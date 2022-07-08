@@ -81,7 +81,7 @@ void UpdateConstrainGpu::Impl::integrate(GpuEventSynchronizer*             fRead
                                          gmx::ArrayRef<const t_grp_tcstat> tcstat,
                                          const bool                        doParrinelloRahman,
                                          const float                       dtPressureCouple,
-                                         const matrix                      prVelocityScalingMatrix)
+                                         const Matrix3x3&                  prVelocityScalingMatrix)
 {
     wallcycle_start_nocount(wcycle_, WallCycleCounter::LaunchGpu);
     wallcycle_sub_start(wcycle_, WallCycleSubCounter::LaunchGpuUpdateConstrain);
@@ -125,7 +125,7 @@ void UpdateConstrainGpu::Impl::integrate(GpuEventSynchronizer*             fRead
     wallcycle_stop(wcycle_, WallCycleCounter::LaunchGpu);
 }
 
-void UpdateConstrainGpu::Impl::scaleCoordinates(const matrix scalingMatrix)
+void UpdateConstrainGpu::Impl::scaleCoordinates(const Matrix3x3& scalingMatrix)
 {
     if (numAtoms_ == 0)
     {
@@ -143,7 +143,7 @@ void UpdateConstrainGpu::Impl::scaleCoordinates(const matrix scalingMatrix)
     wallcycle_stop(wcycle_, WallCycleCounter::LaunchGpu);
 }
 
-void UpdateConstrainGpu::Impl::scaleVelocities(const matrix scalingMatrix)
+void UpdateConstrainGpu::Impl::scaleVelocities(const Matrix3x3& scalingMatrix)
 {
     if (numAtoms_ == 0)
     {
@@ -252,7 +252,7 @@ void UpdateConstrainGpu::integrate(GpuEventSynchronizer*             fReadyOnDev
                                    gmx::ArrayRef<const t_grp_tcstat> tcstat,
                                    const bool                        doParrinelloRahman,
                                    const float                       dtPressureCouple,
-                                   const matrix                      prVelocityScalingMatrix)
+                                   const gmx::Matrix3x3&             prVelocityScalingMatrix)
 {
     impl_->integrate(fReadyOnDevice,
                      dt,
@@ -266,12 +266,12 @@ void UpdateConstrainGpu::integrate(GpuEventSynchronizer*             fReadyOnDev
                      prVelocityScalingMatrix);
 }
 
-void UpdateConstrainGpu::scaleCoordinates(const matrix scalingMatrix)
+void UpdateConstrainGpu::scaleCoordinates(const gmx::Matrix3x3& scalingMatrix)
 {
     impl_->scaleCoordinates(scalingMatrix);
 }
 
-void UpdateConstrainGpu::scaleVelocities(const matrix scalingMatrix)
+void UpdateConstrainGpu::scaleVelocities(const gmx::Matrix3x3& scalingMatrix)
 {
     impl_->scaleVelocities(scalingMatrix);
 }

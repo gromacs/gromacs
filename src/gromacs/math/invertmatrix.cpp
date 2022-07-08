@@ -44,11 +44,38 @@
 
 #include <cmath>
 
+#include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
 
 namespace gmx
 {
+
+Matrix3x3 invertBoxMatrix(const Matrix3x3& src)
+{
+    // Check the preconditions
+    GMX_ASSERT(src(XX, YY) == 0.0, "Must have zero above the leading diagonal");
+    GMX_ASSERT(src(XX, ZZ) == 0.0, "Must have zero above the leading diagonal");
+    GMX_ASSERT(src(YY, ZZ) == 0.0, "Must have zero above the leading diagonal");
+
+    double tmp = src(XX, XX) * src(YY, YY) * src(ZZ, ZZ);
+    if (std::fabs(tmp) <= 100 * GMX_REAL_MIN)
+    {
+        GMX_THROW(gmx::RangeError("Cannot invert matrix, determinant is too close to zero"));
+    }
+
+    Matrix3x3 dest;
+    dest(XX, XX) = 1 / src(XX, XX);
+    dest(YY, YY) = 1 / src(YY, YY);
+    dest(ZZ, ZZ) = 1 / src(ZZ, ZZ);
+    dest(ZZ, XX) = (src(YY, XX) * src(ZZ, YY) * dest(YY, YY) - src(ZZ, XX)) * dest(XX, XX) * dest(ZZ, ZZ);
+    dest(YY, XX) = -src(YY, XX) * dest(XX, XX) * dest(YY, YY);
+    dest(ZZ, YY) = -src(ZZ, YY) * dest(YY, YY) * dest(ZZ, ZZ);
+    dest(XX, YY) = 0.0;
+    dest(XX, ZZ) = 0.0;
+    dest(YY, ZZ) = 0.0;
+    return dest;
+}
 
 void invertBoxMatrix(const matrix src, matrix dest)
 {

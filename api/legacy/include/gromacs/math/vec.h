@@ -587,13 +587,6 @@ static inline void mvmul_ur0(const matrix a, const rvec src, rvec dest)
     dest[XX] = a[XX][XX] * src[XX];
 }
 
-static inline void tmvmul_ur0(const matrix a, const rvec src, rvec dest)
-{
-    dest[XX] = a[XX][XX] * src[XX] + a[YY][XX] * src[YY] + a[ZZ][XX] * src[ZZ];
-    dest[YY] = a[YY][YY] * src[YY] + a[ZZ][YY] * src[ZZ];
-    dest[ZZ] = a[ZZ][ZZ] * src[ZZ];
-}
-
 static inline void unitv(const rvec src, rvec dest)
 {
     real linv;

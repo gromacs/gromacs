@@ -58,16 +58,16 @@ namespace
 {
 
 //! GoogleTest expectations about whether matrices are diagonal or not
-void isAlmostDiagonalMatrix(const char* name, const matrix m)
+void isAlmostDiagonalMatrix(const char* name, const Matrix3x3& m)
 {
     SCOPED_TRACE(formatString("Testing that %s is almost diagonal", name));
     FloatingPointTolerance tolerance = absoluteTolerance(2e-5);
-    EXPECT_REAL_EQ_TOL(0, m[XX][YY], tolerance);
-    EXPECT_REAL_EQ_TOL(0, m[XX][ZZ], tolerance);
-    EXPECT_REAL_EQ_TOL(0, m[YY][XX], tolerance);
-    EXPECT_REAL_EQ_TOL(0, m[YY][ZZ], tolerance);
-    EXPECT_REAL_EQ_TOL(0, m[ZZ][XX], tolerance);
-    EXPECT_REAL_EQ_TOL(0, m[ZZ][YY], tolerance);
+    EXPECT_REAL_EQ_TOL(0, m(XX, YY), tolerance);
+    EXPECT_REAL_EQ_TOL(0, m(XX, ZZ), tolerance);
+    EXPECT_REAL_EQ_TOL(0, m(YY, XX), tolerance);
+    EXPECT_REAL_EQ_TOL(0, m(YY, ZZ), tolerance);
+    EXPECT_REAL_EQ_TOL(0, m(ZZ, XX), tolerance);
+    EXPECT_REAL_EQ_TOL(0, m(ZZ, YY), tolerance);
 }
 
 /*! \brief Some kinds of matrices of simulation box pressure
@@ -228,10 +228,10 @@ TEST_P(ParrRahmTest, Works)
 
     // Call the Parrinello-Rahman pressure-coupling function to produce
     // new values in legacyBoxVelocity, M, and mu
-    matrix M;
-    matrix mu;
+    Matrix3x3 M;
+    Matrix3x3 mu;
     parrinellorahman_pcoupl(
-            mdlog, 0, options, deform, 0.02, legacyPressure, legacyBox, legacyBoxRel, legacyBoxVelocity, M, mu);
+            mdlog, 0, options, deform, 0.02, legacyPressure, legacyBox, legacyBoxRel, legacyBoxVelocity, &M, &mu);
 
     // Test the outputs
     if (options.epct == PressureCouplingType::Isotropic)
@@ -249,11 +249,11 @@ TEST_P(ParrRahmTest, Works)
         const uint64_t         singleUlpDiff = 10;
         const uint64_t         doubleUlpDiff = boxShape == BoxShape::Other ? 10 : 5;
         FloatingPointTolerance tolerance(0, 0, 0, 0, singleUlpDiff, doubleUlpDiff, false);
-        EXPECT_REAL_EQ_TOL(mu[XX][XX], mu[YY][YY], tolerance);
-        EXPECT_REAL_EQ_TOL(mu[XX][XX], mu[ZZ][ZZ], tolerance);
+        EXPECT_REAL_EQ_TOL(mu(XX, XX), mu(YY, YY), tolerance);
+        EXPECT_REAL_EQ_TOL(mu(XX, XX), mu(ZZ, ZZ), tolerance);
         SCOPED_TRACE("Check the diagonal values of M are equal");
-        EXPECT_REAL_EQ_TOL(M[XX][XX], M[YY][YY], tolerance);
-        EXPECT_REAL_EQ_TOL(M[XX][XX], M[ZZ][ZZ], tolerance);
+        EXPECT_REAL_EQ_TOL(M(XX, XX), M(YY, YY), tolerance);
+        EXPECT_REAL_EQ_TOL(M(XX, XX), M(ZZ, ZZ), tolerance);
     }
 
     // The "other" box is just a set of numbers we use for ensuring

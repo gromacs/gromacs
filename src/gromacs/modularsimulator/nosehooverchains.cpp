@@ -583,11 +583,11 @@ inline real NoseHooverChainsElement::currentKineticEnergy(const t_grp_tcstat& tc
     {
         if (useFullStepKE_ == UseFullStepKE::Yes)
         {
-            return trace(tcstat.ekinf) * tcstat.ekinscalef_nhc;
+            return ::trace(tcstat.ekinf) * tcstat.ekinscalef_nhc;
         }
         else
         {
-            return trace(tcstat.ekinh) * tcstat.ekinscaleh_nhc;
+            return ::trace(tcstat.ekinh) * tcstat.ekinscaleh_nhc;
         }
     }
     else if (nhcUsage_ == NhcUsage::Barostat)

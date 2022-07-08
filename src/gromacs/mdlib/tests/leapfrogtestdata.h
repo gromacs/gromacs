@@ -48,6 +48,7 @@
 #include <vector>
 
 #include "gromacs/gpu_utils/gpu_utils.h"
+#include "gromacs/math/matrix.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/mdlib/update.h"
@@ -112,7 +113,7 @@ public:
     //! Period between pressure coupling steps
     float dtPressureCouple_;
     //! Matrix for Parrinello-Rahman velocity scaling
-    matrix velocityScalingMatrix_;
+    Matrix3x3 velocityScalingMatrix_;
 
     /*! \brief Constructor.
      *

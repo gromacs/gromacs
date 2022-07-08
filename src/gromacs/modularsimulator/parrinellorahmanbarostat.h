@@ -43,6 +43,7 @@
 #ifndef GMX_MODULARSIMULATOR_PARRINELLORAHMANBAROSTAT_H
 #define GMX_MODULARSIMULATOR_PARRINELLORAHMANBAROSTAT_H
 
+#include "gromacs/math/matrix.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/logger.h"
 
@@ -148,12 +149,12 @@ private:
     const Step initStep_;
 
     //! View on the velocity scaling tensor (owned by the propagator)
-    ArrayRef<rvec> scalingTensor_;
+    gmx::Matrix3x3* scalingTensor_ = nullptr;
     //! Callback to let propagator know that we updated lambda
     PropagatorCallback propagatorCallback_;
 
     //! Relative change in box before - after barostatting
-    matrix mu_;
+    Matrix3x3 mu_;
     //! Relative box shape
     tensor boxRel_;
     //! Box velocity

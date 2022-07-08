@@ -72,7 +72,7 @@ void LeapFrogGpu::integrate(DeviceBuffer<Float3>              d_x,
                             gmx::ArrayRef<const t_grp_tcstat> tcstat,
                             const bool                        doParrinelloRahman,
                             const float                       dtPressureCouple,
-                            const matrix                      prVelocityScalingMatrix)
+                            const gmx::Matrix3x3&             prVelocityScalingMatrix)
 {
     GMX_ASSERT(numAtoms_ > 0, "The number of atoms needs to be >0.");
 
@@ -105,14 +105,14 @@ void LeapFrogGpu::integrate(DeviceBuffer<Float3>              d_x,
     if (doParrinelloRahman)
     {
         parrinelloRahmanVelocityScaling = ParrinelloRahmanVelocityScaling::Diagonal;
-        GMX_ASSERT(prVelocityScalingMatrix[YY][XX] == 0 && prVelocityScalingMatrix[ZZ][XX] == 0
-                           && prVelocityScalingMatrix[ZZ][YY] == 0 && prVelocityScalingMatrix[XX][YY] == 0
-                           && prVelocityScalingMatrix[XX][ZZ] == 0 && prVelocityScalingMatrix[YY][ZZ] == 0,
+        GMX_ASSERT(prVelocityScalingMatrix(YY, XX) == 0 && prVelocityScalingMatrix(ZZ, XX) == 0
+                           && prVelocityScalingMatrix(ZZ, YY) == 0 && prVelocityScalingMatrix(XX, YY) == 0
+                           && prVelocityScalingMatrix(XX, ZZ) == 0 && prVelocityScalingMatrix(YY, ZZ) == 0,
                    "Fully anisotropic Parrinello-Rahman pressure coupling is not yet supported "
                    "in GPU version of Leap-Frog integrator.");
-        prVelocityScalingMatrixDiagonal_ = Float3{ dtPressureCouple * prVelocityScalingMatrix[XX][XX],
-                                                   dtPressureCouple * prVelocityScalingMatrix[YY][YY],
-                                                   dtPressureCouple * prVelocityScalingMatrix[ZZ][ZZ] };
+        prVelocityScalingMatrixDiagonal_ = Float3{ dtPressureCouple * prVelocityScalingMatrix(XX, XX),
+                                                   dtPressureCouple * prVelocityScalingMatrix(YY, YY),
+                                                   dtPressureCouple * prVelocityScalingMatrix(ZZ, ZZ) };
     }
 
     launchLeapFrogKernel(numAtoms_,

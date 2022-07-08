@@ -42,11 +42,21 @@
 #ifndef GMX_MATH_INVERTMATRIX_H
 #define GMX_MATH_INVERTMATRIX_H
 
+#include "gromacs/math/matrix.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/utility/basedefinitions.h"
 
 namespace gmx
 {
+
+/*! \brief Invert a simulation-box matrix
+ *
+ * This routine assumes that src is a simulation-box matrix, i.e. has
+ * zeroes in the upper-right triangle.
+ *
+ * \throws RangeError if the product of the leading diagonal is too small.
+ */
+Matrix3x3 invertBoxMatrix(const Matrix3x3& src);
 
 /*! \brief Invert a simulation-box matrix in \c src, return in \c dest
  *

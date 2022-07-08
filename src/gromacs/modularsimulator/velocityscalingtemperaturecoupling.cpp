@@ -626,8 +626,8 @@ void VelocityScalingTemperatureCoupling::setLambda(Step step)
     for (int temperatureGroup = 0; (temperatureGroup < numTemperatureGroups_); temperatureGroup++)
     {
         const real currentKineticEnergy = useFullStepKE_ == UseFullStepKE::Yes
-                                                  ? trace(ekind->tcstat[temperatureGroup].ekinf)
-                                                  : trace(ekind->tcstat[temperatureGroup].ekinh);
+                                                  ? ::trace(ekind->tcstat[temperatureGroup].ekinf)
+                                                  : ::trace(ekind->tcstat[temperatureGroup].ekinh);
         const real currentTemperature   = useFullStepKE_ == UseFullStepKE::Yes
                                                   ? ekind->tcstat[temperatureGroup].T
                                                   : ekind->tcstat[temperatureGroup].Th;

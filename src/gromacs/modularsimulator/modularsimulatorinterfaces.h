@@ -59,6 +59,7 @@
 #include <memory>
 #include <optional>
 
+#include "gromacs/math/matrix.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/mdtypes/checkpointdata.h"
 #include "gromacs/utility/basedefinitions.h"
@@ -550,7 +551,7 @@ struct PropagatorConnection
     //! Function object to request callback allowing to signal a position scaling step
     std::function<PropagatorCallback()> getPositionScalingCallback;
     //! Function object for receiving view on pressure scaling matrix
-    std::function<ArrayRef<rvec>()> getViewOnPRScalingMatrix;
+    std::function<Matrix3x3*()> getViewOnPRScalingMatrix;
     //! Function object to request callback allowing to signal a Parrinello-Rahman scaling step
     std::function<PropagatorCallback()> getPRScalingCallback;
 };

@@ -44,6 +44,9 @@
 #ifndef GMX_MATH_MULTIDIMARRAY_H_
 #define GMX_MATH_MULTIDIMARRAY_H_
 
+#include <type_traits>
+#include <utility>
+
 #include "gromacs/mdspan/mdspan.h"
 #include "gromacs/utility/arrayref.h"
 
@@ -62,7 +65,7 @@ struct is_resizable : std::false_type
 };
 
 template<typename T>
-struct is_resizable<T, void_t<decltype(std::declval<T>().resize(size_t()))>> : std::true_type
+struct is_resizable<T, void_t<decltype(std::declval<T>().resize(size_t(0)))>> : std::true_type
 {
 };
 

@@ -139,6 +139,8 @@ void integrateVVFirstStep(int64_t                   step,
                            TrotterSequence::One);
         }
 
+        // This is not used when updating under VV
+        gmx::Matrix3x3 dummyParrinelloRahmanM;
         upd->update_coords(*ir,
                            step,
                            mdatoms->homenr,
@@ -150,7 +152,7 @@ void integrateVVFirstStep(int64_t                   step,
                            f->view().forceWithPadding(),
                            fcdata,
                            ekind,
-                           nullptr,
+                           dummyParrinelloRahmanM,
                            etrtVELOCITY1,
                            cr,
                            constr != nullptr);
@@ -356,6 +358,8 @@ void integrateVVSecondStep(int64_t                   step,
                            t_nrnb*                                                  nrnb,
                            gmx_wallcycle*                                           wcycle)
 {
+    // This is not used when updating under VV
+    gmx::Matrix3x3 dummyParrinelloRahmanM;
     /* velocity half-step update */
     upd->update_coords(*ir,
                        step,
@@ -368,7 +372,7 @@ void integrateVVSecondStep(int64_t                   step,
                        f->view().forceWithPadding(),
                        fcdata,
                        ekind,
-                       nullptr,
+                       dummyParrinelloRahmanM,
                        etrtVELOCITY2,
                        cr,
                        constr != nullptr);
@@ -401,7 +405,7 @@ void integrateVVSecondStep(int64_t                   step,
                        f->view().forceWithPadding(),
                        fcdata,
                        ekind,
-                       nullptr,
+                       dummyParrinelloRahmanM,
                        etrtPOSITION,
                        cr,
                        constr != nullptr);
@@ -470,7 +474,7 @@ void integrateVVSecondStep(int64_t                   step,
                            f->view().forceWithPadding(),
                            fcdata,
                            ekind,
-                           nullptr,
+                           dummyParrinelloRahmanM,
                            etrtPOSITION,
                            cr,
                            constr != nullptr);

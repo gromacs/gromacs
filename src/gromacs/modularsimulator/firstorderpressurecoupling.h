@@ -140,7 +140,7 @@ private:
     const int couplingOffset_;
 
     //! The current box scaling matrix
-    tensor boxScalingMatrix_;
+    Matrix3x3 boxScalingMatrix_;
     //! Relative box shape
     tensor boxRel_;
     //! Contribution to the conserved energy

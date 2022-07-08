@@ -529,7 +529,7 @@ void EnergyData::updateKineticEnergy()
 
     enerd_->term[F_TEMP] = sum_ekin(
             &(inputrec_->opts), ekind_, dEkinDLambda, useFullStepKineticEnergy, ignoreScalingFactor);
-    enerd_->term[F_EKIN] = trace(ekind_->ekin);
+    enerd_->term[F_EKIN] = ::trace(ekind_->ekin);
 }
 
 EnergyData::Element* EnergyData::element()

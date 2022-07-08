@@ -78,7 +78,7 @@ void FirstOrderPressureCoupling::calculateScalingMatrix(Step step)
                                                                  box,
                                                                  forceVirial,
                                                                  constraintVirial,
-                                                                 boxScalingMatrix_,
+                                                                 &boxScalingMatrix_,
                                                                  &conservedEnergyContribution_);
     conservedEnergyContributionStep_ = step;
 }

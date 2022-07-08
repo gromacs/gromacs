@@ -78,19 +78,19 @@ void UpdateConstrainGpu::integrate(GpuEventSynchronizer* /* fReadyOnDevice */,
                                    gmx::ArrayRef<const t_grp_tcstat> /* tcstat */,
                                    const bool /* doParrinelloRahman */,
                                    const float /* dtPressureCouple */,
-                                   const matrix /* prVelocityScalingMatrix*/)
+                                   const Matrix3x3& /* prVelocityScalingMatrix*/)
 {
     GMX_ASSERT(!impl_,
                "A CPU stub for UpdateConstrain was called instead of the correct implementation.");
 }
 
-void UpdateConstrainGpu::scaleCoordinates(const matrix /* scalingMatrix */)
+void UpdateConstrainGpu::scaleCoordinates(const Matrix3x3& /* scalingMatrix */)
 {
     GMX_ASSERT(!impl_,
                "A CPU stub for UpdateConstrain was called instead of the correct implementation.");
 }
 
-void UpdateConstrainGpu::scaleVelocities(const matrix /* scalingMatrix */)
+void UpdateConstrainGpu::scaleVelocities(const Matrix3x3& /* scalingMatrix */)
 {
     GMX_ASSERT(!impl_,
                "A CPU stub for UpdateConstrain was called instead of the correct implementation.");

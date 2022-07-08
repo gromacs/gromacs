@@ -46,6 +46,7 @@
 #include <memory>
 
 #include "gromacs/gpu_utils/devicebuffer_datatype.h"
+#include "gromacs/math/matrix.h"
 #include "gromacs/mdtypes/group.h"
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/utility/arrayref.h"
@@ -116,7 +117,7 @@ public:
                    gmx::ArrayRef<const t_grp_tcstat> tcstat,
                    bool                              doParrinelloRahman,
                    float                             dtPressureCouple,
-                   const matrix                      prVelocityScalingMatrix);
+                   const gmx::Matrix3x3&             prVelocityScalingMatrix);
 
     /*! \brief Scale coordinates on the GPU for the pressure coupling.
      *
@@ -125,7 +126,7 @@ public:
      *
      * \param[in] scalingMatrix Coordinates scaling matrix.
      */
-    void scaleCoordinates(const matrix scalingMatrix);
+    void scaleCoordinates(const gmx::Matrix3x3& scalingMatrix);
 
     /*! \brief Scale velocities on the GPU for the pressure coupling.
      *
@@ -133,7 +134,7 @@ public:
      *
      * \param[in] scalingMatrix Velocities scaling matrix.
      */
-    void scaleVelocities(const matrix scalingMatrix);
+    void scaleVelocities(const gmx::Matrix3x3& scalingMatrix);
 
     /*! \brief Set the pointers and update data-structures (e.g. after NB search step).
      *

@@ -56,6 +56,7 @@
 
 #include "gromacs/gpu_utils/devicebuffer_datatype.h"
 #include "gromacs/gpu_utils/hostallocator.h"
+#include "gromacs/math/matrix.h"
 #include "gromacs/utility/arrayref.h"
 
 class DeviceContext;
@@ -133,7 +134,7 @@ public:
                    gmx::ArrayRef<const t_grp_tcstat> tcstat,
                    bool                              doParrinelloRahman,
                    float                             dtPressureCouple,
-                   const matrix                      prVelocityScalingMatrix);
+                   const Matrix3x3&                  prVelocityScalingMatrix);
 
     /*! \brief Set the integrator
      *

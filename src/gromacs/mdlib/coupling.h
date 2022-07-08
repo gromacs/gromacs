@@ -39,6 +39,7 @@
 #include <array>
 #include <vector>
 
+#include "gromacs/math/matrix.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/utility/enumerationhelpers.h"
@@ -85,8 +86,8 @@ void update_pcouple_before_coordinates(const gmx::MDLogger&           mdlog,
                                        const tensor                   deform,
                                        real                           delta_t,
                                        t_state*                       state,
-                                       matrix                         parrinellorahmanMu,
-                                       matrix                         M);
+                                       gmx::Matrix3x3*                parrinellorahmanMu,
+                                       gmx::Matrix3x3*                M);
 
 /*! \brief Implement aspects of pressure coupling.
  *
@@ -130,7 +131,7 @@ void update_pcouple_after_coordinates(FILE*                               fplog,
                                       const matrix                        pressure,
                                       const matrix                        forceVirial,
                                       const matrix                        constraintVirial,
-                                      matrix                              pressureCouplingMu,
+                                      gmx::Matrix3x3*                     pressureCouplingMu,
                                       t_state*                            state,
                                       t_nrnb*                             nrnb,
                                       gmx::BoxDeformation*                boxDeformation,
@@ -262,8 +263,8 @@ void init_parrinellorahman(const PressureCouplingOptions& pressureCouplingOption
                            const tensor                   box,
                            tensor                         box_rel,
                            tensor                         boxv,
-                           tensor                         M,
-                           matrix                         mu);
+                           gmx::Matrix3x3*                M,
+                           gmx::Matrix3x3*                mu);
 
 /*! \brief Calculate the change in box vectors due to Parrinello-Rahman pressure coupling
  *
@@ -319,8 +320,8 @@ void parrinellorahman_pcoupl(const gmx::MDLogger&           mdlog,
                              const tensor                   box,
                              tensor                         box_rel,
                              tensor                         boxv,
-                             tensor                         M,
-                             matrix                         mu);
+                             gmx::Matrix3x3*                M,
+                             gmx::Matrix3x3*                mu);
 
 /*! \brief Calculate the pressure coupling scaling matrix
  *
@@ -339,7 +340,7 @@ void pressureCouplingCalculateScalingMatrix(FILE*                          fplog
                                             const matrix                   box,
                                             const matrix                   force_vir,
                                             const matrix                   constraint_vir,
-                                            matrix                         mu,
+                                            gmx::Matrix3x3*                mu,
                                             double*                        baros_integral);
 
 /*! \brief Scale the box and coordinates
@@ -353,7 +354,7 @@ template<PressureCoupling pressureCouplingType>
 void pressureCouplingScaleBoxAndCoordinates(const PressureCouplingOptions&      pressureCoupling,
                                             const tensor                        deform,
                                             const ivec*                         nFreeze,
-                                            const matrix                        mu,
+                                            const gmx::Matrix3x3&               mu,
                                             matrix                              box,
                                             matrix                              box_rel,
                                             int                                 start,

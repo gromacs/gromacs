@@ -46,7 +46,8 @@
 
 #include "gromacs/math/multidimarray.h"
 #include "gromacs/math/utilities.h"
-#include "gromacs/math/vec.h"
+#include "gromacs/math/vectypes.h"
+#include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/real.h"
 
 namespace gmx
@@ -150,6 +151,40 @@ static inline void fillLegacyMatrix(Matrix3x3ConstSpan newMatrix, matrix legacyM
             legacyMatrix[i][j] = newMatrix(i, j);
         }
     }
+}
+
+//! Return the product of multiplying the vector \c v by the 3x3 matrix \c m
+template<typename ElementType>
+BasicVector<ElementType> multiplyVectorByMatrix(const BasicMatrix3x3<ElementType>& m, const rvec v)
+{
+    BasicVector<ElementType> result;
+    for (int d = 0; d < DIM; ++d)
+    {
+        result[d] = m(d, 0) * v[0] + m(d, 1) * v[1] + m(d, 2) * v[2];
+    }
+    return result;
+}
+
+//! Return the product of multiplying the 3x3 matrix \c m by the scalar \c s
+template<typename ElementType>
+BasicMatrix3x3<ElementType> operator*(const BasicMatrix3x3<ElementType>& m, const real s)
+{
+    BasicMatrix3x3<ElementType> result;
+    for (int i = 0; i < DIM; i++)
+    {
+        for (int j = 0; j < DIM; j++)
+        {
+            result(i, j) = m(i, j) * s;
+        }
+    }
+    return result;
+}
+
+//! Return a vector that is the diagonal of the 3x3 matrix \c m
+template<typename ElementType>
+BasicVector<ElementType> diagonal(const BasicMatrix3x3<ElementType>& m)
+{
+    return { m(XX, XX), m(YY, YY), m(ZZ, ZZ) };
 }
 
 } // namespace gmx

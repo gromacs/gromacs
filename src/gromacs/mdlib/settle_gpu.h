@@ -49,7 +49,6 @@
 #include "gromacs/gpu_utils/devicebuffer_datatype.h"
 #include "gromacs/gpu_utils/gputraits.h"
 #include "gromacs/math/functions.h"
-#include "gromacs/math/invertmatrix.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/constraint_gpu_helpers.h"
 #include "gromacs/mdlib/settle.h"

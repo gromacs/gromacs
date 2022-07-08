@@ -47,6 +47,7 @@
 #include "gromacs/gpu_utils/device_stream.h"
 #include "gromacs/gpu_utils/devicebuffer_datatype.h"
 #include "gromacs/gpu_utils/gputraits.h"
+#include "gromacs/math/matrix.h"
 
 class GpuEventSynchronizer;
 
@@ -59,8 +60,8 @@ namespace gmx
  */
 struct ScalingMatrix
 {
-    ScalingMatrix(const matrix m) :
-        xx(m[XX][XX]), yy(m[YY][YY]), zz(m[ZZ][ZZ]), yx(m[YY][XX]), zx(m[ZZ][XX]), zy(m[ZZ][YY])
+    ScalingMatrix(const Matrix3x3& m) :
+        xx(m(XX, XX)), yy(m(YY, YY)), zz(m(ZZ, ZZ)), yx(m(YY, XX)), zx(m(ZZ, XX)), zy(m(ZZ, YY))
     {
     }
     float xx, yy, zz, yx, zx, zy;

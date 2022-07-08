@@ -145,10 +145,48 @@ void ParrinelloRahmanBarostat::integrateBoxVelocityEquations(Step step)
                             box,
                             boxRel_,
                             boxVelocity_,
-                            scalingTensor_.data(),
-                            mu_);
+                            scalingTensor_,
+                            &mu_);
     // multiply matrix by the coupling time step to avoid having the propagator needing to know about that
-    msmul(scalingTensor_.data(), couplingTimePeriod_, scalingTensor_.data());
+    (*scalingTensor_) = (*scalingTensor_) * couplingTimePeriod_;
+}
+
+/*! \brief Check that the matrix \c m describes a simulation box
+ *
+ * The GROMACS convention is that all simulation box descriptions are
+ * normalized to have zero entries in the upper triangle. This function
+ * asserts if that is not true. */
+static void checkMatrixIsBoxMatrix(const Matrix3x3& m)
+{
+    GMX_ASSERT(
+            (m(XX, YY) == 0.0) && (m(XX, ZZ) == 0.0) && (m(YY, ZZ) == 0.0),
+            formatString("Box matrix should contain zero in the upper triangle, but "
+                         "was\n%10.6g %10.6g %10.6g\n%10.6g %10.6g %10.6g\n%10.6g %10.6g %10.6g\n",
+                         m(0, 0),
+                         m(0, 1),
+                         m(0, 2),
+                         m(1, 0),
+                         m(1, 1),
+                         m(1, 2),
+                         m(2, 0),
+                         m(2, 1),
+                         m(2, 2))
+                    .c_str());
+}
+
+/*! \brief Multiply a vector \c src by the transpose of the box matrix \c m
+ *
+ * This has the same functionality as the legacy tmvmul_ur0 routine.
+ */
+static inline RVec multiplyVectorByTransposeOfBoxMatrix(const Matrix3x3& m, const RVec& src)
+{
+    checkMatrixIsBoxMatrix(m);
+
+    RVec dest;
+    dest[XX] = m(XX, XX) * src[XX] + m(YY, XX) * src[YY] + m(ZZ, XX) * src[ZZ];
+    dest[YY] = m(YY, YY) * src[YY] + m(ZZ, YY) * src[ZZ];
+    dest[ZZ] = m(ZZ, ZZ) * src[ZZ];
+    return dest;
 }
 
 void ParrinelloRahmanBarostat::scaleBoxAndPositions()
@@ -165,30 +203,30 @@ void ParrinelloRahmanBarostat::scaleBoxAndPositions()
     preserveBoxShape(inputrec_->pressureCouplingOptions, inputrec_->deform, boxRel_, box);
 
     // Scale the coordinates
-    const int start  = 0;
-    const int homenr = mdAtoms_->mdatoms()->homenr;
-    auto*     x      = as_rvec_array(statePropagatorData_->positionsView().paddedArrayRef().data());
-    ivec*     nFreeze = inputrec_->opts.nFreeze;
+    const int      start   = 0;
+    const int      homenr  = mdAtoms_->mdatoms()->homenr;
+    ArrayRef<RVec> x       = statePropagatorData_->positionsView().paddedArrayRef();
+    ivec*          nFreeze = inputrec_->opts.nFreeze;
     for (int n = start; n < start + homenr; n++)
     {
         if (mdAtoms_->mdatoms()->cFREEZE.empty())
         {
-            tmvmul_ur0(mu_, x[n], x[n]);
+            x[n] = multiplyVectorByTransposeOfBoxMatrix(mu_, x[n]);
         }
         else
         {
             int g = mdAtoms_->mdatoms()->cFREEZE[n];
             if (!nFreeze[g][XX])
             {
-                x[n][XX] = mu_[XX][XX] * x[n][XX] + mu_[YY][XX] * x[n][YY] + mu_[ZZ][XX] * x[n][ZZ];
+                x[n][XX] = mu_(XX, XX) * x[n][XX] + mu_(YY, XX) * x[n][YY] + mu_(ZZ, XX) * x[n][ZZ];
             }
             if (!nFreeze[g][YY])
             {
-                x[n][YY] = mu_[YY][YY] * x[n][YY] + mu_[ZZ][YY] * x[n][ZZ];
+                x[n][YY] = mu_(YY, YY) * x[n][YY] + mu_(ZZ, YY) * x[n][ZZ];
             }
             if (!nFreeze[g][ZZ])
             {
-                x[n][ZZ] = mu_[ZZ][ZZ] * x[n][ZZ];
+                x[n][ZZ] = mu_(ZZ, ZZ) * x[n][ZZ];
             }
         }
     }
@@ -196,7 +234,7 @@ void ParrinelloRahmanBarostat::scaleBoxAndPositions()
 
 void ParrinelloRahmanBarostat::elementSetup()
 {
-    if (!propagatorCallback_ || scalingTensor_.empty())
+    if (!propagatorCallback_ || scalingTensor_ == nullptr || scalingTensor_->asConstView().rank() == 0)
     {
         throw MissingElementConnectionError(
                 "Parrinello-Rahman barostat was not connected to a propagator.\n"
@@ -228,10 +266,10 @@ void ParrinelloRahmanBarostat::elementSetup()
                               box,
                               boxRel_,
                               boxVelocity_,
-                              scalingTensor_.data(),
-                              mu_);
+                              scalingTensor_,
+                              &mu_);
         // multiply matrix by the coupling time step to avoid having the propagator needing to know about that
-        msmul(scalingTensor_.data(), couplingTimePeriod_, scalingTensor_.data());
+        (*scalingTensor_) = (*scalingTensor_) * couplingTimePeriod_;
 
         propagatorCallback_(initStep_);
     }
@@ -272,7 +310,7 @@ real ParrinelloRahmanBarostat::conservedEnergyContribution() const
      * track of unwrapped box diagonal elements. This case is
      * excluded in integratorHasConservedEnergyQuantity().
      */
-    energy += volume * trace(inputrec_->pressureCouplingOptions.ref_p) / (DIM * c_presfac);
+    energy += volume * ::trace(inputrec_->pressureCouplingOptions.ref_p) / (DIM * c_presfac);
 
     return energy;
 }

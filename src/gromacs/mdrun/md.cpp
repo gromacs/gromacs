@@ -172,10 +172,10 @@ void gmx::LegacySimulator::do_md()
     gmx_bool     do_ene, do_log, do_verbose;
     gmx_bool     bMasterState;
     unsigned int force_flags;
-    tensor force_vir = { { 0 } }, shake_vir = { { 0 } }, total_vir = { { 0 } }, pres = { { 0 } };
-    int    i, m;
-    rvec   mu_tot;
-    matrix pressureCouplingMu, M;
+    tensor    force_vir = { { 0 } }, shake_vir = { { 0 } }, total_vir = { { 0 } }, pres = { { 0 } };
+    int       i, m;
+    rvec      mu_tot;
+    Matrix3x3 pressureCouplingMu{ { 0. } }, parrinelloRahmanM{ { 0. } };
     gmx_repl_ex_t     repl_ex = nullptr;
     gmx_global_stat_t gstat;
     gmx_shellfc_t*    shellfc;
@@ -411,8 +411,8 @@ void gmx::LegacySimulator::do_md()
                           state->box,
                           state->box_rel,
                           state->boxv,
-                          M,
-                          pressureCouplingMu);
+                          &parrinelloRahmanM,
+                          &pressureCouplingMu);
 
     std::unique_ptr<UpdateConstrainGpu> integrator;
 
@@ -1414,8 +1414,14 @@ void gmx::LegacySimulator::do_md()
         else
         {
             update_tcouple(step, ir, state, ekind, &MassQ, md->homenr, md->cTC);
-            update_pcouple_before_coordinates(
-                    mdlog, step, ir->pressureCouplingOptions, ir->deform, ir->delta_t, state, pressureCouplingMu, M);
+            update_pcouple_before_coordinates(mdlog,
+                                              step,
+                                              ir->pressureCouplingOptions,
+                                              ir->deform,
+                                              ir->delta_t,
+                                              state,
+                                              &pressureCouplingMu,
+                                              &parrinelloRahmanM);
         }
 
         /* With leap-frog type integrators we compute the kinetic energy
@@ -1525,7 +1531,7 @@ void gmx::LegacySimulator::do_md()
                                       ekind->tcstat,
                                       doParrinelloRahman,
                                       ir->pressureCouplingOptions.nstpcouple * ir->delta_t,
-                                      M);
+                                      parrinelloRahmanM);
             }
             else
             {
@@ -1572,7 +1578,7 @@ void gmx::LegacySimulator::do_md()
                                   forceCombined,
                                   &fcdata,
                                   ekind,
-                                  M,
+                                  parrinelloRahmanM,
                                   etrtPOSITION,
                                   cr,
                                   constr != nullptr);
@@ -1730,7 +1736,7 @@ void gmx::LegacySimulator::do_md()
                                          pres,
                                          force_vir,
                                          shake_vir,
-                                         pressureCouplingMu,
+                                         &pressureCouplingMu,
                                          state,
                                          nrnb,
                                          upd.deform(),
@@ -1748,9 +1754,7 @@ void gmx::LegacySimulator::do_md()
             integrator->scaleCoordinates(pressureCouplingMu);
             if (doCRescalePressureCoupling)
             {
-                matrix pressureCouplingInvMu;
-                gmx::invertBoxMatrix(pressureCouplingMu, pressureCouplingInvMu);
-                integrator->scaleVelocities(pressureCouplingInvMu);
+                integrator->scaleVelocities(invertBoxMatrix(pressureCouplingMu));
             }
             integrator->setPbc(PbcType::Xyz, state->box);
         }

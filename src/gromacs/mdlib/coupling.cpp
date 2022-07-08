@@ -79,6 +79,8 @@
 /* for n=3, w0 = w2 = 1/(2-2^-(1/3)), w1 = 1-2*w0 */
 /* for n=5, w0 = w1 = w3 = w4 = 1/(4-4^-(1/3)), w1 = 1-4*w0 */
 
+using gmx::Matrix3x3;
+
 #define SUZUKI_YOSHIDA_NUM 5
 
 static const double sy_const_1[] = { 1. };
@@ -172,8 +174,8 @@ void update_pcouple_before_coordinates(const gmx::MDLogger&           mdlog,
                                        const tensor                   deform,
                                        const real                     delta_t,
                                        t_state*                       state,
-                                       matrix                         parrinellorahmanMu,
-                                       matrix                         M)
+                                       Matrix3x3*                     parrinellorahmanMu,
+                                       Matrix3x3*                     M)
 {
     /* Berendsen P-coupling is completely handled after the coordinate update.
      * Trotter P-coupling is handled by separate calls to trotter_update().
@@ -197,6 +199,69 @@ void update_pcouple_before_coordinates(const gmx::MDLogger&           mdlog,
     }
 }
 
+/*! \brief Check that the matrix \c m describes a simulation box
+ *
+ * The GROMACS convention is that all simulation box descriptions are
+ * normalized to have zero entries in the upper triangle. This function
+ * asserts if that is not true.
+ *
+ * This function is a duplicate of one in parrinellorahmanbarostat.cpp
+ * which is thought to be better than having it in a header and
+ * requiring a warning suppression for an unused function for most
+ * source files that use that header. It is expected that eventually
+ * this copy will go away as code migrates elsewhere. */
+static void checkMatrixIsBoxMatrix(const Matrix3x3& m)
+{
+    GMX_ASSERT((m(XX, YY) == 0.0) && (m(XX, ZZ) == 0.0) && (m(YY, ZZ) == 0.0),
+               gmx::formatString(
+                       "Box matrix should contain zero in the upper triangle, but "
+                       "was\n%10.6g %10.6g %10.6g\n%10.6g %10.6g %10.6g\n%10.6g %10.6g %10.6g\n",
+                       m(0, 0),
+                       m(0, 1),
+                       m(0, 2),
+                       m(1, 0),
+                       m(1, 1),
+                       m(1, 2),
+                       m(2, 0),
+                       m(2, 1),
+                       m(2, 2))
+                       .c_str());
+}
+
+/*! \brief Check that the matrix \c m describes a simulation box
+ *
+ * The GROMACS convention is that all simulation box descriptions are
+ * normalized to have zero entries in the upper triangle. This function
+ * asserts if that is not true. */
+static void checkMatrixIsBoxMatrix(const matrix m)
+{
+    GMX_ASSERT((m[XX][YY] == 0.0) && (m[XX][ZZ] == 0.0) && (m[YY][ZZ] == 0.0),
+               gmx::formatString(
+                       "Box matrix should contain zero in the upper triangle, but was\n%10.6g "
+                       "%10.6g %10.6g\n%10.6g %10.6g %10.6g\n%10.6g %10.6g %10.6g\n",
+                       m[0][0],
+                       m[0][1],
+                       m[0][2],
+                       m[1][0],
+                       m[1][1],
+                       m[1][2],
+                       m[2][0],
+                       m[2][1],
+                       m[2][2])
+                       .c_str());
+}
+
+/*! \brief Multiply vector \c v by the transpose of the box matrix \c
+ * m, relying on the fact that the upper triangle of the matrix is
+ * zero. */
+static void multiplyVectorByTransposeOfBoxMatrix(const Matrix3x3& m, const rvec v, rvec result)
+{
+    checkMatrixIsBoxMatrix(m);
+    result[XX] = m(XX, XX) * v[XX] + m(YY, XX) * v[YY] + m(ZZ, XX) * v[ZZ];
+    result[YY] = m(YY, YY) * v[YY] + m(ZZ, YY) * v[ZZ];
+    result[ZZ] = m(ZZ, ZZ) * v[ZZ];
+}
+
 void update_pcouple_after_coordinates(FILE*                               fplog,
                                       int64_t                             step,
                                       const PressureCouplingOptions&      pressureCouplingOptions,
@@ -210,7 +275,7 @@ void update_pcouple_after_coordinates(FILE*                               fplog,
                                       const matrix                        pressure,
                                       const matrix                        forceVirial,
                                       const matrix                        constraintVirial,
-                                      matrix                              pressureCouplingMu,
+                                      Matrix3x3*                          pressureCouplingMu,
                                       t_state*                            state,
                                       t_nrnb*                             nrnb,
                                       gmx::BoxDeformation*                boxDeformation,
@@ -252,7 +317,7 @@ void update_pcouple_after_coordinates(FILE*                               fplog,
                         pressureCouplingOptions,
                         deform,
                         nFreeze,
-                        pressureCouplingMu,
+                        *pressureCouplingMu,
                         state->box,
                         state->box_rel,
                         start,
@@ -284,7 +349,7 @@ void update_pcouple_after_coordinates(FILE*                               fplog,
                 pressureCouplingScaleBoxAndCoordinates<PressureCoupling::CRescale>(pressureCouplingOptions,
                                                                                    deform,
                                                                                    nFreeze,
-                                                                                   pressureCouplingMu,
+                                                                                   *pressureCouplingMu,
                                                                                    state->box,
                                                                                    state->box_rel,
                                                                                    start,
@@ -323,25 +388,25 @@ void update_pcouple_after_coordinates(FILE*                               fplog,
                     {
                         if (cFREEZE.empty())
                         {
-                            tmvmul_ur0(pressureCouplingMu, x[n], x[n]);
+                            multiplyVectorByTransposeOfBoxMatrix(*pressureCouplingMu, x[n], x[n]);
                         }
                         else
                         {
                             int g = cFREEZE[n];
                             if (!nFreeze[g][XX])
                             {
-                                x[n][XX] = pressureCouplingMu[XX][XX] * x[n][XX]
-                                           + pressureCouplingMu[YY][XX] * x[n][YY]
-                                           + pressureCouplingMu[ZZ][XX] * x[n][ZZ];
+                                x[n][XX] = (*pressureCouplingMu)(XX, XX) * x[n][XX]
+                                           + (*pressureCouplingMu)(YY, XX) * x[n][YY]
+                                           + (*pressureCouplingMu)(ZZ, XX) * x[n][ZZ];
                             }
                             if (!nFreeze[g][YY])
                             {
-                                x[n][YY] = pressureCouplingMu[YY][YY] * x[n][YY]
-                                           + pressureCouplingMu[ZZ][YY] * x[n][ZZ];
+                                x[n][YY] = (*pressureCouplingMu)(YY, YY) * x[n][YY]
+                                           + (*pressureCouplingMu)(ZZ, YY) * x[n][ZZ];
                             }
                             if (!nFreeze[g][ZZ])
                             {
-                                x[n][ZZ] = pressureCouplingMu[ZZ][ZZ] * x[n][ZZ];
+                                x[n][ZZ] = (*pressureCouplingMu)(ZZ, ZZ) * x[n][ZZ];
                             }
                         }
                     }
@@ -695,16 +760,52 @@ static void calcParrinelloRahmanInvMass(const PressureCouplingOptions& pressureC
     }
 }
 
+//! Multiply box matrices, relying on the fact that their upper triangle is zero
+static Matrix3x3 multiplyBoxMatrices(const Matrix3x3& a, const Matrix3x3& b)
+{
+    checkMatrixIsBoxMatrix(a);
+    checkMatrixIsBoxMatrix(b);
+    Matrix3x3 result;
+    result(XX, XX) = a(XX, XX) * b(XX, XX);
+    result(XX, YY) = 0.0;
+    result(XX, ZZ) = 0.0;
+    result(YY, XX) = a(YY, XX) * b(XX, XX) + a(YY, YY) * b(YY, XX);
+    result(YY, YY) = a(YY, YY) * b(YY, YY);
+    result(YY, ZZ) = 0.0;
+    result(ZZ, XX) = a(ZZ, XX) * b(XX, XX) + a(ZZ, YY) * b(YY, XX) + a(ZZ, ZZ) * b(ZZ, XX);
+    result(ZZ, YY) = a(ZZ, YY) * b(YY, YY) + a(ZZ, ZZ) * b(ZZ, YY);
+    result(ZZ, ZZ) = a(ZZ, ZZ) * b(ZZ, ZZ);
+    return result;
+}
+
+//! Multiply box matrices, relying on the fact that their upper triangle is zero
+static Matrix3x3 multiplyBoxMatrices(const Matrix3x3& a, const matrix b)
+{
+    checkMatrixIsBoxMatrix(a);
+    checkMatrixIsBoxMatrix(b);
+    Matrix3x3 result;
+    result(XX, XX) = a(XX, XX) * b[XX][XX];
+    result(XX, YY) = 0.0;
+    result(XX, ZZ) = 0.0;
+    result(YY, XX) = a(YY, XX) * b[XX][XX] + a(YY, YY) * b[YY][XX];
+    result(YY, YY) = a(YY, YY) * b[YY][YY];
+    result(YY, ZZ) = 0.0;
+    result(ZZ, XX) = a(ZZ, XX) * b[XX][XX] + a(ZZ, YY) * b[YY][XX] + a(ZZ, ZZ) * b[ZZ][XX];
+    result(ZZ, YY) = a(ZZ, YY) * b[YY][YY] + a(ZZ, ZZ) * b[ZZ][YY];
+    result(ZZ, ZZ) = a(ZZ, ZZ) * b[ZZ][ZZ];
+    return result;
+}
+
 /*! \brief Calculate the M tensor for Parrinello-Rahman pressure coupling
  *
  * M is used in the update code to couple the change in particle
  * velocities to that of the box vectors introduced by mu (see \c
  * calculateMu()).
  */
-static void calculateM(const matrix invbox, const matrix boxv, tensor M)
+static Matrix3x3 calculateM(const Matrix3x3& invbox, const Matrix3x3& boxv)
+
 {
-    // M = box^-1 * boxv
-    mmul(invbox, boxv, M);
+    return multiplyBoxMatrices(invbox, boxv);
 }
 
 /*! \brief Calculate the mu tensor for Parrinello-Rahman pressure coupling
@@ -713,16 +814,15 @@ static void calculateM(const matrix invbox, const matrix boxv, tensor M)
  * coupling and applied at each step. This ensures there is no large
  * jump in box-vector values.
  */
-static void calculateMu(const PressureCouplingOptions& pressureCouplingOptions,
-                        const tensor                   deform,
-                        tensor                         box_rel,
-                        const matrix                   box,
-                        const matrix                   invbox,
-                        const matrix                   boxv,
-                        const real                     couplingTimePeriod,
-                        tensor                         mu)
+static Matrix3x3 calculateMu(const PressureCouplingOptions& pressureCouplingOptions,
+                             const tensor                   deform,
+                             tensor                         box_rel,
+                             const matrix                   box,
+                             const Matrix3x3&               invbox,
+                             const matrix                   boxv,
+                             const real                     couplingTimePeriod)
 {
-    tensor temp;
+    tensor temp{ { 0._real } };
     for (int d = 0; d < DIM; d++)
     {
         for (int n = 0; n <= d; n++)
@@ -733,7 +833,8 @@ static void calculateMu(const PressureCouplingOptions& pressureCouplingOptions,
     preserveBoxShape(pressureCouplingOptions, deform, box_rel, temp);
     // Now temp is the box at t+dt, determine mu as the relative
     // change in the box.
-    mmul_ur0(invbox, temp, mu);
+    const Matrix3x3 mu = multiplyBoxMatrices(invbox, temp);
+    return mu;
 }
 
 void init_parrinellorahman(const PressureCouplingOptions& pressureCouplingOptions,
@@ -742,14 +843,13 @@ void init_parrinellorahman(const PressureCouplingOptions& pressureCouplingOption
                            const tensor                   box,
                            tensor                         box_rel,
                            tensor                         boxv,
-                           tensor                         M,
-                           matrix                         mu)
+                           Matrix3x3*                     M,
+                           Matrix3x3*                     mu)
 {
-    tensor invbox;
-    gmx::invertBoxMatrix(box, invbox);
+    const Matrix3x3 inverseBox = gmx::invertBoxMatrix(gmx::createMatrix3x3FromLegacyMatrix(box));
     preserveBoxShape(pressureCouplingOptions, deform, box_rel, boxv);
-    calculateM(invbox, boxv, M);
-    calculateMu(pressureCouplingOptions, deform, box_rel, box, invbox, boxv, couplingTimePeriod, mu);
+    *M = calculateM(inverseBox, gmx::createMatrix3x3FromLegacyMatrix(boxv));
+    *mu = calculateMu(pressureCouplingOptions, deform, box_rel, box, inverseBox, boxv, couplingTimePeriod);
 }
 
 void parrinellorahman_pcoupl(const gmx::MDLogger&           mdlog,
@@ -761,8 +861,8 @@ void parrinellorahman_pcoupl(const gmx::MDLogger&           mdlog,
                              const tensor                   box,
                              tensor                         box_rel,
                              tensor                         boxv,
-                             tensor                         M,
-                             matrix                         mu)
+                             Matrix3x3*                     M,
+                             Matrix3x3*                     mu)
 {
     real   vol = box[XX][XX] * box[YY][YY] * box[ZZ][ZZ];
     real   atot, arel, change;
@@ -908,9 +1008,10 @@ void parrinellorahman_pcoupl(const gmx::MDLogger&           mdlog,
     // accumulated.
     preserveBoxShape(pressureCouplingOptions, deform, box_rel, boxv);
 
-    calculateM(invbox, boxv, M);
+    const Matrix3x3 inverseBox = gmx::createMatrix3x3FromLegacyMatrix(invbox);
+    *M                         = calculateM(inverseBox, gmx::createMatrix3x3FromLegacyMatrix(boxv));
 
-    calculateMu(pressureCouplingOptions, deform, box_rel, box, invbox, boxv, couplingTimePeriod, mu);
+    *mu = calculateMu(pressureCouplingOptions, deform, box_rel, box, inverseBox, boxv, couplingTimePeriod);
 }
 
 //! Return compressibility factor for entry (i,j) of Berendsen / C-rescale scaling matrix
@@ -927,7 +1028,7 @@ template<PressureCoupling pressureCouplingType>
 static void calculateScalingMatrixImplDetail(const PressureCouplingOptions& pressureCouplingOptions,
                                              int64_t                        ld_seed,
                                              real                           referenceTemperature,
-                                             matrix                         mu,
+                                             Matrix3x3*                     mu,
                                              real                           couplingTimePeriod,
                                              const matrix                   pres,
                                              const matrix                   box,
@@ -940,7 +1041,7 @@ template<PressureCoupling pressureCouplingType>
 static void calculateScalingMatrixImpl(const PressureCouplingOptions& pressureCouplingOptions,
                                        const int64_t                  ld_seed,
                                        const real                     referenceTemperature,
-                                       matrix                         mu,
+                                       Matrix3x3*                     mu,
                                        const real                     couplingTimePeriod,
                                        const matrix                   pres,
                                        const matrix                   box,
@@ -956,7 +1057,7 @@ static void calculateScalingMatrixImpl(const PressureCouplingOptions& pressureCo
             xy_pressure += pres[d][d] / (DIM - 1);
         }
     }
-    clear_mat(mu);
+    *mu = gmx::Matrix3x3{ { 0._real } };
     calculateScalingMatrixImplDetail<pressureCouplingType>(pressureCouplingOptions,
                                                            ld_seed,
                                                            referenceTemperature,
@@ -973,7 +1074,7 @@ template<>
 void calculateScalingMatrixImplDetail<PressureCoupling::Berendsen>(const PressureCouplingOptions& pressureCouplingOptions,
                                                                    int64_t /*ld_seed*/,
                                                                    real /*referenceTemperature*/,
-                                                                   matrix       mu,
+                                                                   Matrix3x3*   mu,
                                                                    const real   couplingTimePeriod,
                                                                    const matrix pres,
                                                                    const matrix box,
@@ -987,30 +1088,30 @@ void calculateScalingMatrixImplDetail<PressureCoupling::Berendsen>(const Pressur
         case PressureCouplingType::Isotropic:
             for (int d = 0; d < DIM; d++)
             {
-                mu[d][d] = 1.0
-                           - compressibilityFactor(d, d, pressureCouplingOptions, couplingTimePeriod)
-                                     * (pressureCouplingOptions.ref_p[d][d] - scalar_pressure) / DIM;
+                (*mu)(d, d) = 1.0
+                              - compressibilityFactor(d, d, pressureCouplingOptions, couplingTimePeriod)
+                                        * (pressureCouplingOptions.ref_p[d][d] - scalar_pressure) / DIM;
             }
             break;
         case PressureCouplingType::SemiIsotropic:
             for (int d = 0; d < ZZ; d++)
             {
-                mu[d][d] = 1.0
-                           - compressibilityFactor(d, d, pressureCouplingOptions, couplingTimePeriod)
-                                     * (pressureCouplingOptions.ref_p[d][d] - xy_pressure) / DIM;
+                (*mu)(d, d) = 1.0
+                              - compressibilityFactor(d, d, pressureCouplingOptions, couplingTimePeriod)
+                                        * (pressureCouplingOptions.ref_p[d][d] - xy_pressure) / DIM;
             }
-            mu[ZZ][ZZ] = 1.0
-                         - compressibilityFactor(ZZ, ZZ, pressureCouplingOptions, couplingTimePeriod)
-                                   * (pressureCouplingOptions.ref_p[ZZ][ZZ] - pres[ZZ][ZZ]) / DIM;
+            (*mu)(ZZ, ZZ) = 1.0
+                            - compressibilityFactor(ZZ, ZZ, pressureCouplingOptions, couplingTimePeriod)
+                                      * (pressureCouplingOptions.ref_p[ZZ][ZZ] - pres[ZZ][ZZ]) / DIM;
             break;
         case PressureCouplingType::Anisotropic:
             for (int d = 0; d < DIM; d++)
             {
                 for (int n = 0; n < DIM; n++)
                 {
-                    mu[d][n] = (d == n ? 1.0 : 0.0)
-                               - compressibilityFactor(d, n, pressureCouplingOptions, couplingTimePeriod)
-                                         * (pressureCouplingOptions.ref_p[d][n] - pres[d][n]) / DIM;
+                    (*mu)(d, n) = (d == n ? 1.0 : 0.0)
+                                  - compressibilityFactor(d, n, pressureCouplingOptions, couplingTimePeriod)
+                                            * (pressureCouplingOptions.ref_p[d][n] - pres[d][n]) / DIM;
                 }
             }
             break;
@@ -1028,14 +1129,15 @@ void calculateScalingMatrixImplDetail<PressureCoupling::Berendsen>(const Pressur
                  * in the z-direction to zero to get the correct surface tension */
                 p_corr_z = 0;
             }
-            mu[ZZ][ZZ] = 1.0 - pressureCouplingOptions.compress[ZZ][ZZ] * p_corr_z;
+            (*mu)(ZZ, ZZ) = 1.0 - pressureCouplingOptions.compress[ZZ][ZZ] * p_corr_z;
             for (int d = 0; d < DIM - 1; d++)
             {
-                mu[d][d] = 1.0
-                           + compressibilityFactor(d, d, pressureCouplingOptions, couplingTimePeriod)
-                                     * (pressureCouplingOptions.ref_p[d][d] / (mu[ZZ][ZZ] * box[ZZ][ZZ])
-                                        - (pres[ZZ][ZZ] + p_corr_z - xy_pressure))
-                                     / (DIM - 1);
+                (*mu)(d, d) =
+                        1.0
+                        + compressibilityFactor(d, d, pressureCouplingOptions, couplingTimePeriod)
+                                  * (pressureCouplingOptions.ref_p[d][d] / ((*mu)(ZZ, ZZ) * box[ZZ][ZZ])
+                                     - (pres[ZZ][ZZ] + p_corr_z - xy_pressure))
+                                  / (DIM - 1);
             }
             break;
         default:
@@ -1049,7 +1151,7 @@ template<>
 void calculateScalingMatrixImplDetail<PressureCoupling::CRescale>(const PressureCouplingOptions& pressureCouplingOptions,
                                                                   const int64_t ld_seed,
                                                                   const real   referenceTemperature,
-                                                                  matrix       mu,
+                                                                  Matrix3x3*   mu,
                                                                   const real   couplingTimePeriod,
                                                                   const matrix pres,
                                                                   const matrix box,
@@ -1081,8 +1183,9 @@ void calculateScalingMatrixImplDetail<PressureCoupling::CRescale>(const Pressure
             {
                 const real factor =
                         compressibilityFactor(d, d, pressureCouplingOptions, couplingTimePeriod);
-                mu[d][d] = std::exp(-factor * (pressureCouplingOptions.ref_p[d][d] - scalar_pressure) / DIM
-                                    + std::sqrt(2.0 * kt * factor * gmx::c_presfac / vol) * gauss / DIM);
+                (*mu)(d, d) =
+                        std::exp(-factor * (pressureCouplingOptions.ref_p[d][d] - scalar_pressure) / DIM
+                                 + std::sqrt(2.0 * kt * factor * gmx::c_presfac / vol) * gauss / DIM);
             }
             break;
         case PressureCouplingType::SemiIsotropic:
@@ -1092,14 +1195,15 @@ void calculateScalingMatrixImplDetail<PressureCoupling::CRescale>(const Pressure
             {
                 const real factor =
                         compressibilityFactor(d, d, pressureCouplingOptions, couplingTimePeriod);
-                mu[d][d] = std::exp(-factor * (pressureCouplingOptions.ref_p[d][d] - xy_pressure) / DIM
-                                    + std::sqrt((DIM - 1) * 2.0 * kt * factor * gmx::c_presfac / vol / DIM)
-                                              / (DIM - 1) * gauss);
+                (*mu)(d, d) =
+                        std::exp(-factor * (pressureCouplingOptions.ref_p[d][d] - xy_pressure) / DIM
+                                 + std::sqrt((DIM - 1) * 2.0 * kt * factor * gmx::c_presfac / vol / DIM)
+                                           / (DIM - 1) * gauss);
             }
             {
                 const real factor =
                         compressibilityFactor(ZZ, ZZ, pressureCouplingOptions, couplingTimePeriod);
-                mu[ZZ][ZZ] =
+                (*mu)(ZZ, ZZ) =
                         std::exp(-factor * (pressureCouplingOptions.ref_p[ZZ][ZZ] - pres[ZZ][ZZ]) / DIM
                                  + std::sqrt(2.0 * kt * factor * gmx::c_presfac / vol / DIM) * gauss2);
             }
@@ -1112,7 +1216,7 @@ void calculateScalingMatrixImplDetail<PressureCoupling::CRescale>(const Pressure
                 const real factor =
                         compressibilityFactor(d, d, pressureCouplingOptions, couplingTimePeriod);
                 /* Notice: we here use ref_p[ZZ][ZZ] as isotropic pressure and pressureCouplingOptions.ref_p[d][d] as surface tension */
-                mu[d][d] = std::exp(
+                (*mu)(d, d) = std::exp(
                         -factor
                                 * (pressureCouplingOptions.ref_p[ZZ][ZZ]
                                    - pressureCouplingOptions.ref_p[d][d] / box[ZZ][ZZ] - xy_pressure)
@@ -1122,7 +1226,7 @@ void calculateScalingMatrixImplDetail<PressureCoupling::CRescale>(const Pressure
             {
                 const real factor =
                         compressibilityFactor(ZZ, ZZ, pressureCouplingOptions, couplingTimePeriod);
-                mu[ZZ][ZZ] =
+                (*mu)(ZZ, ZZ) =
                         std::exp(-factor * (pressureCouplingOptions.ref_p[ZZ][ZZ] - pres[ZZ][ZZ]) / DIM
                                  + std::sqrt(2.0 / 3.0 * kt * factor * gmx::c_presfac / vol) * gauss2);
             }
@@ -1145,7 +1249,7 @@ void pressureCouplingCalculateScalingMatrix(FILE*                          fplog
                                             const matrix                   box,
                                             const matrix                   force_vir,
                                             const matrix                   constraint_vir,
-                                            matrix                         mu,
+                                            Matrix3x3*                     mu,
                                             double*                        baros_integral)
 {
     // If the support here increases, we need to also add the template declarations
@@ -1162,12 +1266,12 @@ void pressureCouplingCalculateScalingMatrix(FILE*                          fplog
      * we will set mu_yx, mu_zx and mu_zy to 0 and correct
      * the other elements of mu to first order.
      */
-    mu[YY][XX] += mu[XX][YY];
-    mu[ZZ][XX] += mu[XX][ZZ];
-    mu[ZZ][YY] += mu[YY][ZZ];
-    mu[XX][YY] = 0;
-    mu[XX][ZZ] = 0;
-    mu[YY][ZZ] = 0;
+    (*mu)(YY, XX) += (*mu)(XX, YY);
+    (*mu)(ZZ, XX) += (*mu)(XX, ZZ);
+    (*mu)(ZZ, YY) += (*mu)(YY, ZZ);
+    (*mu)(XX, YY) = 0;
+    (*mu)(XX, ZZ) = 0;
+    (*mu)(YY, ZZ) = 0;
 
     /* Keep track of the work the barostat applies on the system.
      * Without constraints force_vir tells us how Epot changes when scaling.
@@ -1183,18 +1287,12 @@ void pressureCouplingCalculateScalingMatrix(FILE*                          fplog
         for (int n = 0; n <= d; n++)
         {
             *baros_integral -=
-                    2 * (mu[d][n] - (n == d ? 1 : 0)) * (force_vir[d][n] + constraint_vir[d][n]);
+                    2 * ((*mu)(d, n) - (n == d ? 1 : 0)) * (force_vir[d][n] + constraint_vir[d][n]);
         }
     }
 
-    if (debug)
-    {
-        pr_rvecs(debug, 0, "PC: pres ", pres, 3);
-        pr_rvecs(debug, 0, "PC: mu   ", mu, 3);
-    }
-
-    if (mu[XX][XX] < 0.99 || mu[XX][XX] > 1.01 || mu[YY][YY] < 0.99 || mu[YY][YY] > 1.01
-        || mu[ZZ][ZZ] < 0.99 || mu[ZZ][ZZ] > 1.01)
+    if ((*mu)(XX, XX) < 0.99 || (*mu)(XX, XX) > 1.01 || (*mu)(YY, YY) < 0.99 || (*mu)(YY, YY) > 1.01
+        || (*mu)(ZZ, ZZ) < 0.99 || (*mu)(ZZ, ZZ) > 1.01)
     {
         char buf[STRLEN];
         char buf2[22];
@@ -1202,9 +1300,9 @@ void pressureCouplingCalculateScalingMatrix(FILE*                          fplog
                 "\nStep %s  Warning: pressure scaling more than 1%%, "
                 "mu: %g %g %g\n",
                 gmx_step_str(step, buf2),
-                mu[XX][XX],
-                mu[YY][YY],
-                mu[ZZ][ZZ]);
+                (*mu)(XX, XX),
+                (*mu)(YY, YY),
+                (*mu)(ZZ, ZZ));
         if (fplog)
         {
             fprintf(fplog, "%s", buf);
@@ -1223,7 +1321,7 @@ template void pressureCouplingCalculateScalingMatrix<PressureCoupling::CRescale>
                                                                                  const matrix,
                                                                                  const matrix,
                                                                                  const matrix,
-                                                                                 matrix,
+                                                                                 Matrix3x3*,
                                                                                  double*);
 
 template void pressureCouplingCalculateScalingMatrix<PressureCoupling::Berendsen>(FILE*,
@@ -1236,14 +1334,14 @@ template void pressureCouplingCalculateScalingMatrix<PressureCoupling::Berendsen
                                                                                   const matrix,
                                                                                   const matrix,
                                                                                   const matrix,
-                                                                                  matrix,
+                                                                                  Matrix3x3*,
                                                                                   double*);
 
 template<PressureCoupling pressureCouplingType>
 void pressureCouplingScaleBoxAndCoordinates(const PressureCouplingOptions& pressureCouplingOptions,
                                             const tensor                   deform,
                                             const ivec*                    nFreeze,
-                                            const matrix                   mu,
+                                            const Matrix3x3&               mu,
                                             matrix                         box,
                                             matrix                         box_rel,
                                             int                            start,
@@ -1261,10 +1359,10 @@ void pressureCouplingScaleBoxAndCoordinates(const PressureCouplingOptions& press
                   "pressureCouplingScaleBoxAndCoordinates is only implemented for Berendsen and "
                   "C-rescale pressure coupling");
 
-    matrix inv_mu;
+    Matrix3x3 inverseMu;
     if (pressureCouplingType == PressureCoupling::CRescale)
     {
-        gmx::invertBoxMatrix(mu, inv_mu);
+        inverseMu = gmx::invertBoxMatrix(mu);
     }
 
     /* Scale the positions (for Berendsen and c-rescale) and perhaps the velocities (for c-rescale only) */
@@ -1283,27 +1381,27 @@ void pressureCouplingScaleBoxAndCoordinates(const PressureCouplingOptions& press
 
             if (!nFreeze[g][XX])
             {
-                x[n][XX] = mu[XX][XX] * x[n][XX] + mu[YY][XX] * x[n][YY] + mu[ZZ][XX] * x[n][ZZ];
+                x[n][XX] = mu(XX, XX) * x[n][XX] + mu(YY, XX) * x[n][YY] + mu(ZZ, XX) * x[n][ZZ];
                 if (pressureCouplingType == PressureCoupling::CRescale)
                 {
-                    v[n][XX] = inv_mu[XX][XX] * v[n][XX] + inv_mu[YY][XX] * v[n][YY]
-                               + inv_mu[ZZ][XX] * v[n][ZZ];
+                    v[n][XX] = inverseMu(XX, XX) * v[n][XX] + inverseMu(YY, XX) * v[n][YY]
+                               + inverseMu(ZZ, XX) * v[n][ZZ];
                 }
             }
             if (!nFreeze[g][YY])
             {
-                x[n][YY] = mu[YY][YY] * x[n][YY] + mu[ZZ][YY] * x[n][ZZ];
+                x[n][YY] = mu(YY, YY) * x[n][YY] + mu(ZZ, YY) * x[n][ZZ];
                 if (pressureCouplingType == PressureCoupling::CRescale)
                 {
-                    v[n][YY] = inv_mu[YY][YY] * v[n][YY] + inv_mu[ZZ][YY] * v[n][ZZ];
+                    v[n][YY] = inverseMu(YY, YY) * v[n][YY] + inverseMu(ZZ, YY) * v[n][ZZ];
                 }
             }
             if (!nFreeze[g][ZZ])
             {
-                x[n][ZZ] = mu[ZZ][ZZ] * x[n][ZZ];
+                x[n][ZZ] = mu(ZZ, ZZ) * x[n][ZZ];
                 if (pressureCouplingType == PressureCoupling::CRescale)
                 {
-                    v[n][ZZ] = inv_mu[ZZ][ZZ] * v[n][ZZ];
+                    v[n][ZZ] = inverseMu(ZZ, ZZ) * v[n][ZZ];
                 }
             }
         }
@@ -1311,9 +1409,9 @@ void pressureCouplingScaleBoxAndCoordinates(const PressureCouplingOptions& press
     /* compute final boxlengths */
     for (int d = 0; d < DIM; d++)
     {
-        box[d][XX] = mu[XX][XX] * box[d][XX] + mu[YY][XX] * box[d][YY] + mu[ZZ][XX] * box[d][ZZ];
-        box[d][YY] = mu[YY][YY] * box[d][YY] + mu[ZZ][YY] * box[d][ZZ];
-        box[d][ZZ] = mu[ZZ][ZZ] * box[d][ZZ];
+        box[d][XX] = mu(XX, XX) * box[d][XX] + mu(YY, XX) * box[d][YY] + mu(ZZ, XX) * box[d][ZZ];
+        box[d][YY] = mu(YY, YY) * box[d][YY] + mu(ZZ, YY) * box[d][ZZ];
+        box[d][ZZ] = mu(ZZ, ZZ) * box[d][ZZ];
     }
 
     preserveBoxShape(pressureCouplingOptions, deform, box_rel, box);
@@ -1328,7 +1426,7 @@ template void
 pressureCouplingScaleBoxAndCoordinates<PressureCoupling::Berendsen>(const PressureCouplingOptions&,
                                                                     const tensor,
                                                                     const ivec*,
-                                                                    const matrix,
+                                                                    const Matrix3x3&,
                                                                     matrix,
                                                                     matrix,
                                                                     int,
@@ -1344,7 +1442,7 @@ template void
 pressureCouplingScaleBoxAndCoordinates<PressureCoupling::CRescale>(const PressureCouplingOptions&,
                                                                    const tensor,
                                                                    const ivec*,
-                                                                   const matrix,
+                                                                   const Matrix3x3&,
                                                                    matrix,
                                                                    matrix,
                                                                    int,

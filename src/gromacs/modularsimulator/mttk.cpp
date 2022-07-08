@@ -72,7 +72,7 @@ void MttkData::build(LegacySimulatorData*                    legacySimulatorData
     // Uses reference temperature of first T-group
     const real referenceTemperature = legacySimulatorData->inputrec->opts.ref_t[0];
     const real referencePressure =
-            trace(legacySimulatorData->inputrec->pressureCouplingOptions.ref_p) / DIM;
+            ::trace(legacySimulatorData->inputrec->pressureCouplingOptions.ref_p) / DIM;
     // Weights are set based on initial volume
     real initialVolume = det(statePropagatorData->constBox());
 
@@ -149,7 +149,7 @@ MttkData::MttkData(real                       referenceTemperature,
                    MttkPropagatorConnection*  mttkPropagatorConnection) :
     couplingTimeStep_(couplingTimeStep),
     etaVelocity_(0.0),
-    invMass_((c_presfac * trace(compressibility) * c_boltz * referenceTemperature)
+    invMass_((c_presfac * ::trace(compressibility) * c_boltz * referenceTemperature)
              / (DIM * initialVolume * gmx::square(couplingTime / M_2PI))),
     etaVelocityTime_(0.0),
     temperatureCouplingIntegral_(0.0),

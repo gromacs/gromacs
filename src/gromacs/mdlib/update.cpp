@@ -121,7 +121,7 @@ public:
                        const gmx::ArrayRefWithPadding<const gmx::RVec>& f,
                        t_fcdata*                                        fcdata,
                        const gmx_ekindata_t*                            ekind,
-                       const matrix                                     M,
+                       const Matrix3x3&                                 parrinelloRahmanM,
                        int                                              UpdatePart,
                        const t_commrec*                                 cr,
                        bool                                             haveConstraints);
@@ -219,7 +219,7 @@ void Update::update_coords(const t_inputrec&                 inputRecord,
                            const gmx::ArrayRefWithPadding<const gmx::RVec>& f,
                            t_fcdata*                                        fcdata,
                            const gmx_ekindata_t*                            ekind,
-                           const matrix                                     M,
+                           const Matrix3x3&                                 parrinelloRahmanM,
                            int                                              updatePart,
                            const t_commrec*                                 cr,
                            const bool                                       haveConstraints)
@@ -235,7 +235,7 @@ void Update::update_coords(const t_inputrec&                 inputRecord,
                                 f,
                                 fcdata,
                                 ekind,
-                                M,
+                                parrinelloRahmanM,
                                 updatePart,
                                 cr,
                                 haveConstraints);
@@ -347,7 +347,7 @@ updateMDLeapfrogSimple(int                                 start,
                        gmx::ArrayRef<const gmx::RVec>      invMassPerDim,
                        gmx::ArrayRef<const t_grp_tcstat>   tcstat,
                        gmx::ArrayRef<const unsigned short> cTC,
-                       const rvec                          pRVScaleMatrixDiagonal,
+                       const gmx::RVec                     pRVScaleMatrixDiagonal,
                        const rvec* gmx_restrict            x,
                        rvec* gmx_restrict                  xprime,
                        VelocityType* gmx_restrict          v,
@@ -556,7 +556,7 @@ enum class AccelerationType
  * \param[in]     f                 Forces.
  * \param[in]     nh_vxi            Nose-Hoover velocity scaling factors.
  * \param[in]     nsttcouple        Frequency of the temperature coupling steps.
- * \param[in]     M                 Parrinello-Rahman scaling matrix.
+ * \param[in]     parrinelloRahmanM Parrinello-Rahman scaling matrix.
  */
 template<AccelerationType accelerationType>
 static void updateMDLeapfrogGeneral(int                                 start,
@@ -576,7 +576,7 @@ static void updateMDLeapfrogGeneral(int                                 start,
                                     const rvec* gmx_restrict            f,
                                     const double* gmx_restrict          nh_vxi,
                                     const int                           nsttcouple,
-                                    const matrix                        M)
+                                    const Matrix3x3&                    parrinelloRahmanM)
 {
     /* This is a version of the leap-frog integrator that supports
      * all combinations of T-coupling, P-coupling and NEMD.
@@ -632,11 +632,13 @@ static void updateMDLeapfrogGeneral(int                                 start,
             factorNH = 0.5 * nsttcouple * dt * nh_vxi[gt];
         }
 
+        const RVec parrinelloRahmanScaledVelocity =
+                dtPressureCouple * multiplyVectorByMatrix(parrinelloRahmanM, vRel);
         for (int d = 0; d < DIM; d++)
         {
             real vNew = (lg * vRel[d]
                          + (f[n][d] * invMassPerDim[n][d] * dt - factorNH * vRel[d]
-                            - dtPressureCouple * iprod(M[d], vRel)))
+                            - parrinelloRahmanScaledVelocity[d]))
                         / (1 + factorNH);
             switch (accelerationType)
             {
@@ -681,7 +683,7 @@ static void do_update_md(int                                  start,
                          const gmx_ekindata_t*                ekind,
                          const matrix                         box,
                          const double* gmx_restrict           nh_vxi,
-                         const matrix                         M,
+                         const Matrix3x3&                     parrinelloRahmanM,
                          bool gmx_unused                      havePartiallyFrozenAtoms)
 {
     GMX_ASSERT(nrend == start || xprime != x,
@@ -694,7 +696,8 @@ static void do_update_md(int                                  start,
     const bool doParrinelloRahmanThisStep = (epc == PressureCoupling::ParrinelloRahman
                                              && do_per_step(step + nstpcouple - 1, nstpcouple));
     ParrinelloRahmanVelocityScaling parrinelloRahmanVelocityScaling =
-            (doParrinelloRahmanThisStep ? ((M[YY][XX] != 0 || M[ZZ][XX] != 0 || M[ZZ][YY] != 0)
+            (doParrinelloRahmanThisStep ? ((parrinelloRahmanM(YY, XX) != 0 || parrinelloRahmanM(ZZ, XX) != 0
+                                            || parrinelloRahmanM(ZZ, YY) != 0)
                                                    ? ParrinelloRahmanVelocityScaling::Anisotropic
                                                    : ParrinelloRahmanVelocityScaling::Diagonal)
                                         : ParrinelloRahmanVelocityScaling::No);
@@ -711,16 +714,11 @@ static void do_update_md(int                                  start,
     if (doNoseHoover || (parrinelloRahmanVelocityScaling == ParrinelloRahmanVelocityScaling::Anisotropic)
         || accelerationType != AccelerationType::None)
     {
-        matrix stepM;
-        if (parrinelloRahmanVelocityScaling == ParrinelloRahmanVelocityScaling::No)
-        {
-            // We should not apply PR scaling at this step
-            clear_mat(stepM);
-        }
-        else
-        {
-            copy_mat(M, stepM);
-        }
+        // If there's no Parrinello-Rahman scaling this step, we need to pass a zero matrix instead
+        Matrix3x3        zero = { { 0._real } };
+        const Matrix3x3& parrinelloRahmanMToUseThisStep =
+                parrinelloRahmanVelocityScaling != ParrinelloRahmanVelocityScaling::No ? parrinelloRahmanM
+                                                                                       : zero;
 
         dispatchTemplatedFunction(
                 [=](auto accelerationType) {
@@ -741,7 +739,7 @@ static void do_update_md(int                                  start,
                                                                      f,
                                                                      nh_vxi,
                                                                      nsttcouple,
-                                                                     stepM);
+                                                                     parrinelloRahmanMToUseThisStep);
                 },
                 accelerationType);
     }
@@ -762,16 +760,14 @@ static void do_update_md(int                                  start,
 
         if (parrinelloRahmanVelocityScaling != ParrinelloRahmanVelocityScaling::No)
         {
-            GMX_ASSERT((parrinelloRahmanVelocityScaling != ParrinelloRahmanVelocityScaling::Anisotropic),
+            GMX_ASSERT((parrinelloRahmanVelocityScaling == ParrinelloRahmanVelocityScaling::Diagonal),
                        "updateMDLeapfrogSimple only supports diagonal Parrinello-Rahman scaling "
-                       "matrices");
-            rvec diagM;
-            if (parrinelloRahmanVelocityScaling == ParrinelloRahmanVelocityScaling::Diagonal)
-            {
-                diagM[XX] = M[XX][XX];
-                diagM[YY] = M[YY][YY];
-                diagM[ZZ] = M[ZZ][ZZ];
-            }
+                       "matrices when scaling is active");
+            RVec diagM = {
+                parrinelloRahmanM(XX, XX),
+                parrinelloRahmanM(YY, YY),
+                parrinelloRahmanM(ZZ, ZZ),
+            };
 
             dispatchTemplatedFunction(
                     [=](auto numTempScaleValues, auto parrinelloRahmanVelocityScaling) {
@@ -812,18 +808,7 @@ static void do_update_md(int                                  start,
                              */
                             {
                                 updateMDLeapfrogSimple<StoreUpdatedVelocities::Yes, numTempScaleValues, ParrinelloRahmanVelocityScaling::No>(
-                                        start,
-                                        nrend,
-                                        dt,
-                                        dtPressureCouple,
-                                        invMassPerDim,
-                                        tcstat,
-                                        cTC,
-                                        nullptr,
-                                        x,
-                                        xprime,
-                                        v,
-                                        f);
+                                        start, nrend, dt, dtPressureCouple, invMassPerDim, tcstat, cTC, {}, x, xprime, v, f);
                             }
                         },
                         numTempScaleValues);
@@ -858,7 +843,7 @@ static void doUpdateMDDoNotUpdateVelocities(int                      start,
     else
     {
         updateMDLeapfrogSimple<StoreUpdatedVelocities::No, NumTempScaleValues::Single, ParrinelloRahmanVelocityScaling::No>(
-                start, nrend, dt, dt, invMassPerDim, tcstat, gmx::ArrayRef<const unsigned short>(), nullptr, x, xprime, v, f);
+                start, nrend, dt, dt, invMassPerDim, tcstat, gmx::ArrayRef<const unsigned short>(), {}, x, xprime, v, f);
     }
 }
 
@@ -1114,7 +1099,7 @@ static void doSDUpdateGeneral(const gmx_stochd_t&                 sd,
                               int                                 seed,
                               const int*                          gatindex,
                               real                                dtPressureCouple,
-                              const matrix                        parrinelloRahmanM)
+                              const Matrix3x3&                    parrinelloRahmanM)
 {
     // cTC, cACC and cFREEZE can be nullptr any time, but various
     // instantiations do not make sense with particular pointer
@@ -1152,6 +1137,12 @@ static void doSDUpdateGeneral(const gmx_stochd_t&                 sd,
         int accelerationGroup = !cAcceleration.empty() ? cAcceleration[n] : 0;
         int temperatureGroup  = !cTC.empty() ? cTC[n] : 0;
 
+        RVec parrinelloRahmanScaledVelocity;
+        if (updateType != SDUpdate::FrictionAndNoiseOnly)
+        {
+            parrinelloRahmanScaledVelocity =
+                    dtPressureCouple * multiplyVectorByMatrix(parrinelloRahmanM, v[n]);
+        }
         for (int d = 0; d < DIM; d++)
         {
             if ((ptype[n] != ParticleType::Shell) && !nFreeze[freezeGroup][d])
@@ -1159,7 +1150,7 @@ static void doSDUpdateGeneral(const gmx_stochd_t&                 sd,
                 if (updateType == SDUpdate::ForcesOnly)
                 {
                     real vn = v[n][d] + (inverseMass * f[n][d] + acceleration[accelerationGroup][d]) * dt
-                              - dtPressureCouple * iprod(parrinelloRahmanM[d], v[n]);
+                              - parrinelloRahmanScaledVelocity[d];
                     v[n][d] = vn;
                     // Simple position update.
                     xprime[n][d] = x[n][d] + v[n][d] * dt;
@@ -1177,7 +1168,7 @@ static void doSDUpdateGeneral(const gmx_stochd_t&                 sd,
                 else
                 {
                     real vn = v[n][d] + (inverseMass * f[n][d] + acceleration[accelerationGroup][d]) * dt
-                              - dtPressureCouple * iprod(parrinelloRahmanM[d], v[n]);
+                              - parrinelloRahmanScaledVelocity[d];
                     v[n][d] = (vn * sd.sdc[temperatureGroup].em
                                + invsqrtMass * sd.sdsig[temperatureGroup].V * dist(rng));
                     // Here we include half of the friction+noise
@@ -1222,19 +1213,18 @@ static void do_update_sd(int                                 start,
                          bool                                haveConstraints,
                          const PressureCoupling              pressureCoupling,
                          const int                           nstpcouple,
-                         const matrix                        M)
+                         const Matrix3x3&                    parrinelloRahmanM)
 {
     const bool doParrinelloRahmanThisStep = (pressureCoupling == PressureCoupling::ParrinelloRahman
                                              && do_per_step(step + nstpcouple - 1, nstpcouple));
     ParrinelloRahmanVelocityScaling parrinelloRahmanVelocityScaling =
             (doParrinelloRahmanThisStep ? ParrinelloRahmanVelocityScaling::Anisotropic
                                         : ParrinelloRahmanVelocityScaling::No);
-
-    matrix zero;
-    clear_mat(zero);
-    const rvec* parrinelloRahmanM =
-            (parrinelloRahmanVelocityScaling != ParrinelloRahmanVelocityScaling::No) ? M : zero;
-
+    // If there's no Parrinello-Rahman scaling this step, we need to pass a zero matrix instead
+    Matrix3x3        zero = { { 0._real } };
+    const Matrix3x3& parrinelloRahmanMToUseThisStep =
+            parrinelloRahmanVelocityScaling != ParrinelloRahmanVelocityScaling::No ? parrinelloRahmanM
+                                                                                   : zero;
     const real dtPressureCouple =
             ((parrinelloRahmanVelocityScaling != ParrinelloRahmanVelocityScaling::No) ? nstpcouple * dt : 0);
 
@@ -1260,7 +1250,7 @@ static void do_update_sd(int                                 start,
                                                 seed,
                                                 nullptr,
                                                 dtPressureCouple,
-                                                parrinelloRahmanM);
+                                                parrinelloRahmanMToUseThisStep);
     }
     else
     {
@@ -1284,7 +1274,7 @@ static void do_update_sd(int                                 start,
                 seed,
                 haveDDAtomOrdering(*cr) ? cr->dd->globalAtomIndices.data() : nullptr,
                 dtPressureCouple,
-                parrinelloRahmanM);
+                parrinelloRahmanMToUseThisStep);
     }
 }
 
@@ -1557,9 +1547,8 @@ void Update::Impl::update_sd_second_half(const t_inputrec&                 input
          */
         real dt = inputRecord.delta_t;
 
-        matrix parrinelloRahmanM;
-        clear_mat(parrinelloRahmanM);
-        real dtPressureCouple = 0;
+        Matrix3x3 parrinelloRahmanM{ { 0._real } };
+        real      dtPressureCouple = 0;
 
         wallcycle_start(wcycle, WallCycleCounter::Update);
 
@@ -1686,7 +1675,7 @@ void Update::Impl::update_coords(const t_inputrec&                 inputRecord,
                                  const gmx::ArrayRefWithPadding<const gmx::RVec>& f,
                                  t_fcdata*                                        fcdata,
                                  const gmx_ekindata_t*                            ekind,
-                                 const matrix                                     M,
+                                 const Matrix3x3&                                 parrinelloRahmanM,
                                  int                                              updatePart,
                                  const t_commrec*                                 cr,
                                  const bool                                       haveConstraints)
@@ -1751,7 +1740,7 @@ void Update::Impl::update_coords(const t_inputrec&                 inputRecord,
                                  ekind,
                                  state->box,
                                  state->nosehoover_vxi.data(),
-                                 M,
+                                 parrinelloRahmanM,
                                  havePartiallyFrozenAtoms);
                     break;
                 case (IntegrationAlgorithm::SD1):
@@ -1776,7 +1765,7 @@ void Update::Impl::update_coords(const t_inputrec&                 inputRecord,
                                  haveConstraints,
                                  inputRecord.pressureCouplingOptions.epc,
                                  inputRecord.pressureCouplingOptions.nstpcouple,
-                                 M);
+                                 parrinelloRahmanM);
                     break;
                 case (IntegrationAlgorithm::BD):
                     do_update_bd(start_th,
