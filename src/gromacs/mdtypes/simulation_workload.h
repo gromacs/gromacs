@@ -105,6 +105,8 @@ public:
     bool computePmeOnSeparateRank = false;
     //! Whether to combine the forces for multiple time stepping before the halo exchange
     bool combineMtsForcesBeforeHaloExchange = false;
+    //! Whether to clear local force buffer on the device early on in the step
+    bool clearGpuFBufferEarly = false;
 };
 
 /*! \libinternal
