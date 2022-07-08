@@ -49,6 +49,7 @@
 
 class DeviceStream;
 class DeviceContext;
+class GpuEventSynchronizer;
 
 struct PpRanks;
 
@@ -110,20 +111,18 @@ public:
                                                int                senderIndex);
 
     /*! \brief
-     * For lib MPI, wait for coordinates from any PP rank
-     * For thread MPI, enqueue PP co-ordinate transfer event received from PP
-     * rank determined from pipeline stage into given stream
+     * Return PP co-ordinate transfer event received from PP
+     * rank determined from pipeline stage, for consumer to enqueue
      * \param[in] pipelineStage  stage of pipeline corresponding to this transfer
-     * \param[in] deviceStream   stream in which to enqueue the wait event.
+     * \returns                  tuple with rank of sending PP task and corresponding event
+     */
+    std::tuple<int, GpuEventSynchronizer*> receivePpCoordinateSendEvent(int pipelineStage);
+
+    /*! \brief
+     * Wait for coordinates from any PP rank
      * \returns                  rank of sending PP task
      */
-    int synchronizeOnCoordinatesFromPpRank(int pipelineStage, const DeviceStream& deviceStream);
-
-    /*! \brief Perform above synchronizeOnCoordinatesFromPpRanks for all PP ranks,
-     * enqueueing all events to a single stream
-     * \param[in] deviceStream   stream in which to enqueue the wait events.
-     */
-    void synchronizeOnCoordinatesFromAllPpRanks(const DeviceStream& deviceStream);
+    int waitForCoordinatesFromAnyPpRank();
 
     /*! \brief
      * Return pointer to stream associated with specific PP rank sender index

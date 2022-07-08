@@ -99,20 +99,20 @@ void PmeCoordinateReceiverGpu::launchReceiveCoordinatesFromPpCudaMpi(DeviceBuffe
                "implementation.");
 }
 
-int PmeCoordinateReceiverGpu::synchronizeOnCoordinatesFromPpRank(int /* pipelineStage */,
-                                                                 const DeviceStream& /* deviceStream */)
+std::tuple<int, GpuEventSynchronizer*> PmeCoordinateReceiverGpu::receivePpCoordinateSendEvent(int /* pipelineStage */)
+{
+    GMX_ASSERT(!impl_,
+               "A CPU stub for PME-PP GPU communication was called instead of the correct "
+               "implementation.");
+    return std::make_tuple(0, nullptr);
+}
+
+int PmeCoordinateReceiverGpu::waitForCoordinatesFromAnyPpRank()
 {
     GMX_ASSERT(!impl_,
                "A CPU stub for PME-PP GPU communication was called instead of the correct "
                "implementation.");
     return 0;
-}
-
-void PmeCoordinateReceiverGpu::synchronizeOnCoordinatesFromAllPpRanks(const DeviceStream& /* deviceStream */)
-{
-    GMX_ASSERT(!impl_,
-               "A CPU stub for PME-PP GPU communication was called instead of the correct "
-               "implementation.");
 }
 
 DeviceStream* PmeCoordinateReceiverGpu::ppCommStream(int /* senderIndex */)

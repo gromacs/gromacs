@@ -149,50 +149,39 @@ void PmeCoordinateReceiverGpu::Impl::launchReceiveCoordinatesFromPpCudaMpi(Devic
 #endif
 }
 
-int PmeCoordinateReceiverGpu::Impl::synchronizeOnCoordinatesFromPpRank(int pipelineStage,
-                                                                       const DeviceStream& deviceStream)
+std::tuple<int, GpuEventSynchronizer*> PmeCoordinateReceiverGpu::Impl::receivePpCoordinateSendEvent(int pipelineStage)
 {
 #if GMX_MPI
     int senderRank = -1; // Rank of PP task that is associated with this invocation.
-#    if (!GMX_THREAD_MPI)
-    // Wait on data from any one of the PP sender GPUs
-    MPI_Waitany(requests_.size(), requests_.data(), &senderRank, MPI_STATUS_IGNORE);
-    GMX_ASSERT(senderRank >= 0, "Rank of sending PP task must be 0 or greater");
-    GMX_UNUSED_VALUE(pipelineStage);
-    GMX_UNUSED_VALUE(deviceStream);
-#    else
     // MPI_Waitany is not available in thread-MPI. However, the
     // MPI_Wait here is not associated with data but is host-side
     // scheduling code to receive a CUDA event, and will be executed
     // in advance of the actual data transfer. Therefore we can
     // receive in order of pipeline stage, still allowing the
     // scheduled GPU-direct comms to initiate out-of-order in their
-    // respective streams. For cases with CPU force computations, the
-    // scheduling is less asynchronous (done on a per-step basis), so
-    // host-side improvements should be investigated as tracked in
-    // issue #4047
+    // respective streams.
     senderRank = pipelineStage;
     MPI_Wait(&(requests_[senderRank]), MPI_STATUS_IGNORE);
-    ppCommManagers_[senderRank].sync->enqueueWaitEvent(deviceStream);
-#    endif
-    return senderRank;
+    return std::tie(senderRank, ppCommManagers_[senderRank].sync);
 #else
     GMX_UNUSED_VALUE(pipelineStage);
-    GMX_UNUSED_VALUE(deviceStream);
+    return std::tie(-1, nullptr);
+#endif
+}
+
+int PmeCoordinateReceiverGpu::Impl::waitForCoordinatesFromAnyPpRank()
+{
+#if GMX_LIB_MPI
+    int senderRank = -1; // Rank of PP task that is associated with this invocation.
+    // Wait on data from any one of the PP sender GPUs
+    MPI_Waitany(requests_.size(), requests_.data(), &senderRank, MPI_STATUS_IGNORE);
+    GMX_ASSERT(senderRank >= 0, "Rank of sending PP task must be 0 or greater");
+    return senderRank;
+#else
     return -1;
 #endif
 }
 
-void PmeCoordinateReceiverGpu::Impl::synchronizeOnCoordinatesFromAllPpRanks(const DeviceStream& deviceStream)
-{
-    for (int i = 0; i < static_cast<int>(ppCommManagers_.size()); i++)
-    {
-        if (ppCommManagers_[i].ppRank.numAtoms > 0)
-        {
-            synchronizeOnCoordinatesFromPpRank(i, deviceStream);
-        }
-    }
-}
 DeviceStream* PmeCoordinateReceiverGpu::Impl::ppCommStream(int senderIndex)
 {
     return ppCommManagers_[senderIndex].stream.get();
@@ -236,15 +225,14 @@ void PmeCoordinateReceiverGpu::launchReceiveCoordinatesFromPpCudaMpi(DeviceBuffe
     impl_->launchReceiveCoordinatesFromPpCudaMpi(recvbuf, numAtoms, numBytes, ppRank, senderIndex);
 }
 
-int PmeCoordinateReceiverGpu::synchronizeOnCoordinatesFromPpRank(int                 senderIndex,
-                                                                 const DeviceStream& deviceStream)
+std::tuple<int, GpuEventSynchronizer*> PmeCoordinateReceiverGpu::receivePpCoordinateSendEvent(int pipelineStage)
 {
-    return impl_->synchronizeOnCoordinatesFromPpRank(senderIndex, deviceStream);
+    return impl_->receivePpCoordinateSendEvent(pipelineStage);
 }
 
-void PmeCoordinateReceiverGpu::synchronizeOnCoordinatesFromAllPpRanks(const DeviceStream& deviceStream)
+int PmeCoordinateReceiverGpu::waitForCoordinatesFromAnyPpRank()
 {
-    impl_->synchronizeOnCoordinatesFromAllPpRanks(deviceStream);
+    return impl_->waitForCoordinatesFromAnyPpRank();
 }
 
 DeviceStream* PmeCoordinateReceiverGpu::ppCommStream(int senderIndex)

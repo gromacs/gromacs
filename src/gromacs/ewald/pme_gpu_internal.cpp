@@ -1615,6 +1615,46 @@ static auto selectSpreadKernelPtr(const PmeGpu*  pmeGpu,
     return kernelPtr;
 }
 
+/*! \brief
+ * Manages synchronization with remote GPU's PP coordinate sender, for a stage of the communication operation.
+ * For thread-MPI, an event associated with a stage of the operation is enqueued to the GPU stream that will be used by the consumer.
+ * For lib-MPI, the CPU task executing this function will wait for a stage to be completed.
+ * In each case, the rank of the sender associated with the corresponding stage is returned.
+ *
+ * \param[in]  pmeGpu                    The PME GPU structure.
+ * \param[in]  pmeCoordinateReceiverGpu  The PME coordinate reciever GPU object
+ * \param[in]  usePipeline               Whether pipelining is in use for PME-PP communication
+ * \param[in]  pipelineStage             Stage of the PME-PP communication pipeline
+ *
+ * \return Rank of remote sender associated with this stage
+ */
+static int manageSyncWithPpCoordinateSenderGpu(const PmeGpu*                  pmeGpu,
+                                               gmx::PmeCoordinateReceiverGpu* pmeCoordinateReceiverGpu,
+                                               bool                           usePipeline   = false,
+                                               int                            pipelineStage = 0)
+{
+    int senderRank;
+    if (GMX_THREAD_MPI)
+    {
+        GpuEventSynchronizer* event;
+        std::tie(senderRank, event) =
+                pmeCoordinateReceiverGpu->receivePpCoordinateSendEvent(pipelineStage);
+        if (usePipeline)
+        {
+            event->enqueueWaitEvent(*(pmeCoordinateReceiverGpu->ppCommStream(senderRank)));
+        }
+        else
+        {
+            event->enqueueWaitEvent(pmeGpu->archSpecific->pmeStream_);
+        }
+    }
+    else
+    {
+        senderRank = pmeCoordinateReceiverGpu->waitForCoordinatesFromAnyPpRank();
+    }
+    return senderRank;
+}
+
 void pme_gpu_spread(const PmeGpu*                  pmeGpu,
                     GpuEventSynchronizer*          xReadyOnDevice,
                     real**                         h_grids,
@@ -1736,16 +1776,8 @@ void pme_gpu_spread(const PmeGpu*                  pmeGpu,
 
             for (int i = 0; i < numStagesInPipeline; i++)
             {
-                int senderRank;
-                if (useGpuDirectComm)
-                {
-                    senderRank = pmeCoordinateReceiverGpu->synchronizeOnCoordinatesFromPpRank(
-                            i, *(pmeCoordinateReceiverGpu->ppCommStream(i)));
-                }
-                else
-                {
-                    senderRank = i;
-                }
+                int senderRank = manageSyncWithPpCoordinateSenderGpu(
+                        pmeGpu, pmeCoordinateReceiverGpu, kernelParamsPtr->usePipeline, i);
 
                 // set kernel configuration options specific to this stage of the pipeline
                 std::tie(kernelParamsPtr->pipelineAtomStart, kernelParamsPtr->pipelineAtomEnd) =
@@ -1792,8 +1824,10 @@ void pme_gpu_spread(const PmeGpu*                  pmeGpu,
         {
             if (useGpuDirectComm) // Sync all PME-PP communications to PME stream
             {
-                pmeCoordinateReceiverGpu->synchronizeOnCoordinatesFromAllPpRanks(
-                        pmeGpu->archSpecific->pmeStream_);
+                for (int i = 0; i < pmeCoordinateReceiverGpu->ppCommNumSenderRanks(); i++)
+                {
+                    manageSyncWithPpCoordinateSenderGpu(pmeGpu, pmeCoordinateReceiverGpu);
+                }
             }
 
 #if c_canEmbedBuffers
