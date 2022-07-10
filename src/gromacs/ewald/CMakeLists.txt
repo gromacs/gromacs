@@ -61,9 +61,11 @@ if (GMX_GPU_CUDA)
         pme_solve.cu
         pme_spread.cu
         pme_gpu_program_impl.cu
-        pme_pp_comm_gpu_impl.cu
-        pme_force_sender_gpu_impl.cu
-        pme_coordinate_receiver_gpu_impl.cu
+        pme_pp_comm_gpu_impl_gpu.cpp
+        pme_pp_comm_gpu_impl_gpu.cu
+        pme_force_sender_gpu_impl_gpu.cpp
+        pme_force_sender_gpu_impl_gpu.cu
+        pme_coordinate_receiver_gpu_impl_gpu.cpp
         pme_gpu_grid.cu
         # GPU-specific sources
         pme_gpu.cpp

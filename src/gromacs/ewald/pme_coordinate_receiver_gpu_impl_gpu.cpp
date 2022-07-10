@@ -48,7 +48,7 @@
 #include "config.h"
 
 #include "gromacs/ewald/pme_force_sender_gpu.h"
-#include "gromacs/gpu_utils/cudautils.cuh"
+#include "gromacs/gpu_utils/device_stream.h"
 #include "gromacs/gpu_utils/gpueventsynchronizer.h"
 #include "gromacs/utility/gmxmpi.h"
 
@@ -106,10 +106,10 @@ void PmeCoordinateReceiverGpu::Impl::reinitCoordinateReceiver(DeviceBuffer<RVec>
 }
 
 /*! \brief Receive coordinate synchronizer pointer from the PP ranks. */
-void PmeCoordinateReceiverGpu::Impl::receiveCoordinatesSynchronizerFromPpCudaDirect(int ppRank)
+void PmeCoordinateReceiverGpu::Impl::receiveCoordinatesSynchronizerFromPpPeerToPeer(int ppRank)
 {
     GMX_ASSERT(GMX_THREAD_MPI,
-               "receiveCoordinatesSynchronizerFromPpCudaDirect is expected to be called only for "
+               "receiveCoordinatesSynchronizerFromPpPeerToPeer is expected to be called only for "
                "Thread-MPI");
 
     // Data will be pushed directly from PP task
@@ -129,14 +129,15 @@ void PmeCoordinateReceiverGpu::Impl::receiveCoordinatesSynchronizerFromPpCudaDir
 }
 
 /*! \brief Receive coordinate data using GPU-aware MPI */
-void PmeCoordinateReceiverGpu::Impl::launchReceiveCoordinatesFromPpCudaMpi(DeviceBuffer<RVec> recvbuf,
-                                                                           int numAtoms,
-                                                                           int numBytes,
-                                                                           int ppRank,
-                                                                           int senderIndex)
+void PmeCoordinateReceiverGpu::Impl::launchReceiveCoordinatesFromPpGpuAwareMpi(DeviceBuffer<RVec> recvbuf,
+                                                                               int numAtoms,
+                                                                               int numBytes,
+                                                                               int ppRank,
+                                                                               int senderIndex)
 {
-    GMX_ASSERT(GMX_LIB_MPI,
-               "launchReceiveCoordinatesFromPpCudaMpi is expected to be called only for Lib-MPI");
+    GMX_ASSERT(
+            GMX_LIB_MPI,
+            "launchReceiveCoordinatesFromPpGpuAwareMpi is expected to be called only for Lib-MPI");
 
 #if GMX_MPI
     MPI_Irecv(&recvbuf[numAtoms], numBytes, MPI_BYTE, ppRank, eCommType_COORD_GPU, comm_, &(requests_[senderIndex]));
@@ -222,18 +223,18 @@ void PmeCoordinateReceiverGpu::reinitCoordinateReceiver(DeviceBuffer<RVec> d_x)
     impl_->reinitCoordinateReceiver(d_x);
 }
 
-void PmeCoordinateReceiverGpu::receiveCoordinatesSynchronizerFromPpCudaDirect(int ppRank)
+void PmeCoordinateReceiverGpu::receiveCoordinatesSynchronizerFromPpPeerToPeer(int ppRank)
 {
-    impl_->receiveCoordinatesSynchronizerFromPpCudaDirect(ppRank);
+    impl_->receiveCoordinatesSynchronizerFromPpPeerToPeer(ppRank);
 }
 
-void PmeCoordinateReceiverGpu::launchReceiveCoordinatesFromPpCudaMpi(DeviceBuffer<RVec> recvbuf,
-                                                                     int                numAtoms,
-                                                                     int                numBytes,
-                                                                     int                ppRank,
-                                                                     int                senderIndex)
+void PmeCoordinateReceiverGpu::launchReceiveCoordinatesFromPpGpuAwareMpi(DeviceBuffer<RVec> recvbuf,
+                                                                         int numAtoms,
+                                                                         int numBytes,
+                                                                         int ppRank,
+                                                                         int senderIndex)
 {
-    impl_->launchReceiveCoordinatesFromPpCudaMpi(recvbuf, numAtoms, numBytes, ppRank, senderIndex);
+    impl_->launchReceiveCoordinatesFromPpGpuAwareMpi(recvbuf, numAtoms, numBytes, ppRank, senderIndex);
 }
 
 int PmeCoordinateReceiverGpu::synchronizeOnCoordinatesFromPpRank(int                 senderIndex,

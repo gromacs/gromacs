@@ -46,7 +46,6 @@
 
 #include "config.h"
 
-#include "gromacs/gpu_utils/cudautils.cuh"
 #include "gromacs/gpu_utils/gpueventsynchronizer.h"
 #include "gromacs/utility/gmxmpi.h"
 
@@ -113,9 +112,9 @@ void PmeForceSenderGpu::Impl::setForceSendBuffer(DeviceBuffer<Float3> d_f)
         {
             localForcePtr_[i] = &d_f[ind_start];
             // NOLINTNEXTLINE(bugprone-sizeof-expression)
-            MPI_Recv(&pmeRemoteGpuForcePtr_[i], sizeof(float3*), MPI_BYTE, receiver.rankId, 0, comm_, MPI_STATUS_IGNORE);
+            MPI_Recv(&pmeRemoteGpuForcePtr_[i], sizeof(Float3*), MPI_BYTE, receiver.rankId, 0, comm_, MPI_STATUS_IGNORE);
             // NOLINTNEXTLINE(bugprone-sizeof-expression)
-            MPI_Recv(&pmeRemoteCpuForcePtr_[i], sizeof(float3*), MPI_BYTE, receiver.rankId, 0, comm_, MPI_STATUS_IGNORE);
+            MPI_Recv(&pmeRemoteCpuForcePtr_[i], sizeof(Float3*), MPI_BYTE, receiver.rankId, 0, comm_, MPI_STATUS_IGNORE);
             // Send address of event and associated flag to PP rank, to allow remote enqueueing
             // NOLINTNEXTLINE(bugprone-sizeof-expression)
             MPI_Send(&ppCommEvent_[i], sizeof(GpuEventSynchronizer*), MPI_BYTE, receiver.rankId, 0, comm_);
@@ -134,57 +133,12 @@ void PmeForceSenderGpu::Impl::setForceSendBuffer(DeviceBuffer<Float3> d_f)
 #endif
 }
 
-
-/*! \brief Send PME synchronizer directly using CUDA memory copy */
-void PmeForceSenderGpu::Impl::sendFToPpCudaDirect(int ppRank, int numAtoms, bool sendForcesDirectToPpGpu)
-{
-
-    GMX_ASSERT(GMX_THREAD_MPI, "sendFToPpCudaDirect is expected to be called only for Thread-MPI");
-
-
-#if GMX_MPI
-    float3* pmeRemoteForcePtr = (sendForcesDirectToPpGpu || stageThreadMpiGpuCpuComm_)
-                                        ? pmeRemoteGpuForcePtr_[ppRank]
-                                        : pmeRemoteCpuForcePtr_[ppRank];
-
-    pmeForcesReady_->enqueueWaitEvent(*ppCommStream_[ppRank]);
-
-    // Push data to remote GPU's memory
-    cudaError_t stat = cudaMemcpyAsync(pmeRemoteForcePtr,
-                                       localForcePtr_[ppRank],
-                                       numAtoms * sizeof(rvec),
-                                       cudaMemcpyDefault,
-                                       ppCommStream_[ppRank]->stream());
-    CU_RET_ERR(stat, "cudaMemcpyAsync on Recv from PME CUDA direct data transfer failed");
-
-    if (stageThreadMpiGpuCpuComm_ && !sendForcesDirectToPpGpu)
-    {
-        // Perform local D2H (from remote GPU memory to remote PP rank's CPU memory)
-        // to finalize staged data transfer
-        stat = cudaMemcpyAsync(pmeRemoteCpuForcePtr_[ppRank],
-                               pmeRemoteGpuForcePtr_[ppRank],
-                               numAtoms * sizeof(rvec),
-                               cudaMemcpyDefault,
-                               ppCommStream_[ppRank]->stream());
-        CU_RET_ERR(stat, "cudaMemcpyAsync on local device to host transfer of PME forces failed");
-    }
-
-    ppCommEvent_[ppRank]->markEvent(*ppCommStream_[ppRank]);
-    std::atomic<bool>* tmpPpCommEventRecordedPtr =
-            reinterpret_cast<std::atomic<bool>*>(&(ppCommEventRecorded_[ppRank]));
-    tmpPpCommEventRecordedPtr->store(true, std::memory_order_release);
-#else
-    GMX_UNUSED_VALUE(ppRank);
-    GMX_UNUSED_VALUE(numAtoms);
-#endif
-}
-
 /*! \brief Send PME data directly using GPU-aware MPI */
-void PmeForceSenderGpu::Impl::sendFToPpCudaMpi(DeviceBuffer<RVec> sendbuf,
-                                               int                offset,
-                                               int                numBytes,
-                                               int                ppRank,
-                                               MPI_Request*       request)
+void PmeForceSenderGpu::Impl::sendFToPpGpuAwareMpi(DeviceBuffer<RVec> sendbuf,
+                                                   int                offset,
+                                                   int                numBytes,
+                                                   int                ppRank,
+                                                   MPI_Request*       request)
 {
     GMX_ASSERT(GMX_LIB_MPI, "sendFToPpCudaMpi is expected to be called only for Lib-MPI");
 
@@ -220,18 +174,18 @@ void PmeForceSenderGpu::setForceSendBuffer(DeviceBuffer<RVec> d_f)
     impl_->setForceSendBuffer(d_f);
 }
 
-void PmeForceSenderGpu::sendFToPpCudaMpi(DeviceBuffer<RVec> sendbuf,
-                                         int                offset,
-                                         int                numBytes,
-                                         int                ppRank,
-                                         MPI_Request*       request)
+void PmeForceSenderGpu::sendFToPpGpuAwareMpi(DeviceBuffer<RVec> sendbuf,
+                                             int                offset,
+                                             int                numBytes,
+                                             int                ppRank,
+                                             MPI_Request*       request)
 {
-    impl_->sendFToPpCudaMpi(sendbuf, offset, numBytes, ppRank, request);
+    impl_->sendFToPpGpuAwareMpi(sendbuf, offset, numBytes, ppRank, request);
 }
 
-void PmeForceSenderGpu::sendFToPpCudaDirect(int ppRank, int numAtoms, bool sendForcesDirectToPpGpu)
+void PmeForceSenderGpu::sendFToPpPeerToPeer(int ppRank, int numAtoms, bool sendForcesDirectToPpGpu)
 {
-    impl_->sendFToPpCudaDirect(ppRank, numAtoms, sendForcesDirectToPpGpu);
+    impl_->sendFToPpPeerToPeer(ppRank, numAtoms, sendForcesDirectToPpGpu);
 }
 
 

@@ -81,18 +81,18 @@ void PmeCoordinateReceiverGpu::reinitCoordinateReceiver(DeviceBuffer<RVec> /* d_
                "correct implementation.");
 }
 
-void PmeCoordinateReceiverGpu::receiveCoordinatesSynchronizerFromPpCudaDirect(int /* ppRank */)
+void PmeCoordinateReceiverGpu::receiveCoordinatesSynchronizerFromPpPeerToPeer(int /* ppRank */)
 {
     GMX_ASSERT(!impl_,
                "A CPU stub for PME-PP GPU communication was called instead of the correct "
                "implementation.");
 }
 
-void PmeCoordinateReceiverGpu::launchReceiveCoordinatesFromPpCudaMpi(DeviceBuffer<RVec> /* recvbuf */,
-                                                                     int /* numAtoms */,
-                                                                     int /* numBytes */,
-                                                                     int /* ppRank */,
-                                                                     int /* senderIndex */)
+void PmeCoordinateReceiverGpu::launchReceiveCoordinatesFromPpGpuAwareMpi(DeviceBuffer<RVec> /* recvbuf */,
+                                                                         int /* numAtoms */,
+                                                                         int /* numBytes */,
+                                                                         int /* ppRank */,
+                                                                         int /* senderIndex */)
 {
     GMX_ASSERT(!impl_,
                "A CPU stub for PME-PP GPU communication was called instead of the correct "
