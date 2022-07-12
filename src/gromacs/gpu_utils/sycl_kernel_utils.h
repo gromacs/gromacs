@@ -57,14 +57,54 @@ static constexpr unsigned int c_cudaFullWarpMask = 0xffffffff;
 #    define SYCL_ASSERT(condition)
 #endif
 
+#if GMX_SYCL_HIPSYCL && HIPSYCL_LIBKERNEL_IS_DEVICE_PASS_HIP
+HIPSYCL_UNIVERSAL_TARGET
+static inline void atomicAddOptimized(float gmx_unused* ptr, const float gmx_unused delta)
+{
+#    if defined(__gfx908__) // Special function for AMD MI100
+#        pragma clang diagnostic push
+#        pragma clang diagnostic ignored "-Wdeprecated-declarations"
+    atomicAddNoRet(ptr, delta);
+#        pragma clang diagnostic pop
+#    elif defined(__gfx90a__) // Special function for AMD MI200
+    unsafeAtomicAdd(ptr, delta); // Not checked on real hardware, see #4465
+#    else
+    atomicAdd(ptr, delta);
+#    endif
+}
+#else
+[[noreturn]] static inline void atomicAddOptimized(float*, const float)
+{
+    assert(false);
+}
+#endif
+
+template<typename T, sycl_2020::memory_scope MemoryScope = sycl_2020::memory_scope::device>
+static inline void atomicAddDefault(T& val, const T delta)
+{
+    using sycl_2020::memory_order, sycl::access::address_space;
+    sycl_2020::atomic_ref<T, memory_order::relaxed, MemoryScope, address_space::global_space> ref(val);
+    ref.fetch_add(delta);
+}
+
 /*! \brief Convenience wrapper to do atomic addition to a global buffer.
  */
 template<typename T, sycl_2020::memory_scope MemoryScope = sycl_2020::memory_scope::device>
 static inline void atomicFetchAdd(T& val, const T delta)
 {
-    sycl_2020::atomic_ref<T, sycl_2020::memory_order::relaxed, MemoryScope, sycl::access::address_space::global_space> ref(
-            val);
-    ref.fetch_add(delta);
+    if constexpr (GMX_SYCL_HIPSYCL && std::is_same_v<T, float>)
+    {
+#if GMX_SYCL_HIPSYCL && HIPSYCL_LIBKERNEL_IS_DEVICE_PASS_HIP
+        atomicAddOptimized(&val, delta);
+#else
+
+        atomicAddDefault<T, MemoryScope>(val, delta);
+#endif
+    }
+    else
+    {
+        atomicAddDefault<T, MemoryScope>(val, delta);
+    }
 }
 
 /*! \brief Convenience wrapper to do atomic loads from a global buffer.
