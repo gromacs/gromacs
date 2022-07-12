@@ -362,9 +362,8 @@ void Propagator<IntegrationStage::LeapFrog>::run()
     const int nth    = gmx_omp_nthreads_get(ModuleMultiThread::Update);
     const int homenr = mdAtoms_->mdatoms()->homenr;
 
-#pragma omp parallel for num_threads(nth) schedule(static) default(none) \
-        shared(x, xp, v, f, invMassPerDim)                               \
-                firstprivate(nth, homenr, lambdaStart, lambdaEnd, treatPRScalingMatrixAsDiagonal, diagonalOfPRScalingMatrix)
+#pragma omp parallel for num_threads(nth) schedule(static) default(none) shared(x, xp, v, f, invMassPerDim) \
+        firstprivate(nth, homenr, lambdaStart, lambdaEnd, treatPRScalingMatrixAsDiagonal, diagonalOfPRScalingMatrix)
     for (int th = 0; th < nth; th++)
     {
         try
@@ -446,9 +445,8 @@ void Propagator<IntegrationStage::VelocityVerletPositionsAndVelocities>::run()
     const int nth    = gmx_omp_nthreads_get(ModuleMultiThread::Update);
     const int homenr = mdAtoms_->mdatoms()->homenr;
 
-#pragma omp parallel for num_threads(nth) schedule(static) default(none) \
-        shared(x, xp, v, f, invMassPerDim)                               \
-                firstprivate(nth, homenr, lambdaStart, lambdaEnd, treatPRScalingMatrixAsDiagonal, diagonalOfPRScalingMatrix)
+#pragma omp parallel for num_threads(nth) schedule(static) default(none) shared(x, xp, v, f, invMassPerDim) \
+        firstprivate(nth, homenr, lambdaStart, lambdaEnd, treatPRScalingMatrixAsDiagonal, diagonalOfPRScalingMatrix)
     for (int th = 0; th < nth; th++)
     {
         try
