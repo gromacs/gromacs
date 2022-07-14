@@ -208,6 +208,39 @@ TEST_F(TreeValueTransformTest, ScopedTransformRules)
     testTransform(input, transform);
 }
 
+TEST_F(TreeValueTransformTest, CanAssignUserMultiValue)
+{
+    gmx::KeyValueTreeBuilder builder;
+    builder.rootObject().addValue<std::string>("numValues", "3");
+    auto arrayBuilder = builder.rootObject().addObjectArray("values");
+    for (int i = 0; i < 3; ++i)
+    {
+        auto valueABuilder = arrayBuilder.addObject();
+        auto valueBBuilder = arrayBuilder.addObject();
+        auto keyA          = gmx::formatString("TestA-%d", i);
+        auto keyB          = gmx::formatString("TestB-%d", i);
+        valueABuilder.addValue<std::string>(keyA, std::to_string(i + 1));
+        valueBBuilder.addValue<std::string>(keyB, std::to_string(i + 2));
+    }
+    auto input = builder.build();
+
+    gmx::KeyValueTreeTransformer transform;
+    transform.rules()->addRule().keyMatchType("/", gmx::StringCompareType::CaseAndDashInsensitive);
+    transform.rules()->addRule().from<std::string>("/numValues").to<int>("/i").transformWith(&gmx::fromStdString<int>);
+    for (int i = 0; i < 3; ++i)
+    {
+        auto keyA    = gmx::formatString("/TestA-%d", i);
+        auto keyB    = gmx::formatString("/TestB-%d", i);
+        auto resultA = gmx::formatString("/j-%d", i);
+        auto resultB = gmx::formatString("/j-%d", i + 2);
+        transform.rules()->addRule().from<std::string>(keyA).to<int>(resultA).transformWith(
+                &gmx::fromStdString<int>);
+        transform.rules()->addRule().from<std::string>(keyB).to<int>(resultB).transformWith(
+                &gmx::fromStdString<int>);
+    }
+    testTransform(input, transform);
+}
+
 /********************************************************************
  * Tests for errors
  */

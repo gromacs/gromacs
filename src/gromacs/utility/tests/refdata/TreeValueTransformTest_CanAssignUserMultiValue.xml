@@ -1,0 +1,44 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Object Name="Input">
+    <String Name="numValues">3</String>
+    <Sequence Name="values">
+      <Int Name="Length">6</Int>
+      <Object>
+        <String Name="TestA-0">1</String>
+      </Object>
+      <Object>
+        <String Name="TestB-0">2</String>
+      </Object>
+      <Object>
+        <String Name="TestA-1">2</String>
+      </Object>
+      <Object>
+        <String Name="TestB-1">3</String>
+      </Object>
+      <Object>
+        <String Name="TestA-2">3</String>
+      </Object>
+      <Object>
+        <String Name="TestB-2">4</String>
+      </Object>
+    </Sequence>
+  </Object>
+  <Sequence Name="MappedPaths">
+    <Int Name="Length">7</Int>
+    <String>/numValues</String>
+    <String>/TestA-0</String>
+    <String>/TestA-1</String>
+    <String>/TestA-2</String>
+    <String>/TestB-0</String>
+    <String>/TestB-1</String>
+    <String>/TestB-2</String>
+  </Sequence>
+  <Object Name="Tree">
+    <Int Name="i">3</Int>
+  </Object>
+  <BackMapping Name="Mapping">
+    <String Name="/i">/numValues</String>
+  </BackMapping>
+</ReferenceData>
