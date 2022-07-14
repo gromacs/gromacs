@@ -156,7 +156,7 @@ void ParrinelloRahmanBarostat::integrateBoxVelocityEquations(Step step)
  * The GROMACS convention is that all simulation box descriptions are
  * normalized to have zero entries in the upper triangle. This function
  * asserts if that is not true. */
-static void checkMatrixIsBoxMatrix(const Matrix3x3& m)
+static void checkMatrixIsBoxMatrix(const Matrix3x3& gmx_used_in_debug m)
 {
     GMX_ASSERT(
             (m(XX, YY) == 0.0) && (m(XX, ZZ) == 0.0) && (m(YY, ZZ) == 0.0),

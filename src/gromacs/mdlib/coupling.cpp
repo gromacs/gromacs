@@ -210,7 +210,7 @@ void update_pcouple_before_coordinates(const gmx::MDLogger&           mdlog,
  * requiring a warning suppression for an unused function for most
  * source files that use that header. It is expected that eventually
  * this copy will go away as code migrates elsewhere. */
-static void checkMatrixIsBoxMatrix(const Matrix3x3& m)
+static void checkMatrixIsBoxMatrix(const Matrix3x3& gmx_used_in_debug m)
 {
     GMX_ASSERT((m(XX, YY) == 0.0) && (m(XX, ZZ) == 0.0) && (m(YY, ZZ) == 0.0),
                gmx::formatString(
@@ -233,7 +233,7 @@ static void checkMatrixIsBoxMatrix(const Matrix3x3& m)
  * The GROMACS convention is that all simulation box descriptions are
  * normalized to have zero entries in the upper triangle. This function
  * asserts if that is not true. */
-static void checkMatrixIsBoxMatrix(const matrix m)
+static void checkMatrixIsBoxMatrix(const matrix gmx_used_in_debug m)
 {
     GMX_ASSERT((m[XX][YY] == 0.0) && (m[XX][ZZ] == 0.0) && (m[YY][ZZ] == 0.0),
                gmx::formatString(
@@ -833,7 +833,7 @@ static Matrix3x3 calculateMu(const PressureCouplingOptions& pressureCouplingOpti
     preserveBoxShape(pressureCouplingOptions, deform, box_rel, temp);
     // Now temp is the box at t+dt, determine mu as the relative
     // change in the box.
-    const Matrix3x3 mu = multiplyBoxMatrices(invbox, temp);
+    Matrix3x3 mu = multiplyBoxMatrices(invbox, temp);
     return mu;
 }
 
