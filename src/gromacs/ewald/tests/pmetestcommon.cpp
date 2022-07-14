@@ -298,11 +298,7 @@ static void pmeGetGridAndSizesInternal(const gmx_pme_t* /*unused*/,
                                        CodePath /*unused*/,
                                        ValueType*& /*unused*/, //NOLINT(google-runtime-references)
                                        IVec& /*unused*/,       //NOLINT(google-runtime-references)
-                                       IVec& /*unused*/)       //NOLINT(google-runtime-references)
-{
-    GMX_THROW(InternalError("Deleted function call"));
-    // explicitly deleting general template does not compile in clang, see https://llvm.org/bugs/show_bug.cgi?id=17537
-}
+                                       IVec& /*unused*/) = delete; //NOLINT(google-runtime-references)
 
 //! Getting the PME real grid memory buffer and its sizes
 template<>
