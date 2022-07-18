@@ -684,24 +684,6 @@ fft5d_plan fft5d_plan_3d(int                NG,
         plan->cart[1] = comm[0];
         plan->cart[0] = comm[1];
     }
-#ifdef FFT5D_MPI_TRANSPOSE
-    FFTW_LOCK;
-    for (s = 0; s < 2; s++)
-    {
-        if ((s == 0 && !(flags & FFT5D_ORDER_YZ)) || (s == 1 && (flags & FFT5D_ORDER_YZ)))
-        {
-            plan->mpip[s] = FFTW(mpi_plan_many_transpose)(
-                    nP[s], nP[s], N[s] * K[s] * pM[s] * 2, 1, 1, (real*)lout2, (real*)lout3, plan->cart[s], FFTW_PATIENT);
-        }
-        else
-        {
-            plan->mpip[s] = FFTW(mpi_plan_many_transpose)(
-                    nP[s], nP[s], N[s] * pK[s] * M[s] * 2, 1, 1, (real*)lout2, (real*)lout3, plan->cart[s], FFTW_PATIENT);
-        }
-    }
-    FFTW_UNLOCK;
-#endif
-
 
     plan->lin   = lin;
     plan->lout  = lout;
@@ -1121,9 +1103,6 @@ void fft5d_execute(fft5d_plan plan, int thread, fft5d_time times)
     t_complex *fftout, *joinin;
 
     gmx_fft_t** p1d = plan->p1d;
-#ifdef FFT5D_MPI_TRANSPOSE
-    FFTW(plan)* mpip = plan->mpip;
-#endif
 #if GMX_MPI
     MPI_Comm* cart = plan->cart;
 #endif
@@ -1286,10 +1265,7 @@ void fft5d_execute(fft5d_plan plan, int thread, fft5d_time times)
 #else
                 wallcycle_start(times, WallCycleCounter::PmeFftComm);
 #endif
-#ifdef FFT5D_MPI_TRANSPOSE
-                FFTW(execute)(mpip[s]);
-#else
-#    if GMX_MPI
+#if GMX_MPI
                 if ((s == 0 && !(plan->flags & FFT5D_ORDER_YZ))
                     || (s == 1 && (plan->flags & FFT5D_ORDER_YZ)))
                 {
@@ -1311,10 +1287,9 @@ void fft5d_execute(fft5d_plan plan, int thread, fft5d_time times)
                                  GMX_MPI_REAL,
                                  cart[s]);
                 }
-#    else
+#else
                 GMX_RELEASE_ASSERT(false, "Invalid call to fft5d_execute");
-#    endif /*GMX_MPI*/
-#endif     /*FFT5D_MPI_TRANSPOSE*/
+#endif /*GMX_MPI*/
 #ifdef NOGMX
                 if (times != 0)
                 {
@@ -1493,12 +1468,6 @@ void fft5d_destroy(fft5d_plan plan)
     }
 #if GMX_FFT_FFTW3
     FFTW_LOCK
-#    ifdef FFT5D_MPI_TRANSPOS
-    for (s = 0; s < 2; s++)
-    {
-        FFTW(destroy_plan)(plan->mpip[s]);
-    }
-#    endif /* FFT5D_MPI_TRANSPOS */
     if (plan->p3d)
     {
         FFTW(destroy_plan)(plan->p3d);
