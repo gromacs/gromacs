@@ -1777,7 +1777,7 @@ void pme_gpu_spread(const PmeGpu*                  pmeGpu,
             for (int i = 0; i < numStagesInPipeline; i++)
             {
                 int senderRank = manageSyncWithPpCoordinateSenderGpu(
-                        pmeGpu, pmeCoordinateReceiverGpu, kernelParamsPtr->usePipeline, i);
+                        pmeGpu, pmeCoordinateReceiverGpu, kernelParamsPtr->usePipeline != 0, i);
 
                 // set kernel configuration options specific to this stage of the pipeline
                 std::tie(kernelParamsPtr->pipelineAtomStart, kernelParamsPtr->pipelineAtomEnd) =

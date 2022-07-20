@@ -169,6 +169,7 @@ std::tuple<int, GpuEventSynchronizer*> PmeCoordinateReceiverGpu::Impl::receivePp
 #endif
 }
 
+// NOLINTNEXTLINE(readability-convert-member-functions-to-static)
 int PmeCoordinateReceiverGpu::Impl::waitForCoordinatesFromAnyPpRank()
 {
 #if GMX_LIB_MPI
