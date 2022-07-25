@@ -190,8 +190,29 @@ void printCopyright(gmx::TextWriter* writer)
             writer, "Coordinated by the GROMACS project leaders:", gmx::currentProjectLeaders);
 }
 
+std::string describeMkl()
+{
+#if HAVE_LIBMKL
+    MKLVersion mklVersion;
+    mkl_get_version(&mklVersion);
+    auto description = formatString("Intel MKL version %d.%d.%d Build %s",
+                                    mklVersion.MajorVersion,
+                                    mklVersion.MinorVersion,
+                                    mklVersion.UpdateVersion,
+                                    mklVersion.Build);
+    if (mklVersion.ProductStatus != std::string("Product"))
+    {
+        description += " ";
+        description += mklVersion.ProductStatus;
+    }
+    return description;
+#else
+    return "Intel MKL";
+#endif
+}
+
 //! Construct a string that describes the library that provides CPU FFT support to this build
-const char* getCpuFftDescriptionString()
+std::string getCpuFftDescriptionString()
 {
 // Define the FFT description string
 #if GMX_FFT_FFTW3 || GMX_FFT_ARMPL_FFTW3
@@ -208,7 +229,7 @@ const char* getCpuFftDescriptionString()
 #    endif
 #endif
 #if GMX_FFT_MKL
-    return "Intel MKL";
+    return describeMkl();
 #endif
 #if GMX_FFT_FFTPACK
     return "fftpack (built-in)";
@@ -216,7 +237,7 @@ const char* getCpuFftDescriptionString()
 };
 
 //! Construct a string that describes the library that provides GPU FFT support to this build
-const char* getGpuFftDescriptionString()
+std::string getGpuFftDescriptionString()
 {
     if (GMX_GPU)
     {
@@ -230,7 +251,14 @@ const char* getGpuFftDescriptionString()
         }
         else if (GMX_GPU_SYCL)
         {
-            return "unknown";
+            if (GMX_FFT_MKL)
+            {
+                return describeMkl();
+            }
+            else
+            {
+                return "unknown";
+            }
         }
         else
         {
@@ -290,8 +318,8 @@ void gmx_print_version_info(gmx::TextWriter* writer)
 #endif
     writer->writeLine(formatString("GPU support:        %s", getGpuImplementationString()));
     writer->writeLine(formatString("SIMD instructions:  %s", GMX_SIMD_STRING));
-    writer->writeLine(formatString("CPU FFT library:    %s", getCpuFftDescriptionString()));
-    writer->writeLine(formatString("GPU FFT library:    %s", getGpuFftDescriptionString()));
+    writer->writeLine(formatString("CPU FFT library:    %s", getCpuFftDescriptionString().c_str()));
+    writer->writeLine(formatString("GPU FFT library:    %s", getGpuFftDescriptionString().c_str()));
 #if GMX_TARGET_X86
     writer->writeLine(formatString("RDTSCP usage:       %s", GMX_USE_RDTSCP ? "enabled" : "disabled"));
 #endif
@@ -326,8 +354,12 @@ void gmx_print_version_info(gmx::TextWriter* writer)
             "C++ compiler flags: %s %s", BUILD_CXXFLAGS, CMAKE_BUILD_CONFIGURATION_CXX_FLAGS));
 #if HAVE_LIBMKL
     /* MKL might be used for LAPACK/BLAS even if FFTs use FFTW, so keep it separate */
-    writer->writeLine(formatString(
-            "Intel MKL version:  %d.%d.%d", __INTEL_MKL__, __INTEL_MKL_MINOR__, __INTEL_MKL_UPDATE__));
+    MKLVersion mklVersion;
+    mkl_get_version(&mklVersion);
+    writer->writeLine(formatString("Intel MKL version:  %d.%d.%d",
+                                   mklVersion.MajorVersion,
+                                   mklVersion.MinorVersion,
+                                   mklVersion.UpdateVersion));
 #endif
 #if GMX_GPU_OPENCL
     writer->writeLine(formatString("OpenCL include dir: %s", OPENCL_INCLUDE_DIR));
