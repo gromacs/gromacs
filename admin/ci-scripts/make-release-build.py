@@ -172,13 +172,15 @@ def upload_release_artifacts():
         full_version += '-dev'
 
     overwrite_str = ''
-    upload_location = './.ci-test'
+    # the default location for ftp and manual bot is ./.ci-test, so we upload to this by not providing any path
+    upload_location = '.'
     if re.match(r'^release-\d{4}$', branch) or re.match(r'^main$', branch):
         if release_build_str == 'true':
             is_upload = True
             overwrite_str = '--ignore-existing'
-            upload_location = '.'
-            # Only upload to real location if all preconditions are set.
+            upload_location = '../'
+            # Only upload to real location if all preconditions are set. As the default path is as mentioned above,
+            # we just use the directory above it
 
     current_dir = os.getcwd()
 
