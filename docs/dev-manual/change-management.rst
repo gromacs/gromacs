@@ -84,6 +84,17 @@ Naming branches
 Good names: documentation_UpdateDevelopersDocsTOGitLab, nbnxm_MakeNbnxmGPUIntoClass, pme_FEPPMEGPU. 
 Bad names: branch1234, mybranch, test, etc
 
+Documentation
+-------------
+
+Contributors and reviewers frequently overlook the effects of changes on the built documentation.
+Contributors and reviewers should note that the build artifacts from the automated test jobs
+are available for download through the GitLab CI web interface (``webpage:build`` job artifacts).
+For earlier review or alternative preferences, consider building and sharing a Docker image
+containing the built documentation. See
+`docs/docs.dockerfile <https://gitlab.com/gromacs/gromacs/-/tree/main/docs/docs.dockerfile>`__
+in the source tree.
+
 Labels
 ======
 

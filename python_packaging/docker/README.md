@@ -115,22 +115,3 @@ lost when `docker run` completes.
 To preserve work in a notebook run this way,
 download the `ipynb` through theJupyter web interface
 (such as when updating the examples in the repository).
-
-### docs.dockerfile
-
-For very quick and isolated documentation builds on top of the gmxapi/ci-mpich 
-image, build the image from docs .dockerfile.
-The resulting image is a small web server image (without GROMACS or gmxapi installed) 
-with html content built in and copied from a temporary container.
-
-    docker run --rm -p 8080:80 gmxapi/docs
-
-Then browse to http://localhost:8080/
-
-## Automation
-
-*TODO: Update this section as CI infrastructure evolves.*
-
-Travis-CI builds and pushes a chain of Docker images to the `gmxapi` dockerhub organization.
-The `kassonlab` GitHub organization `gromacs-gmxapi` repository branches that are descended from the `kassonLabFork`
-branch have the necessary Travis-CI configuration.
