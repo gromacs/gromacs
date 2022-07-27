@@ -72,11 +72,6 @@ static inline void atomicAddOptimized(float gmx_unused* ptr, const float gmx_unu
     atomicAdd(ptr, delta);
 #    endif
 }
-#else
-[[noreturn]] static inline void atomicAddOptimized(float*, const float)
-{
-    assert(false);
-}
 #endif
 
 template<typename T, sycl_2020::memory_scope MemoryScope = sycl_2020::memory_scope::device>
