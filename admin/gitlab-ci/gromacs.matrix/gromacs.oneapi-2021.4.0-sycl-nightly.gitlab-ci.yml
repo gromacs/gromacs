@@ -3,7 +3,7 @@
 #   OS: Ubuntu newest supported
 #   Compiler: ICPX newest supported
 #   FFT: MKL
-#   GPU: SYCL DPC++ (OpenCL and LevelZero)
+#   GPU: SYCL DPC++ (OpenCL backend)
 #   Scope: configure, build, unit tests, regression tests
 # Test implementation choices (free to change as needed):
 #   OS: Ubuntu 20.04
@@ -12,6 +12,9 @@
 #   MPI: thread_MPI
 #   SIMD: AVX2_256
 #   Parallelism nt/ntomp: 2/1 and 2/2
+
+# We'd ideally want to also run with LevelZero, but it fails (loudly) with a specific configuration
+# we use in CI (Xe Max GPU, 5.18 kernel, 22.10.22597 compute-runtime). See #4219.
 
 gromacs:oneapi-2021.4.0-sycl-nightly:configure:
   extends:
@@ -56,8 +59,6 @@ gromacs:oneapi-2021.4.0-sycl-nightly:test-opencl:
   needs:
     - job: gromacs:oneapi-2021.4.0-sycl-nightly:build
 
-# We'd ideally want to have this test run with LevelZero, but it fails (loudly) with a specific configuration
-# we use in CI (Xe Max GPU, 5.18 kernel, 22.10.22597 compute-runtime). See #4219.
 gromacs:oneapi-2021.4.0-sycl-nightly:test-opencl-upd:
   extends:
     - .gromacs:base:test
@@ -123,7 +124,7 @@ gromacs:oneapi-2021.4.0-sycl-nightly:regressiontest-opencl-singlerank-upd:
     - job: regressiontests:prepare
 
 
-gromacs:oneapi-2021.4.0-sycl-nightly:regressiontest-l0-upd:
+gromacs:oneapi-2021.4.0-sycl-nightly:regressiontest-opencl-upd:
   extends:
     - .gromacs:base:regressiontest
     - .use-oneapi:base
@@ -133,7 +134,7 @@ gromacs:oneapi-2021.4.0-sycl-nightly:regressiontest-l0-upd:
   image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-gcc-7-oneapi-2021.4.0-intel-compute-runtime:latest
   variables:
     CMAKE: /usr/local/cmake-3.18.4/bin/cmake
-    SYCL_DEVICE_FILTER: "level_zero:gpu"
+    SYCL_DEVICE_FILTER: "opencl:gpu"
     # Default not working, see #2980
     REGRESSIONTEST_TOTAL_RANK_NUMBER: 2
     REGRESSIONTEST_OMP_RANK_NUMBER: 1
@@ -146,7 +147,7 @@ gromacs:oneapi-2021.4.0-sycl-nightly:regressiontest-l0-upd:
     - job: gromacs:oneapi-2021.4.0-sycl-nightly:build
     - job: regressiontests:prepare
 
-gromacs:oneapi-2021.4.0-sycl-nightly:regressiontest-l0-singlerank:
+gromacs:oneapi-2021.4.0-sycl-nightly:regressiontest-opencl-singlerank:
   extends:
     - .gromacs:base:regressiontest
     - .use-oneapi:base
@@ -156,7 +157,7 @@ gromacs:oneapi-2021.4.0-sycl-nightly:regressiontest-l0-singlerank:
   image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-gcc-7-oneapi-2021.4.0-intel-compute-runtime:latest
   variables:
     CMAKE: /usr/local/cmake-3.18.4/bin/cmake
-    SYCL_DEVICE_FILTER: "level_zero:gpu"
+    SYCL_DEVICE_FILTER: "opencl:gpu"
     # Default not working, see #2980
     REGRESSIONTEST_TOTAL_RANK_NUMBER: 1
     REGRESSIONTEST_OMP_RANK_NUMBER: 1
