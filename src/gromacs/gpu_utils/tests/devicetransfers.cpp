@@ -49,7 +49,8 @@
 namespace gmx
 {
 
-void doDeviceTransfers(const DeviceInformation& /* deviceInfo */,
+void doDeviceTransfers(const DeviceContext& /* deviceContext */,
+                       const DeviceInformation& /* deviceInfo */,
                        ArrayRef<const char> input,
                        ArrayRef<char>       output)
 {

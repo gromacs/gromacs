@@ -97,7 +97,10 @@ ArrayRef<char> charArrayRefFromArray(T* data, size_t size)
 
 //! Does a device transfer of \c input to the device in \c gpuInfo, and back to \c output.
 template<typename T>
-void runTest(const DeviceInformation& deviceInfo, ArrayRef<T> input, ArrayRef<T> output)
+void runTest(const DeviceContext&     deviceContext,
+             const DeviceInformation& deviceInfo,
+             ArrayRef<T>              input,
+             ArrayRef<T>              output)
 {
     // Convert the views of input and output to flat non-const chars,
     // so that there's no templating when we call doDeviceTransfers.
@@ -106,7 +109,7 @@ void runTest(const DeviceInformation& deviceInfo, ArrayRef<T> input, ArrayRef<T>
 
     ASSERT_EQ(inputRef.size(), outputRef.size());
 
-    doDeviceTransfers(deviceInfo, inputRef, outputRef);
+    doDeviceTransfers(deviceContext, deviceInfo, inputRef, outputRef);
     compareViews(input, output);
 }
 
@@ -207,7 +210,7 @@ TYPED_TEST(HostAllocatorTestCopyable, TransfersWithoutPinningWork)
         typename TestFixture::VectorType output;
         output.resizeWithPadding(input.size());
 
-        runTest(testDevice->deviceInfo(), makeArrayRef(input), makeArrayRef(output));
+        runTest(testDevice->deviceContext(), testDevice->deviceInfo(), makeArrayRef(input), makeArrayRef(output));
     }
 }
 
@@ -307,7 +310,7 @@ TYPED_TEST(HostAllocatorTestCopyable, TransfersWithPinningWorkWithDevice)
         changePinningPolicy(&output, PinningPolicy::PinnedIfSupported);
         output.resizeWithPadding(input.size());
 
-        runTest(testDevice->deviceInfo(), makeArrayRef(input), makeArrayRef(output));
+        runTest(testDevice->deviceContext(), testDevice->deviceInfo(), makeArrayRef(input), makeArrayRef(output));
     }
 }
 

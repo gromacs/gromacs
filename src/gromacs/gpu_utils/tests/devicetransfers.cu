@@ -48,6 +48,7 @@
 #include "devicetransfers.h"
 
 #include "gromacs/gpu_utils/cudautils.cuh"
+#include "gromacs/gpu_utils/device_context.h"
 #include "gromacs/hardware/device_information.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/exceptions.h"
@@ -57,7 +58,10 @@
 namespace gmx
 {
 
-void doDeviceTransfers(const DeviceInformation& deviceInfo, ArrayRef<const char> input, ArrayRef<char> output)
+void doDeviceTransfers(const DeviceContext& /*context*/,
+                       const DeviceInformation& deviceInfo,
+                       ArrayRef<const char>     input,
+                       ArrayRef<char>           output)
 {
     GMX_RELEASE_ASSERT(input.size() == output.size(), "Input and output must have matching size");
     cudaError_t status;
