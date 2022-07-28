@@ -358,9 +358,11 @@ public:
 #if GMX_SYCL_USE_USM
     //! Handle to the real grid buffer
     float* realGrid_;
+    float* complexGrid_;
 #else
     //! Handle to the real grid buffer
     sycl::buffer<float, 1>  realGrid_;
+    sycl::buffer<float, 1>  complexGrid_;
 #endif
     /*! \brief Copy of PME stream
      *
@@ -434,22 +436,22 @@ void Gpu3dFft::ImplSyclRocfft::perform3dFft(gmx_fft_direction dir, CommandEvent*
     FftDirection direction;
 #if GMX_SYCL_USE_USM
     float **inputGrid = nullptr, **outputGrid = nullptr;
-    float*  complexGrid = *complexGrid_.buffer_.get();
+    impl_->complexGrid_ = *complexGrid_.buffer_.get();
 #else
-    sycl::buffer<float, 1>* inputGrid   = nullptr;
-    sycl::buffer<float, 1>* outputGrid  = nullptr;
-    sycl::buffer<float, 1>  complexGrid = *complexGrid_.buffer_.get();
+    sycl::buffer<float, 1>* inputGrid  = nullptr;
+    sycl::buffer<float, 1>* outputGrid = nullptr;
+    impl_->complexGrid_                = *complexGrid_.buffer_.get();
 #endif
     if (dir == GMX_FFT_REAL_TO_COMPLEX)
     {
         direction  = FftDirection::RealToComplex;
         inputGrid  = &impl_->realGrid_;
-        outputGrid = &complexGrid;
+        outputGrid = &impl_->complexGrid_;
     }
     else
     {
         direction  = FftDirection::ComplexToReal;
-        inputGrid  = &complexGrid;
+        inputGrid  = &impl_->complexGrid_;
         outputGrid = &impl_->realGrid_;
     }
     // Enqueue the 3D FFT work
