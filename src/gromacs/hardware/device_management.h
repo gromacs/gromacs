@@ -123,6 +123,32 @@ bool isDeviceDetectionFunctional(std::string* errorMessage);
  */
 DeviceVendor getDeviceVendor(const char* vendorName);
 
+/*! \brief Get the factor to divide the number of compute units by.
+ *
+ * OpenCL and SYCL can report the number of Compute Units (CUs) a device has, see
+ * \c CL_DEVICE_MAX_COMPUTE_UNITS and \c info::device::max_compute_units.
+ * But "CU" is only vaguely defined by the standard, and on different vendors the same
+ * API call returns different things.
+ *
+ * On NVIDIA, that is the number of SMs.
+ *
+ * On AMD, that is the number of Compute Units, which are similar to CUDA's SM.
+ * Except on RDNA, where the number of Dual Compute Units is returned (https://stackoverflow.com/a/63976796/929437).
+ *
+ * On Intel, that is the number of EUs (XVEs), which are similar to CUDA core. The concept similar
+ * to CUDA SM is called sub-slice (Xe Core, XC), and it contains 16 EUs (Gen9-Gen11, Xe).
+ *
+ * This function uses CUDA SM as a reference. To get the number of SM-like units on a device,
+ * divide the result of \c CL_DEVICE_MAX_COMPUTE_UNITS / \c info::device::max_compute_units API
+ * call by the value returned by this function.
+ *
+ * \todo: Handled AMD RDNA?
+ *
+ * \param[in] deviceInfo Device information.
+ * \return how many CUs are there in a single SM-like entity.
+ */
+int getDeviceComputeUnitFactor(const DeviceInformation& deviceInfo);
+
 /*! \brief Find all GPUs in the system.
  *
  *  Will detect every GPU supported by the device driver in use.

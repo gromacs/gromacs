@@ -438,7 +438,8 @@ fft5d_plan fft5d_plan_3d(int                NG,
     if (!(flags & FFT5D_NOMALLOC))
     {
         // only needed for PME GPU mixed mode
-        if (GMX_GPU_CUDA && realGridAllocationPinningPolicy == gmx::PinningPolicy::PinnedIfSupported)
+        if ((GMX_GPU_CUDA || GMX_GPU_SYCL)
+            && realGridAllocationPinningPolicy == gmx::PinningPolicy::PinnedIfSupported)
         {
             const std::size_t numBytes = lsize * sizeof(t_complex);
             pmalloc(reinterpret_cast<void**>(&lin), numBytes);
@@ -1478,9 +1479,13 @@ void fft5d_destroy(fft5d_plan plan)
     if (!(plan->flags & FFT5D_NOMALLOC))
     {
         // only needed for PME GPU mixed mode
-        if (GMX_GPU_CUDA && plan->pinningPolicy == gmx::PinningPolicy::PinnedIfSupported)
+        if ((GMX_GPU_CUDA || GMX_GPU_SYCL) && plan->pinningPolicy == gmx::PinningPolicy::PinnedIfSupported)
         {
-            GMX_ASSERT(isHostMemoryPinned(plan->lin), "Memory should have been pinned");
+            /* We need DeviceContext to properly check pinning with SYCL. We can work around that,
+             * but for an assert it's not overly important.
+             */
+            GMX_ASSERT(GMX_GPU_SYCL || isHostMemoryPinned(plan->lin),
+                       "Memory should have been pinned");
             pfree(plan->lin);
         }
         else

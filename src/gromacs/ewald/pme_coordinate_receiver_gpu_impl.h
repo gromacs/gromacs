@@ -93,7 +93,7 @@ public:
      * Receive coordinate synchronizer pointer from the PP ranks.
      * \param[in] ppRank  PP rank to receive the synchronizer from.
      */
-    void receiveCoordinatesSynchronizerFromPpCudaDirect(int ppRank);
+    void receiveCoordinatesSynchronizerFromPpPeerToPeer(int ppRank);
 
     /*! \brief
      * Used for lib MPI, receives co-ordinates from PP ranks
@@ -103,11 +103,11 @@ public:
      * \param[in] ppRank       PP rank to send data
      * \param[in] senderIndex  Index of PP rank within those involved in communication with this PME rank
      */
-    void launchReceiveCoordinatesFromPpCudaMpi(DeviceBuffer<RVec> recvbuf,
-                                               int                numAtoms,
-                                               int                numBytes,
-                                               int                ppRank,
-                                               int                senderIndex);
+    void launchReceiveCoordinatesFromPpGpuAwareMpi(DeviceBuffer<RVec> recvbuf,
+                                                   int                numAtoms,
+                                                   int                numBytes,
+                                                   int                ppRank,
+                                                   int                senderIndex);
 
     /*! \brief
      * Return PP co-ordinate transfer event received from PP

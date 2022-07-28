@@ -3,49 +3,52 @@
 #   OS: Ubuntu newest supported
 #   Compiler: ICPX newest supported
 #   FFT: MKL
-#   GPU: SYCL DPC++ (OpenCL and LevelZero)
+#   GPU: SYCL DPC++ (OpenCL backend)
 #   Scope: configure, build, unit tests, regression tests
 # Test implementation choices (free to change as needed):
 #   OS: Ubuntu 20.04
 #   Build type: RelWithAssert
-#   Compiler: ICPX 2021.4
+#   Compiler: ICPX 2022.1
 #   MPI: thread_MPI
 #   SIMD: AVX2_256
 #   Parallelism nt/ntomp: 2/1 and 2/2
 
-gromacs:oneapi-2021.4.0-sycl-nightly:configure:
+# We'd ideally want to also run with LevelZero, but it fails (loudly) with a specific configuration
+# we use in CI (Xe Max GPU, 5.18 kernel, 22.10.22597 compute-runtime). See #4219.
+
+gromacs:oneapi-2022.1.0-sycl-nightly:configure:
   extends:
    - .gromacs:base:configure
    - .use-oneapi:base
    - .use-sycl
    - .rules:nightly-not-for-release
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-gcc-7-oneapi-2021.4.0-intel-compute-runtime:latest
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-gcc-9-oneapi-2022.1.0-intel-compute-runtime:latest
   variables:
     CMAKE: /usr/local/cmake-3.18.4/bin/cmake
     CMAKE_BUILD_TYPE_OPTIONS: "-DCMAKE_BUILD_TYPE=RelWithAssert"
     COMPILER_MAJOR_VERSION: 2021
 
-gromacs:oneapi-2021.4.0-sycl-nightly:build:
+gromacs:oneapi-2022.1.0-sycl-nightly:build:
   extends:
     - .variables:default
     - .gromacs:base:build
     - .use-ccache
     - .use-oneapi:base
     - .rules:nightly-not-for-release
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-gcc-7-oneapi-2021.4.0-intel-compute-runtime:latest
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-gcc-9-oneapi-2022.1.0-intel-compute-runtime:latest
   variables:
     CMAKE: /usr/local/cmake-3.18.4/bin/cmake
   needs:
-    - job: gromacs:oneapi-2021.4.0-sycl-nightly:configure
+    - job: gromacs:oneapi-2022.1.0-sycl-nightly:configure
 
-gromacs:oneapi-2021.4.0-sycl-nightly:test-opencl:
+gromacs:oneapi-2022.1.0-sycl-nightly:test-opencl:
   extends:
     - .gromacs:base:test
     - .use-oneapi:base
     - .rules:nightly-not-for-release
   tags:
     - intel-gpu-dg1
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-gcc-7-oneapi-2021.4.0-intel-compute-runtime:latest
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-gcc-9-oneapi-2022.1.0-intel-compute-runtime:latest
   variables:
     CMAKE: /usr/local/cmake-3.18.4/bin/cmake
     SYCL_DEVICE_FILTER: "opencl:gpu"
@@ -54,18 +57,16 @@ gromacs:oneapi-2021.4.0-sycl-nightly:test-opencl:
     KUBERNETES_EXTENDED_RESOURCE_NAME: "intel.com/gpu"
     KUBERNETES_EXTENDED_RESOURCE_LIMIT: 2
   needs:
-    - job: gromacs:oneapi-2021.4.0-sycl-nightly:build
+    - job: gromacs:oneapi-2022.1.0-sycl-nightly:build
 
-# We'd ideally want to have this test run with LevelZero, but it fails (loudly) with a specific configuration
-# we use in CI (Xe Max GPU, 5.18 kernel, 22.10.22597 compute-runtime). See #4219.
-gromacs:oneapi-2021.4.0-sycl-nightly:test-opencl-upd:
+gromacs:oneapi-2022.1.0-sycl-nightly:test-opencl-upd:
   extends:
     - .gromacs:base:test
     - .use-oneapi:base
     - .rules:nightly-not-for-release
   tags:
     - intel-gpu-dg1
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-gcc-7-oneapi-2021.4.0-intel-compute-runtime:latest
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-gcc-9-oneapi-2022.1.0-intel-compute-runtime:latest
   variables:
     CMAKE: /usr/local/cmake-3.18.4/bin/cmake
     SYCL_DEVICE_FILTER: "opencl:gpu"
@@ -75,16 +76,16 @@ gromacs:oneapi-2021.4.0-sycl-nightly:test-opencl-upd:
     KUBERNETES_EXTENDED_RESOURCE_NAME: "intel.com/gpu"
     KUBERNETES_EXTENDED_RESOURCE_LIMIT: 2
   needs:
-    - job: gromacs:oneapi-2021.4.0-sycl-nightly:build
+    - job: gromacs:oneapi-2022.1.0-sycl-nightly:build
 
-gromacs:oneapi-2021.4.0-sycl-nightly:regressiontest-opencl:
+gromacs:oneapi-2022.1.0-sycl-nightly:regressiontest-opencl:
   extends:
     - .gromacs:base:regressiontest
     - .use-oneapi:base
     - .rules:nightly-not-for-release
   tags:
     - intel-gpu-dg1
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-gcc-7-oneapi-2021.4.0-intel-compute-runtime:latest
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-gcc-9-oneapi-2022.1.0-intel-compute-runtime:latest
   variables:
     CMAKE: /usr/local/cmake-3.18.4/bin/cmake
     SYCL_DEVICE_FILTER: "opencl:gpu"
@@ -96,17 +97,17 @@ gromacs:oneapi-2021.4.0-sycl-nightly:regressiontest-opencl:
     KUBERNETES_EXTENDED_RESOURCE_NAME: "intel.com/gpu"
     KUBERNETES_EXTENDED_RESOURCE_LIMIT: 2
   needs:
-    - job: gromacs:oneapi-2021.4.0-sycl-nightly:build
+    - job: gromacs:oneapi-2022.1.0-sycl-nightly:build
     - job: regressiontests:prepare
 
-gromacs:oneapi-2021.4.0-sycl-nightly:regressiontest-opencl-singlerank-upd:
+gromacs:oneapi-2022.1.0-sycl-nightly:regressiontest-opencl-singlerank-upd:
   extends:
     - .gromacs:base:regressiontest
     - .use-oneapi:base
     - .rules:nightly-not-for-release
   tags:
     - intel-gpu-dg1
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-gcc-7-oneapi-2021.4.0-intel-compute-runtime:latest
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-gcc-9-oneapi-2022.1.0-intel-compute-runtime:latest
   variables:
     CMAKE: /usr/local/cmake-3.18.4/bin/cmake
     SYCL_DEVICE_FILTER: "opencl:gpu"
@@ -119,21 +120,21 @@ gromacs:oneapi-2021.4.0-sycl-nightly:regressiontest-opencl-singlerank-upd:
     KUBERNETES_EXTENDED_RESOURCE_NAME: "intel.com/gpu"
     KUBERNETES_EXTENDED_RESOURCE_LIMIT: 2
   needs:
-    - job: gromacs:oneapi-2021.4.0-sycl-nightly:build
+    - job: gromacs:oneapi-2022.1.0-sycl-nightly:build
     - job: regressiontests:prepare
 
 
-gromacs:oneapi-2021.4.0-sycl-nightly:regressiontest-l0-upd:
+gromacs:oneapi-2022.1.0-sycl-nightly:regressiontest-opencl-upd:
   extends:
     - .gromacs:base:regressiontest
     - .use-oneapi:base
     - .rules:nightly-not-for-release
   tags:
     - intel-gpu-dg1
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-gcc-7-oneapi-2021.4.0-intel-compute-runtime:latest
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-gcc-9-oneapi-2022.1.0-intel-compute-runtime:latest
   variables:
     CMAKE: /usr/local/cmake-3.18.4/bin/cmake
-    SYCL_DEVICE_FILTER: "level_zero:gpu"
+    SYCL_DEVICE_FILTER: "opencl:gpu"
     # Default not working, see #2980
     REGRESSIONTEST_TOTAL_RANK_NUMBER: 2
     REGRESSIONTEST_OMP_RANK_NUMBER: 1
@@ -143,20 +144,20 @@ gromacs:oneapi-2021.4.0-sycl-nightly:regressiontest-l0-upd:
     KUBERNETES_EXTENDED_RESOURCE_NAME: "intel.com/gpu"
     KUBERNETES_EXTENDED_RESOURCE_LIMIT: 2
   needs:
-    - job: gromacs:oneapi-2021.4.0-sycl-nightly:build
+    - job: gromacs:oneapi-2022.1.0-sycl-nightly:build
     - job: regressiontests:prepare
 
-gromacs:oneapi-2021.4.0-sycl-nightly:regressiontest-l0-singlerank:
+gromacs:oneapi-2022.1.0-sycl-nightly:regressiontest-opencl-singlerank:
   extends:
     - .gromacs:base:regressiontest
     - .use-oneapi:base
     - .rules:nightly-not-for-release
   tags:
     - intel-gpu-dg1
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-gcc-7-oneapi-2021.4.0-intel-compute-runtime:latest
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-gcc-9-oneapi-2022.1.0-intel-compute-runtime:latest
   variables:
     CMAKE: /usr/local/cmake-3.18.4/bin/cmake
-    SYCL_DEVICE_FILTER: "level_zero:gpu"
+    SYCL_DEVICE_FILTER: "opencl:gpu"
     # Default not working, see #2980
     REGRESSIONTEST_TOTAL_RANK_NUMBER: 1
     REGRESSIONTEST_OMP_RANK_NUMBER: 1
@@ -165,5 +166,5 @@ gromacs:oneapi-2021.4.0-sycl-nightly:regressiontest-l0-singlerank:
     KUBERNETES_EXTENDED_RESOURCE_NAME: "intel.com/gpu"
     KUBERNETES_EXTENDED_RESOURCE_LIMIT: 2
   needs:
-    - job: gromacs:oneapi-2021.4.0-sycl-nightly:build
+    - job: gromacs:oneapi-2022.1.0-sycl-nightly:build
     - job: regressiontests:prepare

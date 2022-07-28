@@ -117,7 +117,7 @@ public:
      * \param[in] numAtoms                 number of atoms to send
      * \param[in] sendForcesDirectToPpGpu  whether forces are transferred direct to remote GPU memory
      */
-    void sendFToPpCudaDirect(int ppRank, int numAtoms, bool sendForcesDirectToPpGpu);
+    void sendFToPpPeerToPeer(int ppRank, int numAtoms, bool sendForcesDirectToPpGpu);
 
     /*! \brief
      * Send force to PP rank (used with Lib-MPI)
@@ -127,7 +127,7 @@ public:
      * \param[in] ppRank   PP rank to receive data
      * \param[in] request  MPI request to track asynchronous MPI call status
      */
-    void sendFToPpCudaMpi(DeviceBuffer<RVec> sendbuf, int offset, int numBytes, int ppRank, MPI_Request* request);
+    void sendFToPpGpuAwareMpi(DeviceBuffer<RVec> sendbuf, int offset, int numBytes, int ppRank, MPI_Request* request);
 
 private:
     //! Event indicating when PME forces are ready on the GPU in order for PP stream to sync with the PME stream

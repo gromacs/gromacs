@@ -463,12 +463,12 @@ static int gmx_pme_recv_coeffs_coords(struct gmx_pme_t*            pme,
                     {
                         if (GMX_THREAD_MPI)
                         {
-                            pme_pp->pmeCoordinateReceiverGpu->receiveCoordinatesSynchronizerFromPpCudaDirect(
+                            pme_pp->pmeCoordinateReceiverGpu->receiveCoordinatesSynchronizerFromPpPeerToPeer(
                                     sender.rankId);
                         }
                         else
                         {
-                            pme_pp->pmeCoordinateReceiverGpu->launchReceiveCoordinatesFromPpCudaMpi(
+                            pme_pp->pmeCoordinateReceiverGpu->launchReceiveCoordinatesFromPpGpuAwareMpi(
                                     stateGpu->getCoordinates(),
                                     nat,
                                     sender.numAtoms * sizeof(rvec),
@@ -559,7 +559,7 @@ static void gmx_pme_send_force_vir_ener(const gmx_pme_t& pme, gmx_pme_pp* pme_pp
         for (int i = 0; i < numPpRanks; i++)
         {
             auto& receiver = pme_pp->ppRanks[i];
-            pme_pp->pmeForceSenderGpu->sendFToPpCudaDirect(
+            pme_pp->pmeForceSenderGpu->sendFToPpPeerToPeer(
                     receiver.rankId, receiver.numAtoms, pme_pp->sendForcesDirectToPpGpu);
         }
     }
@@ -571,11 +571,11 @@ static void gmx_pme_send_force_vir_ener(const gmx_pme_t& pme, gmx_pme_pp* pme_pp
             ind_end   = ind_start + receiver.numAtoms;
             if (pme_pp->useGpuDirectComm)
             {
-                pme_pp->pmeForceSenderGpu->sendFToPpCudaMpi(pme_gpu_get_device_f(&pme),
-                                                            ind_start,
-                                                            receiver.numAtoms * sizeof(rvec),
-                                                            receiver.rankId,
-                                                            &pme_pp->req[messages]);
+                pme_pp->pmeForceSenderGpu->sendFToPpGpuAwareMpi(pme_gpu_get_device_f(&pme),
+                                                                ind_start,
+                                                                receiver.numAtoms * sizeof(rvec),
+                                                                receiver.rankId,
+                                                                &pme_pp->req[messages]);
             }
             else
             {

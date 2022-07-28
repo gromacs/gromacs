@@ -39,6 +39,7 @@
  */
 #include "gmxpre.h"
 
+#include "gromacs/gpu_utils/device_context.h"
 #include "gromacs/gpu_utils/gmxsycl.h"
 #include "gromacs/hardware/device_information.h"
 #include "gromacs/utility/arrayref.h"
@@ -51,13 +52,16 @@
 namespace gmx
 {
 
-void doDeviceTransfers(const DeviceInformation& deviceInfo, ArrayRef<const char> input, ArrayRef<char> output)
+void doDeviceTransfers(const DeviceContext&     deviceContext,
+                       const DeviceInformation& deviceInfo,
+                       ArrayRef<const char>     input,
+                       ArrayRef<char>           output)
 {
     GMX_RELEASE_ASSERT(input.size() == output.size(), "Input and output must have matching size");
 
     try
     {
-        sycl::queue syclQueue(deviceInfo.syclDevice);
+        sycl::queue syclQueue(deviceContext.context(), deviceInfo.syclDevice);
 
         sycl::property_list syclBufferProperties{ sycl::property::buffer::context_bound(
                 syclQueue.get_context()) };

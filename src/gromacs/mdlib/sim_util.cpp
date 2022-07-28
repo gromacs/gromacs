@@ -944,6 +944,7 @@ static DomainLifetimeWorkload setupDomainLifetimeWorkload(const t_inputrec&     
  * \param[in]      legacyFlags          Force bitmask flags used to construct the new flags
  * \param[in]      mtsLevels            The multiple time-stepping levels, either empty or 2 levels
  * \param[in]      step                 The current MD step
+ * \param[in]      domainWork           Domain lifetime workload description.
  * \param[in]      simulationWork       Simulation workload description.
  *
  * \returns New Stepworkload description.
@@ -951,6 +952,7 @@ static DomainLifetimeWorkload setupDomainLifetimeWorkload(const t_inputrec&     
 static StepWorkload setupStepWorkload(const int                     legacyFlags,
                                       ArrayRef<const gmx::MtsLevel> mtsLevels,
                                       const int64_t                 step,
+                                      const DomainLifetimeWorkload& domainWork,
                                       const SimulationWorkload&     simulationWork)
 {
     GMX_ASSERT(mtsLevels.empty() || mtsLevels.size() == 2, "Expect 0 or 2 MTS levels");
@@ -990,6 +992,9 @@ static StepWorkload setupStepWorkload(const int                     legacyFlags,
             (flags.computeForces && simulationWork.useMts && flags.computeSlowForces
              && flags.useOnlyMtsCombinedForceBuffer
              && !(flags.computeVirial || simulationWork.useGpuNonbonded || flags.haveGpuPmeOnThisRank));
+    // On NS steps, the buffer is cleared in stateGpu->reinit, no need to clear it twice.
+    flags.clearGpuFBufferEarly =
+            flags.useGpuFHalo && !domainWork.haveCpuLocalForceWork && !flags.doNeighborSearch;
 
     return flags;
 }
@@ -1091,6 +1096,11 @@ static int getExpectedLocalXReadyOnDeviceConsumptionCount(gmx_used_in_debug cons
         {
             result++;
         }
+    }
+    if (stepWork.clearGpuFBufferEarly && simulationWork.useGpuUpdate)
+    {
+        // Event is consumed by force clearing which waits for the update to complete
+        result++;
     }
     return result;
 }
@@ -1373,7 +1383,8 @@ void do_force(FILE*                               fplog,
 
     const SimulationWorkload& simulationWork = runScheduleWork->simulationWork;
 
-    runScheduleWork->stepWork = setupStepWorkload(legacyFlags, inputrec.mtsLevels, step, simulationWork);
+    runScheduleWork->stepWork = setupStepWorkload(
+            legacyFlags, inputrec.mtsLevels, step, runScheduleWork->domainWork, simulationWork);
     const StepWorkload& stepWork = runScheduleWork->stepWork;
 
     if (stepWork.doNeighborSearch && gmx::needStateGpu(simulationWork))
@@ -1388,16 +1399,20 @@ void do_force(FILE*                               fplog,
         }
     }
 
-    if (stepWork.useGpuFHalo && !runScheduleWork->domainWork.haveCpuLocalForceWork && !stepWork.doNeighborSearch)
+    auto* localXReadyOnDevice =
+            (stepWork.haveGpuPmeOnThisRank || simulationWork.useGpuXBufferOps || simulationWork.useGpuUpdate)
+                    ? stateGpu->getCoordinatesReadyOnDeviceEvent(AtomLocality::Local, simulationWork, stepWork)
+                    : nullptr;
+
+    if (stepWork.clearGpuFBufferEarly)
     {
-        // GPU Force halo exchange will set a subset of local atoms with remote non-local data
+        // GPU Force halo exchange will set a subset of local atoms with remote non-local data.
         // First clear local portion of force array, so that untouched atoms are zero.
         // The dependency for this is that forces from previous timestep have been consumed,
-        // which is satisfied when getCoordinatesReadyOnDeviceEvent has been marked.
-        // On NS steps, the buffer could have already cleared in stateGpu->reinit.
-        stateGpu->clearForcesOnGpu(AtomLocality::Local,
-                                   stateGpu->getCoordinatesReadyOnDeviceEvent(
-                                           AtomLocality::Local, simulationWork, stepWork));
+        // which is satisfied when localXReadyOnDevice has been marked for GPU update case.
+        // For CPU update, the forces are consumed by the beginning of the step, so no extra sync needed.
+        GpuEventSynchronizer* dependency = simulationWork.useGpuUpdate ? localXReadyOnDevice : nullptr;
+        stateGpu->clearForcesOnGpu(AtomLocality::Local, dependency);
     }
 
     /* At a search step we need to start the first balancing region
@@ -1439,11 +1454,6 @@ void do_force(FILE*                               fplog,
             simulationWork.useGpuPmePpCommunication && !(stepWork.doNeighborSearch);
     const bool reinitGpuPmePpComms =
             simulationWork.useGpuPmePpCommunication && (stepWork.doNeighborSearch);
-
-    auto* localXReadyOnDevice = (stepWork.haveGpuPmeOnThisRank || simulationWork.useGpuXBufferOps)
-                                        ? stateGpu->getCoordinatesReadyOnDeviceEvent(
-                                                AtomLocality::Local, simulationWork, stepWork)
-                                        : nullptr;
 
     GMX_ASSERT(simulationWork.useGpuHaloExchange
                        == ((cr->dd != nullptr) && (!cr->dd->gpuHaloExchange[0].empty())),
@@ -2298,7 +2308,11 @@ void do_force(FILE*                               fplog,
                 // If there exist CPU forces, data from halo exchange should accumulate into these
                 bool accumulateForces = domainWork.haveCpuLocalForceWork;
                 gmx::FixedCapacityVector<GpuEventSynchronizer*, 2> gpuForceHaloDependencies;
-                gpuForceHaloDependencies.push_back(stateGpu->fReadyOnDevice(AtomLocality::Local));
+                // completion of both H2D copy and clearing is signaled by fReadyOnDevice
+                if (domainWork.haveCpuLocalForceWork || stepWork.clearGpuFBufferEarly)
+                {
+                    gpuForceHaloDependencies.push_back(stateGpu->fReadyOnDevice(AtomLocality::Local));
+                }
                 gpuForceHaloDependencies.push_back(stateGpu->fReducedOnDevice(AtomLocality::NonLocal));
 
                 communicateGpuHaloForces(*cr, accumulateForces, &gpuForceHaloDependencies);

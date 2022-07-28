@@ -71,17 +71,17 @@ inline void assertIsFinite(T /* arg */)
 }
 #else
 template<>
-inline void assertIsFinite(Float3 gmx_used_in_debug arg)
+inline void assertIsFinite(Float3 gmx_unused arg)
 {
-    assert(sycl::isfinite(arg[0]));
-    assert(sycl::isfinite(arg[1]));
-    assert(sycl::isfinite(arg[2]));
+    SYCL_ASSERT(sycl::isfinite(arg[0]));
+    SYCL_ASSERT(sycl::isfinite(arg[1]));
+    SYCL_ASSERT(sycl::isfinite(arg[2]));
 }
 
 template<typename T>
-inline void assertIsFinite(T gmx_used_in_debug arg)
+inline void assertIsFinite(T gmx_unused arg)
 {
-    assert(sycl::isfinite(static_cast<float>(arg)));
+    SYCL_ASSERT(sycl::isfinite(static_cast<float>(arg)));
 }
 #endif
 
@@ -108,7 +108,7 @@ using sycl::access::fence_space;
 template<int order, int atomsPerSubGroup>
 static inline int getSplineParamIndexBase(int subGroupIndex, int atomSubGroupIndex)
 {
-    assert((atomSubGroupIndex >= 0) && (atomSubGroupIndex < atomsPerSubGroup));
+    SYCL_ASSERT((atomSubGroupIndex >= 0) && (atomSubGroupIndex < atomsPerSubGroup));
     constexpr int dimIndex    = 0;
     constexpr int splineIndex = 0;
     // The zeroes are here to preserve the full index formula for reference
@@ -132,8 +132,8 @@ static inline int getSplineParamIndexBase(int subGroupIndex, int atomSubGroupInd
 template<int order, int atomsPerSubGroup>
 static inline int getSplineParamIndex(int paramIndexBase, int dimIndex, int splineIndex)
 {
-    assert((dimIndex >= XX) && (dimIndex < DIM));
-    assert((splineIndex >= 0) && (splineIndex < order));
+    SYCL_ASSERT((dimIndex >= XX) && (dimIndex < DIM));
+    SYCL_ASSERT((splineIndex >= 0) && (splineIndex < order));
     return (paramIndexBase + (splineIndex * DIM + dimIndex) * atomsPerSubGroup);
 }
 
@@ -271,7 +271,7 @@ static inline void calculateSplines(const int                           atomInde
         {
             int   tableIndex, tInt;
             float n, t;
-            assert(atomIndexLocal < DIM * atomsPerBlock);
+            SYCL_ASSERT(atomIndexLocal < DIM * atomsPerBlock);
             // Switch structure inherited from CUDA.
             // TODO: Issue #4153: Direct indexing with dimIndex can be better with SYCL
             switch (dimIndex)
@@ -299,11 +299,11 @@ static inline void calculateSplines(const int                           atomInde
             /* Fractional coordinates along box vectors, adding a positive shift to ensure t is positive for triclinic boxes */
             t    = (t + shift) * n;
             tInt = static_cast<int>(t);
-            assert(sharedMemoryIndex < atomsPerBlock * DIM);
+            SYCL_ASSERT(sharedMemoryIndex < atomsPerBlock * DIM);
             sm_fractCoords[sharedMemoryIndex] = t - tInt;
             tableIndex += tInt;
-            assert(tInt >= 0);
-            assert(tInt < c_pmeNeighborUnitcellCount * n);
+            SYCL_ASSERT(tInt >= 0);
+            SYCL_ASSERT(tInt < c_pmeNeighborUnitcellCount * n);
 
             // TODO: Issue #4153: use shared table for both parameters to share the fetch, as index is always same.
             sm_fractCoords[sharedMemoryIndex] += gm_fractShiftsTable[tableIndex];
@@ -357,7 +357,7 @@ static inline void calculateSplines(const int                           atomInde
 
                     const float dtheta = ((o > 0) ? splineData[o - 1] : 0.0F) - splineData[o];
                     assertIsFinite(dtheta);
-                    assert(thetaIndex < order * DIM * atomsPerBlock);
+                    SYCL_ASSERT(thetaIndex < order * DIM * atomsPerBlock);
                     if constexpr (writeSmDtheta)
                     {
                         sm_dtheta[thetaIndex] = dtheta;
@@ -387,7 +387,7 @@ static inline void calculateSplines(const int                           atomInde
             {
                 const int thetaIndex =
                         getSplineParamIndex<order, atomsPerWarp>(thetaIndexBase, dimIndex, o);
-                assert(thetaIndex < order * DIM * atomsPerBlock);
+                SYCL_ASSERT(thetaIndex < order * DIM * atomsPerBlock);
                 sm_theta[thetaIndex] = splineData[o];
                 assertIsFinite(sm_theta[thetaIndex]);
                 if constexpr (writeGlobal)

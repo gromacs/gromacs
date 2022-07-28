@@ -217,7 +217,15 @@ void gpu_free_platform_specific(NbnxmGpu* nb)
 //! This function is documented in the header file
 int gpu_min_ci_balanced(NbnxmGpu* nb)
 {
-    return nb != nullptr ? gpu_min_ci_balanced_factor * nb->deviceContext_->deviceInfo().compute_units : 0;
+    if (nb != nullptr)
+    {
+        return gpu_min_ci_balanced_factor * nb->deviceContext_->deviceInfo().compute_units
+               / getDeviceComputeUnitFactor(nb->deviceContext_->deviceInfo());
+    }
+    else
+    {
+        return 0;
+    }
 }
 
 } // namespace Nbnxm

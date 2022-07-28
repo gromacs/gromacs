@@ -46,14 +46,60 @@
 //! \brief Full warp active thread mask used in CUDA warp-level primitives.
 static constexpr unsigned int c_cudaFullWarpMask = 0xffffffff;
 
+#if defined(SYCL_EXT_ONEAPI_ASSERT) && SYCL_EXT_ONEAPI_ASSERT
+#    define SYCL_ASSERT(condition) assert(condition)
+#else
+/* Assertions are not defined in SYCL standard, but they are available as oneAPI extension sycl_ext_oneapi_assert.
+ * Technically, asserts should work just fine with hipSYCL, since they are supported by CUDA since sm_20.
+ * But with some settings (Clang 14, hipSYCL 0.9.2, RelWithAssert), CUDA build fails at link time:
+ * ptxas fatal   : Unresolved extern function '__assert_fail'
+ * So, we just disable kernel asserts unless they are promised to be available. */
+#    define SYCL_ASSERT(condition)
+#endif
+
+#if GMX_SYCL_HIPSYCL && HIPSYCL_LIBKERNEL_IS_DEVICE_PASS_HIP
+HIPSYCL_UNIVERSAL_TARGET
+static inline void atomicAddOptimized(float gmx_unused* ptr, const float gmx_unused delta)
+{
+#    if defined(__gfx908__) // Special function for AMD MI100
+#        pragma clang diagnostic push
+#        pragma clang diagnostic ignored "-Wdeprecated-declarations"
+    atomicAddNoRet(ptr, delta);
+#        pragma clang diagnostic pop
+#    elif defined(__gfx90a__) // Special function for AMD MI200
+    unsafeAtomicAdd(ptr, delta); // Not checked on real hardware, see #4465
+#    else
+    atomicAdd(ptr, delta);
+#    endif
+}
+#endif
+
+template<typename T, sycl_2020::memory_scope MemoryScope = sycl_2020::memory_scope::device>
+static inline void atomicAddDefault(T& val, const T delta)
+{
+    using sycl_2020::memory_order, sycl::access::address_space;
+    sycl_2020::atomic_ref<T, memory_order::relaxed, MemoryScope, address_space::global_space> ref(val);
+    ref.fetch_add(delta);
+}
+
 /*! \brief Convenience wrapper to do atomic addition to a global buffer.
  */
 template<typename T, sycl_2020::memory_scope MemoryScope = sycl_2020::memory_scope::device>
 static inline void atomicFetchAdd(T& val, const T delta)
 {
-    sycl_2020::atomic_ref<T, sycl_2020::memory_order::relaxed, MemoryScope, sycl::access::address_space::global_space> ref(
-            val);
-    ref.fetch_add(delta);
+    if constexpr (GMX_SYCL_HIPSYCL && std::is_same_v<T, float>)
+    {
+#if GMX_SYCL_HIPSYCL && HIPSYCL_LIBKERNEL_IS_DEVICE_PASS_HIP
+        atomicAddOptimized(&val, delta);
+#else
+
+        atomicAddDefault<T, MemoryScope>(val, delta);
+#endif
+    }
+    else
+    {
+        atomicAddDefault<T, MemoryScope>(val, delta);
+    }
 }
 
 /*! \brief Convenience wrapper to do atomic loads from a global buffer.
@@ -61,9 +107,24 @@ static inline void atomicFetchAdd(T& val, const T delta)
 template<typename T, sycl_2020::memory_scope MemoryScope = sycl_2020::memory_scope::device>
 static inline T atomicLoad(T& val)
 {
-    sycl_2020::atomic_ref<T, sycl_2020::memory_order::relaxed, MemoryScope, sycl::access::address_space::global_space> ref(
+#if GMX_SYCL_HIPSYCL && GMX_HIPSYCL_HAVE_CUDA_TARGET
+    /* Some versions of Clang do not support atomicLoad in NVPTX backend, and die with ICE,
+     * e.g. Clang 14, hipSYCL 0.9.2, CUDA 11.5, Debug:
+     * fatal error: error in backend: Cannot select: 0xd870450: i32,ch = AtomicLoad<(load seq_cst (s32) from %ir.27)>.
+     *
+     * Since we use relaxed memory order, normal loads should be safe for small datatypes.
+     * Allegedly, datatypes up to 128 bytes should be fine, but we only use floats, so we have
+     * a very concervative 4-byte limit here.
+     * As a demonstration of correctness, we don't use atomic loads in CUDA and it's doing fine.
+     * See https://github.com/illuhad/hipSYCL/issues/752 */
+    static_assert(sizeof(T) <= 4);
+    return val;
+#else
+    using sycl::access::address_space;
+    sycl_2020::atomic_ref<T, sycl_2020::memory_order::relaxed, MemoryScope, address_space::global_space> ref(
             val);
     return ref.load();
+#endif
 }
 
 
@@ -222,9 +283,9 @@ static inline void storeFromVec(const sycl::vec<T, NumElements>& v,
  * Can probably be removed when
  * https://github.com/illuhad/hipSYCL/issues/647 is resolved. */
 template<sycl::access::address_space AddressSpace, typename T, int NumElements>
-static inline void loadToVec(size_t offset,
+static inline void loadToVec(size_t                                 offset,
                              sycl::multi_ptr<const T, AddressSpace> ptr,
-                             sycl::vec<T, NumElements>* v)
+                             sycl::vec<T, NumElements>*             v)
 {
     v->load(offset, ptr);
 }
@@ -238,7 +299,7 @@ static inline void loadToVec(size_t offset,
  * https://github.com/illuhad/hipSYCL/issues/647 is resolved. */
 template<sycl::access::address_space AddressSpace, typename T, int NumElements>
 static inline void storeFromVec(const sycl::vec<T, NumElements>& v,
-                                size_t offset,
+                                size_t                           offset,
                                 sycl::multi_ptr<T, AddressSpace> ptr)
 {
     v.store(offset, ptr);

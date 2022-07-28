@@ -406,6 +406,13 @@ void copyToDeviceBuffer(DeviceBuffer<ValueType>* buffer,
     GMX_ASSERT(checkDeviceBuffer(*buffer, startingOffset + numValues),
                "buffer too small or not initialized");
 
+    if (transferKind == GpuApiCallBehavior::Async)
+    {
+        using sycl::usm::alloc;
+        GMX_ASSERT(sycl::get_pointer_type(hostBuffer, buffer->buffer_->context_) == alloc::host,
+                   "Trying to launch async copy from unpinned host buffer");
+    }
+
     sycl::event ev;
 #if GMX_SYCL_USE_USM
     ev = deviceStream.stream().submit([&](sycl::handler& cgh) {
@@ -464,6 +471,13 @@ void copyFromDeviceBuffer(ValueType*               hostBuffer,
 
     GMX_ASSERT(checkDeviceBuffer(*buffer, startingOffset + numValues),
                "buffer too small or not initialized");
+
+    if (transferKind == GpuApiCallBehavior::Async)
+    {
+        using sycl::usm::alloc;
+        GMX_ASSERT(sycl::get_pointer_type(hostBuffer, buffer->buffer_->context_) == alloc::host,
+                   "Trying to launch async copy to unpinned host buffer");
+    }
 
     sycl::event ev;
 #if GMX_SYCL_USE_USM

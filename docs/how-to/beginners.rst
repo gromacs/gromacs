@@ -16,6 +16,6 @@ Resources
 * :doc:`Flow Chart </user-guide/flow>`- simple flow chart of a typical |Gromacs| MD run of a protein in a box of water.
 * Molecular dynamics simulations and GROMACS introduction
   (`slides <https://extras.csc.fi/chem/courses/gmx2007/Berk_talks/forcef.pdf>`_,
-  `video <http://tv.funet.fi/medar/showRecordingInfo.do?id=/metadata/fi/csc/courses/gromacs_workshop_2007/IntroductiontoMolecularSimulationandGromacs_1.xml>`_)
+  `video <https://video.csc.fi/playlist/dedicated/0_7z3nas0q/0_9aehv6v2>`_)
   - force fields, integrators, control of temperature and pressure (Berk Hess).
 

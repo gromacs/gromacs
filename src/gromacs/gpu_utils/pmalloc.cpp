@@ -43,7 +43,7 @@
 
 #include "gromacs/utility/smalloc.h"
 
-/*! \brief \brief Allocates nbytes of host memory. Use pfree to free memory allocated with this function.
+/*! \brief Allocates nbytes of host memory. Use pfree to free memory allocated with this function.
  *
  *  \todo
  *  This function should allocate page-locked memory to help reduce D2H and H2D

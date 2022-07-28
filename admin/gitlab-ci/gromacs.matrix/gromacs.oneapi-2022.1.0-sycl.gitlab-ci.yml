@@ -9,80 +9,80 @@
 # Test implementation choices (free to change as needed):
 #   OS: Ubuntu 20.04
 #   Build type: Debug
-#   Compiler: ICPX 2021.4
+#   Compiler: ICPX 2022.1
 #   MPI: thread_MPI
 #   SIMD: AVX2_256
 #   Parallelism nt/ntomp: 4/2
 
-gromacs:oneapi-2021.4.0-sycl:configure:
+gromacs:oneapi-2022.1.0-sycl:configure:
   extends:
    - .gromacs:base:configure
    - .use-oneapi:base
    - .use-sycl
    - .rules:merge-and-post-merge-acceptance
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-gcc-7-oneapi-2021.4.0
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-gcc-9-oneapi-2022.1.0
   variables:
     CMAKE: /usr/local/cmake-3.17.2/bin/cmake
     COMPILER_MAJOR_VERSION: 2021
 
-gromacs:oneapi-2021.4.0-sycl:build:
+gromacs:oneapi-2022.1.0-sycl:build:
   extends:
     - .variables:default
     - .gromacs:base:build
     - .use-ccache
     - .use-oneapi:base
     - .rules:merge-and-post-merge-acceptance
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-gcc-7-oneapi-2021.4.0
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-gcc-9-oneapi-2022.1.0
   variables:
     CMAKE: /usr/local/cmake-3.17.2/bin/cmake
   needs:
-    - job: gromacs:oneapi-2021.4.0-sycl:configure
+    - job: gromacs:oneapi-2022.1.0-sycl:configure
 
-gromacs:oneapi-2021.4.0-sycl:test:
+gromacs:oneapi-2022.1.0-sycl:test:
   extends:
     - .gromacs:base:test
     - .use-oneapi:base
     - .rules:post-merge-acceptance
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-gcc-7-oneapi-2021.4.0
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-gcc-9-oneapi-2022.1.0
   variables:
     CMAKE: /usr/local/cmake-3.17.2/bin/cmake
   needs:
-    - job: gromacs:oneapi-2021.4.0-sycl:build
+    - job: gromacs:oneapi-2022.1.0-sycl:build
 
-gromacs:oneapi-2021.4.0-sycl:regressiontest:
+gromacs:oneapi-2022.1.0-sycl:regressiontest:
   extends:
     - .gromacs:base:regressiontest
     - .use-oneapi:base
     - .rules:post-merge-acceptance
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-gcc-7-oneapi-2021.4.0
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-gcc-9-oneapi-2022.1.0
   variables:
     CMAKE: /usr/local/cmake-3.17.2/bin/cmake
   needs:
-    - job: gromacs:oneapi-2021.4.0-sycl:build
+    - job: gromacs:oneapi-2022.1.0-sycl:build
     - job: regressiontests:prepare
 
-gromacs:oneapi-2021.4.0-sycl-buffers:configure:
+gromacs:oneapi-2022.1.0-sycl-buffers:configure:
   extends:
    - .gromacs:base:configure
    - .use-oneapi:base
    - .use-sycl
    - .rules:nightly-not-for-release
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-gcc-7-oneapi-2021.4.0
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-gcc-9-oneapi-2022.1.0
   variables:
     CMAKE: /usr/local/cmake-3.21.2/bin/cmake
     COMPILER_MAJOR_VERSION: 2021
     CMAKE_EXTRA_OPTIONS: "-DGMX_SYCL_USE_USM=OFF"
 
-gromacs:oneapi-2021.4.0-sycl-buffers:build:
+gromacs:oneapi-2022.1.0-sycl-buffers:build:
   extends:
     - .variables:default
     - .gromacs:base:build
     - .use-ccache
     - .use-oneapi:base
     - .rules:nightly-not-for-release
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-gcc-7-oneapi-2021.4.0
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-gcc-9-oneapi-2022.1.0
   variables:
     CMAKE: /usr/local/cmake-3.21.2/bin/cmake
   needs:
-    - job: gromacs:oneapi-2021.4.0-sycl:configure
+    - job: gromacs:oneapi-2022.1.0-sycl:configure
 

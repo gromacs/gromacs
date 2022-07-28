@@ -147,6 +147,9 @@ LincsGpu::LincsGpu(int                  numIterations,
 
 LincsGpu::~LincsGpu()
 {
+    // Wait for all the tasks to complete before freeing the memory. See #4519.
+    deviceStream_.synchronize();
+
     freeDeviceBuffer(&kernelParams_.d_virialScaled);
 
     if (numConstraintsThreadsAlloc_ > 0)

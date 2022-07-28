@@ -73,9 +73,11 @@ int gpu_min_ci_balanced(NbnxmGpu* nb)
     {
         return 0;
     }
-    const sycl::device device          = nb->deviceContext_->deviceInfo().syclDevice;
-    const int          numComputeUnits = device.get_info<sycl::info::device::max_compute_units>();
-    return balancedFactor * numComputeUnits;
+    const DeviceInformation& deviceInfo = nb->deviceContext_->deviceInfo();
+    const sycl::device       device     = deviceInfo.syclDevice;
+    const int numComputeUnits           = device.get_info<sycl::info::device::max_compute_units>();
+    const int numComputeUnitsFactor     = getDeviceComputeUnitFactor(deviceInfo);
+    return balancedFactor * numComputeUnits / numComputeUnitsFactor;
 }
 
 } // namespace Nbnxm

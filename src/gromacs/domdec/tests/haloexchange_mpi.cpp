@@ -144,8 +144,8 @@ void gpuHalo(gmx_domdec_t* dd, matrix box, HostVector<RVec>* h_x, int numAtomsTo
             dd->comm->cd.begin(), dd->comm->cd.end(), 0, [](const int a, const auto& b) {
                 return a + b.numPulses();
             });
-    const int numExtraConsumptions = GMX_THREAD_MPI ? 1 : 0;
-    // Will be consumed once for each pulse, and, with tMPI, once more for dim=0,pulse=0 case
+    const int numExtraConsumptions = GMX_THREAD_MPI ? dd->ndim : 0;
+    // Will be consumed once for each pulse, and, with tMPI, once more for each dim on the first pulse
     GpuEventSynchronizer coordinatesReadyOnDeviceEvent(numPulses + numExtraConsumptions,
                                                        numPulses + numExtraConsumptions);
     coordinatesReadyOnDeviceEvent.markEvent(deviceStream);

@@ -39,6 +39,7 @@
  */
 #include "gmxpre.h"
 
+#include "gromacs/gpu_utils/device_context.h"
 #include "gromacs/gpu_utils/gmxopencl.h"
 #include "gromacs/gpu_utils/oclutils.h"
 #include "gromacs/hardware/device_information.h"
@@ -70,19 +71,17 @@ void throwUponFailure(cl_int status, const char* message)
 
 } // namespace
 
-void doDeviceTransfers(const DeviceInformation& deviceInfo, ArrayRef<const char> input, ArrayRef<char> output)
+void doDeviceTransfers(const DeviceContext&     deviceContext,
+                       const DeviceInformation& deviceInfo,
+                       ArrayRef<const char>     input,
+                       ArrayRef<char>           output)
 {
     GMX_RELEASE_ASSERT(input.size() == output.size(), "Input and output must have matching size");
 
     cl_int status;
 
-    cl_context_properties properties[] = {
-        CL_CONTEXT_PLATFORM, reinterpret_cast<cl_context_properties>(deviceInfo.oclPlatformId), 0
-    };
-
-    auto deviceId = deviceInfo.oclDeviceId;
-    auto context  = clCreateContext(properties, 1, &deviceId, nullptr, nullptr, &status);
-    throwUponFailure(status, "creating context");
+    auto deviceId     = deviceInfo.oclDeviceId;
+    auto context      = deviceContext.context();
     auto commandQueue = clCreateCommandQueue(context, deviceId, 0, &status);
     throwUponFailure(status, "creating command queue");
 

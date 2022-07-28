@@ -33,7 +33,7 @@
  */
 /*! \internal \file
  *
- * \brief Declares CUDA implementation class for PME-PP communications
+ * \brief Declares GPU implementation class for PME-PP communications
  *
  * \author Alan Gray <alang@nvidia.com>
  *
@@ -52,7 +52,7 @@
 namespace gmx
 {
 
-/*! \internal \brief Class with interfaces and data for CUDA version of PME-PP Communication */
+/*! \internal \brief Class with interfaces and data for GPU version of PME-PP Communication */
 class PmePpCommGpu::Impl
 {
 
@@ -89,11 +89,11 @@ public:
      * contributions on the CPU. It will automatically wait for
      * remote PME force data to be ready.
      *
-     * \param[out] recvPtr CPU buffer to receive PME force data
+     * \param[out] recvPtr CPU or GPU buffer to receive PME force data
      * \param[in] recvSize Number of elements to receive
      * \param[in] receivePmeForceToGpu Whether receive is to GPU, otherwise CPU
      */
-    void receiveForceFromPme(float3* recvPtr, int recvSize, bool receivePmeForceToGpu);
+    void receiveForceFromPme(Float3* recvPtr, int recvSize, bool receivePmeForceToGpu);
 
     /*! \brief Push coordinates buffer directly to GPU memory on PME
      * task, from either GPU or CPU memory on PP task using CUDA
@@ -105,7 +105,7 @@ public:
      * \param[in] sendSize Number of elements to send
      * \param[in] coordinatesReadyOnDeviceEvent Event recorded when coordinates are available on device
      */
-    void sendCoordinatesToPme(float3* sendPtr, int sendSize, GpuEventSynchronizer* coordinatesReadyOnDeviceEvent);
+    void sendCoordinatesToPme(Float3* sendPtr, int sendSize, GpuEventSynchronizer* coordinatesReadyOnDeviceEvent);
 
     /*! \brief
      * Return pointer to buffer used for staging PME force on GPU
@@ -120,12 +120,12 @@ public:
 private:
     /*! \brief Receive buffer from GPU memory on PME rank to either
      * GPU or CPU memory on PP rank. Data is pushed from PME force
-     * sender object using CUDA memory copy funtionality, and this
+     * sender object using CUDA memory copy functionality, and this
      * method performs the necessary synchronization on that
      * communication. This method is used with thread-MPI.
      * \param[in] receivePmeForceToGpu Whether receive is to GPU, otherwise CPU
      */
-    void receiveForceFromPmeCudaDirect(bool receivePmeForceToGpu);
+    void receiveForceFromPmePeerToPeer(bool receivePmeForceToGpu);
 
     /*! \brief Receive buffer from GPU memory on PME rank to either
      * GPU or CPU memory on PP rank using GPU-aware MPI. This method
@@ -133,7 +133,7 @@ private:
      * \param[out] recvPtr CPU or GPU buffer to receive PME force data into
      * \param[in] recvSize Number of elements to receive
      */
-    void receiveForceFromPmeCudaMpi(float3* recvPtr, int recvSize);
+    void receiveForceFromPmeGpuAwareMpi(Float3* recvPtr, int recvSize);
 
     /*! \brief Push coordinates buffer directly to GPU memory on PME
      * task, from either GPU or CPU memory on PP task using CUDA Memory copy.
@@ -142,7 +142,7 @@ private:
      * \param[in] sendSize Number of elements to send
      * \param[in] coordinatesReadyOnDeviceEvent Event recorded when coordinates are available on device
      */
-    void sendCoordinatesToPmeCudaDirect(float3*               sendPtr,
+    void sendCoordinatesToPmePeerToPeer(Float3*               sendPtr,
                                         int                   sendSize,
                                         GpuEventSynchronizer* coordinatesReadyOnDeviceEvent);
 
@@ -153,16 +153,16 @@ private:
      * \param[in] sendSize Number of elements to send
      * \param[in] coordinatesReadyOnDeviceEvent Event recorded when coordinates are available on device
      */
-    void sendCoordinatesToPmeCudaMpi(float3*               sendPtr,
-                                     int                   sendSize,
-                                     GpuEventSynchronizer* coordinatesReadyOnDeviceEvent);
+    void sendCoordinatesToPmeGpuAwareMpi(Float3*               sendPtr,
+                                         int                   sendSize,
+                                         GpuEventSynchronizer* coordinatesReadyOnDeviceEvent);
 
     //! GPU context handle (not used in CUDA)
     const DeviceContext& deviceContext_;
     //! Handle for CUDA stream used for the communication operations in this class
     const DeviceStream& pmePpCommStream_;
     //! Remote location of PME coordinate data buffer
-    float3* remotePmeXBuffer_ = nullptr;
+    Float3* remotePmeXBuffer_ = nullptr;
     //! communicator for simulation
     MPI_Comm comm_;
     //! Rank of PME task

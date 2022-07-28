@@ -1092,6 +1092,20 @@ void gpu_free(NbnxmGpu* nb)
         return;
     }
 
+    /* Synchronize to make sure there are no leftover operations in the streams.
+     * Ideally, there should not be any, but just in case we synchronize there
+     * to avoid freeing buffers that can be still used. See #4519.
+     *
+     * In practice, that's not needed for CUDA since cudaFree synchronizes internally.
+     * But explicitly waiting for tasks to complete before freeing the memory they use is logically
+     * sound and should not have any performance impact.
+     */
+    nb->deviceStreams[Nbnxm::InteractionLocality::Local]->synchronize();
+    if (nb->deviceStreams[Nbnxm::InteractionLocality::NonLocal])
+    {
+        nb->deviceStreams[Nbnxm::InteractionLocality::NonLocal]->synchronize();
+    }
+
     gpu_free_platform_specific(nb);
 
     delete nb->timers;

@@ -98,7 +98,7 @@ auto settleKernel(sycl::handler&                                               c
         constexpr float almost_zero = real(1e-12);
         const int       settleIdx   = itemIdx.get_global_linear_id();
         const int       threadIdx = itemIdx.get_local_linear_id(); // Work-item index in work-group
-        assert(itemIdx.get_local_range(0) == sc_workGroupSize);
+        SYCL_ASSERT(itemIdx.get_local_range(0) == sc_workGroupSize);
         // These are the indexes of three atoms in a single 'water' molecule.
         // TODO Can be reduced to one integer if atoms are consecutive in memory.
         if (settleIdx < numSettles)
