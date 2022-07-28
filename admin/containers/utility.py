@@ -96,12 +96,10 @@ compiler_group.add_argument('--gcc', type=int, nargs='?', const=7, default=7,
 compiler_group.add_argument('--llvm', type=str, nargs='?', const='7', default=None,
                             help='Select LLVM compiler tool chain. '
                                  'Some checking is implemented to avoid incompatible combinations')
-# TODO currently the installation merely gets the latest beta version of oneAPI,
-# not a specific version. GROMACS probably doesn't need to address that until
-# oneAPI makes an official release. Also, the resulting container is a mix
-# of packages with different betaXY version numbers, which hopefully works and
-# is what Intel intends...
-compiler_group.add_argument('--oneapi', type=str, nargs='?', const="2021.1.1", default=None,
+# Note that oneAPI packages don't bump their version numbers every
+# version of the umbrella release, so we may need to specify such
+# package versions from time to time.
+compiler_group.add_argument('--oneapi', type=str, nargs='?', const="2022.1.0", default=None,
                             help='Select Intel oneAPI package version.')
 
 linux_group = parser.add_mutually_exclusive_group()

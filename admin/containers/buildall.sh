@@ -17,8 +17,10 @@ args[${#args[@]}]="--llvm 11 --cuda 11.4.1"
 args[${#args[@]}]="--llvm 11 --tsan"
 args[${#args[@]}]="--llvm 8 --cuda 11.0 --clfft --mpi openmpi"
 args[${#args[@]}]="--llvm 13 --clfft --mpi openmpi --rocm"
-args[${#args[@]}]="--oneapi 2021.4.0"
-args[${#args[@]}]="--oneapi 2021.4.0 --intel-compute-runtime"
+# Note that oneAPI currently only supports Ubuntu 20.04
+args[${#args[@]}]="--oneapi 2022.1.0 --ubuntu 20.04"
+# Note that oneAPI currently only supports Ubuntu 20.04
+args[${#args[@]}]="--oneapi 2022.1.0 --intel-compute-runtime --ubuntu 20.04"
 args[${#args[@]}]="--llvm --doxygen --mpi openmpi --venvs 3.7.7"
 args[${#args[@]}]="--llvm 12 --cuda 11.4.3 --hipsycl c1246fd --rocm 5.0"
 
