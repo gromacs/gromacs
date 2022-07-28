@@ -2317,7 +2317,11 @@ void do_force(FILE*                               fplog,
                 // If there exist CPU forces, data from halo exchange should accumulate into these
                 bool accumulateForces = domainWork.haveCpuLocalForceWork;
                 gmx::FixedCapacityVector<GpuEventSynchronizer*, 2> gpuForceHaloDependencies;
-                gpuForceHaloDependencies.push_back(stateGpu->fReadyOnDevice(AtomLocality::Local));
+                // completion of both H2D copy and clearing is signaled by fReadyOnDevice
+                if (domainWork.haveCpuLocalForceWork || stepWork.clearGpuFBufferEarly)
+                {
+                    gpuForceHaloDependencies.push_back(stateGpu->fReadyOnDevice(AtomLocality::Local));
+                }
                 gpuForceHaloDependencies.push_back(stateGpu->fReducedOnDevice(AtomLocality::NonLocal));
 
                 communicateGpuHaloForces(*cr, accumulateForces, &gpuForceHaloDependencies);
