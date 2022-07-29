@@ -44,7 +44,9 @@ function(gmx_check_compiler_flag FLAGS LANGUAGE RESULT_VARIABLE)
 endfunction()
 
 # Helper function to call the correct language version of the CMake
-# check_*_source_compiles function.
+# check_*_source_compiles function. The use of a function creates a
+# scope that prevents the leaking of the flags via
+# CMAKE_REQUIRED_FLAGS.
 function(gmx_check_source_compiles_with_flags SOURCE FLAGS LANGUAGE RESULT_VARIABLE)
    set(CMAKE_REQUIRED_FLAGS "${FLAGS}")
    if (LANGUAGE STREQUAL "C")
@@ -56,7 +58,15 @@ function(gmx_check_source_compiles_with_flags SOURCE FLAGS LANGUAGE RESULT_VARIA
    endif()
 endfunction()
 
-# Helper routine to find flag (from a list) to compile a specific source (in C or C++).
+# Helper routine to find flag (from a list) to compile a specific
+# source (in C or C++).  It loops over flags in the list, first
+# checking that the compiler recognizes the flag, and then that it can
+# compile the given sources with that flag. When it finds a flag, it
+# leaves the loop, otherwise it proceeds to the next flag in the list.
+#
+# If you want to end up passing multiple flags, call this or similar
+# methods once for each flag.
+#
 # RESULT_VARIABLE           Name of variable to set in the parent scope to true if
 #                           we have found a flag that works (which could be "")
 # SOURCE                    Source code to test
