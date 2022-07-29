@@ -112,6 +112,12 @@ environment to jobs that run under the ``schedules``
 Nightly scheduled pipelines run against ``main`` and *release* branches in
 the GROMACS repository.
 
+Some of the rules defined in :file:`rules.gitlab-ci.yml` restrict jobs
+to run *only* for scheduled pipelines, or only for *specific* schedules
+according to the variables defined for that schedule in the web interface.
+For example, the rule element ``if-weekly-then-on-success`` causes a job
+to run only if the schedule sets ``GMX_PIPELINE_SCHEDULE=weekly``.
+
 Running post-merge-acceptance pipelines
 """""""""""""""""""""""""""""""""""""""
 
@@ -262,6 +268,15 @@ Other important variable keys are as follows.
         run after a commit has been merged into its target branch should be executed.
         Can be set to run pipelines through the web interface or as schedules.
         For use please see the *rules* mix-ins in :file:`admin/gitlab-ci/global.gitlab-ci.yml`.
+
+    GMX_PIPELINE_SCHEDULE
+        Read-only environment variable used exclusively by job rules.
+        Rule elements of the form ``if-<value>-then-on-success`` check
+        whether ``GMX_PIPELINE_SCHEDULE==value``. Allowed values
+        are determined by the rule elements available in
+        :file:`admin/gitlab-ci/rules.gitlab-ci.yml`, and include
+        ``nightly`` and ``weekly`` to restrict jobs to only run
+        in the corresponding schedules.
 
 Setting variables
 -----------------
