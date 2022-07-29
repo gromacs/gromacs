@@ -43,16 +43,115 @@
  */
 #include "gmxpre.h"
 
+#include "config.h"
+
 #include <map>
 #include <optional>
+#include <tuple>
 
 #include "gromacs/gpu_utils/gmxsycl.h"
 #include "gromacs/hardware/device_management.h"
+#include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/strconvert.h"
 #include "gromacs/utility/stringutil.h"
 
 #include "device_information.h"
 
+static std::optional<std::tuple<int, int>> getHardwareVersionNvidia(const sycl::device& device)
+{
+#if (GMX_SYCL_HIPSYCL && GMX_HIPSYCL_HAVE_CUDA_TARGET) // hipSYCL uses CUDA Runtime API
+    const int             nativeDeviceId = sycl::get_native<sycl::backend::cuda>(device);
+    struct cudaDeviceProp prop;
+    cudaError_t           status = cudaGetDeviceProperties(&prop, nativeDeviceId);
+    if (status == cudaSuccess)
+    {
+        return std::make_tuple(prop.major, prop.minor);
+    }
+    else
+    {
+        return std::nullopt;
+    }
+#elif (GMX_SYCL_DPCPP && defined(SYCL_EXT_ONEAPI_BACKEND_CUDA))
+    // oneAPI uses CUDA Driver API, but does not link the application to it
+    // Instead, we have to use info::device::backend_version, and parse it
+    const std::string              ccStr = device.get_info<sycl::info::device::backend_version>();
+    const std::vector<std::string> ccTokens = gmx::splitDelimitedString(ccStr, '.');
+    if (ccTokens.size() == 2)
+    {
+        try
+        {
+            const int major = gmx::fromStdString<int>(ccTokens[0]);
+            const int minor = gmx::fromStdString<int>(ccTokens[1]);
+            return std::make_tuple(major, minor);
+        }
+        catch (gmx::InvalidInputError)
+        {
+            return std::nullopt;
+        }
+    }
+    else
+    {
+        return std::nullopt;
+    }
+#else
+    GMX_UNUSED_VALUE(device);
+    return std::nullopt;
+#endif
+}
+
+static std::optional<std::tuple<int, int, int>> getHardwareVersionAmd(const sycl::device& device)
+{
+#if (GMX_SYCL_HIPSYCL && GMX_HIPSYCL_HAVE_HIP_TARGET)
+    const int              nativeDeviceId = sycl::get_native<sycl::backend::hip>(device);
+    struct hipDeviceProp_t prop;
+    hipError_t             status = hipGetDeviceProperties(&prop, nativeDeviceId);
+    if (status != hipSuccess)
+    {
+        return std::nullopt;
+    }
+    // prop.major and prop.minor indicate the closest CUDA CC
+    // gcnArch is deprecated, so we have to parse gcnArchName
+    std::string archName{ prop.gcnArchName }; // We have something like 'gfx90a:sramecc+:xnack-'
+    std::vector<std::string> archNameTokens = gmx::splitDelimitedString(archName, ':');
+    if (!gmx::startsWith(archNameTokens[0], "gfx"))
+    {
+        return std::nullopt;
+    }
+    const std::string archNumber = archNameTokens[0].substr(3);
+    // Now we have the main part, e.g., "906", "90a", or "1033"
+    // Last two chars are minor version and patch, the first one or two chars are major
+    const int split = archNumber.size() - 2;
+    if (split != 1 && split != 2)
+    {
+        return std::nullopt;
+    }
+    try
+    {
+        const int  major     = gmx::fromStdString<int>(archNumber.substr(0, split));
+        const int  minor     = gmx::fromStdString<int>(archNumber.substr(split, 1));
+        const char patchChar = archNumber[split + 1];
+        int        patch;
+        if (patchChar >= '0' && patchChar <= '9')
+        {
+            patch = patchChar - '0';
+        }
+        else if (patchChar >= 'a' && patchChar <= 'z')
+        {
+            patch = 10 + patchChar - 'a';
+        }
+        // If we have not thrown any exceptions, save the data
+        return std::make_tuple(major, minor, patch);
+    }
+    catch (gmx::InvalidInputError)
+    {
+        return std::nullopt;
+    }
+#else
+    GMX_UNUSED_VALUE(device);
+    return std::nullopt;
+#endif
+}
 
 void warnWhenDeviceNotTargeted(const gmx::MDLogger& /* mdlog */, const DeviceInformation& /* deviceInfo */)
 {
@@ -336,6 +435,29 @@ std::vector<std::unique_ptr<DeviceInformation>> findDevices()
         deviceInfos[i]->status     = checkDevice(i, *deviceInfos[i]);
         deviceInfos[i]->deviceVendor =
                 getDeviceVendor(syclDevice.get_info<sycl::info::device::vendor>().c_str());
+
+        deviceInfos[i]->hardwareVersionMajor = std::nullopt;
+        deviceInfos[i]->hardwareVersionMinor = std::nullopt;
+        deviceInfos[i]->hardwareVersionPatch = std::nullopt;
+        if (deviceInfos[i]->deviceVendor == DeviceVendor::Nvidia)
+        {
+            if (const auto computeCapability = getHardwareVersionNvidia(syclDevice);
+                computeCapability.has_value())
+            {
+                deviceInfos[i]->hardwareVersionMajor = std::get<0>(*computeCapability);
+                deviceInfos[i]->hardwareVersionMinor = std::get<1>(*computeCapability);
+                deviceInfos[i]->hardwareVersionPatch = std::nullopt;
+            }
+        }
+        if (deviceInfos[i]->deviceVendor == DeviceVendor::Amd)
+        {
+            if (const auto gfxVersion = getHardwareVersionAmd(syclDevice); gfxVersion.has_value())
+            {
+                deviceInfos[i]->hardwareVersionMajor = std::get<0>(*gfxVersion);
+                deviceInfos[i]->hardwareVersionMinor = std::get<1>(*gfxVersion);
+                deviceInfos[i]->hardwareVersionPatch = std::get<2>(*gfxVersion);
+            }
+        }
     }
 #if GMX_SYCL_DPCPP
     // Now, filter by the backend if we did not disable compatibility check
@@ -374,10 +496,24 @@ std::string getDeviceInformationString(const DeviceInformation& deviceInfo)
     }
     else
     {
+        std::string deviceArchitecture = "";
+        if (deviceInfo.hardwareVersionMajor.has_value())
+        {
+            deviceArchitecture += gmx::formatString(", architecture %d", *deviceInfo.hardwareVersionMajor);
+            if (deviceInfo.hardwareVersionMinor.has_value())
+            {
+                deviceArchitecture += gmx::formatString(".%d", *deviceInfo.hardwareVersionMinor);
+                if (deviceInfo.hardwareVersionPatch.has_value())
+                {
+                    deviceArchitecture += gmx::formatString(".%d", *deviceInfo.hardwareVersionPatch);
+                }
+            }
+        }
         return gmx::formatString(
-                "#%d: name: %s, vendor: %s, device version: %s, driver version %s, status: %s",
+                "#%d: name: %s%s, vendor: %s, device version: %s, driver version %s, status: %s",
                 deviceInfo.id,
                 deviceInfo.syclDevice.get_info<sycl::info::device::name>().c_str(),
+                deviceArchitecture.c_str(),
                 deviceInfo.syclDevice.get_info<sycl::info::device::vendor>().c_str(),
                 deviceInfo.syclDevice.get_info<sycl::info::device::version>().c_str(),
                 deviceInfo.syclDevice.get_info<sycl::info::device::driver_version>().c_str(),
