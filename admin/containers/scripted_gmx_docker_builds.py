@@ -609,7 +609,7 @@ def prepare_venv(version: StrictVersion) -> typing.Sequence[str]:
             'Pygments>=2.2.0' \
             'pytest>=4.6' \
             'setuptools>=42' \
-            'Sphinx>=1.6.3' \
+            'Sphinx>=4.0' \
             'sphinxcontrib-plantuml>=0.14' \
             'wheel'""")
     return commands

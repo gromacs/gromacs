@@ -56,7 +56,7 @@ mark_as_advanced(SOURCE_MD5SUM)
 
 set(EXPECTED_DOXYGEN_VERSION 1.8.5)
 
-set(EXPECTED_SPHINX_VERSION 1.6.1)
+set(EXPECTED_SPHINX_VERSION 4.0.0)
 
 # By default, suppress output after first configuration.
 if(SPHINX_ALREADY_SEARCHED)
