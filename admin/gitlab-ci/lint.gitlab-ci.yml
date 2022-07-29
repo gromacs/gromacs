@@ -70,6 +70,7 @@ clang-tidy:test:
     - .gromacs:base:build
     - .variables:default
     - .rules:merge-requests
+  allow_failure: true
   stage: source-check
   image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-llvm-11-cuda-11.4.1
   needs:
