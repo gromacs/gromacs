@@ -12,6 +12,7 @@
 
 #include <cassert>
 
+#include <iostream>
 #include <memory>
 
 #include "gmxapi/exceptions.h"
