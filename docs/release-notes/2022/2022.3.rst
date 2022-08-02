@@ -69,6 +69,16 @@ contains ``-1`` instead. Use ``-nomerge`` option if full hydrogen bond informati
 
 :issue:`3837`
 
+Fix generation of duplicate groups in index generation
+""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Both :ref:`gmx make_ndx` and :ref:`gmx select` would duplicate index groups for molecules
+not defined as Protein or Nucleotides due to a logic error in the code, where any extra
+group defined in the system would cause the detection to be run again and generate the
+duplicate groups.
+
+:issue:`4524`
+
 Fixes that affect portability
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
