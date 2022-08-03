@@ -52,6 +52,7 @@
 #include <memory>
 
 #include "gromacs/gmxlib/network.h"
+#include "gromacs/math/boxmatrix.h"
 #include "gromacs/math/invertmatrix.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdtypes/commrec.h"
@@ -63,11 +64,11 @@
 namespace gmx
 {
 
-std::unique_ptr<BoxDeformation> prepareBoxDeformation(const matrix&     initialBox,
-                                                      DDRole            ddRole,
-                                                      NumRanks          numRanks,
-                                                      MPI_Comm          communicator,
-                                                      const t_inputrec& inputrec)
+std::unique_ptr<BoxDeformation> buildBoxDeformation(const Matrix3x3&  initialBox,
+                                                    DDRole            ddRole,
+                                                    NumRanks          numRanks,
+                                                    MPI_Comm          communicator,
+                                                    const t_inputrec& inputrec)
 {
     if (!inputrecDeform(&inputrec))
     {
@@ -79,46 +80,47 @@ std::unique_ptr<BoxDeformation> prepareBoxDeformation(const matrix&     initialB
                 "Box deformation is only supported with dynamical integrators"));
     }
 
-    matrix box;
+    Matrix3x3 box;
     // Only the rank that read the tpr has the global state, and thus
     // the initial box, so we pass that around.
     // (numRanks != NumRanks::Multiple helps clang static analyzer to
     // understand that box is defined in all cases)
     if (ddRole == DDRole::Master || numRanks != NumRanks::Multiple)
     {
-        copy_mat(initialBox, box);
+        box = initialBox;
     }
     if (numRanks == NumRanks::Multiple)
     {
-        gmx_bcast(sizeof(box), box, communicator);
+        auto boxArrayRef = box.toArrayRef();
+        gmx_bcast(boxArrayRef.size() * sizeof(boxArrayRef[0]), boxArrayRef.data(), communicator);
     }
 
-    return std::make_unique<BoxDeformation>(inputrec.delta_t, inputrec.init_step, inputrec.deform, box);
+    return std::make_unique<BoxDeformation>(
+            inputrec.delta_t, inputrec.init_step, createMatrix3x3FromLegacyMatrix(inputrec.deform), box);
 }
 
-BoxDeformation::BoxDeformation(double        timeStep,
-                               int64_t       initialStep,
-                               const tensor& deformationTensor,
-                               const matrix& referenceBox) :
-    timeStep_(timeStep), initialStep_(initialStep)
+BoxDeformation::BoxDeformation(const double     timeStep,
+                               const int64_t    initialStep,
+                               const Matrix3x3& deformationTensor,
+                               const Matrix3x3& referenceBox) :
+    timeStep_(timeStep),
+    initialStep_(initialStep),
+    deformationTensor_(deformationTensor),
+    referenceBox_(referenceBox)
 {
-    copy_mat(deformationTensor, deformationTensor_);
-    copy_mat(referenceBox, referenceBox_);
 }
 
-void BoxDeformation::apply(ArrayRef<RVec> x, matrix box, int64_t step)
+void BoxDeformation::apply(ArrayRef<RVec> x, Matrix3x3* box, const int64_t step)
 {
-    matrix updatedBox, invbox, mu;
-
-    double elapsedTime = (step + 1 - initialStep_) * timeStep_;
-    copy_mat(box, updatedBox);
+    const real elapsedTime = (step + 1 - initialStep_) * timeStep_;
+    Matrix3x3  updatedBox  = *box;
     for (int i = 0; i < DIM; i++)
     {
         for (int j = 0; j < DIM; j++)
         {
-            if (deformationTensor_[i][j] != 0)
+            if (deformationTensor_(i, j) != 0)
             {
-                updatedBox[i][j] = referenceBox_[i][j] + elapsedTime * deformationTensor_[i][j];
+                updatedBox(i, j) = referenceBox_(i, j) + elapsedTime * deformationTensor_(i, j);
             }
         }
     }
@@ -130,27 +132,30 @@ void BoxDeformation::apply(ArrayRef<RVec> x, matrix box, int64_t step)
     {
         for (int j = i - 1; j >= 0; j--)
         {
-            while (updatedBox[i][j] - box[i][j] > 0.5 * updatedBox[j][j])
+            while (updatedBox(i, j) - (*box)(i, j) > 0.5_real * updatedBox(j, j))
             {
-                rvec_dec(updatedBox[i], updatedBox[j]);
+                updatedBox(i, XX) -= updatedBox(j, XX);
+                updatedBox(i, YY) -= updatedBox(j, YY);
+                updatedBox(i, ZZ) -= updatedBox(j, ZZ);
             }
-            while (updatedBox[i][j] - box[i][j] < -0.5 * updatedBox[j][j])
+            while (updatedBox(i, j) - (*box)(i, j) < -0.5_real * updatedBox(j, j))
             {
-                rvec_inc(updatedBox[i], updatedBox[j]);
+                updatedBox(i, XX) += updatedBox(j, XX);
+                updatedBox(i, YY) += updatedBox(j, YY);
+                updatedBox(i, ZZ) += updatedBox(j, ZZ);
             }
         }
     }
-    invertBoxMatrix(box, invbox);
-    // Return the updated box
-    copy_mat(updatedBox, box);
-    mmul_ur0(box, invbox, mu);
-
+    // Update the positions
+    Matrix3x3 mu = multiplyBoxMatrices(updatedBox, invertBoxMatrix(*box));
     for (auto& thisX : x)
     {
-        thisX[XX] = mu[XX][XX] * thisX[XX] + mu[YY][XX] * thisX[YY] + mu[ZZ][XX] * thisX[ZZ];
-        thisX[YY] = mu[YY][YY] * thisX[YY] + mu[ZZ][YY] * thisX[ZZ];
-        thisX[ZZ] = mu[ZZ][ZZ] * thisX[ZZ];
+        thisX[XX] = mu(XX, XX) * thisX[XX] + mu(YY, XX) * thisX[YY] + mu(ZZ, XX) * thisX[ZZ];
+        thisX[YY] = mu(YY, YY) * thisX[YY] + mu(ZZ, YY) * thisX[ZZ];
+        thisX[ZZ] = mu(ZZ, ZZ) * thisX[ZZ];
     }
+    // Return the updated box
+    *box = updatedBox;
 }
 
 } // namespace gmx

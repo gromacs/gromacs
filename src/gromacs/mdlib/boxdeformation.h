@@ -44,6 +44,7 @@
 
 #include <memory>
 
+#include "gromacs/math/matrix.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/classhelpers.h"
@@ -62,10 +63,13 @@ class BoxDeformation
 {
 public:
     //! Trivial constructor.
-    BoxDeformation(double timeStep, int64_t initialStep, const tensor& deformationTensor, const matrix& referenceBox);
+    BoxDeformation(double           timeStep,
+                   int64_t          initialStep,
+                   const Matrix3x3& deformationTensor,
+                   const Matrix3x3& referenceBox);
 
     //! Deform \c x and \c box at this \c step;
-    void apply(ArrayRef<RVec> x, matrix box, int64_t step);
+    void apply(ArrayRef<RVec> x, Matrix3x3* box, int64_t step);
 
 private:
     //! The integrator time step.
@@ -73,11 +77,9 @@ private:
     //! The initial step number (from the .tpr, which permits checkpointing to work correctly).
     int64_t initialStep_;
     //! Non-zero elements provide a scaling factor for deformation in that box dimension.
-    tensor deformationTensor_;
+    Matrix3x3 deformationTensor_;
     //! The initial box, ie from the .tpr file.
-    matrix referenceBox_;
-
-    GMX_DISALLOW_COPY_AND_ASSIGN(BoxDeformation);
+    Matrix3x3 referenceBox_;
 };
 
 /*! \brief Factory function for box deformation module.
@@ -90,11 +92,11 @@ private:
  * \throws NotImplementedError if the \c inputrec specifies an
  * unsupported combination.
  */
-std::unique_ptr<BoxDeformation> prepareBoxDeformation(const matrix&     initialBox,
-                                                      DDRole            ddRole,
-                                                      NumRanks          numRanks,
-                                                      MPI_Comm          communicator,
-                                                      const t_inputrec& inputrec);
+std::unique_ptr<BoxDeformation> buildBoxDeformation(const Matrix3x3&  initialBox,
+                                                    DDRole            ddRole,
+                                                    NumRanks          numRanks,
+                                                    MPI_Comm          communicator,
+                                                    const t_inputrec& inputrec);
 
 } // namespace gmx
 

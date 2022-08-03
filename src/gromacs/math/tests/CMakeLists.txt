@@ -34,6 +34,7 @@
 gmx_add_unit_test(MathUnitTests math-test
     CPP_SOURCE_FILES
         arrayrefwithpadding.cpp
+        boxmatrix.cpp
         coordinatetransformation.cpp
         densityfit.cpp
         dofit.cpp

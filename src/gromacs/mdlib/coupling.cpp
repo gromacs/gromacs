@@ -43,6 +43,7 @@
 
 #include "gromacs/domdec/domdec_struct.h"
 #include "gromacs/gmxlib/nrnb.h"
+#include "gromacs/math/boxmatrix.h"
 #include "gromacs/math/functions.h"
 #include "gromacs/math/invertmatrix.h"
 #include "gromacs/math/units.h"
@@ -197,69 +198,6 @@ void update_pcouple_before_coordinates(const gmx::MDLogger&           mdlog,
                                 M,
                                 parrinellorahmanMu);
     }
-}
-
-/*! \brief Check that the matrix \c m describes a simulation box
- *
- * The GROMACS convention is that all simulation box descriptions are
- * normalized to have zero entries in the upper triangle. This function
- * asserts if that is not true.
- *
- * This function is a duplicate of one in parrinellorahmanbarostat.cpp
- * which is thought to be better than having it in a header and
- * requiring a warning suppression for an unused function for most
- * source files that use that header. It is expected that eventually
- * this copy will go away as code migrates elsewhere. */
-static void checkMatrixIsBoxMatrix(const Matrix3x3& gmx_used_in_debug m)
-{
-    GMX_ASSERT((m(XX, YY) == 0.0) && (m(XX, ZZ) == 0.0) && (m(YY, ZZ) == 0.0),
-               gmx::formatString(
-                       "Box matrix should contain zero in the upper triangle, but "
-                       "was\n%10.6g %10.6g %10.6g\n%10.6g %10.6g %10.6g\n%10.6g %10.6g %10.6g\n",
-                       m(0, 0),
-                       m(0, 1),
-                       m(0, 2),
-                       m(1, 0),
-                       m(1, 1),
-                       m(1, 2),
-                       m(2, 0),
-                       m(2, 1),
-                       m(2, 2))
-                       .c_str());
-}
-
-/*! \brief Check that the matrix \c m describes a simulation box
- *
- * The GROMACS convention is that all simulation box descriptions are
- * normalized to have zero entries in the upper triangle. This function
- * asserts if that is not true. */
-static void checkMatrixIsBoxMatrix(const matrix gmx_used_in_debug m)
-{
-    GMX_ASSERT((m[XX][YY] == 0.0) && (m[XX][ZZ] == 0.0) && (m[YY][ZZ] == 0.0),
-               gmx::formatString(
-                       "Box matrix should contain zero in the upper triangle, but was\n%10.6g "
-                       "%10.6g %10.6g\n%10.6g %10.6g %10.6g\n%10.6g %10.6g %10.6g\n",
-                       m[0][0],
-                       m[0][1],
-                       m[0][2],
-                       m[1][0],
-                       m[1][1],
-                       m[1][2],
-                       m[2][0],
-                       m[2][1],
-                       m[2][2])
-                       .c_str());
-}
-
-/*! \brief Multiply vector \c v by the transpose of the box matrix \c
- * m, relying on the fact that the upper triangle of the matrix is
- * zero. */
-static void multiplyVectorByTransposeOfBoxMatrix(const Matrix3x3& m, const rvec v, rvec result)
-{
-    checkMatrixIsBoxMatrix(m);
-    result[XX] = m(XX, XX) * v[XX] + m(YY, XX) * v[YY] + m(ZZ, XX) * v[ZZ];
-    result[YY] = m(YY, YY) * v[YY] + m(ZZ, YY) * v[ZZ];
-    result[ZZ] = m(ZZ, ZZ) * v[ZZ];
 }
 
 void update_pcouple_after_coordinates(FILE*                               fplog,
@@ -442,8 +380,10 @@ void update_pcouple_after_coordinates(FILE*                               fplog,
 
     if (boxDeformation)
     {
-        auto localX = makeArrayRef(state->x).subArray(start, homenr);
-        boxDeformation->apply(localX, state->box, step);
+        auto localX   = makeArrayRef(state->x).subArray(start, homenr);
+        auto localBox = gmx::createMatrix3x3FromLegacyMatrix(state->box);
+        boxDeformation->apply(localX, &localBox, step);
+        fillLegacyMatrix(localBox, state->box);
     }
 }
 
@@ -758,42 +698,6 @@ static void calcParrinelloRahmanInvMass(const PressureCouplingOptions& pressureC
                          / (3 * pressureCouplingOptions.tau_p * pressureCouplingOptions.tau_p * maxBoxLength);
         }
     }
-}
-
-//! Multiply box matrices, relying on the fact that their upper triangle is zero
-static Matrix3x3 multiplyBoxMatrices(const Matrix3x3& a, const Matrix3x3& b)
-{
-    checkMatrixIsBoxMatrix(a);
-    checkMatrixIsBoxMatrix(b);
-    Matrix3x3 result;
-    result(XX, XX) = a(XX, XX) * b(XX, XX);
-    result(XX, YY) = 0.0;
-    result(XX, ZZ) = 0.0;
-    result(YY, XX) = a(YY, XX) * b(XX, XX) + a(YY, YY) * b(YY, XX);
-    result(YY, YY) = a(YY, YY) * b(YY, YY);
-    result(YY, ZZ) = 0.0;
-    result(ZZ, XX) = a(ZZ, XX) * b(XX, XX) + a(ZZ, YY) * b(YY, XX) + a(ZZ, ZZ) * b(ZZ, XX);
-    result(ZZ, YY) = a(ZZ, YY) * b(YY, YY) + a(ZZ, ZZ) * b(ZZ, YY);
-    result(ZZ, ZZ) = a(ZZ, ZZ) * b(ZZ, ZZ);
-    return result;
-}
-
-//! Multiply box matrices, relying on the fact that their upper triangle is zero
-static Matrix3x3 multiplyBoxMatrices(const Matrix3x3& a, const matrix b)
-{
-    checkMatrixIsBoxMatrix(a);
-    checkMatrixIsBoxMatrix(b);
-    Matrix3x3 result;
-    result(XX, XX) = a(XX, XX) * b[XX][XX];
-    result(XX, YY) = 0.0;
-    result(XX, ZZ) = 0.0;
-    result(YY, XX) = a(YY, XX) * b[XX][XX] + a(YY, YY) * b[YY][XX];
-    result(YY, YY) = a(YY, YY) * b[YY][YY];
-    result(YY, ZZ) = 0.0;
-    result(ZZ, XX) = a(ZZ, XX) * b[XX][XX] + a(ZZ, YY) * b[YY][XX] + a(ZZ, ZZ) * b[ZZ][XX];
-    result(ZZ, YY) = a(ZZ, YY) * b[YY][YY] + a(ZZ, ZZ) * b[ZZ][YY];
-    result(ZZ, ZZ) = a(ZZ, ZZ) * b[ZZ][ZZ];
-    return result;
 }
 
 /*! \brief Calculate the M tensor for Parrinello-Rahman pressure coupling

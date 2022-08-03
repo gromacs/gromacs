@@ -840,7 +840,6 @@ static void finish_run(FILE*                     fplog,
 
 int Mdrunner::mdrunner()
 {
-    matrix                      box;
     std::unique_ptr<t_forcerec> fr;
     real                        ewaldcoeff_q     = 0;
     real                        ewaldcoeff_lj    = 0;
@@ -1210,11 +1209,13 @@ int Mdrunner::mdrunner()
         extendStateWithOriresHistory(mtop, *inputrec, globalState.get());
     }
 
-    auto deform = prepareBoxDeformation(globalState != nullptr ? globalState->box : box,
-                                        MASTER(cr) ? DDRole::Master : DDRole::Agent,
-                                        PAR(cr) ? NumRanks::Multiple : NumRanks::Single,
-                                        cr->mpi_comm_mygroup,
-                                        *inputrec);
+    std::unique_ptr<BoxDeformation> deform = buildBoxDeformation(
+            globalState != nullptr ? createMatrix3x3FromLegacyMatrix(globalState->box)
+                                   : diagonalMatrix<real, 3, 3>(0.0),
+            MASTER(cr) ? DDRole::Master : DDRole::Agent,
+            PAR(cr) ? NumRanks::Multiple : NumRanks::Single,
+            cr->mpi_comm_mygroup,
+            *inputrec);
 
 #if GMX_FAHCORE
     /* We have to remember the generation's first step before reading checkpoint.
@@ -1301,6 +1302,7 @@ int Mdrunner::mdrunner()
     /* override nsteps with value set on the commandline */
     override_nsteps_cmdline(mdlog, mdrunOptions.numStepsCommandline, inputrec.get());
 
+    matrix box;
     if (isSimulationMasterRank)
     {
         copy_mat(globalState->box, box);

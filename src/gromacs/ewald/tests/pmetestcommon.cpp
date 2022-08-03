@@ -61,7 +61,7 @@
 #include "gromacs/ewald/pme_spread.h"
 #include "gromacs/fft/parallel_3dfft.h"
 #include "gromacs/gpu_utils/gpu_utils.h"
-#include "gromacs/math/invertmatrix.h"
+#include "gromacs/math/boxmatrix.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/topology/topology.h"

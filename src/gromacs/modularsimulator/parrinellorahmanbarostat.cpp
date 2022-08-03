@@ -43,6 +43,7 @@
 #include "parrinellorahmanbarostat.h"
 
 #include "gromacs/domdec/domdec_network.h"
+#include "gromacs/math/boxmatrix.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/coupling.h"
@@ -149,44 +150,6 @@ void ParrinelloRahmanBarostat::integrateBoxVelocityEquations(Step step)
                             &mu_);
     // multiply matrix by the coupling time step to avoid having the propagator needing to know about that
     (*scalingTensor_) = (*scalingTensor_) * couplingTimePeriod_;
-}
-
-/*! \brief Check that the matrix \c m describes a simulation box
- *
- * The GROMACS convention is that all simulation box descriptions are
- * normalized to have zero entries in the upper triangle. This function
- * asserts if that is not true. */
-static void checkMatrixIsBoxMatrix(const Matrix3x3& gmx_used_in_debug m)
-{
-    GMX_ASSERT(
-            (m(XX, YY) == 0.0) && (m(XX, ZZ) == 0.0) && (m(YY, ZZ) == 0.0),
-            formatString("Box matrix should contain zero in the upper triangle, but "
-                         "was\n%10.6g %10.6g %10.6g\n%10.6g %10.6g %10.6g\n%10.6g %10.6g %10.6g\n",
-                         m(0, 0),
-                         m(0, 1),
-                         m(0, 2),
-                         m(1, 0),
-                         m(1, 1),
-                         m(1, 2),
-                         m(2, 0),
-                         m(2, 1),
-                         m(2, 2))
-                    .c_str());
-}
-
-/*! \brief Multiply a vector \c src by the transpose of the box matrix \c m
- *
- * This has the same functionality as the legacy tmvmul_ur0 routine.
- */
-static inline RVec multiplyVectorByTransposeOfBoxMatrix(const Matrix3x3& m, const RVec& src)
-{
-    checkMatrixIsBoxMatrix(m);
-
-    RVec dest;
-    dest[XX] = m(XX, XX) * src[XX] + m(YY, XX) * src[YY] + m(ZZ, XX) * src[ZZ];
-    dest[YY] = m(YY, YY) * src[YY] + m(ZZ, YY) * src[ZZ];
-    dest[ZZ] = m(ZZ, ZZ) * src[ZZ];
-    return dest;
 }
 
 void ParrinelloRahmanBarostat::scaleBoxAndPositions()

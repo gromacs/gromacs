@@ -49,24 +49,6 @@
 namespace gmx
 {
 
-/*! \brief Invert a simulation-box matrix
- *
- * This routine assumes that src is a simulation-box matrix, i.e. has
- * zeroes in the upper-right triangle.
- *
- * \throws RangeError if the product of the leading diagonal is too small.
- */
-Matrix3x3 invertBoxMatrix(const Matrix3x3& src);
-
-/*! \brief Invert a simulation-box matrix in \c src, return in \c dest
- *
- * This routine assumes that src is a simulation-box matrix, i.e. has
- * zeroes in the upper-right triangle. A fatal error occurs if the
- * product of the leading diagonal is too small. The inversion can be
- * done "in place", i.e \c src and \c dest can be the same matrix.
- */
-void invertBoxMatrix(const matrix src, matrix dest);
-
 /*! \brief Invert a general 3x3 matrix in \c src, return in \c dest
  *
  * A fatal error occurs if the determinant is too small. \c src and

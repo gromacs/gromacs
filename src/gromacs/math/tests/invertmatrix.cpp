@@ -55,7 +55,6 @@
 namespace
 {
 
-using gmx::invertBoxMatrix;
 using gmx::invertMatrix;
 using gmx::test::defaultRealTolerance;
 
@@ -98,43 +97,6 @@ TEST(InvertMatrixTest, ComputesInverse)
     EXPECT_REAL_EQ_TOL(out[ZZ][XX], expected[ZZ][XX], defaultRealTolerance());
     EXPECT_REAL_EQ_TOL(out[ZZ][YY], expected[ZZ][YY], defaultRealTolerance());
     EXPECT_REAL_EQ_TOL(out[ZZ][ZZ], expected[ZZ][ZZ], defaultRealTolerance());
-}
-
-TEST(InvertBoxMatrixTest, IdentityIsImpotent)
-{
-    matrix in = { { 1, 0, 0 }, { 0, 1, 0 }, { 0, 0, 1 } };
-
-    invertBoxMatrix(in, in);
-
-    EXPECT_REAL_EQ_TOL(in[XX][XX], in[XX][XX], defaultRealTolerance());
-    EXPECT_REAL_EQ_TOL(in[XX][YY], in[XX][YY], defaultRealTolerance());
-    EXPECT_REAL_EQ_TOL(in[XX][ZZ], in[XX][ZZ], defaultRealTolerance());
-    EXPECT_REAL_EQ_TOL(in[YY][XX], in[YY][XX], defaultRealTolerance());
-    EXPECT_REAL_EQ_TOL(in[YY][YY], in[YY][YY], defaultRealTolerance());
-    EXPECT_REAL_EQ_TOL(in[YY][ZZ], in[YY][ZZ], defaultRealTolerance());
-    EXPECT_REAL_EQ_TOL(in[ZZ][XX], in[ZZ][XX], defaultRealTolerance());
-    EXPECT_REAL_EQ_TOL(in[ZZ][YY], in[ZZ][YY], defaultRealTolerance());
-    EXPECT_REAL_EQ_TOL(in[ZZ][ZZ], in[ZZ][ZZ], defaultRealTolerance());
-}
-
-TEST(InvertBoxMatrixTest, ComputesInverseInPlace)
-{
-    matrix in       = { { 1, 0, 0 }, { -1, real(2.5), 0 }, { 10, -2, real(1.2) } };
-    matrix expected = { { 1, 0, 0 },
-                        { real(0.4), real(0.4), 0 },
-                        { real(-23.0 / 3.0), real(2.0 / 3.0), real(5.0 / 6.0) } };
-
-    invertBoxMatrix(in, in);
-
-    EXPECT_REAL_EQ_TOL(expected[XX][XX], in[XX][XX], defaultRealTolerance());
-    EXPECT_REAL_EQ_TOL(expected[XX][YY], in[XX][YY], defaultRealTolerance());
-    EXPECT_REAL_EQ_TOL(expected[XX][ZZ], in[XX][ZZ], defaultRealTolerance());
-    EXPECT_REAL_EQ_TOL(expected[YY][XX], in[YY][XX], defaultRealTolerance());
-    EXPECT_REAL_EQ_TOL(expected[YY][YY], in[YY][YY], defaultRealTolerance());
-    EXPECT_REAL_EQ_TOL(expected[YY][ZZ], in[YY][ZZ], defaultRealTolerance());
-    EXPECT_REAL_EQ_TOL(expected[ZZ][XX], in[ZZ][XX], defaultRealTolerance());
-    EXPECT_REAL_EQ_TOL(expected[ZZ][YY], in[ZZ][YY], defaultRealTolerance());
-    EXPECT_REAL_EQ_TOL(expected[ZZ][ZZ], in[ZZ][ZZ], defaultRealTolerance());
 }
 
 } // namespace

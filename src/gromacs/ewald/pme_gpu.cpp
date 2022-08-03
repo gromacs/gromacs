@@ -49,7 +49,7 @@
 #include "gromacs/ewald/pme.h"
 #include "gromacs/ewald/pme_coordinate_receiver_gpu.h"
 #include "gromacs/fft/parallel_3dfft.h"
-#include "gromacs/math/invertmatrix.h"
+#include "gromacs/math/boxmatrix.h"
 #include "gromacs/mdlib/gmx_omp_nthreads.h"
 #include "gromacs/mdtypes/enerdata.h"
 #include "gromacs/mdtypes/forceoutput.h"

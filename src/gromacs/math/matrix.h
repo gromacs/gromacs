@@ -165,9 +165,26 @@ BasicVector<ElementType> multiplyVectorByMatrix(const BasicMatrix3x3<ElementType
     return result;
 }
 
+//! Return the sum of two 3x3 matrices \c a and \c b
+template<typename ElementType>
+BasicMatrix3x3<ElementType> operator+(const BasicMatrix3x3<ElementType>& a,
+                                      const BasicMatrix3x3<ElementType>& b)
+{
+    BasicMatrix3x3<ElementType> result;
+    for (int i = 0; i < DIM; i++)
+    {
+        for (int j = 0; j < DIM; j++)
+        {
+            result(i, j) = a(i, j) + b(i, j);
+        }
+    }
+    return result;
+}
+
+
 //! Return the product of multiplying the 3x3 matrix \c m by the scalar \c s
 template<typename ElementType>
-BasicMatrix3x3<ElementType> operator*(const BasicMatrix3x3<ElementType>& m, const real s)
+BasicMatrix3x3<ElementType> operator*(const BasicMatrix3x3<ElementType>& m, const ElementType s)
 {
     BasicMatrix3x3<ElementType> result;
     for (int i = 0; i < DIM; i++)
@@ -178,6 +195,13 @@ BasicMatrix3x3<ElementType> operator*(const BasicMatrix3x3<ElementType>& m, cons
         }
     }
     return result;
+}
+
+//! Return the product of multiplying the 3x3 matrix \c m by the scalar \c s
+template<typename ElementType>
+BasicMatrix3x3<ElementType> operator*(const ElementType s, const BasicMatrix3x3<ElementType>& m)
+{
+    return m * s;
 }
 
 //! Return a vector that is the diagonal of the 3x3 matrix \c m
