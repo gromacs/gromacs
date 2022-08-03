@@ -2062,16 +2062,6 @@ static void do_hbac(const char*             fn,
                "Expect close to linear scaling over this donor-loop.\n",
                nThreads);
         fflush(stdout);
-        fprintf(stderr, "Donors: [thread no]\n");
-        {
-            char tmpstr[7];
-            for (i = 0; i < nThreads; i++)
-            {
-                snprintf(tmpstr, 7, "[%i]", i);
-                fprintf(stderr, "%-7s", tmpstr);
-            }
-        }
-        fprintf(stderr, "\n");
     }
 
 

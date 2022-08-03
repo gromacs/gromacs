@@ -91,23 +91,23 @@ typedef struct
 
 static void comp_tpx(const char* fn1, const char* fn2, gmx_bool bRMSD, real ftol, real abstol)
 {
-    const char* ff[2];
-    t_inputrec* ir[2];
-    t_state     state[2];
-    gmx_mtop_t  mtop[2];
-    int         i;
+    const char*                 ff[2];
+    std::unique_ptr<t_inputrec> ir[2];
+    t_state                     state[2];
+    gmx_mtop_t                  mtop[2];
+    int                         i;
 
     ff[0] = fn1;
     ff[1] = fn2;
     for (i = 0; i < (fn2 ? 2 : 1); i++)
     {
-        ir[i] = new t_inputrec();
-        read_tpx_state(ff[i], ir[i], &state[i], &(mtop[i]));
-        gmx::MDModules().adjustInputrecBasedOnModules(ir[i]);
+        ir[i] = std::make_unique<t_inputrec>();
+        read_tpx_state(ff[i], ir[i].get(), &state[i], &(mtop[i]));
+        gmx::MDModules().adjustInputrecBasedOnModules(ir[i].get());
     }
     if (fn2)
     {
-        cmp_inputrec(stdout, ir[0], ir[1], ftol, abstol);
+        cmp_inputrec(stdout, ir[0].get(), ir[1].get(), ftol, abstol);
         compareMtop(stdout, mtop[0], mtop[1], ftol, abstol);
         comp_state(&state[0], &state[1], bRMSD, ftol, abstol);
     }
@@ -126,8 +126,6 @@ static void comp_tpx(const char* fn1, const char* fn2, gmx_bool bRMSD, real ftol
             compareMtopAB(stdout, mtop[0], ftol, abstol);
         }
     }
-    delete ir[0];
-    delete ir[1];
 }
 
 static void comp_trx(const gmx_output_env_t* oenv, const char* fn1, const char* fn2, gmx_bool bRMSD, real ftol, real abstol)
