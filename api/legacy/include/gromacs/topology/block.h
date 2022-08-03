@@ -170,40 +170,12 @@ void init_blocka(t_blocka* block);
  * of RangePartitioning.
  */
 
-/*! \brief
- * Minimal initialization of t_block datastructure.
- *
- * Performs the equivalent to a snew on a t_block, setting all
- * values to zero or nullptr. Needed for some cases where the topology
- * handling expects a block to be valid initialized (e.g. during domain
- * decomposition) but without the first block set to zero.
- *
- * \param[in,out] block datastructure to initialize.
- */
-void init_block_null(t_block* block);
-
-/*! \brief
- * Minimal initialization of t_blocka datastructure.
- *
- * Performs the equivalent to a snew on a t_blocka, setting all
- * values to zero or nullptr. Needed for some cases where the topology
- * handling expects a block to be valid initialized (e.g. during domain
- * decomposition) but without the first block set to zero.
- *
- * \param[in,out] block datastructure to initialize.
- */
-void init_blocka_null(t_blocka* block);
-
 t_blocka* new_blocka();
 /* allocate new block */
 
 void done_block(t_block* block);
 //! Deallocates memory within \c block
 void done_blocka(t_blocka* block);
-
-void copy_blocka(const t_blocka* src, t_blocka* dest);
-
-void copy_block(const t_block* src, t_block* dst);
 
 void stupid_fill_block(t_block* grp, int natom, gmx_bool bOneIndexGroup);
 /* Fill a block structure with numbers identical to the index

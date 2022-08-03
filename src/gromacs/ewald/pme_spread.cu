@@ -50,17 +50,6 @@
 #include "pme_gpu_calculate_splines.cuh"
 #include "pme_grid.h"
 
-/*
- * This define affects the spline calculation behaviour in the kernel.
- * 0: a single GPU thread handles a single dimension of a single particle (calculating and storing
- * (order) spline values and derivatives). 1: (order) threads do redundant work on this same task,
- * each one stores only a single theta and single dtheta into global arrays. The only efficiency
- * difference is less global store operations, countered by more redundant spline computation.
- *
- * TODO: estimate if this should be a boolean parameter (and add it to the unit test if so).
- */
-#define PME_GPU_PARALLEL_SPLINE 0
-
 /*! \brief
  * Charge spreading onto the grid.
  * This corresponds to the CPU function spread_coefficients_bsplines_thread().

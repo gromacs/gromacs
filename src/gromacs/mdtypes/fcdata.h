@@ -129,9 +129,6 @@ struct t_oriresdata
     //! Returns the list of masses for fitting
     gmx::ArrayRef<const real> fitMasses() const { return fitMasses_; }
 
-    //! Returns the list of local atoms for fitting, matching the order of referenceCoordinates
-    gmx::ArrayRef<const int> fitLocalAtomIndices() const { return fitLocalAtomIndices_; }
-
     //! Returns the list of coordinates for temporary use, size matches referenceCoordinates
     gmx::ArrayRef<gmx::RVec> xTmp() { return xTmp_; }
 
@@ -169,8 +166,6 @@ private:
     std::vector<gmx::RVec> referenceCoordinates_;
     //! The masses for fitting
     std::vector<real> fitMasses_;
-    //! List of reference atoms for fitting
-    std::vector<int> fitLocalAtomIndices_;
     //! Temporary array, used for fitting
     std::vector<gmx::RVec> xTmp_;
     //! The factor for initializing the time averaging, only present when time averaging is used

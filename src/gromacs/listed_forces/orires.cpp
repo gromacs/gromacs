@@ -273,7 +273,6 @@ t_oriresdata::t_oriresdata(FILE*                     fplog,
     }
 
     const size_t numFitAtoms = referenceCoordinates_.size();
-    fitLocalAtomIndices_.resize(numFitAtoms);
     xTmp_.resize(numFitAtoms);
 
     if (fplog)

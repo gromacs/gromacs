@@ -62,7 +62,6 @@ struct gmx_rmpbc
     const t_idef*                 idef;
     int                           natoms_init;
     PbcType                       pbcType;
-    int                           ePBC;
     int                           ngraph;
     rmpbc_graph_t*                graph;
 };

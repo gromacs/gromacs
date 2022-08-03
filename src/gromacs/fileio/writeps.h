@@ -43,22 +43,12 @@
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
-/* TODO: These two enums are used also in xutil.h in src/programs/view/.
- * The Y position enum doesn't seem to be actually used in this header...
- */
 typedef enum
 {
     eXCenter,
     eXLeft,
     eXRight
 } eXPos;
-
-typedef enum
-{
-    eYCenter,
-    eYTop,
-    eYBottom
-} eYPos;
 
 enum class Fonts : int
 {
@@ -80,8 +70,7 @@ enum class Fonts : int
 
 struct t_psdata
 {
-    FILE*              fp     = nullptr;
-    int                maxrgb = 0;
+    FILE*              fp = nullptr;
     std::vector<t_rgb> rgb;
     real               gen_ybox = 0;
     int                ostack   = 0;

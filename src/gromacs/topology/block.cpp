@@ -70,13 +70,6 @@ void init_block(t_block* block)
     block->index[0] = 0;
 }
 
-void init_block_null(t_block* block)
-{
-    block->nr           = 0;
-    block->nalloc_index = 0;
-    block->index        = nullptr;
-}
-
 void init_blocka(t_blocka* block)
 {
     block->nr           = 0;
@@ -86,16 +79,6 @@ void init_blocka(t_blocka* block)
     block->index[0] = 0;
     block->nalloc_a = 0;
     block->a        = nullptr;
-}
-
-void init_blocka_null(t_blocka* block)
-{
-    block->nr           = 0;
-    block->nra          = 0;
-    block->nalloc_index = 0;
-    block->index        = nullptr;
-    block->nalloc_a     = 0;
-    block->a            = nullptr;
 }
 
 t_blocka* new_blocka()
@@ -167,29 +150,6 @@ void stupid_fill_blocka(t_blocka* grp, int natom)
         grp->index[i] = i;
     }
     grp->nr = natom;
-}
-
-void copy_blocka(const t_blocka* src, t_blocka* dest)
-{
-    dest->nr = src->nr;
-    /* Workaround for inconsistent handling of nalloc_index in
-     * other parts of the code. Often nalloc_index and nalloc_a
-     * are not set.
-     */
-    dest->nalloc_index = std::max(src->nalloc_index, dest->nr + 1);
-    snew(dest->index, dest->nalloc_index);
-    for (int i = 0; i < dest->nr + 1; ++i)
-    {
-        dest->index[i] = src->index[i];
-    }
-    dest->nra = src->nra;
-    /* See above. */
-    dest->nalloc_a = std::max(src->nalloc_a, dest->nra);
-    snew(dest->a, dest->nalloc_a);
-    for (int i = 0; i < dest->nra; ++i)
-    {
-        dest->a[i] = src->a[i];
-    }
 }
 
 static int pr_block_title(FILE* fp, int indent, const char* title, const t_block* block)
@@ -375,20 +335,5 @@ void pr_listoflists(FILE* fp, int indent, const char* title, const gmx::ListOfLi
             }
             fprintf(fp, "}\n");
         }
-    }
-}
-
-void copy_block(const t_block* src, t_block* dst)
-{
-    dst->nr = src->nr;
-    /* Workaround for inconsistent handling of nalloc_index in
-     * other parts of the code. Often nalloc_index and nalloc_a
-     * are not set.
-     */
-    dst->nalloc_index = std::max(src->nalloc_index, dst->nr + 1);
-    snew(dst->index, dst->nalloc_index);
-    for (int i = 0; i < dst->nr + 1; ++i)
-    {
-        dst->index[i] = src->index[i];
     }
 }
