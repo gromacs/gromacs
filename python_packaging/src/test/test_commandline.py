@@ -84,7 +84,7 @@ def test_true_base(cleandir):
         logging.warning(f'{current_dir}')
         command = shutil.which('true')
         kwargs = dict(command=[command], shell=False)
-        if gmx.version.has_feature('cli_env_kwarg'):
+        if gmx.version.api_is_at_least(0, 4):
             kwargs['env'] = dict(os.environ)
         operation = commandline.cli(**kwargs)
 
@@ -105,7 +105,7 @@ def test_false_explicit(cleandir):
     """Test a command known to produce a return code of 1."""
     command = shutil.which('false')
     kwargs = dict(command=[command], shell=False)
-    if gmx.version.has_feature('cli_env_kwarg'):
+    if gmx.version.api_is_at_least(0, 4):
         kwargs['env'] = dict(os.environ)
     operation = commandline.cli(**kwargs)    # Explicitly run the operation.
     operation.run()
@@ -115,7 +115,7 @@ def test_false_explicit(cleandir):
 def test_false_implicit(cleandir):
     command = shutil.which('false')
     kwargs = dict(command=[command], shell=False)
-    if gmx.version.has_feature('cli_env_kwarg'):
+    if gmx.version.api_is_at_least(0, 4):
         kwargs['env'] = dict(os.environ)
     operation = commandline.cli(**kwargs)
     # Allow the operation to be executed implicitly to satisfy data constraint.
@@ -125,7 +125,7 @@ def test_false_implicit(cleandir):
 def test_command_with_arguments(cleandir):
     """Test that cli() can wrap a command with arguments."""
     kwargs = dict(command=[shutil.which('echo'), 'hi', 'there'], shell=False)
-    if gmx.version.has_feature('cli_env_kwarg'):
+    if gmx.version.api_is_at_least(0, 4):
         kwargs['env'] = dict(os.environ)
     operation = commandline.cli(**kwargs)
     assert operation.output.returncode.result() == 0
@@ -137,7 +137,7 @@ def test_command_with_stdin(cleandir):
     subcommand = '{wc} -l | {grep} -q 2'.format(wc=shutil.which('wc'), grep=shutil.which('grep'))
 
     kwargs = dict(command=['/bin/sh', '-c', subcommand], shell=False, stdin=stdin)
-    if gmx.version.has_feature('cli_env_kwarg'):
+    if gmx.version.api_is_at_least(0, 4):
         kwargs['env'] = dict(os.environ)
     operation = commandline.cli(**kwargs)
     assert operation.output.returncode.result() == 0
@@ -147,7 +147,7 @@ def test_command_with_stdin(cleandir):
     subcommand = '{wc} -l | {grep} -q 1'.format(wc=shutil.which('wc'), grep=shutil.which('grep'))
 
     kwargs = dict(command=['/bin/sh', '-c', subcommand], shell=False, stdin=stdin)
-    if gmx.version.has_feature('cli_env_kwarg'):
+    if gmx.version.api_is_at_least(0, 4):
         kwargs['env'] = dict(os.environ)
     operation = commandline.cli(**kwargs)
     assert operation.output.returncode.result() != 0
