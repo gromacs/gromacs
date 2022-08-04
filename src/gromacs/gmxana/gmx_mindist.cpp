@@ -38,6 +38,8 @@
 #include <cstring>
 
 #include <algorithm>
+#include <array>
+#include <vector>
 
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/commandline/viewit.h"
@@ -58,6 +60,7 @@
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/stringutil.h"
 
 
 static void
@@ -142,16 +145,16 @@ static void periodic_mindist_plot(const char*             trxfn,
                                   gmx_bool                bSplit,
                                   const gmx_output_env_t* oenv)
 {
-    FILE*        out;
-    const char*  leg[5] = { "min per.", "max int.", "box1", "box2", "box3" };
-    t_trxstatus* status;
-    real         t;
-    rvec*        x;
-    matrix       box;
-    int          natoms, ind_min[2] = { 0, 0 }, ind_mini = 0, ind_minj = 0;
-    real         rmin, rmax, rmint, tmint;
-    gmx_bool     bFirst;
-    gmx_rmpbc_t  gpbc = nullptr;
+    FILE*                      out;
+    std::array<std::string, 5> leg = { "min per.", "max int.", "box1", "box2", "box3" };
+    t_trxstatus*               status;
+    real                       t;
+    rvec*                      x;
+    matrix                     box;
+    int                        natoms, ind_min[2] = { 0, 0 }, ind_mini = 0, ind_minj = 0;
+    real                       rmin, rmax, rmint, tmint;
+    gmx_bool                   bFirst;
+    gmx_rmpbc_t                gpbc = nullptr;
 
     natoms = read_first_x(oenv, &status, trxfn, &t, &x, box);
 
@@ -166,7 +169,7 @@ static void periodic_mindist_plot(const char*             trxfn,
     {
         fprintf(out, "@ subtitle \"and maximum internal distance\"\n");
     }
-    xvgr_legend(out, 5, leg, oenv);
+    xvgrLegend(out, leg, oenv);
 
     rmint = box[XX][XX];
     tmint = 0;
@@ -371,22 +374,22 @@ static void dist_plot(const char*             fn,
                       gmx_bool                bPrintResName,
                       const gmx_output_env_t* oenv)
 {
-    FILE *       atm, *dist, *num;
-    t_trxstatus* trxout;
-    char         buf[256];
-    char**       leg;
-    real         t, dmin, dmax, **mindres = nullptr, **maxdres = nullptr;
-    int          nmin, nmax;
-    t_trxstatus* status;
-    int          i = -1, j, k;
-    int          min2, max2, min1r, min2r, max1r, max2r;
-    int          min1 = 0;
-    int          max1 = 0;
-    int          oindex[2];
-    rvec*        x0;
-    matrix       box;
-    gmx_bool     bFirst;
-    FILE*        respertime = nullptr;
+    FILE *                   atm, *dist, *num;
+    t_trxstatus*             trxout;
+    char                     buf[256];
+    std::vector<std::string> leg;
+    real                     t, dmin, dmax, **mindres = nullptr, **maxdres = nullptr;
+    int                      nmin, nmax;
+    t_trxstatus*             status;
+    int                      i = -1, j, k;
+    int                      min2, max2, min1r, min2r, max1r, max2r;
+    int                      min1 = 0;
+    int                      max1 = 0;
+    int                      oindex[2];
+    rvec*                    x0;
+    matrix                   box;
+    gmx_bool                 bFirst;
+    FILE*                    respertime = nullptr;
 
     if (read_first_x(oenv, &status, fn, &t, &x0, box) == 0)
     {
@@ -404,46 +407,40 @@ static void dist_plot(const char*             fn,
     {
         if (ng == 1)
         {
-            snew(leg, 1);
-            sprintf(buf, "Internal in %s", grpn[0]);
-            leg[0] = gmx_strdup(buf);
-            xvgr_legend(dist, 0, leg, oenv);
+            leg.emplace_back(gmx::formatString("Internal in %s", grpn[0]));
+            xvgrLegend(dist, leg, oenv);
             if (num)
             {
-                xvgr_legend(num, 0, leg, oenv);
+                xvgrLegend(num, leg, oenv);
             }
         }
         else
         {
             GMX_RELEASE_ASSERT(ng > 1, "Must have more than one group with bMat");
-            snew(leg, (ng * (ng - 1)) / 2);
             for (i = j = 0; (i < ng - 1); i++)
             {
                 for (k = i + 1; (k < ng); k++, j++)
                 {
-                    sprintf(buf, "%s-%s", grpn[i], grpn[k]);
-                    leg[j] = gmx_strdup(buf);
+                    leg.emplace_back(gmx::formatString("%s-%s", grpn[i], grpn[k]));
                 }
             }
-            xvgr_legend(dist, j, leg, oenv);
+            xvgrLegend(dist, leg, oenv);
             if (num)
             {
-                xvgr_legend(num, j, leg, oenv);
+                xvgrLegend(num, leg, oenv);
             }
         }
     }
     else
     {
-        snew(leg, ng - 1);
         for (i = 0; (i < ng - 1); i++)
         {
-            sprintf(buf, "%s-%s", grpn[0], grpn[i + 1]);
-            leg[i] = gmx_strdup(buf);
+            leg.emplace_back(gmx::formatString("%s-%s", grpn[0], grpn[i + 1]));
         }
-        xvgr_legend(dist, ng - 1, leg, oenv);
+        xvgrLegend(dist, leg, oenv);
         if (num)
         {
-            xvgr_legend(num, ng - 1, leg, oenv);
+            xvgrLegend(num, leg, oenv);
         }
     }
 
@@ -451,7 +448,7 @@ static void dist_plot(const char*             fn,
     {
         sprintf(buf, "%simum Distance", bMin ? "Min" : "Max");
         respertime = xvgropen(rfile, buf, output_env_get_time_label(oenv), "Distance (nm)", oenv);
-        xvgr_legend(respertime, ng - 1, leg, oenv);
+        xvgrLegend(respertime, leg, oenv);
         if (bPrintResName && output_env_get_print_xvgr_codes(oenv))
         {
             fprintf(respertime, "# ");
@@ -687,7 +684,7 @@ static void dist_plot(const char*             fn,
 
         sprintf(buf, "%simum Distance", bMin ? "Min" : "Max");
         res = xvgropen(rfile, buf, "Residue (#)", "Distance (nm)", oenv);
-        xvgr_legend(res, ng - 1, leg, oenv);
+        xvgrLegend(res, leg, oenv);
         for (j = 0; j < nres; j++)
         {
             fprintf(res, "%4d", j + 1);
@@ -704,13 +701,6 @@ static void dist_plot(const char*             fn,
     {
         sfree(x0);
     }
-
-    int freeLeg = bMat ? (ng == 1 ? 1 : (ng * (ng - 1)) / 2) : ng - 1;
-    for (int i = 0; i < freeLeg; i++)
-    {
-        sfree(leg[i]);
-    }
-    sfree(leg);
 }
 
 static int find_residues(const t_atoms* atoms, int n, const int index[], int** resindex)

@@ -33,6 +33,8 @@
  */
 #include "gmxpre.h"
 
+#include <array>
+
 #include "gromacs/commandline/filenm.h"
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/trxio.h"
@@ -114,10 +116,10 @@ int gmx_dyecoupl(int argc, char* argv[])
     FILE *   rkfp = nullptr, *rhfp = nullptr, *khfp = nullptr, *datfp = nullptr, *iefp = nullptr;
     gmx_bool bRKout, bRhistout, bKhistout, bDatout, bInstEffout, grident;
 
-    const char* rkleg[2] = { "R", "\\f{Symbol}k\\f{}\\S2\\N" };
-    const char* rhleg[1] = { "p(R)" };
-    const char* khleg[1] = { "p(\\f{Symbol}k\\f{}\\S2\\N)" };
-    const char* ieleg[1] = { "E\\sRET\\N(t)" };
+    std::array<std::string, 2> rkleg = { "R", "\\f{Symbol}k\\f{}\\S2\\N" };
+    std::array<std::string, 1> rhleg = { "p(R)" };
+    std::array<std::string, 1> khleg = { "p(\\f{Symbol}k\\f{}\\S2\\N)" };
+    std::array<std::string, 1> ieleg = { "E\\sRET\\N(t)" };
 
     real R, kappa2, insteff, Rs = 0., kappa2s = 0., insteffs = 0., rmax, rmin, kmin = 0., kmax = 4.,
                              rrange, krange, rincr, kincr, Rfrac;
@@ -241,7 +243,7 @@ int gmx_dyecoupl(int argc, char* argv[])
                                 "Time (ps)",
                                 "Distance (nm) / \\f{Symbol}k\\f{}\\S2\\N",
                                 oenv);
-                xvgr_legend(rkfp, 2, rkleg, oenv);
+                xvgrLegend(rkfp, rkleg, oenv);
             }
 
             if (bInstEffout)
@@ -251,7 +253,7 @@ int gmx_dyecoupl(int argc, char* argv[])
                                 "Time (ps)",
                                 "RET Efficiency",
                                 oenv);
-                xvgr_legend(iefp, 1, ieleg, oenv);
+                xvgrLegend(iefp, ieleg, oenv);
             }
 
 
@@ -421,7 +423,7 @@ int gmx_dyecoupl(int argc, char* argv[])
                     rhfp = xvgropen(
                             out_xvgrhistfile, "Distance Distribution", "R (nm)", "Probability", oenv);
                 }
-                xvgr_legend(rhfp, 1, rhleg, oenv);
+                xvgrLegend(rhfp, rhleg, oenv);
                 for (i = 0; i < histbins; i++)
                 {
                     fprintf(rhfp, "%12.7f %12.7f\n", (i + 0.5) * rincr + rmin, rhist[i]);
@@ -460,7 +462,7 @@ int gmx_dyecoupl(int argc, char* argv[])
                                     "Probability",
                                     oenv);
                 }
-                xvgr_legend(khfp, 1, khleg, oenv);
+                xvgrLegend(khfp, khleg, oenv);
                 for (i = 0; i < histbins; i++)
                 {
                     fprintf(khfp, "%12.7f %12.7f\n", (i + 0.5) * kincr + kmin, khist[i]);

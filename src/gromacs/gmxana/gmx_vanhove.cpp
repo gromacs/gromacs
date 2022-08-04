@@ -55,6 +55,7 @@
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/stringutil.h"
 
 
 int gmx_vanhove(int argc, char* argv[])
@@ -125,21 +126,21 @@ int gmx_vanhove(int argc, char* argv[])
     };
 #define NFILE asize(fnm)
 
-    gmx_output_env_t* oenv;
-    const char *      matfile, *otfile, *orfile;
-    t_topology        top;
-    PbcType           pbcType;
-    matrix            boxtop, box, *sbox, avbox, corr;
-    rvec *            xtop, *x, **sx;
-    int               isize, nalloc, nallocn;
-    t_trxstatus*      status;
-    int*              index;
-    char*             grpname;
-    int               nfr, f, ff, i, m, mat_nx = 0, nbin = 0, bin, mbin, fbin;
-    real *            time, t, invbin = 0, rmax2 = 0, rint2 = 0, d2;
-    real              invsbin = 0, matmax, normfac, dt, *tickx, *ticky;
-    char              buf[STRLEN], **legend;
-    real**            mat = nullptr;
+    gmx_output_env_t*        oenv;
+    const char *             matfile, *otfile, *orfile;
+    t_topology               top;
+    PbcType                  pbcType;
+    matrix                   boxtop, box, *sbox, avbox, corr;
+    rvec *                   xtop, *x, **sx;
+    int                      isize, nalloc, nallocn;
+    t_trxstatus*             status;
+    int*                     index;
+    char*                    grpname;
+    int                      nfr, f, ff, i, m, mat_nx = 0, nbin = 0, bin, mbin, fbin;
+    real *                   time, t, invbin = 0, rmax2 = 0, rint2 = 0, d2;
+    real                     invsbin = 0, matmax, normfac, dt, *tickx, *ticky;
+    std::vector<std::string> legend;
+    real**                   mat = nullptr;
     int * pt = nullptr, **pr = nullptr, *mcount = nullptr, *tcount = nullptr, *rcount = nullptr;
     FILE* fp;
     t_rgb rlo = { 1, 1, 1 }, rhi = { 0, 0, 0 };
@@ -450,13 +451,11 @@ int gmx_vanhove(int argc, char* argv[])
         {
             fprintf(fp, "@ subtitle \"for particles in group %s\"\n", grpname);
         }
-        snew(legend, nr);
         for (fbin = 0; fbin < nr; fbin++)
         {
-            sprintf(buf, "%g ps", (fbin + 1) * fshift * dt);
-            legend[fbin] = gmx_strdup(buf);
+            legend.emplace_back(gmx::formatString("%g ps", (fbin + 1) * fshift * dt));
         }
-        xvgr_legend(fp, nr, legend, oenv);
+        xvgrLegend(fp, legend, oenv);
         for (i = 0; i < nalloc; i++)
         {
             fprintf(fp, "%g", i * rbin);
@@ -474,8 +473,8 @@ int gmx_vanhove(int argc, char* argv[])
 
     if (otfile)
     {
-        sprintf(buf, "Probability of moving less than %g nm", rint);
-        fp = xvgropen(otfile, buf, "t (ps)", "", oenv);
+        auto buf = gmx::formatString("Probability of moving less than %g nm", rint);
+        fp       = xvgropen(otfile, buf.c_str(), "t (ps)", "", oenv);
         if (output_env_get_print_xvgr_codes(oenv))
         {
             fprintf(fp, "@ subtitle \"for particles in group %s\"\n", grpname);

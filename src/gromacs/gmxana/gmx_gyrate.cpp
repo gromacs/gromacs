@@ -36,6 +36,7 @@
 #include <cmath>
 #include <cstring>
 
+#include <array>
 #include <vector>
 
 #include "gromacs/commandline/pargs.h"
@@ -215,26 +216,26 @@ int gmx_gyrate(int argc, char* argv[])
           { &nz },
           "Calculate the 2D radii of gyration of this number of slices along the z-axis" },
     };
-    FILE*             out;
-    t_trxstatus*      status;
-    t_topology        top;
-    PbcType           pbcType;
-    rvec *            x, *x_s;
-    rvec              xcm, gvec, gvec1;
-    matrix            box, trans;
-    gmx_bool          bACF;
-    real**            moi_trans = nullptr;
-    int               max_moi = 0, delta_moi = 100;
-    rvec              d, d1; /* eigenvalues of inertia tensor */
-    real              t, t0, tm, gyro;
-    int               natoms;
-    char*             grpname;
-    int               j, m, gnx, nam, mol;
-    int*              index;
-    gmx_output_env_t* oenv;
-    gmx_rmpbc_t       gpbc   = nullptr;
-    const char*       leg[]  = { "Rg", "Rg\\sX\\N", "Rg\\sY\\N", "Rg\\sZ\\N" };
-    const char*       legI[] = { "Itot", "I1", "I2", "I3" };
+    FILE*                      out;
+    t_trxstatus*               status;
+    t_topology                 top;
+    PbcType                    pbcType;
+    rvec *                     x, *x_s;
+    rvec                       xcm, gvec, gvec1;
+    matrix                     box, trans;
+    gmx_bool                   bACF;
+    real**                     moi_trans = nullptr;
+    int                        max_moi = 0, delta_moi = 100;
+    rvec                       d, d1; /* eigenvalues of inertia tensor */
+    real                       t, t0, tm, gyro;
+    int                        natoms;
+    char*                      grpname;
+    int                        j, m, gnx, nam, mol;
+    int*                       index;
+    gmx_output_env_t*          oenv;
+    gmx_rmpbc_t                gpbc = nullptr;
+    std::array<std::string, 4> leg  = { "Rg", "Rg\\sX\\N", "Rg\\sY\\N", "Rg\\sZ\\N" };
+    std::array<std::string, 4> legI = { "Itot", "I1", "I2", "I3" };
 #define NLEG asize(leg)
     t_filenm fnm[] = {
         { efTRX, "-f", nullptr, ffREAD },      { efTPS, nullptr, nullptr, ffREAD },
@@ -319,7 +320,7 @@ int gmx_gyrate(int argc, char* argv[])
     }
     if (bMOI)
     {
-        xvgr_legend(out, NLEG, legI, oenv);
+        xvgrLegend(out, legI, oenv);
     }
     else
     {
@@ -330,7 +331,7 @@ int gmx_gyrate(int argc, char* argv[])
                 fprintf(out, "@ subtitle \"Axes are principal component axes\"\n");
             }
         }
-        xvgr_legend(out, NLEG, leg, oenv);
+        xvgrLegend(out, leg, oenv);
     }
     if (nz == 0)
     {

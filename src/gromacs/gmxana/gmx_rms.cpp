@@ -37,6 +37,7 @@
 #include <cstdlib>
 
 #include <algorithm>
+#include <vector>
 
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/commandline/viewit.h"
@@ -770,6 +771,12 @@ int gmx_rms(int argc, char* argv[])
         freq2    = freq;
     }
     gmx_rmpbc_done(gpbc);
+    std::vector<std::string> names;
+    names.resize(nrms);
+    for (int i = 0; i < nrms; ++i)
+    {
+        names[i] = gn_rms[i];
+    }
 
     if (bMat || bBond)
     {
@@ -1157,7 +1164,7 @@ int gmx_rms(int argc, char* argv[])
     }
     if (nrms != 1)
     {
-        xvgr_legend(fp, nrms, gn_rms, oenv);
+        xvgrLegend(fp, names, oenv);
     }
     for (i = 0; (i < teller); i++)
     {
@@ -1197,7 +1204,7 @@ int gmx_rms(int argc, char* argv[])
             {
                 fprintf(fp, "@ subtitle \"after lsq fit to mirror %s\"\n", bFit ? gn_fit : "");
             }
-            xvgr_legend(fp, nrms, gn_rms, oenv);
+            xvgrLegend(fp, names, oenv);
         }
         for (i = 0; (i < teller); i++)
         {

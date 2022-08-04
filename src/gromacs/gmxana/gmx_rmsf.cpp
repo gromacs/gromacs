@@ -37,6 +37,8 @@
 #include <cmath>
 #include <cstring>
 
+#include <array>
+
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/commandline/viewit.h"
 #include "gromacs/fileio/confio.h"
@@ -266,7 +268,7 @@ int gmx_rmsf(int argc, char* argv[])
 
     gmx_output_env_t* oenv;
 
-    const char* leg[2] = { "MD", "X-Ray" };
+    std::array<std::string, 2> leg = { "MD", "X-Ray" };
 
     t_filenm fnm[] = { { efTRX, "-f", nullptr, ffREAD },     { efTPS, nullptr, nullptr, ffREAD },
                        { efNDX, nullptr, nullptr, ffOPTRD }, { efPDB, "-q", nullptr, ffOPTRD },
@@ -480,7 +482,7 @@ int gmx_rmsf(int argc, char* argv[])
     {
         bfac = 8.0 * M_PI * M_PI / 3.0 * 100;
         fp = xvgropen(ftp2fn(efXVG, NFILE, fnm), "B-Factors", label, "(A\\b\\S\\So\\N\\S2\\N)", oenv);
-        xvgr_legend(fp, 2, leg, oenv);
+        xvgrLegend(fp, leg, oenv);
         for (i = 0; (i < isize); i++)
         {
             if (!bRes || i + 1 == isize

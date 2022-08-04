@@ -38,6 +38,7 @@
 #include <cstring>
 
 #include <algorithm>
+#include <array>
 
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/commandline/viewit.h"
@@ -56,6 +57,7 @@
 #include "gromacs/topology/topology.h"
 #include "gromacs/trajectory/energyframe.h"
 #include "gromacs/trajectoryanalysis/topologyinformation.h"
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
@@ -63,6 +65,7 @@
 #include "gromacs/utility/pleasecite.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/strconvert.h"
+#include "gromacs/utility/stringutil.h"
 
 static constexpr real minthird = -1.0 / 3.0, minsixth = -1.0 / 6.0;
 
@@ -95,7 +98,7 @@ static real blk_value(t_enxblock* blk, int sub, int index)
     }
 }
 
-static int* select_it(int nre, char* nm[], int* nset)
+static int* select_it(int nre, gmx::ArrayRef<const std::string> nm, int* nset)
 {
     gmx_bool* bE;
     int       n, k, j, i;
@@ -116,7 +119,7 @@ static int* select_it(int nre, char* nm[], int* nset)
         {
             for (j = 0; (j < 4) && (k < nre); j++, k++)
             {
-                fprintf(stderr, " %3d=%14s", k + 1, nm[k]);
+                fprintf(stderr, " %3d=%14s", k + 1, nm[k].c_str());
             }
             fprintf(stderr, "\n");
         }
@@ -394,7 +397,7 @@ int gmx_nmr(int argc, char* argv[])
         { "-orinst", FALSE, etBOOL, { &bOrinst }, "Analyse instantaneous orientation data" },
         { "-ovec", FALSE, etBOOL, { &bOvec }, "Also plot the eigenvectors with [TT]-oten[tt]" }
     };
-    const char* drleg[] = { "Running average", "Instantaneous" };
+    std::array<std::string, 2> drleg = { "Running average", "Instantaneous" };
 
     FILE /* *out     = NULL,*/ *out_disre = nullptr, *fp_pairs = nullptr, *fort = nullptr,
                                *fodt = nullptr, *foten = nullptr;
@@ -405,21 +408,19 @@ int gmx_nmr(int argc, char* argv[])
     int          nre, teller, teller_disre;
     int          nor = 0, nex = 0, norfr = 0, enx_i = 0;
     real *bounds = nullptr, *violaver = nullptr, *oobs = nullptr, *orient = nullptr, *odrms = nullptr;
-    int *       index = nullptr, *pair = nullptr, norsel = 0, *orsel = nullptr, *or_label = nullptr;
-    int         nbounds = 0, npairs;
-    gmx_bool    bDisRe, bDRAll, bORA, bORT, bODA, bODR, bODT, bORIRE, bOTEN;
-    gmx_bool    bCont;
-    double      sumaver, sumt;
-    int *       set = nullptr, i, j, k, nset, sss;
-    char **     pairleg, **odtleg, **otenleg;
-    char**      leg = nullptr;
-    const char *anm_j, *anm_k, *resnm_j, *resnm_k;
-    int         resnr_j, resnr_k;
-    const char* orinst_sub = "@ subtitle \"instantaneous\"\n";
-    char        buf[256];
-    gmx_output_env_t* oenv;
-    t_enxblock*       blk_disre = nullptr;
-    int               ndisre    = 0;
+    int *    index = nullptr, *pair = nullptr, norsel = 0, *orsel = nullptr, *or_label = nullptr;
+    int      nbounds = 0, npairs;
+    gmx_bool bDisRe, bDRAll, bORA, bORT, bODA, bODR, bODT, bORIRE, bOTEN;
+    gmx_bool bCont;
+    double   sumaver, sumt;
+    int *    set = nullptr, i, j, k, nset, sss;
+    std::vector<std::string> pairleg, odtleg, otenleg, leg;
+    const char *             anm_j, *anm_k, *resnm_j, *resnm_k;
+    int                      resnr_j, resnr_k;
+    const char*              orinst_sub = "@ subtitle \"instantaneous\"\n";
+    gmx_output_env_t*        oenv;
+    t_enxblock*              blk_disre = nullptr;
+    int                      ndisre    = 0;
 
     t_filenm fnm[] = { { efEDR, "-f", nullptr, ffREAD },
                        { efEDR, "-f2", nullptr, ffOPTRD },
@@ -545,11 +546,9 @@ int gmx_nmr(int argc, char* argv[])
                         }
                     }
                 }
-                snew(odtleg, norsel);
                 for (i = 0; i < norsel; i++)
                 {
-                    snew(odtleg[i], 256);
-                    sprintf(odtleg[i], "%d", or_label[orsel[i]]);
+                    odtleg.emplace_back(gmx::formatString("%d", or_label[orsel[i]]));
                 }
                 if (bORT)
                 {
@@ -559,7 +558,7 @@ int gmx_nmr(int argc, char* argv[])
                     {
                         fprintf(fort, "%s", orinst_sub);
                     }
-                    xvgr_legend(fort, norsel, odtleg, oenv);
+                    xvgrLegend(fort, odtleg, oenv);
                 }
                 if (bODT)
                 {
@@ -572,41 +571,29 @@ int gmx_nmr(int argc, char* argv[])
                     {
                         fprintf(fodt, "%s", orinst_sub);
                     }
-                    xvgr_legend(fodt, norsel, odtleg, oenv);
+                    xvgrLegend(fodt, odtleg, oenv);
                 }
-                for (i = 0; i < norsel; i++)
-                {
-                    sfree(odtleg[i]);
-                }
-                sfree(odtleg);
             }
         }
         if (bOTEN)
         {
             foten = xvgropen(opt2fn("-oten", NFILE, fnm), "Order tensor", "Time (ps)", "", oenv);
-            snew(otenleg, bOvec ? nex * 12 : nex * 3);
             for (i = 0; i < nex; i++)
             {
                 for (j = 0; j < 3; j++)
                 {
-                    sprintf(buf, "eig%d", j + 1);
-                    otenleg[(bOvec ? 12 : 3) * i + j] = gmx_strdup(buf);
+                    otenleg.emplace_back(gmx::formatString("eig%d", j + 1));
                 }
                 if (bOvec)
                 {
                     for (j = 0; j < 9; j++)
                     {
-                        sprintf(buf, "vec%d%s", j / 3 + 1, j % 3 == 0 ? "x" : (j % 3 == 1 ? "y" : "z"));
-                        otenleg[12 * i + 3 + j] = gmx_strdup(buf);
+                        otenleg.emplace_back(gmx::formatString(
+                                "vec%d%s", j / 3 + 1, j % 3 == 0 ? "x" : (j % 3 == 1 ? "y" : "z")));
                     }
                 }
             }
-            xvgr_legend(foten, bOvec ? nex * 12 : nex * 3, otenleg, oenv);
-            for (j = 0; j < 3; j++)
-            {
-                sfree(otenleg[j]);
-            }
-            sfree(otenleg);
+            xvgrLegend(foten, otenleg, oenv);
         }
     }
     else
@@ -620,7 +607,7 @@ int gmx_nmr(int argc, char* argv[])
         nbounds = get_bounds(&bounds, &index, &pair, &npairs, top->idef);
         snew(violaver, npairs);
         out_disre = xvgropen(opt2fn("-viol", NFILE, fnm), "Sum of Violations", "Time (ps)", "nm", oenv);
-        xvgr_legend(out_disre, 2, drleg, oenv);
+        xvgrLegend(out_disre, drleg, oenv);
         if (bDRAll)
         {
             fp_pairs = xvgropen(
@@ -656,7 +643,7 @@ int gmx_nmr(int argc, char* argv[])
              * the first frame has been read... (Then we know how many there are)
              */
             blk_disre = find_block_id_enxframe(&fr, enxDISRE, nullptr);
-            if (bDisRe && bDRAll && !leg && blk_disre)
+            if (bDisRe && bDRAll && leg.empty() && blk_disre)
             {
                 const InteractionList&   ilist = top->idef.il[F_DISRES];
                 gmx::ArrayRef<const int> fa    = ilist.iatoms;
@@ -675,34 +662,24 @@ int gmx_nmr(int argc, char* argv[])
                               ndisre,
                               ilist.size() / 3);
                 }
-                snew(pairleg, ndisre);
                 int molb = 0;
                 for (i = 0; i < ndisre; i++)
                 {
-                    snew(pairleg[i], 30);
                     j = fa[3 * i + 1];
                     k = fa[3 * i + 2];
                     GMX_ASSERT(topInfo.hasTopology(), "Need to have a valid topology");
                     mtopGetAtomAndResidueName(*topInfo.mtop(), j, &molb, &anm_j, &resnr_j, &resnm_j, nullptr);
                     mtopGetAtomAndResidueName(*topInfo.mtop(), k, &molb, &anm_k, &resnr_k, &resnm_k, nullptr);
-                    sprintf(pairleg[i],
-                            "%d %s %d %s (%d)",
-                            resnr_j,
-                            anm_j,
-                            resnr_k,
-                            anm_k,
-                            ip[fa[3 * i]].disres.label);
+                    pairleg.emplace_back(gmx::formatString(
+                            "%d %s %d %s (%d)", resnr_j, anm_j, resnr_k, anm_k, ip[fa[3 * i]].disres.label));
                 }
                 set = select_it(ndisre, pairleg, &nset);
-                snew(leg, 2 * nset);
                 for (i = 0; (i < nset); i++)
                 {
-                    snew(leg[2 * i], 32);
-                    sprintf(leg[2 * i], "a %s", pairleg[set[i]]);
-                    snew(leg[2 * i + 1], 32);
-                    sprintf(leg[2 * i + 1], "i %s", pairleg[set[i]]);
+                    leg.emplace_back(gmx::formatString("a %s", pairleg[set[i]].c_str()));
+                    leg.emplace_back(gmx::formatString("i %s", pairleg[set[i]].c_str()));
                 }
-                xvgr_legend(fp_pairs, 2 * nset, leg, oenv);
+                xvgrLegend(fp_pairs, leg, oenv);
             }
 
             /*

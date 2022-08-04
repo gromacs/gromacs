@@ -322,13 +322,7 @@ void AbstractPlotModule::dataStarted(AbstractAnalysisData* /* data */)
             }
             if (output_env_get_print_xvgr_codes(oenv) && !impl_->legend_.empty())
             {
-                std::vector<const char*> legend;
-                legend.reserve(impl_->legend_.size());
-                for (size_t i = 0; i < impl_->legend_.size(); ++i)
-                {
-                    legend.push_back(impl_->legend_[i].c_str());
-                }
-                xvgr_legend(impl_->fp_, legend.size(), legend.data(), oenv);
+                xvgrLegend(impl_->fp_, impl_->legend_, oenv);
             }
         }
     }

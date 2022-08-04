@@ -45,6 +45,7 @@
 #include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/stringutil.h"
 
 
 static void calc_principal_axes(const t_topology* top, rvec* x, int* index, int n, matrix axes, rvec inertia)
@@ -74,19 +75,19 @@ int gmx_principal(int argc, char* argv[])
     real         t;
     rvec*        x;
 
-    int               natoms;
-    char*             grpname;
-    int               i, gnx;
-    int*              index;
-    rvec              moi;
-    FILE*             axis1;
-    FILE*             axis2;
-    FILE*             axis3;
-    FILE*             fmoi;
-    matrix            axes, box;
-    gmx_output_env_t* oenv;
-    gmx_rmpbc_t       gpbc = nullptr;
-    char**            legend;
+    int                      natoms;
+    char*                    grpname;
+    int                      i, gnx;
+    int*                     index;
+    rvec                     moi;
+    FILE*                    axis1;
+    FILE*                    axis2;
+    FILE*                    axis3;
+    FILE*                    fmoi;
+    matrix                   axes, box;
+    gmx_output_env_t*        oenv;
+    gmx_rmpbc_t              gpbc = nullptr;
+    std::vector<std::string> legend;
 
     t_filenm fnm[] = { { efTRX, "-f", nullptr, ffREAD },     { efTPS, nullptr, nullptr, ffREAD },
                        { efNDX, nullptr, nullptr, ffOPTRD }, { efXVG, "-a1", "paxis1", ffWRITE },
@@ -110,11 +111,9 @@ int gmx_principal(int argc, char* argv[])
         return 0;
     }
 
-    snew(legend, DIM);
     for (i = 0; i < DIM; i++)
     {
-        snew(legend[i], STRLEN);
-        sprintf(legend[i], "%c component", 'X' + i);
+        legend.emplace_back(gmx::formatString("%c component", 'X' + i));
     }
 
     axis1 = xvgropen(opt2fn("-a1", NFILE, fnm),
@@ -122,38 +121,32 @@ int gmx_principal(int argc, char* argv[])
                      output_env_get_xvgr_tlabel(oenv),
                      "Component (nm)",
                      oenv);
-    xvgr_legend(axis1, DIM, legend, oenv);
+    xvgrLegend(axis1, legend, oenv);
 
     axis2 = xvgropen(opt2fn("-a2", NFILE, fnm),
                      "Principal axis 2 (middle axis)",
                      output_env_get_xvgr_tlabel(oenv),
                      "Component (nm)",
                      oenv);
-    xvgr_legend(axis2, DIM, legend, oenv);
+    xvgrLegend(axis2, legend, oenv);
 
     axis3 = xvgropen(opt2fn("-a3", NFILE, fnm),
                      "Principal axis 3 (minor axis)",
                      output_env_get_xvgr_tlabel(oenv),
                      "Component (nm)",
                      oenv);
-    xvgr_legend(axis3, DIM, legend, oenv);
+    xvgrLegend(axis3, legend, oenv);
 
-    sprintf(legend[XX], "Axis 1 (major)");
-    sprintf(legend[YY], "Axis 2 (middle)");
-    sprintf(legend[ZZ], "Axis 3 (minor)");
+    legend[XX] = "Axis 1 (major)";
+    legend[YY] = "Axis 2 (middle)";
+    legend[ZZ] = "Axis 3 (minor)";
 
     fmoi = xvgropen(opt2fn("-om", NFILE, fnm),
                     "Moments of inertia around inertial axes",
                     output_env_get_xvgr_tlabel(oenv),
                     "I (au nm\\S2\\N)",
                     oenv);
-    xvgr_legend(fmoi, DIM, legend, oenv);
-
-    for (i = 0; i < DIM; i++)
-    {
-        sfree(legend[i]);
-    }
-    sfree(legend);
+    xvgrLegend(fmoi, legend, oenv);
 
     read_tps_conf(ftp2fn(efTPS, NFILE, fnm), &top, &pbcType, nullptr, nullptr, box, TRUE);
 

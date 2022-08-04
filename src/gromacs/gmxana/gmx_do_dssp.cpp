@@ -39,6 +39,7 @@
 #include <cstring>
 
 #include <algorithm>
+#include <array>
 #include <numeric>
 
 #include "gromacs/commandline/pargs.h"
@@ -522,31 +523,31 @@ int gmx_do_dssp(int argc, char* argv[])
           "DSSP major version. Syntax changed with version 2 and 4." }
     };
 
-    t_trxstatus*      status;
-    FILE *            tapein, *tapeout;
-    FILE *            ss, *acc, *fTArea, *tmpf;
-    const char *      fnSCount, *fnArea, *fnTArea, *fnAArea;
-    const char*       leg[] = { "Phobic", "Phylic" };
-    t_topology        top;
-    PbcType           pbcType;
-    t_atoms*          atoms;
-    t_matrix          mat;
-    int               nres, nr0, naccr, nres_plus_separators;
-    gmx_bool *        bPhbres, bDoAccSurf;
-    real              t;
-    int               natoms, nframe = 0;
-    matrix            box = { { 0 } };
-    int               gnx;
-    char*             grpnm;
-    int*              index;
-    rvec *            xp, *x;
-    int*              average_area;
-    real **           accr, *accr_ptr = nullptr, *av_area, *norm_av_area;
-    char              pdbfile[32], tmpfile[32];
-    char              dssp[256];
-    const char*       dptr;
-    gmx_output_env_t* oenv;
-    gmx_rmpbc_t       gpbc = nullptr;
+    t_trxstatus*               status;
+    FILE *                     tapein, *tapeout;
+    FILE *                     ss, *acc, *fTArea, *tmpf;
+    const char *               fnSCount, *fnArea, *fnTArea, *fnAArea;
+    std::array<std::string, 2> leg = { "Phobic", "Phylic" };
+    t_topology                 top;
+    PbcType                    pbcType;
+    t_atoms*                   atoms;
+    t_matrix                   mat;
+    int                        nres, nr0, naccr, nres_plus_separators;
+    gmx_bool *                 bPhbres, bDoAccSurf;
+    real                       t;
+    int                        natoms, nframe = 0;
+    matrix                     box = { { 0 } };
+    int                        gnx;
+    char*                      grpnm;
+    int*                       index;
+    rvec *                     xp, *x;
+    int*                       average_area;
+    real **                    accr, *accr_ptr = nullptr, *av_area, *norm_av_area;
+    char                       pdbfile[32], tmpfile[32];
+    char                       dssp[256];
+    const char*                dptr;
+    gmx_output_env_t*          oenv;
+    gmx_rmpbc_t                gpbc = nullptr;
 
     t_filenm fnm[] = {
         { efTRX, "-f", nullptr, ffREAD },     { efTPS, nullptr, nullptr, ffREAD },
@@ -685,7 +686,7 @@ int gmx_do_dssp(int argc, char* argv[])
                           output_env_get_xvgr_tlabel(oenv),
                           "Area (nm\\S2\\N)",
                           oenv);
-        xvgr_legend(fTArea, 2, leg, oenv);
+        xvgrLegend(fTArea, leg, oenv);
     }
     else
     {

@@ -72,12 +72,14 @@
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/topology/mtop_lookup.h"
 #include "gromacs/topology/topology.h"
+#include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/enumerationhelpers.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/pleasecite.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/snprintf.h"
+#include "gromacs/utility/stringutil.h"
 
 static const std::string SwS      = { "SWAP:" }; /**< For output that comes from the swap module */
 static const std::string SwSEmpty = { "     " }; /**< Placeholder for multi-line output */
@@ -1088,14 +1090,7 @@ static int get_group_apm_check(int igroup, t_swap* s, gmx_bool bVerbose, const g
  */
 static void print_ionlist_legend(const t_inputrec* ir, t_swap* s, const gmx_output_env_t* oenv)
 {
-    const char** legend;
-    int          count = 0;
-    char         buf[STRLEN];
-
-    int nIonTypes = ir->swap->ngrp - static_cast<int>(SwapGroupSplittingType::Count);
-    snew(legend,
-         static_cast<int>(Compartment::Count) * nIonTypes * 3 + 2
-                 + static_cast<int>(Channel::Count) * nIonTypes + 1);
+    std::vector<std::string> legend;
 
     // Number of molecules and difference to reference counts for each
     // compartment and ion type
@@ -1106,35 +1101,24 @@ static void print_ionlist_legend(const t_inputrec* ir, t_swap* s, const gmx_outp
             t_swapGroup* g = &ir->swap->grp[ig];
             real         q = s->group[ig].q;
 
-            snprintf(buf, STRLEN, "%s %s ions (charge %s%g)", CompStr[ic], g->molname, q > 0 ? "+" : "", q);
-            legend[count++] = gmx_strdup(buf);
+            legend.emplace_back(gmx::formatString(
+                    "%s %s ions (charge %s%g)", CompStr[ic], g->molname, q > 0 ? "+" : "", q));
+            legend.emplace_back(gmx::formatString(
+                    "%s av. mismatch to %d %s ions", CompStr[ic], s->group[ig].comp[ic].nMolReq, g->molname));
 
-            snprintf(buf,
-                     STRLEN,
-                     "%s av. mismatch to %d %s ions",
-                     CompStr[ic],
-                     s->group[ig].comp[ic].nMolReq,
-                     g->molname);
-            legend[count++] = gmx_strdup(buf);
-
-            snprintf(buf, STRLEN, "%s net %s ion influx", CompStr[ic], g->molname);
-            legend[count++] = gmx_strdup(buf);
+            legend.emplace_back(gmx::formatString("%s net %s ion influx", CompStr[ic], g->molname));
         }
     }
 
     // Center of split groups
-    snprintf(buf,
-             STRLEN,
-             "%scenter of %s of split group 0",
-             SwapStr[ir->eSwapCoords],
-             (nullptr != s->group[static_cast<int>(SwapGroupSplittingType::Split0)].m) ? "mass" : "geometry");
-    legend[count++] = gmx_strdup(buf);
-    snprintf(buf,
-             STRLEN,
-             "%scenter of %s of split group 1",
-             SwapStr[ir->eSwapCoords],
-             (nullptr != s->group[static_cast<int>(SwapGroupSplittingType::Split1)].m) ? "mass" : "geometry");
-    legend[count++] = gmx_strdup(buf);
+    legend.emplace_back(gmx::formatString(
+            "%scenter of %s of split group 0",
+            SwapStr[ir->eSwapCoords],
+            (nullptr != s->group[static_cast<int>(SwapGroupSplittingType::Split0)].m) ? "mass" : "geometry"));
+    legend.emplace_back(gmx::formatString(
+            "%scenter of %s of split group 1",
+            SwapStr[ir->eSwapCoords],
+            (nullptr != s->group[static_cast<int>(SwapGroupSplittingType::Split1)].m) ? "mass" : "geometry"));
 
     // Ion flux for each channel and ion type
     for (auto ic : gmx::EnumerationWrapper<Channel>{})
@@ -1142,26 +1126,24 @@ static void print_ionlist_legend(const t_inputrec* ir, t_swap* s, const gmx_outp
         for (int ig = static_cast<int>(SwapGroupSplittingType::Count); ig < s->ngrp; ig++)
         {
             t_swapGroup* g = &ir->swap->grp[ig];
-            snprintf(buf, STRLEN, "A->ch%d->B %s permeations", static_cast<int>(ic), g->molname);
-            legend[count++] = gmx_strdup(buf);
+            legend.emplace_back(gmx::formatString(
+                    "A->ch%d->B %s permeations", static_cast<int>(ic), g->molname));
         }
     }
 
     // Number of molecules that leaked from A to B
-    snprintf(buf, STRLEN, "leakage");
-    legend[count++] = gmx_strdup(buf);
+    legend.emplace_back("leakage");
 
-    xvgr_legend(s->fpout, count, legend, oenv);
+    xvgrLegend(s->fpout, legend, oenv);
 
     fprintf(s->fpout,
             "# Instantaneous ion counts and time-averaged differences to requested numbers\n");
 
     // We add a simple text legend helping to identify the columns with xvgr legend strings
     fprintf(s->fpout, "#  time (ps)");
-    for (int i = 0; i < count; i++)
+    for (int i = 0; i < gmx::ssize(legend); i++)
     {
-        snprintf(buf, STRLEN, "s%d", i);
-        fprintf(s->fpout, "%10s", buf);
+        fprintf(s->fpout, "%10s", gmx::formatString("s%d", i).c_str());
     }
     fprintf(s->fpout, "\n");
     fflush(s->fpout);

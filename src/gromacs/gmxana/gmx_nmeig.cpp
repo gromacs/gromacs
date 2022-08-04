@@ -37,6 +37,7 @@
 #include <cmath>
 #include <cstring>
 
+#include <array>
 #include <vector>
 
 #include "gromacs/commandline/pargs.h"
@@ -498,24 +499,24 @@ int gmx_nmeig(int argc, char* argv[])
           { &width },
           "Width (sigma) of the gaussian peaks (1/cm) when generating a spectrum" }
     };
-    FILE *              out, *qc, *spec;
-    t_topology          top;
-    gmx_mtop_t          mtop;
-    rvec*               top_x;
-    matrix              box;
-    real*               eigenvalues;
-    real*               eigenvectors;
-    real                qcvtot, qutot, qcv, qu;
-    int                 i, j, k;
-    real                value, omega, nu;
-    real                factor_gmx_to_omega2;
-    real                factor_omega_to_wavenumber;
-    real*               spectrum = nullptr;
-    real                wfac;
-    gmx_output_env_t*   oenv;
-    const char*         qcleg[]        = { "Heat Capacity cV (J/mol K)", "Enthalpy H (kJ/mol)" };
-    real*               full_hessian   = nullptr;
-    gmx_sparsematrix_t* sparse_hessian = nullptr;
+    FILE *                     out, *qc, *spec;
+    t_topology                 top;
+    gmx_mtop_t                 mtop;
+    rvec*                      top_x;
+    matrix                     box;
+    real*                      eigenvalues;
+    real*                      eigenvectors;
+    real                       qcvtot, qutot, qcv, qu;
+    int                        i, j, k;
+    real                       value, omega, nu;
+    real                       factor_gmx_to_omega2;
+    real                       factor_omega_to_wavenumber;
+    real*                      spectrum = nullptr;
+    real                       wfac;
+    gmx_output_env_t*          oenv;
+    std::array<std::string, 2> qcleg = { "Heat Capacity cV (J/mol K)", "Enthalpy H (kJ/mol)" };
+    real*                      full_hessian   = nullptr;
+    gmx_sparsematrix_t*        sparse_hessian = nullptr;
 
     t_filenm fnm[] = {
         { efMTX, "-f", "hessian", ffREAD },     { efTPR, nullptr, nullptr, ffREAD },
@@ -676,7 +677,7 @@ int gmx_nmeig(int argc, char* argv[])
     if (opt2bSet("-qc", NFILE, fnm))
     {
         qc = xvgropen(opt2fn("-qc", NFILE, fnm), "Quantum Corrections", "Eigenvector index", "", oenv);
-        xvgr_legend(qc, asize(qcleg), qcleg, oenv);
+        xvgrLegend(qc, qcleg, oenv);
         qcvtot = qutot = 0;
     }
     else

@@ -53,6 +53,7 @@
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/stringutil.h"
 
 static std::string append_before_extension(const std::string& pathname, const std::string& to_append)
 {
@@ -355,10 +356,9 @@ void pull_print_output(struct pull_t* pull, int64_t step, double time)
     }
 }
 
-static void set_legend_for_coord_components(const pull_coord_work_t* pcrd,
-                                            int                      coord_index,
-                                            char**                   setname,
-                                            int*                     nsets_ptr)
+static void set_legend_for_coord_components(const pull_coord_work_t*  pcrd,
+                                            int                       coord_index,
+                                            std::vector<std::string>* setname)
 {
     /*  Loop over the distance vectors and print their components. Each vector is made up of two consecutive groups. */
     for (int g = 0; g < pcrd->params.ngroup; g += 2)
@@ -368,22 +368,21 @@ static void set_legend_for_coord_components(const pull_coord_work_t* pcrd,
         {
             if (pcrd->params.dim[m])
             {
-                char legend[STRLEN];
+                std::string legend;
 
                 if (g == 0 && pcrd->params.ngroup <= 2)
                 {
                     /*  For the simplest case we print a simplified legend without group indices,
                        just the cooordinate index and which dimensional component it is. */
-                    sprintf(legend, "%d d%c", coord_index + 1, 'X' + m);
+                    legend = gmx::formatString("%d d%c", coord_index + 1, 'X' + m);
                 }
                 else
                 {
                     /* Otherwise, print also the group indices (relative to the coordinate, not the global ones). */
-                    sprintf(legend, "%d g %d-%d d%c", coord_index + 1, g + 1, g + 2, 'X' + m);
+                    legend = gmx::formatString("%d g %d-%d d%c", coord_index + 1, g + 1, g + 2, 'X' + m);
                 }
 
-                setname[*nsets_ptr] = gmx_strdup(legend);
-                (*nsets_ptr)++;
+                setname->emplace_back(legend);
             }
         }
     }
@@ -395,10 +394,10 @@ static FILE* open_pull_out(const char*             fn,
                            gmx_bool                bCoord,
                            const bool              restartWithAppending)
 {
-    FILE*  fp;
-    int    nsets, m;
-    char **setname, buf[50];
+    FILE* fp;
+    int   m;
 
+    std::vector<std::string> setname;
     if (restartWithAppending)
     {
         fp = gmx_fio_fopen(fn, "a+");
@@ -408,7 +407,7 @@ static FILE* open_pull_out(const char*             fn,
         fp = gmx_fio_fopen(fn, "w+");
         if (bCoord)
         {
-            sprintf(buf, "Position (nm%s)", pull->bAngle ? ", deg" : "");
+            auto buf = gmx::formatString("Position (nm%s)", pull->bAngle ? ", deg" : "");
             if (pull->bXOutAverage)
             {
                 xvgr_header(fp, "Pull Average COM", "Time (ps)", buf, exvggtXNY, oenv);
@@ -420,7 +419,7 @@ static FILE* open_pull_out(const char*             fn,
         }
         else
         {
-            sprintf(buf, "Force (kJ/mol/nm%s)", pull->bAngle ? ", kJ/mol/rad" : "");
+            auto buf = gmx::formatString("Force (kJ/mol/nm%s)", pull->bAngle ? ", kJ/mol/rad" : "");
             if (pull->bFOutAverage)
             {
                 xvgr_header(fp, "Pull Average force", "Time (ps)", buf, exvggtXNY, oenv);
@@ -436,10 +435,7 @@ static FILE* open_pull_out(const char*             fn,
          * the group COMs for all the groups (+ ngroups_max*DIM)
          * and the components of the distance vectors can be printed (+ (ngroups_max/2)*DIM).
          */
-        snew(setname,
-             pull->coord.size() * (1 + 1 + c_pullCoordNgroupMax * DIM + c_pullCoordNgroupMax / 2 * DIM));
 
-        nsets = 0;
         for (size_t c = 0; c < pull->coord.size(); c++)
         {
             if (bCoord)
@@ -449,18 +445,14 @@ static FILE* open_pull_out(const char*             fn,
                  */
 
                 /* The pull coord distance */
-                sprintf(buf, "%zu", c + 1);
-                setname[nsets] = gmx_strdup(buf);
-                nsets++;
+                setname.emplace_back(gmx::formatString("%zu", c + 1));
                 if (pull->params.bPrintRefValue && pull->coord[c].params.eType != PullingAlgorithm::External)
                 {
-                    sprintf(buf, "%zu ref", c + 1);
-                    setname[nsets] = gmx_strdup(buf);
-                    nsets++;
+                    setname.emplace_back(gmx::formatString("%zu ref", c + 1));
                 }
                 if (pull->params.bPrintComp)
                 {
-                    set_legend_for_coord_components(&pull->coord[c], c, setname, &nsets);
+                    set_legend_for_coord_components(&pull->coord[c], c, &setname);
                 }
 
                 if (pull->params.bPrintCOM)
@@ -472,9 +464,8 @@ static FILE* open_pull_out(const char*             fn,
                         {
                             if (pull->coord[c].params.dim[m])
                             {
-                                sprintf(buf, "%zu g %d %c", c + 1, g + 1, 'X' + m);
-                                setname[nsets] = gmx_strdup(buf);
-                                nsets++;
+                                setname.emplace_back(
+                                        gmx::formatString("%zu g %d %c", c + 1, g + 1, 'X' + m));
                             }
                         }
                     }
@@ -483,20 +474,13 @@ static FILE* open_pull_out(const char*             fn,
             else
             {
                 /* For the pull force we always only use one scalar */
-                sprintf(buf, "%zu", c + 1);
-                setname[nsets] = gmx_strdup(buf);
-                nsets++;
+                setname.emplace_back(gmx::formatString("%zu", c + 1));
             }
         }
-        if (nsets > 1)
+        if (setname.size() > 1)
         {
-            xvgr_legend(fp, nsets, setname, oenv);
+            xvgrLegend(fp, setname, oenv);
         }
-        for (int c = 0; c < nsets; c++)
-        {
-            sfree(setname[c]);
-        }
-        sfree(setname);
     }
 
     return fp;

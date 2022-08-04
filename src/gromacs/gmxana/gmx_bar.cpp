@@ -59,6 +59,7 @@
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/snprintf.h"
+#include "gromacs/utility/stringutil.h"
 
 
 /* Structure for the names of lambda vector components */
@@ -981,15 +982,14 @@ static void sample_coll_make_hist(sample_coll_t* sc, std::vector<int>* bin, doub
 /* write a collection of histograms to a file */
 static void sim_data_histogram(sim_data_t* sd, const char* filename, int nbin_default, const gmx_output_env_t* oenv)
 {
-    char           label_x[STRLEN];
-    const char *   dhdl = "dH/d\\lambda", *deltag = "\\DeltaH", *lambda = "\\lambda";
-    const char*    title   = "N(\\DeltaH)";
-    const char*    label_y = "Samples";
-    FILE*          fp;
-    lambda_data_t* bl;
-    int            nsets     = 0;
-    char**         setnames  = nullptr;
-    gmx_bool       first_set = FALSE;
+    char                     label_x[STRLEN];
+    const char *             dhdl = "dH/d\\lambda", *deltag = "\\DeltaH", *lambda = "\\lambda";
+    const char*              title   = "N(\\DeltaH)";
+    const char*              label_y = "Samples";
+    FILE*                    fp;
+    lambda_data_t*           bl;
+    std::vector<std::string> setnames;
+    gmx_bool                 first_set = FALSE;
     /* histogram data: */
     std::vector<int> hist;
     double           dx      = 0;
@@ -1013,26 +1013,24 @@ static void sim_data_histogram(sim_data_t* sd, const char* filename, int nbin_de
         {
             char buf[STRLEN], buf2[STRLEN];
 
-            nsets++;
-            srenew(setnames, nsets);
-            snew(setnames[nsets - 1], STRLEN);
             if (sc->foreign_lambda->dhdl < 0)
             {
                 lambda_vec_print(sc->native_lambda, buf, FALSE);
                 lambda_vec_print(sc->foreign_lambda, buf2, FALSE);
-                sprintf(setnames[nsets - 1], "N(%s(%s=%s) | %s=%s)", deltag, lambda, buf2, lambda, buf);
+                setnames.emplace_back(gmx::formatString(
+                        "N(%s(%s=%s) | %s=%s)", deltag, lambda, buf2, lambda, buf));
             }
             else
             {
                 lambda_vec_print(sc->native_lambda, buf, FALSE);
-                sprintf(setnames[nsets - 1], "N(%s | %s=%s)", dhdl, lambda, buf);
+                setnames.emplace_back(gmx::formatString("N(%s | %s=%s)", dhdl, lambda, buf));
             }
             sc = sc->next;
         }
 
         bl = bl->next;
     }
-    xvgr_legend(fp, nsets, setnames, oenv);
+    xvgrLegend(fp, setnames, oenv);
 
 
     /* now make the histograms */
@@ -1047,7 +1045,7 @@ static void sim_data_histogram(sim_data_t* sd, const char* filename, int nbin_de
         {
             if (!first_set)
             {
-                xvgr_new_dataset(fp, 0, 0, nullptr, oenv);
+                xvgrNewDataset(fp, 0, {}, oenv);
             }
 
             sample_coll_make_hist(sc, &hist, &dx, &minval, nbin_default);

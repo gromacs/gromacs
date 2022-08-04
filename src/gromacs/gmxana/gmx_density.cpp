@@ -38,6 +38,8 @@
 #include <cstdlib>
 #include <cstring>
 
+#include <vector>
+
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/commandline/viewit.h"
 #include "gromacs/fileio/trxio.h"
@@ -49,6 +51,7 @@
 #include "gromacs/pbcutil/rmpbc.h"
 #include "gromacs/topology/index.h"
 #include "gromacs/topology/topology.h"
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
@@ -487,22 +490,21 @@ static void calc_density(const char*             fn,
     sfree(den_val);
 }
 
-static void plot_density(double*                 slDensity[],
-                         const char*             afile,
-                         int                     nslices,
-                         int                     nr_grps,
-                         char*                   grpname[],
-                         real                    slWidth,
-                         const char**            dens_opt,
-                         gmx_bool                bCenter,
-                         gmx_bool                bSymmetrize,
-                         const gmx_output_env_t* oenv)
+static void plot_density(double*                          slDensity[],
+                         const char*                      afile,
+                         int                              nslices,
+                         gmx::ArrayRef<const std::string> grpname,
+                         real                             slWidth,
+                         const char**                     dens_opt,
+                         gmx_bool                         bCenter,
+                         gmx_bool                         bSymmetrize,
+                         const gmx_output_env_t*          oenv)
 {
     FILE*       den;
     const char* title  = nullptr;
     const char* xlabel = nullptr;
     const char* ylabel = nullptr;
-    int         slice, n;
+    int         slice;
     real        ddd;
     real        axispos;
 
@@ -520,7 +522,7 @@ static void plot_density(double*                 slDensity[],
 
     den = xvgropen(afile, title, xlabel, ylabel, oenv);
 
-    xvgr_legend(den, nr_grps, grpname, oenv);
+    xvgrLegend(den, grpname, oenv);
 
     for (slice = 0; (slice < nslices); slice++)
     {
@@ -533,7 +535,7 @@ static void plot_density(double*                 slDensity[],
             axispos = (slice + 0.5) * slWidth;
         }
         fprintf(den, "%12g  ", axispos);
-        for (n = 0; (n < nr_grps); n++)
+        for (int n = 0; (n < gmx::ssize(grpname)); n++)
         {
             if (bSymmetrize)
             {
@@ -761,8 +763,13 @@ int gmx_density(int argc, char* argv[])
                      dens_opt);
     }
 
-    plot_density(
-            density, opt2fn("-o", NFILE, fnm), nslices, ngrps, grpname, slWidth, dens_opt, bCenter, bSymmetrize, oenv);
+    std::vector<std::string> names;
+    names.resize(ngrps);
+    for (int i = 0; i < ngrps; ++i)
+    {
+        names[i] = grpname[i];
+    }
+    plot_density(density, opt2fn("-o", NFILE, fnm), nslices, names, slWidth, dens_opt, bCenter, bSymmetrize, oenv);
 
     do_view(oenv, opt2fn("-o", NFILE, fnm), "-nxy"); /* view xvgr file */
     return 0;

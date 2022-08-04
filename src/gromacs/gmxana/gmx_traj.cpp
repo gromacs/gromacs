@@ -229,51 +229,33 @@ static void make_legend(FILE*                   fp,
                         const gmx_bool          bDim[],
                         const gmx_output_env_t* oenv)
 {
-    char**      leg;
-    const char* dimtxt[] = { " X", " Y", " Z", "" };
-    int         n, i, j, d;
+    std::vector<std::string> leg;
+    const char*              dimtxt[] = { " X", " Y", " Z", "" };
 
-    if (bCom)
-    {
-        n = ngrps;
-    }
-    else
-    {
-        n = isize;
-    }
+    const int n = bCom ? ngrps : isize;
 
-    snew(leg, 4 * n);
-    j = 0;
-    for (i = 0; i < n; i++)
+    for (int i = 0; i < n; i++)
     {
-        for (d = 0; d <= DIM; d++)
+        for (int d = 0; d <= DIM; d++)
         {
             if (bDim[d])
             {
-                snew(leg[j], STRLEN);
                 if (bMol)
                 {
-                    sprintf(leg[j], "mol %d%s", index[i] + 1, dimtxt[d]);
+                    leg.emplace_back(gmx::formatString("mol %d%s", index[i] + 1, dimtxt[d]));
                 }
                 else if (bCom)
                 {
-                    sprintf(leg[j], "%s%s", name[i], dimtxt[d]);
+                    leg.emplace_back(gmx::formatString("%s%s", name[i], dimtxt[d]));
                 }
                 else
                 {
-                    sprintf(leg[j], "atom %d%s", index[i] + 1, dimtxt[d]);
+                    leg.emplace_back(gmx::formatString("atom %d%s", index[i] + 1, dimtxt[d]));
                 }
-                j++;
             }
         }
     }
-    xvgr_legend(fp, j, leg, oenv);
-
-    for (i = 0; i < j; i++)
-    {
-        sfree(leg[i]);
-    }
-    sfree(leg);
+    xvgrLegend(fp, leg, oenv);
 }
 
 static real ekrot(rvec x[], rvec v[], const real mass[], int isize, const int index[])
@@ -698,8 +680,8 @@ int gmx_traj(int argc, char* argv[])
     gmx_bool     bTop, bOX, bOXT, bOV, bOF, bOB, bOT, bEKT, bEKR, bCV, bCF;
     gmx_bool     bDim[4], bDum[4], bVD;
     char         sffmt[STRLEN];
-    const char*  box_leg[6] = { "XX", "YY", "ZZ", "YX", "ZX", "ZY" };
-    gmx_output_env_t* oenv;
+    std::array<std::string, 6> box_leg = { "XX", "YY", "ZZ", "YX", "ZX", "ZY" };
+    gmx_output_env_t*          oenv;
 
     t_filenm fnm[] = {
         { efTRX, "-f", nullptr, ffREAD },       { efTPS, nullptr, nullptr, ffREAD },
@@ -875,7 +857,7 @@ int gmx_traj(int argc, char* argv[])
     {
         outb = xvgropen(opt2fn("-ob", NFILE, fnm), "Box vector elements", label, "(nm)", oenv);
 
-        xvgr_legend(outb, 6, box_leg, oenv);
+        xvgrLegend(outb, box_leg, oenv);
     }
     if (bOT)
     {

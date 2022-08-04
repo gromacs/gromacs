@@ -56,6 +56,7 @@
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/topology/topology.h"
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
@@ -485,15 +486,15 @@ static void histogramming(FILE*                    log,
 #define NKKKCHI asize(kkkchi1)
 #define NJC (NKKKPHI + NKKKPSI + NKKKCHI)
 
-    FILE *      fp, *ssfp[3] = { nullptr, nullptr, nullptr };
-    const char* sss[3] = { "sheet", "helix", "coil" };
-    real        S2;
-    real **     Jc, **Jcsig;
-    int*        histmp;
-    int         m, n, nn, nres, hindex, angle;
-    gmx_bool    bBfac, bOccup;
-    char        hisfile[256], hhisfile[256], title[256], *ss_str = nullptr;
-    char**      leg;
+    FILE *                   fp, *ssfp[3] = { nullptr, nullptr, nullptr };
+    const char*              sss[3] = { "sheet", "helix", "coil" };
+    real                     S2;
+    real **                  Jc, **Jcsig;
+    int*                     histmp;
+    int                      m, n, nn, nres, hindex, angle;
+    gmx_bool                 bBfac, bOccup;
+    char                     hisfile[256], hhisfile[256], title[256], *ss_str = nullptr;
+    std::vector<std::string> leg;
 
     if (bSSHisto)
     {
@@ -690,24 +691,23 @@ static void histogramming(FILE*                    log,
     if (bDo_jc)
     {
         fp = xvgropen(fn, "\\S3\\NJ-Couplings from Karplus Equation", "Residue", "Coupling", oenv);
-        snew(leg, NJC);
         for (int i = 0; (i < NKKKPHI); i++)
         {
-            leg[i] = gmx_strdup(kkkphi[i].name);
+            leg.emplace_back(kkkphi[i].name);
         }
         for (int i = 0; (i < NKKKPSI); i++)
         {
-            leg[i + NKKKPHI] = gmx_strdup(kkkpsi[i].name);
+            leg.emplace_back(kkkpsi[i].name);
         }
         for (int i = 0; (i < NKKKCHI); i++)
         {
-            leg[i + NKKKPHI + NKKKPSI] = gmx_strdup(kkkchi1[i].name);
+            leg.emplace_back(kkkchi1[i].name);
         }
-        xvgr_legend(fp, NJC, leg, oenv);
+        xvgrLegend(fp, leg, oenv);
         fprintf(fp, "%5s ", "#Res.");
         for (int i = 0; (i < NJC); i++)
         {
-            fprintf(fp, "%10s ", leg[i]);
+            fprintf(fp, "%10s ", leg[i].c_str());
         }
         fprintf(fp, "\n");
         {
@@ -724,11 +724,6 @@ static void histogramming(FILE*                    log,
             }
         }
         xvgrclose(fp);
-        for (int i = 0; (i < NJC); i++)
-        {
-            sfree(leg[i]);
-        }
-        sfree(leg);
     }
     /* finished -jc stuff */
 
@@ -1046,18 +1041,18 @@ static void print_transitions(const char*                  fn,
     FILE* fp;
 
     /*  must correspond with enum in gstat.h */
-    const char* leg[edMax] = {
+    std::array<std::string, 9> leg = {
         "Phi", "Psi", "Omega", "Chi1", "Chi2", "Chi3", "Chi4", "Chi5", "Chi6",
     };
     /* Print order parameters */
     fp = xvgropen(fn, "Dihedral Rotamer Transitions", "Residue", "Transitions/ns", oenv);
-    xvgr_legend(fp, NONCHI + maxchi, leg, oenv);
+    xvgrLegend(fp, gmx::makeArrayRef(leg).subArray(0, NONCHI + maxchi), oenv);
 
     fprintf(fp, "%5s ", "#Res.");
-    fprintf(fp, "%10s %10s %10s ", leg[edPhi], leg[edPsi], leg[edOmega]);
+    fprintf(fp, "%10s %10s %10s ", leg[edPhi].c_str(), leg[edPsi].c_str(), leg[edOmega].c_str());
     for (int Xi = 0; Xi < maxchi; Xi++)
     {
-        fprintf(fp, "%10s ", leg[NONCHI + Xi]);
+        fprintf(fp, "%10s ", leg[NONCHI + Xi].c_str());
     }
     fprintf(fp, "\n");
 
@@ -1094,20 +1089,13 @@ static void order_params(FILE*                        log,
     real  S2Max, S2Min;
 
     /* except for S2Min/Max, must correspond with enum in pp2shift.h:38 */
-    const char* const_leg[2 + edMax] = { "S2Min", "S2Max", "Phi",  "Psi",  "Omega", "Chi1",
-                                         "Chi2",  "Chi3",  "Chi4", "Chi5", "Chi6" };
+    std::array<std::string, 11> const_leg = { "S2Min", "S2Max", "Phi",  "Psi",  "Omega", "Chi1",
+                                              "Chi2",  "Chi3",  "Chi4", "Chi5", "Chi6" };
 #define NLEG asize(leg)
-
-    char* leg[2 + edMax];
-
-    for (int i = 0; i < NLEG; i++)
-    {
-        leg[i] = gmx_strdup(const_leg[i]);
-    }
 
     /* Print order parameters */
     fp = xvgropen(fn, "Dihedral Order Parameters", "Residue", "S2", oenv);
-    xvgr_legend(fp, 2 + NONCHI + maxchi, const_leg, oenv);
+    xvgrLegend(fp, gmx::makeArrayRef(const_leg).subArray(0, 2 + NONCHI + maxchi), oenv);
 
     for (int Dih = 0; (Dih < edMax); Dih++)
     {
@@ -1115,11 +1103,15 @@ static void order_params(FILE*                        log,
     }
 
     fprintf(fp, "%5s ", "#Res.");
-    fprintf(fp, "%10s %10s ", leg[0], leg[1]);
-    fprintf(fp, "%10s %10s %10s ", leg[2 + edPhi], leg[2 + edPsi], leg[2 + edOmega]);
+    fprintf(fp, "%10s %10s ", const_leg[0].c_str(), const_leg[1].c_str());
+    fprintf(fp,
+            "%10s %10s %10s ",
+            const_leg[2 + edPhi].c_str(),
+            const_leg[2 + edPsi].c_str(),
+            const_leg[2 + edOmega].c_str());
     for (int Xi = 0; Xi < maxchi; Xi++)
     {
-        fprintf(fp, "%10s ", leg[2 + NONCHI + Xi]);
+        fprintf(fp, "%10s ", const_leg[2 + NONCHI + Xi].c_str());
     }
     fprintf(fp, "\n");
 
@@ -1237,7 +1229,7 @@ static void order_params(FILE*                        log,
     {
         for (int Xi = 0; (Xi < maxchi); Xi++)
         {
-            fprintf(log, " %s ", leg[2 + NONCHI + Xi]);
+            fprintf(log, " %s ", const_leg[2 + NONCHI + Xi].c_str());
         }
     }
     fprintf(log, "\nNumber:   ");
@@ -1257,11 +1249,6 @@ static void order_params(FILE*                        log,
         }
     }
     fprintf(log, "\n");
-
-    for (int i = 0; i < NLEG; i++)
-    {
-        sfree(leg[i]);
-    }
 }
 
 int gmx_chi(int argc, char* argv[])

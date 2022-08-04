@@ -37,6 +37,7 @@
 #include <cstring>
 
 #include <algorithm>
+#include <array>
 
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/commandline/viewit.h"
@@ -50,8 +51,10 @@
 #include "gromacs/topology/index.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/arraysize.h"
+#include "gromacs/utility/booltype.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/stringutil.h"
 
 static void gyro_eigen(double** gyr, double* eig, double** eigv, int* ord)
 {
@@ -140,30 +143,30 @@ int gmx_polystat(int argc, char* argv[])
                        { efXVG, "-i", "intdist", ffOPTWR } };
 #define NFILE asize(fnm)
 
-    t_topology*       top;
-    gmx_output_env_t* oenv;
-    PbcType           pbcType;
-    int               isize, *index, nmol, *molind, mol, nat_min = 0, nat_max = 0;
-    char*             grpname;
-    t_trxstatus*      status;
-    real              t;
-    rvec *            x, *bond = nullptr;
-    matrix            box;
-    int               natoms, i, j, frame, ind0, ind1, a, d, d2, ord[DIM] = { 0 };
-    dvec              cm, sum_eig = { 0, 0, 0 };
-    double **         gyr, **gyr_all, eig[DIM], **eigv;
-    double            sum_eed2, sum_eed2_tot, sum_gyro, sum_gyro_tot, sum_pers_tot;
-    int*              ninp    = nullptr;
-    double *          sum_inp = nullptr, pers;
-    double *          intd, ymax, ymin;
-    double            mmol, m;
-    char              title[STRLEN];
-    FILE *            out, *outv, *outp, *outi;
-    const char*       leg[8] = { "end to end",      "<R\\sg\\N>",      "<R\\sg\\N> eig1",
-                           "<R\\sg\\N> eig2", "<R\\sg\\N> eig3", "<R\\sg\\N eig1>",
-                           "<R\\sg\\N eig2>", "<R\\sg\\N eig3>" };
-    char **           legp, buf[STRLEN];
-    gmx_rmpbc_t       gpbc = nullptr;
+    t_topology*                top;
+    gmx_output_env_t*          oenv;
+    PbcType                    pbcType;
+    int                        isize, *index, nmol, *molind, mol, nat_min = 0, nat_max = 0;
+    char*                      grpname;
+    t_trxstatus*               status;
+    real                       t;
+    rvec *                     x, *bond = nullptr;
+    matrix                     box;
+    int                        natoms, i, j, frame, ind0, ind1, a, d, d2, ord[DIM] = { 0 };
+    dvec                       cm, sum_eig = { 0, 0, 0 };
+    double **                  gyr, **gyr_all, eig[DIM], **eigv;
+    double                     sum_eed2, sum_eed2_tot, sum_gyro, sum_gyro_tot, sum_pers_tot;
+    int*                       ninp    = nullptr;
+    double *                   sum_inp = nullptr, pers;
+    double *                   intd, ymax, ymin;
+    double                     mmol, m;
+    char                       title[STRLEN];
+    FILE *                     out, *outv, *outp, *outi;
+    std::array<std::string, 8> leg = { "end to end",      "<R\\sg\\N>",      "<R\\sg\\N> eig1",
+                                       "<R\\sg\\N> eig2", "<R\\sg\\N> eig3", "<R\\sg\\N eig1>",
+                                       "<R\\sg\\N eig2>", "<R\\sg\\N eig3>" };
+    std::vector<std::string>   legp;
+    gmx_rmpbc_t                gpbc = nullptr;
 
     if (!parse_common_args(&argc,
                            argv,
@@ -214,7 +217,7 @@ int gmx_polystat(int argc, char* argv[])
 
     sprintf(title, "Size of %d polymers", nmol);
     out = xvgropen(opt2fn("-o", NFILE, fnm), title, output_env_get_xvgr_tlabel(oenv), "(nm)", oenv);
-    xvgr_legend(out, bPC ? 8 : 5, leg, oenv);
+    xvgrLegend(out, gmx::makeArrayRef(leg).subArray(0, bPC ? 8 : 5), oenv);
 
     if (opt2bSet("-v", NFILE, fnm))
     {
@@ -223,16 +226,14 @@ int gmx_polystat(int argc, char* argv[])
                         output_env_get_xvgr_tlabel(oenv),
                         "(nm)",
                         oenv);
-        snew(legp, DIM * DIM);
         for (d = 0; d < DIM; d++)
         {
             for (d2 = 0; d2 < DIM; d2++)
             {
-                sprintf(buf, "eig%d %c", d + 1, 'x' + d2);
-                legp[d * DIM + d2] = gmx_strdup(buf);
+                legp.emplace_back(gmx::formatString("eig%d %c", d + 1, 'x' + d2));
             }
         }
-        xvgr_legend(outv, DIM * DIM, legp, oenv);
+        xvgrLegend(outv, legp, oenv);
     }
     else
     {

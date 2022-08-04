@@ -584,7 +584,7 @@ int gmx_enemat(int argc, char* argv[])
         }
 
         out = xvgropen(ftp2fn(efXVG, NFILE, fnm), "Mean Energy", "Residue", "kJ/mol", oenv);
-        xvgr_legend(out, 0, nullptr, oenv);
+        xvgrLegend(out, {}, oenv);
         j = 0;
         if (output_env_get_print_xvgr_codes(oenv))
         {

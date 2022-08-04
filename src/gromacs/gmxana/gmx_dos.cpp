@@ -326,9 +326,9 @@ int gmx_dos(int argc, char* argv[])
         { efLOG, "-g", "dos", ffWRITE },
     };
 #define NFILE asize(fnm)
-    int         npargs;
-    t_pargs*    ppa;
-    const char* DoSlegend[] = { "DoS(v)", "DoS(v)[Solid]", "DoS(v)[Diff]" };
+    int                        npargs;
+    t_pargs*                   ppa;
+    std::array<std::string, 3> DoSlegend = { "DoS(v)", "DoS(v)[Solid]", "DoS(v)[Diff]" };
 
     npargs = asize(pa);
     ppa    = add_acf_pargs(&npargs, pa);
@@ -565,7 +565,7 @@ int gmx_dos(int argc, char* argv[])
                   bRecip ? "E (cm\\S-1\\N)" : "\\f{12}n\\f{4} (1/ps)",
                   "\\f{4}S(\\f{12}n\\f{4})",
                   oenv);
-    xvgr_legend(fp, asize(DoSlegend), DoSlegend, oenv);
+    xvgrLegend(fp, DoSlegend, oenv);
     recip_fac = bRecip ? (1e7 / gmx::c_speedOfLight) : 1.0;
     for (j = 0; (j < nframes / 4); j++)
     {

@@ -40,7 +40,9 @@
 #include <cstring>
 
 #include <algorithm>
+#include <array>
 #include <numeric>
+#include <vector>
 
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/commandline/viewit.h"
@@ -73,13 +75,12 @@
 #include "gromacs/utility/programcontext.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/snprintf.h"
+#include "gromacs/utility/stringutil.h"
 
 #define max_hx 7
-typedef int t_hx[max_hx];
-#define NRHXTYPES max_hx
-// NOLINTNEXTLINE(cppcoreguidelines-avoid-non-const-global-variables)
-static const char* hxtypenames[NRHXTYPES] = { "n-n",   "n-n+1", "n-n+2", "n-n+3",
-                                              "n-n+4", "n-n+5", "n-n>6" };
+typedef int                             t_hx[max_hx];
+static const std::array<std::string, 7> hxtypenames = { "n-n",   "n-n+1", "n-n+2", "n-n+3",
+                                                        "n-n+4", "n-n+5", "n-n>6" };
 #define MAXHH 4
 
 static const int NOTSET = -49297;
@@ -1557,15 +1558,15 @@ static void do_nhb_dist(FILE* fp, t_hbdata* hb, real t)
 
 static void do_hblife(const char* fn, t_hbdata* hb, gmx_bool bMerge, gmx_bool bContact, const gmx_output_env_t* oenv)
 {
-    FILE*          fp;
-    const char*    leg[] = { "p(t)", "t p(t)" };
-    int*           histo;
-    int            i, j, j0, k, m, nh, ihb, ohb, nhydro, ndump = 0;
-    int            nframes = hb->nframes;
-    unsigned int** h;
-    real           t, x1, dt;
-    double         sum, integral;
-    t_hbond*       hbh;
+    FILE*                      fp;
+    std::array<std::string, 2> leg = { "p(t)", "t p(t)" };
+    int*                       histo;
+    int                        i, j, j0, k, m, nh, ihb, ohb, nhydro, ndump = 0;
+    int                        nframes = hb->nframes;
+    unsigned int**             h;
+    real                       t, x1, dt;
+    double                     sum, integral;
+    t_hbond*                   hbh;
 
     snew(h, hb->maxhydro);
     snew(histo, nframes + 1);
@@ -1641,7 +1642,7 @@ static void do_hblife(const char* fn, t_hbdata* hb, gmx_bool bMerge, gmx_bool bC
                 fn, "Uninterrupted hydrogen bond lifetime", output_env_get_xvgr_tlabel(oenv), "()", oenv);
     }
 
-    xvgr_legend(fp, asize(leg), leg, oenv);
+    xvgrLegend(fp, leg, oenv);
     j0 = nframes - 1;
     while ((j0 > 0) && (histo[j0] == 0))
     {
@@ -1994,21 +1995,21 @@ static void do_hbac(const char*             fn,
     FILE* fp;
     int   i, j, k, m, ihb, idist, n2, nn;
 
-    const char*    legLuzar[] = { "Ac\\sfin sys\\v{}\\z{}(t)",
-                               "Ac(t)",
-                               "Cc\\scontact,hb\\v{}\\z{}(t)",
-                               "-dAc\\sfs\\v{}\\z{}/dt" };
-    gmx_bool       bNorm      = FALSE;
-    double         nhb        = 0;
-    real *         rhbex      = nullptr, *ht, *gt, *ght, *dght, *kt;
-    real *         ct, tail, tail2, dtail, *cct;
-    const real     tol     = 1e-3;
-    int            nframes = hb->nframes;
-    unsigned int **h = nullptr, **g = nullptr;
-    int            nh, nhbonds, nhydro;
-    t_hbond*       hbh;
-    int            acType;
-    int*           dondata = nullptr;
+    std::array<std::string, 4> legLuzar = { "Ac\\sfin sys\\v{}\\z{}(t)",
+                                            "Ac(t)",
+                                            "Cc\\scontact,hb\\v{}\\z{}(t)",
+                                            "-dAc\\sfs\\v{}\\z{}/dt" };
+    gmx_bool                   bNorm    = FALSE;
+    double                     nhb      = 0;
+    real *                     rhbex    = nullptr, *ht, *gt, *ght, *dght, *kt;
+    real *                     ct, tail, tail2, dtail, *cct;
+    const real                 tol     = 1e-3;
+    int                        nframes = hb->nframes;
+    unsigned int **            h = nullptr, **g = nullptr;
+    int                        nh, nhbonds, nhydro;
+    t_hbond*                   hbh;
+    int                        acType;
+    int*                       dondata = nullptr;
 
     enum
     {
@@ -2227,7 +2228,7 @@ static void do_hbac(const char*             fn,
     {
         fp = xvgropen(fn, "Hydrogen Bond Autocorrelation", output_env_get_xvgr_tlabel(oenv), "C(t)", oenv);
     }
-    xvgr_legend(fp, asize(legLuzar), legLuzar, oenv);
+    xvgrLegend(fp, legLuzar, oenv);
 
 
     for (j = 0; (j < nn); j++)
@@ -2264,8 +2265,8 @@ static void init_hbframe(t_hbdata* hb, int nframes, real t)
 
 static FILE* open_donor_properties_file(const char* fn, t_hbdata* hb, const gmx_output_env_t* oenv)
 {
-    FILE*       fp    = nullptr;
-    const char* leg[] = { "Nbound", "Nfree" };
+    FILE*                      fp  = nullptr;
+    std::array<std::string, 2> leg = { "Nbound", "Nfree" };
 
     if (!fn || !hb)
     {
@@ -2273,7 +2274,7 @@ static FILE* open_donor_properties_file(const char* fn, t_hbdata* hb, const gmx_
     }
 
     fp = xvgropen(fn, "Donor properties", output_env_get_xvgr_tlabel(oenv), "Number", oenv);
-    xvgr_legend(fp, asize(leg), leg, oenv);
+    xvgrLegend(fp, leg, oenv);
 
     return fp;
 }
@@ -2621,7 +2622,6 @@ int gmx_hbond(int argc, char* argv[])
     gmx_bool          bHBmap, bStop, bTwo, bBox, bTric;
     int *             adist, *rdist;
     int               grp, nabin, nrbin, resdist, ihb;
-    char**            leg;
     t_hbdata*         hb;
     FILE *            fp, *fpnhb = nullptr, *donor_properties = nullptr;
     t_gridcell***     grid;
@@ -2665,13 +2665,13 @@ int gmx_hbond(int argc, char* argv[])
 
     if (opt2bSet("-nhbdist", NFILE, fnm))
     {
-        const char* leg[MAXHH + 1] = { "0 HBs", "1 HB", "2 HBs", "3 HBs", "Total" };
-        fpnhb                      = xvgropen(opt2fn("-nhbdist", NFILE, fnm),
+        std::array<std::string, 5> leg = { "0 HBs", "1 HB", "2 HBs", "3 HBs", "Total" };
+        fpnhb                          = xvgropen(opt2fn("-nhbdist", NFILE, fnm),
                          "Number of donor-H with N HBs",
                          output_env_get_xvgr_tlabel(oenv),
                          "N",
                          oenv);
-        xvgr_legend(fpnhb, asize(leg), leg, oenv);
+        xvgrLegend(fpnhb, leg, oenv);
     }
 
     hb = mk_hbdata(bHBmap, opt2bSet("-dan", NFILE, fnm), bMerge || bContact);
@@ -3246,15 +3246,10 @@ int gmx_hbond(int argc, char* argv[])
                   output_env_get_xvgr_tlabel(oenv),
                   "Number",
                   oenv);
-    snew(leg, 2);
-    snew(leg[0], STRLEN);
-    snew(leg[1], STRLEN);
-    sprintf(leg[0], "%s", bContact ? "Contacts" : "Hydrogen bonds");
-    sprintf(leg[1], "Pairs within %g nm", (r2cut > 0) ? r2cut : rcut);
-    xvgr_legend(fp, 2, leg, oenv);
-    sfree(leg[1]);
-    sfree(leg[0]);
-    sfree(leg);
+    std::array<std::string, 2> leg;
+    leg[0] = gmx::formatString("%s", bContact ? "Contacts" : "Hydrogen bonds");
+    leg[1] = gmx::formatString("Pairs within %g nm", (r2cut > 0) ? r2cut : rcut);
+    xvgrLegend(fp, leg, oenv);
     for (i = 0; (i < nframes); i++)
     {
         fprintf(fp, "%10g  %10d  %10d\n", hb->time[i], hb->nhb[i], hb->ndist[i]);
@@ -3318,7 +3313,7 @@ int gmx_hbond(int argc, char* argv[])
                       output_env_get_xvgr_tlabel(oenv),
                       "Count",
                       oenv);
-        xvgr_legend(fp, NRHXTYPES, hxtypenames, oenv);
+        xvgrLegend(fp, hxtypenames, oenv);
         for (i = 0; i < nframes; i++)
         {
             fprintf(fp, "%10g", hb->time[i]);
@@ -3430,9 +3425,8 @@ int gmx_hbond(int argc, char* argv[])
 
     if (hb->bDAnr)
     {
-        int    i, j, nleg;
-        char** legnames;
-        char   buf[STRLEN];
+        int                      i, j, nleg;
+        std::vector<std::string> legnames;
 
 #define USE_THIS_GROUP(j) (((j) == gr0) || (bTwo && ((j) == gr1)))
 
@@ -3442,23 +3436,20 @@ int gmx_hbond(int argc, char* argv[])
                       "Count",
                       oenv);
         nleg = (bTwo ? 2 : 1) * 2;
-        snew(legnames, nleg);
-        i = 0;
+        i    = 0;
         for (j = 0; j < grNR; j++)
         {
             if (USE_THIS_GROUP(j))
             {
-                sprintf(buf, "Donors %s", grpnames[j]);
-                legnames[i++] = gmx_strdup(buf);
-                sprintf(buf, "Acceptors %s", grpnames[j]);
-                legnames[i++] = gmx_strdup(buf);
+                legnames.emplace_back(gmx::formatString("Donors %s", grpnames[j]));
+                legnames.emplace_back(gmx::formatString("Acceptors %s", grpnames[j]));
             }
         }
         if (i != nleg)
         {
             gmx_incons("number of legend entries");
         }
-        xvgr_legend(fp, nleg, legnames, oenv);
+        xvgrLegend(fp, legnames, oenv);
         for (i = 0; i < nframes; i++)
         {
             fprintf(fp, "%10g", hb->time[i]);

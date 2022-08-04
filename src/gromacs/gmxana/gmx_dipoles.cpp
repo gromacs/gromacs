@@ -37,6 +37,7 @@
 #include <cstring>
 
 #include <algorithm>
+#include <array>
 
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/commandline/viewit.h"
@@ -61,6 +62,7 @@
 #include "gromacs/topology/index.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/trajectory/energyframe.h"
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/binaryinformation.h"
 #include "gromacs/utility/cstringutil.h"
@@ -193,6 +195,7 @@ static void do_gkr(t_gkrbin*     gb,
     rvec         dx;
     t_pbc        pbc;
 
+    GMX_RELEASE_ASSERT(ncos > 0, "Need to have at least one group");
     for (n = 0; (n < ncos); n++)
     {
         if (!xcm[n])
@@ -380,14 +383,16 @@ static void print_gkrbin(const char* fn, t_gkrbin* gb, int ngrp, int nframes, re
      * rather than their inner product. This allows to take polarizible
      * models into account. The RDF is calculated as well, almost for free!
      */
-    FILE*       fp;
-    const char* leg[] = { "G\\sk\\N(r)", "< cos >", "h\\sOO\\N", "g\\sOO\\N", "Energy" };
-    int         i, last;
-    real        x0, x1, ggg, Gkr, vol_s, rho, gOO, hOO, cosav, ener;
-    double      fac;
+    FILE*                      fp;
+    std::array<std::string, 5> leg = {
+        "G\\sk\\N(r)", "< cos >", "h\\sOO\\N", "g\\sOO\\N", "Energy"
+    };
+    int    i, last;
+    real   x0, x1, ggg, Gkr, vol_s, rho, gOO, hOO, cosav, ener;
+    double fac;
 
     fp = xvgropen(fn, "Distance dependent Gk", "r (nm)", "G\\sk\\N(r)", oenv);
-    xvgr_legend(fp, asize(leg), leg, oenv);
+    xvgrLegend(fp, leg, oenv);
 
     Gkr = 1; /* Self-dipole inproduct = 1 */
     rho = ngrp / volume;
@@ -709,18 +714,18 @@ static void dump_slab_dipoles(const char*             fn,
                               int                     nframes,
                               const gmx_output_env_t* oenv)
 {
-    FILE*       fp;
-    char        buf[STRLEN];
-    int         i;
-    real        mutot;
-    const char* leg_dim[4] = { "\\f{12}m\\f{4}\\sX\\N",
-                               "\\f{12}m\\f{4}\\sY\\N",
-                               "\\f{12}m\\f{4}\\sZ\\N",
-                               "\\f{12}m\\f{4}\\stot\\N" };
+    FILE*                      fp;
+    char                       buf[STRLEN];
+    int                        i;
+    real                       mutot;
+    std::array<std::string, 4> leg_dim = { "\\f{12}m\\f{4}\\sX\\N",
+                                           "\\f{12}m\\f{4}\\sY\\N",
+                                           "\\f{12}m\\f{4}\\sZ\\N",
+                                           "\\f{12}m\\f{4}\\stot\\N" };
 
     sprintf(buf, "Box-%c (nm)", 'X' + idim);
     fp = xvgropen(fn, "Average dipole moment per slab", buf, "\\f{12}m\\f{4} (D)", oenv);
-    xvgr_legend(fp, DIM, leg_dim, oenv);
+    xvgrLegend(fp, leg_dim, oenv);
     for (i = 0; (i < nslice); i++)
     {
         mutot = norm(slab_dipole[i]) / nframes;
@@ -805,23 +810,18 @@ static void do_dip(const t_topology*       top,
                    const char*             slabfn,
                    const gmx_output_env_t* oenv)
 {
-    const char* leg_mtot[] = { "M\\sx \\N", "M\\sy \\N", "M\\sz \\N", "|M\\stot \\N|" };
-#define NLEGMTOT asize(leg_mtot)
-    const char* leg_eps[] = { "epsilon", "G\\sk", "g\\sk" };
-#define NLEGEPS asize(leg_eps)
-    const char* leg_aver[] = { "< |M|\\S2\\N >",
-                               "< |M| >\\S2\\N",
-                               "< |M|\\S2\\N > - < |M| >\\S2\\N",
-                               "< |M| >\\S2\\N / < |M|\\S2\\N >" };
-#define NLEGAVER asize(leg_aver)
-    const char* leg_cosaver[] = { "\\f{4}<|cos\\f{12}q\\f{4}\\sij\\N|>",
-                                  "RMSD cos",
-                                  "\\f{4}<|cos\\f{12}q\\f{4}\\siX\\N|>",
-                                  "\\f{4}<|cos\\f{12}q\\f{4}\\siY\\N|>",
-                                  "\\f{4}<|cos\\f{12}q\\f{4}\\siZ\\N|>" };
-#define NLEGCOSAVER asize(leg_cosaver)
-    const char* leg_adip[] = { "<mu>", "Std. Dev.", "Error" };
-#define NLEGADIP asize(leg_adip)
+    std::array<std::string, 4> leg_mtot = { "M\\sx \\N", "M\\sy \\N", "M\\sz \\N", "|M\\stot \\N|" };
+    std::array<std::string, 3> leg_eps  = { "epsilon", "G\\sk", "g\\sk" };
+    std::array<std::string, 4> leg_aver    = { "< |M|\\S2\\N >",
+                                            "< |M| >\\S2\\N",
+                                            "< |M|\\S2\\N > - < |M| >\\S2\\N",
+                                            "< |M| >\\S2\\N / < |M|\\S2\\N >" };
+    std::array<std::string, 5> leg_cosaver = { "\\f{4}<|cos\\f{12}q\\f{4}\\sij\\N|>",
+                                               "RMSD cos",
+                                               "\\f{4}<|cos\\f{12}q\\f{4}\\siX\\N|>",
+                                               "\\f{4}<|cos\\f{12}q\\f{4}\\siY\\N|>",
+                                               "\\f{4}<|cos\\f{12}q\\f{4}\\siZ\\N|>" };
+    std::array<std::string, 3> leg_adip    = { "<mu>", "Std. Dev.", "Error" };
 
     FILE *         outdd, *outmtot, *outaver, *outeps, *caver = nullptr;
     FILE *         dip3d = nullptr, *adip = nullptr;
@@ -973,16 +973,17 @@ static void do_dip(const t_topology*       top,
     if (fnadip)
     {
         adip = xvgropen(fnadip, "Average molecular dipole", "Dipole (D)", "", oenv);
-        xvgr_legend(adip, NLEGADIP, leg_adip, oenv);
+        xvgrLegend(adip, leg_adip, oenv);
     }
     if (cosaver)
     {
-        caver = xvgropen(cosaver,
+        caver          = xvgropen(cosaver,
                          bPairs ? "Average pair orientation" : "Average absolute dipole orientation",
                          "Time (ps)",
                          "",
                          oenv);
-        xvgr_legend(caver, NLEGCOSAVER, bPairs ? leg_cosaver : &(leg_cosaver[1]), oenv);
+        const int size = leg_cosaver.size() - (bPairs ? 0 : 1);
+        xvgrLegend(caver, gmx::makeArrayRef(leg_cosaver).subArray(bPairs ? 0 : 1, size), oenv);
     }
 
     if (fndip3d)
@@ -1006,16 +1007,16 @@ static void do_dip(const t_topology*       top,
     }
 
     /* Write legends to all the files */
-    xvgr_legend(outmtot, NLEGMTOT, leg_mtot, oenv);
-    xvgr_legend(outaver, NLEGAVER, leg_aver, oenv);
+    xvgrLegend(outmtot, leg_mtot, oenv);
+    xvgrLegend(outaver, leg_aver, oenv);
 
     if (bMU && (mu_aver == -1))
     {
-        xvgr_legend(outeps, NLEGEPS - 2, leg_eps, oenv);
+        xvgrLegend(outeps, gmx::makeArrayRef(leg_eps).subArray(0, leg_eps.size() - 2), oenv);
     }
     else
     {
-        xvgr_legend(outeps, NLEGEPS, leg_eps, oenv);
+        xvgrLegend(outeps, leg_eps, oenv);
     }
 
     snew(fr, 1);

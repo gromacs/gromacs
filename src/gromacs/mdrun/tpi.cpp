@@ -47,6 +47,7 @@
 #include <ctime>
 
 #include <algorithm>
+#include <array>
 
 #include "gromacs/commandline/filenm.h"
 #include "gromacs/domdec/dlbtiming.h"
@@ -95,6 +96,7 @@
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/logger.h"
 #include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/stringutil.h"
 
 #include "legacysimulator.h"
 
@@ -163,32 +165,33 @@ void LegacySimulator::do_tpi()
     GMX_RELEASE_ASSERT(gmx_omp_nthreads_get(ModuleMultiThread::Default) == 1,
                        "TPI does not support OpenMP");
 
-    gmx::ForceBuffers f;
-    real              lambda, t, temp, beta, drmax, epot;
-    double            embU, sum_embU, *sum_UgembU, V, V_all, VembU_all;
-    t_trxstatus*      status;
-    t_trxframe        rerun_fr;
-    gmx_bool          bDispCorr, bCharge, bRFExcl, bNotLastFrame, bStateChanged, bNS;
-    tensor            force_vir, shake_vir, vir, pres;
-    int               a_tp0, a_tp1, ngid, gid_tp, nener, e;
-    rvec*             x_mol;
-    rvec              mu_tot, x_init, dx;
-    int               nnodes, frame;
-    int64_t           frame_step_prev, frame_step;
-    int64_t           nsteps, stepblocksize = 0, step;
-    int64_t           seed;
-    int               i;
-    FILE*             fp_tpi = nullptr;
-    char *            ptr, *dump_pdb, **leg, str[STRLEN], str2[STRLEN];
-    double            dbl, dump_ener;
-    gmx_bool          bCavity;
-    int               nat_cavity  = 0, d;
-    real *            mass_cavity = nullptr, mass_tot;
-    int               nbin;
-    double            invbinw, *bin, refvolshift, logV, bUlogV;
-    gmx_bool          bEnergyOutOfBounds;
-    const char*       tpid_leg[2] = { "direct", "reweighted" };
-    auto*             mdatoms     = mdAtoms->mdatoms();
+    gmx::ForceBuffers          f;
+    real                       lambda, t, temp, beta, drmax, epot;
+    double                     embU, sum_embU, *sum_UgembU, V, V_all, VembU_all;
+    t_trxstatus*               status;
+    t_trxframe                 rerun_fr;
+    gmx_bool                   bDispCorr, bCharge, bRFExcl, bNotLastFrame, bStateChanged, bNS;
+    tensor                     force_vir, shake_vir, vir, pres;
+    int                        a_tp0, a_tp1, ngid, gid_tp, nener, e;
+    rvec*                      x_mol;
+    rvec                       mu_tot, x_init, dx;
+    int                        nnodes, frame;
+    int64_t                    frame_step_prev, frame_step;
+    int64_t                    nsteps, stepblocksize = 0, step;
+    int64_t                    seed;
+    int                        i;
+    FILE*                      fp_tpi = nullptr;
+    char *                     ptr, *dump_pdb;
+    std::vector<std::string>   leg;
+    double                     dbl, dump_ener;
+    gmx_bool                   bCavity;
+    int                        nat_cavity  = 0, d;
+    real *                     mass_cavity = nullptr, mass_tot;
+    int                        nbin;
+    double                     invbinw, *bin, refvolshift, logV, bUlogV;
+    gmx_bool                   bEnergyOutOfBounds;
+    std::array<std::string, 2> tpid_leg = { "direct", "reweighted" };
+    auto*                      mdatoms  = mdAtoms->mdatoms();
 
     GMX_UNUSED_VALUE(outputProvider);
 
@@ -479,56 +482,39 @@ void LegacySimulator::do_tpi()
                           "(kJ mol\\S-1\\N) / (nm\\S3\\N)",
                           oenv);
         xvgr_subtitle(fp_tpi, "f. are averages over one frame", oenv);
-        snew(leg, 4 + nener);
-        e = 0;
-        sprintf(str, "-kT log(<Ve\\S-\\betaU\\N>/<V>)");
-        leg[e++] = gmx_strdup(str);
-        sprintf(str, "f. -kT log<e\\S-\\betaU\\N>");
-        leg[e++] = gmx_strdup(str);
-        sprintf(str, "f. <e\\S-\\betaU\\N>");
-        leg[e++] = gmx_strdup(str);
-        sprintf(str, "f. V");
-        leg[e++] = gmx_strdup(str);
-        sprintf(str, "f. <Ue\\S-\\betaU\\N>");
-        leg[e++] = gmx_strdup(str);
+        leg.emplace_back("-kT log(<Ve\\S-\\betaU\\N>/<V>)");
+        leg.emplace_back("f. -kT log<e\\S-\\betaU\\N>");
+        leg.emplace_back("f. <e\\S-\\betaU\\N>");
+        leg.emplace_back("#f. V");
+        leg.emplace_back("f. <Ue\\S-\\betaU\\N>");
         for (i = 0; i < ngid; i++)
         {
-            sprintf(str,
+            leg.emplace_back(gmx::formatString(
                     "f. <U\\sVdW %s\\Ne\\S-\\betaU\\N>",
-                    *(groups->groupNames[groups->groups[SimulationAtomGroupType::EnergyOutput][i]]));
-            leg[e++] = gmx_strdup(str);
+                    *(groups->groupNames[groups->groups[SimulationAtomGroupType::EnergyOutput][i]])));
         }
         if (bDispCorr)
         {
-            sprintf(str, "f. <U\\sdisp c\\Ne\\S-\\betaU\\N>");
-            leg[e++] = gmx_strdup(str);
+            leg.emplace_back("f. <U\\sdisp c\\Ne\\S-\\betaU\\N>");
         }
         if (bCharge)
         {
             for (i = 0; i < ngid; i++)
             {
-                sprintf(str,
+                leg.emplace_back(gmx::formatString(
                         "f. <U\\sCoul %s\\Ne\\S-\\betaU\\N>",
-                        *(groups->groupNames[groups->groups[SimulationAtomGroupType::EnergyOutput][i]]));
-                leg[e++] = gmx_strdup(str);
+                        *(groups->groupNames[groups->groups[SimulationAtomGroupType::EnergyOutput][i]])));
             }
             if (bRFExcl)
             {
-                sprintf(str, "f. <U\\sRF excl\\Ne\\S-\\betaU\\N>");
-                leg[e++] = gmx_strdup(str);
+                leg.emplace_back("f. <U\\sRF excl\\Ne\\S-\\betaU\\N>");
             }
             if (usingFullElectrostatics(fr->ic->eeltype))
             {
-                sprintf(str, "f. <U\\sCoul recip\\Ne\\S-\\betaU\\N>");
-                leg[e++] = gmx_strdup(str);
+                leg.emplace_back("f. <U\\sCoul recip\\Ne\\S-\\betaU\\N>");
             }
         }
-        xvgr_legend(fp_tpi, 4 + nener, leg, oenv);
-        for (i = 0; i < 4 + nener; i++)
-        {
-            sfree(leg[i]);
-        }
-        sfree(leg);
+        xvgrLegend(fp_tpi, leg, oenv);
     }
     clear_rvec(x_init);
     V_all     = 0;
@@ -927,10 +913,10 @@ void LegacySimulator::do_tpi()
 
             if (dump_pdb && epot <= dump_ener)
             {
-                sprintf(str, "t%g_step%d.pdb", t, static_cast<int>(step));
-                sprintf(str2, "t: %f step %d ener: %f", t, static_cast<int>(step), epot);
-                write_sto_conf_mtop(str,
-                                    str2,
+                auto str = gmx::formatString("t%g_step%d.pdb", t, static_cast<int>(step));
+                auto str2 = gmx::formatString("t: %f step %d ener: %f", t, static_cast<int>(step), epot);
+                write_sto_conf_mtop(str.c_str(),
+                                    str2.c_str(),
                                     top_global,
                                     state_global->x.rvec_array(),
                                     state_global->v.rvec_array(),
@@ -1019,14 +1005,14 @@ void LegacySimulator::do_tpi()
     }
     if (MASTER(cr))
     {
-        fp_tpi = xvgropen(opt2fn("-tpid", nfile, fnm),
+        fp_tpi   = xvgropen(opt2fn("-tpid", nfile, fnm),
                           "TPI energy distribution",
                           "\\betaU - log(V/<V>)",
                           "count",
                           oenv);
-        sprintf(str, "number \\betaU > %g: %9.3e", bU_bin_limit, bin[0]);
-        xvgr_subtitle(fp_tpi, str, oenv);
-        xvgr_legend(fp_tpi, 2, tpid_leg, oenv);
+        auto str = gmx::formatString("number \\betaU > %g: %9.3e", bU_bin_limit, bin[0]);
+        xvgr_subtitle(fp_tpi, str.c_str(), oenv);
+        xvgrLegend(fp_tpi, tpid_leg, oenv);
         for (i = nbin - 1; i > 0; i--)
         {
             bUlogV = -i / invbinw + bU_logV_bin_limit - refvolshift + log(V_all / frame);

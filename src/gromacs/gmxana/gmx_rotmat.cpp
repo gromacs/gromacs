@@ -223,21 +223,21 @@ int gmx_rotmat(int argc, char* argv[])
           "Fit the x/y rotation before determining the rotation" },
         { "-mw", FALSE, etBOOL, { &bMW }, "Use mass weighted fitting" }
     };
-    FILE*             out;
-    t_trxstatus*      status;
-    t_topology        top;
-    PbcType           pbcType;
-    rvec *            x_ref, *x;
-    matrix            box, R;
-    real              t;
-    int               natoms, i;
-    char*             grpname;
-    int               gnx;
-    gmx_rmpbc_t       gpbc = nullptr;
-    int*              index;
-    gmx_output_env_t* oenv;
-    real*             w_rls;
-    const char*       leg[] = { "xx", "xy", "xz", "yx", "yy", "yz", "zx", "zy", "zz" };
+    FILE*                      out;
+    t_trxstatus*               status;
+    t_topology                 top;
+    PbcType                    pbcType;
+    rvec *                     x_ref, *x;
+    matrix                     box, R;
+    real                       t;
+    int                        natoms, i;
+    char*                      grpname;
+    int                        gnx;
+    gmx_rmpbc_t                gpbc = nullptr;
+    int*                       index;
+    gmx_output_env_t*          oenv;
+    real*                      w_rls;
+    std::array<std::string, 9> leg = { "xx", "xy", "xz", "yx", "yy", "yz", "zx", "zy", "zz" };
 #define NLEG asize(leg)
     t_filenm fnm[] = { { efTRX, "-f", nullptr, ffREAD },
                        { efTPS, nullptr, nullptr, ffREAD },
@@ -286,7 +286,7 @@ int gmx_rotmat(int argc, char* argv[])
     }
 
     out = xvgropen(ftp2fn(efXVG, NFILE, fnm), "Fit matrix", "Time (ps)", "", oenv);
-    xvgr_legend(out, NLEG, leg, oenv);
+    xvgrLegend(out, leg, oenv);
 
     do
     {

@@ -44,9 +44,11 @@
 #include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/topology/topology.h"
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/stringutil.h"
 
 typedef struct
 {
@@ -131,7 +133,6 @@ int gmx_saltbr(int argc, char* argv[])
 
     t_topology*  top;
     PbcType      pbcType;
-    char*        buf;
     t_trxstatus* status;
     int          i, j, k, m, nnn, teller, ncg;
     real         t, *time, qi, qj;
@@ -193,15 +194,14 @@ int gmx_saltbr(int argc, char* argv[])
 
     if (bSep)
     {
-        snew(buf, 256);
         for (i = 0; (i < ncg); i++)
         {
             for (j = i + 1; (j < ncg); j++)
             {
                 if (nWithin[i][j])
                 {
-                    sprintf(buf, "sb-%s:%s.xvg", cg[i].label, cg[j].label);
-                    fp = xvgropen(buf, buf, "Time (ps)", "Distance (nm)", oenv);
+                    std::string buf = gmx::formatString("sb-%s:%s.xvg", cg[i].label, cg[j].label);
+                    fp = xvgropen(buf.c_str(), buf.c_str(), "Time (ps)", "Distance (nm)", oenv);
                     for (k = 0; (k < teller); k++)
                     {
                         fprintf(fp, "%10g  %10g\n", time[k], cgdist[i][j][k]);
@@ -210,7 +210,6 @@ int gmx_saltbr(int argc, char* argv[])
                 }
             }
         }
-        sfree(buf);
     }
     else
     {
@@ -220,7 +219,6 @@ int gmx_saltbr(int argc, char* argv[])
             out[m] = xvgropen(fn[m], title[m], "Time (ps)", "Distance (nm)", oenv);
         }
 
-        snew(buf, 256);
         for (i = 0; (i < ncg); i++)
         {
             qi = cg[i].q;
@@ -229,7 +227,7 @@ int gmx_saltbr(int argc, char* argv[])
                 qj = cg[j].q;
                 if (nWithin[i][j])
                 {
-                    sprintf(buf, "%s:%s", cg[i].label, cg[j].label);
+                    auto buf = gmx::formatString("%s:%s", cg[i].label, cg[j].label);
                     if (qi * qj < 0)
                     {
                         nnn = 2;
@@ -245,17 +243,17 @@ int gmx_saltbr(int argc, char* argv[])
 
                     if (nset[nnn] == 0)
                     {
-                        xvgr_legend(out[nnn], 1, &buf, oenv);
+                        xvgrLegend(out[nnn], gmx::arrayRefFromArray(&buf, 1), oenv);
                     }
                     else
                     {
                         if (output_env_get_xvg_format(oenv) == XvgFormat::Xmgr)
                         {
-                            fprintf(out[nnn], "@ legend string %d \"%s\"\n", nset[nnn], buf);
+                            fprintf(out[nnn], "@ legend string %d \"%s\"\n", nset[nnn], buf.c_str());
                         }
                         else if (output_env_get_xvg_format(oenv) == XvgFormat::Xmgrace)
                         {
-                            fprintf(out[nnn], "@ s%d legend \"%s\"\n", nset[nnn], buf);
+                            fprintf(out[nnn], "@ s%d legend \"%s\"\n", nset[nnn], buf.c_str());
                         }
                     }
                     nset[nnn]++;

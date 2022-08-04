@@ -40,6 +40,7 @@
 #include <algorithm>
 #include <optional>
 #include <unordered_map>
+#include <vector>
 
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/commandline/viewit.h"
@@ -73,6 +74,7 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/stringutil.h"
 
 typedef struct
 {
@@ -742,13 +744,13 @@ int gmx_disre(int argc, char* argv[])
     int *        index = nullptr, *ind_fit = nullptr;
     char*        grpname;
     t_dr_result  dr, *dr_clust = nullptr;
-    char**       leg;
-    real *       vvindex = nullptr, *w_rls = nullptr;
-    t_pbc        pbc, *pbc_null;
-    int          my_clust;
-    FILE*        fplog;
-    gmx_output_env_t* oenv;
-    gmx_rmpbc_t       gpbc = nullptr;
+    std::vector<std::string> leg;
+    real *                   vvindex = nullptr, *w_rls = nullptr;
+    t_pbc                    pbc, *pbc_null;
+    int                      my_clust;
+    FILE*                    fplog;
+    gmx_output_env_t*        oenv;
+    gmx_rmpbc_t              gpbc = nullptr;
 
     t_filenm fnm[] = { { efTPR, nullptr, nullptr, ffREAD }, { efTRX, "-f", nullptr, ffREAD },
                        { efXVG, "-ds", "drsum", ffWRITE },  { efXVG, "-da", "draver", ffWRITE },
@@ -816,14 +818,12 @@ int gmx_disre(int argc, char* argv[])
         rd_index(ftp2fn(efNDX, NFILE, fnm), 1, &isize, &index, &grpname);
         xvg = xvgropen(opt2fn("-dr", NFILE, fnm), "Individual Restraints", "Time (ps)", "nm", oenv);
         snew(vvindex, isize);
-        snew(leg, isize);
         for (i = 0; (i < isize); i++)
         {
             index[i]++;
-            snew(leg[i], 12);
-            sprintf(leg[i], "index %d", index[i]);
+            leg.emplace_back(gmx::formatString("index %d", index[i]));
         }
-        xvgr_legend(xvg, isize, leg, oenv);
+        xvgrLegend(xvg, leg, oenv);
     }
     else
     {

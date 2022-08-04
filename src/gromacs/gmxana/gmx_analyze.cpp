@@ -418,15 +418,15 @@ static void estimate_error(const char*             eefile,
                            gmx_bool                bAllowNegLTCorr,
                            const gmx_output_env_t* oenv)
 {
-    FILE*  fp;
-    int    bs, prev_bs, nbs, nb;
-    real   spacing, nbr;
-    int    s, i, j;
-    double blav, var;
-    char** leg;
-    real * tbs, *ybs, rtmp, dens, *fitsig, twooe, tau1_est, tau_sig;
-    double fitparm[3];
-    real   ee, a, tau1, tau2;
+    FILE*                    fp;
+    int                      bs, prev_bs, nbs, nb;
+    real                     spacing, nbr;
+    int                      s, i, j;
+    double                   blav, var;
+    std::vector<std::string> leg;
+    real *                   tbs, *ybs, rtmp, dens, *fitsig, twooe, tau1_est, tau_sig;
+    double                   fitparm[3];
+    real                     ee, a, tau1, tau2;
 
     if (n < 4)
     {
@@ -440,9 +440,8 @@ static void estimate_error(const char*             eefile,
     {
         fprintf(fp, "@ subtitle \"using block averaging, total time %g (%d points)\"\n", (n - 1) * dt, n);
     }
-    snew(leg, 2 * nset);
-    xvgr_legend(fp, 2 * nset, leg, oenv);
-    sfree(leg);
+    leg.resize(2 * nset);
+    xvgrLegend(fp, leg, oenv);
 
     spacing = std::pow(2.0, 1.0 / resol);
     snew(tbs, n);

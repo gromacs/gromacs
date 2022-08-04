@@ -37,6 +37,7 @@
 #include <cstring>
 
 #include <algorithm>
+#include <array>
 
 #include "gromacs/commandline/filenm.h"
 #include "gromacs/commandline/pargs.h"
@@ -398,22 +399,14 @@ int gmx_mdmat(int argc, char* argv[])
 
     if (bCalcN)
     {
-        char** legend;
+        std::array<std::string, 5> legend = {
+            "Total/mean", "Total", "Mean", "# atoms", "Mean/# atoms"
+        };
 
-        snew(legend, 5);
-        for (i = 0; i < 5; i++)
-        {
-            snew(legend[i], STRLEN);
-        }
         tot_nmat(nres, natoms, nframes, totnmat, tot_n, mean_n);
         fp = xvgropen(
                 ftp2fn(efXVG, NFILE, fnm), "Increase in number of contacts", "Residue", "Ratio", oenv);
-        sprintf(legend[0], "Total/mean");
-        sprintf(legend[1], "Total");
-        sprintf(legend[2], "Mean");
-        sprintf(legend[3], "# atoms");
-        sprintf(legend[4], "Mean/# atoms");
-        xvgr_legend(fp, 5, legend, oenv);
+        xvgrLegend(fp, legend, oenv);
         for (i = 0; (i < nres); i++)
         {
             if (mean_n[i] == 0)

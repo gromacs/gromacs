@@ -35,6 +35,8 @@
 
 #include <cmath>
 
+#include <array>
+
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/commandline/viewit.h"
 #include "gromacs/fileio/confio.h"
@@ -132,8 +134,8 @@ int gmx_sorient(int argc, char* argv[])
     rvec        xref, dx, dxh1, dxh2, outer;
     gmx_rmpbc_t gpbc = nullptr;
     t_pbc       pbc;
-    const char* legr[] = { "<cos(\\8q\\4\\s1\\N)>", "<3cos\\S2\\N(\\8q\\4\\s2\\N)-1>" };
-    const char* legc[] = { "cos(\\8q\\4\\s1\\N)", "3cos\\S2\\N(\\8q\\4\\s2\\N)-1" };
+    std::array<std::string, 2> legr = { "<cos(\\8q\\4\\s1\\N)>", "<3cos\\S2\\N(\\8q\\4\\s2\\N)-1>" };
+    std::array<std::string, 2> legc = { "cos(\\8q\\4\\s1\\N)", "3cos\\S2\\N(\\8q\\4\\s2\\N)-1" };
 
     const char* desc[] = {
         "[THISMODULE] analyzes solvent orientation around solutes.",
@@ -408,7 +410,7 @@ int gmx_sorient(int argc, char* argv[])
     {
         fprintf(fp, "@ subtitle \"as a function of distance\"\n");
     }
-    xvgr_legend(fp, 2, legr, oenv);
+    xvgrLegend(fp, legr, oenv);
     for (i = 0; i < nrbin; i++)
     {
         fprintf(fp,
@@ -425,7 +427,7 @@ int gmx_sorient(int argc, char* argv[])
     {
         fprintf(fp, "@ subtitle \"as a function of distance\"\n");
     }
-    xvgr_legend(fp, 2, legc, oenv);
+    xvgrLegend(fp, legc, oenv);
     normfac = 1.0 / (nrefgrp * nf);
     c1      = 0;
     c2      = 0;

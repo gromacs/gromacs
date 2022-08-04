@@ -43,6 +43,7 @@
 
 #include <algorithm>
 #include <memory>
+#include <vector>
 
 #include "gromacs/commandline/filenm.h"
 #include "gromacs/domdec/dlbtiming.h"
@@ -72,9 +73,11 @@
 #include "gromacs/topology/mtop_lookup.h"
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/pleasecite.h"
 #include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/stringutil.h"
 
 static const std::string RotStr = { "Enforced rotation:" };
 
@@ -953,13 +956,12 @@ static void add_to_string_aligned(char** str, char* buf)
  * Call on master only */
 static FILE* open_rot_out(const char* fn, const gmx_output_env_t* oenv, gmx_enfrot* er)
 {
-    FILE*        fp;
-    int          nsets;
-    const char** setname;
-    char         buf[50], buf2[75];
-    gmx_bool     bFlex;
-    char*        LegendStr = nullptr;
-    const t_rot* rot       = er->rot;
+    FILE*                    fp;
+    std::vector<std::string> setname;
+    char                     buf[50];
+    gmx_bool                 bFlex;
+    char*                    LegendStr = nullptr;
+    const t_rot*             rot       = er->rot;
 
     if (er->restartWithAppending)
     {
@@ -1078,17 +1080,12 @@ static FILE* open_rot_out(const char* fn, const gmx_output_env_t* oenv, gmx_enfr
         sprintf(buf, "#     %6s", "time");
         add_to_string_aligned(&LegendStr, buf);
 
-        nsets = 0;
-        snew(setname, 4 * rot->grp.size());
-
         for (int g = 0; g < gmx::ssize(rot->grp); g++)
         {
             sprintf(buf, "theta_ref%d", g);
             add_to_string_aligned(&LegendStr, buf);
 
-            sprintf(buf2, "%s (degrees)", buf);
-            setname[nsets] = gmx_strdup(buf2);
-            nsets++;
+            setname.emplace_back(gmx::formatString("%s (degrees)", buf));
         }
         for (int g = 0; g < gmx::ssize(rot->grp); g++)
         {
@@ -1106,30 +1103,22 @@ static FILE* open_rot_out(const char* fn, const gmx_output_env_t* oenv, gmx_enfr
                 sprintf(buf, "theta_av%d", g);
             }
             add_to_string_aligned(&LegendStr, buf);
-            sprintf(buf2, "%s (degrees)", buf);
-            setname[nsets] = gmx_strdup(buf2);
-            nsets++;
+            setname.emplace_back(gmx::formatString("%s (degrees)", buf));
 
             sprintf(buf, "tau%d", g);
             add_to_string_aligned(&LegendStr, buf);
-            sprintf(buf2, "%s (kJ/mol)", buf);
-            setname[nsets] = gmx_strdup(buf2);
-            nsets++;
+            setname.emplace_back(gmx::formatString("%s (kJ/mol)", buf));
 
             sprintf(buf, "energy%d", g);
             add_to_string_aligned(&LegendStr, buf);
-            sprintf(buf2, "%s (kJ/mol)", buf);
-            setname[nsets] = gmx_strdup(buf2);
-            nsets++;
+            setname.emplace_back(gmx::formatString("%s (kJ/mol)", buf));
         }
         fprintf(fp, "#\n");
 
-        if (nsets > 1)
+        if (setname.size() > 1)
         {
-            xvgr_legend(fp, nsets, setname, oenv);
+            xvgrLegend(fp, setname, oenv);
         }
-        sfree(setname);
-
         fprintf(fp, "#\n# Legend for the following data columns:\n");
         fprintf(fp, "%s\n", LegendStr);
         sfree(LegendStr);

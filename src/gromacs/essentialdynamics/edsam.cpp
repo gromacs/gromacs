@@ -41,6 +41,8 @@
 #include <ctime>
 
 #include <memory>
+#include <utility>
+#include <vector>
 
 #include "gromacs/commandline/filenm.h"
 #include "gromacs/domdec/domdec_struct.h"
@@ -75,6 +77,7 @@
 #include "gromacs/utility/logger.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/strconvert.h"
+#include "gromacs/utility/stringutil.h"
 
 namespace
 {
@@ -2494,58 +2497,29 @@ static void init_edsamstate(const gmx_edsam& ed, edsamhistory_t* EDstate)
     }
 }
 
-
-/* Adds 'buf' to 'str' */
-static void add_to_string(char** str, const char* buf)
+static void nice_legend(std::vector<std::string>* setname,
+                        std::string*              LegendStr,
+                        const std::string&        value,
+                        const std::string&        unit,
+                        char                      EDgroupchar)
 {
-    int len;
-
-
-    len = strlen(*str) + strlen(buf) + 1;
-    srenew(*str, len);
-    strcat(*str, buf);
+    auto tmp = gmx::formatString("%c %s", EDgroupchar, value.c_str());
+    LegendStr->append(gmx::formatString(EDcol_sfmt, tmp.c_str()));
+    tmp += gmx::formatString(" (%s)", unit.c_str());
+    setname->emplace_back(tmp);
 }
 
 
-static void add_to_string_aligned(char** str, const char* buf)
+static void nice_legend_evec(std::vector<std::string>* setname,
+                             std::string*              LegendStr,
+                             t_eigvec*                 evec,
+                             char                      EDgroupChar,
+                             const std::string&        EDtype)
 {
-    char buf_aligned[STRLEN];
-
-    sprintf(buf_aligned, EDcol_sfmt, buf);
-    add_to_string(str, buf_aligned);
-}
-
-
-static void nice_legend(const char*** setname,
-                        int*          nsets,
-                        char**        LegendStr,
-                        const char*   value,
-                        const char*   unit,
-                        char          EDgroupchar)
-{
-    auto tmp = gmx::formatString("%c %s", EDgroupchar, value);
-    add_to_string_aligned(LegendStr, tmp.c_str());
-    tmp += gmx::formatString(" (%s)", unit);
-    (*setname)[*nsets] = gmx_strdup(tmp.c_str());
-    (*nsets)++;
-}
-
-
-static void nice_legend_evec(const char*** setname,
-                             int*          nsets,
-                             char**        LegendStr,
-                             t_eigvec*     evec,
-                             char          EDgroupChar,
-                             const char*   EDtype)
-{
-    int  i;
-    char tmp[STRLEN];
-
-
-    for (i = 0; i < evec->neig; i++)
+    for (int i = 0; i < evec->neig; i++)
     {
-        sprintf(tmp, "EV%dprj%s", evec->ieig[i], EDtype);
-        nice_legend(setname, nsets, LegendStr, tmp, "nm", EDgroupChar);
+        auto tmp = gmx::formatString("EV%dprj%s", evec->ieig[i], EDtype.c_str());
+        nice_legend(setname, LegendStr, tmp, "nm", EDgroupChar);
     }
 }
 
@@ -2553,18 +2527,16 @@ static void nice_legend_evec(const char*** setname,
 /* Makes a legend for the xvg output file. Call on MASTER only! */
 static void write_edo_legend(gmx_edsam* ed, int nED, const gmx_output_env_t* oenv)
 {
-    int          i;
-    int          nr_edi, nsets, n_flood, n_edsam;
-    const char** setname;
-    char         buf[STRLEN];
-    char*        LegendStr = nullptr;
+    int                      n_flood, n_edsam;
+    std::vector<std::string> setname;
+    std::string              LegendStr;
 
 
     auto edi = ed->edpar.begin();
 
     fprintf(ed->edo, "# Output will be written every %d step%s\n", edi->outfrq, edi->outfrq != 1 ? "s" : "");
 
-    for (nr_edi = 1; nr_edi <= nED; nr_edi++)
+    for (int nr_edi = 1; nr_edi <= nED; nr_edi++)
     {
         fprintf(ed->edo, "#\n");
         fprintf(ed->edo,
@@ -2618,23 +2590,7 @@ static void write_edo_legend(gmx_edsam* ed, int nED, const gmx_output_env_t* oen
         ++edi;
     }
 
-    /* Print a nice legend */
-    snew(LegendStr, 1);
-    LegendStr[0] = '\0';
-    sprintf(buf, "#     %6s", "time");
-    add_to_string(&LegendStr, buf);
-
-    /* Calculate the maximum number of columns we could end up with */
-    edi   = ed->edpar.begin();
-    nsets = 0;
-    for (nr_edi = 1; nr_edi <= nED; nr_edi++)
-    {
-        nsets += 5 + edi->vecs.mon.neig + edi->vecs.linfix.neig + edi->vecs.linacc.neig
-                 + edi->vecs.radfix.neig + edi->vecs.radacc.neig + edi->vecs.radcon.neig
-                 + 6 * edi->flood.vecs.neig;
-        ++edi;
-    }
-    snew(setname, nsets);
+    LegendStr.append(gmx::formatString("#     %6s", "time"));
 
     /* In the mdrun time step in a first function call (do_flood()) the flooding
      * forces are calculated and in a second function call (do_edsam()) the
@@ -2642,120 +2598,94 @@ static void write_edo_legend(gmx_edsam* ed, int nED, const gmx_output_env_t* oen
      * over the edi groups and output first the flooding, then the ED part */
 
     /* The flooding-related legend entries, if flooding is done */
-    nsets = 0;
     if (EssentialDynamicsType::Flooding == ed->eEDtype)
     {
-        edi = ed->edpar.begin();
-        for (nr_edi = 1; nr_edi <= nED; nr_edi++)
+        auto edi = ed->edpar.begin();
+        for (int nr_edi = 1; nr_edi <= nED; nr_edi++)
         {
             /* Always write out the projection on the flooding EVs. Of course, this can also
              * be achieved with the monitoring option in do_edsam() (if switched on by the
              * user), but in that case the positions need to be communicated in do_edsam(),
              * which is not necessary when doing flooding only. */
-            nice_legend(&setname, &nsets, &LegendStr, "RMSD to ref", "nm", get_EDgroupChar(nr_edi, nED));
+            nice_legend(&setname, &LegendStr, "RMSD to ref", "nm", get_EDgroupChar(nr_edi, nED));
 
-            for (i = 0; i < edi->flood.vecs.neig; i++)
+            for (int i = 0; i < edi->flood.vecs.neig; i++)
             {
-                sprintf(buf, "EV%dprjFLOOD", edi->flood.vecs.ieig[i]);
-                nice_legend(&setname, &nsets, &LegendStr, buf, "nm", get_EDgroupChar(nr_edi, nED));
+                auto buf = gmx::formatString("EV%dprjFLOOD", edi->flood.vecs.ieig[i]);
+                nice_legend(&setname, &LegendStr, buf, "nm", get_EDgroupChar(nr_edi, nED));
 
                 /* Output the current reference projection if it changes with time;
                  * this can happen when flooding is used as harmonic restraint */
                 if (edi->flood.bHarmonic && edi->flood.referenceProjectionSlope[i] != 0.0)
                 {
-                    sprintf(buf, "EV%d ref.prj.", edi->flood.vecs.ieig[i]);
-                    nice_legend(&setname, &nsets, &LegendStr, buf, "nm", get_EDgroupChar(nr_edi, nED));
+                    auto buf = gmx::formatString("EV%d ref.prj.", edi->flood.vecs.ieig[i]);
+                    nice_legend(&setname, &LegendStr, buf, "nm", get_EDgroupChar(nr_edi, nED));
                 }
 
                 /* For flooding we also output Efl, Vfl, deltaF, and the flooding forces */
                 if (0 != edi->flood.tau) /* only output Efl for adaptive flooding (constant otherwise) */
                 {
-                    sprintf(buf, "EV%d-Efl", edi->flood.vecs.ieig[i]);
-                    nice_legend(&setname, &nsets, &LegendStr, buf, "kJ/mol", get_EDgroupChar(nr_edi, nED));
+                    auto buf = gmx::formatString("EV%d-Efl", edi->flood.vecs.ieig[i]);
+                    nice_legend(&setname, &LegendStr, buf, "kJ/mol", get_EDgroupChar(nr_edi, nED));
                 }
 
-                sprintf(buf, "EV%d-Vfl", edi->flood.vecs.ieig[i]);
-                nice_legend(&setname, &nsets, &LegendStr, buf, "kJ/mol", get_EDgroupChar(nr_edi, nED));
+                buf = gmx::formatString("EV%d-Vfl", edi->flood.vecs.ieig[i]);
+                nice_legend(&setname, &LegendStr, buf, "kJ/mol", get_EDgroupChar(nr_edi, nED));
 
                 if (0 != edi->flood.tau) /* only output deltaF for adaptive flooding (zero otherwise) */
                 {
-                    sprintf(buf, "EV%d-deltaF", edi->flood.vecs.ieig[i]);
-                    nice_legend(&setname, &nsets, &LegendStr, buf, "kJ/mol", get_EDgroupChar(nr_edi, nED));
+                    auto buf = gmx::formatString("EV%d-deltaF", edi->flood.vecs.ieig[i]);
+                    nice_legend(&setname, &LegendStr, buf, "kJ/mol", get_EDgroupChar(nr_edi, nED));
                 }
 
-                sprintf(buf, "EV%d-FLforces", edi->flood.vecs.ieig[i]);
-                nice_legend(&setname, &nsets, &LegendStr, buf, "kJ/mol/nm", get_EDgroupChar(nr_edi, nED));
+                buf = gmx::formatString("EV%d-FLforces", edi->flood.vecs.ieig[i]);
+                nice_legend(&setname, &LegendStr, buf, "kJ/mol/nm", get_EDgroupChar(nr_edi, nED));
             }
 
             ++edi;
         } /* End of flooding-related legend entries */
     }
-    n_flood = nsets;
+    n_flood = setname.size();
 
     /* Now the ED-related entries, if essential dynamics is done */
     edi = ed->edpar.begin();
-    for (nr_edi = 1; nr_edi <= nED; nr_edi++)
+    for (int nr_edi = 1; nr_edi <= nED; nr_edi++)
     {
         if (bNeedDoEdsam(*edi)) /* Only print ED legend if at least one ED option is on */
         {
-            nice_legend(&setname, &nsets, &LegendStr, "RMSD to ref", "nm", get_EDgroupChar(nr_edi, nED));
+            nice_legend(&setname, &LegendStr, "RMSD to ref", "nm", get_EDgroupChar(nr_edi, nED));
 
             /* Essential dynamics, projections on eigenvectors */
-            nice_legend_evec(&setname,
-                             &nsets,
-                             &LegendStr,
-                             &edi->vecs.mon,
-                             get_EDgroupChar(nr_edi, nED),
-                             "MON");
-            nice_legend_evec(&setname,
-                             &nsets,
-                             &LegendStr,
-                             &edi->vecs.linfix,
-                             get_EDgroupChar(nr_edi, nED),
-                             "LINFIX");
-            nice_legend_evec(&setname,
-                             &nsets,
-                             &LegendStr,
-                             &edi->vecs.linacc,
-                             get_EDgroupChar(nr_edi, nED),
-                             "LINACC");
-            nice_legend_evec(&setname,
-                             &nsets,
-                             &LegendStr,
-                             &edi->vecs.radfix,
-                             get_EDgroupChar(nr_edi, nED),
-                             "RADFIX");
+            nice_legend_evec(
+                    &setname, &LegendStr, &edi->vecs.mon, get_EDgroupChar(nr_edi, nED), "MON");
+            nice_legend_evec(
+                    &setname, &LegendStr, &edi->vecs.linfix, get_EDgroupChar(nr_edi, nED), "LINFIX");
+            nice_legend_evec(
+                    &setname, &LegendStr, &edi->vecs.linacc, get_EDgroupChar(nr_edi, nED), "LINACC");
+            nice_legend_evec(
+                    &setname, &LegendStr, &edi->vecs.radfix, get_EDgroupChar(nr_edi, nED), "RADFIX");
             if (edi->vecs.radfix.neig)
             {
-                nice_legend(&setname, &nsets, &LegendStr, "RADFIX radius", "nm", get_EDgroupChar(nr_edi, nED));
+                nice_legend(&setname, &LegendStr, "RADFIX radius", "nm", get_EDgroupChar(nr_edi, nED));
             }
-            nice_legend_evec(&setname,
-                             &nsets,
-                             &LegendStr,
-                             &edi->vecs.radacc,
-                             get_EDgroupChar(nr_edi, nED),
-                             "RADACC");
+            nice_legend_evec(
+                    &setname, &LegendStr, &edi->vecs.radacc, get_EDgroupChar(nr_edi, nED), "RADACC");
             if (edi->vecs.radacc.neig)
             {
-                nice_legend(&setname, &nsets, &LegendStr, "RADACC radius", "nm", get_EDgroupChar(nr_edi, nED));
+                nice_legend(&setname, &LegendStr, "RADACC radius", "nm", get_EDgroupChar(nr_edi, nED));
             }
-            nice_legend_evec(&setname,
-                             &nsets,
-                             &LegendStr,
-                             &edi->vecs.radcon,
-                             get_EDgroupChar(nr_edi, nED),
-                             "RADCON");
+            nice_legend_evec(
+                    &setname, &LegendStr, &edi->vecs.radcon, get_EDgroupChar(nr_edi, nED), "RADCON");
             if (edi->vecs.radcon.neig)
             {
-                nice_legend(&setname, &nsets, &LegendStr, "RADCON radius", "nm", get_EDgroupChar(nr_edi, nED));
+                nice_legend(&setname, &LegendStr, "RADCON radius", "nm", get_EDgroupChar(nr_edi, nED));
             }
         }
         ++edi;
     } /* end of 'pure' essential dynamics legend entries */
-    n_edsam = nsets - n_flood;
+    n_edsam = setname.size() - n_flood;
 
-    xvgr_legend(ed->edo, nsets, setname, oenv);
-    sfree(setname);
+    xvgrLegend(ed->edo, setname, oenv);
 
     fprintf(ed->edo,
             "#\n"
@@ -2764,8 +2694,7 @@ static void write_edo_legend(gmx_edsam* ed, int nED, const gmx_output_env_t* oen
             1 == n_flood ? "" : "s",
             n_edsam,
             1 == n_edsam ? "" : "s");
-    fprintf(ed->edo, "%s", LegendStr);
-    sfree(LegendStr);
+    fprintf(ed->edo, "%s", LegendStr.c_str());
 
     fflush(ed->edo);
 }
