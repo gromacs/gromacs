@@ -142,7 +142,13 @@ This section lists only major changes; minor changes like additional/removed
 options or bug fixes are not typically included.
 
 For more information about changed features, please check out the
-:ref:`release notes <release-notes>`.
+.. only:: html
+
+    :ref:`release notes <release-notes>`.
+
+.. only:: latex
+
+    `release notes <https://manual.gromacs.org/current/release-notes/index.html>`_.
 
 Version 2020
 ^^^^^^^^^^^^

@@ -34,8 +34,6 @@ obtain and install a separate DSSP binary, so we plan to replace the
 implementation at some point with a native implementation, likely
 based upon xssp, and make it available under a new gmx tool name.
 
-.. _deprecated-functionality:
-
 Functionality deprecated in GROMACS 2019
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
