@@ -37,6 +37,13 @@ import os
 from gmxapi.operation import function_wrapper
 
 
-@function_wrapper()
-def join_path(first: str, second: str) -> str:
-    return os.path.join(first, second)
+@function_wrapper(output = {'path': str})
+def join_path(first: str, second: str, output = None) -> str:
+    """Get a Future path for use in data flow.
+
+    This is useful when a base path or filename is not known until runtime.
+
+    Attributes:
+        output.path (str): *first* and *second*, joined by the native filesystem path separator.
+    """
+    output.path = os.path.join(first, second)

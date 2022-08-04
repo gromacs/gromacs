@@ -83,6 +83,8 @@ Utilities
 
 .. automodule:: gmxapi.utility
 
+.. autofunction:: join_path
+
 .. py:currentmodule:: gmxapi
 
 .. autofunction:: concatenate_lists

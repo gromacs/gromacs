@@ -81,9 +81,14 @@ else:
 def test_run_from_tpr(spc_water_box, mdrun_kwargs):
     assert os.path.exists(spc_water_box)
 
+    # TODO(#4422): provide MPI communicator to make the most of available resources.
     md = gmx.mdrun(spc_water_box, runtime_args=mdrun_kwargs)
     md.run()
-    # TODO: better handling of output on unused MPI ranks.
+
+    published_trajectory = md.output.trajectory.result()
+    expected_trajectory = join_path(md.output.directory, 'traj.trr').output.path.result()
+    assert os.path.exists(published_trajectory)
+    assert published_trajectory == expected_trajectory
 
 
 @pytest.mark.usefixtures('cleandir')
@@ -228,7 +233,7 @@ def test_run_trivial_ensemble(spc_water_box, caplog, mdrun_kwargs):
             assert md.output.ensemble_width == ensemble_width
             md.run()
 
-            output_directory = md.output._work_dir.result()
+            output_directory = md.output.directory.result()
             logging.info('output_directory result: {}'.format(str(output_directory)))
             assert len(output_directory) == ensemble_width
 

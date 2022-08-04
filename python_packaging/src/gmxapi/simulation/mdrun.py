@@ -69,7 +69,7 @@ logger.info('Importing {}'.format(__name__))
 #  subclasses) so that static code inspection can more easily determine the
 #  attributes of the data proxies.
 _output_descriptors = (
-    _op.OutputDataDescriptor('_work_dir', str),
+    _op.OutputDataDescriptor('directory', str),
     _op.OutputDataDescriptor('checkpoint', str),
     _op.OutputDataDescriptor('parameters', dict),
     _op.OutputDataDescriptor('trajectory', str),
@@ -87,11 +87,14 @@ class OutputDataProxy(_op.DataProxyBase,
     """Implement the 'output' attribute of `mdrun` operations.
 
     Attributes:
-        checkpoint: Full path to ``cpt`` file.
-        parameters: Dictionary of parameters with which the simulation was run.
-        trajectory: Full path to trajectory output (corresponding to the ``-o``
-                    flag, if provided).
+        checkpoint (str): Full path to ``cpt`` file.
+        directory (str): Full path to the working directory in which the simulation ran.
+        parameters (dict): Dictionary of parameters with which the simulation was run.
+        trajectory (str): Full path to trajectory output (corresponding to the ``-o``
+            flag, if provided).
 
+    .. versionchanged:: 0.4
+        Added *directory* output, replacing an earlier "hidden" *_work_dir* output.
     """
 
 
@@ -465,7 +468,7 @@ class SubscriptionPublishingRunner(object):
         """Operation implementation in the gmxapi.operation module context."""
         publisher: PublishingDataProxy = self.resources.output
         assert isinstance(publisher, PublishingDataProxy)
-        publisher._work_dir = self.resources.workdir
+        publisher.directory = self.resources.workdir
         publisher.parameters = self.resources.parameters
         logger.debug(f'Session resources have runtime_args: {self.resources.runtime_args}')
 
