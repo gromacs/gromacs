@@ -373,7 +373,7 @@ GROMACS against and building with compatible compilers.
 ::
 
     python -m pip install --upgrade pip setuptools
-    MPICC=`which mpicc` pip install --upgrade mpi4py
+    MPICC=`which mpicc` pip install --no-cache-dir --upgrade mpi4py
 
 .. seealso:: :ref:`mpi_requirements`
 
