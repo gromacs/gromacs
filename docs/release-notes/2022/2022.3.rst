@@ -22,6 +22,17 @@ Fixes for ``gmx`` tools
 Fixes that affect portability
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Further fix to nvcc flag detection
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Version 2022.1 fixed a nvcc flag detection issue for gcc version 11,
+but this fix resulted in issues for older gcc versions. Version 2022.2
+resolved this for gcc version 7, but issues remained for other gcc
+versions. This release provides a fix that should prevent this issue
+for all gcc versions.
+
+:issue:`4539`
+
 Miscellaneous
 ^^^^^^^^^^^^^
 
