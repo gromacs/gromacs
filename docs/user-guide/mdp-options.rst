@@ -2594,7 +2594,7 @@ Free energy calculations
 
 .. mdp:: sc-power
 
-   (0)
+   (1)
    the power for lambda in the soft-core function, only the values 1
    and 2 are supported. Used only with `sc-function=beutler`
 

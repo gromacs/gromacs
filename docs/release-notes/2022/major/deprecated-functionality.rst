@@ -7,6 +7,8 @@
 Changes anticipated to |Gromacs| 2022 functionality
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+.. _deprecated-functionality:
+
 Functionality deprecated in |Gromacs| 2022
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 

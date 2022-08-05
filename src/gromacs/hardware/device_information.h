@@ -171,6 +171,12 @@ struct DeviceInformation
     size_t         maxWorkGroupSize;    //!< Workgroup total size limit (CL_DEVICE_MAX_WORK_GROUP_SIZE).
 #elif GMX_GPU_SYCL
     sycl::device syclDevice;
+    //! CUDA CC major for NVIDIA devices, generation code for AMD (gfx90a -> 9), not set for Intel (yet)
+    std::optional<int> hardwareVersionMajor;
+    //! CUDA CC minor for NVIDIA devices, major architecture(?) code for AMD (gfx90a -> 0), not set for Intel (yet)
+    std::optional<int> hardwareVersionMinor;
+    //! CUDA CC minor for NVIDIA devices, device code for AMD (gfx90a -> a -> 10), not set for Intel (yet)
+    std::optional<int> hardwareVersionPatch;
 #endif
 };
 

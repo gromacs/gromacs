@@ -140,8 +140,8 @@ libraries and require no further configuration. If your vendor's
 compiler also manages the standard library library via compiler flags,
 these will be honored. For configuration of other compilers, read on.
 
-On Linux, the clang compilers use the libstdc++ which
-comes with gcc as the default C++ library. For |Gromacs|, we require
+On Linux, the clang compilers typically use for their C++ library
+the libstdc++ which comes with g++. For |Gromacs|, we require
 the compiler to support libstc++ version 7.1 or higher. To select a
 particular libstdc++ library, provide the path to g++ with
 ``-DGMX_GPLUSPLUS_PATH=/path/to/g++``.

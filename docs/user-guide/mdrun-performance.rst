@@ -1408,6 +1408,9 @@ Checking and improving performance
   imbalance, the automated PME-tuning might have reduced the initial imbalance.
   You could still gain performance by changing the mdp parameters or increasing
   the number of PME ranks.
+* In GPU-resident runs (``-update gpu``), frequent virial or energy computation
+  can have a large overhead (and this will not show up in the cycle counters).
+  To reduce this overhead, increase ``nstcalcenergy``.
 * If the neighbor searching takes a lot of time, increase nstlist. If a Verlet
   buffer tolerance is used, this is done automatically by :ref:`gmx mdrun`
   and the pair-list buffer is increased to keep the energy drift constant.
