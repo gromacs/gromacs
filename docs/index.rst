@@ -49,6 +49,7 @@ Welcome to the |Gromacs| documentation!
             gmxapi/index
 	    nblib/index
             dev-manual/index
+            release-notes/index
 
 
 .. _printable PDF here: `gmx-manual`_
