@@ -29,13 +29,8 @@ can be found on the `issue tracker`_ at that issue number.
 
 Patch releases
 ^^^^^^^^^^^^^^
-.. toctree::
+.. .. toctree::
    :maxdepth: 1
-
-   2022/2022.3
-   2022/2022.2
-   2022/2022.1
-
 
 Major release
 ^^^^^^^^^^^^^
@@ -54,9 +49,17 @@ Major release
    2023/major/portability
    2023/major/miscellaneous
 
-
 |Gromacs| 2022 series
 ---------------------
+
+Patch releases
+^^^^^^^^^^^^^^
+.. toctree::
+   :maxdepth: 1
+
+   2022/2022.3
+   2022/2022.2
+   2022/2022.1
 
 Major release
 ^^^^^^^^^^^^^
