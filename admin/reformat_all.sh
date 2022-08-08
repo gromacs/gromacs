@@ -40,9 +40,9 @@
 
 function usage() {
     echo "usage: reformat_all.sh [-f|--force]"
-    echo "           [--filter=(complete_formatting|clangformat|uncrustify|copyright|includesort)]"
+    echo "           [--filter=(complete_formatting|clangformat|uncrustify|copyright)]"
     echo "           [--pattern=<pattern>] [<action>] [-B=<build dir>]"
-    echo "<action>: (list-files|uncrustify|clang-format*|copyright|includesort) (*=default)"
+    echo "<action>: (list-files|uncrustify|clang-format*|copyright) (*=default)"
 }
 
 filter=default
@@ -51,8 +51,7 @@ patterns=()
 action=clang-format
 for arg in "$@" ; do
     if [[ "$arg" == "list-files" || "$arg" == "uncrustify" ||
-          "$arg" == "clang-format" || "$arg" == "copyright" ||
-          "$arg" == "includesort" ]] ; then
+          "$arg" == "clang-format" || "$arg" == "copyright" ]] ; then
         action=$arg
     elif [[ "$arg" == --filter=* ]] ; then
         filter=${arg#--filter=}
@@ -111,13 +110,6 @@ case "$action" in
     copyright)
         command="xargs admin/copyright.py --check"
         ;;
-    includesort)
-        if [ -z "${builddir}" ] ; then
-            echo "Build directory must be set with -B for includesort."
-            exit 2
-        fi
-        command="docs/doxygen/includesorter.py -S . -B ${builddir} -F -"
-        ;;
     *)
         echo "Unknown action: $action"
         exit 2
@@ -132,9 +124,6 @@ if [[ "$filter" == "default" ]] ; then
 fi
 
 case "$filter" in
-    includesort)
-        filter_re="(complete_formatting|includesort)"
-        ;;
     uncrustify)
         filter_re="(uncrustify)"
         ;;

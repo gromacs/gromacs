@@ -1,8 +1,9 @@
 Guidelines for #include directives
 ==================================
 
-The following include order is used in |Gromacs|. An empty line should appear
-between each group, and headers within each group sorted alphabetically.
+The following include order is used in |Gromacs| and enforced by ``clang-format``.
+An empty line should appear between each group, and headers within 
+each group sorted alphabetically.
 
 1. Each *source* file should include ``gmxpre.h`` first.
 2. If a *source* file has a corresponding header, it should be included next.

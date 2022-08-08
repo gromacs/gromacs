@@ -57,7 +57,6 @@ from optparse import OptionParser
 
 import gmxtree
 from gmxtree import GromacsTree, DocType
-from includesorter import IncludeSorter
 from reporter import Reporter
 
 def check_file(fileobj, tree, reporter):
@@ -194,23 +193,6 @@ def check_member(member, reporter, check_ignored):
 
 def check_all(tree, reporter, check_ignored):
     """Do all checks for the GROMACS tree."""
-    # Include sorting is disabled pending resolution of
-    # https://gitlab.com/gromacs/gromacs/-/issues/3288 and
-    # https://gitlab.com/gromacs/gromacs/-/issues/3659
-    # includesorter = IncludeSorter()
-    # for fileobj in tree.get_files():
-    #     if isinstance(fileobj, gmxtree.GeneratorSourceFile):
-    #         continue
-    #     check_file(fileobj, tree, reporter)
-    #     for includedfile in fileobj.get_includes():
-    #         check_include(fileobj, includedfile, reporter)
-    #     if fileobj.should_includes_be_sorted():
-    #         is_sorted, details = includesorter.check_sorted(fileobj)
-    #         if not is_sorted:
-    #             details.append("You can use includesorter.py to do the sorting automatically; see docs/dev-manual/gmxtree.rst")
-    #             reporter.code_issue(fileobj,
-    #                     "include style/order is not consistent; see docs/dev-manual/includestyle.rst", details)
-
     for classobj in tree.get_classes():
         check_class(classobj, reporter)
 

@@ -6,8 +6,9 @@ Automatic source code formatting
 .. highlight:: bash
 
 The source code can be automatically formatted using clang-format
-since GROMACS 2020.
-Both are formatting tools that apply the guidelines in :doc:`formatting`.
+since |Gromacs| 2020.
+It automatically applies the guidelines in :doc:`formatting` and in
+:doc:`includestyle`.
 Additionally, other Python scripts are used for a few other automatic
 formatting/checking tasks.  The overview tools page contains a list of these
 tools: :ref:`dev-formatting-tools`.

@@ -100,8 +100,7 @@ cmd="$cmd -I${src_folder} -I${src_folder}/external/thread_mpi/include
      -Xiwyu --mapping_file=${src_path}/admin/iwyu.imp"
 
 if [ $apply -eq 1 ] ; then
-    cmd="$cmd 2>&1 | fix_includes.py --nosafe_headers ||
-         ${src_path}/docs/doxygen/includesorter.py $filename -B$build_path -S$src_path"
+    cmd="$cmd 2>&1 | fix_includes.py --nosafe_headers"
 fi
 
 eval $cmd

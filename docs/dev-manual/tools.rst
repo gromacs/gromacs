@@ -142,12 +142,6 @@ clang-tidy
   before every commit to check for formatting
   issues.  See :doc:`code-formatting` for details.
 
-``docs/doxygen/includesorter.py``
-  This Python script sorts and reformats #include directives according to
-  the guidelines at :doc:`includestyle`.  Details are documented on a
-  separate page (with the whole suite of Python scripts used for source code
-  checks): :ref:`dev-include-sorter`.
-
 include directive checker
   In its present form, the above include sorter script cannot be conveniently
   applied in the formatting script.  To check for issues, it is instead integrated into
