@@ -255,7 +255,7 @@ docs:build:
     - grep -i "error" docs/sphinx-*.log > sphinxDiagnostics.log || true
     - grep -i "warning" docs/sphinx-*.log >> sphinxDiagnostics.log || true
     - grep -e "error:" -e "warning:" webpage.log > doxygenErrors.log || true
-    - grep -e "ERROR:" -e "WARNING:" webpage.log > sphinxErrors.log || true
+    - grep -e "ERROR:" -e "WARNING:" -e 'exception:' webpage.log > sphinxErrors.log || true
 # TODO(#4543): Resolve various warnings and errors from doxygen and its supporting tools.
 #    - if [ -s doxygenErrors.log ] ; then echo "Found errors during doxygen build"; cat doxygenErrors.log; exit 1; fi
     - if [ -s pythonErrors.log ] ; then echo "Found Python Errors during manual build"; cat pythonErrors.log; exit 1; fi
