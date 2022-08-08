@@ -151,7 +151,7 @@ if (SPHINX_FOUND)
         # Definitions and Units chapter
         reference-manual/definitions.rst
         # Topologies chapter
-        reference-manual/topologies.rst
+        reference-manual/topologies/topologies.rst
         reference-manual/topologies/particle-type.rst
         reference-manual/topologies/parameter-files.rst
         reference-manual/topologies/molecule-definition.rst
@@ -178,7 +178,7 @@ if (SPHINX_FOUND)
         )
     set(REFERENCEMANUAL_SPHINX_FILES_WITH_IMAGES
         # Algorithms chapter
-        reference-manual/algorithms.rst
+        reference-manual/algorithms/algorithms.rst
         reference-manual/algorithms/periodic-boundary-conditions.rst
         reference-manual/algorithms/group-concept.rst
         reference-manual/algorithms/molecular-dynamics.rst
@@ -195,7 +195,7 @@ if (SPHINX_FOUND)
         reference-manual/algorithms/expanded-ensemble.rst
         reference-manual/algorithms/parallelization-domain-decomp.rst
         # Interaction functions and force fields chapter
-        reference-manual/functions.rst
+        reference-manual/functions/functions.rst
         reference-manual/functions/bonded-interactions.rst
         reference-manual/functions/force-field.rst
         reference-manual/functions/free-energy-interactions.rst
@@ -206,7 +206,7 @@ if (SPHINX_FOUND)
         reference-manual/functions/polarization.rst
         reference-manual/functions/restraints.rst
         # Special topics chapter
-        reference-manual/special.rst
+        reference-manual/special/special.rst
         reference-manual/special/free-energy-implementation.rst
         reference-manual/special/pulling.rst
         reference-manual/special/awh.rst
@@ -224,7 +224,7 @@ if (SPHINX_FOUND)
         reference-manual/special/mimic-qmmm.rst
         reference-manual/special/density-guided-simulation.rst
         # Analysis chapter
-        reference-manual/analysis.rst
+        reference-manual/analysis/analysis.rst
         reference-manual/analysis/using-groups.rst
         reference-manual/analysis/looking-at-trajectory.rst
         reference-manual/analysis/general-properties.rst
@@ -326,6 +326,7 @@ if (SPHINX_FOUND)
         )
     set(SPHINX_SOURCE_FILES
         index.rst
+        texindex.rst
         download.rst
         links.dat
         dev-manual/build-system.rst
@@ -512,9 +513,9 @@ if (SPHINX_FOUND)
     endif()
 
     if(IMAGE_CONVERT_POSSIBLE)
-        set(IMAGE_CONVERT_STRING "possible")
+        set(IMAGE_CONVERT_STRING "gmx_image_convert_possible")
     else()
-        set(IMAGE_CONVERT_STRING "impossible")
+        set(IMAGE_CONVERT_STRING "gmx_image_convert_impossible")
     endif()
 
     set(SPHINX_CONFIG_FILE ${SPHINX_INPUT_DIR}/conf.py)
@@ -618,7 +619,8 @@ if (SPHINX_FOUND)
     # TODO: Make this remove obsolete .rst files.
     # TODO: This does not work in cross-compilation scenarios; disable up to
     # the necessary level.
-    gmx_add_custom_output_target(sphinx-programs OUTPUT STAMP
+    gmx_add_custom_output_target(sphinx-programs
+        OUTPUT ${SPHINX_INPUT_DIR}/conf-man.py
         COMMAND ${CMAKE_COMMAND} -E make_directory onlinehelp
         COMMAND gmx -quiet help -export rst
         DEPENDS gmx
@@ -632,6 +634,8 @@ if (SPHINX_FOUND)
     # into the tarball via the CPack rules below, which requires that
     # the INSTALL file is in a separate directory by itself.
     set(TEXT_INSTALL_GUIDE_OUTPUT_DIR "install-guide/text")
+    # Note: the automatically generated builder tags are not available until after
+    # conf.py is processed, so we use additional custom tags in our sphinx targets.
     add_custom_target(install-guide
         COMMAND
             ${SPHINX_EXECUTABLE}
@@ -639,6 +643,7 @@ if (SPHINX_FOUND)
             -w sphinx-install.log
             -d ${CMAKE_CURRENT_BINARY_DIR}/install-guide/_doctrees
             -c ${SPHINX_INPUT_DIR}
+            -t do_text
             "${SPHINX_INPUT_DIR}/install-guide"
             "${TEXT_INSTALL_GUIDE_OUTPUT_DIR}"
         COMMAND
@@ -653,8 +658,6 @@ if (SPHINX_FOUND)
     add_dependencies(install-guide sphinx-input)
     gmx_cpack_add_generated_source_directory(install-guide/text DESTINATION /)
 
-    # Sphinx cache with pickled ReST documents
-    set(SPHINX_CACHE_DIR "${CMAKE_CURRENT_BINARY_DIR}/_doctrees")
     set(SPHINX_CONFIG_OVERRIDES "")
     if (GMX_DEVELOPER_BUILD)
         set(SPHINX_CONFIG_OVERRIDES "-Dtodo_include_todos=1")
@@ -664,13 +667,14 @@ if (SPHINX_FOUND)
         DEPENDS sphinx-input
         DEPENDS sphinx-image-conversion
         DEPENDS manual
-        COMMAND
-            ${CMAKE_COMMAND} -E make_directory ${SPHINX_INPUT_DIR}/_static
+        # Note: the automatically generated builder tags are not available until after
+        # conf.py is processed, so we use additional custom tags in our sphinx targets.
         COMMAND
             ${SPHINX_EXECUTABLE}
             -q -b html
             -w sphinx-html.log
-            -d "${SPHINX_CACHE_DIR}"
+            -d "${CMAKE_CURRENT_BINARY_DIR}/_html_doctrees"
+            -t do_html
             ${SPHINX_CONFIG_OVERRIDES}
             "${SPHINX_INPUT_DIR}"
             "${HTML_OUTPUT_DIR}"
@@ -680,12 +684,15 @@ if (SPHINX_FOUND)
         VERBATIM
         )
 
+    # Note: the automatically generated builder tags are not available until after
+    # conf.py is processed, so we use additional custom tags in our sphinx targets.
     add_custom_target(man
+        DEPENDS ${SPHINX_INPUT_DIR}/conf-man.py
         COMMAND
             ${SPHINX_EXECUTABLE}
             -q -b man
             -w sphinx-man.log
-            -d ${SPHINX_CACHE_DIR}
+            -d "${CMAKE_CURRENT_BINARY_DIR}/_man_doctrees"
             -t do_man
             ${SPHINX_INPUT_DIR}
             ${CMAKE_CURRENT_BINARY_DIR}/man

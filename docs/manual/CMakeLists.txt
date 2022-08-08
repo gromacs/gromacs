@@ -32,6 +32,8 @@
 # the research papers on the package. Check out https://www.gromacs.org.
 
 if(MANUAL_BUILD_IS_POSSIBLE)
+    # Note: the automatically generated builder tags are not available until after
+    # conf.py is processed, so we use additional custom tags in our sphinx targets.
     add_custom_command(
         OUTPUT ${SPHINX_LATEX_FILE}
         DEPENDS sphinx-programs sphinx-input
@@ -39,7 +41,8 @@ if(MANUAL_BUILD_IS_POSSIBLE)
             ${SPHINX_EXECUTABLE}
             -q -b latex
             -w sphinx-latex.log
-            -d "${SPHINX_CACHE_DIR}"
+            -d "${CMAKE_CURRENT_BINARY_DIR}/_latex_doctrees"
+            -t do_latex
             "${SPHINX_INPUT_DIR}"
             "${TEX_OUTPUT_DIR}"
         WORKING_DIRECTORY

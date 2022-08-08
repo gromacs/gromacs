@@ -58,7 +58,6 @@ gmx_version_string = '@GMX_VERSION_STRING@'
 gmx_version_string_full = '@GMX_VERSION_STRING_FULL@'
 regressiontest_version = '@REGRESSIONTEST_VERSION@'
 gmx_min_sphinx = '@EXPECTED_SPHINX_VERSION@'
-gmx_image_convert = '@IMAGE_CONVERT_STRING@'
 variables = [
     ('EXPECTED_DOXYGEN_VERSION', '@EXPECTED_DOXYGEN_VERSION@'),
     ('EXPECTED_SPHINX_VERSION', '@EXPECTED_SPHINX_VERSION@'),
@@ -103,7 +102,6 @@ extensions = [
     'sphinx.ext.extlinks',
     'sphinx.ext.napoleon',
     'sphinx.ext.doctest',
-    'sphinx.ext.ifconfig',
     'sphinx.ext.intersphinx',
     'sphinx.ext.mathjax',
     'sphinx.ext.napoleon',
@@ -129,9 +127,6 @@ source_suffix = '.rst'
 
 # The encoding of source files.
 #source_encoding = 'utf-8-sig'
-
-# The master toctree document.
-root_doc = 'index'
 
 # General information about the project.
 project = u'GROMACS'
@@ -161,13 +156,32 @@ plotext = u'.eps'
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
 exclude_patterns = ['fragments']
+# Note: the automatically generated builder tags are not available until after
+# conf.py is processed, so we use additional custom tags in our sphinx targets.
 if not tags.has('do_man'):
     exclude_patterns += ['man']
+if tags.has('do_latex'):
+    exclude_patterns.extend([
+        'index.rst',
+    ])
+    # The master toctree document.
+    root_doc = 'texindex'
+else:
+    exclude_patterns += ['texindex.rst']
+    # The master toctree document.
+    root_doc = 'index'
 
-# Set variable if documentation build can convert images or not
+# Set tag if documentation build can convert images or not
 # to selectively include files in reference manual
-def setup(app):
-    app.add_config_value('gmx_image_convert', 'impossible', 'env')
+tags.add('@IMAGE_CONVERT_STRING@')
+
+if tags.has('gmx_image_convert_impossible'):
+    exclude_patterns.extend([
+        'reference-manual/algorithms',
+        'reference-manual/functions',
+        'reference-manual/special',
+        'reference-manual/analysis'
+    ])
 
 # The reST default role (used for this markup: `text`) to use for all
 # documents.
@@ -319,73 +333,79 @@ htmlhelp_basename = 'Gromacsdoc'
 
 
 # -- Options for LaTeX output ---------------------------------------------
+# Note: the automatically generated builder tags are not available until after
+# conf.py is processed, so we use additional custom tags in our sphinx targets.
+if tags.has('do_latex'):
+    latex_elements = {
+        # The paper size ('letterpaper' or 'a4paper').
+        'papersize': 'a4paper',
 
-latex_elements = {
-# The paper size ('letterpaper' or 'a4paper').
-'papersize': 'a4paper',
 
+        # The font size ('10pt', '11pt' or '12pt').
+        'pointsize': '11',
 
-# The font size ('10pt', '11pt' or '12pt').
-'pointsize': '11',
+        # Additional stuff for the LaTeX preamble.
+        # The tocdepth setting is needed to overwrite the default value set by Sphinx
+        # to get a more detailed toctree in the pdf version of the manual.
+        'preamble': r'''
+        \usepackage{here}
+        \usepackage{picins}
+        \usepackage{underscore}
+        \usepackage{tabularx}
+        \usepackage{multicol}
+        \usepackage{dcolumn}
+        \usepackage{makeidx}
+        \usepackage{times}
+        \usepackage{ifthen}
+        \usepackage{enumitem}
+        \usepackage{longtable}
+        \usepackage{pdflscape}
+        \pagenumbering{roman}
+        \usepackage{array}
+        \setcounter{tocdepth}{2}
+        ''',
+        # Format output to avoid empty pages
+        'classoptions': ',openany,oneside'
+    }
 
-# Additional stuff for the LaTeX preamble.
-# The tocdepth setting is needed to overwrite the default value set by Sphinx
-# to get a more detailed toctree in the pdf version of the manual.
-    'preamble': r'''
-    \usepackage{here}
-    \usepackage{picins}
-    \usepackage{underscore}
-    \usepackage{tabularx}
-    \usepackage{multicol}
-    \usepackage{dcolumn}
-    \usepackage{makeidx}
-    \usepackage{times}
-    \usepackage{ifthen}
-    \usepackage{enumitem}
-    \usepackage{longtable}
-    \usepackage{pdflscape}
-    \pagenumbering{roman}
-    \usepackage{array}
-    \setcounter{tocdepth}{2}
-    ''',
-# Format output to avoid empty pages
-  'classoptions': ',openany,oneside'
-}
+    # Grouping the document tree into LaTeX files. List of tuples
+    # (source start file, target name, title,
+    #  author, documentclass [howto, manual, or own class]).
+    latex_documents = [
+      ('texindex', 'gromacs.tex', u'GROMACS Documentation',
+       u'GROMACS development team', 'manual'),
+    ]
 
-# Grouping the document tree into LaTeX files. List of tuples
-# (source start file, target name, title,
-#  author, documentclass [howto, manual, or own class]).
-latex_documents = [
-  ('index', 'gromacs.tex', u'GROMACS Documentation',
-   u'GROMACS development team', 'manual'),
-]
+    # The name of an image file (relative to this directory) to place at the top of
+    # the title page.
+    latex_logo = 'reference-manual/plots/GMX_logos/gmx_falcon_blue.png'
 
-# The name of an image file (relative to this directory) to place at the top of
-# the title page.
-latex_logo = 'reference-manual/plots/GMX_logos/gmx_falcon_blue.png'
+    # For "manual" documents, if this is true, then toplevel headings are parts,
+    # not chapters.
+    latex_use_parts = True
 
-# For "manual" documents, if this is true, then toplevel headings are parts,
-# not chapters.
-latex_use_parts = True
+    # If true, show page references after internal links.
+    latex_show_pagerefs = True
 
-# If true, show page references after internal links.
-latex_show_pagerefs = True
+    # If true, show URL addresses after external links.
+    #latex_show_urls = False
 
-# If true, show URL addresses after external links.
-#latex_show_urls = False
+    # Documents to append as an appendix to all manuals.
+    #latex_appendices = []
 
-# Documents to append as an appendix to all manuals.
-#latex_appendices = []
-
-# If false, no module index is generated.
-#latex_domain_indices = True
+    # If false, no module index is generated.
+    #latex_domain_indices = True
 
 
 # -- Options for manual page output ---------------------------------------
 
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
+# Note: the automatically generated builder tags are not available until after
+# conf.py is processed, so we use additional custom tags in our sphinx targets.
 if tags.has('do_man'):
+    # Note: conf-man.py is generated by the (built) command line executable.
+    # Ref: gmx::CommandLineHelpModule
     exec(open('conf-man.py').read())
 
 # If true, show URL addresses after external links.
@@ -393,27 +413,30 @@ if tags.has('do_man'):
 
 
 # -- Options for Texinfo output -------------------------------------------
+# Note: the automatically generated builder tags are not available until after
+# conf.py is processed, so we use additional custom tags in our sphinx targets.
+if tags.has('do_texinfo'):
 
-# Grouping the document tree into Texinfo files. List of tuples
-# (source start file, target name, title, author,
-#  dir menu entry, description, category)
-texinfo_documents = [
-  ('index', 'GROMACS', u'GROMACS Documentation',
-   u'GROMACS development team', 'GROMACS', 'One line description of project.',
-   'Miscellaneous'),
-]
+    # Grouping the document tree into Texinfo files. List of tuples
+    # (source start file, target name, title, author,
+    #  dir menu entry, description, category)
+    texinfo_documents = [
+      ('texindex', 'GROMACS', u'GROMACS Documentation',
+       u'GROMACS development team', 'GROMACS', 'One line description of project.',
+       'Miscellaneous'),
+    ]
 
-# Documents to append as an appendix to all manuals.
-#texinfo_appendices = []
+    # Documents to append as an appendix to all manuals.
+    #texinfo_appendices = []
 
-# If false, no module index is generated.
-#texinfo_domain_indices = True
+    # If false, no module index is generated.
+    #texinfo_domain_indices = True
 
-# How to display URL addresses: 'footnote', 'no', or 'inline'.
-#texinfo_show_urls = 'footnote'
+    # How to display URL addresses: 'footnote', 'no', or 'inline'.
+    #texinfo_show_urls = 'footnote'
 
-# If true, do not generate a @detailmenu in the "Top" node's menu.
-#texinfo_no_detailmenu = False
+    # If true, do not generate a @detailmenu in the "Top" node's menu.
+    #texinfo_no_detailmenu = False
 
 # Make it possible to use numbered labels for figures and tables
 numfig = True
