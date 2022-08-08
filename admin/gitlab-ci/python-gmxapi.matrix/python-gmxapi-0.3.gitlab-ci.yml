@@ -39,26 +39,9 @@
     - job: gromacs:clang-8:build
       artifacts: true
 
-gmxapi:clang-8:py-3.7.7:
+gmxapi:clang-8:py-3.7:
   extends:
     - .gmxapi:clang-8
     - .rules:merge-requests
   variables:
     VENVPATH: "/root/venv/py3.7"
-    PY_VER: "3.7.7"
-
-gmxapi:clang-8:py-3.8.2:
-  extends:
-    - .gmxapi:clang-8
-    - .rules:merge-requests
-  variables:
-    VENVPATH: "/root/venv/py3.8"
-    PY_VER: "3.8.2"
-
-gmxapi:clang-8:py-3.9.1:
-  extends:
-    - .gmxapi:clang-8
-    - .rules:merge-requests
-  variables:
-    VENVPATH: "/root/venv/py3.9"
-    PY_VER: "3.9.1"

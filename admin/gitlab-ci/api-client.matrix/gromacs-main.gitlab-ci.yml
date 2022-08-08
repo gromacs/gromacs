@@ -74,7 +74,7 @@ sample_taf:tmpi:
     when: always
     expire_in: 1 week
 
-sample_restraint:clang-8:py-3.7.7:
+sample_restraint:clang-8:py-3.7:
   extends:
     - .sample_restraint
     - .use-clang:base
@@ -82,39 +82,6 @@ sample_restraint:clang-8:py-3.7.7:
   image: ${CI_REGISTRY_IMAGE}/ci-ubuntu-20.04-llvm-8-cuda-11.0
   variables:
     VENVPATH: "/root/venv/py3.7"
-    PY_VER: "3.7.7"
-  needs:
-    - job: gromacs:clang-8:build
-      artifacts: true
-  tags:
-    - k8s-scilifelab
-  # The dependency means we need to use the same tag restriction as upstream.
-
-sample_restraint:clang-8:py-3.8.2:
-  extends:
-    - .sample_restraint
-    - .use-clang:base
-    - .rules:merge-requests
-  image: ${CI_REGISTRY_IMAGE}/ci-ubuntu-20.04-llvm-8-cuda-11.0
-  variables:
-    VENVPATH: "/root/venv/py3.8"
-    PY_VER: "3.8.2"
-  needs:
-    - job: gromacs:clang-8:build
-      artifacts: true
-  tags:
-    - k8s-scilifelab
-  # The dependency means we need to use the same tag restriction as upstream.
-
-sample_restraint:clang-8:py-3.9.1:
-  extends:
-    - .sample_restraint
-    - .use-clang:base
-    - .rules:merge-requests
-  image: ${CI_REGISTRY_IMAGE}/ci-ubuntu-20.04-llvm-8-cuda-11.0
-  variables:
-    VENVPATH: "/root/venv/py3.9"
-    PY_VER: "3.9.1"
   needs:
     - job: gromacs:clang-8:build
       artifacts: true
