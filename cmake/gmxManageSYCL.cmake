@@ -300,11 +300,12 @@ else()
         endif()
         set(CHECK_SYCL_CXX_FLAGS_QUIETLY 1 CACHE INTERNAL "Keep quiet on future calls to detect SYCL flags" FORCE)
         set(SYCL_TOOLCHAIN_CXX_FLAGS "${SYCL_TOOLCHAIN_CXX_FLAGS} ${SYCL_CXX_FLAGS}")
+        set(SYCL_TOOLCHAIN_LINKER_FLAGS "${SYCL_TOOLCHAIN_LINKER_FLAGS} ${SYCL_CXX_FLAGS}")
     else()
         message(FATAL_ERROR "Cannot compile a SYCL program with ${SYCL_TOOLCHAIN_CXX_FLAGS} ${SYCL_CXX_FLAGS}. Try a different compiler or disable SYCL.")
     endif()
 
-    # Add kernel-splitting flag if available
+    # Add kernel-splitting flag if available, both for compiling and linking
     set(SYCL_DEVICE_CODE_SPLIT_CXX_FLAGS "-fsycl-device-code-split=per_kernel")
     gmx_check_source_compiles_with_flags(
         "${SAMPLE_SYCL_SOURCE}"
@@ -314,6 +315,7 @@ else()
         )
     if (SYCL_DEVICE_CODE_SPLIT_CXX_FLAGS_RESULT)
         set(SYCL_TOOLCHAIN_CXX_FLAGS "${SYCL_TOOLCHAIN_CXX_FLAGS} ${SYCL_DEVICE_CODE_SPLIT_CXX_FLAGS}")
+        set(SYCL_TOOLCHAIN_LINKER_FLAGS "${SYCL_TOOLCHAIN_LINKER_FLAGS} ${SYCL_DEVICE_CODE_SPLIT_CXX_FLAGS}")
     else()
         message(WARNING "Cannot compile SYCL with per-kernel device-code splitting. Simulations will work, but the first step will be much slower than it needs to be. Try a different compiler.")
     endif()
@@ -352,6 +354,11 @@ else()
         set_property(SOURCE ${ARGS_SOURCES} APPEND PROPERTY COMPILE_OPTIONS
             ${SYCL_TOOLCHAIN_CXX_FLAGS}
             ${SYCL_CXX_FLAGS_EXTRA})
-        target_link_options(${ARGS_TARGET} PRIVATE ${SYCL_CXX_FLAGS})
+        if (WIN32) # Linking flags handling is not reliable on Windows, so we pass the bare minimum
+            target_link_options(${ARGS_TARGET} PRIVATE ${SYCL_CXX_FLAGS})
+        else()
+            string(REPLACE " " ";" SYCL_TOOLCHAIN_LINKER_FLAGS_LIST "${SYCL_TOOLCHAIN_LINKER_FLAGS} ${SYCL_CXX_FLAGS_EXTRA}")
+            target_link_options(${ARGS_TARGET} PRIVATE ${SYCL_TOOLCHAIN_LINKER_FLAGS_LIST})
+        endif()
     endfunction(add_sycl_to_target)
 endif()
