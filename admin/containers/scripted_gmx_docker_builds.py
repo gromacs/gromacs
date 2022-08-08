@@ -283,14 +283,15 @@ def get_rocm_packages(args) -> typing.List[str]:
     else:
         return _rocm_extra_packages
 
-def get_cp2k_packages(args) -> typing.List[str]:
-    if args.mpi is not None:
-        packages = _cp2k_extra_packages + ['libfftw3-mpi-dev']
 
-    if (args.cp2k is None):
-        return []
-    else:
-        return packages
+def get_cp2k_packages(args) -> typing.List[str]:
+    cp2k_packages = []
+    if args.cp2k:
+        cp2k_packages.extend(_cp2k_extra_packages)
+        if args.mpi is not None:
+            cp2k_packages.append('libfftw3-mpi-dev')
+    return cp2k_packages
+
 
 def get_compiler(args, compiler_build_stage: hpccm.Stage = None) -> bb_base:
     # Compiler
