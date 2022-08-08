@@ -67,9 +67,6 @@
 //! Macro to select a bool name
 #define EBOOL(e) gmx::boolToString(e)
 
-/* Default values for nstcalcenergy, used when the are no other restrictions. */
-constexpr int c_defaultNstCalcEnergy = 10;
-
 /* The minimum number of integration steps required for reasonably accurate
  * integration of first and second order coupling algorithms.
  */
@@ -93,27 +90,6 @@ t_inputrec::t_inputrec() :
 t_inputrec::~t_inputrec()
 {
     done_inputrec(this);
-}
-
-int ir_optimal_nstcalcenergy(const t_inputrec* ir)
-{
-    int nst;
-
-    if (ir->nstlist > 0)
-    {
-        nst = ir->nstlist;
-    }
-    else
-    {
-        nst = c_defaultNstCalcEnergy;
-    }
-
-    if (ir->useMts)
-    {
-        nst = std::lcm(nst, ir->mtsLevels.back().stepFactor);
-    }
-
-    return nst;
 }
 
 int tcouple_min_integration_steps(TemperatureCoupling etc)

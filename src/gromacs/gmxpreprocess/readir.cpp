@@ -507,27 +507,15 @@ void check_ir(const char*                    mdparin,
     }
     if (EI_DYNAMICS(ir->eI))
     {
+        // Replace old -1 "automation" values by the default value of 100
         if (ir->nstcalcenergy < 0)
         {
-            ir->nstcalcenergy = ir_optimal_nstcalcenergy(ir);
-            if (ir->nstenergy != 0 && ir->nstenergy < ir->nstcalcenergy)
-            {
-                /* nstcalcenergy larger than nstener does not make sense.
-                 * We ideally want nstcalcenergy=nstener.
-                 */
-                if (ir->nstlist > 0)
-                {
-                    ir->nstcalcenergy = std::gcd(ir->nstenergy, ir->nstlist);
-                }
-                else
-                {
-                    ir->nstcalcenergy = ir->nstenergy;
-                }
-            }
+            ir->nstcalcenergy = 100;
         }
-        else if ((ir->nstenergy > 0 && ir->nstcalcenergy > ir->nstenergy)
-                 || (ir->efep != FreeEnergyPerturbationType::No && ir->fepvals->nstdhdl > 0
-                     && (ir->nstcalcenergy > ir->fepvals->nstdhdl)))
+
+        if ((ir->nstenergy > 0 && ir->nstcalcenergy > ir->nstenergy)
+            || (ir->efep != FreeEnergyPerturbationType::No && ir->fepvals->nstdhdl > 0
+                && (ir->nstcalcenergy > ir->fepvals->nstdhdl)))
 
         {
             const char* nsten    = "nstenergy";

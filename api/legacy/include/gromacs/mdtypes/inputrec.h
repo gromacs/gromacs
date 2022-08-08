@@ -583,8 +583,6 @@ struct t_inputrec // NOLINT (clang-analyzer-optin.performance.Padding)
     std::unique_ptr<gmx::KeyValueTreeObject> internalParameters;
 };
 
-int ir_optimal_nstcalcenergy(const t_inputrec* ir);
-
 int tcouple_min_integration_steps(TemperatureCoupling etc);
 
 int ir_optimal_nsttcouple(const t_inputrec* ir);
