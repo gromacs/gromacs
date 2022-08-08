@@ -5,9 +5,6 @@ Change Management
 This documentation assumes the reader is already familiar with using ``git``
 for managing file revisions.
 
-.. contents::
-   :local:
-
 Getting started
 ===============
 

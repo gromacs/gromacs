@@ -19,10 +19,6 @@ Command line examples assume the `bash <https://www.gnu.org/software/bash/>`_ sh
     Once built, a particular copy of the :py:mod:`gmxapi` Python package always refers to the
     same GROMACS installation.
 
-.. contents:: Contents
-    :local:
-    :depth: 2
-
 .. note::
 
     The following documentation contains frequent references to the pip_ tool
