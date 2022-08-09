@@ -44,6 +44,29 @@
 # Web service is provided by a base `httpd` Docker image. Refer to
 # https://hub.docker.com/_/httpd for additional details.
 #
+# Hint: For minor updates copy new content instead of rebuilding.
+#
+# The image can take a long time to rebuild since a full gromacs build is
+# required (any additional caching would be unnecessarily complex and may
+# hurt reproducibility). To update the web content,
+#  1. create a container from an existing image
+#  2. copy a local docs build into the container
+#  3. save a snapshot of the container as a new image
+#
+#     BUILD=/path/to/gromacs/build
+#     docker create --name docs_container gromacs/docs:my-original
+#     docker cp $BUILD/docs/html/. docs_container:/usr/local/apache2/htdocs/
+#     docker commit docs_container gromacs/docs:my-update
+#     docker rm docs_container
+#
+# Note that the exact syntax for the paths to `docker cp` is a bit sensitive
+# when the destination directory exists.
+# Ref https://docs.docker.com/engine/reference/commandline/cp/#description
+#
+# If you push images updated this, it will be less expensive for others
+# to pull successive updates. But try to update the same base image when only
+# content is changing so that you don't add unnecessary extra layers that bloat
+# the overall docker image size for first-time pullers.
 
 ARG BASE_IMAGE=ci-ubuntu-20.04-llvm-7-docs
 ARG BASE_TAG=latest
@@ -59,6 +82,8 @@ ENV BUILD_DIR /tmp/gromacs-build
 
 RUN mkdir -p $BUILD_DIR
 WORKDIR $BUILD_DIR
+
+RUN /root/venv/py3.7/bin/pip install furo sphinx-copybutton sphinx_inline_tabs
 
 # Enable (or disable) Sphinx "todo" output.
 ARG TODOS=1

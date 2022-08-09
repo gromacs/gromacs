@@ -363,6 +363,7 @@ if (SPHINX_FOUND)
         how-to/special.rst
         how-to/visualize.rst
         install-guide/index.rst
+        reference-manual/plots/GMX_logos/gmx_logo_blue.png
         release-notes/index.rst
         release-notes/2023/major/highlights.rst
         release-notes/2023/major/features.rst

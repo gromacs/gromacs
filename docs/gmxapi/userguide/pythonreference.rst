@@ -2,9 +2,6 @@
 gmxapi Python module reference
 ==============================
 
-.. contents:: :local:
-    :depth: 2
-
 .. Concise reference documentation extracted directly from code.
 .. For new and non-backwards-compatible features, API versions must be given.
 

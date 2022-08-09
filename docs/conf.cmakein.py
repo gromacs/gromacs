@@ -114,6 +114,8 @@ extensions = [
     # Please run linkchecker and inspect the generated
     # docs/html/_modules/index.html page before committing a change that enables
     # 'sphinx.ext.viewcode',
+    'sphinx_copybutton',
+    'sphinx_inline_tabs',
     'gmxsphinx'
 ]
 extlinks = {'issue': ('https://gitlab.com/gromacs/gromacs/-/issues/%s',
@@ -199,7 +201,7 @@ default_role = 'any'
 #show_authors = False
 
 # The name of the Pygments (syntax highlighting) style to use.
-pygments_style = 'sphinx'
+# pygments_style = 'sphinx'
 
 # A list of ignored prefixes for module index sorting.
 #modindex_common_prefix = []
@@ -251,12 +253,20 @@ rst_epilog += """
 
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
-html_theme = 'classic'
+html_theme = 'furo'
+# html_theme = 'alabaster'
 
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
 # documentation.
-#html_theme_options = {}
+html_theme_options = {
+    # Hide project title in sidebar, since we are using a logo instead.
+    "sidebar_hide_name": True,
+    # Add an "edit" button to the rendered web pages.
+    "source_repository": "https://gitlab.com/gromacs/gromacs/",
+    "source_branch": "main",
+    "source_directory": "docs/",
+}
 
 # Add any paths that contain custom themes here, relative to this directory.
 html_theme_path = ['']
@@ -270,7 +280,7 @@ html_short_title = u'GROMACS ' + version
 
 # The name of an image file (relative to this directory) to place at the top
 # of the sidebar.
-#html_logo = None
+html_logo = 'reference-manual/plots/GMX_logos/gmx_logo_blue.png'
 
 # The name of an image file (within the static path) to use as favicon of the
 # docs.  This file should be a Windows icon file (.ico) being 16x16 or 32x32
