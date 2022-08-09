@@ -14,7 +14,7 @@ Source code
 * (md5sum |SOURCE_MD5SUM|)
 
 Other source code versions may be found at the
-`web site <http://www.gromacs.org/Downloads>`_.
+`web site <https://manual.gromacs.org/>`_.
 
 Regression tests
 ----------------
