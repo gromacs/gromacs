@@ -40,7 +40,7 @@ CI pipeline jobs.
 Example::
 
     $ python3 -m utility --llvm --doxygen
-    gromacs/ci-ubuntu-20.04-llvm-7-docs
+    gromacs/ci-ubuntu-20.04-llvm-9-docs
 
 See Also:
     :file:`buildall.sh`
@@ -90,10 +90,10 @@ parser.add_argument('--cmake', nargs='*', type=str, default=['3.16.3', '3.17.2',
                     help='Selection of CMake version to provide to base image')
 
 compiler_group = parser.add_mutually_exclusive_group()
-compiler_group.add_argument('--gcc', type=int, nargs='?', const=7, default=7,
+compiler_group.add_argument('--gcc', type=int, default=9,
                             help='Select GNU compiler tool chain. (Default) '
                                  'Some checking is implemented to avoid incompatible combinations')
-compiler_group.add_argument('--llvm', type=str, nargs='?', const='7', default=None,
+compiler_group.add_argument('--llvm', type=str, nargs='?', const='9', default=None,
                             help='Select LLVM compiler tool chain. '
                                  'Some checking is implemented to avoid incompatible combinations')
 # Note that oneAPI packages don't bump their version numbers every

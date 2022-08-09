@@ -17,7 +17,7 @@
 # The final web server image should be much smaller.
 # The base image is fairly stable. If you need to update the `latest` tag,
 # though, you can explicitly
-#     docker pull registry.gitlab.com/gromacs/gromacs/ci-ubuntu-20.04-llvm-7-docs
+#     docker pull registry.gitlab.com/gromacs/gromacs/ci-ubuntu-20.04-llvm-9-docs
 # To use a specific base image from
 # https://gitlab.com/gromacs/gromacs/container_registry/?search[]=docs,
 # specify the image and/or tag with the BASE_IMAGE and BASE_TAG build args,
@@ -68,7 +68,7 @@
 # content is changing so that you don't add unnecessary extra layers that bloat
 # the overall docker image size for first-time pullers.
 
-ARG BASE_IMAGE=ci-ubuntu-20.04-llvm-7-docs
+ARG BASE_IMAGE=ci-ubuntu-20.04-llvm-9-docs
 ARG BASE_TAG=latest
 FROM registry.gitlab.com/gromacs/gromacs/$BASE_IMAGE:$BASE_TAG as build
 

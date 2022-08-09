@@ -8,14 +8,14 @@
 # Test implementation choices (free to change as needed):
 #   GROMACS branch: repository version
 #   gmxapi Python package: sources from python_packaging/
-#   compiler: clang-8
+#   compiler: clang-9
 
 
-.gmxapi:clang-8:
+.gmxapi:clang-9:
   extends:
     - .variables:default
     - .use-clang:base
-  image: ${CI_REGISTRY_IMAGE}/ci-ubuntu-20.04-llvm-8-cuda-11.0
+  image: ${CI_REGISTRY_IMAGE}/ci-ubuntu-20.04-llvm-9-cuda-11.0.3
   stage: test
   variables:
     KUBERNETES_CPU_LIMIT: 2
@@ -36,12 +36,12 @@
     when: always
     expire_in: 1 week
   needs:
-    - job: gromacs:clang-8:build
+    - job: gromacs:clang-9:build
       artifacts: true
 
-gmxapi:clang-8:py-3.7:
+gmxapi:clang-9:py-3.7:
   extends:
-    - .gmxapi:clang-8
+    - .gmxapi:clang-9
     - .rules:merge-requests
   variables:
     VENVPATH: "/root/venv/py3.7"

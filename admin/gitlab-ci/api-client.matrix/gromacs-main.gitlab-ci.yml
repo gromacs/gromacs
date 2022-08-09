@@ -11,7 +11,7 @@
 # Test implementation choices (free to change as needed):
 #   GROMACS branch: main
 #   gmxapi Python package: 0.3 alpha from GROMACS main
-#   compiler: clang-8
+#   compiler: clang-9
 
 .sample_taf:
   extends:
@@ -45,11 +45,11 @@ sample_taf:tmpi:
   extends:
     - .sample_taf
     - .rules:merge-requests
-  image: ${CI_REGISTRY_IMAGE}/ci-ubuntu-20.04-llvm-8-cuda-11.0
+  image: ${CI_REGISTRY_IMAGE}/ci-ubuntu-20.04-llvm-9-cuda-11.0.3
   variables:
     CMAKE: /usr/local/cmake-3.21.2/bin/cmake
   needs:
-    - job: gromacs:clang-8:build
+    - job: gromacs:clang-9:build
 
 .sample_restraint:
   extends:
@@ -74,16 +74,16 @@ sample_taf:tmpi:
     when: always
     expire_in: 1 week
 
-sample_restraint:clang-8:py-3.7:
+sample_restraint:clang-9:py-3.7:
   extends:
     - .sample_restraint
     - .use-clang:base
     - .rules:merge-requests
-  image: ${CI_REGISTRY_IMAGE}/ci-ubuntu-20.04-llvm-8-cuda-11.0
+  image: ${CI_REGISTRY_IMAGE}/ci-ubuntu-20.04-llvm-9-cuda-11.0.3
   variables:
     VENVPATH: "/root/venv/py3.7"
   needs:
-    - job: gromacs:clang-8:build
+    - job: gromacs:clang-9:build
       artifacts: true
   tags:
     - k8s-scilifelab
