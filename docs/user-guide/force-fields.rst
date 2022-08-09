@@ -11,7 +11,7 @@ AMBER
 `AMBER`_ (Assisted Model Building and Energy Refinement) refers both to a set of molecular mechanical
 :ref:`force fields <gmx-force-field>` for the simulation of biomolecules and a package of molecular simulation programs.
 
-|Gromacs| versions higher than 4.5 support the following AMBER force fields natively:
+|Gromacs| supports the following AMBER force fields natively:
 
 * AMBER94
 * AMBER96
@@ -23,8 +23,8 @@ AMBER
 
 Information concerning the force field can be found using the following information:
 
-* `AMBER Force Fields <http://ambermd.org/#ff>`__ - background about the AMBER force fields
-* `AMBER Programs <http://ambermd.org/#code>`__ - information about the AMBER suite of
+* `AMBER Force Fields <https://ambermd.org/AmberModels.php>`__ - background about the AMBER force fields
+* `AMBER Programs <https://ambermd.org/AmberTools.php>`__ - information about the AMBER suite of
   programs for molecular simulation
 * `ANTECHAMBER/GAFF <http://ambermd.org/antechamber/antechamber.html>`__ -
   Generalized Amber Force Field (GAFF) which is supposed to provide parameters
@@ -36,16 +36,6 @@ Information concerning the force field can be found using the following informat
   or `ACPYPE <https://github.com/alanwilter/acpype>`_), but they do require 
   `AmberTools <https://ambermd.org/AmberTools.php>`_ installation to work.
 
-Older |Gromacs| versions need a separate installation of the ffamber ports:
-
-* `Using AMBER Force Field in GROMACS <http://chemistry.csulb.edu/ffamber/>`__
-  - known as the "ffamber ports," a number of AMBER force fields, complete with documentation.
-
-* Using the ffamber ports with |Gromacs| requires that the input structure files adhere to
-  the AMBER nomenclature for residues.  Problematic residues involve termini (prefixed with
-  N and C), lysine (either LYN or LYP), histidine (HID, HIE, or HIS), and cysteine (CYN or CYX).
-  Please see the `ffamber documentation <http://chemistry.csulb.edu/ffamber/#usage>`__.
-
 .. _AMBER: http://ambermd.org/
 
 .. _gmx-charmm-ff:
@@ -56,13 +46,13 @@ CHARMM
 `CHARMM`_ (Chemistry at HARvard Macromolecular Mechanics) is a both a set of force fields and
 a software package for :ref:`molecular dynamics <gmx-md>` simulations and analysis. Includes united atom
 (CHARMM19) and all atom (CHARMM22, CHARMM27, CHARMM36) :ref:`force fields <gmx-force-field>`.  The CHARMM27 force field
-has been ported to GROMACS and is officially supported as of version 4.5.  CHARMM36 force field files can be
+has been ported to |Gromacs| and is officially supported.  CHARMM36 force field files can be
 obtained from the `MacKerell lab website`_, which regularly produces up-to-date CHARMM force field files in GROMACS format.
 
 .. _CHARMM: http://www.charmm.org/
 .. _MacKerell lab website: http://mackerell.umaryland.edu/charmm_ff.shtml#gromacs
 
-For using CHARMM36 in |Gromacs| 5.0 and newer, please use the following settings in the :ref:`mdp` file::
+For using CHARMM36 in |Gromacs|, please use the following settings in the :ref:`mdp` file::
 
     constraints = h-bonds
     cutoff-scheme = Verlet
@@ -81,10 +71,6 @@ Please also note that the switching distance is a matter of some debate in lipid
 and it is dependent to some extent on the nature of the lipid. Some studies have found that an 0.8-1.0 nm
 switch is appropriate, others argue 0.8-1.2 nm is best, and yet others stand by 1.0-1.2 nm. The user
 is cautioned to thoroughly investigate the force field literature for their chosen lipid(s) before beginning a simulation!
-
-Anyone using very old versions of |Gromacs| may find this script useful:
-
-    CHARMM to |Gromacs| - perl scripts intended to facilitate calculations using |Gromacs| programs and CHARMM forcefields (needed for |Gromacs| versions < 4.5). (`link <http://www.gromacs.org/@api/deki/files/76/=charmm_to_gromacs.tgz>`_)
 
 .. _gmx-gromos-ff:
 

@@ -251,8 +251,8 @@ on a single machine (i.e. not across a network) without MPI. Additionally, it no
 convenient way to use computers with multicore CPU(s), but thread-MPI does in some
 cases make :ref:`mdrun <gmx mdrun>` run slightly faster than with MPI.
 
-Thread-MPI is included in the |Gromacs| source and it is the default parallelization since
-version 4.5, practically rendering the serial :ref:`mdrun <gmx mdrun>` deprecated.
+Thread-MPI is included in the |Gromacs| source and it is the default parallelization mode,
+practically rendering the serial :ref:`mdrun <gmx mdrun>` deprecated.
 Compilation with thread-MPI is controlled by the ``GMX_THREAD_MPI`` CMake variable.
 
 Thread-MPI is compatible with most :ref:`mdrun <gmx mdrun>` features and parallelization schemes,
@@ -262,7 +262,7 @@ By default, the thread-MPI :ref:`mdrun <gmx mdrun>` will use all available cores
 an appropriate number of ranks or OpenMP threads to occupy all of them. The number of
 ranks can be controlled using the
 ``-nt`` and ``-ntmpi`` options. ``-nt`` represents the total number of threads
-to be used (which can be a mix of thread-MPI and OpenMP threads.
+to be used (which can be a mix of thread-MPI and OpenMP threads).
 
 Hybrid/heterogeneous acceleration
 .................................
