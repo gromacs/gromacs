@@ -18,7 +18,7 @@ gromacs:clang-ASAN:configure:
     - .gromacs:base:configure
     - .use-clang:base
     - .rules:merge-requests
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-llvm-11-tsan
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-llvm-11-tsan:release-2022
   variables:
     CMAKE: /usr/local/cmake-3.21.2/bin/cmake
     COMPILER_MAJOR_VERSION: 11
@@ -31,7 +31,7 @@ gromacs:clang-ASAN:build:
     - .use-clang:base
     - .use-ccache
     - .rules:merge-requests
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-llvm-11-tsan
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-llvm-11-tsan:release-2022
   variables:
     CMAKE: /usr/local/cmake-3.21.2/bin/cmake
   tags:
@@ -44,7 +44,7 @@ gromacs:clang-ASAN:test:
     - .gromacs:base:test
     - .use-clang:base
     - .rules:merge-requests
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-llvm-11-tsan
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-llvm-11-tsan:release-2022
   variables:
     CMAKE: /usr/local/cmake-3.21.2/bin/cmake
     CTEST_RUN_MODE: "ExperimentalMemCheck"
@@ -63,7 +63,7 @@ gromacs:clang-ASAN:regressiontest:
     - .gromacs:base:regressiontest
     - .use-clang:base
     - .rules:merge-requests
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-llvm-11-tsan
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-llvm-11-tsan:release-2022
   variables:
     CMAKE: /usr/local/cmake-3.21.2/bin/cmake
   tags:

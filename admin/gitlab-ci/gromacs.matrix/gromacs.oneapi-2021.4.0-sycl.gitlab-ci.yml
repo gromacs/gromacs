@@ -20,7 +20,7 @@ gromacs:oneapi-2021.4.0-sycl:configure:
    - .use-oneapi:base
    - .use-sycl
    - .rules:merge-and-post-merge-acceptance
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-gcc-7-oneapi-2021.4.0
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-gcc-7-oneapi-2021.4.0:release-2022
   variables:
     CMAKE: /usr/local/cmake-3.17.2/bin/cmake
     COMPILER_MAJOR_VERSION: 2021
@@ -32,7 +32,7 @@ gromacs:oneapi-2021.4.0-sycl:build:
     - .use-ccache
     - .use-oneapi:base
     - .rules:merge-and-post-merge-acceptance
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-gcc-7-oneapi-2021.4.0
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-gcc-7-oneapi-2021.4.0:release-2022
   variables:
     CMAKE: /usr/local/cmake-3.17.2/bin/cmake
   needs:
@@ -43,7 +43,7 @@ gromacs:oneapi-2021.4.0-sycl:test:
     - .gromacs:base:test
     - .use-oneapi:base
     - .rules:post-merge-acceptance
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-gcc-7-oneapi-2021.4.0
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-gcc-7-oneapi-2021.4.0:release-2022
   variables:
     CMAKE: /usr/local/cmake-3.17.2/bin/cmake
   needs:
@@ -54,7 +54,7 @@ gromacs:oneapi-2021.4.0-sycl:regressiontest:
     - .gromacs:base:regressiontest
     - .use-oneapi:base
     - .rules:post-merge-acceptance
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-gcc-7-oneapi-2021.4.0
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-gcc-7-oneapi-2021.4.0:release-2022
   variables:
     CMAKE: /usr/local/cmake-3.17.2/bin/cmake
   needs:
@@ -67,7 +67,7 @@ gromacs:oneapi-2021.4.0-sycl-buffers:configure:
    - .use-oneapi:base
    - .use-sycl
    - .rules:nightly-not-for-release
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-gcc-7-oneapi-2021.4.0
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-gcc-7-oneapi-2021.4.0:release-2022
   variables:
     CMAKE: /usr/local/cmake-3.21.2/bin/cmake
     COMPILER_MAJOR_VERSION: 2021
@@ -80,7 +80,7 @@ gromacs:oneapi-2021.4.0-sycl-buffers:build:
     - .use-ccache
     - .use-oneapi:base
     - .rules:nightly-not-for-release
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-gcc-7-oneapi-2021.4.0
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-gcc-7-oneapi-2021.4.0:release-2022
   variables:
     CMAKE: /usr/local/cmake-3.21.2/bin/cmake
   needs:

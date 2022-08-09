@@ -27,7 +27,7 @@ gromacs:gcc-7-cuda-11.0:configure:
     - .use-gcc:base
     - .use-cuda
     - .rules:merge-and-post-merge-acceptance
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-gcc-7-cuda-11.0
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-gcc-7-cuda-11.0:release-2022
   variables:
     CMAKE: /usr/local/cmake-3.17.2/bin/cmake
     CMAKE_SIMD_OPTIONS: "-DGMX_SIMD=SSE4.1"
@@ -40,7 +40,7 @@ gromacs:gcc-7-cuda-11.0:build:
     - .before_script:default
     - .use-ccache
     - .rules:merge-and-post-merge-acceptance
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-gcc-7-cuda-11.0
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-gcc-7-cuda-11.0:release-2022
   variables:
     CMAKE: /usr/local/cmake-3.17.2/bin/cmake
   needs:
@@ -50,7 +50,7 @@ gromacs:gcc-7-cuda-11.0:test:
   extends:
     - .gromacs:base:test
     - .rules:merge-requests
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-gcc-7-cuda-11.0
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-gcc-7-cuda-11.0:release-2022
   variables:
     CMAKE: /usr/local/cmake-3.17.2/bin/cmake
     KUBERNETES_EXTENDED_RESOURCE_NAME: "nvidia.com/gpu"
@@ -64,7 +64,7 @@ gromacs:gcc-7-cuda-11.0:test-gpucommupd:
   extends:
     - .gromacs:base:test
     - .rules:post-merge-acceptance
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-gcc-7-cuda-11.0
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-gcc-7-cuda-11.0:release-2022
   variables:
     CMAKE: /usr/local/cmake-3.17.2/bin/cmake
     KUBERNETES_EXTENDED_RESOURCE_NAME: "nvidia.com/gpu"
@@ -79,7 +79,7 @@ gromacs:gcc-7-cuda-11.0:regressiontest:
   extends:
     - .gromacs:base:regressiontest
     - .rules:merge-requests
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-gcc-7-cuda-11.0
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-gcc-7-cuda-11.0:release-2022
   variables:
     CMAKE: /usr/local/cmake-3.17.2/bin/cmake
     KUBERNETES_EXTENDED_RESOURCE_NAME: "nvidia.com/gpu"
@@ -97,7 +97,7 @@ gromacs:gcc-7-cuda-11.0:regressiontest-gpucommupd-tMPI:
   extends:
     - .gromacs:base:regressiontest
     - .rules:post-merge-acceptance
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-gcc-7-cuda-11.0
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-gcc-7-cuda-11.0:release-2022
   variables:
     CMAKE: /usr/local/cmake-3.17.2/bin/cmake
     KUBERNETES_EXTENDED_RESOURCE_NAME: "nvidia.com/gpu"
@@ -121,7 +121,7 @@ gromacs:gcc-7-cuda-11.0:regressiontest-upd-tMPI:
   extends:
     - .gromacs:base:regressiontest
     - .rules:post-merge-acceptance
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-gcc-7-cuda-11.0
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-gcc-7-cuda-11.0:release-2022
   variables:
     KUBERNETES_EXTENDED_RESOURCE_NAME: "nvidia.com/gpu"
     KUBERNETES_EXTENDED_RESOURCE_LIMIT: 2

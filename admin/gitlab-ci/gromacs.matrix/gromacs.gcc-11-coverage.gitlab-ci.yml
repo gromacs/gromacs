@@ -17,7 +17,7 @@ gromacs:gcc-11:coverage:configure:
     - .gromacs:base:configure
     - .use-gcc:base
     - .rules:post-merge-acceptance
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-gcc-11
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-gcc-11:release-2022
   variables:
     CMAKE: /usr/local/cmake-3.18.4/bin/cmake
     CMAKE_SIMD_OPTIONS: "-DGMX_SIMD=AVX2_256"
@@ -31,7 +31,7 @@ gromacs:gcc-11:coverage:build:
     - .before_script:default
     - .use-ccache
     - .rules:post-merge-acceptance
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-gcc-11
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-gcc-11:release-2022
   variables:
     CMAKE: /usr/local/cmake-3.18.4/bin/cmake
   needs:
@@ -41,7 +41,7 @@ gromacs:gcc-11:coverage:test:
   extends:
     - .gromacs:base:test
     - .rules:post-merge-acceptance
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-gcc-11
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-gcc-11:release-2022
   variables:
     CMAKE: /usr/local/cmake-3.18.4/bin/cmake
   tags:
@@ -62,7 +62,7 @@ gromacs:coverage:analyse:
     - .variables:default
     - .rules:post-merge-acceptance
   stage: post-test
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-gcc-11
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-gcc-11:release-2022
   needs:
     - job: gromacs:gcc-11:coverage:build
     - job: gromacs:gcc-11:coverage:test

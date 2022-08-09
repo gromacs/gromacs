@@ -20,7 +20,7 @@ gromacs-cp2k:gcc-9-nightly:configure:
     - .rules:nightly-not-for-release
   stage: configure-build
   cache: {}
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-gcc-9-cp2k-8.2
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-gcc-9-cp2k-8.2:release-2022
   variables:
     KUBERNETES_CPU_LIMIT: 1
     KUBERNETES_CPU_REQUEST: 1
@@ -56,7 +56,7 @@ gromacs-cp2k:gcc-9-nightly:build-test:
     - .rules:nightly-not-for-release
     - .use-ccache
   stage: build
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-gcc-9-cp2k-8.2
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-gcc-9-cp2k-8.2:release-2022
   variables:
     KUBERNETES_CPU_LIMIT: 4
     KUBERNETES_CPU_REQUEST: 4
