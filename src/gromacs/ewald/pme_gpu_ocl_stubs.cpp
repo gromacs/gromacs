@@ -54,12 +54,12 @@
 #    pragma clang diagnostic ignored "-Wmissing-noreturn"
 #endif // (__clang__)
 
-void pmeGpuGridHaloExchange(const PmeGpu* /*pmeGpu*/)
+void pmeGpuGridHaloExchange(const PmeGpu* /*pmeGpu*/, gmx_wallcycle* /*wcycle*/)
 {
     GMX_THROW(gmx::NotImplementedError("PME decomposition is not implemented in OpenCL"));
 }
 
-void pmeGpuGridHaloExchangeReverse(const PmeGpu* /*pmeGpu*/)
+void pmeGpuGridHaloExchangeReverse(const PmeGpu* /*pmeGpu*/, gmx_wallcycle* /*wcycle*/)
 {
     GMX_THROW(gmx::NotImplementedError("PME decomposition is not implemented in OpenCL"));
 }

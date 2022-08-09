@@ -83,6 +83,7 @@ enum class WallCycleCounter : int
     Force,
     MoveF,
     PmeMesh,
+    PmeGpuMesh, /* PmeGpuMesh is used for GPU code and similar to PmeMesh on CPU. It includes WaitGpuPmePPRecvX cycles too. */
     PmeRedistXF,
     PmeSpread,
     PmeGather,
@@ -90,14 +91,19 @@ enum class WallCycleCounter : int
     PmeFftComm,
     LJPme,
     PmeSolve,
-    PmeWaitComm,
-    PpPmeWaitRecvF,
-    WaitGpuPmeSpread,
+    WaitGpuPmeGridD2hCopy, /* Time for PME grid D2H transfer. Used in mixed mode. */
     PmeFftMixedMode,
     PmeSolveMixedMode,
     WaitGpuPmeGather,
-    WaitGpuBonded,
     PmeGpuFReduction,
+    WaitGpuPmePPRecvX, /* Time for waiting on receiving PP X on PME rank. Used only when GPU direct comm is active.*/
+    WaitGpuPmeSpread, /* Time taken to finish PME spread on GPU. Used only when PME halo-exchange is active with PME decomposition*/
+    WaitGpuFftToPmeGrid, /* Time taken to convert to PME grid after FFTs are complete. Used only when PME halo-exchange is active with PME decomposition*/
+    PmeHaloExchangeComm, /* Time taken in PME halo-exchange, active with PME decomposition*/
+    PmeWaitComm, /* PmeWaitComm = Run - PmeMesh. Without GPU direct comm, this includes time spent in waiting for coord and force comm.
+                 With GPU direct comm, waiting for coord comm is part of PME mesh and is measured with WaitGpuPmePPRecvX sub-counter*/
+    PpPmeWaitRecvF,
+    WaitGpuBonded,
     WaitGpuNbNL,
     WaitGpuNbL,
     WaitGpuStatePropagatorData,
@@ -142,6 +148,7 @@ enum class WallCycleSubCounter : int
     LaunchGpuNonBonded,
     LaunchGpuBonded,
     LaunchGpuPme,
+    LaunchGpuPmeFft,
     LaunchStatePropagatorData,
     EwaldCorrection,
     NBXBufOps,

@@ -373,17 +373,18 @@ void pme_gpu_destroy_3dfft(const PmeGpu* pmeGpu);
  * \param[in]  useGpuDirectComm          Whether direct GPU PME-PP communication is active
  * \param[in]  pmeCoordinateReceiverGpu  Coordinate receiver object, which must be valid when
  *                                       direct GPU PME-PP communication is active
+ * \param[in]  wcycle                    The wallclock counter.
  */
-GPU_FUNC_QUALIFIER void
-pme_gpu_spread(const PmeGpu*                  GPU_FUNC_ARGUMENT(pmeGpu),
-               GpuEventSynchronizer*          GPU_FUNC_ARGUMENT(xReadyOnDevice),
-               float**                        GPU_FUNC_ARGUMENT(h_grids),
-               gmx_parallel_3dfft_t*          GPU_FUNC_ARGUMENT(fftSetup),
-               bool                           GPU_FUNC_ARGUMENT(computeSplines),
-               bool                           GPU_FUNC_ARGUMENT(spreadCharges),
-               real                           GPU_FUNC_ARGUMENT(lambda),
-               bool                           GPU_FUNC_ARGUMENT(useGpuDirectComm),
-               gmx::PmeCoordinateReceiverGpu* GPU_FUNC_ARGUMENT(pmeCoordinateReceiverGpu)) GPU_FUNC_TERM;
+GPU_FUNC_QUALIFIER void pme_gpu_spread(const PmeGpu*         GPU_FUNC_ARGUMENT(pmeGpu),
+                                       GpuEventSynchronizer* GPU_FUNC_ARGUMENT(xReadyOnDevice),
+                                       float**               GPU_FUNC_ARGUMENT(h_grids),
+                                       gmx_parallel_3dfft_t* GPU_FUNC_ARGUMENT(fftSetup),
+                                       bool                  GPU_FUNC_ARGUMENT(computeSplines),
+                                       bool                  GPU_FUNC_ARGUMENT(spreadCharges),
+                                       real                  GPU_FUNC_ARGUMENT(lambda),
+                                       bool                  GPU_FUNC_ARGUMENT(useGpuDirectComm),
+                                       gmx::PmeCoordinateReceiverGpu* GPU_FUNC_ARGUMENT(pmeCoordinateReceiverGpu),
+                                       gmx_wallcycle* GPU_FUNC_ARGUMENT(wcycle)) GPU_FUNC_TERM;
 
 /*! \libinternal \brief
  * 3D FFT R2C/C2R routine.
@@ -418,11 +419,13 @@ GPU_FUNC_QUALIFIER void pme_gpu_solve(const PmeGpu* GPU_FUNC_ARGUMENT(pmeGpu),
  * \param[in]     h_grids                  The host-side grid buffer (used only in testing mode).
  * \param[in]     fftSetup                 Host-side FFT setup structure used in Mixed mode
  * \param[in]     lambda                   The lambda value to use.
+ * \param[in]     wcycle                   The wallclock counter.
  */
 GPU_FUNC_QUALIFIER void pme_gpu_gather(PmeGpu*               GPU_FUNC_ARGUMENT(pmeGpu),
                                        float**               GPU_FUNC_ARGUMENT(h_grids),
                                        gmx_parallel_3dfft_t* GPU_FUNC_ARGUMENT(fftSetup),
-                                       float GPU_FUNC_ARGUMENT(lambda)) GPU_FUNC_TERM;
+                                       float                 GPU_FUNC_ARGUMENT(lambda),
+                                       gmx_wallcycle* GPU_FUNC_ARGUMENT(wcycle)) GPU_FUNC_TERM;
 
 
 /*! \brief Sets the device pointer to coordinate data

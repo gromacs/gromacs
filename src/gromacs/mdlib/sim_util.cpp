@@ -738,11 +738,13 @@ static inline void launchPmeGpuSpread(gmx_pme_t*            pmedata,
                                       const real            lambdaQ,
                                       gmx_wallcycle*        wcycle)
 {
+    wallcycle_start(wcycle, WallCycleCounter::PmeGpuMesh);
     pme_gpu_prepare_computation(pmedata, box, wcycle, stepWork);
     bool                           useGpuDirectComm         = false;
     gmx::PmeCoordinateReceiverGpu* pmeCoordinateReceiverGpu = nullptr;
     pme_gpu_launch_spread(
             pmedata, xReadyOnDevice, wcycle, lambdaQ, useGpuDirectComm, pmeCoordinateReceiverGpu);
+    wallcycle_stop(wcycle, WallCycleCounter::PmeGpuMesh);
 }
 
 /*! \brief Launch the FFT and gather stages of PME GPU
@@ -759,8 +761,35 @@ static void launchPmeGpuFftAndGather(gmx_pme_t*               pmedata,
                                      gmx_wallcycle*           wcycle,
                                      const gmx::StepWorkload& stepWork)
 {
+    wallcycle_start_nocount(wcycle, WallCycleCounter::PmeGpuMesh);
     pme_gpu_launch_complex_transforms(pmedata, wcycle, stepWork);
     pme_gpu_launch_gather(pmedata, wcycle, lambdaQ);
+    wallcycle_stop(wcycle, WallCycleCounter::PmeGpuMesh);
+}
+
+/*! \brief
+ * Blocks until PME GPU tasks are completed, and gets the output forces and virial/energy
+ * (if they were to be computed).
+ *
+ * \param[in]  pme             The PME data structure.
+ * \param[in]  stepWork        The required work for this simulation step
+ * \param[in]  wcycle          The wallclock counter.
+ * \param[out] forceWithVirial The output force and virial
+ * \param[out] enerd           The output energies
+ * \param[in]  lambdaQ         The Coulomb lambda to use when calculating the results.
+ */
+static void pmeGpuWaitAndReduce(gmx_pme_t*               pme,
+                                const gmx::StepWorkload& stepWork,
+                                gmx_wallcycle*           wcycle,
+                                gmx::ForceWithVirial*    forceWithVirial,
+                                gmx_enerdata_t*          enerd,
+                                const real               lambdaQ)
+{
+    wallcycle_start_nocount(wcycle, WallCycleCounter::PmeGpuMesh);
+
+    pme_gpu_wait_and_reduce(pme, stepWork, wcycle, forceWithVirial, enerd, lambdaQ);
+
+    wallcycle_stop(wcycle, WallCycleCounter::PmeGpuMesh);
 }
 
 /*! \brief
@@ -799,10 +828,12 @@ static void alternatePmeNbGpuWaitReduce(nonbonded_verlet_t* nbv,
     {
         if (!isPmeGpuDone)
         {
+            wallcycle_start_nocount(wcycle, WallCycleCounter::PmeGpuMesh);
             GpuTaskCompletion completionType =
                     (isNbGpuDone) ? GpuTaskCompletion::Wait : GpuTaskCompletion::Check;
             isPmeGpuDone = pme_gpu_try_finish_task(
                     pmedata, stepWork, wcycle, &forceOutputsPme->forceWithVirial(), enerd, lambdaQ, completionType);
+            wallcycle_stop(wcycle, WallCycleCounter::PmeGpuMesh);
         }
 
         if (!isNbGpuDone)
@@ -1032,7 +1063,9 @@ static void launchGpuEndOfStepTasks(nonbonded_verlet_t*               nbv,
 
     if (runScheduleWork.stepWork.haveGpuPmeOnThisRank)
     {
+        wallcycle_start_nocount(wcycle, WallCycleCounter::PmeGpuMesh);
         pme_gpu_reinit_computation(pmedata, wcycle);
+        wallcycle_stop(wcycle, WallCycleCounter::PmeGpuMesh);
     }
 
     if (runScheduleWork.domainWork.haveGpuBondedWork && runScheduleWork.stepWork.computeEnergy)
@@ -2145,12 +2178,12 @@ void do_force(FILE*                               fplog,
     {
         if (stepWork.haveGpuPmeOnThisRank)
         {
-            pme_gpu_wait_and_reduce(fr->pmedata,
-                                    stepWork,
-                                    wcycle,
-                                    &forceOutMtsLevel1->forceWithVirial(),
-                                    enerd,
-                                    lambda[static_cast<int>(FreeEnergyPerturbationCouplingType::Coul)]);
+            pmeGpuWaitAndReduce(fr->pmedata,
+                                stepWork,
+                                wcycle,
+                                &forceOutMtsLevel1->forceWithVirial(),
+                                enerd,
+                                lambda[static_cast<int>(FreeEnergyPerturbationCouplingType::Coul)]);
         }
         else if (needToReceivePmeResultsFromSeparateRank)
         {
@@ -2353,12 +2386,12 @@ void do_force(FILE*                               fplog,
 
     if (!alternateGpuWait && stepWork.haveGpuPmeOnThisRank && !needEarlyPmeResults)
     {
-        pme_gpu_wait_and_reduce(fr->pmedata,
-                                stepWork,
-                                wcycle,
-                                &forceOutMtsLevel1->forceWithVirial(),
-                                enerd,
-                                lambda[static_cast<int>(FreeEnergyPerturbationCouplingType::Coul)]);
+        pmeGpuWaitAndReduce(fr->pmedata,
+                            stepWork,
+                            wcycle,
+                            &forceOutMtsLevel1->forceWithVirial(),
+                            enerd,
+                            lambda[static_cast<int>(FreeEnergyPerturbationCouplingType::Coul)]);
     }
 
     /* Wait for local GPU NB outputs on the non-alternating wait path */

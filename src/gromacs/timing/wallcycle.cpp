@@ -88,6 +88,7 @@ static const char* enumValuetoString(WallCycleCounter enumValue)
         "Force",
         "Wait + Comm. F",
         "PME mesh",
+        "PME GPU mesh",
         "PME redist. X/F",
         "PME spread",
         "PME gather",
@@ -95,14 +96,18 @@ static const char* enumValuetoString(WallCycleCounter enumValue)
         "PME 3D-FFT Comm.",
         "PME solve LJ",
         "PME solve Elec",
+        "Wait PME GPU D2H",
+        "PME 3D-FFT",
+        "PME solve",
+        "Wait PME GPU gather",
+        "Reduce GPU PME F",
+        "Wait PME Recv. PP X",
+        "Wait PME GPU spread",
+        "Wait GPU FFT to PME",
+        "PME Halo exch comm",
         "PME wait for PP",
         "Wait + Recv. PME F",
-        "Wait PME GPU spread",
-        "PME 3D-FFT",
-        "PME solve", /* the strings for FFT/solve are repeated here for mixed mode counters */
-        "Wait PME GPU gather",
         "Wait Bonded GPU",
-        "Reduce GPU PME F",
         "Wait GPU NB nonloc.",
         "Wait GPU NB local",
         "Wait GPU state copy",
@@ -149,6 +154,7 @@ static const char* enumValuetoString(WallCycleSubCounter enumValue)
         "Launch NB GPU tasks",
         "Launch Bonded GPU tasks",
         "Launch PME GPU tasks",
+        "Launch PME GPU FFT",
         "Launch state copy",
         "Ewald F correction",
         "NB X buffer ops.",
@@ -449,11 +455,25 @@ WallcycleCounts wallcycle_sum(const t_commrec* cr, gmx_wallcycle* wc)
         /* The are PME-only nodes */
         if (wcc[WallCycleCounter::PmeMesh].n > 0)
         {
+            GMX_ASSERT(wcc[WallCycleCounter::PmeGpuMesh].c == 0,
+                       "PME mesh GPU ticks should be 0 when PME mesh is running on CPU");
             /* This must be a PME only node, calculate the Wait + Comm. time */
             GMX_ASSERT(wcc[WallCycleCounter::Run].c >= wcc[WallCycleCounter::PmeMesh].c,
                        "Total run ticks must be greater than PME-only ticks");
             wcc[WallCycleCounter::PmeWaitComm].c =
                     wcc[WallCycleCounter::Run].c - wcc[WallCycleCounter::PmeMesh].c;
+        }
+
+        if (wcc[WallCycleCounter::PmeGpuMesh].n > 0)
+        {
+            GMX_ASSERT(wcc[WallCycleCounter::PmeMesh].c == 0,
+                       "PME mesh CPU ticks should be 0 when PME mesh is running on GPU");
+
+            /* This must be a PME only node, calculate the Wait + Comm. time */
+            GMX_ASSERT(wcc[WallCycleCounter::Run].c >= wcc[WallCycleCounter::PmeGpuMesh].c,
+                       "Total run ticks must be greater than PME-only ticks");
+            wcc[WallCycleCounter::PmeWaitComm].c =
+                    wcc[WallCycleCounter::Run].c - wcc[WallCycleCounter::PmeGpuMesh].c;
         }
     }
 
@@ -833,7 +853,7 @@ void wallcycle_print(FILE*                            fplog,
                 hline);
     }
 
-    if (wc->wcc[WallCycleCounter::PmeMesh].n > 0)
+    if (wc->wcc[WallCycleCounter::PmeMesh].n > 0 || wc->wcc[WallCycleCounter::PmeGpuMesh].n > 0)
     {
         // A workaround to not print breakdown when no subcounters were recorded.
         // TODO: figure out and record PME GPU counters (what to do with the waiting ones?)

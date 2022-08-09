@@ -53,6 +53,7 @@
 #include "gromacs/gpu_utils/cudautils.cuh"
 #include "gromacs/gpu_utils/devicebuffer.cuh"
 #include "gromacs/math/vec.h"
+#include "gromacs/timing/wallcycle.h"
 
 #include "pme.cuh"
 #include "pme_gpu_types.h"
@@ -805,7 +806,7 @@ static void receiveAndSend(DeviceBuffer<float> sendBuf,
     MPI_Isend(sendBuf, sendCount, MPI_FLOAT, dest, tag, comm, sendRequest);
 }
 
-void pmeGpuGridHaloExchange(const PmeGpu* pmeGpu)
+void pmeGpuGridHaloExchange(const PmeGpu* pmeGpu, gmx_wallcycle* wcycle)
 {
 #if GMX_MPI
     // Note here we are assuming that width of the chunks is not so small that we need to
@@ -858,6 +859,9 @@ void pmeGpuGridHaloExchange(const PmeGpu* pmeGpu)
         }
         else
         {
+            wallcycle_start_nocount(wcycle, WallCycleCounter::LaunchGpu);
+            wallcycle_sub_start_nocount(wcycle, WallCycleSubCounter::LaunchGpuPme);
+
             // launch packing kernel
             packHaloDataExternal(
                     pmeGpu,
@@ -877,7 +881,12 @@ void pmeGpuGridHaloExchange(const PmeGpu* pmeGpu)
                     pmeGpu->haloExchange->d_sendGrids[gmx::DirectionX::Down][gmx::DirectionY::Left],
                     pmeGpu->haloExchange->d_sendGrids[gmx::DirectionX::Up][gmx::DirectionY::Right],
                     pmeGpu->haloExchange->d_sendGrids[gmx::DirectionX::Down][gmx::DirectionY::Right]);
+
+            wallcycle_sub_stop(wcycle, WallCycleSubCounter::LaunchGpuPme);
+            wallcycle_stop(wcycle, WallCycleCounter::LaunchGpu);
         }
+
+        wallcycle_start(wcycle, WallCycleCounter::WaitGpuPmeSpread);
 
         // Make sure data is ready on GPU before MPI communication.
         // Wait for spread to finish in case of slab decomposition along X-dimension and
@@ -885,6 +894,10 @@ void pmeGpuGridHaloExchange(const PmeGpu* pmeGpu)
         // Todo: Consider using events to create dependcy on spread
         pmeGpu->archSpecific->pmeStream_.synchronize();
 
+        wallcycle_stop(wcycle, WallCycleCounter::WaitGpuPmeSpread);
+
+
+        wallcycle_start(wcycle, WallCycleCounter::PmeHaloExchangeComm);
 
         // major dimension
         if (sizeX > 1)
@@ -1037,6 +1050,11 @@ void pmeGpuGridHaloExchange(const PmeGpu* pmeGpu)
 
         MPI_Waitall(reqCount, req, MPI_STATUSES_IGNORE);
 
+        wallcycle_stop(wcycle, WallCycleCounter::PmeHaloExchangeComm);
+
+        wallcycle_start_nocount(wcycle, WallCycleCounter::LaunchGpu);
+        wallcycle_sub_start_nocount(wcycle, WallCycleSubCounter::LaunchGpuPme);
+
         // reduce halo data
         unpackAndAddHaloDataInternal(
                 pmeGpu,
@@ -1056,13 +1074,16 @@ void pmeGpuGridHaloExchange(const PmeGpu* pmeGpu)
                 pmeGpu->haloExchange->d_recvGrids[gmx::DirectionX::Down][gmx::DirectionY::Left],
                 pmeGpu->haloExchange->d_recvGrids[gmx::DirectionX::Up][gmx::DirectionY::Right],
                 pmeGpu->haloExchange->d_recvGrids[gmx::DirectionX::Down][gmx::DirectionY::Right]);
+
+        wallcycle_sub_stop(wcycle, WallCycleSubCounter::LaunchGpuPme);
+        wallcycle_stop(wcycle, WallCycleCounter::LaunchGpu);
     }
 #else
     GMX_UNUSED_VALUE(pmeGpu);
 #endif
 }
 
-void pmeGpuGridHaloExchangeReverse(const PmeGpu* pmeGpu)
+void pmeGpuGridHaloExchangeReverse(const PmeGpu* pmeGpu, gmx_wallcycle* wcycle)
 {
 #if GMX_MPI
     // Note here we are assuming that width of the chunks is not so small that we need to
@@ -1124,6 +1145,9 @@ void pmeGpuGridHaloExchangeReverse(const PmeGpu* pmeGpu)
         }
         else
         {
+            wallcycle_start_nocount(wcycle, WallCycleCounter::LaunchGpu);
+            wallcycle_sub_start_nocount(wcycle, WallCycleSubCounter::LaunchGpuPme);
+
             // launch packing kernel
             packHaloDataInternal(
                     pmeGpu,
@@ -1143,7 +1167,12 @@ void pmeGpuGridHaloExchangeReverse(const PmeGpu* pmeGpu)
                     pmeGpu->haloExchange->d_sendGrids[gmx::DirectionX::Down][gmx::DirectionY::Left],
                     pmeGpu->haloExchange->d_sendGrids[gmx::DirectionX::Up][gmx::DirectionY::Right],
                     pmeGpu->haloExchange->d_sendGrids[gmx::DirectionX::Down][gmx::DirectionY::Right]);
+
+            wallcycle_sub_stop(wcycle, WallCycleSubCounter::LaunchGpuPme);
+            wallcycle_stop(wcycle, WallCycleCounter::LaunchGpu);
         }
+
+        wallcycle_start(wcycle, WallCycleCounter::WaitGpuFftToPmeGrid);
 
         // Make sure data is ready on GPU before MPI communication.
         // Wait for FFT to PME grid conversion to finish in case of slab decomposition along X-dimension and
@@ -1151,6 +1180,9 @@ void pmeGpuGridHaloExchangeReverse(const PmeGpu* pmeGpu)
         // Todo: Consider using events to create dependcy on FFT->PME grid operation
         pmeGpu->archSpecific->pmeStream_.synchronize();
 
+        wallcycle_stop(wcycle, WallCycleCounter::WaitGpuFftToPmeGrid);
+
+        wallcycle_start(wcycle, WallCycleCounter::PmeHaloExchangeComm);
 
         // major dimension
         if (sizeX > 1)
@@ -1302,10 +1334,15 @@ void pmeGpuGridHaloExchangeReverse(const PmeGpu* pmeGpu)
 
         MPI_Waitall(reqCount, req, MPI_STATUSES_IGNORE);
 
+        wallcycle_stop(wcycle, WallCycleCounter::PmeHaloExchangeComm);
+
         // data is written at the right place as part of MPI communication if slab-decomposition is
         // used in X-dimension, but we need to unpack if decomposition happens (also) along Y
         if (sizeY > 1)
         {
+            wallcycle_start_nocount(wcycle, WallCycleCounter::LaunchGpu);
+            wallcycle_sub_start_nocount(wcycle, WallCycleSubCounter::LaunchGpuPme);
+
             // assign halo data
             unpackHaloDataExternal(
                     pmeGpu,
@@ -1325,6 +1362,9 @@ void pmeGpuGridHaloExchangeReverse(const PmeGpu* pmeGpu)
                     pmeGpu->haloExchange->d_recvGrids[gmx::DirectionX::Down][gmx::DirectionY::Left],
                     pmeGpu->haloExchange->d_recvGrids[gmx::DirectionX::Up][gmx::DirectionY::Right],
                     pmeGpu->haloExchange->d_recvGrids[gmx::DirectionX::Down][gmx::DirectionY::Right]);
+
+            wallcycle_sub_stop(wcycle, WallCycleSubCounter::LaunchGpuPme);
+            wallcycle_stop(wcycle, WallCycleCounter::LaunchGpu);
         }
     }
 #else

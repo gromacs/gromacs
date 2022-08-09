@@ -45,6 +45,7 @@
 #include "gromacs/gpu_utils/devicebuffer_datatype.h"
 
 struct PmeGpu;
+struct gmx_wallcycle;
 typedef struct gmx_parallel_3dfft* gmx_parallel_3dfft_t;
 
 /*! \libinternal \brief
@@ -56,8 +57,9 @@ typedef struct gmx_parallel_3dfft* gmx_parallel_3dfft_t;
  * spread. Consider using events for this synchnozation.
  *
  * \param[in]  pmeGpu                 The PME GPU structure.
+ * \param[in]  wcycle                 The wallclock counter.
  */
-void pmeGpuGridHaloExchange(const PmeGpu* pmeGpu);
+void pmeGpuGridHaloExchange(const PmeGpu* pmeGpu, gmx_wallcycle* wcycle);
 
 /*! \libinternal \brief
  * Grid reverse Halo exchange before PME gather
@@ -68,8 +70,9 @@ void pmeGpuGridHaloExchange(const PmeGpu* pmeGpu);
  * to PME grid conversion. Consider using events for this synchnozation.
  *
  * \param[in]  pmeGpu                 The PME GPU structure.
+ * \param[in]  wcycle                 The wallclock counter.
  */
-void pmeGpuGridHaloExchangeReverse(const PmeGpu* pmeGpu);
+void pmeGpuGridHaloExchangeReverse(const PmeGpu* pmeGpu, gmx_wallcycle* wcycle);
 
 /*! \libinternal \brief
  * Copy PME Grid with overlap region to host FFT grid and vice-versa. Used in mixed mode PME decomposition

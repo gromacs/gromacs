@@ -735,7 +735,7 @@ int gmx_pmeonly(struct gmx_pme_t*               pme,
             walltime_accounting_start_time(walltime_accounting);
         }
 
-        wallcycle_start(wcycle, WallCycleCounter::PmeMesh);
+        wallcycle_start(wcycle, useGpuForPme ? WallCycleCounter::PmeGpuMesh : WallCycleCounter::PmeMesh);
 
         // TODO Make a struct of array refs onto these per-atom fields
         // of pme_pp (maybe box, energy and virial, too; and likewise
@@ -809,7 +809,9 @@ int gmx_pmeonly(struct gmx_pme_t*               pme,
             output.forces_ = pme_pp->f;
         }
 
-        cycles = wallcycle_stop(wcycle, WallCycleCounter::PmeMesh);
+        cycles = wallcycle_stop(
+                wcycle, useGpuForPme ? WallCycleCounter::PmeGpuMesh : WallCycleCounter::PmeMesh);
+
         gmx_pme_send_force_vir_ener(*pme, pme_pp.get(), output, cycles);
 
         count++;
