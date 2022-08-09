@@ -332,8 +332,23 @@ else()
         set(SYCL_TOOLCHAIN_CXX_FLAGS "${SYCL_TOOLCHAIN_CXX_FLAGS} ${SYCL_FAST_MATH_CXX_FLAGS}")
     endif()
 
+    if("${SYCL_CXX_FLAGS_EXTRA}" MATCHES "fsycl-targets=.*(nvptx64|amdgcn)")
+        # When compiling for NVIDIA/AMD, Intel LLVM produces tons of harmless warnings, ignore them
+        set(SYCL_WARNINGS_CXX_FLAGS "-Wno-linker-warnings -Wno-override-module")
+        gmx_check_source_compiles_with_flags(
+            "${SAMPLE_SYCL_SOURCE}"
+            "${SYCL_TOOLCHAIN_CXX_FLAGS} ${SYCL_WARNING_CXX_FLAGS}"
+            "CXX"
+            SYCL_WARNINGS_CXX_FLAGS_RESULT
+            )
+        if (SYCL_WARNINGS_CXX_FLAGS_RESULT)
+            set(SYCL_TOOLCHAIN_CXX_FLAGS "${SYCL_TOOLCHAIN_CXX_FLAGS} ${SYCL_WARNINGS_CXX_FLAGS}")
+        endif()
+    endif()
+
     include(gmxManageFFTLibraries)
-    if(NOT GMX_FFT_MKL)
+    # Don't warn in CI builds
+    if(NOT GMX_FFT_MKL AND NOT DEFINED ENV{GITLAB_CI})
         message(WARNING "Building SYCL version with ${GMX_FFT_LIBRARY} instead of MKL. GPU FFT is disabled!")
     endif()
     if(WIN32 AND GMX_FFT_MKL)

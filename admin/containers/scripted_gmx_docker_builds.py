@@ -69,6 +69,7 @@ import argparse
 import collections
 import collections.abc
 import copy
+import shlex
 import typing
 from distutils.version import StrictVersion
 
@@ -82,6 +83,16 @@ except ImportError:
     raise RuntimeError(
         'This module assumes availability of supporting modules in the same directory. Add the directory to '
         'PYTHONPATH or invoke Python from within the module directory so module location can be resolved.')
+
+
+def shlex_join(split_command):
+    """Return a shell-escaped string from *split_command*.
+
+    Copied from Python 3.8.
+    Can be replaced with shlex.join once we don't need to support Python 3.7.
+    """
+    return ' '.join(shlex.quote(arg) for arg in split_command)
+
 
 # Basic packages for all final images.
 _common_packages = ['build-essential',
@@ -321,6 +332,15 @@ def get_compiler(args, compiler_build_stage: hpccm.Stage = None) -> bb_base:
 
         else:
             raise RuntimeError('No oneAPI compiler build stage!')
+
+    elif args.intel_llvm is not None:
+        if compiler_build_stage is not None:
+            compiler = compiler_build_stage.runtime(_from='intel_llvm')
+            intel_llvm_toolchain = hpccm.toolchain(CC='/opt/intel-llvm/bin/clang',
+                                               CXX='/opt/intel-llvm/bin/clang++')
+            setattr(compiler, 'toolchain', intel_llvm_toolchain)
+        else:
+            raise RuntimeError('No IntelLLVM compiler build stage!')
 
     elif args.gcc is not None:
         if args.cp2k is not None:
@@ -603,6 +623,71 @@ def add_oneapi_compiler_build_stage(input_args, output_stages: typing.Mapping[st
     output_stages['compiler_build'] = oneapi_stage
 
 
+def intel_llvm_runtime(_from='0'):
+    llvm_runtime_stage = hpccm.Stage()
+    llvm_runtime_stage += hpccm.primitives.copy(_from='intel-llvm-build',
+            files={"/opt/intel-llvm": "/opt/intel-llvm"})
+
+    bashrc = ['export DPCPP_HOME=/opt/intel-llvm',
+              'export PATH=${DPCPP_HOME}/bin:$PATH',
+              'export LD_LIBRARY_PATH=${DPCPP_HOME}/lib:${LD_LIBRARY_PATH}',
+              'export CFLAGS="-isystem ${DPCPP_HOME}/include"',
+              'export CXXFLAGS="-isystem ${DPCPP_HOME}/include"']
+    # Since we cannot just create a file, we write to it line-by-line using "echo".
+    # We must shlex.quote the lines to ensure all spaces/quotes/etc are preserved.
+    commands = ['echo {} >> /opt/intel-llvm/setenv.sh'.format(shlex.quote(line)) for line in bashrc] + \
+               ['echo source "/opt/intel-llvm/setenv.sh" >> /etc/bash.bashrc']
+    llvm_runtime_stage += hpccm.primitives.shell(commands=commands)
+
+    return llvm_runtime_stage
+
+
+def add_intel_llvm_compiler_build_stage(input_args, output_stages: typing.Mapping[str, hpccm.Stage]):
+    """Isolate the Intel LLVM (open-source oneAPI) preparation stage.
+
+    This stage is isolated so that its installed components are minimized in the
+    final image (chiefly /opt/intel) and its environment setup script can be
+    sourced. This also helps with rebuild time and final image size.
+    """
+    if not isinstance(output_stages, collections.abc.MutableMapping):
+        raise RuntimeError('Need output_stages container.')
+    if 'compiler_build' in output_stages:
+        raise RuntimeError('"compiler_build" output stage is already present.')
+    llvm_stage = hpccm.Stage()
+    llvm_stage += hpccm.primitives.baseimage(image=base_image_tag(input_args),
+                                             _distro=hpccm_distro_name(input_args),
+                                             _as='intel-llvm-build')
+
+    buildbot_flags = [
+        '--build-type=Release',
+        '--cuda',  # Build with CUDA support
+        '--llvm-external-projects=openmp',  # Enable OpenMP
+        '--obj-dir=/var/tmp/llvm/llvm/build',  # Build directory
+        # Help CMake find CUDA Driver stub, see https://github.com/opencv/opencv/issues/6577
+        '--cmake-opt=-DCMAKE_LIBRARY_PATH=/usr/local/cuda/targets/x86_64-linux/lib/stubs/',
+    ]
+
+    llvm_stage += hpccm.building_blocks.packages(ospackages=['git', 'ninja-build', 'cmake', 'python3', 'build-essential'])
+    llvm_stage += hpccm.building_blocks.generic_build(
+            repository='https://github.com/intel/llvm.git',
+            directory='llvm/llvm',
+            build=[
+                'mkdir -p /var/tmp/llvm/llvm/build',
+                shlex_join(['python3', '/var/tmp/llvm/buildbot/configure.py', *buildbot_flags]),
+                'cd /var/tmp/llvm/llvm/build',
+                # Must be called after the configure.py
+                shlex_join(['cmake', '/var/tmp/llvm/llvm', '-DCMAKE_INSTALL_PREFIX=/opt/intel-llvm/']),
+                'ninja',
+                'ninja sycl-toolchain install'
+                ],
+            install=[],
+            branch=input_args.intel_llvm,
+            )
+
+    setattr(llvm_stage, 'runtime', intel_llvm_runtime)
+
+    output_stages['compiler_build'] = llvm_stage
+
 def prepare_venv(version: StrictVersion) -> typing.Sequence[str]:
     """Get shell commands to set up the venv for the requested Python version."""
     major = version.version[0]
@@ -793,6 +878,8 @@ def build_stages(args) -> typing.Iterable[hpccm.Stage]:
         add_tsan_compiler_build_stage(input_args=args, output_stages=stages)
     if args.oneapi is not None:
         add_oneapi_compiler_build_stage(input_args=args, output_stages=stages)
+    if args.intel_llvm is not None:
+        add_intel_llvm_compiler_build_stage(input_args=args, output_stages=stages)
 
     add_base_stage(name='build_base', input_args=args, output_stages=stages)
 

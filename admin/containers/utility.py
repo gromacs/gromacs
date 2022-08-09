@@ -101,6 +101,8 @@ compiler_group.add_argument('--llvm', type=str, nargs='?', const='7', default=No
 # package versions from time to time.
 compiler_group.add_argument('--oneapi', type=str, nargs='?', const="2022.1.0", default=None,
                             help='Select Intel oneAPI package version.')
+compiler_group.add_argument('--intel-llvm', type=str, nargs='?', const="2022-06", default=None,
+                            help='Select Intel LLVM release (GitHub tag).')
 
 linux_group = parser.add_mutually_exclusive_group()
 linux_group.add_argument('--ubuntu', type=str, nargs='?', const='20.04', default='20.04',
@@ -167,7 +169,7 @@ def image_name(configuration: argparse.Namespace) -> str:
         if version is not None:
             elements.append(distro + '-' + version)
             break
-    for compiler in ('llvm', 'gcc'):
+    for compiler in ('llvm', 'intel_llvm', 'gcc'):
         version = getattr(configuration, compiler, None)
         if version is not None:
             elements.append(compiler + '-' + str(version).split('.')[0])

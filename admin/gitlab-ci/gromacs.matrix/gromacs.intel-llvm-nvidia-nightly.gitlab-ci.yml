@@ -1,0 +1,85 @@
+# Test goal: Newest open-source oneAPI build with SYCL with tests on NVIDIA GPUs
+# Test intents (should change rarely and conservatively):
+#   OS: Ubuntu newest supported
+#   Compiler: IntelLLVM newest supported
+#   FFT: FFTW3
+#   GPU: SYCL DPC++ (CUDA backend)
+#   Scope: configure, build, unit tests, regression tests
+# Test implementation choices (free to change as needed):
+#   OS: Ubuntu 20.04
+#   Build type: RelWithAssert
+#   Compiler: IntelLLVM 2022-06
+#   MPI: threadMPI
+#   SIMD: AVX2_256
+#   Parallelism nt/ntomp: 2/1 and 2/2
+
+gromacs:intel-llvm-nvidia-weekly:configure:
+  extends:
+   - .gromacs:base:configure
+   - .use-sycl
+   - .use-clang:base
+   - .rules:weekly-not-for-release
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-intel_llvm-2022-06-cuda-11.4.3:latest
+  variables:
+    CMAKE: /usr/local/cmake-3.21.2/bin/cmake
+    CMAKE_COMPILER_SCRIPT: -DCMAKE_C_COMPILER=/opt/intel-llvm/bin/clang -DCMAKE_CXX_COMPILER=/opt/intel-llvm/bin/clang++
+    CMAKE_BUILD_TYPE_OPTIONS: "-DCMAKE_BUILD_TYPE=RelWithAssert"
+    CMAKE_EXTRA_OPTIONS: "-DSYCL_CXX_FLAGS_EXTRA=-fsycl-targets=nvptx64-nvidia-cuda -DGMX_GPU_NB_CLUSTER_SIZE=8"
+  before_script:
+    - source /opt/intel-llvm/setenv.sh
+
+gromacs:intel-llvm-nvidia-weekly:build:
+  extends:
+    - .variables:default
+    - .gromacs:base:build
+    - .use-ccache
+    - .rules:weekly-not-for-release
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-intel_llvm-2022-06-cuda-11.4.3:latest
+  variables:
+    CMAKE: /usr/local/cmake-3.21.2/bin/cmake
+  before_script:
+    - source /opt/intel-llvm/setenv.sh
+    - mkdir -p ccache
+    - export CCACHE_BASEDIR=${PWD}
+    - export CCACHE_DIR=${PWD}/ccache
+  needs:
+    - job: gromacs:intel-llvm-nvidia-weekly:configure
+
+gromacs:intel-llvm-nvidia-weekly:test:
+  extends:
+    - .gromacs:base:test
+    - .rules:weekly-not-for-release
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-intel_llvm-2022-06-cuda-11.4.3:latest
+  variables:
+    CMAKE: /usr/local/cmake-3.21.2/bin/cmake
+    KUBERNETES_EXTENDED_RESOURCE_NAME: "nvidia.com/gpu"
+    KUBERNETES_EXTENDED_RESOURCE_LIMIT: 1
+    GMX_FORCE_UPDATE_DEFAULT_GPU: 1
+  tags:
+    - k8s-scilifelab
+  before_script:
+    - source /opt/intel-llvm/setenv.sh
+  needs:
+    - job: gromacs:intel-llvm-nvidia-weekly:build
+
+gromacs:intel-llvm-nvidia-weekly:regressiontest:
+  extends:
+    - .gromacs:base:regressiontest
+    - .rules:weekly-not-for-release
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-intel_llvm-2022-06-cuda-11.4.3:latest
+  variables:
+    CMAKE: /usr/local/cmake-3.21.2/bin/cmake
+    # Default not working, see #2980
+    REGRESSIONTEST_TOTAL_RANK_NUMBER: 2
+    REGRESSIONTEST_OMP_RANK_NUMBER: 1
+    KUBERNETES_EXTENDED_RESOURCE_NAME: "nvidia.com/gpu"
+    KUBERNETES_EXTENDED_RESOURCE_LIMIT: 1
+    GMX_FORCE_UPDATE_DEFAULT_GPU: 1
+  tags:
+    - k8s-scilifelab
+  before_script:
+    - source /opt/intel-llvm/setenv.sh
+  needs:
+    - job: gromacs:intel-llvm-nvidia-weekly:build
+    - job: regressiontests:prepare
+
