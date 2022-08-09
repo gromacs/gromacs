@@ -68,6 +68,7 @@ See Also:
 import argparse
 import collections
 import collections.abc
+import copy
 import typing
 from distutils.version import StrictVersion
 
@@ -350,8 +351,11 @@ def get_ucx(args, compiler, gdrcopy):
     if args.cuda is not None:
         if hasattr(compiler, 'toolchain'):
             use_gdrcopy = (gdrcopy is not None)
-            # Version last updated June 7, 2021
-            return hpccm.building_blocks.ucx(toolchain=compiler.toolchain, gdrcopy=use_gdrcopy, version="1.10.1",
+            # We disable `-Werror`, since there are some unknown pragmas and unused variables which upset clang
+            toolchain = copy.copy(compiler.toolchain)
+            toolchain.CFLAGS = '-Wno-error'
+            # Version last updated July 15, 2022
+            return hpccm.building_blocks.ucx(toolchain=toolchain, gdrcopy=use_gdrcopy, version="1.13.0",
                                              cuda=True)
         else:
             raise RuntimeError('compiler is not an HPCCM compiler building block!')
@@ -373,7 +377,23 @@ def get_mpi(args, compiler, ucx):
                                                      ucx=use_ucx, infiniband=False)
             else:
                 raise RuntimeError('compiler is not an HPCCM compiler building block!')
-
+        elif args.mpi == 'mpich':
+            if hasattr(compiler, 'toolchain'):
+                use_cuda = (args.cuda is not None)
+                use_rocm = (args.rocm is not None)
+                use_ucx = (ucx is not None)
+                flags = {}
+                if ucx is not None:
+                    flags['with-device'] = 'ch4:ucx'
+                mpich_stage = hpccm.Stage()
+                # Python needed for configuring
+                mpich_stage += hpccm.building_blocks.python(python3=True, python2=False, devel=False)
+                # Version last updated July 15, 2022
+                mpich_stage += hpccm.building_blocks.mpich(toolchain=compiler.toolchain, version="4.0.2",
+                        cuda=use_cuda, rocm=use_rocm, ucx=use_ucx, infiniband=False, disable_fortran=True, **flags)
+                return mpich_stage
+            else:
+                raise RuntimeError('compiler is not an HPCCM compiler building block!')
         elif args.mpi == 'impi':
             # TODO Intel MPI from the oneAPI repo is not working reliably,
             # reasons are unclear. When solved, add packagages called:
@@ -420,14 +440,16 @@ def get_hipsycl(args):
     if args.hipsycl is None:
         return None
     if args.llvm is None:
-        raise RuntimeError('Can not build hipSYCL without llvm')
-
+        raise RuntimeError('Can not build hipSYCL without LLVM')
     if args.rocm is None:
-        raise RuntimeError('hipSYCL requires the rocm packages')
+        raise RuntimeError('hipSYCL requires the ROCm packages')
 
-    cmake_opts = ['-DLLVM_DIR=/opt/rocm/llvm/lib/cmake/llvm',
+    cmake_opts = ['-DCMAKE_C_COMPILER=clang-{}'.format(args.llvm),
+                  '-DCMAKE_CXX_COMPILER=clang++-{}'.format(args.llvm),
+                  '-DLLVM_DIR=/usr/lib/llvm-{}/cmake/'.format(args.llvm),
                   '-DCMAKE_PREFIX_PATH=/opt/rocm/lib/cmake',
                   '-DWITH_ROCM_BACKEND=ON']
+
     if args.cuda is not None:
         cmake_opts += ['-DCUDA_TOOLKIT_ROOT_DIR=/usr/local/cuda',
                        '-DWITH_CUDA_BACKEND=ON']

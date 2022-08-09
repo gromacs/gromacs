@@ -199,7 +199,7 @@ include:
   - local: '/admin/gitlab-ci/gromacs.matrix/gromacs.clang-8.gitlab-ci.yml'
   - local: '/admin/gitlab-ci/gromacs.matrix/gromacs.clang-13-mpi.gitlab-ci.yml'
   - local: '/admin/gitlab-ci/gromacs.matrix/gromacs.clang-13-release.gitlab-ci.yml'
-  - local: '/admin/gitlab-ci/gromacs.matrix/gromacs.clang-12-cuda-11.4.3.gitlab-ci.yml'
+  - local: '/admin/gitlab-ci/gromacs.matrix/gromacs.clang-14-cuda-11.4.3.gitlab-ci.yml'
   - local: '/admin/gitlab-ci/gromacs.matrix/gromacs.clang-ASAN.gitlab-ci.yml'
   - local: '/admin/gitlab-ci/gromacs.matrix/gromacs.clang-static-analyzer.gitlab-ci.yml'
   - local: '/admin/gitlab-ci/gromacs.matrix/gromacs.clang-TSAN.gitlab-ci.yml'
