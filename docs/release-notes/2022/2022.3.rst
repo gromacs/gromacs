@@ -36,3 +36,8 @@ for all gcc versions.
 Miscellaneous
 ^^^^^^^^^^^^^
 
+Improve mdrun log file energy output formatting
+"""""""""""""""""""""""""""""""""""""""""""""""
+
+The mdrun log file now prints more energy-field names in abbreviated
+forms so as to avoid exceeding the maximum column lengths available.
