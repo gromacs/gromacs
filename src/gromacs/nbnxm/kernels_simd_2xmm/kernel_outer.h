@@ -32,108 +32,91 @@
  * the research papers on the package. Check out https://www.gromacs.org.
  */
 
-
 {
     using namespace gmx;
+
+#if GMX_SIMD_J_UNROLL_SIZE == 1
+    constexpr KernelLayout kernelLayout = KernelLayout::r4xM;
+#else
+    constexpr KernelLayout            kernelLayout         = KernelLayout::r2xMM;
+#endif
+
+    /* The number of 'i' SIMD registers */
+    static_assert(UNROLLI % GMX_SIMD_J_UNROLL_SIZE == 0);
+    constexpr int nR = UNROLLI / GMX_SIMD_J_UNROLL_SIZE;
+
+    /* Interaction type and output choice specific constexpr variables */
+#ifdef CALC_COUL_RF
+    constexpr KernelCoulombType coulombType = KernelCoulombType::RF;
+#endif
+#ifdef CALC_COUL_EWALD
+    constexpr KernelCoulombType coulombType = KernelCoulombType::EwaldAnalytical;
+#endif
+#ifdef CALC_COUL_TAB
+    constexpr KernelCoulombType coulombType = KernelCoulombType::EwaldTabulated;
+#endif
+#ifdef LJ_COMB_GEOM
+    constexpr LJCombinationRule ljCombinationRule = LJCombinationRule::Geometric;
+#else
+#    ifdef LJ_COMB_LB
+    constexpr LJCombinationRule       ljCombinationRule    = LJCombinationRule::LorentzBerthelot;
+#    else
+    constexpr LJCombinationRule ljCombinationRule = LJCombinationRule::None;
+#    endif
+#endif
+#ifdef LJ_POT_SWITCH
+    constexpr InteractionModifiers vdwModifier = InteractionModifiers::PotSwitch;
+#else
+#    ifdef LJ_FORCE_SWITCH
+    constexpr InteractionModifiers    vdwModifier          = InteractionModifiers::ForceSwitch;
+#    else
+    /* Note the we also use the potential-shift kernel for LJ without shift */
+    constexpr InteractionModifiers vdwModifier = InteractionModifiers::PotShift;
+#    endif
+#endif
+#ifdef LJ_EWALD_GEOM
+    constexpr bool haveLJEwaldGeometric = true;
+#else
+    constexpr bool                    haveLJEwaldGeometric = false;
+#endif
+#ifdef CALC_ENERGIES
+    constexpr bool calculateEnergies = true;
+#else
+    constexpr bool                    calculateEnergies    = false;
+#endif
+#if defined CALC_ENEGIES && defined ENERGY_GROUPS
+    constexpr bool useEnergyGroups = true;
+#else
+    constexpr bool                    useEnergyGroups      = false;
+#endif
+#ifdef VDW_CUTOFF_CHECK
+    constexpr bool haveVdwCutoffCheck = true;
+#else
+    constexpr bool                    haveVdwCutoffCheck   = false;
+#endif
 
     /* Unpack pointers for output */
     real* f      = out->f.data();
     real* fshift = out->fshift.data();
-#ifdef CALC_ENERGIES
-#    ifdef ENERGY_GROUPS
-    real* Vvdw = out->VSvdw.data();
-    real* Vc   = out->VSc.data();
-#    else
-    real*       Vvdw       = out->Vvdw.data();
-    real*       Vc         = out->Vc.data();
-#    endif
-#endif
+    real* Vvdw;
+    real* Vc;
+    if constexpr (calculateEnergies)
+    {
+        if constexpr (useEnergyGroups)
+        {
+            Vvdw = out->VSvdw.data();
+            Vc   = out->VSc.data();
+        }
+        else
+        {
+            Vvdw = out->Vvdw.data();
+            Vc   = out->Vc.data();
+        }
+    }
 
-    SimdReal shX_S;
-    SimdReal shY_S;
-    SimdReal shZ_S;
-    SimdReal ix_S0, iy_S0, iz_S0;
-    SimdReal ix_S2, iy_S2, iz_S2;
-    SimdReal fix_S0, fiy_S0, fiz_S0;
-    SimdReal fix_S2, fiy_S2, fiz_S2;
-
-    SimdReal diagonal_jmi_S;
-#if UNROLLI == UNROLLJ
-    SimdBool diagonal_mask_S0, diagonal_mask_S2;
-#else
-    SimdBool                         diagonal_mask0_S0, diagonal_mask0_S2;
-    SimdBool                         diagonal_mask1_S0, diagonal_mask1_S2;
-#endif
-
-    SimdBitMask filter_S0, filter_S2;
+    SimdBitMask filter_S0, filter_S1, filter_S2, filter_S3;
 
     SimdReal zero_S(0.0);
-
-    SimdReal one_S(1.0);
-    SimdReal iq_S0 = setZero();
-    SimdReal iq_S2 = setZero();
-
-#ifdef CALC_COUL_RF
-    SimdReal mrc_3_S;
-#    ifdef CALC_ENERGIES
-    SimdReal hrc_3_S, moh_rc_S;
-#    endif
-#endif
-
-#ifdef CALC_COUL_TAB
-    /* Coulomb table variables */
-    SimdReal invtsp_S;
-
-#    ifdef CALC_ENERGIES
-    SimdReal mhalfsp_S;
-#    endif
-#endif
-
-#ifdef CALC_COUL_EWALD
-    SimdReal beta2_S, beta_S;
-#endif
-
-#if defined CALC_ENERGIES && (defined CALC_COUL_EWALD || defined CALC_COUL_TAB)
-    SimdReal sh_ewald_S;
-#endif
-
-#if defined LJ_CUT && defined CALC_ENERGIES
-    SimdReal p6_cpot_S, p12_cpot_S;
-#endif
-#ifdef LJ_POT_SWITCH
-    SimdReal rswitch_S;
-    SimdReal swV3_S, swV4_S, swV5_S;
-    SimdReal swF2_S, swF3_S, swF4_S;
-#endif
-#ifdef LJ_FORCE_SWITCH
-    SimdReal rswitch_S;
-    SimdReal p6_fc2_S, p6_fc3_S;
-    SimdReal p12_fc2_S, p12_fc3_S;
-#    ifdef CALC_ENERGIES
-    SimdReal p6_vc3_S, p6_vc4_S;
-    SimdReal p12_vc3_S, p12_vc4_S;
-    SimdReal p6_6cpot_S, p12_12cpot_S;
-#    endif
-#endif
-#ifdef LJ_EWALD_GEOM
-    SimdReal half_S, lje_c2_S, lje_c6_6_S;
-#endif
-
-#ifdef LJ_COMB_LB
-    SimdReal hsig_i_S0, seps_i_S0;
-    SimdReal hsig_i_S2, seps_i_S2;
-#else
-#    ifdef FIX_LJ_C
-    alignas(GMX_SIMD_ALIGNMENT) real pvdw_c6[2 * UNROLLI * UNROLLJ];
-    real*                            pvdw_c12          = pvdw_c6 + UNROLLI * UNROLLJ;
-#    endif
-#endif /* LJ_COMB_LB */
-
-    SimdReal minRsq_S;
-    SimdReal rc2_S;
-#ifdef VDW_CUTOFF_CHECK
-    SimdReal rcvdw2_S;
-#endif
 
 #ifdef COUNT_PAIRS
     int npair = 0;
@@ -141,40 +124,57 @@
 
     const nbnxn_atomdata_t::Params& nbatParams = nbat->params();
 
-#if defined LJ_COMB_GEOM || defined LJ_COMB_LB || defined LJ_EWALD_GEOM
-    const real* gmx_restrict ljc = nbatParams.lj_comb.data();
-#endif
-#if !(defined LJ_COMB_GEOM || defined LJ_COMB_LB || defined FIX_LJ_C)
-    /* No combination rule used */
-    const real* gmx_restrict nbfp_ptr = nbatParams.nbfp_aligned.data();
-    const int* gmx_restrict  type     = nbatParams.type.data();
-#endif
+    const real* gmx_restrict ljc;
+    if constexpr (ljCombinationRule != LJCombinationRule::None || haveLJEwaldGeometric)
+    {
+        ljc = nbatParams.lj_comb.data();
+    }
+    const real* gmx_restrict nbfp_ptr;
+    const int* gmx_restrict  type;
+    if constexpr (ljCombinationRule == LJCombinationRule::None)
+    {
+        /* No combination rule used */
+        nbfp_ptr = nbatParams.nbfp_aligned.data();
+        type     = nbatParams.type.data();
+    }
 
+    /* Set up the diagonal exclusion masks */
+    std::array<SimdBool, UNROLLI == UNROLLJ ? nR : 0> diagonalMaskV;
+    std::array<SimdBool, UNROLLI == UNROLLJ ? 0 : nR> diagonalMask0V;
+    std::array<SimdBool, UNROLLI == UNROLLJ ? 0 : nR> diagonalMask1V;
     /* Load j-i for the first i */
-    diagonal_jmi_S = load<SimdReal>(nbat->simdMasks.diagonal_2xnn_j_minus_i.data());
+    SimdReal diagonalJMinusI = load<SimdReal>(kernelLayout == KernelLayout::r4xM
+                                                      ? nbat->simdMasks.diagonal_4xn_j_minus_i.data()
+                                                      : nbat->simdMasks.diagonal_2xnn_j_minus_i.data());
     /* Generate all the diagonal masks as comparison results */
-#if UNROLLI == UNROLLJ
-    diagonal_mask_S0 = (zero_S < diagonal_jmi_S);
-    diagonal_jmi_S   = diagonal_jmi_S - one_S;
-    diagonal_jmi_S   = diagonal_jmi_S - one_S;
-    diagonal_mask_S2 = (zero_S < diagonal_jmi_S);
-#else
-#    if 2 * UNROLLI == UNROLLJ
-    diagonal_mask0_S0                                  = (zero_S < diagonal_jmi_S);
-    diagonal_jmi_S                                     = diagonal_jmi_S - one_S;
-    diagonal_jmi_S                                     = diagonal_jmi_S - one_S;
-    diagonal_mask0_S2                                  = (zero_S < diagonal_jmi_S);
-    diagonal_jmi_S                                     = diagonal_jmi_S - one_S;
-    diagonal_jmi_S                                     = diagonal_jmi_S - one_S;
-    diagonal_mask1_S0                                  = (zero_S < diagonal_jmi_S);
-    diagonal_jmi_S                                     = diagonal_jmi_S - one_S;
-    diagonal_jmi_S                                     = diagonal_jmi_S - one_S;
-    diagonal_mask1_S2                                  = (zero_S < diagonal_jmi_S);
-#    endif
-#endif
+    SimdReal iIndexIncrement(GMX_SIMD_J_UNROLL_SIZE);
+    if constexpr (UNROLLI == UNROLLJ)
+    {
+        for (int i = 0; i < nR; i++)
+        {
+            diagonalMaskV[i] = (zero_S < diagonalJMinusI);
+            diagonalJMinusI  = diagonalJMinusI - iIndexIncrement;
+        }
+    }
+    else if constexpr (UNROLLI == 2 * UNROLLJ || 2 * UNROLLI == UNROLLJ)
+    {
+        for (int i = 0; i < nR; i++)
+        {
+            diagonalMask0V[i] = (zero_S < diagonalJMinusI);
+            diagonalJMinusI   = diagonalJMinusI - iIndexIncrement;
+        }
+        if constexpr (UNROLLI == 2 * UNROLLJ)
+        {
+            /* Load j-i for the second half of the j-cluster */
+            diagonalJMinusI = load<SimdReal>(nbat->simdMasks.diagonal_4xn_j_minus_i.data() + UNROLLJ);
+        }
+        for (int i = 0; i < nR; i++)
+        {
+            diagonalMask1V[i] = (zero_S < diagonalJMinusI);
+            diagonalJMinusI   = diagonalJMinusI - iIndexIncrement;
+        }
+    }
 
-    /* Load masks for topology exclusion masking. filter_stride is
-       static const, so the conditional will be optimized away. */
 #if GMX_DOUBLE && !GMX_SIMD_HAVE_INT32_LOGICAL
     const std::uint64_t* gmx_restrict exclusion_filter = nbat->simdMasks.exclusion_filter64.data();
 #else
@@ -185,140 +185,63 @@
      * Since we only check bits, the actual value they represent does not
      * matter, as long as both filter and mask data are treated the same way.
      */
-#if GMX_SIMD_HAVE_INT32_LOGICAL
-    filter_S0 = load<SimdBitMask>(reinterpret_cast<const int*>(exclusion_filter + 0 * UNROLLJ));
-    filter_S2 = load<SimdBitMask>(reinterpret_cast<const int*>(exclusion_filter + 2 * UNROLLJ));
-#else
-    filter_S0 = load<SimdBitMask>(reinterpret_cast<const real*>(exclusion_filter + 0 * UNROLLJ));
-    filter_S2 = load<SimdBitMask>(reinterpret_cast<const real*>(exclusion_filter + 2 * UNROLLJ));
-#endif
-
-#ifdef CALC_COUL_RF
-    /* Reaction-field constants */
-    mrc_3_S = SimdReal(-2 * ic->reactionFieldCoefficient);
-#    ifdef CALC_ENERGIES
-    hrc_3_S  = SimdReal(ic->reactionFieldCoefficient);
-    moh_rc_S = SimdReal(-ic->reactionFieldShift);
-#    endif
-#endif
-
-#ifdef CALC_COUL_TAB
-
-    invtsp_S = SimdReal(ic->coulombEwaldTables->scale);
-#    ifdef CALC_ENERGIES
-    mhalfsp_S = SimdReal(-0.5_real / ic->coulombEwaldTables->scale);
-#    endif
-
-#    ifdef TAB_FDV0
-    const real* tab_coul_F = ic->coulombEwaldTables->tableFDV0.data();
-#    else
-    const real* tab_coul_F = ic->coulombEwaldTables->tableF.data();
-#        ifdef CALC_ENERGIES
-    const real* tab_coul_V = ic->coulombEwaldTables->tableV.data();
-#        endif
-#    endif
-#endif /* CALC_COUL_TAB */
-
-#ifdef CALC_COUL_EWALD
-    beta2_S = SimdReal(ic->ewaldcoeff_q * ic->ewaldcoeff_q);
-    beta_S  = SimdReal(ic->ewaldcoeff_q);
-#endif
-
-#if (defined CALC_COUL_TAB || defined CALC_COUL_EWALD) && defined CALC_ENERGIES
-    sh_ewald_S = SimdReal(ic->sh_ewald);
-#endif
-
-    /* LJ function constants */
-#if defined CALC_ENERGIES || defined LJ_POT_SWITCH
-    SimdReal sixth_S    = SimdReal(1.0 / 6.0);
-    SimdReal twelveth_S = SimdReal(1.0 / 12.0);
-#endif
-
-#if defined LJ_CUT && defined CALC_ENERGIES
-    /* We shift the potential by cpot, which can be zero */
-    p6_cpot_S  = SimdReal(ic->dispersion_shift.cpot);
-    p12_cpot_S = SimdReal(ic->repulsion_shift.cpot);
-#endif
-#ifdef LJ_POT_SWITCH
-    rswitch_S = SimdReal(ic->rvdw_switch);
-    swV3_S    = SimdReal(ic->vdw_switch.c3);
-    swV4_S    = SimdReal(ic->vdw_switch.c4);
-    swV5_S    = SimdReal(ic->vdw_switch.c5);
-    swF2_S    = SimdReal(3 * ic->vdw_switch.c3);
-    swF3_S    = SimdReal(4 * ic->vdw_switch.c4);
-    swF4_S    = SimdReal(5 * ic->vdw_switch.c5);
-#endif
-#ifdef LJ_FORCE_SWITCH
-    rswitch_S = SimdReal(ic->rvdw_switch);
-    p6_fc2_S  = SimdReal(ic->dispersion_shift.c2);
-    p6_fc3_S  = SimdReal(ic->dispersion_shift.c3);
-    p12_fc2_S = SimdReal(ic->repulsion_shift.c2);
-    p12_fc3_S = SimdReal(ic->repulsion_shift.c3);
-#    ifdef CALC_ENERGIES
+    SimdBitMask exclusionFilterV[nR];
+    for (int i = 0; i < nR; i++)
     {
-        SimdReal mthird_S  = SimdReal(-1.0 / 3.0);
-        SimdReal mfourth_S = SimdReal(-1.0 / 4.0);
-
-        p6_vc3_S     = mthird_S * p6_fc2_S;
-        p6_vc4_S     = mfourth_S * p6_fc3_S;
-        p6_6cpot_S   = SimdReal(ic->dispersion_shift.cpot / 6);
-        p12_vc3_S    = mthird_S * p12_fc2_S;
-        p12_vc4_S    = mfourth_S * p12_fc3_S;
-        p12_12cpot_S = SimdReal(ic->repulsion_shift.cpot / 12);
+#if GMX_SIMD_HAVE_INT32_LOGICAL
+        exclusionFilterV[i] = load<SimdBitMask>(
+                reinterpret_cast<const int*>(exclusion_filter + i * GMX_SIMD_J_UNROLL_SIZE * UNROLLJ));
+#else
+        exclusionFilterV[i] = load<SimdBitMask>(
+                reinterpret_cast<const real*>(exclusion_filter + i * GMX_SIMD_J_UNROLL_SIZE * UNROLLJ));
+#endif
     }
-#    endif
-#endif
-#ifdef LJ_EWALD_GEOM
-    half_S                      = SimdReal(0.5);
-    const real lj_ewaldcoeff2   = ic->ewaldcoeff_lj * ic->ewaldcoeff_lj;
-    const real lj_ewaldcoeff6_6 = lj_ewaldcoeff2 * lj_ewaldcoeff2 * lj_ewaldcoeff2 / 6;
-    lje_c2_S                    = SimdReal(lj_ewaldcoeff2);
-    lje_c6_6_S                  = SimdReal(lj_ewaldcoeff6_6);
-#    ifdef CALC_ENERGIES
-    /* Determine the grid potential at the cut-off */
-    SimdReal lje_vc_S = SimdReal(ic->sh_lj_ewald);
-#    endif
-#endif
+
+    CoulombCalculator<coulombType> coulombCalculator(*ic);
+
+    gmx_unused SimdReal ewaldShift;
+    if constexpr (coulombType != KernelCoulombType::RF && calculateEnergies)
+    {
+        ewaldShift = SimdReal(ic->sh_ewald);
+    }
+
+    /* LJ function constants, only actually needed with energies or potential switching */
+    SimdReal sixth_S(1.0_real / 6.0_real);
+    SimdReal twelveth_S(1.0_real / 12.0_real);
+
+    LennardJonesCalculator<calculateEnergies, vdwModifier> ljCalculator(*ic);
+
+    std::array<SimdReal, haveLJEwaldGeometric ? 5 : 0> ljEwaldParams;
+    real                                               lj_ewaldcoeff6_6;
+    if constexpr (haveLJEwaldGeometric)
+    {
+        ljEwaldParams[0]          = SimdReal(1.0_real);
+        ljEwaldParams[1]          = SimdReal(0.5_real);
+        const real lj_ewaldcoeff2 = ic->ewaldcoeff_lj * ic->ewaldcoeff_lj;
+        lj_ewaldcoeff6_6          = lj_ewaldcoeff2 * lj_ewaldcoeff2 * lj_ewaldcoeff2 / 6;
+        ljEwaldParams[2]          = SimdReal(lj_ewaldcoeff2);
+        ljEwaldParams[3]          = SimdReal(lj_ewaldcoeff6_6);
+        /* Determine the grid potential at the cut-off */
+        ljEwaldParams[4] = ic->sh_lj_ewald;
+    }
 
     /* The kernel either supports rcoulomb = rvdw or rcoulomb >= rvdw */
-    rc2_S = SimdReal(ic->rcoulomb * ic->rcoulomb);
-#ifdef VDW_CUTOFF_CHECK
-    rcvdw2_S = SimdReal(ic->rvdw * ic->rvdw);
-#endif
+    const SimdReal cutoffSquared(ic->rcoulomb * ic->rcoulomb);
+    SimdReal       vdwCutoffSquared;
+    if constexpr (haveVdwCutoffCheck)
+    {
+        vdwCutoffSquared = SimdReal(ic->rvdw * ic->rvdw);
+    }
 
-    minRsq_S = SimdReal(c_nbnxnMinDistanceSquared);
+    const SimdReal minDistanceSquared(c_nbnxnMinDistanceSquared);
 
     const real* gmx_restrict q        = nbatParams.q.data();
     const real               facel    = ic->epsfac;
     const real* gmx_restrict shiftvec = shift_vec[0];
     const real* gmx_restrict x        = nbat->x().data();
 
-#ifdef FIX_LJ_C
 
-    for (jp = 0; jp < UNROLLJ; jp++)
-    {
-        pvdw_c6[0 * UNROLLJ + jp] = nbat->nbfp[0 * 2];
-        pvdw_c6[1 * UNROLLJ + jp] = nbat->nbfp[0 * 2];
-        pvdw_c6[2 * UNROLLJ + jp] = nbat->nbfp[0 * 2];
-        pvdw_c6[3 * UNROLLJ + jp] = nbat->nbfp[0 * 2];
-
-        pvdw_c12[0 * UNROLLJ + jp] = nbat->nbfp[0 * 2 + 1];
-        pvdw_c12[1 * UNROLLJ + jp] = nbat->nbfp[0 * 2 + 1];
-        pvdw_c12[2 * UNROLLJ + jp] = nbat->nbfp[0 * 2 + 1];
-        pvdw_c12[3 * UNROLLJ + jp] = nbat->nbfp[0 * 2 + 1];
-    }
-    SimdReal c6_S0 = load<SimdReal>(pvdw_c6 + 0 * UNROLLJ);
-    SimdReal c6_S1 = load<SimdReal>(pvdw_c6 + 1 * UNROLLJ);
-    SimdReal c6_S2 = load<SimdReal>(pvdw_c6 + 2 * UNROLLJ);
-    SimdReal c6_S3 = load<SimdReal>(pvdw_c6 + 3 * UNROLLJ);
-
-    SimdReal c12_S0 = load<SimdReal>(pvdw_c12 + 0 * UNROLLJ);
-    SimdReal c12_S1 = load<SimdReal>(pvdw_c12 + 1 * UNROLLJ);
-    SimdReal c12_S2 = load<SimdReal>(pvdw_c12 + 2 * UNROLLJ);
-    SimdReal c12_S3 = load<SimdReal>(pvdw_c12 + 3 * UNROLLJ);
-#endif /* FIX_LJ_C */
-
-#ifdef ENERGY_GROUPS
+    // These constants are only used when useEnergyGroups==true
     const int egps_ishift  = nbatParams.neg_2log;
     const int egps_imask   = (1 << egps_ishift) - 1;
     const int egps_jshift  = 2 * nbatParams.neg_2log;
@@ -326,7 +249,6 @@
     const int egps_jstride = (UNROLLJ >> 1) * UNROLLJ;
     /* Major division is over i-particle energy groups, determine the stride */
     const int Vstride_i = nbatParams.nenergrp * (1 << nbatParams.neg_2log) * egps_jstride;
-#endif
 
     const nbnxn_cj_t* l_cj = nbl->cj.data();
 
@@ -339,22 +261,23 @@
         const int ci     = ciEntry.ci;
         const int ci_sh  = (ish == gmx::c_centralShiftIndex ? ci : -1);
 
-        shX_S = SimdReal(shiftvec[ish3]);
-        shY_S = SimdReal(shiftvec[ish3 + 1]);
-        shZ_S = SimdReal(shiftvec[ish3 + 2]);
+        // Load the periodic shift vector for the i-atoms
+        const SimdReal iShiftX(shiftvec[ish3]);
+        const SimdReal iShiftY(shiftvec[ish3 + 1]);
+        const SimdReal iShiftZ(shiftvec[ish3 + 2]);
 
 #if UNROLLJ <= 4
         int sci  = ci * STRIDE;
         int scix = sci * DIM;
-#    if defined LJ_COMB_LB || defined LJ_COMB_GEOM || defined LJ_EWALD_GEOM
+        //#    if defined LJ_COMB_LB || defined LJ_COMB_GEOM || defined LJ_EWALD_GEOM
         int sci2 = sci * 2;
-#    endif
+        //#    endif
 #else
         int sci  = (ci >> 1) * STRIDE;
         int scix = sci * DIM + (ci & 1) * (STRIDE >> 1);
-#    if defined LJ_COMB_LB || defined LJ_COMB_GEOM || defined LJ_EWALD_GEOM
+        //#    if defined LJ_COMB_LB || defined LJ_COMB_GEOM || defined LJ_EWALD_GEOM
         int sci2 = sci * 2 + (ci & 1) * (STRIDE >> 1);
-#    endif
+        //#    endif
         sci += (ci & 1) * (STRIDE >> 1);
 #endif
 
@@ -368,11 +291,12 @@
         const bool do_coul = ((ciEntry.shift & NBNXN_CI_DO_COUL(0)) != 0);
         const bool half_LJ = (((ciEntry.shift & NBNXN_CI_HALF_LJ(0)) != 0) || !do_LJ) && do_coul;
 
-#ifdef ENERGY_GROUPS
-        const int egps_i = nbatParams.energrp[ci];
-        real*     vvdwtp[UNROLLI];
-        real*     vctp[UNROLLI];
+        std::array<real*, useEnergyGroups ? UNROLLI : 0> vvdwtp;
+        std::array<real*, useEnergyGroups ? UNROLLI : 0> vctp;
+        int                                              egps_i;
+        if constexpr (useEnergyGroups)
         {
+            egps_i = nbatParams.energrp[ci];
             for (int ia = 0; ia < UNROLLI; ia++)
             {
                 int egp_ia = (egps_i >> (ia * egps_ishift)) & egps_imask;
@@ -380,214 +304,224 @@
                 vctp[ia]   = Vc + egp_ia * Vstride_i;
             }
         }
+
+        if constexpr (calculateEnergies)
+        {
+            // Compute self interaction energies, when present
+            const bool do_self = haveLJEwaldGeometric || do_coul;
+
+#if UNROLLJ == 4
+            if (do_self && l_cj[ciEntry.cj_ind_start].cj == ci_sh)
 #endif
-
-#ifdef CALC_ENERGIES
-#    ifdef LJ_EWALD_GEOM
-        gmx_bool do_self = TRUE;
-#    else
-        gmx_bool do_self = do_coul;
-#    endif
-#    if UNROLLJ == 4
-        if (do_self && l_cj[ciEntry.cj_ind_start].cj == ci_sh)
-#    endif
-#    if UNROLLJ == 8
-            if (do_self && l_cj[ciEntry.cj_ind_start].cj == (ci_sh >> 1))
-#    endif
-            {
-                if (do_coul)
-                {
-#    ifdef CALC_COUL_RF
-                    const real Vc_sub_self = 0.5 * ic->reactionFieldShift;
-#    endif
-#    ifdef CALC_COUL_TAB
-#        ifdef TAB_FDV0
-                    const real Vc_sub_self = 0.5 * tab_coul_F[2];
-#        else
-                    const real Vc_sub_self = 0.5 * tab_coul_V[0];
-#        endif
-#    endif
-#    ifdef CALC_COUL_EWALD
-                    /* beta/sqrt(pi) */
-                    const real Vc_sub_self = 0.5 * ic->ewaldcoeff_q * M_2_SQRTPI;
-#    endif
-
-                    for (int ia = 0; ia < UNROLLI; ia++)
-                    {
-                        const real qi = q[sci + ia];
-#    ifdef ENERGY_GROUPS
-                        vctp[ia][((egps_i >> (ia * egps_ishift)) & egps_imask) * egps_jstride]
-#    else
-                    Vc[0]
-#    endif
-                                -= facel * qi * qi * Vc_sub_self;
-                    }
-                }
-
-#    ifdef LJ_EWALD_GEOM
-                {
-                    for (int ia = 0; ia < UNROLLI; ia++)
-                    {
-                        const real c6_i =
-                                nbatParams.nbfp[nbatParams.type[sci + ia] * (nbatParams.numTypes + 1) * 2]
-                                / 6;
-#        ifdef ENERGY_GROUPS
-                        vvdwtp[ia][((egps_i >> (ia * egps_ishift)) & egps_imask) * egps_jstride]
-#        else
-                        Vvdw[0]
-#        endif
-                                += 0.5 * c6_i * lj_ewaldcoeff6_6;
-                    }
-                }
-#    endif /* LJ_EWALD */
-            }
+#if UNROLLJ == 2
+                if (do_self && l_cj[ciEntry.cj_ind_start].cj == (ci_sh << 1))
 #endif
+#if UNROLLJ == 8
+                    if (do_self && l_cj[ciEntry.cj_ind_start].cj == (ci_sh >> 1))
+#endif
+                    {
+                        if (do_coul)
+                        {
+                            const real Vc_sub_self = coulombCalculator.selfEnergy();
+
+                            for (int ia = 0; ia < UNROLLI; ia++)
+                            {
+                                const real qi = q[sci + ia];
+                                if constexpr (useEnergyGroups)
+                                {
+                                    vctp[ia][((egps_i >> (ia * egps_ishift)) & egps_imask) * egps_jstride] -=
+                                            facel * qi * qi * Vc_sub_self;
+                                }
+                                else
+                                {
+                                    Vc[0] -= facel * qi * qi * Vc_sub_self;
+                                }
+                            }
+                        }
+
+                        if constexpr (haveLJEwaldGeometric)
+                        {
+                            for (int ia = 0; ia < UNROLLI; ia++)
+                            {
+                                real c6_i =
+                                        nbatParams.nbfp[nbatParams.type[sci + ia] * (nbatParams.numTypes + 1) * 2]
+                                        / 6;
+                                if constexpr (useEnergyGroups)
+                                {
+                                    vvdwtp[ia][((egps_i >> (ia * egps_ishift)) & egps_imask) * egps_jstride] +=
+                                            0.5 * c6_i * lj_ewaldcoeff6_6;
+                                }
+                                else
+                                {
+                                    Vvdw[0] += 0.5 * c6_i * lj_ewaldcoeff6_6;
+                                }
+                            }
+                        }
+                    }
+
+        } // calulateEnergies
 
         /* Load i atom data */
-        int sciy = scix + STRIDE;
-        int sciz = sciy + STRIDE;
-        ix_S0    = loadU1DualHsimd(x + scix);
-        ix_S2    = loadU1DualHsimd(x + scix + 2);
-        iy_S0    = loadU1DualHsimd(x + sciy);
-        iy_S2    = loadU1DualHsimd(x + sciy + 2);
-        iz_S0    = loadU1DualHsimd(x + sciz);
-        iz_S2    = loadU1DualHsimd(x + sciz + 2);
-        ix_S0    = ix_S0 + shX_S;
-        ix_S2    = ix_S2 + shX_S;
-        iy_S0    = iy_S0 + shY_S;
-        iy_S2    = iy_S2 + shY_S;
-        iz_S0    = iz_S0 + shZ_S;
-        iz_S2    = iz_S2 + shZ_S;
+        const int sciy = scix + STRIDE;
+        const int sciz = sciy + STRIDE;
 
+        const auto ixV =
+                genArr<nR>([&](int i) { return loadIAtomData<kernelLayout>(x, scix, i) + iShiftX; });
+        const auto iyV =
+                genArr<nR>([&](int i) { return loadIAtomData<kernelLayout>(x, sciy, i) + iShiftY; });
+        const auto izV =
+                genArr<nR>([&](int i) { return loadIAtomData<kernelLayout>(x, sciz, i) + iShiftZ; });
+
+        std::array<SimdReal, nR> chargeIV;
         if (do_coul)
         {
-            SimdReal facel_S;
-
-            facel_S = SimdReal(facel);
-
-            iq_S0 = loadU1DualHsimd(q + sci);
-            iq_S2 = loadU1DualHsimd(q + sci + 2);
-            iq_S0 = facel_S * iq_S0;
-            iq_S2 = facel_S * iq_S2;
+            chargeIV =
+                    genArr<nR>([&](int i) { return facel * loadIAtomData<kernelLayout>(q, sci, i); });
         }
 
-#ifdef LJ_COMB_LB
-        hsig_i_S0 = loadU1DualHsimd(ljc + sci2);
-        hsig_i_S2 = loadU1DualHsimd(ljc + sci2 + 2);
-        seps_i_S0 = loadU1DualHsimd(ljc + sci2 + STRIDE);
-        seps_i_S2 = loadU1DualHsimd(ljc + sci2 + STRIDE + 2);
-#else
-#    ifdef LJ_COMB_GEOM
-        SimdReal c6s_S0, c12s_S0;
-        SimdReal c6s_S2, c12s_S2;
-
-        c6s_S0 = loadU1DualHsimd(ljc + sci2);
-
-        if (!half_LJ)
+        constexpr bool c_ljCombLB = (ljCombinationRule == LJCombinationRule::LorentzBerthelot);
+        // Note that when half_lj==true we actually only need nR/2 LJ parameters
+        std::array<SimdReal, c_ljCombLB ? nR : 0> halfSigmaIV;
+        std::array<SimdReal, c_ljCombLB ? nR : 0> sqrtEpsilonIV;
+        std::array<SimdReal, (ljCombinationRule == LJCombinationRule::Geometric || haveLJEwaldGeometric) ? nR : 0> c6GeomV;
+        std::array<SimdReal, (ljCombinationRule == LJCombinationRule::Geometric) ? nR : 0> c12GeomV;
+        std::array<const real*, (ljCombinationRule == LJCombinationRule::None) ? UNROLLI : 0> nbfpI;
+        if constexpr (c_ljCombLB)
         {
-            c6s_S2 = loadU1DualHsimd(ljc + sci2 + 2);
+            for (int i = 0; i < nR; i++)
+            {
+                halfSigmaIV[i]   = loadIAtomData<kernelLayout>(ljc, sci2, i);
+                sqrtEpsilonIV[i] = loadIAtomData<kernelLayout>(ljc, sci2 + STRIDE, i);
+            }
         }
-        c12s_S0 = loadU1DualHsimd(ljc + sci2 + STRIDE);
-        if (!half_LJ)
+        else if constexpr (ljCombinationRule == LJCombinationRule::Geometric)
         {
-            c12s_S2 = loadU1DualHsimd(ljc + sci2 + STRIDE + 2);
+            for (int i = 0; i < nR; i++)
+            {
+                c6GeomV[i]  = loadIAtomData<kernelLayout>(ljc, sci2, i);
+                c12GeomV[i] = loadIAtomData<kernelLayout>(ljc, sci2 + STRIDE, i);
+            }
         }
-#    elif !defined LJ_COMB_LB && !defined FIX_LJ_C
-        const int   numTypes = nbatParams.numTypes;
-        const real* nbfp0    = nbfp_ptr + type[sci] * numTypes * c_simdBestPairAlignment;
-        const real* nbfp1    = nbfp_ptr + type[sci + 1] * numTypes * c_simdBestPairAlignment;
-        const real *nbfp2 = nullptr, *nbfp3 = nullptr;
-        if (!half_LJ)
+        else
         {
-            nbfp2 = nbfp_ptr + type[sci + 2] * numTypes * c_simdBestPairAlignment;
-            nbfp3 = nbfp_ptr + type[sci + 3] * numTypes * c_simdBestPairAlignment;
+            const int numTypes = nbatParams.numTypes;
+            for (int i = 0; i < UNROLLI; i++)
+            {
+                nbfpI[i] = nbfp_ptr + type[sci + i] * numTypes * c_simdBestPairAlignment;
+            }
         }
-#    endif
-#endif
-#ifdef LJ_EWALD_GEOM
-        /* We need the geometrically combined C6 for the PME grid correction */
-        SimdReal c6s_S0, c6s_S2;
-        c6s_S0 = loadU1DualHsimd(ljc + sci2);
-        if (!half_LJ)
+        if constexpr (haveLJEwaldGeometric && ljCombinationRule != LJCombinationRule::Geometric)
         {
-            c6s_S2 = loadU1DualHsimd(ljc + sci2 + 2);
+            /* We need the geometrically combined C6 for the PME grid correction */
+            for (int i = 0; i < nR; i++)
+            {
+                c6GeomV[i] = loadIAtomData<kernelLayout>(ljc, sci2, i);
+            }
         }
-#endif
 
-        /* Zero the potential energy for this list */
-#ifdef CALC_ENERGIES
-        SimdReal Vvdwtot_S = setZero();
-        SimdReal vctot_S   = setZero();
-#endif
+        SimdReal Vvdwtot_S;
+        SimdReal vctot_S;
+        if constexpr (calculateEnergies)
+        {
+            /* Zero the potential energy for this list */
+            Vvdwtot_S = setZero();
+            vctot_S   = setZero();
+        }
 
-        /* Clear i atom forces */
-        fix_S0 = setZero();
-        fix_S2 = setZero();
-        fiy_S0 = setZero();
-        fiy_S2 = setZero();
-        fiz_S0 = setZero();
-        fiz_S2 = setZero();
+        /* Declare and clear i atom forces */
+        auto forceIXV = genArr<nR>([&](int gmx_unused i) {
+            SimdReal tmp = setZero();
+            return tmp;
+        });
+        auto forceIYV = genArr<nR>([&](int gmx_unused i) {
+            SimdReal tmp = setZero();
+            return tmp;
+        });
+        auto forceIZV = genArr<nR>([&](int gmx_unused i) {
+            SimdReal tmp = setZero();
+            return tmp;
+        });
+
 
         int cjind = cjind0;
 
         /* Currently all kernels use (at least half) LJ */
-#define CALC_LJ
         if (half_LJ)
         {
             /* Coulomb: all i-atoms, LJ: first half i-atoms */
-#define CALC_COULOMB
-#define HALF_LJ
-#define CHECK_EXCLS
-            while (cjind < cjind1 && nbl->cj[cjind].excl != NBNXN_INTERACTION_MASK_ALL)
+            constexpr bool            c_calculateCoulombInteractions = true;
+            constexpr ILJInteractions c_iLJInteractions              = ILJInteractions::Half;
             {
+                constexpr bool c_needToCheckExclusions = true;
+                while (cjind < cjind1 && nbl->cj[cjind].excl != NBNXN_INTERACTION_MASK_ALL)
+                {
 #include "kernel_inner.h"
-                cjind++;
+                    cjind++;
+                }
             }
-#undef CHECK_EXCLS
-            for (; (cjind < cjind1); cjind++)
             {
+                constexpr bool c_needToCheckExclusions = false;
+                for (; (cjind < cjind1); cjind++)
+                {
 #include "kernel_inner.h"
+                }
             }
-#undef HALF_LJ
-#undef CALC_COULOMB
         }
         else if (do_coul)
         {
             /* Coulomb: all i-atoms, LJ: all i-atoms */
-#define CALC_COULOMB
-#define CHECK_EXCLS
-            while (cjind < cjind1 && nbl->cj[cjind].excl != NBNXN_INTERACTION_MASK_ALL)
+            constexpr bool            c_calculateCoulombInteractions = true;
+            constexpr ILJInteractions c_iLJInteractions              = ILJInteractions::All;
             {
+                constexpr bool c_needToCheckExclusions = true;
+                while (cjind < cjind1 && nbl->cj[cjind].excl != NBNXN_INTERACTION_MASK_ALL)
+                {
 #include "kernel_inner.h"
-                cjind++;
+                    cjind++;
+                }
             }
-#undef CHECK_EXCLS
-            for (; (cjind < cjind1); cjind++)
             {
+                constexpr bool c_needToCheckExclusions = false;
+                for (; (cjind < cjind1); cjind++)
+                {
 #include "kernel_inner.h"
+                }
             }
-#undef CALC_COULOMB
         }
         else
         {
             /* Coulomb: none, LJ: all i-atoms */
-#define CHECK_EXCLS
-            while (cjind < cjind1 && nbl->cj[cjind].excl != NBNXN_INTERACTION_MASK_ALL)
+            constexpr bool            c_calculateCoulombInteractions = false;
+            constexpr ILJInteractions c_iLJInteractions              = ILJInteractions::All;
             {
+                constexpr bool c_needToCheckExclusions = true;
+                while (cjind < cjind1 && nbl->cj[cjind].excl != NBNXN_INTERACTION_MASK_ALL)
+                {
 #include "kernel_inner.h"
-                cjind++;
+                    cjind++;
+                }
             }
-#undef CHECK_EXCLS
-            for (; (cjind < cjind1); cjind++)
             {
+                constexpr bool c_needToCheckExclusions = false;
+                for (; (cjind < cjind1); cjind++)
+                {
 #include "kernel_inner.h"
+                }
             }
         }
-#undef CALC_LJ
         /* Add accumulated i-forces to the force array */
-        real fShiftX = reduceIncr4ReturnSumHsimd(f + scix, fix_S0, fix_S2);
-        real fShiftY = reduceIncr4ReturnSumHsimd(f + sciy, fiy_S0, fiy_S2);
-        real fShiftZ = reduceIncr4ReturnSumHsimd(f + sciz, fiz_S0, fiz_S2);
+#if GMX_SIMD_J_UNROLL_SIZE == 1
+        real fShiftX =
+                reduceIncr4ReturnSum(f + scix, forceIXV[0], forceIXV[1], forceIXV[2], forceIXV[3]);
+        real fShiftY =
+                reduceIncr4ReturnSum(f + sciy, forceIYV[0], forceIYV[1], forceIYV[2], forceIYV[3]);
+        real fShiftZ =
+                reduceIncr4ReturnSum(f + sciz, forceIZV[0], forceIZV[1], forceIZV[2], forceIZV[3]);
+#else
+        real fShiftX = reduceIncr4ReturnSumHsimd(f + scix, forceIXV[0], forceIXV[1]);
+        real fShiftY = reduceIncr4ReturnSumHsimd(f + sciy, forceIYV[0], forceIYV[1]);
+        real fShiftZ = reduceIncr4ReturnSumHsimd(f + sciz, forceIZV[0], forceIZV[1]);
+#endif
 
 #ifdef CALC_SHIFTFORCES
         fshift[ish3 + 0] += fShiftX;
@@ -595,13 +529,15 @@
         fshift[ish3 + 2] += fShiftZ;
 #endif
 
-#ifdef CALC_ENERGIES
-        if (do_coul)
+        if constexpr (calculateEnergies)
         {
-            *Vc += reduce(vctot_S);
+            if (do_coul)
+            {
+                *Vc += reduce(vctot_S);
+            }
+
+            *Vvdw += reduce(Vvdwtot_S);
         }
-        *Vvdw += reduce(Vvdwtot_S);
-#endif
 
         /* Outer loop uses 6 flops/iteration */
     }

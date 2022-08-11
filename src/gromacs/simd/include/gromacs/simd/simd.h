@@ -160,6 +160,10 @@ struct SimdDInt32Tag
 #    pragma clang diagnostic pop
 #endif
 
+// Include Hsimd declarations and definitions with static_assert, so we can
+// use Hsimd functions in constexpr false branches without cpp fences.
+#include "gromacs/simd/hsimd_declarations.h"
+
 // The scalar SIMD-mimicking functions are always included so we can use
 // templated functions even without SIMD support.
 #include "gromacs/simd/scalar/scalar.h"
