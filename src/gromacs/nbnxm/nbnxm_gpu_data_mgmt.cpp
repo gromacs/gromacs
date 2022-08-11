@@ -113,8 +113,39 @@ static inline void init_ewald_coulomb_force_table(const EwaldCorrectionTables& t
             &nbp->coulomb_tab, &nbp->coulomb_tab_texobj, tables.tableF.data(), tables.tableF.size(), deviceContext);
 }
 
+static bool useTabulatedEwaldByDefault(const DeviceInformation& deviceInfo)
+{
+    /* By default, use analytical Ewald except:
+     *  - NVIDIA CC 7.0 and 8.0,
+     *  - all AMD GPUs (although tested for gfx906 and 908 only).
+     *
+     * Note 1: this function does not handle OpenCL.
+     * Note 2: for SYCL, the heuristics are taken from CUDA/HIP ports, and were only partially
+     *         verified on oneAPI/hipSYCL themselves on AMD gfx 906/908/90a.
+     */
+#if GMX_GPU_CUDA
+    return (deviceInfo.prop.major == 7 && deviceInfo.prop.minor == 0)
+           || (deviceInfo.prop.major == 8 && deviceInfo.prop.minor == 0);
+#elif GMX_GPU_SYCL
+    switch (deviceInfo.deviceVendor)
+    {
+        case DeviceVendor::Amd: return true;
+        case DeviceVendor::Nvidia:
+        {
+            const int major = deviceInfo.hardwareVersionMajor.value_or(-1);
+            const int minor = deviceInfo.hardwareVersionMinor.value_or(-1);
+            return ((major == 7 && minor == 0) || (major == 8 && minor == 0));
+        }
+        default: return false;
+    }
+#else
+    GMX_UNUSED_VALUE(deviceInfo);
+    return false;
+#endif
+}
+
 static inline ElecType nbnxn_gpu_pick_ewald_kernel_type(const interaction_const_t& ic,
-                                                        const DeviceInformation gmx_unused& deviceInfo)
+                                                        const DeviceInformation&   deviceInfo)
 {
     bool bTwinCut = (ic.rcoulomb != ic.rvdw);
 
@@ -131,16 +162,8 @@ static inline ElecType nbnxn_gpu_pick_ewald_kernel_type(const interaction_const_
                 "requested through environment variables.");
     }
 
-    /* By default, use analytical Ewald except with CUDA on NVIDIA CC 7.0 and 8.0.
-     */
-    const bool c_useTabulatedEwaldDefault =
-#if GMX_GPU_CUDA
-            (deviceInfo.prop.major == 7 && deviceInfo.prop.minor == 0)
-            || (deviceInfo.prop.major == 8 && deviceInfo.prop.minor == 0);
-#else
-            false;
-#endif
-    bool bUseAnalyticalEwald = !c_useTabulatedEwaldDefault;
+    const bool c_useTabulatedEwaldDefault = useTabulatedEwaldByDefault(deviceInfo);
+    bool       bUseAnalyticalEwald        = !c_useTabulatedEwaldDefault;
     if (forceAnalyticalEwald)
     {
         bUseAnalyticalEwald = true;
