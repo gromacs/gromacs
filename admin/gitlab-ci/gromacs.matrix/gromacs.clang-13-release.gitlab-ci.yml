@@ -11,7 +11,7 @@
 #   Build type: RelWithAssert
 #   Compiler: Clang 13
 #   MPI: OpenMPI 3.1
-#   SIMD: AVX2_256
+#   SIMD: AVX_512
 #   FFT: FFTW3
 #   Parallelism np/ntomp: 4/2
 
@@ -28,6 +28,7 @@ gromacs:clang-13:release:configure:
     RELEASE_BUILD_DIR: release-builds-clang
     CMAKE_PRECISION_OPTIONS: "-DGMX_DOUBLE=ON"
     CMAKE_BUILD_TYPE_OPTIONS: "-DCMAKE_BUILD_TYPE=RelWithAssert"
+    CMAKE_SIMD_OPTIONS: "-DGMX_SIMD=AVX_512"
   dependencies:
     - archive:package
     - regressiontests:package

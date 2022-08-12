@@ -10,7 +10,7 @@
 #   Compiler: Clang 9
 #   GPU: CUDA 11.0
 #   MPI: thread_MPI
-#   SIMD: AVX2_256
+#   SIMD: AVX_512
 #   FFT: FFTW3
 #   Parallelism nt/ntomp: 4/2 (unit tests)
 #   Parallelism nt/ntomp: 2/1 (regression tests)
@@ -26,6 +26,7 @@ gromacs:clang-9-cuda-11.0:release:configure:
     COMPILER_MAJOR_VERSION: 9
     RELEASE_BUILD_DIR: release-builds-clang
     CMAKE_BUILD_TYPE_OPTIONS: "-DCMAKE_BUILD_TYPE=RelWithAssert"
+    CMAKE_SIMD_OPTIONS: "-DGMX_SIMD=AVX_512"
 
 gromacs:clang-9-cuda-11.0:release:build:
   extends:

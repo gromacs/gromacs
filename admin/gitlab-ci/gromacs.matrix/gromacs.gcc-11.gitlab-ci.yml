@@ -11,7 +11,7 @@
 #   Build type: Debug
 #   Compiler: GCC 11
 #   MPI: thread_MPI
-#   SIMD: AVX2_256
+#   SIMD: AVX_512
 #   Parallelism nt/ntomp: 4/2 (unit tests)
 #   Parallelism nt/ntomp: 2/1 (regression tests)
 
@@ -24,7 +24,7 @@ gromacs:gcc-11:configure:
   image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-gcc-11
   variables:
     CMAKE: /usr/local/cmake-3.16.3/bin/cmake
-    CMAKE_SIMD_OPTIONS: "-DGMX_SIMD=AVX2_256"
+    CMAKE_SIMD_OPTIONS: "-DGMX_SIMD=AVX_512"
     CMAKE_EXTRA_OPTIONS: "-DGMX_EXTERNAL_CLFFT=ON"
     COMPILER_MAJOR_VERSION: 11
 
