@@ -3,21 +3,14 @@ Preface and Disclaimer
 
 |Gromacs| - |version|
 
-Contributions from:
+Current Contributors:
+|GMX_CURRENT_CONTRIBUTORS|
 
-Emile Apol, Rossen Apostolov, Paul Bauer, Herman J.C. Berendsen,
-Pär Bjelkmar, Christian Blau, Viacheslav Bolnykh, Kevin Boyd,
-Aldert van Buuren, Rudi van Drunen, Anton Feenstra, Gerrit Groenhof,
-Anca Hamuraru, Vincent Hindriksen, M. Eric Irrgang, Aleksei Iupinov,
-Christoph Junghans, Joe Jordan, Dimitrios Karkoulis, Peter Kasson,
-Jiri Kraus, Carsten Kutzner, Per Larsson, Justin A. Lemkul,
-Viveca Lindahl, Magnus Lundborg, Erik Marklund,Pascal Merz,
-Pieter Meulenhoff, Teemu Murtola, Szilárd Páll, Sander Pronk,
-Roland Schulz, Michael Shirts, Alexey Shvetsov, Alfons Sijbers,
-Peter Tieleman, Teemu Virolainen, Christian Wennberg, Maarten Wolf,
-and Artem Zhmurov.
+Previous Contributors:
+|GMX_PREVIOUS_CONTRIBUTORS|
 
-Mark Abraham, Berk Hess, David van der Spoel, and Erik Lindahl.
+Project leaders:
+|GMX_CURRENT_PROJECT_LEADERS|
 
 © 1991 -- 2000:
 
