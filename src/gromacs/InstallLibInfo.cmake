@@ -114,6 +114,8 @@ function (do_cmake_config)
     # the directory already contains the suffix. This allows simple
     # find_package(GROMACS NAMES gromacs_d) to find them, without also
     # specifying CONFIGS.
+    # Note, however, that the exports file for Gromacs::libgromacs exists with
+    # the same name in each of the gromacs${GMX_LIBS_SUFFIX} subdirectories.
     install(FILES ${CMAKE_CURRENT_BINARY_DIR}/gromacs-config.cmake
             DESTINATION ${GMX_INSTALL_CMAKEPKGDIR}
             RENAME "gromacs${GMX_LIBS_SUFFIX}-config.cmake"

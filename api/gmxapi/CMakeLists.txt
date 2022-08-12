@@ -65,6 +65,14 @@ if (GMX_LIB_MPI)
     # GROMACS is built against an MPI library.
     set(_gmx_mpi_type "library")
     target_link_libraries(gmxapi PRIVATE MPI::MPI_CXX)
+    # a660b04e8d8756ed9c4dd355ad5d0d23d503eaa9 removed the definition for _gmxapi_find_dependencies
+    # that was used in gmxapi-config.cmake.in because we do not intend to require clients to build
+    # with MPI support. However, we _should_ provide some sort of helpers for clients to find
+    # tool chain and MPI installation consistent with what would be needed. We could insert a
+    # find_dependency for MPI, preconfigured with our best guess of hints. It would probably be better,
+    # though, to add the appropriate hints to the gromacs-hints.cmake so that the client can easily
+    # set or override input variables arbitrarily early in their CMake config call.
+    # _gmxapi_find_dependencies is now set in api/gmxapi/cpp/CMakeLists.txt
 elseif(GMX_THREAD_MPI)
     # GROMACS is built with its internal thread-MPI implementation.
     set(_gmx_mpi_type "tmpi")

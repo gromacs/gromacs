@@ -32,9 +32,14 @@
 # the research papers on the package. Check out https://www.gromacs.org.
 
 cmake_minimum_required(VERSION 3.16.3)
-cmake_policy(SET CMP0074 NEW) # From CMake 3.12
-cmake_policy(SET CMP0068 NEW) # From CMake-3.9
+
+cmake_policy(SET CMP0022 NEW)
 cmake_policy(SET CMP0048 NEW) # As of CMake 3.22, default is still "OLD"
+cmake_policy(SET CMP0068 NEW) # From CMake 3.9
+cmake_policy(SET CMP0074 NEW) # From CMake 3.12
+if(POLICY CMP0131) # From CMake 3.24
+    cmake_policy(SET CMP0131 NEW)
+endif()
 
 # CMake modules/macros are in a subdirectory to keep this file cleaner
 # This needs to be set before project() in order to pick up toolchain files
