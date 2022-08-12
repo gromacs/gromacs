@@ -59,7 +59,7 @@
 
 #include "domdec_internal.h"
 
-constexpr bool supportedLibMpiBuild    = (GMX_LIB_MPI && GMX_GPU_CUDA);
+constexpr bool supportedLibMpiBuild    = (GMX_LIB_MPI && (GMX_GPU_CUDA || GMX_GPU_SYCL));
 constexpr bool supportedThreadMpiBuild = (GMX_THREAD_MPI && GMX_GPU_CUDA);
 
 namespace gmx
@@ -70,6 +70,8 @@ static T* asMpiPointer(DeviceBuffer<T>& buffer)
 {
 #if GMX_GPU_CUDA
     return buffer;
+#elif GMX_GPU_SYCL && GMX_SYCL_USE_USM
+    return buffer ? buffer.buffer_->ptr_ : nullptr;
 #else
     assert(false);
 #endif
@@ -443,7 +445,9 @@ void GpuHaloExchange::Impl::communicateHaloDataPeerToPeer(Float3* sendPtr,
 #else
     GMX_UNUSED_VALUE(sendPtr);
     GMX_UNUSED_VALUE(sendSize);
+    GMX_UNUSED_VALUE(sendRank);
     GMX_UNUSED_VALUE(remotePtr);
+    GMX_UNUSED_VALUE(recvRank);
 #endif
 }
 

@@ -85,9 +85,10 @@ SimulationWorkload createSimulationWorkload(const t_inputrec& inputrec,
         GMX_RELEASE_ASSERT(!haveSeparatePmeRank, "Can not have separate PME rank(s) without PME.");
     }
     simulationWorkload.haveSeparatePmeRank = haveSeparatePmeRank;
+    // PME-PP communication not supported with SYCL yet
     simulationWorkload.useGpuPmePpCommunication =
             haveSeparatePmeRank && canUseDirectGpuComm
-            && (pmeRunMode == PmeRunMode::GPU || pmeRunMode == PmeRunMode::Mixed);
+            && (pmeRunMode == PmeRunMode::GPU || pmeRunMode == PmeRunMode::Mixed) && !GMX_GPU_SYCL;
     simulationWorkload.useCpuPmePpCommunication =
             haveSeparatePmeRank && !simulationWorkload.useGpuPmePpCommunication;
     GMX_RELEASE_ASSERT(!(simulationWorkload.useGpuPmePpCommunication

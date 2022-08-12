@@ -33,8 +33,8 @@
  */
 /*! \internal \file
  *
- * \brief Implements GPU halo exchange using CUDA.
- *
+ * \brief Implements backend-specific part of GPU halo exchange, namely pack and unpack
+ * kernels and the host code for scheduling them, using CUDA.
  *
  * \author Alan Gray <alang@nvidia.com>
  *

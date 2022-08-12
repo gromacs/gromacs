@@ -52,6 +52,10 @@
 #include "gromacs/gpu_utils/hostallocator.h"
 #include "gromacs/utility/gmxmpi.h"
 
+#if GMX_GPU_SYCL
+#    include "gromacs/gpu_utils/gputraits_sycl.h"
+#endif
+
 struct gmx_wallcycle;
 
 namespace gmx
