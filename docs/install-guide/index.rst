@@ -333,20 +333,11 @@ slightly faster.
 Using MKL
 ~~~~~~~~~
 
-Use MKL bundled with Intel compilers by setting up the compiler
-environment, e.g., through ``source /path/to/compilervars.sh intel64``
-or similar before running CMake including setting
-``-DGMX_FFT_LIBRARY=mkl``.
-
-If you need to customize this further, use
-
-::
-
-    cmake -DGMX_FFT_LIBRARY=mkl \
-          -DMKL_LIBRARIES="/full/path/to/libone.so;/full/path/to/libtwo.so" \
-          -DMKL_INCLUDE_DIR="/full/path/to/mkl/include"
-
-The full list and order(!) of libraries you require are found in Intel's MKL documentation for your system.
+Use OneAPI MKL(>=2021.3) by setting up the environment, e.g., through
+``source /opt/intel/oneapi/setvars.sh`` or
+``source /opt/intel/oneapi/mkl/latest/env/vars.sh``
+or manually setting environment variable ``MKLROOT=/full/path/to/mkl``.
+Then run CMake with setting ``-DGMX_FFT_LIBRARY=mkl``.
 
 Using ARM Performance Libraries
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

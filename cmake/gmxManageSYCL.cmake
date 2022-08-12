@@ -351,8 +351,8 @@ else()
     if(NOT GMX_FFT_MKL AND NOT DEFINED ENV{GITLAB_CI})
         message(WARNING "Building SYCL version with ${GMX_FFT_LIBRARY} instead of MKL. GPU FFT is disabled!")
     endif()
-    if(WIN32 AND GMX_FFT_MKL)
-        list(APPEND GMX_EXTRA_LIBRARIES "opencl")
+    if(GMX_FFT_MKL)
+	list(APPEND GMX_EXTRA_LIBRARIES "mkl_sycl;OpenCL")
     endif()
 
     # Add function wrapper similar to the one used by ComputeCPP and hipSYCL

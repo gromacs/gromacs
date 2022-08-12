@@ -36,28 +36,6 @@ include_guard()
 # Manage setup of the different FFT libraries we can use in Gromacs.
 set(PKG_FFT "")
 set(PKG_FFT_LIBS "")
-# Intel 11 and up makes life somewhat easy if you just want to use
-# all their stuff. It's not easy if you only want some of their
-# stuff...
-set(MKL_MANUALLY FALSE)
-if (GMX_FFT_LIBRARY STREQUAL "MKL" AND NOT GMX_INTEL_LLVM)
-    # The user will have to provide the set of magic libraries in
-    # MKL_LIBRARIES (see below), which we cache (non-advanced), so that they
-    # don't have to keep specifying it, and can easily see that
-    # CMake is still using that information.
-    set(MKL_MANUALLY TRUE)
-endif()
-set(MKL_LIBRARIES_FORMAT_DESCRIPTION "Use full paths to library files, in the right order, and separated by semicolons.")
-gmx_dependent_cache_variable(
-    MKL_LIBRARIES
-    "List of libraries for linking to MKL. ${MKL_LIBRARIES_FORMAT_DESCRIPTION}"
-    STRING ""
-    MKL_MANUALLY)
-gmx_dependent_cache_variable(
-    MKL_INCLUDE_DIR
-    "Path to mkl.h (non-inclusive)."
-    PATH ""
-    MKL_MANUALLY)
 if(${GMX_FFT_LIBRARY} STREQUAL "FFTW3")
     # ${FFTW} must be in upper case
     if(GMX_DOUBLE)
@@ -123,45 +101,26 @@ if(${GMX_FFT_LIBRARY} STREQUAL "FFTW3")
     endif()
 
     set(FFT_LIBRARIES ${${FFTW}_LIBRARIES})
-elseif(${GMX_FFT_LIBRARY} STREQUAL "MKL")
-    # Intel compilers make life somewhat easy if you just want to use
-    # all their stuff. It's not easy if you only want some of their
-    # stuff...
-    if (NOT MKL_MANUALLY)
-        # The next line takes care of everything for MKL
-        if (WIN32)
-            set(FFT_LINKER_FLAGS "/Qmkl:sequential")
-        elseif(GMX_INTEL_LLVM AND GMX_INTEL_LLVM_VERSION GREATER_EQUAL 2021020)
-            set(FFT_LINKER_FLAGS "-qmkl=sequential")
-        else()
-            set(FFT_LINKER_FLAGS "-mkl=sequential")
-        endif()
-        # Some versions of icc require this in order that mkl.h can be
-        # found at compile time.
-        list(APPEND EXTRA_C_FLAGS ${FFT_LINKER_FLAGS})
-        list(APPEND EXTRA_CXX_FLAGS ${FFT_LINKER_FLAGS})
-
-        set(MKL_ERROR_MESSAGE "Make sure you have configured your compiler so that ${FFT_LINKER_FLAGS} will work.")
-    else()
-        include_directories(SYSTEM ${MKL_INCLUDE_DIR})
-        set(FFT_LIBRARIES "${MKL_LIBRARIES}")
-        set(MKL_ERROR_MESSAGE "The include path to mkl.h in MKL_INCLUDE_DIR, and the link libraries in MKL_LIBRARIES=${MKL_LIBRARIES} need to match what the MKL documentation says you need for your system: ${MKL_LIBRARIES_FORMAT_DESCRIPTION}")
-        # Convert the semi-colon separated list to a list of
-        # command-line linker arguments so that code using our
-        # pkgconfig setup can use it.
-        string(REGEX REPLACE ";" " " PKG_FFT_LIBS "${MKL_LIBRARIES}")
+  elseif(${GMX_FFT_LIBRARY} STREQUAL "MKL")
+    if (TEST_MKL)
+        set(FIND_MKL_QUIETLY "QUIET")
     endif()
-
+    set(MKL_THREADING sequential)
+    if (GMX_PREFER_STATIC_LIBS)
+        set(MKL_LINK static)
+    endif()
+    find_package(MKL CONFIG REQUIRED ${FIND_MKL_QUIETLY} PATHS $ENV{MKLROOT})
+    set(FFT_LIBRARIES MKL::MKL)
+    #work-around for https://gitlab.kitware.com/cmake/cmake/-/issues/23844
+    get_target_property(_mkl_path MKL::MKL INTERFACE_INCLUDE_DIRECTORIES)
+    list(REMOVE_ITEM CMAKE_CXX_IMPLICIT_INCLUDE_DIRECTORIES "${_mkl_path}")
     # Check MKL works. If we were in a non-global scope, we wouldn't
     # have to play nicely.
-    set(old_CMAKE_REQUIRED_FLAGS "${CMAKE_REQUIRED_FLAGS}")
-    set(CMAKE_REQUIRED_FLAGS "${FFT_LINKER_FLAGS}")
     set(old_CMAKE_REQUIRED_LIBRARIES "${CMAKE_REQUIRED_LIBRARIES}")
     set(CMAKE_REQUIRED_LIBRARIES "${FFT_LIBRARIES}")
 
     check_function_exists(DftiCreateDescriptor TEST_MKL)
 
-    set(CMAKE_REQUIRED_FLAGS "${old_CMAKE_REQUIRED_FLAGS}")
     set(CMAKE_REQUIRED_LIBRARIES "${old_CMAKE_REQUIRED_LIBRARIES}")
 
     if(NOT TEST_MKL)
