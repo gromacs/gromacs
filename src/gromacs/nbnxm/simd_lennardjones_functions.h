@@ -97,11 +97,13 @@ inline void rInvSixAndRInvTwelve(const std::array<SimdReal, inputSize>&    rInvS
 {
     rInvSixV = genArr<nR>([&](int i) { return rInvSquaredV[i] * rInvSquaredV[i] * rInvSquaredV[i]; });
 
+    // NOLINTNEXTLINE(readability-misleading-indentation) remove when clang-tidy-13 is required
     if constexpr (maskInteractions)
     {
         rInvSixV = genArr<nR>([&](int i) { return selectByMask(rInvSixV[i], interactV[i]); });
     }
 
+    // NOLINTNEXTLINE(readability-misleading-indentation) remove when clang-tidy-13 is required
     rInvTwelveV = genArr<nR>([&](int i) { return rInvSixV[i] * rInvSixV[i]; });
 }
 
@@ -131,6 +133,7 @@ inline void lennardJonesInteractionsSigmaEpsilon(const std::array<SimdReal, inpu
         sigmaInvR6V = genArr<nR>([&](int i) { return selectByMask(sigmaInvR6V[i], interactV[i]); });
     }
 
+    // NOLINTNEXTLINE(readability-misleading-indentation) remove when clang-tidy-13 is required
     if constexpr (haveCutoffCheck)
     {
         sigmaInvR6V =
@@ -208,8 +211,8 @@ public:
                                   SimdBool*                                 withinCutoffV,
                                   const std::array<SimdReal, nR>&           sigmaV,
                                   const std::array<SimdReal, nR>&           epsilonV,
-                                  const SimdReal                            sixth,
-                                  const SimdReal                            twelfth,
+                                  SimdReal                                  sixth,
+                                  SimdReal                                  twelfth,
                                   std::array<SimdReal, nR>&                 frLJV,
                                   std::array<SimdReal, vljvSize>&           vLJV)
     {
@@ -238,8 +241,8 @@ public:
                            const std::array<SimdBool, interactSize>& interactV,
                            const std::array<SimdReal, nR>&           c6V,
                            const std::array<SimdReal, nR>&           c12V,
-                           const SimdReal                            sixth,
-                           const SimdReal                            twelfth,
+                           SimdReal                                  sixth,
+                           SimdReal                                  twelfth,
                            std::array<SimdReal, nR>&                 frLJV,
                            std::array<SimdReal, vljvSize>&           vLJV)
     {
@@ -570,7 +573,7 @@ inline void addLennardJonesEwaldCorrections(const std::array<SimdReal, inputSize
                                             const SimdBool*                           withinCutoffV,
                                             const std::array<SimdReal, nR>&           c6GridV,
                                             const std::array<SimdReal, ljepSize>&     ljEwaldParams,
-                                            const SimdReal                            sixth,
+                                            SimdReal                                  sixth,
                                             std::array<SimdReal, nR>&                 frLJV,
                                             std::array<SimdReal, vljvSize>&           vLJV)
 {

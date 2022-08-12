@@ -87,7 +87,7 @@ public:
     }
 
     //! Returns the self energy
-    inline real selfEnergy() { return selfEnergy_; }
+    inline real selfEnergy() const { return selfEnergy_; }
 
     //! Returns the force
     template<int nR>
@@ -138,7 +138,7 @@ public:
     }
 
     //! Returns the self energy
-    inline real selfEnergy() { return selfEnergy_; }
+    inline real selfEnergy() const { return selfEnergy_; }
 
     template<int nR>
     inline std::array<SimdReal, nR> force(const std::array<SimdReal, nR>& rSquaredV,
@@ -203,7 +203,7 @@ public:
     }
 
     //! Returns the self energy
-    inline real selfEnergy() { return selfEnergy_; }
+    inline real selfEnergy() const { return selfEnergy_; }
 
     //! Returns the force
     template<int nR>
