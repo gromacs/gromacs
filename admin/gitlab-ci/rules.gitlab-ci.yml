@@ -116,6 +116,7 @@
     - *if-post-merge-acceptance-then-on-success
     - *if-web-then-on-success
     - *if-schedule-then-on-success
+    - *if-api-then-on-success  
 
 # Jobs that run for merge requests and schedules, but not when GROMACS_RELEASE
 # is set. Excludes non-GROMACS projects.
@@ -136,6 +137,7 @@
   rules:
     - *if-not-gromacs-then-never
     - *if-release-then-never
+    - *if-api-then-on-success  
     - *if-web-then-on-success
     - *if-schedule-then-on-success
     - *if-post-merge-acceptance-or-mr-then-on-success

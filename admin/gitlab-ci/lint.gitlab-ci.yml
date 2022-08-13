@@ -16,7 +16,7 @@ clang-tidy:configure-schedule:
   extends:
     - .gromacs:base:configure
     - .use-clang:base
-    - .rules:nightly-not-for-release
+    - .rules:post-merge-acceptance
   image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-llvm-11-cuda-11.4.1
   variables:
     CMAKE: /usr/local/cmake-3.16.3/bin/cmake
@@ -29,7 +29,7 @@ clang-tidy:configure-schedule-cuda:
     - .gromacs:base:configure
     - .use-clang:base
     - .use-cuda
-    - .rules:nightly-not-for-release
+    - .rules:post-merge-acceptance
   image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-llvm-11-cuda-11.4.1
   variables:
     CMAKE: cmake
@@ -42,7 +42,7 @@ clang-tidy:build:
     - .gromacs:base:build
     - .use-ccache
     - .variables:default
-    - .rules:nightly-not-for-release
+    - .rules:post-merge-acceptance
   stage: source-check
   image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-llvm-11-cuda-11.4.1
   needs:
@@ -56,7 +56,7 @@ clang-tidy:build-cuda:
     - .gromacs:base:build
     - .use-ccache
     - .variables:default
-    - .rules:nightly-not-for-release
+    - .rules:post-merge-acceptance
   stage: source-check
   image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-llvm-11-cuda-11.4.1
   needs:
