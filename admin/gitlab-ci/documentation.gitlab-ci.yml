@@ -253,7 +253,7 @@ docs:build:
   script:
     - cd $BUILD_DIR
     # TODO(#4553): Remove the following `pip install` once base image is updated.
-    - /root/venv/py3.7/bin/pip install furo sphinx-copybutton sphinx_inline_tabs
+    - /root/venv/py3.7/bin/pip install furo sphinx-argparse sphinxcontrib-autoprogram sphinx-copybutton sphinx_inline_tabs
     - cmake --build . --target manual -- -j4 2>&1 | tee docs/manual/all-output.log
       | grep -i "warning" | grep -v "TeX" | grep -v "Package" || true
     - cmake --build . --target webpage -- -j4 2>&1 | tee webpage.log || true

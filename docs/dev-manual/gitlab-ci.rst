@@ -11,8 +11,11 @@ at the root of the source tree.
 Configuration templates are found in the files in the
 :file:`admin/ci-templates/` directory.
 
-Docker images used by GitLab Runner are available on `Docker Hub <https://hub.docker.com/u/gromacs>`__.
+Docker images used by GitLab Runner are available in our
+`GitLab Container Registry <https://gitlab.com/gromacs/gromacs/container_registry>`__.
+(See :ref:`containers`.)
 Images are (re)built manually using details in :file:`admin/containers`.
+(See :ref:`gitlab-ci tools`.)
 
 .. todo:: (:issue:`3617`) Comment on the number of pipelines that can be or which are likely to be running at the same time.
 
@@ -38,7 +41,7 @@ Such jobs are not directly eligible to run, but may be used as templates
 via the `*extends* job property <https://docs.gitlab.com/ee/ci/yaml/#extends>`_.
 
 Job parameters
---------------
+""""""""""""""
 
 Refer to https://docs.gitlab.com/ee/ci/yaml for complete documentation on
 GitLab CI job parameters, but note the following GROMACS-specific conventions.
@@ -60,7 +63,7 @@ GitLab CI job parameters, but note the following GROMACS-specific conventions.
         to `cache:key <https://docs.gitlab.com/ee/ci/yaml/#cachekey>`__
 
     image
-        See :doc:`/dev-manual/containers` for more about the Docker images used for the
+        See :ref:`containers` for more about the Docker images used for the
         CI pipelines. If a job depends on artifacts from previous jobs, be sure
         to use the same (or a compatible) image as the dependency!
 
@@ -101,7 +104,7 @@ GitLab CI job parameters, but note the following GROMACS-specific conventions.
         for details of the merging behavior. Refer to :ref:`variables` for local usage.
 
 Schedules and triggers
-----------------------
+""""""""""""""""""""""
 
 Pipeline `schedules <https://gitlab.com/help/ci/pipelines/schedules>`__ are
 configured through the GitLab web interface.
@@ -118,17 +121,19 @@ according to the variables defined for that schedule in the web interface.
 For example, the rule element ``if-weekly-then-on-success`` causes a job
 to run only if the schedule sets ``GMX_PIPELINE_SCHEDULE=weekly``.
 
-Running post-merge-acceptance pipelines
-"""""""""""""""""""""""""""""""""""""""
+.. admonition:: Running post-merge-acceptance pipelines
+    :class: tip
 
-The Gitlab CI for |Gromacs| runs a set of jobs by default only after a MR has been
-accepted and the resulting commit is included in the target branch if it is ``main``
-or one of the *release* branches. Those jobs can be triggered manually using the
-``POST_MERGE_ACCEPTANCE`` input variable documented below when executing a new pipeline
-through the Gitlab web interface.
+    The Gitlab CI for |Gromacs| runs a set of jobs by default only after a MR has been
+    accepted and the resulting commit is included in the target branch if it is ``main``
+    or one of the *release* branches. Those jobs can be triggered manually using the
+    ``POST_MERGE_ACCEPTANCE`` input variable documented below when executing a new pipeline
+    through the Gitlab web interface.
+
+    See also :ref:`trigger-post-merge`.
 
 Global templates
-----------------
+""""""""""""""""
 
 In addition to the templates in the main job definition files,
 common "mix-in" functionality and behavioral templates are defined in
@@ -146,7 +151,7 @@ by a meaningful descriptor and documented within
 :file:`admin/gitlab-ci/global.gitlab-ci.yml`
 
 Job names
----------
+"""""""""
 
 Job names should
 
@@ -224,7 +229,7 @@ Other important variable keys are as follows.
         using ``$CMAKE`` instead of ``cmake`` and begin the *script* section with
         a line such as ``- CMAKE=${CMAKE:-$(which cmake)}``. Specify a CMake
         version by setting the *CMAKE* variable to the full executable path for
-        the CMake version you would like to use. See also :doc:`containers`.
+        the CMake version you would like to use. See also :ref:`containers`.
 
     CMAKE_COMPILER_SCRIPT
         CMake command line options for a tool chain. A definition is provided by
@@ -279,9 +284,107 @@ Other important variable keys are as follows.
         in the corresponding schedules.
 
 Setting variables
------------------
+"""""""""""""""""
 
 Variables for individual piplelines are set in the gitlab interface under 
 ``CI/CD``; ``Pipelines``. Then chose in the top right corner ``Run Piplelines``.
 Under ``Run for``, the desired branch may be selected, and variables may be set
 in the fields below.
+
+.. _containers:
+
+Containers
+----------
+
+|Gromacs| project infrastructure uses Docker containerization to
+isolate automated tasks.
+A number of images are maintained to provide a breadth of testing coverage.
+
+Scripts and configuration files for building images are stored in the repository
+under :file:`admin/containers/`.
+Images are (re)built manually by |Gromacs| project staff and pushed to
+DockerHub and GitLab.
+See https://hub.docker.com/u/gromacs and https://gitlab.com/gromacs/gromacs/container_registry
+
+GitLab Container Registry
+"""""""""""""""""""""""""
+
+CI Pipelines use a GitLab container registry instead of pulling from Docker Hub.
+
+Project members with role ``Developer`` or higher privilege can
+`push images <https://docs.gitlab.com/ee/user/packages/container_registry/index.html#build-and-push-images-by-using-docker-commands>`__
+to the container registry.
+
+Steps:
+
+1. Create a `personal access token <https://gitlab.com/-/profile/personal_access_tokens>`__ (`docs <https://docs.gitlab.com/ee/user/profile/personal_access_tokens.html>`__)
+   with ``write_registry`` and ``read_registry`` scopes. Save the hash!
+2. Authenticate from the command line with ``docker login registry.gitlab.com -u <user name> -p <hash>``
+3. ``docker push registry.gitlab.com/gromacs/gromacs/<imagename>``
+
+Refer to :file:`buildall.sh` in the ``main`` branch for the set of images
+currently built.
+
+Within :doc:`pipeline jobs <gitlab-ci>`, jobs specify a Docker image with the *image* property.
+For image naming convention, see :py:func:`utility.image_name`.
+Images from the GitLab registry
+are easily accessible with the same identifier as above.
+For portability, CI environment variables may be preferable for parts of the image identifier.
+Example::
+
+    some_job:
+      image: ${CI_REGISTRY_IMAGE}/ci-<configuration>
+      ...
+
+For more granularity,
+consider equivalent expressions ``${CI_REGISTRY}/${CI_PROJECT_PATH}``
+or ``${CI_REGISTRY}/${CI_PROJECT_NAMESPACE}/${CI_PROJECT_NAME}``
+Ref: https://docs.gitlab.com/ee/ci/variables/predefined_variables.html
+
+.. _gitlab-ci tools:
+
+Tools
+-----
+(in :file:`admin/`)
+
+.. autoprogram:: make-release-build:parser
+    :prog: make-release-build.py
+
+.. _trigger-post-merge:
+
+.. autoprogram:: trigger-post-merge:parser
+    :prog: trigger-post-merge.py
+
+admin/containers/buildall.sh
+""""""""""""""""""""""""""""
+
+Uses NVidia's
+`HPC Container Maker <https://github.com/NVIDIA/hpc-container-maker/tree/master/docs>`__
+to generate DockerFiles using our :py:mod:`scripted_gmx_docker_builds` module.
+Refer to the contents of :file:`admin/buildall.sh` for the flags currently in use.
+Run the script to see the tagged images currently being produced.
+
+scripted_gmx_docker_builds.py
+"""""""""""""""""""""""""""""
+(in :file:`admin/containers/`)
+
+.. argparse::
+    :module: scripted_gmx_docker_builds
+    :func: parser
+    :prog: scripted_gmx_docker_builds.py
+    :nodefault:
+
+Supporting modules in :file:`admin/containers`
+----------------------------------------------
+
+:file:`scripted_gmx_docker_builds.py`
+"""""""""""""""""""""""""""""""""""""
+
+.. automodule:: scripted_gmx_docker_builds
+    :members:
+
+:file:`utility.py`
+""""""""""""""""""
+
+.. automodule:: utility
+    :members:

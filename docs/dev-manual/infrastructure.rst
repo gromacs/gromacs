@@ -10,5 +10,4 @@ performed by GitLab and GitLab Runner.
 
     jenkins
     gitlab-ci
-    containers
 

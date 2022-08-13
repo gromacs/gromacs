@@ -212,7 +212,7 @@ parser = argparse.ArgumentParser(description='GROMACS CI image creation script',
 
 parser.add_argument('--format', type=str, default='docker',
                     choices=['docker', 'singularity'],
-                    help='Container specification format (default: docker)')
+                    help='Container specification format (default: %(default)s)')
 
 
 def base_image_tag(args) -> str:
