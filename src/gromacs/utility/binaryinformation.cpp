@@ -317,6 +317,9 @@ void gmx_print_version_info(gmx::TextWriter* writer)
     writer->writeLine("OpenMP support:     disabled");
 #endif
     writer->writeLine(formatString("GPU support:        %s", getGpuImplementationString()));
+#if GMX_GPU
+    writer->writeLine(formatString("NB cluster size:    %d", GMX_GPU_NB_CLUSTER_SIZE));
+#endif
     writer->writeLine(formatString("SIMD instructions:  %s", GMX_SIMD_STRING));
     writer->writeLine(formatString("CPU FFT library:    %s", getCpuFftDescriptionString().c_str()));
     writer->writeLine(formatString("GPU FFT library:    %s", getGpuFftDescriptionString().c_str()));

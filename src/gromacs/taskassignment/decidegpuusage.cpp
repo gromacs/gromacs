@@ -787,7 +787,7 @@ bool decideWhetherDirectGpuCommunicationCanBeUsed(const DevelopmentFeatureFlags&
                                                   bool                           haveSwapCoords,
                                                   const gmx::MDLogger&           mdlog)
 {
-    const bool buildSupportsDirectGpuComm = GMX_GPU_CUDA && GMX_MPI;
+    const bool buildSupportsDirectGpuComm = (GMX_GPU_CUDA || GMX_GPU_SYCL) && GMX_MPI;
     if (!buildSupportsDirectGpuComm)
     {
         return false;
@@ -797,6 +797,15 @@ bool decideWhetherDirectGpuCommunicationCanBeUsed(const DevelopmentFeatureFlags&
     const bool enableDirectGpuComm = (getenv("GMX_ENABLE_DIRECT_GPU_COMM") != nullptr)
                                      || (getenv("GMX_GPU_DD_COMMS") != nullptr)
                                      || (getenv("GMX_GPU_PME_PP_COMMS") != nullptr);
+
+    if (GMX_THREAD_MPI && GMX_GPU_SYCL && enableDirectGpuComm)
+    {
+        GMX_LOG(mdlog.warning)
+                .asParagraph()
+                .appendTextFormatted(
+                        "GMX_ENABLE_DIRECT_GPU_COMM environment variable detected, "
+                        "but SYCL does not support direct communications with threadMPI.");
+    }
 
     // Now check those flags that may cause, from the user perspective, an unexpected
     // fallback to CPU halo, and report accordingly
@@ -816,7 +825,8 @@ bool decideWhetherDirectGpuCommunicationCanBeUsed(const DevelopmentFeatureFlags&
     bool runAndGpuSupportDirectGpuComm = (runUsesCompatibleFeatures && enableDirectGpuComm);
 
     // Thread-MPI case on by default, can be disabled with env var.
-    bool canUseDirectGpuCommWithThreadMpi = (runAndGpuSupportDirectGpuComm && GMX_THREAD_MPI);
+    bool canUseDirectGpuCommWithThreadMpi =
+            (runAndGpuSupportDirectGpuComm && GMX_THREAD_MPI && !GMX_GPU_SYCL);
     // GPU-aware MPI case off by default, can be enabled with dev flag
     // Note: GMX_DISABLE_DIRECT_GPU_COMM already taken into account in devFlags.enableDirectGpuCommWithMpi
     bool canUseDirectGpuCommWithMpi = (runAndGpuSupportDirectGpuComm && GMX_LIB_MPI

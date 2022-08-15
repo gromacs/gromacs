@@ -51,7 +51,7 @@
 #include "gromacs/domdec/gpuhaloexchange.h"
 #include "gromacs/utility/gmxassert.h"
 
-#if !GMX_GPU_CUDA
+#if !GMX_GPU_CUDA && !GMX_GPU_SYCL
 
 namespace gmx
 {
@@ -120,4 +120,4 @@ GpuEventSynchronizer* GpuHaloExchange::getForcesReadyOnDeviceEvent()
 
 } // namespace gmx
 
-#endif // !GMX_GPU_CUDA
+#endif // !GMX_GPU_CUDA && !GMX_GPU_SYCL

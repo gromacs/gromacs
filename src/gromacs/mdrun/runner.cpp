@@ -219,7 +219,7 @@ static DevelopmentFeatureFlags manageDevelopmentFeatures(const gmx::MDLogger& md
     // Direct GPU comm path is being used with GPU-aware MPI
     // make sure underlying MPI implementation is GPU-aware
 
-    if (GMX_LIB_MPI && GMX_GPU_CUDA)
+    if (GMX_LIB_MPI && (GMX_GPU_CUDA || GMX_GPU_SYCL))
     {
         // Allow overriding the detection for GPU-aware MPI
         GpuAwareMpiStatus gpuAwareMpiStatus = checkMpiCudaAwareSupport();
@@ -243,7 +243,7 @@ static DevelopmentFeatureFlags manageDevelopmentFeatures(const gmx::MDLogger& md
                 GMX_LOG(mdlog.warning)
                         .asParagraph()
                         .appendText(
-                                "This run has forced use of 'GPU-aware MPI', ie. 'CUDA-aware MPI'. "
+                                "This run has forced use of 'GPU-aware MPI'. "
                                 "However, GROMACS cannot determine if underlying MPI is GPU-aware. "
                                 "GROMACS recommends use of latest OpenMPI version for GPU-aware "
                                 "support. If you observe failures at runtime, try unsetting the "
@@ -291,9 +291,9 @@ static DevelopmentFeatureFlags manageDevelopmentFeatures(const gmx::MDLogger& md
             GMX_LOG(mdlog.info)
                     .asParagraph()
                     .appendText(
-                            "A CUDA build with an external MPI library is required in order to "
-                            "benefit from GMX_FORCE_GPU_AWARE_MPI. That environment variable is "
-                            "being ignored because such a build is not in use.");
+                            "A CUDA or SYCL build with an external MPI library is required in "
+                            "order to benefit from GMX_FORCE_GPU_AWARE_MPI. That environment "
+                            "variable is being ignored because such a build is not in use.");
         }
     }
 

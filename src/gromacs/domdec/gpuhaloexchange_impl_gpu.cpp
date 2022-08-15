@@ -62,7 +62,8 @@
 // NOLINTNEXTLINE(misc-redundant-expression)
 constexpr bool supportedLibMpiBuild = ((GMX_LIB_MPI != 0) && (GMX_GPU_CUDA != 0));
 // NOLINTNEXTLINE(misc-redundant-expression)
-constexpr bool supportedThreadMpiBuild = ((GMX_THREAD_MPI != 0) && (GMX_GPU_CUDA != 0));
+constexpr bool supportedThreadMpiBuild =
+        ((GMX_THREAD_MPI != 0) && ((GMX_GPU_CUDA != 0) || GMX_GPU_SYCL != 0));
 
 namespace gmx
 {
@@ -72,6 +73,8 @@ static T* asMpiPointer(DeviceBuffer<T>& buffer)
 {
 #if GMX_GPU_CUDA
     return buffer;
+#elif GMX_GPU_SYCL && GMX_SYCL_USE_USM
+    return buffer ? buffer.buffer_->ptr_ : nullptr;
 #else
     assert(false);
 #endif
@@ -536,7 +539,9 @@ void GpuHaloExchange::Impl::communicateHaloDataPeerToPeer(Float3* sendPtr,
 #else
     GMX_UNUSED_VALUE(sendPtr);
     GMX_UNUSED_VALUE(sendSize);
+    GMX_UNUSED_VALUE(sendRank);
     GMX_UNUSED_VALUE(remotePtr);
+    GMX_UNUSED_VALUE(recvRank);
 #endif
 }
 
