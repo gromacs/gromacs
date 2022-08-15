@@ -624,7 +624,6 @@ NbnxnPairlistCpu::NbnxnPairlistCpu() :
     na_cj(0),
     rlist(0),
     ncjInUse(0),
-    nci_tot(0),
     work(std::make_unique<NbnxnPairlistCpuWork>())
 {
 }
@@ -2176,7 +2175,6 @@ static void clear_pairlist(NbnxnPairlistCpu* nbl)
     nbl->ci.clear();
     nbl->cj.clear();
     nbl->ncjInUse = 0;
-    nbl->nci_tot  = 0;
     nbl->ciOuter.clear();
     nbl->cjOuter.clear();
 

@@ -250,9 +250,6 @@ struct NbnxnPairlistCpu
     //! The number of j-clusters that are used by ci entries in this list, will be <= cj.size()
     int ncjInUse;
 
-    //! The total number of i clusters
-    int nci_tot;
-
     //! Working data storage for list construction
     std::unique_ptr<NbnxnPairlistCpuWork> work;
 
