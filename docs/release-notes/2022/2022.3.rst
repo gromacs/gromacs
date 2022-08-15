@@ -16,6 +16,15 @@ in the :ref:`release-notes`.
 Fixes where mdrun could behave incorrectly
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Energy minimization would not converge with GPU and without DD
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+The steepest descent and conjugate gradient minimizers would not converge
+when using a GPU for the nonbonded interactions and not using domain
+decomposition.
+
+:issue:`4533`
+
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
 

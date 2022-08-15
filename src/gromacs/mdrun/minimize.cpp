@@ -732,11 +732,9 @@ static bool do_em_step(const t_commrec*                          cr,
         }
     }
 
-    if (haveDDAtomOrdering(*cr))
-    {
-        s2->ddp_count       = s1->ddp_count;
-        s2->ddp_count_cg_gl = s1->ddp_count_cg_gl;
-    }
+    // Copy the DD or pair search counters
+    s2->ddp_count       = s1->ddp_count;
+    s2->ddp_count_cg_gl = s1->ddp_count_cg_gl;
 
     if (constr)
     {
@@ -965,7 +963,7 @@ void EnergyEvaluator::run(em_state_t* ems, rvec mu_tot, tensor vir, tensor pres,
     // Compute the buffer size of the pair list
     const real bufferSize = inputrec->rlist - std::max(inputrec->rcoulomb, inputrec->rvdw);
 
-    if (bFirst || bufferSize <= 0 || (haveDDAtomOrdering(*cr) && ems->s.ddp_count != ddpCountPairSearch))
+    if (bFirst || bufferSize <= 0 || ems->s.ddp_count != ddpCountPairSearch)
     {
         /* This is the first state or an old state used before the last ns */
         bNS = TRUE;
@@ -979,12 +977,37 @@ void EnergyEvaluator::run(em_state_t* ems, rvec mu_tot, tensor vir, tensor pres,
               > bufferSize;
     }
 
-    if (haveDDAtomOrdering(*cr) && bNS)
+    if (bNS)
     {
-        /* Repartition the domain decomposition */
-        em_dd_partition_system(
-                fplog, mdlog, count, cr, top_global, inputrec, imdSession, pull_work, ems, top, mdAtoms, fr, vsite, constr, nrnb, wcycle);
-        ddpCountPairSearch = cr->dd->ddp_count;
+        if (haveDDAtomOrdering(*cr))
+        {
+            /* Repartition the domain decomposition */
+            em_dd_partition_system(fplog,
+                                   mdlog,
+                                   count,
+                                   cr,
+                                   top_global,
+                                   inputrec,
+                                   imdSession,
+                                   pull_work,
+                                   ems,
+                                   top,
+                                   mdAtoms,
+                                   fr,
+                                   vsite,
+                                   constr,
+                                   nrnb,
+                                   wcycle);
+            ddpCountPairSearch = cr->dd->ddp_count;
+        }
+        else
+        {
+            // Without DD we increase the search counter here
+            ddpCountPairSearch++;
+            // Store the count in the state, so we check whether we later need
+            // to do pair search after resetting to this, by then, old state
+            ems->s.ddp_count = ddpCountPairSearch;
+        }
     }
 
     /* Store the local coordinates that will be used in the pair search, after we re-partitioned */
