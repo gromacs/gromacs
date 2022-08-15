@@ -297,11 +297,23 @@ void gmx_print_version_info(gmx::TextWriter* writer)
 #if GMX_THREAD_MPI
     writer->writeLine("MPI library:        thread_mpi");
 #elif GMX_MPI
-    const bool haveDetectedCudaAwareMpi =
-            (gmx::checkMpiCudaAwareSupport() == gmx::GpuAwareMpiStatus::Supported);
-    if (haveDetectedCudaAwareMpi)
+    std::vector<std::string> gpuAwareBackendsSupported;
+    if (gmx::checkMpiCudaAwareSupport() == gmx::GpuAwareMpiStatus::Supported)
     {
-        writer->writeLine("MPI library:        MPI (CUDA-aware)");
+        gpuAwareBackendsSupported.emplace_back("CUDA");
+    }
+    if (gmx::checkMpiHipAwareSupport() == gmx::GpuAwareMpiStatus::Supported)
+    {
+        gpuAwareBackendsSupported.emplace_back("HIP");
+    }
+    if (gmx::checkMpiZEAwareSupport() == gmx::GpuAwareMpiStatus::Supported)
+    {
+        gpuAwareBackendsSupported.emplace_back("LevelZero");
+    }
+    if (!gpuAwareBackendsSupported.empty())
+    {
+        writer->writeLine(formatString("MPI library:        MPI (GPU-aware: %s)",
+                                       gmx::joinStrings(gpuAwareBackendsSupported, ", ").c_str()));
     }
     else
     {
