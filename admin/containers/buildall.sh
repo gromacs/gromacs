@@ -3,7 +3,7 @@
 set -e
 
 SCRIPT=$PWD/scripted_gmx_docker_builds.py
-PYTHON=$(which python3)
+PYTHON=${PYTHON:-$(which python3)}
 
 # Note: All official GROMACS CI images are built
 # with openmpi on. That reduces the total number of
@@ -81,13 +81,13 @@ for tag in "${tags[@]}"; do
   # Checking whether $image is used.
   grep -qR -e "${image}\(:latest\)*$" ../gitlab-ci || echo Warning: Image $image appears unused.
 done
-list=$(grep -R 'image: ' ../gitlab-ci/ |awk '{print $3}' |xargs basename |sort -u)
+list=$(grep -R 'image: ' ../gitlab-ci/ |awk '{print $3}' |sort -u)
 $PYTHON << EOF
 from os.path import basename
 built="""${tags[@]}"""
 built=set(basename(image.rstrip()) for image in built.split())
 in_use="""${list[@]}"""
-in_use=[image.rstrip() for image in in_use.split()]
+in_use=[basename(image.rstrip()) for image in in_use.split()]
 for tag in in_use:
   if tag.endswith(':latest'):
     tag = tag.split(':')[0]
