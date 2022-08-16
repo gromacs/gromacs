@@ -51,6 +51,7 @@
 
 #include "gromacs/gpu_utils/gmxsycl.h"
 #include "gromacs/hardware/device_management.h"
+#include "gromacs/hardware/device_management_sycl_intel_device_ids.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/strconvert.h"
@@ -151,6 +152,33 @@ static std::optional<std::tuple<int, int, int>> getHardwareVersionAmd(const sycl
     GMX_UNUSED_VALUE(device);
     return std::nullopt;
 #endif
+}
+
+static std::optional<std::tuple<int, int, int>> getHardwareVersionIntel(const sycl::device& device)
+{
+    // For Intel, we have to parse and match PCI Express device ID
+    const std::string deviceName = device.get_info<sycl::info::device::name>();
+    // Find " [0xABCD]" and extract 0xABCD:
+    const size_t prefixStart = deviceName.find(" [0x");
+    const size_t pciIdStart  = prefixStart + 2;
+    const size_t pciIdEnd    = pciIdStart + 6;
+    const size_t suffix      = pciIdEnd; // Should be ']'
+    if (prefixStart == std::string::npos || deviceName.length() < suffix + 1 || deviceName[suffix] != ']')
+    {
+        return std::nullopt;
+    }
+    const auto    pciIdStr = deviceName.substr(pciIdStart, 6); // 0xABCD
+    unsigned long pciId;
+    try
+    {
+        pciId = std::stoul(pciIdStr, nullptr, 16);
+    }
+    catch (std::invalid_argument)
+    {
+        return std::nullopt;
+    }
+    // Now, find the matching device
+    return getIntelHardwareVersionFromPciExpressID(pciId);
 }
 
 void warnWhenDeviceNotTargeted(const gmx::MDLogger& /* mdlog */, const DeviceInformation& /* deviceInfo */)
@@ -456,6 +484,15 @@ std::vector<std::unique_ptr<DeviceInformation>> findDevices()
                 deviceInfos[i]->hardwareVersionMajor = std::get<0>(*gfxVersion);
                 deviceInfos[i]->hardwareVersionMinor = std::get<1>(*gfxVersion);
                 deviceInfos[i]->hardwareVersionPatch = std::get<2>(*gfxVersion);
+            }
+        }
+        if (deviceInfos[i]->deviceVendor == DeviceVendor::Intel)
+        {
+            if (const auto hwVersion = getHardwareVersionIntel(syclDevice); hwVersion.has_value())
+            {
+                deviceInfos[i]->hardwareVersionMajor = std::get<0>(*hwVersion);
+                deviceInfos[i]->hardwareVersionMinor = std::get<1>(*hwVersion);
+                deviceInfos[i]->hardwareVersionPatch = std::get<2>(*hwVersion);
             }
         }
     }
