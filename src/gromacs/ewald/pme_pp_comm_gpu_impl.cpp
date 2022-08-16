@@ -99,9 +99,7 @@ void PmePpCommGpu::sendCoordinatesToPmeFromGpu(DeviceBuffer<RVec> /* sendPtr */,
                "implementation.");
 }
 
-void PmePpCommGpu::sendCoordinatesToPmeFromCpu(RVec* /* sendPtr */,
-                                               int /* sendSize */,
-                                               GpuEventSynchronizer* /* coordinatesOnDeviceEvent */)
+void PmePpCommGpu::sendCoordinatesToPmeFromCpu(RVec* /* sendPtr */, int /* sendSize */)
 {
     GMX_ASSERT(!impl_,
                "A CPU stub for PME-PP GPU communication was called instead of the correct "

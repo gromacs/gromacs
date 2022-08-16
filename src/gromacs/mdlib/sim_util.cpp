@@ -1525,7 +1525,7 @@ void do_force(FILE*                               fplog,
                                  reinitGpuPmePpComms,
                                  pmeSendCoordinatesFromGpu,
                                  stepWork.useGpuPmeFReduction,
-                                 localXReadyOnDevice,
+                                 pmeSendCoordinatesFromGpu ? localXReadyOnDevice : nullptr,
                                  wcycle);
     }
 

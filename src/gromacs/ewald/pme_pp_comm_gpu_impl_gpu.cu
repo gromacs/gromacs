@@ -63,7 +63,10 @@ void PmePpCommGpu::Impl::sendCoordinatesToPmePeerToPeer(Float3*               se
                                                         GpuEventSynchronizer* coordinatesReadyOnDeviceEvent)
 {
     // ensure stream waits until coordinate data is available on device
-    coordinatesReadyOnDeviceEvent->enqueueWaitEvent(pmePpCommStream_);
+    if (coordinatesReadyOnDeviceEvent)
+    {
+        coordinatesReadyOnDeviceEvent->waitForEvent();
+    }
 
     cudaError_t stat = cudaMemcpyAsync(remotePmeXBuffer_,
                                        sendPtr,

@@ -194,7 +194,10 @@ void PmePpCommGpu::Impl::sendCoordinatesToPmeGpuAwareMpi(Float3*               s
                                                          GpuEventSynchronizer* coordinatesReadyOnDeviceEvent)
 {
     // ensure coordinate data is available on device before we start transfer
-    coordinatesReadyOnDeviceEvent->waitForEvent();
+    if (coordinatesReadyOnDeviceEvent)
+    {
+        coordinatesReadyOnDeviceEvent->waitForEvent();
+    }
 
 #if GMX_MPI
     Float3* sendptr_x = sendPtr;
@@ -264,11 +267,9 @@ void PmePpCommGpu::sendCoordinatesToPmeFromGpu(DeviceBuffer<RVec>    sendPtr,
     impl_->sendCoordinatesToPme(sendPtr, sendSize, coordinatesReadyOnDeviceEvent);
 }
 
-void PmePpCommGpu::sendCoordinatesToPmeFromCpu(RVec*                 sendPtr,
-                                               int                   sendSize,
-                                               GpuEventSynchronizer* coordinatesReadyOnDeviceEvent)
+void PmePpCommGpu::sendCoordinatesToPmeFromCpu(RVec* sendPtr, int sendSize)
 {
-    impl_->sendCoordinatesToPme(sendPtr, sendSize, coordinatesReadyOnDeviceEvent);
+    impl_->sendCoordinatesToPme(sendPtr, sendSize, nullptr);
 }
 
 DeviceBuffer<Float3> PmePpCommGpu::getGpuForceStagingPtr()
