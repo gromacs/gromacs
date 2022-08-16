@@ -708,7 +708,7 @@ int gmx_disre(int argc, char* argv[])
         "the program will compute average violations using the third power",
         "averaging algorithm and print them in the log file."
     };
-    static int      ntop    = 0;
+    static int      ntoppar = 0;
     static int      nlevels = 20;
     static real     max_dr  = 0;
     static gmx_bool bThird  = TRUE;
@@ -716,7 +716,7 @@ int gmx_disre(int argc, char* argv[])
         { "-ntop",
           FALSE,
           etINT,
-          { &ntop },
+          { &ntoppar },
           "Number of large violations that are stored in the log file every step" },
         { "-maxdr",
           FALSE,
@@ -768,9 +768,9 @@ int gmx_disre(int argc, char* argv[])
 
     fplog = ftp2FILE(efLOG, NFILE, fnm, "w");
 
-    if (ntop)
+    if (ntoppar)
     {
-        init5(ntop);
+        init5(ntoppar);
     }
 
     t_inputrec  irInstance;
@@ -801,9 +801,9 @@ int gmx_disre(int argc, char* argv[])
         atoms->havePdbInfo = TRUE;
     }
 
-    gmx_localtop_t top(topInfo.mtop()->ffparams);
-    gmx_mtop_generate_local_top(*topInfo.mtop(), &top, ir->efep != FreeEnergyPerturbationType::No);
-    const InteractionDefinitions& idef = top.idef;
+    gmx_localtop_t localtop(topInfo.mtop()->ffparams);
+    gmx_mtop_generate_local_top(*topInfo.mtop(), &localtop, ir->efep != FreeEnergyPerturbationType::No);
+    const InteractionDefinitions& idef = localtop.idef;
 
     pbc_null = nullptr;
     if (ir->pbcType != PbcType::No)

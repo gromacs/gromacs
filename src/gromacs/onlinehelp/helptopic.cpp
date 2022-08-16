@@ -142,12 +142,12 @@ bool AbstractCompositeHelpTopic::writeSubTopicList(const HelpWriterContext& cont
         Impl::SubTopicList::const_iterator topic;
         for (topic = impl_->subTopics_.begin(); topic != impl_->subTopics_.end(); ++topic)
         {
-            const char* const title = (*topic)->title();
-            if (!isNullOrEmpty(title))
+            const char* const topic_title = (*topic)->title();
+            if (!isNullOrEmpty(topic_title))
             {
                 context.paragraphBreak();
                 HelpWriterContext subContext(context);
-                subContext.enterSubSection(title);
+                subContext.enterSubSection(topic_title);
                 (*topic)->writeHelp(subContext);
             }
         }
@@ -157,8 +157,8 @@ bool AbstractCompositeHelpTopic::writeSubTopicList(const HelpWriterContext& cont
     Impl::SubTopicMap::const_iterator topic;
     for (topic = impl_->subTopicMap_.begin(); topic != impl_->subTopicMap_.end(); ++topic)
     {
-        const char* const title = topic->second->title();
-        if (!isNullOrEmpty(title))
+        const char* const topic_title = topic->second->title();
+        if (!isNullOrEmpty(topic_title))
         {
             int nameLength = static_cast<int>(topic->first.length());
             if (nameLength > maxNameLength)

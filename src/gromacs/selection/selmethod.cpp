@@ -113,7 +113,7 @@ static void report_param_error(FILE* fp, const char* mname, const char* pname, g
  *   (can be NULL).
  * \param[in]     name    Name of the method (used for error messages).
  * \param[in]     nparams Number of parameters in \p param.
- * \param[in,out] param   Parameter array
+ * \param[in,out] params   Parameter array
  *   (only the \c flags field of boolean parameters may be modified).
  * \param[in]     symtab  Symbol table (used for checking overlaps).
  * \returns       true if there are no problems with the parameters,
@@ -130,18 +130,18 @@ static void report_param_error(FILE* fp, const char* mname, const char* pname, g
 static bool check_params(FILE*                                  fp,
                          const char*                            name,
                          int                                    nparams,
-                         gmx_ana_selparam_t                     param[],
+                         gmx_ana_selparam_t                     params[],
                          const gmx::SelectionParserSymbolTable& symtab)
 {
     bool bOk = true;
     int  i, j;
 
-    if (nparams > 0 && !param)
+    if (nparams > 0 && !params)
     {
         report_error(fp, name, "error: missing parameter data");
         return false;
     }
-    if (nparams == 0 && param)
+    if (nparams == 0 && params)
     {
         report_error(fp, name, "warning: parameter data unused because nparams=0");
     }
@@ -149,7 +149,7 @@ static bool check_params(FILE*                                  fp,
     for (i = 0; i < nparams; ++i)
     {
         /* Check that there is at most one NULL name, in the beginning */
-        if (param[i].name == nullptr && i > 0)
+        if (params[i].name == nullptr && i > 0)
         {
             report_error(fp, name, "error: NULL parameter should be the first one");
             bOk = false;
@@ -158,175 +158,177 @@ static bool check_params(FILE*                                  fp,
         /* Check for duplicates */
         for (j = 0; j < i; ++j)
         {
-            if (param[j].name == nullptr)
+            if (params[j].name == nullptr)
             {
                 continue;
             }
-            if (!gmx_strcasecmp(param[i].name, param[j].name))
+            if (!gmx_strcasecmp(params[i].name, params[j].name))
             {
-                report_error(fp, name, "error: duplicate parameter name '%s'", param[i].name);
+                report_error(fp, name, "error: duplicate parameter name '%s'", params[i].name);
                 bOk = false;
                 break;
             }
         }
         /* Check flags */
-        if (param[i].flags & SPAR_SET)
+        if (params[i].flags & SPAR_SET)
         {
-            report_param_error(fp, name, param[i].name, "warning: flag SPAR_SET is set");
-            param[i].flags &= ~SPAR_SET;
+            report_param_error(fp, name, params[i].name, "warning: flag SPAR_SET is set");
+            params[i].flags &= ~SPAR_SET;
         }
-        if (param[i].flags & SPAR_RANGES)
+        if (params[i].flags & SPAR_RANGES)
         {
-            if (param[i].val.type != INT_VALUE && param[i].val.type != REAL_VALUE)
+            if (params[i].val.type != INT_VALUE && params[i].val.type != REAL_VALUE)
             {
                 report_param_error(fp,
                                    name,
-                                   param[i].name,
+                                   params[i].name,
                                    "error: SPAR_RANGES cannot be set for a non-numeric parameter");
                 bOk = false;
             }
-            if (param[i].flags & SPAR_DYNAMIC)
+            if (params[i].flags & SPAR_DYNAMIC)
             {
                 report_param_error(fp,
                                    name,
-                                   param[i].name,
+                                   params[i].name,
                                    "warning: SPAR_DYNAMIC does not have effect with SPAR_RANGES");
-                param[i].flags &= ~SPAR_DYNAMIC;
+                params[i].flags &= ~SPAR_DYNAMIC;
             }
-            if (!(param[i].flags & SPAR_VARNUM) && param[i].val.nr != 1)
+            if (!(params[i].flags & SPAR_VARNUM) && params[i].val.nr != 1)
             {
                 report_param_error(
                         fp,
                         name,
-                        param[i].name,
+                        params[i].name,
                         "error: range should take either one or an arbitrary number of values");
                 bOk = false;
             }
-            if (param[i].flags & SPAR_ATOMVAL)
+            if (params[i].flags & SPAR_ATOMVAL)
             {
                 report_param_error(
-                        fp, name, param[i].name, "error: SPAR_RANGES and SPAR_ATOMVAL both set");
+                        fp, name, params[i].name, "error: SPAR_RANGES and SPAR_ATOMVAL both set");
                 bOk = false;
             }
         }
-        if ((param[i].flags & SPAR_VARNUM) && (param[i].flags & SPAR_ATOMVAL))
+        if ((params[i].flags & SPAR_VARNUM) && (params[i].flags & SPAR_ATOMVAL))
         {
             report_param_error(
-                    fp, name, param[i].name, "error: SPAR_VARNUM and SPAR_ATOMVAL both set");
+                    fp, name, params[i].name, "error: SPAR_VARNUM and SPAR_ATOMVAL both set");
             bOk = false;
         }
-        if (param[i].flags & SPAR_ENUMVAL)
+        if (params[i].flags & SPAR_ENUMVAL)
         {
-            if (param[i].val.type != STR_VALUE)
+            if (params[i].val.type != STR_VALUE)
             {
                 report_param_error(fp,
                                    name,
-                                   param[i].name,
+                                   params[i].name,
                                    "error: SPAR_ENUMVAL can only be set for string parameters");
                 bOk = false;
             }
-            if (param[i].val.nr != 1)
+            if (params[i].val.nr != 1)
             {
                 report_param_error(fp,
                                    name,
-                                   param[i].name,
+                                   params[i].name,
                                    "error: SPAR_ENUMVAL parameters should take exactly one value");
                 bOk = false;
             }
-            if (param[i].flags & (SPAR_DYNAMIC | SPAR_VARNUM | SPAR_ATOMVAL))
+            if (params[i].flags & (SPAR_DYNAMIC | SPAR_VARNUM | SPAR_ATOMVAL))
             {
                 report_param_error(fp,
                                    name,
-                                   param[i].name,
+                                   params[i].name,
                                    "error: only SPAR_OPTIONAL supported with SPAR_ENUMVAL");
                 bOk = false;
             }
         }
         /* Check boolean parameters */
-        if (param[i].val.type == NO_VALUE)
+        if (params[i].val.type == NO_VALUE)
         {
-            if (param[i].val.nr != 0)
+            if (params[i].val.nr != 0)
             {
                 report_param_error(fp,
                                    name,
-                                   param[i].name,
+                                   params[i].name,
                                    "error: number of values should be zero for boolean parameters");
                 bOk = false;
             }
             /* The boolean parameters should always be optional, so set the
              * flag for convenience. */
-            param[i].flags |= SPAR_OPTIONAL;
+            params[i].flags |= SPAR_OPTIONAL;
             /* Any other flags should not be specified */
-            if (param[i].flags & ~SPAR_OPTIONAL)
+            if (params[i].flags & ~SPAR_OPTIONAL)
             {
                 report_param_error(fp,
                                    name,
-                                   param[i].name,
+                                   params[i].name,
                                    "error: boolean parameter should not have any flags set");
                 bOk = false;
             }
         }
         /* Check val.nr */
-        if (param[i].flags & (SPAR_VARNUM | SPAR_ATOMVAL))
+        if (params[i].flags & (SPAR_VARNUM | SPAR_ATOMVAL))
         {
-            if (param[i].val.nr != -1)
+            if (params[i].val.nr != -1)
             {
                 report_param_error(
                         fp,
                         name,
-                        param[i].name,
+                        params[i].name,
                         "warning: val.nr is not -1 although SPAR_VARNUM/SPAR_ATOMVAL is set");
             }
-            param[i].val.nr = -1;
+            params[i].val.nr = -1;
         }
-        else if (param[i].val.type != NO_VALUE)
+        else if (params[i].val.type != NO_VALUE)
         {
-            if (param[i].val.nr <= 0)
+            if (params[i].val.nr <= 0)
             {
-                report_param_error(fp, name, param[i].name, "error: val.nr <= 0");
+                report_param_error(fp, name, params[i].name, "error: val.nr <= 0");
                 bOk = false;
             }
         }
         /* Check that the value pointer is NULL */
-        if (param[i].nvalptr != nullptr)
+        if (params[i].nvalptr != nullptr)
         {
-            report_param_error(fp, name, param[i].name, "warning: nvalptr is set");
+            report_param_error(fp, name, params[i].name, "warning: nvalptr is set");
         }
-        if (param[i].val.u.ptr != nullptr && !(param[i].flags & SPAR_ENUMVAL))
+        if (params[i].val.u.ptr != nullptr && !(params[i].flags & SPAR_ENUMVAL))
         {
-            report_param_error(fp, name, param[i].name, "warning: value pointer is set");
+            report_param_error(fp, name, params[i].name, "warning: value pointer is set");
         }
         /* Check that the name contains only valid characters */
-        if (param[i].name == nullptr)
+        if (params[i].name == nullptr)
         {
             continue;
         }
-        if (!isalpha(param[i].name[0]))
+        if (!isalpha(params[i].name[0]))
         {
-            report_param_error(fp, name, param[i].name, "error: name does not begin with a letter");
+            report_param_error(fp, name, params[i].name, "error: name does not begin with a letter");
             bOk = false;
             continue;
         }
-        for (j = 1; param[i].name[j] != 0; ++j)
+        for (j = 1; params[i].name[j] != 0; ++j)
         {
-            if (param[i].name[j] != '_' && !isalnum(param[i].name[j]))
+            if (params[i].name[j] != '_' && !isalnum(params[i].name[j]))
             {
-                report_param_error(
-                        fp, name, param[i].name, "error: name contains non-alphanumeric characters");
+                report_param_error(fp,
+                                   name,
+                                   params[i].name,
+                                   "error: name contains non-alphanumeric characters");
                 bOk = false;
                 break;
             }
         }
-        if (param[i].name[j] != 0)
+        if (params[i].name[j] != 0)
         {
             continue;
         }
         /* Check that the name does not conflict with a method */
-        if (symtab.findSymbol(param[i].name) != nullptr)
+        if (symtab.findSymbol(params[i].name) != nullptr)
         {
             report_param_error(fp,
                                name,
-                               param[i].name,
+                               params[i].name,
                                "error: name conflicts with another method or a keyword");
             bOk = false;
         }

@@ -140,7 +140,8 @@ private:
 struct ThrowLocation
 {
     //! Creates an object for storing the throw location.
-    ThrowLocation(const char* func, const char* file, int line) : func(func), file(file), line(line)
+    ThrowLocation(const char* function, const char* fileName, int lineNumber) :
+        func(function), file(fileName), line(lineNumber)
     {
     }
 

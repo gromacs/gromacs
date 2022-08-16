@@ -669,8 +669,8 @@ nbnxn_atomdata_t::nbnxn_atomdata_t(gmx::PinningPolicy      pinningPolicy,
     /* Initialize the output data structures */
     for (int i = 0; i < nout; i++)
     {
-        const auto& pinningPolicy = params().type.get_allocator().pinningPolicy();
-        out.emplace_back(kernelType, params().nenergrp, 1 << params().neg_2log, pinningPolicy);
+        const auto& outputPinningPolicy = params().type.get_allocator().pinningPolicy();
+        out.emplace_back(kernelType, params().nenergrp, 1 << params().neg_2log, outputPinningPolicy);
     }
 
     buffer_flags.clear();

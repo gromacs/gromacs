@@ -125,8 +125,8 @@ public:
     {
     }
     //! Conversion constructor
-    explicit constexpr EnumerationIterator(const EnumType index) noexcept :
-        m_current(static_cast<IntegerType>(index))
+    explicit constexpr EnumerationIterator(const EnumType enumIndex) noexcept :
+        m_current(static_cast<IntegerType>(enumIndex))
     {
     }
     //! Addition-assignment operator
@@ -222,26 +222,26 @@ struct EnumerationArray final // NOLINT
 
     /*!@{*/
     //! Array access with asserts:
-    DataType& operator[](const std::size_t index)
+    DataType& operator[](const std::size_t arrayIndex)
     {
-        GMX_ASSERT(index < size(), "index out of range");
-        return m_elements[index];
+        GMX_ASSERT(arrayIndex < size(), "index out of range");
+        return m_elements[arrayIndex];
     }
-    const DataType& operator[](const std::size_t index) const
+    const DataType& operator[](const std::size_t arrayIndex) const
     {
-        GMX_ASSERT(index < size(), "index out of range");
-        return m_elements[index];
+        GMX_ASSERT(arrayIndex < size(), "index out of range");
+        return m_elements[arrayIndex];
     }
 
-    DataType& operator[](const EnumType index)
+    DataType& operator[](const EnumType enumIndex)
     {
-        GMX_ASSERT(std::size_t(index) < size(), "index out of range");
-        return m_elements[std::size_t(index)];
+        GMX_ASSERT(std::size_t(enumIndex) < size(), "index out of range");
+        return m_elements[std::size_t(enumIndex)];
     }
-    const DataType& operator[](const EnumType index) const
+    const DataType& operator[](const EnumType enumIndex) const
     {
-        GMX_ASSERT(std::size_t(index) < size(), "index out of range");
-        return m_elements[std::size_t(index)];
+        GMX_ASSERT(std::size_t(enumIndex) < size(), "index out of range");
+        return m_elements[std::size_t(enumIndex)];
     }
     /*!@}*/
 

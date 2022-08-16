@@ -734,8 +734,8 @@ void gen_pad(t_atoms*                               atoms,
                                 }
                                 if (nFound == 0)
                                 {
-                                    std::vector<int> atoms = { i, j1, k1, l1 };
-                                    dih.push_back(InteractionOfType(atoms, {}, ""));
+                                    std::vector<int> atomsNeigh = { i, j1, k1, l1 };
+                                    dih.push_back(InteractionOfType(atomsNeigh, {}, ""));
                                 }
 
                                 int nbd = nb_dist(&nnb, i, l1);
@@ -753,8 +753,8 @@ void gen_pad(t_atoms*                               atoms,
                                         if (rtpFFDB[0].bGenerateHH14Interactions
                                             || !(is_hydro(atoms, i1) && is_hydro(atoms, i2)))
                                         {
-                                            std::vector<int> atoms = { i1, i2 };
-                                            pai.push_back(InteractionOfType(atoms, {}, ""));
+                                            std::vector<int> atomsMinMax = { i1, i2 };
+                                            pai.push_back(InteractionOfType(atomsMinMax, {}, ""));
                                         }
                                     }
                                 }

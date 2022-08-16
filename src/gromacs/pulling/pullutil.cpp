@@ -616,21 +616,21 @@ void pull_calc_coms(const t_commrec*     cr,
                 {
                     const int numThreads = pgrp->numThreads();
 #pragma omp parallel for num_threads(numThreads) schedule(static)
-                    for (int t = 0; t < numThreads; t++)
+                    for (int thread = 0; thread < numThreads; thread++)
                     {
-                        int ind_start = (pgrp->atomSet.numAtomsLocal() * (t + 0)) / numThreads;
-                        int ind_end   = (pgrp->atomSet.numAtomsLocal() * (t + 1)) / numThreads;
+                        int ind_start = (pgrp->atomSet.numAtomsLocal() * (thread + 0)) / numThreads;
+                        int ind_end   = (pgrp->atomSet.numAtomsLocal() * (thread + 1)) / numThreads;
                         sum_com_part(
-                                pgrp, ind_start, ind_end, x, xp, masses, pbc, x_pbc, &pull->comSums[t]);
+                                pgrp, ind_start, ind_end, x, xp, masses, pbc, x_pbc, &pull->comSums[thread]);
                     }
 
                     /* Reduce the thread contributions to sum_com[0] */
-                    for (int t = 1; t < numThreads; t++)
+                    for (int thread = 1; thread < numThreads; thread++)
                     {
-                        comSumsTotal.sum_wm += pull->comSums[t].sum_wm;
-                        comSumsTotal.sum_wwm += pull->comSums[t].sum_wwm;
-                        dvec_inc(comSumsTotal.sum_wmx, pull->comSums[t].sum_wmx);
-                        dvec_inc(comSumsTotal.sum_wmxp, pull->comSums[t].sum_wmxp);
+                        comSumsTotal.sum_wm += pull->comSums[thread].sum_wm;
+                        comSumsTotal.sum_wwm += pull->comSums[thread].sum_wwm;
+                        dvec_inc(comSumsTotal.sum_wmx, pull->comSums[thread].sum_wmx);
+                        dvec_inc(comSumsTotal.sum_wmxp, pull->comSums[thread].sum_wmxp);
                     }
                 }
 
@@ -656,25 +656,25 @@ void pull_calc_coms(const t_commrec*     cr,
                  */
                 const int numThreads = pgrp->numThreads();
 #pragma omp parallel for num_threads(numThreads) schedule(static)
-                for (int t = 0; t < numThreads; t++)
+                for (int thread = 0; thread < numThreads; thread++)
                 {
-                    int ind_start = (pgrp->atomSet.numAtomsLocal() * (t + 0)) / numThreads;
-                    int ind_end   = (pgrp->atomSet.numAtomsLocal() * (t + 1)) / numThreads;
+                    int ind_start = (pgrp->atomSet.numAtomsLocal() * (thread + 0)) / numThreads;
+                    int ind_end   = (pgrp->atomSet.numAtomsLocal() * (thread + 1)) / numThreads;
                     sum_com_part_cosweight(
-                            pgrp, ind_start, ind_end, pull->cosdim, twopi_box, x, xp, masses, &pull->comSums[t]);
+                            pgrp, ind_start, ind_end, pull->cosdim, twopi_box, x, xp, masses, &pull->comSums[thread]);
                 }
 
                 /* Reduce the thread contributions to comSums[0] */
                 ComSums& comSumsTotal = pull->comSums[0];
-                for (int t = 1; t < numThreads; t++)
+                for (int thread = 1; thread < numThreads; thread++)
                 {
-                    comSumsTotal.sum_cm += pull->comSums[t].sum_cm;
-                    comSumsTotal.sum_sm += pull->comSums[t].sum_sm;
-                    comSumsTotal.sum_ccm += pull->comSums[t].sum_ccm;
-                    comSumsTotal.sum_csm += pull->comSums[t].sum_csm;
-                    comSumsTotal.sum_ssm += pull->comSums[t].sum_ssm;
-                    comSumsTotal.sum_cmp += pull->comSums[t].sum_cmp;
-                    comSumsTotal.sum_smp += pull->comSums[t].sum_smp;
+                    comSumsTotal.sum_cm += pull->comSums[thread].sum_cm;
+                    comSumsTotal.sum_sm += pull->comSums[thread].sum_sm;
+                    comSumsTotal.sum_ccm += pull->comSums[thread].sum_ccm;
+                    comSumsTotal.sum_csm += pull->comSums[thread].sum_csm;
+                    comSumsTotal.sum_ssm += pull->comSums[thread].sum_ssm;
+                    comSumsTotal.sum_cmp += pull->comSums[thread].sum_cmp;
+                    comSumsTotal.sum_smp += pull->comSums[thread].sum_smp;
                 }
 
                 /* Copy local sums to a buffer for global summing */

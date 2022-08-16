@@ -327,7 +327,7 @@ static void tMPI_Thread_destroy(struct tmpi_thread *th)
     }
 }
 
-static int tMPI_Global_init(struct tmpi_global *g, int Nthreads)
+static int tMPI_Global_init(struct tmpi_global *g, int nthreads)
 {
     int ret;
 
@@ -341,7 +341,7 @@ static int tMPI_Global_init(struct tmpi_global *g, int Nthreads)
     }
     tMPI_Spinlock_init(&(g->datatype_lock));
 
-    ret = tMPI_Thread_barrier_init( &(g->barrier), Nthreads);
+    ret = tMPI_Thread_barrier_init( &(g->barrier), nthreads);
     if (ret != 0)
     {
         return tMPI_Error(TMPI_COMM_WORLD, TMPI_ERR_IO);

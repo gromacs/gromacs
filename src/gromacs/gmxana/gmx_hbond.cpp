@@ -107,7 +107,7 @@ static const unsigned char c_donorMask    = (1 << 1);
 static const unsigned char c_inGroupMask  = (1 << 2);
 
 // NOLINTNEXTLINE(cppcoreguidelines-avoid-non-const-global-variables)
-static const char* grpnames[grNR] = { "0", "1", "I" };
+static const char* grpnames_default[grNR] = { "0", "1", "I" };
 // NOLINTNEXTLINE(cppcoreguidelines-avoid-non-const-global-variables)
 static gmx_bool bDebug = FALSE;
 
@@ -1164,7 +1164,7 @@ static void dump_grid(FILE* fp, ivec ngrid, t_gridcell*** grid)
     for (gr = 0; gr < grNR; gr++)
     {
         sum[gr] = 0;
-        fprintf(fp, "GROUP %d (%s)\n", gr, grpnames[gr]);
+        fprintf(fp, "GROUP %d (%s)\n", gr, grpnames_default[gr]);
         for (z = 0; z < ngrid[ZZ]; z += 2)
         {
             fprintf(fp, "Z=%d,%d\n", z, z + 1);
@@ -2610,7 +2610,7 @@ int gmx_hbond(int argc, char* argv[])
     t_pargs*          ppa;
     int               npargs, natoms, nframes = 0, shatom;
     int*              isize;
-    char**            grpnames;
+    char**            grpnames_spec;
     int**             index;
     rvec *            x, hbox;
     matrix            box;
@@ -2681,7 +2681,7 @@ int gmx_hbond(int argc, char* argv[])
     t_inputrec* ir = &irInstance;
     read_tpx_top(ftp2fn(efTPR, NFILE, fnm), ir, box, &natoms, nullptr, nullptr, &top);
 
-    snew(grpnames, grNR);
+    snew(grpnames_spec, grNR);
     snew(index, grNR);
     snew(isize, grNR);
     /* Make Donor-Acceptor table */
@@ -2689,7 +2689,7 @@ int gmx_hbond(int argc, char* argv[])
 
     /* analyze all hydrogen bonds: get group(s) */
     printf("Specify 2 groups to analyze:\n");
-    get_index(&(top.atoms), ftp2fn_null(efNDX, NFILE, fnm), 2, isize, index, grpnames);
+    get_index(&(top.atoms), ftp2fn_null(efNDX, NFILE, fnm), 2, isize, index, grpnames_spec);
 
     /* check if we have two identical or two non-overlapping groups */
     bTwo = isize[0] != isize[1];
@@ -2699,7 +2699,7 @@ int gmx_hbond(int argc, char* argv[])
     }
     if (bTwo)
     {
-        printf("Checking for overlap in atoms between %s and %s\n", grpnames[0], grpnames[1]);
+        printf("Checking for overlap in atoms between %s and %s\n", grpnames_spec[0], grpnames_spec[1]);
 
         gen_datable(index[0], isize[0], datable, top.atoms.nr);
 
@@ -2707,7 +2707,10 @@ int gmx_hbond(int argc, char* argv[])
         {
             if (ISINGRP(datable[index[1][i]]))
             {
-                gmx_fatal(FARGS, "Partial overlap between groups '%s' and '%s'", grpnames[0], grpnames[1]);
+                gmx_fatal(FARGS,
+                          "Partial overlap between groups '%s' and '%s'",
+                          grpnames_spec[0],
+                          grpnames_spec[1]);
             }
         }
     }
@@ -2716,9 +2719,9 @@ int gmx_hbond(int argc, char* argv[])
         printf("Calculating %s "
                "between %s (%d atoms) and %s (%d atoms)\n",
                bContact ? "contacts" : "hydrogen bonds",
-               grpnames[0],
+               grpnames_spec[0],
                isize[0],
-               grpnames[1],
+               grpnames_spec[1],
                isize[1]);
     }
     else
@@ -2726,7 +2729,7 @@ int gmx_hbond(int argc, char* argv[])
         fprintf(stderr,
                 "Calculating %s in %s (%d atoms)\n",
                 bContact ? "contacts" : "hydrogen bonds",
-                grpnames[0],
+                grpnames_spec[0],
                 isize[0]);
     }
     free(datable);
@@ -3230,7 +3233,7 @@ int gmx_hbond(int argc, char* argv[])
 
             if (opt2bSet("-hbn", NFILE, fnm))
             {
-                dump_hbmap(hb, NFILE, fnm, bTwo, bContact, isize, index, grpnames, &top.atoms);
+                dump_hbmap(hb, NFILE, fnm, bTwo, bContact, isize, index, grpnames_spec, &top.atoms);
             }
 
             /* Moved the call to merge_hb() to a line BEFORE dump_hbmap
@@ -3441,8 +3444,8 @@ int gmx_hbond(int argc, char* argv[])
         {
             if (USE_THIS_GROUP(j))
             {
-                legnames.emplace_back(gmx::formatString("Donors %s", grpnames[j]));
-                legnames.emplace_back(gmx::formatString("Acceptors %s", grpnames[j]));
+                legnames.emplace_back(gmx::formatString("Donors %s", grpnames_spec[j]));
+                legnames.emplace_back(gmx::formatString("Acceptors %s", grpnames_spec[j]));
             }
         }
         if (i != nleg)

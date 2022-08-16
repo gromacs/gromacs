@@ -448,12 +448,12 @@ real calc_orires_dev(const gmx_multisim_t* ms,
     gmx::index referenceListIndex = 0;
     for (const int fitLocalAtomIndex : fitLocalAtomIndices)
     {
-        const gmx::RVec& x       = xWholeMolecules[fitLocalAtomIndex];
+        const gmx::RVec& xLocal  = xWholeMolecules[fitLocalAtomIndex];
         const real       mass    = od->fitMasses()[referenceListIndex];
-        xFit[referenceListIndex] = x;
+        xFit[referenceListIndex] = xLocal;
         for (int d = 0; d < DIM; d++)
         {
-            com[d] += mass * x[d];
+            com[d] += mass * xLocal[d];
         }
         mtot += mass;
         referenceListIndex++;

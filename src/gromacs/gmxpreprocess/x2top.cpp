@@ -125,9 +125,9 @@ static void mk_bonds(int                 nnm,
             dx2 = iprod(dx, dx);
             if (is_bond(nnm, nmt, *atoms->atomname[i], *atoms->atomname[j], std::sqrt(dx2)))
             {
-                forceParam[0]          = std::sqrt(dx2);
-                std::vector<int> atoms = { i, j };
-                add_param_to_list(bond, InteractionOfType(atoms, forceParam));
+                forceParam[0]             = std::sqrt(dx2);
+                std::vector<int> atomPair = { i, j };
+                add_param_to_list(bond, InteractionOfType(atomPair, forceParam));
                 nbond[i]++;
                 nbond[j]++;
             }

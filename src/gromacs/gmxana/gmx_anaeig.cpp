@@ -680,7 +680,7 @@ static void project(const char*             trajfile,
 
     if (threedplotfile)
     {
-        t_atoms  atoms;
+        t_atoms  atoms3D;
         rvec*    x;
         real*    b = nullptr;
         matrix   box;
@@ -720,7 +720,7 @@ static void project(const char*             trajfile,
                     eignr[outvec[1]] + 1,
                     eignr[outvec[2]] + 1);
         }
-        init_t_atoms(&atoms, nframes, FALSE);
+        init_t_atoms(&atoms3D, nframes, FALSE);
         snew(x, nframes);
         snew(b, nframes);
         atnm  = gmx_strdup("C");
@@ -737,14 +737,14 @@ static void project(const char*             trajfile,
 
         for (i = 0; i < nframes; i++)
         {
-            atoms.atomname[i]     = &atnm;
-            atoms.atom[i].resind  = i;
-            atoms.resinfo[i].name = &resnm;
-            atoms.resinfo[i].nr   = static_cast<int>(std::ceil(i * fact));
-            atoms.resinfo[i].ic   = ' ';
-            x[i][XX]              = inprod[0][i];
-            x[i][YY]              = inprod[1][i];
-            x[i][ZZ]              = inprod[2][i];
+            atoms3D.atomname[i]     = &atnm;
+            atoms3D.atom[i].resind  = i;
+            atoms3D.resinfo[i].name = &resnm;
+            atoms3D.resinfo[i].nr   = static_cast<int>(std::ceil(i * fact));
+            atoms3D.resinfo[i].ic   = ' ';
+            x[i][XX]                = inprod[0][i];
+            x[i][YY]                = inprod[1][i];
+            x[i][ZZ]                = inprod[2][i];
             if (b4D)
             {
                 b[i] = inprod[3][i];
@@ -762,7 +762,7 @@ static void project(const char*             trajfile,
                 fprintf(out, "REMARK    %s\n", "fourth dimension plotted as B-factor");
             }
             j = 0;
-            for (i = 0; i < atoms.nr; i++)
+            for (i = 0; i < atoms3D.nr; i++)
             {
                 if (j > 0 && bSplit && std::abs(inprod[noutvec][i]) < 1e-5)
                 {
@@ -795,9 +795,9 @@ static void project(const char*             trajfile,
         }
         else
         {
-            write_sto_conf(threedplotfile, str, &atoms, x, nullptr, pbcType, box);
+            write_sto_conf(threedplotfile, str, &atoms3D, x, nullptr, pbcType, box);
         }
-        done_atom(&atoms);
+        done_atom(&atoms3D);
     }
 
     if (extremefile)
