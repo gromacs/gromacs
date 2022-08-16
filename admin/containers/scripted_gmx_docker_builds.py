@@ -73,10 +73,6 @@ import shlex
 import typing
 from distutils.version import StrictVersion
 
-import hpccm
-import hpccm.config
-from hpccm.building_blocks.base import bb_base
-
 try:
     import utility
 except ImportError:
@@ -305,7 +301,7 @@ def get_cp2k_packages(args) -> typing.List[str]:
     return cp2k_packages
 
 
-def get_compiler(args, compiler_build_stage: hpccm.Stage = None) -> bb_base:
+def get_compiler(args, compiler_build_stage: 'hpccm.Stage' = None) -> 'hpccm.building_blocks.base':
     # Compiler
     if args.llvm is not None:
         # Build our own version instead to get TSAN + OMP
@@ -534,7 +530,7 @@ def get_cp2k(args):
                 'cd ../../']
                  + make_commands)
 
-def add_tsan_compiler_build_stage(input_args, output_stages: typing.Mapping[str, hpccm.Stage]):
+def add_tsan_compiler_build_stage(input_args, output_stages: typing.Mapping[str, 'hpccm.Stage']):
     """Isolate the expensive TSAN preparation stage.
 
     This is a very expensive stage, but has few and disjoint dependencies, and
@@ -583,7 +579,7 @@ def oneapi_runtime(_from='0'):
     return oneapi_runtime_stage
 
 
-def add_oneapi_compiler_build_stage(input_args, output_stages: typing.Mapping[str, hpccm.Stage]):
+def add_oneapi_compiler_build_stage(input_args, output_stages: typing.Mapping[str, 'hpccm.Stage']):
     """Isolate the oneAPI preparation stage.
 
     This stage is isolated so that its installed components are minimized in the
@@ -642,7 +638,7 @@ def intel_llvm_runtime(_from='0'):
     return llvm_runtime_stage
 
 
-def add_intel_llvm_compiler_build_stage(input_args, output_stages: typing.Mapping[str, hpccm.Stage]):
+def add_intel_llvm_compiler_build_stage(input_args, output_stages: typing.Mapping[str, 'hpccm.Stage']):
     """Isolate the Intel LLVM (open-source oneAPI) preparation stage.
 
     This stage is isolated so that its installed components are minimized in the
@@ -725,7 +721,7 @@ def prepare_venv(version: StrictVersion) -> typing.Sequence[str]:
 
 def add_python_stages(input_args: argparse.Namespace, *,
                       base: str,
-                      output_stages: typing.MutableMapping[str, hpccm.Stage]):
+                      output_stages: typing.MutableMapping[str, 'hpccm.Stage']):
     """Add the stage(s) necessary for the requested venvs.
 
     One intermediate build stage is created for each venv (see --venv option).
@@ -792,7 +788,7 @@ def add_python_stages(input_args: argparse.Namespace, *,
 
 
 def add_documentation_dependencies(input_args,
-                                   output_stages: typing.MutableMapping[str, hpccm.Stage]):
+                                   output_stages: typing.MutableMapping[str, 'hpccm.Stage']):
     """Add appropriate layers according to doxygen input arguments."""
     if input_args.doxygen is None:
         return
@@ -834,7 +830,7 @@ def add_documentation_dependencies(input_args,
 
 def add_base_stage(name: str,
                    input_args,
-                   output_stages: typing.MutableMapping[str, hpccm.Stage]):
+                   output_stages: typing.MutableMapping[str, 'hpccm.Stage']):
     """Establish dependencies that are shared by multiple parallel stages."""
     # Building blocks are chunks of container-builder instructions that can be
     # copied to any build stage with the addition operator.
@@ -859,7 +855,7 @@ def add_base_stage(name: str,
             output_stages[name] += bb
 
 
-def build_stages(args) -> typing.Iterable[hpccm.Stage]:
+def build_stages(args) -> typing.Iterable['hpccm.Stage']:
     """Define and sequence the stages for the recipe corresponding to *args*."""
 
     # A Dockerfile or Singularity recipe can have multiple build stages.
@@ -994,6 +990,7 @@ def build_stages(args) -> typing.Iterable[hpccm.Stage]:
 
 if __name__ == '__main__':
     args = parser.parse_args()
+    import hpccm.config
 
     # Set container specification output format
     hpccm.config.set_container_format(args.format)

@@ -45,8 +45,13 @@ Author:
 """
 
 import argparse
+import warnings
 
-import gitlab
+try:
+    import gitlab
+except ImportError:
+    warnings.warn('This tool requires the `gitlab` package. Try `pip install python-gitlab`.')
+    gitlab = None
 
 
 def submit_gitlab_pipeline(auth_token, branch='main'):
