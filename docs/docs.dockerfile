@@ -83,15 +83,13 @@ ENV BUILD_DIR /tmp/gromacs-build
 RUN mkdir -p $BUILD_DIR
 WORKDIR $BUILD_DIR
 
-RUN /root/venv/py3.7/bin/pip install furo sphinx-copybutton sphinx_inline_tabs
-
 # Enable (or disable) Sphinx "todo" output.
 ARG TODOS=1
 # Allow the build type to be specified with `docker build --build-arg TYPE=something`
 ARG TYPE=Release
 # Allow arbitrary CMake args with `--build-arg CMAKE_ARGS="..."`
 ARG CMAKE_ARGS=""
-RUN . /root/venv/py3.7/bin/activate && \
+RUN . /root/venv/py3.9/bin/activate && \
     cmake $SRC_DIR \
         -DCMAKE_INSTALL_PREFIX=/usr/local/gromacs \
         -DGMXAPI=ON \
@@ -105,6 +103,9 @@ RUN . /root/venv/py3.7/bin/activate && \
 
 # Additional arguments to pass to the build system.
 ARG BUILD_ARGS=""
+
+RUN cmake --build . -- $BUILD_ARGS
+
 RUN cmake --build . --target webpage -- $BUILD_ARGS
 
 
