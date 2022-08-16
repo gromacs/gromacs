@@ -289,7 +289,7 @@ a safe interval, far from instabilities. The power :math:`2` of
 :math:`\sin\theta_i` in the denominator has been chosen to guarantee
 this behavior and allows an elegant differentiation:
 
-.. math:: F_{\rm ReB}(\theta_i) = \frac{2k_{\theta}}{\sin^4\theta_i}(\cos\theta_i - \cos\theta_0) (1 - \cos\theta_i\cos\theta_0) \frac{\partial \cos\theta_i}{\partial \vec r_{k}}.
+.. math:: F_{\rm ReB}(\theta_i) = \frac{k_{\theta}}{\sin^4\theta_i}(\cos\theta_i - \cos\theta_0) (1 - \cos\theta_i\cos\theta_0) \frac{\partial \cos\theta_i}{\partial \vec r_{k}}.
           :label: eqdiffReB
 
 Due to its construction, the restricted bending potential cannot be

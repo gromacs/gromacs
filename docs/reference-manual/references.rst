@@ -1158,8 +1158,8 @@ Fundam.*, **11** [3] 379–387 (1972).
 
 :sup:`83` M. Bulacu, N. Goga, W. Zhao, G. Rossi, L. Monticelli, X.
 Periole, D. Tieleman, and S. Marrink, "Improved angle potentials for
-coarse-grained molecular dynamics simulations," *J. Chem. Phys.*,
-**123** [11] (2005).
+coarse-grained molecular dynamics simulations," *J. Chem. Theory Comput.*,
+**9** [8] 3282-3292 (2013).
 
 .. raw:: html
 
@@ -1231,7 +1231,7 @@ peptide and protein torsional energetics with the oPLS-aA force field,"
 
 :sup:`88` M. Bulacu and E. van der Giessen, "Effect of bending and
 torsion rigidity on self-diffusion in polymer melts: A
-molecular-dynamics study," *JCTC*, **9** [8] 3282–3292 (2013).
+molecular-dynamics study," *J. Chem. Phys.*, **123** [11] 114901 (2005).
 
 .. raw:: html
 
