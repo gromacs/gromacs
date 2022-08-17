@@ -2651,8 +2651,10 @@ static void combine_nblists(gmx::ArrayRef<const NbnxnPairlistGpu> nbls, NbnxnPai
             for (gmx::index jPacked = 0; jPacked < nbli.cjPacked.size(); jPacked++)
             {
                 nblc->cjPacked.list_[cjPacked_offset + jPacked] = nbli.cjPacked.list_[jPacked];
-                nblc->cjPacked.list_[cjPacked_offset + jPacked].imei[0].excl_ind += excl_offset;
-                nblc->cjPacked.list_[cjPacked_offset + jPacked].imei[1].excl_ind += excl_offset;
+                for (int splitIdx = 0; splitIdx < c_nbnxnGpuClusterpairSplit; splitIdx++)
+                {
+                    nblc->cjPacked.list_[cjPacked_offset + jPacked].imei[splitIdx].excl_ind += excl_offset;
+                }
             }
 
             for (size_t jPacked = 0; jPacked < nbli.excl.size(); jPacked++)

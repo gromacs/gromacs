@@ -273,6 +273,9 @@
 // Number of clusters along Z in a pair-search grid cell for GPU lists.
 #define GMX_GPU_NB_NUM_CLUSTER_PER_CELL_Z @GMX_GPU_NB_NUM_CLUSTER_PER_CELL_Z@
 
+// Disable nbnxm cluster setup splitting
+#cmakedefine01 GMX_GPU_NB_DISABLE_CLUSTER_PAIR_SPLIT
+
 /* Define constants for build types (starting at 1 to make sure undefined values don't match) */
 #define CMAKE_BUILD_TYPE_DEBUG 1
 #define CMAKE_BUILD_TYPE_RELEASE 2

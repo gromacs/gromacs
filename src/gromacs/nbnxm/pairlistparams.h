@@ -62,7 +62,7 @@ static constexpr int c_nbnxnCpuIClusterSize = 4;
 #if GMX_GPU_OPENCL || GMX_GPU_SYCL
 static constexpr int c_nbnxnGpuClusterSize = GMX_GPU_NB_CLUSTER_SIZE;
 #else
-static constexpr int c_nbnxnGpuClusterSize = 8;
+static constexpr int c_nbnxnGpuClusterSize      = 8;
 #endif
 
 /*! \brief The number of clusters along a direction in a pair-search grid cell for GPU lists
@@ -81,9 +81,17 @@ static constexpr int c_gpuNumClusterPerCell =
 /*! \brief The number of sub-parts used for data storage for a GPU cluster pair
  *
  * In CUDA the number of threads in a warp is 32 and we have cluster pairs
- * of 8*8=64 atoms, so it's convenient to store data for cluster pair halves.
+ * of 8*8=64 atoms, so it's convenient to store data for cluster pair halves,
+ * i.e. split in 2.
+ *
+ * On architectures with 64-wide execution however it is better to avoid splitting
+ * (e.g. AMD GCN, CDNA and later).
  */
+#if GMX_GPU_NB_DISABLE_CLUSTER_PAIR_SPLIT
+static constexpr int c_nbnxnGpuClusterpairSplit = 1;
+#else
 static constexpr int c_nbnxnGpuClusterpairSplit = 2;
+#endif
 
 //! The fixed size of the exclusion mask array for a half GPU cluster pair
 static constexpr int c_nbnxnGpuExclSize =

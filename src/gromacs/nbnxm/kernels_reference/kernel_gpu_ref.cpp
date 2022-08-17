@@ -67,7 +67,7 @@ void nbnxn_kernel_gpu_ref(const NbnxnPairlistGpu*        nbl,
 {
     real                fscal = NAN;
     real                vcoul = 0;
-    const nbnxn_excl_t* excl[2];
+    const nbnxn_excl_t* excl[c_nbnxnGpuClusterpairSplit];
 
     if (nbl->na_ci != c_clSize)
     {
@@ -146,8 +146,10 @@ void nbnxn_kernel_gpu_ref(const NbnxnPairlistGpu*        nbl,
 
         for (int cjPacked = cjPackedBegin; (cjPacked < cjPackedEnd); cjPacked++)
         {
-            excl[0] = &nbl->excl[nbl->cjPacked.list_[cjPacked].imei[0].excl_ind];
-            excl[1] = &nbl->excl[nbl->cjPacked.list_[cjPacked].imei[1].excl_ind];
+            for (int splitIdx = 0; splitIdx < c_nbnxnGpuClusterpairSplit; splitIdx++)
+            {
+                excl[splitIdx] = &nbl->excl[nbl->cjPacked.list_[cjPacked].imei[splitIdx].excl_ind];
+            }
 
             for (int jm = 0; jm < c_nbnxnGpuJgroupSize; jm++)
             {

@@ -84,7 +84,7 @@ auto nbnxmKernelPruneOnly(sycl::handler&                                      cg
     sycl_2020::local_accessor<Float4, 1> sm_xq(
             sycl::range<1>(c_nbnxnGpuNumClusterPerSupercluster * c_clSize), cgh);
 
-    constexpr int warpSize = c_clSize * c_clSize / 2;
+    constexpr int warpSize = c_clSize * c_splitClSize;
 
     /* Somewhat weird behavior inherited from OpenCL.
      * With clSize == 4, we use sub_group size of 16 (not enforced in OpenCL implementation, but chosen

@@ -882,6 +882,11 @@ The following flags can be passed to CMake in order to tune |Gromacs|:
       set ``-DGMX_GPU_NB_NUM_CLUSTER_PER_CELL_X=1`` and leave the
       other values as the default.
 
+``-DGMX_GPU_NB_DISABLE_CLUSTER_PAIR_SPLIT``
+     Disables cluster pair splitting in the GPU non-bonded kernels;
+     this is only support in SYCL, and it is compatible with and improves performance
+     on GPUs with 64-wide execution like AMD GCN and CDNA family.
+
 Static linking
 ~~~~~~~~~~~~~~
 
