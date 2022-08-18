@@ -78,6 +78,8 @@ PmeForceSenderGpu::Impl::Impl(GpuEventSynchronizer*  pmeForcesReady,
         event            = std::make_unique<GpuEventSynchronizer>();
         ppCommEvent_[i]  = std::move(event);
     }
+    pmeForcesReady_->setConsumptionLimits(ppRanks_.size(), ppRanks_.size());
+    pmeForcesReady_->reset();
     stageThreadMpiGpuCpuComm_ = (getenv("GMX_ENABLE_STAGED_GPU_TO_CPU_PMEPP_COMM") != nullptr);
 }
 
