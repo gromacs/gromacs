@@ -1688,7 +1688,8 @@ std::string getCoolQuote()
           "Anonymous" },
         { "Optimist: The glass is 1/2 full. Pessimist: The glass is 1/2 empty. "
           "Excel: The glass is January 2nd.",
-          "John Feminella" }
+          "John Feminella" },
+        { "FORTRAN. Input: reason, output: pleasure", "ORDA, FORTRAN board game" }
     };
 
     if (beCool())
