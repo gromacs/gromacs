@@ -63,15 +63,14 @@
 /* This number should be increased whenever the file format changes! */
 static const int enx_version = 5;
 
-// NOLINTNEXTLINE(cppcoreguidelines-avoid-non-const-global-variables)
-const char* enx_block_id_name[] = { "Averaged orientation restraints",
-                                    "Instantaneous orientation restraints",
-                                    "Orientation restraint order tensor(s)",
-                                    "Distance restraints",
-                                    "Free energy data",
-                                    "BAR histogram",
-                                    "Delta H raw data",
-                                    "AWH data" };
+const char* const enx_block_id_name[] = { "Averaged orientation restraints",
+                                          "Instantaneous orientation restraints",
+                                          "Orientation restraint order tensor(s)",
+                                          "Distance restraints",
+                                          "Free energy data",
+                                          "BAR histogram",
+                                          "Delta H raw data",
+                                          "AWH data" };
 
 
 /* Stuff for reading pre 4.1 energy files */

@@ -106,8 +106,7 @@ static const unsigned char c_acceptorMask = (1 << 0);
 static const unsigned char c_donorMask    = (1 << 1);
 static const unsigned char c_inGroupMask  = (1 << 2);
 
-// NOLINTNEXTLINE(cppcoreguidelines-avoid-non-const-global-variables)
-static const char* grpnames_default[grNR] = { "0", "1", "I" };
+static const char* const grpnames_default[grNR] = { "0", "1", "I" };
 // NOLINTNEXTLINE(cppcoreguidelines-avoid-non-const-global-variables)
 static gmx_bool bDebug = FALSE;
 

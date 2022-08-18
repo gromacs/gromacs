@@ -73,8 +73,7 @@ const char* s_ffn[effnNR + 2] = { nullptr, "none",  "exp",   "aexp",  "exp_exp",
 // clang-format off
 // needed because clang-format wants to break the lines below
 /*! \brief Long description for each fitting function type */
-// NOLINTNEXTLINE(cppcoreguidelines-avoid-non-const-global-variables)
-static const char* longs_ffn[effnNR]
+static const char* const longs_ffn[effnNR]
         = { "no fit",
             "y = exp(-x/|a0|)",
             "y = a1 exp(-x/|a0|)",

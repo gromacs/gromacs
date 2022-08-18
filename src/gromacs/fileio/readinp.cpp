@@ -478,7 +478,7 @@ const char* get_estr(std::vector<t_inpfile>* inp, const std::string& name, const
 }
 
 /* Note that sanitizing the trailing part of inp[ii].value was the responsibility of read_inpfile() */
-int get_eeenum(std::vector<t_inpfile>* inp, const char* name, const char** defs, WarningHandler* wi)
+int get_eeenum(std::vector<t_inpfile>* inp, const char* name, const char* const* defs, WarningHandler* wi)
 {
     std::vector<t_inpfile>& inpRef = *inp;
     int                     n      = 0;
@@ -532,12 +532,12 @@ int get_eeenum(std::vector<t_inpfile>* inp, const char* name, const char** defs,
     return i;
 }
 
-int get_eeenum(std::vector<t_inpfile>* inp, const std::string& name, const char** defs, WarningHandler* wi)
+int get_eeenum(std::vector<t_inpfile>* inp, const std::string& name, const char* const* defs, WarningHandler* wi)
 {
     return get_eeenum(inp, name.c_str(), defs, wi);
 }
 
-int get_eenum(std::vector<t_inpfile>* inp, const char* name, const char** defs)
+int get_eenum(std::vector<t_inpfile>* inp, const char* name, const char* const* defs)
 {
     return get_eeenum(inp, name, defs, nullptr);
 }

@@ -91,8 +91,7 @@ enum
 };
 
 /* names for the above enum */
-// NOLINTNEXTLINE(cppcoreguidelines-avoid-non-const-global-variables)
-extern const char* enx_block_id_name[];
+extern const char* const enx_block_id_name[];
 
 
 /* the subblocks that are contained in energy file blocks. Each of these

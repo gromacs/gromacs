@@ -62,8 +62,7 @@
 #include "gromacs/utility/snprintf.h"
 #include "gromacs/utility/stringutil.h"
 
-// NOLINTNEXTLINE(cppcoreguidelines-avoid-non-const-global-variables)
-static bool cudaProfilerRun = ((getenv("NVPROF_ID") != nullptr));
+static const bool cudaProfilerRun = ((getenv("NVPROF_ID") != nullptr));
 
 bool isHostMemoryPinned(const void* h_ptr)
 {

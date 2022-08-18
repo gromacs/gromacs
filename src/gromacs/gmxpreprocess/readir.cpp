@@ -147,12 +147,10 @@ enum class GroupCoverage
     OneGroup //<! Merge all selected groups into one group, make a rest group for the remaining particles
 };
 
-// NOLINTNEXTLINE(cppcoreguidelines-avoid-non-const-global-variables)
-static const char* constraints[eshNR + 1] = { "none",     "h-bonds",    "all-bonds",
-                                              "h-angles", "all-angles", nullptr };
+static const char* const constraints[eshNR + 1] = { "none",     "h-bonds",    "all-bonds",
+                                                    "h-angles", "all-angles", nullptr };
 
-// NOLINTNEXTLINE(cppcoreguidelines-avoid-non-const-global-variables)
-static const char* couple_lam[ecouplamNR + 1] = { "vdw-q", "vdw", "q", "none", nullptr };
+static const char* const couple_lam[ecouplamNR + 1] = { "vdw-q", "vdw", "q", "none", nullptr };
 
 static void getSimTemps(int ntemps, t_simtemp* simtemp, gmx::ArrayRef<double> temperature_lambdas)
 {

@@ -202,14 +202,11 @@ static void get_params(const char* mpin, const char* mpout, t_psrec* psr)
     done_warning(wi, FARGS);
 }
 
-// NOLINTNEXTLINE(cppcoreguidelines-avoid-non-const-global-variables)
-static t_rgb black = { 0, 0, 0 };
-// NOLINTNEXTLINE(cppcoreguidelines-avoid-non-const-global-variables)
-static t_rgb white = { 1, 1, 1 };
+static const t_rgb black = { 0, 0, 0 };
+static const t_rgb white = { 1, 1, 1 };
 #define BLACK (&black)
 /* this must correspond to *colors[] in get_params */
-// NOLINTNEXTLINE(cppcoreguidelines-avoid-non-const-global-variables)
-static t_rgb* linecolors[] = { nullptr, &black, &white, nullptr };
+static const t_rgb* const linecolors[] = { nullptr, &black, &white, nullptr };
 
 static void leg_discrete(t_psdata*                      ps,
                          real                           x0,

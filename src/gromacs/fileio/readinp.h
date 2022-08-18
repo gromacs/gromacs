@@ -149,12 +149,12 @@ double get_ereal(std::vector<t_inpfile>* inp, const std::string& name, double de
 const char* get_estr(std::vector<t_inpfile>* inp, const char* name, const char* def);
 const char* get_estr(std::vector<t_inpfile>* inp, const std::string& name, const char* def);
 
-int get_eeenum(std::vector<t_inpfile>* inp, const char* name, const char** defs, WarningHandler* wi);
+int get_eeenum(std::vector<t_inpfile>* inp, const char* name, const char* const* defs, WarningHandler* wi);
 /* defs must be NULL terminated */
-int get_eeenum(std::vector<t_inpfile>* inp, const std::string& name, const char** defs, WarningHandler* wi);
+int get_eeenum(std::vector<t_inpfile>* inp, const std::string& name, const char* const* defs, WarningHandler* wi);
 /* defs must be NULL terminated */
 
-int get_eenum(std::vector<t_inpfile>* inp, const char* name, const char** defs);
+int get_eenum(std::vector<t_inpfile>* inp, const char* name, const char* const* defs);
 /* defs must be NULL terminated */
 
 //! Get index of option `name`. Exposed here so that `getEnum` can access it.
