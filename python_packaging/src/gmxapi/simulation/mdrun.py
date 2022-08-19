@@ -43,10 +43,13 @@ __all__ = ['mdrun', 'SimulationError']
 import functools
 import inspect
 import os
+import sys
 import typing
 import warnings
 from contextlib import contextmanager
+from enum import Enum
 from pathlib import Path
+from typing import Union
 
 import gmxapi
 import gmxapi.abc
@@ -72,6 +75,8 @@ _output_descriptors = (
     _op.OutputDataDescriptor('directory', str),
     _op.OutputDataDescriptor('checkpoint', str),
     _op.OutputDataDescriptor('parameters', dict),
+    _op.OutputDataDescriptor('stderr', str),
+    _op.OutputDataDescriptor('stdout', str),
     _op.OutputDataDescriptor('trajectory', str),
 )
 _publishing_descriptors = {desc._name: gmxapi.operation.Publisher(desc._name, desc._dtype)
@@ -82,6 +87,40 @@ _output = _op.OutputCollectionDescription(**{descriptor._name: descriptor._dtype
                                              _output_descriptors})
 
 
+class FD(Enum):
+    """Enumerate the canonical posix file descriptors for stdio.
+
+    This provides a reference for use with subprocesses or called code,
+    since pytest or other calling code may have already manipulated the
+    file descriptors associated with Python's `sys` module.
+    """
+    STDOUT = 1
+    STDERR = 2
+
+
+@contextmanager
+def redirect_stdio(fd: FD, path: Union[str, Path, os.PathLike]):
+    """Temporarily redirect the indicated file descriptor to the indicated file.
+
+    *path* is opened for (appended) writing for the scope of the context manager.
+    The indicated file descriptor is duplicated, then replaced with that of
+    the opened *path*. On exiting the context manager, *path* is closed, *fd*
+    is restored to its original value, and the duplicate is closed.
+
+    Note:
+        `contextlib.redirect_stdout`, etc, only works for Python calls that
+        already support indirection because they ultimately use the `sys`
+        module attributes.
+    """
+    fd_backup = os.dup(fd.value)
+    try:
+        with open(path, 'a') as fh:
+            yield os.dup2(fh.fileno(), fd.value)
+    finally:
+        os.dup2(fd_backup, fd.value)
+        os.close(fd_backup)
+
+
 class OutputDataProxy(_op.DataProxyBase,
                       descriptors=_output_descriptors):
     """Implement the 'output' attribute of `mdrun` operations.
@@ -90,11 +129,20 @@ class OutputDataProxy(_op.DataProxyBase,
         checkpoint (str): Full path to ``cpt`` file.
         directory (str): Full path to the working directory in which the simulation ran.
         parameters (dict): Dictionary of parameters with which the simulation was run.
+        stderr (str): Full path to the text file that captured stderr during the simulation.
+        stdout (str): Full path to the text file that captured stdout during the simulation.
         trajectory (str): Full path to trajectory output (corresponding to the ``-o``
             flag, if provided).
 
     .. versionchanged:: 0.4
         Added *directory* output, replacing an earlier "hidden" *_work_dir* output.
+
+    .. versionadded:: 0.4
+        *stderr* and *stdout* provide paths to the captured standard I/O.
+        Previously, a lot of output from the underlying library bypassed Python
+        and went straight to the standard output and standard error of the
+        calling process.
+
     """
 
 
@@ -371,14 +419,21 @@ class LegacyImplementationSubscription(object):
                     self.workspec = work.workspec
                     # TODO(#3145): Attach extension code, if any.
 
+                    # Go ahead and execute immediately. No need for lazy initialization in this basic case.
                     context = LegacyContext(work=self.workspec,
                                             workdir_list=workdir_list,
                                             communicator=ensemble_comm)
                     self.simulation_module_context = context
-                    # Go ahead and execute immediately. No need for lazy initialization in this basic case.
-                    with self.simulation_module_context as session:
-                        session.run()
-                        # TODO: There may be some additional results that we need to extract...
+                    # Note: The redirection of stdout and stderr here is a workaround (#4541) for
+                    # inflexible output handling in libgromacs. A better solution would be to use a
+                    # logging facility instead of assuming terminal I/O in the core library, or at
+                    # least to set and use file descriptors managed through the output_env or program_context,
+                    # but, as of resolution of #4541, there are no near term plans to make such changes.
+                    # See also #1505, #2585, #2999, #3015, #3035
+                    with redirect_stdio(FD.STDOUT, os.path.join(workdir, 'stdout.txt')):
+                        with redirect_stdio(FD.STDERR, os.path.join(workdir, 'stderr.txt')):
+                            with self.simulation_module_context as session:
+                                session.run()
                     logger.debug(f'workdir[{ensemble_rank}] = {workdir_list[ensemble_rank]}')
                     logger.debug(f'parameters[{ensemble_rank}] = {parameters_dict_list[ensemble_rank]}')
                     logger.debug(f'runtime_args[{ensemble_rank}] = {runtime_args_list[ensemble_rank]}')
@@ -469,6 +524,8 @@ class SubscriptionPublishingRunner(object):
         publisher: PublishingDataProxy = self.resources.output
         assert isinstance(publisher, PublishingDataProxy)
         publisher.directory = self.resources.workdir
+        publisher.stdout = os.path.join(self.resources.workdir, 'stdout.txt')
+        publisher.stderr = os.path.join(self.resources.workdir, 'stderr.txt')
         publisher.parameters = self.resources.parameters
         logger.debug(f'Session resources have runtime_args: {self.resources.runtime_args}')
 

@@ -21,3 +21,17 @@ the simulation but not represented by other existing attributes of the
 :py:class:`~gmxapi.simulation.mdrun.OutputDataProxy`.
 
 :issue:`4548`
+
+gmxapi.mdrun now captures STDOUT and STDERR
+"""""""""""""""""""""""""""""""""""""""""""
+
+The GROMACS library prints a lot of output directly to standard out and
+standard error. Previously, this meant that simulator output that traditionally
+goes to the terminal would have to be caught from outside the Python
+interpreter. In mpi4py based ensembles, it could be challenging to catch the
+output at all, without manipulating the ``mpiexec`` command line.
+
+`gmxapi.mdrun` now redirects STDERR and STDOUT during simulation, and provides
+paths to the resulting text files on new *stdout* and *stderr* outputs.
+
+Reference :issue:`4541`

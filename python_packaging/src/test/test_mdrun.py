@@ -90,6 +90,13 @@ def test_run_from_tpr(spc_water_box, mdrun_kwargs):
     assert os.path.exists(published_trajectory)
     assert published_trajectory == expected_trajectory
 
+    # Look for some expected output text to make sure we are capturing
+    # status messages from libgromacs as intended. Ref #4541
+    stderr = md.output.stderr.result()
+    assert os.path.exists(stderr)
+    with open(stderr, 'r') as fh:
+        assert 'starting mdrun' in fh.read()
+
 
 @pytest.mark.usefixtures('cleandir')
 def test_mdrun_runtime_args(spc_water_box, caplog, mdrun_kwargs):
