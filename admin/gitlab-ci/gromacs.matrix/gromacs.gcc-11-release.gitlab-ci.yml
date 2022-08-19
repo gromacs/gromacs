@@ -60,7 +60,8 @@ gromacs:gcc-11:release:test:
     BUILD_DIR: release-builds-gcc
     KUBERNETES_EXTENDED_RESOURCE_NAME: "amd.com/gpu"
     KUBERNETES_EXTENDED_RESOURCE_LIMIT: 1
-    LD_LIBRARY_PATH: "/opt/rocm-3.5.0/opencl/lib"
+    LD_LIBRARY_PATH: "/opt/rocm/opencl/lib"
+    ROC_ENABLE_PRE_VEGA: 1
   tags:
     - k8s-scilifelab
   needs:
@@ -81,7 +82,8 @@ gromacs:gcc-11:release:regressiontest:
     REGRESSIONTEST_PME_RANK_NUMBER: 0
     REGRESSIONTEST_TOTAL_RANK_NUMBER: 2
     REGRESSIONTEST_OMP_RANK_NUMBER: 1
-    LD_LIBRARY_PATH: "/opt/rocm-3.5.0/opencl/lib"
+    LD_LIBRARY_PATH: "/opt/rocm/opencl/lib"
+    ROC_ENABLE_PRE_VEGA: 1
   tags:
     - k8s-scilifelab
   needs:
