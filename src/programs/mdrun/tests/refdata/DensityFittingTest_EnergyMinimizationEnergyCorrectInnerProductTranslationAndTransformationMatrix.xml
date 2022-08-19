@@ -8,7 +8,7 @@
     <Real Name="Time 3.000000 Step 3 in frame 3">-10304.425</Real>
     <Real Name="Time 4.000000 Step 4 in frame 4">-10955.273</Real>
   </Energy>
-  <Energy Name="Density fitting">
+  <Energy Name="Dens. fitting">
     <Real Name="Time 0.000000 Step 0 in frame 0">-8932.1885</Real>
     <Real Name="Time 1.000000 Step 1 in frame 1">-9307.208</Real>
     <Real Name="Time 2.000000 Step 2 in frame 2">-9759.4893</Real>

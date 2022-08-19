@@ -15,7 +15,7 @@
   extends:
     - .variables:default
     - .use-clang:base
-  image: ${CI_REGISTRY_IMAGE}/ci-ubuntu-20.04-llvm-8-cuda-11.0
+  image: ${CI_REGISTRY_IMAGE}/ci-ubuntu-20.04-llvm-8-cuda-11.0:release-2022
   stage: test
   variables:
     KUBERNETES_CPU_LIMIT: 2

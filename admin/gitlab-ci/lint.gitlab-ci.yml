@@ -5,7 +5,7 @@ clang-tidy:configure-mr:
     - .gromacs:base:configure
     - .use-clang:base
     - .rules:merge-requests
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-llvm-11-cuda-11.4.1
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-llvm-11-cuda-11.4.1:release-2022
   variables:
     CMAKE: /usr/local/cmake-3.16.3/bin/cmake
     COMPILER_MAJOR_VERSION: 11
@@ -17,7 +17,7 @@ clang-tidy:configure-schedule:
     - .gromacs:base:configure
     - .use-clang:base
     - .rules:nightly-not-for-release
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-llvm-11-cuda-11.4.1
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-llvm-11-cuda-11.4.1:release-2022
   variables:
     CMAKE: /usr/local/cmake-3.16.3/bin/cmake
     COMPILER_MAJOR_VERSION: 11
@@ -30,7 +30,7 @@ clang-tidy:configure-schedule-cuda:
     - .use-clang:base
     - .use-cuda
     - .rules:nightly-not-for-release
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-llvm-11-cuda-11.4.1
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-llvm-11-cuda-11.4.1:release-2022
   variables:
     CMAKE: cmake
     COMPILER_MAJOR_VERSION: 11
@@ -44,7 +44,7 @@ clang-tidy:build:
     - .variables:default
     - .rules:nightly-not-for-release
   stage: source-check
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-llvm-11-cuda-11.4.1
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-llvm-11-cuda-11.4.1:release-2022
   needs:
     - job: clang-tidy:configure-schedule
   variables:
@@ -58,7 +58,7 @@ clang-tidy:build-cuda:
     - .variables:default
     - .rules:nightly-not-for-release
   stage: source-check
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-llvm-11-cuda-11.4.1
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-llvm-11-cuda-11.4.1:release-2022
   needs:
     - job: clang-tidy:configure-schedule-cuda
   variables:
@@ -71,7 +71,7 @@ clang-tidy:test:
     - .variables:default
     - .rules:merge-requests
   stage: source-check
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-llvm-11-cuda-11.4.1
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-llvm-11-cuda-11.4.1:release-2022
   needs:
     - job: clang-tidy:configure-mr
   variables:
@@ -107,7 +107,7 @@ clang-format:
     - .rules:merge-requests
   cache: {}
   stage: pre-build
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-llvm-11-cuda-11.4.1
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-llvm-11-cuda-11.4.1:release-2022
   variables:
     COMPILER_MAJOR_VERSION: 11
     KUBERNETES_CPU_LIMIT: 1
@@ -137,7 +137,7 @@ copyright-check:
     - .rules:merge-requests
   cache: {}
   stage: pre-build
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-llvm-11-cuda-11.4.1
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-llvm-11-cuda-11.4.1:release-2022
   variables:
     KUBERNETES_CPU_LIMIT: 1
     KUBERNETES_CPU_REQUEST: 1

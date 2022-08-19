@@ -8,7 +8,7 @@ prepare-release-version:
     - .variables:default
     - .rules:nightly-only-for-release
   cache: {}
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-llvm-7-docs
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-llvm-7-docs:release-2022
   stage: configure-build
   variables:
     KUBERNETES_CPU_LIMIT: 1
@@ -28,7 +28,7 @@ regressiontests:prepare:
     - .variables:default
     - .rules:merge-and-post-merge-acceptance
   cache: {}
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-llvm-7-docs
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-llvm-7-docs:release-2022
   stage: configure-build
   variables:
     KUBERNETES_CPU_LIMIT: 1
@@ -72,7 +72,7 @@ regressiontests:package:
   cache: {}
   # Docker image uploaded to dockerhub by user eriklindahl
   # TODO: Get DockerFile for admin/dockerfiles
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-llvm-7-docs
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-llvm-7-docs:release-2022
   stage: release-package
   variables:
     KUBERNETES_CPU_LIMIT: 1
@@ -145,7 +145,7 @@ archive:configure:release:
     - .use-ccache
     - .before_script:default
     - .docs:build
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-llvm-7-docs
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-llvm-7-docs:release-2022
   variables:
     KUBERNETES_CPU_LIMIT: 4
     KUBERNETES_CPU_REQUEST: 2
@@ -209,7 +209,7 @@ archive:package:
     BUILD_DIR: build-package
 
 checksum-verify:
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-llvm-7-docs
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-llvm-7-docs:release-2022
   stage: release-verify
   extends:
     - .variables:default
@@ -250,7 +250,7 @@ checksum-verify:
     - prepare-release-version
 
 version-verify:
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-llvm-7-docs
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-llvm-7-docs:release-2022
   stage: release-verify
   extends:
     - .variables:default

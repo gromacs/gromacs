@@ -22,7 +22,7 @@ gromacs:clang-13-mpi:configure:
    - .use-clang:base
    - .use-mpi
    - .rules:merge-requests
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-llvm-13
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-llvm-13:release-2022
   variables:
     CMAKE: /usr/local/cmake-3.17.2/bin/cmake
     COMPILER_MAJOR_VERSION: 13
@@ -38,7 +38,7 @@ gromacs:clang-13-mpi:build:
     - .before_script:default
     - .use-ccache
     - .rules:merge-requests
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-llvm-13
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-llvm-13:release-2022
   variables:
     CMAKE: /usr/local/cmake-3.17.2/bin/cmake
   needs:
@@ -48,7 +48,7 @@ gromacs:clang-13-mpi:test:
   extends:
     - .gromacs:base:test
     - .rules:merge-requests
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-llvm-13
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-llvm-13:release-2022
   variables:
     CMAKE: /usr/local/cmake-3.17.2/bin/cmake
   tags:
@@ -60,7 +60,7 @@ gromacs:clang-13:regressiontest:
   extends:
     - .gromacs:base:regressiontest
     - .rules:merge-requests
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-llvm-13
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-llvm-13:release-2022
   variables:
     CMAKE: /usr/local/cmake-3.17.2/bin/cmake
     REGRESSIONTEST_DOUBLE: "-double"

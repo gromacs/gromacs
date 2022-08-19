@@ -539,6 +539,9 @@ if (SPHINX_FOUND)
             RELENG_PATH
             SOURCE_MD5SUM
             SPHINX_EXTENSION_PATH
+            GMX_CURRENT_CONTRIBUTORS_STRING
+            GMX_PREVIOUS_CONTRIBUTORS_STRING
+            GMX_CURRENT_PROJECT_LEADERS_STRING
         COMMENT "Configuring Sphinx configuration file")
     gmx_add_sphinx_input_file(${SPHINX_CONFIG_FILE})
     gmx_add_sphinx_source_files(FILES ${SPHINX_SOURCE_FILES})

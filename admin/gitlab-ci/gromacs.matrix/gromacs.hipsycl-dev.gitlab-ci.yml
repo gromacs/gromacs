@@ -17,7 +17,7 @@ gromacs:hipsycl-dev:configure:
     - .use-clang:base
     - .use-sycl
     - .rules:merge-and-post-merge-acceptance
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-llvm-12-cuda-11.4.3-hipsycl-c1246fd-rocm-5.0
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-llvm-12-cuda-11.4.3-hipsycl-c1246fd-rocm-5.0:release-2022
   variables:
     CMAKE: /usr/local/cmake-3.18.4/bin/cmake
     CMAKE_SIMD_OPTIONS: "-DGMX_SIMD=AVX2_256"
@@ -39,7 +39,7 @@ gromacs:hipsycl-dev:build:
     - .before_script:default
     # Not using ccache because it plays poorly with syclcc-launcher
     - .rules:merge-and-post-merge-acceptance
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-llvm-12-cuda-11.4.3-hipsycl-c1246fd-rocm-5.0
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-llvm-12-cuda-11.4.3-hipsycl-c1246fd-rocm-5.0:release-2022
   variables:
     CMAKE: /usr/local/cmake-3.18.4/bin/cmake
   tags:

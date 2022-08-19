@@ -21,7 +21,7 @@ simple-build:
     - .use-clang:base
     - .rules:merge-requests
   stage: pre-build
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-llvm-12
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-llvm-12:release-2022
 
   variables:
     CMAKE: /usr/local/cmake-3.16.3/bin/cmake

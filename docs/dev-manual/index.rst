@@ -43,9 +43,6 @@ related content appears split between the two sources.
 
 The documentation does not yet cover all areas, but more content is being
 (slowly) added.
-Wiki pages at http://www.gromacs.org/Developer_Zone may contain additional
-information (much of it outdated, though), and can be linked from relevant
-locations in the developer guide.
 
 .. toctree::
    :maxdepth: 2

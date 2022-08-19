@@ -16,12 +16,37 @@ in the :ref:`release-notes`.
 Fixes where mdrun could behave incorrectly
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Energy minimization would not converge with GPU and without DD
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+The steepest descent and conjugate gradient minimizers would not converge
+when using a GPU for the nonbonded interactions and not using domain
+decomposition.
+
+:issue:`4533`
+
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
 
 Fixes that affect portability
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Further fix to nvcc flag detection
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Version 2022.1 fixed a nvcc flag detection issue for gcc version 11,
+but this fix resulted in issues for older gcc versions. Version 2022.2
+resolved this for gcc version 7, but issues remained for other gcc
+versions. This release provides a fix that should prevent this issue
+for all gcc versions.
+
+:issue:`4539`
+
 Miscellaneous
 ^^^^^^^^^^^^^
 
+Improve mdrun log file energy output formatting
+"""""""""""""""""""""""""""""""""""""""""""""""
+
+The mdrun log file now prints more energy-field names in abbreviated
+forms so as to avoid exceeding the maximum column lengths available.
