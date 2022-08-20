@@ -91,6 +91,11 @@ if (NOT pybind11_FOUND)
 endif ()
 
 if(GMXAPI_MASTER_PROJECT)
+    # Workaround for issue #4563 for GROMACS releases that won't be patched.
+    find_package(GROMACS REQUIRED
+                 NAMES gromacs gromacs_mpi gromacs_d gromacs_mpi_d
+                 HINTS "$ENV{GROMACS_DIR}"
+                 )
     find_package(gmxapi REQUIRED)
     if (gmxapi_VERSION VERSION_LESS 0.2.1)
         message(WARNING "Your GROMACS installation does not support custom MD plugins. "
