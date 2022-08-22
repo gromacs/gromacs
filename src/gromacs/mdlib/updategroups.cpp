@@ -46,6 +46,7 @@
 #include <cmath>
 
 #include <unordered_map>
+#include <variant>
 
 #include "gromacs/math/functions.h"
 #include "gromacs/math/units.h"
@@ -57,12 +58,33 @@
 #include "gromacs/topology/mtop_atomloops.h"
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/topology/topology.h"
+#include "gromacs/utility/enumerationhelpers.h"
 #include "gromacs/utility/listoflists.h"
 #include "gromacs/utility/logger.h"
 #include "gromacs/utility/message_string_collector.h"
 
 namespace gmx
 {
+
+//! Reasons why the system can be incompatible with update groups
+enum class IncompatibilityReasons
+{
+    FlexibleConstraint,
+    IncompatibleVsite,
+    VsiteConstructingAtomsSplit,
+    ConstrainedAtomOrder,
+    NoCentralConstraintAtom,
+    Count
+};
+
+//! Strings explaining why the system is incompatible with update groups
+static const EnumerationArray<IncompatibilityReasons, std::string> reasonStrings = {
+    "flexible constraints are present",
+    "an incompatible virtual site type is used",
+    "the construction atoms of a virtual site are only partly with a group of constrained atoms",
+    "atoms that are (in)directly constrained together are interdispersed with other atoms",
+    "there are three or more consecutively coupled constraints"
+};
 
 /*! \brief Returns whether \p moltype contains flexible constraints */
 static bool hasFlexibleConstraints(const gmx_moltype_t& moltype, gmx::ArrayRef<const t_iparams> iparams)
@@ -236,11 +258,11 @@ static std::vector<bool> buildIsParticleVsite(const gmx_moltype_t& moltype)
     return isVsite;
 }
 
-/*! \brief Returns the size of the update group starting at \p firstAtom or 0 when criteria (see updategroups.h) are not met */
-static int detectGroup(int                     firstAtom,
-                       const gmx_moltype_t&    moltype,
-                       const ListOfLists<int>& at2con,
-                       const InteractionList&  ilistConstraints)
+/*! \brief Returns the size of the update group starting at \p firstAtom or an incompatibility reason */
+static std::variant<int, IncompatibilityReasons> detectGroup(int                     firstAtom,
+                                                             const gmx_moltype_t&    moltype,
+                                                             const ListOfLists<int>& at2con,
+                                                             const InteractionList& ilistConstraints)
 {
     /* We should be using moltype.atoms.atom[].ptype for checking whether
      * a particle is a vsite. But the test code can't fill t_atoms,
@@ -274,7 +296,7 @@ static int detectGroup(int                     firstAtom,
                 /* A constructing atom is outside the group,
                  * we can not use update groups.
                  */
-                return 0;
+                return IncompatibilityReasons::VsiteConstructingAtomsSplit;
             }
             lastAtom = std::max(lastAtom, extremes.maxAtom);
         }
@@ -284,7 +306,7 @@ static int detectGroup(int                     firstAtom,
             if (numConstraints == 0)
             {
                 /* We can not have unconstrained atoms in an update group */
-                return 0;
+                return IncompatibilityReasons::ConstrainedAtomOrder;
             }
             /* This atom has at least one constraint.
              * Check whether all constraints are within the group
@@ -297,7 +319,7 @@ static int detectGroup(int                     firstAtom,
             if (extremes.minAtom < firstAtom)
             {
                 /* Constraint to atom outside the "group" */
-                return 0;
+                return IncompatibilityReasons::ConstrainedAtomOrder;
             }
             lastAtom = std::max(lastAtom, extremes.maxAtom);
         }
@@ -314,7 +336,7 @@ static int detectGroup(int                     firstAtom,
         if (extremes.minAtom < firstAtom)
         { // NOLINT bugprone-branch-clone
             /* Constructing atom precedes the group */
-            return 0;
+            return IncompatibilityReasons::VsiteConstructingAtomsSplit;
         }
         else if (extremes.maxAtom <= lastAtom)
         {
@@ -324,7 +346,7 @@ static int detectGroup(int                     firstAtom,
         else if (extremes.minAtom <= lastAtom)
         {
             /* Some, but not all constructing atoms are in the group */
-            return 0;
+            return IncompatibilityReasons::VsiteConstructingAtomsSplit;
         }
     }
 
@@ -334,15 +356,15 @@ static int detectGroup(int                     firstAtom,
     /* Check that at least one atom is constrained to all others */
     if (maxConstraintsPerAtom != numAtomsWithConstraints - 1)
     {
-        return 0;
+        return IncompatibilityReasons::NoCentralConstraintAtom;
     }
 
     return lastAtom - firstAtom + 1;
 }
 
-/*! \brief Returns a list of update groups for \p moltype */
-static RangePartitioning makeUpdateGroupingsPerMoleculeType(const gmx_moltype_t&           moltype,
-                                                            gmx::ArrayRef<const t_iparams> iparams)
+/*! \brief Returns a list of update groups for \p moltype or an incompatibility reason */
+static std::variant<RangePartitioning, IncompatibilityReasons>
+makeUpdateGroupingsPerMoleculeType(const gmx_moltype_t& moltype, gmx::ArrayRef<const t_iparams> iparams)
 {
     RangePartitioning groups;
 
@@ -351,9 +373,13 @@ static RangePartitioning makeUpdateGroupingsPerMoleculeType(const gmx_moltype_t&
      * but since performance for EM/NM is less critical, we do not
      * use update groups to keep the code here simpler.
      */
-    if (hasFlexibleConstraints(moltype, iparams) || hasIncompatibleVsites(moltype, iparams))
+    if (hasFlexibleConstraints(moltype, iparams))
     {
-        return groups;
+        return IncompatibilityReasons::FlexibleConstraint;
+    }
+    if (hasIncompatibleVsites(moltype, iparams))
+    {
+        return IncompatibilityReasons::IncompatibleVsite;
     }
 
     /* Combine all constraint ilists into a single one */
@@ -363,52 +389,42 @@ static RangePartitioning makeUpdateGroupingsPerMoleculeType(const gmx_moltype_t&
     const ListOfLists<int> at2con = make_at2con(
             moltype.atoms.nr, ilistsCombined, iparams, FlexibleConstraintTreatment::Include);
 
-    bool satisfiesCriteria = true;
-
     int firstAtom = 0;
-    while (satisfiesCriteria && firstAtom < moltype.atoms.nr)
+    while (firstAtom < moltype.atoms.nr)
     {
-        int numAtomsInGroup = detectGroup(firstAtom, moltype, at2con, ilistsCombined[F_CONSTR]);
+        const auto detectionResult = detectGroup(firstAtom, moltype, at2con, ilistsCombined[F_CONSTR]);
 
-        if (numAtomsInGroup == 0)
+        if (std::holds_alternative<IncompatibilityReasons>(detectionResult))
         {
-            satisfiesCriteria = false;
+            // Can not use update groups, return the reason for incompatiblity
+            return std::get<IncompatibilityReasons>(detectionResult);
         }
-        else
-        {
-            groups.appendBlock(numAtomsInGroup);
-        }
+
+        const int numAtomsInGroup = std::get<int>(detectionResult);
+
+        groups.appendBlock(numAtomsInGroup);
+
         firstAtom += numAtomsInGroup;
-    }
-
-    if (!satisfiesCriteria)
-    {
-        /* Make groups empty, to signal not satisfying the criteria */
-        groups.clear();
     }
 
     return groups;
 }
 
-std::vector<RangePartitioning> makeUpdateGroupingsPerMoleculeType(const gmx_mtop_t& mtop)
+std::variant<std::vector<RangePartitioning>, std::string> makeUpdateGroupingsPerMoleculeType(const gmx_mtop_t& mtop)
 {
     std::vector<RangePartitioning> updateGroupingsPerMoleculeType;
 
-    bool systemSatisfiesCriteria = true;
     for (const gmx_moltype_t& moltype : mtop.moltype)
     {
-        updateGroupingsPerMoleculeType.push_back(
-                makeUpdateGroupingsPerMoleculeType(moltype, mtop.ffparams.iparams));
+        const auto detectionResult = makeUpdateGroupingsPerMoleculeType(moltype, mtop.ffparams.iparams);
 
-        if (updateGroupingsPerMoleculeType.back().numBlocks() == 0)
+        if (std::holds_alternative<IncompatibilityReasons>(detectionResult))
         {
-            systemSatisfiesCriteria = false;
+            // Can not use update groups, return a string with the reason for incompatiblity
+            return reasonStrings[std::get<IncompatibilityReasons>(detectionResult)];
         }
-    }
 
-    if (!systemSatisfiesCriteria)
-    {
-        updateGroupingsPerMoleculeType.clear();
+        updateGroupingsPerMoleculeType.push_back(std::get<RangePartitioning>(detectionResult));
     }
 
     return updateGroupingsPerMoleculeType;
@@ -777,6 +793,8 @@ UpdateGroups makeUpdateGroups(const gmx::MDLogger&             mdlog,
                               const bool                       systemHasConstraintsOrVsites,
                               const real                       cutoffMargin)
 {
+    GMX_RELEASE_ASSERT(!updateGroupingPerMoleculeType.empty(), "We need the update grouping");
+
     MessageStringCollector messages;
 
     messages.startContext("When checking whether update groups are usable:");
@@ -787,11 +805,6 @@ UpdateGroups makeUpdateGroups(const gmx::MDLogger&             mdlog,
     messages.appendIf(!systemHasConstraintsOrVsites,
                       "No constraints or virtual sites are in use, so it is best not to use update "
                       "groups");
-
-    messages.appendIf(
-            updateGroupingPerMoleculeType.empty(),
-            "At least one moleculetype does not conform to the requirements for using update "
-            "groups");
 
     messages.appendIf(
             getenv("GMX_NO_UPDATEGROUPS") != nullptr,

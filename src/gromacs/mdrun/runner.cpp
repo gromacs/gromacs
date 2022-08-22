@@ -1336,16 +1336,29 @@ int Mdrunner::mdrunner()
 
     // We need to decide on update groups early, as this affects
     // inter-domain communication distances.
-    auto       updateGroupingsPerMoleculeType = makeUpdateGroupingsPerMoleculeType(mtop);
-    const real maxUpdateGroupRadius           = computeMaxUpdateGroupRadius(
-            mtop, updateGroupingsPerMoleculeType, maxReferenceTemperature(*inputrec));
-    const real   cutoffMargin = std::sqrt(max_cutoff2(inputrec->pbcType, box)) - inputrec->rlist;
-    UpdateGroups updateGroups = makeUpdateGroups(mdlog,
-                                                 std::move(updateGroupingsPerMoleculeType),
-                                                 maxUpdateGroupRadius,
-                                                 useDomainDecomposition,
-                                                 systemHasConstraintsOrVsites(mtop),
-                                                 cutoffMargin);
+    auto         updateGroupingsPerMoleculeTypeResult = makeUpdateGroupingsPerMoleculeType(mtop);
+    UpdateGroups updateGroups;
+    if (std::holds_alternative<std::string>(updateGroupingsPerMoleculeTypeResult))
+    {
+        GMX_LOG(mdlog.warning)
+                .asParagraph()
+                .appendTextFormatted("Update groups can not be used for this system because %s",
+                                     std::get<std::string>(updateGroupingsPerMoleculeTypeResult).c_str());
+    }
+    else
+    {
+        auto updateGroupingsPerMoleculeType =
+                std::get<std::vector<RangePartitioning>>(updateGroupingsPerMoleculeTypeResult);
+        const real maxUpdateGroupRadius = computeMaxUpdateGroupRadius(
+                mtop, updateGroupingsPerMoleculeType, maxReferenceTemperature(*inputrec));
+        const real cutoffMargin = std::sqrt(max_cutoff2(inputrec->pbcType, box)) - inputrec->rlist;
+        updateGroups            = makeUpdateGroups(mdlog,
+                                        std::move(updateGroupingsPerMoleculeType),
+                                        maxUpdateGroupRadius,
+                                        useDomainDecomposition,
+                                        systemHasConstraintsOrVsites(mtop),
+                                        cutoffMargin);
+    }
 
     try
     {

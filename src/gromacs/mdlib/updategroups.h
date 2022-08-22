@@ -42,6 +42,7 @@
 #ifndef GMX_MDLIB_UPDATEGROUPS
 #define GMX_MDLIB_UPDATEGROUPS
 
+#include <variant>
 #include <vector>
 
 #include "gromacs/math/vectypes.h"
@@ -57,9 +58,9 @@ class MDLogger;
 class RangePartitioning;
 
 /*! \brief Returns a vector with update groups for each moleculetype in \p mtop
- * or an empty vector when the criteria (see below) are not satisfied.
+ * or an error string when the criteria (see below) are not satisfied.
  *
- * An empty vector is returned when at least one moleculetype does not obey
+ * An error string is returned when at least one moleculetype does not obey
  * the restrictions of update groups, e.g. more than two constraints in a row.
  *
  * Currently valid update groups are:
@@ -75,7 +76,7 @@ class RangePartitioning;
  *
  * \param[in] mtop  The system topology
  */
-std::vector<RangePartitioning> makeUpdateGroupingsPerMoleculeType(const gmx_mtop_t& mtop);
+std::variant<std::vector<RangePartitioning>, std::string> makeUpdateGroupingsPerMoleculeType(const gmx_mtop_t& mtop);
 
 /*! \brief Returns the maximum update group radius
  *
@@ -117,17 +118,19 @@ public:
 
 private:
     //! Whether update groups are in use
-    const bool useUpdateGroups_ = false;
+    bool useUpdateGroups_ = false;
     //! The update groupings within each respective molecule type, empty when not in use
-    const std::vector<RangePartitioning> updateGroupingPerMoleculeType_ = {};
+    std::vector<RangePartitioning> updateGroupingPerMoleculeType_ = {};
     //! The maximum radius of any update group, 0 when not in use
-    const real maxUpdateGroupRadius_ = 0.0_real;
+    real maxUpdateGroupRadius_ = 0.0_real;
 };
 
 /*! \brief Builder for update groups.
  *
  * Checks the conditions for using update groups, and logs a message
  * if they cannot be used, along with the reason why not.
+ *
+ * \p updateGroupingPerMoleculeType can not be empty (is asserted).
  *
  * If PP domain decomposition is not in use, there is no reason to use
  * update groups.

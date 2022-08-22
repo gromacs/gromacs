@@ -177,7 +177,11 @@ TEST_F(UpdateGroupsTest, WithEthaneUA)
         mtop_.ffparams.iparams.push_back(iparams);
     }
 
-    auto updateGroupingsPerMoleculeType = gmx::makeUpdateGroupingsPerMoleculeType(mtop_);
+    auto result = gmx::makeUpdateGroupingsPerMoleculeType(mtop_);
+
+    ASSERT_EQ(std::holds_alternative<std::string>(result), false);
+
+    auto updateGroupingsPerMoleculeType = std::get<std::vector<RangePartitioning>>(result);
 
     ASSERT_EQ(updateGroupingsPerMoleculeType.size(), 1);
     EXPECT_EQ(updateGroupingsPerMoleculeType[0].numBlocks(), 1);
@@ -199,7 +203,11 @@ TEST_F(UpdateGroupsTest, WithMethane)
         mtop_.ffparams.iparams.push_back(iparams);
     }
 
-    auto updateGroupingsPerMoleculeType = gmx::makeUpdateGroupingsPerMoleculeType(mtop_);
+    auto result = gmx::makeUpdateGroupingsPerMoleculeType(mtop_);
+
+    ASSERT_EQ(std::holds_alternative<std::string>(result), false);
+
+    auto updateGroupingsPerMoleculeType = std::get<std::vector<RangePartitioning>>(result);
 
     ASSERT_EQ(updateGroupingsPerMoleculeType.size(), 1);
     EXPECT_EQ(updateGroupingsPerMoleculeType[0].numBlocks(), 1);
@@ -223,7 +231,11 @@ TEST_F(UpdateGroupsTest, WithEthane)
         mtop_.ffparams.iparams.push_back(iparams);
     }
 
-    auto updateGroupingsPerMoleculeType = gmx::makeUpdateGroupingsPerMoleculeType(mtop_);
+    auto result = gmx::makeUpdateGroupingsPerMoleculeType(mtop_);
+
+    ASSERT_EQ(std::holds_alternative<std::string>(result), false);
+
+    auto updateGroupingsPerMoleculeType = std::get<std::vector<RangePartitioning>>(result);
 
     ASSERT_EQ(updateGroupingsPerMoleculeType.size(), 1);
     EXPECT_EQ(updateGroupingsPerMoleculeType[0].numBlocks(), 2);
@@ -247,7 +259,11 @@ TEST_F(UpdateGroupsTest, CheckRadiusCalculationAtDifferentTemperaturesWithEthane
         mtop_.ffparams.iparams.push_back(iparams);
     }
 
-    auto updateGroupingsPerMoleculeType = gmx::makeUpdateGroupingsPerMoleculeType(mtop_);
+    auto result = gmx::makeUpdateGroupingsPerMoleculeType(mtop_);
+
+    ASSERT_EQ(std::holds_alternative<std::string>(result), false);
+
+    auto updateGroupingsPerMoleculeType = std::get<std::vector<RangePartitioning>>(result);
 
     ASSERT_EQ(updateGroupingsPerMoleculeType.size(), 1);
     EXPECT_EQ(updateGroupingsPerMoleculeType[0].numBlocks(), 2);
@@ -274,18 +290,17 @@ TEST_F(UpdateGroupsTest, WithButaneUALogsThatUnsuitableForUpdateGroups)
         mtop_.ffparams.iparams.push_back(iparams);
     }
 
-    auto updateGroupingsPerMoleculeType = gmx::makeUpdateGroupingsPerMoleculeType(mtop_);
+    auto result = gmx::makeUpdateGroupingsPerMoleculeType(mtop_);
 
-    EXPECT_EQ(updateGroupingsPerMoleculeType.size(), 0);
+    ASSERT_EQ(std::holds_alternative<std::string>(result), true);
+
+    EXPECT_EQ(std::get<std::string>(result),
+              "there are three or more consecutively coupled constraints");
+
+    std::vector<RangePartitioning> updateGroupingsPerMoleculeType;
 
     real maxRadius = computeMaxUpdateGroupRadius(mtop_, updateGroupingsPerMoleculeType, temperature_);
     EXPECT_FLOAT_EQ(maxRadius, 0.0);
-
-    logHelper_.expectEntryMatchingRegex(
-            MDLogger::LogLevel::Info,
-            "At least one moleculetype does not conform to the requirements");
-    UpdateGroups updateGroups = makeUpdateGroups(
-            logHelper_.logger(), std::move(updateGroupingsPerMoleculeType), maxRadius, true, true, 1e6_real);
 }
 
 TEST_F(UpdateGroupsTest, WithWaterThreeSite)
@@ -297,7 +312,11 @@ TEST_F(UpdateGroupsTest, WithWaterThreeSite)
         mtop_.ffparams.iparams.push_back(iparams);
     }
 
-    auto updateGroupingsPerMoleculeType = gmx::makeUpdateGroupingsPerMoleculeType(mtop_);
+    auto result = gmx::makeUpdateGroupingsPerMoleculeType(mtop_);
+
+    ASSERT_EQ(std::holds_alternative<std::string>(result), false);
+
+    auto updateGroupingsPerMoleculeType = std::get<std::vector<RangePartitioning>>(result);
 
     ASSERT_EQ(updateGroupingsPerMoleculeType.size(), 1);
     EXPECT_EQ(updateGroupingsPerMoleculeType[0].numBlocks(), 1);
@@ -322,7 +341,11 @@ TEST_F(UpdateGroupsTest, WithWaterFourSite)
         mtop_.ffparams.iparams.push_back(iparams[1]);
     }
 
-    auto updateGroupingsPerMoleculeType = gmx::makeUpdateGroupingsPerMoleculeType(mtop_);
+    auto result = gmx::makeUpdateGroupingsPerMoleculeType(mtop_);
+
+    ASSERT_EQ(std::holds_alternative<std::string>(result), false);
+
+    auto updateGroupingsPerMoleculeType = std::get<std::vector<RangePartitioning>>(result);
 
     ASSERT_EQ(updateGroupingsPerMoleculeType.size(), 1);
     EXPECT_EQ(updateGroupingsPerMoleculeType[0].numBlocks(), 1);
@@ -347,7 +370,11 @@ TEST_F(UpdateGroupsTest, WithFourAtomsWithSettle)
         mtop_.ffparams.iparams.push_back(iparams[1]);
     }
 
-    auto updateGroupingsPerMoleculeType = gmx::makeUpdateGroupingsPerMoleculeType(mtop_);
+    auto result = gmx::makeUpdateGroupingsPerMoleculeType(mtop_);
+
+    ASSERT_EQ(std::holds_alternative<std::string>(result), false);
+
+    auto updateGroupingsPerMoleculeType = std::get<std::vector<RangePartitioning>>(result);
 
     ASSERT_EQ(updateGroupingsPerMoleculeType.size(), 1);
     EXPECT_EQ(updateGroupingsPerMoleculeType[0].numBlocks(), 2);
@@ -372,7 +399,11 @@ TEST_F(UpdateGroupsTest, WithWaterFlexAngle)
         mtop_.ffparams.iparams.push_back(iparams);
     }
 
-    auto updateGroupingsPerMoleculeType = gmx::makeUpdateGroupingsPerMoleculeType(mtop_);
+    auto result = gmx::makeUpdateGroupingsPerMoleculeType(mtop_);
+
+    ASSERT_EQ(std::holds_alternative<std::string>(result), false);
+
+    auto updateGroupingsPerMoleculeType = std::get<std::vector<RangePartitioning>>(result);
 
     ASSERT_EQ(updateGroupingsPerMoleculeType.size(), 1);
     EXPECT_EQ(updateGroupingsPerMoleculeType[0].numBlocks(), 1);
@@ -396,7 +427,11 @@ TEST_F(UpdateGroupsTest, CheckRadiusCalculationAtDifferentTemperaturesWithWaterF
         mtop_.ffparams.iparams.push_back(iparams);
     }
 
-    auto updateGroupingsPerMoleculeType = gmx::makeUpdateGroupingsPerMoleculeType(mtop_);
+    auto result = gmx::makeUpdateGroupingsPerMoleculeType(mtop_);
+
+    ASSERT_EQ(std::holds_alternative<std::string>(result), false);
+
+    auto updateGroupingsPerMoleculeType = std::get<std::vector<RangePartitioning>>(result);
 
     ASSERT_EQ(updateGroupingsPerMoleculeType.size(), 1);
     EXPECT_EQ(updateGroupingsPerMoleculeType[0].numBlocks(), 1);
@@ -426,7 +461,11 @@ TEST_F(UpdateGroupsTest, WithTwoMoltypes)
     mtop_.moltype.emplace_back(waterThreeSite());
     // Note: iparams not accessed for SETTLE when not computing radius
 
-    auto updateGroupingsPerMoleculeType = gmx::makeUpdateGroupingsPerMoleculeType(mtop_);
+    auto result = gmx::makeUpdateGroupingsPerMoleculeType(mtop_);
+
+    ASSERT_EQ(std::holds_alternative<std::string>(result), false);
+
+    auto updateGroupingsPerMoleculeType = std::get<std::vector<RangePartitioning>>(result);
 
     ASSERT_EQ(updateGroupingsPerMoleculeType.size(), 2);
     EXPECT_EQ(updateGroupingsPerMoleculeType[0].numBlocks(), 1);
@@ -449,7 +488,12 @@ TEST_F(UpdateGroupsTest, LogsWhenSizesAreInvalid)
         mtop_.ffparams.iparams.push_back(iparams);
     }
 
-    auto updateGroupingsPerMoleculeType = gmx::makeUpdateGroupingsPerMoleculeType(mtop_);
+    auto result = gmx::makeUpdateGroupingsPerMoleculeType(mtop_);
+
+    ASSERT_EQ(std::holds_alternative<std::string>(result), false);
+
+    auto updateGroupingsPerMoleculeType = std::get<std::vector<RangePartitioning>>(result);
+
     logHelper_.expectEntryMatchingRegex(MDLogger::LogLevel::Info,
                                         "The combination of rlist and box size prohibits");
     UpdateGroups updateGroups = makeUpdateGroups(
@@ -465,7 +509,11 @@ TEST_F(UpdateGroupsTest, LogsWhenUpdateGroupsAreNotUseful)
         mtop_.ffparams.iparams.push_back(iparams);
     }
 
-    auto updateGroupingsPerMoleculeType = gmx::makeUpdateGroupingsPerMoleculeType(mtop_);
+    auto result = gmx::makeUpdateGroupingsPerMoleculeType(mtop_);
+
+    ASSERT_EQ(std::holds_alternative<std::string>(result), false);
+
+    auto updateGroupingsPerMoleculeType = std::get<std::vector<RangePartitioning>>(result);
 
     ASSERT_EQ(updateGroupingsPerMoleculeType.size(), 1);
     EXPECT_EQ(updateGroupingsPerMoleculeType[0].numBlocks(), 2);

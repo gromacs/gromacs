@@ -108,7 +108,9 @@ TEST(UpdateGroupsCog, ComputesCogs)
     mtop.ffparams.iparams.push_back(iparams);
 
     // Run the test
-    auto updateGroupingsPerMoleculeType = makeUpdateGroupingsPerMoleculeType(mtop);
+    auto result = gmx::makeUpdateGroupingsPerMoleculeType(mtop);
+    ASSERT_EQ(std::holds_alternative<std::string>(result), false);
+    auto updateGroupingsPerMoleculeType = std::get<std::vector<RangePartitioning>>(result);
     real temperature                    = 300;
 
     UpdateGroupsCog updateGroupsCog(mtop, updateGroupingsPerMoleculeType, temperature, numAtoms);

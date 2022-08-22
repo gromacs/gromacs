@@ -455,6 +455,9 @@ function(gmx_warn_on_everything target)
     gmx_target_warning_suppression(${target} "-Wno-c++98-compat" HAS_WARNING_NO_CPLUSPLUS98_COMPAT)
     gmx_target_warning_suppression(${target} "-Wno-c++98-compat-pedantic" HAS_WARNING_NO_CPLUSPLUS98_COMPAT_PEDANTIC)
 
+    # We require newer C++ than version 11, so ignore c++11 specific warnings
+    gmx_target_warning_suppression(${target} "-Wno-return-std-move-in-c++11" HAS_WARNING_NO_RETURN_STD_MOVE_IN_CPLUSPLUS11)
+
     # Don't warn for use of OpenMP pragmas in no-omp build
     gmx_target_warning_suppression(${target} "-Wno-source-uses-openmp" HAS_WARNING_NO_SOURCE_USED_OPENMP)
 
