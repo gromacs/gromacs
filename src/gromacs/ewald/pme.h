@@ -212,8 +212,17 @@ void gmx_pme_reinit(gmx_pme_t**       pmedata,
                     real              ewaldcoeff_q,
                     real              ewaldcoeff_lj);
 
-/*! \brief Destroys the PME data structure.*/
+/*! \brief Destroys the PME data structure (including shared data). */
 void gmx_pme_destroy(gmx_pme_t* pme);
+
+/*! \brief Destroys the PME data structure.
+ *
+ * \param pme               The data structure to destroy.
+ * \param destroySharedData Set to \c false if \p pme is a copy created by \ref gmx_pme_reinit,
+ * and only it should be destroyed, while shared data should be preserved. If \c true, the shared
+ * data will be destroyed, like in \c gmx_pme_destroy(gmx_pme_t* pme).
+ * */
+void gmx_pme_destroy(gmx_pme_t* pme, bool destroySharedData);
 
 /*! \brief Do a PME calculation on a CPU for the long range electrostatics and/or LJ.
  *
