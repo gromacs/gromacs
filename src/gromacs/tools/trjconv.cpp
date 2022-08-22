@@ -1114,7 +1114,6 @@ int gmx_trjconv(int argc, char* argv[])
                 }
                 // Read the next frame now, so that we know whether
                 // one exists.
-                nextFrame.step = fr.step;
                 bHaveNextFrame = read_next_frame(oenv, trxin, &nextFrame);
 
 

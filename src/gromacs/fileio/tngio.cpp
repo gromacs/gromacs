@@ -1438,8 +1438,19 @@ gmx_bool gmx_read_next_tng_frame(gmx_tng_trajectory_t gmx_tng_input,
     }
     fr->natoms = numberOfAtoms;
 
+    /* If the current (last read/written) TNG step is recorded use that. Otherwise retrieve it from the frame data. */
+    std::int64_t step;
+    if (gmx_tng_input->lastStepDataIsValid)
+    {
+        step = gmx_tng_input->lastStep;
+    }
+    else
+    {
+        step = fr->step;
+    }
+
     bool nextFrameExists = gmx_get_tng_data_block_types_of_next_frame(
-            gmx_tng_input, fr->step, numRequestedIds, requestedIds, &frameNumber, &nBlocks, &blockIds);
+            gmx_tng_input, step, numRequestedIds, requestedIds, &frameNumber, &nBlocks, &blockIds);
     gmx::unique_cptr<int64_t, gmx::free_wrapper> blockIdsGuard(blockIds);
     if (!nextFrameExists)
     {
@@ -1563,6 +1574,12 @@ gmx_bool gmx_read_next_tng_frame(gmx_tng_trajectory_t gmx_tng_input,
     // Convert the time to ps
     fr->time  = frameTime / gmx::c_pico;
     fr->bTime = (frameTime > 0);
+
+    /* Update the data in the wrapper */
+    gmx_tng_input->lastStepDataIsValid = true;
+    gmx_tng_input->lastStep            = frameNumber;
+    gmx_tng_input->lastTimeDataIsValid = true;
+    gmx_tng_input->lastTime            = frameTime;
 
     // TODO This does not leak, but is not exception safe.
     /* values must be freed before leaving this function */
