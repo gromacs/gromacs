@@ -60,10 +60,10 @@
 #include "domdec_internal.h"
 
 // NOLINTNEXTLINE(misc-redundant-expression)
-constexpr bool supportedLibMpiBuild = ((GMX_LIB_MPI != 0) && (GMX_GPU_CUDA != 0));
+constexpr bool supportedLibMpiBuild =
+        ((GMX_LIB_MPI != 0) && ((GMX_GPU_CUDA != 0) || (GMX_GPU_SYCL != 0)));
 // NOLINTNEXTLINE(misc-redundant-expression)
-constexpr bool supportedThreadMpiBuild =
-        ((GMX_THREAD_MPI != 0) && ((GMX_GPU_CUDA != 0) || GMX_GPU_SYCL != 0));
+constexpr bool supportedThreadMpiBuild = ((GMX_THREAD_MPI != 0) && (GMX_GPU_CUDA != 0));
 
 namespace gmx
 {
