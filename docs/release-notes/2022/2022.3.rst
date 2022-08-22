@@ -50,3 +50,16 @@ Improve mdrun log file energy output formatting
 
 The mdrun log file now prints more energy-field names in abbreviated
 forms so as to avoid exceeding the maximum column lengths available.
+
+Improve warning message about AVX_128_FMA SIMD
+""""""""""""""""""""""""""""""""""""""""""""""
+
+This instruction set only works on early AMD CPUs that support their
+FMA4 extensions. Since Zen1, AMD has instead moved to support FMA3
+(similar to Intel hardware), which unfortunately means SIMD instruction
+sets are NOT incremental. We now detect this for parallel runs and stick
+to vanilla 256-bit AVX, and properly detect when the FMA4 instruction
+set is used on non-compatible hardware and warn why the run is likely to
+crash. To clarify, we have also changed the string to AVX_128_FMA4.
+
+:issue:`4526`
