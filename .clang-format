@@ -88,7 +88,7 @@ IncludeCategories:
   # Private headers. Unfortunately, also matches headers without subdirectories or angle-brackets.
   - Regex:           '.*'
     Priority:        100
-IncludeIsMainRegex: '([-_](test|tests|unittest))?$'
+IncludeIsMainRegex: '(([-_](test|tests|unittest))?([-_][0-9]+)*)$'
 IncludeIsMainSourceRegex: '(\.cu)$'
 IndentPPDirectives: AfterHash
 IndentCaseLabels: true
