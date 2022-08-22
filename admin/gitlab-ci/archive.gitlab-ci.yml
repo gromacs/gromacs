@@ -335,7 +335,7 @@ archive:full-release:
     # but helps to find and cache self-consistent Python and Sphinx details
     # without additional hinting. Once CMakeCache.txt exists, the later stages
     # should work fine without reactivating the venv.
-    - source /root/venv/py3.7/bin/activate
+    - source /root/venv/py3.9/bin/activate
     - tar czf webpage.tar.gz $BUILD_DIR/docs/html/
     - export VERSION=`sed -n -e '/GMX_VERSION_STRING\b/ s/.*"\(.*\)")/\1/p' VersionInfo-partial.cmake.cmakein`
     - python admin/ci-scripts/make-release-build.py --server

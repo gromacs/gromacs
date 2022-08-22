@@ -86,7 +86,7 @@ parsers for tools.
     Instead, inherit from it with the *parents* argument to :py:class:`argparse.ArgumentParser`
 """
 
-parser.add_argument('--cmake', nargs='*', type=str, default=['3.16.3', '3.17.2', '3.18.4', '3.21.2'], # new minimum required versions
+parser.add_argument('--cmake', nargs='*', type=str, default=['3.16.3', '3.17.2', '3.18.4', '3.21.2', '3.24.0'],
                     help='Selection of CMake version to provide to base image. (default: %(default)s)')
 
 compiler_group = parser.add_mutually_exclusive_group()
@@ -122,7 +122,7 @@ parser.add_argument('--tsan', type=str, nargs='?', const='llvm', default=None,
 parser.add_argument('--hipsycl', type=str, nargs='?', default=None,
                     help='Select hipSYCL repository tag/commit/branch.')
 
-parser.add_argument('--rocm', type=str, nargs='?', const='debian', default=None,
+parser.add_argument('--rocm', type=str, nargs='?', const='3.5.1', default=None,
                     help='Select AMD compute engine version.')
 
 parser.add_argument('--intel-compute-runtime', action='store_true', default=False,
@@ -144,7 +144,7 @@ parser.add_argument('--cp2k', type=str, nargs='?', const='8.2', default=None,
                     help='Add build environment for CP2K QM/MM support')
 
 # Supported Python versions for maintained branches.
-_python_versions = ['3.7.7', '3.8.2', '3.9.1']
+_python_versions = ['3.7.13', '3.10.5']
 parser.add_argument('--venvs', nargs='*', type=str, default=_python_versions,
                     help='List of Python versions ("major.minor.patch") for which to install venvs. (default: %(default)s)')
 
@@ -182,7 +182,7 @@ def image_name(configuration: argparse.Namespace) -> str:
     if configuration.intel_compute_runtime:
         elements.append('intel-compute-runtime')
     if configuration.rocm is not None:
-        if (configuration.rocm != 'debian'):
+        if (configuration.rocm != '3.5.1'):
             elements.append('rocm-' + configuration.rocm)
     if configuration.cp2k is not None:
         elements.append('cp2k-' + configuration.cp2k)

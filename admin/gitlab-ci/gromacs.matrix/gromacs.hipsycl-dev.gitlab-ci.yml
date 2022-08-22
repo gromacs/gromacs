@@ -17,7 +17,7 @@ gromacs:hipsycl-rocm:configure:
     - .use-clang:base
     - .use-sycl
     - .rules:merge-and-post-merge-acceptance
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-llvm-14-cuda-11.4.3-hipsycl-c828db0-rocm-5.1
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-llvm-14-cuda-11.4.3-hipsycl-03de8f8-rocm-5.1
   variables:
     CMAKE: /usr/local/cmake-3.18.4/bin/cmake
     CMAKE_SIMD_OPTIONS: "-DGMX_SIMD=AVX2_256"
@@ -34,7 +34,7 @@ gromacs:hipsycl-rocm:build:
     - .before_script:default
     # Not using ccache because it plays poorly with syclcc-launcher
     - .rules:merge-and-post-merge-acceptance
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-llvm-14-cuda-11.4.3-hipsycl-c828db0-rocm-5.1
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-llvm-14-cuda-11.4.3-hipsycl-03de8f8-rocm-5.1
   variables:
     CMAKE: /usr/local/cmake-3.18.4/bin/cmake
   tags:
@@ -49,7 +49,7 @@ gromacs:hipsycl-nvidia-mpi:configure:
     - .use-sycl
     - .use-mpi
     - .rules:weekly-not-for-release
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-llvm-14-cuda-11.4.3-hipsycl-c828db0-rocm-5.1
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-llvm-14-cuda-11.4.3-hipsycl-03de8f8-rocm-5.1
   variables:
     CMAKE: /usr/local/cmake-3.18.4/bin/cmake
     CMAKE_SIMD_OPTIONS: "-DGMX_SIMD=AVX2_256"
@@ -66,7 +66,7 @@ gromacs:hipsycl-nvidia-mpi:build:
     - .before_script:default
     # Not using ccache because it plays poorly with syclcc-launcher
     - .rules:weekly-not-for-release
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-llvm-14-cuda-11.4.3-hipsycl-c828db0-rocm-5.1
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-llvm-14-cuda-11.4.3-hipsycl-03de8f8-rocm-5.1
   variables:
     CMAKE: /usr/local/cmake-3.18.4/bin/cmake
   tags:
@@ -78,7 +78,7 @@ gromacs:hipsycl-nvidia-mpi:test-gpucommupd-MPI:
   extends:
     - .gromacs:base:test
     - .rules:weekly-not-for-release
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-llvm-14-cuda-11.4.3-hipsycl-c828db0-rocm-5.1
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-llvm-14-cuda-11.4.3-hipsycl-03de8f8-rocm-5.1
   variables:
     CMAKE: /usr/local/cmake-3.18.4/bin/cmake
     KUBERNETES_EXTENDED_RESOURCE_NAME: "nvidia.com/gpu"
@@ -97,7 +97,7 @@ gromacs:hipsycl-nvidia-mpi:regressiontest-gpucommupd-MPI:
   extends:
     - .gromacs:base:regressiontest
     - .rules:weekly-not-for-release
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-llvm-14-cuda-11.4.3-hipsycl-c828db0-rocm-5.1
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-llvm-14-cuda-11.4.3-hipsycl-03de8f8-rocm-5.1
   variables:
     CMAKE: /usr/local/cmake-3.18.4/bin/cmake
     KUBERNETES_EXTENDED_RESOURCE_NAME: "nvidia.com/gpu"

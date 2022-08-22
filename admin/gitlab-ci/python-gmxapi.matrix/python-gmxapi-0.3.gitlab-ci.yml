@@ -45,3 +45,10 @@ gmxapi:clang-9:py-3.7:
     - .rules:merge-requests
   variables:
     VENVPATH: "/root/venv/py3.7"
+
+gmxapi:clang-9:py-3.10:
+  extends:
+    - .gmxapi:clang-9
+    - .rules:merge-requests
+  variables:
+    VENVPATH: "/root/venv/py3.10"

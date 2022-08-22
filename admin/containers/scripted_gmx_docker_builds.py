@@ -69,9 +69,9 @@ import argparse
 import collections
 import collections.abc
 import copy
+import packaging.version
 import shlex
 import typing
-from distutils.version import StrictVersion
 
 try:
     import utility
@@ -128,6 +128,17 @@ _rocm_extra_packages = [
     'libelf1',
     'rocfft',
     'rocfft-dev',
+    'rocm-opencl',
+    'rocm-dev',
+]
+
+_rocm_legacy_extra_packages = [
+    # The following require
+    #             apt_keys=['http://repo.radeon.com/rocm/rocm.gpg.key'],
+    #             apt_repositories=['deb [arch=amd64] http://repo.radeon.com/rocm/apt/X.Y.Z/ ubuntu main']
+    'clinfo',
+    'libelf1',
+    'rocfft',
     'rocm-opencl',
     'rocm-dev',
 ]
@@ -289,6 +300,10 @@ def get_rocm_packages(args) -> typing.List[str]:
     if (args.rocm is None):
         return []
     else:
+        if (args.rocm != 'debian'):
+            if (packaging.version.parse(args.rocm) < packaging.version.parse(str(4.2))):
+                return _rocm_legacy_extra_packages
+
         return _rocm_extra_packages
 
 
@@ -494,9 +509,9 @@ def get_cp2k(args):
     if args.gcc is None:
         raise RuntimeError('CP2K build requires GNU compilers')
 
-    make_commands = ['make ARCH=local VERSION=ssmp libcp2k']
+    make_commands = ['make -j$(nproc) ARCH=local VERSION=ssmp libcp2k']
     if args.mpi is not None:
-        make_commands += ['make ARCH=local VERSION=psmp libcp2k']
+        make_commands += ['make -j$(nproc) ARCH=local VERSION=psmp libcp2k']
     make_commands += ['rm -rf ./obj']
 
     return hpccm.building_blocks.generic_build(
@@ -684,10 +699,10 @@ def add_intel_llvm_compiler_build_stage(input_args, output_stages: typing.Mappin
 
     output_stages['compiler_build'] = llvm_stage
 
-def prepare_venv(version: StrictVersion) -> typing.Sequence[str]:
+def prepare_venv(version: packaging.version.Version) -> typing.Sequence[str]:
     """Get shell commands to set up the venv for the requested Python version."""
-    major = version.version[0]
-    minor = version.version[1]  # type: int
+    major = version.major
+    minor = version.minor  # type: int
 
     pyenv = '$HOME/.pyenv/bin/pyenv'
 
@@ -701,9 +716,12 @@ def prepare_venv(version: StrictVersion) -> typing.Sequence[str]:
     # TODO: Get requirements.txt from an input argument.
     commands.append(f"""{venv_path}/bin/python -m pip install --upgrade \
             'breathe' \
+            'build' \
             'cmake>=3.16.3' \
             'flake8>=3.7.7' \
+            'furo' \
             'gcovr>=4.2' \
+            'importlib-resources;python_version<"3.10"' \
             'mpi4py>=3.0.3' \
             'networkx>=2.0' \
             'numpy>1.7' \
@@ -712,9 +730,15 @@ def prepare_venv(version: StrictVersion) -> typing.Sequence[str]:
             'pybind11>2.6' \
             'Pygments>=2.2.0' \
             'pytest>=4.6' \
-            'setuptools>=42' \
+            'python-gitlab' \
+            'setuptools>=61' \
             'Sphinx>=4.0' \
+            'sphinx-argparse' \
+            'sphinx-copybutton' \
+            'sphinx_inline_tabs' \
+            'sphinxcontrib-autoprogram' \
             'sphinxcontrib-plantuml>=0.14' \
+            'versioningit>=2' \
             'wheel'""")
     return commands
 
@@ -745,7 +769,7 @@ def add_python_stages(input_args: argparse.Namespace, *,
                                               _as='pyenv')
     pyenv_stage += hpccm.building_blocks.packages(ospackages=_python_extra_packages)
 
-    for version in [StrictVersion(py_ver) for py_ver in sorted(input_args.venvs)]:
+    for version in [packaging.version.parse(py_ver) for py_ver in sorted(input_args.venvs)]:
         stage_name = 'py' + str(version)
         stage = hpccm.Stage()
         stage += hpccm.primitives.baseimage(image=base,
@@ -910,9 +934,13 @@ def build_stages(args) -> typing.Iterable['hpccm.Stage']:
         )
         os_packages += _intel_compute_runtime_extra_packages
     if args.rocm is not None:
+        dist_string = 'ubuntu'
+        if (args.rocm != 'debian'):
+            if (packaging.version.parse(args.rocm) < packaging.version.parse(str(4.2))):
+                dist_string = 'xenial'
         building_blocks['extra_packages'] += hpccm.building_blocks.packages(
             apt_keys=['http://repo.radeon.com/rocm/rocm.gpg.key'],
-            apt_repositories=[f'deb [arch=amd64] http://repo.radeon.com/rocm/apt/{args.rocm}/ ubuntu main']
+            apt_repositories=[f'deb [arch=amd64] http://repo.radeon.com/rocm/apt/{args.rocm}/ '+dist_string+' main']
         )
     building_blocks['extra_packages'] += hpccm.building_blocks.packages(
         ospackages=os_packages,

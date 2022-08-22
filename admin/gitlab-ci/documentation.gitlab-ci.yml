@@ -60,9 +60,7 @@
     # but helps to find and cache self-consistent Python and Sphinx details
     # without additional hinting. Once CMakeCache.txt exists, the later stages
     # should work fine without reactivating the venv.
-    - source /root/venv/py3.7/bin/activate
-    # TODO(#4553): Remove the following `pip install` once base image is updated.
-    - pip install furo sphinx-copybutton sphinx_inline_tabs
+    - source /root/venv/py3.9/bin/activate
     - cmake ..
       -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
       $CMAKE_COMPILER_SCRIPT
@@ -164,9 +162,7 @@
       mkdir $RELEASE_BUILD_DIR ;
       fi
     - cd $RELEASE_BUILD_DIR
-    - source /root/venv/py3.7/bin/activate
-    # TODO(#4553): Remove the following `pip install` once base image is updated.
-    - pip install furo sphinx-copybutton sphinx_inline_tabs
+    - source /root/venv/py3.9/bin/activate
     - cmake ../$RELEASE_SOURCE/
       -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
       $CMAKE_COMPILER_SCRIPT
@@ -252,8 +248,6 @@ docs:build:
     KUBERNETES_MEMORY_REQUEST: 4Gi
   script:
     - cd $BUILD_DIR
-    # TODO(#4553): Remove the following `pip install` once base image is updated.
-    - /root/venv/py3.7/bin/pip install furo sphinx-argparse sphinxcontrib-autoprogram sphinx-copybutton sphinx_inline_tabs
     - cmake --build . --target manual -- -j4 2>&1 | tee docs/manual/all-output.log
       | grep -i "warning" | grep -v "TeX" | grep -v "Package" || true
     - cmake --build . --target webpage -- -j4 2>&1 | tee webpage.log || true

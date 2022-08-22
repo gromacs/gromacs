@@ -85,6 +85,15 @@ sample_restraint:clang-9:py-3.7:
   needs:
     - job: gromacs:clang-9:build
       artifacts: true
-  tags:
-    - k8s-scilifelab
-  # The dependency means we need to use the same tag restriction as upstream.
+
+sample_restraint:clang-9:py-3.10:
+  extends:
+    - .sample_restraint
+    - .use-clang:base
+    - .rules:merge-requests
+  image: ${CI_REGISTRY_IMAGE}/ci-ubuntu-20.04-llvm-9-cuda-11.0.3
+  variables:
+    VENVPATH: "/root/venv/py3.10"
+  needs:
+    - job: gromacs:clang-9:build
+      artifacts: true
