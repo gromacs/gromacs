@@ -69,22 +69,21 @@ namespace gmx
 
 const std::string& simdString(SimdType s)
 {
-    static const std::map<SimdType, std::string> name = {
-        { SimdType::None, "None" },
-        { SimdType::Reference, "Reference" },
-        { SimdType::Generic, "Generic" },
-        { SimdType::X86_Sse2, "SSE2" },
-        { SimdType::X86_Sse4_1, "SSE4.1" },
-        { SimdType::X86_Avx128Fma, "AVX_128_FMA4" },
-        { SimdType::X86_Avx, "AVX_256" },
-        { SimdType::X86_Avx2, "AVX2_256" },
-        { SimdType::X86_Avx2_128, "AVX2_128" },
-        { SimdType::X86_Avx512, "AVX_512" },
-        { SimdType::X86_Avx512Knl, "AVX_512_KNL" },
-        { SimdType::Arm_NeonAsimd, "ARM_NEON_ASIMD" },
-        { SimdType::Arm_Sve, "ARM_SVE" },
-        { SimdType::Ibm_Vsx, "IBM_VSX" }
-    };
+    static const std::map<SimdType, std::string> name = { { SimdType::None, "None" },
+                                                          { SimdType::Reference, "Reference" },
+                                                          { SimdType::Generic, "Generic" },
+                                                          { SimdType::X86_Sse2, "SSE2" },
+                                                          { SimdType::X86_Sse4_1, "SSE4.1" },
+                                                          { SimdType::X86_Avx128Fma, "AVX_128_FMA" },
+                                                          { SimdType::X86_Avx, "AVX_256" },
+                                                          { SimdType::X86_Avx2, "AVX2_256" },
+                                                          { SimdType::X86_Avx2_128, "AVX2_128" },
+                                                          { SimdType::X86_Avx512, "AVX_512" },
+                                                          { SimdType::X86_Avx512Knl, "AVX_512_KNL" },
+                                                          { SimdType::Arm_NeonAsimd,
+                                                            "ARM_NEON_ASIMD" },
+                                                          { SimdType::Arm_Sve, "ARM_SVE" },
+                                                          { SimdType::Ibm_Vsx, "IBM_VSX" } };
 
     return name.at(s);
 }

@@ -60,6 +60,6 @@ FMA4 extensions. Since Zen1, AMD has instead moved to support FMA3
 sets are NOT incremental. We now detect this for parallel runs and stick
 to vanilla 256-bit AVX, and properly detect when the FMA4 instruction
 set is used on non-compatible hardware and warn why the run is likely to
-crash. To clarify, we have also changed the string to AVX_128_FMA4.
+crash.
 
 :issue:`4526`
