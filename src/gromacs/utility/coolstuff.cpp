@@ -1689,7 +1689,13 @@ std::string getCoolQuote()
         { "Optimist: The glass is 1/2 full. Pessimist: The glass is 1/2 empty. "
           "Excel: The glass is January 2nd.",
           "John Feminella" },
-        { "FORTRAN. Input: reason, output: pleasure", "ORDA, FORTRAN board game" }
+        { "FORTRAN. Input: reason, output: pleasure", "ORDA, FORTRAN board game" },
+        { "gmx fellowship-writing -g grant_name -s protein_structure_involved -o output -m "
+          "method_used -p list_of_pi",
+          "Tanadet Pipatpolkai, while discussing new features for GROMACS" },
+        { "I came up with the new convergence method, it's called a deadline driven convergence. "
+          "My simulation is converged when it hits the deadline.",
+          "Tanadet Pipatpolkai" }
     };
 
     if (beCool())
