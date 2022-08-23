@@ -55,18 +55,10 @@
 #    include "gromacs/gpu_utils/cudautils.cuh"
 #    include "gromacs/gpu_utils/typecasts.cuh"
 #endif
-#include "gromacs/utility/gmxmpi.h"
-
-
-template<typename T>
-static T* asMpiPointer(DeviceBuffer<T>& buffer)
-{
-#if GMX_GPU_CUDA
-    return buffer;
-#else
-    assert(false);
+#if GMX_GPU_SYCL
+#    include "gromacs/gpu_utils/gmxsycl.h"
 #endif
-}
+#include "gromacs/utility/gmxmpi.h"
 
 namespace gmx
 {
@@ -95,7 +87,6 @@ void PmePpCommGpu::Impl::reinit(int size)
 
     // This rank will access PME rank memory directly, so needs to receive the remote PME buffer addresses.
 #if GMX_THREAD_MPI
-
     if (GMX_THREAD_MPI)
     {
         // receive device coordinate buffer address from PME rank
@@ -158,7 +149,7 @@ void PmePpCommGpu::Impl::receiveForceFromPmeGpuAwareMpi(Float3* pmeForcePtr, int
     else
     {
         // Receive data from remote GPU in memory of local GPU
-        MPI_Recv(d_pmeForces_, recvSize * DIM, MPI_FLOAT, pmeRank_, 0, comm_, MPI_STATUS_IGNORE);
+        MPI_Recv(asMpiPointer(d_pmeForces_), recvSize * DIM, MPI_FLOAT, pmeRank_, 0, comm_, MPI_STATUS_IGNORE);
         if (pmeForcePtr != asMpiPointer(d_pmeForces_)) // destination is CPU memory, so finalize transfer with local D2H
         {
             copyFromDeviceBuffer(reinterpret_cast<RVec*>(pmeForcePtr),
@@ -264,7 +255,7 @@ void PmePpCommGpu::sendCoordinatesToPmeFromGpu(DeviceBuffer<RVec>    sendPtr,
                                                int                   sendSize,
                                                GpuEventSynchronizer* coordinatesReadyOnDeviceEvent)
 {
-    impl_->sendCoordinatesToPme(sendPtr, sendSize, coordinatesReadyOnDeviceEvent);
+    impl_->sendCoordinatesToPme(asMpiPointer(sendPtr), sendSize, coordinatesReadyOnDeviceEvent);
 }
 
 void PmePpCommGpu::sendCoordinatesToPmeFromCpu(RVec* sendPtr, int sendSize)

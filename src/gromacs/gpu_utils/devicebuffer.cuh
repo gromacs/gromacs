@@ -393,4 +393,10 @@ void destroyParamLookupTable(DeviceBuffer<ValueType>* deviceBuffer, const Device
     freeDeviceBuffer(deviceBuffer);
 }
 
+template<typename ValueType>
+ValueType* asMpiPointer(DeviceBuffer<ValueType>& buffer)
+{
+    return buffer;
+}
+
 #endif

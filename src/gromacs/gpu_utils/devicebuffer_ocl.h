@@ -359,4 +359,11 @@ void destroyParamLookupTable(DeviceBuffer<ValueType>* deviceBuffer, const Device
 #    pragma clang diagnostic pop
 #endif
 
+template<typename ValueType>
+ValueType* asMpiPointer(DeviceBuffer<ValueType>& /*buffer*/)
+{
+    assert(false);
+    return nullptr;
+}
+
 #endif

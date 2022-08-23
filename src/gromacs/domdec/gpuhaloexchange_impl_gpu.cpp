@@ -65,18 +65,6 @@ constexpr bool supportedThreadMpiBuild = (GMX_THREAD_MPI && GMX_GPU_CUDA);
 namespace gmx
 {
 
-template<typename T>
-static T* asMpiPointer(DeviceBuffer<T>& buffer)
-{
-#if GMX_GPU_CUDA
-    return buffer;
-#elif GMX_GPU_SYCL && GMX_SYCL_USE_USM
-    return buffer ? buffer.buffer_->ptr_ : nullptr;
-#else
-    assert(false);
-#endif
-}
-
 void GpuHaloExchange::Impl::reinitHalo(DeviceBuffer<Float3> d_coordinatesBuffer,
                                        DeviceBuffer<Float3> d_forcesBuffer)
 {

@@ -33,7 +33,7 @@
  */
 /*! \internal \file
  *
- * \brief Implements PME-PP communication using CUDA
+ * \brief Implements backend-agnostic part of GPU-direct PME-PP communication.
  *
  *
  * \author Alan Gray <alang@nvidia.com>
@@ -42,12 +42,13 @@
  */
 #include "gmxpre.h"
 
-#include "pme_force_sender_gpu_impl.h"
-
 #include "config.h"
 
+#include "gromacs/gpu_utils/devicebuffer.h"
 #include "gromacs/gpu_utils/gpueventsynchronizer.h"
 #include "gromacs/utility/gmxmpi.h"
+
+#include "pme_force_sender_gpu_impl.h"
 
 namespace gmx
 {
@@ -95,8 +96,10 @@ void PmeForceSenderGpu::Impl::setForceSendBuffer(DeviceBuffer<Float3> d_f)
     {
         return;
     }
+    GMX_ASSERT(!GMX_GPU_SYCL,
+               "PmeForceSenderGpu does not support SYCL with threadMPI; use libMPI instead.");
 
-#if GMX_MPI
+#if GMX_MPI && GMX_GPU_CUDA
 
     if (localForcePtr_.empty())
     {
@@ -149,7 +152,7 @@ void PmeForceSenderGpu::Impl::sendFToPpGpuAwareMpi(DeviceBuffer<RVec> sendbuf,
     // before sending it to PP ranks
     pmeForcesReady_->waitForEvent();
 
-    MPI_Isend(sendbuf[offset], numBytes, MPI_BYTE, ppRank, 0, comm_, request);
+    MPI_Isend(asMpiPointer(sendbuf) + offset, numBytes, MPI_BYTE, ppRank, 0, comm_, request);
 
 #else
     GMX_UNUSED_VALUE(sendbuf);

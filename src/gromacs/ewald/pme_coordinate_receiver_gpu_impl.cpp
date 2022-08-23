@@ -36,7 +36,7 @@
  * \brief May be used to implement PME-PP GPU comm interfaces for non-GPU builds.
  *
  * Currently, reports and exits if any of the interfaces are called.
- * Needed to satisfy compiler on systems, where CUDA is not available.
+ * Needed to satisfy compiler when compiling without GPU support.
  *
  * \author Alan Gray <alang@nvidia.com>
  *
@@ -50,7 +50,7 @@
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/gmxassert.h"
 
-#if !GMX_GPU_CUDA
+#if !GMX_GPU_CUDA && !GMX_GPU_SYCL
 
 namespace gmx
 {
