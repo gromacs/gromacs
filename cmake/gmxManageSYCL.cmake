@@ -72,6 +72,11 @@ function(_getHipSyclCmakeFlags RETURN_VAR)
     set("${RETURN_VAR}" ${RESULT} PARENT_SCOPE)
 endfunction()
 
+# Common SYCL flags
+if(NOT WIN32 OR GMX_SYCL_HIPSYCL)
+    set(SYCL_CXX_FLAGS_EXTRA "${SYCL_CXX_FLAGS_EXTRA} -ffast-math")
+endif()
+
 if(GMX_SYCL_HIPSYCL)
     set(HIPSYCL_CLANG "${CMAKE_CXX_COMPILER}")
     # -Wno-unknown-cuda-version because Clang-11 complains about CUDA 11.0-11.2, despite working fine with them.
@@ -299,10 +304,6 @@ else()
     
     if(NOT SYCL_CXX_FLAGS_RESULT)
         message(FATAL_ERROR "Cannot compile with SYCL Intel compiler. Try a different compiler or disable SYCL.")
-    endif()
-
-    if(NOT WIN32)
-         set(SYCL_CXX_FLAGS "${SYCL_CXX_FLAGS} -ffast-math")
     endif()
 
     include(gmxManageFFTLibraries)
