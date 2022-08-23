@@ -141,12 +141,12 @@ endif ()
 # compiler wrapper.
 
 pybind11_add_module(_gmxapi
-                    gmxapi/module.cpp
-                    gmxapi/export_context.cpp
-                    gmxapi/export_system.cpp
-                    gmxapi/export_tprfile.cpp
-                    gmxapi/pycontext.cpp
-                    gmxapi/pysystem.cpp
+                    src/cpp/module.cpp
+                    src/cpp/export_context.cpp
+                    src/cpp/export_system.cpp
+                    src/cpp/export_tprfile.cpp
+                    src/cpp/pycontext.cpp
+                    src/cpp/pysystem.cpp
                     )
 
 if (NOT DEFINED gmxapi_VERSION)
@@ -157,19 +157,19 @@ if (NOT DEFINED gmxapi_VERSION)
 endif ()
 if (gmxapi_VERSION VERSION_LESS 0.3.1)
     message(WARNING "Found an old gmxapi library version. Please consider updating your GROMACS installation.")
-    target_sources(_gmxapi PRIVATE gmxapi/export_exceptions_0_2_0.cpp)
+    target_sources(_gmxapi PRIVATE src/cpp/export_exceptions_0_2_0.cpp)
 else()
-    target_sources(_gmxapi PRIVATE gmxapi/export_exceptions_0_3_1.cpp)
+    target_sources(_gmxapi PRIVATE src/cpp/export_exceptions_0_3_1.cpp)
 endif()
 if (gmxapi_VERSION VERSION_GREATER_EQUAL 0.2.1)
-    target_sources(_gmxapi PRIVATE gmxapi/launch_0_2_1.cpp)
+    target_sources(_gmxapi PRIVATE src/cpp/launch_0_2_1.cpp)
 else()
-    target_sources(_gmxapi PRIVATE gmxapi/launch_0_2_0.cpp)
+    target_sources(_gmxapi PRIVATE src/cpp/launch_0_2_0.cpp)
 endif()
 
 target_include_directories(_gmxapi PRIVATE
-                           ${CMAKE_CURRENT_SOURCE_DIR}/gmxapi
-                           ${CMAKE_CURRENT_BINARY_DIR}/gmxapi
+                           ${CMAKE_CURRENT_SOURCE_DIR}/src/cpp
+                           ${CMAKE_CURRENT_BINARY_DIR}/src/cpp
                            )
 
 # RPATH management: make sure build artifacts can find GROMACS library.
@@ -229,7 +229,7 @@ if (GROMACS_IS_DOUBLE)
 else()
     set(_gmx_double "false")
 endif()
-configure_file(gmxapi/gmxconfig.json.in gmxapi/gmxconfig.json)
+configure_file(src/gmxapi/gmxconfig.json.in src/gmxapi/gmxconfig.json)
 unset(_gmx_executable)
 unset(_gmx_bindir)
 unset(_gmx_mpi_type)
@@ -240,7 +240,7 @@ if (GMXAPI_MASTER_PROJECT)
     set_target_properties(_gmxapi PROPERTIES INSTALL_RPATH_USE_LINK_PATH TRUE)
     target_link_libraries(_gmxapi PRIVATE Gromacs::gmxapi)
     # The Python setup.py sets CMAKE_LIBRARY_OUTPUT_DIRECTORY and will be looking for generated files there.
-    file(COPY ${CMAKE_CURRENT_BINARY_DIR}/gmxapi/gmxconfig.json
+    file(COPY ${CMAKE_CURRENT_BINARY_DIR}/src/gmxapi/gmxconfig.json
          DESTINATION ${CMAKE_LIBRARY_OUTPUT_DIRECTORY})
 else()
     # The rest of the logic in this conditional is to support the GMX_PYTHON_PACKAGE option
@@ -269,14 +269,14 @@ else()
                           LIBRARY_OUTPUT_DIRECTORY ${GMXAPI_PYTHON_STAGING_DIR}/gmxapi)
     file(GLOB_RECURSE _py_sources
          CONFIGURE_DEPENDS
-         ${CMAKE_CURRENT_SOURCE_DIR}/gmxapi/*.py)
+         ${CMAKE_CURRENT_SOURCE_DIR}/src/gmxapi/*.py)
     foreach(_package_file IN LISTS _py_sources)
         get_filename_component(_absolute_dir ${_package_file} DIRECTORY)
-        file(RELATIVE_PATH _relative_dir ${CMAKE_CURRENT_SOURCE_DIR} ${_absolute_dir})
+        file(RELATIVE_PATH _relative_dir ${CMAKE_CURRENT_SOURCE_DIR}/src ${_absolute_dir})
         file(COPY ${_package_file} DESTINATION ${GMXAPI_PYTHON_STAGING_DIR}/${_relative_dir})
     endforeach()
     file(COPY setup.py CMakeLists.txt DESTINATION ${GMXAPI_PYTHON_STAGING_DIR})
-    file(COPY ${CMAKE_CURRENT_BINARY_DIR}/gmxapi/gmxconfig.json DESTINATION ${GMXAPI_PYTHON_STAGING_DIR}/gmxapi)
+    file(COPY ${CMAKE_CURRENT_BINARY_DIR}/src/gmxapi/gmxconfig.json DESTINATION ${GMXAPI_PYTHON_STAGING_DIR}/gmxapi)
 
     # Unit test and build docs using PYTHONPATH=$CMAKE_CURRENT_BINARY_DIR/gmxapi_staging
     set_target_properties(_gmxapi PROPERTIES staging_dir ${GMXAPI_PYTHON_STAGING_DIR})

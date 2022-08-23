@@ -179,7 +179,7 @@ If you are building from source code in a local copy of the GROMACS source
 repository, some helpful files allow you to preinstall the Python requirements
 before installing the :py:mod:`gmxapi` package.
 
-    pip install -r python_packaging/src/requirements.txt
+    pip install -r python_packaging/gmxapi/requirements.txt
 
 If building documentation or running tests,
 :command:`pip install -r python_packaging/requirements-docs.txt` or
@@ -455,11 +455,11 @@ Install from source
 You can also install the :py:mod:`gmxapi` Python package from within a local copy of
 the GROMACS source repository. Assuming you have already obtained the GROMACS
 source code and you are in the root directory of the source tree, you will find
-the :py:mod:`gmxapi` Python package sources in the :file:`python_packaging/src` directory.
+the :py:mod:`gmxapi` Python package sources in the :file:`python_packaging/gmxapi` directory.
 
 ::
 
-    cd python_packaging/src
+    cd python_packaging/gmxapi
     pip install -r requirements.txt
     pip install .
 
@@ -495,7 +495,7 @@ source repository using Python ``setuptools``.
 Example::
 
     pip install --upgrade setuptools wheel pybind11 cmake
-    cd python_packaging/src
+    cd python_packaging/gmxapi
     python setup.py sdist
 
 This command will create a ``dist`` directory containing a source distribution
@@ -507,7 +507,7 @@ The new `build <https://pypa-build.readthedocs.io/en/latest/>`__ module is somew
 It automatically manages a temporary venv with the necessary dependencies::
 
     pip install --upgrade build
-    cd python_packaging/src
+    cd python_packaging/gmxapi
     python -m build --sdist .
 
 .. seealso::
@@ -589,7 +589,7 @@ you can run the Python test suite from the GROMACS source tree.
 Example::
 
     # Assuming you are in the root directory of the repository:
-    pytest python_packaging/src/test/
+    pytest python_packaging/gmxapi/test/
 
 Refer to :file:`python_packaging/README.md` for more detailed information.
 

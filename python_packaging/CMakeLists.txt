@@ -64,7 +64,7 @@
 # For basic building and testing of the Python package, we don't necessarily
 # need to create a distribution archive or install the Python package outside
 # of the build tree. We can use a CMake ExternalProject to build and install the
-# ``_gmxapi`` binary extension module from `python_packaging/src` into the main
+# ``_gmxapi`` binary extension module from `python_packaging/gmxapi` into the main
 # project build tree (note ``ExternalProject_add()`` option ``INSTALL_DIR``).
 # If avoiding Python packaging tools in this way, the Python source files (``.py`` files)
 # will have to be copied explicitly in additional CMake ``install(FILES)`` directives,
@@ -84,10 +84,10 @@
 #
 # To drive the packaging of a Python package distribution archive
 # by a higher-level CMake configuration, a CMakeLists.txt file at this level would
-# 1. configure: copy the contents of `src` to the build directory, potentially
+# 1. configure: copy the contents of `gmxapi` to the build directory, potentially
 #    configuring version info and CMakeToolchain for GROMACS
-# 2. build: run (cd $CMAKE_CURRENT_BINARY_DIR/src && python setup.py sdist),
-#    producing $CMAKE_CURRENT_BINARY_DIR/src/dist/gmxapi-0.1.0.dev0+fr7.tar.gz or similar
+# 2. build: run (cd $CMAKE_CURRENT_BINARY_DIR/gmxapi && python setup.py sdist),
+#    producing $CMAKE_CURRENT_BINARY_DIR/gmxapi/dist/gmxapi-0.1.0.dev0+fr7.tar.gz or similar
 #    (add_custom_command(OUTPUT $sdist_name ...) where sdist_name is determined with
 #    `python setup.py --full-name` and a choice of argument for `python setup.py sdist --formats`
 # 3. install: copy the source distribution to $GROMACS_INSTALL_DIR/sdist/ or something
@@ -99,5 +99,5 @@
 #    4. run `pytest copy_of_src/test`
 
 set(PYBIND11_PYTHON_VERSION "3")
-add_subdirectory(src)
+add_subdirectory(gmxapi)
 add_subdirectory(sample_restraint)

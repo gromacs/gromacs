@@ -11,7 +11,7 @@
  * Contains a lot of boiler plate that is being generalized and migrate out of this file, but other
  * pair restraints can be implemented by following the example in this and ``ensemblepotential.cpp``.
  * The ``CMakeLists.txt`` file will need to be updated if you add additional source files, and
- * ``src/pythonmodule/export_plugin.cpp`` will need to be updated if you add or change the name of
+ * ``gmxapi/pythonmodule/export_plugin.cpp`` will need to be updated if you add or change the name of
  * potentials.
  *
  * \author M. Eric Irrgang <ericirrgang@gmail.com>

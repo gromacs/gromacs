@@ -178,7 +178,7 @@ private:
  * \brief Template for MDModules from restraints.
  *
  * Allows a GROMACS module to be produced easily from the provided class. Refer to
- * src/pythonmodule/export_plugin.cpp for how this template is used.
+ * gmxapi/pythonmodule/export_plugin.cpp for how this template is used.
  *
  * \tparam R a class implementing the gmx::IRestraintPotential interface.
  *

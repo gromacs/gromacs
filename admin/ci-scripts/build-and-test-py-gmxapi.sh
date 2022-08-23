@@ -23,7 +23,7 @@
 # Make sure the script errors if any commands error.
 set -e
 
-pushd python_packaging/src
+pushd python_packaging/gmxapi
   # Make sure to delete any accidentally lingering build artifacts.
   rm -rf build dist
   # Build and install the gmxapi Python package.
@@ -39,7 +39,7 @@ pushd python_packaging/src
 popd
 
 # Run Python unit tests.
-python -m pytest python_packaging/src/test --junitxml="$PY_UNIT_TEST_XML" --threads=2
+python -m pytest python_packaging/gmxapi/test --junitxml="$PY_UNIT_TEST_XML" --threads=2
 
 # Note: Multiple pytest processes getting --junitxml output file argument
 # may cause problems, so we set the option on only one of the launched processes.
@@ -47,7 +47,7 @@ python -m pytest python_packaging/src/test --junitxml="$PY_UNIT_TEST_XML" --thre
 # https://www.open-mpi.org/doc/v3.0/man1/mpiexec.1.php
 PROGRAM=("$(which python)" -m mpi4py -m pytest \
         -p no:cacheprovider \
-        "$PWD"/python_packaging/src/test \
+        "$PWD"/python_packaging/gmxapi/test \
         --threads=1)
 if [ -x "$(which mpiexec)" ]; then
     PYTHONDONTWRITEBYTECODE=1 \

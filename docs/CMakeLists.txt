@@ -520,7 +520,7 @@ if (SPHINX_FOUND)
 
     set(SPHINX_CONFIG_FILE ${SPHINX_INPUT_DIR}/conf.py)
     if (GMX_PYTHON_PACKAGE)
-        set(GMXAPI_PYTHON_STAGING_DIR ${CMAKE_BINARY_DIR}/python_packaging/src/gmxapi_staging)
+        set(GMXAPI_PYTHON_STAGING_DIR ${CMAKE_BINARY_DIR}/python_packaging/gmxapi/gmxapi_staging)
         # TODO: Resolve circular reference. We would like to get the CMake build-time directory for
         # the gmxapi Python package from the _gmxapi target, as we do when building sample_restraint.
         # Instead of the above hard-coded path, how can we do

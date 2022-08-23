@@ -19,7 +19,7 @@ set -e
 
 # Build and install gmxapi python package from local source.
 # Note that tool chain may be provided differently across GROMACS versions.
-python -m pip install --no-build-isolation --no-cache-dir --no-deps --no-index python_packaging/src
+python -m pip install --no-build-isolation --no-cache-dir --no-deps --no-index python_packaging/gmxapi
 
 pushd python_packaging/sample_restraint
   rm -rf build
