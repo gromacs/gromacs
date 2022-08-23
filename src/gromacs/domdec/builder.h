@@ -95,7 +95,7 @@ public:
                                bool                              useGpuForNonbonded,
                                bool                              useGpuForPme,
                                bool                              useGpuForUpdate,
-                               bool*                             useGpuDirectHalo,
+                               bool                              useGpuDirectHalo,
                                bool                              canUseGpuPmeDecomposition);
     //! Destructor
     ~DomainDecompositionBuilder();

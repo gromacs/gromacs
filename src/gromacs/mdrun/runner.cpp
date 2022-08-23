@@ -1432,7 +1432,7 @@ int Mdrunner::mdrunner()
                 useGpuForNonbonded,
                 useGpuForPme,
                 useGpuForUpdate,
-                &useGpuDirectHalo,
+                useGpuDirectHalo,
                 devFlags.enableGpuPmeDecomposition);
     }
     else
