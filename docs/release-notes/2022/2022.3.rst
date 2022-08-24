@@ -32,7 +32,7 @@ Fixes that affect portability
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Further fix to nvcc flag detection
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+""""""""""""""""""""""""""""""""""
 
 Version 2022.1 fixed a nvcc flag detection issue for gcc version 11,
 but this fix resulted in issues for older gcc versions. Version 2022.2
@@ -41,6 +41,14 @@ versions. This release provides a fix that should prevent this issue
 for all gcc versions.
 
 :issue:`4539`
+
+Document incompatiblity of gcc-11 and nvcc 11.6.1
+"""""""""""""""""""""""""""""""""""""""""""""""""
+
+A known incompatiblity between the default gcc and nvcc compiler on
+Ubuntu 22.04 has been documented, with a guide how to circumvent the issue.
+
+:issue:`4574`
 
 Miscellaneous
 ^^^^^^^^^^^^^
