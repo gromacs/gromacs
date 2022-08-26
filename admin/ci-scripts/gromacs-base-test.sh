@@ -28,8 +28,14 @@ ctest -D $CTEST_RUN_MODE --output-on-failure | tee ctestLog.log || true
 
 EXITCODE=$?
 
+if [[ "$CTEST_RUN_MODE" == "ExperimentalMemCheck" ]] ; then
+    TEST_XML_OUTPUT="DynamicAnalysis.xml"
+else
+    TEST_XML_OUTPUT="Test.xml"
+fi
+
 awk '/The following tests FAILED/,/^Errors while running CTest|^$/' ctestLog.log | tee ctestErrors.log
-xsltproc $CI_PROJECT_DIR/scripts/CTest2JUnit.xsl Testing/`head -n 1 < Testing/TAG`/*.xml > JUnitTestResults.xml
+xsltproc $CI_PROJECT_DIR/scripts/CTest2JUnit.xsl Testing/`head -n 1 < Testing/TAG`/$TEST_XML_OUTPUT > JUnitTestResults.xml
 if [ -s ctestErrors.log ] || [ $EXITCODE != 0 ] ; then
     echo "Error during running ctest";
     exit 1;
