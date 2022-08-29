@@ -248,19 +248,27 @@ docs:build:
     KUBERNETES_MEMORY_REQUEST: 4Gi
   script:
     - cd $BUILD_DIR
+    - cmake --build . --target doxygen-all -- -j4 2>&1 | tee docs/doxygen-all.log
+    - cmake --build . --target sphinx-programs -- -j4 2>setupErrors.log | tee docs/setup.log || true
+    - |
+      if [ ! -f setupErrors.log -o -s setupErrors.log ] ; then
+        echo "Errors while setting up Sphinx dependencies."
+        [ -f setupErrors.log ] && cat setupErrors.log
+        exit 1
+      fi
     - cmake --build . --target manual -- -j4 2>&1 | tee docs/manual/all-output.log
       | grep -i "warning" | grep -v "TeX" | grep -v "Package" || true
     - cmake --build . --target webpage -- -j4 2>&1 | tee webpage.log || true
     - grep "WARNING:" docs/manual/all-output.log > pythonErrors.log || true
     - grep -i "error" docs/sphinx-*.log > sphinxDiagnostics.log || true
     - grep -i "warning" docs/sphinx-*.log >> sphinxDiagnostics.log || true
-    - grep -e "error:" -e "warning:" webpage.log > doxygenErrors.log || true
-    - grep -e "ERROR:" -e "WARNING:" -e '[Ee]xception' webpage.log | grep -v "is not documented" | grep -v "exceptions.h" > sphinxErrors.log || true
+    - grep -e "error:" -e "warning:" docs/doxygen-all.log > doxygenErrors.log || true
+    - grep -e "ERROR:" -e "WARNING:" -e '[Ee]xception' webpage.log > sphinxErrors.log || true
 # TODO(#4543): Resolve various warnings and errors from doxygen and its supporting tools.
 #    - if [ -s doxygenErrors.log ] ; then echo "Found errors during doxygen build"; cat doxygenErrors.log; exit 1; fi
     - |
       if [ ! -f pythonErrors.log -o -s pythonErrors.log ] ; then
-        echo "Found Python Errors during manual build"
+        echo "Found Python Errors during (latex) manual build"
         cat pythonErrors.log
         exit 1
       fi
@@ -289,7 +297,9 @@ docs:build:
       - $BUILD_DIR/docs/doxygen/doxygen-user.log
       - $BUILD_DIR/docs/doxygen/doxygen-lib.log
       - $BUILD_DIR/docs/doxygen/doxygen-full.log
-      - $BUILD_DIR/docs/sphinx-html.log
+      - $BUILD_DIR/docs/doxygen-all.log
+      - $BUILD_DIR/docs/setup.log
+      - $BUILD_DIR/docs/sphinx-*.log
 
 webpage:build:
   extends:
