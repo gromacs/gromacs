@@ -25,6 +25,15 @@ decomposition.
 
 :issue:`4533`
 
+Settings of lambda-only replica exchange is mistakenly routed to temperature+lambda branch
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+When replica exchange of lambda-only mode is enabled, all reference temperatures ref-t
+are the same among replicas. However, another branch temperature+lambda is used according
+to log messages.
+
+:issue:`4580`
+
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
 
