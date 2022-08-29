@@ -27,7 +27,7 @@ pushd python_packaging/sample_restraint
   pushd build
     # TODO: Update with respect to https://gitlab.com/gromacs/gromacs/-/issues/3133
     cmake .. \
-      -C $GROMACS_ROOT/share/cmake/gromacs/gromacs-hints.cmake \
+      -C $GROMACS_ROOT/share/cmake/gromacs${GMX_SUFFIX}/gromacs-hints${GMX_SUFFIX}.cmake \
       -DPYTHON_EXECUTABLE=`which python` \
       -DGMXAPI_EXTENSION_DOWNLOAD_PYBIND=ON
     make -j4 tests

@@ -91,13 +91,14 @@ if(MPIEXEC_EXECUTABLE)
         set(GMXAPI_MPI4PY_FOUND TRUE CACHE INTERNAL "Suppress checking for Python mpi4py module.")
     endif()
 
-    # TODO(#4423) Use 2 ranks once #4423 is resolved.
+    # In case this output becomes too noisy or confusing, Note:
     #    For Multiple Instruction Multiple Data Model for OpenMPI mpirun, we can
     #    make the non-root rank less noisy by providing different argv after a colon (`:`)
     #    (https://www.open-mpi.org/doc/v3.0/man1/mpiexec.1.php)
     add_custom_target(gmxapi_pytest_mpi
-                      COMMAND ${MPIEXEC_EXECUTABLE} -n 1 ${PYTHON_EXECUTABLE} -m mpi4py -m pytest --log-cli-level
-                          ERROR ${CMAKE_CURRENT_SOURCE_DIR}
+                      COMMAND ${MPIEXEC_EXECUTABLE} -n 2
+                        ${PYTHON_EXECUTABLE} -m mpi4py -m pytest --log-cli-level ERROR
+                        ${CMAKE_CURRENT_SOURCE_DIR}
                       DEPENDS _gmxapi
                       WORKING_DIRECTORY ${GMXAPI_PYTHON_STAGING_DIR})
     # The current test fixtures require the `gmx` tool-wrapper executable.

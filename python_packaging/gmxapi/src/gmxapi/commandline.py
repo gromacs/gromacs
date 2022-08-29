@@ -55,24 +55,11 @@ from gmxapi.datamodel import NDArray
 from gmxapi.exceptions import MissingImplementationError
 from gmxapi.exceptions import UsageError
 from gmxapi.operation import OutputCollectionDescription
+from gmxapi.utility import config as _config
 
 # Module-level logger
 logger = root_logger.getChild('commandline')
 logger.info('Importing {}'.format(__name__))
-
-
-@functools.lru_cache()
-def _config() -> dict:
-    """Get the GROMACS configuration detected during installation.
-
-    If this appears to be a useful function, it may become part of the regular
-    interface, but it is currently unadvertised.
-    """
-    import json
-    from importlib.resources import open_text
-    with open_text('gmxapi', 'gmxconfig.json') as textfile:
-        config = json.load(textfile)
-    return config
 
 
 @functools.lru_cache()

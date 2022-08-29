@@ -11,7 +11,12 @@ import os
 
 try:
     import mpi4py.MPI as _MPI
+
+    rank_number = _MPI.COMM_WORLD.Get_rank()
+    comm_size = _MPI.COMM_WORLD.Get_size()
 except (ImportError, ModuleNotFoundError):
+    rank_number = 0
+    comm_size = 1
     _MPI = None
 
 import gmxapi as gmx
@@ -31,6 +36,13 @@ logging.getLogger().addHandler(ch)
 
 logger = logging.getLogger()
 
+mpi_support = pytest.mark.skipif(
+    comm_size > 1
+    and gmx.utility.config()['gmx_mpi_type'] == 'library'
+    and not gmx.version.has_feature('mpi_comm_integration'),
+    reason="Multi-rank MPI contexts require gmxapi 0.4."
+)
+
 
 def test_import():
     # Suppress inspection warning outside of testing context.
@@ -39,23 +51,17 @@ def test_import():
     assert myplugin
 
 
+@mpi_support
 @pytest.mark.usefixtures("cleandir")
 def test_binding_protocol(spc_water_box, mdrun_kwargs):
     """Test that gmxapi successfully attaches MD plugins."""
     import myplugin
 
-    if _MPI is not None:
-        _size = _MPI.COMM_WORLD.Get_size()
-        _rank = _MPI.COMM_WORLD.Get_rank()
-    else:
-        _size = 1
-        _rank = 0
-
     tpr_filename = spc_water_box
     logger.info("Testing plugin potential with input file {}".format(os.path.abspath(tpr_filename)))
 
     assert gmx.version.api_is_at_least(0, 2, 1)
-    md = from_tpr([tpr_filename] * _size, append_output=False, **mdrun_kwargs)
+    md = from_tpr([tpr_filename] * comm_size, append_output=False, **mdrun_kwargs)
 
     potential = WorkElement(namespace="myplugin",
                             operation="null_restraint",
@@ -77,6 +83,7 @@ def test_binding_protocol(spc_water_box, mdrun_kwargs):
             assert restraint.count() > 1
 
 
+@mpi_support
 @pytest.mark.usefixtures("cleandir")
 def test_ensemble_potential_nompi(spc_water_box, mdrun_kwargs):
     """Test ensemble potential without an ensemble.
@@ -114,6 +121,7 @@ def test_ensemble_potential_nompi(spc_water_box, mdrun_kwargs):
         session.run()
 
 
+@mpi_support
 @pytest.mark.withmpi_only
 @pytest.mark.usefixtures("cleandir")
 def test_ensemble_potential_withmpi(spc_water_box, mdrun_kwargs):

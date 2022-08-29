@@ -4,7 +4,7 @@
 #   OS: Ubuntu oldest supported
 #   GPU: unspecified
 #   GROMACS: main
-#   GROMACS MPI: thread-MPI
+#   GROMACS MPI: OpenMPI
 #   gmxapi: as per GROMACS main
 #   client code:
 #    * sample_restraint as bundled with GROMACS main
@@ -14,26 +14,34 @@
 #   GROMACS branch: merge request target branch
 #   gmxapi Python package: according to merge request target branch
 #   sample code: according to merge request target branch
-#   compiler: clang-9
+#   compiler: clang-13
 
-sample_taf:tmpi:
+sample_taf:openmpi-double:
   extends:
     - .sample_taf
     - .rules:merge-requests
-  image: ${CI_REGISTRY_IMAGE}/ci-ubuntu-20.04-llvm-9-cuda-11.0.3
+  image: ${CI_REGISTRY_IMAGE}/ci-ubuntu-20.04-llvm-13
   variables:
-    CMAKE: /usr/local/cmake-3.21.2/bin/cmake
+    KUBERNETES_CPU_LIMIT: 2
+    KUBERNETES_CPU_REQUEST: 2
+    KUBERNETES_MEMORY_LIMIT: 2Gi
+    KUBERNETES_MEMORY_REQUEST: 2Gi
+    CMAKE: "/usr/local/cmake-3.16.3/bin/cmake"
+    GMX_SUFFIX: "_mpi_d"
+    GMX_DOUBLE: "ON"
   needs:
-    - job: gromacs:clang-9:build
+    - job: gromacs:clang-13-mpi:build
 
-sample_restraint:tmpi:
+sample_restraint:openmpi-double:
   extends:
     - .sample_restraint
     - .use-clang:base
     - .rules:merge-requests
-  image: ${CI_REGISTRY_IMAGE}/ci-ubuntu-20.04-llvm-9-cuda-11.0.3
+  image: ${CI_REGISTRY_IMAGE}/ci-ubuntu-20.04-llvm-13
   variables:
-    VENVPATH: "/root/venv/py3.7"
+    GMX_SUFFIX: "_mpi_d"
+    GMX_DOUBLE: "ON"
+    VENVPATH: "/root/venv/py3.10"
   needs:
-    - job: gromacs:clang-9:build
+    - job: gromacs:clang-13-mpi:build
       artifacts: true

@@ -1,0 +1,48 @@
+# Test goal: Integration testing for gmxapi support and client Python package.
+# Test intents (should change rarely and conservatively):
+#   OS: Ubuntu oldest supported
+#   GPU: unspecified
+#   GROMACS: according to merge request target branch
+#   GROMACS MPI: thread-MPI
+#   gmxapi: library as bundled with GROMACS
+#   Scope: build, install, test
+# Test implementation choices (free to change as needed):
+#   GROMACS branch: repository version
+#   gmxapi Python package: sources from python_packaging/
+#   compiler: clang-9
+#   Features: regular precision FP
+
+.gmxapi:clang-9:
+  extends:
+    - .variables:default
+    - .use-clang:base
+  image: ${CI_REGISTRY_IMAGE}/ci-ubuntu-20.04-llvm-9-cuda-11.0.3
+  stage: test
+  variables:
+    KUBERNETES_CPU_LIMIT: 2
+    KUBERNETES_CPU_REQUEST: 2
+    KUBERNETES_MEMORY_LIMIT: 2Gi
+    KUBERNETES_MEMORY_REQUEST: 2Gi
+    PY_UNIT_TEST_XML: $CI_PROJECT_DIR/py-JUnitTestResults.xml
+    PY_MPI_UNIT_TEST_XML: $CI_PROJECT_DIR/py-mpi-JUnitTestResults.xml
+  script:
+    - source $INSTALL_DIR/bin/GMXRC
+    - source $VENVPATH/bin/activate
+    - GROMACS_ROOT=$PWD/$INSTALL_DIR OMP_NUM_THREADS=1 bash -x admin/ci-scripts/build-and-test-py-gmxapi.sh
+  artifacts:
+    reports:
+      junit:
+        - $PY_UNIT_TEST_XML
+        - $PY_MPI_UNIT_TEST_XML
+    when: always
+    expire_in: 1 week
+  needs:
+    - job: gromacs:clang-9:build
+      artifacts: true
+
+gmxapi:clang-9:py-3.10:
+  extends:
+    - .gmxapi:clang-9
+    - .rules:merge-requests
+  variables:
+    VENVPATH: "/root/venv/py3.10"

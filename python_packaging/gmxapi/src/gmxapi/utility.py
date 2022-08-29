@@ -32,13 +32,15 @@
 # the research papers on the package. Check out https://www.gromacs.org.
 
 """Provide some additional utilities."""
+import functools
 import os
+from types import MappingProxyType
 
 from gmxapi.operation import function_wrapper
 
 
-@function_wrapper(output = {'path': str})
-def join_path(first: str, second: str, output = None) -> str:
+@function_wrapper(output={'path': str})
+def join_path(first: str, second: str, output=None):
     """Get a Future path for use in data flow.
 
     This is useful when a base path or filename is not known until runtime.
@@ -47,3 +49,23 @@ def join_path(first: str, second: str, output = None) -> str:
         output.path (str): *first* and *second*, joined by the native filesystem path separator.
     """
     output.path = os.path.join(first, second)
+
+
+@functools.lru_cache()
+def config():
+    """Get the GROMACS configuration detected during installation.
+
+    Returns read-only dictionary proxy to file written during installation.
+    The :py:class:`~typing.Mapping` contains information about the supporting
+    GROMACS installation that was used to configure the Python package
+    installation. The exact keys in the Mapping is not formally specified,
+    and mostly for internal use.
+
+    .. versionadded:: 0.4
+
+    """
+    import json
+    from importlib.resources import open_text
+    with open_text('gmxapi', 'gmxconfig.json') as textfile:
+        _config = json.load(textfile)
+    return MappingProxyType(_config)

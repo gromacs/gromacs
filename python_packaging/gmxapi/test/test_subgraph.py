@@ -32,6 +32,8 @@
 # the research papers on the package. Check out https://www.gromacs.org.
 import os
 
+import pytest
+
 import gmxapi as gmx
 
 try:
@@ -48,6 +50,13 @@ except ImportError:
     MPI = None
 else:
     rank_tag = 'rank{}:'.format(rank_number)
+
+mpi_support = pytest.mark.skipif(
+    comm_size > 1
+    and gmx.utility.config()['gmx_mpi_type'] == 'library'
+    and not gmx.version.has_feature('mpi_comm_integration'),
+    reason="Multi-rank MPI contexts require gmxapi 0.4."
+)
 
 
 @gmx.function_wrapper(output={'data': float})
@@ -94,6 +103,7 @@ def _is_new(current_cpt: str, output):
         output.data = True
 
 
+@mpi_support
 def test_subgraph_simulation_extension(spc_water_box, mdrun_kwargs):
     tpr_list = gmx.read_tpr([spc_water_box] * comm_size)
     input_list = gmx.modify_input(tpr_list, parameters={'nsteps': 10 ** 6})

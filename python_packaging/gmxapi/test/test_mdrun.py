@@ -77,6 +77,15 @@ else:
 #    logging.getLogger().addHandler(ch)
 
 
+mpi_support = pytest.mark.skipif(
+    comm_size > 1
+    and gmx.utility.config()['gmx_mpi_type'] == 'library'
+    and not gmx.version.has_feature('mpi_comm_integration'),
+    reason="Multi-rank MPI contexts require gmxapi 0.4."
+)
+
+
+@mpi_support
 @pytest.mark.usefixtures('cleandir')
 def test_run_from_tpr(spc_water_box, mdrun_kwargs):
     assert os.path.exists(spc_water_box)
@@ -98,6 +107,7 @@ def test_run_from_tpr(spc_water_box, mdrun_kwargs):
         assert 'starting mdrun' in fh.read()
 
 
+@mpi_support
 @pytest.mark.usefixtures('cleandir')
 def test_mdrun_runtime_args(spc_water_box, caplog, mdrun_kwargs):
     """Test that *runtime_args* is respected.
@@ -136,6 +146,7 @@ def test_mdrun_runtime_args(spc_water_box, caplog, mdrun_kwargs):
                 assert md.output.trajectory.result()[0] != md.output.trajectory.result()[1]
 
 
+@mpi_support
 @pytest.mark.withmpi_only
 @pytest.mark.usefixtures('cleandir')
 def test_mdrun_parallel_runtime_args(spc_water_box, mdrun_kwargs):
@@ -177,6 +188,7 @@ def test_mdrun_parallel_runtime_args(spc_water_box, mdrun_kwargs):
     assert md.output.trajectory.result()[0] != md.output.trajectory.result()[1]
 
 
+@mpi_support
 @pytest.mark.usefixtures('cleandir')
 def test_extend_simulation_via_checkpoint(spc_water_box, mdrun_kwargs, caplog):
     assert os.path.exists(spc_water_box)
@@ -222,6 +234,7 @@ def test_extend_simulation_via_checkpoint(spc_water_box, mdrun_kwargs, caplog):
             # TODO: Check more rigorously when we can read trajectory files.
 
 
+@mpi_support
 @pytest.mark.withmpi_only
 @pytest.mark.usefixtures('cleandir')
 def test_run_trivial_ensemble(spc_water_box, caplog, mdrun_kwargs):
@@ -256,6 +269,7 @@ def test_run_trivial_ensemble(spc_water_box, caplog, mdrun_kwargs):
                 assert os.path.exists(md.output.trajectory.result()[rank_number])
 
 
+@mpi_support
 @pytest.mark.usefixtures('cleandir')
 def test_run_from_read_tpr_op(spc_water_box, caplog, mdrun_kwargs):
     with caplog.at_level(logging.DEBUG):
@@ -268,6 +282,7 @@ def test_run_from_read_tpr_op(spc_water_box, caplog, mdrun_kwargs):
                 assert os.path.exists(md.output.trajectory.result())
 
 
+@mpi_support
 @pytest.mark.usefixtures('cleandir')
 def test_run_from_modify_input_op(spc_water_box, caplog, mdrun_kwargs):
     with caplog.at_level(logging.DEBUG):
