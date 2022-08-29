@@ -73,6 +73,7 @@ class DsspModuleTest :
 {
 };
 
+// NOLINTNEXTLINE(cppcoreguidelines-owning-memory)
 TEST_P(DsspModuleTest, WorksWithCutoffs)
 {
     auto              params    = GetParam();
