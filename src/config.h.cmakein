@@ -179,9 +179,6 @@
 /* Fallback path for VMD plug-ins */
 #define GMX_VMD_PLUGIN_PATH "@GMX_VMD_PLUGIN_PATH@"
 
-/* Default path for DSSP program */
-#define GMX_DSSP_PROGRAM_PATH "@GMX_DSSP_PROGRAM_PATH@"
-
 /* Define when pthreads are used */
 #cmakedefine THREAD_PTHREADS
 

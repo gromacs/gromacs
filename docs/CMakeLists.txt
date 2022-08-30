@@ -313,7 +313,6 @@ if (SPHINX_FOUND)
         # Analysis chapter
         reference-manual/analysis/plots/dih-def.pdf
         reference-manual/analysis/plots/distm.pdf
-        reference-manual/analysis/plots/dssp.pdf
         reference-manual/analysis/plots/hbond-insert.pdf
         reference-manual/analysis/plots/hbond.pdf
         reference-manual/analysis/plots/hpr-wheel.pdf

@@ -487,10 +487,6 @@ compilation of OpenCL kernels, but they are also used in device selection.
 Analysis and Core Functions
 ---------------------------
 
-``DSSP``
-        used by :ref:`gmx do_dssp` to point to the ``dssp``
-        executable (not just its path).
-
 ``GMX_DIPOLE_SPACING``
         spacing used by :ref:`gmx dipoles`.
 

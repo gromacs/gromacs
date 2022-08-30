@@ -1,7 +1,7 @@
 Protein-related items
 ---------------------
 
-| :ref:`gmx do_dssp <gmx do_dssp>`, :ref:`gmx rama <gmx rama>`,
+| :ref:`gmx dssp <gmx dssp>`, :ref:`gmx rama <gmx rama>`,
   :ref:`gmx wheel <gmx wheel>`
 | To analyze structural changes of a protein, you can calculate the
   radius of gyration or the minimum residue distances over time (see
@@ -9,16 +9,7 @@ Protein-related items
 
 You can also look at the changing of *secondary structure elements*
 during your run. For this, you can use the program 
-:ref:`gmx do_dssp <gmx do_dssp>`, which is an interface for the
-commercial program ``DSSP``  :ref:`176 <refKabsch83>`. For
-further information, see the ``DSSP`` manual. A typical
-output plot of :ref:`gmx do_dssp <gmx do_dssp>` is given in
-:numref:`Fig. %s <fig-dssp>`.
-
-.. _fig-dssp: 
-
-.. figure:: plots/dssp.*
-   :width: 12.00000cm
+:ref:`gmx dssp <gmx dssp>`, which is a native implementation of DSSP algorithm :ref:`176 <refKabsch83>`. 
 
    Analysis of the secondary structure elements of a peptide in time.
 

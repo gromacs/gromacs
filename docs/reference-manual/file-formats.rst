@@ -103,8 +103,6 @@ Other files
     Encapsulated Postscript
 :ref:`log`
     log file
-:ref:`map`
-    colormap input for :ref:`gmx do_dssp`
 :ref:`mtx`
     binary matrix data
 :ref:`out`
@@ -376,35 +374,6 @@ from :ref:`gmx xpm2ps`.
     y-font                   = Times-Roman
     y-tickfontsize           = 10
     y-tickfont               = Helvetica
-
-.. _map:
-
-map
----
-
-This file maps matrix data to RGB values which is used by the
-:ref:`gmx do_dssp` program.
-
-The format of this file is as follow: first line number of elements
-in the colormap. Then for each line: The first character is
-a code for the secondary structure type.
-Then comes a string for use in the legend of the plot and then the
-R (red) G (green) and B (blue) values.
-
-In this case the colors are
-(in order of appearance): white, red, black, cyan, yellow, blue, magenta, orange.
-
-::
-
-    8
-    ~  	Coil		1.0	  1.0	  1.0
-    E 	B-Sheet		1.0	  0.0	  0.0
-    B 	B-Bridge	0.0	  0.0	  0.0
-    S 	Bend		0.0	  0.8	  0.8
-    T 	Turn		1.0	  1.0	  0.0
-    H 	A-Helix		0.0	  0.0	  1.0
-    G 	3-Helix		1.0	  0.0	  1.0
-    I 	5-Helix		1.0	  0.6	  0.0
 
 .. _mdp:
 

@@ -205,10 +205,6 @@ void registerLegacyModules(gmx::CommandLineModuleManager* manager)
             manager, gmx::pdb2gmxInfo::name, gmx::pdb2gmxInfo::shortDescription, &gmx::pdb2gmxInfo::create);
 
     // Modules from gmx_ana.h.
-    registerModule(manager,
-                   &gmx_do_dssp,
-                   "do_dssp",
-                   "Assign secondary structure and calculate solvent accessible surface area");
     registerModule(manager, &gmx_editconf, "editconf", "Convert and manipulates structure files");
     registerModule(manager, &gmx_eneconv, "eneconv", "Convert energy files");
     registerModule(manager, &gmx_solvate, "solvate", "Solvate a system");
@@ -514,7 +510,6 @@ void registerLegacyModules(gmx::CommandLineModuleManager* manager)
     }
     {
         gmx::CommandLineModuleGroup group = manager->addModuleGroup("Protein-specific analysis");
-        group.addModule("do_dssp");
         group.addModule("chi");
         group.addModule("helix");
         group.addModule("helixorient");

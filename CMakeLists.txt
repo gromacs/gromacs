@@ -770,12 +770,6 @@ if(GMX_USE_PLUGINS)
     endif()
 endif()
 
-# People might want to customize the default location for the DSSP binary
-set(GMX_DSSP_PROGRAM_PATH "/usr/local/bin/dssp"
-    CACHE PATH
-    "The default location to use for the DSSP binary")
-mark_as_advanced(GMX_DSSP_PROGRAM_PATH)
-
 # Link real-time library for POSIX timers. The check for clock_gettime
 # confirms the linkability of rt.
 if(HAVE_TIME_H AND HAVE_UNISTD_H AND HAVE_CLOCK_GETTIME)

@@ -69,8 +69,6 @@ int gmx_dipoles(int argc, char* argv[]);
 
 int gmx_disre(int argc, char* argv[]);
 
-int gmx_do_dssp(int argc, char* argv[]);
-
 int gmx_dos(int argc, char* argv[]);
 
 int gmx_dyecoupl(int argc, char* argv[]);
