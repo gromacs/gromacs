@@ -118,11 +118,14 @@ int check_times2(real t, real t0, gmx_bool bDouble)
     bDouble = FALSE;
 #endif
 
-    r = -1;
-    if ((!bTimeSet(TimeControl::Begin) || (t >= rTimeValue(TimeControl::Begin)))
-        && (!bTimeSet(TimeControl::End) || (t <= rTimeValue(TimeControl::End))))
+    r              = -1;
+    auto startTime = timeValue(TimeControl::Begin);
+    auto endTime   = timeValue(TimeControl::End);
+    auto deltaTime = timeValue(TimeControl::Delta);
+    if ((!startTime.has_value() || (t >= startTime.value()))
+        && (!endTime.has_value() || (t <= endTime.value())))
     {
-        if (bTimeSet(TimeControl::Delta) && !bRmod_fd(t, t0, rTimeValue(TimeControl::Delta), bDouble))
+        if (deltaTime.has_value() && !bRmod_fd(t, t0, deltaTime.value(), bDouble))
         {
             r = -1;
         }
@@ -131,7 +134,7 @@ int check_times2(real t, real t0, gmx_bool bDouble)
             r = 0;
         }
     }
-    else if (bTimeSet(TimeControl::End) && (t >= rTimeValue(TimeControl::End)))
+    else if (endTime.has_value() && (t >= endTime.value()))
     {
         r = 1;
     }
@@ -141,9 +144,9 @@ int check_times2(real t, real t0, gmx_bool bDouble)
                 "t=%g, t0=%g, b=%g, e=%g, dt=%g: r=%d\n",
                 t,
                 t0,
-                rTimeValue(TimeControl::Begin),
-                rTimeValue(TimeControl::End),
-                rTimeValue(TimeControl::Delta),
+                startTime.value_or(0),
+                endTime.value_or(0),
+                deltaTime.value_or(0),
                 r);
     }
     return r;
@@ -838,6 +841,7 @@ bool read_next_frame(const gmx_output_env_t* oenv, t_trxstatus* status, t_trxfra
         {
             ftp = gmx_fio_getftp(status->fio);
         }
+        auto startTime = timeValue(TimeControl::Begin);
         switch (ftp)
         {
             case efTRR: bRet = gmx_next_frame(status, fr); break;
@@ -852,14 +856,14 @@ bool read_next_frame(const gmx_output_env_t* oenv, t_trxstatus* status, t_trxfra
                 break;
             }
             case efXTC:
-                if (bTimeSet(TimeControl::Begin) && (status->tf < rTimeValue(TimeControl::Begin)))
+                if (startTime.has_value() && (status->tf < startTime.value()))
                 {
-                    if (xtc_seek_time(status->fio, rTimeValue(TimeControl::Begin), fr->natoms, TRUE))
+                    if (xtc_seek_time(status->fio, startTime.value(), fr->natoms, TRUE))
                     {
                         gmx_fatal(FARGS,
                                   "Specified frame (time %f) doesn't exist or file "
                                   "corrupt/inconsistent.",
-                                  rTimeValue(TimeControl::Begin));
+                                  startTime.value());
                     }
                     initcount(status);
                 }

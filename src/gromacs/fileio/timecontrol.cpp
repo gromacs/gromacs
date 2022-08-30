@@ -36,6 +36,7 @@
 #include "timecontrol.h"
 
 #include <mutex>
+#include <optional>
 
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/enumerationhelpers.h"
@@ -45,44 +46,28 @@
 /* The source code in this file should be thread-safe.
          Please keep it that way. */
 
-/* Globals for trajectory input */
-struct t_timecontrol
-{
-    t_timecontrol(real inputT, bool inputSet) : t(inputT), bSet(inputSet) {}
-    real t;
-    bool bSet;
-};
-
 // NOLINTNEXTLINE(cppcoreguidelines-avoid-non-const-global-variables)
-static gmx::EnumerationArray<TimeControl, t_timecontrol> timecontrol = { t_timecontrol(0, false),
-                                                                         t_timecontrol(0, false),
-                                                                         t_timecontrol(0, false) };
+static gmx::EnumerationArray<TimeControl, std::optional<real>> timecontrol = { std::nullopt,
+                                                                               std::nullopt,
+                                                                               std::nullopt };
 
 // NOLINTNEXTLINE(cppcoreguidelines-avoid-non-const-global-variables)
 static std::mutex g_timeControlMutex;
 
-gmx_bool bTimeSet(TimeControl tcontrol)
+std::optional<real> timeValue(TimeControl tcontrol)
 {
-    gmx_bool ret;
-
     const std::lock_guard<std::mutex> lock(g_timeControlMutex);
-    ret = timecontrol[tcontrol].bSet;
-
-    return ret;
-}
-
-real rTimeValue(TimeControl tcontrol)
-{
-    real ret;
-
-    const std::lock_guard<std::mutex> lock(g_timeControlMutex);
-    ret = timecontrol[tcontrol].t;
-    return ret;
+    return timecontrol[tcontrol];
 }
 
 void setTimeValue(TimeControl tcontrol, real value)
 {
     const std::lock_guard<std::mutex> lock(g_timeControlMutex);
-    timecontrol[tcontrol].t    = value;
-    timecontrol[tcontrol].bSet = TRUE;
+    timecontrol[tcontrol].emplace(value);
+}
+
+void unsetTimeValue(TimeControl tcontrol)
+{
+    const std::lock_guard<std::mutex> lock(g_timeControlMutex);
+    timecontrol[tcontrol].reset();
 }

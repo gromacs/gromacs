@@ -43,6 +43,7 @@ gmx_add_unit_test(FileIOTests fileio-test
         mrcdensitymap.cpp
         mrcdensitymapheader.cpp
         readinp.cpp
+        timecontrol.cpp
         fileioxdrserializer.cpp
         ${tng_sources}
         xvgio.cpp

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright 2013- The GROMACS Authors
+ * Copyright 2022- The GROMACS Authors
  * and the project initiators Erik Lindahl, Berk Hess and David van der Spoel.
  * Consult the AUTHORS/COPYING files and https://www.gromacs.org for details.
  *
@@ -31,50 +31,52 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out https://www.gromacs.org.
  */
-#ifndef GMX_FILEIO_TIMECONTROL_H
-#define GMX_FILEIO_TIMECONTROL_H
-
-#include <optional>
-
-#include "gromacs/utility/basedefinitions.h"
-#include "gromacs/utility/real.h"
-
-/*! \brief
- * Controls when to start and stop reading trajectory data from files.
+/*! \internal \file
+ * \brief
+ * Tests for time control value setting.
+ *
+ * \author Paul Bauer <paul.bauer.q@gmail.com>
+ * \ingroup module_fileio
  */
-enum class TimeControl : int
+#include "gmxpre.h"
+
+#include "gromacs/fileio/timecontrol.h"
+
+#include <iostream>
+#include <string>
+#include <vector>
+
+#include <gtest/gtest.h>
+
+#include "testutils/include/testutils/testasserts.h"
+
+TEST(TimeControlTest, UnSetHasNoValue)
 {
-    //! Control setting of start time.
-    Begin,
-    //! Control setting of final time.
-    End,
-    //! Control setting of time step.
-    Delta,
-    //! Maximum number.
-    Count
-};
+    auto value = timeValue(TimeControl::Begin);
+    EXPECT_FALSE(value.has_value());
+}
 
-//! Return time value if one is set.
-std::optional<real> timeValue(TimeControl tcontrol);
+TEST(TimeControlTest, CanSetValue)
+{
+    setTimeValue(TimeControl::Begin, 13.37);
+    auto value = timeValue(TimeControl::Begin);
+    ASSERT_TRUE(value.has_value());
+    EXPECT_FLOAT_EQ(*value, 13.37);
+    auto otherValue = timeValue(TimeControl::End);
+    EXPECT_FALSE(otherValue.has_value());
+}
 
-/*! \brief
- * Set time value to \p value and set internal state to true.
- *
- * Be aware that this sets the global state of the binary that persists
- * as long as the executable is in memory.
- * To return internal state to its original value, use the unset function.
- *
- * \param[in] tcontrol TimeControl value to change setting for.
- * \param[in] value    The time value to set.
- */
-void setTimeValue(TimeControl tcontrol, real value);
-
-/*! \brief
- * Return time value to initial state.
- *
- * Ensures that internal state for \p tcontrol is the same as before
- * using setTimeValue. Useful for combining several tools together.
- */
-void unsetTimeValue(TimeControl tcontrol);
-
-#endif
+TEST(TimeControlTest, CanUnsetValueAgain)
+{
+    setTimeValue(TimeControl::Begin, 13.37);
+    setTimeValue(TimeControl::End, 42.23);
+    auto value      = timeValue(TimeControl::Begin);
+    auto otherValue = timeValue(TimeControl::End);
+    EXPECT_TRUE(value.has_value());
+    EXPECT_TRUE(otherValue.has_value());
+    unsetTimeValue(TimeControl::Begin);
+    auto newValue      = timeValue(TimeControl::Begin);
+    auto newOtherValue = timeValue(TimeControl::End);
+    EXPECT_FALSE(newValue.has_value());
+    EXPECT_TRUE(newOtherValue.has_value());
+}
