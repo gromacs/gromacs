@@ -45,11 +45,13 @@ if (BUILD_SHARED_LIBS)
 endif()
 
 # Source files have the following dependencies on library infrastructure.
-target_link_libraries(pulling PRIVATE
-                      common
-                      legacy_modules
-        utility
+target_link_libraries(
+    pulling PRIVATE
+        common
+        legacy_modules
         muparser
+        timing
+        utility
 )
 
 # Public interface for modules, including dependencies and interfaces

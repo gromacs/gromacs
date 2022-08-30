@@ -33,7 +33,7 @@
  */
 #include "gmxpre.h"
 
-#include "walltime_accounting.h"
+#include "gromacs/timing/walltime_accounting.h"
 
 #include "config.h"
 

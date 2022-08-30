@@ -33,7 +33,7 @@
  */
 #include "gmxpre.h"
 
-#include "cyclecounter.h"
+#include "gromacs/timing/cyclecounter.h"
 
 #include "config.h"
 

@@ -60,6 +60,10 @@ target_include_directories(domdec INTERFACE
 #target_link_libraries(domdec PUBLIC
 target_link_libraries(domdec INTERFACE
                       legacy_api
+                      mdlib
+                      timing
+                      topology
+                      utility
                       )
 
 # TODO: when domdec is an OBJECT target

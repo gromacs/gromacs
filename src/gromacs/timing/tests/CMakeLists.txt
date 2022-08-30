@@ -35,3 +35,4 @@ gmx_add_unit_test(GmxTimingTests timing-test
     CPP_SOURCE_FILES
         timing.cpp
     )
+target_link_libraries(timing-test PRIVATE timing)

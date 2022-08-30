@@ -42,3 +42,17 @@ gmx_add_unit_test(EwaldUnitTests ewald-test
         pmetestcommon.cpp
         pme.cpp
 )
+
+target_link_libraries(
+    ewald-test PRIVATE
+        ewald
+        domdec
+        fft
+        gpu_utils
+        math
+        mdtypes
+        pbcutil
+        testutils
+        topology
+        utility
+)

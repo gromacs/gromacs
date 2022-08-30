@@ -139,6 +139,10 @@ target_include_directories(fft INTERFACE
 #target_link_libraries(fft PUBLIC
 target_link_libraries(fft INTERFACE
                       legacy_api
+                      gpu_utils
+                      math
+                      timing
+                      utility
                       )
 
 # TODO: when fft is an OBJECT target

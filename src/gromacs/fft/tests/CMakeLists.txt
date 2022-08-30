@@ -39,6 +39,13 @@ gmx_add_gtest_executable(fft-test HARDWARE_DETECTION
         fft.cpp
     )
 gmx_register_gtest_test(FFTUnitTests fft-test SLOW_TEST QUICK_GPU_TEST)
+target_link_libraries(
+    fft-test PRIVATE
+        fft
+        gpu_utils
+        testutils
+        utility
+)
 
 if(GMX_USE_Heffte OR GMX_USE_cuFFTMp)
 gmx_add_mpi_unit_test(FFTMpiUnitTests fft-mpi-test 4 HARDWARE_DETECTION
@@ -46,3 +53,13 @@ gmx_add_mpi_unit_test(FFTMpiUnitTests fft-mpi-test 4 HARDWARE_DETECTION
         fft_mpi.cpp
         )
 endif()
+
+if (TARGET fft-mpi-test)
+    target_link_libraries(
+        fft-mpi-test PRIVATE
+            fft
+            gpu_utils
+            testutils
+            utility
+    )
+endif ()
