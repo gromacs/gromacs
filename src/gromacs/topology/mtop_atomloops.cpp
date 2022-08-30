@@ -33,7 +33,7 @@
  */
 #include "gmxpre.h"
 
-#include "mtop_atomloops.h"
+#include "gromacs/topology/mtop_atomloops.h"
 
 #include "gromacs/utility/fatalerror.h"
 

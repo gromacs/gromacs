@@ -71,8 +71,9 @@ target_link_libraries(modularsimulator PRIVATE
                       math
                       mdtypes
                       pulling
-                      tng_io
                       timing
+                      tng_io
+                      topology
                       )
 
 # Public interface for modules, including dependencies and interfaces

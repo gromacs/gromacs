@@ -68,7 +68,12 @@ target_link_libraries(taskassignment PUBLIC
 # Source files have the following private module dependencies.
 #target_link_libraries(taskassignment PRIVATE NOTHING)
 # TODO: Explicitly link specific modules.
-target_link_libraries(taskassignment PRIVATE legacy_modules pulling timing)
+target_link_libraries(taskassignment PRIVATE
+        legacy_modules
+        pulling
+        timing
+        topology
+        )
 
 if (BUILD_TESTING)
     add_subdirectory(tests)

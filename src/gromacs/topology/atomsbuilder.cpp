@@ -39,7 +39,7 @@
  */
 #include "gmxpre.h"
 
-#include "atomsbuilder.h"
+#include "gromacs/topology/atomsbuilder.h"
 
 #include <algorithm>
 

@@ -51,6 +51,7 @@ target_link_libraries(
         legacy_modules
         muparser
         timing
+        topology
         utility
 )
 

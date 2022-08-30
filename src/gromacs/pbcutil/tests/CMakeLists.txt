@@ -38,3 +38,4 @@ gmx_add_unit_test(PbcutilUnitTest pbcutil-test
         pbc.cpp
         pbcenums.cpp
         )
+target_link_libraries(pbcutil-test PRIVATE topology)

@@ -60,8 +60,8 @@ gmx_add_unit_test(MdlibUnitTest mdlib-test HARDWARE_DETECTION
         settletestrunners_gpu.cpp
 	wholemoleculetransform.cpp
         )
-
 target_link_libraries(
 	mdlib-test PRIVATE
 	mdlib
+	topology
 )

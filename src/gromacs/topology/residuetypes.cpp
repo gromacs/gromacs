@@ -33,7 +33,7 @@
  */
 #include "gmxpre.h"
 
-#include "residuetypes.h"
+#include "gromacs/topology/residuetypes.h"
 
 #include <string>
 

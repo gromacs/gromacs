@@ -33,7 +33,7 @@
  */
 #include "gmxpre.h"
 
-#include "topsort.h"
+#include "gromacs/topology/topsort.h"
 
 #include <cstdio>
 

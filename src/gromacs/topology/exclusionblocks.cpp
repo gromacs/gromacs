@@ -33,7 +33,7 @@
  */
 #include "gmxpre.h"
 
-#include "exclusionblocks.h"
+#include "gromacs/topology/exclusionblocks.h"
 
 #include <algorithm>
 
