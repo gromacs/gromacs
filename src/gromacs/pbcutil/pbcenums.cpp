@@ -42,7 +42,7 @@
 
 #include "gmxpre.h"
 
-#include "pbcenums.h"
+#include "gromacs/pbcutil/pbcenums.h"
 
 #include "gromacs/utility/enumerationhelpers.h"
 

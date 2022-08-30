@@ -70,6 +70,7 @@ target_link_libraries(modularsimulator PRIVATE
                       gmxlib
                       math
                       mdtypes
+                      pbcutil
                       pulling
                       timing
                       tng_io

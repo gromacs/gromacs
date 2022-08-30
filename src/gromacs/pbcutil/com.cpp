@@ -41,7 +41,7 @@
  */
 #include "gmxpre.h"
 
-#include "com.h"
+#include "gromacs/pbcutil/com.h"
 
 #include <algorithm>
 #include <vector>

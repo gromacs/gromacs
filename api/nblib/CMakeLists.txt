@@ -108,6 +108,7 @@ target_link_libraries(nblib PRIVATE
                       listed_forces
                       mdtypes
                       mdlib
+                      pbcutil
                       simd
                       topology
                       utility)

@@ -39,7 +39,7 @@
  */
 #include "gmxpre.h"
 
-#include "boxutilities.h"
+#include "gromacs/pbcutil/boxutilities.h"
 
 #include <algorithm>
 

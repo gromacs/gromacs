@@ -113,6 +113,7 @@ target_include_directories(mdlib INTERFACE
 #target_link_libraries(mdlib PUBLIC
 target_link_libraries(mdlib INTERFACE
                       legacy_api
+                      pbcutil
                       pulling
                       topology
                       )

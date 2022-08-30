@@ -33,7 +33,7 @@
  */
 #include "gmxpre.h"
 
-#include "pbcmethods.h"
+#include "gromacs/pbcutil/pbcmethods.h"
 
 #include <algorithm>
 #include <memory>

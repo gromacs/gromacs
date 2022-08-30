@@ -33,7 +33,16 @@
 
 # Set up the module library
 add_library(pbcutil INTERFACE)
-file(GLOB PBCUTIL_SOURCES *.cpp)
+set(PBCUTIL_SOURCES
+        ${CMAKE_CURRENT_SOURCE_DIR}/boxutilities.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/com.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/mshift.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/pbc.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/pbc_simd.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/pbcenums.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/pbcmethods.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/rmpbc.cpp
+        )
 set(LIBGROMACS_SOURCES ${LIBGROMACS_SOURCES} ${PBCUTIL_SOURCES} PARENT_SCOPE)
 
 # Source files have the following dependencies on library infrastructure.

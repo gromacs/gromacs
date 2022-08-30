@@ -33,7 +33,7 @@
  */
 #include "gmxpre.h"
 
-#include "rmpbc.h"
+#include "gromacs/pbcutil/rmpbc.h"
 
 #include <cmath>
 #include <cstdlib>
