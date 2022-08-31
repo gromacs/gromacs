@@ -33,7 +33,7 @@
 
 gmx_add_unit_test_library(onlinehelp-test-shared
                           mock_helptopic.cpp)
-target_link_libraries(onlinehelp-test-shared PUBLIC common legacy_api)
+target_link_libraries(onlinehelp-test-shared PRIVATE common legacy_api)
 
 gmx_add_unit_test(OnlineHelpUnitTests onlinehelp-test
     CPP_SOURCE_FILES

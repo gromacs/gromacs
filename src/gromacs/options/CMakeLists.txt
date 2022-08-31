@@ -49,6 +49,7 @@ add_library(options OBJECT
 
 # Source files have the following private module dependencies.
 target_link_libraries(options PRIVATE
+                legacy_api
                 legacy_modules
                 utility
 		)
@@ -57,7 +58,6 @@ target_link_libraries(options PRIVATE
 target_include_directories(options PUBLIC
 		$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>)
 
-target_link_libraries(options PUBLIC legacy_api)
 target_link_libraries(options PRIVATE common)
 
 if (BUILD_SHARED_LIBS)  

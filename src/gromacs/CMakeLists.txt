@@ -333,7 +333,7 @@ target_link_libraries(libgromacs
                       PUBLIC
                       ${GMX_PUBLIC_LIBRARIES}
                       )
-target_link_libraries(libgromacs PUBLIC legacy_api)
+target_link_libraries(libgromacs PRIVATE legacy_api)
 # Dependencies from libgromacs to the modules are set up here, but
 # once the add_subdirectory() commands are re-ordered then
 # responsibility for setting this up will move to the respective

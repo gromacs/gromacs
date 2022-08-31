@@ -56,25 +56,15 @@ target_link_libraries(taskassignment PRIVATE common)
 # Public interface for modules, including dependencies and interfaces
 target_include_directories(taskassignment PUBLIC
                            $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>)
-target_link_libraries(taskassignment PUBLIC
+target_link_libraries(taskassignment PRIVATE
                       legacy_api
-                      )
-
-# Module dependencies
-# taskassignment interfaces convey transitive dependence on these modules.
-target_link_libraries(taskassignment PUBLIC
+                      legacy_modules
+                      math
+                      pulling
+                      timing
+                      topology
                       utility
                       )
-# Source files have the following private module dependencies.
-#target_link_libraries(taskassignment PRIVATE NOTHING)
-# TODO: Explicitly link specific modules.
-target_link_libraries(taskassignment PRIVATE
-        legacy_modules
-        math
-        pulling
-        timing
-        topology
-        )
 
 if (BUILD_TESTING)
     add_subdirectory(tests)

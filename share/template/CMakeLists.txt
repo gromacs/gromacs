@@ -39,7 +39,7 @@ endif()
 # This should be removable once object libraries can directly use target_link_libraries
 # with CMake 3.12, #3290
 target_include_directories(template SYSTEM PRIVATE ${PROJECT_SOURCE_DIR}/src/external)
-target_link_libraries(template libgromacs legacy_modules ${GMX_EXE_LINKER_FLAGS})
+target_link_libraries(template PRIVATE libgromacs legacy_modules legacy_api ${GMX_EXE_LINKER_FLAGS})
 
 set(DOCUMENTATION_HTTP_URL_BASE
     https://manual.gromacs.org/nightly/index.html)
