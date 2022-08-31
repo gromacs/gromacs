@@ -75,6 +75,7 @@ PmeCoordinateReceiverGpu::Impl::Impl(MPI_Comm                     comm,
                 ppRank,
                 std::make_unique<DeviceStream>(deviceContext_, DeviceStreamPriority::High, false),
                 nullptr,
+                std::make_unique<GpuEventSynchronizer>(),
                 { 0, 0 } });
     }
 }
@@ -200,6 +201,12 @@ int PmeCoordinateReceiverGpu::Impl::ppCommNumSenderRanks()
     return ppCommManagers_.size();
 }
 
+void PmeCoordinateReceiverGpu::Impl::insertAsDependencyIntoStream(int senderIndex, const DeviceStream& stream)
+{
+    ppCommManagers_[senderIndex].ready->markEvent(*ppCommManagers_[senderIndex].stream);
+    ppCommManagers_[senderIndex].ready->enqueueWaitEvent(stream);
+}
+
 PmeCoordinateReceiverGpu::PmeCoordinateReceiverGpu(MPI_Comm               comm,
                                                    const DeviceContext&   deviceContext,
                                                    gmx::ArrayRef<PpRanks> ppRanks) :
@@ -253,5 +260,9 @@ int PmeCoordinateReceiverGpu::ppCommNumSenderRanks()
     return impl_->ppCommNumSenderRanks();
 }
 
+void PmeCoordinateReceiverGpu::insertAsDependencyIntoStream(int senderIndex, const DeviceStream& stream)
+{
+    impl_->insertAsDependencyIntoStream(senderIndex, stream);
+}
 
 } // namespace gmx

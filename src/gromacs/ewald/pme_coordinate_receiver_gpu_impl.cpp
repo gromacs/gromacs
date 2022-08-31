@@ -139,6 +139,12 @@ int PmeCoordinateReceiverGpu::ppCommNumSenderRanks()
     return 0;
 }
 
+void PmeCoordinateReceiverGpu::insertAsDependencyIntoStream(int /*senderIndex*/, const DeviceStream& /*stream*/)
+{
+    GMX_ASSERT(!impl_,
+               "A CPU stub for PME-PP GPU communication was called instead of the correct "
+               "implementation.");
+}
 
 } // namespace gmx
 

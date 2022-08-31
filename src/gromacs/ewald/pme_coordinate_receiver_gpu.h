@@ -141,6 +141,11 @@ public:
      */
     int ppCommNumSenderRanks();
 
+    /*! \brief
+     * Mark an event in the sender stream \p senderIndex and enqueue it into \p stream.
+     */
+    void insertAsDependencyIntoStream(int senderIndex, const DeviceStream& stream);
+
 private:
     class Impl;
     std::unique_ptr<Impl> impl_;

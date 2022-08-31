@@ -1829,9 +1829,7 @@ void pme_gpu_spread(const PmeGpu*                  pmeGpu,
             // Set dependencies for PME stream on all pipeline streams
             for (int i = 0; i < pmeCoordinateReceiverGpu->ppCommNumSenderRanks(); i++)
             {
-                GpuEventSynchronizer event;
-                event.markEvent(*(pmeCoordinateReceiverGpu->ppCommStream(i)));
-                event.enqueueWaitEvent(pmeGpu->archSpecific->pmeStream_);
+                pmeCoordinateReceiverGpu->insertAsDependencyIntoStream(i, pmeGpu->archSpecific->pmeStream_);
             }
             wallcycle_sub_stop(wcycle, WallCycleSubCounter::LaunchGpuPme);
             wallcycle_stop(wcycle, WallCycleCounter::LaunchGpu);

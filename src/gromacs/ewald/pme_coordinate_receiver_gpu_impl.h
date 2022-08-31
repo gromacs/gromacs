@@ -63,6 +63,8 @@ struct PpCommManager
     std::unique_ptr<DeviceStream> stream;
     //! Synchronization event to receive from PP rank
     GpuEventSynchronizer* sync = nullptr;
+    //! Synchronization event to indicate that all communications in \ref stream are complete.
+    std::unique_ptr<GpuEventSynchronizer> ready;
     //! Range of atoms corresponding to PP rank
     std::tuple<int, int> atomRange = { 0, 0 };
 };
@@ -139,6 +141,11 @@ public:
      * Return number of PP ranks involved in PME-PP communication
      */
     int ppCommNumSenderRanks();
+
+    /*! \brief
+     * Mark an event in the sender stream \p senderIndex and enqueue it into \p stream.
+     */
+    void insertAsDependencyIntoStream(int senderIndex, const DeviceStream& stream);
 
 private:
     //! communicator for simulation
