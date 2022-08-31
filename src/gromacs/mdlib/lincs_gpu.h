@@ -212,6 +212,9 @@ private:
      * reallocated.
      */
     int numAtomsAlloc_;
+
+    //! Maximum number of coupled constraints
+    int maxCoupledConstraints_ = 0;
 };
 
 } // namespace gmx

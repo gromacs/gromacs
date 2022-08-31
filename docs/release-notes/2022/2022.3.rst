@@ -98,3 +98,11 @@ set is used on non-compatible hardware and warn why the run is likely to
 crash.
 
 :issue:`4526`
+
+Remove unnecessary memory re-allocations for GPU update runs
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+An issue has been fixed where GPU memory allocations were repeatedly
+being performed unecessarily for runs with GPU update enabled,
+significantly impacting performance in some cases. The memory
+allocations are now only performed when necessary.

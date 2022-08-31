@@ -436,7 +436,6 @@ void LincsGpu::set(const InteractionDefinitions& idef, const int numAtoms, const
     // array --- a number, greater then total number of constraints, taking into account the splits
     // in the constraints array due to the GPU block borders. This number can be adjusted to improve
     // memory access pattern. Mass factors are saved in a similar data structure.
-    int  maxCoupledConstraints             = 0;
     bool maxCoupledConstraintsHasIncreased = false;
     for (int c = 0; c < numConstraints; c++)
     {
@@ -446,18 +445,18 @@ void LincsGpu::set(const InteractionDefinitions& idef, const int numAtoms, const
         // Constraint 'c' is counted twice, but it should be excluded altogether. Hence '-2'.
         int nCoupledConstraints = atomsAdjacencyList[a1].size() + atomsAdjacencyList[a2].size() - 2;
 
-        if (nCoupledConstraints > maxCoupledConstraints)
+        if (nCoupledConstraints > maxCoupledConstraints_)
         {
-            maxCoupledConstraints             = nCoupledConstraints;
+            maxCoupledConstraints_            = nCoupledConstraints;
             maxCoupledConstraintsHasIncreased = true;
         }
     }
 
-    kernelParams_.haveCoupledConstraints = (maxCoupledConstraints > 0);
+    kernelParams_.haveCoupledConstraints = (maxCoupledConstraints_ > 0);
 
     coupledConstraintsCountsHost.resize(kernelParams_.numConstraintsThreads, 0);
-    coupledConstraintsIndicesHost.resize(maxCoupledConstraints * kernelParams_.numConstraintsThreads, -1);
-    massFactorsHost.resize(maxCoupledConstraints * kernelParams_.numConstraintsThreads, -1);
+    coupledConstraintsIndicesHost.resize(maxCoupledConstraints_ * kernelParams_.numConstraintsThreads, -1);
+    massFactorsHost.resize(maxCoupledConstraints_ * kernelParams_.numConstraintsThreads, -1);
 
     for (int c1 = 0; c1 < numConstraints; c1++)
     {
@@ -549,13 +548,13 @@ void LincsGpu::set(const InteractionDefinitions& idef, const int numAtoms, const
                              kernelParams_.numConstraintsThreads,
                              deviceContext_);
         allocateDeviceBuffer(&kernelParams_.d_coupledConstraintsIndices,
-                             maxCoupledConstraints * kernelParams_.numConstraintsThreads,
+                             maxCoupledConstraints_ * kernelParams_.numConstraintsThreads,
                              deviceContext_);
         allocateDeviceBuffer(&kernelParams_.d_massFactors,
-                             maxCoupledConstraints * kernelParams_.numConstraintsThreads,
+                             maxCoupledConstraints_ * kernelParams_.numConstraintsThreads,
                              deviceContext_);
         allocateDeviceBuffer(&kernelParams_.d_matrixA,
-                             maxCoupledConstraints * kernelParams_.numConstraintsThreads,
+                             maxCoupledConstraints_ * kernelParams_.numConstraintsThreads,
                              deviceContext_);
     }
 
@@ -595,14 +594,14 @@ void LincsGpu::set(const InteractionDefinitions& idef, const int numAtoms, const
     copyToDeviceBuffer(&kernelParams_.d_coupledConstraintsIndices,
                        coupledConstraintsIndicesHost.data(),
                        0,
-                       maxCoupledConstraints * kernelParams_.numConstraintsThreads,
+                       maxCoupledConstraints_ * kernelParams_.numConstraintsThreads,
                        deviceStream_,
                        GpuApiCallBehavior::Sync,
                        nullptr);
     copyToDeviceBuffer(&kernelParams_.d_massFactors,
                        massFactorsHost.data(),
                        0,
-                       maxCoupledConstraints * kernelParams_.numConstraintsThreads,
+                       maxCoupledConstraints_ * kernelParams_.numConstraintsThreads,
                        deviceStream_,
                        GpuApiCallBehavior::Sync,
                        nullptr);
