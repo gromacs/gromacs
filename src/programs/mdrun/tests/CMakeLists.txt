@@ -111,8 +111,8 @@ gmx_add_gtest_executable(${exename} MPI
         $<TARGET_OBJECTS:mdrun_objlib>
     )
 target_link_libraries(${exename} PRIVATE mdrun_test_infrastructure)
-gmx_register_gtest_test(MdrunTestsOneRank ${exename} MPI_RANKS 1 OPENMP_THREADS 2 INTEGRATION_TEST IGNORE_LEAKS)
-gmx_register_gtest_test(MdrunTestsTwoRanks ${exename} MPI_RANKS 2 OPENMP_THREADS 2 INTEGRATION_TEST IGNORE_LEAKS)
+gmx_register_gtest_test(MdrunTestsOneRank ${exename} MPI_RANKS 1 OPENMP_THREADS 2 INTEGRATION_TEST SLOW_TEST IGNORE_LEAKS)
+gmx_register_gtest_test(MdrunTestsTwoRanks ${exename} MPI_RANKS 2 OPENMP_THREADS 2 INTEGRATION_TEST SLOW_TEST IGNORE_LEAKS)
 
 # The orires test is separate, as it supports only a single MPI rank
 set(testname "MdrunSingleRankAlgorithmsTests")

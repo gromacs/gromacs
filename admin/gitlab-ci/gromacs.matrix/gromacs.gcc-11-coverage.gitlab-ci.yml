@@ -37,27 +37,10 @@ gromacs:gcc-11:coverage:build:
   needs:
     - job: gromacs:gcc-11:coverage:configure
 
-gromacs:gcc-11:coverage:test:
-  extends:
-    - .gromacs:base:test
-    - .rules:post-merge-acceptance
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-gcc-11
-  variables:
-    CMAKE: /usr/local/cmake-3.18.4/bin/cmake
-  tags:
-    - k8s-scilifelab
-  needs:
-    - job: gromacs:gcc-11:coverage:build
-  artifacts:
-    paths:
-      - $BUILD_DIR
-
 gromacs:coverage:analyse:
   variables:
     CMAKE: /usr/local/cmake-3.18.4/bin/cmake
     VENVPATH: "/root/venv/py3.7"
-    GCOVR_GENERAL_OPTIONS: "-r ../ /. --gcov-executable=gcov-11 --exclude-unreachable-branches --exclude-throw-branches -j$KUBERNETES_CPU_LIMIT"
-    GCOVR_EXCLUDE_OPTIONS: "--exclude-directories '^src/external/.*' --exclude-directories '^src/gromacs/selection/.*' --exclude-directories '.*tests.*" 
   extends:
     - .variables:default
     - .rules:post-merge-acceptance
@@ -65,29 +48,20 @@ gromacs:coverage:analyse:
   image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-gcc-11
   needs:
     - job: gromacs:gcc-11:coverage:build
-    - job: gromacs:gcc-11:coverage:test
 
   tags:
     - k8s-scilifelab
   script:
-    - echo ${GCOVR_GENERAL_OPTIONS}
-    - echo ${GCOVR_EXCLUDE_OPTIONS}
     - source $VENVPATH/bin/activate
     - mkdir public
     - outputdir=`pwd`/public
     - cd $BUILD_DIR
-    # run gcovr to write to stdout for GitLab pipeline grep.
-    - gcovr ${GCOVR_GENERAL_OPTIONS} ${GCOVR_EXCLUDE_OPTIONS}
-    # run gcovr to generate xml output. keep the generated files to produce the html output later.
-    # the invocations need to be separate due to a crash in gcovr where files can not be found.
-    - gcovr ${GCOVR_GENERAL_OPTIONS} ${GCOVR_EXCLUDE_OPTIONS} --xml $outputdir/cobertura-coverage.xml --xml-pretty --keep
-    # final gcovr run, using the generated files to produce nice looking html output
-    - gcovr ${GCOVR_GENERAL_OPTIONS} ${GCOVR_EXCLUDE_OPTIONS} --html $outputdir/coverage.html --use-gcov-files
-  coverage: '/^TOTAL.*\s+(\d+\%)$/'
+    - ctest -T test ctest -T coverage || true
+  coverage: '/Percentage.*\: (\d+\.\d+)\%/'
   artifacts:
     paths:
-      - public/
+      - $BUILD_DIR/Testing/`head -n 1 < $BUILD_DIR/Testing/TAG`/
     reports:
       coverage_report:
         coverage_format: cobertura
-        path: public/cobertura-coverage.xml
+        path: $BUILD_DIR/Testing/`head -n 1 < $BUILD_DIR/Testing/TAG`/Coverage.xml

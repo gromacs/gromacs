@@ -808,8 +808,9 @@ endif()
 
 if (GMX_BUILD_FOR_COVERAGE)
     # Set flags for coverage build here instead having to do so manually
-    set(CMAKE_C_FLAGS "-g --coverage")
-    set(CMAKE_CXX_FLAGS "-g --coverage")
+    set(CMAKE_C_FLAGS "-g -fprofile-arcs -ftest-coverage")
+    set(CMAKE_CXX_FLAGS "-g -fprofile-arcs -ftest-coverage")
+    set(CMAKE_EXE_LINKER_FLAGS "-fprofile-arcs -ftest-coverage")
 endif()
 
 # # # # # # # # # # NO MORE TESTS AFTER THIS LINE! # # # # # # # # # # #

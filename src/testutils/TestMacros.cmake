@@ -69,6 +69,9 @@ function (gmx_add_unit_test_library NAME)
         target_compile_definitions(${NAME} PRIVATE HAVE_CONFIG_H)
         target_include_directories(${NAME} SYSTEM BEFORE PRIVATE ${PROJECT_SOURCE_DIR}/src/external/thread_mpi/include)
         target_link_libraries(${NAME} PRIVATE testutils gmock)
+        if (GMX_BUILD_FOR_COVERAGE)
+            target_link_libraries(${NAME} PRIVATE gcov)
+        endif()
         if(GMX_CLANG_TIDY)
             set_target_properties(${NAME} PROPERTIES CXX_CLANG_TIDY
                 "${CLANG_TIDY_EXE};-warnings-as-errors=*;-header-filter=.*")
@@ -210,6 +213,9 @@ function (gmx_add_gtest_executable EXENAME)
         target_link_libraries(${EXENAME} PRIVATE
             testutils common libgromacs gmock
             ${GMX_COMMON_LIBRARIES} ${GMX_EXE_LINKER_FLAGS})
+        if (GMX_BUILD_FOR_COVERAGE)
+            target_link_libraries(${EXENAME} PRIVATE gcov)
+        endif()
 
         if(GMX_CLANG_TIDY)
             set_target_properties(${EXENAME} PROPERTIES CXX_CLANG_TIDY
