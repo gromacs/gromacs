@@ -146,6 +146,12 @@ TEST_P(SimulatorComparisonTest, WithinTolerances)
         return;
     }
 
+    // We should reenable C-rescale here when it supports NPH
+    if (pcoupling == "c-rescale" && tcoupling == "no")
+    {
+        return;
+    }
+
     const std::string envVariableModSimOn  = "GMX_USE_MODULAR_SIMULATOR";
     const std::string envVariableModSimOff = "GMX_DISABLE_MODULAR_SIMULATOR";
 

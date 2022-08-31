@@ -45,6 +45,16 @@ to take geometry into account.
 
 :issue:`4573`
 
+Disallow C-rescale barostat without temperature coupling
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+The C-rescale barostat needs a reference temperature which is currently taken
+from the thermostat. A check is added to grompp for temperature coupling or BD/SD
+being present. Also a warning is generated when the reference temperature are
+not all equal.
+
+:issue:`4495`
+
 Fixes that affect portability
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
