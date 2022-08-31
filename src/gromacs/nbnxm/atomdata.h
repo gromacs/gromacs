@@ -223,8 +223,6 @@ struct nbnxn_atomdata_t
         AlignedVector<uint32_t> exclusion_filter;
         //! Filters for topology exclusion masks for double SIMD kernels without SIMD int32 logical support
         AlignedVector<uint64_t> exclusion_filter64;
-        //! Array of masks needed for exclusions
-        AlignedVector<real> interaction_array;
     };
 
     /*! \brief Constructor

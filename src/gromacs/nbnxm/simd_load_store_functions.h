@@ -96,19 +96,18 @@ typedef SimdReal SimdBitMask;
 //! Loads no interaction masks, returns an empty array
 template<bool loadMasks, KernelLayout kernelLayout>
 inline std::enable_if_t<!loadMasks, std::array<SimdBool, 0>>
-loadSimdPairInteractionMasks(const int excl, SimdBitMask* filterBitMasksV, const real* simdInteractionArray)
+loadSimdPairInteractionMasks(const int excl, SimdBitMask* filterBitMasksV)
 {
     return std::array<SimdBool, 0>{};
 
     GMX_UNUSED_VALUE(excl);
     GMX_UNUSED_VALUE(filterBitMasksV);
-    GMX_UNUSED_VALUE(simdInteractionArray);
 }
 
 //! Loads interaction masks for a cluster pair for 4xM kernel layout
 template<bool loadMasks, KernelLayout kernelLayout>
 inline std::enable_if_t<loadMasks && kernelLayout == KernelLayout::r4xM, std::array<SimdBool, c_nbnxnCpuIClusterSize>>
-loadSimdPairInteractionMasks(const int excl, SimdBitMask* filterBitMasksV, const real* simdInteractionArray)
+loadSimdPairInteractionMasks(const int excl, SimdBitMask* filterBitMasksV)
 {
     using namespace gmx;
 
@@ -122,7 +121,6 @@ loadSimdPairInteractionMasks(const int excl, SimdBitMask* filterBitMasksV, const
         interactionMasksV[i] = cvtIB2B(testBits(mask_pr_S & filterBitMasksV[i]));
     }
 
-    GMX_UNUSED_VALUE(simdInteractionArray);
 #elif GMX_SIMD_HAVE_LOGICAL
     union
     {
@@ -142,19 +140,11 @@ loadSimdPairInteractionMasks(const int excl, SimdBitMask* filterBitMasksV, const
         interactionMasksV[i] = testBits(mask_pr_S & filterBitMasksV[i]);
     }
 
-    GMX_UNUSED_VALUE(simdInteractionArray);
 #else
-    // Neither real or integer bitwise logical operations supported.
-    // Load masks from memory instead.
-    SimdReal zero = setZero();
-    for (int i = 0; i < c_nbnxnCpuIClusterSize; i++)
-    {
-        interactionMasksV[i] =
-                (zero < load<SimdReal>(simdInteractionArray
-                                       + GMX_SIMD_REAL_WIDTH * ((excl >> (i * UNROLLJ)) & 0xF)));
-    }
-
-    GMX_UNUSED_VALUE(filterBitMasksV);
+    // Note that there was exclusion support without logical support up to release-2022,
+    // which could be resurrected. This is probably only efficient for 4-wide SIMD.
+    static_assert(false,
+                  "Need GMX_SIMD_HAVE_INT32_LOGICAL or GMX_SIMD_HAVE_LOGICAL for NBNxM kernels");
 #endif
 
     return interactionMasksV;
@@ -163,7 +153,7 @@ loadSimdPairInteractionMasks(const int excl, SimdBitMask* filterBitMasksV, const
 //! Loads interaction masks for a cluster pair for 2xMM kernel layout
 template<bool loadMasks, KernelLayout kernelLayout>
 inline std::enable_if_t<loadMasks && kernelLayout == KernelLayout::r2xMM, std::array<SimdBool, c_nbnxnCpuIClusterSize / 2>>
-loadSimdPairInteractionMasks(const int excl, SimdBitMask* filterBitMasksV, const real* simdInteractionArray)
+loadSimdPairInteractionMasks(const int excl, SimdBitMask* filterBitMasksV)
 {
     using namespace gmx;
 
@@ -175,8 +165,6 @@ loadSimdPairInteractionMasks(const int excl, SimdBitMask* filterBitMasksV, const
     {
         interactionMasksV[i] = cvtIB2B(testBits(mask_pr_S & filterBitMasksV[i]));
     }
-
-    GMX_UNUSED_VALUE(simdInteractionArray);
 #elif GMX_SIMD_HAVE_LOGICAL
     union
     {
@@ -195,10 +183,9 @@ loadSimdPairInteractionMasks(const int excl, SimdBitMask* filterBitMasksV, const
     {
         interactionMasksV[i] = testBits(mask_pr_S & filterBitMasksV[i]);
     }
-
-    GMX_UNUSED_VALUE(simdInteractionArray);
 #else
-#    error "the SIMD architecture does not support 2xMM interaction mask loading"
+    static_assert(false,
+                  "Need GMX_SIMD_HAVE_INT32_LOGICAL or GMX_SIMD_HAVE_LOGICAL for NBNxM kernels");
 #endif
 
     return interactionMasksV;

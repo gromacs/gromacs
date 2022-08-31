@@ -385,36 +385,7 @@ nbnxn_atomdata_t::SimdMasks::SimdMasks()
 #    endif
     }
 
-    if (!GMX_SIMD_HAVE_LOGICAL && !GMX_SIMD_HAVE_INT32_LOGICAL) // NOLINT(misc-redundant-expression)
-    {
-        // If the SIMD implementation has no bitwise logical operation support
-        // whatsoever we cannot use the normal masking. Instead,
-        // we generate a vector of all 2^4 possible ways an i atom
-        // interacts with its 4 j atoms. Each array entry contains
-        // GMX_SIMD_REAL_WIDTH values that are read with a single aligned SIMD load.
-        // Since there is no logical value representation in this case, we use
-        // any nonzero value to indicate 'true', while zero mean 'false'.
-        // This can then be converted to a SIMD boolean internally in the SIMD
-        // module by comparing to zero.
-        // Each array entry encodes how this i atom will interact with the 4 j atoms.
-        // Matching code exists in set_ci_top_excls() to generate indices into this array.
-        // Those indices are used in the kernels.
-
-        const int  simd_excl_size = c_nbnxnCpuIClusterSize * c_nbnxnCpuIClusterSize;
-        const real simdFalse      = 0.0;
-        const real simdTrue       = 1.0;
-
-        interaction_array.resize(simd_excl_size * GMX_SIMD_REAL_WIDTH);
-        for (int j = 0; j < simd_excl_size; j++)
-        {
-            const int index = j * GMX_SIMD_REAL_WIDTH;
-            for (int i = 0; i < GMX_SIMD_REAL_WIDTH; i++)
-            {
-                interaction_array[index + i] = (j & (1 << i)) ? simdTrue : simdFalse;
-            }
-        }
-    }
-#endif
+#endif // GMX_SIMD
 }
 
 nbnxn_atomdata_t::Params::Params(gmx::PinningPolicy pinningPolicy) :
