@@ -43,11 +43,9 @@
 #include "select.h"
 
 #include <cstdio>
-#include <cstring>
 
 #include <algorithm>
 #include <set>
-#include <string>
 #include <vector>
 
 #include "gromacs/analysisdata/analysisdata.h"
@@ -63,16 +61,13 @@
 #include "gromacs/options/ioptionscontainer.h"
 #include "gromacs/selection/selection.h"
 #include "gromacs/selection/selectionoption.h"
-#include "gromacs/topology/topology.h"
 #include "gromacs/trajectory/trajectoryframe.h"
 #include "gromacs/trajectoryanalysis/analysissettings.h"
 #include "gromacs/trajectoryanalysis/topologyinformation.h"
 #include "gromacs/utility/arrayref.h"
-#include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/stringutil.h"
-#include "gromacs/utility/unique_cptr.h"
 
 namespace gmx
 {

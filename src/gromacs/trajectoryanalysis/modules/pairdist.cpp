@@ -46,7 +46,6 @@
 
 #include <algorithm>
 #include <limits>
-#include <string>
 #include <vector>
 
 #include "gromacs/analysisdata/analysisdata.h"
@@ -60,9 +59,7 @@
 #include "gromacs/trajectory/trajectoryframe.h"
 #include "gromacs/trajectoryanalysis/analysissettings.h"
 #include "gromacs/trajectoryanalysis/topologyinformation.h"
-#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/exceptions.h"
-#include "gromacs/utility/stringutil.h"
 
 namespace gmx
 {

@@ -42,8 +42,6 @@
 
 #include "sasa.h"
 
-#include <algorithm>
-#include <string>
 #include <vector>
 
 #include "gromacs/analysisdata/analysisdata.h"

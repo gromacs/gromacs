@@ -43,7 +43,6 @@
 
 #include "extract_cluster.h"
 
-#include <algorithm>
 #include <optional>
 
 #include "gromacs/coordinateio/coordinatefile.h"
