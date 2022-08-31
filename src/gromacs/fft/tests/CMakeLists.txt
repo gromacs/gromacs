@@ -52,6 +52,7 @@ gmx_add_mpi_unit_test(FFTMpiUnitTests fft-mpi-test 4 HARDWARE_DETECTION
     GPU_CPP_SOURCE_FILES
         fft_mpi.cpp
         )
+target_link_libraries(fft-mpi-test PRIVATE fft)
 endif()
 
 if (TARGET fft-mpi-test)

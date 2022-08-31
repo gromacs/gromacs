@@ -63,6 +63,7 @@ target_include_directories(fileio INTERFACE
 #target_link_libraries(fileio PUBLIC
 target_link_libraries(fileio INTERFACE
                       legacy_api
+                      math
                       )
 
 # TODO: when fileio is an OBJECT target

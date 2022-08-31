@@ -40,3 +40,4 @@ gmx_add_gtest_executable(tool-test
         convert-tpr.cpp
         )
 gmx_register_gtest_test(ToolUnitTests tool-test SLOW_TEST)
+target_link_libraries(tool-test PRIVATE math)

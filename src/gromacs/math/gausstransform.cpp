@@ -41,7 +41,7 @@
  */
 #include "gmxpre.h"
 
-#include "gausstransform.h"
+#include "gromacs/math/gausstransform.h"
 
 #include <cmath>
 

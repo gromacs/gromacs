@@ -35,3 +35,4 @@ gmx_add_unit_test(NbnxmTests nbnxm-test
     CPP_SOURCE_FILES
         kernelsetup.cpp
         )
+target_link_libraries(nbnxm-test PRIVATE nbnxm)

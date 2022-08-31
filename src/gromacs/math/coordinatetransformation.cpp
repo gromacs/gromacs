@@ -38,15 +38,14 @@
  */
 #include "gmxpre.h"
 
-#include "coordinatetransformation.h"
+#include "gromacs/math/coordinatetransformation.h"
 
 #include <vector>
 
+#include "gromacs/math/matrix.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdspan/extensions.h"
 #include "gromacs/utility/arrayref.h"
-
-#include "matrix.h"
 
 namespace gmx
 {

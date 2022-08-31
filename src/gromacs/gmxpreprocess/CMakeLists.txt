@@ -53,6 +53,7 @@ target_include_directories(gmxpreprocess INTERFACE
 #target_link_libraries(gmxpreprocess PUBLIC
 target_link_libraries(gmxpreprocess INTERFACE
                       legacy_api
+                      mdtypes
                       )
 
 # TODO: when is an OBJECT target

@@ -40,7 +40,7 @@
  */
 #include "gmxpre.h"
 
-#include "densityfit.h"
+#include "gromacs/math/densityfit.h"
 
 #include <algorithm>
 #include <numeric>

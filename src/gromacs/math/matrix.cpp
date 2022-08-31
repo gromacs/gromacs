@@ -40,7 +40,7 @@
 
 #include "gmxpre.h"
 
-#include "matrix.h"
+#include "gromacs/math/matrix.h"
 
 namespace gmx
 {

@@ -40,7 +40,7 @@
  */
 #include "gmxpre.h"
 
-#include "densityfittingforce.h"
+#include "gromacs/math/densityfittingforce.h"
 
 #include "gromacs/math/functions.h"
 #include "gromacs/math/multidimarray.h"

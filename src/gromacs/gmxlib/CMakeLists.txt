@@ -57,6 +57,7 @@ target_include_directories(gmxlib INTERFACE
 #target_link_libraries(gmxlib PUBLIC
 target_link_libraries(gmxlib INTERFACE
                       legacy_api
+                      mdlib
                       pbcutil
                       utility
                       )

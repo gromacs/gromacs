@@ -40,7 +40,7 @@
  */
 #include "gmxpre.h"
 
-#include "exponentialmovingaverage.h"
+#include "gromacs/math/exponentialmovingaverage.h"
 
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/keyvaluetree.h"

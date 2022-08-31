@@ -45,10 +45,11 @@ if (BUILD_SHARED_LIBS)
 endif()
 
 # Source files have the following dependencies on library infrastructure.
-target_link_libraries(
-    pulling PRIVATE
-        common
-        legacy_modules
+target_link_libraries(pulling PRIVATE
+                      common
+                      legacy_modules
+        math
+        utility
         muparser
         timing
         topology

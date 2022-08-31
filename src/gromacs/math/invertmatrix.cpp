@@ -40,7 +40,7 @@
  */
 #include "gmxpre.h"
 
-#include "invertmatrix.h"
+#include "gromacs/math/invertmatrix.h"
 
 #include <cmath>
 

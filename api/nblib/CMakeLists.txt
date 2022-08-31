@@ -106,6 +106,7 @@ target_link_libraries(nblib PRIVATE
                       fileio
                       gmxlib
                       listed_forces
+                      math
                       mdtypes
                       mdlib
                       pbcutil

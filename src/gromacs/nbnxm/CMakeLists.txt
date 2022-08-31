@@ -99,6 +99,7 @@ target_include_directories(nbnxm INTERFACE
 #target_link_libraries(nbnxm PUBLIC
 target_link_libraries(nbnxm INTERFACE
         legacy_api
+        gpu_utils
         )
 
 # TODO: when nbnxm is an OBJECT target

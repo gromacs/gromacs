@@ -53,6 +53,7 @@ target_include_directories(correlationfunctions INTERFACE
 #target_link_libraries(correlationfunctions PUBLIC
 target_link_libraries(correlationfunctions INTERFACE
                       legacy_api
+                      fft
                       )
 
 # TODO: when fileio is an OBJECT target

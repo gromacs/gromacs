@@ -33,7 +33,7 @@
  */
 #include "gmxpre.h"
 
-#include "veccompare.h"
+#include "gromacs/math/veccompare.h"
 
 #include <cmath>
 #include <cstdio>

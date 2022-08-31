@@ -36,6 +36,7 @@ gmx_add_unit_test(DomDecTests domdec-test
         hashedmap.cpp
         localatomsetmanager.cpp
         )
+target_link_libraries(domdec-test PRIVATE domdec)
 
 target_link_libraries(
     domdec-test PRIVATE

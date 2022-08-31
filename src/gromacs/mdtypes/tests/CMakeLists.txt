@@ -38,3 +38,6 @@ gmx_add_unit_test(MdtypesUnitTest mdtypes-test
         forcebuffers.cpp
         multipletimestepping.cpp
         )
+target_link_libraries(mdtypes-test PRIVATE
+        mdtypes
+        )

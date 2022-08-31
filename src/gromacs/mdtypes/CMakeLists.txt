@@ -86,6 +86,8 @@ target_include_directories(mdtypes INTERFACE
 #target_link_libraries(mdtypes PUBLIC
 target_link_libraries(mdtypes INTERFACE
                       legacy_api
+                      gpu_utils
+                      math
                       )
 # Interface conveys transitive dependence on other interface(s)
 target_link_libraries(mdtypes INTERFACE utility)

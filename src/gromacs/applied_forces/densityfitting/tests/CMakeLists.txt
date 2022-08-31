@@ -38,3 +38,5 @@ gmx_add_unit_test(DensityFittingAppliedForcesUnitTest density_fitting_applied_fo
         densityfittingforceprovider.cpp
         densityfittingoptions.cpp
         )
+# Todo: link density_fitting_applied_forces target when it exists
+target_link_libraries(density_fitting_applied_forces-test PRIVATE math)

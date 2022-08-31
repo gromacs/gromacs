@@ -70,6 +70,7 @@ target_link_libraries(taskassignment PUBLIC
 # TODO: Explicitly link specific modules.
 target_link_libraries(taskassignment PRIVATE
         legacy_modules
+        math
         pulling
         timing
         topology

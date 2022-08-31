@@ -60,6 +60,7 @@ target_include_directories(domdec INTERFACE
 #target_link_libraries(domdec PUBLIC
 target_link_libraries(domdec INTERFACE
                       legacy_api
+                      gpu_utils
                       mdlib
                       timing
                       topology

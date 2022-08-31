@@ -40,9 +40,9 @@
 
 #include "gmxpre.h"
 
-#include "optimization.h"
+#include "gromacs/math/optimization.h"
 
-#include "neldermead.h"
+#include "gromacs/math/neldermead.h"
 
 namespace gmx
 {

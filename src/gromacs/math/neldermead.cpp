@@ -40,7 +40,7 @@
 
 #include "gmxpre.h"
 
-#include "neldermead.h"
+#include "gromacs/math/neldermead.h"
 
 #include <algorithm>
 #include <list>

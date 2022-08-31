@@ -47,6 +47,7 @@ target_include_directories(nblib_test_infrastructure PUBLIC ${CMAKE_CURRENT_SOUR
 target_link_libraries(nblib_test_infrastructure PUBLIC
     nblib
     legacy_api
+    math
     pbcutil
     simd
     topology
