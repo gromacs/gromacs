@@ -47,15 +47,12 @@
 #include "gromacs/gmxpreprocess/grompp.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/pbcutil/pbc.h"
-#include "gromacs/topology/topology.h"
-#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/textwriter.h"
 
 #include "testutils/cmdlinetest.h"
 #include "testutils/testfilemanager.h"
 
-#include "moduletest.h"
 
 namespace gmx
 {

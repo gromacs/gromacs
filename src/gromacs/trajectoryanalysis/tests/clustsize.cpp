@@ -44,8 +44,6 @@
 
 #include "gmxpre.h"
 
-#include <cstring>
-
 #include <string>
 
 #include "gromacs/gmxana/gmx_ana.h"

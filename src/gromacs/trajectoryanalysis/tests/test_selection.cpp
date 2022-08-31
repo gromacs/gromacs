@@ -47,7 +47,6 @@
 #include "gromacs/trajectoryanalysis/analysissettings.h"
 #include "gromacs/trajectoryanalysis/cmdlinerunner.h"
 #include "gromacs/utility/arrayref.h"
-#include "gromacs/utility/exceptions.h"
 
 namespace gmx
 {

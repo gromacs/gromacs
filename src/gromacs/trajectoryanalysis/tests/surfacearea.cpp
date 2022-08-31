@@ -47,13 +47,11 @@
 #include <gtest/gtest.h>
 
 #include "gromacs/math/units.h"
-#include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/random/threefry.h"
 #include "gromacs/random/uniformrealdistribution.h"
 #include "gromacs/utility/arrayref.h"
-#include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
 
 #include "testutils/refdata.h"

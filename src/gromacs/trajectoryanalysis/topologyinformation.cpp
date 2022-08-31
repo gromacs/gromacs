@@ -54,7 +54,6 @@
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
-#include "gromacs/utility/unique_cptr.h"
 
 namespace gmx
 {

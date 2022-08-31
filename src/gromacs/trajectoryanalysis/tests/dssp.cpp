@@ -44,7 +44,6 @@
 
 #include "gromacs/trajectoryanalysis/modules/dssp.h"
 
-#include <gmock/gmock-matchers.h>
 #include <gtest/gtest-param-test.h>
 #include <gtest/gtest.h>
 

@@ -45,7 +45,6 @@
 #include <cstring>
 
 #include <algorithm>
-#include <string>
 
 #include "gromacs/fileio/oenv.h"
 #include "gromacs/fileio/timecontrol.h"
