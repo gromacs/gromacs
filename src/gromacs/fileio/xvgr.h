@@ -36,6 +36,7 @@
 
 #include <stdio.h>
 
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -251,9 +252,27 @@ void write_xvg(const char*                      fn,
  * ny columns to a file. If leg != NULL it will be written too.
  */
 
+/*! \brief
+ * Read xvg data as a time series.
+ *
+ * Allows truncation of data series to exclude time points.
+ * Expects first row to be
+ * time series. Only one set can be read in at the same time.
+ *
+ * \returns Data series in row major, first row being the time series.
+ * \param[in] fn Xvg file to read
+ * \param[in] startTime Optional first time to read.
+ * \param[in] endTime Optional last time to read.
+ */
+gmx::MultiDimArray<std::vector<double>, gmx::dynamicExtents2D>
+readXvgTimeSeries(const std::string& fn, std::optional<real> startTime, std::optional<real> endTime);
 
-/* This function reads ascii (xvg) files and extracts the data sets to a
+
+/*!\brief
+ *  This function reads ascii (xvg) files and extracts the data sets to a
  * two dimensional array which is returned.
+ *
+ * NOTE: This function is deprecated and shouldn't be used for new code.
  */
 real** read_xvg_time(const char* fn,
                      gmx_bool    bHaveT,

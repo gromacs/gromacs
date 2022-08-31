@@ -40,6 +40,7 @@
 #include "gmxpre.h"
 
 #include <numeric>
+#include <optional>
 
 #include <gtest/gtest.h>
 
@@ -47,6 +48,8 @@
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/textwriter.h"
 
+#include "testutils/refdata.h"
+#include "testutils/testasserts.h"
 #include "testutils/testfilemanager.h"
 #include "testutils/testoptions.h"
 
@@ -54,8 +57,38 @@ namespace gmx
 {
 namespace test
 {
+namespace
+{
 
-class XvgioTest : public ::testing::Test
+void compareValues(basic_mdspan<const double, dynamicExtents2D> ref,
+                   basic_mdspan<const double, dynamicExtents2D> test)
+{
+    // The xvg reading routines use a column-major layout, while we would
+    // like to enforce row major behaviour everywhere else. This requires
+    // this test to swap the orders between reference data and test data.
+    // Hence, we compare extent(0) with extent(1) and [i][j] with [j][i].
+    EXPECT_EQ(ref.extent(0), test.extent(1));
+    EXPECT_EQ(ref.extent(1), test.extent(0));
+
+    for (std::ptrdiff_t i = 0; i < ref.extent(0); i++)
+    {
+        for (std::ptrdiff_t j = 0; j < ref.extent(1); j++)
+        {
+            EXPECT_DOUBLE_EQ(ref[i][j], test[j][i]);
+        }
+    }
+}
+
+} // namespace
+
+/*! \brief
+ * Convienience type for testing read_xvg_time.
+ *
+ * Fields are: haveStartTime, haveEndTime
+ */
+using XvgrTimeReadingParams = std::tuple<bool, bool>;
+
+class XvgioTest : public ::testing::Test, public ::testing::WithParamInterface<XvgrTimeReadingParams>
 {
 public:
     XvgioTest() { referenceFilename_ = fileManager_.getTemporaryFilePath("ref.xvg"); }
@@ -69,25 +102,6 @@ public:
     void writeXvgFile() const
     {
         gmx::TextWriter::writeFileFromString(referenceFilename(), referenceContents());
-    }
-
-    static void compareValues(basic_mdspan<const double, dynamicExtents2D> ref,
-                              basic_mdspan<const double, dynamicExtents2D> test)
-    {
-        // The xvg reading routines use a column-major layout, while we would
-        // like to enforce row major behaviour everywhere else. This requires
-        // this test to swap the orders between reference data and test data.
-        // Hence, we compare extent(0) with extent(1) and [i][j] with [j][i].
-        EXPECT_EQ(ref.extent(0), test.extent(1));
-        EXPECT_EQ(ref.extent(1), test.extent(0));
-
-        for (std::ptrdiff_t i = 0; i < ref.extent(0); i++)
-        {
-            for (std::ptrdiff_t j = 0; j < ref.extent(1); j++)
-            {
-                EXPECT_DOUBLE_EQ(ref[i][j], test[j][i]);
-            }
-        }
     }
 
 private:
@@ -198,6 +212,59 @@ TEST_F(XvgioTest, readXvgDeprecatedWorks)
     sfree(xvgRefData);
     sfree(xvgTestData);
 }
+
+namespace
+{
+//! Helper for checking file contents against reference file
+void checkMatrix(TestReferenceChecker* checker, basic_mdspan<const double, dynamicExtents2D> input)
+{
+    TestReferenceChecker compound(checker->checkCompound("XvgMatrix", nullptr));
+
+    std::vector<real> values;
+    for (int i = 0; i < input.extent(0); ++i)
+    {
+        std::vector<real> row(input.extent(1));
+        for (int j = 0; j < input.extent(1); ++j)
+        {
+            row[j] = input[i][j];
+        }
+        values.insert(values.end(), row.begin(), row.end());
+    }
+    compound.checkSequence(values.begin(), values.end(), "ColumnValues");
+}
+
+} // namespace
+
+TEST_P(XvgioTest, readXvgTimeSeriesWorks)
+{
+    TestReferenceData    data;
+    TestReferenceChecker checker(data.rootChecker());
+    useStringAsXvgFile(
+            "0.2 1 2 3\n"
+            "0.4 1 3 2\n"
+            "0.8 3 2 1\n"
+            "1.0 3 1 2\n"
+            "1.4 1 2 3\n");
+    writeXvgFile();
+
+    auto params       = GetParam();
+    bool useStartTime = std::get<0>(params);
+    bool useEndTime   = std::get<1>(params);
+
+    auto timeSeriesData = readXvgTimeSeries(referenceFilename(),
+                                            useStartTime ? std::make_optional(0.3) : std::nullopt,
+                                            useEndTime ? std::make_optional(1.2) : std::nullopt);
+
+    checkMatrix(&checker, timeSeriesData);
+}
+
+INSTANTIATE_TEST_SUITE_P(XvgReadTimeSeries,
+                         XvgioTest,
+                         ::testing::Combine(
+
+                                 ::testing::Values(true, false),
+                                 ::testing::Values(true, false)));
+
 
 } // namespace test
 } // namespace gmx

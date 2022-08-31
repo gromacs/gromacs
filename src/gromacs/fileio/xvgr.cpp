@@ -37,6 +37,7 @@
 
 #include <cassert>
 #include <cctype>
+#include <cstddef>
 #include <cstring>
 
 #include <array>
@@ -718,7 +719,10 @@ int read_xvg(const char* fn, double*** y, int* ny)
     return nx;
 }
 
-gmx::MultiDimArray<std::vector<double>, gmx::dynamicExtents2D> readXvgData(const std::string& fn)
+namespace
+{
+//! Internal reading of xvg data, before changing layout.
+gmx::MultiDimArray<std::vector<double>, gmx::dynamicExtents2D> readXvgDataInternal(const std::string& fn)
 {
     FILE* fp = gmx_fio_fopen(fn.c_str(), "r");
     char* ptr;
@@ -789,6 +793,16 @@ gmx::MultiDimArray<std::vector<double>, gmx::dynamicExtents2D> readXvgData(const
     gmx::MultiDimArray<std::vector<double>, gmx::dynamicExtents2D> xvgDataAsArray(numRows, numColumns);
     std::copy(std::begin(xvgData), std::end(xvgData), begin(xvgDataAsArray.asView()));
 
+    return xvgDataAsArray;
+}
+
+} // namespace
+
+gmx::MultiDimArray<std::vector<double>, gmx::dynamicExtents2D> readXvgData(const std::string& fn)
+{
+    auto      xvgDataAsArray = readXvgDataInternal(fn);
+    const int numRows        = xvgDataAsArray.extent(0);
+    const int numColumns     = xvgDataAsArray.extent(1);
     gmx::MultiDimArray<std::vector<double>, gmx::dynamicExtents2D> xvgDataAsArrayTransposed(
             numColumns, numRows);
     for (std::ptrdiff_t row = 0; row < numRows; ++row)
@@ -800,6 +814,35 @@ gmx::MultiDimArray<std::vector<double>, gmx::dynamicExtents2D> readXvgData(const
     }
 
     return xvgDataAsArrayTransposed;
+}
+
+gmx::MultiDimArray<std::vector<double>, gmx::dynamicExtents2D>
+readXvgTimeSeries(const std::string& fn, std::optional<real> startTime, std::optional<real> endTime)
+{
+    auto fullDataSet = readXvgDataInternal(fn);
+    if (!startTime.has_value() && !endTime.has_value())
+    {
+        return fullDataSet;
+    }
+    const int numRows    = fullDataSet.extent(0);
+    const int numColumns = fullDataSet.extent(1);
+    gmx::MultiDimArray<std::vector<double>, gmx::dynamicExtents2D> reducedDataSet(numRows, numColumns);
+    int                                                            reducedRows = 0;
+    for (std::ptrdiff_t row = 0; row < numRows; ++row)
+    {
+        const bool timeLargerThanStartTime = !startTime.has_value() || (fullDataSet(row, 0) > *startTime);
+        const bool timeSmallerThanEndTime = !endTime.has_value() || (fullDataSet(row, 0) < *endTime);
+        if (timeLargerThanStartTime && timeSmallerThanEndTime)
+        {
+            for (std::ptrdiff_t column = 0; column < numColumns; ++column)
+            {
+                reducedDataSet(reducedRows, column) = fullDataSet(row, column);
+            }
+            ++reducedRows;
+        }
+    }
+    reducedDataSet.resize(reducedRows, numColumns);
+    return reducedDataSet;
 }
 
 void write_xvg(const char*                      fn,
