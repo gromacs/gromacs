@@ -37,6 +37,14 @@ to log messages.
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
 
+Fix pdb2gmx vsite assignment for tetrahedral secondary amines
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+The pdb2gmx vsite assignment code would always select a planar vsite for structures like secondary
+amines based solely on the number of atoms, without taking geometry into account. Changed
+to take geometry into account.
+
+:issue:`4573`
+
 Fixes that affect portability
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
