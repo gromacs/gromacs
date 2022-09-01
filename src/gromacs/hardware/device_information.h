@@ -46,6 +46,8 @@
 
 #include "config.h"
 
+#include <optional>
+
 #if GMX_GPU_CUDA
 #    include <cuda_runtime.h>
 #endif

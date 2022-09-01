@@ -46,7 +46,6 @@
 #define GMX_GPU_UTILS_GPUSTREAMMANAGER_H
 
 #include <memory>
-#include <string>
 
 class DeviceContext;
 struct DeviceInformation;
