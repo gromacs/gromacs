@@ -248,22 +248,25 @@ docs:build:
     KUBERNETES_MEMORY_REQUEST: 4Gi
   script:
     - cd $BUILD_DIR
-    - cmake --build . --target doxygen-all -- -j4 2>&1 | tee docs/doxygen-all.log
-    - cmake --build . --target sphinx-programs -- -j4 2>setupErrors.log | tee docs/setup.log || true
+    - |
+      cmake --build . --target sphinx-programs \
+      -- -j4 2>setupErrors.log | tee docs/setup.log || true
     - |
       if [ ! -f setupErrors.log -o -s setupErrors.log ] ; then
         echo "Errors while setting up Sphinx dependencies."
         [ -f setupErrors.log ] && cat setupErrors.log
         exit 1
       fi
+    - cmake --build . --target doxygen-all -- -j4 2>&1 | tee docs/doxygen-all.log
     - cmake --build . --target manual -- -j4 2>&1 | tee docs/manual/all-output.log
       | grep -i "warning" | grep -v "TeX" | grep -v "Package" || true
-    - cmake --build . --target webpage -- -j4 2>&1 | tee webpage.log || true
+    - cmake --build . --target webpage-sphinx -- -j4 2>&1 | tee webpage-sphinx.log || true
+    - cmake --build . --target webpage -- -j4 > webpage.log 2>&1 || true
     - grep "WARNING:" docs/manual/all-output.log > pythonErrors.log || true
     - grep -i "error" docs/sphinx-*.log > sphinxDiagnostics.log || true
     - grep -i "warning" docs/sphinx-*.log >> sphinxDiagnostics.log || true
     - grep -e "error:" -e "warning:" docs/doxygen-all.log > doxygenErrors.log || true
-    - grep -e "ERROR:" -e "WARNING:" -e '[Ee]xception' webpage.log > sphinxErrors.log || true
+    - grep -e "ERROR:" -e "WARNING:" -e '[Ee]xception' webpage-sphinx.log > sphinxErrors.log || true
 # TODO(#4543): Resolve various warnings and errors from doxygen and its supporting tools.
 #    - if [ -s doxygenErrors.log ] ; then echo "Found errors during doxygen build"; cat doxygenErrors.log; exit 1; fi
     - |
@@ -320,10 +323,10 @@ webpage:configure:
   cache: {}
   tags:
     - k8s-scilifelab
-  dependencies:
-    - archive:package
-    - regressiontests:package
-    - prepare-release-version
+  needs:
+    - job: archive:package
+    - job: regressiontests:package
+    - job: prepare-release-version
   variables:
     CMAKE_EXTRA_OPTIONS: -DGMX_BUILD_HELP=on -DGMX_BUILD_MANUAL=on -DGMX_USE_SIMD_KERNELS=off
 
@@ -351,8 +354,8 @@ webpage:build:release:
   stage: release-prepare-deploy
   tags:
     - k8s-scilifelab
-  dependencies:
-    - webpage:dependencies
-    - webpage:configure
+  needs:
+    - job: webpage:dependencies
+    - job: webpage:configure
   variables:
     BUILD_DIR: release-doc-builds
