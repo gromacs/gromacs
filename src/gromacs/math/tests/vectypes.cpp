@@ -366,6 +366,15 @@ TEST(RVecTest, CanScaleByVector)
     EXPECT_REAL_EQ(3, scaled[ZZ]);
 }
 
+TEST(RVecTest, CanNegate)
+{
+    RVec a(1, -2, 3);
+    RVec b = -a;
+    EXPECT_REAL_EQ(-1, b[XX]);
+    EXPECT_REAL_EQ(2, b[YY]);
+    EXPECT_REAL_EQ(-3, b[ZZ]);
+}
+
 TEST(RVecTest, asIVec)
 {
     RVec a(1.2, 2.7, -3e3);

@@ -173,6 +173,8 @@ public:
 
         return *this *= 1 / right;
     }
+    //! Unary minus
+    BasicVector<ValueType> operator-() const { return { -x_[0], -x_[1], -x_[2] }; }
     //! Return dot product
     ValueType dot(const BasicVector<ValueType>& right) const
     {
