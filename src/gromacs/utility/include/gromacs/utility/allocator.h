@@ -119,13 +119,11 @@ public:
      *  \param n    Number of elements of type T to allocate. n can be
      *              0 bytes, which will return a non-null properly aligned
      *              and padded pointer that should not be used.
-     *  \param hint Optional value returned from previous call to allocate.
-     *              For now this is not used.
      *  \return Pointer to allocated memory
      *
      *  \throws std::bad_alloc if the allocation fails.
      */
-    value_type* allocate(std::size_t n, typename std::allocator<void>::const_pointer gmx_unused hint = nullptr)
+    value_type* allocate(std::size_t n)
     {
         void* p = AllocationPolicy::malloc(n * sizeof(T));
 
