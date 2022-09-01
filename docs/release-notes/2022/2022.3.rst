@@ -55,6 +55,20 @@ not all equal.
 
 :issue:`4495`
 
+Prevent hbond merging in gmx hbond for non-compatible options
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+The option to merge multiple hbonds from one donor-acceptor pair does not
+work with other options that rely on analysing all hydrogen bonds, or changing
+the search for donor-acceptor pairs. Due to this, the tool will stop
+if known incompatible combinations are used.
+
+When using ``-hbn`` to export the hydrogen bonding information with merging enabled,
+previously indices of arbitrary hydrogens were printed. Now, to avoid confusion, the index file
+contains ``-1`` instead. Use ``-nomerge`` option if full hydrogen bond information is needed.
+
+:issue:`3837`
+
 Fixes that affect portability
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -69,10 +83,10 @@ for all gcc versions.
 
 :issue:`4539`
 
-Document incompatiblity of gcc-11 and nvcc 11.6.1
-"""""""""""""""""""""""""""""""""""""""""""""""""
+Document incompatibility of gcc-11 and nvcc 11.6.1
+""""""""""""""""""""""""""""""""""""""""""""""""""
 
-A known incompatiblity between the default gcc and nvcc compiler on
+A known incompatibility between the default gcc and nvcc compiler on
 Ubuntu 22.04 has been documented, with a guide how to circumvent the issue.
 
 :issue:`4574`
