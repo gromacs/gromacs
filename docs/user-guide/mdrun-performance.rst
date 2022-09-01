@@ -1410,10 +1410,11 @@ Run setup
 ^^^^^^^^^
 
 * For an approximately spherical solute, use a rhombic dodecahedron unit cell.
-* When using a time-step of 2 fs, use :mdp-value:`constraints=h-bonds`
-  (and not :mdp-value:`constraints=all-bonds`), since this is faster, especially with GPUs,
-  and most force fields have been parametrized with only bonds involving
-  hydrogens constrained.
+* When using a time-step of <=2 fs, use :mdp-value:`constraints=h-bonds`
+  (and not :mdp-value:`constraints=all-bonds`), since:
+  * this is faster, especially with GPUs;
+  * it is necessary to be able to use GPU-resident mode;
+  * and most force fields have been parametrized with only bonds involving hydrogens constrained.
 * You can increase the time-step to 4 or 5 fs when using virtual interaction
   sites (``gmx pdb2gmx -vsite h``).
 * For massively parallel runs with PME, you might need to try different numbers
@@ -1436,15 +1437,28 @@ Checking and improving performance
   imbalance, the automated PME-tuning might have reduced the initial imbalance.
   You could still gain performance by changing the mdp parameters or increasing
   the number of PME ranks.
-* In GPU-resident runs (``-update gpu``), frequent virial or energy computation
-  can have a large overhead (and this will not show up in the cycle counters).
-  To reduce this overhead, increase ``nstcalcenergy``.
-* If the neighbor searching takes a lot of time, increase nstlist. If a Verlet
+* (Especially) In GPU-resident runs (``-update gpu``):
+
+  * Frequent virial or energy computation can have a large overhead (and this will not show up in the cycle counters).
+    To reduce this overhead, increase ``nstcalcenergy``;
+  * Frequent temperature or pressure coupling can have significant overhead; 
+    to reduce this, make sure to have as infrequent coupling as your algorithms allow (typically >=50-100 steps).
+
+* If the neighbor searching and/or domain decomposition takes a lot of time, increase ``nstlist``. If a Verlet
   buffer tolerance is used, this is done automatically by :ref:`gmx mdrun`
   and the pair-list buffer is increased to keep the energy drift constant.
 
-  * If ``Comm. energies`` takes a lot of time (a note will be printed in the log
-    file), increase nstcalcenergy.
-  * If all communication takes a lot of time, you might be running on too many
-    cores, or you could try running combined MPI/OpenMP parallelization with 2
-    or 4 OpenMP threads per MPI process.
+    * especially with multi-GPU runs, the automatic increasing of ``nstlist`` at ``mdrun``
+      startup can be conservative and larger value is often be optimal
+      (e.g. ``nstlist=200-300`` with PME and default Verlet buffer tolerance).
+
+* If ``Comm. energies`` takes a lot of time (a note will be printed in the log
+  file), increase nstcalcenergy.
+* If all communication takes a lot of time, you might be running on too many
+  cores, or you could try running combined MPI/OpenMP parallelization with 2
+  or 4 OpenMP threads per MPI process.
+* In multi-GPU runs avoid using as many ranks as cores (or hardware threads) since
+  this introduces a major inefficiency due to overheads associated to GPUs sharing by several MPI ranks.
+  Use at most a few ranks per GPU, 1-3 ranks is generally optimal;
+  with GPU-resident mode and direct GPU communication typically 1 rank/GPU is best.
+
