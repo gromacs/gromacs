@@ -205,7 +205,7 @@ TEST(TopologyInformation, WorksWithTprFromPdbFile)
         CommandLine caller;
         caller.append("grompp");
         caller.addOption("-f", mdpInputFileName);
-        caller.addOption("-p", TestFileManager::getInputFilePath(name));
+        caller.addOption("-p", TestFileManager::getInputFilePath(name + ".top"));
         caller.addOption("-c", TestFileManager::getInputFilePath(name + ".pdb"));
         caller.addOption("-o", tprName);
         ASSERT_EQ(0, gmx_grompp(caller.argc(), caller.argv()));

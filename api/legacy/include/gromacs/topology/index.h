@@ -85,9 +85,8 @@ struct t_cluster_ndx
 
 t_cluster_ndx cluster_index(FILE* fplog, const char* ndx);
 
-
+//! Write index blocks to file.
 void write_index(const char* outf, struct t_blocka* b, char** gnames, gmx_bool bDuplicate, int natoms);
-/* Writes index blocks to outf (writes an indexfile) */
 
 /*! \brief
  * Add a new group with \p name to \p b.
@@ -98,12 +97,18 @@ void write_index(const char* outf, struct t_blocka* b, char** gnames, gmx_bool b
  * \param[in] name Group name.
  */
 void add_grp(struct t_blocka* b, char*** gnames, gmx::ArrayRef<const int> a, const std::string& name);
-/* Ads group a with name name to block b and namelist gnames */
 
-void analyse(const t_atoms* atoms, struct t_blocka* gb, char*** gn, gmx_bool bASK, gmx_bool bVerb);
-/* Makes index groups gb with names gn for atoms in atoms.
- * bASK=FALSE gives default groups.
+/*! \brief
+ * Builds index group \p gb form input \p atoms and \p gn names.
+ *
+ * \param[in] atoms Topology atoms to generate index groups for.
+ * \param[out] gb Index datastructures to populate.
+ * \param[out] gn Names of index groups.
+ * \param[in] bASK If user should be prompted for groups.
+ *                 If false, generates default groups.
+ * \param[in] bVerb If output should be verbose.
  */
+void analyse(const t_atoms* atoms, struct t_blocka* gb, char*** gn, gmx_bool bASK, gmx_bool bVerb);
 
 /*! \brief Look up a group in a list.
  *
