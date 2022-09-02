@@ -124,10 +124,10 @@ ListedForcesGpu::Impl::~Impl()
 {
     for (int fType : fTypesOnGpu)
     {
-        if (d_iLists_[fType].iatoms)
+        if (d_iAtoms_[fType])
         {
-            freeDeviceBuffer(&d_iLists_[fType].iatoms);
-            d_iLists_[fType].iatoms = nullptr;
+            freeDeviceBuffer(&d_iAtoms_[fType]);
+            d_iAtoms_[fType] = nullptr;
         }
     }
 
@@ -231,12 +231,11 @@ void ListedForcesGpu::Impl::updateInteractionListsAndDeviceBuffers(ArrayRef<cons
         // end.
         if (iList.size() > 0)
         {
-            t_ilist& d_iList = d_iLists_[fType];
-
+            int newListSize;
             reallocateDeviceBuffer(
-                    &d_iList.iatoms, iList.size(), &d_iList.nr, &d_iList.nalloc, deviceContext_);
+                    &d_iAtoms_[fType], iList.size(), &newListSize, &d_iAtomsAlloc_[fType], deviceContext_);
 
-            copyToDeviceBuffer(&d_iList.iatoms,
+            copyToDeviceBuffer(&d_iAtoms_[fType],
                                iList.iatoms.data(),
                                0,
                                iList.size(),
@@ -247,7 +246,7 @@ void ListedForcesGpu::Impl::updateInteractionListsAndDeviceBuffers(ArrayRef<cons
         kernelParams_.fTypesOnGpu[fTypesCounter] = fType;
         int numBonds = iList.size() / (interaction_function[fType].nratoms + 1);
         kernelParams_.numFTypeBonds[fTypesCounter] = numBonds;
-        kernelParams_.d_iatoms[fTypesCounter]      = d_iLists_[fType].iatoms;
+        kernelParams_.d_iatoms[fTypesCounter]      = d_iAtoms_[fType];
         if (fTypesCounter == 0)
         {
             kernelParams_.fTypeRangeStart[fTypesCounter] = 0;
@@ -276,8 +275,8 @@ void ListedForcesGpu::Impl::updateInteractionListsAndDeviceBuffers(ArrayRef<cons
     kernelLaunchConfig_.gridSize[0] = (fTypeRangeEnd + c_threadsPerBlock) / c_threadsPerBlock;
 
     d_xq_     = static_cast<float4*>(d_xqPtr);
-    d_f_      = asFloat3(d_fPtr);
-    d_fShift_ = asFloat3(d_fShiftPtr);
+    d_f_      = d_fPtr;
+    d_fShift_ = d_fShiftPtr;
 
     kernelParams_.d_forceParams = d_forceParams_;
     kernelParams_.d_vTot        = d_vTot_;

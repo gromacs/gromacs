@@ -80,7 +80,6 @@ struct bonded_threading_t;
 struct gmx_enerdata_t;
 struct gmx_ffparams_t;
 struct gmx_grppairener_t;
-struct gmx_localtop_t;
 struct gmx_multisim_t;
 class history_t;
 struct t_commrec;
@@ -88,9 +87,6 @@ struct t_fcdata;
 struct t_forcerec;
 struct t_lambda;
 struct t_nrnb;
-class t_state;
-struct t_disresdata;
-struct t_oriresdata;
 
 namespace gmx
 {
@@ -204,7 +200,7 @@ public:
 private:
     //! Pointer to the interaction definitions
     InteractionDefinitions const* idef_ = nullptr;
-    //! Interaction defintions used for storing selections
+    //! Interaction definitions used for storing selections
     InteractionDefinitions idefSelection_;
     //! Thread parallelization setup, unique_ptr to avoid declaring bonded_threading_t
     std::unique_ptr<bonded_threading_t> threading_;

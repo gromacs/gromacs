@@ -47,14 +47,13 @@
 #ifndef GMX_LISTED_FORCES_LISTED_FORCES_GPU_IMPL_H
 #define GMX_LISTED_FORCES_LISTED_FORCES_GPU_IMPL_H
 
-#include "gromacs/gpu_utils/device_context.h"
-#include "gromacs/gpu_utils/gputraits.cuh"
+#include "gromacs/gpu_utils/gputraits.h"
 #include "gromacs/gpu_utils/hostallocator.h"
 #include "gromacs/listed_forces/listed_forces_gpu.h"
 #include "gromacs/pbcutil/pbc_aiuc.h"
 
 struct gmx_ffparams_t;
-struct t_forcerec;
+class DeviceContext;
 
 namespace gmx
 {
@@ -75,7 +74,7 @@ struct HostInteractionList
  * to the GPU as a single structure.
  *
  */
-struct BondedCudaKernelParameters
+struct BondedGpuKernelParameters
 {
     //! Periodic boundary data
     PbcAiuc pbcAiuc;
@@ -91,19 +90,19 @@ struct BondedCudaKernelParameters
     int fTypeRangeEnd[numFTypesOnGpu];
 
     //! Force parameters (on GPU)
-    t_iparams* d_forceParams;
+    DeviceBuffer<t_iparams> d_forceParams;
     //! Total Energy (on GPU)
-    float* d_vTot;
+    DeviceBuffer<float> d_vTot;
     //! Interaction list atoms (on GPU)
-    t_iatom* d_iatoms[numFTypesOnGpu];
+    DeviceBuffer<t_iatom> d_iatoms[numFTypesOnGpu];
 
-    BondedCudaKernelParameters()
+    BondedGpuKernelParameters()
     {
         matrix boxDummy = { { 0, 0, 0 }, { 0, 0, 0 }, { 0, 0, 0 } };
 
         setPbcAiuc(0, boxDummy, &pbcAiuc);
 
-        electrostaticsScaleFactor = 1.0;
+        electrostaticsScaleFactor = 1.0F;
         d_forceParams             = nullptr;
         d_vTot                    = nullptr;
     }
@@ -168,27 +167,28 @@ private:
     //! Tells whether there are any interaction in iLists.
     bool haveInteractions_;
     //! Interaction lists on the device.
-    t_ilist d_iLists_[F_NRE] = {};
+    std::array<DeviceBuffer<t_iatom>, F_NRE> d_iAtoms_      = {};
+    std::array<int, F_NRE>                   d_iAtomsAlloc_ = {};
     //! Bonded parameters for device-side use.
-    t_iparams* d_forceParams_ = nullptr;
+    DeviceBuffer<t_iparams> d_forceParams_ = nullptr;
     //! Position-charge vector on the device.
-    const float4* d_xq_ = nullptr;
+    DeviceBuffer<Float4> d_xq_ = nullptr;
     //! Force vector on the device.
-    float3* d_f_ = nullptr;
+    DeviceBuffer<Float3> d_f_ = nullptr;
     //! Shift force vector on the device.
-    float3* d_fShift_ = nullptr;
+    DeviceBuffer<Float3> d_fShift_ = nullptr;
     //! \brief Host-side virial buffer
     HostVector<float> vTot_ = { {}, gmx::HostAllocationPolicy(gmx::PinningPolicy::PinnedIfSupported) };
     //! \brief Device-side total virial
-    float* d_vTot_ = nullptr;
+    DeviceBuffer<float> d_vTot_ = nullptr;
 
     //! GPU context object
     const DeviceContext& deviceContext_;
     //! \brief Bonded GPU stream, not owned by this module
     const DeviceStream& deviceStream_;
 
-    //! Parameters and pointers, passed to the CUDA kernel
-    BondedCudaKernelParameters kernelParams_;
+    //! Parameters and pointers, passed to the GPU kernel
+    BondedGpuKernelParameters kernelParams_;
 
     //! GPU kernel launch configuration
     KernelLaunchConfig kernelLaunchConfig_;
