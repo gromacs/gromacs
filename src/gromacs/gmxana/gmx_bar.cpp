@@ -91,7 +91,6 @@ typedef struct xvg_t
     int           ftp;          /* file type */
     int           nset;         /* number of lambdas, including dhdl */
     int*          np;           /* number of data points (du or hists) per lambda */
-    int           np_alloc;     /* number of points (du or hists) allocated */
     double        temp;         /* temperature */
     lambda_vec_t* lambda;       /* the lambdas (of first index for y). */
     double*       t;            /* the times (of second index for y) */
@@ -139,9 +138,8 @@ typedef struct samples_t
     hist_t* hist; /* a histogram */
 
     /* allocation data: (not NULL for data 'owned' by this struct) */
-    double *du_alloc, *t_alloc;  /* allocated delta u arrays  */
-    size_t  ndu_alloc, nt_alloc; /* pre-allocated sizes */
-    hist_t* hist_alloc;          /* allocated hist */
+    double* du_alloc;  /* allocated delta u arrays  */
+    size_t  ndu_alloc; /* pre-allocated sizes */
 
     int64_t     ntot;     /* total number of samples */
     const char* filename; /* the file name this sample comes from */
@@ -568,7 +566,6 @@ static void xvg_init(xvg_t* ba)
 {
     ba->filename = nullptr;
     ba->nset     = 0;
-    ba->np_alloc = 0;
     ba->np       = nullptr;
     ba->y        = nullptr;
 }
@@ -591,10 +588,7 @@ static void samples_init(samples_t*    s,
     s->start_time = s->delta_time = 0;
     s->hist                       = nullptr;
     s->du_alloc                   = nullptr;
-    s->t_alloc                    = nullptr;
-    s->hist_alloc                 = nullptr;
     s->ndu_alloc                  = 0;
-    s->nt_alloc                   = 0;
 
     s->ntot     = 0;
     s->filename = filename;

@@ -83,8 +83,6 @@ struct BondedCudaKernelParameters
     float electrostaticsScaleFactor;
     //! The bonded types on GPU
     int fTypesOnGpu[numFTypesOnGpu];
-    //! The number of interaction atom (iatom) elements for every function type
-    int numFTypeIAtoms[numFTypesOnGpu];
     //! The number of bonds for every function type
     int numFTypeBonds[numFTypesOnGpu];
     //! The start index in the range of each interaction type

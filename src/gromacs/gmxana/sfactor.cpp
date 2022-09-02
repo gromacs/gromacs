@@ -81,7 +81,6 @@ typedef struct reduced_atom
 typedef struct structure_factor
 {
     int      n_angles;
-    int      n_groups;
     double   lambda;
     double   energy;
     double   momentum;

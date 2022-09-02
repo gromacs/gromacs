@@ -2218,7 +2218,7 @@ static void do_cpt_mdmodules(CheckPointVersion              fileVersion,
             gmx::dumpKeyValueTree(&textWriter, mdModuleCheckpointParameterTree);
         }
         gmx::MDModulesCheckpointReadingDataOnMaster mdModuleCheckpointReadingDataOnMaster = {
-            mdModuleCheckpointParameterTree, fileVersion
+            mdModuleCheckpointParameterTree
         };
         mdModulesNotifiers.checkpointingNotifier_.notify(mdModuleCheckpointReadingDataOnMaster);
     }
@@ -2440,8 +2440,7 @@ void write_checkpoint_data(t_fileio*                         fp,
     // Checkpointing MDModules
     {
         gmx::KeyValueTreeBuilder          builder;
-        gmx::MDModulesWriteCheckpointData mdModulesWriteCheckpoint = { builder.rootObject(),
-                                                                       headerContents.file_version };
+        gmx::MDModulesWriteCheckpointData mdModulesWriteCheckpoint = { builder.rootObject() };
         mdModulesNotifiers.checkpointingNotifier_.notify(mdModulesWriteCheckpoint);
         auto                     tree = builder.build();
         gmx::FileIOXdrSerializer serializer(fp);
@@ -2882,9 +2881,8 @@ void load_checkpoint(const char*                    fn,
     if (PAR(cr))
     {
         gmx_bcast(sizeof(headerContents.step), &headerContents.step, cr->mpiDefaultCommunicator);
-        gmx::MDModulesCheckpointReadingBroadcast broadcastCheckPointData = {
-            cr->mpiDefaultCommunicator, PAR(cr), headerContents.file_version
-        };
+        gmx::MDModulesCheckpointReadingBroadcast broadcastCheckPointData = { cr->mpiDefaultCommunicator,
+                                                                             PAR(cr) };
         mdModulesNotifiers.checkpointingNotifier_.notify(broadcastCheckPointData);
     }
     ir->bContinuation = TRUE;

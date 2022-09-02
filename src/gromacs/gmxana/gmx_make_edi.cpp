@@ -73,14 +73,12 @@ typedef struct
 
 
 /* This type is for the average, reference, target, and origin structure   */
-typedef struct edix
+struct edix
 {
-    int   nr;    /* number of atoms this structure contains */
-    int*  anrs;  /* atom index numbers                      */
-    rvec* x;     /* positions                               */
-    real* sqrtm; /* sqrt of the masses used for mass-
-                  * weighting of analysis                   */
-} t_edix;
+    int   nr;   /* number of atoms this structure contains */
+    int*  anrs; /* atom index numbers                      */
+    rvec* x;    /* positions                               */
+};
 
 
 typedef struct edipar

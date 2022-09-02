@@ -175,8 +175,6 @@ typedef struct domdec_load
 /*! \brief Data needed to sort an atom to the desired location in the local state */
 typedef struct gmx_cgsort
 {
-    /**< Global atom/charge group index */
-    int ind_gl = 0;
     /**< Local atom/charge group index */
     int ind = 0;
 } gmx_cgsort_t;

@@ -97,7 +97,6 @@ struct fft5d_plan_t
     gmx_fft_t* p1d[3]; /*1D plans*/
 #if GMX_FFT_FFTW3
     FFTW(plan) p3d; /*3D plan: used for 0D decomposition if FFT supports transposed output*/
-    FFTW(plan) mpip[2];
 #endif
     MPI_Comm cart[2];
 
@@ -136,19 +135,6 @@ fft5d_plan fft5d_plan_3d(int         N,
                          t_complex** lout3,
                          int         nthreads,
                          gmx::PinningPolicy realGridAllocationPinningPolicy = gmx::PinningPolicy::CannotBePinned);
-void       fft5d_local_size(fft5d_plan plan, int* N1, int* M0, int* K0, int* K1, int** coor);
 void       fft5d_destroy(fft5d_plan plan);
-fft5d_plan fft5d_plan_3d_cart(int         N,
-                              int         M,
-                              int         K,
-                              MPI_Comm    comm,
-                              int         P0,
-                              int         flags,
-                              t_complex** lin,
-                              t_complex** lin2,
-                              t_complex** lout2,
-                              t_complex** lout3,
-                              int         nthreads);
-void       fft5d_compare_data(const t_complex* lin, const t_complex* in, fft5d_plan plan, int bothLocal, int normarlize);
 
 #endif

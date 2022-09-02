@@ -244,8 +244,7 @@ void ListedForcesGpu::Impl::updateInteractionListsAndDeviceBuffers(ArrayRef<cons
                                GpuApiCallBehavior::Async,
                                nullptr);
         }
-        kernelParams_.fTypesOnGpu[fTypesCounter]    = fType;
-        kernelParams_.numFTypeIAtoms[fTypesCounter] = iList.size();
+        kernelParams_.fTypesOnGpu[fTypesCounter] = fType;
         int numBonds = iList.size() / (interaction_function[fType].nratoms + 1);
         kernelParams_.numFTypeBonds[fTypesCounter] = numBonds;
         kernelParams_.d_iatoms[fTypesCounter]      = d_iLists_[fType].iatoms;

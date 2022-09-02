@@ -79,8 +79,6 @@ struct NbnxnPairlistCpuWork
 
     //! Work data for generating an IEntry in the pairlist
     IClusterData iClusterData;
-    //! The current cj_ind index for the current list
-    int cj_ind;
     //! Temporary j-cluster list, used for sorting on exclusions
     std::vector<nbnxn_cj_t> cj;
 

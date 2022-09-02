@@ -128,8 +128,6 @@ struct MDModulesCheckpointReadingDataOnMaster
 {
     //! The data of the MDModules that is stored in the checkpoint file
     const KeyValueTreeObject& checkpointedData_;
-    //! The version of the read ceckpoint file
-    CheckPointVersion checkpointFileVersion_;
 };
 
 /*! \libinternal
@@ -141,8 +139,6 @@ struct MDModulesCheckpointReadingBroadcast
     MPI_Comm communicator_;
     //! Whether the run is executed in parallel
     bool isParallelRun_;
-    //! The version of the read file version
-    CheckPointVersion checkpointFileVersion_;
 };
 
 /*! \libinternal \brief Writing the MDModules data to a checkpoint file.
@@ -151,8 +147,6 @@ struct MDModulesWriteCheckpointData
 {
     //! Builder for the Key-Value-Tree to store the MDModule checkpoint data
     KeyValueTreeObjectBuilder builder_;
-    //! The version of the read file version
-    CheckPointVersion checkpointFileVersion_;
 };
 
 } // namespace gmx

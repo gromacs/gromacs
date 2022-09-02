@@ -211,9 +211,9 @@ typedef struct UmbrellaOptions // NOLINT(clang-analyzer-optin.performance.Paddin
      */
     /*!\{*/
     const char *fnTpr, *fnPullf, *fnCoordSel;
-    const char* fnPullx;              //!< file names of input
-    gmx_bool    bTpr, bPullf, bPullx; //!< input file types given?
-    real        tmin, tmax, dt;       //!< only read input within tmin and tmax with dt
+    const char* fnPullx;        //!< file names of input
+    gmx_bool    bPullf, bPullx; //!< input file types given?
+    real        tmin, tmax, dt; //!< only read input within tmin and tmax with dt
 
     gmx_bool bInitPotByIntegration; //!< before WHAM, guess potential by force integration. Yields 1.5 to 2 times faster convergence
     int stepUpdateContrib; //!< update contribution table every ... iterations. Accelerates WHAM.
@@ -3170,7 +3170,6 @@ int gmx_wham(int argc, char* argv[])
     opt.bProf0Set = opt2parg_bSet("-zprof0", asize(pa), pa);
 
     opt.bTab         = opt2bSet("-tab", NFILE, fnm);
-    opt.bTpr         = opt2bSet("-it", NFILE, fnm);
     opt.bPullx       = opt2bSet("-ix", NFILE, fnm);
     opt.bPullf       = opt2bSet("-if", NFILE, fnm);
     opt.bTauIntGiven = opt2bSet("-iiact", NFILE, fnm);
