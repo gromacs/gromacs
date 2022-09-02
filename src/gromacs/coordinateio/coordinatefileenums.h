@@ -33,7 +33,7 @@
  */
 /*! \file
  * \brief
- * Enum class defining the different requirements that outputadapters
+ * Defines enum class defining the different requirements that outputadapters
  * have for the output file type. OutputManager objects can only be built
  * with OutputAdapters whose requirements can be implemented with the available input.
  *
@@ -41,8 +41,8 @@
  * \libinternal
  * \ingroup module_coordinateio
  */
-#ifndef GMX_COORDINATEIO_ENUMS_H
-#define GMX_COORDINATEIO_ENUMS_H
+#ifndef GMX_COORDINATEIO_OUTPUTMANAGERENUMS_H
+#define GMX_COORDINATEIO_OUTPUTMANAGERENUMS_H
 
 namespace gmx
 {

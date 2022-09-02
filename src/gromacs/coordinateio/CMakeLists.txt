@@ -33,7 +33,7 @@
 
 # Set up the module library
 add_library(coordinateio INTERFACE)
-file(GLOB COORDINATEIO_SOURCES *.cpp outputadapters/*.cpp)
+file(GLOB COORDINATEIO_SOURCES *.cpp outputadapters/*.cpp frameconverters/*.cpp)
 set(LIBGROMACS_SOURCES ${LIBGROMACS_SOURCES} ${COORDINATEIO_SOURCES} PARENT_SCOPE)
 
 # Source files have the following dependencies on library infrastructure.

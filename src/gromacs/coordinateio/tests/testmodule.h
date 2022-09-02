@@ -44,6 +44,7 @@
 #ifndef GMX_COORDINATEIO_TESTMODULE_H
 #define GMX_COORDINATEIO_TESTMODULE_H
 
+#include "gromacs/coordinateio/coordinatefileenums.h"
 #include "gromacs/coordinateio/ioutputadapter.h"
 
 namespace gmx

@@ -47,7 +47,7 @@
 #include "gromacs/math/vec.h"
 #include "gromacs/options/ioptionscontainer.h"
 
-#include "enums.h"
+#include "coordinatefileenums.h"
 
 namespace gmx
 {

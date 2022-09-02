@@ -36,6 +36,7 @@ gmx_add_unit_test(CoordinateIOTests coordinateio-test
         builder.cpp
         outputadaptercontainer.cpp
         outputadapters.cpp
+        register.cpp
         requirements.cpp
         setatoms.cpp
         setbothtime.cpp

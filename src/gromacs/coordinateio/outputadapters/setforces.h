@@ -44,6 +44,7 @@
 
 #include <memory>
 
+#include "gromacs/coordinateio/coordinatefileenums.h"
 #include "gromacs/coordinateio/ioutputadapter.h"
 
 namespace gmx

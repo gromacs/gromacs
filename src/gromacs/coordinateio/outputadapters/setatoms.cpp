@@ -46,6 +46,7 @@
 
 #include <algorithm>
 
+#include "gromacs/coordinateio/coordinatefileenums.h"
 #include "gromacs/trajectory/trajectoryframe.h"
 #include "gromacs/utility/exceptions.h"
 

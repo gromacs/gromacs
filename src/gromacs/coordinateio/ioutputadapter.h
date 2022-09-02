@@ -47,7 +47,7 @@
 
 #include "gromacs/utility/classhelpers.h"
 
-#include "enums.h"
+#include "coordinatefileenums.h"
 
 struct t_trxframe;
 

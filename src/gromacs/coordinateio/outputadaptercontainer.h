@@ -50,6 +50,8 @@
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/enumerationhelpers.h"
 
+#include "coordinatefileenums.h"
+
 namespace gmx
 {
 
