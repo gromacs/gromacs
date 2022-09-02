@@ -726,7 +726,7 @@ namespace gmx
 {
 
 template<bool calcVir, bool calcEner>
-__global__ void exec_kernel_gpu(BondedGpuKernelParameters kernelParams, float4* gm_xq, float3* gm_f, float3* gm_fShift)
+__global__ void bonded_kernel_gpu(BondedGpuKernelParameters kernelParams, float4* gm_xq, float3* gm_f, float3* gm_fShift)
 {
     assert(blockDim.y == 1 && blockDim.z == 1);
     const int tid          = blockIdx.x * blockDim.x + threadIdx.x;
@@ -923,7 +923,7 @@ void ListedForcesGpu::Impl::launchKernel()
         return;
     }
 
-    auto kernelPtr = exec_kernel_gpu<calcVir, calcEner>;
+    auto kernelPtr = bonded_kernel_gpu<calcVir, calcEner>;
 
     const auto kernelArgs = prepareGpuKernelArguments(
             kernelPtr, kernelLaunchConfig_, &kernelParams_, &d_xq_, &d_f_, &d_fShift_);
@@ -932,7 +932,7 @@ void ListedForcesGpu::Impl::launchKernel()
                     kernelLaunchConfig_,
                     deviceStream_,
                     nullptr,
-                    "exec_kernel_gpu<calcVir, calcEner>",
+                    "bonded_kernel_gpu<calcVir, calcEner>",
                     kernelArgs);
 
     wallcycle_sub_stop(wcycle_, WallCycleSubCounter::LaunchGpuBonded);
