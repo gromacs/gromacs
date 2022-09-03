@@ -284,6 +284,11 @@ std::vector<PropagationParameters> propagationParametersWithCoupling()
                 }
                 for (std::string pcoupl : { "no", "Berendsen", "Parrinello-Rahman", "C-rescale" })
                 {
+                    if (pcoupl == "C-rescale" && tcoupl == "no")
+                    {
+                        // TODO Add NPH test for c-rescale again once it is working.
+                        continue;
+                    }
                     // VV supports few algorithm combinations
                     if (integrator == "md-vv")
                     {
@@ -350,6 +355,11 @@ std::vector<PropagationParameters> propagationParametersWithConstraints()
                 }
                 for (std::string pcoupl : { "no", "Parrinello-Rahman", "C-rescale" })
                 {
+                    if (pcoupl == "C-rescale" && tcoupl == "no")
+                    {
+                        // TODO Add NPH test for c-rescale again once it is working.
+                        continue;
+                    }
                     // VV supports few algorithm combinations
                     if (integrator == "md-vv")
                     {

@@ -131,11 +131,11 @@ function(gmx_add_nvcc_flag_if_supported _output_variable_name_to_append_to _flag
             set(_cache_variable_value TRUE)
             message(STATUS "Checking if nvcc accepts flags ${ARGN} - Assuming success when using gcc 7")
         else()
-	    if(CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 11)
-	      set(CCBIN "-ccbin ${CUDA_HOST_COMPILER}")
-	    endif()
+            if(NOT(CMAKE_CXX_COMPILER_ID MATCHES "GNU" AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS 11))
+              set(CCBIN "-ccbin ${CUDA_HOST_COMPILER}")
+            endif()
             execute_process(
-	        COMMAND ${CUDA_NVCC_EXECUTABLE} ${ARGN} ${CCBIN} "${CMAKE_SOURCE_DIR}/cmake/TestCUDA.cu"
+                COMMAND ${CUDA_NVCC_EXECUTABLE} ${ARGN} ${CCBIN} "${CMAKE_SOURCE_DIR}/cmake/TestCUDA.cu"
                 RESULT_VARIABLE _cuda_success
                 OUTPUT_QUIET
                 ERROR_QUIET

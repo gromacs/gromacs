@@ -4839,6 +4839,42 @@ void triple_check(const char* mdparin, t_inputrec* ir, gmx_mtop_t* sys, warninp_
                 "rounding errors can lead to build up of kinetic energy of the center of mass");
     }
 
+    if (ir->epc == PressureCoupling::CRescale)
+    {
+        // These checks should be moved to the reference temperature automation/checking
+        // code when we introduce that in the next major release.
+        //
+        // Note that we should also check for atoms not being part of any T-coupling
+        // group. This check is not present here yet.
+
+        if (!EI_RANDOM(ir->eI) && ir->etc == TemperatureCoupling::No)
+        {
+            sprintf(warn_buf,
+                    "Can not use the %s barostat without temperature coupling",
+                    enumValueToString(ir->epc));
+            warning_error(wi, warn_buf);
+        }
+        else
+        {
+            GMX_RELEASE_ASSERT(ir->opts.ngtc > 0, "Expect at least one temperature coupling group");
+            const real refT0 = ir->opts.ref_t[0];
+            for (int i = 1; i < ir->opts.ngtc; i++)
+            {
+                if (ir->opts.ref_t[i] != refT0)
+                {
+                    sprintf(warn_buf,
+                            "The %s barostat needs a reference temperature, but the reference "
+                            "temperatures for the T-coupling groups are not identical. Will "
+                            "use the temperature of the first group as reference temperature.",
+                            enumValueToString(ir->epc));
+                    warning(wi, warn_buf);
+
+                    break;
+                }
+            }
+        }
+    }
+
     if (ir->epc == PressureCoupling::ParrinelloRahman && ir->etc == TemperatureCoupling::NoseHoover)
     {
         real tau_t_max = 0;

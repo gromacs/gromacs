@@ -494,14 +494,15 @@ INSTANTIATE_TEST_SUITE_P(
                            ::testing::Values("no"),
                            ::testing::Values(MdpParameterDatabase::Default)));
 
-INSTANTIATE_TEST_SUITE_P(
-        NPH,
-        MdrunNoAppendContinuationIsExact,
-        ::testing::Combine(::testing::Values("argon12"),
-                           ::testing::Values("md", "md-vv"),
-                           ::testing::Values("no"),
-                           ::testing::Values("berendsen", "parrinello-rahman", "C-rescale"),
-                           ::testing::Values(MdpParameterDatabase::Default)));
+INSTANTIATE_TEST_SUITE_P(NPH,
+                         MdrunNoAppendContinuationIsExact,
+                         ::testing::Combine(::testing::Values("argon12"),
+                                            ::testing::Values("md", "md-vv"),
+                                            ::testing::Values("no"),
+                                            // C-rescale temporarily removed because a reference temperature is needed
+                                            //                           ::testing::Values("berendsen", "parrinello-rahman", "C-rescale"),
+                                            ::testing::Values("berendsen", "parrinello-rahman"),
+                                            ::testing::Values(MdpParameterDatabase::Default)));
 
 INSTANTIATE_TEST_SUITE_P(
         NPT,

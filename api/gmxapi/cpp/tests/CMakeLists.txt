@@ -68,8 +68,10 @@ target_link_libraries(gmxapi-test PRIVATE Gromacs::gmxapi gmxapi-testsupport mdr
 
 gmx_register_gtest_test(GmxapiExternalInterfaceTests gmxapi-test OPENMP_THREADS 2 INTEGRATION_TEST IGNORE_LEAKS QUICK_GPU_TEST)
 
-set_tests_properties(GmxapiExternalInterfaceTests PROPERTIES
-                     WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
+if (GMX_CAN_RUN_MPI_TESTS)
+    set_tests_properties(GmxapiExternalInterfaceTests PROPERTIES
+                         WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
+endif()
 
 #
 # Test public interface with MPI.
@@ -101,6 +103,8 @@ if (GMX_MPI)
 
     gmx_register_gtest_test(GmxapiMpiTests gmxapi-mpi-test MPI_RANKS 2 OPENMP_THREADS 2 INTEGRATION_TEST IGNORE_LEAKS)
 
-    set_tests_properties(GmxapiMpiTests PROPERTIES
-                         WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
+    if (GMX_CAN_RUN_MPI_TESTS)
+        set_tests_properties(GmxapiMpiTests PROPERTIES
+                             WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
+    endif()
 endif ()

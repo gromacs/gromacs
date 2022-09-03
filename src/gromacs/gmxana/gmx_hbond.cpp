@@ -2320,13 +2320,16 @@ static void analyse_donor_properties(FILE* fp, t_hbdata* hb, int nframes, real t
 static void dump_hbmap(t_hbdata*      hb,
                        int            nfile,
                        t_filenm       fnm[],
-                       gmx_bool       bTwo,
-                       gmx_bool       bContact,
+                       bool           bTwo,
+                       bool           bContact,
+                       bool           bMerge,
                        const int      isize[],
                        int*           index[],
                        char*          grpnames[],
                        const t_atoms* atoms)
 {
+    /* Note: When bMerge is enabled, hydrogen atom indices are mangled, so we don't output
+     * them in this case, instead printing `-1` for indices and `-` for atom types. */
     FILE *   fp, *fplog;
     int      ddd, hhh, aaa, i, j, k, m, grp;
     char     ds[32], hs[32], as[32];
@@ -2361,7 +2364,7 @@ static void dump_hbmap(t_hbdata*      hb,
                 {
                     for (j = 0; (j < hb->d.nhydro[i]); j++)
                     {
-                        fprintf(fp, " %4d %4d", hb->d.don[i] + 1, hb->d.hydro[i][j] + 1);
+                        fprintf(fp, " %4d %4d", hb->d.don[i] + 1, bMerge ? -1 : hb->d.hydro[i][j] + 1);
                     }
                     fprintf(fp, "\n");
                 }
@@ -2413,10 +2416,10 @@ static void dump_hbmap(t_hbdata*      hb,
                     {
                         hhh = hb->d.hydro[i][m];
                         sprintf(hs, "%s", mkatomname(atoms, hhh));
-                        fprintf(fp, " %6d %6d %6d\n", ddd + 1, hhh + 1, aaa + 1);
+                        fprintf(fp, " %6d %6d %6d\n", ddd + 1, bMerge ? -1 : hhh + 1, aaa + 1);
                         if (fplog)
                         {
-                            fprintf(fplog, "%12s  %12s  %12s\n", ds, hs, as);
+                            fprintf(fplog, "%12s  %12s  %12s\n", ds, bMerge ? "-" : hs, as);
                         }
                     }
                 }
@@ -2512,7 +2515,8 @@ int gmx_hbond(int argc, char* argv[])
         "   with helices in proteins.",
         " * [TT]-hbn[tt]:  all selected groups, donors, hydrogens and acceptors",
         "   for selected groups, all hydrogen bonded atoms from all groups and",
-        "   all solvent atoms involved in insertion.",
+        "   all solvent atoms involved in insertion. Output is limited unless",
+        "   [TT]-nomerge[tt] is set.",
         " * [TT]-hbm[tt]:  existence matrix for all hydrogen bonds over all",
         "   frames, this also contains information on solvent insertion",
         "   into hydrogen bonds. Ordering is identical to that in [TT]-hbn[tt]",
@@ -2527,11 +2531,11 @@ int gmx_hbond(int argc, char* argv[])
         "times the total number of acceptors in the selected group(s)."
     };
 
-    static real     acut = 30, abin = 1, rcut = 0.35, r2cut = 0, rbin = 0.005, rshell = -1;
-    static real     maxnhb = 0, fit_start = 1, fit_end = 60, temp = 298.15;
-    static gmx_bool bNitAcc = TRUE, bDA = TRUE, bMerge = TRUE;
-    static int      nDump    = 0;
-    static int      nThreads = 0;
+    static real acut = 30, abin = 1, rcut = 0.35, r2cut = 0, rbin = 0.005, rshell = -1;
+    static real maxnhb = 0, fit_start = 1, fit_end = 60, temp = 298.15;
+    static bool bNitAcc = true, bDA = true, bMerge = true;
+    static int  nDump    = 0;
+    static int  nThreads = 0;
 
     static gmx_bool bContact = FALSE;
 
@@ -2599,7 +2603,8 @@ int gmx_hbond(int argc, char* argv[])
           etBOOL,
           { &bMerge },
           "H-bonds between the same donor and acceptor, but with different hydrogen are treated as "
-          "a single H-bond. Mainly important for the ACF." },
+          "a single H-bond. Mainly important for the ACF. Not compatible with options that depend "
+          "on knowing a specific hydrogen: [TT]-noad[tt], [TT]-ang[tt]." },
 #if GMX_OPENMP
         { "-nthreads",
           FALSE,
@@ -2685,6 +2690,16 @@ int gmx_hbond(int argc, char* argv[])
         return 0;
     }
 
+    if (bMerge && !bDA)
+    {
+        gmx_fatal(FARGS,
+                  "Can't combine merging hbonds and defining hydrogen bonds by the "
+                  "hydrogen-acceptor distance");
+    }
+    if (bMerge && opt2bSet("-ang", NFILE, fnm))
+    {
+        gmx_fatal(FARGS, "Can't combine merging hbonds and writing angle distribution");
+    }
     /* process input */
     bSelected = FALSE;
     ccut      = std::cos(acut * gmx::c_deg2Rad);
@@ -3378,7 +3393,7 @@ int gmx_hbond(int argc, char* argv[])
 
             if (opt2bSet("-hbn", NFILE, fnm))
             {
-                dump_hbmap(hb, NFILE, fnm, bTwo, bContact, isize, index, grpnames, &top.atoms);
+                dump_hbmap(hb, NFILE, fnm, bTwo, bContact, bMerge, isize, index, grpnames, &top.atoms);
             }
 
             /* Moved the call to merge_hb() to a line BEFORE dump_hbmap

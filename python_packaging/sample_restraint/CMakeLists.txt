@@ -47,17 +47,6 @@ if(GMXAPI_EXTENSION_DOWNLOAD_PYBIND)
 else()
     find_package(pybind11 2.6 REQUIRED)
 endif()
-# Assuming GROMACS is in our path or that we have set either gmxapi_ROOT or the
-# GROMACS_DIR environment variable, this will find the CMake configuration for
-# the GROMACS libraries we need and define the CMake library object Gromacs::gmxapi
-if(GMXAPI_EXTENSION_MASTER_PROJECT)
-    find_package(gmxapi
-                 0.2.1 REQUIRED CONFIG
-                 PATHS "$ENV{GROMACS_DIR}"
-                 )
-
-    message(STATUS "Found gmxapi version ${gmxapi_VERSION_MAJOR}.${gmxapi_VERSION_MINOR}.${gmxapi_VERSION_PATCH}")
-endif()
 
 if(GMXAPI_EXTENSION_MASTER_PROJECT)
     ######################################################
@@ -80,9 +69,20 @@ if(GMXAPI_EXTENSION_MASTER_PROJECT)
         string(REPLACE /MD /MT CMAKE_C_FLAGS_DEBUG ${CMAKE_C_FLAGS_DEBUG})
         set(CMAKE_C_FLAGS_DEBUG ${CMAKE_C_FLAGS_DEBUG} CACHE STRING "" FORCE)
     endif()
+    ######################################################
 
-    # Activate the CTest module for this directory.
-    include(CTest)
+    # Note that we find GROMACS before gmxapi as a workaround for issue #4563
+    # for GROMACS releases that won't be patched.
+
+    # Assuming GROMACS is in our path or that we have set either gmxapi_ROOT or the
+    # GROMACS_DIR environment variable, this will find the CMake configuration for
+    # the GROMACS libraries we need and define the CMake library object Gromacs::gmxapi
+    find_package(gmxapi
+                 0.2.1 REQUIRED CONFIG
+                 PATHS "$ENV{GROMACS_DIR}"
+                 )
+
+    message(STATUS "Found gmxapi version ${gmxapi_VERSION_MAJOR}.${gmxapi_VERSION_MINOR}.${gmxapi_VERSION_PATCH}")
 endif()
 
 ########################################################
