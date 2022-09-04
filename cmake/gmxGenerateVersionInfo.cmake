@@ -150,12 +150,13 @@ else()
     # was new in 2.36.0. Using the former name for the parameter with
     # such git versions issues a deprecation warning, which we must
     # avoid for use in CI.
-    file(TOUCH empty.tmp)
+    set(TEMPORARY_EMPTY_FILE_NAME "${PROJECT_BINARY_DIR}/empty.tmp")
+    file(TOUCH "${TEMPORARY_EMPTY_FILE_NAME}")
     execute_process(COMMAND ${GIT_EXECUTABLE} name-rev --annotate-stdin
         RESULT_VARIABLE GIT_NAME_REV_KNOWS_ANNOTATE_STDIN
-        INPUT_FILE empty.tmp
+        INPUT_FILE "${TEMPORARY_EMPTY_FILE_NAME}"
         OUTPUT_QUIET ERROR_QUIET)
-    file(REMOVE empty.tmp)
+    file(REMOVE "${TEMPORARY_EMPTY_FILE_NAME}")
     if (GIT_NAME_REV_KNOWS_ANNOTATE_STDIN EQUAL 0)
         set(GIT_NAME_REV_ARGUMENT "--annotate-stdin")
     else()
