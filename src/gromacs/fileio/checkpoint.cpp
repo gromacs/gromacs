@@ -771,8 +771,11 @@ static int doVectorLow(XDR*                           xd,
         return -1;
     }
 
-    if (list == nullptr && (sflags & enumValueToBitMask(ecpt)))
+    if (list == nullptr)
     {
+        GMX_RELEASE_ASSERT(
+                sflags & enumValueToBitMask(ecpt),
+                "When not listing, the flag for the entry should be set when requesting i/o");
         if (nval >= 0)
         {
             if (numElemInTheFile != nval)
@@ -819,6 +822,7 @@ static int doVectorLow(XDR*                           xd,
         }
         else
         {
+            GMX_RELEASE_ASSERT(vector != nullptr, "Without list or v, vector should be supplied");
             /* This conditional ensures that we don't resize on write.
              * In particular in the state where this code was written
              * vector has a size of numElemInThefile and we

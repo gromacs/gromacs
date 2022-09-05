@@ -55,14 +55,14 @@ namespace
 
 //! Returns true if any of the argument values is smaller than zero.
 template<typename Container>
-bool anySmallerZero(Container values)
+bool anySmallerZero(const Container& values)
 {
     return std::any_of(std::begin(values), std::end(values), [](auto v) { return v < 0; });
 }
 
 //! Returns true if any of the argument values is larger than a given boundary value.
 template<typename Container>
-bool anyLargerThanValue(Container values, typename Container::value_type boundaryValue)
+bool anyLargerThanValue(const Container& values, typename Container::value_type boundaryValue)
 {
     return std::any_of(std::begin(values), std::end(values), [boundaryValue](auto v) {
         return v > boundaryValue;

@@ -113,9 +113,9 @@ public:
      */
     std::vector<int> allSizes()
     {
-        const int        count = parent_.size();
+        const size_t     count = parent_.size();
         std::vector<int> result(count, 0);
-        for (int i = 0; i < count; ++i)
+        for (size_t i = 0; i < count; ++i)
         {
             ++result[findRootAndCompressPath(i)];
         }
