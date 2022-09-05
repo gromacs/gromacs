@@ -62,7 +62,7 @@
 #ifndef GMX_EWALD_EWALD_H
 #define GMX_EWALD_EWALD_H
 
-#include <stdio.h>
+#include <cstdio>
 
 #include <vector>
 

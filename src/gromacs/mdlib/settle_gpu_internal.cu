@@ -44,10 +44,9 @@
 
 #include "settle_gpu_internal.h"
 
-#include <assert.h>
-#include <stdio.h>
-
+#include <cassert>
 #include <cmath>
+#include <cstdio>
 
 #include <algorithm>
 

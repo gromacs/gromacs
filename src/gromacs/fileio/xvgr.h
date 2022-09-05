@@ -34,7 +34,7 @@
 #ifndef GMX_FILEIO_XVGR_H
 #define GMX_FILEIO_XVGR_H
 
-#include <stdio.h>
+#include <cstdio>
 
 #include <optional>
 #include <string>

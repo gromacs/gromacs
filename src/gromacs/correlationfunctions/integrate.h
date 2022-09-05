@@ -43,7 +43,7 @@
 #ifndef GMX_INTEGRATE_H
 #define GMX_INTEGRATE_H
 
-#include <stdio.h>
+#include <cstdio>
 
 #include "gromacs/utility/real.h"
 

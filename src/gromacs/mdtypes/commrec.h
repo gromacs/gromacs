@@ -34,7 +34,7 @@
 #ifndef GMX_MDTYPES_COMMREC_H
 #define GMX_MDTYPES_COMMREC_H
 
-#include <stddef.h>
+#include <cstddef>
 
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/gmxmpi.h"

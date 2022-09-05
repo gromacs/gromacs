@@ -35,7 +35,7 @@
 #ifndef GMX_OMP_NTHREADS_H
 #define GMX_OMP_NTHREADS_H
 
-#include <stdio.h>
+#include <cstdio>
 
 #include "gromacs/utility/basedefinitions.h"
 

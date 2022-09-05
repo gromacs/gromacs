@@ -34,7 +34,7 @@
 #ifndef GMX_MDLIB_MDOUTF_H
 #define GMX_MDLIB_MDOUTF_H
 
-#include <stdio.h>
+#include <cstdio>
 
 #include "gromacs/fileio/enxio.h"
 #include "gromacs/math/vectypes.h"

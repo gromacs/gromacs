@@ -38,7 +38,7 @@
  * This module defines the interface of the actual communication routines.
  */
 
-#include <stdio.h>
+#include <cstdio>
 
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/gmxmpi.h"

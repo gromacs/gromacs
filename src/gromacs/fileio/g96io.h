@@ -34,7 +34,7 @@
 #ifndef GMX_FILEIO_G96IO_H
 #define GMX_FILEIO_G96IO_H
 
-#include <stdio.h>
+#include <cstdio>
 
 
 struct t_symtab;

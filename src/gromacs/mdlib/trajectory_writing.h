@@ -34,7 +34,7 @@
 #ifndef GMX_MDLIB_TRAJECTORY_WRITING_H
 #define GMX_MDLIB_TRAJECTORY_WRITING_H
 
-#include <stdio.h>
+#include <cstdio>
 
 #include "gromacs/mdlib/mdoutf.h"
 

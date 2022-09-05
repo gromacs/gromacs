@@ -42,13 +42,12 @@
  */
 #include "gmxpre.h"
 
-#include <assert.h>
-#include <stdarg.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-
+#include <cassert>
 #include <cmath>
+#include <cstdarg>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
 
 #include "gromacs/gpu_utils/pmalloc.h"
 #include "gromacs/hardware/device_information.h"
@@ -112,10 +111,10 @@ static void nbnxn_gpu_init_kernels(NbnxmGpu* nb)
     /* They will be later on initialized in select_nbnxn_kernel */
     // TODO: consider always creating all variants of the kernels here so that there is no
     // need for late call to clCreateKernel -- if that gives any advantage?
-    memset(nb->kernel_ener_noprune_ptr, 0, sizeof(nb->kernel_ener_noprune_ptr));
-    memset(nb->kernel_ener_prune_ptr, 0, sizeof(nb->kernel_ener_prune_ptr));
-    memset(nb->kernel_noener_noprune_ptr, 0, sizeof(nb->kernel_noener_noprune_ptr));
-    memset(nb->kernel_noener_prune_ptr, 0, sizeof(nb->kernel_noener_prune_ptr));
+    std::memset(nb->kernel_ener_noprune_ptr, 0, sizeof(nb->kernel_ener_noprune_ptr));
+    std::memset(nb->kernel_ener_prune_ptr, 0, sizeof(nb->kernel_ener_prune_ptr));
+    std::memset(nb->kernel_noener_noprune_ptr, 0, sizeof(nb->kernel_noener_noprune_ptr));
+    std::memset(nb->kernel_noener_prune_ptr, 0, sizeof(nb->kernel_noener_prune_ptr));
 
     /* Init pruning kernels
      *
@@ -135,10 +134,10 @@ void gpu_init_platform_specific(NbnxmGpu* nb)
     /* Enable LJ param manual prefetch for AMD or Intel or if we request through env. var.
      * TODO: decide about NVIDIA
      */
-    nb->bPrefetchLjParam = (getenv("GMX_OCL_DISABLE_I_PREFETCH") == nullptr)
+    nb->bPrefetchLjParam = (std::getenv("GMX_OCL_DISABLE_I_PREFETCH") == nullptr)
                            && ((nb->deviceContext_->deviceInfo().deviceVendor == DeviceVendor::Amd)
                                || (nb->deviceContext_->deviceInfo().deviceVendor == DeviceVendor::Intel)
-                               || (getenv("GMX_OCL_ENABLE_I_PREFETCH") != nullptr));
+                               || (std::getenv("GMX_OCL_ENABLE_I_PREFETCH") != nullptr));
 
     /* NOTE: in CUDA we pick L1 cache configuration for the nbnxn kernels here,
      * but sadly this is not supported in OpenCL (yet?). Consider adding it if

@@ -35,8 +35,7 @@
 
 #include "gromacs/mdlib/shake.h"
 
-#include <assert.h>
-
+#include <cassert>
 #include <cmath>
 
 #include <algorithm>

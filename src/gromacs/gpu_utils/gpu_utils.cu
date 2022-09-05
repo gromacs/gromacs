@@ -41,10 +41,11 @@
 
 #include "gpu_utils.h"
 
-#include <assert.h>
 #include <cuda_profiler_api.h>
-#include <stdio.h>
-#include <stdlib.h>
+
+#include <cassert>
+#include <cstdio>
+#include <cstdlib>
 
 #include "gromacs/gpu_utils/cudautils.cuh"
 #include "gromacs/gpu_utils/device_context.h"
@@ -62,7 +63,7 @@
 #include "gromacs/utility/snprintf.h"
 #include "gromacs/utility/stringutil.h"
 
-static const bool cudaProfilerRun = ((getenv("NVPROF_ID") != nullptr));
+static const bool cudaProfilerRun = ((std::getenv("NVPROF_ID") != nullptr));
 
 bool isHostMemoryPinned(const void* h_ptr)
 {

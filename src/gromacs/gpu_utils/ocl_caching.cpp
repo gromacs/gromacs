@@ -44,8 +44,7 @@
 
 #include "ocl_caching.h"
 
-#include <assert.h>
-
+#include <cassert>
 #include <cctype>
 #include <cstdio>
 

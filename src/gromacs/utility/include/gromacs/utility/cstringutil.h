@@ -40,7 +40,7 @@
 #ifndef GMX_UTILITY_CSTRINGUTIL_H
 #define GMX_UTILITY_CSTRINGUTIL_H
 
-#include <stdio.h>
+#include <cstdio>
 
 #include "gromacs/utility/basedefinitions.h"
 

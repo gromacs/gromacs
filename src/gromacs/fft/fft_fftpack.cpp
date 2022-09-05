@@ -33,12 +33,11 @@
  */
 #include "gmxpre.h"
 
-#include <errno.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-
+#include <cerrno>
 #include <cmath>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
 
 #include "external/fftpack/fftpack.h"
 
@@ -81,7 +80,7 @@ int gmx_fft_init_1d(gmx_fft_t* pfft, int nx, int gmx_unused flags)
     }
     *pfft = nullptr;
 
-    if ((fft = static_cast<struct gmx_fft*>(malloc(sizeof(struct gmx_fft)))) == nullptr)
+    if ((fft = static_cast<struct gmx_fft*>(std::malloc(sizeof(struct gmx_fft)))) == nullptr)
     {
         return ENOMEM;
     }
@@ -90,9 +89,9 @@ int gmx_fft_init_1d(gmx_fft_t* pfft, int nx, int gmx_unused flags)
     fft->n    = nx;
 
     /* Need 4*n storage for 1D complex FFT */
-    if ((fft->work = static_cast<real*>(malloc(sizeof(real) * (4 * nx)))) == nullptr)
+    if ((fft->work = static_cast<real*>(std::malloc(sizeof(real) * (4 * nx)))) == nullptr)
     {
-        free(fft);
+        std::free(fft);
         return ENOMEM;
     }
 
@@ -117,7 +116,7 @@ int gmx_fft_init_1d_real(gmx_fft_t* pfft, int nx, int gmx_unused flags)
     }
     *pfft = nullptr;
 
-    if ((fft = static_cast<struct gmx_fft*>(malloc(sizeof(struct gmx_fft)))) == nullptr)
+    if ((fft = static_cast<struct gmx_fft*>(std::malloc(sizeof(struct gmx_fft)))) == nullptr)
     {
         return ENOMEM;
     }
@@ -126,9 +125,9 @@ int gmx_fft_init_1d_real(gmx_fft_t* pfft, int nx, int gmx_unused flags)
     fft->n    = nx;
 
     /* Need 2*n storage for 1D real FFT */
-    if ((fft->work = static_cast<real*>(malloc(sizeof(real) * (2 * nx)))) == nullptr)
+    if ((fft->work = static_cast<real*>(std::malloc(sizeof(real) * (2 * nx)))) == nullptr)
     {
-        free(fft);
+        std::free(fft);
         return ENOMEM;
     }
 
@@ -155,7 +154,7 @@ int gmx_fft_init_2d_real(gmx_fft_t* pfft, int nx, int ny, int flags)
     *pfft = nullptr;
 
     /* Create the X transform */
-    if ((fft = static_cast<struct gmx_fft*>(malloc(sizeof(struct gmx_fft)))) == nullptr)
+    if ((fft = static_cast<struct gmx_fft*>(std::malloc(sizeof(struct gmx_fft)))) == nullptr)
     {
         return ENOMEM;
     }
@@ -165,9 +164,9 @@ int gmx_fft_init_2d_real(gmx_fft_t* pfft, int nx, int ny, int flags)
     /* Need 4*nx storage for 1D complex FFT, and another
      * 2*nx*nyc elements for complex-to-real storage in our high-level routine.
      */
-    if ((fft->work = static_cast<real*>(malloc(sizeof(real) * (4 * nx + 2 * nx * nyc)))) == nullptr)
+    if ((fft->work = static_cast<real*>(std::malloc(sizeof(real) * (4 * nx + 2 * nx * nyc)))) == nullptr)
     {
-        free(fft);
+        std::free(fft);
         return ENOMEM;
     }
     fftpack_cffti1(nx, fft->work, fft->ifac);
@@ -175,7 +174,7 @@ int gmx_fft_init_2d_real(gmx_fft_t* pfft, int nx, int ny, int flags)
     /* Create real Y transform as a link from X */
     if ((rc = gmx_fft_init_1d_real(&(fft->next), ny, flags)) != 0)
     {
-        free(fft);
+        std::free(fft);
         return rc;
     }
 
@@ -394,7 +393,7 @@ int gmx_fft_2d_real(gmx_fft_t fft, enum gmx_fft_direction dir, void* in_data, vo
          */
         if (in_data != out_data)
         {
-            memcpy(work, in_data, sizeof(t_complex) * nx * nyc);
+            std::memcpy(work, in_data, sizeof(t_complex) * nx * nyc);
             data = reinterpret_cast<t_complex*>(work);
         }
         else
@@ -451,12 +450,12 @@ void gmx_fft_destroy(gmx_fft_t fft)
 {
     if (fft != nullptr)
     {
-        free(fft->work);
+        std::free(fft->work);
         if (fft->next != nullptr)
         {
             gmx_fft_destroy(fft->next);
         }
-        free(fft);
+        std::free(fft);
     }
 }
 

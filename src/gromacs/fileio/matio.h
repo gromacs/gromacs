@@ -35,7 +35,7 @@
 #ifndef GMX_FILEIO_MATIO_H
 #define GMX_FILEIO_MATIO_H
 
-#include <stdio.h>
+#include <cstdio>
 
 #include <string>
 #include <vector>

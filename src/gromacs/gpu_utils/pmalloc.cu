@@ -41,7 +41,7 @@
 
 #include "pmalloc.h"
 
-#include <stdlib.h>
+#include <cstdlib>
 
 #include "gromacs/gpu_utils/cudautils.cuh"
 #include "gromacs/utility/cstringutil.h"

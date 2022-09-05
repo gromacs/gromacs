@@ -37,7 +37,7 @@
 
 #include "config.h"
 
-#include <stdio.h>
+#include <cstdio>
 
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
@@ -74,7 +74,7 @@ void matrix_multiply(FILE* fp, int n, int m, double** x, double** y, double** z)
 #ifdef DEBUG_MATRIX
     if (fp)
     {
-        fprintf(fp, "Multiplying %d x %d matrix with a %d x %d matrix\n", n, m, m, n);
+        std::fprintf(fp, "Multiplying %d x %d matrix with a %d x %d matrix\n", n, m, m, n);
     }
     if (fp)
     {
@@ -82,9 +82,9 @@ void matrix_multiply(FILE* fp, int n, int m, double** x, double** y, double** z)
         {
             for (j = 0; (j < m); j++)
             {
-                fprintf(fp, " %7g", x[i][j]);
+                std::fprintf(fp, " %7g", x[i][j]);
             }
-            fprintf(fp, "\n");
+            std::fprintf(fp, "\n");
         }
     }
 #endif
@@ -106,17 +106,17 @@ static void dump_matrix(FILE* fp, const char* title, int n, double** a)
     double d = 1;
     int    i, j;
 
-    fprintf(fp, "%s\n", title);
+    std::fprintf(fp, "%s\n", title);
     for (i = 0; (i < n); i++)
     {
         d = d * a[i][i];
         for (j = 0; (j < n); j++)
         {
-            fprintf(fp, " %8.2f", a[i][j]);
+            std::fprintf(fp, " %8.2f", a[i][j]);
         }
-        fprintf(fp, "\n");
+        std::fprintf(fp, "\n");
     }
-    fprintf(fp, "Prod a[i][i] = %g\n", d);
+    std::fprintf(fp, "Prod a[i][i] = %g\n", d);
 }
 
 int matrix_invert(FILE* fp, int n, double** a)
@@ -127,7 +127,7 @@ int matrix_invert(FILE* fp, int n, double** a)
 #ifdef DEBUG_MATRIX
     if (fp)
     {
-        fprintf(fp, "Inverting %d square matrix\n", n);
+        std::fprintf(fp, "Inverting %d square matrix\n", n);
         test = alloc_matrix(n, n);
         for (i = 0; (i < n); i++)
         {

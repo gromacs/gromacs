@@ -43,7 +43,7 @@
 #ifndef GMX_MDLIB_EBIN_H
 #define GMX_MDLIB_EBIN_H
 
-#include <stdio.h>
+#include <cstdio>
 
 #include "gromacs/fileio/enxio.h"
 #include "gromacs/trajectory/energyframe.h"

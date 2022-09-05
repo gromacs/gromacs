@@ -1,4 +1,4 @@
-#include <stdlib.h>
+#include <cstdlib>
 
 #include <cmath>
 
@@ -34,7 +34,7 @@ void F77_FUNC(dlagts, DLAGTS)(int*    job,
     --a;
 
     *info = 0;
-    if (abs(*job) > 2 || *job == 0)
+    if (std::abs(*job) > 2 || *job == 0)
     {
         *info = -1;
     }
@@ -89,7 +89,7 @@ void F77_FUNC(dlagts, DLAGTS)(int*    job,
         }
     }
 
-    if (1 == abs(*job))
+    if (1 == std::abs(*job))
     {
         i__1 = *n;
         for (k = 2; k <= i__1; ++k)

@@ -60,7 +60,7 @@
 #ifndef GMX_UTILITY_SMALLOC_H
 #define GMX_UTILITY_SMALLOC_H
 
-#include <stddef.h>
+#include <cstddef>
 
 /*! \brief
  * \Gromacs wrapper for malloc().

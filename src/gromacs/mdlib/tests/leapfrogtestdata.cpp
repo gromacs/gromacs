@@ -41,8 +41,7 @@
 
 #include "leapfrogtestdata.h"
 
-#include <assert.h>
-
+#include <cassert>
 #include <cmath>
 
 #include <algorithm>

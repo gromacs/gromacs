@@ -34,7 +34,7 @@
 #ifndef GMX_GPU_UTILS_CUDAUTILS_CUH
 #define GMX_GPU_UTILS_CUDAUTILS_CUH
 
-#include <stdio.h>
+#include <cstdio>
 
 #include <array>
 #include <string>

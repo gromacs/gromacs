@@ -50,7 +50,7 @@
 #ifndef GMX_FFT_FFT_H
 #define GMX_FFT_FFT_H
 
-#include <stdio.h>
+#include <cstdio>
 
 #include "gromacs/math/gmxcomplex.h"
 #include "gromacs/utility/real.h"

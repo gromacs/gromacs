@@ -44,7 +44,7 @@
 #ifndef GMX_TOPOLOGY_SYMTAB_H
 #define GMX_TOPOLOGY_SYMTAB_H
 
-#include <stdio.h>
+#include <cstdio>
 
 #include <functional>
 #include <string>

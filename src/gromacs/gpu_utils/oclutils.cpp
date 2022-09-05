@@ -40,10 +40,9 @@
 
 #include "oclutils.h"
 
-#include <stdlib.h>
-
 #include <cassert>
 #include <cstdio>
+#include <cstdlib>
 
 #include <string>
 

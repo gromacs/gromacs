@@ -40,9 +40,8 @@
  */
 #include "gmxpre.h"
 
-#include <stdlib.h>
-
 #include <cassert>
+#include <cstdlib>
 
 #include <string>
 
@@ -165,7 +164,7 @@ void nbnxn_gpu_compile_kernels(NbnxmGpu* nb)
     gmx_bool   bFastGen = TRUE;
     cl_program program  = nullptr;
 
-    if (getenv("GMX_OCL_NOFASTGEN") != nullptr)
+    if (std::getenv("GMX_OCL_NOFASTGEN") != nullptr)
     {
         bFastGen = FALSE;
     }

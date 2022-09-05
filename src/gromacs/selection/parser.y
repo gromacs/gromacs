@@ -174,8 +174,8 @@ using gmx::SelectionTreeElementPointer;
 %type <vlist> value_list value_list_contents basic_value_list basic_value_list_contents
 %type <val>   value_item value_item_range basic_value_item
 
-%destructor { free($$);        } STR IDENTIFIER KEYWORD_POS CMP_OP string
-%destructor { if($$) free($$); } PARAM pos_mod
+%destructor { std::free($$);        } STR IDENTIFIER KEYWORD_POS CMP_OP string
+%destructor { if($$) std::free($$); } PARAM pos_mod
 %destructor { delete $$;       } commands command cmd_plain selection
 %destructor { delete $$;       } sel_expr num_expr str_expr pos_expr
 %destructor { delete $$;       } method_params method_param_list method_param

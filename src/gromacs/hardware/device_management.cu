@@ -47,7 +47,7 @@
 
 #include "device_management.h"
 
-#include <assert.h>
+#include <cassert>
 
 #include "gromacs/gpu_utils/cudautils.cuh"
 #include "gromacs/gpu_utils/device_context.h"

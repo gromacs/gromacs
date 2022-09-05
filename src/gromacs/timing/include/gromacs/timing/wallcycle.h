@@ -37,7 +37,7 @@
 /* NOTE: None of the routines here are safe to call within an OpenMP
  * region */
 
-#include <stdio.h>
+#include <cstdio>
 
 #include <array>
 #include <memory>

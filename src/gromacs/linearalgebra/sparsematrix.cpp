@@ -35,10 +35,9 @@
 
 #include "sparsematrix.h"
 
-#include <stdio.h>
-#include <stdlib.h>
-
 #include <cassert>
+#include <cstdio>
+#include <cstdlib>
 
 #include "gromacs/utility/smalloc.h"
 
@@ -95,7 +94,7 @@ void gmx_sparsematrix_print(FILE* stream, gmx_sparsematrix_t* A)
         {
             for (j = 0; j < A->nrow; j++)
             {
-                fprintf(stream, " %6.3f", 0.0);
+                std::fprintf(stream, " %6.3f", 0.0);
             }
         }
         else
@@ -105,16 +104,16 @@ void gmx_sparsematrix_print(FILE* stream, gmx_sparsematrix_t* A)
             {
                 while (k++ < A->data[i][j].col)
                 {
-                    fprintf(stream, " %6.3f", 0.0);
+                    std::fprintf(stream, " %6.3f", 0.0);
                 }
-                fprintf(stream, " %6.3f", A->data[i][j].value);
+                std::fprintf(stream, " %6.3f", A->data[i][j].value);
             }
             while (k++ < A->nrow)
             {
-                fprintf(stream, " %6.3f", 0.0);
+                std::fprintf(stream, " %6.3f", 0.0);
             }
         }
-        fprintf(stream, "\n");
+        std::fprintf(stream, "\n");
     }
 }
 
@@ -236,7 +235,7 @@ void gmx_sparsematrix_compress(gmx_sparsematrix_t* A)
             }
         }
         /* Only non-zero elements remaining on this row. Sort them after column index */
-        qsort((void*)(A->data[i]), A->ndata[i], sizeof(gmx_sparsematrix_entry_t), compare_columns);
+        std::qsort((void*)(A->data[i]), A->ndata[i], sizeof(gmx_sparsematrix_entry_t), compare_columns);
     }
 }
 

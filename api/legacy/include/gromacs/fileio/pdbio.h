@@ -35,7 +35,7 @@
 #ifndef GMX_FILEIO_PDBIO_H
 #define GMX_FILEIO_PDBIO_H
 
-#include <stdio.h>
+#include <cstdio>
 
 #include "gromacs/math/vectypes.h"
 #include "gromacs/topology/atoms.h"

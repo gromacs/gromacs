@@ -34,7 +34,7 @@
 #ifndef GMX_MDLIB_EXPANDED_H
 #define GMX_MDLIB_EXPANDED_H
 
-#include <stdio.h>
+#include <cstdio>
 
 #include "gromacs/math/vectypes.h"
 

@@ -34,7 +34,7 @@
 #ifndef GMX_TOPOLOGY_BLOCK_H
 #define GMX_TOPOLOGY_BLOCK_H
 
-#include <stdio.h>
+#include <cstdio>
 
 #include <vector>
 

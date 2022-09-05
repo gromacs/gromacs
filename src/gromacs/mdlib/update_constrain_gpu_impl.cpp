@@ -48,10 +48,9 @@
 
 #include "update_constrain_gpu_impl.h"
 
-#include <assert.h>
-#include <stdio.h>
-
+#include <cassert>
 #include <cmath>
+#include <cstdio>
 
 #include <algorithm>
 

@@ -34,7 +34,7 @@
 #ifndef GMX_PBCUTIL_PBC_H
 #define GMX_PBCUTIL_PBC_H
 
-#include <stdio.h>
+#include <cstdio>
 
 #include <string>
 

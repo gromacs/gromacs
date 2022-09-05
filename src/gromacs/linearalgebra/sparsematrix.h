@@ -34,7 +34,7 @@
 #ifndef GMX_LINEARALGEBRA_SPARSEMATRIX_H
 #define GMX_LINEARALGEBRA_SPARSEMATRIX_H
 
-#include <stdio.h>
+#include <cstdio>
 
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"

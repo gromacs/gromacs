@@ -34,7 +34,7 @@
 #ifndef GMX_MDLIB_VCM_H
 #define GMX_MDLIB_VCM_H
 
-#include <stdio.h>
+#include <cstdio>
 
 #include <vector>
 

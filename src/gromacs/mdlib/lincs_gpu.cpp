@@ -46,10 +46,9 @@
 
 #include "lincs_gpu.h"
 
-#include <assert.h>
-#include <stdio.h>
-
+#include <cassert>
 #include <cmath>
+#include <cstdio>
 
 #include <algorithm>
 

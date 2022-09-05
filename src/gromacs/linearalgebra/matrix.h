@@ -34,7 +34,7 @@
 #ifndef GMX_LINEARALGEBRA_MATRIX_H
 #define GMX_LINEARALGEBRA_MATRIX_H
 
-#include <stdio.h>
+#include <cstdio>
 
 double** alloc_matrix(int n, int m);
 

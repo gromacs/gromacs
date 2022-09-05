@@ -38,10 +38,10 @@
  */
 #include "gmxpre.h"
 
-#include <assert.h>
-#include <stdarg.h>
-#include <stdio.h>
-#include <stdlib.h>
+#include <cassert>
+#include <cstdarg>
+#include <cstdio>
+#include <cstdlib>
 
 // TODO We would like to move this down, but the way NbnxmGpu
 //      is currently declared means this has to be before gpu_types.h

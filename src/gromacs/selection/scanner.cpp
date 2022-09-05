@@ -27,10 +27,10 @@
 /* First, we deal with  platform-specific or compiler-specific issues. */
 
 /* begin standard C headers. */
-#include <errno.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+#include <cerrno>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
 
 /* end standard C headers. */
 
@@ -663,7 +663,7 @@ static int input(yyscan_t yyscanner);
 #    define ECHO                                     \
         do                                           \
         {                                            \
-            if (fwrite(yytext, yyleng, 1, yyout)) {} \
+            if (std::fwrite(yytext, yyleng, 1, yyout)) {} \
         } while (0)
 #endif
 
@@ -676,18 +676,18 @@ static int input(yyscan_t yyscanner);
         {                                                                          \
             int    c = '*';                                                        \
             size_t n;                                                              \
-            for (n = 0; n < max_size && (c = getc(yyin)) != EOF && c != '\n'; ++n) \
+            for (n = 0; n < max_size && (c = std::getc(yyin)) != EOF && c != '\n'; ++n) \
                 buf[n] = (char)c;                                                  \
             if (c == '\n')                                                         \
                 buf[n++] = (char)c;                                                \
-            if (c == EOF && ferror(yyin))                                          \
+            if (c == EOF && std::ferror(yyin))                                          \
                 YY_FATAL_ERROR("input in flex scanner failed");                    \
             result = n;                                                            \
         }                                                                          \
         else                                                                       \
         {                                                                          \
             errno = 0;                                                             \
-            while ((result = fread(buf, 1, max_size, yyin)) == 0 && ferror(yyin))  \
+            while ((result = std::fread(buf, 1, max_size, yyin)) == 0 && std::ferror(yyin))  \
             {                                                                      \
                 if (errno != EINTR)                                                \
                 {                                                                  \
@@ -695,7 +695,7 @@ static int input(yyscan_t yyscanner);
                     break;                                                         \
                 }                                                                  \
                 errno = 0;                                                         \
-                clearerr(yyin);                                                    \
+                std::clearerr(yyin);                                                    \
             }                                                                      \
         }
 
@@ -875,7 +875,7 @@ YY_DECL
                 case 2: YY_RULE_SETUP
 #line 138 "scanner.l"
                     {
-                        yylval->i = strtol(yytext, NULL, 10);
+                        yylval->i = std::strtol(yytext, NULL, 10);
                         ADD_TOKEN;
                         return TOK_INT;
                     }
@@ -883,7 +883,7 @@ YY_DECL
                 case 3: YY_RULE_SETUP
 #line 139 "scanner.l"
                     {
-                        yylval->r = strtod(yytext, NULL);
+                        yylval->r = std::strtod(yytext, NULL);
                         ADD_TOKEN;
                         return TOK_REAL;
                     }
@@ -1733,7 +1733,7 @@ static void _gmx_sel_yyensure_buffer_stack(yyscan_t yyscanner)
         if (!yyg->yy_buffer_stack)
             YY_FATAL_ERROR("out of dynamic memory in _gmx_sel_yyensure_buffer_stack()");
 
-        memset(yyg->yy_buffer_stack, 0, num_to_alloc * sizeof(struct yy_buffer_state*));
+	std::memset(yyg->yy_buffer_stack, 0, num_to_alloc * sizeof(struct yy_buffer_state*));
 
         yyg->yy_buffer_stack_max = num_to_alloc;
         yyg->yy_buffer_stack_top = 0;
@@ -1753,7 +1753,7 @@ static void _gmx_sel_yyensure_buffer_stack(yyscan_t yyscanner)
             YY_FATAL_ERROR("out of dynamic memory in _gmx_sel_yyensure_buffer_stack()");
 
         /* zero only the new slots.*/
-        memset(yyg->yy_buffer_stack + yyg->yy_buffer_stack_max,
+	std::memset(yyg->yy_buffer_stack + yyg->yy_buffer_stack_max,
                0,
                grow_size * sizeof(struct yy_buffer_state*));
         yyg->yy_buffer_stack_max = num_to_alloc;
@@ -1804,7 +1804,7 @@ YY_BUFFER_STATE _gmx_sel_yy_scan_buffer(char* base, yy_size_t size, yyscan_t yys
 YY_BUFFER_STATE _gmx_sel_yy_scan_string(yyconst char* yystr, yyscan_t yyscanner)
 {
 
-    return _gmx_sel_yy_scan_bytes(yystr, strlen(yystr), yyscanner);
+    return _gmx_sel_yy_scan_bytes(yystr, std::strlen(yystr), yyscanner);
 }
 
 /** Setup the input buffer state to scan the given bytes. The next call to _gmx_sel_yylex() will
@@ -1852,8 +1852,8 @@ static void yy_fatal_error(yyconst char* msg, yyscan_t yyscanner)
 {
     struct yyguts_t* yyg = (struct yyguts_t*)yyscanner;
     (void)yyg;
-    (void)fprintf(stderr, "%s\n", msg);
-    exit(YY_EXIT_FAILURE);
+    (void)std::fprintf(stderr, "%s\n", msg);
+    std::exit(YY_EXIT_FAILURE);
 }
 
 /* Redefine yyless() so it works in section 3 code. */
@@ -2043,7 +2043,7 @@ int _gmx_sel_yylex_init(yyscan_t* ptr_yy_globals)
     }
 
     /* By setting to 0xAA, we expose bugs in yy_init_globals. Leave at 0x00 for releases. */
-    memset(*ptr_yy_globals, 0x00, sizeof(struct yyguts_t));
+    std::memset(*ptr_yy_globals, 0x00, sizeof(struct yyguts_t));
 
     return yy_init_globals(*ptr_yy_globals);
 }
@@ -2079,7 +2079,7 @@ int _gmx_sel_yylex_init_extra(YY_EXTRA_TYPE yy_user_defined, yyscan_t* ptr_yy_gl
 
     /* By setting to 0xAA, we expose bugs in
     yy_init_globals. Leave at 0x00 for releases. */
-    memset(*ptr_yy_globals, 0x00, sizeof(struct yyguts_t));
+    std::memset(*ptr_yy_globals, 0x00, sizeof(struct yyguts_t));
 
     _gmx_sel_yyset_extra(yy_user_defined, *ptr_yy_globals);
 
@@ -2181,7 +2181,7 @@ void* _gmx_sel_yyalloc(yy_size_t size, yyscan_t yyscanner)
 {
     struct yyguts_t* yyg = (struct yyguts_t*)yyscanner;
     (void)yyg;
-    return (void*)malloc(size);
+    return (void*)std::malloc(size);
 }
 
 void* _gmx_sel_yyrealloc(void* ptr, yy_size_t size, yyscan_t yyscanner)
@@ -2196,14 +2196,14 @@ void* _gmx_sel_yyrealloc(void* ptr, yy_size_t size, yyscan_t yyscanner)
      * any pointer type to void*, and deal with argument conversions
      * as though doing an assignment.
      */
-    return (void*)realloc((char*)ptr, size);
+    return (void*)std::realloc((char*)ptr, size);
 }
 
 void _gmx_sel_yyfree(void* ptr, yyscan_t yyscanner)
 {
     struct yyguts_t* yyg = (struct yyguts_t*)yyscanner;
     (void)yyg;
-    free((char*)ptr); /* see _gmx_sel_yyrealloc() for (char *) cast */
+    std::free((char*)ptr); /* see _gmx_sel_yyrealloc() for (char *) cast */
 }
 
 #define YYTABLES_NAME "yytables"

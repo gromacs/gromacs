@@ -59,8 +59,8 @@
  */
 #include "gmxpre.h"
 
-#include <assert.h>
-#include <stdlib.h>
+#include <cassert>
+#include <cstdlib>
 
 #if defined(_MSVC)
 #    include <limits>

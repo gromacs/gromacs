@@ -35,7 +35,7 @@
 #ifndef GMX_GMXANA_HXPROPS_H
 #define GMX_GMXANA_HXPROPS_H
 
-#include <stdio.h>
+#include <cstdio>
 
 #include "gromacs/math/vectypes.h"
 #include "gromacs/topology/idef.h"

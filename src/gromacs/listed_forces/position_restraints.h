@@ -45,7 +45,7 @@
 #ifndef GMX_LISTED_FORCES_POSITION_RESTRAINTS_H
 #define GMX_LISTED_FORCES_POSITION_RESTRAINTS_H
 
-#include <stdio.h>
+#include <cstdio>
 
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/arrayref.h"

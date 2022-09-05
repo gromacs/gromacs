@@ -41,10 +41,9 @@
 #ifndef GMX_UTILITY_BASEDEFINITIONS_H
 #define GMX_UTILITY_BASEDEFINITIONS_H
 
-#include <stdint.h>
-
 #include <cinttypes>
 #include <cstddef>
+#include <cstdint>
 
 //! Identical to bool
 typedef bool gmx_bool;

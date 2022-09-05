@@ -34,10 +34,9 @@
 #ifndef GMX_MATH_UTILITIES_H
 #define GMX_MATH_UTILITIES_H
 
-#include <limits.h>
-#include <stdint.h>
-
+#include <climits>
 #include <cmath>
+#include <cstdint>
 
 /*! \brief Enum to select safe or highly unsafe (faster) math functions.
  *

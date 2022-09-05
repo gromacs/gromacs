@@ -40,7 +40,7 @@
 #ifndef GMX_GPU_UTILS_PMALLOC_H
 #define GMX_GPU_UTILS_PMALLOC_H
 
-#include <stdlib.h>
+#include <cstdlib>
 
 #include "gromacs/utility/basedefinitions.h"
 

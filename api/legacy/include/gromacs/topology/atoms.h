@@ -34,7 +34,7 @@
 #ifndef GMX_TOPOLOGY_ATOMS_H
 #define GMX_TOPOLOGY_ATOMS_H
 
-#include <stdio.h>
+#include <cstdio>
 
 #include <optional>
 #include <vector>

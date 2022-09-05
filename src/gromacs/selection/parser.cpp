@@ -324,7 +324,7 @@ typedef short int          yytype_int16;
 #    elif defined size_t
 #        define YYSIZE_T size_t
 #    elif !defined YYSIZE_T
-#        include <stddef.h> /* INFRINGES ON USER NAME SPACE */
+#        include <cstddef> /* INFRINGES ON USER NAME SPACE */
 #        define YYSIZE_T size_t
 #    else
 #        define YYSIZE_T unsigned int
@@ -421,21 +421,21 @@ typedef short int          yytype_int16;
 #        endif
 #        if (defined __cplusplus && !defined EXIT_SUCCESS \
              && !((defined YYMALLOC || defined malloc) && (defined YYFREE || defined free)))
-#            include <stdlib.h> /* INFRINGES ON USER NAME SPACE */
+#            include <cstdlib> /* INFRINGES ON USER NAME SPACE */
 #            ifndef EXIT_SUCCESS
 #                define EXIT_SUCCESS 0
 #            endif
 #        endif
 #        ifndef YYMALLOC
-#            define YYMALLOC malloc
+#            define YYMALLOC std::malloc
 #            if !defined malloc && !defined EXIT_SUCCESS
-void* malloc(YYSIZE_T); /* INFRINGES ON USER NAME SPACE */
+void* std::malloc(YYSIZE_T); /* INFRINGES ON USER NAME SPACE */
 #            endif
 #        endif
 #        ifndef YYFREE
-#            define YYFREE free
+#            define YYFREE std::free
 #            if !defined free && !defined EXIT_SUCCESS
-void  free(void*);      /* INFRINGES ON USER NAME SPACE */
+void  std::free(void*);      /* INFRINGES ON USER NAME SPACE */
 #            endif
 #        endif
 #    endif
@@ -824,8 +824,8 @@ static const yytype_uint8 yyr2[] = { 0, 2, 0, 2, 2, 2, 0, 1, 1, 1, 2, 3, 3, 3, 1
 #if YYDEBUG
 
 #    ifndef YYFPRINTF
-#        include <stdio.h> /* INFRINGES ON USER NAME SPACE */
-#        define YYFPRINTF fprintf
+#        include <cstdio> /* INFRINGES ON USER NAME SPACE */
+#        define YYFPRINTF std::fprintf
 #    endif
 
 #    define YYDPRINTF(Args)     \
@@ -1248,7 +1248,7 @@ static void yydestruct(const char* yymsg, int yytype, YYSTYPE* yyvaluep, YYLTYPE
         case 6:      /* STR  */
 #line 178 "parser.y" /* yacc.c:1257  */
         {
-            free(((*yyvaluep).str));
+		std::free(((*yyvaluep).str));
         }
 #line 1313 "parser.cpp" /* yacc.c:1257  */
         break;
@@ -1256,7 +1256,7 @@ static void yydestruct(const char* yymsg, int yytype, YYSTYPE* yyvaluep, YYLTYPE
         case 7:      /* IDENTIFIER  */
 #line 178 "parser.y" /* yacc.c:1257  */
         {
-            free(((*yyvaluep).str));
+		std::free(((*yyvaluep).str));
         }
 #line 1319 "parser.cpp" /* yacc.c:1257  */
         break;
@@ -1264,7 +1264,7 @@ static void yydestruct(const char* yymsg, int yytype, YYSTYPE* yyvaluep, YYLTYPE
         case 16:     /* KEYWORD_POS  */
 #line 178 "parser.y" /* yacc.c:1257  */
         {
-            free(((*yyvaluep).str));
+		std::free(((*yyvaluep).str));
         }
 #line 1325 "parser.cpp" /* yacc.c:1257  */
         break;
@@ -1273,7 +1273,7 @@ static void yydestruct(const char* yymsg, int yytype, YYSTYPE* yyvaluep, YYLTYPE
 #line 179 "parser.y" /* yacc.c:1257  */
         {
             if (((*yyvaluep).str))
-                free(((*yyvaluep).str));
+                std::free(((*yyvaluep).str));
         }
 #line 1331 "parser.cpp" /* yacc.c:1257  */
         break;
@@ -1281,7 +1281,7 @@ static void yydestruct(const char* yymsg, int yytype, YYSTYPE* yyvaluep, YYLTYPE
         case 26:     /* CMP_OP  */
 #line 178 "parser.y" /* yacc.c:1257  */
         {
-            free(((*yyvaluep).str));
+		std::free(((*yyvaluep).str));
         }
 #line 1337 "parser.cpp" /* yacc.c:1257  */
         break;
@@ -1321,7 +1321,7 @@ static void yydestruct(const char* yymsg, int yytype, YYSTYPE* yyvaluep, YYLTYPE
         case 57:     /* string  */
 #line 178 "parser.y" /* yacc.c:1257  */
         {
-            free(((*yyvaluep).str));
+		std::free(((*yyvaluep).str));
         }
 #line 1367 "parser.cpp" /* yacc.c:1257  */
         break;
@@ -1338,7 +1338,7 @@ static void yydestruct(const char* yymsg, int yytype, YYSTYPE* yyvaluep, YYLTYPE
 #line 179 "parser.y" /* yacc.c:1257  */
         {
             if (((*yyvaluep).str))
-                free(((*yyvaluep).str));
+                std::free(((*yyvaluep).str));
         }
 #line 1379 "parser.cpp" /* yacc.c:1257  */
         break;
@@ -1499,7 +1499,7 @@ struct yypstate
 yypstate* yypstate_new(void)
 {
     yypstate* yyps;
-    yyps = (yypstate*)malloc(sizeof *yyps);
+    yyps = (yypstate*)std::malloc(sizeof *yyps);
     if (!yyps)
         return YY_NULLPTR;
     yyps->yynew = 1;
@@ -1514,7 +1514,7 @@ void yypstate_delete(yypstate* yyps)
     if (!yyps->yynew && yyps->yyss != yyps->yyssa)
         YYSTACK_FREE(yyps->yyss);
 #endif
-    free(yyps);
+    std::free(yyps);
 }
 
 #define _gmx_sel_yynerrs yyps->_gmx_sel_yynerrs
