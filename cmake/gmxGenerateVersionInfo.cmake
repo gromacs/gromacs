@@ -150,7 +150,7 @@ else()
     # was new in 2.36.0. Using the former name for the parameter with
     # such git versions issues a deprecation warning, which we must
     # avoid for use in CI.
-    set(TEMPORARY_EMPTY_FILE_NAME "${PROJECT_BINARY_DIR}/empty.tmp")
+    set(TEMPORARY_EMPTY_FILE_NAME "${CMAKE_CURRENT_BINARY_DIR}/empty.tmp")
     file(TOUCH "${TEMPORARY_EMPTY_FILE_NAME}")
     execute_process(COMMAND ${GIT_EXECUTABLE} name-rev --annotate-stdin
         RESULT_VARIABLE GIT_NAME_REV_KNOWS_ANNOTATE_STDIN
