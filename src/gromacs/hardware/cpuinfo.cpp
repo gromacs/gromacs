@@ -893,6 +893,12 @@ void detectProcCpuInfoArm(const std::map<std::string, std::string>& cpuInfo,
     {
         *brand = cpuInfo.at("model name");
     }
+    else if (cpuInfo.count("CPU part") != 0U)
+    {
+        // If all else fails, at least print the hexadecimal CPU part code.
+        // Mapping can be found at https://github.com/torvalds/linux/blob/master/arch/arm64/include/asm/cputype.h
+        *brand = cpuInfo.at("CPU part");
+    }
 
     if (cpuInfo.count("CPU architecture") != 0U)
     {
