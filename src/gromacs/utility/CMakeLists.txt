@@ -35,7 +35,8 @@ add_library(utility INTERFACE)
 
 file(GLOB UTILITY_SOURCES *.cpp)
 if (GMX_GPU_CUDA)
-    gmx_add_libgromacs_sources(cuda_version_information.cu)
+    set_source_files_properties(cuda_version_information.cu PROPERTIES LANGUAGE CUDA)
+    set_property(GLOBAL APPEND PROPERTY GMX_LIBGROMACS_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/cuda_version_information.cu)
 endif ()
 if (GMX_GPU_SYCL)
     _gmx_add_files_to_property(SYCL_SOURCES
