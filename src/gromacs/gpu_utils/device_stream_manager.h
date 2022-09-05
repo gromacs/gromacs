@@ -97,10 +97,7 @@ public:
      *
      * \throws InternalError  If any of the required resources could not be initialized.
      */
-    DeviceStreamManager(const DeviceInformation& deviceInfo,
-                        bool                     havePpDomainDecomposition,
-                        SimulationWorkload       simulationWork,
-                        bool                     useTiming);
+    DeviceStreamManager(const DeviceInformation& deviceInfo, SimulationWorkload simulationWork, bool useTiming);
     ~DeviceStreamManager();
 
     /*! \brief Get the device information object of the associated device.
@@ -122,11 +119,8 @@ public:
      */
     const DeviceStream& stream(DeviceStreamType streamToGet) const;
 
-    /*! \brief Returns a handle to the GPU stream to compute bonded forces in.
-     *
-     * \param[in] hasPPDomainDecomposition Whether there is a particle-particle domain decomposition.
-     */
-    const DeviceStream& bondedStream(bool hasPPDomainDecomposition) const;
+    //! \brief Returns a handle to the GPU stream to compute bonded forces in.
+    const DeviceStream& bondedStream() const;
 
     /*! \brief Return whether the requested GPU stream is valid for use.
      *
