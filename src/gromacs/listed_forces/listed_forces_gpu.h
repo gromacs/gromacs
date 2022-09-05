@@ -62,6 +62,7 @@ struct gmx_ffparams_t;
 struct gmx_mtop_t;
 struct t_inputrec;
 struct gmx_wallcycle;
+struct NBAtomDataGpu;
 
 
 namespace gmx
@@ -134,17 +135,13 @@ public:
      * to device data structures, and updates device buffers that
      * may have been updated after search.
      *
-     * \param[in]     nbnxnAtomOrder  Mapping between rvec and NBNXM formats.
-     * \param[in]     idef            List of interactions to compute.
-     * \param[in]     xqDevice        Device buffer with coordinates and charge in xyzq-format.
-     * \param[in,out] forceDevice     Device buffer with forces.
-     * \param[in,out] fshiftDevice    Device buffer with shift forces.
+     * \param[in]     nbnxnAtomOrder   Mapping between rvec and NBNXM formats.
+     * \param[in]     idef             List of interactions to compute.
+     * \param[in,out] nbnxmAtomDataGpu Nbnxm GPU atom data (XQ and force buffers).
      */
     void updateInteractionListsAndDeviceBuffers(ArrayRef<const int>           nbnxnAtomOrder,
                                                 const InteractionDefinitions& idef,
-                                                void*                         xqDevice,
-                                                DeviceBuffer<RVec>            forceDevice,
-                                                DeviceBuffer<RVec>            fshiftDevice);
+                                                NBAtomDataGpu*                nbnxmAtomDataGpu);
     /*! \brief
      * Update PBC data.
      *

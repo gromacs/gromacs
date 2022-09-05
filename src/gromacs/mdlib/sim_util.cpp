@@ -1633,11 +1633,7 @@ void do_force(FILE*                               fplog,
                 // resources, so they should be maintained by a
                 // higher-level object than the nb module.
                 fr->listedForcesGpu->updateInteractionListsAndDeviceBuffers(
-                        nbv->getGridIndices(),
-                        top->idef,
-                        Nbnxm::gpu_get_xq(nbv->gpu_nbv),
-                        Nbnxm::gpu_get_f(nbv->gpu_nbv),
-                        Nbnxm::gpu_get_fshift(nbv->gpu_nbv));
+                        nbv->getGridIndices(), top->idef, Nbnxm::gpuGetNBAtomData(nbv->gpu_nbv));
             }
         }
 

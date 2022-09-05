@@ -107,18 +107,4 @@ int gpu_min_ci_balanced(NbnxmGpu* nb)
                          : 0;
 }
 
-void* gpu_get_xq(NbnxmGpu* nb)
-{
-    assert(nb);
-
-    return static_cast<void*>(nb->atdat->xq);
-}
-
-DeviceBuffer<gmx::RVec> gpu_get_fshift(NbnxmGpu* nb)
-{
-    assert(nb);
-
-    return reinterpret_cast<DeviceBuffer<gmx::RVec>>(nb->atdat->fShift);
-}
-
 } // namespace Nbnxm

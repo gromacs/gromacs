@@ -151,9 +151,7 @@ ListedForcesGpu::~ListedForcesGpu() = default;
 
 void ListedForcesGpu::updateInteractionListsAndDeviceBuffers(ArrayRef<const int> /* nbnxnAtomOrder */,
                                                              const InteractionDefinitions& /* idef */,
-                                                             void* /* xqDevice */,
-                                                             DeviceBuffer<RVec> /* forceDevice */,
-                                                             DeviceBuffer<RVec> /* fshiftDevice */)
+                                                             NBAtomDataGpu* /* nbnxmAtomDataGpu */)
 {
 }
 

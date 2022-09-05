@@ -130,9 +130,9 @@ public:
      * may have been updated after search. */
     void updateInteractionListsAndDeviceBuffers(ArrayRef<const int>           nbnxnAtomOrder,
                                                 const InteractionDefinitions& idef,
-                                                void*                         xqDevice,
-                                                DeviceBuffer<RVec>            forceDevice,
-                                                DeviceBuffer<RVec>            fshiftDevice);
+                                                DeviceBuffer<Float4>          d_xqPtr,
+                                                DeviceBuffer<RVec>            d_fPtr,
+                                                DeviceBuffer<RVec>            d_fShiftPtr);
     /*! \brief
      * Update PBC data.
      *

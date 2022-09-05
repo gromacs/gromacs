@@ -1206,6 +1206,12 @@ void gpu_free(NbnxmGpu* nb)
     }
 }
 
+NBAtomDataGpu* gpuGetNBAtomData(NbnxmGpu* nb)
+{
+    GMX_ASSERT(nb != nullptr, "nb pointer must be valid");
+    return nb->atdat;
+}
+
 DeviceBuffer<gmx::RVec> gpu_get_f(NbnxmGpu* nb)
 {
     GMX_ASSERT(nb != nullptr, "nb pointer must be valid");
