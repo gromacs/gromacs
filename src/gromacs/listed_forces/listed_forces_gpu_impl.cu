@@ -111,14 +111,13 @@ ListedForcesGpu::Impl::Impl(const gmx_ffparams_t& ffparams,
 
     int fTypeRangeEnd = kernelParams_.fTypeRangeEnd[numFTypesOnGpu - 1];
 
-    kernelLaunchConfig_.blockSize[0] = c_threadsPerBlock;
-    kernelLaunchConfig_.blockSize[1] = 1;
-    kernelLaunchConfig_.blockSize[2] = 1;
-    kernelLaunchConfig_.gridSize[0]  = (fTypeRangeEnd + c_threadsPerBlock) / c_threadsPerBlock;
-    kernelLaunchConfig_.gridSize[1]  = 1;
-    kernelLaunchConfig_.gridSize[2]  = 1;
-    kernelLaunchConfig_.sharedMemorySize =
-            c_numShiftVectors * sizeof(float3) + (c_threadsPerBlock / warp_size) * 3 * sizeof(float);
+    kernelLaunchConfig_.blockSize[0]     = c_threadsPerBlock;
+    kernelLaunchConfig_.blockSize[1]     = 1;
+    kernelLaunchConfig_.blockSize[2]     = 1;
+    kernelLaunchConfig_.gridSize[0]      = (fTypeRangeEnd + c_threadsPerBlock) / c_threadsPerBlock;
+    kernelLaunchConfig_.gridSize[1]      = 1;
+    kernelLaunchConfig_.gridSize[2]      = 1;
+    kernelLaunchConfig_.sharedMemorySize = c_numShiftVectors * sizeof(float3);
 }
 
 ListedForcesGpu::Impl::~Impl()
