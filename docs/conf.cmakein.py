@@ -98,10 +98,9 @@ needs_sphinx = gmx_min_sphinx
 # ones.
 extensions = [
     'sphinx.ext.autodoc',
-    'sphinx.ext.graphviz',
-    'sphinx.ext.extlinks',
-    'sphinx.ext.napoleon',
     'sphinx.ext.doctest',
+    'sphinx.ext.extlinks',
+    'sphinx.ext.graphviz',
     'sphinx.ext.intersphinx',
     'sphinx.ext.mathjax',
     'sphinx.ext.napoleon',

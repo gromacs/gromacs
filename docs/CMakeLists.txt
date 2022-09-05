@@ -328,6 +328,8 @@ if (SPHINX_FOUND)
         texindex.rst
         download.rst
         links.dat
+        api/gmxlibs.rst
+        api/index.rst
         dev-manual/build-system.rst
         dev-manual/change-management.rst
         dev-manual/commitstyle.rst

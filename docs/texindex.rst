@@ -15,4 +15,5 @@ The release notes can be found online at http://manual.gromacs.org/current/relea
     gmxapi/index
     nblib/index
     dev-manual/index
+    api/index
     release-notes/index

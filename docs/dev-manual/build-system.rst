@@ -402,9 +402,23 @@ Variables affecting the ``all`` target
 Variables affecting special targets
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+.. cmake:: GMX_INSTALL_LEGACY_API
+
+    Default ``OFF``. If set to ``ON``, headers will be installed to ``gromacs/``
+    in the CMake header destination folder to allow use of the ``::gmx`` C++
+    namespace, supported by the :file:`libgromacs` library.
+    See `Legacy API <../doxygen/html-user/index.xhtml>`_.
+
+.. cmake:: GMX_INSTALL_NBLIB_API
+
+    If set to ``ON`` (default, when :cmake:`BUILD_SHARED_LIBS` on non-Windows platforms),
+    build and install the :file:`libnb_gmx` and :file:`nblib/` headers.
+    See :ref:`nblib`.
+
 .. cmake:: GMXAPI
 
-    If set ``ON``, the additional ``gmxapi`` C++ library is configured and the
+    If set ``ON`` (default, when :cmake:`BUILD_SHARED_LIBS` on non-Windows platforms),
+    the additional ``gmxapi`` C++ library is configured and the
     ``gmxapi`` headers will be installed. Provides the additional build tree
     targets ``gmxapi-cppdocs`` and ``gmxapi-cppdocs-dev`` when Doxygen is
     available. Also exports CMake configuration files for ``gmxapi`` that allow
