@@ -130,7 +130,9 @@ void MultiSimTest::organizeMdpFile(SimulationRunner*    runner,
     std::string mdpFileContents = formatString(
             "integrator = %s\n"
             "tcoupl = %s\n"
+            "nsttcouple = 10\n"
             "pcoupl = %s\n"
+            "nstpcouple = 10\n"
             "nsteps = %d\n"
             "nstlog = 1\n"
             "nstcalcenergy = 1\n"

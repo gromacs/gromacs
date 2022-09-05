@@ -67,18 +67,21 @@
 //! Macro to select a bool name
 #define EBOOL(e) gmx::boolToString(e)
 
-/* The minimum number of integration steps required for reasonably accurate
- * integration of first and second order coupling algorithms.
+/* The minimum number of integration steps per decay time tau required
+ * to stay reasonable close to the target value.
  */
-const int nstmin_berendsen_tcouple = 5;
-const int nstmin_berendsen_pcouple = 10;
-const int nstmin_harmonic          = 20;
+const int c_minimumStepsPerTau = 5;
+
+/* The minimum number of integration steps per period
+ * for reasonably accurate integration of second order coupling algorithms.
+ */
+const int c_minimumStepsPerPeriod = 20;
 
 /* Default values for T- and P- coupling intervals, used when the are no other
  * restrictions.
  */
-constexpr int c_defaultNstTCouple = 10;
-constexpr int c_defaultNstPCouple = 10;
+const int c_defaultNstTCouple = 100;
+const int c_defaultNstPCouple = 100;
 
 t_inputrec::t_inputrec() :
     fepvals(std::make_unique<t_lambda>()),
@@ -100,12 +103,12 @@ int tcouple_min_integration_steps(TemperatureCoupling etc)
     {
         case TemperatureCoupling::No: n = 0; break;
         case TemperatureCoupling::Berendsen:
-        case TemperatureCoupling::Yes: n = nstmin_berendsen_tcouple; break;
+        case TemperatureCoupling::Yes:
         case TemperatureCoupling::VRescale:
             /* V-rescale supports instantaneous rescaling */
-            n = 0;
+            n = c_minimumStepsPerTau;
             break;
-        case TemperatureCoupling::NoseHoover: n = nstmin_harmonic; break;
+        case TemperatureCoupling::NoseHoover: n = c_minimumStepsPerPeriod; break;
         case TemperatureCoupling::Andersen:
         case TemperatureCoupling::AndersenMassive: n = 1; break;
         default: gmx_incons("Unknown etc value");
@@ -136,7 +139,7 @@ int ir_optimal_nsttcouple(const t_inputrec* ir)
         }
     }
 
-    if (nmin == 0 || ir->delta_t * nwanted <= tau_min)
+    if (nmin == 0 || ir->delta_t * nwanted <= tau_min / nmin)
     {
         n = nwanted;
     }
@@ -165,9 +168,9 @@ int pcouple_min_integration_steps(PressureCoupling epc)
         case PressureCoupling::No: n = 0; break;
         case PressureCoupling::Berendsen:
         case PressureCoupling::CRescale:
-        case PressureCoupling::Isotropic: n = nstmin_berendsen_pcouple; break;
+        case PressureCoupling::Isotropic: n = c_minimumStepsPerTau; break;
         case PressureCoupling::ParrinelloRahman:
-        case PressureCoupling::Mttk: n = nstmin_harmonic; break;
+        case PressureCoupling::Mttk: n = c_minimumStepsPerPeriod; break;
         default: gmx_incons("Unknown epc value");
     }
 
@@ -184,7 +187,8 @@ int ir_optimal_nstpcouple(const t_inputrec* ir)
     const int minNstPCouple = (ir->useMts ? ir->mtsLevels.back().stepFactor : 1);
 
     int n;
-    if (minIntegrationSteps == 0 || ir->delta_t * nwanted <= ir->pressureCouplingOptions.tau_p)
+    if (minIntegrationSteps == 0
+        || nwanted * ir->delta_t <= ir->pressureCouplingOptions.tau_p / minIntegrationSteps)
     {
         n = nwanted;
     }

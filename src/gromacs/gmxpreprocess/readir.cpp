@@ -3737,7 +3737,6 @@ void do_index(const char*                    mdparin,
     char**    gnames;
     int       nr;
     real      tau_min;
-    int       nstcmin;
     int       i, j, k, restnm;
     bool      bExcl, bTable, bAnneal;
     char      warn_buf[STRLEN];
@@ -3897,8 +3896,9 @@ void do_index(const char*                    mdparin,
                 wi->addNote(warn_buf);
             }
         }
-        nstcmin = tcouple_min_integration_steps(ir->etc);
-        if (nstcmin > 1)
+        const int nstcmin = tcouple_min_integration_steps(ir->etc);
+        // V-rescale can act correctly with any coupling interval
+        if (nstcmin > 1 && ir->etc != TemperatureCoupling::VRescale)
         {
             if (tau_min / (ir->delta_t * ir->nsttcouple) < nstcmin - 10 * GMX_REAL_EPS)
             {
