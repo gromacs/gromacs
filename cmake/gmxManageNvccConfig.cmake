@@ -137,8 +137,23 @@ function(gmx_add_nvcc_flag_if_supported _output_variable_name_to_append_to _flag
             set(_cache_variable_value TRUE)
             message(STATUS "Checking if nvcc accepts flags ${ARGN} - Success")
         else()
-            set(_cache_variable_value FALSE)
-            message(STATUS "Checking if nvcc accepts flags ${ARGN} - Failed")
+            if(NOT(CMAKE_CXX_COMPILER_ID MATCHES "GNU" AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS 11))
+              set(CCBIN "-ccbin ${CUDA_HOST_COMPILER}")
+            endif()
+            execute_process(
+                COMMAND ${CUDA_NVCC_EXECUTABLE} ${ARGN} ${CCBIN} "${CMAKE_SOURCE_DIR}/cmake/TestCUDA.cu"
+                RESULT_VARIABLE _cuda_success
+                OUTPUT_QUIET
+                ERROR_QUIET
+                )
+            # Convert the success value to a boolean and report status
+            if (_cuda_success EQUAL 0)
+                set(_cache_variable_value TRUE)
+                message(STATUS "Checking if nvcc accepts flags ${ARGN} - Success")
+            else()
+                set(_cache_variable_value FALSE)
+                message(STATUS "Checking if nvcc accepts flags ${ARGN} - Failed")
+            endif()
         endif()
         set(${_flags_cache_variable_name} ${_cache_variable_value} CACHE BOOL "Whether NVCC supports flag(s) ${ARGN}")
     endif()

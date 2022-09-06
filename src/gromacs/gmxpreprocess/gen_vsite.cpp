@@ -1968,13 +1968,44 @@ void do_vsites(gmx::ArrayRef<const PreprocessResidue> rtpFFDB,
 
             bWARNING       = FALSE;
             bAddVsiteParam = TRUE;
+            real th;
+            rvec r_ij;
+            rvec r_kj;
             /* nested if's which check nrHatoms, nrbonds and atomname */
             if (nrHatoms == 1)
             {
                 switch (nrbonds)
                 {
                     case 2: /* -O-H */ (*vsite_type)[i] = F_BONDS; break;
-                    case 3: /* =CH-, -NH- or =NH+- */ (*vsite_type)[i] = F_VSITE3FD; break;
+                    case 3: /* =CH-, -NH- or =NH+- */
+                        /* We need special treatment here for the case of tetrahedral
+                         * structures with lone pairs, such as neutral secondary amines */
+                        aj = Heavy; /* Central atom of angle */
+                        ai = heavies[0];
+                        if (nrheavies == 3)
+                        {
+                            ak = heavies[1];
+                        }
+                        else
+                        {
+                            ak = Hatoms[0];
+                        }
+                        rvec_sub((*x)[ai], (*x)[aj], r_ij);
+                        rvec_sub((*x)[ak], (*x)[aj], r_kj);
+                        th = gmx_angle(r_ij, r_kj) * gmx::c_rad2Deg;
+                        /* Check whether angle is closer to 109 or 120 degrees in the current configuration.
+                         * If it is closer to 109, the structure is likely tetrahedral, and requires a
+                         * tetrahedral vsite, otherwise a planar vsite should be used. */
+                        if (th < 111) /* likely tetrahedral geometry */
+                        {
+                            (*vsite_type)[i] = F_VSITE3OUT;
+                        }
+                        else /* planar geometry */
+                        {
+
+                            (*vsite_type)[i] = F_VSITE3FD;
+                        }
+                        break;
                     case 4: /* --CH- (tert) */
                         /* The old type 4FD had stability issues, so
                          * all new constructs should use 4FDN

@@ -53,8 +53,6 @@ Build testing
   :doc:`releng/index` provides more information on the technical implementation
   of the builds.
 
-.. _Git Tips & Tricks: http://www.gromacs.org/index.php?title=Developer_Zone/Git/Git_Tips_%26_Tricks
-
 Build system
 ------------
 

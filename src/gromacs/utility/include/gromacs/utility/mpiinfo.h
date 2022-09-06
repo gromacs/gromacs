@@ -48,14 +48,34 @@ enum class GpuAwareMpiStatus : int
 
 
 /*! \brief
- * Wrapper on top of MPIX_Query_cuda_support()
+ * Wrapper on top of \c MPIX_Query_cuda_support()
  * For MPI implementations which don't support this function, it returns NotKnown
  * Even when an MPI implementation does support this function, MPI library might not be
- * robust enough to detect CUDA-aware support at runtime correcly e.g. when UCX PML is used
+ * robust enough to detect CUDA-aware support at runtime correctly e.g. when UCX PML is used
  * or CUDA is disabled at runtime
  *
- * \returns     GPU-aware status in MPI implementation */
+ * \returns     CUDA-aware status in MPI implementation */
 GpuAwareMpiStatus checkMpiCudaAwareSupport();
+
+/*! \brief
+ * Wrapper on top of \c MPIX_Query_hip_support()
+ * For MPI implementations which don't support this function, it returns NotKnown.
+ *
+ * Currently, this function is only supported by MPICH, and is not very reliable.
+ * For OpenMPI, querying UCX is possible, but not implemented yet.
+ *
+ * \returns     HIP-aware status in MPI implementation */
+GpuAwareMpiStatus checkMpiHipAwareSupport();
+
+/*! \brief
+ * Wrapper on top of \c MPIX_Query_ze_support()
+ * For MPI implementations which don't support this function, it returns NotKnown.
+ *
+ * Currently, this funtion is only supported by MPICH, not OpenMPI or IntelMPI.
+ *
+ * \returns     LevelZero-aware status in MPI implementation */
+GpuAwareMpiStatus checkMpiZEAwareSupport();
+
 
 } // namespace gmx
 

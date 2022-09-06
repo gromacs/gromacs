@@ -33,54 +33,29 @@
  */
 /*! \internal \file
  *
- * \brief Implements backend-specific part of PME-PP communication using CUDA.
+ * \brief Implements backend-specific code for PME-PP communication using SYCL.
  *
+ * Does not actually implement anything, since the only backend-specific part is for peer-to-peer
+ * communication, which is not supported with SYCL yet.
  *
- * \author Alan Gray <alang@nvidia.com>
+ * \author Andrey Alekseenko <al42and@gmail.com>
  *
  * \ingroup module_ewald
  */
 #include "gmxpre.h"
 
-#include "config.h"
+#include "gromacs/utility/gmxassert.h"
 
-#include "gromacs/gpu_utils/cudautils.cuh"
-#include "gromacs/gpu_utils/device_context.h"
-#include "gromacs/gpu_utils/device_stream.h"
-#include "gromacs/gpu_utils/devicebuffer.h"
-#include "gromacs/gpu_utils/gpueventsynchronizer.h"
-#include "gromacs/gpu_utils/typecasts.cuh"
-
-#include "pme_pp_comm_gpu_impl.h"
-#include "pme_pp_communication.h"
+#include "pme_force_sender_gpu_impl.h"
 
 namespace gmx
 {
 
-void PmePpCommGpu::Impl::sendCoordinatesToPmePeerToPeer(Float3*               sendPtr,
-                                                        int                   sendSize,
-                                                        GpuEventSynchronizer* coordinatesReadyOnDeviceEvent)
+/*! \brief Send PME synchronizer directly to the peer devices. Not implemented with SYCL. */
+void PmeForceSenderGpu::Impl::sendFToPpPeerToPeer(int /*ppRank*/, int /*numAtoms*/, bool /*sendForcesDirectToPpGpu*/)
 {
-    // ensure stream waits until coordinate data is available on device
-    if (coordinatesReadyOnDeviceEvent)
-    {
-        coordinatesReadyOnDeviceEvent->enqueueWaitEvent(pmePpCommStream_);
-    }
-
-    cudaError_t stat = cudaMemcpyAsync(remotePmeXBuffer_,
-                                       sendPtr,
-                                       sendSize * DIM * sizeof(float),
-                                       cudaMemcpyDefault,
-                                       pmePpCommStream_.stream());
-    CU_RET_ERR(stat, "cudaMemcpyAsync on Send to PME CUDA direct data transfer failed");
-
-#if GMX_MPI
-    // Record and send event to allow PME task to sync to above transfer before commencing force calculations
-    pmeCoordinatesSynchronizer_.markEvent(pmePpCommStream_);
-    GpuEventSynchronizer* pmeSync = &pmeCoordinatesSynchronizer_;
-    // NOLINTNEXTLINE(bugprone-sizeof-expression)
-    MPI_Send(&pmeSync, sizeof(GpuEventSynchronizer*), MPI_BYTE, pmeRank_, 0, comm_);
-#endif
+    GMX_RELEASE_ASSERT(false,
+                       "Direct peer-to-peer communications not supported with SYCL and threadMPI.");
 }
 
 } // namespace gmx

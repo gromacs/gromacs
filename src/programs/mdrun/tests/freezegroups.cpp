@@ -224,11 +224,12 @@ TEST_P(FreezeGroupTest, WithinTolerances)
             runner_.fullPrecisionTrajectoryFileName_, backbone, sideChainH, positionsTolerance, velocitiesTolerance);
 }
 
-INSTANTIATE_TEST_SUITE_P(
-        FreezeWorks,
-        FreezeGroupTest,
-        ::testing::Combine(::testing::Values("md", "md-vv", "sd", "bd"),
-                           ::testing::Values("no"),
-                           ::testing::Values("no", "c-rescale", "parrinello-rahman")));
+INSTANTIATE_TEST_SUITE_P(FreezeWorks,
+                         FreezeGroupTest,
+                         ::testing::Combine(::testing::Values("md", "md-vv", "sd", "bd"),
+                                            ::testing::Values("no"),
+                                            // Enable C-rescale again when it supports NPH
+                                            //                           ::testing::Values("no", "c-rescale", "parrinello-rahman")));
+                                            ::testing::Values("no", "parrinello-rahman")));
 } // namespace
 } // namespace gmx::test

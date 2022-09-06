@@ -83,9 +83,9 @@ struct PpForceCommManager
     //! Address of local force buffer to send to remote PP rank
     DeviceBuffer<RVec> localForcePtr;
     //! CPU force buffer pointer for remote PP rank
-    float3* pmeRemoteCpuForcePtr;
+    Float3* pmeRemoteCpuForcePtr;
     //! GPU force buffer pointers for remote PP rank
-    float3* pmeRemoteGpuForcePtr;
+    Float3* pmeRemoteGpuForcePtr;
 };
 
 class PmeForceSenderGpu::Impl

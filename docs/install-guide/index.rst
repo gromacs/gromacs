@@ -556,7 +556,8 @@ lead to performance loss, e.g. on Intel Skylake-X/SP and AMD Zen.
    processors support this, so this can also be considered a good
    baseline if you are content with slow simulations and prefer
    portability between reasonably modern processors.
-4. ``AVX_128_FMA`` AMD Bulldozer, Piledriver (and later Family 15h) processors have this.
+4. ``AVX_128_FMA`` AMD Bulldozer, Piledriver (and later Family 15h) processors
+   have this but it is NOT supported on any AMD processors since Zen1.
 5. ``AVX_256`` Intel processors since Sandy Bridge (2011). While this
    code will work on the  AMD Bulldozer and Piledriver processors, it is significantly less
    efficient than the ``AVX_128_FMA`` choice above - do not be fooled

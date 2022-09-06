@@ -715,6 +715,23 @@ the torsion potential) but the next step would be singular
 (:math:`\theta` is not :math:`180^{\circ}` and :math:`\phi` is very
 close to :math:`180^{\circ}`).
 
+Bonded pair and 1-4 interactions
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Most force fields do not use normal Lennard-Jones and Coulomb interactions
+for atoms separated by three bonds, the so-called 1-4 interactions. These
+interactions are still affected by the modified electronic distributions
+due to the chemical bonds and they are modified in the force field by
+the dihedral terms. For this reason the Lennard-Jones and Coulomb 1-4
+interactions are often scaled down, by a fixed factor given by the force field.
+These factors can be supplied in the topology and the parameters can also
+be overriden per 1-4 interaction or atom type pair. The pair interactions
+can be used for any atom pair in a molecule, not only 1-4 pairs.
+The non-bonded interactions between such pairs should be excluded to avoid double
+interactions. Plain Lennard-Jones and Coulomb interactions are used which
+are not affected by the non-bonded interaction treatment and potential
+modifiers.
+
 Tabulated bonded interaction functions
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

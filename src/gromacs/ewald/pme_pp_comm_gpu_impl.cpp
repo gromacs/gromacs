@@ -50,7 +50,7 @@
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/gmxmpi.h"
 
-#if !GMX_GPU_CUDA
+#if !GMX_GPU_CUDA && !GMX_GPU_SYCL
 
 namespace gmx
 {
@@ -103,9 +103,7 @@ void PmePpCommGpu::sendCoordinatesToPmeFromGpu(DeviceBuffer<RVec> /* sendPtr */,
 }
 
 //NOLINTNEXTLINE(readability-convert-member-functions-to-static)
-void PmePpCommGpu::sendCoordinatesToPmeFromCpu(RVec* /* sendPtr */,
-                                               int /* sendSize */,
-                                               GpuEventSynchronizer* /* coordinatesOnDeviceEvent */)
+void PmePpCommGpu::sendCoordinatesToPmeFromCpu(RVec* /* sendPtr */, int /* sendSize */)
 {
     GMX_ASSERT(!impl_,
                "A CPU stub for PME-PP GPU communication was called instead of the correct "
@@ -132,4 +130,4 @@ GpuEventSynchronizer* PmePpCommGpu::getForcesReadySynchronizer()
 
 } // namespace gmx
 
-#endif // !GMX_GPU_CUDA
+#endif // !GMX_GPU_CUDA && !GMX_GPU_SYCL

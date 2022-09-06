@@ -680,4 +680,16 @@ void destroyParamLookupTable(DeviceBuffer<ValueType>* deviceBuffer, DeviceTextur
     freeDeviceBuffer(deviceBuffer);
 }
 
+template<typename ValueType>
+ValueType* asMpiPointer(DeviceBuffer<ValueType>& buffer)
+{
+#if GMX_SYCL_USE_USM
+    return buffer ? buffer.buffer_->ptr_ : nullptr;
+#else
+    assert(false);
+    GMX_UNUSED_VALUE(buffer);
+    return nullptr;
+#endif
+}
+
 #endif // GMX_GPU_UTILS_DEVICEBUFFER_SYCL_H

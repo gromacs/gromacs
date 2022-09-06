@@ -102,9 +102,7 @@ simulations. Some stages are optional for some kinds of simulations.
 9. Run the equilibration simulation for sufficient time so that the
    system relaxes sufficiently in the target ensemble to allow the
    production run to be commenced (using :ref:`gmx grompp` and
-   :ref:`gmx mdrun`, then :ref:`gmx energy` and `trajectory
-   visualization tools
-   <http://www.gromacs.org/Documentation/How-tos/Trajectory_Visualization>`_).
+   :ref:`gmx mdrun`, then :ref:`gmx energy` and :doc:`/how-to/visualize`).
 
 10. Select the appropriate simulation parameters for the production
     simulation (defined in :ref:`mdp` file). In particular, be careful not

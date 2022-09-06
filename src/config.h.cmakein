@@ -236,9 +236,11 @@
 /* Use a single compilation unit when compiling the CUDA (non-bonded) kernels.  */
 #cmakedefine01 GMX_CUDA_NB_SINGLE_COMPILATION_UNIT
 
-/* Use CUDA-aware MPI.  */
+/* Whether MPI can report its GPU-awareness  */
 #cmakedefine01 HAVE_MPI_EXT
 #cmakedefine01 MPI_SUPPORTS_CUDA_AWARE_DETECTION
+#cmakedefine01 MPI_SUPPORTS_HIP_AWARE_DETECTION
+#cmakedefine01 MPI_SUPPORTS_ZE_AWARE_DETECTION
 
 /* Define if HeFFTe library found */
 #cmakedefine01 GMX_USE_Heffte

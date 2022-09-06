@@ -371,6 +371,10 @@ set(GMX_CURRENT_CONTRIBUTORS ${CMAKE_MATCH_1})
 set(GMX_PREVIOUS_CONTRIBUTORS ${CMAKE_MATCH_2})
 set(GMX_CURRENT_PROJECT_LEADERS ${CMAKE_MATCH_3})
 
+string(REGEX REPLACE "\n" ", " GMX_CURRENT_CONTRIBUTORS_STRING "${GMX_CURRENT_CONTRIBUTORS}")
+string(REGEX REPLACE "\n" ", " GMX_PREVIOUS_CONTRIBUTORS_STRING "${GMX_PREVIOUS_CONTRIBUTORS}")
+string(REGEX REPLACE "\n" ", " GMX_CURRENT_PROJECT_LEADERS_STRING "${GMX_CURRENT_PROJECT_LEADERS}")
+
 string(REGEX REPLACE "([^\n]+)" "    \"\\1\"," GMX_CURRENT_CONTRIBUTORS "${GMX_CURRENT_CONTRIBUTORS}")
 string(REGEX REPLACE "([^\n]+)" "    \"\\1\"," GMX_PREVIOUS_CONTRIBUTORS "${GMX_PREVIOUS_CONTRIBUTORS}")
 string(REGEX REPLACE "([^\n]+)" "    \"\\1\"," GMX_CURRENT_PROJECT_LEADERS "${GMX_CURRENT_PROJECT_LEADERS}")
@@ -667,13 +671,15 @@ if(GMX_GPU)
 
 endif()
 
-# For build with CUDA and Lib-MPI, check if underlying MPI implementation is CUDA-aware
-# CUDA-aware MPI allows direct GPU communication without staging data through host
-if(GMX_GPU_CUDA AND GMX_LIB_MPI)
-    include(gmxManageCudaAwareMPI)
+# For build with CUDA/SYCL and Lib-MPI, check if underlying MPI implementation is GPU-aware
+# GPU-aware MPI allows direct GPU communication without staging data through host
+if((GMX_GPU_CUDA OR GMX_GPU_SYCL) AND GMX_LIB_MPI)
+    include(gmxManageGpuAwareMpi)
 else()
     set(HAVE_MPI_EXT 0)
     set(MPI_SUPPORTS_CUDA_AWARE_DETECTION 0)
+    set(MPI_SUPPORTS_HIP_AWARE_DETECTION 0)
+    set(MPI_SUPPORTS_ZE_AWARE_DETECTION 0)
 endif()
 
 if(CYGWIN)

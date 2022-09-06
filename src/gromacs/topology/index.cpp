@@ -594,6 +594,7 @@ void analyse(const t_atoms* atoms, t_blocka* gb, char*** gn, gmx_bool bASK, gmx_
         p_status(restype, previousTypename);
     }
 
+    bool haveAnalysedOther = false;
     for (gmx::index k = 0; k < gmx::ssize(previousTypename); k++)
     {
         std::vector<int> aid = mk_aid(atoms, restype, previousTypename[k], TRUE);
@@ -626,11 +627,16 @@ void analyse(const t_atoms* atoms, t_blocka* gb, char*** gn, gmx_bool bASK, gmx_
                 add_grp(gb, gn, aid, "non-Water");
             }
         }
-        else if (!aid.empty())
+        else if (!gmx_strcasecmp(previousTypename[k].c_str(), "Ion") && !aid.empty())
+        {
+            add_grp(gb, gn, aid, previousTypename[k]);
+        }
+        else if (!aid.empty() && !haveAnalysedOther)
         {
             /* Other groups */
             add_grp(gb, gn, aid, previousTypename[k]);
             analyse_other(restype, atoms, gb, gn, bASK, bVerb);
+            haveAnalysedOther = true;
         }
     }
 

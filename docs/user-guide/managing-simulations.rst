@@ -117,12 +117,12 @@ then call
 
 ::
 
-   gmx grompp -f possibly-changed.mdp -p possibly-changed.top -c state.cpt -o new.tpr
+   gmx grompp -f possibly-changed.mdp -p possibly-changed.top -c original.gro -t state.cpt -o new.tpr
    gmx mdrun -s new.tpr -cpi state.cpt
 
 to instruct :ref:`gmx grompp` to copy the full-precision coordinates
-in the checkpoint file into the new :ref:`tpr` file. You should
-consider your choices for :mdp:`tinit`, :mdp:`init-step`,
+and velocities in the checkpoint file into the new :ref:`tpr` file.
+You should consider your choices for :mdp:`tinit`, :mdp:`init-step`,
 :mdp:`nsteps` and :mdp:`simulation-part`. You should generally not
 regenerate velocities with :mdp:`gen-vel`, and generally select
 :mdp:`continuation` so that constraints are not re-applied before

@@ -33,7 +33,7 @@
  */
 /*! \internal \file
  *
- * \brief Implements class which recieves coordinates to GPU memory on PME task using CUDA
+ * \brief Implements class which receives coordinates to GPU memory on PME task using CUDA/SYCL.
  *
  *
  * \author Alan Gray <alang@nvidia.com>
@@ -46,8 +46,8 @@
 
 #include "gromacs/ewald/pme_force_sender_gpu.h"
 #include "gromacs/ewald/pme_pp_communication.h"
-#include "gromacs/gpu_utils/cudautils.cuh"
 #include "gromacs/gpu_utils/device_stream.h"
+#include "gromacs/gpu_utils/devicebuffer.h"
 #include "gromacs/gpu_utils/gpueventsynchronizer.h"
 #include "gromacs/utility/gmxmpi.h"
 
@@ -97,8 +97,11 @@ void PmeCoordinateReceiverGpu::Impl::reinitCoordinateReceiver(DeviceBuffer<RVec>
         // Skip receiving x buffer pointer when the PP domain is empty (the matching call in `pmePpCommGpu->reinit(n)` is also conditional)
         if (GMX_THREAD_MPI && (ppCommManager.ppRank.numAtoms > 0))
         {
+            GMX_RELEASE_ASSERT(
+                    GMX_GPU_CUDA,
+                    "Direct PME-PP communication with threadMPI is only supported with CUDA.");
             // Data will be transferred directly from GPU.
-            void* sendBuf = reinterpret_cast<void*>(&d_x[indStart]);
+            void* sendBuf = reinterpret_cast<void*>(asMpiPointer(d_x) + indStart);
             MPI_Send(&sendBuf, sizeof(void**), MPI_BYTE, ppCommManager.ppRank.rankId, 0, comm_);
         }
     }
@@ -113,6 +116,9 @@ void PmeCoordinateReceiverGpu::Impl::receiveCoordinatesSynchronizerFromPpPeerToP
     GMX_ASSERT(GMX_THREAD_MPI,
                "receiveCoordinatesSynchronizerFromPpPeerToPeer is expected to be called only for "
                "Thread-MPI");
+    GMX_ASSERT(!GMX_GPU_SYCL,
+               "Direct PME-PP communication not supported with SYCL and threadMPI; use libMPI "
+               "instead.");
 
     // Data will be pushed directly from PP task
 
@@ -142,7 +148,13 @@ void PmeCoordinateReceiverGpu::Impl::launchReceiveCoordinatesFromPpGpuAwareMpi(D
             "launchReceiveCoordinatesFromPpGpuAwareMpi is expected to be called only for Lib-MPI");
 
 #if GMX_MPI
-    MPI_Irecv(&recvbuf[numAtoms], numBytes, MPI_BYTE, ppRank, eCommType_COORD_GPU, comm_, &(requests_[senderIndex]));
+    MPI_Irecv(asMpiPointer(recvbuf) + numAtoms,
+              numBytes,
+              MPI_BYTE,
+              ppRank,
+              eCommType_COORD_GPU,
+              comm_,
+              &(requests_[senderIndex]));
 #else
     GMX_UNUSED_VALUE(recvbuf);
     GMX_UNUSED_VALUE(numAtoms);

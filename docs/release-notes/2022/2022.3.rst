@@ -1,7 +1,7 @@
 GROMACS 2022.3 release notes
 ----------------------------
 
-This version was released on TODO, 2022. These release notes
+This version was released on September 2nd, 2022. These release notes
 document the changes that have taken place in GROMACS since the
 previous 2022.2 version, to fix known issues. It also incorporates all
 fixes made in version 2021.6 and earlier, which you can find described
@@ -16,12 +16,117 @@ in the :ref:`release-notes`.
 Fixes where mdrun could behave incorrectly
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Energy minimization would not converge with GPU and without DD
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+The steepest descent and conjugate gradient minimizers would not converge
+when using a GPU for the nonbonded interactions and not using domain
+decomposition.
+
+:issue:`4533`
+
+Settings of lambda-only replica exchange is mistakenly routed to temperature+lambda branch
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+When replica exchange of lambda-only mode is enabled, all reference temperatures ref-t
+are the same among replicas. However, another branch temperature+lambda is used according
+to log messages.
+
+:issue:`4580`
+
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
+
+Fix pdb2gmx vsite assignment for tetrahedral secondary amines
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+The pdb2gmx vsite assignment code would always select a planar vsite for structures like secondary
+amines based solely on the number of atoms, without taking geometry into account. Changed
+to take geometry into account.
+
+:issue:`4573`
+
+Disallow C-rescale barostat without temperature coupling
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+The C-rescale barostat needs a reference temperature which is currently taken
+from the thermostat. A check is added to grompp for temperature coupling or BD/SD
+being present. Also a warning is generated when the reference temperature are
+not all equal.
+
+:issue:`4495`
+
+Prevent hbond merging in gmx hbond for non-compatible options
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+The option to merge multiple hbonds from one donor-acceptor pair does not
+work with other options that rely on analysing all hydrogen bonds, or changing
+the search for donor-acceptor pairs. Due to this, the tool will stop
+if known incompatible combinations are used.
+
+When using ``-hbn`` to export the hydrogen bonding information with merging enabled,
+previously indices of arbitrary hydrogens were printed. Now, to avoid confusion, the index file
+contains ``-1`` instead. Use ``-nomerge`` option if full hydrogen bond information is needed.
+
+:issue:`3837`
+
+Fix generation of duplicate groups in index generation
+""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Both :ref:`gmx make_ndx` and :ref:`gmx select` would duplicate index groups for molecules
+not defined as Protein or Nucleotides due to a logic error in the code, where any extra
+group defined in the system would cause the detection to be run again and generate the
+duplicate groups.
+
+:issue:`4524`
 
 Fixes that affect portability
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Further fix to nvcc flag detection
+""""""""""""""""""""""""""""""""""
+
+Version 2022.1 fixed a nvcc flag detection issue for gcc version 11,
+but this fix resulted in issues for older gcc versions. Version 2022.2
+resolved this for gcc version 7, but issues remained for other gcc
+versions. This release provides a fix that should prevent this issue
+for all gcc versions.
+
+:issue:`4539`
+
+Document incompatibility of gcc-11 and nvcc 11.6.1
+""""""""""""""""""""""""""""""""""""""""""""""""""
+
+A known incompatibility between the default gcc and nvcc compiler on
+Ubuntu 22.04 has been documented, with a guide how to circumvent the issue.
+
+:issue:`4574`
+
 Miscellaneous
 ^^^^^^^^^^^^^
 
+Improve mdrun log file energy output formatting
+"""""""""""""""""""""""""""""""""""""""""""""""
+
+The mdrun log file now prints more energy-field names in abbreviated
+forms so as to avoid exceeding the maximum column lengths available.
+
+Improve warning message about AVX_128_FMA SIMD
+""""""""""""""""""""""""""""""""""""""""""""""
+
+This instruction set only works on early AMD CPUs that support their
+FMA4 extensions. Since Zen1, AMD has instead moved to support FMA3
+(similar to Intel hardware), which unfortunately means SIMD instruction
+sets are NOT incremental. We now detect this for parallel runs and stick
+to vanilla 256-bit AVX, and properly detect when the FMA4 instruction
+set is used on non-compatible hardware and warn why the run is likely to
+crash.
+
+:issue:`4526`
+
+Remove unnecessary memory re-allocations for GPU update runs
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+An issue has been fixed where GPU memory allocations were repeatedly
+being performed unecessarily for runs with GPU update enabled,
+significantly impacting performance in some cases. The memory
+allocations are now only performed when necessary.

@@ -105,11 +105,8 @@ public:
     /*! \brief Push coordinates buffer from host memory directly to GPU memory on PME task
      * \param[in] sendPtr Buffer with coordinate data
      * \param[in] sendSize Number of elements to send
-     * \param[in] coordinatesReadyOnDeviceEvent Event recorded when coordinates are available on device
      */
-    void sendCoordinatesToPmeFromCpu(RVec*                 sendPtr,
-                                     int                   sendSize,
-                                     GpuEventSynchronizer* coordinatesReadyOnDeviceEvent);
+    void sendCoordinatesToPmeFromCpu(RVec* sendPtr, int sendSize);
 
     /*! \brief
      * Return pointer to buffer used for staging PME force on GPU

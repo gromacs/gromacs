@@ -33,7 +33,7 @@
  */
 /*! \internal \file
  *
- * \brief Implements PME-PP communication using CUDA
+ * \brief Implements backend-agnostic part of GPU-direct PME-PP communication.
  *
  *
  * \author Alan Gray <alang@nvidia.com>
@@ -44,6 +44,7 @@
 
 #include "config.h"
 
+#include "gromacs/gpu_utils/devicebuffer.h"
 #include "gromacs/gpu_utils/gpueventsynchronizer.h"
 #include "gromacs/utility/gmxmpi.h"
 
@@ -71,6 +72,8 @@ PmeForceSenderGpu::Impl::Impl(GpuEventSynchronizer*  pmeForcesReady,
                 nullptr,
                 nullptr });
     }
+    pmeForcesReady_->setConsumptionLimits(ppRanks_.size(), ppRanks_.size());
+    pmeForcesReady_->reset();
     stageThreadMpiGpuCpuComm_ = (getenv("GMX_ENABLE_STAGED_GPU_TO_CPU_PMEPP_COMM") != nullptr);
 }
 
@@ -86,8 +89,10 @@ void PmeForceSenderGpu::Impl::setForceSendBuffer(DeviceBuffer<Float3> d_f)
     {
         return;
     }
+    GMX_ASSERT(!GMX_GPU_SYCL,
+               "PmeForceSenderGpu does not support SYCL with threadMPI; use libMPI instead.");
 
-#if GMX_MPI
+#if GMX_MPI && GMX_GPU_CUDA
 
     int ind_start = 0;
     int ind_end   = 0;
@@ -148,7 +153,7 @@ void PmeForceSenderGpu::Impl::sendFToPpGpuAwareMpi(DeviceBuffer<RVec> sendbuf,
     // before sending it to PP ranks
     pmeForcesReady_->waitForEvent();
 
-    MPI_Isend(sendbuf[offset], numBytes, MPI_BYTE, ppRank, 0, comm_, request);
+    MPI_Isend(asMpiPointer(sendbuf) + offset, numBytes, MPI_BYTE, ppRank, 0, comm_, request);
 
 #else
     GMX_UNUSED_VALUE(sendbuf);

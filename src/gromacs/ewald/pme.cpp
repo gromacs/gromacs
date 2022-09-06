@@ -1765,6 +1765,11 @@ int gmx_pme_do(struct gmx_pme_t*              pme,
 
 void gmx_pme_destroy(gmx_pme_t* pme)
 {
+    gmx_pme_destroy(pme, true);
+}
+
+void gmx_pme_destroy(gmx_pme_t* pme, bool destroySharedData)
+{
     if (!pme)
     {
         return;
@@ -1777,9 +1782,12 @@ void gmx_pme_destroy(gmx_pme_t* pme)
     sfree(pme->fshy);
     sfree(pme->fshz);
 
-    for (int i = 0; i < pme->ngrids; ++i)
+    if (destroySharedData)
     {
-        pmegrids_destroy(&pme->pmegrid[i]);
+        for (int i = 0; i < pme->ngrids; ++i)
+        {
+            pmegrids_destroy(&pme->pmegrid[i]);
+        }
     }
     if (pme->pfft_setup)
     {
@@ -1807,7 +1815,7 @@ void gmx_pme_destroy(gmx_pme_t* pme)
 
     destroy_pme_spline_work(pme->spline_work);
 
-    if (pme->gpu != nullptr)
+    if (pme->gpu != nullptr && destroySharedData)
     {
         pme_gpu_destroy(pme->gpu);
     }

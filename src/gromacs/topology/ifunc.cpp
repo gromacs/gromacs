@@ -112,7 +112,14 @@ constexpr t_interaction_function def_nofc(const char* str, const char* lstr)
     return t_interaction_function{ str, lstr, 0, 0, 0, IF_NULL };
 }
 
-/* this MUST correspond to the enum in src/gromacs/topology/ifunc.h */
+/* This MUST correspond to the enum in src/gromacs/topology/ifunc.h
+ *
+ * Note also that the longname field of the interaction is used for
+ * printing e.g. the mdrun log file in a columnar style, and pr_ebin
+ * makes available only 14 printing characters (ie not including the
+ * terminating '\0'). So please abbreviate accordingly,
+ * e.g. "Conserved En."
+ */
 const t_interaction_function interaction_function[F_NRE] = {
     def_bond("BONDS", "Bond", 2, 2, 2),
     def_bond("G96BONDS", "G96Bond", 2, 2, 2),
@@ -126,7 +133,7 @@ const t_interaction_function interaction_function[F_NRE] = {
     def_bonded("RESTRAINTPOT", "Restraint Pot.", 2, 4, 4),
     def_angle("ANGLES", "Angle", 3, 2, 2),
     def_angle("G96ANGLES", "G96Angle", 3, 2, 2),
-    def_angle("RESTRANGLES", "Restricted Angles", 3, 2, 2),
+    def_angle("RESTRANGLES", "Restr. Angles", 3, 2, 2),
     def_angle("LINEAR_ANGLES", "Lin. Angle", 3, 2, 2),
     def_bonded("CROSS_BOND_BOND", "Bond-Cross", 3, 3, 0),
     def_bonded("CROSS_BOND_ANGLE", "BA-Cross", 3, 4, 0),
@@ -135,11 +142,11 @@ const t_interaction_function interaction_function[F_NRE] = {
     def_bondedt("TABANGLES", "Tab. Angles", 3, 2, 2),
     def_dihedral("PDIHS", "Proper Dih.", 4, 3, 3),
     def_dihedral("RBDIHS", "Ryckaert-Bell.", 4, 6, 6),
-    def_dihedral("RESTRDIHS", "Restricted Dih.", 4, 2, 2),
+    def_dihedral("RESTRDIHS", "Restr. Dih.", 4, 2, 2),
     def_dihedral("CBTDIHS", "CBT Dih.", 4, 6, 6),
     def_dihedral("FOURDIHS", "Fourier Dih.", 4, 4, 4),
     def_dihedral("IDIHS", "Improper Dih.", 4, 2, 2),
-    def_dihedral("PIDIHS", "Periodic Improper Dih.", 4, 3, 3),
+    def_dihedral("PIDIHS", "Per. Imp. Dih.", 4, 3, 3),
     def_dihedral_tabulated("TABDIHS", "Tab. Dih.", 4, 2, 2),
     def_dihedral("CMAP", "CMAP Dih.", 5, -1, -1),
     def_nofc("GB12", "GB 1-2 Pol. (unused)"),
@@ -167,7 +174,7 @@ const t_interaction_function interaction_function[F_NRE] = {
     def_bonded("THOLE", "Thole Pol.", 4, 3, 0),
     def_bondnb("ANHARM_POL", "Anharm. Pol.", 2, 3, 0),
     def_bonded("POSRES", "Position Rest.", 1, 3, 3),
-    def_bonded("FBPOSRES", "Flat-bottom posres", 1, 3, 0),
+    def_bonded("FBPOSRES", "Flat-b. P-R.", 1, 3, 0),
     def_bonded("DISRES", "Dis. Rest.", 2, 6, 0),
     def_nofc("DISRESVIOL", "D.R.Viol. (nm)"),
     def_bonded("ORIRES", "Orient. Rest.", 2, 6, 0),
@@ -190,7 +197,7 @@ const t_interaction_function interaction_function[F_NRE] = {
     def_vsite("VSITE4FDN", "Virtual site 4fdn", 5, 3),
     def_vsite("VSITEN", "Virtual site N", 2, 2),
     def_nofc("COM_PULL", "COM Pull En."),
-    def_nofc("DENSITYFIT", "Density fitting"),
+    def_nofc("DENSITYFIT", "Dens. fitting"),
     def_nofc("EQM", "Quantum En."),
     def_nofc("EPOT", "Potential"),
     def_nofc("EKIN", "Kinetic En."),

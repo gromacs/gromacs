@@ -6,7 +6,7 @@
     <Real Name="Time 1.000000 Step 1 in frame 1">-3591.7776</Real>
     <Real Name="Time 2.000000 Step 2 in frame 2">-3856.54</Real>
   </Energy>
-  <Energy Name="Density fitting">
+  <Energy Name="Dens. fitting">
     <Real Name="Time 0.000000 Step 0 in frame 0">-3378.9026</Real>
     <Real Name="Time 1.000000 Step 1 in frame 1">-3590.7383</Real>
     <Real Name="Time 2.000000 Step 2 in frame 2">-3855.5586</Real>

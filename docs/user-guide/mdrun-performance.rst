@@ -1044,7 +1044,7 @@ to the next time point. For a better understanding also please see the section
 on :ref:`domain decomposition <gmx-domain-decomp>`.
 
 Of all calculations required for an MD step,
-GROMACS aims to optimize performance bottom-up for each step
+|Gromacs| aims to optimize performance bottom-up for each step
 from the lowest level (SIMD unit, cores, sockets, accelerators, etc.).
 Therefore many of the individual computation units are
 highly tuned for the lowest level of hardware parallelism: the SIMD units.
@@ -1055,19 +1055,23 @@ Right now, |Gromacs| supports GPU accelerator offload of two tasks:
 the short-range :ref:`nonbonded interactions in real space <gmx-gpu-pp>`,
 and :ref:`PME <gmx-gpu-pme>`.
 
-**Please note that the solving of PME on GPU is still only the initial
-version supporting this behaviour, and comes with a set of limitations
-outlined further below.**
+|Gromacs| supports two major offload modes: force-offload and GPU-resident.
+The former involves offloading interaction calculations with integration
+on the CPU (hence requiring per-step data movement). In the GPU-resident mode
+by offloading integration and constraints (when used) less data movement is
+necessary.
 
-Right now, we generally support short-range nonbonded offload with and
-without dynamic pruning on a wide range of GPU accelerators
+The force-offload mode is the more broadly supported GPU-acceleration mode
+with short-range nonbonded offload supported on a wide range of GPU accelerators
 (NVIDIA, AMD, and Intel). This is compatible with the grand majority of
 the features and parallelization modes and can be used to scale to large machines.
-
 Simultaneously offloading both short-range nonbonded and long-range
-PME work to GPU accelerators is a new feature that that has some
-restrictions in terms of feature and parallelization
+PME work to GPU accelerators has some restrictions in terms of feature and parallelization
 compatibility (please see the :ref:`section below <gmx-pme-gpu-limitations>`).
+Offloading (most types of) bonded interactions is only supported in CUDA.
+The GPU-resident mode is supported with CUDA and SYCL, but it has additional limitations as
+described in :ref:`the GPU update section <gmx-gpu-update>`.
+
 
 .. _gmx-gpu-pp:
 
@@ -1102,10 +1106,11 @@ Known limitations
 
 - Only a PME order of 4 is supported on GPUs.
 
-- PME will run on a GPU only when exactly one rank has a
-  PME task, ie. decompositions with multiple ranks doing PME are not supported.
-
-- Only single precision is supported.
+- PME can run on a GPU only when exactly one rank has a
+  PME task, ie. decompositions with multiple ranks (hence multiple GPUs) computing
+  PME are not supported.
+  Note that experimental PME decomposition in hybrid mode (``-pmefft cpu``) is supported
+  from the 2022 release.
 
 - Only dynamical integrators are supported (ie. leap-frog, Velocity Verlet,
   stochastic dynamics)
@@ -1133,19 +1138,20 @@ A typical case for the latter is free-energy calculations.
 GPU accelerated calculation of constraints and coordinate update (CUDA and SYCL only)
 .....................................................................................
 
-.. TODO again, extend this and add some actual useful information concerning performance etc...
+.. TODO again, extend this with information on when is GPU update supported
 
 |Gromacs| makes it possible to also perform the coordinate update and (if requested)
-constraint calculation on a CUDA-compatible GPU. This allows executing all
-(supported) computation of a simulation step on the GPU. 
-This feature is supported in single domain runs (unless using the experimental
-GPU domain decomposition feature), and needs to be explicitly requested by the user. 
-This is a new parallelization mode where all force and coordinate
-data can be "GPU resident" for a number of steps, typically between neighbor searching steps.
+constraint calculation on a GPU.
+This parallelization mode is referred to as "GPU-resident" as all force and coordinate
+data can remain resident on the GPU for a number of steps (typically between temperature/pressure coupling or
+neighbor searching steps).
+The GPU-resident mode allows executing all (supported) computation of a simulation step on the GPU. 
 This has the benefit that there is less coupling between CPU host and GPU and
-on typical MD steps data does not need to be transferred between CPU and GPU.
-In this scheme it is however still possible for part of the computation to be 
-executed on the CPU concurrently with GPU calculation.
+on typical MD steps data does not need to be transferred between CPU and GPU
+in contrast to the force-offload scheme requires coordinates and forces to be transferred
+every step between the CPU and GPU.
+The GPU-resident scheme however is still able to carry out part of the computation
+on the CPU concurrently with GPU calculation.
 This helps supporting the broad range of |Gromacs| features not all of which are 
 ported to GPUs. At the same time, it also allows improving performance by making 
 use of the otherwise mostly idle CPU. It can often be advantageous to move the bonded 
@@ -1158,7 +1164,7 @@ case simulations will try to run all parts by default on the GPU, and will only 
 back to the CPU based calculation if the simulation is not compatible.
 
 Using this parallelization mode is typically advantageous in cases where a fast GPU is
-used with a weak CPU, in particular if there is only single simulation assigned to a GPU.
+used with a slower CPU, in particular if there is only single simulation assigned to a GPU.
 However, in typical throughput cases where multiple runs are assigned to each GPU,
 offloading everything, especially without moving back some of the work to the CPU
 can perform worse than the parallelization mode where only force computation is offloaded.
@@ -1179,15 +1185,15 @@ One overview over the possible task assignments is given below:
 
 |Gromacs| version 2018:
 
-  Two different types of assignable GPU accelerated tasks are available, NB and PME.
-  Each PP rank has a NB task that can be offloaded to a GPU.
+  Two different types of assignable GPU accelerated tasks are available, (short-range) nonbonded and PME.
+  Each PP rank has a nonbnonded task that can be offloaded to a GPU.
   If there is only one rank with a PME task (including if that rank is a
   PME-only rank), then that task can be offloaded to a GPU. Such a PME
   task can run wholly on the GPU, or have its latter stages run only on the CPU.
 
   Limitations are that PME on GPU does not support PME domain decomposition,
   so that only one PME task can be offloaded to a single GPU
-  assigned to a separate PME rank, while NB can be decomposed and offloaded to multiple GPUs.
+  assigned to a separate PME rank, while the nonbonded can be decomposed and offloaded to multiple GPUs.
 
 |Gromacs| version 2019:
 
@@ -1195,15 +1201,37 @@ One overview over the possible task assignments is given below:
   may run on the same GPU as the short-ranged interactions for a PP task.
   This can be influenced with the ``-bonded`` flag.
 
+|Gromacs| version 2020:
+
+  Update and constraints can run on the same GPU as the short-ranged nonbonded and bonded interactions for a PP task.
+  This can be influenced with the ``-update`` flag.
+
+|Gromacs| version 2021/2022:
+
+  Communication and auxiliary tasks can also be offloaded.
+  In domain-decomposition halo exchange and PP-PME communication,
+  instead of staging transfers between GPUs though the CPU,
+  direct GPU--GPU communication is possible.
+  As an auxiliary tasks for halo exchange  data packing and unpacking is performed 
+  which is also offloaded to the GPU.
+  In the 2021 release this is supported with thread-MPI and from the 2022 release
+  it is also supported using GPU-aware MPI.
+  Direct GPU communication is not enabled by default and can be triggered using
+  the ``GMX_ENABLE_DIRECT_GPU_COMM`` environment variable (will only have an effect
+  on supported systems).
+
 Performance considerations for GPU tasks
 ........................................
 
 #) The performance balance depends on the speed and number of CPU cores you
    have vs the speed and number of GPUs you have.
 
+#) The GPU-resident parallelization mode (with update/constraints offloaded) is less
+   sensitive to the appropriate CPU-GPU balance than the force-offload mode. 
+
 #) With slow/old GPUs and/or fast/modern CPUs with many
    cores, it might make more sense to let the CPU do PME calculation,
-   with the GPUs focused on the calculation of the NB.
+   with the GPUs focused on the nonbonded calculation.
 
 #) With fast/modern GPUs and/or slow/old CPUs with few cores,
    it generally helps to have the GPU do PME.
@@ -1382,10 +1410,11 @@ Run setup
 ^^^^^^^^^
 
 * For an approximately spherical solute, use a rhombic dodecahedron unit cell.
-* When using a time-step of 2 fs, use :mdp-value:`constraints=h-bonds`
-  (and not :mdp-value:`constraints=all-bonds`), since this is faster, especially with GPUs,
-  and most force fields have been parametrized with only bonds involving
-  hydrogens constrained.
+* When using a time-step of <=2 fs, use :mdp-value:`constraints=h-bonds`
+  (and not :mdp-value:`constraints=all-bonds`), since:
+  * this is faster, especially with GPUs;
+  * it is necessary to be able to use GPU-resident mode;
+  * and most force fields have been parametrized with only bonds involving hydrogens constrained.
 * You can increase the time-step to 4 or 5 fs when using virtual interaction
   sites (``gmx pdb2gmx -vsite h``).
 * For massively parallel runs with PME, you might need to try different numbers
@@ -1408,15 +1437,28 @@ Checking and improving performance
   imbalance, the automated PME-tuning might have reduced the initial imbalance.
   You could still gain performance by changing the mdp parameters or increasing
   the number of PME ranks.
-* In GPU-resident runs (``-update gpu``), frequent virial or energy computation
-  can have a large overhead (and this will not show up in the cycle counters).
-  To reduce this overhead, increase ``nstcalcenergy``.
-* If the neighbor searching takes a lot of time, increase nstlist. If a Verlet
+* (Especially) In GPU-resident runs (``-update gpu``):
+
+  * Frequent virial or energy computation can have a large overhead (and this will not show up in the cycle counters).
+    To reduce this overhead, increase ``nstcalcenergy``;
+  * Frequent temperature or pressure coupling can have significant overhead; 
+    to reduce this, make sure to have as infrequent coupling as your algorithms allow (typically >=50-100 steps).
+
+* If the neighbor searching and/or domain decomposition takes a lot of time, increase ``nstlist``. If a Verlet
   buffer tolerance is used, this is done automatically by :ref:`gmx mdrun`
   and the pair-list buffer is increased to keep the energy drift constant.
 
-  * If ``Comm. energies`` takes a lot of time (a note will be printed in the log
-    file), increase nstcalcenergy.
-  * If all communication takes a lot of time, you might be running on too many
-    cores, or you could try running combined MPI/OpenMP parallelization with 2
-    or 4 OpenMP threads per MPI process.
+    * especially with multi-GPU runs, the automatic increasing of ``nstlist`` at ``mdrun``
+      startup can be conservative and larger value is often be optimal
+      (e.g. ``nstlist=200-300`` with PME and default Verlet buffer tolerance).
+
+* If ``Comm. energies`` takes a lot of time (a note will be printed in the log
+  file), increase nstcalcenergy.
+* If all communication takes a lot of time, you might be running on too many
+  cores, or you could try running combined MPI/OpenMP parallelization with 2
+  or 4 OpenMP threads per MPI process.
+* In multi-GPU runs avoid using as many ranks as cores (or hardware threads) since
+  this introduces a major inefficiency due to overheads associated to GPUs sharing by several MPI ranks.
+  Use at most a few ranks per GPU, 1-3 ranks is generally optimal;
+  with GPU-resident mode and direct GPU communication typically 1 rank/GPU is best.
+

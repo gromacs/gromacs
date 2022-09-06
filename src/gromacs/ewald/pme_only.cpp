@@ -823,6 +823,11 @@ int gmx_pmeonly(struct gmx_pme_t*               pme,
     } /***** end of quasi-loop, we stop with the break above */
     while (TRUE);
 
+    // The first element, `pme`, will be freed outside this function
+    for (size_t i = 1; i < pmedata.size(); i++)
+    {
+        gmx_pme_destroy(pmedata[i], false);
+    }
     walltime_accounting_end_time(walltime_accounting);
 
     return 0;

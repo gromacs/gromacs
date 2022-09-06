@@ -33,7 +33,7 @@
  */
 /*! \internal \file
  *
- * \brief Implements PME-PP communication using CUDA
+ * \brief Implememnts backend-specific code for PME-PP communication using CUDA.
  *
  *
  * \author Alan Gray <alang@nvidia.com>
@@ -61,14 +61,14 @@ void PmeForceSenderGpu::Impl::sendFToPpPeerToPeer(int ppRank, int numAtoms, bool
     GMX_ASSERT(GMX_THREAD_MPI, "sendFToPpCudaDirect is expected to be called only for Thread-MPI");
 
 #if GMX_MPI
-    float3* pmeRemoteForcePtr = (sendForcesDirectToPpGpu || stageThreadMpiGpuCpuComm_)
+    Float3* pmeRemoteForcePtr = (sendForcesDirectToPpGpu || stageThreadMpiGpuCpuComm_)
                                         ? ppCommManagers_[ppRank].pmeRemoteGpuForcePtr
                                         : ppCommManagers_[ppRank].pmeRemoteCpuForcePtr;
 
     pmeForcesReady_->enqueueWaitEvent(*ppCommManagers_[ppRank].stream);
 
     // Push data to remote GPU's memory
-    cudaError_t stat = cudaMemcpyAsync(pmeRemoteForcePtr,
+    cudaError_t stat = cudaMemcpyAsync(asFloat3(pmeRemoteForcePtr),
                                        ppCommManagers_[ppRank].localForcePtr,
                                        numAtoms * sizeof(rvec),
                                        cudaMemcpyDefault,
