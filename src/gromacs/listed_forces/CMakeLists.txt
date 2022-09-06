@@ -47,9 +47,12 @@ gmx_add_libgromacs_sources(
 
 if(GMX_GPU_CUDA)
     gmx_add_libgromacs_sources(
-       listed_forces_gpu_impl.cu
+       listed_forces_gpu_impl_gpu.cpp
        listed_forces_gpu_internal.cu
        )
+    _gmx_add_files_to_property(CUDA_SOURCES
+      listed_forces_gpu_impl_gpu.cpp
+      )
 endif()
 
 # Source files have the following private module dependencies.

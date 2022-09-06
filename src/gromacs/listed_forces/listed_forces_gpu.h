@@ -55,6 +55,7 @@
 #include "gromacs/topology/idef.h"
 
 class DeviceContext;
+struct DeviceInformation;
 class DeviceStream;
 
 struct gmx_enerdata_t;
@@ -114,16 +115,18 @@ public:
      * \param[in] ffparams                   Force-field parameters.
      * \param[in] electrostaticsScaleFactor  Scaling factor for the electrostatic potential
      *                                       (Coulomb constant, multiplied by the Fudge factor).
+     * \param[in] deviceInfo                 GPU device handle.
      * \param[in] deviceContext              GPU device context (not used in CUDA).
      * \param[in] deviceStream               GPU device stream.
      * \param[in] wcycle                     The wallclock counter.
      *
      */
-    ListedForcesGpu(const gmx_ffparams_t& ffparams,
-                    float                 electrostaticsScaleFactor,
-                    const DeviceContext&  deviceContext,
-                    const DeviceStream&   deviceStream,
-                    gmx_wallcycle*        wcycle);
+    ListedForcesGpu(const gmx_ffparams_t&    ffparams,
+                    float                    electrostaticsScaleFactor,
+                    const DeviceInformation& deviceInfo,
+                    const DeviceContext&     deviceContext,
+                    const DeviceStream&      deviceStream,
+                    gmx_wallcycle*           wcycle);
     //! Destructor
     ~ListedForcesGpu();
 

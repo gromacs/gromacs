@@ -1808,6 +1808,7 @@ int Mdrunner::mdrunner()
                                "version of bonded forces.");
             fr->listedForcesGpu = std::make_unique<ListedForcesGpu>(mtop.ffparams,
                                                                     fr->ic->epsfac * fr->fudgeQQ,
+                                                                    *deviceInfo,
                                                                     deviceStreamManager->context(),
                                                                     deviceStreamManager->bondedStream(),
                                                                     wcycle.get());

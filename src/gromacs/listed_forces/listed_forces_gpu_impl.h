@@ -32,7 +32,7 @@
  * the research papers on the package. Check out https://www.gromacs.org.
  */
 /*! \internal \file
- * \brief Declares GPU implementation class for CUDA bonded
+ * \brief Declares GPU implementation class for GPU bonded
  * interactions.
  *
  * This header file is needed to include from both the device-side
@@ -95,6 +95,8 @@ struct BondedGpuKernelParameters
     DeviceBuffer<float> d_vTot;
     //! Interaction list atoms (on GPU)
     DeviceBuffer<t_iatom> d_iatoms[numFTypesOnGpu];
+    //! Device sub-group/warp size
+    int deviceSubGroupSize;
 
     BondedGpuKernelParameters()
     {
@@ -113,13 +115,13 @@ class ListedForcesGpu::Impl
 {
 public:
     //! Constructor
-    Impl(const gmx_ffparams_t& ffparams,
-         float                 electrostaticsScaleFactor,
-         const DeviceContext&  deviceContext,
-         const DeviceStream&   deviceStream,
-         gmx_wallcycle*        wcycle);
-    /*! \brief Destructor, non-default needed for freeing
-     * device-side buffers */
+    Impl(const gmx_ffparams_t&    ffparams,
+         float                    electrostaticsScaleFactor,
+         const DeviceInformation& deviceInfo,
+         const DeviceContext&     deviceContext,
+         const DeviceStream&      deviceStream,
+         gmx_wallcycle*           wcycle);
+    //! \brief Destructor, non-default needed for freeing device-side buffers
     ~Impl();
     /*! \brief Update lists of interactions from idef suitable for the GPU,
      * using the data structures prepared for PP work.
