@@ -238,7 +238,7 @@ descriptions of keywords that can be found in this part of CPMD input:
 The ``&ATOMS`` section of CPMD input file contains all the QM atoms
 within the system and has a default CPMD formatting. Please refer
 to the `CPMD manual
-<http://www.cpmd.org/downloadable-files/no-authentication/manual_v4_0_1.pdf>`__
+<https://www.cpmd.org/wordpress/CPMD/getFile.php?file=manual.pdf>`__
 to adjust it to your needs(one will need to set the correct pseudo-potential
 for each atom species).
 

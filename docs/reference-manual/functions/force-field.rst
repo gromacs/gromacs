@@ -234,5 +234,5 @@ The PLUM force field :ref:`126 <refbereau12>` is an example of a solvent-free
 protein-membrane model for which the membrane was derived from
 structure-based coarse-graining \ :ref:`127 <refwang_jpcb10>`. A |Gromacs|
 implementation can be found at
-`code.google.com/p/plumx <http://code.google.com/p/plumx/>`__.
+`github.com/tbereau/plumx <https://github.com/tbereau/plumx>`__.
 

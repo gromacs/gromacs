@@ -6,5 +6,5 @@ So, you want to build the manual? This is now easy.
    usual way, and use the generated binaries to build the manual.
 
 An installation of pdflatex and ImageMagick is assumed by the
-UseLATEX.cmake package (http://www.itk.org/Wiki/CMakeUserUseLATEX)
+UseLATEX.cmake package (https://gitlab.kitware.com/kmorel/UseLATEX)
 that is used by manual/CMakeLists.txt.

@@ -78,10 +78,8 @@ The tests are written using `Google Test`_, which provides a framework for
 writing unit tests and compiling them into a test binary.  Most of the command
 line options provided by the test binaries are implemented by Google Test.  See
 the `Google Test Primer`_ for an introduction.
-Some tests also use `Google Mock`_, which provides a framework for creating
-mock implementations of C++ classes.  Both components are included in the
-source tree under ``src/external/googletest/``, and are compiled as part of the
-unit test build.
+`Google Test`_ is included in the source tree under ``src/external/googletest/``, 
+and is compiled as part of the unit test build.
 
 ``src/testutils/`` contains |Gromacs|-specific shared test code.  This includes
 a few parts:
@@ -123,7 +121,7 @@ a few parts:
 In addition to ``src/testutils/``, some of the module test directories may
 provide reusable test code that is used in higher-level tests.  For example,
 the ``src/gromacs/analysisdata/tests/`` provides test fixtures, a mock
-implementation for gmx::IAnalysisDataModule, and some helper classes
+implementation for ``gmx::IAnalysisDataModule``, and some helper classes
 that are also used in ``src/gromacs/trajectoryanalysis/tests/``.
 These cases are handled using CMake object libraries that are linked to all the
 test binaries that need them.
@@ -182,9 +180,8 @@ Here are some things to keep in mind when working with the unit tests:
   goes wrong, but the main audience for the messages is the developer who
   caused the test to fail.
 
-.. _Google Test: http://code.google.com/p/googletest/
-.. _Google Test Primer: http://code.google.com/p/googletest/wiki/V1_7_Primer
-.. _Google Mock: http://code.google.com/p/googlemock/
+.. _Google Test: https://github.com/google/googletest
+.. _Google Test Primer: https://google.github.io/googletest/primer.html
 
 .. include:: /fragments/doxygen-links.rst
 
