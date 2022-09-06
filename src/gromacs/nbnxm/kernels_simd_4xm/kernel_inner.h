@@ -99,41 +99,8 @@
     {
         if constexpr (c_haveExclusionForces)
         {
-            /* Only remove the (sub-)diagonal to avoid double counting */
-            if constexpr (UNROLLJ == UNROLLI)
-            {
-                if (cj == ci_sh)
-                {
-                    withinCutoffV = genBoolArr<nR>(
-                            [&](int i) { return withinCutoffV[i] && diagonalMaskV[i]; });
-                }
-            }
-            else if constexpr (UNROLLJ < UNROLLI)
-            {
-                if (cj == ci_sh * 2)
-                {
-                    withinCutoffV = genBoolArr<nR>(
-                            [&](int i) { return withinCutoffV[i] && diagonalMask0V[i]; });
-                }
-                if (cj == ci_sh * 2 + 1)
-                {
-                    withinCutoffV = genBoolArr<nR>(
-                            [&](int i) { return withinCutoffV[i] && diagonalMask1V[i]; });
-                }
-            }
-            else
-            {
-                if (cj * 2 == ci_sh)
-                {
-                    withinCutoffV = genBoolArr<nR>(
-                            [&](int i) { return withinCutoffV[i] && diagonalMask0V[i]; });
-                }
-                else if (cj * 2 + 1 == ci_sh)
-                {
-                    withinCutoffV = genBoolArr<nR>(
-                            [&](int i) { return withinCutoffV[i] && diagonalMask1V[i]; });
-                }
-            }
+            /* Only remove the (sub-)diagonal to avoid double counting exclusion forces */
+            diagonalMasker.maskArray(ci_sh, cj, withinCutoffV);
         }
         else
         {

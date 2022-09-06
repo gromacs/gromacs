@@ -32,6 +32,7 @@
  * the research papers on the package. Check out https://www.gromacs.org.
  */
 #include "gromacs/nbnxm/simd_coulomb_functions.h"
+#include "gromacs/nbnxm/simd_diagonal_masker.h"
 #include "gromacs/nbnxm/simd_lennardjones_functions.h"
 #include "gromacs/nbnxm/simd_load_store_functions.h"
 #include "gromacs/pbcutil/ishift.h"

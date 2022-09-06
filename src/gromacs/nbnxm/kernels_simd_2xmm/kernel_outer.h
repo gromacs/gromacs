@@ -139,41 +139,8 @@
     }
 
     /* Set up the diagonal exclusion masks */
-    std::array<SimdBool, UNROLLI == UNROLLJ ? nR : 0> diagonalMaskV;
-    std::array<SimdBool, UNROLLI == UNROLLJ ? 0 : nR> diagonalMask0V;
-    std::array<SimdBool, UNROLLI == UNROLLJ ? 0 : nR> diagonalMask1V;
-    /* Load j-i for the first i */
-    SimdReal diagonalJMinusI = load<SimdReal>(kernelLayout == KernelLayout::r4xM
-                                                      ? nbat->simdMasks.diagonal_4xn_j_minus_i.data()
-                                                      : nbat->simdMasks.diagonal_2xnn_j_minus_i.data());
-    /* Generate all the diagonal masks as comparison results */
-    SimdReal iIndexIncrement(GMX_SIMD_J_UNROLL_SIZE);
-    if constexpr (UNROLLI == UNROLLJ)
-    {
-        for (int i = 0; i < nR; i++)
-        {
-            diagonalMaskV[i] = (zero_S < diagonalJMinusI);
-            diagonalJMinusI  = diagonalJMinusI - iIndexIncrement;
-        }
-    }
-    else if constexpr (UNROLLI == 2 * UNROLLJ || 2 * UNROLLI == UNROLLJ)
-    {
-        for (int i = 0; i < nR; i++)
-        {
-            diagonalMask0V[i] = (zero_S < diagonalJMinusI);
-            diagonalJMinusI   = diagonalJMinusI - iIndexIncrement;
-        }
-        if constexpr (UNROLLI == 2 * UNROLLJ)
-        {
-            /* Load j-i for the second half of the j-cluster */
-            diagonalJMinusI = load<SimdReal>(nbat->simdMasks.diagonal_4xn_j_minus_i.data() + UNROLLJ);
-        }
-        for (int i = 0; i < nR; i++)
-        {
-            diagonalMask1V[i] = (zero_S < diagonalJMinusI);
-            diagonalJMinusI   = diagonalJMinusI - iIndexIncrement;
-        }
-    }
+    const DiagonalMasker<nR, kernelLayout, getDiagonalMaskType<UNROLLI, UNROLLJ>()> diagonalMasker(
+            nbat->simdMasks);
 
 #if GMX_DOUBLE && !GMX_SIMD_HAVE_INT32_LOGICAL
     const std::uint64_t* gmx_restrict exclusion_filter = nbat->simdMasks.exclusion_filter64.data();
