@@ -863,7 +863,7 @@ __global__ void bonded_kernel_gpu(BondedGpuKernelParameters kernelParams, float4
         {
             vtot_loc = vtotElec_loc;
         }
-#pragma unroll(4)
+#pragma unroll 4
         for (int i = 2; i < warpSize; i *= 2)
         {
             vtot_loc += __shfl_down_sync(c_fullWarpMask, vtot_loc, i);
