@@ -34,7 +34,7 @@
 /* This file is completely threadsafe - keep it that way! */
 #include "gmxpre.h"
 
-#include "nrjac.h"
+#include "gromacs/linearalgebra/nrjac.h"
 
 #include <cmath>
 

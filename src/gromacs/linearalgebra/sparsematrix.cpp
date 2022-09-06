@@ -33,7 +33,7 @@
  */
 #include "gmxpre.h"
 
-#include "sparsematrix.h"
+#include "gromacs/linearalgebra/sparsematrix.h"
 
 #include <cassert>
 #include <cstdio>

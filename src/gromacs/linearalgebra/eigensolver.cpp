@@ -33,7 +33,7 @@
  */
 #include "gmxpre.h"
 
-#include "eigensolver.h"
+#include "gromacs/linearalgebra/eigensolver.h"
 
 #include "gromacs/linearalgebra/sparsematrix.h"
 #include "gromacs/utility/fatalerror.h"

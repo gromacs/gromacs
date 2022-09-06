@@ -33,7 +33,7 @@
  */
 #include "gmxpre.h"
 
-#include "matrix.h"
+#include "gromacs/linearalgebra/matrix.h"
 
 #include "config.h"
 

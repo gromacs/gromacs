@@ -31,22 +31,30 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out https://www.gromacs.org.
 
-file(GLOB LINEARALGEBRA_SOURCES *.cpp)
+add_library(linearalgebra OBJECT)
+target_sources(linearalgebra PRIVATE
+        eigensolver.cpp
+        gmx_arpack.cpp
+        matrix.cpp
+        nrjac.cpp
+        sparsematrix.cpp
+)
 
 if (NOT GMX_EXTERNAL_BLAS)
     file(GLOB BLAS_SOURCES gmx_blas/*.cpp)
+    target_sources(linearalgebra PRIVATE ${BLAS_SOURCES})
 endif()
 
 if (NOT GMX_EXTERNAL_LAPACK)
     file(GLOB LAPACK_SOURCES gmx_lapack/*.cpp)
+    target_sources(linearalgebra PRIVATE ${LAPACK_SOURCES})
 endif()
 
-set(LINEARALGEBRA_SOURCES
-    ${LINEARALGEBRA_SOURCES} ${BLAS_SOURCES} ${LAPACK_SOURCES})
+if (BUILD_SHARED_LIBS)
+    set_target_properties(linearalgebra PROPERTIES POSITION_INDEPENDENT_CODE ON)
+endif()
 
-add_library(linearalgebra OBJECT ${LINEARALGEBRA_SOURCES})
-# TODO: Only expose the module's public headers.
-target_include_directories(linearalgebra INTERFACE
+target_include_directories(linearalgebra PUBLIC
                            $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>)
 target_include_directories(linearalgebra PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 
@@ -69,5 +77,3 @@ target_link_libraries(linearalgebra PRIVATE legacy_api)
 target_link_libraries(linearalgebra PRIVATE common)
 # TODO: Remove `legacy_modules` once specific modules are explicitly linked.
 target_link_libraries(linearalgebra PRIVATE legacy_modules utility)
-list(APPEND libgromacs_object_library_dependencies linearalgebra)
-set(libgromacs_object_library_dependencies ${libgromacs_object_library_dependencies} PARENT_SCOPE)
