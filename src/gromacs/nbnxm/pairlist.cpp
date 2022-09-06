@@ -86,6 +86,15 @@ using Grid = Nbnxm::Grid; // TODO: Remove when refactoring this file
 // Convenience alias for partial Nbnxn namespace usage
 using InteractionLocality = gmx::InteractionLocality;
 
+// Whether we use SIMD to compute the distance between a pair of clusters for the GPU pair list
+#if GMX_SIMD
+constexpr bool c_useSimdGpuClusterPairDistance =
+        (c_nbnxnGpuClusterSize >= GMX_SIMD_REAL_WIDTH
+         || (GMX_SIMD4_HAVE_REAL && c_nbnxnGpuClusterSize >= 4));
+#else
+constexpr bool c_useSimdGpuClusterPairDistance = false;
+#endif
+
 /* We shift the i-particles backward for PBC.
  * This leads to more conditionals than shifting forward.
  * We do this to get more balanced pair lists.
@@ -452,17 +461,14 @@ static void clusterBoundingBoxDistance2_xxxx_simd4(const float* bb_j, const int 
 
 #endif /* NBNXN_SEARCH_BB_SIMD4 */
 
-
-/* Returns if any atom pair from two clusters is within distance sqrt(rlist2) */
-static inline gmx_bool
-clusterpair_in_range(const NbnxnPairlistGpuWork& work, int si, int csj, int stride, const real* x_j, real rlist2)
+// Returns whether any atom pair from two clusters is within distance sqrt(rlist2)
+static inline bool clusterpairInRangePlainC(const NbnxnPairlistGpuWork& work,
+                                            const int                   si,
+                                            const int                   csj,
+                                            const int                   jCoordStride,
+                                            const real*                 x_j,
+                                            const real                  rlist2)
 {
-#if !GMX_SIMD4_HAVE_REAL
-
-    /* Plain C version.
-     * All coordinates are stored as xyzxyz...
-     */
-
     const real* x_i = work.iSuperClusterData.x.data();
 
     for (int i = 0; i < c_nbnxnGpuClusterSize; i++)
@@ -470,45 +476,73 @@ clusterpair_in_range(const NbnxnPairlistGpuWork& work, int si, int csj, int stri
         int i0 = (si * c_nbnxnGpuClusterSize + i) * DIM;
         for (int j = 0; j < c_nbnxnGpuClusterSize; j++)
         {
-            int j0 = (csj * c_nbnxnGpuClusterSize + j) * stride;
+            int j0 = (csj * c_nbnxnGpuClusterSize + j) * jCoordStride;
 
             real d2 = gmx::square(x_i[i0] - x_j[j0]) + gmx::square(x_i[i0 + 1] - x_j[j0 + 1])
                       + gmx::square(x_i[i0 + 2] - x_j[j0 + 2]);
 
             if (d2 < rlist2)
             {
-                return TRUE;
+                return true;
             }
         }
     }
 
-    return FALSE;
+    return false;
+}
 
-#else /* !GMX_SIMD4_HAVE_REAL */
+#if GMX_SIMD
 
-    /* 4-wide SIMD version.
-     * The coordinates x_i are stored as xxxxyyyy..., x_j is stored xyzxyz...
-     * Using 8-wide AVX(2) is not faster on Intel Sandy Bridge and Haswell.
-     */
-    static_assert(c_nbnxnGpuClusterSize == 8 || c_nbnxnGpuClusterSize == 4,
-                  "A cluster is hard-coded to 4/8 atoms.");
+// Define simdLoad for SimdReal, so we can use code templated on SimdReal or Simd4Real type
+template<typename T>
+gmx_unused static inline T simdLoad(std::enable_if_t<std::is_same_v<T, SimdReal>, const real*> x)
+{
+    return simdLoad(x);
+}
 
-    Simd4Real rc2_S{ rlist2 };
+#    if GMX_SIMD4_HAVE_REAL
+// Define simdLoad for Simd4Real, so we can use code templated on SimdReal or Simd4Real type
+template<typename T>
+gmx_unused static inline T simdLoad(std::enable_if_t<std::is_same_v<T, Simd4Real>, const real*> x)
+{
+    return load4(x);
+}
+#    endif
+
+// Returns whether any atom pair from two clusters is within distance sqrt(rlist2), uses SIMD or SIMD4
+template<int simdWidth, typename T, typename BoolT>
+static inline bool clusterpairInRangeSimd(const NbnxnPairlistGpuWork& work,
+                                          int                         si,
+                                          int                         csj,
+                                          int                         jCoordStride,
+                                          const real*                 x_j,
+                                          real                        rlist2)
+{
+    /* The coordinates x_i are stored as xxxxyyyy..., x_j is stored xyzxyz..., so we can use SIMD loads */
+
+    static_assert(c_nbnxnGpuClusterSize >= simdWidth);
+
+    constexpr int nR = c_nbnxnGpuClusterSize / simdWidth;
+
+    static_assert(nR * simdWidth == c_nbnxnGpuClusterSize,
+                  "The GPU cluster size should be a multiple of the SIMD width");
+
+    T cutoffSquared(rlist2);
 
     const real* x_i = work.iSuperClusterData.xSimd.data();
 
-    int       dim_stride = c_nbnxnGpuClusterSize * DIM;
-    Simd4Real ix_S0      = load4(x_i + si * dim_stride + 0 * GMX_SIMD4_WIDTH);
-    Simd4Real iy_S0      = load4(x_i + si * dim_stride + 1 * GMX_SIMD4_WIDTH);
-    Simd4Real iz_S0      = load4(x_i + si * dim_stride + 2 * GMX_SIMD4_WIDTH);
+    constexpr int iDimStride = c_nbnxnGpuClusterSize * DIM;
 
-    Simd4Real ix_S1, iy_S1, iz_S1;
-    if (c_nbnxnGpuClusterSize == 8)
+    std::array<T, nR> ixV;
+    std::array<T, nR> iyV;
+    std::array<T, nR> izV;
+    for (int i = 0; i < nR; i++)
     {
-        ix_S1 = load4(x_i + si * dim_stride + 3 * GMX_SIMD4_WIDTH);
-        iy_S1 = load4(x_i + si * dim_stride + 4 * GMX_SIMD4_WIDTH);
-        iz_S1 = load4(x_i + si * dim_stride + 5 * GMX_SIMD4_WIDTH);
+        ixV[i] = simdLoad<T>(x_i + si * iDimStride + XX * c_nbnxnGpuClusterSize + i * simdWidth);
+        iyV[i] = simdLoad<T>(x_i + si * iDimStride + YY * c_nbnxnGpuClusterSize + i * simdWidth);
+        izV[i] = simdLoad<T>(x_i + si * iDimStride + ZZ * c_nbnxnGpuClusterSize + i * simdWidth);
     }
+
     /* We loop from the outer to the inner particles to maximize
      * the chance that we find a pair in range quickly and return.
      */
@@ -516,89 +550,93 @@ clusterpair_in_range(const NbnxnPairlistGpuWork& work, int si, int csj, int stri
     int j1 = j0 + c_nbnxnGpuClusterSize - 1;
     while (j0 < j1)
     {
-        Simd4Real jx0_S, jy0_S, jz0_S;
-        Simd4Real jx1_S, jy1_S, jz1_S;
+        const T jx0 = T(x_j[j0 * jCoordStride + XX]);
+        const T jy0 = T(x_j[j0 * jCoordStride + YY]);
+        const T jz0 = T(x_j[j0 * jCoordStride + ZZ]);
 
-        Simd4Real dx_S0, dy_S0, dz_S0;
-        Simd4Real dx_S1, dy_S1, dz_S1;
-        Simd4Real dx_S2, dy_S2, dz_S2;
-        Simd4Real dx_S3, dy_S3, dz_S3;
+        const T jx1 = T(x_j[j1 * jCoordStride + XX]);
+        const T jy1 = T(x_j[j1 * jCoordStride + YY]);
+        const T jz1 = T(x_j[j1 * jCoordStride + ZZ]);
 
-        Simd4Real rsq_S0;
-        Simd4Real rsq_S1;
-        Simd4Real rsq_S2;
-        Simd4Real rsq_S3;
-
-        Simd4Bool wco_S0;
-        Simd4Bool wco_S1;
-        Simd4Bool wco_S2;
-        Simd4Bool wco_S3;
-        Simd4Bool wco_any_S01, wco_any_S23, wco_any_S;
-
-        jx0_S = Simd4Real(x_j[j0 * stride + 0]);
-        jy0_S = Simd4Real(x_j[j0 * stride + 1]);
-        jz0_S = Simd4Real(x_j[j0 * stride + 2]);
-
-        jx1_S = Simd4Real(x_j[j1 * stride + 0]);
-        jy1_S = Simd4Real(x_j[j1 * stride + 1]);
-        jz1_S = Simd4Real(x_j[j1 * stride + 2]);
-
-        /* Calculate distance */
-        dx_S0 = ix_S0 - jx0_S;
-        dy_S0 = iy_S0 - jy0_S;
-        dz_S0 = iz_S0 - jz0_S;
-        dx_S2 = ix_S0 - jx1_S;
-        dy_S2 = iy_S0 - jy1_S;
-        dz_S2 = iz_S0 - jz1_S;
-        if (c_nbnxnGpuClusterSize == 8)
+        // Calculate the atom pair distance components
+        std::array<T, nR> dx0V;
+        std::array<T, nR> dy0V;
+        std::array<T, nR> dz0V;
+        std::array<T, nR> dx1V;
+        std::array<T, nR> dy1V;
+        std::array<T, nR> dz1V;
+        for (int i = 0; i < nR; i++)
         {
-            dx_S1 = ix_S1 - jx0_S;
-            dy_S1 = iy_S1 - jy0_S;
-            dz_S1 = iz_S1 - jz0_S;
-            dx_S3 = ix_S1 - jx1_S;
-            dy_S3 = iy_S1 - jy1_S;
-            dz_S3 = iz_S1 - jz1_S;
+            dx0V[i] = ixV[i] - jx0;
+            dy0V[i] = iyV[i] - jy0;
+            dz0V[i] = izV[i] - jz0;
+
+            dx1V[i] = ixV[i] - jx1;
+            dy1V[i] = iyV[i] - jy1;
+            dz1V[i] = izV[i] - jz1;
         }
 
-        /* rsq = dx*dx+dy*dy+dz*dz */
-        rsq_S0 = norm2(dx_S0, dy_S0, dz_S0);
-        rsq_S2 = norm2(dx_S2, dy_S2, dz_S2);
-        if (c_nbnxnGpuClusterSize == 8)
+        // Compute the distances and compare with the cut-off
+        std::array<BoolT, nR> withinCutoffAnyV;
+        for (int i = 0; i < nR; i++)
         {
-            rsq_S1 = norm2(dx_S1, dy_S1, dz_S1);
-            rsq_S3 = norm2(dx_S3, dy_S3, dz_S3);
+            const T rSquared0 = norm2(dx0V[i], dy0V[i], dz0V[i]);
+            const T rSquared1 = norm2(dx1V[i], dy1V[i], dz1V[i]);
+
+            const BoolT withinCutoff0 = (rSquared0 < cutoffSquared);
+            const BoolT withinCutoff1 = (rSquared1 < cutoffSquared);
+
+            withinCutoffAnyV[i] = withinCutoff0 || withinCutoff1;
         }
 
-        wco_S0 = (rsq_S0 < rc2_S);
-        wco_S2 = (rsq_S2 < rc2_S);
-        if (c_nbnxnGpuClusterSize == 8)
+        // Reduce the bools over the nR SIMD registers
+        for (int i = 1; i < nR; i++)
         {
-            wco_S1 = (rsq_S1 < rc2_S);
-            wco_S3 = (rsq_S3 < rc2_S);
-        }
-        if (c_nbnxnGpuClusterSize == 8)
-        {
-            wco_any_S01 = wco_S0 || wco_S1;
-            wco_any_S23 = wco_S2 || wco_S3;
-            wco_any_S   = wco_any_S01 || wco_any_S23;
-        }
-        else
-        {
-            wco_any_S = wco_S0 || wco_S2;
+            withinCutoffAnyV[0] = (withinCutoffAnyV[0] || withinCutoffAnyV[i]);
         }
 
-        if (anyTrue(wco_any_S))
+        if (anyTrue(withinCutoffAnyV[0]))
         {
-            return TRUE;
+            return true;
         }
 
         j0++;
         j1--;
     }
 
-    return FALSE;
+    return false;
+}
 
-#endif /* !GMX_SIMD4_HAVE_REAL */
+#endif // GMX_SIMD
+
+// Returns whether any atom between a GPU cluster pair is within range
+static inline bool clusterpairInRange(const NbnxnPairlistGpuWork& work,
+                                      const int                   si,
+                                      const int                   csj,
+                                      const int                   jCoordStride,
+                                      const real*                 x_j,
+                                      const real                  rlist2)
+{
+    if constexpr (!c_useSimdGpuClusterPairDistance)
+    {
+        return clusterpairInRangePlainC(work, si, csj, jCoordStride, x_j, rlist2);
+    }
+#if GMX_SIMD
+    else
+    {
+        if constexpr (c_nbnxnGpuClusterSize >= GMX_SIMD_REAL_WIDTH)
+        {
+            return clusterpairInRangeSimd<GMX_SIMD_REAL_WIDTH, SimdReal, SimdBool>(
+                    work, si, csj, jCoordStride, x_j, rlist2);
+        }
+#    if GMX_SIMD4_HAVE_REAL
+        else
+        {
+            return clusterpairInRangeSimd<4, Simd4Real, Simd4Bool>(work, si, csj, jCoordStride, x_j, rlist2);
+        }
+#    endif
+    }
+#endif
 }
 
 /* Returns the j-cluster index for index cjIndex in a cj list */
@@ -1169,7 +1207,7 @@ static void make_cluster_list_supersub(const Grid&       iGrid,
              * within the cut-off. This check is very costly.
              */
             *numDistanceChecks += c_nbnxnGpuClusterSize * c_nbnxnGpuClusterSize;
-            if (d2 < rbb2 || (d2 < rlist2 && clusterpair_in_range(work, ci, cj_gl, stride, x, rlist2)))
+            if (d2 < rbb2 || (d2 < rlist2 && clusterpairInRange(work, ci, cj_gl, stride, x, rlist2)))
 #else
             /* Check if the distance between the two bounding boxes
              * in within the pair-list cut-off.
@@ -1193,7 +1231,7 @@ static void make_cluster_list_supersub(const Grid&       iGrid,
          * within the cut-off, so we could get rid of it.
          */
         if (npair == 1 && d2l[ci_last] >= rbb2
-            && !clusterpair_in_range(work, ci_last, cj_gl, stride, x, rlist2))
+            && !clusterpairInRange(work, ci_last, cj_gl, stride, x, rlist2))
         {
             imask &= ~(1U << (cj_offset * c_gpuNumClusterPerCell + ci_last));
             npair--;
@@ -2327,38 +2365,39 @@ static void icell_set_x(int                                  ci,
                         ClusterDistanceKernelType gmx_unused kernelType,
                         NbnxnPairlistGpuWork*                work)
 {
-#if !GMX_SIMD4_HAVE_REAL
-
-    real* x_ci = work->iSuperClusterData.x.data();
-
-    int ia = ci * c_gpuNumClusterPerCell * c_nbnxnGpuClusterSize;
-    for (int i = 0; i < c_gpuNumClusterPerCell * c_nbnxnGpuClusterSize; i++)
+    if constexpr (!c_useSimdGpuClusterPairDistance)
     {
-        x_ci[i * DIM + XX] = x[(ia + i) * stride + XX] + shx;
-        x_ci[i * DIM + YY] = x[(ia + i) * stride + YY] + shy;
-        x_ci[i * DIM + ZZ] = x[(ia + i) * stride + ZZ] + shz;
-    }
+        real* x_ci = work->iSuperClusterData.x.data();
 
-#else /* !GMX_SIMD4_HAVE_REAL */
-
-    real* x_ci = work->iSuperClusterData.xSimd.data();
-
-    for (int si = 0; si < c_gpuNumClusterPerCell; si++)
-    {
-        for (int i = 0; i < c_nbnxnGpuClusterSize; i += GMX_SIMD4_WIDTH)
+        int ia = ci * c_gpuNumClusterPerCell * c_nbnxnGpuClusterSize;
+        for (int i = 0; i < c_gpuNumClusterPerCell * c_nbnxnGpuClusterSize; i++)
         {
-            int io = si * c_nbnxnGpuClusterSize + i;
-            int ia = ci * c_gpuNumClusterPerCell * c_nbnxnGpuClusterSize + io;
-            for (int j = 0; j < GMX_SIMD4_WIDTH; j++)
+            x_ci[i * DIM + XX] = x[(ia + i) * stride + XX] + shx;
+            x_ci[i * DIM + YY] = x[(ia + i) * stride + YY] + shy;
+            x_ci[i * DIM + ZZ] = x[(ia + i) * stride + ZZ] + shz;
+        }
+    }
+    else
+    {
+        // Store the coordinates packed per dimension: xx...yy...z..
+
+        real* x_ci = work->iSuperClusterData.xSimd.data();
+
+        for (int si = 0; si < c_gpuNumClusterPerCell; si++)
+        {
+            const int inputOffset = (ci * c_gpuNumClusterPerCell + si) * c_nbnxnGpuClusterSize * stride;
+            const int outputOffset = si * c_nbnxnGpuClusterSize * DIM;
+            for (int i = 0; i < c_nbnxnGpuClusterSize; i++)
             {
-                x_ci[io * DIM + j + XX * GMX_SIMD4_WIDTH] = x[(ia + j) * stride + XX] + shx;
-                x_ci[io * DIM + j + YY * GMX_SIMD4_WIDTH] = x[(ia + j) * stride + YY] + shy;
-                x_ci[io * DIM + j + ZZ * GMX_SIMD4_WIDTH] = x[(ia + j) * stride + ZZ] + shz;
+                x_ci[outputOffset + XX * c_nbnxnGpuClusterSize + i] =
+                        x[inputOffset + i * stride + XX] + shx;
+                x_ci[outputOffset + YY * c_nbnxnGpuClusterSize + i] =
+                        x[inputOffset + i * stride + YY] + shy;
+                x_ci[outputOffset + ZZ * c_nbnxnGpuClusterSize + i] =
+                        x[inputOffset + i * stride + ZZ] + shz;
             }
         }
     }
-
-#endif /* !GMX_SIMD4_HAVE_REAL */
 }
 
 static real minimum_subgrid_size_xy(const Grid& grid)
