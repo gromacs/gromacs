@@ -39,6 +39,7 @@ gmx_add_libgromacs_sources(
     hardwaretopology.cpp
     printhardware.cpp
     identifyavx512fmaunits.cpp
+    simd_support.cpp
     )
 
 if(GMX_GPU_OPENCL)

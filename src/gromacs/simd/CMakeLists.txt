@@ -31,17 +31,14 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out https://www.gromacs.org.
 
-add_library(simd OBJECT)
-target_sources(simd PRIVATE support.cpp)
-if (BUILD_SHARED_LIBS)
-    set_target_properties(simd PROPERTIES POSITION_INDEPENDENT_CODE ON)
-endif()
+# The simd module contains only headers, so can be an INTERFACE target
+add_library(simd INTERFACE)
 
 # Public interface for modules, including dependencies and interfaces
-target_include_directories(simd PUBLIC
+target_include_directories(simd INTERFACE
                            $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>)
 
-target_link_libraries(simd PRIVATE
+target_link_libraries(simd INTERFACE
                       common
                       legacy_modules
                       utility

@@ -43,7 +43,7 @@
 
 #include "gmxpre.h"
 
-#include "gromacs/simd/support.h"
+#include "gromacs/hardware/simd_support.h"
 
 #include "config.h"
 
@@ -67,7 +67,7 @@ namespace gmx
 
 /*! \cond libapi */
 
-const std::string& simdString(SimdType s)
+static const std::string& simdString(SimdType s)
 {
     static const std::map<SimdType, std::string> name = { { SimdType::None, "None" },
                                                           { SimdType::Reference, "Reference" },
@@ -192,7 +192,7 @@ SimdType simdSuggested(const CpuInfo& c)
     return suggested;
 }
 
-SimdType simdCompiled()
+static SimdType simdCompiled()
 {
 #if GMX_SIMD_X86_AVX_512_KNL
     return SimdType::X86_Avx512Knl;

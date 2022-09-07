@@ -47,7 +47,7 @@
 #include "gromacs/hardware/hardwaretopology.h"
 #include "gromacs/hardware/hw_info.h"
 #include "gromacs/hardware/identifyavx512fmaunits.h"
-#include "gromacs/simd/support.h"
+#include "gromacs/hardware/simd_support.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/basenetwork.h"
 #include "gromacs/utility/cstringutil.h"

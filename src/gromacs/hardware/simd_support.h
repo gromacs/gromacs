@@ -45,10 +45,12 @@
  * \ingroup module_simd
  */
 
-#include "gromacs/hardware/cpuinfo.h"
+#include <cstdio>
 
 namespace gmx
 {
+
+class CpuInfo;
 
 /*! \cond libapi */
 
@@ -71,17 +73,8 @@ enum class SimdType
     Ibm_Vsx        //!< IBM VSX SIMD (Power7 and later)
 };
 
-/*! \libinternal \brief Return a string with the name of a SIMD type
- *
- *  \param s  SIMD type to turn into string
- */
-const std::string& simdString(SimdType s);
-
 /*! \libinternal \brief Return the SIMD type that would fit this hardware best */
 SimdType simdSuggested(const CpuInfo& c);
-
-/*! \libinternal \brief Return the SIMD type the library was compiled with */
-SimdType simdCompiled();
 
 /*! \libinternal \brief Check if binary was compiled with the provided SIMD type
  *
