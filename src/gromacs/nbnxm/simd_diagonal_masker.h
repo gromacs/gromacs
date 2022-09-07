@@ -120,7 +120,7 @@ generateDiagonalMasks(const nbnxn_atomdata_t::SimdMasks& simdMasks)
             diagonalJMinusI      = diagonalJMinusI - iIndexIncrement;
         }
     }
-
+    // NOLINTNEXTLINE(readability-misleading-indentation) remove when clang-tidy-13 is required
     return diagonalMaskVV;
 }
 
