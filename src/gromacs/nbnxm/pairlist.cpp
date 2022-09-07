@@ -461,6 +461,11 @@ static void clusterBoundingBoxDistance2_xxxx_simd4(const float* bb_j, const int 
 
 #endif /* NBNXN_SEARCH_BB_SIMD4 */
 
+#if GMX_SIMD
+// clang-format off
+CLANG_DIAGNOSTIC_IGNORE(-Wunneeded-internal-declaration)
+// clang-format on
+#endif
 // Returns whether any atom pair from two clusters is within distance sqrt(rlist2)
 static inline bool clusterpairInRangePlainC(const NbnxnPairlistGpuWork& work,
                                             const int                   si,
@@ -490,6 +495,9 @@ static inline bool clusterpairInRangePlainC(const NbnxnPairlistGpuWork& work,
 
     return false;
 }
+#if GMX_SIMD
+CLANG_DIAGNOSTIC_RESET
+#endif
 
 #if GMX_SIMD
 
