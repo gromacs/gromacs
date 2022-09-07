@@ -90,16 +90,29 @@ if (NOT pybind11_FOUND)
             "See https://manual.gromacs.org/current/gmxapi/userguide/install.html")
 endif ()
 
+# Workaround for issue #4563 for GROMACS releases that won't be patched:
+# Find GROMACS package early.
 if(GMXAPI_MASTER_PROJECT)
-    # Workaround for issue #4563 for GROMACS releases that won't be patched.
-    find_package(GROMACS REQUIRED
+    find_package(GROMACS 2021 REQUIRED
                  NAMES gromacs gromacs_mpi gromacs_d gromacs_mpi_d
                  HINTS "$ENV{GROMACS_DIR}"
                  )
+    if (NOT DEFINED GROMACS_IS_DOUBLE)
+        message(AUTHOR_WARNING "GROMACS_IS_DOUBLE undefined.")
+    endif ()
+else()
+    if (NOT DEFINED GMX_DOUBLE)
+        message(AUTHOR_WARNING "GMX_DOUBLE undefined.")
+    endif ()
+    set(GROMACS_IS_DOUBLE ${GMX_DOUBLE})
+endif()
+
+if(GMXAPI_MASTER_PROJECT)
     find_package(gmxapi REQUIRED)
     if (gmxapi_VERSION VERSION_LESS 0.2.1)
-        message(WARNING "Your GROMACS installation does not support custom MD plugins. "
-                "If you need this feature, please install GROMACS 2021.3 or higher.")
+        message(
+            FATAL_ERROR
+            "Your GROMACS installation is too old. This package requires GROMACS 2021.3 or higher.")
     endif ()
 else()
     # Building as part of the GROMACS master project. GROMACS CMake logic should
@@ -141,6 +154,7 @@ endif ()
 # compiler wrapper.
 
 pybind11_add_module(_gmxapi
+                    src/cpp/launch_0_2_1.cpp
                     src/cpp/module.cpp
                     src/cpp/export_context.cpp
                     src/cpp/export_system.cpp
@@ -161,11 +175,6 @@ if (gmxapi_VERSION VERSION_LESS 0.3.1)
 else()
     target_sources(_gmxapi PRIVATE src/cpp/export_exceptions_0_3_1.cpp)
 endif()
-if (gmxapi_VERSION VERSION_GREATER_EQUAL 0.2.1)
-    target_sources(_gmxapi PRIVATE src/cpp/launch_0_2_1.cpp)
-else()
-    target_sources(_gmxapi PRIVATE src/cpp/launch_0_2_0.cpp)
-endif()
 
 target_include_directories(_gmxapi PRIVATE
                            ${CMAKE_CURRENT_SOURCE_DIR}/src/cpp
@@ -174,22 +183,6 @@ target_include_directories(_gmxapi PRIVATE
 
 # RPATH management: make sure build artifacts can find GROMACS library.
 set_target_properties(_gmxapi PROPERTIES SKIP_BUILD_RPATH FALSE)
-
-if(GMXAPI_MASTER_PROJECT)
-    # TODO: This requirement is probably overly restrictive.
-    find_package(GROMACS 2021 REQUIRED
-                 NAMES gromacs gromacs_mpi gromacs_d gromacs_mpi_d
-                 HINTS "$ENV{GROMACS_DIR}"
-                 )
-    if (NOT DEFINED GROMACS_IS_DOUBLE)
-        message(AUTHOR_WARNING "GROMACS_IS_DOUBLE undefined.")
-    endif ()
-else()
-    if (NOT DEFINED GMX_DOUBLE)
-        message(AUTHOR_WARNING "GMX_DOUBLE undefined.")
-    endif ()
-    set(GROMACS_IS_DOUBLE ${GMX_DOUBLE})
-endif()
 
 # Get details of GROMACS installation needed by the Python package at run time.
 
