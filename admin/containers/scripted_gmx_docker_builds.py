@@ -716,6 +716,7 @@ def prepare_venv(version: packaging.version.Version) -> typing.Sequence[str]:
     # WARNING: Please keep this list synchronized with python_packaging/gmxapi/requirements.txt
     # TODO: Get requirements.txt from an input argument.
     commands.append(f"""{venv_path}/bin/python -m pip install --upgrade \
+            'black' \
             'breathe' \
             'build' \
             'cmake>=3.16.3' \
@@ -724,6 +725,7 @@ def prepare_venv(version: packaging.version.Version) -> typing.Sequence[str]:
             'gcovr>=4.2' \
             'importlib-resources;python_version<"3.10"' \
             'mpi4py>=3.0.3' \
+            'mypy' \
             'networkx>=2.0' \
             'numpy>1.7' \
             'packaging' \
