@@ -336,11 +336,6 @@ set(VERSION_INFO_DEPS         ${VERSION_INFO_CMAKE_FILE})
 # the function below.
 set(VERSION_INFO_CMAKEIN_FILE     ${CMAKE_CURRENT_LIST_DIR}/VersionInfo.cmake.cmakein)
 set(VERSION_INFO_CONFIGURE_SCRIPT ${CMAKE_CURRENT_LIST_DIR}/gmxConfigureVersionInfo.cmake)
-# A set of directories to scan for calculating the hash of source files.
-set(SET_OF_DIRECTORIES_TO_CHECKSUM  "src")
-list(APPEND SET_OF_DIRECTORIES_TO_CHECKSUM "python_packaging")
-# Due to the limitations for passing a list as arguments, we make the directories a string here
-string(REPLACE ";" ":" DIRECTORIES_TO_CHECKSUM_STRING "${SET_OF_DIRECTORIES_TO_CHECKSUM}")
 
 # Rules to create the VersionInfo.cmake file.
 # For git info, the sequence is:
@@ -371,20 +366,6 @@ string(REPLACE ";" ":" DIRECTORIES_TO_CHECKSUM_STRING "${SET_OF_DIRECTORIES_TO_C
 #
 # Note that VersionInfo-partial.cmake is also used to transfer version
 # information between GitLab CI jobs for release and documentation builds.
-
-# Check if we have all necessary python modules available
-if (Python3_Interpreter_FOUND)
-    set(HAVE_FULL_FUNCTIONING_PYTHON Python3_Interpreter_FOUND)
-    foreach(module argparse hashlib hmac os stat re) # add further modules if necessary
-        find_python_module(${module} QUIET)
-        string(TOUPPER ${module} module_upper)
-        if(NOT PYTHONMODULE_${module_upper})
-            message(STATUS
-                "Python module ${module} not found - disabling checksum validation")
-            unset(HAVE_FULL_FUNCTIONING_PYTHON)
-        endif()
-    endforeach()
-endif()
 
 # Configure information known at this time into a partially filled
 # version info file.
@@ -440,36 +421,6 @@ configure_file(${VERSION_INFO_CMAKEIN_FILE}
 unset(GMX_VERSION_STRING_FULL)
 unset(GMX_VERSION_FULL_HASH)
 unset(GMX_VERSION_CENTRAL_BASE_HASH)
-
-# What file the checksum should be written to
-set(CHECKSUM_FILE "${PROJECT_SOURCE_DIR}/src/reference_checksum")
-
-# Target that allows checksumming a source tree when producing a tarball.
-# Allows verification of builds from the tarball to make sure the source had
-# not been tampered with.
-# Note: The RUN_ALWAYS here is to regenerate the hash file only, it does not
-# mean that the target is run in all builds
-if (HAVE_FULL_FUNCTIONING_PYTHON)
-    # We need the full path to the directories after passing it through
-    set(FULL_PATH_DIRECTORIES "")
-    foreach(DIR ${SET_OF_DIRECTORIES_TO_CHECKSUM})
-        list(APPEND FULL_PATH_DIRECTORIES "${PROJECT_SOURCE_DIR}/${DIR}")
-    endforeach()
-    gmx_add_custom_output_target(reference_checksum RUN_ALWAYS
-        OUTPUT ${CHECKSUM_FILE}
-        COMMAND ${PYTHON_EXECUTABLE}
-            ${PROJECT_SOURCE_DIR}/admin/createFileHash.py
-            -s ${FULL_PATH_DIRECTORIES}
-            -o ${CHECKSUM_FILE}
-        WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
-        COMMENT "Generating reference checksum of source files")
-else()
-    add_custom_target(reference_checksum
-        COMMAND ${CMAKE_COMMAND} -E echo
-        "Can not checksum files without python3 being available"
-        WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
-        COMMENT "Generating reference checksum of source files")
-endif()
 
 # The main user-visible interface to the machinery.
 # See documentation at the top of the script.
