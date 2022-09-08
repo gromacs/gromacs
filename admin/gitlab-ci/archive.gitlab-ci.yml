@@ -338,7 +338,7 @@ archive:full-release:
     - source /root/venv/py3.9/bin/activate
     - tar czf webpage.tar.gz $BUILD_DIR/docs/html/
     - export VERSION=`sed -n -e '/GMX_VERSION_STRING\b/ s/.*"\(.*\)")/\1/p' VersionInfo-partial.cmake.cmakein`
-    - python admin/ci-scripts/make-release-build.py --server
+    - python admin/make-release-build.py --server
   artifacts:
     when: always
     paths:
