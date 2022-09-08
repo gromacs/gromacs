@@ -51,6 +51,7 @@
 #include "gromacs/fileio/checkpoint.h"
 #include "gromacs/math/multidimarray.h"
 #include "gromacs/mdlib/broadcaststructs.h"
+#include "gromacs/mdrunutility/mdmodulesnotifiers.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/imdmodule.h"
 #include "gromacs/mdtypes/imdoutputprovider.h"
@@ -58,7 +59,6 @@
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/keyvaluetreebuilder.h"
 #include "gromacs/utility/logger.h"
-#include "gromacs/utility/mdmodulesnotifiers.h"
 
 #include "qmmmforceprovider.h"
 #include "qmmmoptions.h"

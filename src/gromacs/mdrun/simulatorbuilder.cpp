@@ -45,12 +45,12 @@
 #include <memory>
 
 #include "gromacs/mdlib/vsite.h"
+#include "gromacs/mdrunutility/mdmodulesnotifiers.h"
 #include "gromacs/mdtypes/checkpointdata.h"
 #include "gromacs/mdtypes/mdrunoptions.h"
 #include "gromacs/mdtypes/state.h"
 #include "gromacs/modularsimulator/modularsimulator.h"
 #include "gromacs/topology/topology.h"
-#include "gromacs/utility/mdmodulesnotifiers.h"
 
 #include "legacysimulator.h"
 #include "membedholder.h"

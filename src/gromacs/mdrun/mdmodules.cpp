@@ -41,6 +41,7 @@
 #include "gromacs/applied_forces/electricfield.h"
 #include "gromacs/applied_forces/qmmm/qmmm.h"
 #include "gromacs/imd/imd.h"
+#include "gromacs/mdrunutility/mdmodulesnotifiers.h"
 #include "gromacs/mdtypes/iforceprovider.h"
 #include "gromacs/mdtypes/imdmodule.h"
 #include "gromacs/mdtypes/imdoutputprovider.h"
@@ -53,7 +54,6 @@
 #include "gromacs/utility/keyvaluetree.h"
 #include "gromacs/utility/keyvaluetreebuilder.h"
 #include "gromacs/utility/keyvaluetreetransform.h"
-#include "gromacs/utility/mdmodulesnotifiers.h"
 #include "gromacs/utility/smalloc.h"
 
 namespace gmx

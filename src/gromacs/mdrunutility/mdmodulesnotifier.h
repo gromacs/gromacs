@@ -37,11 +37,11 @@
  *
  * \author Christian Blau <blau@kth.se>
  * \inlibraryapi
- * \ingroup module_utility
+ * \ingroup module_mdrunutility
  */
 
-#ifndef GMX_UTILITY_MDMODULESNOTIFIER_H
-#define GMX_UTILITY_MDMODULESNOTIFIER_H
+#ifndef GMX_MDRUNUTILITY_MDMODULESNOTIFIER_H
+#define GMX_MDRUNUTILITY_MDMODULESNOTIFIER_H
 
 #include <functional>
 #include <vector>

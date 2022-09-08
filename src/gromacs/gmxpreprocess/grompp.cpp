@@ -80,6 +80,7 @@
 #include "gromacs/mdlib/perf_est.h"
 #include "gromacs/mdlib/vsite.h"
 #include "gromacs/mdrun/mdmodules.h"
+#include "gromacs/mdrunutility/mdmodulesnotifiers.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/mdtypes/nblist.h"
@@ -105,7 +106,6 @@
 #include "gromacs/utility/listoflists.h"
 #include "gromacs/utility/logger.h"
 #include "gromacs/utility/loggerbuilder.h"
-#include "gromacs/utility/mdmodulesnotifiers.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/snprintf.h"
 

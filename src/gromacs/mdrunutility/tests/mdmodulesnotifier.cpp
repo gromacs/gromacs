@@ -36,11 +36,11 @@
  * Tests MDModulesNotifier
  *
  * \author Christian Blau <blau@kth.se>
- * \ingroup module_utility
+ * \ingroup module_mdrunutility
  */
 #include "gmxpre.h"
 
-#include "gromacs/utility/mdmodulesnotifier.h"
+#include "gromacs/mdrunutility/mdmodulesnotifier.h"
 
 #include <gmock/gmock.h>
 

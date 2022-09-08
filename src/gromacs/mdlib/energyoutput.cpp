@@ -66,6 +66,7 @@
 #include "gromacs/mdlib/ebin.h"
 #include "gromacs/mdlib/mdebin_bar.h"
 #include "gromacs/mdrunutility/handlerestart.h"
+#include "gromacs/mdrunutility/mdmodulesnotifiers.h"
 #include "gromacs/mdtypes/energyhistory.h"
 #include "gromacs/mdtypes/fcdata.h"
 #include "gromacs/mdtypes/group.h"
@@ -80,7 +81,6 @@
 #include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/enumerationhelpers.h"
 #include "gromacs/utility/fatalerror.h"
-#include "gromacs/utility/mdmodulesnotifiers.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/stringutil.h"
 

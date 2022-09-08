@@ -44,6 +44,7 @@
 
 #include "gromacs/applied_forces/densityfitting/densityfitting.h"
 #include "gromacs/math/densityfit.h"
+#include "gromacs/mdrunutility/mdmodulesnotifiers.h"
 #include "gromacs/options/basicoptions.h"
 #include "gromacs/options/optionsection.h"
 #include "gromacs/selection/indexutil.h"
@@ -51,7 +52,6 @@
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/keyvaluetreebuilder.h"
 #include "gromacs/utility/keyvaluetreetransform.h"
-#include "gromacs/utility/mdmodulesnotifiers.h"
 #include "gromacs/utility/strconvert.h"
 
 #include "densityfittingamplitudelookup.h"

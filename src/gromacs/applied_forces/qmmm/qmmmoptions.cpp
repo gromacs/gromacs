@@ -47,6 +47,7 @@
 
 #include "gromacs/fileio/warninp.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/mdrunutility/mdmodulesnotifiers.h"
 #include "gromacs/options/basicoptions.h"
 #include "gromacs/options/optionsection.h"
 #include "gromacs/selection/indexutil.h"
@@ -57,7 +58,6 @@
 #include "gromacs/utility/keyvaluetreebuilder.h"
 #include "gromacs/utility/keyvaluetreetransform.h"
 #include "gromacs/utility/logger.h"
-#include "gromacs/utility/mdmodulesnotifiers.h"
 #include "gromacs/utility/path.h"
 #include "gromacs/utility/strconvert.h"
 #include "gromacs/utility/stringutil.h"

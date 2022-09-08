@@ -52,12 +52,12 @@
 #include "gromacs/math/coordinatetransformation.h"
 #include "gromacs/math/densityfit.h"
 #include "gromacs/math/multidimarray.h"
+#include "gromacs/mdrunutility/mdmodulesnotifiers.h"
 #include "gromacs/mdtypes/imdmodule.h"
 #include "gromacs/selection/indexutil.h"
 #include "gromacs/utility/classhelpers.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/keyvaluetreebuilder.h"
-#include "gromacs/utility/mdmodulesnotifiers.h"
 
 #include "densityfittingforceprovider.h"
 #include "densityfittingoptions.h"

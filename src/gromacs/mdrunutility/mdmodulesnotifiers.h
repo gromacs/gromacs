@@ -37,18 +37,18 @@
  *
  * \author Christian Blau <blau@kth.se>
  * \inlibraryapi
- * \ingroup module_utility
+ * \ingroup module_mdrunutility
  */
 
-#ifndef GMX_UTILITY_MDMODULESNOTIFIERS_H
-#define GMX_UTILITY_MDMODULESNOTIFIERS_H
+#ifndef GMX_MDRUNUTILITY_MDMODULESNOTIFIERS_H
+#define GMX_MDRUNUTILITY_MDMODULESNOTIFIERS_H
 
 #include <string>
 #include <vector>
 
 #include "gromacs/math/arrayrefwithpadding.h"
 #include "gromacs/math/vectypes.h"
-#include "gromacs/utility/mdmodulesnotifier.h"
+#include "gromacs/mdrunutility/mdmodulesnotifier.h"
 
 struct t_commrec;
 struct gmx_mtop_t;

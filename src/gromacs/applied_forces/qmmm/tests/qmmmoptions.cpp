@@ -47,13 +47,13 @@
 
 #include <gtest/gtest.h>
 
+#include "gromacs/mdrunutility/mdmodulesnotifiers.h"
 #include "gromacs/options/options.h"
 #include "gromacs/options/treesupport.h"
 #include "gromacs/selection/indexutil.h"
 #include "gromacs/utility/keyvaluetreebuilder.h"
 #include "gromacs/utility/keyvaluetreemdpwriter.h"
 #include "gromacs/utility/keyvaluetreetransform.h"
-#include "gromacs/utility/mdmodulesnotifiers.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/stringcompare.h"
 #include "gromacs/utility/stringstream.h"
