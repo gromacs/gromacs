@@ -423,34 +423,40 @@ static std::optional<sycl::backend> chooseBestBackend(const std::vector<std::uni
 }
 #endif
 
+static std::vector<sycl::device> partitionDevices(const std::vector<sycl::device>&& devices)
+{
+#if GMX_SYCL_DPCPP
+    std::vector<sycl::device> retVal;
+    for (const auto& device : devices)
+    {
+        using sycl::info::partition_property, sycl::info::partition_affinity_domain;
+        try
+        {
+            /* Split the device along NUMA domains into sub-devices.
+             * For multi-tile Intel GPUs, this corresponds to individual tiles.
+             * All other devices tested don't support partitioning and throw sycl::exception. */
+            const auto subDevices =
+                    device.create_sub_devices<partition_property::partition_by_affinity_domain>(
+                            partition_affinity_domain::numa);
+            retVal.insert(retVal.end(), subDevices.begin(), subDevices.end());
+        }
+        catch (const sycl::exception&)
+        {
+            retVal.push_back(device);
+        }
+    }
+    return retVal;
+#else
+    // For hipSYCL, we don't even bother splitting the devices
+    return devices;
+#endif
+}
+
 std::vector<std::unique_ptr<DeviceInformation>> findDevices()
 {
     std::vector<std::unique_ptr<DeviceInformation>> deviceInfos(0);
-    std::vector<sycl::device> devices = sycl::device::get_devices(sycl::info::device_type::gpu);
-    if (getenv("GMX_GPU_SYCL_USE_SUBDEVICES") != nullptr)
-    {
-        std::vector<sycl::device> allSubDevices;
-        for (const auto& device : devices)
-        {
-            using sycl::info::partition_property, sycl::info::partition_affinity_domain;
-            try
-            {
-                /* Split the device along NUMA domains into sub-devices.
-                 * For multi-tile Intel GPUs, this corresponds to individual tiles.
-                 * All other devices tested don't support partitioning and throw sycl::exception.
-                 */
-                const auto subDevices =
-                        device.create_sub_devices<partition_property::partition_by_affinity_domain>(
-                                partition_affinity_domain::numa);
-                allSubDevices.insert(allSubDevices.end(), subDevices.begin(), subDevices.end());
-            }
-            catch (const sycl::exception&)
-            {
-                // Device or runtime does not support partitioning, skip the device.
-            }
-        }
-        devices = allSubDevices;
-    }
+    const std::vector<sycl::device> allDevices = sycl::device::get_devices(sycl::info::device_type::gpu);
+    const std::vector<sycl::device> devices = partitionDevices(std::move(allDevices));
     deviceInfos.reserve(devices.size());
     for (const auto& syclDevice : devices)
     {
