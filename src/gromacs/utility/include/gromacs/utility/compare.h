@@ -43,7 +43,6 @@
 
 #include <cstdio>
 
-#include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
