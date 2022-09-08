@@ -81,6 +81,10 @@ PYBIND11_MODULE(_gmxapi, m)
     using namespace gmxpy::detail;
     m.doc() = docstring;
 
+    // Provide a module level dict for internal use to support
+    // API queries for feature level.
+    m.attr("_named_features") = py::dict();
+
     // Register exceptions and catch-all exception translators. We do this early
     // to give more freedom to the other export functions. Note that bindings
     // for C++ symbols should be expressed before those symbols are referenced
@@ -89,7 +93,7 @@ PYBIND11_MODULE(_gmxapi, m)
     const auto& baseException = export_exceptions(m);
 
     // Export core bindings
-    m.def("has_feature",
+    m.def("library_has_feature",
           &gmxapi::Version::hasFeature,
           "Check the gmxapi library for a named feature.");
 
@@ -99,5 +103,19 @@ PYBIND11_MODULE(_gmxapi, m)
     export_context(m);
     export_system(m);
     export_tprfile(m);
+
+    // Module helpers and utilities
+    m.def(
+            "has_feature",
+            [self = m](const std::string& name) {
+                py::gil_scoped_acquire lock;
+                bool feature_found = py::cast<py::dict>(self.attr("_named_features")).contains(name);
+                if (!feature_found)
+                {
+                    feature_found = py::cast<bool>(self.attr("library_has_feature")(name));
+                }
+                return feature_found;
+            },
+            "Check feature *name* first with the bindings package, then the supporting library.");
 
 } // end pybind11 module

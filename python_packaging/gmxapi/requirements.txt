@@ -8,6 +8,7 @@
 # and run time package dependencies (to be checked during installation) are
 # resolved by setuptools from the `install_requires` in `setup.cfg`.
 cmake>=3.16
+importlib_metadata;python_version<"3.8"
 networkx>=2.0
 numpy>1.7
 packaging

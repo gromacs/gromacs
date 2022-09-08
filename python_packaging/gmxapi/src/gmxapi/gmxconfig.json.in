@@ -2,5 +2,6 @@
     "gmx_executable": "@_gmx_executable@",
     "gmx_bindir": "@_gmx_bindir@",
     "gmx_mpi_type": @_gmx_mpi_type@,
-    "gmx_double": @_gmx_double@
+    "gmx_double": @_gmx_double@,
+    "gmxapi_level": "@gmxapi_VERSION@"
 }

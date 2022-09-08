@@ -139,7 +139,7 @@ def api_is_at_least(major_version, minor_version=0, patch_version=0):
         return False
 
 
-def has_feature(name='', enable_exception=False) -> bool:
+def has_feature(name: str, enable_exception=False) -> bool:
     """Query whether a named feature is available in the installed package.
 
     Between updates to the API specification, new features or experimental aspects
@@ -172,6 +172,8 @@ def has_feature(name='', enable_exception=False) -> bool:
         gmxapi.exceptions.FeatureNotAvailableError: If ``enable_exception == True`` and feature is not found.
 
     """
+    import gmxapi._gmxapi as core
+
     # First, issue a warning if the feature name is subject to removal because
     # of the history of the API specification.
     for version in range(_minor):
@@ -188,6 +190,8 @@ def has_feature(name='', enable_exception=False) -> bool:
 
     # Check whether the feature is listed in the API specification amendments.
     if any(name in features for features in _named_features_0):
+        return True
+    elif core.has_feature(name):
         return True
     else:
         if enable_exception:
