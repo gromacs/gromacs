@@ -356,6 +356,25 @@ options:
           -DFFTWF_LIBRARY="${ARMPL_DIR}/lib/libarmpl_lp64.so" \
           -DFFTWF_INCLUDE_DIR=${ARMPL_DIR}/include
 
+.. _cufftmp installation:
+
+Using cuFFTMp
+~~~~~~~~~~~~~
+
+PME decomposition is supported with PME offloaded to NVIDIA GPUs when using a CUDA build. This requires building |Gromacs| with the NVIDIA `cuFFTMp (cuFFT Multi-process) library
+<https://docs.nvidia.com/hpc-sdk/cufftmp>`_, shipped with the NVIDIA HPC SDK, which provides distributed FFTs including across multiple compute nodes. To enable cuFFTMp support use the following cmake options:
+
+::
+
+    cmake -DGMX_USE_CUFFTMP=ON \
+          -DcuFFTMp_ROOT=<path to NVIDIA HPC SDK math_libs folder>
+
+Please make sure `cuFFTMp's hardware and software requirements
+<https://docs.nvidia.com/hpc-sdk/cufftmp/usage/requirements.html>`_
+are met before trying to use GPU PME decomposition feature.
+Also, since cuFFTMp internally uses `NVSHMEM <https://developer.nvidia.com/nvshmem>`_ it is advisable to refer to the `NVSHMEM FAQ page
+<https://docs.nvidia.com/hpc-sdk/nvshmem/api/faq.html#general-faqs>`_ for
+any issues faced at runtime.
 
 Other optional build components
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
