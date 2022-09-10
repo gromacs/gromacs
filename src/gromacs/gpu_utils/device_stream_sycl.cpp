@@ -76,7 +76,7 @@ DeviceStream::DeviceStream(const DeviceContext& deviceContext,
     bool enableProfiling = false;
     if (useTiming)
     {
-        const bool deviceSupportsTiming = device.get_info<sycl::info::device::queue_profiling>();
+        const bool deviceSupportsTiming = device.has(sycl::aspect::queue_profiling);
         enableProfiling                 = deviceSupportsTiming;
     }
     const bool inOrder = (GMX_SYCL_USE_USM != 0);

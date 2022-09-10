@@ -178,7 +178,7 @@ __device__ __host__ static inline float shift_left(sycl::sub_group, float var, s
     // Should never be called
     GMX_UNUSED_VALUE(var);
     GMX_UNUSED_VALUE(delta);
-    assert(false);
+    SYCL_ASSERT(false);
     return NAN;
 #    endif
 }
@@ -204,7 +204,7 @@ __device__ __host__ static inline float shift_right(sycl::sub_group, float var, 
 #        endif
 #    else
     // Should never be called
-    assert(false);
+    SYCL_ASSERT(false);
     GMX_UNUSED_VALUE(var);
     GMX_UNUSED_VALUE(delta);
     return NAN;
@@ -237,7 +237,7 @@ __device__ __host__ static inline bool isfinite(Real value)
 #        endif
 #    else
     // Should never be called
-    assert(false);
+    SYCL_ASSERT(false);
     GMX_UNUSED_VALUE(value);
     return false;
 #    endif
@@ -247,78 +247,6 @@ template<typename Real>
 static inline bool isfinite(Real value)
 {
     return sycl::isfinite(value);
-}
-
-#endif
-
-#if GMX_SYCL_HIPSYCL
-
-/*! \brief Polyfill for sycl::vec::load buggy in hipSYCL
- *
- * Loads from the address \c ptr offset in elements of type T by
- * NumElements * offset, into the components of \c v.
- *
- * Can probably be removed when
- * https://github.com/illuhad/hipSYCL/issues/647 is resolved. */
-template<sycl::access::address_space AddressSpace, typename T, int NumElements>
-static inline void loadToVec(size_t                                 offset,
-                             sycl::multi_ptr<const T, AddressSpace> ptr,
-                             sycl::vec<T, NumElements>*             v)
-{
-    for (int i = 0; i < NumElements; ++i)
-    {
-        (*v)[i] = ptr.get()[offset * NumElements + i];
-    }
-}
-
-/*! \brief Polyfill for sycl::vec::store buggy in hipSYCL
- *
- * Loads from the address \c ptr offset in elements of type T by
- * NumElements * offset, into the components of \c v.
- *
- * Can probably be removed when
- * https://github.com/illuhad/hipSYCL/issues/647 is resolved. */
-template<sycl::access::address_space AddressSpace, typename T, int NumElements>
-static inline void storeFromVec(const sycl::vec<T, NumElements>& v,
-                                size_t                           offset,
-                                sycl::multi_ptr<T, AddressSpace> ptr)
-{
-    for (int i = 0; i < NumElements; ++i)
-    {
-        ptr.get()[offset * NumElements + i] = v[i];
-    }
-}
-
-#elif GMX_SYCL_DPCPP
-
-/*! \brief Polyfill for sycl::vec::load buggy in hipSYCL
- *
- * Loads from the address \c ptr offset in elements of type T by
- * NumElements * offset, into the components of \c v.
- *
- * Can probably be removed when
- * https://github.com/illuhad/hipSYCL/issues/647 is resolved. */
-template<sycl::access::address_space AddressSpace, typename T, int NumElements>
-static inline void loadToVec(size_t                                 offset,
-                             sycl::multi_ptr<const T, AddressSpace> ptr,
-                             sycl::vec<T, NumElements>*             v)
-{
-    v->load(offset, ptr);
-}
-
-/*! \brief Polyfill for sycl::vec::store buggy in hipSYCL
- *
- * Loads from the address \c ptr offset in elements of type T by
- * NumElements * offset, into the components of \c v.
- *
- * Can probably be removed when
- * https://github.com/illuhad/hipSYCL/issues/647 is resolved. */
-template<sycl::access::address_space AddressSpace, typename T, int NumElements>
-static inline void storeFromVec(const sycl::vec<T, NumElements>& v,
-                                size_t                           offset,
-                                sycl::multi_ptr<T, AddressSpace> ptr)
-{
-    v.store(offset, ptr);
 }
 
 #endif

@@ -249,15 +249,11 @@ auto makeSolveKernel(sycl::handler&                    cgh,
                 const float tmp1   = sycl::exp(-solveKernelParams.ewaldFactor * m2k);
                 const float etermk = solveKernelParams.elFactor * tmp1 / denom;
 
-                // sycl::float2::load and store are buggy in hipSYCL,
-                // but can probably be used after resolution of
-                // https://github.com/illuhad/hipSYCL/issues/647
                 sycl::float2 gridValue;
-                sycl_2020::loadToVec(
-                        gridThreadIndex, sycl::global_ptr<const float>(gm_fourierGrid), &gridValue);
+                gridValue.load(gridThreadIndex, sycl::global_ptr<const float>(gm_fourierGrid));
                 const sycl::float2 oldGridValue = gridValue;
                 gridValue *= etermk;
-                sycl_2020::storeFromVec(gridValue, gridThreadIndex, gm_fourierGrid);
+                gridValue.store(gridThreadIndex, gm_fourierGrid);
 
                 if (computeEnergyAndVirial)
                 {
