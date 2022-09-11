@@ -221,22 +221,6 @@ void InMemorySerializer::doReal(real* value)
     impl_->doValue(*value);
 }
 
-void InMemorySerializer::doRvec(rvec* value)
-{
-    for (int d = 0; d < DIM; d++)
-    {
-        doReal(&(*value)[d]);
-    }
-}
-
-void InMemorySerializer::doIvec(ivec* value)
-{
-    for (int d = 0; d < DIM; d++)
-    {
-        doInt(&(*value)[d]);
-    }
-}
-
 void InMemorySerializer::doString(std::string* value)
 {
     impl_->doString(*value);
@@ -366,22 +350,6 @@ void InMemoryDeserializer::doReal(real* value)
         float temp = 0.0;
         doFloat(&temp);
         *value = temp;
-    }
-}
-
-void InMemoryDeserializer::doRvec(rvec* value)
-{
-    for (int d = 0; d < DIM; d++)
-    {
-        doReal(&(*value)[d]);
-    }
-}
-
-void InMemoryDeserializer::doIvec(ivec* value)
-{
-    for (int d = 0; d < DIM; d++)
-    {
-        doInt(&(*value)[d]);
     }
 }
 

@@ -189,10 +189,6 @@ public:
     void doDouble(double* value) override;
     //! Handle GROMACS floating point number I/O.
     void doReal(real* value) override;
-    //! Handle I/O of integer vector of size DIM.
-    void doIvec(ivec* value) override;
-    //! Handle I/O of GROMACS real vector of size DIM.
-    void doRvec(rvec* value) override;
     //! Handle I/O if string.
     void doString(std::string* value) override;
     //! Handle opaque data.
@@ -201,8 +197,6 @@ public:
     void doCharArray(char* values, int elements) override;
     //! Special case for handling I/O of a vector of unsigned characters.
     void doUCharArray(unsigned char* values, int elements) override;
-    //! Special case for handling I/O of a vector of rvecs.
-    void doRvecArray(rvec* values, int elements) override;
 
 private:
     //! File I/O handle.

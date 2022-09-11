@@ -87,8 +87,6 @@ public:
     void doFloat(float* value) override;
     void doDouble(double* value) override;
     void doReal(real* value) override;
-    void doIvec(ivec* value) override;
-    void doRvec(rvec* value) override;
     void doString(std::string* value) override;
     void doOpaque(char* data, std::size_t size) override;
 
@@ -121,8 +119,6 @@ public:
     void doFloat(float* value) override;
     void doDouble(double* value) override;
     void doReal(real* value) override;
-    void doIvec(ivec* value) override;
-    void doRvec(rvec* value) override;
     void doString(std::string* value) override;
     void doOpaque(char* data, std::size_t size) override;
 

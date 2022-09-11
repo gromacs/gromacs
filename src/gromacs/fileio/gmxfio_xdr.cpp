@@ -850,16 +850,6 @@ void FileIOXdrSerializer::doReal(real* value)
     gmx_fio_do_real(fio_, *value);
 }
 
-void FileIOXdrSerializer::doIvec(ivec* value)
-{
-    gmx_fio_do_ivec(fio_, *value);
-}
-
-void FileIOXdrSerializer::doRvec(rvec* value)
-{
-    gmx_fio_do_rvec(fio_, *value);
-}
-
 void FileIOXdrSerializer::doCharArray(char* values, int elements)
 {
     gmx_fio_ndo_char(fio_, values, elements);
@@ -868,11 +858,6 @@ void FileIOXdrSerializer::doCharArray(char* values, int elements)
 void FileIOXdrSerializer::doUCharArray(unsigned char* values, int elements)
 {
     gmx_fio_ndo_uchar(fio_, values, elements);
-}
-
-void FileIOXdrSerializer::doRvecArray(rvec* values, int elements)
-{
-    gmx_fio_ndo_rvec(fio_, values, elements);
 }
 
 void FileIOXdrSerializer::doString(std::string* value)
