@@ -483,11 +483,9 @@ static inline void reduceForceIAndFShiftGeneric(sycl::local_ptr<float> sm_buf,
         {
             if (tidxj < i)
             {
-                sm_buf[tidxj * c_clSize + tidxi] += sm_buf[(tidxj + i) * c_clSize + tidxi];
-                sm_buf[bufStride + tidxj * c_clSize + tidxi] +=
-                        sm_buf[bufStride + (tidxj + i) * c_clSize + tidxi];
-                sm_buf[2 * bufStride + tidxj * c_clSize + tidxi] +=
-                        sm_buf[2 * bufStride + (tidxj + i) * c_clSize + tidxi];
+                sm_buf[tidx] += sm_buf[tidx + i * c_clSize];
+                sm_buf[bufStride + tidx] += sm_buf[bufStride + tidx + i * c_clSize];
+                sm_buf[2 * bufStride + tidx] += sm_buf[2 * bufStride + tidx + i * c_clSize];
             }
             i >>= 1;
             itemIdx.barrier(fence_space::local_space);
