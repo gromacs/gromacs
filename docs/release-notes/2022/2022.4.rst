@@ -19,6 +19,16 @@ Fixes where mdrun could behave incorrectly
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
 
+Corrected gmx awh friction metric legend
+""""""""""""""""""""""""""""""""""""""""
+
+The output of friction metric with :ref:`gmx awh` -more is the sqrt of
+the metric while ``sqrt`` was missing from the legend. This has been
+added now. Note that the output of :ref:`gmx awh` -fric, correctly,
+does not involve sqrt.
+
+:issue:`4598`
+
 Fixes that affect portability
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
