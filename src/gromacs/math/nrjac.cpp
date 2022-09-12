@@ -31,10 +31,16 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out https://www.gromacs.org.
  */
+/*! \libinternal
+ * \file
+ * \brief Defines wrapper functions for higher-level matrix functions
+ *
+ * \ingroup module_math
+ */
 /* This file is completely threadsafe - keep it that way! */
 #include "gmxpre.h"
 
-#include "gromacs/linearalgebra/nrjac.h"
+#include "gromacs/math/nrjac.h"
 
 #include <cmath>
 
@@ -185,7 +191,7 @@ int jacobi(gmx::ArrayRef<gmx::DVec> a, gmx::ArrayRef<double> eigenvalues, gmx::A
     return jacobi(a, DIM, eigenvalues.data(), eigenvectors);
 }
 
-int m_inv_gen(real* m, int n, real* minv)
+int m_inv_gen(const real* m, int n, real* minv)
 {
     double **md, **v, *eig, tol, s;
     int      nzero, i, j, k, nrot;

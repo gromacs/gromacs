@@ -36,7 +36,6 @@ target_sources(linearalgebra PRIVATE
         eigensolver.cpp
         gmx_arpack.cpp
         matrix.cpp
-        nrjac.cpp
         sparsematrix.cpp
 )
 
