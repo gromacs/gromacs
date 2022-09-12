@@ -77,11 +77,7 @@ def test_true_base(cleandir):
     work_dir = cleandir
     if comm_size > 1:
         work_dir = comm.bcast(work_dir, root=0)
-    if rank_number != 0:
-        assert work_dir != cleandir
     with scoped_chdir(work_dir):
-        current_dir = os.getcwd()
-        logging.warning(f'{current_dir}')
         command = shutil.which('true')
         kwargs = dict(command=[command], shell=False)
         if gmx.version.api_is_at_least(0, 4):

@@ -40,10 +40,8 @@ Context or its own Context, also implemented in this module.
 
 __all__ = ['mdrun', 'SimulationError']
 
-import functools
 import inspect
 import os
-import sys
 import typing
 import warnings
 from contextlib import contextmanager
@@ -56,7 +54,7 @@ import gmxapi.abc
 import gmxapi.operation as _op
 from gmxapi import exceptions
 from gmxapi import logger as root_logger
-from gmxapi.exceptions import Error
+from gmxapi.runtime import scoped_resources
 
 from . import fileio
 from . import workflow
@@ -180,69 +178,8 @@ def _standard_node_resource_factory(*args, **kwargs) -> _op.DataSourceCollection
     return source_collection
 
 
-class SimulationError(Error):
+class SimulationError(exceptions.Error):
     """Error occurred during simulation."""
-
-
-_current_communicator = None
-
-
-@contextmanager
-def scoped_communicator(original_comm, requested_size: int = None):
-    """Manage the lifecycle of a new communicator.
-
-    Get a Python context manager that produces a new communicator
-    in a ``with`` statement and frees it afterwards.
-
-    The new communicator is a sub-communicator of *original_comm*, if provided.
-
-    Args:
-        original_comm: parent communicator, or *None* to determine automatically.
-        requested_size: number of ranks requested, or *None* for all available.
-
-    *original_comm* is required if *requested_size* is not *None*.
-
-    If *requested_size* is less than the size of *original_comm*, the type of object
-    produced on higher-numbered (non-participating) ranks is unspecified. Callers
-    should use ``original_comm.Get_rank()`` to decide whether to use the new comm.
-    """
-    from gmxapi.simulation.context import (_acquire_communicator,
-                                           _get_ensemble_communicator,
-                                           )
-    global _current_communicator
-    if original_comm is None:
-        original_comm = _current_communicator
-
-    if requested_size is None:
-        communicator = _acquire_communicator(communicator=original_comm)
-
-    else:
-        if original_comm is None or not hasattr(original_comm, 'Get_size'):
-            error = f'Cannot get Comm size {requested_size} from {repr(original_comm)}.'
-            logger.error(
-                error + ' '
-                + 'To get a scoped communicator of a specific size, provide a parent '
-                + 'communicator supporting the mpi4py.MPI.Comm interface.'
-            )
-            raise exceptions.UsageError(error)
-        original_comm_size = original_comm.Get_size()
-        if original_comm_size < requested_size:
-            raise exceptions.FeatureNotAvailableError(
-                'Cannot produce a subcommunicator of size {} from a communicator of size {}.'.format(
-                    requested_size,
-                    original_comm_size
-                ))
-        assert original_comm_size >= requested_size
-        communicator = _get_ensemble_communicator(original_comm, requested_size)
-
-    try:
-        previous_communicator = _current_communicator
-        _current_communicator = communicator
-        yield communicator
-    finally:
-        _current_communicator = previous_communicator
-        if communicator is not None:
-            communicator.Free()
 
 
 class LegacyImplementationSubscription(object):
@@ -280,6 +217,10 @@ class LegacyImplementationSubscription(object):
 
         # Determine ensemble width
         ensemble_width = resource_manager.ensemble_width
+        if ensemble_width > 1 and mpi4py_Comm is None:
+            raise exceptions.FeatureNotAvailableError(
+                'Ensemble workflows require the mpi4py Python package.'
+            )
 
         # Choose working directories
         # TODO: operation working directory naming scheme should be centrally well-defined.
@@ -297,175 +238,197 @@ class LegacyImplementationSubscription(object):
         # handle some optimization and dependency reduction when the ensemble size is 1.
         # TODO: multithread and multiprocess alternatives to MPI ensemble management.
 
-        # TODO: Allow user to provide communicator instead of implicitly getting COMM_WORLD
-        with scoped_communicator(None) as context_comm:
-            context_rank = context_comm.Get_rank()
-            with scoped_communicator(context_comm, ensemble_width) as ensemble_comm:
-                # Note that in the current implementation, extra ranks have nothing to do,
-                # but they may have a dummy communicator, so be sure to skip those members
-                # of the context_comm.
-                if context_rank < ensemble_width:
-                    assert ensemble_comm.Get_size() == ensemble_width
-                    ensemble_rank = ensemble_comm.Get_rank()
-                else:
-                    ensemble_rank = None
+        # TODO: Consider the allowable hierarchy of resource allocation and assignment.
+        # The way that chained simulations are originally implemented, this code will be
+        # reentered due to resource_manager.local_input() below. We end up creating
+        # multiple coexisting and overlapping subcommunicators, and only the inherent
+        # serialization of the input resolution prevents CPUs from being oversubscribed
+        # at run time.
+        base_context = gmxapi.runtime.BaseContext.instance()
+        base_comm = base_context.communicator()
+        if base_comm is not None:
+            base_rank = base_comm.Get_rank()
+        else:
+            # We assume that there will at least be a comm of size 1 if mpi4py was available.
+            assert mpi4py_Comm is None
+            # TODO(#4422): Use updated features API.
+            # if gmxapi.utility.config()['gmx_mpi_type'] == 'library':
+            #     warnings.warn(
+            #         'MPI-enabled GROMACS may behave strangely if gmxapi is used without mpi4py.'
+            #     )
+            #     # TODO: Consider falling back to non-mpi4py based MPIContextManager through gmxapi and
+            #     #    bindings.
+            base_rank = 0
+        # Get resources for the entire ensemble of tasks (the session).
+        requirements = gmxapi.runtime.ResourceRequirements(comm_size=ensemble_width)
+        with scoped_resources(base_context, requirements=requirements) as session_resources:
+            session_comm: mpi4py_Comm = session_resources.communicator()
+            if base_rank < ensemble_width:
+                # Note that in the current implementation, we assign one rank to each ensemble member.
+                assert session_comm.Get_size() == ensemble_width
+                ensemble_rank = session_comm.Get_rank()
+            else:
+                # Extra ranks have nothing to do, but they may have a dummy communicator.
+                # Explicitly set to `None` to skip those members of the base_comm.
+                ensemble_rank = None
 
-                source_file, parameters, runtime_args = None, None, None
-                # For the interim subscription system between MPI ranks,
-                # ResourceManager.update_output() needs to be called on all ranks.
-                for ensemble_member in range(ensemble_width):
-                    with resource_manager.local_input(member=ensemble_member) as input_pack:
-                        if ensemble_member == ensemble_rank:
-                            source_file = input_pack.kwargs['_simulation_input']
-                            parameters = input_pack.kwargs['parameters']
-                            runtime_args = input_pack.kwargs['runtime_args']
-                            # If there are any other key word arguments to process from the
-                            # gmxapi.mdrun factory call, do it here.
+            source_file, parameters, runtime_args = None, None, None
+            # For the interim subscription system between MPI ranks, to synchronize
+            # ResourceManager.update_output() calls, `local_input` needs to be called
+            # on *all* ranks once for each member (participating rank).
+            for ensemble_member in range(ensemble_width):
+                with resource_manager.local_input(member=ensemble_member) as input_pack:
+                    if ensemble_member == ensemble_rank:
+                        source_file = input_pack.kwargs['_simulation_input']
+                        parameters = input_pack.kwargs['parameters']
+                        runtime_args = input_pack.kwargs['runtime_args']
+                        # If there are any other key word arguments to process from the
+                        # gmxapi.mdrun factory call, do it here.
 
-                _current_rank_participates = ensemble_rank is not None
-                if _current_rank_participates:
-                    # TODO: This should be a richer object that includes at least host information
-                    #  and preferably the full gmxapi Future interface.
-                    workdir = os.path.abspath(workdir_list[ensemble_rank])
+            _current_rank_participates = ensemble_rank is not None
+            if _current_rank_participates:
+                # TODO: This should be a richer object that includes at least host information
+                #  and preferably the full gmxapi Future interface.
+                workdir = os.path.abspath(workdir_list[ensemble_rank])
 
-                    # TODO: We should really name this file with a useful input-dependent tag.
-                    tprfile = os.path.join(workdir, 'topol.tpr')
+                # TODO: We should really name this file with a useful input-dependent tag.
+                tprfile = os.path.join(workdir, 'topol.tpr')
 
-                    expected_working_files = [tprfile]
+                expected_working_files = [tprfile]
 
-                    if os.path.exists(workdir):
-                        if os.path.isdir(workdir):
-                            # Confirm that this is a restarted simulation.
-                            # It is unspecified by the API, but at least through gmxapi 0.1,
-                            # all simulations are initialized with a checkpoint file named state.cpt
-                            # (see src/api/cpp/context.cpp)
-                            checkpoint_file = runtime_args.get('-cpi', 'state.cpt')
-                            if not os.path.isabs(checkpoint_file):
-                                checkpoint_file = os.path.join(workdir, checkpoint_file)
-                            expected_working_files.append(checkpoint_file)
+                if os.path.exists(workdir):
+                    if os.path.isdir(workdir):
+                        # Confirm that this is a restarted simulation.
+                        # It is unspecified by the API, but at least through gmxapi 0.1,
+                        # all simulations are initialized with a checkpoint file named state.cpt
+                        # (see src/api/cpp/context.cpp)
+                        checkpoint_file = runtime_args.get('-cpi', 'state.cpt')
+                        if not os.path.isabs(checkpoint_file):
+                            checkpoint_file = os.path.join(workdir, checkpoint_file)
+                        expected_working_files.append(checkpoint_file)
 
-                            for file in expected_working_files:
-                                if not os.path.exists(file):
-                                    logger.error(
-                                        f'Expected file {file} not found. gmxapi.mdrun task '
-                                        f'{resource_manager.operation_id} is in an unknown state. Aborting.'
-                                    )
-                                    raise exceptions.ApiError(
-                                        f'Cannot determine working directory state: {workdir}')
-                        else:
-                            raise exceptions.ApiError(
-                                f'Chosen working directory path exists but is not a directory: {workdir}')
-                    else:
-                        # Build the working directory and input files.
-                        os.mkdir(workdir)
-                        sim_input = fileio.read_tpr(source_file)
-                        # TODO(#3295): insertion point for updated positions and velocities.
-                        for key, value in parameters.items():
-                            try:
-                                sim_input.parameters.set(key=key, value=value)
-                            except _gmxapi.Exception as e:
+                        for file in expected_working_files:
+                            if not os.path.exists(file):
+                                logger.error(
+                                    f'Expected file {file} not found. gmxapi.mdrun task '
+                                    f'{resource_manager.operation_id} is in an unknown state. Aborting.'
+                                )
                                 raise exceptions.ApiError(
-                                    'Bug encountered. Unknown error when trying to set simulation '
-                                    'parameter {} to {}'.format(key, value)
-                                ) from e
-
-                        fileio.write_tpr_file(output=tprfile, input=sim_input)
-                    logger.info('Created {} on rank {}'.format(tprfile, context_rank))
-
-                    # Gather the actual outputs from the ensemble members.
-                    if hasattr(ensemble_comm, 'allgather'):
-                        # We should not assume that abspath expands the same on different MPI ranks.
-                        workdir_list = ensemble_comm.allgather(workdir)
-                        tpr_filenames = ensemble_comm.allgather(tprfile)
-                        parameters = fileio.read_tpr(tprfile).parameters.extract()
-                        parameters_dict_list = ensemble_comm.allgather(parameters)
-                        runtime_args_list = ensemble_comm.allgather(runtime_args)
+                                    f'Cannot determine working directory state: {workdir}')
                     else:
-                        workdir_list = [os.path.abspath(_workdir) for _workdir in workdir_list]
-                        # TODO: If we use better input file names, they need to be updated in multiple places.
-                        tpr_filenames = [os.path.join(_workdir, 'topol.tpr') for _workdir in workdir_list]
-                        parameters_dict_list = [fileio.read_tpr(tprfile).parameters.extract() for tprfile in
-                                                tpr_filenames]
-                        if isinstance(runtime_args, (list, tuple)):
-                            runtime_args_list = list(runtime_args)
-                        else:
-                            assert isinstance(runtime_args, dict)
-                            runtime_args_list = list(
-                                runtime_args.copy() for _ in range(ensemble_width))
+                        raise exceptions.ApiError(
+                            f'Chosen working directory path exists but is not a directory: {workdir}')
+                else:
+                    # Build the working directory and input files.
+                    os.mkdir(workdir)
+                    sim_input = fileio.read_tpr(source_file)
+                    # TODO(#3295): insertion point for updated positions and velocities.
+                    for key, value in parameters.items():
+                        try:
+                            sim_input.parameters.set(key=key, value=value)
+                        except _gmxapi.Exception as e:
+                            raise exceptions.ApiError(
+                                'Bug encountered. Unknown error when trying to set simulation '
+                                'parameter {} to {}'.format(key, value)
+                            ) from e
 
-                    logger.debug('Context rank {} acknowledges working directories {}'.format(
-                        context_rank,
-                        workdir_list))
-                    logger.debug('Operation {}:{} will use {}'.format(
-                        resource_manager.operation_id,
-                        ensemble_rank,
-                        workdir
+                    fileio.write_tpr_file(output=tprfile, input=sim_input)
+                logger.info('Created {} on rank {}'.format(tprfile, base_rank))
+
+                # Gather the actual outputs from the ensemble members.
+                if hasattr(session_comm, 'allgather'):
+                    # We should not assume that abspath expands the same on different MPI ranks.
+                    workdir_list = session_comm.allgather(workdir)
+                    tpr_filenames = session_comm.allgather(tprfile)
+                    parameters = fileio.read_tpr(tprfile).parameters.extract()
+                    parameters_dict_list = session_comm.allgather(parameters)
+                    runtime_args_list = session_comm.allgather(runtime_args)
+                else:
+                    workdir_list = [os.path.abspath(_workdir) for _workdir in workdir_list]
+                    # TODO: If we use better input file names, they need to be updated in multiple places.
+                    tpr_filenames = [os.path.join(_workdir, 'topol.tpr') for _workdir in workdir_list]
+                    parameters_dict_list = [fileio.read_tpr(tprfile).parameters.extract() for tprfile in
+                                            tpr_filenames]
+                    if isinstance(runtime_args, (list, tuple)):
+                        runtime_args_list = list(runtime_args)
+                    else:
+                        assert isinstance(runtime_args, dict)
+                        runtime_args_list = list(
+                            runtime_args.copy() for _ in range(ensemble_width))
+
+                logger.debug('Context rank {} acknowledges working directories {}'.format(
+                    base_rank,
+                    workdir_list))
+                logger.debug('Operation {}:{} will use {}'.format(
+                    resource_manager.operation_id,
+                    ensemble_rank,
+                    workdir
+                ))
+                if hasattr(resource_manager, 'mdrun_kwargs'):
+                    warnings.warn(DeprecationWarning(
+                        'Ignoring ResourceManager.mdrun_kwargs attribute. '
+                        'Provide runtime arguments to mdrun with the *runtime_args* kwarg.'
                     ))
-                    if hasattr(resource_manager, 'mdrun_kwargs'):
-                        warnings.warn(DeprecationWarning(
-                            'Ignoring ResourceManager.mdrun_kwargs attribute. '
-                            'Provide runtime arguments to mdrun with the *runtime_args* kwarg.'
-                        ))
-                    # TODO(#3718): Normalize the way we pass run time parameters to mdrun.
-                    kwargs = runtime_args_list[ensemble_rank].copy()
-                    for key, value in runtime_args.items():
-                        logger.debug(
-                            'Adding mdrun run time argument from user input: {}'.format(
-                                key + '=' + str(value)))
-                    # Note that this violates the traditional gmxapi assumption that all ranks see the same
-                    # instructions. The "md_sim" element of the gmxapi 0.0.7 workspec ends up being unique
-                    # to the rank that sees it.
-                    work = workflow.from_tpr(tpr_filenames, **kwargs)
-                    self.workspec = work.workspec
-                    # TODO(#3145): Attach extension code, if any.
+                # TODO(#3718): Normalize the way we pass run time parameters to mdrun.
+                kwargs = runtime_args_list[ensemble_rank].copy()
+                for key, value in runtime_args.items():
+                    logger.debug(
+                        'Adding mdrun run time argument from user input: {}'.format(
+                            key + '=' + str(value)))
+                # Note that this violates the traditional gmxapi assumption that all ranks see the same
+                # instructions. The "md_sim" element of the gmxapi 0.0.7 workspec ends up being unique
+                # to the rank that sees it.
+                work = workflow.from_tpr(tpr_filenames, **kwargs)
+                self.workspec = work.workspec
+                # TODO(#3145): Attach extension code, if any.
 
-                    # Go ahead and execute immediately. No need for lazy initialization in this basic case.
-                    context = LegacyContext(work=self.workspec,
-                                            workdir_list=workdir_list,
-                                            communicator=ensemble_comm)
-                    self.simulation_module_context = context
-                    # Note: The redirection of stdout and stderr here is a workaround (#4541) for
-                    # inflexible output handling in libgromacs. A better solution would be to use a
-                    # logging facility instead of assuming terminal I/O in the core library, or at
-                    # least to set and use file descriptors managed through the output_env or program_context,
-                    # but, as of resolution of #4541, there are no near term plans to make such changes.
-                    # See also #1505, #2585, #2999, #3015, #3035
-                    with redirect_stdio(FD.STDOUT, os.path.join(workdir, 'stdout.txt')):
-                        with redirect_stdio(FD.STDERR, os.path.join(workdir, 'stderr.txt')):
-                            with self.simulation_module_context as session:
-                                session.run()
-                    logger.debug(f'workdir[{ensemble_rank}] = {workdir_list[ensemble_rank]}')
-                    logger.debug(f'parameters[{ensemble_rank}] = {parameters_dict_list[ensemble_rank]}')
-                    logger.debug(f'runtime_args[{ensemble_rank}] = {runtime_args_list[ensemble_rank]}')
-                    # end if _current_rank_participates
+                # Go ahead and execute immediately. No need for lazy initialization in this basic case.
+                context = LegacyContext(work=self.workspec,
+                                        workdir_list=workdir_list,
+                                        communicator=session_comm)
+                self.simulation_module_context = context
+                # Note: The redirection of stdout and stderr here is a workaround (#4541) for
+                # inflexible output handling in libgromacs. A better solution would be to use a
+                # logging facility instead of assuming terminal I/O in the core library, or at
+                # least to set and use file descriptors managed through the output_env or program_context,
+                # but, as of resolution of #4541, there are no near term plans to make such changes.
+                # See also #1505, #2585, #2999, #3015, #3035
+                with redirect_stdio(FD.STDOUT, os.path.join(workdir, 'stdout.txt')):
+                    with redirect_stdio(FD.STDERR, os.path.join(workdir, 'stderr.txt')):
+                        with self.simulation_module_context as session:
+                            session.run()
+                logger.debug(f'workdir[{ensemble_rank}] = {workdir_list[ensemble_rank]}')
+                logger.debug(f'parameters[{ensemble_rank}] = {parameters_dict_list[ensemble_rank]}')
+                logger.debug(f'runtime_args[{ensemble_rank}] = {runtime_args_list[ensemble_rank]}')
+                # end if _current_rank_participates
 
-                # end scoped_communicator: ensemble_comm
+            # end scoped_communicator: session_comm
 
-            # Info from other ranks might not have been available when we originally constructed
-            # the list(s)
-            context_comm_size = context_comm.Get_size()
-            if context_comm_size > ensemble_width:
+        # Info from other ranks might not have been available when we originally constructed
+        # the list(s)
+        if hasattr(base_comm, 'Get_size'):
+            base_comm_size = base_comm.Get_size()
+            if base_comm_size > ensemble_width:
                 # Extra unused ranks will not participate in the collective work, but they should
                 # still have representations of the ensemble work.
-                assert isinstance(context_comm, mpi4py_Comm)
+                assert isinstance(base_comm, mpi4py_Comm)
                 synched_objects = (workdir_list,
                                    parameters_dict_list, runtime_args_list)
-                if context_rank == 0:
-                    for inactive_member in range(ensemble_width, context_comm_size):
+                if base_rank == 0:
+                    for inactive_member in range(ensemble_width, base_comm_size):
                         for obj in synched_objects:
-                            context_comm.send(obj, inactive_member)
-                elif context_rank in range(ensemble_width, context_comm_size):
-                    workdir_list = context_comm.recv(source=0)
-                    parameters_dict_list = context_comm.recv(source=0)
-                    runtime_args_list = context_comm.recv(source=0)
-            if hasattr(context_comm, 'barrier'):
-                logger.debug('Waiting for simulations to complete on all ranks before publishing results.')
-                # This is heavy-handed. Hopefully we can replace the explicit MPI calls with a Future
-                # abstraction and only wait on individual results when they are actually consumed.
-                # As of gmxapi 0.3, SubscriptionPublishingRunner takes responsibility for the full
-                # ensemble results on all ranks, and checks for file existence before publishing.
-                context_comm.barrier()
-            # end scoped_communicator: context_comm
+                            base_comm.send(obj, inactive_member)
+                elif base_rank in range(ensemble_width, base_comm_size):
+                    workdir_list = base_comm.recv(source=0)
+                    parameters_dict_list = base_comm.recv(source=0)
+                    runtime_args_list = base_comm.recv(source=0)
+        if hasattr(base_comm, 'barrier'):
+            logger.debug('Waiting for simulations to complete on all ranks before publishing results.')
+            # This is heavy-handed. Hopefully we can replace the explicit MPI calls with a Future
+            # abstraction and only wait on individual results when they are actually consumed.
+            # As of gmxapi 0.3, SubscriptionPublishingRunner takes responsibility for the full
+            # ensemble results on all ranks, and checks for file existence before publishing.
+            base_comm.barrier()
 
         # Replace the local-specific workdir value with the ensemble values.
         self.workdir = list(workdir_list)

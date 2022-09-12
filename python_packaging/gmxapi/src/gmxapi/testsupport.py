@@ -209,6 +209,10 @@ def cleandir(tmp_path):
 
     Temporary directory is created and managed as described at
     https://docs.pytest.org/en/latest/how-to/tmp_path.html
+
+    TODO:
+        Avoid or suppress ``PytestWarning: (rm_rf) error removing ...``
+        from duplicated temporary directory management on multiple MPI ranks.
     """
     with scoped_chdir(tmp_path):
         yield tmp_path

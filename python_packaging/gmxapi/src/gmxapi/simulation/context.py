@@ -214,6 +214,8 @@ def _md(context, element):
             dag.graph['width'] = required_width
 
             # Provide closure with which to execute tasks for this node.
+            # TODO(#4079): launch is explicitly a collaboration with the Context
+            #  to build a Session, and should be decoupled from element.workspec._context
             def launch(rank=None):
                 assert rank is not None
                 # Note that gmxapi 0.0.7 does not support any consumers of mdrun, so the graph cannot be
@@ -249,13 +251,14 @@ def _md(context, element):
                 mdargs = _gmxapi.MDArgs()
                 mdargs.set(runtime_params)
                 # Workaround to give access to plugin potentials used in a context.
-                pycontext = element.workspec._context
-                pycontext.potentials = potential_list
-                context = pycontext._api_object
-                context.setMDArgs(mdargs)
+                # See https://gitlab.com/gromacs/gromacs/-/issues/3145
+                work_context: Context = element.workspec._context
+                work_context.potentials = potential_list
+                pycontext: _gmxapi.Context = work_context._api_context
+                pycontext.setMDArgs(mdargs)
                 for potential in potential_list:
-                    context.add_mdmodule(potential)
-                dag.nodes[name]['session'] = system.launch(context)
+                    pycontext.add_mdmodule(potential)
+                dag.nodes[name]['session'] = system.launch(pycontext)
                 dag.nodes[name]['close'] = dag.nodes[name]['session'].close
 
                 if 'end_time' in runtime_params:
@@ -544,7 +547,6 @@ def _get_ensemble_update(context):
         functor = _ensemble_update
     else:
         functor = _no_ensemble_update
-    context.part = {}
     return functor
 
 
@@ -638,6 +640,7 @@ class Context(object):
             work : work specification with which to initialize this context
             workdir_list : deprecated
             communicator : non-owning reference to a multiprocessing communicator
+                from which ensemble and simulation session resources will be derived
 
         If provided, communicator must implement the mpi4py.MPI.Comm interface. The
         Context will use this communicator as the parent for subcommunicators
@@ -709,7 +712,7 @@ class Context(object):
         self.work = work
 
         try:
-            self._api_object = _gmxapi.Context()
+            self._api_context = _gmxapi.Context()
         except Exception as e:
             logger.error('Got exception when trying to create default library context: ' + str(e))
             raise exceptions.ApiError('Uncaught exception in API object creation.') from e
@@ -875,16 +878,23 @@ class Context(object):
         abstraction, this means the clean approach should take two passes to first build a DAG and then
         instantiate objects to perform the work. In the first implementation, we kind of muddle things into
         a single pass.
+
+        TODO(#3145, #4079): Use an explicit function call for context manager behavior.
+        By implementing __enter__ and __exit__ directly on the class, we prevent
+        ourselves from cleanly nesting context managers for managed resources,
+        and we limit our ability to decouple the code involved in setting up and
+        tearing down a Session.
         """
+        # Cache the working directory from which we were launched
+        # so that __exit__() can give us proper context management behavior.
+        self.__initial_cwd = os.getcwd()
+
         try:
             import networkx as nx
             from networkx import DiGraph as _Graph
         except ImportError:
             raise exceptions.FeatureNotAvailableError("gmx requires the networkx package to execute work graphs.")
 
-        # Cache the working directory from which we were launched so that __exit__() can give us proper context
-        # management behavior.
-        self.__initial_cwd = os.getcwd()
         logger.debug("Launching session from {}".format(self.__initial_cwd))
 
         if self._session is not None:
@@ -968,6 +978,7 @@ class Context(object):
         # For gmxapi 0.0.6, all ranks have a session_ensemble_communicator
         self._session_ensemble_communicator = _get_ensemble_communicator(self._session_communicator, self.work_width)
         self.__ensemble_update = _get_ensemble_update(self)
+        self.part = {}
 
         # launch() is currently a method of gmx.core.MDSystem and returns a gmxapi::Session.
         # MDSystem objects are obtained from gmx.core.from_tpr(). They also provide add_potential().
@@ -1005,8 +1016,10 @@ class Context(object):
             closers = []
             for name in sorted_nodes:
                 launcher = graph.nodes[name]['launch']
+                # TODO(#4079): launch is explicitly a collaboration with the Context
+                #  to build a Session, which should provide SessionResources here.
                 runner = launcher(self.rank)
-                if not runner is None:
+                if runner is not None:
                     runners.append(runner)
                     closers.append(graph.nodes[name]['close'])
 
@@ -1091,8 +1104,9 @@ class Context(object):
 
         os.chdir(self.__initial_cwd)
         logger.info("Session closed on context rank {}.".format(self.rank))
-        # Note: Since sessions running in different processes can have different work, sessions have not necessarily
-        # ended on all ranks. As a result, starting another session on the same resources could block until the
+        # Note: Since sessions running in different processes can have different
+        # work, sessions have not necessarily ended on all ranks. As a result,
+        # starting another session on the same resources could block until the
         # resources are available.
 
         # Python context managers return False when there were no exceptions to handle.
