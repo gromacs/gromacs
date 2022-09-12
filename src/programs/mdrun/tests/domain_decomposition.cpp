@@ -41,6 +41,7 @@
  */
 #include "gmxpre.h"
 
+#include <algorithm>
 #include <mutex>
 #include <string>
 #include <unordered_map>
