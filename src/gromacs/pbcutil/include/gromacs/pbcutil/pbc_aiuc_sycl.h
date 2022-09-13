@@ -35,6 +35,7 @@
  *
  * \brief Basic routines to handle periodic boundary conditions with SYCL.
  *
+ * \author Andrey Alekseenko <al42and@gmail.com>
  * \author Artem Zhmurov <zhmurov@gmail.com>
  *
  * \inlibraryapi
@@ -43,7 +44,74 @@
 #ifndef GMX_PBCUTIL_PBC_AIUC_SYCL_H
 #define GMX_PBCUTIL_PBC_AIUC_SYCL_H
 
+#include "gromacs/gpu_utils/gputraits_sycl.h"
 #include "gromacs/pbcutil/pbc_aiuc.h"
+
+static constexpr inline int xyzToShiftIndex(int x, int y, int z)
+{
+    return gmx::detail::c_nBoxX * (gmx::detail::c_nBoxY * (z + gmx::c_dBoxZ) + y + gmx::c_dBoxY) + x
+           + gmx::c_dBoxX;
+}
+
+
+/*! \brief Computes the vector between two points taking PBC into account.
+ *
+ * Computes the vector dr between points r2 and r1, taking into account the
+ * periodic boundary conditions, described in pbcAiuc object. Note that this
+ * routine always does the PBC arithmetic for all directions, multiplying the
+ * displacements by zeroes if the corresponding direction is not periodic.
+ * For triclinic boxes only distances up to half the smallest box diagonal
+ * element are guaranteed to be the shortest. This means that distances from
+ * 0.5/sqrt(2) times a box vector length (e.g. for a rhombic dodecahedron)
+ * can use a more distant periodic image.
+ *
+ * \todo This routine uses CUDA float4 types for input coordinates and
+ *       returns in rvec data-type. Other than that, it does essentially
+ *       the same thing as the version below, as well as SIMD and CPU
+ *       versions. This routine is used in GPU listed forces module.
+ *       To avoid code duplication, these implementations should be
+ *       unified. See Issue #2863:
+ *       https://gitlab.com/gromacs/gromacs/-/issues/2863
+ *
+ * \param[in]  pbcAiuc  PBC object.
+ * \param[in]  r1       Coordinates of the first point.
+ * \param[in]  r2       Coordinates of the second point.
+ * \param[out] dr       Resulting distance.
+ */
+template<bool returnShift>
+// NOLINTNEXTLINE(google-runtime-references)
+int pbcDxAiucSycl(const PbcAiuc& pbcAiuc, const sycl::float4& r1, const sycl::float4& r2, Float3& dr)
+{
+    dr[XX] = r1[XX] - r2[XX];
+    dr[YY] = r1[YY] - r2[YY];
+    dr[ZZ] = r1[ZZ] - r2[ZZ];
+
+    float shz = sycl::rint(dr[ZZ] * pbcAiuc.invBoxDiagZ);
+    dr[XX] -= shz * pbcAiuc.boxZX;
+    dr[YY] -= shz * pbcAiuc.boxZY;
+    dr[ZZ] -= shz * pbcAiuc.boxZZ;
+
+    float shy = sycl::rint(dr[YY] * pbcAiuc.invBoxDiagY);
+    dr[XX] -= shy * pbcAiuc.boxYX;
+    dr[YY] -= shy * pbcAiuc.boxYY;
+
+    float shx = sycl::rint(dr[XX] * pbcAiuc.invBoxDiagX);
+    dr[XX] -= shx * pbcAiuc.boxXX;
+
+    if (returnShift)
+    {
+        // TODO: Use intrinsics with CUDA/HIP or sycl::native?
+        int ishiftX = -sycl::rint(shx);
+        int ishiftY = -sycl::rint(shy);
+        int ishiftZ = -sycl::rint(shz);
+
+        return xyzToShiftIndex(ishiftX, ishiftY, ishiftZ);
+    }
+    else
+    {
+        return 0;
+    }
+}
 
 /*! \brief Computes the vector between two points taking PBC into account.
  *
@@ -67,7 +135,7 @@
  * \param[in]  r2       Coordinates of the second point.
  * \param[out]    dr       Resulting distance.
  */
-static inline void pbcDxAiucSycl(const PbcAiuc& pbcAiuc, const rvec& r1, const rvec& r2, rvec dr)
+static void pbcDxAiucSycl(const PbcAiuc& pbcAiuc, const rvec& r1, const rvec& r2, rvec dr)
 {
     dr[XX] = r1[XX] - r2[XX];
     dr[YY] = r1[YY] - r2[YY];

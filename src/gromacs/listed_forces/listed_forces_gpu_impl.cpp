@@ -99,7 +99,6 @@ bool buildSupportsListedForcesGpu(std::string* error)
     errorReasons.startContext("Bonded interactions on GPU are not supported in:");
     errorReasons.appendIf(GMX_DOUBLE, "Double precision build of GROMACS");
     errorReasons.appendIf(GMX_GPU_OPENCL, "OpenCL build of GROMACS");
-    errorReasons.appendIf(GMX_GPU_SYCL, "SYCL build of GROMACS");
     errorReasons.appendIf(!GMX_GPU, "CPU-only build of GROMACS");
     errorReasons.finishContext();
     if (error != nullptr)
@@ -132,7 +131,7 @@ bool inputSupportsListedForcesGpu(const t_inputrec& ir, const gmx_mtop_t& mtop, 
     return errorReasons.isEmpty();
 }
 
-#if !GMX_GPU_CUDA
+#if !GMX_GPU_CUDA && !GMX_GPU_SYCL
 
 class ListedForcesGpu::Impl
 {

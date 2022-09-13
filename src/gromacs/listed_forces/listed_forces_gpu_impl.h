@@ -52,6 +52,10 @@
 #include "gromacs/listed_forces/listed_forces_gpu.h"
 #include "gromacs/pbcutil/pbc_aiuc.h"
 
+#if GMX_GPU_SYCL
+#    include "gromacs/gpu_utils/syclutils.h"
+#endif
+
 struct gmx_ffparams_t;
 class DeviceContext;
 
@@ -88,26 +92,21 @@ struct BondedGpuKernelParameters
     int fTypeRangeStart[numFTypesOnGpu];
     //! The end index in the range of each interaction type
     int fTypeRangeEnd[numFTypesOnGpu];
-
-    //! Force parameters (on GPU)
-    DeviceBuffer<t_iparams> d_forceParams;
-    //! Total Energy (on GPU)
-    DeviceBuffer<float> d_vTot;
-    //! Interaction list atoms (on GPU)
-    DeviceBuffer<t_iatom> d_iatoms[numFTypesOnGpu];
-    //! Device sub-group/warp size
-    int deviceSubGroupSize;
-
     BondedGpuKernelParameters()
     {
         matrix boxDummy = { { 0, 0, 0 }, { 0, 0, 0 }, { 0, 0, 0 } };
-
         setPbcAiuc(0, boxDummy, &pbcAiuc);
-
         electrostaticsScaleFactor = 1.0F;
-        d_forceParams             = nullptr;
-        d_vTot                    = nullptr;
     }
+};
+struct BondedGpuKernelBuffers
+{
+    //! Force parameters (on GPU)
+    DeviceBuffer<t_iparams> d_forceParams = nullptr;
+    //! Total Energy (on GPU)
+    DeviceBuffer<float> d_vTot = nullptr;
+    //! Interaction list atoms (on GPU)
+    DeviceBuffer<t_iatom> d_iatoms[numFTypesOnGpu];
 };
 
 /*! \internal \brief Implements GPU bondeds */
@@ -189,8 +188,13 @@ private:
     //! \brief Bonded GPU stream, not owned by this module
     const DeviceStream& deviceStream_;
 
-    //! Parameters and pointers, passed to the GPU kernel
+    //! Parameters, passed to the GPU kernel
     BondedGpuKernelParameters kernelParams_;
+    //! Buffers, used in the GPU kernel
+    BondedGpuKernelBuffers kernelBuffers_;
+
+    //! Device sub-group/warp size
+    int deviceSubGroupSize_;
 
     //! GPU kernel launch configuration
     KernelLaunchConfig kernelLaunchConfig_;

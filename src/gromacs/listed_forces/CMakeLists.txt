@@ -55,6 +55,17 @@ if(GMX_GPU_CUDA)
       )
 endif()
 
+if (GMX_GPU_SYCL)
+    gmx_add_libgromacs_sources(
+        listed_forces_gpu_impl_gpu.cpp
+        listed_forces_gpu_internal_sycl.cpp
+        )
+    _gmx_add_files_to_property(SYCL_SOURCES
+        listed_forces_gpu_impl_gpu.cpp
+        listed_forces_gpu_internal_sycl.cpp
+        )
+endif()
+
 # Source files have the following private module dependencies.
 target_link_libraries(listed_forces PRIVATE
 #                      gmxlib

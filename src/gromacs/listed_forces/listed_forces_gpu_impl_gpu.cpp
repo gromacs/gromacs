@@ -97,20 +97,20 @@ ListedForcesGpu::Impl::Impl(const gmx_ffparams_t&    ffparams,
     clearDeviceBufferAsync(&d_vTot_, 0, F_NRE, deviceStream_);
 
     kernelParams_.electrostaticsScaleFactor = electrostaticsScaleFactor;
-    kernelParams_.d_forceParams             = d_forceParams_;
-    kernelParams_.d_vTot                    = d_vTot_;
+    kernelBuffers_.d_forceParams            = d_forceParams_;
+    kernelBuffers_.d_vTot                   = d_vTot_;
     for (int i = 0; i < numFTypesOnGpu; i++)
     {
-        kernelParams_.d_iatoms[i]        = nullptr;
+        kernelBuffers_.d_iatoms[i]       = nullptr;
         kernelParams_.fTypeRangeStart[i] = 0;
         kernelParams_.fTypeRangeEnd[i]   = -1;
     }
     switch (deviceInfo.deviceVendor)
     {
         // For AMD RDNA and Intel we might be overestimating the subgroup size, but that is ok for SYCL
-        case DeviceVendor::Amd: kernelParams_.deviceSubGroupSize = 64; break;
+        case DeviceVendor::Amd: deviceSubGroupSize_ = 64; break;
         case DeviceVendor::Intel:
-        case DeviceVendor::Nvidia: kernelParams_.deviceSubGroupSize = 32; break;
+        case DeviceVendor::Nvidia: deviceSubGroupSize_ = 32; break;
         default: GMX_RELEASE_ASSERT(false, "Unknown GPU vendor");
     }
 
@@ -250,7 +250,7 @@ void ListedForcesGpu::Impl::updateInteractionListsAndDeviceBuffers(ArrayRef<cons
         kernelParams_.fTypesOnGpu[fTypesCounter] = fType;
         int numBonds = iList.size() / (interaction_function[fType].nratoms + 1);
         kernelParams_.numFTypeBonds[fTypesCounter] = numBonds;
-        kernelParams_.d_iatoms[fTypesCounter]      = d_iAtoms_[fType];
+        kernelBuffers_.d_iatoms[fTypesCounter]     = d_iAtoms_[fType];
         if (fTypesCounter == 0)
         {
             kernelParams_.fTypeRangeStart[fTypesCounter] = 0;
@@ -260,9 +260,8 @@ void ListedForcesGpu::Impl::updateInteractionListsAndDeviceBuffers(ArrayRef<cons
             kernelParams_.fTypeRangeStart[fTypesCounter] =
                     kernelParams_.fTypeRangeEnd[fTypesCounter - 1] + 1;
         }
-        kernelParams_.fTypeRangeEnd[fTypesCounter] =
-                kernelParams_.fTypeRangeStart[fTypesCounter]
-                + roundUpToFactor(numBonds, kernelParams_.deviceSubGroupSize) - 1;
+        kernelParams_.fTypeRangeEnd[fTypesCounter] = kernelParams_.fTypeRangeStart[fTypesCounter]
+                                                     + roundUpToFactor(numBonds, deviceSubGroupSize_) - 1;
 
         GMX_ASSERT(numBonds > 0
                            || kernelParams_.fTypeRangeEnd[fTypesCounter]
@@ -270,9 +269,8 @@ void ListedForcesGpu::Impl::updateInteractionListsAndDeviceBuffers(ArrayRef<cons
                    "Invalid GPU listed forces setup. numBonds must be > 0 if there are threads "
                    "allocated to do work on that interaction function type.");
         GMX_ASSERT(
-                kernelParams_.fTypeRangeStart[fTypesCounter] % kernelParams_.deviceSubGroupSize == 0
-                        && (kernelParams_.fTypeRangeEnd[fTypesCounter] + 1) % kernelParams_.deviceSubGroupSize
-                                   == 0,
+                kernelParams_.fTypeRangeStart[fTypesCounter] % deviceSubGroupSize_ == 0
+                        && (kernelParams_.fTypeRangeEnd[fTypesCounter] + 1) % deviceSubGroupSize_ == 0,
                 "The bonded interactions must be assigned to the GPU in blocks of sub-group size.");
 
         fTypesCounter++;
@@ -285,8 +283,8 @@ void ListedForcesGpu::Impl::updateInteractionListsAndDeviceBuffers(ArrayRef<cons
     d_f_      = d_fPtr;
     d_fShift_ = d_fShiftPtr;
 
-    kernelParams_.d_forceParams = d_forceParams_;
-    kernelParams_.d_vTot        = d_vTot_;
+    kernelBuffers_.d_forceParams = d_forceParams_;
+    kernelBuffers_.d_vTot        = d_vTot_;
 
     // TODO wallcycle sub stop
 }

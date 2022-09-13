@@ -81,7 +81,7 @@ static constexpr int numFTypesOnGpu = 8;
  * \note This list should be in sync with the actual GPU code.
  * \note Perturbed interactions are not supported on GPUs.
  * \note The function types in the list are ordered on increasing value.
- * \note Currently bonded are only supported with CUDA, not with OpenCL.
+ * \note Currently bonded are only supported with CUDA and SYCL, not with OpenCL.
  */
 constexpr std::array<int, numFTypesOnGpu> fTypesOnGpu = { F_BONDS,  F_ANGLES, F_UREY_BRADLEY,
                                                           F_PDIHS,  F_RBDIHS, F_IDIHS,
