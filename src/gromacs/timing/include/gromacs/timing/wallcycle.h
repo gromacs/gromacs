@@ -58,15 +58,6 @@
 
 struct t_commrec;
 
-#ifndef DEBUG_WCYCLE
-/*! \brief Enables consistency checking for the counters.
- *
- * If the macro is set to 1, code checks if you stop a counter different from the last
- * one that was opened and if you do nest too deep.
- */
-#    define DEBUG_WCYCLE 0
-#endif
-
 enum class WallCycleCounter : int
 {
     Run,
@@ -163,10 +154,19 @@ enum class WallCycleSubCounter : int
     Count
 };
 
-static constexpr int sc_numWallCycleCounters        = static_cast<int>(WallCycleCounter::Count);
-static constexpr int sc_numWallCycleSubCounters     = static_cast<int>(WallCycleSubCounter::Count);
+//! Number of all main counters.
+static constexpr int sc_numWallCycleCounters = static_cast<int>(WallCycleCounter::Count);
+//! Number of all subcyclecounters.
+static constexpr int sc_numWallCycleSubCounters = static_cast<int>(WallCycleSubCounter::Count);
+//! Scare of all counters for keeping track.
 static constexpr int sc_numWallCycleCountersSquared = sc_numWallCycleCounters * sc_numWallCycleCounters;
-static constexpr bool sc_useCycleSubcounters        = GMX_CYCLE_SUBCOUNTERS;
+//! Do we keep track of sub cycle counters.
+static constexpr bool sc_useCycleSubcounters = GMX_CYCLE_SUBCOUNTERS;
+//! Whether wallcycle debugging is enabled.
+constexpr bool sc_enableWallcycleDebug = (DEBUG_WCYCLE != 0);
+//! Maximum depth of counters for debugging.
+static constexpr int sc_maxWallCycleDepth = sc_enableWallcycleDebug ? 6 : 0;
+
 
 struct wallcc_t
 {
@@ -175,25 +175,18 @@ struct wallcc_t
     gmx_cycles_t start;
 };
 
-#if DEBUG_WCYCLE
-static constexpr int c_MaxWallCycleDepth = 6;
-#endif
-
-
 struct gmx_wallcycle
 {
     gmx::EnumerationArray<WallCycleCounter, wallcc_t> wcc;
     /* did we detect one or more invalid cycle counts */
     bool haveInvalidCount;
     /* variables for testing/debugging */
-    bool                  wc_barrier;
-    std::vector<wallcc_t> wcc_all;
-    int                   wc_depth;
-#if DEBUG_WCYCLE
-    std::array<WallCycleCounter, c_MaxWallCycleDepth> counterlist;
-    int                                               count_depth;
-    bool                                              isMasterRank;
-#endif
+    bool                                                 wc_barrier;
+    std::vector<wallcc_t>                                wcc_all;
+    int                                                  wc_depth;
+    std::array<WallCycleCounter, sc_maxWallCycleDepth>   counterlist;
+    int                                                  count_depth;
+    bool                                                 isMasterRank;
     WallCycleCounter                                     ewc_prev;
     gmx_cycles_t                                         cycle_prev;
     int64_t                                              reset_counters;
@@ -227,6 +220,11 @@ inline void wallcycle_all_stop(gmx_wallcycle* wc, WallCycleCounter ewc, gmx_cycl
     wc->wcc_all[prev * sc_numWallCycleCounters + current].c += cycle - wc->cycle_prev;
 }
 
+//! Start debug for wallcycle counter.
+void debug_start_check(gmx_wallcycle* wc, WallCycleCounter ewc);
+//! End debug for wallcycle counter.
+void debug_stop_check(gmx_wallcycle* wc, WallCycleCounter ewc);
+
 //! Starts the cycle counter (and increases the call count)
 inline void wallcycle_start(gmx_wallcycle* wc, WallCycleCounter ewc)
 {
@@ -237,9 +235,10 @@ inline void wallcycle_start(gmx_wallcycle* wc, WallCycleCounter ewc)
 
     wallcycleBarrier(wc);
 
-#if DEBUG_WCYCLE
-    debug_start_check(wc, ewc);
-#endif
+    if constexpr (sc_enableWallcycleDebug)
+    {
+        debug_start_check(wc, ewc);
+    }
     gmx_cycles_t cycle = gmx_cycles_read();
     wc->wcc[ewc].start = cycle;
     if (!wc->wcc_all.empty())
@@ -279,9 +278,10 @@ inline double wallcycle_stop(gmx_wallcycle* wc, WallCycleCounter ewc)
 
     wallcycleBarrier(wc);
 
-#if DEBUG_WCYCLE
-    debug_stop_check(wc, ewc);
-#endif
+    if constexpr (sc_enableWallcycleDebug)
+    {
+        debug_stop_check(wc, ewc);
+    }
 
     /* When processes or threads migrate between cores, the cycle counting
      * can get messed up if the cycle counter on different cores are not
@@ -347,29 +347,38 @@ void wcycle_set_reset_counters(gmx_wallcycle* wc, int64_t reset_counters);
 //! Set the start sub cycle count for ewcs
 inline void wallcycle_sub_start(gmx_wallcycle* wc, WallCycleSubCounter ewcs)
 {
-    if (sc_useCycleSubcounters && wc != nullptr)
+    if constexpr (sc_useCycleSubcounters)
     {
-        wc->wcsc[ewcs].start = gmx_cycles_read();
+        if (wc != nullptr)
+        {
+            wc->wcsc[ewcs].start = gmx_cycles_read();
+        }
     }
 }
 
 //! Set the start sub cycle count for ewcs without increasing the call count
 inline void wallcycle_sub_start_nocount(gmx_wallcycle* wc, WallCycleSubCounter ewcs)
 {
-    if (sc_useCycleSubcounters && wc != nullptr)
+    if constexpr (sc_useCycleSubcounters)
     {
-        wallcycle_sub_start(wc, ewcs);
-        wc->wcsc[ewcs].n--;
+        if (wc != nullptr)
+        {
+            wallcycle_sub_start(wc, ewcs);
+            wc->wcsc[ewcs].n--;
+        }
     }
 }
 
 //! Stop the sub cycle count for ewcs
 inline void wallcycle_sub_stop(gmx_wallcycle* wc, WallCycleSubCounter ewcs)
 {
-    if (sc_useCycleSubcounters && wc != nullptr)
+    if constexpr (sc_useCycleSubcounters)
     {
-        wc->wcsc[ewcs].c += gmx_cycles_read() - wc->wcsc[ewcs].start;
-        wc->wcsc[ewcs].n++;
+        if (wc != nullptr)
+        {
+            wc->wcsc[ewcs].c += gmx_cycles_read() - wc->wcsc[ewcs].start;
+            wc->wcsc[ewcs].n++;
+        }
     }
 }
 
