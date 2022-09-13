@@ -49,6 +49,8 @@
 #include "gmxapi/status.h"
 #include "gmxapi/version.h"
 
+#include "gmxpy_exceptions.h"
+
 namespace py = pybind11;
 
 // Export Python module.
@@ -84,7 +86,7 @@ PYBIND11_MODULE(_gmxapi, m)
     // for C++ symbols should be expressed before those symbols are referenced
     // in other bindings, and that exception translators are tried in reverse
     // order of registration for uncaught C++ exceptions.
-    export_exceptions(m);
+    const auto& baseException = export_exceptions(m);
 
     // Export core bindings
     m.def("has_feature",

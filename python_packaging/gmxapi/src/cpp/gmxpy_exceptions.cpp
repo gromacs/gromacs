@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright 2022- The GROMACS Authors
+ * Copyright 2019- The GROMACS Authors
  * and the project initiators Erik Lindahl, Berk Hess and David van der Spoel.
  * Consult the AUTHORS/COPYING files and https://www.gromacs.org for details.
  *
@@ -32,35 +32,47 @@
  * the research papers on the package. Check out https://www.gromacs.org.
  */
 /*! \file
- * \brief Exception translation.
+ * \brief Basic translation from C++ to Python Exceptions.
  *
- * Note that C++ exception objects are not actually bound to Python objects
- * because C++ cannot give ownership of a thrown exception to the interpreter.
- * Instead, we catch C++ exceptions and translate them into Python exceptions.
+ * Provide definitions for the common ::gmxpy C++ exception classes
+ * and export corresponding Python exceptions.
  *
- * As of pybind11 2.2, pybind does not provide a way to automatically express
- * C++ exception class inheritance to Python, and only supports simple Python
- * exceptions initialized with strings at the time of translation. (Automatic
- * translation uses `std::exception::what()`)
- *
- * Currently, we restrict ourselves to this simple translation. Future versions
- * may use the Python C API directly to support richer exception classes.
- *
- * \todo Determine inheritance relationship or equality between
- * gmxapi._gmxapi.Exception and gmxapi.exceptions.Error, if any.
+ * Known exceptions from supporting libraries are deferred to an
+ * export function specific to the API level that is detected by CMake at
+ * build time. (See wrapped_exceptions.h)
  *
  * \author M. Eric Irrgang <ericirrgang@gmail.com>
  *
  * \ingroup module_python
  */
+
+#include "gmxpy_exceptions.h"
+
 #include "gmxapi/exceptions.h"
-#include "gmxapi/version.h"
 
-#include "module.h"
-
+#include "wrapped_exceptions.h"
 
 namespace gmxpy
 {
+
+FeatureNotAvailable::FeatureNotAvailable(const std::string& what_arg) : Exception(what_arg) {}
+
+FeatureNotAvailable::FeatureNotAvailable() : FeatureNotAvailable(std::string()) {}
+
+FeatureNotAvailable::FeatureNotAvailable(const char* what_arg) :
+    FeatureNotAvailable(std::string(what_arg))
+{
+}
+FeatureNotAvailable& FeatureNotAvailable::operator=(const FeatureNotAvailable&) = default;
+
+FeatureNotAvailable::FeatureNotAvailable(const FeatureNotAvailable&) = default;
+
+FeatureNotAvailable& FeatureNotAvailable::operator=(FeatureNotAvailable&&) noexcept = default;
+
+FeatureNotAvailable::FeatureNotAvailable(FeatureNotAvailable&&) noexcept = default;
+
+FeatureNotAvailable::~FeatureNotAvailable() = default;
+
 
 namespace detail
 {
@@ -68,8 +80,9 @@ namespace detail
 namespace py = pybind11;
 
 
-void export_exceptions(pybind11::module& m)
+const pybind11::exception<Exception>& export_exceptions(pybind11::module& m)
 {
+
     // These two lines could cause exceptions, but they are already handled,
     // causing an ImportError for the _gmxapi submodule raised from the
     // ImportError or AttributeError that caused the failure.
@@ -80,7 +93,7 @@ void export_exceptions(pybind11::module& m)
     const auto packageModule           = py::module::import("gmxapi");
     const auto gmxapi_exceptions_error = packageModule.attr("exceptions").attr("Error");
 
-    static py::exception<gmxapi::Exception> baseException(m, "Exception", gmxapi_exceptions_error.ptr());
+    static py::exception<Exception> baseException(m, "Exception", gmxapi_exceptions_error.ptr());
 
     // Developer note: as of pybind11 2.2.4, the py::exception template argument
     // is unused internally, but required.
@@ -90,9 +103,12 @@ void export_exceptions(pybind11::module& m)
     static py::exception<UnknownExceptionPlaceHolder> unknownException(
             m, "UnknownException", baseException.ptr());
     unknownException.doc() =
-            "GROMACS library produced an exception that is "
-            "not mapped in gmxapi or which should have been "
-            "caught at a lower level. I.e. a bug. (Please report.)";
+            R"delimeter(Catch-all exception wrapper.
+
+            GROMACS library produced an exception that is not mapped in gmxapi
+            or which should have been caught at a lower level. I.e. a bug.
+            (Please report.)
+            )delimeter";
 
     // Catch unexpected/unbound exceptions from libgromacs or libgmxapi.
     py::register_exception_translator([](std::exception_ptr p) {
@@ -122,47 +138,21 @@ void export_exceptions(pybind11::module& m)
         }
     });
 
-    // Map gmxapi exceptions from gmxapi/exceptions.h to Python package exceptions.
-    // Note: C++ exception translation occurs in revers order of registration,
-    // So derived exceptions must be registered after their base exceptions.
-    // TODO: We could have more informative exception class docstrings
-    //   by linking to online docs or if we had a way to reuse doxygen docs.
-
     {
-        auto exception =
-                py::register_exception<gmxapi::ProtocolError>(m, "ProtocolError", baseException.ptr());
-        exception.doc() = "Behavioral protocol violated.";
+        auto exception = py::register_exception<FeatureNotAvailable>(
+                m, "FeatureNotAvailable", baseException.ptr());
+        exception.doc() =
+                R"delimeter(An API feature is not available in the current installation.
+
+                This may occur when a new gmxapi Python package is installed with an older
+                GROMACS installation that does not have the library support for a newer
+                feature.
+                )delimeter";
     }
 
-    {
-        const auto missing_implementation_doc =
-                "Expected feature is not implemented.\n\n"
-                ".. deprecated:: 0.3\n"
-                "    Use MissingImplementationError instead.\n";
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wdeprecated-declarations"
-        auto exception = py::register_exception<gmxapi::NotImplementedError>(
-                m, "NotImplementedError", baseException.ptr());
-#pragma clang diagnostic pop
-        exception.doc() = missing_implementation_doc;
-    }
+    export_wrapped_exceptions(m, baseException);
 
-    {
-        const auto missing_implementation_doc =
-                "Expected feature is not implemented.\n\n"
-                ".. versionchanged:: 0.3\n"
-                "    Renamed from NotImplementedError.\n";
-        assert(gmxapi::Version::isAtLeast(0, 3, 1) && "CMake version checking failed.");
-        auto exception = py::register_exception<gmxapi::MissingImplementationError>(
-                m, "MissingImplementationError", baseException.ptr());
-        exception.doc() = missing_implementation_doc;
-    }
-
-    {
-        auto exception =
-                py::register_exception<gmxapi::UsageError>(m, "UsageError", baseException.ptr());
-        exception.doc() = "Unacceptable API usage.";
-    }
+    return baseException;
 }
 
 

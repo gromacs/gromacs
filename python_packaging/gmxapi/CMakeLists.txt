@@ -159,6 +159,7 @@ pybind11_add_module(_gmxapi
                     src/cpp/export_context.cpp
                     src/cpp/export_system.cpp
                     src/cpp/export_tprfile.cpp
+                    src/cpp/gmxpy_exceptions.cpp
                     src/cpp/pycontext.cpp
                     src/cpp/pysystem.cpp
                     )
@@ -171,9 +172,9 @@ if (NOT DEFINED gmxapi_VERSION)
 endif ()
 if (gmxapi_VERSION VERSION_LESS 0.3.1)
     message(WARNING "Found an old gmxapi library version. Please consider updating your GROMACS installation.")
-    target_sources(_gmxapi PRIVATE src/cpp/export_exceptions_0_2_0.cpp)
+    target_sources(_gmxapi PRIVATE src/cpp/wrapped_exceptions_0_1_0.cpp)
 else()
-    target_sources(_gmxapi PRIVATE src/cpp/export_exceptions_0_3_1.cpp)
+    target_sources(_gmxapi PRIVATE src/cpp/wrapped_exceptions_0_3_1.cpp)
 endif()
 
 target_include_directories(_gmxapi PRIVATE

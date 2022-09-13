@@ -116,17 +116,32 @@ Core API
 Exceptions
 ----------
 
+Module Exceptions
+~~~~~~~~~~~~~~~~~
+
 .. autoexception:: gmxapi._gmxapi.Exception
 
     Root exception for the C++ extension module. Derives from `gmxapi.exceptions.Error`.
+
+.. autoexception:: FeatureNotAvailable
+
+
+Wrapped C++ exceptions emitted through the supporting |Gromacs| library
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. autoexception:: gmxapi._gmxapi.MissingImplementationError
 
 .. autoexception:: gmxapi._gmxapi.ProtocolError
 
-.. autoexception:: gmxapi._gmxapi.UnknownException
-
 .. autoexception:: gmxapi._gmxapi.UsageError
+
+Other
+~~~~~
+
+No other C++ exceptions are expected, but will be wrapped in a
+:py:class:`Exception` to help tracing and reporting bugs.
+
+.. autoexception:: gmxapi._gmxapi.UnknownException
 
 Functions
 ---------
