@@ -94,6 +94,7 @@ def shlex_join(split_command):
 _common_packages = ['build-essential',
                     'ca-certificates',
                     'ccache',
+                    'cmake',
                     'git',
                     'gnupg',
                     'gpg-agent',
@@ -743,6 +744,37 @@ def prepare_venv(version: packaging.version.Version) -> typing.Sequence[str]:
     return commands
 
 
+def get_cmake_stages(*, input_args: argparse.Namespace, base: str):
+    """Get the stage(s) necessary for the requested CMake versions.
+
+    One (intermediate) build stage is created
+    for each CMake version, based on the *base* stage.
+    See ``--cmake`` option.
+
+    Each stage uses the version number to determine an installation location:
+        /usr/local/cmake-{version}
+
+    The resulting path is easily copied into the main stage.
+
+    Returns:
+        dict of isolated CMake installation stages with keys from ``cmake-{version}``
+    """
+    cmake_stages = {}
+    for cmake_version in input_args.cmake:
+        stage_name = f'cmake-{cmake_version}'
+        cmake_stages[stage_name] = hpccm.Stage()
+        cmake_stages[stage_name] += hpccm.primitives.baseimage(
+            image=base,
+            _distro=hpccm_distro_name(input_args),
+            _as=stage_name
+        )
+        cmake_stages[stage_name] += hpccm.building_blocks.cmake(
+            eula=True,
+            prefix=f'/usr/local/{stage_name}',
+            version=cmake_version)
+    return cmake_stages
+
+
 def add_python_stages(input_args: argparse.Namespace, *,
                       base: str,
                       output_stages: typing.MutableMapping[str, 'hpccm.Stage']):
@@ -912,12 +944,6 @@ def build_stages(args) -> typing.Iterable['hpccm.Stage']:
     # copied to any build stage with the addition operator.
     building_blocks = collections.OrderedDict()
 
-    for i, cmake in enumerate(args.cmake):
-        building_blocks['cmake' + str(i)] = hpccm.building_blocks.cmake(
-            eula=True,
-            prefix=f'/usr/local/cmake-{cmake}',
-            version=cmake)
-
     # Install additional packages early in the build to optimize Docker build layer cache.
     os_packages = list(get_llvm_packages(args)) + get_opencl_packages(args) + get_rocm_packages(args) + get_cp2k_packages(args)
     if args.doxygen is not None:
@@ -978,6 +1004,11 @@ def build_stages(args) -> typing.Iterable['hpccm.Stage']:
     if args.mpi is not None and len(args.venvs) > 0:
         add_python_stages(base='build_base', input_args=args, output_stages=stages)
 
+    cmake_stages = get_cmake_stages(
+        input_args=args,
+        base='build_base')
+    stages.update(cmake_stages)
+
     # Create the stage from which the targeted image will be tagged.
     stages['main'] = hpccm.Stage()
 
@@ -994,6 +1025,14 @@ def build_stages(args) -> typing.Iterable['hpccm.Stage']:
     # Add documentation requirements (doxygen and sphinx + misc).
     if args.doxygen is not None:
         add_documentation_dependencies(args, stages)
+
+    for stage_name in cmake_stages:
+        stages['main'] += hpccm.primitives.copy(
+            _from=stage_name,
+            _mkdir=True,
+            src=[f'/usr/local/{stage_name}/'],
+            dest=f'/usr/local/{stage_name}'
+        )
 
     if 'pyenv' in stages and stages['pyenv'] is not None:
         stages['main'] += hpccm.primitives.copy(_from='pyenv', _mkdir=True, src=['/root/.pyenv/'],
