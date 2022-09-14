@@ -287,6 +287,11 @@ __device__ void urey_bradley_gpu(const int       i,
         harmonic_gpu(kUBA, r13A, dr, &vbond, &fbond);
 
         float cos_theta2 = cos_theta * cos_theta;
+
+        float3 f_i = make_float3(0.0F);
+        float3 f_j = make_float3(0.0F);
+        float3 f_k = make_float3(0.0F);
+
         if (cos_theta2 < 1.0F)
         {
             float st  = dVdt * rsqrtf(1.0F - cos_theta2);
@@ -299,13 +304,9 @@ __device__ void urey_bradley_gpu(const int       i,
             float cii = sth / nrij2;
             float ckk = sth / nrkj2;
 
-            float3 f_i = cii * r_ij - cik * r_kj;
-            float3 f_k = ckk * r_kj - cik * r_ij;
-            float3 f_j = -f_i - f_k;
-
-            atomicAdd(&gm_f[ai], f_i);
-            atomicAdd(&gm_f[aj], f_j);
-            atomicAdd(&gm_f[ak], f_k);
+            f_i = cii * r_ij - cik * r_kj;
+            f_k = ckk * r_kj - cik * r_ij;
+            f_j = -f_i - f_k;
 
             if (calcVir)
             {
@@ -326,14 +327,24 @@ __device__ void urey_bradley_gpu(const int       i,
             fbond *= rsqrtf(dr2);
 
             float3 fik = fbond * r_ik;
-            atomicAdd(&gm_f[ai], fik);
-            atomicAdd(&gm_f[ak], -fik);
+            f_i += fik;
+            f_k -= fik;
 
             if (calcVir && ki != gmx::c_centralShiftIndex)
             {
                 atomicAdd(&sm_fShiftLoc[ki], fik);
                 atomicAdd(&sm_fShiftLoc[gmx::c_centralShiftIndex], -fik);
             }
+        }
+        if ((cos_theta2 < 1.0F) || (dr2 != 0.0F))
+        {
+            atomicAdd(gm_f[ai], f_i);
+            atomicAdd(gm_f[ak], f_k);
+        }
+
+        if (cos_theta2 < 1.0F)
+        {
+            atomicAdd(gm_f[aj], f_j);
         }
     }
 }

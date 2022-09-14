@@ -340,6 +340,11 @@ static void urey_bradley_gpu(const int                                  i,
         harmonic_gpu<calcEner>(kUBA, r13A, dr, &vbond, &fbond);
 
         float cos_theta2 = cos_theta * cos_theta;
+
+        Float3 f_i = { 0.0F, 0.0F, 0.0F };
+        Float3 f_j = { 0.0F, 0.0F, 0.0F };
+        Float3 f_k = { 0.0F, 0.0F, 0.0F };
+
         if (cos_theta2 < 1.0F)
         {
             float st  = dVdt * sycl::rsqrt(1.0F - cos_theta2);
@@ -352,13 +357,9 @@ static void urey_bradley_gpu(const int                                  i,
             float cii = sth / nrij2;
             float ckk = sth / nrkj2;
 
-            Float3 f_i = cii * r_ij - cik * r_kj;
-            Float3 f_k = ckk * r_kj - cik * r_ij;
-            Float3 f_j = -f_i - f_k;
-
-            atomicFetchAdd(gm_f[ai], f_i);
-            atomicFetchAdd(gm_f[aj], f_j);
-            atomicFetchAdd(gm_f[ak], f_k);
+            f_i = cii * r_ij - cik * r_kj;
+            f_k = ckk * r_kj - cik * r_ij;
+            f_j = -f_i - f_k;
 
             if (calcVir)
             {
@@ -377,16 +378,27 @@ static void urey_bradley_gpu(const int                                  i,
             }
 
             fbond *= sycl::rsqrt(dr2);
-
             Float3 fik = fbond * r_ik;
-            atomicFetchAdd(gm_f[ai], fik);
-            atomicFetchAdd(gm_f[ak], -fik);
+            f_i += fik;
+            f_k -= fik;
+
 
             if (calcVir && ki != gmx::c_centralShiftIndex)
             {
                 atomicFetchAddLocal(sm_fShiftLoc[ki], fik);
                 atomicFetchAddLocal(sm_fShiftLoc[gmx::c_centralShiftIndex], -fik);
             }
+        }
+
+        if ((cos_theta2 < 1.0F) || (dr2 != 0.0F))
+        {
+            atomicFetchAdd(gm_f[ai], f_i);
+            atomicFetchAdd(gm_f[ak], f_k);
+        }
+
+        if (cos_theta2 < 1.0F)
+        {
+            atomicFetchAdd(gm_f[aj], f_j);
         }
     }
 }
