@@ -34,7 +34,7 @@
 # This CMakeLists.txt is not intended to be used directly, but either through
 # setup.py or as an inclusion of the full GROMACS project.
 # See https://manual.gromacs.org/current/gmxapi/userguide/install.html for more.
-cmake_minimum_required(VERSION 3.16.3)
+cmake_minimum_required(VERSION 3.18.4)
 
 # Note that this is the gmxapi._gmxapi Python bindings package version,
 # not the C++ API version. It is not essential that it match the pure Python

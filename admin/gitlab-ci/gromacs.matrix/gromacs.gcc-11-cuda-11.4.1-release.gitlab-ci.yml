@@ -23,7 +23,7 @@ gromacs:gcc-11-cuda-11.4.1:release:configure:
     - .rules:nightly-only-for-release
   image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-gcc-11-cuda-11.4.1
   variables:
-    CMAKE: /usr/local/cmake-3.16.3/bin/cmake
+    CMAKE: /usr/local/cmake-3.18.4/bin/cmake
     COMPILER_MAJOR_VERSION: 11
     RELEASE_BUILD_DIR: release-builds-gcc
     CMAKE_BUILD_TYPE_OPTIONS : "-DCMAKE_BUILD_TYPE=RelWithAssert"
@@ -42,7 +42,7 @@ gromacs:gcc-11-cuda-11.4.1:release:build:
     - .rules:nightly-only-for-release
   stage: release-build
   variables:
-    CMAKE: /usr/local/cmake-3.16.3/bin/cmake
+    CMAKE: /usr/local/cmake-3.18.4/bin/cmake
     BUILD_DIR: release-builds-gcc
   image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-gcc-11-cuda-11.4.1
   needs:
@@ -55,7 +55,7 @@ gromacs:gcc-11-cuda-11.4.1:release:test:
   stage: release-tests
   image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-gcc-11-cuda-11.4.1
   variables:
-    CMAKE: /usr/local/cmake-3.16.3/bin/cmake
+    CMAKE: /usr/local/cmake-3.18.4/bin/cmake
     KUBERNETES_EXTENDED_RESOURCE_NAME: "nvidia.com/gpu"
     KUBERNETES_EXTENDED_RESOURCE_LIMIT: 1
     BUILD_DIR: release-builds-gcc

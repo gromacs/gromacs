@@ -19,7 +19,7 @@ gromacs:clang-static-analyzer:configure:
     - .rules:merge-requests
   image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-llvm-11-tsan
   variables:
-    CMAKE: /usr/local/cmake-3.16.3/bin/cmake
+    CMAKE: /usr/local/cmake-3.18.4/bin/cmake
     CMAKE_COMPILER_SCRIPT: "-DCMAKE_CXX_COMPILER=/usr/local/libexec/c++-analyzer -DCMAKE_C_COMPILER=gcc"
     CMAKE_EXTRA_OPTIONS: "-DGMX_CLANG_ANALYZER=ON -DGMX_OPENMP=OFF -DGMX_USE_RDTSCP=OFF -DGMX_FFT_LIBRARY=fftpack -DGMX_DEVELOPER_BUILD=ON"
     CMAKE_SIMD_OPTIONS: "-DGMX_SIMD=None"
@@ -33,7 +33,7 @@ gromacs:clang-static-analyzer:build:
     - .rules:merge-requests
   image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-llvm-11-tsan
   variables:
-    CMAKE: /usr/local/cmake-3.16.3/bin/cmake
+    CMAKE: /usr/local/cmake-3.18.4/bin/cmake
   tags:
     - k8s-scilifelab
   needs:

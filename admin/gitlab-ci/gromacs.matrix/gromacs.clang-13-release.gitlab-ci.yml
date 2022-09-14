@@ -23,7 +23,7 @@ gromacs:clang-13:release:configure:
     - .rules:nightly-only-for-release
   image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-llvm-13
   variables:
-    CMAKE: /usr/local/cmake-3.16.3/bin/cmake
+    CMAKE: /usr/local/cmake-3.18.4/bin/cmake
     COMPILER_MAJOR_VERSION: 13
     RELEASE_BUILD_DIR: release-builds-clang
     CMAKE_PRECISION_OPTIONS: "-DGMX_DOUBLE=ON"
@@ -43,7 +43,7 @@ gromacs:clang-13:release:build:
     - .rules:nightly-only-for-release
   stage: release-build
   variables:
-    CMAKE: /usr/local/cmake-3.16.3/bin/cmake
+    CMAKE: /usr/local/cmake-3.18.4/bin/cmake
     BUILD_DIR: release-builds-clang
   image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-llvm-13
   needs:
@@ -56,7 +56,7 @@ gromacs:clang-13:release:test:
   stage: release-tests
   image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-llvm-13
   variables:
-    CMAKE: /usr/local/cmake-3.16.3/bin/cmake
+    CMAKE: /usr/local/cmake-3.18.4/bin/cmake
     BUILD_DIR: release-builds-clang
   needs:
     - job: gromacs:clang-13:release:configure
@@ -69,7 +69,7 @@ gromacs:clang-13:release:regressiontest:
   stage: release-tests
   image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-llvm-13
   variables:
-    CMAKE: /usr/local/cmake-3.16.3/bin/cmake
+    CMAKE: /usr/local/cmake-3.18.4/bin/cmake
     BUILD_DIR: release-builds-clang
     REGRESSIONTEST_DOUBLE: "-double"
     REGRESSIONTEST_PARALLEL: "-np"

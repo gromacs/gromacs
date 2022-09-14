@@ -22,7 +22,7 @@ gromacs:oneapi-2022.1.0-opencl:release:configure:
    - .rules:nightly-only-for-release
   image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-gcc-9-oneapi-2022.1.0
   variables:
-    CMAKE: /usr/local/cmake-3.17.2/bin/cmake
+    CMAKE: /usr/local/cmake-3.18.4/bin/cmake
     COMPILER_MAJOR_VERSION: 2021
     RELEASE_BUILD_DIR: release-builds-oneapi
 
@@ -36,7 +36,7 @@ gromacs:oneapi-2022.1.0-opencl:release:build:
     - .rules:nightly-only-for-release
   stage: release-build
   variables:
-    CMAKE: /usr/local/cmake-3.17.2/bin/cmake
+    CMAKE: /usr/local/cmake-3.18.4/bin/cmake
     BUILD_DIR: release-builds-oneapi
     COMPILER_MAJOR_VERSION: 2021
   image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-gcc-9-oneapi-2022.1.0
@@ -51,7 +51,7 @@ gromacs:oneapi-2022.1.0-opencl:release:test:
   stage: release-tests
   image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-gcc-9-oneapi-2022.1.0
   variables:
-    CMAKE: /usr/local/cmake-3.17.2/bin/cmake
+    CMAKE: /usr/local/cmake-3.18.4/bin/cmake
     BUILD_DIR: release-builds-oneapi
   needs:
     - job: gromacs:oneapi-2022.1.0-opencl:release:configure
@@ -65,7 +65,7 @@ gromacs:oneapi-2022.1.0-opencl:release:regressiontest:
   stage: release-tests
   image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-gcc-9-oneapi-2022.1.0
   variables:
-    CMAKE: /usr/local/cmake-3.17.2/bin/cmake
+    CMAKE: /usr/local/cmake-3.18.4/bin/cmake
     BUILD_DIR: release-builds-oneapi
     REGRESSIONTEST_PME_RANK_NUMBER: 0
     REGRESSIONTEST_TOTAL_RANK_NUMBER: 2

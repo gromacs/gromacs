@@ -29,7 +29,7 @@ gromacs:gcc-9-cuda-11.0.3:configure:
     - .rules:merge-and-post-merge-acceptance
   image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-gcc-9-cuda-11.0.3
   variables:
-    CMAKE: /usr/local/cmake-3.17.2/bin/cmake
+    CMAKE: /usr/local/cmake-3.18.4/bin/cmake
     CMAKE_SIMD_OPTIONS: "-DGMX_SIMD=SSE4.1"
     COMPILER_MAJOR_VERSION: 9
 
@@ -42,7 +42,7 @@ gromacs:gcc-9-cuda-11.0.3:build:
     - .rules:merge-and-post-merge-acceptance
   image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-gcc-9-cuda-11.0.3
   variables:
-    CMAKE: /usr/local/cmake-3.17.2/bin/cmake
+    CMAKE: /usr/local/cmake-3.18.4/bin/cmake
   needs:
     - job: gromacs:gcc-9-cuda-11.0.3:configure
 
@@ -52,7 +52,7 @@ gromacs:gcc-9-cuda-11.0.3:test:
     - .rules:merge-requests
   image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-gcc-9-cuda-11.0.3
   variables:
-    CMAKE: /usr/local/cmake-3.17.2/bin/cmake
+    CMAKE: /usr/local/cmake-3.18.4/bin/cmake
     KUBERNETES_EXTENDED_RESOURCE_NAME: "nvidia.com/gpu"
     KUBERNETES_EXTENDED_RESOURCE_LIMIT: 1
   tags:
@@ -66,7 +66,7 @@ gromacs:gcc-9-cuda-11.0.3:test-gpucommupd:
     - .rules:post-merge-acceptance
   image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-gcc-9-cuda-11.0.3
   variables:
-    CMAKE: /usr/local/cmake-3.17.2/bin/cmake
+    CMAKE: /usr/local/cmake-3.18.4/bin/cmake
     KUBERNETES_EXTENDED_RESOURCE_NAME: "nvidia.com/gpu"
     KUBERNETES_EXTENDED_RESOURCE_LIMIT: 1
     GMX_FORCE_UPDATE_DEFAULT_GPU: 1
@@ -81,7 +81,7 @@ gromacs:gcc-9-cuda-11.0.3:regressiontest:
     - .rules:merge-requests
   image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-gcc-9-cuda-11.0.3
   variables:
-    CMAKE: /usr/local/cmake-3.17.2/bin/cmake
+    CMAKE: /usr/local/cmake-3.18.4/bin/cmake
     KUBERNETES_EXTENDED_RESOURCE_NAME: "nvidia.com/gpu"
     KUBERNETES_EXTENDED_RESOURCE_LIMIT: 1
     REGRESSIONTEST_PME_RANK_NUMBER: 0
@@ -99,7 +99,7 @@ gromacs:gcc-9-cuda-11.0.3:regressiontest-gpucommupd-tMPI:
     - .rules:post-merge-acceptance
   image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-gcc-9-cuda-11.0.3
   variables:
-    CMAKE: /usr/local/cmake-3.17.2/bin/cmake
+    CMAKE: /usr/local/cmake-3.18.4/bin/cmake
     KUBERNETES_EXTENDED_RESOURCE_NAME: "nvidia.com/gpu"
     KUBERNETES_EXTENDED_RESOURCE_LIMIT: 2
     REGRESSIONTEST_PME_RANK_NUMBER: 0
