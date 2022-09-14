@@ -3,7 +3,7 @@ name: CMake Build Matrix
 on: [push, pull_request]
 
 env:
-  CMAKE_VERSION: 3.18.3
+  CMAKE_VERSION: 3.18.4
   NINJA_VERSION: 1.10.1
   BUILD_TYPE: Release
   CCACHE_VERSION: 3.7.7
