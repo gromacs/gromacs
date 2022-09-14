@@ -235,6 +235,7 @@ void debug_start_check(gmx_wallcycle* wc, WallCycleCounter ewc)
     // NOLINTNEXTLINE(readability-misleading-indentation)
     if constexpr (sc_enableWallcycleDebug)
     {
+        // NOLINTNEXTLINE(misc-redundant-expression)
         if (wc->count_depth < 0 || wc->count_depth >= sc_maxWallCycleDepth)
         {
             gmx_fatal(FARGS, "wallcycle counter depth out of range: %d", wc->count_depth + 1);
