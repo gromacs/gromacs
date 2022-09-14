@@ -892,7 +892,6 @@ static auto nbnxmKernel(sycl::handler&                                          
         const unsigned tidxi = itemIdx.get_local_id(2);
         const unsigned tidxj = itemIdx.get_local_id(1);
         const unsigned tidx  = tidxj * c_clSize + tidxi;
-        const unsigned tidxz = 0;
 
         const unsigned bidx = itemIdx.get_group(0);
 
@@ -1006,7 +1005,7 @@ static auto nbnxmKernel(sycl::handler&                                          
         const bool nonSelfInteraction = !(nbSci.shift == gmx::c_centralShiftIndex & tidxj <= tidxi);
 
         // loop over the j clusters = seen by any of the atoms in the current super-cluster
-        for (int j4 = cij4Start + tidxz; j4 < cij4End; j4 += 1)
+        for (int j4 = cij4Start; j4 < cij4End; j4 += 1)
         {
             unsigned imask = a_plistCJ4[j4].imei[imeiIdx].imask;
             if (!doPruneNBL && !imask)
