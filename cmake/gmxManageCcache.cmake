@@ -66,7 +66,8 @@ if(CCACHE_PROGRAM)
         set(_cacheable OFF)
         if (CMAKE_C_COMPILER_ID MATCHES "GNU"
             OR CMAKE_C_COMPILER_ID MATCHES "AppleClang"
-            OR CMAKE_C_COMPILER_ID MATCHES "Clang")
+            OR CMAKE_C_COMPILER_ID MATCHES "Clang"
+            OR CMAKE_C_COMPILER_ID MATCHES "IntelLLVM")
             message(STATUS "Setting up ccache wrapper for ${CMAKE_C_COMPILER_ID} C compiler ${CMAKE_C_COMPILER}")
             configure_file(${CMAKE_CURRENT_SOURCE_DIR}/admin/ccache-wrapper-c.in ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/ccache-wrapper-c)
             file(COPY ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/ccache-wrapper-c
@@ -101,7 +102,8 @@ if(CCACHE_PROGRAM)
         set(_cacheable OFF)
         if (CMAKE_CXX_COMPILER_ID MATCHES "GNU"
             OR CMAKE_CXX_COMPILER_ID MATCHES "AppleClang"
-            OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+            OR CMAKE_CXX_COMPILER_ID MATCHES "Clang"
+            OR CMAKE_C_COMPILER_ID MATCHES "IntelLLVM")
             message(STATUS "Setting up ccache wrapper for ${CMAKE_CXX_COMPILER_ID} CXX compiler ${CMAKE_CXX_COMPILER}")
             configure_file(${CMAKE_CURRENT_SOURCE_DIR}/admin/ccache-wrapper-cxx.in ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/ccache-wrapper-cxx)
             file(COPY ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/ccache-wrapper-cxx
