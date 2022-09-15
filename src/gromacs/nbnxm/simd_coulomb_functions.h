@@ -53,6 +53,7 @@
 #ifndef GMX_NBNXM_SIMD_COULOMB_FUNCTIONS_H
 #define GMX_NBNXM_SIMD_COULOMB_FUNCTIONS_H
 
+#include "gromacs/math/units.h"
 #include "gromacs/mdtypes/interaction_const.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/simd/simd.h"
