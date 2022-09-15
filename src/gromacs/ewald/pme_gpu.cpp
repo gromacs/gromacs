@@ -127,14 +127,12 @@ void inline parallel_3dfft_execute_gpu_wrapper(gmx_pme_t*             pme,
 {
     if (pme_gpu_settings(pme->gpu).performGPUFFT)
     {
-        wallcycle_start_nocount(wcycle, WallCycleCounter::LaunchGpu);
         // use a separate sub-counter for GPU FFT launch
         // this is specially important for PME decomposition where distributed FFT
         // implementations are used
-        wallcycle_sub_start(wcycle, WallCycleSubCounter::LaunchGpuPmeFft);
+        wallcycle_start(wcycle, WallCycleCounter::LaunchGpuPmeFft);
         pme_gpu_3dfft(pme->gpu, dir, gridIndex);
-        wallcycle_sub_stop(wcycle, WallCycleSubCounter::LaunchGpuPmeFft);
-        wallcycle_stop(wcycle, WallCycleCounter::LaunchGpu);
+        wallcycle_stop(wcycle, WallCycleCounter::LaunchGpuPmeFft);
     }
     else
     {
@@ -175,11 +173,9 @@ void pme_gpu_prepare_computation(gmx_pme_t*               pme,
 
     if (stepWork.haveDynamicBox || shouldUpdateBox) // || is to make the first computation always update
     {
-        wallcycle_start_nocount(wcycle, WallCycleCounter::LaunchGpu);
-        wallcycle_sub_start_nocount(wcycle, WallCycleSubCounter::LaunchGpuPme);
+        wallcycle_start(wcycle, WallCycleCounter::LaunchGpuPme);
         pme_gpu_update_input_box(pmeGpu, box);
-        wallcycle_sub_stop(wcycle, WallCycleSubCounter::LaunchGpuPme);
-        wallcycle_stop(wcycle, WallCycleCounter::LaunchGpu);
+        wallcycle_stop(wcycle, WallCycleCounter::LaunchGpuPme);
 
         if (!pme_gpu_settings(pmeGpu).performGPUSolve)
         {
@@ -256,11 +252,9 @@ void pme_gpu_launch_complex_transforms(gmx_pme_t* pme, gmx_wallcycle* wcycle, co
             if (settings.performGPUSolve)
             {
                 const auto gridOrdering = GridOrdering::XYZ;
-                wallcycle_start_nocount(wcycle, WallCycleCounter::LaunchGpu);
-                wallcycle_sub_start_nocount(wcycle, WallCycleSubCounter::LaunchGpuPme);
+                wallcycle_start(wcycle, WallCycleCounter::LaunchGpuPme);
                 pme_gpu_solve(pmeGpu, gridIndex, cfftgrid, gridOrdering, computeEnergyAndVirial);
-                wallcycle_sub_stop(wcycle, WallCycleSubCounter::LaunchGpuPme);
-                wallcycle_stop(wcycle, WallCycleCounter::LaunchGpu);
+                wallcycle_stop(wcycle, WallCycleCounter::LaunchGpuPme);
             }
             else
             {
@@ -431,16 +425,14 @@ void pme_gpu_reinit_computation(const gmx_pme_t* pme, gmx_wallcycle* wcycle)
 {
     GMX_ASSERT(pme_gpu_active(pme), "This should be a GPU run of PME but it is not enabled.");
 
-    wallcycle_start_nocount(wcycle, WallCycleCounter::LaunchGpu);
-    wallcycle_sub_start_nocount(wcycle, WallCycleSubCounter::LaunchGpuPme);
+    wallcycle_start(wcycle, WallCycleCounter::LaunchGpuPme);
 
     pme_gpu_update_timings(pme->gpu);
 
     pme_gpu_clear_grids(pme->gpu);
     pme_gpu_clear_energy_virial(pme->gpu);
 
-    wallcycle_sub_stop(wcycle, WallCycleSubCounter::LaunchGpuPme);
-    wallcycle_stop(wcycle, WallCycleCounter::LaunchGpu);
+    wallcycle_stop(wcycle, WallCycleCounter::LaunchGpuPme);
 }
 
 DeviceBuffer<gmx::RVec> pme_gpu_get_device_f(const gmx_pme_t* pme)

@@ -1787,8 +1787,7 @@ void pme_gpu_spread(const PmeGpu*                  pmeGpu,
                         pmeGpu, pmeCoordinateReceiverGpu, kernelParamsPtr->usePipeline != 0, i);
                 wallcycle_stop(wcycle, WallCycleCounter::WaitGpuPmePPRecvX);
 
-                wallcycle_start_nocount(wcycle, WallCycleCounter::LaunchGpu);
-                wallcycle_sub_start_nocount(wcycle, WallCycleSubCounter::LaunchGpuPme);
+                wallcycle_start(wcycle, WallCycleCounter::LaunchGpuPme);
 
                 // set kernel configuration options specific to this stage of the pipeline
                 std::tie(kernelParamsPtr->pipelineAtomStart, kernelParamsPtr->pipelineAtomEnd) =
@@ -1822,18 +1821,15 @@ void pme_gpu_spread(const PmeGpu*                  pmeGpu,
 #endif
 
                 launchGpuKernel(kernelPtr, config, *launchStream, timingEvent, "PME spline/spread", kernelArgs);
-                wallcycle_sub_stop(wcycle, WallCycleSubCounter::LaunchGpuPme);
-                wallcycle_stop(wcycle, WallCycleCounter::LaunchGpu);
+                wallcycle_stop(wcycle, WallCycleCounter::LaunchGpuPme);
             }
-            wallcycle_start_nocount(wcycle, WallCycleCounter::LaunchGpu);
-            wallcycle_sub_start_nocount(wcycle, WallCycleSubCounter::LaunchGpuPme);
+            wallcycle_start(wcycle, WallCycleCounter::LaunchGpuPme);
             // Set dependencies for PME stream on all pipeline streams
             for (int i = 0; i < pmeCoordinateReceiverGpu->ppCommNumSenderRanks(); i++)
             {
                 pmeCoordinateReceiverGpu->insertAsDependencyIntoStream(i, pmeGpu->archSpecific->pmeStream_);
             }
-            wallcycle_sub_stop(wcycle, WallCycleSubCounter::LaunchGpuPme);
-            wallcycle_stop(wcycle, WallCycleCounter::LaunchGpu);
+            wallcycle_stop(wcycle, WallCycleCounter::LaunchGpuPme);
         }
         else // pipelining is not in use
         {
@@ -1847,8 +1843,7 @@ void pme_gpu_spread(const PmeGpu*                  pmeGpu,
                 wallcycle_stop(wcycle, WallCycleCounter::WaitGpuPmePPRecvX);
             }
 
-            wallcycle_start_nocount(wcycle, WallCycleCounter::LaunchGpu);
-            wallcycle_sub_start_nocount(wcycle, WallCycleSubCounter::LaunchGpuPme);
+            wallcycle_start(wcycle, WallCycleCounter::LaunchGpuPme);
 
 #if c_canEmbedBuffers
             const auto kernelArgs = prepareGpuKernelArguments(kernelPtr, config, kernelParamsPtr);
@@ -1876,8 +1871,7 @@ void pme_gpu_spread(const PmeGpu*                  pmeGpu,
                             "PME spline/spread",
                             kernelArgs);
 
-            wallcycle_sub_stop(wcycle, WallCycleSubCounter::LaunchGpuPme);
-            wallcycle_stop(wcycle, WallCycleCounter::LaunchGpu);
+            wallcycle_stop(wcycle, WallCycleCounter::LaunchGpuPme);
         }
 
         pme_gpu_stop_timing(pmeGpu, timingId);
@@ -1891,8 +1885,7 @@ void pme_gpu_spread(const PmeGpu*                  pmeGpu,
         pmeGpuGridHaloExchange(pmeGpu, wcycle);
     }
 
-    wallcycle_start_nocount(wcycle, WallCycleCounter::LaunchGpu);
-    wallcycle_sub_start_nocount(wcycle, WallCycleSubCounter::LaunchGpuPme);
+    wallcycle_start(wcycle, WallCycleCounter::LaunchGpuPme);
 
     // full PME GPU decomposition
     const bool convertPmeToFftGridOnGpu = settings.performGPUFFT && settings.useDecomposition;
@@ -1934,8 +1927,7 @@ void pme_gpu_spread(const PmeGpu*                  pmeGpu,
         pme_gpu_copy_output_spread_atom_data(pmeGpu);
     }
 
-    wallcycle_sub_stop(wcycle, WallCycleSubCounter::LaunchGpuPme);
-    wallcycle_stop(wcycle, WallCycleCounter::LaunchGpu);
+    wallcycle_stop(wcycle, WallCycleCounter::LaunchGpuPme);
 }
 
 void pme_gpu_solve(const PmeGpu* pmeGpu,
@@ -2192,8 +2184,7 @@ void pme_gpu_gather(PmeGpu*               pmeGpu,
     const auto& settings        = pmeGpu->settings;
     auto*       kernelParamsPtr = pmeGpu->kernelParams.get();
 
-    wallcycle_start_nocount(wcycle, WallCycleCounter::LaunchGpu);
-    wallcycle_sub_start_nocount(wcycle, WallCycleSubCounter::LaunchGpuPme);
+    wallcycle_start(wcycle, WallCycleCounter::LaunchGpuPme);
 
     // full PME GPU decomposition
     const bool convertFftToPmeGridOnGpu = settings.performGPUFFT && settings.useDecomposition;
@@ -2235,8 +2226,7 @@ void pme_gpu_gather(PmeGpu*               pmeGpu,
         pme_gpu_copy_input_gather_atom_data(pmeGpu);
     }
 
-    wallcycle_sub_stop(wcycle, WallCycleSubCounter::LaunchGpuPme);
-    wallcycle_stop(wcycle, WallCycleCounter::LaunchGpu);
+    wallcycle_stop(wcycle, WallCycleCounter::LaunchGpuPme);
 
     // reverse halo exchange
     if (settings.useDecomposition)
@@ -2244,8 +2234,7 @@ void pme_gpu_gather(PmeGpu*               pmeGpu,
         pmeGpuGridHaloExchangeReverse(pmeGpu, wcycle);
     }
 
-    wallcycle_start_nocount(wcycle, WallCycleCounter::LaunchGpu);
-    wallcycle_sub_start_nocount(wcycle, WallCycleSubCounter::LaunchGpuPme);
+    wallcycle_start(wcycle, WallCycleCounter::LaunchGpuPme);
 
     /* Set if we have unit tests */
     const bool   readGlobal = pmeGpu->settings.copyAllOutputs;
@@ -2330,8 +2319,7 @@ void pme_gpu_gather(PmeGpu*               pmeGpu,
         pme_gpu_copy_output_forces(pmeGpu);
     }
 
-    wallcycle_sub_stop(wcycle, WallCycleSubCounter::LaunchGpuPme);
-    wallcycle_stop(wcycle, WallCycleCounter::LaunchGpu);
+    wallcycle_stop(wcycle, WallCycleCounter::LaunchGpuPme);
 }
 
 DeviceBuffer<gmx::RVec> pme_gpu_get_kernelparam_forces(const PmeGpu* pmeGpu)

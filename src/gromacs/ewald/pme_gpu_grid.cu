@@ -859,8 +859,7 @@ void pmeGpuGridHaloExchange(const PmeGpu* pmeGpu, gmx_wallcycle* wcycle)
         }
         else
         {
-            wallcycle_start_nocount(wcycle, WallCycleCounter::LaunchGpu);
-            wallcycle_sub_start_nocount(wcycle, WallCycleSubCounter::LaunchGpuPme);
+            wallcycle_start(wcycle, WallCycleCounter::LaunchGpuPme);
 
             // launch packing kernel
             packHaloDataExternal(
@@ -882,8 +881,7 @@ void pmeGpuGridHaloExchange(const PmeGpu* pmeGpu, gmx_wallcycle* wcycle)
                     pmeGpu->haloExchange->d_sendGrids[gmx::DirectionX::Up][gmx::DirectionY::Right],
                     pmeGpu->haloExchange->d_sendGrids[gmx::DirectionX::Down][gmx::DirectionY::Right]);
 
-            wallcycle_sub_stop(wcycle, WallCycleSubCounter::LaunchGpuPme);
-            wallcycle_stop(wcycle, WallCycleCounter::LaunchGpu);
+            wallcycle_stop(wcycle, WallCycleCounter::LaunchGpuPme);
         }
 
         wallcycle_start(wcycle, WallCycleCounter::WaitGpuPmeSpread);
@@ -1052,8 +1050,7 @@ void pmeGpuGridHaloExchange(const PmeGpu* pmeGpu, gmx_wallcycle* wcycle)
 
         wallcycle_stop(wcycle, WallCycleCounter::PmeHaloExchangeComm);
 
-        wallcycle_start_nocount(wcycle, WallCycleCounter::LaunchGpu);
-        wallcycle_sub_start_nocount(wcycle, WallCycleSubCounter::LaunchGpuPme);
+        wallcycle_start(wcycle, WallCycleCounter::LaunchGpuPme);
 
         // reduce halo data
         unpackAndAddHaloDataInternal(
@@ -1075,8 +1072,7 @@ void pmeGpuGridHaloExchange(const PmeGpu* pmeGpu, gmx_wallcycle* wcycle)
                 pmeGpu->haloExchange->d_recvGrids[gmx::DirectionX::Up][gmx::DirectionY::Right],
                 pmeGpu->haloExchange->d_recvGrids[gmx::DirectionX::Down][gmx::DirectionY::Right]);
 
-        wallcycle_sub_stop(wcycle, WallCycleSubCounter::LaunchGpuPme);
-        wallcycle_stop(wcycle, WallCycleCounter::LaunchGpu);
+        wallcycle_stop(wcycle, WallCycleCounter::LaunchGpuPme);
     }
 #else
     GMX_UNUSED_VALUE(pmeGpu);
@@ -1145,8 +1141,7 @@ void pmeGpuGridHaloExchangeReverse(const PmeGpu* pmeGpu, gmx_wallcycle* wcycle)
         }
         else
         {
-            wallcycle_start_nocount(wcycle, WallCycleCounter::LaunchGpu);
-            wallcycle_sub_start_nocount(wcycle, WallCycleSubCounter::LaunchGpuPme);
+            wallcycle_start(wcycle, WallCycleCounter::LaunchGpuPme);
 
             // launch packing kernel
             packHaloDataInternal(
@@ -1168,8 +1163,7 @@ void pmeGpuGridHaloExchangeReverse(const PmeGpu* pmeGpu, gmx_wallcycle* wcycle)
                     pmeGpu->haloExchange->d_sendGrids[gmx::DirectionX::Up][gmx::DirectionY::Right],
                     pmeGpu->haloExchange->d_sendGrids[gmx::DirectionX::Down][gmx::DirectionY::Right]);
 
-            wallcycle_sub_stop(wcycle, WallCycleSubCounter::LaunchGpuPme);
-            wallcycle_stop(wcycle, WallCycleCounter::LaunchGpu);
+            wallcycle_stop(wcycle, WallCycleCounter::LaunchGpuPme);
         }
 
         wallcycle_start(wcycle, WallCycleCounter::WaitGpuFftToPmeGrid);
@@ -1340,8 +1334,7 @@ void pmeGpuGridHaloExchangeReverse(const PmeGpu* pmeGpu, gmx_wallcycle* wcycle)
         // used in X-dimension, but we need to unpack if decomposition happens (also) along Y
         if (sizeY > 1)
         {
-            wallcycle_start_nocount(wcycle, WallCycleCounter::LaunchGpu);
-            wallcycle_sub_start_nocount(wcycle, WallCycleSubCounter::LaunchGpuPme);
+            wallcycle_start(wcycle, WallCycleCounter::LaunchGpuPme);
 
             // assign halo data
             unpackHaloDataExternal(
@@ -1363,8 +1356,7 @@ void pmeGpuGridHaloExchangeReverse(const PmeGpu* pmeGpu, gmx_wallcycle* wcycle)
                     pmeGpu->haloExchange->d_recvGrids[gmx::DirectionX::Up][gmx::DirectionY::Right],
                     pmeGpu->haloExchange->d_recvGrids[gmx::DirectionX::Down][gmx::DirectionY::Right]);
 
-            wallcycle_sub_stop(wcycle, WallCycleSubCounter::LaunchGpuPme);
-            wallcycle_stop(wcycle, WallCycleCounter::LaunchGpu);
+            wallcycle_stop(wcycle, WallCycleCounter::LaunchGpuPme);
         }
     }
 #else
