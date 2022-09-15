@@ -50,6 +50,10 @@
 
 #include <gtest/gtest.h>
 
+#if HAVE_MUPARSER
+#    include <muParser.h>
+#endif
+
 #include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/pulling/pull_internal.h"
@@ -221,10 +225,12 @@ TEST_F(PullTest, TransformationCoordSimple)
     x2.coordIndex = 1;
     pull.coord.emplace_back(x2);
 
+    const double t = 0.0;
+
     //-----TESTS -------
     // 1) check transformation pull coordinate values
     pull.coord[1].spatialData.value = getTransformationPullCoordinateValue(
-            &pull.coord[1], constArrayRefFromArray(pull.coord.data(), 1));
+            &pull.coord[1], constArrayRefFromArray(pull.coord.data(), 1), t);
     EXPECT_REAL_EQ_TOL(pull.coord[1].spatialData.value, -dist, defaultRealTolerance());
 
     // 2) check that a force on the transformation coord propagates to the original pull coordinate
@@ -276,6 +282,8 @@ TEST_F(PullTest, TransformationCoordAdvanced)
     x4.dx                   = 1e-4;
     pull.coord.emplace_back(x4);
 
+    const double t = 0.0;
+
     // below we set x1 and x2 to different values and make sure that
     // 1) the transformation coordinates are correct, i.e. test getTransformationPullCoordinateValue
     // 2) that the force is accurately distributed from the transformation coord to the normal
@@ -289,9 +297,9 @@ TEST_F(PullTest, TransformationCoordAdvanced)
         pull.coord[0].spatialData.value = v1;
         pull.coord[1].spatialData.value = v2;
         pull.coord[2].spatialData.value = getTransformationPullCoordinateValue(
-                &pull.coord[2], constArrayRefFromArray(pull.coord.data(), 2));
+                &pull.coord[2], constArrayRefFromArray(pull.coord.data(), 2), t);
         pull.coord[3].spatialData.value = getTransformationPullCoordinateValue(
-                &pull.coord[3], constArrayRefFromArray(pull.coord.data(), 3));
+                &pull.coord[3], constArrayRefFromArray(pull.coord.data(), 3), t);
 
         // 1) check transformation pull coordinate values
         // Since we perform numerical differentiation and floating point operations
@@ -338,6 +346,69 @@ TEST_F(PullTest, TransformationCoordAdvanced)
 }
 
 /*
+ * Tests that time works corretly as a variable in transformation coordinates
+ *
+ */
+TEST_F(PullTest, TransformationCoordTime)
+{
+    //-----_SETUP-------
+    pull_t pull;
+    // Create standard pull coordinates
+    const double dist = 2; // the pull coord value
+    t_pull_coord x1;
+    x1.coordIndex = 0;
+    pull.coord.emplace_back(x1);
+    pull.coord[0].spatialData.value = dist;
+
+    // Create a transformation pull coordinate using time
+    t_pull_coord x2;
+    x2.eGeom      = PullGroupGeometry::Transformation;
+    x2.expression = "-x1 + sin(2 * t)";
+    x2.coordIndex = 1;
+    pull.coord.emplace_back(x2, true);
+
+    const double t = 0.75;
+
+    const double ref = -dist + std::sin(2 * t);
+
+    //-----TESTS -------
+    // 1) check transformation pull coordinate values
+    pull.coord[1].spatialData.value = getTransformationPullCoordinateValue(
+            &pull.coord[1], constArrayRefFromArray(pull.coord.data(), 1), t);
+    EXPECT_REAL_EQ_TOL(pull.coord[1].spatialData.value, ref, defaultRealTolerance());
+}
+
+/*
+ * Tests that pull transformation throws when time is not allowed as a variable
+ *
+ */
+TEST_F(PullTest, TransformationCoordTimeNotAllowed)
+{
+    //-----_SETUP-------
+    pull_t pull;
+    // Create standard pull coordinates
+    const double dist = 2; // the pull coord value
+    t_pull_coord x1;
+    x1.coordIndex = 0;
+    pull.coord.emplace_back(x1);
+    pull.coord[0].spatialData.value = dist;
+
+    // Create a transformation pull coordinate using time
+    t_pull_coord x2;
+    x2.eGeom      = PullGroupGeometry::Transformation;
+    x2.expression = "-x1 + sin(2 * t)";
+    x2.coordIndex = 1;
+    // Pass false to not allow time as a variable in transformation coordinate
+    pull.coord.emplace_back(x2, false);
+
+    const double t = 0.75;
+
+    EXPECT_THROW_GMX(getTransformationPullCoordinateValue(
+                             &pull.coord[1], constArrayRefFromArray(pull.coord.data(), 1), t),
+                     gmx::InconsistentInputError);
+}
+
+/*
  * Simple test case with one transformation coordinate set to a constant value
  *
  * The purpose of this test is just to make sure that the code works even in this case
@@ -354,8 +425,8 @@ TEST_F(PullTest, TransformationCoordDummyExpression)
     pull.coord.emplace_back(x);
     //-----TESTS -------
     // check transformation pull coordinate values
-    double value =
-            getTransformationPullCoordinateValue(&pull.coord[0], ArrayRef<const pull_coord_work_t>{});
+    double value = getTransformationPullCoordinateValue(
+            &pull.coord[0], ArrayRef<const pull_coord_work_t>{}, 0.0);
     EXPECT_REAL_EQ_TOL(value, 10, defaultRealTolerance());
 }
 #endif // HAVE_MUPARSER

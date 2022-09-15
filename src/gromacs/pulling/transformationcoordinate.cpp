@@ -53,8 +53,8 @@ namespace
 double getTransformationPullCoordinateValue(pull_coord_work_t* coord)
 {
     const int transformationPullCoordinateIndex = coord->params.coordIndex;
-    GMX_ASSERT(ssize(coord->transformationVariables) == transformationPullCoordinateIndex,
-               "We need as many variables as the transformation pull coordinate index");
+    GMX_ASSERT(ssize(coord->transformationVariables) == transformationPullCoordinateIndex + 1,
+               "We need as many variables as the transformation pull coordinate index plus one");
     double result = 0;
     try
     {
@@ -85,7 +85,8 @@ double getTransformationPullCoordinateValue(pull_coord_work_t* coord)
 } // namespace
 
 double getTransformationPullCoordinateValue(pull_coord_work_t*                coord,
-                                            ArrayRef<const pull_coord_work_t> variableCoords)
+                                            ArrayRef<const pull_coord_work_t> variableCoords,
+                                            const double                      t)
 {
     GMX_ASSERT(ssize(variableCoords) == coord->params.coordIndex,
                "We need as many variables as the transformation pull coordinate index");
@@ -94,6 +95,7 @@ double getTransformationPullCoordinateValue(pull_coord_work_t*                co
     {
         coord->transformationVariables[coordIndex++] = variableCoord.spatialData.value;
     }
+    coord->transformationVariables[coordIndex] = t;
 
     return getTransformationPullCoordinateValue(coord);
 }

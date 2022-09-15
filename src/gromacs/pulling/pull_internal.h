@@ -149,15 +149,16 @@ struct PullCoordSpatialData
 struct pull_coord_work_t
 {
     //! Constructor
-    pull_coord_work_t(const t_pull_coord& params) :
+    pull_coord_work_t(const t_pull_coord& params, const bool allowTimeAsTransformationVariable = true) :
         params(params),
         value_ref(0),
         spatialData(),
         scalarForce(0),
         bExternalPotentialProviderHasBeenRegistered(false),
         expressionParser(params.eGeom == PullGroupGeometry::Transformation ? params.expression : "",
-                         params.coordIndex),
-        transformationVariables(params.eGeom == PullGroupGeometry::Transformation ? params.coordIndex : 0)
+                         params.coordIndex,
+                         allowTimeAsTransformationVariable),
+        transformationVariables(params.eGeom == PullGroupGeometry::Transformation ? params.coordIndex + 1 : 0)
     {
     }
 
@@ -248,6 +249,9 @@ struct pull_t
 {
     /* Global parameters */
     pull_params_t params; /* The pull parameters, from inputrec */
+
+    /* Tells whether time is allowed as a variable in transformation coordinate expressions */
+    bool allowTimeAsTransformationVariable;
 
     gmx_bool bPotential;  /* Are there coordinates with potential? */
     gmx_bool bConstraint; /* Are there constrained coordinates? */

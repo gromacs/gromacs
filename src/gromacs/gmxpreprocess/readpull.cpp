@@ -763,7 +763,8 @@ pull_t* set_pull_init(t_inputrec*                    ir,
             pcrd->init = 0;
         }
 
-        double value = get_pull_coord_value(pull_work, c, pbc);
+        double t     = ir->init_t + ir->init_step * ir->delta_t;
+        double value = get_pull_coord_value(pull_work, c, pbc, t);
 
         value *= pull_conversion_factor_internal2userinput(*pcrd);
         fprintf(stderr, " %10.3f %s", value, pull_coordinate_units(*pcrd));

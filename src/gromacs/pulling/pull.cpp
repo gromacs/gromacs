@@ -718,7 +718,7 @@ static double get_dihedral_angle_coord(PullCoordSpatialData* spatialData)
 /* Calculates pull->coord[coord_ind].value.
  * This function also updates pull->coord[coord_ind].dr.
  */
-static void get_pull_coord_distance(const pull_t& pull, pull_coord_work_t* pcrd, const t_pbc& pbc)
+static void get_pull_coord_distance(const pull_t& pull, pull_coord_work_t* pcrd, const t_pbc& pbc, const double t)
 {
     get_pull_coord_dr(pull, pcrd, pbc);
 
@@ -753,7 +753,9 @@ static void get_pull_coord_distance(const pull_t& pull, pull_coord_work_t* pcrd,
         case PullGroupGeometry::Transformation:
             // Note that we would only need to pass the part of coord up to coord_ind
             spatialData.value = gmx::getTransformationPullCoordinateValue(
-                    pcrd, ArrayRef<const pull_coord_work_t>(pull.coord).subArray(0, pcrd->params.coordIndex));
+                    pcrd,
+                    ArrayRef<const pull_coord_work_t>(pull.coord).subArray(0, pcrd->params.coordIndex),
+                    t);
             break;
         default: gmx_incons("Unsupported pull type in get_pull_coord_distance");
     }
@@ -771,7 +773,7 @@ static double get_pull_coord_deviation(const pull_t& pull, pull_coord_work_t* pc
      */
     updatePullCoordReferenceValue(&pcrd->value_ref, pcrd->params, t);
 
-    get_pull_coord_distance(pull, pcrd, pbc);
+    get_pull_coord_distance(pull, pcrd, pbc, t);
 
     /* Determine the deviation */
     dev = pcrd->spatialData.value - pcrd->value_ref;
@@ -795,9 +797,20 @@ static double get_pull_coord_deviation(const pull_t& pull, pull_coord_work_t* pc
     return dev;
 }
 
+double get_pull_coord_value(pull_t* pull, int coordIndex, const t_pbc& pbc, const double t)
+{
+    get_pull_coord_distance(*pull, &pull->coord[coordIndex], pbc, t);
+
+    return pull->coord[coordIndex].spatialData.value;
+}
+
 double get_pull_coord_value(pull_t* pull, int coordIndex, const t_pbc& pbc)
 {
-    get_pull_coord_distance(*pull, &pull->coord[coordIndex], pbc);
+    GMX_RELEASE_ASSERT(!pull->allowTimeAsTransformationVariable,
+                       "This function should only be called when time is not allowed as a "
+                       "transformation coordinate variable");
+
+    get_pull_coord_distance(*pull, &pull->coord[coordIndex], pbc, 0.0);
 
     return pull->coord[coordIndex].spatialData.value;
 }
@@ -866,7 +879,7 @@ static void do_constraint(struct pull_t* pull,
          * We don't modify dr and value anymore, so these values are also used
          * for printing.
          */
-        get_pull_coord_distance(*pull, pcrd, pbc);
+        get_pull_coord_distance(*pull, pcrd, pbc, t);
 
         const PullCoordSpatialData& spatialData = pcrd->spatialData;
         if (debug)
@@ -2014,6 +2027,9 @@ struct pull_t* init_pull(FILE*                     fplog,
     /* Copy the pull parameters */
     pull->params = *pull_params;
 
+    /* We do not allow transformation coordinates to depend on time when using AWH */
+    pull->allowTimeAsTransformationVariable = !ir->bDoAwh;
+
     /* The gmx_omp_nthreads module might not be initialized here, so max(1,) */
     const int maxNumThreads = std::max(1, gmx_omp_nthreads_get(ModuleMultiThread::Default));
 
@@ -2057,7 +2073,7 @@ struct pull_t* init_pull(FILE*                     fplog,
                            "The stored index should match the position in the vector");
 
         /* Construct a pull coordinate, copying all coordinate parameters */
-        pull->coord.emplace_back(pull_params->coord[c]);
+        pull->coord.emplace_back(pull_params->coord[c], pull->allowTimeAsTransformationVariable);
 
         pull_coord_work_t* pcrd = &pull->coord.back();
 

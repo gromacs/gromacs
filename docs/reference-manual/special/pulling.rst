@@ -262,9 +262,9 @@ The transformation pull coordinate
 
 The transformation pull coordinate is a "meta" pull coordinate that can
 be used to define more complex collective variables.
-It can transform one or more other pull coordinates using an arbitrary
-mathematical expression. This is a powerful tool for generating
-complex collective variables.
+It can transform one or more other pull coordinates, as well as time,
+using an arbitrary mathematical expression.
+This is a powerful tool for generating complex collective variables.
 A simple example is a contact coordinate using a non-linear transformation
 of a distance. More complex examples are a (non-)linear combination of
 two or more pull coordinates or a sum of contacts.

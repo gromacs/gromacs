@@ -59,6 +59,7 @@ class ArrayRef;
  * \param[in] coord  The (transformation) coordinate to compute the value for
  * \param[in] variableCoords  Pull coordinates used as variables, entries 0 to coord->coordIndex
  *                            will be used
+ * \param[in] t               The time
  *
  * \returns Transformation value for pull coordinate.
  *
@@ -66,7 +67,8 @@ class ArrayRef;
  *         than the index of \p coord.
  */
 double getTransformationPullCoordinateValue(pull_coord_work_t*                coord,
-                                            ArrayRef<const pull_coord_work_t> variableCoords);
+                                            ArrayRef<const pull_coord_work_t> variableCoords,
+                                            double                            t);
 
 /*! \brief Distributes the force on a transformation pull coordinates to the involved coordinates of lower rank
  *

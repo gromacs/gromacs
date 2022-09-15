@@ -1214,7 +1214,10 @@ static void setStateDependentAwhPullDimParams(AwhDimParams*        dimParams,
         }
     }
 
-    /* The initial coordinate value, converted to external user units. */
+    /* The initial coordinate value, converted to external user units.
+     * Note that we do not pass time here, as time is not allowed as
+     * a variable for transformation coordinates when AWH is in use.
+     */
     double initialCoordinate = get_pull_coord_value(pull_work, dimParams->coordinateIndex(), pbc);
     initialCoordinate *= pull_conversion_factor_internal2userinput(pullCoordParams);
     dimParams->setInitialCoordinate(initialCoordinate);

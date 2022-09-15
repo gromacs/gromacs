@@ -330,6 +330,9 @@ real Awh::applyBiasForcesAndUpdateBias(PbcType                pbcType,
         {
             if (biasCts.bias_.dimParams()[d].isPullDimension())
             {
+                /* Note that we do not pass time here, as time is not allowed as
+                 * a variable for transformation coordinates when AWH is in use.
+                 */
                 coordValue[d] = get_pull_coord_value(
                         pull_, biasCts.pullCoordIndex_[d - numLambdaDimsCounted], pbc);
             }

@@ -103,6 +103,19 @@ double pull_conversion_factor_internal2userinput(const t_pull_coord& pcrd);
  * \param[in,out] pull        The pull struct.
  * \param[in]     coordIndex  Index of the pull coordinate in the list of coordinates
  * \param[in]     pbc         Information structure about periodicity.
+ * \param[in]     t           The time
+ * \returns the value of the pull coordinate.
+ */
+double get_pull_coord_value(pull_t* pull, int coordIndex, const t_pbc& pbc, double t);
+
+/*! \brief Get the value for pull coord coord_ind.
+ *
+ * Should only be called when time is not allowed to be used as a transformation
+ * coordinate variable. This condition is (release) asserted upon.
+ *
+ * \param[in,out] pull        The pull struct.
+ * \param[in]     coordIndex  Index of the pull coordinate in the list of coordinates
+ * \param[in]     pbc         Information structure about periodicity.
  * \returns the value of the pull coordinate.
  */
 double get_pull_coord_value(pull_t* pull, int coordIndex, const t_pbc& pbc);

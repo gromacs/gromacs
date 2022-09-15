@@ -1810,15 +1810,16 @@ pull-coord2-vec, pull-coord2-k, and so on.
    .. mdp-value:: transformation
 
       Transforms other pull coordinates using a mathematical expression defined by :mdp:`pull-coord1-expression`.
-      Pull coordinates of lower indices can be used as variables to this pull coordinate.
-      Thus, pull transformation coordinates should have a higher pull coordinate index
-      than all pull coordinates they transform.
+      Pull coordinates of lower indices, and time, can be used as variables to
+      this pull coordinate. Thus, pull transformation coordinates should have
+      a higher pull coordinate index than all pull coordinates they transform.
 
 .. mdp:: pull-coord1-expression
 
    Mathematical expression to transform pull coordinates of lower indices to a new one.
    The pull coordinates are referred to as variables in the equation so that
    pull-coord1's value becomes 'x1', pull-coord2 value becomes 'x2' etc.
+   Time can also be used a variable, becoming 't'.
    The mathematical expression are evaluated using muParser.
    Only relevant if :mdp:`pull-coord1-geometry` is set to :mdp-value:`transformation`.
 
@@ -1924,7 +1925,8 @@ AWH adaptive biasing
       multidimensional and is defined by mapping each dimension to a pull coordinate index.
       This is only allowed if :mdp-value:`pull-coord1-type=external-potential` and
       :mdp:`pull-coord1-potential-provider` = ``awh`` for the concerned pull coordinate
-      indices. Pull geometry 'direction-periodic' is not supported by AWH.
+      indices. Pull geometry 'direction-periodic' and transformation
+      coordinates that depend on time are not supported by AWH.
 
 .. mdp:: awh-potential
 
