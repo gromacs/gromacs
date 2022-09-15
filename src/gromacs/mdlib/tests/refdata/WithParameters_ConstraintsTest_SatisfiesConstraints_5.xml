@@ -27,25 +27,25 @@
       <Real Name="ZZ">0</Real>
     </Atom>
     <Atom>
-      <Real Name="XX">3.3654542</Real>
+      <Real Name="XX">3.3725662719306713</Real>
       <Real Name="YY">4.3654542</Real>
-      <Real Name="ZZ">2.3919024</Real>
+      <Real Name="ZZ">2.3996890359335241</Real>
     </Atom>
     <Atom>
-      <Real Name="XX">-1.7939267</Real>
-      <Real Name="YY">-1.7939267</Real>
-      <Real Name="ZZ">-0.79392672</Real>
+      <Real Name="XX">-1.7997667769501431</Real>
+      <Real Name="YY">-1.7997667769501431</Real>
+      <Real Name="ZZ">-0.79976677695014309</Real>
     </Atom>
   </Sequence>
   <VirialScaled>
-    <Real Name="XX">0.0041404041</Real>
-    <Real Name="XY">0.0041404041</Real>
-    <Real Name="XZ">0.0033143177</Real>
-    <Real Name="YX">0.0041404041</Real>
-    <Real Name="YY">0.0041404041</Real>
-    <Real Name="YZ">0.0033143177</Real>
-    <Real Name="ZX">0.0033143177</Real>
-    <Real Name="ZY">0.0033143177</Real>
-    <Real Name="ZZ">0.0033143177</Real>
+    <Real Name="XX">0.0041506203750850028</Real>
+    <Real Name="XY">0.0041506203750850028</Real>
+    <Real Name="XZ">0.0033251066660822731</Real>
+    <Real Name="YX">0.0041506203750850028</Real>
+    <Real Name="YY">0.0041506203750850028</Real>
+    <Real Name="YZ">0.0033251066660822731</Real>
+    <Real Name="ZX">0.0033251066660822731</Real>
+    <Real Name="ZY">0.0033251066660822731</Real>
+    <Real Name="ZZ">0.0033251066660822731</Real>
   </VirialScaled>
 </ReferenceData>

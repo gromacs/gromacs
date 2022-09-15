@@ -648,30 +648,9 @@ TEST_P(ConstraintsTest, SatisfiesConstraints)
                                  constraintsTestSystem.lincslincsExpansionOrder,
                                  constraintsTestSystem.lincsWarnAngle);
 
-    float maxX = 0.0F;
-    float maxV = 0.0F;
-    for (int i = 0; i < constraintsTestSystem.numAtoms; i++)
-    {
-        for (int d = 0; d < DIM; d++)
-        {
-            maxX = fmax(fabs(constraintsTestSystem.x[i][d]), maxX);
-            maxV = fmax(fabs(constraintsTestSystem.v[i][d]), maxV);
-        }
-    }
-
-    float maxVirialScaled = 0.0F;
-    for (int d1 = 0; d1 < DIM; d1++)
-    {
-        for (int d2 = 0; d2 < DIM; d2++)
-        {
-            maxVirialScaled = fmax(fabs(testData.virialScaled_[d1][d2]), maxVirialScaled);
-        }
-    }
-
-    FloatingPointTolerance positionsTolerance = relativeToleranceAsFloatingPoint(maxX, 0.002F);
-    FloatingPointTolerance velocityTolerance  = relativeToleranceAsFloatingPoint(maxV, 0.002F);
-    FloatingPointTolerance virialTolerance = relativeToleranceAsFloatingPoint(maxVirialScaled, 0.002F);
-    FloatingPointTolerance lengthTolerance = relativeToleranceAsFloatingPoint(0.1, 0.002F);
+    FloatingPointTolerance positionsTolerance = absoluteTolerance(0.001F);
+    FloatingPointTolerance velocityTolerance  = absoluteTolerance(0.02F);
+    FloatingPointTolerance lengthTolerance    = relativeToleranceAsFloatingPoint(0.1, 0.002F);
 
     // Cycle through all available runners
     for (const auto& runner : getRunners())
@@ -696,6 +675,18 @@ TEST_P(ConstraintsTest, SatisfiesConstraints)
         checkConstrainsDirection(testData, pbc);
         checkCOMCoordinates(positionsTolerance, testData);
         checkCOMVelocity(velocityTolerance, testData);
+
+        float virialTrace = 0.0F;
+        for (int d = 0; d < DIM; d++)
+        {
+            virialTrace += testData.virialScaled_[d][d];
+        }
+
+        // The virial tolerance factor can be:
+        // LINCS iter=2, order=4:  0.002
+        // LINCS iter=1, order=4:  0.02
+        // SHAKE tolerance=0.0001: 0.2
+        FloatingPointTolerance virialTolerance = absoluteTolerance(fabs(virialTrace) / 3 * 0.02F);
 
         checker_.setDefaultTolerance(virialTolerance);
         checkVirialTensor(testData);

@@ -36,7 +36,6 @@
         <String Name="Name">COM Pull En.</String>
         <String Name="Units">kJ/mol</String>
       </EnergyTerm>
-
       <EnergyTerm>
         <String Name="Name">Potential</String>
         <String Name="Units">kJ/mol</String>

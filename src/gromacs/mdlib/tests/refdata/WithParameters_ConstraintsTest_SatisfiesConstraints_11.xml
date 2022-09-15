@@ -34,7 +34,7 @@
     <Atom>
       <Real Name="XX">-13.211565</Real>
       <Real Name="YY">14.089125</Real>
-      <Real Name="ZZ">2.1224403</Real>
+      <Real Name="ZZ">2.1378530836833995</Real>
     </Atom>
   </Sequence>
   <VirialScaled>
@@ -46,6 +46,6 @@
     <Real Name="YZ">-0.00092554104</Real>
     <Real Name="ZX">0.0010049095</Real>
     <Real Name="ZY">-0.00092554104</Real>
-    <Real Name="ZZ">-7.9368474e-05</Real>
+    <Real Name="ZZ">-8.0458363146655482e-05</Real>
   </VirialScaled>
 </ReferenceData>
