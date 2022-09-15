@@ -715,7 +715,7 @@ static void print_header(FILE* fplog, int nrank_pp, int nth_pp, int nrank_pme, i
     }
 
     fprintf(fplog, "\n\n");
-    fprintf(fplog, " Computing:          Num   Num      Call    Wall time         Giga-Cycles\n");
+    fprintf(fplog, " Activity:           Num   Num      Call    Wall time         Giga-Cycles\n");
     fprintf(fplog, "                     Ranks Threads  Count      (s)         total sum    %%\n");
 }
 
@@ -900,7 +900,7 @@ void wallcycle_print(FILE*                            fplog,
 
         if (!validPmeSubcounterIndices.empty())
         {
-            fprintf(fplog, " Breakdown of PME mesh computation\n");
+            fprintf(fplog, " Breakdown of PME mesh activities\n");
             fprintf(fplog, "%s\n", hline);
             for (auto i : validPmeSubcounterIndices)
             {
@@ -920,7 +920,7 @@ void wallcycle_print(FILE*                            fplog,
     // NOLINTNEXTLINE(readability-misleading-indentation)
     if constexpr (sc_useCycleSubcounters)
     {
-        fprintf(fplog, " Breakdown of PP computation\n");
+        fprintf(fplog, " Breakdown of PP activities\n");
         fprintf(fplog, "%s\n", hline);
         for (auto key : keysOf(wc->wcsc))
         {
