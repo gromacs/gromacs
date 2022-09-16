@@ -180,6 +180,11 @@ Utilities
     commands may adjust their behavior slightly depending on feature checks,
     and (at worst) should produce meaningful error messages or exceptions.
 
+    Named features:
+
+    * *mpi_bindings*: C++ extension module was built with :py:mod:`mpi4py` compatibility.
+
+
 Classes
 -------
 

@@ -33,8 +33,22 @@ need to explicitly use :cmake:`Gromacs::libgromacs` or its details.
 Client build system support
 ===========================
 
+|Gromacs| relies heavily on `CMake <https://cmake.org/documentation/>`__
+to configure and manage the build system.
+The |Gromacs| installation directly supports CMake configured client software
+through configuration and "hints" files installed to
+:file:`$GROMACS_ROOT/share/cmake/`.
+
+:command:`gmx --version` (or the appropriate ``gmx$GROMACS_SUFFIX``) includes
+notes on the original build toolchain that may or may not be sufficient for
+configuring the client software build system.
+
 Compiler toolchain
 ------------------
+
+Though not explicitly required, it is highly recommended that client software
+build with a toolchain that closely matches that of the |Gromacs| build to
+avoid binary incompatibilities.
 
 Each |Gromacs| installation (since 2022) provides a CMake "hints" file that
 can be used to initialize your :command:`cmake` cache with the ``-C``
@@ -52,8 +66,38 @@ However, using ``-C path/to/gromacs-hints$GROMACS_SUFFIX.cmake`` in your client
 options so that you have a better chance of building a compatible binary.
 (I.e. it helps :func:`gromacs_check_compiler` succeed.)
 
+MPI support
+-----------
+
+|Gromacs| uses `FindMPI <https://cmake.org/cmake/help/latest/module/FindMPI.html>`__
+(the module that supports CMake ``find_package(MPI ...)``) to locate and
+configure compiler and linker options for MPI support. Client software is
+advised to do the same.
+
+If software support for MPI was detected by |Gromacs| when built, the
+*gromacs-hints* file (see above) will define input variables to help
+``find_package`` locate the same MPI installation.
+
+Caveats
+-------
+
+If |Gromacs| is installed from a package built in a different environment, the
+embedded toolchain information may be inaccurate. This could make the
+:command:`gmx --version` output misleading and the *gromacs-hints* file useless.
+You may encounter spurious warnings when configuring the client build system,
+and the client software may or may not interact properly with the |Gromacs|
+installation.
+
+In a computing environment with multiple toolchains available (such as a
+typical High Performance Computing (HPC) cluster), the toolchain may depend on
+environment variables for consistent behavior. If environment modules were
+used when setting up the |Gromacs| build environment
+(e.g. :command:`module load gcc openmpi/gcc`),
+it may be necessary to load the same environment modules before building the
+client software.
+
 ``gmxapi`` CMake package
-------------------------
+========================
 
 The CMake configuration files installed with |Gromacs| support the
 "Config mode" of CMake
@@ -78,7 +122,7 @@ Each |Gromacs| installation (with :cmake:`GMXAPI` ``ON``) overwrites the
 CMake configuration files for the previously installed gmxapi support.
 
 Imported target
-^^^^^^^^^^^^^^^
+---------------
 
 .. cmake:: Gromacs::gmxapi
 
@@ -89,7 +133,7 @@ Imported target
     (See :cmake:`GMX_DOUBLE` and :cmake:`GMX_MPI`).
 
 ``gromacs`` (and ``gromacs$GROMACS_SUFFIX`` packages)
------------------------------------------------------
+=====================================================
 
 The CMake machinery to support ``find_package(GROMACS)`` has two parts:
 a ``FindGROMACS.cmake`` find module (found in
@@ -119,7 +163,7 @@ names. Otherwise, you must use the exact package name that you are looking for.
 E.g. ``find_package(gromacs_d)``.
 
 Imported targets
-^^^^^^^^^^^^^^^^
+----------------
 
 .. cmake:: Gromacs::libgromacs
 
@@ -136,7 +180,7 @@ Imported targets
     in your :file:`CMakeLists.txt`
 
 Input options
-^^^^^^^^^^^^^
+-------------
 
 Input options for influencing what to find
 
@@ -170,7 +214,7 @@ Input options for influencing what to find
     done by ``GMXRC``.
 
 Output variables
-^^^^^^^^^^^^^^^^
+----------------
 
 Output variables that specify how the found ``libgromacs`` and header
 should be used:
@@ -205,7 +249,7 @@ should be used:
     Required compiler flags.
 
 Macros/functions
-^^^^^^^^^^^^^^^^
+----------------
 
 Declared macros/functions that can be used for checking for correctness
 of some settings:

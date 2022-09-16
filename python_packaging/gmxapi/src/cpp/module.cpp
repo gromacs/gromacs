@@ -35,6 +35,9 @@
 /*! \internal \file
  * \brief Exports Python bindings for gmxapi._gmxapi module.
  *
+ * Defines the entry point for an importable Python extension module
+ * (in accordance with Python C API), using the pybind11 template headers.
+ *
  * \author M. Eric Irrgang <ericirrgang@gmail.com>
  *
  * \ingroup module_python
@@ -50,6 +53,7 @@
 #include "gmxapi/version.h"
 
 #include "gmxpy_exceptions.h"
+#include "mpi_bindings.h"
 
 namespace py = pybind11;
 
@@ -100,6 +104,10 @@ PYBIND11_MODULE(_gmxapi, m)
     py::class_<::gmxapi::Status> gmx_status(m, "Status", "Holds status for API operations.");
 
     // Get bindings exported by the various components.
+    // Additional exports may be conditionally added within this export functions
+    // based on implementations chosen by CMake logic. (E.g. MPI bindings or features
+    // requiring specific GROMACS versions)
+    export_mpi_bindings(m, baseException);
     export_context(m);
     export_system(m);
     export_tprfile(m);

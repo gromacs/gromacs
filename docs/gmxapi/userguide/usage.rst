@@ -54,6 +54,8 @@ the intended Python interpreter since new process environments are being created
 
     mpiexec -n 2 `which python` -m mpi4py myscript.py
 
+.. todo:: update the following with :issue:`4423` and :issue:`4422`
+
 *gmxapi* 0.1 has limited parallelism, but future versions will include seamless
 acceleration as integration improves with the GROMACS library and computing
 environment runtime resources.
@@ -135,6 +137,8 @@ To run a batch of simulations, just pass an array of inputs.::
 
 Make sure to launch the script in an MPI environment with a sufficient number
 of ranks to allow one rank per simulation.
+
+.. todo:: update with :issue:`4422`
 
 For *gmxapi* 0.1, we recommend configuring the GROMACS build with
 ``GMX_THREAD_MPI=ON`` and allowing one rank per node in order to allow each

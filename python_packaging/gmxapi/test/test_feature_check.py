@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright 2019- The GROMACS Authors
+# Copyright 2022- The GROMACS Authors
 # and the project initiators Erik Lindahl, Berk Hess and David van der Spoel.
 # Consult the AUTHORS/COPYING files and https://www.gromacs.org for details.
 #
@@ -62,3 +62,18 @@ def test_feature_check():
         assert 'gmxapi_level' in config()
         assert parse(config()['gmxapi_level']) >= parse('0.2')
     assert not core.has_feature('spam')
+
+
+@pytest.mark.skipif(
+    not core.has_feature('mpi_bindings'),
+    reason="Requires MPI bindings through mpi4py at package build time.")
+@pytest.mark.withmpi_only
+@pytest.mark.usefixtures('cleandir')
+def test_mpi_bindings():
+    from mpi4py import MPI
+
+    rank_number = MPI.COMM_WORLD.Get_rank()
+    comm_size = MPI.COMM_WORLD.Get_size()
+
+    gmxapi_rank, gmxapi_size = core.mpi_report(MPI.COMM_WORLD)
+    assert (gmxapi_rank, gmxapi_size) == (rank_number, comm_size)

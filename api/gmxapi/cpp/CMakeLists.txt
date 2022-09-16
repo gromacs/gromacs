@@ -108,6 +108,10 @@ install(TARGETS gmxapi
 install(EXPORT gmxapi
         NAMESPACE Gromacs::
         DESTINATION share/cmake/gmxapi/
+        # If we use components for clients to ask for an MPI-aware version,
+        # we might want to export the MPI-related details they need to help
+        # with compatibility.
+        # EXPORT_LINK_INTERFACE_LIBRARIES
         )
 add_library(Gromacs::gmxapi ALIAS gmxapi )
 

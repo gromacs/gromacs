@@ -53,12 +53,10 @@
  * functionality.
  *
  * Client software should use the CMake infrastructure to ensure a compatible
- * MPI implementation.
+ * MPI implementation. Use `find_package(MPI COMPONENTS ...)` and
+ * `target_link_libraries(... MPI::CXX)`
  *
  * Use of an incompatible MPI implementation will produce linking errors.
- *
- * \todo With resolution of #3672, we can include additional checks.
- *
  */
 
 namespace gmxapi

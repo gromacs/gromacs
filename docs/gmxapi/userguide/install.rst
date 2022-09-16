@@ -181,11 +181,6 @@ before installing the :py:mod:`gmxapi` package.
 
     pip install -r python_packaging/gmxapi/requirements.txt
 
-If building documentation or running tests,
-:command:`pip install -r python_packaging/requirements-docs.txt` or
-:command:`pip install -r python_packaging/requirements-test.txt`,
-respectively, or see below.
-
 Documentation build requirements
 --------------------------------
 
@@ -202,10 +197,10 @@ Acquire the GROMACS sources with :command:`git` or by downloading an archive, as
 
 Testing is performed with `pytest <https://docs.pytest.org/en/latest/>`_.
 
-:file:`python_packaging/requirements-test.txt` lists additional requirements for testing.
+:file:`python_packaging/gmxapi/requirements.txt` lists additional requirements for testing.
 With pip_::
 
-    pip install -r python_packaging/requirements-test.txt
+    pip install -r python_packaging/gmxapi/requirements.txt
 
 To test the full functionality also requires an MPI parallel environment.
 You will need the mpi4py_ Python package and an MPI launcher
@@ -218,6 +213,7 @@ MPI requirements
 ----------------
 
 For the ensemble simulations features, you will need an MPI installation.
+
 On an HPC system, this means you will probably have to use :command:`module load`
 to load a compatible set of MPI tools and compilers.
 Check your HPC documentation or try :command:`module avail` to look for an
@@ -227,6 +223,15 @@ This may be as simple as::
     module load gcc
     module load mpicc
 
+If you are using a |Gromacs| installation that is already available through
+``module load``, try to find a Python installation with the ``mpi4py`` package
+that is also available through ``module load``. The *module* system will
+generally enforce toolchain compatibility between the loaded modules. If you
+``module load`` mpi4py or a Python installation with mpi4py, you will probably
+want to use this version of the package in your venv. (See :ref:`gmxapi venv`)
+If you ``module load`` an MPI-enabled |Gromacs| installation, ``gmxapi`` will
+try to check ``mpi4py`` for compatibility.
+
 Note that the compilers loaded might not be the first compilers discovered
 automatically by the build tools we will use below,
 so you may have to specify compilers on the command line for consistency.
@@ -234,21 +239,26 @@ It may be necessary to require that GROMACS, gmxapi,
 and the sample code are built with the same compiler(s).
 
 Note that strange errors have been known to occur when mpi4py_ is built with
-different a different tool set than has been used to build Python and gmxapi.
+a different tool set than has been used to build Python and gmxapi.
 If the default compilers on your system are not sufficient for GROMACS or gmxapi,
 you may need to build, e.g., OpenMPI or MPICH, and/or build mpi4py_ with a
 specific MPI compiler wrapper. This can complicate building in environments such
 as Conda_. You should be able to confirm that your MPI compiler wrapper is consistent
-with your GROMACS tool chain by comapring the output of :command:`mpicc --version`
+with your GROMACS tool chain by comparing the output of :command:`mpicc --version`
 with the compiler information reported by :command:`gmx --version`.
 
-Set the MPICC environment variable to the MPI compiler wrapper and forcibly
+Set the ``MPICC`` environment variable to the MPI compiler wrapper and forcibly
 reinstall mpi4py_::
 
     export MPICC=`which mpicc`
     pip install --no-cache-dir --upgrade --no-binary ":all:" --force-reinstall mpi4py
 
 If you have a different MPI C compiler wrapper, substitute it for :command:`mpicc` above.
+
+While ``gmxapi`` is configuring its build system during installation, it will
+try to confirm the compatibility of the ``mpi4py`` toolchain with that of the
+|Gromacs| installation. If they appear incompatible, you should see a ``CMake``
+message that includes a guess at what you might try using for ``MPICC``.
 
 .. _installation:
 
@@ -324,9 +334,32 @@ with the command :command:`python` or :command:`python3`. Use :command:`python -
 :command:`python3 --version` to figure out which you need to use. The following assumes
 the Python 3 interpreter is accessed with :command:`python3`.
 
+.. _system-site-packages:
+
+.. admonition:: --system-site-packages
+    :class: tip
+
+    It can be tricky to properly or optimally build MPI enabled software in
+    computing clusters, and administrators often provide prebuilt packages like
+    ``mpi4py``. If your computing environment has multiple Python installations,
+    try to choose one that already includes ``mpi4py``. When you are using a
+    Python installation that provides ``mpi4py``, generally, you should be sure
+    to use the existing ``mpi4py`` installation in your new virtual environment
+    by creating the ``venv`` with the ``--system-site-packages`` option.
+
+    In personal computing environments (laptops and workstations), it is common to
+    have multiple Python installations, and it can be hard to keep packages in the
+    different installations from conflicting with each other. Unless you know that
+    you want to inherit the ``mpi4py`` package from the system installation, it is
+    generally cleaner *not* to inherit the system site-packages.
+
 Create a Python 3 virtual environment::
 
     python3 -m venv $HOME/myvenv
+
+*or* (see note)::
+
+    python3 -m venv --system-site-packages $HOME/myvenv
 
 Activate the virtual environment. Your shell prompt will probably be updated with the name of the environment you
 created to make it more obvious.
@@ -363,8 +396,10 @@ they are installed and up to date before proceeding.
     pip install --upgrade cmake pybind11
 
 For MPI, we use mpi4py_.
-Make sure it is using the same MPI installation that we are building
-GROMACS against and building with compatible compilers.
+**If you did not inherit mpi4py from system site-packages**
+(see :ref:`above <system-site-packages>`),
+make sure to install it using the same MPI installation that we are building
+GROMACS against, and build with compatible compilers.
 
 ::
 
@@ -549,13 +584,7 @@ will not be installed automatically. You can update your Python environment
 (before configuring with CMake) using the :file:`requirements.txt` files provided
 in the :file:`python_packaging/` directory of the repository. Example::
 
-    pip install -r python_packaging/requirements-docs.txt
-
-or
-
-::
-
-    pip install -r python_packaging/requirements-test.txt
+    pip install -r python_packaging/gmxapi/requirements.txt
 
 Sometimes the build environment can choose a different Python interpreter than
 the one you intended.

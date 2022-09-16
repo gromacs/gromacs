@@ -69,6 +69,9 @@ if(POLICY CMP0074) #3.12
     # Allow gmxapi_ROOT hint.
     cmake_policy(SET CMP0074 NEW)
 endif()
+if (POLICY CMP0139) #3.24
+    cmake_policy(SET CMP0139 NEW)
+endif ()
 
 find_package(Python3 3.7 COMPONENTS Interpreter Development)
 find_package(pybind11 2.6 QUIET CONFIG)
@@ -144,15 +147,6 @@ if (NOT TARGET Gromacs::gmxapi)
     message(FATAL_ERROR "Cannot build Python package without GROMACS gmxapi support.")
 endif ()
 
-# TODO(#3279): Provide user hints for mpi4py installation.
-# Note that neither the Python package nor the Gromacs::gmxapi CMake target are
-# built with MPI in any case, but they _should_ be built with a C++ compiler
-# that is compatible with the available MPI compiler wrappers, and technically
-# _that_ is what we want to help the user identify when installing mpi4py, even
-# if libgromacs is not built with MPI support either.
-# For convenience, it is fine if libgmxapi and _gmxapi are built with the mpi
-# compiler wrapper.
-
 pybind11_add_module(_gmxapi
                     src/cpp/launch_0_2_1.cpp
                     src/cpp/module.cpp
@@ -185,12 +179,15 @@ target_include_directories(_gmxapi PRIVATE
 # RPATH management: make sure build artifacts can find GROMACS library.
 set_target_properties(_gmxapi PROPERTIES SKIP_BUILD_RPATH FALSE)
 
+#
 # Get details of GROMACS installation needed by the Python package at run time.
+#
 
 # Get the MPI capability.
 get_target_property(_gmx_mpi Gromacs::gmxapi MPI)
 if (${_gmx_mpi} STREQUAL "library")
     set(_gmx_mpi_type "\"library\"")
+    set(HAS_GROMACS_MPI TRUE)
 elseif(${_gmx_mpi} STREQUAL "tmpi")
     set(_gmx_mpi_type "\"tmpi\"")
 elseif(${_gmx_mpi} STREQUAL "none")
@@ -229,10 +226,134 @@ unset(_gmx_bindir)
 unset(_gmx_mpi_type)
 unset(_gmx_double)
 
+# Detect mpi4py. Try to confirm compatibility of linked libraries.
+# For MPI-enabled GROMACS, enable mpi4py.h and bindings for
+# a `createContext(const ResourceAssignment& resources)` version.
+execute_process(
+    COMMAND "${Python3_EXECUTABLE}" -c
+        "import mpi4py; print(mpi4py.get_include());"
+    RESULT_VARIABLE _mpi4py_result
+    OUTPUT_VARIABLE _mpi4py_include_path
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+)
+if (_mpi4py_result EQUAL 0)
+    # NOTE: Even if GROMACS build does not support MPI, we can still accept offers
+    # of communicators. In a more advanced case, we could inspect the cgroups or
+    # hwloc details to determine how many cores to make available for multithreading,
+    # even though we won't be using the MPI facilities of the offered communicator.
+    # However, we don't want to refuse to compile, completely, if mpi4py was built
+    # with a toolchain that is incompatible with the GROMACS toolchain.
+    message(STATUS "mpi4py include path: ${_mpi4py_include_path}")
+
+    execute_process(
+        COMMAND "${Python3_EXECUTABLE}" -c
+            "import mpi4py; print(mpi4py.get_config()['mpicc'])"
+        RESULT_VARIABLE _mpi4py_result
+        OUTPUT_VARIABLE _mpi4py_mpicc
+        OUTPUT_STRIP_TRAILING_WHITESPACE
+    )
+    # TODO: If not found, try mpi_dir
+    execute_process(
+        COMMAND "${Python3_EXECUTABLE}" -c
+        "import mpi4py; print(mpi4py.get_config()['mpicxx'])"
+        RESULT_VARIABLE _mpi4py_result
+        OUTPUT_VARIABLE _mpi4py_mpicxx
+        OUTPUT_STRIP_TRAILING_WHITESPACE
+    )
+    if ((NOT _mpi4py_mpicc OR NOT EXISTS "${_mpi4py_mpicc}") AND (NOT _mpi4py_mpicxx OR NOT EXISTS "${_mpi4py_mpicxx}"))
+        execute_process(
+            COMMAND "${Python3_EXECUTABLE}" -c
+            "import mpi4py; print(mpi4py.get_config()['mpi_dir'])"
+            RESULT_VARIABLE _mpi4py_result
+            OUTPUT_VARIABLE _mpi4py_mpi_dir
+            OUTPUT_STRIP_TRAILING_WHITESPACE
+        )
+    endif ()
+    # NOTE: The reported compiler wrappers may be falsely reported or unavailable
+    # if mpi4py was built in a different environment. We will rely on checks in
+    # FindMPI.cmake to confirm tool chain compatibility, later.
+
+    if (GMXAPI_MASTER_PROJECT)
+        if (NOT MPI_C_COMPILER AND NOT MPI_CXX_COMPILER)
+            if (_mpi4py_mpicc)
+                set(MPI_C_COMPILER ${_mpi4py_mpicc})
+            endif ()
+
+            if (_mpi4py_mpicxx)
+                set(MPI_CXX_COMPILER ${_mpi4py_mpicxx})
+            endif ()
+
+            if (_mpi4py_mpi_dir)
+                if (NOT MPI_HOME)
+                    set(MPI_HOME ${_mpi4py_mpi_dir})
+                endif ()
+                if (NOT MPI_ROOT)
+                    set(MPI_ROOT ${_mpi4py_mpi_dir})
+                endif ()
+            endif ()
+        endif ()
+        find_package(MPI COMPONENTS CXX)
+    else()
+        # Building as part of GROMACS build tree.
+        if (_mpi4py_mpicxx AND NOT _mpi4py_compiler_warned)
+            if (CMAKE_VERSION VERSION_GREATER_EQUAL "3.19")
+                file(REAL_PATH ${_mpi4py_mpicxx} _mpi4py_mpicxx)
+                file(REAL_PATH ${MPI_CXX_COMPILER} MPI_CXX_COMPILER)
+            endif ()
+
+            set(_warning "mpi4py reports building with ${_mpi4py_mpicxx}, but MPI_CXX_COMPILER=${MPI_CXX_COMPILER}")
+            if (CMAKE_VERSION VERSION_GREATER_EQUAL "3.24")
+                if (NOT ("${_mpi4py_mpicxx}" PATH_EQUAL "${MPI_CXX_COMPILER}"))
+                    message(WARNING "${_warning}")
+                    set(_mpi4py_compiler_warned TRUE CACHE BOOL "Suppress warning on subsequent runs.")
+                endif ()
+            else()
+                if (NOT ("${_mpi4py_mpicxx}" STREQUAL "${MPI_CXX_COMPILER}"))
+                    message(WARNING "${_warning}")
+                    set(_mpi4py_compiler_warned TRUE CACHE BOOL "Suppress warning on subsequent runs.")
+                endif ()
+            endif ()
+            unset(_warning)
+        endif ()
+    endif ()
+
+    # TODO: Try to confirm `mpi4py.MPI.Get_library_version()` and `mpi4py.MPI.Get_library_version()`
+    #       is consistent with the version in use by GROMACS. Sample output of Get_library_version():
+    #       'Open MPI v4.1.4, package: Open MPI brew@Monterey Distribution, ident: 4.1.4, repo rev: v4.1.4, May 26, 2022\x00'
+    # Note that different implementations have different C API calls to support this query.
+
+    set(HAS_MPI4PY TRUE)
+else()
+    if (HAS_GROMACS_MPI)
+        # Note that the Gromacs::gmxapi CMake target is not built with MPI in any case,
+        # but it _should_ be built with a C++ compiler that is compatible with the available
+        # MPI compiler wrappers.
+        # This is what we want to help the user identify when installing mpi4py,
+        # even if libgromacs is not built with MPI support either.
+        # For convenience, it is fine if libgmxapi and _gmxapi are built with the mpi
+        # compiler wrapper.
+        # TODO(#4422): Use library features to detect MPI context if mpi4py is not in use, and adjust
+        #              message severity.
+        message(FATAL_ERROR
+            "gmxapi cannot safely use MPI-enabled GROMACS without MPI Python bindings. "
+            "Please install mpi4py with a compatible toolchain, then try again to install this package.\n"
+            "GROMACS appears to have been configured with `-DMPI_CXX_COMPILER=${MPI_CXX_COMPILER}` "
+            "so you might try:\n  MPICC=${MPI_C_COMPILER} pip install mpi4py")
+    endif ()
+endif()
+
+target_link_libraries(_gmxapi PRIVATE Gromacs::gmxapi)
+
+# Enable MPI bindings, to the extent allowed by the Python and GROMACS environments.
+if (HAS_MPI4PY)
+    target_include_directories(_gmxapi PRIVATE ${_mpi4py_include_path})
+    target_sources(_gmxapi PRIVATE src/cpp/mpi_bindings.cpp)
+    target_link_libraries(_gmxapi PRIVATE MPI::MPI_CXX)
+endif()
+
 if (GMXAPI_MASTER_PROJECT)
     set_target_properties(_gmxapi PROPERTIES BUILD_WITH_INSTALL_RPATH TRUE)
     set_target_properties(_gmxapi PROPERTIES INSTALL_RPATH_USE_LINK_PATH TRUE)
-    target_link_libraries(_gmxapi PRIVATE Gromacs::gmxapi)
     # The Python setup.py sets CMAKE_LIBRARY_OUTPUT_DIRECTORY and will be looking for generated files there.
     file(COPY ${CMAKE_CURRENT_BINARY_DIR}/src/gmxapi/gmxconfig.json
          DESTINATION ${CMAKE_LIBRARY_OUTPUT_DIRECTORY})
@@ -256,7 +377,6 @@ else()
 
     # The Python module is being built against GROMACS in its build tree, so we will not install.
     set_target_properties(_gmxapi PROPERTIES BUILD_WITH_INSTALL_RPATH FALSE)
-    target_link_libraries(_gmxapi PRIVATE Gromacs::gmxapi)
     # However, we can still produce an importable package for documentation builds and
     # basic testing in ${CMAKE_CURRENT_BINARY_DIR}/gmxapi_staging
     set_target_properties(_gmxapi PROPERTIES
@@ -280,7 +400,7 @@ endif()
 
 # When building as part of GROMACS umbrella project, add a testing target
 # to the `check` target. Normal usage is to first install the Python package,
-# then run `pytest` on the `tests` directory. Refer to gmxapi package documentation.
+# then run `pytest` on the `test` directory. Refer to gmxapi package documentation.
 if(NOT GMXAPI_MASTER_PROJECT)
 	if (BUILD_TESTING)
 		add_subdirectory(test)
