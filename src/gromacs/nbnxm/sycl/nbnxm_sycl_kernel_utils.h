@@ -47,16 +47,16 @@
 namespace Nbnxm
 {
 
-#ifndef GMX_NBNXN_PRUNE_KERNEL_J4_CONCURRENCY
-//! \brief Default for the prune kernel's j4 processing concurrency.
-#    define GMX_NBNXN_PRUNE_KERNEL_J4_CONCURRENCY 4
+#ifndef GMX_NBNXN_PRUNE_KERNEL_JPACKED_CONCURRENCY
+//! \brief Default for the prune kernel's jPacked processing concurrency.
+#    define GMX_NBNXN_PRUNE_KERNEL_JPACKED_CONCURRENCY 4
 #endif
 
-/*! \brief Prune kernel's j4 processing concurrency.
+/*! \brief Prune kernel's jPacked processing concurrency.
  *
- *  The \c GMX_NBNXN_PRUNE_KERNEL_J4_CONCURRENCY macro allows compile-time override.
+ *  The \c GMX_NBNXN_PRUNE_KERNEL_JPACKED_CONCURRENCY macro allows compile-time override.
  */
-static constexpr int c_syclPruneKernelJ4Concurrency = GMX_NBNXN_PRUNE_KERNEL_J4_CONCURRENCY;
+static constexpr int c_syclPruneKernelJPackedConcurrency = GMX_NBNXN_PRUNE_KERNEL_JPACKED_CONCURRENCY;
 
 /* Convenience constants */
 /*! \cond */

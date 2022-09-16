@@ -838,14 +838,15 @@ static void print_nblist_statistics(FILE*                   fp,
     for (const nbnxn_sci_t& sci : nbl.sci)
     {
         int nsp = 0;
-        for (int j4 = sci.cjPackedBegin; j4 < sci.cjPackedEnd; j4++)
+        for (int jPacked = sci.cjPackedBegin; jPacked < sci.cjPackedEnd; jPacked++)
         {
             for (int j = 0; j < c_nbnxnGpuJgroupSize; j++)
             {
                 int b = 0;
                 for (int si = 0; si < c_gpuNumClusterPerCell; si++)
                 {
-                    if (nbl.cjPacked.list_[j4].imei[0].imask & (1U << (j * c_gpuNumClusterPerCell + si)))
+                    if (nbl.cjPacked.list_[jPacked].imei[0].imask
+                        & (1U << (j * c_gpuNumClusterPerCell + si)))
                     {
                         b++;
                     }
@@ -2094,9 +2095,9 @@ static void split_sci_entry(NbnxnPairlistGpu* nbl,
 
     const int cjPackedBegin = nbl->sci.back().cjPackedBegin;
     const int cjPackedEnd   = nbl->sci.back().cjPackedEnd;
-    const int j4len         = cjPackedEnd - cjPackedBegin;
+    const int jPackedLen    = cjPackedEnd - cjPackedBegin;
 
-    if (j4len > 1 && j4len * c_gpuNumClusterPerCell * c_nbnxnGpuJgroupSize > nsp_max)
+    if (jPackedLen > 1 && jPackedLen * c_gpuNumClusterPerCell * c_nbnxnGpuJgroupSize > nsp_max)
     {
         /* Modify the last ci entry and process the cjPacked's again */
 
@@ -2158,8 +2159,8 @@ static void closeIEntry(NbnxnPairlistGpu* nbl, int nsp_max_av, gmx_bool progBal,
     /* All content of the new ci entry have already been filled correctly,
      * we only need to, potentially, split or remove the entry when empty.
      */
-    int j4len = sciEntry.numJClusterGroups();
-    if (j4len > 0)
+    int jPackedLen = sciEntry.numJClusterGroups();
+    if (jPackedLen > 0)
     {
         /* We can only have complete blocks of 4 j-entries in a list,
          * so round the count up before closing.
@@ -2584,17 +2585,18 @@ static void print_nblist_sci_cj(FILE* fp, const NbnxnPairlistGpu& nbl)
         fprintf(fp, "ci %4d  shift %2d  ncjPacked %2d\n", sci.sci, sci.shift, sci.numJClusterGroups());
 
         int ncp = 0;
-        for (int j4 = sci.cjPackedBegin; j4 < sci.cjPackedEnd; j4++)
+        for (int jPacked = sci.cjPackedBegin; jPacked < sci.cjPackedEnd; jPacked++)
         {
             for (int j = 0; j < c_nbnxnGpuJgroupSize; j++)
             {
                 fprintf(fp,
                         "  sj %5d  imask %x\n",
-                        nbl.cjPacked.list_[j4].cj[j],
-                        nbl.cjPacked.list_[j4].imei[0].imask);
+                        nbl.cjPacked.list_[jPacked].cj[j],
+                        nbl.cjPacked.list_[jPacked].imei[0].imask);
                 for (int si = 0; si < c_gpuNumClusterPerCell; si++)
                 {
-                    if (nbl.cjPacked.list_[j4].imei[0].imask & (1U << (j * c_gpuNumClusterPerCell + si)))
+                    if (nbl.cjPacked.list_[jPacked].imei[0].imask
+                        & (1U << (j * c_gpuNumClusterPerCell + si)))
                     {
                         ncp++;
                     }
@@ -2657,16 +2659,16 @@ static void combine_nblists(gmx::ArrayRef<const NbnxnPairlistGpu> nbls, NbnxnPai
                 nblc->sci[sci_offset + i].cjPackedEnd += cjPacked_offset;
             }
 
-            for (gmx::index j4 = 0; j4 < nbli.cjPacked.size(); j4++)
+            for (gmx::index jPacked = 0; jPacked < nbli.cjPacked.size(); jPacked++)
             {
-                nblc->cjPacked.list_[cjPacked_offset + j4] = nbli.cjPacked.list_[j4];
-                nblc->cjPacked.list_[cjPacked_offset + j4].imei[0].excl_ind += excl_offset;
-                nblc->cjPacked.list_[cjPacked_offset + j4].imei[1].excl_ind += excl_offset;
+                nblc->cjPacked.list_[cjPacked_offset + jPacked] = nbli.cjPacked.list_[jPacked];
+                nblc->cjPacked.list_[cjPacked_offset + jPacked].imei[0].excl_ind += excl_offset;
+                nblc->cjPacked.list_[cjPacked_offset + jPacked].imei[1].excl_ind += excl_offset;
             }
 
-            for (size_t j4 = 0; j4 < nbli.excl.size(); j4++)
+            for (size_t jPacked = 0; jPacked < nbli.excl.size(); jPacked++)
             {
-                nblc->excl[excl_offset + j4] = nbli.excl[j4];
+                nblc->excl[excl_offset + jPacked] = nbli.excl[jPacked];
             }
         }
         GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR

@@ -625,7 +625,7 @@ void gpu_launch_kernel_pruneonly(NbnxmGpu* nb, const InteractionLocality iloc, c
      *   and j-cluster concurrency, in x, y, and z, respectively.
      * - The 1D block-grid contains as many blocks as super-clusters.
      */
-    int num_threads_z = c_pruneKernelJ4Concurrency;
+    int num_threads_z = c_pruneKernelJPackedConcurrency;
     int nblock        = calc_nb_kernel_nblock(numSciInPart, &nb->deviceContext_->deviceInfo());
     KernelLaunchConfig config;
     config.blockSize[0]     = c_clSize;

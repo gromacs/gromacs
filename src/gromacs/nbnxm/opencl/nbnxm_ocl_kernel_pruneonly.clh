@@ -52,7 +52,7 @@
  * should be revisited.
  *
  */
-#define NTHREAD_Z GMX_NBNXN_PRUNE_KERNEL_J4_CONCURRENCY
+#define NTHREAD_Z GMX_NBNXN_PRUNE_KERNEL_JPACKED_CONCURRENCY
 
 __attribute__((reqd_work_group_size(CL_SIZE, CL_SIZE, NTHREAD_Z)))
 #ifdef HAVE_FRESH_LIST
@@ -66,7 +66,7 @@ nbnxn_kernel_prune_rolling_opencl
          const __global float4* restrict xq,
          const __global float* restrict  shift_vec,
          const __global nbnxn_sci_t* pl_sci,
-         __global nbnxn_cj_packed_t* pl_cj4,
+         __global nbnxn_cj_packed_t* pl_cjPacked,
 #if !defined HAVE_FRESH_LIST
          const
 #endif
@@ -139,9 +139,9 @@ nbnxn_kernel_prune_rolling_opencl
 
     const nbnxn_sci_t nb_sci =
             pl_sci[bidx * numParts + part]; /* my i super-cluster's index = sciOffset + current bidx * numParts + part */
-    const int sci        = nb_sci.sci;           /* super-cluster */
-    const int cij4_start = nb_sci.cjPackedBegin; /* first ...*/
-    const int cij4_end   = nb_sci.cjPackedEnd;   /* and last index of j clusters */
+    const int sci           = nb_sci.sci;           /* super-cluster */
+    const int cjPackedBegin = nb_sci.cjPackedBegin; /* first ...*/
+    const int cjPackedEnd   = nb_sci.cjPackedEnd;   /* and last index of j clusters */
 
     // We may need only a subset of threads active for preloading i-atoms
     // depending on the super-cluster and cluster / thread-block size.
@@ -168,14 +168,14 @@ nbnxn_kernel_prune_rolling_opencl
 
 
     /* loop over the j clusters = seen by any of the atoms in the current super-cluster */
-    for (int j4 = cij4_start + tidxz; j4 < cij4_end; j4 += NTHREAD_Z)
+    for (int jPacked = cjPackedBegin + tidxz; jPacked < cjPackedEnd; jPacked += NTHREAD_Z)
     {
         unsigned int imaskFull = 0, imaskCheck = 0, imaskNew = 0;
 
         if (haveFreshList)
         {
             /* Read the mask from the list transferred from the CPU */
-            imaskFull = pl_cj4[j4].imei[widx].imask;
+            imaskFull = pl_cjPacked[jPacked].imei[widx].imask;
             /* We attempt to prune all pairs present in the original list */
             imaskCheck = imaskFull;
             imaskNew   = 0;
@@ -183,14 +183,14 @@ nbnxn_kernel_prune_rolling_opencl
         else
         {
             /* Read the mask from the "warp-pruned" by rlistOuter mask array */
-            imaskFull = prePrunedImask[j4 * c_nbnxnGpuClusterpairSplit + widx];
+            imaskFull = prePrunedImask[jPacked * c_nbnxnGpuClusterpairSplit + widx];
             /* Read the old rolling pruned mask, use as a base for new */
-            imaskNew = pl_cj4[j4].imei[widx].imask;
+            imaskNew = pl_cjPacked[jPacked].imei[widx].imask;
             /* We only need to check pairs with different mask */
             imaskCheck = (imaskNew ^ imaskFull);
         }
 
-        preloadCj4(&cjs, pl_cj4[j4].cj, tidxi, tidxj, imaskCheck != 0U);
+        preloadCjPacked(&cjs, pl_cjPacked[jPacked].cj, tidxi, tidxj, imaskCheck != 0U);
 
         if (imaskCheck)
         {
@@ -201,7 +201,7 @@ nbnxn_kernel_prune_rolling_opencl
                 {
                     unsigned int mask_ji = (1U << (jm * c_nbnxnGpuNumClusterPerSupercluster));
 
-                    const int cj = loadCj(cjs, pl_cj4[j4].cj, jm, tidxi, tidxj);
+                    const int cj = loadCj(cjs, pl_cjPacked[jPacked].cj, jm, tidxi, tidxj);
                     const int aj = cj * c_clSize + tidxj;
 
                     /* load j atom data */
@@ -247,11 +247,11 @@ nbnxn_kernel_prune_rolling_opencl
 #ifdef HAVE_FRESH_LIST
             {
                 /* copy the list pruned to rlistOuter to a separate buffer */
-                prePrunedImask[j4 * c_nbnxnGpuClusterpairSplit + widx] = imaskFull;
+                prePrunedImask[jPacked * c_nbnxnGpuClusterpairSplit + widx] = imaskFull;
             }
 #endif
             /* update the imask with only the pairs up to rlistInner */
-            pl_cj4[j4].imei[widx].imask = imaskNew;
+            pl_cjPacked[jPacked].imei[widx].imask = imaskNew;
         }
     }
 }

@@ -62,15 +62,15 @@
 #    include "gromacs/gpu_utils/gpuregiontimer_sycl.h"
 #endif
 
-/*! \brief Macro definining default for the prune kernel's j4 processing concurrency.
+/*! \brief Macro definining default for the prune kernel's jPacked processing concurrency.
  *
- *  The GMX_NBNXN_PRUNE_KERNEL_J4_CONCURRENCY macro allows compile-time override with the default value of 4.
+ *  The GMX_NBNXN_PRUNE_KERNEL_JPACKED_CONCURRENCY macro allows compile-time override with the default value of 4.
  */
-#ifndef GMX_NBNXN_PRUNE_KERNEL_J4_CONCURRENCY
-#    define GMX_NBNXN_PRUNE_KERNEL_J4_CONCURRENCY 4
+#ifndef GMX_NBNXN_PRUNE_KERNEL_JPACKED_CONCURRENCY
+#    define GMX_NBNXN_PRUNE_KERNEL_JPACKED_CONCURRENCY 4
 #endif
-//! Default for the prune kernel's j4 processing concurrency.
-static constexpr int c_pruneKernelJ4Concurrency = GMX_NBNXN_PRUNE_KERNEL_J4_CONCURRENCY;
+//! Default for the prune kernel's jPacked processing concurrency.
+static constexpr int c_pruneKernelJPackedConcurrency = GMX_NBNXN_PRUNE_KERNEL_JPACKED_CONCURRENCY;
 
 /*! \internal
  * \brief Staging area for temporary data downloaded from the GPU.

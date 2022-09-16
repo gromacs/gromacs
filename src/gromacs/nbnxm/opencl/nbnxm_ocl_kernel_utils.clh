@@ -203,9 +203,9 @@ typedef struct
     int sci;
     //! Shift vector index plus possible flags
     int shift;
-    //! Start index into cj4
+    //! Start index into cjPacked
     int cjPackedBegin;
-    //! End index into cj4
+    //! End index into cjPacked
     int cjPackedEnd;
 } nbnxn_sci_t;
 
@@ -239,11 +239,11 @@ __constant const unsigned supercl_interaction_mask = ((1U << c_nbnxnGpuNumCluste
 /*! Minimum single precision threshold for r^2 to avoid r^-12 overflow. */
 __constant const float c_nbnxnMinDistanceSquared = NBNXM_MIN_DISTANCE_SQUARED_VALUE_FLOAT;
 
-gmx_opencl_inline void preloadCj4Generic(__local int*        sm_cjPreload,
-                                         const __global int* gm_cj,
-                                         int                 tidxi,
-                                         int                 tidxj,
-                                         bool gmx_unused     iMaskCond)
+gmx_opencl_inline void preloadCjPackedGeneric(__local int*        sm_cjPreload,
+                                              const __global int* gm_cj,
+                                              int                 tidxi,
+                                              int                 tidxj,
+                                              bool gmx_unused     iMaskCond)
 {
     /* Pre-load cj into shared memory */
 #    if defined _AMD_SOURCE_ // TODO: fix by setting c_nbnxnGpuClusterpairSplit properly
@@ -264,7 +264,7 @@ gmx_opencl_inline void preloadCj4Generic(__local int*        sm_cjPreload,
 
 
 #    if USE_SUBGROUP_PRELOAD
-gmx_opencl_inline int preloadCj4Subgroup(const __global int* gm_cj)
+gmx_opencl_inline int preloadCjPackedSubgroup(const __global int* gm_cj)
 {
     // loads subgroup-size # of elements (8) instead of the 4 required
     // equivalent to *cjs = *gm_cj
@@ -278,7 +278,7 @@ typedef size_t CjType;
 typedef __local int* CjType;
 #    endif
 
-/*! \brief Preload cj4
+/*! \brief Preload cjPacked
  *
  * - For AMD we load once for a wavefront of 64 threads (on 4 threads * NTHREAD_Z)
  * - For NVIDIA once per warp (on 2x4 threads * NTHREAD_Z)
@@ -287,16 +287,16 @@ typedef __local int* CjType;
  * It is the caller's responsibility to make sure that data is consumed only when
  * it's ready. This function does not call a barrier.
  */
-gmx_opencl_inline void preloadCj4(CjType gmx_unused* cjs,
-                                  const __global int gmx_unused* gm_cj,
-                                  int gmx_unused                 tidxi,
-                                  int gmx_unused                 tidxj,
-                                  bool gmx_unused                iMaskCond)
+gmx_opencl_inline void preloadCjPacked(CjType gmx_unused* cjs,
+                                       const __global int gmx_unused* gm_cj,
+                                       int gmx_unused                 tidxi,
+                                       int gmx_unused                 tidxj,
+                                       bool gmx_unused                iMaskCond)
 {
 #    if USE_SUBGROUP_PRELOAD
-    *cjs = preloadCj4Subgroup(gm_cj);
+    *cjs = preloadCjPackedSubgroup(gm_cj);
 #    elif USE_CJ_PREFETCH
-    preloadCj4Generic(*cjs, gm_cj, tidxi, tidxj, iMaskCond);
+    preloadCjPackedGeneric(*cjs, gm_cj, tidxi, tidxj, iMaskCond);
 #    else
     // nothing to do
 #    endif
@@ -317,7 +317,7 @@ gmx_opencl_inline int loadCjPreload(__local int* sm_cjPreload, int jm, int gmx_u
 
 /* \brief Load a cj given a jm index.
  *
- * If cj4 preloading is enabled, it loads from the local memory, otherwise from global.
+ * If cjPacked preloading is enabled, it loads from the local memory, otherwise from global.
  */
 gmx_opencl_inline int
 loadCj(CjType cjs, const __global int gmx_unused* gm_cj, int jm, int gmx_unused tidxi, int gmx_unused tidxj)

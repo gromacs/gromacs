@@ -83,7 +83,7 @@
 
     Each thread calculates an i force-component taking one pair of i-j atoms.
 
-   TODO: implement 128 threads/wavefront by porting over the NTHREAD_Z/j4 loop
+   TODO: implement 128 threads/wavefront by porting over the NTHREAD_Z/jPacked loop
    "horizontal splitting" over threads.
  */
 
@@ -132,7 +132,7 @@ __kernel void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_opencl)
 #ifndef PRUNE_NBL
                 const
 #endif
-                __global nbnxn_cj_packed_t* pl_cj4,       /* OUT / IN */
+                __global nbnxn_cj_packed_t* pl_cjPacked,  /* OUT / IN */
                 const __global nbnxn_excl_t* excl,        /* IN  */
                 int                          bCalcFshift, /* IN  */
                 __local float4* xqib                      /* Pointer to dyn alloc'ed shmem */
@@ -218,10 +218,10 @@ __kernel void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_opencl)
 #endif
 #undef LOCAL_OFFSET
 
-    const nbnxn_sci_t nb_sci     = pl_sci[bidx]; /* my i super-cluster's index = current bidx */
-    const int         sci        = nb_sci.sci;   /* super-cluster */
-    const int         cij4_start = nb_sci.cjPackedBegin; /* first ...*/
-    const int         cij4_end   = nb_sci.cjPackedEnd;   /* and last index of j clusters */
+    const nbnxn_sci_t nb_sci        = pl_sci[bidx]; /* my i super-cluster's index = current bidx */
+    const int         sci           = nb_sci.sci;   /* super-cluster */
+    const int         cjPackedBegin = nb_sci.cjPackedBegin; /* first ...*/
+    const int         cjPackedEnd   = nb_sci.cjPackedEnd;   /* and last index of j clusters */
 
     // We may need only a subset of threads active for preloading i-atoms
     // depending on the super-cluster and cluster / thread-block size.
@@ -281,7 +281,7 @@ __kernel void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_opencl)
 
 #    if defined EXCLUSION_FORCES /* Ewald or RF */
     if (nb_sci.shift == c_centralShiftIndex
-        && pl_cj4[cij4_start].cj[0] == sci * c_nbnxnGpuNumClusterPerSupercluster)
+        && pl_cjPacked[cjPackedBegin].cj[0] == sci * c_nbnxnGpuNumClusterPerSupercluster)
     {
         /* we have the diagonal: add the charge and LJ self interaction energy term */
         for (int i = 0; i < c_nbnxnGpuNumClusterPerSupercluster; i++)
@@ -321,13 +321,13 @@ __kernel void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_opencl)
 #endif
 
     /* loop over the j clusters = seen by any of the atoms in the current super-cluster */
-    for (int j4 = cij4_start; j4 < cij4_end; j4++)
+    for (int jPacked = cjPackedBegin; jPacked < cjPackedEnd; jPacked++)
     {
-        const int          wexcl_idx = pl_cj4[j4].imei[widx].excl_ind;
-        unsigned int       imask     = pl_cj4[j4].imei[widx].imask;
+        const int          wexcl_idx = pl_cjPacked[jPacked].imei[widx].excl_ind;
+        unsigned int       imask     = pl_cjPacked[jPacked].imei[widx].imask;
         const unsigned int wexcl     = excl[wexcl_idx].pair[(tidx) & (WARP_SIZE - 1)];
 
-        preloadCj4(&cjs, pl_cj4[j4].cj, tidxi, tidxj, imask != 0U);
+        preloadCjPacked(&cjs, pl_cjPacked[jPacked].cj, tidxi, tidxj, imask != 0U);
 
 #ifndef PRUNE_NBL
         if (imask)
@@ -349,7 +349,7 @@ __kernel void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_opencl)
                 {
                     unsigned int mask_ji = (1U << (jm * c_nbnxnGpuNumClusterPerSupercluster));
 
-                    const int cj = loadCj(cjs, pl_cj4[j4].cj, jm, tidxi, tidxj);
+                    const int cj = loadCj(cjs, pl_cjPacked[jPacked].cj, jm, tidxi, tidxj);
                     const int aj = cj * CL_SIZE + tidxj;
 
                     /* load j atom data */
@@ -603,7 +603,7 @@ __kernel void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_opencl)
             /* Update the imask with the new one which does not contain the
                out of range clusters anymore. */
 
-            pl_cj4[j4].imei[widx].imask = imask;
+            pl_cjPacked[jPacked].imei[widx].imask = imask;
 #endif
         }
     }

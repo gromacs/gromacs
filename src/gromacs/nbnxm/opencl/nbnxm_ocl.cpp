@@ -745,7 +745,7 @@ void gpu_launch_kernel_pruneonly(NbnxmGpu* nb, const InteractionLocality iloc, c
      *   and j-cluster concurrency, in x, y, and z, respectively.
      * - The 1D block-grid contains as many blocks as super-clusters.
      */
-    int num_threads_z = c_pruneKernelJ4Concurrency;
+    int num_threads_z = c_pruneKernelJPackedConcurrency;
     /* kernel launch config */
     KernelLaunchConfig config;
     config.sharedMemorySize = calc_shmem_required_prune(num_threads_z);

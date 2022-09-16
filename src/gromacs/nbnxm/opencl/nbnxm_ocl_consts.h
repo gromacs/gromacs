@@ -42,12 +42,12 @@
 #ifndef NBNXN_OCL_CONSTS_H
 #define NBNXN_OCL_CONSTS_H
 
-/*! \brief Macro definining default for the prune kernel's j4 processing concurrency.
+/*! \brief Macro definining default for the prune kernel's jPacked processing concurrency.
  *
- *  The GMX_NBNXN_PRUNE_KERNEL_J4_CONCURRENCY macro allows compile-time override with the default value of 4.
+ *  The GMX_NBNXN_PRUNE_KERNEL_JPACKED_CONCURRENCY macro allows compile-time override with the default value of 4.
  */
-#ifndef GMX_NBNXN_PRUNE_KERNEL_J4_CONCURRENCY
-#    define GMX_NBNXN_PRUNE_KERNEL_J4_CONCURRENCY 4
+#ifndef GMX_NBNXN_PRUNE_KERNEL_JPACKED_CONCURRENCY
+#    define GMX_NBNXN_PRUNE_KERNEL_JPACKED_CONCURRENCY 4
 #endif
 
 #endif

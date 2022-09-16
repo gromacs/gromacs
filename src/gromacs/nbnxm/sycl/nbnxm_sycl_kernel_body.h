@@ -745,7 +745,7 @@ static auto nbnxmKernel(sycl::handler&                                          
                         DeviceAccessor<Float3, mode::read_write>                  a_fShift,
                         OptionalAccessor<float, mode::read_write, doCalcEnergies> a_energyElec,
                         OptionalAccessor<float, mode::read_write, doCalcEnergies> a_energyVdw,
-                        DeviceAccessor<nbnxn_cj_packed_t, doPruneNBL ? mode::read_write : mode::read> a_plistCJ4,
+                        DeviceAccessor<nbnxn_cj_packed_t, doPruneNBL ? mode::read_write : mode::read> a_plistCJPacked,
                         DeviceAccessor<nbnxn_sci_t, mode::read>                     a_plistSci,
                         DeviceAccessor<nbnxn_excl_t, mode::read>                    a_plistExcl,
                         OptionalAccessor<Float2, mode::read, ljComb<vdwType>>       a_ljComb,
@@ -782,7 +782,7 @@ static auto nbnxmKernel(sycl::handler&                                          
         a_energyElec.bind(cgh);
         a_energyVdw.bind(cgh);
     }
-    a_plistCJ4.bind(cgh);
+    a_plistCJPacked.bind(cgh);
     a_plistSci.bind(cgh);
     a_plistExcl.bind(cgh);
     if constexpr (!props.vdwComb)
@@ -904,10 +904,10 @@ static auto nbnxmKernel(sycl::handler&                                          
             fCiBuf[i] = Float3(0.0F, 0.0F, 0.0F);
         }
 
-        const nbnxn_sci_t nbSci     = a_plistSci[bidx];
-        const int         sci       = nbSci.sci;
-        const int         cij4Start = nbSci.cjPackedBegin;
-        const int         cij4End   = nbSci.cjPackedEnd;
+        const nbnxn_sci_t nbSci          = a_plistSci[bidx];
+        const int         sci            = nbSci.sci;
+        const int         cijPackedBegin = nbSci.cjPackedBegin;
+        const int         cijPackedEnd   = nbSci.cjPackedEnd;
 
         // Only needed if props.elecEwaldAna
         const float beta2 = ewaldBeta * ewaldBeta;
@@ -960,7 +960,7 @@ static auto nbnxmKernel(sycl::handler&                                          
         if constexpr (doCalcEnergies && doExclusionForces)
         {
             if (nbSci.shift == gmx::c_centralShiftIndex
-                && a_plistCJ4[cij4Start].cj[0] == sci * c_nbnxnGpuNumClusterPerSupercluster)
+                && a_plistCJPacked[cijPackedBegin].cj[0] == sci * c_nbnxnGpuNumClusterPerSupercluster)
             {
                 // we have the diagonal: add the charge and LJ self interaction energy term
                 for (int i = 0; i < c_nbnxnGpuNumClusterPerSupercluster; i++)
@@ -996,21 +996,21 @@ static auto nbnxmKernel(sycl::handler&                                          
                     energyElec /= epsFac * c_clSize;
                     energyElec *= -ewaldBeta * c_OneOverSqrtPi; /* last factor 1/sqrt(pi) */
                 }
-            } // (nbSci.shift == gmx::c_centralShiftIndex && a_plistCJ4[cij4Start].cj[0] == sci * c_nbnxnGpuNumClusterPerSupercluster)
+            } // (nbSci.shift == gmx::c_centralShiftIndex && a_plistCJPacked[cijPackedBegin].cj[0] == sci * c_nbnxnGpuNumClusterPerSupercluster)
         }     // (doCalcEnergies && doExclusionForces)
 
         // Only needed if (doExclusionForces)
         const bool nonSelfInteraction = !(nbSci.shift == gmx::c_centralShiftIndex & tidxj <= tidxi);
 
         // loop over the j clusters = seen by any of the atoms in the current super-cluster
-        for (int j4 = cij4Start; j4 < cij4End; j4 += 1)
+        for (int jPacked = cijPackedBegin; jPacked < cijPackedEnd; jPacked += 1)
         {
-            unsigned imask = a_plistCJ4[j4].imei[imeiIdx].imask;
+            unsigned imask = a_plistCJPacked[jPacked].imei[imeiIdx].imask;
             if (!doPruneNBL && !imask)
             {
                 continue;
             }
-            const int wexclIdx = a_plistCJ4[j4].imei[imeiIdx].excl_ind;
+            const int wexclIdx = a_plistCJPacked[jPacked].imei[imeiIdx].excl_ind;
             static_assert(gmx::isPowerOfTwo(prunedClusterPairSize));
             const unsigned wexcl = a_plistExcl[wexclIdx].pair[tidx & (prunedClusterPairSize - 1)];
             for (int jm = 0; jm < c_nbnxnGpuJgroupSize; jm++)
@@ -1022,7 +1022,7 @@ static auto nbnxmKernel(sycl::handler&                                          
                     continue;
                 }
                 unsigned  maskJI = (1U << (jm * c_nbnxnGpuNumClusterPerSupercluster));
-                const int cj     = a_plistCJ4[j4].cj[jm];
+                const int cj     = a_plistCJPacked[jPacked].cj[jm];
                 const int aj     = cj * c_clSize + tidxj;
 
                 // load j atom data
@@ -1260,9 +1260,9 @@ static auto nbnxmKernel(sycl::handler&                                          
             {
                 /* Update the imask with the new one which does not contain the
                  * out of range clusters anymore. */
-                a_plistCJ4[j4].imei[imeiIdx].imask = imask;
+                a_plistCJPacked[jPacked].imei[imeiIdx].imask = imask;
             }
-        } // for (int j4 = cij4Start; j4 < cij4End; j4 += 1)
+        } // for (int jPacked = cijPackedBegin; jPacked < cijPackedEnd; jPacked += 1)
 
         /* skip central shifts when summing shift forces */
         const bool doCalcShift = (calcShift && nbSci.shift != gmx::c_centralShiftIndex);
