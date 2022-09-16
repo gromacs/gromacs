@@ -161,13 +161,13 @@ void nonbonded_verlet_t::convertCoordinatesGpu(const gmx::AtomLocality locality,
                                                DeviceBuffer<gmx::RVec> d_x,
                                                GpuEventSynchronizer*   xReadyOnDevice)
 {
-    wallcycle_start(wcycle_, WallCycleCounter::LaunchGpu);
+    wallcycle_start(wcycle_, WallCycleCounter::LaunchGpuPp);
     wallcycle_sub_start(wcycle_, WallCycleSubCounter::LaunchGpuNBXBufOps);
 
     nbnxn_atomdata_x_to_nbat_x_gpu(pairSearch_->gridSet(), locality, gpu_nbv, d_x, xReadyOnDevice);
 
     wallcycle_sub_stop(wcycle_, WallCycleSubCounter::LaunchGpuNBXBufOps);
-    wallcycle_stop(wcycle_, WallCycleCounter::LaunchGpu);
+    wallcycle_stop(wcycle_, WallCycleCounter::LaunchGpuPp);
 }
 
 gmx::ArrayRef<const int> nonbonded_verlet_t::getGridIndices() const

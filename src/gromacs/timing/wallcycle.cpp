@@ -78,7 +78,7 @@ static const char* enumValuetoString(WallCycleCounter enumValue)
         "Vsite constr.",
         "Send X to PME",
         "Neighbor search",
-        "Launch GPU ops.",
+        "Launch PP GPU ops.",
         "Comm. coord.",
         "Force",
         "Wait + Comm. F",
@@ -97,7 +97,6 @@ static const char* enumValuetoString(WallCycleCounter enumValue)
         "Wait PME GPU gather",
         "Reduce GPU PME F",
         "Launch PME GPU ops.",
-        "Launch PME GPU FFT",
         "Wait PME Recv. PP X",
         "Wait PME GPU spread",
         "Wait GPU FFT to PME",
@@ -164,6 +163,7 @@ static const char* enumValuetoString(WallCycleSubCounter enumValue)
         "Launch GPU Comm. coord.",
         "Launch GPU Comm. force.",
         "Launch GPU update",
+        "Launch PME GPU FFT",
         "Test subcounter"
     };
     return wallCycleSubCounterNames[enumValue];
@@ -925,7 +925,7 @@ void wallcycle_print(FILE*                            fplog,
     // NOLINTNEXTLINE(readability-misleading-indentation)
     if constexpr (sc_useCycleSubcounters)
     {
-        fprintf(fplog, " Breakdown of PP activities\n");
+        fprintf(fplog, " Breakdown of PP / PME activities\n");
         fprintf(fplog, "%s\n", hline);
         for (auto key : keysOf(wc->wcsc))
         {

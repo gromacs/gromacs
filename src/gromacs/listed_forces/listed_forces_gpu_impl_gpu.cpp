@@ -340,11 +340,11 @@ void ListedForcesGpu::Impl::waitAccumulateEnergyTerms(gmx_enerdata_t* enerd)
 
 void ListedForcesGpu::Impl::clearEnergies()
 {
-    wallcycle_start_nocount(wcycle_, WallCycleCounter::LaunchGpu);
+    wallcycle_start_nocount(wcycle_, WallCycleCounter::LaunchGpuPp);
     wallcycle_sub_start_nocount(wcycle_, WallCycleSubCounter::LaunchGpuBonded);
     clearDeviceBufferAsync(&d_vTot_, 0, F_NRE, deviceStream_);
     wallcycle_sub_stop(wcycle_, WallCycleSubCounter::LaunchGpuBonded);
-    wallcycle_stop(wcycle_, WallCycleCounter::LaunchGpu);
+    wallcycle_stop(wcycle_, WallCycleCounter::LaunchGpuPp);
 }
 
 // ---- ListedForcesGpu

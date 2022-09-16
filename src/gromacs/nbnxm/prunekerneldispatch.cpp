@@ -99,7 +99,7 @@ void nonbonded_verlet_t::dispatchPruneKernelCpu(const gmx::InteractionLocality i
 
 void nonbonded_verlet_t::dispatchPruneKernelGpu(int64_t step)
 {
-    wallcycle_start_nocount(wcycle_, WallCycleCounter::LaunchGpu);
+    wallcycle_start_nocount(wcycle_, WallCycleCounter::LaunchGpuPp);
     wallcycle_sub_start_nocount(wcycle_, WallCycleSubCounter::LaunchGpuNonBonded);
 
     const bool stepIsEven =
@@ -111,5 +111,5 @@ void nonbonded_verlet_t::dispatchPruneKernelGpu(int64_t step)
             pairlistSets().params().numRollingPruningParts);
 
     wallcycle_sub_stop(wcycle_, WallCycleSubCounter::LaunchGpuNonBonded);
-    wallcycle_stop(wcycle_, WallCycleCounter::LaunchGpu);
+    wallcycle_stop(wcycle_, WallCycleCounter::LaunchGpuPp);
 }

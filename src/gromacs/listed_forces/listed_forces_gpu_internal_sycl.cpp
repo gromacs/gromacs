@@ -945,7 +945,7 @@ void ListedForcesGpu::Impl::launchKernel()
     GMX_ASSERT(haveInteractions_,
                "Cannot launch bonded GPU kernels unless bonded GPU work was scheduled");
 
-    wallcycle_start_nocount(wcycle_, WallCycleCounter::LaunchGpu);
+    wallcycle_start_nocount(wcycle_, WallCycleCounter::LaunchGpuPp);
     wallcycle_sub_start(wcycle_, WallCycleSubCounter::LaunchGpuBonded);
 
     if (kernelParams_.fTypeRangeEnd[numFTypesOnGpu - 1] < 0)
@@ -972,7 +972,7 @@ void ListedForcesGpu::Impl::launchKernel()
     });
 
     wallcycle_sub_stop(wcycle_, WallCycleSubCounter::LaunchGpuBonded);
-    wallcycle_stop(wcycle_, WallCycleCounter::LaunchGpu);
+    wallcycle_stop(wcycle_, WallCycleCounter::LaunchGpuPp);
 }
 
 void ListedForcesGpu::launchKernel(const gmx::StepWorkload& stepWork)

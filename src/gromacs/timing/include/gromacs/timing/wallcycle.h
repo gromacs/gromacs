@@ -69,7 +69,7 @@ enum class WallCycleCounter : int
     VsiteConstr,
     PpPmeSendX,
     NS,
-    LaunchGpu,
+    LaunchGpuPp,
     MoveX,
     Force,
     MoveF,
@@ -87,8 +87,7 @@ enum class WallCycleCounter : int
     PmeSolveMixedMode,
     WaitGpuPmeGather,
     PmeGpuFReduction,
-    LaunchGpuPme,    /* Time for launching PME specific GPU operations*/
-    LaunchGpuPmeFft, /* Time for launching FFT operations on GPU*/
+    LaunchGpuPme, /* Time for launching PME specific GPU operations*/
     WaitGpuPmePPRecvX, /* Time for waiting on receiving PP X on PME rank. Used only when GPU direct comm is active.*/
     WaitGpuPmeSpread, /* Time taken to finish PME spread on GPU. Used only when PME halo-exchange is active with PME decomposition*/
     WaitGpuFftToPmeGrid, /* Time taken to convert to PME grid after FFTs are complete. Used only when PME halo-exchange is active with PME decomposition*/
@@ -150,6 +149,7 @@ enum class WallCycleSubCounter : int
     LaunchGpuMoveX,
     LaunchGpuMoveF,
     LaunchGpuUpdateConstrain,
+    LaunchGpuPmeFft, /* Time for launching FFT operations on GPU*/
     Test,
     Count
 };

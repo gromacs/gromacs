@@ -229,7 +229,7 @@ void GpuHaloExchange::Impl::enqueueWaitRemoteCoordinatesReadyEvent(GpuEventSynch
 GpuEventSynchronizer* GpuHaloExchange::Impl::communicateHaloCoordinates(const matrix box,
                                                                         GpuEventSynchronizer* dependencyEvent)
 {
-    wallcycle_start(wcycle_, WallCycleCounter::LaunchGpu);
+    wallcycle_start(wcycle_, WallCycleCounter::LaunchGpuPp);
 
     // ensure stream waits until dependency has been satisfied
     dependencyEvent->enqueueWaitEvent(*haloStream_);
@@ -238,7 +238,7 @@ GpuEventSynchronizer* GpuHaloExchange::Impl::communicateHaloCoordinates(const ma
     launchPackXKernel(box);
     wallcycle_sub_stop(wcycle_, WallCycleSubCounter::LaunchGpuMoveX);
 
-    wallcycle_stop(wcycle_, WallCycleCounter::LaunchGpu);
+    wallcycle_stop(wcycle_, WallCycleCounter::LaunchGpuPp);
 
     // Consider time spent in communicateHaloData as Comm.X counter
     // TODO: We need further refinement here as communicateHaloData includes launch time for async mem copy
@@ -304,7 +304,7 @@ void GpuHaloExchange::Impl::communicateHaloForces(bool accumulateForces,
 
     wallcycle_stop(wcycle_, WallCycleCounter::MoveF);
 
-    wallcycle_start_nocount(wcycle_, WallCycleCounter::LaunchGpu);
+    wallcycle_start_nocount(wcycle_, WallCycleCounter::LaunchGpuPp);
     wallcycle_sub_start(wcycle_, WallCycleSubCounter::LaunchGpuMoveF);
 
     // Unpack halo buffer into force array
@@ -321,7 +321,7 @@ void GpuHaloExchange::Impl::communicateHaloForces(bool accumulateForces,
     fReadyOnDevice_.markEvent(*haloStream_);
 
     wallcycle_sub_stop(wcycle_, WallCycleSubCounter::LaunchGpuMoveF);
-    wallcycle_stop(wcycle_, WallCycleCounter::LaunchGpu);
+    wallcycle_stop(wcycle_, WallCycleCounter::LaunchGpuPp);
 }
 
 void GpuHaloExchange::Impl::communicateHaloData(Float3* sendPtr,

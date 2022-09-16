@@ -130,9 +130,11 @@ void inline parallel_3dfft_execute_gpu_wrapper(gmx_pme_t*             pme,
         // use a separate sub-counter for GPU FFT launch
         // this is specially important for PME decomposition where distributed FFT
         // implementations are used
-        wallcycle_start(wcycle, WallCycleCounter::LaunchGpuPmeFft);
+        wallcycle_start(wcycle, WallCycleCounter::LaunchGpuPme);
+        wallcycle_sub_start(wcycle, WallCycleSubCounter::LaunchGpuPmeFft);
         pme_gpu_3dfft(pme->gpu, dir, gridIndex);
-        wallcycle_stop(wcycle, WallCycleCounter::LaunchGpuPmeFft);
+        wallcycle_sub_stop(wcycle, WallCycleSubCounter::LaunchGpuPmeFft);
+        wallcycle_stop(wcycle, WallCycleCounter::LaunchGpuPme);
     }
     else
     {
