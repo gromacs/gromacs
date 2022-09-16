@@ -1360,41 +1360,27 @@ static inline int findJClusterInJList(int jCluster, const JListRanges& ranges, c
     }
 }
 
-// TODO: Get rid of the two functions below by renaming sci to ci (or something better)
-
-/* Return the i-entry in the list we are currently operating on */
-static nbnxn_ci_t* getOpenIEntry(NbnxnPairlistCpu* nbl)
-{
-    return &nbl->ci.back();
-}
-
-/* Return the i-entry in the list we are currently operating on */
-static nbnxn_sci_t* getOpenIEntry(NbnxnPairlistGpu* nbl)
-{
-    return &nbl->sci.back();
-}
-
-/* Set all atom-pair exclusions for a simple type list i-entry
+/* Set all atom-pair exclusions for the last i-cluster entry in the CPU list
  *
- * Set all atom-pair exclusions from the topology stored in exclusions
- * as masks in the pair-list for simple list entry iEntry.
- */
+ * All the atom-pair exclusions from the topology are converted to
+ * exclusion masks in the simple pairlist. */
 static void setExclusionsForIEntry(const Nbnxm::GridSet&   gridSet,
                                    NbnxnPairlistCpu*       nbl,
                                    gmx_bool                diagRemoved,
                                    int                     na_cj_2log,
-                                   const nbnxn_ci_t&       iEntry,
                                    const ListOfLists<int>& exclusions)
 {
-    if (iEntry.cj_ind_end == iEntry.cj_ind_start)
+    // Set the exclusions for the current (ie. last) i-entry in the list
+    const nbnxn_ci_t& currentIEntry = nbl->ci.back();
+    if (currentIEntry.cj_ind_end == currentIEntry.cj_ind_start)
     {
         /* Empty list: no exclusions */
         return;
     }
 
-    const JListRanges ranges(iEntry.cj_ind_start, iEntry.cj_ind_end, nbl->cj);
+    const JListRanges ranges(currentIEntry.cj_ind_start, currentIEntry.cj_ind_end, nbl->cj);
 
-    const int iCluster = iEntry.ci;
+    const int iCluster = currentIEntry.ci;
 
     gmx::ArrayRef<const int> cell        = gridSet.cells();
     gmx::ArrayRef<const int> atomIndices = gridSet.atomIndices();
@@ -1490,7 +1476,6 @@ static void make_fep_list(gmx::ArrayRef<const int> atomIndices,
                           const nbnxn_atomdata_t*  nbat,
                           NbnxnPairlistCpu*        nbl,
                           gmx_bool                 bDiagRemoved,
-                          nbnxn_ci_t*              nbl_ci,
                           real gmx_unused          shx,
                           real gmx_unused          shy,
                           real gmx_unused          shz,
@@ -1502,16 +1487,19 @@ static void make_fep_list(gmx::ArrayRef<const int> atomIndices,
     int gid_i  = 0;
     int gid_cj = 0;
 
-    if (nbl_ci->cj_ind_end == nbl_ci->cj_ind_start)
+    // Exclude pairs from the current (ie. last) i-cluster entry in
+    // the list
+    const nbnxn_ci_t& currentCi = nbl->ci.back();
+    if (currentCi.cj_ind_end == currentCi.cj_ind_start)
     {
         /* Empty list */
         return;
     }
 
-    const int ci = nbl_ci->ci;
+    const int ci = currentCi.ci;
 
-    const int cj_ind_start = nbl_ci->cj_ind_start;
-    const int cj_ind_end   = nbl_ci->cj_ind_end;
+    const int cj_ind_start = currentCi.cj_ind_start;
+    const int cj_ind_end   = currentCi.cj_ind_end;
 
     /* In worst case we have alternating energy groups
      * and create #atom-pair lists, which means we need the size
@@ -1558,7 +1546,7 @@ static void make_fep_list(gmx::ArrayRef<const int> atomIndices,
             nlist->iinr[nri]       = ai;
             /* The actual energy group pair index is set later */
             nlist->gid[nri]   = 0;
-            nlist->shift[nri] = nbl_ci->shift & NBNXN_CI_SHIFT;
+            nlist->shift[nri] = currentCi.shift & NBNXN_CI_SHIFT;
 
             bool bFEP_i = iGrid.atomIsPerturbed(ci - iGrid.cellOffset(), i);
 
@@ -1675,8 +1663,8 @@ static void make_fep_list(gmx::ArrayRef<const int> atomIndices,
 
     if (bFEP_i_all)
     {
-        /* All interactions are perturbed, we can skip this entry */
-        nbl_ci->cj_ind_end = cj_ind_start;
+        // All interactions are perturbed, we can skip this (ie. last) entry
+        nbl->ci.back().cj_ind_end = cj_ind_start;
         nbl->ncjInUse -= cj_ind_end - cj_ind_start;
     }
 }
@@ -1704,7 +1692,6 @@ static void make_fep_list(gmx::ArrayRef<const int> atomIndices,
                           const nbnxn_atomdata_t*  nbat,
                           NbnxnPairlistGpu*        nbl,
                           gmx_bool                 bDiagRemoved,
-                          const nbnxn_sci_t*       nbl_sci,
                           real                     shx,
                           real                     shy,
                           real                     shz,
@@ -1713,17 +1700,20 @@ static void make_fep_list(gmx::ArrayRef<const int> atomIndices,
                           const Grid&              jGrid,
                           t_nblist*                nlist)
 {
-    const int numJClusterGroups = nbl_sci->numJClusterGroups();
+    // Exclude pairs from the current (ie. last) i-super-cluster entry
+    // in the list
+    const nbnxn_sci_t& currentSci        = nbl->sci.back();
+    const int          numJClusterGroups = currentSci.numJClusterGroups();
     if (numJClusterGroups == 0)
     {
         /* Empty list */
         return;
     }
 
-    const int sci = nbl_sci->sci;
+    const int sci = currentSci.sci;
 
-    const int cjPackedBegin = nbl_sci->cjPackedBegin;
-    const int cjPackedEnd   = nbl_sci->cjPackedEnd;
+    const int cjPackedBegin = currentSci.cjPackedBegin;
+    const int cjPackedEnd   = currentSci.cjPackedEnd;
 
     /* Here we process one super-cell, max #atoms na_sc, versus a list
      * cjPacked entries, each with max c_nbnxnGpuJgroupSize cj's, each
@@ -1756,7 +1746,7 @@ static void make_fep_list(gmx::ArrayRef<const int> atomIndices,
                 nlist->iinr[nri]       = ai;
                 /* With GPUs, energy groups are not supported */
                 nlist->gid[nri]   = 0;
-                nlist->shift[nri] = nbl_sci->shift & NBNXN_CI_SHIFT;
+                nlist->shift[nri] = currentSci.shift & NBNXN_CI_SHIFT;
 
                 const bool bFEP_i =
                         iGrid.atomIsPerturbed(c_abs - iGrid.cellOffset() * c_gpuNumClusterPerCell, i);
@@ -1861,19 +1851,19 @@ static void make_fep_list(gmx::ArrayRef<const int> atomIndices,
     }
 }
 
-/* Set all atom-pair exclusions for a GPU type list i-entry
+/* Set all atom-pair exclusions for the last i-super-cluster entry in the GPU list
  *
- * Sets all atom-pair exclusions from the topology stored in exclusions
- * as masks in the pair-list for i-super-cluster list entry iEntry.
- */
+ * All the atom-pair exclusions from the topology are converted to
+ * exclusion masks in the simple pairlist. */
 static void setExclusionsForIEntry(const Nbnxm::GridSet&   gridSet,
                                    NbnxnPairlistGpu*       nbl,
                                    gmx_bool                diagRemoved,
                                    int gmx_unused          na_cj_2log,
-                                   const nbnxn_sci_t&      iEntry,
                                    const ListOfLists<int>& exclusions)
 {
-    if (iEntry.numJClusterGroups() == 0)
+    // Set the exclusions for the current (ie. last) i-entry in the list
+    const nbnxn_sci_t& currentIEntry = nbl->sci.back();
+    if (currentIEntry.numJClusterGroups() == 0)
     {
         /* Empty list */
         return;
@@ -1883,13 +1873,14 @@ static void setExclusionsForIEntry(const Nbnxm::GridSet&   gridSet,
      * Note that here we can not use cjPackedEnd, since the last cjPacked
      * can be only partially filled, so we use cj_ind.
      */
-    const JListRanges ranges(iEntry.cjPackedBegin * c_nbnxnGpuJgroupSize, nbl->work->cj_ind, nbl->cjPacked);
+    const JListRanges ranges(
+            currentIEntry.cjPackedBegin * c_nbnxnGpuJgroupSize, nbl->work->cj_ind, nbl->cjPacked);
 
     GMX_ASSERT(nbl->na_ci == c_nbnxnGpuClusterSize, "na_ci should match the GPU cluster size");
     constexpr int c_clusterSize      = c_nbnxnGpuClusterSize;
     constexpr int c_superClusterSize = c_nbnxnGpuNumClusterPerSupercluster * c_nbnxnGpuClusterSize;
 
-    const int iSuperCluster = iEntry.sci;
+    const int iSuperCluster = currentIEntry.sci;
 
     gmx::ArrayRef<const int> atomIndices = gridSet.atomIndices();
     gmx::ArrayRef<const int> cell        = gridSet.cells();
@@ -2022,7 +2013,7 @@ static void sort_cj_excl(nbnxn_cj_t* cj, int ncj, NbnxnPairlistCpuWork* work)
     }
 }
 
-/* Close this simple list i entry */
+/* Close the current (ie. the last) simple list i entry */
 static void closeIEntry(NbnxnPairlistCpu*   nbl,
                         int gmx_unused      sp_max_av,
                         gmx_bool gmx_unused progBal,
@@ -2030,24 +2021,23 @@ static void closeIEntry(NbnxnPairlistCpu*   nbl,
                         int gmx_unused      thread,
                         int gmx_unused      nthread)
 {
-    nbnxn_ci_t& ciEntry = nbl->ci.back();
-
-    /* All content of the new ci entry have already been filled correctly,
-     * we only need to sort and increase counts or remove the entry when empty.
-     */
-    const int jlen = ciEntry.cj_ind_end - ciEntry.cj_ind_start;
+    /* All content of the current ci entry have already been filled
+     * correctly, we only need to sort and increase counts or remove
+     * the entry when empty. */
+    nbnxn_ci_t& currentCi = nbl->ci.back();
+    const int   jlen      = currentCi.cj_ind_end - currentCi.cj_ind_start;
     if (jlen > 0)
     {
-        sort_cj_excl(nbl->cj.list_.data() + ciEntry.cj_ind_start, jlen, nbl->work.get());
+        sort_cj_excl(nbl->cj.list_.data() + currentCi.cj_ind_start, jlen, nbl->work.get());
 
         /* The counts below are used for non-bonded pair/flop counts
          * and should therefore match the available kernel setups.
          */
-        if (!(ciEntry.shift & NBNXN_CI_DO_COUL(0)))
+        if (!(currentCi.shift & NBNXN_CI_DO_COUL(0)))
         {
             nbl->work->ncj_noq += jlen;
         }
-        else if ((ciEntry.shift & NBNXN_CI_HALF_LJ(0)) || !(ciEntry.shift & NBNXN_CI_DO_LJ(0)))
+        else if ((currentCi.shift & NBNXN_CI_HALF_LJ(0)) || !(currentCi.shift & NBNXN_CI_DO_LJ(0)))
         {
             nbl->work->ncj_hlj += jlen;
         }
@@ -2151,15 +2141,14 @@ static void split_sci_entry(NbnxnPairlistGpu* nbl,
     }
 }
 
-/* Clost this super/sub list i entry */
+/* Close the current (ie. the last) super/sub list i entry */
 static void closeIEntry(NbnxnPairlistGpu* nbl, int nsp_max_av, gmx_bool progBal, float nsp_tot_est, int thread, int nthread)
 {
-    nbnxn_sci_t& sciEntry = *getOpenIEntry(nbl);
-
-    /* All content of the new ci entry have already been filled correctly,
-     * we only need to, potentially, split or remove the entry when empty.
-     */
-    int jPackedLen = sciEntry.numJClusterGroups();
+    /* All content of the current sci entry have already been filled
+     * correctly, we only need to, potentially, split or remove the
+     * entry when empty. */
+    nbnxn_sci_t& currentSci = nbl->sci.back();
+    int          jPackedLen = currentSci.numJClusterGroups();
     if (jPackedLen > 0)
     {
         /* We can only have complete blocks of 4 j-entries in a list,
@@ -3507,8 +3496,7 @@ static void nbnxn_make_pairlist_part(const Nbnxm::GridSet&   gridSet,
                     if (!exclusions.empty())
                     {
                         /* Set the exclusions for this ci list */
-                        setExclusionsForIEntry(
-                                gridSet, nbl, excludeSubDiagonal, na_cj_2log, *getOpenIEntry(nbl), exclusions);
+                        setExclusionsForIEntry(gridSet, nbl, excludeSubDiagonal, na_cj_2log, exclusions);
                     }
 
                     if (haveFep)
@@ -3517,7 +3505,6 @@ static void nbnxn_make_pairlist_part(const Nbnxm::GridSet&   gridSet,
                                       nbat,
                                       nbl,
                                       excludeSubDiagonal,
-                                      getOpenIEntry(nbl),
                                       shx,
                                       shy,
                                       shz,
