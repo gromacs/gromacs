@@ -130,7 +130,7 @@ struct ConstraintsTestSystem
     std::vector<RVec> v;
 
     //! Target tolerance for SHAKE.
-    real shakeTolerance = 0.0001;
+    real shakeTolerance = 0.00002;
     /*! \brief Use successive over-relaxation method for SHAKE iterations.
      *
      * The general formula is:
@@ -609,7 +609,7 @@ public:
     {
         std::vector<std::unique_ptr<IConstraintsTestRunner>> runners;
         // Add runners for CPU versions of SHAKE and LINCS
-        // runners.emplace_back(std::make_unique<ShakeConstraintsRunner>());
+        runners.emplace_back(std::make_unique<ShakeConstraintsRunner>());
         runners.emplace_back(std::make_unique<LincsConstraintsRunner>());
         // If supported, add runners for the GPU version of LINCS for each available GPU
         const bool addGpuRunners = GPU_CONSTRAINTS_SUPPORTED;
@@ -683,10 +683,13 @@ TEST_P(ConstraintsTest, SatisfiesConstraints)
         }
 
         // The virial tolerance factor can be:
-        // LINCS iter=2, order=4:  0.002
-        // LINCS iter=1, order=4:  0.02
-        // SHAKE tolerance=0.0001: 0.2
-        FloatingPointTolerance virialTolerance = absoluteTolerance(fabs(virialTrace) / 3 * 0.02F);
+        // LINCS iter=2, order=4:   0.002
+        // LINCS iter=1, order=4:   0.02
+        // SHAKE tolerance=0.0001:  0.2
+        // SHAKE tolerance=0.00002: 0.1
+        const float virialRelativeTolerance = (runner->name().substr(0, 5) == "SHAKE" ? 0.1F : 0.02F);
+        FloatingPointTolerance virialTolerance =
+                absoluteTolerance(fabs(virialTrace) / 3 * virialRelativeTolerance);
 
         checker_.setDefaultTolerance(virialTolerance);
         checkVirialTensor(testData);
