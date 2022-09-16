@@ -94,11 +94,11 @@ parser.add_argument('--token', type=str, required=True,
 parser.add_argument('--branch', type=str, default='main',
                     help='Branch to run pipeline for (default "main")')
 
-parser.add_argument('--regtest-branch', type=str, default='main',
-                    help='Regressiontest branch to use to for running regression tests (default "main")')
+parser.add_argument('--regtest-branch', type=str, default='',
+                    help='Regressiontest branch to use to for running regression tests (default none, which means fall back to main)')
 
-parser.add_argument('--regtest-commit', type=str, default='HEAD',
-                    help='Commit in regressiontest branch to use for running tests (default "HEAD")')
+parser.add_argument('--regtest-commit', type=str, default='',
+                    help='Commit to use instead of the regtest-branch tip for running tests (default empty)')
 
 if __name__ == "__main__":
     args = parser.parse_args()

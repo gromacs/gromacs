@@ -37,12 +37,12 @@ regressiontests:prepare:
   # Always clone the default version for this branch, main in this case
   script:
     - export REGTESTBRANCH=main
-    - if [[ ! -z $REGRESSIONTESTBRANCH ]] ; then
+    - if [[ ! -z "$REGRESSIONTESTBRANCH" ]] ; then
       export REGTESTBRANCH=$REGRESSIONTESTBRANCH ;
       echo "Using $REGTESTBRANCH instead of default" ;
       fi
     - export CHECKOUTCOMMIT=FETCH_HEAD
-    - if [[ ! -z $REGRESSIONTESTCOMMIT ]] ; then
+    - if [[ ! -z "$REGRESSIONTESTCOMMIT" ]] ; then
       export CHECKOUTCOMMIT=$REGRESSIONTESTCOMMIT ;
       echo "Using $CHECKOUTCOMMIT instead of head of $REGTESTBRANCH" ;
       fi
