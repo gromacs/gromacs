@@ -48,7 +48,7 @@
 #include "gromacs/timing/cyclecounter.h"
 #include "gromacs/timing/gpu_timing.h"
 #include "gromacs/timing/wallcyclereporting.h"
-#include "gromacs/utility/arrayref.h"
+#include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/enumerationhelpers.h"
 #include "gromacs/utility/fatalerror.h"
@@ -125,6 +125,10 @@ static const char* enumValuetoString(WallCycleCounter enumValue)
     return wallCycleCounterNames[enumValue];
 }
 
+// Clang complains about this function not used in builds without subcounters
+// clang-format off
+CLANG_DIAGNOSTIC_IGNORE(-Wunneeded-internal-declaration)
+// clang-format on
 static const char* enumValuetoString(WallCycleSubCounter enumValue)
 {
     constexpr gmx::EnumerationArray<WallCycleSubCounter, const char*> wallCycleSubCounterNames = {
@@ -164,6 +168,7 @@ static const char* enumValuetoString(WallCycleSubCounter enumValue)
     };
     return wallCycleSubCounterNames[enumValue];
 }
+CLANG_DIAGNOSTIC_RESET
 
 /* PME GPU timing events' names - correspond to the enum in the gpu_timing.h */
 static const char* enumValuetoString(PmeStage enumValue)
