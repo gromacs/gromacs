@@ -114,15 +114,15 @@ harmonic_gpu(const float kA, const float xA, const float x, float* V, float* F)
 }
 
 template<bool calcVir, bool calcEner>
-__device__ void bonds_gpu(const int       i,
-                          float*          vtot_loc,
-                          const int       numBonds,
-                          const t_iatom   d_forceatoms[],
-                          const t_iparams d_forceparams[],
-                          const float4    gm_xq[],
-                          float3          gm_f[],
-                          float3          sm_fShiftLoc[],
-                          const PbcAiuc   pbcAiuc)
+__device__ __forceinline__ void bonds_gpu(const int       i,
+                                          float*          vtot_loc,
+                                          const int       numBonds,
+                                          const t_iatom   d_forceatoms[],
+                                          const t_iparams d_forceparams[],
+                                          const float4    gm_xq[],
+                                          float3          gm_f[],
+                                          float3          sm_fShiftLoc[],
+                                          const PbcAiuc   pbcAiuc)
 {
     if (i < numBonds)
     {
@@ -185,15 +185,15 @@ __device__ __forceinline__ static float bond_angle_gpu(const float4   xi,
 }
 
 template<bool calcVir, bool calcEner>
-__device__ void angles_gpu(const int       i,
-                           float*          vtot_loc,
-                           const int       numBonds,
-                           const t_iatom   d_forceatoms[],
-                           const t_iparams d_forceparams[],
-                           const float4    gm_xq[],
-                           float3          gm_f[],
-                           float3          sm_fShiftLoc[],
-                           const PbcAiuc   pbcAiuc)
+__device__ __forceinline__ void angles_gpu(const int       i,
+                                           float*          vtot_loc,
+                                           const int       numBonds,
+                                           const t_iatom   d_forceatoms[],
+                                           const t_iparams d_forceparams[],
+                                           const float4    gm_xq[],
+                                           float3          gm_f[],
+                                           float3          sm_fShiftLoc[],
+                                           const PbcAiuc   pbcAiuc)
 {
     if (i < numBonds)
     {
@@ -258,15 +258,15 @@ __device__ void angles_gpu(const int       i,
 }
 
 template<bool calcVir, bool calcEner>
-__device__ void urey_bradley_gpu(const int       i,
-                                 float*          vtot_loc,
-                                 const int       numBonds,
-                                 const t_iatom   d_forceatoms[],
-                                 const t_iparams d_forceparams[],
-                                 const float4    gm_xq[],
-                                 float3          gm_f[],
-                                 float3          sm_fShiftLoc[],
-                                 const PbcAiuc   pbcAiuc)
+__device__ __forceinline__ void urey_bradley_gpu(const int       i,
+                                                 float*          vtot_loc,
+                                                 const int       numBonds,
+                                                 const t_iatom   d_forceatoms[],
+                                                 const t_iparams d_forceparams[],
+                                                 const float4    gm_xq[],
+                                                 float3          gm_f[],
+                                                 float3          sm_fShiftLoc[],
+                                                 const PbcAiuc   pbcAiuc)
 {
     if (i < numBonds)
     {
@@ -413,23 +413,23 @@ dopdihs_gpu(const float cpA, const float phiA, const int mult, const float phi, 
 }
 
 template<bool calcVir>
-__device__ static void do_dih_fup_gpu(const int            i,
-                                      const int            j,
-                                      const int            k,
-                                      const int            l,
-                                      const float          ddphi,
-                                      const float3         r_ij,
-                                      const float3         r_kj,
-                                      const float3         r_kl,
-                                      const float3         m,
-                                      const float3         n,
-                                      float3               gm_f[],
-                                      float3               sm_fShiftLoc[],
-                                      const PbcAiuc&       pbcAiuc,
-                                      const float4         gm_xq[],
-                                      const int            t1,
-                                      const int            t2,
-                                      const int gmx_unused t3)
+__device__ __forceinline__ static void do_dih_fup_gpu(const int            i,
+                                                      const int            j,
+                                                      const int            k,
+                                                      const int            l,
+                                                      const float          ddphi,
+                                                      const float3         r_ij,
+                                                      const float3         r_kj,
+                                                      const float3         r_kl,
+                                                      const float3         m,
+                                                      const float3         n,
+                                                      float3               gm_f[],
+                                                      float3               sm_fShiftLoc[],
+                                                      const PbcAiuc&       pbcAiuc,
+                                                      const float4         gm_xq[],
+                                                      const int            t1,
+                                                      const int            t2,
+                                                      const int gmx_unused t3)
 {
     float iprm  = norm2(m);
     float iprn  = norm2(n);
@@ -473,15 +473,15 @@ __device__ static void do_dih_fup_gpu(const int            i,
 }
 
 template<bool calcVir, bool calcEner>
-__device__ void pdihs_gpu(const int       i,
-                          float*          vtot_loc,
-                          const int       numBonds,
-                          const t_iatom   d_forceatoms[],
-                          const t_iparams d_forceparams[],
-                          const float4    gm_xq[],
-                          float3          gm_f[],
-                          float3          sm_fShiftLoc[],
-                          const PbcAiuc   pbcAiuc)
+__device__ __forceinline__ void pdihs_gpu(const int       i,
+                                          float*          vtot_loc,
+                                          const int       numBonds,
+                                          const t_iatom   d_forceatoms[],
+                                          const t_iparams d_forceparams[],
+                                          const float4    gm_xq[],
+                                          float3          gm_f[],
+                                          float3          sm_fShiftLoc[],
+                                          const PbcAiuc   pbcAiuc)
 {
     if (i < numBonds)
     {
@@ -522,15 +522,15 @@ __device__ void pdihs_gpu(const int       i,
 }
 
 template<bool calcVir, bool calcEner>
-__device__ void rbdihs_gpu(const int       i,
-                           float*          vtot_loc,
-                           const int       numBonds,
-                           const t_iatom   d_forceatoms[],
-                           const t_iparams d_forceparams[],
-                           const float4    gm_xq[],
-                           float3          gm_f[],
-                           float3          sm_fShiftLoc[],
-                           const PbcAiuc   pbcAiuc)
+__device__ __forceinline__ void rbdihs_gpu(const int       i,
+                                           float*          vtot_loc,
+                                           const int       numBonds,
+                                           const t_iatom   d_forceatoms[],
+                                           const t_iparams d_forceparams[],
+                                           const float4    gm_xq[],
+                                           float3          gm_f[],
+                                           float3          sm_fShiftLoc[],
+                                           const PbcAiuc   pbcAiuc)
 {
     constexpr float c0 = 0.0F, c1 = 1.0F, c2 = 2.0F, c3 = 3.0F, c4 = 4.0F, c5 = 5.0F;
 
@@ -639,15 +639,15 @@ __device__ __forceinline__ static void make_dp_periodic_gpu(float* dp)
 }
 
 template<bool calcVir, bool calcEner>
-__device__ void idihs_gpu(const int       i,
-                          float*          vtot_loc,
-                          const int       numBonds,
-                          const t_iatom   d_forceatoms[],
-                          const t_iparams d_forceparams[],
-                          const float4    gm_xq[],
-                          float3          gm_f[],
-                          float3          sm_fShiftLoc[],
-                          const PbcAiuc   pbcAiuc)
+__device__ __forceinline__ void idihs_gpu(const int       i,
+                                          float*          vtot_loc,
+                                          const int       numBonds,
+                                          const t_iatom   d_forceatoms[],
+                                          const t_iparams d_forceparams[],
+                                          const float4    gm_xq[],
+                                          float3          gm_f[],
+                                          float3          sm_fShiftLoc[],
+                                          const PbcAiuc   pbcAiuc)
 {
     if (i < numBonds)
     {
@@ -697,17 +697,17 @@ __device__ void idihs_gpu(const int       i,
 }
 
 template<bool calcVir, bool calcEner>
-__device__ void pairs_gpu(const int       i,
-                          const int       numBonds,
-                          const t_iatom   d_forceatoms[],
-                          const t_iparams iparams[],
-                          const float4    gm_xq[],
-                          float3          gm_f[],
-                          float3          sm_fShiftLoc[],
-                          const PbcAiuc   pbcAiuc,
-                          const float     scale_factor,
-                          float*          vtotVdw_loc,
-                          float*          vtotElec_loc)
+__device__ __forceinline__ void pairs_gpu(const int       i,
+                                          const int       numBonds,
+                                          const t_iatom   d_forceatoms[],
+                                          const t_iparams iparams[],
+                                          const float4    gm_xq[],
+                                          float3          gm_f[],
+                                          float3          sm_fShiftLoc[],
+                                          const PbcAiuc   pbcAiuc,
+                                          const float     scale_factor,
+                                          float*          vtotVdw_loc,
+                                          float*          vtotElec_loc)
 {
     if (i < numBonds)
     {
