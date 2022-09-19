@@ -220,17 +220,17 @@ static inline void init_plist(gpu_plist* pl)
 {
     /* initialize to nullptr pointers to data that is not allocated here and will
        need reallocation in nbnxn_gpu_init_pairlist */
-    pl->sci   = nullptr;
-    pl->cj4   = nullptr;
-    pl->imask = nullptr;
-    pl->excl  = nullptr;
+    pl->sci      = nullptr;
+    pl->cjPacked = nullptr;
+    pl->imask    = nullptr;
+    pl->excl     = nullptr;
 
     /* size -1 indicates that the respective array hasn't been initialized yet */
     pl->na_c                   = -1;
     pl->nsci                   = -1;
     pl->sci_nalloc             = -1;
-    pl->ncj4                   = -1;
-    pl->cj4_nalloc             = -1;
+    pl->ncjPacked              = -1;
+    pl->cjPacked_nalloc        = -1;
     pl->nimask                 = -1;
     pl->imask_nalloc           = -1;
     pl->nexcl                  = -1;
@@ -582,18 +582,21 @@ void gpu_init_pairlist(NbnxmGpu* nb, const NbnxnPairlistGpu* h_plist, const Inte
                        GpuApiCallBehavior::Async,
                        bDoTime ? iTimers.pl_h2d.fetchNextEvent() : nullptr);
 
-    reallocateDeviceBuffer(
-            &d_plist->cj4, h_plist->cj4.size(), &d_plist->ncj4, &d_plist->cj4_nalloc, deviceContext);
-    copyToDeviceBuffer(&d_plist->cj4,
-                       h_plist->cj4.data(),
+    reallocateDeviceBuffer(&d_plist->cjPacked,
+                           h_plist->cjPacked.size(),
+                           &d_plist->ncjPacked,
+                           &d_plist->cjPacked_nalloc,
+                           deviceContext);
+    copyToDeviceBuffer(&d_plist->cjPacked,
+                       h_plist->cjPacked.list_.data(),
                        0,
-                       h_plist->cj4.size(),
+                       h_plist->cjPacked.size(),
                        deviceStream,
                        GpuApiCallBehavior::Async,
                        bDoTime ? iTimers.pl_h2d.fetchNextEvent() : nullptr);
 
     reallocateDeviceBuffer(&d_plist->imask,
-                           h_plist->cj4.size() * c_nbnxnGpuClusterpairSplit,
+                           h_plist->cjPacked.size() * c_nbnxnGpuClusterpairSplit,
                            &d_plist->nimask,
                            &d_plist->imask_nalloc,
                            deviceContext);
@@ -1172,7 +1175,7 @@ void gpu_free(NbnxmGpu* nb)
     /* Free plist */
     auto* plist = nb->plist[InteractionLocality::Local];
     freeDeviceBuffer(&plist->sci);
-    freeDeviceBuffer(&plist->cj4);
+    freeDeviceBuffer(&plist->cjPacked);
     freeDeviceBuffer(&plist->imask);
     freeDeviceBuffer(&plist->excl);
     delete plist;
@@ -1180,7 +1183,7 @@ void gpu_free(NbnxmGpu* nb)
     {
         auto* plist_nl = nb->plist[InteractionLocality::NonLocal];
         freeDeviceBuffer(&plist_nl->sci);
-        freeDeviceBuffer(&plist_nl->cj4);
+        freeDeviceBuffer(&plist_nl->cjPacked);
         freeDeviceBuffer(&plist_nl->imask);
         freeDeviceBuffer(&plist_nl->excl);
         delete plist_nl;

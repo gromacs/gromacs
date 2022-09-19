@@ -63,11 +63,11 @@ namespace Nbnxm
  *
  */
 template<bool haveFreshList>
-auto nbnxmKernelPruneOnly(sycl::handler&                                cgh,
-                          DeviceAccessor<Float4, mode::read>            a_xq,
-                          DeviceAccessor<Float3, mode::read>            a_shiftVec,
-                          DeviceAccessor<nbnxn_cj4_t, mode::read_write> a_plistCJ4,
-                          DeviceAccessor<nbnxn_sci_t, mode::read>       a_plistSci,
+auto nbnxmKernelPruneOnly(sycl::handler&                                      cgh,
+                          DeviceAccessor<Float4, mode::read>                  a_xq,
+                          DeviceAccessor<Float3, mode::read>                  a_shiftVec,
+                          DeviceAccessor<nbnxn_cj_packed_t, mode::read_write> a_plistCJ4,
+                          DeviceAccessor<nbnxn_sci_t, mode::read>             a_plistSci,
                           DeviceAccessor<unsigned int, haveFreshList ? mode::write : mode::read> a_plistIMask,
                           const float rlistOuterSq,
                           const float rlistInnerSq,
@@ -113,8 +113,8 @@ auto nbnxmKernelPruneOnly(sycl::handler&                                cgh,
         // my i super-cluster's index = sciOffset + current bidx * numParts + part
         const nbnxn_sci_t nbSci     = a_plistSci[bidx * numParts + part];
         const int         sci       = nbSci.sci;           /* super-cluster */
-        const int         cij4Start = nbSci.cj4_ind_start; /* first ...*/
-        const int         cij4End   = nbSci.cj4_ind_end;   /* and last index of j clusters */
+        const int         cij4Start = nbSci.cjPackedBegin; /* first ...*/
+        const int         cij4End   = nbSci.cjPackedEnd;   /* and last index of j clusters */
 
         // We may need only a subset of threads active for preloading i-atoms
         // depending on the super-cluster and cluster / thread-block size.
@@ -274,7 +274,7 @@ void launchNbnxmKernelPruneOnly(NbnxmGpu*                 nb,
                                                         numSciInPart,
                                                         adat->xq,
                                                         adat->shiftVec,
-                                                        plist->cj4,
+                                                        plist->cjPacked,
                                                         plist->sci,
                                                         plist->imask,
                                                         nbp->rlistOuter_sq,

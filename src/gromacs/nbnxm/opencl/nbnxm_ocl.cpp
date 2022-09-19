@@ -610,7 +610,7 @@ void gpu_launch_kernel(NbnxmGpu* nb, const gmx::StepWorkload& stepWork, const Nb
                                                           &nbp->nbfp_comb,
                                                           &nbp->coulomb_tab,
                                                           &plist->sci,
-                                                          &plist->cj4,
+                                                          &plist->cjPacked,
                                                           &plist->excl,
                                                           &computeFshift);
 
@@ -633,7 +633,7 @@ void gpu_launch_kernel(NbnxmGpu* nb, const gmx::StepWorkload& stepWork, const Nb
                                                           &nbp->nbfp_comb,
                                                           &nbp->coulomb_tab,
                                                           &plist->sci,
-                                                          &plist->cj4,
+                                                          &plist->cjPacked,
                                                           &plist->excl,
                                                           &computeFshift);
         launchGpuKernel(kernel, config, deviceStream, timingEvent, kernelName, kernelArgs);
@@ -651,9 +651,8 @@ void gpu_launch_kernel(NbnxmGpu* nb, const gmx::StepWorkload& stepWork, const Nb
  *  Note that for the sake of simplicity we use the CUDA terminology "shared memory"
  *  for OpenCL local memory.
  *
- * \param[in] num_threads_z cj4 concurrency equal to the number of threads/work items in the 3-rd
- * dimension.
- * \returns   the amount of local memory in bytes required by the pruning kernel
+ * \param[in] num_threads_z cjPacked concurrency equal to the number of threads/work items in the
+ * 3-rd dimension. \returns   the amount of local memory in bytes required by the pruning kernel
  */
 static inline int calc_shmem_required_prune(const int num_threads_z)
 {
@@ -786,7 +785,7 @@ void gpu_launch_kernel_pruneonly(NbnxmGpu* nb, const InteractionLocality iloc, c
                                                       &adat->xq,
                                                       &adat->shiftVec,
                                                       &plist->sci,
-                                                      &plist->cj4,
+                                                      &plist->cjPacked,
                                                       &plist->imask,
                                                       &numParts,
                                                       &part);

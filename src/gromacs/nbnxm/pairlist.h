@@ -89,6 +89,28 @@ struct nbnxn_cj_t
     unsigned int excl;
 };
 
+//! Simple j-cluster list
+class JClusterList
+{
+public:
+    //! The list of packed j-cluster groups
+    FastVector<nbnxn_cj_t> list_;
+    //! Return the j-cluster index for \c index from the pack list
+    int cj(int index) const { return list_[index].cj; }
+    //! Return the exclusion mask for \c index
+    const unsigned int& excl(int index) const { return list_[index].excl; }
+    //! Return the exclusion mask for \c index
+    unsigned int& excl(int index) { return list_[index].excl; }
+    //! Return the size of the list (not the number of packed elements)
+    gmx::index size() const noexcept { return list_.size(); }
+    //! Return whether the list is empty
+    bool empty() const noexcept { return size() == 0; }
+    //! Resize the list
+    void resize(gmx::index count) { list_.resize(count); }
+    //! Add a new element to the list
+    void push_back(const decltype(list_)::value_type& value) { list_.push_back(value); }
+};
+
 /*! \brief Constants for interpreting interaction flags
  *
  * In nbnxn_ci_t the integer shift contains the shift in the lower 7 bits.
@@ -176,16 +198,16 @@ struct nbnxn_ci_t
 typedef struct nbnxn_sci
 {
     //! Returns the number of j-cluster groups in this entry
-    int numJClusterGroups() const { return cj4_ind_end - cj4_ind_start; }
+    int numJClusterGroups() const { return cjPackedEnd - cjPackedBegin; }
 
     //! i-super-cluster
     int sci;
     //! Shift vector index plus possible flags
     int shift;
-    //! Start index into cj4
-    int cj4_ind_start;
-    //! End index into cj4
-    int cj4_ind_end;
+    //! Start index into cjPacked
+    int cjPackedBegin;
+    //! End index into cjPacked (ie. one past the last element)
+    int cjPackedEnd;
 } nbnxn_sci_t;
 
 //! Interaction data for a j-group for one warp
@@ -197,14 +219,47 @@ struct nbnxn_im_ei_t
     int excl_ind = 0;
 };
 
-//! Four-way j-cluster lists
+//! Packed j-cluster list element
 typedef struct
 {
-    //! The 4 j-clusters
+    //! The packed j-clusters
     int cj[c_nbnxnGpuJgroupSize];
     //! The i-cluster mask data for 2 warps
     nbnxn_im_ei_t imei[c_nbnxnGpuClusterpairSplit];
-} nbnxn_cj4_t;
+} nbnxn_cj_packed_t;
+
+/*! Packed j-cluster list
+ *
+ * Four j-cluster indices are stored per integer in an nbnxn_cj_packed_t.
+ */
+class PackedJClusterList
+{
+public:
+    explicit PackedJClusterList(const gmx::PinningPolicy pinningPolicy) :
+        list_({}, { pinningPolicy })
+    {
+    }
+    //! The list of packed j-cluster groups
+    gmx::HostVector<nbnxn_cj_packed_t> list_;
+    //! Return the j-cluster index for \c index from the pack list
+    int cj(const int index) const
+    {
+        return list_[index / c_nbnxnGpuJgroupSize].cj[index & (c_nbnxnGpuJgroupSize - 1)];
+    }
+    //! Return the i-cluster interaction mask for the first cluster in \c index
+    unsigned int imask0(const int index) const
+    {
+        return list_[index / c_nbnxnGpuJgroupSize].imei[0].imask;
+    }
+    //! Return the size of the list (not the number of packed elements)
+    gmx::index size() const noexcept { return list_.size(); }
+    //! Return whether the list is empty
+    bool empty() const noexcept { return size() == 0; }
+    //! Resize the packed list
+    void resize(gmx::index count) { list_.resize(count); }
+    //! Add a new element to the packed list
+    void push_back(const decltype(list_)::value_type& value) { list_.push_back(value); }
+};
 
 //! Struct for storing the atom-pair interaction bits for a cluster pair in a GPU pairlist
 struct nbnxn_excl_t
@@ -243,11 +298,11 @@ struct NbnxnPairlistCpu
     //! The outer, unpruned i-cluster list
     FastVector<nbnxn_ci_t> ciOuter;
 
-    //! The j-cluster list, size ncj
-    FastVector<nbnxn_cj_t> cj;
+    //! The j-cluster list
+    JClusterList cj;
     //! The outer, unpruned j-cluster list
     FastVector<nbnxn_cj_t> cjOuter;
-    //! The number of j-clusters that are used by ci entries in this list, will be <= cj.size()
+    //! The number of j-clusters that are used by ci entries in this list, will be <= cj.list.size()
     int ncjInUse;
 
     //! Working data storage for list construction
@@ -282,13 +337,13 @@ struct NbnxnPairlistGpu
     int na_sc;
     //! The radius for constructing the list
     real rlist;
-    // The i-super-cluster list, indexes into cj4;
+    //! The i-super-cluster list, indexes into cjPacked list;
     gmx::HostVector<nbnxn_sci_t> sci;
-    // The list of 4*j-cluster groups
-    gmx::HostVector<nbnxn_cj4_t> cj4;
-    // Atom interaction bits (non-exclusions)
+    //! The list of packed j-cluster groups
+    PackedJClusterList cjPacked;
+    //! Atom interaction bits (non-exclusions)
     gmx::HostVector<nbnxn_excl_t> excl;
-    // The total number of i-clusters
+    //! The total number of i-clusters
     int nci_tot;
 
     //! Working data storage for list construction

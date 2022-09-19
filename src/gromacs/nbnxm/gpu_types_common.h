@@ -260,13 +260,13 @@ struct gpu_plist
     //! list of i-cluster ("super-clusters")
     DeviceBuffer<nbnxn_sci_t> sci;
 
-    //! total # of 4*j clusters
-    int ncj4;
-    //! allocation size of cj4
-    int cj4_nalloc;
-    //! 4*j cluster list, contains j cluster number and index into the i cluster list
-    DeviceBuffer<nbnxn_cj4_t> cj4;
-    //! # of 4*j clusters * # of warps
+    //! total # of packed j clusters
+    int ncjPacked;
+    //! allocation size of cjPacked
+    int cjPacked_nalloc;
+    //! Packed j cluster list, contains j cluster number and index into the i cluster list
+    DeviceBuffer<nbnxn_cj_packed_t> cjPacked;
+    //! # of packed j clusters * # of warps
     int nimask;
     //! allocation size of imask
     int imask_nalloc;

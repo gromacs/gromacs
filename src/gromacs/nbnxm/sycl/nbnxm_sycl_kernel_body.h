@@ -745,7 +745,7 @@ static auto nbnxmKernel(sycl::handler&                                          
                         DeviceAccessor<Float3, mode::read_write>                  a_fShift,
                         OptionalAccessor<float, mode::read_write, doCalcEnergies> a_energyElec,
                         OptionalAccessor<float, mode::read_write, doCalcEnergies> a_energyVdw,
-                        DeviceAccessor<nbnxn_cj4_t, doPruneNBL ? mode::read_write : mode::read> a_plistCJ4,
+                        DeviceAccessor<nbnxn_cj_packed_t, doPruneNBL ? mode::read_write : mode::read> a_plistCJ4,
                         DeviceAccessor<nbnxn_sci_t, mode::read>                     a_plistSci,
                         DeviceAccessor<nbnxn_excl_t, mode::read>                    a_plistExcl,
                         OptionalAccessor<Float2, mode::read, ljComb<vdwType>>       a_ljComb,
@@ -906,8 +906,8 @@ static auto nbnxmKernel(sycl::handler&                                          
 
         const nbnxn_sci_t nbSci     = a_plistSci[bidx];
         const int         sci       = nbSci.sci;
-        const int         cij4Start = nbSci.cj4_ind_start;
-        const int         cij4End   = nbSci.cj4_ind_end;
+        const int         cij4Start = nbSci.cjPackedBegin;
+        const int         cij4End   = nbSci.cjPackedEnd;
 
         // Only needed if props.elecEwaldAna
         const float beta2 = ewaldBeta * ewaldBeta;
@@ -1356,7 +1356,7 @@ void launchNbnxmKernelHelper(NbnxmGpu* nb, const gmx::StepWorkload& stepWork, co
                                                            adat->fShift,
                                                            adat->eElec,
                                                            adat->eLJ,
-                                                           plist->cj4,
+                                                           plist->cjPacked,
                                                            plist->sci,
                                                            plist->excl,
                                                            adat->ljComb,

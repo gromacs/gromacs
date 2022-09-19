@@ -217,7 +217,7 @@
     /* Major division is over i-particle energy groups, determine the stride */
     const int Vstride_i = nbatParams.nenergrp * (1 << nbatParams.neg_2log) * egps_jstride;
 
-    const nbnxn_cj_t* l_cj = nbl->cj.data();
+    const nbnxn_cj_t* l_cj = nbl->cj.list_.data();
 
     for (const nbnxn_ci_t& ciEntry : nbl->ci)
     {
@@ -420,7 +420,7 @@
             constexpr ILJInteractions c_iLJInteractions              = ILJInteractions::Half;
             {
                 constexpr bool c_needToCheckExclusions = true;
-                while (cjind < cjind1 && nbl->cj[cjind].excl != NBNXN_INTERACTION_MASK_ALL)
+                while (cjind < cjind1 && nbl->cj.excl(cjind) != NBNXN_INTERACTION_MASK_ALL)
                 {
 #include "kernel_inner.h"
                     cjind++;
@@ -441,7 +441,7 @@
             constexpr ILJInteractions c_iLJInteractions              = ILJInteractions::All;
             {
                 constexpr bool c_needToCheckExclusions = true;
-                while (cjind < cjind1 && nbl->cj[cjind].excl != NBNXN_INTERACTION_MASK_ALL)
+                while (cjind < cjind1 && nbl->cj.excl(cjind) != NBNXN_INTERACTION_MASK_ALL)
                 {
 #include "kernel_inner.h"
                     cjind++;
@@ -462,7 +462,7 @@
             constexpr ILJInteractions c_iLJInteractions              = ILJInteractions::All;
             {
                 constexpr bool c_needToCheckExclusions = true;
-                while (cjind < cjind1 && nbl->cj[cjind].excl != NBNXN_INTERACTION_MASK_ALL)
+                while (cjind < cjind1 && nbl->cj.excl(cjind) != NBNXN_INTERACTION_MASK_ALL)
                 {
 #include "kernel_inner.h"
                     cjind++;

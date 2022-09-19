@@ -106,19 +106,19 @@ void nbnxn_kernel_gpu_ref(const NbnxnPairlistGpu*        nbl,
 
     for (const nbnxn_sci_t& nbln : nbl->sci)
     {
-        const int  ish      = nbln.shift;
-        const int  ish3     = DIM * ish;
-        const real shX      = shiftvec[ish][XX];
-        const real shY      = shiftvec[ish][YY];
-        const real shZ      = shiftvec[ish][ZZ];
-        const int  cj4_ind0 = nbln.cj4_ind_start;
-        const int  cj4_ind1 = nbln.cj4_ind_end;
-        const int  sci      = nbln.sci;
-        real       vctot    = 0;
-        real       Vvdwtot  = 0;
+        const int  ish           = nbln.shift;
+        const int  ish3          = DIM * ish;
+        const real shX           = shiftvec[ish][XX];
+        const real shY           = shiftvec[ish][YY];
+        const real shZ           = shiftvec[ish][ZZ];
+        const int  cjPackedBegin = nbln.cjPackedBegin;
+        const int  cjPackedEnd   = nbln.cjPackedEnd;
+        const int  sci           = nbln.sci;
+        real       vctot         = 0;
+        real       Vvdwtot       = 0;
 
         if (nbln.shift == gmx::c_centralShiftIndex
-            && nbl->cj4[cj4_ind0].cj[0] == sci * c_nbnxnGpuNumClusterPerSupercluster)
+            && nbl->cjPacked.list_[cjPackedBegin].cj[0] == sci * c_nbnxnGpuNumClusterPerSupercluster)
         {
             /* we have the diagonal:
              * add the charge self interaction energy term
@@ -144,21 +144,22 @@ void nbnxn_kernel_gpu_ref(const NbnxnPairlistGpu*        nbl,
             }
         }
 
-        for (int cj4_ind = cj4_ind0; (cj4_ind < cj4_ind1); cj4_ind++)
+        for (int cjPacked = cjPackedBegin; (cjPacked < cjPackedEnd); cjPacked++)
         {
-            excl[0] = &nbl->excl[nbl->cj4[cj4_ind].imei[0].excl_ind];
-            excl[1] = &nbl->excl[nbl->cj4[cj4_ind].imei[1].excl_ind];
+            excl[0] = &nbl->excl[nbl->cjPacked.list_[cjPacked].imei[0].excl_ind];
+            excl[1] = &nbl->excl[nbl->cjPacked.list_[cjPacked].imei[1].excl_ind];
 
             for (int jm = 0; jm < c_nbnxnGpuJgroupSize; jm++)
             {
-                const int cj = nbl->cj4[cj4_ind].cj[jm];
+                const int cj = nbl->cjPacked.list_[cjPacked].cj[jm];
 
                 for (int im = 0; im < c_nbnxnGpuNumClusterPerSupercluster; im++)
                 {
                     /* We're only using the first imask,
                      * but here imei[1].imask is identical.
                      */
-                    if ((nbl->cj4[cj4_ind].imei[0].imask >> (jm * c_nbnxnGpuNumClusterPerSupercluster + im))
+                    if ((nbl->cjPacked.list_[cjPacked].imei[0].imask
+                         >> (jm * c_nbnxnGpuNumClusterPerSupercluster + im))
                         & 1)
                     {
                         const int ci = sci * c_nbnxnGpuNumClusterPerSupercluster + im;

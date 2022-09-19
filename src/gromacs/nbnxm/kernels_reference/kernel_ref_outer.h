@@ -178,7 +178,7 @@ void
     const real* shiftvec = shift_vec[0];
     const real* x        = nbat->x().data();
 
-    const nbnxn_cj_t* l_cj = nbl->cj.data();
+    const nbnxn_cj_t* l_cj = nbl->cj.list_.data();
 
     for (const nbnxn_ci_t& ciEntry : nbl->ci)
     {
@@ -272,7 +272,7 @@ void
 #endif /* CALC_ENERGIES */
 
         int cjind = cjind0;
-        while (cjind < cjind1 && nbl->cj[cjind].excl != 0xffff)
+        while (cjind < cjind1 && nbl->cj.excl(cjind) != 0xffff)
         {
 #define CHECK_EXCLS
             if (half_LJ)

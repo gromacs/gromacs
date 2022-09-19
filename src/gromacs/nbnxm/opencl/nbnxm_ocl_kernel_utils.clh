@@ -204,9 +204,9 @@ typedef struct
     //! Shift vector index plus possible flags
     int shift;
     //! Start index into cj4
-    int cj4_ind_start;
+    int cjPackedBegin;
     //! End index into cj4
-    int cj4_ind_end;
+    int cjPackedEnd;
 } nbnxn_sci_t;
 
 typedef struct
@@ -219,11 +219,11 @@ typedef struct
 
 typedef struct
 {
-    //! The 4 j-clusters
-    int cj[4];
+    //! The packed j-clusters
+    int cj[4]; // This has to match the value used in pairlist.h
     //! The i-cluster mask data       for 2 warps
     nbnxn_im_ei_t imei[2];
-} nbnxn_cj4_t;
+} nbnxn_cj_packed_t;
 
 
 typedef struct

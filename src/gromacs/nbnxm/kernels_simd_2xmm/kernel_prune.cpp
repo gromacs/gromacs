@@ -63,7 +63,7 @@ void nbnxn_kernel_prune_2xnn(NbnxnPairlistCpu*              nbl,
     nbnxn_ci_t* gmx_restrict       ciInner = nbl->ci.data();
 
     const nbnxn_cj_t* gmx_restrict cjOuter = nbl->cjOuter.data();
-    nbnxn_cj_t* gmx_restrict       cjInner = nbl->cj.data();
+    nbnxn_cj_t* gmx_restrict       cjInner = nbl->cj.list_.data();
 
     const real* gmx_restrict x = nbat->x().data();
 

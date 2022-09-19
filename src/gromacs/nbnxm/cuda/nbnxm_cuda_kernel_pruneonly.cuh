@@ -122,7 +122,7 @@ nbnxn_kernel_prune_cuda<false>(const NBAtomDataGpu, const NBParamGpu, const Nbnx
 
     /* convenience variables */
     const nbnxn_sci_t* pl_sci    = plist.sci;
-    nbnxn_cj4_t*       pl_cj4    = plist.cj4;
+    nbnxn_cj_packed_t* pl_cj4    = plist.cjPacked;
     const float4*      xq        = atdat.xq;
     const float3*      shift_vec = asFloat3(atdat.shiftVec);
 
@@ -173,8 +173,8 @@ nbnxn_kernel_prune_cuda<false>(const NBAtomDataGpu, const NBParamGpu, const Nbnx
     nbnxn_sci_t nb_sci =
             pl_sci[bidx * numParts + part]; /* my i super-cluster's index = sciOffset + current bidx * numParts + part */
     int sci        = nb_sci.sci;           /* super-cluster */
-    int cij4_start = nb_sci.cj4_ind_start; /* first ...*/
-    int cij4_end   = nb_sci.cj4_ind_end;   /* and last index of j clusters */
+    int cij4_start = nb_sci.cjPackedBegin; /* first ...*/
+    int cij4_end   = nb_sci.cjPackedEnd;   /* and last index of j clusters */
 
     // We may need only a subset of threads active for preloading i-atoms
     // depending on the super-cluster and cluster / thread-block size.
@@ -285,7 +285,7 @@ nbnxn_kernel_prune_cuda<false>(const NBAtomDataGpu, const NBParamGpu, const Nbnx
                 plist.imask[j4 * c_nbnxnGpuClusterpairSplit + widx] = imaskFull;
             }
             /* update the imask with only the pairs up to rlistInner */
-            plist.cj4[j4].imei[widx].imask = imaskNew;
+            plist.cjPacked[j4].imei[widx].imask = imaskNew;
         }
         if (c_preloadCj)
         {
