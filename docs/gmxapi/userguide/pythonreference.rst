@@ -157,6 +157,8 @@ Tools for launching simulations
 
 .. autofunction:: gmxapi._gmxapi.from_tpr
 
+.. autofunction:: gmxapi._gmxapi.create_context
+
 Tools to manipulate TPR input files
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -182,6 +184,8 @@ Utilities
 
     Named features:
 
+    * *create_context*: `create_context` can be used to initialize a `Context`
+      with assigned resources.
     * *mpi_bindings*: C++ extension module was built with :py:mod:`mpi4py` compatibility.
 
 

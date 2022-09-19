@@ -252,7 +252,6 @@ if (_mpi4py_result EQUAL 0)
         OUTPUT_VARIABLE _mpi4py_mpicc
         OUTPUT_STRIP_TRAILING_WHITESPACE
     )
-    # TODO: If not found, try mpi_dir
     execute_process(
         COMMAND "${Python3_EXECUTABLE}" -c
         "import mpi4py; print(mpi4py.get_config()['mpicxx'])"
@@ -348,7 +347,16 @@ target_link_libraries(_gmxapi PRIVATE Gromacs::gmxapi)
 if (HAS_MPI4PY)
     target_include_directories(_gmxapi PRIVATE ${_mpi4py_include_path})
     target_sources(_gmxapi PRIVATE src/cpp/mpi_bindings.cpp)
+    target_sources(_gmxapi PRIVATE src/cpp/pycontext_create.cpp)
+    # Conditionally activate the offer_comm() API.
+    if (HAS_GROMACS_MPI)
+        target_sources(_gmxapi PRIVATE src/cpp/mpi_gromacs_support.cpp)
+    else()
+        target_sources(_gmxapi PRIVATE src/cpp/mpi_no_gromacs_support.cpp)
+    endif ()
     target_link_libraries(_gmxapi PRIVATE MPI::MPI_CXX)
+else()
+    target_sources(_gmxapi PRIVATE src/cpp/pycontext_create_no_mpi.cpp)
 endif()
 
 if (GMXAPI_MASTER_PROJECT)

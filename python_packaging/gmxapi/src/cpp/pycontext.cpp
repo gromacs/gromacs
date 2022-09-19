@@ -92,8 +92,12 @@ std::shared_ptr<gmxapi::Context> PyContext::get() const
 }
 
 PyContext::PyContext() :
-    context_{ std::make_shared<gmxapi::Context>(gmxapi::createContext()) },
-    workNodes_{ std::make_shared<gmxapi::MDWorkSpec>() }
+    PyContext(std::move(std::make_shared<gmxapi::Context>(gmxapi::createContext())))
+{
+}
+
+PyContext::PyContext(std::shared_ptr<gmxapi::Context> context) :
+    context_{ context }, workNodes_{ std::make_shared<gmxapi::MDWorkSpec>() }
 {
     assert(context_);
     assert(workNodes_);
@@ -136,6 +140,6 @@ void PyContext::addMDModule(const pybind11::object& force_object) const
         // Ref: https://github.com/kassonlab/gmxapi/issues/125
         throw py::value_error("Argument must provide a `bind` method.");
     }
-} // namespace gmxpy
+} // end namespace detail
 
 } // end namespace gmxpy

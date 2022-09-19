@@ -68,6 +68,8 @@ extern "C" __attribute__((visibility("default"))) PyObject* PyInit__gmxapi();
  */
 namespace gmxpy
 {
+// Base exception forward declared for gmxpy_exceptions.h.
+class Exception;
 
 /*!
  * \brief Implementation details of the Python bindings library.
@@ -86,7 +88,7 @@ namespace gmxpy
 namespace detail
 {
 
-void export_context(pybind11::module& m);
+void export_context(pybind11::module& m, const pybind11::exception<Exception>& baseException);
 void export_system(pybind11::module& m);
 void export_tprfile(pybind11::module& module);
 

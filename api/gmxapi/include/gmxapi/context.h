@@ -178,7 +178,7 @@ private:
      * new Context handles to the same resources can be created (in library code)
      * by constructing from a smart pointer to an implementation object.
      *
-     * \todo Consider client requirements and ownership contracts.
+     * \todo (#3688) Consider client requirements and ownership contracts.
      * Whether/how API client might be required to create and hold a Context
      * and/or Session object for the length of a process.
      */

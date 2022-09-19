@@ -43,6 +43,7 @@
 #include "gmxapi/exceptions.h"
 #include "gmxapi/version.h"
 
+#include "gmxpy_exceptions.h"
 #include "module.h"
 #include "pycontext.h"
 
@@ -242,7 +243,7 @@ static void setMDArgs(std::vector<std::string>* mdargs, const py::dict& params)
     }
 }
 
-void export_context(py::module& m)
+void export_context(pybind11::module& m, const pybind11::exception<Exception>& baseException)
 {
     // Add argument type before it is used for more sensible automatic bindings behavior.
     py::class_<MDArgs, std::unique_ptr<MDArgs>> mdargs(m, "MDArgs");
@@ -258,6 +259,8 @@ void export_context(py::module& m)
     context.def("setMDArgs", &PyContext::setMDArgs, "Set MD runtime parameters.");
 
     context.def("add_mdmodule", &PyContext::addMDModule, "Add an MD plugin for the simulation.");
+
+    export_create_context(m, baseException);
 }
 
 } // namespace detail

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright 2019- The GROMACS Authors
+ * Copyright 2022- The GROMACS Authors
  * and the project initiators Erik Lindahl, Berk Hess and David van der Spoel.
  * Consult the AUTHORS/COPYING files and https://www.gromacs.org for details.
  *
@@ -32,83 +32,54 @@
  * the research papers on the package. Check out https://www.gromacs.org.
  */
 /*! \file
- * \brief Declarations for Context wrappers.
+ * \brief Create a PyContext for gmxapi < 0.2.0
+ *
+ *
+ * \author M. Eric Irrgang <ericirrgang@gmail.com>
  *
  * \ingroup module_python
- * \author M. Eric Irrgang <ericirrgang@gmail.com>
  */
 
-#ifndef GMXPY_PYCONTEXT_H
-#define GMXPY_PYCONTEXT_H
 
 #include "pybind11/pybind11.h"
 
-#include "gmxapi/context.h"
-#include "gmxapi/md.h"
-
 #include "gmxpy_exceptions.h"
+#include "pycontext.h"
+
+namespace py = pybind11;
 
 namespace gmxpy
 {
 
-/*!
- * \brief Computing resources are not suitable.
- */
-class ResourceError : public ::gmxpy::Exception
+PyContext create_context()
 {
-public:
-    using Exception::Exception;
-};
+    auto context     = gmxapi::createContext();
+    auto context_ptr = std::make_shared<gmxapi::Context>(std::move(context));
+    return PyContext(std::move(context_ptr));
+}
 
-using gmxapi::MDArgs;
-
-
-/*!
- * \brief Wrapper for gmxapi::Context
- *
- * Proxies gmxapi::Context methods and includes additions not yet provided by
- * by upstream library.
- */
-class PyContext
+PyContext create_context(py::object /* unused */)
 {
-public:
-    PyContext();
-    explicit PyContext(std::shared_ptr<gmxapi::Context> context);
-
-    void setMDArgs(const MDArgs& mdArgs);
-
-    std::shared_ptr<gmxapi::Session> launch(const gmxapi::Workflow& work);
-
-    [[nodiscard]] std::shared_ptr<gmxapi::Context> get() const;
-
-    void addMDModule(const pybind11::object& forceProvider) const;
-
-    /*!
-     * \brief Borrow shared ownership of the System's container of associated modules.
-     *
-     * Used with gmxapi::MDHolder to add MD Modules to the simulation to be run.
-     *
-     * \return handle to be passed to gmxapi::MDHolder
-     *
-     */
-    [[nodiscard]] std::shared_ptr<gmxapi::MDWorkSpec> getSpec() const;
-
-private:
-    // TODO(#4467): Directly hold a `gmxapi::Context` object.
-    std::shared_ptr<gmxapi::Context>    context_;
-    std::shared_ptr<gmxapi::MDWorkSpec> workNodes_;
-};
-
-PyContext create_context();
-PyContext create_context(pybind11::object communicator);
-
+    throw FeatureNotAvailable(
+            "ResourceAssignment bindings require gmxapi library level 0.2 or higher and a "
+            "compatible mpi4py installation.");
+}
 namespace detail
 {
 
-void export_create_context(pybind11::module& module, const pybind11::exception<Exception>& exception);
+void export_create_context(pybind11::module& m, const pybind11::exception<Exception>& /*exception*/)
+{
+    py::dict features          = m.attr("_named_features");
+    features["create_context"] = 1;
+    m.def(
+            "create_context",
+            []() { return create_context(); },
+            "Initialize a new API Context to manage resources and software environment.");
+    m.def(
+            "create_context",
+            [](const py::object& resource) { return create_context(resource); },
+            "Initialize a new API Context to manage resources and software environment.");
+}
+} // namespace detail
 
-} // end namespace detail
-
-} // end namespace gmxpy
-
-#endif // GMXPY_PYCONTEXT_H
+} // namespace gmxpy
