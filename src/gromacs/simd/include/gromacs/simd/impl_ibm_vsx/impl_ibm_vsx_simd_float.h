@@ -49,8 +49,7 @@ class SimdFloat
 public:
     SimdFloat() {}
 
-    // gcc-4.9 does not recognize that we use the parameter
-    SimdFloat(float gmx_unused f) : simdInternal_(vec_splats(f)) {}
+    SimdFloat(float f) : simdInternal_(vec_splats(f)) {}
 
     // Internal utility constructor to simplify return statements
     SimdFloat(__vector float simd) : simdInternal_(simd) {}
@@ -63,8 +62,7 @@ class SimdFInt32
 public:
     SimdFInt32() {}
 
-    // gcc-4.9 does not recognize that we use the parameter
-    SimdFInt32(std::int32_t gmx_unused i) : simdInternal_(vec_splats(i)) {}
+    SimdFInt32(std::int32_t i) : simdInternal_(vec_splats(i)) {}
 
     // Internal utility constructor to simplify return statements
     SimdFInt32(__vector signed int simd) : simdInternal_(simd) {}
@@ -103,9 +101,6 @@ public:
 
     __vector vsxBool int simdInternal_;
 };
-
-// Note that the interfaces we use here have been a mess in xlc;
-// currently version 13.1.5 is required.
 
 static inline SimdFloat gmx_simdcall simdLoad(const float* m, SimdFloatTag = {})
 {
@@ -157,9 +152,8 @@ static inline SimdFInt32 gmx_simdcall setZeroFI()
     return { vec_splats(static_cast<int>(0)) };
 }
 
-// gcc-4.9 does not detect that vec_extract() uses its argument
 template<int index>
-static inline std::int32_t gmx_simdcall extract(SimdFInt32 gmx_unused a)
+static inline std::int32_t gmx_simdcall extract(SimdFInt32 a)
 {
     return vec_extract(a.simdInternal_, index);
 }
@@ -510,13 +504,7 @@ static inline SimdFBool gmx_simdcall cvtIB2B(SimdFIBool a)
 
 static inline SimdFloat gmx_simdcall copysign(SimdFloat x, SimdFloat y)
 {
-#if defined(__GNUC__) && !defined(__ibmxl__) && !defined(__xlC__)
-    __vector float res;
-    __asm__("xvcpsgnsp %x0,%x1,%x2" : "=wf"(res) : "wf"(y.simdInternal_), "wf"(x.simdInternal_));
-    return { res };
-#else
     return { vec_cpsgn(y.simdInternal_, x.simdInternal_) };
-#endif
 }
 
 } // namespace gmx

@@ -96,13 +96,12 @@ static inline void gmx_simdcall gatherLoadUTranspose(const double*      base,
                                    vec_splats(*(base + align * offset[1] + 2)));
 }
 
-// gcc-4.9 fails to recognize that the argument to vec_extract() is used
 template<int align>
-static inline void gmx_simdcall transposeScatterStoreU(double*               base,
-                                                       const std::int32_t    offset[],
-                                                       SimdDouble            v0,
-                                                       SimdDouble            v1,
-                                                       SimdDouble gmx_unused v2)
+static inline void gmx_simdcall transposeScatterStoreU(double*            base,
+                                                       const std::int32_t offset[],
+                                                       SimdDouble         v0,
+                                                       SimdDouble         v1,
+                                                       SimdDouble         v2)
 {
     SimdDouble t1, t2;
 

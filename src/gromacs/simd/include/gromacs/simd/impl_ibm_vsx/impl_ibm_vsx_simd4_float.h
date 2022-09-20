@@ -49,8 +49,7 @@ class Simd4Float
 public:
     Simd4Float() {}
 
-    // gcc-4.9 does not recognize that we use the parameter
-    Simd4Float(float gmx_unused f) : simdInternal_(vec_splats(f)) {}
+    Simd4Float(float f) : simdInternal_(vec_splats(f)) {}
 
     // Internal utility constructor to simplify return statements
     Simd4Float(__vector float simd) : simdInternal_(simd) {}

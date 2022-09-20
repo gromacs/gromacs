@@ -50,8 +50,7 @@ class SimdDouble
 public:
     SimdDouble() {}
 
-    // gcc-4.9 does not recognize that we use the parameter
-    SimdDouble(double gmx_unused d) : simdInternal_(vec_splats(d)) {}
+    SimdDouble(double d) : simdInternal_(vec_splats(d)) {}
 
     // Internal utility constructor to simplify return statements
     SimdDouble(__vector double simd) : simdInternal_(simd) {}
@@ -64,8 +63,7 @@ class SimdDInt32
 public:
     SimdDInt32() {}
 
-    // gcc-4.9 does not recognize that we use the parameter
-    SimdDInt32(std::int32_t gmx_unused i) : simdInternal_(vec_splats(i)) {}
+    SimdDInt32(std::int32_t i) : simdInternal_(vec_splats(i)) {}
 
     // Internal utility constructor to simplify return statements
     SimdDInt32(__vector signed int simd) : simdInternal_(simd) {}
@@ -105,49 +103,24 @@ public:
     __vector vsxBool int simdInternal_;
 };
 
-// Note that the interfaces we use here have been a mess in xlc;
-// currently version 13.1.5 is required.
-
 static inline SimdDouble gmx_simdcall simdLoad(const double* m, SimdDoubleTag = {})
 {
-    return
-    {
-#if defined(__ibmxl__)
-        vec_ld(0, m)
-#else
-        vec_vsx_ld(0, m)
-#endif
-    };
+    return { vec_vsx_ld(0, m) };
 }
 
 static inline void gmx_simdcall store(double* m, SimdDouble a)
 {
-#if defined(__ibmxl__)
-    vec_st(a.simdInternal_, 0, m);
-#else
     vec_vsx_st(a.simdInternal_, 0, m);
-#endif
 }
 
 static inline SimdDouble gmx_simdcall simdLoadU(const double* m, SimdDoubleTag = {})
 {
-    return
-    {
-#if defined(__ibmxl__)
-        vec_xl(0, m)
-#else
-        vec_vsx_ld(0, m)
-#endif
-    };
+    return { vec_vsx_ld(0, m) };
 }
 
 static inline void gmx_simdcall storeU(double* m, SimdDouble a)
 {
-#if defined(__ibmxl__)
-    vec_xst(a.simdInternal_, 0, m);
-#else
     vec_vsx_st(a.simdInternal_, 0, m);
-#endif
 }
 
 static inline SimdDouble gmx_simdcall setZeroD()
@@ -164,8 +137,7 @@ static inline SimdDInt32 gmx_simdcall simdLoad(const std::int32_t* m, SimdDInt32
     return { vec_perm(t0, t1, perm) };
 }
 
-// gcc-4.9 does not understand that arguments to vec_extract() are used
-static inline void gmx_simdcall store(std::int32_t* m, SimdDInt32 gmx_unused x)
+static inline void gmx_simdcall store(std::int32_t* m, SimdDInt32 x)
 {
     m[0] = vec_extract(x.simdInternal_, 0);
     m[1] = vec_extract(x.simdInternal_, 2);
@@ -186,9 +158,8 @@ static inline SimdDInt32 gmx_simdcall setZeroDI()
     return { vec_splats(static_cast<int>(0)) };
 }
 
-// gcc-4.9 does not detect that vec_extract() uses its argument
 template<int index>
-static inline std::int32_t gmx_simdcall extract(SimdDInt32 gmx_unused a)
+static inline std::int32_t gmx_simdcall extract(SimdDInt32 a)
 {
     return vec_extract(a.simdInternal_, 2 * index);
 }
@@ -316,14 +287,7 @@ static inline SimdDouble gmx_simdcall min(SimdDouble a, SimdDouble b)
 
 static inline SimdDouble gmx_simdcall round(SimdDouble x)
 {
-#if defined(__GNUC__) && !defined(__ibmxl__) && !defined(__xlC__)
-    // gcc up to at least version 4.9 does not have vec_round() in double precision - use inline asm
-    __vector double res;
-    __asm__("xvrdpi %x0,%x1" : "=wd"(res) : "wd"(x.simdInternal_));
-    return { res };
-#else
     return { vec_round(x.simdInternal_) };
-#endif
 }
 
 static inline SimdDouble gmx_simdcall trunc(SimdDouble x)
@@ -395,16 +359,7 @@ static inline SimdDouble ldexp(SimdDouble value, SimdDInt32 exponent)
 static inline double gmx_simdcall reduce(SimdDouble x)
 {
     const __vector unsigned char perm = { 8, 9, 10, 11, 12, 13, 14, 15, 0, 1, 2, 3, 4, 5, 6, 7 };
-#ifdef __xlC__
-    /* old xlc version 12 does not understand vec_perm() with double arguments */
-    x.simdInternal_ = vec_add(x.simdInternal_,
-                              reinterpret_cast<__vector double>(vec_perm(
-                                      reinterpret_cast<__vector signed int>(x.simdInternal_),
-                                      reinterpret_cast<__vector signed int>(x.simdInternal_),
-                                      perm)));
-#else
     x.simdInternal_ = vec_add(x.simdInternal_, vec_perm(x.simdInternal_, x.simdInternal_, perm));
-#endif
     return vec_extract(x.simdInternal_, 0);
 }
 
@@ -443,7 +398,7 @@ static inline SimdDBool gmx_simdcall testBits(SimdDouble a)
 
     // Shuffle low/high 32-bit fields of tmp into tmp2
     const __vector unsigned char perm = { 4, 5, 6, 7, 0, 1, 2, 3, 12, 13, 14, 15, 8, 9, 10, 11 };
-    __vector vsxBool int tmp2 = vec_perm(tmp, tmp, perm);
+    __vector vsxBool int         tmp2 = vec_perm(tmp, tmp, perm);
 
     // Return the or:d parts of tmp & tmp2
     return { reinterpret_cast<__vector vsxBool long long>(vec_or(tmp, tmp2)) };
@@ -568,7 +523,7 @@ static inline SimdDInt32 gmx_simdcall blend(SimdDInt32 a, SimdDInt32 b, SimdDIBo
 static inline SimdDInt32 gmx_simdcall cvttR2I(SimdDouble a)
 {
 #if defined(__GNUC__) && !defined(__ibmxl__) && !defined(__xlC__)
-    // gcc up to at least version 6.1 is missing intrinsics for converting double to/from int - use inline asm
+    // gcc up to at least version 9.4 is missing intrinsics for converting double to/from int - use inline asm
     const __vector unsigned char perm = { 4, 5, 6, 7, 0, 1, 2, 3, 12, 13, 14, 15, 8, 9, 10, 11 };
     __vector double              ix;
 
@@ -588,7 +543,7 @@ static inline SimdDInt32 gmx_simdcall cvtR2I(SimdDouble a)
 static inline SimdDouble gmx_simdcall cvtI2R(SimdDInt32 a)
 {
 #if defined(__GNUC__) && !defined(__ibmxl__) && !defined(__xlC__)
-    // gcc up to at least version 4.9 is missing intrinsics for converting double to/from int - use inline asm
+    // gcc up to at least version 9.4 is missing intrinsics for converting double to/from int - use inline asm
     __vector double x;
 #    ifndef __BIG_ENDIAN__
     const __vector unsigned char perm = { 4, 5, 6, 7, 0, 1, 2, 3, 12, 13, 14, 15, 8, 9, 10, 11 };
@@ -619,12 +574,12 @@ static inline void gmx_simdcall cvtF2DD(SimdFloat f, SimdDouble* d0, SimdDouble*
     fA = vec_mergeh(f.simdInternal_, f.simdInternal_); /* 0011 */
     fB = vec_mergel(f.simdInternal_, f.simdInternal_); /* 2233 */
 #if defined(__GNUC__) && !defined(__ibmxl__) && !defined(__xlC__)
-    // gcc-4.9 is missing double-to-float/float-to-double conversions.
+    // gcc up to at least version 9.4 is missing double-to-float/float-to-double conversions.
     __asm__("xvcvspdp %x0,%x1" : "=wd"(d0->simdInternal_) : "wf"(fA));
     __asm__("xvcvspdp %x0,%x1" : "=wd"(d1->simdInternal_) : "wf"(fB));
 #else
-    d0->simdInternal_ = vec_cvf(fA); /* 01 */
-    d1->simdInternal_ = vec_cvf(fB); /* 23 */
+    d0->simdInternal_ = vec_cvf(fA);               /* 01 */
+    d1->simdInternal_ = vec_cvf(fB);               /* 23 */
 #endif
 }
 
@@ -632,12 +587,12 @@ static inline SimdFloat gmx_simdcall cvtDD2F(SimdDouble d0, SimdDouble d1)
 {
     __vector float fA, fB, fC, fD, fE;
 #if defined(__GNUC__) && !defined(__ibmxl__) && !defined(__xlC__)
-    // gcc-4.9 is missing double-to-float/float-to-double conversions.
+    // gcc up to at least version 9.4 is missing double-to-float/float-to-double conversions.
     __asm__("xvcvdpsp %x0,%x1" : "=wf"(fA) : "wd"(d0.simdInternal_));
     __asm__("xvcvdpsp %x0,%x1" : "=wf"(fB) : "wd"(d1.simdInternal_));
 #else
-    fA = vec_cvf(d0.simdInternal_);  /* 0x1x */
-    fB = vec_cvf(d1.simdInternal_);  /* 2x3x */
+    fA                = vec_cvf(d0.simdInternal_); /* 0x1x */
+    fB                = vec_cvf(d1.simdInternal_); /* 2x3x */
 #endif
     fC = vec_mergeh(fA, fB); /* 02xx */
     fD = vec_mergel(fA, fB); /* 13xx */
@@ -647,13 +602,7 @@ static inline SimdFloat gmx_simdcall cvtDD2F(SimdDouble d0, SimdDouble d1)
 
 static inline SimdDouble gmx_simdcall copysign(SimdDouble x, SimdDouble y)
 {
-#if defined(__GNUC__) && !defined(__ibmxl__) && !defined(__xlC__)
-    __vector double res;
-    __asm__("xvcpsgndp %x0,%x1,%x2" : "=wd"(res) : "wd"(y.simdInternal_), "wd"(x.simdInternal_));
-    return { res };
-#else
     return { vec_cpsgn(y.simdInternal_, x.simdInternal_) };
-#endif
 }
 
 } // namespace gmx

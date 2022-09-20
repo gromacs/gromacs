@@ -43,16 +43,11 @@
 
 #include <altivec.h>
 
-#if defined(__GNUC__) && !defined(__ibmxl__) && !defined(__xlC__)
 // According to G++ documentation, when using VSX in C++ we
 // must undefine vector & bool macros after including altivec.h
-#    undef vector
-#    undef bool
-#    define vsxBool __bool
-#else
-// We cannot undefine bool on xlc, but somehow it works anyway
-#    define vsxBool bool
-#endif
+#undef vector
+#undef bool
+#define vsxBool __bool
 
 #define GMX_SIMD 1
 #define GMX_SIMD_HAVE_FLOAT 1

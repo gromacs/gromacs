@@ -136,13 +136,9 @@ static inline void gmx_simdcall gatherLoadUTranspose(const float*       base,
 }
 
 
-// gcc-4.9 does not recognize that the argument to vec_extract() is used
 template<int align>
-static inline void gmx_simdcall transposeScatterStoreU(float*               base,
-                                                       const std::int32_t   offset[],
-                                                       SimdFloat            v0,
-                                                       SimdFloat            v1,
-                                                       SimdFloat gmx_unused v2)
+static inline void gmx_simdcall
+transposeScatterStoreU(float* base, const std::int32_t offset[], SimdFloat v0, SimdFloat v1, SimdFloat v2)
 {
     __vector float t1, t2;
 
@@ -333,9 +329,6 @@ static inline void gmx_simdcall expandScalarsToTriplets(SimdFloat  scalar,
     triplets2->simdInternal_ = vec_perm(scalar.simdInternal_, t1, perm2);
 }
 
-/* TODO In debug mode, xlc 13.1.5 seems to overwrite v0 on the stack,
-   leading to segfaults. Possibly the calling convention doesn't
-   implement __vector int correctly. Release mode is OK. gcc is OK. */
 template<int align>
 static inline void gmx_simdcall gatherLoadBySimdIntTranspose(const float* base,
                                                              SimdFInt32   offset,
