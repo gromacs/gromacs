@@ -43,6 +43,8 @@
 
 #include "config.h"
 
+#include <filesystem>
+
 #if GMX_FFT_FFTW3 || GMX_FFT_ARMPL_FFTW3
 // Needed for construction of the FFT library description string
 #    include <fftw3.h>
@@ -474,21 +476,21 @@ void printBinaryInformation(TextWriter*                      writer,
         writer->writeLine(formatString(
                 "%sGROMACS:      %s, version %s%s%s", prefix, name, gmx_version(), precisionString, suffix));
     }
-    const char* const binaryPath = programContext.fullBinaryPath();
-    if (!gmx::isNullOrEmpty(binaryPath))
+    const auto& binaryPath = programContext.fullBinaryPath();
+    if (!binaryPath.empty())
     {
-        writer->writeLine(formatString("%sExecutable:   %s%s", prefix, binaryPath, suffix));
+        writer->writeLine(formatString("%sExecutable:   %s%s", prefix, binaryPath.c_str(), suffix));
     }
     const gmx::InstallationPrefixInfo installPrefix = programContext.installationPrefix();
-    if (!gmx::isNullOrEmpty(installPrefix.path))
+    if (!installPrefix.path.empty())
     {
         writer->writeLine(formatString("%sData prefix:  %s%s%s",
                                        prefix,
-                                       installPrefix.path,
+                                       installPrefix.path.c_str(),
                                        installPrefix.bSourceLayout ? " (source tree)" : "",
                                        suffix));
     }
-    const std::string workingDir = Path::getWorkingDirectory();
+    const auto workingDir = std::filesystem::current_path();
     if (!workingDir.empty())
     {
         writer->writeLine(formatString("%sWorking dir:  %s%s", prefix, workingDir.c_str(), suffix));

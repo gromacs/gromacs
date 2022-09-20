@@ -155,15 +155,15 @@ public:
 
         // Prepare a .tpr file
         CommandLine caller;
-        const auto* simDB = gmx::test::TestFileManager::getTestSimulationDatabaseDirectory();
+        const auto  simDB = gmx::test::TestFileManager::getTestSimulationDatabaseDirectory();
         caller.append("grompp");
         caller.addOption("-maxwarn", 0);
         caller.addOption("-f", mdp.c_str());
-        std::string gro = gmx::Path::join(simDB, structure);
+        auto gro = std::filesystem::path(simDB).append(structure);
         caller.addOption("-c", gro.c_str());
-        std::string top = gmx::Path::join(simDB, topology);
+        auto top = std::filesystem::path(simDB).append(topology);
         caller.addOption("-p", top.c_str());
-        std::string ndx = gmx::Path::join(simDB, index);
+        auto ndx = std::filesystem::path(simDB).append(index);
         caller.addOption("-n", ndx.c_str());
         caller.addOption("-o", tpr.c_str());
         ASSERT_EQ(0, gmx_grompp(caller.argc(), caller.argv()));

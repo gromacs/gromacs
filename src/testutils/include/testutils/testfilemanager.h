@@ -42,6 +42,7 @@
 #ifndef GMX_TESTUTILS_TESTFILEMANAGER_H
 #define GMX_TESTUTILS_TESTFILEMANAGER_H
 
+#include <filesystem>
 #include <memory>
 #include <string>
 
@@ -108,9 +109,7 @@ public:
      * Two calls with the same \p suffix return the same string within the
      * same test.
      */
-    std::string getTemporaryFilePath(const char* suffix);
-    //! \copydoc TestFileManager::getTemporaryFilePath(const char *)
-    std::string getTemporaryFilePath(const std::string& suffix);
+    std::filesystem::path getTemporaryFilePath(const std::filesystem::path& suffix);
 
     /*! \brief
      * Manage cleaning up this output file whose name was generated
@@ -125,16 +124,14 @@ public:
      * is specified by e.g. an input command-line option, pass the
      * return value of getTemporaryFilePath() to that option.
      */
-    void manageGeneratedOutputFile(const char* filename);
-    //! \copydoc TestFileManager::manageGeneratedOutputFile(const char *)
-    void manageGeneratedOutputFile(std::string&& filename);
+    void manageGeneratedOutputFile(const std::filesystem::path& filename);
 
     /*! \brief Returns the path to the output temporary directory
      * for tests which use this TestFileManager object.
      *
      * \returns Path to output temporary directory
      */
-    const char* getOutputTempDirectory() const;
+    std::filesystem::path getOutputTempDirectory() const;
 
     /*! \brief Sets the output temporary directory for tests which
      * use this TestFileManager object.
@@ -146,7 +143,7 @@ public:
      * valid mutex on the object before calling this member
      * function.
      */
-    void setOutputTempDirectory(const std::string& path);
+    void setOutputTempDirectory(const std::filesystem::path& path);
 
     // static functions follow
 
@@ -159,7 +156,7 @@ public:
      * tests. Intended to produce distinct names for files that
      * may be stored in the same directory for multiple tests.
      */
-    static std::string getTestSpecificFileNameRoot();
+    static std::filesystem::path getTestSpecificFileNameRoot();
 
     /*! \brief
      * Creates a file name for use within a single unit test.
@@ -175,7 +172,7 @@ public:
      * Intended to produce distinct names for files that may be stored in
      * the same directory for multiple tests.
      */
-    static std::string getTestSpecificFileName(const char* suffix);
+    static std::filesystem::path getTestSpecificFileName(const std::filesystem::path& suffix);
 
     /*! \brief
      * Returns the path to a test input file.
@@ -183,23 +180,21 @@ public:
      * \param[in] filename  Relative path/filename to a test input file.
      * \returns Path to \p filename under the test input data directory.
      */
-    static std::string getInputFilePath(const char* filename);
-    //! \copydoc TestFileManager::getInputFilePath(const char *)
-    static std::string getInputFilePath(const std::string& filename);
+    static std::filesystem::path getInputFilePath(const std::filesystem::path& filename);
 
     /*! \brief
      * Returns the path to the simulation input database directory.
      *
      * \returns Path to simulation input database directory.
      */
-    static const char* getTestSimulationDatabaseDirectory();
+    static std::filesystem::path getTestSimulationDatabaseDirectory();
 
     /*! \brief
      * Returns the path to the test input directory.
      *
      * \returns Path to input data directory for the test executable.
      */
-    static const char* getInputDataDirectory();
+    static std::filesystem::path getInputDataDirectory();
 
     /*! \brief
      * Sets the test input directory.
@@ -211,7 +206,7 @@ public:
      * This function is automatically called by unittest_main.cpp through
      * initTestUtils().
      */
-    static void setInputDataDirectory(const std::string& path);
+    static void setInputDataDirectory(const std::filesystem::path& path);
 
     /*! \brief
      * Sets the input directory for simulation input files.
@@ -223,14 +218,14 @@ public:
      * This function is automatically called by unittest_main.cpp through
      * initTestUtils().
      */
-    static void setTestSimulationDatabaseDirectory(const std::string& path);
+    static void setTestSimulationDatabaseDirectory(const std::filesystem::path& path);
 
     /*! \brief Returns the path to the global test output
      * temporary directory for future TestFileManager objects.
      *
      * \returns Path to default output temporary directory for the test executable.
      */
-    static const char* getGlobalOutputTempDirectory();
+    static std::filesystem::path getGlobalOutputTempDirectory();
 
     /*! \brief Sets the default global test output temporary
      * directory for future TestFileManager objects.
@@ -244,7 +239,7 @@ public:
      * setOutputTempDirectory(), rather than change the global
      * state.
      */
-    static void setGlobalOutputTempDirectory(const char* path);
+    static void setGlobalOutputTempDirectory(const std::filesystem::path& path);
 
 private:
     class Impl;

@@ -42,6 +42,7 @@
 #ifndef GMX_UTILITY_PATH_H
 #define GMX_UTILITY_PATH_H
 
+#include <filesystem>
 #include <string>
 #include <string_view>
 #include <utility>
@@ -50,73 +51,44 @@
 namespace gmx
 {
 
-class Path
-{
-public:
-    static bool containsDirectory(const std::string& path);
-    static bool isAbsolute(const char* path);
-    static bool isAbsolute(const std::string& path);
-    static bool isEquivalent(const std::string& path1, const std::string& path2);
-
-    static std::string join(const std::string& path1, const std::string& path2);
-    static std::string join(const std::string& path1, const std::string& path2, const std::string& path3);
-    //! Return a path using directory separators that suit the execution OS.
-    static std::string normalize(const std::string& path);
-    /*! \brief Returns a copy of the parent path (ie. directory
-     * components) of \c input ie. up to but excluding the last
-     * directory separator (if one exists).
-     *
-     * \returns A copy of the parent path-components, or empty if
-     * no directory separator exists. */
-    static std::string getParentPath(const std::string& input);
-    /*! \brief Returns a copy of the filename in \c input
-     * ie. after the last directory separator (if one exists). */
-    static std::string getFilename(const std::string& input);
-    //! Returns whether an extension is present in \c input.
-    static bool hasExtension(const std::string& input);
-    /*! \brief Returns whether the extension present in \c input
-     * matches \c extension (which does not include the separator
-     * character). */
-    static bool extensionMatches(std::string_view input, std::string_view extension);
-    /*! \brief Returns a copy of the input without any trailing
-     * extension found in the filename component. */
-    static std::string stripExtension(const std::string& input);
-    /*! \brief Concatenate \c stringToAdd to a copy of \c input,
-     * before any file extension (if one exists), and return the
-     * result. */
-    static std::string concatenateBeforeExtension(const std::string& input, const std::string& stringToAdd);
-
-    static const char* stripSourcePrefix(const char* path);
-
-    static bool        exists(const char* path);
-    static bool        exists(const std::string& path);
-    static std::string getWorkingDirectory();
-
-    static void splitPathEnvironment(const std::string& pathEnv, std::vector<std::string>* result);
-    static std::vector<std::string> getExecutablePaths();
-
-    static std::string resolveSymlinks(const std::string& path);
-
-private:
-    // Disallow instantiation.
-    Path();
-};
+/*! \brief
+ * Split PATH environment variable into search paths
+ *
+ * \param[in] pathEnv String to split.
+ * \returns vector of filesystem paths to search.
+ */
+std::vector<std::filesystem::path> splitPathEnvironment(const std::string& pathEnv);
+//! Get collection of possible executable paths.
+std::vector<std::filesystem::path> getSystemExecutablePaths();
+//! Strip source prefix from path.
+std::string stripSourcePrefix(const char* path);
+//! Concatenate before extension
+std::filesystem::path concatenateBeforeExtension(const std::filesystem::path& path,
+                                                 const std::string&           addition);
+//! Remove extension from file path.
+std::filesystem::path stripExtension(const std::filesystem::path& path);
+//! Check if file extension of \p path without final '.' matches \p extension.
+bool extensionMatches(const std::filesystem::path& path, std::string_view extension);
 
 class File
 {
 public:
     struct NotFoundInfo
     {
-        NotFoundInfo(const char* filename, const char* message, const char* call, bool wasError, int err) :
+        NotFoundInfo(const std::filesystem::path& filename,
+                     const char*                  message,
+                     const char*                  call,
+                     bool                         wasError,
+                     int                          err) :
             filename(filename), message(message), call(call), wasError(wasError), err(err)
         {
         }
 
-        const char* filename;
-        const char* message;
-        const char* call;
-        bool        wasError;
-        int         err;
+        const std::filesystem::path& filename;
+        const char*                  message;
+        const char*                  call;
+        bool                         wasError;
+        int                          err;
     };
 
     static void              returnFalseOnError(const NotFoundInfo& info);
@@ -135,26 +107,11 @@ public:
      *
      * Does not throw, unless onNotFound throws.
      */
-    static bool exists(const char* filename, NotFoundHandler onNotFound);
-    //! \copydoc exists(const char *, NotFoundHandler)
-    static bool exists(const std::string& filename, NotFoundHandler onNotFound);
+    static bool exists(const std::filesystem::path& filename, NotFoundHandler onNotFound);
 
 private:
     // Disallow instantiation.
     File();
-};
-
-class Directory
-{
-public:
-    static int  create(const char* path);
-    static int  create(const std::string& path);
-    static bool exists(const char* path);
-    static bool exists(const std::string& path);
-
-private:
-    // Disallow instantiation.
-    Directory();
 };
 
 } // namespace gmx

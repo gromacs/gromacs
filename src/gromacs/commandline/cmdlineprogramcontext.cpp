@@ -50,6 +50,7 @@
 #include <cstdlib>
 #include <cstring>
 
+#include <filesystem>
 #include <mutex>
 #include <string>
 #include <vector>
@@ -98,16 +99,16 @@ public:
         return ExecutableEnvironmentPointer(new DefaultExecutableEnvironment());
     }
 
-    DefaultExecutableEnvironment() : initialWorkingDirectory_(Path::getWorkingDirectory()) {}
+    DefaultExecutableEnvironment() : initialWorkingDirectory_(std::filesystem::current_path()) {}
 
-    std::string getWorkingDirectory() const override { return initialWorkingDirectory_; }
-    std::vector<std::string> getExecutablePaths() const override
+    std::filesystem::path getWorkingDirectory() const override { return initialWorkingDirectory_; }
+    std::vector<std::filesystem::path> getExecutablePaths() const override
     {
-        return Path::getExecutablePaths();
+        return getSystemExecutablePaths();
     }
 
 private:
-    std::string initialWorkingDirectory_;
+    std::filesystem::path initialWorkingDirectory_;
 };
 
 /*! \brief
@@ -120,39 +121,36 @@ private:
  * If a binary with the given name cannot be located, \p invokedName is
  * returned.
  */
-std::string findFullBinaryPath(const std::string& invokedName, const IExecutableEnvironment& env)
+std::filesystem::path findFullBinaryPath(const std::string& invokedName, const IExecutableEnvironment& env)
 {
-    std::string searchName = invokedName;
+    std::filesystem::path searchName = invokedName;
     // On Windows & Cygwin we need to add the .exe extension,
     // or we wont be able to detect that the file exists.
 #if GMX_NATIVE_WINDOWS || GMX_CYGWIN
     if (!endsWith(searchName, ".exe"))
     {
-        searchName.append(".exe");
+        searchName.replace_extension(".exe");
     }
 #endif
-    if (!Path::containsDirectory(searchName))
+    if (!searchName.has_parent_path())
     {
         // No directory in name means it must be in the path - search it!
-        std::vector<std::string>                 pathEntries = env.getExecutablePaths();
-        std::vector<std::string>::const_iterator i;
-        for (i = pathEntries.begin(); i != pathEntries.end(); ++i)
+        std::vector<std::filesystem::path> pathEntries = env.getExecutablePaths();
+        for (const auto& path : pathEntries)
         {
-            const std::string& dir      = i->empty() ? env.getWorkingDirectory() : *i;
-            std::string        testPath = Path::join(dir, searchName);
-            if (File::exists(testPath, File::returnFalseOnError))
+            auto dir = path.empty() ? env.getWorkingDirectory() : path;
+            dir.append(searchName.string());
+            if (File::exists(dir, File::returnFalseOnError))
             {
-                return testPath;
+                return dir;
             }
         }
     }
-    else if (!Path::isAbsolute(searchName))
+    else if (!searchName.is_absolute())
     {
         // Name contains directories, but is not absolute, i.e.,
         // it is relative to the current directory.
-        std::string cwd      = env.getWorkingDirectory();
-        std::string testPath = Path::join(cwd, searchName);
-        return testPath;
+        return env.getWorkingDirectory().append(searchName.string());
     }
     return searchName;
 }
@@ -162,9 +160,9 @@ std::string findFullBinaryPath(const std::string& invokedName, const IExecutable
  *
  * Only checks for a single file that has an uncommon enough name.
  */
-bool isAcceptableLibraryPath(const std::string& path)
+bool isAcceptableLibraryPath(const std::filesystem::path& path)
 {
-    return Path::exists(Path::join(path, "residuetypes.dat"));
+    return std::filesystem::exists(std::filesystem::path(path).append("residuetypes.dat"));
 }
 
 /*! \brief
@@ -177,10 +175,10 @@ bool isAcceptableLibraryPath(const std::string& path)
  * files have been installed:  appends the relative installation path of the
  * data files and calls isAcceptableLibraryPath().
  */
-bool isAcceptableLibraryPathPrefix(const std::string& path)
+bool isAcceptableLibraryPathPrefix(const std::filesystem::path& path)
 {
-    std::string testPath = Path::join(path, GMX_INSTALL_GMXDATADIR, "top");
-    return isAcceptableLibraryPath(testPath);
+    return isAcceptableLibraryPath(
+            std::filesystem::path(path).append(GMX_INSTALL_GMXDATADIR).append("top"));
 }
 
 /*! \brief
@@ -190,7 +188,7 @@ bool isAcceptableLibraryPathPrefix(const std::string& path)
  * configure-time hard-coded path.  The hard-coded path is preferred if it
  * actually contains the data files, though.
  */
-std::string findFallbackInstallationPrefixPath()
+std::filesystem::path findFallbackInstallationPrefixPath()
 {
 #if !GMX_NATIVE_WINDOWS
     if (!isAcceptableLibraryPathPrefix(CMAKE_INSTALL_PREFIX))
@@ -228,27 +226,26 @@ std::string findFallbackInstallationPrefixPath()
  * Extra logic is present to allow running binaries from the build tree such
  * that they use up-to-date data files from the source tree.
  */
-std::string findInstallationPrefixPath(const std::string& binaryPath, bool* bSourceLayout)
+std::filesystem::path findInstallationPrefixPath(const std::filesystem::path& binaryPath, bool* bSourceLayout)
 {
     *bSourceLayout = false;
     // Don't search anything if binary cannot be found.
-    if (Path::exists(binaryPath))
+    if (std::filesystem::exists(binaryPath))
     {
         // Remove the executable name.
-        std::string searchPath = Path::getParentPath(binaryPath);
+        auto searchPath = binaryPath.parent_path();
         // If running directly from the build tree, try to use the source
         // directory.
 #if (defined CMAKE_SOURCE_DIR && defined CMAKE_BINARY_DIR)
-        std::string buildBinPath;
+        std::filesystem::path buildBinPath;
 #    ifdef CMAKE_INTDIR /*In multi-configuration build systems the output subdirectory*/
-        buildBinPath = Path::join(CMAKE_BINARY_DIR, "bin", CMAKE_INTDIR);
+        buildBinPath = std::filesystem::path(CMAKE_BINARY_DIR).append("bin").append(CMAKE_INTDIR);
 #    else
-        buildBinPath = Path::join(CMAKE_BINARY_DIR, "bin");
+        buildBinPath = std::filesystem::path(CMAKE_BINARY_DIR).append("bin");
 #    endif
-        if (Path::isEquivalent(searchPath, buildBinPath))
+        if (std::filesystem::equivalent(searchPath, buildBinPath))
         {
-            std::string testPath = Path::join(CMAKE_SOURCE_DIR, "share/top");
-            if (isAcceptableLibraryPath(testPath))
+            if (isAcceptableLibraryPath(std::filesystem::path(CMAKE_SOURCE_DIR).append("share/top")))
             {
                 *bSourceLayout = true;
                 return CMAKE_SOURCE_DIR;
@@ -258,13 +255,13 @@ std::string findInstallationPrefixPath(const std::string& binaryPath, bool* bSou
 
         // Use the executable path to (try to) find the library dir.
         // TODO: Consider only going up exactly the required number of levels.
-        while (!searchPath.empty())
+        while (searchPath != searchPath.root_path()) // While we can go one level up
         {
             if (isAcceptableLibraryPathPrefix(searchPath))
             {
                 return searchPath;
             }
-            searchPath = Path::getParentPath(searchPath);
+            searchPath = searchPath.parent_path();
         }
     }
 
@@ -297,15 +294,15 @@ public:
      */
     void findBinaryPath() const;
 
-    ExecutableEnvironmentPointer executableEnv_;
-    std::string                  invokedName_;
-    std::string                  programName_;
-    std::string                  displayName_;
-    std::string                  commandLine_;
-    mutable std::string          fullBinaryPath_;
-    mutable std::string          installationPrefix_;
-    mutable bool                 bSourceLayout_;
-    mutable std::mutex           binaryPathMutex_;
+    ExecutableEnvironmentPointer  executableEnv_;
+    std::filesystem::path         invokedName_;
+    std::string                   programName_;
+    std::string                   displayName_;
+    std::string                   commandLine_;
+    mutable std::filesystem::path fullBinaryPath_;
+    mutable std::filesystem::path installationPrefix_;
+    mutable bool                  bSourceLayout_;
+    mutable std::mutex            binaryPathMutex_;
 };
 
 CommandLineProgramContext::Impl::Impl() : programName_("GROMACS"), bSourceLayout_(false) {}
@@ -313,7 +310,7 @@ CommandLineProgramContext::Impl::Impl() : programName_("GROMACS"), bSourceLayout
 CommandLineProgramContext::Impl::Impl(int argc, const char* const argv[], ExecutableEnvironmentPointer env) :
     executableEnv_(std::move(env)), invokedName_(argc != 0 ? argv[0] : ""), bSourceLayout_(false)
 {
-    programName_ = Path::getFilename(invokedName_);
+    programName_ = invokedName_.filename();
     programName_ = stripSuffixIfPresent(programName_, ".exe");
 
     commandLine_ = quoteIfNecessary(programName_.c_str());
@@ -329,7 +326,22 @@ void CommandLineProgramContext::Impl::findBinaryPath() const
     if (fullBinaryPath_.empty())
     {
         fullBinaryPath_ = findFullBinaryPath(invokedName_, *executableEnv_);
-        fullBinaryPath_ = Path::normalize(Path::resolveSymlinks(fullBinaryPath_));
+        if (std::filesystem::is_symlink(fullBinaryPath_))
+        {
+            auto tempPath = std::filesystem::read_symlink(fullBinaryPath_);
+            // if the path from the symlink is not an absolute path, we need
+            // to later combine the path information again from the binaryPath
+            // and the relative position of the resolved symlink
+            if (!tempPath.is_absolute())
+            {
+                fullBinaryPath_ = fullBinaryPath_.parent_path().append(tempPath.string());
+            }
+            else
+            {
+                fullBinaryPath_ = tempPath;
+            }
+        }
+        fullBinaryPath_ = fullBinaryPath_.make_preferred();
         // TODO: Investigate/Consider using a dladdr()-based solution.
         // Potentially less portable, but significantly simpler, and also works
         // with user binaries even if they are located in some arbitrary location,
@@ -383,7 +395,7 @@ const char* CommandLineProgramContext::commandLine() const
     return impl_->commandLine_.c_str();
 }
 
-const char* CommandLineProgramContext::fullBinaryPath() const
+std::filesystem::path CommandLineProgramContext::fullBinaryPath() const
 {
     std::lock_guard<std::mutex> lock(impl_->binaryPathMutex_);
     impl_->findBinaryPath();
@@ -396,8 +408,8 @@ InstallationPrefixInfo CommandLineProgramContext::installationPrefix() const
     if (impl_->installationPrefix_.empty())
     {
         impl_->findBinaryPath();
-        impl_->installationPrefix_ = Path::normalize(
-                findInstallationPrefixPath(impl_->fullBinaryPath_, &impl_->bSourceLayout_));
+        impl_->installationPrefix_ =
+                findInstallationPrefixPath(impl_->fullBinaryPath_, &impl_->bSourceLayout_).make_preferred();
     }
     return InstallationPrefixInfo(impl_->installationPrefix_.c_str(), impl_->bSourceLayout_);
 }

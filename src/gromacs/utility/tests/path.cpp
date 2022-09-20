@@ -58,15 +58,15 @@ namespace
 
 TEST(PathTest, StripSourcePrefixWorks)
 {
-    EXPECT_STREQ("", Path::stripSourcePrefix(""));
-    EXPECT_STREQ("foo.cpp", Path::stripSourcePrefix("foo.cpp"));
-    EXPECT_STREQ("foo.cpp", Path::stripSourcePrefix("some/dir/foo.cpp"));
-    EXPECT_STREQ("foo.cpp", Path::stripSourcePrefix("src/some/dir/foo.cpp"));
-    EXPECT_STREQ("foo.cpp", Path::stripSourcePrefix("srcx/gromacs/foo.cpp"));
-    EXPECT_STREQ("src/gromacs/foo.cpp", Path::stripSourcePrefix("src/gromacs/foo.cpp"));
-    EXPECT_STREQ("src/gromacs/foo.cpp", Path::stripSourcePrefix("some/dir/src/gromacs/foo.cpp"));
+    EXPECT_EQ("", stripSourcePrefix(""));
+    EXPECT_EQ("foo.cpp", stripSourcePrefix("foo.cpp"));
+    EXPECT_EQ("foo.cpp", stripSourcePrefix("some/dir/foo.cpp"));
+    EXPECT_EQ("foo.cpp", stripSourcePrefix("src/some/dir/foo.cpp"));
+    EXPECT_EQ("foo.cpp", stripSourcePrefix("srcx/gromacs/foo.cpp"));
+    EXPECT_EQ("src/gromacs/foo.cpp", stripSourcePrefix("src/gromacs/foo.cpp"));
+    EXPECT_EQ("src/gromacs/foo.cpp", stripSourcePrefix("some/dir/src/gromacs/foo.cpp"));
     // TODO: For in-source builds, this might not work.
-    EXPECT_EQ(Path::normalize("src/gromacs/utility/tests/path.cpp"), Path::stripSourcePrefix(__FILE__))
+    EXPECT_EQ(std::filesystem::path("src/gromacs/utility/tests/path.cpp").make_preferred(), stripSourcePrefix(__FILE__))
             << "stripSourcePrefix() does not work with compiler-produced file names. "
             << "This only affects source paths reported in fatal error messages.";
 }
@@ -83,36 +83,21 @@ TEST_P(PathSearchTest, SearchOperationsWork)
 
     auto checker = rootChecker.checkCompound("PathToTest", input);
     {
-        std::string result;
-        ASSERT_NO_THROW_GMX(result = Path::getParentPath(input));
-        checker.checkString(result, "getParentPath");
-    }
-    {
-        std::string result;
-        ASSERT_NO_THROW_GMX(result = Path::getFilename(input));
-        checker.checkString(result, "getFilename");
-    }
-    {
         bool result = false;
-        ASSERT_NO_THROW_GMX(result = Path::hasExtension(input));
-        checker.checkBoolean(result, "hasExtension");
-    }
-    {
-        bool result = false;
-        ASSERT_NO_THROW_GMX(result = Path::extensionMatches(input, "pdb"));
+        ASSERT_NO_THROW_GMX(result = extensionMatches(input, "pdb"));
         checker.checkBoolean(result, "extensionMatchesPdb");
         // The match is exclusive of the dot separator, so no
         // input string can match.
-        ASSERT_FALSE(Path::extensionMatches(input, ".pdb"));
+        ASSERT_FALSE(extensionMatches(input, ".pdb"));
     }
     {
         std::string result;
-        ASSERT_NO_THROW_GMX(result = Path::stripExtension(input));
+        ASSERT_NO_THROW_GMX(result = stripExtension(input));
         checker.checkString(result, "stripExtension");
     }
     {
         std::string result;
-        ASSERT_NO_THROW_GMX(result = Path::concatenateBeforeExtension(input, "_34"));
+        ASSERT_NO_THROW_GMX(result = concatenateBeforeExtension(input, "_34"));
         checker.checkString(result, "concatenateBeforeExtension");
     }
 }

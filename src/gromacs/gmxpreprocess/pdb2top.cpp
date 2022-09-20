@@ -233,7 +233,9 @@ static void choose_ff_impl(const char*          ffsel,
         desc.reserve(ffdirs.size());
         for (int i = 0; i < nff; ++i)
         {
-            std::string docFileName(gmx::Path::join(ffdirs[i].dir, ffdirs[i].name, fflib_forcefield_doc()));
+            auto docFileName(std::filesystem::path(ffdirs[i].dir)
+                                     .append(ffdirs[i].name.string())
+                                     .append(fflib_forcefield_doc()));
             // TODO: Just try to open the file with a method that does not
             // throw/bail out with a fatal error instead of multiple checks.
             if (gmx::File::exists(docFileName, gmx::File::returnFalseOnError))
@@ -343,19 +345,19 @@ static void choose_ff_impl(const char*          ffsel,
     }
     strcpy(forcefield, ffs[sel].c_str());
 
-    std::string ffpath;
+    std::filesystem::path ffpath;
     if (ffdirs[sel].bFromDefaultDir)
     {
         ffpath = ffdirs[sel].name;
     }
     else
     {
-        ffpath = gmx::Path::join(ffdirs[sel].dir, ffdirs[sel].name);
+        ffpath = std::filesystem::path(ffdirs[sel].dir).append(ffdirs[sel].name.string());
     }
-    if (ffpath.length() >= static_cast<size_t>(ffdir_maxlen))
+    if (ffpath.string().length() >= static_cast<size_t>(ffdir_maxlen))
     {
         std::string message = gmx::formatString("Length of force field dir (%d) >= maxlen (%d)",
-                                                static_cast<int>(ffpath.length()),
+                                                static_cast<int>(ffpath.string().length()),
                                                 ffdir_maxlen);
         GMX_THROW(gmx::InvalidInputError(message));
     }
@@ -393,7 +395,7 @@ void choose_watermodel(const char* wmsel, const char* ffdir, char** watermodel, 
         return;
     }
 
-    std::string filename = gmx::Path::join(ffdir, fn_watermodels);
+    auto filename = std::filesystem::path(ffdir).append(fn_watermodels);
     if (!fflib_fexist(filename))
     {
         GMX_LOG(logger.warning)
@@ -672,7 +674,7 @@ void print_top_mols(FILE*                            out,
         fprintf(out, "; Include chain topologies\n");
         for (const auto& incl : incls)
         {
-            fprintf(out, "#include \"%s\"\n", gmx::Path::getFilename(incl).c_str());
+            fprintf(out, "#include \"%s\"\n", std::filesystem::path(incl).filename().c_str());
         }
         fprintf(out, "\n");
     }

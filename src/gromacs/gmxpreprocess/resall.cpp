@@ -66,8 +66,8 @@ PreprocessingAtomTypes read_atype(const char* ffdir)
     double m;
     auto   atom = std::make_unique<t_atom>();
 
-    std::vector<std::string> files = fflib_search_file_end(ffdir, ".atp", TRUE);
-    PreprocessingAtomTypes   at;
+    auto                   files = fflib_search_file_end(ffdir, ".atp", TRUE);
+    PreprocessingAtomTypes at;
 
     for (const auto& filename : files)
     {

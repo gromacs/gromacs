@@ -46,6 +46,7 @@
 #include <cmath>
 
 #include <algorithm>
+#include <filesystem>
 #include <string>
 
 #include <gtest/gtest.h>
@@ -85,13 +86,13 @@ MultiSimTest::MultiSimTest() :
     // each simulation. No need to have a mutex on this, nobody else
     // can access the fileManager_ yet because we only just
     // constructed it.
-    std::string originalTempDirectory = fileManager_.getOutputTempDirectory();
-    std::string newTempDirectory =
-            Path::join(originalTempDirectory, formatString(directoryNameFormat, simulationNumber_));
+    const std::filesystem::path& originalTempDirectory = fileManager_.getOutputTempDirectory();
+    const std::filesystem::path  newTempDirectory =
+            std::filesystem::path(originalTempDirectory).append(formatString(directoryNameFormat, simulationNumber_));
     if (rank_ % numRanksPerSimulation_ == 0)
     {
         // Only one rank per simulation creates directory
-        Directory::create(newTempDirectory);
+        std::filesystem::create_directory(newTempDirectory);
     }
 #if GMX_LIB_MPI
     // Make sure directories got created.
@@ -103,7 +104,8 @@ MultiSimTest::MultiSimTest() :
     mdrunCaller_->addOption("-multidir");
     for (int i = 0; i < size_ / numRanksPerSimulation_; ++i)
     {
-        mdrunCaller_->append(Path::join(originalTempDirectory, formatString(directoryNameFormat, i)));
+        mdrunCaller_->append(
+                std::filesystem::path(originalTempDirectory).append(formatString(directoryNameFormat, i)));
     }
 }
 

@@ -383,7 +383,7 @@ static void write_checkpoint(const char*                     fn,
                                                 eSwapCoords,
                                                 false };
     std::strcpy(headerContents.version, gmx_version());
-    std::strcpy(headerContents.fprog, gmx::getProgramContext().fullBinaryPath());
+    std::strcpy(headerContents.fprog, gmx::getProgramContext().fullBinaryPath().c_str());
     std::strcpy(headerContents.ftime, timebuf.c_str());
     if (haveDDAtomOrdering(*cr))
     {

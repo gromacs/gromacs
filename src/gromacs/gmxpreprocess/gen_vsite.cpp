@@ -1759,7 +1759,7 @@ void do_vsites(gmx::ArrayRef<const PreprocessResidue> rtpFFDB,
         fprintf(debug, "# # # VSITES # # #\n");
     }
 
-    std::vector<std::string> db = fflib_search_file_end(ffdir, ".vsd", FALSE);
+    auto db = fflib_search_file_end(ffdir, ".vsd", FALSE);
 
     /* Container of CH3/NH3/NH2 configuration entries.
      * See comments in read_vsite_database. It isnt beautiful,

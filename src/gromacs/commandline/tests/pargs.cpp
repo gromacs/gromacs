@@ -95,7 +95,7 @@ public:
     }
     std::string addFileArg(const char* name, const char* extension, FileArgumentType type)
     {
-        std::string filename(tempFiles_.getTemporaryFilePath(extension));
+        auto filename(tempFiles_.getTemporaryFilePath(extension));
         gmx::TextWriter::writeFileFromString(filename, "Dummy file");
         if (name != nullptr)
         {
@@ -103,7 +103,7 @@ public:
             switch (type)
             {
                 case efFull: args_.append(filename); break;
-                case efNoExtension: args_.append(gmx::Path::stripExtension(filename)); break;
+                case efNoExtension: args_.append(gmx::stripExtension(filename)); break;
                 case efEmptyValue: break;
             }
         }
@@ -408,10 +408,10 @@ TEST_F(ParseCommonArgsTest, HandlesCompressedFiles)
 {
     t_filenm fnm[] = { { efTRX, "-f", nullptr, ffREAD }, { efGRO, "-g", nullptr, ffREAD } };
     args_.append("test");
-    std::string expectedF = addFileArg("-f", ".pdb.gz", efFull);
-    std::string expectedG = addFileArg("-g", ".gro.Z", efFull);
-    expectedF             = gmx::Path::stripExtension(expectedF);
-    expectedG             = gmx::Path::stripExtension(expectedG);
+    std::filesystem::path expectedF = addFileArg("-f", ".pdb.gz", efFull);
+    std::filesystem::path expectedG = addFileArg("-g", ".gro.Z", efFull);
+    expectedF                       = gmx::stripExtension(expectedF);
+    expectedG                       = gmx::stripExtension(expectedG);
     parseFromArgs(0, fnm, {});
     EXPECT_EQ(expectedF, opt2fn("-f", nfile(), fnm));
     EXPECT_EQ(expectedG, opt2fn("-g", nfile(), fnm));
@@ -433,7 +433,7 @@ TEST_F(ParseCommonArgsTest, CompletesExtensionFromExistingFile)
     std::string expected2 = addFileArg("-f2", "2.gro", efNoExtension);
     std::string expected3 = addFileArg("-f3", "3.tng", efNoExtension);
     std::string expected4 = addFileArg("-f4", ".gro", efEmptyValue);
-    std::string def4      = gmx::Path::stripExtension(expected4);
+    std::string def4      = gmx::stripExtension(expected4);
     t_filenm    fnm[]     = { { efTRX, "-f1", nullptr, ffREAD },
                        { efTRX, "-f2", nullptr, ffREAD },
                        { efTRX, "-f3", nullptr, ffREAD },
@@ -456,7 +456,7 @@ TEST_F(ParseCommonArgsTest, CompletesExtensionFromExistingFileWithDefaultFileNam
     std::string expected2 = addFileArg("-f2", ".pdb", efEmptyValue);
     std::string expected3 = addFileArg("-f3", ".trr", efEmptyValue);
     std::string expected4 = addFileArg(nullptr, ".pdb", efEmptyValue);
-    std::string deffnm    = gmx::Path::stripExtension(expected3);
+    std::string deffnm    = gmx::stripExtension(expected3);
     args_.append("-deffnm");
     args_.append(deffnm);
     parseFromArgs(PCA_CAN_SET_DEFFNM, fnm, {});

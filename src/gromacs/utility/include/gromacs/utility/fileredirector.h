@@ -79,13 +79,8 @@ public:
      * conditions.  Functions to pass as this parameter are provided as
      * members of gmx::File.
      */
-    virtual bool fileExists(const char* filename, File::NotFoundHandler onNotFound) const = 0;
-
-    //! Convenience method to check file existence using an std::string path.
-    bool fileExists(const std::string& filename, File::NotFoundHandler onNotFound) const
-    {
-        return fileExists(filename.c_str(), onNotFound);
-    }
+    virtual bool fileExists(const std::filesystem::path& filename,
+                            const File::NotFoundHandler& onNotFound) const = 0;
 };
 
 /*! \libinternal \brief

@@ -42,6 +42,8 @@
 #ifndef GMX_UTILITY_PROGRAMCONTEXT_H
 #define GMX_UTILITY_PROGRAMCONTEXT_H
 
+#include <filesystem>
+
 namespace gmx
 {
 
@@ -57,7 +59,10 @@ namespace gmx
 struct InstallationPrefixInfo
 {
     //! Initializes the structure with given values.
-    InstallationPrefixInfo(const char* path, bool bSource) : path(path), bSourceLayout(bSource) {}
+    InstallationPrefixInfo(const std::filesystem::path& path, bool bSource) :
+        path(path), bSourceLayout(bSource)
+    {
+    }
 
     /*! \brief
      * Path to the installation prefix of the current \Gromacs instance.
@@ -66,7 +71,7 @@ struct InstallationPrefixInfo
      * install tree and \Gromacs functions that access such files may fail.
      * This can also contain a path to the source tree (see \a bSourceLayout).
      */
-    const char* const path;
+    std::filesystem::path path;
     /*! \brief
      * Whether \a path points to a source tree -like layout.
      *
@@ -136,7 +141,7 @@ public:
      * binary is not available.  In such a case, the information is not
      * shown.
      */
-    virtual const char* fullBinaryPath() const = 0;
+    virtual std::filesystem::path fullBinaryPath() const = 0;
     /*! \brief
      * Returns the installation prefix for \Gromacs.
      *

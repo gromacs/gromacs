@@ -108,20 +108,20 @@ public:
     /*! \brief
      * Sets the source directory root from which to look for data files.
      */
-    void overrideSourceRoot(const std::string& sourceRoot) { dataPath_ = sourceRoot; }
+    void overrideSourceRoot(const std::filesystem::path& sourceRoot) { dataPath_ = sourceRoot; }
 
     const char*            programName() const override { return context_.programName(); }
     const char*            displayName() const override { return context_.displayName(); }
-    const char*            fullBinaryPath() const override { return context_.fullBinaryPath(); }
+    std::filesystem::path  fullBinaryPath() const override { return context_.fullBinaryPath(); }
     InstallationPrefixInfo installationPrefix() const override
     {
-        return InstallationPrefixInfo(dataPath_.c_str(), true);
+        return InstallationPrefixInfo(dataPath_, true);
     }
     const char* commandLine() const override { return context_.commandLine(); }
 
 private:
     const IProgramContext& context_;
-    std::string            dataPath_;
+    std::filesystem::path  dataPath_;
 };
 
 //! Prints the command-line options for the unit test binary.
@@ -167,13 +167,13 @@ class SuccessListener : public testing::EmptyTestEventListener
 } // namespace
 
 //! \cond internal
-void initTestUtils(const char* dataPath,
-                   const char* tempPath,
-                   bool        usesMpi,
-                   bool        usesHardwareDetection,
-                   bool        registersDynamically,
-                   int*        argc,
-                   char***     argv)
+void initTestUtils(const std::filesystem::path& dataPath,
+                   const std::filesystem::path& tempPath,
+                   bool                         usesMpi,
+                   bool                         usesHardwareDetection,
+                   bool                         registersDynamically,
+                   int*                         argc,
+                   char***                      argv)
 {
     if (gmxShouldEnableFPExceptions())
     {
@@ -216,11 +216,12 @@ void initTestUtils(const char* dataPath,
         // generally can only get confused by a different set of data files.
         setLibraryFileFinder(nullptr);
         ::testing::InitGoogleMock(argc, *argv);
-        if (dataPath != nullptr)
+        if (!dataPath.empty())
         {
-            TestFileManager::setInputDataDirectory(Path::join(CMAKE_SOURCE_DIR, dataPath));
+            TestFileManager::setInputDataDirectory(
+                    std::filesystem::path(CMAKE_SOURCE_DIR).append(dataPath.string()));
         }
-        if (tempPath != nullptr)
+        if (!tempPath.empty())
         {
             TestFileManager::setGlobalOutputTempDirectory(tempPath);
         }
@@ -271,7 +272,8 @@ void initTestUtils(const char* dataPath,
         if (!sourceRoot.empty())
         {
             g_testContext->overrideSourceRoot(sourceRoot);
-            TestFileManager::setInputDataDirectory(Path::join(sourceRoot, dataPath));
+            TestFileManager::setInputDataDirectory(
+                    std::filesystem::path(sourceRoot).append(dataPath.string()));
         }
         // Echo success messages only from the master MPI rank
         if (echoReasons && (gmx_node_rank() == 0))

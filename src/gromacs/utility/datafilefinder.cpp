@@ -44,6 +44,7 @@
 
 #include <cstdlib>
 
+#include <filesystem>
 #include <set>
 #include <string>
 #include <vector>
@@ -67,24 +68,24 @@ namespace gmx
 class DataFileFinder::Impl
 {
 public:
-    static std::string getDefaultPath();
+    static std::filesystem::path getDefaultPath();
 
     Impl() : envName_(nullptr), bEnvIsSet_(false) {}
 
-    const char*              envName_;
-    bool                     bEnvIsSet_;
-    std::vector<std::string> searchPath_;
+    const char*                        envName_;
+    bool                               bEnvIsSet_;
+    std::vector<std::filesystem::path> searchPath_;
 };
 
-std::string DataFileFinder::Impl::getDefaultPath()
+std::filesystem::path DataFileFinder::Impl::getDefaultPath()
 {
     const InstallationPrefixInfo installPrefix = getProgramContext().installationPrefix();
-    if (!isNullOrEmpty(installPrefix.path))
+    if (!installPrefix.path.empty())
     {
         const char* const dataPath = installPrefix.bSourceLayout ? "share" : GMX_INSTALL_GMXDATADIR;
-        return Path::join(installPrefix.path, dataPath, "top");
+        return std::filesystem::path(installPrefix.path).append(dataPath).append("top");
     }
-    return std::string();
+    return std::filesystem::path();
 }
 
 /********************************************************************
@@ -105,11 +106,10 @@ void DataFileFinder::setSearchPathFromEnv(const char* envVarName)
     const char* const lib = getenv(envVarName);
     if (!isNullOrEmpty(lib))
     {
-        std::vector<std::string>& path        = impl_->searchPath_; // convenience
-        const std::string         defaultPath = impl_->getDefaultPath();
-        std::vector<std::string>  tmpPath;
-        Path::splitPathEnvironment(lib, &tmpPath);
-        std::set<std::string> pathsSeen;
+        auto&                              path        = impl_->searchPath_; // convenience
+        auto                               defaultPath = impl_->getDefaultPath();
+        std::vector<std::filesystem::path> tmpPath     = splitPathEnvironment(lib);
+        std::set<std::filesystem::path>    pathsSeen;
         pathsSeen.insert(defaultPath);
         for (auto& d : tmpPath)
         {
@@ -129,45 +129,38 @@ FilePtr DataFileFinder::openFile(const DataFileOptions& options) const
     // the exists() calls and actually opening the file.  It would be better
     // to leave the file open after a successful exists() if the desire is to
     // actually open the file.
-    std::string filename = findFile(options);
+    auto filename = findFile(options);
     if (filename.empty())
     {
         return nullptr;
     }
-#if 0
-    if (debug)
-    {
-        fprintf(debug, "Opening library file %s\n", fn);
-    }
-#endif
     return TextInputFile::openRawHandle(filename);
 }
 
-std::string DataFileFinder::findFile(const DataFileOptions& options) const
+std::filesystem::path DataFileFinder::findFile(const DataFileOptions& options) const
 {
-    if (options.bCurrentDir_ && Path::exists(options.filename_))
+    if (options.bCurrentDir_ && std::filesystem::exists(options.filename_))
     {
         return options.filename_;
     }
     if (impl_ != nullptr)
     {
-        std::vector<std::string>::const_iterator i;
-        for (i = impl_->searchPath_.begin(); i != impl_->searchPath_.end(); ++i)
+        for (auto path : impl_->searchPath_)
         {
             // TODO: Deal with an empty search path entry more reasonably.
-            std::string testPath = Path::join(*i, options.filename_);
+            path.append(options.filename_.string());
             // TODO: Consider skipping directories.
-            if (Path::exists(testPath))
+            if (std::filesystem::exists(path))
             {
-                return testPath;
+                return path;
             }
         }
     }
-    const std::string& defaultPath = Impl::getDefaultPath();
+    const auto& defaultPath = Impl::getDefaultPath();
     if (!defaultPath.empty())
     {
-        std::string testPath = Path::join(defaultPath, options.filename_);
-        if (Path::exists(testPath))
+        auto testPath = std::filesystem::path(defaultPath).append(options.filename_.string());
+        if (std::filesystem::exists(testPath))
         {
             return testPath;
         }
@@ -176,7 +169,7 @@ std::string DataFileFinder::findFile(const DataFileOptions& options) const
     {
         const char* const envName   = (impl_ != nullptr ? impl_->envName_ : nullptr);
         const bool        bEnvIsSet = (impl_ != nullptr ? impl_->bEnvIsSet_ : false);
-        std::string       message(formatString("Library file '%s' not found", options.filename_));
+        std::string message(formatString("Library file '%s' not found", options.filename_.c_str()));
         if (options.bCurrentDir_)
         {
             message.append(" in current dir nor");
@@ -189,16 +182,15 @@ std::string DataFileFinder::findFile(const DataFileOptions& options) const
         if (options.bCurrentDir_)
         {
             message.append("\n  ");
-            message.append(Path::getWorkingDirectory());
+            message.append(std::filesystem::current_path().string());
             message.append(" (current dir)");
         }
         if (impl_ != nullptr)
         {
-            std::vector<std::string>::const_iterator i;
-            for (i = impl_->searchPath_.begin(); i != impl_->searchPath_.end(); ++i)
+            for (const auto& path : impl_->searchPath_)
             {
                 message.append("\n  ");
-                message.append(*i);
+                message.append(path.string());
             }
         }
         if (!defaultPath.empty())
@@ -224,38 +216,34 @@ std::vector<DataFileInfo> DataFileFinder::enumerateFiles(const DataFileOptions& 
     // TODO: Consider if not being able to list one of the directories should
     // really be a fatal error. Or alternatively, check somewhere else that
     // paths in GMXLIB are valid.
-    std::vector<DataFileInfo>                result;
-    std::vector<std::string>::const_iterator i;
+    std::vector<DataFileInfo> result;
     if (options.bCurrentDir_)
     {
-        std::vector<std::string> files =
-                DirectoryEnumerator::enumerateFilesWithExtension(".", options.filename_, false);
-        for (i = files.begin(); i != files.end(); ++i)
+        auto files = DirectoryEnumerator::enumerateFilesWithExtension(
+                std::filesystem::current_path(), options.filename_, false);
+        for (const auto& file : files)
         {
-            result.emplace_back(".", *i, false);
+            result.emplace_back(".", file, false);
         }
     }
     if (impl_ != nullptr)
     {
-        std::vector<std::string>::const_iterator j;
-        for (j = impl_->searchPath_.begin(); j != impl_->searchPath_.end(); ++j)
+        for (const auto& path : impl_->searchPath_)
         {
-            std::vector<std::string> files = DirectoryEnumerator::enumerateFilesWithExtension(
-                    j->c_str(), options.filename_, false);
-            for (i = files.begin(); i != files.end(); ++i)
+            auto files = DirectoryEnumerator::enumerateFilesWithExtension(path, options.filename_, false);
+            for (const auto& file : files)
             {
-                result.emplace_back(*j, *i, false);
+                result.emplace_back(path, file, false);
             }
         }
     }
-    const std::string& defaultPath = Impl::getDefaultPath();
+    const auto& defaultPath = Impl::getDefaultPath();
     if (!defaultPath.empty())
     {
-        std::vector<std::string> files = DirectoryEnumerator::enumerateFilesWithExtension(
-                defaultPath.c_str(), options.filename_, false);
-        for (i = files.begin(); i != files.end(); ++i)
+        auto files = DirectoryEnumerator::enumerateFilesWithExtension(defaultPath, options.filename_, false);
+        for (const auto& file : files)
         {
-            result.emplace_back(defaultPath, *i, true);
+            result.emplace_back(defaultPath, file, true);
         }
     }
     if (result.empty() && options.bThrow_)
@@ -264,7 +252,7 @@ std::vector<DataFileInfo> DataFileFinder::enumerateFiles(const DataFileOptions& 
         std::string message(
                 formatString("Could not find any files ending on '%s' in the "
                              "current directory or the GROMACS library search path",
-                             options.filename_));
+                             options.filename_.c_str()));
         GMX_THROW(FileIOError(message));
     }
     return result;

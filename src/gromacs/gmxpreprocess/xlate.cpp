@@ -163,7 +163,7 @@ void rename_atoms(const char*                            xlfile,
     }
     else
     {
-        std::vector<std::string> fns = fflib_search_file_end(ffdir, ".arn", FALSE);
+        auto fns = fflib_search_file_end(ffdir, ".arn", FALSE);
         for (const auto& filename : fns)
         {
             FILE* fp = fflib_open(filename);

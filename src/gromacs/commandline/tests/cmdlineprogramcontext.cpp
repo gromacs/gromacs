@@ -44,6 +44,7 @@
 
 #include "config.h"
 
+#include <filesystem>
 #include <memory>
 #include <string>
 #include <vector>
@@ -56,8 +57,6 @@
 #include "testutils/cmdlinetest.h"
 
 #include "buildinfo.h"
-
-using gmx::Path;
 
 #if GMX_NATIVE_WINDOWS || GMX_CYGWIN
 //! Extension for executable files on the platform.
@@ -80,11 +79,11 @@ public:
     {
     }
 
-    std::string              getWorkingDirectory() const override { return workingDirectory_; }
-    std::vector<std::string> getExecutablePaths() const override { return path_; }
+    std::filesystem::path getWorkingDirectory() const override { return workingDirectory_; }
+    std::vector<std::filesystem::path> getExecutablePaths() const override { return path_; }
 
-    std::string              workingDirectory_;
-    std::vector<std::string> path_;
+    std::filesystem::path              workingDirectory_;
+    std::vector<std::filesystem::path> path_;
 
     GMX_DISALLOW_COPY_AND_ASSIGN(TestExecutableEnvironment);
 };
@@ -97,8 +96,9 @@ class CommandLineProgramContextTest : public ::testing::Test
 public:
     CommandLineProgramContextTest() : env_(new TestExecutableEnvironment())
     {
-        expectedExecutable_ = Path::normalize(
-                Path::join(env_->getWorkingDirectory(), "bin/test-exe" EXECUTABLE_EXTENSION));
+        expectedExecutable_ = std::filesystem::path(env_->getWorkingDirectory())
+                                      .append("bin/test-exe" EXECUTABLE_EXTENSION)
+                                      .make_preferred();
     }
 
     void testBinaryPathSearch(const char* argv0)
@@ -115,7 +115,7 @@ public:
 
 TEST_F(CommandLineProgramContextTest, FindsBinaryWithAbsolutePath)
 {
-    testBinaryPathSearch(Path::join(env_->getWorkingDirectory(), "bin/test-exe"));
+    testBinaryPathSearch(std::filesystem::path(env_->getWorkingDirectory()).append("bin/test-exe"));
 }
 
 TEST_F(CommandLineProgramContextTest, FindsBinaryWithRelativePath)
@@ -125,13 +125,13 @@ TEST_F(CommandLineProgramContextTest, FindsBinaryWithRelativePath)
 
 TEST_F(CommandLineProgramContextTest, FindsBinaryFromPath)
 {
-    env_->path_.push_back(Path::join(env_->getWorkingDirectory(), "bin"));
+    env_->path_.push_back(std::filesystem::path(env_->getWorkingDirectory()).append("bin"));
     testBinaryPathSearch("test-exe");
 }
 
 TEST_F(CommandLineProgramContextTest, FindsBinaryFromCurrentDirectory)
 {
-    env_->workingDirectory_ = Path::join(env_->getWorkingDirectory(), "bin");
+    env_->workingDirectory_ = std::filesystem::path(env_->getWorkingDirectory()).append("bin");
     env_->path_.emplace_back("");
     testBinaryPathSearch("test-exe");
 }

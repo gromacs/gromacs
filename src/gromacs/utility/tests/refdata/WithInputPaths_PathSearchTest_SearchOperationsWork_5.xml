@@ -2,9 +2,6 @@
 <?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
 <ReferenceData>
   <PathToTest Name="simpledir/traj">
-    <String Name="getParentPath">simpledir</String>
-    <String Name="getFilename">traj</String>
-    <Bool Name="hasExtension">false</Bool>
     <Bool Name="extensionMatchesPdb">false</Bool>
     <String Name="stripExtension">simpledir/traj</String>
     <String Name="concatenateBeforeExtension">simpledir/traj_34</String>

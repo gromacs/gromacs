@@ -47,6 +47,7 @@
 #ifndef GMX_COMMANDLINE_CMDLINEPROGRAMCONTEXT_H
 #define GMX_COMMANDLINE_CMDLINEPROGRAMCONTEXT_H
 
+#include <filesystem>
 #include <memory>
 #include <string>
 #include <vector>
@@ -77,14 +78,14 @@ public:
     /*! \brief
      * Returns the working directory when the program was launched.
      */
-    virtual std::string getWorkingDirectory() const = 0;
+    virtual std::filesystem::path getWorkingDirectory() const = 0;
     /*! \brief
      * Returns list of paths where executables are searched for.
      *
      * The returned list should be in priority order.  An empty string in
      * the returned list corresponds to getWorkindDirectory().
      */
-    virtual std::vector<std::string> getExecutablePaths() const = 0;
+    virtual std::vector<std::filesystem::path> getExecutablePaths() const = 0;
 };
 
 //! Shorthand for a smart pointer to IExecutableEnvironment.
@@ -188,7 +189,7 @@ public:
      *
      * Returns argv[0] if there was an error in finding the absolute path.
      */
-    const char* fullBinaryPath() const override;
+    std::filesystem::path fullBinaryPath() const override;
     /*! \brief
      * Returns the installation prefix (for finding \Gromacs data files).
      *

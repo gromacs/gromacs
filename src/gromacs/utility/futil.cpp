@@ -354,12 +354,12 @@ gmx_bool gmx_fexist(const std::string& fname)
     }
 }
 
-static std::string backup_fn(const std::string& file)
+static std::string backup_fn(const std::filesystem::path& file)
 {
     int count = 1;
 
-    std::string directory = gmx::Path::getParentPath(file);
-    std::string fn        = gmx::Path::getFilename(file);
+    auto        directory = file.parent_path();
+    auto        fn        = file.filename();
     std::string buf;
     if (directory.empty())
     {

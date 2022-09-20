@@ -293,7 +293,7 @@ StartingBehaviorHandler chooseStartingBehavior(const AppendingBehavior appending
                        "The checkpoint file or its reading is broken, as no output "
                        "file information is stored in it");
     const char* logFilename = outputFiles[0].filename;
-    GMX_RELEASE_ASSERT(Path::extensionMatches(logFilename, ftp2ext(efLOG)),
+    GMX_RELEASE_ASSERT(extensionMatches(std::filesystem::path(logFilename), ftp2ext(efLOG)),
                        formatString("The checkpoint file or its reading is broken, the first "
                                     "output file '%s' must be a log file with extension '%s'",
                                     logFilename,

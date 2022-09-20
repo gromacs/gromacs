@@ -2540,8 +2540,11 @@ static void check_match(FILE*                           fplog,
 
     if (reproducibilityRequested)
     {
-        check_string(
-                fplog, "Program name", gmx::getProgramContext().fullBinaryPath(), headerContents.fprog, &mm);
+        check_string(fplog,
+                     "Program name",
+                     gmx::getProgramContext().fullBinaryPath().c_str(),
+                     headerContents.fprog,
+                     &mm);
 
         check_int(fplog, "#ranks", cr->nnodes, headerContents.nnodes, &mm);
     }

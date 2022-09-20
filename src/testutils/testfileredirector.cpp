@@ -70,7 +70,8 @@ void TestFileInputRedirector::addExistingFile(const char* filename)
     existingFiles_.insert(filename);
 }
 
-bool TestFileInputRedirector::fileExists(const char* filename, File::NotFoundHandler onNotFound) const
+bool TestFileInputRedirector::fileExists(const std::filesystem::path& filename,
+                                         const File::NotFoundHandler& onNotFound) const
 {
     if (existingFiles_.count(filename) == 0)
     {

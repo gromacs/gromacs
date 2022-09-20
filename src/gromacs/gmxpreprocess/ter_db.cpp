@@ -396,7 +396,7 @@ int read_ter_db(const char* ffdir, char ter, std::vector<MoleculePatchDatabase>*
     /* Search for termini database files.
      * Do not generate an error when none are found.
      */
-    std::vector<std::string> tdbf = fflib_search_file_end(ffdir, ext.c_str(), FALSE);
+    auto tdbf = fflib_search_file_end(ffdir, ext.c_str(), FALSE);
     tbptr->clear();
     for (const auto& filename : tdbf)
     {

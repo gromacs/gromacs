@@ -44,6 +44,7 @@
 
 #include <cstring>
 
+#include <filesystem>
 #include <string>
 
 #include "gromacs/fileio/filetypes.h"
@@ -151,7 +152,8 @@ std::string FileNameOptionManager::completeFileName(const std::string& value, co
     // TODO: Consider splitting them into a separate DirectoryOption.
     if (option.isDirectoryOption())
     {
-        if (!impl_->bInputCheckingDisabled_ && bInput && !bAllowMissing && !Directory::exists(value))
+        if (!impl_->bInputCheckingDisabled_ && bInput && !bAllowMissing
+            && !std::filesystem::is_directory(value))
         {
             std::string message =
                     formatString("Directory '%s' does not exist or is not accessible.", value.c_str());

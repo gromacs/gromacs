@@ -959,14 +959,14 @@ static void calc_cumulatives(t_UmbrellaWindow*  window,
                              const char*        fnhist,
                              const char*        xlabel)
 {
-    int         i, j, k, nbin;
-    double      last;
-    std::string fn;
-    FILE*       fp = nullptr;
+    int                   i, j, k, nbin;
+    double                last;
+    std::filesystem::path fn;
+    FILE*                 fp = nullptr;
 
     if (opt->bs_verbose)
     {
-        fn = gmx::Path::concatenateBeforeExtension(fnhist, "_cumul");
+        fn = gmx::concatenateBeforeExtension(fnhist, "_cumul");
         fp = xvgropen(fn.c_str(), "CDFs of umbrella windows", xlabel, "CDF", opt->oenv);
     }
 
@@ -1198,18 +1198,18 @@ static void print_histograms(const char*        fnhist,
                              t_UmbrellaOptions* opt,
                              const char*        xlabel)
 {
-    std::string fn, title;
-    FILE*       fp;
-    int         bins, l, i, j;
+    std::filesystem::path fn, title;
+    FILE*                 fp;
+    int                   bins, l, i, j;
 
     if (bs_index >= 0)
     {
-        fn    = gmx::Path::concatenateBeforeExtension(fnhist, gmx::formatString("_bs%d", bs_index));
+        fn    = gmx::concatenateBeforeExtension(fnhist, gmx::formatString("_bs%d", bs_index));
         title = gmx::formatString("Umbrella histograms. Bootstrap #%d", bs_index);
     }
     else
     {
-        fn    = gmx_strdup(fnhist);
+        fn    = fnhist;
         title = gmx::formatString("Umbrella histograms");
     }
 

@@ -41,6 +41,7 @@
 #ifndef GMX_TESTUTILS_TESTINIT_H
 #define GMX_TESTUTILS_TESTINIT_H
 
+#include <filesystem>
 #include <string>
 
 #include <gtest/gtest.h>
@@ -72,13 +73,13 @@ namespace test
  *
  * \ingroup module_testutils
  */
-void initTestUtils(const char* dataPath,
-                   const char* tempPath,
-                   bool        usesMpi,
-                   bool        usesHardwareDetection,
-                   bool        registersDynamically,
-                   int*        argc,
-                   char***     argv);
+void initTestUtils(const std::filesystem::path& dataPath,
+                   const std::filesystem::path& tempPath,
+                   bool                         usesMpi,
+                   bool                         usesHardwareDetection,
+                   bool                         registersDynamically,
+                   int*                         argc,
+                   char***                      argv);
 
 /*! \internal
  * \brief

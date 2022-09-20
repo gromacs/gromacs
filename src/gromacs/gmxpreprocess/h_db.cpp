@@ -209,7 +209,7 @@ int read_h_db(const char* ffdir, std::vector<MoleculePatchDatabase>* globalPatch
      * Do not generate an error when no files are found.
      */
 
-    std::vector<std::string> hdbf = fflib_search_file_end(ffdir, ".hdb", FALSE);
+    auto hdbf = fflib_search_file_end(ffdir, ".hdb", FALSE);
     globalPatches->clear();
     for (const auto& filename : hdbf)
     {

@@ -49,6 +49,7 @@
 #include <cstdio>
 
 #include <algorithm>
+#include <filesystem>
 #include <string>
 #include <vector>
 
@@ -215,9 +216,9 @@ static std::string selectCompilerOptions(DeviceVendor deviceVendor)
  * \throws std::bad_alloc    if out of memory.
  *         FileIOError  if GMX_OCL_FILE_PATH does not specify a readable path
  */
-static std::string getSourceRootPath(const std::string& sourceRelativePath)
+static std::filesystem::path getSourceRootPath(const std::string& sourceRelativePath)
 {
-    std::string sourceRootPath;
+    std::filesystem::path sourceRootPath;
     /* Use GMX_OCL_FILE_PATH if the user has defined it */
     const char* gmxOclFilePath = getenv("GMX_OCL_FILE_PATH");
 
@@ -227,22 +228,23 @@ static std::string getSourceRootPath(const std::string& sourceRelativePath)
            root path from the path to the binary that is running. */
         InstallationPrefixInfo info           = getProgramContext().installationPrefix();
         std::string            dataPathSuffix = (info.bSourceLayout ? "src" : GMX_INSTALL_OCLDIR);
-        sourceRootPath = Path::join(info.path, dataPathSuffix, sourceRelativePath);
+        sourceRootPath =
+                std::filesystem::path(info.path).append(dataPathSuffix).append(sourceRelativePath);
     }
     else
     {
-        if (!Directory::exists(gmxOclFilePath))
+        if (!std::filesystem::is_directory(gmxOclFilePath))
         {
             GMX_THROW(FileIOError(
                     formatString("GMX_OCL_FILE_PATH must point to the directory where OpenCL"
                                  "kernels are found, but '%s' does not exist",
                                  gmxOclFilePath)));
         }
-        sourceRootPath = Path::join(gmxOclFilePath, sourceRelativePath);
+        sourceRootPath = std::filesystem::path(gmxOclFilePath).append(sourceRelativePath);
     }
 
     // Make sure we return an OS-correct path format
-    return Path::normalize(sourceRootPath);
+    return sourceRootPath.make_preferred();
 }
 
 size_t getKernelWarpSize(cl_kernel kernel, cl_device_id deviceId)
@@ -411,14 +413,14 @@ cl_program compileProgram(FILE*              fplog,
 {
     cl_int cl_error;
     // Let the kernel find include files from its module.
-    std::string kernelRootPath = getSourceRootPath(kernelRelativePath);
+    auto kernelRootPath = getSourceRootPath(kernelRelativePath);
     // Let the kernel find include files from other modules.
-    std::string rootPath = getSourceRootPath("");
+    auto rootPath = getSourceRootPath("");
 
     GMX_RELEASE_ASSERT(fplog != nullptr, "Need a valid log file for building OpenCL programs");
 
     /* Load OpenCL source files */
-    std::string kernelFilename = Path::join(kernelRootPath, kernelBaseFilename);
+    auto kernelFilename = std::filesystem::path(kernelRootPath).append(kernelBaseFilename);
 
     /* Make the build options */
     std::string preprocessorOptions = makePreprocessorOptions(
@@ -467,7 +469,8 @@ cl_program compileProgram(FILE*              fplog,
         std::string kernelSource = TextReader::readFileToString(kernelFilename);
         if (kernelSource.empty())
         {
-            GMX_THROW(FileIOError("Error loading OpenCL code " + kernelFilename));
+            GMX_THROW(FileIOError(
+                    gmx::formatString("Error loading OpenCL code %s", kernelFilename.c_str())));
         }
         const char* kernelSourcePtr  = kernelSource.c_str();
         size_t      kernelSourceSize = kernelSource.size();

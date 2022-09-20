@@ -76,7 +76,7 @@ void printFatalErrorHeader(FILE* fp, const char* title, const char* func, const 
     std::fprintf(fp, "Program:     %s, version %s\n", programName, gmx_version());
     if (file != nullptr)
     {
-        std::fprintf(fp, "Source file: %s (line %d)\n", Path::stripSourcePrefix(file), line);
+        std::fprintf(fp, "Source file: %s (line %d)\n", stripSourcePrefix(file).c_str(), line);
     }
     if (func != nullptr)
     {

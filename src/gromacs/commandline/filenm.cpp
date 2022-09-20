@@ -278,7 +278,7 @@ int add_suffix_to_output_names(t_filenm* fnm, int nfile, const char* suffix)
                 // mdrun should not generate files like
                 // md.part0002.part0003.log. mdrun should permit users
                 // to name files like md.equil.part0002.log. So,
-                // before we use Path::concatenateBeforeExtension to
+                // before we use concatenateBeforeExtension to
                 // add the requested suffix, we need to check for
                 // files matching mdrun's pattern for adding part
                 // numbers. Then we can remove that if needed.
@@ -292,7 +292,7 @@ int add_suffix_to_output_names(t_filenm* fnm, int nfile, const char* suffix)
                     temporary += filename.substr(partPosition + 9);
                     filename.swap(temporary);
                 }
-                filename = gmx::Path::concatenateBeforeExtension(filename, suffix);
+                filename = gmx::concatenateBeforeExtension(filename, suffix);
             }
         }
     }

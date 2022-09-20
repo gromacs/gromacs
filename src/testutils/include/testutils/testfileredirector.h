@@ -81,7 +81,8 @@ public:
     void addExistingFile(const char* filename);
 
     // From IFileInputRedirector
-    bool fileExists(const char* filename, File::NotFoundHandler onNotFound) const override;
+    bool fileExists(const std::filesystem::path& filename,
+                    const File::NotFoundHandler& onNotFound) const override;
 
 private:
     std::set<std::string> existingFiles_;

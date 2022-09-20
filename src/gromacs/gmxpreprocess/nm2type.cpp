@@ -130,9 +130,9 @@ static void rd_nm2type_file(const std::string& filename, int* nnm, t_nm2type** n
 
 t_nm2type* rd_nm2type(const char* ffdir, int* nnm)
 {
-    std::vector<std::string> ff = fflib_search_file_end(ffdir, ".n2t", FALSE);
-    *nnm                        = 0;
-    t_nm2type* nm               = nullptr;
+    auto ff       = fflib_search_file_end(ffdir, ".n2t", FALSE);
+    *nnm          = 0;
+    t_nm2type* nm = nullptr;
     for (const auto& filename : ff)
     {
         rd_nm2type_file(filename, nnm, &nm);

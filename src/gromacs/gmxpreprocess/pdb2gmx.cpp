@@ -2020,7 +2020,7 @@ int pdb2gmx::run()
     ResidueTypeMap residueTypeMap = residueTypeMapFromLibraryFile("residuetypes.dat");
 
     /* Read residue renaming database(s), if present */
-    std::vector<std::string> rrn = fflib_search_file_end(ffdir_, ".r2b", FALSE);
+    auto rrn = fflib_search_file_end(ffdir_, ".r2b", FALSE);
 
     std::vector<RtpRename> rtprename;
     for (const auto& filename : rrn)
@@ -2346,7 +2346,7 @@ int pdb2gmx::run()
 
     /* read residue database */
     GMX_LOG(logger.info).asParagraph().appendTextFormatted("Reading residue database... (%s)", forcefield_);
-    std::vector<std::string>       rtpf = fflib_search_file_end(ffdir_, ".rtp", true);
+    auto                           rtpf = fflib_search_file_end(ffdir_, ".rtp", true);
     std::vector<PreprocessResidue> rtpFFDB;
     for (const auto& filename : rtpf)
     {
@@ -2713,7 +2713,7 @@ int pdb2gmx::run()
             posre_fn.append(".itp");
             if (posre_fn == itp_fn)
             {
-                posre_fn = Path::concatenateBeforeExtension(posre_fn, "_pr");
+                posre_fn = gmx::concatenateBeforeExtension(posre_fn, "_pr");
             }
             incls_.emplace_back();
             incls_.back() = itp_fn;

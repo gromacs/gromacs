@@ -314,7 +314,7 @@ void OptionsAdapter::filenmToOptions(Options* options, t_filenm* fnm)
     {
         defName = ftp2defnm(fnm->ftp);
     }
-    else if (Path::hasExtension(defName))
+    else if (std::filesystem::path(defName).has_extension())
     {
         defType = fn2ftp(defName);
         GMX_RELEASE_ASSERT(defType != efNR, "File name option specifies an invalid extension");

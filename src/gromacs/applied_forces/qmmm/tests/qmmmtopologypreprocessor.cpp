@@ -85,8 +85,10 @@ public:
             gmx::test::CommandLine caller;
             caller.append("grompp");
             caller.addOption("-f", mdpInputFileName);
-            caller.addOption("-p", gmx::Path::join(simData, fileName + ".top"));
-            caller.addOption("-c", gmx::Path::join(simData, fileName + ".gro"));
+            caller.addOption(
+                    "-p", std::filesystem::path(simData).append(fileName).replace_extension(".top"));
+            caller.addOption(
+                    "-c", std::filesystem::path(simData).append(fileName).replace_extension(".gro"));
             caller.addOption("-o", tprName);
             ASSERT_EQ(0, gmx_grompp(caller.argc(), caller.argv()));
         }

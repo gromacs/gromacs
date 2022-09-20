@@ -44,6 +44,7 @@
 
 #include <cstdio>
 
+#include <filesystem>
 #include <memory>
 #include <string>
 #include <vector>
@@ -85,12 +86,8 @@ public:
      * DataFileFinder methods to search for the string with the default
      * parameters.
      */
-    DataFileOptions(const char* filename) : filename_(filename), bCurrentDir_(true), bThrow_(true)
-    {
-    }
-    //! \copydoc DataFileOptions(const char *)
-    DataFileOptions(const std::string& filename) :
-        filename_(filename.c_str()), bCurrentDir_(true), bThrow_(true)
+    DataFileOptions(const std::filesystem::path& filename) :
+        filename_(filename), bCurrentDir_(true), bThrow_(true)
     {
     }
 
@@ -108,9 +105,9 @@ public:
     }
 
 private:
-    const char* filename_;
-    bool        bCurrentDir_;
-    bool        bThrow_;
+    const std::filesystem::path filename_;
+    bool                        bCurrentDir_;
+    bool                        bThrow_;
 
     /*! \brief
      * Needed to access the members without otherwise unnecessary accessors.
@@ -127,7 +124,7 @@ private:
 struct DataFileInfo
 {
     //! Initializes the structure with given values.
-    DataFileInfo(const std::string& dir, const std::string& name, bool bDefault) :
+    DataFileInfo(const std::filesystem::path& dir, const std::filesystem::path& name, bool bDefault) :
         dir(dir), name(name), bFromDefaultDir(bDefault)
     {
     }
@@ -139,11 +136,11 @@ struct DataFileInfo
      * In other cases, this will be a full path (except if the user-provided
      * search path contains relative paths).
      */
-    std::string dir;
+    std::filesystem::path dir;
     /*! \brief
      * Name of the file without any directory name.
      */
-    std::string name;
+    std::filesystem::path name;
     /*! \brief
      * Whether the file was found from the default directory.
      *
@@ -224,7 +221,7 @@ public:
      * finder, as well as in the current directory if so required.
      * Returns the full path to the first file found.
      */
-    std::string findFile(const DataFileOptions& options) const;
+    std::filesystem::path findFile(const DataFileOptions& options) const;
     /*! \brief
      * Enumerates files in the data directories.
      *

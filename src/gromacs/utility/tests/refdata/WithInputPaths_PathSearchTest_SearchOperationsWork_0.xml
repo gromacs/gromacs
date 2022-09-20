@@ -2,9 +2,6 @@
 <?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
 <ReferenceData>
   <PathToTest>
-    <String Name="getParentPath"></String>
-    <String Name="getFilename"></String>
-    <Bool Name="hasExtension">false</Bool>
     <Bool Name="extensionMatchesPdb">false</Bool>
     <String Name="stripExtension"></String>
     <String Name="concatenateBeforeExtension">_34</String>

@@ -46,12 +46,12 @@
 
 #ifndef TEST_DATA_PATH
 //! Path to test input data directory (needs to be set by the build system).
-#    define TEST_DATA_PATH nullptr
+#    define TEST_DATA_PATH ""
 #endif
 
 #ifndef TEST_TEMP_PATH
 //! Path to test output temporary directory (needs to be set by the build system).
-#    define TEST_TEMP_PATH nullptr
+#    define TEST_TEMP_PATH ""
 #endif
 
 #ifndef TEST_USES_MPI

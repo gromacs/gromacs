@@ -94,25 +94,26 @@ void fflib_filename_base(const char* filename, char* filebase, int maxlen)
     }
 }
 
-std::vector<std::string> fflib_search_file_end(const char* ffdir, const char* file_end, bool bFatalError)
+std::vector<std::filesystem::path> fflib_search_file_end(const std::filesystem::path& ffdir,
+                                                         const char*                  file_end,
+                                                         bool                         bFatalError)
 {
     try
     {
-        std::string              ffdirFull(gmx::getLibraryFileFinder().findFile(ffdir));
-        std::vector<std::string> result = gmx::DirectoryEnumerator::enumerateFilesWithExtension(
-                ffdirFull.c_str(), file_end, true);
+        auto ffdirFull = (gmx::getLibraryFileFinder().findFile(ffdir));
+        auto result = gmx::DirectoryEnumerator::enumerateFilesWithExtension(ffdirFull, file_end, true);
         if (result.empty() && bFatalError)
         {
             std::string message = gmx::formatString(
                     "Could not find any files ending on '%s' "
                     "in the force field directory '%s'",
                     file_end,
-                    ffdir);
+                    ffdir.c_str());
             GMX_THROW(gmx::InvalidInputError(message));
         }
-        for (std::string& filename : result)
+        for (auto& filename : result)
         {
-            filename = gmx::Path::join(ffdir, filename);
+            filename = std::filesystem::path(ffdir).append(filename.string());
         }
         return result;
     }
@@ -127,13 +128,13 @@ std::vector<gmx::DataFileInfo> fflib_enumerate_forcefields()
             gmx::DataFileOptions(dirend).throwIfNotFound(false));
 
     std::vector<gmx::DataFileInfo> result;
-    for (size_t i = 0; i < candidates.size(); ++i)
+    for (const auto& candidate : candidates)
     {
-        std::string testPath(gmx::Path::join(candidates[i].dir, candidates[i].name, filename));
+        auto testPath(std::filesystem::path(candidate.dir).append(candidate.name.string()).append(filename));
         // TODO: Consider also checking that the directory can be listed.
         if (gmx::File::exists(testPath, gmx::File::returnFalseOnError))
         {
-            result.push_back(candidates[i]);
+            result.push_back(candidate);
         }
     }
 

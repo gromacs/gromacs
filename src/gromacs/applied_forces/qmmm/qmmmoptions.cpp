@@ -307,7 +307,8 @@ void QMMMOptions::processTprFilename(const MdRunInputFilename& tprFilename)
     }
 
     parameters_.qmFileNameBase_ =
-            gmx::Path::stripExtension(gmx::Path::getFilename(tprFilename.mdRunFilename_)) + "_cp2k";
+            stripExtension(std::filesystem::path(tprFilename.mdRunFilename_).filename())
+                    .append("_cp2k");
 }
 
 void QMMMOptions::processExternalInputFile()

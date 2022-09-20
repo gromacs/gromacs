@@ -180,7 +180,7 @@ void ExtractCluster::initAnalysis(const TrajectoryAnalysisSettings& /*settings*/
     int numberOfClusters = clusterIndex_->clust->nr;
     for (int i = 0; i < numberOfClusters; i++)
     {
-        std::string outputName = Path::concatenateBeforeExtension(
+        auto outputName = gmx::concatenateBeforeExtension(
                 outputNamePrefix_, formatString("_%s", clusterIndex_->grpname[i]));
         writers_.emplace_back(createTrajectoryFrameWriter(top.mtop(),
                                                           sel_,

@@ -66,7 +66,7 @@ namespace
 class DefaultInputRedirector : public IFileInputRedirector
 {
 public:
-    bool fileExists(const char* filename, File::NotFoundHandler onNotFound) const override
+    bool fileExists(const std::filesystem::path& filename, const File::NotFoundHandler& onNotFound) const override
     {
         return File::exists(filename, onNotFound);
     }

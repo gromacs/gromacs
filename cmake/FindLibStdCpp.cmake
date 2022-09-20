@@ -55,13 +55,15 @@ include(CheckCXXSourceCompiles)
 # Test that required 2017 standard library features work.
 # Note that this check also requires linking to succeed.
 set (SAMPLE_CODE_TO_TEST_CXX17 "
+#include <filesystem>
 #include <string>
 #include <string_view>
 #include <optional>
 int main(int argc, char **argv) {
+  auto path = std::filesystem::current_path();
   std::optional<std::string> input(argv[0]);
   std::string_view view(input.value());
-  return int(view[0]);
+  return int(view[0])+path.string().size();
 }")
 check_cxx_source_compiles("${SAMPLE_CODE_TO_TEST_CXX17}" CXX17_COMPILES)
 
