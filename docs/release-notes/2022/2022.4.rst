@@ -48,3 +48,10 @@ Fixes that affect portability
 Miscellaneous
 ^^^^^^^^^^^^^
 
+Fixed argument checking with nvcc
+"""""""""""""""""""""""""""""""""
+
+Incorrect configure-time checks of flags passed to nvcc resulted in
+several performance-related flags never being used. Simulations using
+Nvidia GPUs were correct but may not have achieved best possible
+performance.
