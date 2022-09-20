@@ -434,17 +434,16 @@ static void dump_stats(FILE*                          log,
     sfree(drs);
 }
 
-static void dump_clust_stats(FILE*                          fp,
-                             const t_disresdata&            dd,
-                             const InteractionList&         disres,
-                             gmx::ArrayRef<const t_iparams> ip,
-                             t_blocka*                      clust,
-                             t_dr_result                    dr[],
-                             char*                          clust_name[],
-                             int                            isize,
-                             int                            index[])
+static void dump_clust_stats(FILE*                           fp,
+                             const t_disresdata&             dd,
+                             const InteractionList&          disres,
+                             gmx::ArrayRef<const t_iparams>  ip,
+                             gmx::ArrayRef<const IndexGroup> clusters,
+                             t_dr_result                     dr[],
+                             int                             isize,
+                             int                             index[])
 {
-    int         k, nra;
+    int         nra;
     double      sumV, maxV, sumVT3, sumVT6, maxVT3, maxVT6;
     t_dr_stats* drs;
 
@@ -454,22 +453,24 @@ static void dump_clust_stats(FILE*                          fp,
 
     snew(drs, dd.nres);
 
-    for (k = 0; (k < clust->nr); k++)
+    for (int k = 0; k < gmx::ssize(clusters); k++)
     {
+        const auto& cluster = clusters[k];
+
         if (dr[k].nframes == 0)
         {
             continue;
         }
-        if (dr[k].nframes != (clust->index[k + 1] - clust->index[k]))
+        if (dr[k].nframes != gmx::ssize(cluster.particleIndices))
         {
             gmx_fatal(FARGS,
                       "Inconsistency in cluster %s.\n"
-                      "Found %d frames in trajectory rather than the expected %d\n",
-                      clust_name[k],
+                      "Found %d frames in trajectory rather than the expected %td\n",
+                      cluster.name.c_str(),
                       dr[k].nframes,
-                      clust->index[k + 1] - clust->index[k]);
+                      gmx::ssize(cluster.particleIndices));
         }
-        if (!clust_name[k])
+        if (cluster.name.empty())
         {
             gmx_fatal(FARGS, "Inconsistency with cluster %d. Invalid name", k);
         }
@@ -513,7 +514,7 @@ static void dump_clust_stats(FILE*                          fp,
         }
         fprintf(fp,
                 "%-10s%6d%8.3f  %8.3f  %8.3f  %8.3f  %8.3f  %8.3f\n",
-                clust_name[k],
+                cluster.name.c_str(),
                 dr[k].nframes,
                 sumV,
                 maxV,
@@ -851,9 +852,9 @@ int gmx_disre(int argc, char* argv[])
     init_dr_res(&dr, disresdata.nres);
     if (opt2bSet("-c", NFILE, fnm))
     {
-        clust = std::optional<t_cluster_ndx>(cluster_index(fplog, opt2fn("-c", NFILE, fnm)));
-        snew(dr_clust, clust->clust->nr + 1);
-        for (i = 0; (i <= clust->clust->nr); i++)
+        clust = cluster_index(fplog, opt2fn("-c", NFILE, fnm));
+        snew(dr_clust, gmx::ssize(clust->clusters) + 1);
+        for (i = 0; i <= gmx::ssize(clust->clusters); i++)
         {
             init_dr_res(&dr_clust[i], disresdata.nres);
         }
@@ -899,7 +900,7 @@ int gmx_disre(int argc, char* argv[])
                           t);
             }
             my_clust = clust->inv_clust[j];
-            range_check(my_clust, 0, clust->clust->nr);
+            range_check(my_clust, 0, gmx::ssize(clust->clusters));
             check_viol(
                     fplog, idef.il[F_DISRES], idef.iparams, x, f, pbc_null, dr_clust, my_clust, isize, index, vvindex, &disresdata);
         }
@@ -949,7 +950,7 @@ int gmx_disre(int argc, char* argv[])
     if (clust)
     {
         dump_clust_stats(
-                fplog, disresdata, idef.il[F_DISRES], idef.iparams, clust->clust, dr_clust, clust->grpname, isize, index);
+                fplog, disresdata, idef.il[F_DISRES], idef.iparams, clust->clusters, dr_clust, isize, index);
     }
     else
     {

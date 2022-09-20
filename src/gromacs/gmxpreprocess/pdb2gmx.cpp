@@ -825,13 +825,11 @@ bool pdbicomp(const t_pdbindex& a, const t_pdbindex& b)
     return d < 0;
 }
 
-void sort_pdbatoms(gmx::ArrayRef<const PreprocessResidue> restp_chain,
-                   int                                    natoms,
-                   t_atoms**                              pdbaptr,
-                   t_atoms**                              newPdbAtoms,
-                   std::vector<gmx::RVec>*                x,
-                   t_blocka*                              block,
-                   char***                                gnames)
+std::vector<IndexGroup> sort_pdbatoms(gmx::ArrayRef<const PreprocessResidue> restp_chain,
+                                      int                                    natoms,
+                                      t_atoms**                              pdbaptr,
+                                      t_atoms**                              newPdbAtoms,
+                                      std::vector<gmx::RVec>*                x)
 {
     t_atoms*               pdba = *pdbaptr;
     std::vector<gmx::RVec> xnew;
@@ -904,8 +902,13 @@ void sort_pdbatoms(gmx::ArrayRef<const PreprocessResidue> restp_chain,
     /* copy the sorted pdbnew back to pdba */
     *pdbaptr = *newPdbAtoms;
     *x       = xnew;
-    add_grp(block, gnames, a, "prot_sort");
+
+    std::vector<IndexGroup> indexGroups;
+    indexGroups.push_back({ "prot_sort", a });
+
     sfree(pdbi);
+
+    return indexGroups;
 }
 
 int remove_duplicate_atoms(t_atoms* pdba, gmx::ArrayRef<gmx::RVec> x, bool bVerbose, const gmx::MDLogger& logger)
@@ -2591,10 +2594,7 @@ int pdb2gmx::run()
 
         if (bSort_)
         {
-            char**    gnames;
-            t_blocka* block = new_blocka();
-            snew(gnames, 1);
-            sort_pdbatoms(restp_chain, natom, &pdba, &sortAtoms[chain], &x, block, &gnames);
+            const auto indexGroups = sort_pdbatoms(restp_chain, natom, &pdba, &sortAtoms[chain], &x);
             remove_duplicate_atoms(pdba, x, bVerbose_, logger);
             if (bIndexSet_)
             {
@@ -2608,15 +2608,8 @@ int pdb2gmx::run()
                                     "(the index file is generated before hydrogens are added)",
                                     indexOutputFile_.c_str());
                 }
-                write_index(indexOutputFile_.c_str(), block, gnames, false, 0);
+                write_index(indexOutputFile_.c_str(), indexGroups, false, 0);
             }
-            for (int i = 0; i < block->nr; i++)
-            {
-                sfree(gnames[i]);
-            }
-            sfree(gnames);
-            done_blocka(block);
-            sfree(block);
         }
         else
         {

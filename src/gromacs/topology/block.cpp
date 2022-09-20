@@ -39,28 +39,11 @@
 
 #include <algorithm>
 
+#include "gromacs/topology/index.h"
 #include "gromacs/utility/listoflists.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/txtdump.h"
 
-void gmx::RangePartitioning::setAllBlocksSizeOne(int numBlocksToSet)
-{
-    if (!allBlocksHaveSizeOne())
-    {
-        clear();
-    }
-    if (numBlocksToSet < numBlocks())
-    {
-        index_.resize(numBlocksToSet + 1);
-    }
-    else if (numBlocksToSet > numBlocks())
-    {
-        for (int b = numBlocks(); b < numBlocksToSet; b++)
-        {
-            appendBlock(1);
-        }
-    }
-}
 
 void init_block(t_block* block)
 {
@@ -79,16 +62,6 @@ void init_blocka(t_blocka* block)
     block->index[0] = 0;
     block->nalloc_a = 0;
     block->a        = nullptr;
-}
-
-t_blocka* new_blocka()
-{
-    t_blocka* block = nullptr;
-
-    snew(block, 1);
-    snew(block->index, 1);
-
-    return block;
 }
 
 void done_block(t_block* block)
@@ -133,25 +106,6 @@ void stupid_fill_block(t_block* grp, int natom, gmx_bool bOneIndexGroup)
     }
 }
 
-void stupid_fill_blocka(t_blocka* grp, int natom)
-{
-    grp->nalloc_a = natom;
-    snew(grp->a, grp->nalloc_a);
-    for (int i = 0; i < natom; ++i)
-    {
-        grp->a[i] = i;
-    }
-    grp->nra = natom;
-
-    grp->nalloc_index = natom + 1;
-    snew(grp->index, grp->nalloc_index);
-    for (int i = 0; i <= natom; ++i)
-    {
-        grp->index[i] = i;
-    }
-    grp->nr = natom;
-}
-
 static int pr_block_title(FILE* fp, int indent, const char* title, const t_block* block)
 {
     if (available(fp, block, indent, title))
@@ -163,16 +117,12 @@ static int pr_block_title(FILE* fp, int indent, const char* title, const t_block
     return indent;
 }
 
-static int pr_blocka_title(FILE* fp, int indent, const char* title, const t_blocka* block)
+static int pr_blocka_title(FILE* fp, int indent, const char* title, const int numBlocks)
 {
-    if (available(fp, block, indent, title))
-    {
-        indent = pr_title(fp, indent, title);
-        pr_indent(fp, indent);
-        fprintf(fp, "nr=%d\n", block->nr);
-        pr_indent(fp, indent);
-        fprintf(fp, "nra=%d\n", block->nra);
-    }
+    indent = pr_title(fp, indent, title);
+    pr_indent(fp, indent);
+    fprintf(fp, "nr=%d\n", numBlocks);
+
     return indent;
 }
 
@@ -187,24 +137,6 @@ static int pr_listoflists_title(FILE* fp, int indent, const char* title, const g
         fprintf(fp, "numElements=%d\n", lists->numElements());
     }
     return indent;
-}
-
-static void low_pr_blocka(FILE* fp, int indent, const char* title, const t_blocka* block, gmx_bool bShowNumbers)
-{
-    if (available(fp, block, indent, title))
-    {
-        indent = pr_blocka_title(fp, indent, title, block);
-        for (int i = 0; i <= block->nr; i++)
-        {
-            pr_indent(fp, indent + INDENT);
-            fprintf(fp, "%s->index[%d]=%d\n", title, bShowNumbers ? i : -1, block->index[i]);
-        }
-        for (int i = 0; i < block->nra; i++)
-        {
-            pr_indent(fp, indent + INDENT);
-            fprintf(fp, "%s->a[%d]=%d\n", title, bShowNumbers ? i : -1, block->a[i]);
-        }
-    }
 }
 
 void pr_block(FILE* fp, int indent, const char* title, const t_block* block, gmx_bool bShowNumbers)
@@ -242,62 +174,38 @@ void pr_block(FILE* fp, int indent, const char* title, const t_block* block, gmx
     }
 }
 
-void pr_blocka(FILE* fp, int indent, const char* title, const t_blocka* block, gmx_bool bShowNumbers)
+void pr_blocka(FILE* fp, int indent, const char* title, gmx::ArrayRef<const IndexGroup> blocks, gmx_bool bShowNumbers)
 {
-    bool ok = false;
+    indent = pr_blocka_title(fp, indent, title, gmx::ssize(blocks));
 
-    if (available(fp, block, indent, title))
+    for (int i = 0; i < gmx::ssize(blocks); i++)
     {
-        indent    = pr_blocka_title(fp, indent, title, block);
-        int start = 0;
-        int end   = start;
-        ok        = (block->index[start] == 0);
-        if (!ok)
+        const auto& block = blocks[i].particleIndices;
+        int         size  = pr_indent(fp, indent);
+        if (block.empty())
         {
-            fprintf(fp, "block->index[%d] should be 0\n", start);
+            size += fprintf(fp, "%s[%d]={", title, i);
         }
         else
         {
-            for (int i = 0; i < block->nr; i++)
-            {
-                end      = block->index[i + 1];
-                int size = pr_indent(fp, indent);
-                if (end <= start)
-                {
-                    size += fprintf(fp, "%s[%d]={", title, i);
-                }
-                else
-                {
-                    size += fprintf(fp,
-                                    "%s[%d][%d..%d]={",
-                                    title,
-                                    bShowNumbers ? i : -1,
-                                    bShowNumbers ? start : -1,
-                                    bShowNumbers ? end - 1 : -1);
-                }
-                for (int j = start; j < end; j++)
-                {
-                    if (j > start)
-                    {
-                        size += fprintf(fp, ", ");
-                    }
-                    if ((size) > (USE_WIDTH))
-                    {
-                        fprintf(fp, "\n");
-                        size = pr_indent(fp, indent + INDENT);
-                    }
-                    size += fprintf(fp, "%d", block->a[j]);
-                }
-                fprintf(fp, "}\n");
-                start = end;
-            }
+            size += fprintf(fp, "%s[%d]={", title, bShowNumbers ? i : -1);
         }
-        if ((end != block->nra) || (!ok))
+        bool firstElement = true;
+        for (const int a : block)
         {
-            pr_indent(fp, indent);
-            fprintf(fp, "tables inconsistent, dumping complete tables:\n");
-            low_pr_blocka(fp, indent, title, block, bShowNumbers);
+            if (!firstElement)
+            {
+                size += fprintf(fp, ", ");
+            }
+            if ((size) > (USE_WIDTH))
+            {
+                fprintf(fp, "\n");
+                size = pr_indent(fp, indent + INDENT);
+            }
+            size += fprintf(fp, "%d", a);
+            firstElement = false;
         }
+        fprintf(fp, "}\n");
     }
 }
 

@@ -44,6 +44,7 @@
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/topology/block.h"
+#include "gromacs/topology/index.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
@@ -323,14 +324,13 @@ extern void set_reference_positions(t_rot* rot, rvec* x, matrix box, const char*
 
 extern void make_rotation_groups(t_rot*                           rot,
                                  gmx::ArrayRef<const std::string> rotateGroupNames,
-                                 t_blocka*                        grps,
-                                 char**                           gnames)
+                                 gmx::ArrayRef<const IndexGroup>  indexGroups)
 {
     for (int g = 0; g < gmx::ssize(rot->grp); g++)
     {
         t_rotgrp* rotg = &rot->grp[g];
-        int       ig   = search_string(rotateGroupNames[g].c_str(), grps->nr, gnames);
-        rotg->nat      = grps->index[ig + 1] - grps->index[ig];
+        int       ig   = getGroupIndex(rotateGroupNames[g], indexGroups);
+        rotg->nat      = gmx::ssize(indexGroups[ig].particleIndices);
 
         if (rotg->nat > 0)
         {
@@ -338,7 +338,7 @@ extern void make_rotation_groups(t_rot*                           rot,
             snew(rotg->ind, rotg->nat);
             for (int i = 0; i < rotg->nat; i++)
             {
-                rotg->ind[i] = grps->a[grps->index[ig] + i];
+                rotg->ind[i] = indexGroups[ig].particleIndices[i];
             }
         }
         else

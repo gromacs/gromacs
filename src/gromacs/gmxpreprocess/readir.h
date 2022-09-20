@@ -36,6 +36,7 @@
 #define GMX_GMXPREPROCESS_READIR_H
 
 #include <string>
+#include <vector>
 
 #include "gromacs/fileio/readinp.h"
 #include "gromacs/math/vectypes.h"
@@ -50,10 +51,10 @@ struct MDModulesNotifiers;
 } // namespace gmx
 
 struct gmx_mtop_t;
-struct gmx_output_env_t;
+struct gmx_output_eenv_t;
+struct IndexGroup;
 struct pull_params_t;
 struct pull_t;
-struct t_blocka;
 struct t_grpopts;
 struct t_inpfile;
 struct t_inputrec;
@@ -118,8 +119,8 @@ void check_ir(const char*                    mdparin,
               t_gromppopts*                  opts,
               WarningHandler*                wi);
 
-//! Returns the index of string \p s in \p gn or exit with a verbose fatal error when not found
-int search_string(const char* s, int ng, char* const gn[]);
+//! Returns the index of string \p s in \p indexGroups or exit with a verbose fatal error when not found
+int getGroupIndex(const std::string& s, gmx::ArrayRef<const IndexGroup> indexGroups);
 
 void double_check(t_inputrec* ir, matrix box, bool bHasNormalConstraints, bool bHasAnyConstraints, WarningHandler* wi);
 /* Do more checks */
@@ -155,8 +156,7 @@ std::vector<std::string> read_pullparams(std::vector<t_inpfile>* inp, pull_param
 /* Reads the pull parameters, returns a list of the pull group names */
 void process_pull_groups(gmx::ArrayRef<t_pull_group>      pullGroups,
                          gmx::ArrayRef<const std::string> pullGroupNames,
-                         const t_blocka*                  grps,
-                         char**                           gnames);
+                         gmx::ArrayRef<const IndexGroup>  indexGroups);
 /* Process the pull group parameters after reading the index groups */
 
 void checkPullCoords(gmx::ArrayRef<const t_pull_group> pullGroups,
@@ -180,8 +180,7 @@ std::vector<std::string> read_rotparams(std::vector<t_inpfile>* inp, t_rot* rot,
 
 void make_rotation_groups(t_rot*                           rot,
                           gmx::ArrayRef<const std::string> rotateGroupNames,
-                          t_blocka*                        grps,
-                          char**                           gnames);
+                          gmx::ArrayRef<const IndexGroup>  indexGroups);
 /* Process the rotation parameters after reading the index groups */
 
 void set_reference_positions(t_rot* rot, rvec* x, matrix box, const char* fn, bool bSet, WarningHandler* wi);

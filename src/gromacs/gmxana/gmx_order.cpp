@@ -37,6 +37,7 @@
 #include <cstring>
 
 #include <algorithm>
+#include <optional>
 
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/commandline/viewit.h"
@@ -361,18 +362,16 @@ static void calc_tetra_order_parm(const char*             fnNDX,
 
 
 /* Print name of first atom in all groups in index file */
-static void print_types(const int index[], int a[], int ngrps, char* groups[], const t_topology* top)
+static void print_types(gmx::ArrayRef<const IndexGroup> indexGroups, const t_topology* top)
 {
-    int i;
-
     fprintf(stderr, "Using following groups: \n");
-    for (i = 0; i < ngrps; i++)
+    for (const auto& indexGroup : indexGroups)
     {
         fprintf(stderr,
                 "Groupname: %s First atomname: %s First atomnr %d\n",
-                groups[i],
-                *(top->atoms.atomname[a[index[i]]]),
-                a[index[i]]);
+                indexGroup.name.c_str(),
+                *(top->atoms.atomname[indexGroup.particleIndices[0]]),
+                1 + indexGroup.particleIndices[0]);
     }
     fprintf(stderr, "\n");
 }
@@ -390,24 +389,22 @@ static void check_length(real length, int a, int b)
     }
 }
 
-static void calc_order(const char*             fn,
-                       const int*              index,
-                       int*                    a,
-                       rvec**                  order,
-                       real***                 slOrder,
-                       real*                   slWidth,
-                       int                     nslices,
-                       gmx_bool                bSliced,
-                       const t_topology*       top,
-                       PbcType                 pbcType,
-                       int                     ngrps,
-                       int                     axis,
-                       gmx_bool                permolecule,
-                       gmx_bool                radial,
-                       gmx_bool                distcalc,
-                       const char*             radfn,
-                       real***                 distvals,
-                       const gmx_output_env_t* oenv)
+static void calc_order(const char*                     fn,
+                       gmx::ArrayRef<const IndexGroup> indexGroups,
+                       rvec**                          order,
+                       real***                         slOrder,
+                       real*                           slWidth,
+                       int                             nslices,
+                       gmx_bool                        bSliced,
+                       const t_topology*               top,
+                       PbcType                         pbcType,
+                       int                             axis,
+                       gmx_bool                        permolecule,
+                       gmx_bool                        radial,
+                       gmx_bool                        distcalc,
+                       const char*                     radfn,
+                       real***                         distvals,
+                       const gmx_output_env_t*         oenv)
 {
     /* if permolecule = TRUE, order parameters will be calculed per molecule
      * and stored in slOrder with #slices = # molecules */
@@ -447,7 +444,7 @@ static void calc_order(const char*             fn,
         gmx_fatal(FARGS, "Could not read coordinates from statusfile\n");
     }
 
-    nr_tails = index[1] - index[0];
+    nr_tails = gmx::ssize(indexGroups[0].particleIndices);
     fprintf(stderr, "Number of elements in first group: %d\n", nr_tails);
     /* take first group as standard. Not rocksolid, but might catch error in index*/
 
@@ -480,6 +477,8 @@ static void calc_order(const char*             fn,
         fprintf(stderr,
                 "Warning:  slicing and specified unit vectors are not currently compatible\n");
     }
+
+    const int ngrps = gmx::ssize(indexGroups);
 
     snew(slCount, nslices);
     snew(*slOrder, nslices);
@@ -566,7 +565,7 @@ static void calc_order(const char*             fn,
         {
             clear_rvec(frameorder);
 
-            size = index[i + 1] - index[i];
+            size = gmx::ssize(indexGroups[i].particleIndices);
             if (size != nr_tails)
             {
                 gmx_fatal(FARGS,
@@ -580,7 +579,7 @@ static void calc_order(const char*             fn,
                 if (radial)
                 /*create unit vector*/
                 {
-                    pbc_dx(&pbc, x1[a[index[i] + j]], com, direction);
+                    pbc_dx(&pbc, x1[indexGroups[i].particleIndices[j]], com, direction);
                     unitv(direction, direction);
                     /*DEBUG*/
                     /*if (j==0)
@@ -590,17 +589,24 @@ static void calc_order(const char*             fn,
 
                 rvec dist;
                 /* get vector dist(Cn-1,Cn+1) for tail atoms */
-                rvec_sub(x1[a[index[i + 1] + j]], x1[a[index[i - 1] + j]], dist);
+                rvec_sub(x1[indexGroups[i + 1].particleIndices[j]],
+                         x1[indexGroups[i - 1].particleIndices[j]],
+                         dist);
                 length = norm(dist); /* determine distance between two atoms */
-                check_length(length, a[index[i - 1] + j], a[index[i + 1] + j]);
-
+                check_length(length,
+                             indexGroups[i - 1].particleIndices[j],
+                             indexGroups[i + 1].particleIndices[j]);
                 svmul(1.0 / length, dist, Sz);
                 /* Sz is now the molecular axis Sz, normalized and all that */
 
                 /* now get Sx. Sx is normal to the plane of Cn-1, Cn and Cn+1 so
                    we can use the outer product of Cn-1->Cn and Cn+1->Cn, I hope */
-                rvec_sub(x1[a[index[i + 1] + j]], x1[a[index[i] + j]], tmp1);
-                rvec_sub(x1[a[index[i - 1] + j]], x1[a[index[i] + j]], tmp2);
+                rvec_sub(x1[indexGroups[i + 1].particleIndices[j]],
+                         x1[indexGroups[i].particleIndices[j]],
+                         tmp1);
+                rvec_sub(x1[indexGroups[i - 1].particleIndices[j]],
+                         x1[indexGroups[i].particleIndices[j]],
+                         tmp2);
                 cprod(tmp1, tmp2, Sx);
                 svmul(1.0 / norm(Sx), Sx, Sx);
 
@@ -639,8 +645,8 @@ static void calc_order(const char*             fn,
                        kept, until I find it necessary to know the others too
                      */
 
-                    z1    = x1[a[index[i - 1] + j]][axis];
-                    z2    = x1[a[index[i + 1] + j]][axis];
+                    z1    = x1[indexGroups[i - 1].particleIndices[j]][axis];
+                    z2    = x1[indexGroups[i + 1].particleIndices[j]][axis];
                     z_ave = 0.5 * (z1 + z2);
                     slice = static_cast<int>((static_cast<real>(nslices) * z_ave) / box[axis][axis]);
                     while (slice < 0)
@@ -677,7 +683,7 @@ static void calc_order(const char*             fn,
                         for (k = 0; k < distsize; k++)
                         {
                             rvec displacement;
-                            pbc_dx(&pbc, x1[distidx[k]], x1[a[index[i] + j]], displacement);
+                            pbc_dx(&pbc, x1[distidx[k]], x1[indexGroups[i].particleIndices[j]], displacement);
                             /* at the moment, just remove displacement[axis] */
                             displacement[axis] = 0;
                             tmpdist            = std::min(tmpdist, norm2(displacement));
@@ -847,16 +853,14 @@ static void order_plot(rvec                    order[],
     xvgrclose(slOrd);
 }
 
-static void write_bfactors(t_filenm*         fnm,
-                           int               nfile,
-                           const int*        index,
-                           const int*        a,
-                           int               nslices,
-                           int               ngrps,
-                           real**            order,
-                           const t_topology* top,
-                           real**            distvals,
-                           gmx_output_env_t* oenv)
+static void write_bfactors(t_filenm*                       fnm,
+                           int                             nfile,
+                           gmx::ArrayRef<const IndexGroup> indexGroups,
+                           int                             nslices,
+                           real**                          order,
+                           const t_topology*               top,
+                           real**                          distvals,
+                           gmx_output_env_t*               oenv)
 {
     /*function to write order parameters as B factors in PDB file using
           first frame of trajectory*/
@@ -865,8 +869,9 @@ static void write_bfactors(t_filenm*         fnm,
     t_atoms      useatoms;
     int          i, j, ctr, nout;
 
-    ngrps -= 2; /*we don't have an order parameter for the first or
-                      last atom in each chain*/
+    /* we don't have an order parameter for the first or last atom in each chain */
+    const int ngrps = gmx::ssize(indexGroups) - 2;
+
     nout = nslices * ngrps;
     read_first_frame(oenv, &status, ftp2fn(efTRX, nfile, fnm), &fr, TRX_NEED_X);
 
@@ -900,9 +905,10 @@ static void write_bfactors(t_filenm*         fnm,
             {
                 useatoms.pdbinfo[ctr].occup = distvals[j][i + 1];
             }
-            copy_rvec(fr.x[a[index[i + 1] + j]], frout.x[ctr]);
-            useatoms.atomname[ctr] = top->atoms.atomname[a[index[i + 1] + j]];
-            useatoms.atom[ctr]     = top->atoms.atom[a[index[i + 1] + j]];
+            const int atomIndex = indexGroups[i + 1].particleIndices[j];
+            copy_rvec(fr.x[atomIndex], frout.x[ctr]);
+            useatoms.atomname[ctr] = top->atoms.atomname[atomIndex];
+            useatoms.atom[ctr]     = top->atoms.atom[atomIndex];
             useatoms.nres          = std::max(useatoms.nres, useatoms.atom[ctr].resind + 1);
             useatoms.resinfo[useatoms.atom[ctr].resind] =
                     top->atoms.resinfo[useatoms.atom[ctr].resind]; /*copy resinfo*/
@@ -980,18 +986,14 @@ int gmx_order(int argc, char* argv[])
         { "-calcdist", FALSE, etBOOL, { &distcalc }, "Compute distance from a reference" },
     };
 
-    rvec*  order;         /* order par. for each atom   */
-    real** slOrder;       /* same, per slice            */
-    real   slWidth = 0.0; /* width of a slice           */
-    char** grpname;       /* groupnames                 */
-    int    ngrps,         /* nr. of groups              */
-            i, axis = 0;  /* normal axis                */
-    t_topology* top;      /* topology                   */
-    PbcType     pbcType;  /* type of periodic boundary conditions */
-    int *       index,    /* indices for a              */
-            *a;           /* atom numbers in each group */
-    t_blocka* block;      /* data from index file       */
-    t_filenm  fnm[] = {
+    rvec*       order;         /* order par. for each atom   */
+    real**      slOrder;       /* same, per slice            */
+    real        slWidth = 0.0; /* width of a slice           */
+    int         i, axis = 0;   /* normal axis                */
+    t_topology* top;           /* topology                   */
+    PbcType     pbcType;       /* type of periodic boundary conditions */
+
+    t_filenm fnm[] = {
         /* files for g_order    */
         { efTRX, "-f", nullptr, ffREAD },     /* trajectory file              */
         { efNDX, "-n", nullptr, ffREAD },     /* index file           */
@@ -1101,14 +1103,11 @@ int gmx_order(int argc, char* argv[])
 
         top = read_top(ftp2fn(efTPR, NFILE, fnm), &pbcType); /* read topology file */
 
-        block = init_index(ftp2fn(efNDX, NFILE, fnm), &grpname);
-        index = block->index; /* get indices from t_block block */
-        a     = block->a;     /* see block.h                    */
-        ngrps = block->nr;
+        auto indexGroups = init_index(ftp2fn(efNDX, NFILE, fnm));
 
         if (permolecule)
         {
-            nslices = index[1] - index[0]; /*I think this assumes contiguous lipids in topology*/
+            nslices = gmx::ssize(indexGroups[0].particleIndices);
             fprintf(stderr, "Calculating Scd order parameters for each of %d molecules\n", nslices);
         }
 
@@ -1122,11 +1121,10 @@ int gmx_order(int argc, char* argv[])
         }
 
         /* show atomtypes, to check if index file is correct */
-        print_types(index, a, ngrps, grpname, top);
+        print_types(indexGroups, top);
 
         calc_order(ftp2fn(efTRX, NFILE, fnm),
-                   index,
-                   a,
+                   indexGroups,
                    &order,
                    &slOrder,
                    &slWidth,
@@ -1134,7 +1132,6 @@ int gmx_order(int argc, char* argv[])
                    bSliced,
                    top,
                    pbcType,
-                   ngrps,
                    axis,
                    permolecule,
                    radial,
@@ -1145,15 +1142,15 @@ int gmx_order(int argc, char* argv[])
 
         if (radial)
         {
-            ngrps--; /*don't print the last group--was used for
-                               center-of-mass determination*/
+            /* don't print the last group--was used for center-of-mass determination */
+            indexGroups.pop_back();
         }
         order_plot(order,
                    slOrder,
                    opt2fn("-o", NFILE, fnm),
                    opt2fn("-os", NFILE, fnm),
                    opt2fn("-od", NFILE, fnm),
-                   ngrps,
+                   gmx::ssize(indexGroups),
                    nslices,
                    slWidth,
                    bSzonly,
@@ -1170,7 +1167,7 @@ int gmx_order(int argc, char* argv[])
             }
             else
             {
-                write_bfactors(fnm, NFILE, index, a, nslices, ngrps, slOrder, top, distvals, oenv);
+                write_bfactors(fnm, NFILE, indexGroups, nslices, slOrder, top, distvals, oenv);
             }
         }
 

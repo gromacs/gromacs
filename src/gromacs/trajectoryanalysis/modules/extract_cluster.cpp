@@ -75,8 +75,6 @@ class ExtractCluster : public TrajectoryAnalysisModule
 public:
     ExtractCluster();
 
-    ~ExtractCluster() override;
-
     void initOptions(IOptionsContainer* options, TrajectoryAnalysisSettings* settings) override;
     void optionsFinished(TrajectoryAnalysisSettings* settings) override;
     void initAnalysis(const TrajectoryAnalysisSettings& settings, const TopologyInformation& top) override;
@@ -101,27 +99,6 @@ private:
 };
 
 ExtractCluster::ExtractCluster() {}
-
-ExtractCluster::~ExtractCluster()
-{
-    if (clusterIndex_)
-    {
-        if (clusterIndex_->grpname != nullptr)
-        {
-            for (int i = 0; i < clusterIndex_->clust->nr; i++)
-            {
-                sfree(clusterIndex_->grpname[i]);
-            }
-            sfree(clusterIndex_->grpname);
-        }
-        if (clusterIndex_->clust != nullptr)
-        {
-            done_blocka(clusterIndex_->clust);
-            sfree(clusterIndex_->clust);
-        }
-    }
-}
-
 
 void ExtractCluster::initOptions(IOptionsContainer* options, TrajectoryAnalysisSettings* settings)
 {
@@ -177,11 +154,10 @@ void ExtractCluster::optionsFinished(TrajectoryAnalysisSettings* settings)
 void ExtractCluster::initAnalysis(const TrajectoryAnalysisSettings& /*settings*/,
                                   const TopologyInformation& top)
 {
-    int numberOfClusters = clusterIndex_->clust->nr;
-    for (int i = 0; i < numberOfClusters; i++)
+    for (const auto& cluster : clusterIndex_->clusters)
     {
         auto outputName = gmx::concatenateBeforeExtension(
-                outputNamePrefix_, formatString("_%s", clusterIndex_->grpname[i]));
+                outputNamePrefix_, formatString("_%s", cluster.name.c_str()));
         writers_.emplace_back(createTrajectoryFrameWriter(top.mtop(),
                                                           sel_,
                                                           outputName,
@@ -207,7 +183,7 @@ void ExtractCluster::analyzeFrame(int               frameNumber,
         // and actually write out
         int clusterToWriteTo = clusterIndex_->inv_clust[frameNumber];
         // Check for valid entry in cluster list, otherwise skip frame.
-        if (clusterToWriteTo != -1 && clusterToWriteTo < clusterIndex_->clust->nr)
+        if (clusterToWriteTo != -1 && clusterToWriteTo < gmx::ssize(clusterIndex_->clusters))
         {
             writers_[clusterToWriteTo]->prepareAndWriteFrame(frameNumber, frame);
         }

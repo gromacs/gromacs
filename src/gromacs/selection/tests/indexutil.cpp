@@ -48,7 +48,7 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
-#include "gromacs/topology/block.h"
+#include "gromacs/topology/index.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/smalloc.h"
 
@@ -665,42 +665,22 @@ class IndexGroupsAndNamesTest : public ::testing::Test
 public:
     IndexGroupsAndNamesTest()
     {
-        init_blocka(&blockA_);
-        addGroupToBlocka_(indicesGroupA_);
-        addGroupToBlocka_(indicesGroupB_);
-        addGroupToBlocka_(indicesGroupSecondA_);
-        addGroupToBlocka_(indicesGroupC_);
+        std::vector<IndexGroup> indexGroups;
+        indexGroups.push_back({ groupNames[0], indicesGroupA_ });
+        indexGroups.push_back({ groupNames[1], indicesGroupB_ });
+        indexGroups.push_back({ groupNames[2], indicesGroupSecondA_ });
+        indexGroups.push_back({ groupNames[3], indicesGroupC_ });
 
-        const char* const namesAsConstCharArray[4] = {
-            groupNames[0].c_str(), groupNames[1].c_str(), groupNames[2].c_str(), groupNames[3].c_str()
-        };
-        indexGroupAndNames_ = std::make_unique<gmx::IndexGroupsAndNames>(blockA_, namesAsConstCharArray);
+        indexGroupAndNames_ = std::make_unique<gmx::IndexGroupsAndNames>(indexGroups);
     }
-    ~IndexGroupsAndNamesTest() override { done_blocka(&blockA_); }
 
 protected:
     std::unique_ptr<gmx::IndexGroupsAndNames> indexGroupAndNames_;
     const std::vector<std::string>            groupNames           = { "A", "B - Name", "A", "C" };
-    const std::vector<gmx::index>             indicesGroupA_       = {};
-    const std::vector<gmx::index>             indicesGroupB_       = { 1, 2 };
-    const std::vector<gmx::index>             indicesGroupSecondA_ = { 5 };
-    const std::vector<gmx::index>             indicesGroupC_       = { 10 };
-
-private:
-    //! Add a new group to t_blocka
-    void addGroupToBlocka_(gmx::ArrayRef<const gmx::index> index)
-    {
-        srenew(blockA_.index, blockA_.nr + 2);
-        srenew(blockA_.a, blockA_.nra + index.size());
-        for (int i = 0; (i < index.ssize()); i++)
-        {
-            blockA_.a[blockA_.nra++] = index[i];
-        }
-        blockA_.nr++;
-        blockA_.index[blockA_.nr] = blockA_.nra;
-    }
-
-    t_blocka blockA_;
+    const std::vector<int>                    indicesGroupA_       = {};
+    const std::vector<int>                    indicesGroupB_       = { 1, 2 };
+    const std::vector<int>                    indicesGroupSecondA_ = { 5 };
+    const std::vector<int>                    indicesGroupC_       = { 10 };
 };
 
 TEST_F(IndexGroupsAndNamesTest, containsNames)

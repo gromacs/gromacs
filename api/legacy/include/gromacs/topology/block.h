@@ -41,9 +41,12 @@
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/range.h"
 
+struct IndexGroup;
+
 namespace gmx
 {
-
+template<typename>
+class ArrayRef;
 template<typename>
 class ListOfLists;
 
@@ -71,15 +74,6 @@ public:
     /*! \brief Returns the full range */
     Block fullRange() const { return Block(index_.front(), index_.back()); }
 
-    /*! \brief Returns a range starting at \p blockIndexBegin and ending at \p blockIndexEnd */
-    Block subRange(int blockIndexBegin, int blockIndexEnd) const
-    {
-        return Block(index_[blockIndexBegin], index_[blockIndexEnd]);
-    }
-
-    /*! \brief Returns true when all blocks have size 0 or numBlocks()=0 */
-    bool allBlocksHaveSizeOne() const { return (index_.back() == numBlocks()); }
-
     /*! \brief Appends a block of size \p blockSize at the end of the range
      *
      * \note blocksize has to be >= 1
@@ -92,22 +86,6 @@ public:
 
     /*! \brief Removes all blocks */
     void clear() { index_.resize(1); }
-
-    /*! \brief Reduces the number of blocks to \p newNumBlocks
-     *
-     * \note \p newNumBlocks should be <= numBlocks().
-     */
-    void reduceNumBlocks(int newNumBlocks)
-    {
-        GMX_ASSERT(newNumBlocks <= numBlocks(), "Can only shrink to fewer blocks");
-        index_.resize(newNumBlocks + 1LL);
-    }
-
-    /*! \brief Sets the partitioning to \p numBlocks blocks each of size 1 */
-    void setAllBlocksSizeOne(int numBlocks);
-
-    /*! \brief Returns the raw block index array, avoid using this */
-    std::vector<int>& rawIndex() { return index_; }
 
 private:
     std::vector<int> index_ = { 0 }; /**< The list of block begin/end indices */
@@ -170,9 +148,6 @@ void init_blocka(t_blocka* block);
  * of RangePartitioning.
  */
 
-t_blocka* new_blocka();
-/* allocate new block */
-
 void done_block(t_block* block);
 //! Deallocates memory within \c block
 void done_blocka(t_blocka* block);
@@ -184,14 +159,8 @@ void stupid_fill_block(t_block* grp, int natom, gmx_bool bOneIndexGroup);
  * otherwise there is one atom per index entry
  */
 
-void stupid_fill_blocka(t_blocka* grp, int natom);
-/* Fill a block structure with numbers identical to the index
- * (0, 1, 2, .. natom-1)
- * There is one atom per index entry
- */
-
 void pr_block(FILE* fp, int indent, const char* title, const t_block* block, gmx_bool bShowNumbers);
-void pr_blocka(FILE* fp, int indent, const char* title, const t_blocka* block, gmx_bool bShowNumbers);
+void pr_blocka(FILE* fp, int indent, const char* title, gmx::ArrayRef<const IndexGroup> groups, bool showNumbers);
 void pr_listoflists(FILE* fp, int indent, const char* title, const gmx::ListOfLists<int>* block, gmx_bool bShowNumbers);
 
 #endif

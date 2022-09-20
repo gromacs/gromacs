@@ -68,6 +68,8 @@
 #include "gromacs/topology/block.h"
 #include "gromacs/utility/arrayref.h"
 
+struct IndexGroup;
+
 namespace gmx
 {
 class TextWriter;
@@ -84,11 +86,10 @@ class TextWriter;
 class IndexGroupsAndNames
 {
 public:
-    /*!\brief Construct from index group and group names
-     * \param[in] indexGroup
-     * \param[in] groupNames names of the index groups
+    /*!\brief Construct from list of index groups
+     * \param[in] indexGroups  The list of index groups
      */
-    IndexGroupsAndNames(const t_blocka& indexGroup, ArrayRef<char const* const> groupNames);
+    IndexGroupsAndNames(gmx::ArrayRef<const IndexGroup> indexGroups);
 
     /*!\brief Return if a group name is contained in the groups.
      *
@@ -112,8 +113,7 @@ public:
     std::vector<index> indices(const std::string& groupName) const;
 
 private:
-    const t_blocka&          indexGroup_;
-    std::vector<std::string> groupNames_;
+    std::vector<IndexGroup> indexGroups_;
 };
 
 } // namespace gmx

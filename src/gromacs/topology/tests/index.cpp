@@ -64,26 +64,31 @@ namespace test
 namespace
 {
 
-void checkBlocks(TestReferenceChecker* checker, const t_blocka* blocks)
+void checkIndexGroup(TestReferenceChecker* checker, const IndexGroup& group)
 {
-    TestReferenceChecker compound(checker->checkCompound("Blocks", nullptr));
-    compound.checkInteger(blocks->nr, "Number");
-    compound.checkSequence(blocks->index, blocks->index + blocks->nr, "Index");
-    compound.checkInteger(blocks->nra, "NumberAtoms");
-    compound.checkSequence(blocks->a, blocks->a + blocks->nra, "AtomIndex");
+    TestReferenceChecker compound(checker->checkCompound("Group", nullptr));
+    compound.checkString(group.name, "GroupName");
+    compound.checkSequence(group.particleIndices.begin(), group.particleIndices.end(), "Entries");
 }
 
-void compareBlocks(const t_blocka* one, const t_blocka* two)
+void checkBlocks(TestReferenceChecker* checker, ArrayRef<const IndexGroup> blocks)
 {
-    ASSERT_EQ(one->nr, two->nr);
-    for (int i = 0; i < one->nr; ++i)
+    TestReferenceChecker compound(checker->checkCompound("Blocks", nullptr));
+    compound.checkInteger(blocks.size(), "Number");
+    compound.checkSequence(blocks.begin(), blocks.end(), "Index", checkIndexGroup);
+}
+
+void compareBlocks(ArrayRef<const IndexGroup> one, ArrayRef<const IndexGroup> two)
+{
+    ASSERT_EQ(one.size(), two.size());
+    for (int i = 0; i < gmx::ssize(one); ++i)
     {
-        EXPECT_EQ(one->index[i], two->index[i]);
-    }
-    ASSERT_EQ(one->nra, two->nra);
-    for (int i = 0; i < one->nra; ++i)
-    {
-        EXPECT_EQ(one->a[i], two->a[i]);
+        EXPECT_EQ(one[i].name, two[i].name);
+        ASSERT_EQ(one[i].particleIndices.size(), two[i].particleIndices.size());
+        for (int j = 0; j < gmx::ssize(one[i].particleIndices); ++j)
+        {
+            EXPECT_EQ(one[i].particleIndices[j], two[i].particleIndices[j]);
+        }
     }
 }
 
@@ -98,7 +103,6 @@ class IndexTest : public ::testing::Test
 {
 public:
     IndexTest();
-    ~IndexTest() override;
 
     //! Handle to atoms from topology.
     const t_atoms* atoms() { return topInfo_.atoms(); }
@@ -106,10 +110,6 @@ public:
     TestReferenceChecker* checker() { return &checker_; }
     //! Handle to file manager.
     TestFileManager* manager() { return &manager_; }
-    //! Index group structure.
-    t_blocka blocks_;
-    //! Index group names.
-    char** groupNames_ = nullptr;
 
 private:
     //! Input structure data.
@@ -127,51 +127,31 @@ IndexTest::IndexTest() : checker_(data_.rootChecker())
     // When we have many test cases using this class, refactor to fill
     // a static topInfo only once, in SetUpTestSuite()
     topInfo_.fillFromInputFile(manager()->getInputFilePath("lysozyme.gro"));
-    init_blocka(&blocks_);
-    snew(groupNames_, 1);
-}
-
-IndexTest::~IndexTest()
-{
-    for (int i = 0; i < blocks_.nr; ++i)
-    {
-        sfree(groupNames_[i]);
-    }
-    sfree(groupNames_);
-    done_blocka(&blocks_);
 }
 
 TEST_F(IndexTest, AnalyseWorksDefaultGroups)
 {
-    analyse(atoms(), &blocks_, &groupNames_, false, false);
-    checkBlocks(checker(), &blocks_);
+    auto indexGroups = analyse(atoms(), false, false);
+    checkBlocks(checker(), indexGroups);
 }
 
 TEST_F(IndexTest, WriteIndexWorks)
 {
-    analyse(atoms(), &blocks_, &groupNames_, false, false);
-    std::string fileName = "out.ndx";
-    std::string fullPath = manager()->getTemporaryFilePath(fileName);
-    write_index(fullPath.c_str(), &blocks_, groupNames_, false, atoms()->nr);
+    auto        indexGroups = analyse(atoms(), false, false);
+    std::string fileName    = "out.ndx";
+    std::string fullPath    = manager()->getTemporaryFilePath(fileName);
+    write_index(fullPath.c_str(), indexGroups, false, atoms()->nr);
     checkFileMatch(checker(), fileName, fullPath);
 }
 
 TEST_F(IndexTest, WriteAndReadIndexWorks)
 {
-    analyse(atoms(), &blocks_, &groupNames_, false, false);
-    std::string fileName = "out.ndx";
-    std::string fullPath = manager()->getTemporaryFilePath(fileName);
-    write_index(fullPath.c_str(), &blocks_, groupNames_, false, atoms()->nr);
-    char**    newNames = nullptr;
-    t_blocka* newIndex = init_index(fullPath.c_str(), &newNames);
-    compareBlocks(&blocks_, newIndex);
-    for (int i = 0; i < newIndex->nr; ++i)
-    {
-        sfree(newNames[i]);
-    }
-    sfree(newNames);
-    done_blocka(newIndex);
-    sfree(newIndex);
+    auto        indexGroups = analyse(atoms(), false, false);
+    std::string fileName    = "out.ndx";
+    std::string fullPath    = manager()->getTemporaryFilePath(fileName);
+    write_index(fullPath.c_str(), indexGroups, false, atoms()->nr);
+    auto newIndex = init_index(fullPath.c_str());
+    compareBlocks(indexGroups, newIndex);
 }
 
 } // namespace

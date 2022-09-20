@@ -40,7 +40,6 @@
 enum class Directive : int;
 class PreprocessingAtomTypes;
 struct t_atoms;
-struct t_blocka;
 struct t_excls;
 struct MoleculeInformation;
 class InteractionOfType;

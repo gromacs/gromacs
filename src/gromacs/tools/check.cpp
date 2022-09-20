@@ -659,36 +659,26 @@ static void chk_tps(const char* fn, real vdw_fac, real bon_lo, real bon_hi)
 
 static void chk_ndx(const char* fn)
 {
-    t_blocka* grps;
-    char**    grpname;
-    int       i;
-
-    grps = init_index(fn, &grpname);
+    const auto grps = init_index(fn);
     if (debug)
     {
-        pr_blocka(debug, 0, fn, grps, FALSE);
+        pr_blocka(debug, 0, fn, grps, false);
     }
     else
     {
         printf("Contents of index file %s\n", fn);
         printf("--------------------------------------------------\n");
         printf("Nr.   Group               #Entries   First    Last\n");
-        for (i = 0; (i < grps->nr); i++)
+        for (gmx::index i = 0; i < gmx::ssize(grps); i++)
         {
-            printf("%4d  %-20s%8d%8d%8d\n",
+            printf("%4td  %-20s%8td%8d%8d\n",
                    i,
-                   grpname[i],
-                   grps->index[i + 1] - grps->index[i],
-                   grps->a[grps->index[i]] + 1,
-                   grps->a[grps->index[i + 1] - 1] + 1);
+                   grps[i].name.c_str(),
+                   gmx::ssize(grps[i].particleIndices),
+                   grps[i].particleIndices[0] + 1,
+                   grps[i].particleIndices.back() + 1);
         }
     }
-    for (i = 0; (i < grps->nr); i++)
-    {
-        sfree(grpname[i]);
-    }
-    sfree(grpname);
-    done_blocka(grps);
 }
 
 static void chk_enx(const char* fn)

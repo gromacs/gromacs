@@ -51,6 +51,7 @@
 #include "gromacs/mdtypes/pull_params.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/pulling/pull.h"
+#include "gromacs/topology/index.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/basedefinitions.h"
@@ -549,8 +550,7 @@ std::vector<std::string> read_pullparams(std::vector<t_inpfile>* inp, pull_param
 
 void process_pull_groups(gmx::ArrayRef<t_pull_group>      pullGroups,
                          gmx::ArrayRef<const std::string> pullGroupNames,
-                         const t_blocka*                  grps,
-                         char**                           gnames)
+                         gmx::ArrayRef<const IndexGroup>  indexGroups)
 {
     /* Absolute reference group (might not be used) is special */
     pullGroups.front().pbcatom       = -1;
@@ -566,8 +566,8 @@ void process_pull_groups(gmx::ArrayRef<t_pull_group>      pullGroups,
             gmx_fatal(FARGS, "Pull option pull_group%d required by grompp has not been set.", g);
         }
 
-        int ig                = search_string(pullGroupNames[g].c_str(), grps->nr, gnames);
-        int numPullGroupAtoms = grps->index[ig + 1] - grps->index[ig];
+        int ig                = getGroupIndex(pullGroupNames[g], indexGroups);
+        int numPullGroupAtoms = gmx::ssize(indexGroups[ig].particleIndices);
 
         fprintf(stderr, "Pull group %d '%s' has %d atoms\n", g, pullGroupNames[g].c_str(), numPullGroupAtoms);
 
@@ -578,7 +578,7 @@ void process_pull_groups(gmx::ArrayRef<t_pull_group>      pullGroups,
 
         for (int i = 0; i < numPullGroupAtoms; i++)
         {
-            pullGroup.ind.push_back(grps->a[grps->index[ig] + i]);
+            pullGroup.ind.push_back(indexGroups[ig].particleIndices[i]);
         }
 
         if (!pullGroup.weight.empty() && pullGroup.weight.size() != pullGroup.ind.size())

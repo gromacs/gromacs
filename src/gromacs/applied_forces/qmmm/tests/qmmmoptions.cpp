@@ -51,6 +51,7 @@
 #include "gromacs/options/options.h"
 #include "gromacs/options/treesupport.h"
 #include "gromacs/selection/indexutil.h"
+#include "gromacs/topology/index.h"
 #include "gromacs/utility/keyvaluetreebuilder.h"
 #include "gromacs/utility/keyvaluetreemdpwriter.h"
 #include "gromacs/utility/keyvaluetreetransform.h"
@@ -70,9 +71,6 @@ namespace gmx
 class QMMMOptionsTest : public ::testing::Test
 {
 public:
-    QMMMOptionsTest() { init_blocka(&defaultGroups_); }
-    ~QMMMOptionsTest() override { done_blocka(&defaultGroups_); }
-
     void setFromMdpValues(const KeyValueTreeObject& qmmmMdpValues)
     {
         // Setup options
@@ -107,76 +105,41 @@ public:
         return mdpValueBuilder.build();
     }
 
-    IndexGroupsAndNames indexGroupsAndNamesGeneric()
+    static IndexGroupsAndNames indexGroupsAndNamesGeneric()
     {
         // System group is default for QM atoms
-        const std::vector<std::string> groupNames         = { "A", "System", "C" };
-        const std::vector<gmx::index>  indicesGroupA      = { 1 };
-        const std::vector<gmx::index>  indicesGroupSystem = { 1, 2, 3 };
-        const std::vector<gmx::index>  indicesGroupC      = { 2, 3 };
+        std::vector<IndexGroup> indexGroups;
+        indexGroups.push_back({ "A", { 1 } });
+        indexGroups.push_back({ "System", { 1, 2, 3 } });
+        indexGroups.push_back({ "C", { 2, 3 } });
 
-        addGroup(indicesGroupA);
-        addGroup(indicesGroupSystem);
-        addGroup(indicesGroupC);
-
-        const char* const namesAsConstChar[3] = { groupNames[0].c_str(),
-                                                  groupNames[1].c_str(),
-                                                  groupNames[2].c_str() };
-        return { defaultGroups_, namesAsConstChar };
+        return IndexGroupsAndNames(indexGroups);
     }
 
 
-    IndexGroupsAndNames indexGroupsAndNamesNoQM()
+    static IndexGroupsAndNames indexGroupsAndNamesNoQM()
     {
         // System group is default for QM atoms (not present here)
-        const std::vector<std::string> groupNames    = { "A", "B", "C" };
-        const std::vector<gmx::index>  indicesGroupA = { 1 };
-        const std::vector<gmx::index>  indicesGroupB = { 2 };
-        const std::vector<gmx::index>  indicesGroupC = { 3 };
+        std::vector<IndexGroup> indexGroups;
+        indexGroups.push_back({ "A", { 1 } });
+        indexGroups.push_back({ "B", { 2 } });
+        indexGroups.push_back({ "C", { 3 } });
 
-        addGroup(indicesGroupA);
-        addGroup(indicesGroupB);
-        addGroup(indicesGroupC);
-
-        const char* const namesAsConstChar[3] = { groupNames[0].c_str(),
-                                                  groupNames[1].c_str(),
-                                                  groupNames[2].c_str() };
-        return { defaultGroups_, namesAsConstChar };
+        return IndexGroupsAndNames(indexGroups);
     }
 
-    IndexGroupsAndNames indexGroupsAndNamesEmptyQM()
+    static IndexGroupsAndNames indexGroupsAndNamesEmptyQM()
     {
         // System group is default for QM atoms and empty in this case
-        const std::vector<std::string> groupNames         = { "A", "System", "C" };
-        const std::vector<gmx::index>  indicesGroupA      = { 1 };
-        const std::vector<gmx::index>  indicesGroupSystem = {};
-        const std::vector<gmx::index>  indicesGroupC      = { 2, 3 };
+        std::vector<IndexGroup> indexGroups;
+        indexGroups.push_back({ "A", { 1 } });
+        indexGroups.push_back({ "System", {} });
+        indexGroups.push_back({ "C", { 2, 3 } });
 
-        addGroup(indicesGroupA);
-        addGroup(indicesGroupSystem);
-        addGroup(indicesGroupC);
-
-        const char* const namesAsConstChar[3] = { groupNames[0].c_str(),
-                                                  groupNames[1].c_str(),
-                                                  groupNames[2].c_str() };
-        return { defaultGroups_, namesAsConstChar };
+        return IndexGroupsAndNames(indexGroups);
     }
 
 protected:
-    //! Add a new group to t_blocka
-    void addGroup(gmx::ArrayRef<const gmx::index> index)
-    {
-        srenew(defaultGroups_.index, defaultGroups_.nr + 2);
-        srenew(defaultGroups_.a, defaultGroups_.nra + index.size());
-        for (int i = 0; (i < index.ssize()); i++)
-        {
-            defaultGroups_.a[defaultGroups_.nra++] = index[i];
-        }
-        defaultGroups_.nr++;
-        defaultGroups_.index[defaultGroups_.nr] = defaultGroups_.nra;
-    }
-
-    t_blocka    defaultGroups_;
     QMMMOptions qmmmOptions_;
 };
 

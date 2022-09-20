@@ -64,19 +64,17 @@
 namespace gmx
 {
 
-IndexGroupsAndNames::IndexGroupsAndNames(const t_blocka& indexGroup, ArrayRef<char const* const> groupNames) :
-    indexGroup_{ indexGroup }
+IndexGroupsAndNames::IndexGroupsAndNames(gmx::ArrayRef<const IndexGroup> indexGroups) :
+    indexGroups_(indexGroups.begin(), indexGroups.end())
 {
-    std::copy(groupNames.begin(), groupNames.end(), std::back_inserter(groupNames_));
-    GMX_ASSERT(indexGroup_.nr == ssize(groupNames),
-               "Number of groups must match number of group names.");
 }
 
 bool IndexGroupsAndNames::containsGroupName(const std::string& groupName) const
 {
-    return std::any_of(std::begin(groupNames_), std::end(groupNames_), [&groupName](const std::string& name) {
-        return equalCaseInsensitive(groupName, name);
-    });
+    return std::any_of(
+            std::begin(indexGroups_), std::end(indexGroups_), [&groupName](const IndexGroup& indexGroup) {
+                return equalCaseInsensitive(groupName, indexGroup.name);
+            });
 }
 
 std::vector<index> IndexGroupsAndNames::indices(const std::string& groupName) const
@@ -93,18 +91,12 @@ std::vector<index> IndexGroupsAndNames::indices(const std::string& groupName) co
                           "of grompp."));
     }
     const auto groupNamePosition = std::find_if(
-            std::begin(groupNames_), std::end(groupNames_), [&groupName](const std::string& name) {
-                return equalCaseInsensitive(groupName, name);
+            std::begin(indexGroups_), std::end(indexGroups_), [&groupName](const IndexGroup& indexGroup) {
+                return equalCaseInsensitive(groupName, indexGroup.name);
             });
-    const auto groupIndex = std::distance(std::begin(groupNames_), groupNamePosition);
-    const auto groupSize  = indexGroup_.index[groupIndex + 1] - indexGroup_.index[groupIndex];
-    std::vector<index> groupIndices(groupSize);
-    const auto         startingIndex = indexGroup_.index[groupIndex];
-    std::iota(std::begin(groupIndices), std::end(groupIndices), startingIndex);
-    std::transform(std::begin(groupIndices),
-                   std::end(groupIndices),
-                   std::begin(groupIndices),
-                   [blockLookup = indexGroup_.a](auto i) { return blockLookup[i]; });
+    const auto         groupIndex = std::distance(std::begin(indexGroups_), groupNamePosition);
+    std::vector<index> groupIndices(indexGroups_[groupIndex].particleIndices.begin(),
+                                    indexGroups_[groupIndex].particleIndices.end());
     return groupIndices;
 }
 
@@ -151,19 +143,17 @@ struct gmx_ana_indexgrps_t
  */
 void gmx_ana_indexgrps_init(gmx_ana_indexgrps_t** g, gmx_mtop_t* top, const char* fnm)
 {
-    t_blocka* block = nullptr;
-    char**    names = nullptr;
+    std::vector<IndexGroup> indexGroups;
 
     if (fnm)
     {
-        block = init_index(fnm, &names);
+        indexGroups = init_index(fnm);
     }
     else if (top)
     {
-        block = new_blocka();
         // TODO: Propagate mtop further.
         t_atoms atoms = gmx_mtop_global_atoms(*top);
-        analyse(&atoms, block, &names, FALSE, FALSE);
+        indexGroups   = analyse(&atoms, FALSE, FALSE);
         done_atom(&atoms);
     }
     else
@@ -172,41 +162,22 @@ void gmx_ana_indexgrps_init(gmx_ana_indexgrps_t** g, gmx_mtop_t* top, const char
         return;
     }
 
-    try
+    *g = new gmx_ana_indexgrps_t(gmx::ssize(indexGroups));
+    for (int i = 0; i < gmx::ssize(indexGroups); i++)
     {
-        *g = new gmx_ana_indexgrps_t(block->nr);
-        for (int i = 0; i < block->nr; ++i)
-        {
-            gmx_ana_index_t* grp = &(*g)->g[i];
+        gmx::ArrayRef<const int> indexGroup = indexGroups[i].particleIndices;
 
-            grp->isize = block->index[i + 1] - block->index[i];
-            snew(grp->index, grp->isize);
-            for (int j = 0; j < grp->isize; ++j)
-            {
-                grp->index[j] = block->a[block->index[i] + j];
-            }
-            grp->nalloc_index = grp->isize;
-            (*g)->names.emplace_back(names[i]);
-        }
-    }
-    catch (...)
-    {
-        for (int i = 0; i < block->nr; ++i)
+        gmx_ana_index_t* grp = &(*g)->g[i];
+
+        grp->isize = indexGroup.ssize();
+        snew(grp->index, grp->isize);
+        for (int j = 0; j < grp->isize; ++j)
         {
-            sfree(names[i]);
+            grp->index[j] = indexGroup[j];
         }
-        sfree(names);
-        done_blocka(block);
-        sfree(block);
-        throw;
+        grp->nalloc_index = grp->isize;
+        (*g)->names.emplace_back(indexGroups[i].name);
     }
-    for (int i = 0; i < block->nr; ++i)
-    {
-        sfree(names[i]);
-    }
-    sfree(names);
-    done_blocka(block);
-    sfree(block);
 }
 
 /*!

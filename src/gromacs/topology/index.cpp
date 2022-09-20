@@ -47,6 +47,7 @@
 #include "gromacs/topology/block.h"
 #include "gromacs/topology/invblock.h"
 #include "gromacs/topology/residuetypes.h"
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
@@ -74,32 +75,36 @@ static gmx_bool gmx_ask_yesno(gmx_bool bASK)
     }
 }
 
-void write_index(const char* outf, t_blocka* b, char** gnames, gmx_bool bDuplicate, int natoms)
+void write_index(const char* outf, gmx::ArrayRef<const IndexGroup> indexGroups, const bool duplicate, const int numAtoms)
 {
     FILE* out = gmx_ffopen(outf, "w");
-    /* fprintf(out,"%5d  %5d\n",b->nr,b->nra); */
-    for (int i = 0; (i < b->nr); i++)
+
+    for (const auto& indexGroup : indexGroups)
     {
-        fprintf(out, "[ %s ]", gnames[i]);
-        for (int k = 0, j = b->index[i]; j < b->index[i + 1]; j++, k++)
+        fprintf(out, "[ %s ]", indexGroup.name.c_str());
+        int k = 0;
+        for (const int particleIndex : indexGroup.particleIndices)
         {
             const char sep = (k % 15 == 0 ? '\n' : ' ');
-            fprintf(out, "%c%4d", sep, b->a[j] + 1);
+            fprintf(out, "%c%4d", sep, particleIndex + 1);
+            k++;
         }
         fprintf(out, "\n");
     }
 
     /* Duplicate copy, useful for computational electrophysiology double-layer setups */
-    if (bDuplicate)
+    if (duplicate)
     {
-        fprintf(stderr, "Duplicating the whole system with an atom offset of %d atoms.\n", natoms);
-        for (int i = 0; (i < b->nr); i++)
+        fprintf(stderr, "Duplicating the whole system with an atom offset of %d atoms.\n", numAtoms);
+        for (const auto& indexGroup : indexGroups)
         {
-            fprintf(out, "[ %s_copy ]", gnames[i]);
-            for (int k = 0, j = b->index[i]; j < b->index[i + 1]; j++, k++)
+            fprintf(out, "[ %s_copy ]", indexGroup.name.c_str());
+            int k = 0;
+            for (const int particleIndex : indexGroup.particleIndices)
             {
                 const char sep = (k % 15 == 0 ? '\n' : ' ');
-                fprintf(out, "%c%4d", sep, b->a[j] + 1 + natoms);
+                fprintf(out, "%c%4d", sep, particleIndex + 1 + numAtoms);
+                k++;
             }
             fprintf(out, "\n");
         }
@@ -108,50 +113,37 @@ void write_index(const char* outf, t_blocka* b, char** gnames, gmx_bool bDuplica
     gmx_ffclose(out);
 }
 
-void add_grp(t_blocka* b, char*** gnames, gmx::ArrayRef<const int> a, const std::string& name)
-{
-    srenew(b->index, b->nr + 2);
-    srenew(*gnames, b->nr + 1);
-    (*gnames)[b->nr] = gmx_strdup(name.c_str());
-
-    srenew(b->a, b->nra + a.size());
-    for (gmx::index i = 0; (i < a.ssize()); i++)
-    {
-        b->a[b->nra++] = a[i];
-    }
-    b->nr++;
-    b->index[b->nr] = b->nra;
-}
-
 /*! \brief
  * Compare index in groups.
  *
  * Checks the index in \p a to the one in \p b at \p index.
  * If \p index is < 0, it is taken as relative to the end of \p b.
  *
- * \param[in] b Block with groups.
+ * \param[in] indexGroups  List of index groups
  * \param[in] a New group to compare to.
- * \param[in] index The index to check.
+ * \param[in] index The index to check, when negative this is the offset from the last index
  * \returns True if groups are the same.
  */
-static bool grp_cmp(t_blocka* b, gmx::ArrayRef<const int> a, int index)
+static bool grp_cmp(gmx::ArrayRef<const IndexGroup> indexGroups, gmx::ArrayRef<const int> a, int index)
 {
-    if (index < 0)
+    if (index >= indexGroups.ssize())
     {
-        index = b->nr - 1 + index;
+        gmx_fatal(FARGS, "no such index group %d in index groups (nr=%td)", index, indexGroups.ssize());
     }
-    if (index >= b->nr)
-    {
-        gmx_fatal(FARGS, "no such index group %d in t_blocka (nr=%d)", index, b->nr);
-    }
+
+    const int indexToCompare = (index >= 0 ? index : indexGroups.ssize() - 1 + index);
+    GMX_RELEASE_ASSERT(indexToCompare >= 0 && indexToCompare < indexGroups.ssize(),
+                       "Index should be in range");
+    gmx::ArrayRef<const int> indexGroup = indexGroups[indexToCompare].particleIndices;
+
     /* compare sizes */
-    if (a.ssize() != b->index[index + 1] - b->index[index])
+    if (a.ssize() != indexGroup.ssize())
     {
-        return FALSE;
+        return false;
     }
     for (gmx::index i = 0; i < a.ssize(); i++)
     {
-        if (a[i] != b->a[b->index[index] + i])
+        if (a[i] != indexGroup[i])
         {
             return false;
         }
@@ -218,8 +210,7 @@ typedef struct
 
 static void analyse_other(gmx::ArrayRef<std::string> restype,
                           const t_atoms*             atoms,
-                          t_blocka*                  gb,
-                          char***                    gn,
+                          std::vector<IndexGroup>*   indexGroups,
                           gmx_bool                   bASK,
                           gmx_bool                   bVerb)
 {
@@ -277,7 +268,7 @@ static void analyse_other(gmx::ArrayRef<std::string> restype,
                     aid.push_back(j);
                 }
             }
-            add_grp(gb, gn, aid, restp[i].gname);
+            indexGroups->push_back({ restp[i].gname, aid });
             if (bASK)
             {
                 printf("split %s into atoms (y/n) ? ", restp[i].gname);
@@ -310,7 +301,7 @@ static void analyse_other(gmx::ArrayRef<std::string> restype,
                                     aaid.push_back(aid[k]);
                                 }
                             }
-                            add_grp(gb, gn, aaid, attp[l]);
+                            indexGroups->push_back({ attp[l], aaid });
                         }
                     }
                 }
@@ -350,8 +341,7 @@ typedef struct gmx_help_make_index_group // NOLINT(clang-analyzer-optin.performa
 
 static void analyse_prot(gmx::ArrayRef<const std::string> restype,
                          const t_atoms*                   atoms,
-                         t_blocka*                        gb,
-                         char***                          gn,
+                         std::vector<IndexGroup>*         indexGroups,
                          gmx_bool                         bASK,
                          gmx_bool                         bVerb)
 {
@@ -439,9 +429,10 @@ static void analyse_prot(gmx::ArrayRef<const std::string> restype,
         }
         /* if we want to add this group always or it differs from previous
            group, add it: */
-        if (-1 == constructing_data[i].compareto || !grp_cmp(gb, aid, constructing_data[i].compareto - i))
+        if (-1 == constructing_data[i].compareto
+            || !grp_cmp(*indexGroups, aid, constructing_data[i].compareto - i))
         {
-            add_grp(gb, gn, aid, constructing_data[i].group_name);
+            indexGroups->push_back({ constructing_data[i].group_name, aid });
         }
         aid.clear();
     }
@@ -484,7 +475,7 @@ static void analyse_prot(gmx::ArrayRef<const std::string> restype,
                                 *ri->name,
                                 ri->nr,
                                 ri->ic == ' ' ? '\0' : ri->ic);
-                        add_grp(gb, gn, aid, ndx_name);
+                        indexGroups->push_back({ ndx_name, aid });
                         aid.clear();
                     }
                 }
@@ -540,23 +531,26 @@ static void analyse_prot(gmx::ArrayRef<const std::string> restype,
             /* copy the residuename to the tail of the groupname */
             if (!aid.empty())
             {
-                add_grp(gb, gn, aid, "SwapSC-CO");
+                indexGroups->push_back({ "SwapSC-CO", aid });
             }
         }
     }
 }
 
 
-void analyse(const t_atoms* atoms, t_blocka* gb, char*** gn, gmx_bool bASK, gmx_bool bVerb)
+std::vector<IndexGroup> analyse(const t_atoms* atoms, gmx_bool bASK, gmx_bool bVerb)
 {
     if (bVerb)
     {
         printf("Analysing residue names:\n");
     }
+
+    std::vector<IndexGroup> indexGroups;
+
     /* Create system group, every single atom */
     std::vector<int> aid(atoms->nr);
     std::iota(aid.begin(), aid.end(), 0);
-    add_grp(gb, gn, aid, "System");
+    indexGroups.push_back({ "System", aid });
 
     /* For every residue, get a pointer to the residue type name */
     ResidueTypeMap residueTypeMap = residueTypeMapFromLibraryFile("residuetypes.dat");
@@ -604,38 +598,38 @@ void analyse(const t_atoms* atoms, t_blocka* gb, char*** gn, gmx_bool bASK, gmx_
         if (!gmx_strcasecmp(previousTypename[k].c_str(), "Protein") && !aid.empty())
         {
             /* PROTEIN */
-            analyse_prot(restype, atoms, gb, gn, bASK, bVerb);
+            analyse_prot(restype, atoms, &indexGroups, bASK, bVerb);
 
             /* Create a Non-Protein group */
             std::vector<int> aid = mk_aid(atoms, restype, "Protein", FALSE);
             if ((!aid.empty()) && (gmx::ssize(aid) < atoms->nr))
             {
-                add_grp(gb, gn, aid, "non-Protein");
+                indexGroups.push_back({ "non-Protein", aid });
             }
         }
         else if (!gmx_strcasecmp(previousTypename[k].c_str(), "Water") && !aid.empty())
         {
-            add_grp(gb, gn, aid, previousTypename[k]);
+            indexGroups.push_back({ previousTypename[k], aid });
             /* Add this group as 'SOL' too, for backward compatibility with older gromacs versions */
-            add_grp(gb, gn, aid, "SOL");
+            indexGroups.push_back({ "SOL", aid });
 
 
             /* Solvent, create a negated group too */
             std::vector<int> aid = mk_aid(atoms, restype, "Water", FALSE);
             if ((!aid.empty()) && (gmx::ssize(aid) < atoms->nr))
             {
-                add_grp(gb, gn, aid, "non-Water");
+                indexGroups.push_back({ "non-Water", aid });
             }
         }
         else if (!gmx_strcasecmp(previousTypename[k].c_str(), "Ion") && !aid.empty())
         {
-            add_grp(gb, gn, aid, previousTypename[k]);
+            indexGroups.push_back({ previousTypename[k], aid });
         }
         else if (!aid.empty() && !haveAnalysedOther)
         {
             /* Other groups */
-            add_grp(gb, gn, aid, previousTypename[k]);
-            analyse_other(restype, atoms, gb, gn, bASK, bVerb);
+            indexGroups.push_back({ previousTypename[k], aid });
+            analyse_other(restype, atoms, &indexGroups, bASK, bVerb);
             haveAnalysedOther = true;
         }
     }
@@ -647,43 +641,33 @@ void analyse(const t_atoms* atoms, t_blocka* gb, char*** gn, gmx_bool bASK, gmx_
     int nwater = 0;
     int nion   = 0;
 
-    for (int i = 0; i < gb->nr; i++)
+    for (gmx::index i = 0; i < gmx::ssize(indexGroups); i++)
     {
-        if (!gmx_strcasecmp((*gn)[i], "Water"))
+        if (!gmx_strcasecmp(indexGroups[i].name.c_str(), "Water"))
         {
             iwater = i;
-            nwater = gb->index[i + 1] - gb->index[i];
+            nwater = indexGroups[i].particleIndices.size();
         }
-        else if (!gmx_strcasecmp((*gn)[i], "Ion"))
+        else if (!gmx_strcasecmp(indexGroups[i].name.c_str(), "Ion"))
         {
             iion = i;
-            nion = gb->index[i + 1] - gb->index[i];
+            nion = indexGroups[i].particleIndices.size();
         }
     }
 
     if (nwater > 0 && nion > 0)
     {
-        srenew(gb->index, gb->nr + 2);
-        srenew(*gn, gb->nr + 1);
-        (*gn)[gb->nr] = gmx_strdup("Water_and_ions");
-        srenew(gb->a, gb->nra + nwater + nion);
-        if (nwater > 0)
-        {
-            for (int i = gb->index[iwater]; i < gb->index[iwater + 1]; i++)
-            {
-                gb->a[gb->nra++] = gb->a[i];
-            }
-        }
-        if (nion > 0)
-        {
-            for (int i = gb->index[iion]; i < gb->index[iion + 1]; i++)
-            {
-                gb->a[gb->nra++] = gb->a[i];
-            }
-        }
-        gb->nr++;
-        gb->index[gb->nr] = gb->nra;
+        indexGroups.push_back({ "Water_and_ions", {} });
+        std::vector<int>& a = indexGroups.back().particleIndices;
+        a.insert(a.end(),
+                 indexGroups[iwater].particleIndices.begin(),
+                 indexGroups[iwater].particleIndices.end());
+        a.insert(a.end(),
+                 indexGroups[iion].particleIndices.begin(),
+                 indexGroups[iion].particleIndices.end());
     }
+
+    return indexGroups;
 }
 
 
@@ -712,71 +696,55 @@ void check_index(const char* gname, int n, int index[], const char* traj, int na
     }
 }
 
-t_blocka* init_index(const char* gfile, char*** grpname)
+std::vector<IndexGroup> init_index(const char* gfile)
 {
-    t_blocka* b = nullptr;
-    char      line[STRLEN], str[STRLEN];
+    std::vector<IndexGroup> indexGroups;
+
+    char line[STRLEN], str[STRLEN];
 
     FILE* in = gmx_ffopen(gfile, "r");
-    snew(b, 1);
-    b->nr          = 0;
-    b->index       = nullptr;
-    b->nra         = 0;
-    b->a           = nullptr;
-    *grpname       = nullptr;
-    int maxentries = 0;
+
+    std::vector<int>* atomListPtr = nullptr;
     while (get_a_line(in, line, STRLEN))
     {
         if (get_header(line, str))
         {
-            b->nr++;
-            srenew(b->index, b->nr + 1);
-            srenew(*grpname, b->nr);
-            if (b->nr == 1)
-            {
-                b->index[0] = 0;
-            }
-            b->index[b->nr]       = b->index[b->nr - 1];
-            (*grpname)[b->nr - 1] = gmx_strdup(str);
+            indexGroups.push_back({ str, {} });
+            atomListPtr = &indexGroups.back().particleIndices;
         }
         else
         {
-            if (b->nr == 0)
+            if (indexGroups.empty())
             {
                 gmx_fatal(FARGS, "The first header of your indexfile is invalid");
             }
+            GMX_RELEASE_ASSERT(atomListPtr != nullptr,
+                               "Here we should have a valid atom list pointer");
             char* pt = line;
             while (sscanf(pt, "%s", str) == 1)
             {
-                int i = b->index[b->nr];
-                if (i >= maxentries)
-                {
-                    maxentries += 1024;
-                    srenew(b->a, maxentries);
-                }
-                assert(b->a != nullptr); // for clang analyzer
-                b->a[i] = strtol(str, nullptr, 10) - 1;
-                b->index[b->nr]++;
-                (b->nra)++;
+                atomListPtr->push_back(strtol(str, nullptr, 10) - 1);
                 pt = strstr(pt, str) + strlen(str);
             }
         }
     }
     gmx_ffclose(in);
 
-    for (int i = 0; (i < b->nr); i++)
+    for (const auto& indexGroup : indexGroups)
     {
-        assert(b->a != nullptr); // for clang analyzer
-        for (int j = b->index[i]; (j < b->index[i + 1]); j++)
+        for (const int particleIndex : indexGroup.particleIndices)
         {
-            if (b->a[j] < 0)
+            if (particleIndex < 0)
             {
-                fprintf(stderr, "\nWARNING: negative index %d in group %s\n\n", b->a[j], (*grpname)[i]);
+                fprintf(stderr,
+                        "\nWARNING: negative index %d in group %s\n\n",
+                        particleIndex,
+                        indexGroup.name.c_str());
             }
         }
     }
 
-    return b;
+    return indexGroups;
 }
 
 static void minstring(char* str)
@@ -790,7 +758,19 @@ static void minstring(char* str)
     }
 }
 
-int find_group(const char* s, int ngrps, char** grpname)
+static const char* indexGroupName(const IndexGroup& indexGroup)
+{
+    return indexGroup.name.c_str();
+}
+
+static const char* indexGroupName(const char* indexGroup)
+{
+    return indexGroup;
+}
+
+
+template<typename T>
+static int findGroupTemplated(const char* s, gmx::ArrayRef<T> indexGroups)
 {
     char      string[STRLEN];
     bool      bMultiple = false;
@@ -798,9 +778,9 @@ int find_group(const char* s, int ngrps, char** grpname)
     int       aa        = -1;
     /* first look for whole name match */
     {
-        for (int i = 0; i < ngrps; i++)
+        for (gmx::index i = 0; i < indexGroups.ssize(); i++)
         {
-            if (gmx_strcasecmp_min(s, grpname[i]) == 0)
+            if (gmx_strcasecmp_min(s, indexGroupName(indexGroups[i])) == 0)
             {
                 if (aa != -1)
                 {
@@ -810,12 +790,12 @@ int find_group(const char* s, int ngrps, char** grpname)
             }
         }
     }
-    /* second look for first string match */
+    /* particleIndices look for first string match */
     if (aa == -1)
     {
-        for (int i = 0; i < ngrps; i++)
+        for (gmx::index i = 0; i < indexGroups.ssize(); i++)
         {
-            if (gmx_strncasecmp_min(s, grpname[i], n) == 0)
+            if (gmx_strncasecmp_min(s, indexGroupName(indexGroups[i]), n) == 0)
             {
                 if (aa != -1)
                 {
@@ -833,9 +813,9 @@ int find_group(const char* s, int ngrps, char** grpname)
         key[STRLEN - 1] = '\0';
         upstring(key);
         minstring(key);
-        for (int i = 0; i < ngrps; i++)
+        for (gmx::index i = 0; i < indexGroups.ssize(); i++)
         {
-            strncpy(string, grpname[i], STRLEN - 1);
+            strncpy(string, indexGroupName(indexGroups[i]), STRLEN - 1);
             upstring(string);
             minstring(string);
             if (strstr(string, key) != nullptr)
@@ -856,7 +836,17 @@ int find_group(const char* s, int ngrps, char** grpname)
     return aa;
 }
 
-static int qgroup(int* a, int ngrps, char** grpname)
+int find_group(const char* s, gmx::ArrayRef<const IndexGroup> indexGroups)
+{
+    return findGroupTemplated(s, indexGroups);
+}
+
+int find_group(const char* s, int ngrps, char** grpname)
+{
+    return findGroupTemplated(s, gmx::constArrayRefFromArray<const char*>(grpname, ngrps));
+}
+
+static int qgroup(gmx::ArrayRef<const IndexGroup> indexGroups)
 {
     char  s[STRLEN];
     int   aa       = 0;
@@ -877,161 +867,145 @@ static int qgroup(int* a, int ngrps, char** grpname)
         aa = strtol(s, &end, 10);
         if (aa == 0 && end[0] != '\0') /* string entered */
         {
-            aa = find_group(s, ngrps, grpname);
+            aa = find_group(s, indexGroups);
         }
-        bInRange = (aa >= 0 && aa < ngrps);
+        bInRange = (aa >= 0 && aa < indexGroups.ssize());
         if (!bInRange)
         {
             printf("Error: No such group '%s'\n", s);
         }
     } while (!bInRange);
-    printf("Selected %d: '%s'\n", aa, grpname[aa]);
-    *a = aa;
+    printf("Selected %d: '%s'\n", aa, indexGroups[aa].name.c_str());
+
     return aa;
 }
 
-static void
-rd_groups(t_blocka* grps, char** grpname, char* gnames[], int ngrps, int isize[], int* index[], int grpnr[])
+static void rd_groups(gmx::ArrayRef<const IndexGroup> indexGroups,
+                      char*                           gnames[],
+                      int                             ngrps,
+                      int                             isize[],
+                      int*                            index[])
 {
-    if (grps->nr == 0)
+    if (indexGroups.empty())
     {
         gmx_fatal(FARGS, "Error: no groups in indexfile");
     }
-    for (int i = 0; (i < grps->nr); i++)
+    for (gmx::index i = 0; i < indexGroups.ssize(); i++)
     {
-        fprintf(stderr, "Group %5d (%15s) has %5d elements\n", i, grpname[i], grps->index[i + 1] - grps->index[i]);
+        fprintf(stderr,
+                "Group %5zd (%15s) has %5zd elements\n",
+                i,
+                indexGroups[i].name.c_str(),
+                gmx::ssize(indexGroups[i].particleIndices));
     }
     for (int i = 0; (i < ngrps); i++)
     {
         int gnr1 = 0;
-        if (grps->nr > 1)
+        if (indexGroups.size() > 1)
         {
             do
             {
-                gnr1 = qgroup(&grpnr[i], grps->nr, grpname);
-                if ((gnr1 < 0) || (gnr1 >= grps->nr))
+                gnr1 = qgroup(indexGroups);
+                if (gnr1 < 0 || gnr1 >= indexGroups.ssize())
                 {
-                    fprintf(stderr, "Select between %d and %d.\n", 0, grps->nr - 1);
+                    fprintf(stderr, "Select between %d and %zd.\n", 0, indexGroups.ssize() - 1);
                 }
-            } while ((gnr1 < 0) || (gnr1 >= grps->nr));
+            } while (gnr1 < 0 || gnr1 >= indexGroups.ssize());
         }
         else
         {
             fprintf(stderr, "There is one group in the index\n");
             gnr1 = 0;
         }
-        gnames[i] = gmx_strdup(grpname[gnr1]);
-        isize[i]  = grps->index[gnr1 + 1] - grps->index[gnr1];
+        gnames[i] = gmx_strdup(indexGroups[gnr1].name.c_str());
+        isize[i]  = gmx::ssize(indexGroups[gnr1].particleIndices);
         snew(index[i], isize[i]);
         for (int j = 0; (j < isize[i]); j++)
         {
-            index[i][j] = grps->a[grps->index[gnr1] + j];
+            index[i][j] = indexGroups[gnr1].particleIndices[j];
         }
     }
 }
 
 void rd_index(const char* statfile, int ngrps, int isize[], int* index[], char* grpnames[])
 {
-    char** gnames = nullptr;
-    int*   grpnr  = nullptr;
-
-    snew(grpnr, ngrps);
     if (!statfile)
     {
         gmx_fatal(FARGS, "No index file specified");
     }
-    t_blocka* grps = init_index(statfile, &gnames);
-    rd_groups(grps, gnames, grpnames, ngrps, isize, index, grpnr);
-    for (int i = 0; i < grps->nr; i++)
-    {
-        sfree(gnames[i]);
-    }
-    sfree(gnames);
-    sfree(grpnr);
-    done_blocka(grps);
-    sfree(grps);
+    const auto indexGroups = init_index(statfile);
+    rd_groups(indexGroups, grpnames, ngrps, isize, index);
 }
 
 void get_index(const t_atoms* atoms, const char* fnm, int ngrps, int isize[], int* index[], char* grpnames[])
 {
-    char***   gnames = nullptr;
-    t_blocka* grps   = nullptr;
-    int*      grpnr  = nullptr;
-
-    snew(grpnr, ngrps);
-    snew(gnames, 1);
+    std::vector<IndexGroup> indexGroups;
     if (fnm != nullptr)
     {
-        grps = init_index(fnm, gnames);
+        indexGroups = init_index(fnm);
     }
     else if (atoms)
     {
-        snew(grps, 1);
-        snew(grps->index, 1);
-        analyse(atoms, grps, gnames, FALSE, FALSE);
+        indexGroups = analyse(atoms, FALSE, FALSE);
     }
     else
     {
         gmx_incons("You need to supply a valid atoms structure or a valid index file name");
     }
 
-    rd_groups(grps, *gnames, grpnames, ngrps, isize, index, grpnr);
-    for (int i = 0; i < grps->nr; ++i)
-    {
-        sfree((*gnames)[i]);
-    }
-    sfree(*gnames);
-    sfree(gnames);
-    sfree(grpnr);
-    done_blocka(grps);
-    sfree(grps);
+    rd_groups(indexGroups, grpnames, ngrps, isize, index);
 }
 
 t_cluster_ndx cluster_index(FILE* fplog, const char* ndx)
 {
     t_cluster_ndx c;
 
-    c.clust    = init_index(ndx, &c.grpname);
-    c.maxframe = -1;
-    for (int i = 0; (i < c.clust->nra); i++)
+    c.clusters                = init_index(ndx);
+    c.maxframe                = -1;
+    gmx::index totalNumFrames = 0;
+    for (const auto& cluster : c.clusters)
     {
-        c.maxframe = std::max(c.maxframe, c.clust->a[i]);
+        for (const int frame : cluster.particleIndices)
+        {
+            c.maxframe = std::max(c.maxframe, frame);
+        }
+        totalNumFrames += gmx::ssize(cluster.particleIndices);
     }
     fprintf(fplog ? fplog : stdout,
-            "There are %d clusters containing %d structures, highest framenr is %d\n",
-            c.clust->nr,
-            c.clust->nra,
+            "There are %td clusters containing %td structures, highest framenr is %d\n",
+            gmx::ssize(c.clusters),
+            totalNumFrames,
             c.maxframe);
+
     if (debug)
     {
-        pr_blocka(debug, 0, "clust", c.clust, TRUE);
-        for (int i = 0; (i < c.clust->nra); i++)
+        pr_blocka(debug, 0, "clust", c.clusters, true);
+
+        for (const auto& cluster : c.clusters)
         {
-            if ((c.clust->a[i] < 0) || (c.clust->a[i] > c.maxframe))
+            int i = 0;
+            for (const int frame : cluster.particleIndices)
             {
-                gmx_fatal(FARGS,
-                          "Range check error for c.clust->a[%d] = %d\n"
-                          "should be within 0 and %d",
-                          i,
-                          c.clust->a[i],
-                          c.maxframe + 1);
+                if (frame < 0 || frame > c.maxframe)
+                {
+                    gmx_fatal(FARGS,
+                              "Range check error for c.clust->a[%d] = %d\n"
+                              "should be within 0 and %d",
+                              i,
+                              frame,
+                              c.maxframe + 1);
+                }
+                i++;
             }
         }
     }
 
-    GMX_RELEASE_ASSERT(c.clust->index != nullptr, "Keep clang-tidy happy");
-    std::vector<int> listRanges(c.clust->nr + 1);
-    for (int i = 0; i < c.clust->nr + 1; i++)
+    gmx::ListOfLists<int> clusterList;
+    for (const IndexGroup& cluster : c.clusters)
     {
-        listRanges[i] = c.clust->index[i];
+        clusterList.pushBack(cluster.particleIndices);
     }
-    std::vector<int> elements(c.clust->nra);
-    for (int i = 0; i < c.clust->nra; i++)
-    {
-        elements[i] = c.clust->a[i];
-    }
-    gmx::ListOfLists<int> clusters(std::move(listRanges), std::move(elements));
-    c.inv_clust = make_invblock(clusters, c.maxframe);
+    c.inv_clust = make_invblock(clusterList, c.maxframe);
 
     return c;
 }

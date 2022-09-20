@@ -50,6 +50,7 @@
 #include "gromacs/options/options.h"
 #include "gromacs/options/treesupport.h"
 #include "gromacs/selection/indexutil.h"
+#include "gromacs/topology/index.h"
 #include "gromacs/utility/keyvaluetreebuilder.h"
 #include "gromacs/utility/keyvaluetreemdpwriter.h"
 #include "gromacs/utility/keyvaluetreetransform.h"
@@ -98,26 +99,22 @@ public:
         return mdpValueBuilder.build();
     }
 
-    IndexGroupsAndNames genericIndexGroupsAndNames()
+    static IndexGroupsAndNames genericIndexGroupsAndNames()
     {
-        done_blocka(&defaultGroups_);
-        stupid_fill_blocka(&defaultGroups_, 3);
-        std::vector<std::string> groupNames          = { "A", "protein", "C" };
-        const char* const        namesAsConstChar[3] = { groupNames[0].c_str(),
-                                                  groupNames[1].c_str(),
-                                                  groupNames[2].c_str() };
-        return { defaultGroups_, namesAsConstChar };
+        std::vector<IndexGroup> indexGroups;
+        indexGroups.push_back({ "A", { 0 } });
+        indexGroups.push_back({ "protein", { 1 } });
+        indexGroups.push_back({ "C", { 2 } });
+        return IndexGroupsAndNames(indexGroups);
     }
 
-    IndexGroupsAndNames differingIndexGroupsAndNames()
+    static IndexGroupsAndNames differingIndexGroupsAndNames()
     {
-        done_blocka(&defaultGroups_);
-        stupid_fill_blocka(&defaultGroups_, 3);
-        std::vector<std::string> groupNames          = { "protein", "C", "A" };
-        const char* const        namesAsConstChar[3] = { groupNames[0].c_str(),
-                                                  groupNames[1].c_str(),
-                                                  groupNames[2].c_str() };
-        return { defaultGroups_, namesAsConstChar };
+        std::vector<IndexGroup> indexGroups;
+        indexGroups.push_back({ "protein", { 0 } });
+        indexGroups.push_back({ "C", { 1 } });
+        indexGroups.push_back({ "A", { 2 } });
+        return IndexGroupsAndNames(indexGroups);
     }
 
     void mangleInternalParameters()
