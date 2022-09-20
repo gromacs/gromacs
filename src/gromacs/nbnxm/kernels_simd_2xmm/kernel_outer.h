@@ -84,7 +84,7 @@
 #else
     constexpr bool                    calculateEnergies    = false;
 #endif
-#if defined CALC_ENEGIES && defined ENERGY_GROUPS
+#if defined CALC_ENERGIES && defined ENERGY_GROUPS
     constexpr bool useEnergyGroups = true;
 #else
     constexpr bool                    useEnergyGroups      = false;
