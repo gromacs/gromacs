@@ -71,7 +71,7 @@ from .exceptions import FeatureNotAvailableError
 _major = 0
 _minor = 4
 _micro = 0
-_suffix = 'a3'
+_suffix = 'b1'
 
 # Reference https://www.python.org/dev/peps/pep-0440/
 # and https://packaging.pypa.io/en/latest/version/
@@ -112,7 +112,7 @@ _named_features_0[3] = [
 ]
 
 _named_features_0[4] = [
-    # 'mpi_comm_integration'
+    'mpi_comm_integration'
 ]
 
 

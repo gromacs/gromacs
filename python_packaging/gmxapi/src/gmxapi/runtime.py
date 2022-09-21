@@ -334,3 +334,82 @@ def scoped_resources(allocation: BaseContext, requirements: ResourceRequirements
         yield resources
     finally:
         resources.close()
+
+
+def assign_ensemble(allocation: ResourceAllocation, membership: typing.Iterable[int]) -> ResourceAssignment:
+    """Assign resources to members of a new ensemble.
+
+    Args:
+        allocation: resource allocation from which to assign resources.
+        membership: ensemble member ID for each rank in *allocation*
+
+    *membership* IDs are in the *new* ensemble, sequenced by rank in *allocation*.
+    *membership* values begin at zero and should be monotonic. I.e. the number
+    of ensemble members is ``max(membership) + 1``. If the size of the original
+    allocation is larger than the required assignment, let *membership* be a
+    shorter sequence than ``allocation.communicator.Get_size()``
+
+    Each ensemble member gets its own sub-communicator, split from the allocation.
+
+    Ranks that are not part of any ensemble member get MPI_COMM_NULL.
+    (I.e. when ``len(membership) > allocation.communicator().Get_size()``)
+
+    This is a collective call. All ranks in *allocation* must call this function
+    with the same arguments.
+    """
+    membership = list(membership)
+    ensemble_size = max(membership) + 1
+    if set(membership) != set(range(ensemble_size)):
+        raise exceptions.UsageError(f'Invalid ensemble membership list: {membership}')
+
+    required_comm_size = len(membership)
+
+    base_communicator = allocation.communicator()
+    # If requested size is 1, we should not need to require mpi4py.
+    #
+    # It is not safe to proceed with tMPI if multiple processes are
+    # active and cannot be detected, but this is an issue without gmxapi,
+    # as well, and we consider it a user error.
+    #
+    # For MPI-GROMACS and a requested size of 1, but no mpi4py, it is safe
+    # to perform exactly one simulation, after which libgromacs will call
+    # MPI_Finalize.
+    #
+    # With resolution of #4423, we will require mpi4py for MPI-GROMACS.
+    #
+    # As part of resolution of #4422, we will remove this requirement and
+    # rely on internal (C++ level) MPI management to detect the MPI context
+    # and call Init and Finalize the correct number of times.
+    # TODO(#4423): Check for MPI bindings.
+    if required_comm_size > 1:
+        # Ensembles require mpi4py and a valid base communicator.
+        if not hasattr(base_communicator, 'Get_size'):
+            if _MPI is None:
+                error = f'Ensemble work requires the mpi4py Python package.'
+            else:
+                error = f'Cannot get Comm size {required_comm_size} from {repr(allocation)}.'
+            logger.error(
+                error + ' '
+                + 'To get a scoped communicator of a specific size, provide a parent '
+                + 'communicator supporting the mpi4py.MPI.Comm interface.'
+            )
+            raise exceptions.UsageError(error)
+
+    if _MPI is None:
+        assert required_comm_size == 1
+        assert base_communicator is None
+        resources = ResourceAssignment()
+    else:
+        assert base_communicator is not None
+        original_comm_size = base_communicator.Get_size()
+        padding = original_comm_size - required_comm_size
+        if padding < 0:
+            raise exceptions.FeatureNotAvailableError(
+                f'Cannot produce a sub-communicator of size {required_comm_size}'
+                f' from a communicator of size {original_comm_size}.')
+        split_color = membership + ([_MPI.UNDEFINED] * padding)
+        assert len(split_color) == original_comm_size
+        current_rank = base_communicator.Get_rank()
+        communicator = base_communicator.Split(color=split_color[current_rank])
+        resources = ResourceAssignment(communicator)
+    return resources
