@@ -1702,6 +1702,7 @@ std::string getCoolQuote()
         { "There are way too many quotes", "Sebastian Wingbermuehle" },
         { "It is not critical to add the next quote to a patch release", "Paul Bauer" },
         { "It is a cute toxin.", "Rebecca Howard" },
+        { "Everything is failing", "Paul Bauer" },
 
     };
 
