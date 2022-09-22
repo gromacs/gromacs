@@ -144,8 +144,8 @@ static void dd_move_cellx(gmx_domdec_t* dd, const gmx_ddbox_t* ddbox, rvec cell_
     gmx_ddzone_t       buf_e[c_ddZoneCommMaxNumZones];
     gmx_domdec_comm_t* comm = dd->comm.get();
 
-    rvec extr_s[2];
-    rvec extr_r[2];
+    std::array<gmx::RVec, 2> extr_s;
+    std::array<gmx::RVec, 2> extr_r;
     for (int d = 1; d < dd->ndim; d++)
     {
         int           dim = dd->dim[d];
@@ -235,7 +235,11 @@ static void dd_move_cellx(gmx_domdec_t* dd, const gmx_ddbox_t* ddbox, rvec cell_
             bool receiveValidData = (applyPbc || dd->ci[dim] > 0);
 
             int numElements = dd->ndim - d - 1;
-            ddSendrecv(dd, d, dddirForward, extr_s + d, numElements, extr_r + d, numElements);
+            ddSendrecv(dd,
+                       d,
+                       dddirForward,
+                       gmx::arrayRefFromArray(extr_s.data() + d, numElements),
+                       gmx::arrayRefFromArray(extr_r.data() + d, numElements));
 
             if (receiveValidData)
             {
@@ -433,7 +437,7 @@ static void dd_move_cellx(gmx_domdec_t* dd, const gmx_ddbox_t* ddbox, rvec cell_
 }
 
 //! Sets the charge-group zones to be equal to the home zone.
-static void set_zones_numHomeAtoms(gmx_domdec_t* dd)
+static void set_zones_numHomeAtoms(const gmx_domdec_t* dd)
 {
     gmx_domdec_zones_t* zones;
     int                 i;
@@ -2078,7 +2082,11 @@ static void setup_dd_communication(gmx_domdec_t* dd, matrix box, gmx_ddbox_t* dd
             ind->nsend[nzone]     = ind->index.size();
             ind->nsend[nzone + 1] = comm->dth[0].nat;
             /* Communicate the number of cg's and atoms to receive */
-            ddSendrecv(dd, dim_ind, dddirBackward, ind->nsend, nzone + 2, ind->nrecv, nzone + 2);
+            ddSendrecv(dd,
+                       dim_ind,
+                       dddirBackward,
+                       gmx::arrayRefFromArray(ind->nsend, nzone + 2),
+                       gmx::arrayRefFromArray(ind->nrecv, nzone + 2));
 
             if (p > 0)
             {
@@ -3327,7 +3335,7 @@ void dd_partition_system(FILE*                     fplog,
      * the last vsite construction, we need to communicate the constructing
      * atom coordinates again (for spreading the forces this MD step).
      */
-    dd_move_x_vsites(*dd, state_local->box, state_local->x.rvec_array());
+    dd_move_x_vsites(*dd, state_local->box, state_local->x);
 
     wallcycle_sub_stop(wcycle, WallCycleSubCounter::DDTopOther);
 

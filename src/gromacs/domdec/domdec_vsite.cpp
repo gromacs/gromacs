@@ -67,7 +67,7 @@ void dd_move_f_vsites(const gmx_domdec_t& dd, gmx::ArrayRef<gmx::RVec> f, gmx::A
 {
     if (dd.vsite_comm)
     {
-        dd_move_f_specat(&dd, dd.vsite_comm.get(), as_rvec_array(f.data()), as_rvec_array(fshift.data()));
+        dd_move_f_specat(&dd, dd.vsite_comm.get(), f.data(), fshift.data());
     }
 }
 
@@ -82,19 +82,22 @@ void dd_clear_f_vsites(const gmx_domdec_t& dd, gmx::ArrayRef<gmx::RVec> f)
     }
 }
 
-void dd_move_x_vsites(const gmx_domdec_t& dd, const matrix box, rvec* x)
+void dd_move_x_vsites(const gmx_domdec_t& dd, const matrix box, gmx::ArrayRef<gmx::RVec> x)
 {
     if (dd.vsite_comm)
     {
-        dd_move_x_specat(&dd, dd.vsite_comm.get(), box, x, nullptr, FALSE);
+        dd_move_x_specat(&dd, dd.vsite_comm.get(), box, x.data(), nullptr, FALSE);
     }
 }
 
-void dd_move_x_and_v_vsites(const gmx_domdec_t& dd, const matrix box, rvec* x, rvec* v)
+void dd_move_x_and_v_vsites(const gmx_domdec_t&      dd,
+                            const matrix             box,
+                            gmx::ArrayRef<gmx::RVec> x,
+                            gmx::ArrayRef<gmx::RVec> v)
 {
     if (dd.vsite_comm)
     {
-        dd_move_x_specat(&dd, dd.vsite_comm.get(), box, x, v, FALSE);
+        dd_move_x_specat(&dd, dd.vsite_comm.get(), box, x.data(), v.data(), FALSE);
     }
 }
 

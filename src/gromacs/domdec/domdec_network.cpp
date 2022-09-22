@@ -66,13 +66,13 @@
  * (direction=dddirFoward) or backward (direction=dddirBackward).
  */
 template<typename T>
-void ddSendrecv(const struct gmx_domdec_t* dd,
-                int                        ddDimensionIndex,
-                int                        direction,
-                T*                         sendBuffer,
-                int                        numElementsToSend,
-                T*                         receiveBuffer,
-                int                        numElementsToReceive)
+static void ddSendrecv(const struct gmx_domdec_t* dd,
+                       int                        ddDimensionIndex,
+                       int                        direction,
+                       T*                         sendBuffer,
+                       int                        numElementsToSend,
+                       T*                         receiveBuffer,
+                       int                        numElementsToReceive)
 {
 #if GMX_MPI
     int sendRank    = dd->neighbor[ddDimensionIndex][direction == dddirForward ? 0 : 1];
@@ -113,13 +113,6 @@ void ddSendrecv(const struct gmx_domdec_t* dd,
     GMX_UNUSED_VALUE(numElementsToReceive);
 #endif // GMX_MPI
 }
-
-//! Specialization of extern template for int
-template void ddSendrecv(const gmx_domdec_t*, int, int, int*, int, int*, int);
-//! Specialization of extern template for real
-template void ddSendrecv(const gmx_domdec_t*, int, int, real*, int, real*, int);
-//! Specialization of extern template for gmx::RVec
-template void ddSendrecv(const gmx_domdec_t*, int, int, rvec*, int, rvec*, int);
 
 template<typename T>
 void ddSendrecv(const gmx_domdec_t* dd,

@@ -83,7 +83,7 @@ struct gmx_domdec_specat_comm_t
 };
 
 /*! \brief Communicates the force for special atoms, the shift forces are reduced with \p fshift != NULL */
-void dd_move_f_specat(const gmx_domdec_t* dd, gmx_domdec_specat_comm_t* spac, rvec* f, rvec* fshift);
+void dd_move_f_specat(const gmx_domdec_t* dd, gmx_domdec_specat_comm_t* spac, gmx::RVec* f, gmx::RVec* fshift);
 
 /*! \brief Communicates the coordinates for special atoms
  *
@@ -97,9 +97,9 @@ void dd_move_f_specat(const gmx_domdec_t* dd, gmx_domdec_specat_comm_t* spac, rv
 void dd_move_x_specat(const gmx_domdec_t*       dd,
                       gmx_domdec_specat_comm_t* spac,
                       const matrix              box,
-                      rvec*                     x0,
-                      rvec*                     x1,
-                      gmx_bool                  bX1IsCoord);
+                      gmx::RVec*                x0,
+                      gmx::RVec*                x1,
+                      bool                      bX1IsCoord);
 
 /*! \brief Sets up the communication for special atoms
  *

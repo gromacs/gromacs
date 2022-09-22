@@ -63,52 +63,6 @@ enum
     dddirBackward
 };
 
-/*! \brief Move T values in the communication region one cell along
- * the domain decomposition
- *
- * Moves in the dimension indexed by ddDimensionIndex, either forward
- * (direction=dddirFoward) or backward (direction=dddirBackward).
- *
- * \todo This function template is deprecated, new calls should be
- * made to the version taking ArrayRef parameters and this function
- * template removed when unused.
- */
-template<typename T>
-void ddSendrecv(const gmx_domdec_t* dd,
-                int                 ddDimensionIndex,
-                int                 direction,
-                T*                  sendBuffer,
-                int                 numElementsToSend,
-                T*                  receiveBuffer,
-                int                 numElementsToReceive);
-
-//! Extern declaration for int specialization
-extern template void ddSendrecv<int>(const gmx_domdec_t* dd,
-                                     int                 ddDimensionIndex,
-                                     int                 direction,
-                                     int*                buf_s,
-                                     int                 n_s,
-                                     int*                buf_r,
-                                     int                 n_r);
-
-//! Extern declaration for real specialization
-extern template void ddSendrecv<real>(const gmx_domdec_t* dd,
-                                      int                 ddDimensionIndex,
-                                      int                 direction,
-                                      real*               buf_s,
-                                      int                 n_s,
-                                      real*               buf_r,
-                                      int                 n_r);
-
-//! Extern declaration for rvec specialization
-extern template void ddSendrecv<rvec>(const gmx_domdec_t* dd,
-                                      int                 ddDimensionIndex,
-                                      int                 direction,
-                                      rvec*               buf_s,
-                                      int                 n_s,
-                                      rvec*               buf_r,
-                                      int                 n_r);
-
 /*! \brief Move a view of T values in the communication region one
  * cell along the domain decomposition
  *

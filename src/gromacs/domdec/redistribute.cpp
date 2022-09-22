@@ -782,7 +782,11 @@ void dd_redistribute_cg(FILE*         fplog,
                 fprintf(debug, "Sending ddim %d dir %d: nat %d\n", d, dir, nat[cdd]);
             }
             int atomCountToReceive;
-            ddSendrecv(dd, d, dir, &nat[cdd], 1, &atomCountToReceive, 1);
+            ddSendrecv(dd,
+                       d,
+                       dir,
+                       gmx::arrayRefFromArray(&nat[cdd], 1),
+                       gmx::arrayRefFromArray(&atomCountToReceive, 1));
 
             flagBuffer.resize((totalAtomsReceived + atomCountToReceive) * DD_CGIBS);
 
@@ -790,10 +794,9 @@ void dd_redistribute_cg(FILE*         fplog,
             ddSendrecv(dd,
                        d,
                        dir,
-                       comm->cggl_flag[cdd].data(),
-                       nat[cdd] * DD_CGIBS,
-                       flagBuffer.buffer.data() + totalAtomsReceived * DD_CGIBS,
-                       atomCountToReceive * DD_CGIBS);
+                       gmx::arrayRefFromArray(comm->cggl_flag[cdd].data(), nat[cdd] * DD_CGIBS),
+                       gmx::arrayRefFromArray(flagBuffer.buffer.data() + totalAtomsReceived * DD_CGIBS,
+                                              atomCountToReceive * DD_CGIBS));
 
             const int nvs = nat[cdd] * (1 + nvec);
             const int i   = atomCountToReceive * (1 + nvec);
@@ -803,10 +806,8 @@ void dd_redistribute_cg(FILE*         fplog,
             ddSendrecv(dd,
                        d,
                        dir,
-                       as_rvec_array(comm->cgcm_state[cdd].data()),
-                       nvs,
-                       as_rvec_array(rvecBuffer.buffer.data()) + nvr,
-                       i);
+                       gmx::arrayRefFromArray(comm->cgcm_state[cdd].data(), nvs),
+                       gmx::arrayRefFromArray(rvecBuffer.buffer.data() + nvr, i));
             totalAtomsReceived += atomCountToReceive;
             nvr += i;
         }

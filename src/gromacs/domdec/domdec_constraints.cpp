@@ -81,8 +81,7 @@ void dd_move_x_constraints(gmx_domdec_t*            dd,
 {
     if (dd->constraint_comm)
     {
-        dd_move_x_specat(
-                dd, dd->constraint_comm.get(), box, as_rvec_array(x0.data()), as_rvec_array(x1.data()), bX1IsCoord);
+        dd_move_x_specat(dd, dd->constraint_comm.get(), box, x0.data(), x1.data(), bX1IsCoord);
 
         ddReopenBalanceRegionCpu(dd);
     }

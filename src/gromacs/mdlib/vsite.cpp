@@ -1169,12 +1169,11 @@ static void construct_vsites(const ThreadingInfo*            threadingInfo,
     {
         if (calculateVelocity == VSiteCalculateVelocity::Yes)
         {
-            dd_move_x_and_v_vsites(
-                    *domainInfo.domdec_, box, as_rvec_array(x.data()), as_rvec_array(v.data()));
+            dd_move_x_and_v_vsites(*domainInfo.domdec_, box, x, v);
         }
         else
         {
-            dd_move_x_vsites(*domainInfo.domdec_, box, as_rvec_array(x.data()));
+            dd_move_x_vsites(*domainInfo.domdec_, box, x);
         }
     }
 
