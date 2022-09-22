@@ -100,7 +100,7 @@ CommrecHandle init_commrec(MPI_Comm communicator)
 
 void done_commrec(t_commrec* cr)
 {
-    if (MASTER(cr))
+    if (MAIN(cr))
     {
         done_domdec(cr->dd);
     }
@@ -334,16 +334,16 @@ void gmx_sumi(int gmx_unused nr, int gmx_unused r[], const t_commrec gmx_unused*
 #endif
 }
 
-const char* opt2fn_master(const char* opt, int nfile, const t_filenm fnm[], t_commrec* cr)
+const char* opt2fn_main(const char* opt, int nfile, const t_filenm fnm[], t_commrec* cr)
 {
-    return SIMMASTER(cr) ? opt2fn(opt, nfile, fnm) : nullptr;
+    return SIMMAIN(cr) ? opt2fn(opt, nfile, fnm) : nullptr;
 }
 
 void gmx_fatal_collective(int                    f_errno,
                           const char*            file,
                           int                    line,
                           MPI_Comm               comm,
-                          gmx_bool               bMaster,
+                          gmx_bool               bMain,
                           gmx_fmtstr const char* fmt,
                           ...)
 {
@@ -361,6 +361,6 @@ void gmx_fatal_collective(int                    f_errno,
 #endif
 
     va_start(ap, fmt);
-    gmx_fatal_mpi_va(f_errno, file, line, bMaster, bFinalize, fmt, ap);
+    gmx_fatal_mpi_va(f_errno, file, line, bMain, bFinalize, fmt, ap);
     va_end(ap);
 }

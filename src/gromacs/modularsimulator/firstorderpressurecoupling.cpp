@@ -187,7 +187,7 @@ void FirstOrderPressureCoupling::doCheckpointData(CheckpointData<operation>* che
 void FirstOrderPressureCoupling::saveCheckpointState(std::optional<WriteCheckpointData> checkpointData,
                                                      const t_commrec*                   cr)
 {
-    if (MASTER(cr))
+    if (MAIN(cr))
     {
         doCheckpointData<CheckpointDataOperation::Write>(&checkpointData.value());
     }
@@ -196,7 +196,7 @@ void FirstOrderPressureCoupling::saveCheckpointState(std::optional<WriteCheckpoi
 void FirstOrderPressureCoupling::restoreCheckpointState(std::optional<ReadCheckpointData> checkpointData,
                                                         const t_commrec*                  cr)
 {
-    if (MASTER(cr))
+    if (MAIN(cr))
     {
         doCheckpointData<CheckpointDataOperation::Read>(&checkpointData.value());
     }

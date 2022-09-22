@@ -151,7 +151,7 @@ EnsemblePotential::EnsemblePotential(const input_param_type& params) :
 //
 //
 // HERE is the (optional) function that updates the state of the restraint periodically.
-// It is called before calculate() once per timestep per simulation (on the master rank of
+// It is called before calculate() once per timestep per simulation (on the main rank of
 // a parallelized simulation).
 //
 //

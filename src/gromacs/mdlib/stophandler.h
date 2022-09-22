@@ -117,7 +117,7 @@ static inline StopSignal convertToStopSignal(signed char sig)
  * \brief Class handling the stop signal
  *
  * Loops over the registered stop conditions and sets a signal if
- * requested (currently only done by master rank).
+ * requested (currently only done by main rank).
  * All ranks receive the stop signal and set the respective flag.
  * The functions are implemented within this header file to avoid leaving
  * the translation unit unnecessarily.
@@ -188,7 +188,7 @@ private:
 /*! \libinternal
  * \brief Class setting the stop signal based on gmx_get_stop_condition()
  *
- * Master rank sets the stop signal if required (generally due to SIGINT).
+ * Main rank sets the stop signal if required (generally due to SIGINT).
  */
 class StopConditionSignal final
 {
@@ -215,7 +215,7 @@ private:
 /*! \libinternal
  * \brief Class setting the stop signal based on maximal run time
  *
- * Master rank sets the stop signal if run time exceeds maximal run time.
+ * Main rank sets the stop signal if run time exceeds maximal run time.
  */
 class StopConditionTime final
 {
@@ -286,7 +286,7 @@ public:
      */
     std::unique_ptr<StopHandler> getStopHandlerMD(compat::not_null<SimulationSignal*> signal,
                                                   bool            simulationShareState,
-                                                  bool            isMaster,
+                                                  bool            isMain,
                                                   int             nstList,
                                                   bool            makeBinaryReproducibleSimulation,
                                                   int             nstSignalComm,

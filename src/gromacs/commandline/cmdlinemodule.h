@@ -164,7 +164,7 @@ public:
      * \throws    std::bad_alloc if out of memory.
      * \throws    FileIOError on any I/O error.
      *
-     * Note that for MPI-enabled builds, this is called only on the master
+     * Note that for MPI-enabled builds, this is called only on the main
      * rank.
      */
     virtual void writeHelp(const CommandLineHelpContext& context) const = 0;

@@ -151,7 +151,7 @@ std::unique_ptr<TestProgramContext> g_testContext;
  * produces no output. This test listener changes that behavior, so
  * that the message is echoed.
  *
- * When run with multiple ranks, only the master rank should use this
+ * When run with multiple ranks, only the main rank should use this
  * listener, else the output can be very noisy. */
 class SuccessListener : public testing::EmptyTestEventListener
 {
@@ -186,7 +186,7 @@ void initTestUtils(const std::filesystem::path& dataPath,
         {
             // We cannot continue, since some tests might be using
             // MPI_COMM_WORLD, which could deadlock if we would only
-            // continue with the master rank here.
+            // continue with the main rank here.
             if (gmx_node_rank() == 0)
             {
                 fprintf(stderr,
@@ -275,7 +275,7 @@ void initTestUtils(const std::filesystem::path& dataPath,
             TestFileManager::setInputDataDirectory(
                     std::filesystem::path(sourceRoot).append(dataPath.string()));
         }
-        // Echo success messages only from the master MPI rank
+        // Echo success messages only from the main MPI rank
         if (echoReasons && (gmx_node_rank() == 0))
         {
             testing::UnitTest::GetInstance()->listeners().Append(new SuccessListener);

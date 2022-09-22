@@ -832,7 +832,7 @@ static void do_constraint(struct pull_t* pull,
                           const t_pbc&   pbc,
                           ArrayRef<RVec> x,
                           ArrayRef<RVec> v,
-                          gmx_bool       bMaster,
+                          gmx_bool       bMain,
                           tensor         vir,
                           double         dt,
                           double         t)
@@ -1196,7 +1196,7 @@ static void do_constraint(struct pull_t* pull,
                    * dt * dt);
         pcrd->scalarForce += force;
 
-        if (vir != nullptr && pcrd->params.eGeom != PullGroupGeometry::DirectionPBC && bMaster)
+        if (vir != nullptr && pcrd->params.eGeom != PullGroupGeometry::DirectionPBC && bMain)
         {
             double f_invr;
 
@@ -1631,7 +1631,7 @@ real pull_potential(struct pull_t*       pull,
             }
         }
 
-        if (MASTER(cr))
+        if (MAIN(cr))
         {
             *dvdlambda += dVdl;
         }
@@ -1642,7 +1642,7 @@ real pull_potential(struct pull_t*       pull,
     /* All external pull potentials still need to be applied */
     pull->numExternalPotentialsStillToBeAppliedThisStep = pull->numCoordinatesWithExternalPotential;
 
-    return (MASTER(cr) ? V : 0.0);
+    return (MAIN(cr) ? V : 0.0);
 }
 
 void pull_apply_forces(struct pull_t*        pull,
@@ -1658,7 +1658,7 @@ void pull_apply_forces(struct pull_t*        pull,
         return;
     }
 
-    const bool computeVirial = (force != nullptr && force->computeVirial_ && MASTER(cr));
+    const bool computeVirial = (force != nullptr && force->computeVirial_ && MAIN(cr));
     matrix     virial        = { { 0 } };
 
     /* Applying forces needs to loop backward to apply transformation coordinate forces */
@@ -1715,7 +1715,7 @@ void pull_constraint(struct pull_t*       pull,
     {
         pull_calc_coms(cr, pull, masses, pbc, t, x, xp);
 
-        do_constraint(pull, pbc, xp, v, MASTER(cr), vir, dt, t);
+        do_constraint(pull, pbc, xp, v, MAIN(cr), vir, dt, t);
     }
 }
 
@@ -1729,10 +1729,10 @@ void dd_make_local_pull_groups(const t_commrec* cr, struct pull_t* pull)
 
     comm = &pull->comm;
 
-    /* We always make the master node participate, such that it can do i/o,
+    /* We always make the main node participate, such that it can do i/o,
      * add the virial and to simplify MC type extensions people might have.
      */
-    bMustParticipate = (comm->bParticipateAll || comm->isMasterRank);
+    bMustParticipate = (comm->bParticipateAll || comm->isMainRank);
 
     for (pull_group_work_t& group : pull->group)
     {
@@ -1783,7 +1783,7 @@ void dd_make_local_pull_groups(const t_commrec* cr, struct pull_t* pull)
         if (debug && dd != nullptr)
         {
             fprintf(debug,
-                    "Our DD rank (%3d) pull #atoms>0 or master: %s, will be part %s\n",
+                    "Our DD rank (%3d) pull #atoms>0 or main: %s, will be part %s\n",
                     dd->rank,
                     gmx::boolToString(bMustParticipate),
                     gmx::boolToString(bWillParticipate));
@@ -1840,8 +1840,8 @@ void dd_make_local_pull_groups(const t_commrec* cr, struct pull_t* pull)
             {
                 if (group.epgrppbc == epgrppbcPREVSTEPCOM)
                 {
-                    GMX_ASSERT(comm->bParticipate || !MASTER(cr),
-                               "The master rank has to participate, as it should pass an up to "
+                    GMX_ASSERT(comm->bParticipate || !MAIN(cr),
+                               "The main rank has to participate, as it should pass an up to "
                                "date prev. COM "
                                "to bcast here as well as to e.g. checkpointing");
 
@@ -2399,11 +2399,11 @@ struct pull_t* init_pull(FILE*                     fplog,
      */
     comm->mpi_comm_com = MPI_COMM_NULL;
     comm->nparticipate = 0;
-    comm->isMasterRank = (cr == nullptr || MASTER(cr));
+    comm->isMainRank   = (cr == nullptr || MAIN(cr));
 #else
     /* No MPI: 1 rank: all ranks pull */
     comm->bParticipateAll = TRUE;
-    comm->isMasterRank    = true;
+    comm->isMainRank      = true;
 #endif
     comm->bParticipate = comm->bParticipateAll;
     comm->setup_count  = 0;
@@ -2471,13 +2471,13 @@ void preparePrevStepPullCom(const t_inputrec*    ir,
     allocStatePrevStepPullCom(state, pull_work);
     if (startingFromCheckpoint)
     {
-        if (MASTER(cr))
+        if (MAIN(cr))
         {
             state->pull_com_prev_step = state_global->pull_com_prev_step;
         }
         if (PAR(cr))
         {
-            /* Only the master rank has the checkpointed COM from the previous step */
+            /* Only the main rank has the checkpointed COM from the previous step */
             gmx_bcast(sizeof(double) * state->pull_com_prev_step.size(),
                       &state->pull_com_prev_step[0],
                       cr->mpi_comm_mygroup);

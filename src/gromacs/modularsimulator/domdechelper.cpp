@@ -101,13 +101,13 @@ void DomDecHelper::setup()
 {
     // constant choices for this call to dd_partition_system
     const bool     verbose       = false;
-    const bool     isMasterState = true;
+    const bool     isMainState   = true;
     const int      nstglobalcomm = 1;
     gmx_wallcycle* wcycle        = nullptr;
 
-    // Distribute the charge groups over the nodes from the master node
+    // Distribute the charge groups over the nodes from the main node
     partitionSystem(verbose,
-                    isMasterState,
+                    isMainState,
                     nstglobalcomm,
                     wcycle,
                     statePropagatorData_->localState(),
@@ -125,7 +125,7 @@ void DomDecHelper::run(Step step, Time gmx_unused time)
 
     // constant choices for this call to dd_partition_system
     const bool verbose = isVerbose_ && (step % verbosePrintInterval_ == 0 || step == inputrec_->init_step);
-    bool isMasterState = false;
+    bool isMainState = false;
 
     // Correct the new box if it is too skewed
     if (inputrecDynamicBox(inputrec_))
@@ -134,20 +134,20 @@ void DomDecHelper::run(Step step, Time gmx_unused time)
         //       Think about unifying this responsibility, could this be done in one place?
         if (correct_box(fplog_, step, localState->box))
         {
-            isMasterState = true;
+            isMainState = true;
         }
     }
-    if (isMasterState)
+    if (isMainState)
     {
         dd_collect_state(cr_->dd, localState, globalState);
     }
 
-    // Distribute the charge groups over the nodes from the master node
-    partitionSystem(verbose, isMasterState, nstglobalcomm_, wcycle_, localState, globalState);
+    // Distribute the charge groups over the nodes from the main node
+    partitionSystem(verbose, isMainState, nstglobalcomm_, wcycle_, localState, globalState);
 }
 
 void DomDecHelper::partitionSystem(bool           verbose,
-                                   bool           isMasterState,
+                                   bool           isMainState,
                                    int            nstglobalcomm,
                                    gmx_wallcycle* wcycle,
                                    t_state*       localState,
@@ -158,12 +158,12 @@ void DomDecHelper::partitionSystem(bool           verbose,
     // Work-around to keep dd_partition_system from failing -
     // we're not actually using the information related to Nose-Hoover chains
     localState->nhchainlength = inputrec_->opts.nhchainlength;
-    // Distribute the charge groups over the nodes from the master node
+    // Distribute the charge groups over the nodes from the main node
     dd_partition_system(fplog_,
                         mdlog_,
                         inputrec_->init_step,
                         cr_,
-                        isMasterState,
+                        isMainState,
                         nstglobalcomm,
                         globalState,
                         topologyHolder_->globalTopology(),

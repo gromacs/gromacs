@@ -60,7 +60,7 @@ struct gmx_domdec_t;
 enum
 {
     setcellsizeslbLOCAL,     //!< Set cell sizes locally on each rank
-    setcellsizeslbMASTER,    //!< Set cell sizes on master rank only
+    setcellsizeslbMAIN,      //!< Set cell sizes on main rank only
     setcellsizeslbPULSE_ONLY //!< Only set the communication pulses, not the cell sizes
 };
 
@@ -70,7 +70,7 @@ real grid_jump_limit(const gmx_domdec_comm_t* comm, real cutoff, int dim_ind);
 /*! \brief Sets up an initial, non-staggered grid geometry, possibly using static load balancing
  *
  * The number of communication pulses per dimension is returned in numPulses.
- * When setmode==setcellsizeslbMASTER, the cell boundaries per dimension are
+ * When setmode==setcellsizeslbMAIN, the cell boundaries per dimension are
  * returned, otherwise an empty arrayref is returned.
  */
 gmx::ArrayRef<const std::vector<real>>

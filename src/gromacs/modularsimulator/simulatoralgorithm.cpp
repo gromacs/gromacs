@@ -198,7 +198,7 @@ void ModularSimulatorAlgorithm::simulatorSetup()
                         "may be removed in a future version.");
     }
 
-    if (MASTER(cr))
+    if (MAIN(cr))
     {
         char        sbuf[STEPSTRSIZE], sbuf2[STEPSTRSIZE];
         std::string timeString;
@@ -282,7 +282,7 @@ void ModularSimulatorAlgorithm::preStep(Step step, Time gmx_unused time, bool is
 void ModularSimulatorAlgorithm::postStep(Step step, Time gmx_unused time)
 {
     // Output stuff
-    if (MASTER(cr))
+    if (MAIN(cr))
     {
         if (do_per_step(step, inputrec->nstlog))
         {
@@ -296,7 +296,7 @@ void ModularSimulatorAlgorithm::postStep(Step step, Time gmx_unused time)
                             && (step % mdrunOptions.verboseStepPrintInterval == 0
                                 || step == inputrec->init_step || step == signalHelper_->lastStep_);
     // Print the remaining wall clock time for the run
-    if (MASTER(cr) && (do_verbose || gmx_got_usr_signal())
+    if (MAIN(cr) && (do_verbose || gmx_got_usr_signal())
         && !(pmeLoadBalanceHelper_ && pmeLoadBalanceHelper_->pmePrinting()))
     {
         print_time(stderr, walltime_accounting, step, inputrec, cr);
@@ -452,7 +452,7 @@ ModularSimulatorAlgorithmBuilder::ModularSimulatorAlgorithmBuilder(
                                                legacySimulatorData->fplog,
                                                legacySimulatorData->fr->fcdata.get(),
                                                legacySimulatorData->mdModulesNotifiers,
-                                               MASTER(legacySimulatorData->cr),
+                                               MAIN(legacySimulatorData->cr),
                                                legacySimulatorData->observablesHistory,
                                                legacySimulatorData->startingBehavior,
                                                simulationsShareHamiltonian,
@@ -519,7 +519,7 @@ ModularSimulatorAlgorithm ModularSimulatorAlgorithmBuilder::build()
             compat::not_null<SimulationSignal*>(
                     &(*globalCommunicationHelper_.simulationSignals())[eglsSTOPCOND]),
             simulationsShareState,
-            MASTER(legacySimulatorData_->cr),
+            MAIN(legacySimulatorData_->cr),
             legacySimulatorData_->inputrec->nstlist,
             legacySimulatorData_->mdrunOptions.reproducible,
             globalCommunicationHelper_.nstglobalcomm(),
@@ -537,7 +537,7 @@ ModularSimulatorAlgorithm ModularSimulatorAlgorithmBuilder::build()
                     &(*globalCommunicationHelper_.simulationSignals())[eglsRESETCOUNTERS]),
             simulationsShareResetCounters,
             legacySimulatorData_->inputrec->nsteps,
-            MASTER(legacySimulatorData_->cr),
+            MAIN(legacySimulatorData_->cr),
             legacySimulatorData_->mdrunOptions.timingOptions.resetHalfway,
             legacySimulatorData_->mdrunOptions.maximumHoursToRun,
             legacySimulatorData_->mdlog,
@@ -618,7 +618,7 @@ ModularSimulatorAlgorithm ModularSimulatorAlgorithmBuilder::build()
                 compat::make_not_null<SimulationSignal*>(&(*algorithm.signals_)[eglsCHKPT]),
                 simulationsShareState,
                 legacySimulatorData_->inputrec->nstlist == 0,
-                MASTER(legacySimulatorData_->cr),
+                MAIN(legacySimulatorData_->cr),
                 legacySimulatorData_->mdrunOptions.writeConfout,
                 legacySimulatorData_->mdrunOptions.checkpointOptions.period));
         algorithm.checkpointHelper_ =

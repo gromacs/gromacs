@@ -370,7 +370,7 @@ static void calcBondedForces(const InteractionDefinitions&       idef,
                              const rvec                          x[],
                              const t_forcerec*                   fr,
                              const t_pbc*                        pbc_null,
-                             rvec*                               fshiftMasterBuffer,
+                             rvec*                               fshiftMainBuffer,
                              gmx_enerdata_t*                     enerd,
                              t_nrnb*                             nrnb,
                              gmx::ArrayRef<const real>           lambda,
@@ -405,7 +405,7 @@ static void calcBondedForces(const InteractionDefinitions&       idef,
              */
             if (thread == 0)
             {
-                fshift = fshiftMasterBuffer;
+                fshift = fshiftMainBuffer;
                 epot   = enerd->term;
                 grpp   = &enerd->grpp;
                 dvdlt  = dvdl;

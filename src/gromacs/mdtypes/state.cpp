@@ -430,7 +430,7 @@ void initialize_lambdas(FILE*                            fplog,
                         const t_lambda&                  fep,
                         gmx::ArrayRef<const real>        simulatedTemperingTemps,
                         gmx::ArrayRef<real>              ref_t,
-                        bool                             isMaster,
+                        bool                             isMain,
                         int*                             fep_state,
                         gmx::ArrayRef<real>              lambda)
 {
@@ -443,7 +443,7 @@ void initialize_lambdas(FILE*                            fplog,
         return;
     }
 
-    if (isMaster)
+    if (isMain)
     {
         *fep_state = fep.init_fep_state; /* this might overwrite the checkpoint
                                              if checkpoint is set -- a kludge is in for now
@@ -462,7 +462,7 @@ void initialize_lambdas(FILE*                            fplog,
         {
             thisLambda = fep.all_lambda[i][fep.init_fep_state];
         }
-        if (isMaster)
+        if (isMain)
         {
             lambda[i] = thisLambda;
         }

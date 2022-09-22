@@ -2141,8 +2141,8 @@ void do_force(FILE*                               fplog,
 
     wallcycle_stop(wcycle, WallCycleCounter::Force);
 
-    // VdW dispersion correction, only computed on master rank to avoid double counting
-    if ((stepWork.computeEnergy || stepWork.computeVirial) && fr->dispersionCorrection && MASTER(cr))
+    // VdW dispersion correction, only computed on main rank to avoid double counting
+    if ((stepWork.computeEnergy || stepWork.computeVirial) && fr->dispersionCorrection && MAIN(cr))
     {
         // Calculate long range corrections to pressure and energy
         const DispersionCorrection::Correction correction = fr->dispersionCorrection->calculate(

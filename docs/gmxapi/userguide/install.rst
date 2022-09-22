@@ -764,7 +764,7 @@ installations, such as with :command:`pip install somepackage`) and ambiguities
 between python versions. 
 
 If you are working in a development branch of the repository, note that
-the upstream branch may be reset to ``master`` after a new release is
+the upstream branch may be reset to ``main`` after a new release is
 tagged. In general, but particularly on the ``devel`` branch, when you
 do a :command:`git pull`, you should use the ``--rebase`` flag.
 

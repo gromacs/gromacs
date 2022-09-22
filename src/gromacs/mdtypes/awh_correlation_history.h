@@ -89,7 +89,7 @@ struct CorrelationGridHistory
 /*! \brief
  * Initialize correlation grid history, sets all sizes.
  *
- * \param[in,out] correlationGridHistory  Correlation grid history for master rank.
+ * \param[in,out] correlationGridHistory  Correlation grid history for main rank.
  * \param[in] numCorrelationTensors       Number of correlation tensors in the grid.
  * \param[in] tensorSize                  Number of correlation elements in each tensor.
  * \param[in] blockDataListSize           The number of blocks in the list of each tensor element.

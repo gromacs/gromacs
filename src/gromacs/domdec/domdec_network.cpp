@@ -55,8 +55,8 @@
 #include "domdec_internal.h"
 
 
-/*! \brief Returns the MPI rank of the domain decomposition master rank */
-#define DDMASTERRANK(dd) ((dd)->masterrank)
+/*! \brief Returns the MPI rank of the domain decomposition main rank */
+#define DDMAINRANK(dd) ((dd)->mainrank)
 
 
 /*! \brief Move data of type \p T in the communication region one cell along
@@ -228,7 +228,7 @@ void dd_bcast(const gmx_domdec_t gmx_unused* dd, int gmx_unused nbytes, void gmx
 #if GMX_MPI
     if (dd->nnodes > 1)
     {
-        MPI_Bcast(data, nbytes, MPI_BYTE, DDMASTERRANK(dd), dd->mpi_comm_all);
+        MPI_Bcast(data, nbytes, MPI_BYTE, DDMAINRANK(dd), dd->mpi_comm_all);
     }
 #endif
 }
@@ -239,7 +239,7 @@ void dd_scatter(const gmx_domdec_t gmx_unused* dd, int gmx_unused nbytes, const 
     if (dd->nnodes > 1)
     {
         /* Some MPI implementions don't specify const */
-        MPI_Scatter(const_cast<void*>(src), nbytes, MPI_BYTE, dest, nbytes, MPI_BYTE, DDMASTERRANK(dd), dd->mpi_comm_all);
+        MPI_Scatter(const_cast<void*>(src), nbytes, MPI_BYTE, dest, nbytes, MPI_BYTE, DDMAINRANK(dd), dd->mpi_comm_all);
     }
     else
 #endif
@@ -261,7 +261,7 @@ void dd_gather(const gmx_domdec_t gmx_unused* dd,
     if (dd->nnodes > 1)
     {
         /* Some MPI implementions don't specify const */
-        MPI_Gather(const_cast<void*>(src), nbytes, MPI_BYTE, dest, nbytes, MPI_BYTE, DDMASTERRANK(dd), dd->mpi_comm_all);
+        MPI_Gather(const_cast<void*>(src), nbytes, MPI_BYTE, dest, nbytes, MPI_BYTE, DDMAINRANK(dd), dd->mpi_comm_all);
     }
     else
 #endif
@@ -289,7 +289,7 @@ void dd_scatterv(const gmx_domdec_t gmx_unused* dd,
         }
         /* Some MPI implementions don't specify const */
         MPI_Scatterv(
-                const_cast<void*>(sbuf), scounts, disps, MPI_BYTE, rbuf, rcount, MPI_BYTE, DDMASTERRANK(dd), dd->mpi_comm_all);
+                const_cast<void*>(sbuf), scounts, disps, MPI_BYTE, rbuf, rcount, MPI_BYTE, DDMAINRANK(dd), dd->mpi_comm_all);
     }
     else
 #endif
@@ -321,7 +321,7 @@ void dd_gatherv(const gmx_domdec_t gmx_unused* dd,
         }
         /* Some MPI implementions don't specify const */
         MPI_Gatherv(
-                const_cast<void*>(sbuf), scount, MPI_BYTE, rbuf, rcounts, disps, MPI_BYTE, DDMASTERRANK(dd), dd->mpi_comm_all);
+                const_cast<void*>(sbuf), scount, MPI_BYTE, rbuf, rcounts, disps, MPI_BYTE, DDMAINRANK(dd), dd->mpi_comm_all);
     }
     else
 #endif

@@ -123,9 +123,9 @@ static DeviceDetectionResult detectAllDeviceInformation(const PhysicalNodeCommun
 
     std::string errorMessage;
 
-    bool isMasterRankOfPhysicalNode = true;
+    bool isMainRankOfPhysicalNode = true;
 #if GMX_LIB_MPI
-    isMasterRankOfPhysicalNode = (physicalNodeComm.rank_ == 0);
+    isMainRankOfPhysicalNode = (physicalNodeComm.rank_ == 0);
 #else
     // Without an MPI library, this process is trivially the only one
     // on the physical node. This code runs before e.g. thread-MPI
@@ -133,7 +133,7 @@ static DeviceDetectionResult detectAllDeviceInformation(const PhysicalNodeCommun
     // Read-only access is enforced with providing those ranks with a
     // handle to a const object, so usage is also free of races.
     GMX_UNUSED_VALUE(physicalNodeComm);
-    isMasterRankOfPhysicalNode         = true;
+    isMainRankOfPhysicalNode           = true;
 #endif
 
     /* The SYCL and OpenCL support requires us to run detection on all
@@ -145,7 +145,7 @@ static DeviceDetectionResult detectAllDeviceInformation(const PhysicalNodeCommun
      * node making the same GPU API calls. */
     constexpr bool allRanksMustDetectGpus = (GMX_GPU_OPENCL != 0 || GMX_GPU_SYCL != 0);
     bool           gpusCanBeDetected      = false;
-    if (isMasterRankOfPhysicalNode || allRanksMustDetectGpus)
+    if (isMainRankOfPhysicalNode || allRanksMustDetectGpus)
     {
         std::string errorMessage;
         gpusCanBeDetected = isDeviceDetectionFunctional(&errorMessage);
@@ -166,11 +166,11 @@ static DeviceDetectionResult detectAllDeviceInformation(const PhysicalNodeCommun
 #if GMX_LIB_MPI
     if (!allRanksMustDetectGpus && (physicalNodeComm.size_ > 1))
     {
-        // Master rank must serialize the device information list and
+        // Main rank must serialize the device information list and
         // send it to the other ranks on this node.
         std::vector<char> buffer;
         int               sizeOfBuffer;
-        if (isMasterRankOfPhysicalNode)
+        if (isMainRankOfPhysicalNode)
         {
             gmx::InMemorySerializer writer;
             serializeDeviceInformations(deviceDetectionResult.deviceInfoList_, &writer);
@@ -184,7 +184,7 @@ static DeviceDetectionResult detectAllDeviceInformation(const PhysicalNodeCommun
         {
             // Send the list and deserialize it
             MPI_Bcast(buffer.data(), buffer.size(), MPI_BYTE, 0, physicalNodeComm.comm_);
-            if (!isMasterRankOfPhysicalNode)
+            if (!isMainRankOfPhysicalNode)
             {
                 gmx::InMemoryDeserializer reader(buffer, false);
                 deviceDetectionResult.deviceInfoList_ = deserializeDeviceInformations(&reader);
@@ -245,8 +245,8 @@ static void gmx_collect_hardware_mpi(const gmx::CpuInfo&             cpuInfo,
         std::array<int, numElementsCounts> countsLocal = { { 0 } };
         // Organize to sum values from only one rank within each node,
         // so we get the sum over all nodes.
-        bool isMasterRankOfPhysicalNode = (physicalNodeComm.rank_ == 0);
-        if (isMasterRankOfPhysicalNode)
+        bool isMainRankOfPhysicalNode = (physicalNodeComm.rank_ == 0);
+        if (isMainRankOfPhysicalNode)
         {
             countsLocal[0] = 1;
             countsLocal[1] = nCores;

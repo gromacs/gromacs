@@ -75,7 +75,7 @@ static inline ResetSignal convertToResetSignal(signed char sig)
 ResetHandler::ResetHandler(compat::not_null<SimulationSignal*> signal,
                            bool                                simulationsShareState,
                            int64_t                             nsteps,
-                           bool                                isMaster,
+                           bool                                isMain,
                            bool                                resetHalfway,
                            real                                maximumHoursToRun,
                            const MDLogger&                     mdlog,
@@ -101,7 +101,7 @@ ResetHandler::ResetHandler(compat::not_null<SimulationSignal*> signal,
         }
         simulationNeedsReset_ = true;
 
-        if (isMaster && (maximumHoursToRun > 0))
+        if (isMain && (maximumHoursToRun > 0))
         {
             rankCanSetSignal_ = true;
         }

@@ -66,7 +66,7 @@ constexpr int c_checkTurnDlbOffInterval = 20;
 
 /*! \brief Return the PME/PP force load ratio, or -1 if nothing was measured.
  *
- * Should only be called on the DD master node.
+ * Should only be called on the DD main node.
  */
 float dd_pme_f_ratio(const gmx_domdec_t* dd);
 

@@ -234,7 +234,7 @@ t_oriresdata::t_oriresdata(FILE*                     fplog,
 
     eigenOutput.resize(numExperiments * c_numEigenRealsPerExperiment);
 
-    /* Determine the reference structure on the master node.
+    /* Determine the reference structure on the main node.
      * Copy it to the other nodes after checking multi compatibility,
      * so we are sure the subsystems match before copying.
      */
@@ -250,7 +250,7 @@ t_oriresdata::t_oriresdata(FILE*                     fplog,
             // Not correct for free-energy with changing masses
             const real mass = local.m;
             // Note that only one rank per sim is supported.
-            if (isMasterSim(ms))
+            if (isMainSim(ms))
             {
                 referenceCoordinates_.push_back(x[i]);
                 for (int d = 0; d < DIM; d++)
@@ -264,7 +264,7 @@ t_oriresdata::t_oriresdata(FILE*                     fplog,
     }
 
     svmul(1.0 / mtot, com, com);
-    if (isMasterSim(ms))
+    if (isMainSim(ms))
     {
         for (auto& refCoord : referenceCoordinates_)
         {
@@ -299,7 +299,7 @@ t_oriresdata::t_oriresdata(FILE*                     fplog,
         check_multi_int(
                 fplog, ms, numFitAtoms, "the number of fit atoms for orientation restraining", FALSE);
         check_multi_int(fplog, ms, ir.nsteps, "nsteps", FALSE);
-        /* Copy the reference coordinates from the master to the other nodes */
+        /* Copy the reference coordinates from the main to the other nodes */
         gmx_sum_sim(DIM * referenceCoordinates_.size(), as_rvec_array(referenceCoordinates_.data())[0], ms);
     }
 

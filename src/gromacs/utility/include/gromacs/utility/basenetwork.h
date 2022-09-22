@@ -70,9 +70,9 @@ int gmx_node_num();
  *
  * For thread-MPI, returns zero before the threads have been started.
  * This allows code between the real MPI_Init() and the thread-MPI "init" to
- * still use this function to check for master node work as expected:
+ * still use this function to check for main node work as expected:
  * for thread-MPI, at that point the only thread of execution should behave as
- * if it the master node.
+ * if it the main node.
  */
 int gmx_node_rank();
 

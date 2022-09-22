@@ -72,9 +72,9 @@ public:
      *
      * \param[in] awhParams              Parameters for all biases in this simulation
      * \param[in] commRecord             Intra-simulation communication record
-     * \param[in] simulationMastersComm  MPI communicator for all master ranks of all simulations that share this bias
+     * \param[in] simulationMainComm     MPI communicator for all main ranks of all simulations that share this bias
      */
-    BiasSharing(const AwhParams& awhParams, const t_commrec& commRecord, MPI_Comm simulationMastersComm);
+    BiasSharing(const AwhParams& awhParams, const t_commrec& commRecord, MPI_Comm simulationMainComm);
 
     ~BiasSharing();
 
@@ -84,22 +84,22 @@ public:
     //! Returns the index of our simulation in the simulations sharing bias \p biasIndex
     int sharingSimulationIndex(int biasIndex) const { return sharingSimulationIndices_[biasIndex]; }
 
-    //! Sums data of type int over the master ranks of all simulations sharing bias \p biasIndex
-    void sumOverSharingMasterRanks(ArrayRef<int> data, int biasIndex) const;
+    //! Sums data of type int over the main ranks of all simulations sharing bias \p biasIndex
+    void sumOverSharingMainRanks(ArrayRef<int> data, int biasIndex) const;
 
-    //! Sums data of type long over the master ranks of all simulations sharing bias \p biasIndex
-    void sumOverSharingMasterRanks(ArrayRef<long> data, int biasIndex) const;
+    //! Sums data of type long over the main ranks of all simulations sharing bias \p biasIndex
+    void sumOverSharingMainRanks(ArrayRef<long> data, int biasIndex) const;
 
     /*! \brief Sums data of type int over all simulations sharing bias \p biasIndex
      *
-     * The summing is performed over the master ranks of the simulations sharing bias \p biasIndex
+     * The summing is performed over the main ranks of the simulations sharing bias \p biasIndex
      * and the result is broadcasted to the other ranks within each simulation.
      */
     void sumOverSharingSimulations(ArrayRef<int> data, int biasIndex) const;
 
     /*! \brief Sums data of type long over all simulations sharing bias \p biasIndex
      *
-     * The summing is performed over the master ranks of the simulations sharing bias \p biasIndex
+     * The summing is performed over the main ranks of the simulations sharing bias \p biasIndex
      * and the result is broadcasted to the other ranks within each simulation.
      */
     void sumOverSharingSimulations(ArrayRef<double> data, int biasIndex) const;
@@ -112,7 +112,7 @@ private:
     //! Reference to the intra-simulation communication record
     const t_commrec& commRecord_;
 
-    //! Communicator between master ranks sharing a bias, for each bias
+    //! Communicator between main ranks sharing a bias, for each bias
     std::vector<MPI_Comm> multiSimCommPerBias_;
     //! List of MPI communicators created by this object so we can destroy them on distruction
     std::vector<MPI_Comm> createdCommList_;
@@ -128,7 +128,7 @@ bool haveBiasSharingWithinSimulation(const AwhParams& awhParams);
 
 /*! \brief Checks whether biases are compatible for sharing between simulations, throws when not.
  *
- * Should be called simultaneously on the master rank of every simulation.
+ * Should be called simultaneously on the main rank of every simulation.
  * Note that this only checks for technical compatibility. It is up to
  * the user to check that the sharing physically makes sense.
  * Throws an exception when shared biases are not compatible.

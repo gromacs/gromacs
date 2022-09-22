@@ -85,13 +85,13 @@ EnergyData::EnergyData(StatePropagatorData*        statePropagatorData,
                        FILE*                       fplog,
                        t_fcdata*                   fcd,
                        const MDModulesNotifiers&   mdModulesNotifiers,
-                       bool                        isMasterRank,
+                       bool                        isMainRank,
                        ObservablesHistory*         observablesHistory,
                        StartingBehavior            startingBehavior,
                        bool                        simulationsShareHamiltonian,
                        pull_t*                     pullWork) :
-    element_(std::make_unique<Element>(this, isMasterRank, inputrec->fepvals->nstdhdl)),
-    isMasterRank_(isMasterRank),
+    element_(std::make_unique<Element>(this, isMainRank, inputrec->fepvals->nstdhdl)),
+    isMainRank_(isMainRank),
     forceVirialStep_(-1),
     shakeVirialStep_(-1),
     totalVirialStep_(-1),
@@ -127,7 +127,7 @@ EnergyData::EnergyData(StatePropagatorData*        statePropagatorData,
 
 void EnergyData::Element::scheduleTask(Step step, Time time, const RegisterRunFunction& registerRunFunction)
 {
-    if (!isMasterRank_)
+    if (!isMainRank_)
     {
         return;
     }
@@ -149,7 +149,7 @@ void EnergyData::Element::scheduleTask(Step step, Time time, const RegisterRunFu
 
 void EnergyData::teardown()
 {
-    if (inputrec_->nstcalcenergy > 0 && isMasterRank_)
+    if (inputrec_->nstcalcenergy > 0 && isMainRank_)
     {
         energyOutput_->printEnergyConservation(fplog_, inputrec_->simulation_part, EI_MD(inputrec_->eI));
         energyOutput_->printAverages(fplog_, groups_);
@@ -173,7 +173,7 @@ void EnergyData::setup(gmx_mdoutf* outf)
                                                    simulationsShareHamiltonian_,
                                                    mdModulesNotifiers_);
 
-    if (!isMasterRank_)
+    if (!isMainRank_)
     {
         return;
     }
@@ -184,7 +184,7 @@ void EnergyData::setup(gmx_mdoutf* outf)
     //       but we have all we need in this element,
     //       so we'll leave it here for now!
     double io = compute_io(inputrec_, top_global_.natoms, *groups_, energyOutput_->numEnergyTerms(), 1);
-    if ((io > 2000) && isMasterRank_)
+    if ((io > 2000) && isMainRank_)
     {
         fprintf(stderr, "\nWARNING: This run will generate roughly %.0f Mb of data\n\n", io);
     }
@@ -204,7 +204,7 @@ void EnergyData::setup(gmx_mdoutf* outf)
 
 std::optional<ITrajectoryWriterCallback> EnergyData::Element::registerTrajectoryWriterCallback(TrajectoryEvent event)
 {
-    if (event == TrajectoryEvent::EnergyWritingStep && isMasterRank_)
+    if (event == TrajectoryEvent::EnergyWritingStep && isMainRank_)
     {
         return [this](gmx_mdoutf* mdoutf, Step step, Time time, bool writeTrajectory, bool writeLog) {
             energyData_->write(mdoutf, step, time, writeTrajectory, writeLog);
@@ -215,7 +215,7 @@ std::optional<ITrajectoryWriterCallback> EnergyData::Element::registerTrajectory
 
 std::optional<SignallerCallback> EnergyData::Element::registerTrajectorySignallerCallback(gmx::TrajectoryEvent event)
 {
-    if (event == TrajectoryEvent::EnergyWritingStep && isMasterRank_)
+    if (event == TrajectoryEvent::EnergyWritingStep && isMainRank_)
     {
         return [this](Step step, Time /*unused*/) { energyWritingStep_ = step; };
     }
@@ -224,11 +224,11 @@ std::optional<SignallerCallback> EnergyData::Element::registerTrajectorySignalle
 
 std::optional<SignallerCallback> EnergyData::Element::registerEnergyCallback(EnergySignallerEvent event)
 {
-    if (event == EnergySignallerEvent::EnergyCalculationStep && isMasterRank_)
+    if (event == EnergySignallerEvent::EnergyCalculationStep && isMainRank_)
     {
         return [this](Step step, Time /*unused*/) { energyCalculationStep_ = step; };
     }
-    if (event == EnergySignallerEvent::FreeEnergyCalculationStep && isMasterRank_)
+    if (event == EnergySignallerEvent::FreeEnergyCalculationStep && isMainRank_)
     {
         return [this](Step step, Time /*unused*/) { freeEnergyCalculationStep_ = step; };
     }
@@ -417,12 +417,12 @@ void EnergyData::Element::saveCheckpointState(std::optional<WriteCheckpointData>
 {
     // Here we always store the ekinstate, even when it might be not be used at this step.
     // It would be cleaner make it conditional on when it is used (and thus up to date).
-    update_ekinstate(MASTER(cr) ? &energyData_->ekinstate_ : nullptr,
+    update_ekinstate(MAIN(cr) ? &energyData_->ekinstate_ : nullptr,
                      energyData_->ekind_,
                      energyData_->needToSumEkinhOld_,
                      cr);
 
-    if (MASTER(cr))
+    if (MAIN(cr))
     {
         energyData_->ekinstate_.bUpToDate = true;
 
@@ -435,11 +435,11 @@ void EnergyData::Element::saveCheckpointState(std::optional<WriteCheckpointData>
 void EnergyData::Element::restoreCheckpointState(std::optional<ReadCheckpointData> checkpointData,
                                                  const t_commrec*                  cr)
 {
-    if (MASTER(cr))
+    if (MAIN(cr))
     {
         doCheckpointData<CheckpointDataOperation::Read>(&checkpointData.value());
     }
-    energyData_->hasReadEkinFromCheckpoint_ = MASTER(cr) ? energyData_->ekinstate_.bUpToDate : false;
+    energyData_->hasReadEkinFromCheckpoint_ = MAIN(cr) ? energyData_->ekinstate_.bUpToDate : false;
     if (PAR(cr))
     {
         gmx_bcast(sizeof(hasReadEkinFromCheckpoint_),
@@ -448,7 +448,7 @@ void EnergyData::Element::restoreCheckpointState(std::optional<ReadCheckpointDat
     }
     if (energyData_->hasReadEkinFromCheckpoint_)
     {
-        // this takes care of broadcasting from master to agents
+        // this takes care of broadcasting from main to agents
         restore_ekinstate_from_state(cr, energyData_->ekind_, &energyData_->ekinstate_);
     }
 }
@@ -537,9 +537,9 @@ EnergyData::Element* EnergyData::element()
     return element_.get();
 }
 
-EnergyData::Element::Element(EnergyData* energyData, bool isMasterRank, int freeEnergyCalculationPeriod) :
+EnergyData::Element::Element(EnergyData* energyData, bool isMainRank, int freeEnergyCalculationPeriod) :
     energyData_(energyData),
-    isMasterRank_(isMasterRank),
+    isMainRank_(isMainRank),
     energyWritingStep_(-1),
     energyCalculationStep_(-1),
     freeEnergyCalculationStep_(-1),

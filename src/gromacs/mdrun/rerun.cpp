@@ -275,15 +275,15 @@ void gmx::LegacySimulator::do_rerun()
         auto* nonConstGlobalTopology                         = const_cast<gmx_mtop_t*>(&top_global);
         nonConstGlobalTopology->intermolecularExclusionGroup = genQmmmIndices(top_global);
     }
-    int*                fep_state = MASTER(cr) ? &state_global->fep_state : nullptr;
-    gmx::ArrayRef<real> lambda    = MASTER(cr) ? state_global->lambda : gmx::ArrayRef<real>();
+    int*                fep_state = MAIN(cr) ? &state_global->fep_state : nullptr;
+    gmx::ArrayRef<real> lambda    = MAIN(cr) ? state_global->lambda : gmx::ArrayRef<real>();
     initialize_lambdas(fplog,
                        ir->efep,
                        ir->bSimTemp,
                        *ir->fepvals,
                        ir->simtempvals->temperatures,
                        gmx::arrayRefFromArray(ir->opts.ref_t, ir->opts.ngtc),
-                       MASTER(cr),
+                       MAIN(cr),
                        fep_state,
                        lambda);
     const bool        simulationsShareState = false;
@@ -326,7 +326,7 @@ void gmx::LegacySimulator::do_rerun()
         // Local state only becomes valid now.
         dd_init_local_state(*cr->dd, state_global, state);
 
-        /* Distribute the charge groups over the nodes from the master node */
+        /* Distribute the charge groups over the nodes from the main node */
         dd_partition_system(fplog,
                             mdlog,
                             ir->init_step,
@@ -407,7 +407,7 @@ void gmx::LegacySimulator::do_rerun()
         observablesReducer.markAsReadyToReduce();
     }
 
-    if (MASTER(cr))
+    if (MAIN(cr))
     {
         fprintf(stderr,
                 "starting md rerun '%s', reading coordinates from"
@@ -442,7 +442,7 @@ void gmx::LegacySimulator::do_rerun()
     }
 
     rerun_fr.natoms = 0;
-    if (MASTER(cr))
+    if (MAIN(cr))
     {
         isLastStep = !read_first_frame(oenv, &status, opt2fn("-rerun", nfile, fnm), &rerun_fr, TRX_NEED_X);
         if (rerun_fr.natoms != top_global.natoms)
@@ -499,7 +499,7 @@ void gmx::LegacySimulator::do_rerun()
     auto stopHandler = stopHandlerBuilder->getStopHandlerMD(
             compat::not_null<SimulationSignal*>(&signals[eglsSTOPCOND]),
             false,
-            MASTER(cr),
+            MAIN(cr),
             ir->nstlist,
             mdrunOptions.reproducible,
             nstglobalcomm,
@@ -535,7 +535,7 @@ void gmx::LegacySimulator::do_rerun()
             t = step;
         }
 
-        if (ir->efep != FreeEnergyPerturbationType::No && MASTER(cr))
+        if (ir->efep != FreeEnergyPerturbationType::No && MAIN(cr))
         {
             if (rerun_fr.bLambda)
             {
@@ -552,7 +552,7 @@ void gmx::LegacySimulator::do_rerun()
             state_global->lambda = currentLambdas(step, *(ir->fepvals), state->fep_state);
         }
 
-        if (MASTER(cr))
+        if (MAIN(cr))
         {
             const bool constructVsites = ((vsite != nullptr) && mdrunOptions.rerunConstructVsites);
             if (constructVsites && haveDDAtomOrdering(*cr))
@@ -570,12 +570,12 @@ void gmx::LegacySimulator::do_rerun()
         if (haveDDAtomOrdering(*cr))
         {
             /* Repartition the domain decomposition */
-            const bool bMasterState = true;
+            const bool bMainState = true;
             dd_partition_system(fplog,
                                 mdlog,
                                 step,
                                 cr,
-                                bMasterState,
+                                bMainState,
                                 nstglobalcomm,
                                 state_global,
                                 top_global,
@@ -594,7 +594,7 @@ void gmx::LegacySimulator::do_rerun()
                                 mdrunOptions.verbose);
         }
 
-        if (MASTER(cr))
+        if (MAIN(cr))
         {
             EnergyOutput::printHeader(fplog, step, t); /* can we improve the information printed here? */
         }
@@ -771,7 +771,7 @@ void gmx::LegacySimulator::do_rerun()
            generate the new shake_vir, but test the veta value for convergence.  This will take some thought. */
 
         /* Output stuff */
-        if (MASTER(cr))
+        if (MAIN(cr))
         {
             const bool bCalcEnerStep = true;
             energyOutput.addDataAtEnergyStep(doFreeEnergyPerturbation,
@@ -825,7 +825,7 @@ void gmx::LegacySimulator::do_rerun()
         }
 
         /* Print the remaining wall clock time for the run */
-        if (isMasterSimMasterRank(ms, MASTER(cr)) && (mdrunOptions.verbose || gmx_got_usr_signal()))
+        if (isMainSimMainRank(ms, MAIN(cr)) && (mdrunOptions.verbose || gmx_got_usr_signal()))
         {
             if (shellfc)
             {
@@ -849,11 +849,11 @@ void gmx::LegacySimulator::do_rerun()
                           wcycle,
                           rerun_fr.x,
                           rerun_fr.box,
-                          MASTER(cr) && mdrunOptions.verbose,
+                          MAIN(cr) && mdrunOptions.verbose,
                           doRerun);
         }
 
-        if (MASTER(cr))
+        if (MAIN(cr))
         {
             /* read next frame from input trajectory */
             isLastStep = !read_next_frame(oenv, status, &rerun_fr);
@@ -887,7 +887,7 @@ void gmx::LegacySimulator::do_rerun()
     /* Stop measuring walltime */
     walltime_accounting_end_time(walltime_accounting);
 
-    if (MASTER(cr))
+    if (MAIN(cr))
     {
         close_trx(status);
     }

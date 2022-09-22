@@ -79,8 +79,8 @@ inline void gmxRVecZeroWorkaround<gmx::RVec>(gmx::RVec& value)
 
 /*! \internal \brief proxy object to access forces in an underlying buffer
  *
- * Depending on the index, either the underlying master buffer, or local
- * storage for outliers is accessed. This object does not own the master buffer.
+ * Depending on the index, either the underlying main buffer, or local
+ * storage for outliers is accessed. This object does not own the main buffer.
  *
  */
 template<class T>
@@ -101,7 +101,7 @@ public:
     {
         if (i >= rangeStart_ && i < rangeEnd_)
         {
-            return masterForceBuffer[i];
+            return mainForceBuffer[i];
         }
         else
         {
@@ -121,10 +121,10 @@ public:
 
     [[nodiscard]] bool inRange(int index) const { return (index >= rangeStart_ && index < rangeEnd_); }
 
-    void setMasterBuffer(gmx::ArrayRef<T> buffer) { masterForceBuffer = buffer; }
+    void setMainBuffer(gmx::ArrayRef<T> buffer) { mainForceBuffer = buffer; }
 
 private:
-    gmx::ArrayRef<T> masterForceBuffer;
+    gmx::ArrayRef<T> mainForceBuffer;
     int rangeStart_;
     int rangeEnd_;
 

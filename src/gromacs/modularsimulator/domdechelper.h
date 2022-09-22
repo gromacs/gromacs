@@ -141,7 +141,7 @@ private:
 
     //! Helper function unifying the DD partitioning calls in setup() and run()
     void partitionSystem(bool           verbose,
-                         bool           isMasterState,
+                         bool           isMainState,
                          int            nstglobalcomm,
                          gmx_wallcycle* wcycle,
                          t_state*       localState,

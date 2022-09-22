@@ -439,7 +439,7 @@ public:
     //! Write thermostat dof to checkpoint
     void writeCheckpoint(std::optional<WriteCheckpointData> checkpointData, const t_commrec* cr) override
     {
-        if (MASTER(cr))
+        if (MAIN(cr))
         {
             doCheckpointData(&checkpointData.value());
         }
@@ -447,7 +447,7 @@ public:
     //! Read thermostat dof from checkpoint
     void readCheckpoint(std::optional<ReadCheckpointData> checkpointData, const t_commrec* cr) override
     {
-        if (MASTER(cr))
+        if (MAIN(cr))
         {
             doCheckpointData(&checkpointData.value());
         }
@@ -683,7 +683,7 @@ void VelocityScalingTemperatureCoupling::doCheckpointData(CheckpointData<operati
 void VelocityScalingTemperatureCoupling::saveCheckpointState(std::optional<WriteCheckpointData> checkpointData,
                                                              const t_commrec*                   cr)
 {
-    if (MASTER(cr))
+    if (MAIN(cr))
     {
         doCheckpointData<CheckpointDataOperation::Write>(&checkpointData.value());
     }
@@ -697,7 +697,7 @@ void VelocityScalingTemperatureCoupling::saveCheckpointState(std::optional<Write
 void VelocityScalingTemperatureCoupling::restoreCheckpointState(std::optional<ReadCheckpointData> checkpointData,
                                                                 const t_commrec* cr)
 {
-    if (MASTER(cr))
+    if (MAIN(cr))
     {
         doCheckpointData<CheckpointDataOperation::Read>(&checkpointData.value());
     }

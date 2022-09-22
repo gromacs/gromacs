@@ -250,7 +250,7 @@ private:
     Step lastStep_;
 
     // Access to ISimulator data
-    //! Full simulation state (only non-nullptr on master rank).
+    //! Full simulation state (only non-nullptr on main rank).
     t_state* globalState_;
     //! Local simulation state
     t_state* localState_;

@@ -156,7 +156,8 @@ public:
     gmx::PotentialPointData calculate(gmx::Vector v, gmx::Vector v0, gmx_unused double t);
 
     /*!
-     * \brief An update function to be called on the simulation master rank/thread periodically by the Restraint framework.
+     * \brief An update function to be called on the simulation main rank/thread
+     * periodically by the Restraint framework.
      *
      * Defining this function in a plugin potential is optional. If the function is defined,
      * the restraint framework calls this function (on the first rank only in a parallel simulation) before calling calculate().
@@ -250,7 +251,8 @@ public:
     };
 
     /*!
-     * \brief An update function to be called on the simulation master rank/thread periodically by the Restraint framework.
+     * \brief An update function to be called on the simulation main rank/thread
+     * periodically by the Restraint framework.
      *
      * Implements optional override of gmx::IRestraintPotential::update
      *

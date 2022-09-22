@@ -374,7 +374,7 @@ std::shared_ptr<Session> ContextImpl::launch(const Workflow& work)
         LogFilePtr       logFileGuard     = nullptr;
         gmx_multisim_t*  ms               = simulationContext.multiSimulation_.get();
         std::tie(startingBehavior, logFileGuard) =
-                handleRestart(findIsSimulationMasterRank(ms, simulationContext.simulationCommunicator_),
+                handleRestart(findIsSimulationMainRank(ms, simulationContext.simulationCommunicator_),
                               simulationContext.simulationCommunicator_,
                               ms,
                               options.mdrunOptions.appendingBehavior,

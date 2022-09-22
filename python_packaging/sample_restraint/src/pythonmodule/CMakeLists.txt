@@ -25,7 +25,7 @@ target_link_libraries(gmxapi_extension PRIVATE
                       gmxapi_extension_test
                       )
 
-if (GMXAPI_EXTENSION_MASTER_PROJECT)
+if (GMXAPI_EXTENSION_MAIN_PROJECT)
     install(TARGETS gmxapi_extension
             LIBRARY DESTINATION ${GMXPLUGIN_INSTALL_PATH}
             ARCHIVE DESTINATION ${GMXPLUGIN_INSTALL_PATH}

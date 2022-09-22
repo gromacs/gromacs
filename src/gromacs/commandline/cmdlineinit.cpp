@@ -105,20 +105,20 @@ void broadcastArguments(int* argc, char*** argv)
     }
     broadcastWorld(sizeof(*argc), argc);
 
-    const bool isMaster = (gmx_node_rank() == 0);
-    if (!isMaster)
+    const bool isMain = (gmx_node_rank() == 0);
+    if (!isMain)
     {
         snew(*argv, *argc + 1);
     }
     for (int i = 0; i < *argc; i++)
     {
         int len;
-        if (isMaster)
+        if (isMain)
         {
             len = std::strlen((*argv)[i]) + 1;
         }
         broadcastWorld(sizeof(len), &len);
-        if (!isMaster)
+        if (!isMain)
         {
             snew((*argv)[i], len);
         }

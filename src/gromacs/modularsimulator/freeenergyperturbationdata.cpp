@@ -69,8 +69,8 @@ FreeEnergyPerturbationData::FreeEnergyPerturbationData(FILE* fplog, const t_inpu
 {
     std::fill(lambda_.begin(), lambda_.end(), 0);
     // The legacy implementation only filled the lambda vector in state_global, which is only
-    // available on master. We have the lambda vector available everywhere, so we pass a `true`
-    // for isMaster on all ranks. See #3647.
+    // available on main. We have the lambda vector available everywhere, so we pass a `true`
+    // for isMain on all ranks. See #3647.
     initialize_lambdas(fplog_,
                        inputrec_.efep,
                        inputrec_.bSimTemp,
@@ -211,7 +211,7 @@ void FreeEnergyPerturbationData::Element::doCheckpointData(CheckpointData<operat
 void FreeEnergyPerturbationData::Element::saveCheckpointState(std::optional<WriteCheckpointData> checkpointData,
                                                               const t_commrec*                   cr)
 {
-    if (MASTER(cr))
+    if (MAIN(cr))
     {
         freeEnergyPerturbationData_->doCheckpointData<CheckpointDataOperation::Write>(
                 &checkpointData.value());
@@ -222,7 +222,7 @@ void FreeEnergyPerturbationData::Element::saveCheckpointState(std::optional<Writ
 void FreeEnergyPerturbationData::Element::restoreCheckpointState(std::optional<ReadCheckpointData> checkpointData,
                                                                  const t_commrec* cr)
 {
-    if (MASTER(cr))
+    if (MAIN(cr))
     {
         freeEnergyPerturbationData_->doCheckpointData<CheckpointDataOperation::Read>(
                 &checkpointData.value());

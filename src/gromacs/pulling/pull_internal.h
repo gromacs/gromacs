@@ -232,7 +232,7 @@ struct pull_comm_t
     MPI_Comm mpi_comm_com; /* Communicator for pulling */
 #endif
     int nparticipate; /* The number of ranks participating */
-    bool isMasterRank; /* Tells whether our rank is the master rank and thus should add the pull virial */
+    bool isMainRank; /* Tells whether our rank is the main rank and thus should add the pull virial */
 
     int64_t setup_count; /* The number of decomposition calls */
     int64_t must_count;  /* The last count our rank needed to be part */

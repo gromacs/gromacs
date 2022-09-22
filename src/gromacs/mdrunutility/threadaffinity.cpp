@@ -95,8 +95,8 @@ static bool invalidWithinSimulation(const t_commrec* cr, bool invalidLocally)
     {
         int value = invalidLocally ? 1 : 0;
         int globalValue;
-        MPI_Reduce(&value, &globalValue, 1, MPI_INT, MPI_LOR, MASTERRANK(cr), cr->mpi_comm_mysim);
-        return SIMMASTER(cr) ? (globalValue != 0) : invalidLocally;
+        MPI_Reduce(&value, &globalValue, 1, MPI_INT, MPI_LOR, MAINRANK(cr), cr->mpi_comm_mysim);
+        return SIMMAIN(cr) ? (globalValue != 0) : invalidLocally;
     }
 #else
     GMX_UNUSED_VALUE(cr);

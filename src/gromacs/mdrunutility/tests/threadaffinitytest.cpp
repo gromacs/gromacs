@@ -67,7 +67,7 @@ ThreadAffinityTestHelper::ThreadAffinityTestHelper()
     snew(cr_, 1);
     cr_->nnodes = gmx_node_num();
     cr_->nodeid = gmx_node_rank();
-    // Default communicator is needed for [SIM]MASTER(cr) to work
+    // Default communicator is needed for [SIM]MAIN(cr) to work
     // TODO: Should get cleaned up once thread affinity works with
     //       communicators rather than the full cr (part of #2395)
     cr_->sizeOfDefaultCommunicator = gmx_node_num();

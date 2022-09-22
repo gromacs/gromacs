@@ -23,9 +23,9 @@ list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 # Check if Python package is being built directly or via add_subdirectory.
 # I.e. is this being built as a standalone project or as part of the GROMACS
 # build tree (for testing)?
-set(GMXAPI_EXTENSION_MASTER_PROJECT OFF)
+set(GMXAPI_EXTENSION_MAIN_PROJECT OFF)
 if (CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR)
-    set(GMXAPI_EXTENSION_MASTER_PROJECT ON)
+    set(GMXAPI_EXTENSION_MAIN_PROJECT ON)
 endif()
 
 option(GMXAPI_EXTENSION_DOWNLOAD_PYBIND ON)
@@ -48,7 +48,7 @@ else()
     find_package(pybind11 2.6 REQUIRED)
 endif()
 
-if(GMXAPI_EXTENSION_MASTER_PROJECT)
+if(GMXAPI_EXTENSION_MAIN_PROJECT)
     ######################################################
     # The following is boiler-plate recommended by GROMACS
     ######################################################
@@ -140,7 +140,7 @@ set(GMXPLUGIN_INSTALL_PATH ${GMXPLUGIN_DEFAULT_SITE_PACKAGES} CACHE PATH
     GMXPLUGIN_USER_INSTALL on or off to specify the installation's site-packages directory or the 'user' site-packages \
     directory.")
 
-if(GMXAPI_EXTENSION_MASTER_PROJECT)
+if(GMXAPI_EXTENSION_MAIN_PROJECT)
     message(STATUS "Python module will be installed to GMXPLUGIN_INSTALL_PATH cache value ${GMXPLUGIN_INSTALL_PATH}")
 endif()
 
@@ -164,7 +164,7 @@ if(BUILD_TESTING AND (NOT DEFINED GMX_BUILD_UNITTESTS OR GMX_BUILD_UNITTESTS))
     if(DOWNLOAD_GOOGLETEST)
         # Download and unpack googletest at configure time. For simplicity, we pin to the same
         # googletest ref as in
-        #    https://gitlab.com/gromacs/gromacs/-/blob/master/src/external/googletest/README.Gromacs
+        #    https://gitlab.com/gromacs/gromacs/-/blob/main/src/external/googletest/README.Gromacs
         # Reference https://google.github.io/googletest/quickstart-cmake.html#set-up-a-project
         include(FetchContent)
         FetchContent_Declare(
@@ -181,7 +181,7 @@ if(BUILD_TESTING AND (NOT DEFINED GMX_BUILD_UNITTESTS OR GMX_BUILD_UNITTESTS))
         add_library(GTest::GTest ALIAS gtest)
         add_library(GTest::Main ALIAS gtest_main)
     else()
-        if(GMXAPI_EXTENSION_MASTER_PROJECT)
+        if(GMXAPI_EXTENSION_MAIN_PROJECT)
             # Allow project maintainers to bundle or provide googletest sources in
             # a subdirectory `external`.
             if (DEFINED ENV{CI})

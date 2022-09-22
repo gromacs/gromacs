@@ -92,7 +92,7 @@ struct gmx_mdoutf
     gmx::IMDOutputProvider*        outputProvider;
     const gmx::MDModulesNotifiers* mdModulesNotifiers;
     bool                           simulationsShareState;
-    MPI_Comm                       mastersComm;
+    MPI_Comm                       mainRanksComm;
 };
 
 
@@ -140,10 +140,10 @@ gmx_mdoutf_t init_mdoutf(FILE*                          fplog,
     of->simulationsShareState = simulationsShareState;
     if (of->simulationsShareState)
     {
-        of->mastersComm = ms->mastersComm_;
+        of->mainRanksComm = ms->mainRanksComm_;
     }
 
-    if (MASTER(cr))
+    if (MAIN(cr))
     {
         of->bKeepAndNumCPT = mdrunOptions.checkpointOptions.keepAndNumberCheckpointFiles;
 
@@ -529,7 +529,7 @@ void mdoutf_write_checkpoint(gmx_mdoutf_t                    of,
                      *(of->mdModulesNotifiers),
                      modularSimulatorCheckpointData,
                      of->simulationsShareState,
-                     of->mastersComm);
+                     of->mainRanksComm);
 }
 
 void mdoutf_write_to_trajectory_files(FILE*                           fplog,
@@ -557,7 +557,7 @@ void mdoutf_write_to_trajectory_files(FILE*                           fplog,
         {
             if (mdof_flags & (MDOF_X | MDOF_X_COMPRESSED))
             {
-                auto globalXRef = MASTER(cr) ? state_global->x : gmx::ArrayRef<gmx::RVec>();
+                auto globalXRef = MAIN(cr) ? state_global->x : gmx::ArrayRef<gmx::RVec>();
                 dd_collect_vec(cr->dd,
                                state_local->ddp_count,
                                state_local->ddp_count_cg_gl,
@@ -567,7 +567,7 @@ void mdoutf_write_to_trajectory_files(FILE*                           fplog,
             }
             if (mdof_flags & MDOF_V)
             {
-                auto globalVRef = MASTER(cr) ? state_global->v : gmx::ArrayRef<gmx::RVec>();
+                auto globalVRef = MAIN(cr) ? state_global->v : gmx::ArrayRef<gmx::RVec>();
                 dd_collect_vec(cr->dd,
                                state_local->ddp_count,
                                state_local->ddp_count_cg_gl,
@@ -579,9 +579,9 @@ void mdoutf_write_to_trajectory_files(FILE*                           fplog,
         f_global = of->f_global;
         if (mdof_flags & MDOF_F)
         {
-            auto globalFRef = MASTER(cr) ? gmx::arrayRefFromArray(
+            auto globalFRef = MAIN(cr) ? gmx::arrayRefFromArray(
                                       reinterpret_cast<gmx::RVec*>(of->f_global), of->natoms_global)
-                                         : gmx::ArrayRef<gmx::RVec>();
+                                       : gmx::ArrayRef<gmx::RVec>();
             dd_collect_vec(cr->dd,
                            state_local->ddp_count,
                            state_local->ddp_count_cg_gl,
@@ -598,7 +598,7 @@ void mdoutf_write_to_trajectory_files(FILE*                           fplog,
         f_global = as_rvec_array(f_local.data());
     }
 
-    if (MASTER(cr))
+    if (MAIN(cr))
     {
         if (mdof_flags & MDOF_CPT)
         {

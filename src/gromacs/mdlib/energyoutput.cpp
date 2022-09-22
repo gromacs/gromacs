@@ -537,7 +537,7 @@ EnergyOutput::EnergyOutput(ener_file*                fp_ene,
     }
     sfree(grpnms);
 
-    /* Note that fp_ene should be valid on the master rank and null otherwise */
+    /* Note that fp_ene should be valid on the main rank and null otherwise */
     if (fp_ene != nullptr && startingBehavior != StartingBehavior::RestartWithAppending)
     {
         do_enxnms(fp_ene, &ebin_->nener, &ebin_->enm);

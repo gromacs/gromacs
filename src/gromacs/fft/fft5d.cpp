@@ -157,7 +157,7 @@ fft5d_plan fft5d_plan_3d(int                NG,
 {
 
     int  P[2], prank[2], i;
-    bool bMaster;
+    bool bMain;
     int  rNG, rMG, rKG;
     int *N0 = nullptr, *N1 = nullptr, *M0 = nullptr, *M1 = nullptr, *K0 = nullptr, *K1 = nullptr,
         *oN0 = nullptr, *oN1 = nullptr, *oM0 = nullptr, *oM1 = nullptr, *oK0 = nullptr, *oK1 = nullptr;
@@ -196,7 +196,7 @@ fft5d_plan fft5d_plan_3d(int                NG,
         prank[1] = 0;
     }
 
-    bMaster = prank[0] == 0 && prank[1] == 0;
+    bMain = prank[0] == 0 && prank[1] == 0;
 
 
     if (debug)
@@ -204,7 +204,7 @@ fft5d_plan fft5d_plan_3d(int                NG,
         fprintf(debug, "FFT5D: Using %dx%d rank grid, rank %d,%d\n", P[0], P[1], prank[0], prank[1]);
     }
 
-    if (bMaster)
+    if (bMain)
     {
         if (debug)
         {
@@ -232,7 +232,7 @@ fft5d_plan fft5d_plan_3d(int                NG,
 
     if (NG == 0 || MG == 0 || KG == 0)
     {
-        if (bMaster)
+        if (bMain)
         {
             printf("FFT5D: FATAL: Datasize cannot be zero in any dimension\n");
         }
@@ -483,7 +483,7 @@ fft5d_plan fft5d_plan_3d(int                NG,
     /*if not FFTW - then we don't do a 3d plan but instead use only 1D plans */
     /* It is possible to use the 3d plan with OMP threads - but in that case it is not allowed to be
      * called from within a parallel region. For now deactivated. If it should be supported it has
-     * to made sure that that the execute of the 3d plan is in a master/serial block (since it
+     * to made sure that that the execute of the 3d plan is in a main/serial block (since it
      * contains it own parallel region) and that the 3d plan is faster than the 1d plan.
      */
     if ((!(flags & FFT5D_INPLACE)) && (!(P[0] > 1 || P[1] > 1))
@@ -1286,7 +1286,7 @@ void fft5d_execute(fft5d_plan plan, int thread, fft5d_time times)
 #else
                 wallcycle_stop(times, WallCycleCounter::PmeFftComm);
 #endif
-            }       /*master*/
+            }       /*main*/
         }           /* bPrallelDim */
 #pragma omp barrier /*both needed for parallel and non-parallel dimension (either have to wait on data from AlltoAll or from last FFT*/
 

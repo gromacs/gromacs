@@ -48,7 +48,7 @@
 #include "gromacs/utility/arrayref.h"
 
 /*! \internal
- * \brief Distribution of atom groups over the domain (only available on the master rank)
+ * \brief Distribution of atom groups over the domain (only available on the main rank)
  */
 struct AtomDistribution
 {
@@ -76,7 +76,7 @@ struct AtomDistribution
 /*! \brief Returns state scatter/gather buffer element counts and displacements
  *
  * NOTE: Should only be called with a pointer to a valid ma struct
- *       (only available on the master rank).
+ *       (only available on the main rank).
  */
 void get_commbuffer_counts(AtomDistribution* ma, int** counts, int** disps);
 

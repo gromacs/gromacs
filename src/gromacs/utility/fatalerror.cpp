@@ -180,8 +180,8 @@ void gmx_exit_on_fatal_error(ExitType exitType, int returnValue)
 #    else
                 break;
 #    endif
-            case ExitType_NonMasterAbort:
-                // Let all other processes wait till the master has printed
+            case ExitType_NonMainAbort:
+                // Let all other processes wait till the main has printed
                 // the error message and issued MPI_Abort.
                 MPI_Barrier(MPI_COMM_WORLD);
                 break;
@@ -204,12 +204,12 @@ void gmx_exit_on_fatal_error(ExitType exitType, int returnValue)
 void gmx_fatal_mpi_va(int /*f_errno*/,
                       const char* file,
                       int         line,
-                      gmx_bool    bMaster,
+                      gmx_bool    bMain,
                       gmx_bool    bFinalize,
                       const char* fmt,
                       va_list     ap)
 {
-    if (bMaster)
+    if (bMain)
     {
         std::string msg = gmx::formatStringV(fmt, ap);
         call_error_handler("fatal", file, line, msg);
@@ -218,7 +218,7 @@ void gmx_fatal_mpi_va(int /*f_errno*/,
     ExitType exitType = ExitType_CleanExit;
     if (!bFinalize)
     {
-        exitType = bMaster ? ExitType_Abort : ExitType_NonMasterAbort;
+        exitType = bMain ? ExitType_Abort : ExitType_NonMainAbort;
     }
     gmx_exit_on_fatal_error(exitType, 1);
 }

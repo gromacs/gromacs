@@ -95,7 +95,7 @@ struct DensityFittingForceProviderState
      */
     void writeState(KeyValueTreeObjectBuilder kvtBuilder, const std::string& identifier) const;
 
-    /*! \brief Read the internal parameters from the checkpoint file on master
+    /*! \brief Read the internal parameters from the checkpoint file on main
      * \param[in] kvtData holding the checkpoint information
      * \param[in] identifier identifies the data in a key-value-tree
      */

@@ -106,9 +106,9 @@ void RestraintForceProvider::calculateForces(const ForceProviderInput& forceProv
     // In the case of a single-atom site, r1 and r2 are now correct if local or [0,0,0] if not local.
 
 
-    // Master rank update call-back. This needs to be moved to a discrete place in the
+    // Main rank update call-back. This needs to be moved to a discrete place in the
     // time step to avoid extraneous barriers. The code would be prettier with "futures"...
-    if ((cr.dd == nullptr) || MASTER(&cr))
+    if ((cr.dd == nullptr) || MAIN(&cr))
     {
         restraint_->update(RVec(r1), r2, t);
     }

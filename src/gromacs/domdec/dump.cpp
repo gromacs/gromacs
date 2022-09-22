@@ -68,14 +68,14 @@ void write_dd_grid_pdb(const char* fn, int64_t step, gmx_domdec_t* dd, matrix bo
     copy_rvec(dd->comm->cell_x1, grid_s[1]);
 
     std::vector<gmx::RVec> grid_r;
-    if (DDMASTER(dd))
+    if (DDMAIN(dd))
     {
         grid_r.resize(2 * dd->nnodes);
     }
 
-    dd_gather(dd, 2 * sizeof(rvec), grid_s, DDMASTER(dd) ? grid_r.data() : nullptr);
+    dd_gather(dd, 2 * sizeof(rvec), grid_s, DDMAIN(dd) ? grid_r.data() : nullptr);
 
-    if (DDMASTER(dd))
+    if (DDMAIN(dd))
     {
         for (d = 0; d < DIM; d++)
         {

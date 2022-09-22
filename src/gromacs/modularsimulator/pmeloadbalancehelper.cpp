@@ -108,7 +108,7 @@ void PmeLoadBalanceHelper::run(gmx::Step step, gmx::Time gmx_unused time)
     // simulationWork.useGpuPmePpCommunication as is done in main MD loop.
     pme_loadbal_do(pme_loadbal_,
                    cr_,
-                   (isVerbose_ && MASTER(cr_)) ? stderr : nullptr,
+                   (isVerbose_ && MAIN(cr_)) ? stderr : nullptr,
                    fplog_,
                    mdlog_,
                    *inputrec_,

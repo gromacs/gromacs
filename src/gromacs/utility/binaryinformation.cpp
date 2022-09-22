@@ -361,7 +361,7 @@ void gmx_print_version_info(gmx::TextWriter* writer)
 
 
     /* TODO: The below strings can be quite long, so it would be nice to wrap
-     * them. Can wait for later, as the master branch has ready code to do all
+     * them. Can wait for later, as the main branch has ready code to do all
      * that. */
     writer->writeLine(formatString("C compiler:         %s", BUILD_C_COMPILER));
     writer->writeLine(formatString(

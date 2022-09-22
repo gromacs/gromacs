@@ -244,10 +244,10 @@ static void manage_number_of_openmp_threads(const gmx::MDLogger& mdlog,
 
 #if GMX_THREAD_MPI
     /* modth is shared among tMPI threads, so for thread safety, the
-     * detection is done on the master only. It is not thread-safe
+     * detection is done on the main only. It is not thread-safe
      * with multiple simulations, but that's anyway not supported by
      * tMPI. */
-    if (!SIMMASTER(cr))
+    if (!SIMMAIN(cr))
     {
         return;
     }
@@ -478,7 +478,7 @@ void gmx_omp_nthreads_init(const gmx::MDLogger& mdlog,
     manage_number_of_openmp_threads(
             mdlog, cr, bOMP, maxThreads, omp_nthreads_req, omp_nthreads_pme_req, bThisNodePMEOnly, numRanksOnThisNode, bSepPME);
 #if GMX_THREAD_MPI
-    /* Non-master threads have to wait for the OpenMP management to be
+    /* Non-main threads have to wait for the OpenMP management to be
      * done, so that code elsewhere that uses OpenMP can be certain
      * the setup is complete. */
     if (PAR(cr))

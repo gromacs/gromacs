@@ -837,7 +837,7 @@ int gmx_disre(int argc, char* argv[])
                 *topInfo.mtop(),
                 ir,
                 DisResRunMode::AnalysisTool,
-                DDRole::Master,
+                DDRole::Main,
                 NumRanks::Single,
                 MPI_COMM_NULL,
                 nullptr,

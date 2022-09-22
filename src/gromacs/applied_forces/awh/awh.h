@@ -195,7 +195,7 @@ public:
     /*! \brief
      * Update the AWH history in preparation for writing to checkpoint file.
      *
-     * Should be called at least on the master rank at checkpoint steps.
+     * Should be called at least on the main rank at checkpoint steps.
      *
      * Should be called with a valid \p awhHistory (is checked).
      *
@@ -207,7 +207,7 @@ public:
      * Allocate and initialize an AWH history with the given AWH state.
      *
      * This function should be called at the start of a new simulation
-     * at least on the master rank.
+     * at least on the main rank.
      * Note that only constant data will be initialized here.
      * History data is set by \ref Awh::updateHistory.
      *
@@ -218,7 +218,7 @@ public:
     /*! \brief Restore the AWH state from the given history.
      *
      * Should be called on all ranks (for internal MPI broadcast).
-     * Should pass a point to an AwhHistory on the master rank that
+     * Should pass a point to an AwhHistory on the main rank that
      * is compatible with the AWH setup in this simulation. Will throw
      * an exception if it is not compatible.
      *

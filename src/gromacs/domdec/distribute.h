@@ -55,7 +55,7 @@ namespace gmx
 class MDLogger;
 }
 
-/*! \brief Distributes the state from the master rank to all DD ranks */
+/*! \brief Distributes the state from the main rank to all DD ranks */
 void distributeState(const gmx::MDLogger& mdlog,
                      gmx_domdec_t*        dd,
                      const gmx_mtop_t&    mtop,
@@ -63,7 +63,7 @@ void distributeState(const gmx::MDLogger& mdlog,
                      const gmx_ddbox_t&   ddbox,
                      t_state*             state_local);
 
-/*! \brief Distribute the dfhist struct from the master rank to all DD ranks
+/*! \brief Distribute the dfhist struct from the main rank to all DD ranks
  *
  * Used by the modular simulator checkpointing
  *

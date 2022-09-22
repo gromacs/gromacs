@@ -159,7 +159,7 @@ public:
      * \param[in] biasSharing            Pointer to object for sharing bias over simulations, can be nullptr
      * \param[in] biasInitFilename       Name of file to read PMF and target from.
      * \param[in] thisRankWillDoIO       Tells whether this MPI rank will do I/O (checkpointing, AWH output),
-     * normally (only) the master rank does I/O.
+     *                                   normally (only) the main rank does I/O.
      * \param[in] disableUpdateSkips     If to disable update skips, useful for testing.
      */
     Bias(int                            biasIndexInCollection,
@@ -238,9 +238,9 @@ public:
     }
 
     /*! \brief
-     * Restore the bias state from history on the master rank and broadcast it.
+     * Restore the bias state from history on the main rank and broadcast it.
      *
-     * \param[in] biasHistory  Bias history struct, only allowed to be nullptr on non-master ranks.
+     * \param[in] biasHistory  Bias history struct, only allowed to be nullptr on worker ranks.
      * \param[in] cr           The communication record.
      */
     void restoreStateFromHistory(const AwhBiasHistory* biasHistory, const t_commrec* cr);

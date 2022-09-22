@@ -33,7 +33,7 @@
  */
 /* \internal \file
  *
- * \brief Implements functions to collect state data to the master rank.
+ * \brief Implements functions to collect state data to the main rank.
  *
  * \author Berk Hess <hess@kth.se>
  * \ingroup module_domdec
@@ -60,9 +60,9 @@ static void dd_collect_cg(gmx_domdec_t*            dd,
                           const int                ddpCountCgGl,
                           gmx::ArrayRef<const int> localCGNumbers)
 {
-    if (ddpCount == dd->comm->master_cg_ddp_count)
+    if (ddpCount == dd->comm->main_cg_ddp_count)
     {
-        /* The master has the correct distribution */
+        /* The main has the correct distribution */
         return;
     }
 
@@ -92,11 +92,11 @@ static void dd_collect_cg(gmx_domdec_t*            dd,
 
     AtomDistribution* ma = dd->ma.get();
 
-    /* Collect the charge group and atom counts on the master */
+    /* Collect the charge group and atom counts on the main */
     int localBuffer[2] = { static_cast<int>(atomGroups.size()), nat_home };
-    dd_gather(dd, 2 * sizeof(int), localBuffer, DDMASTER(dd) ? ma->intBuffer.data() : nullptr);
+    dd_gather(dd, 2 * sizeof(int), localBuffer, DDMAIN(dd) ? ma->intBuffer.data() : nullptr);
 
-    if (DDMASTER(dd))
+    if (DDMAIN(dd))
     {
         int groupOffset = 0;
         for (int rank = 0; rank < dd->nnodes; rank++)
@@ -133,29 +133,29 @@ static void dd_collect_cg(gmx_domdec_t*            dd,
         }
     }
 
-    /* Collect the charge group indices on the master */
+    /* Collect the charge group indices on the main */
     dd_gatherv(dd,
                atomGroups.size() * sizeof(int),
                atomGroups.data(),
-               DDMASTER(dd) ? ma->intBuffer.data() : nullptr,
-               DDMASTER(dd) ? ma->intBuffer.data() + dd->nnodes : nullptr,
-               DDMASTER(dd) ? ma->atomGroups.data() : nullptr);
+               DDMAIN(dd) ? ma->intBuffer.data() : nullptr,
+               DDMAIN(dd) ? ma->intBuffer.data() + dd->nnodes : nullptr,
+               DDMAIN(dd) ? ma->atomGroups.data() : nullptr);
 
-    dd->comm->master_cg_ddp_count = ddpCount;
+    dd->comm->main_cg_ddp_count = ddpCount;
 }
 
 static void dd_collect_vec_sendrecv(gmx_domdec_t*                  dd,
                                     gmx::ArrayRef<const gmx::RVec> lv,
                                     gmx::ArrayRef<gmx::RVec>       v)
 {
-    if (!DDMASTER(dd))
+    if (!DDMAIN(dd))
     {
 #if GMX_MPI
         const int numHomeAtoms = dd->comm->atomRanges.numHomeAtoms();
         MPI_Send(const_cast<void*>(static_cast<const void*>(lv.data())),
                  numHomeAtoms * sizeof(rvec),
                  MPI_BYTE,
-                 dd->masterrank,
+                 dd->mainrank,
                  dd->rank,
                  dd->mpi_comm_all);
 #endif
@@ -164,7 +164,7 @@ static void dd_collect_vec_sendrecv(gmx_domdec_t*                  dd,
     {
         AtomDistribution& ma = *dd->ma;
 
-        int rank      = dd->masterrank;
+        int rank      = dd->mainrank;
         int localAtom = 0;
         for (const int& globalAtom : ma.domainGroups[rank].atomGroups)
         {
@@ -214,7 +214,7 @@ static void dd_collect_vec_gatherv(gmx_domdec_t*                  dd,
     int* recvCounts    = nullptr;
     int* displacements = nullptr;
 
-    if (DDMASTER(dd))
+    if (DDMAIN(dd))
     {
         get_commbuffer_counts(dd->ma.get(), &recvCounts, &displacements);
     }
@@ -225,9 +225,9 @@ static void dd_collect_vec_gatherv(gmx_domdec_t*                  dd,
                lv.data(),
                recvCounts,
                displacements,
-               DDMASTER(dd) ? dd->ma->rvecBuffer.data() : nullptr);
+               DDMAIN(dd) ? dd->ma->rvecBuffer.data() : nullptr);
 
-    if (DDMASTER(dd))
+    if (DDMAIN(dd))
     {
         const AtomDistribution& ma = *dd->ma;
 
@@ -267,7 +267,7 @@ void dd_collect_state(gmx_domdec_t* dd, const t_state* state_local, t_state* sta
 {
     int nh = state_local->nhchainlength;
 
-    if (DDMASTER(dd))
+    if (DDMAIN(dd))
     {
         GMX_RELEASE_ASSERT(state->nhchainlength == nh,
                            "The global and local Nose-Hoover chain lengths should match");

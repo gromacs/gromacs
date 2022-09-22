@@ -64,14 +64,14 @@ ConstraintsElement<variable>::ConstraintsElement(Constraints*                con
                                                  StatePropagatorData*        statePropagatorData,
                                                  EnergyData*                 energyData,
                                                  FreeEnergyPerturbationData* freeEnergyPerturbationData,
-                                                 bool                        isMaster,
+                                                 bool                        isMain,
                                                  FILE*                       fplog,
                                                  const t_inputrec*           inputrec,
                                                  const t_mdatoms*            mdAtoms) :
     nextVirialCalculationStep_(-1),
     nextEnergyWritingStep_(-1),
     nextLogWritingStep_(-1),
-    isMasterRank_(isMaster),
+    isMainRank_(isMain),
     statePropagatorData_(statePropagatorData),
     energyData_(energyData),
     freeEnergyPerturbationData_(freeEnergyPerturbationData),
@@ -106,7 +106,7 @@ void ConstraintsElement<variable>::elementSetup()
                            statePropagatorData_->box(),
                            lambdaBonded);
 
-        if (isMasterRank_)
+        if (isMainRank_)
         {
             if (inputrec_->eConstrAlg == ConstraintAlgorithm::Lincs)
             {
@@ -245,7 +245,7 @@ ISimulatorElement* ConstraintsElement<variable>::getElementPointerImpl(
                                                            statePropagatorData,
                                                            energyData,
                                                            freeEnergyPerturbationData,
-                                                           MASTER(legacySimulatorData->cr),
+                                                           MAIN(legacySimulatorData->cr),
                                                            legacySimulatorData->fplog,
                                                            legacySimulatorData->inputrec,
                                                            legacySimulatorData->mdAtoms->mdatoms()));

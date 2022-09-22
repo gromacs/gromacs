@@ -161,4 +161,4 @@ Because of security features in browsers, the transformations may not work for
 all browsers.  For the same reason, the XSLT files must be in the same folder
 as the XML files.  For cases where the XSLT files are shared between multiple
 modules, `src/testutils/copy_xsl.sh` takes care to synchronize the files after
-a master copy is edited.
+a main copy is edited.

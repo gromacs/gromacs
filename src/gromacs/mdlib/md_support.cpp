@@ -498,7 +498,7 @@ void rerun_parallel_comm(t_commrec* cr, t_trxframe* fr, gmx_bool* bLastStep)
 {
     rvec *xp, *vp;
 
-    if (MASTER(cr) && *bLastStep)
+    if (MAIN(cr) && *bLastStep)
     {
         fr->natoms = -1;
     }

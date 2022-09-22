@@ -43,7 +43,7 @@
  *
  * The setting and handling is implemented in private functions. They are only called
  * if a respective boolean is true. For the trivial case of no checkpointing (or no checkpoint
- * signal setting on any other rank than master), the translation unit of the calling
+ * signal setting on any other rank than main), the translation unit of the calling
  * function is therefore never left. In the future, this will be achieved by adding
  * (or not adding) handlers / setters to the task graph.
  *
@@ -78,7 +78,7 @@ enum class CheckpointSignal
 /*! \libinternal
  * \brief Class handling the checkpoint signal
  *
- * Master rank sets the checkpointing signal periodically
+ * Main rank sets the checkpointing signal periodically
  * All ranks receive checkpointing signal and set the respective flag
  */
 class CheckpointHandler final
@@ -93,7 +93,7 @@ public:
     CheckpointHandler(compat::not_null<SimulationSignal*> signal,
                       bool                                simulationsShareState,
                       bool                                neverUpdateNeighborList,
-                      bool                                isMaster,
+                      bool                                isMain,
                       bool                                writeFinalCheckpoint,
                       real                                checkpointingPeriod);
 

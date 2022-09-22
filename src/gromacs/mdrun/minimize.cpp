@@ -386,19 +386,19 @@ static void init_em(FILE*                fplog,
         fprintf(fplog, "Initiating %s\n", title);
     }
 
-    if (MASTER(cr))
+    if (MAIN(cr))
     {
         state_global->ngtc = 0;
     }
-    int*                fep_state = MASTER(cr) ? &state_global->fep_state : nullptr;
-    gmx::ArrayRef<real> lambda    = MASTER(cr) ? state_global->lambda : gmx::ArrayRef<real>();
+    int*                fep_state = MAIN(cr) ? &state_global->fep_state : nullptr;
+    gmx::ArrayRef<real> lambda    = MAIN(cr) ? state_global->lambda : gmx::ArrayRef<real>();
     initialize_lambdas(fplog,
                        ir->efep,
                        ir->bSimTemp,
                        *ir->fepvals,
                        ir->simtempvals->temperatures,
                        gmx::arrayRefFromArray(ir->opts.ref_t, ir->opts.ngtc),
-                       MASTER(cr),
+                       MAIN(cr),
                        fep_state,
                        lambda);
 
@@ -433,7 +433,7 @@ static void init_em(FILE*                fplog,
         // Local state only becomes valid now.
         dd_init_local_state(*cr->dd, state_global, &ems->s);
 
-        /* Distribute the charge groups over the nodes from the master node */
+        /* Distribute the charge groups over the nodes from the main node */
         dd_partition_system(fplog,
                             mdlog,
                             ir->init_step,
@@ -597,7 +597,7 @@ static void write_em_traj(FILE*               fplog,
             /* If bX=true, x was collected to state_global in the call above */
             if (!bX)
             {
-                auto globalXRef = MASTER(cr) ? state_global->x : gmx::ArrayRef<gmx::RVec>();
+                auto globalXRef = MAIN(cr) ? state_global->x : gmx::ArrayRef<gmx::RVec>();
                 dd_collect_vec(
                         cr->dd, state->s.ddp_count, state->s.ddp_count_cg_gl, state->s.cg_gl, state->s.x, globalXRef);
             }
@@ -608,7 +608,7 @@ static void write_em_traj(FILE*               fplog,
             state_global = &state->s;
         }
 
-        if (MASTER(cr))
+        if (MAIN(cr))
         {
             if (ir->pbcType != PbcType::No && !ir->bPeriodicMols && haveDDAtomOrdering(*cr))
             {
@@ -1291,7 +1291,7 @@ void LegacySimulator::do_cg()
 
     step = 0;
 
-    if (MASTER(cr))
+    if (MAIN(cr))
     {
         // In CG, the state is extended with a search direction
         state_global->flags |= enumValueToBitMask(StateEntry::Cgp);
@@ -1365,7 +1365,7 @@ void LegacySimulator::do_cg()
     /* Max number of steps */
     number_steps = inputrec->nsteps;
 
-    if (MASTER(cr))
+    if (MAIN(cr))
     {
         sp_header(stderr, CG, inputrec->em_tol, number_steps);
     }
@@ -1402,7 +1402,7 @@ void LegacySimulator::do_cg()
     energyEvaluator.run(s_min, mu_tot, vir, pres, -1, TRUE, step);
     observablesReducer.markAsReadyToReduce();
 
-    if (MASTER(cr))
+    if (MAIN(cr))
     {
         /* Copy stuff to the energy bin for easy printing etc. */
         matrix nullBox = {};
@@ -1429,7 +1429,7 @@ void LegacySimulator::do_cg()
     /* Estimate/guess the initial stepsize */
     stepsize = inputrec->em_stepsize / s_min->fnorm;
 
-    if (MASTER(cr))
+    if (MAIN(cr))
     {
         double sqrtNumAtoms = sqrt(static_cast<double>(state_global->natoms));
         fprintf(stderr, "   F-max             = %12.5e on atom %d\n", s_min->fmax, s_min->a_fmax + 1);
@@ -1840,7 +1840,7 @@ void LegacySimulator::do_cg()
         gpa = gpb;
 
         /* Print it if necessary */
-        if (MASTER(cr))
+        if (MAIN(cr))
         {
             if (mdrunOptions.verbose)
             {
@@ -1892,7 +1892,7 @@ void LegacySimulator::do_cg()
         }
 
         /* Send energies and positions to the IMD client if bIMD is TRUE. */
-        if (MASTER(cr) && imdSession->run(step, TRUE, state_global->box, state_global->x, 0))
+        if (MAIN(cr) && imdSession->run(step, TRUE, state_global->box, state_global->x, 0))
         {
             imdSession->sendPositionsAndEnergies();
         }
@@ -1910,14 +1910,14 @@ void LegacySimulator::do_cg()
     }
     if (s_min->fmax > inputrec->em_tol)
     {
-        if (MASTER(cr))
+        if (MAIN(cr))
         {
             warn_step(fplog, inputrec->em_tol, s_min->fmax, step - 1 == number_steps, FALSE);
         }
         converged = FALSE;
     }
 
-    if (MASTER(cr))
+    if (MAIN(cr))
     {
         /* If we printed energy and/or logfile last step (which was the last step)
          * we don't have to do it again, but otherwise print the final values.
@@ -1943,7 +1943,7 @@ void LegacySimulator::do_cg()
     }
 
     /* Print some stuff... */
-    if (MASTER(cr))
+    if (MAIN(cr))
     {
         fprintf(stderr, "\nwriting lowest energy coordinates.\n");
     }
@@ -1965,7 +1965,7 @@ void LegacySimulator::do_cg()
             fplog, cr, outf, do_x, do_f, ftp2fn(efSTO, nfile, fnm), top_global, inputrec, step, s_min, state_global, observablesHistory);
 
 
-    if (MASTER(cr))
+    if (MAIN(cr))
     {
         double sqrtNumAtoms = sqrt(static_cast<double>(state_global->natoms));
         print_converged(stderr, CG, inputrec->em_tol, step, converged, number_steps, s_min, sqrtNumAtoms);
@@ -2115,7 +2115,7 @@ void LegacySimulator::do_lbfgs()
             frozen[3 * i + m] = (inputrec->opts.nFreeze[gf][m] != 0);
         }
     }
-    if (MASTER(cr))
+    if (MAIN(cr))
     {
         sp_header(stderr, LBFGS, inputrec->em_tol, number_steps);
     }
@@ -2158,7 +2158,7 @@ void LegacySimulator::do_lbfgs()
     tensor          pres;
     energyEvaluator.run(&ems, mu_tot, vir, pres, -1, TRUE, step);
 
-    if (MASTER(cr))
+    if (MAIN(cr))
     {
         /* Copy stuff to the energy bin for easy printing etc. */
         matrix nullBox = {};
@@ -2188,7 +2188,7 @@ void LegacySimulator::do_lbfgs()
      * norm of the force.
      */
 
-    if (MASTER(cr))
+    if (MAIN(cr))
     {
         double sqrtNumAtoms = sqrt(static_cast<double>(state_global->natoms));
         fprintf(stderr, "Using %d BFGS correction steps.\n\n", nmaxcorr);
@@ -2667,7 +2667,7 @@ void LegacySimulator::do_lbfgs()
         }
 
         /* Print it if necessary */
-        if (MASTER(cr))
+        if (MAIN(cr))
         {
             if (mdrunOptions.verbose)
             {
@@ -2719,7 +2719,7 @@ void LegacySimulator::do_lbfgs()
         }
 
         /* Send x and E to IMD client, if bIMD is TRUE. */
-        if (imdSession->run(step, TRUE, state_global->box, state_global->x, 0) && MASTER(cr))
+        if (imdSession->run(step, TRUE, state_global->box, state_global->x, 0) && MAIN(cr))
         {
             imdSession->sendPositionsAndEnergies();
         }
@@ -2740,7 +2740,7 @@ void LegacySimulator::do_lbfgs()
     }
     if (ems.fmax > inputrec->em_tol)
     {
-        if (MASTER(cr))
+        if (MAIN(cr))
         {
             warn_step(fplog, inputrec->em_tol, ems.fmax, step - 1 == number_steps, FALSE);
         }
@@ -2768,7 +2768,7 @@ void LegacySimulator::do_lbfgs()
     }
 
     /* Print some stuff... */
-    if (MASTER(cr))
+    if (MAIN(cr))
     {
         fprintf(stderr, "\nwriting lowest energy coordinates.\n");
     }
@@ -2785,7 +2785,7 @@ void LegacySimulator::do_lbfgs()
     write_em_traj(
             fplog, cr, outf, do_x, do_f, ftp2fn(efSTO, nfile, fnm), top_global, inputrec, step, &ems, state_global, observablesHistory);
 
-    if (MASTER(cr))
+    if (MAIN(cr))
     {
         double sqrtNumAtoms = sqrt(static_cast<double>(state_global->natoms));
         print_converged(stderr, LBFGS, inputrec->em_tol, step, converged, number_steps, &ems, sqrtNumAtoms);
@@ -2885,7 +2885,7 @@ void LegacySimulator::do_steep()
     /* Max number of steps  */
     nsteps = inputrec->nsteps;
 
-    if (MASTER(cr))
+    if (MAIN(cr))
     {
         /* Print to the screen  */
         sp_header(stderr, SD, inputrec->em_tol, nsteps);
@@ -2945,7 +2945,7 @@ void LegacySimulator::do_steep()
             s_try->epot = std::numeric_limits<real>::infinity();
         }
 
-        if (MASTER(cr))
+        if (MAIN(cr))
         {
             EnergyOutput::printHeader(fplog, count, count);
         }
@@ -2956,7 +2956,7 @@ void LegacySimulator::do_steep()
         }
 
         /* Print it if necessary  */
-        if (MASTER(cr))
+        if (MAIN(cr))
         {
             if (mdrunOptions.verbose)
             {
@@ -3071,7 +3071,7 @@ void LegacySimulator::do_steep()
         if (count == nsteps || ustep < 1e-6)
 #endif
         {
-            if (MASTER(cr))
+            if (MAIN(cr))
             {
                 warn_step(fplog, inputrec->em_tol, s_min->fmax, count == nsteps, constr != nullptr);
             }
@@ -3081,10 +3081,10 @@ void LegacySimulator::do_steep()
         /* Send IMD energies and positions, if bIMD is TRUE. */
         if (imdSession->run(count,
                             TRUE,
-                            MASTER(cr) ? state_global->box : nullptr,
-                            MASTER(cr) ? state_global->x : gmx::ArrayRef<gmx::RVec>(),
+                            MAIN(cr) ? state_global->box : nullptr,
+                            MAIN(cr) ? state_global->x : gmx::ArrayRef<gmx::RVec>(),
                             0)
-            && MASTER(cr))
+            && MAIN(cr))
         {
             imdSession->sendPositionsAndEnergies();
         }
@@ -3094,7 +3094,7 @@ void LegacySimulator::do_steep()
     } /* End of the loop  */
 
     /* Print some data...  */
-    if (MASTER(cr))
+    if (MAIN(cr))
     {
         fprintf(stderr, "\nwriting lowest energy coordinates.\n");
     }
@@ -3111,7 +3111,7 @@ void LegacySimulator::do_steep()
                   state_global,
                   observablesHistory);
 
-    if (MASTER(cr))
+    if (MAIN(cr))
     {
         double sqrtNumAtoms = sqrt(static_cast<double>(state_global->natoms));
 
@@ -3148,8 +3148,8 @@ void LegacySimulator::do_nm()
     int   row, col;
     real  der_range = 10.0 * std::sqrt(GMX_REAL_EPS);
     real  x_min;
-    bool  bIsMaster = MASTER(cr);
-    auto* mdatoms   = mdAtoms->mdatoms();
+    bool  bIsMain = MAIN(cr);
+    auto* mdatoms = mdAtoms->mdatoms();
 
     GMX_LOG(mdlog.info)
             .asParagraph()
@@ -3213,7 +3213,7 @@ void LegacySimulator::do_nm()
     snew(dfdx, atom_index.size());
 
 #if !GMX_DOUBLE
-    if (bIsMaster)
+    if (bIsMain)
     {
         fprintf(stderr,
                 "NOTE: This version of GROMACS has been compiled in single precision,\n"
@@ -3273,7 +3273,7 @@ void LegacySimulator::do_nm()
         nonConstInputrec->nsteps = atom_index.size() * 2;
     }
 
-    if (bIsMaster)
+    if (bIsMain)
     {
         fprintf(stderr,
                 "starting normal mode calculation '%s'\n%" PRId64 " steps.\n\n",
@@ -3421,11 +3421,11 @@ void LegacySimulator::do_nm()
                 }
             }
 
-            if (!bIsMaster)
+            if (!bIsMain)
             {
 #if GMX_MPI
 #    define mpi_type GMX_MPI_REAL
-                MPI_Send(dfdx[0], atom_index.size() * DIM, mpi_type, MASTER(cr), cr->nodeid, cr->mpi_comm_mygroup);
+                MPI_Send(dfdx[0], atom_index.size() * DIM, mpi_type, MAIN(cr), cr->nodeid, cr->mpi_comm_mygroup);
 #endif
             }
             else
@@ -3471,7 +3471,7 @@ void LegacySimulator::do_nm()
             }
         }
         /* write progress */
-        if (bIsMaster && mdrunOptions.verbose)
+        if (bIsMain && mdrunOptions.verbose)
         {
             fprintf(stderr,
                     "\rFinished step %d out of %td",
@@ -3481,7 +3481,7 @@ void LegacySimulator::do_nm()
         }
     }
 
-    if (bIsMaster)
+    if (bIsMain)
     {
         fprintf(stderr, "\n\nWriting Hessian...\n");
         gmx_mtxio_write(ftp2fn(efMTX, nfile, fnm), sz, sz, full_matrix, sparse_matrix);

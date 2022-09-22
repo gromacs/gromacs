@@ -82,7 +82,7 @@ public:
                        StatePropagatorData*        statePropagatorData,
                        EnergyData*                 energyData,
                        FreeEnergyPerturbationData* freeEnergyPerturbationData,
-                       bool                        isMaster,
+                       bool                        isMain,
                        FILE*                       fplog,
                        const t_inputrec*           inputrec,
                        const t_mdatoms*            mdAtoms);
@@ -146,8 +146,8 @@ private:
     //! The next logging step
     Step nextLogWritingStep_;
 
-    //! Whether we're master rank
-    const bool isMasterRank_;
+    //! Whether we're main rank
+    const bool isMainRank_;
 
     // TODO: Clarify relationship to data objects and find a more robust alternative to raw pointers (#3583)
     //! Pointer to the micro state

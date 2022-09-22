@@ -7,7 +7,7 @@ by future infrastructure.
 Assume you have already checked out the commit you want to build for.
 Assume the following definitions.
 
-    FORKPOINT=$(git show -s --pretty=format:"%h" `git merge-base master HEAD`)
+    FORKPOINT=$(git show -s --pretty=format:"%h" `git merge-base main HEAD`)
     TAG="fr1" # for functional requirement 1
 
 ## Building
@@ -29,7 +29,7 @@ This should rarely be necessary, and the dependent images can probably just pull
 from dockerhub.
 
 For `gromacs`, the build context needs to be the root of the GROMACS repository (`../..`).
-In case images for feature branches diverge too much or become tightly coupled to particular revisions in `master`,
+In case images for feature branches diverge too much or become tightly coupled to particular revisions in `main`,
 it may be useful to tag this image to annotate the GROMACS build.
 
     # Use DOCKER_CORES to let `make` use all cores available to the Docker engine.

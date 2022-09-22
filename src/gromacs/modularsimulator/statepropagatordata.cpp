@@ -201,7 +201,7 @@ StatePropagatorData::StatePropagatorData(int                numAtoms,
         changePinningPolicy(&x_, gmx::PinningPolicy::PinnedIfSupported);
     }
 
-    if (haveDDAtomOrdering(*cr) && MASTER(cr))
+    if (haveDDAtomOrdering(*cr) && MAIN(cr))
     {
         xGlobal_.resizeWithPadding(totalNumAtoms_);
         previousXGlobal_.resizeWithPadding(totalNumAtoms_);
@@ -631,7 +631,7 @@ void StatePropagatorData::Element::saveCheckpointState(std::optional<WriteCheckp
                   statePropagatorData_->v_.end(),
                   statePropagatorData_->vGlobal_.begin());
     }
-    if (MASTER(cr))
+    if (MAIN(cr))
     {
         statePropagatorData_->doCheckpointData<CheckpointDataOperation::Write>(&checkpointData.value());
     }
@@ -662,13 +662,13 @@ static void updateGlobalState(t_state*                      globalState,
 void StatePropagatorData::Element::restoreCheckpointState(std::optional<ReadCheckpointData> checkpointData,
                                                           const t_commrec*                  cr)
 {
-    if (MASTER(cr))
+    if (MAIN(cr))
     {
         statePropagatorData_->doCheckpointData<CheckpointDataOperation::Read>(&checkpointData.value());
     }
 
     // Copy data to global state to be distributed by DD at setup stage
-    if (haveDDAtomOrdering(*cr) && MASTER(cr))
+    if (haveDDAtomOrdering(*cr) && MAIN(cr))
     {
         updateGlobalState(statePropagatorData_->globalState_,
                           statePropagatorData_->xGlobal_,
@@ -712,16 +712,14 @@ void StatePropagatorData::Element::trajectoryWriterTeardown(gmx_mdoutf* gmx_unus
     wallcycle_start(mdoutf_get_wcycle(outf), WallCycleCounter::Traj);
     if (haveDDAtomOrdering(*cr_))
     {
-        auto globalXRef =
-                MASTER(cr_) ? statePropagatorData_->globalState_->x : gmx::ArrayRef<gmx::RVec>();
+        auto globalXRef = MAIN(cr_) ? statePropagatorData_->globalState_->x : gmx::ArrayRef<gmx::RVec>();
         dd_collect_vec(cr_->dd,
                        localStateBackup_->ddp_count,
                        localStateBackup_->ddp_count_cg_gl,
                        localStateBackup_->cg_gl,
                        localStateBackup_->x,
                        globalXRef);
-        auto globalVRef =
-                MASTER(cr_) ? statePropagatorData_->globalState_->v : gmx::ArrayRef<gmx::RVec>();
+        auto globalVRef = MAIN(cr_) ? statePropagatorData_->globalState_->v : gmx::ArrayRef<gmx::RVec>();
         dd_collect_vec(cr_->dd,
                        localStateBackup_->ddp_count,
                        localStateBackup_->ddp_count_cg_gl,
@@ -735,7 +733,7 @@ void StatePropagatorData::Element::trajectoryWriterTeardown(gmx_mdoutf* gmx_unus
         statePropagatorData_->globalState_ = localStateBackup_.get();
     }
 
-    if (MASTER(cr_))
+    if (MAIN(cr_))
     {
         fprintf(stderr, "\nWriting final coordinates.\n");
         if (canMoleculesBeDistributedOverPBC_ && !systemHasPeriodicMolecules_)

@@ -131,8 +131,8 @@ void QMMMForceProvider::initCP2KForceEnvironment(const t_commrec& cr)
     const std::string cp2kPdbName    = parameters_.qmFileNameBase_ + ".pdb";
     const std::string cp2kOutputName = parameters_.qmFileNameBase_ + ".out";
 
-    // Write CP2K input if we are Master
-    if (MASTER(&cr))
+    // Write CP2K input if we are Main
+    if (MAIN(&cr))
     {
         // In the CP2K Input we need to substitute placeholder with the actuall *.pdb file name
         writeStringToFile(cp2kInputName, formatString(parameters_.qmInput_.c_str(), cp2kPdbName.c_str()));
@@ -272,8 +272,8 @@ void QMMMForceProvider::calculateForces(const ForceProviderInput& fInput, ForceP
      * We need to fill only local part into fOutput
      */
 
-    // Only master process should add QM + QMMM energy
-    if (MASTER(&fInput.cr_))
+    // Only main process should add QM + QMMM energy
+    if (MAIN(&fInput.cr_))
     {
         double qmEner = 0.0;
         cp2k_get_potential_energy(force_env_, &qmEner);

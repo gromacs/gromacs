@@ -1224,7 +1224,7 @@ Constraints::Impl::Impl(const gmx_mtop_t&          mtop_p,
         {
             fprintf(log, "Setting the maximum number of constraint warnings to %d\n", maxwarn);
         }
-        if (MASTER(cr))
+        if (MAIN(cr))
         {
             fprintf(stderr, "Setting the maximum number of constraint warnings to %d\n", maxwarn);
         }

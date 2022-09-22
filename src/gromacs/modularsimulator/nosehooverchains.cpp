@@ -414,7 +414,7 @@ void NoseHooverGroup::broadcastCheckpointValues(const gmx_domdec_t* dd)
 void NoseHooverChainsData::saveCheckpointState(std::optional<WriteCheckpointData> checkpointData,
                                                const t_commrec*                   cr)
 {
-    if (MASTER(cr))
+    if (MAIN(cr))
     {
         doCheckpointData<CheckpointDataOperation::Write>(&checkpointData.value());
     }
@@ -423,7 +423,7 @@ void NoseHooverChainsData::saveCheckpointState(std::optional<WriteCheckpointData
 void NoseHooverChainsData::restoreCheckpointState(std::optional<ReadCheckpointData> checkpointData,
                                                   const t_commrec*                  cr)
 {
-    if (MASTER(cr))
+    if (MAIN(cr))
     {
         doCheckpointData<CheckpointDataOperation::Read>(&checkpointData.value());
     }

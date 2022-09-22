@@ -855,14 +855,14 @@ static void get_load_distribution(gmx_domdec_t* dd, gmx_wallcycle* wcycle)
                        0,
                        comm->mpi_comm_load[d]);
 #endif
-            if (dd->ci[dim] == dd->master_ci[dim])
+            if (dd->ci[dim] == dd->main_ci[dim])
             {
-                /* We are the master along this row, process this row */
-                RowMaster* rowMaster = nullptr;
+                /* We are the main along this row, process this row */
+                RowCoordinator* rowCoordinator = nullptr;
 
                 if (isDlbOn(comm->dlbState))
                 {
-                    rowMaster = comm->cellsizesWithDlb[d].rowMaster.get();
+                    rowCoordinator = comm->cellsizesWithDlb[d].rowCoordinator.get();
                 }
                 load->sum      = 0;
                 load->max      = 0;
@@ -879,7 +879,7 @@ static void get_load_distribution(gmx_domdec_t* dd, gmx_wallcycle* wcycle)
                     pos++;
                     if (isDlbOn(dd->comm->dlbState))
                     {
-                        if (rowMaster->dlbIsLimited)
+                        if (rowCoordinator->dlbIsLimited)
                         {
                             /* This direction could not be load balanced properly,
                              * therefore we need to use the maximum iso the average load.
@@ -899,8 +899,8 @@ static void get_load_distribution(gmx_domdec_t* dd, gmx_wallcycle* wcycle)
                         }
                         if (d > 0)
                         {
-                            rowMaster->bounds[i].cellFracLowerMax = load->load[pos++];
-                            rowMaster->bounds[i].cellFracUpperMin = load->load[pos++];
+                            rowCoordinator->bounds[i].cellFracLowerMax = load->load[pos++];
+                            rowCoordinator->bounds[i].cellFracUpperMin = load->load[pos++];
                         }
                     }
                     if (bSepPME)
@@ -911,7 +911,7 @@ static void get_load_distribution(gmx_domdec_t* dd, gmx_wallcycle* wcycle)
                         pos++;
                     }
                 }
-                if (isDlbOn(comm->dlbState) && rowMaster->dlbIsLimited)
+                if (isDlbOn(comm->dlbState) && rowCoordinator->dlbIsLimited)
                 {
                     load->sum_m *= dd->numCells[dim];
                     load->flags |= (1 << d);
@@ -920,7 +920,7 @@ static void get_load_distribution(gmx_domdec_t* dd, gmx_wallcycle* wcycle)
         }
     }
 
-    if (DDMASTER(dd))
+    if (DDMAIN(dd))
     {
         comm->nload += dd_load_count(comm);
         comm->load_step += comm->cycl[ddCyclStep];
@@ -984,8 +984,8 @@ static void print_dd_load_av(FILE* fplog, gmx_domdec_t* dd)
 {
     gmx_domdec_comm_t* comm = dd->comm.get();
 
-    /* Only the master rank prints loads and only if we measured loads */
-    if (!DDMASTER(dd) || comm->nload == 0)
+    /* Only the main rank prints loads and only if we measured loads */
+    if (!DDMAIN(dd) || comm->nload == 0)
     {
         return;
     }
@@ -1271,23 +1271,23 @@ static void turn_on_dlb(const gmx::MDLogger& mdlog, gmx_domdec_t* dd, int64_t st
      */
     for (int d = 0; d < dd->ndim; d++)
     {
-        RowMaster* rowMaster = comm->cellsizesWithDlb[d].rowMaster.get();
+        RowCoordinator* rowCoordinator = comm->cellsizesWithDlb[d].rowCoordinator.get();
 
-        if (rowMaster)
+        if (rowCoordinator)
         {
             comm->load[d].sum_m = comm->load[d].sum;
 
             int nc = dd->numCells[dd->dim[d]];
             for (int i = 0; i < nc; i++)
             {
-                rowMaster->cellFrac[i] = i / static_cast<real>(nc);
+                rowCoordinator->cellFrac[i] = i / static_cast<real>(nc);
                 if (d > 0)
                 {
-                    rowMaster->bounds[i].cellFracLowerMax = i / static_cast<real>(nc);
-                    rowMaster->bounds[i].cellFracUpperMin = (i + 1) / static_cast<real>(nc);
+                    rowCoordinator->bounds[i].cellFracLowerMax = i / static_cast<real>(nc);
+                    rowCoordinator->bounds[i].cellFracUpperMin = (i + 1) / static_cast<real>(nc);
                 }
             }
-            rowMaster->cellFrac[nc] = 1.0;
+            rowCoordinator->cellFrac[nc] = 1.0;
         }
     }
 }
@@ -2747,7 +2747,7 @@ void dd_partition_system(FILE*                     fplog,
                          const gmx::MDLogger&      mdlog,
                          int64_t                   step,
                          const t_commrec*          cr,
-                         bool                      bMasterState,
+                         bool                      bMainState,
                          int                       nstglobalcomm,
                          t_state*                  state_global,
                          const gmx_mtop_t&         top_global,
@@ -2776,7 +2776,7 @@ void dd_partition_system(FILE*                     fplog,
 
     // TODO if the update code becomes accessible here, use
     // upd->deform for this logic.
-    bool bBoxChanged = (bMasterState || inputrecDeform(&inputrec));
+    bool bBoxChanged = (bMainState || inputrecDeform(&inputrec));
     if (inputrec.pressureCouplingOptions.epc != PressureCoupling::No)
     {
         /* With nstpcouple > 1 pressure coupling happens.
@@ -2843,7 +2843,7 @@ void dd_partition_system(FILE*                     fplog,
             || (bVerbose && (inputrec.nstlist == 0 || nstglobalcomm <= inputrec.nstlist)))
         {
             get_load_distribution(dd, wcycle);
-            if (DDMASTER(dd))
+            if (DDMAIN(dd))
             {
                 if (bLogLoad)
                 {
@@ -2858,7 +2858,7 @@ void dd_partition_system(FILE*                     fplog,
 
             if (isDlbOn(comm->dlbState))
             {
-                if (DDMASTER(dd))
+                if (DDMAIN(dd))
                 {
                     /* Add the measured cycles to the running average */
                     const float averageFactor = 0.1F;
@@ -2870,7 +2870,7 @@ void dd_partition_system(FILE*                     fplog,
                     && dd->comm->n_load_have % c_checkTurnDlbOffInterval == c_checkTurnDlbOffInterval - 1)
                 {
                     bool turnOffDlb;
-                    if (DDMASTER(dd))
+                    if (DDMAIN(dd))
                     {
                         /* If the running averaged cycles with DLB are more
                          * than before we turned on DLB, turn off DLB.
@@ -2884,7 +2884,7 @@ void dd_partition_system(FILE*                     fplog,
                     {
                         /* To turn off DLB, we need to redistribute the atoms */
                         dd_collect_state(dd, state_local, state_global);
-                        bMasterState = true;
+                        bMainState = true;
                         turn_off_dlb(mdlog, dd, step);
                     }
                 }
@@ -2894,8 +2894,8 @@ void dd_partition_system(FILE*                     fplog,
                 bool turnOffDlbForever = false;
                 bool turnOnDlb         = false;
 
-                /* Since the timings are node dependent, the master decides */
-                if (DDMASTER(dd))
+                /* Since the timings are node dependent, the main decides */
+                if (DDMAIN(dd))
                 {
                     /* If we recently turned off DLB, we want to check if
                      * performance is better without DLB. We want to do this
@@ -2963,7 +2963,7 @@ void dd_partition_system(FILE*                     fplog,
     }
 
     bool bRedist = false;
-    if (bMasterState)
+    if (bMainState)
     {
         /* Clear the old state */
         clearDDStateIndices(dd, false);
@@ -2971,7 +2971,7 @@ void dd_partition_system(FILE*                     fplog,
 
         auto xGlobal = positionsFromStatePointer(state_global);
 
-        set_ddbox(*dd, true, DDMASTER(dd) ? state_global->box : nullptr, true, xGlobal, &ddbox);
+        set_ddbox(*dd, true, DDMAIN(dd) ? state_global->box : nullptr, true, xGlobal, &ddbox);
 
         distributeState(mdlog, dd, top_global, state_global, ddbox, state_local);
 
@@ -3014,7 +3014,7 @@ void dd_partition_system(FILE*                     fplog,
 
         dd_set_atominfo(dd->globalAtomGroupIndices, 0, dd->numHomeAtoms, fr);
 
-        set_ddbox(*dd, bMasterState, state_local->box, true, state_local->x, &ddbox);
+        set_ddbox(*dd, bMainState, state_local->box, true, state_local->x, &ddbox);
 
         bRedist = isDlbOn(comm->dlbState);
     }
@@ -3035,7 +3035,7 @@ void dd_partition_system(FILE*                     fplog,
             copy_rvec(comm->box0, ddbox.box0);
             copy_rvec(comm->box_size, ddbox.box_size);
         }
-        set_ddbox(*dd, bMasterState, state_local->box, bNStGlobalComm, state_local->x, &ddbox);
+        set_ddbox(*dd, bMainState, state_local->box, bNStGlobalComm, state_local->x, &ddbox);
 
         bBoxChanged = true;
         bRedist     = true;
@@ -3044,7 +3044,7 @@ void dd_partition_system(FILE*                     fplog,
     copy_rvec(ddbox.box0, comm->box0);
     copy_rvec(ddbox.box_size, comm->box_size);
 
-    set_dd_cell_sizes(dd, &ddbox, dd->unitCellInfo.ddBoxIsDynamic, bMasterState, bDoDLB, step, wcycle);
+    set_dd_cell_sizes(dd, &ddbox, dd->unitCellInfo.ddBoxIsDynamic, bMainState, bDoDLB, step, wcycle);
 
     if (comm->ddSettings.nstDDDumpGrid > 0 && step % comm->ddSettings.nstDDDumpGrid == 0)
     {
@@ -3059,7 +3059,7 @@ void dd_partition_system(FILE*                     fplog,
     }
 
     /* Check if we should sort the charge groups */
-    const bool bSortCG = (bMasterState || bRedist);
+    const bool bSortCG = (bMainState || bRedist);
 
     /* When repartitioning we mark atom groups that will move to neighboring
      * DD cells, but we do not move them right away for performance reasons.
@@ -3359,12 +3359,12 @@ void dd_partition_system(FILE*                     fplog,
     dd->ddp_count++;
     /* The state currently matches this DD partitioning count, store it */
     state_local->ddp_count = dd->ddp_count;
-    if (bMasterState)
+    if (bMainState)
     {
-        /* The DD master node knows the complete cg distribution,
+        /* The DD main node knows the complete cg distribution,
          * store the count so we can possibly skip the cg info communication.
          */
-        comm->master_cg_ddp_count = (bSortCG ? 0 : dd->ddp_count);
+        comm->main_cg_ddp_count = (bSortCG ? 0 : dd->ddp_count);
     }
 
     if (comm->ddSettings.DD_debug > 0)

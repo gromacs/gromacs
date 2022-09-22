@@ -59,8 +59,8 @@
 #include "gromacs/utility/snprintf.h"
 #include "gromacs/utility/stringutil.h"
 
-//! True if only the master rank should print debugging output
-constexpr bool onlyMasterDebugPrints = true;
+//! True if only the main rank should print debugging output
+constexpr bool onlyMainDebugPrints = true;
 //! True if cycle counter nesting depth debugging prints are enabled
 constexpr bool debugPrintDepth = false;
 
@@ -228,8 +228,8 @@ std::unique_ptr<gmx_wallcycle> wallcycle_init(FILE* fplog, int resetstep, const 
     // NOLINTNEXTLINE(readability-misleading-indentation)
     if constexpr (sc_enableWallcycleDebug)
     {
-        wc->count_depth  = 0;
-        wc->isMasterRank = MASTER(cr);
+        wc->count_depth = 0;
+        wc->isMainRank  = MAIN(cr);
     }
 
     return wc;
@@ -248,7 +248,7 @@ void debug_start_check(gmx_wallcycle* wc, WallCycleCounter ewc)
         wc->counterlist[wc->count_depth] = ewc;
         wc->count_depth++;
 
-        if (debugPrintDepth && (!onlyMasterDebugPrints || wc->isMasterRank))
+        if (debugPrintDepth && (!onlyMainDebugPrints || wc->isMainRank))
         {
             std::string indentStr(4 * wc->count_depth, ' ');
             fprintf(stderr,
@@ -265,7 +265,7 @@ void debug_stop_check(gmx_wallcycle* wc, WallCycleCounter ewc)
     // NOLINTNEXTLINE(readability-misleading-indentation)
     if constexpr (sc_enableWallcycleDebug)
     {
-        if (debugPrintDepth && (!onlyMasterDebugPrints || wc->isMasterRank))
+        if (debugPrintDepth && (!onlyMainDebugPrints || wc->isMainRank))
         {
             std::string indentStr(4 * wc->count_depth, ' ');
             fprintf(stderr,
@@ -449,7 +449,7 @@ void wallcycle_scale_by_num_threads(gmx_wallcycle* wc, bool isPmeRank, int nthre
  * uses cycles_sum to manage this, which works OK now because wcsc and
  * wcc_all are unused by the GPU reporting, but it is not satisfactory
  * for the future. Also, there's no need for MPI_Allreduce, since
- * only MASTERRANK uses any of the results. */
+ * only MAINRANK uses any of the results. */
 WallcycleCounts wallcycle_sum(const t_commrec* cr, gmx_wallcycle* wc)
 {
     WallcycleCounts                                    cycles_sum;
@@ -1050,7 +1050,7 @@ void wallcycle_print(FILE*                            fplog,
              * CPU-GPU load balancing is possible */
             if (gpu_cpu_ratio < 0.8 || gpu_cpu_ratio > 1.25)
             {
-                /* Only the sim master calls this function, so always print to stderr */
+                /* Only the sim main calls this function, so always print to stderr */
                 if (gpu_cpu_ratio < 0.8)
                 {
                     if (npp > 1)
@@ -1107,7 +1107,7 @@ void wallcycle_print(FILE*                            fplog,
         && (cyc_sum[static_cast<int>(WallCycleCounter::Domdec)] > tot * 0.1
             || cyc_sum[static_cast<int>(WallCycleCounter::NS)] > tot * 0.1))
     {
-        /* Only the sim master calls this function, so always print to stderr */
+        /* Only the sim main calls this function, so always print to stderr */
         if (wc->wcc[WallCycleCounter::Domdec].n == 0)
         {
             GMX_LOG(mdlog.warning)

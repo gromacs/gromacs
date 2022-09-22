@@ -95,19 +95,19 @@ Additional information in `python_packaging/docker/README.md`.
    account will have to push the new repository the first time and then grant access
    to the service account used by the Travis-CI configuration.
    `<tag>` is the (short) git revision hash
-   of the `master` branch commit corresponding to the current state of the `kassonLabFork`
+   of the `main` branch commit corresponding to the current state of the `kassonLabFork`
    branch.
 2. `gmxapi/gromacs-<matrix>:<tag>` Builds on `gromacs-dependencies-<matrix>`, where
    `<matrix>` has the same meaning as above. `<tag>` is the (short) git revision hash
-   of the `master` branch commit corresponding to the current state of the `kassonLabFork`
+   of the `main` branch commit corresponding to the current state of the `kassonLabFork`
    branch.
    This is recorded in the `kassonLabFork` `.travis.yml`.
 3. `gmxapi/ci-<matrix>:<tag>` starts with `gromacs-<matrix>` and merges in the
     `python_packaging` changes associated with the feature branch indicated by `<tag>`
 
-Hint: the fork point from `master` and the current git ref can be set as environment variables:
+Hint: the fork point from `main` and the current git ref can be set as environment variables:
 
-    FORKPOINT=$(git show -s --pretty=format:"%h" `git merge-base master HEAD`)
+    FORKPOINT=$(git show -s --pretty=format:"%h" `git merge-base main HEAD`)
     REF=`git show -s --pretty=format:"%h"`
 
 ## External project code

@@ -64,7 +64,7 @@ struct IMDSocket;
  */
 int imdsock_winsockinit();
 
-/*! \brief Create an IMD master socket.
+/*! \brief Create an IMD main socket.
  *
  * \returns  The IMD socket if successful. Otherwise prints an error message and returns NULL.
  */

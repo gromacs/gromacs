@@ -44,10 +44,10 @@ struct gmx_domdec_t;
 #define DUTY_PP (1U << 0U)
 #define DUTY_PME (1U << 1U)
 
-//! Whether the current DD role is master or slave
+//! Whether the current DD role is main or slave
 enum class DDRole
 {
-    Master,
+    Main,
     Agent
 };
 
@@ -141,18 +141,18 @@ inline bool thisRankHasDuty(const t_commrec* cr, int duty)
  * other simulation types. */
 #define PAR(cr) ((cr)->sizeOfDefaultCommunicator > 1)
 
-//! True of this is the master node
-#define MASTER(cr) (((cr)->rankInDefaultCommunicator == 0) || !PAR(cr))
+//! True of this is the main node
+#define MAIN(cr) (((cr)->rankInDefaultCommunicator == 0) || !PAR(cr))
 
-// Note that currently, master is always PP master, so this is equivalent to MASTER(cr)
-//! True if this is the particle-particle master
-#define SIMMASTER(cr) ((MASTER(cr) && thisRankHasDuty((cr), DUTY_PP)) || !PAR(cr))
+// Note that currently, main is always PP main, so this is equivalent to MAIN(cr)
+//! True if this is the particle-particle main
+#define SIMMAIN(cr) ((MAIN(cr) && thisRankHasDuty((cr), DUTY_PP)) || !PAR(cr))
 
 //! The node id for this rank
 #define RANK(cr, nodeid) (nodeid)
 
-//! The node id for the master
-#define MASTERRANK(cr) (0)
+//! The node id for the main
+#define MAINRANK(cr) (0)
 
 /*! \brief Returns whether the domain decomposition machinery is active and reorders atoms
  *

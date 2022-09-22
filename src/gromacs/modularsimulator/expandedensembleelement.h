@@ -70,7 +70,7 @@ class ExpandedEnsembleElement final : public ISimulatorElement, public ICheckpoi
 {
 public:
     //! Constructor
-    explicit ExpandedEnsembleElement(bool                              isMasterRank,
+    explicit ExpandedEnsembleElement(bool                              isMainRank,
                                      Step                              initialStep,
                                      int                               frequency,
                                      const EnergyData*                 energyData,
@@ -119,8 +119,8 @@ private:
     //! Helper object allowing to set new FEP state
     FepStateSetting* fepStateSetting_;
 
-    //! Whether this runs on master
-    const bool isMasterRank_;
+    //! Whether this runs on main
+    const bool isMainRank_;
     //! The initial Step
     const Step initialStep_;
     //! The frequency of lambda MC steps

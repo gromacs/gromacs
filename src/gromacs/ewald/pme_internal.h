@@ -299,7 +299,7 @@ struct pme_spline_work;
 /*! \brief Data structure for working buffers */
 struct pme_solve_work_t;
 
-/*! \brief Master PME data structure */
+/*! \brief Main PME data structure */
 struct gmx_pme_t
 {                   //NOLINT(clang-analyzer-optin.performance.Padding)
     int ndecompdim; /* The number of decomposition dimensions */

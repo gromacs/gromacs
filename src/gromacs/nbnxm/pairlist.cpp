@@ -733,7 +733,7 @@ PairlistSet::PairlistSet(const PairlistParams& pairlistParams) :
             {
                 /* We used to allocate all normal lists locally on each thread
                  * as well. The question is if allocating the object on the
-                 * master thread (but all contained list memory thread local)
+                 * main thread (but all contained list memory thread local)
                  * impacts performance.
                  */
                 fepLists_[i] = std::make_unique<t_nblist>();

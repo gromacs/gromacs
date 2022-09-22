@@ -172,10 +172,10 @@ struct gmx_domdec_t
     int      nnodes       = 1;
     MPI_Comm mpi_comm_all = MPI_COMM_NULL;
     /* The local DD cell index and rank */
-    gmx::IVec ci         = { 0, 0, 0 };
-    int       rank       = 0;
-    gmx::IVec master_ci  = { 0, 0, 0 };
-    int       masterrank = 0;
+    gmx::IVec ci       = { 0, 0, 0 };
+    int       rank     = 0;
+    gmx::IVec main_ci  = { 0, 0, 0 };
+    int       mainrank = 0;
     /* Communication with the PME only nodes */
     int                   pme_nodeid           = 0;
     gmx_bool              pme_receive_vir_ener = false;
@@ -195,7 +195,7 @@ struct gmx_domdec_t
     /* Forward and backward neighboring cells, indexed by 0 to ndim */
     int neighbor[DIM][2] = { { 0, 0 }, { 0, 0 }, { 0, 0 } };
 
-    /* Only available on the master node */
+    /* Only available on the main node */
     std::unique_ptr<AtomDistribution> ma;
 
     /* Global atom number to interaction list */
@@ -243,16 +243,16 @@ struct gmx_domdec_t
     std::vector<std::unique_ptr<gmx::GpuHaloExchange>> gpuHaloExchange[DIM];
 };
 
-//! Are we the master node for domain decomposition
-static inline bool DDMASTER(const gmx_domdec_t& dd)
+//! Are we the main node for domain decomposition
+static inline bool DDMAIN(const gmx_domdec_t& dd)
 {
-    return dd.rank == dd.masterrank;
+    return dd.rank == dd.mainrank;
 };
 
-//! Are we the master node for domain decomposition, deprecated
-static inline bool DDMASTER(const gmx_domdec_t* dd)
+//! Are we the main node for domain decomposition, deprecated
+static inline bool DDMAIN(const gmx_domdec_t* dd)
 {
-    return dd->rank == dd->masterrank;
+    return dd->rank == dd->mainrank;
 };
 
 #endif

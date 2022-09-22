@@ -101,7 +101,7 @@
 #include "pme_output.h"
 #include "pme_pp_communication.h"
 
-/*! \brief Master PP-PME communication data structure */
+/*! \brief Main PP-PME communication data structure */
 struct gmx_pme_pp
 {
     MPI_Comm             mpi_comm_mysim; /**< MPI communicator for this simulation */

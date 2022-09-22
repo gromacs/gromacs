@@ -247,7 +247,7 @@ bool opt2parg_bSet(const char* option, int nparg, const t_pargs* pa);
  * that is passed to gmx_run_cmain().  It should be called as the first thing in
  * that function.  Initialization code can be executed before it, but you need
  * to be aware that if the program is executed with -h and MPI, the code before
- * parse_common_args() only executes on the master node.
+ * parse_common_args() only executes on the main node.
  *
  * If the return value is `FALSE`, the program should return immediately (this
  * is necessary for -h and a few other cases).

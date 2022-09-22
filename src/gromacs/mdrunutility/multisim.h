@@ -68,7 +68,7 @@ struct t_commrec;
  *
  * Splits \c worldComm into \c multidirs.size() separate
  * simulations, if >1, and creates a communication structure
- * between the master ranks of these simulations.
+ * between the main ranks of these simulations.
  *
  * Valid to call regardless of build configuration, but \c
  * multidirs must be empty unless a real MPI build is used.
@@ -92,7 +92,7 @@ struct gmx_multisim_t
      *
      * \param[in]  numSimulations   The number of simulations in the MPI world.
      * \param[in]  simulationIndex  The index of this simulation in the set of simulations.
-     * \param[in]  mastersComm      On master ranks, the communicator among master ranks;
+     * \param[in]  mainsComm        On main ranks, the communicator among main ranks;
      *                              otherwise MPI_COMM_NULL.
      * \param[in]  simulationComm   The communicator among ranks of this simulation.
      *
@@ -100,7 +100,7 @@ struct gmx_multisim_t
      * MPI_COMM_WORLD nor MPI_COMM_NULL. If so, upon destruction will
      * call MPI_Comm_free on them.
      */
-    gmx_multisim_t(int numSimulations, int simulationIndex, MPI_Comm mastersComm, MPI_Comm simulationComm);
+    gmx_multisim_t(int numSimulations, int simulationIndex, MPI_Comm mainsComm, MPI_Comm simulationComm);
     //! Destructor
     ~gmx_multisim_t();
 
@@ -108,8 +108,8 @@ struct gmx_multisim_t
     int numSimulations_ = 1;
     //! The index of the simulation that owns this object within the set
     int simulationIndex_ = 0;
-    //! The MPI communicator between master ranks of simulations, valid only on master ranks.
-    MPI_Comm mastersComm_ = MPI_COMM_NULL;
+    //! The MPI communicator between main ranks of simulations, valid only on main ranks.
+    MPI_Comm mainRanksComm_ = MPI_COMM_NULL;
     //! The MPI communicator between ranks of this simulation.
     MPI_Comm simulationComm_ = MPI_COMM_NULL;
 };
@@ -127,7 +127,7 @@ void gmx_sumf_sim(int nr, float r[], const gmx_multisim_t* ms);
 void gmx_sumd_sim(int nr, double r[], const gmx_multisim_t* ms);
 
 /*! \brief Return a vector containing the gathered values of \c
- * localValue found on the master rank of each simulation. */
+ * localValue found on the main rank of each simulation. */
 std::vector<int> gatherIntFromMultiSimulation(const gmx_multisim_t* ms, int localValue);
 
 /*! \brief Check if val is the same on all simulations for a mdrun
@@ -154,18 +154,18 @@ static bool inline isMultiSim(const gmx_multisim_t* ms)
     return ms != nullptr;
 }
 
-/*! \brief Return whether this rank is the master rank of a
+/*! \brief Return whether this rank is the main rank of a
  * simulation, using \c ms (if it is valid) and otherwise \c
  * communicator */
-bool findIsSimulationMasterRank(const gmx_multisim_t* ms, MPI_Comm communicator);
+bool findIsSimulationMainRank(const gmx_multisim_t* ms, MPI_Comm communicator);
 
-//! Are we the master simulation of a possible multi-simulation?
-bool isMasterSim(const gmx_multisim_t* ms);
+//! Are we the main simulation of a possible multi-simulation?
+bool isMainSim(const gmx_multisim_t* ms);
 
-/*! \brief Are we the master rank (of the master simulation, for a multi-sim).
+/*! \brief Are we the main rank (of the main simulation, for a multi-sim).
  *
  * This rank prints the remaining run time etc. */
-bool isMasterSimMasterRank(const gmx_multisim_t* ms, bool isMaster);
+bool isMainSimMainRank(const gmx_multisim_t* ms, bool isMain);
 
 /*! \brief Log the initial state of the multi-sim
  *

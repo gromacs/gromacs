@@ -124,7 +124,7 @@ void ListedForceCalculator::computeForcesAndEnergies(gmx::ArrayRef<const Vec3> x
         ForceBufferProxy<Vec3>* threadBuffer = &threadedForceBuffers_[thread];
 
         // forces in range of this thread are directly written into the output buffer
-        threadBuffer->setMasterBuffer(forces);
+        threadBuffer->setMainBuffer(forces);
 
         // zero out the outliers in the thread buffer
         threadBuffer->clearOutliers();

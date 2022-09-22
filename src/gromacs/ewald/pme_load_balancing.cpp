@@ -195,7 +195,7 @@ struct pme_load_balancing_t
 
     int    cycles_n;  /**< step cycle counter cumulative count */
     double cycles_c;  /**< step cycle counter cumulative cycles */
-    double startTime; /**< time stamp when the balancing was started on the master rank (relative to the UNIX epoch start).*/
+    double startTime; /**< time stamp when the balancing was started on the main rank (relative to the UNIX epoch start).*/
 };
 
 /* TODO The code in this file should call this getter, rather than
@@ -292,8 +292,8 @@ void pme_loadbal_init(pme_load_balancing_t**     pme_lb_p,
 
     pme_lb->cycles_n = 0;
     pme_lb->cycles_c = 0;
-    // only master ranks do timing
-    if (!PAR(cr) || (haveDDAtomOrdering(*cr) && DDMASTER(cr->dd)))
+    // only main ranks do timing
+    if (!PAR(cr) || (haveDDAtomOrdering(*cr) && DDMAIN(cr->dd)))
     {
         pme_lb->startTime = gmx_gettime();
     }
@@ -950,7 +950,7 @@ void pme_loadbal_do(pme_load_balancing_t*          pme_lb,
      * We also want to skip a number of steps and seconds while
      * the CPU and GPU, when used, performance stabilizes.
      */
-    if (!PAR(cr) || (haveDDAtomOrdering(*cr) && DDMASTER(cr->dd)))
+    if (!PAR(cr) || (haveDDAtomOrdering(*cr) && DDMAIN(cr->dd)))
     {
         pme_lb->startupTimeDelayElapsed = (gmx_gettime() - pme_lb->startTime < c_startupTimeDelay);
     }
@@ -988,7 +988,7 @@ void pme_loadbal_do(pme_load_balancing_t*          pme_lb,
         else if (step_rel >= c_numFirstTuningIntervalSkipWithSepPme * ir.nstlist)
         {
             GMX_ASSERT(haveDDAtomOrdering(*cr), "Domain decomposition should be active here");
-            if (DDMASTER(cr->dd))
+            if (DDMAIN(cr->dd))
             {
                 /* If PME rank load is too high, start tuning. If
                    PME-PP direct GPU communication is active,

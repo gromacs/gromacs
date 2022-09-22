@@ -153,7 +153,7 @@ std::string makeGpuIdString(const std::vector<int>& gpuIds, int totalNumberOfTas
  * The error is given with a suitable descriptive message, which will
  * have context if this check is done after the hardware detection
  * results have been reported to the user. However, note that only the
- * GPUs detected on the master rank are reported, because of the
+ * GPUs detected on the main rank are reported, because of the
  * existing limitations of that reporting.
  *
  * \todo Note that the selected GPUs can be different on each rank,

@@ -104,7 +104,7 @@ enum class StartingBehavior : int
  * \throws GromacsException        On ranks upon which the error condition was
  *                                 not detected.
  *
- * \param[in]    isSimulationMaster Whether this rank is the master rank of a simulation
+ * \param[in]    isSimulationMain Whether this rank is the main rank of a simulation
  * \param[in]    communicator       MPI communicator
  * \param[in]    ms                 Handles multi-simulations.
  * \param[in]    appendingBehavior  User choice for appending
@@ -112,7 +112,7 @@ enum class StartingBehavior : int
  * \param[inout] fnm                Filename parameters to mdrun
  *
  * \return  Description of how mdrun is starting */
-std::tuple<StartingBehavior, LogFilePtr> handleRestart(bool                  isSimulationMaster,
+std::tuple<StartingBehavior, LogFilePtr> handleRestart(bool                  isSimulationMain,
                                                        MPI_Comm              communicator,
                                                        const gmx_multisim_t* ms,
                                                        AppendingBehavior     appendingBehavior,

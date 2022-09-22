@@ -169,8 +169,8 @@ void ewald_LRcorrection(const int                      numAtomsLocal,
         }
     }
 
-    /* Global corrections only on master process */
-    if (MASTER(commrec) && thread == 0)
+    /* Global corrections only on main process */
+    if (MAIN(commrec) && thread == 0)
     {
         for (int q = 0; q < (bHaveChargePerturbed ? 2 : 1); q++)
         {

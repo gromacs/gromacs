@@ -498,8 +498,8 @@ void CommandLineModuleManager::addHelpTopic(HelpTopicPointer topic)
 int CommandLineModuleManager::run(int argc, char* argv[])
 {
     ICommandLineModule*            module;
-    const bool                     bMaster = (gmx_node_rank() == 0);
-    bool                           bQuiet  = impl_->bQuiet_ || !bMaster;
+    const bool                     bMain  = (gmx_node_rank() == 0);
+    bool                           bQuiet = impl_->bQuiet_ || !bMain;
     CommandLineCommonOptionsHolder optionsHolder;
     try
     {
@@ -564,7 +564,7 @@ int CommandLineModuleManager::run(int argc, char* argv[])
     }
 
     int rc = 0;
-    if (!(module == impl_->helpModule_ && !bMaster))
+    if (!(module == impl_->helpModule_ && !bMain))
     {
         rc = module->run(argc, argv);
     }

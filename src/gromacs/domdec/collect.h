@@ -32,7 +32,7 @@
  * the research papers on the package. Check out https://www.gromacs.org.
  */
 /*! \libinternal \file
- * \brief Declares functions to collect state data to the master rank.
+ * \brief Declares functions to collect state data to the main rank.
  *
  * \author Berk Hess <hess@kth.se>
  * \inlibraryapi
@@ -52,7 +52,7 @@ class ArrayRef;
 struct gmx_domdec_t;
 class t_state;
 
-/*! \brief Gathers rvec arrays \p localVector to \p globalVector on the master rank */
+/*! \brief Gathers rvec arrays \p localVector to \p globalVector on the main rank */
 void dd_collect_vec(gmx_domdec_t*                  dd,
                     int                            ddpCount,
                     int                            ddpCountCgGl,
@@ -60,7 +60,7 @@ void dd_collect_vec(gmx_domdec_t*                  dd,
                     gmx::ArrayRef<const gmx::RVec> localVector,
                     gmx::ArrayRef<gmx::RVec>       globalVector);
 
-/*! \brief Gathers state \p localState to \p globalState on the master rank */
+/*! \brief Gathers state \p localState to \p globalState on the main rank */
 void dd_collect_state(gmx_domdec_t* dd, const t_state* localState, t_state* globalState);
 
 #endif

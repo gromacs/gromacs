@@ -101,7 +101,7 @@ void parallelTestFunction(const void gmx_unused* dummy)
     const std::array<int, c_numRanks> input{ 1, 2, 4, 8 };
     std::array<int, 1>                buffer{ input[myRank] };
 
-    biasSharing.sumOverSharingMasterRanks(buffer, 0);
+    biasSharing.sumOverSharingMainRanks(buffer, 0);
     int expectedSum = 0;
     for (int i = 0; i < c_numSharingBiases; i++)
     {

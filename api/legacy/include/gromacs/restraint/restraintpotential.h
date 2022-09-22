@@ -184,9 +184,9 @@ public:
     /*!
      * \brief Call-back hook for restraint implementations.
      *
-     * An update function to be called on the simulation master rank/thread periodically
+     * An update function to be called on the simulation main rank/thread periodically
      * by the Restraint framework.
-     * Receives the same input as the evaluate() method, but is only called on the master
+     * Receives the same input as the evaluate() method, but is only called on the main
      * rank of a simulation to allow implementation code to be thread-safe without knowing
      * anything about the domain decomposition.
      *

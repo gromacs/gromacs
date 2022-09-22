@@ -487,7 +487,7 @@ static void lincs_update_atoms(Lincs*                         li,
         if (!li->task[li->ntask].updateConstraintIndices1.empty())
         {
             /* Update the constraints that operate on atoms
-             * in multiple thread atom blocks on the master thread.
+             * in multiple thread atom blocks on the main thread.
              */
 #pragma omp barrier
 #pragma omp master
@@ -1673,7 +1673,7 @@ static void lincs_thread_setup(Lincs* li, int natoms)
 
     if (li->bTaskDep)
     {
-        /* Assign the rest constraint to a second thread task or a master test task */
+        /* Assign the rest constraint to a second thread task or a main test task */
 
         /* Clear the atom flags */
         for (gmx_bitmask_t& mask : atf)

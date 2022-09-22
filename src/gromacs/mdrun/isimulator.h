@@ -229,7 +229,7 @@ public:
     const gmx_mtop_t& top_global;
     //! Handle to local simulation topology.
     gmx_localtop_t* top;
-    //! Full simulation state (only non-nullptr on master rank).
+    //! Full simulation state (only non-nullptr on main rank).
     t_state* state_global;
     //! Handle to local state of the simulation.
     t_state* state;

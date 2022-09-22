@@ -273,17 +273,17 @@ static void low_set_ddbox(int                            numPbcDimensions,
 }
 
 void set_ddbox(const gmx_domdec_t&            dd,
-               bool                           masterRankHasTheSystemState,
+               bool                           mainRankHasTheSystemState,
                const matrix                   box,
                bool                           calculateUnboundedSize,
                gmx::ArrayRef<const gmx::RVec> x,
                gmx_ddbox_t*                   ddbox)
 {
-    if (!masterRankHasTheSystemState || DDMASTER(dd))
+    if (!mainRankHasTheSystemState || DDMAIN(dd))
     {
-        bool needToReduceCoordinateData     = (!masterRankHasTheSystemState && dd.nnodes > 1);
+        bool needToReduceCoordinateData     = (!mainRankHasTheSystemState && dd.nnodes > 1);
         gmx::ArrayRef<const gmx::RVec> xRef = constArrayRefFromArray(
-                x.data(), masterRankHasTheSystemState ? x.size() : dd.comm->atomRanges.numHomeAtoms());
+                x.data(), mainRankHasTheSystemState ? x.size() : dd.comm->atomRanges.numHomeAtoms());
 
         low_set_ddbox(dd.unitCellInfo.npbcdim,
                       dd.unitCellInfo.numBoundedDimensions,
@@ -295,7 +295,7 @@ void set_ddbox(const gmx_domdec_t&            dd,
                       ddbox);
     }
 
-    if (masterRankHasTheSystemState)
+    if (mainRankHasTheSystemState)
     {
         dd_bcast(&dd, sizeof(gmx_ddbox_t), ddbox);
     }
@@ -309,7 +309,7 @@ void set_ddbox_cr(DDRole                         ddRole,
                   gmx::ArrayRef<const gmx::RVec> x,
                   gmx_ddbox_t*                   ddbox)
 {
-    if (ddRole == DDRole::Master)
+    if (ddRole == DDRole::Main)
     {
         low_set_ddbox(
                 numPbcDimensions(ir.pbcType), inputrec2nboundeddim(&ir), dd_nc, box, true, x, nullptr, ddbox);

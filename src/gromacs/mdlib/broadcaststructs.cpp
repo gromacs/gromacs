@@ -63,7 +63,7 @@ void broadcastStateWithoutDynamics(MPI_Comm communicator,
         return;
     }
 
-    /* Broadcasts the state sizes and flags from the master to all ranks
+    /* Broadcasts the state sizes and flags from the main to all ranks
      * in cr->mpi_comm_mygroup.
      */
     block_bc(communicator, state->natoms);
@@ -113,23 +113,23 @@ static void bc_tpxheader(MPI_Comm communicator, TpxFileHeader* tpx)
     block_bc(communicator, tpx->isDouble);
 }
 
-static void bc_tprCharBuffer(MPI_Comm communicator, bool isMasterRank, std::vector<char>* charBuffer)
+static void bc_tprCharBuffer(MPI_Comm communicator, bool isMainRank, std::vector<char>* charBuffer)
 {
     int elements = charBuffer->size();
     block_bc(communicator, elements);
 
-    nblock_abc(isMasterRank, communicator, elements, charBuffer);
+    nblock_abc(isMainRank, communicator, elements, charBuffer);
 }
 
 void init_parallel(MPI_Comm                    communicator,
-                   bool                        isMasterRank,
+                   bool                        isMainRank,
                    t_inputrec*                 inputrec,
                    gmx_mtop_t*                 mtop,
                    PartialDeserializedTprFile* partialDeserializedTpr)
 {
     bc_tpxheader(communicator, &partialDeserializedTpr->header);
-    bc_tprCharBuffer(communicator, isMasterRank, &partialDeserializedTpr->body);
-    if (!isMasterRank)
+    bc_tprCharBuffer(communicator, isMainRank, &partialDeserializedTpr->body);
+    if (!isMainRank)
     {
         completeTprDeserialization(partialDeserializedTpr, inputrec, mtop);
     }

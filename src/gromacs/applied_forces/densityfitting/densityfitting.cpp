@@ -277,7 +277,7 @@ public:
      *   - the writing of checkpoint data
      *     by taking a MDModulesWriteCheckpointData as parameter
      *   - the reading of checkpoint data
-     *     by taking a MDModulesCheckpointReadingDataOnMaster as parameter
+     *     by taking a MDModulesCheckpointReadingDataOnMain as parameter
      *   - the broadcasting of checkpoint data
      *     by taking MDModulesCheckpointReadingBroadcast as parameter
      */
@@ -326,7 +326,7 @@ public:
         notifiers->checkpointingNotifier_.subscribe(checkpointDataWriting);
 
         // reading checkpoint data
-        const auto checkpointDataReading = [this](MDModulesCheckpointReadingDataOnMaster checkpointData) {
+        const auto checkpointDataReading = [this](MDModulesCheckpointReadingDataOnMain checkpointData) {
             densityFittingState_.readState(checkpointData.checkpointedData_,
                                            DensityFittingModuleInfo::name_);
         };

@@ -4,7 +4,7 @@
 
 
 # Copy test files
-if (GMXAPI_EXTENSION_MASTER_PROJECT)
+if (GMXAPI_EXTENSION_MAIN_PROJECT)
     # TODO: Deduplicate and leverage CMake dependencies.
     # We also build a test file in the spc_water_box pytest test fixture, but we can
     # presumably extract both of those from the GROMACS installation, or at least
@@ -71,11 +71,11 @@ gtest_add_tests(TARGET gmxapi_extension_bounding-test
 
 # Like GROMACS, this project uses a `tests` target to avoid
 # building the tests unnecessarily (such as for the `install` target).
-# If built as part of the GROMACS build tree (GROMACS is the "master" project),
+# If built as part of the GROMACS build tree (GROMACS is the "main" project),
 # the `tests` target is defined by the parent project.
-# Otherwise (the MD plugin is the "master project"), we have to add
+# Otherwise (the MD plugin is the "main project"), we have to add
 # the `tests` target in this project.
-if (GMXAPI_EXTENSION_MASTER_PROJECT)
+if (GMXAPI_EXTENSION_MAIN_PROJECT)
     add_custom_target(tests)
 else()
     include(CMakeGROMACS.txt)

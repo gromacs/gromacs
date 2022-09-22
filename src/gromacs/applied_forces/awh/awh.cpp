@@ -192,7 +192,8 @@ Awh::Awh(FILE*                 fplog,
     if (awhParams.shareBiasMultisim() && multiSimRecord != nullptr)
     {
         GMX_RELEASE_ASSERT(commRecord, "Need a valid commRecord");
-        biasSharing_ = std::make_unique<BiasSharing>(awhParams, *commRecord, multiSimRecord->mastersComm_);
+        biasSharing_ =
+                std::make_unique<BiasSharing>(awhParams, *commRecord, multiSimRecord->mainRanksComm_);
         if (fplog)
         {
             for (int k = 0; k < awhParams.numBias(); k++)
@@ -263,7 +264,7 @@ Awh::Awh(FILE*                 fplog,
 
         /* Construct the bias and couple it to the system. */
         Bias::ThisRankWillDoIO thisRankWillDoIO =
-                (MASTER(commRecord_) ? Bias::ThisRankWillDoIO::Yes : Bias::ThisRankWillDoIO::No);
+                (MAIN(commRecord_) ? Bias::ThisRankWillDoIO::Yes : Bias::ThisRankWillDoIO::No);
         biasCoupledToSystem_.emplace_back(Bias(k,
                                                awhParams,
                                                awhBiasParams[k],
@@ -281,7 +282,7 @@ Awh::Awh(FILE*                 fplog,
     /* Need to register the AWH coordinates to be allowed to apply forces to the pull coordinates. */
     registerAwhWithPull(awhParams, pull_);
 
-    if (biasSharing_ && MASTER(commRecord_))
+    if (biasSharing_ && MAIN(commRecord_))
     {
         std::vector<size_t> pointSize;
         for (auto const& biasCts : biasCoupledToSystem_)
@@ -399,12 +400,12 @@ real Awh::applyBiasForcesAndUpdateBias(PbcType                pbcType,
 
     wallcycle_stop(wallcycle, WallCycleCounter::Awh);
 
-    return MASTER(commRecord_) ? static_cast<real>(awhPotential) : 0;
+    return MAIN(commRecord_) ? static_cast<real>(awhPotential) : 0;
 }
 
 std::shared_ptr<AwhHistory> Awh::initHistoryFromState() const
 {
-    if (MASTER(commRecord_))
+    if (MAIN(commRecord_))
     {
         std::shared_ptr<AwhHistory> awhHistory(new AwhHistory);
         awhHistory->bias.clear();
@@ -427,10 +428,10 @@ std::shared_ptr<AwhHistory> Awh::initHistoryFromState() const
 void Awh::restoreStateFromHistory(const AwhHistory* awhHistory)
 {
     /* Restore the history to the current state */
-    if (MASTER(commRecord_))
+    if (MAIN(commRecord_))
     {
         GMX_RELEASE_ASSERT(awhHistory != nullptr,
-                           "The master rank should have a valid awhHistory when restoring the "
+                           "The main rank should have a valid awhHistory when restoring the "
                            "state from history.");
 
         if (awhHistory->bias.size() != biasCoupledToSystem_.size())
@@ -456,12 +457,12 @@ void Awh::restoreStateFromHistory(const AwhHistory* awhHistory)
 
 void Awh::updateHistory(AwhHistory* awhHistory) const
 {
-    if (!MASTER(commRecord_))
+    if (!MAIN(commRecord_))
     {
         return;
     }
 
-    /* This assert will also catch a non-master rank calling this function. */
+    /* This assert will also catch a worker rank calling this function. */
     GMX_RELEASE_ASSERT(awhHistory->bias.size() == biasCoupledToSystem_.size(),
                        "AWH state and history bias count should match");
 
@@ -499,7 +500,7 @@ void Awh::registerAwhWithPull(const AwhParams& awhParams, pull_t* pull_work)
 /* Fill the AWH data block of an energy frame with data (if there is any). */
 void Awh::writeToEnergyFrame(int64_t step, t_enxframe* frame) const
 {
-    GMX_ASSERT(MASTER(commRecord_), "writeToEnergyFrame should only be called on the master rank");
+    GMX_ASSERT(MAIN(commRecord_), "writeToEnergyFrame should only be called on the main rank");
     GMX_ASSERT(frame != nullptr, "Need a valid energy frame");
 
     if (!isOutputStep(step))
@@ -595,9 +596,9 @@ std::unique_ptr<Awh> prepareAwhModule(FILE*                 fplog,
     if (startingFromCheckpoint)
     {
         // Restore the AWH history read from checkpoint
-        awh->restoreStateFromHistory(MASTER(commRecord) ? stateGlobal->awhHistory.get() : nullptr);
+        awh->restoreStateFromHistory(MAIN(commRecord) ? stateGlobal->awhHistory.get() : nullptr);
     }
-    else if (MASTER(commRecord))
+    else if (MAIN(commRecord))
     {
         // Initialize the AWH history here
         stateGlobal->awhHistory = awh->initHistoryFromState();

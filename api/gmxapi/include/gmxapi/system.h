@@ -184,7 +184,7 @@ private:
  * The TPR file has sufficient information to fully specify an MD run, though
  * various parameters are implicit until the work is launched. The TPR filename
  * provided must refer to identical TPR files at the API client and at the
- * master rank of the execution host.
+ * main rank of the execution host.
  *
  * \param filename Filesystem path of TPR file.
  * \returns gmxapi::System object with the specified workflow.

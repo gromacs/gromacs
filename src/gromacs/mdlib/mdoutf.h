@@ -105,7 +105,7 @@ void done_mdoutf(gmx_mdoutf_t of);
  *
  * Writes data to trn, xtc and/or checkpoint. What is written is
  * determined by the mdof_flags defined below. Data is collected to
- * the master node only when necessary. Without domain decomposition
+ * the main node only when necessary. Without domain decomposition
  * only data from state_local is used and state_global is ignored.
  *
  * Note that the mdoutf_write_checkpoint function below allows to

@@ -319,7 +319,7 @@ real ewald_charge_correction(const t_commrec*            commrec,
 {
     real enercorr = 0;
 
-    if (MASTER(commrec))
+    if (MAIN(commrec))
     {
         /* Apply charge correction */
         real vol = box[XX][XX] * box[YY][YY] * box[ZZ][ZZ];

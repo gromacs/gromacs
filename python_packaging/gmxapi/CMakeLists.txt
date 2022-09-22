@@ -42,9 +42,9 @@ cmake_minimum_required(VERSION 3.18.4)
 project(gmxapi)
 
 # Check if Python package is being built directly or via add_subdirectory
-set(GMXAPI_MASTER_PROJECT OFF)
+set(GMXAPI_MAIN_PROJECT OFF)
 if (CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR)
-    set(GMXAPI_MASTER_PROJECT ON)
+    set(GMXAPI_MAIN_PROJECT ON)
     if (NOT Python3_FIND_STRATEGY)
         # If the user provides a hint for the Python installation with Python3_ROOT_DIR,
         # prevent FindPython3 from overriding the choice with a newer Python version
@@ -95,7 +95,7 @@ endif ()
 
 # Workaround for issue #4563 for GROMACS releases that won't be patched:
 # Find GROMACS package early.
-if(GMXAPI_MASTER_PROJECT)
+if(GMXAPI_MAIN_PROJECT)
     find_package(GROMACS 2021 REQUIRED
                  NAMES gromacs gromacs_mpi gromacs_d gromacs_mpi_d
                  HINTS "$ENV{GROMACS_DIR}"
@@ -110,7 +110,7 @@ else()
     set(GROMACS_IS_DOUBLE ${GMX_DOUBLE})
 endif()
 
-if(GMXAPI_MASTER_PROJECT)
+if(GMXAPI_MAIN_PROJECT)
     find_package(gmxapi REQUIRED)
     if (gmxapi_VERSION VERSION_LESS 0.2.1)
         message(
@@ -118,7 +118,7 @@ if(GMXAPI_MASTER_PROJECT)
             "Your GROMACS installation is too old. This package requires GROMACS 2021.3 or higher.")
     endif ()
 else()
-    # Building as part of the GROMACS master project. GROMACS CMake logic should
+    # Building as part of the GROMACS base project. GROMACS CMake logic should
     # not be processing this unless Python3 was appropriately detected.
     if (NOT Python3_FOUND)
         message(FATAL_ERROR "Error in CMake script. Please report GROMACS bug.")
@@ -129,10 +129,10 @@ endif()
 
 if(gmxapi_FOUND)
     set(_suffix "")
-    # GROMACS master branch and development branches may have divergent
+    # GROMACS main branch and development branches may have divergent
     # pre-release APIs. This check allows us to distinguish them and behave
     # differently if needed. github.com/kassonlab/gromacs-gmxapi devel branch
-    # sets gmxapi_EXPERIMENTAL=TRUE. Upstream GROMACS master branch does not.
+    # sets gmxapi_EXPERIMENTAL=TRUE. Upstream GROMACS main branch does not.
     # Ref: https://github.com/kassonlab/gmxapi/issues/166
     if(gmxapi_EXPERIMENTAL)
         set(_suffix " (unofficial)")
@@ -276,7 +276,7 @@ if (_mpi4py_result EQUAL 0)
     # if mpi4py was built in a different environment. We will rely on checks in
     # FindMPI.cmake to confirm tool chain compatibility, later.
 
-    if (GMXAPI_MASTER_PROJECT)
+    if (GMXAPI_MAIN_PROJECT)
         if (NOT MPI_C_COMPILER AND NOT MPI_CXX_COMPILER)
             if (_mpi4py_mpicc)
                 set(MPI_C_COMPILER ${_mpi4py_mpicc})
@@ -363,7 +363,7 @@ else()
     target_sources(_gmxapi PRIVATE src/cpp/pycontext_create_no_mpi.cpp)
 endif()
 
-if (GMXAPI_MASTER_PROJECT)
+if (GMXAPI_MAIN_PROJECT)
     set_target_properties(_gmxapi PROPERTIES BUILD_WITH_INSTALL_RPATH TRUE)
     set_target_properties(_gmxapi PROPERTIES INSTALL_RPATH_USE_LINK_PATH TRUE)
     # The Python setup.py sets CMAKE_LIBRARY_OUTPUT_DIRECTORY and will be looking for generated files there.
@@ -413,7 +413,7 @@ endif()
 # When building as part of GROMACS umbrella project, add a testing target
 # to the `check` target. Normal usage is to first install the Python package,
 # then run `pytest` on the `test` directory. Refer to gmxapi package documentation.
-if(NOT GMXAPI_MASTER_PROJECT)
+if(NOT GMXAPI_MAIN_PROJECT)
 	if (BUILD_TESTING)
 		add_subdirectory(test)
 	endif()

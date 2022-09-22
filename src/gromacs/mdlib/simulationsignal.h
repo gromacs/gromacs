@@ -130,7 +130,7 @@ public:
     /*! \brief Handle inter-simulation signal communication.
      *
      * If an inter-simulation signal should be handled, communicate between
-     * simulation-master ranks, then propagate from the masters to the
+     * simulation-main ranks, then propagate from the mains to the
      * rest of the ranks for each simulation. It is the responsibility of
      * the calling code to ensure that any necessary intra-simulation
      * signalling has already occurred, e.g. in global_stat(). */

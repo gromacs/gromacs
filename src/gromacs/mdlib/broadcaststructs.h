@@ -79,34 +79,34 @@ void nblock_bc(MPI_Comm communicator, gmx::ArrayRef<T> data)
 {
     gmx_bcast(data.size() * sizeof(T), static_cast<void*>(data.data()), communicator);
 }
-//! Convenience wrapper for allocation with snew of vectors that need allocation on non-master ranks.
+//! Convenience wrapper for allocation with snew of vectors that need allocation on non-main ranks.
 template<typename T>
-void snew_bc(bool isMasterRank, T*& data, int numElements)
+void snew_bc(bool isMainRank, T*& data, int numElements)
 {
-    if (!isMasterRank)
+    if (!isMainRank)
     {
         snew(data, numElements);
     }
 }
-//! Convenience wrapper for gmx_bcast of a C-style array which needs allocation on non-master ranks.
+//! Convenience wrapper for gmx_bcast of a C-style array which needs allocation on non-main ranks.
 template<typename T>
-void nblock_abc(bool isMasterRank, MPI_Comm communicator, int numElements, T** v)
+void nblock_abc(bool isMainRank, MPI_Comm communicator, int numElements, T** v)
 {
-    snew_bc(isMasterRank, v, numElements);
+    snew_bc(isMainRank, v, numElements);
     nblock_bc(communicator, numElements, *v);
 }
-//! Convenience wrapper for gmx_bcast of a std::vector which needs resizing on non-master ranks.
+//! Convenience wrapper for gmx_bcast of a std::vector which needs resizing on non-main ranks.
 template<typename T>
-void nblock_abc(bool isMasterRank, MPI_Comm communicator, int numElements, std::vector<T>* v)
+void nblock_abc(bool isMainRank, MPI_Comm communicator, int numElements, std::vector<T>* v)
 {
-    if (!isMasterRank)
+    if (!isMainRank)
     {
         v->resize(numElements);
     }
     gmx_bcast(numElements * sizeof(T), v->data(), communicator);
 }
 
-//! \brief Broadcasts the, non-dynamic, state from the master to all ranks in cr->mpi_comm_mygroup
+//! \brief Broadcasts the, non-dynamic, state from the main to all ranks in cr->mpi_comm_mygroup
 //
 // This is intended to be used with MPI parallelization without
 // domain decompostion (currently with NM and TPI).
@@ -117,7 +117,7 @@ void broadcastStateWithoutDynamics(MPI_Comm communicator,
 
 //! \brief Broadcast inputrec and mtop and allocate node-specific settings
 void init_parallel(MPI_Comm                    communicator,
-                   bool                        isMasterRank,
+                   bool                        isMainRank,
                    t_inputrec*                 inputrec,
                    gmx_mtop_t*                 mtop,
                    PartialDeserializedTprFile* partialDeserializedTpr);

@@ -75,7 +75,7 @@ void MembedHolder::initializeMembed(FILE*          fplog,
 {
     if (doMembed_)
     {
-        if (MASTER(cr))
+        if (MAIN(cr))
         {
             fprintf(stderr, "Initializing membed");
         }

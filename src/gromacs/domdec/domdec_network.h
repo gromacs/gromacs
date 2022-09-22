@@ -117,25 +117,25 @@ void dd_sendrecv2_rvec(const struct gmx_domdec_t* dd,
 /* The functions below perform the same operations as the MPI functions
  * with the same name appendices, but over the domain decomposition
  * nodes only.
- * The DD master node is the master for these operations.
+ * The DD main node is the coordinator for these operations.
  */
 
-/*! \brief Broadcasts \p nbytes from \p data on \p DDMASTERRANK to all PP ranks */
+/*! \brief Broadcasts \p nbytes from \p data on \p DDMAINRANK to all PP ranks */
 void dd_bcast(const gmx_domdec_t* dd, int nbytes, void* data);
 
-/*! \brief Scatters \p nbytes from \p src on \p DDMASTERRANK to all PP ranks, received in \p dest */
+/*! \brief Scatters \p nbytes from \p src on \p DDMAINRANK to all PP ranks, received in \p dest */
 void dd_scatter(const gmx_domdec_t* dd, int nbytes, const void* src, void* dest);
 
-/*! \brief Gathers \p nbytes from \p src on all PP ranks, received in \p dest on \p DDMASTERRANK */
+/*! \brief Gathers \p nbytes from \p src on all PP ranks, received in \p dest on \p DDMAINRANK */
 void dd_gather(const gmx_domdec_t* dd, int nbytes, const void* src, void* dest);
 
-/*! \brief Scatters \p scounts bytes from \p src on \p DDMASTERRANK to all PP ranks, receiving \p rcount bytes in \p dest.
+/*! \brief Scatters \p scounts bytes from \p src on \p DDMAINRANK to all PP ranks, receiving \p rcount bytes in \p dest.
  *
  * See man MPI_Scatterv for details of how to construct scounts and disps.
  * If rcount==0, rbuf is allowed to be NULL */
 void dd_scatterv(const gmx_domdec_t* dd, int* scounts, int* disps, const void* sbuf, int rcount, void* rbuf);
 
-/*! \brief Gathers \p rcount bytes from \p src on all PP ranks, received in \p scounts bytes in \p dest on \p DDMASTERRANK.
+/*! \brief Gathers \p rcount bytes from \p src on all PP ranks, received in \p scounts bytes in \p dest on \p DDMAINRANK.
  *
  * See man MPI_Gatherv for details of how to construct scounts and disps.
  *

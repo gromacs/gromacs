@@ -35,7 +35,7 @@
  * \brief
  * Declares the reset handler class.
  *
- * This class resets the various counters based on either the time (master rank sends
+ * This class resets the various counters based on either the time (main rank sends
  * checkpointing signal after 49.5% or run time), or based on the number of elapsed
  * steps (handled locally by all ranks independently). Resets can happen in different
  * ways:
@@ -53,7 +53,7 @@
  *
  * The setting and handling is implemented in private functions. They are only called
  * if a respective boolean is true. For the trivial case of no reset needed (or no reset
- * signal setting on any other rank than master), the translation unit of the calling
+ * signal setting on any other rank than main), the translation unit of the calling
  * function is therefore never left. The current implementation also allows the handler
  * and setters to be ignored once a reset has been done, as a reset is only allowed to
  * happen once. In the future, many of these cases this will be achieved by adding
@@ -95,7 +95,7 @@ enum class ResetSignal
 /*! \libinternal
  * \brief Class handling the reset of counters
  *
- * Master rank sets the reset signal if half the run time is reached.
+ * Main rank sets the reset signal if half the run time is reached.
  * All ranks receive the reset signal and reset their respective counters.
  * This also resets the counters if half the time steps have passed (no communication needed).
  */
@@ -112,7 +112,7 @@ public:
     ResetHandler(compat::not_null<SimulationSignal*> signal,
                  bool                                simulationsShareState,
                  int64_t                             nsteps,
-                 bool                                isMaster,
+                 bool                                isMain,
                  bool                                resetHalfway,
                  real                                maximumHoursToRun,
                  const MDLogger&                     mdlog,

@@ -304,13 +304,13 @@ static void ensureStateAndRunConsistency(const BiasParams& params, const BiasSta
 
 void Bias::restoreStateFromHistory(const AwhBiasHistory* biasHistory, const t_commrec* cr)
 {
-    GMX_RELEASE_ASSERT(thisRankDoesIO_ == MASTER(cr),
-                       "The master rank should do I/O, the other ranks should not");
+    GMX_RELEASE_ASSERT(thisRankDoesIO_ == MAIN(cr),
+                       "The main rank should do I/O, the other ranks should not");
 
-    if (MASTER(cr))
+    if (MAIN(cr))
     {
         GMX_RELEASE_ASSERT(biasHistory != nullptr,
-                           "On the master rank we need a valid history object to restore from");
+                           "On the main rank we need a valid history object to restore from");
         state_.restoreFromHistory(*biasHistory, grid_);
 
         /* Ensure that the state is consistent with our current run setup,

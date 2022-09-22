@@ -64,7 +64,7 @@ void gmx_setup_nodecomm(FILE* fplog, struct t_commrec* cr);
 //! Wait until all processes in communicator have reached the barrier
 void gmx_barrier(MPI_Comm communicator);
 
-/*! \brief Broadcast nbytes bytes from the master to communicator
+/*! \brief Broadcast nbytes bytes from the main to communicator
  *
  * Can be called with a single rank or without MPI
  */
@@ -94,19 +94,19 @@ void gmx_sumd(int nr, double r[], const struct t_commrec* cr);
 #    define gmx_sum gmx_sumf
 #endif
 
-const char* opt2fn_master(const char* opt, int nfile, const t_filenm fnm[], t_commrec* cr);
+const char* opt2fn_main(const char* opt, int nfile, const t_filenm fnm[], t_commrec* cr);
 /* Return the filename belonging to cmd-line option opt, or NULL when
- * no such option or not running on master */
+ * no such option or not running on main */
 
 [[noreturn]] void gmx_fatal_collective(int                    f_errno,
                                        const char*            file,
                                        int                    line,
                                        MPI_Comm               comm,
-                                       gmx_bool               bMaster,
+                                       gmx_bool               bMain,
                                        gmx_fmtstr const char* fmt,
                                        ...) gmx_format(printf, 6, 7);
 /* As gmx_fatal declared in utility/fatalerror.h,
- * but only the master process prints the error message.
+ * but only the main process prints the error message.
  * This should only be called one of the following two situations:
  * 1) On all nodes in cr->mpi_comm_mysim, with cr!=NULL,dd==NULL.
  * 2) On all nodes in dd->mpi_comm_all,   with cr==NULL,dd!=NULL.

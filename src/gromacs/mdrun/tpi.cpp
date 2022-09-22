@@ -474,7 +474,7 @@ void LegacySimulator::do_tpi()
             seed, gmx::RandomDomain::TestParticleInsertion); // 16 bits internal counter => 2^16 * 2 = 131072 values per stream
     gmx::UniformRealDistribution<real> dist;
 
-    if (MASTER(cr))
+    if (MAIN(cr))
     {
         fp_tpi = xvgropen(opt2fn("-tpi", nfile, fnm),
                           "TPI energies",
@@ -1003,7 +1003,7 @@ void LegacySimulator::do_tpi()
         realloc_bins(&bin, &nbin, i);
         gmx_sumd(nbin, bin, cr);
     }
-    if (MASTER(cr))
+    if (MAIN(cr))
     {
         fp_tpi   = xvgropen(opt2fn("-tpid", nfile, fnm),
                           "TPI energy distribution",

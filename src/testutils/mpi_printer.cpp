@@ -125,7 +125,7 @@ void MPIEventForward::OnTestEnd(const ::testing::TestInfo& test_info)
         for (int i = 0; i < result->total_part_count(); ++i)
         {
             /* TODO: A future implementation might forward the
-               contents / output of OnTestPartResult to the master
+               contents / output of OnTestPartResult to the main
                rank to handle all the output there. Currently, the
                output of the expected and actual behaviour only occurs
                if the failing ranks include rank 0, and is only

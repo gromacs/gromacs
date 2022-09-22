@@ -61,7 +61,7 @@ enum class DDRole;
 
 /*! \brief Set the box and PBC data in \p ddbox */
 void set_ddbox(const gmx_domdec_t&            dd,
-               bool                           masterRankHasTheSystemState,
+               bool                           mainRankHasTheSystemState,
                const matrix                   box,
                bool                           calculateUnboundedSize,
                gmx::ArrayRef<const gmx::RVec> x,

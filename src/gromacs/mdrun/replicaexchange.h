@@ -71,7 +71,7 @@ typedef struct gmx_repl_ex* gmx_repl_ex_t;
 
 /*! \brief Setup function.
  *
- * Should only be called on the master ranks */
+ * Should only be called on the main ranks */
 gmx_repl_ex_t init_replica_exchange(FILE*                            fplog,
                                     const gmx_multisim_t*            ms,
                                     int                              numAtomsInSystem,
@@ -81,7 +81,7 @@ gmx_repl_ex_t init_replica_exchange(FILE*                            fplog,
 /*! \brief Attempts replica exchange.
  *
  * Should be called on all ranks.  When running each replica in
- * parallel, this routine collects the state on the master rank before
+ * parallel, this routine collects the state on the main rank before
  * exchange.  With domain decomposition, the global state after
  * exchange is stored in state and still needs to be redistributed
  * over the ranks.
@@ -100,7 +100,7 @@ gmx_bool replica_exchange(FILE*                 fplog,
 
 /*! \brief Prints replica exchange statistics to the log file.
  *
- * Should only be called on the master ranks */
+ * Should only be called on the main ranks */
 void print_replica_exchange_statistics(FILE* fplog, gmx_repl_ex_t re);
 
 #endif

@@ -81,7 +81,7 @@ void MttkData::build(LegacySimulatorData*                    legacySimulatorData
     // TODO: Make sure we have a valid state in statePropagatorData at all times (#3421)
     if (haveDDAtomOrdering(*legacySimulatorData->cr))
     {
-        if (MASTER(legacySimulatorData->cr))
+        if (MAIN(legacySimulatorData->cr))
         {
             initialVolume = det(legacySimulatorData->state_global->box);
         }
@@ -296,7 +296,7 @@ void MttkData::doCheckpointData(CheckpointData<operation>* checkpointData)
 
 void MttkData::saveCheckpointState(std::optional<WriteCheckpointData> checkpointData, const t_commrec* cr)
 {
-    if (MASTER(cr))
+    if (MAIN(cr))
     {
         doCheckpointData<CheckpointDataOperation::Write>(&checkpointData.value());
     }
@@ -304,7 +304,7 @@ void MttkData::saveCheckpointState(std::optional<WriteCheckpointData> checkpoint
 
 void MttkData::restoreCheckpointState(std::optional<ReadCheckpointData> checkpointData, const t_commrec* cr)
 {
-    if (MASTER(cr))
+    if (MAIN(cr))
     {
         doCheckpointData<CheckpointDataOperation::Read>(&checkpointData.value());
     }

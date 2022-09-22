@@ -980,7 +980,7 @@ void init_forcerec(FILE*                            fplog,
     {
         t_fcdata& fcdata = *forcerec->fcdata;
         // Need to catch std::bad_alloc
-        // TODO Don't need to catch this here, when merging with master branch
+        // TODO Don't need to catch this here, when merging with main branch
         try
         {
             // TODO move these tables into a separate struct and store reference in ListedForces

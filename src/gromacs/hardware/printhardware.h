@@ -44,7 +44,7 @@ class MDLogger;
 }
 
 /* Print information about the detected hardware to fplog (if != NULL)
- * and to stderr on the master rank of the master simulation.
+ * and to stderr on the main rank of the main simulation.
  */
 void gmx_print_detected_hardware(FILE*                fplog,
                                  bool                 warnToStdErr,

@@ -64,7 +64,7 @@ class LocalAtomSetManager;
 class MDLogger;
 class IndexGroupsAndNames;
 class SeparatePmeRanksPermitted;
-struct MDModulesCheckpointReadingDataOnMaster;
+struct MDModulesCheckpointReadingDataOnMain;
 struct MDModulesCheckpointReadingBroadcast;
 struct MDModulesWriteCheckpointData;
 
@@ -277,8 +277,8 @@ struct MDModulesNotifiers
 
     /*! \brief Handles subscribing and calling checkpointing callback functions.
      *
-     * MDModulesCheckpointReadingDataOnMaster provides modules with their
-     *                                        checkpointed data on the master
+     * MDModulesCheckpointReadingDataOnMain   provides modules with their
+     *                                        checkpointed data on the main
      *                                        node and checkpoint file version
      * MDModulesCheckpointReadingBroadcast provides modules with a communicator
      *                                     and the checkpoint file version to
@@ -287,7 +287,7 @@ struct MDModulesNotifiers
      *                              builder to store their checkpoint data and
      *                              the checkpoint file version
      */
-    BuildMDModulesNotifier<MDModulesCheckpointReadingDataOnMaster, MDModulesCheckpointReadingBroadcast, MDModulesWriteCheckpointData>::type
+    BuildMDModulesNotifier<MDModulesCheckpointReadingDataOnMain, MDModulesCheckpointReadingBroadcast, MDModulesWriteCheckpointData>::type
             checkpointingNotifier_;
 
     /*! \brief Handles subscribing and calling callbacks during simulation setup.

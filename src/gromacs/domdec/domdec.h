@@ -290,7 +290,7 @@ void communicateGpuHaloForces(const t_commrec&                                  
 /*! \brief Wraps the \c positions so that atoms from the same
  * update group share the same periodic image wrt \c box.
  *
- * When DD and update groups are in use, the simulation master rank
+ * When DD and update groups are in use, the simulation main rank
  * should call this to ensure that e.g. when restarting a simulation
  * that did not use update groups that the coordinates satisfy the new
  * requirements.

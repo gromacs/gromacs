@@ -173,7 +173,7 @@ void StopHandlerBuilder::registerStopCondition(std::function<StopSignal()> stopC
 
 std::unique_ptr<StopHandler> StopHandlerBuilder::getStopHandlerMD(compat::not_null<SimulationSignal*> signal,
                                                                   bool simulationShareState,
-                                                                  bool isMaster,
+                                                                  bool isMain,
                                                                   int  nstList,
                                                                   bool makeBinaryReproducibleSimulation,
                                                                   int   nstSignalComm,
@@ -184,7 +184,7 @@ std::unique_ptr<StopHandler> StopHandlerBuilder::getStopHandlerMD(compat::not_nu
                                                                   const gmx_bool& bNS,
                                                                   gmx_walltime_accounting_t walltime_accounting)
 {
-    if (!GMX_THREAD_MPI || isMaster)
+    if (!GMX_THREAD_MPI || isMain)
     {
         // Using shared ptr because move-only callable not supported by std::function.
         // Would require replacement such as fu2::function or cxx_function.
@@ -194,7 +194,7 @@ std::unique_ptr<StopHandler> StopHandlerBuilder::getStopHandlerMD(compat::not_nu
                 [stopConditionSignal, fplog]() { return stopConditionSignal->getSignal(fplog); });
     }
 
-    if (isMaster && maximumHoursToRun > 0)
+    if (isMain && maximumHoursToRun > 0)
     {
         auto stopConditionTime =
                 std::make_shared<StopConditionTime>(nstList, maximumHoursToRun, nstSignalComm);

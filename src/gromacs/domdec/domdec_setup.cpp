@@ -981,14 +981,14 @@ DDGridSetup getDDGridSetup(const gmx::MDLogger&                  mdlog,
     {
         set_ddbox_cr(ddRole, communicator, nullptr, ir, box, xGlobal, ddbox);
 
-        if (ddRole == DDRole::Master)
+        if (ddRole == DDRole::Main)
         {
             numDomains = optimizeDDCells(
                     mdlog, numRanksRequested, numPmeOnlyRanks, cellSizeLimit, mtop, box, *ddbox, ir, systemInfo);
         }
     }
 
-    /* Communicate the information set by the master to all ranks */
+    /* Communicate the information set by the coordinator to all ranks */
     gmx_bcast(sizeof(numDomains), numDomains, communicator);
     if (usingPme(ir.coulombtype))
     {

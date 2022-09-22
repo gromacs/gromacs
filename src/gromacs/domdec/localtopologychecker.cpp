@@ -180,7 +180,7 @@ static std::string printMissingInteractionsMolblock(const t_commrec*         cr,
             int j     = mol * nril_mol + j_mol;
             if (isAssigned[j] == 0 && !(interaction_function[ftype].flags & IF_VSITE))
             {
-                if (DDMASTER(cr->dd))
+                if (DDMAIN(cr->dd))
                 {
                     if (i == 0)
                     {
@@ -281,7 +281,7 @@ static void printMissingInteractionsAtoms(const MDLogger&               mdlog,
 
     gmx_sumi(F_NRE, cl, cr);
 
-    if (DDMASTER(dd))
+    if (DDMAIN(dd))
     {
         GMX_LOG(mdlog.warning).appendText("A list of missing interactions:");
         int rest_global = expectedNumGlobalBondedInteractions;
@@ -343,7 +343,7 @@ static void printMissingInteractionsAtoms(const MDLogger&               mdlog,
                 dd_cutoff_multibody(dd),
                 dd_cutoff_twobody(dd));
     }
-    gmx_fatal_collective(FARGS, cr->mpi_comm_mygroup, MASTER(cr), "%s", errorMessage.c_str());
+    gmx_fatal_collective(FARGS, cr->mpi_comm_mygroup, MAIN(cr), "%s", errorMessage.c_str());
 }
 
 /*! \brief Data to help check local topology construction

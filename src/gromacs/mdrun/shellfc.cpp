@@ -1137,7 +1137,7 @@ void relax_shell_flexcon(FILE*                         fplog,
                   posWithPadding[Try].paddedArrayRef().begin());
     }
 
-    if (bVerbose && MASTER(cr))
+    if (bVerbose && MAIN(cr))
     {
         print_epot(stdout, mdstep, 0, Epot[Min], df[Min], nflexcon, sf_dir);
     }
@@ -1278,7 +1278,7 @@ void relax_shell_flexcon(FILE*                         fplog,
             }
         }
 
-        if (bVerbose && MASTER(cr))
+        if (bVerbose && MAIN(cr))
         {
             print_epot(stdout, mdstep, count, Epot[Try], df[Try], nflexcon, sf_dir);
         }
@@ -1315,7 +1315,7 @@ void relax_shell_flexcon(FILE*                         fplog,
     {
         shfc->numConvergedIterations++;
     }
-    if (MASTER(cr) && !(bConverged))
+    if (MAIN(cr) && !(bConverged))
     {
         /* Note that the energies and virial are incorrect when not converged */
         if (fplog)

@@ -186,7 +186,7 @@ struct gmx_wallcycle
     int                                                  wc_depth;
     std::array<WallCycleCounter, sc_maxWallCycleDepth>   counterlist;
     int                                                  count_depth;
-    bool                                                 isMasterRank;
+    bool                                                 isMainRank;
     WallCycleCounter                                     ewc_prev;
     gmx_cycles_t                                         cycle_prev;
     int64_t                                              reset_counters;

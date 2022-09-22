@@ -187,7 +187,7 @@ void increaseNstlist(FILE*               fp,
 
     if (EI_MD(ir->eI) && ir->etc == TemperatureCoupling::No)
     {
-        if (MASTER(cr))
+        if (MAIN(cr))
         {
             fprintf(stderr, "%s\n", nve_err);
         }
@@ -208,7 +208,7 @@ void increaseNstlist(FILE*               fp,
 
     if (ir->verletbuf_tol < 0)
     {
-        if (MASTER(cr))
+        if (MAIN(cr))
         {
             fprintf(stderr, "%s\n", vbd_err);
         }
@@ -352,7 +352,7 @@ void increaseNstlist(FILE*               fp,
                 ir->nstlist,
                 ir->rlist,
                 rlist_new);
-        if (MASTER(cr))
+        if (MAIN(cr))
         {
             fprintf(stderr, "%s\n\n", buf);
         }

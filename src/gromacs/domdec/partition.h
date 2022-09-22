@@ -81,7 +81,7 @@ void print_dd_statistics(const t_commrec* cr, const t_inputrec& inputrec, FILE* 
 /*! \brief Partition the system over the nodes.
  *
  * step is only used for printing error messages.
- * If bMasterState==TRUE then state_global from the master node is used,
+ * If bMainState==TRUE then state_global from the main node is used,
  * else state_local is redistributed between the nodes.
  * When f!=NULL, *f will be reallocated to the size of state_local.
  *
@@ -89,7 +89,7 @@ void print_dd_statistics(const t_commrec* cr, const t_inputrec& inputrec, FILE* 
  * \param[in] mdlog         MD file logger
  * \param[in] step          Current step
  * \param[in] cr            Communication record
- * \param[in] bMasterState  Is it a master state
+ * \param[in] bMainState  Is it a main state
  * \param[in] nstglobalcomm Will globals be computed on this step
  * \param[in] state_global  Global state
  * \param[in] top_global    Global topology
@@ -111,7 +111,7 @@ void dd_partition_system(FILE*                     fplog,
                          const gmx::MDLogger&      mdlog,
                          int64_t                   step,
                          const t_commrec*          cr,
-                         bool                      bMasterState,
+                         bool                      bMainState,
                          int                       nstglobalcomm,
                          t_state*                  state_global,
                          const gmx_mtop_t&         top_global,

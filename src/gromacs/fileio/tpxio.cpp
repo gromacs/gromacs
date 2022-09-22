@@ -3318,7 +3318,7 @@ static PartialDeserializedTprFile readTpxBody(TpxFileHeader*    tpx,
     // Update header to system info for communication to nodes.
     // As we only need to communicate the inputrec and mtop to other nodes,
     // we prepare a new char buffer with the information we have already read
-    // in on master.
+    // in on main.
     partialDeserializedTpr.header = populateTpxHeader(*state, ir, mtop);
     // Long-term we should move to use little endian in files to avoid extra byte swapping,
     // but since we just used the default XDR format (which is big endian) for the TPR

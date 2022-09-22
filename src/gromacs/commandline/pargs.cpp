@@ -536,7 +536,7 @@ gmx_bool parse_common_args(int*               argc,
         {
             GMX_RELEASE_ASSERT(gmx_node_rank() == 0,
                                "Help output should be handled higher up and "
-                               "only get called only on the master rank");
+                               "only get called only on the main rank");
             gmx::CommandLineHelpWriter(options)
                     .setHelpText(gmx::constArrayRefFromArray<const char*>(desc, ndesc))
                     .setKnownIssues(gmx::constArrayRefFromArray(bugs, nbugs))

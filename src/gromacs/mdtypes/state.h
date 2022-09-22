@@ -371,7 +371,7 @@ void printLambdaStateToLog(FILE* fplog, gmx::ArrayRef<const real> lambda, bool i
 /*! \brief Fills fep_state and lambda if needed
  *
  * If FEP or simulated tempering is in use,  fills fep_state
- * and lambda on master rank.
+ * and lambda on main rank.
  *
  * Reports the initial lambda state to the log file. */
 void initialize_lambdas(FILE*                      fplog,
@@ -380,7 +380,7 @@ void initialize_lambdas(FILE*                      fplog,
                         const t_lambda&            fep,
                         gmx::ArrayRef<const real>  simulatedTemperingTemps,
                         gmx::ArrayRef<real>        ref_t,
-                        bool                       isMaster,
+                        bool                       isMain,
                         int*                       fep_state,
                         gmx::ArrayRef<real>        lambda);
 

@@ -177,7 +177,7 @@ PbcType completeTprDeserialization(PartialDeserializedTprFile* partialDeserializ
  * to populate the \p state, \p ir and \p mtop needed to run a simulations.
  *
  * This function returns the partial deserialized TPR file
- * that can then be communicated to set up non-master nodes to run simulations.
+ * that can then be communicated to set up non-main nodes to run simulations.
  *
  * \param[in] fn Input file name.
  * \param[out] ir Input parameters to be set, or nullptr.

@@ -199,7 +199,7 @@ ISimulatorElement* AndersenTemperatureCoupling::getElementPointerImpl(
                 statePropagatorData,
                 energyData,
                 freeEnergyPerturbationData,
-                MASTER(legacySimulatorData->cr),
+                MAIN(legacySimulatorData->cr),
                 legacySimulatorData->fplog,
                 legacySimulatorData->inputrec,
                 legacySimulatorData->mdAtoms->mdatoms());

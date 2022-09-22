@@ -85,7 +85,7 @@ std::unique_ptr<BoxDeformation> buildBoxDeformation(const Matrix3x3&  initialBox
     // the initial box, so we pass that around.
     // (numRanks != NumRanks::Multiple helps clang static analyzer to
     // understand that box is defined in all cases)
-    if (ddRole == DDRole::Master || numRanks != NumRanks::Multiple)
+    if (ddRole == DDRole::Main || numRanks != NumRanks::Multiple)
     {
         box = initialBox;
     }

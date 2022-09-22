@@ -446,7 +446,7 @@ gmx_repl_ex_t init_replica_exchange(FILE*                            fplog,
     re->nst = nst;
     if (replExParams.randomSeed == -1)
     {
-        if (isMasterSim(ms))
+        if (isMainSim(ms))
         {
             re->seed = static_cast<int>(gmx::makeRandomSeed());
         }
@@ -516,13 +516,13 @@ static void exchange_reals(const gmx_multisim_t gmx_unused* ms, int gmx_unused b
         /*
            MPI_Sendrecv(v,  n*sizeof(real),MPI_BYTE,MSRANK(ms,b),0,
            buf,n*sizeof(real),MPI_BYTE,MSRANK(ms,b),0,
-           ms->mastersComm_,MPI_STATUS_IGNORE);
+           ms->mainRanksComm_,MPI_STATUS_IGNORE);
          */
         {
             MPI_Request mpi_req;
 
-            MPI_Isend(v, n * sizeof(real), MPI_BYTE, MSRANK(ms, b), 0, ms->mastersComm_, &mpi_req);
-            MPI_Recv(buf, n * sizeof(real), MPI_BYTE, MSRANK(ms, b), 0, ms->mastersComm_, MPI_STATUS_IGNORE);
+            MPI_Isend(v, n * sizeof(real), MPI_BYTE, MSRANK(ms, b), 0, ms->mainRanksComm_, &mpi_req);
+            MPI_Recv(buf, n * sizeof(real), MPI_BYTE, MSRANK(ms, b), 0, ms->mainRanksComm_, MPI_STATUS_IGNORE);
             MPI_Wait(&mpi_req, MPI_STATUS_IGNORE);
         }
 #endif
@@ -547,13 +547,13 @@ static void exchange_doubles(const gmx_multisim_t gmx_unused* ms, int gmx_unused
         /*
            MPI_Sendrecv(v,  n*sizeof(double),MPI_BYTE,MSRANK(ms,b),0,
            buf,n*sizeof(double),MPI_BYTE,MSRANK(ms,b),0,
-           ms->mastersComm_,MPI_STATUS_IGNORE);
+           ms->mainRanksComm_,MPI_STATUS_IGNORE);
          */
         {
             MPI_Request mpi_req;
 
-            MPI_Isend(v, n * sizeof(double), MPI_BYTE, MSRANK(ms, b), 0, ms->mastersComm_, &mpi_req);
-            MPI_Recv(buf, n * sizeof(double), MPI_BYTE, MSRANK(ms, b), 0, ms->mastersComm_, MPI_STATUS_IGNORE);
+            MPI_Isend(v, n * sizeof(double), MPI_BYTE, MSRANK(ms, b), 0, ms->mainRanksComm_, &mpi_req);
+            MPI_Recv(buf, n * sizeof(double), MPI_BYTE, MSRANK(ms, b), 0, ms->mainRanksComm_, MPI_STATUS_IGNORE);
             MPI_Wait(&mpi_req, MPI_STATUS_IGNORE);
         }
 #endif
@@ -577,13 +577,13 @@ static void exchange_rvecs(const gmx_multisim_t gmx_unused* ms, int gmx_unused b
         /*
            MPI_Sendrecv(v[0],  n*sizeof(rvec),MPI_BYTE,MSRANK(ms,b),0,
            buf[0],n*sizeof(rvec),MPI_BYTE,MSRANK(ms,b),0,
-           ms->mastersComm_,MPI_STATUS_IGNORE);
+           ms->mainRanksComm_,MPI_STATUS_IGNORE);
          */
         {
             MPI_Request mpi_req;
 
-            MPI_Isend(v[0], n * sizeof(rvec), MPI_BYTE, MSRANK(ms, b), 0, ms->mastersComm_, &mpi_req);
-            MPI_Recv(buf[0], n * sizeof(rvec), MPI_BYTE, MSRANK(ms, b), 0, ms->mastersComm_, MPI_STATUS_IGNORE);
+            MPI_Isend(v[0], n * sizeof(rvec), MPI_BYTE, MSRANK(ms, b), 0, ms->mainRanksComm_, &mpi_req);
+            MPI_Recv(buf[0], n * sizeof(rvec), MPI_BYTE, MSRANK(ms, b), 0, ms->mainRanksComm_, MPI_STATUS_IGNORE);
             MPI_Wait(&mpi_req, MPI_STATUS_IGNORE);
         }
 #endif
@@ -1273,7 +1273,7 @@ gmx_bool replica_exchange(FILE*                 fplog,
     /* The order in which multiple exchanges will occur. */
     gmx_bool bThisReplicaExchanged = FALSE;
 
-    if (MASTER(cr))
+    if (MAIN(cr))
     {
         replica_id = re->repl;
         test_for_replica_exchange(fplog, ms, re, enerd, det(state_local->box), step, time);
@@ -1286,14 +1286,14 @@ gmx_bool replica_exchange(FILE*                 fplog,
     if (haveDDAtomOrdering(*cr))
     {
 #if GMX_MPI
-        MPI_Bcast(&bThisReplicaExchanged, sizeof(gmx_bool), MPI_BYTE, MASTERRANK(cr), cr->mpi_comm_mygroup);
+        MPI_Bcast(&bThisReplicaExchanged, sizeof(gmx_bool), MPI_BYTE, MAINRANK(cr), cr->mpi_comm_mygroup);
 #endif
     }
 
     if (bThisReplicaExchanged)
     {
         /* Exchange the states */
-        /* Collect the global state on the master node */
+        /* Collect the global state on the main node */
         if (haveDDAtomOrdering(*cr))
         {
             dd_collect_state(cr->dd, state_local, state);
@@ -1303,7 +1303,7 @@ gmx_bool replica_exchange(FILE*                 fplog,
             copy_state_serial(state_local, state);
         }
 
-        if (MASTER(cr))
+        if (MAIN(cr))
         {
             /* There will be only one swap cycle with standard replica
              * exchange, but there may be multiple swap cycles if we
@@ -1315,7 +1315,7 @@ gmx_bool replica_exchange(FILE*                 fplog,
 
                 if (exchange_partner != replica_id)
                 {
-                    /* Exchange the global states between the master nodes */
+                    /* Exchange the global states between the main nodes */
                     if (debug)
                     {
                         fprintf(debug, "Exchanging %d with %d\n", replica_id, exchange_partner);

@@ -1408,8 +1408,8 @@ void update_ekinstate(ekinstate_t* ekinstate, const gmx_ekindata_t* ekind, const
 
         gmx_sumd(bufIndex, buffer.data(), cr);
 
-        // Extract to ekinstate on the master rank only
-        if (MASTER(cr))
+        // Extract to ekinstate on the main rank only
+        if (MAIN(cr))
         {
             bufIndex = 0;
             for (int g = 0; g < ekinstate->ekin_n; g++)
@@ -1433,7 +1433,7 @@ void update_ekinstate(ekinstate_t* ekinstate, const gmx_ekindata_t* ekind, const
         }
     }
 
-    if (MASTER(cr))
+    if (MAIN(cr))
     {
         if (!reduceEkin)
         {
@@ -1462,7 +1462,7 @@ void restore_ekinstate_from_state(const t_commrec* cr, gmx_ekindata_t* ekind, co
 {
     int i, n;
 
-    if (MASTER(cr))
+    if (MAIN(cr))
     {
         for (i = 0; i < ekinstate->ekin_n; i++)
         {

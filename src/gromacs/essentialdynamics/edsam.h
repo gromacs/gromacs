@@ -118,7 +118,7 @@ void do_edsam(const t_inputrec*        ir,
  * \param ir                MD input parameter record.
  * \param cr                Data needed for MPI communication.
  * \param constr            Data structure keeping the constraint information.
- * \param globalState       The global state, only used on the master rank.
+ * \param globalState       The global state, only used on the main rank.
  * \param oh                The observables history container.
  * \param oenv              The output environment information.
  * \param startingBehavior  Describes whether this is a restart appending to output files

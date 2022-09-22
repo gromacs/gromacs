@@ -680,7 +680,7 @@ static void print_hw_opt(FILE* fp, const gmx_hw_opt_t* hw_opt)
 
 void checkAndUpdateHardwareOptions(const gmx::MDLogger& mdlog,
                                    gmx_hw_opt_t*        hw_opt,
-                                   const bool           isSimulationMasterRank,
+                                   const bool           isSimulationMainRank,
                                    const int            nPmeRanks,
                                    const t_inputrec*    inputrec)
 {
@@ -726,7 +726,7 @@ void checkAndUpdateHardwareOptions(const gmx::MDLogger& mdlog,
     /* With thread-MPI we need to handle TPI and #OpenMP-threads=auto early,
      * so we can parallelize using MPI only. The general check is done later.
      */
-    if (GMX_THREAD_MPI && isSimulationMasterRank)
+    if (GMX_THREAD_MPI && isSimulationMainRank)
     {
         GMX_RELEASE_ASSERT(inputrec, "Expect a valid inputrec");
         if (EI_TPI(inputrec->eI) && hw_opt->nthreads_omp == 0)
@@ -734,11 +734,11 @@ void checkAndUpdateHardwareOptions(const gmx::MDLogger& mdlog,
             hw_opt->nthreads_omp = 1;
         }
     }
-    /* With thread-MPI the master thread sets hw_opt->totNumThreadsIsAuto.
-     * The other threads receive a partially processed hw_opt from the master
+    /* With thread-MPI the main thread sets hw_opt->totNumThreadsIsAuto.
+     * The other threads receive a partially processed hw_opt from the main
      * thread and should not set hw_opt->totNumThreadsIsAuto again.
      */
-    if (!GMX_THREAD_MPI || isSimulationMasterRank)
+    if (!GMX_THREAD_MPI || isSimulationMainRank)
     {
         /* Check if mdrun is free to choose the total number of threads */
         hw_opt->totNumThreadsIsAuto = (hw_opt->nthreads_omp == 0 && hw_opt->nthreads_omp_pme == 0
@@ -1024,7 +1024,7 @@ void checkHardwareOversubscription(int                             numThreadsOnT
             mesg += "threads.";
         }
         mesg += "\n         This will cause considerable performance loss.";
-        /* Note that only the master rank logs to stderr and only ranks
+        /* Note that only the main rank logs to stderr and only ranks
          * with an open log file write to log.
          * TODO: When we have a proper parallel logging framework,
          *       the framework should add the rank and node numbers.

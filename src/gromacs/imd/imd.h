@@ -165,7 +165,7 @@ public:
      * Each node checks which of the atoms from "ind" are local and puts its local
      * atom numbers into the "ind_local" array. Furthermore, in "xa_ind" it is
      * stored at which position each local atom belongs in the assembled/collective
-     * array, so that on the master node all positions can be merged into the
+     * array, so that on the main node all positions can be merged into the
      * assembled array correctly.
      *
      * \param dd          Structure containing domain decomposition data.

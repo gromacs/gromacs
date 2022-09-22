@@ -67,7 +67,7 @@ AtomDistribution::AtomDistribution(const ivec numCells, int numAtomGroups, int n
 
 void get_commbuffer_counts(AtomDistribution* ma, int** counts, int** disps)
 {
-    GMX_ASSERT(ma != nullptr, "Need a valid AtomDistribution struct (on the master rank)");
+    GMX_ASSERT(ma != nullptr, "Need a valid AtomDistribution struct (on the main rank)");
 
     /* Make the rvec count and displacement arrays */
     int numRanks = ma->intBuffer.size() / 2;

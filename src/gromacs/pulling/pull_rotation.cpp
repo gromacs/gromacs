@@ -331,7 +331,7 @@ gmx_enfrot* EnforcedRotation::getLegacyEnfrot()
                 erg->f_rot_loc[j][YY],          \
                 erg->f_rot_loc[j][ZZ]);
 #    define PRINT_POT_TAU                   \
-        if (MASTER(cr))                     \
+        if (MAIN(cr))                       \
         {                                   \
             fprintf(stderr,                 \
                     "potential = %15.8f\n"  \
@@ -494,11 +494,11 @@ static void reduce_output(const t_commrec* cr, gmx_enfrot* er, real t, int64_t s
         }
 
 #if GMX_MPI
-        MPI_Reduce(er->mpi_inbuf, er->mpi_outbuf, count, GMX_MPI_REAL, MPI_SUM, MASTERRANK(cr), cr->mpi_comm_mygroup);
+        MPI_Reduce(er->mpi_inbuf, er->mpi_outbuf, count, GMX_MPI_REAL, MPI_SUM, MAINRANK(cr), cr->mpi_comm_mygroup);
 #endif
 
-        /* Copy back the reduced data from the buffer on the master */
-        if (MASTER(cr))
+        /* Copy back the reduced data from the buffer on the main */
+        if (MAIN(cr))
         {
             count = 0;
             for (auto& ergRef : er->enfrotgrp)
@@ -530,7 +530,7 @@ static void reduce_output(const t_commrec* cr, gmx_enfrot* er, real t, int64_t s
     }
 
     /* Output */
-    if (MASTER(cr))
+    if (MAIN(cr))
     {
         /* Angle and torque for each rotation group */
         for (auto& ergRef : er->enfrotgrp)
@@ -625,7 +625,7 @@ real add_rot_forces(gmx_enfrot* er, gmx::ArrayRef<gmx::RVec> force, const t_comm
     }
 
     /* Reduce energy,torque, angles etc. to get the sum values (per rotation group)
-     * on the master and output these values to file. */
+     * on the main and output these values to file. */
     if ((do_per_step(step, er->nstrout) || do_per_step(step, er->nstsout)) && er->bOut)
     {
         reduce_output(cr, er, t, step);
@@ -765,7 +765,7 @@ static void get_slab_centers(gmx_enfrotgrp* erg, /* Enforced rotation group work
         }
     } /* END of loop over slabs */
 
-    /* Output on the master */
+    /* Output on the main */
     if ((nullptr != out_slabs) && bOutStep)
     {
         fprintf(out_slabs, "%12.3e%6d", time, erg->groupIndex);
@@ -883,7 +883,7 @@ static FILE* open_output_file(const char* fn, int steps, const char what[])
 }
 
 
-/* Open output file for slab center data. Call on master only */
+/* Open output file for slab center data. Call on main only */
 static FILE* open_slab_out(const char* fn, gmx_enfrot* er)
 {
     FILE* fp;
@@ -953,7 +953,7 @@ static void add_to_string_aligned(char** str, char* buf)
 
 
 /* Open output file and print some general information about the rotation groups.
- * Call on master only */
+ * Call on main only */
 static FILE* open_rot_out(const char* fn, const gmx_output_env_t* oenv, gmx_enfrot* er)
 {
     FILE*                    fp;
@@ -1130,7 +1130,7 @@ static FILE* open_rot_out(const char* fn, const gmx_output_env_t* oenv, gmx_enfr
 }
 
 
-/* Call on master only */
+/* Call on main only */
 static FILE* open_angles_out(const char* fn, gmx_enfrot* er)
 {
     FILE*        fp;
@@ -1224,7 +1224,7 @@ static FILE* open_angles_out(const char* fn, gmx_enfrot* er)
 
 
 /* Open torque output file and write some information about it's structure.
- * Call on master only */
+ * Call on main only */
 static FILE* open_torque_out(const char* fn, gmx_enfrot* er)
 {
     FILE*        fp;
@@ -1598,7 +1598,7 @@ static real opt_angle_analytic(rvec*      ref_s,
 
 
 /* Determine angle of the group by RMSD fit to the reference */
-/* Not parallelized, call this routine only on the master */
+/* Not parallelized, call this routine only on the main */
 static real flex_fit_angle(gmx_enfrotgrp* erg)
 {
     rvec* fitcoords = nullptr;
@@ -1641,7 +1641,7 @@ static real flex_fit_angle(gmx_enfrotgrp* erg)
 
 
 /* Determine actual angle of each slab by RMSD fit to the reference */
-/* Not parallelized, call this routine only on the master */
+/* Not parallelized, call this routine only on the main */
 static void flex_fit_angle_perslab(gmx_enfrotgrp* erg, double t, real degangle, FILE* fp)
 {
     rvec curr_x, ref_x;
@@ -2596,7 +2596,7 @@ static void get_firstlast_slab_check(
 
 
 /* Enforced rotation with a flexible axis */
-static void do_flexible(gmx_bool       bMaster,
+static void do_flexible(gmx_bool       bMain,
                         gmx_enfrot*    enfrot, /* Other rotation data                        */
                         gmx_enfrotgrp* erg,
                         gmx::ArrayRef<const gmx::RVec> coords, /* The local positions */
@@ -2657,7 +2657,7 @@ static void do_flexible(gmx_bool       bMaster,
 
     /* Determine angle by RMSD fit to the reference - Let's hope this */
     /* only happens once in a while, since this is not parallelized! */
-    if (bMaster && (RotationGroupFitting::Pot != erg->rotg->eFittype))
+    if (bMain && (RotationGroupFitting::Pot != erg->rotg->eFittype))
     {
         if (bOutstepRot)
         {
@@ -2827,7 +2827,7 @@ static void do_fixed(gmx_enfrotgrp* erg,
         }
         /* If you want enforced rotation to contribute to the virial,
          * activate the following lines:
-            if (MASTER(cr))
+            if (MAIN(cr))
             {
                Add the rotation contribution to the virial
               for(j=0; j<DIM; j++)
@@ -3549,7 +3549,7 @@ static void init_rot_group(FILE*             fplog,
         get_center(as_rvec_array(erg->rotg->x_ref_original.data()), erg->mc, erg->rotg->nat, erg->xc_ref_center);
 
         /* Center of the actual positions */
-        if (MASTER(cr))
+        if (MAIN(cr))
         {
             snew(xdum, erg->rotg->nat);
             for (int i = 0; i < erg->rotg->nat; i++)
@@ -3576,7 +3576,7 @@ static void init_rot_group(FILE*             fplog,
          * restarted, we compute the starting reference positions (given the time)
          * and assume that the correct PBC image of each position is the one nearest
          * to the current reference */
-        if (MASTER(cr))
+        if (MAIN(cr))
         {
             /* Calculate the rotation matrix for this angle: */
             t_start       = ir->init_t + ir->init_step * ir->delta_t;
@@ -3695,7 +3695,7 @@ std::unique_ptr<gmx::EnforcedRotation> init_rot(FILE*                       fplo
     int   nat_max = 0;       /* Size of biggest rotation group */
     rvec* x_pbc   = nullptr; /* Space for the pbc-correct atom positions */
 
-    if (MASTER(cr) && mdrunOptions.verbose)
+    if (MAIN(cr) && mdrunOptions.verbose)
     {
         fprintf(stdout, "%s Initializing ...\n", RotStr.c_str());
     }
@@ -3709,7 +3709,7 @@ std::unique_ptr<gmx::EnforcedRotation> init_rot(FILE*                       fplo
     /* When appending, skip first output to avoid duplicate entries in the data files */
     er->bOut = er->restartWithAppending;
 
-    if (MASTER(cr) && er->bOut)
+    if (MAIN(cr) && er->bOut)
     {
         please_cite(fplog, "Kutzner2011");
     }
@@ -3731,12 +3731,12 @@ std::unique_ptr<gmx::EnforcedRotation> init_rot(FILE*                       fplo
     }
 
     er->out_slabs = nullptr;
-    if (MASTER(cr) && HaveFlexibleGroups(er->rot))
+    if (MAIN(cr) && HaveFlexibleGroups(er->rot))
     {
         er->out_slabs = open_slab_out(opt2fn("-rs", nfile, fnm), er);
     }
 
-    if (MASTER(cr))
+    if (MAIN(cr))
     {
         /* Remove pbc, make molecule whole.
          * When ir->bContinuation=TRUE this has already been done, but ok. */
@@ -3780,7 +3780,7 @@ std::unique_ptr<gmx::EnforcedRotation> init_rot(FILE*                       fplo
                            mtop,
                            mdrunOptions.verbose,
                            er->out_slabs,
-                           MASTER(cr) ? globalState->box : nullptr,
+                           MAIN(cr) ? globalState->box : nullptr,
                            ir,
                            !er->restartWithAppending); /* Do not output the reference centers
                                                         * again if we are appending */
@@ -3808,11 +3808,11 @@ std::unique_ptr<gmx::EnforcedRotation> init_rot(FILE*                       fplo
         er->mpi_outbuf  = nullptr;
     }
 
-    /* Only do I/O on the MASTER */
+    /* Only do I/O on the MAIN */
     er->out_angles = nullptr;
     er->out_rot    = nullptr;
     er->out_torque = nullptr;
-    if (MASTER(cr))
+    if (MAIN(cr))
     {
         er->out_rot = open_rot_out(opt2fn("-ro", nfile, fnm), oenv, er);
 
@@ -3901,7 +3901,7 @@ void do_rotation(const t_commrec*               cr,
     outstep_slab = do_per_step(step, er->nstsout) && er->bOut;
 
     /* Output time into rotation output file */
-    if (outstep_rot && MASTER(cr))
+    if (outstep_rot && MAIN(cr))
     {
         fprintf(er->out_rot, "%12.3e", t);
     }
@@ -3987,7 +3987,7 @@ void do_rotation(const t_commrec*               cr,
         gmx_enfrotgrp*  erg  = &ergRef;
         const t_rotgrp* rotg = erg->rotg;
 
-        if (outstep_rot && MASTER(cr))
+        if (outstep_rot && MAIN(cr))
         {
             fprintf(er->out_rot, "%12.4f", erg->degangle);
         }
@@ -4035,20 +4035,20 @@ void do_rotation(const t_commrec*               cr,
                 get_center(erg->xc, erg->mc, rotg->nat, erg->xc_center);
                 svmul(-1.0, erg->xc_center, transvec);
                 translate_x(erg->xc, rotg->nat, transvec);
-                do_flexible(MASTER(cr), er, erg, coords, box, t, outstep_rot, outstep_slab);
+                do_flexible(MAIN(cr), er, erg, coords, box, t, outstep_rot, outstep_slab);
                 break;
             case EnforcedRotationGroupType::Flex:
             case EnforcedRotationGroupType::Flex2:
                 /* Do NOT subtract the center of mass in the low level routines! */
                 clear_rvec(erg->xc_center);
-                do_flexible(MASTER(cr), er, erg, coords, box, t, outstep_rot, outstep_slab);
+                do_flexible(MAIN(cr), er, erg, coords, box, t, outstep_rot, outstep_slab);
                 break;
             default: gmx_fatal(FARGS, "No such rotation potential.");
         }
     }
 
 #ifdef TAKETIME
-    if (MASTER(cr))
+    if (MAIN(cr))
     {
         fprintf(stderr, "%s calculation (step %d) took %g seconds.\n", RotStr, step, MPI_Wtime() - t0);
     }

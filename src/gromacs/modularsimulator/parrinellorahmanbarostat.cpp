@@ -306,7 +306,7 @@ void ParrinelloRahmanBarostat::doCheckpointData(CheckpointData<operation>* check
 void ParrinelloRahmanBarostat::saveCheckpointState(std::optional<WriteCheckpointData> checkpointData,
                                                    const t_commrec*                   cr)
 {
-    if (MASTER(cr))
+    if (MAIN(cr))
     {
         doCheckpointData<CheckpointDataOperation::Write>(&checkpointData.value());
     }
@@ -315,7 +315,7 @@ void ParrinelloRahmanBarostat::saveCheckpointState(std::optional<WriteCheckpoint
 void ParrinelloRahmanBarostat::restoreCheckpointState(std::optional<ReadCheckpointData> checkpointData,
                                                       const t_commrec*                  cr)
 {
-    if (MASTER(cr))
+    if (MAIN(cr))
     {
         doCheckpointData<CheckpointDataOperation::Read>(&checkpointData.value());
     }

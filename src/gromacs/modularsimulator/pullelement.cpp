@@ -99,7 +99,7 @@ void PullElement::schedulePostStep(Step step, Time time, const RegisterRunFuncti
 {
     // Printing output must happen after all external pull potentials
     // (currently only AWH) were applied, so execute this after step
-    if (MASTER(commrec_))
+    if (MAIN(commrec_))
     {
         registerRunFunction([this, step, time]() { pull_print_output(pullWork_, step, time); });
     }
@@ -131,7 +131,7 @@ static void doCheckpointData(CheckpointData<operation>* checkpointData, ArrayRef
 
 void PullElement::saveCheckpointState(std::optional<WriteCheckpointData> checkpointData, const t_commrec* cr)
 {
-    if (MASTER(cr))
+    if (MAIN(cr))
     {
         auto previousStepCom = prevStepPullCom(pullWork_);
         doCheckpointData<CheckpointDataOperation::Write>(&checkpointData.value(), previousStepCom);
@@ -142,7 +142,7 @@ void PullElement::restoreCheckpointState(std::optional<ReadCheckpointData> check
                                          const t_commrec*                  cr)
 {
     auto previousStepCom = prevStepPullCom(pullWork_);
-    if (MASTER(cr))
+    if (MAIN(cr))
     {
         doCheckpointData<CheckpointDataOperation::Read>(&checkpointData.value(), previousStepCom);
     }

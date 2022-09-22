@@ -85,7 +85,7 @@ private:
 /*! \brief Factory function for box deformation module.
  *
  * If the \c inputrec specifies the use of box deformation during the
- * update phase, communicates the \c initialBox from SIMMASTER to
+ * update phase, communicates the \c initialBox from SIMMAIN to
  * other ranks, and constructs and returns an object to manage that
  * update.
  *

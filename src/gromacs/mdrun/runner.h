@@ -99,7 +99,7 @@ class StopHandlerBuilder;
  * \todo Preparing logging and MPI contexts could probably be a
  * higher-level responsibility, so that an Mdrunner would get made
  * without needing to re-initialize these components (as currently
- * happens always for the master rank, and differently for the spawned
+ * happens always for the main rank, and differently for the spawned
  * ranks with thread-MPI).
  *
  * \ingroup module_mdrun
@@ -174,9 +174,9 @@ public:
      * in turn calls mdrunner() for each thread. */
     void spawnThreads(int numThreadsToLaunch);
 
-    /*! \brief Initializes a new Mdrunner from the master.
+    /*! \brief Initializes a new Mdrunner from the main.
      *
-     * Run this method in a new thread from a master runner to get additional
+     * Run this method in a new thread from a main runner to get additional
      * workers on spawned threads.
      *
      * \returns New Mdrunner instance suitable for thread-MPI work on new ranks.

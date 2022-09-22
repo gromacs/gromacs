@@ -100,7 +100,7 @@ void ExpandedEnsembleElement::scheduleTask(Step step, Time /*unused*/, const Reg
 {
     const bool isFirstStep  = (step == initialStep_);
     const bool doLambdaStep = (do_per_step(step, frequency_) && !isFirstStep);
-    const bool doLog        = (isMasterRank_ && step == nextLogWritingStep_ && (fplog_ != nullptr));
+    const bool doLog        = (isMainRank_ && step == nextLogWritingStep_ && (fplog_ != nullptr));
 
     if (doLambdaStep || doLog)
     {
@@ -141,7 +141,7 @@ void ExpandedEnsembleElement::doCheckpointData(CheckpointData<operation>* checkp
 void ExpandedEnsembleElement::saveCheckpointState(std::optional<WriteCheckpointData> checkpointData,
                                                   const t_commrec*                   cr)
 {
-    if (MASTER(cr))
+    if (MAIN(cr))
     {
         doCheckpointData<CheckpointDataOperation::Write>(&checkpointData.value());
     }
@@ -150,7 +150,7 @@ void ExpandedEnsembleElement::saveCheckpointState(std::optional<WriteCheckpointD
 void ExpandedEnsembleElement::restoreCheckpointState(std::optional<ReadCheckpointData> checkpointData,
                                                      const t_commrec*                  cr)
 {
-    if (MASTER(cr))
+    if (MAIN(cr))
     {
         doCheckpointData<CheckpointDataOperation::Read>(&checkpointData.value());
     }
@@ -168,7 +168,7 @@ const std::string& ExpandedEnsembleElement::clientID()
 
 std::optional<SignallerCallback> ExpandedEnsembleElement::registerLoggingCallback()
 {
-    if (isMasterRank_)
+    if (isMainRank_)
     {
         return [this](Step step, Time /*unused*/) { nextLogWritingStep_ = step; };
     }
@@ -178,7 +178,7 @@ std::optional<SignallerCallback> ExpandedEnsembleElement::registerLoggingCallbac
     }
 }
 
-ExpandedEnsembleElement::ExpandedEnsembleElement(bool                              isMasterRank,
+ExpandedEnsembleElement::ExpandedEnsembleElement(bool                              isMainRank,
                                                  Step                              initialStep,
                                                  int                               frequency,
                                                  const EnergyData*                 energyData,
@@ -186,7 +186,7 @@ ExpandedEnsembleElement::ExpandedEnsembleElement(bool                           
                                                  FILE*                             fplog,
                                                  const t_inputrec*                 inputrec) :
     fepStateSetting_(freeEnergyPerturbationData->enableExternalFepStateSetting()),
-    isMasterRank_(isMasterRank),
+    isMainRank_(isMainRank),
     initialStep_(initialStep),
     frequency_(frequency),
     nextLogWritingStep_(-1),
@@ -210,7 +210,7 @@ ISimulatorElement* ExpandedEnsembleElement::getElementPointerImpl(
         ObservablesReducer* /*observablesReducer*/)
 {
     return builderHelper->storeElement(std::make_unique<ExpandedEnsembleElement>(
-            MASTER(legacySimulatorData->cr),
+            MAIN(legacySimulatorData->cr),
             legacySimulatorData->inputrec->init_step,
             legacySimulatorData->inputrec->expandedvals->nstexpanded,
             energyData,

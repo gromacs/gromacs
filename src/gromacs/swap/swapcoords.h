@@ -93,7 +93,7 @@ std::unique_ptr<IMDModule> createSwapCoordinatesModule();
  *                          also the structure needed for position swapping.
  * \param[in] fn            Output file name for swap data.
  * \param[in] mtop          Molecular topology.
- * \param[in] globalState   The global state, only used on the master rank.
+ * \param[in] globalState   The global state, only used on the main rank.
  * \param[in] oh            Contains struct with swap data that is read from or written to checkpoint.
  * \param[in] cr            Pointer to MPI communication data.
  * \param[in] atomSets      Manager tending to swap atom indices.

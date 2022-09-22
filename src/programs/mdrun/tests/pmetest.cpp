@@ -320,7 +320,7 @@ TEST_P(PmeTest, Runs)
 
         if (thisRankChecks)
         {
-            // Check the contents of the edr file. Only the master
+            // Check the contents of the edr file. Only the main
             // rank should do this I/O intensive operation
             checkEnergies(usePmeTuning);
         }

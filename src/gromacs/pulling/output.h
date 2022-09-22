@@ -59,7 +59,7 @@ enum class StartingBehavior;
 
 /*! \brief Set up and open the pull output files, when requested.
  *
- * NOTE: This should only be called on the master rank and only when
+ * NOTE: This should only be called on the main rank and only when
  *       doing dynamics (e.g. not with energy minimization).
  *
  * \param pull        The pull work data struct

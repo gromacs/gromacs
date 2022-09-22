@@ -12,7 +12,7 @@
 # Build from the GROMACS image at the current fork point. Tag with the feature
 # name or the current revision.
 #
-#    FORKPOINT=$(git show -s --pretty=format:"%h" `git merge-base master HEAD`)
+#    FORKPOINT=$(git show -s --pretty=format:"%h" `git merge-base main HEAD`)
 #    REF=`git show -s --pretty=format:"%h"`
 #    # or
 #    REF="fr1"

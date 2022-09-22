@@ -108,7 +108,7 @@ public:
                FILE*                       fplog,
                t_fcdata*                   fcd,
                const MDModulesNotifiers&   mdModulesNotifiers,
-               bool                        isMasterRank,
+               bool                        isMainRank,
                ObservablesHistory*         observablesHistory,
                StartingBehavior            startingBehavior,
                bool                        simulationsShareHamiltonian,
@@ -249,7 +249,7 @@ private:
 
     /*! \brief Write to energy trajectory
      *
-     * This is only called by master - writes energy to trajectory and to log.
+     * This is only called by main - writes energy to trajectory and to log.
      */
     void write(gmx_mdoutf* outf, Step step, Time time, bool writeTrajectory, bool writeLog);
 
@@ -263,8 +263,8 @@ private:
     //! Helper object to checkpoint kinetic energy data
     ekinstate_t ekinstate_;
 
-    //! Whether this is the master rank
-    const bool isMasterRank_;
+    //! Whether this is the main rank
+    const bool isMainRank_;
 
     //! The force virial tensor
     tensor forceVirial_;
@@ -360,7 +360,7 @@ class EnergyData::Element final :
 {
 public:
     //! Constructor
-    Element(EnergyData* energyData, bool isMasterRank, int freeEnergyCalculationPeriod);
+    Element(EnergyData* energyData, bool isMainRank, int freeEnergyCalculationPeriod);
 
     /*! \brief Register run function for step / time
      *
@@ -438,8 +438,8 @@ private:
     template<CheckpointDataOperation operation>
     void doCheckpointData(CheckpointData<operation>* checkpointData);
 
-    //! Whether this is the master rank
-    const bool isMasterRank_;
+    //! Whether this is the main rank
+    const bool isMainRank_;
     //! The next communicated energy writing step
     Step energyWritingStep_;
     //! The next communicated energy calculation step

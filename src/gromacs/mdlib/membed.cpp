@@ -1053,7 +1053,7 @@ gmx_membed_t* init_membed(FILE*          fplog,
     snew(ins_at, 1);
     snew(pos_ins, 1);
 
-    if (MASTER(cr))
+    if (MAIN(cr))
     {
         fprintf(fplog,
                 "Note: it is expected that in future gmx mdrun -membed will not be the "

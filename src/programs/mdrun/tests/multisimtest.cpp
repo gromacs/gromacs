@@ -212,7 +212,7 @@ void MultiSimTest::runGrompp(SimulationRunner* runner, int numSteps, bool doRegr
     }
 
 #if GMX_LIB_MPI
-    // Make sure simulation masters have written the .tpr file before other ranks try to read it.
+    // Make sure simulation mains have written the .tpr file before other ranks try to read it.
     MPI_Barrier(MdrunTestFixtureBase::s_communicator);
 #endif
 }

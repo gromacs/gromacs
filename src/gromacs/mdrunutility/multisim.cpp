@@ -102,23 +102,23 @@ std::unique_ptr<gmx_multisim_t> buildMultiSimulation(MPI_Comm                   
     }
 
     int numSimulations = multidirs.size();
-    // Create a communicator for the master ranks of each simulation
-    std::vector<int> ranksOfMasters(numSimulations);
+    // Create a communicator for the main ranks of each simulation
+    std::vector<int> ranksOfMains(numSimulations);
     for (int i = 0; i < numSimulations; i++)
     {
-        ranksOfMasters[i] = i * numRanksPerSimulation;
+        ranksOfMains[i] = i * numRanksPerSimulation;
     }
     MPI_Group worldGroup;
     // No need to free worldGroup later, we didn't create it.
     MPI_Comm_group(worldComm, &worldGroup);
 
-    MPI_Group mastersGroup = MPI_GROUP_NULL;
-    MPI_Group_incl(worldGroup, numSimulations, ranksOfMasters.data(), &mastersGroup);
-    MPI_Comm mastersComm = MPI_COMM_NULL;
-    MPI_Comm_create(worldComm, mastersGroup, &mastersComm);
-    if (mastersGroup != MPI_GROUP_NULL)
+    MPI_Group mainsGroup = MPI_GROUP_NULL;
+    MPI_Group_incl(worldGroup, numSimulations, ranksOfMains.data(), &mainsGroup);
+    MPI_Comm mainRanksComm = MPI_COMM_NULL;
+    MPI_Comm_create(worldComm, mainsGroup, &mainRanksComm);
+    if (mainsGroup != MPI_GROUP_NULL)
     {
-        MPI_Group_free(&mastersGroup);
+        MPI_Group_free(&mainsGroup);
     }
 
     int      simulationIndex = rankWithinWorldComm / numRanksPerSimulation;
@@ -134,17 +134,17 @@ std::unique_ptr<gmx_multisim_t> buildMultiSimulation(MPI_Comm                   
         e.prependContext("While changing directory for multi-simulation to " + multidirs[simulationIndex]);
         throw;
     }
-    return std::make_unique<gmx_multisim_t>(numSimulations, simulationIndex, mastersComm, simulationComm);
+    return std::make_unique<gmx_multisim_t>(numSimulations, simulationIndex, mainRanksComm, simulationComm);
 #else
     GMX_UNUSED_VALUE(worldComm);
     return nullptr;
 #endif
 }
 
-gmx_multisim_t::gmx_multisim_t(int numSimulations, int simulationIndex, MPI_Comm mastersComm, MPI_Comm simulationComm) :
+gmx_multisim_t::gmx_multisim_t(int numSimulations, int simulationIndex, MPI_Comm mainRanksComm, MPI_Comm simulationComm) :
     numSimulations_(numSimulations),
     simulationIndex_(simulationIndex),
-    mastersComm_(mastersComm),
+    mainRanksComm_(mainRanksComm),
     simulationComm_(simulationComm)
 {
 }
@@ -154,9 +154,9 @@ gmx_multisim_t::~gmx_multisim_t()
 #if GMX_LIB_MPI
     // TODO This would work better if the result of MPI_Comm_split was
     // put into an RAII-style guard, such as gmx::unique_cptr.
-    if (mastersComm_ != MPI_COMM_NULL && mastersComm_ != MPI_COMM_WORLD)
+    if (mainRanksComm_ != MPI_COMM_NULL && mainRanksComm_ != MPI_COMM_WORLD)
     {
-        MPI_Comm_free(&mastersComm_);
+        MPI_Comm_free(&mainRanksComm_);
     }
     if (simulationComm_ != MPI_COMM_NULL && simulationComm_ != MPI_COMM_WORLD)
     {
@@ -184,7 +184,7 @@ void gmx_sumd_sim(int gmx_unused nr, double gmx_unused r[], const gmx_multisim_t
 #if !GMX_MPI
     GMX_RELEASE_ASSERT(false, "Invalid call to gmx_sumd_sim");
 #else
-    gmx_sumd_comm(nr, r, ms->mastersComm_);
+    gmx_sumd_comm(nr, r, ms->mainRanksComm_);
 #endif
 }
 
@@ -193,7 +193,7 @@ void gmx_sumf_sim(int gmx_unused nr, float gmx_unused r[], const gmx_multisim_t 
 #if !GMX_MPI
     GMX_RELEASE_ASSERT(false, "Invalid call to gmx_sumf_sim");
 #else
-    gmx_sumf_comm(nr, r, ms->mastersComm_);
+    gmx_sumf_comm(nr, r, ms->mainRanksComm_);
 #endif
 }
 
@@ -202,7 +202,7 @@ void gmx_sumi_sim(int gmx_unused nr, int gmx_unused r[], const gmx_multisim_t gm
 #if !GMX_MPI
     GMX_RELEASE_ASSERT(false, "Invalid call to gmx_sumi_sim");
 #else
-    MPI_Allreduce(MPI_IN_PLACE, r, nr, MPI_INT, MPI_SUM, ms->mastersComm_);
+    MPI_Allreduce(MPI_IN_PLACE, r, nr, MPI_INT, MPI_SUM, ms->mainRanksComm_);
 #endif
 }
 
@@ -211,7 +211,7 @@ void gmx_sumli_sim(int gmx_unused nr, int64_t gmx_unused r[], const gmx_multisim
 #if !GMX_MPI
     GMX_RELEASE_ASSERT(false, "Invalid call to gmx_sumli_sim");
 #else
-    MPI_Allreduce(MPI_IN_PLACE, r, nr, MPI_INT64_T, MPI_SUM, ms->mastersComm_);
+    MPI_Allreduce(MPI_IN_PLACE, r, nr, MPI_INT64_T, MPI_SUM, ms->mainRanksComm_);
 #endif
 }
 
@@ -338,16 +338,16 @@ void check_multi_int64(FILE* log, const gmx_multisim_t* ms, int64_t val, const c
     sfree(ibuf);
 }
 
-bool findIsSimulationMasterRank(const gmx_multisim_t* ms, MPI_Comm communicator)
+bool findIsSimulationMainRank(const gmx_multisim_t* ms, MPI_Comm communicator)
 {
     if (GMX_LIB_MPI)
     {
-        // Ranks of multi-simulations know whether they are a master
+        // Ranks of multi-simulations know whether they are a main
         // rank. Ranks of non-multi simulation do not know until a
         // t_commrec is available.
         if ((ms != nullptr) && (ms->numSimulations_ > 1))
         {
-            return ms->mastersComm_ != MPI_COMM_NULL;
+            return ms->mainRanksComm_ != MPI_COMM_NULL;
         }
         else
         {
@@ -364,24 +364,24 @@ bool findIsSimulationMasterRank(const gmx_multisim_t* ms, MPI_Comm communicator)
                            "Invalid communicator");
         // Spawned threads have MPI_COMM_WORLD upon creation, so if
         // the communicator is MPI_COMM_NULL this is not a spawned thread,
-        // ie is the master thread
+        // ie is the main thread
         return (communicator == MPI_COMM_NULL);
     }
     else
     {
-        // No MPI means it must be the master (and only) rank.
+        // No MPI means it must be the main (and only) rank.
         return true;
     }
 }
 
-bool isMasterSim(const gmx_multisim_t* ms)
+bool isMainSim(const gmx_multisim_t* ms)
 {
     return !isMultiSim(ms) || ms->simulationIndex_ == 0;
 }
 
-bool isMasterSimMasterRank(const gmx_multisim_t* ms, const bool isMaster)
+bool isMainSimMainRank(const gmx_multisim_t* ms, const bool isMain)
 {
-    return (isMaster && isMasterSim(ms));
+    return (isMain && isMainSim(ms));
 }
 
 static bool multisim_int_all_are_equal(const gmx_multisim_t* ms, int64_t value)
@@ -392,7 +392,7 @@ static bool multisim_int_all_are_equal(const gmx_multisim_t* ms, int64_t value)
     GMX_RELEASE_ASSERT(ms, "Invalid use of multi-simulation pointer");
 
     snew(buf, ms->numSimulations_);
-    /* send our value to all other master ranks, receive all of theirs */
+    /* send our value to all other main ranks, receive all of theirs */
     buf[ms->simulationIndex_] = value;
     gmx_sumli_sim(ms->numSimulations_, buf, ms);
 
@@ -429,7 +429,7 @@ void logInitialMultisimStatus(const gmx_multisim_t* ms,
     {
         if (simulationsShareState)
         {
-            if (MASTER(cr))
+            if (MAIN(cr))
             {
                 gmx_fatal(FARGS,
                           "The initial step is not consistent across multi simulations which "

@@ -110,7 +110,7 @@ VerletbufListSetup verletbufGetSafeListSetup(ListSetupType listType);
  *       in the system.
  * \note When communicator!=MPI_COMM_NULL computes on rank 0 and broadcasts to the other ranks.
  *
- * \param[in] coordinates   The coordinates of all atoms, can be empty on non-master ranks
+ * \param[in] coordinates   The coordinates of all atoms, can be empty on non-main ranks
  * \param[in] box           The simulation unit cell
  * \param[in] cutoff        The maximum non-bonded interaction cut-off distance
  * \param[in] communicator  MPI communicator, can be MPI_COMM_NULL when not called in parallel

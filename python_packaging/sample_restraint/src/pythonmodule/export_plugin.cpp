@@ -423,7 +423,8 @@ PYBIND11_MODULE(myplugin, m)
 {
     m.doc() = "sample plugin"; // This will be the text of the module's docstring.
 
-    // Matrix utility class (temporary). Borrowed from http://pybind11.readthedocs.io/en/master/advanced/pycpp/numpy.html#arrays
+    // Matrix utility class (temporary). Borrowed from
+    // http://pybind11.readthedocs.io/en/stable/advanced/pycpp/numpy.html#arrays
     py::class_<plugin::Matrix<double>, std::shared_ptr<plugin::Matrix<double>>>(
             m, "Matrix", py::buffer_protocol())
             .def_buffer([](plugin::Matrix<double>& matrix) -> py::buffer_info {
