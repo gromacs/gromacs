@@ -53,7 +53,6 @@
 #include "gmxapi/version.h"
 
 #include "gmxpy_exceptions.h"
-#include "mpi_bindings.h"
 
 namespace py = pybind11;
 
