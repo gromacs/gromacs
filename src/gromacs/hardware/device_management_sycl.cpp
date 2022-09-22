@@ -217,63 +217,70 @@ bool isDeviceDetectionFunctional(std::string* errorMessage)
  */
 static DeviceStatus isDeviceCompatible(const sycl::device& syclDevice)
 {
-    if (getenv("GMX_GPU_DISABLE_COMPATIBILITY_CHECK") != nullptr)
+    try
     {
-        // Assume the device is compatible because checking has been disabled.
-        return DeviceStatus::Compatible;
-    }
+        if (getenv("GMX_GPU_DISABLE_COMPATIBILITY_CHECK") != nullptr)
+        {
+            // Assume the device is compatible because checking has been disabled.
+            return DeviceStatus::Compatible;
+        }
 
-    if (syclDevice.get_info<sycl::info::device::local_mem_type>() == sycl::info::local_mem_type::none)
-    {
-        // While some kernels (leapfrog) can run without shared/local memory, this is a bad sign
-        return DeviceStatus::Incompatible;
-    }
+        if (syclDevice.get_info<sycl::info::device::local_mem_type>() == sycl::info::local_mem_type::none)
+        {
+            // While some kernels (leapfrog) can run without shared/local memory, this is a bad sign
+            return DeviceStatus::Incompatible;
+        }
 
 #if GMX_SYCL_DPCPP && defined(__INTEL_LLVM_COMPILER) && (__INTEL_LLVM_COMPILER == 20220000)
-    if (syclDevice.get_backend() == sycl::backend::ext_oneapi_level_zero)
-    {
-        // See Issue #4354
-        return DeviceStatus::IncompatibleLevelZeroAndOneApi2022;
-    }
+        if (syclDevice.get_backend() == sycl::backend::ext_oneapi_level_zero)
+        {
+            // See Issue #4354
+            return DeviceStatus::IncompatibleLevelZeroAndOneApi2022;
+        }
 #endif
 
-    if (syclDevice.is_host())
-    {
-        // Host device does not support subgroups or even querying for sub_group_sizes
-        return DeviceStatus::Incompatible;
-    }
+        if (syclDevice.is_host())
+        {
+            // Host device does not support subgroups or even querying for sub_group_sizes
+            return DeviceStatus::Incompatible;
+        }
 
-    const std::vector<size_t> supportedSubGroupSizes =
-            syclDevice.get_info<sycl::info::device::sub_group_sizes>();
+        const std::vector<size_t> supportedSubGroupSizes =
+                syclDevice.get_info<sycl::info::device::sub_group_sizes>();
 
-    // Ensure any changes stay in sync with subGroupSize in src/gromacs/nbnxm/sycl/nbnxm_sycl_kernel.cpp
-    constexpr size_t requiredSubGroupSizeForNbnxm =
+        // Ensure any changes stay in sync with subGroupSize in src/gromacs/nbnxm/sycl/nbnxm_sycl_kernel.cpp
+        constexpr size_t requiredSubGroupSizeForNbnxm =
 #if defined(HIPSYCL_PLATFORM_ROCM)
-            GMX_GPU_NB_CLUSTER_SIZE * GMX_GPU_NB_CLUSTER_SIZE;
+                GMX_GPU_NB_CLUSTER_SIZE * GMX_GPU_NB_CLUSTER_SIZE;
 #else
-            GMX_GPU_NB_CLUSTER_SIZE * GMX_GPU_NB_CLUSTER_SIZE / 2;
+                GMX_GPU_NB_CLUSTER_SIZE * GMX_GPU_NB_CLUSTER_SIZE / 2;
 #endif
 
-    if (std::find(supportedSubGroupSizes.begin(), supportedSubGroupSizes.end(), requiredSubGroupSizeForNbnxm)
-        == supportedSubGroupSizes.end())
-    {
-        return DeviceStatus::IncompatibleClusterSize;
-    }
+        if (std::find(supportedSubGroupSizes.begin(), supportedSubGroupSizes.end(), requiredSubGroupSizeForNbnxm)
+            == supportedSubGroupSizes.end())
+        {
+            return DeviceStatus::IncompatibleClusterSize;
+        }
 
-    /* Host device can not be used, because NBNXM requires sub-groups, which are not supported.
-     * Accelerators (FPGAs and their emulators) are not supported.
-     * So, the only viable options are CPUs and GPUs. */
-    const bool forceCpu = (getenv("GMX_SYCL_FORCE_CPU") != nullptr);
+        /* Host device can not be used, because NBNXM requires sub-groups, which are not supported.
+         * Accelerators (FPGAs and their emulators) are not supported.
+         * So, the only viable options are CPUs and GPUs. */
+        const bool forceCpu = (getenv("GMX_SYCL_FORCE_CPU") != nullptr);
 
-    if (forceCpu && syclDevice.is_cpu())
-    {
-        return DeviceStatus::Compatible;
+        if (forceCpu && syclDevice.is_cpu())
+        {
+            return DeviceStatus::Compatible;
+        }
+        else if (!forceCpu && syclDevice.is_gpu())
+        {
+            return DeviceStatus::Compatible;
+        }
+        else
+        {
+            return DeviceStatus::Incompatible;
+        }
     }
-    else if (!forceCpu && syclDevice.is_gpu())
-    {
-        return DeviceStatus::Compatible;
-    }
-    else
+    catch (sycl::exception const&) // in case a driver bug causes get_info to throw
     {
         return DeviceStatus::Incompatible;
     }
