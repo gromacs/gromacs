@@ -107,7 +107,6 @@ PYBIND11_MODULE(_gmxapi, m)
     // Additional exports may be conditionally added within this export functions
     // based on implementations chosen by CMake logic. (E.g. MPI bindings or features
     // requiring specific GROMACS versions)
-    export_mpi_bindings(m, baseException);
     export_context(m, baseException);
     export_system(m);
     export_tprfile(m);

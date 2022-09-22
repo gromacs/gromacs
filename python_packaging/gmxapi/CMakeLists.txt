@@ -234,6 +234,7 @@ execute_process(
         "import mpi4py; print(mpi4py.get_include());"
     RESULT_VARIABLE _mpi4py_result
     OUTPUT_VARIABLE _mpi4py_include_path
+    ERROR_QUIET
     OUTPUT_STRIP_TRAILING_WHITESPACE
 )
 if (_mpi4py_result EQUAL 0)
@@ -250,6 +251,7 @@ if (_mpi4py_result EQUAL 0)
             "import mpi4py; print(mpi4py.get_config()['mpicc'])"
         RESULT_VARIABLE _mpi4py_result
         OUTPUT_VARIABLE _mpi4py_mpicc
+        ERROR_QUIET
         OUTPUT_STRIP_TRAILING_WHITESPACE
     )
     execute_process(
@@ -257,6 +259,7 @@ if (_mpi4py_result EQUAL 0)
         "import mpi4py; print(mpi4py.get_config()['mpicxx'])"
         RESULT_VARIABLE _mpi4py_result
         OUTPUT_VARIABLE _mpi4py_mpicxx
+        ERROR_QUIET
         OUTPUT_STRIP_TRAILING_WHITESPACE
     )
     if ((NOT _mpi4py_mpicc OR NOT EXISTS "${_mpi4py_mpicc}") AND (NOT _mpi4py_mpicxx OR NOT EXISTS "${_mpi4py_mpicxx}"))
@@ -265,6 +268,7 @@ if (_mpi4py_result EQUAL 0)
             "import mpi4py; print(mpi4py.get_config()['mpi_dir'])"
             RESULT_VARIABLE _mpi4py_result
             OUTPUT_VARIABLE _mpi4py_mpi_dir
+            ERROR_QUIET
             OUTPUT_STRIP_TRAILING_WHITESPACE
         )
     endif ()
