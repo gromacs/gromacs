@@ -5,7 +5,6 @@
 #   FFT: MKL
 #   GPU: SYCL
 #   Scope: configure, build, unit tests, regression tests
-#   Scope: configure, build (with SYCL buffers instead of USM)
 # Test implementation choices (free to change as needed):
 #   OS: Ubuntu 20.04
 #   Build type: Debug
@@ -61,28 +60,4 @@ gromacs:oneapi-2022.1.0-sycl:regressiontest:
     - job: gromacs:oneapi-2022.1.0-sycl:build
     - job: regressiontests:prepare
 
-gromacs:oneapi-2022.1.0-sycl-buffers:configure:
-  extends:
-   - .gromacs:base:configure
-   - .use-oneapi:base
-   - .use-sycl
-   - .rules:nightly-not-for-release
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-gcc-9-oneapi-2022.1.0
-  variables:
-    CMAKE: /usr/local/cmake-3.21.2/bin/cmake
-    COMPILER_MAJOR_VERSION: 2021
-    CMAKE_EXTRA_OPTIONS: "-DGMX_SYCL_USE_USM=OFF"
-
-gromacs:oneapi-2022.1.0-sycl-buffers:build:
-  extends:
-    - .variables:default
-    - .gromacs:base:build
-    - .use-ccache
-    - .use-oneapi:base
-    - .rules:nightly-not-for-release
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-gcc-9-oneapi-2022.1.0
-  variables:
-    CMAKE: /usr/local/cmake-3.21.2/bin/cmake
-  needs:
-    - job: gromacs:oneapi-2022.1.0-sycl:configure
 

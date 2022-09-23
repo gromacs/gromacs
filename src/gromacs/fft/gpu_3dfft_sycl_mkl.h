@@ -92,11 +92,7 @@ private:
     using Descriptor =
             oneapi::mkl::dft::descriptor<oneapi::mkl::dft::precision::SINGLE, oneapi::mkl::dft::domain::REAL>;
 
-#if GMX_SYCL_USE_USM
-    float* realGrid_;
-#else
-    sycl::buffer<float, 1> realGrid_;
-#endif
+    float*      realGrid_;
     sycl::queue queue_;
     Descriptor  r2cDescriptor_, c2rDescriptor_;
 

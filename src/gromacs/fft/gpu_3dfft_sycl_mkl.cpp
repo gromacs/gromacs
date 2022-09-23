@@ -187,11 +187,7 @@ Gpu3dFft::ImplSyclMkl::~ImplSyclMkl()
 
 void Gpu3dFft::ImplSyclMkl::perform3dFft(gmx_fft_direction dir, CommandEvent* /*timingEvent*/)
 {
-#if GMX_SYCL_USE_USM
     float* complexGrid = *complexGrid_.buffer_;
-#else
-    sycl::buffer<float, 1> complexGrid = *complexGrid_.buffer_;
-#endif
     switch (dir)
     {
         case GMX_FFT_REAL_TO_COMPLEX:

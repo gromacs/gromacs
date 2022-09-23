@@ -230,9 +230,6 @@
 /* Define if Intel's DPC++ is used (default unless hipSYCL is chosen) */
 #define GMX_SYCL_DPCPP (!GMX_SYCL_HIPSYCL && GMX_GPU_SYCL)
 
-/* Define if we wish to use USM (otherwise buffer-accessor mechanism is used) */
-#cmakedefine01 GMX_SYCL_USE_USM
-
 /* Use a single compilation unit when compiling the CUDA (non-bonded) kernels.  */
 #cmakedefine01 GMX_CUDA_NB_SINGLE_COMPILATION_UNIT
 

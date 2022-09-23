@@ -79,13 +79,13 @@ DeviceStream::DeviceStream(const DeviceContext& deviceContext,
         const bool deviceSupportsTiming = device.has(sycl::aspect::queue_profiling);
         enableProfiling                 = deviceSupportsTiming;
     }
-    const bool inOrder = (GMX_SYCL_USE_USM != 0);
+    const bool inOrder = true;
     stream_ = sycl::queue(deviceContext.context(), device, makeQueuePropertyList(inOrder, enableProfiling));
 }
 
 DeviceStream::~DeviceStream()
 {
-#if GMX_SYCL_HIPSYCL && GMX_SYCL_USE_USM
+#if GMX_SYCL_HIPSYCL
     // Prevents use-after-free errors in hipSYCL's CUDA backend during unit tests
     synchronize();
 #endif

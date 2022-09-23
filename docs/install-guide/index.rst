@@ -875,10 +875,6 @@ The following flags can be passed to CMake in order to tune |Gromacs|:
       compiling with `Intel oneAPI DPC++`_, 8 when compiling with hipSYCL_.
       Those are reasonable defaults for Intel and AMD devices, respectively.
 
-``-DGMX_SYCL_USE_USM``
-      switches between SYCL buffers (``OFF``) and USM (``ON``) for data management.
-      Default: on (for performance reasons).
-
 Static linking
 ~~~~~~~~~~~~~~
 

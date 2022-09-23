@@ -43,8 +43,6 @@ set(GMX_GPU_SYCL ON)
 
 option(GMX_SYCL_HIPSYCL "Use hipSYCL instead of Intel/Clang for SYCL compilation" OFF)
 
-option(GMX_SYCL_USE_USM "Use USM instead of SYCL buffers" ON)
-
 if(GMX_DOUBLE)
     message(FATAL_ERROR "SYCL acceleration is not available in double precision")
 endif()
