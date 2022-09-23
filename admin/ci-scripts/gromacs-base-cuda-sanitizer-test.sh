@@ -12,7 +12,7 @@ if [ -z "${GMX_TEST_REQUIRED_NUMBER_OF_DEVICES}" ] && [ -n "${KUBERNETES_EXTENDE
     fi
 fi
 if grep -qF 'nvidia.com/gpu' <<< "$KUBERNETES_EXTENDED_RESOURCE_NAME"; then
-    nvidia-smi || true
+    nvidia-smi -L && nvidia-smi || true
 else
     echo "Can not use CUDA Compute Sanitizer without an NVIDIA GPU"
     exit 1
