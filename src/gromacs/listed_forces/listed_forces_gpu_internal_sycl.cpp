@@ -64,6 +64,29 @@
 static constexpr float c_deg2RadF = gmx::c_deg2Rad;
 constexpr float        c_Pi       = M_PI;
 
+// \brief Staggered atomic force component accummulation into global memory to reduce clashes
+//
+// Reduce the number of atomic clashes by a theoretical max 3x by having consecutive threads
+// accumulate different force components at the same time.
+static inline void staggeredAtomicAddForce(sycl::global_ptr<Float3> gm_f, Float3 f, const int localId)
+{
+    __builtin_assume(localId >= 0);
+
+    using Int3  = sycl::int3;
+    Int3 offset = { 0, 1, 2 };
+
+    // Shift force components x (0), y (1), and z (2) left by 2, 1, and 0, respectively
+    // to end up with zxy, yzx, xyz on consecutive threads.
+    f      = (localId % 3 == 0) ? Float3(f[1], f[2], f[0]) : f;
+    offset = (localId % 3 == 0) ? Int3(offset[1], offset[2], offset[0]) : offset;
+    f      = (localId % 3 <= 1) ? Float3(f[1], f[2], f[0]) : f;
+    offset = (localId % 3 <= 1) ? Int3(offset[1], offset[2], offset[0]) : offset;
+
+    atomicFetchAdd(gm_f[0][offset[0]], f[0]);
+    atomicFetchAdd(gm_f[0][offset[1]], f[1]);
+    atomicFetchAdd(gm_f[0][offset[2]], f[2]);
+}
+
 /* Harmonic */
 template<bool calcEner>
 static inline void harmonic_gpu(const float              kA,
@@ -92,7 +115,8 @@ static inline void bonds_gpu(const int                                  i,
                              const sycl::global_ptr<const sycl::float4> gm_xq,
                              sycl::global_ptr<Float3>                   gm_f,
                              sycl::local_ptr<Float3>                    sm_fShiftLoc,
-                             const PbcAiuc&                             pbcAiuc)
+                             const PbcAiuc&                             pbcAiuc,
+                             const int                                  localId)
 {
     if (i < numBonds)
     {
@@ -122,8 +146,8 @@ static inline void bonds_gpu(const int                                  i,
             fbond *= sycl::rsqrt(dr2);
 
             Float3 fij = fbond * dx;
-            atomicFetchAdd(gm_f[ai], fij);
-            atomicFetchAdd(gm_f[aj], -fij);
+            staggeredAtomicAddForce(&gm_f[ai], fij, localId);
+            staggeredAtomicAddForce(&gm_f[aj], -fij, localId);
             if (calcVir && ki != gmx::c_centralShiftIndex)
             {
                 atomicFetchAddLocal(sm_fShiftLoc[ki], fij);
@@ -222,7 +246,8 @@ static void angles_gpu(const int                                  i,
                        const sycl::global_ptr<const sycl::float4> gm_xq,
                        sycl::global_ptr<Float3>                   gm_f,
                        sycl::local_ptr<Float3>                    sm_fShiftLoc,
-                       const PbcAiuc&                             pbcAiuc)
+                       const PbcAiuc&                             pbcAiuc,
+                       const int                                  localId)
 {
     if (i < numBonds)
     {
@@ -273,9 +298,9 @@ static void angles_gpu(const int                                  i,
             Float3 f_k = ckk * r_kj - cik * r_ij;
             Float3 f_j = -f_i - f_k;
 
-            atomicFetchAdd(gm_f[ai], f_i);
-            atomicFetchAdd(gm_f[aj], f_j);
-            atomicFetchAdd(gm_f[ak], f_k);
+            staggeredAtomicAddForce(&gm_f[ai], f_i, localId);
+            staggeredAtomicAddForce(&gm_f[aj], f_j, localId);
+            staggeredAtomicAddForce(&gm_f[ak], f_k, localId);
 
             if (calcVir)
             {
@@ -296,7 +321,8 @@ static void urey_bradley_gpu(const int                                  i,
                              const sycl::global_ptr<const sycl::float4> gm_xq,
                              sycl::global_ptr<Float3>                   gm_f,
                              sycl::local_ptr<Float3>                    sm_fShiftLoc,
-                             const PbcAiuc&                             pbcAiuc)
+                             const PbcAiuc&                             pbcAiuc,
+                             const int                                  localId)
 {
     if (i < numBonds)
     {
@@ -392,13 +418,13 @@ static void urey_bradley_gpu(const int                                  i,
 
         if ((cos_theta2 < 1.0F) || (dr2 != 0.0F))
         {
-            atomicFetchAdd(gm_f[ai], f_i);
-            atomicFetchAdd(gm_f[ak], f_k);
+            staggeredAtomicAddForce(&gm_f[ai], f_i, localId);
+            staggeredAtomicAddForce(&gm_f[ak], f_k, localId);
         }
 
         if (cos_theta2 < 1.0F)
         {
-            atomicFetchAdd(gm_f[aj], f_j);
+            staggeredAtomicAddForce(&gm_f[aj], f_j, localId);
         }
     }
 }
@@ -462,7 +488,8 @@ static void do_dih_fup_gpu(const int                            i,
                            const PbcAiuc&                       pbcAiuc,
                            const sycl::global_ptr<const Float4> gm_xq,
                            const int                            t1,
-                           const int                            t2)
+                           const int                            t2,
+                           const int                            localId)
 {
     float iprm  = m.norm2();
     float iprn  = n.norm2();
@@ -487,10 +514,10 @@ static void do_dih_fup_gpu(const int                            i,
         Float3 f_j  = f_i - svec;
         Float3 f_k  = f_l + svec;
 
-        atomicFetchAdd(gm_f[i], f_i);
-        atomicFetchAdd(gm_f[j], -f_j);
-        atomicFetchAdd(gm_f[k], -f_k);
-        atomicFetchAdd(gm_f[l], f_l);
+        staggeredAtomicAddForce(&gm_f[i], f_i, localId);
+        staggeredAtomicAddForce(&gm_f[j], -f_j, localId);
+        staggeredAtomicAddForce(&gm_f[k], -f_k, localId);
+        staggeredAtomicAddForce(&gm_f[l], f_l, localId);
 
         if constexpr (calcVir)
         {
@@ -514,7 +541,8 @@ static void pdihs_gpu(const int                                  i,
                       const sycl::global_ptr<const sycl::float4> gm_xq,
                       sycl::global_ptr<Float3>                   gm_f,
                       sycl::local_ptr<Float3>                    sm_fShiftLoc,
-                      const PbcAiuc&                             pbcAiuc)
+                      const PbcAiuc&                             pbcAiuc,
+                      const int                                  localId)
 {
     if (i < numBonds)
     {
@@ -550,7 +578,7 @@ static void pdihs_gpu(const int                                  i,
         }
 
         do_dih_fup_gpu<calcVir>(
-                ai, aj, ak, al, ddphi, r_ij, r_kj, r_kl, m, n, gm_f, sm_fShiftLoc, pbcAiuc, gm_xq, t1, t2);
+                ai, aj, ak, al, ddphi, r_ij, r_kj, r_kl, m, n, gm_f, sm_fShiftLoc, pbcAiuc, gm_xq, t1, t2, localId);
     }
 }
 
@@ -563,7 +591,8 @@ static void rbdihs_gpu(const int                                  i,
                        const sycl::global_ptr<const sycl::float4> gm_xq,
                        sycl::global_ptr<Float3>                   gm_f,
                        sycl::local_ptr<Float3>                    sm_fShiftLoc,
-                       const PbcAiuc&                             pbcAiuc)
+                       const PbcAiuc&                             pbcAiuc,
+                       const int                                  localId)
 {
     constexpr float c0 = 0.0F, c1 = 1.0F, c2 = 2.0F, c3 = 3.0F, c4 = 4.0F, c5 = 5.0F;
 
@@ -650,7 +679,7 @@ static void rbdihs_gpu(const int                                  i,
         ddphi = -ddphi * sin_phi;
 
         do_dih_fup_gpu<calcVir>(
-                ai, aj, ak, al, ddphi, r_ij, r_kj, r_kl, m, n, gm_f, sm_fShiftLoc, pbcAiuc, gm_xq, t1, t2);
+                ai, aj, ak, al, ddphi, r_ij, r_kj, r_kl, m, n, gm_f, sm_fShiftLoc, pbcAiuc, gm_xq, t1, t2, localId);
         if (calcEner)
         {
             *vtot_loc += v;
@@ -685,7 +714,8 @@ static void idihs_gpu(const int                                  i,
                       const sycl::global_ptr<const sycl::float4> gm_xq,
                       sycl::global_ptr<Float3>                   gm_f,
                       sycl::local_ptr<Float3>                    sm_fShiftLoc,
-                      const PbcAiuc&                             pbcAiuc)
+                      const PbcAiuc&                             pbcAiuc,
+                      const int                                  localId)
 {
     if (i < numBonds)
     {
@@ -723,7 +753,7 @@ static void idihs_gpu(const int                                  i,
         float ddphi = -kA * dp;
 
         do_dih_fup_gpu<calcVir>(
-                ai, aj, ak, al, -ddphi, r_ij, r_kj, r_kl, m, n, gm_f, sm_fShiftLoc, pbcAiuc, gm_xq, t1, t2);
+                ai, aj, ak, al, -ddphi, r_ij, r_kj, r_kl, m, n, gm_f, sm_fShiftLoc, pbcAiuc, gm_xq, t1, t2, localId);
 
         if (calcEner)
         {
@@ -743,7 +773,8 @@ static void pairs_gpu(const int                                  i,
                       const PbcAiuc&                             pbcAiuc,
                       const float                                scale_factor,
                       sycl::private_ptr<float>                   vtotVdw_loc,
-                      sycl::private_ptr<float>                   vtotElec_loc)
+                      sycl::private_ptr<float>                   vtotElec_loc,
+                      const int                                  localId)
 {
     if (i < numBonds)
     {
@@ -774,8 +805,8 @@ static void pairs_gpu(const int                                  i,
         Float3 f     = finvr * dr;
 
         /* Add the forces */
-        atomicFetchAdd(gm_f[ai], f);
-        atomicFetchAdd(gm_f[aj], -f);
+        staggeredAtomicAddForce(&gm_f[ai], f, localId);
+        staggeredAtomicAddForce(&gm_f[aj], -f, localId);
         if (calcVir && fshift_index != gmx::c_centralShiftIndex)
         {
             atomicFetchAddLocal(sm_fShiftLoc[fshift_index], f);
@@ -869,28 +900,28 @@ auto bondedKernel(sycl::handler&                                        cgh,
                 {
                     case F_BONDS:
                         bonds_gpu<calcVir, calcEner>(
-                                fTypeTid, &vtot_loc, numBonds, iatoms, gm_forceParams, gm_xq, gm_f, sm_fShiftLoc, pbcAiuc);
+                                fTypeTid, &vtot_loc, numBonds, iatoms, gm_forceParams, gm_xq, gm_f, sm_fShiftLoc, pbcAiuc, localId);
                         break;
                     case F_ANGLES:
                         angles_gpu<calcVir, calcEner>(
-                                fTypeTid, &vtot_loc, numBonds, iatoms, gm_forceParams, gm_xq, gm_f, sm_fShiftLoc, pbcAiuc);
+                                fTypeTid, &vtot_loc, numBonds, iatoms, gm_forceParams, gm_xq, gm_f, sm_fShiftLoc, pbcAiuc, localId);
                         break;
                     case F_UREY_BRADLEY:
                         urey_bradley_gpu<calcVir, calcEner>(
-                                fTypeTid, &vtot_loc, numBonds, iatoms, gm_forceParams, gm_xq, gm_f, sm_fShiftLoc, pbcAiuc);
+                                fTypeTid, &vtot_loc, numBonds, iatoms, gm_forceParams, gm_xq, gm_f, sm_fShiftLoc, pbcAiuc, localId);
                         break;
                     case F_PDIHS:
                     case F_PIDIHS:
                         pdihs_gpu<calcVir, calcEner>(
-                                fTypeTid, &vtot_loc, numBonds, iatoms, gm_forceParams, gm_xq, gm_f, sm_fShiftLoc, pbcAiuc);
+                                fTypeTid, &vtot_loc, numBonds, iatoms, gm_forceParams, gm_xq, gm_f, sm_fShiftLoc, pbcAiuc, localId);
                         break;
                     case F_RBDIHS:
                         rbdihs_gpu<calcVir, calcEner>(
-                                fTypeTid, &vtot_loc, numBonds, iatoms, gm_forceParams, gm_xq, gm_f, sm_fShiftLoc, pbcAiuc);
+                                fTypeTid, &vtot_loc, numBonds, iatoms, gm_forceParams, gm_xq, gm_f, sm_fShiftLoc, pbcAiuc, localId);
                         break;
                     case F_IDIHS:
                         idihs_gpu<calcVir, calcEner>(
-                                fTypeTid, &vtot_loc, numBonds, iatoms, gm_forceParams, gm_xq, gm_f, sm_fShiftLoc, pbcAiuc);
+                                fTypeTid, &vtot_loc, numBonds, iatoms, gm_forceParams, gm_xq, gm_f, sm_fShiftLoc, pbcAiuc, localId);
                         break;
                     case F_LJ14:
                         pairs_gpu<calcVir, calcEner>(fTypeTid,
@@ -903,7 +934,8 @@ auto bondedKernel(sycl::handler&                                        cgh,
                                                      pbcAiuc,
                                                      kernelParams.electrostaticsScaleFactor,
                                                      &vtot_loc,
-                                                     &vtotElec_loc);
+                                                     &vtotElec_loc,
+                                                     localId);
                         break;
                 }
                 break;
