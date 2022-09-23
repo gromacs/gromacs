@@ -109,6 +109,7 @@ void TestHardwareEnvironment::gmxTearDown()
         return;
     }
     s_testHardwareEnvironment->testDeviceList_.clear();
+    s_testHardwareEnvironment->hardwareInfo_.reset();
 }
 
 } // namespace test
