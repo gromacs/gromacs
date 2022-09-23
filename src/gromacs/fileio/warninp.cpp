@@ -53,18 +53,18 @@ static const char* warningTypeString(const WarningType type)
     return warningTypeName[type];
 }
 
-void WarningHandler::setFileAndLineNumber(const char* fileName, int lineNumber)
+void WarningHandler::setFileAndLineNumber(const std::filesystem::path& fileName, int lineNumber)
 {
-    if (fileName != nullptr)
+    if (!fileName.empty())
     {
         fileName_ = fileName;
     }
     lineNumber_ = lineNumber;
 }
 
-const char* WarningHandler::getFileName() const
+std::filesystem::path WarningHandler::getFileName() const
 {
-    return fileName_.c_str();
+    return fileName_;
 }
 
 void WarningHandler::addLowLevel(std::string_view message, const WarningType type)
@@ -148,13 +148,16 @@ static void printWarningCount(const WarningType type, int n)
 }
 
 // Note it is the caller's responsibility to ensure that exiting is correct behaviour
-[[noreturn]] static void check_warning_error_impl(const WarningHandler& wi, int f_errno, const char* file, int line)
+[[noreturn]] static void check_warning_error_impl(const WarningHandler&        wi,
+                                                  int                          f_errno,
+                                                  const std::filesystem::path& file,
+                                                  int                          line)
 {
     printWarningCount(WarningType::Note, wi.noteCount());
     printWarningCount(WarningType::Warning, wi.warningCount());
 
     gmx_fatal(f_errno,
-              file,
+              file.c_str(),
               line,
               "There %s %d error%s in input file(s)",
               (wi.errorCount() == 1) ? "was" : "were",
@@ -162,7 +165,7 @@ static void printWarningCount(const WarningType type, int n)
               (wi.errorCount() == 1) ? "" : "s");
 }
 
-void check_warning_error(const WarningHandler& wi, int f_errno, const char* file, int line)
+void check_warning_error(const WarningHandler& wi, int f_errno, const std::filesystem::path& file, int line)
 {
     if (wi.errorCount() > 0)
     {
@@ -170,13 +173,17 @@ void check_warning_error(const WarningHandler& wi, int f_errno, const char* file
     }
 }
 
-void warning_error_and_exit(WarningHandler* wi, const char* s, int f_errno, const char* file, int line)
+void warning_error_and_exit(WarningHandler* wi, const char* s, int f_errno, const std::filesystem::path& file, int line)
 {
     wi->addError(s);
     check_warning_error_impl(*wi, f_errno, file, line);
 }
 
-void warning_error_and_exit(WarningHandler* wi, const std::string& s, int f_errno, const char* file, int line)
+void warning_error_and_exit(WarningHandler*              wi,
+                            const std::string&           s,
+                            int                          f_errno,
+                            const std::filesystem::path& file,
+                            int                          line)
 {
     warning_error_and_exit(wi, s.c_str(), f_errno, file, line);
 }
@@ -186,7 +193,7 @@ bool warning_errors_exist(const WarningHandler& wi)
     return (wi.errorCount() > 0);
 }
 
-void done_warning(const WarningHandler& wi, int f_errno, const char* file, int line)
+void done_warning(const WarningHandler& wi, int f_errno, const std::filesystem::path& file, int line)
 {
     // If we've had an error, then this will report the number of
     // notes and warnings, and then exit.
@@ -199,7 +206,7 @@ void done_warning(const WarningHandler& wi, int f_errno, const char* file, int l
     if (wi.warningCount() > wi.maxWarningCount())
     {
         gmx_fatal(f_errno,
-                  file,
+                  file.c_str(),
                   line,
                   "Too many warnings (%d).\n"
                   "If you are sure all warnings are harmless, use the -maxwarn option.",
@@ -207,13 +214,14 @@ void done_warning(const WarningHandler& wi, int f_errno, const char* file, int l
     }
 }
 
-void too_few_function(WarningHandler* wi, const char* fn, int line)
-{
-    wi->addWarning(gmx::formatString("Too few parameters on line (source file %s, line %d)", fn, line));
-}
-
-void incorrect_n_param_function(WarningHandler* wi, const char* fn, int line)
+void too_few_function(WarningHandler* wi, const std::filesystem::path& fn, int line)
 {
     wi->addWarning(gmx::formatString(
-            "Incorrect number of parameters on line (source file %s, line %d)", fn, line));
+            "Too few parameters on line (source file %s, line %d)", fn.c_str(), line));
+}
+
+void incorrect_n_param_function(WarningHandler* wi, const std::filesystem::path& fn, int line)
+{
+    wi->addWarning(gmx::formatString(
+            "Incorrect number of parameters on line (source file %s, line %d)", fn.c_str(), line));
 }

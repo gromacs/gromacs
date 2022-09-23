@@ -34,6 +34,7 @@
 #ifndef GMX_FILEIO_WARNINP_H
 #define GMX_FILEIO_WARNINP_H
 
+#include <filesystem>
 #include <string>
 #include <string_view>
 
@@ -81,9 +82,9 @@ public:
      * Note that \p fileName can be nullptr, leading to no file
      * information being printed.
      */
-    void setFileAndLineNumber(const char* fileName, int lineNumber);
+    void setFileAndLineNumber(const std::filesystem::path& fileName, int lineNumber);
     //! Get filename for the warning */
-    const char* getFileName() const;
+    std::filesystem::path getFileName() const;
 
     int errorCount() const { return numberOfEntries_[WarningType::Error]; }
 
@@ -136,7 +137,7 @@ private:
     //! Which line number corresponds to the message.
     int lineNumber_ = -1;
     //! Which file the message is coming from.
-    std::string fileName_ = "unknown";
+    std::filesystem::path fileName_ = "unknown";
 };
 
 /*! \brief Issue an error with warning_error() and prevent further
@@ -144,21 +145,27 @@ private:
  *
  * This is intended for use where there is no way to produce a data
  * structure that would prevent execution from segfaulting. */
-[[noreturn]] void
-warning_error_and_exit(WarningHandler* wi, const char* s, int f_errno, const char* file, int line);
+[[noreturn]] void warning_error_and_exit(WarningHandler*              wi,
+                                         const char*                  s,
+                                         int                          f_errno,
+                                         const std::filesystem::path& file,
+                                         int                          line);
 //! \copydoc warning_error_and_exit(WarningHandler*,const char *,int,const char *,int)
-[[noreturn]] void
-warning_error_and_exit(WarningHandler* wi, const std::string& s, int f_errno, const char* file, int line);
+[[noreturn]] void warning_error_and_exit(WarningHandler*              wi,
+                                         const std::string&           s,
+                                         int                          f_errno,
+                                         const std::filesystem::path& file,
+                                         int                          line);
 
 //! Return whether any error-level warnings were issued to \p wi. */
 bool warning_errors_exist(const WarningHandler& wi);
 
-void check_warning_error(const WarningHandler& wi, int f_errno, const char* file, int line);
+void check_warning_error(const WarningHandler& wi, int f_errno, const std::filesystem::path& file, int line);
 /* When warning_error has been called at least once gmx_fatal is called,
  * otherwise does nothing.
  */
 
-void done_warning(const WarningHandler& wi, int f_errno, const char* file, int line);
+void done_warning(const WarningHandler& wi, int f_errno, const std::filesystem::path& file, int line);
 /* Should be called when finished processing the input file.
  * Prints the number of notes and warnings
  * and generates a fatal error when errors were found or too many
@@ -167,11 +174,11 @@ void done_warning(const WarningHandler& wi, int f_errno, const char* file, int l
  */
 
 
-void too_few_function(WarningHandler* wi, const char* fn, int line);
+void too_few_function(WarningHandler* wi, const std::filesystem::path& fn, int line);
 #define too_few(wi) too_few_function(wi, __FILE__, __LINE__)
 /* Issue a warning stating 'Too few parameters' */
 
-void incorrect_n_param_function(WarningHandler* wi, const char* fn, int line);
+void incorrect_n_param_function(WarningHandler* wi, const std::filesystem::path& fn, int line);
 #define incorrect_n_param(wi) incorrect_n_param_function(wi, __FILE__, __LINE__)
 /* Issue a warning stating 'Incorrect number of parameters' */
 

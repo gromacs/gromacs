@@ -35,6 +35,7 @@
 #ifndef GMX_GMXPREPROCESS_GMXCPP_H
 #define GMX_GMXPREPROCESS_GMXCPP_H
 
+#include <filesystem>
 #include <string>
 
 typedef struct gmx_cpp* gmx_cpp_t;
@@ -58,7 +59,7 @@ enum
    info for the cpp emulator. The cppopt variable (null terminated)
    can hold cpp options like -IXXX and -DXXX. Return integer status.
  */
-int cpp_open_file(const char* filenm, gmx_cpp_t* handlep, char** cppopts);
+int cpp_open_file(const std::filesystem::path& filenm, gmx_cpp_t* handlep, char** cppopts);
 
 /* Return one whole line from the file into buf which holds at most n
    characters, for subsequent processing. Returns integer status.
@@ -67,7 +68,7 @@ int cpp_read_line(gmx_cpp_t* handlep, int n, char buf[]);
 
 /* Return the file currently being read.
  */
-const char* cpp_cur_file(const gmx_cpp_t* handlep);
+std::filesystem::path cpp_cur_file(const gmx_cpp_t* handlep);
 
 /* Return the current line number.
  */

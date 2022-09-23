@@ -164,7 +164,7 @@ int gmx_covar(int argc, char* argv[])
     const char *      fitfile, *trxfile, *ndxfile;
     const char *      eigvalfile, *eigvecfile, *averfile, *logfile;
     const char *      asciifile, *xpmfile, *xpmafile;
-    char              str[STRLEN], *fitname, *ananame;
+    char *            fitname, *ananame;
     int               d, dj, nfit;
     int *             index, *ifit;
     gmx_bool          bDiffMass1, bDiffMass2;
@@ -643,7 +643,7 @@ int gmx_covar(int argc, char* argv[])
 
     fprintf(stderr, "\nWriting eigenvalues to %s\n", eigvalfile);
 
-    sprintf(str, "(%snm\\S2\\N)", bM ? "u " : "");
+    auto str = gmx::formatString("(%snm\\S2\\N)", bM ? "u " : "");
     out = xvgropen(eigvalfile, "Eigenvalues of the covariance matrix", "Eigenvector index", str, oenv);
     for (i = 0; (i < end); i++)
     {
@@ -681,9 +681,9 @@ int gmx_covar(int argc, char* argv[])
     fprintf(out, "Covariance analysis log, written %s\n", gmx_format_current_time().c_str());
 
     fprintf(out, "Program: %s\n", argv[0]);
-    gmx_getcwd(str, STRLEN);
+    auto cwd = gmx_getcwd();
 
-    fprintf(out, "Working directory: %s\n\n", str);
+    fprintf(out, "Working directory: %s\n\n", cwd.c_str());
 
     fprintf(out,
             "Read %d frames from %s (time %g to %g %s)\n",

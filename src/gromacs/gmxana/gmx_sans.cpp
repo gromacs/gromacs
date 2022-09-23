@@ -57,6 +57,7 @@
 #include "gromacs/utility/gmxomp.h"
 #include "gromacs/utility/pleasecite.h"
 #include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/stringutil.h"
 
 int gmx_sans(int argc, char* argv[])
 {
@@ -132,8 +133,6 @@ int gmx_sans(int argc, char* argv[])
     int*                                 index   = nullptr;
     int                                  isize;
     int                                  i;
-    char*                                hdr            = nullptr;
-    char*                                suffix         = nullptr;
     gmx_radial_distribution_histogram_t *prframecurrent = nullptr, *pr = nullptr;
     gmx_static_structurefactor_t *       sqframecurrent = nullptr, *sq = nullptr;
     gmx_output_env_t*                    oenv;
@@ -284,16 +283,13 @@ int gmx_sans(int argc, char* argv[])
         /* print frame data if needed */
         if (opt2fn_null("-prframe", NFILE, fnm))
         {
-            snew(hdr, 25);
-            snew(suffix, GMX_PATH_MAX);
             /* prepare header */
-            sprintf(hdr, "g(r), t = %f", t);
-            /* prepare output filename */
+            auto hdr    = gmx::formatString("g(r), t = %f", t);
             auto fnmdup = filenames;
-            sprintf(suffix, "-t%.2f", t);
-            add_suffix_to_output_names(fnmdup.data(), NFILE, suffix);
+            auto suffix = gmx::formatString("-t%.2f", t);
+            add_suffix_to_output_names(fnmdup.data(), NFILE, suffix.c_str());
             fp = xvgropen(opt2fn_null("-prframe", NFILE, fnmdup.data()),
-                          hdr,
+                          hdr.c_str(),
                           "Distance (nm)",
                           "Probability",
                           oenv);
@@ -302,28 +298,25 @@ int gmx_sans(int argc, char* argv[])
                 fprintf(fp, "%10.6f%10.6f\n", prframecurrent->r[i], prframecurrent->gr[i]);
             }
             xvgrclose(fp);
-            sfree(hdr);
-            sfree(suffix);
         }
         if (opt2fn_null("-sqframe", NFILE, fnm))
         {
-            snew(hdr, 25);
-            snew(suffix, GMX_PATH_MAX);
             /* prepare header */
-            sprintf(hdr, "I(q), t = %f", t);
+            auto hdr = gmx::formatString("I(q), t = %f", t);
             /* prepare output filename */
             auto fnmdup = filenames;
-            sprintf(suffix, "-t%.2f", t);
-            add_suffix_to_output_names(fnmdup.data(), NFILE, suffix);
-            fp = xvgropen(
-                    opt2fn_null("-sqframe", NFILE, fnmdup.data()), hdr, "q (nm^-1)", "s(q)/s(0)", oenv);
+            auto suffix = gmx::formatString("-t%.2f", t);
+            add_suffix_to_output_names(fnmdup.data(), NFILE, suffix.c_str());
+            fp = xvgropen(opt2fn_null("-sqframe", NFILE, fnmdup.data()),
+                          hdr.c_str(),
+                          "q (nm^-1)",
+                          "s(q)/s(0)",
+                          oenv);
             for (i = 0; i < sqframecurrent->qn; i++)
             {
                 fprintf(fp, "%10.6f%10.6f\n", sqframecurrent->q[i], sqframecurrent->s[i]);
             }
             xvgrclose(fp);
-            sfree(hdr);
-            sfree(suffix);
         }
         /* free pr structure */
         sfree(prframecurrent->gr);

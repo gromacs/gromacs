@@ -45,22 +45,11 @@
 #include <climits>
 #include <cstdio>
 
+#include <filesystem>
 #include <string>
 
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/fileptr.h"
-
-/*! \def GMX_PATH_MAX
- * \brief
- * Maximum path length, if the OS provides one, otherwise a fixed constant.
- */
-#ifdef PATH_MAX
-#    define GMX_PATH_MAX PATH_MAX
-#elif defined MAX_PATH
-#    define GMX_PATH_MAX MAX_PATH
-#else
-#    define GMX_PATH_MAX 4096
-#endif
 
 /** \Gromacs definition to use instead of `off_t`. */
 typedef int64_t gmx_off_t;
@@ -92,12 +81,12 @@ void gmx_set_max_backup_count(int count);
  * Note that this returns `TRUE` even if \p fname is a directory instead of a
  * file.
  */
-gmx_bool gmx_fexist(const std::string& fname);
+bool gmx_fexist(const std::filesystem::path& fname);
 
 /*! \brief
  * Makes a backup of file if the file exists.
  */
-void make_backup(const std::string& file);
+void make_backup(const std::filesystem::path& file);
 
 /*! \brief
  * Opens a file, with \Gromacs-specific additions.
@@ -112,7 +101,7 @@ void make_backup(const std::string& file);
  * overwriting it.
  * A fatal error results if the file cannot be opened, for whatever reason.
  */
-FILE* gmx_ffopen(const std::string& file, const char* mode);
+FILE* gmx_ffopen(const std::filesystem::path& file, const char* mode);
 
 /** Closes a file opened with gmx_ffopen(). */
 int gmx_ffclose(FILE* fp);
@@ -138,7 +127,7 @@ int gmx_fseek(FILE* stream, gmx_off_t offset, int whence);
 gmx_off_t gmx_ftell(FILE* stream);
 
 /** OS-independent truncate(). */
-int gmx_truncate(const std::string& filename, gmx_off_t length);
+int gmx_truncate(const std::filesystem::path& filename, gmx_off_t length);
 
 namespace gmx
 {
@@ -151,9 +140,9 @@ namespace gmx
  * error results if the file is not found in any location and \c
  * bFatal is true.
  */
-std::string findLibraryFile(const std::string& filename, bool bAddCWD = true, bool bFatal = true);
-//! \copydoc findLibraryFile(const std::string &, bool, bool)
-std::string findLibraryFile(const char* filename, bool bAddCWD = true, bool bFatal = true);
+std::filesystem::path findLibraryFile(const std::filesystem::path& filename,
+                                      bool                         bAddCWD = true,
+                                      bool                         bFatal  = true);
 
 /*! \brief
  * Opens a library file for reading in an RAII-style `FILE` handle.
@@ -161,9 +150,7 @@ std::string findLibraryFile(const char* filename, bool bAddCWD = true, bool bFat
  * Works as findLibraryFile(), except that it opens the file and
  * returns a file handle.
  */
-FilePtr openLibraryFile(const std::string& filename, bool bAddCWD = true, bool bFatal = true);
-//! \copydoc openLibraryFile(const std::string &, bool, bool)
-FilePtr openLibraryFile(const char* filename, bool bAddCWD = true, bool bFatal = true);
+FilePtr openLibraryFile(const std::filesystem::path& filename, bool bAddCWD = true, bool bFatal = true);
 
 } // namespace gmx
 
@@ -186,14 +173,14 @@ void gmx_tmpnam(char* buf);
  *
  * Renames/moves a file atomically, if the OS makes that available.
  */
-void gmx_file_rename(const char* oldname, const char* newname);
+void gmx_file_rename(const std::filesystem::path& oldname, const std::filesystem::path& newname);
 
 /*! \brief
  * Copies a file (data only) oldname to newname.
  *
- * If \p copy_if_empty is `FALSE`, the file won't be copied if it's empty.
+ * If \p copy_if_empty is `false`, the file won't be copied if it's empty.
  */
-int gmx_file_copy(const char* oldname, const char* newname, gmx_bool copy_if_empty);
+int gmx_file_copy(const std::filesystem::path& oldname, const std::filesystem::path& newname, bool copy_if_empty);
 
 /*! \brief
  * OS-independent fsync().
@@ -207,13 +194,13 @@ int gmx_fsync(FILE* fp);
  *
  * Exits with a fatal error if changing the directory fails.
  */
-void gmx_chdir(const char* directory);
+void gmx_chdir(const std::filesystem::path& directory);
 /*! \brief
  * OS-independent getcwd().
  *
  * Exits with a fatal error if the call fails.
  */
-void gmx_getcwd(char* buffer, size_t size);
+std::filesystem::path gmx_getcwd();
 
 namespace gmx
 {

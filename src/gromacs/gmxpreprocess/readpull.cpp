@@ -504,7 +504,7 @@ std::vector<std::string> read_pullparams(std::vector<t_inpfile>* inp, pull_param
                     pullCoord.ngroup,
                     enumValueToString(pullCoord.eGeom),
                     nscan);
-            wi->setFileAndLineNumber(nullptr, -1);
+            wi->setFileAndLineNumber({}, -1);
             wi->addError(message);
         }
         for (int g = 0; g < pullCoord.ngroup; g++)
@@ -739,7 +739,7 @@ pull_t* set_pull_init(t_inputrec*                    ir,
                         g,
                         c_pullGroupPbcMargin,
                         pull->group[g].pbcatom + 1);
-                wi->setFileAndLineNumber(nullptr, -1);
+                wi->setFileAndLineNumber({}, -1);
                 wi->addWarning(buf);
             }
         }
