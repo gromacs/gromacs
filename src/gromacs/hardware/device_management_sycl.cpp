@@ -239,12 +239,6 @@ static DeviceStatus isDeviceCompatible(const sycl::device& syclDevice)
         }
 #endif
 
-        if (syclDevice.is_host())
-        {
-            // Host device does not support subgroups or even querying for sub_group_sizes
-            return DeviceStatus::Incompatible;
-        }
-
         const std::vector<size_t> supportedSubGroupSizes =
                 syclDevice.get_info<sycl::info::device::sub_group_sizes>();
 
