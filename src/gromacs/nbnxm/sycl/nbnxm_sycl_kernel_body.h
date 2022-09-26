@@ -761,7 +761,7 @@ static auto nbnxmKernel(sycl::handler&                                          
                         const float                                                 rlistOuterSq,
                         const float                                                 ewaldShift,
                         const float                                                 epsFac,
-                        const float                                                 ewaldCoeffLJ,
+                        const float                                                 ewaldCoeffLJ_2,
                         const float                                                 cRF,
                         const shift_consts_t                                        dispersionShift,
                         const shift_consts_t                                        repulsionShift,
@@ -945,10 +945,9 @@ static auto nbnxmKernel(sycl::handler&                                          
         }
         itemIdx.barrier(fence_space::local_space);
 
-        float ewaldCoeffLJ_2, ewaldCoeffLJ_6_6; // Only needed if (props.vdwEwald)
+        float ewaldCoeffLJ_6_6; // Only needed if (props.vdwEwald)
         if constexpr (props.vdwEwald)
         {
-            ewaldCoeffLJ_2   = ewaldCoeffLJ * ewaldCoeffLJ;
             ewaldCoeffLJ_6_6 = ewaldCoeffLJ_2 * ewaldCoeffLJ_2 * ewaldCoeffLJ_2 * c_oneSixth;
         }
 
@@ -1372,7 +1371,7 @@ void launchNbnxmKernelHelper(NbnxmGpu* nb, const gmx::StepWorkload& stepWork, co
                                                            nbp->rlistOuter_sq,
                                                            nbp->sh_ewald,
                                                            nbp->epsfac,
-                                                           nbp->ewaldcoeff_lj,
+                                                           nbp->ewaldcoeff_lj * nbp->ewaldcoeff_lj,
                                                            nbp->c_rf,
                                                            nbp->dispersion_shift,
                                                            nbp->repulsion_shift,
