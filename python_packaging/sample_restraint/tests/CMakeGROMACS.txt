@@ -59,7 +59,7 @@ if(MPIEXEC_EXECUTABLE)
     add_custom_target(
         gmxapi_extension_pytest_mpi
         COMMAND ${MPIEXEC_EXECUTABLE} -n 2 -x PYTHONPATH=${GMXAPI_PYTHON_STAGING_DIR}:${PLUGINPATH}
-            ${PYTHON_EXECUTABLE} -m mpi4py -m pytest --log-cli-level ERROR ${CMAKE_CURRENT_SOURCE_DIR}
+            ${PYTHON_EXECUTABLE} -m mpi4py -m pytest -x --log-cli-level ERROR ${CMAKE_CURRENT_SOURCE_DIR}
             DEPENDS gmxapi_extension _gmxapi gmx
             )
 

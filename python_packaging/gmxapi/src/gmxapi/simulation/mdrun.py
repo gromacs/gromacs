@@ -264,9 +264,19 @@ class LegacyImplementationSubscription(object):
         with scoped_resources(base_context, requirements=requirements) as session_resources:
             session_comm: mpi4py_Comm = session_resources.communicator()
             if base_rank < ensemble_width:
-                # Note that in the current implementation, we assign one rank to each ensemble member.
-                assert session_comm.Get_size() == ensemble_width
-                ensemble_rank = session_comm.Get_rank()
+                if session_comm is not None:
+                    assert hasattr(session_comm, 'Get_size')
+                    assert hasattr(session_comm, 'Get_rank')
+                    # Note that in the current implementation, we assign one rank to each ensemble member.
+                    assert typing.cast('mpi4py.MPI.Comm', session_comm).Get_size() == ensemble_width
+                    ensemble_rank = typing.cast('mpi4py.MPI.Comm', session_comm).Get_rank()
+                else:
+                    # We should have already checked, but ensemble simulations
+                    # or MPI-enabled GROMACS simulators require `mpi4py` and a
+                    # valid MPI communicator. This may be relaxed with a full
+                    # solution to #4422.
+                    assert base_rank == 0
+                    ensemble_rank = 0
             else:
                 # Extra ranks have nothing to do, but they may have a dummy communicator.
                 # Explicitly set to `None` to skip those members of the base_comm.
