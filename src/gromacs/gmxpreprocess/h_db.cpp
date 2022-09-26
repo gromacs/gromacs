@@ -78,7 +78,7 @@ void print_ab(FILE* out, const MoleculePatch& hack, const char* nname)
 }
 
 
-void read_ab(char* line, const char* fn, MoleculePatch* hack)
+void read_ab(char* line, const std::filesystem::path& fn, MoleculePatch* hack)
 {
     int  nh, tp, ns;
     char a[4][12];
@@ -87,7 +87,7 @@ void read_ab(char* line, const char* fn, MoleculePatch* hack)
     ns = sscanf(line, "%d%d%s%s%s%s%s", &nh, &tp, hn, a[0], a[1], a[2], a[3]);
     if (ns < 4)
     {
-        gmx_fatal(FARGS, "wrong format in input file %s on line\n%s\n", fn, line);
+        gmx_fatal(FARGS, "wrong format in input file %s on line\n%s\n", fn.c_str(), line);
     }
 
     hack->nr = nh;
@@ -96,7 +96,7 @@ void read_ab(char* line, const char* fn, MoleculePatch* hack)
     {
         gmx_fatal(FARGS,
                   "Error in hdb file %s:\nH-type should be in 1-%d. Offending line:\n%s",
-                  fn,
+                  fn.c_str(),
                   maxcontrol - 1,
                   line);
     }
@@ -107,7 +107,7 @@ void read_ab(char* line, const char* fn, MoleculePatch* hack)
         gmx_fatal(FARGS,
                   "Error in hdb file %s:\nWrong number of control atoms (%d instead of %d) on "
                   "line:\n%s\n",
-                  fn,
+                  fn.c_str(),
                   hack->nctl,
                   ncontrol[hack->tp],
                   line);
@@ -128,11 +128,11 @@ void read_ab(char* line, const char* fn, MoleculePatch* hack)
     }
 }
 
-static void read_h_db_file(const char* hfn, std::vector<MoleculePatchDatabase>* globalPatches)
+static void read_h_db_file(const std::filesystem::path& hfn, std::vector<MoleculePatchDatabase>* globalPatches)
 {
-    char filebase[STRLEN], line[STRLEN], buf[STRLEN];
+    char line[STRLEN], buf[STRLEN];
 
-    fflib_filename_base(hfn, filebase, STRLEN);
+    auto filebase = fflib_filename_base(hfn);
     /* Currently filebase is read and set, but not used.
      * hdb entries from any hdb file and be applied to rtp entries
      * in any rtp file.
@@ -173,11 +173,11 @@ static void read_h_db_file(const char* hfn, std::vector<MoleculePatchDatabase>* 
                               nab,
                               i - 1,
                               block->name.c_str(),
-                              hfn);
+                              hfn.c_str());
                 }
                 if (nullptr == fgets(buf, STRLEN, in))
                 {
-                    gmx_fatal(FARGS, "Error reading from file %s", hfn);
+                    gmx_fatal(FARGS, "Error reading from file %s", hfn.c_str());
                 }
                 block->hack.emplace_back(MoleculePatch());
                 read_ab(buf, hfn, &block->hack.back());
@@ -203,7 +203,7 @@ static void read_h_db_file(const char* hfn, std::vector<MoleculePatchDatabase>* 
     }
 }
 
-int read_h_db(const char* ffdir, std::vector<MoleculePatchDatabase>* globalPatches)
+int read_h_db(const std::filesystem::path& ffdir, std::vector<MoleculePatchDatabase>* globalPatches)
 {
     /* Read the hydrogen database file(s).
      * Do not generate an error when no files are found.

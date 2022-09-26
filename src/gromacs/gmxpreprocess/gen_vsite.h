@@ -35,6 +35,7 @@
 #ifndef GMX_GMXPREPROCESS_GEN_VSITE_H
 #define GMX_GMXPREPROCESS_GEN_VSITE_H
 
+#include <filesystem>
 #include <vector>
 
 #include "gromacs/math/vectypes.h"
@@ -64,7 +65,7 @@ void do_vsites(gmx::ArrayRef<const PreprocessResidue> rtpFFDB,
                int*                                   cgnr[],
                real                                   mHmult,
                bool                                   bVSiteAromatics,
-               const char*                            ffdir);
+               const std::filesystem::path&           ffdir);
 
 void do_h_mass(InteractionsOfType* psb, int vsite_type[], t_atoms* at, real mHmult, bool bDeuterate);
 

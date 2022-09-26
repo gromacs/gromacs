@@ -57,7 +57,7 @@
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
 
-static void rd_nm2type_file(const std::string& filename, int* nnm, t_nm2type** nmp)
+static void rd_nm2type_file(const std::filesystem::path& filename, int* nnm, t_nm2type** nmp)
 {
     FILE*      fp;
     bool       bCont;
@@ -128,7 +128,7 @@ static void rd_nm2type_file(const std::string& filename, int* nnm, t_nm2type** n
     *nmp = nm2t;
 }
 
-t_nm2type* rd_nm2type(const char* ffdir, int* nnm)
+t_nm2type* rd_nm2type(const std::filesystem::path& ffdir, int* nnm)
 {
     auto ff       = fflib_search_file_end(ffdir, ".n2t", FALSE);
     *nnm          = 0;

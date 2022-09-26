@@ -387,7 +387,7 @@ int gmx_x2top(int argc, char* argv[])
     t_nm2type*                            nm2t;
     t_mols                                mymol;
     int                                   nnm;
-    char                                  forcefield[32], ffdir[STRLEN];
+    char                                  forcefield[32];
     rvec*                                 x; /* coordinates? */
     int *                                 nbonds, *cgnr;
     int                                   bts[] = { 1, 1, 1, 2 };
@@ -396,7 +396,6 @@ int gmx_x2top(int argc, char* argv[])
     PbcType                               pbcType;
     bool                                  bRTP, bTOP, bOPLS;
     real                                  qtot, mtot;
-    char                                  n2t[STRLEN];
     gmx_output_env_t*                     oenv;
 
     t_filenm fnm[] = { { efSTX, "-f", "conf", ffREAD },
@@ -479,7 +478,7 @@ int gmx_x2top(int argc, char* argv[])
 
 
     /* Force field selection, interactive or direct */
-    choose_ff(strcmp(ff, "select") == 0 ? nullptr : ff, forcefield, sizeof(forcefield), ffdir, sizeof(ffdir), logger);
+    auto ffdir = choose_ff(strcmp(ff, "select") == 0 ? nullptr : ff, forcefield, sizeof(forcefield), logger);
 
     bOPLS = (strcmp(forcefield, "oplsaa") == 0);
 
@@ -498,17 +497,17 @@ int gmx_x2top(int argc, char* argv[])
         snew(atoms->pdbinfo, natoms);
     }
 
-    sprintf(n2t, "%s", ffdir);
-    nm2t = rd_nm2type(n2t, &nnm);
+    nm2t = rd_nm2type(ffdir, &nnm);
     if (nnm == 0)
     {
-        gmx_fatal(FARGS, "No or incorrect atomname2type.n2t file found (looking for %s)", n2t);
+        gmx_fatal(FARGS, "No or incorrect atomname2type.n2t file found (looking for %s)", ffdir.c_str());
     }
     else
     {
         GMX_LOG(logger.info)
                 .asParagraph()
-                .appendTextFormatted("There are %d name to type translations in file %s", nnm, n2t);
+                .appendTextFormatted(
+                        "There are %d name to type translations in file %s", nnm, ffdir.c_str());
     }
     if (debug)
     {
@@ -563,7 +562,7 @@ int gmx_x2top(int argc, char* argv[])
         print_top_header(fp, ftp2fn(efTOP, NFILE, fnm), TRUE, ffdir, 1.0);
 
         write_top(fp,
-                  nullptr,
+                  {},
                   mymol.name.c_str(),
                   atoms,
                   FALSE,

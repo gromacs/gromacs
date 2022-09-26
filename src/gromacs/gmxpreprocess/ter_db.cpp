@@ -240,20 +240,14 @@ static void print_ter_db(const char*                                ff,
     gmx_fio_fclose(out);
 }
 
-static void read_ter_db_file(const char*                         fn,
+static void read_ter_db_file(const std::filesystem::path&        fn,
                              std::vector<MoleculePatchDatabase>* tbptr,
                              PreprocessingAtomTypes*             atype)
 {
-    char filebase[STRLEN];
     char header[STRLEN], buf[STRLEN], line[STRLEN];
 
-    fflib_filename_base(fn, filebase, STRLEN);
-    /* Remove the C/N termini extension */
-    char* ptr = strrchr(filebase, '.');
-    if (ptr != nullptr)
-    {
-        ptr[0] = '\0';
-    }
+    auto filebase = fflib_filename_base(fn);
+    filebase.replace_extension();
 
     FILE* in = fflib_open(fn);
 
@@ -305,7 +299,7 @@ static void read_ter_db_file(const char*                         fn,
                         gmx_fatal(FARGS,
                                   "Reading Termini Database '%s': "
                                   "expected atom name on line\n%s",
-                                  fn,
+                                  fn.c_str(),
                                   line);
                     }
                     hack->oname = buf;
@@ -340,7 +334,7 @@ static void read_ter_db_file(const char*                         fn,
                             gmx_fatal(FARGS,
                                       "Reading Termini Database '%s': don't know which name the "
                                       "new atom should have on line\n%s",
-                                      fn,
+                                      fn.c_str(),
                                       line);
                         }
                     }
@@ -364,7 +358,7 @@ static void read_ter_db_file(const char*                         fn,
                         gmx_fatal(FARGS,
                                   "Reading Termini Database '%s': expected %d atom names (found "
                                   "%d) on line\n%s",
-                                  fn,
+                                  fn.c_str(),
                                   enumValueToNumIAtoms(*btkw),
                                   j - 1,
                                   line);
@@ -389,7 +383,10 @@ static void read_ter_db_file(const char*                         fn,
     gmx_ffclose(in);
 }
 
-int read_ter_db(const char* ffdir, char ter, std::vector<MoleculePatchDatabase>* tbptr, PreprocessingAtomTypes* atype)
+int read_ter_db(const std::filesystem::path&        ffdir,
+                char                                ter,
+                std::vector<MoleculePatchDatabase>* tbptr,
+                PreprocessingAtomTypes*             atype)
 {
     std::string ext = gmx::formatString(".%c.tdb", ter);
 
@@ -400,7 +397,7 @@ int read_ter_db(const char* ffdir, char ter, std::vector<MoleculePatchDatabase>*
     tbptr->clear();
     for (const auto& filename : tdbf)
     {
-        read_ter_db_file(filename.c_str(), tbptr, atype);
+        read_ter_db_file(filename, tbptr, atype);
     }
 
     if (debug)

@@ -35,6 +35,8 @@
 #ifndef GMX_GMXPREPROCESS_XLATE_H
 #define GMX_GMXPREPROCESS_XLATE_H
 
+#include <filesystem>
+
 #include "gromacs/topology/residuetypes.h"
 
 struct t_atoms;
@@ -50,8 +52,8 @@ class ArrayRef;
 /* If bResname is true renames atoms based on residue names,
  * otherwise renames atoms based on rtp entry names.
  */
-void rename_atoms(const char*                            xlfile,
-                  const char*                            ffdir,
+void rename_atoms(const std::filesystem::path&           xlfile,
+                  const std::filesystem::path&           ffdir,
                   t_atoms*                               atoms,
                   t_symtab*                              symtab,
                   gmx::ArrayRef<const PreprocessResidue> restp,

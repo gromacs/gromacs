@@ -37,6 +37,7 @@
 
 #include <cstdio>
 
+#include <filesystem>
 #include <string>
 #include <vector>
 
@@ -73,18 +74,16 @@ enum class HistidineStates : int
 };
 const char* enumValueToString(HistidineStates enumValue);
 
-void choose_ff(const char*          ffsel,
-               char*                forcefield,
-               int                  ff_maxlen,
-               char*                ffdir,
-               int                  ffdir_maxlen,
-               const gmx::MDLogger& logger);
+std::filesystem::path choose_ff(const char* ffsel, char* forcefield, int ff_maxlen, const gmx::MDLogger& logger);
 /* Find force fields in the current and libdirs and choose an ff.
  * If ffsel!=NULL: search for ffsel.
  * If ffsel==NULL: interactive selection.
  */
 
-void choose_watermodel(const char* wmsel, const char* ffdir, char** watermodel, const gmx::MDLogger& logger);
+void choose_watermodel(const char*                  wmsel,
+                       const std::filesystem::path& ffdir,
+                       char**                       watermodel,
+                       const gmx::MDLogger&         logger);
 /* Choose, possibly interactively, which water model to include,
  * based on the wmsel command line option choice and watermodels.dat
  * in ffdir.
@@ -119,19 +118,26 @@ void match_atomnames_with_rtp(gmx::ArrayRef<PreprocessResidue>     usedPpResidue
  * add these atoms to restp.
  */
 
-void print_top_comment(FILE* out, const char* filename, const char* ffdir, bool bITP);
+void print_top_comment(FILE*                        out,
+                       const std::filesystem::path& filename,
+                       const std::filesystem::path& ffdir,
+                       bool                         bITP);
 
-void print_top_header(FILE* out, const char* filename, bool bITP, const char* ffdir, real mHmult);
+void print_top_header(FILE*                        out,
+                      const std::filesystem::path& filename,
+                      bool                         bITP,
+                      const std::filesystem::path& ffdir,
+                      real                         mHmult);
 
-void print_top_mols(FILE*                            out,
-                    const char*                      title,
-                    const char*                      ffdir,
-                    const char*                      water,
-                    gmx::ArrayRef<const std::string> incls,
-                    gmx::ArrayRef<const t_mols>      mols);
+void print_top_mols(FILE*                                      out,
+                    const char*                                title,
+                    const std::filesystem::path&               ffdir,
+                    const char*                                water,
+                    gmx::ArrayRef<const std::filesystem::path> incls,
+                    gmx::ArrayRef<const t_mols>                mols);
 
 void write_top(FILE*                                   out,
-               const char*                             pr,
+               const std::filesystem::path&            pr,
                const char*                             molname,
                t_atoms*                                at,
                bool                                    bRTPresname,
@@ -144,7 +150,7 @@ void write_top(FILE*                                   out,
 /* NOTE: nrexcl is not the size of *excl! */
 
 void pdb2top(FILE*                                  top_file,
-             const char*                            posre_fn,
+             const std::filesystem::path&           posre_fn,
              const char*                            molname,
              t_atoms*                               atoms,
              std::vector<gmx::RVec>*                x,
@@ -156,7 +162,7 @@ void pdb2top(FILE*                                  top_file,
              bool                                   bAllowMissing,
              bool                                   bVsites,
              bool                                   bVsiteAromatics,
-             const char*                            ffdir,
+             const std::filesystem::path&           ffdir,
              real                                   mHmult,
              gmx::ArrayRef<const DisulfideBond>     ssbonds,
              real                                   long_bond_dist,

@@ -69,7 +69,6 @@
 #    endif
 #endif
 
-#include "gromacs/utility/dir_separator.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/stringutil.h"

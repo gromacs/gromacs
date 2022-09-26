@@ -49,19 +49,18 @@
  */
 std::vector<gmx::DataFileInfo> fflib_enumerate_forcefields();
 
-const char* fflib_forcefield_dir_ext();
+std::filesystem::path fflib_forcefield_dir_ext();
 /* Returns the name of the force field directory extension */
 
-const char* fflib_forcefield_itp();
+std::filesystem::path fflib_forcefield_itp();
 /* Returns the name of the main forcefield itp file */
 
-const char* fflib_forcefield_doc();
+std::filesystem::path fflib_forcefield_doc();
 /* Returns the name of the forcefield documentation file */
 
-void fflib_filename_base(const char* filename, char* filebase, int maxlen);
+std::filesystem::path fflib_filename_base(const std::filesystem::path& filename);
 /* Return the base file name of filename in base,
  * i.e. remove path and extension, if present.
- * base should be at least of size maxlen.
  */
 
 std::vector<std::filesystem::path> fflib_search_file_end(const std::filesystem::path& ffdir,
@@ -72,10 +71,10 @@ std::vector<std::filesystem::path> fflib_search_file_end(const std::filesystem::
  * Return the number of files and the file names in filenames.
  */
 
-bool fflib_fexist(const std::string& file);
+bool fflib_fexist(const std::filesystem::path& file);
 /* Check if a file exists in the force field library */
 
-FILE* fflib_open(const std::string& file);
+FILE* fflib_open(const std::filesystem::path& file);
 /* Open force field library file "file" for reading.
  * "file" should contain the whole path to the force field library,
  * either absolute or relative to the current dir.

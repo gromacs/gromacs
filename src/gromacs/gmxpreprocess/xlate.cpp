@@ -61,16 +61,15 @@ typedef struct
     char* replace;
 } t_xlate_atom;
 
-static void get_xlatoms(const std::string& filename, FILE* fp, int* nptr, t_xlate_atom** xlptr)
+static void get_xlatoms(const std::filesystem::path& filename, FILE* fp, int* nptr, t_xlate_atom** xlptr)
 {
-    char          filebase[STRLEN];
     char          line[STRLEN];
     char          abuf[1024], rbuf[1024], repbuf[1024], dumbuf[1024];
     char*         _ptr;
     int           n, na, idum;
     t_xlate_atom* xl;
 
-    fflib_filename_base(filename.c_str(), filebase, STRLEN);
+    auto filebase = fflib_filename_base(filename);
 
     n  = *nptr;
     xl = *xlptr;
@@ -94,7 +93,7 @@ static void get_xlatoms(const std::string& filename, FILE* fp, int* nptr, t_xlat
         }
 
         srenew(xl, n + 1);
-        xl[n].filebase = gmx_strdup(filebase);
+        xl[n].filebase = gmx_strdup(filebase.c_str());
 
         /* Use wildcards... */
         if (strcmp(rbuf, "*") != 0)
@@ -138,8 +137,8 @@ static void done_xlatom(int nxlate, t_xlate_atom* xlatom)
     sfree(xlatom);
 }
 
-void rename_atoms(const char*                            xlfile,
-                  const char*                            ffdir,
+void rename_atoms(const std::filesystem::path&           xlfile,
+                  const std::filesystem::path&           ffdir,
                   t_atoms*                               atoms,
                   t_symtab*                              symtab,
                   gmx::ArrayRef<const PreprocessResidue> localPpResidue,
@@ -156,7 +155,7 @@ void rename_atoms(const char*                            xlfile,
 
     nxlate = 0;
     xlatom = nullptr;
-    if (xlfile != nullptr)
+    if (!xlfile.empty())
     {
         gmx::FilePtr fp = gmx::openLibraryFile(xlfile);
         get_xlatoms(xlfile, fp.get(), &nxlate, &xlatom);

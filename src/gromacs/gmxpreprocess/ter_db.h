@@ -35,6 +35,7 @@
 #ifndef GMX_GMXPREPROCESS_TER_DB_H
 #define GMX_GMXPREPROCESS_TER_DB_H
 
+#include <filesystem>
 #include <vector>
 
 class PreprocessingAtomTypes;
@@ -55,7 +56,7 @@ class ArrayRef;
  * \param[in] atype Database for atomtype information.
  * \returns Number of entries entered into database.
  */
-int read_ter_db(const char*                         ffdir,
+int read_ter_db(const std::filesystem::path&        ffdir,
                 char                                ter,
                 std::vector<MoleculePatchDatabase>* tbptr,
                 PreprocessingAtomTypes*             atype);

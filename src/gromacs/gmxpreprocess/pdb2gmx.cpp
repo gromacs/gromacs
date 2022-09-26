@@ -73,7 +73,6 @@
 #include "gromacs/topology/residuetypes.h"
 #include "gromacs/topology/symtab.h"
 #include "gromacs/topology/topology.h"
-#include "gromacs/utility/dir_separator.h"
 #include "gromacs/utility/enumerationhelpers.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
@@ -703,7 +702,7 @@ int read_pdball(const char*           inf,
     rename_pdbres(atoms, "SOL", watres, false, symtab);
     rename_pdbres(atoms, "WAT", watres, false, symtab);
 
-    rename_atoms("xlateat.dat", nullptr, atoms, symtab, {}, true, residueTypeMap, true, bVerbose);
+    rename_atoms("xlateat.dat", {}, atoms, symtab, {}, true, residueTypeMap, true, bVerbose);
 
     if (natom == 0)
     {
@@ -1655,15 +1654,15 @@ private:
     WaterType           waterType_;
     MergeType           mergeType_;
 
-    FILE*                        itp_file_;
-    char                         forcefield_[STRLEN];
-    char                         ffdir_[STRLEN];
-    char*                        ffname_;
-    char*                        watermodel_;
-    std::vector<std::string>     incls_;
-    std::vector<t_mols>          mols_;
-    real                         mHmult_;
-    std::unique_ptr<LoggerOwner> loggerOwner_;
+    FILE*                              itp_file_;
+    char                               forcefield_[STRLEN];
+    std::filesystem::path              ffdir_;
+    char*                              ffname_;
+    char*                              watermodel_;
+    std::vector<std::filesystem::path> incls_;
+    std::vector<t_mols>                mols_;
+    real                               mHmult_;
+    std::unique_ptr<LoggerOwner>       loggerOwner_;
 };
 
 void pdb2gmx::initOptions(IOptionsContainer* options, ICommandLineOptionsModuleSettings* settings)
@@ -1951,12 +1950,10 @@ void pdb2gmx::optionsFinished()
     }
 
     /* Force field selection, interactive or direct */
-    choose_ff(strcmp(ff_.c_str(), "select") == 0 ? nullptr : ff_.c_str(),
-              forcefield_,
-              sizeof(forcefield_),
-              ffdir_,
-              sizeof(ffdir_),
-              loggerOwner_->logger());
+    ffdir_ = choose_ff(strcmp(ff_.c_str(), "select") == 0 ? nullptr : ff_.c_str(),
+                       forcefield_,
+                       sizeof(forcefield_),
+                       loggerOwner_->logger());
 
     if (strlen(forcefield_) > 0)
     {
@@ -1993,7 +1990,7 @@ int pdb2gmx::run()
 
     GMX_LOG(logger.info)
             .asParagraph()
-            .appendTextFormatted("Using the %s force field in directory %s", ffname_, ffdir_);
+            .appendTextFormatted("Using the %s force field in directory %s", ffname_, ffdir_.c_str());
 
     choose_watermodel(c_waterTypeNames[waterType_], ffdir_, &watermodel_, logger);
 
@@ -2588,7 +2585,7 @@ int pdb2gmx::run()
            requires some re-thinking of code in gen_vsite.c, which I won't
            do now :( AF 26-7-99 */
 
-        rename_atoms(nullptr, ffdir_, pdba, &symtab, restp_chain, false, residueTypeMap, false, bVerbose_);
+        rename_atoms({}, ffdir_, pdba, &symtab, restp_chain, false, residueTypeMap, false, bVerbose_);
 
         match_atomnames_with_rtp(restp_chain, hb_chain, pdba, &symtab, x, bVerbose_, logger);
 
@@ -2805,7 +2802,8 @@ int pdb2gmx::run()
     }
     else
     {
-        std::string waterFile = formatString("%s%c%s.itp", ffdir_, DIR_SEPARATOR, watermodel_);
+        auto waterFile = ffdir_;
+        waterFile.append(watermodel_).replace_extension("itp");
         if (!fflib_fexist(waterFile))
         {
             auto message = formatString(

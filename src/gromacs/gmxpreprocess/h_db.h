@@ -37,6 +37,7 @@
 
 #include <cstdio>
 
+#include <filesystem>
 #include <vector>
 
 #include "gromacs/utility/arrayref.h"
@@ -46,7 +47,7 @@ struct MoleculePatchDatabase;
 
 /* functions for the h-database */
 
-void read_ab(char* line, const char* fn, MoleculePatch* ab);
+void read_ab(char* line, const std::filesystem::path& fn, MoleculePatch* ab);
 /* Read one add block */
 
 /*! \brief
@@ -56,7 +57,7 @@ void read_ab(char* line, const char* fn, MoleculePatch* ab);
  * \param[inout] globalPatches The database for atom modifications to populate.
  * \returns The number of modifications stored.
  */
-int read_h_db(const char* ffdir, std::vector<MoleculePatchDatabase>* globalPatches);
+int read_h_db(const std::filesystem::path& ffdir, std::vector<MoleculePatchDatabase>* globalPatches);
 
 void print_ab(FILE* out, const MoleculePatch& ab, const char* nname);
 /* print one add block */
