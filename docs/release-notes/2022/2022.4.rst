@@ -27,6 +27,11 @@ when invoked with more than one MPI rank.
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
 
+With flexible constraint grompp and mdrun exited with an assertion failure
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+:issue:`4605`
+
 Corrected gmx awh friction metric legend
 """"""""""""""""""""""""""""""""""""""""
 
