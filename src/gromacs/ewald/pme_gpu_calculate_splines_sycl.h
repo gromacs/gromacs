@@ -251,7 +251,7 @@ static inline void calculateSplines(const int                           atomInde
 
     /* Spline contribution index in one dimension */
     const int threadLocalIdXY =
-            (itemIdx.get_local_id(1) * itemIdx.get_group_range(2)) + itemIdx.get_local_id(2);
+            (itemIdx.get_local_id(1) * itemIdx.get_local_range(2)) + itemIdx.get_local_id(2);
     const int orderIndex = threadLocalIdXY / DIM;
     /* Dimension index */
     const int dimIndex = threadLocalIdXY % DIM;
