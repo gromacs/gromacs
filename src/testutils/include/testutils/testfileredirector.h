@@ -78,14 +78,14 @@ public:
      *
      * Further checks for existence of the given path will return `true`.
      */
-    void addExistingFile(const char* filename);
+    void addExistingFile(const std::filesystem::path& filename);
 
     // From IFileInputRedirector
     bool fileExists(const std::filesystem::path& filename,
                     const File::NotFoundHandler& onNotFound) const override;
 
 private:
-    std::set<std::string> existingFiles_;
+    std::set<std::filesystem::path> existingFiles_;
 
     GMX_DISALLOW_COPY_AND_ASSIGN(TestFileInputRedirector);
 };
@@ -116,7 +116,7 @@ public:
 
     // From IFileOutputRedirector
     TextOutputStream&       standardOutput() override;
-    TextOutputStreamPointer openTextOutputFile(const char* filename) override;
+    TextOutputStreamPointer openTextOutputFile(const std::filesystem::path& filename) override;
 
 private:
     class Impl;

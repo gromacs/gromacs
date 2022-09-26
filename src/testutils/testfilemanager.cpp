@@ -85,7 +85,7 @@ public:
     static std::filesystem::path s_globalOutputTempDirectory;
 
     //! Container type for names of temporary files.
-    typedef std::set<std::string> FileNameList;
+    typedef std::set<std::filesystem::path> FileNameList;
 
     /*! \brief Constructor
      *
@@ -135,7 +135,7 @@ void TestFileManager::Impl::removeFiles()
 {
     for (const auto& file : files_)
     {
-        std::remove(file.c_str());
+        std::filesystem::remove(file);
     }
     files_.clear();
 }
@@ -161,8 +161,7 @@ std::filesystem::path TestFileManager::getTemporaryFilePath(const std::filesyste
      * test. Currently, files whose names are returned by this method
      * get cleaned up (by default) at the end of all tests.
      */
-    auto filename =
-            std::filesystem::path(getOutputTempDirectory()).append(getTestSpecificFileName(suffix).string());
+    auto filename = getOutputTempDirectory() / getTestSpecificFileName(suffix);
     impl_->files_.insert(filename);
     return filename;
 }
@@ -192,12 +191,12 @@ std::filesystem::path TestFileManager::getTestSpecificFileNameRoot()
 
 std::filesystem::path TestFileManager::getTestSpecificFileName(const std::filesystem::path& suffix)
 {
-    std::string filename = getTestSpecificFileNameRoot();
+    std::string filename = getTestSpecificFileNameRoot().string();
     if (suffix.string()[0] != '.')
     {
         filename.append("_");
     }
-    filename.append(suffix);
+    filename.append(suffix.string());
     return filename;
 }
 
@@ -206,13 +205,10 @@ std::filesystem::path TestFileManager::getInputFilePath(const std::filesystem::p
     const std::string& name = filename.string();
     // Check if file is present in local directory.
     std::filesystem::path file;
-    return File::exists(file = std::filesystem::path(getInputDataDirectory()).append(name),
-                        File::returnFalseOnError)
+    return File::exists(file = getInputDataDirectory() / name, File::returnFalseOnError) ? file
+           : File::exists(file = getTestSimulationDatabaseDirectory() / name, File::returnFalseOnError)
                    ? file
-           : File::exists(file = std::filesystem::path(getTestSimulationDatabaseDirectory()).append(name),
-                          File::returnFalseOnError)
-                   ? file
-                   : std::filesystem::path(getInputDataDirectory()).append(name);
+                   : getInputDataDirectory() / name;
 }
 
 std::filesystem::path TestFileManager::getInputDataDirectory()

@@ -65,7 +65,7 @@ TestFileInputRedirector::TestFileInputRedirector() {}
 
 TestFileInputRedirector::~TestFileInputRedirector() {}
 
-void TestFileInputRedirector::addExistingFile(const char* filename)
+void TestFileInputRedirector::addExistingFile(const std::filesystem::path& filename)
 {
     existingFiles_.insert(filename);
 }
@@ -114,7 +114,7 @@ TextOutputStream& TestFileOutputRedirector::standardOutput()
     return *impl_->stdoutStream_;
 }
 
-TextOutputStreamPointer TestFileOutputRedirector::openTextOutputFile(const char* filename)
+TextOutputStreamPointer TestFileOutputRedirector::openTextOutputFile(const std::filesystem::path& filename)
 {
     Impl::StringStreamPointer stream(new StringOutputStream);
     impl_->fileList_.emplace_back(filename, stream);

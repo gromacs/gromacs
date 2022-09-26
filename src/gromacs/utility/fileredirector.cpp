@@ -85,7 +85,7 @@ class DefaultOutputRedirector : public IFileOutputRedirector
 {
 public:
     TextOutputStream&       standardOutput() override { return TextOutputFile::standardOutput(); }
-    TextOutputStreamPointer openTextOutputFile(const char* filename) override
+    TextOutputStreamPointer openTextOutputFile(const std::filesystem::path& filename) override
     {
         return TextOutputStreamPointer(new TextOutputFile(filename));
     }

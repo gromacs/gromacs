@@ -44,6 +44,7 @@
 
 #include <cstdio>
 
+#include <filesystem>
 #include <memory>
 #include <string>
 
@@ -105,9 +106,7 @@ public:
      * Instead of returning `NULL` on errors, throws an exception with
      * additional details (including the file name and `errno`).
      */
-    static FilePtr openRawHandle(const char* filename);
-    //! \copydoc openRawHandle(const char *)
-    static FilePtr openRawHandle(const std::string& filename);
+    static FilePtr openRawHandle(const std::filesystem::path& filename);
 
     /*! \brief
      * Opens a text file as a stream.
@@ -116,7 +115,7 @@ public:
      * \throws     std::bad_alloc if out of memory.
      * \throws     FileIOError on any I/O error.
      */
-    explicit TextInputFile(const std::string& filename);
+    explicit TextInputFile(const std::filesystem::path& filename);
     /*! \brief
      * Initializes file object from an existing file handle.
      *
@@ -157,7 +156,7 @@ class TextOutputFile : public TextOutputStream
 {
 public:
     //! \copydoc TextInputFile::TextInputFile(const std::string &)
-    explicit TextOutputFile(const std::string& filename);
+    explicit TextOutputFile(const std::filesystem::path& filename);
     //! \copydoc TextInputFile::TextInputFile(FILE *)
     explicit TextOutputFile(FILE* fp);
     ~TextOutputFile() override;

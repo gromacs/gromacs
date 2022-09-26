@@ -123,13 +123,7 @@ public:
      *
      * \param[in] filename  Requested file name.
      */
-    virtual TextOutputStreamPointer openTextOutputFile(const char* filename) = 0;
-
-    //! Convenience method to open a stream using an std::string path.
-    TextOutputStreamPointer openTextOutputFile(const std::string& filename)
-    {
-        return openTextOutputFile(filename.c_str());
-    }
+    virtual TextOutputStreamPointer openTextOutputFile(const std::filesystem::path& filename) = 0;
 };
 
 //! \cond libapi

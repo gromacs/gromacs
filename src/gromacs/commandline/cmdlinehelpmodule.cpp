@@ -787,7 +787,8 @@ namespace
 class ModificationCheckingFileOutputStream : public TextOutputStream
 {
 public:
-    ModificationCheckingFileOutputStream(const char* path, IFileOutputRedirector* redirector) :
+    ModificationCheckingFileOutputStream(const std::filesystem::path& path,
+                                         IFileOutputRedirector*       redirector) :
         path_(path), redirector_(redirector)
     {
     }
@@ -810,7 +811,7 @@ public:
     }
 
 private:
-    std::string            path_;
+    std::filesystem::path  path_;
     StringOutputStream     contents_;
     IFileOutputRedirector* redirector_;
 };
@@ -828,7 +829,7 @@ public:
     }
 
     TextOutputStream&       standardOutput() override { return redirector_->standardOutput(); }
-    TextOutputStreamPointer openTextOutputFile(const char* filename) override
+    TextOutputStreamPointer openTextOutputFile(const std::filesystem::path& filename) override
     {
         return TextOutputStreamPointer(new ModificationCheckingFileOutputStream(filename, redirector_));
     }
