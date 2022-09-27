@@ -363,6 +363,14 @@ static std::vector<VerletbufAtomtype> getVerletBufferAtomtypes(const gmx_mtop_t&
                 {
                     continue;
                 }
+                /* Check for flexible constraints, indicated by length=0.
+                 * As flexible constraints have varying length, we will not take
+                 * them into account, which gives a more conservative estimate.
+                 */
+                if (ip.constr.dA == 0)
+                {
+                    continue;
+                }
                 GMX_RELEASE_ASSERT(ip.constr.dA > 0,
                                    "We should only have positive constraint lengths here");
 

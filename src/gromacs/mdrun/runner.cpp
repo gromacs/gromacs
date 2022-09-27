@@ -1206,14 +1206,6 @@ int Mdrunner::mdrunner()
         extendStateWithOriresHistory(mtop, *inputrec, globalState.get());
     }
 
-    std::unique_ptr<BoxDeformation> deform = buildBoxDeformation(
-            globalState != nullptr ? createMatrix3x3FromLegacyMatrix(globalState->box)
-                                   : diagonalMatrix<real, 3, 3>(0.0),
-            MAIN(cr) ? DDRole::Main : DDRole::Agent,
-            PAR(cr) ? NumRanks::Multiple : NumRanks::Single,
-            cr->mpi_comm_mygroup,
-            *inputrec);
-
 #if GMX_FAHCORE
     /* We have to remember the generation's first step before reading checkpoint.
        This way, we can report to the F@H core both the generation's first step
@@ -1728,8 +1720,9 @@ int Mdrunner::mdrunner()
                                   cr,
                                   &mdrunOptions.checkpointOptions.period);
 
-    const bool               thisRankHasPmeGpuTask = gpuTaskAssignments.thisRankHasPmeGpuTask();
-    std::unique_ptr<MDAtoms> mdAtoms;
+    const bool thisRankHasPmeGpuTask = gpuTaskAssignments.thisRankHasPmeGpuTask();
+    std::unique_ptr<BoxDeformation>      deform;
+    std::unique_ptr<MDAtoms>             mdAtoms;
     std::unique_ptr<VirtualSitesHandler> vsite;
 
     t_nrnb nrnb;
@@ -1762,6 +1755,14 @@ int Mdrunner::mdrunner()
             fr->fcdata->orires = std::make_unique<t_oriresdata>(
                     fplog, mtop, *inputrec, ms, globalState.get(), &atomSets);
         }
+
+        deform = buildBoxDeformation(globalState != nullptr
+                                             ? createMatrix3x3FromLegacyMatrix(globalState->box)
+                                             : diagonalMatrix<real, 3, 3>(0.0),
+                                     MAIN(cr) ? DDRole::Main : DDRole::Agent,
+                                     PAR(cr) ? NumRanks::Multiple : NumRanks::Single,
+                                     cr->mpi_comm_mygroup,
+                                     *inputrec);
 
         // Save a handle to device stream manager to use elsewhere in the code
         // TODO: Forcerec is not a correct place to store it.
