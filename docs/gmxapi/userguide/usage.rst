@@ -37,8 +37,9 @@ Notes on parallelism and MPI
 
 The |Gromacs| library can be built for parallel computation using various
 strategies.
-*gmxapi* will need to be built slightly differently if |Gromacs| was configured
-with ``-DGMX_MPI=ON``.
+If |Gromacs| was configured with ``-DGMX_MPI=ON``,
+the same MPI library and compiler tool chain must be used for *gmxapi*
+and :py:mod:`mpi4py`.
 In any case, the Python package must be built with :py:mod:`mpi4py` installed.
 See :ref:`mpi_requirements`.
 
@@ -69,7 +70,7 @@ the intended Python interpreter since new process environments are being created
 
 The ``-m mpi4py`` ensures that the :py:mod:`mpi4py` package is available and
 allows for proper clean-up of resources.
-(See https://mpi4py.readthedocs.io/en/stable/mpi4py.run.html for details.)
+(See :py:mod:`mpi4py.run` for details.)
 
 .. todo:: update the following with :issue:`4422`
 

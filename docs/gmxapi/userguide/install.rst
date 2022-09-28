@@ -250,7 +250,8 @@ and the sample code are built with the same compiler(s).
 Note that strange errors have been known to occur when mpi4py_ is built with
 a different tool set than has been used to build Python and gmxapi.
 If the default compilers on your system are not sufficient for GROMACS or gmxapi,
-you may need to build, e.g., OpenMPI or MPICH, and/or build mpi4py_ with a
+you may need to build, e.g., OpenMPI or MPICH, and/or
+`build mpi4py <https://mpi4py.readthedocs.io/en/stable/install.html>`__ with a
 specific MPI compiler wrapper. This can complicate building in environments such
 as Conda_. You should be able to confirm that your MPI compiler wrapper is consistent
 with your GROMACS tool chain by comparing the output of :command:`mpicc --version`
@@ -349,7 +350,7 @@ the Python 3 interpreter is accessed with :command:`python3`.
 
     It can be tricky to properly or optimally build MPI enabled software in
     computing clusters, and administrators often provide prebuilt packages like
-    ``mpi4py``. If your computing environment has multiple Python installations,
+    :py:mod:`mpi4py`. If your computing environment has multiple Python installations,
     try to choose one that already includes ``mpi4py``. When you are using a
     Python installation that provides ``mpi4py``, generally, you should be sure
     to use the existing ``mpi4py`` installation in your new virtual environment
@@ -407,7 +408,9 @@ We use mpi4py_ for some features and to ensure compatible MPI bindings
 throughout your Python environment.
 **If you did not inherit mpi4py from system site-packages**
 (see :ref:`above <system-site-packages>`),
-make sure to install it using the same MPI installation that we are building
+make sure to
+`install it <https://mpi4py.readthedocs.io/en/stable/install.html>`__
+using the same MPI installation that we are building
 GROMACS against, and build with compatible compilers.
 
 ::
@@ -772,7 +775,9 @@ Two of the easiest problems to run into are incompatible compilers and
 incompatible Python. Try to make sure that you use the same C and C++
 compilers for GROMACS, for the Python package, and for the sample
 plugin. These compilers should also correspond to the :command:`mpicc` compiler
-wrapper used to compile mpi4py_. In order to build the Python
+wrapper used to
+`compile mpi4py <https://mpi4py.readthedocs.io/en/stable/install.html>`__.
+In order to build the Python
 package, you will need the Python headers or development installation,
 which might not already be installed on the machine you are using. (If
 not, then you will get an error about missing :file:`Python.h` at some

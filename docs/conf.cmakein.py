@@ -462,6 +462,9 @@ autodoc_mock_imports = ['hpccm', 'hpccm.config']
 
 # -- Options for intersphinx extension ------------------------------------
 
-intersphinx_mapping = {'python': ('https://docs.python.org/3', None)}
+intersphinx_mapping = {
+    'python': ('https://docs.python.org/3', None),
+    'mpi4py': ('https://mpi4py.readthedocs.io/en/stable/', None)
+}
 intersphinx_cache_limit = -1
 intersphinx_timeout = 10
