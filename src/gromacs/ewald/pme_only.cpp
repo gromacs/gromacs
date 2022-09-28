@@ -200,8 +200,11 @@ static gmx_pme_t* gmx_pmeonly_switch(std::vector<gmx_pme_t*>* pmedata,
              * So, just some grid size updates in the GPU kernel parameters.
              * TODO: this should be something like gmx_pme_update_split_params()
              */
-            gmx_pme_reinit(&pme, cr, pme, ir, grid_size, ewaldcoeff_q, ewaldcoeff_lj);
-            return pme;
+            gmx_pme_t* pmeNew;
+            gmx_pme_reinit(&pmeNew, cr, pme, ir, grid_size, ewaldcoeff_q, ewaldcoeff_lj);
+            gmx_pme_destroy(pme, false);
+            pme = pmeNew;
+            return pmeNew;
         }
     }
 

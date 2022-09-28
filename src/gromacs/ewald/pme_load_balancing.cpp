@@ -867,11 +867,16 @@ static void pme_load_balance(pme_load_balancing_t*          pme_lb,
         if ((pme_lb->setup[pme_lb->cur].pmedata == nullptr)
             || pme_gpu_task_enabled(pme_lb->setup[pme_lb->cur].pmedata))
         {
-            /* Generate a new PME data structure,
-             * copying part of the old pointers.
-             */
+            gmx_pme_t* newPmeData;
+            // Generate a new PME data structure, copying part of the old pointers.
             gmx_pme_reinit(
-                    &set->pmedata, cr, pme_lb->setup[0].pmedata, &ir, set->grid, set->ewaldcoeff_q, set->ewaldcoeff_lj);
+                    &newPmeData, cr, pme_lb->setup[0].pmedata, &ir, set->grid, set->ewaldcoeff_q, set->ewaldcoeff_lj);
+            // Destroy the old structure. Must be done after gmx_pme_reinit in case pme_lb->cur is 0.
+            if (set->pmedata != nullptr)
+            {
+                gmx_pme_destroy(set->pmedata, false);
+            }
+            set->pmedata = newPmeData;
         }
         *pmedata = set->pmedata;
     }
@@ -1179,6 +1184,14 @@ void pme_loadbal_done(pme_load_balancing_t* pme_lb, FILE* fplog, const gmx::MDLo
     if (fplog != nullptr && (pme_lb->cur > 0 || pme_lb->elimited != PmeLoadBalancingLimit::No))
     {
         print_pme_loadbal_settings(pme_lb, fplog, mdlog, bNonBondedOnGPU);
+    }
+    for (int i = 0; i < gmx::ssize(pme_lb->setup); i++)
+    {
+        // current element is stored in forcerec and free'd in Mdrunner::mdruner, together with shared data
+        if (i != pme_lb->cur)
+        {
+            gmx_pme_destroy(pme_lb->setup[i].pmedata, false);
+        }
     }
 
     delete pme_lb;
