@@ -28,6 +28,7 @@ simple-build:
     KUBERNETES_CPU_LIMIT: 8
     KUBERNETES_CPU_REQUEST: 4
     KUBERNETES_MEMORY_REQUEST: 8Gi
+    CTEST_RUN_MODE: "ExperimentalTest"
     CMAKE_SIMD_OPTIONS: "-DGMX_SIMD=None"
     CMAKE_MPI_OPTIONS: "-DGMX_THREAD_MPI=ON"
     CMAKE_PRECISION_OPTIONS: "-DGMX_DOUBLE=OFF"
@@ -37,58 +38,9 @@ simple-build:
     COMPILER_MAJOR_VERSION: 12
     BUILD_DIR: simple-build
   script:
-    - CMAKE=${CMAKE:-$(which cmake)}
-    - echo $CMAKE_COMPILER_SCRIPT
-    - echo $CMAKE_EXTRA_OPTIONS
-    - echo $CMAKE_SIMD_OPTIONS
-    - echo $CMAKE_GPU_OPTIONS
-    - echo $CMAKE_MPI_OPTIONS
-    - echo $CMAKE_PRECISION_OPTIONS
-    - echo $CMAKE_BUILD_TYPE_OPTIONS
-    - echo $CMAKE_GMXAPI_OPTIONS
-    - if [[ -d $BUILD_DIR ]] ; then
-      echo "Cleaning up build directory" ;
-      rm -rf $BUILD_DIR && mkdir $BUILD_DIR ;
-      else
-      echo "Preparing new build directory" ;
-      mkdir $BUILD_DIR ;
-      fi
-    - cd $BUILD_DIR
-    - which $CMAKE
-    - $CMAKE --version
-    - $CMAKE ..
-      -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
-      $CMAKE_COMPILER_SCRIPT
-      $CMAKE_EXTRA_OPTIONS
-      $CMAKE_SIMD_OPTIONS
-      $CMAKE_MPI_OPTIONS
-      $CMAKE_PRECISION_OPTIONS
-      $CMAKE_BUILD_TYPE_OPTIONS
-      $CMAKE_GPU_OPTIONS
-      $CMAKE_GMXAPI_OPTIONS
-      -DCMAKE_INSTALL_PREFIX=../$INSTALL_DIR -DGMX_COMPILER_WARNINGS=ON
-      2>&1 | tee cmakeLog.log
-    - awk '/CMake Warning/,/^--|^$/' cmakeLog.log | tee cmakeErrors.log
-    - if [ -s cmakeErrors.log  ] ; then echo "Found CMake warning while processing build"; cat cmakeErrors.log ; exit 1; fi
-    - $CMAKE --build . -- -j$KUBERNETES_CPU_LIMIT 2>&1 | tee buildLogFile.log
-    - $CMAKE --build . --target tests -- -j$KUBERNETES_CPU_LIMIT 2>&1 | tee testBuildLogFile.log
-    - awk '/warning/,/warning.*generated|^$/' buildLogFile.log testBuildLogFile.log
-      | grep -v "CMake" | tee buildErrors.log || true
-    - grep "cannot be built" buildLogFile.log testBuildLogFile.log | tee -a buildErrors.log || true
-    - grep "fatal error" buildLogFile.log testBuildLogFile.log | tee -a buildErrors.log || true
-    - grep "error generated when compiling" buildLogFile.log testBuildLogFile.log | tee -a buildErrors.log || true
-    - grep "error:" buildLogFile.log testBuildLogFile.log | tee -a buildErrors.log || true
-    - $CMAKE --build . --target install 2>&1 | tee installBuildLogFile.log
-    - if [ -s buildErrors.log ] ; then echo "Found compiler warning during build"; cat buildErrors.log; exit 1; fi
-    - ctest -D ExperimentalTest --output-on-failure | tee ctestLog.log || true
-    - awk '/The following tests FAILED/,/^Errors while running CTest|^$/'
-      ctestLog.log | tee ctestErrors.log
-    - xsltproc $CI_PROJECT_DIR/scripts/CTest2JUnit.xsl Testing/`head -n 1 < Testing/TAG`/Test.xml > JUnitTestResults.xml
-    - if [ -s ctestErrors.log ] ; then
-      echo "Error during running ctest";
-      exit 1;
-      fi
-    - cd ..
+    - bash -x admin/ci-scripts/gromacs-base-configure.sh
+    - bash -x admin/ci-scripts/gromacs-base-build.sh
+    - bash -x admin/ci-scripts/gromacs-base-test.sh
   artifacts:
     reports:
       junit: $BUILD_DIR/JUnitTestResults.xml
