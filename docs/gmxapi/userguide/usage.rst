@@ -35,15 +35,28 @@ from Python, build and install *gmxapi* in separate
 Notes on parallelism and MPI
 ============================
 
+The |Gromacs| library can be built for parallel computation using various
+strategies.
+*gmxapi* will need to be built slightly differently if |Gromacs| was configured
+with ``-DGMX_MPI=ON``.
+In any case, the Python package must be built with :py:mod:`mpi4py` installed.
+See :ref:`mpi_requirements`.
+
 .. note::
     This section uses "mpiexec" generically to refer to the MPI program launcher.
     Depending on your MPI implementation and system details,
     your environment may use "mpirun", or some other command instead.
 
-When launching a *gmxapi* script with MPI,
-you must help *gmxapi* detect the MPI context by ensuring that :py:mod:`mpi4py`
-is loaded.
-Refer to :ref:`mpi_requirements` for more on installing :py:mod:`mpi4py`.
+*gmxapi* scripts manage batches of simulations (as "ensembles") using
+MPI and :py:mod:`mpi4py`.
+To check whether your installed *gmxapi* package was built with MPI bindings,
+you can check for the ``mpi_bindings`` feature using
+:py:func:`gmxapi.version.has_feature`. The following command will produce an
+error if the feature is not available.
+
+::
+
+    python -c 'import gmxapi; assert gmxapi.version.has_feature("mpi_bindings")'
 
 Assuming you use :command:`mpiexec` to launch MPI jobs in your environment,
 run a *gmxapi* script on two ranks with something like the following.
@@ -54,20 +67,15 @@ the intended Python interpreter since new process environments are being created
 
     mpiexec -n 2 `which python` -m mpi4py myscript.py
 
-.. todo:: update the following with :issue:`4423` and :issue:`4422`
+The ``-m mpi4py`` ensures that the :py:mod:`mpi4py` package is available and
+allows for proper clean-up of resources.
+(See https://mpi4py.readthedocs.io/en/stable/mpi4py.run.html for details.)
 
-*gmxapi* 0.1 has limited parallelism, but future versions will include seamless
-acceleration as integration improves with the GROMACS library and computing
-environment runtime resources.
-Currently, *gmxapi* and the GROMACS library do not have an effective way to
-share an MPI environment.
-Therefore, if you intend to run more than one simulation at a time, in parallel,
-in a *gmxapi* script, you should build GROMACS with *thread-MPI* instead of a
-standard MPI library.
-I.e. configure GROMACS with the CMake flag ``-DGMX_THREAD_MPI=ON``.
-Then, launch your *gmxapi* script with one MPI rank per node, and *gmxapi* will
-assign each (non-MPI) simulation to its own node, while keeping the full MPI
-environment available for use via :py:mod:`mpi4py`.
+.. todo:: update the following with :issue:`4422`
+
+*gmxapi* ensemble simulations use one rank per simulator.
+Parallelism within a simulator is achieved through OpenMPI or "thread MPI".
+See also :issue:`4422`.
 
 Caveats for MPI jobs
 --------------------
@@ -137,12 +145,6 @@ To run a batch of simulations, just pass an array of inputs.::
 
 Make sure to launch the script in an MPI environment with a sufficient number
 of ranks to allow one rank per simulation.
-
-.. todo:: update with :issue:`4422`
-
-For *gmxapi* 0.1, we recommend configuring the GROMACS build with
-``GMX_THREAD_MPI=ON`` and allowing one rank per node in order to allow each
-simulation ensemble member to run on a separate node.
 
 .. seealso:: :ref:`parallelism`
 

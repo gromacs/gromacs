@@ -93,12 +93,16 @@ if (NOT pybind11_FOUND)
             "See https://manual.gromacs.org/current/gmxapi/userguide/install.html")
 endif ()
 
+if(NOT gmxapi_ROOT AND ENV{gmxapi_ROOT})
+    set(gmxapi_ROOT $ENV{gmxapi_ROOT})
+endif()
+
 # Workaround for issue #4563 for GROMACS releases that won't be patched:
 # Find GROMACS package early.
 if(GMXAPI_MAIN_PROJECT)
     find_package(GROMACS 2021 REQUIRED
                  NAMES gromacs gromacs_mpi gromacs_d gromacs_mpi_d
-                 HINTS "$ENV{GROMACS_DIR}"
+                 HINTS "$ENV{GROMACS_DIR}" ${gmxapi_ROOT}
                  )
     if (NOT DEFINED GROMACS_IS_DOUBLE)
         message(AUTHOR_WARNING "GROMACS_IS_DOUBLE undefined.")
@@ -111,7 +115,9 @@ else()
 endif()
 
 if(GMXAPI_MAIN_PROJECT)
-    find_package(gmxapi REQUIRED)
+    find_package(gmxapi REQUIRED
+                 HINTS "$ENV{GROMACS_DIR}" ${GROMACS_ROOT}
+                 )
     if (gmxapi_VERSION VERSION_LESS 0.2.1)
         message(
             FATAL_ERROR
@@ -225,6 +231,7 @@ unset(_gmx_executable)
 unset(_gmx_bindir)
 unset(_gmx_mpi_type)
 unset(_gmx_double)
+unset(_gmxapi_level)
 
 # Detect mpi4py. Try to confirm compatibility of linked libraries.
 # For MPI-enabled GROMACS, enable mpi4py.h and bindings for
@@ -237,15 +244,33 @@ execute_process(
     ERROR_QUIET
     OUTPUT_STRIP_TRAILING_WHITESPACE
 )
-if (_mpi4py_result EQUAL 0)
+if(NOT _mpi4py_result EQUAL 0)
+    # If mpi4py headers are not available when the gmxapi bindings are built,
+    # it is confusing and hard to document robustly how to rebuild and
+    # reinstall the package later. To ensure that all gmxapi installations are
+    # compatible with mpi4py and libgromacs, we require mpi4py at build time.
+    string(
+        CONCAT _msg
+        "gmxapi core features includes MPI Python bindings and mpi4py compatibility. "
+        "Please install mpi4py with a compatible toolchain, then try again to install this package.\n"
+    )
+    if (MPI_CXX_COMPILER)
+        string(
+            CONCAT _msg
+            ${_msg}
+            "The GROMACS C++ compiler appears to be compatible with ${MPI_CXX_COMPILER} "
+            "so you might try:\n"
+            "  MPICC=${MPI_C_COMPILER} pip install --upgrade --no-cache-dir mpi4py"
+        )
+    endif ()
+    message(FATAL_ERROR ${_msg})
+else()
     # NOTE: Even if GROMACS build does not support MPI, we can still accept offers
     # of communicators. In a more advanced case, we could inspect the cgroups or
     # hwloc details to determine how many cores to make available for multithreading,
     # even though we won't be using the MPI facilities of the offered communicator.
     # However, we don't want to refuse to compile, completely, if mpi4py was built
     # with a toolchain that is incompatible with the GROMACS toolchain.
-    message(STATUS "mpi4py include path: ${_mpi4py_include_path}")
-
     execute_process(
         COMMAND "${Python3_EXECUTABLE}" -c
             "import mpi4py; print(mpi4py.get_config()['mpicc'])"
@@ -326,23 +351,6 @@ if (_mpi4py_result EQUAL 0)
     # Note that different implementations have different C API calls to support this query.
 
     set(HAS_MPI4PY TRUE)
-else()
-    if (HAS_GROMACS_MPI)
-        # Note that the Gromacs::gmxapi CMake target is not built with MPI in any case,
-        # but it _should_ be built with a C++ compiler that is compatible with the available
-        # MPI compiler wrappers.
-        # This is what we want to help the user identify when installing mpi4py,
-        # even if libgromacs is not built with MPI support either.
-        # For convenience, it is fine if libgmxapi and _gmxapi are built with the mpi
-        # compiler wrapper.
-        # TODO(#4422): Use library features to detect MPI context if mpi4py is not in use, and adjust
-        #              message severity.
-        message(FATAL_ERROR
-            "gmxapi cannot safely use MPI-enabled GROMACS without MPI Python bindings. "
-            "Please install mpi4py with a compatible toolchain, then try again to install this package.\n"
-            "GROMACS appears to have been configured with `-DMPI_CXX_COMPILER=${MPI_CXX_COMPILER}` "
-            "so you might try:\n  MPICC=${MPI_C_COMPILER} pip install mpi4py")
-    endif ()
 endif()
 
 target_link_libraries(_gmxapi PRIVATE Gromacs::gmxapi)

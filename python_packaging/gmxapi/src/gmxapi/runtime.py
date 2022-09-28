@@ -89,6 +89,9 @@ logger.info('Importing {}'.format(__name__))
 try:
     import mpi4py.MPI as _MPI
     from mpi4py.MPI import Comm as Communicator
+    from mpi4py.MPI import COMM_NULL as MPI_COMM_NULL
+    from mpi4py.MPI import COMM_WORLD as MPI_COMM_WORLD
+    from mpi4py.MPI import UNDEFINED as MPI_UNDEFINED
 except (ImportError, ModuleNotFoundError):
     _MPI = None
     Communicator = None
@@ -109,7 +112,7 @@ class ResourceAllocation(Protocol[CommunicatorT]):
 
 def _finalize_communicator(comm):
     if _MPI is not None:
-        if comm == _MPI.COMM_NULL:
+        if comm == MPI_COMM_NULL:
             return
     # noinspection PyBroadException
     try:
@@ -205,7 +208,7 @@ class BaseContext:
     @classmethod
     def instance(cls):
         if _MPI is not None and cls.__mpi_communicator is None:
-            cls.set_base_communicator(_MPI.COMM_WORLD)
+            cls.set_base_communicator(MPI_COMM_WORLD)
         return cls()
 
 
@@ -238,18 +241,17 @@ def scoped_resources(allocation: BaseContext, requirements: ResourceRequirements
     *allocation* is required if *requirements* is not *None*. *requirements*
     may be validated in terms of the provided *allocation*.
 
-    .. tbd wrt #4423 and #4422
-        If ``gmxapi.version.has_feature('mpi_bindings') == True``, we assume that
-        ``mpi4py`` can be imported, and the returned object is guaranteed to be an
-        instance of :py:class:`mpi4py.MPI.Comm`. If the package was built without
-        ``mpi4py`` integration, and *original_comm* is not a
-        :py:class:`mpi4py.MPI.Comm` instance, the object produced will be a
-        (special module object) :py:class:`_NullCommunicator`.
+    .. versionchanged:: 0.4
 
         Previous versions transformed :py:class:`~mpi4py.MPI.COMM_NULL` into a mock
         communicator before returning for consistency in trivial cases with or
         without :py:mod:`mpi4py`. This translation adds unnecessary indirection,
         and has been removed.
+
+        Similarly, for *original_comm.Get_size()* or *requested_size* of 1,
+        an unspecified "fake" communicator could be produced to avoid an
+        ``MPI_Comm_split()``. While more efficient, the code complexity was
+        problematic and has been removed.
 
     When ``mpi4py`` is in use (``gmxapi.version.has_feature('mpi_bindings') == True``
     or *allocation.communicator()* is an :py:class:`mpi4py.MPI.Comm`), and
@@ -259,12 +261,6 @@ def scoped_resources(allocation: BaseContext, requirements: ResourceRequirements
 
     Callers should use ``allocation.communicator().Get_rank()`` to decide
     whether to use the new communicator.
-
-    ..
-        Previously, for *original_comm.Get_size()* or *requested_size* of 1,
-        an unspecified "fake" communicator could be produced to avoid an
-        ``MPI_Comm_split()``. While more efficient, the code complexity was
-        problematic.
 
     TODO(#4079):
         This context manager is called "scoped_resources" instead of "scoped_assignment"
@@ -326,7 +322,8 @@ def scoped_resources(allocation: BaseContext, requirements: ResourceRequirements
             if rank is not None and rank < requested_size:
                 color = 0
             else:
-                color = _MPI.UNDEFINED
+                assert _MPI is not None
+                color = MPI_UNDEFINED
             communicator = base_communicator.Split(color=color)
             resources = ResourceAssignment(communicator)
 
@@ -407,7 +404,7 @@ def assign_ensemble(allocation: ResourceAllocation, membership: typing.Iterable[
             raise exceptions.FeatureNotAvailableError(
                 f'Cannot produce a sub-communicator of size {required_comm_size}'
                 f' from a communicator of size {original_comm_size}.')
-        split_color = membership + ([_MPI.UNDEFINED] * padding)
+        split_color = membership + ([MPI_UNDEFINED] * padding)
         assert len(split_color) == original_comm_size
         current_rank = base_communicator.Get_rank()
         communicator = base_communicator.Split(color=split_color[current_rank])

@@ -1124,6 +1124,14 @@ class Context(object):
                 # TODO(#4422): Prevent potential hangs on error. Be careful with exceptions.
                 # There is potential divergence in collective MPI calls
                 # if all ranks do not proceed as expected.
+                # If another rank may be in (or approaching) a collective call,
+                # we must exit with an uncaught exception (or explicitly
+                # MPI_ABORT). If an exception may cause divergence between ranks,
+                # we must resolve it (or allow MPI_ABORT) before entering another
+                # collective call. Here, the exception raised is likely more
+                # informative than the AssertionError that would occur below,
+                # so re-raise.
+                raise e
 
         if member_id is not None and member_id < self.work_width:
             assert self._api_context is not None

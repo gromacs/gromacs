@@ -94,6 +94,8 @@ class FD(Enum):
     """
     STDOUT = 1
     STDERR = 2
+    # Provide a type hint for the *value* property.
+    value: int
 
 
 @contextmanager
@@ -106,7 +108,7 @@ def redirect_stdio(fd: FD, path: Union[str, Path, os.PathLike]):
     is restored to its original value, and the duplicate is closed.
 
     Note:
-        `contextlib.redirect_stdout`, etc, only works for Python calls that
+        `contextlib.redirect_stdout`, etc., only works for Python calls that
         already support indirection because they ultimately use the `sys`
         module attributes.
     """
@@ -133,9 +135,11 @@ class OutputDataProxy(_op.DataProxyBase,
             flag, if provided).
 
     .. versionchanged:: 0.4
+
         Added *directory* output, replacing an earlier "hidden" *_work_dir* output.
 
     .. versionadded:: 0.4
+
         *stderr* and *stdout* provide paths to the captured standard I/O.
         Previously, a lot of output from the underlying library bypassed Python
         and went straight to the standard output and standard error of the
@@ -705,12 +709,12 @@ class RegisteredOperation(_op.OperationImplementation, metaclass=_op.OperationMe
 
     # This is a class method to allow the class object to be used in gmxapi.operation._make_registry_key
     @classmethod
-    def name(self) -> str:
+    def name(cls) -> str:
         """Canonical name for the operation."""
         return 'mdrun'
 
     @classmethod
-    def namespace(self) -> str:
+    def namespace(cls) -> str:
         """modify_input is importable from the gmxapi module."""
         return 'gmxapi'
 
@@ -865,7 +869,7 @@ def mdrun(input,
     See :py:class:`~gmxapi.simulation.mdrun.OutputDataProxy` for members of the
     *output* attribute.
 
-    *input* may be a TPR file name or a an object providing the SimulationInput interface.
+    *input* may be a TPR file name or an object providing the SimulationInput interface.
 
     *runtime_args* allows an optional dictionary of mdrun options, using the option flag
     (including the leading hyphen ``-``) as the dictionary key.
@@ -884,7 +888,7 @@ def mdrun(input,
     # by transforming arguments into a DataSourceCollection and providing the
     # collection to a Director.
     # The Director is specific to the Operation (this module) but could be generated
-    # with the help of simle metaprogramming in the future (e.g. just declare
+    # with the help of simple metaprogramming in the future (e.g. just declare
     # requirements or helpers in a class definition).
     # Ref: gmxapi.abc.NodeBuilder and gmxapi.operation.NodeBuilder
 

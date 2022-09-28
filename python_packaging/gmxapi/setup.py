@@ -185,6 +185,18 @@ class CMakeBuild(typing.cast('setuptools.Command', build_ext)):
             os.makedirs(self.build_temp)
 
         cmake_args = update_gromacs_client_cmake_args(cmake_args)
+        try:
+            hints_file_index = cmake_args.index('-C')
+        except ValueError:
+            pass
+        else:
+            hints_file = cmake_args[hints_file_index + 1]
+            if not hints_file or not os.path.exists(hints_file):
+                raise GmxapiInstallError(
+                    f'CMake hints file {hints_file} does not exist.'
+                )
+            # Insert before the end, in case there are trailing `-- ...` args.
+            cmake_args.insert(hints_file_index, f'-D_setuppy_cmake_hints={hints_file}')
 
         has_pybind = False
         for arg in cmake_args:
