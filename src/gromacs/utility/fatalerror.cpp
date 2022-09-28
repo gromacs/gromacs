@@ -71,7 +71,7 @@ static std::mutex error_mutex;        // NOLINT(cppcoreguidelines-avoid-non-cons
 
 using Lock = std::lock_guard<std::mutex>;
 
-void gmx_init_debug(const int dbglevel, const char* dbgfile)
+void gmx_init_debug(const int dbglevel, const std::filesystem::path& dbgfile)
 {
     if (!bDebug)
     {
@@ -95,7 +95,10 @@ void gmx_fatal_set_log_file(FILE* fp)
     log_file = fp;
 }
 
-static void default_error_handler(const char* title, const std::string& msg, const char* file, int line)
+static void default_error_handler(const char*                  title,
+                                  const std::string&           msg,
+                                  const std::filesystem::path& file,
+                                  int                          line)
 {
     if (log_file)
     {
@@ -149,7 +152,7 @@ static const char* gmx_strerror(const char* key)
     return gmx::getErrorCodeString(gmx::eeUnknownError);
 }
 
-static void call_error_handler(const char* key, const char* file, int line, const std::string& msg)
+static void call_error_handler(const char* key, const std::filesystem::path& file, int line, const std::string& msg)
 {
     Lock lock(error_mutex);
     gmx_error_handler(gmx_strerror(key), msg.empty() ? "Empty gmx_fatal message (bug)." : msg, file, line);
@@ -202,12 +205,12 @@ void gmx_exit_on_fatal_error(ExitType exitType, int returnValue)
 }
 
 void gmx_fatal_mpi_va(int /*f_errno*/,
-                      const char* file,
-                      int         line,
-                      gmx_bool    bMain,
-                      gmx_bool    bFinalize,
-                      const char* fmt,
-                      va_list     ap)
+                      const std::filesystem::path& file,
+                      int                          line,
+                      gmx_bool                     bMain,
+                      gmx_bool                     bFinalize,
+                      const char*                  fmt,
+                      va_list                      ap)
 {
     if (bMain)
     {
@@ -223,7 +226,7 @@ void gmx_fatal_mpi_va(int /*f_errno*/,
     gmx_exit_on_fatal_error(exitType, 1);
 }
 
-void gmx_fatal(int f_errno, const char* file, int line, gmx_fmtstr const char* fmt, ...)
+void gmx_fatal(int f_errno, const std::filesystem::path& file, int line, gmx_fmtstr const char* fmt, ...)
 {
     va_list ap;
     va_start(ap, fmt);
@@ -231,13 +234,19 @@ void gmx_fatal(int f_errno, const char* file, int line, gmx_fmtstr const char* f
     va_end(ap);
 }
 
-void gmx_error_function(const char* key, const std::string& msg, const char* file, int line)
+void gmx_error_function(const char* key, const std::string& msg, const std::filesystem::path& file, int line)
 {
     call_error_handler(key, file, line, msg);
     gmx_exit_on_fatal_error(ExitType_Abort, 1);
 }
 
-void range_check_function(int n, int n_min, int n_max, const char* warn_str, const char* var, const char* file, int line)
+void range_check_function(int                          n,
+                          int                          n_min,
+                          int                          n_max,
+                          const char*                  warn_str,
+                          const char*                  var,
+                          const std::filesystem::path& file,
+                          int                          line)
 {
     if ((n < n_min) || (n >= n_max))
     {

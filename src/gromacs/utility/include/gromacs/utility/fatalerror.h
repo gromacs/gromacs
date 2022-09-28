@@ -44,6 +44,8 @@
 #include <cstdarg>
 #include <cstdio>
 
+#include <filesystem>
+
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/stringutil.h"
 
@@ -71,7 +73,7 @@ extern gmx_bool gmx_debug_at; //NOLINT(cppcoreguidelines-avoid-non-const-global-
  * For command line programs, gmx::CommandLineModuleManager takes care
  * of this if the user requests debugging.
  */
-void gmx_init_debug(int dbglevel, const char* dbgfile);
+void gmx_init_debug(int dbglevel, const std::filesystem::path& dbgfile);
 
 /** Returns TRUE when the program was started in debug mode */
 gmx_bool bDebugMode();
@@ -80,7 +82,10 @@ gmx_bool bDebugMode();
 void gmx_fatal_set_log_file(FILE* fp);
 
 /** Function pointer type for fatal error handler callback. */
-typedef void (*gmx_error_handler_t)(const char* title, const std::string& msg, const char* file, int line);
+typedef void (*gmx_error_handler_t)(const char*                  title,
+                                    const std::string&           msg,
+                                    const std::filesystem::path& file,
+                                    int                          line);
 
 /*! \brief
  * Sets an error handler for gmx_fatal() and other fatal error routines.
@@ -145,13 +150,13 @@ enum ExitType
  *
  * This function is deprecated and no new calls should be made to it.
  */
-[[noreturn]] void gmx_fatal_mpi_va(int         fatal_errno,
-                                   const char* file,
-                                   int         line,
-                                   gmx_bool    bMain,
-                                   gmx_bool    bFinalize,
-                                   const char* fmt,
-                                   va_list     ap);
+[[noreturn]] void gmx_fatal_mpi_va(int                          fatal_errno,
+                                   const std::filesystem::path& file,
+                                   int                          line,
+                                   gmx_bool                     bMain,
+                                   gmx_bool                     bFinalize,
+                                   const char*                  fmt,
+                                   va_list                      ap);
 
 /*! \brief
  * Fatal error reporting routine for \Gromacs.
@@ -176,7 +181,8 @@ enum ExitType
    gmx_fatal(FARGS, fmt, ...);
    \endcode
  */
-[[noreturn]] void gmx_fatal(int fatal_errno, const char* file, int line, gmx_fmtstr const char* fmt, ...)
+[[noreturn]] void
+gmx_fatal(int fatal_errno, const std::filesystem::path& file, int line, gmx_fmtstr const char* fmt, ...)
         gmx_format(printf, 4, 5);
 /** Helper macro to pass first three parameters to gmx_fatal(). */
 #define FARGS 0, __FILE__, __LINE__
@@ -184,7 +190,10 @@ enum ExitType
 /*! \brief Implementation for gmx_error().
  *
  * This function is deprecated and no new calls should be made to it. */
-[[noreturn]] void gmx_error_function(const char* key, const std::string& msg, const char* file, int line);
+[[noreturn]] void gmx_error_function(const char*                  key,
+                                     const std::string&           msg,
+                                     const std::filesystem::path& file,
+                                     int                          line);
 /*! \brief
  * Alternative fatal error routine with canned messages.
  *
@@ -211,7 +220,7 @@ enum ExitType
 #define gmx_incons(msg) gmx_error("incons", msg)
 #define gmx_input(msg) gmx_error("input", msg)
 #define gmx_mem(msg) gmx_error("mem", msg)
-#define gmx_open(fn) gmx_error("open", fn)
+#define gmx_open(fn) gmx_error("open", (fn).c_str())
 /*! \} */
 
 /*! \brief
@@ -219,7 +228,13 @@ enum ExitType
  *
  * \p warn_str can be NULL.
  */
-void range_check_function(int n, int n_min, int n_max, const char* warn_str, const char* var, const char* file, int line);
+void range_check_function(int                          n,
+                          int                          n_min,
+                          int                          n_max,
+                          const char*                  warn_str,
+                          const char*                  var,
+                          const std::filesystem::path& file,
+                          int                          line);
 
 /*! \brief
  * Checks that a variable is within a range.

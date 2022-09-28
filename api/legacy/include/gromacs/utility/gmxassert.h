@@ -42,6 +42,8 @@
 #ifndef GMX_UTILITY_GMXASSERT_H
 #define GMX_UTILITY_GMXASSERT_H
 
+#include <filesystem>
+
 #include "current_function.h"
 
 //! \addtogroup module_utility
@@ -108,8 +110,11 @@ namespace internal
  *
  * \ingroup module_utility
  */
-[[noreturn]] void
-assertHandler(const char* condition, const char* msg, const char* func, const char* file, int line);
+[[noreturn]] void assertHandler(const char*                  condition,
+                                const char*                  msg,
+                                const char*                  func,
+                                const std::filesystem::path& file,
+                                int                          line);
 
 } // namespace internal
 //! \endcond

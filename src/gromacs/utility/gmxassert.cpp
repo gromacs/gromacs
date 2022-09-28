@@ -56,7 +56,7 @@ namespace gmx
 namespace internal
 {
 
-void assertHandler(const char* condition, const char* msg, const char* func, const char* file, int line)
+void assertHandler(const char* condition, const char* msg, const char* func, const std::filesystem::path& file, int line)
 {
     printFatalErrorHeader(stderr, "Assertion failed", func, file, line);
     std::fprintf(stderr, "Condition: %s\n", condition);
