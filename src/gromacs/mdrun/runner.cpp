@@ -75,6 +75,7 @@
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/gmxlib/nrnb.h"
 #include "gromacs/gpu_utils/device_stream_manager.h"
+#include "gromacs/gpu_utils/gpueventsynchronizer_helpers.h"
 #include "gromacs/hardware/cpuinfo.h"
 #include "gromacs/hardware/detecthardware.h"
 #include "gromacs/hardware/device_management.h"
@@ -179,7 +180,6 @@
 
 namespace gmx
 {
-
 
 /*! \brief Manage any development feature flag variables encountered
  *
@@ -1546,6 +1546,11 @@ int Mdrunner::mdrunner()
                                                               canUseDirectGpuComm,
                                                               useGpuPmeDecomposition);
 
+    if (runScheduleWork.simulationWork.useGpuDirectCommunication && GMX_GPU_CUDA)
+    {
+        // Don't enable event counting with GPU Direct comm, see #3988.
+        gmx::internal::disableCudaEventConsumptionCounting();
+    }
 
     if (isSimulationMainRank && GMX_GPU_SYCL)
     {

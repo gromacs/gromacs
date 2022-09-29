@@ -41,6 +41,8 @@
 
 #include "gpu_utils.h"
 
+#include "config.h"
+
 #include <cuda_profiler_api.h>
 
 #include <cassert>
