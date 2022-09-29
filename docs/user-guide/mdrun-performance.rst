@@ -60,7 +60,7 @@ definitions. Experienced HPC users can skip this section.
         "simultaneous multi-threading". IBM Power8 can for instance use
         up to 8 hardware threads per core.
         This feature can usually be enabled or disabled either in
-        the hardware bios or through a setting in the Linux operating
+        the hardware BIOS or through a setting in the Linux operating
         system. |Gromacs| can typically make use of this, for a moderate
         free performance boost. In most cases it will be
         enabled by default e.g. on new x86 processors, but in some cases
@@ -82,7 +82,7 @@ definitions. Experienced HPC users can skip this section.
         for node sharing).
         Setting thread affinity is sometimes called thread "pinning".
 
-    MPI
+    MPI (Message Passing Interface)
         The dominant multi-node parallelization-scheme, which provides
         a standardized language in which programs can be written that
         work across more than one node.
@@ -1410,11 +1410,13 @@ Run setup
 ^^^^^^^^^
 
 * For an approximately spherical solute, use a rhombic dodecahedron unit cell.
-* When using a time-step of <=2 fs, use :mdp-value:`constraints=h-bonds`
+* When using a time-step of <=2.5 fs, use :mdp-value:`constraints=h-bonds`
   (and not :mdp-value:`constraints=all-bonds`), since:
+
   * this is faster, especially with GPUs;
   * it is necessary to be able to use GPU-resident mode;
   * and most force fields have been parametrized with only bonds involving hydrogens constrained.
+
 * You can increase the time-step to 4 or 5 fs when using virtual interaction
   sites (``gmx pdb2gmx -vsite h``).
 * For massively parallel runs with PME, you might need to try different numbers

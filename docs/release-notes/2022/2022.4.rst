@@ -16,8 +16,31 @@ in the :ref:`release-notes`.
 Fixes where mdrun could behave incorrectly
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+The deform option caused parallel mdrun to exit
+"""""""""""""""""""""""""""""""""""""""""""""""
+
+With the deform mdp option mdrun would exit with an MPI error
+when invoked with more than one MPI rank.
+
+:issue:`4604`
+
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
+
+With flexible constraint grompp and mdrun exited with an assertion failure
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+:issue:`4605`
+
+Corrected gmx awh friction metric legend
+""""""""""""""""""""""""""""""""""""""""
+
+The output of friction metric with :ref:`gmx awh` -more is the sqrt of
+the metric while ``sqrt`` was missing from the legend. This has been
+added now. Note that the output of :ref:`gmx awh` -fric, correctly,
+does not involve sqrt.
+
+:issue:`4598`
 
 Fixes that affect portability
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -25,3 +48,10 @@ Fixes that affect portability
 Miscellaneous
 ^^^^^^^^^^^^^
 
+Fixed argument checking with nvcc
+"""""""""""""""""""""""""""""""""
+
+Incorrect configure-time checks of flags passed to nvcc resulted in
+several performance-related flags never being used. Simulations using
+Nvidia GPUs were correct but may not have achieved best possible
+performance.
