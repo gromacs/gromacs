@@ -97,21 +97,28 @@ if(NOT gmxapi_ROOT AND ENV{gmxapi_ROOT})
     set(gmxapi_ROOT $ENV{gmxapi_ROOT})
 endif()
 
-# Workaround for issue #4563 for GROMACS releases that won't be patched:
+# Workaround for issue #4563 for GROMACS releases (<2022) that won't be patched:
 # Find GROMACS package early.
 if(GMXAPI_MAIN_PROJECT)
     find_package(GROMACS 2021 REQUIRED
-                 NAMES gromacs gromacs_mpi gromacs_d gromacs_mpi_d
+                 NAMES gromacs${GROMACS_SUFFIX} gromacs gromacs_mpi gromacs_d gromacs_mpi_d
                  HINTS "$ENV{GROMACS_DIR}" ${gmxapi_ROOT}
                  )
     if (NOT DEFINED GROMACS_IS_DOUBLE)
         message(AUTHOR_WARNING "GROMACS_IS_DOUBLE undefined.")
+    endif ()
+    if (NOT DEFINED GROMACS_SUFFIX)
+        message(AUTHOR_WARNING "GROMACS_SUFFIX undefined.")
     endif ()
 else()
     if (NOT DEFINED GMX_DOUBLE)
         message(AUTHOR_WARNING "GMX_DOUBLE undefined.")
     endif ()
     set(GROMACS_IS_DOUBLE ${GMX_DOUBLE})
+    if (NOT DEFINED GMX_LIBS_SUFFIX)
+        message(AUTHOR_WARNING "GMX_LIBS_SUFFIX undefined.")
+    endif ()
+    set(GROMACS_SUFFIX ${GMX_LIBS_SUFFIX})
 endif()
 
 if(GMXAPI_MAIN_PROJECT)

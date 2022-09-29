@@ -3,8 +3,9 @@
     "gmx_bindir": "@_gmx_bindir@",
     "gmx_cmake_hints": "@_setuppy_cmake_hints@",
     "gmx_cmake_toolchain": "@CMAKE_TOOLCHAIN_FILE@",
-    "gmx_mpi_type": @_gmx_mpi_type@,
     "gmx_double": @_gmx_double@,
+    "gmx_mpi_type": @_gmx_mpi_type@,
+    "gmx_suffix": "@GROMACS_SUFFIX@",
     "gmxapi_root": "@gmxapi_ROOT@",
     "gmxapi_level": "@gmxapi_VERSION@"
 }
