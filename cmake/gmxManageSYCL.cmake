@@ -165,6 +165,26 @@ if(GMX_SYCL_HIPSYCL)
     endif()
     unset(_rerun_hipsycl_try_compile_tests)
 
+    if(GMX_GPU_FFT_VKFFT)
+        # Use VkFFT with HIP back end as header-only library
+        set(vkfft_VERSION "1.2.26-b15cb0ca3e884bdb6c901a12d87aa8aadf7637d8")
+        if (GMX_HIPSYCL_HAVE_HIP_TARGET)
+            set(_backend 2)
+        else()
+            message(FATAL_ERROR "VkFFT can only be used with the HIP backend")
+        endif()
+        add_library(VkFFT INTERFACE)
+        target_compile_definitions(VkFFT INTERFACE VKFFT_BACKEND=${_backend})
+        target_include_directories(VkFFT INTERFACE ${CMAKE_PROJECT_ROOT}/src/external/VkFFT)
+        gmx_target_interface_warning_suppression(VkFFT "-Wno-unused-parameter" HAS_WARNING_NO_UNUSED_PARAMETER)
+        gmx_target_interface_warning_suppression(VkFFT "-Wno-unused-variable" HAS_WARNING_NO_UNUSED_VARIABLE)
+        gmx_target_interface_warning_suppression(VkFFT "-Wno-newline-eof" HAS_WARNING_NO_NEWLINE_EOF)
+        gmx_target_interface_warning_suppression(VkFFT "-Wno-old-style-cast" HAS_WARNING_NO_OLD_STYLE_CAST)
+        gmx_target_interface_warning_suppression(VkFFT "-Wno-zero-as-null-pointer-constant" HAS_WARNING_NO_ZERO_AS_NULL_POINTER_CONSTANT)
+        gmx_target_interface_warning_suppression(VkFFT "-Wno-unused-but-set-variable" HAS_WARNING_NO_UNUSED_BUT_SET_VARIABLE)
+        gmx_target_interface_warning_suppression(VkFFT "-Wno-sign-compare" HAS_WARNING_NO_SIGN_COMPARE)
+    endif()
+
     # Find a suitable rocFFT when hipSYCL is targeting AMD devices
     if (GMX_HIPSYCL_HAVE_HIP_TARGET)
         # For consistency, we prefer to find rocFFT as part of the
@@ -220,12 +240,16 @@ if(GMX_SYCL_HIPSYCL)
             endif()
         endif()
 
-        # Find rocFFT, either from the ROCm used by hipSYCL, or as otherwise found on the system
-        find_package(rocfft ${FIND_ROCFFT_QUIETLY} CONFIG HINTS ${HIPSYCL_SYCLCC_ROCM_PATH} PATHS /opt/rocm)
-        if (NOT rocfft_FOUND)
-            message(FATAL_ERROR "rocFFT is required for the hipSYCL build, but was not found")
+
+        if(NOT GMX_GPU_FFT_VKFFT)
+            # Find rocFFT, either from the ROCm used by hipSYCL, or as otherwise found on the system
+            set(GMX_GPU_FFT_ROCFFT TRUE CACHE INTERNAL "Use rocFFT library for FFT on GPUs")
+            find_package(rocfft ${FIND_ROCFFT_QUIETLY} CONFIG HINTS ${HIPSYCL_SYCLCC_ROCM_PATH} PATHS /opt/rocm)
+            if (NOT rocfft_FOUND)
+                message(FATAL_ERROR "rocFFT is required for the hipSYCL build, but was not found")
+            endif()
+            set(FIND_ROCFFT_QUIETLY "QUIET")
         endif()
-        set(FIND_ROCFFT_QUIETLY "QUIET")
     endif()
 else()
     if(WIN32)

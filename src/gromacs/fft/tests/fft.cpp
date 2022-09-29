@@ -495,7 +495,9 @@ TEST_P(ParameterizedFFTTest3D, RunsOnDevices)
         const FftBackend backend = FftBackend::Ocl;
 #    elif GMX_GPU_SYCL
 #        if GMX_SYCL_HIPSYCL
-#            if GMX_HIPSYCL_HAVE_HIP_TARGET
+#            if GMX_GPU_FFT_VKFFT
+        const FftBackend backend = FftBackend::SyclVkfft;
+#            elif GMX_GPU_FFT_ROCFFT
         const FftBackend backend = FftBackend::SyclRocfft;
 #            else
         // Use stub backend so compilation succeeds
@@ -506,7 +508,7 @@ TEST_P(ParameterizedFFTTest3D, RunsOnDevices)
             checker.value().disableUnusedEntriesCheck();
         }
         // Skip the rest of the test
-        GTEST_SKIP() << "Only rocFFT backend is supported with hipSYCL";
+        GTEST_SKIP() << "Only rocFFT and VkFFT backends are supported with hipSYCL";
 #            endif
 #        elif GMX_SYCL_DPCPP
 #            if GMX_FFT_MKL

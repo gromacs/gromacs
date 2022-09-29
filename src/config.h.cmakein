@@ -64,6 +64,19 @@
 /* Use built in fftpack FFT library */
 #cmakedefine01 GMX_FFT_FFTPACK
 
+/* Use VKFFT Library */
+#cmakedefine01 GMX_GPU_FFT_VKFFT
+
+/* VKFFT Library version */
+
+#define vkfft_VERSION "@vkfft_VERSION@"
+
+/* Use rocFFT Library */
+#cmakedefine01 GMX_GPU_FFT_ROCFFT
+
+/* rocFFT version */
+#define rocfft_VERSION "@rocfft_VERSION@"
+
 /* Target platform is x86 or x86_64 */
 #cmakedefine01 GMX_TARGET_X86
 

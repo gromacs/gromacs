@@ -214,6 +214,13 @@ function(gmx_source_file_warning_suppression SOURCE_FILE WARNING_FLAG VARNAME)
     endif()
 endfunction()
 
+function(gmx_target_interface_warning_suppression TARGET WARNING_FLAG VARNAME)
+    check_cxx_compiler_flag(${WARNING_FLAG} ${VARNAME})
+    if(${VARNAME})
+        target_compile_options(${TARGET} INTERFACE $<$<COMPILE_LANGUAGE:CXX>:${WARNING_FLAG}>)
+    endif()
+endfunction()
+
 # This is the actual exported function to be called
 macro (gmx_c_flags)
 
