@@ -19,7 +19,7 @@ wheel
 # The following packages are not strictly necessary, but allow documentation builds.
 furo
 Pygments>=2.2.0
-Sphinx>=42
+Sphinx>=4
 sphinx-copybutton
 sphinx_inline_tabs
 sphinxcontrib-plantuml>=0.14
