@@ -54,14 +54,12 @@ support additional convenience and introspection.
     Consider https://packaging.pypa.io/en/latest/version/ for programmatic
     handling of the version string. For example::
 
+        import pkg_resources
         from packaging.version import parse
         gmxapi_version = pkg_resources.get_distribution('gmxapi').version
         if parse(gmxapi_version).is_prerelease:
             print('The early bird gets the worm.')
 
-.. todo:: Use pkg_resources.get_distribution('gmxapi').version and
-          "development installations" instead of relying on or publicizing
-          a __version__ attribute.
 """
 import warnings
 
@@ -73,8 +71,9 @@ _minor = 4
 _micro = 0
 _suffix = 'b2'
 
-# Reference https://www.python.org/dev/peps/pep-0440/
-# and https://packaging.pypa.io/en/latest/version/
+# Reference https://www.python.org/dev/peps/pep-0440/ and
+# https://packaging.pypa.io/en/latest/version/ for
+# versioning semantics and rules.
 __version__ = '{major}.{minor}.{micro}{suffix}'.format(major=_major,
                                                        minor=_minor,
                                                        micro=_micro,

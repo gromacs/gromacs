@@ -594,9 +594,18 @@ Example::
     python -m build --sdist
 
 This command will create a ``dist`` directory containing a source distribution
-archive file. The file name has the form *gmxapi-<version>.<suffix>*, where
-*<version>* is the version from the package metadata, and *<suffix>* is
-determined by the local environment.
+archive file. The file name has the form
+:file:`gmxapi-{version}.{suffix}`, where
+*version* is the version from the package metadata, and *suffix* is an
+archive file extension determined by the local environment and the current
+packaging specifications.
+
+The version information is derived from :py:data:`gmxapi.__version__`
+defined by the :py:mod:`gmxapi.version` module.
+Pending refinement under :issue:`3851`,
+the gmxapi version information is hard coded in the :file:`version.py`.
+Make sure you have an up-to-date version of the sources and that the version
+information is appropriate before distributing a new release.
 
 .. seealso::
 
@@ -606,9 +615,10 @@ determined by the local environment.
 
 Package maintainers may update the
 `online repository <https://pypi.org/project/gmxapi/>`__
-by uploading a freshly built ``sdist`` with ``python -m twine upload dist/*``.
+by uploading a freshly built ``sdist`` with
+``python -m twine upload dist/gmxapi-{version}.{suffix}``.
 To update the repository at the PyPI test server, use
-``python -m twine upload --repository testpypi dist/*``.
+``python -m twine upload --repository testpypi dist/gmxapi-{version}.{suffix}``.
 
 .. _gmxapi_package_documentation:
 
