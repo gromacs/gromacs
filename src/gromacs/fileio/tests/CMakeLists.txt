@@ -39,6 +39,7 @@ gmx_add_unit_test(FileIOTests fileio-test
         checkpoint.cpp
         confio.cpp
         filemd5.cpp
+        filetypes.cpp
         mrcserializer.cpp
         mrcdensitymap.cpp
         mrcdensitymapheader.cpp
