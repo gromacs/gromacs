@@ -64,7 +64,7 @@ jobs:
         execute_process(COMMAND ${CMAKE_COMMAND} -E tar xvf ./ccache.tar.xz)
 
     - name: ccache cache files
-      uses: actions/cache@v1.1.0
+      uses: actions/cache@v3
       with:
         path: .ccache
         key: ${{ matrix.config.name }}-ccache-${{ github.sha }}
@@ -80,7 +80,7 @@ jobs:
     - name: Run tests
       run: cmake -P .github/scripts/test.cmake
 
-  build-aarch64:
+  build-linux-aarch64:
     name: Ubuntu 20.04 ARM64 Clang 10
     runs-on: ubuntu-20.04
 
@@ -94,6 +94,14 @@ jobs:
     steps:
     - name: Checkout
       uses: actions/checkout@v3
+
+    - name: ccache cache files
+      id: cache-ccache
+      uses: actions/cache@v3
+      with:
+        path: .ccache
+        key: ${{ github.job }}-ccache-${{ github.sha }}
+        restore-keys: ${{ github.job }}-ccache-
 
     - name: Build
       uses: uraimo/run-on-arch-action@v2
