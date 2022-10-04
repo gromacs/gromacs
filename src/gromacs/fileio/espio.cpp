@@ -96,7 +96,7 @@ static int get_espresso_word(FILE* fp, char word[])
     return ret;
 }
 
-static int check_open_parenthesis(FILE* fp, int r, const char* infile, const char* keyword)
+static int check_open_parenthesis(FILE* fp, int r, const std::filesystem::path& infile, const char* keyword)
 {
     int  level_inc;
     char word[STRLEN];
@@ -115,14 +115,14 @@ static int check_open_parenthesis(FILE* fp, int r, const char* infile, const cha
         }
         else
         {
-            gmx_fatal(FARGS, "Expected '{' after '%s' in file '%s'", keyword, infile);
+            gmx_fatal(FARGS, "Expected '{' after '%s' in file '%s'", keyword, infile.c_str());
         }
     }
 
     return level_inc;
 }
 
-static int check_close_parenthesis(FILE* fp, int r, const char* infile, const char* keyword)
+static int check_close_parenthesis(FILE* fp, int r, const std::filesystem::path& infile, const char* keyword)
 {
     int  level_inc;
     char word[STRLEN];
@@ -141,7 +141,7 @@ static int check_close_parenthesis(FILE* fp, int r, const char* infile, const ch
         }
         else
         {
-            gmx_fatal(FARGS, "Expected '}' after section '%s' in file '%s'", keyword, infile);
+            gmx_fatal(FARGS, "Expected '}' after section '%s' in file '%s'", keyword, infile.c_str());
         }
     }
 
@@ -161,7 +161,13 @@ enum
 };
 static const char* const esp_prop[espNR] = { "id", "pos", "type", "q", "v", "f", "molecule" };
 
-void gmx_espresso_read_conf(const char* infile, t_symtab* symtab, char** name, t_atoms* atoms, rvec x[], rvec* v, matrix box)
+void gmx_espresso_read_conf(const std::filesystem::path& infile,
+                            t_symtab*                    symtab,
+                            char**                       name,
+                            t_atoms*                     atoms,
+                            rvec                         x[],
+                            rvec*                        v,
+                            matrix                       box)
 {
     FILE*    fp;
     char     word[STRLEN], buf[STRLEN];
@@ -377,13 +383,13 @@ void gmx_espresso_read_conf(const char* infile, t_symtab* symtab, char** name, t
 
     if (!bFoundParticles)
     {
-        fprintf(stderr, "Did not find a particles section in Espresso file '%s'\n", infile);
+        fprintf(stderr, "Did not find a particles section in Espresso file '%s'\n", infile.c_str());
     }
 
     gmx_fio_fclose(fp);
 }
 
-int get_espresso_coordnum(const char* infile)
+int get_espresso_coordnum(const std::filesystem::path& infile)
 {
     FILE*    fp;
     char     word[STRLEN];
@@ -429,7 +435,7 @@ int get_espresso_coordnum(const char* infile)
     }
     if (!bFoundParticles)
     {
-        fprintf(stderr, "Did not find a particles section in Espresso file '%s'\n", infile);
+        fprintf(stderr, "Did not find a particles section in Espresso file '%s'\n", infile.c_str());
     }
 
     gmx_fio_fclose(fp);

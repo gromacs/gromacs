@@ -36,6 +36,7 @@
 
 #include <cstdio>
 
+#include <filesystem>
 #include <string>
 #include <vector>
 
@@ -79,7 +80,7 @@ struct t_psdata
 
 const char* enumValueToString(Fonts enumValue);
 
-t_psdata ps_open(const char* fn, real x1, real y1, real x2, real y2);
+t_psdata ps_open(const std::filesystem::path& fn, real x1, real y1, real x2, real y2);
 
 void ps_linewidth(t_psdata* ps, int lw);
 void ps_color(t_psdata* ps, real r, real g, real b);

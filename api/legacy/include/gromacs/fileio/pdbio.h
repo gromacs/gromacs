@@ -37,6 +37,8 @@
 
 #include <cstdio>
 
+#include <filesystem>
+
 #include "gromacs/math/vectypes.h"
 #include "gromacs/topology/atoms.h"
 #include "gromacs/utility/basedefinitions.h"
@@ -145,13 +147,13 @@ int read_pdbfile(FILE*            in,
  * pbcType and gmx_conect structure may be NULL.
  */
 
-void gmx_pdb_read_conf(const char* infile,
-                       t_symtab*   symtab,
-                       char**      name,
-                       t_atoms*    atoms,
-                       rvec        x[],
-                       PbcType*    pbcType,
-                       matrix      box);
+void gmx_pdb_read_conf(const std::filesystem::path& infile,
+                       t_symtab*                    symtab,
+                       char**                       name,
+                       t_atoms*                     atoms,
+                       rvec                         x[],
+                       PbcType*                     pbcType,
+                       matrix                       box);
 /* Read a pdb file and extract ATOM and HETATM fields.
  * Read a box from the CRYST1 line, return 0 box when no CRYST1 is found.
  * pbcType may be NULL.

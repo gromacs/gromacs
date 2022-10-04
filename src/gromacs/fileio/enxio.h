@@ -34,6 +34,8 @@
 #ifndef GMX_FILEIO_ENXIO_H
 #define GMX_FILEIO_ENXIO_H
 
+#include <filesystem>
+
 #include "gromacs/fileio/xdr_datatype.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
@@ -156,7 +158,7 @@ void init_enxframe(t_enxframe* ef);
 void free_enxframe(t_enxframe* ef);
 
 
-ener_file_t open_enx(const char* fn, const char* mode);
+ener_file_t open_enx(const std::filesystem::path& fn, const char* mode);
 
 struct t_fileio* enx_file_pointer(const ener_file* ef);
 
@@ -174,7 +176,11 @@ void free_enxnms(int n, gmx_enxnm_t* nms);
 gmx_bool do_enx(ener_file_t ef, t_enxframe* fr);
 /* Reads enx_frames, memory in fr is (re)allocated if necessary */
 
-void get_enx_state(const char* fn, real t, const SimulationGroups& groups, t_inputrec* ir, t_state* state);
+void get_enx_state(const std::filesystem::path& fn,
+                   real                         t,
+                   const SimulationGroups&      groups,
+                   t_inputrec*                  ir,
+                   t_state*                     state);
 /*
  * Reads state variables from enx file fn at time t.
  * atoms and ir are required for determining which things must be read.
@@ -197,7 +203,11 @@ t_enxblock* find_block_id_enxframe(t_enxframe* ef, int id, t_enxblock* prev);
    subbblocks. */
 void add_subblocks_enxblock(t_enxblock* eb, int n);
 
-void comp_enx(const char* fn1, const char* fn2, real ftol, real abstol, const char* lastener);
+void comp_enx(const std::filesystem::path& fn1,
+              const std::filesystem::path& fn2,
+              real                         ftol,
+              real                         abstol,
+              const char*                  lastener);
 /* Compare two binary energy files */
 
 #endif

@@ -54,13 +54,15 @@
 #include "gromacs/utility/textreader.h"
 #include "gromacs/utility/textwriter.h"
 
-std::vector<t_inpfile> read_inpfile(gmx::TextInputStream* stream, const char* fn, WarningHandler* wi)
+std::vector<t_inpfile> read_inpfile(gmx::TextInputStream*        stream,
+                                    const std::filesystem::path& fn,
+                                    WarningHandler*              wi)
 {
     std::vector<t_inpfile> inp;
 
     if (debug)
     {
-        fprintf(debug, "Reading MDP file %s\n", fn);
+        fprintf(debug, "Reading MDP file %s\n", fn.c_str());
     }
 
     int             indexOfLineReadFromFile = 0;
@@ -189,12 +191,12 @@ static void sort_inp(std::vector<t_inpfile>* inp)
     std::sort(inpRef.begin(), inpRef.end(), inp_comp());
 }
 
-void write_inpfile(gmx::TextOutputStream*  stream,
-                   const char*             fn,
-                   std::vector<t_inpfile>* inp,
-                   gmx_bool                bHaltOnUnknown,
-                   WriteMdpHeader          writeHeader,
-                   WarningHandler*         wi)
+void write_inpfile(gmx::TextOutputStream*       stream,
+                   const std::filesystem::path& fn,
+                   std::vector<t_inpfile>*      inp,
+                   gmx_bool                     bHaltOnUnknown,
+                   WriteMdpHeader               writeHeader,
+                   WarningHandler*              wi)
 {
     using gmx::formatString;
 
@@ -203,7 +205,7 @@ void write_inpfile(gmx::TextOutputStream*  stream,
     gmx::TextWriter writer(stream);
     if (writeHeader == WriteMdpHeader::yes)
     {
-        gmx::niceHeader(&writer, fn, ';');
+        gmx::niceHeader(&writer, fn.c_str(), ';');
 
         gmx::BinaryInformationSettings settings;
         settings.generatedByHeader(true);

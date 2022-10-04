@@ -99,7 +99,9 @@ struct t_inpfile
  * \param[out] wi              Handler for context-sensitive warnings.
  * \throws     std::bad_alloc  If out of memory.
  * \throws     Anything the stream underlying \c reader can throw. */
-std::vector<t_inpfile> read_inpfile(gmx::TextInputStream* stream, const char* fn, WarningHandler* wi);
+std::vector<t_inpfile> read_inpfile(gmx::TextInputStream*        stream,
+                                    const std::filesystem::path& fn,
+                                    WarningHandler*              wi);
 
 gmx::KeyValueTreeObject flatKeyValueTreeFromInpFile(gmx::ArrayRef<const t_inpfile> inp);
 
@@ -119,12 +121,12 @@ enum class WriteMdpHeader
  * \param[out] wi              Handler for context-sensitive warnings.
  * \throws     std::bad_alloc  If out of memory.
  * \throws     Anything the stream underlying \c writer can throw. */
-void write_inpfile(gmx::TextOutputStream*  stream,
-                   const char*             fn,
-                   std::vector<t_inpfile>* inp,
-                   gmx_bool                bHaltOnUnknown,
-                   WriteMdpHeader          writeHeader,
-                   WarningHandler*         wi);
+void write_inpfile(gmx::TextOutputStream*       stream,
+                   const std::filesystem::path& fn,
+                   std::vector<t_inpfile>*      inp,
+                   gmx_bool                     bHaltOnUnknown,
+                   WriteMdpHeader               writeHeader,
+                   WarningHandler*              wi);
 /* Write inp to fn, warning (and perhaps halting) if any fields are
  * unknown. The helpful header contains irreproducible content, so
  * its writing can be suppressed to make testing more useful. */

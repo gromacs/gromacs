@@ -71,7 +71,7 @@ static int xdr_r2f(XDR* xdrs, real* r, gmx_bool gmx_unused bRead)
 }
 
 
-t_fileio* open_xtc(const char* fn, const char* mode)
+t_fileio* open_xtc(const std::filesystem::path& fn, const char* mode)
 {
     return gmx_fio_open(fn, mode);
 }

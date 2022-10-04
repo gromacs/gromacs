@@ -318,7 +318,7 @@ void write_checkpoint_data(t_fileio*                         fp,
  * but not the state itself.
  * With reproducibilityRequested warns about version, build, #ranks differences.
  */
-void load_checkpoint(const char*                    fn,
+void load_checkpoint(const std::filesystem::path&   fn,
                      t_fileio*                      logfio,
                      const t_commrec*               cr,
                      const ivec                     dd_nc,
@@ -334,7 +334,7 @@ void load_checkpoint(const char*                    fn,
 void read_checkpoint_trxframe(struct t_fileio* fp, t_trxframe* fr);
 
 /* Print the complete contents of checkpoint file fn to out */
-void list_checkpoint(const char* fn, FILE* out);
+void list_checkpoint(const std::filesystem::path& fn, FILE* out);
 
 /*!\brief Read simulation step and part from a checkpoint file
  *
@@ -346,7 +346,7 @@ void list_checkpoint(const char* fn, FILE* out);
  *
  * The output variables will both contain 0 if filename is NULL, the file
  * does not exist, or is not readable. */
-void read_checkpoint_part_and_step(const char* filename, int* simulation_part, int64_t* step);
+void read_checkpoint_part_and_step(const std::filesystem::path& filename, int* simulation_part, int64_t* step);
 
 /*!\brief Return header information from an open checkpoint file.
  *

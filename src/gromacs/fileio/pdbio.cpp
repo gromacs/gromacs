@@ -1045,7 +1045,13 @@ void get_pdb_coordnum(FILE* in, int* natoms)
     }
 }
 
-void gmx_pdb_read_conf(const char* infile, t_symtab* symtab, char** name, t_atoms* atoms, rvec x[], PbcType* pbcType, matrix box)
+void gmx_pdb_read_conf(const std::filesystem::path& infile,
+                       t_symtab*                    symtab,
+                       char**                       name,
+                       t_atoms*                     atoms,
+                       rvec                         x[],
+                       PbcType*                     pbcType,
+                       matrix                       box)
 {
     FILE* in = gmx_fio_fopen(infile, "r");
     char  title[STRLEN];

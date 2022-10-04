@@ -40,6 +40,7 @@
  * \inlibraryapi
  * \ingroup module_fileio
  */
+#include <filesystem>
 #include <memory>
 #include <string>
 #include <vector>
@@ -105,7 +106,7 @@ public:
      * \throws FileIOError if header information does not match density
      *                     data size
      */
-    explicit MrcDensityMapOfFloatFromFileReader(const std::string& filename);
+    explicit MrcDensityMapOfFloatFromFileReader(const std::filesystem::path& filename);
 
     ~MrcDensityMapOfFloatFromFileReader();
 

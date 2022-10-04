@@ -36,6 +36,7 @@
 
 #include <cstdio>
 
+#include <filesystem>
 #include <optional>
 #include <string>
 #include <vector>
@@ -145,7 +146,7 @@ void xvgr_header(FILE*                          fp,
  * but takes a filename and opens it.
  */
 
-FILE* xvgropen_type(const char*                    fn,
+FILE* xvgropen_type(const std::filesystem::path&   fn,
                     const char*                    title,
                     const std::string&             xaxis,
                     const std::string&             yaxis,
@@ -156,7 +157,7 @@ FILE* xvgropen_type(const char*                    fn,
  * The xvgr graph type enum is defined above.
  */
 
-FILE* xvgropen(const char*                    fn,
+FILE* xvgropen(const std::filesystem::path&   fn,
                const char*                    title,
                const std::string&             xaxis,
                const std::string&             yaxis,
@@ -209,7 +210,7 @@ void xvgr_box(FILE*                          out,
               const struct gmx_output_env_t* oenv);
 /* Make a box */
 
-int read_xvg_legend(const char* fn, double*** y, int* ny, char** subtitle, char*** legend);
+int read_xvg_legend(const std::filesystem::path& fn, double*** y, int* ny, char** subtitle, char*** legend);
 /* Read an xvg file for post processing. The number of rows is returned
  * fn is the filename, y is a pointer to a 2D array (to be allocated by
  * the routine) ny is the number of columns (including X if appropriate).
@@ -231,17 +232,17 @@ int read_xvg_legend(const char* fn, double*** y, int* ny, char** subtitle, char*
  *
  * Todo: Port all read_xvg calls to use readXvgData
  */
-int read_xvg(const char* fn, double*** y, int* ny);
+int read_xvg(const std::filesystem::path& fn, double*** y, int* ny);
 
 /* \brief Read only the data from an xvg file for post processing.
  *
  * \param[out] XvgData Data in row major.
  * \param[in]  fn      Xvg file to read.
  */
-gmx::MultiDimArray<std::vector<double>, gmx::dynamicExtents2D> readXvgData(const std::string& fn);
+gmx::MultiDimArray<std::vector<double>, gmx::dynamicExtents2D> readXvgData(const std::filesystem::path& fn);
 
 
-void write_xvg(const char*                      fn,
+void write_xvg(const std::filesystem::path&     fn,
                const char*                      title,
                int                              nx,
                int                              ny,
@@ -265,7 +266,7 @@ void write_xvg(const char*                      fn,
  * \param[in] endTime Optional last time to read.
  */
 gmx::MultiDimArray<std::vector<double>, gmx::dynamicExtents2D>
-readXvgTimeSeries(const std::string& fn, std::optional<real> startTime, std::optional<real> endTime);
+readXvgTimeSeries(const std::filesystem::path& fn, std::optional<real> startTime, std::optional<real> endTime);
 
 
 /*!\brief
@@ -274,15 +275,15 @@ readXvgTimeSeries(const std::string& fn, std::optional<real> startTime, std::opt
  *
  * NOTE: This function is deprecated and shouldn't be used for new code.
  */
-real** read_xvg_time(const char* fn,
-                     gmx_bool    bHaveT,
-                     gmx_bool    bTB,
-                     real        tb,
-                     gmx_bool    bTE,
-                     real        te,
-                     int         nsets_in,
-                     int*        nset,
-                     int*        nval,
-                     real*       dt,
-                     real**      t);
+real** read_xvg_time(const std::filesystem::path& fn,
+                     gmx_bool                     bHaveT,
+                     gmx_bool                     bTB,
+                     real                         tb,
+                     gmx_bool                     bTE,
+                     real                         te,
+                     int                          nsets_in,
+                     int*                         nset,
+                     int*                         nval,
+                     real*                        dt,
+                     real**                       t);
 #endif

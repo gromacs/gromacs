@@ -34,6 +34,8 @@
 #ifndef GMX_FILEIO_FILETYPES_H
 #define GMX_FILEIO_FILETYPES_H
 
+#include <filesystem>
+
 #include "gromacs/utility/basedefinitions.h"
 
 /* this enum should correspond to the array deffile in filetypes.cpp */
@@ -114,7 +116,7 @@ const char* ftp2defopt(int ftp);
 gmx_bool ftp_is_text(int ftp);
 gmx_bool ftp_is_xdr(int ftp);
 
-int fn2ftp(const char* fn);
+int fn2ftp(const std::filesystem::path& fn);
 /* Return the filetype corrsponding to filename */
 
 #endif

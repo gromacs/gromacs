@@ -40,6 +40,8 @@
 #ifndef GMX_FILEIO_MTXIO_H
 #define GMX_FILEIO_MTXIO_H
 
+#include <filesystem>
+
 #include "gromacs/linearalgebra/sparsematrix.h"
 #include "gromacs/utility/real.h"
 
@@ -49,7 +51,11 @@
  * EITHER a pointer to a full storage matrix or a sparse storage
  * matrix. If both pointers are non-NULL a fatal error will occur.
  */
-void gmx_mtxio_write(const char* filename, int nrow, int ncol, real* full_matrix, gmx_sparsematrix_t* sparse_matrix);
+void gmx_mtxio_write(const std::filesystem::path& filename,
+                     int                          nrow,
+                     int                          ncol,
+                     real*                        full_matrix,
+                     gmx_sparsematrix_t*          sparse_matrix);
 
 
 /* Read a matrix from file.
@@ -63,6 +69,10 @@ void gmx_mtxio_write(const char* filename, int nrow, int ncol, real* full_matrix
  * To determine the format you should set *full_matrix and *sparse_matrix to NULL
  * before calling this routine, and check which one is non-NULL on return.
  */
-void gmx_mtxio_read(const char* filename, int* nrow, int* ncol, real** full_matrix, gmx_sparsematrix_t** sparse_matrix);
+void gmx_mtxio_read(const std::filesystem::path& filename,
+                    int*                         nrow,
+                    int*                         ncol,
+                    real**                       full_matrix,
+                    gmx_sparsematrix_t**         sparse_matrix);
 
 #endif

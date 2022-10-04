@@ -1050,7 +1050,7 @@ int gmx_trjconv(int argc, char* argv[])
                     trxout = trjtools_gmx_prepare_tng_writing(out_file,
                                                               filemode[0],
                                                               trxin,
-                                                              nullptr,
+                                                              {},
                                                               nout,
                                                               mtop.get(),
                                                               gmx::arrayRefFromArray(index, nout),

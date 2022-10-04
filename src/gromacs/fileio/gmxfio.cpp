@@ -119,9 +119,9 @@ static void gmx_fio_make_dummy()
 {
     if (!open_files)
     {
-        open_files       = new t_fileio{};
-        open_files->fp   = nullptr;
-        open_files->fn   = nullptr;
+        open_files     = new t_fileio{};
+        open_files->fp = nullptr;
+        open_files->fn.clear();
         open_files->next = open_files;
         open_files->prev = open_files;
         tMPI_Lock_init(&(open_files->mtx));
@@ -252,7 +252,7 @@ static void gmx_fio_stop_getting_next(t_fileio* fio)
  *                     EXPORTED SECTION
  *
  *****************************************************************/
-t_fileio* gmx_fio_open(const char* fn, const char* mode)
+t_fileio* gmx_fio_open(const std::filesystem::path& fn, const char* mode)
 {
     t_fileio* fio = nullptr;
     char      newmode[5];
@@ -300,14 +300,14 @@ t_fileio* gmx_fio_open(const char* fn, const char* mode)
     bReadWrite = (newmode[1] == '+');
     fio->fp    = nullptr;
     fio->xdr   = nullptr;
-    if (fn)
+    if (!fn.empty())
     {
         if (fn2ftp(fn) == efTNG)
         {
             gmx_incons("gmx_fio_open may not be used to open TNG files");
         }
         fio->iFTP = fn2ftp(fn);
-        fio->fn   = gmx_strdup(fn);
+        fio->fn   = fn;
 
         fio->fp = gmx_ffopen(fn, newmode);
         /* If this file type is in the list of XDR files, open it like that */
@@ -335,7 +335,7 @@ t_fileio* gmx_fio_open(const char* fn, const char* mode)
     }
     else
     {
-        gmx_fatal(FARGS, "Cannot open file with NULL filename string");
+        gmx_fatal(FARGS, "Cannot open file with empty filename");
     }
 
     fio->bRead      = bRead;
@@ -377,7 +377,6 @@ int gmx_fio_close(t_fileio* fio)
     rc = gmx_fio_close_locked(fio);
     gmx_fio_unlock(fio);
 
-    sfree(fio->fn);
     delete fio;
 
     return rc;
@@ -398,7 +397,7 @@ int gmx_fio_fp_close(t_fileio* fio)
     return rc;
 }
 
-FILE* gmx_fio_fopen(const char* fn, const char* mode)
+FILE* gmx_fio_fopen(const std::filesystem::path& fn, const char* mode)
 {
     FILE*     ret;
     t_fileio* fio;
@@ -425,7 +424,6 @@ int gmx_fio_fclose(FILE* fp)
             rc = gmx_fio_close_locked(cur);
             gmx_fio_remove(cur);
             gmx_fio_stop_getting_next(cur);
-            sfree(cur->fn);
             delete cur;
             break;
         }
@@ -492,11 +490,11 @@ static int gmx_fio_int_get_file_md5(t_fileio* fio, gmx_off_t offset, std::array<
         // md5sum check to prevent overwriting files is not vital.
         if (ferror(fio->fp))
         {
-            fprintf(stderr, "\nTrying to get md5sum: %s: %s\n", fio->fn, strerror(errno));
+            fprintf(stderr, "\nTrying to get md5sum: %s: %s\n", fio->fn.c_str(), strerror(errno));
         }
         else if (!feof(fio->fp))
         {
-            fprintf(stderr, "\nTrying to get md5sum: Unknown reason for short read: %s\n", fio->fn);
+            fprintf(stderr, "\nTrying to get md5sum: Unknown reason for short read: %s\n", fio->fn.c_str());
         }
 
         gmx_fseek(fio->fp, 0, SEEK_END);
@@ -507,7 +505,7 @@ static int gmx_fio_int_get_file_md5(t_fileio* fio, gmx_off_t offset, std::array<
 
     if (debug)
     {
-        fprintf(debug, "chksum %s readlen %ld\n", fio->fn, static_cast<long int>(readLength));
+        fprintf(debug, "chksum %s readlen %ld\n", fio->fn.c_str(), static_cast<long int>(readLength));
     }
 
     gmx_md5_init(&state);
@@ -540,7 +538,7 @@ static int gmx_fio_int_get_file_position(t_fileio* fio, gmx_off_t* offset)
     if (gmx_fio_int_flush(fio))
     {
         char buf[STRLEN];
-        sprintf(buf, "Cannot write file '%s'; maybe you are out of disk space?", fio->fn);
+        sprintf(buf, "Cannot write file '%s'; maybe you are out of disk space?", fio->fn.c_str());
         gmx_file(buf);
     }
 
@@ -569,8 +567,7 @@ std::vector<gmx_file_position_t> gmx_fio_get_output_file_positions()
         if (!cur->bRead && cur->iFTP != efCPT)
         {
             outputfiles.emplace_back();
-
-            std::strncpy(outputfiles.back().filename, cur->fn, STRLEN - 1);
+            std::strncpy(outputfiles.back().filename, cur->fn.string().data(), STRLEN - 1);
 
             /* Get the file position */
             gmx_fio_int_get_file_position(cur, &outputfiles.back().offset);
@@ -588,9 +585,9 @@ std::vector<gmx_file_position_t> gmx_fio_get_output_file_positions()
 }
 
 
-char* gmx_fio_getname(t_fileio* fio)
+std::filesystem::path gmx_fio_getname(t_fileio* fio)
 {
-    char* ret;
+    std::filesystem::path ret;
     gmx_fio_lock(fio);
     ret = fio->fn;
     gmx_fio_unlock(fio);

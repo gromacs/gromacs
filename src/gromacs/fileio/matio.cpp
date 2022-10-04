@@ -114,7 +114,7 @@ t_matelmt searchcmap(ArrayRef<const t_mapping> map, t_xpmelmt c)
 }
 
 //! Read the mapping table from in, return number of entries
-static std::vector<t_mapping> getcmap(FILE* in, const char* fn)
+static std::vector<t_mapping> getcmap(FILE* in, const std::filesystem::path& fn)
 {
     int                    i, n;
     char                   line[STRLEN];
@@ -127,7 +127,7 @@ static std::vector<t_mapping> getcmap(FILE* in, const char* fn)
         gmx_fatal(FARGS,
                   "Not enough lines in colormap file %s"
                   "(just wanted to read number of entries)",
-                  fn);
+                  fn.c_str());
     }
     sscanf(line, "%d", &n);
     m.resize(n);
@@ -138,7 +138,7 @@ static std::vector<t_mapping> getcmap(FILE* in, const char* fn)
             gmx_fatal(FARGS,
                       "Not enough lines in colormap file %s"
                       "(should be %d, found only %d)",
-                      fn,
+                      fn.c_str(),
                       n + 1,
                       i);
         }
@@ -154,7 +154,7 @@ static std::vector<t_mapping> getcmap(FILE* in, const char* fn)
     return m;
 }
 
-std::vector<t_mapping> readcmap(const char* fn)
+std::vector<t_mapping> readcmap(const std::filesystem::path& fn)
 {
     FilePtr in = openLibraryFile(fn);
     return getcmap(in.get(), fn);
@@ -178,7 +178,7 @@ void printcmap(FILE* out, int n, t_mapping map[])
     }
 }
 
-void writecmap(const char* fn, int n, t_mapping map[])
+void writecmap(const std::filesystem::path& fn, int n, t_mapping map[])
 {
     FILE* out;
 
@@ -553,7 +553,7 @@ static t_matrix read_xpm_entry(FILE* in)
     return mm;
 }
 
-std::vector<t_matrix> read_xpm_matrix(const char* fnm)
+std::vector<t_matrix> read_xpm_matrix(const std::filesystem::path& fnm)
 {
     FILE* in;
     char* line    = nullptr;

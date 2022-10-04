@@ -36,6 +36,8 @@
 
 #include <cstdio>
 
+#include <filesystem>
+
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/basedefinitions.h"
 
@@ -44,8 +46,14 @@ struct t_atoms;
 struct t_symtab;
 struct t_trxframe;
 
-void get_coordnum(const char* infile, int* natoms);
-void gmx_gro_read_conf(const char* infile, t_symtab* symtab, char** name, t_atoms* atoms, rvec x[], rvec* v, matrix box);
+void get_coordnum(const std::filesystem::path& infile, int* natoms);
+void gmx_gro_read_conf(const std::filesystem::path& infile,
+                       t_symtab*                    symtab,
+                       char**                       name,
+                       t_atoms*                     atoms,
+                       rvec                         x[],
+                       rvec*                        v,
+                       matrix                       box);
 /* If name is not nullptr, gmx_strdup the title string into it. */
 
 gmx_bool gro_next_x_or_v(FILE* status, struct t_trxframe* fr);
@@ -67,11 +75,11 @@ void write_hconf_p(FILE* out, const char* title, const t_atoms* atoms, const rve
 /* Write a Gromos file with precision ndec: number of decimal places in x,
  * v has one place more. */
 
-void write_conf_p(const char*    outfile,
-                  const char*    title,
-                  const t_atoms* atoms,
-                  const rvec*    x,
-                  const rvec*    v,
-                  const matrix   box);
+void write_conf_p(const std::filesystem::path& outfile,
+                  const char*                  title,
+                  const t_atoms*               atoms,
+                  const rvec*                  x,
+                  const rvec*                  v,
+                  const matrix                 box);
 
 #endif

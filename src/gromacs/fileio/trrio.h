@@ -34,6 +34,8 @@
 #ifndef GMX_FILEIO_TRRIO_H
 #define GMX_FILEIO_TRRIO_H
 
+#include <filesystem>
+
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
@@ -90,7 +92,7 @@ typedef struct gmx_trr_header_t
     int     fep_state; /* Current value of alchemical state   */
 } gmx_trr_header_t;
 
-struct t_fileio* gmx_trr_open(const char* fn, const char* mode);
+struct t_fileio* gmx_trr_open(const std::filesystem::path& fn, const char* mode);
 /* Open a trr file */
 
 void gmx_trr_close(struct t_fileio* fio);
@@ -132,31 +134,31 @@ void gmx_trr_write_frame(struct t_fileio* fio,
                          const rvec*      f);
 /* Write a trr frame to file fp, box, x, v, f may be NULL */
 
-void gmx_trr_read_single_header(const char* fn, gmx_trr_header_t* header);
+void gmx_trr_read_single_header(const std::filesystem::path& fn, gmx_trr_header_t* header);
 /* Read the header of a trr file from fn, and close the file afterwards.
  */
 
-void gmx_trr_read_single_frame(const char* fn,
-                               int64_t*    step,
-                               real*       t,
-                               real*       lambda,
-                               rvec*       box,
-                               int*        natoms,
-                               rvec*       x,
-                               rvec*       v,
-                               rvec*       f);
+void gmx_trr_read_single_frame(const std::filesystem::path& fn,
+                               int64_t*                     step,
+                               real*                        t,
+                               real*                        lambda,
+                               rvec*                        box,
+                               int*                         natoms,
+                               rvec*                        x,
+                               rvec*                        v,
+                               rvec*                        f);
 /* Read a single trr frame from file fn, which is closed afterwards
  */
 
-void gmx_trr_write_single_frame(const char* fn,
-                                int64_t     step,
-                                real        t,
-                                real        lambda,
-                                const rvec* box,
-                                int         natoms,
-                                const rvec* x,
-                                const rvec* v,
-                                const rvec* f);
+void gmx_trr_write_single_frame(const std::filesystem::path& fn,
+                                int64_t                      step,
+                                real                         t,
+                                real                         lambda,
+                                const rvec*                  box,
+                                int                          natoms,
+                                const rvec*                  x,
+                                const rvec*                  v,
+                                const rvec*                  f);
 /* Write a single trr frame to file fn, which is closed afterwards */
 
 

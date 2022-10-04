@@ -261,12 +261,12 @@ void xvgr_header(FILE*                   fp,
     }
 }
 
-FILE* xvgropen_type(const char*             fn,
-                    const char*             title,
-                    const std::string&      xaxis,
-                    const std::string&      yaxis,
-                    int                     exvg_graph_type,
-                    const gmx_output_env_t* oenv)
+FILE* xvgropen_type(const std::filesystem::path& fn,
+                    const char*                  title,
+                    const std::string&           xaxis,
+                    const std::string&           yaxis,
+                    int                          exvg_graph_type,
+                    const gmx_output_env_t*      oenv)
 {
     FILE* fp;
 
@@ -277,11 +277,11 @@ FILE* xvgropen_type(const char*             fn,
     return fp;
 }
 
-FILE* xvgropen(const char*             fn,
-               const char*             title,
-               const std::string&      xaxis,
-               const std::string&      yaxis,
-               const gmx_output_env_t* oenv)
+FILE* xvgropen(const std::filesystem::path& fn,
+               const char*                  title,
+               const std::string&           xaxis,
+               const std::string&           yaxis,
+               const gmx_output_env_t*      oenv)
 {
     return xvgropen_type(fn, title, xaxis, yaxis, exvggtXNY, oenv);
 }
@@ -538,7 +538,7 @@ static char* read_xvgr_string(const char* line)
     return str;
 }
 
-int read_xvg_legend(const char* fn, double*** y, int* ny, char** subtitle, char*** legend)
+int read_xvg_legend(const std::filesystem::path& fn, double*** y, int* ny, char** subtitle, char*** legend)
 {
     FILE*    fp;
     char*    ptr;
@@ -662,7 +662,7 @@ int read_xvg_legend(const char* fn, double*** y, int* ny, char** subtitle, char*
             }
             if (k != nny)
             {
-                fprintf(stderr, "Only %d columns on line %d in file %s\n", k, line, fn);
+                fprintf(stderr, "Only %d columns on line %d in file %s\n", k, line, fn.c_str());
                 for (; (k < nny); k++)
                 {
                     yy[k][nx] = 0.0;
@@ -694,7 +694,7 @@ int read_xvg_legend(const char* fn, double*** y, int* ny, char** subtitle, char*
     return nx;
 }
 
-int read_xvg(const char* fn, double*** y, int* ny)
+int read_xvg(const std::filesystem::path& fn, double*** y, int* ny)
 {
     gmx::MultiDimArray<std::vector<double>, gmx::dynamicExtents2D> xvgData =
             readXvgData(std::string(fn));
@@ -722,7 +722,7 @@ int read_xvg(const char* fn, double*** y, int* ny)
 namespace
 {
 //! Internal reading of xvg data, before changing layout.
-gmx::MultiDimArray<std::vector<double>, gmx::dynamicExtents2D> readXvgDataInternal(const std::string& fn)
+gmx::MultiDimArray<std::vector<double>, gmx::dynamicExtents2D> readXvgDataInternal(const std::filesystem::path& fn)
 {
     FILE* fp = gmx_fio_fopen(fn.c_str(), "r");
     char* ptr;
@@ -798,7 +798,7 @@ gmx::MultiDimArray<std::vector<double>, gmx::dynamicExtents2D> readXvgDataIntern
 
 } // namespace
 
-gmx::MultiDimArray<std::vector<double>, gmx::dynamicExtents2D> readXvgData(const std::string& fn)
+gmx::MultiDimArray<std::vector<double>, gmx::dynamicExtents2D> readXvgData(const std::filesystem::path& fn)
 {
     auto      xvgDataAsArray = readXvgDataInternal(fn);
     const int numRows        = xvgDataAsArray.extent(0);
@@ -817,7 +817,7 @@ gmx::MultiDimArray<std::vector<double>, gmx::dynamicExtents2D> readXvgData(const
 }
 
 gmx::MultiDimArray<std::vector<double>, gmx::dynamicExtents2D>
-readXvgTimeSeries(const std::string& fn, std::optional<real> startTime, std::optional<real> endTime)
+readXvgTimeSeries(const std::filesystem::path& fn, std::optional<real> startTime, std::optional<real> endTime)
 {
     auto fullDataSet = readXvgDataInternal(fn);
     if (!startTime.has_value() && !endTime.has_value())
@@ -845,7 +845,7 @@ readXvgTimeSeries(const std::string& fn, std::optional<real> startTime, std::opt
     return reducedDataSet;
 }
 
-void write_xvg(const char*                      fn,
+void write_xvg(const std::filesystem::path&     fn,
                const char*                      title,
                int                              nx,
                int                              ny,
@@ -872,17 +872,17 @@ void write_xvg(const char*                      fn,
     xvgrclose(fp);
 }
 
-real** read_xvg_time(const char* fn,
-                     gmx_bool    bHaveT,
-                     gmx_bool    bTB,
-                     real        tb,
-                     gmx_bool    bTE,
-                     real        te,
-                     int         nsets_in,
-                     int*        nset,
-                     int*        nval,
-                     real*       dt,
-                     real**      t)
+real** read_xvg_time(const std::filesystem::path& fn,
+                     gmx_bool                     bHaveT,
+                     gmx_bool                     bTB,
+                     real                         tb,
+                     gmx_bool                     bTE,
+                     real                         te,
+                     int                          nsets_in,
+                     int*                         nset,
+                     int*                         nval,
+                     real*                        dt,
+                     real**                       t)
 {
     FILE* fp;
 #define MAXLINELEN 16384
@@ -929,7 +929,7 @@ real** read_xvg_time(const char* fn,
                     a = sscanf(line, "%lf%lf", &dbl, &dbl);
                     if (a == 0)
                     {
-                        gmx_fatal(FARGS, "Expected a number in %s on line:\n%s", fn, line0);
+                        gmx_fatal(FARGS, "Expected a number in %s on line:\n%s", fn.c_str(), line0);
                     }
                     else if (a == 1)
                     {
@@ -1022,13 +1022,15 @@ real** read_xvg_time(const char* fn,
                 }
                 if (line0[strlen(line0) - 1] != '\n')
                 {
-                    fprintf(stderr, "File %s does not end with a newline, ignoring the last line\n", fn);
+                    fprintf(stderr,
+                            "File %s does not end with a newline, ignoring the last line\n",
+                            fn.c_str());
                 }
                 else if (bTimeInRange)
                 {
                     if (a == 0)
                     {
-                        fprintf(stderr, "Ignoring invalid line in %s:\n%s", fn, line0);
+                        fprintf(stderr, "Ignoring invalid line in %s:\n%s", fn.c_str(), line0);
                     }
                     else
                     {
@@ -1037,7 +1039,7 @@ real** read_xvg_time(const char* fn,
                             fprintf(stderr,
                                     "Invalid line in %s:\n%s"
                                     "Using zeros for the last %d sets\n",
-                                    fn,
+                                    fn.c_str(),
                                     line0,
                                     narg - a);
                         }

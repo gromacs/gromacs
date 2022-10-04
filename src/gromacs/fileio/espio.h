@@ -36,23 +36,25 @@
 
 #include <cstdio>
 
+#include <filesystem>
+
 #include "gromacs/math/vectypes.h"
 
 struct t_atoms;
 struct t_symtab;
 
-void gmx_espresso_read_conf(const char* infile,
-                            t_symtab*   symtab,
-                            char**      name,
-                            t_atoms*    atoms,
-                            rvec        x[],
-                            rvec*       v,
-                            matrix      box);
+void gmx_espresso_read_conf(const std::filesystem::path& infile,
+                            t_symtab*                    symtab,
+                            char**                       name,
+                            t_atoms*                     atoms,
+                            rvec                         x[],
+                            rvec*                        v,
+                            matrix                       box);
 /* If name is not nullptr, gmx_strdup the title string into
  * it. Reading a title from espresso format is not , so this will
  * always be an empty string. */
 
-int get_espresso_coordnum(const char* infile);
+int get_espresso_coordnum(const std::filesystem::path& infile);
 
 void write_espresso_conf_indexed(FILE*          out,
                                  const char*    title,

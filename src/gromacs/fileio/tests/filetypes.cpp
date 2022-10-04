@@ -59,9 +59,9 @@ namespace test
 namespace
 {
 
-using TypeAndName = std::tuple<int, const char*>;
+using TypeAndName = std::tuple<int, std::string>;
 
-using FileTypeTestParams = std::tuple<TypeAndName, const char*>;
+using FileTypeTestParams = std::tuple<TypeAndName, std::string>;
 
 class FileTypeTest : public ::testing::Test, public ::testing::WithParamInterface<FileTypeTestParams>
 {
@@ -72,14 +72,9 @@ public:
 void FileTypeTest::runTest(const TypeAndName& params)
 {
     const int   type = std::get<0>(params);
-    const char* path = std::get<1>(params);
+    const auto& path = std::get<1>(params);
     EXPECT_EQ(type, fn2ftp(path));
     // also test
-}
-
-TEST_F(FileTypeTest, CorrectValueForNullptr)
-{
-    runTest({ efNR, nullptr });
 }
 
 TEST_F(FileTypeTest, CorrectValueForEmptyString)
@@ -104,11 +99,11 @@ TEST_F(FileTypeTest, CorrectValueForLongExtensionWithStrangeCharacters)
 
 TEST_P(FileTypeTest, CorrectValueForExtension)
 {
-    auto        param       = GetParam();
-    auto        typeAndName = std::get<0>(param);
-    const char* prefix      = std::get<1>(param);
-    auto        fullName    = gmx::formatString("%s%s", prefix, std::get<1>(typeAndName));
-    runTest({ std::get<0>(typeAndName), fullName.c_str() });
+    auto param       = GetParam();
+    auto typeAndName = std::get<0>(param);
+    auto prefix      = std::get<1>(param);
+    auto fullName    = prefix + std::get<1>(typeAndName);
+    runTest({ std::get<0>(typeAndName), fullName });
 }
 
 const std::vector<TypeAndName> testParams = {
@@ -120,7 +115,7 @@ const std::vector<TypeAndName> testParams = {
     { 37, ".mtx" }, { 38, ".edi" }, { 39, ".cub" }, { 40, ".xpm" }, { 42, ".csv" }, { 43, ".inp" }
 };
 
-const std::vector<const char*> prefixes = { "",
+const std::vector<std::string> prefixes = { "",
                                             "test",
                                             "test.pdb",
                                             "a/../b/test",

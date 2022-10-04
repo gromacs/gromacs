@@ -34,6 +34,8 @@
 #ifndef GMX_FILEIO_VMDIO_H
 #define GMX_FILEIO_VMDIO_H
 
+#include <filesystem>
+
 #include "external/vmd_molfile/molfile_plugin.h"
 
 #include "gromacs/utility/basedefinitions.h"
@@ -42,13 +44,13 @@ struct t_trxframe;
 
 struct gmx_vmdplugin_t
 {
-    molfile_plugin_t* api;
-    const char*       filetype;
-    void*             handle;
-    gmx_bool          bV;
+    molfile_plugin_t*     api;
+    std::filesystem::path filetype;
+    void*                 handle;
+    gmx_bool              bV;
 };
 
-int      read_first_vmd_frame(const char* fn, gmx_vmdplugin_t** vmdpluginp, t_trxframe* fr);
+int read_first_vmd_frame(const std::filesystem::path& fn, gmx_vmdplugin_t** vmdpluginp, t_trxframe* fr);
 gmx_bool read_next_vmd_frame(gmx_vmdplugin_t* vmdplugin, t_trxframe* fr);
 
 #endif

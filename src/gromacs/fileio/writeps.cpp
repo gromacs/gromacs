@@ -52,14 +52,14 @@ const char* enumValueToString(Fonts enumValue)
     return fontNames[enumValue];
 }
 
-t_psdata ps_open(const char* fn, real x1, real y1, real x2, real y2)
+t_psdata ps_open(const std::filesystem::path& fn, real x1, real y1, real x2, real y2)
 {
     t_psdata ps;
 
     ps.fp = gmx_fio_fopen(fn, "w");
     fprintf(ps.fp, "%%!PS-Adobe-2.0 EPSF-1.2\n");
     fprintf(ps.fp, "%%%%Creator: GROMACS\n");
-    fprintf(ps.fp, "%%%%Title: %s\n", fn);
+    fprintf(ps.fp, "%%%%Title: %s\n", fn.c_str());
     fprintf(ps.fp, "%%%%BoundingBox: %g %g %g %g\n", x1, y1, x2, y2);
     fprintf(ps.fp, "%%%%EndComments\n");
     fprintf(ps.fp, "/m {moveto} bind def\n");

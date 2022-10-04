@@ -2723,11 +2723,11 @@ static void do_mtop(gmx::ISerializer* serializer, gmx_mtop_t* mtop, int file_ver
  * \param[in,out] fio File handle.
  * \param[in] TopOnlyOK If not reading \p ir is fine or not.
  */
-static void do_tpxheader(gmx::FileIOXdrSerializer* serializer,
-                         TpxFileHeader*            tpx,
-                         const char*               filename,
-                         t_fileio*                 fio,
-                         bool                      TopOnlyOK)
+static void do_tpxheader(gmx::FileIOXdrSerializer*    serializer,
+                         TpxFileHeader*               tpx,
+                         const std::filesystem::path& filename,
+                         t_fileio*                    fio,
+                         bool                         TopOnlyOK)
 {
     int  precision;
     int  idum = 0;
@@ -2747,7 +2747,7 @@ static void do_tpxheader(gmx::FileIOXdrSerializer* serializer,
                     "Can not read file %s,\n"
                     "             this file is from a GROMACS version which is older than 2.0\n"
                     "             Make a new one with grompp or use a gro or pdb file, if possible",
-                    filename);
+                    filename.c_str());
         }
         // We need to know the precision used to write the TPR file, to match it
         // to the precision of the currently running binary. If the precisions match
@@ -2761,7 +2761,7 @@ static void do_tpxheader(gmx::FileIOXdrSerializer* serializer,
             gmx_fatal(FARGS,
                       "Unknown precision in file %s: real is %d bytes "
                       "instead of %zu or %zu",
-                      filename,
+                      filename.c_str(),
                       precision,
                       sizeof(float),
                       sizeof(double));
@@ -2769,7 +2769,7 @@ static void do_tpxheader(gmx::FileIOXdrSerializer* serializer,
         gmx_fio_setprecision(fio, tpx->isDouble);
         fprintf(stderr,
                 "Reading file %s, %s (%s precision)\n",
-                filename,
+                filename.c_str(),
                 buf.c_str(),
                 tpx->isDouble ? "double" : "single");
     }
@@ -2821,7 +2821,7 @@ static void do_tpxheader(gmx::FileIOXdrSerializer* serializer,
                 gmx_fatal(FARGS,
                           "tpx tag/version mismatch: reading tpx file (%s) version %d, tag '%s' "
                           "with program for tpx version %d, tag '%s'",
-                          filename,
+                          filename.c_str(),
                           tpx->fileVersion,
                           fileTag.c_str(),
                           tpx_version,
@@ -2836,7 +2836,7 @@ static void do_tpxheader(gmx::FileIOXdrSerializer* serializer,
     {
         gmx_fatal(FARGS,
                   "reading tpx file (%s) version %d with version %d program",
-                  filename,
+                  filename.c_str(),
                   tpx->fileVersion,
                   tpx_version);
     }
@@ -3208,7 +3208,7 @@ static PbcType do_tpx_body(gmx::ISerializer* serializer, TpxFileHeader* tpx, t_i
     return do_tpx_body(serializer, tpx, ir, nullptr, nullptr, nullptr, mtop);
 }
 
-static t_fileio* open_tpx(const char* fn, const char* mode)
+static t_fileio* open_tpx(const std::filesystem::path& fn, const char* mode)
 {
     return gmx_fio_open(fn, mode);
 }
@@ -3338,7 +3338,7 @@ static PartialDeserializedTprFile readTpxBody(TpxFileHeader*    tpx,
  *
  ************************************************************/
 
-TpxFileHeader readTpxHeader(const char* fileName, bool canReadTopologyOnly)
+TpxFileHeader readTpxHeader(const std::filesystem::path& fileName, bool canReadTopologyOnly)
 {
     t_fileio* fio;
 
@@ -3351,7 +3351,10 @@ TpxFileHeader readTpxHeader(const char* fileName, bool canReadTopologyOnly)
     return tpx;
 }
 
-void write_tpx_state(const char* fn, const t_inputrec* ir, const t_state* state, const gmx_mtop_t& mtop)
+void write_tpx_state(const std::filesystem::path& fn,
+                     const t_inputrec*            ir,
+                     const t_state*               state,
+                     const gmx_mtop_t&            mtop)
 {
     /* To write a state, we first need to write the state information to a buffer before
      * we append the raw bytes to the file. For this, the header information needs to be
@@ -3413,7 +3416,8 @@ PbcType completeTprDeserialization(PartialDeserializedTprFile* partialDeserializ
     return completeTprDeserialization(partialDeserializedTpr, ir, nullptr, nullptr, nullptr, mtop);
 }
 
-PartialDeserializedTprFile read_tpx_state(const char* fn, t_inputrec* ir, t_state* state, gmx_mtop_t* mtop)
+PartialDeserializedTprFile
+read_tpx_state(const std::filesystem::path& fn, t_inputrec* ir, t_state* state, gmx_mtop_t* mtop)
 {
     t_fileio* fio;
     fio = open_tpx(fn, "r");
@@ -3426,7 +3430,7 @@ PartialDeserializedTprFile read_tpx_state(const char* fn, t_inputrec* ir, t_stat
     return partialDeserializedTpr;
 }
 
-PbcType read_tpx(const char* fn, t_inputrec* ir, matrix box, int* natoms, rvec* x, rvec* v, gmx_mtop_t* mtop)
+PbcType read_tpx(const std::filesystem::path& fn, t_inputrec* ir, matrix box, int* natoms, rvec* x, rvec* v, gmx_mtop_t* mtop)
 {
     t_fileio* fio;
     t_state   state;
@@ -3449,7 +3453,13 @@ PbcType read_tpx(const char* fn, t_inputrec* ir, matrix box, int* natoms, rvec* 
     return partialDeserializedTpr.pbcType;
 }
 
-PbcType read_tpx_top(const char* fn, t_inputrec* ir, matrix box, int* natoms, rvec* x, rvec* v, t_topology* top)
+PbcType read_tpx_top(const std::filesystem::path& fn,
+                     t_inputrec*                  ir,
+                     matrix                       box,
+                     int*                         natoms,
+                     rvec*                        x,
+                     rvec*                        v,
+                     t_topology*                  top)
 {
     gmx_mtop_t mtop;
     PbcType    pbcType;
@@ -3461,7 +3471,7 @@ PbcType read_tpx_top(const char* fn, t_inputrec* ir, matrix box, int* natoms, rv
     return pbcType;
 }
 
-gmx_bool fn2bTPX(const char* file)
+gmx_bool fn2bTPX(const std::filesystem::path& file)
 {
     return (efTPR == fn2ftp(file));
 }

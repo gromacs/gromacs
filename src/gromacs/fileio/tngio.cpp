@@ -111,7 +111,7 @@ static const char* modeToVerb(char mode)
 }
 #endif
 
-void gmx_tng_open(const char* filename, char mode, gmx_tng_trajectory_t* gmx_tng)
+void gmx_tng_open(const std::filesystem::path& filename, char mode, gmx_tng_trajectory_t* gmx_tng)
 {
 #if GMX_USE_TNG
     /* First check whether we have to make a backup,
@@ -131,12 +131,12 @@ void gmx_tng_open(const char* filename, char mode, gmx_tng_trajectory_t* gmx_tng
     /* tng must not be pointing at already allocated memory.
      * Memory will be allocated by tng_util_trajectory_open() and must
      * later on be freed by tng_util_trajectory_close(). */
-    if (TNG_SUCCESS != tng_util_trajectory_open(filename, mode, tng))
+    if (TNG_SUCCESS != tng_util_trajectory_open(filename.c_str(), mode, tng))
     {
         /* TNG does return more than one degree of error, but there is
            no use case for GROMACS handling the non-fatal errors
            gracefully. */
-        gmx_fatal(FARGS, "File I/O error while opening %s for %s", filename, modeToVerb(mode));
+        gmx_fatal(FARGS, "File I/O error while opening %s for %s", filename.c_str(), modeToVerb(mode));
     }
 
     if (mode == 'w' || mode == 'a')
@@ -1011,14 +1011,14 @@ float gmx_tng_get_time_of_final_frame(gmx_tng_trajectory_t gmx_tng)
 #endif
 }
 
-void gmx_prepare_tng_writing(const char*              filename,
-                             char                     mode,
-                             gmx_tng_trajectory_t*    gmx_tng_input,
-                             gmx_tng_trajectory_t*    gmx_tng_output,
-                             int                      nAtoms,
-                             const gmx_mtop_t*        mtop,
-                             gmx::ArrayRef<const int> index,
-                             const char*              indexGroupName)
+void gmx_prepare_tng_writing(const std::filesystem::path& filename,
+                             char                         mode,
+                             gmx_tng_trajectory_t*        gmx_tng_input,
+                             gmx_tng_trajectory_t*        gmx_tng_output,
+                             int                          nAtoms,
+                             const gmx_mtop_t*            mtop,
+                             gmx::ArrayRef<const int>     index,
+                             const char*                  indexGroupName)
 {
 #if GMX_USE_TNG
     tng_trajectory_t* input = (gmx_tng_input && *gmx_tng_input) ? &(*gmx_tng_input)->tng : nullptr;

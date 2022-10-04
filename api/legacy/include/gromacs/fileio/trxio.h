@@ -35,6 +35,8 @@
 #ifndef GMX_FILEIO_TRXIO_H
 #define GMX_FILEIO_TRXIO_H
 
+#include <filesystem>
+
 #include "gromacs/fileio/pdbio.h"
 
 struct gmx_mtop_t;
@@ -132,14 +134,14 @@ int write_trx(t_trxstatus*   status,
  * \param[in] index_group_name Name of the group of atom indices.
  * \returns Pointer to output TNG file.
  */
-t_trxstatus* trjtools_gmx_prepare_tng_writing(const char*              filename,
-                                              char                     filemode,
-                                              t_trxstatus*             in,
-                                              const char*              infile,
-                                              int                      natoms,
-                                              const gmx_mtop_t*        mtop,
-                                              gmx::ArrayRef<const int> index,
-                                              const char*              index_group_name);
+t_trxstatus* trjtools_gmx_prepare_tng_writing(const std::filesystem::path& filename,
+                                              char                         filemode,
+                                              t_trxstatus*                 in,
+                                              const std::filesystem::path& infile,
+                                              int                          natoms,
+                                              const gmx_mtop_t*            mtop,
+                                              gmx::ArrayRef<const int>     index,
+                                              const char*                  index_group_name);
 
 /*! \brief Write a trxframe to the TNG file in status.
  *
@@ -168,7 +170,7 @@ void close_trx(t_trxstatus* status);
  * in new code. Use read_first_frame() and close_trx() instead. */
 void done_trx_xframe(t_trxstatus* status);
 
-t_trxstatus* open_trx(const char* outfile, const char* filemode);
+t_trxstatus* open_trx(const std::filesystem::path& outfile, const char* filemode);
 /* Open a TRX file and return an allocated status pointer */
 
 struct t_fileio* trx_get_fileio(t_trxstatus* status);
@@ -226,11 +228,11 @@ int check_times(real t);
 #define DATA_NOT_OK (1u << 1u)
 #define FRAME_NOT_OK (HEADER_NOT_OK | DATA_NOT_OK)
 
-bool read_first_frame(const gmx_output_env_t* oenv,
-                      t_trxstatus**           status,
-                      const char*             fn,
-                      struct t_trxframe*      fr,
-                      int                     flags);
+bool read_first_frame(const gmx_output_env_t*      oenv,
+                      t_trxstatus**                status,
+                      const std::filesystem::path& fn,
+                      struct t_trxframe*           fr,
+                      int                          flags);
 /* Read the first frame which is in accordance with flags, which are
  * defined further up in this file.
  * Memory will be allocated for flagged entries.
@@ -243,7 +245,12 @@ bool read_next_frame(const gmx_output_env_t* oenv, t_trxstatus* status, struct t
  * Returns true when succeeded, false otherwise.
  */
 
-int read_first_x(const gmx_output_env_t* oenv, t_trxstatus** status, const char* fn, real* t, rvec** x, matrix box);
+int read_first_x(const gmx_output_env_t*      oenv,
+                 t_trxstatus**                status,
+                 const std::filesystem::path& fn,
+                 real*                        t,
+                 rvec**                       x,
+                 matrix                       box);
 /* These routines read first coordinates and box, and allocates
  * memory for the coordinates, for a trajectory file.
  * The routine returns the number of atoms, or 0 when something is wrong.
@@ -263,7 +270,7 @@ gmx_bool read_next_x(const gmx_output_env_t* oenv, t_trxstatus* status, real* t,
 void rewind_trj(t_trxstatus* status);
 /* Rewind trajectory file as opened with read_first_x */
 
-struct t_topology* read_top(const char* fn, PbcType* pbcType);
+struct t_topology* read_top(const std::filesystem::path& fn, PbcType* pbcType);
 /* Extract a topology data structure from a topology file.
  * If pbcType!=NULL *pbcType gives the pbc type.
  */

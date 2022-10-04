@@ -38,6 +38,7 @@
 #include <cstdio>
 
 #include <array>
+#include <filesystem>
 #include <vector>
 
 #include "gromacs/math/vectypes.h"
@@ -58,7 +59,7 @@ typedef struct t_fileio t_fileio;
  * Open and Close
  ********************************************************/
 
-t_fileio* gmx_fio_open(const char* fn, const char* mode);
+t_fileio* gmx_fio_open(const std::filesystem::path& fn, const char* mode);
 /* Open a new file for reading or writing.
  * The file type will be deduced from the file name.
  */
@@ -80,7 +81,7 @@ int gmx_fio_fp_close(t_fileio* fp);
 
 
 /* Open a file, return a stream, record the entry in internal FIO object */
-FILE* gmx_fio_fopen(const char* fn, const char* mode);
+FILE* gmx_fio_fopen(const std::filesystem::path& fn, const char* mode);
 
 /* Close a file previously opened with gmx_fio_fopen.
  * Do not mix these calls with standard fopen/fclose ones!
@@ -92,7 +93,7 @@ int gmx_fio_fclose(FILE* fp);
  * Change properties of the open file
  ********************************************************/
 
-char* gmx_fio_getname(t_fileio* fio);
+std::filesystem::path gmx_fio_getname(t_fileio* fio);
 /* Return the filename corresponding to the fio index */
 
 int gmx_fio_getftp(t_fileio* fio);

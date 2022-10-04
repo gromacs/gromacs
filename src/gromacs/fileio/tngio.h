@@ -37,6 +37,8 @@
 
 #include <cstdio>
 
+#include <filesystem>
+
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
@@ -60,7 +62,7 @@ class ArrayRef;
  *
  * Handles all I/O errors internally via fatal error
  */
-void gmx_tng_open(const char* filename, char mode, gmx_tng_trajectory_t* tng_data_p);
+void gmx_tng_open(const std::filesystem::path& filename, char mode, gmx_tng_trajectory_t* tng_data_p);
 
 /*! \brief Finish writing a TNG trajectory file */
 void gmx_tng_close(gmx_tng_trajectory_t* tng);
@@ -138,14 +140,14 @@ void fflush_tng(gmx_tng_trajectory_t tng);
 float gmx_tng_get_time_of_final_frame(gmx_tng_trajectory_t tng);
 
 /*! \brief Prepare to write TNG output from trajectory conversion tools */
-void gmx_prepare_tng_writing(const char*              filename,
-                             char                     mode,
-                             gmx_tng_trajectory_t*    in,
-                             gmx_tng_trajectory_t*    out,
-                             int                      nAtoms,
-                             const struct gmx_mtop_t* mtop,
-                             gmx::ArrayRef<const int> index,
-                             const char*              indexGroupName);
+void gmx_prepare_tng_writing(const std::filesystem::path& filename,
+                             char                         mode,
+                             gmx_tng_trajectory_t*        in,
+                             gmx_tng_trajectory_t*        out,
+                             int                          nAtoms,
+                             const struct gmx_mtop_t*     mtop,
+                             gmx::ArrayRef<const int>     index,
+                             const char*                  indexGroupName);
 
 /*! \brief Write a trxframe to a TNG file
  *

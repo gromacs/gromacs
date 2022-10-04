@@ -36,6 +36,7 @@
 
 #include <cstdio>
 
+#include <filesystem>
 #include <vector>
 
 #include "gromacs/math/vectypes.h"
@@ -138,9 +139,12 @@ struct PartialDeserializedTprFile
  * \param[in] canReadTopologyOnly If reading the inputrec can be skipped or not.
  * \returns An initialized and populated TPX File header object.
  */
-TpxFileHeader readTpxHeader(const char* fileName, bool canReadTopologyOnly);
+TpxFileHeader readTpxHeader(const std::filesystem::path& fileName, bool canReadTopologyOnly);
 
-void write_tpx_state(const char* fn, const t_inputrec* ir, const t_state* state, const gmx_mtop_t& mtop);
+void write_tpx_state(const std::filesystem::path& fn,
+                     const t_inputrec*            ir,
+                     const t_state*               state,
+                     const gmx_mtop_t&            mtop);
 /* Write a file, and close it again.
  */
 
@@ -185,7 +189,8 @@ PbcType completeTprDeserialization(PartialDeserializedTprFile* partialDeserializ
  * \param[out] mtop Global simulation topolgy.
  * \returns Struct with header and body in char vector.
  */
-PartialDeserializedTprFile read_tpx_state(const char* fn, t_inputrec* ir, t_state* state, gmx_mtop_t* mtop);
+PartialDeserializedTprFile
+read_tpx_state(const std::filesystem::path& fn, t_inputrec* ir, t_state* state, gmx_mtop_t* mtop);
 
 /*! \brief
  * Read a file and close it again.
@@ -209,12 +214,24 @@ PartialDeserializedTprFile read_tpx_state(const char* fn, t_inputrec* ir, t_stat
  * \param[out] mtop Topology to be populated, or nullptr.
  * \returns ir->pbcType if it was read from the file.
  */
-PbcType read_tpx(const char* fn, t_inputrec* ir, matrix box, int* natoms, rvec* x, rvec* v, gmx_mtop_t* mtop);
+PbcType read_tpx(const std::filesystem::path& fn,
+                 t_inputrec*                  ir,
+                 matrix                       box,
+                 int*                         natoms,
+                 rvec*                        x,
+                 rvec*                        v,
+                 gmx_mtop_t*                  mtop);
 
-PbcType read_tpx_top(const char* fn, t_inputrec* ir, matrix box, int* natoms, rvec* x, rvec* v, t_topology* top);
+PbcType read_tpx_top(const std::filesystem::path& fn,
+                     t_inputrec*                  ir,
+                     matrix                       box,
+                     int*                         natoms,
+                     rvec*                        x,
+                     rvec*                        v,
+                     t_topology*                  top);
 /* As read_tpx, but for the old t_topology struct */
 
-gmx_bool fn2bTPX(const char* file);
+gmx_bool fn2bTPX(const std::filesystem::path& file);
 /* return if *file is one of the TPX file types */
 
 void pr_tpxheader(FILE* fp, int indent, const char* title, const TpxFileHeader* sh);

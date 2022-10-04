@@ -58,15 +58,15 @@
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
 
-void write_sto_conf_indexed(const char*    outfile,
-                            const char*    title,
-                            const t_atoms* atoms,
-                            const rvec     x[],
-                            const rvec*    v,
-                            PbcType        pbcType,
-                            const matrix   box,
-                            int            nindex,
-                            int            index[])
+void write_sto_conf_indexed(const std::filesystem::path& outfile,
+                            const char*                  title,
+                            const t_atoms*               atoms,
+                            const rvec                   x[],
+                            const rvec*                  v,
+                            PbcType                      pbcType,
+                            const matrix                 box,
+                            int                          nindex,
+                            int                          index[])
 {
     FILE*      out;
     int        ftp;
@@ -112,18 +112,18 @@ void write_sto_conf_indexed(const char*    outfile,
             write_espresso_conf_indexed(out, title, atoms, nindex, index, x, v, box);
             gmx_fio_fclose(out);
             break;
-        case efTPR: gmx_fatal(FARGS, "Sorry, can not write a topology to %s", outfile);
+        case efTPR: gmx_fatal(FARGS, "Sorry, can not write a topology to %s", outfile.c_str());
         default: gmx_incons("Not supported in write_sto_conf_indexed");
     }
 }
 
-void write_sto_conf(const char*    outfile,
-                    const char*    title,
-                    const t_atoms* atoms,
-                    const rvec     x[],
-                    const rvec*    v,
-                    PbcType        pbcType,
-                    const matrix   box)
+void write_sto_conf(const std::filesystem::path& outfile,
+                    const char*                  title,
+                    const t_atoms*               atoms,
+                    const rvec                   x[],
+                    const rvec*                  v,
+                    PbcType                      pbcType,
+                    const matrix                 box)
 {
     FILE*      out;
     int        ftp;
@@ -163,18 +163,18 @@ void write_sto_conf(const char*    outfile,
             write_espresso_conf_indexed(out, title, atoms, atoms->nr, nullptr, x, v, box);
             gmx_fio_fclose(out);
             break;
-        case efTPR: gmx_fatal(FARGS, "Sorry, can not write a topology to %s", outfile);
+        case efTPR: gmx_fatal(FARGS, "Sorry, can not write a topology to %s", outfile.c_str());
         default: gmx_incons("Not supported in write_sto_conf");
     }
 }
 
-void write_sto_conf_mtop(const char*       outfile,
-                         const char*       title,
-                         const gmx_mtop_t& mtop,
-                         const rvec        x[],
-                         const rvec*       v,
-                         PbcType           pbcType,
-                         const matrix      box)
+void write_sto_conf_mtop(const std::filesystem::path& outfile,
+                         const char*                  title,
+                         const gmx_mtop_t&            mtop,
+                         const rvec                   x[],
+                         const rvec*                  v,
+                         PbcType                      pbcType,
+                         const matrix                 box)
 {
     int     ftp;
     FILE*   out;
@@ -201,7 +201,7 @@ void write_sto_conf_mtop(const char*       outfile,
     }
 }
 
-static void get_stx_coordnum(const char* infile, int* natoms)
+static void get_stx_coordnum(const std::filesystem::path& infile, int* natoms)
 {
     FILE*      in;
     int        ftp;
@@ -334,14 +334,14 @@ static void tpx_make_chain_identifiers(t_atoms* atoms, const t_block* mols)
     filler.clearIfNeeded(atoms);
 }
 
-static void read_stx_conf(const char* infile,
-                          t_symtab*   symtab,
-                          char**      name,
-                          t_atoms*    atoms,
-                          rvec        x[],
-                          rvec*       v,
-                          PbcType*    pbcType,
-                          matrix      box)
+static void read_stx_conf(const std::filesystem::path& infile,
+                          t_symtab*                    symtab,
+                          char**                       name,
+                          t_atoms*                     atoms,
+                          rvec                         x[],
+                          rvec*                        v,
+                          PbcType*                     pbcType,
+                          matrix                       box)
 {
     FILE*      in;
     t_trxframe fr;
@@ -350,7 +350,7 @@ static void read_stx_conf(const char* infile,
 
     if (atoms->nr == 0)
     {
-        fprintf(stderr, "Warning: Number of atoms in %s is 0\n", infile);
+        fprintf(stderr, "Warning: Number of atoms in %s is 0\n", infile.c_str());
     }
     else if (atoms->atom == nullptr)
     {
@@ -385,17 +385,15 @@ static void read_stx_conf(const char* infile,
     }
 }
 
-void readConfAndAtoms(const char* infile,
-                      t_symtab*   symtab,
-                      char**      name,
-                      t_atoms*    atoms,
-                      PbcType*    pbcType,
-                      rvec**      x,
-                      rvec**      v,
-                      matrix      box)
+void readConfAndAtoms(const std::filesystem::path& infile,
+                      t_symtab*                    symtab,
+                      char**                       name,
+                      t_atoms*                     atoms,
+                      PbcType*                     pbcType,
+                      rvec**                       x,
+                      rvec**                       v,
+                      matrix                       box)
 {
-    GMX_RELEASE_ASSERT(infile, "Need a valid file name string");
-
     if (fn2ftp(infile) == efTPR)
     {
         bool       haveTopology;
@@ -441,13 +439,13 @@ void readConfAndAtoms(const char* infile,
     }
 }
 
-void readConfAndTopology(const char* infile,
-                         bool*       haveTopology,
-                         gmx_mtop_t* mtop,
-                         PbcType*    pbcType,
-                         rvec**      x,
-                         rvec**      v,
-                         matrix      box)
+void readConfAndTopology(const std::filesystem::path& infile,
+                         bool*                        haveTopology,
+                         gmx_mtop_t*                  mtop,
+                         PbcType*                     pbcType,
+                         rvec**                       x,
+                         rvec**                       v,
+                         matrix                       box)
 {
     GMX_RELEASE_ASSERT(mtop != nullptr, "readConfAndTopology requires mtop!=NULL");
 
@@ -491,7 +489,13 @@ void readConfAndTopology(const char* infile,
     }
 }
 
-gmx_bool read_tps_conf(const char* infile, t_topology* top, PbcType* pbcType, rvec** x, rvec** v, matrix box, gmx_bool requireMasses)
+gmx_bool read_tps_conf(const std::filesystem::path& infile,
+                       t_topology*                  top,
+                       PbcType*                     pbcType,
+                       rvec**                       x,
+                       rvec**                       v,
+                       matrix                       box,
+                       gmx_bool                     requireMasses)
 {
     bool       haveTopology;
     gmx_mtop_t mtop;

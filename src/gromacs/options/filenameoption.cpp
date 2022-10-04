@@ -310,13 +310,15 @@ std::string FileNameOptionStorage::processValue(const std::string& value) const
             // except for sanity checking.
             if (!isDirectoryOption())
             {
-                const int fileType = fn2ftp(processedValue.c_str());
+                const int fileType = fn2ftp(processedValue);
                 if (fileType == efNR)
                 {
                     // If the manager returned an invalid file name, assume
                     // that it knows what it is doing.  But assert that it
                     // only does that for the only case that it is currently
                     // required for: VMD plugins.
+                    fprintf(stderr, "Value is %s\n", processedValue.c_str());
+                    fflush(stderr);
                     GMX_ASSERT(isInputFile() && isTrajectoryOption(),
                                "Manager returned an invalid file name");
                 }
@@ -335,7 +337,7 @@ std::string FileNameOptionStorage::processValue(const std::string& value) const
     {
         return value;
     }
-    const int fileType = fn2ftp(value.c_str());
+    const int fileType = fn2ftp(value);
     if (fileType == efNR)
     {
         std::string message = formatString(

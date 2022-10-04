@@ -35,6 +35,8 @@
 #ifndef GMX_FILEIO_XTCIO_H
 #define GMX_FILEIO_XTCIO_H
 
+#include <filesystem>
+
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
@@ -52,7 +54,7 @@ struct t_fileio;
  * negative. Fortunately, this tends not to cause serious problems,
  * and we've fixed it in TNG. */
 
-struct t_fileio* open_xtc(const char* filename, const char* mode);
+struct t_fileio* open_xtc(const std::filesystem::path& filename, const char* mode);
 /* Open a file for xdr I/O */
 
 void close_xtc(struct t_fileio* fio);

@@ -409,7 +409,7 @@ static void write_checkpoint(const char*                     fn,
     if (ret)
     {
         char buf[STRLEN];
-        sprintf(buf, "Cannot fsync '%s'; maybe you are out of disk space?", gmx_fio_getname(ret));
+        sprintf(buf, "Cannot fsync '%s'; maybe you are out of disk space?", gmx_fio_getname(ret).c_str());
 
         if (getenv(GMX_IGNORE_FSYNC_FAILURE_ENV) == nullptr)
         {
