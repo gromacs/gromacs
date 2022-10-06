@@ -168,17 +168,16 @@ def image_name(configuration: argparse.Namespace) -> str:
         if version is not None:
             elements.append(distro + '-' + version)
             break
-    for compiler in ('llvm', 'intel_llvm', 'gcc'):
+    for compiler in ('llvm', 'intel_llvm', 'oneapi', 'gcc'):
         version = getattr(configuration, compiler, None)
         if version is not None:
-            elements.append(compiler + '-' + str(version).split('.')[0])
+            version = str(version).split('.')[0] if compiler != 'oneapi' else str(version)
+            elements.append(compiler + '-' + version)
             break
     for gpusdk in ('cuda', 'hipsycl'):
         version = getattr(configuration, gpusdk, None)
         if version is not None:
             elements.append(gpusdk + '-' + version)
-    if configuration.oneapi is not None:
-        elements.append('oneapi-' + configuration.oneapi)
     if configuration.intel_compute_runtime:
         elements.append('intel-compute-runtime')
     if configuration.rocm is not None:

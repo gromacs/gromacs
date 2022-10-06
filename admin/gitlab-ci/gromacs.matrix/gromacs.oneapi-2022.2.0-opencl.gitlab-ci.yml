@@ -8,55 +8,55 @@
 # Test implementation choices (free to change as needed):
 #   OS: Ubuntu 20.04
 #   Build type: Debug
-#   Compiler: ICPX 2022.1
+#   Compiler: ICPX 2022.2
 #   MPI: thread_MPI
 #   SIMD: AVX2_256
 #   Parallelism nt/ntomp: 4/2
 
-gromacs:oneapi-2022.1.0-opencl:configure:
+gromacs:oneapi-2022.2.0-opencl:configure:
   extends:
    - .gromacs:base:configure
    - .use-oneapi:base
    - .use-opencl
    - .rules:merge-requests
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-gcc-9-oneapi-2022.1.0
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-oneapi-2022.2.0-intel-compute-runtime
   variables:
     CMAKE: /usr/local/cmake-3.18.4/bin/cmake
     COMPILER_MAJOR_VERSION: 2021
 
-gromacs:oneapi-2022.1.0-opencl:build:
+gromacs:oneapi-2022.2.0-opencl:build:
   extends:
     - .variables:default
     - .gromacs:base:build
     - .use-ccache
     - .use-oneapi:base
     - .rules:merge-requests
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-gcc-9-oneapi-2022.1.0
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-oneapi-2022.2.0-intel-compute-runtime
   variables:
     CMAKE: /usr/local/cmake-3.18.4/bin/cmake
   needs:
-    - job: gromacs:oneapi-2022.1.0-opencl:configure
+    - job: gromacs:oneapi-2022.2.0-opencl:configure
 
-gromacs:oneapi-2022.1.0-opencl:test:
+gromacs:oneapi-2022.2.0-opencl:test:
   extends:
     - .gromacs:base:test
     - .use-oneapi:base
     - .rules:merge-requests
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-gcc-9-oneapi-2022.1.0
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-oneapi-2022.2.0-intel-compute-runtime
   variables:
     CMAKE: /usr/local/cmake-3.18.4/bin/cmake
   needs:
-    - job: gromacs:oneapi-2022.1.0-opencl:build
+    - job: gromacs:oneapi-2022.2.0-opencl:build
 
-gromacs:oneapi-2022.1.0-opencl:regressiontest:
+gromacs:oneapi-2022.2.0-opencl:regressiontest:
   extends:
     - .gromacs:base:regressiontest
     - .use-oneapi:base
     - .rules:merge-requests
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-gcc-9-oneapi-2022.1.0
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-oneapi-2022.2.0-intel-compute-runtime
   variables:
     CMAKE: /usr/local/cmake-3.18.4/bin/cmake
   needs:
-    - job: gromacs:oneapi-2022.1.0-opencl:build
+    - job: gromacs:oneapi-2022.2.0-opencl:build
     - job: regressiontests:prepare
 

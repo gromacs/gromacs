@@ -8,25 +8,25 @@
 #   Scope: configure, build, unit tests, regression tests
 # Test implementation choices (free to change as needed):
 #   OS: Ubuntu 20.04
-#   Compiler: ICPX 2022.1
+#   Compiler: ICPX 2022.2
 #   MPI: thread_MPI
 #   SIMD: AVX2_256
 #   Parallelism nt/ntomp: 4/2 (unit tests)
 #   Parallelism nt/ntomp: 2/1 (regression tests)
 
-gromacs:oneapi-2022.1.0-opencl:release:configure:
+gromacs:oneapi-2022.2.0-opencl:release:configure:
   extends:
    - .gromacs:base:release:configure
    - .use-oneapi:base
    - .use-opencl
    - .rules:nightly-only-for-release
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-gcc-9-oneapi-2022.1.0
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-oneapi-2022.2.0-intel-compute-runtime
   variables:
     CMAKE: /usr/local/cmake-3.18.4/bin/cmake
     COMPILER_MAJOR_VERSION: 2021
     RELEASE_BUILD_DIR: release-builds-oneapi
 
-gromacs:oneapi-2022.1.0-opencl:release:build:
+gromacs:oneapi-2022.2.0-opencl:release:build:
   extends:
     - .variables:default
     - .gromacs:base:build
@@ -39,31 +39,31 @@ gromacs:oneapi-2022.1.0-opencl:release:build:
     CMAKE: /usr/local/cmake-3.18.4/bin/cmake
     BUILD_DIR: release-builds-oneapi
     COMPILER_MAJOR_VERSION: 2021
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-gcc-9-oneapi-2022.1.0
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-oneapi-2022.2.0-intel-compute-runtime
   needs:
-    - job: gromacs:oneapi-2022.1.0-opencl:release:configure
+    - job: gromacs:oneapi-2022.2.0-opencl:release:configure
 
-gromacs:oneapi-2022.1.0-opencl:release:test:
+gromacs:oneapi-2022.2.0-opencl:release:test:
   extends:
     - .gromacs:base:test
     - .use-oneapi:base
     - .rules:nightly-only-for-release
   stage: release-tests
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-gcc-9-oneapi-2022.1.0
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-oneapi-2022.2.0-intel-compute-runtime
   variables:
     CMAKE: /usr/local/cmake-3.18.4/bin/cmake
     BUILD_DIR: release-builds-oneapi
   needs:
-    - job: gromacs:oneapi-2022.1.0-opencl:release:configure
-    - job: gromacs:oneapi-2022.1.0-opencl:release:build
+    - job: gromacs:oneapi-2022.2.0-opencl:release:configure
+    - job: gromacs:oneapi-2022.2.0-opencl:release:build
 
-gromacs:oneapi-2022.1.0-opencl:release:regressiontest:
+gromacs:oneapi-2022.2.0-opencl:release:regressiontest:
   extends:
     - .gromacs:base:regressiontest
     - .use-oneapi:base
     - .rules:nightly-only-for-release
   stage: release-tests
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-gcc-9-oneapi-2022.1.0
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-oneapi-2022.2.0-intel-compute-runtime
   variables:
     CMAKE: /usr/local/cmake-3.18.4/bin/cmake
     BUILD_DIR: release-builds-oneapi
@@ -71,5 +71,5 @@ gromacs:oneapi-2022.1.0-opencl:release:regressiontest:
     REGRESSIONTEST_TOTAL_RANK_NUMBER: 2
     REGRESSIONTEST_OMP_RANK_NUMBER: 1
   needs:
-    - job: gromacs:oneapi-2022.1.0-opencl:release:build
+    - job: gromacs:oneapi-2022.2.0-opencl:release:build
     - job: regressiontests:package
