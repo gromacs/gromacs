@@ -404,8 +404,8 @@ def get_mpi(args, compiler, ucx):
                     raise RuntimeError('oneAPI building OpenMPI is not supported')
                 use_cuda = (args.cuda is not None)
                 use_ucx = (ucx is not None)
-                # Version last updated June 7, 2021
-                return hpccm.building_blocks.openmpi(toolchain=compiler.toolchain, version="4.1.1", cuda=use_cuda,
+                # Version last updated October 7, 2022
+                return hpccm.building_blocks.openmpi(toolchain=compiler.toolchain, version="4.1.4", cuda=use_cuda,
                                                      ucx=use_ucx, infiniband=False)
             else:
                 raise RuntimeError('compiler is not an HPCCM compiler building block!')

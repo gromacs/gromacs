@@ -8,20 +8,20 @@
 # Test implementation choices (free to change as needed):
 #   OS: Ubuntu 20.04
 #   Build type: RelWithDebInfo
-#   Compiler: GCC 11.2
-#   GPU: CUDA 11.4.1
+#   Compiler: GCC 11.1
+#   GPU: CUDA 11.7.1
 #   SIMD: AVX2_256
 #   FFT: FFTW3
 #   Parallelism nt/ntomp: 4/2 (unit tests)
 
-gromacs:gcc-11-cuda-11.4.1:release:configure:
+gromacs:gcc-11-cuda-11.7.1:release:configure:
   extends:
     - .gromacs:base:release:configure
     - .use-gcc:base
     - .use-mpi
     - .use-cuda
     - .rules:nightly-only-for-release
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-gcc-11-cuda-11.4.1
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-gcc-11-cuda-11.7.1
   variables:
     CMAKE: /usr/local/cmake-3.18.4/bin/cmake
     COMPILER_MAJOR_VERSION: 11
@@ -33,7 +33,7 @@ gromacs:gcc-11-cuda-11.4.1:release:configure:
     - regressiontests:package
     - prepare-release-version
 
-gromacs:gcc-11-cuda-11.4.1:release:build:
+gromacs:gcc-11-cuda-11.7.1:release:build:
   extends:
     - .variables:default
     - .gromacs:base:build
@@ -44,16 +44,16 @@ gromacs:gcc-11-cuda-11.4.1:release:build:
   variables:
     CMAKE: /usr/local/cmake-3.18.4/bin/cmake
     BUILD_DIR: release-builds-gcc
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-gcc-11-cuda-11.4.1
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-gcc-11-cuda-11.7.1
   needs:
-    - job: gromacs:gcc-11-cuda-11.4.1:release:configure
+    - job: gromacs:gcc-11-cuda-11.7.1:release:configure
 
-gromacs:gcc-11-cuda-11.4.1:release:test:
+gromacs:gcc-11-cuda-11.7.1:release:test:
   extends:
     - .gromacs:base:test
     - .rules:nightly-only-for-release
   stage: release-tests
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-gcc-11-cuda-11.4.1
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-gcc-11-cuda-11.7.1
   variables:
     CMAKE: /usr/local/cmake-3.18.4/bin/cmake
     KUBERNETES_EXTENDED_RESOURCE_NAME: "nvidia.com/gpu"
@@ -62,5 +62,5 @@ gromacs:gcc-11-cuda-11.4.1:release:test:
   tags:
     - k8s-scilifelab
   needs:
-    - job: gromacs:gcc-11-cuda-11.4.1:release:configure
-    - job: gromacs:gcc-11-cuda-11.4.1:release:build
+    - job: gromacs:gcc-11-cuda-11.7.1:release:configure
+    - job: gromacs:gcc-11-cuda-11.7.1:release:build

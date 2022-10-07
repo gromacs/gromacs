@@ -12,7 +12,7 @@ PYTHON=${PYTHON:-$(which python3)}
 
 args[${#args[@]}]="--llvm 12"
 args[${#args[@]}]="--gcc 11 --clfft --mpi openmpi --rocm"
-args[${#args[@]}]="--gcc 11 --cuda 11.4.1 --clfft --mpi openmpi --nvhpcsdk 22.5"
+args[${#args[@]}]="--gcc 11 --cuda 11.7.1 --clfft --mpi openmpi --nvhpcsdk 22.7"
 args[${#args[@]}]="--gcc 9 --cuda 11.0.3 --clfft --mpi openmpi --heffte v2.2.0"
 args[${#args[@]}]="--gcc 9 --mpi openmpi --cp2k 8.2"
 args[${#args[@]}]="--gcc 9 --mpi openmpi --cp2k 9.1"
