@@ -21,9 +21,9 @@ gromacs:clang-14-cuda-11.4.3:configure:
     - .use-clang:base
     - .use-cuda
     - .rules:post-merge-acceptance
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-llvm-14-cuda-11.4.3-hipsycl-03de8f8-rocm-5.1
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-llvm-14-cuda-11.4.3-hipsycl-ee45074-rocm-5.1
   variables:
-    CMAKE: /usr/local/cmake-3.18.4/bin/cmake
+    CMAKE: /usr/local/cmake-3.24.0/bin/cmake
     CMAKE_SIMD_OPTIONS: "-DGMX_USE_SIMD_KERNELS=off"
     CMAKE_EXTRA_OPTIONS: "-DGMX_CLANG_CUDA=ON"
     CMAKE_BUILD_TYPE_OPTIONS: "-DCMAKE_BUILD_TYPE=RelWithDebInfo"
@@ -36,9 +36,9 @@ gromacs:clang-14-cuda-11.4.3:build:
     - .use-clang:base
     - .use-ccache
     - .rules:post-merge-acceptance
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-llvm-14-cuda-11.4.3-hipsycl-03de8f8-rocm-5.1
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-llvm-14-cuda-11.4.3-hipsycl-ee45074-rocm-5.1
   variables:
-    CMAKE: /usr/local/cmake-3.18.4/bin/cmake
+    CMAKE: /usr/local/cmake-3.24.0/bin/cmake
   needs:
     - job: gromacs:clang-14-cuda-11.4.3:configure
 
@@ -46,9 +46,9 @@ gromacs:clang-14-cuda-11.4.3:test:
   extends:
     - .gromacs:base:test
     - .rules:post-merge-acceptance
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-llvm-14-cuda-11.4.3-hipsycl-03de8f8-rocm-5.1
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-llvm-14-cuda-11.4.3-hipsycl-ee45074-rocm-5.1
   variables:
-    CMAKE: /usr/local/cmake-3.18.4/bin/cmake
+    CMAKE: /usr/local/cmake-3.24.0/bin/cmake
     KUBERNETES_EXTENDED_RESOURCE_NAME: "nvidia.com/gpu"
     KUBERNETES_EXTENDED_RESOURCE_LIMIT: 1
   tags:
@@ -60,9 +60,9 @@ gromacs:clang-14-cuda-11.4.3:regressiontest:
   extends:
     - .gromacs:base:regressiontest
     - .rules:post-merge-acceptance
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-llvm-14-cuda-11.4.3-hipsycl-03de8f8-rocm-5.1
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-llvm-14-cuda-11.4.3-hipsycl-ee45074-rocm-5.1
   variables:
-    CMAKE: /usr/local/cmake-3.18.4/bin/cmake
+    CMAKE: /usr/local/cmake-3.24.0/bin/cmake
     KUBERNETES_EXTENDED_RESOURCE_NAME: "nvidia.com/gpu"
     KUBERNETES_EXTENDED_RESOURCE_LIMIT: 1
     REGRESSIONTEST_PME_RANK_NUMBER: 0
@@ -78,9 +78,9 @@ gromacs:clang-14-cuda-11.4.3:test-gpucommupd-cuda-sanitizer:
   extends:
     - .gromacs:base:test
     - .rules:post-merge-acceptance
-  image:  ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-llvm-14-cuda-11.4.3-hipsycl-03de8f8-rocm-5.1
+  image:  ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-llvm-14-cuda-11.4.3-hipsycl-ee45074-rocm-5.1
   variables:
-    CMAKE: /usr/local/cmake-3.18.4/bin/cmake
+    CMAKE: /usr/local/cmake-3.24.0/bin/cmake
     KUBERNETES_EXTENDED_RESOURCE_NAME: "nvidia.com/gpu"
     KUBERNETES_EXTENDED_RESOURCE_LIMIT: 1
     GMX_FORCE_UPDATE_DEFAULT_GPU: 1

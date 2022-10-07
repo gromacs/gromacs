@@ -2,6 +2,7 @@
 set -eo pipefail
 
 CMAKE="${CMAKE:-$(which cmake)}"
+CTEST="$(dirname $CMAKE)/ctest"
 cd "${BUILD_DIR}"
 
 # If $GMX_TEST_REQUIRED_NUMBER_OF_DEVICES is not set and we have GPUs, set it
@@ -29,7 +30,7 @@ TOOLS_FAILED=""
 
 for TOOL in memcheck racecheck synccheck initcheck; do
     echo "Running CUDA Compute Sanitizer in ${TOOL} mode"
-    ctest -T MemCheck \
+    "${CTEST}" -T MemCheck \
       --overwrite MemoryCheckCommand="${COMPUTE_SANITIZER_BIN}" \
       --overwrite MemoryCheckCommandOptions="--tool=${TOOL} ${COMPUTE_SANITIZER_FLAGS}" \
       --overwrite MemoryCheckType=CudaSanitizer \
