@@ -113,9 +113,11 @@ const char* const g_specifyEverythingFormatString =
 
 // The conditions below must be in sync with modeTargetsFftOnGpus check in src/programs/mdrun/tests/pmetest.cpp
 constexpr bool sc_gpuBuildSyclDpcpp = (GMX_GPU_SYCL != 0) && (GMX_SYCL_DPCPP != 0); // Issue #4219
-constexpr bool sc_gpuBuildSyclHipsyclNotAmd = //NOLINTNEXTLINE(misc-redundant-expression)
-        (GMX_GPU_SYCL != 0) && (GMX_SYCL_HIPSYCL != 0) && (GMX_HIPSYCL_HAVE_HIP_TARGET == 0);
-constexpr bool sc_gpuBuildOnlySupportsMixedModePme = sc_gpuBuildSyclDpcpp || sc_gpuBuildSyclHipsyclNotAmd;
+constexpr bool sc_gpuBuildSyclHipsyclWithoutFft = //NOLINTNEXTLINE(misc-redundant-expression)
+        (GMX_GPU_SYCL != 0) && (GMX_SYCL_HIPSYCL != 0) && (GMX_GPU_FFT_ROCFFT == 0)
+        && (GMX_GPU_FFT_VKFFT == 0);
+constexpr bool sc_gpuBuildOnlySupportsMixedModePme =
+        sc_gpuBuildSyclDpcpp || sc_gpuBuildSyclHipsyclWithoutFft;
 
 } // namespace
 

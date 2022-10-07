@@ -38,7 +38,7 @@
  */
 
 /*! \internal \file
- *  \brief Implements GPU 3D FFT routines for HIP.
+ *  \brief Implements GPU 3D FFT routines for hipSYCL using vkFFT.
  *
  *  \author Bálint Soproni <balint@streamhpc.com>
  *  \author Anton Gorenko <anton@streamhpc.com>
@@ -83,6 +83,14 @@ void handleFftError(VkFFTResult result, const std::string& msg)
 }
 } // namespace
 
+#if GMX_HIPSYCL_HAVE_CUDA_TARGET
+constexpr auto c_hipsyclBackend = sycl::backend::cuda;
+using NativeDevice              = int;
+#elif GMX_HIPSYCL_HAVE_HIP_TARGET
+constexpr auto c_hipsyclBackend = sycl::backend::hip;
+using NativeDevice              = hipDevice_t;
+#endif
+
 //! Impl class
 class Gpu3dFft::ImplSyclVkfft::Impl
 {
@@ -110,7 +118,7 @@ public:
     VkFFTLaunchParams  launchParams_;
     uint64_t           bufferSize_;
     uint64_t           inputBufferSize_;
-    hipDevice_t        queue_device_;
+    NativeDevice       queue_device_;
 
     DeviceBuffer<float> realGrid_;
 
@@ -154,7 +162,7 @@ Gpu3dFft::ImplSyclVkfft::Impl::Impl(bool allocateGrids,
     configuration_.size[2] = realGridSize[XX];
 
     configuration_.performR2C  = 1;
-    queue_device_              = sycl::get_native<sycl::backend::hip>(queue_.get_device());
+    queue_device_              = sycl::get_native<c_hipsyclBackend>(queue_.get_device());
     configuration_.device      = &queue_device_;
     configuration_.num_streams = 1;
 
@@ -230,9 +238,9 @@ void Gpu3dFft::ImplSyclVkfft::perform3dFft(gmx_fft_direction dir, CommandEvent* 
 {
     impl_->queue_.submit([&](sycl::handler& cgh) {
         cgh.hipSYCL_enqueue_custom_operation([=](sycl::interop_handle& h) {
-            void*       d_complexGrid = reinterpret_cast<void*>(complexGrid_.buffer_->ptr_);
-            void*       d_realGrid    = reinterpret_cast<void*>(impl_->realGrid_.buffer_->ptr_);
-            hipStream_t stream        = h.get_native_queue<sycl::backend::hip>();
+            void* d_complexGrid = reinterpret_cast<void*>(complexGrid_.buffer_->ptr_);
+            void* d_realGrid    = reinterpret_cast<void*>(impl_->realGrid_.buffer_->ptr_);
+            auto  stream        = h.get_native_queue<c_hipsyclBackend>();
             // based on: https://github.com/DTolm/VkFFT/issues/78
             impl_->application_.configuration.stream = &stream;
             impl_->launchParams_.inputBuffer         = &d_realGrid;

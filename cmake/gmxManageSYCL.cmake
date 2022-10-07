@@ -168,7 +168,9 @@ if(GMX_SYCL_HIPSYCL)
     if(GMX_GPU_FFT_VKFFT)
         # Use VkFFT with HIP back end as header-only library
         set(vkfft_VERSION "1.2.26-b15cb0ca3e884bdb6c901a12d87aa8aadf7637d8")
-        if (GMX_HIPSYCL_HAVE_HIP_TARGET)
+        if (GMX_HIPSYCL_HAVE_CUDA_TARGET)
+            set(_backend 1)
+        elseif (GMX_HIPSYCL_HAVE_HIP_TARGET)
             set(_backend 2)
         else()
             message(FATAL_ERROR "VkFFT can only be used with the HIP backend")
@@ -183,6 +185,12 @@ if(GMX_SYCL_HIPSYCL)
         gmx_target_interface_warning_suppression(VkFFT "-Wno-zero-as-null-pointer-constant" HAS_WARNING_NO_ZERO_AS_NULL_POINTER_CONSTANT)
         gmx_target_interface_warning_suppression(VkFFT "-Wno-unused-but-set-variable" HAS_WARNING_NO_UNUSED_BUT_SET_VARIABLE)
         gmx_target_interface_warning_suppression(VkFFT "-Wno-sign-compare" HAS_WARNING_NO_SIGN_COMPARE)
+
+        if (GMX_HIPSYCL_HAVE_CUDA_TARGET)
+            # This is not ideal, because it uses some random version of CUDA. See #4621.
+            find_package(CUDAToolkit REQUIRED)
+            target_link_libraries(VkFFT INTERFACE CUDA::cuda_driver CUDA::nvrtc)
+        endif()
     endif()
 
     # Find a suitable rocFFT when hipSYCL is targeting AMD devices
