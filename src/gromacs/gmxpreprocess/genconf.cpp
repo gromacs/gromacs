@@ -188,7 +188,7 @@ int gmx_genconf(int argc, char* argv[])
 
     if (bTRX)
     {
-        if (!read_first_x(oenv, &status, ftp2fn(efTRX, NFILE, fnm), &t, &xx, boxx))
+        if (read_first_x(oenv, &status, ftp2fn(efTRX, NFILE, fnm), &t, &xx, boxx) == 0)
         {
             gmx_fatal(FARGS, "No atoms in trajectory %s", ftp2fn(efTRX, NFILE, fnm));
         }
