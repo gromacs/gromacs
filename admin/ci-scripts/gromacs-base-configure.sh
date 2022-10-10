@@ -18,6 +18,7 @@ fi
 cd $BUILD_DIR
 which $CMAKE
 $CMAKE --version
+set +e -o pipefail # Make "$?" work correctly
 $CMAKE .. \
       -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
       $CMAKE_COMPILER_SCRIPT \
@@ -32,6 +33,7 @@ $CMAKE .. \
       2>&1 | tee cmakeLog.log
 
 EXITCODE=$?
+set -e +o pipefail
 
 awk '/CMake Warning/,/^--|^$/' cmakeLog.log | tee cmakeErrors.log
 awk '/CMake Error/,/^--|^$/' cmakeLog.log | tee -a cmakeErrors.log

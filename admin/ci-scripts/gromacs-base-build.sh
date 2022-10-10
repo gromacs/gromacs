@@ -17,9 +17,10 @@ grep "error:" buildLogFile.log testBuildLogFile.log | tee -a buildErrors.log || 
 grep "^/usr/bin/ld:" buildLogFile.log testBuildLogFile.log | tee -a buildErrors.log || true
 
 # Install GROMACS
+set +e -o pipefail # Make "$?" work correctly
 $CMAKE --build . --target install 2>&1 | tee installBuildLogFile.log
-
 EXITCODE=$?
+set -e +o pipefail
 
 # Fail if there were warnings or errors reported
 if [ -s buildErrors.log ] || [ $EXITCODE != 0 ] ; then echo "Found compiler warning during build"; cat buildErrors.log; exit 1; fi
