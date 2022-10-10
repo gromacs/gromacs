@@ -441,13 +441,6 @@ if (GMX_CLANG_TIDY)
        "${CLANG_TIDY_EXE};-warnings-as-errors=*")
 endif()
 
-# clang-3.6 warns about a number of issues that are not reported by more modern compilers
-# and we know they are not real issues. So we only check that it can compile without error
-# but ignore all warnings.
-if (CMAKE_CXX_COMPILER_ID MATCHES "Clang" AND CMAKE_CXX_COMPILER_VERSION MATCHES "^3\.6")
-    target_compile_options(libgromacs PRIVATE $<$<COMPILE_LANGUAGE:CXX>:-w>)
-endif()
-
 # TODO: Stop installing libgromacs. Possibly allow installation during deprecation period with GMX_INSTALL_LEGACY_API.
 if (BUILD_SHARED_LIBS)
     install(TARGETS libgromacs

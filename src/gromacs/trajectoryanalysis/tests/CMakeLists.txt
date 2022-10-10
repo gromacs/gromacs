@@ -41,7 +41,7 @@ gmx_add_gtest_executable(trajectoryanalysis-test
         cmdlinerunner.cpp
         convert_trj.cpp
         distance.cpp
-	dssp.cpp
+        dssp.cpp
         extract_cluster.cpp
         freevolume.cpp
         msd.cpp

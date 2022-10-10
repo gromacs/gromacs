@@ -400,10 +400,10 @@ endif()
 
 if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
     # GCC bug 49001, 54412 on Windows (just warn, since it might be fixed in later versions)
-    if((CMAKE_CXX_COMPILER_VERSION VERSION_LESS "4.9.0" OR CMAKE_SIZEOF_VOID_P EQUAL 8)
+    if((CMAKE_SIZEOF_VOID_P EQUAL 8)
             AND (WIN32 OR CYGWIN)
             AND (GMX_SIMD_ACTIVE MATCHES "AVX") AND NOT (GMX_SIMD_ACTIVE STREQUAL "AVX_128_FMA"))
-        message(WARNING "GCC on Windows (GCC older than 4.9 in 32-bit mode, or any version in 64-bit mode) with 256-bit AVX will probably crash. You might want to choose a different GMX_SIMD or a different compiler.")
+        message(WARNING "GCC on Windows in 64-bit mode with 256-bit AVX will probably crash. You might want to choose a different GMX_SIMD or a different compiler.")
     endif()
 endif()
 

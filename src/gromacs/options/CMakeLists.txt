@@ -52,11 +52,11 @@ target_link_libraries(options PRIVATE
                 legacy_api
                 legacy_modules
                 utility
-		)
+                )
 
 # Public interface for modules, including dependencies and interfaces
 target_include_directories(options PUBLIC
-		$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>)
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>)
 
 target_link_libraries(options PRIVATE common)
 

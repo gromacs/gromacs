@@ -429,7 +429,7 @@ endif()
 # to the `check` target. Normal usage is to first install the Python package,
 # then run `pytest` on the `test` directory. Refer to gmxapi package documentation.
 if(NOT GMXAPI_MAIN_PROJECT)
-	if (BUILD_TESTING)
-		add_subdirectory(test)
-	endif()
+    if (BUILD_TESTING)
+        add_subdirectory(test)
+    endif()
 endif()

@@ -54,23 +54,23 @@ elseif(GMX_GPU_CUDA)
         # Must add these files so they can include device_information.h
         device_management_common.cpp
         detecthardware.cpp
-	)
+        )
 elseif(GMX_GPU_SYCL)
     gmx_add_libgromacs_sources(
         device_management_sycl.cpp
         device_management_sycl_intel_device_ids.cpp
-    )
+        )
     _gmx_add_files_to_property(SYCL_SOURCES
         device_management_sycl.cpp
         # Must add these files so they can include device_information.h
         device_management.cpp
         device_management_common.cpp
         detecthardware.cpp
-	)
+        )
 else()
     gmx_add_libgromacs_sources(
         device_management.cpp
-    )
+        )
 endif()
 
 # Source files have the following private module dependencies.
