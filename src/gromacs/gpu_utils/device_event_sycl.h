@@ -116,7 +116,7 @@ public:
         {
 #    if GMX_SYCL_HIPSYCL
             // Submit an empty kernel that depends on all the events recorded.
-            deviceStream.stream().single_task(events_, [=]() {});
+            deviceStream.stream().hipSYCL_enqueue_custom_operation([=](sycl::interop_handle&) {}, events_);
 #    else
             GMX_ASSERT(events_.size() <= 1, "One event expected in DPC++, but we have several!");
             // Relies on SYCL_INTEL_enqueue_barrier extensions
