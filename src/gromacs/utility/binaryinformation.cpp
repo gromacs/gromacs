@@ -405,6 +405,7 @@ void gmx_print_version_info(gmx::TextWriter* writer)
 #if GMX_SYCL_HIPSYCL
     writer->writeLine(formatString("hipSYCL launcher:   %s", SYCL_HIPSYCL_COMPILER_LAUNCHER));
     writer->writeLine(formatString("hipSYCL flags:      %s", SYCL_HIPSYCL_COMPILER_FLAGS));
+    writer->writeLine(formatString("hipSYCL GPU flags:  %s", SYCL_HIPSYCL_DEVICE_COMPILER_FLAGS));
     writer->writeLine(formatString("hipSYCL targets:    %s", SYCL_HIPSYCL_TARGETS));
     writer->writeLine("hipSYCL version:    " + gmx::getSyclCompilerVersion());
 #endif

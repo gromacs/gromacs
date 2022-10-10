@@ -72,8 +72,9 @@ endfunction()
 
 if(GMX_SYCL_HIPSYCL)
     set(HIPSYCL_CLANG "${CMAKE_CXX_COMPILER}")
-    # -Wno-unknown-cuda-version because Clang-11 complains about CUDA 11.0-11.2, despite working fine with them.
+    # -Wno-unknown-cuda-version because Clang often complains about the newest CUDA, despite working fine with it.
     # -Wno-unknown-attributes because hipSYCL does not support reqd_sub_group_size (because it can only do some sub group sizes).
+    #    The latter can be added to HIPSYCL_SYCLCC_EXTRA_COMPILE_OPTIONS
     set(HIPSYCL_SYCLCC_EXTRA_ARGS "-Wno-unknown-cuda-version -Wno-unknown-attributes ${SYCL_CXX_FLAGS_EXTRA}")
 
     # Must be called before find_package to capture all user-set CMake variables, but not those set automatically
@@ -109,6 +110,25 @@ if(GMX_SYCL_HIPSYCL)
     endif()
     if (NOT GMX_HIPSYCL_COMPILATION_WORKS)
         message(FATAL_ERROR "hipSYCL compiler not working:\n${_HIPSYCL_COMPILATION_OUTPUT}")
+    endif()
+
+    # Does hipSYCL support passing compilation flags to a subset of files?
+    if(NOT DEFINED GMX_HIPSYCL_HAVE_SYCLCC_EXTRA_COMPILE_OPTIONS OR _rerun_hipsycl_try_compile_tests)
+        message(STATUS "Checking for hipSYCL compiler options handling")
+        try_compile(GMX_HIPSYCL_HAVE_SYCLCC_EXTRA_COMPILE_OPTIONS "${CMAKE_BINARY_DIR}/CMakeTmpHipSyclTest" "${CMAKE_SOURCE_DIR}/cmake/HipSyclTest/" "HipSyclTest"
+            CMAKE_FLAGS
+            -DHIPSYCL_SYCLCC_EXTRA_COMPILE_OPTIONS=-DTEST_MACRO_IS_SET=1
+            -DCHECK_TEST_MACRO_IS_SET=ON
+            ${_ALL_HIPSYCL_CMAKE_FLAGS})
+        file(REMOVE_RECURSE "${CMAKE_BINARY_DIR}/CMakeTmpHipSyclTest")
+        if(GMX_HIPSYCL_HAVE_SYCLCC_EXTRA_COMPILE_OPTIONS)
+            message(STATUS "Checking for the ability to pass compilation flags - Success")
+        else()
+            message(STATUS "Checking for the ability to pass compilation flags - Failed")
+        endif()
+    endif()
+    if (NOT GMX_HIPSYCL_HAVE_SYCLCC_EXTRA_COMPILE_OPTIONS)
+        message(WARNING "hipSYCL cannot pass compilation flags to a subset of files. It might hurt the performance. Please update your hipSYCL.")
     endif()
 
     # Does hipSYCL compilation target CUDA devices?
@@ -164,6 +184,20 @@ if(GMX_SYCL_HIPSYCL)
         message(FATAL_ERROR "hipSYCL cannot have both CUDA and HIP targets active! This would require explicit multipass mode which both decreases performance on NVIDIA devices and has been removed in clang 12. Compile only for either CUDA or HIP targets.")
     endif()
     unset(_rerun_hipsycl_try_compile_tests)
+
+
+    if (GMX_HIPSYCL_HAVE_SYCLCC_EXTRA_COMPILE_OPTIONS)
+        # -ffast-math for performance
+        set(HIPSYCL_SYCLCC_EXTRA_COMPILE_OPTIONS -ffast-math)
+
+        # We want to inline aggressively, but only Clang 13 or newer supports this flag.
+        # Likely not needed on AMD, since hipSYCL by default sets AMD-specific flags to force inlining, but no harm either.
+        check_cxx_compiler_flag("-fgpu-inline-threshold=1" HAS_GPU_INLINE_THRESHOLD)
+        if(${HAS_GPU_INLINE_THRESHOLD})
+            list(APPEND HIPSYCL_SYCLCC_EXTRA_COMPILE_OPTIONS -fgpu-inline-threshold=99999)
+        endif()
+    endif()
+
 
     if(GMX_GPU_FFT_VKFFT)
         # Use VkFFT with HIP back end as header-only library

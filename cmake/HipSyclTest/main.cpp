@@ -48,6 +48,10 @@
  * backends we are compiling for and report it to CMake.
  * */
 
+#if defined(CHECK_TEST_MACRO_IS_SET) && !defined(TEST_MACRO_IS_SET)
+#    error "Macro should have been set but is not";
+#endif
+
 #if defined(CHECK_CUDA_TARGET) && !defined(__HIPSYCL_ENABLE_CUDA_TARGET__)
 #    error "CUDA target not enabled";
 #endif
