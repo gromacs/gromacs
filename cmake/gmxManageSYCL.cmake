@@ -416,7 +416,23 @@ else()
         message(WARNING "Building SYCL version with ${GMX_FFT_LIBRARY} instead of MKL. GPU FFT is disabled!")
     endif()
     if(GMX_FFT_MKL)
-	list(APPEND GMX_EXTRA_LIBRARIES "mkl_sycl;OpenCL")
+        list(APPEND GMX_EXTRA_LIBRARIES "mkl_sycl;OpenCL")
+        set(CMAKE_REQUIRED_FLAGS "${SYCL_TOOLCHAIN_CXX_FLAGS}")
+        get_target_property(CMAKE_REQUIRED_LIBRARIES MKL::MKL INTERFACE_LINK_LIBRARIES)
+        list(APPEND CMAKE_REQUIRED_LIBRARIES "${GMX_EXTRA_LIBRARIES}")
+        check_cxx_source_compiles("
+#include <oneapi/mkl/dfti.hpp>
+int main() {
+    oneapi::mkl::dft::descriptor<oneapi::mkl::dft::precision::SINGLE, oneapi::mkl::dft::domain::REAL> d({3,5,7});
+    sycl::queue q;
+    d.commit(q);
+}"
+          CAN_LINK_SYCL_MKL)
+        unset(CMAKE_REQUIRED_FLAGS)
+        unset(CMAKE_REQUIRED_LIBRARIES)
+        if (NOT CAN_LINK_SYCL_MKL)
+            message(FATAL_ERROR "Cannot link mkl_sycl. Make sure the MKL and compiler versions are compatible.")
+        endif()
     endif()
 
     # Add function wrapper similar to the one used by ComputeCPP and hipSYCL
