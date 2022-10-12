@@ -63,11 +63,7 @@ class DeviceEvent
 {
 public:
     //! A constructor.
-    DeviceEvent()
-    {
-        doNotSynchronizeBetweenStreams_ = (std::getenv("GMX_GPU_SYCL_NO_SYNCHRONIZE") != nullptr);
-        events_.reserve(1);
-    }
+    DeviceEvent() { events_.reserve(1); }
     //! A constructor from an existing event.
     DeviceEvent(const sycl::event& event) : events_{ event } {}
     //! A destructor.
@@ -112,21 +108,18 @@ public:
 
     inline void enqueueWait(const DeviceStream& deviceStream)
     {
-        if (!doNotSynchronizeBetweenStreams_)
-        {
 #    if GMX_SYCL_HIPSYCL
-            // Submit an empty kernel that depends on all the events recorded.
-            deviceStream.stream().hipSYCL_enqueue_custom_operation([=](sycl::interop_handle&) {}, events_);
+        // Submit an empty kernel that depends on all the events recorded.
+        deviceStream.stream().hipSYCL_enqueue_custom_operation([=](sycl::interop_handle&) {}, events_);
 #    else
-            GMX_ASSERT(events_.size() <= 1, "One event expected in DPC++, but we have several!");
-            // Relies on SYCL_INTEL_enqueue_barrier extensions
+        GMX_ASSERT(events_.size() <= 1, "One event expected in DPC++, but we have several!");
+        // Relies on SYCL_INTEL_enqueue_barrier extensions
 #        if __SYCL_COMPILER_VERSION >= 20211123
-            deviceStream.stream().ext_oneapi_submit_barrier(events_);
+        deviceStream.stream().ext_oneapi_submit_barrier(events_);
 #        else
-            deviceStream.stream().submit_barrier(events_);
+        deviceStream.stream().submit_barrier(events_);
 #        endif
 #    endif
-        }
     }
 
     //! Checks the completion of the underlying event.
@@ -168,15 +161,6 @@ private:
      * the queue. So, we use an explicit flag to check the event state. */
     bool isMarked_ = false;
 #    endif
-    /*! \brief Dev. setting to no-op enqueueWait
-     *
-     * In SYCL, dependencies between the GPU tasks are managed by the runtime, so manual
-     * synchronization between GPU streams should be redundant, but we keep it on by default.
-     *
-     * Setting this to \c true via \c GMX_GPU_SYCL_NO_SYNCHRONIZE environment variable will
-     * immediately return from \ref enqueueWaitEvent, without placing a barrier into the stream.
-     */
-    bool doNotSynchronizeBetweenStreams_;
 };
 
 #endif // DOXYGEN

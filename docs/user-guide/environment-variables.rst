@@ -183,10 +183,6 @@ Performance and Run Control
         Use CUDA Graphs to schedule a graph on each step rather than multiple
         activities scheduled to multiple CUDA streams, if the run conditions allow. Experimental.
 
-``GMX_GPU_SYCL_NO_SYNCHRONIZE``
-        disable synchronizations between different GPU streams in SYCL build, instead relying on SYCL runtime to
-        do scheduling based on data dependencies. Experimental.
-
 ``GMX_GPU_SYCL_USE_GPU_FFT``
         enable the use of GPU FFT with DPC++ on Intel GPUs. Unless this variable is set, only Mixed Mode PME is
         available on Intel GPUs. It has been tested with oneAPI 2022.0.1 and OpenCL backend; older oneAPI
