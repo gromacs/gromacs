@@ -777,31 +777,16 @@ static auto nbnxmKernel(sycl::handler&                                          
     a_f.bind(cgh);
     a_shiftVec.bind(cgh);
     a_fShift.bind(cgh);
-    if constexpr (doCalcEnergies)
-    {
-        a_energyElec.bind(cgh);
-        a_energyVdw.bind(cgh);
-    }
+    a_energyElec.bind(cgh);
+    a_energyVdw.bind(cgh);
     a_plistCJPacked.bind(cgh);
     a_plistSci.bind(cgh);
     a_plistExcl.bind(cgh);
-    if constexpr (!props.vdwComb)
-    {
-        a_atomTypes.bind(cgh);
-        a_nbfp.bind(cgh);
-    }
-    else
-    {
-        a_ljComb.bind(cgh);
-    }
-    if constexpr (props.vdwEwald)
-    {
-        a_nbfpComb.bind(cgh);
-    }
-    if constexpr (props.elecEwaldTab)
-    {
-        a_coulombTab.bind(cgh);
-    }
+    a_atomTypes.bind(cgh);
+    a_nbfp.bind(cgh);
+    a_ljComb.bind(cgh);
+    a_nbfpComb.bind(cgh);
+    a_coulombTab.bind(cgh);
 
     // The post-prune j-i cluster-pair organization is linked to how exclusion and interaction mask data is stored.
     // Currently, this is ideally suited for 32-wide subgroup size but slightly less so for others,
