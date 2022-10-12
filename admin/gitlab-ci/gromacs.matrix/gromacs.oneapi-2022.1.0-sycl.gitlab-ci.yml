@@ -45,6 +45,7 @@ gromacs:oneapi-2022.1.0-sycl:test:
   image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-gcc-9-oneapi-2022.1.0
   variables:
     CMAKE: /usr/local/cmake-3.18.4/bin/cmake
+    GMX_TEST_LABELS: "QuickGpuTest|SlowGpuTest"
   needs:
     - job: gromacs:oneapi-2022.1.0-sycl:build
 

@@ -52,6 +52,7 @@ gromacs:clang-9-cuda-11.0:release:test:
     KUBERNETES_EXTENDED_RESOURCE_NAME: "nvidia.com/gpu"
     KUBERNETES_EXTENDED_RESOURCE_LIMIT: 1
     BUILD_DIR: release-builds-clang
+    GMX_TEST_LABELS: "QuickGpuTest|SlowGpuTest"
   tags:
     - k8s-scilifelab
   needs:

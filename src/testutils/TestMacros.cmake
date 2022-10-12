@@ -247,13 +247,15 @@ endfunction()
 #   IGNORE_LEAKS          Skip some memory safety checks.
 #   QUICK_GPU_TEST        marks tests that use GPUs and are fast (< 10 seconds on a desktop GPU in Release build);
 #                         currently this label is used to select tests for CUDA Compute Sanitizer runs.
+#   SLOW_GPU_TEST         marks all other tests that should run on a GPU, used to make sure GPU CI only runs GPU
+#                         tests and doesn't waste time on others.
 #
 # TODO When a test case needs it, generalize the MPI_RANKS mechanism so
 # that ctest can run the test binary over a range of numbers of MPI
 # ranks.
 function (gmx_register_gtest_test NAME EXENAME)
     if (GMX_BUILD_UNITTESTS AND BUILD_TESTING)
-        set(_options INTEGRATION_TEST SLOW_TEST IGNORE_LEAKS QUICK_GPU_TEST)
+        set(_options INTEGRATION_TEST SLOW_TEST IGNORE_LEAKS QUICK_GPU_TEST SLOW_GPU_TEST)
         set(_one_value_args MPI_RANKS OPENMP_THREADS)
         cmake_parse_arguments(ARG "${_options}" "${_one_value_args}" "" ${ARGN})
         set(_xml_path ${CMAKE_BINARY_DIR}/Testing/Temporary/${NAME}.xml)
@@ -304,6 +306,9 @@ function (gmx_register_gtest_test NAME EXENAME)
         endif()
         if (ARG_QUICK_GPU_TEST)
             list(APPEND _labels QuickGpuTest)
+        endif()
+        if (ARG_SLOW_GPU_TEST)
+            list(APPEND _labels SlowGpuTest)
         endif()
         add_test(NAME ${NAME}
                  COMMAND ${_cmd} --gtest_output=xml:${_xml_path})

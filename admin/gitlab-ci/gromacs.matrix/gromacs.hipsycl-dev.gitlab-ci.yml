@@ -86,6 +86,7 @@ gromacs:hipsycl-nvidia-mpi:test-gpucommupd-MPI:
     GMX_ENABLE_DIRECT_GPU_COMM: 1
     GMX_FORCE_UPDATE_DEFAULT_GPU: 1
     GMX_FORCE_GPU_AWARE_MPI: 1
+    GMX_TEST_LABELS: "QuickGpuTest|SlowGpuTest"
   tags:
     - k8s-scilifelab
   needs:

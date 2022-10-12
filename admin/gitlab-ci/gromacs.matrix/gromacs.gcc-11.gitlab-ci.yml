@@ -52,6 +52,7 @@ gromacs:gcc-11:test:
     KUBERNETES_EXTENDED_RESOURCE_LIMIT: 1
     LD_LIBRARY_PATH: "/opt/rocm/opencl/lib"
     ROC_ENABLE_PRE_VEGA: 1
+    GMX_TEST_LABELS: "QuickGpuTest|SlowGpuTest"
   tags:
     - k8s-scilifelab
   needs:
