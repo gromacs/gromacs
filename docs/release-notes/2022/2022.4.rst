@@ -69,3 +69,13 @@ Incorrect configure-time checks of flags passed to nvcc resulted in
 several performance-related flags never being used. Simulations using
 Nvidia GPUs were correct but may not have achieved best possible
 performance.
+
+
+Added compilation support for new CUDA architectures
+""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+The list of NVIDIA CUDA architectures for which code is directly
+generated for, with a default cmake configuration, and when support
+exists in the compiler in use, has been updated to include the latest
+Ada Lovelace and Hopper architectures.
+
