@@ -115,20 +115,22 @@ if(GMX_SYCL_HIPSYCL)
     # Does hipSYCL support passing compilation flags to a subset of files?
     if(NOT DEFINED GMX_HIPSYCL_HAVE_SYCLCC_EXTRA_COMPILE_OPTIONS OR _rerun_hipsycl_try_compile_tests)
         message(STATUS "Checking for hipSYCL compiler options handling")
+        set(_ALL_HIPSYCL_CMAKE_FLAGS_WITHOUT_EXTRA_FLAGS ${_ALL_HIPSYCL_CMAKE_FLAGS})
+        list(FILTER _ALL_HIPSYCL_CMAKE_FLAGS_WITHOUT_EXTRA_FLAGS EXCLUDE REGEX "-DHIPSYCL_SYCLCC_EXTRA_COMPILE_OPTIONS=.*")
         try_compile(GMX_HIPSYCL_HAVE_SYCLCC_EXTRA_COMPILE_OPTIONS "${CMAKE_BINARY_DIR}/CMakeTmpHipSyclTest" "${CMAKE_SOURCE_DIR}/cmake/HipSyclTest/" "HipSyclTest"
             CMAKE_FLAGS
             -DHIPSYCL_SYCLCC_EXTRA_COMPILE_OPTIONS=-DTEST_MACRO_IS_SET=1
             -DCHECK_TEST_MACRO_IS_SET=ON
-            ${_ALL_HIPSYCL_CMAKE_FLAGS})
+            ${_ALL_HIPSYCL_CMAKE_FLAGS_WITHOUT_EXTRA_FLAGS})
         file(REMOVE_RECURSE "${CMAKE_BINARY_DIR}/CMakeTmpHipSyclTest")
         if(GMX_HIPSYCL_HAVE_SYCLCC_EXTRA_COMPILE_OPTIONS)
             message(STATUS "Checking for the ability to pass compilation flags - Success")
         else()
             message(STATUS "Checking for the ability to pass compilation flags - Failed")
         endif()
-    endif()
-    if (NOT GMX_HIPSYCL_HAVE_SYCLCC_EXTRA_COMPILE_OPTIONS)
-        message(WARNING "hipSYCL cannot pass compilation flags to a subset of files. It might hurt the performance. Please update your hipSYCL.")
+        if (NOT GMX_HIPSYCL_HAVE_SYCLCC_EXTRA_COMPILE_OPTIONS)
+            message(WARNING "hipSYCL cannot pass compilation flags to a subset of files. It might hurt the performance. Please update your hipSYCL.")
+        endif()
     endif()
 
     # Does hipSYCL compilation target CUDA devices?
