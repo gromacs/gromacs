@@ -50,6 +50,11 @@
 
 #include "device_event.h"
 
+#ifdef __clang__
+#    pragma clang diagnostic push
+#    pragma clang diagnostic ignored "-Wmissing-noreturn"
+#endif
+
 /*! \libinternal \brief
  * A class which allows for CPU thread to mark and wait for certain GPU stream execution point.
  *
@@ -135,6 +140,23 @@ public:
         event_.mark(deviceStream);
         consumptionCount_ = 0;
     }
+
+    /*! \brief Marks the synchronization point in the \p stream and reset the consumption counter,
+     * for an external event while capturing a graph
+     */
+    //NOLINTNEXTLINE(readability-convert-member-functions-to-static)
+    inline void markExternalEventWhileCapturingGraph(const DeviceStream& deviceStream)
+    {
+#if GMX_HAVE_CUDA_GRAPH_SUPPORT
+        event_.markExternalEventWhileCapturingGraph(deviceStream);
+#else
+        GMX_UNUSED_VALUE(deviceStream);
+        GMX_THROW(gmx::InternalError(
+                "markExternalEventWhileCapturingGraph called without CUDA graph support"));
+#endif
+        consumptionCount_ = 0;
+    }
+
     /*! \brief Synchronizes the host thread on the marked event.
      *
      * Consumes the event if able, otherwise throws \ref gmx::InternalError.
@@ -190,6 +212,25 @@ public:
         resetIfFullyConsumed();
     }
 
+    /*! \brief Enqueues a wait for the recorded event in stream \p deviceStream,
+     * for an external event while capturing a graph.
+     *
+     */
+    //NOLINTNEXTLINE(readability-convert-member-functions-to-static)
+    inline void enqueueExternalWaitEventWhileCapturingGraph(const DeviceStream& deviceStream)
+    {
+#if GMX_HAVE_CUDA_GRAPH_SUPPORT
+        event_.enqueueExternalWaitEventWhileCapturingGraph(deviceStream);
+#else
+        GMX_UNUSED_VALUE(deviceStream);
+        GMX_THROW(gmx::InternalError(
+                "enqueueExternalWaitEventWhileCapturingGraph called without CUDA graph support"));
+#endif
+        resetIfFullyConsumed();
+    }
+#ifdef __clang__
+#    pragma clang diagnostic pop
+#endif
     //! Resets the event to unmarked state, releasing the underlying event object if needed.
     inline void reset()
     {

@@ -60,6 +60,7 @@ if(GMX_GPU_CUDA)
        settle_gpu_internal.cu
        update_constrain_gpu_impl.cpp
        update_constrain_gpu_internal.cu
+       mdgraph_gpu_impl.cu
        )
     _gmx_add_files_to_property(CUDA_SOURCES
        gpuforcereduction_impl.cpp

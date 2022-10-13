@@ -87,6 +87,8 @@ struct DevelopmentFeatureFlags
     bool canUseGpuAwareMpi = false;
     //! True if GPU PME-decomposition is enabled
     bool enableGpuPmeDecomposition = false;
+    //! True if CUDA Graphs are enabled
+    bool enableCudaGraphs = false;
 };
 
 

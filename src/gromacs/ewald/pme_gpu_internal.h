@@ -140,8 +140,9 @@ void pme_gpu_free_energy_virial(PmeGpu* pmeGpu);
  * Should be called at the end of PME computation which returned energy/virial.
  *
  * \param[in] pmeGpu            The PME GPU structure.
+ * \param[in] useMdGpuGraph     Whether MD GPU Graph is in use.
  */
-void pme_gpu_clear_energy_virial(const PmeGpu* pmeGpu);
+void pme_gpu_clear_energy_virial(const PmeGpu* pmeGpu, bool useMdGpuGraph);
 
 /*! \libinternal \brief
  * Reallocates and copies the pre-computed B-spline values to the GPU.
@@ -538,17 +539,18 @@ GPU_FUNC_QUALIFIER void pme_gpu_get_real_grid_sizes(const PmeGpu* GPU_FUNC_ARGUM
 /*! \libinternal \brief
  * (Re-)initializes the PME GPU data at the beginning of the run or on DLB.
  *
- * \param[in,out] pme            The PME structure.
- * \param[in]     deviceContext  The GPU context.
- * \param[in]     deviceStream   The GPU stream.
- * \param[in,out] pmeGpuProgram  The handle to the program/kernel data created outside (e.g. in unit tests/runner)
- *
+ * \param[in,out] pme               The PME structure.
+ * \param[in]     deviceContext     The GPU context.
+ * \param[in]     deviceStream      The GPU stream.
+ * \param[in,out] pmeGpuProgram     The handle to the program/kernel data created outside (e.g. in unit tests/runner)
+ * \param[in]     useMdGpuGraph     Whether MD GPU Graph is in use
  * \throws gmx::NotImplementedError if this generally valid PME structure is not valid for GPU runs.
  */
 GPU_FUNC_QUALIFIER void pme_gpu_reinit(gmx_pme_t*           GPU_FUNC_ARGUMENT(pme),
                                        const DeviceContext* GPU_FUNC_ARGUMENT(deviceContext),
                                        const DeviceStream*  GPU_FUNC_ARGUMENT(deviceStream),
-                                       const PmeGpuProgram* GPU_FUNC_ARGUMENT(pmeGpuProgram)) GPU_FUNC_TERM;
+                                       const PmeGpuProgram* GPU_FUNC_ARGUMENT(pmeGpuProgram),
+                                       bool GPU_FUNC_ARGUMENT(useMdGpuGraph)) GPU_FUNC_TERM;
 
 /*! \libinternal \brief
  * Destroys the PME GPU data at the end of the run.

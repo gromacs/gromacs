@@ -286,6 +286,12 @@ struct gpu_plist
     int rollingPruningNumParts;
     //! the next part to which the rolling pruning needs to be applied
     int rollingPruningPart;
+    //! device memory buffer (1 value per thread block) for next part to which the rolling pruning needs to be applied
+    DeviceBuffer<int> d_rollingPruningPart;
+    //! size of rolling pruning part buffer on device
+    int d_rollingPruningPart_size = -1;
+    //! allocated size of rolling pruning part buffer on device
+    int d_rollingPruningPart_size_alloc = -1;
 };
 
 } // namespace Nbnxm

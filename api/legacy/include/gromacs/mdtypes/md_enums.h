@@ -866,4 +866,12 @@ enum class PbcType : int
     Default = Xyz
 };
 
+//! Enumeration to label different MD Graphs corresponding to even and odd simulation steps
+enum class MdGraphEvenOrOddStep : int
+{
+    EvenStep,
+    OddStep,
+    Count
+};
+
 #endif /* GMX_MDTYPES_MD_ENUMS_H */

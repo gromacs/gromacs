@@ -89,6 +89,7 @@ void gmx_pme_send_coordinates(t_forcerec*                    fr,
                               bool                           sendCoordinatesFromGpu,
                               bool                           receiveForcesToGpu,
                               GpuEventSynchronizer*          coordinatesReadyOnDeviceEvent,
+                              bool                           useMdGpuGraph,
                               gmx_wallcycle*                 wcycle);
 
 /*! \brief Tell our PME-only node to finish */

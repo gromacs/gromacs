@@ -225,6 +225,9 @@
 /* Define if CUDA GPU acceleration is compiled */
 #cmakedefine01 GMX_GPU_CUDA
 
+/* Define if CUDA Graphs support is available */
+#cmakedefine01 GMX_HAVE_CUDA_GRAPH_SUPPORT
+
 /* Define if OpenCL GPU acceleration is compiled */
 #cmakedefine01 GMX_GPU_OPENCL
 

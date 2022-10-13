@@ -103,22 +103,36 @@
  */
 template<bool haveFreshList>
 __launch_bounds__(THREADS_PER_BLOCK, MIN_BLOCKS_PER_MP) __global__
-        void nbnxn_kernel_prune_cuda(NBAtomDataGpu    atdat,
-                                     NBParamGpu       nbparam,
-                                     Nbnxm::gpu_plist plist,
-                                     int              numParts,
-                                     int              part)
+        void nbnxn_kernel_prune_cuda(NBAtomDataGpu atdat, NBParamGpu nbparam, Nbnxm::gpu_plist plist, int numParts)
 #ifdef FUNCTION_DECLARATION_ONLY
                 ; /* Only do function declaration, omit the function body. */
 
 // Add extern declarations so each translation unit understands that
 // there will be a definition provided.
 extern template __global__ void
-nbnxn_kernel_prune_cuda<true>(const NBAtomDataGpu, const NBParamGpu, const Nbnxm::gpu_plist, int, int);
+nbnxn_kernel_prune_cuda<true>(const NBAtomDataGpu, const NBParamGpu, const Nbnxm::gpu_plist, int);
 extern template __global__ void
-nbnxn_kernel_prune_cuda<false>(const NBAtomDataGpu, const NBParamGpu, const Nbnxm::gpu_plist, int, int);
+nbnxn_kernel_prune_cuda<false>(const NBAtomDataGpu, const NBParamGpu, const Nbnxm::gpu_plist, int);
 #else
 {
+
+    // Get part for this kernel from global memory. Each block has its own copy to allow asynchronous incrementation.
+    int part = plist.d_rollingPruningPart[blockIdx.x];
+    __syncthreads();
+
+    // Single thread per block increments the block's copy of the part index
+    if (threadIdx.x == 0 && threadIdx.y == 0 && threadIdx.z == 0)
+    {
+        plist.d_rollingPruningPart[blockIdx.x] = (part + 1) % numParts;
+    }
+
+    // Kernel has been launched with max number of blocks across all passes (plist.nsci/numParts),
+    // but the last pass will require 1 less block, so extra block should return early.
+    size_t numSciInPart = (plist.nsci - part) / numParts;
+    if (blockIdx.x >= numSciInPart)
+    {
+        return;
+    }
 
     /* convenience variables */
     const nbnxn_sci_t* pl_sci      = plist.sci;

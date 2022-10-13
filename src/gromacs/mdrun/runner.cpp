@@ -101,6 +101,7 @@
 #include "gromacs/mdlib/makeconstraints.h"
 #include "gromacs/mdlib/md_support.h"
 #include "gromacs/mdlib/mdatoms.h"
+#include "gromacs/mdlib/mdgraph_gpu.h"
 #include "gromacs/mdlib/sighandler.h"
 #include "gromacs/mdlib/stophandler.h"
 #include "gromacs/mdlib/tgroup.h"
@@ -210,6 +211,30 @@ static DevelopmentFeatureFlags manageDevelopmentFeatures(const gmx::MDLogger& md
     devFlags.enableGpuBufferOps = (GMX_GPU_CUDA || GMX_GPU_SYCL) && useGpuForNonbonded
                                   && (getenv("GMX_USE_GPU_BUFFER_OPS") != nullptr);
     devFlags.forceGpuUpdateDefault = (getenv("GMX_FORCE_UPDATE_DEFAULT_GPU") != nullptr) || GMX_FAHCORE;
+
+    if (getenv("GMX_CUDA_GRAPH") != nullptr)
+    {
+        if (GMX_HAVE_CUDA_GRAPH_SUPPORT)
+        {
+            devFlags.enableCudaGraphs = true;
+            GMX_LOG(mdlog.warning)
+                    .asParagraph()
+                    .appendText(
+                            "GMX_CUDA_GRAPH environment variable is detected. "
+                            "The experimental CUDA Graphs feature will be used if run conditions "
+                            "allow.");
+        }
+        else
+        {
+            devFlags.enableCudaGraphs = false;
+            GMX_LOG(mdlog.warning)
+                    .asParagraph()
+                    .appendText(
+                            "GMX_CUDA_GRAPH environment variable is detected, "
+                            "but the CUDA version in use is below the minumum requirement (11.1). "
+                            "CUDA Graphs will be disabled.");
+        }
+    }
 
     // Flag use to enable GPU-aware MPI depenendent features such PME GPU decomposition
     // GPU-aware MPI is marked available if it has been detected by GROMACS or detection fails but
@@ -2124,6 +2149,28 @@ int Mdrunner::mdrunner()
                     deviceStreamManager->context(),
                     deviceStreamManager->stream(gmx::DeviceStreamType::NonBondedNonLocal),
                     wcycle.get());
+
+            if (runScheduleWork.simulationWork.useMdGpuGraph)
+            {
+                fr->mdGraph[MdGraphEvenOrOddStep::EvenStep] =
+                        std::make_unique<gmx::MdGpuGraph>(*fr->deviceStreamManager,
+                                                          runScheduleWork.simulationWork,
+                                                          cr->mpi_comm_mygroup,
+                                                          MdGraphEvenOrOddStep::EvenStep,
+                                                          wcycle.get());
+
+                fr->mdGraph[MdGraphEvenOrOddStep::OddStep] =
+                        std::make_unique<gmx::MdGpuGraph>(*fr->deviceStreamManager,
+                                                          runScheduleWork.simulationWork,
+                                                          cr->mpi_comm_mygroup,
+                                                          MdGraphEvenOrOddStep::OddStep,
+                                                          wcycle.get());
+
+                fr->mdGraph[MdGraphEvenOrOddStep::EvenStep]->setAlternateStepPpTaskCompletionEvent(
+                        fr->mdGraph[MdGraphEvenOrOddStep::OddStep]->getPpTaskCompletionEvent());
+                fr->mdGraph[MdGraphEvenOrOddStep::OddStep]->setAlternateStepPpTaskCompletionEvent(
+                        fr->mdGraph[MdGraphEvenOrOddStep::EvenStep]->getPpTaskCompletionEvent());
+            }
         }
 
         std::unique_ptr<gmx::StatePropagatorDataGpu> stateGpu;

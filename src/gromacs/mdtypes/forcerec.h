@@ -44,6 +44,7 @@
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/utility/arrayref.h"
+#include "gromacs/utility/enumerationhelpers.h"
 #include "gromacs/utility/real.h"
 
 #include "locality.h"
@@ -66,6 +67,7 @@ class DeviceStreamManager;
 class ListedForcesGpu;
 class GpuForceReduction;
 class ForceProviders;
+class MdGpuGraph;
 class StatePropagatorDataGpu;
 class PmePpCommGpu;
 class WholeMoleculeTransform;
@@ -272,6 +274,8 @@ struct t_forcerec
 
     /* For GPU force reduction (on both local and non-local atoms) */
     gmx::EnumerationArray<gmx::AtomLocality, std::unique_ptr<gmx::GpuForceReduction>> gpuForceReduction;
+
+    gmx::EnumerationArray<MdGraphEvenOrOddStep, std::unique_ptr<gmx::MdGpuGraph>> mdGraph;
 };
 
 /* Important: Starting with Gromacs-4.6, the values of c6 and c12 in the nbfp array have

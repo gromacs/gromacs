@@ -179,6 +179,10 @@ Performance and Run Control
         runs with low atom counts (which are more sensitive to latency
         than bandwidth).
 
+``GMX_CUDA_GRAPH``
+        Use CUDA Graphs to schedule a graph on each step rather than multiple
+        activities scheduled to multiple CUDA streams, if the run conditions allow. Experimental.
+
 ``GMX_GPU_SYCL_NO_SYNCHRONIZE``
         disable synchronizations between different GPU streams in SYCL build, instead relying on SYCL runtime to
         do scheduling based on data dependencies. Experimental.

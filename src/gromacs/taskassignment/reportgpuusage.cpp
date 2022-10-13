@@ -156,6 +156,11 @@ void reportGpuUsage(const MDLogger&                   mdlog,
             output +=
                     gmx::formatString("GPU direct communication will be used between MPI ranks.\n");
         }
+        if (simulationWork.useMdGpuGraph)
+        {
+            output += gmx::formatString(
+                    "CUDA Graphs will be used, provided there are no CPU force computations.\n");
+        }
     }
 
     /* NOTE: this print is only for and on one physical node */

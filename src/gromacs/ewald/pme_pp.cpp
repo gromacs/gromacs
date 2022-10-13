@@ -110,6 +110,7 @@ static void gmx_pme_send_coeffs_coords(t_forcerec*                    fr,
                                        bool                           reinitGpuPmePpComms,
                                        bool                           sendCoordinatesFromGpu,
                                        bool                           receiveForcesToGpu,
+                                       bool                           useMdGpuGraph,
                                        GpuEventSynchronizer*          coordinatesReadyOnDeviceEvent)
 {
     gmx_domdec_t*         dd;
@@ -139,6 +140,11 @@ static void gmx_pme_send_coeffs_coords(t_forcerec*                    fr,
         {
             flags |= PP_PME_RECVFTOGPU;
         }
+    }
+
+    if (useMdGpuGraph)
+    {
+        flags |= PP_PME_MDGPUGRAPH;
     }
 
     if (c_useDelayedWait)
@@ -363,6 +369,7 @@ void gmx_pme_send_parameters(const t_commrec*           cr,
                                false,
                                false,
                                false,
+                               false,
                                nullptr);
 }
 
@@ -379,6 +386,7 @@ void gmx_pme_send_coordinates(t_forcerec*                    fr,
                               bool                           sendCoordinatesFromGpu,
                               bool                           receiveForcesToGpu,
                               GpuEventSynchronizer*          coordinatesReadyOnDeviceEvent,
+                              bool                           useMdGpuGraph,
                               gmx_wallcycle*                 wcycle)
 {
     wallcycle_start(wcycle, WallCycleCounter::PpPmeSendX);
@@ -408,6 +416,7 @@ void gmx_pme_send_coordinates(t_forcerec*                    fr,
                                receiveCoordinateAddressFromPme,
                                sendCoordinatesFromGpu,
                                receiveForcesToGpu,
+                               useMdGpuGraph,
                                coordinatesReadyOnDeviceEvent);
 
     wallcycle_stop(wcycle, WallCycleCounter::PpPmeSendX);
@@ -417,8 +426,28 @@ void gmx_pme_send_finish(const t_commrec* cr)
 {
     unsigned int flags = PP_PME_FINISH;
 
-    gmx_pme_send_coeffs_coords(
-            nullptr, cr, flags, {}, {}, {}, {}, {}, {}, nullptr, gmx::ArrayRef<gmx::RVec>(), 0, 0, 0, 0, -1, false, false, false, false, nullptr);
+    gmx_pme_send_coeffs_coords(nullptr,
+                               cr,
+                               flags,
+                               {},
+                               {},
+                               {},
+                               {},
+                               {},
+                               {},
+                               nullptr,
+                               gmx::ArrayRef<gmx::RVec>(),
+                               0,
+                               0,
+                               0,
+                               0,
+                               -1,
+                               false,
+                               false,
+                               false,
+                               false,
+                               false,
+                               nullptr);
 }
 
 void gmx_pme_send_switchgrid(const t_commrec* cr, ivec grid_size, real ewaldcoeff_q, real ewaldcoeff_lj)

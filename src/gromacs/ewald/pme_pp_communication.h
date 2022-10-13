@@ -83,6 +83,8 @@ enum
 #define PP_PME_GPUCOMMS (1 << 13)
 // Whether PME forces are transferred directly to remote PP GPU memory in a specific step
 #define PP_PME_RECVFTOGPU (1 << 14)
+// Whether a GPU graph should be used to execute steps in the MD loop if run conditions allow
+#define PP_PME_MDGPUGRAPH (1 << 15)
 //@}
 
 /*! \brief Return values for gmx_pme_recv_q_x */

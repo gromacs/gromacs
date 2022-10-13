@@ -119,6 +119,7 @@ static const char* enumValuetoString(WallCycleCounter enumValue)
         "Add rot. forces",
         "Position swapping",
         "IMD",
+        "MD Graph",
         "Test"
     };
     return wallCycleCounterNames[enumValue];
@@ -164,6 +165,11 @@ static const char* enumValuetoString(WallCycleSubCounter enumValue)
         "Launch GPU Comm. force.",
         "Launch GPU update",
         "Launch PME GPU FFT",
+        "MD Graph wait bf capture",
+        "MD Graph capture",
+        "MD Graph inst./upd.",
+        "MD Graph wait bf launch",
+        "MD Graph launch",
         "Test subcounter"
     };
     return wallCycleSubCounterNames[enumValue];

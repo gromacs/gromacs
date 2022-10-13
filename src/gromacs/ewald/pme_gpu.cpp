@@ -423,7 +423,7 @@ void pme_gpu_wait_and_reduce(gmx_pme_t*               pme,
     pme_gpu_reduce_outputs(computeEnergyAndVirial, output, wcycle, forceWithVirial, enerd);
 }
 
-void pme_gpu_reinit_computation(const gmx_pme_t* pme, gmx_wallcycle* wcycle)
+void pme_gpu_reinit_computation(const gmx_pme_t* pme, const bool useMdGpuGraph, gmx_wallcycle* wcycle)
 {
     GMX_ASSERT(pme_gpu_active(pme), "This should be a GPU run of PME but it is not enabled.");
 
@@ -432,7 +432,7 @@ void pme_gpu_reinit_computation(const gmx_pme_t* pme, gmx_wallcycle* wcycle)
     pme_gpu_update_timings(pme->gpu);
 
     pme_gpu_clear_grids(pme->gpu);
-    pme_gpu_clear_energy_virial(pme->gpu);
+    pme_gpu_clear_energy_virial(pme->gpu, useMdGpuGraph);
 
     wallcycle_stop(wcycle, WallCycleCounter::LaunchGpuPme);
 }

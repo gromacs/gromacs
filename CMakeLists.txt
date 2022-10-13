@@ -619,6 +619,10 @@ if(GMX_GPU)
         set(CMAKE_CUDA_STANDARD_REQUIRED ON)
         # Avoid new cmake policy of enforcing CMAKE_CUDA_ARCHITECTURES initialization
         cmake_policy(SET CMP0104 OLD) # Since CMake 3.18
+	# Add definition if CUDA version in use supports CUDA Graphs
+        if(${CMAKE_CUDA_COMPILER_VERSION} GREATER_EQUAL 11.1)
+	  set(GMX_HAVE_CUDA_GRAPH_SUPPORT ON)
+        endif()
         include(gmxManageCuda)
     elseif(${_gmx_gpu_uppercase} STREQUAL "OPENCL")
         message(STATUS "GPU support with OpenCL is deprecated. It is still fully supported (and " 

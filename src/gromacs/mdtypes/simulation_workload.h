@@ -205,6 +205,8 @@ public:
     bool haveEwaldSurfaceContribution = false;
     //! Whether to use multiple time stepping
     bool useMts = false;
+    // Whether a GPU graph should be used to execute steps in the MD loop if run conditions allow.
+    bool useMdGpuGraph = false;
 };
 
 class MdrunScheduleWorkload

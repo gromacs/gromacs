@@ -111,6 +111,7 @@ enum class WallCycleCounter : int
     RotAdd,
     Swap,
     Imd,
+    MdGpuGraph,
     Test,
     Count
 };
@@ -150,6 +151,11 @@ enum class WallCycleSubCounter : int
     LaunchGpuMoveF,
     LaunchGpuUpdateConstrain,
     LaunchGpuPmeFft, /* Time for launching FFT operations on GPU*/
+    MdGpuGraphWaitBeforeCapture,
+    MdGpuGraphCapture,
+    MdGpuGraphInstantiateOrUpdate,
+    MdGpuGraphWaitBeforeLaunch,
+    MdGpuGraphLaunch,
     Test,
     Count
 };

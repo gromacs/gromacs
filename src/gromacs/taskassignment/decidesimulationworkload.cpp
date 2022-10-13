@@ -108,7 +108,11 @@ SimulationWorkload createSimulationWorkload(const t_inputrec& inputrec,
         GMX_ASSERT(simulationWorkload.useGpuNonbonded,
                    "Can only offload X/F buffer ops if nonbonded computation is also offloaded");
     }
-
+    simulationWorkload.useMdGpuGraph =
+            devFlags.enableCudaGraphs && useGpuForUpdate
+            && (simulationWorkload.haveSeparatePmeRank ? simulationWorkload.useGpuPmePpCommunication : true)
+            && (havePpDomainDecomposition ? simulationWorkload.useGpuHaloExchange : true)
+            && (havePpDomainDecomposition ? (GMX_THREAD_MPI > 0) : true);
     return simulationWorkload;
 }
 

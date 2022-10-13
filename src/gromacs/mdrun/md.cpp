@@ -89,6 +89,7 @@
 #include "gromacs/mdlib/freeenergyparameters.h"
 #include "gromacs/mdlib/md_support.h"
 #include "gromacs/mdlib/mdatoms.h"
+#include "gromacs/mdlib/mdgraph_gpu.h"
 #include "gromacs/mdlib/mdoutf.h"
 #include "gromacs/mdlib/membed.h"
 #include "gromacs/mdlib/resethandler.h"
@@ -837,6 +838,7 @@ void gmx::LegacySimulator::do_md()
         logInitialMultisimStatus(ms, cr, mdlog, simulationsShareState, ir->nsteps, ir->init_step);
     }
 
+    bool usedMdGpuGraphLastStep = false;
     /* and stop now if we should */
     bLastStep = (bLastStep || (ir->nsteps >= 0 && step_rel > ir->nsteps));
     while (!bLastStep)
@@ -1102,6 +1104,55 @@ void gmx::LegacySimulator::do_md()
             // TODO: merge this with stepWork.useOnlyMtsCombinedForceBuffer
             force_flags |= GMX_FORCE_DO_NOT_NEED_NORMAL_FORCE;
         }
+
+        const bool doTemperatureScaling = (ir->etc != TemperatureCoupling::No
+                                           && do_per_step(step + ir->nsttcouple - 1, ir->nsttcouple));
+
+        /* With leap-frog type integrators we compute the kinetic energy
+         * at a whole time step as the average of the half-time step kinetic
+         * energies of two subsequent steps. Therefore we need to compute the
+         * half step kinetic energy also if we need energies at the next step.
+         */
+        const bool needHalfStepKineticEnergy =
+                (!EI_VV(ir->eI) && (do_per_step(step + 1, nstglobalcomm) || step_rel + 1 == ir->nsteps));
+
+        // Parrinello-Rahman requires the pressure to be availible before the update to compute
+        // the velocity scaling matrix. Hence, it runs one step after the nstpcouple step.
+        const bool doParrinelloRahman =
+                (ir->pressureCouplingOptions.epc == PressureCoupling::ParrinelloRahman
+                 && do_per_step(step + ir->pressureCouplingOptions.nstpcouple - 1,
+                                ir->pressureCouplingOptions.nstpcouple));
+
+        MdGpuGraph* mdGraph = simulationWork.useMdGpuGraph ? fr->mdGraph[step % 2].get() : nullptr;
+
+        if (simulationWork.useMdGpuGraph)
+        {
+            if (bNS)
+            {
+                fr->mdGraph[MdGraphEvenOrOddStep::EvenStep]->reset();
+                fr->mdGraph[MdGraphEvenOrOddStep::OddStep]->reset();
+            }
+            else
+            {
+                mdGraph->setUsedGraphLastStep(usedMdGpuGraphLastStep);
+                bool canUseMdGpuGraphThisStep = !bCalcVir && !doTemperatureScaling && !doParrinelloRahman
+                                                && !bGStat && !needHalfStepKineticEnergy;
+                if (mdGraph->captureThisStep(canUseMdGpuGraphThisStep))
+                {
+                    // getCoordinatesReadyOnDeviceEvent() uses stepWork.doNeighborSearch but this is not set until
+                    // later in do_force(), so preset this part here.
+                    // TODO remove this when stepWork initialization has been refactored to start of step.
+                    runScheduleWork->stepWork.doNeighborSearch = false;
+                    mdGraph->startRecord(stateGpu->getCoordinatesReadyOnDeviceEvent(
+                            AtomLocality::Local, simulationWork, runScheduleWork->stepWork));
+                }
+            }
+        }
+
+        // Temporary disable clang-format to make change easier to review (no extra indent).
+        // clang-format off
+        if (!simulationWork.useMdGpuGraph || mdGraph->graphIsCapturingThisStep() || !mdGraph->useGraphThisStep())
+        {
 
         if (shellfc)
         {
@@ -1424,21 +1475,6 @@ void gmx::LegacySimulator::do_md()
                                               &parrinelloRahmanM);
         }
 
-        /* With leap-frog type integrators we compute the kinetic energy
-         * at a whole time step as the average of the half-time step kinetic
-         * energies of two subsequent steps. Therefore we need to compute the
-         * half step kinetic energy also if we need energies at the next step.
-         */
-        const bool needHalfStepKineticEnergy =
-                (!EI_VV(ir->eI) && (do_per_step(step + 1, nstglobalcomm) || step_rel + 1 == ir->nsteps));
-
-        // Parrinello-Rahman requires the pressure to be availible before the update to compute
-        // the velocity scaling matrix. Hence, it runs one step after the nstpcouple step.
-        const bool doParrinelloRahman =
-                (ir->pressureCouplingOptions.epc == PressureCoupling::ParrinelloRahman
-                 && do_per_step(step + ir->pressureCouplingOptions.nstpcouple - 1,
-                                ir->pressureCouplingOptions.nstpcouple));
-
         if (EI_VV(ir->eI))
         {
             GMX_ASSERT(!useGpuForUpdate, "GPU update is not supported with VVAK integrator.");
@@ -1607,6 +1643,32 @@ void gmx::LegacySimulator::do_md()
             }
 
             enerd->term[F_DVDL_CONSTR] += dvdl_constr;
+
+        }
+        }
+        // clang-format on
+        if (simulationWork.useMdGpuGraph)
+        {
+            GMX_ASSERT((mdGraph != nullptr), "MD GPU graph does not exist.");
+            if (mdGraph->graphIsCapturingThisStep())
+            {
+                mdGraph->endRecord();
+                mdGraph->createExecutableGraph();
+            }
+            if (mdGraph->useGraphThisStep())
+            {
+                mdGraph->launchGraphMdStep(integrator->xUpdatedOnDeviceEvent());
+            }
+            if (bNS)
+            {
+                // TODO: merge disableForDomainIfAnyPpRankHasCpuForces() back into reset() when
+                // domainWork initialization is moved out of do_force().
+                fr->mdGraph[MdGraphEvenOrOddStep::EvenStep]->disableForDomainIfAnyPpRankHasCpuForces(
+                        runScheduleWork->domainWork.haveCpuLocalForceWork);
+                fr->mdGraph[MdGraphEvenOrOddStep::OddStep]->disableForDomainIfAnyPpRankHasCpuForces(
+                        runScheduleWork->domainWork.haveCpuLocalForceWork);
+            }
+            usedMdGpuGraphLastStep = mdGraph->useGraphThisStep();
         }
 
         /* ############## IF NOT VV, Calculate globals HERE  ############ */

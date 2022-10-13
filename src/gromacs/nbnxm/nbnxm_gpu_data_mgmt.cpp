@@ -611,6 +611,15 @@ void gpu_init_pairlist(NbnxmGpu* nb, const NbnxnPairlistGpu* h_plist, const Inte
                        GpuApiCallBehavior::Async,
                        bDoTime ? iTimers.pl_h2d.fetchNextEvent() : nullptr);
 
+    // Part index is managed on device, through a buffer containing a separate copy of the index
+    // per block, to allow asynchronous incrementation on the GPU without CPU involvement.
+    reallocateDeviceBuffer(&d_plist->d_rollingPruningPart,
+                           d_plist->nsci,
+                           &d_plist->d_rollingPruningPart_size,
+                           &d_plist->d_rollingPruningPart_size_alloc,
+                           *nb->deviceContext_);
+    clearDeviceBufferAsync(&d_plist->d_rollingPruningPart, 0, d_plist->nsci, deviceStream);
+
     if (bDoTime)
     {
         iTimers.pl_h2d.closeTimingRegion(deviceStream);
