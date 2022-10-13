@@ -42,7 +42,6 @@
 
 #include <string>
 
-#include "gromacs/gpu_utils/gmxsycl.h"
 #include "gromacs/gpu_utils/gputraits.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
@@ -77,8 +76,7 @@ public:
      * \param config       Work-group configuration.
      * \param deviceStream \c DeviceStream to use.
      */
-    virtual sycl::event launch(const KernelLaunchConfig& /*config*/,
-                               const DeviceStream& /*deviceStream*/) = 0;
+    virtual void launch(const KernelLaunchConfig& /*config*/, const DeviceStream& /*deviceStream*/) = 0;
 };
 
 
@@ -150,8 +148,8 @@ inline void launchGpuKernel(void*                     kernel,
                             const char* /*kernelName*/,
                             const void* /*kernelArgs*/)
 {
-    auto*       kernelFunctor = reinterpret_cast<ISyclKernelFunctor*>(kernel);
-    sycl::event event         = kernelFunctor->launch(config, deviceStream);
+    auto* kernelFunctor = reinterpret_cast<ISyclKernelFunctor*>(kernel);
+    kernelFunctor->launch(config, deviceStream);
 }
 
 /* To properly mark function as [[noreturn]], we must do it everywhere it is declared, which

@@ -223,7 +223,7 @@ auto nbnxmKernelPruneOnly(sycl::handler&                                      cg
 
 //! \brief Leap Frog SYCL prune-only kernel launch code.
 template<bool haveFreshList, class... Args>
-sycl::event launchNbnxmKernelPruneOnly(const DeviceStream& deviceStream, const int numSciInPart, Args&&... args)
+void launchNbnxmKernelPruneOnly(const DeviceStream& deviceStream, const int numSciInPart, Args&&... args)
 {
     using kernelNameType = NbnxmKernelPruneOnly<haveFreshList>;
 
@@ -239,21 +239,19 @@ sycl::event launchNbnxmKernelPruneOnly(const DeviceStream& deviceStream, const i
 
     sycl::queue q = deviceStream.stream();
 
-    sycl::event e = q.submit([&](sycl::handler& cgh) {
+    q.submit([&](sycl::handler& cgh) {
         auto kernel = nbnxmKernelPruneOnly<haveFreshList>(cgh, std::forward<Args>(args)...);
         cgh.parallel_for<kernelNameType>(range, kernel);
     });
-
-    return e;
 }
 
 //! \brief Select templated kernel and launch it.
 template<class... Args>
-sycl::event chooseAndLaunchNbnxmKernelPruneOnly(bool haveFreshList, Args&&... args)
+void chooseAndLaunchNbnxmKernelPruneOnly(bool haveFreshList, Args&&... args)
 {
-    return gmx::dispatchTemplatedFunction(
+    gmx::dispatchTemplatedFunction(
             [&](auto haveFreshList_) {
-                return launchNbnxmKernelPruneOnly<haveFreshList_>(std::forward<Args>(args)...);
+                launchNbnxmKernelPruneOnly<haveFreshList_>(std::forward<Args>(args)...);
             },
             haveFreshList);
 }
@@ -270,18 +268,18 @@ void launchNbnxmKernelPruneOnly(NbnxmGpu*                 nb,
     const bool          haveFreshList = plist->haveFreshList;
     const DeviceStream& deviceStream  = *nb->deviceStreams[iloc];
 
-    sycl::event e = chooseAndLaunchNbnxmKernelPruneOnly(haveFreshList,
-                                                        deviceStream,
-                                                        numSciInPart,
-                                                        adat->xq,
-                                                        adat->shiftVec,
-                                                        plist->cjPacked,
-                                                        plist->sci,
-                                                        plist->imask,
-                                                        nbp->rlistOuter_sq,
-                                                        nbp->rlistInner_sq,
-                                                        numParts,
-                                                        part);
+    chooseAndLaunchNbnxmKernelPruneOnly(haveFreshList,
+                                        deviceStream,
+                                        numSciInPart,
+                                        adat->xq,
+                                        adat->shiftVec,
+                                        plist->cjPacked,
+                                        plist->sci,
+                                        plist->imask,
+                                        nbp->rlistOuter_sq,
+                                        nbp->rlistInner_sq,
+                                        numParts,
+                                        part);
 }
 
 } // namespace Nbnxm

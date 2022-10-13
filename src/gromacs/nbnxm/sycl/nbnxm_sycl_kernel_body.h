@@ -1311,7 +1311,7 @@ static auto nbnxmKernel(sycl::handler&                                          
 
 //! \brief NBNXM kernel launch code.
 template<bool doPruneNBL, bool doCalcEnergies, enum ElecType elecType, enum VdwType vdwType, class... Args>
-static sycl::event launchNbnxmKernel(const DeviceStream& deviceStream, const int numSci, Args&&... args)
+static void launchNbnxmKernel(const DeviceStream& deviceStream, const int numSci, Args&&... args)
 {
     using kernelNameType = NbnxmKernel<doPruneNBL, doCalcEnergies, elecType, vdwType>;
 
@@ -1327,13 +1327,11 @@ static sycl::event launchNbnxmKernel(const DeviceStream& deviceStream, const int
 
     sycl::queue q = deviceStream.stream();
 
-    sycl::event e = q.submit([&](sycl::handler& cgh) {
+    q.submit([&](sycl::handler& cgh) {
         auto kernel = nbnxmKernel<doPruneNBL, doCalcEnergies, elecType, vdwType>(
                 cgh, std::forward<Args>(args)...);
         cgh.parallel_for<kernelNameType>(range, kernel);
     });
-
-    return e;
 }
 
 //! \brief Select templated kernel and launch it.

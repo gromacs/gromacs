@@ -39,7 +39,6 @@
  *  \author Andrey Alekseenko <al42and@gmail.com>
  */
 
-#include "gromacs/gpu_utils/gmxsycl.h"
 #include "gromacs/gpu_utils/syclutils.h"
 
 #include "pme_gpu_types_host.h"
@@ -54,8 +53,8 @@ class PmeSplineAndSpreadKernel : public ISyclKernelFunctor
 {
 public:
     PmeSplineAndSpreadKernel();
-    void        setArg(size_t argIndex, void* arg) override;
-    sycl::event launch(const KernelLaunchConfig& config, const DeviceStream& deviceStream) override;
+    void setArg(size_t argIndex, void* arg) override;
+    void launch(const KernelLaunchConfig& config, const DeviceStream& deviceStream) override;
 
 private:
     PmeGpuGridParams*    gridParams_;

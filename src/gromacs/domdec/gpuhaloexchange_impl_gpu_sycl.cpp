@@ -124,35 +124,31 @@ auto unpackRecvBufKernel(sycl::handler&                                        c
 
 
 template<bool usePbc, class... Args>
-static sycl::event launchPackSendBufKernel(const DeviceStream& deviceStream, int xSendSize, Args&&... args)
+static void launchPackSendBufKernel(const DeviceStream& deviceStream, int xSendSize, Args&&... args)
 {
     using kernelNameType = PackSendBufKernel<usePbc>;
 
     const sycl::range<1> range(xSendSize);
     sycl::queue          q = deviceStream.stream();
 
-    sycl::event e = q.submit([&](sycl::handler& cgh) {
+    q.submit([&](sycl::handler& cgh) {
         auto kernel = packSendBufKernel<usePbc>(cgh, std::forward<Args>(args)...);
         cgh.parallel_for<kernelNameType>(range, kernel);
     });
-
-    return e;
 }
 
 template<bool accumulateForces, class... Args>
-static sycl::event launchUnpackRecvBufKernel(const DeviceStream& deviceStream, int fRecvSize, Args&&... args)
+static void launchUnpackRecvBufKernel(const DeviceStream& deviceStream, int fRecvSize, Args&&... args)
 {
     using kernelNameType = UnpackRecvBufKernel<accumulateForces>;
 
     const sycl::range<1> range(fRecvSize);
     sycl::queue          q = deviceStream.stream();
 
-    sycl::event e = q.submit([&](sycl::handler& cgh) {
+    q.submit([&](sycl::handler& cgh) {
         auto kernel = unpackRecvBufKernel<accumulateForces>(cgh, std::forward<Args>(args)...);
         cgh.parallel_for<kernelNameType>(range, kernel);
     });
-
-    return e;
 }
 
 void GpuHaloExchange::Impl::launchPackXKernel(const matrix box)

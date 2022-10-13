@@ -353,7 +353,7 @@ class SettleKernelName;
 
 //! \brief SETTLE SYCL kernel launch code.
 template<bool updateVelocities, bool computeVirial, class... Args>
-static sycl::event launchSettleKernel(const DeviceStream& deviceStream, int numSettles, Args&&... args)
+static void launchSettleKernel(const DeviceStream& deviceStream, int numSettles, Args&&... args)
 {
     // Should not be needed for SYCL2020.
     using kernelNameType = SettleKernelName<updateVelocities, computeVirial>;
@@ -363,20 +363,18 @@ static sycl::event launchSettleKernel(const DeviceStream& deviceStream, int numS
     const sycl::nd_range<1> rangeAllSettles(numSettlesRoundedUp, sc_workGroupSize);
     sycl::queue             q = deviceStream.stream();
 
-    sycl::event e = q.submit([&](sycl::handler& cgh) {
+    q.submit([&](sycl::handler& cgh) {
         auto kernel = settleKernel<updateVelocities, computeVirial>(
                 cgh, numSettles, std::forward<Args>(args)...);
         cgh.parallel_for<kernelNameType>(rangeAllSettles, kernel);
     });
-
-    return e;
 }
 
 /*! \brief Select templated kernel and launch it. */
 template<class... Args>
-static inline sycl::event launchSettleKernel(bool updateVelocities, bool computeVirial, Args&&... args)
+static inline void launchSettleKernel(bool updateVelocities, bool computeVirial, Args&&... args)
 {
-    return dispatchTemplatedFunction(
+    dispatchTemplatedFunction(
             [&](auto updateVelocities_, auto computeVirial_) {
                 return launchSettleKernel<updateVelocities_, computeVirial_>(std::forward<Args>(args)...);
             },

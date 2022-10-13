@@ -168,7 +168,7 @@ auto leapFrogKernel(
 
 //! \brief Leap Frog SYCL kernel launch code.
 template<NumTempScaleValues numTempScaleValues, ParrinelloRahmanVelocityScaling parrinelloRahmanVelocityScaling, class... Args>
-static sycl::event launchLeapFrogKernel(const DeviceStream& deviceStream, int numAtoms, Args&&... args)
+static void launchLeapFrogKernel(const DeviceStream& deviceStream, int numAtoms, Args&&... args)
 {
     // Should not be needed for SYCL2020.
     using kernelNameType = LeapFrogKernel<numTempScaleValues, parrinelloRahmanVelocityScaling>;
@@ -176,13 +176,11 @@ static sycl::event launchLeapFrogKernel(const DeviceStream& deviceStream, int nu
     const sycl::range<1> rangeAllAtoms(numAtoms);
     sycl::queue          q = deviceStream.stream();
 
-    sycl::event e = q.submit([&](sycl::handler& cgh) {
+    q.submit([&](sycl::handler& cgh) {
         auto kernel = leapFrogKernel<numTempScaleValues, parrinelloRahmanVelocityScaling>(
                 cgh, std::forward<Args>(args)...);
         cgh.parallel_for<kernelNameType>(rangeAllAtoms, kernel);
     });
-
-    return e;
 }
 
 //! Convert \p doTemperatureScaling and \p numTempScaleValues to \ref NumTempScaleValues.
@@ -208,15 +206,15 @@ static NumTempScaleValues getTempScalingType(bool doTemperatureScaling, int numT
 
 /*! \brief Select templated kernel and launch it. */
 template<class... Args>
-static inline sycl::event launchLeapFrogKernel(NumTempScaleValues              tempScalingType,
-                                               ParrinelloRahmanVelocityScaling parrinelloRahmanVelocityScaling,
-                                               Args&&... args)
+static inline void launchLeapFrogKernel(NumTempScaleValues              tempScalingType,
+                                        ParrinelloRahmanVelocityScaling parrinelloRahmanVelocityScaling,
+                                        Args&&... args)
 {
     GMX_ASSERT(parrinelloRahmanVelocityScaling == ParrinelloRahmanVelocityScaling::No
                        || parrinelloRahmanVelocityScaling == ParrinelloRahmanVelocityScaling::Diagonal,
                "Only isotropic Parrinello-Rahman pressure coupling is supported.");
 
-    return dispatchTemplatedFunction(
+    dispatchTemplatedFunction(
             [&](auto tempScalingType_, auto prScalingType_) {
                 return launchLeapFrogKernel<tempScalingType_, prScalingType_>(std::forward<Args>(args)...);
             },

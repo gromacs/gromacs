@@ -468,9 +468,7 @@ template<bool updateVelocities, bool computeVirial, bool haveCoupledConstraints>
 class LincsKernelName;
 
 template<bool updateVelocities, bool computeVirial, bool haveCoupledConstraints, class... Args>
-static sycl::event launchLincsKernel(const DeviceStream& deviceStream,
-                                     const int           numConstraintsThreads,
-                                     Args&&... args)
+static void launchLincsKernel(const DeviceStream& deviceStream, const int numConstraintsThreads, Args&&... args)
 {
     // Should not be needed for SYCL2020.
     using kernelNameType = LincsKernelName<updateVelocities, computeVirial, haveCoupledConstraints>;
@@ -478,21 +476,19 @@ static sycl::event launchLincsKernel(const DeviceStream& deviceStream,
     const sycl::nd_range<1> rangeAllLincs(numConstraintsThreads, c_threadsPerBlock);
     sycl::queue             q = deviceStream.stream();
 
-    sycl::event e = q.submit([&](sycl::handler& cgh) {
+    q.submit([&](sycl::handler& cgh) {
         auto kernel = lincsKernel<updateVelocities, computeVirial, haveCoupledConstraints>(
                 cgh, numConstraintsThreads, std::forward<Args>(args)...);
         cgh.parallel_for<kernelNameType>(rangeAllLincs, kernel);
     });
-
-    return e;
 }
 
 /*! \brief Select templated kernel and launch it. */
 template<class... Args>
-static inline sycl::event
+static inline void
 launchLincsKernel(bool updateVelocities, bool computeVirial, bool haveCoupledConstraints, Args&&... args)
 {
-    return dispatchTemplatedFunction(
+    dispatchTemplatedFunction(
             [&](auto updateVelocities_, auto computeVirial_, auto haveCoupledConstraints_) {
                 return launchLincsKernel<updateVelocities_, computeVirial_, haveCoupledConstraints_>(
                         std::forward<Args>(args)...);
