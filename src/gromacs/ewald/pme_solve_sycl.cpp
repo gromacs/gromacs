@@ -88,6 +88,10 @@ auto makeSolveKernel(sycl::handler&                    cgh,
      */
     return [=](sycl::nd_item<3> itemIdx) [[intel::reqd_sub_group_size(subGroupSize)]]
     {
+        if constexpr (skipKernelCompilation<subGroupSize>())
+        {
+            return;
+        }
         /* This kernel supports 2 different grid dimension orderings: YZX and XYZ */
         int majorDim, middleDim, minorDim;
         switch (gridOrdering)

@@ -250,6 +250,10 @@ auto pmeSplineAndSpreadKernel(
 
     return [=](sycl::nd_item<3> itemIdx) [[intel::reqd_sub_group_size(subGroupSize)]]
     {
+        if constexpr (skipKernelCompilation<subGroupSize>())
+        {
+            return;
+        }
         const int blockIndex      = itemIdx.get_group_linear_id();
         const int atomIndexOffset = blockIndex * atomsPerBlock;
 

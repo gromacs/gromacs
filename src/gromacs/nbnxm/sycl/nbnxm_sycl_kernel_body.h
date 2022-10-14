@@ -881,14 +881,10 @@ static auto nbnxmKernel(sycl::handler&                                          
 
     return [=](sycl::nd_item<3> itemIdx) [[intel::reqd_sub_group_size(subGroupSize)]]
     {
-        // Skip compiling for CPU. Makes compiling this file ~10% faster for oneAPI/CUDA or
-        // hipSYCL/CUDA. For DPC++, any non-CPU targets must be explicitly allowed in the #if below.
-#if GMX_SYCL_HIPSYCL
-        __hipsycl_if_target_host(return;);
-#endif
-#if GMX_SYCL_DPCPP && !(defined(__NVPTX__) || !defined(__AMDGCN__) || !defined(__SPIR__))
-        return;
-#endif
+        if constexpr (skipKernelCompilation<subGroupSize>())
+        {
+            return;
+        }
         /* thread/block/warp id-s */
         const unsigned tidxi = itemIdx.get_local_id(2);
         const unsigned tidxj = itemIdx.get_local_id(1);

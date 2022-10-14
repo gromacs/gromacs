@@ -358,6 +358,10 @@ auto pmeGatherKernel(sycl::handler&                                     cgh,
 
     return [=](sycl::nd_item<3> itemIdx) [[intel::reqd_sub_group_size(subGroupSize)]]
     {
+        if constexpr (skipKernelCompilation<subGroupSize>())
+        {
+            return;
+        }
         SYCL_ASSERT(blockSize == itemIdx.get_local_range().size());
         /* These are the atom indices - for the shared and global memory */
         const int atomIndexLocal = itemIdx.get_local_id(XX);
