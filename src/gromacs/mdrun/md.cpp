@@ -1149,444 +1149,477 @@ void gmx::LegacySimulator::do_md()
             }
         }
 
-        // Temporary disable clang-format to make change easier to review (no extra indent).
-        // clang-format off
-        if (!simulationWork.useMdGpuGraph || mdGraph->graphIsCapturingThisStep() || !mdGraph->useGraphThisStep())
+        if (!simulationWork.useMdGpuGraph || mdGraph->graphIsCapturingThisStep()
+            || !mdGraph->useGraphThisStep())
         {
 
-        if (shellfc)
-        {
-            /* Now is the time to relax the shells */
-            relax_shell_flexcon(fplog,
-                                cr,
-                                ms,
-                                mdrunOptions.verbose,
-                                enforcedRotation,
-                                step,
-                                ir,
-                                imdSession,
-                                pull_work,
-                                bNS,
-                                force_flags,
-                                top,
-                                constr,
-                                enerd,
-                                state->natoms,
-                                state->x.arrayRefWithPadding(),
-                                state->v.arrayRefWithPadding(),
-                                state->box,
-                                state->lambda,
-                                &state->hist,
-                                &f.view(),
-                                force_vir,
-                                *md,
-                                fr->longRangeNonbondeds.get(),
-                                nrnb,
-                                wcycle,
-                                shellfc,
-                                fr,
-                                runScheduleWork,
-                                t,
-                                mu_tot,
-                                vsite,
-                                ddBalanceRegionHandler);
-        }
-        else
-        {
-            /* The AWH history need to be saved _before_ doing force calculations where the AWH bias
-               is updated (or the AWH update will be performed twice for one step when continuing).
-               It would be best to call this update function from do_md_trajectory_writing but that
-               would occur after do_force. One would have to divide the update_awh function into one
-               function applying the AWH force and one doing the AWH bias update. The update AWH
-               bias function could then be called after do_md_trajectory_writing (then containing
-               update_awh_history). The checkpointing will in the future probably moved to the start
-               of the md loop which will rid of this issue. */
-            if (awh && checkpointHandler->isCheckpointingStep() && MAIN(cr))
+            if (shellfc)
             {
-                awh->updateHistory(state_global->awhHistory.get());
-            }
-
-            /* The coordinates (x) are shifted (to get whole molecules)
-             * in do_force.
-             * This is parallellized as well, and does communication too.
-             * Check comments in sim_util.c
-             */
-            do_force(fplog,
-                     cr,
-                     ms,
-                     *ir,
-                     awh.get(),
-                     enforcedRotation,
-                     imdSession,
-                     pull_work,
-                     step,
-                     nrnb,
-                     wcycle,
-                     top,
-                     state->box,
-                     state->x.arrayRefWithPadding(),
-                     &state->hist,
-                     &f.view(),
-                     force_vir,
-                     md,
-                     enerd,
-                     state->lambda,
-                     fr,
-                     runScheduleWork,
-                     vsite,
-                     mu_tot,
-                     t,
-                     ed ? ed->getLegacyED() : nullptr,
-                     fr->longRangeNonbondeds.get(),
-                     (bNS ? GMX_FORCE_NS : 0) | force_flags,
-                     ddBalanceRegionHandler);
-        }
-
-        // VV integrators do not need the following velocity half step
-        // if it is the first step after starting from a checkpoint.
-        // That is, the half step is needed on all other steps, and
-        // also the first step when starting from a .tpr file.
-        if (EI_VV(ir->eI))
-        {
-            integrateVVFirstStep(step,
-                                 bFirstStep,
-                                 bInitStep,
-                                 startingBehavior,
-                                 nstglobalcomm,
-                                 ir,
-                                 fr,
-                                 cr,
-                                 state,
-                                 mdAtoms->mdatoms(),
-                                 &fcdata,
-                                 &MassQ,
-                                 &vcm,
-                                 enerd,
-                                 &observablesReducer,
-                                 ekind,
-                                 gstat,
-                                 &last_ekin,
-                                 bCalcVir,
-                                 total_vir,
-                                 shake_vir,
-                                 force_vir,
-                                 pres,
-                                 do_log,
-                                 do_ene,
-                                 bCalcEner,
-                                 bGStat,
-                                 bStopCM,
-                                 bTrotter,
-                                 bExchanged,
-                                 &bSumEkinhOld,
-                                 &saved_conserved_quantity,
-                                 &f,
-                                 &upd,
-                                 constr,
-                                 &nullSignaller,
-                                 trotter_seq,
-                                 nrnb,
-                                 fplog,
-                                 wcycle);
-            if (vsite != nullptr && needVirtualVelocitiesThisStep)
-            {
-                // Positions were calculated earlier
-                wallcycle_start(wcycle, WallCycleCounter::VsiteConstr);
-                vsite->construct(state->x, state->v, state->box, VSiteOperation::Velocities);
-                wallcycle_stop(wcycle, WallCycleCounter::VsiteConstr);
-            }
-        }
-
-        /* ########  END FIRST UPDATE STEP  ############## */
-        /* ########  If doing VV, we now have v(dt) ###### */
-        if (bDoExpanded)
-        {
-            /* perform extended ensemble sampling in lambda - we don't
-               actually move to the new state before outputting
-               statistics, but if performing simulated tempering, we
-               do update the velocities and the tau_t. */
-            // TODO: Avoid changing inputrec (#3854)
-            // Simulated tempering updates the reference temperature.
-            // Expanded ensemble without simulated tempering does not change the inputrec.
-            auto* nonConstInputrec = const_cast<t_inputrec*>(inputrec);
-            lamnew                 = ExpandedEnsembleDynamics(fplog,
-                                              nonConstInputrec,
-                                              enerd,
-                                              state,
-                                              &MassQ,
-                                              state->fep_state,
-                                              state->dfhist,
-                                              step,
-                                              state->v.rvec_array(),
-                                              md->homenr,
-                                              md->cTC);
-            /* history is maintained in state->dfhist, but state_global is what is sent to trajectory and log output */
-            if (MAIN(cr))
-            {
-                copy_df_history(state_global->dfhist, state->dfhist);
-            }
-        }
-
-        // Copy coordinate from the GPU for the output/checkpointing if the update is offloaded and
-        // coordinates have not already been copied for i) search or ii) CPU force tasks.
-        if (useGpuForUpdate && !bNS && !runScheduleWork->domainWork.haveCpuLocalForceWork
-            && (do_per_step(step, ir->nstxout) || do_per_step(step, ir->nstxout_compressed)
-                || checkpointHandler->isCheckpointingStep()))
-        {
-            stateGpu->copyCoordinatesFromGpu(state->x, AtomLocality::Local);
-            stateGpu->waitCoordinatesReadyOnHost(AtomLocality::Local);
-        }
-        // Copy velocities if needed for the output/checkpointing.
-        // NOTE: Copy on the search steps is done at the beginning of the step.
-        if (useGpuForUpdate && !bNS
-            && (do_per_step(step, ir->nstvout) || checkpointHandler->isCheckpointingStep()))
-        {
-            stateGpu->copyVelocitiesFromGpu(state->v, AtomLocality::Local);
-            stateGpu->waitVelocitiesReadyOnHost(AtomLocality::Local);
-        }
-        // Copy forces for the output if the forces were reduced on the GPU (not the case on virial steps)
-        // and update is offloaded hence forces are kept on the GPU for update and have not been
-        // already transferred in do_force().
-        // TODO: There should be an improved, explicit mechanism that ensures this copy is only executed
-        //       when the forces are ready on the GPU -- the same synchronizer should be used as the one
-        //       prior to GPU update.
-        // TODO: When the output flags will be included in step workload, this copy can be combined with the
-        //       copy call in do_force(...).
-        // NOTE: The forces should not be copied here if the vsites are present, since they were modified
-        //       on host after the D2H copy in do_force(...).
-        if (runScheduleWork->stepWork.useGpuFBufferOps && (simulationWork.useGpuUpdate && !vsite)
-            && do_per_step(step, ir->nstfout))
-        {
-            stateGpu->copyForcesFromGpu(f.view().force(), AtomLocality::Local);
-            stateGpu->waitForcesReadyOnHost(AtomLocality::Local);
-        }
-        /* Now we have the energies and forces corresponding to the
-         * coordinates at time t. We must output all of this before
-         * the update.
-         */
-        const EkindataState ekindataState = bGStat ? (bSumEkinhOld ? EkindataState::UsedNeedToReduce
-                                                                   : EkindataState::UsedDoNotNeedToReduce)
-                                                   : EkindataState::NotUsed;
-        do_md_trajectory_writing(fplog,
-                                 cr,
-                                 nfile,
-                                 fnm,
-                                 step,
-                                 step_rel,
-                                 t,
-                                 ir,
-                                 state,
-                                 state_global,
-                                 observablesHistory,
-                                 top_global,
-                                 fr,
-                                 outf,
-                                 energyOutput,
-                                 ekind,
-                                 f.view().force(),
-                                 checkpointHandler->isCheckpointingStep(),
-                                 bRerunMD,
-                                 bLastStep,
-                                 mdrunOptions.writeConfout,
-                                 ekindataState);
-        /* Check if IMD step and do IMD communication, if bIMD is TRUE. */
-        bInteractiveMDstep = imdSession->run(step, bNS, state->box, state->x, t);
-
-        /* kludge -- virial is lost with restart for MTTK NPT control. Must reload (saved earlier). */
-        if (startingBehavior != StartingBehavior::NewSimulation && bFirstStep
-            && (inputrecNptTrotter(ir) || inputrecNphTrotter(ir)))
-        {
-            copy_mat(state->svir_prev, shake_vir);
-            copy_mat(state->fvir_prev, force_vir);
-        }
-
-        stopHandler->setSignal();
-        resetHandler->setSignal(walltime_accounting);
-
-        if (bGStat || !PAR(cr))
-        {
-            /* In parallel we only have to check for checkpointing in steps
-             * where we do global communication,
-             *  otherwise the other nodes don't know.
-             */
-            checkpointHandler->setSignal(walltime_accounting);
-        }
-
-        /* #########   START SECOND UPDATE STEP ################# */
-
-        /* at the start of step, randomize or scale the velocities ((if vv. Restriction of Andersen
-           controlled in preprocessing */
-
-        if (ETC_ANDERSEN(ir->etc)) /* keep this outside of update_tcouple because of the extra info required to pass */
-        {
-            gmx_bool bIfRandomize;
-            bIfRandomize = update_randomize_velocities(
-                    ir, step, cr, md->homenr, md->cTC, md->invmass, state->v, &upd, constr);
-            /* if we have constraints, we have to remove the kinetic energy parallel to the bonds */
-            if (constr && bIfRandomize)
-            {
-                constrain_velocities(constr, do_log, do_ene, step, state, nullptr, false, nullptr);
-            }
-        }
-        /* Box is changed in update() when we do pressure coupling,
-         * but we should still use the old box for energy corrections and when
-         * writing it to the energy file, so it matches the trajectory files for
-         * the same timestep above. Make a copy in a separate array.
-         */
-        copy_mat(state->box, lastbox);
-
-        dvdl_constr = 0;
-
-        if (!useGpuForUpdate)
-        {
-            wallcycle_start(wcycle, WallCycleCounter::Update);
-        }
-        /* UPDATE PRESSURE VARIABLES IN TROTTER FORMULATION WITH CONSTRAINTS */
-        if (bTrotter)
-        {
-            trotter_update(ir,
-                           step,
-                           ekind,
-                           enerd,
-                           state,
-                           total_vir,
-                           md->homenr,
-                           md->cTC,
-                           md->invmass,
-                           &MassQ,
-                           trotter_seq,
-                           TrotterSequence::Three);
-            /* We can only do Berendsen coupling after we have summed
-             * the kinetic energy or virial. Since the happens
-             * in global_state after update, we should only do it at
-             * step % nstlist = 1 with bGStatEveryStep=FALSE.
-             */
-        }
-        else
-        {
-            update_tcouple(step, ir, state, ekind, &MassQ, md->homenr, md->cTC);
-            update_pcouple_before_coordinates(mdlog,
-                                              step,
-                                              ir->pressureCouplingOptions,
-                                              ir->deform,
-                                              ir->delta_t,
-                                              state,
-                                              &pressureCouplingMu,
-                                              &parrinelloRahmanM);
-        }
-
-        if (EI_VV(ir->eI))
-        {
-            GMX_ASSERT(!useGpuForUpdate, "GPU update is not supported with VVAK integrator.");
-
-            integrateVVSecondStep(step,
-                                  ir,
-                                  fr,
-                                  cr,
-                                  state,
-                                  mdAtoms->mdatoms(),
-                                  &fcdata,
-                                  &MassQ,
-                                  &vcm,
-                                  pull_work,
-                                  enerd,
-                                  &observablesReducer,
-                                  ekind,
-                                  gstat,
-                                  &dvdl_constr,
-                                  bCalcVir,
-                                  total_vir,
-                                  shake_vir,
-                                  force_vir,
-                                  pres,
-                                  lastbox,
-                                  do_log,
-                                  do_ene,
-                                  bGStat,
-                                  &bSumEkinhOld,
-                                  &f,
-                                  &cbuf,
-                                  &upd,
-                                  constr,
-                                  &nullSignaller,
-                                  trotter_seq,
-                                  nrnb,
-                                  wcycle);
-        }
-        else
-        {
-            if (useGpuForUpdate)
-            {
-                // On search steps, update handles to device vectors
-                // TODO: this condition has redundant / unnecessary clauses
-                if (bNS && (bFirstStep || haveDDAtomOrdering(*cr) || bExchanged))
-                {
-                    integrator->set(stateGpu->getCoordinates(),
-                                    stateGpu->getVelocities(),
-                                    stateGpu->getForces(),
-                                    top->idef,
-                                    *md);
-
-                    // Copy data to the GPU after buffers might have been reinitialized
-                    /* The velocity copy is redundant if we had Center-of-Mass motion removed on
-                     * the previous step. We don't check that now. */
-                    stateGpu->copyVelocitiesToGpu(state->v, AtomLocality::Local);
-                }
-
-                // Copy x to the GPU unless we have already transferred in do_force().
-                // We transfer in do_force() if a GPU force task requires x (PME or x buffer ops).
-                if (!(runScheduleWork->stepWork.haveGpuPmeOnThisRank
-                      || runScheduleWork->stepWork.useGpuXBufferOps))
-                {
-                    stateGpu->copyCoordinatesToGpu(state->x, AtomLocality::Local);
-                    // Coordinates are later used by the integrator running in the same stream.
-                    stateGpu->consumeCoordinatesCopiedToDeviceEvent(AtomLocality::Local);
-                }
-
-                if ((simulationWork.useGpuPme && simulationWork.useCpuPmePpCommunication)
-                    || (!runScheduleWork->stepWork.useGpuFBufferOps))
-                {
-                    // The PME forces were recieved to the host, and reduced on the CPU with the
-                    // rest of the forces computed on the GPU, so the final forces have to be copied
-                    // back to the GPU. Or the buffer ops were not offloaded this step, so the
-                    // forces are on the host and have to be copied
-                    stateGpu->copyForcesToGpu(f.view().force(), AtomLocality::Local);
-                }
-                const bool doTemperatureScaling =
-                        (ir->etc != TemperatureCoupling::No
-                         && do_per_step(step + ir->nsttcouple - 1, ir->nsttcouple));
-
-                // This applies Leap-Frog, LINCS and SETTLE in succession
-                integrator->integrate(stateGpu->getLocalForcesReadyOnDeviceEvent(
-                                              runScheduleWork->stepWork, runScheduleWork->simulationWork),
-                                      ir->delta_t,
-                                      true,
-                                      bCalcVir,
-                                      shake_vir,
-                                      doTemperatureScaling,
-                                      ekind->tcstat,
-                                      doParrinelloRahman,
-                                      ir->pressureCouplingOptions.nstpcouple * ir->delta_t,
-                                      parrinelloRahmanM);
+                /* Now is the time to relax the shells */
+                relax_shell_flexcon(fplog,
+                                    cr,
+                                    ms,
+                                    mdrunOptions.verbose,
+                                    enforcedRotation,
+                                    step,
+                                    ir,
+                                    imdSession,
+                                    pull_work,
+                                    bNS,
+                                    force_flags,
+                                    top,
+                                    constr,
+                                    enerd,
+                                    state->natoms,
+                                    state->x.arrayRefWithPadding(),
+                                    state->v.arrayRefWithPadding(),
+                                    state->box,
+                                    state->lambda,
+                                    &state->hist,
+                                    &f.view(),
+                                    force_vir,
+                                    *md,
+                                    fr->longRangeNonbondeds.get(),
+                                    nrnb,
+                                    wcycle,
+                                    shellfc,
+                                    fr,
+                                    runScheduleWork,
+                                    t,
+                                    mu_tot,
+                                    vsite,
+                                    ddBalanceRegionHandler);
             }
             else
             {
-                /* With multiple time stepping we need to do an additional normal
-                 * update step to obtain the virial, as the actual MTS integration
-                 * using an acceleration where the slow forces are multiplied by mtsFactor.
-                 * Using that acceleration would result in a virial with the slow
-                 * force contribution would be a factor mtsFactor too large.
-                 */
-                if (simulationWork.useMts && bCalcVir && constr != nullptr)
+                /* The AWH history need to be saved _before_ doing force calculations where the AWH bias
+                   is updated (or the AWH update will be performed twice for one step when continuing).
+                   It would be best to call this update function from do_md_trajectory_writing but that
+                   would occur after do_force. One would have to divide the update_awh function into one
+                   function applying the AWH force and one doing the AWH bias update. The update AWH
+                   bias function could then be called after do_md_trajectory_writing (then containing
+                   update_awh_history). The checkpointing will in the future probably moved to the start
+                   of the md loop which will rid of this issue. */
+                if (awh && checkpointHandler->isCheckpointingStep() && MAIN(cr))
                 {
-                    upd.update_for_constraint_virial(*ir,
-                                                     md->homenr,
-                                                     md->havePartiallyFrozenAtoms,
-                                                     md->invmass,
-                                                     md->invMassPerDim,
-                                                     *state,
-                                                     f.view().forceWithPadding(),
-                                                     *ekind);
+                    awh->updateHistory(state_global->awhHistory.get());
+                }
+
+                /* The coordinates (x) are shifted (to get whole molecules)
+                 * in do_force.
+                 * This is parallellized as well, and does communication too.
+                 * Check comments in sim_util.c
+                 */
+                do_force(fplog,
+                         cr,
+                         ms,
+                         *ir,
+                         awh.get(),
+                         enforcedRotation,
+                         imdSession,
+                         pull_work,
+                         step,
+                         nrnb,
+                         wcycle,
+                         top,
+                         state->box,
+                         state->x.arrayRefWithPadding(),
+                         &state->hist,
+                         &f.view(),
+                         force_vir,
+                         md,
+                         enerd,
+                         state->lambda,
+                         fr,
+                         runScheduleWork,
+                         vsite,
+                         mu_tot,
+                         t,
+                         ed ? ed->getLegacyED() : nullptr,
+                         fr->longRangeNonbondeds.get(),
+                         (bNS ? GMX_FORCE_NS : 0) | force_flags,
+                         ddBalanceRegionHandler);
+            }
+
+            // VV integrators do not need the following velocity half step
+            // if it is the first step after starting from a checkpoint.
+            // That is, the half step is needed on all other steps, and
+            // also the first step when starting from a .tpr file.
+            if (EI_VV(ir->eI))
+            {
+                integrateVVFirstStep(step,
+                                     bFirstStep,
+                                     bInitStep,
+                                     startingBehavior,
+                                     nstglobalcomm,
+                                     ir,
+                                     fr,
+                                     cr,
+                                     state,
+                                     mdAtoms->mdatoms(),
+                                     &fcdata,
+                                     &MassQ,
+                                     &vcm,
+                                     enerd,
+                                     &observablesReducer,
+                                     ekind,
+                                     gstat,
+                                     &last_ekin,
+                                     bCalcVir,
+                                     total_vir,
+                                     shake_vir,
+                                     force_vir,
+                                     pres,
+                                     do_log,
+                                     do_ene,
+                                     bCalcEner,
+                                     bGStat,
+                                     bStopCM,
+                                     bTrotter,
+                                     bExchanged,
+                                     &bSumEkinhOld,
+                                     &saved_conserved_quantity,
+                                     &f,
+                                     &upd,
+                                     constr,
+                                     &nullSignaller,
+                                     trotter_seq,
+                                     nrnb,
+                                     fplog,
+                                     wcycle);
+                if (vsite != nullptr && needVirtualVelocitiesThisStep)
+                {
+                    // Positions were calculated earlier
+                    wallcycle_start(wcycle, WallCycleCounter::VsiteConstr);
+                    vsite->construct(state->x, state->v, state->box, VSiteOperation::Velocities);
+                    wallcycle_stop(wcycle, WallCycleCounter::VsiteConstr);
+                }
+            }
+
+            /* ########  END FIRST UPDATE STEP  ############## */
+            /* ########  If doing VV, we now have v(dt) ###### */
+            if (bDoExpanded)
+            {
+                /* perform extended ensemble sampling in lambda - we don't
+                   actually move to the new state before outputting
+                   statistics, but if performing simulated tempering, we
+                   do update the velocities and the tau_t. */
+                // TODO: Avoid changing inputrec (#3854)
+                // Simulated tempering updates the reference temperature.
+                // Expanded ensemble without simulated tempering does not change the inputrec.
+                auto* nonConstInputrec = const_cast<t_inputrec*>(inputrec);
+                lamnew                 = ExpandedEnsembleDynamics(fplog,
+                                                  nonConstInputrec,
+                                                  enerd,
+                                                  state,
+                                                  &MassQ,
+                                                  state->fep_state,
+                                                  state->dfhist,
+                                                  step,
+                                                  state->v.rvec_array(),
+                                                  md->homenr,
+                                                  md->cTC);
+                /* history is maintained in state->dfhist, but state_global is what is sent to trajectory and log output */
+                if (MAIN(cr))
+                {
+                    copy_df_history(state_global->dfhist, state->dfhist);
+                }
+            }
+
+            // Copy coordinate from the GPU for the output/checkpointing if the update is offloaded
+            // and coordinates have not already been copied for i) search or ii) CPU force tasks.
+            if (useGpuForUpdate && !bNS && !runScheduleWork->domainWork.haveCpuLocalForceWork
+                && (do_per_step(step, ir->nstxout) || do_per_step(step, ir->nstxout_compressed)
+                    || checkpointHandler->isCheckpointingStep()))
+            {
+                stateGpu->copyCoordinatesFromGpu(state->x, AtomLocality::Local);
+                stateGpu->waitCoordinatesReadyOnHost(AtomLocality::Local);
+            }
+            // Copy velocities if needed for the output/checkpointing.
+            // NOTE: Copy on the search steps is done at the beginning of the step.
+            if (useGpuForUpdate && !bNS
+                && (do_per_step(step, ir->nstvout) || checkpointHandler->isCheckpointingStep()))
+            {
+                stateGpu->copyVelocitiesFromGpu(state->v, AtomLocality::Local);
+                stateGpu->waitVelocitiesReadyOnHost(AtomLocality::Local);
+            }
+            // Copy forces for the output if the forces were reduced on the GPU (not the case on virial steps)
+            // and update is offloaded hence forces are kept on the GPU for update and have not been
+            // already transferred in do_force().
+            // TODO: There should be an improved, explicit mechanism that ensures this copy is only executed
+            //       when the forces are ready on the GPU -- the same synchronizer should be used as the one
+            //       prior to GPU update.
+            // TODO: When the output flags will be included in step workload, this copy can be combined with the
+            //       copy call in do_force(...).
+            // NOTE: The forces should not be copied here if the vsites are present, since they were modified
+            //       on host after the D2H copy in do_force(...).
+            if (runScheduleWork->stepWork.useGpuFBufferOps
+                && (simulationWork.useGpuUpdate && !vsite) && do_per_step(step, ir->nstfout))
+            {
+                stateGpu->copyForcesFromGpu(f.view().force(), AtomLocality::Local);
+                stateGpu->waitForcesReadyOnHost(AtomLocality::Local);
+            }
+            /* Now we have the energies and forces corresponding to the
+             * coordinates at time t. We must output all of this before
+             * the update.
+             */
+            const EkindataState ekindataState =
+                    bGStat ? (bSumEkinhOld ? EkindataState::UsedNeedToReduce
+                                           : EkindataState::UsedDoNotNeedToReduce)
+                           : EkindataState::NotUsed;
+            do_md_trajectory_writing(fplog,
+                                     cr,
+                                     nfile,
+                                     fnm,
+                                     step,
+                                     step_rel,
+                                     t,
+                                     ir,
+                                     state,
+                                     state_global,
+                                     observablesHistory,
+                                     top_global,
+                                     fr,
+                                     outf,
+                                     energyOutput,
+                                     ekind,
+                                     f.view().force(),
+                                     checkpointHandler->isCheckpointingStep(),
+                                     bRerunMD,
+                                     bLastStep,
+                                     mdrunOptions.writeConfout,
+                                     ekindataState);
+            /* Check if IMD step and do IMD communication, if bIMD is TRUE. */
+            bInteractiveMDstep = imdSession->run(step, bNS, state->box, state->x, t);
+
+            /* kludge -- virial is lost with restart for MTTK NPT control. Must reload (saved earlier). */
+            if (startingBehavior != StartingBehavior::NewSimulation && bFirstStep
+                && (inputrecNptTrotter(ir) || inputrecNphTrotter(ir)))
+            {
+                copy_mat(state->svir_prev, shake_vir);
+                copy_mat(state->fvir_prev, force_vir);
+            }
+
+            stopHandler->setSignal();
+            resetHandler->setSignal(walltime_accounting);
+
+            if (bGStat || !PAR(cr))
+            {
+                /* In parallel we only have to check for checkpointing in steps
+                 * where we do global communication,
+                 *  otherwise the other nodes don't know.
+                 */
+                checkpointHandler->setSignal(walltime_accounting);
+            }
+
+            /* #########   START SECOND UPDATE STEP ################# */
+
+            /* at the start of step, randomize or scale the velocities ((if vv. Restriction of
+               Andersen controlled in preprocessing */
+
+            if (ETC_ANDERSEN(ir->etc)) /* keep this outside of update_tcouple because of the extra info required to pass */
+            {
+                gmx_bool bIfRandomize;
+                bIfRandomize = update_randomize_velocities(
+                        ir, step, cr, md->homenr, md->cTC, md->invmass, state->v, &upd, constr);
+                /* if we have constraints, we have to remove the kinetic energy parallel to the bonds */
+                if (constr && bIfRandomize)
+                {
+                    constrain_velocities(constr, do_log, do_ene, step, state, nullptr, false, nullptr);
+                }
+            }
+            /* Box is changed in update() when we do pressure coupling,
+             * but we should still use the old box for energy corrections and when
+             * writing it to the energy file, so it matches the trajectory files for
+             * the same timestep above. Make a copy in a separate array.
+             */
+            copy_mat(state->box, lastbox);
+
+            dvdl_constr = 0;
+
+            if (!useGpuForUpdate)
+            {
+                wallcycle_start(wcycle, WallCycleCounter::Update);
+            }
+            /* UPDATE PRESSURE VARIABLES IN TROTTER FORMULATION WITH CONSTRAINTS */
+            if (bTrotter)
+            {
+                trotter_update(ir,
+                               step,
+                               ekind,
+                               enerd,
+                               state,
+                               total_vir,
+                               md->homenr,
+                               md->cTC,
+                               md->invmass,
+                               &MassQ,
+                               trotter_seq,
+                               TrotterSequence::Three);
+                /* We can only do Berendsen coupling after we have summed
+                 * the kinetic energy or virial. Since the happens
+                 * in global_state after update, we should only do it at
+                 * step % nstlist = 1 with bGStatEveryStep=FALSE.
+                 */
+            }
+            else
+            {
+                update_tcouple(step, ir, state, ekind, &MassQ, md->homenr, md->cTC);
+                update_pcouple_before_coordinates(mdlog,
+                                                  step,
+                                                  ir->pressureCouplingOptions,
+                                                  ir->deform,
+                                                  ir->delta_t,
+                                                  state,
+                                                  &pressureCouplingMu,
+                                                  &parrinelloRahmanM);
+            }
+
+            if (EI_VV(ir->eI))
+            {
+                GMX_ASSERT(!useGpuForUpdate, "GPU update is not supported with VVAK integrator.");
+
+                integrateVVSecondStep(step,
+                                      ir,
+                                      fr,
+                                      cr,
+                                      state,
+                                      mdAtoms->mdatoms(),
+                                      &fcdata,
+                                      &MassQ,
+                                      &vcm,
+                                      pull_work,
+                                      enerd,
+                                      &observablesReducer,
+                                      ekind,
+                                      gstat,
+                                      &dvdl_constr,
+                                      bCalcVir,
+                                      total_vir,
+                                      shake_vir,
+                                      force_vir,
+                                      pres,
+                                      lastbox,
+                                      do_log,
+                                      do_ene,
+                                      bGStat,
+                                      &bSumEkinhOld,
+                                      &f,
+                                      &cbuf,
+                                      &upd,
+                                      constr,
+                                      &nullSignaller,
+                                      trotter_seq,
+                                      nrnb,
+                                      wcycle);
+            }
+            else
+            {
+                if (useGpuForUpdate)
+                {
+                    // On search steps, update handles to device vectors
+                    // TODO: this condition has redundant / unnecessary clauses
+                    if (bNS && (bFirstStep || haveDDAtomOrdering(*cr) || bExchanged))
+                    {
+                        integrator->set(stateGpu->getCoordinates(),
+                                        stateGpu->getVelocities(),
+                                        stateGpu->getForces(),
+                                        top->idef,
+                                        *md);
+
+                        // Copy data to the GPU after buffers might have been reinitialized
+                        /* The velocity copy is redundant if we had Center-of-Mass motion removed on
+                         * the previous step. We don't check that now. */
+                        stateGpu->copyVelocitiesToGpu(state->v, AtomLocality::Local);
+                    }
+
+                    // Copy x to the GPU unless we have already transferred in do_force().
+                    // We transfer in do_force() if a GPU force task requires x (PME or x buffer ops).
+                    if (!(runScheduleWork->stepWork.haveGpuPmeOnThisRank
+                          || runScheduleWork->stepWork.useGpuXBufferOps))
+                    {
+                        stateGpu->copyCoordinatesToGpu(state->x, AtomLocality::Local);
+                        // Coordinates are later used by the integrator running in the same stream.
+                        stateGpu->consumeCoordinatesCopiedToDeviceEvent(AtomLocality::Local);
+                    }
+
+                    if ((simulationWork.useGpuPme && simulationWork.useCpuPmePpCommunication)
+                        || (!runScheduleWork->stepWork.useGpuFBufferOps))
+                    {
+                        // The PME forces were recieved to the host, and reduced on the CPU with the
+                        // rest of the forces computed on the GPU, so the final forces have to be
+                        // copied back to the GPU. Or the buffer ops were not offloaded this step,
+                        // so the forces are on the host and have to be copied
+                        stateGpu->copyForcesToGpu(f.view().force(), AtomLocality::Local);
+                    }
+                    const bool doTemperatureScaling =
+                            (ir->etc != TemperatureCoupling::No
+                             && do_per_step(step + ir->nsttcouple - 1, ir->nsttcouple));
+
+                    // This applies Leap-Frog, LINCS and SETTLE in succession
+                    integrator->integrate(stateGpu->getLocalForcesReadyOnDeviceEvent(
+                                                  runScheduleWork->stepWork, runScheduleWork->simulationWork),
+                                          ir->delta_t,
+                                          true,
+                                          bCalcVir,
+                                          shake_vir,
+                                          doTemperatureScaling,
+                                          ekind->tcstat,
+                                          doParrinelloRahman,
+                                          ir->pressureCouplingOptions.nstpcouple * ir->delta_t,
+                                          parrinelloRahmanM);
+                }
+                else
+                {
+                    /* With multiple time stepping we need to do an additional normal
+                     * update step to obtain the virial, as the actual MTS integration
+                     * using an acceleration where the slow forces are multiplied by mtsFactor.
+                     * Using that acceleration would result in a virial with the slow
+                     * force contribution would be a factor mtsFactor too large.
+                     */
+                    if (simulationWork.useMts && bCalcVir && constr != nullptr)
+                    {
+                        upd.update_for_constraint_virial(*ir,
+                                                         md->homenr,
+                                                         md->havePartiallyFrozenAtoms,
+                                                         md->invmass,
+                                                         md->invMassPerDim,
+                                                         *state,
+                                                         f.view().forceWithPadding(),
+                                                         *ekind);
+
+                        constrain_coordinates(constr,
+                                              do_log,
+                                              do_ene,
+                                              step,
+                                              state,
+                                              upd.xp()->arrayRefWithPadding(),
+                                              &dvdl_constr,
+                                              bCalcVir,
+                                              shake_vir);
+                    }
+
+                    ArrayRefWithPadding<const RVec> forceCombined =
+                            (simulationWork.useMts && step % ir->mtsLevels[1].stepFactor == 0)
+                                    ? f.view().forceMtsCombinedWithPadding()
+                                    : f.view().forceWithPadding();
+                    upd.update_coords(*ir,
+                                      step,
+                                      md->homenr,
+                                      md->havePartiallyFrozenAtoms,
+                                      md->ptype,
+                                      md->invmass,
+                                      md->invMassPerDim,
+                                      state,
+                                      forceCombined,
+                                      &fcdata,
+                                      ekind,
+                                      parrinelloRahmanM,
+                                      etrtPOSITION,
+                                      cr,
+                                      constr != nullptr);
+
+                    wallcycle_stop(wcycle, WallCycleCounter::Update);
 
                     constrain_coordinates(constr,
                                           do_log,
@@ -1595,58 +1628,35 @@ void gmx::LegacySimulator::do_md()
                                           state,
                                           upd.xp()->arrayRefWithPadding(),
                                           &dvdl_constr,
-                                          bCalcVir,
+                                          bCalcVir && !simulationWork.useMts,
                                           shake_vir);
+
+                    upd.update_sd_second_half(*ir,
+                                              step,
+                                              &dvdl_constr,
+                                              md->homenr,
+                                              md->ptype,
+                                              md->invmass,
+                                              state,
+                                              cr,
+                                              nrnb,
+                                              wcycle,
+                                              constr,
+                                              do_log,
+                                              do_ene);
+                    upd.finish_update(
+                            *ir, md->havePartiallyFrozenAtoms, md->homenr, state, wcycle, constr != nullptr);
                 }
 
-                ArrayRefWithPadding<const RVec> forceCombined =
-                        (simulationWork.useMts && step % ir->mtsLevels[1].stepFactor == 0)
-                                ? f.view().forceMtsCombinedWithPadding()
-                                : f.view().forceWithPadding();
-                upd.update_coords(*ir,
-                                  step,
-                                  md->homenr,
-                                  md->havePartiallyFrozenAtoms,
-                                  md->ptype,
-                                  md->invmass,
-                                  md->invMassPerDim,
-                                  state,
-                                  forceCombined,
-                                  &fcdata,
-                                  ekind,
-                                  parrinelloRahmanM,
-                                  etrtPOSITION,
-                                  cr,
-                                  constr != nullptr);
+                if (ir->bPull && ir->pull->bSetPbcRefToPrevStepCOM)
+                {
+                    updatePrevStepPullCom(pull_work, state->pull_com_prev_step);
+                }
 
-                wallcycle_stop(wcycle, WallCycleCounter::Update);
-
-                constrain_coordinates(constr,
-                                      do_log,
-                                      do_ene,
-                                      step,
-                                      state,
-                                      upd.xp()->arrayRefWithPadding(),
-                                      &dvdl_constr,
-                                      bCalcVir && !simulationWork.useMts,
-                                      shake_vir);
-
-                upd.update_sd_second_half(
-                        *ir, step, &dvdl_constr, md->homenr, md->ptype, md->invmass, state, cr, nrnb, wcycle, constr, do_log, do_ene);
-                upd.finish_update(
-                        *ir, md->havePartiallyFrozenAtoms, md->homenr, state, wcycle, constr != nullptr);
+                enerd->term[F_DVDL_CONSTR] += dvdl_constr;
             }
-
-            if (ir->bPull && ir->pull->bSetPbcRefToPrevStepCOM)
-            {
-                updatePrevStepPullCom(pull_work, state->pull_com_prev_step);
-            }
-
-            enerd->term[F_DVDL_CONSTR] += dvdl_constr;
-
         }
-        }
-        // clang-format on
+
         if (simulationWork.useMdGpuGraph)
         {
             GMX_ASSERT((mdGraph != nullptr), "MD GPU graph does not exist.");
