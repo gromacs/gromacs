@@ -3121,13 +3121,6 @@ void LegacySimulator::do_steep()
 
     finish_em(cr, outf, walltime_accounting, wcycle);
 
-    /* To print the actual number of steps we needed somewhere */
-    {
-        // TODO: Avoid changing inputrec (#3854)
-        auto* nonConstInputrec   = const_cast<t_inputrec*>(inputrec);
-        nonConstInputrec->nsteps = count;
-    }
-
     walltime_accounting_set_nsteps_done(walltime_accounting, count);
 }
 
@@ -3266,19 +3259,13 @@ void LegacySimulator::do_nm()
     /* Write start time and temperature */
     print_em_start(fplog, cr, walltime_accounting, wcycle, NM);
 
-    /* fudge nr of steps to nr of atoms */
-    {
-        // TODO: Avoid changing inputrec (#3854)
-        auto* nonConstInputrec   = const_cast<t_inputrec*>(inputrec);
-        nonConstInputrec->nsteps = atom_index.size() * 2;
-    }
-
+    const int64_t numSteps = atom_index.size() * 2;
     if (bIsMain)
     {
         fprintf(stderr,
                 "starting normal mode calculation '%s'\n%" PRId64 " steps.\n\n",
                 *(top_global.name),
-                inputrec->nsteps);
+                numSteps);
     }
 
     nnodes = cr->nnodes;
@@ -3489,7 +3476,7 @@ void LegacySimulator::do_nm()
 
     finish_em(cr, outf, walltime_accounting, wcycle);
 
-    walltime_accounting_set_nsteps_done(walltime_accounting, atom_index.size() * 2);
+    walltime_accounting_set_nsteps_done(walltime_accounting, numSteps);
 }
 
 } // namespace gmx
