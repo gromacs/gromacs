@@ -16,6 +16,14 @@ underestimation of the buffer for (very) inhomogeneous systems.
 
 :issue:`4509`
 
+Fix segmentation fault for large atom and thread count
+""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+When the number of atoms times the number of OpenMP threads was larger
+than 2147483647, negative atom number could cause illegal memory access.
+
+:issue:`4628`
+
 Density-guided simulation normalization
 """""""""""""""""""""""""""""""""""""""
 

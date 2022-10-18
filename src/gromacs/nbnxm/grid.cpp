@@ -1261,8 +1261,10 @@ void Grid::calcColumnIndices(const Grid::Dimensions&        gridDims,
         cxy_na[i] = 0;
     }
 
-    int taskAtomStart = *atomRange.begin() + static_cast<int>((thread + 0) * atomRange.size()) / nthread;
-    int taskAtomEnd = *atomRange.begin() + static_cast<int>((thread + 1) * atomRange.size()) / nthread;
+    // Use gmx::index to avoid overflow of int with large atom and thread counts
+    const gmx::index rangeSize     = atomRange.size();
+    const int        taskAtomStart = *atomRange.begin() + ((thread + 0) * rangeSize) / nthread;
+    const int        taskAtomEnd   = *atomRange.begin() + ((thread + 1) * rangeSize) / nthread;
 
     if (dd_zone == 0)
     {
