@@ -52,6 +52,7 @@
 #include "gromacs/gpu_utils/gmxsycl.h"
 #include "gromacs/hardware/device_management.h"
 #include "gromacs/hardware/device_management_sycl_intel_device_ids.h"
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/strconvert.h"
@@ -208,14 +209,15 @@ bool isDeviceDetectionFunctional(std::string* errorMessage)
     }
 }
 
-
 /*!
  * \brief Checks that device \c deviceInfo is compatible with GROMACS.
  *
- * \param[in]  syclDevice  The SYCL device pointer.
- * \returns                The status enumeration value for the checked device:
+ * \param[in]  syclDevice              SYCL device handle.
+ * \param[in]  supportedSubGroupSizes  List of supported sub-group sizes as reported by the device.
+ * \returns                            The status enumeration value for the checked device.
  */
-static DeviceStatus isDeviceCompatible(const sycl::device& syclDevice)
+static DeviceStatus isDeviceCompatible(const sycl::device&      syclDevice,
+                                       gmx::ArrayRef<const int> supportedSubGroupSizes)
 {
     try
     {
@@ -238,9 +240,6 @@ static DeviceStatus isDeviceCompatible(const sycl::device& syclDevice)
             return DeviceStatus::IncompatibleLevelZeroAndOneApi2022;
         }
 #endif
-
-        const std::vector<size_t> supportedSubGroupSizes =
-                syclDevice.get_info<sycl::info::device::sub_group_sizes>();
 
         // Ensure any changes stay in sync with subGroupSize in src/gromacs/nbnxm/sycl/nbnxm_sycl_kernel.cpp
         constexpr size_t requiredSubGroupSizeForNbnxm =
@@ -350,7 +349,8 @@ static bool isDeviceFunctional(const sycl::device& syclDevice, std::string* erro
 static DeviceStatus checkDevice(size_t deviceId, const DeviceInformation& deviceInfo)
 {
 
-    DeviceStatus supportStatus = isDeviceCompatible(deviceInfo.syclDevice);
+    DeviceStatus supportStatus =
+            isDeviceCompatible(deviceInfo.syclDevice, deviceInfo.supportedSubGroupSizes());
     if (supportStatus != DeviceStatus::Compatible)
     {
         return supportStatus;
@@ -467,9 +467,26 @@ std::vector<std::unique_ptr<DeviceInformation>> findDevices()
 
         deviceInfos[i]->id         = i;
         deviceInfos[i]->syclDevice = syclDevice;
-        deviceInfos[i]->status     = checkDevice(i, *deviceInfos[i]);
         deviceInfos[i]->deviceVendor =
                 getDeviceVendor(syclDevice.get_info<sycl::info::device::vendor>().c_str());
+
+        deviceInfos[i]->supportedSubGroupSizesSize = 0;
+        try
+        {
+            const auto sgSizes = syclDevice.get_info<sycl::info::device::sub_group_sizes>();
+            GMX_RELEASE_ASSERT(sgSizes.size() <= deviceInfos[i]->supportedSubGroupSizesData.size(),
+                               "Device supports too many subgroup sizes");
+            deviceInfos[i]->supportedSubGroupSizesSize = sgSizes.size();
+            // TODO: check capacity, see MR !3208
+            std::copy(sgSizes.begin(), sgSizes.end(), deviceInfos[i]->supportedSubGroupSizesData.begin());
+        }
+        catch (std::exception)
+        {
+            deviceInfos[i]->supportedSubGroupSizesSize = 0;
+            // The device will be marked incompatible by checkDevice below
+        }
+
+        deviceInfos[i]->status = checkDevice(i, *deviceInfos[i]);
 
         deviceInfos[i]->hardwareVersionMajor = std::nullopt;
         deviceInfos[i]->hardwareVersionMinor = std::nullopt;

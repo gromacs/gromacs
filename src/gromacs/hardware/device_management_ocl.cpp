@@ -55,6 +55,10 @@
 #    include <sys/sysctl.h>
 #endif
 
+#include <array>
+#include <vector>
+
+#include "gromacs/gpu_utils/ocl_compiler.h"
 #include "gromacs/gpu_utils/oclraii.h"
 #include "gromacs/gpu_utils/oclutils.h"
 #include "gromacs/hardware/device_management.h"
@@ -130,6 +134,89 @@ static bool runningOnCompatibleHWForNvidia(const DeviceInformation& deviceInfo)
     }
     return ccMajor < ccMajorBad;
 #endif
+}
+
+/*! \brief Return the list of sub-group sizes supported by the device
+ * \param devId OpenCL device ID.
+ * \param deviceVendor Device vendor.
+ * \param resultCapacity The capacity of \p result. Program is aborted if device returns more.
+ * \param result Pointer to pre-allocated result array, capable of holding at least \p resultCapacity elements.
+ * \return Number of elements written to \p results, that is, the number of sub-group sizes supported.
+ */
+static int fillSupportedSubGroupSizes(const cl_device_id devId,
+                                      const DeviceVendor deviceVendor,
+                                      int                resultCapacity,
+                                      int*               result)
+{
+    GMX_ASSERT(resultCapacity > 0, "Cannot write to empty array");
+    switch (deviceVendor)
+    {
+        case DeviceVendor::Amd:
+        {
+            cl_int status;
+            // Try to query the device:
+#ifdef CL_DEVICE_WAVEFRONT_WIDTH_AMD
+            cl_uint waveFrontSize;
+            status = clGetDeviceInfo(
+                    devId, CL_DEVICE_WAVEFRONT_WIDTH_AMD, sizeof(waveFrontSize), &waveFrontSize, nullptr);
+            if (status == CL_SUCCESS)
+            {
+                result[0] = waveFrontSize;
+                return 1;
+            }
+#endif
+            // We couldn't query the device directly, try compiling a kernel for it:
+            cl_context context = clCreateContext(nullptr, 1, &devId, nullptr, nullptr, &status);
+            if (status == CL_SUCCESS)
+            {
+                try
+                {
+                    int warpSize = gmx::ocl::getDeviceWarpSize(context, devId);
+                    clReleaseContext(context);
+                    result[0] = warpSize;
+                    return 1;
+                }
+                catch (const gmx::InternalError&)
+                {
+                    clReleaseContext(context);
+                    // Fallthrough to the next method
+                }
+            }
+            // Everything else failed, make an educated guess:
+            result[0] = 64;
+            return 1;
+        }
+        case DeviceVendor::Intel:
+        {
+            // Try to query the device:
+#ifdef CL_DEVICE_SUB_GROUP_SIZES_INTEL
+            std::vector<size_t> subGroupSizesTemp(resultCapacity);
+            size_t              numSubGroupSizes;
+            cl_int              status = clGetDeviceInfo(devId,
+                                            CL_DEVICE_SUB_GROUP_SIZES_INTEL,
+                                            subGroupSizesTemp.size(),
+                                            subGroupSizesTemp.data(),
+                                            &numSubGroupSizes);
+            if (status == CL_SUCCESS)
+            {
+                GMX_RELEASE_ASSERT(static_cast<int>(numSubGroupSizes) <= resultCapacity,
+                                   "Device supports too many sub-group sizes");
+                std::copy(subGroupSizesTemp.begin(), subGroupSizesTemp.begin() + numSubGroupSizes, result);
+                return numSubGroupSizes;
+            }
+#endif
+            // All Intel devices tested support those, and they are the only ones that matter to GROMACS
+            GMX_RELEASE_ASSERT(resultCapacity >= 3,
+                               "Device supports (by our guess) too many sub-group sizes");
+            result[0] = 8;
+            result[1] = 16;
+            result[2] = 32;
+            return 3;
+        }
+        case DeviceVendor::Nvidia: result[0] = 32; return 1;
+        // Keep the list of sub-groups empty for unknown vendors
+        default: return 0;
+    }
 }
 
 /*!
@@ -487,6 +574,13 @@ std::vector<std::unique_ptr<DeviceInformation>> findDevices()
 
                     deviceInfoList[device_index]->deviceVendor =
                             getDeviceVendor(deviceInfoList[device_index]->vendorName);
+
+                    deviceInfoList[device_index]->supportedSubGroupSizesSize =
+                            gmx::fillSupportedSubGroupSizes(
+                                    ocl_device_ids[j],
+                                    deviceInfoList[device_index]->deviceVendor,
+                                    deviceInfoList[device_index]->supportedSubGroupSizesData.size(),
+                                    deviceInfoList[device_index]->supportedSubGroupSizesData.data());
 
                     clGetDeviceInfo(ocl_device_ids[j],
                                     CL_DEVICE_MAX_WORK_ITEM_SIZES,

@@ -64,14 +64,26 @@ constexpr bool c_wrapY = true;
 constexpr int c_stateA = 0;
 constexpr int c_stateB = 1;
 
-static int subGroupSizeFromVendor(const DeviceInformation& deviceInfo)
+static int chooseSubGroupSizeForDevice(const DeviceInformation& deviceInfo)
 {
-    switch (deviceInfo.deviceVendor)
+    if (deviceInfo.supportedSubGroupSizesSize == 1)
     {
-        case DeviceVendor::Amd: return 64;   // Handle RDNA2 devices, Issue #3972.
-        case DeviceVendor::Intel: return 16; // TODO: Choose best value, Issue #4153.
-        case DeviceVendor::Nvidia: return 32;
-        default: GMX_RELEASE_ASSERT(false, "Unknown device vendor"); return 0;
+        return deviceInfo.supportedSubGroupSizesData[0];
+    }
+    else if (deviceInfo.supportedSubGroupSizesSize > 1)
+    {
+        switch (deviceInfo.deviceVendor)
+        {
+            case DeviceVendor::Intel: return 16; // TODO: Choose best value, Issue #4153.
+            default:
+                GMX_RELEASE_ASSERT(false, "Flexible sub-groups only supported for Intel GPUs");
+                return 0;
+        }
+    }
+    else
+    {
+        GMX_RELEASE_ASSERT(false, "Device has no known supported sub-group sizes");
+        return 0;
     }
 }
 
@@ -199,7 +211,13 @@ PmeGpuProgramImpl::PmeGpuProgramImpl(const DeviceContext& deviceContext) :
     deviceContext_(deviceContext)
 {
     // kernel parameters
-    warpSize_             = subGroupSizeFromVendor(deviceContext.deviceInfo());
+    const DeviceInformation& deviceInfo = deviceContext.deviceInfo();
+    warpSize_                           = chooseSubGroupSizeForDevice(deviceInfo);
+    GMX_RELEASE_ASSERT(std::find(deviceInfo.supportedSubGroupSizes().begin(),
+                                 deviceInfo.supportedSubGroupSizes().end(),
+                                 warpSize_)
+                               != deviceInfo.supportedSubGroupSizes().end(),
+                       "Device does not support selected sub-group size");
     spreadWorkGroupSize   = c_spreadMaxWarpsPerBlock * warpSize_;
     solveMaxWorkGroupSize = c_solveMaxWarpsPerBlock * warpSize_;
     gatherWorkGroupSize   = c_gatherMaxWarpsPerBlock * warpSize_;

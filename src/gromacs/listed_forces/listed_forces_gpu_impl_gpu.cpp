@@ -63,6 +63,29 @@ namespace gmx
 {
 // ---- ListedForcesGpu::Impl
 
+static int chooseSubGroupSizeForDevice(const DeviceInformation& deviceInfo)
+{
+    if (deviceInfo.supportedSubGroupSizesSize == 1)
+    {
+        return deviceInfo.supportedSubGroupSizesData[0];
+    }
+    else if (deviceInfo.supportedSubGroupSizesSize > 1)
+    {
+        switch (deviceInfo.deviceVendor)
+        {
+            case DeviceVendor::Intel: return 32;
+            default:
+                GMX_RELEASE_ASSERT(false, "Flexible sub-groups only supported for Intel GPUs");
+                return 0;
+        }
+    }
+    else
+    {
+        GMX_RELEASE_ASSERT(false, "Device has no known supported sub-group sizes");
+        return 0;
+    }
+}
+
 ListedForcesGpu::Impl::Impl(const gmx_ffparams_t&    ffparams,
                             const float              electrostaticsScaleFactor,
                             const DeviceInformation& deviceInfo,
@@ -105,14 +128,13 @@ ListedForcesGpu::Impl::Impl(const gmx_ffparams_t&    ffparams,
         kernelParams_.fTypeRangeStart[i] = 0;
         kernelParams_.fTypeRangeEnd[i]   = -1;
     }
-    switch (deviceInfo.deviceVendor)
-    {
-        // For AMD RDNA and Intel we might be overestimating the subgroup size, but that is ok for SYCL
-        case DeviceVendor::Amd: deviceSubGroupSize_ = 64; break;
-        case DeviceVendor::Intel:
-        case DeviceVendor::Nvidia: deviceSubGroupSize_ = 32; break;
-        default: GMX_RELEASE_ASSERT(false, "Unknown GPU vendor");
-    }
+
+    deviceSubGroupSize_ = chooseSubGroupSizeForDevice(deviceInfo);
+    GMX_RELEASE_ASSERT(std::find(deviceInfo.supportedSubGroupSizes().begin(),
+                                 deviceInfo.supportedSubGroupSizes().end(),
+                                 deviceSubGroupSize_)
+                               != deviceInfo.supportedSubGroupSizes().end(),
+                       "Device does not support selected sub-group size");
 
     int fTypeRangeEnd = kernelParams_.fTypeRangeEnd[numFTypesOnGpu - 1];
 

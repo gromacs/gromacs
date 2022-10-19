@@ -46,6 +46,7 @@
 
 #include "config.h"
 
+#include <array>
 #include <optional>
 #include <type_traits>
 
@@ -61,6 +62,7 @@
 #    include "gromacs/gpu_utils/gmxsycl.h"
 #endif
 
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/enumerationhelpers.h"
 
 //! Constant used to help minimize preprocessed code
@@ -156,6 +158,17 @@ struct DeviceInformation
     int id;
     //! Device vendor.
     DeviceVendor deviceVendor;
+    /*! \brief Warp/sub-group sizes supported by the device.
+     *
+     * \ref DeviceInformation must be serializable in CUDA, so we cannot use \c std::vector here.
+     * Arbitrarily limiting to 10. FixedCapacityVector uses pointers internally, so no good either. */
+    std::array<int, 10>      supportedSubGroupSizesData;
+    int                      supportedSubGroupSizesSize;
+    gmx::ArrayRef<const int> supportedSubGroupSizes() const
+    {
+        return { supportedSubGroupSizesData.begin(),
+                 supportedSubGroupSizesData.begin() + supportedSubGroupSizesSize };
+    }
 #if GMX_GPU_CUDA
     //! CUDA device properties.
     cudaDeviceProp prop;
