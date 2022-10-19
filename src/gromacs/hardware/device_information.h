@@ -47,6 +47,7 @@
 #include "config.h"
 
 #include <optional>
+#include <type_traits>
 
 #if GMX_GPU_CUDA
 #    include <cuda_runtime.h>
@@ -64,9 +65,6 @@
 
 //! Constant used to help minimize preprocessed code
 static constexpr bool c_binarySupportsGpus = (GMX_GPU != 0);
-//! Whether \ref DeviceInformation can be serialized for sending via MPI.
-static constexpr bool c_canSerializeDeviceInformation =
-        (!GMX_GPU_OPENCL && !GMX_GPU_SYCL); /*NOLINT(misc-redundant-expression)*/
 
 //! Possible results of the GPU detection/check.
 enum class DeviceStatus : int
@@ -181,5 +179,8 @@ struct DeviceInformation
     std::optional<int> hardwareVersionPatch;
 #endif
 };
+
+//! Whether \ref DeviceInformation can be serialized for sending via MPI.
+static constexpr bool c_canSerializeDeviceInformation = std::is_trivial_v<DeviceInformation>;
 
 #endif // GMX_HARDWARE_DEVICE_INFORMATION_H
