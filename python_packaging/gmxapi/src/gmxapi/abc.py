@@ -112,10 +112,8 @@ from typing import Type, Callable
 
 
 class NDArray(collections.abc.Sequence, ABC):
-    """N-dimensional data interface.
+    """N-dimensional data interface."""
 
-
-    """
     # TODO: Fix the data model and ABC vs. type-checking conflicts so that we can
     #       recognize NDArrays and NDArray futures as compatible data in data flow operations.
     # We cannot do the following because of the forward reference to Future:
@@ -137,11 +135,13 @@ class NDArray(collections.abc.Sequence, ABC):
     #             any(is_compatible(base) for base in subclass.__mro__)
     #             return True
     #     return NotImplemented
+
+
 NDArray.register(list)
 
 
 # TODO: Define an enumeration.
-SourceProtocol = typing.NewType('SourceProtocol', str)
+SourceProtocol = typing.NewType("SourceProtocol", str)
 
 
 class Resource(ABC):
@@ -154,6 +154,7 @@ class Resource(ABC):
     in a different Context than that in which the resource is owned. The Context
     instances negotiate the resource availability in the new Context.
     """
+
     # No public interface is yet defined for the Resource API.
 
     # Resource instances should have an attribute serving as a sequence of available
@@ -171,6 +172,7 @@ class Future(Resource):
 
     Futures represent "immutable resources," or fixed points in the data flow.
     """
+
     @property
     @abstractmethod
     def dtype(self) -> type:
@@ -211,6 +213,7 @@ class MutableResource(Resource):
     and consumers of MutableResources must be able to be instantiated in the
     same Context.
     """
+
     def subscribe(self, subscriber: MutableResourceSubscriber):
         """Create a dependency on this resource.
 
@@ -229,6 +232,7 @@ class OutputDataProxy(ABC):
     This abstract base class describes the interface to the output of an
     operation / work node.
     """
+
     # TODO: Specification.
     # Currently, the common aspect of OutputDataProxy is that a class has public
     # attributes that are exclusively OutputDescriptor instances, meaning that
@@ -370,8 +374,9 @@ class Node(ABC):
 
     .. todo:: Converge. A Node is to a concrete Context what an operation handle is to the None (Python UI) Context.
     """
+
     @abstractmethod
-    def handle(self, context: 'Context') -> OperationReference:
+    def handle(self, context: "Context") -> OperationReference:
         """Get a reference to the Operation in the indicated Context.
 
         This is equivalent to the reference obtained from the helper function
@@ -383,7 +388,7 @@ class Node(ABC):
         # director that translates from the Node's Context to *context*
 
     @abstractmethod
-    def output_description(self, context: 'Context') -> OutputDescription:
+    def output_description(self, context: "Context") -> OutputDescription:
         """Get a description of the output available from this node.
 
         Returns a subset of the information available through handle(), but
@@ -413,9 +418,8 @@ class Node(ABC):
         """
 
     @abstractmethod
-    def operation(self) -> 'OperationImplementation':
-        """Get a reference to the registered operation that produces nodes like this.
-        """
+    def operation(self) -> "OperationImplementation":
+        """Get a reference to the registered operation that produces nodes like this."""
         # Note that the uniqueness of a node is such that Node.operation() and
         # Node.input() used to get an OperationReference in the same Context
         # should result in a handle to the same Node.
@@ -527,6 +531,7 @@ class Context(ABC):
     implementations may, *but are not required*, to subclass from this ABC to
     help enforce compatibility.
     """
+
     @abstractmethod
     def node_builder(self, *, operation, label=None) -> NodeBuilder:
         """Get a builder for a new work graph node.
@@ -554,6 +559,7 @@ class ResourceFactory(ABC):
 
     TODO: refine interface.
     """
+
     @abstractmethod
     def input_description(self, context: Context):
         """Get an input description in a form usable by the indicated Context."""
@@ -566,6 +572,7 @@ class OperationDirector(ABC):
     (by a dispatching factory) to update the work managed by the context
     (add a computational element).
     """
+
     # TODO: How to handle subscriptions? Should the subscription itself be represented
     #  as a type of resource that is passed to __call__, or should the director be
     #  able to subscribe to resources as an alternative to passing with __call__?
@@ -592,10 +599,11 @@ class OperationDirector(ABC):
         ...
 
     @abstractmethod
-    def resource_factory(self,
-                         source: typing.Union[Context, None],
-                         target: typing.Optional[Context] = None) \
-            -> typing.Union[ResourceFactory, typing.Callable]:
+    def resource_factory(
+        self,
+        source: typing.Union[Context, None],
+        target: typing.Optional[Context] = None,
+    ) -> typing.Union[ResourceFactory, typing.Callable]:
         """Get an appropriate resource factory.
 
         The ResourceFactory converts resources (in the form produced by the *source* Context)
@@ -644,6 +652,7 @@ class OperationImplementation(ABC):
     The registered object must be able to describe its namespace and name, and
     to dispatch an OperationDirector appropriate for a given Context.
     """
+
     # TODO: Either OperationImplementations should be composed or subclasses should
     #  each be singletons. We can still consider that OperationReferences are instances
     #  of OperationImplementations or its subclasses, or that OperationReference classes

@@ -38,7 +38,7 @@ not use the Python Context resource manager. It uses either the legacy 0.0.7
 Context or its own Context, also implemented in this module.
 """
 
-__all__ = ['mdrun', 'SimulationError']
+__all__ = ["mdrun", "SimulationError"]
 
 import inspect
 import os
@@ -61,8 +61,8 @@ from . import workflow
 from .abc import ModuleObject
 
 # Initialize module-level logger
-logger = root_logger.getChild('mdrun')
-logger.info('Importing {}'.format(__name__))
+logger = root_logger.getChild("mdrun")
+logger.info("Importing {}".format(__name__))
 
 # Output in the gmxapi.operation Context.
 # TODO: Consider using a single base class for the DataProxy, but have distinct
@@ -70,19 +70,20 @@ logger.info('Importing {}'.format(__name__))
 #  subclasses) so that static code inspection can more easily determine the
 #  attributes of the data proxies.
 _output_descriptors = (
-    _op.OutputDataDescriptor('directory', str),
-    _op.OutputDataDescriptor('checkpoint', str),
-    _op.OutputDataDescriptor('parameters', dict),
-    _op.OutputDataDescriptor('stderr', str),
-    _op.OutputDataDescriptor('stdout', str),
-    _op.OutputDataDescriptor('trajectory', str),
+    _op.OutputDataDescriptor("directory", str),
+    _op.OutputDataDescriptor("checkpoint", str),
+    _op.OutputDataDescriptor("parameters", dict),
+    _op.OutputDataDescriptor("stderr", str),
+    _op.OutputDataDescriptor("stdout", str),
+    _op.OutputDataDescriptor("trajectory", str),
 )
-_publishing_descriptors = {desc._name: gmxapi.operation.Publisher(desc._name, desc._dtype)
-                           for desc in
-                           _output_descriptors}
-_output = _op.OutputCollectionDescription(**{descriptor._name: descriptor._dtype for
-                                             descriptor in
-                                             _output_descriptors})
+_publishing_descriptors = {
+    desc._name: gmxapi.operation.Publisher(desc._name, desc._dtype)
+    for desc in _output_descriptors
+}
+_output = _op.OutputCollectionDescription(
+    **{descriptor._name: descriptor._dtype for descriptor in _output_descriptors}
+)
 
 
 class FD(Enum):
@@ -92,6 +93,7 @@ class FD(Enum):
     since pytest or other calling code may have already manipulated the
     file descriptors associated with Python's `sys` module.
     """
+
     STDOUT = 1
     STDERR = 2
     # Provide a type hint for the *value* property.
@@ -114,15 +116,14 @@ def redirect_stdio(fd: FD, path: Union[str, Path, os.PathLike]):
     """
     fd_backup = os.dup(fd.value)
     try:
-        with open(path, 'a') as fh:
+        with open(path, "a") as fh:
             yield os.dup2(fh.fileno(), fd.value)
     finally:
         os.dup2(fd_backup, fd.value)
         os.close(fd_backup)
 
 
-class OutputDataProxy(_op.DataProxyBase,
-                      descriptors=_output_descriptors):
+class OutputDataProxy(_op.DataProxyBase, descriptors=_output_descriptors):
     """Implement the 'output' attribute of `mdrun` operations.
 
     Attributes:
@@ -148,37 +149,55 @@ class OutputDataProxy(_op.DataProxyBase,
     """
 
 
-class PublishingDataProxy(_op.DataProxyBase,
-                          descriptors=_publishing_descriptors):
+class PublishingDataProxy(_op.DataProxyBase, descriptors=_publishing_descriptors):
     """Manage output resource updates for MDRun operation."""
 
 
-_output_factory = _op.OutputFactory(output_proxy=OutputDataProxy,
-                                    output_description=_output,
-                                    publishing_data_proxy=PublishingDataProxy)
+_output_factory = _op.OutputFactory(
+    output_proxy=OutputDataProxy,
+    output_description=_output,
+    publishing_data_proxy=PublishingDataProxy,
+)
 
 # Input in the gmxapi.operation Context for the dispatching runner.
 # The default empty dictionary for parameters just means that there are no overrides
 # to the parameters already provided in _simulation_input.
 _input = _op.InputCollectionDescription(
-    [('_simulation_input', inspect.Parameter('_simulation_input',
-                                             inspect.Parameter.POSITIONAL_OR_KEYWORD,
-                                             annotation=str)),
-     ('parameters', inspect.Parameter('parameters',
-                                      inspect.Parameter.POSITIONAL_OR_KEYWORD,
-                                      annotation=dict,
-                                      default=dict())),
-     ('runtime_args', inspect.Parameter('runtime_args',
-                                        inspect.Parameter.POSITIONAL_OR_KEYWORD,
-                                        annotation=dict,
-                                        default=dict()))
-     ])
+    [
+        (
+            "_simulation_input",
+            inspect.Parameter(
+                "_simulation_input",
+                inspect.Parameter.POSITIONAL_OR_KEYWORD,
+                annotation=str,
+            ),
+        ),
+        (
+            "parameters",
+            inspect.Parameter(
+                "parameters",
+                inspect.Parameter.POSITIONAL_OR_KEYWORD,
+                annotation=dict,
+                default=dict(),
+            ),
+        ),
+        (
+            "runtime_args",
+            inspect.Parameter(
+                "runtime_args",
+                inspect.Parameter.POSITIONAL_OR_KEYWORD,
+                annotation=dict,
+                default=dict(),
+            ),
+        ),
+    ]
+)
 
 
 def _standard_node_resource_factory(*args, **kwargs) -> _op.DataSourceCollection:
     """Translate Python UI input to the gmxapi.operation node builder inputs."""
     source_collection = _input.bind(*args, **kwargs)
-    logger.info('mdrun input bound as source collection {}'.format(source_collection))
+    logger.info("mdrun input bound as source collection {}".format(source_collection))
     return source_collection
 
 
@@ -192,6 +211,7 @@ class LegacyImplementationSubscription(object):
     This input resource is a subscription to work that is dispatched to a sub-context.
     The resource can be created from the standard data of the simulation module.
     """
+
     workdir: typing.List[str]  # Simulation working directories.
     parameters: typing.List[dict]  # MDP dictionaries.
     runtime_args: typing.List[dict]  # CLI args passed as gmxapi 0.0.7 work params.
@@ -199,6 +219,7 @@ class LegacyImplementationSubscription(object):
     def __init__(self, resource_manager: _op.ResourceManager):
         from .context import Context as LegacyContext
         import gmxapi._gmxapi as _gmxapi
+
         try:
             from mpi4py.MPI import Comm as mpi4py_Comm
         except ImportError:
@@ -223,16 +244,17 @@ class LegacyImplementationSubscription(object):
         ensemble_width = resource_manager.ensemble_width
         if ensemble_width > 1 and mpi4py_Comm is None:
             raise exceptions.FeatureNotAvailableError(
-                'Ensemble workflows require the mpi4py Python package.'
+                "Ensemble workflows require the mpi4py Python package."
             )
 
         # Choose working directories
         # TODO: operation working directory naming scheme should be centrally well-defined.
         # Note that workflow.WorkSpec.uid is currently dependent on the input file parameter,
         # so we cannot create the input file path in the working directory based on WorkSpec.uid.
-        workdir_list = ['{node}_{member}'.format(node=resource_manager.operation_id,
-                                                 member=member)
-                        for member in range(ensemble_width)]
+        workdir_list = [
+            "{node}_{member}".format(node=resource_manager.operation_id, member=member)
+            for member in range(ensemble_width)
+        ]
         parameters_dict_list = [{}] * ensemble_width
         runtime_args_list = [{}] * ensemble_width
 
@@ -265,15 +287,22 @@ class LegacyImplementationSubscription(object):
             base_rank = 0
         # Get resources for the entire ensemble of tasks (the session).
         requirements = gmxapi.runtime.ResourceRequirements(comm_size=ensemble_width)
-        with scoped_resources(base_context, requirements=requirements) as session_resources:
+        with scoped_resources(
+            base_context, requirements=requirements
+        ) as session_resources:
             session_comm: mpi4py_Comm = session_resources.communicator()
             if base_rank < ensemble_width:
                 if session_comm is not None:
-                    assert hasattr(session_comm, 'Get_size')
-                    assert hasattr(session_comm, 'Get_rank')
+                    assert hasattr(session_comm, "Get_size")
+                    assert hasattr(session_comm, "Get_rank")
                     # Note that in the current implementation, we assign one rank to each ensemble member.
-                    assert typing.cast('mpi4py.MPI.Comm', session_comm).Get_size() == ensemble_width
-                    ensemble_rank = typing.cast('mpi4py.MPI.Comm', session_comm).Get_rank()
+                    assert (
+                        typing.cast("mpi4py.MPI.Comm", session_comm).Get_size()
+                        == ensemble_width
+                    )
+                    ensemble_rank = typing.cast(
+                        "mpi4py.MPI.Comm", session_comm
+                    ).Get_rank()
                 else:
                     # We should have already checked, but ensemble simulations
                     # or MPI-enabled GROMACS simulators require `mpi4py` and a
@@ -293,9 +322,9 @@ class LegacyImplementationSubscription(object):
             for ensemble_member in range(ensemble_width):
                 with resource_manager.local_input(member=ensemble_member) as input_pack:
                     if ensemble_member == ensemble_rank:
-                        source_file = input_pack.kwargs['_simulation_input']
-                        parameters = input_pack.kwargs['parameters']
-                        runtime_args = input_pack.kwargs['runtime_args']
+                        source_file = input_pack.kwargs["_simulation_input"]
+                        parameters = input_pack.kwargs["parameters"]
+                        runtime_args = input_pack.kwargs["runtime_args"]
                         # If there are any other key word arguments to process from the
                         # gmxapi.mdrun factory call, do it here.
 
@@ -306,7 +335,7 @@ class LegacyImplementationSubscription(object):
                 workdir = os.path.abspath(workdir_list[ensemble_rank])
 
                 # TODO: We should really name this file with a useful input-dependent tag.
-                tprfile = os.path.join(workdir, 'topol.tpr')
+                tprfile = os.path.join(workdir, "topol.tpr")
 
                 expected_working_files = [tprfile]
 
@@ -316,7 +345,7 @@ class LegacyImplementationSubscription(object):
                         # It is unspecified by the API, but at least through gmxapi 0.1,
                         # all simulations are initialized with a checkpoint file named state.cpt
                         # (see src/api/cpp/context.cpp)
-                        checkpoint_file = runtime_args.get('-cpi', 'state.cpt')
+                        checkpoint_file = runtime_args.get("-cpi", "state.cpt")
                         if not os.path.isabs(checkpoint_file):
                             checkpoint_file = os.path.join(workdir, checkpoint_file)
                         expected_working_files.append(checkpoint_file)
@@ -324,14 +353,16 @@ class LegacyImplementationSubscription(object):
                         for file in expected_working_files:
                             if not os.path.exists(file):
                                 logger.error(
-                                    f'Expected file {file} not found. gmxapi.mdrun task '
-                                    f'{resource_manager.operation_id} is in an unknown state. Aborting.'
+                                    f"Expected file {file} not found. gmxapi.mdrun task "
+                                    f"{resource_manager.operation_id} is in an unknown state. Aborting."
                                 )
                                 raise exceptions.ApiError(
-                                    f'Cannot determine working directory state: {workdir}')
+                                    f"Cannot determine working directory state: {workdir}"
+                                )
                     else:
                         raise exceptions.ApiError(
-                            f'Chosen working directory path exists but is not a directory: {workdir}')
+                            f"Chosen working directory path exists but is not a directory: {workdir}"
+                        )
                 else:
                     # Build the working directory and input files.
                     os.mkdir(workdir)
@@ -342,15 +373,15 @@ class LegacyImplementationSubscription(object):
                             sim_input.parameters.set(key=key, value=value)
                         except _gmxapi.Exception as e:
                             raise exceptions.ApiError(
-                                'Bug encountered. Unknown error when trying to set simulation '
-                                'parameter {} to {}'.format(key, value)
+                                "Bug encountered. Unknown error when trying to set simulation "
+                                "parameter {} to {}".format(key, value)
                             ) from e
 
                     fileio.write_tpr_file(output=tprfile, input=sim_input)
-                logger.info('Created {} on rank {}'.format(tprfile, base_rank))
+                logger.info("Created {} on rank {}".format(tprfile, base_rank))
 
                 # Gather the actual outputs from the ensemble members.
-                if hasattr(session_comm, 'allgather'):
+                if hasattr(session_comm, "allgather"):
                     # We should not assume that abspath expands the same on different MPI ranks.
                     workdir_list = session_comm.allgather(workdir)
                     tpr_filenames = session_comm.allgather(tprfile)
@@ -358,37 +389,50 @@ class LegacyImplementationSubscription(object):
                     parameters_dict_list = session_comm.allgather(parameters)
                     runtime_args_list = session_comm.allgather(runtime_args)
                 else:
-                    workdir_list = [os.path.abspath(_workdir) for _workdir in workdir_list]
+                    workdir_list = [
+                        os.path.abspath(_workdir) for _workdir in workdir_list
+                    ]
                     # TODO: If we use better input file names, they need to be updated in multiple places.
-                    tpr_filenames = [os.path.join(_workdir, 'topol.tpr') for _workdir in workdir_list]
-                    parameters_dict_list = [fileio.read_tpr(tprfile).parameters.extract() for tprfile in
-                                            tpr_filenames]
+                    tpr_filenames = [
+                        os.path.join(_workdir, "topol.tpr") for _workdir in workdir_list
+                    ]
+                    parameters_dict_list = [
+                        fileio.read_tpr(tprfile).parameters.extract()
+                        for tprfile in tpr_filenames
+                    ]
                     if isinstance(runtime_args, (list, tuple)):
                         runtime_args_list = list(runtime_args)
                     else:
                         assert isinstance(runtime_args, dict)
                         runtime_args_list = list(
-                            runtime_args.copy() for _ in range(ensemble_width))
+                            runtime_args.copy() for _ in range(ensemble_width)
+                        )
 
-                logger.debug('Context rank {} acknowledges working directories {}'.format(
-                    base_rank,
-                    workdir_list))
-                logger.debug('Operation {}:{} will use {}'.format(
-                    resource_manager.operation_id,
-                    ensemble_rank,
-                    workdir
-                ))
-                if hasattr(resource_manager, 'mdrun_kwargs'):
-                    warnings.warn(DeprecationWarning(
-                        'Ignoring ResourceManager.mdrun_kwargs attribute. '
-                        'Provide runtime arguments to mdrun with the *runtime_args* kwarg.'
-                    ))
+                logger.debug(
+                    "Context rank {} acknowledges working directories {}".format(
+                        base_rank, workdir_list
+                    )
+                )
+                logger.debug(
+                    "Operation {}:{} will use {}".format(
+                        resource_manager.operation_id, ensemble_rank, workdir
+                    )
+                )
+                if hasattr(resource_manager, "mdrun_kwargs"):
+                    warnings.warn(
+                        DeprecationWarning(
+                            "Ignoring ResourceManager.mdrun_kwargs attribute. "
+                            "Provide runtime arguments to mdrun with the *runtime_args* kwarg."
+                        )
+                    )
                 # TODO(#3718): Normalize the way we pass run time parameters to mdrun.
                 kwargs = runtime_args_list[ensemble_rank].copy()
                 for key, value in runtime_args.items():
                     logger.debug(
-                        'Adding mdrun run time argument from user input: {}'.format(
-                            key + '=' + str(value)))
+                        "Adding mdrun run time argument from user input: {}".format(
+                            key + "=" + str(value)
+                        )
+                    )
                 # Note that this violates the traditional gmxapi assumption that all ranks see the same
                 # instructions. The "md_sim" element of the gmxapi 0.0.7 workspec ends up being unique
                 # to the rank that sees it.
@@ -397,9 +441,11 @@ class LegacyImplementationSubscription(object):
                 # TODO(#3145): Attach extension code, if any.
 
                 # Go ahead and execute immediately. No need for lazy initialization in this basic case.
-                context = LegacyContext(work=self.workspec,
-                                        workdir_list=workdir_list,
-                                        communicator=session_comm)
+                context = LegacyContext(
+                    work=self.workspec,
+                    workdir_list=workdir_list,
+                    communicator=session_comm,
+                )
                 self.simulation_module_context = context
                 # Note: The redirection of stdout and stderr here is a workaround (#4541) for
                 # inflexible output handling in libgromacs. A better solution would be to use a
@@ -407,27 +453,36 @@ class LegacyImplementationSubscription(object):
                 # least to set and use file descriptors managed through the output_env or program_context,
                 # but, as of resolution of #4541, there are no near term plans to make such changes.
                 # See also #1505, #2585, #2999, #3015, #3035
-                with redirect_stdio(FD.STDOUT, os.path.join(workdir, 'stdout.txt')):
-                    with redirect_stdio(FD.STDERR, os.path.join(workdir, 'stderr.txt')):
+                with redirect_stdio(FD.STDOUT, os.path.join(workdir, "stdout.txt")):
+                    with redirect_stdio(FD.STDERR, os.path.join(workdir, "stderr.txt")):
                         with self.simulation_module_context as session:
                             session.run()
-                logger.debug(f'workdir[{ensemble_rank}] = {workdir_list[ensemble_rank]}')
-                logger.debug(f'parameters[{ensemble_rank}] = {parameters_dict_list[ensemble_rank]}')
-                logger.debug(f'runtime_args[{ensemble_rank}] = {runtime_args_list[ensemble_rank]}')
+                logger.debug(
+                    f"workdir[{ensemble_rank}] = {workdir_list[ensemble_rank]}"
+                )
+                logger.debug(
+                    f"parameters[{ensemble_rank}] = {parameters_dict_list[ensemble_rank]}"
+                )
+                logger.debug(
+                    f"runtime_args[{ensemble_rank}] = {runtime_args_list[ensemble_rank]}"
+                )
                 # end if _current_rank_participates
 
             # end scoped_communicator: session_comm
 
         # Info from other ranks might not have been available when we originally constructed
         # the list(s)
-        if hasattr(base_comm, 'Get_size'):
+        if hasattr(base_comm, "Get_size"):
             base_comm_size = base_comm.Get_size()
             if base_comm_size > ensemble_width:
                 # Extra unused ranks will not participate in the collective work, but they should
                 # still have representations of the ensemble work.
                 assert isinstance(base_comm, mpi4py_Comm)
-                synched_objects = (workdir_list,
-                                   parameters_dict_list, runtime_args_list)
+                synched_objects = (
+                    workdir_list,
+                    parameters_dict_list,
+                    runtime_args_list,
+                )
                 if base_rank == 0:
                     for inactive_member in range(ensemble_width, base_comm_size):
                         for obj in synched_objects:
@@ -436,8 +491,10 @@ class LegacyImplementationSubscription(object):
                     workdir_list = base_comm.recv(source=0)
                     parameters_dict_list = base_comm.recv(source=0)
                     runtime_args_list = base_comm.recv(source=0)
-        if hasattr(base_comm, 'barrier'):
-            logger.debug('Waiting for simulations to complete on all ranks before publishing results.')
+        if hasattr(base_comm, "barrier"):
+            logger.debug(
+                "Waiting for simulations to complete on all ranks before publishing results."
+            )
             # This is heavy-handed. Hopefully we can replace the explicit MPI calls with a Future
             # abstraction and only wait on individual results when they are actually consumed.
             # As of gmxapi 0.3, SubscriptionPublishingRunner takes responsibility for the full
@@ -460,7 +517,9 @@ class SubscriptionSessionResources(object):
     .. todo:: Better factoring of SessionResources, ResourceFactory, Director.resource_factory.
     """
 
-    def __init__(self, input: LegacyImplementationSubscription, output: PublishingDataProxy):
+    def __init__(
+        self, input: LegacyImplementationSubscription, output: PublishingDataProxy
+    ):
         # This is instantiated by the ResourceManager and then provided to the task runner to update
         # the mdrun reference. In the current implementation, mdrun has actually already run as a
         # gmxapi 0.0.7 task, and is provided to as the input LegacyImplementationSubscription.
@@ -479,7 +538,6 @@ class SubscriptionSessionResources(object):
 
 
 class SubscriptionPublishingRunnerDirector(_op.AbstractRunnerDirector):
-
     def __init__(self):
         # We expect the gmxapi 0.0.7 MD runner to be run on all ranks.
         self.allow_duplicate = True
@@ -501,10 +559,12 @@ class SubscriptionPublishingRunner(object):
         publisher: PublishingDataProxy = self.resources.output
         assert isinstance(publisher, PublishingDataProxy)
         publisher.directory = self.resources.workdir
-        publisher.stdout = os.path.join(self.resources.workdir, 'stdout.txt')
-        publisher.stderr = os.path.join(self.resources.workdir, 'stderr.txt')
+        publisher.stdout = os.path.join(self.resources.workdir, "stdout.txt")
+        publisher.stderr = os.path.join(self.resources.workdir, "stderr.txt")
         publisher.parameters = self.resources.parameters
-        logger.debug(f'Session resources have runtime_args: {self.resources.runtime_args}')
+        logger.debug(
+            f"Session resources have runtime_args: {self.resources.runtime_args}"
+        )
 
         # Note: the gromacs library still does not provide a way to query the outputs
         # produced through the API!
@@ -513,7 +573,7 @@ class SubscriptionPublishingRunner(object):
         # TODO(#3130,#3379): Make the return value a trajectory handle rather than a file path.
         # Note: There may be some ambiguity about how best to handle append vs. noappend
         # output, and how the user interface should represent the different possible behaviors.
-        trajectory = self.resources.runtime_args.get('-o', None)
+        trajectory = self.resources.runtime_args.get("-o", None)
         if trajectory is not None:
             trajectory = Path(trajectory)
             if not trajectory.is_absolute():
@@ -522,22 +582,22 @@ class SubscriptionPublishingRunner(object):
         # and we do not have a way to query the file that is actually produced!
         if trajectory is None or not trajectory.exists():
             if trajectory is None:
-                stem, suffix = 'traj', '.trr'
+                stem, suffix = "traj", ".trr"
                 dir = Path(self.resources.workdir)
             else:
                 trajectory = Path(trajectory)
                 stem, suffix = trajectory.stem, trajectory.suffix
                 dir = trajectory.parent
-            candidates = dir.glob(f'{stem}*{suffix}')
+            candidates = dir.glob(f"{stem}*{suffix}")
             trajectory = max(
                 [(candidate.stat().st_mtime, candidate) for candidate in candidates],
                 default=(None, None),
-                key=lambda x: x[0]
+                key=lambda x: x[0],
             )[1]
 
         # TODO(#3379): Make the return value a SimulationInput handle rather than a
         #  file path.
-        checkpoint = self.resources.runtime_args.get('-cpo', 'state.cpt')
+        checkpoint = self.resources.runtime_args.get("-cpo", "state.cpt")
         if not os.path.isabs(checkpoint):
             checkpoint = os.path.join(self.resources.workdir, checkpoint)
 
@@ -547,14 +607,11 @@ class SubscriptionPublishingRunner(object):
                 # Publish the output file.
                 publisher.trajectory = str(path)
             else:
-                logger.info(f'Output file {trajectory} does not exist.')
+                logger.info(f"Output file {trajectory} does not exist.")
                 try:
                     dir = path.parent
                     contents = list(str(item) for item in dir.iterdir())
-                    logger.info(
-                        f'Directory {dir} contents: '
-                        ', '.join(contents)
-                    )
+                    logger.info(f"Directory {dir} contents: " ", ".join(contents))
                 except FileNotFoundError:
                     # We weren't able to get a dir listing to log.
                     pass
@@ -572,14 +629,11 @@ class SubscriptionPublishingRunner(object):
                 # Publish the output file.
                 publisher.checkpoint = str(path)
             else:
-                logger.info(f'Output file {checkpoint} does not exist.')
+                logger.info(f"Output file {checkpoint} does not exist.")
                 try:
                     dir = path.parent
                     contents = list(str(item) for item in dir.iterdir())
-                    logger.info(
-                        f'Directory {dir} contents: '
-                        ', '.join(contents)
-                    )
+                    logger.info(f"Directory {dir} contents: " ", ".join(contents))
                 except FileNotFoundError:
                     # We weren't able to get a dir listing to log.
                     pass
@@ -622,7 +676,8 @@ class ResourceManager(gmxapi.operation.ResourceManager):
             self.__operation_entrance_counter += 1
             if self.__operation_entrance_counter > 1:
                 raise exceptions.ProtocolError(
-                    'Bug detected: resource manager tried to execute operation twice.')
+                    "Bug detected: resource manager tried to execute operation twice."
+                )
             with self.publishing_resources() as publishing_resources:
                 # TODO: rewrite with the pattern that this block is directing and then resolving an operation in the
                 #  operation's library/implementation context.
@@ -651,14 +706,18 @@ class ResourceManager(gmxapi.operation.ResourceManager):
                 # We are giving the director a resource that contains the subscription
                 # to the dispatched work.
                 for member in range(self.ensemble_width):
-                    with publishing_resources.publishing_context(ensemble_member=member) as output:
-                        error_message = 'Got {} while executing {} for operation {}.'
+                    with publishing_resources.publishing_context(
+                        ensemble_member=member
+                    ) as output:
+                        error_message = "Got {} while executing {} for operation {}."
                         try:
-                            resources = self._resource_factory(input=input, output=output)
+                            resources = self._resource_factory(
+                                input=input, output=output
+                            )
                         except exceptions.TypeError as e:
-                            message = error_message.format(e,
-                                                           self._resource_factory,
-                                                           self.operation_id)
+                            message = error_message.format(
+                                e, self._resource_factory, self.operation_id
+                            )
                             raise exceptions.ApiError(message) from e
 
                         runner = self._runner_director(resources)
@@ -690,10 +749,8 @@ class StandardInputDescription(_op.InputDescription):
             cls._uids[salt] = cls._next_uid
             cls._next_uid += 1
         else:
-            logger.debug(
-                f'Reissuing uid for mdrun({input}): {cls._uids[salt]}'
-            )
-        new_uid = 'mdrun_{}'.format(cls._uids[salt])
+            logger.debug(f"Reissuing uid for mdrun({input}): {cls._uids[salt]}")
+        new_uid = "mdrun_{}".format(cls._uids[salt])
         return new_uid
 
     def signature(self) -> _op.InputCollectionDescription:
@@ -711,12 +768,12 @@ class RegisteredOperation(_op.OperationImplementation, metaclass=_op.OperationMe
     @classmethod
     def name(cls) -> str:
         """Canonical name for the operation."""
-        return 'mdrun'
+        return "mdrun"
 
     @classmethod
     def namespace(cls) -> str:
         """modify_input is importable from the gmxapi module."""
-        return 'gmxapi'
+        return "gmxapi"
 
     @classmethod
     def director(cls, context: gmxapi.abc.Context) -> gmxapi.abc.OperationDirector:
@@ -750,12 +807,13 @@ class StandardDirector(gmxapi.abc.OperationDirector):
     def __init__(self, context: _op.Context):
         if not isinstance(context, _op.Context):
             raise gmxapi.exceptions.ValueError(
-                'StandardDirector requires a gmxapi.operation Context.')
+                "StandardDirector requires a gmxapi.operation Context."
+            )
         self.context = context
 
-    def __call__(self,
-                 resources: _op.DataSourceCollection,
-                 label: str = None) -> StandardOperationHandle:
+    def __call__(
+        self, resources: _op.DataSourceCollection, label: str = None
+    ) -> StandardOperationHandle:
         builder = self.context.node_builder(operation=RegisteredOperation, label=label)
 
         builder.set_resource_factory(SubscriptionSessionResources)
@@ -788,9 +846,11 @@ class StandardDirector(gmxapi.abc.OperationDirector):
     # factory. The Director may become generic or more universal, but the resource_factory
     # would likely not be typed on the generic parameters of the Director class.
     # Instead, it is likely a generic function with its own TypeVar parameters.
-    def resource_factory(self,
-                         source: typing.Union[gmxapi.abc.Context, ModuleObject, None],
-                         target: gmxapi.abc.Context = None):
+    def resource_factory(
+        self,
+        source: typing.Union[gmxapi.abc.Context, ModuleObject, None],
+        target: gmxapi.abc.Context = None,
+    ):
         """Get a resource factory for use in the target context.
 
         The returned factory takes input from the source context and provides it in a form
@@ -822,7 +882,7 @@ class StandardDirector(gmxapi.abc.OperationDirector):
                 # In the first draft, though, we just access a special payload.
                 # Return a factory that will consume *_simulation_input* and *parameters*
                 # members of a received object.
-                logger.info('Building mdrun operation from source {}'.format(source))
+                logger.info("Building mdrun operation from source {}".format(source))
 
                 def simulation_input_workaround(_simulation_input, runtime_args):
                     """Allows support for the as-yet-undefined SimulationInput resource.
@@ -833,30 +893,41 @@ class StandardDirector(gmxapi.abc.OperationDirector):
                     source = _simulation_input
                     # Accept either an OutputDataProxy with appropriate members, or an abject
                     # that provides such an OutputDataProxy.
-                    if hasattr(source, 'output'):
+                    if hasattr(source, "output"):
                         source = _simulation_input.output
-                    assert hasattr(source, '_simulation_input')
-                    assert hasattr(source, 'parameters')
-                    logger.info('mdrun receiving input {}: {}'.format(source._simulation_input.name,
-                                                                      source._simulation_input.description))
+                    assert hasattr(source, "_simulation_input")
+                    assert hasattr(source, "parameters")
+                    logger.info(
+                        "mdrun receiving input {}: {}".format(
+                            source._simulation_input.name,
+                            source._simulation_input.description,
+                        )
+                    )
                     source_collection = _input.bind(
                         _simulation_input=source._simulation_input,
                         parameters=source.parameters,
-                        runtime_args=runtime_args)
-                    logger.info('mdrun input bound as source collection {}'.format(
-                        source_collection))
+                        runtime_args=runtime_args,
+                    )
+                    logger.info(
+                        "mdrun input bound as source collection {}".format(
+                            source_collection
+                        )
+                    )
                     return source_collection
 
                 return simulation_input_workaround
 
         raise gmxapi.exceptions.ValueError(
-            f'No dispatching from {source} context to {target}')
+            f"No dispatching from {source} context to {target}"
+        )
 
 
-def mdrun(input,
-          runtime_args: typing.Union[dict, typing.Sequence[dict]] = None,
-          label: str = None,
-          context=None):
+def mdrun(
+    input,
+    runtime_args: typing.Union[dict, typing.Sequence[dict]] = None,
+    label: str = None,
+    context=None,
+):
     """MD simulation operation.
 
     Arguments:
@@ -898,13 +969,15 @@ def mdrun(input,
     handle_context = context
     if handle_context is not None:
         raise gmxapi.exceptions.MissingImplementationError(
-            'context must be None. This factory is only for the Python UI right now.')
+            "context must be None. This factory is only for the Python UI right now."
+        )
 
     target_context = _op.current_context()
     assert isinstance(target_context, _op.Context)
     # Get a director that will create a node in the standard context.
-    node_director: StandardDirector = _op._get_operation_director(RegisteredOperation,
-                                                                  context=target_context)
+    node_director: StandardDirector = _op._get_operation_director(
+        RegisteredOperation, context=target_context
+    )
     assert isinstance(node_director, StandardDirector)
     # TODO: refine this protocol
     assert handle_context is None
@@ -920,15 +993,18 @@ def mdrun(input,
     # TODO: Use a standard helper function to pass data and resources to the NodeDirector.
     #  Module-specific input processing logic should be explicit in this user-facing function
     #  or composed into the NodeDirector for this operation.
-    resource_factory = node_director.resource_factory(source=source_context, target=target_context)
+    resource_factory = node_director.resource_factory(
+        source=source_context, target=target_context
+    )
     # The resource_factory will ultimately produce a DataSourceCollection with help from the
     # InputCollectionDescription defined for this module. Per InputCollectionDescription.bind()
     # and the POSITIONAL_OR_KEYWORD property, the `input` could be provided as a positional
     # argument (as it was previously) and get bound to `_simulation_input`. Despite the
     # provisional nature of the `_simulation_input` input, this code is more readable when we
     # use a named parameter.
-    resources: _op.DataSourceCollection = resource_factory(_simulation_input=input,
-                                                           runtime_args=runtime_args)
+    resources: _op.DataSourceCollection = resource_factory(
+        _simulation_input=input, runtime_args=runtime_args
+    )
     handle = node_director(resources=resources, label=label)
     # Note: One effect of the assertions above is to help the type checker infer
     # the return type of the handle. It is hard to convince the type checker that

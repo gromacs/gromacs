@@ -78,12 +78,14 @@ import reporter
 #####################################################################
 # Helper functions and classes
 
+
 def _show_list(title, objlist):
     """Helper function for formatting a list of objects for debug output."""
     if objlist:
-        print('{0}:'.format(title))
+        print("{0}:".format(title))
         for obj in objlist:
-            print('  ', obj)
+            print("  ", obj)
+
 
 @functools.total_ordering
 class DocType(object):
@@ -91,7 +93,7 @@ class DocType(object):
     """Documentation visibility in the generated documentation."""
 
     # Mapping to string representations for the internal integer values
-    _names = ['undocumented', 'internal', 'library', 'public']
+    _names = ["undocumented", "internal", "library", "public"]
 
     def __init__(self, value):
         """Initialize a DocType instance.
@@ -113,11 +115,13 @@ class DocType(object):
         """Order documentation types in the order of visibility."""
         return self._value < other._value
 
+
 # Static values for documentation types.
 DocType.none = DocType(0)
 DocType.internal = DocType(1)
 DocType.library = DocType(2)
 DocType.public = DocType(3)
+
 
 class Location(object):
 
@@ -130,18 +134,19 @@ class Location(object):
 
     def __init__(self, elem):
         """Initialize location from a <location> element."""
-        self.filepath = elem.attrib['file']
-        self.line = int(elem.attrib['line'])
-        self.column = elem.attrib['column']
+        self.filepath = elem.attrib["file"]
+        self.line = int(elem.attrib["line"])
+        self.column = elem.attrib["column"]
 
     def __str__(self):
-        return '{0}:{1}'.format(self.filepath, self.line)
+        return "{0}:{1}".format(self.filepath, self.line)
 
     def get_reporter_location(self):
         return reporter.Location(self.filepath, self.line)
 
     def get_full_string(self):
-        return '{0}:{1}:{2}'.format(self.filepath, self.line, self.column)
+        return "{0}:{1}:{2}".format(self.filepath, self.line, self.column)
+
 
 @functools.total_ordering
 class BodyLocation(object):
@@ -159,14 +164,16 @@ class BodyLocation(object):
 
     def __init__(self, elem):
         """Initialize body location from a <location> element."""
-        self.filepath = elem.attrib['bodyfile']
-        self.startline = int(elem.attrib['bodystart'])
-        self.endline = int(elem.attrib['bodyend'])
+        self.filepath = elem.attrib["bodyfile"]
+        self.startline = int(elem.attrib["bodystart"])
+        self.endline = int(elem.attrib["bodyend"])
 
     def __eq__(self, other):
-        return (self.filepath == other.filepath and
-                self.startline == other.startline and
-                self.endline == other.endline)
+        return (
+            self.filepath == other.filepath
+            and self.startline == other.startline
+            and self.endline == other.endline
+        )
 
     def __lt__(self, other):
         if self.filepath != other.filepath:
@@ -184,12 +191,13 @@ class BodyLocation(object):
         return hash(self.filepath) ^ hash(self.startline) ^ hash(self.endline)
 
     def __str__(self):
-        return '{0}:{1}'.format(self.filepath, self.startline)
+        return "{0}:{1}".format(self.filepath, self.startline)
 
     def get_full_string(self):
         if self.endline < 0:
             return self.__str__()
-        return '{0}:{1}-{2}'.format(self.filepath, self.startline, self.endline)
+        return "{0}:{1}-{2}".format(self.filepath, self.startline, self.endline)
+
 
 class LocationWithBody(object):
 
@@ -202,16 +210,16 @@ class LocationWithBody(object):
     def __init__(self, elem):
         """Initialize location from a <location> element."""
         self._location = Location(elem)
-        if 'bodyfile' in elem.attrib:
+        if "bodyfile" in elem.attrib:
             self._bodylocation = BodyLocation(elem)
         else:
             self._bodylocation = None
 
     def __str__(self):
         if not self._bodylocation:
-            return '{0} (no body)'.format(self._location)
+            return "{0} (no body)".format(self._location)
         else:
-            return '{0} / {1}'.format(self._location, self._bodylocation)
+            return "{0} / {1}".format(self._location, self._bodylocation)
 
     def get_reporter_location(self):
         """Return reporter location for this location.
@@ -233,8 +241,11 @@ class LocationWithBody(object):
         If the main location is different, then it likely points to the
         declaration of the function.
         """
-        return self._location.filepath == self._bodylocation.filepath and \
-                self._location.line == self._bodylocation.startline
+        return (
+            self._location.filepath == self._bodylocation.filepath
+            and self._location.line == self._bodylocation.startline
+        )
+
 
 class MemberSection(object):
 
@@ -257,8 +268,10 @@ class MemberSection(object):
             return
         self._members[pos] = new
 
+
 #####################################################################
 # Documentation entities
+
 
 class Entity(object):
 
@@ -301,7 +314,7 @@ class Entity(object):
         return self._name
 
     def get_reporter_location(self):
-        return reporter.Location('<{0}>'.format(self._name), None)
+        return reporter.Location("<{0}>".format(self._name), None)
 
     def get_visibility(self):
         return self._visibility
@@ -327,20 +340,24 @@ class Entity(object):
             # mark the block internal to the module.
             # \libinternal is used similarly, and inserts custom XML
             # elements.
-            if detailselem[0].tag == 'internal':
+            if detailselem[0].tag == "internal":
                 if len(detailselem) == 1:
                     self._visibility = DocType.internal
                 else:
                     # TODO: Should we also check if internal appears elsewhere?
-                    reporter.doc_note(self, '\internal does not cover whole documentation')
-            if detailselem[0].find('libinternal') is not None:
+                    reporter.doc_note(
+                        self, "\internal does not cover whole documentation"
+                    )
+            if detailselem[0].find("libinternal") is not None:
                 if self._visibility == DocType.public:
                     self._visibility = DocType.library
                 else:
-                    reporter.doc_error(self, '\libinternal should not be used inside \internal')
+                    reporter.doc_error(
+                        self, "\libinternal should not be used inside \internal"
+                    )
             self._has_detailed_description = True
         if inbodyelem is not None:
-            self._has_inbody_description = (len(inbodyelem) > 0)
+            self._has_inbody_description = len(inbodyelem) > 0
 
     def show_base(self):
         """Format information for common properties.
@@ -348,22 +365,24 @@ class Entity(object):
         This is called from subclass show() methods to show base information
         about the entity.
         """
-        print('ID:         {0}'.format(self._id))
-        print('Name:       {0}'.format(self._name))
-        print('Location:   {0}'.format(self.get_reporter_location()))
+        print("ID:         {0}".format(self._id))
+        print("Name:       {0}".format(self._name))
+        print("Location:   {0}".format(self.get_reporter_location()))
         doctype = []
         if self._has_brief_description:
-            doctype.append('brief')
+            doctype.append("brief")
         if self._has_detailed_description:
-            doctype.append('details')
+            doctype.append("details")
         if self._has_inbody_description:
-            doctype.append('in-body')
+            doctype.append("in-body")
         if not doctype:
-            doctype.append('none')
-        print('Doc:        {0}'.format(', '.join(doctype)))
-        print('Visibility: {0}'.format(self._visibility))
+            doctype.append("none")
+        print("Doc:        {0}".format(", ".join(doctype)))
+        print("Visibility: {0}".format(self._visibility))
+
 
 # Member entities
+
 
 class Member(Entity):
 
@@ -399,15 +418,25 @@ class Member(Entity):
         """Add a compound that contains this member."""
         self._parents.add(compound)
         if isinstance(compound, Class):
-            assert self._class is None, 'Class \"{0}\" was already added. Maybe you have two entities with the same name {1}'.format(self._class, self._name)
+            assert (
+                self._class is None
+            ), 'Class "{0}" was already added. Maybe you have two entities with the same name {1}'.format(
+                self._class, self._name
+            )
             self._class = compound
         elif isinstance(compound, Namespace):
-            assert self._namespace is None, 'Namespace \"{0}\" was already added. Maybe you have two entities with the same name {1}'.format(self._namespace, self._name)
+            assert (
+                self._namespace is None
+            ), 'Namespace "{0}" was already added. Maybe you have two entities with the same name {1}'.format(
+                self._namespace, self._name
+            )
             self._namespace = compound
         elif isinstance(compound, File):
             self._files.add(compound)
         elif isinstance(compound, Group):
-            assert self._group is None, 'Group \"{0}\" was already added.'.format(self._group)
+            assert self._group is None, 'Group "{0}" was already added.'.format(
+                self._group
+            )
             self._group = compound
         else:
             assert False
@@ -444,25 +473,28 @@ class Member(Entity):
         detailselem = None
         inbodyelem = None
         for elem in rootelem:
-            if elem.tag == 'name':
+            if elem.tag == "name":
                 if elem.text != self.get_name():
-                    reporter.xml_assert(xmlpath,
-                            "member name mismatch: '{0}' (in index.xml) vs. '{1}'".format(
-                                self.get_name(), elem.text))
-            elif elem.tag == 'briefdescription':
+                    reporter.xml_assert(
+                        xmlpath,
+                        "member name mismatch: '{0}' (in index.xml) vs. '{1}'".format(
+                            self.get_name(), elem.text
+                        ),
+                    )
+            elif elem.tag == "briefdescription":
                 briefelem = elem
-            elif elem.tag == 'detaileddescription':
+            elif elem.tag == "detaileddescription":
                 detailselem = elem
-            elif elem.tag == 'inbodydescription':
+            elif elem.tag == "inbodydescription":
                 # TODO: in-body description is probably only possible for
                 # functions; move it there.
                 inbodyelem = elem
-            elif elem.tag == 'location':
+            elif elem.tag == "location":
                 self._location = LocationWithBody(elem)
             else:
                 if not self._load_element(elem):
                     # TODO Process the rest of the elements so that we can check this
-                    #reporter.xml_assert(xmlpath,
+                    # reporter.xml_assert(xmlpath,
                     #        "unknown member child element '{0}'".format(elem.tag))
                     pass
         self._process_descriptions(briefelem, detailselem, inbodyelem)
@@ -520,20 +552,24 @@ class Member(Entity):
         self.show_base()
         if self._alternates:
             idlist = [x.get_id() for x in self._alternates]
-            print('Alt. IDs:   {0}'.format(', '.join(idlist)))
-        print('Parent vis: {0}'.format(self.get_inherited_visibility()))
-        print('Location:   {0}'.format(self.get_location().get_full_string()))
-        print('Body loc:   {0}'.format(self.get_body_location().get_full_string()))
-        _show_list('Parents', self._parents)
+            print("Alt. IDs:   {0}".format(", ".join(idlist)))
+        print("Parent vis: {0}".format(self.get_inherited_visibility()))
+        print("Location:   {0}".format(self.get_location().get_full_string()))
+        print("Body loc:   {0}".format(self.get_body_location().get_full_string()))
+        _show_list("Parents", self._parents)
+
 
 class Define(Member):
     pass
 
+
 class Variable(Member):
     pass
 
+
 class Typedef(Member):
     pass
+
 
 class Enum(Member):
     def __init__(self, name, refid):
@@ -541,8 +577,8 @@ class Enum(Member):
         self._values = set()
 
     def _load_element(self, elem):
-        if elem.tag == 'enumvalue':
-            refid = elem.attrib['id']
+        if elem.tag == "enumvalue":
+            refid = elem.attrib["id"]
             # Doxygen seems to sometimes assign the same ID to a singleton enum
             # value (this already triggers a warning in loading index.xml).
             if refid == self.get_id():
@@ -557,6 +593,7 @@ class Enum(Member):
     def get_values(self):
         return self._values
 
+
 class EnumValue(Member):
     def __init__(self, name, refid):
         Member.__init__(self, name, refid)
@@ -569,13 +606,17 @@ class EnumValue(Member):
     def _get_raw_location(self):
         return self._enum._get_raw_location()
 
+
 class Function(Member):
     pass
+
 
 class FriendDeclaration(Member):
     pass
 
+
 # Compound entities
+
 
 class Compound(Entity):
 
@@ -604,7 +645,7 @@ class Compound(Entity):
 
     def get_xml_path(self):
         """Return path to the details XML file for this compound."""
-        return os.path.join(self._docset.get_xmlroot(), self.get_id() + '.xml')
+        return os.path.join(self._docset.get_xmlroot(), self.get_id() + ".xml")
 
     def add_member(self, member):
         """Add a contained member."""
@@ -640,52 +681,64 @@ class Compound(Entity):
         root = compoundtree.getroot()
         if len(root) > 1:
             reporter.xml_assert(xmlpath, "more than one compound in a file")
-        if root[0].tag != 'compounddef':
+        if root[0].tag != "compounddef":
             reporter.xml_assert(xmlpath, "expected <compounddef> as the first tag")
             return
         briefelem = None
         detailselem = None
         missing_members = set(self._members.values())
         for elem in root[0]:
-            if elem.tag == 'compoundname':
+            if elem.tag == "compoundname":
                 if elem.text != self.get_name():
-                    reporter.xml_assert(xmlpath,
-                            "compound name mismatch: '{0}' (in index.xml) vs. '{1}'"
-                            .format(self.get_name(), elem.text))
-            elif elem.tag == 'briefdescription':
+                    reporter.xml_assert(
+                        xmlpath,
+                        "compound name mismatch: '{0}' (in index.xml) vs. '{1}'".format(
+                            self.get_name(), elem.text
+                        ),
+                    )
+            elif elem.tag == "briefdescription":
                 briefelem = elem
-            elif elem.tag == 'detaileddescription':
+            elif elem.tag == "detaileddescription":
                 detailselem = elem
-            elif elem.tag in ('includes', 'includedby', 'incdepgraph',
-                    'invincdepgraph', 'inheritancegraph', 'collaborationgraph',
-                    'programlisting', 'templateparamlist', 'listofallmembers'):
+            elif elem.tag in (
+                "includes",
+                "includedby",
+                "incdepgraph",
+                "invincdepgraph",
+                "inheritancegraph",
+                "collaborationgraph",
+                "programlisting",
+                "templateparamlist",
+                "listofallmembers",
+            ):
                 pass
-            elif elem.tag.startswith('inner'):
-                refid = elem.attrib['refid']
+            elif elem.tag.startswith("inner"):
+                refid = elem.attrib["refid"]
                 reftype = elem.tag[5:]
                 # TODO: Handle 'prot' attribute?
                 refcompound = self._docset.get_compound(refid)
                 self._children.add(refcompound)
-                if reftype == 'file':
+                if reftype == "file":
                     self._load_inner_file(refcompound)
-                elif reftype == 'dir':
+                elif reftype == "dir":
                     self._load_inner_dir(refcompound)
-                elif reftype == 'group':
+                elif reftype == "group":
                     self._load_inner_group(refcompound)
-                elif reftype == 'namespace':
+                elif reftype == "namespace":
                     self._load_inner_namespace(refcompound)
-                elif reftype == 'class':
+                elif reftype == "class":
                     self._load_inner_class(refcompound)
                 else:
-                    reporter.xml_assert(xmlpath,
-                            "unknown inner compound type '{0}'".format(reftype))
-            elif elem.tag == 'sectiondef':
+                    reporter.xml_assert(
+                        xmlpath, "unknown inner compound type '{0}'".format(reftype)
+                    )
+            elif elem.tag == "sectiondef":
                 # TODO: Handle header and description elements
-                kind = elem.attrib['kind']
+                kind = elem.attrib["kind"]
                 section = MemberSection(kind)
                 self._sections.append(section)
-                for memberelem in elem.iter('memberdef'):
-                    refid = memberelem.attrib['id']
+                for memberelem in elem.iter("memberdef"):
+                    refid = memberelem.attrib["id"]
                     member = self._members[refid]
                     member.load_details_from_element(memberelem, xmlpath)
                     section.add_member(member)
@@ -697,10 +750,11 @@ class Compound(Entity):
                         missing_members.difference_update(member.get_values())
             else:
                 if not self._load_element(elem):
-                    reporter.xml_assert(xmlpath,
-                            "unknown compound child element '{0}'".format(elem.tag))
+                    reporter.xml_assert(
+                        xmlpath, "unknown compound child element '{0}'".format(elem.tag)
+                    )
         if missing_members:
-            reporter.xml_assert(xmlpath, 'members without section')
+            reporter.xml_assert(xmlpath, "members without section")
         self._process_descriptions(briefelem, detailselem, None)
         self._loaded = True
 
@@ -708,8 +762,9 @@ class Compound(Entity):
         """Report a parsing error for an unexpected inner compound reference."""
         reporter = self._get_reporter()
         xmlpath = self.get_xml_path()
-        reporter.xml_assert(xmlpath,
-                "unexpected inner {0}: {1}".format(typename, compound))
+        reporter.xml_assert(
+            xmlpath, "unexpected inner {0}: {1}".format(typename, compound)
+        )
 
     def _load_inner_file(self, compound):
         """Process a reference to an inner file.
@@ -771,7 +826,7 @@ class Compound(Entity):
         """
         Entity.show_base(self)
         if self._groups:
-            print('Groups:   {0}'.format(', '.join(map(str, self._groups))))
+            print("Groups:   {0}".format(", ".join(map(str, self._groups))))
 
     def show_members(self):
         """Show list of members.
@@ -780,9 +835,10 @@ class Compound(Entity):
         to print the list of members.
         """
         for section in self._sections:
-            print('Member section: {0}'.format(section))
+            print("Member section: {0}".format(section))
             for member in section._members:
-                print('  ', member)
+                print("  ", member)
+
 
 class File(Compound):
     def __init__(self, name, refid):
@@ -802,10 +858,10 @@ class File(Compound):
         self._namespaces.add(compound)
 
     def _load_element(self, elem):
-        if elem.tag == 'location':
-            self._path = elem.attrib['file']
+        if elem.tag == "location":
+            self._path = elem.attrib["file"]
             extension = os.path.splitext(self._path)[1]
-            self._is_source_file = (extension in ('.c', '.cpp', '.cu'))
+            self._is_source_file = extension in (".c", ".cpp", ".cu")
             return True
         return False
 
@@ -826,12 +882,13 @@ class File(Compound):
 
     def show(self):
         self.show_base()
-        print('Path:      {0}'.format(self._path))
-        print('Directory: {0}'.format(self._directory))
-        print('Source:    {0}'.format(self._is_source_file))
-        _show_list('Namespaces', self._namespaces)
-        _show_list('Classes', self._classes)
+        print("Path:      {0}".format(self._path))
+        print("Directory: {0}".format(self._directory))
+        print("Source:    {0}".format(self._is_source_file))
+        _show_list("Namespaces", self._namespaces)
+        _show_list("Classes", self._classes)
         self.show_members()
+
 
 class Directory(Compound):
     def __init__(self, name, refid):
@@ -850,8 +907,8 @@ class Directory(Compound):
         self._subdirs.add(compound)
 
     def _load_element(self, elem):
-        if elem.tag == 'location':
-            self._path = elem.attrib['file']
+        if elem.tag == "location":
+            self._path = elem.attrib["file"]
             return True
         return False
 
@@ -869,11 +926,12 @@ class Directory(Compound):
 
     def show(self):
         self.show_base()
-        print('Path:      {0}'.format(self._path))
+        print("Path:      {0}".format(self._path))
         if self._parent:
-            print('Parent:    {0}'.format(self._parent))
-        _show_list('Subdirectories', self._subdirs)
-        _show_list('Files', self._files)
+            print("Parent:    {0}".format(self._parent))
+        _show_list("Subdirectories", self._subdirs)
+        _show_list("Files", self._files)
+
 
 class Group(Compound):
     def __init__(self, name, refid):
@@ -904,18 +962,19 @@ class Group(Compound):
         self._classes.add(compound)
 
     def _load_element(self, elem):
-        if elem.tag == 'title':
+        if elem.tag == "title":
             self._title = elem.text
             return True
         return False
 
     def show(self):
         self.show_base()
-        print('Title:     {0}'.format(self._title))
-        print('Inner compounds:')
+        print("Title:     {0}".format(self._title))
+        print("Inner compounds:")
         for compound in self._children:
-            print('  ', compound)
+            print("  ", compound)
         self.show_members()
+
 
 class Namespace(Compound):
     def __init__(self, name, refid):
@@ -935,7 +994,7 @@ class Namespace(Compound):
         self._classes.add(compound)
 
     def _load_element(self, elem):
-        if elem.tag == 'location':
+        if elem.tag == "location":
             self._doclocation = Location(elem)
             return True
         return False
@@ -947,14 +1006,15 @@ class Namespace(Compound):
         return self._doclocation.get_reporter_location()
 
     def is_anonymous(self):
-        return 'anonymous_namespace{' in self.get_name()
+        return "anonymous_namespace{" in self.get_name()
 
     def show(self):
         self.show_base()
-        print('Doc. loc.: {0}'.format(self._doclocation.get_full_string()))
-        _show_list('Inner namespaces', self._innernamespaces)
-        _show_list('Classes', self._classes)
+        print("Doc. loc.: {0}".format(self._doclocation.get_full_string()))
+        _show_list("Inner namespaces", self._innernamespaces)
+        _show_list("Classes", self._classes)
         self.show_members()
+
 
 class Class(Compound):
     def __init__(self, name, refid):
@@ -972,21 +1032,21 @@ class Class(Compound):
         self._innerclasses.add(compound)
 
     def _load_element(self, elem):
-        if elem.tag == 'basecompoundref':
+        if elem.tag == "basecompoundref":
             # TODO: Handle unknown bases?
-            if 'refid' in elem.attrib:
-                refid = elem.attrib['refid']
+            if "refid" in elem.attrib:
+                refid = elem.attrib["refid"]
                 # TODO: Handle prot and virt attributes, check name?
                 base = self._docset.get_compound(refid)
                 self._baseclasses.append(base)
             return True
-        if elem.tag == 'derivedcompoundref':
-            refid = elem.attrib['refid']
+        if elem.tag == "derivedcompoundref":
+            refid = elem.attrib["refid"]
             # TODO: Handle prot and virt attributes, check name?
             derived = self._docset.get_compound(refid)
             self._derivedclasses.add(derived)
             return True
-        elif elem.tag == 'location':
+        elif elem.tag == "location":
             self._location = LocationWithBody(elem)
             return True
         return False
@@ -1016,51 +1076,55 @@ class Class(Compound):
 
     def show(self):
         self.show_base()
-        print('Namespace:  {0}'.format(self._namespace))
+        print("Namespace:  {0}".format(self._namespace))
         if self._outerclass:
-            print('Outer cls:  {0}'.format(self._outerclass))
+            print("Outer cls:  {0}".format(self._outerclass))
         location = self._location
-        print('Location:   {0}'.format(location.get_location().get_full_string()))
-        print('Body loc:   {0}'.format(location.get_body_location().get_full_string()))
-        _show_list('Inner classes', self._innerclasses)
+        print("Location:   {0}".format(location.get_location().get_full_string()))
+        print("Body loc:   {0}".format(location.get_body_location().get_full_string()))
+        _show_list("Inner classes", self._innerclasses)
         self.show_members()
+
 
 #####################################################################
 # Top-level container class
 
+
 def _get_compound_type_from_kind(kind):
     """Map compound kinds from Doxygen XML to internal class types."""
-    if kind == 'file':
+    if kind == "file":
         return File
-    elif kind == 'dir':
+    elif kind == "dir":
         return Directory
-    elif kind == 'group':
+    elif kind == "group":
         return Group
-    elif kind == 'namespace':
+    elif kind == "namespace":
         return Namespace
-    elif kind in ('class', 'struct', 'union'):
+    elif kind in ("class", "struct", "union"):
         return Class
     else:
         return None
 
+
 def _get_member_type_from_kind(kind):
     """Map member kinds from Doxygen XML to internal class types."""
-    if kind == 'define':
+    if kind == "define":
         return Define
-    elif kind == 'variable':
+    elif kind == "variable":
         return Variable
-    elif kind == 'typedef':
+    elif kind == "typedef":
         return Typedef
-    elif kind == 'enum':
+    elif kind == "enum":
         return Enum
-    elif kind == 'enumvalue':
+    elif kind == "enumvalue":
         return EnumValue
-    elif kind == 'function':
+    elif kind == "function":
         return Function
-    elif kind == 'friend':
+    elif kind == "friend":
         return FriendDeclaration
     else:
         return None
+
 
 class DocumentationSet(object):
 
@@ -1088,43 +1152,44 @@ class DocumentationSet(object):
         """Initialize the documentation set and read index data."""
         self._xmlroot = xmlroot
         self._reporter = reporter
-        xmlpath = os.path.join(xmlroot, 'index.xml')
+        xmlpath = os.path.join(xmlroot, "index.xml")
         indextree = ET.parse(xmlpath)
         self._compounds = dict()
         self._members = dict()
         self._files = dict()
         for compoundelem in indextree.getroot():
-            name = compoundelem.find('name').text
-            refid = compoundelem.attrib['refid']
-            kind = compoundelem.attrib['kind']
-            if kind in ('page', 'example'):
+            name = compoundelem.find("name").text
+            refid = compoundelem.attrib["refid"]
+            kind = compoundelem.attrib["kind"]
+            if kind in ("page", "example"):
                 # TODO: Model these types as well
                 continue
             compoundtype = _get_compound_type_from_kind(kind)
             if compoundtype is None:
-                reporter.xml_assert(xmlpath,
-                        "unknown compound kind '{0}'".format(kind))
+                reporter.xml_assert(xmlpath, "unknown compound kind '{0}'".format(kind))
                 continue
             compound = compoundtype(name, refid)
             compound.set_documentation_set(self)
             self._compounds[refid] = compound
-            for memberelem in compoundelem.iter('member'):
-                name = memberelem.find('name').text
-                refid = memberelem.attrib['refid']
-                kind = memberelem.attrib['kind']
+            for memberelem in compoundelem.iter("member"):
+                name = memberelem.find("name").text
+                refid = memberelem.attrib["refid"]
+                kind = memberelem.attrib["kind"]
                 if refid in self._members:
                     member = self._members[refid]
                     membertype = _get_member_type_from_kind(kind)
                     if not isinstance(member, membertype):
-                        reporter.xml_assert(xmlpath,
-                                "id '{0}' used for multiple kinds of members"
-                                .format(refid))
+                        reporter.xml_assert(
+                            xmlpath,
+                            "id '{0}' used for multiple kinds of members".format(refid),
+                        )
                         continue
                 else:
                     membertype = _get_member_type_from_kind(kind)
                     if membertype is None:
-                        reporter.xml_assert(xmlpath,
-                                "unknown member kind '{0}'".format(kind))
+                        reporter.xml_assert(
+                            xmlpath, "unknown member kind '{0}'".format(kind)
+                        )
                         continue
                     member = membertype(name, refid)
                     member.set_documentation_set(self)
@@ -1196,9 +1261,12 @@ class DocumentationSet(object):
                 for member in memberlist:
                     if member.has_same_body_location():
                         if definition is not None:
-                            self._reporter.xml_assert(None,
-                                    "duplicate definition for a member '{0}'"
-                                    .format(definition))
+                            self._reporter.xml_assert(
+                                None,
+                                "duplicate definition for a member '{0}'".format(
+                                    definition
+                                ),
+                            )
                             continue
                         definition = member
                     elif declaration is None:
@@ -1209,11 +1277,19 @@ class DocumentationSet(object):
                     # TODO: gmx_cpuid.c produces some false positives
                     details = []
                     for otherdeclaration in otherdeclarations:
-                        details.append('{0}: another declaration is here'
-                                .format(otherdeclaration.get_reporter_location()))
-                    details.append('{0}: definition is here'
-                            .format(declaration.get_body_location()))
-                    text = "duplicate declarations for a member '{0}'".format(declaration)
+                        details.append(
+                            "{0}: another declaration is here".format(
+                                otherdeclaration.get_reporter_location()
+                            )
+                        )
+                    details.append(
+                        "{0}: definition is here".format(
+                            declaration.get_body_location()
+                        )
+                    )
+                    text = "duplicate declarations for a member '{0}'".format(
+                        declaration
+                    )
                     self._reporter.code_issue(declaration, text, details)
                     continue
                 self._members[definition.get_id()] = declaration
@@ -1242,8 +1318,9 @@ class DocumentationSet(object):
     def get_compounds(self, types, predicate=None):
         result = []
         for compound in self._compounds.values():
-            if isinstance(compound, types) and \
-                    (predicate is None or predicate(compound)):
+            if isinstance(compound, types) and (
+                predicate is None or predicate(compound)
+            ):
                 result.append(compound)
         return result
 
@@ -1251,8 +1328,9 @@ class DocumentationSet(object):
         # self._members can contain duplicates because of merge_duplicates()
         result = set()
         for member in self._members.values():
-            if (types is None or isinstance(member, types)) and \
-                    (predicate is None or predicate(member)):
+            if (types is None or isinstance(member, types)) and (
+                predicate is None or predicate(member)
+            ):
                 result.add(member)
         return list(result)
 
@@ -1283,8 +1361,10 @@ class DocumentationSet(object):
     def get_functions(self, name):
         return self.get_members(Member, lambda x: x.get_name() in name)
 
+
 #####################################################################
 # Code for running in script mode
+
 
 def main():
     """Run the script in for debugging/Doxygen XML output inspection."""
@@ -1295,32 +1375,40 @@ def main():
     from reporter import Reporter
 
     parser = OptionParser()
-    parser.add_option('-R', '--root-dir',
-                      help='Doxygen XML root directory')
-    parser.add_option('-F', '--show-file', action='append',
-                      help='Show contents of given file')
-    parser.add_option('-d', '--show-dir', action='append',
-                      help='Show contents of given directory')
-    parser.add_option('-g', '--show-group', action='append',
-                      help='Show contents of given group')
-    parser.add_option('-n', '--show-namespace', action='append',
-                      help='Show contents of given namespace')
-    parser.add_option('-c', '--show-class', action='append',
-                      help='Show contents of given class')
+    parser.add_option("-R", "--root-dir", help="Doxygen XML root directory")
+    parser.add_option(
+        "-F", "--show-file", action="append", help="Show contents of given file"
+    )
+    parser.add_option(
+        "-d", "--show-dir", action="append", help="Show contents of given directory"
+    )
+    parser.add_option(
+        "-g", "--show-group", action="append", help="Show contents of given group"
+    )
+    parser.add_option(
+        "-n",
+        "--show-namespace",
+        action="append",
+        help="Show contents of given namespace",
+    )
+    parser.add_option(
+        "-c", "--show-class", action="append", help="Show contents of given class"
+    )
     # TODO: Add option for other types, and make them work
-    parser.add_option('-f', '--show-function', action='append',
-                      help='Show details of given function')
+    parser.add_option(
+        "-f", "--show-function", action="append", help="Show details of given function"
+    )
     options, args = parser.parse_args()
 
     reporter = Reporter()
 
-    sys.stderr.write('Loading index.xml...\n')
+    sys.stderr.write("Loading index.xml...\n")
     docset = DocumentationSet(options.root_dir, reporter)
     reporter.write_pending()
-    sys.stderr.write('Loading details...\n')
+    sys.stderr.write("Loading details...\n")
     docset.load_details()
     reporter.write_pending()
-    sys.stderr.write('Processing...\n')
+    sys.stderr.write("Processing...\n")
     docset.merge_duplicates()
     reporter.write_pending()
 
@@ -1341,5 +1429,6 @@ def main():
     for obj in objlist:
         obj.show()
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     main()

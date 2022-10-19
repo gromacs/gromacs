@@ -39,7 +39,7 @@ from types import MappingProxyType
 from gmxapi.operation import function_wrapper
 
 
-@function_wrapper(output={'path': str})
+@function_wrapper(output={"path": str})
 def join_path(first: str, second: str, output=None):
     """Get a Future path for use in data flow.
 
@@ -66,6 +66,7 @@ def config():
     """
     import json
     from importlib.resources import open_text
-    with open_text('gmxapi', 'gmxconfig.json') as textfile:
+
+    with open_text("gmxapi", "gmxconfig.json") as textfile:
         _config = json.load(textfile)
     return MappingProxyType(_config)

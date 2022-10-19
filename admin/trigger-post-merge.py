@@ -50,11 +50,19 @@ import warnings
 try:
     import gitlab
 except ImportError:
-    warnings.warn('This tool requires the `gitlab` package. Try `pip install python-gitlab`.')
+    warnings.warn(
+        "This tool requires the `gitlab` package. Try `pip install python-gitlab`."
+    )
     gitlab = None
 
 
-def submit_gitlab_pipeline(auth_token, pipeline_type='POST_MERGE_ACCEPTANCE', branch='main', regtest_branch='main', regtest_commit='FETCH_HEAD'):
+def submit_gitlab_pipeline(
+    auth_token,
+    pipeline_type="POST_MERGE_ACCEPTANCE",
+    branch="main",
+    regtest_branch="main",
+    regtest_commit="FETCH_HEAD",
+):
     """Submit a post merge pipeline to GitLab server.
 
     The pipeline is by default created for main, but can be run for any branch.
@@ -66,40 +74,70 @@ def submit_gitlab_pipeline(auth_token, pipeline_type='POST_MERGE_ACCEPTANCE', br
 
     Throws if the authentication process, or the submission of the pipeline fails.
     """
-    gl = gitlab.Gitlab('https://gitlab.com', private_token=auth_token)
+    gl = gitlab.Gitlab("https://gitlab.com", private_token=auth_token)
     # The project ID for GROMACS is hardcoded here
     project_id = 17679574
     project = gl.projects.get(project_id)
 
-    print('Going to start pipeline with following arguments')
-    print(r'Run for = ', branch)
-    print(r'Type = ', pipeline_type)
-    print(r'Regression tests from: ', regtest_branch)
-    print(r'Regressiontests commit: ', regtest_commit)
+    print("Going to start pipeline with following arguments")
+    print(r"Run for = ", branch)
+    print(r"Type = ", pipeline_type)
+    print(r"Regression tests from: ", regtest_branch)
+    print(r"Regressiontests commit: ", regtest_commit)
 
-    return project.pipelines.create({
-        'ref': branch,
-        'variables': [{'key': pipeline_type, 'value': 'true'}, {'key': 'REGRESSIONTESTBRANCH', 'value': regtest_branch}, {'key': 'REGRESSIONTESTCOMMIT', 'value': regtest_commit}]})
+    return project.pipelines.create(
+        {
+            "ref": branch,
+            "variables": [
+                {"key": pipeline_type, "value": "true"},
+                {"key": "REGRESSIONTESTBRANCH", "value": regtest_branch},
+                {"key": "REGRESSIONTESTCOMMIT", "value": regtest_commit},
+            ],
+        }
+    )
 
 
 parser = argparse.ArgumentParser(
-    description='Options for manually submitting pipelines.')
+    description="Options for manually submitting pipelines."
+)
 
-parser.add_argument('--type', type=str, default='POST_MERGE_ACCEPTANCE',
-                    help='What kind of pipeline to run (default is "POST_MERGE_ACCEPTANCE")')
+parser.add_argument(
+    "--type",
+    type=str,
+    default="POST_MERGE_ACCEPTANCE",
+    help='What kind of pipeline to run (default is "POST_MERGE_ACCEPTANCE")',
+)
 
-parser.add_argument('--token', type=str, required=True,
-                    help='GitLab access token needed to launch pipelines')
+parser.add_argument(
+    "--token",
+    type=str,
+    required=True,
+    help="GitLab access token needed to launch pipelines",
+)
 
-parser.add_argument('--branch', type=str, default='main',
-                    help='Branch to run pipeline for (default "main")')
+parser.add_argument(
+    "--branch",
+    type=str,
+    default="main",
+    help='Branch to run pipeline for (default "main")',
+)
 
-parser.add_argument('--regtest-branch', type=str, default='',
-                    help='Regressiontest branch to use to for running regression tests (default none, which means fall back to main)')
+parser.add_argument(
+    "--regtest-branch",
+    type=str,
+    default="",
+    help="Regressiontest branch to use to for running regression tests (default none, which means fall back to main)",
+)
 
-parser.add_argument('--regtest-commit', type=str, default='',
-                    help='Commit to use instead of the regtest-branch tip for running tests (default empty)')
+parser.add_argument(
+    "--regtest-commit",
+    type=str,
+    default="",
+    help="Commit to use instead of the regtest-branch tip for running tests (default empty)",
+)
 
 if __name__ == "__main__":
     args = parser.parse_args()
-    submit_gitlab_pipeline(args.token, args.type, args.branch, args.regtest_branch, args.regtest_commit)
+    submit_gitlab_pipeline(
+        args.token, args.type, args.branch, args.regtest_branch, args.regtest_commit
+    )

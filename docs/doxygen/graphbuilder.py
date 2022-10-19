@@ -61,14 +61,23 @@ import functools
 
 from gmxtree import DocType
 
+
 @functools.total_ordering
 class EdgeType(object):
 
     """Enumeration type for edge types in include dependency graphs."""
 
     # Mapping to string representation for the internal integer values
-    _names = ['test', 'pubimpl', 'libimpl', 'library', 'public',
-            'intramodule', 'legacy', 'undocumented']
+    _names = [
+        "test",
+        "pubimpl",
+        "libimpl",
+        "library",
+        "public",
+        "intramodule",
+        "legacy",
+        "undocumented",
+    ]
 
     def __init__(self, value):
         """Initialize a EdgeType instance.
@@ -90,6 +99,7 @@ class EdgeType(object):
         """Order edge types in the order of increasing coupling."""
         return self._value < other._value
 
+
 # Tests depend on test
 EdgeType.test = EdgeType(0)
 # Implementation depends on public/library headers
@@ -105,6 +115,7 @@ EdgeType.legacy = EdgeType(6)
 EdgeType.cyclic = EdgeType(7)
 # Invalid dependency
 EdgeType.undocumented = EdgeType(8)
+
 
 class Edge(object):
 
@@ -131,29 +142,30 @@ class Edge(object):
         """Format this edge for 'dot'."""
         # If you change these styles, update also the legend in modulegraph.md
         if self._fromnode.is_file_node() and self._tonode.is_file_node():
-            properties = ''
+            properties = ""
         elif self._edgetype == EdgeType.intramodule:
-            properties = ''
+            properties = ""
         elif self._edgetype == EdgeType.test:
             # TODO: Consider if only some test edges should be made non-constraints
             properties = 'color=".33 .8 .8", style=dashed, constraint=no'
         elif self._edgetype == EdgeType.libimpl:
             properties = 'color=".66 .8 .8", style=dashed'
         elif self._edgetype == EdgeType.pubimpl:
-            properties = 'color=black, style=dashed'
+            properties = "color=black, style=dashed"
         elif self._edgetype == EdgeType.library:
             properties = 'color=".66 .8 .8"'
         elif self._edgetype == EdgeType.public:
-            properties = 'color=black'
+            properties = "color=black"
         elif self._edgetype == EdgeType.legacy:
-            properties = 'color=grey75'
+            properties = "color=grey75"
         elif self._edgetype == EdgeType.cyclic:
-            properties = 'color=red, constraint=no'
-        else: # undocumented
-            properties = 'color=red'
-        return '{0} -> {1} [{2}]'.format(self._fromnode.get_nodename(),
-                                         self._tonode.get_nodename(),
-                                         properties)
+            properties = "color=red, constraint=no"
+        else:  # undocumented
+            properties = "color=red"
+        return "{0} -> {1} [{2}]".format(
+            self._fromnode.get_nodename(), self._tonode.get_nodename(), properties
+        )
+
 
 class Node(object):
 
@@ -173,11 +185,11 @@ class Node(object):
         self._nodename = nodename
         self._label = label
         if style:
-            self._style = ','.join(style)
+            self._style = ",".join(style)
         else:
             self._style = None
         if properties:
-            self._properties = ', '.join(properties)
+            self._properties = ", ".join(properties)
         else:
             self._properties = None
         self._is_file = is_file
@@ -212,21 +224,20 @@ class Node(object):
     def format(self):
         """Format this node for 'dot'."""
         # TODO: Take indent as a parameter to make output marginally nicer.
-        result = ''
+        result = ""
         if self._children:
-            result += '    subgraph cluster_{0} {{\n' \
-                          .format(self._nodename)
+            result += "    subgraph cluster_{0} {{\n".format(self._nodename)
             result += '        label = "{0}"\n'.format(self._label)
             for child in self._children:
                 result += child.format()
-            result += '    }\n'
+            result += "    }\n"
         else:
             properties = 'label="{0}"'.format(self._label)
             if self._properties:
-                properties += ', ' + self._properties
+                properties += ", " + self._properties
             if self._style:
                 properties += ', style="{0}"'.format(self._style)
-            result += '    {0} [{1}]\n'.format(self._nodename, properties)
+            result += "    {0} [{1}]\n".format(self._nodename, properties)
         return result
 
 
@@ -263,20 +274,20 @@ class Graph(object):
         edgesto = dict()
         edgesfrom = dict()
         for edge in self._edges:
-            isfrom = (edge._fromnode in nodes)
-            isto = (edge._tonode in nodes)
+            isfrom = edge._fromnode in nodes
+            isto = edge._tonode in nodes
             if isfrom and isto:
                 pass
             elif isfrom:
                 if not edge._tonode in edgesfrom:
-                    edgesfrom[edge._tonode] = \
-                            Edge(target, edge._tonode, edge._edgetype)
+                    edgesfrom[edge._tonode] = Edge(target, edge._tonode, edge._edgetype)
                 else:
                     edgesfrom[edge._tonode].merge_edge(edge)
             elif isto:
                 if not edge._fromnode in edgesto:
-                    edgesto[edge._fromnode] = \
-                            Edge(edge._fromnode, target, edge._edgetype)
+                    edgesto[edge._fromnode] = Edge(
+                        edge._fromnode, target, edge._edgetype
+                    )
                 else:
                     edgesto[edge._fromnode].merge_edge(edge)
             else:
@@ -296,18 +307,20 @@ class Graph(object):
 
     def write(self, outfile):
         """Write the graph in 'dot' format."""
-        outfile.write('digraph includedeps {\n')
+        outfile.write("digraph includedeps {\n")
         if self._left_to_right:
-            outfile.write('    rankdir = LR\n')
+            outfile.write("    rankdir = LR\n")
         if self._concentrate:
-            outfile.write('    concentrate = true\n')
-        outfile.write('    node [fontname="FreeSans",fontsize=10,height=.2,'
-                                 'shape=box]\n')
+            outfile.write("    concentrate = true\n")
+        outfile.write(
+            '    node [fontname="FreeSans",fontsize=10,height=.2,' "shape=box]\n"
+        )
         for node in self._nodes:
             outfile.write(node.format())
         for edge in self._edges:
-            outfile.write('    ' + edge.format() + '\n')
-        outfile.write('}\n')
+            outfile.write("    " + edge.format() + "\n")
+        outfile.write("}\n")
+
 
 class GraphBuilder(object):
 
@@ -323,24 +336,24 @@ class GraphBuilder(object):
         filenodes is a dict() that maps file objects to their nodes, and is
         updated by this call.
         """
-        nodename = re.subn(r'[-./]', '_', fileobj.get_relpath())[0]
+        nodename = re.subn(r"[-./]", "_", fileobj.get_relpath())[0]
         style = []
         properties = []
         properties.append('URL="\\ref {0}"'.format(fileobj.get_name()))
         if not fileobj.get_module():
-            style.append('bold')
-            properties.append('color=red')
+            style.append("bold")
+            properties.append("color=red")
         if fileobj.is_test_file():
-            style.append('filled')
+            style.append("filled")
             properties.append('fillcolor=".33 .2 1"')
         elif fileobj.is_source_file():
-            style.append('filled')
-            properties.append('fillcolor=grey75')
+            style.append("filled")
+            properties.append("fillcolor=grey75")
         elif fileobj.get_api_type() == DocType.public:
-            style.append('filled')
+            style.append("filled")
             properties.append('fillcolor=".66 .2 1"')
         elif fileobj.get_api_type() == DocType.library:
-            style.append('filled')
+            style.append("filled")
             properties.append('fillcolor=".66 .5 1"')
         node = Node(nodename, fileobj.get_name(), style, properties, is_file=True)
         filenodes[fileobj] = node
@@ -352,7 +365,7 @@ class GraphBuilder(object):
         Determines the type for the edge from the information provided by
         gmxtree.
         """
-        intramodule = (fromfile.get_module() == tofile.get_module())
+        intramodule = fromfile.get_module() == tofile.get_module()
         is_legacy = not tofile.api_type_is_reliable()
         if fromfile.get_module() == tofile.get_module():
             return EdgeType.intramodule
@@ -375,8 +388,11 @@ class GraphBuilder(object):
             elif not tofile.is_documented():
                 return EdgeType.undocumented
             else:
-                raise ValueError('Unknown edge type between {0} and {1}'
-                        .format(fromfile.get_relpath(), tofile.get_relpath()))
+                raise ValueError(
+                    "Unknown edge type between {0} and {1}".format(
+                        fromfile.get_relpath(), tofile.get_relpath()
+                    )
+                )
         elif fromfile.get_api_type() == DocType.library:
             return EdgeType.library
         elif fromfile.is_public():
@@ -387,8 +403,11 @@ class GraphBuilder(object):
         elif is_legacy:
             return EdgeType.legacy
         else:
-            raise ValueError('Unknown edge type between {0} and {1}'
-                    .format(fromfile.get_relpath(), tofile.get_relpath()))
+            raise ValueError(
+                "Unknown edge type between {0} and {1}".format(
+                    fromfile.get_relpath(), tofile.get_relpath()
+                )
+            )
 
     def _create_file_edge(self, fromfile, tofile, filenodes):
         """Create edge between two file objects.
@@ -417,13 +436,13 @@ class GraphBuilder(object):
 
     def _get_module_color(self, modulegroup):
         # If you change these styles, update also the legend in modulegraph.md
-        if modulegroup == 'legacy':
-            return 'fillcolor=grey75'
-        elif modulegroup == 'analysismodules':
+        if modulegroup == "legacy":
+            return "fillcolor=grey75"
+        elif modulegroup == "analysismodules":
             return 'fillcolor="0 .2 1"'
-        elif modulegroup == 'utilitymodules':
+        elif modulegroup == "utilitymodules":
             return 'fillcolor=".08 .2 1"'
-        elif modulegroup == 'mdrun':
+        elif modulegroup == "mdrun":
             return 'fillcolor=".75 .2 1"'
         return None
 
@@ -431,18 +450,18 @@ class GraphBuilder(object):
         """Create node for a module."""
         style = []
         properties = []
-        properties.append('shape=ellipse')
+        properties.append("shape=ellipse")
         if module.is_documented():
             properties.append('URL="\\ref {0}"'.format(module.get_name()))
         if not module.is_documented():
-            fillcolor = self._get_module_color('legacy')
+            fillcolor = self._get_module_color("legacy")
         else:
             fillcolor = self._get_module_color(module.get_group())
         if fillcolor:
-            style.append('filled')
+            style.append("filled")
             properties.append(fillcolor)
         rootdir = module.get_root_dir()
-        nodename = 'module_' + re.subn(r'[-./]', '_', rootdir.get_relpath())[0]
+        nodename = "module_" + re.subn(r"[-./]", "_", rootdir.get_relpath())[0]
         label = module.get_name()[7:]
         node = Node(nodename, label, style, properties)
         return node
@@ -462,10 +481,17 @@ class GraphBuilder(object):
                     if dep.is_cycle_suppressed():
                         edgetype = EdgeType.cyclic
                     else:
-                        edgetype = max([
-                            self._get_file_edge_type(x.get_including_file(), x.get_file())
-                            for x in dep.get_included_files()])
-                    edge = Edge(modulenodes[moduleobj], modulenodes[othermodule], edgetype)
+                        edgetype = max(
+                            [
+                                self._get_file_edge_type(
+                                    x.get_including_file(), x.get_file()
+                                )
+                                for x in dep.get_included_files()
+                            ]
+                        )
+                    edge = Edge(
+                        modulenodes[moduleobj], modulenodes[othermodule], edgetype
+                    )
                     edges.append(edge)
         return edges
 
@@ -473,11 +499,11 @@ class GraphBuilder(object):
         """Create module dependency graph."""
         nodes = []
         modulenodes = dict()
-        libgromacsnode = Node('libgromacs', 'libgromacs')
+        libgromacsnode = Node("libgromacs", "libgromacs")
         nodes.append(libgromacsnode)
         for moduleobj in self._tree.get_modules():
             node = self._create_module_node(moduleobj)
-            if moduleobj.get_root_dir().get_relpath().startswith('src/gromacs'):
+            if moduleobj.get_root_dir().get_relpath().startswith("src/gromacs"):
                 libgromacsnode.add_child(node)
             else:
                 nodes.append(node)
@@ -498,6 +524,7 @@ class GraphBuilder(object):
         graph.set_options(left_to_right=True)
         return graph
 
+
 def main():
     """Run the graph generation script."""
     import os
@@ -509,52 +536,54 @@ def main():
     from reporter import Reporter
 
     parser = OptionParser()
-    parser.add_option('-S', '--source-root',
-                      help='Source tree root directory')
-    parser.add_option('-B', '--build-root',
-                      help='Build tree root directory')
-    parser.add_option('--ignore-cycles',
-                      help='Set file with module dependencies to ignore in cycles')
-    parser.add_option('-o', '--outdir', default='.',
-                      help='Specify output directory for graphs')
-    parser.add_option('-q', '--quiet', action='store_true',
-                      help='Do not write status messages')
+    parser.add_option("-S", "--source-root", help="Source tree root directory")
+    parser.add_option("-B", "--build-root", help="Build tree root directory")
+    parser.add_option(
+        "--ignore-cycles", help="Set file with module dependencies to ignore in cycles"
+    )
+    parser.add_option(
+        "-o", "--outdir", default=".", help="Specify output directory for graphs"
+    )
+    parser.add_option(
+        "-q", "--quiet", action="store_true", help="Do not write status messages"
+    )
     options, args = parser.parse_args()
 
     reporter = Reporter(quiet=True)
 
     if not options.quiet:
-        sys.stderr.write('Scanning source tree...\n')
+        sys.stderr.write("Scanning source tree...\n")
     tree = GromacsTree(options.source_root, options.build_root, reporter)
     if not options.quiet:
-        sys.stderr.write('Reading source files...\n')
+        sys.stderr.write("Reading source files...\n")
     tree.scan_files()
     if options.ignore_cycles:
         tree.load_cycle_suppression_list(options.ignore_cycles)
     if not options.quiet:
-        sys.stderr.write('Reading Doxygen XML files...\n')
+        sys.stderr.write("Reading Doxygen XML files...\n")
     tree.load_xml(only_files=True)
 
     if not options.quiet:
-        sys.stderr.write('Writing graphs...\n')
+        sys.stderr.write("Writing graphs...\n")
     graphbuilder = GraphBuilder(tree)
     if not os.path.exists(options.outdir):
         os.mkdir(options.outdir)
 
-    filename = os.path.join(options.outdir, 'module-deps.dot')
+    filename = os.path.join(options.outdir, "module-deps.dot")
     graph = graphbuilder.create_modules_graph()
-    with open(filename, 'w') as outfile:
+    with open(filename, "w") as outfile:
         graph.write(outfile)
 
     # Skip some modules that are too big to make any sense
-    skippedmodules = ('gmxlib', 'mdlib', 'gmxana', 'gmxpreprocess')
+    skippedmodules = ("gmxlib", "mdlib", "gmxana", "gmxpreprocess")
     for module in tree.get_modules():
         if not module.get_name()[7:] in skippedmodules:
-            filename = '{0}-deps.dot'.format(module.get_name())
+            filename = "{0}-deps.dot".format(module.get_name())
             filename = os.path.join(options.outdir, filename)
             graph = graphbuilder.create_module_file_graph(module)
-            with open(filename, 'w') as outfile:
+            with open(filename, "w") as outfile:
                 graph.write(outfile)
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     main()

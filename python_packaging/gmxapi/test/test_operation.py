@@ -48,22 +48,10 @@ from gmxapi.operation import ResultDescription
 
 
 def test_comparison():
-    int_array_description = ResultDescription(
-        dtype=int,
-        width=3
-    )
-    same_description = ResultDescription(
-        dtype=int,
-        width=3
-    )
-    different_type_description = ResultDescription(
-        dtype=float,
-        width=3
-    )
-    different_width_description = ResultDescription(
-        dtype=int,
-        width=1
-    )
+    int_array_description = ResultDescription(dtype=int, width=3)
+    same_description = ResultDescription(dtype=int, width=3)
+    different_type_description = ResultDescription(dtype=float, width=3)
+    different_width_description = ResultDescription(dtype=int, width=1)
     assert int_array_description == same_description
     assert int_array_description != different_width_description
     assert int_array_description != different_type_description
@@ -122,38 +110,48 @@ def test_data_dependence(cleandir):
     Use the output of one operation as the input of another.
     """
     with tempfile.TemporaryDirectory() as directory:
-        file1 = os.path.join(directory, 'input')
-        file2 = os.path.join(directory, 'output')
+        file1 = os.path.join(directory, "input")
+        file2 = os.path.join(directory, "output")
 
         # Make a shell script that acts like the type of tool we are wrapping.
-        scriptname = os.path.join(directory, 'clicommand.sh')
-        with open(scriptname, 'w') as fh:
-            fh.write('\n'.join(['#!' + shutil.which('bash'),
-                                '# Concatenate an input file and a string argument to an output file.',
-                                '# Mock a utility with the tested syntax.',
-                                '#     clicommand.sh "some words" -i inputfile -o outputfile',
-                                'echo $1 | cat $3 - > $5\n']))
+        scriptname = os.path.join(directory, "clicommand.sh")
+        with open(scriptname, "w") as fh:
+            fh.write(
+                "\n".join(
+                    [
+                        "#!" + shutil.which("bash"),
+                        "# Concatenate an input file and a string argument to an output file.",
+                        "# Mock a utility with the tested syntax.",
+                        '#     clicommand.sh "some words" -i inputfile -o outputfile',
+                        "echo $1 | cat $3 - > $5\n",
+                    ]
+                )
+            )
         os.chmod(scriptname, stat.S_IRWXU)
 
-        line1 = 'first line'
-        filewriter1 = commandline_operation(scriptname,
-                                            arguments=[line1],
-                                            input_files={'-i': os.devnull},
-                                            output_files={'-o': file1})
+        line1 = "first line"
+        filewriter1 = commandline_operation(
+            scriptname,
+            arguments=[line1],
+            input_files={"-i": os.devnull},
+            output_files={"-o": file1},
+        )
 
-        line2 = 'second line'
-        filewriter2 = commandline_operation(scriptname,
-                                            arguments=[line2],
-                                            input_files={'-i': filewriter1.output.file['-o']},
-                                            output_files={'-o': file2})
+        line2 = "second line"
+        filewriter2 = commandline_operation(
+            scriptname,
+            arguments=[line2],
+            input_files={"-i": filewriter1.output.file["-o"]},
+            output_files={"-o": file2},
+        )
 
         filewriter2.run()
         # Check that the files have the expected lines
-        with open(filewriter1.output.file['-o'].result(), 'r') as fh:
+        with open(filewriter1.output.file["-o"].result(), "r") as fh:
             lines = [text.rstrip() for text in fh]
         assert len(lines) == 1
         assert lines[0] == line1
-        with open(filewriter2.output.file['-o'].result(), 'r') as fh:
+        with open(filewriter2.output.file["-o"].result(), "r") as fh:
             lines = [text.rstrip() for text in fh]
         assert len(lines) == 2
         assert lines[0] == line1
@@ -164,6 +162,7 @@ def test_data_dependence(cleandir):
             # on all ranks, but make sure that we don't delete the temporary
             # directory before all ranks have looked for it.
             from mpi4py import MPI
+
             MPI.COMM_WORLD.barrier()
         except ImportError:
             pass

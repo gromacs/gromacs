@@ -59,18 +59,20 @@ import gmxtree
 from gmxtree import GromacsTree, DocType
 from reporter import Reporter
 
+
 def check_file(fileobj, tree, reporter):
     """Check file-level issues."""
-    if not fileobj.is_external() and fileobj.get_relpath().startswith('src/'):
+    if not fileobj.is_external() and fileobj.get_relpath().startswith("src/"):
         includes = fileobj.get_includes()
         if fileobj.is_source_file():
             if includes:
                 firstinclude = includes[0].get_file()
                 if not firstinclude or firstinclude.get_name() != "gmxpre.h":
-                    reporter.code_issue(includes[0],
-                                        "does not include \"gmxpre.h\" first")
+                    reporter.code_issue(
+                        includes[0], 'does not include "gmxpre.h" first'
+                    )
             else:
-                reporter.code_issue(fileobj, "does not include \"gmxpre.h\"")
+                reporter.code_issue(fileobj, 'does not include "gmxpre.h"')
         used_define_files = fileobj.get_used_define_files()
         for define_file in tree.get_checked_define_files():
             includes_file = False
@@ -80,17 +82,21 @@ def check_file(fileobj, tree, reporter):
                     break
             if includes_file:
                 if not define_file in used_define_files:
-                    reporter.code_issue(fileobj,
-                            "includes \"{0}\" unnecessarily".format(define_file.get_name()))
+                    reporter.code_issue(
+                        fileobj,
+                        'includes "{0}" unnecessarily'.format(define_file.get_name()),
+                    )
             else:
                 if define_file in used_define_files:
                     used_defines = list(fileobj.get_used_defines(define_file))
                     if len(used_defines) > 3:
-                        used_defines = used_defines[:3] + ['...']
-                    used_defines = ', '.join(used_defines)
-                    reporter.code_issue(fileobj,
-                            "should include \"{0}\"".format(define_file.get_name()),
-                            details=["uses " + used_defines])
+                        used_defines = used_defines[:3] + ["..."]
+                    used_defines = ", ".join(used_defines)
+                    reporter.code_issue(
+                        fileobj,
+                        'should include "{0}"'.format(define_file.get_name()),
+                        details=["uses " + used_defines],
+                    )
 
     if not fileobj.is_documented():
         # TODO: Add rules for required documentation
@@ -99,18 +105,23 @@ def check_file(fileobj, tree, reporter):
     if fileobj.is_source_file():
         # TODO: Add rule to exclude examples from this check
         if fileobj.get_doc_type() != DocType.internal:
-            reporter.file_error(fileobj,
-                    "source file documentation appears outside full documentation")
+            reporter.file_error(
+                fileobj, "source file documentation appears outside full documentation"
+            )
         elif fileobj.get_api_type() != DocType.internal:
             reporter.file_error(fileobj, "source file marked as non-internal")
         elif fileobj.get_doc_type() < fileobj.get_api_type():
-            reporter.file_error(fileobj,
-                    "API type ({0}) conflicts with documentation visibility ({1})"
-                    .format(fileobj.get_api_type(), fileobj.get_doc_type()))
+            reporter.file_error(
+                fileobj,
+                "API type ({0}) conflicts with documentation visibility ({1})".format(
+                    fileobj.get_api_type(), fileobj.get_doc_type()
+                ),
+            )
 
     if not fileobj.has_brief_description():
-        reporter.file_error(fileobj,
-                "is documented, but does not have brief description")
+        reporter.file_error(
+            fileobj, "is documented, but does not have brief description"
+        )
 
     expectedmod = fileobj.get_expected_module()
     if expectedmod:
@@ -118,13 +129,20 @@ def check_file(fileobj, tree, reporter):
         if docmodules:
             for module in docmodules:
                 if module != expectedmod:
-                    reporter.file_error(fileobj,
-                            "is documented in incorrect module: {0}"
-                            .format(module.get_name()))
+                    reporter.file_error(
+                        fileobj,
+                        "is documented in incorrect module: {0}".format(
+                            module.get_name()
+                        ),
+                    )
         elif expectedmod.is_documented():
-            reporter.file_error(fileobj,
-                    "is not documented in any module, but {0} exists"
-                    .format(expectedmod.get_name()))
+            reporter.file_error(
+                fileobj,
+                "is not documented in any module, but {0} exists".format(
+                    expectedmod.get_name()
+                ),
+            )
+
 
 def check_include(fileobj, includedfile, reporter):
     """Check an #include directive."""
@@ -132,8 +150,9 @@ def check_include(fileobj, includedfile, reporter):
     if includedfile.is_system():
         if not otherfile:
             return
-        reporter.code_issue(includedfile,
-                "includes local file as {0}".format(includedfile))
+        reporter.code_issue(
+            includedfile, "includes local file as {0}".format(includedfile)
+        )
     # To report compiler flags in the log file, include files must be
     # generated by CMake, with a name that is only known at generation
     # time (not even configuration time). This looks like the
@@ -148,8 +167,9 @@ def check_include(fileobj, includedfile, reporter):
     if "compilerflaginfo" in str(includedfile):
         return
     if not otherfile:
-        reporter.code_issue(includedfile,
-                "includes non-local file as {0}".format(includedfile))
+        reporter.code_issue(
+            includedfile, "includes non-local file as {0}".format(includedfile)
+        )
     if not otherfile:
         return
     filemodule = fileobj.get_module()
@@ -158,17 +178,23 @@ def check_include(fileobj, includedfile, reporter):
         filetype = fileobj.get_doc_type()
         othertype = otherfile.get_doc_type()
         if filetype > othertype:
-            reporter.code_issue(includedfile,
-                    "{0} file includes {1} file {2}"
-                    .format(filetype, othertype, includedfile))
-    check_api = (otherfile.api_type_is_reliable() and filemodule != othermodule)
+            reporter.code_issue(
+                includedfile,
+                "{0} file includes {1} file {2}".format(
+                    filetype, othertype, includedfile
+                ),
+            )
+    check_api = otherfile.api_type_is_reliable() and filemodule != othermodule
+
 
 def check_entity(entity, reporter):
     """Check documentation for a code construct."""
     if entity.is_documented():
         if not entity.has_brief_description():
-            reporter.doc_error(entity,
-                    "is documented, but does not have brief description")
+            reporter.doc_error(
+                entity, "is documented, but does not have brief description"
+            )
+
 
 def check_class(classobj, reporter):
     """Check documentation for a class/struct/union."""
@@ -177,19 +203,26 @@ def check_class(classobj, reporter):
         classtype = classobj.get_doc_type()
         filetype = classobj.get_file_doc_type()
         if filetype is not DocType.none and classtype > filetype:
-            reporter.doc_error(classobj,
-                    "is in {0} file(s), but appears in {1} documentation"
-                    .format(filetype, classtype))
+            reporter.doc_error(
+                classobj,
+                "is in {0} file(s), but appears in {1} documentation".format(
+                    filetype, classtype
+                ),
+            )
+
 
 def check_member(member, reporter, check_ignored):
     """Check documentation for a generic member."""
     check_entity(member, reporter)
     if member.is_documented():
         if check_ignored and not member.is_visible():
-            reporter.doc_note(member,
-                    "is documented, but is ignored by Doxygen, because its scope is not documented")
+            reporter.doc_note(
+                member,
+                "is documented, but is ignored by Doxygen, because its scope is not documented",
+            )
         if member.has_inbody_description():
             reporter.doc_note(member, "has in-body comments, which are ignored")
+
 
 def check_all(tree, reporter, check_ignored):
     """Do all checks for the GROMACS tree."""
@@ -199,23 +232,29 @@ def check_all(tree, reporter, check_ignored):
     for memberobj in tree.get_members():
         check_member(memberobj, reporter, check_ignored)
 
+
 def main():
     """Run the checking script."""
     parser = OptionParser()
-    parser.add_option('-S', '--source-root',
-                      help='Source tree root directory')
-    parser.add_option('-B', '--build-root',
-                      help='Build tree root directory')
-    parser.add_option('-l', '--log',
-                      help='Write issues into a given log file in addition to stderr')
-    parser.add_option('--ignore',
-                      help='Set file with patterns for messages to ignore')
-    parser.add_option('--check-ignored', action='store_true',
-                      help='Issue notes for comments ignored by Doxygen')
-    parser.add_option('-q', '--quiet', action='store_true',
-                      help='Do not write status messages')
-    parser.add_option('--exitcode', action='store_true',
-                      help='Return non-zero exit code if there are warnings')
+    parser.add_option("-S", "--source-root", help="Source tree root directory")
+    parser.add_option("-B", "--build-root", help="Build tree root directory")
+    parser.add_option(
+        "-l", "--log", help="Write issues into a given log file in addition to stderr"
+    )
+    parser.add_option("--ignore", help="Set file with patterns for messages to ignore")
+    parser.add_option(
+        "--check-ignored",
+        action="store_true",
+        help="Issue notes for comments ignored by Doxygen",
+    )
+    parser.add_option(
+        "-q", "--quiet", action="store_true", help="Do not write status messages"
+    )
+    parser.add_option(
+        "--exitcode",
+        action="store_true",
+        help="Return non-zero exit code if there are warnings",
+    )
     options, args = parser.parse_args()
 
     reporter = Reporter(options.log)
@@ -223,24 +262,24 @@ def main():
         reporter.load_filters(options.ignore)
 
     if not options.quiet:
-        sys.stderr.write('Scanning source tree...\n')
+        sys.stderr.write("Scanning source tree...\n")
     tree = GromacsTree(options.source_root, options.build_root, reporter)
     tree.load_git_attributes()
     if not options.quiet:
-        sys.stderr.write('Reading source files...\n')
+        sys.stderr.write("Reading source files...\n")
     # TODO: The checking should be possible without storing everything in memory
     tree.scan_files(keep_contents=True)
     if not options.quiet:
-        sys.stderr.write('Finding config.h and other preprocessor macro uses...\n')
+        sys.stderr.write("Finding config.h and other preprocessor macro uses...\n")
     tree.find_define_file_uses()
     if not options.quiet:
-        sys.stderr.write('Reading Doxygen XML files...\n')
+        sys.stderr.write("Reading Doxygen XML files...\n")
     tree.load_xml()
 
     reporter.write_pending()
 
     if not options.quiet:
-        sys.stderr.write('Checking...\n')
+        sys.stderr.write("Checking...\n")
 
     check_all(tree, reporter, options.check_ignored)
 
@@ -250,5 +289,6 @@ def main():
 
     if options.exitcode and reporter.had_warnings():
         sys.exit(1)
+
 
 main()

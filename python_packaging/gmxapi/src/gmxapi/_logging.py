@@ -69,14 +69,14 @@ Refer to the Python :py:mod:`logging` module for information on connecting to an
 logger output.
 """
 
-__all__ = ['logger']
+__all__ = ["logger"]
 
 # Import system facilities
 import logging
 from logging import getLogger, DEBUG, NullHandler
 
 # Define `logger` attribute that is used by submodules to create sub-loggers.
-logger = getLogger('gmxapi')
+logger = getLogger("gmxapi")
 # Prevent gmxapi logs from propagating to the root logger (and to sys.stderr)
 # if the user does not take action to handle logging.
 logger.addHandler(NullHandler(level=DEBUG))
@@ -89,10 +89,10 @@ try:
 except ImportError:
     rank_number = 0
     comm_size = 1
-    rank_tag = ''
+    rank_tag = ""
     MPI = None
 else:
-    rank_tag = 'rank{}:'.format(rank_number)
+    rank_tag = "rank{}:".format(rank_number)
 
 old_factory = logging.getLogRecordFactory()
 

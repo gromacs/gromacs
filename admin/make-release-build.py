@@ -59,7 +59,9 @@ import subprocess
 import typing
 
 
-def submit_gitlab_pipeline(auth_token, ssh_key, branch='main', release_build=False, dry_run=True):
+def submit_gitlab_pipeline(
+    auth_token, ssh_key, branch="main", release_build=False, dry_run=True
+):
     """Submit a pipeline to GitLab server to run a release build.
 
     Authenticates user using token to the project, and tries to create new GROMACS_RELEASE
@@ -79,7 +81,7 @@ def submit_gitlab_pipeline(auth_token, ssh_key, branch='main', release_build=Fal
     """
     import gitlab
 
-    gl = gitlab.Gitlab('https://gitlab.com', private_token=auth_token)
+    gl = gitlab.Gitlab("https://gitlab.com", private_token=auth_token)
     # The project ID for GROMACS is hardcoded here
     project_id = 17679574
     project = gl.projects.get(project_id)
@@ -91,27 +93,41 @@ def submit_gitlab_pipeline(auth_token, ssh_key, branch='main', release_build=Fal
     ssh_key_string = Path(ssh_key).read_text()
 
     # add trailing new line for the ssh-key
-    if ssh_key_string[:-1] != '\n':
-        ssh_key_string += '\n'
+    if ssh_key_string[:-1] != "\n":
+        ssh_key_string += "\n"
 
-    print('Going to start pipeline with following arguments')
-    print(r'Branch = ', branch)
-    print(r'GROMACS_RELEASE = ', release_build_str)
-    print(r'DRY_RUN = ', dry_run_str)
-    #print(r'SSH_PRIVATE_KEY = ', ssh_key_string)
+    print("Going to start pipeline with following arguments")
+    print(r"Branch = ", branch)
+    print(r"GROMACS_RELEASE = ", release_build_str)
+    print(r"DRY_RUN = ", dry_run_str)
+    # print(r'SSH_PRIVATE_KEY = ', ssh_key_string)
 
-    pipeline = project.pipelines.create({'ref': branch, 'variables': [{'key': 'GROMACS_RELEASE', 'value': release_build_str}, {
-                                        'key': 'SSH_PRIVATE_KEY', 'value': ssh_key_string}, {'key': 'DRY_RUN', 'value': dry_run_str}]})
+    pipeline = project.pipelines.create(
+        {
+            "ref": branch,
+            "variables": [
+                {"key": "GROMACS_RELEASE", "value": release_build_str},
+                {"key": "SSH_PRIVATE_KEY", "value": ssh_key_string},
+                {"key": "DRY_RUN", "value": dry_run_str},
+            ],
+        }
+    )
 
 
-def upload_files(*, path: typing.Union[str, Path], options: typing.List[str], server: str, dry_run=False):
+def upload_files(
+    *,
+    path: typing.Union[str, Path],
+    options: typing.List[str],
+    server: str,
+    dry_run=False,
+):
     """Actual upload command.
 
     Takes care of moving files to the server for public consumption.
     Needs to have successfully set up SSH key infrastructure before.
     """
 
-    upload_command = ['rsync', '-rlptvP']
+    upload_command = ["rsync", "-rlptvP"]
     upload_command.extend(options)
 
     upload_command.append(str(path))
@@ -151,47 +167,56 @@ def upload_release_artifacts():
 
     # Please see the variable documentation in docs/dev-manual/gitlab-ci.rst for explanation
     # of GROMACS specific  variables.
-    dry_run_str = os.getenv('DRY_RUN')
-    release_build_str = os.getenv('GROMACS_RELEASE')
-    branch = os.getenv('CI_COMMIT_BRANCH')
-    build_dir = os.getenv('BUILD_DIR')
-    version = os.getenv('VERSION')
+    dry_run_str = os.getenv("DRY_RUN")
+    release_build_str = os.getenv("GROMACS_RELEASE")
+    branch = os.getenv("CI_COMMIT_BRANCH")
+    build_dir = os.getenv("BUILD_DIR")
+    version = os.getenv("VERSION")
 
-    if dry_run_str.lower() not in ('true', 'false'):
+    if dry_run_str.lower() not in ("true", "false"):
         raise ValueError(
-            f'Wrong value of DRY_RUN: "{dry_run_str}". Only "true" and "false" are allowed')
+            f'Wrong value of DRY_RUN: "{dry_run_str}". Only "true" and "false" are allowed'
+        )
 
     # we keep track of whether any command has failed so far
     is_upload = False
     dry_run = True
-    if dry_run_str == 'false':
+    if dry_run_str == "false":
         dry_run = False
 
     full_version = version
-    if not release_build_str == 'true':
-        full_version += '-dev'
+    if not release_build_str == "true":
+        full_version += "-dev"
 
-    overwrite_str = ''
+    overwrite_str = ""
     # the default location for ftp and manual bot is ./, so we just add .ci-test to upload to the test location
-    upload_location = './.ci-test/'
-    if re.match(r'^release-\d{4}$', branch) or re.match(r'^main$', branch):
-        if release_build_str == 'true':
+    upload_location = "./.ci-test/"
+    if re.match(r"^release-\d{4}$", branch) or re.match(r"^main$", branch):
+        if release_build_str == "true":
             is_upload = True
-            overwrite_str = '--ignore-existing'
-            upload_location = './'
+            overwrite_str = "--ignore-existing"
+            upload_location = "./"
             # Only upload to real location if all preconditions are set. As the default path is as mentioned above,
             # we just use the directory above it
 
     current_dir = os.getcwd()
 
     # set up manual front page repo
-    os.mkdir('manual-front-page')
-    os.chdir('manual-front-page')
-    ret_init = subprocess.run(['git', 'init'], capture_output=True)
+    os.mkdir("manual-front-page")
+    os.chdir("manual-front-page")
+    ret_init = subprocess.run(["git", "init"], capture_output=True)
     ret_fetch = subprocess.run(
-        ['git', 'fetch', 'https://gitlab.com/gromacs/deployment/manual-front-page.git', 'main'], capture_output=True)
+        [
+            "git",
+            "fetch",
+            "https://gitlab.com/gromacs/deployment/manual-front-page.git",
+            "main",
+        ],
+        capture_output=True,
+    )
     ret_checkout = subprocess.run(
-        ['git', 'checkout', '-qf', 'FETCH_HEAD'], capture_output=True)
+        ["git", "checkout", "-qf", "FETCH_HEAD"], capture_output=True
+    )
     os.chdir(current_dir)
     if ret_init.returncode != 0:
         print(ret_init.stdout)
@@ -206,96 +231,129 @@ def upload_release_artifacts():
         print(ret_checkout.stderr)
         exit(1)
 
-    ret = subprocess.run(['make', 'html'], capture_output=True,
-                         cwd=Path.cwd()/'manual-front-page')
+    ret = subprocess.run(
+        ["make", "html"], capture_output=True, cwd=Path.cwd() / "manual-front-page"
+    )
 
     if ret.returncode != 0:
         print(ret.stdout)
         print(ret.stderr)
         exit(1)
 
-    ftp_server = 'ftpbot@ftp.gromacs.org'
-    manual_server = 'manualbot@manual.gromacs.org'
+    ftp_server = "ftpbot@ftp.gromacs.org"
+    manual_server = "manualbot@manual.gromacs.org"
 
-    website_file_location = build_dir+'/docs/html'
-    frontpage_file_location = 'manual-front-page/_build/html'
-    manual_file = f'manual-{version}.pdf'
-    manual_file_location = website_file_location+'/'+manual_file
+    website_file_location = build_dir + "/docs/html"
+    frontpage_file_location = "manual-front-page/_build/html"
+    manual_file = f"manual-{version}.pdf"
+    manual_file_location = website_file_location + "/" + manual_file
 
-    website_path_on_server = f'{manual_server}:{upload_location}/{full_version}/'
-    source_path_on_server = f'{ftp_server}:{upload_location}/gromacs/'
-    regressiontests_path_on_server = f'{ftp_server}:{upload_location}/regressiontests/'
-    manual_path_on_server = f'{ftp_server}:{upload_location}/manual/'
-    frontpage_path_on_server = f'{manual_server}:{upload_location}/'
+    website_path_on_server = f"{manual_server}:{upload_location}/{full_version}/"
+    source_path_on_server = f"{ftp_server}:{upload_location}/gromacs/"
+    regressiontests_path_on_server = f"{ftp_server}:{upload_location}/regressiontests/"
+    manual_path_on_server = f"{ftp_server}:{upload_location}/manual/"
+    frontpage_path_on_server = f"{manual_server}:{upload_location}/"
 
-    website_upload_options = ['--chmod=u+rwX,g+rwX,o+rX']
-    file_upload_options = ['--chmod=u+rw,g+rw,o+r']
+    website_upload_options = ["--chmod=u+rwX,g+rwX,o+rX"]
+    file_upload_options = ["--chmod=u+rw,g+rw,o+r"]
 
-    frontpage_upload_options = website_upload_options + \
-        ['--exclude', '_sources', '--exclude',
-            '.buildinfo', '--exclude', 'objects.inv']
+    frontpage_upload_options = website_upload_options + [
+        "--exclude",
+        "_sources",
+        "--exclude",
+        ".buildinfo",
+        "--exclude",
+        "objects.inv",
+    ]
 
     if is_upload and overwrite_str:
         website_upload_options.append(overwrite_str)
         file_upload_options.append(overwrite_str)
 
-    manual_file = f'manual-{full_version}.pdf'
+    manual_file = f"manual-{full_version}.pdf"
     copyfile(manual_file_location, manual_file)
-    source_tarball = f'gromacs-{full_version}.tar.gz'
-    regressiontests_tarball = f'regressiontests-{full_version}.tar.gz'
+    source_tarball = f"gromacs-{full_version}.tar.gz"
+    regressiontests_tarball = f"regressiontests-{full_version}.tar.gz"
 
     os.chdir(website_file_location)
-    upload_files(path='./',
-                 options=website_upload_options,
-                 server=website_path_on_server,
-                 dry_run=dry_run)
+    upload_files(
+        path="./",
+        options=website_upload_options,
+        server=website_path_on_server,
+        dry_run=dry_run,
+    )
     os.chdir(current_dir)
-    upload_files(path=manual_file,
-                 options=file_upload_options,
-                 server=manual_path_on_server,
-                 dry_run=dry_run)
-    upload_files(path=source_tarball,
-                 options=file_upload_options,
-                 server=source_path_on_server,
-                 dry_run=dry_run)
-    upload_files(path=regressiontests_tarball,
-                 options=file_upload_options,
-                 server=regressiontests_path_on_server,
-                 dry_run=dry_run)
+    upload_files(
+        path=manual_file,
+        options=file_upload_options,
+        server=manual_path_on_server,
+        dry_run=dry_run,
+    )
+    upload_files(
+        path=source_tarball,
+        options=file_upload_options,
+        server=source_path_on_server,
+        dry_run=dry_run,
+    )
+    upload_files(
+        path=regressiontests_tarball,
+        options=file_upload_options,
+        server=regressiontests_path_on_server,
+        dry_run=dry_run,
+    )
     os.chdir(frontpage_file_location)
-    upload_files(path='./',
-                 options=frontpage_upload_options,
-                 server=frontpage_path_on_server,
-                 dry_run=dry_run)
+    upload_files(
+        path="./",
+        options=frontpage_upload_options,
+        server=frontpage_path_on_server,
+        dry_run=dry_run,
+    )
     os.chdir(current_dir)
 
 
-parser = argparse.ArgumentParser(
-    description='Automatic release options.')
+parser = argparse.ArgumentParser(description="Automatic release options.")
 
 mode_group = parser.add_mutually_exclusive_group(required=True)
-mode_group.add_argument('--local', action='store_true',
-                        help='Set when running in local (submit pipeline) mode.')
-mode_group.add_argument('--server', action='store_const', const=False, dest='local',
-                        help='Set when running in server (upload artefacts) mode.')
+mode_group.add_argument(
+    "--local",
+    action="store_true",
+    help="Set when running in local (submit pipeline) mode.",
+)
+mode_group.add_argument(
+    "--server",
+    action="store_const",
+    const=False,
+    dest="local",
+    help="Set when running in server (upload artefacts) mode.",
+)
 
-parser.add_argument('--token', type=str,
-                    help='GitLab access token needed to launch pipelines')
-parser.add_argument('--ssh-key', type=str,
-                    help='Path to SSH key needed to upload things to server. Pass in local mode to have it during the job')
+parser.add_argument(
+    "--token", type=str, help="GitLab access token needed to launch pipelines"
+)
+parser.add_argument(
+    "--ssh-key",
+    type=str,
+    help="Path to SSH key needed to upload things to server. Pass in local mode to have it during the job",
+)
 
 release_parser = parser.add_mutually_exclusive_group(required=False)
-release_parser.add_argument('--release', dest='release', action='store_true')
+release_parser.add_argument("--release", dest="release", action="store_true")
 release_parser.add_argument(
-    '--no-release', dest='release', action='store_const', const=False)
+    "--no-release", dest="release", action="store_const", const=False
+)
 
 dry_run_parser = parser.add_mutually_exclusive_group(required=False)
-dry_run_parser.add_argument('--dry-run', dest='dry_run', action='store_true')
+dry_run_parser.add_argument("--dry-run", dest="dry_run", action="store_true")
 dry_run_parser.add_argument(
-    '--no-dry-run', dest='dry_run', action='store_const', const=False)
+    "--no-dry-run", dest="dry_run", action="store_const", const=False
+)
 
-parser.add_argument('--branch', type=str, default='main',
-                    help='Branch to run pipeline for (default "main")')
+parser.add_argument(
+    "--branch",
+    type=str,
+    default="main",
+    help='Branch to run pipeline for (default "main")',
+)
 
 
 if __name__ == "__main__":
@@ -303,14 +361,22 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     if args.local:
-        if args.token is None or args.branch is None or args.release is None or args.dry_run is None or args.ssh_key is None:
+        if (
+            args.token is None
+            or args.branch is None
+            or args.release is None
+            or args.dry_run is None
+            or args.ssh_key is None
+        ):
             raise RuntimeError(
-                'Need to provide all command line options for running in local mode')
+                "Need to provide all command line options for running in local mode"
+            )
 
         ssh_key_location = Path(args.ssh_key).resolve()
 
-        submit_gitlab_pipeline(args.token, ssh_key_location,
-                               args.branch, args.release, args.dry_run)
+        submit_gitlab_pipeline(
+            args.token, ssh_key_location, args.branch, args.release, args.dry_run
+        )
 
     else:
         # --server mode

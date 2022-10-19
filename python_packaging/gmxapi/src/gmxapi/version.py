@@ -69,15 +69,14 @@ from .exceptions import FeatureNotAvailableError
 _major = 0
 _minor = 4
 _micro = 0
-_suffix = 'b2'
+_suffix = "b2"
 
 # Reference https://www.python.org/dev/peps/pep-0440/ and
 # https://packaging.pypa.io/en/latest/version/ for
 # versioning semantics and rules.
-__version__ = '{major}.{minor}.{micro}{suffix}'.format(major=_major,
-                                                       minor=_minor,
-                                                       micro=_micro,
-                                                       suffix=_suffix)
+__version__ = "{major}.{minor}.{micro}{suffix}".format(
+    major=_major, minor=_minor, micro=_micro, suffix=_suffix
+)
 
 # Named features describe functionality or behavior introduced since the last
 # major release, and should be described in gmxapi documentation or issue
@@ -96,23 +95,21 @@ _named_features_0 = [[]] * (_minor + 1)
 # Features added since the initial gmxapi prototype, targeted for version 0.1.
 # Functional requirements were described in issues #2045 and #2893. See also
 # https://gitlab.com/gromacs/gromacs/-/blob/release-2020/python_packaging/roadmap.rst
-_named_features_0[0] = ['fr1', 'fr3', 'fr7', 'fr15']
+_named_features_0[0] = ["fr1", "fr3", "fr7", "fr15"]
 # Features named since the finalization of the 0.1 specification with GROMACS 2020.
 _named_features_0[1] = []
 
 _named_features_0[2] = [
-    'container_futures',
-    'mdrun_checkpoint_output',
-    'mdrun_runtime_args',
+    "container_futures",
+    "mdrun_checkpoint_output",
+    "mdrun_runtime_args",
 ]
 
 _named_features_0[3] = [
-    'cli_env_kwarg',
+    "cli_env_kwarg",
 ]
 
-_named_features_0[4] = [
-    'mpi_comm_integration'
-]
+_named_features_0[4] = ["mpi_comm_integration"]
 
 
 def api_is_at_least(major_version, minor_version=0, patch_version=0):
@@ -129,15 +126,19 @@ def api_is_at_least(major_version, minor_version=0, patch_version=0):
     Note that if gmxapi.version.release is False, the package is not guaranteed to correctly or
     fully support the reported API level.
     """
-    if not isinstance(major_version, int) or not isinstance(minor_version, int) or not isinstance(
-            patch_version,
-            int):
-        raise TypeError('Version levels must be provided as integers.')
+    if (
+        not isinstance(major_version, int)
+        or not isinstance(minor_version, int)
+        or not isinstance(patch_version, int)
+    ):
+        raise TypeError("Version levels must be provided as integers.")
     if _major > major_version:
         return True
     elif _major == major_version and _minor >= minor_version:
         return True
-    elif _major == major_version and _minor == minor_version and _micro >= patch_version:
+    elif (
+        _major == major_version and _minor == minor_version and _micro >= patch_version
+    ):
         return True
     else:
         return False
@@ -187,9 +188,9 @@ def has_feature(name: str, enable_exception=False) -> bool:
         # specification.
         if name in _named_features_0[version]:
             warnings.warn(
-                f'Old feature name. Use `api_is_at_least({_major}, {version + 1})` instead of `has_feature({name})`.',
+                f"Old feature name. Use `api_is_at_least({_major}, {version + 1})` instead of `has_feature({name})`.",
                 category=DeprecationWarning,
-                stacklevel=2
+                stacklevel=2,
             )
 
     # Check whether the feature is listed in the API specification amendments.
@@ -199,5 +200,7 @@ def has_feature(name: str, enable_exception=False) -> bool:
         return True
     else:
         if enable_exception:
-            raise FeatureNotAvailableError('Feature {} not available.'.format(str(name)))
+            raise FeatureNotAvailableError(
+                "Feature {} not available.".format(str(name))
+            )
         return False

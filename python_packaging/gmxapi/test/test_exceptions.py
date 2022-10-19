@@ -37,7 +37,8 @@
 # checking for is hidden dependencies.
 import pytest
 
-@pytest.mark.usefixtures('cleandir')
+
+@pytest.mark.usefixtures("cleandir")
 def test_catchability():
     """Test exception inheritance of C++ extension module.
 
@@ -45,8 +46,10 @@ def test_catchability():
     """
     from gmxapi._gmxapi import Exception as ExtensionException
     import gmxapi
+
     with pytest.raises(gmxapi.exceptions.Error):
         raise ExtensionException()
     from gmxapi._gmxapi import UnknownException as ExtensionException
+
     with pytest.raises(gmxapi.exceptions.Error):
         raise ExtensionException()

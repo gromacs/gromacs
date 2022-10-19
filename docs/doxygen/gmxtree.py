@@ -57,38 +57,50 @@ import subprocess
 
 import doxygenxml as xml
 import reporter
+
 # We import DocType directly so that it is exposed from this module as well.
 from doxygenxml import DocType
+
 
 def _get_api_type_for_compound(grouplist):
     """Helper function to deduce API type from Doxygen group membership."""
     result = DocType.internal
     for group in grouplist:
         if isinstance(group, xml.Group):
-            if group.get_name() == 'group_publicapi':
+            if group.get_name() == "group_publicapi":
                 result = DocType.public
-            elif group.get_name() == 'group_libraryapi':
+            elif group.get_name() == "group_libraryapi":
                 result = DocType.library
             # TODO: Check for multiple group membership
     return result
+
 
 class IncludedFile(object):
 
     """Information about an #include directive in a file."""
 
-    def __init__(self, including_file, lineno, included_file, included_path, is_relative, is_system, line):
+    def __init__(
+        self,
+        including_file,
+        lineno,
+        included_file,
+        included_path,
+        is_relative,
+        is_system,
+        line,
+    ):
         self._including_file = including_file
         self._line_number = lineno
         self._included_file = included_file
         self._included_path = included_path
-        #self._used_include_path = used_include_path
+        # self._used_include_path = used_include_path
         self._is_relative = is_relative
         self._is_system = is_system
         self._line = line
 
     def __str__(self):
         if self._is_system:
-            return '<{0}>'.format(self._included_path)
+            return "<{0}>".format(self._included_path)
         else:
             return '"{0}"'.format(self._included_path)
 
@@ -122,6 +134,7 @@ class IncludedFile(object):
     def get_reporter_location(self):
         return reporter.Location(self._including_file.get_abspath(), self._line_number)
 
+
 class IncludeBlock(object):
 
     """Block of consequent #include directives in a file."""
@@ -145,6 +158,7 @@ class IncludeBlock(object):
     def get_last_line(self):
         return self._last_line
 
+
 class File(object):
 
     """Source/header file in the GROMACS tree."""
@@ -156,7 +170,7 @@ class File(object):
         self._dir = directory
         self._rawdoc = None
         extension = os.path.splitext(abspath)[1]
-        self._sourcefile = (extension in ('.c', '.cc', '.cpp', '.cu'))
+        self._sourcefile = extension in (".c", ".cc", ".cpp", ".cu")
         self._apitype = DocType.none
         self._modules = set()
         self._includes = []
@@ -203,8 +217,9 @@ class File(object):
                 fileobj = sourcetree.get_file(fullpath)
             else:
                 fileobj = sourcetree.find_include_file(includedpath)
-        included_file = IncludedFile(self, lineno, fileobj, includedpath,
-            is_relative, is_system, line)
+        included_file = IncludedFile(
+            self, lineno, fileobj, includedpath, is_relative, is_system, line
+        )
         self._includes.append(included_file)
         return included_file
 
@@ -212,18 +227,19 @@ class File(object):
         """Scan the file contents and initialize information based on it."""
         # TODO: Consider a more robust regex.
         include_re = r'^\s*#\s*include\s+(?P<quote>["<])(?P<path>[^">]*)[">]'
-        define_re = r'^\s*#.*define(?:01)?\s+(\w*)'
+        define_re = r"^\s*#.*define(?:01)?\s+(\w*)"
         current_block = None
-        with open(self._abspath, 'r', encoding='utf8') as scanfile:
+        with open(self._abspath, "r", encoding="utf8") as scanfile:
             contents = scanfile.read()
         lines = contents.splitlines(True)
         for lineno, line in enumerate(lines, 1):
             match = re.match(include_re, line)
             if match:
-                is_system = (match.group('quote') == '<')
-                includedpath = match.group('path')
-                included_file = self._process_include(lineno, is_system,
-                        includedpath, line, sourcetree)
+                is_system = match.group("quote") == "<"
+                includedpath = match.group("path")
+                included_file = self._process_include(
+                    lineno, is_system, includedpath, line, sourcetree
+                )
                 if current_block is None:
                     current_block = IncludeBlock(included_file)
                     self._include_blocks.append(current_block)
@@ -262,7 +278,7 @@ class File(object):
 
     def should_includes_be_sorted(self):
         """Return whether the include directives in the file should be sorted."""
-        return self._filter in ('includesort', 'complete_formatting')
+        return self._filter in ("includesort", "complete_formatting")
 
     def is_documented(self):
         return self._rawdoc and self._rawdoc.is_documented()
@@ -356,9 +372,9 @@ class File(object):
         return set(self._used_defines.keys())
 
     def get_used_defines(self, define_file):
-        """Return set of defines used in this file for a given file like config.h.
-        """
+        """Return set of defines used in this file for a given file like config.h."""
         return self._used_defines.get(define_file, set())
+
 
 class GeneratedFile(File):
     def __init__(self, abspath, relpath, directory):
@@ -385,8 +401,10 @@ class GeneratedFile(File):
             return self._generator_source_file.get_declared_defines()
         return File.get_declared_defines(self)
 
+
 class GeneratorSourceFile(File):
     pass
+
 
 class Directory(object):
 
@@ -401,11 +419,10 @@ class Directory(object):
         self._rawdoc = None
         self._module = None
         self._is_test_dir = False
-        if parent and parent.is_test_directory() or \
-                self._name == 'tests':
+        if parent and parent.is_test_directory() or self._name == "tests":
             self._is_test_dir = True
         self._is_external = False
-        if parent and parent.is_external() or self._name == 'external':
+        if parent and parent.is_external() or self._name == "external":
             self._is_external = True
         self._subdirs = set()
         if parent:
@@ -415,7 +432,7 @@ class Directory(object):
     def set_doc_xml(self, rawdoc, sourcetree):
         """Assiociate Doxygen documentation entity with the directory."""
         assert self._rawdoc is None
-        assert rawdoc.get_path().rstrip('/') in (self._abspath, self._relpath)
+        assert rawdoc.get_path().rstrip("/") in (self._abspath, self._relpath)
         self._rawdoc = rawdoc
 
     def set_module(self, module):
@@ -469,6 +486,7 @@ class Directory(object):
             dirobj = dirobj._parent
         return False
 
+
 class ModuleDependency(object):
 
     """Dependency between modules."""
@@ -510,6 +528,7 @@ class ModuleDependency(object):
         """Get IncludedFile objects for the individual include dependencies."""
         return self._includedfiles
 
+
 class Module(object):
 
     """Code module in the GROMACS source tree.
@@ -536,7 +555,7 @@ class Module(object):
             groups = list(self._rawdoc.get_groups())
             if len(groups) == 1:
                 groupname = groups[0].get_name()
-                if groupname.startswith('group_'):
+                if groupname.startswith("group_"):
                     self._group = groupname[6:]
 
     def add_dependency(self, othermodule, includedfile):
@@ -565,6 +584,7 @@ class Module(object):
     def get_dependencies(self):
         return self._dependencies.values()
 
+
 class Namespace(object):
 
     """Namespace in the GROMACS source code."""
@@ -574,6 +594,7 @@ class Namespace(object):
 
     def is_anonymous(self):
         return self._rawdoc.is_anonymous()
+
 
 class Class(object):
 
@@ -614,6 +635,7 @@ class Class(object):
 
     def get_file_doc_type(self):
         return max([fileobj.get_doc_type() for fileobj in self._files])
+
 
 class Member(object):
 
@@ -695,37 +717,41 @@ class GromacsTree(object):
         self._classes = set()
         self._namespaces = set()
         self._members = set()
-        self._walk_dir(os.path.join(self._source_root, 'src'))
+        self._walk_dir(os.path.join(self._source_root, "src"))
         for fileobj in self.get_files():
             if fileobj and fileobj.is_source_file() and not fileobj.is_external():
                 (basedir, name) = os.path.split(fileobj.get_abspath())
                 (basename, ext) = os.path.splitext(name)
-                header = self.get_file(os.path.join(basedir, basename + '.h'))
-                if not header and ext == '.cu':
-                    header = self.get_file(os.path.join(basedir, basename + '.cuh'))
+                header = self.get_file(os.path.join(basedir, basename + ".h"))
+                if not header and ext == ".cu":
+                    header = self.get_file(os.path.join(basedir, basename + ".cuh"))
                 if not header and fileobj.is_test_file():
                     basedir = os.path.dirname(basedir)
-                    header = self.get_file(os.path.join(basedir, basename + '.h'))
+                    header = self.get_file(os.path.join(basedir, basename + ".h"))
                     if not header:
                         # Somewhat of a hack; currently, the tests for
                         # analysisdata/modules/ and trajectoryanalysis/modules/
                         # is at the top-level tests directory.
                         # TODO: It could be clearer to split the tests so that
                         # there would be a separate modules/tests/.
-                        header = self.get_file(os.path.join(basedir, 'modules', basename + '.h'))
-                    if not header and basename.endswith('_tests'):
-                        header = self.get_file(os.path.join(basedir, basename[:-6] + '.h'))
+                        header = self.get_file(
+                            os.path.join(basedir, "modules", basename + ".h")
+                        )
+                    if not header and basename.endswith("_tests"):
+                        header = self.get_file(
+                            os.path.join(basedir, basename[:-6] + ".h")
+                        )
                 if header:
                     fileobj.set_main_header(header)
-        rootdir = self._get_dir(os.path.join('src', 'gromacs'))
+        rootdir = self._get_dir(os.path.join("src", "gromacs"))
         for subdir in rootdir.get_subdirectories():
             self._create_module(subdir)
         # list of directories that aren't in the default location src/gromacs
-        rootdir = self._get_dir(os.path.join('src', 'testutils'))
+        rootdir = self._get_dir(os.path.join("src", "testutils"))
         self._create_module(rootdir)
-        rootdir = self._get_dir(os.path.join('src', 'gromacs', 'applied_forces', 'awh'))
+        rootdir = self._get_dir(os.path.join("src", "gromacs", "applied_forces", "awh"))
         self._create_module(rootdir)
-        rootdir = self._get_dir(os.path.join('src', 'programs', 'mdrun', 'tests'))
+        rootdir = self._get_dir(os.path.join("src", "programs", "mdrun", "tests"))
         self._create_module(rootdir)
 
     def _get_rel_path(self, path):
@@ -743,8 +769,8 @@ class GromacsTree(object):
         relpath = self._get_rel_path(rootpath)
         self._dirs[relpath] = Directory(rootpath, relpath, None)
         for dirpath, dirnames, filenames in os.walk(rootpath):
-            if 'refdata' in dirnames:
-                dirnames.remove('refdata')
+            if "refdata" in dirnames:
+                dirnames.remove("refdata")
             currentdir = self._dirs[self._get_rel_path(dirpath)]
             # Loop through a copy so that we can modify dirnames.
             for dirname in list(dirnames):
@@ -754,14 +780,14 @@ class GromacsTree(object):
                     continue
                 relpath = self._get_rel_path(fullpath)
                 self._dirs[relpath] = Directory(fullpath, relpath, currentdir)
-            extensions = ('.h', '.cuh', '.hpp', '.c', '.cc', '.cpp', '.cu', '.bm')
+            extensions = (".h", ".cuh", ".hpp", ".c", ".cc", ".cpp", ".cu", ".bm")
             for filename in filenames:
                 basename, extension = os.path.splitext(filename)
                 if extension in extensions:
                     fullpath = os.path.join(dirpath, filename)
                     relpath = self._get_rel_path(fullpath)
                     self._files[relpath] = File(fullpath, relpath, currentdir)
-                elif extension == '.cmakein':
+                elif extension == ".cmakein":
                     extension = os.path.splitext(basename)[1]
                     if extension in extensions:
                         fullpath = os.path.join(dirpath, filename)
@@ -774,20 +800,22 @@ class GromacsTree(object):
                         generatedfile = GeneratedFile(fullpath, relpath, currentdir)
                         self._files[relpath] = generatedfile
                         generatedfile.set_generator_source(sourcefile)
-                elif extension in ('.l', '.y', '.pre'):
+                elif extension in (".l", ".y", ".pre"):
                     fullpath = os.path.join(dirpath, filename)
                     relpath = self._get_rel_path(fullpath)
-                    self._files[relpath] = GeneratorSourceFile(fullpath, relpath, currentdir)
+                    self._files[relpath] = GeneratorSourceFile(
+                        fullpath, relpath, currentdir
+                    )
 
     def _create_module(self, rootdir):
         """Create module for a subdirectory."""
-        name = 'module_' + rootdir.get_name()
+        name = "module_" + rootdir.get_name()
         # Fix for module_mdrun_integration_tests
         # that contains files from three directories.
         # Here we use the directory that contains
         # nearly all files that belong to the module
-        if (name == 'module_tests'):
-            name = 'module_mdrun_integration_tests'
+        if name == "module_tests":
+            name = "module_mdrun_integration_tests"
         moduleobj = Module(name, rootdir)
         rootdir.set_module(moduleobj)
         self._modules[name] = moduleobj
@@ -800,8 +828,10 @@ class GromacsTree(object):
             filelist = self._files.values()
         define_files = list(self.get_checked_define_files())
         for define_file in list(define_files):
-            if isinstance(define_file, GeneratedFile) and \
-                    define_file.get_generator_source() is not None:
+            if (
+                isinstance(define_file, GeneratedFile)
+                and define_file.get_generator_source() is not None
+            ):
                 define_files.append(define_file.get_generator_source())
         for fileobj in filelist:
             if not fileobj.is_external():
@@ -822,7 +852,7 @@ class GromacsTree(object):
         If only_files is True, XML data is not loaded for code constructs, but
         only for files, directories, and their potential parents.
         """
-        xmldir = os.path.join(self._build_root, 'docs', 'html', 'doxygen', 'xml')
+        xmldir = os.path.join(self._build_root, "docs", "html", "doxygen", "xml")
         self._docset = xml.DocumentationSet(xmldir, self._reporter)
         if only_files:
             if isinstance(only_files, collections.abc.Iterable):
@@ -843,14 +873,15 @@ class GromacsTree(object):
 
     def _load_dirs(self):
         """Load Doxygen XML directory information."""
-        rootdirs = self._docset.get_compounds(xml.Directory,
-                lambda x: x.get_parent() is None)
+        rootdirs = self._docset.get_compounds(
+            xml.Directory, lambda x: x.get_parent() is None
+        )
         for dirdoc in rootdirs:
             self._load_dir(dirdoc, None)
 
     def _load_dir(self, dirdoc, parent):
         """Load Doxygen XML directory information for a single directory."""
-        path = dirdoc.get_path().rstrip('/')
+        path = dirdoc.get_path().rstrip("/")
         if not os.path.isabs(path):
             path = os.path.join(self._source_root, path)
         relpath = self._get_rel_path(path)
@@ -865,13 +896,15 @@ class GromacsTree(object):
 
     def _load_modules(self):
         """Load Doxygen XML module (group) information."""
-        moduledocs = self._docset.get_compounds(xml.Group,
-                lambda x: x.get_name().startswith('module_'))
+        moduledocs = self._docset.get_compounds(
+            xml.Group, lambda x: x.get_name().startswith("module_")
+        )
         for moduledoc in moduledocs:
             moduleobj = self._modules.get(moduledoc.get_name())
             if not moduleobj:
                 self._reporter.input_error(
-                        "no matching directory for module: {0}".format(moduledoc))
+                    "no matching directory for module: {0}".format(moduledoc)
+                )
                 continue
             moduleobj.set_doc_xml(moduledoc, self)
             self._docmap[moduledoc] = moduleobj
@@ -889,12 +922,13 @@ class GromacsTree(object):
             extension = os.path.splitext(path)[1]
             # We don't care about Markdown files that only produce pages
             # (and fail the directory check below).
-            if extension == '.md':
+            if extension == ".md":
                 continue
             dirdoc = filedoc.get_directory()
             if not dirdoc:
-                self._reporter.xml_assert(filedoc.get_xml_path(),
-                        "file is not in any directory in Doxygen")
+                self._reporter.xml_assert(
+                    filedoc.get_xml_path(), "file is not in any directory in Doxygen"
+                )
                 continue
             relpath = self._get_rel_path(path)
             fileobj = self._files.get(relpath)
@@ -941,24 +975,29 @@ class GromacsTree(object):
 
     def find_include_file(self, includedpath):
         """Find a file object corresponding to an include path."""
-        for testdir in ('src', 'src/external/thread_mpi/include',
-                'src/external/tng_io/include'):
+        for testdir in (
+            "src",
+            "src/external/thread_mpi/include",
+            "src/external/tng_io/include",
+        ):
             testpath = os.path.join(testdir, includedpath)
             if testpath in self._files:
                 return self._files[testpath]
 
     def load_git_attributes(self):
         """Load git attribute information for files."""
-        args = ['git', 'check-attr', '--stdin', 'filter']
-        filelist = '\n'.join(map(File.get_relpath, self._files.values())) + '\n'
-        git_check_attr = subprocess.run(args,
-                                        input=filelist,
-                                        stdout=subprocess.PIPE,
-                                        universal_newlines=True,
-                                        cwd=self._source_root)
+        args = ["git", "check-attr", "--stdin", "filter"]
+        filelist = "\n".join(map(File.get_relpath, self._files.values())) + "\n"
+        git_check_attr = subprocess.run(
+            args,
+            input=filelist,
+            stdout=subprocess.PIPE,
+            universal_newlines=True,
+            cwd=self._source_root,
+        )
         filters = git_check_attr.stdout
         for fileinfo in filters.splitlines():
-            path, dummy, value = fileinfo.split(': ')
+            path, dummy, value = fileinfo.split(": ")
             fileobj = self._files.get(path)
             assert fileobj is not None
             fileobj.set_git_filter_attribute(value)
@@ -971,17 +1010,19 @@ class GromacsTree(object):
             excluded_files = set([define_file])
             excluded_files.update(define_file.get_included_files(recursive=True))
             all_defines = define_file.get_declared_defines()
-            args = ['git', 'grep', '-zwIF']
+            args = ["git", "grep", "-zwIF"]
             for define in all_defines:
-                args.extend(['-e', define])
-            args.extend(['--', '*.cpp', '*.c', '*.cu', '*.h', '*.cuh'])
-            define_re = r'\b(?:' + '|'.join(all_defines)+ r')\b'
-            completed_process = subprocess.run(args,
-                                               cwd=self._source_root,
-                                               universal_newlines=True,
-                                               stdout=subprocess.PIPE)
+                args.extend(["-e", define])
+            args.extend(["--", "*.cpp", "*.c", "*.cu", "*.h", "*.cuh"])
+            define_re = r"\b(?:" + "|".join(all_defines) + r")\b"
+            completed_process = subprocess.run(
+                args,
+                cwd=self._source_root,
+                universal_newlines=True,
+                stdout=subprocess.PIPE,
+            )
             for line in completed_process.stdout.splitlines():
-                (filename, text) = line.split('\0')
+                (filename, text) = line.split("\0")
                 fileobj = self._files.get(filename)
                 if fileobj is not None and fileobj not in excluded_files:
                     defines = re.findall(define_re, text)
@@ -993,35 +1034,45 @@ class GromacsTree(object):
         These edges between modules, if present, will be marked in the
         corresponding ModuleDependency objects.
         """
-        with open(filename, 'r') as fp:
+        with open(filename, "r") as fp:
             for line in fp:
                 line = line.strip()
-                if not line or line.startswith('#'):
+                if not line or line.startswith("#"):
                     continue
-                modulenames = ['module_' + x.strip() for x in line.split('->')]
+                modulenames = ["module_" + x.strip() for x in line.split("->")]
                 if len(modulenames) != 2:
                     self._reporter.input_error(
-                            "invalid cycle suppression line: {0}".format(line))
+                        "invalid cycle suppression line: {0}".format(line)
+                    )
                     continue
                 firstmodule = self._modules.get(modulenames[0])
                 secondmodule = self._modules.get(modulenames[1])
                 if not firstmodule or not secondmodule:
                     self._reporter.input_error(
-                            "unknown modules mentioned on cycle suppression line: {0}".format(line))
+                        "unknown modules mentioned on cycle suppression line: {0}".format(
+                            line
+                        )
+                    )
                     continue
                 for dep in firstmodule.get_dependencies():
                     if dep.get_other_module() == secondmodule:
                         dep.set_cycle_suppression()
                         break
                 else:
-                    self._reporter.cyclic_issue("unused cycle suppression: {0}".format(line))
+                    self._reporter.cyclic_issue(
+                        "unused cycle suppression: {0}".format(line)
+                    )
 
     def report_unused_cycle_suppressions(self, reporter):
         """Reports unused cycle suppressions."""
         for module in self.get_modules():
             for dep in module.get_dependencies():
                 if not dep.suppression_used:
-                    reporter.cyclic_issue("unused cycle suppression: {0} -> {1}".format(module.get_name()[7:], dep.get_other_module().get_name()[7:]))
+                    reporter.cyclic_issue(
+                        "unused cycle suppression: {0} -> {1}".format(
+                            module.get_name()[7:], dep.get_other_module().get_name()[7:]
+                        )
+                    )
 
     def get_object(self, docobj):
         """Get tree object for a Doxygen XML object."""
@@ -1048,7 +1099,9 @@ class GromacsTree(object):
     def get_checked_define_files(self):
         """Get list of files that contain #define macros whose usage needs to
         be checked."""
-        return (self._files['src/config.h'],
-                self._files['src/gromacs/simd/include/gromacs/simd/simd.h'],
-                self._files['src/gromacs/ewald/pme_simd.h'],
-                self._files['src/gromacs/nbnxm/nbnxm_simd.h'])
+        return (
+            self._files["src/config.h"],
+            self._files["src/gromacs/simd/include/gromacs/simd/simd.h"],
+            self._files["src/gromacs/ewald/pme_simd.h"],
+            self._files["src/gromacs/nbnxm/nbnxm_simd.h"],
+        )

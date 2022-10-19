@@ -43,18 +43,21 @@ import gmxapi.abc
 
 # Use SourceTypeVar and ResultTypeVar for static type hints, annotations, and as a parameter to generics.
 # Use valid_source_types and valid_result_types for run-time type checking.
-ResultTypeVar = TypeVar('ResultTypeVar', *(str, bool, int, float, dict, gmxapi.abc.NDArray))
+ResultTypeVar = TypeVar(
+    "ResultTypeVar", *(str, bool, int, float, dict, gmxapi.abc.NDArray)
+)
 valid_result_types: Tuple[type] = ResultTypeVar.__constraints__
 
-SourceTypeVar = TypeVar('SourceTypeVar',
-                        *(str, bool, int, float, dict, gmxapi.abc.NDArray))
+SourceTypeVar = TypeVar(
+    "SourceTypeVar", *(str, bool, int, float, dict, gmxapi.abc.NDArray)
+)
 valid_source_types: Tuple[type] = SourceTypeVar.__constraints__
 
 # Place holder for type annotations of Context objects.
 # TODO: Expand to support some static type checking.
-_Context = TypeVar('_Context', bound=gmxapi.abc.Context)
+_Context = TypeVar("_Context", bound=gmxapi.abc.Context)
 # Type variable that binds to subclasses of the forward referenced OperationImplentation ABC.
-_Op = TypeVar('_Op', bound=gmxapi.abc.OperationImplementation)
+_Op = TypeVar("_Op", bound=gmxapi.abc.OperationImplementation)
 
 # Note: We could make many types generic in SourceContext and TargetContext and
 # compose functionality into instances of a helpful base class with the option of
@@ -78,6 +81,7 @@ _Op = TypeVar('_Op', bound=gmxapi.abc.OperationImplementation)
 
 class Future(Generic[ResultTypeVar]):
     """Generic result data."""
+
     def dtype(self) -> Type[ResultTypeVar]:
         ...
 
@@ -116,10 +120,11 @@ class OperationImplementation(Generic[_Op], gmxapi.abc.OperationImplementation):
     gmxapi to support building and executing work graphs in gmxapi compatible
     execution contexts.
     """
+
     # The executable part of an operation consumes a distinct resource type.
     # The resource type may be opaque, because it is created through a factory
     # and only used in passing to a function object.
-    ResourceType = NewType('ResourceType', object)
+    ResourceType = NewType("ResourceType", object)
 
     def name(self) -> str:
         """The name of the operation.

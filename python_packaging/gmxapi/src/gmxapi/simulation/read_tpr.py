@@ -52,8 +52,8 @@ from . import fileio
 # Initialize module-level logger
 from gmxapi import logger as root_logger
 
-logger = root_logger.getChild('read_tpr')
-logger.info('Importing {}'.format(__name__))
+logger = root_logger.getChild("read_tpr")
+logger.info("Importing {}".format(__name__))
 
 
 #
@@ -64,19 +64,19 @@ logger.info('Importing {}'.format(__name__))
 #  simulation module specification. Such output is either a special type of output proxy
 #  or Future.
 _output_descriptors = (
-    _op.OutputDataDescriptor('_simulation_input', str),
-    _op.OutputDataDescriptor('parameters', dict)
+    _op.OutputDataDescriptor("_simulation_input", str),
+    _op.OutputDataDescriptor("parameters", dict),
 )
-_publishing_descriptors = {desc._name: gmxapi.operation.Publisher(desc._name, desc._dtype) for desc in
-                           _output_descriptors}
-_output = _op.OutputCollectionDescription(**{descriptor._name: descriptor._dtype for descriptor in
-                                             _output_descriptors})
+_publishing_descriptors = {
+    desc._name: gmxapi.operation.Publisher(desc._name, desc._dtype)
+    for desc in _output_descriptors
+}
+_output = _op.OutputCollectionDescription(
+    **{descriptor._name: descriptor._dtype for descriptor in _output_descriptors}
+)
 
 
-
-class OutputDataProxy(ModuleObject,
-                      _op.DataProxyBase,
-                      descriptors=_output_descriptors):
+class OutputDataProxy(ModuleObject, _op.DataProxyBase, descriptors=_output_descriptors):
     """Implement the 'output' attribute of `read_tpr` operations.
 
     Attributes:
@@ -85,25 +85,27 @@ class OutputDataProxy(ModuleObject,
     Additionally (through an unspecified interface), the object serves as a
     complete simulation input to other gmxapi operations.
     """
+
     def __init__(self, *args, **kwargs):
         _op.DataProxyBase.__init__(self, *args, **kwargs)
 
 
-class PublishingDataProxy(_op.DataProxyBase,
-                          descriptors=_publishing_descriptors
-                          ):
+class PublishingDataProxy(_op.DataProxyBase, descriptors=_publishing_descriptors):
     """Manage output resource updates for ReadTpr operation."""
 
 
-_output_factory = _op.OutputFactory(output_proxy=OutputDataProxy,
-                                    output_description=_output,
-                                    publishing_data_proxy=PublishingDataProxy)
+_output_factory = _op.OutputFactory(
+    output_proxy=OutputDataProxy,
+    output_description=_output,
+    publishing_data_proxy=PublishingDataProxy,
+)
 
 
 class SessionResources(object):
     """Input and output run-time resources for a ReadTpr operation."""
+
     def __init__(self, tpr_filename, publisher: PublishingDataProxy):
-        self.tpr_object = fileio.TprFile(filename=tpr_filename, mode='r')
+        self.tpr_object = fileio.TprFile(filename=tpr_filename, mode="r")
         self.output = publisher
 
 
@@ -113,18 +115,24 @@ class SessionResources(object):
 
 
 _input = _op.InputCollectionDescription(
-    [('filename', inspect.Parameter('filename',
-                                    inspect.Parameter.POSITIONAL_OR_KEYWORD,
-                                    annotation=str))])
+    [
+        (
+            "filename",
+            inspect.Parameter(
+                "filename", inspect.Parameter.POSITIONAL_OR_KEYWORD, annotation=str
+            ),
+        )
+    ]
+)
 
 
 # TODO: Clarify. The actual input and output arguments passed are customized for this operation.
-def _session_resource_factory(input: _op.InputPack, output: 'PublishingDataProxy',
-                              **kwargs
-                              ) -> SessionResources:
+def _session_resource_factory(
+    input: _op.InputPack, output: "PublishingDataProxy", **kwargs
+) -> SessionResources:
     """Translate resources from the gmxapi.operation Context to the ReadTpr implementation."""
     # TODO: Either get rid of **kwargs or clarify the roadmap and timeline for doing so.
-    filename = input.kwargs['filename']
+    filename = input.kwargs["filename"]
     return SessionResources(tpr_filename=filename, publisher=output)
 
 
@@ -159,12 +167,14 @@ class ResourceManager(gmxapi.operation.ResourceManager):
     Extends gmxapi.operation.ResourceManager to tolerate non-standard data payloads.
     Futures managed by this resource manager may contain additional attributes.
     """
+
     def future(self, name: str, description: _op.ResultDescription):
         tpr_future = super().future(name=name, description=description)
         return tpr_future
 
     def data(self) -> OutputDataProxy:
         return OutputDataProxy(self)
+
 
 # TODO: Consider making Generic in source and target context type variables,
 #  or leave unspecified and use generic function or pair of single_dispatch functions.
@@ -175,6 +185,7 @@ class ResourceFactory(gmxapi.abc.ResourceFactory):
     Generic class for creating resources passed to read_tpr implementation details.
     Dispatching may occur based on the source and target Context of factory action.
     """
+
     def __init__(self, target_context, source_context):
         """Initialize an instance to support read_tpr action.
 
@@ -202,11 +213,16 @@ class ResourceFactory(gmxapi.abc.ResourceFactory):
         if isinstance(self.source_context, _op.Context):
             # TODO: Check whether the consumer is a Context.NodeBuilder or an operation runner.
             # We don't yet use this dispatcher for building nodes, so assume we are launching a session.
-            assert 'input' in kwargs
-            assert 'output' in kwargs
-            return _session_resource_factory(input=kwargs['input'], output=kwargs['output'])
+            assert "input" in kwargs
+            assert "output" in kwargs
+            return _session_resource_factory(
+                input=kwargs["input"], output=kwargs["output"]
+            )
         raise gmxapi.exceptions.MissingImplementationError(
-            'No translation from {} context to {}'.format(self.source_context, self.target_context))
+            "No translation from {} context to {}".format(
+                self.source_context, self.target_context
+            )
+        )
 
     @typing.overload
     def input_description(self, context: _op.Context) -> _op.InputDescription:
@@ -241,7 +257,9 @@ class ResourceFactory(gmxapi.abc.ResourceFactory):
         # method itself is not generic beyond the level of typing overloads.
         if isinstance(context, _op.Context):
             return StandardInputDescription()
-        raise gmxapi.exceptions.MissingImplementationError('No input description available for {} context'.format(context))
+        raise gmxapi.exceptions.MissingImplementationError(
+            "No input description available for {} context".format(context)
+        )
 
 
 class StandardInputDescription(_op.InputDescription):
@@ -265,10 +283,8 @@ class StandardInputDescription(_op.InputDescription):
             cls._uids[salt] = cls._next_uid
             cls._next_uid += 1
         else:
-            logger.debug(
-                f'Reissuing uid for read_tpr({input}): {cls._uids[salt]}'
-            )
-        new_uid = 'read_tpr_{}'.format(cls._uids[salt])
+            logger.debug(f"Reissuing uid for read_tpr({input}): {cls._uids[salt]}")
+        new_uid = "read_tpr_{}".format(cls._uids[salt])
         return new_uid
 
     def signature(self) -> InputCollectionDescription:
@@ -286,23 +302,25 @@ class RegisteredOperation(_op.OperationImplementation, metaclass=_op.OperationMe
     @classmethod
     def name(self) -> str:
         """Canonical name for the operation."""
-        return 'read_tpr'
+        return "read_tpr"
 
     @classmethod
     def namespace(self) -> str:
         """read_tpr is importable from the gmxapi module."""
-        return 'gmxapi'
+        return "gmxapi"
 
     @classmethod
     def director(cls, context: gmxapi.abc.Context) -> gmxapi.abc.OperationDirector:
         if isinstance(context, _op.Context):
             return StandardDirector(context)
         raise gmxapi.exceptions.MissingImplementationError(
-            'No dispatcher for context {} of type {}'.format(context, type(context)))
+            "No dispatcher for context {} of type {}".format(context, type(context))
+        )
 
 
 class StandardOperationHandle(_op.AbstractOperation, ModuleObject):
     """Handle used in Python UI or gmxapi.operation Contexts."""
+
     def __init__(self, resource_manager: ResourceManager):
         self.__resource_manager = resource_manager
 
@@ -321,22 +339,24 @@ class StandardDirector(gmxapi.abc.OperationDirector):
 
     .. todo:: Describe where instances live.
     """
+
     def __init__(self, context: _op.Context):
         if not isinstance(context, _op.Context):
-            raise gmxapi.exceptions.ValueError('StandardDirector requires a gmxapi.operation Context.')
+            raise gmxapi.exceptions.ValueError(
+                "StandardDirector requires a gmxapi.operation Context."
+            )
         self.context = context
 
-    def __call__(self, resources: _op.DataSourceCollection, label: str) -> StandardOperationHandle:
+    def __call__(
+        self, resources: _op.DataSourceCollection, label: str
+    ) -> StandardOperationHandle:
         builder = self.context.node_builder(operation=RegisteredOperation, label=label)
 
         builder.set_resource_factory(_session_resource_factory)
         builder.set_input_description(StandardInputDescription())
         builder.set_handle(StandardOperationHandle)
 
-        runner_director = _op.RunnerDirector(
-            runner=_run,
-            allow_duplicate=True
-        )
+        runner_director = _op.RunnerDirector(runner=_run, allow_duplicate=True)
 
         builder.set_runner_director(runner_director)
         builder.set_output_factory(_output_factory)
@@ -349,8 +369,8 @@ class StandardDirector(gmxapi.abc.OperationDirector):
         # while standard Futures can be resolved in the standard context.
         #
         assert isinstance(resources, _op.DataSourceCollection)
-        assert 'filename' in resources
-        builder.add_input('filename', resources['filename'])
+        assert "filename" in resources
+        builder.add_input("filename", resources["filename"])
 
         handle = builder.build()
         assert isinstance(handle, StandardOperationHandle)
@@ -359,9 +379,11 @@ class StandardDirector(gmxapi.abc.OperationDirector):
     def handle_type(self, context: gmxapi.abc.Context):
         return StandardOperationHandle
 
-    def resource_factory(self,
-                         source: typing.Union[gmxapi.abc.Context, None],
-                         target: gmxapi.abc.Context = None) -> ResourceFactory:
+    def resource_factory(
+        self,
+        source: typing.Union[gmxapi.abc.Context, None],
+        target: gmxapi.abc.Context = None,
+    ) -> ResourceFactory:
         # Distinguish between the UIContext, in which input is in the form
         # of function call arguments, and the StandardContext, implemented in
         # gmxapi.operation. UIContext is probably a virtual context that is
@@ -375,7 +397,9 @@ class StandardDirector(gmxapi.abc.OperationDirector):
                 return ResourceFactory(target_context=target, source_context=source)
         if isinstance(source, _op.Context):
             return ResourceFactory(target_context=target, source_context=source)
-        raise gmxapi.exceptions.ValueError('No dispatching from {} context to {}'.format(source, target))
+        raise gmxapi.exceptions.ValueError(
+            "No dispatching from {} context to {}".format(source, target)
+        )
 
 
 def read_tpr(filename, label: str = None, context=None):
@@ -396,7 +420,8 @@ def read_tpr(filename, label: str = None, context=None):
     handle_context = context
     if handle_context is not None:
         raise gmxapi.exceptions.MissingImplementationError(
-            'context must be None. This factory is only for the Python UI right now.')
+            "context must be None. This factory is only for the Python UI right now."
+        )
 
     # 1. Handle node creation in the scripting interface.
     # When *context* input is None, dispatch to the current Context. Confirm that
@@ -422,11 +447,15 @@ def read_tpr(filename, label: str = None, context=None):
     target_context = _op.current_context()
     assert isinstance(target_context, _op.Context)
     # Get a director that will create a node in the standard context.
-    node_director = _op._get_operation_director(RegisteredOperation, context=target_context)
+    node_director = _op._get_operation_director(
+        RegisteredOperation, context=target_context
+    )
     assert isinstance(node_director, StandardDirector)
     # TODO: refine this protocol
     assert handle_context is None
-    resource_factory = node_director.resource_factory(source=handle_context, target=target_context)
+    resource_factory = node_director.resource_factory(
+        source=handle_context, target=target_context
+    )
     resources = resource_factory(filename=filename)
     handle = node_director(resources=resources, label=label)
     # Note: One effect of the assertions above is to help the type checker infer

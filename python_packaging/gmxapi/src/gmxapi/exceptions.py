@@ -44,17 +44,18 @@ the gmxapi package throws an exception that cannot be caught
 as a gmxapi.exceptions.Error, please report the bug.
 """
 
-__all__ = ['ApiError',
-           'DataShapeError',
-           'Error',
-           'FeatureNotAvailableError',
-           'MissingImplementationError',
-           'ProtocolError',
-           'TypeError',
-           'UsageError',
-           'ValueError',
-           'Warning'
-           ]
+__all__ = [
+    "ApiError",
+    "DataShapeError",
+    "Error",
+    "FeatureNotAvailableError",
+    "MissingImplementationError",
+    "ProtocolError",
+    "TypeError",
+    "UsageError",
+    "ValueError",
+    "Warning",
+]
 
 
 class Error(Exception):
@@ -88,6 +89,7 @@ class MissingImplementationError(Error):
     .. versionchanged:: 0.3
         Named changed to avoid conflict with built-in :py:class:`NotImplementedError` exception
     """
+
     # May be useful for error checking in base classes or as a development tool
     # to avoid releasing incomplete implementations (e.g. overlooked "To do"s)
 

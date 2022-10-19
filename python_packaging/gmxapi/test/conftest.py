@@ -39,7 +39,7 @@ import os
 
 import pytest
 
-pytest_plugins = ('gmxapi.testsupport',)
+pytest_plugins = ("gmxapi.testsupport",)
 
 try:
     from mpi4py import MPI
@@ -49,10 +49,10 @@ try:
 except ImportError:
     rank_number = 0
     comm_size = 1
-    rank_tag = ''
+    rank_tag = ""
     MPI = None
 else:
-    rank_tag = 'rank{}:'.format(rank_number)
+    rank_tag = "rank{}:".format(rank_number)
 
 old_factory = logging.getLogRecordFactory()
 
@@ -66,7 +66,7 @@ def record_factory(*args, **kwargs):
 logging.setLogRecordFactory(record_factory)
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture(scope="session")
 def spc_water_box_collection(gmxcli, tmp_path_factory):
     """Provide a collection of simulation input items for a simple simulation.
 
@@ -84,99 +84,107 @@ def spc_water_box_collection(gmxcli, tmp_path_factory):
     #     # Ref https://setuptools.readthedocs.io/en/latest/setuptools.html#including-data-files
     #     from gmx.data import tprfilename
 
-    with scoped_chdir(tmp_path_factory.mktemp('spc_water_box')) as tempdir:
+    with scoped_chdir(tmp_path_factory.mktemp("spc_water_box")) as tempdir:
 
         testdir = os.path.dirname(__file__)
-        with open(os.path.join(testdir, 'testdata.json'), 'r') as fh:
+        with open(os.path.join(testdir, "testdata.json"), "r") as fh:
             testdata = json.load(fh)
 
         # TODO: (#2756) Don't rely on so many automagical behaviors (as described in comments below)
 
-        structurefile = os.path.join(tempdir, 'structure.gro')
+        structurefile = os.path.join(tempdir, "structure.gro")
         # We let `gmx solvate` use the default solvent. Otherwise, we would do
         #     gro_input = testdata['solvent_structure']
         #     with open(structurefile, 'w') as fh:
         #         fh.write('\n'.join(gro_input))
         #         fh.write('\n')
 
-        topfile = os.path.join(tempdir, 'topology.top')
-        top_input = testdata['solvent_topology']
+        topfile = os.path.join(tempdir, "topology.top")
+        top_input = testdata["solvent_topology"]
         # `gmx solvate` will append a line to the provided file with the molecule count,
         # so we strip the last line from the input topology.
-        with open(topfile, 'w') as fh:
-            fh.write('\n'.join(top_input[:-1]))
-            fh.write('\n')
+        with open(topfile, "w") as fh:
+            fh.write("\n".join(top_input[:-1]))
+            fh.write("\n")
 
         assert os.path.exists(topfile)
-        solvate = gmx.commandline_operation(gmxcli,
-                                            arguments=['solvate', '-box', '5', '5', '5'],
-                                            # We use the default solvent instead of specifying one.
-                                            # input_files={'-cs': structurefile},
-                                            output_files={'-p': topfile,
-                                                          '-o': structurefile,
-                                                          },
-                                            env={'PATH': os.getenv('PATH')},
-                                            )
+        solvate = gmx.commandline_operation(
+            gmxcli,
+            arguments=["solvate", "-box", "5", "5", "5"],
+            # We use the default solvent instead of specifying one.
+            # input_files={'-cs': structurefile},
+            output_files={
+                "-p": topfile,
+                "-o": structurefile,
+            },
+            env={"PATH": os.getenv("PATH")},
+        )
         assert os.path.exists(topfile)
 
         if solvate.output.returncode.result() != 0:
             logging.debug(solvate.output.stderr.result())
-            raise RuntimeError('solvate failed in spc_water_box testing fixture.')
+            raise RuntimeError("solvate failed in spc_water_box testing fixture.")
 
         # Choose an exactly representable dt of 2^-9 ps (approximately 0.002)
-        dt = 2. ** -9.
-        mdp_input = [('integrator', 'md'),
-                     ('dt', dt),
-                     ('cutoff-scheme', 'Verlet'),
-                     ('nstcalcenergy', 1),
-                     ('nsteps', 2),
-                     ('nstfout', 1),
-                     ('nstlist', 1),
-                     ('nstxout', 1),
-                     ('nstvout', 1),
-                     ('tcoupl', 'v-rescale'),
-                     ('tc-grps', 'System'),
-                     ('tau-t', 1),
-                     ('ref-t', 298)]
-        mdp_input = '\n'.join([' = '.join([str(item) for item in kvpair]) for kvpair in mdp_input])
-        mdpfile = os.path.join(tempdir, 'md.mdp')
-        with open(mdpfile, 'w') as fh:
+        dt = 2.0**-9.0
+        mdp_input = [
+            ("integrator", "md"),
+            ("dt", dt),
+            ("cutoff-scheme", "Verlet"),
+            ("nstcalcenergy", 1),
+            ("nsteps", 2),
+            ("nstfout", 1),
+            ("nstlist", 1),
+            ("nstxout", 1),
+            ("nstvout", 1),
+            ("tcoupl", "v-rescale"),
+            ("tc-grps", "System"),
+            ("tau-t", 1),
+            ("ref-t", 298),
+        ]
+        mdp_input = "\n".join(
+            [" = ".join([str(item) for item in kvpair]) for kvpair in mdp_input]
+        )
+        mdpfile = os.path.join(tempdir, "md.mdp")
+        with open(mdpfile, "w") as fh:
             fh.write(mdp_input)
-            fh.write('\n')
-        tprfile = os.path.join(tempdir, 'topol.tpr')
+            fh.write("\n")
+        tprfile = os.path.join(tempdir, "topol.tpr")
         # We don't use mdout_mdp, but if we don't specify it to grompp,
         # it will be created in the current working directory.
-        mdout_mdp = os.path.join(tempdir, 'mdout.mdp')
+        mdout_mdp = os.path.join(tempdir, "mdout.mdp")
 
-        grompp = gmx.commandline_operation(gmxcli, 'grompp',
-                                           input_files={
-                                               '-f': mdpfile,
-                                               '-p': solvate.output.file['-p'],
-                                               '-c': solvate.output.file['-o'],
-                                               '-po': mdout_mdp,
-                                           },
-                                           output_files={'-o': tprfile},
-                                           env={'PATH': os.getenv('PATH')},
-                                           )
-        tprfilename = grompp.output.file['-o'].result()
+        grompp = gmx.commandline_operation(
+            gmxcli,
+            "grompp",
+            input_files={
+                "-f": mdpfile,
+                "-p": solvate.output.file["-p"],
+                "-c": solvate.output.file["-o"],
+                "-po": mdout_mdp,
+            },
+            output_files={"-o": tprfile},
+            env={"PATH": os.getenv("PATH")},
+        )
+        tprfilename = grompp.output.file["-o"].result()
         if grompp.output.returncode.result() != 0:
             logging.debug(grompp.output.stderr.result())
-            raise RuntimeError('grompp failed in spc_water_box testing fixture.')
+            raise RuntimeError("grompp failed in spc_water_box testing fixture.")
 
         # TODO: more inspection of grompp errors...
         assert os.path.exists(tprfilename)
         collection = {
-            'tpr_filename': tprfilename,
-            'mdp_input_filename': mdpfile,
-            'mdp_output_filename': mdout_mdp,
-            'topology_filename': solvate.output.file['-p'].result(),
-            'gro_filename': solvate.output.file['-o'].result(),
-            'mdp_input_list': mdp_input
+            "tpr_filename": tprfilename,
+            "mdp_input_filename": mdpfile,
+            "mdp_output_filename": mdout_mdp,
+            "topology_filename": solvate.output.file["-p"].result(),
+            "gro_filename": solvate.output.file["-o"].result(),
+            "mdp_input_list": mdp_input,
         }
         yield collection
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture(scope="session")
 def spc_water_box(spc_water_box_collection):
     """Provide a TPR input file for a simple simulation."""
-    yield spc_water_box_collection['tpr_filename']
+    yield spc_water_box_collection["tpr_filename"]

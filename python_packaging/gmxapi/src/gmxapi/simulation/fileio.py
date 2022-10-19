@@ -38,7 +38,7 @@
 
 import typing
 
-__all__ = ['TprFile', 'read_tpr', 'write_tpr_file']
+__all__ = ["TprFile", "read_tpr", "write_tpr_file"]
 
 import os
 
@@ -57,7 +57,7 @@ class TprFile(object):
 
     """
 
-    def __init__(self, filename: str = None, mode: str = 'r'):
+    def __init__(self, filename: str = None, mode: str = "r"):
         """Open a TPR file.
 
         File access mode is indicated by 'r' for read-only access.
@@ -71,8 +71,10 @@ class TprFile(object):
 
         """
         if filename is None:
-            raise exceptions.UsageError("TprFile objects must be associated with a file.")
-        if mode != 'r':
+            raise exceptions.UsageError(
+                "TprFile objects must be associated with a file."
+            )
+        if mode != "r":
             raise exceptions.UsageError("TPR files only support read-only access.")
         self.mode = mode
         self.filename = filename
@@ -83,10 +85,13 @@ class TprFile(object):
         self._tprFileHandle = None
 
     def __repr__(self):
-        return "{}('{}', '{}')".format(self.__class__.__name__, self.filename, self.mode)
+        return "{}('{}', '{}')".format(
+            self.__class__.__name__, self.filename, self.mode
+        )
 
     def __enter__(self):
         import gmxapi._gmxapi as _gmxapi
+
         self._tprFileHandle = _gmxapi.read_tprfile(self.filename)
         return self
 
@@ -195,7 +200,7 @@ def read_tpr(tprfile: typing.Union[str, TprFile]):
     """
     if not isinstance(tprfile, TprFile):
         try:
-            tprfile = TprFile(os.fsencode(tprfile), mode='r')
+            tprfile = TprFile(os.fsencode(tprfile), mode="r")
         except Exception as e:
             raise exceptions.UsageError("TPR object or file name is required.") from e
 
@@ -253,9 +258,9 @@ def write_tpr_file(output, input=None):
     import gmxapi._gmxapi as _gmxapi
 
     # TODO: (Data model) Decide how to find output data sources.
-    if not hasattr(input, 'parameters'):
-        if hasattr(input, 'output'):
-            if hasattr(input.output, 'parameters'):
+    if not hasattr(input, "parameters"):
+        if hasattr(input, "output"):
+            if hasattr(input.output, "parameters"):
                 parameters = input.output.parameters
             else:
                 raise ValueError("Need output.parameters")
@@ -266,5 +271,6 @@ def write_tpr_file(output, input=None):
 
     if not isinstance(parameters, _gmxapi.SimulationParameters):
         raise exceptions.TypeError(
-            "You must provide a gmx.core.SimulationParameters object to `parameters` as input.")
+            "You must provide a gmx.core.SimulationParameters object to `parameters` as input."
+        )
     _gmxapi.write_tprfile(output, parameters)

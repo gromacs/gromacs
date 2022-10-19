@@ -42,14 +42,14 @@ from gmxapi.simulation.fileio import read_tpr
 from gmxapi.exceptions import UsageError
 
 
-@pytest.mark.usefixtures('cleandir')
+@pytest.mark.usefixtures("cleandir")
 def test_tprfile_read_old(spc_water_box):
     tpr_filename = spc_water_box
     with pytest.raises(UsageError):
-        TprFile(tpr_filename, 'x')
+        TprFile(tpr_filename, "x")
     with pytest.raises(UsageError):
         TprFile()
-    tprfile = TprFile(tpr_filename, 'r')
+    tprfile = TprFile(tpr_filename, "r")
     with tprfile as fh:
         cpp_object = fh._tprFileHandle
         assert cpp_object is not None
@@ -58,46 +58,45 @@ def test_tprfile_read_old(spc_water_box):
         assert "foo" not in params
 
 
-@pytest.mark.usefixtures('cleandir')
+@pytest.mark.usefixtures("cleandir")
 def test_read_tpr(spc_water_box):
     tpr_filename = spc_water_box
     tpr_source = gmxapi.read_tpr(tpr_filename)
-    assert 'parameters' in tpr_source.output
-    assert hasattr(tpr_source.output, 'parameters')
+    assert "parameters" in tpr_source.output
+    assert hasattr(tpr_source.output, "parameters")
     parameters = tpr_source.output.parameters.result()
-    assert 'nsteps' in parameters
-    assert 'foo' not in parameters
-    assert parameters['nsteps'] == 2
-    assert tpr_source.output.parameters['nsteps'].result() == 2
+    assert "nsteps" in parameters
+    assert "foo" not in parameters
+    assert parameters["nsteps"] == 2
+    assert tpr_source.output.parameters["nsteps"].result() == 2
 
 
-@pytest.mark.usefixtures('cleandir')
+@pytest.mark.usefixtures("cleandir")
 def test_write_tpr_file(spc_water_box):
-    """Test gmx.fileio.write_tpr_file() using gmx.core API.
-    """
+    """Test gmx.fileio.write_tpr_file() using gmx.core API."""
     tpr_filename = spc_water_box
     additional_steps = 5000
     sim_input = read_tpr(tpr_filename)
     params = sim_input.parameters.extract()
-    nsteps = params['nsteps']
-    init_step = params['init-step']
+    nsteps = params["nsteps"]
+    init_step = params["init-step"]
     # Choose a new nsteps to check integer parameter setting.
     new_nsteps = init_step + additional_steps
     # Choose a new dt to check floating point parameter setting
-    new_dt = params['dt'] * 2.
+    new_dt = params["dt"] * 2.0
 
-    sim_input.parameters.set('nsteps', new_nsteps)
-    sim_input.parameters.set('dt', new_dt)
+    sim_input.parameters.set("nsteps", new_nsteps)
+    sim_input.parameters.set("dt", new_dt)
 
-    _, temp_filename = tempfile.mkstemp(suffix='.tpr')
+    _, temp_filename = tempfile.mkstemp(suffix=".tpr")
     gmxapi.simulation.fileio.write_tpr_file(temp_filename, input=sim_input)
-    tprfile = TprFile(temp_filename, 'r')
+    tprfile = TprFile(temp_filename, "r")
     with tprfile as fh:
         params = read_tpr(fh).parameters.extract()
         # Note that we have chosen an exactly representable dt for spc_water_box.
         # Otherwise, we would have to use pytest.approx with a suitable tolerance.
-        assert params['dt'] == new_dt
-        assert params['nsteps'] != nsteps
-        assert params['nsteps'] == new_nsteps
+        assert params["dt"] == new_dt
+        assert params["nsteps"] != nsteps
+        assert params["nsteps"] == new_nsteps
 
     os.unlink(temp_filename)

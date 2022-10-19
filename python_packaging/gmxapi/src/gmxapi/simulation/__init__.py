@@ -51,10 +51,7 @@ gmxapi and please participate in the ongoing discussions for design and
 implementation.
 """
 
-__all__ = ['abc',
-           'mdrun',
-           'modify_input',
-           'read_tpr']
+__all__ = ["abc", "mdrun", "modify_input", "read_tpr"]
 
 from gmxapi.simulation import abc
 from .mdrun import mdrun

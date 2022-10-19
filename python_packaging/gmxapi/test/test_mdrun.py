@@ -61,10 +61,10 @@ try:
 except ImportError:
     rank_number = 0
     comm_size = 1
-    rank_tag = ''
+    rank_tag = ""
     MPI = None
 else:
-    rank_tag = 'rank{}:'.format(rank_number)
+    rank_tag = "rank{}:".format(rank_number)
 
 
 # Use this formatter to improve the caplog log records.
@@ -79,14 +79,14 @@ else:
 
 mpi_support = pytest.mark.skipif(
     comm_size > 1
-    and gmx.utility.config()['gmx_mpi_type'] == 'library'
-    and not gmx.version.has_feature('mpi_comm_integration'),
-    reason="Multi-rank MPI contexts require gmxapi 0.4."
+    and gmx.utility.config()["gmx_mpi_type"] == "library"
+    and not gmx.version.has_feature("mpi_comm_integration"),
+    reason="Multi-rank MPI contexts require gmxapi 0.4.",
 )
 
 
 @mpi_support
-@pytest.mark.usefixtures('cleandir')
+@pytest.mark.usefixtures("cleandir")
 def test_run_from_tpr(spc_water_box, mdrun_kwargs):
     assert os.path.exists(spc_water_box)
 
@@ -95,7 +95,9 @@ def test_run_from_tpr(spc_water_box, mdrun_kwargs):
     md.run()
 
     published_trajectory = md.output.trajectory.result()
-    expected_trajectory = join_path(md.output.directory, 'traj.trr').output.path.result()
+    expected_trajectory = join_path(
+        md.output.directory, "traj.trr"
+    ).output.path.result()
     assert os.path.exists(published_trajectory)
     assert published_trajectory == expected_trajectory
 
@@ -103,12 +105,12 @@ def test_run_from_tpr(spc_water_box, mdrun_kwargs):
     # status messages from libgromacs as intended. Ref #4541
     stderr = md.output.stderr.result()
     assert os.path.exists(stderr)
-    with open(stderr, 'r') as fh:
-        assert 'starting mdrun' in fh.read()
+    with open(stderr, "r") as fh:
+        assert "starting mdrun" in fh.read()
 
 
 @mpi_support
-@pytest.mark.usefixtures('cleandir')
+@pytest.mark.usefixtures("cleandir")
 def test_mdrun_runtime_args(spc_water_box, caplog, mdrun_kwargs):
     """Test that *runtime_args* is respected.
 
@@ -117,11 +119,13 @@ def test_mdrun_runtime_args(spc_water_box, caplog, mdrun_kwargs):
     """
     assert api_is_at_least(0, 3)
     with caplog.at_level(logging.DEBUG):
-        with caplog.at_level(logging.WARNING, 'gmxapi'), \
-                caplog.at_level(logging.DEBUG, 'gmxapi.mdrun'), \
-                caplog.at_level(logging.DEBUG, 'gmxapi.modify_input'), \
-                caplog.at_level(logging.DEBUG, 'gmxapi.read_tpr'), \
-                caplog.at_level(logging.DEBUG, 'gmxapi.simulation'):
+        with caplog.at_level(logging.WARNING, "gmxapi"), caplog.at_level(
+            logging.DEBUG, "gmxapi.mdrun"
+        ), caplog.at_level(logging.DEBUG, "gmxapi.modify_input"), caplog.at_level(
+            logging.DEBUG, "gmxapi.read_tpr"
+        ), caplog.at_level(
+            logging.DEBUG, "gmxapi.simulation"
+        ):
             tpr = gmx.read_tpr([spc_water_box] * comm_size)
             # Note: It was originally assumed that each process (each rank) would be executing
             # with the same arguments at the user level and that ensemble differences would
@@ -129,8 +133,8 @@ def test_mdrun_runtime_args(spc_water_box, caplog, mdrun_kwargs):
             # particular problem. Nevertheless, pending further design conversations,
             # we will test the normative usage and refrain from doing fancy tricks with
             # rank-based input generation.
-            traj_name = 'unusualtrajectoryname.trr'
-            runtime_args = {'-o': traj_name}
+            traj_name = "unusualtrajectoryname.trr"
+            runtime_args = {"-o": traj_name}
             runtime_args.update(mdrun_kwargs)
             md = gmx.mdrun(tpr, runtime_args=runtime_args)
             md.run()
@@ -143,12 +147,14 @@ def test_mdrun_runtime_args(spc_water_box, caplog, mdrun_kwargs):
             assert str(output).endswith(traj_name)
             assert os.path.exists(output)
             if comm_size > 1:
-                assert md.output.trajectory.result()[0] != md.output.trajectory.result()[1]
+                assert (
+                    md.output.trajectory.result()[0] != md.output.trajectory.result()[1]
+                )
 
 
 @mpi_support
 @pytest.mark.withmpi_only
-@pytest.mark.usefixtures('cleandir')
+@pytest.mark.usefixtures("cleandir")
 def test_mdrun_parallel_runtime_args(spc_water_box, mdrun_kwargs):
     """Test that array input of *runtime_args* is respected.
 
@@ -160,74 +166,63 @@ def test_mdrun_parallel_runtime_args(spc_water_box, mdrun_kwargs):
     assert api_is_at_least(0, 3)
 
     tpr = gmx.read_tpr(spc_water_box)
-    output_files = [f'traj{i}.trr' for i in range(comm_size)]
+    output_files = [f"traj{i}.trr" for i in range(comm_size)]
     # Take care not to reference the same dictionary object.
     runtime_args = list(mdrun_kwargs.copy() for _ in range(comm_size))
     for i, name in enumerate(output_files):
-        runtime_args[i].update({'-o': name})
+        runtime_args[i].update({"-o": name})
     md = gmx.mdrun(tpr, runtime_args=runtime_args)
     md.run()
-    logging.getLogger().debug(f'testing rank {rank_number} with comm size {comm_size}.')
+    logging.getLogger().debug(f"testing rank {rank_number} with comm size {comm_size}.")
     output = md.output.trajectory.result()[rank_number]
-    assert str(output).endswith(f'traj{rank_number}.trr')
+    assert str(output).endswith(f"traj{rank_number}.trr")
     assert os.path.exists(output)
     assert md.output.trajectory.result()[0] != md.output.trajectory.result()[1]
 
     tpr = gmx.read_tpr([spc_water_box] * comm_size)
-    output_files = [f'traj{i}.trr' for i in range(comm_size)]
+    output_files = [f"traj{i}.trr" for i in range(comm_size)]
     runtime_args = list(mdrun_kwargs.copy() for i in range(comm_size))
     for i, name in enumerate(output_files):
-        runtime_args[i].update({'-o': name})
+        runtime_args[i].update({"-o": name})
     md = gmx.mdrun(tpr, runtime_args=runtime_args)
     md.run()
-    logging.getLogger().debug(f'testing rank {rank_number} with comm size {comm_size}.')
+    logging.getLogger().debug(f"testing rank {rank_number} with comm size {comm_size}.")
     assert comm_size > 1
     output = md.output.trajectory.result()[rank_number]
-    assert str(output).endswith(f'traj{rank_number}.trr')
+    assert str(output).endswith(f"traj{rank_number}.trr")
     assert os.path.exists(output)
     assert md.output.trajectory.result()[0] != md.output.trajectory.result()[1]
 
 
 @mpi_support
-@pytest.mark.usefixtures('cleandir')
+@pytest.mark.usefixtures("cleandir")
 def test_extend_simulation_via_checkpoint(spc_water_box, mdrun_kwargs, caplog):
     assert os.path.exists(spc_water_box)
     assert api_is_at_least(0, 3)
 
     with caplog.at_level(logging.DEBUG):
-        with caplog.at_level(logging.WARNING, 'gmxapi'), \
-                caplog.at_level(logging.DEBUG, 'gmxapi.mdrun'), \
-                caplog.at_level(logging.DEBUG, 'gmxapi.modify_input'), \
-                caplog.at_level(logging.DEBUG, 'gmxapi.read_tpr'), \
-                caplog.at_level(logging.DEBUG, 'gmxapi.simulation'):
+        with caplog.at_level(logging.WARNING, "gmxapi"), caplog.at_level(
+            logging.DEBUG, "gmxapi.mdrun"
+        ), caplog.at_level(logging.DEBUG, "gmxapi.modify_input"), caplog.at_level(
+            logging.DEBUG, "gmxapi.read_tpr"
+        ), caplog.at_level(
+            logging.DEBUG, "gmxapi.simulation"
+        ):
             tpr = gmx.read_tpr(spc_water_box)
-            parameters = dict({
-                'nsteps': 2,
-                'nstxout': 2
-            })
-            input1 = gmx.modify_input(
-                tpr,
-                parameters=parameters)
-            runtime_args = {
-                '-cpo': 'continuation.cpt'
-            }
+            parameters = dict({"nsteps": 2, "nstxout": 2})
+            input1 = gmx.modify_input(tpr, parameters=parameters)
+            runtime_args = {"-cpo": "continuation.cpt"}
             runtime_args.update(mdrun_kwargs)
             md1 = gmx.mdrun(input1, runtime_args=runtime_args)
 
-            input2 = gmx.modify_input(tpr,
-                                      parameters={
-                                          'nsteps': 4,
-                                          'nstxout': 2
-                                      })
+            input2 = gmx.modify_input(tpr, parameters={"nsteps": 4, "nstxout": 2})
             runtime_args = {
-                '-cpi': md1.output.checkpoint,
-                '-cpo': 'state.cpt',
-                '-noappend': None
+                "-cpi": md1.output.checkpoint,
+                "-cpo": "state.cpt",
+                "-noappend": None,
             }
             runtime_args.update(mdrun_kwargs)
-            md2 = gmx.mdrun(input2,
-                            runtime_args=runtime_args
-                            )
+            md2 = gmx.mdrun(input2, runtime_args=runtime_args)
             md2.run()
             # By inspection of the output, we can see that the second trajectory has continued
             # from the checkpoint, but we cannot programmatically confirm it at this point.
@@ -236,25 +231,30 @@ def test_extend_simulation_via_checkpoint(spc_water_box, mdrun_kwargs, caplog):
 
 @mpi_support
 @pytest.mark.withmpi_only
-@pytest.mark.usefixtures('cleandir')
+@pytest.mark.usefixtures("cleandir")
 def test_run_trivial_ensemble(spc_water_box, caplog, mdrun_kwargs):
     with caplog.at_level(logging.DEBUG):
-        with caplog.at_level(logging.WARNING, 'gmxapi'), \
-                caplog.at_level(logging.DEBUG, 'gmxapi.mdrun'), \
-                caplog.at_level(logging.DEBUG, 'gmxapi.modify_input'), \
-                caplog.at_level(logging.DEBUG, 'gmxapi.read_tpr'), \
-                caplog.at_level(logging.DEBUG, 'gmxapi.simulation'):
+        with caplog.at_level(logging.WARNING, "gmxapi"), caplog.at_level(
+            logging.DEBUG, "gmxapi.mdrun"
+        ), caplog.at_level(logging.DEBUG, "gmxapi.modify_input"), caplog.at_level(
+            logging.DEBUG, "gmxapi.read_tpr"
+        ), caplog.at_level(
+            logging.DEBUG, "gmxapi.simulation"
+        ):
             tpr_filename = spc_water_box
             ensemble_width = 2
             simulation_input = gmx.read_tpr([tpr_filename] * ensemble_width)
             assert simulation_input.output.ensemble_width == ensemble_width
-            assert len(simulation_input.output._simulation_input.result()) == ensemble_width
+            assert (
+                len(simulation_input.output._simulation_input.result())
+                == ensemble_width
+            )
             md = gmx.mdrun(simulation_input, runtime_args=mdrun_kwargs)
             assert md.output.ensemble_width == ensemble_width
             md.run()
 
             output_directory = md.output.directory.result()
-            logging.info('output_directory result: {}'.format(str(output_directory)))
+            logging.info("output_directory result: {}".format(str(output_directory)))
             assert len(output_directory) == ensemble_width
 
             # Note that the 'cleandir' test fixture will clean up the output directory on
@@ -270,10 +270,10 @@ def test_run_trivial_ensemble(spc_water_box, caplog, mdrun_kwargs):
 
 
 @mpi_support
-@pytest.mark.usefixtures('cleandir')
+@pytest.mark.usefixtures("cleandir")
 def test_run_from_read_tpr_op(spc_water_box, caplog, mdrun_kwargs):
     with caplog.at_level(logging.DEBUG):
-        with caplog.at_level(logging.DEBUG, 'gmxapi'):
+        with caplog.at_level(logging.DEBUG, "gmxapi"):
             simulation_input = gmx.read_tpr(spc_water_box)
             md = gmx.mdrun(input=simulation_input, runtime_args=mdrun_kwargs)
 
@@ -283,11 +283,13 @@ def test_run_from_read_tpr_op(spc_water_box, caplog, mdrun_kwargs):
 
 
 @mpi_support
-@pytest.mark.usefixtures('cleandir')
+@pytest.mark.usefixtures("cleandir")
 def test_run_from_modify_input_op(spc_water_box, caplog, mdrun_kwargs):
     with caplog.at_level(logging.DEBUG):
         simulation_input = gmx.read_tpr(spc_water_box)
-        modified_input = gmx.modify_input(input=simulation_input, parameters={'nsteps': 4})
+        modified_input = gmx.modify_input(
+            input=simulation_input, parameters={"nsteps": 4}
+        )
         md = gmx.mdrun(input=modified_input, runtime_args=mdrun_kwargs)
 
         md.run()

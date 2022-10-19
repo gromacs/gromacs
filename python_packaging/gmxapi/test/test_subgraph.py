@@ -46,48 +46,52 @@ except ImportError:
     comm = None
     rank_number = 0
     comm_size = 1
-    rank_tag = ''
+    rank_tag = ""
     MPI = None
 else:
-    rank_tag = 'rank{}:'.format(rank_number)
+    rank_tag = "rank{}:".format(rank_number)
 
 mpi_support = pytest.mark.skipif(
     comm_size > 1
-    and gmx.utility.config()['gmx_mpi_type'] == 'library'
-    and not gmx.version.has_feature('mpi_comm_integration'),
-    reason="Multi-rank MPI contexts require gmxapi 0.4."
+    and gmx.utility.config()["gmx_mpi_type"] == "library"
+    and not gmx.version.has_feature("mpi_comm_integration"),
+    reason="Multi-rank MPI contexts require gmxapi 0.4.",
 )
 
 
-@gmx.function_wrapper(output={'data': float})
+@gmx.function_wrapper(output={"data": float})
 def add_float(a: float, b: float) -> float:
     return a + b
 
 
-@gmx.function_wrapper(output={'data': bool})
+@gmx.function_wrapper(output={"data": bool})
 def less_than(lhs: float, rhs: float, output=None):
     output.data = lhs < rhs
 
 
 def test_subgraph_function():
-    subgraph = gmx.subgraph(variables={'float_with_default': 1.0, 'bool_data': True})
+    subgraph = gmx.subgraph(variables={"float_with_default": 1.0, "bool_data": True})
     with subgraph:
         # Define the update for float_with_default to come from an add_float operation.
-        subgraph.float_with_default = add_float(subgraph.float_with_default, 1.).output.data
-        subgraph.bool_data = less_than(lhs=subgraph.float_with_default, rhs=6.).output.data
+        subgraph.float_with_default = add_float(
+            subgraph.float_with_default, 1.0
+        ).output.data
+        subgraph.bool_data = less_than(
+            lhs=subgraph.float_with_default, rhs=6.0
+        ).output.data
     operation_instance = subgraph()
     operation_instance.run()
-    assert operation_instance.values['float_with_default'] == 2.
+    assert operation_instance.values["float_with_default"] == 2.0
 
     loop = gmx.while_loop(operation=subgraph, condition=subgraph.bool_data)
     handle = loop()
     assert handle.output.float_with_default.result() == 6
 
 
-_previous_cpt = [''] * comm_size
+_previous_cpt = [""] * comm_size
 
 
-@gmx.function_wrapper(output={'data': bool})
+@gmx.function_wrapper(output={"data": bool})
 def _is_new(current_cpt: str, output):
     # Is the simulation new or is it continuing from a checkpoint?
     global _previous_cpt
@@ -106,29 +110,31 @@ def _is_new(current_cpt: str, output):
 @mpi_support
 def test_subgraph_simulation_extension(spc_water_box, mdrun_kwargs):
     tpr_list = gmx.read_tpr([spc_water_box] * comm_size)
-    input_list = gmx.modify_input(tpr_list, parameters={'nsteps': 10 ** 6})
+    input_list = gmx.modify_input(tpr_list, parameters={"nsteps": 10**6})
     subgraph = gmx.subgraph(
         variables={
-            'new': True,
-            'checkpoint': '',
+            "new": True,
+            "checkpoint": "",
             # 'previous': '',
-        })
+        }
+    )
     with subgraph:
         md = gmx.mdrun(
             input_list,
             runtime_args={
-                '-cpi': subgraph.checkpoint,
-                '-maxh': '0.001',
-                '-noappend': None
-            })
+                "-cpi": subgraph.checkpoint,
+                "-maxh": "0.001",
+                "-noappend": None,
+            },
+        )
 
         subgraph.new = _is_new(md.output.checkpoint).output.data
 
         subgraph.checkpoint = md.output.checkpoint
 
     trajectory_continuation_loop = gmx.while_loop(
-        operation=subgraph,
-        condition=subgraph.new)()
+        operation=subgraph, condition=subgraph.new
+    )()
 
     trajectory_continuation_loop.run()
     _cpt_output = trajectory_continuation_loop.output.checkpoint
@@ -143,7 +149,7 @@ def test_subgraph_simulation_extension(spc_water_box, mdrun_kwargs):
 
 
 def test_local_tools_and_assumptions():
-    const = gmx.make_constant(1.)
+    const = gmx.make_constant(1.0)
     assert add_float(const, const).output.data.result() == 2
     assert gmx.logical_not(less_than(const, const).output.data).result()
     # Note: It may not be safe to assume that keyword argument order (lhs, rhs) is preserved.

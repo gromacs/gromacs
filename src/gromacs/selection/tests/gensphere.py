@@ -38,14 +38,18 @@ import math
 import random
 import sys
 
+
 def dot(a, b):
-    return sum(x*y for (x, y) in zip(a, b))
+    return sum(x * y for (x, y) in zip(a, b))
+
 
 def norm(a):
     return math.sqrt(dot(a, a))
 
+
 def angle(a, b):
     return math.degrees(math.acos(dot(a, b) / (norm(a) * norm(b))))
+
 
 def minangle(a, list):
     minangle = 180
@@ -57,6 +61,7 @@ def minangle(a, list):
             minindex = index
     return (minangle, minindex)
 
+
 def get_single_vec():
     while True:
         x = random.randint(-1000, 1000) / 1000.0
@@ -67,16 +72,22 @@ def get_single_vec():
         if dist <= 1.0 and dist > 0.25:
             return pos
 
+
 def write_gro_title(fp, title, atomcount):
-    fp.write(title + '\n')
-    fp.write('%5d\n' % (atomcount))
+    fp.write(title + "\n")
+    fp.write("%5d\n" % (atomcount))
+
 
 def write_gro_atom(fp, resnr, resname, atomname, index, x):
-    fp.write('%5d%-5s%5s%5d%8.3f%8.3f%8.3f\n' %
-            (resnr, resname, atomname, index, x[0], x[1], x[2]))
+    fp.write(
+        "%5d%-5s%5s%5d%8.3f%8.3f%8.3f\n"
+        % (resnr, resname, atomname, index, x[0], x[1], x[2])
+    )
+
 
 def write_gro_box(fp, box):
-    fp.write('%10.5f%10.5f%10.5f\n' % box)
+    fp.write("%10.5f%10.5f%10.5f\n" % box)
+
 
 random.seed(1097)
 center = (0, 0, 0)
@@ -100,7 +111,11 @@ postestpoints = []
 negtestpoints = []
 hits = 0
 samplecount = 0
-while samplecount < totsamples or len(postestpoints) < possamples or len(negtestpoints) < negsamples:
+while (
+    samplecount < totsamples
+    or len(postestpoints) < possamples
+    or len(negtestpoints) < negsamples
+):
     pos = get_single_vec()
     (pangle, index) = minangle(pos, refpoints)
     if pangle < cutoff:
@@ -113,31 +128,36 @@ while samplecount < totsamples or len(postestpoints) < possamples or len(negtest
     samplecount += 1
 
 cfrac = float(hits) / samplecount
-errest = math.sqrt((cfrac - cfrac*cfrac) / samplecount)
-sys.stderr.write('Cutoff: %f angles\n' % (cutoff))
-sys.stderr.write('Estimated covered fraction: %f +- %f\n' % (cfrac, errest))
+errest = math.sqrt((cfrac - cfrac * cfrac) / samplecount)
+sys.stderr.write("Cutoff: %f angles\n" % (cutoff))
+sys.stderr.write("Estimated covered fraction: %f +- %f\n" % (cfrac, errest))
 
-debugfp = open('debug.txt', 'w')
+debugfp = open("debug.txt", "w")
 fp = sys.stdout
 count = 1 + len(refpoints) + len(postestpoints) + len(negtestpoints)
-write_gro_title(fp, 'Spherical test case, cutoff %f, cfrac %f +- %f' %
-        (cutoff, cfrac, errest) , count)
+write_gro_title(
+    fp,
+    "Spherical test case, cutoff %f, cfrac %f +- %f" % (cutoff, cfrac, errest),
+    count,
+)
 n = 1
-write_gro_atom(fp, 1, 'C', 'C', n, center)
+write_gro_atom(fp, 1, "C", "C", n, center)
 n += 1
 for i in range(len(refpoints)):
-    write_gro_atom(fp, 2, 'R', 'R', n, refpoints[i])
+    write_gro_atom(fp, 2, "R", "R", n, refpoints[i])
     n += 1
 for i in range(len(postestpoints)):
-    write_gro_atom(fp, 3, 'TP', 'TP', n, postestpoints[i])
+    write_gro_atom(fp, 3, "TP", "TP", n, postestpoints[i])
     x = postestpoints[i]
     xangle, index = minangle(x, refpoints)
     refx = refpoints[index]
-    debugfp.write('%3d%8.3f%8.3f%8.3f  %4.1f  %2d%8.3f%8.3f%8.3f\n' %
-            (n-1, x[0], x[1], x[2], xangle, index, refx[0], refx[1], refx[2]))
+    debugfp.write(
+        "%3d%8.3f%8.3f%8.3f  %4.1f  %2d%8.3f%8.3f%8.3f\n"
+        % (n - 1, x[0], x[1], x[2], xangle, index, refx[0], refx[1], refx[2])
+    )
     n += 1
 for i in range(len(negtestpoints)):
-    write_gro_atom(fp, 4, 'TN', 'TN', n, negtestpoints[i])
+    write_gro_atom(fp, 4, "TN", "TN", n, negtestpoints[i])
     n += 1
 write_gro_box(fp, (10, 10, 10))
 debugfp.close()

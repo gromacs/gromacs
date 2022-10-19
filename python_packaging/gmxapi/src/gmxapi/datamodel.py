@@ -36,7 +36,7 @@
 TBD: https://gitlab.com/gromacs/gromacs/-/issues/2993
 """
 
-__all__ = ['ndarray', 'NDArray']
+__all__ = ["ndarray", "NDArray"]
 
 import collections.abc
 import typing
@@ -45,12 +45,12 @@ import gmxapi.abc
 from gmxapi import exceptions
 
 
-_T = typing.TypeVar('_T')
+_T = typing.TypeVar("_T")
 
 
 class NDArray(gmxapi.abc.NDArray, typing.Generic[_T]):
-    """N-Dimensional array type.
-    """
+    """N-Dimensional array type."""
+
     dtype: typing.Type[_T] = None
     shape: typing.Tuple[int] = ()
 
@@ -60,10 +60,13 @@ class NDArray(gmxapi.abc.NDArray, typing.Generic[_T]):
             self.dtype = None
             self.shape = (0,)
         else:
-            if hasattr(data, 'result') or (
-                    isinstance(data, collections.abc.Iterable) and any([hasattr(item, 'result') for item in data])):
+            if hasattr(data, "result") or (
+                isinstance(data, collections.abc.Iterable)
+                and any([hasattr(item, "result") for item in data])
+            ):
                 raise exceptions.ValueError(
-                    'Make a Future of type NDArray instead of NDArray of type Future, or call result() first.')
+                    "Make a Future of type NDArray instead of NDArray of type Future, or call result() first."
+                )
             if isinstance(data, (str, bytes)):
                 data = [data]
                 length = 1
@@ -85,7 +88,7 @@ class NDArray(gmxapi.abc.NDArray, typing.Generic[_T]):
         return self._values
 
     def __repr__(self):
-        return f'<gmxapi.NDArray: dtype={self.dtype}, shape={self.shape}>'
+        return f"<gmxapi.NDArray: dtype={self.dtype}, shape={self.shape}>"
 
     def __getitem__(self, i: int) -> _T:
         return self._values[i]
@@ -102,6 +105,7 @@ class ArrayFuture(gmxapi.abc.Future, typing.Generic[_T]):
     in static type hints to distinguish Futures for arrays of certain element
     types from Futures of scalars of certain types.
     """
+
     _dtype: typing.Type[_T]
 
     @property

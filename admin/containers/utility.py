@@ -75,7 +75,9 @@ Authors:
 import argparse
 
 
-parser = argparse.ArgumentParser(description='GROMACS CI image slug options.', add_help=False)
+parser = argparse.ArgumentParser(
+    description="GROMACS CI image slug options.", add_help=False
+)
 """A parent parser for tools referencing image parameters.
 
 This argparse parser is defined for convenience and may be used to partially initialize
@@ -86,67 +88,172 @@ parsers for tools.
     Instead, inherit from it with the *parents* argument to :py:class:`argparse.ArgumentParser`
 """
 
-parser.add_argument('--cmake', nargs='*', type=str, default=['3.18.4', '3.21.2', '3.24.0'],
-                    help='Selection of CMake version to provide to base image. (default: %(default)s)')
+parser.add_argument(
+    "--cmake",
+    nargs="*",
+    type=str,
+    default=["3.18.4", "3.21.2", "3.24.0"],
+    help="Selection of CMake version to provide to base image. (default: %(default)s)",
+)
 
 compiler_group = parser.add_mutually_exclusive_group()
-compiler_group.add_argument('--gcc', type=int, default=9,
-                            help='Select GNU compiler tool chain. (default: %(default)s) '
-                                 'Some checking is implemented to avoid incompatible combinations')
-compiler_group.add_argument('--llvm', type=str, nargs='?', const='9', default=None,
-                            help='Select LLVM compiler tool chain. '
-                                 'Some checking is implemented to avoid incompatible combinations')
+compiler_group.add_argument(
+    "--gcc",
+    type=int,
+    default=9,
+    help="Select GNU compiler tool chain. (default: %(default)s) "
+    "Some checking is implemented to avoid incompatible combinations",
+)
+compiler_group.add_argument(
+    "--llvm",
+    type=str,
+    nargs="?",
+    const="9",
+    default=None,
+    help="Select LLVM compiler tool chain. "
+    "Some checking is implemented to avoid incompatible combinations",
+)
 # Note that oneAPI packages don't bump their version numbers every
 # version of the umbrella release, so we may need to specify such
 # package versions from time to time.
-compiler_group.add_argument('--oneapi', type=str, nargs='?', const="2022.1.0", default=None,
-                            help='Select Intel oneAPI package version.')
-compiler_group.add_argument('--intel-llvm', type=str, nargs='?', const="2022-06", default=None,
-                            help='Select Intel LLVM release (GitHub tag).')
+compiler_group.add_argument(
+    "--oneapi",
+    type=str,
+    nargs="?",
+    const="2022.1.0",
+    default=None,
+    help="Select Intel oneAPI package version.",
+)
+compiler_group.add_argument(
+    "--intel-llvm",
+    type=str,
+    nargs="?",
+    const="2022-06",
+    default=None,
+    help="Select Intel LLVM release (GitHub tag).",
+)
 
 linux_group = parser.add_mutually_exclusive_group()
-linux_group.add_argument('--ubuntu', type=str, nargs='?', const='20.04', default='20.04',
-                         help='Select Ubuntu Linux base image. (default: %(default)s)')
-linux_group.add_argument('--centos', type=str, nargs='?', const='7', default=None,
-                         help='Select Centos Linux base image.')
+linux_group.add_argument(
+    "--ubuntu",
+    type=str,
+    nargs="?",
+    const="20.04",
+    default="20.04",
+    help="Select Ubuntu Linux base image. (default: %(default)s)",
+)
+linux_group.add_argument(
+    "--centos",
+    type=str,
+    nargs="?",
+    const="7",
+    default=None,
+    help="Select Centos Linux base image.",
+)
 
-parser.add_argument('--cuda', type=str, nargs='?', const='11.0', default=None,
-                    help='Select a CUDA version for a base Linux image from NVIDIA.')
+parser.add_argument(
+    "--cuda",
+    type=str,
+    nargs="?",
+    const="11.0",
+    default=None,
+    help="Select a CUDA version for a base Linux image from NVIDIA.",
+)
 
-parser.add_argument('--mpi', type=str, nargs='?', const='openmpi', default=None,
-                    help='Enable MPI (default disabled) and optionally select distribution (default: openmpi)')
+parser.add_argument(
+    "--mpi",
+    type=str,
+    nargs="?",
+    const="openmpi",
+    default=None,
+    help="Enable MPI (default disabled) and optionally select distribution (default: openmpi)",
+)
 
-parser.add_argument('--tsan', type=str, nargs='?', const='llvm', default=None,
-                    help='Build special compiler versions with TSAN OpenMP support')
+parser.add_argument(
+    "--tsan",
+    type=str,
+    nargs="?",
+    const="llvm",
+    default=None,
+    help="Build special compiler versions with TSAN OpenMP support",
+)
 
-parser.add_argument('--hipsycl', type=str, nargs='?', default=None,
-                    help='Select hipSYCL repository tag/commit/branch.')
+parser.add_argument(
+    "--hipsycl",
+    type=str,
+    nargs="?",
+    default=None,
+    help="Select hipSYCL repository tag/commit/branch.",
+)
 
-parser.add_argument('--rocm', type=str, nargs='?', const='3.5.1', default=None,
-                    help='Select AMD compute engine version.')
+parser.add_argument(
+    "--rocm",
+    type=str,
+    nargs="?",
+    const="3.5.1",
+    default=None,
+    help="Select AMD compute engine version.",
+)
 
-parser.add_argument('--intel-compute-runtime', action='store_true', default=False,
-                    help='Include Intel Compute Runtime.')
+parser.add_argument(
+    "--intel-compute-runtime",
+    action="store_true",
+    default=False,
+    help="Include Intel Compute Runtime.",
+)
 
-parser.add_argument('--clfft', type=str, nargs='?', const='master', default=None,
-                    help='Add external clFFT libraries to the build image')
+parser.add_argument(
+    "--clfft",
+    type=str,
+    nargs="?",
+    const="master",
+    default=None,
+    help="Add external clFFT libraries to the build image",
+)
 
-parser.add_argument('--heffte', type=str, nargs='?', default=None,
-                    help='Select heffte repository tag/commit/branch.')
+parser.add_argument(
+    "--heffte",
+    type=str,
+    nargs="?",
+    default=None,
+    help="Select heffte repository tag/commit/branch.",
+)
 
-parser.add_argument('--nvhpcsdk', type=str, nargs='?', default=None,
-                    help='Select NVIDIA HPC SDK version.')
+parser.add_argument(
+    "--nvhpcsdk",
+    type=str,
+    nargs="?",
+    default=None,
+    help="Select NVIDIA HPC SDK version.",
+)
 
-parser.add_argument('--doxygen', type=str, nargs='?', const='1.8.5', default=None,
-                    help='Add doxygen environment for documentation builds. Also adds other requirements needed for final docs images.')
+parser.add_argument(
+    "--doxygen",
+    type=str,
+    nargs="?",
+    const="1.8.5",
+    default=None,
+    help="Add doxygen environment for documentation builds. Also adds other requirements needed for final docs images.",
+)
 
-parser.add_argument('--cp2k', type=str, nargs='?', const='8.2', default=None,
-                    help='Add build environment for CP2K QM/MM support')
+parser.add_argument(
+    "--cp2k",
+    type=str,
+    nargs="?",
+    const="8.2",
+    default=None,
+    help="Add build environment for CP2K QM/MM support",
+)
 
 # Supported Python versions for maintained branches.
-_python_versions = ['3.7.13', '3.10.5']
-parser.add_argument('--venvs', nargs='*', type=str, default=_python_versions,
-                    help='List of Python versions ("major.minor.patch") for which to install venvs. (default: %(default)s)')
+_python_versions = ["3.7.13", "3.10.5"]
+parser.add_argument(
+    "--venvs",
+    nargs="*",
+    type=str,
+    default=_python_versions,
+    help='List of Python versions ("major.minor.patch") for which to install venvs. (default: %(default)s)',
+)
 
 
 def image_name(configuration: argparse.Namespace) -> str:
@@ -163,43 +270,44 @@ def image_name(configuration: argparse.Namespace) -> str:
 
     """
     elements = []
-    for distro in ('centos', 'ubuntu'):
+    for distro in ("centos", "ubuntu"):
         version = getattr(configuration, distro, None)
         if version is not None:
-            elements.append(distro + '-' + version)
+            elements.append(distro + "-" + version)
             break
-    for compiler in ('llvm', 'intel_llvm', 'oneapi', 'gcc'):
+    for compiler in ("llvm", "intel_llvm", "oneapi", "gcc"):
         version = getattr(configuration, compiler, None)
         if version is not None:
-            version = str(version).split('.')[0] if compiler != 'oneapi' else str(version)
-            elements.append(compiler + '-' + version)
+            version = (
+                str(version).split(".")[0] if compiler != "oneapi" else str(version)
+            )
+            elements.append(compiler + "-" + version)
             break
-    for gpusdk in ('cuda', 'hipsycl'):
+    for gpusdk in ("cuda", "hipsycl"):
         version = getattr(configuration, gpusdk, None)
         if version is not None:
-            elements.append(gpusdk + '-' + version)
+            elements.append(gpusdk + "-" + version)
     if configuration.intel_compute_runtime:
-        elements.append('intel-compute-runtime')
+        elements.append("intel-compute-runtime")
     if configuration.rocm is not None:
-        if (configuration.rocm != '3.5.1'):
-            elements.append('rocm-' + configuration.rocm)
+        if configuration.rocm != "3.5.1":
+            elements.append("rocm-" + configuration.rocm)
     if configuration.cp2k is not None:
-        elements.append('cp2k-' + configuration.cp2k)
+        elements.append("cp2k-" + configuration.cp2k)
 
     # Check for special cases
     # The following attribute keys indicate the image is built for the named
     # special use case.
-    cases = {'doxygen': 'docs',
-             'tsan': 'tsan'}
+    cases = {"doxygen": "docs", "tsan": "tsan"}
     for attr in cases:
         value = getattr(configuration, attr, None)
         if value is not None:
             elements.append(cases[attr])
-    slug = '-'.join(elements)
+    slug = "-".join(elements)
     # we are using the GitLab container registry to store the images
     # to get around issues with pulling them repeatedly from DockerHub
     # and running into the image pull limitation there.
-    return 'registry.gitlab.com/gromacs/gromacs/ci-' + slug
+    return "registry.gitlab.com/gromacs/gromacs/ci-" + slug
 
 
 if __name__ == "__main__":

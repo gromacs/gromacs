@@ -40,35 +40,41 @@ in C++ or Python with the same tool kit used to implement this package.
 
 """
 
-__all__ = ['commandline_operation',
-           'concatenate_lists',
-           'function_wrapper',
-           'join_arrays',
-           'logger',
-           'logical_not',
-           'make_constant',
-           'mdrun',
-           'modify_input',
-           'ndarray',
-           'read_tpr',
-           'subgraph',
-           'while_loop',
-           'NDArray',
-           '__version__']
+__all__ = [
+    "commandline_operation",
+    "concatenate_lists",
+    "function_wrapper",
+    "join_arrays",
+    "logger",
+    "logical_not",
+    "make_constant",
+    "mdrun",
+    "modify_input",
+    "ndarray",
+    "read_tpr",
+    "subgraph",
+    "while_loop",
+    "NDArray",
+    "__version__",
+]
 
 from ._logging import logger
 from .version import __version__
 
 # Import utilities
 from .operation import computed_result, function_wrapper
+
 # Import public types
 from .datamodel import NDArray
+
 # Import the public operations
 from .datamodel import ndarray
 from .operation import concatenate_lists, join_arrays, logical_not, make_constant
 from .commandline import commandline_operation
 from .simulation import mdrun, modify_input, read_tpr
+
 # TODO: decide where this lives
 from .operation import subgraph
+
 # TODO: decide where this lives
 from .operation import while_loop

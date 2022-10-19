@@ -39,7 +39,7 @@ The *modify_input* operation accepts simulation input, such as from *read_tpr*,
 and allows aspects of the simulation input to be overridden.
 """
 
-__all__ = ['modify_input']
+__all__ = ["modify_input"]
 
 import collections.abc
 import inspect
@@ -56,22 +56,23 @@ from .abc import ModuleObject
 # Initialize module-level logger
 from gmxapi import logger as root_logger
 
-logger = root_logger.getChild('modify_input')
-logger.info('Importing {}'.format(__name__))
+logger = root_logger.getChild("modify_input")
+logger.info("Importing {}".format(__name__))
 
 _output_descriptors = (
-    _op.OutputDataDescriptor('_simulation_input', str),
-    _op.OutputDataDescriptor('parameters', dict)
+    _op.OutputDataDescriptor("_simulation_input", str),
+    _op.OutputDataDescriptor("parameters", dict),
 )
-_publishing_descriptors = {desc._name: gmxapi.operation.Publisher(desc._name, desc._dtype) for desc in
-                           _output_descriptors}
-_output = _op.OutputCollectionDescription(**{descriptor._name: descriptor._dtype for descriptor in
-                                             _output_descriptors})
+_publishing_descriptors = {
+    desc._name: gmxapi.operation.Publisher(desc._name, desc._dtype)
+    for desc in _output_descriptors
+}
+_output = _op.OutputCollectionDescription(
+    **{descriptor._name: descriptor._dtype for descriptor in _output_descriptors}
+)
 
 
-class OutputDataProxy(ModuleObject,
-                      _op.DataProxyBase,
-                      descriptors=_output_descriptors):
+class OutputDataProxy(ModuleObject, _op.DataProxyBase, descriptors=_output_descriptors):
     """Implement the 'output' attribute of `modify_input` operations.
 
     Attributes:
@@ -85,21 +86,23 @@ class OutputDataProxy(ModuleObject,
         _op.DataProxyBase.__init__(self, *args, **kwargs)
 
 
-class PublishingDataProxy(_op.DataProxyBase,
-                          descriptors=_publishing_descriptors
-                          ):
+class PublishingDataProxy(_op.DataProxyBase, descriptors=_publishing_descriptors):
     """Manage output resource updates for ReadTpr operation."""
 
 
-_output_factory = _op.OutputFactory(output_proxy=OutputDataProxy,
-                                    output_description=_output,
-                                    publishing_data_proxy=PublishingDataProxy)
+_output_factory = _op.OutputFactory(
+    output_proxy=OutputDataProxy,
+    output_description=_output,
+    publishing_data_proxy=PublishingDataProxy,
+)
 
 
 class SessionResources(object):
     """Input and output run-time resources for a ModifyTPR operation."""
 
-    def __init__(self, _simulation_input: str, parameters: dict, publisher: PublishingDataProxy):
+    def __init__(
+        self, _simulation_input: str, parameters: dict, publisher: PublishingDataProxy
+    ):
         """Initialize resources for a gmxapi.operation context.
 
         Arguments:
@@ -131,22 +134,35 @@ class SessionResources(object):
 # a user-supplied 'parameters' argument overrides the 'parameters' value from 'input'.
 # The lack of a default on 'parameters' makes it required.
 _input = _op.InputCollectionDescription(
-    [('_simulation_input', inspect.Parameter('_simulation_input',
-                                             inspect.Parameter.POSITIONAL_OR_KEYWORD,
-                                             annotation=str)),
-     ('parameters', inspect.Parameter('parameters',
-                                      inspect.Parameter.POSITIONAL_OR_KEYWORD,
-                                      annotation=dict))
-     ])
+    [
+        (
+            "_simulation_input",
+            inspect.Parameter(
+                "_simulation_input",
+                inspect.Parameter.POSITIONAL_OR_KEYWORD,
+                annotation=str,
+            ),
+        ),
+        (
+            "parameters",
+            inspect.Parameter(
+                "parameters", inspect.Parameter.POSITIONAL_OR_KEYWORD, annotation=dict
+            ),
+        ),
+    ]
+)
 
 
-def _session_resource_factory(input: _op.InputPack, output: PublishingDataProxy, **kwargs
-                              ) -> SessionResources:
+def _session_resource_factory(
+    input: _op.InputPack, output: PublishingDataProxy, **kwargs
+) -> SessionResources:
     """Translate resources from the gmxapi.operation Context to the ReadTpr implementation."""
     # TODO: Either get rid of **kwargs or clarify the roadmap and timeline for doing so.
-    filename = input.kwargs['_simulation_input']
-    parameters = input.kwargs['parameters']
-    return SessionResources(_simulation_input=filename, parameters=parameters, publisher=output)
+    filename = input.kwargs["_simulation_input"]
+    parameters = input.kwargs["parameters"]
+    return SessionResources(
+        _simulation_input=filename, parameters=parameters, publisher=output
+    )
 
 
 def _standard_node_resource_factory(*args, **kwargs):
@@ -161,7 +177,9 @@ def _run(resources: SessionResources):
         assert isinstance(named_data, str)
         assert hasattr(resources, named_data)
         source_value = getattr(resources, named_data)
-        logger.debug('modify_input publishing {} to {}'.format(source_value, named_data))
+        logger.debug(
+            "modify_input publishing {} to {}".format(source_value, named_data)
+        )
         setattr(resources.output, named_data, source_value)
 
 
@@ -187,11 +205,16 @@ class ResourceFactory(gmxapi.abc.ResourceFactory):
         if isinstance(self.source_context, _op.Context):
             # TODO: Check whether the consumer is a Context.NodeBuilder or an operation runner.
             # We don't yet use this dispatcher for building nodes, so assume we are launching a session.
-            assert 'input' in kwargs
-            assert 'output' in kwargs
-            return _session_resource_factory(input=kwargs['input'], output=kwargs['output'])
+            assert "input" in kwargs
+            assert "output" in kwargs
+            return _session_resource_factory(
+                input=kwargs["input"], output=kwargs["output"]
+            )
         raise gmxapi.exceptions.MissingImplementationError(
-            'No translation from {} context to {}'.format(self.source_context, self.target_context))
+            "No translation from {} context to {}".format(
+                self.source_context, self.target_context
+            )
+        )
 
     @typing.overload
     def input_description(self, context: _op.Context) -> _op.InputDescription:
@@ -200,7 +223,9 @@ class ResourceFactory(gmxapi.abc.ResourceFactory):
     def input_description(self, context: gmxapi.abc.Context):
         if isinstance(context, _op.Context):
             return StandardInputDescription()
-        raise gmxapi.exceptions.MissingImplementationError('No input description available for {} context'.format(context))
+        raise gmxapi.exceptions.MissingImplementationError(
+            "No input description available for {} context".format(context)
+        )
 
 
 class StandardInputDescription(_op.InputDescription):
@@ -224,10 +249,8 @@ class StandardInputDescription(_op.InputDescription):
             cls._uids[salt] = cls._next_uid
             cls._next_uid += 1
         else:
-            logger.debug(
-                f'Reissuing uid for modify_input({input}): {cls._uids[salt]}'
-            )
-        new_uid = 'modify_input_{}'.format(cls._uids[salt])
+            logger.debug(f"Reissuing uid for modify_input({input}): {cls._uids[salt]}")
+        new_uid = "modify_input_{}".format(cls._uids[salt])
         return new_uid
 
     def signature(self) -> InputCollectionDescription:
@@ -245,12 +268,12 @@ class RegisteredOperation(_op.OperationImplementation, metaclass=_op.OperationMe
     @classmethod
     def name(self) -> str:
         """Canonical name for the operation."""
-        return 'modify_input'
+        return "modify_input"
 
     @classmethod
     def namespace(self) -> str:
         """modify_input is importable from the gmxapi module."""
-        return 'gmxapi'
+        return "gmxapi"
 
     @classmethod
     def director(cls, context: gmxapi.abc.Context):
@@ -283,10 +306,14 @@ class StandardDirector(gmxapi.abc.OperationDirector):
 
     def __init__(self, context: _op.Context):
         if not isinstance(context, _op.Context):
-            raise gmxapi.exceptions.ValueError('StandardDirector requires a gmxapi.operation Context.')
+            raise gmxapi.exceptions.ValueError(
+                "StandardDirector requires a gmxapi.operation Context."
+            )
         self.context = context
 
-    def __call__(self, resources: _op.DataSourceCollection, label: str = None) -> StandardOperationHandle:
+    def __call__(
+        self, resources: _op.DataSourceCollection, label: str = None
+    ) -> StandardOperationHandle:
         builder = self.context.node_builder(operation=RegisteredOperation, label=label)
 
         builder.set_resource_factory(_session_resource_factory)
@@ -313,9 +340,11 @@ class StandardDirector(gmxapi.abc.OperationDirector):
     def handle_type(self, context: gmxapi.abc.Context):
         return StandardOperationHandle
 
-    def resource_factory(self,
-                         source: typing.Union[gmxapi.abc.Context, ModuleObject, None],
-                         target: gmxapi.abc.Context = None):
+    def resource_factory(
+        self,
+        source: typing.Union[gmxapi.abc.Context, ModuleObject, None],
+        target: gmxapi.abc.Context = None,
+    ):
         # Distinguish between the UIContext, in which input is in the form
         # of function call arguments, and the StandardContext, implemented in
         # gmxapi.operation. UIContext is probably a virtual context that is
@@ -341,33 +370,42 @@ class StandardDirector(gmxapi.abc.OperationDirector):
                 # In the first draft, though, we just access a special payload.
                 # Return a factory that will consume *_simulation_input* and *parameters*
                 # members of a received object.
-                logger.info('Building mdrun operation from source {}'.format(source))
+                logger.info("Building mdrun operation from source {}".format(source))
 
                 def simulation_input_workaround(input, parameters: dict):
                     source = input
                     # TODO: Normalize mechanism for obtaining SimulationInput references.
-                    if hasattr(source, 'output'):
+                    if hasattr(source, "output"):
                         source = input.output
-                    assert hasattr(source, '_simulation_input')
-                    assert hasattr(source, 'parameters')
-                    logger.info('modify_input receiving input {}: {}'.format(source._simulation_input.name,
-                                                                      source._simulation_input.description))
-                    source_collection = _input.bind(_simulation_input=source._simulation_input,
-                                                    parameters=parameters)
-                    logger.info('modify_input input bound as source collection {}'.format(source_collection))
+                    assert hasattr(source, "_simulation_input")
+                    assert hasattr(source, "parameters")
+                    logger.info(
+                        "modify_input receiving input {}: {}".format(
+                            source._simulation_input.name,
+                            source._simulation_input.description,
+                        )
+                    )
+                    source_collection = _input.bind(
+                        _simulation_input=source._simulation_input,
+                        parameters=parameters,
+                    )
+                    logger.info(
+                        "modify_input input bound as source collection {}".format(
+                            source_collection
+                        )
+                    )
                     return source_collection
 
                 return simulation_input_workaround
 
-        raise gmxapi.exceptions.ValueError('No dispatching from {} context to {}'.format(source, target))
+        raise gmxapi.exceptions.ValueError(
+            "No dispatching from {} context to {}".format(source, target)
+        )
 
 
 # TODO: This operation is intended to be able to compose complete simulation input. E.g:
 #  def modify_input(input: SimulationInput, parameters=None, topology=None, conformation=None, simulation_state=None):
-def modify_input(input,
-                 parameters: dict,
-                 label: str = None,
-                 context=None):
+def modify_input(input, parameters: dict, label: str = None, context=None):
     """Modify simulation input with data flow operations.
 
     Given simulation input *input*, override components of simulation input with
@@ -379,14 +417,17 @@ def modify_input(input,
     handle_context = context
     if handle_context is not None:
         raise gmxapi.exceptions.MissingImplementationError(
-            'context must be None. This factory is only for the Python UI right now.')
+            "context must be None. This factory is only for the Python UI right now."
+        )
 
     target_context = _op.current_context()
     assert isinstance(target_context, _op.Context)
     # Get a director that will create a node in the standard context.
     # TODO: For clarity, restructure code to use module-local helper functors that produce callables with clear
     #  interfaces. (May clash with the current ABC scheme.)
-    node_director: StandardDirector = _op._get_operation_director(RegisteredOperation, context=target_context)
+    node_director: StandardDirector = _op._get_operation_director(
+        RegisteredOperation, context=target_context
+    )
     assert isinstance(node_director, StandardDirector)
     # TODO: refine this protocol
     assert handle_context is None
@@ -402,7 +443,11 @@ def modify_input(input,
     # The source Context here is None (the handle Context). The resources themselves
     # may be from different Contexts, so we should dispatch at the add_resource
     # builder method, not here in the director client.
-    resource_factory: ResourceFactory = node_director.resource_factory(source=source_context, target=target_context)
-    resources: _op.DataSourceCollection = resource_factory(input=input, parameters=parameters)
+    resource_factory: ResourceFactory = node_director.resource_factory(
+        source=source_context, target=target_context
+    )
+    resources: _op.DataSourceCollection = resource_factory(
+        input=input, parameters=parameters
+    )
     handle = node_director(resources=resources, label=label)
     return handle

@@ -47,6 +47,7 @@ import sys
 
 from optparse import OptionParser
 
+
 class CopyrightState(object):
 
     """Information about an existing (or non-existing) copyright header."""
@@ -56,6 +57,7 @@ class CopyrightState(object):
         self.is_correct = is_correct
         self.is_newstyle = is_newstyle
         self.first_year = first_year
+
 
 class CopyrightChecker(object):
 
@@ -96,32 +98,32 @@ the research papers on the package. Check out https://www.gromacs.org.
 
     def check_copyright(self, comment_block):
         """Analyze existing copyright header for correctness and extract information."""
-        copyright_re_new = r'Copyright ([0-9]{4})- The GROMACS Authors'
-        copyright_re_old = r'Copyright \(c\) (([0-9]{4}[,-])*[0-9]{4}),?.*'
+        copyright_re_new = r"Copyright ([0-9]{4})- The GROMACS Authors"
+        copyright_re_old = r"Copyright \(c\) (([0-9]{4}[,-])*[0-9]{4}),?.*"
         has_copyright = False
         is_newstyle = True
         is_correct = True
         found_old_style_line = False
         next_header_line = 0
         next_footer_line = 0
-        first_year = ''
+        first_year = ""
         for line in comment_block:
-            if 'Copyright' in line:
+            if "Copyright" in line:
                 has_copyright = True
                 old_match = re.match(copyright_re_old, line)
                 match = re.match(copyright_re_new, line)
-                if ((old_match and not match) and not found_old_style_line):
+                if (old_match and not match) and not found_old_style_line:
                     is_newstyle = False
                     found_old_style_line = True
-                    get_first_year_re = r'Copyright \(c\) ([0-9]{4}[,-]).*'
+                    get_first_year_re = r"Copyright \(c\) ([0-9]{4}[,-]).*"
                     first_year_line_match = re.match(get_first_year_re, line)
                     first_year_line = first_year_line_match.group(1)
                     # decide which separator to use for finding first year
-                    if ('-' in first_year_line):
-                        pos = first_year_line.find('-')
+                    if "-" in first_year_line:
+                        pos = first_year_line.find("-")
                         first_year = first_year_line[:pos]
-                    elif (',' in first_year_line):
-                        pos = first_year_line.find(',')
+                    elif "," in first_year_line:
+                        pos = first_year_line.find(",")
                         first_year = first_year_line[:pos]
                     else:
                         raise Exception("Can't find expected separator!")
@@ -133,7 +135,7 @@ the research papers on the package. Check out https://www.gromacs.org.
                 if next_header_line != -1 or next_footer_line != 0:
                     is_correct = False
                 continue
-            if line.startswith('Written by the Gromacs development team'):
+            if line.startswith("Written by the Gromacs development team"):
                 has_copyright = True
             if next_header_line >= 0:
                 if line == self._header[next_header_line]:
@@ -168,32 +170,32 @@ the research papers on the package. Check out https://www.gromacs.org.
                     need_update = True
                     first_year = current_year
                 if options.check or not need_update:
-                    reporter.report('initial copyright year wrong')
+                    reporter.report("initial copyright year wrong")
                 else:
-                    reporter.report('initial copyright year corrected')
+                    reporter.report("initial copyright year corrected")
 
         if not state.has_copyright:
             if options.add_missing:
                 need_update = True
             if options.check or not need_update:
-                reporter.report('copyright header missing')
+                reporter.report("copyright header missing")
             elif options.add_missing:
-                reporter.report('copyright header added')
+                reporter.report("copyright header added")
         else:
             if not state.is_newstyle:
                 if options.replace_header:
                     need_update = True
                 if options.check or not need_update:
-                    reporter.report('copyright header incorrect')
+                    reporter.report("copyright header incorrect")
                 else:
-                    reporter.report('copyright header replaced')
+                    reporter.report("copyright header replaced")
             elif not state.is_correct:
                 if options.update_header:
                     need_update = True
                 if options.check or not need_update:
-                    reporter.report('copyright header outdated')
+                    reporter.report("copyright header outdated")
                 else:
-                    reporter.report('copyright header updated')
+                    reporter.report("copyright header updated")
 
         return need_update, first_year
 
@@ -206,6 +208,7 @@ the research papers on the package. Check out https://www.gromacs.org.
         output.extend(self._footer)
         return output
 
+
 class Reporter(object):
 
     """Wrapper for reporting issues in a file."""
@@ -215,31 +218,33 @@ class Reporter(object):
         self._filename = filename
 
     def report(self, text):
-        self._reportfile.write(self._filename + ': ' + text + '\n');
+        self._reportfile.write(self._filename + ": " + text + "\n")
+
 
 class CommentHandlerC(object):
 
     """Handler for extracting and creating C-style comments."""
 
     def extract_first_comment_block(self, content_lines):
-        if not content_lines or not content_lines[0].startswith('/*'):
+        if not content_lines or not content_lines[0].startswith("/*"):
             return ([], 0)
         comment_block = [content_lines[0][2:].strip()]
         line_index = 1
         while line_index < len(content_lines):
             line = content_lines[line_index]
-            if '*/' in content_lines[line_index]:
+            if "*/" in content_lines[line_index]:
                 break
-            comment_block.append(line.lstrip('* ').rstrip())
+            comment_block.append(line.lstrip("* ").rstrip())
             line_index += 1
         return (comment_block, line_index + 1)
 
     def create_comment_block(self, lines):
         output = []
-        output.append(('/* ' + lines[0]).rstrip())
-        output.extend([(' * ' + x).rstrip() for x in lines[1:]])
-        output.append(' */')
+        output.append(("/* " + lines[0]).rstrip())
+        output.extend([(" * " + x).rstrip() for x in lines[1:]])
+        output.append(" */")
         return output
+
 
 class CommentHandlerSimple(object):
 
@@ -260,9 +265,13 @@ class CommentHandlerSimple(object):
             line = content_lines[line_index]
             if not line.startswith(self._comment_char):
                 break
-            comment_block.append(line.lstrip(self._comment_char + ' ').rstrip())
+            comment_block.append(line.lstrip(self._comment_char + " ").rstrip())
             line_index += 1
-            if line == self._comment_char + ' the research papers on the package. Check out https://www.gromacs.org.':
+            if (
+                line
+                == self._comment_char
+                + " the research papers on the package. Check out https://www.gromacs.org."
+            ):
                 break
         while line_index < len(content_lines):
             line = content_lines[line_index].rstrip()
@@ -273,44 +282,68 @@ class CommentHandlerSimple(object):
 
     def create_comment_block(self, lines):
         output = []
-        output.extend([(self._comment_char + ' ' + x).rstrip() for x in lines])
-        output.append('')
+        output.extend([(self._comment_char + " " + x).rstrip() for x in lines])
+        output.append("")
         return output
 
+
 comment_handlers = {
-        'c': CommentHandlerC(),
-        'tex': CommentHandlerSimple('%'),
-        'sh': CommentHandlerSimple('#')
-        }
+    "c": CommentHandlerC(),
+    "tex": CommentHandlerSimple("%"),
+    "sh": CommentHandlerSimple("#"),
+}
+
 
 def select_comment_handler(override, filename):
     """Select comment handler for a file based on file name and input options."""
     filetype = override
-    if not filetype and filename != '-':
+    if not filetype and filename != "-":
         basename = os.path.basename(filename)
         root, ext = os.path.splitext(basename)
-        if ext == '.cmakein':
+        if ext == ".cmakein":
             dummy, ext2 = os.path.splitext(root)
             if ext2:
                 ext = ext2
-        if ext in ('.c', '.cu', '.cpp', '.cl', '.h', '.hpp', '.cuh', '.clh', '.y', '.l', '.pre', '.bm'):
-            filetype = 'c'
-        elif ext in ('.tex',):
-            filetype = 'tex'
-        elif basename in ('CMakeLists.txt', 'GMXRC', 'git-pre-commit') or \
-                ext in ('.cmake', '.cmakein', '.in', '.py', '.sh', '.bash', '.csh', '.zsh'):
-            filetype = 'sh'
+        if ext in (
+            ".c",
+            ".cu",
+            ".cpp",
+            ".cl",
+            ".h",
+            ".hpp",
+            ".cuh",
+            ".clh",
+            ".y",
+            ".l",
+            ".pre",
+            ".bm",
+        ):
+            filetype = "c"
+        elif ext in (".tex",):
+            filetype = "tex"
+        elif basename in ("CMakeLists.txt", "GMXRC", "git-pre-commit") or ext in (
+            ".cmake",
+            ".cmakein",
+            ".in",
+            ".py",
+            ".sh",
+            ".bash",
+            ".csh",
+            ".zsh",
+        ):
+            filetype = "sh"
     if filetype in comment_handlers:
         return comment_handlers[filetype]
     if filetype:
         sys.stderr.write("Unsupported input format: {0}\n".format(filetype))
-    elif filename != '-':
+    elif filename != "-":
         sys.stderr.write("Unsupported input format: {0}\n".format(filename))
     else:
         sys.stderr.write("No file name or file type provided.\n")
     sys.exit(1)
 
-def create_copyright_header(current_year, language='c'):
+
+def create_copyright_header(current_year, language="c"):
     if language not in comment_handlers:
         sys.stderr.write("Unsupported language: {0}\n".format(language))
         sys.exit(1)
@@ -318,54 +351,75 @@ def create_copyright_header(current_year, language='c'):
     comment_handler = comment_handlers[language]
     copyright_lines = copyright_checker.get_copyright_text(current_year)
     comment_lines = comment_handler.create_comment_block(copyright_lines)
-    return '\n'.join(comment_lines) + '\n'
+    return "\n".join(comment_lines) + "\n"
+
 
 def process_options():
     """Process input options."""
     parser = OptionParser()
-    parser.add_option('-l', '--lang',
-                      help='Comment type to use (c or sh)')
-    parser.add_option('--first_year',
-                      help='Value for initial year to set in copyright file.')
-    parser.add_option('-F', '--files',
-                      help='File to read list of files from')
-    parser.add_option('--check', action='store_true',
-                      help='Do not modify the files, only check the copyright (default action). ' +
-                           'If specified together with --update, do the modifications ' +
-                           'but produce output as if only --check was provided.')
-    parser.add_option('--update-year', action='store_true',
-                      help='Update the copyright year if outdated')
-    parser.add_option('--update-header', action='store_true',
-                      help='Update the copyright header if outdated')
-    parser.add_option('--replace-header', action='store_true',
-                      help='Replace any copyright header with the current one')
-    parser.add_option('--remove-old-copyrights', action='store_true',
-                      help='Remove copyright statements not in the new format')
-    parser.add_option('--add-missing', action='store_true',
-                      help='Add missing copyright headers')
+    parser.add_option("-l", "--lang", help="Comment type to use (c or sh)")
+    parser.add_option(
+        "--first_year", help="Value for initial year to set in copyright file."
+    )
+    parser.add_option("-F", "--files", help="File to read list of files from")
+    parser.add_option(
+        "--check",
+        action="store_true",
+        help="Do not modify the files, only check the copyright (default action). "
+        + "If specified together with --update, do the modifications "
+        + "but produce output as if only --check was provided.",
+    )
+    parser.add_option(
+        "--update-year",
+        action="store_true",
+        help="Update the copyright year if outdated",
+    )
+    parser.add_option(
+        "--update-header",
+        action="store_true",
+        help="Update the copyright header if outdated",
+    )
+    parser.add_option(
+        "--replace-header",
+        action="store_true",
+        help="Replace any copyright header with the current one",
+    )
+    parser.add_option(
+        "--remove-old-copyrights",
+        action="store_true",
+        help="Remove copyright statements not in the new format",
+    )
+    parser.add_option(
+        "--add-missing", action="store_true", help="Add missing copyright headers"
+    )
     options, args = parser.parse_args()
 
     filenames = args
     if options.files:
-        with open(options.files, 'r') as filelist:
+        with open(options.files, "r") as filelist:
             filenames = [x.strip() for x in filelist.read().splitlines()]
     elif not filenames:
-        filenames = ['-']
+        filenames = ["-"]
 
     # Default is --check if nothing provided.
-    if not options.check and not options.update_year and \
-            not options.update_header and not options.replace_header and \
-            not options.add_missing:
+    if (
+        not options.check
+        and not options.update_year
+        and not options.update_header
+        and not options.replace_header
+        and not options.add_missing
+    ):
         options.check = True
 
     return options, filenames
+
 
 def main():
     """Do processing as a stand-alone script."""
     options, filenames = process_options()
     first_year = options.first_year
     current_year = str(datetime.date.today().year)
-    
+
     checker = CopyrightChecker()
 
     # Process each input file in turn.
@@ -374,20 +428,22 @@ def main():
 
         # Read the input file.  We are doing an in-place operation, so can't
         # operate in pass-through mode.
-        if filename == '-':
+        if filename == "-":
             contents = sys.stdin.read().splitlines()
-            reporter = Reporter(sys.stderr, '<stdin>')
+            reporter = Reporter(sys.stderr, "<stdin>")
         else:
-            with open(filename, 'r', encoding='utf-8') as inputfile:
+            with open(filename, "r", encoding="utf-8") as inputfile:
                 contents = inputfile.read().splitlines()
             reporter = Reporter(sys.stdout, filename)
 
         output = []
         # Keep lines that must be at the beginning of the file and skip them in
         # the check.
-        if contents and (contents[0].startswith('#!/') or \
-                contents[0].startswith('%code requires') or \
-                contents[0].startswith('/* #if')):
+        if contents and (
+            contents[0].startswith("#!/")
+            or contents[0].startswith("%code requires")
+            or contents[0].startswith("/* #if")
+        ):
             output.append(contents[0])
             contents = contents[1:]
         # Remove and skip empty lines at the beginning.
@@ -395,12 +451,16 @@ def main():
             contents = contents[1:]
 
         # Analyze the first comment block in the file.
-        comment_block, line_count = comment_handler.extract_first_comment_block(contents)
+        comment_block, line_count = comment_handler.extract_first_comment_block(
+            contents
+        )
         state = checker.check_copyright(comment_block)
-        need_update, first_year = checker.process_copyright(state, options, first_year, current_year, reporter)
+        need_update, first_year = checker.process_copyright(
+            state, options, first_year, current_year, reporter
+        )
         if options.remove_old_copyrights:
             need_update = True
-            reporter.report('old copyrights removed')
+            reporter.report("old copyrights removed")
 
         if need_update:
             # Remove the original comment if it was a copyright comment.
@@ -410,15 +470,16 @@ def main():
             output.extend(comment_handler.create_comment_block(new_block))
 
         # Write the output file if required.
-        if need_update or filename == '-':
+        if need_update or filename == "-":
             # Append the rest of the input file as it was.
             output.extend(contents)
-            output = '\n'.join(output) + '\n'
-            if filename == '-':
+            output = "\n".join(output) + "\n"
+            if filename == "-":
                 sys.stdout.write(output)
             else:
-                with open(filename, 'w', encoding='utf-8') as outputfile:
+                with open(filename, "w", encoding="utf-8") as outputfile:
                     outputfile.write(output)
+
 
 if __name__ == "__main__":
     main()

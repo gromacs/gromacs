@@ -35,7 +35,7 @@
 Provide command line operation.
 """
 
-__all__ = ['commandline_operation']
+__all__ = ["commandline_operation"]
 
 import collections.abc
 import functools
@@ -58,30 +58,30 @@ from gmxapi.operation import OutputCollectionDescription
 from gmxapi.utility import config as _config
 
 # Module-level logger
-logger = root_logger.getChild('commandline')
-logger.info('Importing {}'.format(__name__))
+logger = root_logger.getChild("commandline")
+logger.info("Importing {}".format(__name__))
 
 
 @functools.lru_cache()
 def cli_executable() -> pathlib.Path:
     """Report the installed GROMACS command line executable."""
-    path = _config().get('gmx_executable', None)
+    path = _config().get("gmx_executable", None)
     if path is not None:
         path = pathlib.Path(os.path.abspath(path))
         if path.is_file():
             return path
-    raise exceptions.FeatureNotAvailableError('GROMACS installation unavailable.')
+    raise exceptions.FeatureNotAvailableError("GROMACS installation unavailable.")
 
 
 @functools.lru_cache()
 def cli_bindir() -> pathlib.Path:
     """Report the installed GROMACS binary directory."""
-    path = _config().get('gmx_bindir', None)
+    path = _config().get("gmx_bindir", None)
     if path is not None:
         path = pathlib.Path(os.path.abspath(path))
         if path.is_dir():
             return path
-    raise exceptions.FeatureNotAvailableError('GROMACS installation unavailable.')
+    raise exceptions.FeatureNotAvailableError("GROMACS installation unavailable.")
 
 
 _seen = set()
@@ -104,12 +104,15 @@ _seen = set()
 # function is called.
 @gmx.function_wrapper(
     output={
-        'directory': str,
-        'returncode': int,
-        'stderr': str,
-        'stdout': str,
-    })
-def cli(command: NDArray, shell: bool, env: dict, output, stdin: str = '', _exist_ok=True):
+        "directory": str,
+        "returncode": int,
+        "stderr": str,
+        "stdout": str,
+    }
+)
+def cli(
+    command: NDArray, shell: bool, env: dict, output, stdin: str = "", _exist_ok=True
+):
     """Execute a command line program in a subprocess.
 
     Configure an executable in a subprocess. Executes when run in an execution
@@ -185,7 +188,7 @@ def cli(command: NDArray, shell: bool, env: dict, output, stdin: str = '', _exis
     if shell:
         raise exceptions.UsageError("Operation does not support shell processing.")
 
-    if stdin == '':
+    if stdin == "":
         stdin = None
 
     if isinstance(command, (str, bytes)):
@@ -196,29 +199,35 @@ def cli(command: NDArray, shell: bool, env: dict, output, stdin: str = '', _exis
     if executable is None:
         executable = shutil.which(command[0], path=str(cli_bindir()))
     if executable is None:
-        raise exceptions.ValueError('"{}" is not found or not executable.'.format(command[0]))
+        raise exceptions.ValueError(
+            '"{}" is not found or not executable.'.format(command[0])
+        )
     command[0] = str(executable)
 
     # The SessionResources concept only exists in the form of the PublishingDataProxy provided as
     # *output* at run time.
-    resource_manager: gmxapi.operation.SourceResource = typing.cast(gmxapi.operation.DataProxyBase,
-                                                                    output)._resource_instance
+    resource_manager: gmxapi.operation.SourceResource = typing.cast(
+        gmxapi.operation.DataProxyBase, output
+    )._resource_instance
     try:
-        op_id = typing.cast(gmxapi.operation.ResourceManager, resource_manager).operation_id
+        op_id = typing.cast(
+            gmxapi.operation.ResourceManager, resource_manager
+        ).operation_id
     except AttributeError as e:
         # Note that the SourceResource interface does not yet specify a means to get a canonical identifier
         # for the node in the work graph.
         raise MissingImplementationError(
-            f'{resource_manager} does not provide required interface. gmxapi.commandline.cli() only '
-            f'supports gmxapi.operation.ResourceManager.'
+            f"{resource_manager} does not provide required interface. gmxapi.commandline.cli() only "
+            f"supports gmxapi.operation.ResourceManager."
         ) from e
     assert op_id
 
-    ensemble_member = typing.cast(gmxapi.operation.DataProxyBase,
-                                  output)._client_identifier
+    ensemble_member = typing.cast(
+        gmxapi.operation.DataProxyBase, output
+    )._client_identifier
     uid = str(op_id)
     if ensemble_member:
-        uid += f'_{ensemble_member}'
+        uid += f"_{ensemble_member}"
     assert uid not in _seen
     _seen.add(uid)
 
@@ -226,7 +235,7 @@ def cli(command: NDArray, shell: bool, env: dict, output, stdin: str = '', _exis
     # Some users may find it useful to preserve that abstraction.
     _cwd = os.path.abspath(uid)
     if os.path.exists(_cwd):
-        message = f'Work directory {_cwd} already exists.'
+        message = f"Work directory {_cwd} already exists."
         if _exist_ok:
             logger.info(message)
         else:
@@ -236,44 +245,44 @@ def cli(command: NDArray, shell: bool, env: dict, output, stdin: str = '', _exis
     # TODO: (FR9) Can OS input/output filehandles be a responsibility of
     #  the code providing 'resources'?
 
-    logger.debug('executing subprocess: %s', ' '.join(str(word) for word in command))
+    logger.debug("executing subprocess: %s", " ".join(str(word) for word in command))
 
     try:
-        completed_process = subprocess.run(command,
-                                           cwd=_cwd,
-                                           env=env,
-                                           shell=shell,
-                                           input=stdin,
-                                           check=True,
-                                           stdout=subprocess.PIPE,
-                                           stderr=subprocess.PIPE,
-                                           encoding='utf-8',
-                                           universal_newlines=True
-                                           )
+        completed_process = subprocess.run(
+            command,
+            cwd=_cwd,
+            env=env,
+            shell=shell,
+            input=stdin,
+            check=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            encoding="utf-8",
+            universal_newlines=True,
+        )
         returncode = completed_process.returncode
 
         stdout = completed_process.stdout
         stderr = completed_process.stderr
 
     except subprocess.CalledProcessError as e:
-        logger.info(
-            f'Non-zero return status when calling {e.cmd} in {_cwd}')
+        logger.info(f"Non-zero return status when calling {e.cmd} in {_cwd}")
         stdout = e.stdout
         stderr = e.stderr
         returncode = e.returncode
 
     if stderr is not None:
         if stdout is not None:
-            logger.debug('STDOUT:')
-            for line in stdout.split('\n'):
+            logger.debug("STDOUT:")
+            for line in stdout.split("\n"):
                 logger.debug(line)
         else:
-            logger.debug('STDOUT is empty')
-        logger.debug('STDERR:')
-        for line in stderr.split('\n'):
+            logger.debug("STDOUT is empty")
+        logger.debug("STDERR:")
+        for line in stderr.split("\n"):
             logger.debug(line)
     else:
-        logger.debug('STDERR is empty')
+        logger.debug("STDERR is empty")
 
     # Publish outputs.
     output.directory = _cwd
@@ -293,7 +302,9 @@ def _flatten_dict(mapping: dict):
     """
     for key, value in mapping.items():
         yield str(key)
-        if isinstance(value, collections.abc.Iterable) and not isinstance(value, (str, bytes)):
+        if isinstance(value, collections.abc.Iterable) and not isinstance(
+            value, (str, bytes)
+        ):
             yield from [str(element) for element in value]
         else:
             yield value
@@ -324,13 +335,15 @@ def filemap_to_flag_list(filemap: dict) -> list:
 # TODO: (FR4) Use generating function or decorator that can validate kwargs?
 # TODO: (FR4) Outputs need to be fully formed and typed in the object returned
 #  from the helper (decorated function).
-def commandline_operation(executable=None,
-                          arguments=(),
-                          input_files: Union[dict, Iterable[dict]] = None,
-                          output_files: Union[dict, Iterable[dict]] = None,
-                          stdin: Union[str, Iterable[str]] = None,
-                          env: Union[dict, Iterable[dict]] = None,
-                          **kwargs):
+def commandline_operation(
+    executable=None,
+    arguments=(),
+    input_files: Union[dict, Iterable[dict]] = None,
+    output_files: Union[dict, Iterable[dict]] = None,
+    stdin: Union[str, Iterable[str]] = None,
+    env: Union[dict, Iterable[dict]] = None,
+    **kwargs,
+):
     """Helper function to define a new operation that executes a subprocess in gmxapi data flow.
 
     Define a new Operation for a particular executable and input/output parameter set.
@@ -436,18 +449,21 @@ def commandline_operation(executable=None,
     #  explicitly sequences rather than maybe-string/maybe-sequence-of-strings
     @gmx.function_wrapper(
         output={
-            'directory': str,
-            'file': dict,
-            'returncode': int,
-            'stderr': str,
-            'stdout': str,
-        })
-    def merged_ops(stdout: str = None,
-                   stderr: str = None,
-                   returncode: int = None,
-                   file: dict = None,
-                   directory: str = None,
-                   output: OutputCollectionDescription = None):
+            "directory": str,
+            "file": dict,
+            "returncode": int,
+            "stderr": str,
+            "stdout": str,
+        }
+    )
+    def merged_ops(
+        stdout: str = None,
+        stderr: str = None,
+        returncode: int = None,
+        file: dict = None,
+        directory: str = None,
+        output: OutputCollectionDescription = None,
+    ):
         assert stdout is not None
         assert stderr is not None
         assert returncode is not None
@@ -478,35 +494,33 @@ def commandline_operation(executable=None,
         executable = str(executable)
     except Exception as e:
         raise gmxapi.exceptions.TypeError(
-            'gmxapi typing currently requires paths and names to be strings. *executable* argument is '
-            f'{type(executable)}.')
+            "gmxapi typing currently requires paths and names to be strings. *executable* argument is "
+            f"{type(executable)}."
+        )
     if isinstance(arguments, (str, bytes)):
         arguments = [arguments]
     input_options = filemap_to_flag_list(input_files).output.data
     output_options = filemap_to_flag_list(output_files).output.data
-    command = gmx.concatenate_lists([[executable],
-                                     arguments,
-                                     input_options,
-                                     output_options])
+    command = gmx.concatenate_lists(
+        [[executable], arguments, input_options, output_options]
+    )
     shell = gmx.make_constant(False)
 
     if env is None:
+
         @gmx.function_wrapper(
             # allow_duplicate=True
         )
         def _env() -> dict:
             import os
+
             return dict(os.environ)
 
         env = _env().output.data
-    cli_args = {
-        'command': command,
-        'shell': shell,
-        'env': env
-    }
+    cli_args = {"command": command, "shell": shell, "env": env}
     cli_args.update(**kwargs)
     if stdin is not None:
-        cli_args['stdin'] = stdin
+        cli_args["stdin"] = stdin
 
     ##
     # 3. Merge operations
@@ -518,12 +532,14 @@ def commandline_operation(executable=None,
     # TODO: ``label`` kwarg
     # TODO: input fingerprinting
     cli_result = cli(**cli_args)
-    merged_result = merged_ops(stdout=cli_result.output.stdout,
-                               stderr=cli_result.output.stderr,
-                               returncode=cli_result.output.returncode,
-                               directory=cli_result.output.directory,
-                               file=output_files,
-                               **kwargs)
+    merged_result = merged_ops(
+        stdout=cli_result.output.stdout,
+        stderr=cli_result.output.stderr,
+        returncode=cli_result.output.returncode,
+        directory=cli_result.output.directory,
+        file=output_files,
+        **kwargs,
+    )
 
     # Return an object with an OutputCollection granting access to outputs of
     # cli() and of output_files (as "file")

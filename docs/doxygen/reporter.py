@@ -48,6 +48,7 @@ other in the output, as well as filtering to make it possible to suppress
 certain messages.
 """
 
+
 @functools.total_ordering
 class Location(object):
 
@@ -69,11 +70,11 @@ class Location(object):
     def __str__(self):
         """Format the location as a string."""
         if self.line:
-            return '{0}:{1}'.format(self.filename, self.line)
+            return "{0}:{1}".format(self.filename, self.line)
         elif self.filename:
             return self.filename
         else:
-            return '<unknown>'
+            return "<unknown>"
 
     def __eq__(self, other):
         """Sort locations based on file name and line number."""
@@ -95,6 +96,7 @@ class Location(object):
             if self.line is None:
                 return True
             return self.line < other.line
+
 
 @functools.total_ordering
 class Message(object):
@@ -133,6 +135,7 @@ class Message(object):
         """Sort messages based on file name and line number."""
         return self.location < other.location
 
+
 class Filter(object):
 
     """Filter expression to exclude messages."""
@@ -140,11 +143,11 @@ class Filter(object):
     def __init__(self, filterline):
         """Initialize a filter from a line in a filter file."""
         self._orgline = filterline
-        filepattern, text = filterline.split(':', 1)
-        if filepattern == '*':
+        filepattern, text = filterline.split(":", 1)
+        if filepattern == "*":
             self._filematcher = lambda x: x is not None
         elif filepattern:
-            self._filematcher = lambda x: x and fnmatch(x, '*/' + filepattern)
+            self._filematcher = lambda x: x and fnmatch(x, "*/" + filepattern)
         else:
             self._filematcher = lambda x: x is None
         self._textpattern = text.strip()
@@ -167,6 +170,7 @@ class Filter(object):
         """Return original line used to specify the filter."""
         return self._orgline
 
+
 class Reporter(object):
 
     """Collect and write out issues found by checker scripts."""
@@ -181,7 +185,7 @@ class Reporter(object):
         """
         self._logfp = None
         if logfile:
-            self._logfp = open(logfile, 'w')
+            self._logfp = open(logfile, "w")
         self._messages = []
         self._filters = []
         self._quiet = quiet
@@ -189,13 +193,13 @@ class Reporter(object):
 
     def _write(self, message):
         """Implement actual message writing."""
-        wholemsg = ''
+        wholemsg = ""
         if message.location:
-            wholemsg += str(message.location) + ': '
+            wholemsg += str(message.location) + ": "
         wholemsg += message.message
         if message.details:
-            wholemsg += '\n    ' + '\n    '.join(message.details)
-        wholemsg += '\n'
+            wholemsg += "\n    " + "\n    ".join(message.details)
+        wholemsg += "\n"
         sys.stderr.write(wholemsg)
         if self._logfp:
             self._logfp.write(wholemsg)
@@ -215,10 +219,10 @@ class Reporter(object):
 
     def load_filters(self, filterfile):
         """Load filters for excluding messages from a file."""
-        with open(filterfile, 'r') as fp:
+        with open(filterfile, "r") as fp:
             for filterline in fp:
                 filterline = filterline.strip()
-                if not filterline or filterline.startswith('#'):
+                if not filterline or filterline.startswith("#"):
                     continue
                 self._filters.append(Filter(filterline))
 
@@ -234,7 +238,7 @@ class Reporter(object):
         for filterobj in self._filters:
             if filterobj.get_match_count() == 0:
                 # TODO: Consider adding the input filter file as location
-                text = 'warning: unused filter: ' + filterobj.get_text()
+                text = "warning: unused filter: " + filterobj.get_text()
                 self._write(Message(text))
 
     def had_warnings(self):
@@ -250,32 +254,44 @@ class Reporter(object):
 
     def xml_assert(self, xmlpath, message):
         """Report issues in Doxygen XML that violate assumptions in the script."""
-        self._report(Message('warning: ' + message, filename=xmlpath))
+        self._report(Message("warning: " + message, filename=xmlpath))
 
     def input_error(self, message):
         """Report issues in input files."""
-        self._report(Message('error: ' + message))
+        self._report(Message("error: " + message))
 
     def file_error(self, fileobj, message):
         """Report file-level issues."""
-        self._report(Message('error: ' + message,
-            location=fileobj.get_reporter_location()))
+        self._report(
+            Message("error: " + message, location=fileobj.get_reporter_location())
+        )
 
     def code_issue(self, entity, message, details=None):
         """Report an issue in a code construct (not documentation related)."""
-        self._report(Message('warning: ' + message, details,
-            location=entity.get_reporter_location()))
+        self._report(
+            Message(
+                "warning: " + message, details, location=entity.get_reporter_location()
+            )
+        )
 
     def cyclic_issue(self, message, details=None):
         """Report a cyclic dependency issue."""
-        self._report(Message('warning: ' + message, details))
+        self._report(Message("warning: " + message, details))
 
     def doc_error(self, entity, message):
         """Report an issue in documentation."""
-        self._report(Message('error: ' + entity.get_name() + ': ' + message,
-            location=entity.get_reporter_location()))
+        self._report(
+            Message(
+                "error: " + entity.get_name() + ": " + message,
+                location=entity.get_reporter_location(),
+            )
+        )
 
     def doc_note(self, entity, message):
         """Report a potential issue in documentation."""
-        self._report(Message('note: ' + entity.get_name() + ': ' + message,
-            location=entity.get_reporter_location()))
+        self._report(
+            Message(
+                "note: " + entity.get_name() + ": " + message,
+                location=entity.get_reporter_location(),
+            )
+        )
