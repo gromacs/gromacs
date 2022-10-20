@@ -41,6 +41,10 @@ endif()
 
 find_package(CUDA ${REQUIRED_CUDA_VERSION} REQUIRED)
 
+if(${CUDA_VERSION} GREATER_EQUAL 11.1)
+  set(GMX_HAVE_CUDA_GRAPH_SUPPORT ON)
+endif()
+
 # Try to execute ${CUDA_NVCC_EXECUTABLE} --version and set the output
 # (or an error string) in the argument variable.
 # Note that semicolon is used as separator for nvcc.
