@@ -1,0 +1,6 @@
+[flake8]
+# These settings are chosen to avoid conflicts with Black code style.
+# Ref: https://black.readthedocs.io/en/stable/guides/using_black_with_other_tools.html#flake8
+max-line-length = 88
+extend-ignore = E203
+# ... end of compatibility settings for Black code style.
