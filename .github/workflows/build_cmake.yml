@@ -7,6 +7,7 @@ env:
   NINJA_VERSION: 1.10.1
   BUILD_TYPE: Release
   CCACHE_VERSION: 3.7.7
+  NINJA_STATUS: "[%f/%t %o/sec] "
 
 jobs:
   build:
@@ -40,49 +41,19 @@ jobs:
 
           }
 
+    env:
+      CC: ${{ matrix.config.cc }}
+      CXX: ${{ matrix.config.cxx }}
+      CI_JOB_ID: ${{ github.sha }} # Tell CMake it's running in CI
+      OPENMP_VAR: ${{ matrix.config.openmp_var }}
+      GPU_VAR: ${{ matrix.config.gpu_var }}
+      ENVIRONMENT_SCRIPT: ${{ matrix.config.environment_script }}
+
     steps:
-    - uses: actions/checkout@v1
+    - uses: actions/checkout@v3
 
     - name: Download Ninja and CMake
-      shell: cmake -P {0}
-      run: |
-        set(cmake_version $ENV{CMAKE_VERSION})
-        set(ninja_version $ENV{NINJA_VERSION})
-
-        message(STATUS "Using host CMake version: ${CMAKE_VERSION}")
-
-        if ("${{ runner.os }}" STREQUAL "Windows")
-          set(ninja_suffix "win.zip")
-          set(cmake_suffix "win64-x64.zip")
-          set(cmake_dir "cmake-${cmake_version}-win64-x64/bin")
-        elseif ("${{ runner.os }}" STREQUAL "macOS")
-          set(ninja_suffix "mac.zip")
-          set(cmake_suffix "Darwin-x86_64.tar.gz")
-          set(cmake_dir "cmake-${cmake_version}-Darwin-x86_64/CMake.app/Contents/bin")
-        endif()
-
-        set(ninja_url "https://github.com/ninja-build/ninja/releases/download/v${ninja_version}/ninja-${ninja_suffix}")
-        file(DOWNLOAD "${ninja_url}" ./ninja.zip SHOW_PROGRESS)
-        execute_process(COMMAND ${CMAKE_COMMAND} -E tar xvf ./ninja.zip)
-
-        set(cmake_url "https://github.com/Kitware/CMake/releases/download/v${cmake_version}/cmake-${cmake_version}-${cmake_suffix}")
-        file(DOWNLOAD "${cmake_url}" ./cmake.zip SHOW_PROGRESS)
-        execute_process(COMMAND ${CMAKE_COMMAND} -E tar xvf ./cmake.zip)
-
-        # Add to PATH environment variable
-        file(TO_CMAKE_PATH "$ENV{GITHUB_WORKSPACE}/${cmake_dir}" cmake_dir)
-        set(path_separator ":")
-        if ("${{ runner.os }}" STREQUAL "Windows")
-          set(path_separator ";")
-        endif()
-        file(APPEND "$ENV{GITHUB_PATH}" "$ENV{GITHUB_WORKSPACE}${path_separator}${cmake_dir}")
-
-        if (NOT "${{ runner.os }}" STREQUAL "Windows")
-          execute_process(
-            COMMAND chmod +x ninja
-            COMMAND chmod +x ${cmake_dir}/cmake
-          )
-        endif()
+      run: cmake -P .github/scripts/download-ninja-cmake.cmake
 
     - name: Download ccache
       id: ccache
@@ -93,7 +64,7 @@ jobs:
         execute_process(COMMAND ${CMAKE_COMMAND} -E tar xvf ./ccache.tar.xz)
 
     - name: ccache cache files
-      uses: actions/cache@v1.1.0
+      uses: actions/cache@v3
       with:
         path: .ccache
         key: ${{ matrix.config.name }}-ccache-${{ github.sha }}
@@ -101,122 +72,57 @@ jobs:
           ${{ matrix.config.name }}-ccache-
 
     - name: Configure
-      shell: cmake -P {0}
-      run: |
-        set(ENV{CC} ${{ matrix.config.cc }})
-        set(ENV{CXX} ${{ matrix.config.cxx }})
-        set(ENV{CI_JOB_ID} ${{ github.sha }} ) # Tell CMake it's running in CI
-
-        if ("${{ runner.os }}" STREQUAL "Windows" AND NOT "x${{ matrix.config.environment_script }}" STREQUAL "x")
-          execute_process(
-            COMMAND "${{ matrix.config.environment_script }}" && set
-            OUTPUT_FILE environment_script_output.txt
-          )
-          file(STRINGS environment_script_output.txt output_lines)
-          foreach(line IN LISTS output_lines)
-            if (line MATCHES "^([a-zA-Z0-9_-]+)=(.*)$")
-              set(ENV{${CMAKE_MATCH_1}} "${CMAKE_MATCH_2}")
-            endif()
-          endforeach()
-        endif()
-
-        set(path_separator ":")
-        if ("${{ runner.os }}" STREQUAL "Windows")
-          set(path_separator ";")
-        endif()
-        set(ENV{PATH} "$ENV{GITHUB_WORKSPACE}${path_separator}$ENV{PATH}")
-        set(openmp_use ${{ matrix.config.openmp_var }})
-        set(gpu_var ${{ matrix.config.gpu_var }})
-
-        execute_process(
-          COMMAND cmake
-            -S .
-            -B build
-            -D CMAKE_BUILD_TYPE=$ENV{BUILD_TYPE}
-            -G Ninja
-            -D CMAKE_MAKE_PROGRAM=ninja
-            -D CMAKE_C_COMPILER_LAUNCHER=ccache
-            -D CMAKE_CXX_COMPILER_LAUNCHER=ccache
-            -D GMX_COMPILER_WARNINGS=ON
-            -D GMX_DEFAULT_SUFFIX=OFF
-            -D GMX_GPU=${gpu_var}
-            -D GMX_SIMD=None
-            -D GMX_FFT_LIBRARY=FFTPACK
-            -D GMX_OPENMP=${openmp_use}
-            -D REGRESSIONTEST_DOWNLOAD=ON
-          RESULT_VARIABLE result
-        )
-        if (NOT result EQUAL 0)
-          message(FATAL_ERROR "Bad exit status")
-        endif()
-
+      run: cmake -P .github/scripts/configure.cmake
 
     - name: Build
-      shell: cmake -P {0}
-      run: |
-        set(ENV{NINJA_STATUS} "[%f/%t %o/sec] ")
-        set(ENV{CI_JOB_ID} ${{ github.sha }} )
-
-        if ("${{ runner.os }}" STREQUAL "Windows" AND NOT "x${{ matrix.config.environment_script }}" STREQUAL "x")
-          file(STRINGS environment_script_output.txt output_lines)
-          foreach(line IN LISTS output_lines)
-            if (line MATCHES "^([a-zA-Z0-9_-]+)=(.*)$")
-              set(ENV{${CMAKE_MATCH_1}} "${CMAKE_MATCH_2}")
-            endif()
-          endforeach()
-        endif()
-
-        file(TO_CMAKE_PATH "$ENV{GITHUB_WORKSPACE}" ccache_basedir)
-        set(ENV{CCACHE_BASEDIR} "${ccache_basedir}")
-        set(ENV{CCACHE_DIR} "${ccache_basedir}/.ccache")
-        set(ENV{CCACHE_COMPRESS} "true")
-        set(ENV{CCACHE_COMPRESSLEVEL} "6")
-        set(ENV{CCACHE_MAXSIZE} "600M")
-
-        execute_process(COMMAND ccache -p)
-        execute_process(COMMAND ccache -z)
-
-        execute_process(
-          COMMAND cmake --build build
-          RESULT_VARIABLE result-build
-          OUTPUT_VARIABLE output-build
-          ERROR_VARIABLE output-build
-          ECHO_OUTPUT_VARIABLE ECHO_ERROR_VARIABLE
-        )
-        execute_process(
-          COMMAND cmake --build build --target tests
-          RESULT_VARIABLE result-build-test
-          OUTPUT_VARIABLE output-build-test
-          ERROR_VARIABLE output-build-test
-          ECHO_OUTPUT_VARIABLE ECHO_ERROR_VARIABLE
-        )
-        if ((NOT result-build EQUAL 0) OR (NOT result-build-test EQUAL 0))
-          string(REGEX MATCH "FAILED:.*$" error_message_build "${output-build}")
-          string(REGEX MATCH "FAILED:.*$" error_message_build_test "${output-build-test}")
-          string(REPLACE "\n" "%0A" error_message_build "${error_message_build}")
-          string(REPLACE "\n" "%0A" error_message_build_test "${error_message_build_test}")
-          message("::error::${error_message_build}")
-          message("::error::${error_message_build_test}")
-          message(FATAL_ERROR "Build failed")
-        endif()
-
-        execute_process(COMMAND ccache -s)
+      run: cmake -P .github/scripts/build.cmake
 
     - name: Run tests
-      shell: cmake -P {0}
-      run: |
-        execute_process(
-          COMMAND ctest --output-on-failure
-          WORKING_DIRECTORY build
-          RESULT_VARIABLE result
-          OUTPUT_VARIABLE output
-          ERROR_VARIABLE output
-          ECHO_OUTPUT_VARIABLE ECHO_ERROR_VARIABLE
-        )
-        if (NOT result EQUAL 0)
-          string(REGEX MATCH "[0-9]+% tests.*[0-9.]+ sec.*$" test_results "${output}")
-          string(REPLACE "\n" "%0A" test_results "${test_results}")
-          message("::error::${test_results}")
-          message(FATAL_ERROR "Running tests failed!")
-        endif()
+      run: cmake -P .github/scripts/test.cmake
+
+  build-linux-aarch64:
+    name: Ubuntu 20.04 ARM64 Clang 10
+    runs-on: ubuntu-20.04
+
+    env:
+      CC: clang-10
+      CXX: clang++-10
+      CI_JOB_ID: ${{ github.sha }} # Tell CMake it's running in CI
+      OPENMP_VAR: Off
+      GPU_VAR: Off
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v3
+
+    - name: ccache cache files
+      id: cache-ccache
+      uses: actions/cache@v3
+      with:
+        path: .ccache
+        key: ${{ github.job }}-ccache-${{ github.sha }}
+        restore-keys: ${{ github.job }}-ccache-
+
+    - name: Build
+      uses: uraimo/run-on-arch-action@v2
+      with:
+        arch: aarch64
+        distro: ubuntu20.04
+        githubToken: ${{ github.token }}
+        dockerRunArgs: |
+          --volume "${PWD}:/Gromacs" -e GITHUB_PATH -e RUNNER_OS -e "RUNNER_ARCH=ARM64" -e CMAKE_VERSION -e NINJA_VERSION -e GPU_VAR -e BUILD_TYPE -e OPENMP_VAR -e CC -e CXX -e CI_JOB_ID
+        install: |
+          apt-get update -q -y
+          apt-get install -q -y clang-10 cmake ninja-build ccache git
+        run: |
+          set -x
+          cd /Gromacs
+          git config --global --add safe.directory /Gromacs
+          export GITHUB_WORKSPACE=$PWD
+          export CMAKE_VERSION=3.24.2 # use a newer version that has an aarch64 archive
+          cmake -P .github/scripts/download-ninja-cmake.cmake
+          export PATH=$GITHUB_WORKSPACE/cmake-${CMAKE_VERSION}-linux-aarch64/bin:$PATH
+          cmake -P .github/scripts/configure.cmake
+          cmake -P .github/scripts/build.cmake
+          cmake -P .github/scripts/test.cmake
 
