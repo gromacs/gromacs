@@ -85,12 +85,18 @@ SET(CMAKE_OSX_ARCHITECTURES \"${CMAKE_OSX_ARCHITECTURES}\" CACHE STRING \"GROMAC
 "SET(MPI_C_COMPILER \"${MPI_C_COMPILER}\" CACHE FILEPATH \"FindMPI C compiler hint.\")
 SET(MPI_CXX_COMPILER \"${MPI_CXX_COMPILER}\" CACHE FILEPATH \"FindMPI CXX compiler hint.\")")
     endif ()
+
+    if(CMAKE_CUDA_COMPILER)
+        set(_gmx_cuda_config
+"SET(CMAKE_CUDA_COMPILER \"${CMAKE_CUDA_COMPILER}\" CACHE FILEPATH \"Hint for enable_language(CUDA).\")")
+    endif ()
     configure_file(gromacs-config.cmake.cmakein
                    gromacs-config.cmake @ONLY)
     configure_file(gromacs-config-version.cmake.cmakein
                    gromacs-config-version.cmake @ONLY)
     configure_file(gromacs-hints.in.cmake
                    gromacs-hints.cmake @ONLY)
+    unset(_gmx_cuda_config)
     unset(_gmx_mpi_config)
     unset(_gmx_osx_config)
     option(GMX_REQUIRE_VALID_CMAKE_HINTS "Force CMake error if generated hints are not usable." OFF)

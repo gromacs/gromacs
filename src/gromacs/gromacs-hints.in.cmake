@@ -37,3 +37,4 @@ SET(CMAKE_LINKER "@CMAKE_LINKER@" CACHE FILEPATH "Linker used for GROMACS.")
 SET(GMX_CMAKE_VERSION "@CMAKE_VERSION@" "Version of CMake used to build these CMake config files.")
 @_gmx_mpi_config@
 @_gmx_osx_config@
+@_gmx_cuda_config@
