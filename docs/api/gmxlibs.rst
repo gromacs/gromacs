@@ -66,6 +66,11 @@ However, using ``-C path/to/gromacs-hints$GROMACS_SUFFIX.cmake`` in your client
 options so that you have a better chance of building a compatible binary.
 (I.e. it helps :func:`gromacs_check_compiler` succeed.)
 
+In addition to hints variables for CMake :cmake:`enable_language` and
+:cmake:`find_package`, the hints file sets ``GMX_CMAKE_VERSION`` in case the
+client build system needs to know the version of CMake that was used to build
+the |Gromacs| installation.
+
 MPI support
 -----------
 
