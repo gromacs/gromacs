@@ -110,7 +110,7 @@ jobs:
         distro: ubuntu20.04
         githubToken: ${{ github.token }}
         dockerRunArgs: |
-          --volume "${PWD}:/Gromacs" -e GITHUB_PATH -e RUNNER_OS -e CMAKE_VERSION -e NINJA_VERSION -e GPU_VAR -e BUILD_TYPE -e OPENMP_VAR -e CC -e CXX -e CI_JOB_ID
+          --volume "${PWD}:/Gromacs" -e GITHUB_PATH -e RUNNER_OS -e "RUNNER_ARCH=ARM64" -e CMAKE_VERSION -e NINJA_VERSION -e GPU_VAR -e BUILD_TYPE -e OPENMP_VAR -e CC -e CXX -e CI_JOB_ID
         install: |
           apt-get update -q -y
           apt-get install -q -y clang-10 cmake ninja-build ccache git

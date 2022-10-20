@@ -35,6 +35,7 @@ set(ninja_version $ENV{NINJA_VERSION})
 
 message(STATUS "Using host CMake version: ${CMAKE_VERSION}")
 message(STATUS "Using RUNNER_OS: $ENV{RUNNER_OS}")
+message(STATUS "Using RUNNER_ARCH: $ENV{RUNNER_ARCH}")
 
 if ("$ENV{RUNNER_OS}" STREQUAL "Windows")
     set(ninja_suffix "win.zip")
