@@ -56,6 +56,8 @@ TEST(FixedCapacityVectorTest, IsEmpty)
     FixedCapacityVector<int, 2> empty;
 
     EXPECT_EQ(0U, empty.size());
+    EXPECT_EQ(2U, empty.capacity());
+    EXPECT_EQ(2U, empty.max_size());
     EXPECT_TRUE(empty.empty());
 }
 
@@ -167,6 +169,8 @@ TEST(FixedCapacityVectorTest, ZeroCapacityWorks)
     FixedCapacityVector<int, 0> v;
 
     EXPECT_EQ(0U, v.size());
+    EXPECT_EQ(0U, v.capacity());
+    EXPECT_EQ(0U, v.max_size());
     EXPECT_TRUE(v.empty());
 }
 

@@ -54,7 +54,7 @@ namespace gmx
 /*! \brief Vector that behaves likes std::vector but has fixed capacity.
  *
  * \tparam T         Value type of elements.
- * \tparam capacity  The maximum number of elements that can be stored.
+ * \tparam capacity_ The maximum number of elements that can be stored.
  *
  * This class provides a variable size container, but with constant
  * memory usage and can be allocated on the stack and avoid the overhead
@@ -78,7 +78,7 @@ namespace gmx
  * \inpublicapi
  * \ingroup module_utility
  */
-template<typename T, size_t capacity>
+template<typename T, size_t capacity_>
 class FixedCapacityVector
 {
 public:
@@ -133,6 +133,11 @@ public:
     //! Returns whether the vector is empty
     bool empty() const noexcept { return data() == end_; }
 
+    //! Returns the vector capacity (max. number of elements that can be stored)
+    static constexpr size_type max_size() noexcept { return capacity_; }
+    //! Returns the vector capacity (max. number of elements that can be stored)
+    static constexpr size_type capacity() noexcept { return capacity_; }
+
     //! Const access an element
     const_reference operator[](size_type n) const noexcept
     {
@@ -177,7 +182,7 @@ public:
     //! Adds element at the end
     void push_back(const T& value) noexcept
     {
-        GMX_ASSERT(size() < capacity, "Cannot add more elements than the capacity");
+        GMX_ASSERT(size() < capacity_, "Cannot add more elements than the capacity");
         *end_ = value;
         end_++;
     }
@@ -193,7 +198,7 @@ public:
     template<class... Args>
     reference emplace_back(Args&&... args)
     {
-        GMX_ASSERT(size() < capacity, "Cannot add more elements than the capacity");
+        GMX_ASSERT(size() < capacity_, "Cannot add more elements than the capacity");
         if (std::is_move_assignable<T>::value)
         {
             *end_ = std::move(T(args...));
@@ -212,7 +217,7 @@ public:
 
 private:
     //! The elements, stored in a fixed size array
-    std::array<T, capacity> data_;
+    std::array<T, capacity_> data_;
     //! The size of the vector
     pointer end_ = data();
 };
