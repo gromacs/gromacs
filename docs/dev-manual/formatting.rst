@@ -3,8 +3,12 @@
 Guidelines for code formatting
 ==============================
 
-The following list provides the general formatting/indentation rules for
-|Gromacs| code (C/C++):
+Python code complies with `PEP 8 <https://peps.python.org/pep-0008/>`__,
+but using the stricter `Black code style
+<https://black.readthedocs.io/en/stable/the_black_code_style/current_style.html>`__.
+
+The following list provides the general formatting/indentation rules for C++
+|Gromacs| code:
 
 * Basic indentation is four spaces.
 * Keep lines at a reasonable length. Keep every line at least below 120

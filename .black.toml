@@ -1,0 +1,17 @@
+# The root GROMACS repository directory is not a Python packaging entry point,
+# so try to avoid confusion by avoiding the conventional config file name (pyproject.toml).
+# Invoke the `black` tool with `black --config .black.toml .` to use this configuration.
+[tool.black]
+# Ref: https://black.readthedocs.io/en/stable/usage_and_configuration/the_basics.html
+target-version = ['py37']
+# 'extend-exclude' excludes files or directories in addition to the defaults
+extend-exclude = '''
+# A regex preceded with ^/ will apply only to files and directories
+# in the root of the project.
+(
+  ^/tests/physicalvalidation  # Exclude sources from external projects.
+  | ^/src/external
+  | .*.ipynb  # Exclude jupyter notebook files (requires `black[jupyter]`) to reduce our infrastructure dependencies.
+  | make_gromos_rtp.py  # Exclude a wayward Python 2 file. See also #4639.
+)
+'''

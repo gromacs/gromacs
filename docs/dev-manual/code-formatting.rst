@@ -5,7 +5,10 @@ Automatic source code formatting
 
 .. highlight:: bash
 
-The source code can be automatically formatted using clang-format
+Python sources can be automatically formatted with
+`Black <https://black.readthedocs.io/en/stable/>`__.
+
+C++ source code can be automatically formatted using clang-format
 since |Gromacs| 2020.
 It automatically applies the guidelines in :doc:`formatting` and in
 :doc:`includestyle`.
@@ -139,8 +142,8 @@ from the |Gromacs| repository.
 For more about the tool and the :file:`.clang-tidy` configuration file,
 visit https://releases.llvm.org/11.0.0/tools/clang/tools/extra/docs/clang-tidy/index.html.
 
-Scripts
--------
+Tools
+-----
 
 ``copyright.py``
 ^^^^^^^^^^^^^^^^
@@ -263,6 +266,15 @@ By default, ``update-*`` refuses to update dirty files (i.e., that differ
 between the disk and the index) to make it easy to revert the changes.
 This can be overridden by adding a ``-f``/``--force`` option.
 
+Black
+^^^^^
+
+The `Black <https://black.readthedocs.io/>`__ tool reformats Python files in
+place, by default. To check and update the entire repository, use the
+:file:`.black.toml` config file in the root directory of the repository::
+
+    pip install black
+    black --config .black.toml .
 
 git pre-commit hook
 ^^^^^^^^^^^^^^^^^^^
