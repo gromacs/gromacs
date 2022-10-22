@@ -41,6 +41,15 @@ when invoked with more than one MPI rank.
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
 
+Programs reading a tpr file of a large system would exit with random errors
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+The tpr file writing and reading code contained a bug that caused reading
+of systems with more than 100 million atoms to exit with random error
+messages.
+
+:issue:`4628`
+
 With flexible constraint grompp and mdrun exited with an assertion failure
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
