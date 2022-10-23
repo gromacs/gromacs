@@ -119,7 +119,7 @@ clang-format:
     - REV=$(git fetch -q https://gitlab.com/gromacs/gromacs.git $TARGET_BRANCH && git show -s --pretty=format:"%h" `git merge-base FETCH_HEAD HEAD`)
     - HEAD_REV=$(git show -s --pretty=format:"%h" HEAD)
     - if [[ "$REV" == "$HEAD_REV" ]] ; then
-        REV="HEAD~1" ;
+      REV="HEAD~1" ;
       fi
     - echo "Revision used for branch point is $REV"
     - git show -s $REV
@@ -131,6 +131,28 @@ clang-format:
     paths:
       - clang-format.log
       - formatting.txt
+
+python-format:
+  extends:
+    - .variables:default
+    - .rules:merge-requests
+  cache: {}
+  stage: pre-build
+  image: ${CI_REGISTRY_IMAGE}/ci-ubuntu-20.04-llvm-9-docs
+  variables:
+    COMPILER_MAJOR_VERSION: 9
+    KUBERNETES_CPU_LIMIT: 1
+    KUBERNETES_CPU_REQUEST: 1
+    KUBERNETES_MEMORY_REQUEST: 2Gi
+  script:
+    - BLACK="/root/venv/py3.9/bin/python -m black --config .black.toml -W $KUBERNETES_CPU_LIMIT "
+    - echo "Using 'black' version " $($BLACK --version)
+    - $BLACK --check --verbose --diff . > black-format.log
+    - if [ -s black-format.log ] ; then echo "Python formatter found issues (see black-format.log)"; exit 1; fi
+  artifacts:
+    when: on_failure
+    paths:
+      - black-format.log
 
 copyright-check:
   extends:
