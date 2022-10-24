@@ -41,6 +41,7 @@
 
 #include <array>
 #include <memory>
+#include <string>
 #include <vector>
 
 #include "gromacs/math/functions.h"
@@ -64,7 +65,20 @@ constexpr bool onlyMainDebugPrints = true;
 //! True if cycle counter nesting depth debugging prints are enabled
 constexpr bool debugPrintDepth = false;
 
-/* Each name should not exceed 19 printing characters
+template<int maxLength, typename Container>
+static constexpr bool checkStringsLengths(const Container& strings)
+{
+    for (const char* str : strings)
+    {
+        if (std::char_traits<char>::length(str) > maxLength)
+        {
+            return false;
+        }
+    }
+    return true;
+}
+
+/* Each name should not exceed 22 printing characters
    (ie. terminating null can be twentieth) */
 static const char* enumValuetoString(WallCycleCounter enumValue)
 {
@@ -122,6 +136,7 @@ static const char* enumValuetoString(WallCycleCounter enumValue)
         "MD Graph",
         "Test"
     };
+    static_assert(checkStringsLengths<22>(wallCycleCounterNames));
     return wallCycleCounterNames[enumValue];
 }
 
@@ -140,38 +155,39 @@ static const char* enumValuetoString(WallCycleSubCounter enumValue)
         "DD top. other",
         "DD GPU ops.",
         "NS grid local",
-        "NS grid non-loc.",
+        "NS grid non-local",
         "NS search local",
-        "NS search non-loc.",
+        "NS search non-local",
         "Bonded F",
         "Bonded-FEP F",
         "Restraints F",
         "Listed buffer ops.",
-        "Nonbonded pruning",
-        "Nonbonded F kernel",
-        "Nonbonded F clear",
-        "Nonbonded FEP",
-        "Nonbonded FEP reduction",
-        "Launch NB GPU tasks",
-        "Launch Bonded GPU tasks",
+        "NB pruning",
+        "NB F kernel",
+        "NB F clear",
+        "NB FEP",
+        "NB FEP reduction",
+        "Launch GPU NB tasks",
+        "Launch GPU Bonded",
         "Launch state copy",
         "Ewald F correction",
         "NB X buffer ops.",
         "NB F buffer ops.",
         "Clear force buffer",
-        "Launch GPU NB X buffer ops.",
-        "Launch GPU NB F buffer ops.",
-        "Launch GPU Comm. coord.",
-        "Launch GPU Comm. force.",
+        "Launch GPU NB X ops.",
+        "Launch GPU NB F ops.",
+        "Launch GPU Comm. X",
+        "Launch GPU Comm. F",
         "Launch GPU update",
         "Launch PME GPU FFT",
-        "MD Graph wait bf capture",
-        "MD Graph capture",
-        "MD Graph inst./upd.",
-        "MD Graph wait bf launch",
-        "MD Graph launch",
+        "Graph wait pre-capture",
+        "Graph capture",
+        "Graph instantiate/upd.",
+        "Graph wait pre-launch",
+        "Graph launch",
         "Test subcounter"
     };
+    static_assert(checkStringsLengths<22>(wallCycleSubCounterNames));
     return wallCycleSubCounterNames[enumValue];
 }
 CLANG_DIAGNOSTIC_RESET
@@ -662,7 +678,7 @@ print_cycles(FILE* fplog, double c2t, const char* name, int nnodes, int nthreads
         wallt = c_sum * c2t;
 
         fprintf(fplog,
-                " %-19.19s %4s %4s %10s  %10.3f %14.3f %5.1f\n",
+                " %-22.22s %4s %4s %10s  %10.3f %14.3f %5.1f\n",
                 name,
                 nnodes_str,
                 nthreads_str,
@@ -726,8 +742,9 @@ static void print_header(FILE* fplog, int nrank_pp, int nth_pp, int nrank_pme, i
     }
 
     fprintf(fplog, "\n\n");
-    fprintf(fplog, " Activity:           Num   Num      Call    Wall time         Giga-Cycles\n");
-    fprintf(fplog, "                     Ranks Threads  Count      (s)         total sum    %%\n");
+    fprintf(fplog, " Activity:              Num   Num      Call    Wall time         Giga-Cycles\n");
+    fprintf(fplog,
+            "                        Ranks Threads  Count      (s)         total sum    %%\n");
 }
 
 
@@ -748,7 +765,7 @@ void wallcycle_print(FILE*                            fplog,
     int         npp, nth_tot;
     char        buf[STRLEN];
     const char* hline =
-            "-----------------------------------------------------------------------------";
+            "--------------------------------------------------------------------------------";
 
     if (wc == nullptr)
     {
@@ -813,7 +830,7 @@ void wallcycle_print(FILE*                            fplog,
         c2t_pme = 0;
     }
 
-    fprintf(fplog, "\n     R E A L   C Y C L E   A N D   T I M E   A C C O U N T I N G\n\n");
+    fprintf(fplog, "\n      R E A L   C Y C L E   A N D   T I M E   A C C O U N T I N G\n\n");
 
     print_header(fplog, npp, nth_pp, npme, nth_pme);
 

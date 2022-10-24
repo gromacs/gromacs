@@ -255,18 +255,18 @@ struct EnumerationArray final // NOLINT
 
     /*!@{*/
     //! Getters for forward iterators for ranges
-    iterator       begin() { return &m_elements[0]; }
-    iterator       end() { return &m_elements[size()]; }
-    const_iterator begin() const { return &m_elements[0]; }
-    const_iterator end() const { return &m_elements[size()]; }
+    iterator                 begin() { return &m_elements[0]; }
+    iterator                 end() { return &m_elements[size()]; }
+    constexpr const_iterator begin() const { return &m_elements[0]; }
+    constexpr const_iterator end() const { return &m_elements[size()]; }
     /*!@}*/
 
     /*!@{*/
     //! Getters for reverse iterators for ranges
-    reverse_iterator       rbegin() { return reverse_iterator{ end() }; }
-    reverse_iterator       rend() { return reverse_iterator{ begin() }; }
-    const_reverse_iterator rbegin() const { return const_reverse_iterator{ end() }; }
-    const_reverse_iterator rend() const { return const_reverse_iterator{ begin() }; }
+    reverse_iterator                 rbegin() { return reverse_iterator{ end() }; }
+    reverse_iterator                 rend() { return reverse_iterator{ begin() }; }
+    constexpr const_reverse_iterator rbegin() const { return const_reverse_iterator{ end() }; }
+    constexpr const_reverse_iterator rend() const { return const_reverse_iterator{ begin() }; }
     /*!@}*/
 
     /*!@{*/
