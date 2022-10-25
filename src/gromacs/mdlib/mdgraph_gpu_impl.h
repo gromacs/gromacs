@@ -50,6 +50,16 @@
 namespace gmx
 {
 
+/*! \brief State of graph */
+enum class GraphState : int
+{
+    Invalid,      //!< Invalid, i.e before recording has started (including after reset)
+    Recording,    //!< Recording is underway and has not yet finished
+    Recorded,     //!< Recording has finished, but graph is not yet instantiated
+    Instantiated, //!< Instatiated and ready to launch
+    Count         //!< Number of valid values
+};
+
 class MdGpuGraph::Impl
 {
 public:
@@ -182,6 +192,8 @@ private:
     bool graphAllocated_ = false;
     //! Whether the graph instance object has been allocated
     bool graphInstanceAllocated_ = false;
+    //! State of graph
+    GraphState graphState_ = GraphState::Invalid;
 };
 
 } // namespace gmx

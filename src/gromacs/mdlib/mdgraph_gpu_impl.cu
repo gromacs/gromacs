@@ -133,6 +133,7 @@ void MdGpuGraph::Impl::reset()
     graphCreated_             = false;
     useGraphThisStep_         = false;
     graphIsCapturingThisStep_ = false;
+    graphState_               = GraphState::Invalid;
 }
 
 void MdGpuGraph::Impl::disableForDomainIfAnyPpRankHasCpuForces(bool disableGraphAcrossAllPpRanks)
@@ -169,6 +170,8 @@ void MdGpuGraph::Impl::startRecord(GpuEventSynchronizer* xReadyOnDeviceEvent)
                "startRecord should not have been called if graph is not in use this step");
     GMX_ASSERT(graphIsCapturingThisStep_,
                "startRecord should not have been called if graph is not capturing this step");
+    GMX_ASSERT(graphState_ == GraphState::Invalid,
+               "Graph should be in an invalid state before recording");
 
     wallcycle_sub_start(wcycle_, WallCycleSubCounter::MdGpuGraphWaitBeforeCapture);
     if (havePPDomainDecomposition_)
@@ -230,6 +233,7 @@ void MdGpuGraph::Impl::startRecord(GpuEventSynchronizer* xReadyOnDeviceEvent)
 
     // Re-mark xReadyOnDeviceEvent to allow full isolation within graph capture
     xReadyOnDeviceEvent->markEvent(deviceStreamManager_.stream(gmx::DeviceStreamType::UpdateAndConstraints));
+    graphState_ = GraphState::Recording;
 };
 
 
@@ -240,6 +244,8 @@ void MdGpuGraph::Impl::endRecord()
                "endRecord should not have been called if graph is not in use this step");
     GMX_ASSERT(graphIsCapturingThisStep_,
                "endRecord should not have been called if graph is not capturing this step");
+    GMX_ASSERT(graphState_ == GraphState::Recording,
+               "Graph should be in a recording state before recording is ended");
 
     if (useGpuPme_ && !haveSeparatePmeRank_)
     {
@@ -289,6 +295,8 @@ void MdGpuGraph::Impl::endRecord()
         graphAllocated_ = true;
     }
 
+    graphState_ = GraphState::Recorded;
+
     // Sync all tasks before closing timing region, since the graph capture should be treated as a collective operation for timing purposes.
     if (havePPDomainDecomposition_)
     {
@@ -307,6 +315,8 @@ void MdGpuGraph::Impl::createExecutableGraph()
     GMX_ASSERT(graphIsCapturingThisStep_,
                "createExecutableGraph should not have been called if graph is not capturing this "
                "step");
+    GMX_ASSERT(graphState_ == GraphState::Recorded,
+               "Graph should be in a recorded state before instantiation");
 
     wallcycle_start(wcycle_, WallCycleCounter::MdGpuGraph);
     wallcycle_sub_start(wcycle_, WallCycleSubCounter::MdGpuGraphInstantiateOrUpdate);
@@ -324,6 +334,8 @@ void MdGpuGraph::Impl::createExecutableGraph()
         graphInstanceAllocated_ = true;
     }
 
+    graphState_ = GraphState::Instantiated;
+
     // Sync all tasks before closing timing region, since the graph instantiate or update should be treated as a collective operation for timing purposes.
     if (havePPDomainDecomposition_)
     {
@@ -338,6 +350,8 @@ void MdGpuGraph::Impl::launchGraphMdStep(GpuEventSynchronizer* xUpdatedOnDeviceE
 
     GMX_ASSERT(useGraphThisStep_,
                "launchGraphMdStep should not have been called if graph is not in use this step");
+    GMX_ASSERT(graphState_ == GraphState::Instantiated,
+               "Graph should be in an instantiated state before launching");
 
     wallcycle_sub_start(wcycle_, WallCycleSubCounter::MdGpuGraphWaitBeforeLaunch);
     if (havePPDomainDecomposition_)
