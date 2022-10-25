@@ -42,10 +42,26 @@
 #define GMX_DOMDEC_ATOMDISTRIBUTION_H
 
 #include <array>
+#include <limits>
 #include <vector>
 
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/arrayref.h"
+
+namespace gmx
+{
+
+template<typename>
+class ArrayRef;
+
+} // namespace gmx
+
+/*! \brief The maximum number of atoms that are supported by the domain decomposition code
+ *
+ * This is currently the limit, but MPI_Scatterv and MPI_Gatherv only support int counts
+ * and offsets.
+ */
+static constexpr int sc_maxNumAtomsForDD = std::numeric_limits<int>::max() / DIM;
 
 /*! \internal
  * \brief Distribution of atom groups over the domain (only available on the main rank)
@@ -73,11 +89,13 @@ struct AtomDistribution
     std::vector<gmx::RVec> rvecBuffer; /**< Buffer for state scattering and gathering */
 };
 
-/*! \brief Returns state scatter/gather buffer element counts and displacements
+/*! \brief Returns state scatter/gather buffer element counts and displacements for reals (not rvecs)
  *
  * NOTE: Should only be called with a pointer to a valid ma struct
  *       (only available on the main rank).
  */
-void get_commbuffer_counts(AtomDistribution* ma, int** counts, int** disps);
+void get_commbuffer_counts(AtomDistribution*         ma,
+                           gmx::ArrayRef<const int>* counts,
+                           gmx::ArrayRef<const int>* displacements);
 
 #endif

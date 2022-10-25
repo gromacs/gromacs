@@ -3,6 +3,14 @@ Useful mdrun features
 This section discusses features in :ref:`gmx mdrun` that don't fit well
 elsewhere.
 
+System size limit
+-----------------
+
+Currently :ref:`gmx mdrun` supports at most 715827882 atoms. This limit
+is caused by 32-bit integer counts and offsets in MPI functions. We could
+work around this, but we have not done that yet, as there is little need
+for simulations of a billion atoms or more.
+
 .. _single-point energy:
 
 Re-running a simulation

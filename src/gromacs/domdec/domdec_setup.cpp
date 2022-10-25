@@ -71,6 +71,7 @@
 #include "gromacs/utility/logger.h"
 #include "gromacs/utility/stringutil.h"
 
+#include "atomdistribution.h"
 #include "box.h"
 #include "domdec_internal.h"
 #include "utility.h"
@@ -967,6 +968,11 @@ DDGridSetup getDDGridSetup(const gmx::MDLogger&                  mdlog,
                            gmx::ArrayRef<const gmx::RVec>        xGlobal,
                            gmx_ddbox_t*                          ddbox)
 {
+    if (mtop.natoms > sc_maxNumAtomsForDD)
+    {
+        gmx_fatal(FARGS, "With domain decompostion, mdrun does not support more than %d atoms", sc_maxNumAtomsForDD);
+    }
+
     int numPmeOnlyRanks = getNumPmeOnlyRanksToUse(
             mdlog, options, mtop, ir, separatePmeRanksPermitted, box, numRanksRequested);
 

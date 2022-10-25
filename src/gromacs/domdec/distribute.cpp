@@ -118,8 +118,8 @@ static void distributeVecScatterv(gmx_domdec_t*                  dd,
                                   gmx::ArrayRef<const gmx::RVec> globalVec,
                                   gmx::ArrayRef<gmx::RVec>       localVec)
 {
-    int* sendCounts    = nullptr;
-    int* displacements = nullptr;
+    gmx::ArrayRef<const int> sendCounts;
+    gmx::ArrayRef<const int> displacements;
 
     if (DDMAIN(dd))
     {
@@ -143,9 +143,9 @@ static void distributeVecScatterv(gmx_domdec_t*                  dd,
     dd_scatterv(dd,
                 sendCounts,
                 displacements,
-                DDMAIN(dd) ? dd->ma->rvecBuffer.data() : nullptr,
-                numHomeAtoms * sizeof(gmx::RVec),
-                localVec.data());
+                DDMAIN(dd) ? reinterpret_cast<const real*>(dd->ma->rvecBuffer.data()) : nullptr,
+                numHomeAtoms * DIM,
+                reinterpret_cast<real*>(localVec.data()));
 }
 
 static void distributeVec(gmx_domdec_t*                  dd,
@@ -524,8 +524,8 @@ static void distributeAtomGroups(const gmx::MDLogger& mdlog,
         int groupOffset = 0;
         for (int rank = 0; rank < dd->nnodes; rank++)
         {
-            ma->intBuffer[rank]              = groupIndices[rank].size() * sizeof(int);
-            ma->intBuffer[dd->nnodes + rank] = groupOffset * sizeof(int);
+            ma->intBuffer[rank]              = groupIndices[rank].size();
+            ma->intBuffer[dd->nnodes + rank] = groupOffset;
 
             ma->atomGroups.insert(
                     ma->atomGroups.end(), groupIndices[rank].begin(), groupIndices[rank].end());
@@ -538,10 +538,11 @@ static void distributeAtomGroups(const gmx::MDLogger& mdlog,
     }
 
     dd_scatterv(dd,
-                bMain ? ma->intBuffer.data() : nullptr,
-                bMain ? ma->intBuffer.data() + dd->nnodes : nullptr,
+                bMain ? gmx::makeArrayRef(ma->intBuffer).subArray(0, dd->nnodes) : gmx::ArrayRef<int>(),
+                bMain ? gmx::makeArrayRef(ma->intBuffer).subArray(dd->nnodes, dd->nnodes)
+                      : gmx::ArrayRef<int>(),
                 bMain ? ma->atomGroups.data() : nullptr,
-                dd->numHomeAtoms * sizeof(int),
+                dd->numHomeAtoms,
                 dd->globalAtomGroupIndices.data());
 
     if (debug)

@@ -129,17 +129,67 @@ void dd_scatter(const gmx_domdec_t* dd, int nbytes, const void* src, void* dest)
 /*! \brief Gathers \p nbytes from \p src on all PP ranks, received in \p dest on \p DDMAINRANK */
 void dd_gather(const gmx_domdec_t* dd, int nbytes, const void* src, void* dest);
 
-/*! \brief Scatters \p scounts bytes from \p src on \p DDMAINRANK to all PP ranks, receiving \p rcount bytes in \p dest.
+/*! \brief Scatters \p scounts elements of type \p T from \p src on \p DDMAINRANK to all PP ranks, receiving \p rcount * \p sc_scattervSize elements in \p dest.
+ *
+ * \tparam T  Data type, can only be int or real
  *
  * See man MPI_Scatterv for details of how to construct scounts and disps.
- * If rcount==0, rbuf is allowed to be NULL */
-void dd_scatterv(const gmx_domdec_t* dd, int* scounts, int* disps, const void* sbuf, int rcount, void* rbuf);
+ * If rcount==0, rbuf is allowed to be nullptr.
+ */
+template<typename T>
+void dd_scatterv(const gmx_domdec_t*      dd,
+                 gmx::ArrayRef<const int> scounts,
+                 gmx::ArrayRef<const int> disps,
+                 const T*                 sbuf,
+                 int                      rcount,
+                 T*                       rbuf);
 
-/*! \brief Gathers \p rcount bytes from \p src on all PP ranks, received in \p scounts bytes in \p dest on \p DDMAINRANK.
+//! Instantiation of \p dd_scatterv for type int
+extern template void dd_scatterv(const gmx_domdec_t*      dd,
+                                 gmx::ArrayRef<const int> scounts,
+                                 gmx::ArrayRef<const int> disps,
+                                 const int*               sbuf,
+                                 int                      rcount,
+                                 int*                     rbuf);
+
+//! Instantiation of \p dd_scatterv for type real
+extern template void dd_scatterv(const gmx_domdec_t*      dd,
+                                 gmx::ArrayRef<const int> scounts,
+                                 gmx::ArrayRef<const int> disps,
+                                 const real*              sbuf,
+                                 int                      rcount,
+                                 real*                    rbuf);
+
+/*! \brief Gathers \p rcount elements of type \p T from \p src on all PP ranks, received in \p scounts elements in \p dest on \p DDMAINRANK.
+ *
+ * \tparam T  Data type, can only be int or real
  *
  * See man MPI_Gatherv for details of how to construct scounts and disps.
  *
- * If scount==0, sbuf is allowed to be NULL */
-void dd_gatherv(const gmx_domdec_t* dd, int scount, const void* sbuf, int* rcounts, int* disps, void* rbuf);
+ * If scount==0, sbuf is allowed to be nullptr.
+ */
+template<typename T>
+void dd_gatherv(const gmx_domdec_t*      dd,
+                int                      scount,
+                const T*                 sbuf,
+                gmx::ArrayRef<const int> rcounts,
+                gmx::ArrayRef<const int> disps,
+                T*                       rbuf);
+
+//! Instantiation of \p dd_gatherv for type int
+extern template void dd_gatherv(const gmx_domdec_t*      dd,
+                                int                      scount,
+                                const int*               sbuf,
+                                gmx::ArrayRef<const int> rcounts,
+                                gmx::ArrayRef<const int> disps,
+                                int*                     rbuf);
+
+//! Instantiation of \p dd_gatherv for type real
+extern template void dd_gatherv(const gmx_domdec_t*      dd,
+                                int                      scount,
+                                const real*              sbuf,
+                                gmx::ArrayRef<const int> rcounts,
+                                gmx::ArrayRef<const int> disps,
+                                real*                    rbuf);
 
 #endif

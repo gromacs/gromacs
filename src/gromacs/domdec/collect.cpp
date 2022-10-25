@@ -127,18 +127,20 @@ static void dd_collect_cg(gmx_domdec_t*            dd,
         for (int rank = 0; rank < dd->nnodes; rank++)
         {
             int numGroups                    = ma->domainGroups[rank].atomGroups.size();
-            ma->intBuffer[rank]              = numGroups * sizeof(int);
-            ma->intBuffer[dd->nnodes + rank] = offset * sizeof(int);
+            ma->intBuffer[rank]              = numGroups;
+            ma->intBuffer[dd->nnodes + rank] = offset;
             offset += numGroups;
         }
     }
 
     /* Collect the charge group indices on the main */
     dd_gatherv(dd,
-               atomGroups.size() * sizeof(int),
+               atomGroups.size(),
                atomGroups.data(),
-               DDMAIN(dd) ? ma->intBuffer.data() : nullptr,
-               DDMAIN(dd) ? ma->intBuffer.data() + dd->nnodes : nullptr,
+               DDMAIN(dd) ? gmx::makeArrayRef(ma->intBuffer).subArray(0, dd->nnodes)
+                          : gmx::ArrayRef<int>(),
+               DDMAIN(dd) ? gmx::makeArrayRef(ma->intBuffer).subArray(dd->nnodes, dd->nnodes)
+                          : gmx::ArrayRef<int>(),
                DDMAIN(dd) ? ma->atomGroups.data() : nullptr);
 
     dd->comm->main_cg_ddp_count = ddpCount;
@@ -211,8 +213,8 @@ static void dd_collect_vec_gatherv(gmx_domdec_t*                  dd,
                                    gmx::ArrayRef<const gmx::RVec> lv,
                                    gmx::ArrayRef<gmx::RVec>       v)
 {
-    int* recvCounts    = nullptr;
-    int* displacements = nullptr;
+    gmx::ArrayRef<const int> recvCounts;
+    gmx::ArrayRef<const int> displacements;
 
     if (DDMAIN(dd))
     {
@@ -221,11 +223,11 @@ static void dd_collect_vec_gatherv(gmx_domdec_t*                  dd,
 
     const int numHomeAtoms = dd->comm->atomRanges.numHomeAtoms();
     dd_gatherv(dd,
-               numHomeAtoms * sizeof(rvec),
-               lv.data(),
+               numHomeAtoms * DIM,
+               reinterpret_cast<const real*>(lv.data()),
                recvCounts,
                displacements,
-               DDMAIN(dd) ? dd->ma->rvecBuffer.data() : nullptr);
+               DDMAIN(dd) ? reinterpret_cast<real*>(dd->ma->rvecBuffer.data()) : nullptr);
 
     if (DDMAIN(dd))
     {
