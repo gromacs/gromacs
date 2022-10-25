@@ -68,6 +68,7 @@ constexpr bool debugPrintDepth = false;
 template<int maxLength, typename Container>
 static constexpr bool checkStringsLengths(const Container& strings)
 {
+    // NOLINTNEXTLINE(readability-use-anyofallof) // std::all_of is constexpr only since C++20
     for (const char* str : strings)
     {
         if (std::char_traits<char>::length(str) > maxLength)
