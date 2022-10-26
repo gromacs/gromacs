@@ -1198,7 +1198,8 @@ static void print_histograms(const char*        fnhist,
                              t_UmbrellaOptions* opt,
                              const char*        xlabel)
 {
-    std::filesystem::path fn, title;
+    std::filesystem::path fn;
+    std::string           title;
     FILE*                 fp;
     int                   bins, l, i, j;
 
@@ -1213,7 +1214,7 @@ static void print_histograms(const char*        fnhist,
         title = gmx::formatString("Umbrella histograms");
     }
 
-    fp   = xvgropen(fn.c_str(), title.c_str(), xlabel, "count", opt->oenv);
+    fp   = xvgropen(fn, title.c_str(), xlabel, "count", opt->oenv);
     bins = opt->bins;
 
     /* Write histograms */
@@ -1231,7 +1232,7 @@ static void print_histograms(const char*        fnhist,
     }
 
     xvgrclose(fp);
-    printf("Wrote %s\n", fn.c_str());
+    printf("Wrote %s\n", fn.u8string().c_str());
 }
 
 //! Make random weights for histograms for the Bayesian bootstrap of complete histograms)

@@ -166,8 +166,8 @@ struct DeviceInformation
     int                      supportedSubGroupSizesSize;
     gmx::ArrayRef<const int> supportedSubGroupSizes() const
     {
-        return { supportedSubGroupSizesData.begin(),
-                 supportedSubGroupSizesData.begin() + supportedSubGroupSizesSize };
+        return { supportedSubGroupSizesData.data(),
+                 supportedSubGroupSizesData.data() + supportedSubGroupSizesSize };
     }
 #if GMX_GPU_CUDA
     //! CUDA device properties.

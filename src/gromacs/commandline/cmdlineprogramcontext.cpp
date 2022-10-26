@@ -121,13 +121,14 @@ private:
  * If a binary with the given name cannot be located, \p invokedName is
  * returned.
  */
-std::filesystem::path findFullBinaryPath(const std::string& invokedName, const IExecutableEnvironment& env)
+std::filesystem::path findFullBinaryPath(const std::filesystem::path&  invokedName,
+                                         const IExecutableEnvironment& env)
 {
-    std::filesystem::path searchName = invokedName;
+    std::filesystem::path searchName{ invokedName };
     // On Windows & Cygwin we need to add the .exe extension,
     // or we wont be able to detect that the file exists.
 #if GMX_NATIVE_WINDOWS || GMX_CYGWIN
-    if (!endsWith(searchName, ".exe"))
+    if (!searchName.has_extension() || searchName.extension() != ".exe")
     {
         searchName.replace_extension(".exe");
     }
@@ -310,7 +311,7 @@ CommandLineProgramContext::Impl::Impl() : programName_("GROMACS"), bSourceLayout
 CommandLineProgramContext::Impl::Impl(int argc, const char* const argv[], ExecutableEnvironmentPointer env) :
     executableEnv_(std::move(env)), invokedName_(argc != 0 ? argv[0] : ""), bSourceLayout_(false)
 {
-    programName_ = invokedName_.filename();
+    programName_ = invokedName_.filename().u8string();
     programName_ = stripSuffixIfPresent(programName_, ".exe");
 
     commandLine_ = quoteIfNecessary(programName_.c_str());
