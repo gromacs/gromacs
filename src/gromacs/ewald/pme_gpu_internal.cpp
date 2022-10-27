@@ -120,7 +120,12 @@ static PmeGpuKernelParamsBase* pme_gpu_get_kernel_params_base_ptr(const PmeGpu* 
  * the numbers of atoms used for determining the size of the memory
  * allocation must be divisible by this.
  */
+#if !GMX_GPU_SYCL
 constexpr int c_pmeAtomDataBlockSize = 64;
+#else
+// Use more padding to support 64-wide warps and ThreadsPerAtom::Order
+constexpr int c_pmeAtomDataBlockSize = 128;
+#endif
 
 int pme_gpu_get_atom_data_block_size()
 {

@@ -16,6 +16,20 @@ in the :ref:`release-notes`.
 Fixes where mdrun could behave incorrectly
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Incorrect foreign energy differences for 1-4 interactions on a GPU
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+When running free-energy calculations using a GPU without domain decomposition,
+the foreign energy differences for 1-4 interactions would be incorrect
+when the atoms involved had only charges perturbed and not the atom types.
+This issue did not affect free-energy calculations using ``couple-moltype``.
+This issue did not affect dV/dlambda. If you have used BAR or AWH for free-energy
+calculations with atoms with charge manually perturbed in the topoogy and
+non-perturbed atom type, we suggest to rerun those with the corrected code
+to check if your results were affected by this issue.
+
+:issue:`4616`
+
 The deform option caused parallel mdrun to exit
 """""""""""""""""""""""""""""""""""""""""""""""
 
@@ -26,6 +40,15 @@ when invoked with more than one MPI rank.
 
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
+
+Programs reading a tpr file of a large system would exit with random errors
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+The tpr file writing and reading code contained a bug that caused reading
+of systems with more than 100 million atoms to exit with random error
+messages.
+
+:issue:`4628`
 
 With flexible constraint grompp and mdrun exited with an assertion failure
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
@@ -55,3 +78,13 @@ Incorrect configure-time checks of flags passed to nvcc resulted in
 several performance-related flags never being used. Simulations using
 Nvidia GPUs were correct but may not have achieved best possible
 performance.
+
+
+Added compilation support for new CUDA architectures
+""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+The list of NVIDIA CUDA architectures for which code is directly
+generated for, with a default cmake configuration, and when support
+exists in the compiler in use, has been updated to include the latest
+Ada Lovelace and Hopper architectures.
+

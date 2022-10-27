@@ -448,10 +448,12 @@ static gmx_bool do_xdr(t_fileio*       fio,
                 const std::size_t maxChunk =
                         static_cast<std::size_t>(std::numeric_limits<int>::max()) + 1 - 4;
 
+                size_t offset = 0;
                 for (res = 1; res > 0 && nitem > 0;)
                 {
                     std::size_t thisChunk = std::min(maxChunk, nitem);
-                    res = xdr_opaque(fio->xdr, reinterpret_cast<char*>(item), thisChunk);
+                    res = xdr_opaque(fio->xdr, reinterpret_cast<char*>(item) + offset, thisChunk);
+                    offset += thisChunk;
                     nitem -= thisChunk;
                 }
             }

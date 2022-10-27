@@ -204,9 +204,12 @@ else()
     gmx_add_nvcc_flag_if_supported(GMX_CUDA_NVCC_GENCODE_FLAGS NVCC_HAS_GENCODE_COMPUTE_AND_SM_70 --generate-code=arch=compute_70,code=sm_70)
     gmx_add_nvcc_flag_if_supported(GMX_CUDA_NVCC_GENCODE_FLAGS NVCC_HAS_GENCODE_COMPUTE_AND_SM_75 --generate-code=arch=compute_75,code=sm_75)
     gmx_add_nvcc_flag_if_supported(GMX_CUDA_NVCC_GENCODE_FLAGS NVCC_HAS_GENCODE_COMPUTE_AND_SM_80 --generate-code=arch=compute_80,code=sm_80)
-    # We use this to avoid a warning in our GitLab CI with a gcc 7 base image (see above for details)
-    if (CMAKE_CXX_COMPILER_ID MATCHES "GNU" AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS 8 AND NOT DEFINED ENV{GITLAB_CI})
+    # Don't attempt to add newest architectures with old GNU compiler, to avoid issues in CI
+    # related to being unable to test which flags are supported
+    if (NOT (CMAKE_CXX_COMPILER_ID MATCHES "GNU" AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS 8))
         gmx_add_nvcc_flag_if_supported(GMX_CUDA_NVCC_GENCODE_FLAGS NVCC_HAS_GENCODE_COMPUTE_AND_SM_86 --generate-code=arch=compute_86,code=sm_86)
+        gmx_add_nvcc_flag_if_supported(GMX_CUDA_NVCC_GENCODE_FLAGS NVCC_HAS_GENCODE_COMPUTE_AND_SM_89 --generate-code=arch=compute_89,code=sm_89)
+        gmx_add_nvcc_flag_if_supported(GMX_CUDA_NVCC_GENCODE_FLAGS NVCC_HAS_GENCODE_COMPUTE_AND_SM_90 --generate-code=arch=compute_90,code=sm_90)
     endif()
     # Requesting sm or compute 35, 37, or 50 triggers deprecation messages with
     # nvcc 11.0, which we need to suppress for use in CI

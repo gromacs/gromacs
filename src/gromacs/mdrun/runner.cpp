@@ -1464,7 +1464,7 @@ int Mdrunner::mdrunner()
         }
     }
 
-    // Produce the task assignment for this rank - done after DD is constructed
+    // Produce the task assignment for all ranks on this node - done after DD is constructed
     GpuTaskAssignments gpuTaskAssignments = GpuTaskAssignmentsBuilder::build(
             availableDevices,
             userGpuTaskAssignment,
@@ -1482,7 +1482,8 @@ int Mdrunner::mdrunner()
             // algorithm is active, but currently does not.
             usingPme(inputrec->coulombtype) && thisRankHasDuty(cr, DUTY_PME));
 
-    // Get the device handles for the modules, nullptr when no task is assigned.
+    // Get the device handle for the modules on this rank, nullptr
+    // when no task is assigned.
     int                deviceId   = -1;
     DeviceInformation* deviceInfo = gpuTaskAssignments.initDevice(&deviceId);
 

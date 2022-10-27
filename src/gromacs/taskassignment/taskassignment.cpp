@@ -84,13 +84,16 @@ namespace gmx
 namespace
 {
 
-/*! \brief Build data structure of types of GPU tasks on a rank,
- * together with the mapped GPU device IDs, for all GPU tasks on all
- * the ranks of this node.
+/*! \brief Build the GPU task assignment for the ranks of this node.
  *
  * \param[in]   gpuTasksOnRanksOfThisNode  For each rank on this node, the set of tasks
  *                                         that are eligible to run on GPUs.
- * \param[in]   gpuIds                     The user-supplied GPU IDs.
+ * \param[in]   gpuIds                     The GPU IDs for the tasks on this node, supplied
+ *                                         either by the user or the automatic assignment.
+ * \return      A vector with elements for each rank on this node that
+ *              describes the GPU tasks and the assigned device ID.
+ *
+ * \throws InvalidInputError  when the user GPU assignment requests multiple devices on a rank
  */
 std::vector<GpuTaskAssignment> buildTaskAssignment(const GpuTasksOnRanks& gpuTasksOnRanksOfThisNode,
                                                    ArrayRef<const int>    gpuIds)
@@ -106,16 +109,31 @@ std::vector<GpuTaskAssignment> buildTaskAssignment(const GpuTasksOnRanks& gpuTas
     auto gpuTaskAssignmentOnRank = gpuTaskAssignmentOnRanksOfThisNode.begin();
     for (const auto& gpuTasksOnRank : gpuTasksOnRanksOfThisNode)
     {
+        if (gpuTasksOnRank.empty())
+        {
+            continue;
+        }
         gpuTaskAssignmentOnRank->reserve(gpuTasksOnRank.size());
+        // Keep a copy of the first GPU ID for this rank so we can
+        // check that it is the only GPU ID used on this rank.
+        const int gpuIdOnRank = *currentGpuId;
         for (const auto& gpuTaskType : gpuTasksOnRank)
         {
             GMX_RELEASE_ASSERT(currentGpuId != gpuIds.end(), "Indexing out of range for GPU tasks");
-            gpuTaskAssignmentOnRank->push_back({ gpuTaskType, *currentGpuId });
+            gpuTaskAssignmentOnRank->push_back({ gpuTaskType, gpuIdOnRank });
+            if (*currentGpuId != gpuIdOnRank)
+            {
+                const char* message =
+                        "The GPU task assignment requested mdrun to use more than one GPU device "
+                        "on a rank, which is not supported. Request only one GPU device per rank.";
+                GMX_THROW(InvalidInputError(message));
+            }
             ++currentGpuId;
         }
         GMX_RELEASE_ASSERT(gpuTaskAssignmentOnRank->size() == gpuTasksOnRank.size(),
                            "Mismatch in number of GPU tasks on a rank with the number of elements "
                            "in the resulting task assignment");
+
         ++gpuTaskAssignmentOnRank;
     }
 
@@ -445,7 +463,9 @@ DeviceInformation* GpuTaskAssignments::initDevice(int* deviceId) const
     DeviceInformation*       deviceInfo        = nullptr;
     const GpuTaskAssignment& gpuTaskAssignment = assignmentForAllRanksOnThisNode_[indexOfThisRank_];
 
-    // This works because only one task of each type per rank is currently permitted.
+    // This works because only one task of each type per rank is
+    // currently permitted and if there are multiple tasks, they must
+    // use the same device.
     auto gpuTaskMapping =
             std::find_if(gpuTaskAssignment.begin(), gpuTaskAssignment.end(), hasPmeOrNonbondedTask);
 

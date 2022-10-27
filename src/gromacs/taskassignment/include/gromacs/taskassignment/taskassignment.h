@@ -179,8 +179,8 @@ public:
  * \brief Contains the GPU task assignment for all ranks on this
  * physical node.
  *
- * This can be used to configure the modules that might run tasks on
- * GPUs.
+ * This can be used to configure the modules on this rank that might
+ * run tasks on GPUs.
  *
  * This assignment is made by a GpuTaskAssignmentsBuilder object. */
 class GpuTaskAssignments
@@ -242,7 +242,7 @@ public:
      *                                           that the user permitted us to use.
      * */
     void logPerformanceHints(const MDLogger& mdlog, size_t numAvailableDevicesOnThisNode);
-    /*! \brief Return handle to the initialized GPU to use in the this rank.
+    /*! \brief Return handle to the initialized GPU to use in this rank.
      *
      * \param[out] deviceId Index of the assigned device.
      *
