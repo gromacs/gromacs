@@ -62,13 +62,19 @@ running SYCL build of |Gromacs| on Intel GPUs.
 :issue:`4219`
 :issue:`4354`
 
-Unable to build with CUDA 11.6 and gcc-11
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-A bug in the nvcc toolchain version 11.6.1 makes it impossible
-to build recent |Gromacs| with gcc-11. As these two are the default
-versions in Ubuntu 22.04 users are recommended to either install and use
-an older version of gcc (version 9.x) has been reported to work, or
-manually update the nvcc toolchain to version 11.6.2.
+Unable to build with CUDA 11.5-11.6 and GCC 11 on Ubuntu 22.04
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+A bug in the nvcc toolchain, versions 11.5.0-11.6.1, makes it impossible
+to build recent |Gromacs| with GCC 11.2 shipped with Ubuntu 22.04. 
+We recommend the users to either use an different version of GCC 
+(at the time of writing 9.x or 10.x have been reported to work), or manually update the nvcc 
+toolchain to version 11.6.2 or newer.
+
+Some non-Ubuntu installations of GCC 11.2 library have been observed to work fine.
+
+When an incompatible combination is used, an error will be raised
+from CMake or later during build.
 
 :issue:`4574`
 
