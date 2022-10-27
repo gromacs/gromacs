@@ -240,12 +240,13 @@ def scoped_resources(
     Get a Python context manager for a new resource assignment that is released
     on exiting the `with` block.
 
-    For resources that include an MPI communicator, the new communicator is a
-    sub-communicator of the communicator in *allocation*, if provided,
-    *if requirements are specified*. (Note: for initial implementation without
-    resource locking, an allocation without a requirements specification is
-    simply borrowed for the context; no new communicator is split or duped and
-    freed.)
+    If *requirements* are specified, and *allocation* includes an MPI
+    communicator, the resources yielded will contain a sub-communicator of
+    *allocation.communicator()*.
+
+    (Note: for initial implementation without resource locking, an *allocation*
+    without a *requirements* specification is simply borrowed for the context;
+    no new communicator is split or duped and freed.)
 
     Args:
         allocation: available resources, or *None* to determine automatically.
@@ -380,21 +381,17 @@ def assign_ensemble(
 
     base_communicator = allocation.communicator()
     # If requested size is 1, we should not need to require mpi4py.
+    # However, it is not safe to proceed with tMPI if multiple processes are
+    # active and cannot be detected. This is also an issue without gmxapi,
+    # though, and we consider it a user error.
+    # See also https://gitlab.com/gromacs/gromacs/-/issues/4637
     #
-    # It is not safe to proceed with tMPI if multiple processes are
-    # active and cannot be detected, but this is an issue without gmxapi,
-    # as well, and we consider it a user error.
+    # With resolution of #4423, we require mpi4py for gmxapi.
     #
-    # For MPI-GROMACS and a requested size of 1, but no mpi4py, it is safe
-    # to perform exactly one simulation, after which libgromacs will call
-    # MPI_Finalize.
-    #
-    # With resolution of #4423, we will require mpi4py for MPI-GROMACS.
-    #
-    # As part of resolution of #4422, we will remove this requirement and
-    # rely on internal (C++ level) MPI management to detect the MPI context
-    # and call Init and Finalize the correct number of times.
-    # TODO(#4423): Check for MPI bindings.
+    # We could remove this requirement and rely instead on internal (C++ level)
+    # MPI management to detect the MPI context and call Init and Finalize the
+    # correct number of times, but the consensus among reviewers was that this
+    # would be an unnecessary development burden with little benefit.
     if required_comm_size > 1:
         # Ensembles require mpi4py and a valid base communicator.
         if not hasattr(base_communicator, "Get_size"):

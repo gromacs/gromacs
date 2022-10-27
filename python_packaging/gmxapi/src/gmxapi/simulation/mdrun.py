@@ -219,11 +219,8 @@ class LegacyImplementationSubscription(object):
     def __init__(self, resource_manager: _op.ResourceManager):
         from .context import Context as LegacyContext
         import gmxapi._gmxapi as _gmxapi
+        from mpi4py.MPI import Comm as mpi4py_Comm
 
-        try:
-            from mpi4py.MPI import Comm as mpi4py_Comm
-        except ImportError:
-            mpi4py_Comm = None
         self._gmxapi = _gmxapi
 
         assert isinstance(resource_manager, _op.ResourceManager)
@@ -242,10 +239,6 @@ class LegacyImplementationSubscription(object):
 
         # Determine ensemble width
         ensemble_width = resource_manager.ensemble_width
-        if ensemble_width > 1 and mpi4py_Comm is None:
-            raise exceptions.FeatureNotAvailableError(
-                "Ensemble workflows require the mpi4py Python package."
-            )
 
         # Choose working directories
         # TODO: operation working directory naming scheme should be centrally well-defined.
@@ -272,19 +265,9 @@ class LegacyImplementationSubscription(object):
         # at run time.
         base_context = gmxapi.runtime.BaseContext.instance()
         base_comm = base_context.communicator()
-        if base_comm is not None:
-            base_rank = base_comm.Get_rank()
-        else:
-            # We assume that there will at least be a comm of size 1 if mpi4py was available.
-            assert mpi4py_Comm is None
-            # TODO(#4422): Use updated features API.
-            # if gmxapi.utility.config()['gmx_mpi_type'] == 'library':
-            #     warnings.warn(
-            #         'MPI-enabled GROMACS may behave strangely if gmxapi is used without mpi4py.'
-            #     )
-            #     # TODO: Consider falling back to non-mpi4py based MPIContextManager through gmxapi and
-            #     #    bindings.
-            base_rank = 0
+        assert isinstance(base_comm, mpi4py_Comm)
+        base_rank = base_comm.Get_rank()
+
         # Get resources for the entire ensemble of tasks (the session).
         requirements = gmxapi.runtime.ResourceRequirements(comm_size=ensemble_width)
         with scoped_resources(
@@ -292,24 +275,11 @@ class LegacyImplementationSubscription(object):
         ) as session_resources:
             session_comm: mpi4py_Comm = session_resources.communicator()
             if base_rank < ensemble_width:
-                if session_comm is not None:
-                    assert hasattr(session_comm, "Get_size")
-                    assert hasattr(session_comm, "Get_rank")
-                    # Note that in the current implementation, we assign one rank to each ensemble member.
-                    assert (
-                        typing.cast("mpi4py.MPI.Comm", session_comm).Get_size()
-                        == ensemble_width
-                    )
-                    ensemble_rank = typing.cast(
-                        "mpi4py.MPI.Comm", session_comm
-                    ).Get_rank()
-                else:
-                    # We should have already checked, but ensemble simulations
-                    # or MPI-enabled GROMACS simulators require `mpi4py` and a
-                    # valid MPI communicator. This may be relaxed with a full
-                    # solution to #4422.
-                    assert base_rank == 0
-                    ensemble_rank = 0
+                assert hasattr(session_comm, "Get_size")
+                assert hasattr(session_comm, "Get_rank")
+                # Note that in the current implementation, we assign one rank to each ensemble member.
+                assert session_comm.Get_size() == ensemble_width
+                ensemble_rank = session_comm.Get_rank()
             else:
                 # Extra ranks have nothing to do, but they may have a dummy communicator.
                 # Explicitly set to `None` to skip those members of the base_comm.
