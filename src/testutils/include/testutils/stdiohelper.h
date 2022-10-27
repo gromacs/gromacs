@@ -66,6 +66,8 @@ class StdioTestHelper
 public:
     //! Creates a helper using the given file manager.
     explicit StdioTestHelper(TestFileManager* fileManager) : fileManager_(*fileManager) {}
+    //! Destructor
+    ~StdioTestHelper();
 
     /*! \brief Accepts a string as input, writes it to a temporary
      * file and then reopens stdin to read the contents of that
@@ -77,6 +79,7 @@ public:
 
 private:
     TestFileManager& fileManager_;
+    bool             redirected = false;
 
     GMX_DISALLOW_COPY_AND_ASSIGN(StdioTestHelper);
 };

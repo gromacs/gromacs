@@ -1,9 +1,9 @@
 <?xml version="1.0"?>
 <?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
 <ReferenceData>
-  <PathToTest Name="windowsdir\traj.tng">
+  <PathToTest Name="windowsdir/traj.tng">
     <Bool Name="extensionMatchesPdb">false</Bool>
-    <String Name="stripExtension">windowsdir\traj</String>
-    <String Name="concatenateBeforeExtension">windowsdir\traj_34.tng</String>
+    <String Name="stripExtension">windowsdir/traj</String>
+    <String Name="concatenateBeforeExtension">windowsdir/traj_34.tng</String>
   </PathToTest>
 </ReferenceData>

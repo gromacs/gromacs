@@ -1114,9 +1114,9 @@ static void dump_grid(FILE* fp, ivec ngrid, const std::vector<std::vector<std::v
             {
                 for (x = 0; x < ngrid[XX]; x++)
                 {
-                    fprintf(fp, "%3ld", grid[x][y][z].d[gr].atoms.size());
+                    fprintf(fp, "%3zd", grid[x][y][z].d[gr].atoms.size());
                     sum[gr] += grid[z][y][x].d[gr].atoms.size();
-                    fprintf(fp, "%3ld", grid[x][y][z].a[gr].atoms.size());
+                    fprintf(fp, "%3zd", grid[x][y][z].a[gr].atoms.size());
                     sum[gr] += grid[z][y][x].a[gr].atoms.size();
                 }
                 fprintf(fp, " | ");
@@ -1124,9 +1124,9 @@ static void dump_grid(FILE* fp, ivec ngrid, const std::vector<std::vector<std::v
                 {
                     for (x = 0; x < ngrid[XX]; x++)
                     {
-                        fprintf(fp, "%3ld", grid[z + 1][y][x].d[gr].atoms.size());
+                        fprintf(fp, "%3zd", grid[z + 1][y][x].d[gr].atoms.size());
                         sum[gr] += grid[z + 1][y][x].d[gr].atoms.size();
-                        fprintf(fp, "%3ld", grid[z + 1][y][x].a[gr].atoms.size());
+                        fprintf(fp, "%3zd", grid[z + 1][y][x].a[gr].atoms.size());
                         sum[gr] += grid[z + 1][y][x].a[gr].atoms.size();
                     }
                 }
@@ -1401,7 +1401,7 @@ static void merge_hb(HydrogenBondData* hb, gmx_bool bTwo, gmx_bool bContact)
     snew(htmp, ntmp);
     for (i = 0; (i < gmx::ssize(hb->d.don)); i++)
     {
-        fprintf(stderr, "\r%d/%ld", i + 1, hb->d.don.size());
+        fprintf(stderr, "\r%d/%zd", i + 1, hb->d.don.size());
         fflush(stderr);
         id = hb->d.don[i];
         ii = hb->a.aptr[id];
@@ -2702,7 +2702,7 @@ int gmx_hbond(int argc, char* argv[])
         }
     }
     sfree(datable);
-    printf("Found %ld donors and %ld acceptors\n", hb.d.don.size(), hb.a.acc.size());
+    printf("Found %zd donors and %zd acceptors\n", hb.d.don.size(), hb.a.acc.size());
 
     donor_properties = open_donor_properties_file(opt2fn_null("-don", NFILE, fnm), &hb, oenv);
 
