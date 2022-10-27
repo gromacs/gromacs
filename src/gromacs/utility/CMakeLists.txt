@@ -60,6 +60,7 @@ else ()
         utility INTERFACE
         $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/external/thread_mpi/include>
     )
+    target_compile_definitions(utility INTERFACE TMPI_USE_VISIBILITY)
 endif ()
 
 # TODO(#3288): when utility is an OBJECT target, explicitly link source dependencies.

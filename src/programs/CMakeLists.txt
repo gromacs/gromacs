@@ -61,6 +61,7 @@ else()
     target_link_libraries(gmx_objlib PRIVATE utility commandline)
     target_include_directories(gmx_objlib SYSTEM PRIVATE ${PROJECT_SOURCE_DIR}/src/external)
     target_include_directories(gmx_objlib SYSTEM BEFORE PRIVATE ${PROJECT_SOURCE_DIR}/src/external/thread_mpi/include)
+    target_compile_definitions(gmx_objlib PRIVATE TMPI_USE_VISIBILITY)
     add_executable(gmx
         $<TARGET_OBJECTS:gmx_objlib>
         $<TARGET_OBJECTS:mdrun_objlib>)

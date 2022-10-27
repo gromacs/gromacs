@@ -46,6 +46,7 @@
 
 #include <filesystem>
 
+#include "gromacs/libgromacs_export.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/stringutil.h"
 
@@ -61,7 +62,7 @@
    }
    \endcode
  */
-extern FILE* debug; //NOLINT(cppcoreguidelines-avoid-non-const-global-variables,-warnings-as-errors)
+LIBGROMACS_EXPORT extern FILE* debug; //NOLINT(cppcoreguidelines-avoid-non-const-global-variables,-warnings-as-errors)
 /** Whether extra debugging is enabled. */
 extern gmx_bool gmx_debug_at; //NOLINT(cppcoreguidelines-avoid-non-const-global-variables,-warnings-as-errors)
 

@@ -223,6 +223,7 @@ foreach(object_library ${libgromacs_object_library_dependencies})
         set_target_properties(${object_library} PROPERTIES POSITION_INDEPENDENT_CODE true)
     endif()
     target_include_directories(${object_library} SYSTEM BEFORE PRIVATE ${PROJECT_SOURCE_DIR}/src/external/thread_mpi/include)
+    target_compile_definitions(${object_library} PRIVATE TMPI_USE_VISIBILITY)
     target_link_libraries(${object_library} PRIVATE common)
 
     # Add the sources from the object libraries to the main library.

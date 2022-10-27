@@ -52,6 +52,7 @@ set_target_properties(gmxapi PROPERTIES POSITION_INDEPENDENT_CODE ON)
 gmx_target_compile_options(gmxapi)
 target_compile_definitions(gmxapi PRIVATE HAVE_CONFIG_H)
 target_include_directories(gmxapi SYSTEM BEFORE PRIVATE ${PROJECT_SOURCE_DIR}/src/external/thread_mpi/include)
+target_compile_definitions(gmxapi PRIVATE TMPI_USE_VISIBILITY)
 # Should be possible to change this when resolving #3290
 target_include_directories(gmxapi SYSTEM PRIVATE ${PROJECT_SOURCE_DIR}/src/external)
 

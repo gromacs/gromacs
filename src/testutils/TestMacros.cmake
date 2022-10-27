@@ -68,6 +68,7 @@ function (gmx_add_unit_test_library NAME)
         gmx_target_compile_options(${NAME})
         target_compile_definitions(${NAME} PRIVATE HAVE_CONFIG_H)
         target_include_directories(${NAME} SYSTEM BEFORE PRIVATE ${PROJECT_SOURCE_DIR}/src/external/thread_mpi/include)
+        target_compile_definitions(${NAME} PRIVATE TMPI_USE_VISIBILITY)
         target_link_libraries(${NAME} PRIVATE testutils gmock)
         if (GMX_BUILD_FOR_COVERAGE)
             target_link_libraries(${NAME} PRIVATE gcov)
@@ -199,6 +200,7 @@ function (gmx_add_gtest_executable EXENAME)
         gmx_target_compile_options(${EXENAME})
         target_compile_definitions(${EXENAME} PRIVATE HAVE_CONFIG_H ${EXTRA_COMPILE_DEFINITIONS})
         target_include_directories(${EXENAME} SYSTEM BEFORE PRIVATE ${PROJECT_SOURCE_DIR}/src/external/thread_mpi/include)
+        target_compile_definitions(${EXENAME} PRIVATE TMPI_USE_VISIBILITY)
         # Permit GROMACS code to include externally developed headers,
         # such as the functionality from the nonstd project that we
         # use for gmx::compat::optional. These are included as system
