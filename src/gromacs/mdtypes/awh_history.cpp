@@ -79,6 +79,7 @@ static void doCheckpoint(CheckpointData<operation> checkpointData, AwhPointState
     checkpointData.scalar("log_pmfsum", &awhPointStateHistory->log_pmfsum);
     checkpointData.scalar("visits_iteration", &awhPointStateHistory->visits_iteration);
     checkpointData.scalar("visits_tot", &awhPointStateHistory->visits_tot);
+    checkpointData.scalar("localWeightSum", &awhPointStateHistory->localWeightSum);
 }
 
 template<CheckpointDataOperation operation>

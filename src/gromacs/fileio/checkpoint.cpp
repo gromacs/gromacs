@@ -2078,7 +2078,12 @@ static int do_cpt_correlation_grid(XDR*                         xd,
     return ret;
 }
 
-static int do_cpt_awh_bias(XDR* xd, gmx_bool bRead, int fflags, gmx::AwhBiasHistory* biasHistory, FILE* list)
+static int do_cpt_awh_bias(XDR*                    xd,
+                           gmx_bool                bRead,
+                           int                     fflags,
+                           gmx::AwhBiasHistory*    biasHistory,
+                           FILE*                   list,
+                           const CheckPointVersion fileVersion)
 {
     int ret = 0;
 
@@ -2127,6 +2132,14 @@ static int do_cpt_awh_bias(XDR* xd, gmx_bool bRead, int fflags, gmx::AwhBiasHist
                         do_cpt_double_err(xd, enumValueToString(*i), &psh.log_pmfsum, list);
                         do_cpt_double_err(xd, enumValueToString(*i), &psh.visits_iteration, list);
                         do_cpt_double_err(xd, enumValueToString(*i), &psh.visits_tot, list);
+                        if (fileVersion >= CheckPointVersion::AwhLocalWeightSum)
+                        {
+                            do_cpt_double_err(xd, enumValueToString(*i), &psh.localWeightSum, list);
+                        }
+                        else
+                        {
+                            psh.localWeightSum = 0;
+                        }
                     }
                     break;
                 case StateAwhEntry::UmbrellaGridPoint:
@@ -2155,7 +2168,7 @@ static int do_cpt_awh_bias(XDR* xd, gmx_bool bRead, int fflags, gmx::AwhBiasHist
     return ret;
 }
 
-static int do_cpt_awh(XDR* xd, gmx_bool bRead, int fflags, gmx::AwhHistory* awhHistory, FILE* list)
+static int do_cpt_awh(XDR* xd, gmx_bool bRead, int fflags, gmx::AwhHistory* awhHistory, FILE* list, const CheckPointVersion fileVersion)
 {
     int ret = 0;
 
@@ -2195,7 +2208,7 @@ static int do_cpt_awh(XDR* xd, gmx_bool bRead, int fflags, gmx::AwhHistory* awhH
         }
         for (auto& bias : awhHistory->bias)
         {
-            ret = do_cpt_awh_bias(xd, bRead, fflags, &bias, list);
+            ret = do_cpt_awh_bias(xd, bRead, fflags, &bias, list, fileVersion);
             if (ret)
             {
                 return ret;
@@ -2429,7 +2442,8 @@ void write_checkpoint_data(t_fileio*                         fp,
         || (do_cpt_EDstate(
                     gmx_fio_getxdr(fp), FALSE, headerContents.nED, observablesHistory->edsamHistory.get(), nullptr)
             < 0)
-        || (do_cpt_awh(gmx_fio_getxdr(fp), FALSE, headerContents.flags_awhh, state->awhHistory.get(), nullptr) < 0)
+        || (do_cpt_awh(gmx_fio_getxdr(fp), FALSE, headerContents.flags_awhh, state->awhHistory.get(), nullptr, CheckPointVersion::CurrentVersion)
+            < 0)
         || (do_cpt_swapstate(gmx_fio_getxdr(fp),
                              FALSE,
                              headerContents.eSwapCoords,
@@ -2814,7 +2828,12 @@ static void read_checkpoint(const std::filesystem::path&   fn,
     {
         state->awhHistory = std::make_shared<gmx::AwhHistory>();
     }
-    ret = do_cpt_awh(gmx_fio_getxdr(fp), TRUE, headerContents->flags_awhh, state->awhHistory.get(), nullptr);
+    ret = do_cpt_awh(gmx_fio_getxdr(fp),
+                     TRUE,
+                     headerContents->flags_awhh,
+                     state->awhHistory.get(),
+                     nullptr,
+                     headerContents->file_version);
     if (ret)
     {
         cp_error();
@@ -2992,7 +3011,12 @@ static CheckpointHeaderContents read_checkpoint_data(t_fileio*                  
         cp_error();
     }
 
-    ret = do_cpt_awh(gmx_fio_getxdr(fp), TRUE, headerContents.flags_awhh, state->awhHistory.get(), nullptr);
+    ret = do_cpt_awh(gmx_fio_getxdr(fp),
+                     TRUE,
+                     headerContents.flags_awhh,
+                     state->awhHistory.get(),
+                     nullptr,
+                     headerContents.file_version);
     if (ret)
     {
         cp_error();
@@ -3116,7 +3140,12 @@ void list_checkpoint(const std::filesystem::path& fn, FILE* out)
 
     if (ret == 0)
     {
-        ret = do_cpt_awh(gmx_fio_getxdr(fp), TRUE, headerContents.flags_awhh, state.awhHistory.get(), out);
+        ret = do_cpt_awh(gmx_fio_getxdr(fp),
+                         TRUE,
+                         headerContents.flags_awhh,
+                         state.awhHistory.get(),
+                         out,
+                         headerContents.file_version);
     }
 
     if (ret == 0)

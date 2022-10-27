@@ -74,6 +74,7 @@ struct AwhPointStateHistory
     double  log_pmfsum;          /**< Logarithm of the PMF histogram (for 1 replica) */
     double  visits_iteration;    /**< Visits to this bin this iteration (1 replica) */
     double  visits_tot;          /**< Accumulated visits to this bin */
+    double  localWeightSum;      /**< The weight contribution from the local walker */
 };
 
 //! The global AWH bias history state, contains most data of the corresponding struct in awh.h.

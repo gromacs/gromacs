@@ -784,10 +784,11 @@ void sumHistograms(gmx::ArrayRef<PointState> pointState,
 
         for (size_t localIndex = 0; localIndex < localUpdateList.size(); localIndex++)
         {
-            const PointState& ps = pointState[localUpdateList[localIndex]];
+            PointState& ps = pointState[localUpdateList[localIndex]];
 
             weightSum[localIndex]   = ps.weightSumIteration();
             coordVisits[localIndex] = ps.numVisitsIteration();
+            ps.addLocalWeightSum();
         }
 
         biasSharing->sumOverSharingSimulations(gmx::ArrayRef<double>(weightSum), biasIndex);
@@ -799,15 +800,25 @@ void sumHistograms(gmx::ArrayRef<PointState> pointState,
             PointState& ps = pointState[localUpdateList[localIndex]];
 
             ps.setPartialWeightAndCount(weightSum[localIndex], coordVisits[localIndex]);
+
+            /* Now add the partial counts and weights to the accumulating histograms.
+            Note: we still need to use the weights for the update so we wait
+            with resetting them until the end of the update. */
+            ps.addPartialWeightAndCount();
         }
     }
-
-    /* Now add the partial counts and weights to the accumulating histograms.
-       Note: we still need to use the weights for the update so we wait
-       with resetting them until the end of the update. */
-    for (int globalIndex : localUpdateList)
+    else
     {
-        pointState[globalIndex].addPartialWeightAndCount();
+        for (int globalIndex : localUpdateList)
+        {
+            PointState& ps = pointState[globalIndex];
+            ps.addLocalWeightSum();
+
+            /* Now add the partial counts and weights to the accumulating histograms.
+            Note: we still need to use the weights for the update so we wait
+            with resetting them until the end of the update. */
+            ps.addPartialWeightAndCount();
+        }
     }
 }
 

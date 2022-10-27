@@ -92,7 +92,8 @@ public:
         lastUpdateIndex_(0),
         logPmfSum_(0),
         numVisitsIteration_(0),
-        numVisitsTot_(0)
+        numVisitsTot_(0),
+        localWeightSum_(0)
     {
     }
 
@@ -113,6 +114,7 @@ public:
         logPmfSum_          = psh.log_pmfsum;
         numVisitsIteration_ = psh.visits_iteration;
         numVisitsTot_       = psh.visits_tot;
+        localWeightSum_     = psh.localWeightSum;
     }
 
     /*! \brief
@@ -132,6 +134,7 @@ public:
         psh->log_pmfsum          = logPmfSum_;
         psh->visits_iteration    = numVisitsIteration_;
         psh->visits_tot          = numVisitsTot_;
+        psh->localWeightSum      = localWeightSum_;
     }
 
     /*! \brief
@@ -195,6 +198,9 @@ public:
 
     /*! \brief Return the total number of visits */
     double numVisitsTot() const { return numVisitsTot_; }
+
+    /*! \brief Return the local contribution to the accumulated weight */
+    double localWeightSum() const { return localWeightSum_; }
 
     /*! \brief Set the constant target weight factor.
      *
@@ -454,6 +460,9 @@ public:
         numVisitsTot_ += numVisitsIteration_;
     }
 
+    /*! \brief Add the local weight contribution accumulated between updates. */
+    void addLocalWeightSum() { localWeightSum_ += weightSumIteration_; }
+
     /*! \brief Scale the target weight of the point.
      *
      * \param[in] scaleFactor  Factor to scale with.
@@ -466,12 +475,13 @@ private:
     double target_;               /**< Current target distribution, normalized to 1 */
     double targetConstantWeight_; /**< Constant target weight, from user data. */
     double weightSumIteration_; /**< Accumulated weight this iteration; note: only contains data for this Bias, even when sharing biases. */
-    double weightSumTot_;       /**< Accumulated weights, never reset */
+    double weightSumTot_;       /**< Accumulated weights, never reset or scaled. */
     double weightSumRef_; /**< The reference weight histogram determining the free energy updates */
     int64_t lastUpdateIndex_; /**< The last update that was performed at this point, in units of number of updates. */
     double  logPmfSum_;          /**< Logarithm of the PMF histogram */
     double  numVisitsIteration_; /**< Visits to this bin this iteration; note: only contains data for this Bias, even when sharing biases. */
     double  numVisitsTot_;       /**< Accumulated visits to this bin */
+    double  localWeightSum_; /**< The contributed weight sum from the local Bias. This is used for computing the average shared friction metric. Never reset or scaled. */
 };
 
 } // namespace gmx

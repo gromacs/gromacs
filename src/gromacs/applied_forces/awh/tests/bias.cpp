@@ -84,6 +84,9 @@ public:
     //! The awh Bias
     std::unique_ptr<Bias> bias_;
 
+    //! Return the awhParams
+    const AwhParams& awhParams() const { return params_->awhParams; }
+
     BiasTest() : coordinates_(std::begin(g_coords), std::end(g_coords))
     {
         /* We test all combinations of:
@@ -140,7 +143,7 @@ public:
     }
 };
 
-TEST_P(BiasTest, ForcesBiasPmf)
+TEST_P(BiasTest, ForcesBiasPmfWeightSum)
 {
     gmx::test::TestReferenceData    data;
     gmx::test::TestReferenceChecker checker(data.rootChecker());
@@ -186,11 +189,15 @@ TEST_P(BiasTest, ForcesBiasPmf)
         bias.doSkippedUpdatesForAllPoints();
     }
 
-    std::vector<double> pointBias, logPmfsum;
+    std::vector<double> pointBias, logPmfsum, pointLocalWeightSum, pointWeightSumTot,
+            pointWeightSumIteration;
     for (const auto& point : bias.state().points())
     {
         pointBias.push_back(point.bias());
         logPmfsum.push_back(point.logPmfSum());
+        pointLocalWeightSum.push_back(point.localWeightSum());
+        pointWeightSumTot.push_back(point.weightSumTot());
+        pointWeightSumIteration.push_back(point.weightSumIteration());
     }
 
     /* The umbrella force is computed from the coordinate deviation.
@@ -209,6 +216,12 @@ TEST_P(BiasTest, ForcesBiasPmf)
     checker.setDefaultTolerance(relativeToleranceAsUlp(1.0, ulpTol));
     checker.checkSequence(pointBias.begin(), pointBias.end(), "PointBias");
     checker.checkSequence(logPmfsum.begin(), logPmfsum.end(), "PointLogPmfsum");
+    checker.checkSequence(
+            pointLocalWeightSum.begin(), pointLocalWeightSum.end(), "pointLocalWeightSum");
+    checker.checkSequence(pointWeightSumTot.begin(), pointWeightSumTot.end(), "pointWeightSumTot");
+    checker.checkSequence(pointWeightSumIteration.begin(),
+                          pointWeightSumIteration.end(),
+                          "pointWeightSumIteration");
 }
 
 /* Scan initial/final phase, MC/convolved force and update skip (not) allowed

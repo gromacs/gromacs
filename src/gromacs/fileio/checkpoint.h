@@ -214,6 +214,8 @@ enum class CheckPointVersion : int
     MDModules,
     //! Added checkpointing for modular simulator.
     ModularSimulator,
+    //! Added local (per walker) weight contribution to each point in AWH.
+    AwhLocalWeightSum,
     //! The total number of checkpoint versions.
     Count,
     //! Current version

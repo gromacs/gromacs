@@ -5,7 +5,7 @@
     <Int Name="Length">3</Int>
     <String>stage:           final</String>
     <String>convolve forces: no</String>
-    <String>skip updates:    no</String>
+    <String>skip updates:    yes</String>
   </Sequence>
   <Sequence Name="Force">
     <Int Name="Length">21</Int>
@@ -126,5 +126,77 @@
     <Real>4.0544222744639056</Real>
     <Real>4.0544222744639056</Real>
     <Real>4.0544222744639056</Real>
+  </Sequence>
+  <Sequence Name="pointLocalWeightSum">
+    <Int Name="Length">21</Int>
+    <Real>0.0017557090249306928</Real>
+    <Real>0.044320415452824821</Real>
+    <Real>0.43007166198151336</Real>
+    <Real>1.6320618638353499</Real>
+    <Real>2.8800681621734237</Real>
+    <Real>3.0591679092550477</Real>
+    <Real>2.6384055199049334</Real>
+    <Real>2.5883273095931636</Real>
+    <Real>2.4653108570589581</Real>
+    <Real>1.6070092993858631</Real>
+    <Real>0.56851244810364465</Real>
+    <Real>0.20384185864534121</Real>
+    <Real>0.48993912600108436</Real>
+    <Real>0.78224888890578237</Real>
+    <Real>0.48387928985479189</Real>
+    <Real>0.11442475343013991</Real>
+    <Real>0.010299539989942232</Real>
+    <Real>0.00035089000054898959</Real>
+    <Real>4.4974027152344902e-06</Real>
+    <Real>0</Real>
+    <Real>0</Real>
+  </Sequence>
+  <Sequence Name="pointWeightSumTot">
+    <Int Name="Length">21</Int>
+    <Real>0.0017557090249306928</Real>
+    <Real>0.044320415452824821</Real>
+    <Real>0.43007166198151336</Real>
+    <Real>1.6320618638353499</Real>
+    <Real>2.8800681621734237</Real>
+    <Real>3.0591679092550477</Real>
+    <Real>2.6384055199049334</Real>
+    <Real>2.5883273095931636</Real>
+    <Real>2.4653108570589581</Real>
+    <Real>1.6070092993858631</Real>
+    <Real>0.56851244810364465</Real>
+    <Real>0.20384185864534121</Real>
+    <Real>0.48993912600108436</Real>
+    <Real>0.78224888890578237</Real>
+    <Real>0.48387928985479189</Real>
+    <Real>0.11442475343013991</Real>
+    <Real>0.010299539989942232</Real>
+    <Real>0.00035089000054898959</Real>
+    <Real>4.4974027152344902e-06</Real>
+    <Real>0</Real>
+    <Real>0</Real>
+  </Sequence>
+  <Sequence Name="pointWeightSumIteration">
+    <Int Name="Length">21</Int>
+    <Real>0</Real>
+    <Real>0</Real>
+    <Real>0</Real>
+    <Real>0</Real>
+    <Real>0</Real>
+    <Real>0</Real>
+    <Real>0</Real>
+    <Real>0</Real>
+    <Real>0</Real>
+    <Real>0</Real>
+    <Real>0</Real>
+    <Real>0</Real>
+    <Real>0</Real>
+    <Real>0</Real>
+    <Real>0</Real>
+    <Real>0</Real>
+    <Real>0</Real>
+    <Real>0</Real>
+    <Real>0</Real>
+    <Real>0</Real>
+    <Real>0</Real>
   </Sequence>
 </ReferenceData>
