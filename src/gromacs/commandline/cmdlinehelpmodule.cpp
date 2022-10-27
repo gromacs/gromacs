@@ -800,7 +800,7 @@ public:
         // TODO: Redirect these for unit tests.
         if (File::exists(path_, File::returnFalseOnError))
         {
-            const std::string originalContents_ = TextReader::readFileToString(path_);
+            const std::string originalContents_ = TextReader::readFileToString(path_.u8string());
             if (originalContents_ == newContents)
             {
                 return;

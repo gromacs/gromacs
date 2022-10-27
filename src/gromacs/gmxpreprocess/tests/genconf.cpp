@@ -59,7 +59,7 @@ public:
     GenconfTest()
     {
         std::string confFileName =
-                gmx::test::TestFileManager::getInputFilePath("spc-and-methanol.gro");
+                gmx::test::TestFileManager::getInputFilePath("spc-and-methanol.gro").u8string();
         commandLine().addOption("-f", confFileName);
         commandLine().addOption("-seed", "1993"); // make random operations reproducible
         setOutputFile("-o", "out.gro", ExactTextMatch());

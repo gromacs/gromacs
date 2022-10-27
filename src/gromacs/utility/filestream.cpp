@@ -102,11 +102,13 @@ public:
     FileStreamImpl(const std::filesystem::path& filename, const char* mode) :
         fp_(nullptr), bClose_(true)
     {
-        fp_ = std::fopen(filename.c_str(), mode);
+        fp_ = std::fopen(filename.u8string().c_str(), mode);
         if (fp_ == nullptr)
         {
             GMX_THROW_WITH_ERRNO(
-                    FileIOError(formatString("Could not open file '%s'", filename.c_str())), "fopen", errno);
+                    FileIOError(formatString("Could not open file '%s'", filename.u8string().c_str())),
+                    "fopen",
+                    errno);
         }
     }
     ~FileStreamImpl()
@@ -175,11 +177,13 @@ bool StandardInputStream::readLine(std::string* line)
 // static
 FilePtr TextInputFile::openRawHandle(const std::filesystem::path& filename)
 {
-    FilePtr fp(fopen(filename.c_str(), "r"));
+    FilePtr fp(fopen(filename.u8string().c_str(), "r"));
     if (fp == nullptr)
     {
         GMX_THROW_WITH_ERRNO(
-                FileIOError(formatString("Could not open file '%s'", filename.c_str())), "fopen", errno);
+                FileIOError(formatString("Could not open file '%s'", filename.u8string().c_str())),
+                "fopen",
+                errno);
     }
     return fp;
 }

@@ -136,7 +136,7 @@ void executeRerunTest(TestFileManager*            fileManager,
     auto simulator2EdrFileName        = fileManager->getTemporaryFilePath("sim2.edr");
 
     // Run grompp
-    runner->tprFileName_ = fileManager->getTemporaryFilePath("sim.tpr");
+    runner->tprFileName_ = fileManager->getTemporaryFilePath("sim.tpr").u8string();
     runner->useTopGroAndNdxFromDatabase(simulationName);
     runner->useStringAsMdpFile(prepareMdpFileContents(mdpFieldValues));
     auto options = std::vector<SimulationOptionTuple>();
@@ -147,18 +147,20 @@ void executeRerunTest(TestFileManager*            fileManager,
     runGrompp(runner, options);
 
     // Do first mdrun
-    runner->fullPrecisionTrajectoryFileName_ = simulator1TrajectoryFileName;
-    runner->edrFileName_                     = simulator1EdrFileName;
+    runner->fullPrecisionTrajectoryFileName_ = simulator1TrajectoryFileName.u8string();
+    runner->edrFileName_                     = simulator1EdrFileName.u8string();
     runMdrun(runner);
 
     // Do second mdrun
-    runner->fullPrecisionTrajectoryFileName_ = simulator2TrajectoryFileName;
-    runner->edrFileName_                     = simulator2EdrFileName;
-    runMdrun(runner, { SimulationOptionTuple("-rerun", simulator1TrajectoryFileName) });
+    runner->fullPrecisionTrajectoryFileName_ = simulator2TrajectoryFileName.u8string();
+    runner->edrFileName_                     = simulator2EdrFileName.u8string();
+    runMdrun(runner, { SimulationOptionTuple("-rerun", simulator1TrajectoryFileName.u8string()) });
 
     // Compare simulation results
-    compareEnergies(simulator1EdrFileName, simulator2EdrFileName, energyTermsToCompare);
-    compareTrajectories(simulator1TrajectoryFileName, simulator2TrajectoryFileName, trajectoryComparison);
+    compareEnergies(simulator1EdrFileName.u8string(), simulator2EdrFileName.u8string(), energyTermsToCompare);
+    compareTrajectories(simulator1TrajectoryFileName.u8string(),
+                        simulator2TrajectoryFileName.u8string(),
+                        trajectoryComparison);
 }
 
 TEST_P(MdrunRerunTest, WithinTolerances)

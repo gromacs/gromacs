@@ -88,12 +88,12 @@ static void get_xlatoms(const std::filesystem::path& filename, FILE* fp, int* np
         {
             gmx_fatal(FARGS,
                       "Expected a residue name and two atom names in file '%s', not '%s'",
-                      filename.c_str(),
+                      filename.u8string().c_str(),
                       line);
         }
 
         srenew(xl, n + 1);
-        xl[n].filebase = gmx_strdup(filebase.c_str());
+        xl[n].filebase = gmx_strdup(filebase.u8string().c_str());
 
         /* Use wildcards... */
         if (strcmp(rbuf, "*") != 0)

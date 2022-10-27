@@ -151,7 +151,8 @@ choose_ff_impl(const char* ffsel, char* forcefield, int ff_maxlen, const gmx::MD
     ffs.reserve(ffdirs.size());
     for (int i = 0; i < nff; ++i)
     {
-        ffs.push_back(gmx::stripSuffixIfPresent(ffdirs[i].name, fflib_forcefield_dir_ext().c_str()));
+        ffs.push_back(gmx::stripSuffixIfPresent(ffdirs[i].name.u8string(),
+                                                fflib_forcefield_dir_ext().u8string().c_str()));
     }
 
     int sel;
@@ -274,7 +275,7 @@ choose_ff_impl(const char* ffsel, char* forcefield, int ff_maxlen, const gmx::MD
                 {
                     GMX_LOG(logger.info)
                             .asParagraph()
-                            .appendTextFormatted("From '%s':", ffdirs[i].dir.c_str());
+                            .appendTextFormatted("From '%s':", ffdirs[i].dir.u8string().c_str());
                 }
             }
             GMX_LOG(logger.info).asParagraph().appendTextFormatted("%2d: %s", i + 1, desc[i].c_str());
@@ -313,7 +314,7 @@ choose_ff_impl(const char* ffsel, char* forcefield, int ff_maxlen, const gmx::MD
                         "rename or move the force field directory present "
                         "in the current working directory.",
                         ffs[sel].c_str(),
-                        fflib_forcefield_dir_ext().c_str());
+                        fflib_forcefield_dir_ext().u8string().c_str());
                 GMX_THROW(gmx::NotImplementedError(message));
             }
         }
@@ -572,7 +573,7 @@ void print_top_comment(FILE* out, const std::filesystem::path& filename, const s
                 ";\tforce field must either be present in the current directory, or the location\n"
                 ";\tspecified in the GMXLIB path variable or with the 'include' mdp file "
                 "option.\n;\n\n",
-                ffdir_parent.c_str());
+                ffdir_parent.u8string().c_str());
     }
 }
 

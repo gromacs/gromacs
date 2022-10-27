@@ -292,7 +292,7 @@ int add_suffix_to_output_names(t_filenm* fnm, int nfile, const char* suffix)
                     temporary += filename.substr(partPosition + 9);
                     filename.swap(temporary);
                 }
-                filename = gmx::concatenateBeforeExtension(filename, suffix);
+                filename = gmx::concatenateBeforeExtension(filename, suffix).u8string();
             }
         }
     }

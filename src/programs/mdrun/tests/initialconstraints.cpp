@@ -101,7 +101,7 @@ TEST_P(InitialConstraintsTest, Works)
     runner_.useTopGroAndNdxFromDatabase(inputFile);
     EXPECT_EQ(0, runner_.callGrompp());
 
-    runner_.edrFileName_ = fileManager_.getTemporaryFilePath(inputFile + ".edr");
+    runner_.edrFileName_ = fileManager_.getTemporaryFilePath(inputFile + ".edr").u8string();
     ASSERT_EQ(0, runner_.callMdrun());
 
     auto energyReader =

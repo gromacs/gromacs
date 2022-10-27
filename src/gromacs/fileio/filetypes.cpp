@@ -276,7 +276,7 @@ int fn2ftp(const std::filesystem::path& fn)
     // We need an extra check if the path is ONLY the extension, or if there is no extension
     if (!fn.has_extension())
     {
-        if (!gmx::concatenateBeforeExtension("t", fn.filename()).has_extension())
+        if (!gmx::concatenateBeforeExtension("t", fn.filename().u8string()).has_extension())
         {
             return efNR;
         }

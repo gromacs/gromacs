@@ -62,7 +62,7 @@ std::vector<t_inpfile> read_inpfile(gmx::TextInputStream*        stream,
 
     if (debug)
     {
-        fprintf(debug, "Reading MDP file %s\n", fn.c_str());
+        fprintf(debug, "Reading MDP file %s\n", fn.u8string().c_str());
     }
 
     int             indexOfLineReadFromFile = 0;
@@ -205,7 +205,7 @@ void write_inpfile(gmx::TextOutputStream*       stream,
     gmx::TextWriter writer(stream);
     if (writeHeader == WriteMdpHeader::yes)
     {
-        gmx::niceHeader(&writer, fn.c_str(), ';');
+        gmx::niceHeader(&writer, fn.u8string().c_str(), ';');
 
         gmx::BinaryInformationSettings settings;
         settings.generatedByHeader(true);

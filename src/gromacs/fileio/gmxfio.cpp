@@ -490,11 +490,13 @@ static int gmx_fio_int_get_file_md5(t_fileio* fio, gmx_off_t offset, std::array<
         // md5sum check to prevent overwriting files is not vital.
         if (ferror(fio->fp))
         {
-            fprintf(stderr, "\nTrying to get md5sum: %s: %s\n", fio->fn.c_str(), strerror(errno));
+            fprintf(stderr, "\nTrying to get md5sum: %s: %s\n", fio->fn.u8string().c_str(), strerror(errno));
         }
         else if (!feof(fio->fp))
         {
-            fprintf(stderr, "\nTrying to get md5sum: Unknown reason for short read: %s\n", fio->fn.c_str());
+            fprintf(stderr,
+                    "\nTrying to get md5sum: Unknown reason for short read: %s\n",
+                    fio->fn.u8string().c_str());
         }
 
         gmx_fseek(fio->fp, 0, SEEK_END);
@@ -505,7 +507,7 @@ static int gmx_fio_int_get_file_md5(t_fileio* fio, gmx_off_t offset, std::array<
 
     if (debug)
     {
-        fprintf(debug, "chksum %s readlen %ld\n", fio->fn.c_str(), static_cast<long int>(readLength));
+        fprintf(debug, "chksum %s readlen %ld\n", fio->fn.u8string().c_str(), static_cast<long int>(readLength));
     }
 
     gmx_md5_init(&state);
@@ -538,7 +540,7 @@ static int gmx_fio_int_get_file_position(t_fileio* fio, gmx_off_t* offset)
     if (gmx_fio_int_flush(fio))
     {
         char buf[STRLEN];
-        sprintf(buf, "Cannot write file '%s'; maybe you are out of disk space?", fio->fn.c_str());
+        sprintf(buf, "Cannot write file '%s'; maybe you are out of disk space?", fio->fn.u8string().c_str());
         gmx_file(buf);
     }
 
@@ -720,7 +722,7 @@ int gmx_fio_seek(t_fileio* fio, gmx_off_t fpos)
     }
     else
     {
-        gmx_file(fio->fn);
+        gmx_file(fio->fn.u8string());
     }
     gmx_fio_unlock(fio);
     return rc;

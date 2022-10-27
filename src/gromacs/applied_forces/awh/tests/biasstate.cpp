@@ -103,7 +103,7 @@ public:
         biasState_ = std::make_unique<BiasState>(awhBiasParams, 1.0, dimParams, grid, nullptr);
 
         // Here we initialize the grid point state using the input file
-        std::string filename = gmx::test::TestFileManager::getInputFilePath(GetParam());
+        std::string filename = gmx::test::TestFileManager::getInputFilePath(GetParam()).u8string();
         biasState_->initGridPointState(
                 awhBiasParams, dimParams, grid, biasParams, filename, params_->awhParams.numBias());
     }

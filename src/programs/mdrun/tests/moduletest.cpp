@@ -100,14 +100,14 @@ GMX_TEST_OPTIONS(MdrunTestOptions, options)
 } // namespace
 
 SimulationRunner::SimulationRunner(TestFileManager* fileManager) :
-    fullPrecisionTrajectoryFileName_(fileManager->getTemporaryFilePath(".trr")),
-    groOutputFileName_(fileManager->getTemporaryFilePath(".gro")),
-    cptOutputFileName_(fileManager->getTemporaryFilePath(".cpt")),
-    mdpOutputFileName_(fileManager->getTemporaryFilePath("output.mdp")),
-    tprFileName_(fileManager->getTemporaryFilePath(".tpr")),
-    logFileName_(fileManager->getTemporaryFilePath(".log")),
-    edrFileName_(fileManager->getTemporaryFilePath(".edr")),
-    mtxFileName_(fileManager->getTemporaryFilePath(".mtx")),
+    fullPrecisionTrajectoryFileName_(fileManager->getTemporaryFilePath(".trr").u8string()),
+    groOutputFileName_(fileManager->getTemporaryFilePath(".gro").u8string()),
+    cptOutputFileName_(fileManager->getTemporaryFilePath(".cpt").u8string()),
+    mdpOutputFileName_(fileManager->getTemporaryFilePath("output.mdp").u8string()),
+    tprFileName_(fileManager->getTemporaryFilePath(".tpr").u8string()),
+    logFileName_(fileManager->getTemporaryFilePath(".log").u8string()),
+    edrFileName_(fileManager->getTemporaryFilePath(".edr").u8string()),
+    mtxFileName_(fileManager->getTemporaryFilePath(".mtx").u8string()),
 
     nsteps_(-2),
     maxwarn_(0),
@@ -159,37 +159,40 @@ void SimulationRunner::useStringAsNdxFile(const char* ndxString) const
 
 void SimulationRunner::useTopG96AndNdxFromDatabase(const std::string& name)
 {
-    topFileName_ = gmx::test::TestFileManager::getInputFilePath(name + ".top");
-    groFileName_ = gmx::test::TestFileManager::getInputFilePath(name + ".g96");
-    ndxFileName_ = gmx::test::TestFileManager::getInputFilePath(name + ".ndx");
+    topFileName_ = gmx::test::TestFileManager::getInputFilePath(name + ".top").u8string();
+    groFileName_ = gmx::test::TestFileManager::getInputFilePath(name + ".g96").u8string();
+    ndxFileName_ = gmx::test::TestFileManager::getInputFilePath(name + ".ndx").u8string();
 }
 
 void SimulationRunner::useTopGroAndNdxFromDatabase(const std::string& name)
 {
-    topFileName_ = gmx::test::TestFileManager::getInputFilePath(name + ".top");
-    groFileName_ = gmx::test::TestFileManager::getInputFilePath(name + ".gro");
-    ndxFileName_ = gmx::test::TestFileManager::getInputFilePath(name + ".ndx");
+    topFileName_ = gmx::test::TestFileManager::getInputFilePath(name + ".top").u8string();
+    groFileName_ = gmx::test::TestFileManager::getInputFilePath(name + ".gro").u8string();
+    ndxFileName_ = gmx::test::TestFileManager::getInputFilePath(name + ".ndx").u8string();
 }
 
 void SimulationRunner::useGroFromDatabase(const char* name)
 {
-    groFileName_ = gmx::test::TestFileManager::getInputFilePath((std::string(name) + ".gro").c_str());
+    groFileName_ =
+            gmx::test::TestFileManager::getInputFilePath((std::string(name) + ".gro").c_str()).u8string();
 }
 
 void SimulationRunner::useNdxFromDatabase(const std::string& name)
 {
-    ndxFileName_ = gmx::test::TestFileManager::getInputFilePath(name + ".ndx");
+    ndxFileName_ = gmx::test::TestFileManager::getInputFilePath(name + ".ndx").u8string();
 }
 
 void SimulationRunner::useTopGroAndMdpFromFepTestDatabase(const std::string& name)
 {
     GMX_RELEASE_ASSERT(mdpSource_ != SimulationRunnerMdpSource::String,
                        "Cannot mix .mdp file from database with options set via string.");
-    mdpSource_   = SimulationRunnerMdpSource::File;
-    topFileName_ = gmx::test::TestFileManager::getInputFilePath("freeenergy/" + name + "/topol.top");
-    groFileName_ = gmx::test::TestFileManager::getInputFilePath("freeenergy/" + name + "/conf.gro");
+    mdpSource_ = SimulationRunnerMdpSource::File;
+    topFileName_ =
+            gmx::test::TestFileManager::getInputFilePath("freeenergy/" + name + "/topol.top").u8string();
+    groFileName_ =
+            gmx::test::TestFileManager::getInputFilePath("freeenergy/" + name + "/conf.gro").u8string();
     mdpFileName_ =
-            gmx::test::TestFileManager::getInputFilePath("freeenergy/" + name + "/grompp.mdp");
+            gmx::test::TestFileManager::getInputFilePath("freeenergy/" + name + "/grompp.mdp").u8string();
 }
 
 void SimulationRunner::setMaxWarn(int maxwarn)
@@ -206,7 +209,7 @@ int SimulationRunner::callGromppOnThisRank(const CommandLine& callerRef)
     }
     else
     {
-        mdpInputFileName = fileManager_.getTemporaryFilePath("input.mdp");
+        mdpInputFileName = fileManager_.getTemporaryFilePath("input.mdp").u8string();
         gmx::TextWriter::writeFileFromString(mdpInputFileName, mdpInputContents_);
     }
 
@@ -321,7 +324,7 @@ int SimulationRunner::callMdrun(const CommandLine& callerRef)
     caller.addOption("-c", groOutputFileName_);
     caller.addOption("-cpo", cptOutputFileName_);
 
-    caller.addOption("-deffnm", fileManager_.getTemporaryFilePath("state"));
+    caller.addOption("-deffnm", fileManager_.getTemporaryFilePath("state").u8string());
 
     if (nsteps_ > -2)
     {

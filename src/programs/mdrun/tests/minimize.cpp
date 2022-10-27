@@ -134,7 +134,7 @@ TEST_P(EnergyMinimizationTest, WithinTolerances)
     }
 
     // do mdrun, preparing to check the energies later
-    runner_.edrFileName_ = fileManager_.getTemporaryFilePath("minimize.edr");
+    runner_.edrFileName_ = fileManager_.getTemporaryFilePath("minimize.edr").u8string();
     {
         CommandLine mdrunCaller;
         mdrunCaller.append("mdrun");

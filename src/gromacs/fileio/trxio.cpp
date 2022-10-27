@@ -892,7 +892,7 @@ bool read_next_frame(const gmx_output_env_t* oenv, t_trxstatus* status, t_trxfra
                 gmx_fatal(FARGS,
                           "DEATH HORROR in read_next_frame ftp=%s,status=%s",
                           ftp2ext(gmx_fio_getftp(status->fio)),
-                          gmx_fio_getname(status->fio).c_str());
+                          gmx_fio_getname(status->fio).u8string().c_str());
 #endif
         }
         status->tf = fr->time;
@@ -1071,7 +1071,7 @@ bool read_first_frame(const gmx_output_env_t*      oenv,
                       "non-GROMACS trajectory formats using the VMD plug-ins.\n"
                       "Please compile with plug-in support if you want to read non-GROMACS "
                       "trajectory formats.\n",
-                      fn.c_str());
+                      fn.u8string().c_str());
 #endif
     }
     (*status)->tf = fr->time;

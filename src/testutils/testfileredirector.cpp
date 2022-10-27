@@ -117,7 +117,7 @@ TextOutputStream& TestFileOutputRedirector::standardOutput()
 TextOutputStreamPointer TestFileOutputRedirector::openTextOutputFile(const std::filesystem::path& filename)
 {
     Impl::StringStreamPointer stream(new StringOutputStream);
-    impl_->fileList_.emplace_back(filename, stream);
+    impl_->fileList_.emplace_back(filename.u8string(), stream);
     return stream;
 }
 

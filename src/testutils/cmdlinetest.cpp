@@ -354,7 +354,7 @@ void CommandLineTestHelper::setInputFileContents(CommandLine*       args,
 {
     GMX_ASSERT(extension[0] != '.', "Extension should not contain a dot");
     std::string fullFilename =
-            impl_->fileManager_.getTemporaryFilePath(formatString("%d.%s", args->argc(), extension));
+            impl_->fileManager_.getTemporaryFilePath(formatString("%d.%s", args->argc(), extension)).u8string();
     TextWriter::writeFileFromString(fullFilename, contents);
     args->addOption(option, fullFilename);
 }
@@ -366,7 +366,7 @@ void CommandLineTestHelper::setInputFileContents(CommandLine*                   
 {
     GMX_ASSERT(extension[0] != '.', "Extension should not contain a dot");
     std::string fullFilename =
-            impl_->fileManager_.getTemporaryFilePath(formatString("%d.%s", args->argc(), extension));
+            impl_->fileManager_.getTemporaryFilePath(formatString("%d.%s", args->argc(), extension)).u8string();
     TextWriter                                  file(fullFilename);
     ArrayRef<const char* const>::const_iterator i;
     for (i = contents.begin(); i != contents.end(); ++i)
@@ -395,7 +395,7 @@ std::string CommandLineTestHelper::setOutputFile(CommandLine*                arg
     {
         suffix = formatString("%d.%s", args->argc(), filename);
     }
-    std::string fullFilename = impl_->fileManager_.getTemporaryFilePath(suffix);
+    std::string fullFilename = impl_->fileManager_.getTemporaryFilePath(suffix).u8string();
     args->addOption(option, fullFilename);
     impl_->outputFiles_.emplace_back(option, fullFilename, matcher.createFileMatcher());
     return fullFilename;
@@ -466,7 +466,7 @@ CommandLineTestBase::~CommandLineTestBase() {}
 
 void CommandLineTestBase::setInputFile(const char* option, const char* filename)
 {
-    impl_->cmdline_.addOption(option, TestFileManager::getInputFilePath(filename));
+    impl_->cmdline_.addOption(option, TestFileManager::getInputFilePath(filename).u8string());
 }
 
 void CommandLineTestBase::setInputFile(const char* option, const std::string& filename)
@@ -481,8 +481,8 @@ void CommandLineTestBase::setModifiableInputFile(const char* option, const std::
 
 void CommandLineTestBase::setModifiableInputFile(const char* option, const char* filename)
 {
-    std::string originalFileName   = gmx::test::TestFileManager::getInputFilePath(filename);
-    std::string modifiableFileName = fileManager().getTemporaryFilePath(filename);
+    std::string originalFileName = gmx::test::TestFileManager::getInputFilePath(filename).u8string();
+    std::string modifiableFileName = fileManager().getTemporaryFilePath(filename).u8string();
     gmx_file_copy(originalFileName.c_str(), modifiableFileName.c_str(), true);
     impl_->cmdline_.addOption(option, modifiableFileName);
 }
@@ -543,8 +543,8 @@ std::string CommandLineTestBase::setInputAndOutputFile(const char*              
                                                        const char*                      filename,
                                                        const ITextBlockMatcherSettings& matcher)
 {
-    std::string originalFileName   = gmx::test::TestFileManager::getInputFilePath(filename);
-    std::string modifiableFileName = fileManager().getTemporaryFilePath(filename);
+    std::string originalFileName = gmx::test::TestFileManager::getInputFilePath(filename).u8string();
+    std::string modifiableFileName = fileManager().getTemporaryFilePath(filename).u8string();
     gmx_file_copy(originalFileName.c_str(), modifiableFileName.c_str(), true);
     impl_->helper_.setOutputFile(&impl_->cmdline_, option, filename, matcher);
     return modifiableFileName;
@@ -554,8 +554,8 @@ std::string CommandLineTestBase::setInputAndOutputFile(const char*              
                                                        const char*                 filename,
                                                        const IFileMatcherSettings& matcher)
 {
-    std::string originalFileName   = gmx::test::TestFileManager::getInputFilePath(filename);
-    std::string modifiableFileName = fileManager().getTemporaryFilePath(filename);
+    std::string originalFileName = gmx::test::TestFileManager::getInputFilePath(filename).u8string();
+    std::string modifiableFileName = fileManager().getTemporaryFilePath(filename).u8string();
     gmx_file_copy(originalFileName.c_str(), modifiableFileName.c_str(), true);
     impl_->helper_.setOutputFile(&impl_->cmdline_, option, filename, matcher);
     return modifiableFileName;

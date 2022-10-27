@@ -86,7 +86,7 @@ public:
     TestFileManager fileManager_;
     // Make sure the file extension is one that gmx_fio_open will
     // recognize to open as binary.
-    std::string filename_ = fileManager_.getTemporaryFilePath("data.edr");
+    std::string filename_ = fileManager_.getTemporaryFilePath("data.edr").u8string();
     t_fileio*   file_     = nullptr;
 };
 

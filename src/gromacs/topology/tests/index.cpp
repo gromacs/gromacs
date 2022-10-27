@@ -126,7 +126,7 @@ IndexTest::IndexTest() : checker_(data_.rootChecker())
 {
     // When we have many test cases using this class, refactor to fill
     // a static topInfo only once, in SetUpTestSuite()
-    topInfo_.fillFromInputFile(manager()->getInputFilePath("lysozyme.gro"));
+    topInfo_.fillFromInputFile(manager()->getInputFilePath("lysozyme.gro").u8string());
 }
 
 TEST_F(IndexTest, AnalyseWorksDefaultGroups)
@@ -139,7 +139,7 @@ TEST_F(IndexTest, WriteIndexWorks)
 {
     auto        indexGroups = analyse(atoms(), false, false);
     std::string fileName    = "out.ndx";
-    std::string fullPath    = manager()->getTemporaryFilePath(fileName);
+    std::string fullPath    = manager()->getTemporaryFilePath(fileName).u8string();
     write_index(fullPath.c_str(), indexGroups, false, atoms()->nr);
     checkFileMatch(checker(), fileName, fullPath);
 }
@@ -148,7 +148,7 @@ TEST_F(IndexTest, WriteAndReadIndexWorks)
 {
     auto        indexGroups = analyse(atoms(), false, false);
     std::string fileName    = "out.ndx";
-    std::string fullPath    = manager()->getTemporaryFilePath(fileName);
+    std::string fullPath    = manager()->getTemporaryFilePath(fileName).u8string();
     write_index(fullPath.c_str(), indexGroups, false, atoms()->nr);
     auto newIndex = init_index(fullPath.c_str());
     compareBlocks(indexGroups, newIndex);

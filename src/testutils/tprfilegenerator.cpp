@@ -55,15 +55,15 @@ namespace test
 
 TprAndFileManager::TprAndFileManager(const std::string& name)
 {
-    const std::string mdpInputFileName = fileManager_.getTemporaryFilePath(name + ".mdp");
+    const std::string mdpInputFileName = fileManager_.getTemporaryFilePath(name + ".mdp").u8string();
     gmx::TextWriter::writeFileFromString(mdpInputFileName, "");
-    tprFileName_ = fileManager_.getTemporaryFilePath(name + ".tpr");
+    tprFileName_ = fileManager_.getTemporaryFilePath(name + ".tpr").u8string();
     {
         CommandLine caller;
         caller.append("grompp");
         caller.addOption("-f", mdpInputFileName);
-        caller.addOption("-p", TestFileManager::getInputFilePath(name + ".top"));
-        caller.addOption("-c", TestFileManager::getInputFilePath(name + ".pdb"));
+        caller.addOption("-p", TestFileManager::getInputFilePath(name + ".top").u8string());
+        caller.addOption("-c", TestFileManager::getInputFilePath(name + ".pdb").u8string());
         caller.addOption("-o", tprFileName_);
         EXPECT_EQ(0, gmx_grompp(caller.argc(), caller.argv()));
     }

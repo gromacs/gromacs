@@ -683,7 +683,7 @@ int gmx_covar(int argc, char* argv[])
     fprintf(out, "Program: %s\n", argv[0]);
     auto cwd = gmx_getcwd();
 
-    fprintf(out, "Working directory: %s\n\n", cwd.c_str());
+    fprintf(out, "Working directory: %s\n\n", cwd.u8string().c_str());
 
     fprintf(out,
             "Read %d frames from %s (time %g to %g %s)\n",

@@ -131,7 +131,7 @@ void SelectionCollectionTest::setTopology()
 void SelectionCollectionTest::loadIndexGroups(const char* filename)
 {
     GMX_RELEASE_ASSERT(grps_ == nullptr, "External groups can only be loaded once");
-    std::string fullpath = gmx::test::TestFileManager::getInputFilePath(filename);
+    std::string fullpath = gmx::test::TestFileManager::getInputFilePath(filename).u8string();
     gmx_ana_indexgrps_init(&grps_, nullptr, fullpath.c_str());
     sc_.setIndexGroups(grps_);
 }
@@ -434,8 +434,8 @@ TEST_F(SelectionCollectionTest, HandlesForceRequestForCenterOfGeometry)
 
 TEST_F(SelectionCollectionTest, ParsesSelectionsFromFile)
 {
-    ASSERT_NO_THROW_GMX(
-            sel_ = sc_.parseFromFile(gmx::test::TestFileManager::getInputFilePath("selfile.dat")));
+    ASSERT_NO_THROW_GMX(sel_ = sc_.parseFromFile(
+                                gmx::test::TestFileManager::getInputFilePath("selfile.dat").u8string()));
     // These should match the contents of selfile.dat
     ASSERT_EQ(2U, sel_.size());
     EXPECT_STREQ("resname RA RB", sel_[0].selectionText());

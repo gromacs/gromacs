@@ -91,7 +91,7 @@ using XvgrTimeReadingParams = std::tuple<bool, bool>;
 class XvgioTest : public ::testing::Test, public ::testing::WithParamInterface<XvgrTimeReadingParams>
 {
 public:
-    XvgioTest() { referenceFilename_ = fileManager_.getTemporaryFilePath("ref.xvg"); }
+    XvgioTest() { referenceFilename_ = fileManager_.getTemporaryFilePath("ref.xvg").u8string(); }
 
     const std::string& referenceFilename() const { return referenceFilename_; }
 

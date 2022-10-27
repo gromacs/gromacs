@@ -96,18 +96,18 @@ public:
     std::string addFileArg(const char* name, const char* extension, FileArgumentType type)
     {
         auto filename(tempFiles_.getTemporaryFilePath(extension));
-        gmx::TextWriter::writeFileFromString(filename, "Dummy file");
+        gmx::TextWriter::writeFileFromString(filename.u8string(), "Dummy file");
         if (name != nullptr)
         {
             args_.append(name);
             switch (type)
             {
-                case efFull: args_.append(filename); break;
-                case efNoExtension: args_.append(gmx::stripExtension(filename)); break;
+                case efFull: args_.append(filename.u8string()); break;
+                case efNoExtension: args_.append(gmx::stripExtension(filename).u8string()); break;
                 case efEmptyValue: break;
             }
         }
-        return filename;
+        return filename.u8string();
     }
 
     // This must be a member that persists until the end of the test,
@@ -433,7 +433,7 @@ TEST_F(ParseCommonArgsTest, CompletesExtensionFromExistingFile)
     std::string expected2 = addFileArg("-f2", "2.gro", efNoExtension);
     std::string expected3 = addFileArg("-f3", "3.tng", efNoExtension);
     std::string expected4 = addFileArg("-f4", ".gro", efEmptyValue);
-    std::string def4      = gmx::stripExtension(expected4);
+    std::string def4      = gmx::stripExtension(expected4).u8string();
     t_filenm    fnm[]     = { { efTRX, "-f1", nullptr, ffREAD },
                        { efTRX, "-f2", nullptr, ffREAD },
                        { efTRX, "-f3", nullptr, ffREAD },
@@ -456,7 +456,7 @@ TEST_F(ParseCommonArgsTest, CompletesExtensionFromExistingFileWithDefaultFileNam
     std::string expected2 = addFileArg("-f2", ".pdb", efEmptyValue);
     std::string expected3 = addFileArg("-f3", ".trr", efEmptyValue);
     std::string expected4 = addFileArg(nullptr, ".pdb", efEmptyValue);
-    std::string deffnm    = gmx::stripExtension(expected3);
+    std::string deffnm    = gmx::stripExtension(expected3).u8string();
     args_.append("-deffnm");
     args_.append(deffnm);
     parseFromArgs(PCA_CAN_SET_DEFFNM, fnm, {});

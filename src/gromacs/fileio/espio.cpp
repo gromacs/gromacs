@@ -115,7 +115,7 @@ static int check_open_parenthesis(FILE* fp, int r, const std::filesystem::path& 
         }
         else
         {
-            gmx_fatal(FARGS, "Expected '{' after '%s' in file '%s'", keyword, infile.c_str());
+            gmx_fatal(FARGS, "Expected '{' after '%s' in file '%s'", keyword, infile.u8string().c_str());
         }
     }
 
@@ -141,7 +141,10 @@ static int check_close_parenthesis(FILE* fp, int r, const std::filesystem::path&
         }
         else
         {
-            gmx_fatal(FARGS, "Expected '}' after section '%s' in file '%s'", keyword, infile.c_str());
+            gmx_fatal(FARGS,
+                      "Expected '}' after section '%s' in file '%s'",
+                      keyword,
+                      infile.u8string().c_str());
         }
     }
 
@@ -383,7 +386,9 @@ void gmx_espresso_read_conf(const std::filesystem::path& infile,
 
     if (!bFoundParticles)
     {
-        fprintf(stderr, "Did not find a particles section in Espresso file '%s'\n", infile.c_str());
+        fprintf(stderr,
+                "Did not find a particles section in Espresso file '%s'\n",
+                infile.u8string().c_str());
     }
 
     gmx_fio_fclose(fp);
@@ -435,7 +440,9 @@ int get_espresso_coordnum(const std::filesystem::path& infile)
     }
     if (!bFoundParticles)
     {
-        fprintf(stderr, "Did not find a particles section in Espresso file '%s'\n", infile.c_str());
+        fprintf(stderr,
+                "Did not find a particles section in Espresso file '%s'\n",
+                infile.u8string().c_str());
     }
 
     gmx_fio_fclose(fp);

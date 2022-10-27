@@ -192,8 +192,8 @@ public:
 
     EnergyOutputTest() :
         ekindata_(numTempCouplingGroups_, cosAccel_, 1),
-        logFilename_(fileManager_.getTemporaryFilePath(".log")),
-        edrFilename_(fileManager_.getTemporaryFilePath(".edr")),
+        logFilename_(fileManager_.getTemporaryFilePath(".log").u8string()),
+        edrFilename_(fileManager_.getTemporaryFilePath(".edr").u8string()),
         log_(std::fopen(logFilename_.c_str(), "w")),
         logFileGuard_(log_),
         checker_(refData_.rootChecker())

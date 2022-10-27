@@ -1138,8 +1138,10 @@ static void make_benchmark_tprs(const char* fn_sim_tpr,  /* READ : User-provided
         info->fsz[j]      = fac * fourierspacing;
 
         /* Write the benchmark tpr file */
-        fn_bench_tprs[j] = gmx_strdup(
-                gmx::concatenateBeforeExtension(fn_sim_tpr, gmx::formatString("_bench%.2d", j)).c_str());
+        fn_bench_tprs[j] =
+                gmx_strdup(gmx::concatenateBeforeExtension(fn_sim_tpr, gmx::formatString("_bench%.2d", j))
+                                   .u8string()
+                                   .c_str());
 
         fprintf(stdout, "Writing benchmark tpr %s with nsteps=", fn_bench_tprs[j]);
         fprintf(stdout, "%" PRId64, ir->nsteps);

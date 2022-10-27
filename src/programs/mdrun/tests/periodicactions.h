@@ -101,7 +101,7 @@ public:
     //! Generate reference data from mdrun writing everything every step.
     void prepareReferenceData();
     //! Names for the output files from the reference mdrun call
-    ReferenceFileNames referenceFileNames_ = { fileManager_.getTemporaryFilePath("reference.edr") };
+    ReferenceFileNames referenceFileNames_ = { fileManager_.getTemporaryFilePath("reference.edr").u8string() };
     //! Functor for energy comparison
     EnergyComparison energyComparison_{ EnergyComparison::defaultEnergyTermsToCompare(),
                                         MaxNumFrames::compareAllFrames() };

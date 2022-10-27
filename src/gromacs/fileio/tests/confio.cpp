@@ -85,8 +85,8 @@ public:
         testTop_ = nullptr;
         testX_   = nullptr;
         clear_mat(testBox_);
-        referenceFilename_ = fileManager_.getTemporaryFilePath(getFileSuffix("ref"));
-        testFilename_      = fileManager_.getTemporaryFilePath(getFileSuffix("test"));
+        referenceFilename_ = fileManager_.getTemporaryFilePath(getFileSuffix("ref")).u8string();
+        testFilename_      = fileManager_.getTemporaryFilePath(getFileSuffix("test")).u8string();
     }
     ~StructureIORoundtripTest() override
     {

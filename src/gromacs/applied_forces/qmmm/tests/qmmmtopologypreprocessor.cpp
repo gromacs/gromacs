@@ -73,22 +73,26 @@ public:
      */
     void makeMtopFromFile(const std::string& fileName, const std::string& mdpContent)
     {
-        const std::string simData = gmx::test::TestFileManager::getTestSimulationDatabaseDirectory();
+        const std::string simData =
+                gmx::test::TestFileManager::getTestSimulationDatabaseDirectory().u8string();
 
         // Generate empty mdp file
-        const std::string mdpInputFileName = fileManager_.getTemporaryFilePath(fileName + ".mdp");
+        const std::string mdpInputFileName =
+                fileManager_.getTemporaryFilePath(fileName + ".mdp").u8string();
         gmx::TextWriter::writeFileFromString(mdpInputFileName, mdpContent);
 
         // Generate tpr file
-        const std::string tprName = fileManager_.getTemporaryFilePath(fileName + ".tpr");
+        const std::string tprName = fileManager_.getTemporaryFilePath(fileName + ".tpr").u8string();
         {
             gmx::test::CommandLine caller;
             caller.append("grompp");
             caller.addOption("-f", mdpInputFileName);
             caller.addOption(
-                    "-p", std::filesystem::path(simData).append(fileName).replace_extension(".top"));
+                    "-p",
+                    std::filesystem::path(simData).append(fileName).replace_extension(".top").u8string());
             caller.addOption(
-                    "-c", std::filesystem::path(simData).append(fileName).replace_extension(".gro"));
+                    "-c",
+                    std::filesystem::path(simData).append(fileName).replace_extension(".gro").u8string());
             caller.addOption("-o", tprName);
             ASSERT_EQ(0, gmx_grompp(caller.argc(), caller.argv()));
         }

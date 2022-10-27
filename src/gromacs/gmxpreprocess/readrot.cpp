@@ -266,7 +266,7 @@ extern void set_reference_positions(t_rot* rot, rvec* x, matrix box, const char*
         rotg->x_ref_original.resize(rotg->nat);
 
         /* Construct the name for the file containing the reference positions for this group: */
-        auto reffileString  = gmx::concatenateBeforeExtension(fn, gmx::formatString(".%d", g));
+        auto reffileString = gmx::concatenateBeforeExtension(fn, gmx::formatString(".%d", g)).u8string();
         const char* reffile = reffileString.c_str();
 
         /* If the base filename for the reference position files was explicitly set by

@@ -82,7 +82,7 @@ typedef MdrunTestFixture MdrunTerminationTest;
 
 TEST_F(MdrunTerminationTest, CheckpointRestartAppendsByDefault)
 {
-    runner_.cptOutputFileName_ = fileManager_.getTemporaryFilePath(".cpt");
+    runner_.cptOutputFileName_ = fileManager_.getTemporaryFilePath(".cpt").u8string();
 
     runner_.useTopGroAndNdxFromDatabase("spc2");
     organizeMdpFile(&runner_);
@@ -182,7 +182,7 @@ TEST_F(MdrunTerminationTest, CheckpointRestartWithNoAppendWorksAndCannotLaterApp
     }
 
     SCOPED_TRACE("Running the third simulation part with -append, which will fail");
-    runner_.logFileName_ = fileManager_.getTemporaryFilePath(".part0002.log");
+    runner_.logFileName_ = fileManager_.getTemporaryFilePath(".part0002.log").u8string();
     runner_.changeTprNsteps(6);
 
     {
@@ -198,7 +198,7 @@ TEST_F(MdrunTerminationTest, CheckpointRestartWithNoAppendWorksAndCannotLaterApp
         thirdPart.append("mdrun");
         thirdPart.addOption("-cpi", runner_.cptOutputFileName_);
         thirdPart.append("-noappend");
-        runner_.edrFileName_ = fileManager_.getTemporaryFilePath(".part0003.edr");
+        runner_.edrFileName_ = fileManager_.getTemporaryFilePath(".part0003.edr").u8string();
         ASSERT_EQ(0, runner_.callMdrun(thirdPart));
 
         auto expectedLogFileName = fileManager_.getTemporaryFilePath(".part0003.log");
@@ -216,8 +216,8 @@ TEST_F(MdrunTerminationTest, CheckpointRestartWithNoAppendWorksAndCannotLaterApp
         fourthPart.addOption("-cpi", runner_.cptOutputFileName_);
         // TODO this is necessary, but ought not be. Is this the issue in Issue #2804?
         fourthPart.append("-noappend");
-        runner_.edrFileName_ = fileManager_.getTemporaryFilePath(".part0004.edr");
-        runner_.logFileName_ = fileManager_.getTemporaryFilePath(".part0004.log");
+        runner_.edrFileName_ = fileManager_.getTemporaryFilePath(".part0004.edr").u8string();
+        runner_.logFileName_ = fileManager_.getTemporaryFilePath(".part0004.log").u8string();
         ASSERT_EQ(0, runner_.callMdrun(fourthPart));
 
         auto expectedLogFileName = fileManager_.getTemporaryFilePath(".part0004.log");
@@ -234,8 +234,8 @@ TEST_F(MdrunTerminationTest, CheckpointRestartWithNoAppendWorksAndCannotLaterApp
         fifthPart.addOption("-cpi", runner_.cptOutputFileName_);
         // TODO this is necessary, but ought not be. Is this the issue in Issue #2804?
         fifthPart.append("-noappend");
-        runner_.edrFileName_ = fileManager_.getTemporaryFilePath(".part0005.edr");
-        runner_.logFileName_ = fileManager_.getTemporaryFilePath(".part0005.log");
+        runner_.edrFileName_ = fileManager_.getTemporaryFilePath(".part0005.edr").u8string();
+        runner_.logFileName_ = fileManager_.getTemporaryFilePath(".part0005.log").u8string();
         ASSERT_EQ(0, runner_.callMdrun(fifthPart));
 
         auto expectedLogFileName = fileManager_.getTemporaryFilePath(".part0005.log");

@@ -570,7 +570,7 @@ static std::vector<t_tabledata> read_tables(FILE* fp, const char* filename, int 
     double   tabscale;
 
     nny               = 2 * ntab + 1;
-    std::string libfn = gmx::findLibraryFile(filename);
+    std::string libfn = gmx::findLibraryFile(filename).u8string();
     gmx::MultiDimArray<std::vector<double>, gmx::dynamicExtents2D> xvgData    = readXvgData(libfn);
     int                                                            numColumns = xvgData.extent(0);
     if (numColumns != nny)

@@ -53,7 +53,7 @@
 
 CorrelationDataSet::CorrelationDataSet(const std::string& fileName)
 {
-    std::string fileNm = gmx::test::TestFileManager::getInputFilePath(fileName.c_str());
+    std::string fileNm = gmx::test::TestFileManager::getInputFilePath(fileName).u8string();
     nrLines_           = read_xvg(fileNm.c_str(), &tempValues_, &nrColumns_);
 
     dt_        = tempValues_[0][1] - tempValues_[0][0];

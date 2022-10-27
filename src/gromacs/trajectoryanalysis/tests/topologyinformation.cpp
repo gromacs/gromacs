@@ -129,7 +129,7 @@ TEST(TopologyInformation, WorksWithGroFile)
 {
     const int           numAtoms = 156;
     TopologyInformation topInfo;
-    topInfo.fillFromInputFile(TestFileManager::getInputFilePath("lysozyme.gro"));
+    topInfo.fillFromInputFile(TestFileManager::getInputFilePath("lysozyme.gro").u8string());
     EXPECT_FALSE(topInfo.hasFullTopology());
     runCommonTests(topInfo, numAtoms);
     EXPECT_EQ(PbcType::Unset, topInfo.pbcType());
@@ -161,7 +161,7 @@ TEST(TopologyInformation, WorksWithPdbFile)
 {
     const int           numAtoms = 156;
     TopologyInformation topInfo;
-    topInfo.fillFromInputFile(TestFileManager::getInputFilePath("lysozyme.pdb"));
+    topInfo.fillFromInputFile(TestFileManager::getInputFilePath("lysozyme.pdb").u8string());
     EXPECT_FALSE(topInfo.hasFullTopology());
     runCommonTests(topInfo, numAtoms);
     // TODO why does this differ from .gro?
@@ -196,17 +196,17 @@ TEST(TopologyInformation, WorksWithTprFromPdbFile)
 
     // Make the tpr file to use
     std::string       name             = "lysozyme";
-    const std::string mdpInputFileName = fileManager.getTemporaryFilePath(name + ".mdp");
+    const std::string mdpInputFileName = fileManager.getTemporaryFilePath(name + ".mdp").u8string();
     // Ensure the seeds have a value so that the resulting .tpr dump
     // is reproducible.
     TextWriter::writeFileFromString(mdpInputFileName, "");
-    std::string tprName = fileManager.getTemporaryFilePath(name + ".tpr");
+    std::string tprName = fileManager.getTemporaryFilePath(name + ".tpr").u8string();
     {
         CommandLine caller;
         caller.append("grompp");
         caller.addOption("-f", mdpInputFileName);
-        caller.addOption("-p", TestFileManager::getInputFilePath(name + ".top"));
-        caller.addOption("-c", TestFileManager::getInputFilePath(name + ".pdb"));
+        caller.addOption("-p", TestFileManager::getInputFilePath(name + ".top").u8string());
+        caller.addOption("-c", TestFileManager::getInputFilePath(name + ".pdb").u8string());
         caller.addOption("-o", tprName);
         ASSERT_EQ(0, gmx_grompp(caller.argc(), caller.argv()));
     }

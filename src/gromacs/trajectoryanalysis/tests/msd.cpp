@@ -144,8 +144,8 @@ public:
     // to calling grompp. sets the -s input to the generated tpr
     void createTpr(const std::string& structure, const std::string& topology, const std::string& index)
     {
-        std::string tpr             = fileManager().getTemporaryFilePath(".tpr");
-        std::string mdp             = fileManager().getTemporaryFilePath(".mdp");
+        std::string tpr             = fileManager().getTemporaryFilePath(".tpr").u8string();
+        std::string mdp             = fileManager().getTemporaryFilePath(".mdp").u8string();
         std::string mdpFileContents = gmx::formatString(
                 "cutoff-scheme = verlet\n"
                 "rcoulomb      = 0.85\n"
@@ -160,11 +160,11 @@ public:
         caller.addOption("-maxwarn", 0);
         caller.addOption("-f", mdp.c_str());
         auto gro = std::filesystem::path(simDB).append(structure);
-        caller.addOption("-c", gro.c_str());
+        caller.addOption("-c", gro.u8string().c_str());
         auto top = std::filesystem::path(simDB).append(topology);
-        caller.addOption("-p", top.c_str());
+        caller.addOption("-p", top.u8string().c_str());
         auto ndx = std::filesystem::path(simDB).append(index);
-        caller.addOption("-n", ndx.c_str());
+        caller.addOption("-n", ndx.u8string().c_str());
         caller.addOption("-o", tpr.c_str());
         ASSERT_EQ(0, gmx_grompp(caller.argc(), caller.argv()));
 

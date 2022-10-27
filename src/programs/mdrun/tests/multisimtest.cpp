@@ -104,8 +104,9 @@ MultiSimTest::MultiSimTest() :
     mdrunCaller_->addOption("-multidir");
     for (int i = 0; i < size_ / numRanksPerSimulation_; ++i)
     {
-        mdrunCaller_->append(
-                std::filesystem::path(originalTempDirectory).append(formatString(directoryNameFormat, i)));
+        mdrunCaller_->append(std::filesystem::path(originalTempDirectory)
+                                     .append(formatString(directoryNameFormat, i))
+                                     .u8string());
     }
 }
 

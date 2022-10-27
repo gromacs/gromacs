@@ -284,7 +284,10 @@ static void read_vsite_database(const std::filesystem::path&           ddbname,
                 curdir = ddb_name2dir(dirstr);
                 if (curdir < 0)
                 {
-                    gmx_fatal(FARGS, "Invalid directive %s in vsite database %s", dirstr, ddbname.c_str());
+                    gmx_fatal(FARGS,
+                              "Invalid directive %s in vsite database %s",
+                              dirstr,
+                              ddbname.u8string().c_str());
                 }
             }
             else
@@ -362,7 +365,7 @@ static void read_vsite_database(const std::filesystem::path&           ddbname,
                         {
                             gmx_fatal(FARGS,
                                       "Need 3 or 4 values to specify bond/angle values in %s: %s\n",
-                                      ddbname.c_str(),
+                                      ddbname.u8string().c_str(),
                                       pline);
                         }
                     }

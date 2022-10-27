@@ -662,7 +662,7 @@ int read_xvg_legend(const std::filesystem::path& fn, double*** y, int* ny, char*
             }
             if (k != nny)
             {
-                fprintf(stderr, "Only %d columns on line %d in file %s\n", k, line, fn.c_str());
+                fprintf(stderr, "Only %d columns on line %d in file %s\n", k, line, fn.u8string().c_str());
                 for (; (k < nny); k++)
                 {
                     yy[k][nx] = 0.0;
@@ -697,7 +697,7 @@ int read_xvg_legend(const std::filesystem::path& fn, double*** y, int* ny, char*
 int read_xvg(const std::filesystem::path& fn, double*** y, int* ny)
 {
     gmx::MultiDimArray<std::vector<double>, gmx::dynamicExtents2D> xvgData =
-            readXvgData(std::string(fn));
+            readXvgData(std::string(fn.u8string()));
 
     int numColumns = xvgData.extent(0);
     int numRows    = xvgData.extent(1);
@@ -777,7 +777,11 @@ gmx::MultiDimArray<std::vector<double>, gmx::dynamicExtents2D> readXvgDataIntern
 
         if (columnCount != numColumns)
         {
-            fprintf(stderr, "Only %d columns on line %d in file %s\n", columnCount, line, fn.c_str());
+            fprintf(stderr,
+                    "Only %d columns on line %d in file %s\n",
+                    columnCount,
+                    line,
+                    fn.u8string().c_str());
             for (; (columnCount < numColumns); columnCount++)
             {
                 xvgData.push_back(0.0);
@@ -929,7 +933,7 @@ real** read_xvg_time(const std::filesystem::path& fn,
                     a = sscanf(line, "%lf%lf", &dbl, &dbl);
                     if (a == 0)
                     {
-                        gmx_fatal(FARGS, "Expected a number in %s on line:\n%s", fn.c_str(), line0);
+                        gmx_fatal(FARGS, "Expected a number in %s on line:\n%s", fn.u8string().c_str(), line0);
                     }
                     else if (a == 1)
                     {
@@ -1024,13 +1028,13 @@ real** read_xvg_time(const std::filesystem::path& fn,
                 {
                     fprintf(stderr,
                             "File %s does not end with a newline, ignoring the last line\n",
-                            fn.c_str());
+                            fn.u8string().c_str());
                 }
                 else if (bTimeInRange)
                 {
                     if (a == 0)
                     {
-                        fprintf(stderr, "Ignoring invalid line in %s:\n%s", fn.c_str(), line0);
+                        fprintf(stderr, "Ignoring invalid line in %s:\n%s", fn.u8string().c_str(), line0);
                     }
                     else
                     {
@@ -1039,7 +1043,7 @@ real** read_xvg_time(const std::filesystem::path& fn,
                             fprintf(stderr,
                                     "Invalid line in %s:\n%s"
                                     "Using zeros for the last %d sets\n",
-                                    fn.c_str(),
+                                    fn.u8string().c_str(),
                                     line0,
                                     narg - a);
                         }

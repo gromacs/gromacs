@@ -108,7 +108,7 @@ TEST_F(CompelTest, SwapCanRun)
 
     EXPECT_EQ(0, runner_.callGrompp());
 
-    runner_.swapFileName_ = fileManager_.getTemporaryFilePath("swap.xvg");
+    runner_.swapFileName_ = fileManager_.getTemporaryFilePath("swap.xvg").u8string();
 
     ::gmx::test::CommandLine swapCaller;
     swapCaller.addOption("-swap", runner_.swapFileName_);

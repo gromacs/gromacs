@@ -118,9 +118,11 @@ ExtractClusterModuleTest::ExtractClusterModuleTest()
     for (auto& generatedFile : generatedFiles)
     {
         generatedFile.filename = gmx::concatenateBeforeExtension(
-                "test.g96", gmx::formatString("_Cluster_000%d", fileNumber));
-        generatedFile.matcher      = TextFileMatch(ExactTextMatch()).createFileMatcher();
-        generatedFile.fullFilepath = fileManager().getTemporaryFilePath(generatedFile.filename);
+                                         "test.g96", gmx::formatString("_Cluster_000%d", fileNumber))
+                                         .u8string();
+        generatedFile.matcher = TextFileMatch(ExactTextMatch()).createFileMatcher();
+        generatedFile.fullFilepath =
+                fileManager().getTemporaryFilePath(generatedFile.filename).u8string();
         fileNumber++;
     }
 }
@@ -137,8 +139,8 @@ void ExtractClusterModuleTest::compareFiles()
 
 TEST_F(ExtractClusterModuleTest, WorksWithAllAtoms)
 {
-    std::string       realFileName = TestFileManager::getTestSpecificFileName("test.g96");
-    const char* const cmdline[]    = { "extract-cluster", "-o", realFileName.c_str() };
+    std::string realFileName    = TestFileManager::getTestSpecificFileName("test.g96").u8string();
+    const char* const cmdline[] = { "extract-cluster", "-o", realFileName.c_str() };
 
     runTest(CommandLine(cmdline));
     compareFiles();
@@ -146,8 +148,8 @@ TEST_F(ExtractClusterModuleTest, WorksWithAllAtoms)
 
 TEST_F(ExtractClusterModuleTest, WorksWithAtomSubset)
 {
-    std::string       realFileName = TestFileManager::getTestSpecificFileName("test.g96");
-    const char* const cmdline[]    = {
+    std::string realFileName    = TestFileManager::getTestSpecificFileName("test.g96").u8string();
+    const char* const cmdline[] = {
         "extract-cluster", "-o", realFileName.c_str(), "-select", "atomnr 1 2"
     };
 

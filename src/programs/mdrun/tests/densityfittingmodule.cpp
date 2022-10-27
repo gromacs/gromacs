@@ -74,7 +74,7 @@ public:
     DensityFittingTest()
     {
         runner_.useTopGroAndNdxFromDatabase("argon12");
-        runner_.edrFileName_ = fileManager_.getTemporaryFilePath(".edr");
+        runner_.edrFileName_ = fileManager_.getTemporaryFilePath(".edr").u8string();
     }
 
     //! Check the output of mdrun
@@ -101,7 +101,7 @@ public:
             "density-guided-simulation-active = yes\n"
             "density-guided-simulation-group  = FirstThreeOfTwelve\n"
             "density-guided-simulation-reference-density-filename = %s\n",
-            TestFileManager::getInputFilePath("ellipsoid-density.mrc").c_str());
+            TestFileManager::getInputFilePath("ellipsoid-density.mrc").u8string().c_str());
 
     //! Mdp values for md integrator with default density fitting parameters.
     const std::string mdpMdDensfitYesUnsetValues = formatString(
@@ -111,7 +111,7 @@ public:
             "density-guided-simulation-active = yes\n"
             "density-guided-simulation-group  = FirstThreeOfTwelve\n"
             "density-guided-simulation-reference-density-filename = %s\n",
-            TestFileManager::getInputFilePath("ellipsoid-density.mrc").c_str());
+            TestFileManager::getInputFilePath("ellipsoid-density.mrc").u8string().c_str());
 
     //! Mdp values for steepest-decent energy minimization with density fitting values set to non-defaults.
     const std::string mdpDensiftAllDefaultsChanged_ = formatString(

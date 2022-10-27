@@ -76,7 +76,7 @@ public:
     TestReferenceChecker checker_;
 
     PrEbinTest() :
-        logFilename_(fileManager_.getTemporaryFilePath(".log")),
+        logFilename_(fileManager_.getTemporaryFilePath(".log").u8string()),
         log_(std::fopen(logFilename_.c_str(), "w")),
         logFileGuard_(log_),
         checker_(refData_.rootChecker())

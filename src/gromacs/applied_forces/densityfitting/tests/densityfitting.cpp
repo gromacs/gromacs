@@ -84,7 +84,7 @@ public:
     {
         mdpValueBuilder_.rootObject().addValue(
                 "density-guided-simulation-reference-density-filename",
-                std::string(test::TestFileManager::getInputFilePath("ellipsoid-density.mrc")));
+                std::string(test::TestFileManager::getInputFilePath("ellipsoid-density.mrc").u8string()));
     }
 
     //! build an mdp options tree that sets the options for the density fitting module

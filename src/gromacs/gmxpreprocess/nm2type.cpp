@@ -71,7 +71,7 @@ static void rd_nm2type_file(const std::filesystem::path& filename, int* nnm, t_n
     fp = fflib_open(filename);
     if (nullptr == fp)
     {
-        gmx_fatal(FARGS, "Can not find %s in library directory", filename.c_str());
+        gmx_fatal(FARGS, "Can not find %s in library directory", filename.u8string().c_str());
     }
 
     nnnm = *nnm;

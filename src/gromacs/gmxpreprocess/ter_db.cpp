@@ -269,7 +269,7 @@ static void read_ter_db_file(const std::filesystem::path&        fn,
                 block = &tbptr->back();
                 clearModificationBlock(block);
                 block->name     = header;
-                block->filebase = filebase;
+                block->filebase = filebase.u8string();
             }
         }
         else
@@ -299,7 +299,7 @@ static void read_ter_db_file(const std::filesystem::path&        fn,
                         gmx_fatal(FARGS,
                                   "Reading Termini Database '%s': "
                                   "expected atom name on line\n%s",
-                                  fn.c_str(),
+                                  fn.u8string().c_str(),
                                   line);
                     }
                     hack->oname = buf;
@@ -334,7 +334,7 @@ static void read_ter_db_file(const std::filesystem::path&        fn,
                             gmx_fatal(FARGS,
                                       "Reading Termini Database '%s': don't know which name the "
                                       "new atom should have on line\n%s",
-                                      fn.c_str(),
+                                      fn.u8string().c_str(),
                                       line);
                         }
                     }
@@ -358,7 +358,7 @@ static void read_ter_db_file(const std::filesystem::path&        fn,
                         gmx_fatal(FARGS,
                                   "Reading Termini Database '%s': expected %d atom names (found "
                                   "%d) on line\n%s",
-                                  fn.c_str(),
+                                  fn.u8string().c_str(),
                                   enumValueToNumIAtoms(*btkw),
                                   j - 1,
                                   line);

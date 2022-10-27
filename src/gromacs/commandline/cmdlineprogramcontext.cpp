@@ -326,7 +326,7 @@ void CommandLineProgramContext::Impl::findBinaryPath() const
 {
     if (fullBinaryPath_.empty())
     {
-        fullBinaryPath_ = findFullBinaryPath(invokedName_, *executableEnv_);
+        fullBinaryPath_ = findFullBinaryPath(invokedName_.u8string(), *executableEnv_);
         if (std::filesystem::is_symlink(fullBinaryPath_))
         {
             auto tempPath = std::filesystem::read_symlink(fullBinaryPath_);

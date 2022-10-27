@@ -113,7 +113,7 @@ public:
     // Make sure the file extension is one that gmx_fio_open will
     // recognize to open as binary, even though we're just abusing it
     // to write arbitrary XDR output.
-    std::string filename_ = fileManager_.getTemporaryFilePath("data.edr");
+    std::string filename_ = fileManager_.getTemporaryFilePath("data.edr").u8string();
     t_fileio*   file_     = nullptr;
 };
 

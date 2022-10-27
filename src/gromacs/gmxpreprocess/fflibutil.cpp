@@ -85,7 +85,7 @@ std::vector<std::filesystem::path> fflib_search_file_end(const std::filesystem::
                     "Could not find any files ending on '%s' "
                     "in the force field directory '%s'",
                     file_end,
-                    ffdir.c_str());
+                    ffdir.u8string().c_str());
             GMX_THROW(gmx::InvalidInputError(message));
         }
         for (auto& filename : result)
@@ -122,8 +122,8 @@ std::vector<gmx::DataFileInfo> fflib_enumerate_forcefields()
         std::string message = gmx::formatString(
                 "No force fields found (files with name '%s' "
                 "in subdirectories ending on '%s')",
-                filename.c_str(),
-                dirend.c_str());
+                filename.u8string().c_str(),
+                dirend.u8string().c_str());
         GMX_THROW(gmx::InvalidInputError(message));
     }
 
@@ -138,7 +138,7 @@ bool fflib_fexist(const std::filesystem::path& file)
 
 FILE* fflib_open(const std::filesystem::path& file)
 {
-    std::string fileFullPath = gmx::findLibraryFile(file);
+    std::string fileFullPath = gmx::findLibraryFile(file).u8string();
     fprintf(stderr, "Opening force field file %s\n", fileFullPath.c_str());
     return gmx_ffopen(fileFullPath, "r");
 }

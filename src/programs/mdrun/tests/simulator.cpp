@@ -245,7 +245,7 @@ TEST_P(SimulatorComparisonTest, WithinTolerances)
     const auto simulator2EdrFileName        = fileManager_.getTemporaryFilePath("sim2.edr");
 
     // Run grompp
-    runner_.tprFileName_ = fileManager_.getTemporaryFilePath("sim.tpr");
+    runner_.tprFileName_ = fileManager_.getTemporaryFilePath("sim.tpr").u8string();
     runner_.useTopGroAndNdxFromDatabase(simulationName);
     runner_.useStringAsMdpFile(prepareMdpFileContents(mdpFieldValues));
     runner_.setMaxWarn(maxNumWarnings);
@@ -258,8 +258,8 @@ TEST_P(SimulatorComparisonTest, WithinTolerances)
     gmxUnsetenv(envVariableModSimOff.c_str());
 
     // Do first mdrun
-    runner_.fullPrecisionTrajectoryFileName_ = simulator1TrajectoryFileName;
-    runner_.edrFileName_                     = simulator1EdrFileName;
+    runner_.fullPrecisionTrajectoryFileName_ = simulator1TrajectoryFileName.u8string();
+    runner_.edrFileName_                     = simulator1EdrFileName.u8string();
     runMdrun(&runner_);
 
     // Set tested environment variable
@@ -267,8 +267,8 @@ TEST_P(SimulatorComparisonTest, WithinTolerances)
     gmxSetenv(environmentVariable.c_str(), "ON", overWriteEnvironmentVariable);
 
     // Do second mdrun
-    runner_.fullPrecisionTrajectoryFileName_ = simulator2TrajectoryFileName;
-    runner_.edrFileName_                     = simulator2EdrFileName;
+    runner_.fullPrecisionTrajectoryFileName_ = simulator2TrajectoryFileName.u8string();
+    runner_.edrFileName_                     = simulator2EdrFileName.u8string();
     runMdrun(&runner_);
 
     // Unset tested environment variable
@@ -284,8 +284,10 @@ TEST_P(SimulatorComparisonTest, WithinTolerances)
     }
 
     // Compare simulation results
-    compareEnergies(simulator1EdrFileName, simulator2EdrFileName, energyTermsToCompare);
-    compareTrajectories(simulator1TrajectoryFileName, simulator2TrajectoryFileName, trajectoryComparison);
+    compareEnergies(simulator1EdrFileName.u8string(), simulator2EdrFileName.u8string(), energyTermsToCompare);
+    compareTrajectories(simulator1TrajectoryFileName.u8string(),
+                        simulator2TrajectoryFileName.u8string(),
+                        trajectoryComparison);
 }
 
 // TODO: The time for OpenCL kernel compilation means these tests time

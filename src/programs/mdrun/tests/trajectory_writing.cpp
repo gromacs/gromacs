@@ -76,9 +76,9 @@ public:
         EXPECT_EQ(0, runner_.callGrompp());
 
         runner_.fullPrecisionTrajectoryFileName_ =
-                fileManager_.getTemporaryFilePath("spc-and-methanol.tng");
+                fileManager_.getTemporaryFilePath("spc-and-methanol.tng").u8string();
         runner_.reducedPrecisionTrajectoryFileName_ =
-                fileManager_.getTemporaryFilePath("spc-and-methanol-reduced.tng");
+                fileManager_.getTemporaryFilePath("spc-and-methanol-reduced.tng").u8string();
         ASSERT_EQ(0, runner_.callMdrun());
         // TODO When there is a way to sense something like the
         // output of gmx check, compare the result with that from

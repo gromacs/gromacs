@@ -296,11 +296,12 @@ TestReferenceDataImpl::TestReferenceDataImpl(ReferenceDataMode                  
                                              std::optional<std::filesystem::path> testNameOverride) :
     updateMismatchingEntries_(false), bSelfTestMode_(bSelfTestMode), bInUse_(false)
 {
-    const std::string dirname  = bSelfTestMode ? TestFileManager::getGlobalOutputTempDirectory()
-                                               : TestFileManager::getInputDataDirectory();
+    const std::string dirname  = bSelfTestMode
+                                         ? TestFileManager::getGlobalOutputTempDirectory().u8string()
+                                         : TestFileManager::getInputDataDirectory().u8string();
     const std::string filename = testNameOverride.has_value()
-                                         ? testNameOverride.value()
-                                         : TestFileManager::getTestSpecificFileName(".xml");
+                                         ? testNameOverride.value().u8string()
+                                         : TestFileManager::getTestSpecificFileName(".xml").u8string();
     fullFilename_              = std::filesystem::path(dirname).append("refdata").append(filename);
 
     switch (mode)
@@ -308,13 +309,13 @@ TestReferenceDataImpl::TestReferenceDataImpl(ReferenceDataMode                  
         case ReferenceDataMode::Compare:
             if (File::exists(fullFilename_, File::throwOnError))
             {
-                compareRootEntry_ = readReferenceDataFile(fullFilename_);
+                compareRootEntry_ = readReferenceDataFile(fullFilename_.u8string());
             }
             break;
         case ReferenceDataMode::CreateMissing:
             if (File::exists(fullFilename_, File::throwOnError))
             {
-                compareRootEntry_ = readReferenceDataFile(fullFilename_);
+                compareRootEntry_ = readReferenceDataFile(fullFilename_.u8string());
             }
             else
             {
@@ -325,7 +326,7 @@ TestReferenceDataImpl::TestReferenceDataImpl(ReferenceDataMode                  
         case ReferenceDataMode::UpdateChanged:
             if (File::exists(fullFilename_, File::throwOnError))
             {
-                compareRootEntry_ = readReferenceDataFile(fullFilename_);
+                compareRootEntry_ = readReferenceDataFile(fullFilename_.u8string());
             }
             else
             {
@@ -359,10 +360,10 @@ void TestReferenceDataImpl::onTestEnd(bool testPassed) const
                 if (!std::filesystem::create_directory(dirname))
                 {
                     GMX_THROW(TestException(gmx::formatString(
-                            "Creation of reference data directory failed: %s", dirname.c_str())));
+                            "Creation of reference data directory failed: %s", dirname.u8string().c_str())));
                 }
             }
-            writeReferenceDataFile(fullFilename_, *outputRootEntry_);
+            writeReferenceDataFile(fullFilename_.u8string(), *outputRootEntry_);
         }
     }
     else if (compareRootEntry_)

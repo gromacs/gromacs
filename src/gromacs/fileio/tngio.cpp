@@ -131,12 +131,12 @@ void gmx_tng_open(const std::filesystem::path& filename, char mode, gmx_tng_traj
     /* tng must not be pointing at already allocated memory.
      * Memory will be allocated by tng_util_trajectory_open() and must
      * later on be freed by tng_util_trajectory_close(). */
-    if (TNG_SUCCESS != tng_util_trajectory_open(filename.c_str(), mode, tng))
+    if (TNG_SUCCESS != tng_util_trajectory_open(filename.u8string().c_str(), mode, tng))
     {
         /* TNG does return more than one degree of error, but there is
            no use case for GROMACS handling the non-fatal errors
            gracefully. */
-        gmx_fatal(FARGS, "File I/O error while opening %s for %s", filename.c_str(), modeToVerb(mode));
+        gmx_fatal(FARGS, "File I/O error while opening %s for %s", filename.u8string().c_str(), modeToVerb(mode));
     }
 
     if (mode == 'w' || mode == 'a')

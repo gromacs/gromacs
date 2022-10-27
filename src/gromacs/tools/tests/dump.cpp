@@ -91,7 +91,7 @@ TEST_F(DumpTest, WorksWithTpr)
 TEST_F(DumpTest, WorksWithTprAndMdpWriting)
 {
     TestFileManager fileManager;
-    std::string     mdpName = fileManager.getTemporaryFilePath("output.mdp");
+    std::string     mdpName = fileManager.getTemporaryFilePath("output.mdp").u8string();
     const char* const command[] = { "dump", "-s", s_tprFileHandle->tprName().c_str(), "-om", mdpName.c_str() };
     CommandLine cmdline(command);
     runTest(&cmdline);

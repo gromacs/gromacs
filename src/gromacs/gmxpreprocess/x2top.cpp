@@ -500,14 +500,17 @@ int gmx_x2top(int argc, char* argv[])
     nm2t = rd_nm2type(ffdir, &nnm);
     if (nnm == 0)
     {
-        gmx_fatal(FARGS, "No or incorrect atomname2type.n2t file found (looking for %s)", ffdir.c_str());
+        gmx_fatal(FARGS,
+                  "No or incorrect atomname2type.n2t file found (looking for %s)",
+                  ffdir.u8string().c_str());
     }
     else
     {
         GMX_LOG(logger.info)
                 .asParagraph()
-                .appendTextFormatted(
-                        "There are %d name to type translations in file %s", nnm, ffdir.c_str());
+                .appendTextFormatted("There are %d name to type translations in file %s",
+                                     nnm,
+                                     ffdir.u8string().c_str());
     }
     if (debug)
     {

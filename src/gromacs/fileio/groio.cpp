@@ -140,11 +140,11 @@ static gmx_bool get_w_conf(FILE*                        in,
     {
         if ((fgets2(line, STRLEN, in)) == nullptr)
         {
-            gmx_fatal(FARGS, "Unexpected end of file in file %s at line %d", infile.c_str(), i + 2);
+            gmx_fatal(FARGS, "Unexpected end of file in file %s at line %d", infile.u8string().c_str(), i + 2);
         }
         if (strlen(line) < 39)
         {
-            gmx_fatal(FARGS, "Invalid line in %s for atom %d:\n%s", infile.c_str(), i + 1, line);
+            gmx_fatal(FARGS, "Invalid line in %s for atom %d:\n%s", infile.u8string().c_str(), i + 1, line);
         }
 
         /* determine read precision from distance between periods
@@ -155,12 +155,12 @@ static gmx_bool get_w_conf(FILE*                        in,
             p1     = strchr(line, '.');
             if (p1 == nullptr)
             {
-                gmx_fatal(FARGS, "A coordinate in file %s does not contain a '.'", infile.c_str());
+                gmx_fatal(FARGS, "A coordinate in file %s does not contain a '.'", infile.u8string().c_str());
             }
             p2 = strchr(&p1[1], '.');
             if (p2 == nullptr)
             {
-                gmx_fatal(FARGS, "A coordinate in file %s does not contain a '.'", infile.c_str());
+                gmx_fatal(FARGS, "A coordinate in file %s does not contain a '.'", infile.u8string().c_str());
             }
             ddist = p2 - p1;
             *ndec = ddist - 5;
@@ -168,7 +168,7 @@ static gmx_bool get_w_conf(FILE*                        in,
             p3 = strchr(&p2[1], '.');
             if (p3 == nullptr)
             {
-                gmx_fatal(FARGS, "A coordinate in file %s does not contain a '.'", infile.c_str());
+                gmx_fatal(FARGS, "A coordinate in file %s does not contain a '.'", infile.u8string().c_str());
             }
 
             if (p3 - p2 != ddist)
@@ -176,7 +176,7 @@ static gmx_bool get_w_conf(FILE*                        in,
                 gmx_fatal(FARGS,
                           "The spacing of the decimal points in file %s is not consistent for x, y "
                           "and z",
-                          infile.c_str());
+                          infile.u8string().c_str());
             }
         }
 
@@ -193,7 +193,7 @@ static gmx_bool get_w_conf(FILE*                        in,
             newres++;
             if (newres >= natoms)
             {
-                gmx_fatal(FARGS, "More residues than atoms in %s (natoms = %d)", infile.c_str(), natoms);
+                gmx_fatal(FARGS, "More residues than atoms in %s (natoms = %d)", infile.u8string().c_str(), natoms);
             }
             atoms->atom[i].resind = newres;
             t_atoms_set_resinfo(atoms, i, symtab, resname, resnr, ' ', 0, ' ');
@@ -228,7 +228,7 @@ static gmx_bool get_w_conf(FILE*                        in,
                 gmx_fatal(FARGS,
                           "Something is wrong in the coordinate formatting of file %s. Note that "
                           "gro is fixed format (see the manual)",
-                          infile.c_str());
+                          infile.u8string().c_str());
             }
             else
             {
@@ -266,7 +266,7 @@ static gmx_bool get_w_conf(FILE*                        in,
     fgets2(line, STRLEN, in);
     if (sscanf(line, "%lf%lf%lf", &x1, &y1, &z1) != 3)
     {
-        gmx_warning("Bad box in file %s", infile.c_str());
+        gmx_warning("Bad box in file %s", infile.u8string().c_str());
 
         /* Generate a cubic box */
         for (m = 0; (m < DIM); m++)
@@ -366,7 +366,7 @@ gmx_bool gro_next_x_or_v(FILE* status, t_trxframe* fr)
     snew(atoms.resinfo, fr->natoms);
     snew(atoms.atomname, fr->natoms);
 
-    fr->bV    = get_w_conf(status, title, title, &symtab, &atoms, &ndec, fr->x, fr->v, fr->box);
+    fr->bV = get_w_conf(status, std::string(title), title, &symtab, &atoms, &ndec, fr->x, fr->v, fr->box);
     fr->bPrec = TRUE;
     fr->prec  = 1;
     /* prec = 10^ndec: */

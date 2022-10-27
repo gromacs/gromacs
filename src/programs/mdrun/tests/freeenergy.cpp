@@ -144,15 +144,15 @@ TEST_P(FreeEnergyReferenceTest, WithinTolerances)
     auto simulationDhdlFileName       = fileManager_.getTemporaryFilePath("dhdl.xvg");
 
     // Run grompp
-    runner_.tprFileName_ = fileManager_.getTemporaryFilePath("sim.tpr");
+    runner_.tprFileName_ = fileManager_.getTemporaryFilePath("sim.tpr").u8string();
     runner_.useTopGroAndMdpFromFepTestDatabase(simulationName);
     runner_.setMaxWarn(maxNumWarnings);
     runGrompp(&runner_);
 
     // Do mdrun
-    runner_.fullPrecisionTrajectoryFileName_ = simulationTrajectoryFileName;
-    runner_.edrFileName_                     = simulationEdrFileName;
-    runner_.dhdlFileName_                    = simulationDhdlFileName;
+    runner_.fullPrecisionTrajectoryFileName_ = simulationTrajectoryFileName.u8string();
+    runner_.edrFileName_                     = simulationEdrFileName.u8string();
+    runner_.dhdlFileName_                    = simulationDhdlFileName.u8string();
     runMdrun(&runner_);
 
     /* Currently used tests write trajectory (x/v/f) frames every 20 steps.
@@ -171,22 +171,28 @@ TEST_P(FreeEnergyReferenceTest, WithinTolerances)
     TestReferenceData    refData;
     TestReferenceChecker rootChecker(refData.rootChecker());
     // Check that the energies agree with the refdata within tolerance.
-    checkEnergiesAgainstReferenceData(simulationEdrFileName, energyTermsToCompare, &rootChecker);
+    checkEnergiesAgainstReferenceData(simulationEdrFileName.u8string(), energyTermsToCompare, &rootChecker);
     // Check that the trajectories agree with the refdata within tolerance.
     if (testTwoTrajectoryFrames)
     {
-        checkTrajectoryAgainstReferenceData(
-                simulationTrajectoryFileName, trajectoryComparison, &rootChecker, MaxNumFrames(2));
+        checkTrajectoryAgainstReferenceData(simulationTrajectoryFileName.u8string(),
+                                            trajectoryComparison,
+                                            &rootChecker,
+                                            MaxNumFrames(2));
     }
     else if (testOneTrajectoryFrame)
     {
-        checkTrajectoryAgainstReferenceData(
-                simulationTrajectoryFileName, trajectoryComparison, &rootChecker, MaxNumFrames(1));
+        checkTrajectoryAgainstReferenceData(simulationTrajectoryFileName.u8string(),
+                                            trajectoryComparison,
+                                            &rootChecker,
+                                            MaxNumFrames(1));
     }
     else
     {
-        checkTrajectoryAgainstReferenceData(
-                simulationTrajectoryFileName, trajectoryComparison, &rootChecker, MaxNumFrames(0));
+        checkTrajectoryAgainstReferenceData(simulationTrajectoryFileName.u8string(),
+                                            trajectoryComparison,
+                                            &rootChecker,
+                                            MaxNumFrames(0));
     }
     if (File::exists(simulationDhdlFileName, File::returnFalseOnError))
     {

@@ -79,7 +79,7 @@ TEST_P(MdrunCompressedXOutput, ExitsNormally)
     runner_.useTopGroAndNdxFromDatabase("spc2");
     ASSERT_EQ(0, runner_.callGrompp());
 
-    runner_.reducedPrecisionTrajectoryFileName_ = fileManager_.getTemporaryFilePath(".xtc");
+    runner_.reducedPrecisionTrajectoryFileName_ = fileManager_.getTemporaryFilePath(".xtc").u8string();
     ASSERT_EQ(0, runner_.callMdrun());
 
     ::gmx::test::CommandLine checkCaller;

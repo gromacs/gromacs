@@ -1007,7 +1007,7 @@ static void calc_cumulatives(t_UmbrellaWindow*  window,
             }
             fprintf(fp, "\n");
         }
-        printf("Wrote cumulative distribution functions to %s\n", fn.c_str());
+        printf("Wrote cumulative distribution functions to %s\n", fn.u8string().c_str());
         xvgrclose(fp);
     }
 }

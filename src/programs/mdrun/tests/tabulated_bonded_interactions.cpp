@@ -96,11 +96,11 @@ public:
     //! Execute the trajectory writing test
     void setupGrompp(const char* interaction)
     {
-        runner_.topFileName_ = fileManager_.getTemporaryFilePath("butane1.top");
+        runner_.topFileName_ = fileManager_.getTemporaryFilePath("butane1.top").u8string();
         TextWriter::writeFileFromString(runner_.topFileName_,
                                         formatString(g_butaneTopFileFormatString, interaction));
-        runner_.groFileName_ = gmx::test::TestFileManager::getInputFilePath("butane1.gro");
-        runner_.ndxFileName_ = gmx::test::TestFileManager::getInputFilePath("butane1.ndx");
+        runner_.groFileName_ = gmx::test::TestFileManager::getInputFilePath("butane1.gro").u8string();
+        runner_.ndxFileName_ = gmx::test::TestFileManager::getInputFilePath("butane1.ndx").u8string();
         runner_.useEmptyMdpFile();
     }
     //! Prepare an mdrun caller
@@ -142,8 +142,8 @@ TEST_F(BondedInteractionsTest, TabulatedBondWorks)
     1     2     8  0  1000");
     EXPECT_EQ(0, runner_.callGrompp());
 
-    test::CommandLine rerunCaller   = setupMdrun();
-    std::string       tableFileName = gmx::test::TestFileManager::getInputFilePath("butane_b0.xvg");
+    test::CommandLine rerunCaller = setupMdrun();
+    std::string tableFileName = gmx::test::TestFileManager::getInputFilePath("butane_b0.xvg").u8string();
     rerunCaller.addOption("-tableb", tableFileName);
     ASSERT_EQ(0, runner_.callMdrun(rerunCaller));
     checkMdrun();
@@ -172,8 +172,8 @@ TEST_F(BondedInteractionsTest, TabulatedAngleWorks)
     1     2     3     8  0  1000");
     EXPECT_EQ(0, runner_.callGrompp());
 
-    test::CommandLine rerunCaller   = setupMdrun();
-    std::string       tableFileName = gmx::test::TestFileManager::getInputFilePath("butane_a0.xvg");
+    test::CommandLine rerunCaller = setupMdrun();
+    std::string tableFileName = gmx::test::TestFileManager::getInputFilePath("butane_a0.xvg").u8string();
     rerunCaller.addOption("-tableb", tableFileName);
     ASSERT_EQ(0, runner_.callMdrun(rerunCaller));
     checkMdrun();
@@ -202,8 +202,8 @@ TEST_F(BondedInteractionsTest, TabulatedDihedralWorks)
     1     2     3     4     8   0  1000");
     EXPECT_EQ(0, runner_.callGrompp());
 
-    test::CommandLine rerunCaller   = setupMdrun();
-    std::string       tableFileName = gmx::test::TestFileManager::getInputFilePath("butane_d0.xvg");
+    test::CommandLine rerunCaller = setupMdrun();
+    std::string tableFileName = gmx::test::TestFileManager::getInputFilePath("butane_d0.xvg").u8string();
     rerunCaller.addOption("-tableb", tableFileName);
     ASSERT_EQ(0, runner_.callMdrun(rerunCaller));
     checkMdrun();

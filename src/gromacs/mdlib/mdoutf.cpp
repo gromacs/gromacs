@@ -383,7 +383,7 @@ static void write_checkpoint(const char*                     fn,
                                                 eSwapCoords,
                                                 false };
     std::strcpy(headerContents.version, gmx_version());
-    std::strcpy(headerContents.fprog, gmx::getProgramContext().fullBinaryPath().c_str());
+    std::strcpy(headerContents.fprog, gmx::getProgramContext().fullBinaryPath().u8string().c_str());
     std::strcpy(headerContents.ftime, timebuf.c_str());
     if (haveDDAtomOrdering(*cr))
     {
@@ -409,7 +409,9 @@ static void write_checkpoint(const char*                     fn,
     if (ret)
     {
         char buf[STRLEN];
-        sprintf(buf, "Cannot fsync '%s'; maybe you are out of disk space?", gmx_fio_getname(ret).c_str());
+        sprintf(buf,
+                "Cannot fsync '%s'; maybe you are out of disk space?",
+                gmx_fio_getname(ret).u8string().c_str());
 
         if (getenv(GMX_IGNORE_FSYNC_FAILURE_ENV) == nullptr)
         {

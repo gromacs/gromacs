@@ -70,13 +70,13 @@ public:
     {
         CommandLine caller = commandLine();
 
-        const std::string mdpInputFileName(fileManager().getTemporaryFilePath("input.mdp"));
+        const std::string mdpInputFileName(fileManager().getTemporaryFilePath("input.mdp").u8string());
         TextWriter::writeFileFromString(
                 mdpInputFileName,
                 "verlet-buffer-tolerance =-1\nrcoulomb=0.5\nrvdw = 0.5\nrlist = 0.5\n");
         caller.addOption("-f", mdpInputFileName);
-        caller.addOption("-c", TestFileManager::getInputFilePath("spc216_with_methane.gro"));
-        caller.addOption("-p", TestFileManager::getInputFilePath("spc216_with_methane.top"));
+        caller.addOption("-c", TestFileManager::getInputFilePath("spc216_with_methane.gro").u8string());
+        caller.addOption("-p", TestFileManager::getInputFilePath("spc216_with_methane.top").u8string());
         caller.addOption("-o", tprFileName_);
 
         gmx_grompp(caller.argc(), caller.argv());
@@ -98,7 +98,8 @@ public:
     }
 
 private:
-    const std::string tprFileName_ = fileManager().getTemporaryFilePath("spc216_with_methane.tpr");
+    const std::string tprFileName_ =
+            fileManager().getTemporaryFilePath("spc216_with_methane.tpr").u8string();
 };
 
 TEST_F(GenionTest, HighConcentrationIonPlacement)
