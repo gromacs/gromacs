@@ -127,7 +127,10 @@ static void comp_tpx(const char* fn1, const char* fn2, gmx_bool bRMSD, real ftol
         }
     }
     delete ir[0];
-    delete ir[1];
+    if (fn2)
+    {
+        delete ir[1];
+    }
 }
 
 static void comp_trx(const gmx_output_env_t* oenv, const char* fn1, const char* fn2, gmx_bool bRMSD, real ftol, real abstol)

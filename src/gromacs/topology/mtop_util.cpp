@@ -840,16 +840,24 @@ static void sortFreeEnergyInteractionsAtEnd(const gmx_mtop_t& mtop, InteractionD
 {
     std::vector<int64_t> atomInfo(mtop.natoms, 0);
 
+
     for (size_t mb = 0; mb < mtop.molblock.size(); mb++)
     {
         const gmx_molblock_t& molb = mtop.molblock[mb];
         const gmx_moltype_t&  molt = mtop.moltype[molb.type];
-        for (int a = 0; a < molt.atoms.nr; a++)
+        if (!molt.ilist[F_LJ14].iatoms.empty())
         {
-            if (atomHasPerturbedChargeIn14Interaction(a, molt))
+            int offset = mtop.moleculeBlockIndices[mb].globalAtomStart;
+            for (int mol = 0; mol < molb.nmol; mol++)
             {
-                atomInfo[a] |= gmx::sc_atomInfo_HasPerturbedChargeIn14Interaction;
-                break;
+                for (int a = 0; a < molt.atoms.nr; a++)
+                {
+                    if (atomHasPerturbedChargeIn14Interaction(a, molt))
+                    {
+                        atomInfo[offset + a] |= gmx::sc_atomInfo_HasPerturbedChargeIn14Interaction;
+                    }
+                }
+                offset += molt.atoms.nr;
             }
         }
     }

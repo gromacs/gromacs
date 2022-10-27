@@ -66,8 +66,8 @@ namespace test
 EnergyTermsToCompare EnergyComparison::defaultEnergyTermsToCompare()
 {
     return {
-        { interaction_function[F_EPOT].longname, relativeToleranceAsUlp(10.0, 50) },
-        { interaction_function[F_EKIN].longname, relativeToleranceAsUlp(10.0, 50) },
+        { interaction_function[F_EPOT].longname, relativeToleranceAsPrecisionDependentUlp(60.0, 200, 160) },
+        { interaction_function[F_EKIN].longname, relativeToleranceAsPrecisionDependentUlp(60.0, 200, 160) },
         // The pressure is very strongly affected by summation errors,
         // so we need a large tolerance.
         // The value of 17000 is calibrated for running a small water box for 16 steps.

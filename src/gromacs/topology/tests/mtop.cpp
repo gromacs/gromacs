@@ -63,13 +63,13 @@ void addTwoWaterMolecules(gmx_mtop_t* mtop)
     iatoms.push_back(1);
     iatoms.push_back(2);
     int moleculeTypeIndex = mtop->moltype.size();
-    mtop->moltype.push_back(moltype);
+    mtop->moltype.push_back(std::move(moltype));
 
     const int numWaterMolecules = 2;
     mtop->molblock.emplace_back(gmx_molblock_t{});
     mtop->molblock.back().type = moleculeTypeIndex;
     mtop->molblock.back().nmol = numWaterMolecules;
-    mtop->natoms               = moltype.atoms.nr * mtop->molblock.back().nmol;
+    mtop->natoms               = mtop->moltype.back().atoms.nr * mtop->molblock.back().nmol;
 }
 
 /*! \brief
@@ -246,6 +246,148 @@ TEST(MtopTest, AtomHasPerturbedChargeIn14Interaction)
         EXPECT_TRUE(atomHasPerturbedChargeIn14Interaction(1, molt));
         EXPECT_FALSE(atomHasPerturbedChargeIn14Interaction(2, molt));
         EXPECT_FALSE(atomHasPerturbedChargeIn14Interaction(3, molt));
+    }
+}
+
+/*! \brief Add an ethane molecule with uniform charges on all atoms and states */
+void addEthane(gmx_mtop_t* mtop)
+{
+    t_iparams iparams;
+    // Add a constraint type
+    iparams.constr = { 0.5, 0.5 };
+    mtop->ffparams.iparams.push_back(iparams);
+    const int constraintInteractionType = 0;
+    // Add an angle type
+    iparams.harmonic = { 120, 1000, 120, 1000 };
+    mtop->ffparams.iparams.push_back(iparams);
+    const int angleInteractionType = 1;
+    // Add an LJ-14 type
+    iparams.lj14 = { 1, 100, 1, 100 };
+    mtop->ffparams.iparams.push_back(iparams);
+    const int oneFourInteractionType = 2;
+
+    const int numAtoms = 8;
+    const int carbon0  = 0;
+    const int carbon1  = 4;
+    // Atoms 1,2,3,5,6,7 are hydrogens.
+
+    gmx_moltype_t& ethaneMoleculeType = mtop->moltype.emplace_back(gmx_moltype_t{});
+
+    // Describe the interactions
+    // clang-format off
+    ethaneMoleculeType.ilist[F_CONSTR].iatoms = { constraintInteractionType, carbon0, 1,
+                                                  constraintInteractionType, carbon0, 2,
+                                                  constraintInteractionType, carbon0, 3,
+                                                  constraintInteractionType, carbon1, 5,
+                                                  constraintInteractionType, carbon1, 6,
+                                                  constraintInteractionType, carbon1, 7 };
+    ethaneMoleculeType.ilist[F_ANGLES].iatoms = { angleInteractionType, 1, carbon0, 2,
+                                                  angleInteractionType, 1, carbon0, 3,
+                                                  angleInteractionType, 2, carbon0, 3,
+                                                  angleInteractionType, 5, carbon1, 6,
+                                                  angleInteractionType, 5, carbon1, 7,
+                                                  angleInteractionType, 6, carbon1, 7 };
+    ethaneMoleculeType.ilist[F_LJ14].iatoms = { oneFourInteractionType, 1, 5,
+                                                oneFourInteractionType, 1, 6,
+                                                oneFourInteractionType, 1, 7,
+                                                oneFourInteractionType, 2, 5,
+                                                oneFourInteractionType, 2, 6,
+                                                oneFourInteractionType, 2, 7,
+                                                oneFourInteractionType, 3, 5,
+                                                oneFourInteractionType, 3, 6,
+                                                oneFourInteractionType, 3, 7 };
+    // clang-format on
+
+    // Set up the atoms, including arbitrary uniform charges
+    ethaneMoleculeType.atoms.nr = numAtoms;
+    snew(ethaneMoleculeType.atoms.atom, numAtoms);
+    for (int i = 0; i != numAtoms; ++i)
+    {
+        ethaneMoleculeType.atoms.atom[i].q  = 1.0;
+        ethaneMoleculeType.atoms.atom[i].qB = 1.0;
+    }
+}
+
+TEST(MtopTest, CanSortPerturbedInteractionsCorrectly)
+{
+    gmx_mtop_t mtop;
+
+    // Add a molecule type of normal ethane
+    addEthane(&mtop);
+    // Perturb the charge on atoms 1 and 7 by changing the B-state
+    // value.
+    const auto& ethaneMoleculeType = mtop.moltype.back();
+    ethaneMoleculeType.atoms.atom[1].qB *= -1.0;
+    ethaneMoleculeType.atoms.atom[7].qB *= -1.0;
+
+    // Add a molecule block of ethane with perturbed charge
+    gmx_molblock_t molblock;
+    molblock.type = 0;
+    molblock.nmol = 1;
+    mtop.molblock.push_back(molblock);
+    mtop.natoms += mtop.moltype[molblock.type].atoms.nr;
+    mtop.finalize();
+
+    SCOPED_TRACE("Make a local topology without sorting perturbed interactions to the end");
+    {
+        gmx_localtop_t localTopology(mtop.ffparams);
+        const bool     perturbedInteractionsAtEnd = false;
+        gmx_mtop_generate_local_top(mtop, &localTopology, perturbedInteractionsAtEnd);
+        ASSERT_EQ(27, localTopology.idef.il[F_LJ14].size());
+        int iatomsIndex = 0;
+        // All the interactions remain in the order in which they were
+        // inserted.
+        for (const int i : { 1, 2, 3 })
+        {
+            for (const int j : { 5, 6, 7 })
+            {
+                ++iatomsIndex;
+                EXPECT_EQ(i, localTopology.idef.il[F_LJ14].iatoms[iatomsIndex++]);
+                EXPECT_EQ(j, localTopology.idef.il[F_LJ14].iatoms[iatomsIndex++]);
+            }
+        }
+    }
+
+    SCOPED_TRACE(
+            "Make a local topology that sorts perturbed interactions to the end, note that the "
+            "interactions including atoms 1 or 7 are now at the end");
+    {
+        gmx_localtop_t localTopology(mtop.ffparams);
+        const bool     perturbedInteractionsAtEnd = true;
+        gmx_mtop_generate_local_top(mtop, &localTopology, perturbedInteractionsAtEnd);
+        ASSERT_EQ(27, localTopology.idef.il[F_LJ14].size());
+        int iatomsIndex = 0;
+        // All the interactions including neither atom 1 or 7 remain in
+        // the order in which they were inserted.
+        for (const int i : { 2, 3 })
+        {
+            for (const int j : { 5, 6 })
+            {
+                ++iatomsIndex;
+                EXPECT_EQ(i, localTopology.idef.il[F_LJ14].iatoms[iatomsIndex++]);
+                EXPECT_EQ(j, localTopology.idef.il[F_LJ14].iatoms[iatomsIndex++]);
+            }
+        }
+        // Then all interactions with atom 1
+        for (const int i : { 1 })
+        {
+            for (const int j : { 5, 6, 7 })
+            {
+                ++iatomsIndex;
+                EXPECT_EQ(i, localTopology.idef.il[F_LJ14].iatoms[iatomsIndex++]);
+                EXPECT_EQ(j, localTopology.idef.il[F_LJ14].iatoms[iatomsIndex++]);
+            }
+        }
+        // Then all interactions with atom 7
+        for (const int i : { 2, 3 })
+        {
+            for (const int j : { 7 })
+            {
+                ++iatomsIndex;
+                EXPECT_EQ(i, localTopology.idef.il[F_LJ14].iatoms[iatomsIndex++]);
+                EXPECT_EQ(j, localTopology.idef.il[F_LJ14].iatoms[iatomsIndex++]);
+            }
+        }
     }
 }
 
