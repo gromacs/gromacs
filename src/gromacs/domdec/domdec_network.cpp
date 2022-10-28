@@ -281,8 +281,7 @@ void dd_scatterv(const gmx_domdec_t gmx_unused*      dd,
 #if GMX_MPI
     static_assert(std::is_same_v<T, int> || std::is_same_v<T, real>,
                   "Currently only support int and real");
-    const MPI_Datatype mpiDatatype =
-            (std::is_same_v<T, int> ? MPI_INT : (GMX_DOUBLE ? MPI_DOUBLE : MPI_FLOAT));
+    MPI_Datatype mpiDatatype = (std::is_same_v<T, int> ? MPI_INT : (GMX_DOUBLE ? MPI_DOUBLE : MPI_FLOAT));
 
     T dum = 0;
 
@@ -340,8 +339,7 @@ void dd_gatherv(const gmx_domdec_t gmx_unused* dd,
 #if GMX_MPI
     static_assert(std::is_same_v<T, int> || std::is_same_v<T, real>,
                   "Currently only support int and real");
-    const MPI_Datatype mpiDatatype =
-            (std::is_same_v<T, int> ? MPI_INT : (GMX_DOUBLE ? MPI_DOUBLE : MPI_FLOAT));
+    MPI_Datatype mpiDatatype = (std::is_same_v<T, int> ? MPI_INT : (GMX_DOUBLE ? MPI_DOUBLE : MPI_FLOAT));
 
     if (dd->nnodes > 1)
     {
