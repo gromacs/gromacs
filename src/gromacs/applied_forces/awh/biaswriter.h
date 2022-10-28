@@ -68,15 +68,15 @@ class Bias;
 //! Enum with the AWH variables to write.
 enum class AwhOutputEntryType
 {
-    MetaData,               //!< Meta data.
-    CoordValue,             //!< Coordinate value.
-    Pmf,                    //!< The pmf.
-    Bias,                   //!< The bias.
-    Visits,                 //!< The number of visits.
-    Weights,                //!< The weights.
-    Target,                 //!< The target distribition.
-    ForceCorrelationVolume, //!< The volume of the force correlation tensor.
-    FrictionTensor          //!< The full friction tensor.
+    MetaData,                     //!< Meta data.
+    CoordValue,                   //!< Coordinate value.
+    Pmf,                          //!< The pmf.
+    Bias,                         //!< The bias.
+    Visits,                       //!< The number of visits.
+    Weights,                      //!< The weights.
+    Target,                       //!< The target distribition.
+    SharedForceCorrelationVolume, //!< The force correlation volume shared between multiple walkers.
+    SharedFrictionTensor          //!< The full friction tensor shared between multiple walkers.
 };
 
 //! Enum with the types of metadata to write.

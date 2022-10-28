@@ -231,7 +231,7 @@ public:
      * \param[in]     step  The current MD step.
      * \param[in,out] fr    Energy data frame.
      */
-    void writeToEnergyFrame(int64_t step, t_enxframe* fr) const;
+    void writeToEnergyFrame(int64_t step, t_enxframe* fr);
 
     /*! \brief Returns string "AWH" for registering AWH as an external potential provider with the pull module.
      */

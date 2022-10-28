@@ -206,7 +206,7 @@ TEST_P(BiasTest, ForcesBiasPmfWeightSum)
      */
     const double kCoordMax = bias.dimParams()[0].pullDimParams().k * coordMaxValue;
 
-    constexpr int ulpTol = 10;
+    constexpr int ulpTol = 20;
 
     checker.checkSequence(props.begin(), props.end(), "Properties");
     checker.setDefaultTolerance(absoluteTolerance(kCoordMax * GMX_DOUBLE_EPS * ulpTol));

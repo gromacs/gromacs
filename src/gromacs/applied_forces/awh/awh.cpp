@@ -498,7 +498,7 @@ void Awh::registerAwhWithPull(const AwhParams& awhParams, pull_t* pull_work)
 }
 
 /* Fill the AWH data block of an energy frame with data (if there is any). */
-void Awh::writeToEnergyFrame(int64_t step, t_enxframe* frame) const
+void Awh::writeToEnergyFrame(int64_t step, t_enxframe* frame)
 {
     GMX_ASSERT(MAIN(commRecord_), "writeToEnergyFrame should only be called on the main rank");
     GMX_ASSERT(frame != nullptr, "Need a valid energy frame");
@@ -526,6 +526,12 @@ void Awh::writeToEnergyFrame(int64_t step, t_enxframe* frame) const
 
     /* Claim it as an AWH block. */
     awhEnergyBlock->id = enxAWH;
+
+    /* Update data shared between walkers. */
+    for (auto& biasCoupledToSystem : biasCoupledToSystem_)
+    {
+        biasCoupledToSystem.bias_.updateBiasStateSharedCorrelationTensorTimeIntegral();
+    }
 
     /* Transfer AWH data blocks to energy sub blocks */
     int energySubblockCount = 0;

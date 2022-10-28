@@ -297,6 +297,10 @@ public:
         return grid_.point(gridPointIndex).coordValue;
     }
 
+    /*! \brief Update the correlation tensor time integral shared across
+     * multiple AWH walkers. */
+    void updateBiasStateSharedCorrelationTensorTimeIntegral();
+
 private:
     /*! \brief
      * Performs statistical checks on the collected histograms and warns if issues are detected.

@@ -388,22 +388,21 @@ Bias::Bias(int                            biasIndexInCollection,
     state_.initGridPointState(
             awhBiasParams, dimParams_, grid_, params_, biasInitFilename, awhParams.numBias());
 
+    /* Set up the force correlation object. */
+
+    /* We let the correlation init function set its parameters
+     * to something useful for now.
+     */
+    double blockLength = 0;
+    /* Construct the force correlation object. */
+    forceCorrelationGrid_ = std::make_unique<CorrelationGrid>(state_.points().size(),
+                                                              ndim(),
+                                                              blockLength,
+                                                              CorrelationGrid::BlockLengthMeasure::Time,
+                                                              awhParams.nstSampleCoord() * mdTimeStep);
+
     if (thisRankDoesIO_)
     {
-        /* Set up the force correlation object. */
-
-        /* We let the correlation init function set its parameters
-         * to something useful for now.
-         */
-        double blockLength = 0;
-        /* Construct the force correlation object. */
-        forceCorrelationGrid_ =
-                std::make_unique<CorrelationGrid>(state_.points().size(),
-                                                  ndim(),
-                                                  blockLength,
-                                                  CorrelationGrid::BlockLengthMeasure::Time,
-                                                  awhParams.nstSampleCoord() * mdTimeStep);
-
         writer_ = std::make_unique<BiasWriter>(*this);
     }
 }
@@ -455,6 +454,11 @@ void Bias::updateForceCorrelationGrid(gmx::ArrayRef<const double> probWeightNeig
         /* Note: we might want to give a whole list of data to add instead and have this loop in the data adding function */
         forceCorrelationGrid_->addData(indexNeighbor, weightNeighbor, forceFromNeighbor, t);
     }
+}
+
+void Bias::updateBiasStateSharedCorrelationTensorTimeIntegral()
+{
+    state_.updateSharedCorrelationTensorTimeIntegral(params_, *forceCorrelationGrid_);
 }
 
 /* Return the number of data blocks that have been prepared for writing. */
