@@ -53,6 +53,16 @@
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/smalloc.h"
 
+/*! \libinternal
+ * \brief Duplicate definitions of those in vectypes.h
+ *
+ * This lets the utility module be independent of the math module,
+ * without which it is hard to build a proper layered library.  The
+ * duplicates must remain matching, but if ever only one is changed
+ * then the compiler will complain about it. */
+typedef real rvec[3];
+typedef int  ivec[3];
+
 namespace gmx
 {
 
@@ -82,6 +92,8 @@ public:
     virtual void doFloat(float* value)                  = 0;
     virtual void doDouble(double* value)                = 0;
     virtual void doReal(real* value)                    = 0;
+    virtual void doIvec(ivec* value)                    = 0;
+    virtual void doRvec(rvec* value)                    = 0;
     virtual void doString(std::string* value)           = 0;
     virtual void doOpaque(char* data, std::size_t size) = 0;
     ///@}
@@ -95,7 +107,7 @@ public:
             doBool(&(values[i]));
         }
     }
-    // Char and UChar have vector specializations that can be
+    // Char, UChar and RVec have vector specializations that can be
     // used instead of the default looping.
     virtual void doCharArray(char* values, int elements)
     {
@@ -158,6 +170,20 @@ public:
         for (int i = 0; i < elements; i++)
         {
             doReal(&(values[i]));
+        }
+    }
+    void doIvecArray(ivec* values, int elements)
+    {
+        for (int i = 0; i < elements; i++)
+        {
+            doIvec(&(values[i]));
+        }
+    }
+    virtual void doRvecArray(rvec* values, int elements)
+    {
+        for (int i = 0; i < elements; i++)
+        {
+            doRvec(&(values[i]));
         }
     }
     ///@}
