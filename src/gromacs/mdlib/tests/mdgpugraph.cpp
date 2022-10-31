@@ -66,110 +66,90 @@ namespace
 TEST(MdGraphTest, MdGpuGraphExecutesActivities)
 {
 
-    const auto& testDevice    = getTestHardwareEnvironment()->getTestDeviceList()[0];
-    const auto& deviceContext = testDevice->deviceContext();
-
-    // Initialize required structures
-    SimulationWorkload simulationWork;
-    simulationWork.useGpuPme                 = true;
-    simulationWork.useGpuUpdate              = true;
-    simulationWork.useMdGpuGraph             = true;
-    simulationWork.havePpDomainDecomposition = false;
-    simulationWork.haveSeparatePmeRank       = true;
-    DeviceStreamManager  deviceStreamManager(testDevice->deviceInfo(), simulationWork, false);
-    GpuEventSynchronizer xReadyOnDeviceEvent;
-    GpuEventSynchronizer xUpdatedOnDeviceEvent;
-    gmx::MdGpuGraph      mdGpuGraph(
-            deviceStreamManager, simulationWork, MPI_COMM_WORLD, MdGraphEvenOrOddStep::EvenStep, nullptr);
-    gmx::MdGpuGraph mdGpuGraphAlternate(
-            deviceStreamManager, simulationWork, MPI_COMM_WORLD, MdGraphEvenOrOddStep::EvenStep, nullptr);
-    mdGpuGraph.setAlternateStepPpTaskCompletionEvent(mdGpuGraphAlternate.getPpTaskCompletionEvent());
-
-    // Allocate 2 device buffers
-    DeviceBuffer<int> d_output;
-    int               d_output_size       = -1;
-    int               d_output_size_alloc = -1;
-    reallocateDeviceBuffer(&d_output, 1, &d_output_size, &d_output_size_alloc, deviceContext);
-    DeviceBuffer<int> d_staging;
-    int               d_staging_size       = -1;
-    int               d_staging_size_alloc = -1;
-    reallocateDeviceBuffer(&d_staging, 1, &d_staging_size, &d_staging_size_alloc, deviceContext);
-
-    // Perform below steps with and without graph
-    for (bool useGraph : { false, true })
+    const auto& testDeviceList = getTestHardwareEnvironment()->getTestDeviceList();
+    if (testDeviceList.empty())
     {
+        GTEST_SKIP() << "No compatible GPUs to test on.";
+    }
+    for (const auto& testDevice : testDeviceList)
+    {
+        testDevice->activate();
+        const auto& deviceContext = testDevice->deviceContext();
 
-        HostVector<int> h_one;
-        changePinningPolicy(&h_one, PinningPolicy::PinnedIfSupported);
-        h_one.resize(1);
-        h_one[0] = 1;
+        // Initialize required structures
+        SimulationWorkload simulationWork;
+        simulationWork.useGpuPme                 = true;
+        simulationWork.useGpuUpdate              = true;
+        simulationWork.useMdGpuGraph             = true;
+        simulationWork.havePpDomainDecomposition = false;
+        simulationWork.haveSeparatePmeRank       = true;
+        DeviceStreamManager  deviceStreamManager(testDevice->deviceInfo(), simulationWork, false);
+        GpuEventSynchronizer xReadyOnDeviceEvent;
+        GpuEventSynchronizer xUpdatedOnDeviceEvent;
+        gmx::MdGpuGraph      mdGpuGraph(
+                deviceStreamManager, simulationWork, MPI_COMM_WORLD, MdGraphEvenOrOddStep::EvenStep, nullptr);
+        gmx::MdGpuGraph mdGpuGraphAlternate(
+                deviceStreamManager, simulationWork, MPI_COMM_WORLD, MdGraphEvenOrOddStep::EvenStep, nullptr);
+        mdGpuGraph.setAlternateStepPpTaskCompletionEvent(mdGpuGraphAlternate.getPpTaskCompletionEvent());
 
-        HostVector<int> h_output;
-        changePinningPolicy(&h_output, PinningPolicy::PinnedIfSupported);
-        h_output.resize(1);
+        // Allocate 2 device buffers
+        DeviceBuffer<int> d_output;
+        int               d_output_size       = -1;
+        int               d_output_size_alloc = -1;
+        reallocateDeviceBuffer(&d_output, 1, &d_output_size, &d_output_size_alloc, deviceContext);
+        DeviceBuffer<int> d_staging;
+        int               d_staging_size       = -1;
+        int               d_staging_size_alloc = -1;
+        reallocateDeviceBuffer(&d_staging, 1, &d_staging_size, &d_staging_size_alloc, deviceContext);
 
-        // Set output to 1 on GPU
-        copyToDeviceBuffer(&d_output,
-                           h_one.data(),
-                           0,
-                           1,
-                           deviceStreamManager.stream(gmx::DeviceStreamType::NonBondedLocal),
-                           GpuApiCallBehavior::Sync,
-                           nullptr);
-
-        if (useGraph && mdGpuGraph.captureThisStep(true)) // denote start of graph region
+        // Perform below steps with and without graph
+        for (bool useGraph : { false, true })
         {
-            // Start graph capture (automatically on local stream)
-            bool usedGraphLastStep = true;
-            mdGpuGraph.setUsedGraphLastStep(usedGraphLastStep);
-            mdGpuGraph.startRecord(&xReadyOnDeviceEvent);
-        }
 
-        // Clear output on GPU in update stream, which will be automatically forked from
-        // local stream in the graph. Can be done in single call, but instead perform in
-        // 2 stages to create a 2-node graph.
-        const DeviceStream& stream =
-                deviceStreamManager.stream(gmx::DeviceStreamType::UpdateAndConstraints);
-        clearDeviceBufferAsync(&d_staging, 0, 1, stream);
-        copyBetweenDeviceBuffers(&d_output, &d_staging, 1, stream, GpuApiCallBehavior::Async, nullptr);
+            HostVector<int> h_one;
+            changePinningPolicy(&h_one, PinningPolicy::PinnedIfSupported);
+            h_one.resize(1);
+            h_one[0] = 1;
 
-        if (mdGpuGraph.graphIsCapturingThisStep()) // denote end of graph region
-        {
-            // End graph capture and instantiate
-            mdGpuGraph.endRecord();
-            mdGpuGraph.createExecutableGraph();
-        }
+            HostVector<int> h_output;
+            changePinningPolicy(&h_output, PinningPolicy::PinnedIfSupported);
+            h_output.resize(1);
 
-        // Wait for update stream
-        deviceStreamManager.stream(gmx::DeviceStreamType::UpdateAndConstraints).synchronize();
-        // Synchronously copy output to host buffer
-        copyFromDeviceBuffer(h_output.data(),
-                             &d_output,
-                             0,
-                             1,
-                             deviceStreamManager.stream(gmx::DeviceStreamType::NonBondedLocal),
-                             GpuApiCallBehavior::Sync,
-                             nullptr);
+            // Set output to 1 on GPU
+            copyToDeviceBuffer(&d_output,
+                               h_one.data(),
+                               0,
+                               1,
+                               deviceStreamManager.stream(gmx::DeviceStreamType::NonBondedLocal),
+                               GpuApiCallBehavior::Sync,
+                               nullptr);
 
-        if (mdGpuGraph.useGraphThisStep())
-        {
-            // Graph has not yet been launched so output has not yet been cleared
-            EXPECT_EQ(h_output[0], 1);
-        }
-        else
-        {
-            // Without graph capture active, the above memory operations will have been performed
-            // directly and output will now be cleared
-            EXPECT_EQ(h_output[0], 0);
-        }
+            if (useGraph && mdGpuGraph.captureThisStep(true)) // denote start of graph region
+            {
+                // Start graph capture (automatically on local stream)
+                bool usedGraphLastStep = true;
+                mdGpuGraph.setUsedGraphLastStep(usedGraphLastStep);
+                mdGpuGraph.startRecord(&xReadyOnDeviceEvent);
+            }
 
-        if (mdGpuGraph.useGraphThisStep())
-        {
-            // Now launch graph and check output is cleared
-            mdGpuGraph.launchGraphMdStep(&xUpdatedOnDeviceEvent);
-            xUpdatedOnDeviceEvent.waitForEvent();
+            // Clear output on GPU in update stream, which will be automatically forked from
+            // local stream in the graph. Can be done in single call, but instead perform in
+            // 2 stages to create a 2-node graph.
+            const DeviceStream& stream =
+                    deviceStreamManager.stream(gmx::DeviceStreamType::UpdateAndConstraints);
+            clearDeviceBufferAsync(&d_staging, 0, 1, stream);
+            copyBetweenDeviceBuffers(&d_output, &d_staging, 1, stream, GpuApiCallBehavior::Async, nullptr);
 
-            // Synchronously copy output to host buffer in local stream
+            if (mdGpuGraph.graphIsCapturingThisStep()) // denote end of graph region
+            {
+                // End graph capture and instantiate
+                mdGpuGraph.endRecord();
+                mdGpuGraph.createExecutableGraph();
+            }
+
+            // Wait for update stream
+            deviceStreamManager.stream(gmx::DeviceStreamType::UpdateAndConstraints).synchronize();
+            // Synchronously copy output to host buffer
             copyFromDeviceBuffer(h_output.data(),
                                  &d_output,
                                  0,
@@ -178,8 +158,35 @@ TEST(MdGraphTest, MdGpuGraphExecutesActivities)
                                  GpuApiCallBehavior::Sync,
                                  nullptr);
 
-            // Graph has now been executed, so output is cleared
-            EXPECT_EQ(h_output[0], 0);
+            if (mdGpuGraph.useGraphThisStep())
+            {
+                // Graph has not yet been launched so output has not yet been cleared
+                EXPECT_EQ(h_output[0], 1);
+            }
+            else
+            {
+                // Without graph capture active, the above memory operations will have been performed directly and output will now be cleared
+                EXPECT_EQ(h_output[0], 0);
+            }
+
+            if (mdGpuGraph.useGraphThisStep())
+            {
+                // Now launch graph and check output is cleared
+                mdGpuGraph.launchGraphMdStep(&xUpdatedOnDeviceEvent);
+                xUpdatedOnDeviceEvent.waitForEvent();
+
+                // Synchronously copy output to host buffer in local stream
+                copyFromDeviceBuffer(h_output.data(),
+                                     &d_output,
+                                     0,
+                                     1,
+                                     deviceStreamManager.stream(gmx::DeviceStreamType::NonBondedLocal),
+                                     GpuApiCallBehavior::Sync,
+                                     nullptr);
+
+                // Graph has now been executed, so output is cleared
+                EXPECT_EQ(h_output[0], 0);
+            }
         }
     }
 }
