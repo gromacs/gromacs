@@ -38,10 +38,10 @@ when invoked with more than one MPI rank.
 
 :issue:`4604`
 
-Pulling with previous reference made mdrun exit at checkpoint writing
-"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+Pulling with average force output made mdrun exit at checkpoint writing
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
-When the pull-pbc-ref-prev-step-com was used, mdrun would exit with
+When ``pull_fout_average`` was set to ``yes``, :ref:`gmx mdrun` would exit with
 an assertion failure when trying to write a checkpoint file.
 
 :issue:`4636`
