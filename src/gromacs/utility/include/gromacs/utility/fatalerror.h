@@ -221,7 +221,7 @@ gmx_fatal(int fatal_errno, const std::filesystem::path& file, int line, gmx_fmts
 #define gmx_incons(msg) gmx_error("incons", msg)
 #define gmx_input(msg) gmx_error("input", msg)
 #define gmx_mem(msg) gmx_error("mem", msg)
-#define gmx_open(fn) gmx_error("open", (fn).c_str())
+#define gmx_open(fn) gmx_error("open", fn)
 /*! \} */
 
 /*! \brief
