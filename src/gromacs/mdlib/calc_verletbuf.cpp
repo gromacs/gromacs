@@ -928,7 +928,7 @@ real calcVerletBufferSize(const gmx_mtop_t&         mtop,
                           const t_inputrec&         ir,
                           const int                 nstlist,
                           const int                 listLifetime,
-                          real                      referenceTemperature,
+                          real                      ensembleTemperature,
                           const VerletbufListSetup& listSetup)
 {
     double resolution;
@@ -952,16 +952,15 @@ real calcVerletBufferSize(const gmx_mtop_t&         mtop,
         gmx_incons("The Verlet buffer tolerance needs to be larger than zero");
     }
 
-    if (referenceTemperature < 0)
+    if (ensembleTemperature < 0)
     {
         /* We use the maximum temperature with multiple T-coupl groups.
          * We could use a per particle temperature, but since particles
          * interact, this might underestimate the buffer size.
          */
-        referenceTemperature = maxReferenceTemperature(ir);
+        ensembleTemperature = maxReferenceTemperature(ir);
 
-        GMX_RELEASE_ASSERT(referenceTemperature >= 0,
-                           "Without T-coupling we should not end up here");
+        GMX_RELEASE_ASSERT(ensembleTemperature >= 0, "Without T-coupling we should not end up here");
     }
 
     /* Resolution of the buffer size */
@@ -1129,7 +1128,7 @@ real calcVerletBufferSize(const gmx_mtop_t&         mtop,
      * For inertial dynamics (not Brownian dynamics) the mass factor
      * is not included in kT_fac, it is added later.
      */
-    const real kT_fac = displacementVariance(ir, referenceTemperature, listLifetime * ir.delta_t);
+    const real kT_fac = displacementVariance(ir, ensembleTemperature, listLifetime * ir.delta_t);
 
     if (debug)
     {

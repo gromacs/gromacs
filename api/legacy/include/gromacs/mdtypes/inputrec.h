@@ -403,6 +403,10 @@ struct t_inputrec // NOLINT (clang-analyzer-optin.performance.Padding)
     bool bPeriodicMols = false;
     //! Continuation run: starting state is correct (ie. constrained)
     bool bContinuation = false;
+    //! Whether and what kind of ensemble temperature we have for the system
+    EnsembleTemperatureSetting ensembleTemperatureSetting;
+    //! The ensemble temperature of the system, see ensembleTemperatureSetting for validity
+    real ensembleTemperature;
     //! Temperature coupling
     TemperatureCoupling etc = TemperatureCoupling::Default;
     //! Interval in steps for temperature coupling
@@ -654,6 +658,18 @@ bool inputrecPbcXY2Walls(const t_inputrec* ir);
 //! \brief Return true if the simulation has frozen atoms (non-trivial freeze groups).
 bool inputrecFrozenAtoms(const t_inputrec* ir);
 
+/*! \brief Returns true when a constant ensemble temperature is available for the system. */
+bool haveConstantEnsembleTemperature(const t_inputrec& ir);
+
+/*! \brief Returns the constant ensemble temperature for the system. */
+real constantEnsembleTemperature(const t_inputrec& ir);
+
+/*! \brief Returns true when a constant or variable ensemble temperature is available for the system.
+ *
+ * \note The current ensemble temperature can be obtained from \p gmx_ekindata_t.
+ */
+bool haveEnsembleTemperature(const t_inputrec& ir);
+
 /*! \brief Returns true for MD integator with T and/or P-coupling that supports
  * calculating a conserved energy quantity.
  *
@@ -663,8 +679,11 @@ bool inputrecFrozenAtoms(const t_inputrec* ir);
  */
 bool integratorHasConservedEnergyQuantity(const t_inputrec* ir);
 
-/*! \brief Returns true when temperature is coupled or constant. */
-bool integratorHasReferenceTemperature(const t_inputrec* ir);
+/*! \brief Returns true when the integrator, and possibly T-coupling, has a reference temperature. */
+bool integratorHasReferenceTemperature(const t_inputrec& ir);
+
+/*! \brief Returns whether we are doing simulated annealing */
+bool doSimulatedAnnealing(const t_inputrec& ir);
 
 /*! \brief Return the number of bounded dimensions
  *

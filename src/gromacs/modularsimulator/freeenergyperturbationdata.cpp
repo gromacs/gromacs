@@ -59,7 +59,10 @@
 namespace gmx
 {
 
-FreeEnergyPerturbationData::FreeEnergyPerturbationData(FILE* fplog, const t_inputrec& inputrec, MDAtoms* mdAtoms) :
+FreeEnergyPerturbationData::FreeEnergyPerturbationData(FILE*             fplog,
+                                                       const t_inputrec& inputrec,
+                                                       MDAtoms*          mdAtoms,
+                                                       gmx_ekindata_t*   ekindata) :
     element_(std::make_unique<Element>(this, inputrec.fepvals->delta_lambda)),
     lambda_(),
     currentFEPState_(0),
@@ -76,7 +79,7 @@ FreeEnergyPerturbationData::FreeEnergyPerturbationData(FILE* fplog, const t_inpu
                        inputrec_.bSimTemp,
                        *inputrec_.fepvals,
                        inputrec_.simtempvals->temperatures,
-                       gmx::arrayRefFromArray(inputrec_.opts.ref_t, inputrec_.opts.ngtc),
+                       ekindata,
                        true,
                        &currentFEPState_,
                        lambda_);
@@ -310,7 +313,7 @@ void FreeEnergyPerturbationData::readCheckpointToTrxFrame(t_trxframe* trxFrame,
 {
     if (readCheckpointData)
     {
-        FreeEnergyPerturbationData freeEnergyPerturbationData(nullptr, t_inputrec(), nullptr);
+        FreeEnergyPerturbationData freeEnergyPerturbationData(nullptr, t_inputrec(), nullptr, nullptr);
         freeEnergyPerturbationData.doCheckpointData(&readCheckpointData.value());
         trxFrame->lambda = freeEnergyPerturbationData.lambda_[FreeEnergyPerturbationCouplingType::Fep];
         trxFrame->fep_state = freeEnergyPerturbationData.currentFEPState_;

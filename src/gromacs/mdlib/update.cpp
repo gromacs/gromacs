@@ -106,7 +106,7 @@ class Update::Impl
 {
 public:
     //! Constructor
-    Impl(const t_inputrec& inputRecord, BoxDeformation* boxDeformation);
+    Impl(const t_inputrec& inputRecord, const gmx_ekindata_t& ekind, BoxDeformation* boxDeformation);
     //! Destructor
     ~Impl() = default;
 
@@ -157,7 +157,7 @@ public:
                                       const gmx::ArrayRefWithPadding<const gmx::RVec>& f,
                                       const gmx_ekindata_t&                            ekind);
 
-    void update_temperature_constants(const t_inputrec& inputRecord);
+    void update_temperature_constants(const t_inputrec& inputRecord, const gmx_ekindata_t& ekind);
 
     const std::vector<bool>& getAndersenRandomizeGroup() const { return sd_.randomize_group; }
 
@@ -183,8 +183,8 @@ private:
     BoxDeformation* deform_ = nullptr;
 };
 
-Update::Update(const t_inputrec& inputRecord, BoxDeformation* boxDeformation) :
-    impl_(new Impl(inputRecord, boxDeformation)){};
+Update::Update(const t_inputrec& inputRecord, const gmx_ekindata_t& ekind, BoxDeformation* boxDeformation) :
+    impl_(new Impl(inputRecord, ekind, boxDeformation)){};
 
 Update::~Update(){};
 
@@ -283,9 +283,9 @@ void Update::update_for_constraint_virial(const t_inputrec&              inputRe
             inputRecord, homenr, havePartiallyFrozenAtoms, invmass, invMassPerDim, state, f, ekind);
 }
 
-void Update::update_temperature_constants(const t_inputrec& inputRecord)
+void Update::update_temperature_constants(const t_inputrec& inputRecord, const gmx_ekindata_t& ekind)
 {
-    return impl_->update_temperature_constants(inputRecord);
+    return impl_->update_temperature_constants(inputRecord, ekind);
 }
 
 /*! \brief Sets whether we store the updated velocities */
@@ -750,10 +750,11 @@ static void do_update_md(int                                  start,
          * If we do not do temperature coupling (in the run or this step),
          * all scaling values are 1, so we effectively have a single value.
          */
+        const int          ntcg = ekind->numTemperatureCouplingGroups();
         NumTempScaleValues numTempScaleValues =
-                (!doTempCouple || ekind->ngtc == 0)
+                (!doTempCouple || ntcg == 0)
                         ? NumTempScaleValues::None
-                        : (ekind->ngtc == 1 ? NumTempScaleValues::Single : NumTempScaleValues::Multiple);
+                        : (ntcg == 1 ? NumTempScaleValues::Single : NumTempScaleValues::Multiple);
 
         /* Extract some pointers needed by all cases */
         gmx::ArrayRef<const t_grp_tcstat> tcstat = ekind->tcstat;
@@ -1007,41 +1008,43 @@ gmx_stochd_t::gmx_stochd_t(const t_inputrec& inputRecord)
     }
 }
 
-void Update::Impl::update_temperature_constants(const t_inputrec& inputRecord)
+void Update::Impl::update_temperature_constants(const t_inputrec& inputRecord, const gmx_ekindata_t& ekind)
 {
+    const int ntcg = ekind.numTemperatureCouplingGroups();
+
     if (inputRecord.eI == IntegrationAlgorithm::BD)
     {
         if (inputRecord.bd_fric != 0)
         {
-            for (int gt = 0; gt < inputRecord.opts.ngtc; gt++)
+            for (int gt = 0; gt < ntcg; gt++)
             {
-                sd_.bd_rf[gt] = std::sqrt(2.0 * gmx::c_boltz * inputRecord.opts.ref_t[gt]
+                sd_.bd_rf[gt] = std::sqrt(2.0 * gmx::c_boltz * ekind.currentReferenceTemperature(gt)
                                           / (inputRecord.bd_fric * inputRecord.delta_t));
             }
         }
         else
         {
-            for (int gt = 0; gt < inputRecord.opts.ngtc; gt++)
+            for (int gt = 0; gt < ntcg; gt++)
             {
-                sd_.bd_rf[gt] = std::sqrt(2.0 * gmx::c_boltz * inputRecord.opts.ref_t[gt]);
+                sd_.bd_rf[gt] = std::sqrt(2.0 * gmx::c_boltz * ekind.currentReferenceTemperature(gt));
             }
         }
     }
     if (inputRecord.eI == IntegrationAlgorithm::SD1)
     {
-        for (int gt = 0; gt < inputRecord.opts.ngtc; gt++)
+        for (int gt = 0; gt < ntcg; gt++)
         {
-            real kT = gmx::c_boltz * inputRecord.opts.ref_t[gt];
+            real kT = gmx::c_boltz * ekind.currentReferenceTemperature(gt);
             /* The mass is accounted for later, since this differs per atom */
             sd_.sdsig[gt].V = std::sqrt(kT * (1 - sd_.sdc[gt].em * sd_.sdc[gt].em));
         }
     }
 }
 
-Update::Impl::Impl(const t_inputrec& inputRecord, BoxDeformation* boxDeformation) :
+Update::Impl::Impl(const t_inputrec& inputRecord, const gmx_ekindata_t& ekind, BoxDeformation* boxDeformation) :
     sd_(inputRecord), deform_(boxDeformation)
 {
-    update_temperature_constants(inputRecord);
+    update_temperature_constants(inputRecord, ekind);
     xp_.resizeWithPadding(0);
 }
 
@@ -1385,9 +1388,10 @@ void update_ekinstate(ekinstate_t* ekinstate, const gmx_ekindata_t* ekind, const
          * precision so we get binary identical reduced results compared with
          * the reduction in compte_globals() which also uses double precision.
          */
-        std::vector<double> buffer(ekind->ngtc * 2 * DIM * DIM + 1);
+        const int           ntcg = ekind->numTemperatureCouplingGroups();
+        std::vector<double> buffer(ntcg * 2 * DIM * DIM + 1);
         int                 bufIndex = 0;
-        for (int g = 0; g < ekind->ngtc; g++)
+        for (int g = 0; g < ntcg; g++)
         {
             for (int i = 0; i < DIM; i++)
             {

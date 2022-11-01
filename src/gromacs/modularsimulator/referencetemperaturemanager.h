@@ -50,7 +50,7 @@
 
 #include "modularsimulatorinterfaces.h"
 
-struct t_inputrec;
+class gmx_ekindata_t;
 
 namespace gmx
 {
@@ -84,7 +84,7 @@ class ReferenceTemperatureManager final
 {
 public:
     //! Constructor
-    ReferenceTemperatureManager(t_inputrec* inputrec);
+    ReferenceTemperatureManager(gmx_ekindata_t* ekindata);
     //! Register a callback for reference temperature update
     void registerUpdateCallback(ReferenceTemperatureCallback referenceTemperatureCallback);
     //! Set reference temperatures (one per temperature group)
@@ -94,8 +94,8 @@ public:
 private:
     //! List of callbacks
     std::vector<ReferenceTemperatureCallback> callbacks_;
-    //! Pointer to the input record
-    t_inputrec* inputrec_;
+    //! Pointer to the kinetic energy data
+    gmx_ekindata_t* ekindata_;
 };
 
 } // namespace gmx

@@ -235,7 +235,7 @@ void gmx::LegacySimulator::do_mimic()
                        ir->bSimTemp,
                        *ir->fepvals,
                        ir->simtempvals->temperatures,
-                       gmx::arrayRefFromArray(ir->opts.ref_t, ir->opts.ngtc),
+                       ekind,
                        MAIN(cr),
                        &state_global->fep_state,
                        state_global->lambda);
@@ -710,7 +710,7 @@ void gmx::LegacySimulator::do_mimic()
             const bool do_dr  = ir->nstdisreout != 0;
             const bool do_or  = ir->nstorireout != 0;
 
-            EnergyOutput::printAnnealingTemperatures(do_log ? fplog : nullptr, groups, &(ir->opts));
+            EnergyOutput::printAnnealingTemperatures(do_log ? fplog : nullptr, *groups, ir->opts, *ekind);
             energyOutput.printStepToEnergyFile(mdoutf_get_fp_ene(outf),
                                                do_ene,
                                                do_dr,

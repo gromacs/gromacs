@@ -73,17 +73,18 @@ void checkAwhParams(const AwhParams& awhParams, const t_inputrec& inputrec, Warn
 /*! \brief
  * Sets AWH parameters that need state parameters such as the box vectors.
  *
- * \param[in,out] awhParams             AWH parameters.
- * \param[in]     pull_params           Pull parameters.
- * \param[in,out] pull_work             Pull working struct to register AWH bias in.
- * \param[in]     box                   Box vectors.
- * \param[in]     pbcType               Periodic boundary conditions enum.
- * \param[in]     compressibility       Compressibility matrix for pressure coupling, pass all 0 without pressure coupling
- * \param[in]     inputrecGroupOptions  Parameters for atom groups.
- * \param[in]     initLambda            The starting lambda, to allow using free energy lambda as reaction coordinate
- * provider in any dimension.
- * \param[in]     mtop                  The system topology.
- * \param[in,out] wi                    Struct for bookeeping warnings.
+ * \param[in,out] awhParams        AWH parameters.
+ * \param[in]     pull_params      Pull parameters.
+ * \param[in,out] pull_work        Pull working struct to register AWH bias in.
+ * \param[in]     box              Box vectors.
+ * \param[in]     pbcType          Periodic boundary conditions enum.
+ * \param[in]     compressibility  Compressibility matrix for pressure coupling, pass all 0
+ *                                 without pressure coupling
+ * \param[in]     inputrec         Input record, for checking the reference temperature
+ * \param[in]     initLambda       The starting lambda, to allow using free energy lambda
+ *                                 as reaction coordinate provider in any dimension.
+ * \param[in]     mtop             The system topology.
+ * \param[in,out] wi               Struct for bookeeping warnings.
  *
  * \note This function currently relies on the function set_pull_init to have been called.
  */
@@ -93,7 +94,7 @@ void setStateDependentAwhParams(AwhParams*           awhParams,
                                 const matrix         box,
                                 PbcType              pbcType,
                                 const tensor&        compressibility,
-                                const t_grpopts*     inputrecGroupOptions,
+                                const t_inputrec&    inputrec,
                                 real                 initLambda,
                                 const gmx_mtop_t&    mtop,
                                 WarningHandler*      wi);

@@ -138,6 +138,7 @@ enum tpxv
     tpxv_ReaddedConstantAcceleration, /**< Re-added support for constant acceleration NEMD. */
     tpxv_RemoveTholeRfac,             /**< Remove unused rfac parameter from thole listed force */
     tpxv_RemoveAtomtypes,             /**< Remove unused atomtypes parameter from mtop */
+    tpxv_EnsembleTemperature,         /**< Add ensemble temperature settings */
     tpxv_Count                        /**< the total number of tpxv versions */
 };
 
@@ -1090,6 +1091,12 @@ static void do_inputrec(gmx::ISerializer* serializer, t_inputrec* ir, int file_v
         ir->mtsLevels.clear();
     }
 
+    if (file_version >= tpxv_EnsembleTemperature)
+    {
+        serializer->doEnumAsInt(&ir->ensembleTemperatureSetting);
+        serializer->doReal(&ir->ensembleTemperature);
+    }
+
     if (file_version >= 67)
     {
         serializer->doInt(&ir->nstcalcenergy);
@@ -1754,6 +1761,31 @@ static void do_inputrec(gmx::ISerializer* serializer, t_inputrec* ir, int file_v
             GMX_RELEASE_ASSERT(ir->internalParameters != nullptr,
                                "Parameters should be present when writing inputrec");
             gmx::serializeKeyValueTree(*ir->internalParameters, serializer);
+        }
+    }
+
+    if (file_version < tpxv_EnsembleTemperature)
+    {
+        if (doSimulatedAnnealing(*ir) || ir->bSimTemp)
+        {
+            ir->ensembleTemperatureSetting = EnsembleTemperatureSetting::Variable;
+        }
+        else if (integratorHasReferenceTemperature(*ir))
+        {
+            ir->ensembleTemperatureSetting = EnsembleTemperatureSetting::Constant;
+        }
+        else
+        {
+            ir->ensembleTemperatureSetting = EnsembleTemperatureSetting::NotAvailable;
+        }
+
+        if (ir->ensembleTemperatureSetting == EnsembleTemperatureSetting::Constant)
+        {
+            ir->ensembleTemperature = ir->opts.ref_t[0];
+        }
+        else
+        {
+            ir->ensembleTemperature = -1;
         }
     }
 }

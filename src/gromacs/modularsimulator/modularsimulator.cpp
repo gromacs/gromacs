@@ -459,7 +459,7 @@ bool ModularSimulator::isInputCompatible(bool                             exitOn
                                  "Ensemble restraints are not supported by the modular simulator.");
     isInputCompatible =
             isInputCompatible
-            && conditionalAssert(!doSimulatedAnnealing(inputrec),
+            && conditionalAssert(!doSimulatedAnnealing(*inputrec),
                                  "Simulated annealing is not supported by the modular simulator.");
     isInputCompatible =
             isInputCompatible

@@ -2112,7 +2112,9 @@ int Mdrunner::mdrunner()
                            "cos_acceleration is only supported by integrator=md");
 
         /* Kinetic energy data */
-        gmx_ekindata_t ekind(inputrec->opts.ngtc,
+        gmx_ekindata_t ekind(gmx::constArrayRefFromArray(inputrec->opts.ref_t, inputrec->opts.ngtc),
+                             haveEnsembleTemperature(*inputrec),
+                             inputrec->ensembleTemperature,
                              inputrec->cos_accel,
                              gmx_omp_nthreads_get(ModuleMultiThread::Update));
 

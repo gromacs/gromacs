@@ -70,7 +70,7 @@ void MttkData::build(LegacySimulatorData*                    legacySimulatorData
                      const MttkPropagatorConnectionDetails&  mttkPropagatorConnectionDetails)
 {
     // Uses reference temperature of first T-group
-    const real referenceTemperature = legacySimulatorData->inputrec->opts.ref_t[0];
+    const real ensembleTemperature = constantEnsembleTemperature(*legacySimulatorData->inputrec);
     const real referencePressure =
             ::trace(legacySimulatorData->inputrec->pressureCouplingOptions.ref_p) / DIM;
     // Weights are set based on initial volume
@@ -108,7 +108,7 @@ void MttkData::build(LegacySimulatorData*                    legacySimulatorData
 
     builderHelper->storeSimulationData(
             MttkData::dataID(),
-            MttkData(referenceTemperature,
+            MttkData(ensembleTemperature,
                      referencePressure,
                      legacySimulatorData->inputrec->pressureCouplingOptions.nstpcouple
                              * legacySimulatorData->inputrec->delta_t,
@@ -137,7 +137,7 @@ std::string MttkData::dataID()
     return "MttkData";
 }
 
-MttkData::MttkData(real                       referenceTemperature,
+MttkData::MttkData(real                       ensembleTemperature,
                    real                       referencePressure,
                    real                       couplingTimeStep,
                    real                       couplingTime,
@@ -149,7 +149,7 @@ MttkData::MttkData(real                       referenceTemperature,
                    MttkPropagatorConnection*  mttkPropagatorConnection) :
     couplingTimeStep_(couplingTimeStep),
     etaVelocity_(0.0),
-    invMass_((c_presfac * ::trace(compressibility) * c_boltz * referenceTemperature)
+    invMass_((c_presfac * ::trace(compressibility) * c_boltz * ensembleTemperature)
              / (DIM * initialVolume * gmx::square(couplingTime / M_2PI))),
     etaVelocityTime_(0.0),
     temperatureCouplingIntegral_(0.0),
@@ -158,7 +158,7 @@ MttkData::MttkData(real                       referenceTemperature,
     boxVelocity_{ { 0 } },
     numDegreesOfFreedom_(numDegreesOfFreedom),
     simulationTimeStep_(simulationTimeStep),
-    referenceTemperature_(referenceTemperature),
+    ensembleTemperature_(ensembleTemperature),
     statePropagatorData_(statePropagatorData),
     mttkPropagatorConnection_(mttkPropagatorConnection)
 {
@@ -262,8 +262,8 @@ void MttkData::updateReferenceTemperature(real temperature,
 {
     // Currently, we don't know about any temperature change algorithms, so we assert this never gets called
     GMX_ASSERT(false, "MttkData: Unknown ReferenceTemperatureChangeAlgorithm.");
-    invMass_ *= temperature / referenceTemperature_;
-    referenceTemperature_ = temperature;
+    invMass_ *= temperature / ensembleTemperature_;
+    ensembleTemperature_ = temperature;
 }
 
 namespace

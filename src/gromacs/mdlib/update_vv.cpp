@@ -304,7 +304,7 @@ void integrateVVFirstStep(int64_t                   step,
     *saved_conserved_quantity = NPT_energy(ir->pressureCouplingOptions,
                                            ir->etc,
                                            gmx::constArrayRefFromArray(ir->opts.nrdf, ir->opts.ngtc),
-                                           gmx::constArrayRefFromArray(ir->opts.ref_t, ir->opts.ngtc),
+                                           *ekind,
                                            inputrecNvtTrotter(ir) || inputrecNptTrotter(ir),
                                            state,
                                            MassQ);

@@ -260,7 +260,7 @@ void LegacySimulator::do_tpi()
     /* We never need full pbc for TPI */
     fr->pbcType = PbcType::Xyz;
     /* Determine the temperature for the Boltzmann weighting */
-    temp = inputrec->opts.ref_t[0];
+    temp = constantEnsembleTemperature(*inputrec);
     if (fplog)
     {
         for (i = 1; (i < inputrec->opts.ngtc); i++)

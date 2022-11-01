@@ -219,7 +219,7 @@ Awh::Awh(FILE*                 fplog,
     const int c_tpxVersionCoverDiameterUnitChange = 127;
 
     /* Initialize all the biases */
-    const double beta          = 1 / (gmx::c_boltz * inputRecord.opts.ref_t[0]);
+    const double beta          = 1 / (gmx::c_boltz * constantEnsembleTemperature(inputRecord));
     const auto&  awhBiasParams = awhParams.awhBiasParams();
     for (int k = 0; k < gmx::ssize(awhBiasParams); k++)
     {

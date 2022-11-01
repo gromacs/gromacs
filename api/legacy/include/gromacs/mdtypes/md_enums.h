@@ -88,6 +88,20 @@ enum class Channel : int
     Count
 };
 
+//! Whether and what kind of ensemble temperature we have for the system
+enum class EnsembleTemperatureSetting : int
+{
+    NotAvailable, //! There is no ensemble temperature available for the system
+    Constant,     //! The ensemble temperature is fixed over time
+    Variable,     //! The ensemble temperature varies over time
+    Auto,         //! Auto setting for grompp, should not be present in tpr and mdrun
+    Count,
+    Default = Auto
+};
+
+//! Return names of ensemble temperature settings
+const char* enumValueToString(EnsembleTemperatureSetting ensembleTemperatureSetting);
+
 /*! \brief Temperature coupling type
  *
  * yes is an alias for berendsen

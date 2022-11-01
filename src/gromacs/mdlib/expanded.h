@@ -37,8 +37,10 @@
 #include <cstdio>
 
 #include "gromacs/math/vectypes.h"
+#include "gromacs/mdlib/coupling.h"
 
 struct df_history_t;
+class gmx_ekindata_t;
 struct gmx_enerdata_t;
 struct t_expanded;
 struct t_extmass;
@@ -53,13 +55,12 @@ template<typename>
 class ArrayRef;
 }
 
-void init_npt_masses(const t_inputrec* ir, t_state* state, t_extmass* MassQ, bool bInit);
-
 void init_expanded_ensemble(bool bStateFromCP, const t_inputrec* ir, df_history_t* dfhist);
 
 int ExpandedEnsembleDynamics(FILE*                               log,
-                             t_inputrec*                         ir,
-                             const gmx_enerdata_t*               enerd,
+                             const t_inputrec&                   ir,
+                             const gmx_enerdata_t&               enerd,
+                             gmx_ekindata_t*                     ekind,
                              t_state*                            state,
                              t_extmass*                          MassQ,
                              int                                 fep_state,

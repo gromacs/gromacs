@@ -1150,12 +1150,12 @@ void check_ir(const char*                    mdparin,
         CHECK((expand->wl_scale <= 0) || (expand->wl_scale >= 1));
 
         /* if there is no temperature control, we need to specify an MC temperature */
-        if (!integratorHasReferenceTemperature(ir)
+        if (!integratorHasReferenceTemperature(*ir)
             && (expand->elmcmove != LambdaMoveCalculation::No) && (expand->mc_temp <= 0.0))
         {
             sprintf(err_buf,
-                    "If there is no temperature control, and lmc-mcmove!='no', mc_temp must be set "
-                    "to a positive number");
+                    "If the system has no reference temperature, and lmc-mcmove!='no', mc_temp "
+                    "must be set to a positive number");
             wi->addError(err_buf);
         }
         if (expand->nstTij > 0)
@@ -2352,6 +2352,9 @@ void get_ir(const char*     mdparin,
 
     /* Coupling stuff */
     printStringNewline(&inp, "OPTIONS FOR WEAK COUPLING ALGORITHMS");
+    ir->ensembleTemperatureSetting =
+            getEnum<EnsembleTemperatureSetting>(&inp, "ensemble-temperature-setting", wi);
+    ir->ensembleTemperature = get_ereal(&inp, "ensemble-temperature", -1, wi);
     printStringNoNewline(&inp, "Temperature coupling");
     ir->etc                = getEnum<TemperatureCoupling>(&inp, "tcoupl", wi);
     ir->nsttcouple         = get_eint(&inp, "nsttcouple", -1, wi);
@@ -3097,8 +3100,10 @@ static void atomGroupRangeValidation(const int natoms, gmx::ArrayRef<const int> 
  * \param[in] coverage    How to treat coverage of all atoms in the system
  * \param[in] bVerbose    Whether to print when we make a rest group
  * \param[in,out] wi      List of warnings
+ *
+ * \returns whether all atoms have been assigned to a group
  */
-static void do_numbering(const int                        natoms,
+static bool do_numbering(const int                        natoms,
                          SimulationGroups*                groups,
                          gmx::ArrayRef<const std::string> groupsFromMdpFile,
                          gmx::ArrayRef<const IndexGroup>  indexGroups,
@@ -3213,6 +3218,8 @@ static void do_numbering(const int                        natoms,
     }
 
     sfree(cbuf);
+
+    return ntot == natoms;
 }
 
 static void calc_nrdf(const gmx_mtop_t* mtop, t_inputrec* ir, gmx::ArrayRef<const std::string> gnames)
@@ -3716,6 +3723,86 @@ static void checkAndUpdateVcmFreezeGroupConsistency(SimulationGroups* groups,
     }
 }
 
+static void processEnsembleTemperature(t_inputrec* ir, const bool allAtomsCoupled, WarningHandler* wi)
+{
+    if (ir->ensembleTemperatureSetting == EnsembleTemperatureSetting::NotAvailable)
+    {
+        ir->ensembleTemperature = -1;
+    }
+    else if (ir->ensembleTemperatureSetting == EnsembleTemperatureSetting::Constant)
+    {
+        if (ir->ensembleTemperature < 0)
+        {
+            wi->addError("ensemble-temperature can not be negative");
+        }
+        else if (integratorHasReferenceTemperature(*ir))
+        {
+            bool refTEqual = true;
+            for (int i = 1; i < ir->opts.ngtc; i++)
+            {
+                if (ir->opts.ref_t[i] != ir->opts.ref_t[0])
+                {
+                    refTEqual = false;
+                }
+            }
+            if (refTEqual && ir->ensembleTemperature != ir->opts.ref_t[0])
+            {
+                wi->addWarning(
+                        "The ensemble temperature of the system does not match the reference "
+                        "temperature(s) of the T-coupling group(s)");
+            }
+        }
+    }
+    else if (ir->ensembleTemperatureSetting == EnsembleTemperatureSetting::Auto)
+    {
+        if (integratorHasReferenceTemperature(*ir))
+        {
+            if (!allAtomsCoupled)
+            {
+                fprintf(stderr,
+                        "Not all atoms are temperature coupled: there is no ensemble temperature "
+                        "available\n");
+                ir->ensembleTemperatureSetting = EnsembleTemperatureSetting::NotAvailable;
+                ir->ensembleTemperature        = -1;
+            }
+            else if (doSimulatedAnnealing(*ir) || ir->bSimTemp)
+            {
+                ir->ensembleTemperatureSetting = EnsembleTemperatureSetting::Variable;
+            }
+            else
+            {
+                bool refTEqual = true;
+                for (int i = 1; i < ir->opts.ngtc; i++)
+                {
+                    if (ir->opts.ref_t[i] != ir->opts.ref_t[0])
+                    {
+                        refTEqual = false;
+                    }
+                }
+                if (refTEqual)
+                {
+                    ir->ensembleTemperatureSetting = EnsembleTemperatureSetting::Constant;
+                    ir->ensembleTemperature        = ir->opts.ref_t[0];
+                }
+                else
+                {
+                    ir->ensembleTemperatureSetting = EnsembleTemperatureSetting::NotAvailable;
+                    ir->ensembleTemperature        = -1;
+                }
+            }
+        }
+        else
+        {
+            // We do not have an ensemble temperature available
+            fprintf(stderr,
+                    "The integrator does not provide a ensemble temperature, there is no system "
+                    "ensemble temperature\n");
+            ir->ensembleTemperatureSetting = EnsembleTemperatureSetting::NotAvailable;
+            ir->ensembleTemperature        = -1;
+        }
+    }
+}
+
 void do_index(const char*                    mdparin,
               const char*                    ndx,
               gmx_mtop_t*                    mtop,
@@ -3781,16 +3868,17 @@ void do_index(const char*                    mdparin,
                   temperatureCouplingTauValues.size());
     }
 
-    const bool useReferenceTemperature = integratorHasReferenceTemperature(ir);
-    do_numbering(natoms,
-                 groups,
-                 temperatureCouplingGroupNames,
-                 defaultIndexGroups,
-                 SimulationAtomGroupType::TemperatureCoupling,
-                 restnm,
-                 useReferenceTemperature ? GroupCoverage::All : GroupCoverage::AllGenerateRest,
-                 bVerbose,
-                 wi);
+    const bool useReferenceTemperature = integratorHasReferenceTemperature(*ir);
+    const bool allAtomsAreTCoupled =
+            do_numbering(natoms,
+                         groups,
+                         temperatureCouplingGroupNames,
+                         defaultIndexGroups,
+                         SimulationAtomGroupType::TemperatureCoupling,
+                         restnm,
+                         useReferenceTemperature ? GroupCoverage::All : GroupCoverage::AllGenerateRest,
+                         bVerbose,
+                         wi);
     nr            = groups->groups[SimulationAtomGroupType::TemperatureCoupling].size();
     ir->opts.ngtc = nr;
     snew(ir->opts.nrdf, nr);
@@ -4345,6 +4433,9 @@ void do_index(const char*                    mdparin,
                 "by default, but it is recommended to set it to an explicit value!",
                 ir->expandedvals->nstexpanded));
     }
+
+    // Now that we have the temperature coupling options, we can process the ensemble temperature
+    processEnsembleTemperature(ir, allAtomsAreTCoupled, wi);
 }
 
 
@@ -4805,40 +4896,12 @@ void triple_check(const char* mdparin, t_inputrec* ir, gmx_mtop_t* sys, WarningH
                 "rounding errors can lead to build up of kinetic energy of the center of mass");
     }
 
-    if (ir->pressureCouplingOptions.epc == PressureCoupling::CRescale)
+    if (ir->pressureCouplingOptions.epc == PressureCoupling::CRescale && !haveEnsembleTemperature(*ir))
     {
-        // These checks should be moved to the reference temperature automation/checking
-        // code when we introduce that in the next major release.
-        //
-        // Note that we should also check for atoms not being part of any T-coupling
-        // group. This check is not present here yet.
-
-        if (!EI_RANDOM(ir->eI) && ir->etc == TemperatureCoupling::No)
-        {
-            sprintf(warn_buf,
-                    "Can not use the %s barostat without temperature coupling",
-                    enumValueToString(ir->pressureCouplingOptions.epc));
-            wi->addError(warn_buf);
-        }
-        else
-        {
-            GMX_RELEASE_ASSERT(ir->opts.ngtc > 0, "Expect at least one temperature coupling group");
-            const real refT0 = ir->opts.ref_t[0];
-            for (int i = 1; i < ir->opts.ngtc; i++)
-            {
-                if (ir->opts.ref_t[i] != refT0)
-                {
-                    sprintf(warn_buf,
-                            "The %s barostat needs a reference temperature, but the reference "
-                            "temperatures for the T-coupling groups are not identical. Will "
-                            "use the temperature of the first group as reference temperature.",
-                            enumValueToString(ir->pressureCouplingOptions.epc));
-                    wi->addWarning(warn_buf);
-
-                    break;
-                }
-            }
-        }
+        sprintf(warn_buf,
+                "Can not use the %s barostat without an ensemble temperature for the system",
+                enumValueToString(ir->pressureCouplingOptions.epc));
+        wi->addError(warn_buf);
     }
 
     if (ir->pressureCouplingOptions.epc == PressureCoupling::ParrinelloRahman
@@ -4881,6 +4944,14 @@ void triple_check(const char* mdparin, t_inputrec* ir, gmx_mtop_t* sys, WarningH
                 }
             }
         }
+    }
+
+    if (ir->pressureCouplingOptions.epc == PressureCoupling::Mttk && !haveConstantEnsembleTemperature(*ir))
+    {
+        sprintf(warn_buf,
+                "The %s barostat requires a constant ensemble temperature for the system",
+                enumValueToString(ir->pressureCouplingOptions.epc));
+        wi->addError(warn_buf);
     }
 
     bCharge = FALSE;
@@ -5047,6 +5118,11 @@ void triple_check(const char* mdparin, t_inputrec* ir, gmx_mtop_t* sys, WarningH
                 }
             }
         }
+    }
+
+    if (ir->bDoAwh && !haveConstantEnsembleTemperature(*ir))
+    {
+        wi->addError("With AWH a constant ensemble temperature is required");
     }
 
     check_disre(*sys);

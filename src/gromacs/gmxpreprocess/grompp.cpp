@@ -2565,7 +2565,7 @@ int gmx_grompp(int argc, char* argv[])
                 state.box,
                 ir->pbcType,
                 compressibility,
-                &ir->opts,
+                *ir,
                 ir->efep != FreeEnergyPerturbationType::No ? ir->fepvals->all_lambda[static_cast<int>(
                         FreeEnergyPerturbationCouplingType::Fep)][ir->fepvals->init_fep_state]
                                                            : 0,

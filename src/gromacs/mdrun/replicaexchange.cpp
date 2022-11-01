@@ -236,6 +236,13 @@ gmx_repl_ex_t init_replica_exchange(FILE*                            fplog,
          * if we are using DD. */
     }
 
+    if (!haveConstantEnsembleTemperature(*ir))
+    {
+        gmx_fatal(FARGS,
+                  "Replica exchange is only supported for systems that have a constant ensemble "
+                  "temperature");
+    }
+
     snew(re, 1);
 
     re->repl  = ms->simulationIndex_;
@@ -260,7 +267,7 @@ gmx_repl_ex_t init_replica_exchange(FILE*                            fplog,
     check_multi_int(fplog, ms, static_cast<int>(ir->efep), "free energy", FALSE);
     check_multi_int(fplog, ms, ir->fepvals->n_lambda, "number of lambda states", FALSE);
 
-    re->temp = ir->opts.ref_t[0];
+    re->temp = constantEnsembleTemperature(*ir);
     for (i = 1; (i < ir->opts.ngtc); i++)
     {
         if (ir->opts.ref_t[i] != re->temp)

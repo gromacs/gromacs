@@ -10,6 +10,16 @@ New and improved features
 mdrun now also reports the conserved energy quantity with AWH bias sharing
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
+Added option for setting the ensemble temperature
+"""""""""""""""""""""""""""""""""""""""""""""""""
+
+Several algorithms, such as pressure coupling and AWH, need the temperature
+of the system. When not all atoms are coupled to the (same) temperature,
+it is now possible to tell mdrun what the ensemble temperature is using
+two new mdp options.
+
+:issue:`3854`
+
 gmxapi.mdrun now publishes the simulation working directory path
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 

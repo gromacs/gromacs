@@ -277,15 +277,8 @@ void gmx::LegacySimulator::do_rerun()
     }
     int*                fep_state = MAIN(cr) ? &state_global->fep_state : nullptr;
     gmx::ArrayRef<real> lambda    = MAIN(cr) ? state_global->lambda : gmx::ArrayRef<real>();
-    initialize_lambdas(fplog,
-                       ir->efep,
-                       ir->bSimTemp,
-                       *ir->fepvals,
-                       ir->simtempvals->temperatures,
-                       gmx::arrayRefFromArray(ir->opts.ref_t, ir->opts.ngtc),
-                       MAIN(cr),
-                       fep_state,
-                       lambda);
+    initialize_lambdas(
+            fplog, ir->efep, ir->bSimTemp, *ir->fepvals, ir->simtempvals->temperatures, ekind, MAIN(cr), fep_state, lambda);
     const bool        simulationsShareState = false;
     gmx_mdoutf*       outf                  = init_mdoutf(fplog,
                                    nfile,
@@ -799,7 +792,7 @@ void gmx::LegacySimulator::do_rerun()
             const bool do_dr  = ir->nstdisreout != 0;
             const bool do_or  = ir->nstorireout != 0;
 
-            EnergyOutput::printAnnealingTemperatures(do_log ? fplog : nullptr, groups, &(ir->opts));
+            EnergyOutput::printAnnealingTemperatures(do_log ? fplog : nullptr, *groups, ir->opts, *ekind);
             energyOutput.printStepToEnergyFile(mdoutf_get_fp_ene(outf),
                                                do_ene,
                                                do_dr,

@@ -100,7 +100,7 @@ class MttkData final : public ICheckpointHelperClient
 {
 public:
     //! Constructor
-    MttkData(real                       referenceTemperature,
+    MttkData(real                       ensembleTemperature,
              real                       referencePressure,
              real                       couplingTimeStep,
              real                       couplingTime,
@@ -189,8 +189,8 @@ private:
     const real numDegreesOfFreedom_;
     //! The simulation time step - by how much the propagators are advancing the positions
     const real simulationTimeStep_;
-    //! The reference temperature the mass is based on
-    real referenceTemperature_;
+    //! The ensemble temperature the mass is based on
+    real ensembleTemperature_;
 
     // TODO: Clarify relationship to data objects and find a more robust alternative to raw pointers (#3583)
     //! Pointer to the micro state data (access to the current box)

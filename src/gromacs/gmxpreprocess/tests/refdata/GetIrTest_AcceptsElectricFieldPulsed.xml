@@ -120,6 +120,8 @@ epsilon-surface          = 0
 implicit-solvent         = no
 
 ; OPTIONS FOR WEAK COUPLING ALGORITHMS
+ensemble-temperature-setting = auto
+ensemble-temperature     = -1
 ; Temperature coupling  
 tcoupl                   = No
 nsttcouple               = -1

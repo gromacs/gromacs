@@ -42,14 +42,16 @@
 
 #include "referencetemperaturemanager.h"
 
-#include "gromacs/mdtypes/inputrec.h"
+#include "gromacs/mdtypes/group.h"
 #include "gromacs/utility/gmxassert.h"
 
 namespace gmx
 {
 
-ReferenceTemperatureManager::ReferenceTemperatureManager(t_inputrec* inputrec) : inputrec_(inputrec)
+ReferenceTemperatureManager::ReferenceTemperatureManager(gmx_ekindata_t* ekindata) :
+    ekindata_(ekindata)
 {
+    GMX_RELEASE_ASSERT(ekindata, "Need a valid ekindata object");
 }
 
 void ReferenceTemperatureManager::registerUpdateCallback(ReferenceTemperatureCallback referenceTemperatureCallback)
@@ -60,13 +62,16 @@ void ReferenceTemperatureManager::registerUpdateCallback(ReferenceTemperatureCal
 void ReferenceTemperatureManager::setReferenceTemperature(ArrayRef<const real> newReferenceTemperatures,
                                                           ReferenceTemperatureChangeAlgorithm algorithm)
 {
-    GMX_RELEASE_ASSERT(newReferenceTemperatures.ssize() == inputrec_->opts.ngtc,
+    GMX_RELEASE_ASSERT(newReferenceTemperatures.ssize() == ekindata_->numTemperatureCouplingGroups(),
                        "Expected one new reference temperature per temperature group.");
 
-    std::copy(newReferenceTemperatures.begin(), newReferenceTemperatures.end(), inputrec_->opts.ref_t);
+    for (gmx::index i = 0; i < gmx::ssize(newReferenceTemperatures); i++)
+    {
+        ekindata_->setCurrentReferenceTemperature(i, newReferenceTemperatures[i]);
+    }
     for (const auto& callback : callbacks_)
     {
-        callback(constArrayRefFromArray(inputrec_->opts.ref_t, inputrec_->opts.ngtc), algorithm);
+        callback(newReferenceTemperatures, algorithm);
     }
 }
 

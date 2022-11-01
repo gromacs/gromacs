@@ -909,6 +909,8 @@ void pr_inputrec(FILE* fp, int indent, const char* title, const t_inputrec* ir, 
         PR("epsilon-surface", ir->epsilon_surface);
 
         /* Options for weak coupling algorithms */
+        PS("ensemble-temperature-setting", enumValueToString(ir->ensembleTemperatureSetting));
+        PR("ensemble-temperature", ir->ensembleTemperature);
         PS("tcoupl", enumValueToString(ir->etc));
         PI("nsttcouple", ir->nsttcouple);
         PI("nh-chain-length", ir->opts.nhchainlength);
@@ -1423,6 +1425,8 @@ void cmp_inputrec(FILE* fp, const t_inputrec* ir1, const t_inputrec* ir2, real f
             static_cast<int>(ir1->bContinuation),
             static_cast<int>(ir2->bContinuation));
     cmp_int(fp, "inputrec->bShakeSOR", -1, static_cast<int>(ir1->bShakeSOR), static_cast<int>(ir2->bShakeSOR));
+    cmpEnum(fp, "inputrec->ensembleTemperatureSetting", ir1->ensembleTemperatureSetting, ir2->ensembleTemperatureSetting);
+    cmp_real(fp, "inputrec->ensembleTemperature", -1, ir1->ensembleTemperature, ir2->ensembleTemperature, ftol, abstol);
     cmpEnum(fp, "inputrec->etc", ir1->etc, ir2->etc);
     cmp_int(fp,
             "inputrec->bPrintNHChains",
@@ -1663,6 +1667,38 @@ bool inputrecFrozenAtoms(const t_inputrec* ir)
                 || ir->opts.nFreeze[0][ZZ] != 0));
 }
 
+//! Asserts that we have a valid, processed ensemble temperature setting
+static void assertValidEnsembleTemperatureSetting(const EnsembleTemperatureSetting rts)
+{
+    GMX_RELEASE_ASSERT(rts == EnsembleTemperatureSetting::NotAvailable
+                               || rts == EnsembleTemperatureSetting::Constant
+                               || rts == EnsembleTemperatureSetting::Variable,
+                       "At this point in the code the ensemble temperature setting cannot be auto");
+}
+
+bool haveConstantEnsembleTemperature(const t_inputrec& ir)
+{
+    assertValidEnsembleTemperatureSetting(ir.ensembleTemperatureSetting);
+
+    return ir.ensembleTemperatureSetting == EnsembleTemperatureSetting::Constant;
+}
+
+real constantEnsembleTemperature(const t_inputrec& ir)
+{
+    GMX_RELEASE_ASSERT(ir.ensembleTemperatureSetting == EnsembleTemperatureSetting::Constant,
+                       "Can only request for a constant ensemble temperature when available");
+
+    return ir.ensembleTemperature;
+}
+
+bool haveEnsembleTemperature(const t_inputrec& ir)
+{
+    assertValidEnsembleTemperatureSetting(ir.ensembleTemperatureSetting);
+
+    return (ir.ensembleTemperatureSetting == EnsembleTemperatureSetting::Constant
+            || ir.ensembleTemperatureSetting == EnsembleTemperatureSetting::Variable);
+}
+
 bool integratorHasConservedEnergyQuantity(const t_inputrec* ir)
 {
     if (!EI_MD(ir->eI))
@@ -1688,10 +1724,22 @@ bool integratorHasConservedEnergyQuantity(const t_inputrec* ir)
     }
 }
 
-bool integratorHasReferenceTemperature(const t_inputrec* ir)
+bool integratorHasReferenceTemperature(const t_inputrec& ir)
 {
-    return ((ir->etc != TemperatureCoupling::No) || EI_SD(ir->eI)
-            || (ir->eI == IntegrationAlgorithm::BD) || EI_TPI(ir->eI));
+    return (ir.etc != TemperatureCoupling::No || EI_SD(ir.eI) || ir.eI == IntegrationAlgorithm::BD
+            || EI_TPI(ir.eI));
+}
+
+bool doSimulatedAnnealing(const t_inputrec& ir)
+{
+    for (int i = 0; i < ir.opts.ngtc; i++)
+    {
+        if (ir.opts.annealing[i] != SimulatedAnnealing::No)
+        {
+            return true;
+        }
+    }
+    return false;
 }
 
 int inputrec2nboundeddim(const t_inputrec* ir)

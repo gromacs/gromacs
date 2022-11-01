@@ -42,6 +42,7 @@
 #include "gromacs/math/utilities.h"
 #include "gromacs/mdtypes/enerdata.h"
 #include "gromacs/mdtypes/forcerec.h"
+#include "gromacs/mdtypes/group.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/mdtypes/state.h"
@@ -1512,7 +1513,8 @@ int expandedEnsembleUpdateLambdaState(FILE*                 log,
 }
 
 //! Update reference temperature for simulated tempering state change
-static void simulatedTemperingUpdateTemperature(t_inputrec*                         ir,
+static void simulatedTemperingUpdateTemperature(const t_inputrec&                   ir,
+                                                gmx_ekindata_t*                     ekind,
                                                 t_state*                            state,
                                                 t_extmass*                          MassQ,
                                                 rvec*                               v,
@@ -1520,16 +1522,17 @@ static void simulatedTemperingUpdateTemperature(t_inputrec*                     
                                                 gmx::ArrayRef<const unsigned short> cTC,
                                                 const int                           lamnew)
 {
-    const t_simtemp*  simtemp = ir->simtempvals.get();
-    std::vector<real> buf_ngtc(ir->opts.ngtc);
+    const t_simtemp*  simtemp = ir.simtempvals.get();
+    std::vector<real> buf_ngtc(ir.opts.ngtc);
 
-    for (int i = 0; i < ir->opts.ngtc; i++)
+    for (int i = 0; i < ir.opts.ngtc; i++)
     {
-        if (ir->opts.ref_t[i] > 0)
+        const real tOld = ekind->currentReferenceTemperature(i);
+        if (tOld > 0)
         {
-            real told         = ir->opts.ref_t[i];
-            ir->opts.ref_t[i] = simtemp->temperatures[lamnew];
-            buf_ngtc[i] = std::sqrt(ir->opts.ref_t[i] / told); /* using the buffer as temperature scaling */
+            ekind->setCurrentReferenceTemperature(i, simtemp->temperatures[lamnew]);
+            /* using the buffer as temperature scaling */
+            buf_ngtc[i] = std::sqrt(ekind->currentReferenceTemperature(i) / tOld);
         }
     }
 
@@ -1544,20 +1547,20 @@ static void simulatedTemperingUpdateTemperature(t_inputrec*                     
         }
     }
 
-    if (inputrecNptTrotter(ir) || inputrecNphTrotter(ir) || inputrecNvtTrotter(ir))
+    if (inputrecNptTrotter(&ir) || inputrecNphTrotter(&ir) || inputrecNvtTrotter(&ir))
     {
         /* we need to recalculate the masses if the temperature has changed */
-        init_npt_masses(ir, state, MassQ, FALSE);
+        init_npt_masses(ir, *ekind, state, MassQ, FALSE);
         for (int i = 0; i < state->nnhpres; i++)
         {
-            for (int j = 0; j < ir->opts.nhchainlength; j++)
+            for (int j = 0; j < ir.opts.nhchainlength; j++)
             {
                 state->nhpres_vxi[i + j] *= buf_ngtc[i];
             }
         }
-        for (int i = 0; i < ir->opts.ngtc; i++)
+        for (int i = 0; i < ir.opts.ngtc; i++)
         {
-            for (int j = 0; j < ir->opts.nhchainlength; j++)
+            for (int j = 0; j < ir.opts.nhchainlength; j++)
             {
                 state->nosehoover_vxi[i + j] *= buf_ngtc[i];
             }
@@ -1566,8 +1569,9 @@ static void simulatedTemperingUpdateTemperature(t_inputrec*                     
 }
 
 int ExpandedEnsembleDynamics(FILE*                               log,
-                             t_inputrec*                         ir,
-                             const gmx_enerdata_t*               enerd,
+                             const t_inputrec&                   ir,
+                             const gmx_enerdata_t&               enerd,
+                             gmx_ekindata_t*                     ekind,
                              t_state*                            state,
                              t_extmass*                          MassQ,
                              int                                 fep_state,
@@ -1579,12 +1583,12 @@ int ExpandedEnsembleDynamics(FILE*                               log,
 /* Note that the state variable is only needed for simulated tempering, not
    Hamiltonian expanded ensemble.  May be able to remove it after integrator refactoring. */
 {
-    const int newLambda = expandedEnsembleUpdateLambdaState(log, ir, enerd, fep_state, dfhist, step);
+    const int newLambda = expandedEnsembleUpdateLambdaState(log, &ir, &enerd, fep_state, dfhist, step);
     // if using simulated tempering, we need to adjust the temperatures
     // only need to change the temperatures if we change the state
-    if (ir->bSimTemp && (newLambda != fep_state))
+    if (ir.bSimTemp && (newLambda != fep_state))
     {
-        simulatedTemperingUpdateTemperature(ir, state, MassQ, v, homenr, cTC, newLambda);
+        simulatedTemperingUpdateTemperature(ir, ekind, state, MassQ, v, homenr, cTC, newLambda);
     }
     return newLambda;
 }

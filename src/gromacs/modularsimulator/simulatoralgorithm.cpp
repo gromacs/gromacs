@@ -418,8 +418,11 @@ ModularSimulatorAlgorithmBuilder::ModularSimulatorAlgorithmBuilder(
 {
     if (legacySimulatorData->inputrec->efep != FreeEnergyPerturbationType::No)
     {
-        freeEnergyPerturbationData_ = std::make_unique<FreeEnergyPerturbationData>(
-                legacySimulatorData->fplog, *legacySimulatorData->inputrec, legacySimulatorData->mdAtoms);
+        freeEnergyPerturbationData_ =
+                std::make_unique<FreeEnergyPerturbationData>(legacySimulatorData->fplog,
+                                                             *legacySimulatorData->inputrec,
+                                                             legacySimulatorData->mdAtoms,
+                                                             legacySimulatorData->ekind);
         registerExistingElement(freeEnergyPerturbationData_->element());
     }
 
@@ -459,11 +462,8 @@ ModularSimulatorAlgorithmBuilder::ModularSimulatorAlgorithmBuilder(
                                                legacySimulatorData->pull_work);
     registerExistingElement(energyData_->element());
 
-    // This is the only modular simulator object which changes the inputrec
-    // TODO: Avoid changing inputrec (#3854)
-    storeSimulationData(
-            "ReferenceTemperatureManager",
-            ReferenceTemperatureManager(const_cast<t_inputrec*>(legacySimulatorData->inputrec)));
+    storeSimulationData("ReferenceTemperatureManager",
+                        ReferenceTemperatureManager(legacySimulatorData->ekind));
     auto* referenceTemperatureManager =
             simulationData<ReferenceTemperatureManager>("ReferenceTemperatureManager").value();
 

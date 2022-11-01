@@ -128,7 +128,7 @@ real computeEffectiveAtomDensity(gmx::ArrayRef<const gmx::RVec> coordinates,
  * The pair list update frequency and the list lifetime, which is nstlist-1
  * for normal pair-list buffering, are passed separately, as in some cases
  * we want an estimate for different values than the ones set in the inputrec.
- * If referenceTemperature < 0, the maximum coupling temperature will be used.
+ * If ensembleTemperature < 0, the maximum coupling temperature will be used.
  * The target is a maximum average energy jump per atom of
  * inputrec.verletbuf_tol*nstlist*inputrec.delta_t over the lifetime of the list.
  *
@@ -141,7 +141,7 @@ real computeEffectiveAtomDensity(gmx::ArrayRef<const gmx::RVec> coordinates,
  * \param[in] nstlist       The pair list update frequency in steps (is not taken from \p inputrec)
  * \param[in] listLifetime  The lifetime of the pair-list, usually nstlist-1, but could be different
  *                          for dynamic pruning
- * \param[in] referenceTemperature  The reference temperature for the ensemble
+ * \param[in] ensembleTemperature  The reference temperature for the ensemble
  * \param[in] listSetup     The pair-list setup
  * \returns The computed pair-list radius including buffer
  */
@@ -150,7 +150,7 @@ real calcVerletBufferSize(const gmx_mtop_t&         mtop,
                           const t_inputrec&         inputrec,
                           int                       nstlist,
                           int                       listLifetime,
-                          real                      referenceTemperature,
+                          real                      ensembleTemperature,
                           const VerletbufListSetup& listSetup);
 
 /* Convenience type */

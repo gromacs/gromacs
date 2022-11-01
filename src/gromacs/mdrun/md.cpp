@@ -256,23 +256,13 @@ void gmx::LegacySimulator::do_md()
 
     int*                fep_state = MAIN(cr) ? &state_global->fep_state : nullptr;
     gmx::ArrayRef<real> lambda    = MAIN(cr) ? state_global->lambda : gmx::ArrayRef<real>();
-    initialize_lambdas(fplog,
-                       ir->efep,
-                       ir->bSimTemp,
-                       *ir->fepvals,
-                       ir->simtempvals->temperatures,
-                       gmx::arrayRefFromArray(ir->opts.ref_t, ir->opts.ngtc),
-                       MAIN(cr),
-                       fep_state,
-                       lambda);
-    Update upd(*ir, deform);
-    bool   doSimulatedAnnealing = false;
-    {
-        // TODO: Avoid changing inputrec (#3854)
-        // Simulated annealing updates the reference temperature.
-        auto* nonConstInputrec = const_cast<t_inputrec*>(inputrec);
-        doSimulatedAnnealing   = initSimulatedAnnealing(nonConstInputrec, &upd);
-    }
+    initialize_lambdas(
+            fplog, ir->efep, ir->bSimTemp, *ir->fepvals, ir->simtempvals->temperatures, ekind, MAIN(cr), fep_state, lambda);
+    Update upd(*ir, *ekind, deform);
+
+    // Simulated annealing updates the reference temperature.
+    const bool doSimulatedAnnealing = initSimulatedAnnealing(*ir, ekind, &upd);
+
     const bool useReplicaExchange = (replExParams.exchangeInterval > 0);
 
     t_fcdata& fcdata = *fr->fcdata;
@@ -478,7 +468,7 @@ void gmx::LegacySimulator::do_md()
         integrator = std::make_unique<UpdateConstrainGpu>(
                 *ir,
                 top_global,
-                ekind->ngtc,
+                ekind->numTemperatureCouplingGroups(),
                 fr->deviceStreamManager->context(),
                 fr->deviceStreamManager->stream(gmx::DeviceStreamType::UpdateAndConstraints),
                 wcycle);
@@ -728,7 +718,7 @@ void gmx::LegacySimulator::do_md()
 
     /* need to make an initiation call to get the Trotter variables set, as well as other constants
        for non-trotter temperature control */
-    auto trotter_seq = init_npt_vars(ir, state, &MassQ, bTrotter);
+    auto trotter_seq = init_npt_vars(ir, *ekind, state, &MassQ, bTrotter);
 
     if (MAIN(cr))
     {
@@ -893,10 +883,8 @@ void gmx::LegacySimulator::do_md()
 
         if (doSimulatedAnnealing)
         {
-            // TODO: Avoid changing inputrec (#3854)
             // Simulated annealing updates the reference temperature.
-            auto* nonConstInputrec = const_cast<t_inputrec*>(inputrec);
-            update_annealing_target_temp(nonConstInputrec, t, &upd);
+            update_annealing_target_temp(*ir, t, ekind, &upd);
         }
 
         /* Stop Center of Mass motion */
@@ -1304,13 +1292,10 @@ void gmx::LegacySimulator::do_md()
                    actually move to the new state before outputting
                    statistics, but if performing simulated tempering, we
                    do update the velocities and the tau_t. */
-                // TODO: Avoid changing inputrec (#3854)
-                // Simulated tempering updates the reference temperature.
-                // Expanded ensemble without simulated tempering does not change the inputrec.
-                auto* nonConstInputrec = const_cast<t_inputrec*>(inputrec);
-                lamnew                 = ExpandedEnsembleDynamics(fplog,
-                                                  nonConstInputrec,
-                                                  enerd,
+                lamnew = ExpandedEnsembleDynamics(fplog,
+                                                  *inputrec,
+                                                  *enerd,
+                                                  ekind,
                                                   state,
                                                   &MassQ,
                                                   state->fep_state,
@@ -1794,12 +1779,14 @@ void gmx::LegacySimulator::do_md()
             accumulateKineticLambdaComponents(enerd, state->lambda, *ir->fepvals);
         }
 
-        bool scaleCoordinates = !useGpuForUpdate || bDoReplEx;
+        const real currentSystemRefT =
+                (haveEnsembleTemperature(*ir) ? ekind->currentEnsembleTemperature() : 0.0_real);
+        const bool scaleCoordinates = !useGpuForUpdate || bDoReplEx;
         update_pcouple_after_coordinates(fplog,
                                          step,
                                          ir->pressureCouplingOptions,
                                          ir->ld_seed,
-                                         ir->opts.ref_t[0],
+                                         currentSystemRefT,
                                          ir->opts.nFreeze,
                                          ir->deform,
                                          ir->delta_t,
@@ -1867,7 +1854,7 @@ void gmx::LegacySimulator::do_md()
                             + NPT_energy(ir->pressureCouplingOptions,
                                          ir->etc,
                                          gmx::constArrayRefFromArray(ir->opts.nrdf, ir->opts.ngtc),
-                                         gmx::constArrayRefFromArray(ir->opts.ref_t, ir->opts.ngtc),
+                                         *ekind,
                                          inputrecNvtTrotter(ir) || inputrecNptTrotter(ir),
                                          state,
                                          &MassQ);
@@ -1925,7 +1912,7 @@ void gmx::LegacySimulator::do_md()
             if (doSimulatedAnnealing)
             {
                 gmx::EnergyOutput::printAnnealingTemperatures(
-                        do_log ? fplog : nullptr, groups, &(ir->opts));
+                        do_log ? fplog : nullptr, *groups, ir->opts, *ekind);
             }
             if (do_log || do_ene || do_dr || do_or)
             {
@@ -2106,7 +2093,7 @@ void gmx::LegacySimulator::do_md()
         {
             energyOutput.printEnergyConservation(fplog, ir->simulation_part, EI_MD(ir->eI));
 
-            gmx::EnergyOutput::printAnnealingTemperatures(fplog, groups, &(ir->opts));
+            gmx::EnergyOutput::printAnnealingTemperatures(fplog, *groups, ir->opts, *ekind);
             energyOutput.printAverages(fplog, groups);
         }
     }

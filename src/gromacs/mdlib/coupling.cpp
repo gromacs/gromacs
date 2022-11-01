@@ -95,6 +95,11 @@ static const double sy_const_5[] = { 0.2967324292201065,
 static constexpr std::array<const double*, 6> sy_const = { nullptr,    sy_const_1, nullptr,
                                                            sy_const_3, nullptr,    sy_const_5 };
 
+static void nosehoover_tcoupl(const gmx_ekindata_t& ekind,
+                              real                  dt,
+                              gmx::ArrayRef<double> xi,
+                              gmx::ArrayRef<double> vxi,
+                              const t_extmass&      MassQ);
 
 void update_tcouple(int64_t                             step,
                     const t_inputrec*                   inputrec,
@@ -144,8 +149,7 @@ void update_tcouple(int64_t                             step,
                 berendsen_tcoupl(inputrec, ekind, dttc, state->therm_integral);
                 break;
             case TemperatureCoupling::NoseHoover:
-                nosehoover_tcoupl(
-                        &(inputrec->opts), ekind, dttc, state->nosehoover_xi, state->nosehoover_vxi, MassQ);
+                nosehoover_tcoupl(*ekind, dttc, state->nosehoover_xi, state->nosehoover_vxi, *MassQ);
                 break;
             case TemperatureCoupling::VRescale:
                 vrescale_tcoupl(inputrec, step, ekind, dttc, state->therm_integral);
@@ -204,7 +208,7 @@ void update_pcouple_after_coordinates(FILE*                               fplog,
                                       int64_t                             step,
                                       const PressureCouplingOptions&      pressureCouplingOptions,
                                       const int64_t                       ld_seed,
-                                      const real                          referenceTemperature,
+                                      const real                          ensembleTemperature,
                                       const ivec*                         nFreeze,
                                       const tensor                        deform,
                                       const real                          delta_t,
@@ -243,7 +247,7 @@ void update_pcouple_after_coordinates(FILE*                               fplog,
                         step,
                         pressureCouplingOptions,
                         ld_seed,
-                        referenceTemperature,
+                        ensembleTemperature,
                         couplingTimePeriod,
                         pressure,
                         state->box,
@@ -276,7 +280,7 @@ void update_pcouple_after_coordinates(FILE*                               fplog,
                         step,
                         pressureCouplingOptions,
                         ld_seed,
-                        referenceTemperature,
+                        ensembleTemperature,
                         couplingTimePeriod,
                         pressure,
                         state->box,
@@ -473,7 +477,7 @@ static void NHC_trotter(const t_grpopts*      opts,
         {
             iQinv = gmx::arrayRefFromArray(&MassQ->QPinv[i * nh], nh);
             nd    = 1.0; /* THIS WILL CHANGE IF NOT ISOTROPIC */
-            reft  = std::max<real>(0, opts->ref_t[0]);
+            reft  = std::max<real>(0, ekind->currentEnsembleTemperature());
             Ekin  = gmx::square(*veta) / MassQ->Winv;
         }
         else
@@ -481,7 +485,7 @@ static void NHC_trotter(const t_grpopts*      opts,
             iQinv                      = gmx::arrayRefFromArray(&MassQ->Qinv[i * nh], nh);
             const t_grp_tcstat* tcstat = &ekind->tcstat[i];
             nd                         = opts->nrdf[i];
-            reft                       = std::max<real>(0, opts->ref_t[i]);
+            reft                       = std::max<real>(0, ekind->currentReferenceTemperature(i));
             if (bEkinAveVel)
             {
                 Ekin = 2 * trace(tcstat->ekinf) * tcstat->ekinscalef_nhc;
@@ -931,7 +935,7 @@ static inline real compressibilityFactor(int                            i,
 template<PressureCoupling pressureCouplingType>
 static void calculateScalingMatrixImplDetail(const PressureCouplingOptions& pressureCouplingOptions,
                                              int64_t                        ld_seed,
-                                             real                           referenceTemperature,
+                                             real                           ensembleTemperature,
                                              Matrix3x3*                     mu,
                                              real                           couplingTimePeriod,
                                              const matrix                   pres,
@@ -944,7 +948,7 @@ static void calculateScalingMatrixImplDetail(const PressureCouplingOptions& pres
 template<PressureCoupling pressureCouplingType>
 static void calculateScalingMatrixImpl(const PressureCouplingOptions& pressureCouplingOptions,
                                        const int64_t                  ld_seed,
-                                       const real                     referenceTemperature,
+                                       const real                     ensembleTemperature,
                                        Matrix3x3*                     mu,
                                        const real                     couplingTimePeriod,
                                        const matrix                   pres,
@@ -964,7 +968,7 @@ static void calculateScalingMatrixImpl(const PressureCouplingOptions& pressureCo
     *mu = gmx::Matrix3x3{ { 0._real } };
     calculateScalingMatrixImplDetail<pressureCouplingType>(pressureCouplingOptions,
                                                            ld_seed,
-                                                           referenceTemperature,
+                                                           ensembleTemperature,
                                                            mu,
                                                            couplingTimePeriod,
                                                            pres,
@@ -977,7 +981,7 @@ static void calculateScalingMatrixImpl(const PressureCouplingOptions& pressureCo
 template<>
 void calculateScalingMatrixImplDetail<PressureCoupling::Berendsen>(const PressureCouplingOptions& pressureCouplingOptions,
                                                                    int64_t /*ld_seed*/,
-                                                                   real /*referenceTemperature*/,
+                                                                   real /*ensembleTemperature*/,
                                                                    Matrix3x3*   mu,
                                                                    const real   couplingTimePeriod,
                                                                    const matrix pres,
@@ -1054,14 +1058,14 @@ void calculateScalingMatrixImplDetail<PressureCoupling::Berendsen>(const Pressur
 template<>
 void calculateScalingMatrixImplDetail<PressureCoupling::CRescale>(const PressureCouplingOptions& pressureCouplingOptions,
                                                                   const int64_t ld_seed,
-                                                                  const real   referenceTemperature,
-                                                                  Matrix3x3*   mu,
-                                                                  const real   couplingTimePeriod,
-                                                                  const matrix pres,
-                                                                  const matrix box,
-                                                                  real         scalar_pressure,
-                                                                  real         xy_pressure,
-                                                                  int64_t      step)
+                                                                  const real    ensembleTemperature,
+                                                                  Matrix3x3*    mu,
+                                                                  const real    couplingTimePeriod,
+                                                                  const matrix  pres,
+                                                                  const matrix  box,
+                                                                  real          scalar_pressure,
+                                                                  real          xy_pressure,
+                                                                  int64_t       step)
 {
     gmx::ThreeFry2x64<64>         rng(ld_seed, gmx::RandomDomain::Barostat);
     gmx::NormalDistribution<real> normalDist;
@@ -1073,7 +1077,7 @@ void calculateScalingMatrixImplDetail<PressureCoupling::CRescale>(const Pressure
     }
     real gauss  = 0;
     real gauss2 = 0;
-    real kt     = referenceTemperature * gmx::c_boltz;
+    real kt     = ensembleTemperature * gmx::c_boltz;
     if (kt < 0.0)
     {
         kt = 0.0;
@@ -1147,7 +1151,7 @@ void pressureCouplingCalculateScalingMatrix(FILE*                          fplog
                                             int64_t                        step,
                                             const PressureCouplingOptions& pressureCouplingOptions,
                                             int64_t                        ld_seed,
-                                            real                           referenceTemperature,
+                                            real                           ensembleTemperature,
                                             const real                     couplingTimePeriod,
                                             const tensor                   pres,
                                             const matrix                   box,
@@ -1164,7 +1168,7 @@ void pressureCouplingCalculateScalingMatrix(FILE*                          fplog
                   "C-rescale pressure coupling");
 
     calculateScalingMatrixImpl<pressureCouplingType>(
-            pressureCouplingOptions, ld_seed, referenceTemperature, mu, couplingTimePeriod, pres, box, step);
+            pressureCouplingOptions, ld_seed, ensembleTemperature, mu, couplingTimePeriod, pres, box, step);
 
     /* To fulfill the orientation restrictions on triclinic boxes
      * we will set mu_yx, mu_zx and mu_zy to 0 and correct
@@ -1378,7 +1382,7 @@ void berendsen_tcoupl(const t_inputrec* ir, gmx_ekindata_t* ekind, real dt, std:
 
         if ((opts->tau_t[i] > 0) && (T > 0.0))
         {
-            real reft               = std::max<real>(0, opts->ref_t[i]);
+            real reft               = std::max<real>(0, ekind->currentReferenceTemperature(i));
             real lll                = std::sqrt(1.0 + (dt / opts->tau_t[i]) * (reft / T - 1.0));
             ekind->tcstat[i].lambda = std::max<real>(std::min<real>(lll, 1.25), 0.8);
         }
@@ -1460,23 +1464,19 @@ void andersen_tcoupl(const t_inputrec*                   ir,
 }
 
 
-void nosehoover_tcoupl(const t_grpopts*      opts,
-                       const gmx_ekindata_t* ekind,
-                       real                  dt,
-                       gmx::ArrayRef<double> xi,
-                       gmx::ArrayRef<double> vxi,
-                       const t_extmass*      MassQ)
+static void nosehoover_tcoupl(const gmx_ekindata_t& ekind,
+                              real                  dt,
+                              gmx::ArrayRef<double> xi,
+                              gmx::ArrayRef<double> vxi,
+                              const t_extmass&      MassQ)
 {
-    int  i;
-    real reft, oldvxi;
-
     /* note that this routine does not include Nose-hoover chains yet. Should be easy to add. */
 
-    for (i = 0; (i < opts->ngtc); i++)
+    for (int i = 0; i < ekind.numTemperatureCouplingGroups(); i++)
     {
-        reft   = std::max<real>(0, opts->ref_t[i]);
-        oldvxi = vxi[i];
-        vxi[i] += dt * MassQ->Qinv[i] * (ekind->tcstat[i].Th - reft);
+        const real reft   = std::max<real>(0, ekind.currentReferenceTemperature(i));
+        const real oldvxi = vxi[i];
+        vxi[i] += dt * MassQ.Qinv[i] * (ekind.tcstat[i].Th - reft);
         xi[i] += dt * (oldvxi + vxi[i]) * 0.5;
     }
 }
@@ -1621,18 +1621,17 @@ void trotter_update(const t_inputrec*                   ir,
     sfree(scalefac);
 }
 
-
-extern void init_npt_masses(const t_inputrec* ir, t_state* state, t_extmass* MassQ, bool bInit)
+void init_npt_masses(const t_inputrec& ir, const gmx_ekindata_t& ekind, t_state* state, t_extmass* MassQ, bool bInit)
 {
     int              i, j, ngtc, nh;
     const t_grpopts* opts;
     real             reft, kT, ndj, nd;
 
-    opts = &(ir->opts); /* just for ease of referencing */
-    ngtc = ir->opts.ngtc;
+    opts = &ir.opts; /* just for ease of referencing */
+    ngtc = opts->ngtc;
     nh   = state->nhchainlength;
 
-    if (ir->eI == IntegrationAlgorithm::MD)
+    if (ir.eI == IntegrationAlgorithm::MD)
     {
         if (bInit)
         {
@@ -1640,9 +1639,10 @@ extern void init_npt_masses(const t_inputrec* ir, t_state* state, t_extmass* Mas
         }
         for (i = 0; (i < ngtc); i++)
         {
-            if ((opts->tau_t[i] > 0) && (opts->ref_t[i] > 0))
+            if (opts->tau_t[i] > 0 && ekind.currentReferenceTemperature(i) > 0)
             {
-                MassQ->Qinv[i] = 1.0 / (gmx::square(opts->tau_t[i] / M_2PI) * opts->ref_t[i]);
+                MassQ->Qinv[i] =
+                        1.0 / (gmx::square(opts->tau_t[i] / M_2PI) * ekind.currentReferenceTemperature(i));
             }
             else
             {
@@ -1650,7 +1650,7 @@ extern void init_npt_masses(const t_inputrec* ir, t_state* state, t_extmass* Mas
             }
         }
     }
-    else if (EI_VV(ir->eI))
+    else if (EI_VV(ir.eI))
     {
         /* Set pressure variables */
 
@@ -1667,9 +1667,9 @@ extern void init_npt_masses(const t_inputrec* ir, t_state* state, t_extmass* Mas
 
         /* units are nm^3 * ns^2 / (nm^3 * bar / kJ/mol) = kJ/mol  */
         /* Consider evaluating eventually if this the right mass to use.  All are correct, some might be more stable  */
-        MassQ->Winv = (gmx::c_presfac * trace(ir->pressureCouplingOptions.compress) * gmx::c_boltz
-                       * opts->ref_t[0])
-                      / (DIM * state->vol0 * gmx::square(ir->pressureCouplingOptions.tau_p / M_2PI));
+        MassQ->Winv = (gmx::c_presfac * trace(ir.pressureCouplingOptions.compress) * gmx::c_boltz
+                       * ekind.currentEnsembleTemperature())
+                      / (DIM * state->vol0 * gmx::square(ir.pressureCouplingOptions.tau_p / M_2PI));
         /* Allocate space for thermostat variables */
         if (bInit)
         {
@@ -1679,9 +1679,9 @@ extern void init_npt_masses(const t_inputrec* ir, t_state* state, t_extmass* Mas
         /* now, set temperature variables */
         for (i = 0; i < ngtc; i++)
         {
-            if (opts->tau_t[i] > 0 && opts->ref_t[i] > 0 && opts->nrdf[i] > 0)
+            if (opts->tau_t[i] > 0 && ekind.currentReferenceTemperature(i) > 0 && opts->nrdf[i] > 0)
             {
-                reft = std::max<real>(0, opts->ref_t[i]);
+                reft = ekind.currentReferenceTemperature(i);
                 nd   = opts->nrdf[i];
                 kT   = gmx::c_boltz * reft;
                 for (j = 0; j < nh; j++)
@@ -1708,8 +1708,11 @@ extern void init_npt_masses(const t_inputrec* ir, t_state* state, t_extmass* Mas
     }
 }
 
-gmx::EnumerationArray<TrotterSequence, std::vector<int>>
-init_npt_vars(const t_inputrec* ir, t_state* state, t_extmass* MassQ, bool bTrotter)
+gmx::EnumerationArray<TrotterSequence, std::vector<int>> init_npt_vars(const t_inputrec*     ir,
+                                                                       const gmx_ekindata_t& ekind,
+                                                                       t_state*              state,
+                                                                       t_extmass*            MassQ,
+                                                                       bool bTrotter)
 {
     int              i, j, nnhpres, nh;
     const t_grpopts* opts;
@@ -1725,7 +1728,13 @@ init_npt_vars(const t_inputrec* ir, t_state* state, t_extmass* MassQ, bool bTrot
         gmx_fatal(FARGS, "Cannot do MTTK pressure coupling without Nose-Hoover temperature control");
     }
 
-    init_npt_masses(ir, state, MassQ, TRUE);
+    /* If we have second order coupling algorithms, initialize their masses here */
+    if (ir->pressureCouplingOptions.epc == PressureCoupling::ParrinelloRahman
+        || ir->pressureCouplingOptions.epc == PressureCoupling::Mttk
+        || ir->etc == TemperatureCoupling::NoseHoover)
+    {
+        init_npt_masses(*ir, ekind, state, MassQ, TRUE);
+    }
 
     /* first, initialize clear all the trotter calls */
     gmx::EnumerationArray<TrotterSequence, std::vector<int>> trotter_seq;
@@ -1858,9 +1867,9 @@ init_npt_vars(const t_inputrec* ir, t_state* state, t_extmass* MassQ, bool bTrot
     MassQ->QPinv.resize(nnhpres * opts->nhchainlength);
 
     /* barostat temperature */
-    if ((ir->pressureCouplingOptions.tau_p > 0) && (opts->ref_t[0] > 0))
+    if ((ir->pressureCouplingOptions.tau_p > 0) && (constantEnsembleTemperature(*ir) > 0))
     {
-        reft = std::max<real>(0, opts->ref_t[0]);
+        reft = constantEnsembleTemperature(*ir);
         kT   = gmx::c_boltz * reft;
         for (i = 0; i < nnhpres; i++)
         {
@@ -1893,7 +1902,7 @@ init_npt_vars(const t_inputrec* ir, t_state* state, t_extmass* MassQ, bool bTrot
 }
 
 static real energyNoseHoover(const gmx::ArrayRef<const real> degreesOfFreedom,
-                             const gmx::ArrayRef<const real> referenceTemperatures,
+                             const gmx_ekindata_t&           ekind,
                              const bool                      isTrotterWithConstantTemperature,
                              const t_state*                  state,
                              const t_extmass*                MassQ)
@@ -1909,7 +1918,7 @@ static real energyNoseHoover(const gmx::ArrayRef<const real> degreesOfFreedom,
         const double* iQinv = &(MassQ->Qinv[i * nh]);
 
         real nd   = degreesOfFreedom[i];
-        real reft = std::max<real>(referenceTemperatures[i], 0);
+        real reft = std::max<real>(ekind.currentReferenceTemperature(i), 0);
         real kT   = gmx::c_boltz * reft;
 
         if (nd > 0.0)
@@ -1948,7 +1957,7 @@ static real energyNoseHoover(const gmx::ArrayRef<const real> degreesOfFreedom,
 }
 
 /* Returns the energy from the barostat thermostat chain */
-static real energyPressureMTTK(const real referenceTemperature, const t_state* state, const t_extmass* MassQ)
+static real energyPressureMTTK(const real ensembleTemperature, const t_state* state, const t_extmass* MassQ)
 {
     real energy = 0;
 
@@ -1957,7 +1966,7 @@ static real energyPressureMTTK(const real referenceTemperature, const t_state* s
     for (int i = 0; i < state->nnhpres; i++)
     {
         /* note -- assumes only one degree of freedom that is thermostatted in barostat */
-        real reft = std::max<real>(referenceTemperature, 0.0); /* using 'System' temperature */
+        real reft = std::max<real>(ensembleTemperature, 0.0); /* using 'System' temperature */
         real kT   = gmx::c_boltz * reft;
 
         for (int j = 0; j < nh; j++)
@@ -1993,7 +2002,7 @@ static real energyVrescale(const t_state* state)
 real NPT_energy(const PressureCouplingOptions&  pressureCouplingOptions,
                 const TemperatureCoupling       etc,
                 const gmx::ArrayRef<const real> degreesOfFreedom,
-                const gmx::ArrayRef<const real> referenceTemperatures,
+                const gmx_ekindata_t&           ekind,
                 const bool                      isTrotterWithConstantTemperature,
                 const t_state*                  state,
                 const t_extmass*                MassQ)
@@ -2045,7 +2054,7 @@ real NPT_energy(const PressureCouplingOptions&  pressureCouplingOptions,
                 if (pressureCouplingOptions.epc == PressureCoupling::Mttk)
                 {
                     /* contribution from the MTTK chain */
-                    energyNPT += energyPressureMTTK(referenceTemperatures[0], state, MassQ);
+                    energyNPT += energyPressureMTTK(ekind.currentEnsembleTemperature(), state, MassQ);
                 }
                 break;
             case PressureCoupling::Berendsen:
@@ -2066,7 +2075,7 @@ real NPT_energy(const PressureCouplingOptions&  pressureCouplingOptions,
         case TemperatureCoupling::Berendsen: energyNPT += energyVrescale(state); break;
         case TemperatureCoupling::NoseHoover:
             energyNPT += energyNoseHoover(
-                    degreesOfFreedom, referenceTemperatures, isTrotterWithConstantTemperature, state, MassQ);
+                    degreesOfFreedom, ekind, isTrotterWithConstantTemperature, state, MassQ);
             break;
         case TemperatureCoupling::Andersen:
         case TemperatureCoupling::AndersenMassive:
@@ -2182,7 +2191,7 @@ void vrescale_tcoupl(const t_inputrec* ir, int64_t step, gmx_ekindata_t* ekind, 
 
         if (opts->tau_t[i] >= 0 && opts->nrdf[i] > 0 && Ek > 0)
         {
-            Ek_ref1 = 0.5 * opts->ref_t[i] * gmx::c_boltz;
+            Ek_ref1 = 0.5 * ekind->currentReferenceTemperature(i) * gmx::c_boltz;
             Ek_ref  = Ek_ref1 * opts->nrdf[i];
 
             Ek_new = vrescale_resamplekin(Ek, Ek_ref, opts->nrdf[i], opts->tau_t[i] / dt, step, ir->ld_seed);
@@ -2240,41 +2249,31 @@ void rescale_velocities(const gmx_ekindata_t*               ekind,
     }
 }
 
-//! Check whether we're doing simulated annealing
-bool doSimulatedAnnealing(const t_inputrec* ir)
-{
-    for (int i = 0; i < ir->opts.ngtc; i++)
-    {
-        /* set bSimAnn if any group is being annealed */
-        if (ir->opts.annealing[i] != SimulatedAnnealing::No)
-        {
-            return true;
-        }
-    }
-    return false;
-}
-
-// TODO If we keep simulated annealing, make a proper module that
-// does not rely on changing inputrec.
-bool initSimulatedAnnealing(t_inputrec* ir, gmx::Update* upd)
+//! Initialize simulated annealing
+bool initSimulatedAnnealing(const t_inputrec& ir, gmx_ekindata_t* ekind, gmx::Update* upd)
 {
     bool doSimAnnealing = doSimulatedAnnealing(ir);
     if (doSimAnnealing)
     {
-        update_annealing_target_temp(ir, ir->init_t, upd);
+        update_annealing_target_temp(ir, ir.init_t, ekind, upd);
     }
     return doSimAnnealing;
 }
 
-real computeAnnealingTargetTemperature(const t_inputrec& inputrec, int temperatureGroup, real time)
+/*!
+ * \brief Compute the new annealing temperature for a temperature group
+ *
+ * \param inputrec          The input record
+ * \param temperatureGroup  The temperature group
+ * \param time              The current time
+ * \return  The new reference temperature for the group
+ */
+static real computeAnnealingTargetTemperature(const t_inputrec& inputrec, int temperatureGroup, real time)
 {
     GMX_RELEASE_ASSERT(temperatureGroup >= 0 && temperatureGroup < inputrec.opts.ngtc,
                        "Invalid temperature group.");
-    if (inputrec.opts.annealing[temperatureGroup] == SimulatedAnnealing::No)
-    {
-        // No change of temperature, return current reference temperature
-        return inputrec.opts.ref_t[temperatureGroup];
-    }
+    GMX_RELEASE_ASSERT(inputrec.opts.annealing[temperatureGroup] != SimulatedAnnealing::No,
+                       "Should only compute temperature of annealed groups");
     GMX_RELEASE_ASSERT(
             inputrec.opts.annealing[temperatureGroup] == SimulatedAnnealing::Single
                     || inputrec.opts.annealing[temperatureGroup] == SimulatedAnnealing::Periodic,
@@ -2334,14 +2333,18 @@ real computeAnnealingTargetTemperature(const t_inputrec& inputrec, int temperatu
 }
 
 /* set target temperatures if we are annealing */
-void update_annealing_target_temp(t_inputrec* ir, real t, gmx::Update* upd)
+void update_annealing_target_temp(const t_inputrec& ir, const real t, gmx_ekindata_t* ekind, gmx::Update* upd)
 {
-    for (int temperatureGroup = 0; temperatureGroup < ir->opts.ngtc; temperatureGroup++)
+    for (int temperatureGroup = 0; temperatureGroup < ir.opts.ngtc; temperatureGroup++)
     {
-        ir->opts.ref_t[temperatureGroup] = computeAnnealingTargetTemperature(*ir, temperatureGroup, t);
+        if (ir.opts.annealing[temperatureGroup] != SimulatedAnnealing::No)
+        {
+            ekind->setCurrentReferenceTemperature(
+                    temperatureGroup, computeAnnealingTargetTemperature(ir, temperatureGroup, t));
+        }
     }
 
-    upd->update_temperature_constants(*ir);
+    upd->update_temperature_constants(ir, *ekind);
 }
 
 void pleaseCiteCouplingAlgorithms(FILE* fplog, const t_inputrec& ir)

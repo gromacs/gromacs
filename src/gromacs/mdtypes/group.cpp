@@ -42,22 +42,31 @@
 
 #include "group.h"
 
+#include "gromacs/mdtypes/inputrec.h"
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/smalloc.h"
 
-gmx_ekindata_t::gmx_ekindata_t(int numTempCoupleGroups, real cos_accel, int numThreads) :
-    ngtc(numTempCoupleGroups), nthreads_(numThreads)
+gmx_ekindata_t::gmx_ekindata_t(gmx::ArrayRef<const real> referenceTemperature,
+                               const bool                haveEnsembleTemperature,
+                               const real                ensembleTemperature,
+                               const real                cosineAcceleration,
+                               const int                 numThreads) :
+    currentReferenceTemperature_(referenceTemperature.begin(), referenceTemperature.end()),
+    haveEnsembleTemperature_(haveEnsembleTemperature),
+    currentEnsembleTemperature_(ensembleTemperature),
+    nthreads_(numThreads)
 {
-    tcstat.resize(ngtc);
+    tcstat.resize(numTemperatureCouplingGroups());
     /* Set Berendsen tcoupl lambda's to 1,
      * so runs without Berendsen coupling are not affected.
      */
-    for (int i = 0; i < ngtc; i++)
+    for (auto& tcstatGroup : tcstat)
     {
-        tcstat[i].lambda         = 1.0;
-        tcstat[i].vscale_nhc     = 1.0;
-        tcstat[i].ekinscaleh_nhc = 1.0;
-        tcstat[i].ekinscalef_nhc = 1.0;
+        tcstatGroup.lambda         = 1.0;
+        tcstatGroup.vscale_nhc     = 1.0;
+        tcstatGroup.ekinscaleh_nhc = 1.0;
+        tcstatGroup.ekinscalef_nhc = 1.0;
     }
 
     snew(ekin_work_alloc, nthreads_);
@@ -75,6 +84,7 @@ gmx_ekindata_t::gmx_ekindata_t(int numTempCoupleGroups, real cos_accel, int numT
              * EKIN_WORK_BUFFER_SIZE*DIM*DIM*sizeof(real) = 72/144 bytes
              * buffer on both sides to avoid cache pollution.
              */
+            const int ngtc = numTemperatureCouplingGroups();
             snew(ekin_work_alloc[thread], ngtc + 2 * EKIN_WORK_BUFFER_SIZE);
             ekin_work[thread] = ekin_work_alloc[thread] + EKIN_WORK_BUFFER_SIZE;
             /* Nasty hack so we can have the per-thread accumulation
@@ -86,7 +96,7 @@ gmx_ekindata_t::gmx_ekindata_t(int numTempCoupleGroups, real cos_accel, int numT
         GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR
     }
 
-    cosacc.cos_accel = cos_accel;
+    cosacc.cos_accel = cosineAcceleration;
 }
 
 gmx_ekindata_t::~gmx_ekindata_t()

@@ -122,7 +122,7 @@ void update_pcouple_after_coordinates(FILE*                               fplog,
                                       int64_t                             step,
                                       const PressureCouplingOptions&      pressureCoupling,
                                       int64_t                             ld_seed,
-                                      real                                referenceTemperature,
+                                      real                                ensembleTemperature,
                                       const ivec*                         nFreeze,
                                       const tensor                        deform,
                                       real                                delta_t,
@@ -165,13 +165,6 @@ void andersen_tcoupl(const t_inputrec*                   ir,
                      const std::vector<bool>&            randomize,
                      gmx::ArrayRef<const real>           boltzfac);
 
-void nosehoover_tcoupl(const t_grpopts*      opts,
-                       const gmx_ekindata_t* ekind,
-                       real                  dt,
-                       gmx::ArrayRef<double> xi,
-                       gmx::ArrayRef<double> vxi,
-                       const t_extmass*      MassQ);
-
 void trotter_update(const t_inputrec*                   ir,
                     int64_t                             step,
                     gmx_ekindata_t*                     ekind,
@@ -185,13 +178,18 @@ void trotter_update(const t_inputrec*                   ir,
                     gmx::ArrayRef<std::vector<int>>     trotter_seqlist,
                     TrotterSequence                     trotter_seqno);
 
-gmx::EnumerationArray<TrotterSequence, std::vector<int>>
-init_npt_vars(const t_inputrec* ir, t_state* state, t_extmass* Mass, bool bTrotter);
+void init_npt_masses(const t_inputrec& ir, const gmx_ekindata_t& ekind, t_state* state, t_extmass* MassQ, bool bInit);
+
+gmx::EnumerationArray<TrotterSequence, std::vector<int>> init_npt_vars(const t_inputrec*     ir,
+                                                                       const gmx_ekindata_t& ekind,
+                                                                       t_state*              state,
+                                                                       t_extmass*            Mass,
+                                                                       bool bTrotter);
 
 real NPT_energy(const PressureCouplingOptions& pressureCoupling,
                 TemperatureCoupling            etc,
                 gmx::ArrayRef<const real>      degreesOfFreedom,
-                gmx::ArrayRef<const real>      referenceTemperatures,
+                const gmx_ekindata_t&          ekind,
                 bool                           isTrotterWithConstantTemperature,
                 const t_state*                 state,
                 const t_extmass*               MassQ);
@@ -211,25 +209,11 @@ void rescale_velocities(const gmx_ekindata_t*               ekind,
                         gmx::ArrayRef<gmx::RVec>            v);
 /* Rescale the velocities with the scaling factor in ekind */
 
-/*!
- * \brief Compute the new annealing temperature for a temperature group
- *
- * \param inputrec          The input record
- * \param temperatureGroup  The temperature group
- * \param time              The current time
- * \return  The new reference temperature for the group
- */
-real computeAnnealingTargetTemperature(const t_inputrec& inputrec, int temperatureGroup, real time);
-
-//! Check whether we do simulated annealing.
-bool doSimulatedAnnealing(const t_inputrec* ir);
-
 //! Initialize simulated annealing.
-bool initSimulatedAnnealing(t_inputrec* ir, gmx::Update* upd);
+bool initSimulatedAnnealing(const t_inputrec& ir, gmx_ekindata_t* ekind, gmx::Update* upd);
 
-// TODO: This is the only function in update.h altering the inputrec
-void update_annealing_target_temp(t_inputrec* ir, real t, gmx::Update* upd);
-/* Set reference temp for simulated annealing at time t*/
+//! Set reference temperature for simulated annealing
+void update_annealing_target_temp(const t_inputrec& ir, real t, gmx_ekindata_t* ekind, gmx::Update* upd);
 
 real calc_temp(real ekin, real nrdf);
 /* Calculate the temperature */
@@ -334,7 +318,7 @@ void pressureCouplingCalculateScalingMatrix(FILE*                          fplog
                                             int64_t                        step,
                                             const PressureCouplingOptions& pressureCoupling,
                                             int64_t                        ld_seed,
-                                            real                           referenceTemperature,
+                                            real                           ensembleTemperature,
                                             real                           delta_t,
                                             const tensor                   pres,
                                             const matrix                   box,

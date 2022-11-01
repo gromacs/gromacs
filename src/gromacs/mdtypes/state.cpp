@@ -45,6 +45,7 @@
 #include "gromacs/math/veccompare.h"
 #include "gromacs/mdtypes/awh_history.h"
 #include "gromacs/mdtypes/df_history.h"
+#include "gromacs/mdtypes/group.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/mdtypes/pull_params.h"
@@ -429,8 +430,8 @@ void initialize_lambdas(FILE*                            fplog,
                         const bool                       haveSimulatedTempering,
                         const t_lambda&                  fep,
                         gmx::ArrayRef<const real>        simulatedTemperingTemps,
-                        gmx::ArrayRef<real>              ref_t,
-                        bool                             isMain,
+                        gmx_ekindata_t*                  ekind,
+                        const bool                       isMain,
                         int*                             fep_state,
                         gmx::ArrayRef<real>              lambda)
 {
@@ -469,12 +470,14 @@ void initialize_lambdas(FILE*                            fplog,
     }
     if (haveSimulatedTempering)
     {
+        GMX_RELEASE_ASSERT(ekind, "Need ekind with simulated tempering");
+
         /* need to rescale control temperatures to match current state */
-        for (int i = 0; i < ref_t.ssize(); i++)
+        for (int i = 0; i < ekind->numTemperatureCouplingGroups(); i++)
         {
-            if (ref_t[i] > 0)
+            if (ekind->currentReferenceTemperature(i) > 0)
             {
-                ref_t[i] = simulatedTemperingTemps[fep.init_fep_state];
+                ekind->setCurrentReferenceTemperature(i, simulatedTemperingTemps[fep.init_fep_state]);
             }
         }
     }

@@ -70,9 +70,10 @@ public:
     /*! \brief Constructor
      *
      * \param[in] inputRecord     Input record, used to construct SD object.
+     * \param[in] ekind           Kinetic energy data
      * \param[in] boxDeformation  Periodic box deformation object.
      */
-    Update(const t_inputrec& inputRecord, BoxDeformation* boxDeformation);
+    Update(const t_inputrec& inputRecord, const gmx_ekindata_t& ekind, BoxDeformation* boxDeformation);
     //! Destructor
     ~Update();
     /*! \brief Get the pointer to updated coordinates
@@ -205,9 +206,10 @@ public:
      *
      * This could change e.g. in simulated annealing.
      *
-     * \param[in]  inputRecord  Input record.
+     * \param[in]  inputRecord  The input record
+     * \param[in]  ekind        Kinetic energy data
      */
-    void update_temperature_constants(const t_inputrec& inputRecord);
+    void update_temperature_constants(const t_inputrec& inputRecord, const gmx_ekindata_t& ekind);
 
     /*!\brief Getter for the list of the randomize groups.
      *

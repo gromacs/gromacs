@@ -679,9 +679,9 @@ FILE* open_dhdl(const char* filename, const t_inputrec* ir, const gmx_output_env
     xvgr_header(fp, title.c_str(), label_x, label_y, exvggtXNY, oenv);
 
     std::string buf;
-    if (!(ir->bSimTemp))
+    if (!(ir->bSimTemp) && haveConstantEnsembleTemperature(*ir))
     {
-        buf = gmx::formatString("T = %g (K) ", ir->opts.ref_t[0]);
+        buf = gmx::formatString("T = %g (K) ", constantEnsembleTemperature(*ir));
     }
     if ((ir->efep != FreeEnergyPerturbationType::SlowGrowth)
         && (ir->efep != FreeEnergyPerturbationType::Expanded)
@@ -1291,24 +1291,24 @@ void EnergyOutput::printStepToEnergyFile(ener_file* fp_ene,
     }
 }
 
-void EnergyOutput::printAnnealingTemperatures(FILE* log, const SimulationGroups* groups, const t_grpopts* opts)
+void EnergyOutput::printAnnealingTemperatures(FILE*                   log,
+                                              const SimulationGroups& groups,
+                                              const t_grpopts&        opts,
+                                              const gmx_ekindata_t&   ekind)
 {
     if (log)
     {
-        if (opts)
+        for (int i = 0; i < opts.ngtc; i++)
         {
-            for (int i = 0; i < opts->ngtc; i++)
+            if (opts.annealing[i] != SimulatedAnnealing::No)
             {
-                if (opts->annealing[i] != SimulatedAnnealing::No)
-                {
-                    fprintf(log,
-                            "Current ref_t for group %s: %8.1f\n",
-                            *(groups->groupNames[groups->groups[SimulationAtomGroupType::TemperatureCoupling][i]]),
-                            opts->ref_t[i]);
-                }
+                fprintf(log,
+                        "Current ref_t for group %s: %8.1f\n",
+                        *(groups.groupNames[groups.groups[SimulationAtomGroupType::TemperatureCoupling][i]]),
+                        ekind.currentReferenceTemperature(i));
             }
-            fprintf(log, "\n");
         }
+        fprintf(log, "\n");
     }
 }
 

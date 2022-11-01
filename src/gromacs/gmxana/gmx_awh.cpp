@@ -629,7 +629,7 @@ int gmx_awh(int argc, char* argv[])
                                                         fnm,
                                                         awhGraphSelection,
                                                         energyUnit,
-                                                        gmx::c_boltz * ir.opts.ref_t[0],
+                                                        gmx::c_boltz * constantEnsembleTemperature(ir),
                                                         block);
             }
 

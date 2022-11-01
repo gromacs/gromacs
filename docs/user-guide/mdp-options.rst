@@ -959,6 +959,41 @@ Ewald
 Temperature coupling
 ^^^^^^^^^^^^^^^^^^^^
 
+.. mdp:: ensemble-temperature-setting
+
+   .. mdp-value:: auto
+
+      With this setting :ref:`gmx grompp` will determine which of the next
+      three settings is available and choose the appropriate one.
+      When all atoms are coupled to a temperature bath with the same
+      temperature, a constant ensemble temperature is chosen and the value
+      is taken from the temperature bath.
+
+   .. mdp-value:: constant
+
+      The system has a constant ensemble temperature given by
+      :mdp:`ensemble-temperature`. A constant ensemble temperature is
+      required for certain sampling algorithms such as AWH.
+
+   .. mdp-value:: variable
+
+      The system has a variable ensemble temperature due to simulated
+      annealing or simulated tempering. The system ensemble temperature
+      is set dynamically during the simulation.
+
+   .. mdp-value:: not-available
+
+      The system has no ensemble temperature.
+
+.. mdp:: ensemble-temperature
+
+      (-1) [K]
+
+      The ensemble temperature for the system. The input value is only used
+      with :mdp:`ensemble-temperature-setting=constant`. By default the
+      ensemble temperature is copied from the temperature of the thermal bath
+      (when used).
+
 .. mdp:: tcoupl
 
    .. mdp-value:: no
@@ -1087,6 +1122,8 @@ Pressure coupling
       volume fluctuations.  The box is scaled every :mdp:`nstpcouple`
       steps. It can be used for both equilibration and production,
       but presently it cannot be used for full anisotropic coupling.
+      This requires a (constant or variable) ensemble temperature
+      to be available.
 
    .. mdp-value:: Parrinello-Rahman
 
@@ -1113,8 +1150,9 @@ Pressure coupling
       fluctuations at equilibrium. This is probably a better method
       when you want to apply pressure scaling during data collection,
       but beware that you can get very large oscillations if you are
-      starting from a different pressure. Currently (as of version
-      5.1), it only supports isotropic scaling, and only works without
+      starting from a different pressure. This requires a constant
+      ensemble temperature for the system.
+      Currently it only supports isotropic scaling, and only works without
       constraints.
 
 .. mdp:: pcoupltype
@@ -1919,8 +1957,9 @@ AWH adaptive biasing
    .. mdp-value:: yes
 
       Adaptively bias a reaction coordinate using the AWH method and estimate
-      the corresponding PMF. The PMF and other AWH data are written to energy
-      file at an interval set by :mdp:`awh-nstout` and can be extracted with
+      the corresponding PMF. This requires a constant ensemble temperature
+      to be available. The PMF and other AWH data are written to energy file
+      at an interval set by :mdp:`awh-nstout` and can be extracted with
       the ``gmx awh`` tool. The AWH coordinate can be
       multidimensional and is defined by mapping each dimension to a pull coordinate index.
       This is only allowed if :mdp-value:`pull-coord1-type=external-potential` and

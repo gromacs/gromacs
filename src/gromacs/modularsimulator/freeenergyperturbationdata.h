@@ -50,6 +50,7 @@
 
 #include "modularsimulatorinterfaces.h"
 
+class gmx_ekindata_t;
 struct t_inputrec;
 struct t_trxframe;
 
@@ -77,7 +78,7 @@ class FreeEnergyPerturbationData final
 {
 public:
     //! Constructor
-    FreeEnergyPerturbationData(FILE* fplog, const t_inputrec& inputrec, MDAtoms* mdAtoms);
+    FreeEnergyPerturbationData(FILE* fplog, const t_inputrec& inputrec, MDAtoms* mdAtoms, gmx_ekindata_t* ekindata);
 
     //! Get a view of the current lambda vector
     ArrayRef<real> lambdaView();

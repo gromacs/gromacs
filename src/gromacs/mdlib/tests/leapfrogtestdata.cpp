@@ -81,7 +81,7 @@ LeapFrogTestData::LeapFrogTestData(int        numAtoms,
     f_(numAtoms),
     inverseMasses_(numAtoms),
     inverseMassesPerDim_(numAtoms),
-    kineticEnergyData_(numTCoupleGroups == 0 ? 1 : numTCoupleGroups, 0.0, 1),
+    kineticEnergyData_(std::vector<real>(numTCoupleGroups == 0 ? 1 : numTCoupleGroups, 0), false, 0.0, 0.0, 1),
     numTCoupleGroups_(numTCoupleGroups)
 {
     mdAtoms_.nr = numAtoms_;
@@ -168,7 +168,7 @@ LeapFrogTestData::LeapFrogTestData(int        numAtoms,
     mdAtoms_.haveVsites               = false;
     mdAtoms_.havePartiallyFrozenAtoms = false;
 
-    update_ = std::make_unique<Update>(inputRecord_, nullptr);
+    update_ = std::make_unique<Update>(inputRecord_, kineticEnergyData_, nullptr);
     update_->updateAfterPartition(numAtoms,
                                   gmx::ArrayRef<const unsigned short>(),
                                   mdAtoms_.cTC,

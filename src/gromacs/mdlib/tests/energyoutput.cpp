@@ -137,8 +137,9 @@ const EnergyOutputTestParameters parametersSets[] = {
  */
 class EnergyOutputTest : public ::testing::TestWithParam<EnergyOutputTestParameters>
 {
-    int  numTempCouplingGroups_ = 3;
-    real cosAccel_              = 1.0;
+    static constexpr int                                      numTempCouplingGroups_ = 3;
+    static constexpr std::array<real, numTempCouplingGroups_> tcgInit_{ 0.0_real, 0.0_real, 0.0_real };
+    static constexpr real                                     cosAccel_ = 1.0;
 
 public:
     //! File manager
@@ -191,7 +192,7 @@ public:
     TestReferenceChecker checker_;
 
     EnergyOutputTest() :
-        ekindata_(numTempCouplingGroups_, cosAccel_, 1),
+        ekindata_(tcgInit_, false, -1.0_real, cosAccel_, 1),
         logFilename_(fileManager_.getTemporaryFilePath(".log").u8string()),
         edrFilename_(fileManager_.getTemporaryFilePath(".edr").u8string()),
         log_(std::fopen(logFilename_.c_str(), "w")),
@@ -342,7 +343,6 @@ public:
 
         // Group options for annealing output
         inputrec_.opts.ngtc = numTempCouplingGroups_;
-        snew(inputrec_.opts.ref_t, inputrec_.opts.ngtc);
         snew(inputrec_.opts.annealing, inputrec_.opts.ngtc);
         inputrec_.opts.annealing[0] = SimulatedAnnealing::No;
         inputrec_.opts.annealing[1] = SimulatedAnnealing::Single;
@@ -493,7 +493,8 @@ public:
 
         for (int i = 0; i < inputrec_.opts.ngtc; i++)
         {
-            inputrec_.opts.ref_t[i] = (*testValue += 0.1);
+            *testValue += 0.1;
+            ekindata_.setCurrentReferenceTemperature(i, *testValue);
         }
 
         for (index k = 0; k < ssize(mtop_.groups.groups[SimulationAtomGroupType::TemperatureCoupling])
@@ -627,13 +628,13 @@ TEST_P(EnergyOutputTest, CheckOutput)
                                           muTotal_,
                                           constraints_.get());
 
-        energyOutput->printAnnealingTemperatures(log_, &mtop_.groups, &inputrec_.opts);
+        energyOutput->printAnnealingTemperatures(log_, mtop_.groups, inputrec_.opts, ekindata_);
         energyOutput->printStepToEnergyFile(
                 energyFile_, true, false, false, log_, 100 * frame, time_, nullptr, nullptr);
         time_ += 1.0;
     }
 
-    energyOutput->printAnnealingTemperatures(log_, &mtop_.groups, &inputrec_.opts);
+    energyOutput->printAnnealingTemperatures(log_, mtop_.groups, inputrec_.opts, ekindata_);
     energyOutput->printAverages(log_, &mtop_.groups);
 
     // We need to close the file before the contents are available.

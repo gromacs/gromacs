@@ -124,6 +124,14 @@ const char* enumValueToString(InteractionModifiers enumValue)
     return interactionModifierNames[enumValue];
 }
 
+const char* enumValueToString(EnsembleTemperatureSetting enumValue)
+{
+    static constexpr gmx::EnumerationArray<EnsembleTemperatureSetting, const char*> ensembleTemperatureSettingNames = {
+        "not available", "constant", "variable", "auto"
+    };
+    return ensembleTemperatureSettingNames[enumValue];
+}
+
 const char* enumValueToString(TemperatureCoupling enumValue)
 {
     static constexpr gmx::EnumerationArray<TemperatureCoupling, const char*> temperatureCouplingNames = {

@@ -1229,7 +1229,7 @@ void setStateDependentAwhParams(AwhParams*           awhParams,
                                 const matrix         box,
                                 PbcType              pbcType,
                                 const tensor&        compressibility,
-                                const t_grpopts*     inputrecGroupOptions,
+                                const t_inputrec&    inputrec,
                                 const real           initLambda,
                                 const gmx_mtop_t&    mtop,
                                 WarningHandler*      wi)
@@ -1238,18 +1238,11 @@ void setStateDependentAwhParams(AwhParams*           awhParams,
      * when read_awhParams is called (in get ir).
      * It is known first after do_index has been called in grompp.cpp.
      */
-    if (inputrecGroupOptions->ref_t == nullptr || inputrecGroupOptions->ref_t[0] <= 0)
+    GMX_RELEASE_ASSERT(haveConstantEnsembleTemperature(inputrec),
+                       "AWH requires a constant ensemble temperaure");
+    if (constantEnsembleTemperature(inputrec) <= 0)
     {
         gmx_fatal(FARGS, "AWH biasing is only supported for temperatures > 0");
-    }
-    for (int i = 1; i < inputrecGroupOptions->ngtc; i++)
-    {
-        if (inputrecGroupOptions->ref_t[i] != inputrecGroupOptions->ref_t[0])
-        {
-            gmx_fatal(FARGS,
-                      "AWH biasing is currently only supported for identical temperatures for all "
-                      "temperature coupling groups");
-        }
     }
 
     t_pbc pbc;
