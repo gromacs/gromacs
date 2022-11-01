@@ -148,11 +148,10 @@ static gmx_bool ip_pert(int ftype, const t_iparams* ip)
 }
 
 
-//! Return whether the two atom indices in a 1-4 interaction have perturbed charges per \c atomInfo
-static bool hasPerturbedChargeIn14Interaction(int atom0, int atom1, gmx::ArrayRef<const int64_t> atomInfo)
+//! Return whether the atom has its charge perturbed per \c atomInfo
+static bool hasPerturbedCharge(int atom, gmx::ArrayRef<const int64_t> atomInfo)
 {
-    return (bool(atomInfo[atom0] & gmx::sc_atomInfo_HasPerturbedChargeIn14Interaction)
-            || bool(atomInfo[atom1] & gmx::sc_atomInfo_HasPerturbedChargeIn14Interaction));
+    return bool(atomInfo[atom] & gmx::sc_atomInfo_HasPerturbedCharge);
 }
 
 gmx_bool gmx_mtop_bondeds_free_energy(const gmx_mtop_t* mtop)
@@ -181,7 +180,7 @@ gmx_bool gmx_mtop_bondeds_free_energy(const gmx_mtop_t* mtop)
         gmx::ArrayRef<const int> ia   = il.iatoms;
         for (int i = 0; i < il.size(); i += 3)
         {
-            if (atom[ia[i + 1]].q != atom[ia[i + 1]].qB || atom[ia[i + 2]].q != atom[ia[i + 2]].qB)
+            if (atomHasPerturbedCharge(atom[ia[i + 1]]) || atomHasPerturbedCharge(atom[ia[i + 2]]))
             {
                 bPert = TRUE;
             }
@@ -213,7 +212,8 @@ void gmx_sort_ilist_fe(InteractionDefinitions* idef, gmx::ArrayRef<const int64_t
                 /* Check if this interaction is perturbed */
                 if (ip_pert(ftype, idef->iparams.data() + iatoms[i])
                     || (ftype == F_LJ14
-                        && hasPerturbedChargeIn14Interaction(iatoms[i + 1], iatoms[i + 2], atomInfo)))
+                        && (hasPerturbedCharge(iatoms[i + 1], atomInfo)
+                            || hasPerturbedCharge(iatoms[i + 2], atomInfo))))
                 {
                     /* Copy to the perturbed buffer */
                     if (ib + 1 + nral > iabuf_nalloc)

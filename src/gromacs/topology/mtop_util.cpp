@@ -589,34 +589,6 @@ static void addMimicExclusions(gmx::ListOfLists<int>* excls, const gmx::ArrayRef
     gmx::mergeExclusions(excls, qmexcl2);
 }
 
-bool atomHasPerturbedChargeIn14Interaction(const int atomIndex, const gmx_moltype_t& molt)
-{
-    if (molt.atoms.nr > 0)
-    {
-        // Is the charge perturbed at all?
-        const t_atom& atom = molt.atoms.atom[atomIndex];
-        if (atom.q != atom.qB)
-        {
-            // Loop over 1-4 interactions
-            const InteractionList&   ilist  = molt.ilist[F_LJ14];
-            gmx::ArrayRef<const int> iatoms = ilist.iatoms;
-            const int                nral   = NRAL(F_LJ14);
-            for (int i = 0; i < ilist.size(); i += nral + 1)
-            {
-                // Compare the atom indices in this 1-4 interaction to
-                // atomIndex.
-                int ia1 = iatoms[i + 1];
-                int ia2 = iatoms[i + 2];
-                if ((atomIndex == ia1) || (atomIndex == ia2))
-                {
-                    return true;
-                }
-            }
-        }
-    }
-    return false;
-}
-
 static void sortFreeEnergyInteractionsAtEnd(const gmx_mtop_t& mtop, InteractionDefinitions* idef)
 {
     std::vector<int64_t> atomInfo(mtop.natoms, 0);
@@ -633,9 +605,9 @@ static void sortFreeEnergyInteractionsAtEnd(const gmx_mtop_t& mtop, InteractionD
             {
                 for (int a = 0; a < molt.atoms.nr; a++)
                 {
-                    if (atomHasPerturbedChargeIn14Interaction(a, molt))
+                    if (atomHasPerturbedCharge(molt.atoms.atom[a]))
                     {
-                        atomInfo[offset + a] |= gmx::sc_atomInfo_HasPerturbedChargeIn14Interaction;
+                        atomInfo[offset + a] |= gmx::sc_atomInfo_HasPerturbedCharge;
                     }
                 }
                 offset += molt.atoms.nr;

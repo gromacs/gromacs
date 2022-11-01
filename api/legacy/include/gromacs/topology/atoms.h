@@ -369,7 +369,17 @@ typedef struct t_atoms
     bool havePdbInfo; /* pdbinfo available                    */
 } t_atoms;
 
-#define PERTURBED(a) (((a).mB != (a).m) || ((a).qB != (a).q) || ((a).typeB != (a).type))
+//! Returns whether the charge of the atom is perturbed
+inline bool atomHasPerturbedCharge(const t_atom& atom)
+{
+    return atom.qB != atom.q;
+}
+
+//! Returns whether the atom is perturbed, i.e. mass, charge or atom type
+inline bool PERTURBED(const t_atom& atom)
+{
+    return atom.mB != atom.m || atomHasPerturbedCharge(atom) || atom.typeB != atom.type;
+}
 
 void init_atom(t_atoms* at);
 void done_atom(t_atoms* at);

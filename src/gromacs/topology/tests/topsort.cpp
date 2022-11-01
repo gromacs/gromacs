@@ -152,7 +152,7 @@ TEST(TopSortTest, WorksOnIdefWithPerturbedInteractions)
     forcefieldParams.iparams.push_back(makePerturbedLJ14Params(100, 10000, 200, 20000));
     idef.il[F_LJ14].push_back(forcefieldParams.iparams.size() - 1, perturbedBondAtoms);
     // Perturb the charge of atom 2, affecting the non-perturbed LJ14 above
-    std::vector<int64_t> atomInfo{ 0, 0, sc_atomInfo_HasPerturbedChargeIn14Interaction, 0 };
+    std::vector<int64_t> atomInfo{ 0, 0, sc_atomInfo_HasPerturbedCharge, 0 };
 
     gmx_sort_ilist_fe(&idef, atomInfo);
 
@@ -187,7 +187,7 @@ TEST(TopSortTest, SortsIdefWithPerturbedInteractions)
     forcefieldParams.iparams.push_back(makeUnperturbedLJ14Params(100, 10000));
     idef.il[F_LJ14].push_back(forcefieldParams.iparams.size() - 1, bondAtoms);
     // Perturb the charge of atom 2, affecting the non-perturbed LJ14 above
-    std::vector<int64_t> atomInfo{ 0, 0, sc_atomInfo_HasPerturbedChargeIn14Interaction, 0 };
+    std::vector<int64_t> atomInfo{ 0, 0, sc_atomInfo_HasPerturbedCharge, 0 };
 
     gmx_sort_ilist_fe(&idef, atomInfo);
 
@@ -231,8 +231,7 @@ TEST(TopSortTest, SortsMoreComplexIdefWithPerturbedInteractions)
     forcefieldParams.iparams.push_back(makeUnperturbedLJ14Params(100, 10000));
     idef.il[F_LJ14].push_back(forcefieldParams.iparams.size() - 1, moreBondAtoms);
     // Perturb the charge of atom 2, affecting the non-perturbed LJ14 above
-    std::vector<int64_t> atomInfo{ 0, 0, sc_atomInfo_HasPerturbedChargeIn14Interaction, 0, 0, 0,
-                                   0, 0 };
+    std::vector<int64_t> atomInfo{ 0, 0, sc_atomInfo_HasPerturbedCharge, 0, 0, 0, 0, 0 };
 
     gmx_sort_ilist_fe(&idef, atomInfo);
 
