@@ -95,8 +95,7 @@ inline void reduce_atom_forces(__local float* __restrict__ sm_forces,
                                float        fx,
                                float        fy,
                                float        fz,
-                               __local float* __restrict__ sm_forceReduction,
-                               __local float** __restrict__ sm_forceTemp)
+                               __local float* __restrict__ sm_forceReduction)
 
 {
     // TODO: implement AMD intrinsics reduction, like with shuffles in CUDA version. #2514
@@ -136,12 +135,11 @@ inline void reduce_atom_forces(__local float* __restrict__ sm_forces,
         }
         barrier(CLK_LOCAL_MEM_FENCE);
         // Last iteration - packing everything to be nearby, storing convenience pointer
-        sm_forceTemp[dimIndex] = sm_forceReduction + dimIndex * smemPerDim;
-        int redStride          = minStride;
+        int redStride = minStride;
         if (splineIndex < redStride)
         {
             const int packedIndex = atomIndexLocal * redStride + splineIndex;
-            sm_forceTemp[dimIndex][packedIndex] =
+            sm_forceReduction[dimIndex * smemPerDim + packedIndex] =
                     sm_forceReduction[elementIndex] + sm_forceReduction[elementIndex + redStride];
         }
 
@@ -163,13 +161,14 @@ inline void reduce_atom_forces(__local float* __restrict__ sm_forces,
     // First 3 warps can now process 1 dimension each
     if (dimIndex < DIM)
     {
-        const int sourceIndex = lineIndex % warp_size;
+        const int      sourceIndex             = lineIndex % warp_size;
+        __local float* sm_forceReductionPacked = sm_forceReduction + dimIndex * smemPerDim + sourceIndex;
 #    pragma unroll
         for (int redStride = minStride >> 1; redStride > 1; redStride >>= 1)
         {
             if (!(splineIndex & redStride))
             {
-                sm_forceTemp[dimIndex][sourceIndex] += sm_forceTemp[dimIndex][sourceIndex + redStride];
+                sm_forceReductionPacked[0] += sm_forceReductionPacked[redStride];
             }
         }
 
@@ -178,7 +177,7 @@ inline void reduce_atom_forces(__local float* __restrict__ sm_forces,
         if (sourceIndex == minStride * atomIndex)
         {
             sm_forces[atomIndex * DIM + dimIndex] =
-                    (sm_forceTemp[dimIndex][sourceIndex] + sm_forceTemp[dimIndex][sourceIndex + 1]) * n;
+                    (sm_forceReductionPacked[0] + sm_forceReductionPacked[1]) * n;
         }
     }
 }
@@ -396,19 +395,10 @@ __kernel void CUSTOMIZED_KERNEL_NAME(pme_gather_kernel)(const struct PmeOpenCLKe
     // Reduction of partial force contributions
     __local float sm_forces[atomsPerBlock * DIM];
 
-    __local float  sm_forceReduction[totalSharedMemory];
-    __local float* sm_forceTemp[DIM];
+    __local float sm_forceReduction[totalSharedMemory];
 
-    reduce_atom_forces(sm_forces,
-                       atomIndexLocal,
-                       splineIndex,
-                       lineIndex,
-                       kernelParams.grid.realGridSizeFP,
-                       fx,
-                       fy,
-                       fz,
-                       sm_forceReduction,
-                       sm_forceTemp);
+    reduce_atom_forces(
+            sm_forces, atomIndexLocal, splineIndex, lineIndex, kernelParams.grid.realGridSizeFP, fx, fy, fz, sm_forceReduction);
     barrier(CLK_LOCAL_MEM_FENCE);
 
     /* Calculating the final forces with no component branching, atomsPerBlock threads */
@@ -458,16 +448,8 @@ __kernel void CUSTOMIZED_KERNEL_NAME(pme_gather_kernel)(const struct PmeOpenCLKe
             sumForceComponents(
                     &fx, &fy, &fz, ixBase, nx, pny, pnz, constOffset, splineIndexBase, tdy, tdz, sm_splineParams, gm_gridB);
         }
-        reduce_atom_forces(sm_forces,
-                           atomIndexLocal,
-                           splineIndex,
-                           lineIndex,
-                           kernelParams.grid.realGridSizeFP,
-                           fx,
-                           fy,
-                           fz,
-                           sm_forceReduction,
-                           sm_forceTemp);
+        reduce_atom_forces(
+                sm_forces, atomIndexLocal, splineIndex, lineIndex, kernelParams.grid.realGridSizeFP, fx, fy, fz, sm_forceReduction);
         barrier(CLK_LOCAL_MEM_FENCE);
         if (forceIndexLocal < atomsPerBlock)
         {
