@@ -203,6 +203,12 @@ TEST_P(FreezeGroupTest, WithinTolerances)
     mdpFieldValues["freezedim"]   = "Y Y Y N N Y";
     mdpFieldValues["constraints"] = "h-bonds";
 
+    if (pcoupling == "c-rescale" && tcoupling == "no" && integrator != "sd" && integrator != "bd")
+    {
+        mdpFieldValues["ensemble-temperature-setting"] = "constant";
+        mdpFieldValues["ensemble-temperature"]         = "0";
+    }
+
     // Run grompp
     runner_.useTopGroAndNdxFromDatabase(simulationName);
     runner_.useStringAsMdpFile(prepareMdpFileContents(mdpFieldValues));
@@ -224,12 +230,11 @@ TEST_P(FreezeGroupTest, WithinTolerances)
             runner_.fullPrecisionTrajectoryFileName_, backbone, sideChainH, positionsTolerance, velocitiesTolerance);
 }
 
-INSTANTIATE_TEST_SUITE_P(FreezeWorks,
-                         FreezeGroupTest,
-                         ::testing::Combine(::testing::Values("md", "md-vv", "sd", "bd"),
-                                            ::testing::Values("no"),
-                                            // Enable C-rescale again when it supports NPH
-                                            //                           ::testing::Values("no", "c-rescale", "parrinello-rahman")));
-                                            ::testing::Values("no", "parrinello-rahman")));
+INSTANTIATE_TEST_SUITE_P(
+        FreezeWorks,
+        FreezeGroupTest,
+        ::testing::Combine(::testing::Values("md", "md-vv", "sd", "bd"),
+                           ::testing::Values("no"),
+                           ::testing::Values("no", "c-rescale", "parrinello-rahman")));
 } // namespace
 } // namespace gmx::test

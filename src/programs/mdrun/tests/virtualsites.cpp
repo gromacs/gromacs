@@ -580,12 +580,6 @@ TEST_P(VirtualSiteTest, WithinToleranceOfReference)
         return;
     }
 
-    // We should reenable C-rescale here when it supports NPH
-    if (pcoupling == "c-rescale" && tcoupling == "no" && integrator != "sd" && integrator != "bd")
-    {
-        return;
-    }
-
     // Prepare mdp input
     auto mdpFieldValues = prepareMdpFieldValues(simulationName, integrator, tcoupling, pcoupling);
     mdpFieldValues["nsteps"]      = "8";
@@ -603,6 +597,13 @@ TEST_P(VirtualSiteTest, WithinToleranceOfReference)
     {
         mdpFieldValues["tau-p"] = "2";
     }
+
+    if (pcoupling == "c-rescale" && tcoupling == "no" && integrator != "sd" && integrator != "bd")
+    {
+        mdpFieldValues["ensemble-temperature-setting"] = "constant";
+        mdpFieldValues["ensemble-temperature"]         = "298";
+    }
+
 
     // Run grompp
     runner_.useTopGroAndNdxFromDatabase(simulationName);
