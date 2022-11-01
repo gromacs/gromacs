@@ -143,9 +143,9 @@ static void distributeVecScatterv(gmx_domdec_t*                  dd,
     dd_scatterv(dd,
                 sendCounts,
                 displacements,
-                DDMAIN(dd) ? reinterpret_cast<const real*>(dd->ma->rvecBuffer.data()) : nullptr,
-                numHomeAtoms * DIM,
-                reinterpret_cast<real*>(localVec.data()));
+                DDMAIN(dd) ? dd->ma->rvecBuffer.data() : nullptr,
+                numHomeAtoms,
+                localVec.data());
 }
 
 static void distributeVec(gmx_domdec_t*                  dd,

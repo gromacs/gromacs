@@ -156,9 +156,9 @@ extern template void dd_scatterv(const gmx_domdec_t*      dd,
 extern template void dd_scatterv(const gmx_domdec_t*      dd,
                                  gmx::ArrayRef<const int> scounts,
                                  gmx::ArrayRef<const int> disps,
-                                 const real*              sbuf,
+                                 const gmx::RVec*         sbuf,
                                  int                      rcount,
-                                 real*                    rbuf);
+                                 gmx::RVec*               rbuf);
 
 /*! \brief Gathers \p rcount elements of type \p T from \p src on all PP ranks, received in \p scounts elements in \p dest on \p DDMAINRANK.
  *
@@ -187,9 +187,9 @@ extern template void dd_gatherv(const gmx_domdec_t*      dd,
 //! Instantiation of \p dd_gatherv for type real
 extern template void dd_gatherv(const gmx_domdec_t*      dd,
                                 int                      scount,
-                                const real*              sbuf,
+                                const gmx::RVec*         sbuf,
                                 gmx::ArrayRef<const int> rcounts,
                                 gmx::ArrayRef<const int> disps,
-                                real*                    rbuf);
+                                gmx::RVec*               rbuf);
 
 #endif

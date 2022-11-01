@@ -77,13 +77,7 @@ void get_commbuffer_counts(AtomDistribution*         ma,
     auto d        = gmx::makeArrayRef(ma->intBuffer).subArray(numRanks, numRanks);
     for (int rank = 0; rank < numRanks; rank++)
     {
-        // Here we multiply by DIM as the MPI routines will use real, not rvec, as the type.
-        // Note that the int count/offsets in MPI are what currently limits the atom count.
-        GMX_RELEASE_ASSERT(ma->domainGroups[rank].numAtoms <= std::numeric_limits<int>::max() / DIM,
-                           "Can not have more than max int / 3 atoms");
-        c[rank] = ma->domainGroups[rank].numAtoms * DIM;
-        GMX_RELEASE_ASSERT(d[rank - 1] <= std::numeric_limits<int>::max() - c[rank - 1],
-                           "Can not have more than max int / 3 atoms");
+        c[rank] = ma->domainGroups[rank].numAtoms;
         d[rank] = (rank == 0 ? 0 : d[rank - 1] + c[rank - 1]);
     }
 

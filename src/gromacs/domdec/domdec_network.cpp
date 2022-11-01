@@ -279,11 +279,11 @@ void dd_scatterv(const gmx_domdec_t gmx_unused*      dd,
                  T*                                  rbuf)
 {
 #if GMX_MPI
-    static_assert(std::is_same_v<T, int> || std::is_same_v<T, real>,
-                  "Currently only support int and real");
-    MPI_Datatype mpiDatatype = (std::is_same_v<T, int> ? MPI_INT : (GMX_DOUBLE ? MPI_DOUBLE : MPI_FLOAT));
+    static_assert(std::is_same_v<T, int> || std::is_same_v<T, gmx::RVec>,
+                  "Currently only supports int and rvec equivalent");
+    const MPI_Datatype mpiDatatype = (std::is_same_v<T, int> ? MPI_INT : dd->comm->mpiRVec);
 
-    T dum = 0;
+    T dum;
 
     if (dd->nnodes > 1)
     {
@@ -324,9 +324,9 @@ template void dd_scatterv(const gmx_domdec_t*      dd,
 template void dd_scatterv(const gmx_domdec_t*      dd,
                           gmx::ArrayRef<const int> scounts,
                           gmx::ArrayRef<const int> disps,
-                          const real*              sbuf,
+                          const gmx::RVec*         sbuf,
                           int                      rcount,
-                          real*                    rbuf);
+                          gmx::RVec*               rbuf);
 
 template<typename T>
 void dd_gatherv(const gmx_domdec_t gmx_unused* dd,
@@ -337,9 +337,9 @@ void dd_gatherv(const gmx_domdec_t gmx_unused* dd,
                 T gmx_unused* rbuf)
 {
 #if GMX_MPI
-    static_assert(std::is_same_v<T, int> || std::is_same_v<T, real>,
-                  "Currently only support int and real");
-    MPI_Datatype mpiDatatype = (std::is_same_v<T, int> ? MPI_INT : (GMX_DOUBLE ? MPI_DOUBLE : MPI_FLOAT));
+    static_assert(std::is_same_v<T, int> || std::is_same_v<T, gmx::RVec>,
+                  "Currently only support int and rvec equivalent");
+    const MPI_Datatype mpiDatatype = (std::is_same_v<T, int> ? MPI_INT : dd->comm->mpiRVec);
 
     if (dd->nnodes > 1)
     {
@@ -377,7 +377,7 @@ template void dd_gatherv(const gmx_domdec_t*      dd,
 
 template void dd_gatherv(const gmx_domdec_t*      dd,
                          int                      scount,
-                         const real*              sbuf,
+                         const gmx::RVec*         sbuf,
                          gmx::ArrayRef<const int> rcounts,
                          gmx::ArrayRef<const int> disps,
-                         real*                    rbuf);
+                         gmx::RVec*               rbuf);

@@ -694,6 +694,11 @@ struct gmx_domdec_comm_t // NOLINT (clang-analyzer-optin.performance.Padding)
     /**< Struct for timing the force load balancing region */
     BalanceRegion balanceRegion;
 
+#if GMX_MPI
+    /**< MPI data type corresponding to rvec */
+    MPI_Datatype mpiRVec;
+#endif
+
     /* Cycle counters over nstlist steps */
     /**< Total cycles counted */
     std::array<float, ddCyclNr> cycl = { 0 };

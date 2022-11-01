@@ -222,12 +222,8 @@ static void dd_collect_vec_gatherv(gmx_domdec_t*                  dd,
     }
 
     const int numHomeAtoms = dd->comm->atomRanges.numHomeAtoms();
-    dd_gatherv(dd,
-               numHomeAtoms * DIM,
-               reinterpret_cast<const real*>(lv.data()),
-               recvCounts,
-               displacements,
-               DDMAIN(dd) ? reinterpret_cast<real*>(dd->ma->rvecBuffer.data()) : nullptr);
+    dd_gatherv(
+            dd, numHomeAtoms, lv.data(), recvCounts, displacements, DDMAIN(dd) ? dd->ma->rvecBuffer.data() : nullptr);
 
     if (DDMAIN(dd))
     {
