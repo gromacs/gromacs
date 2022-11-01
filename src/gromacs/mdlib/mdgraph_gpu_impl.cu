@@ -77,7 +77,23 @@ MdGpuGraph::Impl::Impl(const DeviceStreamManager& deviceStreamManager,
     }
 }
 
-MdGpuGraph::Impl::~Impl() = default;
+MdGpuGraph::Impl::~Impl()
+{
+    stat_ = cudaDeviceSynchronize();
+    CU_RET_ERR(stat_, "cudaDeviceSynchronize during MD graph cleanup failed.");
+
+    if (graphAllocated_)
+    {
+        stat_ = cudaGraphDestroy(graph_);
+        CU_RET_ERR(stat_, "cudaGraphDestroy during MD graph cleanup failed.");
+    }
+
+    if (graphInstanceAllocated_)
+    {
+        stat_ = cudaGraphExecDestroy(instance_);
+        CU_RET_ERR(stat_, "cudaGraphExecDestroy diring MD graph cleanup failed.");
+    }
+}
 
 
 void MdGpuGraph::Impl::enqueueEventFromAllPpRanksToRank0Stream(GpuEventSynchronizer* event,
