@@ -373,14 +373,41 @@ void MdGpuGraph::Impl::launchGraphMdStep(GpuEventSynchronizer* xUpdatedOnDeviceE
         thisLaunchStream = launchStreamAlternate_.get();
     }
 
-    if (ppRank_ == 0)
+    // If graph was not used in the previous step, make sure the graph launch stream (on this step)
+    // waits on all GPU streams, across all GPUs, from the previous step. First sync locally on each
+    // GPU to the local launchStream, and then sync each local launchStream to the main launchStream
+    // on rank 0 (noting that only rank 0 uses its launchStream to actually launch the full graph).
+    if (!usedGraphLastStep_)
     {
-        if (!usedGraphLastStep_)
+
+        // Sync update and constraints
+        helperEvent_->markEvent(deviceStreamManager_.stream(gmx::DeviceStreamType::UpdateAndConstraints));
+        helperEvent_->enqueueWaitEvent(*thisLaunchStream);
+
+        // Sync NB local and non-local (to ensure no race condition with pruning)
+        helperEvent_->markEvent(deviceStreamManager_.stream(gmx::DeviceStreamType::NonBondedLocal));
+        helperEvent_->enqueueWaitEvent(*thisLaunchStream);
+        if (havePPDomainDecomposition_)
         {
-            helperEvent_->markEvent(deviceStreamManager_.stream(gmx::DeviceStreamType::UpdateAndConstraints));
+            helperEvent_->markEvent(deviceStreamManager_.stream(gmx::DeviceStreamType::NonBondedNonLocal));
             helperEvent_->enqueueWaitEvent(*thisLaunchStream);
         }
 
+        // If PME on same rank, sync PME (to ensure no race condition with clearing)
+        // Note that separate rank PME has implicit sync, including clearing.
+        if (useGpuPme_ && !haveSeparatePmeRank_)
+        {
+            helperEvent_->markEvent(deviceStreamManager_.stream(gmx::DeviceStreamType::Pme));
+            helperEvent_->enqueueWaitEvent(*thisLaunchStream);
+        }
+
+        // Sync remote GPUs to main rank 0 GPU which will launch graph
+        helperEvent_->markEvent(*thisLaunchStream);
+        enqueueEventFromAllPpRanksToRank0Stream(helperEvent_.get(), *thisLaunchStream);
+    }
+
+    if (ppRank_ == 0)
+    {
         stat_ = cudaGraphLaunch(instance_, thisLaunchStream->stream());
         CU_RET_ERR(stat_, "cudaGraphLaunch in MD graph definition finalization failed.");
         helperEvent_->markEvent(*thisLaunchStream);
