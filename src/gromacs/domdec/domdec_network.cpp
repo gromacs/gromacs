@@ -281,7 +281,7 @@ void dd_scatterv(const gmx_domdec_t gmx_unused*      dd,
 #if GMX_MPI
     static_assert(std::is_same_v<T, int> || std::is_same_v<T, gmx::RVec>,
                   "Currently only supports int and rvec equivalent");
-    const MPI_Datatype mpiDatatype = (std::is_same_v<T, int> ? MPI_INT : dd->comm->mpiRVec);
+    MPI_Datatype mpiDatatype = (std::is_same_v<T, int> ? MPI_INT : dd->comm->mpiRVec);
 
     T dum;
 
@@ -292,7 +292,7 @@ void dd_scatterv(const gmx_domdec_t gmx_unused*      dd,
             /* MPI does not allow NULL pointers */
             rbuf = &dum;
         }
-        /* Some MPI implementions don't specify const */
+        /* Some MPI implementations don't specify const */
         MPI_Scatterv(const_cast<T*>(sbuf),
                      const_cast<int*>(scounts.data()),
                      const_cast<int*>(disps.data()),
@@ -339,7 +339,7 @@ void dd_gatherv(const gmx_domdec_t gmx_unused* dd,
 #if GMX_MPI
     static_assert(std::is_same_v<T, int> || std::is_same_v<T, gmx::RVec>,
                   "Currently only support int and rvec equivalent");
-    const MPI_Datatype mpiDatatype = (std::is_same_v<T, int> ? MPI_INT : dd->comm->mpiRVec);
+    MPI_Datatype mpiDatatype = (std::is_same_v<T, int> ? MPI_INT : dd->comm->mpiRVec);
 
     if (dd->nnodes > 1)
     {
@@ -350,7 +350,7 @@ void dd_gatherv(const gmx_domdec_t gmx_unused* dd,
             /* MPI does not allow NULL pointers */
             sbuf = &dum;
         }
-        /* Some MPI implementions don't specify const */
+        /* Some MPI implementations don't specify const */
         MPI_Gatherv(const_cast<T*>(sbuf),
                     scount,
                     mpiDatatype,
