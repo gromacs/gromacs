@@ -871,9 +871,16 @@ SYCL GPU compilation options
 The following flags can be passed to CMake in order to tune |Gromacs|:
 
 ``-DGMX_GPU_NB_CLUSTER_SIZE``
-      changes the data layout of non-bonded kernels. Default values: 4 when
-      compiling with `Intel oneAPI DPC++`_, 8 when compiling with hipSYCL_.
-      Those are reasonable defaults for Intel and AMD devices, respectively.
+      changes the data layout of non-bonded kernels. Default values: 4
+      when compiling with `Intel oneAPI DPC++`_, and 8 when compiling
+      with hipSYCL_.  Those are reasonable defaults for Intel and AMD
+      devices, respectively.
+
+``-DGMX_GPU_NB_NUM_CLUSTER_PER_CELL_X``, ``-DGMX_GPU_NB_NUM_CLUSTER_PER_CELL_Y``, ``-DGMX_GPU_NB_NUM_CLUSTER_PER_CELL_Z``
+      Sets the number of clusters along X, Y, or Z in a pair-search
+      grid cell, default 2. When targeting Intel PonteVecchio GPUs,
+      set ``-DGMX_GPU_NB_NUM_CLUSTER_PER_CELL_X=1`` and leave the
+      other values as the default.
 
 Static linking
 ~~~~~~~~~~~~~~

@@ -261,8 +261,17 @@
 /* Define if cuFFTMp library found */
 #cmakedefine01 GMX_USE_cuFFTMp
 
-/* Cluster size used by nonbonded kernel. Should be 8 for NVIDIA/AMD and 4 for Intel */
+// Cluster size used by GPU nonbonded kernel.
 #define GMX_GPU_NB_CLUSTER_SIZE @GMX_GPU_NB_CLUSTER_SIZE@
+
+// Number of clusters along X in a pair-search grid cell for GPU lists.
+#define GMX_GPU_NB_NUM_CLUSTER_PER_CELL_X @GMX_GPU_NB_NUM_CLUSTER_PER_CELL_X@
+
+// Number of clusters along Y in a pair-search grid cell for GPU lists.
+#define GMX_GPU_NB_NUM_CLUSTER_PER_CELL_Y @GMX_GPU_NB_NUM_CLUSTER_PER_CELL_Y@
+
+// Number of clusters along Z in a pair-search grid cell for GPU lists.
+#define GMX_GPU_NB_NUM_CLUSTER_PER_CELL_Z @GMX_GPU_NB_NUM_CLUSTER_PER_CELL_Z@
 
 /* Define constants for build types (starting at 1 to make sure undefined values don't match) */
 #define CMAKE_BUILD_TYPE_DEBUG 1

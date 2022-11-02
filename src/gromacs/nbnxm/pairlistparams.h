@@ -65,12 +65,14 @@ static constexpr int c_nbnxnGpuClusterSize = GMX_GPU_NB_CLUSTER_SIZE;
 static constexpr int c_nbnxnGpuClusterSize = 8;
 #endif
 
-//! The number of clusters along Z in a pair-search grid cell for GPU lists
-static constexpr int c_gpuNumClusterPerCellZ = 2;
-//! The number of clusters along Y in a pair-search grid cell for GPU lists
-static constexpr int c_gpuNumClusterPerCellY = 2;
-//! The number of clusters along X in a pair-search grid cell for GPU lists
-static constexpr int c_gpuNumClusterPerCellX = 2;
+/*! \brief The number of clusters along a direction in a pair-search grid cell for GPU lists
+ *
+ * Typically all 2, but X can be 1 when targeting Intel Ponte Vecchio */
+//! \{
+static constexpr int c_gpuNumClusterPerCellZ = GMX_GPU_NB_NUM_CLUSTER_PER_CELL_Z;
+static constexpr int c_gpuNumClusterPerCellY = GMX_GPU_NB_NUM_CLUSTER_PER_CELL_Y;
+static constexpr int c_gpuNumClusterPerCellX = GMX_GPU_NB_NUM_CLUSTER_PER_CELL_X;
+//! \}
 //! The number of clusters in a pair-search grid cell for GPU lists
 static constexpr int c_gpuNumClusterPerCell =
         c_gpuNumClusterPerCellZ * c_gpuNumClusterPerCellY * c_gpuNumClusterPerCellX;

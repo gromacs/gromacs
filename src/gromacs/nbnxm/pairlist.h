@@ -167,12 +167,12 @@ constexpr float c_nbnxnMinDistanceSquared = 3.82e-07F; // r > 6.2e-4
 #endif
 
 
-//! The number of clusters in a super-cluster, used for GPU
-constexpr int c_nbnxnGpuNumClusterPerSupercluster = 8;
-static_assert(c_nbnxnGpuNumClusterPerSupercluster
-                      == c_gpuNumClusterPerCellX * c_gpuNumClusterPerCellY * c_gpuNumClusterPerCellZ,
-              "c_nbnxnGpuNumClusterPerSupercluster needs to match the number of clusters per "
-              "search cell");
+/*! \brief The number of clusters in a super-cluster, used for GPU
+ *
+ * Configured via GMX_GPU_NB_NUM_CLUSTER_PER_CELL_[XYZ] CMake options.
+ * Typically 8 (2*2*2), but can be 4 (1*2*2) when targeting Intel Ponte Vecchio. */
+constexpr int c_nbnxnGpuNumClusterPerSupercluster =
+        c_gpuNumClusterPerCellX * c_gpuNumClusterPerCellY * c_gpuNumClusterPerCellZ;
 
 /*! \brief With GPU kernels we group cluster pairs in 4 to optimize memory usage
  * of integers containing 32 bits.
