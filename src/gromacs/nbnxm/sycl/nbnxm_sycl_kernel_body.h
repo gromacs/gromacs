@@ -620,17 +620,79 @@ static inline void reduceForceIAndFShiftShuffles(const float fCiBufX[c_nbnxnGpuN
     static_assert(numShuffleReductionSteps == 2 || numShuffleReductionSteps == 3);
     SYCL_ASSERT(sg.get_max_local_range()[0] >= 4 * c_clSize
                 && "Subgroup too small for two-step shuffle reduction, use 1-step");
+
+    float fShiftBuf = 0.0F;
+
+#if defined(__SYCL_DEVICE_ONLY__) && defined(__AMDGCN__) && (__AMDGCN_WAVEFRONT_SIZE == 64)
+    // Use AMD's cross-lane DPP reduction only for 64-wide exec
+    // can't use static_assert because 32-wide compiler passes will trip on it
+    SYCL_ASSERT(numShuffleReductionSteps == 3);
+#    pragma unroll c_nbnxnGpuNumClusterPerSupercluster
+    for (int ciOffset = 0; ciOffset < c_nbnxnGpuNumClusterPerSupercluster; ciOffset++)
+    {
+        const int aidx = (sci * c_nbnxnGpuNumClusterPerSupercluster + ciOffset) * c_clSize + tidxj;
+        float     fx   = fCiBufX[ciOffset];
+        float     fy   = fCiBufY[ciOffset];
+        float     fz   = fCiBufZ[ciOffset];
+
+        // Transpose values so DPP-based reduction can be used later
+        fx = sycl::select_from_group(sg, fx, tidxi * c_clSize + tidxj);
+        fy = sycl::select_from_group(sg, fy, tidxi * c_clSize + tidxj);
+        fz = sycl::select_from_group(sg, fz, tidxi * c_clSize + tidxj);
+
+        fx += amdDppUpdateShfl<float, /* row_shl:1 */ 0x101>(fx);
+        fy += amdDppUpdateShfl<float, /* row_shr:1 */ 0x111>(fy);
+        fz += amdDppUpdateShfl<float, /* row_shl:1 */ 0x101>(fz);
+
+        if (tidxi & 1)
+        {
+            fx = fy;
+        }
+
+        fx += amdDppUpdateShfl<float, /* row_shl:2 */ 0x102>(fx);
+        fz += amdDppUpdateShfl<float, /* row_shr:2 */ 0x112>(fz);
+
+        if (tidxi & 2)
+        {
+            fx = fz;
+        }
+
+        fx += amdDppUpdateShfl<float, /* row_shl:4 */ 0x104>(fx);
+
+        // Threads 0,1,2 increment X, Y, Z for their sub-groups
+        if (tidxi < 3)
+        {
+            atomicFetchAdd(a_f[aidx][(tidxi)], fx);
+
+            if (calcFShift)
+            {
+                fShiftBuf += fx;
+            }
+        }
+    }
+    /* add up local shift forces into global mem */
+    if (calcFShift)
+    {
+        if ((tidxi) < 3)
+        {
+            atomicFetchAdd(a_fShift[shift][(tidxi)], fShiftBuf);
+        }
+    }
+
+#else // GMX_SYCL_HIPSYCL && HIPSYCL_LIBKERNEL_IS_DEVICE_PASS_HIP
+
     // Thread mask to use to select first three threads (in tidxj) in each reduction "tree".
     // Two bits for two steps, three bits for three steps.
     constexpr int threadBitMask = (1U << numShuffleReductionSteps) - 1;
-    float         fShiftBuf     = 0.0F;
-#pragma unroll c_nbnxnGpuNumClusterPerSupercluster
+
+#    pragma unroll c_nbnxnGpuNumClusterPerSupercluster
     for (int ciOffset = 0; ciOffset < c_nbnxnGpuNumClusterPerSupercluster; ciOffset++)
     {
         const int aidx = (sci * c_nbnxnGpuNumClusterPerSupercluster + ciOffset) * c_clSize + tidxi;
         float     fx   = fCiBufX[ciOffset];
         float     fy   = fCiBufY[ciOffset];
         float     fz   = fCiBufZ[ciOffset];
+
         // First reduction step
         fx += sycl_2020::shift_left(sg, fx, c_clSize);
         fy += sycl_2020::shift_right(sg, fy, c_clSize);
@@ -670,6 +732,7 @@ static inline void reduceForceIAndFShiftShuffles(const float fCiBufX[c_nbnxnGpuN
             atomicFetchAdd(a_fShift[shift][(tidxj & threadBitMask)], fShiftBuf);
         }
     }
+#endif // GMX_SYCL_HIPSYCL && HIPSYCL_LIBKERNEL_IS_DEVICE_PASS_HIP
 }
 
 /*! \brief \c reduceForceIAndFShiftShuffles specialization for single-step reduction (e.g., Intel iGPUs).
