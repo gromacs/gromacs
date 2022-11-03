@@ -2138,7 +2138,7 @@ int Mdrunner::mdrunner()
         GMX_RELEASE_ASSERT(pmedata, "pmedata was NULL while cr->duty was not DUTY_PP");
         /* do PME only */
         walltime_accounting = walltime_accounting_init(gmx_omp_nthreads_get(ModuleMultiThread::Pme));
-        gmx_pmeonly(pmedata,
+        gmx_pmeonly(&pmedata,
                     cr,
                     &nrnb,
                     wcycle.get(),

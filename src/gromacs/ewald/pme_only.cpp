@@ -625,7 +625,7 @@ static void gmx_pme_send_force_vir_ener(const gmx_pme_t& pme, gmx_pme_pp* pme_pp
 #endif
 }
 
-int gmx_pmeonly(struct gmx_pme_t*               pme,
+int gmx_pmeonly(struct gmx_pme_t**              pmeFromRunnerPtr,
                 const t_commrec*                cr,
                 t_nrnb*                         mynrnb,
                 gmx_wallcycle*                  wcycle,
@@ -642,13 +642,16 @@ int gmx_pmeonly(struct gmx_pme_t*               pme,
     real    lambda_lj  = 0;
     int     maxshift_x = 0, maxshift_y = 0;
     float   cycles;
-    int     count;
     bool    computeEnergyAndVirial = false;
     int64_t step;
 
-    /* This data will only use with PME tuning, i.e. switching PME grids */
+    gmx_pme_t* pmeFromRunner = *pmeFromRunnerPtr;
+
+    // This data will only use with PME tuning, i.e. switching PME grids
+    // The first element comes from outside, the rest is generated here,
+    // but all elements are freed at the end of this function or when switching configs.
     std::vector<gmx_pme_t*> pmedata;
-    pmedata.push_back(pme);
+    pmedata.push_back(pmeFromRunner);
 
     auto pme_pp = gmx_pme_pp_init(cr);
 
@@ -669,11 +672,11 @@ int gmx_pmeonly(struct gmx_pme_t*               pme,
         {
             pme_pp->pmeCoordinateReceiverGpu = std::make_unique<gmx::PmeCoordinateReceiverGpu>(
                     pme_pp->mpi_comm_mysim, deviceStreamManager->context(), pme_pp->ppRanks);
-            pme_pp->pmeForceSenderGpu =
-                    std::make_unique<gmx::PmeForceSenderGpu>(pme_gpu_get_f_ready_synchronizer(pme),
-                                                             pme_pp->mpi_comm_mysim,
-                                                             deviceStreamManager->context(),
-                                                             pme_pp->ppRanks);
+            pme_pp->pmeForceSenderGpu = std::make_unique<gmx::PmeForceSenderGpu>(
+                    pme_gpu_get_f_ready_synchronizer(pmeFromRunner),
+                    pme_pp->mpi_comm_mysim,
+                    deviceStreamManager->context(),
+                    pme_pp->ppRanks);
         }
         // TODO: Special PME-only constructor is used here. There is no mechanism to prevent from using the other constructor here.
         //       This should be made safer.
@@ -681,13 +684,15 @@ int gmx_pmeonly(struct gmx_pme_t*               pme,
                 &deviceStreamManager->stream(gmx::DeviceStreamType::Pme),
                 deviceStreamManager->context(),
                 GpuApiCallBehavior::Async,
-                pme_gpu_get_block_size(pme),
+                pme_gpu_get_block_size(pmeFromRunner),
                 wcycle);
     }
 
     clear_nrnb(mynrnb);
 
-    count = 0;
+    // the current PME data structure, may change due to PME tuning
+    gmx_pme_t* pme               = pmeFromRunner;
+    bool       haveStartedTiming = false;
     do /****** this is a quasi-loop over time steps! */
     {
         /* The reason for having a loop here is PME grid tuning/switching */
@@ -732,8 +737,11 @@ int gmx_pmeonly(struct gmx_pme_t*               pme,
             break;
         }
 
-        if (count == 0)
+        // Starting wall-time accounting is delayed to avoid the PME rank
+        // start its timer while the PP is still doing initialization.
+        if (!haveStartedTiming)
         {
+            haveStartedTiming = true;
             wallcycle_start(wcycle, WallCycleCounter::Run);
             walltime_accounting_start_time(walltime_accounting);
         }
@@ -815,15 +823,16 @@ int gmx_pmeonly(struct gmx_pme_t*               pme,
         cycles = wallcycle_stop(wcycle, WallCycleCounter::PmeMesh);
         gmx_pme_send_force_vir_ener(*pme, pme_pp.get(), output, cycles);
 
-        count++;
     } /***** end of quasi-loop, we stop with the break above */
     while (TRUE);
 
-    // The first element, `pme`, will be freed outside this function
-    for (size_t i = 1; i < pmedata.size(); i++)
+    for (size_t i = 0; i < pmedata.size(); i++)
     {
-        gmx_pme_destroy(pmedata[i], false);
+        bool destroySharedData = (i == pmedata.size() - 1);
+        gmx_pme_destroy(pmedata[i], destroySharedData);
     }
+    // reset the PME pointer passed from runner
+    *pmeFromRunnerPtr = nullptr;
     walltime_accounting_end_time(walltime_accounting);
 
     return 0;
