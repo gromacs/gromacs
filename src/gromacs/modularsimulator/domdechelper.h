@@ -88,7 +88,6 @@ public:
                  int                           verbosePrintInterval,
                  StatePropagatorData*          statePropagatorData,
                  TopologyHolder*               topologyHolder,
-                 int                           nstglobalcomm,
                  FILE*                         fplog,
                  t_commrec*                    cr,
                  const MDLogger&               mdlog,
@@ -127,8 +126,6 @@ private:
     const bool isVerbose_;
     //! If we're being verbose, how often?
     const int verbosePrintInterval_;
-    //! The global communication frequency
-    const int nstglobalcomm_;
 
     //! List of callbacks to inform clients that DD happened
     std::vector<DomDecCallback> domdecCallbacks_;
@@ -140,12 +137,7 @@ private:
     TopologyHolder* topologyHolder_;
 
     //! Helper function unifying the DD partitioning calls in setup() and run()
-    void partitionSystem(bool           verbose,
-                         bool           isMainState,
-                         int            nstglobalcomm,
-                         gmx_wallcycle* wcycle,
-                         t_state*       localState,
-                         t_state*       globalState);
+    void partitionSystem(bool verbose, bool isMainState, gmx_wallcycle* wcycle, t_state* localState, t_state* globalState);
 
     // Access to ISimulator data
     //! Handles logging.

@@ -2748,7 +2748,6 @@ void dd_partition_system(FILE*                     fplog,
                          int64_t                   step,
                          const t_commrec*          cr,
                          bool                      bMainState,
-                         int                       nstglobalcomm,
                          t_state*                  state_global,
                          const gmx_mtop_t&         top_global,
                          const t_inputrec&         inputrec,
@@ -2804,7 +2803,6 @@ void dd_partition_system(FILE*                     fplog,
         }
     }
 
-    bool bNStGlobalComm = (step % nstglobalcomm == 0);
     bool bDoDLB;
     if (!isDlbOn(comm->dlbState))
     {
@@ -2822,7 +2820,7 @@ void dd_partition_system(FILE*                     fplog,
         }
         else
         {
-            bDoDLB = bNStGlobalComm;
+            bDoDLB = (step % dd->comm->nstDDGlobalComm == 0);
         }
     }
 
@@ -2836,11 +2834,7 @@ void dd_partition_system(FILE*                     fplog,
                          || (inputrec.nsteps >= 0
                              && (step + inputrec.nstlist > inputrec.init_step + inputrec.nsteps)));
 
-        /* Avoid extra communication due to verbose screen output
-         * when nstglobalcomm is set.
-         */
-        if (bDoDLB || bLogLoad || bCheckWhetherToTurnDlbOn
-            || (bVerbose && (inputrec.nstlist == 0 || nstglobalcomm <= inputrec.nstlist)))
+        if (bDoDLB || bLogLoad || bCheckWhetherToTurnDlbOn || bVerbose)
         {
             get_load_distribution(dd, wcycle);
             if (DDMAIN(dd))
@@ -3030,12 +3024,13 @@ void dd_partition_system(FILE*                     fplog,
          * of the system for dims without pbc. Therefore we need to copy
          * the previously computed values when we do not communicate.
          */
-        if (!bNStGlobalComm)
+        const bool doGlobalComm = (step % dd->comm->nstDDGlobalComm == 0);
+        if (!doGlobalComm)
         {
             copy_rvec(comm->box0, ddbox.box0);
             copy_rvec(comm->box_size, ddbox.box_size);
         }
-        set_ddbox(*dd, bMainState, state_local->box, bNStGlobalComm, state_local->x, &ddbox);
+        set_ddbox(*dd, bMainState, state_local->box, doGlobalComm, state_local->x, &ddbox);
 
         bBoxChanged = true;
         bRedist     = true;

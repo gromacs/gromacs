@@ -59,7 +59,6 @@ DomDecHelper::DomDecHelper(bool                          isVerbose,
                            int                           verbosePrintInterval,
                            StatePropagatorData*          statePropagatorData,
                            TopologyHolder*               topologyHolder,
-                           int                           nstglobalcomm,
                            FILE*                         fplog,
                            t_commrec*                    cr,
                            const MDLogger&               mdlog,
@@ -76,7 +75,6 @@ DomDecHelper::DomDecHelper(bool                          isVerbose,
     nextNSStep_(-1),
     isVerbose_(isVerbose),
     verbosePrintInterval_(verbosePrintInterval),
-    nstglobalcomm_(nstglobalcomm),
     domdecCallbacks_(std::move(domdecCallbacks)),
     statePropagatorData_(statePropagatorData),
     topologyHolder_(topologyHolder),
@@ -100,15 +98,13 @@ DomDecHelper::DomDecHelper(bool                          isVerbose,
 void DomDecHelper::setup()
 {
     // constant choices for this call to dd_partition_system
-    const bool     verbose       = false;
-    const bool     isMainState   = true;
-    const int      nstglobalcomm = 1;
-    gmx_wallcycle* wcycle        = nullptr;
+    const bool     verbose     = false;
+    const bool     isMainState = true;
+    gmx_wallcycle* wcycle      = nullptr;
 
     // Distribute the charge groups over the nodes from the main node
     partitionSystem(verbose,
                     isMainState,
-                    nstglobalcomm,
                     wcycle,
                     statePropagatorData_->localState(),
                     statePropagatorData_->globalState());
@@ -143,12 +139,11 @@ void DomDecHelper::run(Step step, Time gmx_unused time)
     }
 
     // Distribute the charge groups over the nodes from the main node
-    partitionSystem(verbose, isMainState, nstglobalcomm_, wcycle_, localState, globalState);
+    partitionSystem(verbose, isMainState, wcycle_, localState, globalState);
 }
 
 void DomDecHelper::partitionSystem(bool           verbose,
                                    bool           isMainState,
-                                   int            nstglobalcomm,
                                    gmx_wallcycle* wcycle,
                                    t_state*       localState,
                                    t_state*       globalState)
@@ -164,7 +159,6 @@ void DomDecHelper::partitionSystem(bool           verbose,
                         inputrec_->init_step,
                         cr_,
                         isMainState,
-                        nstglobalcomm,
                         globalState,
                         topologyHolder_->globalTopology(),
                         *inputrec_,

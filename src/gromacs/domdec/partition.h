@@ -90,7 +90,6 @@ void print_dd_statistics(const t_commrec* cr, const t_inputrec& inputrec, FILE* 
  * \param[in] step          Current step
  * \param[in] cr            Communication record
  * \param[in] bMainState  Is it a main state
- * \param[in] nstglobalcomm Will globals be computed on this step
  * \param[in] state_global  Global state
  * \param[in] top_global    Global topology
  * \param[in] inputrec      Input record
@@ -112,7 +111,6 @@ void dd_partition_system(FILE*                     fplog,
                          int64_t                   step,
                          const t_commrec*          cr,
                          bool                      bMainState,
-                         int                       nstglobalcomm,
                          t_state*                  state_global,
                          const gmx_mtop_t&         top_global,
                          const t_inputrec&         inputrec,

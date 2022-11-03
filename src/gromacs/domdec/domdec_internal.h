@@ -642,6 +642,12 @@ struct gmx_domdec_comm_t // NOLINT (clang-analyzer-optin.performance.Padding)
      * would violate this restriction. */
     int maxpulse = 0;
 
+    /** The step interval for algorithms that require global communication
+     *  such as DLB and the computation the extent of unbound dimensions
+     * (i.e. dimensions without PBC and without walls).
+     */
+    int nstDDGlobalComm = 0;
+
     /** Which cg distribution is stored on the main node,
      *  stored as DD partitioning call count.
      */

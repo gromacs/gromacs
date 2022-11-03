@@ -152,6 +152,9 @@ static const int ddNonbondedZonePairRanges[DD_MAXIZONE][3] = { { 0, 0, 8 },
                                                                { 2, 5, 6 },
                                                                { 3, 5, 7 } };
 
+//! The minimum step interval for DD algorithms requiring global communication
+static constexpr int sc_minimumGCStepInterval = 100;
+
 static void ddindex2xyz(const ivec nc, int ind, ivec xyz)
 {
     xyz[XX] = ind / (nc[YY] * nc[ZZ]);
@@ -2664,6 +2667,13 @@ static void set_ddgrid_parameters(const gmx::MDLogger& mdlog,
     if (!isDlbDisabled(comm->dlbState))
     {
         set_cell_limits_dlb(mdlog, dd, dlb_scale, inputrec, ddbox);
+    }
+
+    // Make nstDDGlobalComm the first multiple of nstlist >= c_minimumGCStepInterval
+    dd->comm->nstDDGlobalComm = sc_minimumGCStepInterval;
+    if (dd->comm->nstDDGlobalComm % inputrec.nstlist != 0)
+    {
+        dd->comm->nstDDGlobalComm += inputrec.nstlist - (dd->comm->nstDDGlobalComm % inputrec.nstlist);
     }
 
     logSettings(mdlog, dd, mtop, inputrec, dlb_scale, ddbox);

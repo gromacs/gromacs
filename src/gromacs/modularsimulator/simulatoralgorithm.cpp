@@ -597,7 +597,6 @@ ModularSimulatorAlgorithm ModularSimulatorAlgorithmBuilder::build()
                                            legacySimulatorData_->mdrunOptions.verboseStepPrintInterval,
                                            algorithm.statePropagatorData_.get(),
                                            algorithm.topologyHolder_.get(),
-                                           globalCommunicationHelper_.nstglobalcomm(),
                                            legacySimulatorData_->fplog,
                                            legacySimulatorData_->cr,
                                            legacySimulatorData_->mdlog,
