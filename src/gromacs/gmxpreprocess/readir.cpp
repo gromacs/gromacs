@@ -3765,6 +3765,12 @@ static void processEnsembleTemperature(t_inputrec* ir, const bool allAtomsCouple
                 ir->ensembleTemperatureSetting = EnsembleTemperatureSetting::NotAvailable;
                 ir->ensembleTemperature        = -1;
             }
+            else if (doSimulatedAnnealing(*ir) && ir->opts.ngtc > 1)
+            {
+                fprintf(stderr,
+                        "Simulated tempering is used with multiple T-coupling groups: setting the "
+                        "ensemble temperature to not available\n");
+            }
             else if (doSimulatedAnnealing(*ir) || ir->bSimTemp)
             {
                 ir->ensembleTemperatureSetting = EnsembleTemperatureSetting::Variable;

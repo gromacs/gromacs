@@ -47,13 +47,13 @@
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/smalloc.h"
 
-gmx_ekindata_t::gmx_ekindata_t(gmx::ArrayRef<const real> referenceTemperature,
-                               const bool                haveEnsembleTemperature,
-                               const real                ensembleTemperature,
-                               const real                cosineAcceleration,
-                               const int                 numThreads) :
+gmx_ekindata_t::gmx_ekindata_t(gmx::ArrayRef<const real>        referenceTemperature,
+                               const EnsembleTemperatureSetting ensembleTemperatureSetting,
+                               const real                       ensembleTemperature,
+                               const real                       cosineAcceleration,
+                               const int                        numThreads) :
     currentReferenceTemperature_(referenceTemperature.begin(), referenceTemperature.end()),
-    haveEnsembleTemperature_(haveEnsembleTemperature),
+    ensembleTemperatureSetting_(ensembleTemperatureSetting),
     currentEnsembleTemperature_(ensembleTemperature),
     nthreads_(numThreads)
 {

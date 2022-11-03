@@ -37,6 +37,7 @@
 #include <vector>
 
 #include "gromacs/math/vectypes.h"
+#include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/real.h"
@@ -84,11 +85,11 @@ struct t_cos_acc
 class gmx_ekindata_t
 {
 public:
-    gmx_ekindata_t(gmx::ArrayRef<const real> referenceTemperature,
-                   bool                      haveEnsembleTemperature,
-                   real                      ensembleTemperature,
-                   real                      cosineAcceleration,
-                   int                       numThreads);
+    gmx_ekindata_t(gmx::ArrayRef<const real>  referenceTemperature,
+                   EnsembleTemperatureSetting ensembleTemperatureSetting,
+                   real                       ensembleTemperature,
+                   real                       cosineAcceleration,
+                   int                        numThreads);
 
     //! Returns the number of T-coupling groups
     int numTemperatureCouplingGroups() const { return gmx::ssize(currentReferenceTemperature_); }
@@ -103,6 +104,14 @@ public:
     void setCurrentReferenceTemperature(const int groupIndex, const real referenceTemperature)
     {
         currentReferenceTemperature_[groupIndex] = referenceTemperature;
+
+        // If we have a variable ensemble temperature, all groups should
+        // have equal temperature, so we can set the ensemble temperature
+        // when setting the reference temperature of group 0
+        if (ensembleTemperatureSetting_ == EnsembleTemperatureSetting::Variable && groupIndex == 0)
+        {
+            currentEnsembleTemperature_ = referenceTemperature;
+        }
     }
 
     /*! \brief Returns the ensemble temperature of the system
@@ -112,7 +121,9 @@ public:
      */
     real currentEnsembleTemperature() const
     {
-        GMX_ASSERT(haveEnsembleTemperature_, "Should only request ensemble T when available");
+        GMX_ASSERT(ensembleTemperatureSetting_ == EnsembleTemperatureSetting::Constant
+                           || ensembleTemperatureSetting_ == EnsembleTemperatureSetting::Variable,
+                   "Should only request ensemble T when available");
 
         return currentEnsembleTemperature_;
     }
@@ -124,7 +135,8 @@ public:
      */
     void setCurrentEnsembleTemperature(const real ensembleTemperature)
     {
-        GMX_ASSERT(haveEnsembleTemperature_, "Should only request set ensemble T when available");
+        GMX_RELEASE_ASSERT(ensembleTemperatureSetting_ == EnsembleTemperatureSetting::Variable,
+                           "Can only set ensemble temperature when it is variable");
 
         currentEnsembleTemperature_ = ensembleTemperature;
     }
@@ -132,8 +144,8 @@ public:
 private:
     //! The reference temperatures, can change when using simulated annealing
     std::vector<real> currentReferenceTemperature_;
-    //! Whether we have an ensemble temperature for the system
-    bool haveEnsembleTemperature_;
+    //! The setting for the ensemble temperature of the system
+    EnsembleTemperatureSetting ensembleTemperatureSetting_;
     //! The current ensemble temperature
     real currentEnsembleTemperature_;
 

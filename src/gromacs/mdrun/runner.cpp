@@ -2113,7 +2113,7 @@ int Mdrunner::mdrunner()
 
         /* Kinetic energy data */
         gmx_ekindata_t ekind(gmx::constArrayRefFromArray(inputrec->opts.ref_t, inputrec->opts.ngtc),
-                             haveEnsembleTemperature(*inputrec),
+                             inputrec->ensembleTemperatureSetting,
                              inputrec->ensembleTemperature,
                              inputrec->cos_accel,
                              gmx_omp_nthreads_get(ModuleMultiThread::Update));
