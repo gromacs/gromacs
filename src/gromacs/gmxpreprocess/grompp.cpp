@@ -43,6 +43,7 @@
 #include <algorithm>
 #include <array>
 #include <memory>
+#include <tuple>
 #include <vector>
 
 #include <sys/types.h>
@@ -1745,17 +1746,19 @@ static void set_verlet_buffer(const gmx_mtop_t*              mtop,
 }
 
 // Computes and returns that largest distance between non-perturbed excluded atom pairs
-static real maxNonPerturbedExclusionDistance(const gmx_mtop_t&              mtop,
-                                             const bool                     useFep,
-                                             const PbcType                  pbcType,
-                                             gmx::ArrayRef<const gmx::RVec> x,
-                                             const matrix                   box)
+static std::tuple<real, int, int> maxNonPerturbedExclusionDistance(const gmx_mtop_t& mtop,
+                                                                   const bool        useFep,
+                                                                   const PbcType     pbcType,
+                                                                   gmx::ArrayRef<const gmx::RVec> x,
+                                                                   const matrix box)
 {
     t_pbc pbc;
 
     set_pbc(&pbc, pbcType, box);
 
     real dx2Max = 0;
+    int  atom0  = -1;
+    int  atom1  = -1;
 
     int moleculeOffset = 0;
     for (const auto& mb : mtop.molblock)
@@ -1783,7 +1786,13 @@ static real maxNonPerturbedExclusionDistance(const gmx_mtop_t&              mtop
                         rvec dx;
 
                         pbc_dx(&pbc, x[moleculeOffset + iAtom], x[moleculeOffset + jAtom], dx);
-                        dx2Max = std::max(dx2Max, norm2(dx));
+                        const real distanceSquared = norm2(dx);
+                        if (distanceSquared > dx2Max)
+                        {
+                            dx2Max = distanceSquared;
+                            atom0  = moleculeOffset + iAtom;
+                            atom1  = moleculeOffset + jAtom;
+                        }
                     }
                 }
             }
@@ -1792,7 +1801,7 @@ static real maxNonPerturbedExclusionDistance(const gmx_mtop_t&              mtop
         }
     }
 
-    return std::sqrt(dx2Max);
+    return std::make_tuple(std::sqrt(dx2Max), atom0, atom1);
 }
 
 // Computes and logs the maximum exclusion distance. Checks whether (non-perturbed) excluded
@@ -1807,13 +1816,16 @@ static void checkExclusionDistances(const gmx_mtop_t&              mtop,
     // Check the maximum distance for (non-perturbed) excluded pairs here,
     // as it should not be longer than the cut-off distance, but we can't
     // easily ensure that during the run.
-    const bool useFep               = (ir.efep != FreeEnergyPerturbationType::No);
-    const real maxExclusionDistance = maxNonPerturbedExclusionDistance(mtop, useFep, ir.pbcType, x, box);
+    const bool useFep = (ir.efep != FreeEnergyPerturbationType::No);
+    const auto [maxExclusionDistance, atom0, atom1] =
+            maxNonPerturbedExclusionDistance(mtop, useFep, ir.pbcType, x, box);
 
-    const std::string distanceString =
-            gmx::formatString("The largest distance between%s excluded atoms is %.3f nm",
-                              useFep ? " non-perturbed" : "",
-                              maxExclusionDistance);
+    const std::string distanceString = gmx::formatString(
+            "The largest distance between%s excluded atoms is %.3f nm between atom %d and %d",
+            useFep ? " non-perturbed" : "",
+            maxExclusionDistance,
+            atom0 + 1,
+            atom1 + 1);
 
     GMX_LOG(logger.info).asParagraph().appendText(distanceString);
 
