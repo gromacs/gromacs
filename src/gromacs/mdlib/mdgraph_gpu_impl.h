@@ -107,8 +107,10 @@ public:
     /*! \brief Join streams involved in graph, and end recording */
     void endRecord();
 
-    /*! \brief Create executable graph from recorded graph */
-    void createExecutableGraph();
+    /*! \brief Create executable graph from recorded graph
+     * \param [in] forceGraphReinstantiation Whether graph reinstantiation should be used instead of graph exec update
+     */
+    void createExecutableGraph(bool forceGraphReinstantiation);
 
     /*! \brief Launch graph corresponding to MD step
      * \param [inout] xUpdatedOnDeviceEvent  Event marked when coordinates have been updated o\

@@ -144,7 +144,8 @@ TEST(MdGraphTest, MdGpuGraphExecutesActivities)
             {
                 // End graph capture and instantiate
                 mdGpuGraph.endRecord();
-                mdGpuGraph.createExecutableGraph();
+                bool forceGraphReinstantiation = true;
+                mdGpuGraph.createExecutableGraph(forceGraphReinstantiation);
             }
 
             // Wait for update stream

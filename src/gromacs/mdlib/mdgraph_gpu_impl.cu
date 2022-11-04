@@ -322,7 +322,7 @@ void MdGpuGraph::Impl::endRecord()
     wallcycle_stop(wcycle_, WallCycleCounter::MdGpuGraph);
 };
 
-void MdGpuGraph::Impl::createExecutableGraph()
+void MdGpuGraph::Impl::createExecutableGraph(bool forceGraphReinstantiation)
 {
 
     GMX_ASSERT(
@@ -340,14 +340,29 @@ void MdGpuGraph::Impl::createExecutableGraph()
     // Instantiate graph
     if (ppRank_ == 0)
     {
-        if (graphInstanceAllocated_)
+        // Update existing graph (which is cheaper than re-instantiation) if possible.
+        // With current CUDA, only single-threaded update is possible.
+        // Multi-threaded update support will be available in a future CUDA release.
+        if (graphInstanceAllocated_ && !havePPDomainDecomposition_ && !haveSeparatePmeRank_
+            && !forceGraphReinstantiation)
         {
-            stat_ = cudaGraphExecDestroy(instance_);
-            CU_RET_ERR(stat_, "cudaGraphExecDestroy in MD graph definition finalization failed.");
+            cudaGraphNode_t           hErrorNode_out;
+            cudaGraphExecUpdateResult updateResult_out;
+            stat_ = cudaGraphExecUpdate(instance_, graph_, &hErrorNode_out, &updateResult_out);
+            CU_RET_ERR(stat_, "cudaGraphExecUpdate in MD graph definition finalization failed.");
         }
-        stat_ = cudaGraphInstantiate(&instance_, graph_, nullptr, nullptr, 0);
-        CU_RET_ERR(stat_, "cudaGraphInstantiate in MD graph definition finalization failed.");
-        graphInstanceAllocated_ = true;
+        else
+        {
+            if (graphInstanceAllocated_)
+            {
+                stat_ = cudaGraphExecDestroy(instance_);
+                CU_RET_ERR(stat_,
+                           "cudaGraphExecDestroy in MD graph definition finalization failed.");
+            }
+            stat_ = cudaGraphInstantiate(&instance_, graph_, nullptr, nullptr, 0);
+            CU_RET_ERR(stat_, "cudaGraphInstantiate in MD graph definition finalization failed.");
+            graphInstanceAllocated_ = true;
+        }
     }
 
     graphState_ = GraphState::Instantiated;
@@ -490,9 +505,9 @@ void MdGpuGraph::endRecord()
     impl_->endRecord();
 }
 
-void MdGpuGraph::createExecutableGraph()
+void MdGpuGraph::createExecutableGraph(bool forceGraphReinstantiation)
 {
-    impl_->createExecutableGraph();
+    impl_->createExecutableGraph(forceGraphReinstantiation);
 }
 
 void MdGpuGraph::launchGraphMdStep(GpuEventSynchronizer* xUpdatedOnDeviceEvent)

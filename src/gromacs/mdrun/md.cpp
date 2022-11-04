@@ -1646,7 +1646,10 @@ void gmx::LegacySimulator::do_md()
             if (mdGraph->graphIsCapturingThisStep())
             {
                 mdGraph->endRecord();
-                mdGraph->createExecutableGraph();
+                // Force graph reinstantiation (instead of graph exec update) with PME tuning,
+                // since the GPU kernels chosen by the FFT library can vary with grid size
+                bool forceGraphReinstantiation = pme_loadbal_is_active(pme_loadbal);
+                mdGraph->createExecutableGraph(forceGraphReinstantiation);
             }
             if (mdGraph->useGraphThisStep())
             {
