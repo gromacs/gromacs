@@ -32,21 +32,21 @@
  * the research papers on the package. Check out https://www.gromacs.org.
  */
 
-/*
- * VkFFT hipSYCL support to GROMACS was contributed by Advanced Micro Devices, Inc.
- * Copyright (c) 2022, Advanced Micro Devices, Inc.  All rights reserved.
- */
-
 /*! \internal \file
  *  \brief Declares the GPU 3D FFT routines.
  *
- *  \author Bálint Soproni <balint@streamhpc.com>
- *  \author Anton Gorenko <anton@streamhpc.com>
+ *  \author Philip Turner <philipturner.ar@gmail.com>
+ *
+ * This backend for OpenCL provides greater performance than clFFT, but
+ * its primary purpose is to bypass a clFFT compilation bug and allow
+ * GPU-accelerated PME on macOS. OpenCL is deprecated, so we may stop
+ * maintaining this backend once hipSYCL runs on Apple GPUs.
+ *
  *  \ingroup module_fft
  */
 
-#ifndef GMX_FFT_GPU_3DFFT_SYCL_VKFFT_H
-#define GMX_FFT_GPU_3DFFT_SYCL_VKFFT_H
+#ifndef GMX_FFT_GPU_3DFFT_OCL_VKFFT_H
+#define GMX_FFT_GPU_3DFFT_OCL_VKFFT_H
 
 #include <memory>
 
@@ -67,26 +67,26 @@ namespace gmx
 /*! \internal \brief
  * A 3D FFT wrapper class for performing R2C/C2R transforms using VkFFT
  */
-class Gpu3dFft::ImplSyclVkfft : public Gpu3dFft::Impl
+class Gpu3dFft::ImplOclVkfft : public Gpu3dFft::Impl
 {
 public:
     //! \copydoc Gpu3dFft::Impl::Impl
-    ImplSyclVkfft(bool                 allocateGrids,
-                  MPI_Comm             comm,
-                  ArrayRef<const int>  gridSizesInXForEachRank,
-                  ArrayRef<const int>  gridSizesInYForEachRank,
-                  int                  nz,
-                  bool                 performOutOfPlaceFFT,
-                  const DeviceContext& context,
-                  const DeviceStream&  pmeStream,
-                  ivec                 realGridSize,
-                  ivec                 realGridSizePadded,
-                  ivec                 complexGridSizePadded,
-                  DeviceBuffer<float>* realGrid,
-                  DeviceBuffer<float>* complexGrid);
+    ImplOclVkfft(bool                 allocateGrids,
+                 MPI_Comm             comm,
+                 ArrayRef<const int>  gridSizesInXForEachRank,
+                 ArrayRef<const int>  gridSizesInYForEachRank,
+                 int                  nz,
+                 bool                 performOutOfPlaceFFT,
+                 const DeviceContext& context,
+                 const DeviceStream&  pmeStream,
+                 ivec                 realGridSize,
+                 ivec                 realGridSizePadded,
+                 ivec                 complexGridSizePadded,
+                 DeviceBuffer<float>* realGrid,
+                 DeviceBuffer<float>* complexGrid);
 
     //! \copydoc Gpu3dFft::Impl::~Impl
-    ~ImplSyclVkfft() override;
+    ~ImplOclVkfft() override;
 
     //! \copydoc Gpu3dFft::Impl::perform3dFft
     void perform3dFft(gmx_fft_direction dir, CommandEvent* timingEvent) override;
@@ -98,4 +98,4 @@ private:
 
 } // namespace gmx
 
-#endif // GMX_FFT_GPU_3DFFT_SYCL_VKFFT_H
+#endif // GMX_FFT_GPU_3DFFT_OCL_VKFFT_H

@@ -321,6 +321,7 @@ static std::string makeVendorFlavorChoice(DeviceVendor deviceVendor)
         case DeviceVendor::Amd: return "-D_AMD_SOURCE_";
         case DeviceVendor::Nvidia: return "-D_NVIDIA_SOURCE_";
         case DeviceVendor::Intel: return "-D_INTEL_SOURCE_";
+        case DeviceVendor::Apple: return "-D_APPLE_SOURCE_";
         default: return "";
     }
 }

@@ -249,7 +249,14 @@ std::string getGpuFftDescriptionString()
         }
         else if (GMX_GPU_OPENCL)
         {
-            return "clFFT";
+            if (GMX_GPU_FFT_VKFFT)
+            {
+                return std::string("VkFFT ") + vkfft_VERSION;
+            }
+            else
+            {
+                return "clFFT";
+            }
         }
         else if (GMX_GPU_SYCL)
         {

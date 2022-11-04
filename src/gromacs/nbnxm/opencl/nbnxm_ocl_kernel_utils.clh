@@ -281,7 +281,7 @@ typedef __local int* CjType;
 /*! \brief Preload cjPacked
  *
  * - For AMD we load once for a wavefront of 64 threads (on 4 threads * NTHREAD_Z)
- * - For NVIDIA once per warp (on 2x4 threads * NTHREAD_Z)
+ * - For NVIDIA and Apple once per warp (on 2x4 threads * NTHREAD_Z)
  * - For Intel(/USE_SUBGROUP_PRELOAD) loads into private memory(/register) instead of local memory
  *
  * It is the caller's responsibility to make sure that data is consumed only when

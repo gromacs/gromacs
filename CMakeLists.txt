@@ -617,8 +617,8 @@ if(GMX_GPU)
         include(gmxManageCuda)
     elseif(${_gmx_gpu_uppercase} STREQUAL "OPENCL")
         message(STATUS "GPU support with OpenCL is deprecated. It is still fully supported (and " 
-            "recommended for AMD and Intel GPUs). It may be replaced by different approaches in "
-            "future releases of GROMACS.")
+            "recommended for AMD, Intel, and Apple GPUs). It may be replaced by different "
+            "approaches in future releases of GROMACS.")
         include(gmxManageOpenCL)
     elseif(${_gmx_gpu_uppercase} STREQUAL "SYCL")
         include(gmxManageSYCL)

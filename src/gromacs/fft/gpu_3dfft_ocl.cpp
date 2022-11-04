@@ -86,7 +86,7 @@ Gpu3dFft::ImplOcl::ImplOcl(bool allocateRealGrid,
 {
     GMX_RELEASE_ASSERT(allocateRealGrid == false, "Grids needs to be pre-allocated");
     GMX_RELEASE_ASSERT(gridSizesInXForEachRank.size() == 1 && gridSizesInYForEachRank.size() == 1,
-                       "FFT decomposition not implemented with OpenCL backend");
+                       "FFT decomposition not implemented with the clFFT backend");
 
     allocateComplexGrid(complexGridSizePadded, realGrid, complexGrid, context);
 

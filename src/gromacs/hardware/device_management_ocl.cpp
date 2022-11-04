@@ -263,7 +263,7 @@ static DeviceStatus isDeviceFunctional(const DeviceInformation& deviceInfo)
         return DeviceStatus::Incompatible;
     }
 
-    /* Only AMD, Intel, and NVIDIA GPUs are supported for now */
+    /* Only AMD, Intel, NVIDIA, and Apple GPUs are supported for now */
     switch (deviceInfo.deviceVendor)
     {
         case DeviceVendor::Nvidia:
@@ -274,6 +274,7 @@ static DeviceStatus isDeviceFunctional(const DeviceInformation& deviceInfo)
         case DeviceVendor::Intel:
             return GMX_GPU_NB_CLUSTER_SIZE == 4 ? DeviceStatus::Compatible
                                                 : DeviceStatus::IncompatibleClusterSize;
+        case DeviceVendor::Apple: return DeviceStatus::Compatible;
         default: return DeviceStatus::Incompatible;
     }
 }

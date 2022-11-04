@@ -120,7 +120,7 @@ Gpu3dFft::ImplSyclMkl::ImplSyclMkl(bool allocateRealGrid,
 {
     GMX_RELEASE_ASSERT(!allocateRealGrid, "Grids needs to be pre-allocated");
     GMX_RELEASE_ASSERT(gridSizesInXForEachRank.size() == 1 && gridSizesInYForEachRank.size() == 1,
-                       "Multi-rank FFT decomposition not implemented with SYCL MKL backend");
+                       "Multi-rank FFT decomposition not implemented with the SYCL MKL backend");
 
     GMX_RELEASE_ASSERT(!(sc_mklHasBuggyOutOfPlaceFFT && performOutOfPlaceFFT),
                        "The version of MKL used does not properly support out-of-place FFTs");

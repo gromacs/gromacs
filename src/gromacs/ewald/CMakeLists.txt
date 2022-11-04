@@ -175,7 +175,7 @@ else()
 endif()
 
 # TODO: test all warp sizes on all vendor targets?
-foreach(VENDOR AMD NVIDIA INTEL)
+foreach(VENDOR AMD NVIDIA INTEL APPLE)
     foreach(WARPSIZE 16 32 64)
         math(EXPR SPREAD_WG_SIZE "8*${WARPSIZE}")
         math(EXPR SOLVE_WG_SIZE "8*${WARPSIZE}")

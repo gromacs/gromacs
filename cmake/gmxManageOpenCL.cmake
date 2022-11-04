@@ -62,8 +62,31 @@ if (UNIX)
 endif()
 
 # Yes Virginia, Darwin kernel version 14.4 corresponds to OS X 10.4.
-if(APPLE AND ${CMAKE_SYSTEM_VERSION} VERSION_LESS "14.4")
+if (APPLE AND ${CMAKE_SYSTEM_VERSION} VERSION_LESS "14.4")
         message(WARNING "OS X prior to version 10.10.4 produces incorrect AMD OpenCL code at runtime. You will not be able to use AMD GPUs on this host unless you upgrade your operating system.")
+endif()
+
+if (APPLE)
+    # VkFFT is required for OpenCL acceleration; clFFT makes the shader compiler silently fail at runtime.
+    set(GMX_GPU_FFT_VKFFT ON)
+endif()
+
+if (GMX_GPU_FFT_VKFFT)
+    # Use VkFFT with OpenCL back end as header-only library
+    set(vkfft_VERSION "1.2.26-b15cb0ca3e884bdb6c901a12d87aa8aadf7637d8")
+    add_library(VkFFT INTERFACE)
+    set(_backend 3)
+    target_compile_definitions(VkFFT INTERFACE VKFFT_BACKEND=${_backend})
+    target_include_directories(VkFFT INTERFACE ${CMAKE_PROJECT_ROOT}/src/external/VkFFT)
+    
+    # The "-Wcast-qual" warning appears when compiling VkFFT for OpenCL, but not for HIP. It cannot be suppressed.
+    gmx_target_interface_warning_suppression(VkFFT "-Wno-unused-parameter" HAS_WARNING_NO_UNUSED_PARAMETER)
+    gmx_target_interface_warning_suppression(VkFFT "-Wno-unused-variable" HAS_WARNING_NO_UNUSED_VARIABLE)
+    gmx_target_interface_warning_suppression(VkFFT "-Wno-newline-eof" HAS_WARNING_NO_NEWLINE_EOF)
+    gmx_target_interface_warning_suppression(VkFFT "-Wno-old-style-cast" HAS_WARNING_NO_OLD_STYLE_CAST)
+    gmx_target_interface_warning_suppression(VkFFT "-Wno-zero-as-null-pointer-constant" HAS_WARNING_NO_ZERO_AS_NULL_POINTER_CONSTANT)
+    gmx_target_interface_warning_suppression(VkFFT "-Wno-unused-but-set-variable" HAS_WARNING_NO_UNUSED_BUT_SET_VARIABLE)
+    gmx_target_interface_warning_suppression(VkFFT "-Wno-sign-compare" HAS_WARNING_NO_SIGN_COMPARE)
 endif()
 
 add_definitions(${OpenCL_DEFINITIONS})

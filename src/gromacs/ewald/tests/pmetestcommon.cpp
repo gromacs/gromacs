@@ -90,9 +90,7 @@ const std::map<std::string, Matrix3x3> c_inputBoxes = {
 //! Valid PME orders for testing
 std::vector<int> c_inputPmeOrders{ 3, 4, 5 };
 
-MessageStringCollector getSkipMessagesIfNecessary(const gmx_hw_info_t& hwinfo,
-                                                  const t_inputrec&    inputRec,
-                                                  const CodePath       codePath)
+MessageStringCollector getSkipMessagesIfNecessary(const t_inputrec& inputRec, const CodePath codePath)
 {
     // Note that we can't call GTEST_SKIP() from within this method,
     // because it only returns from the current function. So we
@@ -110,7 +108,6 @@ MessageStringCollector getSkipMessagesIfNecessary(const gmx_hw_info_t& hwinfo,
 
     std::string errorMessage;
     messages.appendIf(!pme_gpu_supports_build(&errorMessage), errorMessage);
-    messages.appendIf(!pme_gpu_supports_hardware(hwinfo, &errorMessage), errorMessage);
     messages.appendIf(!pme_gpu_supports_input(inputRec, &errorMessage), errorMessage);
     return messages;
 }

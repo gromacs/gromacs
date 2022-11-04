@@ -466,7 +466,7 @@ __attribute__((reqd_work_group_size(order, order, atomsPerBlock))) __kernel void
                           gm_gridlineIndices,
                           gm_fractShiftsTable,
                           gm_gridlineIndicesTable);
-#if !defined(_AMD_SOURCE_) && !defined(_NVIDIA_SOURCE_)
+#if !defined(_AMD_SOURCE_) && !defined(_NVIDIA_SOURCE_) && !defined(_APPLE_SOURCE_)
         /* This is only here for execution of e.g. 32-sized warps on 16-wide hardware; this was
          * __syncwarp() in CUDA. #2519
          */

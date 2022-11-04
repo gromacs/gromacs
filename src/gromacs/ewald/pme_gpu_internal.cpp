@@ -856,7 +856,14 @@ static gmx::FftBackend getFftBackend(const PmeGpu* pmeGpu)
     }
     else if (GMX_GPU_OPENCL)
     {
-        return gmx::FftBackend::Ocl;
+        if (GMX_GPU_FFT_VKFFT)
+        {
+            return gmx::FftBackend::OclVkfft;
+        }
+        else
+        {
+            return gmx::FftBackend::Ocl;
+        }
     }
     else if (GMX_GPU_SYCL)
     {

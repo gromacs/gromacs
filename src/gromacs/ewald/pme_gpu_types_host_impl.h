@@ -131,7 +131,7 @@ struct PmeGpuSpecific
     GpuEventSynchronizer syncSpreadGridD2H;
 
     /* Settings which are set at the start of the run */
-    /*! \brief A boolean which tells whether the complex and real grids for cu/clFFT are different or same. Currently true. */
+    /*! \brief A boolean which tells whether the complex and real grids for cu/clFFT are different or same. Currently false. */
     bool performOutOfPlaceFFT = false;
     /*! \brief A boolean which tells if the GPU timing events are enabled.
      *  False by default, can be enabled by setting the environment variable GMX_ENABLE_GPU_TIMING.

@@ -280,7 +280,6 @@ MessageStringCollector PmeTest::getSkipMessagesIfNecessary(const CommandLine& co
 
         std::string errorMessage;
         messages.appendIf(!pme_gpu_supports_build(&errorMessage), errorMessage);
-        messages.appendIf(!pme_gpu_supports_hardware(*s_hwinfo, &errorMessage), errorMessage);
         // A check on whether the .tpr is supported for PME on GPUs is
         // not needed, because it is supported by design.
     }

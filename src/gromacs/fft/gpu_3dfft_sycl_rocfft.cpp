@@ -420,7 +420,7 @@ Gpu3dFft::ImplSyclRocfft::Impl::Impl(bool allocateRealGrid,
     GMX_RELEASE_ASSERT(performOutOfPlaceFFT, "Only out-of-place FFT is implemented in hipSYCL");
     GMX_RELEASE_ASSERT(allocateRealGrid == false, "Grids need to be pre-allocated");
     GMX_RELEASE_ASSERT(gridSizesInXForEachRank.size() == 1 && gridSizesInYForEachRank.size() == 1,
-                       "FFT decomposition not implemented with SYCL backend");
+                       "FFT decomposition not implemented with the SYCL rocFFT backend");
 }
 
 void Gpu3dFft::ImplSyclRocfft::perform3dFft(gmx_fft_direction dir, CommandEvent* /*timingEvent*/)

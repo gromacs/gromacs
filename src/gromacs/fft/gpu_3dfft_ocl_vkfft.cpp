@@ -33,21 +33,20 @@
  */
 
 /*
- * VkFFT hipSYCL support to GROMACS was contributed by Advanced Micro Devices, Inc.
- * Copyright (c) 2022, Advanced Micro Devices, Inc.  All rights reserved.
+ * OpenCL VkFFT support to GROMACS is based heavily on the SYCL VkFFT backend.
+ * View the respective source files in this directory for author attribution.
  */
 
 /*! \internal \file
- *  \brief Implements GPU 3D FFT routines for hipSYCL using vkFFT.
+ *  \brief Implements GPU 3D FFT routines for OpenCL.
  *
- *  \author Bálint Soproni <balint@streamhpc.com>
- *  \author Anton Gorenko <anton@streamhpc.com>
+ *  \author Philip Turner <philipturner.ar@gmail.com>
  *  \ingroup module_fft
  */
 
 #include "gmxpre.h"
 
-#include "gpu_3dfft_sycl_vkfft.h"
+#include "gpu_3dfft_ocl_vkfft.h"
 
 #include "config.h"
 
@@ -55,15 +54,14 @@
 
 #include "../external/vkfft/vkFFT.h"
 
+#include "gromacs/gpu_utils/device_context.h"
 #include "gromacs/gpu_utils/device_stream.h"
 #include "gromacs/gpu_utils/devicebuffer.h"
+#include "gromacs/gpu_utils/gmxopencl.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
-
-#define VKFFT_ERROR_HANDLING_CASE(ERROR_NAME) \
-    case ERROR_NAME: error_string = #ERROR_NAME; break;
 
 namespace gmx
 {
@@ -83,16 +81,8 @@ void handleFftError(VkFFTResult result, const std::string& msg)
 }
 } // namespace
 
-#if GMX_HIPSYCL_HAVE_CUDA_TARGET
-constexpr auto c_hipsyclBackend = sycl::backend::cuda;
-using NativeDevice              = int;
-#elif GMX_HIPSYCL_HAVE_HIP_TARGET
-constexpr auto c_hipsyclBackend = sycl::backend::hip;
-using NativeDevice              = hipDevice_t;
-#endif
-
 //! Impl class
-class Gpu3dFft::ImplSyclVkfft::Impl
+class Gpu3dFft::ImplOclVkfft::Impl
 {
 public:
     //! \copydoc Gpu3dFft::Impl::Impl
@@ -118,39 +108,44 @@ public:
     VkFFTLaunchParams  launchParams_;
     uint64_t           bufferSize_;
     uint64_t           inputBufferSize_;
-    NativeDevice       queue_device_;
+    cl_context         context_;
+    cl_device_id       device_;
+    cl_command_queue   commandQueue_;
 
     DeviceBuffer<float> realGrid_;
-
-    /*! \brief Copy of PME stream
-     *
-     * This copy is guaranteed by the SYCL standard to work as if
-     * it was the original. */
-    sycl::queue queue_;
 };
 
 
-Gpu3dFft::ImplSyclVkfft::Impl::Impl(bool allocateGrids,
-                                    MPI_Comm /*comm*/,
-                                    ArrayRef<const int> gridSizesInXForEachRank,
-                                    ArrayRef<const int> gridSizesInYForEachRank,
-                                    const int /*nz*/,
-                                    bool performOutOfPlaceFFT,
-                                    const DeviceContext& /*context*/,
-                                    const DeviceStream&  pmeStream,
-                                    ivec                 realGridSize,
-                                    ivec                 realGridSizePadded,
-                                    ivec                 complexGridSizePadded,
-                                    DeviceBuffer<float>* realGrid,
-                                    DeviceBuffer<float>* complexGrid) :
-    realGrid_(*realGrid), queue_(pmeStream.stream())
+Gpu3dFft::ImplOclVkfft::Impl::Impl(bool allocateGrids,
+                                   MPI_Comm /*comm*/,
+                                   ArrayRef<const int> gridSizesInXForEachRank,
+                                   ArrayRef<const int> gridSizesInYForEachRank,
+                                   const int /*nz*/,
+                                   bool                 performOutOfPlaceFFT,
+                                   const DeviceContext& context,
+                                   const DeviceStream&  pmeStream,
+                                   ivec                 realGridSize,
+                                   ivec                 realGridSizePadded,
+                                   ivec                 complexGridSizePadded,
+                                   DeviceBuffer<float>* realGrid,
+                                   DeviceBuffer<float>* complexGrid) :
+    realGrid_(*realGrid)
 {
     GMX_RELEASE_ASSERT(allocateGrids == false, "Grids needs to be pre-allocated");
     GMX_RELEASE_ASSERT(gridSizesInXForEachRank.size() == 1 && gridSizesInYForEachRank.size() == 1,
-                       "FFT decomposition not implemented with the SYCL VkFFT backend");
-    GMX_RELEASE_ASSERT(performOutOfPlaceFFT, "Only out-of-place FFT is implemented in hipSYCL");
+                       "FFT decomposition not implemented with the OpenCL VkFFT backend");
     GMX_RELEASE_ASSERT(realGrid, "Bad (null) input real-space grid");
     GMX_RELEASE_ASSERT(complexGrid, "Bad (null) input complex grid");
+
+    context_      = context.context();
+    commandQueue_ = pmeStream.stream();
+
+    // Fetch OpenCL device from the command queue; this backend assumes only one GPU is present.
+    cl_device_id devices[1];
+    cl_int       status =
+            clGetContextInfo(context_, CL_CONTEXT_DEVICES, sizeof(cl_device_id*), &devices, nullptr);
+    GMX_RELEASE_ASSERT(status == CL_SUCCESS, "Could not fetch OpenCL device for VkFFT");
+    device_ = devices[0];
 
 
     configuration_         = {};
@@ -161,15 +156,14 @@ Gpu3dFft::ImplSyclVkfft::Impl::Impl(bool allocateGrids,
     configuration_.size[1] = realGridSize[YY];
     configuration_.size[2] = realGridSize[XX];
 
-    configuration_.performR2C  = 1;
-    queue_device_              = sycl::get_native<c_hipsyclBackend>(queue_.get_device());
-    configuration_.device      = &queue_device_;
-    configuration_.num_streams = 1;
+    configuration_.performR2C   = 1;
+    configuration_.commandQueue = &commandQueue_;
+    configuration_.device       = &device_;
+    configuration_.context      = &context_;
 
     bufferSize_ = complexGridSizePadded[XX] * complexGridSizePadded[YY] * complexGridSizePadded[ZZ]
                   * sizeof(float) * 2;
     configuration_.bufferSize      = &bufferSize_;
-    configuration_.aimThreads      = 64; // Tuned for AMD GCN architecture
     configuration_.bufferStride[0] = complexGridSizePadded[ZZ];
     configuration_.bufferStride[1] = complexGridSizePadded[ZZ] * complexGridSizePadded[YY];
     configuration_.bufferStride[2] =
@@ -184,33 +178,29 @@ Gpu3dFft::ImplSyclVkfft::Impl::Impl(bool allocateGrids,
     configuration_.inputBufferStride[1] = realGridSizePadded[ZZ] * realGridSizePadded[YY];
     configuration_.inputBufferStride[2] =
             realGridSizePadded[ZZ] * realGridSizePadded[YY] * realGridSizePadded[XX];
-    queue_.submit([&](sycl::handler& cgh) {
-              cgh.hipSYCL_enqueue_custom_operation([=](sycl::interop_handle& gmx_unused h) {
-                  VkFFTResult result = initializeVkFFT(&application_, configuration_);
-                  handleFftError(result, "Initializing VkFFT");
-              });
-          }).wait();
+
+    VkFFTResult result = initializeVkFFT(&application_, configuration_);
+    handleFftError(result, "Initializing VkFFT");
 }
 
-
-Gpu3dFft::ImplSyclVkfft::Impl::~Impl()
+Gpu3dFft::ImplOclVkfft::Impl::~Impl()
 {
     deleteVkFFT(&application_);
 }
 
-Gpu3dFft::ImplSyclVkfft::ImplSyclVkfft(bool                 allocateGrids,
-                                       MPI_Comm             comm,
-                                       ArrayRef<const int>  gridSizesInXForEachRank,
-                                       ArrayRef<const int>  gridSizesInYForEachRank,
-                                       const int            nz,
-                                       bool                 performOutOfPlaceFFT,
-                                       const DeviceContext& context,
-                                       const DeviceStream&  pmeStream,
-                                       ivec                 realGridSize,
-                                       ivec                 realGridSizePadded,
-                                       ivec                 complexGridSizePadded,
-                                       DeviceBuffer<float>* realGrid,
-                                       DeviceBuffer<float>* complexGrid) :
+Gpu3dFft::ImplOclVkfft::ImplOclVkfft(bool                 allocateGrids,
+                                     MPI_Comm             comm,
+                                     ArrayRef<const int>  gridSizesInXForEachRank,
+                                     ArrayRef<const int>  gridSizesInYForEachRank,
+                                     const int            nz,
+                                     bool                 performOutOfPlaceFFT,
+                                     const DeviceContext& context,
+                                     const DeviceStream&  pmeStream,
+                                     ivec                 realGridSize,
+                                     ivec                 realGridSizePadded,
+                                     ivec                 complexGridSizePadded,
+                                     DeviceBuffer<float>* realGrid,
+                                     DeviceBuffer<float>* complexGrid) :
     Gpu3dFft::Impl::Impl(performOutOfPlaceFFT),
     impl_(std::make_unique<Impl>(allocateGrids,
                                  comm,
@@ -229,35 +219,28 @@ Gpu3dFft::ImplSyclVkfft::ImplSyclVkfft(bool                 allocateGrids,
     allocateComplexGrid(complexGridSizePadded, realGrid, complexGrid, context);
 }
 
-Gpu3dFft::ImplSyclVkfft::~ImplSyclVkfft()
+Gpu3dFft::ImplOclVkfft::~ImplOclVkfft()
 {
     deallocateComplexGrid();
 }
 
-void Gpu3dFft::ImplSyclVkfft::perform3dFft(gmx_fft_direction dir, CommandEvent* /*timingEvent*/)
+void Gpu3dFft::ImplOclVkfft::perform3dFft(gmx_fft_direction dir, CommandEvent* /*timingEvent*/)
 {
-    impl_->queue_.submit([&](sycl::handler& cgh) {
-        cgh.hipSYCL_enqueue_custom_operation([=](sycl::interop_handle& h) {
-            void* d_complexGrid = reinterpret_cast<void*>(complexGrid_.buffer_->ptr_);
-            void* d_realGrid    = reinterpret_cast<void*>(impl_->realGrid_.buffer_->ptr_);
-            auto  stream        = h.get_native_queue<c_hipsyclBackend>();
-            // based on: https://github.com/DTolm/VkFFT/issues/78
-            impl_->application_.configuration.stream = &stream;
-            impl_->launchParams_.inputBuffer         = &d_realGrid;
-            impl_->launchParams_.buffer              = &d_complexGrid;
-            VkFFTResult result                       = VKFFT_SUCCESS;
-            if (dir == GMX_FFT_REAL_TO_COMPLEX)
-            {
-                result = VkFFTAppend(&impl_->application_, -1, &impl_->launchParams_);
-                handleFftError(result, "VkFFT: Real to complex");
-            }
-            else
-            {
-                result = VkFFTAppend(&impl_->application_, 1, &impl_->launchParams_);
-                handleFftError(result, "VkFFT: Complex to real");
-            }
-        });
-    });
+    impl_->launchParams_.commandQueue = &impl_->commandQueue_;
+    // In the OpenCL backend, `DeviceBuffer` is a wrapper for `cl_mem`.
+    impl_->launchParams_.inputBuffer = reinterpret_cast<cl_mem*>(&impl_->realGrid_);
+    impl_->launchParams_.buffer      = reinterpret_cast<cl_mem*>(&complexGrid_);
+    VkFFTResult result               = VKFFT_SUCCESS;
+    if (dir == GMX_FFT_REAL_TO_COMPLEX)
+    {
+        result = VkFFTAppend(&impl_->application_, -1, &impl_->launchParams_);
+        handleFftError(result, "VkFFT: Real to complex");
+    }
+    else
+    {
+        result = VkFFTAppend(&impl_->application_, 1, &impl_->launchParams_);
+        handleFftError(result, "VkFFT: Complex to real");
+    }
 }
 
 } // namespace gmx

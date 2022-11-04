@@ -258,8 +258,7 @@ public:
 
         const PmeTestHardwareContext& pmeTestHardwareContext = getPmeTestHardwareContexts()[contextIndex];
         CodePath                      codePath               = pmeTestHardwareContext.codePath();
-        MessageStringCollector        messages =
-                getSkipMessagesIfNecessary(*getTestHardwareEnvironment()->hwinfo(), inputRec, codePath);
+        MessageStringCollector        messages = getSkipMessagesIfNecessary(inputRec, codePath);
         if (!messages.isEmpty())
         {
             GTEST_SKIP() << messages.toString();

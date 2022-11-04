@@ -139,8 +139,10 @@ enum class DeviceVendor : int
     Amd = 2,
     //! Intel
     Intel = 3,
+    //! Apple
+    Apple = 4,
     //! Enumeration size
-    Count = 4
+    Count = 5
 };
 
 

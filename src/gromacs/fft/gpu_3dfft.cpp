@@ -49,7 +49,11 @@
 #if GMX_GPU_CUDA
 #    include "gpu_3dfft_cufft.h"
 #elif GMX_GPU_OPENCL
-#    include "gpu_3dfft_ocl.h"
+#    if GMX_GPU_FFT_VKFFT
+#        include "gpu_3dfft_ocl_vkfft.h"
+#    else
+#        include "gpu_3dfft_ocl.h"
+#    endif
 #elif GMX_GPU_SYCL
 #    include "gpu_3dfft_sycl.h"
 #    if GMX_SYCL_DPCPP && GMX_FFT_MKL
@@ -141,6 +145,23 @@ Gpu3dFft::Gpu3dFft(FftBackend           backend,
 #elif GMX_GPU_OPENCL
     switch (backend)
     {
+#    if GMX_GPU_FFT_VKFFT
+        case FftBackend::OclVkfft:
+            impl_ = std::make_unique<Gpu3dFft::ImplOclVkfft>(allocateRealGrid,
+                                                             comm,
+                                                             gridSizesInXForEachRank,
+                                                             gridSizesInYForEachRank,
+                                                             nz,
+                                                             performOutOfPlaceFFT,
+                                                             context,
+                                                             pmeStream,
+                                                             realGridSize,
+                                                             realGridSizePadded,
+                                                             complexGridSizePadded,
+                                                             realGrid,
+                                                             complexGrid);
+            break;
+#    else
         case FftBackend::Ocl:
             impl_ = std::make_unique<Gpu3dFft::ImplOcl>(allocateRealGrid,
                                                         comm,
@@ -156,6 +177,7 @@ Gpu3dFft::Gpu3dFft(FftBackend           backend,
                                                         realGrid,
                                                         complexGrid);
             break;
+#    endif
         default: GMX_THROW(InternalError("Unsupported FFT backend requested"));
     }
 #elif GMX_GPU_SYCL

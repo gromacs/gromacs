@@ -189,7 +189,6 @@ static bool canUseGpusForPme(const bool           useGpuForNonbonded,
     errorReasons.startContext("Cannot compute PME interactions on a GPU, because:");
     errorReasons.appendIf(!useGpuForNonbonded, "Nonbonded interactions must also run on GPUs.");
     errorReasons.appendIf(!pme_gpu_supports_build(&tempString), tempString);
-    errorReasons.appendIf(!pme_gpu_supports_hardware(hardwareInfo, &tempString), tempString);
     errorReasons.appendIf(!pme_gpu_supports_input(inputrec, &tempString), tempString);
     if (!decideWhetherToUseGpusForPmeFft(pmeFftTarget))
     {
