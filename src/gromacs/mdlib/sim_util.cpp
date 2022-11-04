@@ -568,22 +568,21 @@ static void checkPotentialEnergyValidity(int64_t step, const gmx_enerdata_t& ene
     }
 }
 
-/*! \brief Return true if there are special forces computed this step.
+/*! \brief Return true if there are special forces computed.
  *
  * The conditionals exactly correspond to those in computeSpecialForces().
  */
 static bool haveSpecialForces(const t_inputrec&          inputrec,
                               const gmx::ForceProviders& forceProviders,
                               const pull_t*              pull_work,
-                              const bool                 computeForces,
                               const gmx_edsam*           ed)
 {
 
-    return ((computeForces && forceProviders.hasForceProvider()) || // forceProviders
-            (inputrec.bPull && pull_have_potential(*pull_work)) ||  // pull
-            inputrec.bRot ||                                        // enforced rotation
-            (ed != nullptr) ||                                      // flooding
-            (inputrec.bIMD && computeForces));                      // IMD
+    return ((forceProviders.hasForceProvider()) ||                 // forceProviders
+            (inputrec.bPull && pull_have_potential(*pull_work)) || // pull
+            inputrec.bRot ||                                       // enforced rotation
+            (ed != nullptr) ||                                     // flooding
+            (inputrec.bIMD));                                      // IMD
 }
 
 /*! \brief Compute forces and/or energies for special algorithms
@@ -932,13 +931,11 @@ static DomainLifetimeWorkload setupDomainLifetimeWorkload(const t_inputrec&     
                                                           const pull_t*             pull_work,
                                                           const gmx_edsam*          ed,
                                                           const t_mdatoms&          mdatoms,
-                                                          const SimulationWorkload& simulationWork,
-                                                          const StepWorkload&       stepWork)
+                                                          const SimulationWorkload& simulationWork)
 {
     DomainLifetimeWorkload domainWork;
     // Note that haveSpecialForces is constant over the whole run
-    domainWork.haveSpecialForces =
-            haveSpecialForces(inputrec, *fr.forceProviders, pull_work, stepWork.computeForces, ed);
+    domainWork.haveSpecialForces = haveSpecialForces(inputrec, *fr.forceProviders, pull_work, ed);
     domainWork.haveCpuListedForceWork = false;
     domainWork.haveCpuBondedWork      = false;
     for (const auto& listedForces : fr.listedForces)
@@ -1640,8 +1637,8 @@ void do_force(FILE*                               fplog,
 
         // Need to run after the GPU-offload bonded interaction lists
         // are set up to be able to determine whether there is bonded work.
-        runScheduleWork->domainWork = setupDomainLifetimeWorkload(
-                inputrec, *fr, pull_work, ed, *mdatoms, simulationWork, stepWork);
+        runScheduleWork->domainWork =
+                setupDomainLifetimeWorkload(inputrec, *fr, pull_work, ed, *mdatoms, simulationWork);
 
         wallcycle_start_nocount(wcycle, WallCycleCounter::NS);
         wallcycle_sub_start(wcycle, WallCycleSubCounter::NBSSearchLocal);
