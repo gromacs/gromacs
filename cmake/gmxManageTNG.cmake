@@ -83,6 +83,11 @@ function(gmx_setup_tng_for_libgromacs)
             add_library(tng_io::tng_io ALIAS tng_io)
             gmx_target_compile_options(tng_io_obj)
             target_link_libraries(libgromacs PRIVATE $<BUILD_INTERFACE:tng_io::tng_io>)
+            # GCC 9 in RelWithAssert build seems to have a false-positive warning about array indexing
+            check_c_compiler_flag("-Wno-array-bounds" HAS_WARNING_NO_ARRAY_BOUNDS)
+            if(HAS_WARNING_NO_ARRAY_BOUNDS)
+                target_compile_options(tng_io_obj PRIVATE $<$<COMPILE_LANGUAGE:C>:-Wno-array-bounds>)
+            endif()
             if (NOT GMX_EXTERNAL_ZLIB)
                 # Bundled ZLib has compatibility issues with C2x, and Clang 15 warns about it.
                 check_c_compiler_flag("-Wno-deprecated-non-prototype" HAS_WARNING_NO_DEPRECATED_NON_PROTOTYPE)
