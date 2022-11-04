@@ -16,6 +16,11 @@ the default value of -1 is specified in the mdp file and a lower value
 is used when required for accurate integration. The improves the performance
 of both GPU runs and parallel runs.
 
+The global communication frequency is independent of nstlist
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+The global communication frequency no longer depends on nstlist.
+This can improve performance in simulations using GPUs in particular.
 
 PME decomposition support with CUDA backend
 """"""""""""""""""""""""""""""""""""""""""""
