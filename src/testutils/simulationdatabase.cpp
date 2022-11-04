@@ -71,9 +71,19 @@ using MdpFileValues = std::map<std::string, DatabaseEntry>;
 const MdpFileValues mdpFileValueDatabase_g{
     // Simple system with 12 argon atoms, fairly widely separated
     { "argon12",
-      { { { "ref-t", "80" }, { "compressibility", "5e-10" }, { "tau-p", "1000" } }, { 1, 2, 3, 4 } } },
+      { { { "ref-t", "80" },
+          { "compressibility", "5e-10" },
+          { "tau-p", "1000" },
+          { "ensemble-temperature-setting", "constant" },
+          { "ensemble-temperature", "80" } },
+        { 1, 2, 3, 4 } } },
     // Simple system with 5 water molecules, fairly widely separated
-    { "tip3p5", { { { "compressibility", "5e-10" }, { "tau-p", "1000" } }, { 1, 2, 3, 4, 5, 6, 8, 9 } } },
+    { "tip3p5",
+      { { { "compressibility", "5e-10" },
+          { "tau-p", "1000" },
+          { "ensemble-temperature-setting", "constant" },
+          { "ensemble-temperature", "298" } },
+        { 1, 2, 3, 4, 5, 6, 8, 9 } } },
     // Simple system with 5832 argon atoms, suitable for normal pressure coupling
     { "argon5832",
       { { { "ref-t", "80" } },
