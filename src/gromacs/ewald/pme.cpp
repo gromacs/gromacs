@@ -130,12 +130,12 @@ bool pme_gpu_supports_build(std::string* error)
     errorReasons.startContext("PME GPU does not support:");
     errorReasons.appendIf(GMX_DOUBLE, "Double-precision build of GROMACS.");
 #ifdef __APPLE__
-#if defined(__aarch64__)
+#    if defined(__aarch64__)
     // OpenCL compiler silently fails on macOS when using clFFT backend.
     errorReasons.appendIf(GMX_GPU_OPENCL && !GMX_GPU_FFT_VKFFT, "macOS build using clFFT.");
-#else
+#    else
     errorReasons.appendIf(true, "macOS build for x86 architecture.");
-#endif
+#    endif
 #endif
     errorReasons.appendIf(!GMX_GPU, "Non-GPU build of GROMACS.");
     errorReasons.finishContext();

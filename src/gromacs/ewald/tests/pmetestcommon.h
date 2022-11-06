@@ -127,7 +127,7 @@ enum class PmeSolveAlgorithm : int
 
 /*! \brief Returns message describing why PME in this \c mode is not
  * supported for this \c inputRec, or empty of messages when PME is supported. */
-MessageStringCollector getSkipMessagesIfNecessary(const t_inputrec& inputRec, const CodePath mode);
+MessageStringCollector getSkipMessagesIfNecessary(const t_inputrec& inputRec, CodePath mode);
 
 //! Spline moduli are computed in double precision, so they're very good in single precision
 constexpr int64_t c_splineModuliSinglePrecisionUlps = 1;
