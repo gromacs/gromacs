@@ -377,11 +377,11 @@ static void removeExtraSpaces(std::string* str)
 /*! \brief Builds a string with build options for the OpenCL kernels
  *
  * \throws std::bad_alloc  if out of memory. */
-static std::string makePreprocessorOptions(const std::string& kernelRootPath,
-                                           const std::string& includeRootPath,
-                                           size_t             warpSize,
-                                           DeviceVendor       deviceVendor,
-                                           const std::string& extraDefines)
+static std::string makePreprocessorOptions(const std::filesystem::path& kernelRootPath,
+                                           const std::filesystem::path& includeRootPath,
+                                           size_t                       warpSize,
+                                           DeviceVendor                 deviceVendor,
+                                           const std::string&           extraDefines)
 {
     std::string preprocessorOptions;
 
@@ -394,9 +394,9 @@ static std::string makePreprocessorOptions(const std::string& kernelRootPath,
     preprocessorOptions += ' ';
     preprocessorOptions += selectCompilerOptions(deviceVendor);
     preprocessorOptions += ' ';
-    preprocessorOptions += makeKernelIncludePathOption(kernelRootPath);
+    preprocessorOptions += makeKernelIncludePathOption(kernelRootPath.generic_u8string());
     preprocessorOptions += ' ';
-    preprocessorOptions += makeKernelIncludePathOption(includeRootPath);
+    preprocessorOptions += makeKernelIncludePathOption(includeRootPath.generic_u8string());
 
     // Mac OS (and maybe some other implementations) does not accept double spaces in options
     removeExtraSpaces(&preprocessorOptions);
@@ -467,11 +467,11 @@ cl_program compileProgram(FILE*              fplog,
     if (program == nullptr)
     {
         // Compile OpenCL program from source
-        std::string kernelSource = TextReader::readFileToString(kernelFilename);
+        std::string kernelSource = TextReader::readFileToString(kernelFilename.u8string());
         if (kernelSource.empty())
         {
-            GMX_THROW(FileIOError(
-                    gmx::formatString("Error loading OpenCL code %s", kernelFilename.c_str())));
+            GMX_THROW(FileIOError(gmx::formatString("Error loading OpenCL code %s",
+                                                    kernelFilename.u8string().c_str())));
         }
         const char* kernelSourcePtr  = kernelSource.c_str();
         size_t      kernelSourceSize = kernelSource.size();
@@ -491,7 +491,8 @@ cl_program compileProgram(FILE*              fplog,
 
     /* Write log first, and then throw exception that the user know what is
        the issue even if the build fails. */
-    writeOclBuildLog(fplog, program, deviceId, kernelFilename, preprocessorOptions, buildStatus != CL_SUCCESS);
+    writeOclBuildLog(
+            fplog, program, deviceId, kernelFilename.u8string(), preprocessorOptions, buildStatus != CL_SUCCESS);
 
     if (buildStatus != CL_SUCCESS)
     {

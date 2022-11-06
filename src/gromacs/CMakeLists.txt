@@ -261,8 +261,9 @@ requires clFFT, which was not found on your system. GROMACS does bundle
 clFFT to help with building for OpenCL, but that clFFT has not yet been
 ported to the more recent versions of that compiler that GROMACS itself
 requires. Thus for now, OpenCL is not available with MSVC and the internal
-build of clFFT in GROMACS 2019. Either change compiler, try installing
-a clFFT package, or use the latest GROMACS 2018 point release.")
+build of clFFT in GROMACS 2019 and newer. Either change compiler, try
+installing a clFFT package, use VkFFT by setting -DGMX_GPU_FFT_VKFFT=ON,
+or use GROMACS 2018.8 release (no longer maintained).")
             endif()
 
             # Fall back on the internal version

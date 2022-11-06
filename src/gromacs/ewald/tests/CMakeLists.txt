@@ -31,7 +31,7 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out https://www.gromacs.org.
 
-if (GMX_GPU_FFT_VKFFT)
+if (GMX_GPU_FFT_VKFFT AND NOT MSVC)
   # Suppress warning that first appeared when compiling tests on macOS with x86.
   set_source_files_properties(pmetestcommon.cpp PROPERTIES COMPILE_OPTIONS "-Wno-unused-parameter")
 endif()
