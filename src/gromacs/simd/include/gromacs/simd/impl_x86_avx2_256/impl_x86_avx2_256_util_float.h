@@ -44,9 +44,15 @@
 namespace gmx
 {
 
-// This version is marginally slower than the AVX 4-wide component load
-// version on Intel Skylake. On older Intel architectures this version
-// is significantly slower.
+// This version is marginally slower than the AVX 4-wide component
+// load version on Intel Skylake. On older Intel architectures this
+// version is significantly slower. However, the code using the
+// intrinsic used here is understood better by TSAN and can be used to
+// test GROMACS code in an AVX2_256 (or higher) build configuration
+// together with TSAN without false positives. Otherwise, the LINCS
+// code reports correct races that are in fact benign because the
+// values upon which the race occurs are only used in the load and
+// subsequent transpose and not for any computation.
 template<int align>
 static inline void gmx_simdcall gatherLoadUTransposeSafe(const float*       base,
                                                          const std::int32_t offset[],

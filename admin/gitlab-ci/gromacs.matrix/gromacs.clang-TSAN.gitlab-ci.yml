@@ -2,7 +2,7 @@
 # Test intents (should change rarely and conservatively):
 #   OS: Ubuntu oldest supported
 #   Compiler: Clang
-#   Build type: TSAN
+#   Build type: TSAN (requires x86 GMX_SIMD at least AVX2_256, see lincs.cpp for details)
 #   GPU: None
 #   Scope: configure, build, unit tests, regression tests
 # Test implementation choices (free to change as needed):

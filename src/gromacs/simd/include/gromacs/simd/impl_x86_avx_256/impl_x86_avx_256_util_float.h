@@ -160,7 +160,9 @@ static const int c_simdBestPairAlignmentFloat = 2;
 // With the implementation below, thread-sanitizer can detect false positives.
 // For loading a triplet, we load 4 floats and ignore the last. Another thread
 // might write to this element, but that will not affect the result.
-// On AVX2 we can use a gather intrinsic instead.
+// On AVX2 we can use a gather intrinsic instead, and TSAN seems to do a better
+// job of understanding that any values upon which a race occurs are in fact
+// unused in subsequent computation.
 template<int align>
 static inline void gmx_simdcall gatherLoadUTranspose(const float*       base,
                                                      const std::int32_t offset[],

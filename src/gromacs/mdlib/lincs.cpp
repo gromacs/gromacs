@@ -500,7 +500,46 @@ static void lincs_update_atoms(Lincs*                         li,
 }
 
 #if GMX_SIMD_HAVE_REAL
-//! Helper function so that we can run TSAN with SIMD support (where implemented).
+/*! Helper function so that we can run TSAN with SIMD support (where implemented).
+ *
+ * The production version of this function uses the GROMACS standard
+ * form of SIMD gather that loads whole SIMD cache lines and
+ * transposes them using shuffle operations. When the division between
+ * constraint groups assigned to threads does not align with
+ * cache-line boundaries, more than one thread can read and update the
+ * coordinates in such a cache line. That makes it possible for the
+ * data to race, where one thread updates its coordinate values after
+ * another thread has read the cache line in order to use distinct
+ * coordinate values. The race is benign because the values that are
+ * raced upon are never used in computation - each thread imposes
+ * constraints on parts of each cache line it accesses that are
+ * strictly disjoint from parts accessed by other threads.
+ *
+ * When this function is implemented with gatherLoadUTranspose<align>,
+ * TSAN detects this race. This may be because it observes the loaded
+ * values used in the subsequent shuffle operations without doing a
+ * complete analysis of the fact that those shuffled values are then
+ * never used to produce observable results. When implemented with
+ * gatherLoadUTransposeSafe<align> that uses a gather SIMD intrinsic,
+ * TSAN seems to have an easier job observing that the raced-upon
+ * values are unused and does not report a race. However the code is
+ * slightly slower to execute, particularly on older x86 hardware, so
+ * we prefer not to use this gather version in Release builds of
+ * GROMACS for production usage.
+ *
+ * AVX2_256 builds and simulations with LINCS are frequently used in
+ * GROMACS and we would like to test the production version of the
+ * LINCS kernel with TSAN.  However the above situation makes it
+ * impossible. So we use a non-production form of this function, which
+ * is feasible for us to verify manually is free of races, so that all
+ * the rest of the SIMD+threaded code can be checked with TSAN when
+ * such an AVX2_256 build is used in an end-to-end test of GROMACS
+ * that uses LINCS.
+ *
+ * Possible improvements for this situation are to separate the blocks
+ * of constraints accessed by adjacent LINCS threads by enough memory
+ * that they do not share cache lines, or to divide the work between
+ * LINCS threads strictly at cache-line boundaries. */
 template<int align>
 static inline void gmx_simdcall gatherLoadUTransposeTSANSafe(const real*         base,
                                                              const std::int32_t* offset,
