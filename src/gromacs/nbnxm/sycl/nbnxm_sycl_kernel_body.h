@@ -1016,6 +1016,10 @@ static auto nbnxmKernel(sycl::handler&                                          
             const int wexclIdx = a_plistCJPacked[jPacked].imei[imeiIdx].excl_ind;
             static_assert(gmx::isPowerOfTwo(prunedClusterPairSize));
             const unsigned wexcl = a_plistExcl[wexclIdx].pair[tidx & (prunedClusterPairSize - 1)];
+// Unrolling has been verified to improve performance on AMD
+#if defined __AMDGCN__
+#    pragma unroll c_nbnxnGpuJgroupSize
+#endif
             for (int jm = 0; jm < c_nbnxnGpuJgroupSize; jm++)
             {
                 const bool maskSet =
