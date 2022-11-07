@@ -99,6 +99,8 @@ enum class DeviceStatus : int
     DeviceNotTargeted,
     //! \brief LevelZero backend is known to cause errors with oneAPI 2022.0.1
     IncompatibleLevelZeroAndOneApi2022,
+    //! \brief RDNA not targeted (SYCL)
+    IncompatibleAmdRdnaNotTargeted,
     //! Enumeration size
     Count
 };
@@ -126,6 +128,10 @@ static const gmx::EnumerationArray<DeviceStatus, const char*> c_deviceStateStrin
     "unavailable",
     "not in set of targeted devices",
     "incompatible (Level Zero backend is not stable with oneAPI 2022.0)", // Issue #4354
+    // clang-format off
+    // NOLINTNEXTLINE(bugprone-suspicious-missing-comma)
+    "incompatible (please recompile with GMX" "_HIPSYCL_ENABLE_AMD_RDNA_SUPPORT)"
+    // clang-format on
 };
 
 //! Device vendors

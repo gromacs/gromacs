@@ -50,7 +50,7 @@
 #include "nbnxm_sycl_types.h"
 
 //! \brief Class name for NBNXM kernel
-template<bool doPruneNBL, bool doCalcEnergies, enum Nbnxm::ElecType elecType, enum Nbnxm::VdwType vdwType>
+template<bool doPruneNBL, bool doCalcEnergies, enum Nbnxm::ElecType elecType, enum Nbnxm::VdwType vdwType, int subGroupSize>
 class NbnxmKernel;
 
 namespace Nbnxm
@@ -745,7 +745,7 @@ static inline void reduceForceIAndFShift(sycl::local_ptr<float> sm_buf,
 /*! \brief Main kernel for NBNXM.
  *
  */
-template<bool doPruneNBL, bool doCalcEnergies, enum ElecType elecType, enum VdwType vdwType>
+template<int subGroupSize, bool doPruneNBL, bool doCalcEnergies, enum ElecType elecType, enum VdwType vdwType>
 static auto nbnxmKernel(sycl::handler&                                            cgh,
                         DeviceAccessor<Float4, mode::read>                        a_xq,
                         DeviceAccessor<Float3, mode::read_write>                  a_f,
@@ -811,17 +811,10 @@ static auto nbnxmKernel(sycl::handler&                                          
         a_coulombTab.bind(cgh);
     }
 
-    // The post-prune j-i cluster-pair organization is linked to how exclusion and interaction mask data is stored.
-    // Currently, this is ideally suited for 32-wide subgroup size but slightly less so for others,
-    // e.g. subGroupSize > prunedClusterPairSize on AMD GCN / CDNA.
-    // Hence, the two are decoupled.
-    // When changing this code, please update requiredSubGroupSizeForNbnxm in src/gromacs/hardware/device_management_sycl.cpp.
+    // The post-prune j-i cluster-pair organization is linked to how exclusion and interaction mask
+    // data is stored. Currently, this is ideally suited for 32-wide subgroup size but slightly less
+    // so for others, e.g. subGroupSize > prunedClusterPairSize on AMD GCN / CDNA.
     constexpr int prunedClusterPairSize = c_clSize * c_splitClSize;
-#if defined(HIPSYCL_PLATFORM_ROCM) // SYCL-TODO AMD RDNA/RDNA2 has 32-wide exec; how can we check for that?
-    gmx_unused constexpr int subGroupSize = c_clSize * c_clSize;
-#else
-    gmx_unused constexpr int subGroupSize = prunedClusterPairSize;
-#endif
 
     constexpr int numReductionSteps = gmx::StaticLog2<subGroupSize / c_clSize>::value;
     /* We use shuffles only if we:
@@ -1310,10 +1303,10 @@ static auto nbnxmKernel(sycl::handler&                                          
 }
 
 //! \brief NBNXM kernel launch code.
-template<bool doPruneNBL, bool doCalcEnergies, enum ElecType elecType, enum VdwType vdwType, class... Args>
+template<int subGroupSize, bool doPruneNBL, bool doCalcEnergies, enum ElecType elecType, enum VdwType vdwType, class... Args>
 static void launchNbnxmKernel(const DeviceStream& deviceStream, const int numSci, Args&&... args)
 {
-    using kernelNameType = NbnxmKernel<doPruneNBL, doCalcEnergies, elecType, vdwType>;
+    using kernelNameType = NbnxmKernel<doPruneNBL, doCalcEnergies, elecType, vdwType, subGroupSize>;
 
     /* Kernel launch config:
      * - The thread block dimensions match the size of i-clusters, j-clusters,
@@ -1328,26 +1321,26 @@ static void launchNbnxmKernel(const DeviceStream& deviceStream, const int numSci
     sycl::queue q = deviceStream.stream();
 
     q.submit([&](sycl::handler& cgh) {
-        auto kernel = nbnxmKernel<doPruneNBL, doCalcEnergies, elecType, vdwType>(
+        auto kernel = nbnxmKernel<subGroupSize, doPruneNBL, doCalcEnergies, elecType, vdwType>(
                 cgh, std::forward<Args>(args)...);
         cgh.parallel_for<kernelNameType>(range, kernel);
     });
 }
 
 //! \brief Select templated kernel and launch it.
-template<bool doPruneNBL, bool doCalcEnergies, class... Args>
+template<int subGroupSize, bool doPruneNBL, bool doCalcEnergies, class... Args>
 void chooseAndLaunchNbnxmKernel(enum ElecType elecType, enum VdwType vdwType, Args&&... args)
 {
     gmx::dispatchTemplatedFunction(
             [&](auto elecType_, auto vdwType_) {
-                return launchNbnxmKernel<doPruneNBL, doCalcEnergies, elecType_, vdwType_>(
+                return launchNbnxmKernel<subGroupSize, doPruneNBL, doCalcEnergies, elecType_, vdwType_>(
                         std::forward<Args>(args)...);
             },
             elecType,
             vdwType);
 }
 
-template<bool doPruneNBL, bool doCalcEnergies>
+template<int subGroupSize, bool doPruneNBL, bool doCalcEnergies>
 void launchNbnxmKernelHelper(NbnxmGpu* nb, const gmx::StepWorkload& stepWork, const InteractionLocality iloc)
 {
     NBAtomDataGpu*      adat         = nb->atdat;
@@ -1358,41 +1351,41 @@ void launchNbnxmKernelHelper(NbnxmGpu* nb, const gmx::StepWorkload& stepWork, co
     GMX_ASSERT(doPruneNBL == (plist->haveFreshList && !nb->didPrune[iloc]), "Wrong template called");
     GMX_ASSERT(doCalcEnergies == stepWork.computeEnergy, "Wrong template called");
 
-    chooseAndLaunchNbnxmKernel<doPruneNBL, doCalcEnergies>(nbp->elecType,
-                                                           nbp->vdwType,
-                                                           deviceStream,
-                                                           plist->nsci,
-                                                           adat->xq,
-                                                           adat->f,
-                                                           adat->shiftVec,
-                                                           adat->fShift,
-                                                           adat->eElec,
-                                                           adat->eLJ,
-                                                           plist->cjPacked,
-                                                           plist->sci,
-                                                           plist->excl,
-                                                           adat->ljComb,
-                                                           adat->atomTypes,
-                                                           nbp->nbfp,
-                                                           nbp->nbfp_comb,
-                                                           nbp->coulomb_tab,
-                                                           adat->numTypes,
-                                                           nbp->rcoulomb_sq,
-                                                           nbp->rvdw_sq,
-                                                           nbp->two_k_rf,
-                                                           nbp->ewald_beta,
-                                                           nbp->rlistOuter_sq,
-                                                           nbp->sh_ewald,
-                                                           nbp->epsfac,
-                                                           nbp->ewaldcoeff_lj * nbp->ewaldcoeff_lj,
-                                                           nbp->c_rf,
-                                                           nbp->dispersion_shift,
-                                                           nbp->repulsion_shift,
-                                                           nbp->vdw_switch,
-                                                           nbp->rvdw_switch,
-                                                           nbp->sh_lj_ewald,
-                                                           nbp->coulomb_tab_scale,
-                                                           stepWork.computeVirial);
+    chooseAndLaunchNbnxmKernel<subGroupSize, doPruneNBL, doCalcEnergies>(nbp->elecType,
+                                                                         nbp->vdwType,
+                                                                         deviceStream,
+                                                                         plist->nsci,
+                                                                         adat->xq,
+                                                                         adat->f,
+                                                                         adat->shiftVec,
+                                                                         adat->fShift,
+                                                                         adat->eElec,
+                                                                         adat->eLJ,
+                                                                         plist->cjPacked,
+                                                                         plist->sci,
+                                                                         plist->excl,
+                                                                         adat->ljComb,
+                                                                         adat->atomTypes,
+                                                                         nbp->nbfp,
+                                                                         nbp->nbfp_comb,
+                                                                         nbp->coulomb_tab,
+                                                                         adat->numTypes,
+                                                                         nbp->rcoulomb_sq,
+                                                                         nbp->rvdw_sq,
+                                                                         nbp->two_k_rf,
+                                                                         nbp->ewald_beta,
+                                                                         nbp->rlistOuter_sq,
+                                                                         nbp->sh_ewald,
+                                                                         nbp->epsfac,
+                                                                         nbp->ewaldcoeff_lj * nbp->ewaldcoeff_lj,
+                                                                         nbp->c_rf,
+                                                                         nbp->dispersion_shift,
+                                                                         nbp->repulsion_shift,
+                                                                         nbp->vdw_switch,
+                                                                         nbp->rvdw_switch,
+                                                                         nbp->sh_lj_ewald,
+                                                                         nbp->coulomb_tab_scale,
+                                                                         stepWork.computeVirial);
 }
 
 } // namespace Nbnxm

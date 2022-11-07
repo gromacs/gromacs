@@ -229,6 +229,15 @@ if(GMX_SYCL_HIPSYCL)
         endif()
     endif()
 
+    # Try to detect if we need RDNA support. Not very robust, but should cover the most common use.
+    if (GMX_HIPSYCL_HAVE_HIP_TARGET AND ${HIPSYCL_TARGETS} MATCHES "gfx1[0-9][0-9][0-9]")
+        set(_enable_rdna_support_automatically ON)
+    else()
+        set(_enable_rdna_support_automatically OFF)
+    endif()
+    set(GMX_HIPSYCL_ENABLE_AMD_RDNA_SUPPORT ${_enable_rdna_support_automatically} CACHE BOOL
+        "Enable compiling kernels for AMD RDNA GPUs (gfx1xxx). When OFF, only CDNA and GCN are supported. Only used with hipSYCL.")
+
     # Find a suitable rocFFT when hipSYCL is targeting AMD devices
     if (GMX_HIPSYCL_HAVE_HIP_TARGET)
         # For consistency, we prefer to find rocFFT as part of the

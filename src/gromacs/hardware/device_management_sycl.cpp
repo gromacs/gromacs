@@ -45,9 +45,11 @@
 
 #include "config.h"
 
+#include <algorithm>
 #include <map>
 #include <optional>
 #include <tuple>
+#include <vector>
 
 #include "gromacs/gpu_utils/gmxsycl.h"
 #include "gromacs/hardware/device_management.h"
@@ -102,19 +104,9 @@ static std::optional<std::tuple<int, int>> getHardwareVersionNvidia(const sycl::
 #endif
 }
 
-static std::optional<std::tuple<int, int, int>> getHardwareVersionAmd(const sycl::device& device)
+static std::optional<std::tuple<int, int, int>> parseHardwareVersionAmd(const std::string& archName)
 {
-#if (GMX_SYCL_HIPSYCL && GMX_HIPSYCL_HAVE_HIP_TARGET)
-    const int              nativeDeviceId = sycl::get_native<sycl::backend::hip>(device);
-    struct hipDeviceProp_t prop;
-    hipError_t             status = hipGetDeviceProperties(&prop, nativeDeviceId);
-    if (status != hipSuccess)
-    {
-        return std::nullopt;
-    }
-    // prop.major and prop.minor indicate the closest CUDA CC
-    // gcnArch is deprecated, so we have to parse gcnArchName
-    std::string archName{ prop.gcnArchName }; // We have something like 'gfx90a:sramecc+:xnack-'
+    // archName is something like 'gfx90a:sramecc+:xnack-'
     std::vector<std::string> archNameTokens = gmx::splitDelimitedString(archName, ':');
     if (!gmx::startsWith(archNameTokens[0], "gfx"))
     {
@@ -149,6 +141,26 @@ static std::optional<std::tuple<int, int, int>> getHardwareVersionAmd(const sycl
     {
         return std::nullopt;
     }
+}
+
+
+static std::optional<std::tuple<int, int, int>> getHardwareVersionAmd(const sycl::device& device)
+{
+#if (GMX_SYCL_HIPSYCL && GMX_HIPSYCL_HAVE_HIP_TARGET)
+    const int              nativeDeviceId = sycl::get_native<sycl::backend::hip>(device);
+    struct hipDeviceProp_t prop;
+    hipError_t             status = hipGetDeviceProperties(&prop, nativeDeviceId);
+    if (status != hipSuccess)
+    {
+        return std::nullopt;
+    }
+    // prop.major and prop.minor indicate the closest CUDA CC
+    // gcnArch is deprecated, so we have to parse gcnArchName
+    return parseHardwareVersionAmd(prop.gcnArchName);
+#elif (GMX_SYCL_DPCPP)
+    // DPC++ puts architecture in the device name field, which is fine
+    const std::string deviceName = device.get_info<sycl::info::device::name>(); // gfx1032 or something
+    return parseHardwareVersionAmd(deviceName);
 #else
     GMX_UNUSED_VALUE(device);
     return std::nullopt;
@@ -213,11 +225,13 @@ bool isDeviceDetectionFunctional(std::string* errorMessage)
  * \brief Checks that device \c deviceInfo is compatible with GROMACS.
  *
  * \param[in]  syclDevice              SYCL device handle.
+ * \param[in]  deviceVendor            Device vendor.
  * \param[in]  supportedSubGroupSizes  List of supported sub-group sizes as reported by the device.
  * \returns                            The status enumeration value for the checked device.
  */
-static DeviceStatus isDeviceCompatible(const sycl::device&      syclDevice,
-                                       gmx::ArrayRef<const int> supportedSubGroupSizes)
+static DeviceStatus isDeviceCompatible(const sycl::device&           syclDevice,
+                                       const DeviceVendor gmx_unused deviceVendor,
+                                       gmx::ArrayRef<const int>      supportedSubGroupSizes)
 {
     try
     {
@@ -241,17 +255,34 @@ static DeviceStatus isDeviceCompatible(const sycl::device&      syclDevice,
         }
 #endif
 
-        // Ensure any changes stay in sync with subGroupSize in src/gromacs/nbnxm/sycl/nbnxm_sycl_kernel.cpp
-        constexpr size_t requiredSubGroupSizeForNbnxm =
-#if defined(HIPSYCL_PLATFORM_ROCM)
-                GMX_GPU_NB_CLUSTER_SIZE * GMX_GPU_NB_CLUSTER_SIZE;
-#else
-                GMX_GPU_NB_CLUSTER_SIZE * GMX_GPU_NB_CLUSTER_SIZE / 2;
+// Ensure any changes are in sync with nbnxm_sycl_kernel.h
+#if GMX_GPU_NB_CLUSTER_SIZE == 4
+        const std::vector<int> compiledNbnxmSubGroupSizes{ 8 };
+#elif GMX_GPU_NB_CLUSTER_SIZE == 8
+#    if GMX_SYCL_HIPSYCL && !(GMX_HIPSYCL_HAVE_HIP_TARGET)
+        const std::vector<int> compiledNbnxmSubGroupSizes{ 32 }; // Only NVIDIA
+#    elif GMX_SYCL_HIPSYCL && (GMX_HIPSYCL_HAVE_HIP_TARGET && !GMX_HIPSYCL_ENABLE_AMD_RDNA_SUPPORT)
+        const std::vector<int> compiledNbnxmSubGroupSizes{ 64 }; // Only AMD GCN and CDNA
+#    else
+        const std::vector<int> compiledNbnxmSubGroupSizes{ 32, 64 };
+#    endif
 #endif
 
-        if (std::find(supportedSubGroupSizes.begin(), supportedSubGroupSizes.end(), requiredSubGroupSizeForNbnxm)
-            == supportedSubGroupSizes.end())
+        const auto subGroupSizeSupportedByDevice = [&supportedSubGroupSizes](const int sgSize) -> bool {
+            return std::find(supportedSubGroupSizes.begin(), supportedSubGroupSizes.end(), sgSize)
+                   != supportedSubGroupSizes.end();
+        };
+        if (std::none_of(compiledNbnxmSubGroupSizes.begin(),
+                         compiledNbnxmSubGroupSizes.end(),
+                         subGroupSizeSupportedByDevice))
         {
+#if GMX_SYCL_HIPSYCL && GMX_HIPSYCL_HAVE_HIP_TARGET && !GMX_HIPSYCL_ENABLE_AMD_RDNA_SUPPORT
+            if (supportedSubGroupSizes.size() == 1 && supportedSubGroupSizes[0] == 32
+                && deviceVendor == DeviceVendor::Amd)
+            {
+                return DeviceStatus::IncompatibleAmdRdnaNotTargeted;
+            }
+#endif
             return DeviceStatus::IncompatibleClusterSize;
         }
 
@@ -349,8 +380,8 @@ static bool isDeviceFunctional(const sycl::device& syclDevice, std::string* erro
 static DeviceStatus checkDevice(size_t deviceId, const DeviceInformation& deviceInfo)
 {
 
-    DeviceStatus supportStatus =
-            isDeviceCompatible(deviceInfo.syclDevice, deviceInfo.supportedSubGroupSizes());
+    DeviceStatus supportStatus = isDeviceCompatible(
+            deviceInfo.syclDevice, deviceInfo.deviceVendor, deviceInfo.supportedSubGroupSizes());
     if (supportStatus != DeviceStatus::Compatible)
     {
         return supportStatus;

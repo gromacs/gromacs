@@ -243,6 +243,9 @@
 // Define if hipSYCL has CUDA target(s)
 #cmakedefine01 GMX_HIPSYCL_HAVE_CUDA_TARGET
 
+// Define if hipSYCL should have AMD RDNA support (32-wide execution)
+#cmakedefine01 GMX_HIPSYCL_ENABLE_AMD_RDNA_SUPPORT
+
 /* Define if Intel's DPC++ is used (default unless hipSYCL is chosen) */
 #define GMX_SYCL_DPCPP (!GMX_SYCL_HIPSYCL && GMX_GPU_SYCL)
 

@@ -44,7 +44,19 @@
 
 namespace Nbnxm
 {
-template void launchNbnxmKernelHelper<true, false>(NbnxmGpu*                 nb,
-                                                   const gmx::StepWorkload&  stepWork,
-                                                   const InteractionLocality iloc);
-}
+#if SYCL_NBNXM_SUPPORTS_SUBGROUP_SIZE_8
+template void launchNbnxmKernelHelper<8, true, false>(NbnxmGpu*                 nb,
+                                                      const gmx::StepWorkload&  stepWork,
+                                                      const InteractionLocality iloc);
+#endif
+#if SYCL_NBNXM_SUPPORTS_SUBGROUP_SIZE_32
+template void launchNbnxmKernelHelper<32, true, false>(NbnxmGpu*                 nb,
+                                                       const gmx::StepWorkload&  stepWork,
+                                                       const InteractionLocality iloc);
+#endif
+#if SYCL_NBNXM_SUPPORTS_SUBGROUP_SIZE_64
+template void launchNbnxmKernelHelper<64, true, false>(NbnxmGpu*                 nb,
+                                                       const gmx::StepWorkload&  stepWork,
+                                                       const InteractionLocality iloc);
+#endif
+} // namespace Nbnxm
