@@ -136,17 +136,6 @@ _rocm_extra_packages = [
     "rocm-dev",
 ]
 
-_rocm_legacy_extra_packages = [
-    # The following require
-    #             apt_keys=['http://repo.radeon.com/rocm/rocm.gpg.key'],
-    #             apt_repositories=['deb [arch=amd64] http://repo.radeon.com/rocm/apt/X.Y.Z/ ubuntu main']
-    "clinfo",
-    "libelf1",
-    "rocfft",
-    "rocm-opencl",
-    "rocm-dev",
-]
-
 # Extra packages required to build CP2K
 _cp2k_extra_packages = [
     "autoconf",
@@ -316,11 +305,17 @@ def get_rocm_packages(args) -> typing.List[str]:
     if args.rocm is None:
         return []
     else:
-        if args.rocm != "debian":
-            if packaging.version.parse(args.rocm) < packaging.version.parse(str(4.2)):
-                return _rocm_legacy_extra_packages
-
         return _rocm_extra_packages
+
+
+def get_rocm_repository(args) -> "hpccm.building_blocks.base":
+    dist_string = "ubuntu"
+    return hpccm.building_blocks.packages(
+        apt_keys=["http://repo.radeon.com/rocm/rocm.gpg.key"],
+        apt_repositories=[
+            f"deb [arch=amd64] http://repo.radeon.com/rocm/apt/{args.rocm}/ {dist_string} main"
+        ],
+    )
 
 
 def get_cp2k_packages(args) -> typing.List[str]:
@@ -779,19 +774,36 @@ def add_intel_llvm_compiler_build_stage(
         _distro=hpccm_distro_name(input_args),
         _as="intel-llvm-build",
     )
-
     buildbot_flags = [
         "--build-type=Release",
         "--cuda",  # Build with CUDA support
         "--llvm-external-projects=openmp",  # Enable OpenMP
         "--obj-dir=/var/tmp/llvm/llvm/build",  # Build directory
+        # Disable OpenMP offload targets we're not using
+        "--cmake-opt=-DLIBOMPTARGET_BUILD_AMDGPU_PLUGIN=FALSE",
+        "--cmake-opt=-DLIBOMPTARGET_BUILD_CUDA_PLUGIN=FALSE",
+        "--cmake-opt=-DLIBOMPTARGET_BUILD_DEVICERTL_BCLIB=FALSE",
         # Help CMake find CUDA Driver stub, see https://github.com/opencv/opencv/issues/6577
         "--cmake-opt=-DCMAKE_LIBRARY_PATH=/usr/local/cuda/targets/x86_64-linux/lib/stubs/",
     ]
 
     llvm_stage += hpccm.building_blocks.packages(
-        ospackages=["git", "ninja-build", "cmake", "python3", "build-essential"]
+        ospackages=[
+            "git",
+            "ninja-build",
+            "cmake",
+            "python3",
+            "python3-dev",
+            "build-essential",
+            "wget",
+        ]
     )
+
+    if args.rocm is not None:
+        llvm_stage += get_rocm_repository(args)
+        llvm_stage += hpccm.building_blocks.packages(ospackages=get_rocm_packages(args))
+        buildbot_flags.extend(["--hip", "--hip-platform", "AMD"])
+
     llvm_stage += hpccm.building_blocks.generic_build(
         repository="https://github.com/intel/llvm.git",
         directory="llvm/llvm",
@@ -1115,19 +1127,10 @@ def build_stages(args) -> typing.Iterable["hpccm.Stage"]:
             ],
         )
         os_packages += _intel_compute_runtime_extra_packages
+
     if args.rocm is not None:
-        dist_string = "ubuntu"
-        if args.rocm != "debian":
-            if packaging.version.parse(args.rocm) < packaging.version.parse(str(4.2)):
-                dist_string = "xenial"
-        building_blocks["extra_packages"] += hpccm.building_blocks.packages(
-            apt_keys=["http://repo.radeon.com/rocm/rocm.gpg.key"],
-            apt_repositories=[
-                f"deb [arch=amd64] http://repo.radeon.com/rocm/apt/{args.rocm}/ "
-                + dist_string
-                + " main"
-            ],
-        )
+        building_blocks["extra_packages"] += get_rocm_repository(args)
+
     building_blocks["extra_packages"] += hpccm.building_blocks.packages(
         ospackages=os_packages, apt_ppas=["ppa:intel-opencl/intel-opencl"]
     )

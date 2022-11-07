@@ -8,7 +8,7 @@
 # Test implementation choices (free to change as needed):
 #   OS: Ubuntu 20.04
 #   Build type: RelWithAssert
-#   Compiler: IntelLLVM 2022-06
+#   Compiler: IntelLLVM 2022-09
 #   MPI: threadMPI
 #   SIMD: AVX2_256
 #   Parallelism nt/ntomp: 2/1 and 2/2
@@ -19,7 +19,7 @@ gromacs:intel-llvm-nvidia-weekly:configure:
    - .use-sycl
    - .use-clang:base
    - .rules:weekly-not-for-release
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-intel_llvm-2022-06-cuda-11.4.3:latest
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-intel_llvm-2022-09-cuda-11.5.2-rocm-5.3:latest
   variables:
     CMAKE: /usr/local/cmake-3.21.2/bin/cmake
     CMAKE_COMPILER_SCRIPT: -DCMAKE_C_COMPILER=/opt/intel-llvm/bin/clang -DCMAKE_CXX_COMPILER=/opt/intel-llvm/bin/clang++
@@ -34,7 +34,7 @@ gromacs:intel-llvm-nvidia-weekly:build:
     - .gromacs:base:build
     - .use-ccache
     - .rules:weekly-not-for-release
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-intel_llvm-2022-06-cuda-11.4.3:latest
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-intel_llvm-2022-09-cuda-11.5.2-rocm-5.3:latest
   variables:
     CMAKE: /usr/local/cmake-3.21.2/bin/cmake
   before_script:
@@ -49,7 +49,7 @@ gromacs:intel-llvm-nvidia-weekly:test:
   extends:
     - .gromacs:base:test
     - .rules:weekly-not-for-release
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-intel_llvm-2022-06-cuda-11.4.3:latest
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-intel_llvm-2022-09-cuda-11.5.2-rocm-5.3:latest
   variables:
     CMAKE: /usr/local/cmake-3.21.2/bin/cmake
     KUBERNETES_EXTENDED_RESOURCE_NAME: "nvidia.com/gpu"
@@ -67,7 +67,7 @@ gromacs:intel-llvm-nvidia-weekly:regressiontest:
   extends:
     - .gromacs:base:regressiontest
     - .rules:weekly-not-for-release
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-intel_llvm-2022-06-cuda-11.4.3:latest
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-intel_llvm-2022-09-cuda-11.5.2-rocm-5.3:latest
   variables:
     CMAKE: /usr/local/cmake-3.21.2/bin/cmake
     # Default not working, see #2980

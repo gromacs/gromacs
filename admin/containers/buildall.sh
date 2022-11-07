@@ -24,7 +24,7 @@ args[${#args[@]}]="--llvm 13 --clfft --mpi openmpi --rocm"
 args[${#args[@]}]="--oneapi 2022.2.0 --intel-compute-runtime --ubuntu 20.04"
 args[${#args[@]}]="--llvm --doxygen --mpi openmpi --venvs 3.7.7 3.9.13"
 args[${#args[@]}]="--llvm 14 --cuda 11.4.3 --hipsycl ee45074 --rocm 5.1 --mpi mpich"
-args[${#args[@]}]="--intel-llvm 2022-06 --cuda 11.4.3"
+args[${#args[@]}]="--intel-llvm 2022-09 --cuda 11.5.2 --rocm 5.3"
 
 echo
 echo "Consider pulling the following images for build layer cache."
