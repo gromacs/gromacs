@@ -287,7 +287,7 @@ TEST_P(ParrRahmTest, Works)
     {
         TestReferenceData    refData;
         TestReferenceChecker checker(refData.rootChecker());
-        const uint64_t       singleUlpDiff = 15, doubleUlpDiff = 5;
+        const uint64_t       singleUlpDiff = 16, doubleUlpDiff = 5;
         checker.setDefaultTolerance(FloatingPointTolerance(0, 0, 0, 0, singleUlpDiff, doubleUlpDiff, false));
         std::vector<real> newBoxVelocities;
         for (int d = 0; d < DIM; d++)
