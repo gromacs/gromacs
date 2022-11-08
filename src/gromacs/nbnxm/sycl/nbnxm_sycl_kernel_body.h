@@ -1324,7 +1324,7 @@ static void launchNbnxmKernel(const DeviceStream& deviceStream, const int numSci
 
     sycl::queue q = deviceStream.stream();
 
-    q.submit([&](sycl::handler& cgh) {
+    q.submit(GMX_SYCL_DISCARD_EVENT[&](sycl::handler & cgh) {
         auto kernel = nbnxmKernel<subGroupSize, doPruneNBL, doCalcEnergies, elecType, vdwType>(
                 cgh, std::forward<Args>(args)...);
         cgh.parallel_for<kernelNameType>(range, kernel);

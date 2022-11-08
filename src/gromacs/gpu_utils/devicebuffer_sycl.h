@@ -334,13 +334,19 @@ void copyToDeviceBuffer(DeviceBuffer<ValueType>* buffer,
                    "Trying to launch async copy from unpinned host buffer");
     }
 
-    sycl::event ev;
-    ev = deviceStream.stream().submit([&](sycl::handler& cgh) {
-        cgh.memcpy(buffer->buffer_->ptr_ + startingOffset, hostBuffer, numValues * sizeof(ValueType));
-    });
+    ValueType*   dstPtr = buffer->buffer_->ptr_ + startingOffset;
+    const size_t size   = numValues * sizeof(ValueType);
     if (transferKind == GpuApiCallBehavior::Sync)
     {
-        ev.wait_and_throw();
+        deviceStream.stream()
+                .submit([&](sycl::handler& cgh) { cgh.memcpy(dstPtr, hostBuffer, size); })
+                .wait_and_throw();
+    }
+    else
+    {
+        deviceStream.stream().submit(GMX_SYCL_DISCARD_EVENT[&](sycl::handler & cgh) {
+            cgh.memcpy(dstPtr, hostBuffer, size);
+        });
     }
 }
 
@@ -386,13 +392,19 @@ void copyFromDeviceBuffer(ValueType*               hostBuffer,
                    "Trying to launch async copy to unpinned host buffer");
     }
 
-    sycl::event ev;
-    ev = deviceStream.stream().submit([&](sycl::handler& cgh) {
-        cgh.memcpy(hostBuffer, buffer->buffer_->ptr_ + startingOffset, numValues * sizeof(ValueType));
-    });
+    const ValueType* srcPtr = buffer->buffer_->ptr_ + startingOffset;
+    const size_t     size   = numValues * sizeof(ValueType);
     if (transferKind == GpuApiCallBehavior::Sync)
     {
-        ev.wait_and_throw();
+        deviceStream.stream()
+                .submit([&](sycl::handler& cgh) { cgh.memcpy(hostBuffer, srcPtr, size); })
+                .wait_and_throw();
+    }
+    else
+    {
+        deviceStream.stream().submit(GMX_SYCL_DISCARD_EVENT[&](sycl::handler & cgh) {
+            cgh.memcpy(hostBuffer, srcPtr, size);
+        });
     }
 }
 

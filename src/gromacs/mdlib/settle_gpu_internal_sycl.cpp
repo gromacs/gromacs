@@ -363,7 +363,7 @@ static void launchSettleKernel(const DeviceStream& deviceStream, int numSettles,
     const sycl::nd_range<1> rangeAllSettles(numSettlesRoundedUp, sc_workGroupSize);
     sycl::queue             q = deviceStream.stream();
 
-    q.submit([&](sycl::handler& cgh) {
+    q.submit(GMX_SYCL_DISCARD_EVENT[&](sycl::handler & cgh) {
         auto kernel = settleKernel<updateVelocities, computeVirial>(
                 cgh, numSettles, std::forward<Args>(args)...);
         cgh.parallel_for<kernelNameType>(rangeAllSettles, kernel);

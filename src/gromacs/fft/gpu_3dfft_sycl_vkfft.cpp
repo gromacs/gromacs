@@ -236,7 +236,7 @@ Gpu3dFft::ImplSyclVkfft::~ImplSyclVkfft()
 
 void Gpu3dFft::ImplSyclVkfft::perform3dFft(gmx_fft_direction dir, CommandEvent* /*timingEvent*/)
 {
-    impl_->queue_.submit([&](sycl::handler& cgh) {
+    impl_->queue_.submit(GMX_SYCL_DISCARD_EVENT[&](sycl::handler & cgh) {
         cgh.hipSYCL_enqueue_custom_operation([=](sycl::interop_handle& h) {
             void* d_complexGrid = reinterpret_cast<void*>(complexGrid_.buffer_->ptr_);
             void* d_realGrid    = reinterpret_cast<void*>(impl_->realGrid_.buffer_->ptr_);

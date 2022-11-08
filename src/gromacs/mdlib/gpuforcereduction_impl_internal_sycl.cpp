@@ -113,7 +113,7 @@ static void launchReductionKernel_(const int                   numAtoms,
     // We only need parts of b_rvecForceToAdd and b_forceTotal, so sub-buffers would be appropriate.
     // But hipSYCL does not support them yet, nor plans to. See Issue #4019.
 
-    queue.submit([&](sycl::handler& cgh) {
+    queue.submit(GMX_SYCL_DISCARD_EVENT[&](sycl::handler & cgh) {
         auto kernel = reduceKernel<addRvecForce, accumulateForce>(
                 cgh, b_nbnxmForce, b_rvecForceToAdd, b_forceTotal, b_cell, atomStart);
         cgh.parallel_for<ReduceKernel<addRvecForce, accumulateForce>>(rangeNumAtoms, kernel);

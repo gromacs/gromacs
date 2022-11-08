@@ -80,8 +80,9 @@ public:
     inline void mark(const DeviceStream& deviceStream)
     {
 #    if GMX_SYCL_HIPSYCL
-        // Relies on HIPSYCL_EXT_QUEUE_WAIT_LIST extension
-        events_   = deviceStream.stream().get_wait_list();
+        // This will not launch any GPU operation, but it will mark an event which is returned;
+        // it is functionally equivalent with ext_oneapi_submit_barrier().
+        events_ = { deviceStream.stream().hipSYCL_enqueue_custom_operation([=](sycl::interop_handle&) {}) };
         isMarked_ = true;
 #    else
         // Relies on SYCL_INTEL_enqueue_barrier
@@ -109,8 +110,11 @@ public:
     inline void enqueueWait(const DeviceStream& deviceStream)
     {
 #    if GMX_SYCL_HIPSYCL
-        // Submit an empty kernel that depends on all the events recorded.
-        deviceStream.stream().hipSYCL_enqueue_custom_operation([=](sycl::interop_handle&) {}, events_);
+        // Submit an empty operation that depends on all the events recorded.
+        deviceStream.stream().submit(GMX_SYCL_DISCARD_EVENT[&](sycl::handler & cgh) {
+            cgh.depends_on(events_);
+            cgh.hipSYCL_enqueue_custom_operation([=](sycl::interop_handle&) {});
+        });
 #    else
         GMX_ASSERT(events_.size() <= 1, "One event expected in DPC++, but we have several!");
         // Relies on SYCL_INTEL_enqueue_barrier extensions

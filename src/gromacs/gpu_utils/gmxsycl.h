@@ -129,4 +129,24 @@ using local_accessor = sycl::local_accessor<dataT, dimensions>;
 
 } // namespace sycl_2020
 
+/* Macro to optimize runtime performance by not recording unnecessary events.
+ *
+ * It relies on the availability of HIPSYCL_EXT_CG_PROPERTY_* extension, and is no-op for
+ * other SYCL implementations. Macro can be used as follows (note the lack of comma after it):
+ * `queue.submit(GMX_SYCL_DISCARD_EVENT [=](....))`.
+ *
+ * When this macro is added to `queue.submit`, the returned event should not be used!
+ * As a consequence, patterns like `queue.submit(GMX_SYCL_DISCARD_EVENT [=](....)).wait()`
+ * must be avoided. If you intend to use the returned event in any way, do not add this macro.
+ *
+ * The use of the returned event will not necessarily cause run-time errors, but can cause
+ * performance degradation (specifically, in hipSYCL the synchronization will be sub-optimal).
+ */
+#if GMX_SYCL_HIPSYCL
+#    define GMX_SYCL_DISCARD_EVENT \
+        sycl::property_list{ sycl::property::command_group::hipSYCL_coarse_grained_events() },
+#else // IntelLLVM does not support command-group properties
+#    define GMX_SYCL_DISCARD_EVENT
+#endif
+
 #endif

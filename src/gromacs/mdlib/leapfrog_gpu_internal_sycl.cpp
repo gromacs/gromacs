@@ -176,7 +176,7 @@ static void launchLeapFrogKernel(const DeviceStream& deviceStream, int numAtoms,
     const sycl::range<1> rangeAllAtoms(numAtoms);
     sycl::queue          q = deviceStream.stream();
 
-    q.submit([&](sycl::handler& cgh) {
+    q.submit(GMX_SYCL_DISCARD_EVENT[&](sycl::handler & cgh) {
         auto kernel = leapFrogKernel<numTempScaleValues, parrinelloRahmanVelocityScaling>(
                 cgh, std::forward<Args>(args)...);
         cgh.parallel_for<kernelNameType>(rangeAllAtoms, kernel);

@@ -443,7 +443,7 @@ void Gpu3dFft::ImplSyclRocfft::perform3dFft(gmx_fft_direction dir, CommandEvent*
         outputGrid = &impl_->realGrid_;
     }
     // Enqueue the 3D FFT work
-    impl_->queue_.submit([&](sycl::handler& cgh) {
+    impl_->queue_.submit(GMX_SYCL_DISCARD_EVENT[&](sycl::handler & cgh) {
         // Use a hipSYCL custom operation to access the native buffers
         // needed to call rocFFT
         cgh.hipSYCL_enqueue_custom_operation([=](sycl::interop_handle& gmx_unused h) {

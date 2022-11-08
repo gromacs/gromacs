@@ -131,7 +131,7 @@ static void launchPackSendBufKernel(const DeviceStream& deviceStream, int xSendS
     const sycl::range<1> range(xSendSize);
     sycl::queue          q = deviceStream.stream();
 
-    q.submit([&](sycl::handler& cgh) {
+    q.submit(GMX_SYCL_DISCARD_EVENT[&](sycl::handler & cgh) {
         auto kernel = packSendBufKernel<usePbc>(cgh, std::forward<Args>(args)...);
         cgh.parallel_for<kernelNameType>(range, kernel);
     });
@@ -145,7 +145,7 @@ static void launchUnpackRecvBufKernel(const DeviceStream& deviceStream, int fRec
     const sycl::range<1> range(fRecvSize);
     sycl::queue          q = deviceStream.stream();
 
-    q.submit([&](sycl::handler& cgh) {
+    q.submit(GMX_SYCL_DISCARD_EVENT[&](sycl::handler & cgh) {
         auto kernel = unpackRecvBufKernel<accumulateForces>(cgh, std::forward<Args>(args)...);
         cgh.parallel_for<kernelNameType>(range, kernel);
     });
