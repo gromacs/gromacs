@@ -77,6 +77,9 @@
 /* rocFFT version */
 #define rocfft_VERSION "@rocfft_VERSION@"
 
+/* Use oneMKL Library for GPU FFT */
+#cmakedefine01 GMX_GPU_FFT_MKL
+
 /* Target platform is x86 or x86_64 */
 #cmakedefine01 GMX_TARGET_X86
 

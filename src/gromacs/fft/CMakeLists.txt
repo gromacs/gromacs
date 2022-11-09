@@ -97,53 +97,16 @@ elseif (GMX_GPU_OPENCL)
             )
     endif()
 elseif (GMX_GPU_SYCL)
-    if (NOT GMX_SYCL_HIPSYCL AND GMX_FFT_MKL)
-        gmx_add_libgromacs_sources(
-            gpu_3dfft_sycl_mkl.cpp
-            gpu_3dfft_impl.cpp
-            gpu_3dfft.cpp
-            )
-        _gmx_add_files_to_property(SYCL_SOURCES
-            gpu_3dfft_sycl_mkl.cpp
-            gpu_3dfft_impl.cpp
-            gpu_3dfft.cpp
-            )
+    set(_sycl_fft_sources gpu_3dfft.cpp gpu_3dfft_impl.cpp gpu_3dfft_sycl.cpp)
+    if (GMX_GPU_FFT_MKL)
+        list(APPEND _sycl_fft_sources gpu_3dfft_sycl_mkl.cpp)
+    elseif(GMX_GPU_FFT_ROCFFT)
+        list(APPEND _sycl_fft_sources gpu_3dfft_sycl_rocfft.cpp)
+    elseif(GMX_GPU_FFT_VKFFT)
+        list(APPEND _sycl_fft_sources gpu_3dfft_sycl_vkfft.cpp)
     endif()
-    if (GMX_SYCL_HIPSYCL)
-        if(GMX_GPU_FFT_VKFFT)
-            gmx_add_libgromacs_sources(
-                gpu_3dfft_sycl_vkfft.cpp 
-                gpu_3dfft_impl.cpp 
-                gpu_3dfft.cpp
-            )
-            _gmx_add_files_to_property(SYCL_SOURCES
-                gpu_3dfft_sycl_vkfft.cpp
-                gpu_3dfft_impl.cpp
-                gpu_3dfft.cpp
-            )
-        elseif(GMX_GPU_FFT_ROCFFT)
-            gmx_add_libgromacs_sources(
-                gpu_3dfft_sycl_rocfft.cpp
-                gpu_3dfft_impl.cpp
-                gpu_3dfft.cpp
-                )
-            _gmx_add_files_to_property(SYCL_SOURCES
-                gpu_3dfft_sycl_rocfft.cpp
-                gpu_3dfft_impl.cpp
-                gpu_3dfft.cpp
-                )
-        endif()
-    endif()
-    gmx_add_libgromacs_sources(
-        gpu_3dfft_sycl.cpp
-        gpu_3dfft_impl.cpp
-        gpu_3dfft.cpp
-        )
-    _gmx_add_files_to_property(SYCL_SOURCES
-        gpu_3dfft_sycl.cpp
-        gpu_3dfft.cpp
-        gpu_3dfft_impl.cpp
-        )
+    gmx_add_libgromacs_sources(${_sycl_fft_sources})
+    _gmx_add_files_to_property(SYCL_SOURCES ${_sycl_fft_sources})
 endif()
 
 # Source files have the following private module dependencies.

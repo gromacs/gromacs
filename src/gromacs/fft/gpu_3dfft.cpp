@@ -56,15 +56,12 @@
 #    endif
 #elif GMX_GPU_SYCL
 #    include "gpu_3dfft_sycl.h"
-#    if GMX_SYCL_DPCPP && GMX_FFT_MKL
+#    if GMX_GPU_FFT_MKL
 #        include "gpu_3dfft_sycl_mkl.h"
-#    endif
-#    if GMX_SYCL_HIPSYCL
-#        if GMX_GPU_FFT_VKFFT
-#            include "gpu_3dfft_sycl_vkfft.h"
-#        elif GMX_GPU_FFT_ROCFFT
-#            include "gpu_3dfft_sycl_rocfft.h"
-#        endif
+#    elif GMX_GPU_FFT_ROCFFT
+#        include "gpu_3dfft_sycl_rocfft.h"
+#    elif GMX_GPU_FFT_VKFFT
+#        include "gpu_3dfft_sycl_vkfft.h"
 #    endif
 #endif
 
@@ -183,7 +180,7 @@ Gpu3dFft::Gpu3dFft(FftBackend           backend,
 #elif GMX_GPU_SYCL
     switch (backend)
     {
-#    if GMX_SYCL_DPCPP && GMX_FFT_MKL
+#    if GMX_GPU_FFT_MKL
         case FftBackend::SyclMkl:
             impl_ = std::make_unique<Gpu3dFft::ImplSyclMkl>(allocateRealGrid,
                                                             comm,
@@ -199,9 +196,7 @@ Gpu3dFft::Gpu3dFft(FftBackend           backend,
                                                             realGrid,
                                                             complexGrid);
             break;
-#    endif
-#    if GMX_SYCL_HIPSYCL
-#        if GMX_GPU_FFT_VKFFT
+#    elif GMX_GPU_FFT_VKFFT
         case FftBackend::SyclVkfft:
             impl_ = std::make_unique<Gpu3dFft::ImplSyclVkfft>(allocateRealGrid,
                                                               comm,
@@ -217,7 +212,7 @@ Gpu3dFft::Gpu3dFft(FftBackend           backend,
                                                               realGrid,
                                                               complexGrid);
             break;
-#        elif GMX_GPU_FFT_ROCFFT
+#    elif GMX_GPU_FFT_ROCFFT
         case FftBackend::SyclRocfft:
             impl_ = std::make_unique<Gpu3dFft::ImplSyclRocfft>(allocateRealGrid,
                                                                comm,
@@ -233,7 +228,6 @@ Gpu3dFft::Gpu3dFft(FftBackend           backend,
                                                                realGrid,
                                                                complexGrid);
             break;
-#        endif
 #    endif
         case FftBackend::Sycl:
             impl_ = std::make_unique<Gpu3dFft::ImplSycl>(allocateRealGrid,

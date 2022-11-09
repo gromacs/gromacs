@@ -406,7 +406,7 @@ TEST_P(ParameterizedFFTTest3D, RunsOnHost)
  *
  *  DPCPP uses oneMKL, which seems to have troubles with out-of-place
  *  transforms. */
-constexpr bool sc_performOutOfPlaceFFT = !((GMX_SYCL_DPCPP == 1) && (GMX_FFT_MKL == 1));
+constexpr bool sc_performOutOfPlaceFFT = (GMX_GPU_FFT_MKL == 0);
 
 /*! \brief Return the output grid depending on whether in- or out-of
  * place FFT is used
@@ -419,7 +419,7 @@ constexpr bool sc_performOutOfPlaceFFT = !((GMX_SYCL_DPCPP == 1) && (GMX_FFT_MKL
 template<bool performOutOfPlaceFFT>
 DeviceBuffer<float>* actualOutputGrid(DeviceBuffer<float>* realGrid, DeviceBuffer<float>* complexGrid);
 
-#    if GMX_SYCL_DPCPP && GMX_FFT_MKL
+#    if GMX_GPU_FFT_MKL
 
 template<>
 DeviceBuffer<float>* actualOutputGrid<false>(DeviceBuffer<float>* realGrid,
@@ -498,26 +498,13 @@ TEST_P(ParameterizedFFTTest3D, RunsOnDevices)
         const FftBackend backend = FftBackend::Ocl;
 #        endif
 #    elif GMX_GPU_SYCL
-#        if GMX_SYCL_HIPSYCL
-#            if GMX_GPU_FFT_VKFFT
-        const FftBackend backend = FftBackend::SyclVkfft;
-#            elif GMX_GPU_FFT_ROCFFT
-        const FftBackend backend = FftBackend::SyclRocfft;
-#            else
-        // Use stub backend so compilation succeeds
-        const FftBackend backend = FftBackend::Sycl;
-        // Don't complain about unused reference data
-        if (checker.has_value())
-        {
-            checker.value().disableUnusedEntriesCheck();
-        }
-        // Skip the rest of the test
-        GTEST_SKIP() << "Only rocFFT and VkFFT backends are supported with hipSYCL";
-#            endif
-#        elif GMX_SYCL_DPCPP
-#            if GMX_FFT_MKL
+#        if GMX_GPU_FFT_MKL
         const FftBackend backend = FftBackend::SyclMkl;
-#            else
+#        elif GMX_GPU_FFT_ROCFFT
+        const FftBackend backend = FftBackend::SyclRocfft;
+#        elif GMX_GPU_FFT_VKFFT
+        const FftBackend backend = FftBackend::SyclVkfft;
+#        else
         // Use stub backend so compilation succeeds
         const FftBackend backend = FftBackend::Sycl;
         // Don't complain about unused reference data
@@ -526,10 +513,7 @@ TEST_P(ParameterizedFFTTest3D, RunsOnDevices)
             checker.value().disableUnusedEntriesCheck();
         }
         // Skip the rest of the test
-        GTEST_SKIP() << "Only MKL backend is supported with DPC++";
-#            endif
-#        else
-#            error "Unsupported SYCL implementation"
+        GTEST_SKIP() << "No supported GPU FFT backend detected";
 #        endif
 #    endif
 

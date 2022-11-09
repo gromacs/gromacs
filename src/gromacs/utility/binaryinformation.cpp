@@ -260,17 +260,17 @@ std::string getGpuFftDescriptionString()
         }
         else if (GMX_GPU_SYCL)
         {
-            if (GMX_FFT_MKL)
+            if (GMX_GPU_FFT_MKL)
             {
                 return describeMkl();
-            }
-            else if (GMX_GPU_FFT_VKFFT)
-            {
-                return std::string("VkFFT ") + vkfft_VERSION;
             }
             else if (GMX_GPU_FFT_ROCFFT)
             {
                 return std::string("rocFFT ") + rocfft_VERSION;
+            }
+            else if (GMX_GPU_FFT_VKFFT)
+            {
+                return std::string("VkFFT ") + vkfft_VERSION;
             }
             else
             {
