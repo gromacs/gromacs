@@ -56,6 +56,10 @@ target_link_libraries(fileio PRIVATE
 #                      tng_io
                       )
 
+# Only needed for XDR routines that cast xdr_char and the like to xdrproc_t.
+# TODO: Convert to gmx_target_warning_suppression when fileio in an OBJECT target
+gmx_target_interface_warning_suppression(fileio "-Wno-cast-function-type-strict" HAS_WARNING_NO_CAST_FUNCTION_TYPE_STRICT)
+
 # Public interface for modules, including dependencies and interfaces
 #target_include_directories(fileio PUBLIC
 target_include_directories(fileio INTERFACE
