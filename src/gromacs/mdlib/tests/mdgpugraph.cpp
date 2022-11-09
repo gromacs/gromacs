@@ -245,10 +245,13 @@ TEST(MdGraphTest, MdGpuGraphCaptureAndUsageConsistency)
 
         // Step 2: capture graph
         canUseGraphThisStep = true;
+        // No work in UpdateAndConstraints stream, the event is immediately ready
+        xReadyOnDeviceEvent.markEvent(deviceStreamManager.stream(DeviceStreamType::UpdateAndConstraints));
         ASSERT_TRUE(mdGpuGraph.captureThisStep(canUseGraphThisStep));
         mdGpuGraph.startRecord(&xReadyOnDeviceEvent);
         ASSERT_TRUE(mdGpuGraph.graphIsCapturingThisStep());
         ASSERT_TRUE(mdGpuGraph.useGraphThisStep());
+        EXPECT_TRUE(xReadyOnDeviceEvent.isMarked());
 
         // Activity to capture in graph
         clearDeviceBufferAsync(
@@ -260,7 +263,9 @@ TEST(MdGraphTest, MdGpuGraphCaptureAndUsageConsistency)
         mdGpuGraph.createExecutableGraph(forceGraphReinstantiation);
 
         // Launch graph
+        xUpdatedOnDeviceEvent.reset();
         mdGpuGraph.launchGraphMdStep(&xUpdatedOnDeviceEvent);
+        EXPECT_TRUE(xUpdatedOnDeviceEvent.isMarked());
 
         // Step 3: re-use existing graph
         ASSERT_FALSE(mdGpuGraph.captureThisStep(canUseGraphThisStep));
@@ -268,7 +273,9 @@ TEST(MdGraphTest, MdGpuGraphCaptureAndUsageConsistency)
         ASSERT_TRUE(mdGpuGraph.useGraphThisStep());
 
         // Launch graph
+        xUpdatedOnDeviceEvent.reset();
         mdGpuGraph.launchGraphMdStep(&xUpdatedOnDeviceEvent);
+        EXPECT_TRUE(xUpdatedOnDeviceEvent.isMarked());
 
         // Step 4: don't use graph, even although it exists
         canUseGraphThisStep = false;
