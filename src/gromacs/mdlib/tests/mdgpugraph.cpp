@@ -62,6 +62,24 @@ namespace test
 namespace
 {
 
+/*! \brief Get simulation workload structure with appropriate components for these tests.
+ *
+ * useMdGpuGraph is true to enable the graph, useGpuUpdate is true to
+ * provide an update stream to use in the tests,
+ * havePpDomainDecomposition is false since these are single-rank
+ * tests, and useGpuPme is false since interoperation with the PME
+ * stream relies on an implicit sync in mdrun.
+ * \returns simulationWork Simulation workload structure
+ */
+SimulationWorkload makeSimulationWorkForMdGpuGraph()
+{
+    SimulationWorkload simulationWork;
+    simulationWork.useMdGpuGraph             = true;
+    simulationWork.useGpuUpdate              = true;
+    simulationWork.havePpDomainDecomposition = false;
+    simulationWork.useGpuPme                 = false;
+    return simulationWork;
+}
 
 TEST(MdGraphTest, MdGpuGraphExecutesActivities)
 {
@@ -77,12 +95,7 @@ TEST(MdGraphTest, MdGpuGraphExecutesActivities)
         const auto& deviceContext = testDevice->deviceContext();
 
         // Initialize required structures
-        SimulationWorkload simulationWork;
-        simulationWork.useGpuPme                 = true;
-        simulationWork.useGpuUpdate              = true;
-        simulationWork.useMdGpuGraph             = true;
-        simulationWork.havePpDomainDecomposition = false;
-        simulationWork.haveSeparatePmeRank       = true;
+        SimulationWorkload   simulationWork = makeSimulationWorkForMdGpuGraph();
         DeviceStreamManager  deviceStreamManager(testDevice->deviceInfo(), simulationWork, false);
         GpuEventSynchronizer xReadyOnDeviceEvent;
         GpuEventSynchronizer xUpdatedOnDeviceEvent;
@@ -189,6 +202,90 @@ TEST(MdGraphTest, MdGpuGraphExecutesActivities)
                 EXPECT_EQ(h_output[0], 0);
             }
         }
+    }
+}
+
+TEST(MdGraphTest, MdGpuGraphCaptureAndUsageConsistency)
+{
+
+    const auto& testDeviceList = getTestHardwareEnvironment()->getTestDeviceList();
+    if (testDeviceList.empty())
+    {
+        GTEST_SKIP() << "No compatible GPUs to test on.";
+    }
+    for (const auto& testDevice : testDeviceList)
+    {
+        testDevice->activate();
+        const auto& deviceContext = testDevice->deviceContext();
+
+        // Initialize required structures
+        SimulationWorkload   simulationWork = makeSimulationWorkForMdGpuGraph();
+        DeviceStreamManager  deviceStreamManager(testDevice->deviceInfo(), simulationWork, false);
+        GpuEventSynchronizer xReadyOnDeviceEvent;
+        GpuEventSynchronizer xUpdatedOnDeviceEvent;
+        gmx::MdGpuGraph      mdGpuGraph(
+                deviceStreamManager, simulationWork, MPI_COMM_WORLD, MdGraphEvenOrOddStep::EvenStep, nullptr);
+        gmx::MdGpuGraph mdGpuGraphAlternate(
+                deviceStreamManager, simulationWork, MPI_COMM_WORLD, MdGraphEvenOrOddStep::EvenStep, nullptr);
+        mdGpuGraph.setAlternateStepPpTaskCompletionEvent(mdGpuGraphAlternate.getPpTaskCompletionEvent());
+
+        DeviceBuffer<int> d_buf;
+        int               d_buf_size       = -1;
+        int               d_buf_size_alloc = -1;
+        reallocateDeviceBuffer(&d_buf, 1, &d_buf_size, &d_buf_size_alloc, deviceContext);
+
+        bool usedGraphLastStep = false;
+        mdGpuGraph.setUsedGraphLastStep(usedGraphLastStep);
+
+        // Step 1: don't use graph
+        bool canUseGraphThisStep = false;
+        ASSERT_FALSE(mdGpuGraph.captureThisStep(canUseGraphThisStep));
+        ASSERT_FALSE(mdGpuGraph.graphIsCapturingThisStep());
+        ASSERT_FALSE(mdGpuGraph.useGraphThisStep());
+
+        // Step 2: capture graph
+        canUseGraphThisStep = true;
+        ASSERT_TRUE(mdGpuGraph.captureThisStep(canUseGraphThisStep));
+        mdGpuGraph.startRecord(&xReadyOnDeviceEvent);
+        ASSERT_TRUE(mdGpuGraph.graphIsCapturingThisStep());
+        ASSERT_TRUE(mdGpuGraph.useGraphThisStep());
+
+        // Activity to capture in graph
+        clearDeviceBufferAsync(
+                &d_buf, 0, 1, deviceStreamManager.stream(gmx::DeviceStreamType::NonBondedLocal));
+
+        // End graph capture and instantiate
+        mdGpuGraph.endRecord();
+        bool forceGraphReinstantiation = true;
+        mdGpuGraph.createExecutableGraph(forceGraphReinstantiation);
+
+        // Launch graph
+        mdGpuGraph.launchGraphMdStep(&xUpdatedOnDeviceEvent);
+
+        // Step 3: re-use existing graph
+        ASSERT_FALSE(mdGpuGraph.captureThisStep(canUseGraphThisStep));
+        ASSERT_FALSE(mdGpuGraph.graphIsCapturingThisStep());
+        ASSERT_TRUE(mdGpuGraph.useGraphThisStep());
+
+        // Launch graph
+        mdGpuGraph.launchGraphMdStep(&xUpdatedOnDeviceEvent);
+
+        // Step 4: don't use graph, even although it exists
+        canUseGraphThisStep = false;
+        ASSERT_FALSE(mdGpuGraph.captureThisStep(canUseGraphThisStep));
+        ASSERT_FALSE(mdGpuGraph.graphIsCapturingThisStep());
+        ASSERT_FALSE(mdGpuGraph.useGraphThisStep());
+
+        // Step 5: re-use existing graph again
+        canUseGraphThisStep = true;
+        ASSERT_FALSE(mdGpuGraph.captureThisStep(canUseGraphThisStep));
+        ASSERT_FALSE(mdGpuGraph.graphIsCapturingThisStep());
+        ASSERT_TRUE(mdGpuGraph.useGraphThisStep());
+
+        // Step 6: reset graph
+        mdGpuGraph.reset();
+        ASSERT_FALSE(mdGpuGraph.graphIsCapturingThisStep());
+        ASSERT_FALSE(mdGpuGraph.useGraphThisStep());
     }
 }
 
