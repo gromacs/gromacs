@@ -297,7 +297,12 @@ static inline float interpolateCoulombForceR(const sycl::global_ptr<const float>
 {
     const float normalized = coulombTabScale * r;
     const int   index      = static_cast<int>(normalized);
-    const float fraction   = normalized - index;
+#if defined(__SYCL_DEVICE_ONLY__) && defined(__AMDGCN__)
+    // TODO: up to ROCm v5.3 compiler does not do this transformation. Remove when this is no longer the case.
+    const float fraction = __builtin_amdgcn_fractf(normalized);
+#else
+    const float fraction = normalized - index;
+#endif
 
     const float left  = a_coulombTab[index];
     const float right = a_coulombTab[index + 1];
