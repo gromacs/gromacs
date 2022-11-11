@@ -416,7 +416,7 @@ static inline void reduceForceJGeneric(sycl::local_ptr<float>   sm_buf,
     subGroupBarrier(itemIdx);
 
     // reducing data 8-by-by elements on the leader of same threads as those storing above
-    SYCL_ASSERT(itemIdx.get_sub_group().get_local_range().size() >= c_clSize);
+    SYCL_ASSERT(itemIdx.get_sub_group().get_max_local_range()[0] >= c_clSize);
 
     if (tidxi < 3)
     {
@@ -575,8 +575,8 @@ static inline void reduceForceIAndFShiftShuffles(const float fCiBufX[c_nbnxnGpuN
 {
     const sycl::sub_group sg = itemIdx.get_sub_group();
     static_assert(numShuffleReductionSteps == 2 || numShuffleReductionSteps == 3);
-    assert(sg.get_local_linear_range() >= 4 * c_clSize
-           && "Subgroup too small for two-step shuffle reduction, use 1-step");
+    SYCL_ASSERT(sg.get_max_local_range()[0] >= 4 * c_clSize
+                && "Subgroup too small for two-step shuffle reduction, use 1-step");
     // Thread mask to use to select first three threads (in tidxj) in each reduction "tree".
     // Two bits for two steps, three bits for three steps.
     constexpr int threadBitMask = (1U << numShuffleReductionSteps) - 1;
@@ -656,10 +656,10 @@ inline void reduceForceIAndFShiftShuffles<1>(const float fCiBufX[c_nbnxnGpuNumCl
                                              sycl::global_ptr<Float3> a_fShift)
 {
     const sycl::sub_group sg = itemIdx.get_sub_group();
-    assert(sg.get_local_linear_range() >= 2 * c_clSize
-           && "Subgroup too small even for 1-step shuffle reduction");
-    assert(sg.get_local_linear_range() < 4 * c_clSize
-           && "One-step shuffle reduction inefficient, use two-step version");
+    SYCL_ASSERT(sg.get_max_local_range()[0] >= 2 * c_clSize
+                && "Subgroup too small even for 1-step shuffle reduction");
+    SYCL_ASSERT(sg.get_max_local_range()[0] < 4 * c_clSize
+                && "One-step shuffle reduction inefficient, use two-step version");
     float fShiftBufXY = 0.0F;
     float fShiftBufZ  = 0.0F;
 #pragma unroll c_nbnxnGpuNumClusterPerSupercluster
