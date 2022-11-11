@@ -15,8 +15,9 @@ stage. New things can lead to exciting science, and we love
 that. However, the subsequent code maintenance is time-consuming and
 requires both "up front" and long-term commitment from you, and others
 who might not share your particular scientific enthusiasm. Please read
-this page first, and at least post on the `developer mailing list`_.
-Sometimes we'll be able to save you a lot of time even at the
+this page first, and at least post on the `developer discussion forum`_.
+Looking through the `developer mailing list`_ archives might also be
+helpful. Sometimes we'll be able to save you a lot of time even at the
 planning stage!
 
 Much of the documentation is found alongside the source code in the
@@ -40,7 +41,7 @@ please make sure that you have checked all the points on this list:
   widespread adoption of the method.
 
 * *Advance discussion*: Please communicate with the other developers,
-  e.g.  on the `developer mailing list`_ mailing list, or
+  e.g.  on the `developer discussion forum`_, or
   `issue tracker`_ to let them know of the general
   nature of your plans. This will prevent duplicate or wasted
   effort. It is also a good idea to search those resources as well as
@@ -89,7 +90,7 @@ please make sure that you have checked all the points on this list:
     * functionality for an analysis tool to do useful things with the
       simulation output.
 
-  Do get in touch with us, e.g. on the `developer mailing list`_, to
+  Do get in touch with us, e.g. on the `developer discussion forum`_, to
   exchange ideas here.
 
 * *Timeliness*: We make an annual release of |Gromacs|, with a feature
@@ -153,7 +154,7 @@ There is a project underway to develop a stable API for |Gromacs|,
 which promises to be a great tool for permitting innovation while
 ensuring ongoing quality of the core functionality. You might prefer
 to plan to port your functionality to that API when it becomes
-available. Do keep in touch on the `developer mailing list`_, so
+available. Do keep in touch on the `developer discussion forum`_, so
 you'll be the first to know when such functionality is ready for people to
 explore!
 
@@ -161,11 +162,12 @@ Do you have more questions?
 ---------------------------
 
 If you have questions regarding these points, or would like feedback on your ideas for contributing,
-please feel free to contact us through the `developer mailing list`_.
+please feel free to contact us through the `developer discussion forum`_.
 If your code is of interest to the wider |Gromacs| community, we will be happy to assist you
 in the process of including it in the main source tree.
 
-.. _developer mailing list: https://maillist.sys.kth.se/mailman/listinfo/gromacs.org_gmx-developers
+.. _developer discussion forum: https://gromacs.bioexcel.eu/c/gromacs-developers/10
+.. _developer mailing list: https://mailman-1.sys.kth.se/pipermail/gromacs.org_gmx-developers/
 
 Removing functionality
 ----------------------

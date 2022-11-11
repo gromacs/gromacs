@@ -59,7 +59,8 @@ TEST(CpuInfoTest, SupportLevel)
 
     std::string commonMsg =
             "\nGROMACS might still work, but it will likely hurt your performance."
-            "\nPlease mail gmx-developers@gromacs.org so we can try to fix it.";
+            "\nPlease make a post at the GROMACS development forum at"
+            "\nhttps://gromacs.bioexcel.eu/c/gromacs-developers/10 so we can try to fix it.";
 
     // It is not the end of the world if any of these tests fail (Gromacs will
     // work fine without cpuinfo), but we might as well flag it so we add it to

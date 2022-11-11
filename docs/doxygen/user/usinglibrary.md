@@ -47,8 +47,8 @@ yourself.  In particular, it is currently relatively difficult to extend the
 functionality of `mdrun` without modifying the source code directly.
 If you think that some particular API would be necessary for your work, and
 think that it would be easy to expose, please drop a line on the
-`gmx-developers` mailing list, or contribute the necessary changes on
-http://gerrit.gromacs.org/.
+[developer discussion forum](https://gromacs.bioexcel.eu/c/gromacs-developers/10), 
+or contribute the necessary changes on https://gitlab.com/gromacs/gromacs.
 
 Linking against `libgromacs`
 ============================
