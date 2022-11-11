@@ -129,12 +129,12 @@ Gpu3dFft::ImplSyclMkl::ImplSyclMkl(bool allocateRealGrid,
                                  realGridSizePadded[XX] * realGridSizePadded[YY] * realGridSizePadded[ZZ]),
                "Real grid buffer is too small for the declared padded size");
 
+    allocateComplexGrid(complexGridSizePadded, realGrid, complexGrid, context);
+
     GMX_ASSERT(checkDeviceBuffer(*complexGrid,
                                  complexGridSizePadded[XX] * complexGridSizePadded[YY]
                                          * complexGridSizePadded[ZZ] * 2),
                "Complex grid buffer is too small for the declared padded size");
-
-    allocateComplexGrid(complexGridSizePadded, realGrid, complexGrid, context);
 
     // MKL expects row-major
     const std::array<MKL_LONG, 4> realGridStrides = {
