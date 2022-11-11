@@ -998,8 +998,8 @@ int Mdrunner::mdrunner()
 
     GMX_RELEASE_ASSERT(!GMX_MPI || ms || simulationCommunicator != MPI_COMM_NULL,
                        "Must have valid communicator unless running a multi-simulation");
-    CommrecHandle crHandle = init_commrec(simulationCommunicator);
-    t_commrec*    cr       = crHandle.get();
+    std::unique_ptr<t_commrec> crHandle(init_commrec(simulationCommunicator));
+    t_commrec*                 cr = crHandle.get();
     GMX_RELEASE_ASSERT(cr != nullptr, "Must have valid commrec");
 
     PhysicalNodeCommunicator physicalNodeComm(libraryWorldCommunicator, gmx_physicalnode_id_hash());
@@ -1498,10 +1498,9 @@ int Mdrunner::mdrunner()
     // now, because DD needs them for the LocalTopologyChecker, but
     // they do not contain valid data until after the first DD
     // partition.
-    std::unique_ptr<t_state>      localStateInstance;
-    t_state*                      localState;
-    gmx_localtop_t                localTopology(mtop.ffparams);
-    std::unique_ptr<gmx_domdec_t> ddManager;
+    std::unique_ptr<t_state> localStateInstance;
+    t_state*                 localState;
+    gmx_localtop_t           localTopology(mtop.ffparams);
 
     if (ddBuilder)
     {
@@ -1509,8 +1508,7 @@ int Mdrunner::mdrunner()
         localState         = localStateInstance.get();
         // TODO Pass the GPU streams to ddBuilder to use in buffer
         // transfers (e.g. halo exchange)
-        ddManager = ddBuilder->build(&atomSets, localTopology, *localState, &observablesReducerBuilder);
-        cr->dd = ddManager.get();
+        cr->setDD(ddBuilder->build(&atomSets, localTopology, *localState, &observablesReducerBuilder));
         // The builder's job is done, so destruct it
         ddBuilder.reset(nullptr);
         // Note that local state still does not exist yet.
@@ -2276,9 +2274,7 @@ int Mdrunner::mdrunner()
     // before we destroy the GPU context(s)
     // Pinned buffers are associated with contexts in CUDA.
     // As soon as we destroy GPU contexts after mdrunner() exits, these lines should go.
-    // Note: the current solution does not work when an exception gets thrown.
-    ddManager.reset(nullptr);
-    cr->dd = nullptr; // cr->dd is destroyed via ddManager
+    cr->destroyDD();
     mdAtoms.reset(nullptr);
     globalState.reset(nullptr);
     localStateInstance.reset(nullptr);

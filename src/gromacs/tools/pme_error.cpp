@@ -1129,9 +1129,9 @@ int gmx_pme_error(int argc, char* argv[])
 
 #define NFILE asize(fnm)
 
-    CommrecHandle commrecHandle = init_commrec(MPI_COMM_WORLD);
-    t_commrec*    cr            = commrecHandle.get();
-    PCA_Flags                   = PCA_NOEXIT_ON_ARGS;
+    std::unique_ptr<t_commrec> commrecHandle = init_commrec(MPI_COMM_WORLD);
+    t_commrec*                 cr            = commrecHandle.get();
+    PCA_Flags                                = PCA_NOEXIT_ON_ARGS;
 
     if (!parse_common_args(
                 &argc, argv, PCA_Flags, NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, nullptr, &oenv))

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright 2016- The GROMACS Authors
+ * Copyright 2022- The GROMACS Authors
  * and the project initiators Erik Lindahl, Berk Hess and David van der Spoel.
  * Consult the AUTHORS/COPYING files and https://www.gromacs.org for details.
  *
@@ -33,59 +33,43 @@
  */
 #include "gmxpre.h"
 
-#include "threadaffinitytest.h"
+#include "gromacs/mdtypes/commrec.h"
 
 #include "config.h"
 
-#include <memory>
-
-#include <gmock/gmock.h>
-
-#include "gromacs/hardware/hardwaretopology.h"
-#include "gromacs/mdtypes/commrec.h"
-#include "gromacs/utility/basenetwork.h"
+#include "gromacs/domdec/domdec_struct.h"
 #include "gromacs/utility/gmxmpi.h"
-#include "gromacs/utility/smalloc.h"
 
-namespace gmx
+t_commrec::t_commrec() = default;
+
+t_commrec::~t_commrec()
 {
-namespace test
-{
-
-MockThreadAffinityAccess::MockThreadAffinityAccess() : supported_(true)
-{
-    using ::testing::_;
-    using ::testing::Return;
-    ON_CALL(*this, setCurrentThreadAffinityToCore(_)).WillByDefault(Return(true));
-}
-
-MockThreadAffinityAccess::~MockThreadAffinityAccess() {}
-
-
-ThreadAffinityTestHelper::ThreadAffinityTestHelper()
-{
-    cr_.nnodes = gmx_node_num();
-    cr_.nodeid = gmx_node_rank();
-    // Default communicator is needed for [SIM]MAIN(cr) to work
-    // TODO: Should get cleaned up once thread affinity works with
-    //       communicators rather than the full cr (part of #2395)
-    cr_.sizeOfDefaultCommunicator = gmx_node_num();
-    cr_.rankInDefaultCommunicator = gmx_node_rank();
-    cr_.duty                      = DUTY_PP;
 #if GMX_MPI
-    cr_.mpi_comm_mysim = MPI_COMM_WORLD;
+    // TODO We need to be able to free communicators, but the
+    // structure of the commrec and domdec initialization code makes
+    // it hard to avoid both leaks and double frees.
+    bool mySimIsMyGroup = (mpi_comm_mysim == mpi_comm_mygroup);
+    if (mpi_comm_mysim != MPI_COMM_NULL && mpi_comm_mysim != MPI_COMM_WORLD)
+    {
+        // TODO see above
+        // MPI_Comm_free(&cr->mpi_comm_mysim);
+    }
+    if (!mySimIsMyGroup && mpi_comm_mygroup != MPI_COMM_NULL && mpi_comm_mygroup != MPI_COMM_WORLD)
+    {
+        // TODO see above
+        // MPI_Comm_free(&cr->mpi_comm_mygroup);
+    }
 #endif
-    hwOpt_.threadAffinity      = ThreadAffinity::Auto;
-    hwOpt_.totNumThreadsIsAuto = false;
-    physicalNodeId_            = 0;
 }
 
-ThreadAffinityTestHelper::~ThreadAffinityTestHelper() = default;
-
-void ThreadAffinityTestHelper::setLogicalProcessorCount(int logicalProcessorCount)
+void t_commrec::setDD(std::unique_ptr<gmx_domdec_t>&& ddUniquePtr)
 {
-    hwTop_ = std::make_unique<HardwareTopology>(logicalProcessorCount);
+    ddUniquePtr_ = std::move(ddUniquePtr);
+    dd           = ddUniquePtr_.get();
 }
 
-} // namespace test
-} // namespace gmx
+void t_commrec::destroyDD()
+{
+    ddUniquePtr_.reset(nullptr);
+    dd = nullptr;
+}

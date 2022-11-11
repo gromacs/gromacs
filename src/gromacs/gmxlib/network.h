@@ -40,10 +40,11 @@
 
 #include <cstdio>
 
+#include <memory>
+
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/gmxmpi.h"
 #include "gromacs/utility/stringutil.h"
-#include "gromacs/utility/unique_cptr.h"
 
 struct t_commrec;
 struct t_filenm;
@@ -51,11 +52,8 @@ struct t_filenm;
 //! Free memory associated with the commrec.
 void done_commrec(t_commrec* cr);
 
-//! Convenience alias.
-using CommrecHandle = gmx::unique_cptr<t_commrec, done_commrec>;
-
 //! Allocate, initialize and return the commrec.
-CommrecHandle init_commrec(MPI_Comm communicator);
+std::unique_ptr<t_commrec> init_commrec(MPI_Comm communicator);
 
 
 void gmx_setup_nodecomm(FILE* fplog, struct t_commrec* cr);

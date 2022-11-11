@@ -93,9 +93,6 @@ template<typename, size_t>
 class FixedCapacityVector;
 } // namespace gmx
 
-//! Free \c gmx_domdec_t structure (free-function dtor). Can handle \c nullptr.
-void done_domdec(gmx_domdec_t* dd);
-
 /*! \brief Returns the global topology atom number belonging to local atom index i.
  *
  * This function is intended for writing ASCII output

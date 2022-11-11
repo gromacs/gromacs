@@ -53,19 +53,11 @@
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/smalloc.h"
 
-void done_domdec(gmx_domdec_t* dd);
-
 /* The source code in this file should be thread-safe.
       Please keep it that way. */
 
-CommrecHandle init_commrec(MPI_Comm communicator)
+std::unique_ptr<t_commrec> init_commrec(MPI_Comm communicator)
 {
-    CommrecHandle handle;
-    t_commrec*    cr;
-
-    snew(cr, 1);
-    handle.reset(cr);
-
     int rankInCommunicator, sizeOfCommunicator;
 #if GMX_MPI
 #    if GMX_LIB_MPI
@@ -78,6 +70,8 @@ CommrecHandle init_commrec(MPI_Comm communicator)
     rankInCommunicator = 0;
     sizeOfCommunicator = 1;
 #endif
+
+    std::unique_ptr<t_commrec> cr = std::make_unique<t_commrec>();
 
     cr->mpiDefaultCommunicator    = communicator;
     cr->sizeOfDefaultCommunicator = sizeOfCommunicator;
@@ -95,32 +89,7 @@ CommrecHandle init_commrec(MPI_Comm communicator)
     // TODO cr->duty should not be initialized here
     cr->duty = (DUTY_PP | DUTY_PME);
 
-    return handle;
-}
-
-void done_commrec(t_commrec* cr)
-{
-    if (MAIN(cr))
-    {
-        done_domdec(cr->dd);
-    }
-#if GMX_MPI
-    // TODO We need to be able to free communicators, but the
-    // structure of the commrec and domdec initialization code makes
-    // it hard to avoid both leaks and double frees.
-    bool mySimIsMyGroup = (cr->mpi_comm_mysim == cr->mpi_comm_mygroup);
-    if (cr->mpi_comm_mysim != MPI_COMM_NULL && cr->mpi_comm_mysim != MPI_COMM_WORLD)
-    {
-        // TODO see above
-        // MPI_Comm_free(&cr->mpi_comm_mysim);
-    }
-    if (!mySimIsMyGroup && cr->mpi_comm_mygroup != MPI_COMM_NULL && cr->mpi_comm_mygroup != MPI_COMM_WORLD)
-    {
-        // TODO see above
-        // MPI_Comm_free(&cr->mpi_comm_mygroup);
-    }
-#endif
-    sfree(cr);
+    return cr;
 }
 
 void gmx_setup_nodecomm(FILE gmx_unused* fplog, t_commrec* cr)

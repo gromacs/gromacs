@@ -37,6 +37,7 @@ add_library(mdtypes INTERFACE)
 file(GLOB MDTYPES_SOURCES
     awh_history.cpp
     checkpointdata.cpp
+    commrec.cpp
     df_history.cpp
     energyhistory.cpp
     forcebuffers.cpp
