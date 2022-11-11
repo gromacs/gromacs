@@ -40,6 +40,7 @@ add_subdirectory(kernels_simd_2xmm)
 file(GLOB NBNXM_SOURCES
     # Source files
     atomdata.cpp
+    exclusionchecker.cpp
     freeenergydispatch.cpp
     grid.cpp
     gridset.cpp

@@ -211,7 +211,7 @@ static std::unique_ptr<nonbonded_verlet_t> setupNbnxmForBenchInstance(const Kern
 
     // Put everything together
     auto nbv = std::make_unique<nonbonded_verlet_t>(
-            std::move(pairlistSets), std::move(pairSearch), std::move(atomData), kernelSetup, nullptr, nullptr);
+            std::move(pairlistSets), std::move(pairSearch), std::move(atomData), kernelSetup, nullptr);
 
     t_nrnb nrnb;
 

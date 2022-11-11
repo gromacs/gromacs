@@ -82,8 +82,6 @@ public:
                                    gmx::ForceWithShiftForces*     forceWithShiftForces,
                                    bool                           useSimd,
                                    int                            ntype,
-                                   real                           rlist,
-                                   real                           maxAllowedCutoffSquared,
                                    const interaction_const_t&     ic,
                                    gmx::ArrayRef<const gmx::RVec> shiftvec,
                                    gmx::ArrayRef<const real>      nbfp,

@@ -258,8 +258,6 @@ template<typename DataTypes, KernelSoftcoreType softcoreType, bool scLambdasOrAl
 static void nb_free_energy_kernel(const t_nblist&                                  nlist,
                                   const gmx::ArrayRefWithPadding<const gmx::RVec>& coords,
                                   const int                                        ntype,
-                                  const real                                       rlist,
-                                  const real                           maxAllowedCutoffSquared,
                                   const interaction_const_t&           interactionParameters,
                                   gmx::ArrayRef<const gmx::RVec>       shiftvec,
                                   gmx::ArrayRef<const real>            nbfp,
@@ -447,10 +445,6 @@ static void nb_free_energy_kernel(const t_nblist&                               
             GMX_ASSERT(threadForceShiftBuffer != nullptr, "need a valid threadForceShiftBuffer");
         }
     }
-
-    const real rlistSquared = gmx::square(rlist);
-
-    bool haveExcludedPairsBeyondRlist = false;
 
     for (int n = 0; n < nri; n++)
     {
@@ -668,15 +662,6 @@ static void nb_free_energy_kernel(const t_nblist&                               
             else
             {
                 havePairsWithinCutoff = true;
-            }
-
-            /* Check if there are excluded pairs beyond rlist, which would give incorrect results.
-             * To avoid false positives due to distant periodic images, we need to check if
-             * the distance less than the maximum allowed cut-off.
-             */
-            if (gmx::anyTrue(rSq < maxAllowedCutoffSquared && rlistSquared < rSq && bPairExcluded))
-            {
-                haveExcludedPairsBeyondRlist = true;
             }
 
             const IntType  jnr_s    = gmx::load<IntType>(preloadJnr);
@@ -1182,26 +1167,11 @@ static void nb_free_energy_kernel(const t_nblist&                               
      * TODO: Update the number of flops and/or use different counts for different code paths.
      */
     atomicNrnbIncrement(nrnb, eNR_NBKERNEL_FREE_ENERGY, nlist.nri * 12 + nlist.jindex[nri] * 150);
-
-    if (haveExcludedPairsBeyondRlist)
-    {
-        gmx_fatal(FARGS,
-                  "There are perturbed non-bonded pair interactions beyond the pair-list cutoff "
-                  "of %g nm, which is not supported. This can happen because the system is "
-                  "unstable or because intra-molecular interactions at long distances are "
-                  "excluded. If the "
-                  "latter is the case, you can try to increase nstlist or rlist to avoid this."
-                  "The error is likely triggered by the use of couple-intramol=no "
-                  "and the maximal distance in the decoupled molecule exceeding rlist.",
-                  rlist);
-    }
 }
 
 typedef void (*KernelFunction)(const t_nblist&                                  nlist,
                                const gmx::ArrayRefWithPadding<const gmx::RVec>& coords,
                                const int                                        ntype,
-                               const real                                       rlist,
-                               const real                          maxAllowedCutoffSquared,
                                const interaction_const_t&          interactionParameters,
                                gmx::ArrayRef<const gmx::RVec>      shiftvec,
                                gmx::ArrayRef<const real>           nbfp,
@@ -1381,8 +1351,6 @@ void gmx_nb_free_energy_kernel(const t_nblist&                                  
                                const gmx::ArrayRefWithPadding<const gmx::RVec>& coords,
                                const bool                                       useSimd,
                                const int                                        ntype,
-                               const real                                       rlist,
-                               const real                          maxAllowedCutoffSquared,
                                const interaction_const_t&          interactionParameters,
                                gmx::ArrayRef<const gmx::RVec>      shiftvec,
                                gmx::ArrayRef<const real>           nbfp,
@@ -1444,8 +1412,6 @@ void gmx_nb_free_energy_kernel(const t_nblist&                                  
     kernelFunc(nlist,
                coords,
                ntype,
-               rlist,
-               maxAllowedCutoffSquared,
                interactionParameters,
                shiftvec,
                nbfp,

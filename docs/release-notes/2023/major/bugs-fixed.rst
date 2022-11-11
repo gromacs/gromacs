@@ -51,3 +51,15 @@ This change affects all simulations where voxel values are negative
 effect for: first, similarity  measure ``inner-product`` as an effective
 force-constant scaling and, second, for all similarity measures where the sum
 of all voxel values was negative.   
+
+Fail-safe check for perturbed exclusions beyond rlist
+"""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+With free-energy calculations, excluded non-bonded interactions involving
+at least one perturbed atom should not be beyond rlist when using PME. The
+check for this could have false negatives. Now the check is fail safe and
+will always trigger a fatal error when perturbed excluded pairs are beyond rlist.
+
+:issue:`3403`
+:issue:`4321`
+:issue:`4461`

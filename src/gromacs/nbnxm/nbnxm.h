@@ -119,6 +119,7 @@
 #include "gromacs/utility/real.h"
 
 struct DeviceInformation;
+class ExclusionChecker;
 class FreeEnergyDispatch;
 struct gmx_domdec_zones_t;
 struct gmx_enerdata_t;
@@ -151,6 +152,7 @@ class ListedForcesGpu;
 template<typename>
 class ListOfLists;
 class MDLogger;
+class ObservablesReducerBuilder;
 template<typename>
 class Range;
 class StepWorkload;
@@ -265,13 +267,37 @@ enum
 struct nonbonded_verlet_t
 {
 public:
-    //! Constructs an object from its components
+    /*! \brief Constructs an object from its components
+     *
+     * \param[in] pairlistSets  The pairlist sets, is consumed
+     * \param[in] pairSearch    The pairsearch setup, is consumed
+     * \param[in] nbat          The atom data, is consumed
+     * \param[in] kernelSetup   The non-bonded kernel setup
+     * \param[in] exclusionChecker  The FEP exclusion checker, is consumed, can be nullptr
+     * \param[in] gpu_nbv       The GPU non-bonded setup, ownership is transferred, can be nullptr
+     * \param[in] wcycle        Pointer to wallcycle counters, can be nullptr
+     */
     nonbonded_verlet_t(std::unique_ptr<PairlistSets>     pairlistSets,
                        std::unique_ptr<PairSearch>       pairSearch,
                        std::unique_ptr<nbnxn_atomdata_t> nbat,
                        const Nbnxm::KernelSetup&         kernelSetup,
+                       std::unique_ptr<ExclusionChecker> exclusionChecker,
                        NbnxmGpu*                         gpu_nbv,
                        gmx_wallcycle*                    wcycle);
+
+    /*! \brief Constructs an object from its, minimal, components
+     *
+     * \param[in] pairlistSets  The pairlist sets, is consumed
+     * \param[in] pairSearch    The pairsearch setup, is consumed
+     * \param[in] nbat          The atom data, is consumed
+     * \param[in] kernelSetup   The non-bonded kernel setup
+     * \param[in] gpu_nbv       The GPU non-bonded setup, ownership is transferred, can be nullptr
+     */
+    nonbonded_verlet_t(std::unique_ptr<PairlistSets>     pairlistSets,
+                       std::unique_ptr<PairSearch>       pairSearch,
+                       std::unique_ptr<nbnxn_atomdata_t> nbat,
+                       const Nbnxm::KernelSetup&         kernelSetup,
+                       NbnxmGpu*                         gpu_nbv);
 
     ~nonbonded_verlet_t();
 
@@ -375,8 +401,6 @@ public:
                                    gmx::ForceWithShiftForces*     forceWithShiftForces,
                                    bool                           useSimd,
                                    int                            ntype,
-                                   real                           rlist,
-                                   real                           maxAllowedCutoffSquared,
                                    const interaction_const_t&     ic,
                                    gmx::ArrayRef<const gmx::RVec> shiftvec,
                                    gmx::ArrayRef<const real>      nbfp,
@@ -434,11 +458,14 @@ private:
     //! The non-bonded setup, also affects the pairlist construction kernel
     Nbnxm::KernelSetup kernelSetup_;
 
-    //! \brief Pointer to wallcycle structure.
-    gmx_wallcycle* wcycle_;
-
     //! \brief The non-bonded free-energy kernel dispatcher
     std::unique_ptr<FreeEnergyDispatch> freeEnergyDispatch_;
+
+    //! \brief Checker for exclusions of perturbed pairs
+    std::unique_ptr<ExclusionChecker> exclusionChecker_;
+
+    //! \brief Pointer to wallcycle structure.
+    gmx_wallcycle* wcycle_;
 
 public:
     //! GPU Nbnxm data, only used with a physical GPU (TODO: use unique_ptr)
@@ -457,6 +484,7 @@ std::unique_ptr<nonbonded_verlet_t> init_nb_verlet(const gmx::MDLogger& mdlog,
                                                    bool                 useGpuForNonbonded,
                                                    const gmx::DeviceStreamManager* deviceStreamManager,
                                                    const gmx_mtop_t&               mtop,
+                                                   gmx::ObservablesReducerBuilder* observablesReducerBuilder,
                                                    gmx::ArrayRef<const gmx::RVec> coordinates,
                                                    matrix                         box,
                                                    gmx_wallcycle*                 wcycle);

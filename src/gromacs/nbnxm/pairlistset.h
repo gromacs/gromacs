@@ -117,6 +117,9 @@ public:
     //! Returns the lists of free-energy pairlists, empty when nonbonded interactions are not perturbed
     gmx::ArrayRef<const std::unique_ptr<t_nblist>> fepLists() const { return fepLists_; }
 
+    //! Returns the number of perturbed excluded pairs that are within distance rlist
+    int numPerturbedExclusionsWithinRlist() const { return numPerturbedExclusionsWithinRlist_; }
+
 private:
     //! List of pairlists in CPU layout
     std::vector<NbnxnPairlistCpu> cpuLists_;
@@ -132,6 +135,8 @@ private:
     gmx_bool isCpuType_;
     //! Lists for perturbed interactions in simple atom-atom layout
     std::vector<std::unique_ptr<t_nblist>> fepLists_;
+    //! The number of excluded perturbed interaction within rlist
+    int numPerturbedExclusionsWithinRlist_ = 0;
 
 public:
     /* Pair counts for flop counting */

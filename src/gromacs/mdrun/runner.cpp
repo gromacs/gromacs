@@ -1824,6 +1824,7 @@ int Mdrunner::mdrunner()
                 runScheduleWork.simulationWork.useGpuNonbonded,
                 deviceStreamManager.get(),
                 mtop,
+                PAR(cr) ? &observablesReducerBuilder : nullptr,
                 isSimulationMainRank ? globalState->x : gmx::ArrayRef<const gmx::RVec>(),
                 box,
                 wcycle.get());

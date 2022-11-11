@@ -62,6 +62,7 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/logger.h"
 
+#include "exclusionchecker.h"
 #include "freeenergydispatch.h"
 #include "grid.h"
 #include "nbnxm_geometry.h"
@@ -382,6 +383,7 @@ std::unique_ptr<nonbonded_verlet_t> init_nb_verlet(const gmx::MDLogger& mdlog,
                                                    bool                 useGpuForNonbonded,
                                                    const gmx::DeviceStreamManager* deviceStreamManager,
                                                    const gmx_mtop_t&               mtop,
+                                                   gmx::ObservablesReducerBuilder* observablesReducerBuilder,
                                                    gmx::ArrayRef<const gmx::RVec> coordinates,
                                                    matrix                         box,
                                                    gmx_wallcycle*                 wcycle)
@@ -473,8 +475,20 @@ std::unique_ptr<nonbonded_verlet_t> init_nb_verlet(const gmx::MDLogger& mdlog,
             gmx_omp_nthreads_get(ModuleMultiThread::Pairsearch),
             pinPolicy);
 
-    return std::make_unique<nonbonded_verlet_t>(
-            std::move(pairlistSets), std::move(pairSearch), std::move(nbat), kernelSetup, gpu_nbv, wcycle);
+    std::unique_ptr<ExclusionChecker> exclusionChecker;
+    if (inputrec.efep != FreeEnergyPerturbationType::No
+        && (usingPmeOrEwald(inputrec.coulombtype) || usingLJPme(inputrec.vdwtype)))
+    {
+        exclusionChecker = std::make_unique<ExclusionChecker>(commrec, mtop, observablesReducerBuilder);
+    }
+
+    return std::make_unique<nonbonded_verlet_t>(std::move(pairlistSets),
+                                                std::move(pairSearch),
+                                                std::move(nbat),
+                                                kernelSetup,
+                                                std::move(exclusionChecker),
+                                                gpu_nbv,
+                                                wcycle);
 }
 
 } // namespace Nbnxm
@@ -483,13 +497,38 @@ nonbonded_verlet_t::nonbonded_verlet_t(std::unique_ptr<PairlistSets>     pairlis
                                        std::unique_ptr<PairSearch>       pairSearch,
                                        std::unique_ptr<nbnxn_atomdata_t> nbat_in,
                                        const Nbnxm::KernelSetup&         kernelSetup,
+                                       std::unique_ptr<ExclusionChecker> exclusionChecker,
                                        NbnxmGpu*                         gpu_nbv_ptr,
                                        gmx_wallcycle*                    wcycle) :
     pairlistSets_(std::move(pairlistSets)),
     pairSearch_(std::move(pairSearch)),
     nbat(std::move(nbat_in)),
     kernelSetup_(kernelSetup),
+    exclusionChecker_(std::move(exclusionChecker)),
     wcycle_(wcycle),
+    gpu_nbv(gpu_nbv_ptr)
+{
+    GMX_RELEASE_ASSERT(pairlistSets_, "Need valid pairlistSets");
+    GMX_RELEASE_ASSERT(pairSearch_, "Need valid search object");
+    GMX_RELEASE_ASSERT(nbat, "Need valid atomdata object");
+
+    if (pairlistSets_->params().haveFep)
+    {
+        freeEnergyDispatch_ = std::make_unique<FreeEnergyDispatch>(nbat->params().nenergrp);
+    }
+}
+
+nonbonded_verlet_t::nonbonded_verlet_t(std::unique_ptr<PairlistSets>     pairlistSets,
+                                       std::unique_ptr<PairSearch>       pairSearch,
+                                       std::unique_ptr<nbnxn_atomdata_t> nbat_in,
+                                       const Nbnxm::KernelSetup&         kernelSetup,
+                                       NbnxmGpu*                         gpu_nbv_ptr) :
+    pairlistSets_(std::move(pairlistSets)),
+    pairSearch_(std::move(pairSearch)),
+    nbat(std::move(nbat_in)),
+    kernelSetup_(kernelSetup),
+    exclusionChecker_(),
+    wcycle_(nullptr),
     gpu_nbv(gpu_nbv_ptr)
 {
     GMX_RELEASE_ASSERT(pairlistSets_, "Need valid pairlistSets");
