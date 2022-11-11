@@ -204,6 +204,11 @@ It is not possible to support both Intel and other vendors' GPUs with OpenCL.
 A 64-bit implementation of OpenCL is required and therefore OpenCL is only
 supported on 64-bit platforms.
 
+Please note that OpenCL backend does not support the following GPUs:
+
+* NVIDIA Volta (CC 7.0, e.g., Tesla V100 or GTX 1630) or newer,
+* AMD RDNA1/2/3 (Navi 1/2X,3X, e.g., RX 5500 or RX6900).
+
 Since |Gromacs| 2021, the support for SYCL_ is added.
 The current SYCL implementation can be compiled either with `Intel oneAPI DPC++`_
 compiler for Intel GPUs, or with hipSYCL_ compiler and ROCm runtime for

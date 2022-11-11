@@ -132,6 +132,34 @@ static bool runningOnCompatibleHWForNvidia(const DeviceInformation& deviceInfo)
 #endif
 }
 
+/*! \brief Return true if executing on compatible GPU for AMD OpenCL.
+ *
+ * There are known issues with OpenCL when running on 32-wide AMD hardware, such as
+ * desktop GPUs with RDNA and RDNA2 architectures (gfx10xx).
+ *
+ * This function relies on cl_amd_device_attribute_query. In case it's not functioning properly,
+ * we trust the user and mark the device as compatible.
+ *
+ * \return true if running on 64-wide hardware (GCN, CDNA), or if we can not determine device generation.
+ */
+static bool runningOnCompatibleHWForAmd(const DeviceInformation& deviceInfo)
+{
+    // The macro is defined in Intel's and NVIDIA's headers, but it's not strictly required to be there.
+#ifndef CL_DEVICE_WAVEFRONT_WIDTH_AMD
+    return true;
+#else
+    unsigned int waveFrontSize;
+    cl_device_id devId = deviceInfo.oclDeviceId;
+    const cl_int err   = clGetDeviceInfo(
+            devId, CL_DEVICE_WAVEFRONT_WIDTH_AMD, sizeof(waveFrontSize), &waveFrontSize, nullptr);
+    if (err != CL_SUCCESS)
+    {
+        return true; // Err on a side of trusting the user to know what they are doing.
+    }
+    return waveFrontSize == 64;
+#endif
+}
+
 /*!
  * \brief Checks that device \c deviceInfo is compatible with GROMACS.
  *
@@ -183,7 +211,10 @@ static DeviceStatus isDeviceFunctional(const DeviceInformation& deviceInfo)
             return runningOnCompatibleHWForNvidia(deviceInfo) ? DeviceStatus::Compatible
                                                               : DeviceStatus::IncompatibleNvidiaVolta;
         case DeviceVendor::Amd:
-            return runningOnCompatibleOSForAmd() ? DeviceStatus::Compatible : DeviceStatus::Incompatible;
+            return runningOnCompatibleOSForAmd() ? (runningOnCompatibleHWForAmd(deviceInfo)
+                                                            ? DeviceStatus::Compatible
+                                                            : DeviceStatus::IncompatibleOclAmdRdna)
+                                                 : DeviceStatus::Incompatible;
         case DeviceVendor::Intel:
             return GMX_GPU_NB_CLUSTER_SIZE == 4 ? DeviceStatus::Compatible
                                                 : DeviceStatus::IncompatibleClusterSize;

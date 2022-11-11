@@ -46,6 +46,18 @@ an assertion failure when trying to write a checkpoint file.
 
 :issue:`4636`
 
+AMD RDNA devices are now properly marked as "unsupported" with OpenCL
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+AMD RDNA GPUs (Radeon RX 5000, 6000, and 7000 series) never worked
+correctly with OpenCL, usually with a simulation crashing quickly.
+We now properly mark those devices as incompatible.
+
+AMD GCN (e.g., RX Vega 64) and CDNA/CDNA2 (e.g., Instinct MI100)
+devices are supported.
+
+:issue:`4521`
+
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
 
