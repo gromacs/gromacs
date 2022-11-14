@@ -77,6 +77,22 @@ static constexpr float c_oneSixth = 0.16666667F;
 static constexpr float c_oneTwelfth = 0.08333333F;
 /*! \endcond */
 
+/*! \brief Explicit uniform load across the warp
+ *
+ *  Uses the readfirstlane intrinsic to ensure that uniform loads use
+ *  scalar registers and subsequent operations on the results generate
+ *  scalar instructions.
+ *
+ *  Note that some ROCm versions' compilers can figure out that the nbnxm
+ *  exclusion indices and imasks are uniform and generate the right instructions,
+ *  but others (like 4.5 and 5.0.2) do not.
+ */
+#if defined(__SYCL_DEVICE_ONLY__) && defined(__AMDGCN__) && GMX_GPU_NB_DISABLE_CLUSTER_PAIR_SPLIT
+#    define UNIFORM_LOAD_CLUSTER_PAIR_DATA(x) (__builtin_amdgcn_readfirstlane(x))
+#else
+#    define UNIFORM_LOAD_CLUSTER_PAIR_DATA(x) (x)
+#endif
+
 } // namespace Nbnxm
 
 #endif // GMX_NBNXM_SYCL_NBNXN_SYCL_KERNEL_UTILS_H

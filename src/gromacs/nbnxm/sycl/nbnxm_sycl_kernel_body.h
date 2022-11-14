@@ -1013,12 +1013,14 @@ static auto nbnxmKernel(sycl::handler&                                          
         // loop over the j clusters = seen by any of the atoms in the current super-cluster
         for (int jPacked = cijPackedBegin; jPacked < cijPackedEnd; jPacked += 1)
         {
-            unsigned imask = a_plistCJPacked[jPacked].imei[imeiIdx].imask;
+            unsigned imask = UNIFORM_LOAD_CLUSTER_PAIR_DATA(a_plistCJPacked[jPacked].imei[imeiIdx].imask);
             if (!doPruneNBL && !imask)
             {
                 continue;
             }
-            const int wexclIdx = a_plistCJPacked[jPacked].imei[imeiIdx].excl_ind;
+            const int wexclIdx =
+                    UNIFORM_LOAD_CLUSTER_PAIR_DATA(a_plistCJPacked[jPacked].imei[imeiIdx].excl_ind);
+
             static_assert(gmx::isPowerOfTwo(prunedClusterPairSize));
             const unsigned wexcl = a_plistExcl[wexclIdx].pair[tidx & (prunedClusterPairSize - 1)];
 // Unrolling has been verified to improve performance on AMD

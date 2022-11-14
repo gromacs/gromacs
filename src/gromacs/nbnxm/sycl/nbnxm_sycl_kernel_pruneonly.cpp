@@ -148,7 +148,7 @@ auto nbnxmKernelPruneOnly(sycl::handler&                                      cg
             if constexpr (haveFreshList)
             {
                 /* Read the mask from the list transferred from the CPU */
-                imaskFull = a_plistCJPacked[jPacked].imei[widx].imask;
+                imaskFull = UNIFORM_LOAD_CLUSTER_PAIR_DATA(a_plistCJPacked[jPacked].imei[widx].imask);
                 /* We attempt to prune all pairs present in the original list */
                 imaskCheck = imaskFull;
                 imaskNew   = 0;
@@ -156,9 +156,10 @@ auto nbnxmKernelPruneOnly(sycl::handler&                                      cg
             else
             {
                 /* Read the mask from the "warp-pruned" by rlistOuter mask array */
-                imaskFull = a_plistIMask[jPacked * c_nbnxnGpuClusterpairSplit + widx];
+                imaskFull = UNIFORM_LOAD_CLUSTER_PAIR_DATA(
+                        a_plistIMask[jPacked * c_nbnxnGpuClusterpairSplit + widx]);
                 /* Read the old rolling pruned mask, use as a base for new */
-                imaskNew = a_plistCJPacked[jPacked].imei[widx].imask;
+                imaskNew = UNIFORM_LOAD_CLUSTER_PAIR_DATA(a_plistCJPacked[jPacked].imei[widx].imask);
                 /* We only need to check pairs with different mask */
                 imaskCheck = (imaskNew ^ imaskFull);
             }
