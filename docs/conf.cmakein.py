@@ -232,6 +232,10 @@ rst_epilog += """
 .. |gmx-source-package-http| replace:: As https https://ftp.gromacs.org/gromacs/gromacs-{gmx_version_string}.tar.gz
 .. |gmx-regressiontests-package| replace:: https://ftp.gromacs.org/regressiontests/regressiontests-{regressiontest_version}.tar.gz
 .. _up-to-date installation instructions: https://manual.gromacs.org/documentation/current/install-guide/index.html
+.. _developer discussion forum: https://gromacs.bioexcel.eu/c/gromacs-developers/10
+.. _user discussion forum: https://gromacs.bioexcel.eu/c/gromacs-user-forum/5
+.. _gmx-developers mailing list archive: https://mailman-1.sys.kth.se/pipermail/gromacs.org_gmx-developers
+.. _gmx-users mailing list archive: https://mailman-1.sys.kth.se/pipermail/gromacs.org_gmx-users
 .. _CUDA: https://developer.nvidia.com/cuda-zone
 .. _OpenCL: https://www.khronos.org/opencl/
 .. _SYCL: https://www.khronos.org/sycl/

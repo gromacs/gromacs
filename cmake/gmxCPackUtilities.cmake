@@ -96,7 +96,7 @@ function (gmx_cpack_write_config)
     # Set basic package information.
     set(CPACK_PACKAGE_NAME    "gromacs")
     set(CPACK_PACKAGE_VENDOR  "gromacs.org")
-    set(CPACK_PACKAGE_CONTACT "gmx-users@gromacs.org")
+    set(CPACK_PACKAGE_CONTACT "https://gromacs.bioexcel.eu/c/gromacs-user-forum/5")
     set(CPACK_PACKAGE_DESCRIPTION_SUMMARY
         "GROMACS - a toolkit for high-performance molecular simulation")
     # Set version info.

@@ -16,7 +16,7 @@ that. However, the subsequent code maintenance is time-consuming and
 requires both "up front" and long-term commitment from you, and others
 who might not share your particular scientific enthusiasm. Please read
 this page first, and at least post on the `developer discussion forum`_.
-Looking through the `developer mailing list`_ archives might also be
+Looking through the `gmx-developers mailing list archive`_ might also be
 helpful. Sometimes we'll be able to save you a lot of time even at the
 planning stage!
 
@@ -165,9 +165,6 @@ If you have questions regarding these points, or would like feedback on your ide
 please feel free to contact us through the `developer discussion forum`_.
 If your code is of interest to the wider |Gromacs| community, we will be happy to assist you
 in the process of including it in the main source tree.
-
-.. _developer discussion forum: https://gromacs.bioexcel.eu/c/gromacs-developers/10
-.. _developer mailing list: https://mailman-1.sys.kth.se/pipermail/gromacs.org_gmx-developers/
 
 Removing functionality
 ----------------------

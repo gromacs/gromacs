@@ -104,7 +104,7 @@ Exotic Species
 So, you want to simulate a protein/nucleic acid system, but it binds various exotic metal
 ions (ruthenium?), or there is an iron-sulfur cluster essential for its functionality, or similar.
 But, (unfortunately?) there aren't parameters available for these in the force field you want
-to use. What should you do? You shoot an e-mail to the |Gromacs| users emailing list, and get referred to the FAQs.
+to use. What should you do? You shoot an e-mail to the |Gromacs| `user discussion forum`_, and get referred to the FAQs.
 
 If you really insist on simulating these in molecular dynamics, you'll need to obtain parameters
 for them, either from the literature, or by doing your own parametrization. But before doing so,
@@ -173,7 +173,7 @@ Carbon Nanotube
 Robert Johnson's Tips
 ^^^^^^^^^^^^^^^^^^^^^
 
-Taken from Robert Johnson's posts on the gmx-users mailing list.
+Taken from Robert Johnson's posts on the `gmx-users mailing list archive`_.
 
 * Be absolutely sure that the "terminal" carbon atoms are sharing a bond in the topology file.
 * Use ``periodic_molecules = yes`` in your :ref:`mdp` file for input in :ref:`gmx grompp`.

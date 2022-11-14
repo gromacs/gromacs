@@ -187,7 +187,7 @@ If the proposed change still seems important and the next steps are unclear,
 contributors with stale issues *are encouraged...*
 
 - to contact existing reviewers (or potential reviewers),
-- to participate in the developer discussion forum, and
+- to participate in the `developer discussion forum`_, and
 - to attend the biweekly teleconference to coordinate.
 
 If the future of the merge request has not become clear within a month

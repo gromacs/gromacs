@@ -2,5 +2,5 @@ GROMACS is a versatile and high-performance toolkit for molecular simulations, a
 
 The precompiled binary distributions come with threads support for efficient parallelization on multi-core workstations, but if you want to use large-scale MPI parallelization you will need to build from source on the target system due to MPI library compatibility issues.
 
-If you have problems, you can find lots of documentation at http://www.gromacs.org. You can also post to the mailing lists, but considering these are very high volume it might be a good idea to use the archive search functionality on the website first.
+If you have problems, you can find lots of documentation at http://www.gromacs.org. You can also post to the discussion forums, but considering these are very high volume it might be a good idea to use the archive search functionality on the website first.
 

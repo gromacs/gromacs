@@ -28,8 +28,9 @@ to lack of time of the contributors -- our first priority is to improve
 the software. It is worked on continuously,
 which in some cases might mean the information is not entirely correct.
 
-Comments on form and content are welcome, please send them to one of
-the mailing lists (see our `webpage`_ or this section on
+Comments on form and content are welcome, please send them to the
+`user discussion forum`_ or the `developer discussion forum`_
+(see our `webpage`_ or this section on
 how to :ref:`contribute <gmx-contribute>`), or open an issue
 on our `issue tracker`_. Corrections can also be made in the |Gromacs| git
 source repository and uploaded to the |Gromacs| `GitLab`_.

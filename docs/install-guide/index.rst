@@ -464,7 +464,7 @@ If there is a serious problem detected at this stage, then you will see
 a fatal error and some suggestions for how to overcome it. If you are
 not sure how to deal with that, please start by searching on the web
 (most computer problems already have known solutions!) and then
-consult the gmx-users mailing list. There are also informational
+consult the `user discussion forum`_. There are also informational
 warnings that you might like to take on board or not. Piping the
 output of ``cmake`` through ``less`` or ``tee`` can be
 useful, too.
@@ -626,7 +626,7 @@ an architecture with SIMD support to which |Gromacs| has not yet been
 ported, you may wish to try this option instead of the default
 ``GMX_SIMD=None``, as it can often out-perform this when the
 auto-vectorization in your compiler does a good job. And post on the
-|Gromacs| mailing lists, because |Gromacs| can probably be ported for new
+|Gromacs| `user discussion forum`_, because |Gromacs| can probably be ported for new
 SIMD architectures in a few days.
 
 CMake advanced options
@@ -1129,7 +1129,7 @@ It is expected that this will always complete successfully, and
 give few or no warnings. The CMake-time tests |Gromacs| makes on the settings
 you choose are pretty extensive, but there are probably a few cases we
 have not thought of yet. Search the web first for solutions to
-problems, but if you need help, ask on gmx-users, being sure to
+problems, but if you need help, ask on the `user discussion forum`_, being sure to
 provide as much information as possible about what you did, the system
 you are building on, and what went wrong. This may mean scrolling back
 a long way through the output of ``make`` to find the first error
@@ -1286,21 +1286,23 @@ follow these steps to find the solution:
 1. Read the installation instructions again, taking note that you
    have followed each and every step correctly.
 
-2. Search the |Gromacs| webpage_ and users emailing list for information
+2. Search the |Gromacs| webpage_ and `user discussion forum`_ for information
    on the error. Adding
-   ``site:https://mailman-1.sys.kth.se/pipermail/gromacs.org_gmx-users``
+   ``site:https://gromacs.bioexcel.eu/c/gromacs-user-forum/5``
    to a Google search may help filter better results.
+   It is also a good idea to check the `gmx-users mailing list archive`_ at
+   ``https://mailman-1.sys.kth.se/pipermail/gromacs.org_gmx-users``
 
 3. Search the internet using a search engine such as Google.
 
-4. Post to the |Gromacs| users emailing list gmx-users for
-   assistance. Be sure to give a full description of what you have
+4. Ask for assistance on the |Gromacs| `user discussion forum`_.
+   Be sure to give a full description of what you have
    done and why you think it did not work. Give details about the
-   system on which you are installing.  Copy and paste your command
+   system on which you are installing. Copy and paste your command
    line and as much of the output as you think might be relevant -
    certainly from the first indication of a problem. In particular,
    please try to include at least the header from the mdrun logfile,
-   and preferably the entire file.  People who might volunteer to help
+   and preferably the entire file. People who might volunteer to help
    you do not have time to ask you interactive detailed follow-up
    questions, so you will get an answer faster if you provide as much
    information as you think could possibly help. High quality bug
