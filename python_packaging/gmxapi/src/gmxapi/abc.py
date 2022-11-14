@@ -176,10 +176,20 @@ class Future(Resource):
     @property
     @abstractmethod
     def dtype(self) -> type:
+        """Data type for the promised result."""
         ...
 
     @abstractmethod
     def result(self) -> typing.Any:
+        """Fetch data to the caller's Context.
+
+        Returns the actual result of the operation supplying this Future.
+
+        Ensemble data are returned as a list. Scalar results or results from single
+        member ensembles are returned as scalars. If this behavior is confusing or
+        problematic for you, please reopen https://gitlab.com/gromacs/gromacs/-/issues/3179
+        or a new issue and join the discussion.
+        """
         ...
 
     @classmethod

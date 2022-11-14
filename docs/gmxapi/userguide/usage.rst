@@ -128,7 +128,7 @@ trigger execution. You can explicitly trigger execution with::
     md.run()
 
 or you can let gmxapi automatically launch work in response to the data you
-request.
+request (by calling :py:func:`~gmxapi.abc.Future.result()` on a named *output* member).
 
 The :py:func:`gmxapi.mdrun` operation produces a simulation trajectory output.
 You can use ``md.output.trajectory`` as input to other operations,
@@ -148,6 +148,43 @@ Make sure to launch the script in an MPI environment with a sufficient number
 of ranks to allow one rank per simulation.
 
 .. seealso:: :ref:`parallelism`
+
+.. _gmxapi ensemble:
+
+Input arguments and "ensemble" syntax
+=====================================
+
+When a :py:class:`list` of input is provided to a command argument that expects
+some other type, *gmxapi* generates an *ensemble* operation.
+The command is applied to each element of input,
+and the :py:func:`~Future.result` will be a list.
+When an *output* member of an ensemble operation is provided as input to another command,
+the consuming command will also be an ensemble operation.
+
+*gmxapi* uses MPI to manage ensemble members across available resources.
+It is important that the same *gmxapi* commands are called on all processes
+so that underlying collective MPI calls are made as expected.
+In other words, if you are using :py:mod:`mpi4py` in your script,
+be careful with conditional execution like the following.
+
+.. code-block:: python
+
+    if mpi4py.MPI.COMM_WORLD.Get_rank() == 0:
+        # don't put any gmxapi commands here, including method calls
+        # like `obj.result()`, unless you have an `else`
+        # to make sure the same gmxapi command runs on every rank.
+        ...
+
+For commands that already integrate well with *gmxapi's* MPI-based ensemble management
+(like :py:func:`~gmxapi.mdrun`), available resources can be split up automatically,
+and applied to run the ensemble members concurrently.
+Other operations may require further development of Resource Management
+API features for the *gmxapi* framework to most effectively apply multi-core computing resources.
+See :issue:`3718` and `the wiki
+<https://gitlab.com/gromacs/gromacs/-/wikis/subprojects/Resource-Management-2023>`__
+for more information.
+
+See also :ref:`parallelism`.
 
 .. _commandline:
 
@@ -183,6 +220,8 @@ Example::
     structurefile = solvate.output.file['-o'].result()
     if solvate.output.returncode.result() != 0:
         print(solvate.output.erroroutput.result())
+
+.. _gmxapi simulation preparation:
 
 Preparing simulations
 =====================

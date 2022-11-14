@@ -28,6 +28,59 @@ Refer to the Python source code itself for additional clarification.
     import gmxapi as gmx
     from gmxapi.data import tpr_filename
 
+Interface concepts
+==================
+
+.. py:currentmodule:: gmxapi.abc
+
+*gmxapi* commands return *references* to operations.
+Generally, the operations are collected into a graph of data flow dependencies,
+and only executed when the results are requested.
+
+.. autoclass:: OperationReference
+    :members:
+
+*gmxapi* uses a `Future` to reference an operation output or data that may not yet be available.
+
+.. autoclass:: Future
+    :members:
+
+An `OperationReference` may provide several named Futures on its *output* attribute.
+
+A `Future` may be provided directly as inputs to other *gmxapi* commands.
+*gmxapi* will execute the required operation to get the data when it is needed.
+
+To get an actual result in your Python script, you can call
+:py:func:`~Future.result()` on any *gmxapi* data reference.
+If the operation has not yet been executed, the operation (and any operation dependencies)
+will be executed immediately.
+
+You can also force an operation to run by calling its :py:func:`~OperationReference.run()` method.
+But this is not generally necessary unless your only goal is to produce output files on disk
+that are not consumed in the same script.
+
+In some cases, a `Future` can be subscripted to get a new Future representing
+a slice of the original.
+For instance, `commandline_operation` objects have a *file* output that produces
+a mapping of command line flags to output files (per the *output_files* parameter).
+This *file* output can be subscripted with a single command line option to get
+a `Future` for just one output file type.
+See :ref:`gmxapi simulation preparation` for an illustrative example.
+
+Ensemble data flow
+------------------
+
+*gmxapi* automatically generates arrays of operations and parallel data flow,
+when parallel inputs are provided to *gmxapi* command parameters.
+
+When a `Future` represents the output of an ensemble operation,
+:py:func:`~Future.result()` returns a list with elements corresponding
+to the ensemble members.
+
+It is not currently possible to get a `Future` for a specific ensemble member.
+
+See :ref:`gmxapi ensemble` for more information.
+
 gmxapi basic package
 =====================
 
