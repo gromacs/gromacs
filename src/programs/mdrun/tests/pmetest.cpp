@@ -275,15 +275,6 @@ MessageStringCollector PmeTest::getSkipMessagesIfNecessary(const CommandLine& co
                           "it targets GPU execution of FFT work, which is not supported in the "
                           "current build");
 
-        const bool            syclGpuFftForced = getenv("GMX_GPU_SYCL_USE_GPU_FFT") != nullptr;
-        static constexpr bool sc_gpuBuildSyclDpcppWithMkl = // NOLINTNEXTLINE(misc-redundant-expression)
-                (GMX_GPU_SYCL != 0) && (GMX_SYCL_DPCPP != 0) && (GMX_GPU_FFT_MKL != 0);
-        static constexpr bool sc_gpuBuildPrefersMixedModePme = sc_gpuBuildSyclDpcppWithMkl; // Issue #4219
-
-        messages.appendIf(commandLineTargetsPmeFftOnGpu && !syclGpuFftForced && sc_gpuBuildPrefersMixedModePme,
-                          "it targets GPU execution of FFT work, which is not stable with MKL "
-                          "(use GMX_GPU_SYCL_USE_GPU_FFT=1 to override)");
-
         std::string errorMessage;
         messages.appendIf(!pme_gpu_supports_build(&errorMessage), errorMessage);
         // A check on whether the .tpr is supported for PME on GPUs is
