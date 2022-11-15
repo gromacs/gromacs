@@ -310,6 +310,45 @@ static inline float interpolateCoulombForceR(const sycl::global_ptr<const float>
     return lerp(left, right, fraction); // TODO: sycl::mix
 }
 
+#if defined(__SYCL_DEVICE_ONLY__) && defined(__AMDGCN__)
+/*! \brief Reduce c_clSize j-force components using AMD DPP instruction and atomically accumulate into a_f.
+ *
+ * c_clSize consecutive threads hold the force components of a j-atom which we
+ * reduced in log2(cl_Size) steps using shift and atomically accumulate them into \p a_f.
+ *
+ * Note: This causes massive amount of spills with the tabulated kernel on gfx803 using ROCm 5.3.
+ * We don't disable it only for the tabulated kernel as the analytical is the default anyway.
+ */
+static inline void reduceForceJAmdDpp(Float3 f, const int tidxi, const int aidx, sycl::global_ptr<Float3> a_f)
+{
+    static_assert(c_clSize == 8);
+
+    f[0] += amdDppUpdateShfl<float, /* row_shl:1 */ 0x101>(f[0]);
+    f[1] += amdDppUpdateShfl<float, /* row_shr:1 */ 0x111>(f[1]);
+    f[2] += amdDppUpdateShfl<float, /* row_shl:1 */ 0x101>(f[2]);
+
+    if (tidxi & 1)
+    {
+        f[0] = f[1];
+    }
+
+    f[0] += amdDppUpdateShfl<float, /* row_shl:2 */ 0x102>(f[0]);
+    f[2] += amdDppUpdateShfl<float, /* row_shr:2 */ 0x112>(f[2]);
+
+    if (tidxi & 2)
+    {
+        f[0] = f[2];
+    }
+
+    f[0] += amdDppUpdateShfl<float, /* row_shl:4 */ 0x104>(f[0]);
+
+    if (tidxi < 3)
+    {
+        atomicFetchAdd(a_f[aidx][tidxi], f[0]);
+    }
+}
+#endif
+
 /*! \brief Reduce c_clSize j-force components using shifts and atomically accumulate into a_f.
  *
  * c_clSize consecutive threads hold the force components of a j-atom which we
@@ -448,7 +487,11 @@ static inline void reduceForceJ(sycl::local_ptr<float>   sm_buf,
     }
     else
     {
+#if defined(__SYCL_DEVICE_ONLY__) && defined(__AMDGCN__)
+        reduceForceJAmdDpp(f, tidxi, aidx, a_f);
+#else
         reduceForceJShuffle(f, itemIdx, tidxi, aidx, a_f);
+#endif
     }
 }
 
