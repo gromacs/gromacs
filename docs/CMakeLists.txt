@@ -171,7 +171,7 @@ if (SPHINX_FOUND)
         reference-manual/references.rst
         # PNG formated plot files that don't need to be converted into PNG
         # for the web page.
-	reference-manual/plots/GMX_logos/gmx_falcon_blue.png
+        reference-manual/plots/GMX_logos/gmx_falcon_blue.png
         reference-manual/plots/adress.png
         reference-manual/plots/plotje.png
         reference-manual/plots/xvgr.png
@@ -366,7 +366,7 @@ if (SPHINX_FOUND)
         release-notes/index.rst
         release-notes/2022/2022.1.rst
         release-notes/2022/2022.2.rst
-	release-notes/2022/2022.3.rst
+        release-notes/2022/2022.3.rst
         release-notes/2022/2022.4.rst
         release-notes/2022/major/highlights.rst
         release-notes/2022/major/features.rst
@@ -378,6 +378,7 @@ if (SPHINX_FOUND)
         release-notes/2022/major/portability.rst
         release-notes/2022/major/miscellaneous.rst
         release-notes/2022/major/api.rst
+        release-notes/2021/2021.6.rst
         release-notes/2021/2021.5.rst
         release-notes/2021/2021.4.rst
         release-notes/2021/2021.3.rst
