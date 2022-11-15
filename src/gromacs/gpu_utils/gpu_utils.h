@@ -133,4 +133,9 @@ void setupGpuDevicePeerAccess(const std::vector<int>& CUDA_FUNC_ARGUMENT(gpuIdsT
  */
 bool decideGpuTimingsUsage();
 
+/*! \brief Check for API errors to avoid propagating these across e.g. MD steps.
+ */
+CUDA_FUNC_QUALIFIER
+void checkPendingDeviceErrorBetweenSteps() CUDA_FUNC_TERM;
+
 #endif
