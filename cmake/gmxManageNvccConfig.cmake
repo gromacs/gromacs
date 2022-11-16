@@ -103,8 +103,11 @@ if((_cuda_nvcc_executable_or_flags_changed OR CUDA_HOST_COMPILER_CHANGED OR NOT 
         message(STATUS "${CUDA_NVCC_EXECUTABLE} standard error:  '${_cuda_test_err}'")
         if(${_cuda_test_err} MATCHES "nsupported")
             message(FATAL_ERROR "NVCC/C++ compiler combination does not seem to be supported. CUDA frequently does not support the latest versions of the host compiler, so you might want to try an earlier C++ compiler version and make sure your CUDA compiler and driver are as recent as possible. Set the GMX_NVCC_WORKS CMake cache variable to bypass this check if you know what you are doing.")
+        elseif(CMAKE_CXX_COMPILER_ID MATCHES "GNU" AND CMAKE_CXX_COMPILER_VERSION VERSION_EQUAL 11.2 AND CUDA_VERSION VERSION_GREATER 11.4 AND CUDA_VERSION VERSION_LESS 11.7) # Issue #4574, #4641
+            # Above, we should be checking for VERSION_LESS 11.6.2, but CUDA_VERSION is only "major.minor"
+            message(FATAL_ERROR "CUDA versions 11.5-11.6.1 are known to be incompatible with some GCC 11.x. Use a different GCC or update your CUDA installation to at least CUDA 11.6.2")
         else()
-            message(FATAL_ERROR "CUDA compiler does not seem to be functional. Set the GMX_NVCC_WORKS CMake cache variable to bypass this check if you know what you are doing.")
+            message(FATAL_ERROR "CUDA compiler does not seem to be functional or is not compatible with the host compiler. Set the GMX_NVCC_WORKS CMake cache variable to bypass this check if you know what you are doing.")
         endif()
     elseif(NOT GMX_CUDA_TEST_COMPILER_QUIETLY)
         message(STATUS "Check for working NVCC/C++ compiler combination - works")
