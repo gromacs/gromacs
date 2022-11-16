@@ -368,6 +368,7 @@ if (SPHINX_FOUND)
         release-notes/2022/2022.2.rst
         release-notes/2022/2022.3.rst
         release-notes/2022/2022.4.rst
+        release-notes/2022/2022.5.rst
         release-notes/2022/major/highlights.rst
         release-notes/2022/major/features.rst
         release-notes/2022/major/performance.rst
