@@ -283,15 +283,16 @@ void launchGpuKernel(void (*kernel)(Args...),
 {
     dim3 blockSize(config.blockSize[0], config.blockSize[1], config.blockSize[2]);
     dim3 gridSize(config.gridSize[0], config.gridSize[1], config.gridSize[2]);
-    cudaLaunchKernel(reinterpret_cast<void*>(kernel),
-                     gridSize,
-                     blockSize,
-                     const_cast<void**>(kernelArgs.data()),
-                     config.sharedMemorySize,
-                     deviceStream.stream());
-
-    gmx::ensureNoPendingDeviceError("GPU kernel (" + std::string(kernelName)
-                                    + ") failed to launch.");
+    auto stat = cudaLaunchKernel(reinterpret_cast<void*>(kernel),
+                                 gridSize,
+                                 blockSize,
+                                 const_cast<void**>(kernelArgs.data()),
+                                 config.sharedMemorySize,
+                                 deviceStream.stream());
+    GMX_RELEASE_ASSERT(stat == cudaSuccess,
+                       ("GPU kernel (" + std::string(kernelName)
+                        + ") failed to launch: " + gmx::getDeviceErrorString(stat))
+                               .c_str());
 }
 
 #endif
