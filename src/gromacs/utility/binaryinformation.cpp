@@ -289,6 +289,24 @@ std::string getGpuFftDescriptionString()
     }
 };
 
+/*! \brief Construct a string that describes the library (if any)
+ * that provides multi-GPU FFT support to this build */
+std::string getMultiGpuFftDescriptionString()
+{
+    if (GMX_USE_Heffte)
+    {
+        return "HeFFTe with cuFFT backend";
+    }
+    else if (GMX_USE_cuFFTMp)
+    {
+        return "cuFFTMp";
+    }
+    else
+    {
+        return "none";
+    }
+};
+
 void gmx_print_version_info(gmx::TextWriter* writer)
 {
     writer->writeLine(formatString("GROMACS version:    %s", gmx_version()));
@@ -352,6 +370,7 @@ void gmx_print_version_info(gmx::TextWriter* writer)
     writer->writeLine(formatString("SIMD instructions:  %s", GMX_SIMD_STRING));
     writer->writeLine(formatString("CPU FFT library:    %s", getCpuFftDescriptionString().c_str()));
     writer->writeLine(formatString("GPU FFT library:    %s", getGpuFftDescriptionString().c_str()));
+    writer->writeLine(formatString("Multi-GPU FFT:      %s", getMultiGpuFftDescriptionString().c_str()));
 #if GMX_TARGET_X86
     writer->writeLine(formatString("RDTSCP usage:       %s", GMX_USE_RDTSCP ? "enabled" : "disabled"));
 #endif
