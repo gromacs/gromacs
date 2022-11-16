@@ -1,0 +1,13 @@
+# The following packages should be sufficient to build the GROMACS web docs
+# hosted at https://manual.gromacs.org/.
+# See https://manual.gromacs.org/current/dev-manual/documentation-generation.html
+# for more information on building the documentation.
+breathe
+furo
+Pygments>=2.2.0
+Sphinx>=4.0
+sphinx-argparse
+sphinx-copybutton
+sphinx_inline_tabs
+sphinxcontrib-autoprogram
+sphinxcontrib-plantuml>=0.14

@@ -849,6 +849,7 @@ def prepare_venv(version: packaging.version.Version) -> typing.Sequence[str]:
     commands.append(f"{venv_path}/bin/python -m pip install --upgrade pip setuptools")
     # Install dependencies for building and testing gmxapi Python package.
     # WARNING: Please keep this list synchronized with python_packaging/gmxapi/requirements.txt
+    #  and docs/requirements.txt
     # TODO: Get requirements.txt from an input argument.
     commands.append(
         f"""{venv_path}/bin/python -m pip install --upgrade \

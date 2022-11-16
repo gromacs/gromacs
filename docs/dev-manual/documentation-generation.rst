@@ -31,6 +31,13 @@ You need to enable at least some of the following CMake options:
   to build the ``man`` target manually before installing). See
   :cmake:`GMX_BUILD_HELP`.
 
+To include the full Python package documentation with the ``webpage``
+CMake target (see below), also configure CMake with ``GMX_PYTHON_PACKAGE=ON``,
+and install Python package dependencies from
+:file:`python_packaging/gmxapi/requirements.txt`::
+
+    pip install -r python_packaging/gmxapi/requirements.txt
+
 Some documentation cannot be built when cross-compiling, as it
 requires executing the ``gmx`` binary.
 
@@ -61,6 +68,7 @@ Needed build tools
 ^^^^^^^^^^^^^^^^^^
 
 The following tools are used in building parts of the documentation.
+Make sure they are installed *before* configuring the build system with CMake.
 
 Doxygen
   `Doxygen <http://www.doxygen.org>`_ is used to extract documentation from
@@ -107,6 +115,9 @@ Sphinx
   `Sphinx <http://sphinx-doc.org/>`_; at least version |EXPECTED_SPHINX_VERSION| is used
   for building some parts of the documentation from reStructuredText
   source files.
+  To install an appropriate version of ``sphinx-build`` and other required Python
+  packages, you can use the :file:`requirements.txt` file in the :file:`docs`
+  repository directory. E.g. :command:`pip install -r docs/requirements.txt`
 
 LaTeX
   Also requires ImageMagick for converting graphics file formats.

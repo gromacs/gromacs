@@ -402,8 +402,9 @@ Other optional build components
   ``-DGMX_USE_LMFIT=none``.
 * zlib is used by TNG for compressing some kinds of trajectory data
 * Building the |Gromacs| documentation is optional, and requires
-  ImageMagick, pdflatex, bibtex, doxygen, python 3.6, sphinx
-  |EXPECTED_SPHINX_VERSION|, and pygments.
+  and other software.
+  Refer to https://manual.gromacs.org/current/dev-manual/documentation-generation.html
+  or the ``docs/dev-manual/documentation-generation.rst`` file in the sources.
 * The |Gromacs| utility programs often write data files in formats
   suitable for the Grace plotting tool, but it is straightforward to
   use these files in other plotting programs, too.
