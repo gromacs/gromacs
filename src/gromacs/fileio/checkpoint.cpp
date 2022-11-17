@@ -1752,7 +1752,8 @@ static int doCptPullCoordHist(XDR* xd, PullCoordinateHistory* pullCoordHist, FIL
               | enumValueToBitMask(StatePullCoordEntry::DR01Sum)
               | enumValueToBitMask(StatePullCoordEntry::DR23Sum)
               | enumValueToBitMask(StatePullCoordEntry::DR45Sum)
-              | enumValueToBitMask(StatePullCoordEntry::FScalarSum));
+              | enumValueToBitMask(StatePullCoordEntry::FScalarSum)
+              | enumValueToBitMask(StatePullCoordEntry::DynaxSum));
 
     using StateFlags = gmx::EnumerationArray<StatePullCoordEntry, bool>;
     for (auto i = StateFlags::keys().begin(); (i != StateFlags::keys().end() && ret == 0); i++)
@@ -1851,14 +1852,14 @@ static int doCptPullHist(XDR* xd, gmx_bool bRead, int fflags, PullHistory* pullH
     }
 
     using StateFlags = gmx::EnumerationArray<StatePullEntry, bool>;
-    for (auto i = StateFlags::keys().begin(); (i != StateFlags::keys().end() && ret == 0); i++)
+    for (auto i = StateFlags::keys().begin(); i != StateFlags::keys().end(); i++)
     {
-        if (fflags & (1 << enumValueToBitMask(*i)))
+        if (fflags & enumValueToBitMask(*i))
         {
             switch (*i)
             {
                 case StatePullEntry::NumCoordinates:
-                    ret = do_cpte_int(xd, *i, fflags, &pullHistoryNumCoordinates, list);
+                    do_cpt_int_err(xd, enumValueToString(*i), &pullHistoryNumCoordinates, list);
                     break;
                 case StatePullEntry::NumGroups:
                     do_cpt_int_err(xd, enumValueToString(*i), &pullHistoryNumGroups, list);

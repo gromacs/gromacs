@@ -61,7 +61,7 @@ class DeviceStreamManager;
 }
 
 /*! \brief Called on the nodes that do PME exclusively */
-int gmx_pmeonly(gmx_pme_t*                      pme,
+int gmx_pmeonly(gmx_pme_t**                     pme,
                 const t_commrec*                cr,
                 t_nrnb*                         mynrnb,
                 gmx_wallcycle*                  wcycle,

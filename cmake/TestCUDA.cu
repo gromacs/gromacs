@@ -32,6 +32,12 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
+
+/* GCC 11.2 and CUDA 11.5 from Ubuntu 22.04 repos have troubles with some
+   standard headers. Refs #4574, #4641. */
+#include <algorithm>
+#include <stdio.h>
+
 __global__ void kernel (void) {}
 
 int
