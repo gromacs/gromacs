@@ -234,6 +234,11 @@ if(GMX_SYCL_HIPSYCL)
         set(_enable_rdna_support_automatically ON)
     else()
         set(_enable_rdna_support_automatically OFF)
+        # We assume that any GCN2-5 architecture (gfx7/8) and CDNA1-3 (gfx9 series) up until the time of writing of this conditional is 64-wide
+        if (${HIPSYCL_TARGETS} MATCHES "gfx[7-8][0-9][0-9]|gfx9[0-4][0-9ac]")
+            set(GMX_GPU_NB_DISABLE_CLUSTER_PAIR_SPLIT ON CACHE BOOL "Disable NBNXM GPU cluster pair splitting. Only supported with SYCL and 64-wide GPU architectures (like AMD GCN/CDNA).")
+            mark_as_advanced(GMX_GPU_NB_DISABLE_CLUSTER_PAIR_SPLIT)
+        endif()
     endif()
     set(GMX_HIPSYCL_ENABLE_AMD_RDNA_SUPPORT ${_enable_rdna_support_automatically} CACHE BOOL
         "Enable compiling kernels for AMD RDNA GPUs (gfx1xxx). When OFF, only CDNA and GCN are supported. Only used with hipSYCL.")
