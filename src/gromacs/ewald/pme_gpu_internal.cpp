@@ -862,6 +862,7 @@ static gmx::FftBackend getFftBackend(const PmeGpu* pmeGpu)
         }
         else
         {
+            GMX_RELEASE_ASSERT(GMX_GPU_FFT_CLFFT, "Only clFFT and VkFFT are supported with OpenCL");
             return gmx::FftBackend::Ocl;
         }
     }

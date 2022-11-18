@@ -53,15 +53,11 @@ if (GMX_FFT_MKL)
     gmx_add_libgromacs_sources(fft_mkl.cpp)
 endif()
 if(GMX_USE_Heffte)
-    gmx_add_libgromacs_sources(
-        gpu_3dfft_heffte.cpp
-        )
+    gmx_add_libgromacs_sources(gpu_3dfft_heffte.cpp)
 endif()
 if (GMX_GPU_CUDA)
     if(GMX_USE_cuFFTMp)
-        gmx_add_libgromacs_sources(
-            gpu_3dfft_cufftmp.cpp
-            )
+        gmx_add_libgromacs_sources(gpu_3dfft_cufftmp.cpp)
     endif()
     gmx_add_libgromacs_sources(
         # CUDA-specific sources
@@ -83,14 +79,12 @@ if (GMX_GPU_CUDA)
 elseif (GMX_GPU_OPENCL)
     if (GMX_GPU_FFT_VKFFT)
         gmx_add_libgromacs_sources(
-            # OpenCL-specific sources
             gpu_3dfft_ocl_vkfft.cpp
             gpu_3dfft_impl.cpp
             gpu_3dfft.cpp
             )
-    else()
+    elseif(GMX_GPU_FFT_CLFFT)
         gmx_add_libgromacs_sources(
-            # OpenCL-specific sources
             gpu_3dfft_ocl.cpp
             gpu_3dfft_impl.cpp
             gpu_3dfft.cpp

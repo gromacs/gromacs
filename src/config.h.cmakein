@@ -64,21 +64,25 @@
 /* Use built in fftpack FFT library */
 #cmakedefine01 GMX_FFT_FFTPACK
 
-/* Use VKFFT Library */
+/* Use cuFFT library for FFT on GPUs */
+#cmakedefine01 GMX_GPU_FFT_CUFFT
+/* Use clFFT library for FFT on GPUs */
+#cmakedefine01 GMX_GPU_FFT_CLFFT
+/* Use VkFFT library for FFT on GPUs */
 #cmakedefine01 GMX_GPU_FFT_VKFFT
+/* Use MKL library for FFT on GPUs */
+#cmakedefine01 GMX_GPU_FFT_MKL
+/* Use rocFFT library for FFT on GPUs */
+#cmakedefine01 GMX_GPU_FFT_ROCFFT
 
 /* VKFFT Library version */
-
 #define vkfft_VERSION "@vkfft_VERSION@"
-
-/* Use rocFFT Library */
-#cmakedefine01 GMX_GPU_FFT_ROCFFT
 
 /* rocFFT version */
 #define rocfft_VERSION "@rocfft_VERSION@"
 
-/* Use oneMKL Library for GPU FFT */
-#cmakedefine01 GMX_GPU_FFT_MKL
+/* HeFFTe version */
+#define Heffte_VERSION "@Heffte_VERSION@"
 
 /* Target platform is x86 or x86_64 */
 #cmakedefine01 GMX_TARGET_X86

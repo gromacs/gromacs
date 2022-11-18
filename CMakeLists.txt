@@ -252,14 +252,62 @@ mark_as_advanced(GMX_DISABLE_FFTW_MEASURE)
 
 gmx_dependent_option(
     GMX_USE_HEFFTE
-    "Use HeFFTe for FFT support. Used with CUDA backend"
+    "Use HeFFTe for distributed FFT support. Used with CUDA backend"
     OFF
     "GMX_GPU STREQUAL CUDA;GMX_MPI")
 gmx_dependent_option(
     GMX_USE_CUFFTMP
-    "Use cuFFTMp for FFT support. Used with CUDA backend"
+    "Use cuFFTMp for distributed FFT support. Used with CUDA backend"
     OFF
     "GMX_GPU STREQUAL CUDA;GMX_MPI")
+
+# Here the default GPU FFT library is set up depending
+# on the build configuration. Other choices are
+# available, these are just the defaults.
+#
+# =================+======================================
+# Configuration    |  Default GPU FFT library
+# =================+======================================
+# CUDA             | cuFFT
+# OpenCL           | VkFFT or clFFT according to toolchain
+# SYCL via hipSYCL | VkFFT
+# SYCL via DPCPP   | MKL
+# =================+======================================
+if (GMX_GPU)
+    if (GMX_GPU STREQUAL CUDA)
+        set(GMX_GPU_FFT_LIBRARY_DEFAULT "cuFFT")
+    elseif(GMX_GPU STREQUAL OPENCL)
+        if (APPLE OR MSVC)
+            set(GMX_GPU_FFT_LIBRARY_DEFAULT "VkFFT")
+        else()
+            set(GMX_GPU_FFT_LIBRARY_DEFAULT "clFFT")
+        endif()
+    elseif(GMX_GPU STREQUAL SYCL)
+        if(GMX_SYCL_HIPSYCL)
+            set(GMX_GPU_FFT_LIBRARY_DEFAULT "VkFFT")
+        else()
+            set(GMX_GPU_FFT_LIBRARY_DEFAULT "MKL")
+        endif()
+    endif()
+
+    gmx_option_multichoice(
+        GMX_GPU_FFT_LIBRARY
+        "GPU FFT library"
+        "${GMX_GPU_FFT_LIBRARY_DEFAULT}"
+        cuFFT clFFT VkFFT MKL rocFFT none)
+    # The validity of chosen option is later verified by the selected backend
+
+    foreach (_gpu_fft_library cuFFT clFFT VkFFT MKL rocFFT)
+        string(TOUPPER "${_gpu_fft_library}" _gpu_fft_library_upper)
+        if (GMX_GPU_FFT_LIBRARY STREQUAL ${_gpu_fft_library_upper})
+            message(STATUS "Selected GPU FFT library - ${_gpu_fft_library}")
+            set(_value TRUE)
+        else()
+            set(_value FALSE)
+        endif()
+        set("GMX_GPU_FFT_${_gpu_fft_library_upper}" "${_value}" CACHE INTERNAL "Use ${_gpu_fft_library} library for FFTs on GPUs")
+    endforeach()
+endif()
 
 gmx_dependent_cache_variable(GMX_SIMD_REF_FLOAT_WIDTH  "Reference SIMD single precision width" STRING "4" "GMX_SIMD STREQUAL REFERENCE")
 gmx_dependent_cache_variable(GMX_SIMD_REF_DOUBLE_WIDTH "Reference SIMD double precision width" STRING "2" "GMX_SIMD STREQUAL REFERENCE")
@@ -697,6 +745,10 @@ endif()
 
 if(CYGWIN)
     set(GMX_CYGWIN 1)
+endif()
+
+if(GMX_GPU_CUDA AND NOT GMX_GPU_FFT_CUFFT)
+    message(FATAL_ERROR "The CUDA build only supports cuFFT GPU FFT library")
 endif()
 
 if(GMX_USE_HEFFTE)

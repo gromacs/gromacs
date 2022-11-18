@@ -31,9 +31,12 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out https://www.gromacs.org.
 
-if (GMX_GPU_FFT_VKFFT AND NOT MSVC)
+if (GMX_GPU_FFT_VKFFT)
   # Suppress warning that first appeared when compiling tests on macOS with x86.
-  set_source_files_properties(pmetestcommon.cpp PROPERTIES COMPILE_OPTIONS "-Wno-unused-parameter")
+  check_cxx_compiler_flag("-Wno-unused-parameter" HAS_NO_UNUSED_PARAMETER)
+  if(HAS_NO_UNUSED_PARAMETER)
+    set_source_files_properties(pmetestcommon.cpp PROPERTIES COMPILE_OPTIONS "-Wno-unused-parameter")
+  endif()
 endif()
 
 gmx_add_unit_test(EwaldUnitTests ewald-test

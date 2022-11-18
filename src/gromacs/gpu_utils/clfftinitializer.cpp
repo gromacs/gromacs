@@ -50,7 +50,7 @@
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/stringutil.h"
 
-#if GMX_GPU_OPENCL && !GMX_GPU_FFT_VKFFT
+#if GMX_GPU_OPENCL && GMX_GPU_FFT_CLFFT
 #    include <clFFT.h>
 #endif
 
@@ -60,7 +60,7 @@ namespace gmx
 namespace
 {
 
-#if GMX_GPU_OPENCL && !GMX_GPU_FFT_VKFFT
+#if GMX_GPU_OPENCL && GMX_GPU_FFT_CLFFT
 /*! \brief The clFFT library may only be initialized once per process,
  * and this is orchestrated by this shared value and mutex.
  *
@@ -76,7 +76,7 @@ std::mutex g_clfftMutex;
 
 ClfftInitializer::ClfftInitializer()
 {
-#if GMX_GPU_OPENCL && !GMX_GPU_FFT_VKFFT
+#if GMX_GPU_OPENCL && GMX_GPU_FFT_CLFFT
     std::lock_guard<std::mutex> guard(g_clfftMutex);
     clfftSetupData              fftSetup;
     int                         initErrorCode = clfftInitSetupData(&fftSetup);
@@ -97,7 +97,7 @@ ClfftInitializer::ClfftInitializer()
 
 ClfftInitializer::~ClfftInitializer()
 {
-#if GMX_GPU_OPENCL && !GMX_GPU_FFT_VKFFT
+#if GMX_GPU_OPENCL && GMX_GPU_FFT_CLFFT
     std::lock_guard<std::mutex> guard(g_clfftMutex);
     if (g_clfftInitialized)
     {

@@ -158,7 +158,7 @@ Gpu3dFft::Gpu3dFft(FftBackend           backend,
                                                              realGrid,
                                                              complexGrid);
             break;
-#    else
+#    elif GMX_GPU_FFT_CLFFT
         case FftBackend::Ocl:
             impl_ = std::make_unique<Gpu3dFft::ImplOcl>(allocateRealGrid,
                                                         comm,

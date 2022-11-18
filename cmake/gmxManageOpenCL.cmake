@@ -66,11 +66,6 @@ if (APPLE AND ${CMAKE_SYSTEM_VERSION} VERSION_LESS "14.4")
         message(WARNING "OS X prior to version 10.10.4 produces incorrect AMD OpenCL code at runtime. You will not be able to use AMD GPUs on this host unless you upgrade your operating system.")
 endif()
 
-if (APPLE)
-    # VkFFT is required for OpenCL acceleration; clFFT makes the shader compiler silently fail at runtime.
-    set(GMX_GPU_FFT_VKFFT ON)
-endif()
-
 if (GMX_GPU_FFT_VKFFT)
     # Use VkFFT with OpenCL back end as header-only library
     set(vkfft_VERSION "1.2.26-b15cb0ca3e884bdb6c901a12d87aa8aadf7637d8")
@@ -87,6 +82,8 @@ if (GMX_GPU_FFT_VKFFT)
     gmx_target_interface_warning_suppression(VkFFT "-Wno-zero-as-null-pointer-constant" HAS_WARNING_NO_ZERO_AS_NULL_POINTER_CONSTANT)
     gmx_target_interface_warning_suppression(VkFFT "-Wno-unused-but-set-variable" HAS_WARNING_NO_UNUSED_BUT_SET_VARIABLE)
     gmx_target_interface_warning_suppression(VkFFT "-Wno-sign-compare" HAS_WARNING_NO_SIGN_COMPARE)
+elseif(NOT GMX_GPU_FFT_CLFFT)
+    message(FATAL_ERROR "In the OpenCL build, only -DGMX_GPU_FFT_LIBRARY=VkFFT and -DGMX_GPU_FFT_LIBRARY=clFFT are supported")
 endif()
 
 add_definitions(${OpenCL_DEFINITIONS})

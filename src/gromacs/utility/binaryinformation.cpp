@@ -243,51 +243,40 @@ std::string getGpuFftDescriptionString()
 {
     if (GMX_GPU)
     {
-        if (GMX_GPU_CUDA)
+        if (GMX_GPU_FFT_CUFFT)
         {
             return "cuFFT";
         }
-        else if (GMX_GPU_OPENCL)
+        else if (GMX_GPU_FFT_CLFFT)
         {
-            if (GMX_GPU_FFT_VKFFT)
-            {
-                return std::string("VkFFT ") + vkfft_VERSION;
-            }
-            else
-            {
-                return "clFFT";
-            }
+            return "clFFT";
         }
-        else if (GMX_GPU_SYCL)
+        else if (GMX_GPU_FFT_VKFFT)
         {
-            if (GMX_GPU_FFT_MKL)
-            {
-                return describeMkl();
-            }
-            else if (GMX_GPU_FFT_ROCFFT)
-            {
-                return std::string("rocFFT ") + rocfft_VERSION;
-            }
-            else if (GMX_GPU_FFT_VKFFT)
-            {
-                return std::string("VkFFT ") + vkfft_VERSION;
-            }
-            else
-            {
-                return "unknown";
-            }
+            return std::string("VkFFT ") + vkfft_VERSION;
+        }
+        else if (GMX_GPU_FFT_MKL)
+        {
+            return describeMkl();
+        }
+        else if (GMX_GPU_FFT_ROCFFT)
+        {
+            return std::string("rocFFT ") + rocfft_VERSION;
         }
         else
         {
-            GMX_RELEASE_ASSERT(false, "Unknown GPU configuration");
-            return "impossible";
+            /* Some SYCL builds (e.g., Intel DPC++ for AMD devices) have no support for GPU FFT,
+             * but that's a corner case not intended for general users */
+            GMX_RELEASE_ASSERT(GMX_GPU_SYCL,
+                               "Only the SYCL build can function without a GPU FFT library");
+            return "none / unknown";
         }
     }
     else
     {
         return "none";
     }
-};
+}
 
 /*! \brief Construct a string that describes the library (if any)
  * that provides multi-GPU FFT support to this build */
@@ -295,7 +284,7 @@ std::string getMultiGpuFftDescriptionString()
 {
     if (GMX_USE_Heffte)
     {
-        return "HeFFTe with cuFFT backend";
+        return gmx::formatString("HeFFTe %s with cuFFT backend", Heffte_VERSION);
     }
     else if (GMX_USE_cuFFTMp)
     {

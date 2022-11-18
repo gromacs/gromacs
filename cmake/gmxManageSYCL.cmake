@@ -49,6 +49,8 @@ endif()
 
 include(gmxFindFlagsForSource)
 
+set(_sycl_has_valid_fft FALSE)
+
 # Return all current CMake variables with name starting with "hipsycl" (case-insensitive).
 # Result is in the form of a list of flags ("-Dfoo=bar;-Dbaz=true").
 # Semicolons in values are escaped (needed for HIPSYCL_TARGETS).
@@ -227,6 +229,7 @@ if(GMX_SYCL_HIPSYCL)
             find_package(CUDAToolkit REQUIRED)
             target_link_libraries(VkFFT INTERFACE CUDA::cuda_driver CUDA::nvrtc)
         endif()
+        set(_sycl_has_valid_fft TRUE)
     endif()
 
     # Try to detect if we need RDNA support. Not very robust, but should cover the most common use.
@@ -244,7 +247,7 @@ if(GMX_SYCL_HIPSYCL)
         "Enable compiling kernels for AMD RDNA GPUs (gfx1xxx). When OFF, only CDNA and GCN are supported. Only used with hipSYCL.")
 
     # Find a suitable rocFFT when hipSYCL is targeting AMD devices
-    if (GMX_HIPSYCL_HAVE_HIP_TARGET)
+    if (GMX_HIPSYCL_HAVE_HIP_TARGET AND GMX_GPU_FFT_ROCFFT)
         # For consistency, we prefer to find rocFFT as part of the
         # default ROCm distribution that supports the version of
         # hipSYCL that is being used. Other installations of rocFFT
@@ -299,15 +302,13 @@ if(GMX_SYCL_HIPSYCL)
         endif()
 
 
-        if(NOT GMX_GPU_FFT_VKFFT)
-            # Find rocFFT, either from the ROCm used by hipSYCL, or as otherwise found on the system
-            set(GMX_GPU_FFT_ROCFFT TRUE CACHE INTERNAL "Use rocFFT library for FFT on GPUs")
-            find_package(rocfft ${FIND_ROCFFT_QUIETLY} CONFIG HINTS ${HIPSYCL_SYCLCC_ROCM_PATH} PATHS /opt/rocm)
-            if (NOT rocfft_FOUND)
-                message(FATAL_ERROR "rocFFT is required for the hipSYCL build, but was not found")
-            endif()
-            set(FIND_ROCFFT_QUIETLY "QUIET")
+        # Find rocFFT, either from the ROCm used by hipSYCL, or as otherwise found on the system
+        find_package(rocfft ${FIND_ROCFFT_QUIETLY} CONFIG HINTS ${HIPSYCL_SYCLCC_ROCM_PATH} PATHS /opt/rocm)
+        if (NOT rocfft_FOUND)
+            message(FATAL_ERROR "rocFFT is required for the hipSYCL build, but was not found")
         endif()
+        set(FIND_ROCFFT_QUIETLY "QUIET")
+        set(_sycl_has_valid_fft TRUE)
     endif()
 else()
     if(WIN32)
@@ -429,8 +430,6 @@ else()
 
     include(gmxManageFFTLibraries)
 
-    set(GMX_GPU_FFT_MKL "${GMX_FFT_MKL}" CACHE BOOL "Use Intel oneMKL for GPU FFT")
-
     if(GMX_GPU_FFT_MKL)
         list(APPEND GMX_EXTRA_LIBRARIES "mkl_sycl;OpenCL")
         set(CMAKE_REQUIRED_FLAGS "${SYCL_TOOLCHAIN_CXX_FLAGS}")
@@ -449,6 +448,7 @@ int main() {
         if (NOT CAN_LINK_SYCL_MKL)
             message(FATAL_ERROR "Cannot link mkl_sycl. Make sure the MKL and compiler versions are compatible.")
         endif()
+        set(_sycl_has_valid_fft TRUE)
     endif()
 
     # Add function wrapper similar to the one used by ComputeCPP and hipSYCL
@@ -474,28 +474,16 @@ int main() {
     endfunction(add_sycl_to_target)
 endif()
 
-set(_enabled_sycl_fft_libraries)
-if (GMX_GPU_FFT_MKL)
-    list(APPEND _enabled_sycl_fft_libraries MKL)
-endif()
-if (GMX_GPU_FFT_ROCFFT)
-    list(APPEND _enabled_sycl_fft_libraries ROCFFT)
-endif()
-if (GMX_GPU_FFT_VKFFT)
-    list(APPEND _enabled_sycl_fft_libraries VKFFT)
-endif()
-list(LENGTH _enabled_sycl_fft_libraries _num_enabled_sycl_fft_libraries)
-if (${_num_enabled_sycl_fft_libraries} GREATER 1)
-    message(FATAL_ERROR "Multiple GPU FFT libraries enabled in the same build: ${_enabled_sycl_fft_libraries}. Please disable some by setting -DGMX_GPU_FFT_<library>=OFF")
-elseif(${_num_enabled_sycl_fft_libraries} EQUAL 1)
-    message(STATUS "Selected GPU FFT library: ${_enabled_sycl_fft_libraries}")
-elseif(NOT DEFINED ENV{GITLAB_CI}) # Don't warn in CI builds
+if(NOT ${_sycl_has_valid_fft} AND NOT GMX_GPU_FFT_LIBRARY STREQUAL "NONE")
     set(_hint "")
-    # We require either rocFFT or VkFFT for hipSYCL+HIP build, but for other combinations FFT is optional
-    if (GMX_SYCL_HIPSYCL AND GMX_HIPSYCL_HAVE_CUDA_TARGET)
-        set(_hint " Consider setting -DGMX_GPU_FFT_VKFFT=ON.")
-    elseif (NOT GMX_SYCL_HIPSYCL)
-        set(_hint " Consider installing MKL and using -DGMX_FFT_LIBRARY=MKL (Intel GPUs only).")
+    if (GMX_GPU_FFT_CUFFT OR GMX_GPU_FFT_CLFFT)
+        set(_hint " It is not supported with SYCL.")
+    elseif (GMX_SYCL_HIPSYCL AND GMX_GPU_FFT_MKL)
+        set(_hint " MKL is only supported with Intel DPC++ compiler, not with hipSYCL")
     endif()
-    message(WARNING "Building SYCL version without GPU FFT library. GPU FFT is disabled, which is not good for performance.${_hint}")
+    message(FATAL_ERROR "The selected GPU FFT library ${GMX_GPU_FFT_LIBRARY} is not compatible.${_hint}")
+endif()
+
+if(NOT ${_sycl_has_valid_fft} AND NOT DEFINED ENV{GITLAB_CI}) # Don't warn in CI builds
+    message(WARNING "Building SYCL version without GPU FFT library.  Will not be able to perform FFTs on a GPU, which is not good for performance.")
 endif()
