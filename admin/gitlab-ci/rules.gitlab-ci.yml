@@ -23,12 +23,12 @@
 
 # Exclude if the GROMACS_RELEASE variable is set.
 .rules-element:if-release-then-never: &if-release-then-never
-  if: '$GROMACS_RELEASE && $GROMACS_RELEASE != "false"'
+  if: '$GROMACS_RELEASE'
   when: never
 
 # Exclude unless the GROMACS_RELEASE variable is set (through the web interface).
 .rules-element:if-not-release-then-never: &if-not-release-then-never
-  if: '$GROMACS_RELEASE == null || $GROMACS_RELEASE == "false"'
+  if: '$GROMACS_RELEASE == null'
   when: never
 
 # Include in pipelines triggered through the API.
@@ -63,13 +63,13 @@
 
 # Only run this job manual, never automatic
 .rules-element:user-triggered-only: &user-triggered-only
-  if: '$GROMACS_RELEASE && $GROMACS_RELEASE != "false"'
+  if: '$GROMACS_RELEASE'
   when: manual
 
 # Exclude from selective "schedule" pipelines, e.g. just those
 # that should run the post-merge-acceptance jobs.
 .rules-element:if-post-merge-acceptance-then-never: &if-post-merge-acceptance-then-never
-  if: '$POST_MERGE_ACCEPTANCE && $POST_MERGE_ACCEPTANCE != "false"'
+  if: '$POST_MERGE_ACCEPTANCE'
   when: never
 
 # Include in pipelines triggered in the merge request process.

@@ -37,16 +37,6 @@ stages:
   # Deploy stage for release builds
   - release-deploy
 
-# Variables influencing which jobs are run.
-# 
-variables:
-  GROMACS_RELEASE:
-    value: "false"
-    description: "Run the pipeline for preparing a tagged release"
-  POST_MERGE_ACCEPTANCE:
-    value: "false"
-    description: "Run only jobs scheduled to run after a commit has been merged into its target branch"
-
 include:
   # Mix-in helper job definitions of general utility.
   - local: '/admin/gitlab-ci/global.gitlab-ci.yml'
