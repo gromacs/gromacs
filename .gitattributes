@@ -37,7 +37,6 @@ docs/doxygen/examples/*.cpp             filter=clangformat
 docs/doxygen/examples/*.c               filter=clangformat
 docs/manual/UseLATEX.cmake              !filter
 scripts/GMXRC.*                         !filter
-scripts/make_gromos_rtp.py              !filter
 share/template/template.cpp             filter=copyright
 share/template/README.cmakein           !filter
 src/gromacs/linearalgebra/gmx_blas/*    -filter -gmx-doxygen

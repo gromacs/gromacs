@@ -16,3 +16,11 @@ deprecated in 2022.
 
 :issue:`4296`
 
+Some unmaintained utility scripts were removed
+""""""""""""""""""""""""""""""""""""""""""""""
+
+Several scripts in repository :file:`scripts/` directory were not installed with
+the package, have not been maintained, and, as best we could tell, have not been
+used in a long time.
+
+:issue:`4639`

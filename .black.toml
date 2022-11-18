@@ -12,6 +12,5 @@ extend-exclude = '''
   ^/tests/physicalvalidation  # Exclude sources from external projects.
   | ^/src/external
   | .*.ipynb  # Exclude jupyter notebook files (requires `black[jupyter]`) to reduce our infrastructure dependencies.
-  | make_gromos_rtp.py  # Exclude a wayward Python 2 file. See also #4639.
 )
 '''
