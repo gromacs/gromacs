@@ -359,7 +359,7 @@ t_state::t_state() :
     nhchainlength(0),
     flags(0),
     fep_state(0),
-    lambda(),
+    lambda{ { 0 } },
 
     baros_integral(0),
     veta(0),
@@ -373,11 +373,6 @@ t_state::t_state() :
     ddp_count_cg_gl(0)
 
 {
-    // It would be nicer to initialize these with {} or {{0}} in the
-    // above initialization list, but uncrustify doesn't understand
-    // that.
-    // TODO Fix this if we switch to clang-format some time.
-    lambda = { { 0 } };
     clear_mat(box);
     clear_mat(box_rel);
     clear_mat(boxv);

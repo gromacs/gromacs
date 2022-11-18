@@ -105,12 +105,8 @@ void done_frame(t_trxframe* frame)
 namespace gmx
 {
 
-TrajectoryFrame::TrajectoryFrame(const t_trxframe& frame) : frame_(frame)
+TrajectoryFrame::TrajectoryFrame(const t_trxframe& frame) : frame_(frame), box_{ { { { 0 } } } }
 {
-    // This would be nicer as an initializer, but once uncrustify is
-    // happy, Doxygen can't parse it.
-    box_ = { { { { 0 } } } };
-
     if (!frame.bStep)
     {
         GMX_THROW(APIError("Cannot handle trajectory frame that lacks a step number"));
