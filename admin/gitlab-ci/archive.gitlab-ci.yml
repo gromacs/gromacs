@@ -11,11 +11,12 @@ prepare-release-version:
   image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-llvm-9-docs
   stage: configure-build
   variables:
+    CMAKE: /usr/local/cmake-3.18.4/bin/cmake
     KUBERNETES_CPU_LIMIT: 1
     KUBERNETES_CPU_REQUEST: 1
     KUBERNETES_MEMORY_REQUEST: 2Gi
   script:
-    - cmake . -DGMX_BUILD_TARBALL=on
+    - ${CMAKE} . -DGMX_BUILD_TARBALL=on
   artifacts:
     paths:
       - VersionInfo-partial.cmake.cmakein
