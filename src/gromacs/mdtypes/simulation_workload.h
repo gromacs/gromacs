@@ -207,6 +207,12 @@ public:
     bool useMts = false;
     // Whether a GPU graph should be used to execute steps in the MD loop if run conditions allow.
     bool useMdGpuGraph = false;
+
+    // Whether PME GPU is active on this PP rank (note that currently only PP ranks use SimulationWorkload)
+    __attribute__((always_inline)) bool haveGpuPmeOnPpRank() const
+    {
+        return useGpuPme && !haveSeparatePmeRank;
+    }
 };
 
 class MdrunScheduleWorkload

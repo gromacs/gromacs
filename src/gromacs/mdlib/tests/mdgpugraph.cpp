@@ -78,6 +78,7 @@ SimulationWorkload makeSimulationWorkForMdGpuGraph()
     simulationWork.useGpuUpdate              = true;
     simulationWork.havePpDomainDecomposition = false;
     simulationWork.useGpuPme                 = false;
+    simulationWork.haveSeparatePmeRank       = false;
     return simulationWork;
 }
 

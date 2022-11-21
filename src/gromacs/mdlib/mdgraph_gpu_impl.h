@@ -168,8 +168,8 @@ private:
     std::unique_ptr<DeviceStream> launchStreamAlternate_;
     //! Whether PP domain decomposition is in use
     bool havePPDomainDecomposition_;
-    //! Whether GPU is used for PME
-    bool useGpuPme_;
+    //! Whether there is PME GPU task on this PP rank
+    bool haveGpuPmeOnThisPpRank_;
     //! Whether PME is handled on a separate rank
     bool haveSeparatePmeRank_;
     //! MPI communicator for PP domain decomposition

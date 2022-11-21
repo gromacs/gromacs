@@ -77,9 +77,9 @@ namespace gmx
  */
 inline bool needStateGpu(SimulationWorkload simulationWorkload)
 {
-    return (simulationWorkload.useGpuPme && !simulationWorkload.haveSeparatePmeRank)
-           || simulationWorkload.useGpuXBufferOps || simulationWorkload.useGpuFBufferOps
-           || simulationWorkload.useGpuHaloExchange || simulationWorkload.useGpuUpdate;
+    return (simulationWorkload.haveGpuPmeOnPpRank()) || simulationWorkload.useGpuXBufferOps
+           || simulationWorkload.useGpuFBufferOps || simulationWorkload.useGpuHaloExchange
+           || simulationWorkload.useGpuUpdate;
 }
 
 class DeviceStreamManager;

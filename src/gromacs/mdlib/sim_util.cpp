@@ -1008,13 +1008,13 @@ static StepWorkload setupStepWorkload(const int                     legacyFlags,
     }
     flags.useGpuXBufferOps = simulationWork.useGpuXBufferOps && !flags.doNeighborSearch;
     // on virial steps the CPU reduction path is taken
-    flags.useGpuFBufferOps       = simulationWork.useGpuFBufferOps && !flags.computeVirial;
-    const bool rankHasGpuPmeTask = simulationWork.useGpuPme && !simulationWork.haveSeparatePmeRank;
-    flags.useGpuPmeFReduction    = flags.computeSlowForces && flags.useGpuFBufferOps
-                                && (rankHasGpuPmeTask || simulationWork.useGpuPmePpCommunication);
+    flags.useGpuFBufferOps = simulationWork.useGpuFBufferOps && !flags.computeVirial;
+    flags.useGpuPmeFReduction =
+            flags.computeSlowForces && flags.useGpuFBufferOps
+            && (simulationWork.haveGpuPmeOnPpRank() || simulationWork.useGpuPmePpCommunication);
     flags.useGpuXHalo              = simulationWork.useGpuHaloExchange && !flags.doNeighborSearch;
     flags.useGpuFHalo              = simulationWork.useGpuHaloExchange && flags.useGpuFBufferOps;
-    flags.haveGpuPmeOnThisRank     = rankHasGpuPmeTask && flags.computeSlowForces;
+    flags.haveGpuPmeOnThisRank     = simulationWork.haveGpuPmeOnPpRank() && flags.computeSlowForces;
     flags.computePmeOnSeparateRank = simulationWork.haveSeparatePmeRank && flags.computeSlowForces;
     flags.combineMtsForcesBeforeHaloExchange =
             (flags.computeForces && simulationWork.useMts && flags.computeSlowForces
@@ -1281,7 +1281,7 @@ static void setupLocalGpuForceReduction(const gmx::MdrunScheduleWorkload* runSch
     GpuEventSynchronizer*   pmeSynchronizer     = nullptr;
     bool                    havePmeContribution = false;
 
-    if (runScheduleWork->simulationWork.useGpuPme && !runScheduleWork->simulationWork.haveSeparatePmeRank)
+    if (runScheduleWork->simulationWork.haveGpuPmeOnPpRank())
     {
         pmeForcePtr = pme_gpu_get_device_f(pmedata);
         if (pmeForcePtr)
@@ -1422,11 +1422,13 @@ void do_force(FILE*                               fplog,
         // TODO refactor this to do_md, after partitioning.
         stateGpu->reinit(mdatoms->homenr,
                          getLocalAtomCount(cr->dd, *mdatoms, simulationWork.havePpDomainDecomposition));
-        if (stepWork.haveGpuPmeOnThisRank)
-        {
-            // TODO: This should be moved into PME setup function ( pme_gpu_prepare_computation(...) )
-            pme_gpu_set_device_x(fr->pmedata, stateGpu->getCoordinates());
-        }
+    }
+
+    if (stepWork.doNeighborSearch && simulationWork.haveGpuPmeOnPpRank())
+    {
+        GMX_ASSERT(gmx::needStateGpu(simulationWork), "StatePropagatorDataGpu is needed");
+        // TODO: This should be moved into PME setup function ( pme_gpu_prepare_computation(...) )
+        pme_gpu_set_device_x(fr->pmedata, stateGpu->getCoordinates());
     }
 
     auto* localXReadyOnDevice =

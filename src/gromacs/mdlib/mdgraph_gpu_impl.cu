@@ -60,7 +60,7 @@ MdGpuGraph::Impl::Impl(const DeviceStreamManager& deviceStreamManager,
     launchStreamAlternate_(
             new DeviceStream(deviceStreamManager.context(), DeviceStreamPriority::Normal, false)),
     havePPDomainDecomposition_(simulationWork.havePpDomainDecomposition),
-    useGpuPme_(simulationWork.useGpuPme),
+    haveGpuPmeOnThisPpRank_(simulationWork.haveGpuPmeOnPpRank()),
     haveSeparatePmeRank_(simulationWork.haveSeparatePmeRank),
     mpiComm_(mpiComm),
     evenOrOddStep_(evenOrOddStep),
@@ -263,7 +263,7 @@ void MdGpuGraph::Impl::endRecord()
     GMX_ASSERT(graphState_ == GraphState::Recording,
                "Graph should be in a recording state before recording is ended");
 
-    if (useGpuPme_ && !haveSeparatePmeRank_)
+    if (haveGpuPmeOnThisPpRank_)
     {
         // Join PME stream to NB local stream on each rank
         helperEvent_->markEvent(deviceStreamManager_.stream(gmx::DeviceStreamType::Pme));
@@ -426,7 +426,7 @@ void MdGpuGraph::Impl::launchGraphMdStep(GpuEventSynchronizer* xUpdatedOnDeviceE
 
         // If PME on same rank, sync PME (to ensure no race condition with clearing)
         // Note that separate rank PME has implicit sync, including clearing.
-        if (useGpuPme_ && !haveSeparatePmeRank_)
+        if (haveGpuPmeOnThisPpRank_)
         {
             helperEvent_->markEvent(deviceStreamManager_.stream(gmx::DeviceStreamType::Pme));
             helperEvent_->enqueueWaitEvent(*thisLaunchStream);
