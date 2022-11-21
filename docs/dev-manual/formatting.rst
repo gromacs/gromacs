@@ -38,8 +38,8 @@ Additionally:
 * Whenever you update a file, you should check that the current year is listed
   as a copyright year.
 
-Most of the above guidelines are enforced using clang-format or uncrustify,
-which are both  automatic source code formatting tool. The copyright guidelines
+Most of the above guidelines are enforced using clang-format,
+an automatic source code formatting tool. The copyright guidelines
 are enforced by a separate Python script. See :doc:`code-formatting` for details.
 Note that due to the nature of those scripts (they only do all-or-nothing formatting),
 all the noted formatting rules are enforced at the same time.

@@ -102,7 +102,7 @@ cut -f2 <$tmpdir/difflist | \
     git check-attr --stdin filter | \
     sed -e 's/.*: filter: //' | \
     paste $tmpdir/difflist - | \
-    grep -E '(complete_formatting|uncrustify|copyright|includesort)$' >$tmpdir/filtered
+    grep -E '(complete_formatting|copyright|includesort)$' >$tmpdir/filtered
 cut -f2 <$tmpdir/filtered >$tmpdir/filelist_all
 grep -E '(complete_formatting|copyright)$' <$tmpdir/filtered | \
     cut -f2 >$tmpdir/filelist_copyright
@@ -122,7 +122,7 @@ cp -r $tmpdir/org $tmpdir/new
 # Create output file for what was done (in case no messages get written)
 touch $tmpdir/messages
 
-# Run uncrustify on the temporary directory
+# Run code formatting on the temporary directory
 cd $tmpdir/new
 
 # Update the copyright headers using the requested mode

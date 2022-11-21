@@ -343,7 +343,6 @@ if (SPHINX_FOUND)
         dev-manual/includestyle.rst
         dev-manual/index.rst
         dev-manual/infrastructure.rst
-        dev-manual/jenkins.rst
         dev-manual/known-issues.rst
         dev-manual/language-features.rst
         dev-manual/naming.rst

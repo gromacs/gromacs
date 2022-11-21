@@ -8,6 +8,5 @@ performed by GitLab and GitLab Runner.
 ..  toctree::
     :maxdepth: 2
 
-    jenkins
     gitlab-ci
 

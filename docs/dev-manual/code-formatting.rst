@@ -351,7 +351,7 @@ the git index do not match.
 Using git filters
 -----------------
 
-An alternative to using a pre-commit hook to automatically apply uncrustify or
+An alternative to using a pre-commit hook to automatically apply
 clang-format on changes is to use a git filter (does not require either of the scripts,
 only the ``.gitattributes`` file).  You can run ::
 

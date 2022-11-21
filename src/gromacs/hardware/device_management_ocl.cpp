@@ -341,7 +341,6 @@ static bool isDeviceFunctional(const DeviceInformation& deviceInfo, std::string*
     cl_context_properties properties[] = {
         CL_CONTEXT_PLATFORM, reinterpret_cast<cl_context_properties>(deviceInfo.oclPlatformId), 0
     };
-    // uncrustify spacing
 
     cl_int    status;
     auto      deviceId = deviceInfo.oclDeviceId;
