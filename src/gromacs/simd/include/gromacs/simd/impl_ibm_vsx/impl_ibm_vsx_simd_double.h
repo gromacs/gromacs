@@ -602,7 +602,18 @@ static inline SimdFloat gmx_simdcall cvtDD2F(SimdDouble d0, SimdDouble d1)
 
 static inline SimdDouble gmx_simdcall copysign(SimdDouble x, SimdDouble y)
 {
+    // GCC 9.4, 10.3, 11.2, and earlier pass arguments to vec_cpsgn in the
+    // incorrect order, which is fixed in later releases. Clang 11 and
+    // earlier pass arguments incorrectly, too. We resort to using
+    // inline assembly that works everywhere. Can be removed when at
+    // least GCC 12 is required. See issue #4661 and links therein.
+#if defined(__GNUC__)
+    __vector double res;
+    __asm__("xvcpsgndp %x0,%x1,%x2" : "=wd"(res) : "wd"(y.simdInternal_), "wd"(x.simdInternal_));
+    return { res };
+#else
     return { vec_cpsgn(y.simdInternal_, x.simdInternal_) };
+#endif
 }
 
 } // namespace gmx
