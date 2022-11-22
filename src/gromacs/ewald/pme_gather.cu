@@ -245,17 +245,17 @@ template<int order, int atomsPerWarp, bool wrapX, bool wrapY>
 __device__ __forceinline__ void sumForceComponents(float* __restrict__ fx,
                                                    float* __restrict__ fy,
                                                    float* __restrict__ fz,
-                                                   const int    ithyMin,
-                                                   const int    ithyMax,
-                                                   const int    ixBase,
-                                                   const int    iz,
-                                                   const int    nx,
-                                                   const int    ny,
-                                                   const int    pny,
-                                                   const int    pnz,
-                                                   const int    atomIndexLocal,
-                                                   const int    splineIndexBase,
-                                                   const float2 tdz,
+                                                   const int ithyMin,
+                                                   const int ithyMax,
+                                                   const int ixBase,
+                                                   const int iz,
+                                                   const int nx,
+                                                   const int ny,
+                                                   const int pny,
+                                                   const int pnz,
+                                                   const int atomIndexLocal,
+                                                   const int splineIndexBase,
+                                                   const int splineIndexZ,
                                                    const int* __restrict__ sm_gridlineIndices,
                                                    const float* __restrict__ sm_theta,
                                                    const float* __restrict__ sm_dtheta,
@@ -288,8 +288,8 @@ __device__ __forceinline__ void sumForceComponents(float* __restrict__ fx,
             assert(isfinite(gridValue));
             const int splineIndexX = getSplineParamIndex<order, atomsPerWarp>(splineIndexBase, XX, ithx);
             const float2 tdx       = make_float2(sm_theta[splineIndexX], sm_dtheta[splineIndexX]);
-            const float  fxy1      = tdz.x * gridValue;
-            const float  fz1       = tdz.y * gridValue;
+            const float  fxy1      = sm_theta[splineIndexZ] * gridValue;
+            const float  fz1       = sm_dtheta[splineIndexZ] * gridValue;
             *fx += tdx.y * tdy.x * fxy1;
             *fy += tdx.x * tdy.y * fxy1;
             *fz += tdx.x * tdy.x * fz1;
@@ -481,8 +481,7 @@ __launch_bounds__(c_gatherMaxThreadsPerBlock, c_gatherMinBlocksPerMP) __global__
     const int warpIndex     = atomIndexLocal / atomsPerWarp;
 
     const int splineIndexBase = getSplineParamIndexBase<order, atomsPerWarp>(warpIndex, atomWarpIndex);
-    const int    splineIndexZ = getSplineParamIndex<order, atomsPerWarp>(splineIndexBase, ZZ, ithz);
-    const float2 tdz          = make_float2(sm_theta[splineIndexZ], sm_dtheta[splineIndexZ]);
+    const int splineIndexZ    = getSplineParamIndex<order, atomsPerWarp>(splineIndexBase, ZZ, ithz);
 
     int       iz     = sm_gridlineIndices[atomIndexLocal * DIM + ZZ] + ithz;
     const int ixBase = sm_gridlineIndices[atomIndexLocal * DIM + XX];
@@ -509,7 +508,7 @@ __launch_bounds__(c_gatherMaxThreadsPerBlock, c_gatherMinBlocksPerMP) __global__
                                                               pnz,
                                                               atomIndexLocal,
                                                               splineIndexBase,
-                                                              tdz,
+                                                              splineIndexZ,
                                                               sm_gridlineIndices,
                                                               sm_theta,
                                                               sm_dtheta,
@@ -573,7 +572,7 @@ __launch_bounds__(c_gatherMaxThreadsPerBlock, c_gatherMinBlocksPerMP) __global__
                                                                   pnz,
                                                                   atomIndexLocal,
                                                                   splineIndexBase,
-                                                                  tdz,
+                                                                  splineIndexZ,
                                                                   sm_gridlineIndices,
                                                                   sm_theta,
                                                                   sm_dtheta,

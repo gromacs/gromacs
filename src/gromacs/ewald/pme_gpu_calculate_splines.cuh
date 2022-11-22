@@ -237,8 +237,10 @@ static __device__ __forceinline__ void calculate_splines(const PmeGpuCudaKernelP
 
         if (orderIndex == 0)
         {
-            int   tableIndex, tInt;
-            float n, t;
+            int   tableIndex = 0;
+            int   tInt       = 0;
+            float n          = 0.;
+            float t          = 0.;
             assert(atomIndexLocal < DIM * atomsPerBlock);
             /* Accessing fields in fshOffset/nXYZ/recipbox/... with dimIndex offset
              * puts them into local memory(!) instead of accessing the constant memory directly.
