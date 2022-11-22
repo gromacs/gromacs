@@ -2143,7 +2143,9 @@ void LegacySimulator::do_lbfgs()
                                      mdAtoms,
                                      fr,
                                      runScheduleWork,
-                                     enerd };
+                                     enerd,
+                                     -1,
+                                     {} };
     rvec            mu_tot;
     tensor          vir;
     tensor          pres;
@@ -2903,7 +2905,9 @@ void LegacySimulator::do_steep()
                                      mdAtoms,
                                      fr,
                                      runScheduleWork,
-                                     enerd };
+                                     enerd,
+                                     -1,
+                                     {} };
 
     /**** HERE STARTS THE LOOP ****
      * count is the counter for the number of steps
@@ -3281,7 +3285,9 @@ void LegacySimulator::do_nm()
                                      mdAtoms,
                                      fr,
                                      runScheduleWork,
-                                     enerd };
+                                     enerd,
+                                     -1,
+                                     {} };
     energyEvaluator.run(&state_work, mu_tot, vir, pres, -1, TRUE, 0);
     cr->nnodes = nnodes;
 
