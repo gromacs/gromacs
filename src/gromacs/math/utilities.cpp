@@ -91,6 +91,9 @@ int gmx_feenableexcept()
 {
     // While the function is present on RISC-V, actually calling it fails for now
 #if HAVE_FEENABLEEXCEPT && !defined(__riscv)
+#    if defined(__powerpc__) || defined(__ppc__) || defined(__PPC__)
+    feclearexcept(c_FPexceptions);
+#    endif
     return feenableexcept(c_FPexceptions);
 #elif (defined(__i386__) || defined(__x86_64__)) && defined(__APPLE__)
     /* Author:  David N. Williams
