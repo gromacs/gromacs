@@ -161,7 +161,7 @@ void sharingSamplesFrictionTest(const void* nStepsArg)
 
     const CorrelationGrid& forceCorrelation = bias.forceCorrelationGrid();
 
-    const int64_t exitStep = *static_cast<const int64_t*>(nStepsArg);
+    const int exitStep = *static_cast<const int*>(nStepsArg);
     /* We use a trajectory of the sum of two sines to cover the reaction
      * coordinate range in a semi-realistic way.
      */
@@ -222,9 +222,11 @@ void sharingSamplesFrictionTest(const void* nStepsArg)
         gmx::test::TestReferenceData    data;
         gmx::test::TestReferenceChecker checker(data.rootChecker());
 
-        constexpr int lowUlpTol = 20;
-        /* The correlation time integral calculations (friction) require a higher tolerance */
-        constexpr int highUlpTol = 100;
+        /* Base the tolerance on the number of steps. */
+        const double lowUlpTol = 10 * std::sqrt(exitStep);
+        /* The correlation time integral calculations (friction) require a higher tolerance. With an
+         * accumulation of two multiplied block averages every sample this should be a reasonable estimate. */
+        const double highUlpTol = 20 * std::sqrt(exitStep);
 
         checker.setDefaultTolerance(relativeToleranceAsUlp(1.0, lowUlpTol));
         checker.checkSequence(
@@ -258,8 +260,9 @@ TEST(BiasSharingTest, SharingWorks)
 
 TEST(BiasSharingTest, SharingSamplesAndFrictionWorks)
 {
-    int64_t nSteps = 2002;
-    int     result = tMPI_Init_fn(FALSE,
+    /* Use nSteps % updateStep > 0 in order to test weightSumIteration, which is the accumulated weightSum since last sharing. */
+    int nSteps = 302;
+    int result = tMPI_Init_fn(FALSE,
                               c_numRanks,
                               TMPI_AFFINITY_NONE,
                               sharingSamplesFrictionTest,

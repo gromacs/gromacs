@@ -206,16 +206,19 @@ TEST_P(BiasTest, ForcesBiasPmfWeightSum)
      */
     const double kCoordMax = bias.dimParams()[0].pullDimParams().k * coordMaxValue;
 
-    constexpr int ulpTol = 20;
+    constexpr int lowUlpTol = 10;
+    /* Allow higher tolerance for weight sum calculations - base it on the number of steps. */
+    const double highUlpTol = 10 * std::sqrt(step);
 
     checker.checkSequence(props.begin(), props.end(), "Properties");
-    checker.setDefaultTolerance(absoluteTolerance(kCoordMax * GMX_DOUBLE_EPS * ulpTol));
+    checker.setDefaultTolerance(absoluteTolerance(kCoordMax * GMX_DOUBLE_EPS * lowUlpTol));
     checker.checkSequence(force.begin(), force.end(), "Force");
     checker.checkSequence(pot.begin(), pot.end(), "Potential");
     checker.checkSequence(potJump.begin(), potJump.end(), "PotentialJump");
-    checker.setDefaultTolerance(relativeToleranceAsUlp(1.0, ulpTol));
+    checker.setDefaultTolerance(relativeToleranceAsUlp(1.0, lowUlpTol));
     checker.checkSequence(pointBias.begin(), pointBias.end(), "PointBias");
     checker.checkSequence(logPmfsum.begin(), logPmfsum.end(), "PointLogPmfsum");
+    checker.setDefaultTolerance(relativeToleranceAsUlp(1.0, highUlpTol));
     checker.checkSequence(
             pointLocalWeightSum.begin(), pointLocalWeightSum.end(), "pointLocalWeightSum");
     checker.checkSequence(pointWeightSumTot.begin(), pointWeightSumTot.end(), "pointWeightSumTot");
