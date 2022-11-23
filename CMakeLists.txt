@@ -107,11 +107,15 @@ include(gmxBuildTypeMSAN)
 include(gmxBuildTypeUBSAN)
 include(gmxBuildTypeReleaseWithAssert)
 
+set(valid_build_types "Debug" "Release" "MinSizeRel" "RelWithDebInfo" "Reference" "RelWithAssert" "Profile" "TSAN" "ASAN" "MSAN" "UBSAN")
 if(NOT CMAKE_BUILD_TYPE)
-    set(CMAKE_BUILD_TYPE "Release" CACHE STRING "Choose the type of build, options are: Debug Release RelWithDebInfo MinSizeRel Reference RelWithAssert Profile TSAN ASAN MSAN UBSAN." FORCE)
+    set(CMAKE_BUILD_TYPE "Release" CACHE STRING "Choose the type of build, options are: ${valid_build_types}." FORCE)
     # Set the possible values of build type for cmake-gui
-    set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "Debug" "Release"
-        "MinSizeRel" "RelWithDebInfo" "Reference" "RelWithAssert" "Profile" "TSAN" "ASAN" "MSAN" "UBSAN")
+    set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS ${valid_build_types})
+endif()
+if(NOT "${CMAKE_BUILD_TYPE}" IN_LIST valid_build_types)
+    message(FATAL_ERROR "Unsupported value of -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}. "
+        "Only ${valid_build_types} are allowed (case-sensitive)")
 endif()
 if(CMAKE_CONFIGURATION_TYPES)
     # Add appropriate GROMACS-specific build types for the Visual
