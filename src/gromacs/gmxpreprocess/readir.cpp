@@ -242,6 +242,11 @@ void check_ir(const char*                    mdparin,
 
     wi->setFileAndLineNumber(mdparin, -1);
 
+    if (EI_DYNAMICS(ir->eI) && ir->delta_t <= 0)
+    {
+        wi->addError("dt should be larger than 0");
+    }
+
     /* We cannot check MTS requirements with an invalid MTS setup
      * and we will already have generated errors with an invalid MTS setup.
      */
