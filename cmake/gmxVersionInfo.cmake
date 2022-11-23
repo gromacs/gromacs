@@ -208,7 +208,7 @@ set(GMX_VERSION_PATCH ${Gromacs_VERSION_MINOR})
 # candidates, where it signifies the most recent such release from
 # this branch; it will be empty before the first such release, as well
 # as after the final release is out.
-set(GMX_VERSION_SUFFIX "-beta")
+set(GMX_VERSION_SUFFIX "-rc1")
 
 # Conventionally with libtool, any ABI change must change the major
 # version number, the minor version number should change if it's just
@@ -238,7 +238,7 @@ set(REGRESSIONTEST_VERSION "${GMX_VERSION}${GMX_VERSION_SUFFIX}")
 # Note: Forks that use the suffixing feature later change GMX_VERSION_STRING
 # Ref: https://gitlab.com/gromacs/gromacs/-/merge_requests/2587
 set(GMX_VERSION_STRING "${REGRESSIONTEST_VERSION}")
-set(REGRESSIONTEST_BRANCH "main")
+set(REGRESSIONTEST_BRANCH "release-2023")
 # Follow the relevant part of the release checklist at
 # https://gitlab.com/gromacs/gromacs/-/wikis/Release-checklist#how-to-build-a-regressiontests-tarball
 # in order to have it build the regressiontests tarball with all the
