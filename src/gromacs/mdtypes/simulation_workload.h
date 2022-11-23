@@ -209,7 +209,11 @@ public:
     bool useMdGpuGraph = false;
 
     // Whether PME GPU is active on this PP rank (note that currently only PP ranks use SimulationWorkload)
-    __attribute__((always_inline)) bool haveGpuPmeOnPpRank() const
+#if !defined(_MSC_VER) // MSVC does not support __attribute__
+    __attribute__((always_inline))
+#endif
+    bool
+    haveGpuPmeOnPpRank() const
     {
         return useGpuPme && !haveSeparatePmeRank;
     }
