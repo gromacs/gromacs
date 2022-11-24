@@ -35,6 +35,16 @@ underestimated due to the extremely non-linear nature of the r^-12 potential.
 A temporary solution is to decrease the verlet-buffer-tolerance until you
 get a non-zero Verlet buffer. This issue will be fixed in the 2023 release.
 
+The deform option is not suitable for flow
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The deform option currently scales the coordinates, but for flow the deformation
+should only be driven by changing periodic vectors. In addition the velocities
+of particles need to be corrected when they are displaced by periodic vectors.
+Therefore the deform option is currently only suitable for slowly deforming
+systems.
+
+:issue:`4607`
 
 Build is fragile with gcc 7 and CUDA
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
