@@ -552,16 +552,21 @@ void print_top_comment(FILE* out, const std::filesystem::path& filename, const s
 
     if (!ffdir.has_root_path())
     {
-        fprintf(out, ";\tForce field was read from the standard GROMACS share directory.\n;\n\n");
-    }
-    else if (ffdir.has_relative_path())
-    {
-        fprintf(out,
-                ";\tForce field was read from current directory or a relative path - path "
-                "added.\n;\n\n");
+        if (!ffdir.has_parent_path())
+        {
+            fprintf(out,
+                    ";\tForce field was read from the standard GROMACS share directory.\n;\n\n");
+        }
+        else
+        {
+            fprintf(out,
+                    ";\tForce field was read from current directory or a relative path - path "
+                    "added.\n;\n\n");
+        }
     }
     else
     {
+        // Absolute path - forcefield found through GMXLIB
         auto ffdir_parent = ffdir.parent_path();
         fprintf(out,
                 ";\tForce field data was read from:\n"
@@ -588,11 +593,9 @@ void print_top_header(FILE*                        out,
     print_top_heavy_H(out, mHmult);
     fprintf(out, "; Include forcefield parameters\n");
 
-    auto path = ffdir.has_parent_path() ? ffdir.parent_path() : ffdir;
-
     fprintf(out,
             "#include \"%s/%s\"\n\n",
-            path.u8string().c_str(),
+            ffdir.u8string().c_str(),
             fflib_forcefield_itp().generic_u8string().c_str());
 }
 
@@ -608,8 +611,7 @@ static void print_top_water(FILE* out, const std::filesystem::path& ffdir, const
 {
     fprintf(out, "; Include water topology\n");
 
-    auto path      = ffdir.has_parent_path() ? ffdir.parent_path() : ffdir;
-    auto waterPath = path;
+    auto waterPath = ffdir;
     waterPath.append(water).replace_extension("itp");
     fprintf(out, "#include \"%s\"\n", waterPath.generic_u8string().c_str());
 
@@ -622,7 +624,7 @@ static void print_top_water(FILE* out, const std::filesystem::path& ffdir, const
     fprintf(out, "#endif\n");
     fprintf(out, "\n");
 
-    auto ionPath = path;
+    auto ionPath = ffdir;
     ionPath.append("ions.itp");
 
     if (fflib_fexist(ionPath))
