@@ -171,12 +171,11 @@ static bool decideWhetherToUseGpusForPmeFft(const TaskTarget pmeFftTarget)
     return !useCpuFft;
 }
 
-static bool canUseGpusForPme(const bool           useGpuForNonbonded,
-                             const TaskTarget     pmeTarget,
-                             const TaskTarget     pmeFftTarget,
-                             const gmx_hw_info_t& hardwareInfo,
-                             const t_inputrec&    inputrec,
-                             std::string*         errorMessage)
+static bool canUseGpusForPme(const bool        useGpuForNonbonded,
+                             const TaskTarget  pmeTarget,
+                             const TaskTarget  pmeFftTarget,
+                             const t_inputrec& inputrec,
+                             std::string*      errorMessage)
 {
     if (pmeTarget == TaskTarget::Cpu)
     {
@@ -216,13 +215,12 @@ bool decideWhetherToUseGpusForPmeWithThreadMpi(const bool              useGpuFor
                                                const TaskTarget        pmeFftTarget,
                                                const int               numDevicesToUse,
                                                const std::vector<int>& userGpuTaskAssignment,
-                                               const gmx_hw_info_t&    hardwareInfo,
                                                const t_inputrec&       inputrec,
                                                const int               numRanksPerSimulation,
                                                const int               numPmeRanksPerSimulation)
 {
     // First, exclude all cases where we can't run PME on GPUs.
-    if (!canUseGpusForPme(useGpuForNonbonded, pmeTarget, pmeFftTarget, hardwareInfo, inputrec, nullptr))
+    if (!canUseGpusForPme(useGpuForNonbonded, pmeTarget, pmeFftTarget, inputrec, nullptr))
     {
         // PME can't run on a GPU. If the user required that, we issue an error later.
         return false;
@@ -404,14 +402,13 @@ bool decideWhetherToUseGpusForPme(const bool              useGpuForNonbonded,
                                   const TaskTarget        pmeTarget,
                                   const TaskTarget        pmeFftTarget,
                                   const std::vector<int>& userGpuTaskAssignment,
-                                  const gmx_hw_info_t&    hardwareInfo,
                                   const t_inputrec&       inputrec,
                                   const int               numRanksPerSimulation,
                                   const int               numPmeRanksPerSimulation,
                                   const bool              gpusWereDetected)
 {
     std::string message;
-    if (!canUseGpusForPme(useGpuForNonbonded, pmeTarget, pmeFftTarget, hardwareInfo, inputrec, &message))
+    if (!canUseGpusForPme(useGpuForNonbonded, pmeTarget, pmeFftTarget, inputrec, &message))
     {
         if (!message.empty())
         {

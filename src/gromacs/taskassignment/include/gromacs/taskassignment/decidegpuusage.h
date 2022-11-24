@@ -139,7 +139,6 @@ bool decideWhetherToUseGpusForNonbondedWithThreadMpi(TaskTarget              non
  * \param[in]  pmeFftTarget              The user's choice for mdrun -pmefft for where to run FFT.
  * \param[in]  numDevicesToUse           The number of compatible GPUs that the user permitted us to use.
  * \param[in]  userGpuTaskAssignment     The user-specified assignment of GPU tasks to device IDs.
- * \param[in]  hardwareInfo              Hardware information
  * \param[in]  inputrec                  The user input
  * \param[in]  numRanksPerSimulation     The number of ranks in each simulation.
  * \param[in]  numPmeRanksPerSimulation  The number of PME ranks in each simulation.
@@ -153,7 +152,6 @@ bool decideWhetherToUseGpusForPmeWithThreadMpi(bool                    useGpuFor
                                                TaskTarget              pmeFftTarget,
                                                int                     numDevicesToUse,
                                                const std::vector<int>& userGpuTaskAssignment,
-                                               const gmx_hw_info_t&    hardwareInfo,
                                                const t_inputrec&       inputrec,
                                                int                     numRanksPerSimulation,
                                                int                     numPmeRanksPerSimulation);
@@ -212,7 +210,6 @@ bool decideWhetherToUseGpusForNonbonded(TaskTarget              nonbondedTarget,
  * \param[in]  pmeTarget                 The user's choice for mdrun -pme for where to assign long-ranged PME nonbonded interaction tasks.
  * \param[in]  pmeFftTarget              The user's choice for mdrun -pmefft for where to do FFT for PME.
  * \param[in]  userGpuTaskAssignment     The user-specified assignment of GPU tasks to device IDs.
- * \param[in]  hardwareInfo              Hardware information
  * \param[in]  inputrec                  The user input
  * \param[in]  numRanksPerSimulation     The number of ranks in each simulation.
  * \param[in]  numPmeRanksPerSimulation  The number of PME ranks in each simulation.
@@ -226,7 +223,6 @@ bool decideWhetherToUseGpusForPme(bool                    useGpuForNonbonded,
                                   TaskTarget              pmeTarget,
                                   TaskTarget              pmeFftTarget,
                                   const std::vector<int>& userGpuTaskAssignment,
-                                  const gmx_hw_info_t&    hardwareInfo,
                                   const t_inputrec&       inputrec,
                                   int                     numRanksPerSimulation,
                                   int                     numPmeRanksPerSimulation,

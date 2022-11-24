@@ -968,7 +968,6 @@ int Mdrunner::mdrunner()
                                                                      pmeFftTarget,
                                                                      numAvailableDevices,
                                                                      userGpuTaskAssignment,
-                                                                     *hwinfo_,
                                                                      *inputrec,
                                                                      hw_opt.nthreads_tmpi,
                                                                      domdecOptions.numPmeRanks);
@@ -1047,7 +1046,6 @@ int Mdrunner::mdrunner()
                                                     pmeTarget,
                                                     pmeFftTarget,
                                                     userGpuTaskAssignment,
-                                                    *hwinfo_,
                                                     *inputrec,
                                                     cr->sizeOfDefaultCommunicator,
                                                     domdecOptions.numPmeRanks,
