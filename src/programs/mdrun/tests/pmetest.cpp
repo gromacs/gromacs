@@ -267,16 +267,22 @@ MessageStringCollector PmeTest::getSkipMessagesIfNecessary(const CommandLine& co
         std::optional<std::string_view> pmeFftOptionArgument = commandLine.argumentOf("-pmefft");
         const bool                      commandLineTargetsPmeFftOnGpu =
                 !pmeFftOptionArgument.has_value() || pmeFftOptionArgument.value() == "gpu";
-        const bool syclGpuFftForced         = getenv("GMX_GPU_SYCL_USE_GPU_FFT") != nullptr;
-        constexpr bool sc_gpuBuildSyclDpcpp = (GMX_GPU_SYCL != 0) && (GMX_SYCL_DPCPP != 0); // Issue #4219
-        messages.appendIf(commandLineTargetsPmeFftOnGpu && !syclGpuFftForced && sc_gpuBuildSyclDpcpp,
-                          "it targets GPU execution of FFT work, which is not stable with DPC++ "
+
+        static constexpr bool sc_gpuBuildSyclWithoutGpuFft =
+                (GMX_GPU_SYCL != 0) && (GMX_GPU_FFT_MKL == 0) && (GMX_GPU_FFT_ROCFFT == 0)
+                && (GMX_GPU_FFT_VKFFT == 0); // NOLINT(misc-redundant-expression)
+        messages.appendIf(commandLineTargetsPmeFftOnGpu && sc_gpuBuildSyclWithoutGpuFft,
+                          "it targets GPU execution of FFT work, which is not supported in the "
+                          "current build");
+
+        const bool            syclGpuFftForced = getenv("GMX_GPU_SYCL_USE_GPU_FFT") != nullptr;
+        static constexpr bool sc_gpuBuildSyclDpcppWithMkl = // NOLINTNEXTLINE(misc-redundant-expression)
+                (GMX_GPU_SYCL != 0) && (GMX_SYCL_DPCPP != 0) && (GMX_GPU_FFT_MKL != 0);
+        static constexpr bool sc_gpuBuildPrefersMixedModePme = sc_gpuBuildSyclDpcppWithMkl; // Issue #4219
+
+        messages.appendIf(commandLineTargetsPmeFftOnGpu && !syclGpuFftForced && sc_gpuBuildPrefersMixedModePme,
+                          "it targets GPU execution of FFT work, which is not stable with MKL "
                           "(use GMX_GPU_SYCL_USE_GPU_FFT=1 to override)");
-        constexpr bool sc_gpuBuildSyclHipsyclNotAmd =
-                (GMX_SYCL_HIPSYCL != 0) && (GMX_HIPSYCL_HAVE_HIP_TARGET == 0);
-        messages.appendIf(commandLineTargetsPmeFftOnGpu && sc_gpuBuildSyclHipsyclNotAmd,
-                          "it targets GPU execution of FFT work, which is only supported for AMD "
-                          "targets when using hipSYCL");
 
         std::string errorMessage;
         messages.appendIf(!pme_gpu_supports_build(&errorMessage), errorMessage);
