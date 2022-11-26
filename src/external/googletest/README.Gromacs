@@ -23,3 +23,9 @@ supported by compilers.
 
 A clang-tidy suppression has been added to
 googletest/include/gtest/internal/gtest-internal.h.
+
+A warning suppression was added to 
+googletest/include/gtest/gtest-matchers.h
+to silence the warning from GCC 12 arising from the use of 
+the `_` wildcard matcher.
+
