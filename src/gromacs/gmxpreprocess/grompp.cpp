@@ -698,7 +698,8 @@ static void new_status(const char*                           topfile,
     rvec*       x = nullptr;
     rvec*       v = nullptr;
     snew(conftop, 1);
-    read_tps_conf(confin, conftop, nullptr, &x, &v, state->box, FALSE);
+    // Note that all components in v are set to zero when no v is present in confin
+    read_tps_conf(confin, conftop, nullptr, &x, EI_DYNAMICS(ir->eI) ? &v : nullptr, state->box, FALSE);
     state->natoms = conftop->atoms.nr;
     if (state->natoms != sys->natoms)
     {
@@ -714,15 +715,16 @@ static void new_status(const char*                           topfile,
      * a priori if the number of atoms in confin matches what we expect.
      */
     state->flags |= enumValueToBitMask(StateEntry::X);
-    if (v != nullptr)
+    if (EI_DYNAMICS(ir->eI))
     {
         state->flags |= enumValueToBitMask(StateEntry::V);
     }
     state_change_natoms(state, state->natoms);
     std::copy(x, x + state->natoms, state->x.data());
     sfree(x);
-    if (v != nullptr)
+    if (EI_DYNAMICS(ir->eI))
     {
+        GMX_RELEASE_ASSERT(v, "With dynamics we expect a velocity vector");
         std::copy(v, v + state->natoms, state->v.data());
         sfree(v);
     }
@@ -762,9 +764,8 @@ static void new_status(const char*                           topfile,
 
     if (bGenVel)
     {
-        real* mass;
+        std::vector<real> mass(state->natoms);
 
-        snew(mass, state->natoms);
         for (const AtomProxy atomP : AtomRange(*sys))
         {
             const t_atom& local = atomP.atom();
@@ -776,11 +777,11 @@ static void new_status(const char*                           topfile,
         {
             GMX_LOG(logger.info).asParagraph().appendTextFormatted("Setting gen_seed to %d", opts->seed);
         }
-        state->flags |= enumValueToBitMask(StateEntry::V);
+        GMX_RELEASE_ASSERT((state->flags | enumValueToBitMask(StateEntry::V)) != 0,
+                           "Generate velocities only makes sense when they are used");
         maxwell_speed(opts->tempi, opts->seed, sys, state->v.rvec_array(), logger);
 
-        stop_cm(logger, state->natoms, mass, state->x.rvec_array(), state->v.rvec_array());
-        sfree(mass);
+        stop_cm(logger, state->natoms, mass.data(), state->x.rvec_array(), state->v.rvec_array());
     }
 }
 
