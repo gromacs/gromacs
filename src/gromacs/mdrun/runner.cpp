@@ -1581,12 +1581,13 @@ int Mdrunner::mdrunner()
                               || simWorkload.useGpuNonbonded || simWorkload.useGpuUpdate;
         if (haveAnyGpuWork)
         {
-            GMX_LOG(mdlog.warning)
+            GMX_LOG(mdlog.info)
                     .asParagraph()
                     .appendText(
-                            "\nNOTE: SYCL GPU support in GROMACS is still new and less tested than "
-                            "other backends.\n"
-                            "Please, pay extra attention to the correctness of your results.");
+                            "\nNOTE: SYCL GPU support in GROMACS, and the compilers, libraries,\n"
+                            "and drivers that it depends on are fairly new.\n"
+                            "Please, pay extra attention to the correctness of your results,\n"
+                            "and update to the latest GROMACS patch version if warranted.");
         }
     }
 
