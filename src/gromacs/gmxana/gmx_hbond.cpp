@@ -196,7 +196,7 @@ struct HydrogenBondData
     t_acceptors a;
     /* This holds a matrix with all possible hydrogen bonds */
     int        nrhb = 0, nrdist = 0;
-    t_hbond*** hbmap;
+    t_hbond*** hbmap = nullptr;
 };
 
 HydrogenBondData::HydrogenBondData(bool useHBondMap, bool useDAnr, bool useOneHBond) :
