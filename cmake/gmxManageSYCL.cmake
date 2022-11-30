@@ -435,6 +435,7 @@ else()
         set(CMAKE_REQUIRED_FLAGS "${SYCL_TOOLCHAIN_CXX_FLAGS}")
         get_target_property(CMAKE_REQUIRED_LIBRARIES MKL::MKL INTERFACE_LINK_LIBRARIES)
         list(APPEND CMAKE_REQUIRED_LIBRARIES "${GMX_EXTRA_LIBRARIES}")
+        get_target_property(CMAKE_REQUIRED_INCLUDES MKL::MKL INTERFACE_INCLUDE_DIRECTORIES)
         check_cxx_source_compiles("
 #include <oneapi/mkl/dfti.hpp>
 int main() {
@@ -445,6 +446,7 @@ int main() {
           CAN_LINK_SYCL_MKL)
         unset(CMAKE_REQUIRED_FLAGS)
         unset(CMAKE_REQUIRED_LIBRARIES)
+        unset(CMAKE_REQUIRED_INCLUDES)
         if (NOT CAN_LINK_SYCL_MKL)
             message(FATAL_ERROR "Cannot link mkl_sycl. Make sure the MKL and compiler versions are compatible.")
         endif()
