@@ -1121,8 +1121,12 @@ void gmx::LegacySimulator::do_md()
             else
             {
                 mdGraph->setUsedGraphLastStep(usedMdGpuGraphLastStep);
-                bool canUseMdGpuGraphThisStep = !bCalcVir && !doTemperatureScaling && !doParrinelloRahman
-                                                && !bGStat && !needHalfStepKineticEnergy;
+                bool canUseMdGpuGraphThisStep =
+                        !bCalcVir && !doTemperatureScaling && !doParrinelloRahman && !bGStat
+                        && !needHalfStepKineticEnergy && !do_per_step(step, ir->nstxout)
+                        && !do_per_step(step, ir->nstxout_compressed)
+                        && !do_per_step(step, ir->nstvout) && !do_per_step(step, ir->nstfout)
+                        && !checkpointHandler->isCheckpointingStep();
                 if (mdGraph->captureThisStep(canUseMdGpuGraphThisStep))
                 {
                     // getCoordinatesReadyOnDeviceEvent() uses stepWork.doNeighborSearch but this is not set until
