@@ -2076,8 +2076,13 @@ void gmx::LegacySimulator::do_md()
         /* If bIMD is TRUE, the main updates the IMD energy record and sends positions to VMD client */
         imdSession->updateEnergyRecordAndSendPositionsAndEnergies(bInteractiveMDstep, step, bCalcEner);
 
-        // ensure that GPU errors do not propagate between MD steps
-        checkPendingDeviceErrorBetweenSteps();
+        // any run that uses GPUs must be at least offloading nonbondeds
+        const bool usingGpu = simulationWork.useGpuNonbonded;
+        if (usingGpu)
+        {
+            // ensure that GPU errors do not propagate between MD steps
+            checkPendingDeviceErrorBetweenSteps();
+        }
     }
     /* End of main MD loop */
 
