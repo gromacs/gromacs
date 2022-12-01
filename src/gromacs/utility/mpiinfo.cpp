@@ -72,6 +72,9 @@ GpuAwareMpiStatus checkMpiHipAwareSupport()
 #if MPI_SUPPORTS_HIP_AWARE_DETECTION
     GpuAwareMpiStatus status = (MPIX_Query_hip_support() == 1) ? GpuAwareMpiStatus::Supported
                                                                : GpuAwareMpiStatus::NotSupported;
+#elif MPI_SUPPORTS_ROCM_AWARE_DETECTION
+    GpuAwareMpiStatus status = (MPIX_Query_rocm_support() == 1) ? GpuAwareMpiStatus::Supported
+                                                                : GpuAwareMpiStatus::NotSupported;
 #else
     GpuAwareMpiStatus status = GpuAwareMpiStatus::NotKnown;
 #endif

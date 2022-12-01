@@ -58,11 +58,10 @@ enum class GpuAwareMpiStatus : int
 GpuAwareMpiStatus checkMpiCudaAwareSupport();
 
 /*! \brief
- * Wrapper on top of \c MPIX_Query_hip_support()
+ * Wrapper on top of \c MPIX_Query_hip_support() or \c MPIX_Query_rocm_support().
  * For MPI implementations which don't support this function, it returns NotKnown.
  *
- * Currently, this function is only supported by MPICH, and is not very reliable.
- * For OpenMPI, querying UCX is possible, but not implemented yet.
+ * Currently, this function is only supported by MPICH and OpenMPI 5.0-rc, and is not very reliable.
  *
  * \returns     HIP-aware status in MPI implementation */
 GpuAwareMpiStatus checkMpiHipAwareSupport();
@@ -71,7 +70,7 @@ GpuAwareMpiStatus checkMpiHipAwareSupport();
  * Wrapper on top of \c MPIX_Query_ze_support()
  * For MPI implementations which don't support this function, it returns NotKnown.
  *
- * Currently, this funtion is only supported by MPICH, not OpenMPI or IntelMPI.
+ * Currently, this function is only supported by MPICH, not OpenMPI or IntelMPI.
  *
  * \returns     LevelZero-aware status in MPI implementation */
 GpuAwareMpiStatus checkMpiZEAwareSupport();
