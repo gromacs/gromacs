@@ -1062,6 +1062,23 @@ int Mdrunner::mdrunner()
     const DevelopmentFeatureFlags devFlags = manageDevelopmentFeatures(
             mdlog, useGpuForNonbonded, pmeRunMode, cr->sizeOfDefaultCommunicator, domdecOptions.numPmeRanks);
 
+    if (hw_opt.threadAffinity == ThreadAffinity::On && devFlags.enableGpuPmeDecomposition && GMX_USE_cuFFTMp)
+    {
+        // cuFFTMp uses NVSHMEM which requires CPU proxy thread, this thread may cause contention
+        // with application thread with `-pin on`. Future versions of cuFFTMp will not require
+        // CPU proxy thread whenever it moves to NVSHMEM's GPU initiated communication transport
+        // then we can remove this warning accordingly.
+        GMX_LOG(mdlog.warning)
+                .asParagraph()
+                .appendTextFormatted(
+                        "Note: This run has enabled the GPU PME decomposition feature "
+                        "in combination with the cuFFTMp library and requested setting thread "
+                        "affinities ('-pin on') which may result in poor performance."
+                        "For best performance we recommend using the job scheduler or MPI launcher "
+                        "to set CPU, GPU and network affinities and omitting the '-pin on' "
+                        "option in runs with GPU PME decomposition using cuFFTMp.");
+    }
+
     const bool useModularSimulator = checkUseModularSimulator(false,
                                                               inputrec.get(),
                                                               doRerun,
