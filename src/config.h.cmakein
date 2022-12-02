@@ -437,6 +437,12 @@
 /* Define if we have MKL available */
 #cmakedefine01 HAVE_LIBMKL
 
+// Describes the origin of BLAS routines
+#define GMX_DESCRIBE_BLAS "@GMX_DESCRIBE_BLAS@"
+
+// Describes the origin of LAPACK routines
+#define GMX_DESCRIBE_LAPACK "@GMX_DESCRIBE_LAPACK@"
+
 /* Define if we have lmfit support */
 #cmakedefine01 HAVE_LMFIT
 

@@ -393,15 +393,27 @@ void gmx_print_version_info(gmx::TextWriter* writer)
     writer->writeLine(formatString("C++ compiler:       %s", BUILD_CXX_COMPILER));
     writer->writeLine(formatString(
             "C++ compiler flags: %s %s", BUILD_CXXFLAGS, CMAKE_BUILD_CONFIGURATION_CXX_FLAGS));
-#if HAVE_LIBMKL
-    /* MKL might be used for LAPACK/BLAS even if FFTs use FFTW, so keep it separate */
-    MKLVersion mklVersion;
-    mkl_get_version(&mklVersion);
-    writer->writeLine(formatString("Intel MKL version:  %d.%d.%d",
-                                   mklVersion.MajorVersion,
-                                   mklVersion.MinorVersion,
-                                   mklVersion.UpdateVersion));
-#endif
+
+    // Describe the BLAS and LAPACK libraries. We generally don't know
+    // much about what external library was detected, but we do in the
+    // case of MKL so then it is reported.
+    if (HAVE_LIBMKL && std::strstr(GMX_DESCRIBE_BLAS, "MKL") != nullptr)
+    {
+        writer->writeLine(formatString("BLAS library:       %s", describeMkl().c_str()));
+    }
+    else
+    {
+        writer->writeLine(formatString("BLAS library:       %s", GMX_DESCRIBE_BLAS));
+    }
+    if (HAVE_LIBMKL && std::strstr(GMX_DESCRIBE_LAPACK, "MKL") != nullptr)
+    {
+        writer->writeLine(formatString("LAPACK library:     %s", describeMkl().c_str()));
+    }
+    else
+    {
+        writer->writeLine(formatString("LAPACK library:     %s", GMX_DESCRIBE_LAPACK));
+    }
+
 #if GMX_GPU_OPENCL
     writer->writeLine(formatString("OpenCL include dir: %s", OPENCL_INCLUDE_DIR));
     writer->writeLine(formatString("OpenCL library:     %s", OPENCL_LIBRARY));
