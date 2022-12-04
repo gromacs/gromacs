@@ -73,6 +73,9 @@ function(_getHipSyclCmakeFlags RETURN_VAR)
 endfunction()
 
 if(GMX_SYCL_HIPSYCL)
+    if (NOT CMAKE_CXX_COMPILER_ID MATCHES "Clang" AND NOT CMAKE_CXX_COMPILER_ID MATCHES "IntelLLVM")
+        message(FATAL_ERROR "HipSYCL build requires Clang compiler, but ${CMAKE_CXX_COMPILER_ID} is used")
+    endif()
     set(HIPSYCL_CLANG "${CMAKE_CXX_COMPILER}")
     # -Wno-unknown-cuda-version because Clang often complains about the newest CUDA, despite working fine with it.
     # -Wno-unknown-attributes because hipSYCL does not support reqd_sub_group_size (because it can only do some sub group sizes).
