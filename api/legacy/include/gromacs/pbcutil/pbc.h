@@ -187,7 +187,7 @@ PbcType guessPbcType(const matrix box);
  * \param[in] box   The simulation cell
  * \return TRUE when the box was corrected.
  */
-bool correct_box(FILE* fplog, int step, tensor box);
+bool correct_box(FILE* fplog, int64_t step, tensor box);
 
 /*! \brief Initiate the periodic boundary condition algorithms.
  *

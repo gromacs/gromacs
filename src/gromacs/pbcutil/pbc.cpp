@@ -78,10 +78,20 @@ enum
     epbcdxUNSUPPORTED
 };
 
-//! Margin factor for error message
-#define BOX_MARGIN 1.0010
-//! Margin correction if the box is too skewed
-#define BOX_MARGIN_CORRECT 1.0005
+//! Margin for correction when the box is too skewed
+static constexpr real sc_skewnessMargin = 1.001;
+/*! \brief Margin factor for warning/error message
+ *
+ * The term 0.004 is just sufficient to not warn for a box that
+ * is deformed with a shear rate of 0.001 ps^-1 over a pairlist
+ * lifetime of 0.2 ps.
+ *
+ * Note that there can be errors in periodic images for atom pairs
+ * close to half the box size. In nearly all cases the cut-off
+ * distance is more then 0.5% shorter than half the minimum periodic
+ * vector length, so there is no issue.
+ */
+static constexpr real sc_boxSkewnessMarginForWarning = sc_skewnessMargin + 0.004;
 
 int numPbcDimensions(PbcType pbcType)
 {
@@ -90,7 +100,9 @@ int numPbcDimensions(PbcType pbcType)
     switch (pbcType)
     {
         case PbcType::Unset:
-            gmx_fatal(FARGS, "Number of PBC dimensions was requested before the PBC type set.");
+            GMX_RELEASE_ASSERT(false,
+                               "Number of PBC dimensions was requested before the PBC type set.");
+            break;
         case PbcType::Xyz: npbcdim = 3; break;
         case PbcType::XY: npbcdim = 2; break;
         case PbcType::Screw: npbcdim = 3; break;
@@ -154,10 +166,10 @@ const char* check_box(PbcType pbcType, const matrix box)
     {
         ptr = "The unit cell can not have off-diagonal x-components with screw pbc";
     }
-    else if (std::fabs(box[YY][XX]) > BOX_MARGIN * 0.5 * box[XX][XX]
+    else if (std::fabs(box[YY][XX]) > sc_boxSkewnessMarginForWarning * 0.5_real * box[XX][XX]
              || (pbcType != PbcType::XY
-                 && (std::fabs(box[ZZ][XX]) > BOX_MARGIN * 0.5 * box[XX][XX]
-                     || std::fabs(box[ZZ][YY]) > BOX_MARGIN * 0.5 * box[YY][YY])))
+                 && (std::fabs(box[ZZ][XX]) > sc_boxSkewnessMarginForWarning * 0.5_real * box[XX][XX]
+                     || std::fabs(box[ZZ][YY]) > sc_boxSkewnessMarginForWarning * 0.5_real * box[YY][YY])))
     {
         ptr = "Triclinic box is too skewed.";
     }
@@ -258,18 +270,18 @@ PbcType guessPbcType(const matrix box)
 }
 
 //! Check if the box still obeys the restrictions, if not, correct it
-static int correct_box_elem(FILE* fplog, int step, tensor box, int v, int d)
+static int correct_box_elem(FILE* fplog, const int64_t step, matrix box, const int v, const int d)
 {
     int shift, maxshift = 10;
 
     shift = 0;
 
     /* correct elem d of vector v with vector d */
-    while (box[v][d] > BOX_MARGIN_CORRECT * 0.5 * box[d][d])
+    while (box[v][d] > sc_skewnessMargin * 0.5_real * box[d][d])
     {
         if (fplog)
         {
-            fprintf(fplog, "Step %d: correcting invalid box:\n", step);
+            fprintf(fplog, "Step %" PRId64 ": correcting invalid box:\n", step);
             pr_rvecs(fplog, 0, "old box", box, DIM);
         }
         rvec_dec(box[v], box[d]);
@@ -283,11 +295,11 @@ static int correct_box_elem(FILE* fplog, int step, tensor box, int v, int d)
             gmx_fatal(FARGS, "Box was shifted at least %d times. Please see log-file.", maxshift);
         }
     }
-    while (box[v][d] < -BOX_MARGIN_CORRECT * 0.5 * box[d][d])
+    while (box[v][d] < -sc_skewnessMargin * 0.5_real * box[d][d])
     {
         if (fplog)
         {
-            fprintf(fplog, "Step %d: correcting invalid box:\n", step);
+            fprintf(fplog, "Step %" PRId64 ": correcting invalid box:\n", step);
             pr_rvecs(fplog, 0, "old box", box, DIM);
         }
         rvec_inc(box[v], box[d]);
@@ -305,7 +317,7 @@ static int correct_box_elem(FILE* fplog, int step, tensor box, int v, int d)
     return shift;
 }
 
-gmx_bool correct_box(FILE* fplog, int step, tensor box)
+gmx_bool correct_box(FILE* fplog, const int64_t step, matrix box)
 {
     int      zy, zx, yx;
     gmx_bool bCorrected;
@@ -344,7 +356,7 @@ static void low_set_pbc(t_pbc* pbc, PbcType pbcType, const ivec dd_pbc, const ma
     for (int i = 0; (i < DIM); i++)
     {
         pbc->fbox_diag[i]  = box[i][i];
-        pbc->hbox_diag[i]  = pbc->fbox_diag[i] * 0.5;
+        pbc->hbox_diag[i]  = pbc->fbox_diag[i] * 0.5_real;
         pbc->mhbox_diag[i] = -pbc->hbox_diag[i];
     }
 
@@ -514,7 +526,7 @@ static void low_set_pbc(t_pbc* pbc, PbcType pbcType, const ivec dd_pbc, const ma
                                 d2old += gmx::square(pos[d]);
                                 d2new += gmx::square(pos[d] + trial[d]);
                             }
-                            if (BOX_MARGIN * d2new < d2old)
+                            if (sc_skewnessMargin * d2new < d2old)
                             {
                                 /* Check if shifts with one box vector less do better */
                                 gmx_bool bUse = TRUE;
@@ -528,7 +540,7 @@ static void low_set_pbc(t_pbc* pbc, PbcType pbcType, const ivec dd_pbc, const ma
                                         {
                                             d2new_c += gmx::square(pos[d] + trial[d] - shift * box[dd][d]);
                                         }
-                                        if (d2new_c <= BOX_MARGIN * d2new)
+                                        if (d2new_c <= sc_skewnessMargin * d2new)
                                         {
                                             bUse = FALSE;
                                         }
@@ -1232,14 +1244,14 @@ void calc_box_center(int ecenter, const matrix box, rvec box_center)
             {
                 for (d = 0; d < DIM; d++)
                 {
-                    box_center[d] += 0.5 * box[m][d];
+                    box_center[d] += 0.5_real * box[m][d];
                 }
             }
             break;
         case ecenterRECT:
             for (d = 0; d < DIM; d++)
             {
-                box_center[d] = 0.5 * box[d][d];
+                box_center[d] = 0.5_real * box[d][d];
             }
             break;
         case ecenterZERO: break;
@@ -1500,7 +1512,7 @@ void put_atoms_in_triclinic_unitcell(int ecenter, const matrix box, gmx::ArrayRe
     {
         rvec_inc(shift_center, box[d]);
     }
-    svmul(0.5, shift_center, shift_center);
+    svmul(0.5_real, shift_center, shift_center);
     rvec_sub(box_center, shift_center, shift_center);
 
     shift_center[0] = shm01 * shift_center[1] + shm02 * shift_center[2];
