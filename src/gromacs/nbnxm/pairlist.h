@@ -228,7 +228,7 @@ typedef struct
     nbnxn_im_ei_t imei[c_nbnxnGpuClusterpairSplit];
 } nbnxn_cj_packed_t;
 
-/*! Packed j-cluster list
+/*! \brief Packed j-cluster list
  *
  * Four j-cluster indices are stored per integer in an nbnxn_cj_packed_t.
  */

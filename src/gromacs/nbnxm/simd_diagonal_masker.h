@@ -173,7 +173,7 @@ public:
     }
 
 private:
-    /*! The diagonal mask array for:
+    /*! \brief The diagonal mask array for:
      * j-cluster index * 2 = i-cluster index
      * j-cluster index * 2 + 1 = i-cluster index
      */
@@ -204,7 +204,7 @@ public:
     }
 
 private:
-    /*! The diagonal mask array for:
+    /*! \brief The diagonal mask array for:
      * j-cluster index = i-cluster index * 2
      * j-cluster index = i-cluster index * 2 + 1
      */

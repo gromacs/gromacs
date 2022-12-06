@@ -51,7 +51,7 @@ namespace gmx
 template<typename>
 class ArrayRef;
 
-/*! \brief A clone of a bool as a workaround on the templat specialization
+/*! \brief A clone of a bool as a workaround on the template specialization
  *         of std::vector<bool> that is incompatible with ArrayRef.
  *
  * Use when you need to create an ArrayRef on a vector of boolean values.
