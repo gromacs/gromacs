@@ -4,7 +4,7 @@
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
  * Copyright (c) 2013,2014,2015,2016,2017 by the GROMACS development team.
- * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020,2022, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -122,7 +122,8 @@ void calculateLongRangeNonbondeds(t_forcerec*                   fr,
     /* Do long-range electrostatics and/or LJ-PME
      * and compute PME surface terms when necessary.
      */
-    if ((computePmeOnCpu || fr->ic->eeltype == eelEWALD || haveEwaldSurfaceTerm)
+    if ((computePmeOnCpu || fr->ic->eeltype == eelEWALD || haveEwaldSurfaceTerm || fr->qsum[0] != 0
+         || fr->qsum[1] != 0)
         && stepWork.computeNonbondedForces)
     {
         int  status = 0;
