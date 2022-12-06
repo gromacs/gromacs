@@ -119,7 +119,7 @@ macro(manage_linear_algebra_library name function_in_library)
             if (NOT _find_quietly)
                 message(STATUS "${_message_text}Using GROMACS built-in ${name}.")
             endif()
-            set(GMX_DESCRIBE_${name} "Internal" CACHE STRING)
+            set(GMX_DESCRIBE_${name} "Internal")
         endif()
     endif()
 
