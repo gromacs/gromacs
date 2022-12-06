@@ -39,7 +39,7 @@ pushd python_packaging/gmxapi
 popd
 
 # Run Python unit tests.
-python -m pytest python_packaging/gmxapi/test --junitxml="$PY_UNIT_TEST_XML" --threads=2
+python -m pytest python_packaging/gmxapi/test --junitxml="$PY_UNIT_TEST_XML" --threads=${KUBERNETES_CPU_REQUEST}
 
 # Note: Multiple pytest processes getting --junitxml output file argument
 # may cause problems, so we set the option on only one of the launched processes.
@@ -55,6 +55,6 @@ if [ -x "$(which mpiexec)" ]; then
       -x OMP_NUM_THREADS=1 \
       --mca opal_warn_on_missing_libcuda 0 \
       --mca orte_base_help_aggregate 0 \
-      -n 1 "${PROGRAM[@]}" --junitxml="$PY_MPI_UNIT_TEST_XML" : \
-      -n 1 "${PROGRAM[@]}"
+      -n $((KUBERNETES_CPU_REQUEST/2)) "${PROGRAM[@]}" --junitxml="$PY_MPI_UNIT_TEST_XML" : \
+      -n $((KUBERNETES_CPU_REQUEST/2)) "${PROGRAM[@]}"
 fi

@@ -46,7 +46,9 @@ import importlib
 import os
 import warnings
 import tempfile
-from typing import Optional
+from typing import Optional, TYPE_CHECKING, Any
+
+import numpy as np
 
 import gmxapi._gmxapi as _gmxapi
 import gmxapi.utility
@@ -55,7 +57,13 @@ from gmxapi import logger as root_logger
 from gmxapi.exceptions import ApiError
 from gmxapi.exceptions import DataShapeError
 from gmxapi.exceptions import ProtocolError
-from gmxapi.runtime import ResourceAllocation, ResourceAssignment, assign_ensemble
+
+if TYPE_CHECKING:
+    from gmxapi.runtime import (
+        ResourceAllocation,
+        ResourceAssignment,
+    )
+    import mpi4py.MPI
 
 # Module-level logger
 logger = root_logger.getChild("simulation.context")
@@ -231,19 +239,20 @@ def _md(context, element):
             # Provide closure with which to execute tasks for this node.
             # TODO(#4079): launch is explicitly a collaboration with the Context
             #  to build a Session, and should be decoupled from element.workspec._context
-            def launch(rank=None):
-                assert rank is not None
+            def launch(ensemble_member=None):
+                assert ensemble_member is not None
                 # Note that gmxapi 0.0.7 does not support any consumers of mdrun, so the graph cannot be
                 # further widened, and launch can assume that *rank* <= dag width.
                 assert dag.graph["width"] == required_width
                 assert len(self.infile) == required_width
                 assert len(self.runtime_params) == required_width
-                if rank > required_width:
+                if ensemble_member > required_width:
                     raise ApiError(
-                        f"Trying to launch MD on rank {rank}, but ensemble has width {required_width}."
+                        f"Trying to launch MD for simulator {ensemble_member}, "
+                        f"but ensemble has width {required_width}."
                     )
-                infile = self.infile[rank]
-                runtime_params = self.runtime_params[rank]
+                infile = self.infile[ensemble_member]
+                runtime_params = self.runtime_params[ensemble_member]
 
                 # Copy and update, if required by `end_time` parameter.
                 temp_filename = None
@@ -311,266 +320,6 @@ def _md(context, element):
     return Builder(element)
 
 
-def _get_mpi_ensemble_communicator(session_communicator, ensemble_size):
-    """Get an ensemble communicator from an MPI communicator.
-
-    An ensemble communicator is an object that implements mpi4py.MPI.Comm methods
-    as described elsewhere in this documentation.
-
-    :param session_communicator: MPI communicator with the interface described by mpi4py.MPI.Comm
-    :param ensemble_size: number of ensemble members
-    :return: communicator of described size on participating ranks and null communicator on any others.
-
-    Must be called exactly once in every process in `communicator`. It is the
-    responsibility of the calling code to refrain from running ensemble operations
-    if not part of the ensemble. The calling code determines this by comparing its
-    session_communicator.Get_rank() to ensemble_size. This is not a good solution
-    because it assumes there is a single ensemble communicator and that ensemble
-    work is allocated to ranks serially from session_rank 0. Future work might
-    use process groups associated with specific operations in the work graph so
-    that processes can check for membership in a group to decide whether to use
-    their ensemble communicator. Another possibility would be to return None
-    rather than a null communicator in processes that aren't participating in
-    a given ensemble.
-
-    TODO(#4422): Support MPI-GROMACS with more than one rank per ensemble member.
-    The function needs to be expanded to allow the simulation_root process of each
-    ensemble member to participate in the ensemble communicator.
-    """
-    try:
-        from mpi4py import MPI
-    except ImportError:
-        raise exceptions.FeatureNotAvailableError(
-            "MPI ensemble communicator requires mpi4py package."
-        )
-
-    if (
-        not isinstance(session_communicator, MPI.Comm)
-        or session_communicator == MPI.COMM_NULL
-    ):
-        raise exceptions.UsageError(
-            "session_communicator must be a valid mpi4py.MPI.Comm"
-        )
-
-    session_size = session_communicator.Get_size()
-    session_rank = session_communicator.Get_rank()
-
-    # Check the ensemble "width" against the available parallelism
-    if ensemble_size > session_size:
-        msg = "Work array must fit in the MPI communicator: "
-        msg += f"array width {ensemble_size} > size {session_size}."
-        raise exceptions.UsageError(msg)
-    if ensemble_size < session_size:
-        msg = "MPI context is wider than necessary to run this work:  array width {} vs. size {}."
-        warnings.warn(msg.format(ensemble_size, session_size))
-
-    # Create an appropriate sub-communicator for the present work. Extra ranks will be in a
-    # sub-communicator with no work.
-    if session_rank < ensemble_size:
-        # The session launcher should maintain an inventory of the ensembles and
-        # provide an appropriate tag, but right now we just have a sort of
-        # Boolean: ensemble or not.
-        color = 0
-    else:
-        color = MPI.UNDEFINED
-
-    ensemble_communicator = session_communicator.Split(color, session_rank)
-
-    ensemble_communicator_size = ensemble_communicator.Get_size()
-    ensemble_communicator_rank = ensemble_communicator.Get_rank()
-
-    logger.info(
-        "Session rank {} assigned to rank {} of subcommunicator {} of size {}".format(
-            session_rank,
-            ensemble_communicator_rank,
-            ensemble_communicator,
-            ensemble_communicator_size,
-        )
-    )
-
-    # There isn't a good reason to worry about special handling for a null communicator,
-    # which we have to explicitly avoid "free"ing, so let's just get rid of it.
-    if ensemble_communicator == MPI.COMM_NULL:
-        ensemble_communicator = None
-
-    return ensemble_communicator
-
-
-class _TrivialEnsembleCommunicator:
-    """Mimic an mpi4py.MPI.Comm of size 1 when mpi4py is not available.
-
-    The ensemble communicator is a standard resource available to MD extension
-    code, but we don't want to require mpi4py or MPI bindings for single
-    simulations or ensembles of size 1.
-
-    This class is not intended for use outside of support for the
-    ``ensemble_update`` feature in the gmxapi session resources provided to
-    MD simulation participants.
-
-    .. versionchanged:: 0.4
-
-        This class replaces ``_DummyCommunicator`` with an explicitly more
-        limited use case.
-
-    """
-
-    def __init__(self):
-        import numpy
-
-        self._numpy = numpy
-
-    def Dup(self):
-        return self
-
-    def Free(self):
-        return
-
-    def Allreduce(self, send, recv):
-        logger.debug("Faking an Allreduce for ensemble of size 1.")
-        send_buffer = self._numpy.array(send, copy=False)
-        recv_buffer = self._numpy.array(recv, copy=False)
-        recv_buffer[:] = send_buffer[:]
-
-    def Get_size(self):
-        return 1
-
-    def Get_rank(self):
-        return 0
-
-    def __repr__(self):
-        return f"{self.__class__.__qualname__}()"
-
-
-def _get_ensemble_communicator(communicator, ensemble_size):
-    """Provide ensemble_communicator feature in active_context, if possible.
-
-    If not None, the provided *communicator* must be a valid `mpi4py.MPI.Comm`
-    (not `mpi4py.MPI.COMM_NULL`).
-
-    Must be called on all ranks in `communicator`. The communicator returned
-    must be freed by a call to its `Free()` instance method. This function is
-    best used in a context manager's `__enter__()` method so that the
-    corresponding `context.Free()` can be called in the `__exit__` method.
-
-    Arguments:
-        communicator : session communicator for the session with the ensemble.
-        ensemble_size : ensemble size of the requested ensemble communicator
-
-    The ensemble_communicator feature should be present if the Context can
-    provide communication between all ensemble members. The Context should
-    determine this at the launch of the session and set the
-    ``_session_ensemble_communicator`` attribute to provide an object that
-    implements the same interface as an mpi4py.MPI.Comm object. Actually, this is
-    a temporary shim, so the only methods that need to be available are `Get_size`,
-    `Get_rank` and something that can be called as
-    Allreduce(send, recv) where send and recv are objects providing the Python
-    buffer interface.
-
-    Currently, only one ensemble can be managed in a session.
-    """
-    # For trivial cases, don't bother trying to use MPI
-    # Note: all ranks in communicator must agree on the size of the work!
-    # Note: If running with a dummy session communicator in an MPI session (user error)
-    # every rank will think it is the only rank and will try to perform the
-    # same work.
-    if ensemble_size == 1:
-        message = (
-            "Getting trivial ensemble communicator for ensemble of size {}".format(
-                ensemble_size
-            )
-        )
-        if communicator is not None:
-            message += " for session rank {} in session communicator of size {}".format(
-                communicator.Get_rank(), communicator.Get_size()
-            )
-        logger.debug(message)
-        ensemble_communicator = _TrivialEnsembleCommunicator()
-    else:
-        assert ensemble_size > 1
-        if not all(hasattr(communicator, func) for func in ("Get_rank", "Get_size")):
-            raise exceptions.FeatureNotAvailableError(
-                f"Invalid communicator for ensemble simulation: {communicator}"
-            )
-        message = "Getting an MPI sub-communicator for ensemble of size {}".format(
-            ensemble_size
-        )
-        message += " for session rank {} in session communicator of size {}".format(
-            communicator.Get_rank(), communicator.Get_size()
-        )
-        logger.debug(message)
-        ensemble_communicator = _get_mpi_ensemble_communicator(
-            communicator, ensemble_size
-        )
-
-    return ensemble_communicator
-
-
-def _get_ensemble_update(context):
-    """Set up a simple ensemble resource.
-
-    The context should call this function once per session to get an `ensemble_update`
-    function object.
-
-    This is a draft of a Context feature that may not be available in all
-    Context implementations. This factory function can be wrapped as a
-    ``ensemble_update`` "property" in a Context instance method to produce a Python function
-    with the signature ``update(context, send, recv, tag=None)``.
-
-    This feature requires that the Context is capabable of providing the
-    ensemble_communicator feature and the numpy feature.
-    If both are available, the function object provided by
-    ``ensemble_update`` provides
-    the ensemble reduce operation used by the restraint potential plugin in the
-    gmxapi sample_restraint repository. Otherwise, the provided function object
-    will log an error and then raise an exception.
-
-    gmxapi 0.0.5 and 0.0.6 MD plugin clients look for a member function named
-    ``ensemble_update`` in the Context that launched them. In the future,
-    clients will use session resources to access ensemble reduce operations.
-    In the mean time, a transitional implementation can involve defining a
-    ``ensemble_update`` property in the Context object that acts as a factory
-    function to produce the reducing operation, if possible with the given
-    resources.
-    """
-    try:
-        import numpy
-    except ImportError:
-        message = "ensemble_update requires numpy, but numpy is not available."
-        logger.error(message)
-        raise exceptions.FeatureNotAvailableError(message)
-
-    def _ensemble_update(active_context, send, recv, tag=None):
-        assert not tag is None
-        assert str(tag) != ""
-        if not tag in active_context.part:
-            active_context.part[tag] = 0
-        logger.debug("Performing ensemble update.")
-        active_context._session_ensemble_communicator.Allreduce(send, recv)
-        buffer = numpy.array(recv, copy=False)
-        buffer /= active_context.work_width
-        suffix = "_{}.npz".format(tag)
-        # These will end up in the working directory and each ensemble member will have one
-        filename = str(
-            "rank{}part{:04d}{}".format(
-                active_context.rank, int(active_context.part[tag]), suffix
-            )
-        )
-        numpy.savez(filename, recv=recv)
-        active_context.part[tag] += 1
-
-    def _no_ensemble_update(active_context, send, recv, tag=None):
-        message = "Attempt to call ensemble_update() in a Context that does not provide the operation."
-        # If we confirm effective exception handling, remove the extraneous log.
-        logger.error(message)
-        raise exceptions.FeatureNotAvailableError(message)
-
-    if context._session_ensemble_communicator is not None:
-        functor = _ensemble_update
-    else:
-        functor = _no_ensemble_update
-    return functor
-
-
 class Context(object):
     """Manage an array of simulation work executing in parallel.
 
@@ -585,18 +334,16 @@ class Context(object):
 
     Attributes:
         work :obj:`gmx.workflow.WorkSpec`: specification of work to be performed when a session is launched.
-        rank : numerical index of the current worker in a running session (None if not running)
+        ensemble_rank : numerical index of the simulator task in an ensemble (for participating ranks).
+        simulator_rank : numerical index of the current worker in a running simulator (None if not running).
         work_width : Detected number of co-scheduled work elements.
         elements : dictionary of references to elements of the workflow.
 
-    `rank`, `work_width`, and `elements` are empty or None until the work is processed, as during session launch.
+    *rank*, *work_width*, and *elements* are empty or None until the work is
+    processed, as during session launch.
 
     To run multiple simulations at a time, whether ensembles or independent
     simulations, Python should be invoked in an MPI environment with `mpi4py`.
-    The Context can then use one MPI rank per simulation. It is recommended that
-    GROMACS is compiled without MPI in this case. (Thread-MPI is recommended.)
-    MPI domain decomposition is not explicitly supported with this Context
-    implementation.
 
     Example:
 
@@ -610,7 +357,7 @@ class Context(object):
         ...    # such things.
         ...    # rank = session.rank
         ...    # The local context object knows where it fits in the global array.
-        ...    rank = context.rank
+        ...    member = context.ensemble_rank
         ...    output_path = os.path.join(context.workdir_list[rank], 'traj.trr')
         ...    assert(os.path.exists(output_path))
         ...    print('Worker {} produced {}'.format(rank, output_path))
@@ -622,32 +369,43 @@ class Context(object):
 
     Implementation notes:
 
-    To produce a running session, the Context __enter__() method is called, according to the Python context manager
-    protocol. At this time, the attached WorkSpec must be feasible on the available resources. To turn the specified
-    work into an executable directed acyclic graph (DAG), handle objects for the elements in the work spec are sequenced
-    in dependency-compatible order and the context creates a "builder" for each according to the element's operation.
-    Each builder is subscribed to the builders of its dependency elements. The DAG is then assembled by calling each
-    builder in sequence. A builder can add zero, one, or more nodes and edges to the DAG.
+    To produce a running session, the Context __enter__() method is called,
+    according to the Python context manager protocol. At this time, the attached
+    WorkSpec must be feasible  on the available resources. To turn the specified
+    work into an executable directed acyclic graph (DAG), handle objects for the
+    elements in the work spec are sequenced in dependency-compatible order and
+    the context creates a "builder" for each according to the element's operation.
+    Each builder is subscribed to the builders of its dependency elements. The
+    DAG is then assembled by calling each builder in sequence. A builder can add
+    zero, one, or more nodes and edges to the DAG.
 
-    The Session is then launched from the DAG. What happens next is implementation-dependent, and it may take a while for
-    us to decide whether and how to standardize interfaces for the DAG nodes and edges and/or execution protocols. I
-    expect each node will at least have a `launch()` method, but will also probably have typed input and output ports as well as some signalling.
-    A sophisticated and abstract Session implementation could schedule work only to satisfy data dependencies of requested
-    output upon request. Our immediate implementation will use the following protocol.
+    The Session is then launched from the DAG. What happens next is
+    implementation-dependent, and it may take a while for us to decide whether
+    and how to standardize interfaces for the DAG nodes and edges and/or execution
+    protocols. I expect each node will at least have a `launch()` method, but will
+    also probably have typed input and output ports as well as some signalling.
+    A sophisticated and abstract Session implementation could schedule work only
+    to satisfy data dependencies of requested output upon request. Our immediate
+    implementation will use the following protocol.
 
-    Each node has a `launch()` method. When the session is entered, the `launch()` method is called for each node in
-    dependency order. The launch method returns either a callable (`run()` function) or None, raising an exception in
-    case of an error. The sequence of callables is stored by the Session. When Session.run() is called, the
-    sequence of callables is called in order. If StopIteration is raised by the callable, it is removed from the sequence.
+    Each node has a `launch()` method. When the session is entered, the `launch()`
+    method is called for each node in dependency order. The launch method returns
+    either a callable (`run()` function) or None, raising an exception in
+    case of an error. The sequence of callables is stored by the Session. When
+    Session.run() is called, the sequence of callables is called in order. If
+    StopIteration is raised by the callable, it is removed from the sequence.
     The sequence is processed repeatedly until there are no more callables.
 
-    Note that this does not rigorously handle races or deadlocks, or flexibility in automatically chasing dependencies. A more
-    thorough implementation could recursively call launch on dependencies (launch could be idempotent or involve some
-    signalling to dependents when complete), run calls could be entirely event driven, and/or nodes could "publish"
-    output (including just a completion message), blocking for acknowledgement before looking for the next set of subscribed inputs.
+    Note that this does not rigorously handle races or deadlocks, or flexibility
+    in automatically chasing dependencies. A more thorough implementation could
+    recursively call launch on dependencies (launch could be idempotent or involve
+    some signalling to dependents when complete), run calls could be entirely
+    event driven, and/or nodes could "publish" output (including just a completion
+    message), blocking for acknowledgement before looking for the next set of
+    subscribed inputs.
     """
 
-    _api_context: _gmxapi.Context = None
+    _api_context: Optional[_gmxapi.Context] = None
     """gmxapi library Context object for managing GROMACS resources.
     
     .. versionchanged:: 0.4
@@ -657,69 +415,55 @@ class Context(object):
         communicator provided to the Context (and will not issue an unusable
         Context object). It is easier to handle a ``None`` object than to
         develop and use some sort of mock or dummy context.
+
     """
 
-    __communicator: Optional
-    """Global communicator (optionally) provided by caller.
-
-    Deprecated in favor of a session allocation provided as a
-    gmxapi.runtime.ResourceAllocation.
+    __workdir_list: Optional[list] = None
+    """Caller-provided working directories (if any).
+    
+    Support the (deprecated) *workdir_list* key word argument.
     """
 
-    __session_allocation: Optional[ResourceAllocation]
-    """Base resources from which to assign task resources."""
+    __session_allocation: "Optional[ResourceAllocation[mpi4py.MPI.Comm, Any]]" = None
+    """Base resources (if any) from which to assign task resources.
+    
+    To be removed when we no longer accept *communicator* instead of *resources*.
+    """
 
-    _session_resources: Optional[ResourceAssignment] = None
+    _session_resources: "Optional[ResourceAssignment[mpi4py.MPI.Comm, Any]]" = None
     """Session scoped communication resources (where applicable).
     
     When the Context is used as a Python context manager, the state of the
     Context during the `with` block is represented by a Session.
             
     Until better Session abstraction exists at the Python level,
-    _session_resources will be added to and removed from the
-    context at session entry and exit, Duped from __communicator or
-    __session_allocation, if available.
-    
-    Ensemble and simulator resources will be derived from session resources.
+    _session_resources may be added either at Context initialization or during
+    session entry. _session_resources will be closed and removed at exit.
     """
 
-    _session_ensemble_communicator: Optional = None
-    """Session resource for communication between ensemble members.
+    _session_ensemble_communicator: "Optional[mpi4py.MPI.Comm]" = None
+    """Cached Session resource for communication between ensemble members.
 
-    If necessary, a _session_ensemble_communicator
-    will be split from _session_resources.communicator() for simulation
-    ensembles present in the specified work.
-    
-    Co-scheduled ensemble work has access to a communicator for the ensemble.
-    Ranks are mapped to member_id.
-    
-    Only a subset of MPI calls are available on trivial ensembles (size 1),
-    for which a "dummy" communicator may be issued (for compatibility and
-    optimization).
+    Retrieved from _session_resources before a Session for lower overhead
+    in `ensemble_update()`.
     """
 
-    _simulator_resources: Optional[ResourceAssignment] = None
-    """Resources for the GROMACS library Simulator instance.
-            
-    Individual simulator communicators will be split from
-    _session_resources.communicator().
-    
-    When MPI bindings are available and Python is running in an MPI context,
-    a sub-communicator is derived from the session communicator for the
-    library to use (instead of MPI_COMM_WORLD so that the GROMACS simulators
-    do not cross-talk).
-    
-    Other than non-overlapping ranks amongst the ensemble simulator
-    sub-communicators, resource allocation from the session communicator to the
-    simulation communicator(s) is not strongly specified, and will be the
-    focus of ongoing optimization.
-    
-    See Also:
-        :py:func:`~gmxapi.runtime.assign_ensemble()`
+    _base_rank: Optional[int] = None
+    """Cached rank in the parent allocation.
+
+    We release our reference to the resource assignment when exiting the Session,
+    but it is convenient to retain the rank that we were on, for debugging purposes.
+
+    This attribute is not necessarily available before the Session is being entered,
+    so it is initially None. 
     """
 
     def __init__(
-        self, work=None, *args, resources: Optional[ResourceAllocation] = None, **kwargs
+        self,
+        work=None,
+        *args,
+        resources: "Optional[ResourceAssignment[mpi4py.MPI.Comm, Any]]" = None,
+        **kwargs,
     ):
         """Create manager for computing resources.
 
@@ -736,7 +480,8 @@ class Context(object):
             communicator (optional): non-owning reference to a multiprocessing communicator
                 from which ensemble and simulation session resources will be derived (deprecated)
             resources (optional): non-owning reference to resources (such as an MPI communicator)
-                from which ensemble and simulator resources will be drawn.
+                from which ensemble and simulator resources will be drawn. Caller is responsible
+                for providing resources that are compatible with the work load.
                 (Use instead of *communicator*.)
 
         .. versionchanged:: 0.4
@@ -757,9 +502,10 @@ class Context(object):
 
         # self.__context_array = list([Context(work_element) for work_element in work])
         from .workflow import WorkSpec
+        from ..runtime import BaseContext
 
         # Handle positional arguments until we can require key-word-only.
-        # TODO(2024): Simplify this logic after a suitable deprecation period to disallow *args.
+        # TODO(release-2024): Simplify this logic after a suitable deprecation period to disallow *args.
         if not set(kwargs.keys()).issubset({"workdir_list", "communicator"}):
             raise TypeError("Unsupported key word arguments.")
         if (
@@ -778,7 +524,10 @@ class Context(object):
             workdir_list = args[0]
         if len(args) == 2:
             communicator = args[1]
-        self.__communicator = communicator
+        if communicator is not None:
+            warnings.warn(
+                "Provide *resources* instead of *communicator*.", DeprecationWarning
+            )
         # End: handling for deprecated positional argument handling.
 
         if resources is not None and communicator is not None:
@@ -786,22 +535,34 @@ class Context(object):
                 "Do not provide both *communicator* and *resources*."
             )
 
-        # We do not intend to take ownership of the resources, but until we can
-        # re-write the context manager as a function call (such as a `launch()`
-        # method), we should not impose on the caller to maintain a reference to
-        # the *resources* if the caller has no need for it and no responsibility
-        # to clean it up. Hold a reference at least until the context manager exits.
-        self.__session_allocation = resources
+        if resources is None:
+            if communicator is not None:
+                if BaseContext.communicator() is None:
+                    BaseContext.set_base_communicator(communicator)
+                elif BaseContext.communicator() != communicator:
+                    raise exceptions.UsageError(
+                        "Default base communicator already configured. "
+                        "For non-trivial resource management, "
+                        "provide Context with *resources* instead of *communicator*."
+                    )
+            self.__session_allocation = BaseContext.instance()
+        else:
+            # We do not intend to take ownership of the resources, but until we can
+            # re-write the context manager as a function call (such as a `launch()`
+            # method), we should not impose on the caller to maintain a reference to
+            # the *resources* if the caller has no need for it and no responsibility
+            # to clean it up. Hold a reference at least until the context manager exits.
+            self._session_resources = resources
 
         self.__work = WorkSpec()
         self.__workdir_list = workdir_list
 
         self._session = None
-        # Note: this attribute is a detail of MPI-based Contexts. Client access
-        # is subject to change.
-        self.rank = None
+        self.ensemble_rank = None
+        self.simulator_rank = None
 
-        # `work_width` notes the required width of an array of synchronous tasks to perform the specified work.
+        # `work_width` notes the required width of an array of synchronous tasks
+        # to perform the specified work.
         # As work elements are processed, self.work_width will be increased as appropriate.
         self.work_width = None
 
@@ -809,19 +570,24 @@ class Context(object):
         # Note that there may be a difference between built-in operations provided by this module and
         # additional operations registered at run time.
         self.__operations = dict()
-        # The map contains a builder for each operation. The builder is created by passing the element to the function
-        # in the map. The object returned must have the following methods:
+        # The map contains a builder for each operation. The builder is created
+        # by passing the element to the function in the map. The object returned
+        # must have the following methods:
         #
-        #   * add_subscriber(another_builder) : allow other builders to subscribe to this one.
-        #   * build(dag) : Fulfill the builder responsibilities by adding an arbitrary number of nodes and edges to a Graph.
+        #   * add_subscriber(another_builder) : allow other builders to subscribe
+        #       to this one.
+        #   * build(dag) : Fulfill the builder responsibilities by adding an
+        #       arbitrary number of nodes and edges to a Graph.
         #
-        # The gmxapi namespace of operations should be consistent with a specified universal set of functionalities
+        # The gmxapi namespace of operations should be consistent with a
+        # specified universal set of functionalities.
         self.__operations["gmxapi"] = {
             "md": lambda element: _md(self, element),
         }
-        # Even if TPR file loading were to become a common and stable enough operation to be specified in
-        # an API, it is unlikely to be implemented by any code outside of GROMACS, so let's not clutter
-        # a potentially more universal namespace.
+        # Even if TPR file loading were to become a common and stable enough
+        # operation to be specified in an API, it is unlikely to be implemented
+        # by any code outside GROMACS, so let's not clutter a potentially more
+        # universal namespace.
         self.__operations["gromacs"] = {
             "load_tpr": lambda element: _load_tpr(self, element),
         }
@@ -984,48 +750,39 @@ class Context(object):
     # This should be implemented for Session, not Context, and use an appropriate subcommunicator
     # that is created and freed as the Session launches and exits.
     def ensemble_update(self, send, recv, tag=None):
-        """Implement the ensemble_update member function that gmxapi through 0.0.6 expects."""
+        """Implement the ensemble_update member function that gmxapi through 0.0.6 expects.
+
+        This is a draft of a Context feature that may not be available in all
+        Context implementations.
+        This feature requires that the Context is able to provide the
+        ensemble_communicator feature and the numpy feature.
+        """
         # gmxapi through 0.0.6 expects to bind to this member function during "build".
         # This behavior needs to be deprecated (bind during launch, instead), but this
         # dispatching function should be an effective placeholder.
+
         if tag is None or str(tag) == "":
             raise exceptions.ApiError("ensemble_update must be called with a name tag.")
-        # __ensemble_update is an attribute, not an instance function, so we need to explicitly pass 'self'
-        return self.__ensemble_update(self, send, recv, tag)
 
-    def _acquire_session_resources(self):
-        """Get the value to use for the session communicator in the context manager.
+        ensemble_communicator = self._session_ensemble_communicator
 
-        If mpi4py is available, the session communicator will be duplicated
-        from *resources* or from *communicator* (if a valid MPI communicator is
-        provided) or from MPI_COMM_WORLD.
-
-        If no session communicator can be obtained,
-        ``self._session_communicator`` is set to None.
-
-        This is an internal function used in ``__enter__()``. Upon exiting the
-        session, self._session_communicator should be freed if not None.
-        """
-        try:
-            from mpi4py import MPI
-        except ImportError:
-            logger.debug("Cannot dup a communicator without mpi4py bindings.")
-            new_comm = None
-        else:
-            base_comm = None
-            if self.__communicator is not None:
-                base_comm = self.__communicator
-            elif self.__session_allocation is not None:
-                base_comm = self.__session_allocation.communicator()
-            if base_comm is None:
-                base_comm = MPI.COMM_WORLD
-            if base_comm != MPI.COMM_NULL:
-                logger.debug(f"Duplicating {base_comm} for session resources.")
-                new_comm = base_comm.Dup()
-            else:
-                new_comm = None
-        self._session_resources = ResourceAssignment(new_comm)
-        return self._session_resources
+        assert not tag is None
+        assert str(tag) != ""
+        if tag not in self.part:
+            self.part[tag] = 0
+        logger.debug("Performing ensemble update.")
+        ensemble_communicator.Allreduce(send, recv)
+        buffer = np.array(recv, copy=False)
+        buffer /= self.work_width
+        suffix = "_{}.npz".format(tag)
+        # These will end up in the working directory and each ensemble member will have one
+        filename = str(
+            "rank{}part{:04d}{}".format(
+                ensemble_communicator.Get_rank(), int(self.part[tag]), suffix
+            )
+        )
+        np.savez(filename, recv=recv)
+        self.part[tag] += 1
 
     def __enter__(self):
         """Implement Python context manager protocol, producing a Session.
@@ -1060,6 +817,7 @@ class Context(object):
         # Cache the working directory from which we were launched
         # so that __exit__() can give us proper context management behavior.
         self.__initial_cwd = os.getcwd()
+        from ..runtime import ResourceAssignment, ResourceRequirements
 
         try:
             import networkx as nx
@@ -1078,23 +836,9 @@ class Context(object):
 
         # Set up the global and local context.
         # Check the global MPI configuration
-        # Since the Context doesn't have a destructor, if we use an MPI communicator at this scope then
-        # it has to be owned and managed outside of Context.
         logger.debug(
             f'Starting session for GROMACS MPI type "{gmxapi.utility.config()["gmx_mpi_type"]}"'
         )
-
-        session_resources = self._acquire_session_resources()
-        session_communicator = session_resources.communicator()
-        if session_communicator is not None:
-            context_comm_size = session_communicator.Get_size()
-            context_rank = session_communicator.Get_rank()
-            logger.debug(
-                f"Context rank {context_rank} in context {session_communicator} of size {context_comm_size}"
-            )
-        else:
-            context_rank = 0
-        self.rank = context_rank
 
         ###
         # Process the work specification.
@@ -1129,14 +873,25 @@ class Context(object):
             dependencies = element.depends
             for dependency in dependencies:
                 # If a dependency is a list, assume it is an "ensemble" of dependencies
-                # and pick the element for corresponding to the local rank.
+                # and pick the element corresponding to the local rank.
                 if isinstance(dependency, (list, tuple)):
-                    assert len(dependency) > context_rank
-                    name = str(dependency[context_rank])
+                    if self._session_resources is None:
+                        raise exceptions.FeatureNotAvailableError(
+                            "Cannot infer dependency graph topology. Provide a ResourceAssignment instead "
+                            "of a raw Communicator for complex dependencies."
+                        )
+                    _member_id = self._session_resources.subtask_id()
+                    if _member_id is not None:
+                        assert len(dependency) > _member_id
+                        name = str(dependency[_member_id])
+                        del _member_id
+                    else:
+                        name = None
                 else:
                     name = dependency
-                logger.info("Subscribing {} to {}.".format(element.name, name))
-                builders[name].add_subscriber(new_builder)
+                if name is not None:
+                    logger.info("Subscribing {} to {}.".format(element.name, name))
+                    builders[name].add_subscriber(new_builder)
             builders[element.name] = new_builder
             builder_sequence.append(element.name)
             logger.debug("Appended {} to builder sequence.".format(element.name))
@@ -1152,15 +907,40 @@ class Context(object):
             builder.build(graph)
             logger.debug("Built.")
         self.work_width = graph.graph["width"]
-        # TODO(#4422): Record the member_id (simulator_id) and the simulation rank
-        #  within a simulator, in addition to the top-level session rank.
 
-        # Prepare working directories. This should probably be moved to some aspect of the Session and either
-        # removed from here or made more explicit to the user.
-        workdir_list = self.__workdir_list
-        if workdir_list is None:
-            workdir_list = [os.path.join(".", str(i)) for i in range(self.work_width)]
-        self.__workdir_list = list([os.path.abspath(dir) for dir in workdir_list])
+        # Support the legacy invocation (received *communicator* instead of *resources*)
+        if self.__session_allocation is not None:
+            assert self._session_resources is None
+            # We will need to own this resource assignment, being sure to close
+            # and release in __exit__.
+            _ensemble_label = 0
+            requirements = ResourceRequirements(
+                communication=tuple(
+                    {"ensemble_comm": _ensemble_label, "subtask_comm": True}
+                    for _ in range(self.work_width)
+                )
+            )
+            self._session_resources = ResourceAssignment.assign(
+                allocation=self.__session_allocation, requirements=requirements
+            )
+
+        self.ensemble_rank = self._session_resources.subtask_id()
+        self.simulator_rank = self._session_resources.subtask_rank()
+        self._base_rank = self._session_resources.base_rank()
+        member_id = self.ensemble_rank
+
+        assert self._session_resources is not None
+
+        ensemble_comm = self._session_resources.ensemble_communicator()
+        if ensemble_comm:
+            _ensemble_size = ensemble_comm.Get_size()
+            if self.work_width != _ensemble_size:
+                raise ProtocolError(
+                    f"Resource mismatch: {self.work_width} subtasks received ensemble resources for "
+                    f"{_ensemble_size}."
+                )
+            assert ensemble_comm.Get_rank() == self.ensemble_rank
+            self._session_ensemble_communicator = ensemble_comm
 
         # Provide a Session-scoped gmxapi._gmxapi.Context.
         # Provide an alternative to MPI_COMM_WORLD for the SimulatorCommunicator.
@@ -1169,53 +949,62 @@ class Context(object):
         # (or at least at the Context.__communicator level).
         # self._api_context needs to be in place before the launch() functor from
         # the _md Builder is called.
-        assert self._simulator_resources is None
-        # TODO(#4422): Allow MPI-GROMACS to use more than one rank per ensemble member.
-        ensemble_membership = list(range(self.work_width))
+        simulation_communicator = self._session_resources.communicator()
 
-        if session_resources is not None:
-            self._simulator_resources = assign_ensemble(
-                allocation=session_resources, membership=ensemble_membership
-            )
-        else:
-            self._simulator_resources = None
+        if simulation_communicator:
+            # Prepare working directories.
+            # This should probably be moved to some aspect of the Session and either
+            # removed from here or made more explicit to the user.
+            workdir_list = self.__workdir_list
+            if workdir_list is None:
+                workdir_list = [
+                    os.path.join(".", str(i)) for i in range(self.work_width)
+                ]
+            workdir_list = [os.path.abspath(directory) for directory in workdir_list]
 
-        if context_rank >= self.work_width:
-            member_id = None
-        else:
-            member_id = context_rank
-            assert self._simulator_resources is not None
-            # TODO(#4422): Allow simulation communicator with more than one rank for MPI-GROMACS.
-            simulation_communicator = self._simulator_resources.communicator()
+            self.workdir = simulation_communicator.bcast(workdir_list[member_id])
+            del workdir_list
+
+            if self._session_resources.is_subtask_root() and not os.path.exists(
+                self.workdir
+            ):
+                os.mkdir(self.workdir)
+
             try:
-                if simulation_communicator is None:
-                    self._api_context = _gmxapi.create_context()
-                else:
-                    self._api_context = _gmxapi.create_context(simulation_communicator)
+                self._api_context = _gmxapi.create_context(simulation_communicator)
             except Exception as e:
                 logger.error(
                     "Got exception when trying to create default library context.",
                     exc_info=e,
                 )
-                # TODO(#4422): Prevent potential hangs on error. Be careful with exceptions.
+                # Warning: Be careful about suppressing exceptions.
+                #
+                # Avoid collective calls in `finally` blocks or context manager
+                # `__exit__` functions!
+                #
+                # Suppressing exceptions could cause hangs on errors.
                 # There is potential divergence in collective MPI calls
                 # if all ranks do not proceed as expected.
                 # If another rank may be in (or approaching) a collective call,
                 # we must exit with an uncaught exception (or explicitly
                 # MPI_ABORT). If an exception may cause divergence between ranks,
                 # we must resolve it (or allow MPI_ABORT) before entering another
-                # collective call. Here, the exception raised is likely more
+                # collective call.
+                #
+                # Here, the exception raised is likely more
                 # informative than the AssertionError that would occur below,
                 # so re-raise.
+                #
+                # For the present context manager, the collective calls in __exit__
+                # are okay because __exit__ will not be called if __enter__ does
+                # not complete successfully.
                 raise e
 
-        if member_id is not None and member_id < self.work_width:
+        if simulation_communicator:
             assert self._api_context is not None
         else:
             assert self._api_context is None
 
-        # TODO(#4422): Choose the correct shape and membership
-        #  of the ensemble communicator for MPI-GROMACS.
         # In the first implementation, we only provide the ensemble
         # communicator to the simulation master ranks (as we do for tMPI).
         # In the long term, it may be appropriate for all simulator ranks to
@@ -1231,10 +1020,6 @@ class Context(object):
         # Session resource usable by MD extension code based on sample_restraint.
         # We should reconsider this in the context of current and future use of
         # the multisim communicator.
-        self._session_ensemble_communicator = _get_ensemble_communicator(
-            self._session_resources.communicator(), self.work_width
-        )
-        self.__ensemble_update = _get_ensemble_update(self)
         self.part = {}
 
         # launch() is currently a method of gmx.core.MDSystem and returns a gmxapi::Session.
@@ -1249,30 +1034,28 @@ class Context(object):
         #
         # This `if` condition is currently the thing that ultimately determines whether the
         # rank attempts to do work.
-        if context_rank < self.work_width:
+        if simulation_communicator:
             # print(graph)
             logger.debug(("Launching graph {}.".format(graph.graph)))
             logger.debug("Graph nodes: {}".format(str(list(graph.nodes))))
             logger.debug("Graph edges: {}".format(str(list(graph.edges))))
 
+            simulator_rank = simulation_communicator.Get_rank()
             logger.info(
-                "Launching work on context rank {}, subcommunicator rank {}.".format(
-                    self.rank, self._session_ensemble_communicator.Get_rank()
+                "Launching work for member {}, subcommunicator rank {}.".format(
+                    member_id, simulator_rank
                 )
             )
 
             # Launch the work for this rank
-            self.workdir = self.__workdir_list[self.rank]
-            if os.path.exists(self.workdir):
-                if not os.path.isdir(self.workdir):
-                    raise exceptions.Error(
-                        "{} is not a valid working directory.".format(self.workdir)
-                    )
-            else:
-                os.mkdir(self.workdir)
+            simulation_communicator.barrier()
+            if not os.path.isdir(self.workdir):
+                raise exceptions.Error(
+                    "{} is not a valid working directory.".format(self.workdir)
+                )
             os.chdir(self.workdir)
             logger.info(
-                "rank {} changed directory to {}".format(self.rank, self.workdir)
+                "rank {} changed directory to {}".format(member_id, self.workdir)
             )
             sorted_nodes = nx.topological_sort(graph)
             runners = []
@@ -1281,7 +1064,7 @@ class Context(object):
                 launcher = graph.nodes[name]["launch"]
                 # TODO(#4079): launch is explicitly a collaboration with the Context
                 #  to build a Session, which should provide SessionResources here.
-                runner = launcher(self.rank)
+                runner = launcher(member_id)
                 if runner is not None:
                     runners.append(runner)
                     closers.append(graph.nodes[name]["close"])
@@ -1319,21 +1102,21 @@ class Context(object):
 
             self._session = Session(runners, closers, self._api_context)
         else:
-            logger.info("Context rank {} has no work to do".format(self.rank))
+            logger.warning("Process {} has no work to do".format(os.getpid()))
 
             class NullSession:
-                def __init__(self, session_rank: int):
-                    self.rank = session_rank
+                def __init__(self, base_rank: int):
+                    self.rank = base_rank
 
                 def run(self):
-                    logger.info("Running null session on rank {}.".format(self.rank))
+                    logger.info(f"Running null session on rank {self.rank}.")
                     return True
 
                 def close(self):
                     logger.info("Closing null session.")
 
             assert self._api_context is None
-            self._session = NullSession(self.rank)
+            self._session = NullSession(self._session_resources.base_rank())
 
         # Make sure session has started on all ranks before continuing?
 
@@ -1343,67 +1126,50 @@ class Context(object):
     def __exit__(self, exception_type, exception_value, traceback):
         """Implement Python context manager protocol."""
         try:
-            logger.info("Exiting session on context rank {}.".format(self.rank))
+            logger.info(
+                "Exiting session on rank {}.".format(
+                    self._session_resources.base_rank()
+                )
+            )
             if self._session is not None:
                 logger.info("Calling session.close().")
                 self._session.close()
-                self._session = None
             else:
                 # Note: we should not have a None session but rather an API-compliant Session that just has no work.
                 # Reference: https://github.com/kassonlab/gmxapi/issues/41
                 logger.info("No _session known to context or session already closed.")
 
-            # TODO(#4422): Decouple and clarify the Python interpreter rank from the ensemble member.
-            # Originally, the Context (and Session) rank maps identically to the MPI rank
-            # of the Python interpreter process. In general, this is overly rigid, but
-            # makes sense for tMPI simulations constrained to run synchronously.
-            # For MPI-enabled GROMACS, it becomes essential to allow more than one
-            # Python interpreter process (Context.rank) to map to the same simulation
-            # (i.e. ensemble member).
-            if self._simulator_resources is not None:
-                logger.debug(
-                    f"Freeing simulation communicator on session rank {self.rank}."
-                )
-                self._simulator_resources.close()
-                del self._simulator_resources
-
-            if self._session_ensemble_communicator is not None:
-                logger.debug(
-                    "Freeing ensemble sub-communicator {} on rank {}".format(
-                        self._session_ensemble_communicator, self.rank
-                    )
-                )
-                self._session_ensemble_communicator.Free()
-                del self._session_ensemble_communicator
-            else:
-                logger.debug(
-                    "No ensemble sub-communicator on context rank {}.".format(self.rank)
-                )
-
             if self._api_context is not None:
+                # It really seems like we should expect an explicit close() method in the future.
+                if hasattr(self._api_context, "close"):
+                    try:
+                        self._api_context.close()
+                    except _gmxapi.Exception:
+                        logger.exception("Error while closing GROMACS API context.")
                 logger.debug(f"De-referencing library context {self._api_context}")
-                del self._api_context
+                self._api_context = None
 
-            if self._session_resources is not None:
-                logger.debug("Freeing session communicator.")
-                self._session_resources.close()
-                del self._session_resources
-
+            # We only need to free resources if we allocated them here because the caller
+            # did not provide session resources.
+            if self.__session_allocation is not None:
+                # Support the legacy invocation (*communicator* instead of *resources*)
+                if self._session_resources is not None:
+                    logger.debug("Freeing session resources.")
+                    self._session_resources.close()
+        finally:
+            self._session_resources = None
             if self.__session_allocation is not None:
                 logger.debug("Releasing session allocation.")
-                del self.__session_allocation
-        finally:
+                self.__session_allocation = None
             os.chdir(self.__initial_cwd)
-            if self._session_resources is not None:
-                logger.warning(f"Session communicator not freed on rank {self.rank}.")
-            if self._session_ensemble_communicator is not None:
-                logger.warning(f"Ensemble communicator not freed on rank {self.rank}.")
-            if self._simulator_resources is not None:
-                logger.warning(
-                    f"Simulation communicator not freed for member {self.rank}."
-                )
 
-        logger.info("Session closed on context rank {}.".format(self.rank))
+        self._session = None
+        self._session_ensemble_communicator = None
+        self.simulator_rank = None
+        # Leave `ensemble_rank` set to help clients find the right results afterwards.
+        # I.e. do not set `self.ensemble_rank = None` here.
+
+        logger.info("Session closed on context rank {}.".format(self._base_rank))
         # Note: Since sessions running in different processes can have different
         # work, sessions have not necessarily ended on all ranks. As a result,
         # starting another session on the same resources could block until the

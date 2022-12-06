@@ -19,8 +19,8 @@
   image: ${CI_REGISTRY_IMAGE}/ci-ubuntu-20.04-llvm-13
   stage: test
   variables:
-    KUBERNETES_CPU_LIMIT: 2
-    KUBERNETES_CPU_REQUEST: 2
+    KUBERNETES_CPU_LIMIT: 4
+    KUBERNETES_CPU_REQUEST: 4
     KUBERNETES_MEMORY_LIMIT: 2Gi
     KUBERNETES_MEMORY_REQUEST: 2Gi
     PY_UNIT_TEST_XML: $CI_PROJECT_DIR/py-JUnitTestResults.xml
@@ -29,6 +29,7 @@
     - source $INSTALL_DIR/bin/GMXRC
     - source $VENVPATH/bin/activate
     - export GMX_SUFFIX="_mpi_d"
+    - export KUBERNETES_CPU_REQUEST
     - GROMACS_ROOT=$PWD/$INSTALL_DIR OMP_NUM_THREADS=1 bash -x admin/ci-scripts/build-and-test-py-gmxapi.sh
   artifacts:
     reports:

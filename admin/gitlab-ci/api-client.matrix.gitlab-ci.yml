@@ -33,6 +33,7 @@
     - source $INSTALL_DIR/bin/GMXRC
     - source $VENVPATH/bin/activate
     - export GMX_SUFFIX
+    - export KUBERNETES_CPU_REQUEST
     - |
       GROMACS_ROOT=$PWD/$INSTALL_DIR \
       OMP_NUM_THREADS=1 \

@@ -72,11 +72,43 @@ The ``-m mpi4py`` ensures that the :py:mod:`mpi4py` package is available and
 allows for proper clean-up of resources.
 (See :py:mod:`mpi4py.run` for details.)
 
-.. todo:: update the following with :issue:`4422`
+Mapping ranks to ensemble members
+---------------------------------
 
-*gmxapi* ensemble simulations use one rank per simulator.
-Parallelism within a simulator is achieved through OpenMPI or "thread MPI".
-See also :issue:`4422`.
+*gmxapi* divides the root communicator into separate sub-communicators for
+each simulator in an ensemble simulation task.
+Consider a root communicator of size *S* being allocated to *N* simulators.
+Each rank *R* in the root communicator is assigned to ensemble member *M(R)*
+as follows.
+
+When |Gromacs| is built with MPI library support, *gmxapi* allocates available
+MPI ranks to simulators in (approximately) equal size consecutive chunks.
+
+.. math::
+
+    M(R) = \text{trunc}(R * N / S)
+
+For thread-MPI (or no-MPI) |Gromacs| builds,
+each simulator is assigned one process (with an attempt at even distribution).
+Based on the preceding formula,
+thread-MPI ensemble member assignment looks like the following.
+
+.. math::
+
+    M_T(R) =
+    \begin{cases}
+    M(R) &,\; M(R) \neq M(R-1) \\
+    \textrm{null} &,\; \textrm{otherwise}
+    \end{cases}
+
+In other words, without an MPI library,
+only the root rank from *M(R)* is assigned.
+
+.. versionchanged:: 0.4.0
+
+    In earlier releases, ranks were assigned to thread-MPI simulators
+    contiguously, such that high-numbered ranks *R>N* were unused.
+    MPI simulators were not supported for ensemble simulation tasks.
 
 Caveats for MPI jobs
 --------------------
