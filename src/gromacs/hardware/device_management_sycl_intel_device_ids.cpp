@@ -47,7 +47,7 @@
 #include <unordered_set>
 
 // Based on PRODUCT_CONFIG enum from
-// https://github.com/intel/compute-runtime/blob/110adb50a99ca2a13f99c54879a887608f18cdc4/third_party/aot_config_headers/platforms.h
+// https://github.com/intel/compute-runtime/blob/d75eccc0269be71ebb359d93ca7fff36cb03b9d1/third_party/aot_config_headers/platforms.h
 enum class IntelProductConfig : unsigned int
 {
     BDW        = 0x02000000, //! Broadwell (Gen8), 8.0.0
@@ -65,7 +65,7 @@ enum class IntelProductConfig : unsigned int
     TGL        = 0x03000000, //! Tiger Lake (Gen12), 12.0.0
     RKL        = 0x03004000,
     RPL_S      = 0x03008000,
-    ADL_S      = 0x03008000,
+    ADL_S      = 0x03008000, //! Alder Lake S (Gen12), 12.2.0
     ADL_P      = 0x0300c000,
     ADL_N      = 0x03010000,
     DG1        = 0x03028000, //! DG1 (XeLP), 12.10.0
@@ -88,7 +88,7 @@ enum class IntelProductConfig : unsigned int
 
 // Map from IntelProductConfig to list of PCIE IDs
 /*
- * Check out https://github.com/intel/compute-runtime, then use the the following script:
+ * Check out https://github.com/intel/compute-runtime, then use the following script:
  *
 #!/bin/bash
 set -euo pipefail
@@ -342,6 +342,7 @@ static const std::unordered_map<IntelProductConfig, std::unordered_set<unsigned 
               0xa783,
               0xa788,
               0xa789,
+              0xa78b,
       } },
     { IntelProductConfig::ADL_P,
       {
@@ -473,11 +474,10 @@ static const std::unordered_map<IntelProductConfig, std::unordered_set<unsigned 
 static constexpr std::tuple<int, int, int> getHardwareVersionFromIntelProductConfig(const IntelProductConfig productConfig)
 {
     // Convert IntelProductConfig value into (major, minor) tuple.
-    // PRODUCT_CONFIG layout is described in https://github.com/intel/compute-runtime/blob/416ca5938e7a4de58a46acae2c5c2bee4bfcca2b/shared/source/helpers/product_config_helper.h#L26
+    // PRODUCT_CONFIG layout is described in https://github.com/intel/compute-runtime/blob/d75eccc0269be71ebb359d93ca7fff36cb03b9d1/shared/source/helpers/product_config_helper.h#L31
     const int major = ((static_cast<unsigned>(productConfig) & 0xffc00000) >> 22); // first 10 bits
+    const int minor = ((static_cast<unsigned>(productConfig) & 0x3fc000) >> 14);   // next 8 bits
     // next 8 bits are reserved
-    const int minor = ((static_cast<unsigned>(productConfig) & 0x3fc000) >> 14); // next 8 bits
-    // last 6 bits is revision, ignore it
     const int revision = (static_cast<unsigned>(productConfig) & 0x3f); // last 6 bits
     return std::make_tuple(major, minor, revision);
 }
