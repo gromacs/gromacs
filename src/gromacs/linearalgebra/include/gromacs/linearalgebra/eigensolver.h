@@ -39,10 +39,13 @@
 
 /** Calculate eigenvalues/vectors a matrix stored in linear memory (not sparse).
  *
- *  This routine uses lapack to diagonalize a matrix efficiently, and
- *  the eigenvalues/vectors will be sorted in ascending order on output.
+ *  This routine uses lapack to diagonalize a real symmetric matrix efficiently,
+ *  and the eigenvalues/vectors will be sorted in ascending order on output.
  *  Gromacs comes with a built-in portable BLAS/LAPACK, but if performance
  *  matters it is advisable to link with an optimized vendor-provided library.
+ *  Note that this method uses the LAPACK routine SYEVR, which reduces the
+ *  matrix to an upper triangular form and calculates eigenvalues/vectors for
+ *  the submatrix, and this assumes symmetry of the input matrix.
  *
  *  \param a            Pointer to matrix data, total size n*n
  *                      The input data in the matrix will be destroyed/changed.
