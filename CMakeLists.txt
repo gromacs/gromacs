@@ -738,6 +738,9 @@ endif()
 set(GMX_GPU_NB_NUM_CLUSTER_PER_CELL_X 2 CACHE STRING "Number of clusters along X in a pair-search grid cell for GPU lists")
 set(GMX_GPU_NB_NUM_CLUSTER_PER_CELL_Y 2 CACHE STRING "Number of clusters along Y in a pair-search grid cell for GPU lists")
 set(GMX_GPU_NB_NUM_CLUSTER_PER_CELL_Z 2 CACHE STRING "Number of clusters along Z in a pair-search grid cell for GPU lists")
+mark_as_advanced(GMX_GPU_NB_NUM_CLUSTER_PER_CELL_X)
+mark_as_advanced(GMX_GPU_NB_NUM_CLUSTER_PER_CELL_Y)
+mark_as_advanced(GMX_GPU_NB_NUM_CLUSTER_PER_CELL_Z)
 
 # For build with CUDA/SYCL and Lib-MPI, check if underlying MPI implementation is GPU-aware
 # GPU-aware MPI allows direct GPU communication without staging data through host
@@ -955,6 +958,7 @@ option(GMX_PYTHON_PACKAGE
 mark_as_advanced(GMX_PYTHON_PACKAGE)
 
 find_package(ImageMagick QUIET COMPONENTS convert)
+mark_as_advanced(ImageMagick_EXECUTABLE_DIR)
 include(gmxTestImageMagick)
 GMX_TEST_IMAGEMAGICK(IMAGE_CONVERT_POSSIBLE)
 add_subdirectory(share)

@@ -104,7 +104,7 @@ if (NOT Sphinx_pygments_FOUND)
         ERROR_QUIET
         )
     if (_pygments_status EQUAL 0)
-        set(Sphinx_pygments_FOUND TRUE CACHE BOOL "Whether pygments module is available for Sphinx")
+        set(Sphinx_pygments_FOUND TRUE CACHE INTERNAL "Whether pygments module is available for Sphinx")
     endif()
 endif()
 

@@ -62,6 +62,7 @@ file(GENERATE
 ####
 
 option(GMX_CLANG_TIDY "Use clang-tidy" OFF)
+mark_as_advanced(GMX_CLANG_TIDY)
 if (GMX_CLANG_TIDY)
    if("${CMAKE_BUILD_TYPE}" STREQUAL "Debug")
    elseif("${CMAKE_BUILD_TYPE}" STREQUAL "RelWithAssert")

@@ -52,6 +52,7 @@ if(BUILD_TESTING AND GMX_BUILD_UNITTESTS)
     endif()
 
     add_subdirectory(googletest EXCLUDE_FROM_ALL)
+    mark_as_advanced(BUILD_GMOCK)
     target_compile_definitions(gmock
         PRIVATE
             _GNU_SOURCE=1

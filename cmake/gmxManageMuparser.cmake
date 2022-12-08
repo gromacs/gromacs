@@ -68,6 +68,14 @@ function(gmx_manage_muparser)
             gmx_target_warning_suppression(muparser /wd4310 HAS_NO_MSVC_CAST_TRUNCATES_CONSTANT_VALUE)
         endif()
 
+        # Hide FETCHCONTENT* CMake variables
+        get_cmake_property(_VARS VARIABLES)
+        foreach (_VARNAME ${_VARS})
+            if (_VARNAME MATCHES "^FETCHCONTENT_")
+                mark_as_advanced(${_VARNAME})
+            endif()
+        endforeach()
+
         set(HAVE_MUPARSER 1 CACHE INTERNAL "Is muparser found?")
     elseif(GMX_USE_MUPARSER STREQUAL "EXTERNAL")
         # Find an external muparser library.

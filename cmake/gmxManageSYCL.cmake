@@ -41,7 +41,7 @@ set(GMX_GPU_SYCL ON)
 # CMake issue tracking the efforts to make a universal upstream module:
 # https://gitlab.kitware.com/cmake/cmake/-/issues/21711
 
-option(GMX_SYCL_HIPSYCL "Use hipSYCL instead of Intel/Clang for SYCL compilation" OFF)
+option(GMX_SYCL_HIPSYCL "Use hipSYCL instead of Intel oneAPI for SYCL compilation" OFF)
 
 if(GMX_DOUBLE)
     message(FATAL_ERROR "SYCL acceleration is not available in double precision")
@@ -242,12 +242,16 @@ if(GMX_SYCL_HIPSYCL)
         set(_enable_rdna_support_automatically OFF)
         # We assume that any GCN2-5 architecture (gfx7/8) and CDNA1-3 (gfx9 series) up until the time of writing of this conditional is 64-wide
         if (${HIPSYCL_TARGETS} MATCHES "gfx[7-8][0-9][0-9]|gfx9[0-4][0-9ac]")
-            set(GMX_GPU_NB_DISABLE_CLUSTER_PAIR_SPLIT ON CACHE BOOL "Disable NBNXM GPU cluster pair splitting. Only supported with SYCL and 64-wide GPU architectures (like AMD GCN/CDNA).")
+            option(GMX_GPU_NB_DISABLE_CLUSTER_PAIR_SPLIT
+                "Disable NBNXM GPU cluster pair splitting. Only supported with SYCL and 64-wide GPU architectures (like AMD GCN/CDNA)."
+                ON)
             mark_as_advanced(GMX_GPU_NB_DISABLE_CLUSTER_PAIR_SPLIT)
         endif()
     endif()
-    set(GMX_HIPSYCL_ENABLE_AMD_RDNA_SUPPORT ${_enable_rdna_support_automatically} CACHE BOOL
-        "Enable compiling kernels for AMD RDNA GPUs (gfx1xxx). When OFF, only CDNA and GCN are supported. Only used with hipSYCL.")
+    option(GMX_HIPSYCL_ENABLE_AMD_RDNA_SUPPORT
+        "Enable compiling kernels for AMD RDNA GPUs (gfx1xxx). When OFF, only CDNA and GCN are supported. Only used with hipSYCL."
+        ${_enable_rdna_support_automatically})
+    mark_as_advanced(GMX_HIPSYCL_ENABLE_AMD_RDNA_SUPPORT)
 
     # Find a suitable rocFFT when hipSYCL is targeting AMD devices
     if (GMX_HIPSYCL_HAVE_HIP_TARGET AND GMX_GPU_FFT_ROCFFT)
@@ -313,6 +317,15 @@ if(GMX_SYCL_HIPSYCL)
         set(FIND_ROCFFT_QUIETLY "QUIET")
         set(_sycl_has_valid_fft TRUE)
     endif()
+
+    # Mark hipsycl-related CMake options as "advanced"
+    get_cmake_property(_VARS VARIABLES)
+    foreach (_VARNAME ${_VARS})
+        if (_VARNAME MATCHES "^HIPSYCL")
+            mark_as_advanced(${_VARNAME})
+        endif()
+    endforeach()
+    mark_as_advanced(CLEAR HIPSYCL_TARGETS)
 else()
     if(WIN32)
         if(CMAKE_VERSION VERSION_LESS "3.23.0")
@@ -453,6 +466,7 @@ int main() {
         if (NOT CAN_LINK_SYCL_MKL)
             message(FATAL_ERROR "Cannot link mkl_sycl. Make sure the MKL and compiler versions are compatible.")
         endif()
+
         set(_sycl_has_valid_fft TRUE)
     endif()
 
