@@ -16,6 +16,27 @@ if [ -z $GMX_TEST_REQUIRED_NUMBER_OF_DEVICES ] && [ -n $KUBERNETES_EXTENDED_RESO
 fi
 if grep -qF 'nvidia.com/gpu' <<< "$KUBERNETES_EXTENDED_RESOURCE_NAME"; then
     nvidia-smi -L && nvidia-smi || true;
+    if [ "$GMX_CI_DISABLE_CUFFTMP_DECOMPOSITION_ON_INCOMPATIBLE_DEVICES" != "" ] 
+    then
+	echo "DUE TO LIMITATIONS OF CUFFTMP, THIS JOB RUNS IN DIFFERENT CONFIGURATIONS DEPENDING ON THE VERSION OF GPU AVAILABLE. Now running:" 
+	computeCapability=`nvidia-smi -i 0 --query-gpu=compute_cap --format=csv | tail -1 | sed 's/\.//g'`    
+	if [ "$computeCapability" -lt "70" ]
+	then
+	    echo "    without PME decomposition, since compute Capability is less than 7.0"
+	    unset GMX_GPU_PME_DECOMPOSITION
+	    export LD_PRELOAD=$CUFFTLIB #TODO remove this when cuFFTMp is fixed regarding "regular" ffts for older GPUs #3884
+	else
+	    echo "    with PME decomposition"
+	fi
+	gpuMemory=`nvidia-smi -i 0 --query-gpu=memory.total --format=csv | tail -1 | awk '{ print $1 }'`
+	if [ "$gpuMemory" -lt "8000" ]
+	then
+	    echo "    without FFT MPI Decomposition test, since GPU memory is less than 8GB"
+	    EXTRA_FLAGS="--exclude-regex FFTMpiUnitTests"
+	else
+	    echo "    with FFT MPI Decomposition test"
+	fi
+    fi
 fi
 if grep -qF 'amd.com/gpu' <<< "$KUBERNETES_EXTENDED_RESOURCE_NAME"; then
     clinfo -l || true;
@@ -28,7 +49,7 @@ LABEL_REGEX=
 if [[ -n "$GMX_TEST_LABELS" ]] ; then
     LABEL_REGEX="--label-regex $GMX_TEST_LABELS"
 fi
-ctest -D $CTEST_RUN_MODE $LABEL_REGEX --output-on-failure | tee ctestLog.log || true
+ctest -D $CTEST_RUN_MODE $LABEL_REGEX $EXTRA_FLAGS --output-on-failure | tee ctestLog.log || true
 
 EXITCODE=$?
 

@@ -164,8 +164,12 @@ std::optional<std::string> reasonsTestIsInvalid(MdpFlavor       mdpFlavor,
 #endif
     errorReasons.appendIf(haveAnyGpuWork && nonbondedFlavor == NonbondedFlavor::Cpu,
                           "Cannot offload PME or Update to GPU without offloading Nonbondeds");
-    errorReasons.appendIf(pmeFlavor == PmeFlavor::Gpu && separatePmeRankFlavor == SeparatePmeRankFlavor::Two,
-                          "Cannot use more than one separate PME rank with GPU PME");
+    if ((getenv("GMX_GPU_PME_DECOMPOSITION")) == nullptr)
+    {
+        errorReasons.appendIf(
+                pmeFlavor == PmeFlavor::Gpu && separatePmeRankFlavor == SeparatePmeRankFlavor::Two,
+                "Cannot use more than one separate PME rank with GPU PME");
+    }
     // Related to the number of ranks
     errorReasons.appendIf(numRanks == 1 && separatePmeRankFlavor != SeparatePmeRankFlavor::None,
                           "Cannot use separate PME rank with only one total rank");

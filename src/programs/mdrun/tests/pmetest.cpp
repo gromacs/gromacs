@@ -261,8 +261,11 @@ MessageStringCollector PmeTest::getSkipMessagesIfNecessary(const CommandLine& co
     {
         messages.appendIf(getCompatibleDevices(s_hwinfo->deviceInfoList).empty(),
                           "it targets GPU execution, but no compatible devices were detected");
-        messages.appendIf(!commandLineTargetsPmeOnlyRanks && numRanks > 1,
-                          "it targets PME decomposition, but that is not supported");
+        if ((getenv("GMX_GPU_PME_DECOMPOSITION")) == nullptr)
+        {
+            messages.appendIf(!commandLineTargetsPmeOnlyRanks && numRanks > 1,
+                              "it targets PME decomposition, but that is not supported");
+        }
 
         std::optional<std::string_view> pmeFftOptionArgument = commandLine.argumentOf("-pmefft");
         const bool                      commandLineTargetsPmeFftOnGpu =
