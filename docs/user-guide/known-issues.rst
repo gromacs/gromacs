@@ -78,3 +78,12 @@ from CMake or later during build.
 
 :issue:`4574`
 
+
+"Cannot find a working standard library" error with ROCm Clang
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Some Clang installations don't contain a compatible C++ standard library.
+In such cases, you might have to install ``g++`` and help CMake find it
+by setting ``-DGMX_GPLUSGPLUS_PATH=/path/to/bin/g++``. 
+
+:issue:`4679`
