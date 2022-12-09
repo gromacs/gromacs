@@ -432,7 +432,7 @@ __launch_bounds__(THREADS_PER_BLOCK)
             }
 
 #    if DO_JM_UNROLL
-#        pragma unroll(jmLoopUnrollFactor)
+#        pragma unroll jmLoopUnrollFactor
 #    endif
             for (jm = 0; jm < c_nbnxnGpuJgroupSize; jm++)
             {
