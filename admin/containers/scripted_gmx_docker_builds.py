@@ -204,6 +204,7 @@ _docs_extra_packages = [
     "mscgen",
     "m4",
     "openssh-client",
+    "plantuml",
     "texinfo",
     "texlive-latex-base",
     "texlive-latex-extra",
