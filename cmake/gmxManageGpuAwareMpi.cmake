@@ -43,6 +43,8 @@ function(GMX_TEST_GPU_AWARE_MPI BACKEND)
   string(TOUPPER "${BACKEND}" BACKEND_UPPER)
   string(TOLOWER "${BACKEND}" BACKEND_LOWER)
 
+  # Note: MPI_COMPILE_FLAGS is an output variable controlled by FindMPI.cmake,
+  # but is deprecated since CMake 3.10.
   list(JOIN MPI_COMPILE_FLAGS " " CMAKE_REQUIRED_FLAGS)
   set(CMAKE_REQUIRED_INCLUDES ${MPI_INCLUDE_PATH})
   set(CMAKE_REQUIRED_LIBRARIES ${MPI_LIBRARIES})

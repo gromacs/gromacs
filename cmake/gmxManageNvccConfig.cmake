@@ -312,4 +312,16 @@ function(gmx_cuda_add_library TARGET)
     endforeach()
 
     cuda_add_library(${TARGET} ${ARGN})
+    # TODO: Restrict the scope of MPI dependence.
+    # Targets that actually need MPI headers and build tool flags should
+    # manage their own `target_link_libraries` locally. Such a change is beyond
+    # the scope of the bug fix for #4678.
+    if (GMX_LIB_MPI)
+        target_link_libraries(
+            ${TARGET} PRIVATE
+            $<$<COMPILE_LANGUAGE:C>:MPI::MPI_C>
+            $<$<COMPILE_LANGUAGE:CXX>:MPI::MPI_CXX>
+            $<$<COMPILE_LANGUAGE:CUDA>:MPI::MPI_CXX>
+        )
+    endif ()
 endfunction()
