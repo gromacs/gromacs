@@ -5,7 +5,7 @@
    |  Y Y  \  |  /  |_> > __ \|  | \/\___ \\  ___/|  | \/
    |__|_|  /____/|   __(____  /__|  /____  >\___  >__|
 		 \/      |__|       \/           \/     \/
-   Copyright (C) 2004 - 2020 Ingo Berg
+   Copyright (C) 2004 - 2021 Ingo Berg
 
 	Redistribution and use in source and binary forms, with or without modification, are permitted
 	provided that the following conditions are met:
@@ -46,7 +46,7 @@
 	#define myfgets fgets
 	#define mystrcmp strcmp
 #else
-	#define _T(x) L ##x
+	#define _T(x) L##x
 	#define myprintf wprintf
 	#define mystrlen wcslen
 	#define myfgets fgetws
@@ -118,7 +118,7 @@ static muFloat_t* AddVariable(const muChar_t* a_szName, void* pUserData)
 	static muFloat_t afValBuf[PARSER_MAXVARS];  // I don't want dynamic allocation here
 	static int iVal = 0;						// so i used this buffer
 
-	myprintf(_T("Generating new variable \"%s\" (slots left: %d; context pointer: %") _T(PRIxPTR) _T(")\n"), a_szName, PARSER_MAXVARS - iVal, (intptr_t)pUserData);
+	myprintf(_T("Generating new variable \"%s\" (slots left: %d; context pointer: %") PRIxPTR _T(")\n"), a_szName, PARSER_MAXVARS - iVal, (intptr_t)pUserData);
 
 	afValBuf[iVal] = 0;
 	if (iVal >= PARSER_MAXVARS - 1)
@@ -133,20 +133,28 @@ static muFloat_t* AddVariable(const muChar_t* a_szName, void* pUserData)
 //---------------------------------------------------------------------------
 static void Intro(muParserHandle_t hParser)
 {
-	myprintf(_T("                 __________                                       \n"));
-	myprintf(_T("    _____   __ __\\______   \\_____  _______  ______  ____ _______\n"));
-	myprintf(_T("   /     \\ |  |  \\|     ___/\\__  \\ \\_  __ \\/  ___/_/ __ \\\\_  __ \\ \n"));
-	myprintf(_T("  |  Y Y  \\|  |  /|    |     / __ \\_|  | \\/\\___ \\ \\  ___/ |  | \\/ \n"));
-	myprintf(_T("  |__|_|  /|____/ |____|    (____  /|__|  /____  > \\___  >|__|    \n"));
-	myprintf(_T("        \\/                       \\/            \\/      \\/         \n"));
+	myprintf(_T("\n"));
+	myprintf(_T("   _____  __ _____________ ________  _____ ____________  \n"));
+	myprintf(_T("  /     \\|  |  \\____ \\__   \\\\_  __ \\/ ___// __  \\_  __ \\ \n"));
+	myprintf(_T(" |  Y Y  \\  |  /  |_> > ___ \\|  | \\/\\___\\\\  ___/ |  | \\/ \n"));
+	myprintf(_T(" |__|_|  /____/|   __(____  /___|  /___  >\\___  >|__|    \n"));
+	myprintf(_T("       \\/      |__|       \\/           \\/     \\/         \n"));
 	myprintf(_T("  Version %s (DLL)\n"), mupGetVersion(hParser));
-#ifdef _UNICODE
-	myprintf(_T("  Sample build with UNICODE support\n"));
-#else
-	myprintf(_T("  Sample build with ASCII support\n"));
-#endif
 	myprintf(_T("  (C) 2004 - 2020 Ingo Berg\n"));
-	myprintf(_T("---------------------------------------\n"));
+	myprintf(_T("\n"));
+	myprintf(_T("-----------------------------------------------------------\n"));
+
+#if defined(__clang__)
+	// Note: CLANG also identifies as GCC 4.2.1
+	myprintf(_T("  Compiled with CLANG Version %d.%d.%d\n"), __clang_major__, __clang_minor__, __clang_patchlevel__);
+#elif defined (__GNUC__)
+	myprintf(_T("  Compiled with GCC Version %d.%d.%d\n"), __GNUC__, __GNUC_MINOR__, __GNUC_PATCHLEVEL__);
+#elif defined(_MSC_VER)
+	myprintf(_T("  Compiled with MSVC Version %d\n"), _MSC_VER);
+#endif
+
+	myprintf(_T("  %ld-bit build\n"), sizeof(void*) * 8);
+	myprintf(_T("-----------------------------------------------------------\n"));
 	myprintf(_T("Commands:\n"));
 	myprintf(_T("  list var     - list parser variables\n"));
 	myprintf(_T("  list exprvar - list expression variables\n"));
@@ -156,11 +164,11 @@ static void Intro(muParserHandle_t hParser)
 	myprintf(_T("  locale reset - reset locale\n"));
 	myprintf(_T("  test bulk    - test bulk mode\n"));
 	myprintf(_T("  quit         - exits the parser\n\n"));
-	myprintf(_T("---------------------------------------\n"));
+	myprintf(_T("-----------------------------------------------------------\n"));
 	myprintf(_T("Constants:\n"));
 	myprintf(_T("  \"_e\"   2.718281828459045235360287\n"));
 	myprintf(_T("  \"_pi\"  3.141592653589793238462643\n"));
-	myprintf(_T("---------------------------------------\n"));
+	myprintf(_T("-----------------------------------------------------------\n"));
 	myprintf(_T("Please enter an expression:\n"));
 }
 
@@ -198,7 +206,7 @@ static void ListVar(muParserHandle_t a_hParser)
 		muFloat_t* pVar = 0;
 
 		mupGetVar(a_hParser, i, &szName, &pVar);
-		myprintf(_T("Name: %s    Address: [%") _T(PRIxPTR) _T("]\n"), szName, (uintptr_t)pVar);
+		myprintf(_T("Name: %s    Address: [%") PRIxPTR _T("]\n"), szName, (uintptr_t)pVar);
 	}
 }
 
@@ -225,7 +233,7 @@ static void ListExprVar(muParserHandle_t a_hParser)
 		muFloat_t* pVar = 0;
 
 		mupGetExprVar(a_hParser, i, &szName, &pVar);
-		myprintf(_T("Name: %s   Address: [%") _T(PRIxPTR) _T("]\n"), szName, (intptr_t)pVar);
+		myprintf(_T("Name: %s   Address: [%") PRIxPTR _T("]\n"), szName, (intptr_t)pVar);
 	}
 }
 
@@ -243,7 +251,7 @@ static void ListConst(muParserHandle_t a_hParser)
 
 	myprintf(_T("\nParser constants:\n"));
 	myprintf(_T("---------------------\n"));
-	myprintf(_T("Number: %d"), iNumVar);
+	myprintf(_T("Number: %d\n"), iNumVar);
 
 	for (i = 0; i < iNumVar; ++i)
 	{
@@ -431,12 +439,12 @@ static void Calc(void)
 		// you must use this for error treatment:
 		//if (mupError(hParser))
 		//{
-		//  printf("\nError:\n");
-		//  printf("------\n");
-		//  printf("Message:  %s\n", mupGetErrorMsg(hParser) );
-		//  printf("Token:    %s\n", mupGetErrorToken(hParser) );
-		//  printf("Position: %s\n", mupGetErrorPos(hParser) );
-		//  printf("Errc:     %d\n", mupGetErrorCode(hParser) );
+		//  myprintf("\nError:\n");
+		//  myprintf("------\n");
+		//  myprintf("Message:  %s\n", mupGetErrorMsg(hParser) );
+		//  myprintf("Token:    %s\n", mupGetErrorToken(hParser) );
+		//  myprintf("Position: %s\n", mupGetErrorPos(hParser) );
+		//  myprintf("Errc:     %d\n", mupGetErrorCode(hParser) );
 		//  continue;
 		//}
 
@@ -457,5 +465,5 @@ int main(int argc, char* argv[])
 	// being able to use type lists in function declarations.
 	myprintf(_T("Executing \"%s\" (argc=%d)\n"), argv[0], argc);
 	Calc();
-	printf(_T("done..."));
+	myprintf(_T("done..."));
 }

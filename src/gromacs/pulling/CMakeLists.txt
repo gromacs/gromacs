@@ -42,6 +42,9 @@ set(LIBGROMACS_SOURCES ${LIBGROMACS_SOURCES} ${PULLING_SOURCES} PARENT_SCOPE)
 #                      legacy_modules
 #)
 
+# pulling needs muparser defines 
+target_link_libraries(pulling INTERFACE muparser::muparser)
+
 # Public interface for modules, including dependencies and interfaces
 #target_include_directories(pulling PUBLIC
 target_include_directories(pulling INTERFACE

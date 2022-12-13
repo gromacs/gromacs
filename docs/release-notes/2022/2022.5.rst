@@ -36,3 +36,11 @@ Fixes that affect portability
 Miscellaneous
 ^^^^^^^^^^^^^
 
+Improve muParser detection and bumped internal version to v2.3.4
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+Update internal muParser version that include all changes made by
+us. Use muParser's CMake config to detect external muParser. Update
+required version for external muParser to match the internal version.
+
+:issue:`4614`
+
