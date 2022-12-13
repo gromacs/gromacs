@@ -629,7 +629,7 @@ void check_resource_division_efficiency(const gmx_hw_info_t* hwinfo,
         nthreads_omp_mpi_ok_min = nthreads_omp_mpi_ok_min_gpu;
     }
 
-    if (cr && cr->nnodes > 1)
+    if (cr && (cr->nnodes > 1) && !anyRankIsUsingGpus)
     {
         if (nth_omp_max < nthreads_omp_mpi_ok_min || nth_omp_max > nthreads_omp_mpi_ok_max)
         {
