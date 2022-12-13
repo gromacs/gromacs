@@ -998,7 +998,11 @@ static void nb_free_energy_kernel(const t_nblist&                               
             /* In the following block bPairIncluded should be false in the masks. */
             if (icoul == NbkernelElecType::ReactionField)
             {
-                const BoolType computeReactionField = bPairExcluded;
+                // Reaction-field actually only acts up to the cut-off distance.
+                // But with free-energy we allow exclusions up to rlist.
+                // FEP exclusions are the only non-bonded interactions that can act beyond
+                // rlist. We need to apply a cut-off to avoid incorrect periodic images.
+                const BoolType computeReactionField = (bPairExcluded && rSq < maxAllowedCutoffSquared);
 
                 if (gmx::anyTrue(computeReactionField))
                 {
@@ -1024,7 +1028,10 @@ static void nb_free_energy_kernel(const t_nblist&                               
                 }
             }
 
-            const BoolType computeElecEwaldInteraction = (bPairExcluded || r < rCoulomb);
+            // FEP exclusions are the only non-bonded interactions that can act beyond
+            // rlist. We need to apply a cut-off to avoid incorrect periodic images.
+            const BoolType computeElecEwaldInteraction =
+                    (r < rCoulomb || (bPairExcluded && rSq < maxAllowedCutoffSquared));
             if (elecInteractionTypeIsEwald && gmx::anyTrue(computeElecEwaldInteraction))
             {
                 /* See comment in the preamble. When using Ewald interactions
@@ -1066,7 +1073,10 @@ static void nb_free_energy_kernel(const t_nblist&                               
                 }
             }
 
-            const BoolType computeVdwEwaldInteraction = (bPairExcluded || r < rVdw);
+            // FEP exclusions are the only non-bonded interactions that can act beyond
+            // rlist. We need to apply a cut-off to avoid incorrect periodic images.
+            const BoolType computeVdwEwaldInteraction =
+                    (r < rVdw || (bPairExcluded && rSq < maxAllowedCutoffSquared));
             if (vdwInteractionTypeIsEwald && gmx::anyTrue(computeVdwEwaldInteraction))
             {
                 /* See comment in the preamble. When using LJ-Ewald interactions

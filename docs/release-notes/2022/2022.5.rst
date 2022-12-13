@@ -16,6 +16,18 @@ in the :ref:`release-notes`.
 Fixes where mdrun could behave incorrectly
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Fix perturbed exclusion handling across PBC in small systems
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Systems with up to a few hundred atoms where molecules with excluded
+perturbed atoms were split over periodic boundary conditions could
+have double counted Coulomb and LJ-PME interactions over long distances.
+This led to very large errors in the energy and forces with PME and
+reaction-field, which likely did not go unnoticed. With a plain Coulomb
+cut-off the error is small and might not be noticed.
+
+:issue:`4665`
+
 Add missing net charge term when running PME on a GPU
 """""""""""""""""""""""""""""""""""""""""""""""""""""
 
