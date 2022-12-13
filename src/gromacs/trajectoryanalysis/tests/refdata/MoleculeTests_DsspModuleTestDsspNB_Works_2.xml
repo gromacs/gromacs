@@ -1,0 +1,12 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <String Name="CommandLine">dssp -hmode dssp -nb -cutoff 0.9</String>
+  <OutputFiles Name="Files">
+    <File Name="-o">
+      <String Name="Contents"><![CDATA[
+~~EEEEEEE~TT~EEEEEEEE~TT~~BEEEEEEEETTEEEEEEEEETTTTEEEEEEEETTEE~~~EEE~~~~~~TTSEEEEEEE~~TTEEEEE~TTS~B~~EE~TT~~S~EEEEEEEESEEEEEEEEE~=~EEEEEEEE~TT~EEEEEEEE~TT~SBEEEEEESSSSEEEEEEEEETTTTEEEEEEEETTEE~~~EEE~~~~~~TTSEEEEEEEEETTEEEEE~TTS~EEEEE~TT~~S~EEEEEEEESEEEEEEEEE~
+]]></String>
+    </File>
+  </OutputFiles>
+</ReferenceData>
