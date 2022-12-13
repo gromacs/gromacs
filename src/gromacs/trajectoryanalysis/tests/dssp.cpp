@@ -176,9 +176,8 @@ INSTANTIATE_TEST_SUITE_P(
 // NOLINTNEXTLINE(cppcoreguidelines-owning-memory)
 TEST_P(DsspModuleTestDsspNoNB, Works)
 {
-    std::string           params    = GetParam();
     const char* const     cmdline[] = { "dssp" };
-    std::string           inputFilename(params);
+    std::string           inputFilename(GetParam());
     std::filesystem::path inputBasename = stripExtension(inputFilename);
     CommandLine           command(cmdline);
     setTopology(inputFilename.c_str());
@@ -216,9 +215,8 @@ INSTANTIATE_TEST_SUITE_P(MoleculeTests,
 // NOLINTNEXTLINE(cppcoreguidelines-owning-memory)
 TEST_P(DsspModuleTestGromacsNoNB, Works)
 {
-    std::string           params    = GetParam();
     const char* const     cmdline[] = { "dssp" };
-    std::string           inputFilename(params);
+    std::string           inputFilename(GetParam());
     std::filesystem::path inputBasename = stripExtension(inputFilename);
     CommandLine           command(cmdline);
     setTopology(inputFilename.c_str());
