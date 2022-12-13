@@ -168,7 +168,9 @@
  * gmx::AnalysisData::finishFrameSerial() for each frame from a suitable
  * context where the serial processing for that frame can be done.  When using
  * the data objects as part of the trajectory analysis framework
- * (\ref page_analysisframework), these calls are handled by the framework.
+ * (\ref page_trajectoryanalysisframework)
+ * or energy analysis framework (\ref page_energyanalysisframework),
+ * these calls are handled by the framework.
  *
  * \if libapi
  * <H3>Writing New Data and Module Objects</H3>

@@ -1,4 +1,4 @@
-Framework for trajectory analysis {#page_analysisframework}
+Framework for trajectory analysis {#page_trajectoryanalysisframework}
 =================================
 
 \Gromacs provides a framework for implementing flexible trajectory analysis
@@ -63,7 +63,7 @@ classes:
 
  - gmx::SelectionOption and associated classes are used to declare the
    number and type of selections the tool accepts (see below for
-   [details of the option support](#section_analysisframework_options)).
+   [details of the option support](#section_trajectoryanalysisframework_options)).
  - The tool receives a set of gmx::Selection objects as a value of the
    selection option.  These classes provide the evaluated values for the
    selections during the analysis.  The framework evaluates them for each
@@ -109,7 +109,7 @@ The [analysisdata module documentation](\ref module_analysisdata) provides more
 technical details.
 
 
-Input options {#section_analysisframework_options}
+Input options {#section_trajectoryanalysisframework_options}
 =============
 
 To declare input data for the tool (typically, command-line options, including

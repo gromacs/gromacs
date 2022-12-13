@@ -307,6 +307,15 @@ bool equalCaseInsensitive(const std::string& source, const std::string& target)
               });
 }
 
+bool equalIgnoreDash(const std::string& source, const std::string& target)
+{
+    return source.length() == target.length()
+           && std::equal(source.begin(), source.end(), target.begin(), [](const char& s, const char& t) {
+                  return ((s == '-' || s == '_') ? toupper(s) : s)
+                         == ((t == '-' || t == '_') ? toupper(t) : t);
+              });
+}
+
 bool equalCaseInsensitive(const std::string& source, const std::string& target, size_t maxLengthOfComparison)
 {
     std::string::const_iterator comparisonEnd;

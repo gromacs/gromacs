@@ -8,7 +8,7 @@ The \Gromacs library (`libgromacs`) provides a few different alternatives for
 using it.  These are listed here from the highest level of abstraction to the
 low-level functions.
  - If you are writing a trajectory analysis tool, please see
-   \ref page_analysisframework.  \ref page_analysistemplate should contain
+   \ref page_trajectoryanalysisframework.  \ref page_analysistemplate should contain
    all the ingredients to get started.
    If you have an existing tool written using the analysis template from 4.5 or
    4.6 (using the selection engine added in 4.5), you need to do some

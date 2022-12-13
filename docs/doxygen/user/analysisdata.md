@@ -2,8 +2,8 @@ Analysis output data handling {#page_analysisdata}
 =============================
 
 The \ref module_analysisdata module provides support for common data analysis
-tasks within the \ref page_analysisframework.  The basic approach used in the
-module is visualized below:
+tasks within the \ref page_trajectoryanalysisframework and \ref page_energyanalysisframework.
+The basic approach used in the module is visualized below:
 
 \dot
   digraph analysisdata_overview {

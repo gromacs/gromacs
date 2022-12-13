@@ -429,6 +429,10 @@ std::string replaceAllWords(const std::string& input, const std::string& from, c
  */
 bool equalCaseInsensitive(const std::string& source, const std::string& target);
 
+/*! \brief Return whether too strings are case sensitive equal, ignoring dashes.
+ */
+bool equalIgnoreDash(const std::string& source, const std::string& target);
+
 //! Function object for comparisons with \c equalCaseInsensitive
 class EqualCaseInsensitive
 {

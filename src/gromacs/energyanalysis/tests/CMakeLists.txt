@@ -33,5 +33,6 @@
 
 gmx_add_unit_test(EnergyAnalysisUnitTests energyanalysis-test
     CPP_SOURCE_FILES
+        energyterm.cpp
         legacyenergy.cpp
         )

@@ -31,6 +31,42 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out https://www.gromacs.org.
 
+# Set up the module library
+add_library(energyanalysis OBJECT)
+target_sources(energyanalysis PRIVATE
+               energyterm.cpp
+               )
+
+if (BUILD_SHARED_LIBS)
+    set_target_properties(energyanalysis PROPERTIES POSITION_INDEPENDENT_CODE ON)
+endif()
+
+# Source files have the following dependencies on library infrastructure.
+target_link_libraries(energyanalysis PRIVATE common)
+
+# Public interface for modules, including dependencies and interfaces
+target_include_directories(energyanalysis PUBLIC
+                           $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>)
+target_link_libraries(energyanalysis PUBLIC
+                      fileio
+                      legacy_api
+                      utility
+                      )
+
+# Module dependencies
+# energyanalysis interfaces convey transitive dependence on these modules.
+target_link_libraries(energyanalysis PUBLIC
+                      )
+# Source files have the following private module dependencies.
+#target_link_libraries(energyanalysis PRIVATE NOTHING)
+# TODO: Explicitly link specific modules.
+target_link_libraries(energyanalysis PRIVATE legacy_modules)
+
+if(GMX_INSTALL_LEGACY_API)
+    install(FILES
+	    DESTINATION include/gromacs/energyanalysis)
+endif()
+
 if (BUILD_TESTING)
     add_subdirectory(tests)
 endif()

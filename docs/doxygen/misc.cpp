@@ -33,7 +33,8 @@ Modules with generic utility functions.
 Modules used in analysis tools.
 
 A separate page describes the responsibilities of these modules:
-\ref page_analysisframework
+\ref page_trajectoryanalysisframework
+\ref page_energyanalysisframework
 */
 
 /*! \libinternal

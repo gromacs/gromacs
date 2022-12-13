@@ -24,7 +24,7 @@ Central concepts useful for understanding the selection engine are explained
 below.  A graph represents the relations between the different parts, and a
 textual description of the user-visible components and other concepts follows.
 The graph also includes an overview of how the selection engine integrates into
-the \ref page_analysisframework.  When using selections from the analysis
+the \ref page_trajectoryanalysisframework.  When using selections from the analysis
 framework, the parts in gray are managed by the framework.
 When using selections outside the framework, it is either possible to use only
 the core components (shown in the graph as a box), or to also use the selection

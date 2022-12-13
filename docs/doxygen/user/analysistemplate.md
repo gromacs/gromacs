@@ -2,7 +2,7 @@ Example code for writing trajectory analysis tools {#page_analysistemplate}
 ==================================================
 
 \Gromacs installation includes a template for writing trajectory analysis
-tools using \ref page_analysisframework.
+tools using \ref page_trajectoryanalysisframework.
 It can be found from `share/gromacs/template/` under the installation
 directory, and from `share/template/` in the source distribution.
 

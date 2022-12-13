@@ -49,9 +49,12 @@ To understand the inner workings of \Gromacs, or if you want to contribute to
 Currently, only parts of the code are documented here.  The following pages
 give an overview of some of the topics that are documented:
 
- - \subpage page_analysisframework <br/>
+ - \subpage page_trajectoryanalysisframework <br/>
    Provides an overview of the framework that the \Gromacs library provides for
-   writing (trajectory) analysis tools.
+   writing trajectory analysis tools.
+ - \subpage page_energyanalysisframework <br/>
+   Provides an overview of the framework that the \Gromacs library provides for
+   writing energy analysis tools.
  - \subpage page_onlinehelp <br/>
    Provides an overview of the formatting markup available in help texts.
  - \subpage page_usinglibrary <br/>
