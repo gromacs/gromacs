@@ -57,6 +57,8 @@ struct SolveKernelParams
     gmx::IVec realGridSize;
     /*! \brief Fourier grid dimensions. This counts the complex numbers! */
     gmx::IVec complexGridSize;
+    /*! \brief Offsets for the complex grid */
+    gmx::IVec kOffsets;
     /*! \brief Fourier grid dimensions (padded). This counts the complex numbers! */
     gmx::IVec complexGridSizePadded;
     /*! \brief Offsets for X/Y/Z components of d_splineModuli */

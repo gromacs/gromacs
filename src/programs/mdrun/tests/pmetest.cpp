@@ -51,6 +51,7 @@
 #include <gtest/gtest-spi.h>
 
 #include "gromacs/ewald/pme.h"
+#include "gromacs/fft/gpu_3dfft_support.h"
 #include "gromacs/hardware/hw_info.h"
 #include "gromacs/trajectory/energyframe.h"
 #include "gromacs/utility/basenetwork.h"
@@ -271,12 +272,10 @@ MessageStringCollector PmeTest::getSkipMessagesIfNecessary(const CommandLine& co
         const bool                      commandLineTargetsPmeFftOnGpu =
                 !pmeFftOptionArgument.has_value() || pmeFftOptionArgument.value() == "gpu";
 
-        static constexpr bool sc_gpuBuildSyclWithoutGpuFft =
-                (GMX_GPU_SYCL != 0) && (GMX_GPU_FFT_MKL == 0) && (GMX_GPU_FFT_ROCFFT == 0)
-                && (GMX_GPU_FFT_VKFFT == 0); // NOLINT(misc-redundant-expression)
-        messages.appendIf(commandLineTargetsPmeFftOnGpu && sc_gpuBuildSyclWithoutGpuFft,
-                          "it targets GPU execution of FFT work, which is not supported in the "
-                          "current build");
+        messages.appendIf(commandLineTargetsPmeFftOnGpu && !commandLineTargetsPmeOnlyRanks
+                                  && buildSupportsGpuFft(numRanks),
+                          "it targets GPU execution of FFT work on one or more ranks, which is "
+                          "not supported in the current build");
 
         std::string errorMessage;
         messages.appendIf(!pme_gpu_supports_build(&errorMessage), errorMessage);

@@ -26,8 +26,8 @@ simulations and hardware. The new features are:
   * SYCL optimizations targeting important HPC platforms.
 
 * PME decomposition has been optimized and extended to support offloading the entire
-  PME calculation to multiple GPUs, including the FFT computation; when combined with cuFFTmp
-  this enables much improved strong scaling (experimental feature).
+  PME calculation to multiple GPUs, including the FFT computation; when combined with
+  cuFFTmp or heFFTe this enables much improved strong scaling (experimental feature).
 * CUDA Graph support has been added to execute GPU-resident single-/multi-GPU
   simulations using thread-MPI entirely on the GPU to improve performance
   (experimental feature).

@@ -870,11 +870,56 @@ static gmx::FftBackend getFftBackend(const PmeGpu* pmeGpu)
     {
         if (GMX_GPU_FFT_MKL)
         {
-            return gmx::FftBackend::SyclMkl;
+            if (!pmeGpu->settings.useDecomposition)
+            {
+                return gmx::FftBackend::SyclMkl;
+            }
+            else if (GMX_USE_Heffte)
+            {
+                return gmx::FftBackend::HeFFTe_Sycl_OneMkl;
+            }
+            else
+            {
+                GMX_THROW(gmx::NotImplementedError(
+                        "GROMACS must be built with HeFFTe to enable fully GPU-offloaded "
+                        "PME decomposition on oneAPI-compatible GPUs"));
+            }
         }
         else if (GMX_GPU_FFT_ROCFFT)
         {
-            return gmx::FftBackend::SyclRocfft;
+            if (!pmeGpu->settings.useDecomposition)
+            {
+                return gmx::FftBackend::SyclRocfft;
+            }
+            else if (GMX_USE_Heffte)
+            {
+                return gmx::FftBackend::HeFFTe_Sycl_Rocfft;
+            }
+            else
+            {
+                GMX_THROW(gmx::NotImplementedError(
+                        "GROMACS must be built with HeFFTe to enable fully GPU-offloaded "
+                        "PME decomposition on ROCm-compatible GPUs"));
+            }
+        }
+        else if (GMX_GPU_FFT_CUFFT)
+        {
+            if (GMX_USE_Heffte)
+            {
+                if (pmeGpu->settings.useDecomposition)
+                {
+                    return gmx::FftBackend::HeFFTe_Sycl_cuFFT;
+                }
+                else
+                {
+                    GMX_THROW(gmx::NotImplementedError(
+                            "GROMACS can only do multi-GPU FFT in SYCL+cuFFT+HeFFTe build"));
+                }
+            }
+            else
+            {
+                GMX_THROW(gmx::NotImplementedError("GROMACS does not support cuFFT in SYCL build"));
+            }
         }
         else if (GMX_GPU_FFT_VKFFT)
         {

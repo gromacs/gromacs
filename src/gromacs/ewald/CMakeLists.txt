@@ -95,9 +95,9 @@ elseif (GMX_GPU_SYCL)
         # GPU-specific sources
         pme_gather_sycl.cpp
         pme_gpu.cpp
+        pme_gpu_grid_sycl.cpp
         pme_gpu_internal.cpp
         pme_gpu_program_impl_sycl.cpp
-        pme_gpu_sycl_stubs.cpp
         pme_gpu_timings.cpp
         pme_solve_sycl.cpp
         pme_spread_sycl.cpp
@@ -110,6 +110,7 @@ elseif (GMX_GPU_SYCL)
         )
     _gmx_add_files_to_property(SYCL_SOURCES
         pme_gather_sycl.cpp
+        pme_gpu_grid_sycl.cpp
         pme_gpu_internal.cpp
         pme_gpu_program.cpp
         pme_gpu_program_impl_sycl.cpp

@@ -43,27 +43,42 @@
 
 #include "gpu_3dfft_heffte.h"
 
+#include <iostream>
+
+#include "gromacs/gpu_utils/device_context.h"
 #include "gromacs/gpu_utils/device_stream.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
 
+#if GMX_GPU_SYCL
+#    include "gromacs/gpu_utils/devicebuffer_sycl.h"
+#endif
+
 namespace gmx
 {
+
+#if GMX_HIPSYCL_HAVE_CUDA_TARGET
+constexpr auto c_hipsyclBackend = sycl::backend::cuda;
+#elif GMX_HIPSYCL_HAVE_HIP_TARGET
+constexpr auto c_hipsyclBackend = sycl::backend::hip;
+#endif
+
 template<typename backend_tag>
-Gpu3dFft::ImplHeFfte<backend_tag>::ImplHeFfte(bool                allocateRealGrid,
-                                              MPI_Comm            comm,
-                                              ArrayRef<const int> gridSizesInXForEachRank,
-                                              ArrayRef<const int> gridSizesInYForEachRank,
-                                              const int           nz,
-                                              bool                performOutOfPlaceFFT,
-                                              const DeviceContext& /*context*/,
+Gpu3dFft::ImplHeFfte<backend_tag>::ImplHeFfte(bool                 allocateRealGrid,
+                                              MPI_Comm             comm,
+                                              ArrayRef<const int>  gridSizesInXForEachRank,
+                                              ArrayRef<const int>  gridSizesInYForEachRank,
+                                              const int            nz,
+                                              bool                 performOutOfPlaceFFT,
+                                              const DeviceContext& context,
                                               const DeviceStream&  pmeStream,
                                               ivec                 realGridSize,
                                               ivec                 realGridSizePadded,
                                               ivec                 complexGridSizePadded,
                                               DeviceBuffer<float>* realGrid,
-                                              DeviceBuffer<float>* complexGrid)
+                                              DeviceBuffer<float>* complexGrid) :
+    pmeRawStream_(pmeStream.stream())
 {
     const int numDomainsX = gridSizesInXForEachRank.size();
     const int numDomainsY = gridSizesInYForEachRank.size();
@@ -109,6 +124,17 @@ Gpu3dFft::ImplHeFfte<backend_tag>::ImplHeFfte(bool                allocateRealGr
 
     const int complexZDim = nz / 2 + 1;
 
+    // Define 3D FFT plan options
+    heffte::plan_options planOptions = heffte::default_options<backend_tag>();
+    // Reordering to produce contiguous data was faster with rocFFT
+    planOptions.use_reorder = true;
+    // Point-to-point is best for smaller FFT and low rank counts
+    planOptions.algorithm = heffte::reshape_algorithm::p2p;
+    // Pencils are expected to be slower than slabs at low MPI rank counts
+    planOptions.use_pencils = false;
+    // Transferring data back to the host is assumed to be slower.
+    planOptions.use_gpu_aware = true;
+
     // if possible, keep complex data in slab decomposition along Z
     // this allows heffte to have single communication phase
     if (numDomainsY > 1 && complexZDim >= nProcs)
@@ -126,8 +152,23 @@ Gpu3dFft::ImplHeFfte<backend_tag>::ImplHeFfte(bool                allocateRealGr
                                              { gridOffsetsInZ_transformed[rank + 1] - 1, ny - 1, nx - 1 } };
 
         // Define 3D FFT plan
+#if GMX_SYCL_HIPSYCL
+        pmeRawStream_
+                .submit([&, &fftPlanRef = fftPlan_, &workspaceRef = workspace_](sycl::handler& cgh) {
+                    cgh.hipSYCL_enqueue_custom_operation([=, &fftPlanRef, &workspaceRef](
+                                                                 sycl::interop_handle& h) {
+                        auto stream = h.get_native_queue<c_hipsyclBackend>();
+                        fftPlanRef  = std::make_unique<heffte::fft3d_r2c<backend_tag, int>>(
+                                stream, realBox, complexBox, 0, comm, planOptions);
+                        workspaceRef =
+                                heffte::gpu::vector<std::complex<float>>(fftPlanRef->size_workspace());
+                    });
+                })
+                .wait();
+#else
         fftPlan_ = std::make_unique<heffte::fft3d_r2c<backend_tag, int>>(
-                pmeStream.stream(), realBox, complexBox, 0, comm, heffte::default_options<backend_tag>());
+                pmeRawStream_, realBox, complexBox, 0, comm, planOptions);
+#endif
     }
     else
     {
@@ -153,18 +194,44 @@ Gpu3dFft::ImplHeFfte<backend_tag>::ImplHeFfte(bool                allocateRealGr
         };
 
         // Define 3D FFT plan
+#if GMX_SYCL_HIPSYCL
+        pmeRawStream_
+                .submit([&, &fftPlanRef = fftPlan_, &workspaceRef = workspace_](sycl::handler& cgh) {
+                    cgh.hipSYCL_enqueue_custom_operation([=, &fftPlanRef, &workspaceRef](
+                                                                 sycl::interop_handle& h) {
+                        auto stream = h.get_native_queue<c_hipsyclBackend>();
+                        fftPlanRef  = std::make_unique<heffte::fft3d_r2c<backend_tag, int>>(
+                                stream, realBox, complexBox, 0, comm, planOptions);
+                        workspaceRef =
+                                heffte::gpu::vector<std::complex<float>>(fftPlanRef->size_workspace());
+                    });
+                })
+                .wait();
+#else
         fftPlan_ = std::make_unique<heffte::fft3d_r2c<backend_tag, int>>(
-                pmeStream.stream(), realBox, complexBox, 0, comm, heffte::default_options<backend_tag>());
+                pmeRawStream_, realBox, complexBox, 0, comm, planOptions);
+#endif
     }
 
-    // allocate grid and workspace_
+#if !GMX_SYCL_HIPSYCL
+    workspace_ = heffte::gpu::vector<std::complex<float>>(fftPlan_->size_workspace());
+#endif
+
+    // allocate grid and return handles to it
+#if GMX_GPU_CUDA
     localRealGrid_    = heffte::gpu::vector<float>(fftPlan_->size_inbox());
     localComplexGrid_ = heffte::gpu::vector<std::complex<float>>(fftPlan_->size_outbox());
-    workspace_        = heffte::gpu::vector<std::complex<float>>(fftPlan_->size_workspace());
-
-    // write back the output data
-    *realGrid    = localRealGrid_.data();
-    *complexGrid = (float*)localComplexGrid_.data();
+    *realGrid         = localRealGrid_.data();
+    *complexGrid      = (float*)localComplexGrid_.data();
+    GMX_UNUSED_VALUE(context);
+#elif GMX_GPU_SYCL
+    allocateDeviceBuffer(&localRealGrid_, fftPlan_->size_inbox(), context);
+    allocateDeviceBuffer(&localComplexGrid_, fftPlan_->size_outbox() * 2, context);
+    *realGrid                     = localRealGrid_;
+    *complexGrid                  = localComplexGrid_;
+#else
+#    error "HeFFTe build only supports CUDA and SYCL"
+#endif
 
     realGridSize[XX] = gridSizesInXForEachRank[procX];
     realGridSize[YY] = gridSizesInYForEachRank[procY];
@@ -180,15 +247,42 @@ Gpu3dFft::ImplHeFfte<backend_tag>::ImplHeFfte(bool                allocateRealGr
 }
 
 template<typename backend_tag>
+Gpu3dFft::ImplHeFfte<backend_tag>::~ImplHeFfte<backend_tag>() = default;
+
+template<typename backend_tag>
 void Gpu3dFft::ImplHeFfte<backend_tag>::perform3dFft(gmx_fft_direction dir, CommandEvent* /*timingEvent*/)
 {
+#if GMX_GPU_CUDA
+    float*               realGrid    = localRealGrid_.data();
+    std::complex<float>* complexGrid = localComplexGrid_.data();
+#elif GMX_GPU_SYCL
+    float*               realGrid = localRealGrid_.buffer_->ptr_;
+    std::complex<float>* complexGrid =
+            reinterpret_cast<std::complex<float>*>(localComplexGrid_.buffer_->ptr_);
+#endif
     switch (dir)
     {
         case GMX_FFT_REAL_TO_COMPLEX:
-            fftPlan_->forward(localRealGrid_.data(), localComplexGrid_.data(), workspace_.data());
+#if GMX_SYCL_HIPSYCL
+            pmeRawStream_.submit(GMX_SYCL_DISCARD_EVENT[&](sycl::handler & cgh) {
+                cgh.hipSYCL_enqueue_custom_operation([=](sycl::interop_handle& gmx_unused h) {
+                    fftPlan_->forward(realGrid, complexGrid, workspace_.data());
+                });
+            });
+#else
+            fftPlan_->forward(realGrid, complexGrid, workspace_.data());
+#endif
             break;
         case GMX_FFT_COMPLEX_TO_REAL:
-            fftPlan_->backward(localComplexGrid_.data(), localRealGrid_.data(), workspace_.data());
+#if GMX_SYCL_HIPSYCL
+            pmeRawStream_.submit(GMX_SYCL_DISCARD_EVENT[&](sycl::handler & cgh) {
+                cgh.hipSYCL_enqueue_custom_operation([=](sycl::interop_handle& gmx_unused h) {
+                    fftPlan_->backward(complexGrid, realGrid, workspace_.data());
+                });
+            });
+#else
+            fftPlan_->backward(complexGrid, realGrid, workspace_.data());
+#endif
             break;
         default:
             GMX_THROW(NotImplementedError("The chosen 3D-FFT case is not implemented on GPUs"));
@@ -196,8 +290,14 @@ void Gpu3dFft::ImplHeFfte<backend_tag>::perform3dFft(gmx_fft_direction dir, Comm
 }
 
 // instantiate relevant HeFFTe backend
-#if GMX_GPU_CUDA
+#if GMX_GPU_FFT_CUFFT
 template class Gpu3dFft::ImplHeFfte<heffte::backend::cufft>;
+#endif
+#if GMX_GPU_FFT_MKL
+template class Gpu3dFft::ImplHeFfte<heffte::backend::onemkl>;
+#endif
+#if GMX_GPU_FFT_ROCFFT
+template class Gpu3dFft::ImplHeFfte<heffte::backend::rocfft>;
 #endif
 
 } // namespace gmx

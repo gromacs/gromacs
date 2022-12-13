@@ -54,6 +54,9 @@ if (GMX_FFT_MKL)
 endif()
 if(GMX_USE_Heffte)
     gmx_add_libgromacs_sources(gpu_3dfft_heffte.cpp)
+    if (GMX_GPU_SYCL)
+        _gmx_add_files_to_property(SYCL_SOURCES gpu_3dfft_heffte.cpp)
+    endif()
 endif()
 if (GMX_GPU_CUDA)
     if(GMX_USE_cuFFTMp)
@@ -101,6 +104,10 @@ elseif (GMX_GPU_SYCL)
     endif()
     gmx_add_libgromacs_sources(${_sycl_fft_sources})
     _gmx_add_files_to_property(SYCL_SOURCES ${_sycl_fft_sources})
+else()
+    gmx_add_libgromacs_sources(
+        gpu_3dfft_support.cpp
+        )
 endif()
 
 # Source files have the following private module dependencies.

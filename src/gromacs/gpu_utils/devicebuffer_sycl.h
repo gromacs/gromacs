@@ -152,6 +152,9 @@ DeviceBuffer<T>& DeviceBuffer<T>::operator=(std::nullptr_t nullPtr)
  * accessors can be created outside SYCL kernels, which is helpful if we want to pass them as
  * function arguments.
  *
+ * The accessor is valid to use only when the resource from which it
+ * was created is valid to use.
+ *
  * \tparam T Type of buffer content.
  * \tparam mode Access mode.
  */
@@ -182,11 +185,12 @@ public:
     __attribute__((always_inline)) ValueType& operator[](size_t index) const { return ptr_[index]; }
 
 private:
-    //! Helper function to get sycl:global_ptr object from DeviceBuffer wrapper, with a sanity check.
+    /*! \brief Helper function to get sycl:global_ptr object from DeviceBuffer wrapper
+     *
+     * \returns Device pointer when \c buffer is valid, otherwise nullptr */
     static inline sycl::global_ptr<T> getPointer(const DeviceBuffer<T>& buffer)
     {
-        GMX_ASSERT(bool(buffer), "Trying to use an uninitialized buffer");
-        return buffer.buffer_->ptr_;
+        return bool(buffer) ? buffer.buffer_->ptr_ : nullptr;
     }
     T* ptr_;
 };

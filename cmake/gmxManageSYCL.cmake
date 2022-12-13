@@ -476,6 +476,13 @@ int main() {
     endfunction(add_sycl_to_target)
 endif()
 
+if (GMX_GPU_FFT_CUFFT AND GMX_USE_HEFFTE)
+    set(_sycl_has_valid_fft TRUE)
+    if (NOT DEFINED ENV{GITLAB_CI}) # Don't warn in CI builds
+        message(WARNING "SYCL build with HeFFTe and cuFFT should only ever be used for testing")
+    endif()
+endif()
+
 if(NOT ${_sycl_has_valid_fft} AND NOT GMX_GPU_FFT_LIBRARY STREQUAL "NONE")
     set(_hint "")
     if (GMX_GPU_FFT_CUFFT OR GMX_GPU_FFT_CLFFT)

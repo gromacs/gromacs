@@ -366,8 +366,13 @@ options:
 Using cuFFTMp
 ~~~~~~~~~~~~~
 
-PME decomposition is supported with PME offloaded to NVIDIA GPUs when using a CUDA build. This requires building |Gromacs| with the NVIDIA `cuFFTMp (cuFFT Multi-process) library
-<https://docs.nvidia.com/hpc-sdk/cufftmp>`_, shipped with the NVIDIA HPC SDK, which provides distributed FFTs including across multiple compute nodes. To enable cuFFTMp support use the following cmake options:
+Decomposition of PME work to multiple GPUs is supported with NVIDIA
+GPUs when using a CUDA build. This requires building |Gromacs| with
+the NVIDIA `cuFFTMp (cuFFT Multi-process) library
+<https://docs.nvidia.com/hpc-sdk/cufftmp>`_, shipped with the NVIDIA
+HPC SDK, which provides distributed FFTs including across multiple
+compute nodes. To enable cuFFTMp support use the following cmake
+options:
 
 ::
 
@@ -380,6 +385,32 @@ are met before trying to use GPU PME decomposition feature.
 Also, since cuFFTMp internally uses `NVSHMEM <https://developer.nvidia.com/nvshmem>`_ it is advisable to refer to the `NVSHMEM FAQ page
 <https://docs.nvidia.com/hpc-sdk/nvshmem/api/faq.html#general-faqs>`_ for
 any issues faced at runtime.
+
+.. _heffte installation:
+
+Using heFFTe
+~~~~~~~~~~~~
+
+Decomposition of PME work to multiple GPUs is supported with PME
+offloaded to any vendor's GPU when building |Gromacs| linked to the
+`heFFTe library <https://icl.utk.edu/fft/>`_. HeFFTe uses GPU-aware MPI
+to provide distributed FFTs including across multiple compute
+nodes. It requires a CUDA build to target NVIDIA GPUs and a SYCL build
+to target Intel or AMD GPUs. To enable heFFTe support, use the
+following cmake options:
+
+::
+
+    cmake -DGMX_USE_HEFFTE=ON \
+          -DHeffte_ROOT=<path to heFFTe folder>
+
+You will need an installation of heFFTe configured to use the same
+GPU-aware MPI library that will be used by |Gromacs|, and with support
+that matches the intended |Gromacs| build. It is best to use the same
+C++ compiler and standard library also. When targeting Intel GPUs, add
+``-DHeffte_ENABLE_ONEAPI=ON -DHeffte_ONEMKL_ROOT=<path to oneMKL
+folder>``. When targeting AMD GPUs, add ``-DHeffte_ENABLE_ROCM=ON
+-DHeffte_ROCM_ROOT=<path to ROCm folder>``.
 
 Other optional build components
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

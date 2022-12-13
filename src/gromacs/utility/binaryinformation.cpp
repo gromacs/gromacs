@@ -284,7 +284,24 @@ std::string getMultiGpuFftDescriptionString()
 {
     if (GMX_USE_Heffte)
     {
-        return gmx::formatString("HeFFTe %s with cuFFT backend", Heffte_VERSION);
+        if (GMX_GPU_FFT_CUFFT)
+        {
+            // This could be either in a CUDA or SYCL build, but the
+            // distinction does not matter here.
+            return gmx::formatString("HeFFTe %s with cuFFT backend", Heffte_VERSION);
+        }
+        else if (GMX_GPU_SYCL && GMX_GPU_FFT_MKL)
+        {
+            return gmx::formatString("HeFFTe %s with oneMKL backend", Heffte_VERSION);
+        }
+        else if (GMX_GPU_SYCL && GMX_GPU_FFT_ROCFFT)
+        {
+            return gmx::formatString("HeFFTe %s with rocFFT backend", Heffte_VERSION);
+        }
+        else
+        {
+            return gmx::formatString("HeFFTe %s with unknown backend", Heffte_VERSION);
+        }
     }
     else if (GMX_USE_cuFFTMp)
     {

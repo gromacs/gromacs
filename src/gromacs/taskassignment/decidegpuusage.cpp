@@ -51,6 +51,7 @@
 #include <string>
 
 #include "gromacs/ewald/pme.h"
+#include "gromacs/fft/gpu_3dfft_support.h"
 #include "gromacs/hardware/cpuinfo.h"
 #include "gromacs/hardware/detecthardware.h"
 #include "gromacs/hardware/hardwaretopology.h"
@@ -111,10 +112,6 @@ const char* const g_specifyEverythingFormatString =
 #endif
         ;
 
-// The conditions below must be in sync with getSkipMessagesIfNecessary check in src/programs/mdrun/tests/pmetest.cpp
-constexpr bool c_gpuBuildSyclWithoutGpuFft =
-        (GMX_GPU_SYCL != 0) && (GMX_GPU_FFT_MKL == 0) && (GMX_GPU_FFT_ROCFFT == 0)
-        && (GMX_GPU_FFT_VKFFT == 0); // NOLINT(misc-redundant-expression)
 } // namespace
 
 bool decideWhetherToUseGpusForNonbondedWithThreadMpi(const TaskTarget        nonbondedTarget,
@@ -158,10 +155,11 @@ bool decideWhetherToUseGpusForNonbondedWithThreadMpi(const TaskTarget        non
     return haveAvailableDevices;
 }
 
-static bool decideWhetherToUseGpusForPmeFft(const TaskTarget pmeFftTarget)
+static bool decideWhetherToUseGpusForPmeFft(const TaskTarget pmeFftTarget, const int numPmeRanksPerSimulation)
 {
-    const bool useCpuFft = (pmeFftTarget == TaskTarget::Cpu)
-                           || (pmeFftTarget == TaskTarget::Auto && c_gpuBuildSyclWithoutGpuFft);
+    const bool useCpuFft =
+            (pmeFftTarget == TaskTarget::Cpu)
+            || (pmeFftTarget == TaskTarget::Auto && !buildSupportsGpuFft(numPmeRanksPerSimulation));
     return !useCpuFft;
 }
 
@@ -169,6 +167,7 @@ static bool canUseGpusForPme(const bool        useGpuForNonbonded,
                              const TaskTarget  pmeTarget,
                              const TaskTarget  pmeFftTarget,
                              const t_inputrec& inputrec,
+                             const int         numPmeRanksPerSimulation,
                              std::string*      errorMessage)
 {
     if (pmeTarget == TaskTarget::Cpu)
@@ -183,7 +182,7 @@ static bool canUseGpusForPme(const bool        useGpuForNonbonded,
     errorReasons.appendIf(!useGpuForNonbonded, "Nonbonded interactions must also run on GPUs.");
     errorReasons.appendIf(!pme_gpu_supports_build(&tempString), tempString);
     errorReasons.appendIf(!pme_gpu_supports_input(inputrec, &tempString), tempString);
-    if (!decideWhetherToUseGpusForPmeFft(pmeFftTarget))
+    if (!decideWhetherToUseGpusForPmeFft(pmeFftTarget, numPmeRanksPerSimulation))
     {
         // We need to do FFT on CPU, so we check whether we are able to use PME Mixed mode.
         errorReasons.appendIf(!pme_gpu_mixed_mode_supports_input(inputrec, &tempString), tempString);
@@ -214,7 +213,8 @@ bool decideWhetherToUseGpusForPmeWithThreadMpi(const bool              useGpuFor
                                                const int               numPmeRanksPerSimulation)
 {
     // First, exclude all cases where we can't run PME on GPUs.
-    if (!canUseGpusForPme(useGpuForNonbonded, pmeTarget, pmeFftTarget, inputrec, nullptr))
+    if (!canUseGpusForPme(
+                useGpuForNonbonded, pmeTarget, pmeFftTarget, inputrec, numPmeRanksPerSimulation, nullptr))
     {
         // PME can't run on a GPU. If the user required that, we issue an error later.
         return false;
@@ -402,7 +402,8 @@ bool decideWhetherToUseGpusForPme(const bool              useGpuForNonbonded,
                                   const bool              gpusWereDetected)
 {
     std::string message;
-    if (!canUseGpusForPme(useGpuForNonbonded, pmeTarget, pmeFftTarget, inputrec, &message))
+    if (!canUseGpusForPme(
+                useGpuForNonbonded, pmeTarget, pmeFftTarget, inputrec, numPmeRanksPerSimulation, &message))
     {
         if (!message.empty())
         {
@@ -476,7 +477,10 @@ bool decideWhetherToUseGpusForPme(const bool              useGpuForNonbonded,
 }
 
 
-PmeRunMode determinePmeRunMode(const bool useGpuForPme, const TaskTarget& pmeFftTarget, const t_inputrec& inputrec)
+PmeRunMode determinePmeRunMode(const bool        useGpuForPme,
+                               const int         numPmeRanksPerSimulation,
+                               const TaskTarget& pmeFftTarget,
+                               const t_inputrec& inputrec)
 {
     if (!usingPme(inputrec.coulombtype) && !usingLJPme(inputrec.vdwtype))
     {
@@ -485,13 +489,13 @@ PmeRunMode determinePmeRunMode(const bool useGpuForPme, const TaskTarget& pmeFft
 
     if (useGpuForPme)
     {
-        if (c_gpuBuildSyclWithoutGpuFft && pmeFftTarget == TaskTarget::Gpu)
+        if (!buildSupportsGpuFft(numPmeRanksPerSimulation) && pmeFftTarget == TaskTarget::Gpu)
         {
             gmx_fatal(FARGS,
-                      "GROMACS is built without SYCL GPU FFT library. Please do not use -pmefft "
-                      "gpu.");
+                      "GROMACS is built without a suitable GPU FFT library. Please do not use "
+                      "-pmefft gpu.");
         }
-        if (!decideWhetherToUseGpusForPmeFft(pmeFftTarget))
+        if (!decideWhetherToUseGpusForPmeFft(pmeFftTarget, numPmeRanksPerSimulation))
         {
             return PmeRunMode::Mixed;
         }
