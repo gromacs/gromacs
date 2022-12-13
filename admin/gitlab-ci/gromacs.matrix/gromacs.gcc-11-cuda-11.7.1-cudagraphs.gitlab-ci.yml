@@ -49,7 +49,6 @@ gromacs:gcc-11-cuda-11.7.1:test-cudagraph:
     CMAKE: /usr/local/cmake-3.18.4/bin/cmake
     KUBERNETES_EXTENDED_RESOURCE_NAME: "nvidia.com/gpu"
     KUBERNETES_EXTENDED_RESOURCE_LIMIT: 1
-    GMX_FORCE_UPDATE_DEFAULT_GPU: 1
     GMX_ENABLE_DIRECT_GPU_COMM: 1
     GMX_CUDA_GRAPH: 1
     GMX_TEST_LABELS: "QuickGpuTest|SlowGpuTest"

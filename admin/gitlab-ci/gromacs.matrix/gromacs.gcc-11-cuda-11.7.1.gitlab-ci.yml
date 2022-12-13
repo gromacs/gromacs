@@ -82,7 +82,6 @@ gromacs:gcc-11-cuda-11.7.1:regressiontest-gpucommupd-MPI:
     REGRESSIONTEST_OMP_RANK_NUMBER: 1
     REGRESSIONTEST_PARALLEL: "-np"
     GMX_ENABLE_DIRECT_GPU_COMM: 1
-    GMX_FORCE_UPDATE_DEFAULT_GPU: 1
   tags:
     - k8s-scilifelab
   needs:

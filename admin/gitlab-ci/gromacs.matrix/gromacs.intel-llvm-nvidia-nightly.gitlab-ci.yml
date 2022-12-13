@@ -54,7 +54,6 @@ gromacs:intel-llvm-nvidia-weekly:test:
     CMAKE: /usr/local/cmake-3.21.2/bin/cmake
     KUBERNETES_EXTENDED_RESOURCE_NAME: "nvidia.com/gpu"
     KUBERNETES_EXTENDED_RESOURCE_LIMIT: 1
-    GMX_FORCE_UPDATE_DEFAULT_GPU: 1
     GMX_TEST_LABELS: "QuickGpuTest|SlowGpuTest"
   tags:
     - k8s-scilifelab
@@ -75,7 +74,6 @@ gromacs:intel-llvm-nvidia-weekly:regressiontest:
     REGRESSIONTEST_OMP_RANK_NUMBER: 1
     KUBERNETES_EXTENDED_RESOURCE_NAME: "nvidia.com/gpu"
     KUBERNETES_EXTENDED_RESOURCE_LIMIT: 1
-    GMX_FORCE_UPDATE_DEFAULT_GPU: 1
   tags:
     - k8s-scilifelab
   before_script:

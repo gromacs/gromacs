@@ -583,26 +583,37 @@ bool decideWhetherToUseGpusForBonded(bool              useGpuForNonbonded,
     return gpusWereDetected && usingOurCpuForPmeOrEwald;
 }
 
-bool decideWhetherToUseGpuForUpdate(const bool                     isDomainDecomposition,
-                                    const bool                     useUpdateGroups,
-                                    const PmeRunMode               pmeRunMode,
-                                    const bool                     havePmeOnlyRank,
-                                    const bool                     useGpuForNonbonded,
-                                    const TaskTarget               updateTarget,
-                                    const bool                     gpusWereDetected,
-                                    const t_inputrec&              inputrec,
-                                    const gmx_mtop_t&              mtop,
-                                    const bool                     useEssentialDynamics,
-                                    const bool                     doOrientationRestraints,
-                                    const bool                     haveFrozenAtoms,
-                                    const bool                     doRerun,
-                                    const DevelopmentFeatureFlags& devFlags,
-                                    const gmx::MDLogger&           mdlog)
+bool decideWhetherToUseGpuForUpdate(const bool           isDomainDecomposition,
+                                    const bool           useUpdateGroups,
+                                    const PmeRunMode     pmeRunMode,
+                                    const bool           havePmeOnlyRank,
+                                    const bool           useGpuForNonbonded,
+                                    const TaskTarget     updateTarget,
+                                    const bool           gpusWereDetected,
+                                    const t_inputrec&    inputrec,
+                                    const gmx_mtop_t&    mtop,
+                                    const bool           useEssentialDynamics,
+                                    const bool           doOrientationRestraints,
+                                    const bool           haveFrozenAtoms,
+                                    const bool           useModularSimulator,
+                                    const bool           doRerun,
+                                    const gmx::MDLogger& mdlog)
 {
 
     // '-update cpu' overrides the environment variable, '-update auto' does not
-    if (updateTarget == TaskTarget::Cpu
-        || (updateTarget == TaskTarget::Auto && !devFlags.forceGpuUpdateDefault))
+    const bool forceCpuUpdateDefault = getenv("GMX_FORCE_UPDATE_DEFAULT_CPU") != nullptr;
+
+    if (forceCpuUpdateDefault)
+    {
+        GMX_LOG(mdlog.warning)
+                .asParagraph()
+                .appendTextFormatted(
+                        "This run will default to '-update cpu' as requested by the "
+                        "GMX_FORCE_UPDATE_CPU environment variable.");
+    }
+
+
+    if (updateTarget == TaskTarget::Cpu || (updateTarget == TaskTarget::Auto && forceCpuUpdateDefault))
     {
         return false;
     }
@@ -716,6 +727,10 @@ bool decideWhetherToUseGpuForUpdate(const bool                     isDomainDecom
     {
         errorMessage += "Swapping the coordinates is not supported.\n";
     }
+    if (useModularSimulator)
+    {
+        errorMessage += "The modular simulator is not supported.\n";
+    }
     if (doRerun)
     {
         errorMessage += "Re-run is not supported.\n";
@@ -745,16 +760,14 @@ bool decideWhetherToUseGpuForUpdate(const bool                     isDomainDecom
 
     if (!errorMessage.empty())
     {
-        if (updateTarget == TaskTarget::Auto && devFlags.forceGpuUpdateDefault)
+        if (updateTarget == TaskTarget::Auto && !forceCpuUpdateDefault)
         {
-            GMX_LOG(mdlog.warning)
+            GMX_LOG(mdlog.info)
                     .asParagraph()
                     .appendText(
-                            "Update task on the GPU was required, by the "
-                            "GMX_FORCE_UPDATE_DEFAULT_GPU environment variable, but the following "
+                            "Update task can not run on the GPU, because the following "
                             "condition(s) were not satisfied:");
-            GMX_LOG(mdlog.warning).asParagraph().appendText(errorMessage.c_str());
-            GMX_LOG(mdlog.warning).asParagraph().appendText("Will use CPU version of update.");
+            GMX_LOG(mdlog.info).asParagraph().appendText(errorMessage.c_str());
         }
         else if (updateTarget == TaskTarget::Gpu)
         {
@@ -767,7 +780,7 @@ bool decideWhetherToUseGpuForUpdate(const bool                     isDomainDecom
     }
 
     return (updateTarget == TaskTarget::Gpu
-            || (updateTarget == TaskTarget::Auto && devFlags.forceGpuUpdateDefault));
+            || (updateTarget == TaskTarget::Auto && !forceCpuUpdateDefault));
 }
 
 bool decideWhetherDirectGpuCommunicationCanBeUsed(const DevelopmentFeatureFlags& devFlags,

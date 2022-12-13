@@ -250,13 +250,8 @@ Performance and Run Control
         GPU-aware, but |GROMACS| is not able to detect this. Note that only CUDA and SYCL builds 
         support such functionality.
 
-``GMX_FORCE_UPDATE_DEFAULT_GPU``
-        Force update to run on the GPU by default, overriding the ``mdrun -update auto`` option. Works similar to setting
-        ``mdrun -update gpu``, but (1) falls back to the CPU code-path, if set with input that is not supported and
-        (2) can be used to run update on GPUs in multi-rank cases. The latter case should be
-        considered experimental since it lacks substantial testing. Also, GPU update is only supported with the GPU direct
-        communications and ``GMX_FORCE_UPDATE_DEFAULT_GPU`` variable should be set simultaneously with
-        ``GMX_ENABLE_DIRECT_GPU_COMM`` environment variable in multi-rank cases using library-MPI. Does not override ``mdrun -update cpu``.
+``GMX_FORCE_UPDATE_DEFAULT_CPU``
+        Force update to run on the CPU by default, makes the ``mdrun -update auto`` behave as ``-update cpu``.
 
 ``GMX_GPU_ID``
         set in the same way as ``mdrun -gpu_id``, ``GMX_GPU_ID``

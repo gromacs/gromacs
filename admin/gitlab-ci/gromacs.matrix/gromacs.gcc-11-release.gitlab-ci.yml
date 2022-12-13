@@ -63,6 +63,7 @@ gromacs:gcc-11:release:test:
     LD_LIBRARY_PATH: "/opt/rocm/opencl/lib"
     ROC_ENABLE_PRE_VEGA: 1
     GMX_TEST_LABELS: "QuickGpuTest|SlowGpuTest"
+    GMX_FORCE_UPDATE_DEFAULT_CPU: 1
   tags:
     - k8s-scilifelab
   needs:

@@ -87,7 +87,6 @@ gromacs:hipsycl-rocm-nightly:test:
     # But it's easier to set them up and use the existing scripts for job preparation that rely on them
     KUBERNETES_EXTENDED_RESOURCE_NAME: "amd.com/gpu"
     KUBERNETES_EXTENDED_RESOURCE_LIMIT: 2
-    GMX_FORCE_UPDATE_DEFAULT_GPU: 1
     GMX_TEST_LABELS: "QuickGpuTest" # |SlowGpuTest" TODO: Enable Slow tests when LLVM with https://reviews.llvm.org/D131884 is used (ROCm 5.4 maybe)
   tags:
     - amd-gpu-gfx906
@@ -139,7 +138,6 @@ gromacs:hipsycl-nvidia-mpi:test-gpucommupd-MPI:
     KUBERNETES_EXTENDED_RESOURCE_NAME: "nvidia.com/gpu"
     KUBERNETES_EXTENDED_RESOURCE_LIMIT: 2
     GMX_ENABLE_DIRECT_GPU_COMM: 1
-    GMX_FORCE_UPDATE_DEFAULT_GPU: 1
     GMX_FORCE_GPU_AWARE_MPI: 1
     GMX_TEST_LABELS: "QuickGpuTest|SlowGpuTest"
   tags:
@@ -163,7 +161,6 @@ gromacs:hipsycl-nvidia-mpi:regressiontest-gpucommupd-MPI:
     REGRESSIONTEST_OMP_RANK_NUMBER: 2
     REGRESSIONTEST_PARALLEL: "-np"
     GMX_ENABLE_DIRECT_GPU_COMM: 1
-    GMX_FORCE_UPDATE_DEFAULT_GPU: 1
     GMX_FORCE_GPU_AWARE_MPI: 1
   tags:
     - k8s-scilifelab

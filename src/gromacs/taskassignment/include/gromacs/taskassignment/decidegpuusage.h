@@ -81,8 +81,6 @@ struct DevelopmentFeatureFlags
     //! True if the Buffer ops development feature is enabled
     // TODO: when the trigger of the buffer ops offload is fully automated this should go away
     bool enableGpuBufferOps = false;
-    //! If true, forces 'mdrun -update auto' default to 'gpu'
-    bool forceGpuUpdateDefault = false;
     //! True if the GPU-aware MPI can be used for GPU direct communication feature
     bool canUseGpuAwareMpi = false;
     //! True if GPU PME-decomposition is enabled
@@ -279,29 +277,29 @@ bool decideWhetherToUseGpusForBonded(bool              useGpuForNonbonded,
  * \param[in]  useEssentialDynamics         If essential dynamics is active.
  * \param[in]  doOrientationRestraints      If orientation restraints are enabled.
  * \param[in]  haveFrozenAtoms              If this simulation has frozen atoms (see Issue #3920).
+ * \param[in]  useModularSimulator          Whether the modular simulator is used
  * \param[in]  doRerun                      It this is a rerun.
- * \param[in]  devFlags                     GPU development / experimental feature flags.
  * \param[in]  mdlog                        MD logger.
  *
  * \returns    Whether complete simulation can be run on GPU.
  * \throws     std::bad_alloc            If out of memory
  *             InconsistentInputError    If the user requirements are inconsistent.
  */
-bool decideWhetherToUseGpuForUpdate(bool                           isDomainDecomposition,
-                                    bool                           useUpdateGroups,
-                                    PmeRunMode                     pmeRunMode,
-                                    bool                           havePmeOnlyRank,
-                                    bool                           useGpuForNonbonded,
-                                    TaskTarget                     updateTarget,
-                                    bool                           gpusWereDetected,
-                                    const t_inputrec&              inputrec,
-                                    const gmx_mtop_t&              mtop,
-                                    bool                           useEssentialDynamics,
-                                    bool                           doOrientationRestraints,
-                                    bool                           haveFrozenAtoms,
-                                    bool                           doRerun,
-                                    const DevelopmentFeatureFlags& devFlags,
-                                    const gmx::MDLogger&           mdlog);
+bool decideWhetherToUseGpuForUpdate(bool                 isDomainDecomposition,
+                                    bool                 useUpdateGroups,
+                                    PmeRunMode           pmeRunMode,
+                                    bool                 havePmeOnlyRank,
+                                    bool                 useGpuForNonbonded,
+                                    TaskTarget           updateTarget,
+                                    bool                 gpusWereDetected,
+                                    const t_inputrec&    inputrec,
+                                    const gmx_mtop_t&    mtop,
+                                    bool                 useEssentialDynamics,
+                                    bool                 doOrientationRestraints,
+                                    bool                 haveFrozenAtoms,
+                                    bool                 useModularSimulator,
+                                    bool                 doRerun,
+                                    const gmx::MDLogger& mdlog);
 
 /*! \brief Decide whether direct GPU communication can be used.
  *

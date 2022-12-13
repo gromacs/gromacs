@@ -210,7 +210,6 @@ static DevelopmentFeatureFlags manageDevelopmentFeatures(const gmx::MDLogger& md
 
     devFlags.enableGpuBufferOps = (GMX_GPU_CUDA || GMX_GPU_SYCL) && useGpuForNonbonded
                                   && (getenv("GMX_USE_GPU_BUFFER_OPS") != nullptr);
-    devFlags.forceGpuUpdateDefault = (getenv("GMX_FORCE_UPDATE_DEFAULT_GPU") != nullptr) || GMX_FAHCORE;
 
     if (getenv("GMX_CUDA_GRAPH") != nullptr)
     {
@@ -329,15 +328,6 @@ static DevelopmentFeatureFlags manageDevelopmentFeatures(const gmx::MDLogger& md
                 .appendTextFormatted(
                         "This run uses the 'GPU buffer ops' feature, enabled by the "
                         "GMX_USE_GPU_BUFFER_OPS environment variable.");
-    }
-
-    if (devFlags.forceGpuUpdateDefault)
-    {
-        GMX_LOG(mdlog.warning)
-                .asParagraph()
-                .appendTextFormatted(
-                        "This run will default to '-update gpu' as requested by the "
-                        "GMX_FORCE_UPDATE_DEFAULT_GPU environment variable.");
     }
 
     // PME decomposition is supported only with CUDA-backend in mixed mode
@@ -1087,7 +1077,8 @@ int Mdrunner::mdrunner()
                                                               replExParams,
                                                               nullptr,
                                                               doEssentialDynamics,
-                                                              membedHolder.doMembed());
+                                                              membedHolder.doMembed(),
+                                                              updateTarget == TaskTarget::Gpu);
 
     // Now the number of ranks is known to all ranks, and each knows
     // the inputrec read by the main rank. The ranks can now all run
@@ -1405,8 +1396,8 @@ int Mdrunner::mdrunner()
                                                          doEssentialDynamics,
                                                          gmx_mtop_ftype_count(mtop, F_ORIRES) > 0,
                                                          haveFrozenAtoms,
+                                                         useModularSimulator,
                                                          doRerun,
-                                                         devFlags,
                                                          mdlog);
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR

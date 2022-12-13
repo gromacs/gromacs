@@ -52,6 +52,7 @@ gromacs:clang-14-cuda-11.4.3:test:
     KUBERNETES_EXTENDED_RESOURCE_NAME: "nvidia.com/gpu"
     KUBERNETES_EXTENDED_RESOURCE_LIMIT: 1
     GMX_TEST_LABELS: "QuickGpuTest|SlowGpuTest"
+    GMX_FORCE_UPDATE_DEFAULT_CPU: 1
   tags:
     - k8s-scilifelab
   needs:

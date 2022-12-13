@@ -7,6 +7,12 @@ Performance improvements
    Also, please use the syntax :issue:`number` to reference issues on GitLab, without
    a space between the colon and number!
 
+Update will run on GPU by default
+"""""""""""""""""""""""""""""""""
+
+The mdrun ``-update auto`` will by default map to GPU if supported.
+This gives a significant performance improvement with a single MPI rank.
+
 Increased default T- and P-coupling intervals
 """""""""""""""""""""""""""""""""""""""""""""
 

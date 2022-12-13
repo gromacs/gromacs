@@ -85,7 +85,8 @@ public:
                                   const ReplicaExchangeParameters& replExParams,
                                   const t_fcdata*                  fcd,
                                   bool                             doEssentialDynamics,
-                                  bool                             doMembed);
+                                  bool                             doMembed,
+                                  bool                             useGpuForUpdate);
 
     //! Read everything that can be stored in t_trxframe from a checkpoint file
     static void readCheckpointToTrxFrame(t_trxframe*                     fr,

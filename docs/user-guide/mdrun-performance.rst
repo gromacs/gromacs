@@ -1158,10 +1158,13 @@ use of the otherwise mostly idle CPU. It can often be advantageous to move the b
 or PME calculation back to the CPU, but the details of this will depending on the
 relative performance if the CPU cores paired in a simulation with a GPU.
 
+GPU-resident mode is enabled by default (when supported) with an automatic
+fallback to CPU update when the build configuration or simulation settings
+are incompatible with it. 
 It is possible to change the default behaviour by setting the
-``GMX_FORCE_UPDATE_DEFAULT_GPU`` environment variable to a non-zero value. In this
-case simulations will try to run all parts by default on the GPU, and will only fall
-back to the CPU based calculation if the simulation is not compatible.
+``GMX_FORCE_UPDATE_DEFAULT_CPU`` environment variable. In this
+case simulations following the default behavior (ie. ``-update auto``)
+will run the update on the CPU.
 
 Using this parallelization mode is typically advantageous in cases where a fast GPU is
 used with a slower CPU, in particular if there is only single simulation assigned to a GPU.
@@ -1219,6 +1222,10 @@ One overview over the possible task assignments is given below:
   Direct GPU communication is not enabled by default and can be triggered using
   the ``GMX_ENABLE_DIRECT_GPU_COMM`` environment variable (will only have an effect
   on supported systems).
+
+|Gromacs| version 2023:
+  Update now runs by default on the GPU with supported simulation settings; note that this is only available with CUDA and SYCL not with OpenCL.
+
 
 Performance considerations for GPU tasks
 ........................................

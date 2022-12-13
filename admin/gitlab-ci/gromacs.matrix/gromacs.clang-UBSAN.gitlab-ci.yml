@@ -47,6 +47,7 @@ gromacs:clang-UBSAN:test:
   image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-llvm-11-tsan
   variables:
     CMAKE: /usr/local/cmake-3.18.4/bin/cmake
+    GMX_FORCE_UPDATE_DEFAULT_CPU: 1
   tags:
     - k8s-scilifelab
   needs:

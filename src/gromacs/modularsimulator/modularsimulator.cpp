@@ -350,7 +350,8 @@ bool ModularSimulator::isInputCompatible(bool                             exitOn
                                          const ReplicaExchangeParameters& replExParams,
                                          const t_fcdata*                  fcd,
                                          bool                             doEssentialDynamics,
-                                         bool                             doMembed)
+                                         bool                             doMembed,
+                                         bool                             useGpuForUpdate)
 {
     auto conditionalAssert = [exitOnFailure](bool condition, const char* message) {
         if (exitOnFailure)
@@ -481,12 +482,13 @@ bool ModularSimulator::isInputCompatible(bool                             exitOn
             isInputCompatible
             && conditionalAssert(!doMembed,
                                  "Membrane embedding is not supported by the modular simulator.");
-    // TODO: Change this to the boolean passed when we merge the user interface change for the GPU update.
+
     isInputCompatible =
             isInputCompatible
             && conditionalAssert(
-                    getenv("GMX_FORCE_UPDATE_DEFAULT_GPU") == nullptr,
+                    !useGpuForUpdate,
                     "Integration on the GPU is not supported by the modular simulator.");
+
     // Modular simulator is centered around NS updates
     // TODO: think how to handle nstlist == 0
     isInputCompatible = isInputCompatible
@@ -527,7 +529,8 @@ void ModularSimulator::checkInputForDisabledFunctionality()
                       legacySimulatorData_->replExParams,
                       legacySimulatorData_->fr->fcdata.get(),
                       opt2bSet("-ei", legacySimulatorData_->nfile, legacySimulatorData_->fnm),
-                      legacySimulatorData_->membed != nullptr);
+                      legacySimulatorData_->membed != nullptr,
+                      false);
     if (legacySimulatorData_->observablesHistory->edsamHistory)
     {
         gmx_fatal(FARGS,

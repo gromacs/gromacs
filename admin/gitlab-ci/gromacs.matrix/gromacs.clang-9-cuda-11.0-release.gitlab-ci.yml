@@ -53,6 +53,7 @@ gromacs:clang-9-cuda-11.0:release:test:
     KUBERNETES_EXTENDED_RESOURCE_LIMIT: 1
     BUILD_DIR: release-builds-clang
     GMX_TEST_LABELS: "QuickGpuTest|SlowGpuTest"
+    GMX_FORCE_UPDATE_DEFAULT_CPU: 1
   tags:
     - k8s-scilifelab
   needs:
