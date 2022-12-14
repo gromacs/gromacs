@@ -5,7 +5,7 @@
    |  Y Y  \  |  /  |_> > __ \|  | \/\___ \\  ___/|  | \/
    |__|_|  /____/|   __(____  /__|  /____  >\___  >__|
 		 \/      |__|       \/           \/     \/
-   Copyright (C) 2004 - 2020 Ingo Berg
+   Copyright (C) 2022 Ingo Berg
 
 	Redistribution and use in source and binary forms, with or without modification, are permitted
 	provided that the following conditions are met:
@@ -26,8 +26,6 @@
 	OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#include "muParserTest.h"
-
 #include <cstdlib>
 #include <cstring>
 #include <cmath>
@@ -39,6 +37,7 @@
 #include <iomanip>
 #include <numeric>
 
+#include "muParserTest.h"
 #include "muParser.h"
 
 using namespace std;
@@ -132,6 +131,7 @@ static value_type* AddVariable(const char_type* a_szName, void* a_pUserData)
 		return &afValBuf[iVal];
 }
 
+
 int IsBinValue(const char_type* a_szExpr, int* a_iPos, value_type* a_fVal)
 {
 	if (a_szExpr[0] != 0 && a_szExpr[1] != 'b')
@@ -155,6 +155,7 @@ int IsBinValue(const char_type* a_szExpr, int* a_iPos, value_type* a_fVal)
 
 	return 1;
 }
+
 
 static int IsHexValue(const char_type* a_szExpr, int* a_iPos, value_type* a_fVal)
 {
@@ -188,7 +189,7 @@ static void Splash()
 	mu::console() << _T(R"( |__|_|  /____/|   __(____  /___|  /___  >\___  >|__|    )") << _T("\n");
 	mu::console() << _T(R"(       \/      |__|       \/           \/     \/        )") << _T("\n");
 	mu::console() << _T("  Version ") << Parser().GetVersion(pviFULL) << _T("\n");
-	mu::console() << _T("  (C) 2004 - 2020 Ingo Berg\n");
+	mu::console() << _T("  (C) 2022 Ingo Berg\n");
 	mu::console() << _T("\n");
 	mu::console() << _T("-----------------------------------------------------------\n");
 
@@ -379,13 +380,13 @@ static int CheckKeywords(const mu::char_type* a_szLine, mu::Parser& a_Parser)
 	}
 	else if (sLine == _T("dbg"))
 	{
-		std::string dbg = R"(6 - 6 ? 4 : "", ? 4 : "", ? 4 : ""), 1)";
+		string_type dbg = _T("((\"\")), 7");
 		a_Parser.SetExpr(dbg);
 		mu::console() << dbg;
 
 		int stackSize;
 		double* v = a_Parser.Eval(stackSize);
-		mu::console() << *v << std::endl;
+		mu::console() << "=" <<  *v << std::endl;
 		return 1;
 	}
 
@@ -454,7 +455,7 @@ static void Calc()
 	parser.DefineFun(_T("strfun0"), StrFun0);
 	parser.DefineFun(_T("strfun2"), StrFun2);
 	parser.DefineFun(_T("ping"), Ping);
-	parser.DefineFun(_T("rnd"), Rnd);     // Add an unoptimizeable function
+	parser.DefineFun(_T("rnd"), Rnd, false);     // Add an unoptimizeable function
 	parser.DefineFun(_T("throw"), ThrowAnException);
 
 	parser.DefineOprt(_T("add"), Add, 0);
@@ -465,7 +466,7 @@ static void Calc()
 	parser.DefineFun(_T("selftest"), SelfTest);
 	parser.DefineFun(_T("help"), Help);
 	parser.DefineFun(_T("arg2of2"), Arg2Of2);
-	parser.DefineFun(_T("arg1of2"), Arg1Of2);
+	parser.DefineFun(_T("arg1of2"), Arg1Of2, false);
 
 	parser.DefinePostfixOprt(_T("{ft}"), Milli);
 	parser.DefinePostfixOprt(_T("ft"), Milli);

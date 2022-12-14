@@ -164,7 +164,8 @@ void CpuPpLongRangeNonbondeds::calculate(gmx_pme_t*                     pmedata,
     /* Do long-range electrostatics and/or LJ-PME
      * and compute PME surface terms when necessary.
      */
-    if ((computePmeOnCpu || coulombInteractionType_ == CoulombInteractionType::Ewald || haveEwaldSurfaceTerm_)
+    if ((computePmeOnCpu || coulombInteractionType_ == CoulombInteractionType::Ewald
+         || haveEwaldSurfaceTerm_ || chargeC6Sum_[0] != 0 || chargeC6Sum_[1] != 0)
         && stepWork.computeNonbondedForces)
     {
         real Vlr_q = 0, Vlr_lj = 0;

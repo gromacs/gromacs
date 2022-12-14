@@ -57,6 +57,9 @@ target_link_libraries(pulling PRIVATE
         utility
 )
 
+# pulling needs muparser defines 
+target_link_libraries(pulling INTERFACE muparser::muparser)
+
 # Public interface for modules, including dependencies and interfaces
 target_include_directories(pulling PUBLIC
                            $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>)

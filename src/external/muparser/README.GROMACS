@@ -1,15 +1,15 @@
 Changes by GROMACS to muparser files
 ====================================
-Used from https://github.com/beltoforion/muparser/releases/tag/v2.3.2.
+Used from https://github.com/beltoforion/muparser/releases/tag/v2.3.4.
 
-ENABLE_SAMPLES is commented out so that we don't build them
+ENABLE_SAMPLES is set off
 
 ENABLE_OPENMP gets its value from GMX_OPENMP
 
-Minor modifications exist to avoid compiler warnings, e.g. from
-attempting to return a size_t in an int.
+The minimum required CMake version was changed to match that used for
+GROMACS, so that the policy usage is consistent, so that muParser
+cache variables can be overridden by normal GROMACS variables without
+causing warnings.
 
 target_include_directories() is used so that GROMACS source files
 find the muparser headers.
-
-Targets now link OpenMP::OpenMP_CXX target explicitly.

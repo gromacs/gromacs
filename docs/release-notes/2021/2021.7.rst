@@ -1,10 +1,10 @@
-GROMACS 2022.5 release notes
+GROMACS 2021.7 release notes
 ----------------------------
 
-This version was released on TODO, 2023. These release notes
+This version was released on TODO, 2022. These release notes
 document the changes that have taken place in GROMACS since the
-previous 2022.4 version, to fix known issues. It also incorporates all
-fixes made in version 2021.6 and earlier, which you can find described
+previous 2021.6 version, to fix known issues. It also incorporates all
+fixes made in version 2020.7 and earlier, which you can find described
 in the :ref:`release-notes`.
 
 .. Note to developers!
@@ -14,7 +14,7 @@ in the :ref:`release-notes`.
    a space between the colon and number!
 
 Fixes where mdrun could behave incorrectly
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Add missing net charge term when running PME on a GPU
 """""""""""""""""""""""""""""""""""""""""""""""""""""
@@ -27,6 +27,7 @@ avoid changing the net charge of a system with free-energy calculations).
 
 :issue:`4668`
 
+
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -35,12 +36,4 @@ Fixes that affect portability
 
 Miscellaneous
 ^^^^^^^^^^^^^
-
-Improve muParser detection and bumped internal version to v2.3.4
-""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-Update internal muParser version that include all changes made by
-us. Use muParser's CMake config to detect external muParser. Update
-required version for external muParser to match the internal version.
-
-:issue:`4614`
 

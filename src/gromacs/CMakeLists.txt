@@ -70,6 +70,9 @@ endfunction ()
 option(GMX_USE_SIMD_KERNELS "Whether to compile NBNXM and other SIMD kernels" ON)
 mark_as_advanced(GMX_USE_SIMD_KERNELS)
 
+# pulling is using the muparser target as well, so detect it early
+gmx_manage_muparser()
+
 # Add these contents first because linking their tests can take a lot
 # of time, so we want lots of parallel work still available after
 # linking starts.
@@ -406,8 +409,7 @@ set_target_properties(libgromacs PROPERTIES
 
 gmx_manage_lmfit()
 target_link_libraries(libgromacs PRIVATE lmfit)
-gmx_manage_muparser()
-target_link_libraries(libgromacs PRIVATE muparser)
+target_link_libraries(libgromacs PRIVATE muparser::muparser)
 
 # Make sure we fix "everything" found by compilers that support that
 gmx_warn_on_everything(libgromacs)

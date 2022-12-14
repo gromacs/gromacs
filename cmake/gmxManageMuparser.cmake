@@ -31,7 +31,7 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out https://www.gromacs.org.
 
-set(GMX_MUPARSER_REQUIRED_VERSION "2.3")
+set(GMX_MUPARSER_REQUIRED_VERSION "2.3.4")
 
 include(gmxOptionUtilities)
 
@@ -58,6 +58,9 @@ function(gmx_manage_muparser)
             endif()
             FetchContent_Populate(muparser)
         endif()
+        set(ENABLE_SAMPLES OFF)
+        set(ENABLE_OPENMP ${GMX_OPENMP})
+        set(BUILD_TESTING OFF)
         add_subdirectory(${muparser_SOURCE_DIR} ${muparser_BINARY_DIR})
         if (BUILD_SHARED_LIBS)
             # Ensure muparser is in the export set called libgromacs,
@@ -79,16 +82,16 @@ function(gmx_manage_muparser)
         set(HAVE_MUPARSER 1 CACHE INTERNAL "Is muparser found?")
     elseif(GMX_USE_MUPARSER STREQUAL "EXTERNAL")
         # Find an external muparser library.
-        find_package(Muparser ${GMX_MUPARSER_REQUIRED_VERSION})
-        if(NOT MUPARSER_FOUND OR MUPARSER_VERSION VERSION_LESS GMX_MUPARSER_REQUIRED_VERSION)
-            message(FATAL_ERROR "External muparser >= ${GMX_MUPARSER_REQUIRED_VERSION} could not be found, please adjust your pkg-config path to include the muparser.pc file")
-        endif()
-
+        find_package(muparser ${GMX_MUPARSER_REQUIRED_VERSION} REQUIRED)
         set(HAVE_MUPARSER 1 CACHE INTERNAL "Is muparser found?")
+        get_target_property(_muparser_compile_defs muparser::muparser COMPILE_DEFINITIONS)
+        if(_muparser_compile_defs MATCHES ".*_UNICODE.*")
+            message(FATAL_ERROR "External muParser library with wide char enabled not supported.")
+        endif()
     else()
         # Create a dummy link target so the calling code doesn't need to know
         # whether muparser support is being compiled.
-        add_library(muparser INTERFACE)
+        add_library(muparser::muparser INTERFACE)
         # Add the muparser interface library to the libgromacs Export name, even though
         # we will not be installing any content.
         install(TARGETS muparser EXPORT libgromacs)
