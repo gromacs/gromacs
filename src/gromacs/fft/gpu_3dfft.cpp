@@ -405,8 +405,8 @@ constexpr bool c_cudaBuildThatSupportsGpuFftWithoutDecomposition   = (GMX_GPU_CU
 constexpr bool c_openclBuildThatSupportsGpuFftWithoutDecomposition = (GMX_GPU_OPENCL != 0);
 constexpr bool c_syclBuildThatSupportsGpuFftWithoutDecomposition =
         (GMX_GPU_SYCL != 0)
-        && ((GMX_GPU_FFT_MKL != 0) || (GMX_GPU_FFT_ROCFFT != 0) || (GMX_GPU_FFT_VKFFT != 0)
-            || (GMX_GPU_FFT_DBFFT != 0)); // NOLINT(misc-redundant-expression)
+        && ((GMX_GPU_FFT_MKL != 0) || (GMX_GPU_FFT_ROCFFT != 0) // NOLINT(misc-redundant-expression)
+            || (GMX_GPU_FFT_VKFFT != 0) || (GMX_GPU_FFT_DBFFT != 0)); // NOLINT(misc-redundant-expression)
 constexpr bool c_buildThatSupportsGpuFftWithoutDecomposition =
         (c_cudaBuildThatSupportsGpuFftWithoutDecomposition || c_openclBuildThatSupportsGpuFftWithoutDecomposition
          || c_syclBuildThatSupportsGpuFftWithoutDecomposition);
@@ -426,13 +426,13 @@ constexpr bool c_buildThatSupportsGpuFftWithoutDecomposition =
  */
 //! \{
 constexpr bool c_cudaBuildThatSupportsGpuFftWithDecomposition =
-        (GMX_LIB_MPI != 0) && (GMX_GPU_CUDA != 0)
+        (GMX_LIB_MPI != 0) && (GMX_GPU_CUDA != 0) // NOLINT(misc-redundant-expression)
         && (GMX_USE_cuFFTMp != 0 || (GMX_USE_Heffte != 0 && GMX_GPU_FFT_CUFFT));
 constexpr bool c_openclBuildThatSupportsGpuFftWithDecomposition = false;
 constexpr bool c_syclBuildThatSupportsGpuFftWithDecomposition =
-        (GMX_LIB_MPI != 0) && (GMX_GPU_SYCL != 0) && (GMX_USE_Heffte != 0)
-        && ((GMX_GPU_FFT_MKL != 0) || (GMX_GPU_FFT_ROCFFT != 0) || (GMX_GPU_FFT_VKFFT != 0)
-            || (GMX_GPU_FFT_CUFFT != 0)); // NOLINT(misc-redundant-expression)
+        (GMX_LIB_MPI != 0) && (GMX_GPU_SYCL != 0) && (GMX_USE_Heffte != 0) // NOLINT(misc-redundant-expression)
+        && ((GMX_GPU_FFT_MKL != 0) || (GMX_GPU_FFT_ROCFFT != 0) // NOLINT(misc-redundant-expression)
+            || (GMX_GPU_FFT_VKFFT != 0) || (GMX_GPU_FFT_CUFFT != 0)); // NOLINT(misc-redundant-expression)
 constexpr bool c_buildThatSupportsGpuFftWithDecomposition =
         (c_cudaBuildThatSupportsGpuFftWithDecomposition || c_openclBuildThatSupportsGpuFftWithDecomposition
          || c_syclBuildThatSupportsGpuFftWithDecomposition);
