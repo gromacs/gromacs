@@ -52,7 +52,7 @@ namespace gmx
 {
 
 //! Returns whether the build configuration supports GPU FFt on \c numRanksForGpuFft
-bool buildSupportsGpuFft(const int numRanksForGpuFft);
+bool buildSupportsGpuFft(int numRanksForGpuFft);
 
 } // namespace gmx
 
