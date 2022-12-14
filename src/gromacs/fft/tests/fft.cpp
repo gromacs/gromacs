@@ -406,7 +406,8 @@ TEST_P(ParameterizedFFTTest3D, RunsOnHost)
  *
  *  DPCPP uses oneMKL, which seems to have troubles with out-of-place
  *  transforms. */
-constexpr bool sc_performOutOfPlaceFFT = (GMX_GPU_FFT_MKL == 0) && (GMX_GPU_FFT_DBFFT == 0);
+constexpr bool sc_performOutOfPlaceFFT =
+        (GMX_GPU_FFT_MKL == 0) && (GMX_GPU_FFT_DBFFT == 0); // NOLINT(misc-redundant-expression)
 
 /*! \brief Return the output grid depending on whether in- or out-of
  * place FFT is used
