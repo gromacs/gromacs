@@ -338,11 +338,24 @@ slightly faster.
 Using MKL
 ~~~~~~~~~
 
-Use OneAPI MKL(>=2021.3) by setting up the environment, e.g., through
-``source /opt/intel/oneapi/setvars.sh`` or
+To target either Intel CPUs or GPUs, use OneAPI MKL(>=2021.3) by setting up the environment,
+e.g., through ``source /opt/intel/oneapi/setvars.sh`` or
 ``source /opt/intel/oneapi/mkl/latest/env/vars.sh``
 or manually setting environment variable ``MKLROOT=/full/path/to/mkl``.
-Then run CMake with setting ``-DGMX_FFT_LIBRARY=mkl``.
+Then run CMake with setting ``-DGMX_FFT_LIBRARY=mkl`` and/or ``-DGMX_GPU_FFT_LIBRARY=mkl``.
+
+Using double-batched FFT library
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Generally MKL will provide better performance on Intel GPUs, however
+this alternative open-source library from Intel
+(https://github.com/intel/double-batched-fft-library) is useful for
+very large FFT sizes in |Gromacs|.
+
+::
+
+     cmake -DGMX_GPU_FFT_LIBRARY=DBFFT -DCMAKE_PREFIX_PATH=$PATH_TO_DBFFT_INSTALL
+
 
 Using ARM Performance Libraries
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

@@ -263,6 +263,10 @@ std::string getGpuFftDescriptionString()
         {
             return std::string("rocFFT ") + rocfft_VERSION;
         }
+        else if (GMX_GPU_FFT_DBFFT)
+        {
+            return std::string("Double-Batched FFT Library ") + dbfft_VERSION;
+        }
         else
         {
             /* Some SYCL builds (e.g., Intel DPC++ for AMD devices) have no support for GPU FFT,

@@ -59,6 +59,8 @@
 #    include "gpu_3dfft_sycl.h"
 #    if GMX_GPU_FFT_MKL
 #        include "gpu_3dfft_sycl_mkl.h"
+#    elif GMX_GPU_FFT_DBFFT
+#        include "gpu_3dfft_sycl_dbfft.h"
 #    elif GMX_GPU_FFT_ROCFFT
 #        include "gpu_3dfft_sycl_rocfft.h"
 #    elif GMX_GPU_FFT_VKFFT
@@ -196,6 +198,22 @@ Gpu3dFft::Gpu3dFft(FftBackend           backend,
                                                             complexGridSizePadded,
                                                             realGrid,
                                                             complexGrid);
+            break;
+#    elif GMX_GPU_FFT_DBFFT
+        case FftBackend::SyclDbfft:
+            impl_ = std::make_unique<Gpu3dFft::ImplSyclDbfft>(allocateRealGrid,
+                                                              comm,
+                                                              gridSizesInXForEachRank,
+                                                              gridSizesInYForEachRank,
+                                                              nz,
+                                                              performOutOfPlaceFFT,
+                                                              context,
+                                                              pmeStream,
+                                                              realGridSize,
+                                                              realGridSizePadded,
+                                                              complexGridSizePadded,
+                                                              realGrid,
+                                                              complexGrid);
             break;
 #    elif GMX_GPU_FFT_VKFFT
         case FftBackend::SyclVkfft:
@@ -387,8 +405,8 @@ constexpr bool c_cudaBuildThatSupportsGpuFftWithoutDecomposition   = (GMX_GPU_CU
 constexpr bool c_openclBuildThatSupportsGpuFftWithoutDecomposition = (GMX_GPU_OPENCL != 0);
 constexpr bool c_syclBuildThatSupportsGpuFftWithoutDecomposition =
         (GMX_GPU_SYCL != 0)
-        && ((GMX_GPU_FFT_MKL != 0) || (GMX_GPU_FFT_ROCFFT != 0)
-            || (GMX_GPU_FFT_VKFFT != 0)); // NOLINT(misc-redundant-expression)
+        && ((GMX_GPU_FFT_MKL != 0) || (GMX_GPU_FFT_ROCFFT != 0) || (GMX_GPU_FFT_VKFFT != 0)
+            || (GMX_GPU_FFT_DBFFT != 0)); // NOLINT(misc-redundant-expression)
 constexpr bool c_buildThatSupportsGpuFftWithoutDecomposition =
         (c_cudaBuildThatSupportsGpuFftWithoutDecomposition || c_openclBuildThatSupportsGpuFftWithoutDecomposition
          || c_syclBuildThatSupportsGpuFftWithoutDecomposition);

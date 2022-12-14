@@ -453,6 +453,18 @@ int main() {
         set(_sycl_has_valid_fft TRUE)
     endif()
 
+    if(GMX_GPU_FFT_DBFFT)
+        # The double-batched FFT library is still called by its former
+        # name bbfft in the implementation. For now, only the shared
+        # libraries can link into GROMACS shared libraries.
+        if (BUILD_SHARED_LIBS)
+            find_package(bbfft-sycl 0.3.1 REQUIRED shared)
+        else()
+            find_package(bbfft-sycl 0.3.1 REQUIRED)
+        endif()
+        set(_sycl_has_valid_fft TRUE)
+    endif()
+
     # Add function wrapper similar to the one used by ComputeCPP and hipSYCL
     function(add_sycl_to_target)
         cmake_parse_arguments(

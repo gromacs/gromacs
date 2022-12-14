@@ -77,6 +77,7 @@ enum class FftBackend
     SyclMkl,            //!< supports only single-GPU
     SyclRocfft,         //!< supports only single-GPU
     SyclVkfft,          //!< supports only single-GPU
+    SyclDbfft,          //!< supports only single-GPU
     Sycl,               //!< stubs for not supported configurations
     Count
 };
@@ -137,6 +138,7 @@ private:
     class ImplOclVkfft;
     class ImplOcl;
     class ImplSyclMkl;
+    class ImplSyclDbfft;
     class ImplSyclRocfft;
     class ImplSyclVkfft;
     class ImplSycl;
