@@ -1683,50 +1683,55 @@ static void make_fep_list(gmx::ArrayRef<const int> atomIndices,
                 {
                     for (int j = 0; j < nbl->na_cj; j++)
                     {
-                        /* Is this interaction perturbed and not excluded? */
-                        const int ind_j = cja * nbl->na_cj + j;
-                        const int aj    = atomIndices[ind_j];
-                        if (aj >= 0 && (bFEP_i || (fep_cj & (1 << j))) && (!bDiagRemoved || ind_j >= ind_i))
+                        const int  ind_j       = cja * nbl->na_cj + j;
+                        const int  aj          = atomIndices[ind_j];
+                        const bool isPerturbed = aj >= 0 && (bFEP_i || ((fep_cj & (1 << j)) != 0));
+                        const bool isSubDiagonal = bDiagRemoved && ind_j < ind_i;
+                        if (isPerturbed && !isSubDiagonal)
                         {
-                            if (ngid > 1)
+                            const bool isWithinFepListRange =
+                                    norm2(xiShifted - getCoordinate(*nbat, ind_j)) < rlist_fep2;
+                            if (isWithinFepListRange)
                             {
-                                const int gid_j = (gid_cj >> (j * egp_shift)) & egp_mask;
-                                const int gid   = GID(gid_i, gid_j, ngid);
-
-                                if (nlist->nrj > nlist->jindex[nri] && nlist->gid[nri] != gid)
+                                if (ngid > 1)
                                 {
-                                    /* Energy group pair changed: new list */
+                                    const int gid_j = (gid_cj >> (j * egp_shift)) & egp_mask;
+                                    const int gid   = GID(gid_i, gid_j, ngid);
+
+                                    if (nlist->nrj > nlist->jindex[nri] && nlist->gid[nri] != gid)
+                                    {
+                                        /* Energy group pair changed: new list */
+                                        fep_list_new_nri_copy(nlist);
+                                        nri = nlist->nri;
+                                    }
+                                    nlist->gid[nri] = gid;
+                                }
+
+                                if (nlist->nrj - nlist->jindex[nri] >= max_nrj_fep)
+                                {
                                     fep_list_new_nri_copy(nlist);
                                     nri = nlist->nri;
                                 }
-                                nlist->gid[nri] = gid;
-                            }
 
-                            if (nlist->nrj - nlist->jindex[nri] >= max_nrj_fep)
-                            {
-                                fep_list_new_nri_copy(nlist);
-                                nri = nlist->nri;
-                            }
+                                /* Add it to the FEP list */
+                                nlist->jjnr[nlist->nrj] = aj;
+                                const int pairIsIncluded =
+                                        ((nbl->cj.excl(cj_ind) >> (i * nbl->na_cj + j)) & 1);
+                                nlist->excl_fep[nlist->nrj] = pairIsIncluded;
+                                nlist->nrj++;
+                                /* Count excluded pairs within rlist */
+                                if (pairIsIncluded == 0)
+                                {
+                                    nlist->numExclusionsWithinRlist++;
+                                }
 
-                            /* Add it to the FEP list */
-                            nlist->jjnr[nlist->nrj] = aj;
-                            const int pairIsIncluded =
-                                    ((nbl->cj.excl(cj_ind) >> (i * nbl->na_cj + j)) & 1);
-                            nlist->excl_fep[nlist->nrj] = pairIsIncluded;
-                            nlist->nrj++;
-                            /* Count excluded pairs within rlist */
-                            if (pairIsIncluded == 0
-                                && norm2(xiShifted - getCoordinate(*nbat, ind_j)) < rlist_fep2)
-                            {
-                                nlist->numExclusionsWithinRlist++;
+                                /* Exclude it from the normal list.
+                                 * Note that the charge has been set to zero,
+                                 * but we need to avoid 0/0, as perturbed atoms
+                                 * can be on top of each other.
+                                 */
+                                nbl->cj.excl(cj_ind) &= ~(1U << (i * nbl->na_cj + j));
                             }
-
-                            /* Exclude it from the normal list.
-                             * Note that the charge has been set to zero,
-                             * but we need to avoid 0/0, as perturbed atoms
-                             * can be on top of each other.
-                             */
-                            nbl->cj.excl(cj_ind) &= ~(1U << (i * nbl->na_cj + j));
                         }
                     }
                 }
@@ -3183,27 +3188,25 @@ static void nbnxn_make_pairlist_part(const Nbnxm::GridSet&   gridSet,
 
     if (haveFep)
     {
-        real rlistFep = nbl->rlist;
-        if (!pairlistIsSimple(*nbl))
-        {
-            /* To reduce the cost of the expensive free-energy kernel for which
-             * use a single-range instead of a double-range list, we should use
-             * a single-range sized buffer.
-             *
-             * Determine an atom-pair list cut-off distance for FEP atom pairs.
-             * We should not simply use rlist, since then we would not have
-             * the small, effective buffering of the NxN lists.
-             * The buffer is an overestimate, but the resulting cost for pairs
-             * beyond rlist is negligible compared to the FEP pairs within rlist.
-             */
-            rlistFep += effective_buffer_1x1_vs_MxN(iGrid, jGrid);
-        }
+        /* To reduce the cost of the expensive free-energy kernel for which
+         * use a single-range instead of a double-range list, we should use
+         * a single-range sized buffer.
+         *
+         * Determine an atom-pair list cut-off distance for FEP atom pairs.
+         * We should not simply use rlist, since then we would not have
+         * the small, effective buffering of the NxN lists.
+         * The buffer is an overestimate, but the resulting cost for pairs
+         * beyond rlist is negligible compared to the FEP pairs within rlist.
+         */
+        const real rlistFep = nbl->rlist + effective_buffer_1x1_vs_MxN(iGrid, jGrid);
+
+        /* Make sure we don't go above the maximum allowed cut-off distance */
+        rl_fep2 = std::min(gmx::square(rlistFep), max_cutoff2(gridSet.domainSetup().pbcType, box));
 
         if (debug)
         {
-            fprintf(debug, "nbl_fep atom-pair rlist %f\n", rlistFep);
+            fprintf(debug, "nbl_fep atom-pair rlist %f\n", std::sqrt(rl_fep2));
         }
-        rl_fep2 = gmx::square(rlistFep);
     }
 
     const Grid::Dimensions& iGridDims = iGrid.dimensions();
