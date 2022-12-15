@@ -235,15 +235,11 @@ bool decideWhetherToUseGpusForPme(bool                    useGpuForNonbonded,
  * \note Aborts the run upon incompatible values of \p useGpuForPme and \p pmeFftTarget.
  *
  * \param[in]  useGpuForPme              PME task assignment, true if PME task is mapped to the GPU.
- * \param[in]  numPmeRanksPerSimulation  The number of PME ranks per simulation
  * \param[in]  pmeFftTarget              The user's choice for -pmefft for where to assign the FFT
  *                                       work of the PME task.
  * \param[in]  inputrec                  The user input record
  * */
-PmeRunMode determinePmeRunMode(bool              useGpuForPme,
-                               int               numPmeRanksPerSimulation,
-                               const TaskTarget& pmeFftTarget,
-                               const t_inputrec& inputrec);
+PmeRunMode determinePmeRunMode(bool useGpuForPme, const TaskTarget& pmeFftTarget, const t_inputrec& inputrec);
 
 /*! \brief Decide whether the simulation will try to run bonded tasks on GPUs.
  *

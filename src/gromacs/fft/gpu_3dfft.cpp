@@ -45,7 +45,6 @@
 #include "gpu_3dfft.h"
 
 #include "gpu_3dfft_impl.h"
-#include "gpu_3dfft_support.h"
 
 #if GMX_GPU_CUDA
 #    include "gpu_3dfft_cufft.h"
@@ -388,66 +387,5 @@ void Gpu3dFft::perform3dFft(gmx_fft_direction dir, CommandEvent* timingEvent)
 #ifdef __clang__
 #    pragma clang diagnostic pop
 #endif
-
-namespace
-{
-
-/*! \brief Logic for whether this build can run PME FFT on a single GPU
- *
- * This requires a GPU build and a suitable backend GPU FFT library.
- * - CUDA is trivial because it always supplies cuFFT
- * - OpenCL is trivial because it always uses clFFT (whether internal or external)
- * - SYCL is non-trivial because it must have MKL, rocFFT, or VkFFT. In
- *   particular, cuFFT only works with heFFTe and PME decomposition.
- */
-//! \{
-constexpr bool c_cudaBuildThatSupportsGpuFftWithoutDecomposition   = (GMX_GPU_CUDA != 0);
-constexpr bool c_openclBuildThatSupportsGpuFftWithoutDecomposition = (GMX_GPU_OPENCL != 0);
-constexpr bool c_syclBuildThatSupportsGpuFftWithoutDecomposition =
-        (GMX_GPU_SYCL != 0)
-        && ((GMX_GPU_FFT_MKL != 0) || (GMX_GPU_FFT_ROCFFT != 0) // NOLINT(misc-redundant-expression)
-            || (GMX_GPU_FFT_VKFFT != 0) || (GMX_GPU_FFT_DBFFT != 0)); // NOLINT(misc-redundant-expression)
-constexpr bool c_buildThatSupportsGpuFftWithoutDecomposition =
-        (c_cudaBuildThatSupportsGpuFftWithoutDecomposition || c_openclBuildThatSupportsGpuFftWithoutDecomposition
-         || c_syclBuildThatSupportsGpuFftWithoutDecomposition);
-//! \}
-
-/*! \brief Logic for whether this build can run PME FFT decomposed on multiple GPUs
- *
- * This requires a GPU build with a GPU-aware MPI library, and either
- * cuFFTMP on its own or heFFTe with a suitable backend GPU FFT
- * library.
- *
- * - CUDA is easy because cuFFTMp works by itself and heFFTe needs cuFFT,
- *   which CUDA always supplies
- * - OpenCL is trivial because it never supports it
- * - SYCL is non-trivial because it must have heFFTe with a backend that is
- *   one of MKL, rocFFT, VkFFT, or cuFFT.
- */
-//! \{
-constexpr bool c_cudaBuildThatSupportsGpuFftWithDecomposition =
-        (GMX_LIB_MPI != 0) && (GMX_GPU_CUDA != 0) // NOLINT(misc-redundant-expression)
-        && (GMX_USE_cuFFTMp != 0 || (GMX_USE_Heffte != 0 && GMX_GPU_FFT_CUFFT));
-constexpr bool c_openclBuildThatSupportsGpuFftWithDecomposition = false;
-constexpr bool c_syclBuildThatSupportsGpuFftWithDecomposition =
-        (GMX_LIB_MPI != 0) && (GMX_GPU_SYCL != 0) && (GMX_USE_Heffte != 0) // NOLINT(misc-redundant-expression)
-        && ((GMX_GPU_FFT_MKL != 0) || (GMX_GPU_FFT_ROCFFT != 0) // NOLINT(misc-redundant-expression)
-            || (GMX_GPU_FFT_VKFFT != 0) || (GMX_GPU_FFT_CUFFT != 0)); // NOLINT(misc-redundant-expression)
-constexpr bool c_buildThatSupportsGpuFftWithDecomposition =
-        (c_cudaBuildThatSupportsGpuFftWithDecomposition || c_openclBuildThatSupportsGpuFftWithDecomposition
-         || c_syclBuildThatSupportsGpuFftWithDecomposition);
-//! \}
-
-} // namespace
-
-bool buildSupportsGpuFft(const int numRanksForGpuFft)
-{
-    // Note that PME decomposition requires a GPU build and a suitable
-    // GPU-aware MPI library, which is ensured in the logic
-    // above. However, this function should remain callable from any
-    // build.
-    return ((numRanksForGpuFft == 1 && c_buildThatSupportsGpuFftWithoutDecomposition)
-            || (numRanksForGpuFft > 1 && c_buildThatSupportsGpuFftWithDecomposition));
-}
 
 } // namespace gmx

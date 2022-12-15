@@ -1045,8 +1045,7 @@ int Mdrunner::mdrunner()
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR
 
-    const PmeRunMode pmeRunMode =
-            determinePmeRunMode(useGpuForPme, domdecOptions.numPmeRanks, pmeFftTarget, *inputrec);
+    const PmeRunMode pmeRunMode = determinePmeRunMode(useGpuForPme, pmeFftTarget, *inputrec);
 
     // Initialize development feature flags that enabled by environment variable
     // and report those features that are enabled.
