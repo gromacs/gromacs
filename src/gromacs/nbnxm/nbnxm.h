@@ -548,4 +548,4 @@ void nbnxn_put_on_grid_nonlocal(nonbonded_verlet_t*              nb_verlet,
  */
 bool buildSupportsNonbondedOnGpu(std::string* error);
 
-#endif // GMX_NBNXN_NBNXM_H
+#endif // GMX_NBNXM_NBNXM_H

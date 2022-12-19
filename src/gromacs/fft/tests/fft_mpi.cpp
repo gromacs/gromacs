@@ -180,7 +180,7 @@ public:
 
         int sizeInReals = realGridSizePadded[0] * realGridSizePadded[1] * realGridSizePadded[2];
 
-        // initialze random input data
+        // initialize random input data
         std::vector<real>                in(sizeInReals);
         std::uniform_real_distribution<> dis(-10.0f, 10.0f);
         std::minstd_rand                 gen(time(NULL) + rank);

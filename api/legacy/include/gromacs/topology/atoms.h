@@ -424,7 +424,7 @@ void compareAtoms(FILE* fp, const t_atoms* a1, const t_atoms* a2, real relativeT
 /*! \brief Set mass for each atom using the atom and residue names using a database
  *
  * If atoms->haveMass = TRUE does nothing.
- * If printMissingMasss = TRUE, prints details for first 10 missing masses
+ * If printMissingMasses = TRUE, prints details for first 10 missing masses
  * to stderr.
  */
 void atomsSetMassesBasedOnNames(t_atoms* atoms, bool printMissingMasses);

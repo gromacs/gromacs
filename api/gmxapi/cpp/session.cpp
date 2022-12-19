@@ -254,7 +254,7 @@ gmxapi::SessionResources* SessionImpl::createResources(std::shared_ptr<gmxapi::M
                 restraint->bindSession(resources);
             }
         }
-    };
+    }
     return resources;
 }
 

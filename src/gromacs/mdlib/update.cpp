@@ -171,7 +171,7 @@ public:
     gmx::ArrayRef<const unsigned short> cFREEZE_;
     //! Group index for temperature coupling
     gmx::ArrayRef<const unsigned short> cTC_;
-    //! Group index for accleration groups
+    //! Group index for acceleration groups
     gmx::ArrayRef<const unsigned short> cAcceleration_;
 
 private:

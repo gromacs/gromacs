@@ -111,7 +111,7 @@ public:
 
 /*! \libinternal
  * \brief Describes work done on this domain on every step of its lifetime,
- * but which might change after the next domain paritioning.
+ * but which might change after the next domain partitioning.
  *
  * This work description is based on the SimulationWorkload in the context of the
  * current particle interactions assigned to this domain. The latter might change

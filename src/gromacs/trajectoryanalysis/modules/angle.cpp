@@ -697,7 +697,7 @@ void Angle::analyzeFrame(int frnr, const t_trxframe& fr, t_pbc* pbc, TrajectoryA
 
         // v2 & c2 are conditionally set in the switch statement below, and conditionally
         // used in a different switch statement later. Apparently the clang static analyzer
-        // thinks there are cases where they can be used uninitialzed (which I cannot find),
+        // thinks there are cases where they can be used uninitialized (which I cannot find),
         // but to avoid trouble if we ever change just one of the switch statements it
         // makes sense to clear them outside the first switch.
 

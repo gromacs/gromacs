@@ -107,4 +107,4 @@ private:
     gmx::ThreadedForceBuffer<gmx::RVec> threadedForeignEnergyBuffer_;
 };
 
-#endif // GMX_NBNXN_FREEENERGYDISPATCH_H
+#endif // GMX_NBNXM_FREEENERGYDISPATCH_H

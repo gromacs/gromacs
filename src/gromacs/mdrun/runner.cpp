@@ -195,7 +195,7 @@ namespace gmx
  *
  * \param[in]  mdlog                Logger object.
  * \param[in]  useGpuForNonbonded   True if the nonbonded task is offloaded in this run.
- * \param[in]  pmeRunMode   Run mode indicating what resource is PME execured on.
+ * \param[in]  pmeRunMode   Run mode indicating what resource is PME executed on.
  * \param[in]  numRanksPerSimulation   The number of ranks in each simulation.
  * \param[in]  numPmeRanksPerSimulation   The number of PME ranks in each simulation, can be -1
  * \returns                         The object populated with development feature flags.
@@ -2362,7 +2362,7 @@ int Mdrunner::mdrunner()
     }
 #endif
     return rc;
-} // namespace gmx
+} // Mdrunner::mdrunner
 
 Mdrunner::~Mdrunner()
 {
@@ -2377,7 +2377,7 @@ Mdrunner::~Mdrunner()
                    "restraints added during runner life time should be cleared at runner "
                    "destruction.");
     }
-};
+}
 
 void Mdrunner::addPotential(std::shared_ptr<gmx::IRestraintPotential> puller, const std::string& name)
 {

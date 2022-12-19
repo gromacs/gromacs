@@ -322,7 +322,7 @@ PmeAtomComm::PmeAtomComm(MPI_Comm   PmeMpiCommunicator,
         {
             try
             {
-                /* Allocate buffer with padding to avoid cache polution */
+                /* Allocate buffer with padding to avoid cache pollution */
                 threadMap[thread].nBuffer.resize(nthread + 2 * gmxCacheLineSize);
                 threadMap[thread].n = threadMap[thread].nBuffer.data() + gmxCacheLineSize;
             }

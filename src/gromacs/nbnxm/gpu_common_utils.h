@@ -85,7 +85,7 @@ static inline gmx::Range<int> getGpuAtomRange(const NBAtomDataGpu* atomData, con
     else
     {
         GMX_THROW(gmx::InconsistentInputError(
-                "Only Local and NonLocal atom locities can be used to get atom ranges in NBNXM."));
+                "Only Local and NonLocal atom localities can be used to get atom ranges in NBNXM."));
     }
 }
 

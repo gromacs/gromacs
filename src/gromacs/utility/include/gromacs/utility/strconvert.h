@@ -275,7 +275,7 @@ parsedArrayFromInputString(const std::string& str)
     return { valuesAsArray };
 }
 
-/*! \brief Returns the input string, throwing an excpetion if the demanded
+/*! \brief Returns the input string, throwing an exception if the demanded
  *         conversion to an array will not succeed.
  *
  * \tparam ValueType array element type to convert into

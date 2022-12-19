@@ -181,4 +181,4 @@ private:
 };
 
 } // namespace gmx
-#endif // CoordinateTransformation
+#endif // GMX_MATH_COORDINATETRANSFORMATION_H

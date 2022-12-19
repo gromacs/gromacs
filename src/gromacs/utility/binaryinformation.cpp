@@ -236,7 +236,7 @@ std::string getCpuFftDescriptionString()
 #if GMX_FFT_FFTPACK
     return "fftpack (built-in)";
 #endif
-};
+}
 
 //! Construct a string that describes the library that provides GPU FFT support to this build
 std::string getGpuFftDescriptionString()
@@ -315,7 +315,7 @@ std::string getMultiGpuFftDescriptionString()
     {
         return "none";
     }
-};
+}
 
 void gmx_print_version_info(gmx::TextWriter* writer)
 {

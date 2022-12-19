@@ -2357,7 +2357,7 @@ static void lincs_warning(gmx_domdec_t*                 dd,
     }
 }
 
-//! Status information about how well LINCS satisified the constraints in this domain
+//! Status information about how well LINCS satisfied the constraints in this domain
 struct LincsDeviations
 {
     //! The maximum over all bonds in this domain of the relative deviation in bond lengths

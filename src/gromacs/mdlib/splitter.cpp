@@ -162,7 +162,7 @@ static int mk_sblocks(FILE* fp, t_graph* g, int maxsid, gmx::ArrayRef<t_sid> sid
 
     while (nW > 0)
     {
-        /* Find the first white, this will allways be a larger
+        /* Find the first white, this will always be a larger
          * number than before, because no nodes are made white
          * in the loop
          */

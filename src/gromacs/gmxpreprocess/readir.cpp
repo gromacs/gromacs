@@ -548,7 +548,7 @@ void check_ir(const char*                    mdparin,
             if (ir->useMts && ir->pressureCouplingOptions.nstpcouple % ir->mtsLevels.back().stepFactor != 0)
             {
                 wi->addError(
-                        "With multiple time stepping, nstpcouple should be a mutiple of "
+                        "With multiple time stepping, nstpcouple should be a multiple of "
                         "mts-factor");
             }
         }

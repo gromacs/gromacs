@@ -2470,7 +2470,7 @@ void VirtualSitesHandler::Impl::spreadForces(ArrayRef<const RVec> x,
 
 /*! \brief Returns the an array with group indices for each atom
  *
- * \param[in] grouping  The paritioning of the atom range into atom groups
+ * \param[in] grouping  The partitioning of the atom range into atom groups
  */
 static std::vector<int> makeAtomToGroupMapping(const gmx::RangePartitioning& grouping)
 {

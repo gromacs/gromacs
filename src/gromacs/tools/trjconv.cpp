@@ -701,7 +701,7 @@ int gmx_trjconv(int argc, char* argv[])
                 fprintf(stderr,
                         "WARNING: Option for unitcell representation (-ur %s)\n"
                         "         only has effect in combination with -pbc %s, %s or %s.\n"
-                        "         Ingoring unitcell representation.\n\n",
+                        "         Ignoring unitcell representation.\n\n",
                         unitcell_opt[0],
                         pbc_opt[2],
                         pbc_opt[3],

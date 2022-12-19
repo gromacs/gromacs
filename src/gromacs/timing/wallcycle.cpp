@@ -201,7 +201,7 @@ static const char* enumValuetoString(PmeStage enumValue)
         "PME solve",  "PME 3D-FFT c2r", "PME gather"
     };
     return pmeStageNames[enumValue];
-};
+}
 
 bool wallcycle_have_counter()
 {

@@ -163,7 +163,7 @@ if (parameters.manifest == ThreeCenterType::Cargo::ij)
 
     // aggregate is empty
     return 0.0;
-};
+}
 
 template<class ThreeCenterType, class BasicVector, class ShiftForce>
 inline NBLIB_ALWAYS_INLINE
@@ -179,7 +179,7 @@ addTwoCenterAggregate(const ThreeCenterType& /* parameters */,
                       ShiftForce* /* shf_c */)
 {
     return 0.0;
-};
+}
 
 template<class ThreeCenterType, class BasicVector, class ShiftForce>
 inline NBLIB_ALWAYS_INLINE
@@ -352,7 +352,7 @@ addThreeCenterAggregate(const FourCenterType& parameters,
 
     // aggregate is empty
     return 0.0;
-};
+}
 
 template<class FourCenterType, class BasicVector>
 inline NBLIB_ALWAYS_INLINE
@@ -367,7 +367,7 @@ addThreeCenterAggregate(const FourCenterType& /* parameters*/,
                         BasicVector* /* fl */)
 {
     return 0.0;
-};
+}
 
 /*! \brief Calculate four-center interactions
  *

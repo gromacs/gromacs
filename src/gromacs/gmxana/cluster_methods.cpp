@@ -218,7 +218,7 @@ void gather(t_mat* m, real cutoff, t_clusters* clust)
     }
     if (k != nn)
     {
-        gmx_incons("gather algortihm");
+        gmx_incons("gather algorithm");
     }
     std::sort(d, d + nn, rms_dist_comp);
 

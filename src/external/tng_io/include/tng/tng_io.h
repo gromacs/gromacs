@@ -3896,7 +3896,7 @@ tng_function_status DECLSPECDLLEXPORT tng_util_generic_write_interval_double_set
  * @details n_values_per_frame, block_name, particle_dependency and
  * compression are only used if the data block did not exist before calling
  * this function, in which case it is created.
- * This function is replaced by the more correcly named
+ * This function is replaced by the more correctly named
  * tng_util_generic_write_interval_set(), but is kept for compatibility.
  * @return TNG_SUCCESS (0) if successful, TNG_FAILURE (1) if a minor error
  * has occured (such as invalid mode) or TNG_CRITICAL (2) if a major error
@@ -3960,7 +3960,7 @@ tng_function_status DECLSPECDLLEXPORT tng_util_pos_write_interval_double_set
  * @pre \code i >= 0 \endcode The writing interval must be >= 0.
  * @details This function uses tng_util_generic_write_interval_set() and will
  * create a positions data block if none exists.
- * This function is replaced by the more correcly named
+ * This function is replaced by the more correctly named
  * tng_util_pos_write_interval_set(), but is kept for compatibility.
  * @return TNG_SUCCESS (0) if successful, TNG_FAILURE (1) if a minor error
  * has occured (such as invalid mode) or TNG_CRITICAL (2) if a major error
@@ -4016,7 +4016,7 @@ tng_function_status DECLSPECDLLEXPORT tng_util_vel_write_interval_double_set
  * frame.
  * @details This function uses tng_util_generic_write_interval_set() and will
  * create a velocities data block if none exists.
- * This function is replaced by the more correcly named
+ * This function is replaced by the more correctly named
  * tng_util_vel_write_interval_set(), but is kept for compatibility.
  * @return TNG_SUCCESS (0) if successful, TNG_FAILURE (1) if a minor error
  * has occured (such as invalid mode) or TNG_CRITICAL (2) if a major error
@@ -4072,7 +4072,7 @@ tng_function_status DECLSPECDLLEXPORT tng_util_force_write_interval_double_set
  * frame.
  * @details This function uses tng_util_generic_write_interval_set() and will
  * create a forces data block if none exists.
- * This function is replaced by the more correcly named
+ * This function is replaced by the more correctly named
  * tng_util_force_write_interval_set(), but is kept for compatibility.
  * @return TNG_SUCCESS (0) if successful, TNG_FAILURE (1) if a minor error
  * has occured (such as invalid mode) or TNG_CRITICAL (2) if a major error
@@ -4128,7 +4128,7 @@ tng_function_status DECLSPECDLLEXPORT tng_util_box_shape_write_interval_double_s
  * frame.
  * @details This function uses tng_util_generic_write_interval_set() and will
  * create a box shape data block if none exists.
- * This function is replaced by the more correcly named
+ * This function is replaced by the more correctly named
  * tng_util_box_shape_write_interval_set(), but is kept for compatibility.
  * @return TNG_SUCCESS (0) if successful, TNG_FAILURE (1) if a minor error
  * has occured (such as invalid mode) or TNG_CRITICAL (2) if a major error

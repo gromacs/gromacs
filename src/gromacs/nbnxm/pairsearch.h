@@ -167,7 +167,7 @@ struct PairsearchWork
     //! Counter for thread-local cycles
     nbnxn_cycle_t cycleCounter;
 
-    //! Buffer to avoid cache polution
+    //! Buffer to avoid cache pollution
     gmx_cache_protect_t cp1;
 };
 
