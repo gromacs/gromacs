@@ -127,11 +127,9 @@ static int chooseSubGroupSizeForDevice(const DeviceInformation& deviceInfo)
 
 #if GMX_SYCL_DPCPP
 INSTANTIATE(4, 16);
-INSTANTIATE(4, 32);
-#elif GMX_SYCL_HIPSYCL
+#endif
 INSTANTIATE(4, 32);
 INSTANTIATE(4, 64);
-#endif
 
 //! Helper function to set proper kernel functor pointers
 template<int subGroupSize>
@@ -226,11 +224,9 @@ PmeGpuProgramImpl::PmeGpuProgramImpl(const DeviceContext& deviceContext) :
     {
 #if GMX_SYCL_DPCPP
         case 16: setKernelPointers<16>(this); break;
-        case 32: setKernelPointers<32>(this); break;
-#elif GMX_SYCL_HIPSYCL
+#endif
         case 32: setKernelPointers<32>(this); break;
         case 64: setKernelPointers<64>(this); break;
-#endif
         default: GMX_RELEASE_ASSERT(false, "Invalid sub group size");
     }
 }

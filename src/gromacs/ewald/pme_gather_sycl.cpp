@@ -731,11 +731,9 @@ void PmeGatherKernel<order, wrapX, wrapY, numGrids, readGlobal, threadsPerAtom, 
 
 #if GMX_SYCL_DPCPP
 INSTANTIATE(4, 16); // TODO: Choose best value, Issue #4153.
-INSTANTIATE(4, 32);
-#elif GMX_SYCL_HIPSYCL
+#endif
 INSTANTIATE(4, 32);
 INSTANTIATE(4, 64);
-#endif
 
 #ifdef __clang__
 #    pragma clang diagnostic pop
