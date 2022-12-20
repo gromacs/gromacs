@@ -80,15 +80,15 @@ public:
                      const char*                  call,
                      bool                         wasError,
                      int                          err) :
-            filename(filename), message(message), call(call), wasError(wasError), err(err)
+            filename_(filename), message_(message), call_(call), wasError_(wasError), err_(err)
         {
         }
 
-        const std::filesystem::path& filename;
-        const char*                  message;
-        const char*                  call;
-        bool                         wasError;
-        int                          err;
+        const std::filesystem::path& filename_;
+        const char*                  message_;
+        const char*                  call_;
+        bool                         wasError_;
+        int                          err_;
     };
 
     static void              returnFalseOnError(const NotFoundInfo& info);
