@@ -260,7 +260,7 @@ static void init_frame_common(const gmx::SelMethodEvalContext& context, void* da
 
     d->nbsearch.reset();
     gmx::AnalysisNeighborhoodPositions pos(d->p.x, d->p.count());
-    d->nbsearch = d->nb.initSearch(context.pbc, pos);
+    d->nbsearch = d->nb.initSearch(context.pbc_, pos);
 }
 
 /*!

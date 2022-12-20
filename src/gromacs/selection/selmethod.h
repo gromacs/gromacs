@@ -328,7 +328,7 @@ struct SelMethodEvalContext
 {
     //! Initializes the context with given values.
     SelMethodEvalContext(const gmx_mtop_t* top, t_trxframe* fr, const t_pbc* pbc) :
-        top(top), fr(fr), pbc(pbc)
+        top_(top), fr_(fr), pbc_(pbc)
     {
     }
 
@@ -338,20 +338,20 @@ struct SelMethodEvalContext
      * Can be NULL if \ref SMETH_REQTOP or \ref SMETH_REQMASS is not set for
      * the method.
      */
-    const gmx_mtop_t* top;
+    const gmx_mtop_t* top_;
     /*! \brief
      * Trajectory frame.
      *
      * For static methods that are evaluated based on topology information
      * alone, this is `NULL`.
      */
-    t_trxframe* fr;
+    t_trxframe* fr_;
     /*! \brief
      * Periodic boundary condition information.
      *
      * Can be `NULL`, in which case PBC should not be used.
      */
-    const t_pbc* pbc;
+    const t_pbc* pbc_;
 };
 
 } // namespace gmx

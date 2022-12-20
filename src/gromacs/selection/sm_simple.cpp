@@ -467,7 +467,7 @@ static void evaluate_resnr(const gmx::SelMethodEvalContext& context,
     int molb = 0;
     for (int i = 0; i < g->isize; ++i)
     {
-        mtopGetAtomAndResidueName(*context.top, g->index[i], &molb, nullptr, &out->u.i[i], nullptr, nullptr);
+        mtopGetAtomAndResidueName(*context.top_, g->index[i], &molb, nullptr, &out->u.i[i], nullptr, nullptr);
     }
 }
 
@@ -487,7 +487,7 @@ static void evaluate_resindex(const gmx::SelMethodEvalContext& context,
     for (int i = 0; i < g->isize; ++i)
     {
         int resind;
-        mtopGetAtomAndResidueName(*context.top, g->index[i], &molb, nullptr, nullptr, nullptr, &resind);
+        mtopGetAtomAndResidueName(*context.top_, g->index[i], &molb, nullptr, nullptr, nullptr, &resind);
         out->u.i[i] = resind + 1;
     }
 }
@@ -518,7 +518,7 @@ static void evaluate_molindex(const gmx::SelMethodEvalContext& context,
     int molb = 0;
     for (int i = 0; i < g->isize; ++i)
     {
-        out->u.i[i] = mtopGetMoleculeIndex(*context.top, g->index[i], &molb) + 1;
+        out->u.i[i] = mtopGetMoleculeIndex(*context.top_, g->index[i], &molb) + 1;
     }
 }
 
@@ -538,7 +538,7 @@ static void evaluate_atomname(const gmx::SelMethodEvalContext& context,
     for (int i = 0; i < g->isize; ++i)
     {
         const char* atom_name;
-        mtopGetAtomAndResidueName(*context.top, g->index[i], &molb, &atom_name, nullptr, nullptr, nullptr);
+        mtopGetAtomAndResidueName(*context.top_, g->index[i], &molb, &atom_name, nullptr, nullptr, nullptr);
         out->u.s[i] = const_cast<char*>(atom_name);
     }
 }
@@ -558,7 +558,7 @@ static void evaluate_pdbatomname(const gmx::SelMethodEvalContext& context,
     int molb = 0;
     for (int i = 0; i < g->isize; ++i)
     {
-        const char* s = mtopGetAtomPdbInfo(*context.top, g->index[i], &molb).atomnm;
+        const char* s = mtopGetAtomPdbInfo(*context.top_, g->index[i], &molb).atomnm;
         while (std::isspace(*s))
         {
             ++s;
@@ -592,8 +592,8 @@ static void evaluate_atomtype(const gmx::SelMethodEvalContext& context,
     for (int i = 0; i < g->isize; ++i)
     {
         int atomIndexInMolecule;
-        mtopGetMolblockIndex(*context.top, g->index[i], &molb, nullptr, &atomIndexInMolecule);
-        const gmx_moltype_t& moltype = context.top->moltype[context.top->molblock[molb].type];
+        mtopGetMolblockIndex(*context.top_, g->index[i], &molb, nullptr, &atomIndexInMolecule);
+        const gmx_moltype_t& moltype = context.top_->moltype[context.top_->molblock[molb].type];
         out->u.s[i]                  = *moltype.atoms.atomtype[atomIndexInMolecule];
     }
 }
@@ -613,7 +613,7 @@ static void evaluate_resname(const gmx::SelMethodEvalContext& context,
     int molb = 0;
     for (int i = 0; i < g->isize; ++i)
     {
-        out->u.s[i] = *mtopGetResidueInfo(*context.top, g->index[i], &molb).name;
+        out->u.s[i] = *mtopGetResidueInfo(*context.top_, g->index[i], &molb).name;
     }
 }
 
@@ -632,7 +632,7 @@ static void evaluate_insertcode(const gmx::SelMethodEvalContext& context,
     int molb = 0;
     for (int i = 0; i < g->isize; ++i)
     {
-        out->u.s[i][0] = mtopGetResidueInfo(*context.top, g->index[i], &molb).ic;
+        out->u.s[i][0] = mtopGetResidueInfo(*context.top_, g->index[i], &molb).ic;
     }
 }
 
@@ -651,7 +651,7 @@ static void evaluate_chain(const gmx::SelMethodEvalContext& context,
     int molb = 0;
     for (int i = 0; i < g->isize; ++i)
     {
-        out->u.s[i][0] = mtopGetResidueInfo(*context.top, g->index[i], &molb).chainid;
+        out->u.s[i][0] = mtopGetResidueInfo(*context.top_, g->index[i], &molb).chainid;
     }
 }
 
@@ -666,12 +666,12 @@ static void evaluate_mass(const gmx::SelMethodEvalContext& context,
                           gmx_ana_selvalue_t*              out,
                           void* /* data */)
 {
-    GMX_RELEASE_ASSERT(gmx_mtop_has_masses(context.top), "Masses not available for evaluation");
+    GMX_RELEASE_ASSERT(gmx_mtop_has_masses(context.top_), "Masses not available for evaluation");
     out->nr  = g->isize;
     int molb = 0;
     for (int i = 0; i < g->isize; ++i)
     {
-        out->u.r[i] = mtopGetAtomMass(*context.top, g->index[i], &molb);
+        out->u.r[i] = mtopGetAtomMass(*context.top_, g->index[i], &molb);
     }
 }
 
@@ -699,7 +699,7 @@ static void evaluate_charge(const gmx::SelMethodEvalContext& context,
     int molb = 0;
     for (int i = 0; i < g->isize; ++i)
     {
-        out->u.r[i] = mtopGetAtomParameters(*context.top, g->index[i], &molb).q;
+        out->u.r[i] = mtopGetAtomParameters(*context.top_, g->index[i], &molb).q;
     }
 }
 
@@ -726,7 +726,7 @@ static void evaluate_altloc(const gmx::SelMethodEvalContext& context,
     int molb = 0;
     for (int i = 0; i < g->isize; ++i)
     {
-        out->u.s[i][0] = mtopGetAtomPdbInfo(*context.top, g->index[i], &molb).altloc;
+        out->u.s[i][0] = mtopGetAtomPdbInfo(*context.top_, g->index[i], &molb).altloc;
     }
 }
 
@@ -746,7 +746,7 @@ static void evaluate_occupancy(const gmx::SelMethodEvalContext& context,
     int molb = 0;
     for (int i = 0; i < g->isize; ++i)
     {
-        out->u.r[i] = mtopGetAtomPdbInfo(*context.top, g->index[i], &molb).occup;
+        out->u.r[i] = mtopGetAtomPdbInfo(*context.top_, g->index[i], &molb).occup;
     }
 }
 
@@ -766,7 +766,7 @@ static void evaluate_betafactor(const gmx::SelMethodEvalContext& context,
     int molb = 0;
     for (int i = 0; i < g->isize; ++i)
     {
-        out->u.r[i] = mtopGetAtomPdbInfo(*context.top, g->index[i], &molb).bfac;
+        out->u.r[i] = mtopGetAtomPdbInfo(*context.top_, g->index[i], &molb).bfac;
     }
 }
 

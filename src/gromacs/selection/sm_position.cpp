@@ -383,5 +383,5 @@ static void evaluate_pos(const gmx::SelMethodEvalContext& context,
 {
     t_methoddata_pos* d = static_cast<t_methoddata_pos*>(data);
 
-    gmx_ana_poscalc_update(d->pc, out->u.p, &d->g, context.fr, context.pbc);
+    gmx_ana_poscalc_update(d->pc, out->u.p, &d->g, context.fr_, context.pbc_);
 }

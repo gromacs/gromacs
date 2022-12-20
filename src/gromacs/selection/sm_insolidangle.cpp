@@ -450,9 +450,9 @@ static void init_frame_insolidangle(const gmx::SelMethodEvalContext& context, vo
     clear_surface_points(d);
     for (i = 0; i < d->span.count(); ++i)
     {
-        if (context.pbc)
+        if (context.pbc_)
         {
-            pbc_dx(context.pbc, d->span.x[i], d->center.x[0], dx);
+            pbc_dx(context.pbc_, d->span.x[i], d->center.x[0], dx);
         }
         else
         {
@@ -504,7 +504,7 @@ static void evaluate_insolidangle(const gmx::SelMethodEvalContext& context,
     out->u.g->isize = 0;
     for (int b = 0; b < pos->count(); ++b)
     {
-        if (accept_insolidangle(pos->x[b], context.pbc, data))
+        if (accept_insolidangle(pos->x[b], context.pbc_, data))
         {
             gmx_ana_pos_add_to_group(out->u.g, pos, b);
         }
