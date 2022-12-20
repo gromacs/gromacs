@@ -130,7 +130,7 @@ public:
 
     void compileSelections()
     {
-        const bool  topRequired = selections_.requiredTopologyProperties().needsTopology;
+        const bool  topRequired = selections_.requiredTopologyProperties().needsTopology_;
         gmx_mtop_t* top         = topologyProvider_.getTopology(topRequired);
         int         natoms      = -1;
         if (top == nullptr)
@@ -146,7 +146,7 @@ public:
 
     void getMassesIfRequired(gmx_mtop_t* top) const
     {
-        const bool massRequired = selections_.requiredTopologyProperties().needsMasses;
+        const bool massRequired = selections_.requiredTopologyProperties().needsMasses_;
         if (!massRequired)
         {
             return;

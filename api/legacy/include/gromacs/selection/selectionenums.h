@@ -102,28 +102,28 @@ struct SelectionTopologyProperties
     static SelectionTopologyProperties masses() { return SelectionTopologyProperties(true, true); }
 
     //! Initializes properties that does not require anything.
-    SelectionTopologyProperties() : needsTopology(false), needsMasses(false) {}
+    SelectionTopologyProperties() : needsTopology_(false), needsMasses_(false) {}
     //! Initializes properties with the given flags.
     SelectionTopologyProperties(bool needsTopology, bool needsMasses) :
-        needsTopology(needsTopology), needsMasses(needsMasses)
+        needsTopology_(needsTopology), needsMasses_(needsMasses)
     {
     }
 
     //! Combines flags from another properties object to this.
     void merge(const SelectionTopologyProperties& other)
     {
-        needsTopology = needsTopology || other.needsTopology;
-        needsMasses   = needsMasses || other.needsMasses;
+        needsTopology_ = needsTopology_ || other.needsTopology_;
+        needsMasses_   = needsMasses_ || other.needsMasses_;
     }
     //! Whether all flags are `true` (for short-ciruiting logic).
-    bool hasAll() const { return needsTopology && needsMasses; }
+    bool hasAll() const { return needsTopology_ && needsMasses_; }
     //! Whether any flag is `true`.
-    bool hasAny() const { return needsTopology || needsMasses; }
+    bool hasAny() const { return needsTopology_ || needsMasses_; }
 
     //! Whether topology information is needed for selection evaluation.
-    bool needsTopology;
+    bool needsTopology_;
     //! Whether atom masses are needed for selection evaluation.
-    bool needsMasses;
+    bool needsMasses_;
 };
 
 } // namespace gmx

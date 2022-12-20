@@ -388,11 +388,11 @@ TEST_F(SelectionCollectionTest, HandlesNoSelections)
 TEST_F(SelectionCollectionTest, HandlesNoSelectionsWithDefaultPositionType)
 {
     EXPECT_NO_THROW_GMX(sc_.setOutputPosType("res_com"));
-    EXPECT_TRUE(sc_.requiredTopologyProperties().needsTopology);
-    EXPECT_TRUE(sc_.requiredTopologyProperties().needsMasses);
+    EXPECT_TRUE(sc_.requiredTopologyProperties().needsTopology_);
+    EXPECT_TRUE(sc_.requiredTopologyProperties().needsMasses_);
     EXPECT_NO_THROW_GMX(sc_.setOutputPosType("res_cog"));
-    EXPECT_TRUE(sc_.requiredTopologyProperties().needsTopology);
-    EXPECT_FALSE(sc_.requiredTopologyProperties().needsMasses);
+    EXPECT_TRUE(sc_.requiredTopologyProperties().needsTopology_);
+    EXPECT_FALSE(sc_.requiredTopologyProperties().needsMasses_);
     ASSERT_NO_THROW_GMX(sc_.parseFromString("atom of atomnr 1 to 10"));
     ASSERT_NO_FATAL_FAILURE(loadTopology("simple.gro"));
     ASSERT_NO_THROW_GMX(sc_.compile());
@@ -421,14 +421,14 @@ TEST_F(SelectionCollectionTest, HandlesVelocityAndForceRequests)
 TEST_F(SelectionCollectionTest, HandlesForceRequestForCenterOfGeometry)
 {
     ASSERT_NO_THROW_GMX(sel_ = sc_.parseFromString("res_cog of atomnr 1 to 10"));
-    EXPECT_TRUE(sc_.requiredTopologyProperties().needsTopology);
+    EXPECT_TRUE(sc_.requiredTopologyProperties().needsTopology_);
     ASSERT_NO_FATAL_FAILURE(loadTopology("simple.gro"));
     ASSERT_EQ(1U, sel_.size());
     ASSERT_NO_THROW_GMX(sel_[0].setEvaluateForces(true));
     // In principle, the code could know here that the masses are required, but
     // currently it only knows this after compilation.
     ASSERT_NO_THROW_GMX(sc_.compile());
-    EXPECT_TRUE(sc_.requiredTopologyProperties().needsMasses);
+    EXPECT_TRUE(sc_.requiredTopologyProperties().needsMasses_);
     EXPECT_TRUE(sel_[0].hasForces());
 }
 
@@ -846,7 +846,7 @@ TEST_F(SelectionCollectionDataTest, HandlesMass)
 {
     static const char* const selections[] = { "mass > 5" };
     ASSERT_NO_FATAL_FAILURE(runParser(selections));
-    EXPECT_TRUE(sc_.requiredTopologyProperties().needsMasses);
+    EXPECT_TRUE(sc_.requiredTopologyProperties().needsMasses_);
     ASSERT_NO_FATAL_FAILURE(topManager_.loadTopology("simple.gro"));
     t_atoms& atoms = topManager_.atoms();
     for (int i = 0; i < atoms.nr; ++i)

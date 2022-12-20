@@ -449,7 +449,7 @@ void checkTopologyProperties(const gmx_mtop_t* top, const SelectionTopologyPrope
         }
         return;
     }
-    if (props.needsMasses && !gmx_mtop_has_masses(top))
+    if (props.needsMasses_ && !gmx_mtop_has_masses(top))
     {
         GMX_THROW(InconsistentInputError(
                 "Selection requires mass information, but it is not available in the topology"));
