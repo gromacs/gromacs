@@ -205,10 +205,10 @@ public:
     bool haveEwaldSurfaceContribution = false;
     //! Whether to use multiple time stepping
     bool useMts = false;
-    // Whether a GPU graph should be used to execute steps in the MD loop if run conditions allow.
+    //! Whether a GPU graph should be used to execute steps in the MD loop if run conditions allow.
     bool useMdGpuGraph = false;
 
-    // Whether PME GPU is active on this PP rank (note that currently only PP ranks use SimulationWorkload)
+    //! Whether PME GPU is active on this PP rank (note that currently only PP ranks use SimulationWorkload)
 #if !defined(_MSC_VER) // MSVC does not support __attribute__
     __attribute__((always_inline))
 #endif

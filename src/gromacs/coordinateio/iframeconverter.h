@@ -31,7 +31,8 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out https://www.gromacs.org.
  */
-/*!\inlibraryapi \file
+/*! \file
+ *
  * <H3>Overview of coordinate modification (coordinate converter) routines</H3>
  * The methods based on the IFrameConverter interface provide ways to change
  * the coordinates found in input files according to a user or program specified
@@ -58,7 +59,7 @@
  * Methods that implement single converters without the registration machinery need to
  * implement their own memory handling.
  *
- * <H3>FrameAdapers</H3>
+ * <H3>FrameAdapters</H3>
  * Each class implemented on top of the IFrameConverter interface implements each own
  * convertFrame method that performs its operation on the coordinates in the t_trxframe
  * input. As well as this, the method should report which kind of guarantee is provided
@@ -69,6 +70,7 @@
    hscale="2";
 
    analysistool,
+   builder [ label="CoordinateFileBuilder" ],
    requirements [ label="Requirements to run method" ],
    container [ label="FrameConverterChain" ],
    frameconverters [ label="FrameConverters" ];
@@ -95,7 +97,7 @@
 
    --- [ label="Setup of frameconverters complete, analysis phase begins" ];
     analysistool   => analysisloop [ label="Starts iteration over frames" ];
-    analysisloop   => frameconvertholder [ label="Provides initial unmodified coordinates" ];
+    analysisloop   => frameconverterholder [ label="Provides initial unmodified coordinates" ];
     frameconverterholder => frameconverters [ label="Each successive converter modifies coordinates" ];
     frameconverters => frameconverterholder [ label="Return coordinates from modification" ];
     frameconverterholder => analysisloop [ label="Return final coordinates to analysis tool for analysis" ];
@@ -116,6 +118,7 @@
  * Interface class for frame handling, provides handles for all calls.
  *
  * \author Paul Bauer <paul.bauer.q@gmail.com>
+ * \inlibraryapi
  * \ingroup module_coordinateio
  */
 #ifndef GMX_COORDINATEIO_IFRAMECONVERTER_H
