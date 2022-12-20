@@ -211,15 +211,15 @@ void NoseHooverChainsData::build(NhcUsage                                nhcUsag
         builderHelper->storeSimulationData(
                 NoseHooverChainsData::dataID(nhcUsage),
                 NoseHooverChainsData(
-                        legacySimulatorData->inputrec->opts.ngtc,
-                        legacySimulatorData->inputrec->delta_t * legacySimulatorData->inputrec->nsttcouple,
-                        legacySimulatorData->inputrec->opts.nhchainlength,
-                        constArrayRefFromArray(legacySimulatorData->inputrec->opts.ref_t,
-                                               legacySimulatorData->inputrec->opts.ngtc),
-                        constArrayRefFromArray(legacySimulatorData->inputrec->opts.tau_t,
-                                               legacySimulatorData->inputrec->opts.ngtc),
-                        constArrayRefFromArray(legacySimulatorData->inputrec->opts.nrdf,
-                                               legacySimulatorData->inputrec->opts.ngtc),
+                        legacySimulatorData->inputRec_->opts.ngtc,
+                        legacySimulatorData->inputRec_->delta_t * legacySimulatorData->inputRec_->nsttcouple,
+                        legacySimulatorData->inputRec_->opts.nhchainlength,
+                        constArrayRefFromArray(legacySimulatorData->inputRec_->opts.ref_t,
+                                               legacySimulatorData->inputRec_->opts.ngtc),
+                        constArrayRefFromArray(legacySimulatorData->inputRec_->opts.tau_t,
+                                               legacySimulatorData->inputRec_->opts.ngtc),
+                        constArrayRefFromArray(legacySimulatorData->inputRec_->opts.nrdf,
+                                               legacySimulatorData->inputRec_->opts.ngtc),
                         nhcUsage));
     }
     else
@@ -229,11 +229,11 @@ void NoseHooverChainsData::build(NhcUsage                                nhcUsag
                 NoseHooverChainsData::dataID(nhcUsage),
                 NoseHooverChainsData(
                         numTemperatureGroups,
-                        legacySimulatorData->inputrec->delta_t
-                                * legacySimulatorData->inputrec->pressureCouplingOptions.nstpcouple,
-                        legacySimulatorData->inputrec->opts.nhchainlength,
-                        constArrayRefFromArray(legacySimulatorData->inputrec->opts.ref_t, 1),
-                        constArrayRefFromArray(legacySimulatorData->inputrec->opts.tau_t, 1),
+                        legacySimulatorData->inputRec_->delta_t
+                                * legacySimulatorData->inputRec_->pressureCouplingOptions.nstpcouple,
+                        legacySimulatorData->inputRec_->opts.nhchainlength,
+                        constArrayRefFromArray(legacySimulatorData->inputRec_->opts.ref_t, 1),
+                        constArrayRefFromArray(legacySimulatorData->inputRec_->opts.tau_t, 1),
                         ArrayRef<real>(),
                         nhcUsage));
     }
@@ -769,13 +769,13 @@ ISimulatorElement* NoseHooverChainsElement::getElementPointerImpl(
 
     // Element is now owned by the caller of this method, who will handle lifetime (see ModularSimulatorAlgorithm)
     auto* element = builderHelper->storeElement(std::make_unique<NoseHooverChainsElement>(
-            legacySimulatorData->inputrec->nsttcouple,
+            legacySimulatorData->inputRec_->nsttcouple,
             offset,
             nhcUsage,
             useFullStepKE,
-            legacySimulatorData->inputrec->delta_t * legacySimulatorData->inputrec->nsttcouple / 2,
+            legacySimulatorData->inputRec_->delta_t * legacySimulatorData->inputRec_->nsttcouple / 2,
             scheduleOnInitStep,
-            legacySimulatorData->inputrec->init_step,
+            legacySimulatorData->inputRec_->init_step,
             energyData,
             nhcData,
             mttkData));

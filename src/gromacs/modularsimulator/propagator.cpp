@@ -951,7 +951,7 @@ ISimulatorElement* Propagator<integrationStage>::getElementPointerImpl(
                                || (timestep == 0.0),
                        "Scaling elements don't propagate the system.");
     auto* element    = builderHelper->storeElement(std::make_unique<Propagator<integrationStage>>(
-            timestep, statePropagatorData, legacySimulatorData->mdAtoms, legacySimulatorData->wcycle));
+            timestep, statePropagatorData, legacySimulatorData->mdAtoms_, legacySimulatorData->wallCycleCounters_));
     auto* propagator = static_cast<Propagator<integrationStage>*>(element);
     builderHelper->registerPropagator(getConnection<integrationStage>(propagator, propagatorTag));
     return element;

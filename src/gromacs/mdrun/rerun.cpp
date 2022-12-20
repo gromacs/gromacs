@@ -173,7 +173,7 @@ void gmx::LegacySimulator::do_rerun()
     // alias to avoid a large ripple of nearly useless changes.
     // t_inputrec is being replaced by IMdpOptionsProvider, so this
     // will go away eventually.
-    const t_inputrec* ir = inputrec;
+    const t_inputrec* ir = inputRec_;
     double            t;
     bool              isLastStep               = false;
     bool              doFreeEnergyPerturbation = false;
@@ -193,7 +193,7 @@ void gmx::LegacySimulator::do_rerun()
     // signals, and will use this object to achieve that.
     SimulationSignaller nullSignaller(nullptr, nullptr, nullptr, false, false);
 
-    GMX_LOG(mdlog.info)
+    GMX_LOG(mdLog_.info)
             .asParagraph()
             .appendText(
                     "Note that it is planned that the command gmx mdrun -rerun will "
@@ -201,7 +201,7 @@ void gmx::LegacySimulator::do_rerun()
                     "e.g. gmx rerun -f.");
 
     if (ir->efep != FreeEnergyPerturbationType::No
-        && (mdAtoms->mdatoms()->nMassPerturbed > 0 || (constr && constr->havePerturbedConstraints())))
+        && (mdAtoms_->mdatoms()->nMassPerturbed > 0 || (constr_ && constr_->havePerturbedConstraints())))
     {
         gmx_fatal(FARGS,
                   "Perturbed masses or constraints are not supported by rerun. "
@@ -220,11 +220,11 @@ void gmx::LegacySimulator::do_rerun()
     {
         gmx_fatal(FARGS, "AWH not supported by rerun.");
     }
-    if (replExParams.exchangeInterval > 0)
+    if (replExParams_.exchangeInterval > 0)
     {
         gmx_fatal(FARGS, "Replica exchange not supported by rerun.");
     }
-    if (opt2bSet("-ei", nfile, fnm) || observablesHistory->edsamHistory != nullptr)
+    if (opt2bSet("-ei", nFile_, fnm_) || observablesHistory_->edsamHistory != nullptr)
     {
         gmx_fatal(FARGS, "Essential dynamics not supported by rerun.");
     }
@@ -232,7 +232,7 @@ void gmx::LegacySimulator::do_rerun()
     {
         gmx_fatal(FARGS, "Interactive MD not supported by rerun.");
     }
-    if (isMultiSim(ms))
+    if (isMultiSim(ms_))
     {
         gmx_fatal(FARGS, "Multiple simulations not supported by rerun.");
     }
@@ -246,20 +246,20 @@ void gmx::LegacySimulator::do_rerun()
     /* Rerun can't work if an output file name is the same as the input file name.
      * If this is the case, the user will get an error telling them what the issue is.
      */
-    if (strcmp(opt2fn("-rerun", nfile, fnm), opt2fn("-o", nfile, fnm)) == 0
-        || strcmp(opt2fn("-rerun", nfile, fnm), opt2fn("-x", nfile, fnm)) == 0)
+    if (strcmp(opt2fn("-rerun", nFile_, fnm_), opt2fn("-o", nFile_, fnm_)) == 0
+        || strcmp(opt2fn("-rerun", nFile_, fnm_), opt2fn("-x", nFile_, fnm_)) == 0)
     {
         gmx_fatal(FARGS,
                   "When using mdrun -rerun, the name of the input trajectory file "
                   "%s cannot be identical to the name of an output file (whether "
                   "given explicitly with -o or -x, or by default)",
-                  opt2fn("-rerun", nfile, fnm));
+                  opt2fn("-rerun", nFile_, fnm_));
     }
 
     /* Settings for rerun */
     {
         // TODO: Avoid changing inputrec (#3854)
-        auto* nonConstInputrec               = const_cast<t_inputrec*>(inputrec);
+        auto* nonConstInputrec               = const_cast<t_inputrec*>(inputRec_);
         nonConstInputrec->nstlist            = 1;
         nonConstInputrec->nstcalcenergy      = 1;
         nonConstInputrec->nstxout_compressed = 0;
@@ -267,97 +267,97 @@ void gmx::LegacySimulator::do_rerun()
     int        nstglobalcomm = 1;
     const bool bNS           = true;
 
-    ObservablesReducer observablesReducer = observablesReducerBuilder->build();
+    ObservablesReducer observablesReducer = observablesReducerBuilder_->build();
 
-    const SimulationGroups* groups = &top_global.groups;
+    const SimulationGroups* groups = &topGlobal_.groups;
     if (ir->eI == IntegrationAlgorithm::Mimic)
     {
-        auto* nonConstGlobalTopology                         = const_cast<gmx_mtop_t*>(&top_global);
-        nonConstGlobalTopology->intermolecularExclusionGroup = genQmmmIndices(top_global);
+        auto* nonConstGlobalTopology                         = const_cast<gmx_mtop_t*>(&topGlobal_);
+        nonConstGlobalTopology->intermolecularExclusionGroup = genQmmmIndices(topGlobal_);
     }
-    int*                fep_state = MAIN(cr) ? &state_global->fep_state : nullptr;
-    gmx::ArrayRef<real> lambda    = MAIN(cr) ? state_global->lambda : gmx::ArrayRef<real>();
+    int*                fep_state = MAIN(cr_) ? &stateGlobal_->fep_state : nullptr;
+    gmx::ArrayRef<real> lambda    = MAIN(cr_) ? stateGlobal_->lambda : gmx::ArrayRef<real>();
     initialize_lambdas(
-            fplog, ir->efep, ir->bSimTemp, *ir->fepvals, ir->simtempvals->temperatures, ekind, MAIN(cr), fep_state, lambda);
+            fpLog_, ir->efep, ir->bSimTemp, *ir->fepvals, ir->simtempvals->temperatures, ekind_, MAIN(cr_), fep_state, lambda);
     const bool        simulationsShareState = false;
-    gmx_mdoutf*       outf                  = init_mdoutf(fplog,
-                                   nfile,
-                                   fnm,
-                                   mdrunOptions,
-                                   cr,
-                                   outputProvider,
-                                   mdModulesNotifiers,
+    gmx_mdoutf*       outf                  = init_mdoutf(fpLog_,
+                                   nFile_,
+                                   fnm_,
+                                   mdrunOptions_,
+                                   cr_,
+                                   outputProvider_,
+                                   mdModulesNotifiers_,
                                    ir,
-                                   top_global,
-                                   oenv,
-                                   wcycle,
+                                   topGlobal_,
+                                   oenv_,
+                                   wallCycleCounters_,
                                    StartingBehavior::NewSimulation,
                                    simulationsShareState,
-                                   ms);
+                                   ms_);
     gmx::EnergyOutput energyOutput(mdoutf_get_fp_ene(outf),
-                                   top_global,
+                                   topGlobal_,
                                    *ir,
-                                   pull_work,
+                                   pullWork_,
                                    mdoutf_get_fp_dhdl(outf),
                                    true,
                                    StartingBehavior::NewSimulation,
                                    simulationsShareState,
-                                   mdModulesNotifiers);
+                                   mdModulesNotifiers_);
 
     gstat = global_stat_init(ir);
 
     /* Check for polarizable models and flexible constraints */
-    shellfc = init_shell_flexcon(fplog,
-                                 top_global,
-                                 constr ? constr->numFlexibleConstraints() : 0,
+    shellfc = init_shell_flexcon(fpLog_,
+                                 topGlobal_,
+                                 constr_ ? constr_->numFlexibleConstraints() : 0,
                                  ir->nstcalcenergy,
-                                 haveDDAtomOrdering(*cr),
-                                 runScheduleWork->simulationWork.useGpuPme);
+                                 haveDDAtomOrdering(*cr_),
+                                 runScheduleWork_->simulationWork.useGpuPme);
 
-    if (haveDDAtomOrdering(*cr))
+    if (haveDDAtomOrdering(*cr_))
     {
         // Local state only becomes valid now.
-        dd_init_local_state(*cr->dd, state_global, state);
+        dd_init_local_state(*cr_->dd, stateGlobal_, state_);
 
         /* Distribute the charge groups over the nodes from the main node */
-        dd_partition_system(fplog,
-                            mdlog,
+        dd_partition_system(fpLog_,
+                            mdLog_,
                             ir->init_step,
-                            cr,
+                            cr_,
                             TRUE,
-                            state_global,
-                            top_global,
+                            stateGlobal_,
+                            topGlobal_,
                             *ir,
-                            imdSession,
-                            pull_work,
-                            state,
+                            imdSession_,
+                            pullWork_,
+                            state_,
                             &f,
-                            mdAtoms,
-                            top,
-                            fr,
-                            vsite,
-                            constr,
-                            nrnb,
+                            mdAtoms_,
+                            top_,
+                            fr_,
+                            virtualSites_,
+                            constr_,
+                            nrnb_,
                             nullptr,
                             FALSE);
     }
     else
     {
         /* Copy the pointer to the global state */
-        state = state_global;
+        state_ = stateGlobal_;
 
-        mdAlgorithmsSetupAtomData(cr, *ir, top_global, top, fr, &f, mdAtoms, constr, vsite, shellfc);
+        mdAlgorithmsSetupAtomData(cr_, *ir, topGlobal_, top_, fr_, &f, mdAtoms_, constr_, virtualSites_, shellfc);
     }
 
-    auto* mdatoms = mdAtoms->mdatoms();
-    fr->longRangeNonbondeds->updateAfterPartition(*mdatoms);
+    auto* mdatoms = mdAtoms_->mdatoms();
+    fr_->longRangeNonbondeds->updateAfterPartition(*mdatoms);
 
     // NOTE: The global state is no longer used at this point.
     // But state_global is still used as temporary storage space for writing
     // the global state to file and potentially for replica exchange.
     // (Global topology should persist.)
 
-    update_mdatoms(mdatoms, state->lambda[FreeEnergyPerturbationCouplingType::Mass]);
+    update_mdatoms(mdatoms, state_->lambda[FreeEnergyPerturbationCouplingType::Mass]);
 
     if (ir->efep != FreeEnergyPerturbationType::No && ir->fepvals->nstdhdl != 0)
     {
@@ -372,24 +372,24 @@ void gmx::LegacySimulator::do_rerun()
         bool   bSumEkinhOld = false;
         t_vcm* vcm          = nullptr;
         compute_globals(gstat,
-                        cr,
+                        cr_,
                         ir,
-                        fr,
-                        ekind,
-                        makeConstArrayRef(state->x),
-                        makeConstArrayRef(state->v),
-                        state->box,
+                        fr_,
+                        ekind_,
+                        makeConstArrayRef(state_->x),
+                        makeConstArrayRef(state_->v),
+                        state_->box,
                         mdatoms,
-                        nrnb,
+                        nrnb_,
                         vcm,
                         nullptr,
-                        enerd,
+                        enerd_,
                         force_vir,
                         shake_vir,
                         total_vir,
                         pres,
                         &nullSignaller,
-                        state->box,
+                        state_->box,
                         &bSumEkinhOld,
                         cglo_flags,
                         step,
@@ -398,26 +398,26 @@ void gmx::LegacySimulator::do_rerun()
         observablesReducer.markAsReadyToReduce();
     }
 
-    if (MAIN(cr))
+    if (MAIN(cr_))
     {
         fprintf(stderr,
                 "starting md rerun '%s', reading coordinates from"
                 " input trajectory '%s'\n\n",
-                *(top_global.name),
-                opt2fn("-rerun", nfile, fnm));
-        if (mdrunOptions.verbose)
+                *(topGlobal_.name),
+                opt2fn("-rerun", nFile_, fnm_));
+        if (mdrunOptions_.verbose)
         {
             fprintf(stderr,
                     "Calculated time to finish depends on nsteps from "
                     "run input file,\nwhich may not correspond to the time "
                     "needed to process input trajectory.\n\n");
         }
-        fprintf(fplog, "\n");
+        fprintf(fpLog_, "\n");
     }
 
-    walltime_accounting_start_time(walltime_accounting);
-    wallcycle_start(wcycle, WallCycleCounter::Run);
-    print_start(fplog, cr, walltime_accounting, "mdrun");
+    walltime_accounting_start_time(wallTimeAccounting_);
+    wallcycle_start(wallCycleCounters_, WallCycleCounter::Run);
+    print_start(fpLog_, cr_, wallTimeAccounting_, "mdrun");
 
     /***********************************************************
      *
@@ -425,24 +425,24 @@ void gmx::LegacySimulator::do_rerun()
      *
      ************************************************************/
 
-    if (constr)
+    if (constr_)
     {
-        GMX_LOG(mdlog.info)
+        GMX_LOG(mdLog_.info)
                 .asParagraph()
                 .appendText("Simulations has constraints. Rerun does not recalculate constraints.");
     }
 
     rerun_fr.natoms = 0;
-    if (MAIN(cr))
+    if (MAIN(cr_))
     {
-        isLastStep = !read_first_frame(oenv, &status, opt2fn("-rerun", nfile, fnm), &rerun_fr, TRX_NEED_X);
-        if (rerun_fr.natoms != top_global.natoms)
+        isLastStep = !read_first_frame(oenv_, &status, opt2fn("-rerun", nFile_, fnm_), &rerun_fr, TRX_NEED_X);
+        if (rerun_fr.natoms != topGlobal_.natoms)
         {
             gmx_fatal(FARGS,
                       "Number of atoms in trajectory (%d) does not match the "
                       "run input file (%d)\n",
                       rerun_fr.natoms,
-                      top_global.natoms);
+                      topGlobal_.natoms);
         }
 
         if (ir->pbcType != PbcType::No)
@@ -456,7 +456,7 @@ void gmx::LegacySimulator::do_rerun()
                           rerun_fr.step,
                           rerun_fr.time);
             }
-            if (max_cutoff2(ir->pbcType, rerun_fr.box) < gmx::square(fr->rlist))
+            if (max_cutoff2(ir->pbcType, rerun_fr.box) < gmx::square(fr_->rlist))
             {
                 gmx_fatal(FARGS,
                           "Rerun trajectory frame step %" PRId64
@@ -468,15 +468,15 @@ void gmx::LegacySimulator::do_rerun()
         }
     }
 
-    GMX_LOG(mdlog.info)
+    GMX_LOG(mdLog_.info)
             .asParagraph()
             .appendText(
                     "Rerun does not report kinetic energy, total energy, temperature, virial and "
                     "pressure.");
 
-    if (PAR(cr))
+    if (PAR(cr_))
     {
-        rerun_parallel_comm(cr, &rerun_fr, &isLastStep);
+        rerun_parallel_comm(cr_, &rerun_fr, &isLastStep);
     }
 
     if (ir->pbcType != PbcType::No)
@@ -484,33 +484,33 @@ void gmx::LegacySimulator::do_rerun()
         /* Set the shift vectors.
          * Necessary here when have a static box different from the tpr box.
          */
-        calc_shifts(rerun_fr.box, fr->shift_vec);
+        calc_shifts(rerun_fr.box, fr_->shift_vec);
     }
 
-    auto stopHandler = stopHandlerBuilder->getStopHandlerMD(
+    auto stopHandler = stopHandlerBuilder_->getStopHandlerMD(
             compat::not_null<SimulationSignal*>(&signals[eglsSTOPCOND]),
             false,
-            MAIN(cr),
+            MAIN(cr_),
             ir->nstlist,
-            mdrunOptions.reproducible,
+            mdrunOptions_.reproducible,
             nstglobalcomm,
-            mdrunOptions.maximumHoursToRun,
+            mdrunOptions_.maximumHoursToRun,
             ir->nstlist == 0,
-            fplog,
+            fpLog_,
             step,
             bNS,
-            walltime_accounting);
+            wallTimeAccounting_);
 
     // we don't do counter resetting in rerun - finish will always be valid
-    walltime_accounting_set_valid_finish(walltime_accounting);
+    walltime_accounting_set_valid_finish(wallTimeAccounting_);
 
-    const DDBalanceRegionHandler ddBalanceRegionHandler(cr);
+    const DDBalanceRegionHandler ddBalanceRegionHandler(cr_);
 
     /* and stop now if we should */
     isLastStep = (isLastStep || (ir->nsteps >= 0 && step_rel > ir->nsteps));
     while (!isLastStep)
     {
-        wallcycle_start(wcycle, WallCycleCounter::Step);
+        wallcycle_start(wallCycleCounters_, WallCycleCounter::Step);
 
         if (rerun_fr.bStep)
         {
@@ -526,7 +526,7 @@ void gmx::LegacySimulator::do_rerun()
             t = step;
         }
 
-        if (ir->efep != FreeEnergyPerturbationType::No && MAIN(cr))
+        if (ir->efep != FreeEnergyPerturbationType::No && MAIN(cr_))
         {
             if (rerun_fr.bLambda)
             {
@@ -536,65 +536,65 @@ void gmx::LegacySimulator::do_rerun()
             {
                 if (rerun_fr.bFepState)
                 {
-                    state->fep_state = rerun_fr.fep_state;
+                    state_->fep_state = rerun_fr.fep_state;
                 }
             }
 
-            state_global->lambda = currentLambdas(step, *(ir->fepvals), state->fep_state);
+            stateGlobal_->lambda = currentLambdas(step, *(ir->fepvals), state_->fep_state);
         }
 
-        if (MAIN(cr))
+        if (MAIN(cr_))
         {
-            const bool constructVsites = ((vsite != nullptr) && mdrunOptions.rerunConstructVsites);
-            if (constructVsites && haveDDAtomOrdering(*cr))
+            const bool constructVsites = ((virtualSites_ != nullptr) && mdrunOptions_.rerunConstructVsites);
+            if (constructVsites && haveDDAtomOrdering(*cr_))
             {
                 gmx_fatal(FARGS,
                           "Vsite recalculation with -rerun is not implemented with domain "
                           "decomposition, "
                           "use a single rank");
             }
-            prepareRerunState(rerun_fr, state_global, constructVsites, vsite);
+            prepareRerunState(rerun_fr, stateGlobal_, constructVsites, virtualSites_);
         }
 
         isLastStep = isLastStep || stopHandler->stoppingAfterCurrentStep(bNS);
 
-        if (haveDDAtomOrdering(*cr))
+        if (haveDDAtomOrdering(*cr_))
         {
             /* Repartition the domain decomposition */
             const bool bMainState = true;
-            dd_partition_system(fplog,
-                                mdlog,
+            dd_partition_system(fpLog_,
+                                mdLog_,
                                 step,
-                                cr,
+                                cr_,
                                 bMainState,
-                                state_global,
-                                top_global,
+                                stateGlobal_,
+                                topGlobal_,
                                 *ir,
-                                imdSession,
-                                pull_work,
-                                state,
+                                imdSession_,
+                                pullWork_,
+                                state_,
                                 &f,
-                                mdAtoms,
-                                top,
-                                fr,
-                                vsite,
-                                constr,
-                                nrnb,
-                                wcycle,
-                                mdrunOptions.verbose);
+                                mdAtoms_,
+                                top_,
+                                fr_,
+                                virtualSites_,
+                                constr_,
+                                nrnb_,
+                                wallCycleCounters_,
+                                mdrunOptions_.verbose);
         }
 
-        if (MAIN(cr))
+        if (MAIN(cr_))
         {
-            EnergyOutput::printHeader(fplog, step, t); /* can we improve the information printed here? */
+            EnergyOutput::printHeader(fpLog_, step, t); /* can we improve the information printed here? */
         }
 
         if (ir->efep != FreeEnergyPerturbationType::No)
         {
-            update_mdatoms(mdatoms, state->lambda[FreeEnergyPerturbationCouplingType::Mass]);
+            update_mdatoms(mdatoms, state_->lambda[FreeEnergyPerturbationCouplingType::Mass]);
         }
 
-        fr->longRangeNonbondeds->updateAfterPartition(*mdatoms);
+        fr_->longRangeNonbondeds->updateAfterPartition(*mdatoms);
 
         force_flags = (GMX_FORCE_STATECHANGED | GMX_FORCE_DYNAMICBOX | GMX_FORCE_ALLFORCES
                        | GMX_FORCE_VIRIAL | // TODO: Get rid of this once #2649 and #3400 are solved
@@ -603,38 +603,38 @@ void gmx::LegacySimulator::do_rerun()
         if (shellfc)
         {
             /* Now is the time to relax the shells */
-            relax_shell_flexcon(fplog,
-                                cr,
-                                ms,
-                                mdrunOptions.verbose,
-                                enforcedRotation,
+            relax_shell_flexcon(fpLog_,
+                                cr_,
+                                ms_,
+                                mdrunOptions_.verbose,
+                                enforcedRotation_,
                                 step,
                                 ir,
-                                imdSession,
-                                pull_work,
+                                imdSession_,
+                                pullWork_,
                                 bNS,
                                 force_flags,
-                                top,
-                                constr,
-                                enerd,
-                                state->numAtoms(),
-                                state->x.arrayRefWithPadding(),
-                                state->v.arrayRefWithPadding(),
-                                state->box,
-                                state->lambda,
-                                &state->hist,
+                                top_,
+                                constr_,
+                                enerd_,
+                                state_->numAtoms(),
+                                state_->x.arrayRefWithPadding(),
+                                state_->v.arrayRefWithPadding(),
+                                state_->box,
+                                state_->lambda,
+                                &state_->hist,
                                 &f.view(),
                                 force_vir,
                                 *mdatoms,
-                                fr->longRangeNonbondeds.get(),
-                                nrnb,
-                                wcycle,
+                                fr_->longRangeNonbondeds.get(),
+                                nrnb_,
+                                wallCycleCounters_,
                                 shellfc,
-                                fr,
-                                runScheduleWork,
+                                fr_,
+                                runScheduleWork_,
                                 t,
                                 mu_tot,
-                                vsite,
+                                virtualSites_,
                                 ddBalanceRegionHandler);
         }
         else
@@ -648,39 +648,39 @@ void gmx::LegacySimulator::do_rerun()
             gmx_edsam* ed  = nullptr;
             try
             {
-                do_force(fplog,
-                         cr,
-                         ms,
+                do_force(fpLog_,
+                         cr_,
+                         ms_,
                          *ir,
                          awh,
-                         enforcedRotation,
-                         imdSession,
-                         pull_work,
+                         enforcedRotation_,
+                         imdSession_,
+                         pullWork_,
                          step,
-                         nrnb,
-                         wcycle,
-                         top,
-                         state->box,
-                         state->x.arrayRefWithPadding(),
-                         &state->hist,
+                         nrnb_,
+                         wallCycleCounters_,
+                         top_,
+                         state_->box,
+                         state_->x.arrayRefWithPadding(),
+                         &state_->hist,
                          &f.view(),
                          force_vir,
                          mdatoms,
-                         enerd,
-                         state->lambda,
-                         fr,
-                         runScheduleWork,
-                         vsite,
+                         enerd_,
+                         state_->lambda,
+                         fr_,
+                         runScheduleWork_,
+                         virtualSites_,
                          mu_tot,
                          t,
                          ed,
-                         fr->longRangeNonbondeds.get(),
+                         fr_->longRangeNonbondeds.get(),
                          GMX_FORCE_NS | force_flags,
                          ddBalanceRegionHandler);
             }
             catch (const gmx::InternalError&)
             {
-                GMX_LOG(mdlog.warning)
+                GMX_LOG(mdLog_.warning)
                         .asParagraph()
                         .appendText(
                                 "Continuing with next frame after catching invalid force in "
@@ -694,27 +694,27 @@ void gmx::LegacySimulator::do_rerun()
         {
             const bool isCheckpointingStep = false;
             const bool doRerun             = true;
-            do_md_trajectory_writing(fplog,
-                                     cr,
-                                     nfile,
-                                     fnm,
+            do_md_trajectory_writing(fpLog_,
+                                     cr_,
+                                     nFile_,
+                                     fnm_,
                                      step,
                                      step_rel,
                                      t,
                                      ir,
-                                     state,
-                                     state_global,
-                                     observablesHistory,
-                                     top_global,
-                                     fr,
+                                     state_,
+                                     stateGlobal_,
+                                     observablesHistory_,
+                                     topGlobal_,
+                                     fr_,
                                      outf,
                                      energyOutput,
-                                     ekind,
+                                     ekind_,
                                      f.view().force(),
                                      isCheckpointingStep,
                                      doRerun,
                                      isLastStep,
-                                     mdrunOptions.writeConfout,
+                                     mdrunOptions_.writeConfout,
                                      EkindataState::NotUsed);
         }
 
@@ -725,28 +725,28 @@ void gmx::LegacySimulator::do_rerun()
             const bool          doIntraSimSignal = true;
             bool                bSumEkinhOld     = false;
             t_vcm*              vcm              = nullptr;
-            SimulationSignaller signaller(&signals, cr, ms, doInterSimSignal, doIntraSimSignal);
+            SimulationSignaller signaller(&signals, cr_, ms_, doInterSimSignal, doIntraSimSignal);
 
             int cglo_flags = CGLO_GSTAT | CGLO_ENERGY;
             compute_globals(gstat,
-                            cr,
+                            cr_,
                             ir,
-                            fr,
-                            ekind,
-                            makeConstArrayRef(state->x),
-                            makeConstArrayRef(state->v),
-                            state->box,
+                            fr_,
+                            ekind_,
+                            makeConstArrayRef(state_->x),
+                            makeConstArrayRef(state_->v),
+                            state_->box,
                             mdatoms,
-                            nrnb,
+                            nrnb_,
                             vcm,
-                            wcycle,
-                            enerd,
+                            wallCycleCounters_,
+                            enerd_,
                             force_vir,
                             shake_vir,
                             total_vir,
                             pres,
                             &signaller,
-                            state->box,
+                            state_->box,
                             &bSumEkinhOld,
                             cglo_flags,
                             step,
@@ -761,27 +761,27 @@ void gmx::LegacySimulator::do_rerun()
            generate the new shake_vir, but test the veta value for convergence.  This will take some thought. */
 
         /* Output stuff */
-        if (MAIN(cr))
+        if (MAIN(cr_))
         {
             const bool bCalcEnerStep = true;
             energyOutput.addDataAtEnergyStep(doFreeEnergyPerturbation,
                                              bCalcEnerStep,
                                              t,
                                              mdatoms->tmass,
-                                             enerd,
+                                             enerd_,
                                              ir->fepvals.get(),
-                                             state->box,
-                                             PTCouplingArrays({ state->boxv,
-                                                                state->nosehoover_xi,
-                                                                state->nosehoover_vxi,
-                                                                state->nhpres_xi,
-                                                                state->nhpres_vxi }),
-                                             state->fep_state,
+                                             state_->box,
+                                             PTCouplingArrays({ state_->boxv,
+                                                                state_->nosehoover_xi,
+                                                                state_->nosehoover_vxi,
+                                                                state_->nhpres_xi,
+                                                                state_->nhpres_vxi }),
+                                             state_->fep_state,
                                              total_vir,
                                              pres,
-                                             ekind,
+                                             ekind_,
                                              mu_tot,
-                                             constr);
+                                             constr_);
 
             const bool do_ene = true;
             const bool do_log = true;
@@ -789,25 +789,25 @@ void gmx::LegacySimulator::do_rerun()
             const bool do_dr  = ir->nstdisreout != 0;
             const bool do_or  = ir->nstorireout != 0;
 
-            EnergyOutput::printAnnealingTemperatures(do_log ? fplog : nullptr, *groups, ir->opts, *ekind);
+            EnergyOutput::printAnnealingTemperatures(do_log ? fpLog_ : nullptr, *groups, ir->opts, *ekind_);
             energyOutput.printStepToEnergyFile(mdoutf_get_fp_ene(outf),
                                                do_ene,
                                                do_dr,
                                                do_or,
-                                               do_log ? fplog : nullptr,
+                                               do_log ? fpLog_ : nullptr,
                                                step,
                                                t,
-                                               fr->fcdata.get(),
+                                               fr_->fcdata.get(),
                                                awh);
 
             if (ir->bPull)
             {
-                pull_print_output(pull_work, step, t);
+                pull_print_output(pullWork_, step, t);
             }
 
             if (do_per_step(step, ir->nstlog))
             {
-                if (fflush(fplog) != 0)
+                if (fflush(fpLog_) != 0)
                 {
                     gmx_fatal(FARGS, "Cannot flush logfile - maybe you are out of disk space?");
                 }
@@ -815,13 +815,13 @@ void gmx::LegacySimulator::do_rerun()
         }
 
         /* Print the remaining wall clock time for the run */
-        if (isMainSimMainRank(ms, MAIN(cr)) && (mdrunOptions.verbose || gmx_got_usr_signal()))
+        if (isMainSimMainRank(ms_, MAIN(cr_)) && (mdrunOptions_.verbose || gmx_got_usr_signal()))
         {
             if (shellfc)
             {
                 fprintf(stderr, "\n");
             }
-            print_time(stderr, walltime_accounting, step, ir, cr);
+            print_time(stderr, wallTimeAccounting_, step, ir, cr_);
         }
 
         /* Ion/water position swapping.
@@ -831,33 +831,33 @@ void gmx::LegacySimulator::do_rerun()
             && do_per_step(step, ir->swap->nstswap))
         {
             const bool doRerun = true;
-            do_swapcoords(cr,
+            do_swapcoords(cr_,
                           step,
                           t,
                           ir,
-                          swap,
-                          wcycle,
+                          swap_,
+                          wallCycleCounters_,
                           rerun_fr.x,
                           rerun_fr.box,
-                          MAIN(cr) && mdrunOptions.verbose,
+                          MAIN(cr_) && mdrunOptions_.verbose,
                           doRerun);
         }
 
-        if (MAIN(cr))
+        if (MAIN(cr_))
         {
             /* read next frame from input trajectory */
-            isLastStep = !read_next_frame(oenv, status, &rerun_fr);
+            isLastStep = !read_next_frame(oenv_, status, &rerun_fr);
         }
 
-        if (PAR(cr))
+        if (PAR(cr_))
         {
-            rerun_parallel_comm(cr, &rerun_fr, &isLastStep);
+            rerun_parallel_comm(cr_, &rerun_fr, &isLastStep);
         }
 
-        cycles = wallcycle_stop(wcycle, WallCycleCounter::Step);
-        if (haveDDAtomOrdering(*cr) && wcycle)
+        cycles = wallcycle_stop(wallCycleCounters_, WallCycleCounter::Step);
+        if (haveDDAtomOrdering(*cr_) && wallCycleCounters_)
         {
-            dd_cycles_add(cr->dd, cycles, ddCyclStep);
+            dd_cycles_add(cr_->dd, cycles, ddCyclStep);
         }
 
         if (!rerun_fr.bStep)
@@ -875,22 +875,22 @@ void gmx::LegacySimulator::do_rerun()
     mdoutf_tng_close(outf);
 
     /* Stop measuring walltime */
-    walltime_accounting_end_time(walltime_accounting);
+    walltime_accounting_end_time(wallTimeAccounting_);
 
-    if (MAIN(cr))
+    if (MAIN(cr_))
     {
         close_trx(status);
     }
 
-    if (!thisRankHasDuty(cr, DUTY_PME))
+    if (!thisRankHasDuty(cr_, DUTY_PME))
     {
         /* Tell the PME only node to finish */
-        gmx_pme_send_finish(cr);
+        gmx_pme_send_finish(cr_);
     }
 
     done_mdoutf(outf);
 
-    done_shellfc(fplog, shellfc, step_rel);
+    done_shellfc(fpLog_, shellfc, step_rel);
 
-    walltime_accounting_set_nsteps_done(walltime_accounting, step_rel);
+    walltime_accounting_set_nsteps_done(wallTimeAccounting_, step_rel);
 }

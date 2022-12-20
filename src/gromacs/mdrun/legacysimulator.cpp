@@ -51,19 +51,19 @@ namespace gmx
 //! \brief Run the correct integrator function.
 void LegacySimulator::run()
 {
-    switch (inputrec->eI)
+    switch (inputRec_->eI)
     {
         case IntegrationAlgorithm::MD:
         case IntegrationAlgorithm::BD:
         case IntegrationAlgorithm::SD1:
         case IntegrationAlgorithm::VV:
         case IntegrationAlgorithm::VVAK:
-            if (!EI_DYNAMICS(inputrec->eI))
+            if (!EI_DYNAMICS(inputRec_->eI))
             {
                 GMX_THROW(APIError(
                         "do_md integrator would be called for a non-dynamical integrator"));
             }
-            if (doRerun)
+            if (doRerun_)
             {
                 do_rerun();
             }
@@ -73,7 +73,7 @@ void LegacySimulator::run()
             }
             break;
         case IntegrationAlgorithm::Mimic:
-            if (doRerun)
+            if (doRerun_)
             {
                 do_rerun();
             }
@@ -88,7 +88,7 @@ void LegacySimulator::run()
         case IntegrationAlgorithm::LBFGS: do_lbfgs(); break;
         case IntegrationAlgorithm::TPI:
         case IntegrationAlgorithm::TPIC:
-            if (!EI_TPI(inputrec->eI))
+            if (!EI_TPI(inputRec_->eI))
             {
                 GMX_THROW(APIError("do_tpi integrator would be called for a non-TPI integrator"));
             }

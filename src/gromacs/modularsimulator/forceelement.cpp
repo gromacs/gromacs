@@ -329,27 +329,27 @@ ForceElement::getElementPointerImpl(LegacySimulatorData*                    lega
                                     GlobalCommunicationHelper gmx_unused* globalCommunicationHelper,
                                     ObservablesReducer* /*observablesReducer*/)
 {
-    const bool isVerbose    = legacySimulatorData->mdrunOptions.verbose;
-    const bool isDynamicBox = inputrecDynamicBox(legacySimulatorData->inputrec);
+    const bool isVerbose    = legacySimulatorData->mdrunOptions_.verbose;
+    const bool isDynamicBox = inputrecDynamicBox(legacySimulatorData->inputRec_);
     return builderHelper->storeElement(
             std::make_unique<ForceElement>(statePropagatorData,
                                            energyData,
                                            freeEnergyPerturbationData,
                                            isVerbose,
                                            isDynamicBox,
-                                           legacySimulatorData->fplog,
-                                           legacySimulatorData->cr,
-                                           legacySimulatorData->inputrec,
-                                           legacySimulatorData->mdAtoms,
-                                           legacySimulatorData->nrnb,
-                                           legacySimulatorData->fr,
-                                           legacySimulatorData->wcycle,
-                                           legacySimulatorData->runScheduleWork,
-                                           legacySimulatorData->vsite,
-                                           legacySimulatorData->imdSession,
-                                           legacySimulatorData->pull_work,
-                                           legacySimulatorData->constr,
-                                           legacySimulatorData->top_global,
-                                           legacySimulatorData->enforcedRotation));
+                                           legacySimulatorData->fpLog_,
+                                           legacySimulatorData->cr_,
+                                           legacySimulatorData->inputRec_,
+                                           legacySimulatorData->mdAtoms_,
+                                           legacySimulatorData->nrnb_,
+                                           legacySimulatorData->fr_,
+                                           legacySimulatorData->wallCycleCounters_,
+                                           legacySimulatorData->runScheduleWork_,
+                                           legacySimulatorData->virtualSites_,
+                                           legacySimulatorData->imdSession_,
+                                           legacySimulatorData->pullWork_,
+                                           legacySimulatorData->constr_,
+                                           legacySimulatorData->topGlobal_,
+                                           legacySimulatorData->enforcedRotation_));
 }
 } // namespace gmx

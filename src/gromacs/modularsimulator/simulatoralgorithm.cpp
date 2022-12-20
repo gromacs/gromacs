@@ -407,38 +407,38 @@ ModularSimulatorAlgorithmBuilder::ModularSimulatorAlgorithmBuilder(
     legacySimulatorData_(legacySimulatorData),
     signals_(std::make_unique<SimulationSignals>()),
     elementAdditionHelper_(this),
-    globalCommunicationHelper_(computeGlobalCommunicationPeriod(legacySimulatorData->mdlog,
-                                                                legacySimulatorData->inputrec,
-                                                                legacySimulatorData->cr),
+    globalCommunicationHelper_(computeGlobalCommunicationPeriod(legacySimulatorData->mdLog_,
+                                                                legacySimulatorData->inputRec_,
+                                                                legacySimulatorData->cr_),
                                signals_.get()),
-    observablesReducer_(legacySimulatorData->observablesReducerBuilder->build()),
+    observablesReducer_(legacySimulatorData->observablesReducerBuilder_->build()),
     checkpointHelperBuilder_(std::move(checkpointDataHolder),
-                             legacySimulatorData->startingBehavior,
-                             legacySimulatorData->cr)
+                             legacySimulatorData->startingBehavior_,
+                             legacySimulatorData->cr_)
 {
-    if (legacySimulatorData->inputrec->efep != FreeEnergyPerturbationType::No)
+    if (legacySimulatorData->inputRec_->efep != FreeEnergyPerturbationType::No)
     {
         freeEnergyPerturbationData_ =
-                std::make_unique<FreeEnergyPerturbationData>(legacySimulatorData->fplog,
-                                                             *legacySimulatorData->inputrec,
-                                                             legacySimulatorData->mdAtoms,
-                                                             legacySimulatorData->ekind);
+                std::make_unique<FreeEnergyPerturbationData>(legacySimulatorData->fpLog_,
+                                                             *legacySimulatorData->inputRec_,
+                                                             legacySimulatorData->mdAtoms_,
+                                                             legacySimulatorData->ekind_);
         registerExistingElement(freeEnergyPerturbationData_->element());
     }
 
     statePropagatorData_ = std::make_unique<StatePropagatorData>(
-            legacySimulatorData->top_global.natoms,
-            legacySimulatorData->fplog,
-            legacySimulatorData->cr,
-            legacySimulatorData->state_global,
-            legacySimulatorData->state,
-            legacySimulatorData->fr->nbv->useGpu(),
-            legacySimulatorData->fr->bMolPBC,
-            legacySimulatorData->mdrunOptions.writeConfout,
-            opt2fn("-c", legacySimulatorData->nfile, legacySimulatorData->fnm),
-            legacySimulatorData->inputrec,
-            legacySimulatorData->mdAtoms->mdatoms(),
-            legacySimulatorData->top_global);
+            legacySimulatorData->topGlobal_.natoms,
+            legacySimulatorData->fpLog_,
+            legacySimulatorData->cr_,
+            legacySimulatorData->stateGlobal_,
+            legacySimulatorData->state_,
+            legacySimulatorData->fr_->nbv->useGpu(),
+            legacySimulatorData->fr_->bMolPBC,
+            legacySimulatorData->mdrunOptions_.writeConfout,
+            opt2fn("-c", legacySimulatorData->nFile_, legacySimulatorData->fnm_),
+            legacySimulatorData->inputRec_,
+            legacySimulatorData->mdAtoms_->mdatoms(),
+            legacySimulatorData->topGlobal_);
     registerExistingElement(statePropagatorData_->element());
 
     // Multi sim is turned off
@@ -446,24 +446,24 @@ ModularSimulatorAlgorithmBuilder::ModularSimulatorAlgorithmBuilder(
 
     energyData_ = std::make_unique<EnergyData>(statePropagatorData_.get(),
                                                freeEnergyPerturbationData_.get(),
-                                               legacySimulatorData->top_global,
-                                               legacySimulatorData->inputrec,
-                                               legacySimulatorData->mdAtoms,
-                                               legacySimulatorData->enerd,
-                                               legacySimulatorData->ekind,
-                                               legacySimulatorData->constr,
-                                               legacySimulatorData->fplog,
-                                               legacySimulatorData->fr->fcdata.get(),
-                                               legacySimulatorData->mdModulesNotifiers,
-                                               MAIN(legacySimulatorData->cr),
-                                               legacySimulatorData->observablesHistory,
-                                               legacySimulatorData->startingBehavior,
+                                               legacySimulatorData->topGlobal_,
+                                               legacySimulatorData->inputRec_,
+                                               legacySimulatorData->mdAtoms_,
+                                               legacySimulatorData->enerd_,
+                                               legacySimulatorData->ekind_,
+                                               legacySimulatorData->constr_,
+                                               legacySimulatorData->fpLog_,
+                                               legacySimulatorData->fr_->fcdata.get(),
+                                               legacySimulatorData->mdModulesNotifiers_,
+                                               MAIN(legacySimulatorData->cr_),
+                                               legacySimulatorData->observablesHistory_,
+                                               legacySimulatorData->startingBehavior_,
                                                simulationsShareHamiltonian,
-                                               legacySimulatorData->pull_work);
+                                               legacySimulatorData->pullWork_);
     registerExistingElement(energyData_->element());
 
     storeSimulationData("ReferenceTemperatureManager",
-                        ReferenceTemperatureManager(legacySimulatorData->ekind));
+                        ReferenceTemperatureManager(legacySimulatorData->ekind_));
     auto* referenceTemperatureManager =
             simulationData<ReferenceTemperatureManager>("ReferenceTemperatureManager").value();
 
@@ -494,16 +494,16 @@ ModularSimulatorAlgorithm ModularSimulatorAlgorithmBuilder::build()
         }
     }
 
-    ModularSimulatorAlgorithm algorithm(*(legacySimulatorData_->top_global.name),
-                                        legacySimulatorData_->fplog,
-                                        legacySimulatorData_->cr,
-                                        legacySimulatorData_->mdlog,
-                                        legacySimulatorData_->mdrunOptions,
-                                        legacySimulatorData_->inputrec,
-                                        legacySimulatorData_->nrnb,
-                                        legacySimulatorData_->wcycle,
-                                        legacySimulatorData_->fr,
-                                        legacySimulatorData_->walltime_accounting);
+    ModularSimulatorAlgorithm algorithm(*(legacySimulatorData_->topGlobal_.name),
+                                        legacySimulatorData_->fpLog_,
+                                        legacySimulatorData_->cr_,
+                                        legacySimulatorData_->mdLog_,
+                                        legacySimulatorData_->mdrunOptions_,
+                                        legacySimulatorData_->inputRec_,
+                                        legacySimulatorData_->nrnb_,
+                                        legacySimulatorData_->wallCycleCounters_,
+                                        legacySimulatorData_->fr_,
+                                        legacySimulatorData_->wallTimeAccounting_);
     registerWithInfrastructureAndSignallers(algorithm.signalHelper_.get());
     algorithm.statePropagatorData_        = std::move(statePropagatorData_);
     algorithm.energyData_                 = std::move(energyData_);
@@ -515,20 +515,20 @@ ModularSimulatorAlgorithm ModularSimulatorAlgorithmBuilder::build()
     const bool simulationsShareState = false;
 
     // Build stop handler
-    algorithm.stopHandler_ = legacySimulatorData_->stopHandlerBuilder->getStopHandlerMD(
+    algorithm.stopHandler_ = legacySimulatorData_->stopHandlerBuilder_->getStopHandlerMD(
             compat::not_null<SimulationSignal*>(
                     &(*globalCommunicationHelper_.simulationSignals())[eglsSTOPCOND]),
             simulationsShareState,
-            MAIN(legacySimulatorData_->cr),
-            legacySimulatorData_->inputrec->nstlist,
-            legacySimulatorData_->mdrunOptions.reproducible,
+            MAIN(legacySimulatorData_->cr_),
+            legacySimulatorData_->inputRec_->nstlist,
+            legacySimulatorData_->mdrunOptions_.reproducible,
             globalCommunicationHelper_.nstglobalcomm(),
-            legacySimulatorData_->mdrunOptions.maximumHoursToRun,
-            legacySimulatorData_->inputrec->nstlist == 0,
-            legacySimulatorData_->fplog,
+            legacySimulatorData_->mdrunOptions_.maximumHoursToRun,
+            legacySimulatorData_->inputRec_->nstlist == 0,
+            legacySimulatorData_->fpLog_,
             algorithm.stophandlerCurrentStep_,
             algorithm.stophandlerIsNSStep_,
-            legacySimulatorData_->walltime_accounting);
+            legacySimulatorData_->wallTimeAccounting_);
 
     // Build reset handler
     const bool simulationsShareResetCounters = false;
@@ -536,79 +536,79 @@ ModularSimulatorAlgorithm ModularSimulatorAlgorithmBuilder::build()
             compat::make_not_null<SimulationSignal*>(
                     &(*globalCommunicationHelper_.simulationSignals())[eglsRESETCOUNTERS]),
             simulationsShareResetCounters,
-            legacySimulatorData_->inputrec->nsteps,
-            MAIN(legacySimulatorData_->cr),
-            legacySimulatorData_->mdrunOptions.timingOptions.resetHalfway,
-            legacySimulatorData_->mdrunOptions.maximumHoursToRun,
-            legacySimulatorData_->mdlog,
-            legacySimulatorData_->wcycle,
-            legacySimulatorData_->walltime_accounting);
+            legacySimulatorData_->inputRec_->nsteps,
+            MAIN(legacySimulatorData_->cr_),
+            legacySimulatorData_->mdrunOptions_.timingOptions.resetHalfway,
+            legacySimulatorData_->mdrunOptions_.maximumHoursToRun,
+            legacySimulatorData_->mdLog_,
+            legacySimulatorData_->wallCycleCounters_,
+            legacySimulatorData_->wallTimeAccounting_);
 
     // Build topology holder
-    algorithm.topologyHolder_ = topologyHolderBuilder_.build(legacySimulatorData_->top_global,
-                                                             legacySimulatorData_->top,
-                                                             legacySimulatorData_->cr,
-                                                             legacySimulatorData_->inputrec,
-                                                             legacySimulatorData_->fr,
-                                                             legacySimulatorData_->mdAtoms,
-                                                             legacySimulatorData_->constr,
-                                                             legacySimulatorData_->vsite);
+    algorithm.topologyHolder_ = topologyHolderBuilder_.build(legacySimulatorData_->topGlobal_,
+                                                             legacySimulatorData_->top_,
+                                                             legacySimulatorData_->cr_,
+                                                             legacySimulatorData_->inputRec_,
+                                                             legacySimulatorData_->fr_,
+                                                             legacySimulatorData_->mdAtoms_,
+                                                             legacySimulatorData_->constr_,
+                                                             legacySimulatorData_->virtualSites_);
     registerWithInfrastructureAndSignallers(algorithm.topologyHolder_.get());
 
     // Build PME load balance helper
-    if (PmeLoadBalanceHelper::doPmeLoadBalancing(legacySimulatorData_->mdrunOptions,
-                                                 legacySimulatorData_->inputrec,
-                                                 legacySimulatorData_->fr,
-                                                 legacySimulatorData_->runScheduleWork->simulationWork))
+    if (PmeLoadBalanceHelper::doPmeLoadBalancing(legacySimulatorData_->mdrunOptions_,
+                                                 legacySimulatorData_->inputRec_,
+                                                 legacySimulatorData_->fr_,
+                                                 legacySimulatorData_->runScheduleWork_->simulationWork))
     {
         algorithm.pmeLoadBalanceHelper_ =
-                std::make_unique<PmeLoadBalanceHelper>(legacySimulatorData_->mdrunOptions.verbose,
+                std::make_unique<PmeLoadBalanceHelper>(legacySimulatorData_->mdrunOptions_.verbose,
                                                        algorithm.statePropagatorData_.get(),
-                                                       legacySimulatorData_->fplog,
-                                                       legacySimulatorData_->cr,
-                                                       legacySimulatorData_->mdlog,
-                                                       legacySimulatorData_->inputrec,
-                                                       legacySimulatorData_->wcycle,
-                                                       legacySimulatorData_->fr);
+                                                       legacySimulatorData_->fpLog_,
+                                                       legacySimulatorData_->cr_,
+                                                       legacySimulatorData_->mdLog_,
+                                                       legacySimulatorData_->inputRec_,
+                                                       legacySimulatorData_->wallCycleCounters_,
+                                                       legacySimulatorData_->fr_);
         registerWithInfrastructureAndSignallers(algorithm.pmeLoadBalanceHelper_.get());
     }
 
     // Build trajectory element
-    auto trajectoryElement = trajectoryElementBuilder_.build(legacySimulatorData_->fplog,
-                                                             legacySimulatorData_->nfile,
-                                                             legacySimulatorData_->fnm,
-                                                             legacySimulatorData_->mdrunOptions,
-                                                             legacySimulatorData_->cr,
-                                                             legacySimulatorData_->outputProvider,
-                                                             legacySimulatorData_->mdModulesNotifiers,
-                                                             legacySimulatorData_->inputrec,
-                                                             legacySimulatorData_->top_global,
-                                                             legacySimulatorData_->oenv,
-                                                             legacySimulatorData_->wcycle,
-                                                             legacySimulatorData_->startingBehavior,
+    auto trajectoryElement = trajectoryElementBuilder_.build(legacySimulatorData_->fpLog_,
+                                                             legacySimulatorData_->nFile_,
+                                                             legacySimulatorData_->fnm_,
+                                                             legacySimulatorData_->mdrunOptions_,
+                                                             legacySimulatorData_->cr_,
+                                                             legacySimulatorData_->outputProvider_,
+                                                             legacySimulatorData_->mdModulesNotifiers_,
+                                                             legacySimulatorData_->inputRec_,
+                                                             legacySimulatorData_->topGlobal_,
+                                                             legacySimulatorData_->oenv_,
+                                                             legacySimulatorData_->wallCycleCounters_,
+                                                             legacySimulatorData_->startingBehavior_,
                                                              simulationsShareState);
     registerWithInfrastructureAndSignallers(trajectoryElement.get());
 
     // Build domdec helper (free energy element is a client, so keep this after it is built)
-    if (haveDDAtomOrdering(*legacySimulatorData_->cr))
+    if (haveDDAtomOrdering(*legacySimulatorData_->cr_))
     {
         algorithm.domDecHelper_ =
-                domDecHelperBuilder_.build(legacySimulatorData_->mdrunOptions.verbose,
-                                           legacySimulatorData_->mdrunOptions.verboseStepPrintInterval,
+                domDecHelperBuilder_.build(legacySimulatorData_->mdrunOptions_.verbose,
+                                           legacySimulatorData_->mdrunOptions_.verboseStepPrintInterval,
                                            algorithm.statePropagatorData_.get(),
                                            algorithm.topologyHolder_.get(),
-                                           legacySimulatorData_->fplog,
-                                           legacySimulatorData_->cr,
-                                           legacySimulatorData_->mdlog,
-                                           legacySimulatorData_->constr,
-                                           legacySimulatorData_->inputrec,
-                                           legacySimulatorData_->mdAtoms,
-                                           legacySimulatorData_->nrnb,
-                                           legacySimulatorData_->wcycle,
-                                           legacySimulatorData_->fr,
-                                           legacySimulatorData_->vsite,
-                                           legacySimulatorData_->imdSession,
-                                           legacySimulatorData_->pull_work);
+                                           legacySimulatorData_->fpLog_,
+                                           legacySimulatorData_->cr_,
+                                           legacySimulatorData_->mdLog_,
+                                           legacySimulatorData_->constr_,
+                                           legacySimulatorData_->inputRec_,
+                                           legacySimulatorData_->mdAtoms_,
+                                           legacySimulatorData_->nrnb_,
+                                           legacySimulatorData_->wallCycleCounters_,
+                                           legacySimulatorData_->fr_,
+                                           legacySimulatorData_->virtualSites_,
+                                           legacySimulatorData_->imdSession_,
+                                           legacySimulatorData_->pullWork_);
         registerWithInfrastructureAndSignallers(algorithm.domDecHelper_.get());
     }
     // Build checkpoint helper (do this last so everyone else can be a checkpoint client!)
@@ -616,19 +616,19 @@ ModularSimulatorAlgorithm ModularSimulatorAlgorithmBuilder::build()
         checkpointHelperBuilder_.setCheckpointHandler(std::make_unique<CheckpointHandler>(
                 compat::make_not_null<SimulationSignal*>(&(*algorithm.signals_)[eglsCHKPT]),
                 simulationsShareState,
-                legacySimulatorData_->inputrec->nstlist == 0,
-                MAIN(legacySimulatorData_->cr),
-                legacySimulatorData_->mdrunOptions.writeConfout,
-                legacySimulatorData_->mdrunOptions.checkpointOptions.period));
+                legacySimulatorData_->inputRec_->nstlist == 0,
+                MAIN(legacySimulatorData_->cr_),
+                legacySimulatorData_->mdrunOptions_.writeConfout,
+                legacySimulatorData_->mdrunOptions_.checkpointOptions.period));
         algorithm.checkpointHelper_ =
-                checkpointHelperBuilder_.build(legacySimulatorData_->inputrec->init_step,
+                checkpointHelperBuilder_.build(legacySimulatorData_->inputRec_->init_step,
                                                trajectoryElement.get(),
-                                               legacySimulatorData_->fplog,
-                                               legacySimulatorData_->cr,
-                                               legacySimulatorData_->observablesHistory,
-                                               legacySimulatorData_->walltime_accounting,
-                                               legacySimulatorData_->state_global,
-                                               legacySimulatorData_->mdrunOptions.writeConfout);
+                                               legacySimulatorData_->fpLog_,
+                                               legacySimulatorData_->cr_,
+                                               legacySimulatorData_->observablesHistory_,
+                                               legacySimulatorData_->wallTimeAccounting_,
+                                               legacySimulatorData_->stateGlobal_,
+                                               legacySimulatorData_->mdrunOptions_.writeConfout);
         registerWithInfrastructureAndSignallers(algorithm.checkpointHelper_.get());
     }
 
@@ -653,7 +653,7 @@ ModularSimulatorAlgorithm ModularSimulatorAlgorithmBuilder::build()
             registerWithInfrastructureAndSignallers(signaller.get());
             algorithm.signallerList_.emplace(algorithm.signallerList_.begin(), std::move(signaller));
         };
-        const auto* inputrec   = legacySimulatorData_->inputrec;
+        const auto* inputrec   = legacySimulatorData_->inputRec_;
         auto        virialMode = EnergySignallerVirialMode::Off;
         if (inputrec->pressureCouplingOptions.epc != PressureCoupling::No)
         {
@@ -668,7 +668,7 @@ ModularSimulatorAlgorithm ModularSimulatorAlgorithmBuilder::build()
         }
         addSignaller(energySignallerBuilder_.build(
                 inputrec->nstcalcenergy,
-                computeFepPeriod(*inputrec, legacySimulatorData_->replExParams),
+                computeFepPeriod(*inputrec, legacySimulatorData_->replExParams_),
                 inputrec->pressureCouplingOptions.nstpcouple,
                 virialMode));
         addSignaller(trajectorySignallerBuilder_.build(inputrec->nstxout,
@@ -681,7 +681,7 @@ ModularSimulatorAlgorithm ModularSimulatorAlgorithmBuilder::build()
                                                        trajectoryElement->tngLambdaOutCompressed(),
                                                        inputrec->nstenergy));
         addSignaller(loggingSignallerBuilder_.build(
-                inputrec->nstlog, inputrec->init_step, legacySimulatorData_->startingBehavior));
+                inputrec->nstlog, inputrec->init_step, legacySimulatorData_->startingBehavior_));
         addSignaller(lastStepSignallerBuilder_.build(
                 inputrec->nsteps, inputrec->init_step, algorithm.stopHandler_.get()));
         addSignaller(neighborSearchSignallerBuilder_.build(

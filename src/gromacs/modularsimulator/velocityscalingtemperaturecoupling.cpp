@@ -748,18 +748,18 @@ ISimulatorElement* VelocityScalingTemperatureCoupling::getElementPointerImpl(
 {
     // Element is now owned by the caller of this method, who will handle lifetime (see ModularSimulatorAlgorithm)
     auto* element = builderHelper->storeElement(std::make_unique<VelocityScalingTemperatureCoupling>(
-            legacySimulatorData->inputrec->nsttcouple,
+            legacySimulatorData->inputRec_->nsttcouple,
             offset,
             useFullStepKE,
             reportPreviousStepConservedEnergy,
-            legacySimulatorData->inputrec->ld_seed,
-            legacySimulatorData->inputrec->opts.ngtc,
-            legacySimulatorData->inputrec->delta_t * legacySimulatorData->inputrec->nsttcouple,
-            legacySimulatorData->inputrec->opts.ref_t,
-            legacySimulatorData->inputrec->opts.tau_t,
-            legacySimulatorData->inputrec->opts.nrdf,
+            legacySimulatorData->inputRec_->ld_seed,
+            legacySimulatorData->inputRec_->opts.ngtc,
+            legacySimulatorData->inputRec_->delta_t * legacySimulatorData->inputRec_->nsttcouple,
+            legacySimulatorData->inputRec_->opts.ref_t,
+            legacySimulatorData->inputRec_->opts.tau_t,
+            legacySimulatorData->inputRec_->opts.nrdf,
             energyData,
-            legacySimulatorData->inputrec->etc));
+            legacySimulatorData->inputRec_->etc));
     auto* thermostat = static_cast<VelocityScalingTemperatureCoupling*>(element);
     // Capturing pointer is safe because lifetime is handled by caller
     builderHelper->registerTemperaturePressureControl(

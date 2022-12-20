@@ -210,13 +210,13 @@ ISimulatorElement* ExpandedEnsembleElement::getElementPointerImpl(
         ObservablesReducer* /*observablesReducer*/)
 {
     return builderHelper->storeElement(std::make_unique<ExpandedEnsembleElement>(
-            MAIN(legacySimulatorData->cr),
-            legacySimulatorData->inputrec->init_step,
-            legacySimulatorData->inputrec->expandedvals->nstexpanded,
+            MAIN(legacySimulatorData->cr_),
+            legacySimulatorData->inputRec_->init_step,
+            legacySimulatorData->inputRec_->expandedvals->nstexpanded,
             energyData,
             freeEnergyPerturbationData,
-            legacySimulatorData->fplog,
-            legacySimulatorData->inputrec));
+            legacySimulatorData->fpLog_,
+            legacySimulatorData->inputRec_));
 }
 
 } // namespace gmx

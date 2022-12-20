@@ -240,15 +240,15 @@ ISimulatorElement* ConstraintsElement<variable>::getElementPointerImpl(
         GlobalCommunicationHelper gmx_unused* globalCommunicationHelper,
         ObservablesReducer* /*observablesReducer*/)
 {
-    return builderHelper->storeElement(
-            std::make_unique<ConstraintsElement<variable>>(legacySimulatorData->constr,
-                                                           statePropagatorData,
-                                                           energyData,
-                                                           freeEnergyPerturbationData,
-                                                           MAIN(legacySimulatorData->cr),
-                                                           legacySimulatorData->fplog,
-                                                           legacySimulatorData->inputrec,
-                                                           legacySimulatorData->mdAtoms->mdatoms()));
+    return builderHelper->storeElement(std::make_unique<ConstraintsElement<variable>>(
+            legacySimulatorData->constr_,
+            statePropagatorData,
+            energyData,
+            freeEnergyPerturbationData,
+            MAIN(legacySimulatorData->cr_),
+            legacySimulatorData->fpLog_,
+            legacySimulatorData->inputRec_,
+            legacySimulatorData->mdAtoms_->mdatoms()));
 }
 
 // Explicit template initializations

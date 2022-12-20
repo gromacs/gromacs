@@ -157,20 +157,20 @@ ISimulatorElement* AndersenTemperatureCoupling::getElementPointerImpl(
         GlobalCommunicationHelper gmx_unused* globalCommunicationHelper,
         ObservablesReducer gmx_unused* observablesReducer)
 {
-    GMX_RELEASE_ASSERT(legacySimulatorData->inputrec->etc == TemperatureCoupling::Andersen
-                               || legacySimulatorData->inputrec->etc == TemperatureCoupling::AndersenMassive,
+    GMX_RELEASE_ASSERT(legacySimulatorData->inputRec_->etc == TemperatureCoupling::Andersen
+                               || legacySimulatorData->inputRec_->etc == TemperatureCoupling::AndersenMassive,
                        "Expected the thermostat type to be andersen or andersen-massive.");
     auto andersenThermostat = std::make_unique<AndersenTemperatureCoupling>(
-            legacySimulatorData->inputrec->delta_t,
-            legacySimulatorData->inputrec->etc == TemperatureCoupling::AndersenMassive,
-            legacySimulatorData->inputrec->andersen_seed,
-            constArrayRefFromArray(legacySimulatorData->inputrec->opts.ref_t,
-                                   legacySimulatorData->inputrec->opts.ngtc),
-            constArrayRefFromArray(legacySimulatorData->inputrec->opts.tau_t,
-                                   legacySimulatorData->inputrec->opts.ngtc),
+            legacySimulatorData->inputRec_->delta_t,
+            legacySimulatorData->inputRec_->etc == TemperatureCoupling::AndersenMassive,
+            legacySimulatorData->inputRec_->andersen_seed,
+            constArrayRefFromArray(legacySimulatorData->inputRec_->opts.ref_t,
+                                   legacySimulatorData->inputRec_->opts.ngtc),
+            constArrayRefFromArray(legacySimulatorData->inputRec_->opts.tau_t,
+                                   legacySimulatorData->inputRec_->opts.ngtc),
             statePropagatorData,
-            legacySimulatorData->mdAtoms,
-            legacySimulatorData->cr);
+            legacySimulatorData->mdAtoms_,
+            legacySimulatorData->cr_);
     auto* andersenThermostatPtr = andersenThermostat.get();
     builderHelper->registerReferenceTemperatureUpdate(
             [andersenThermostatPtr](ArrayRef<const real>                temperatures,
@@ -188,23 +188,23 @@ ISimulatorElement* AndersenTemperatureCoupling::getElementPointerImpl(
     elements.emplace_back(std::move(andersenThermostat));
 
     // If there are constraints, add constraint element after Andersen element
-    if (legacySimulatorData->constr)
+    if (legacySimulatorData->constr_)
     {
         // This is excluded in preprocessing -
         // asserted here to make sure things don't get out of sync
         GMX_RELEASE_ASSERT(
-                legacySimulatorData->inputrec->etc == TemperatureCoupling::AndersenMassive,
+                legacySimulatorData->inputRec_->etc == TemperatureCoupling::AndersenMassive,
                 "Per-particle Andersen thermostat is not implemented for systems with constrains.");
         // Build constraint element
         auto constraintElement = std::make_unique<ConstraintsElement<ConstraintVariable::Velocities>>(
-                legacySimulatorData->constr,
+                legacySimulatorData->constr_,
                 statePropagatorData,
                 energyData,
                 freeEnergyPerturbationData,
-                MAIN(legacySimulatorData->cr),
-                legacySimulatorData->fplog,
-                legacySimulatorData->inputrec,
-                legacySimulatorData->mdAtoms->mdatoms());
+                MAIN(legacySimulatorData->cr_),
+                legacySimulatorData->fpLog_,
+                legacySimulatorData->inputRec_,
+                legacySimulatorData->mdAtoms_->mdatoms());
         // Add call to composite element call list
         elementCallList.emplace_back(compat::make_not_null(constraintElement.get()));
         // Move ownership of constraint element to composite element

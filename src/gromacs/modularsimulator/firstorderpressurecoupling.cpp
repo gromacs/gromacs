@@ -262,16 +262,16 @@ ISimulatorElement* FirstOrderPressureCoupling::getElementPointerImpl(
         ReportPreviousStepConservedEnergy reportPreviousStepConservedEnergy)
 {
     return builderHelper->storeElement(std::make_unique<FirstOrderPressureCoupling>(
-            legacySimulatorData->inputrec->pressureCouplingOptions.nstpcouple,
+            legacySimulatorData->inputRec_->pressureCouplingOptions.nstpcouple,
             offset,
-            legacySimulatorData->inputrec->delta_t
-                    * legacySimulatorData->inputrec->pressureCouplingOptions.nstpcouple,
+            legacySimulatorData->inputRec_->delta_t
+                    * legacySimulatorData->inputRec_->pressureCouplingOptions.nstpcouple,
             statePropagatorData,
             energyData,
-            legacySimulatorData->fplog,
-            legacySimulatorData->inputrec,
-            legacySimulatorData->mdAtoms,
-            legacySimulatorData->nrnb,
+            legacySimulatorData->fpLog_,
+            legacySimulatorData->inputRec_,
+            legacySimulatorData->mdAtoms_,
+            legacySimulatorData->nrnb_,
             reportPreviousStepConservedEnergy));
 }
 

@@ -147,120 +147,120 @@ public:
                         gmx_walltime_accounting*            walltime_accounting,
                         std::unique_ptr<StopHandlerBuilder> stopHandlerBuilder,
                         bool                                doRerun) :
-        fplog(fplog),
-        cr(cr),
-        ms(ms),
-        mdlog(mdlog),
-        nfile(nfile),
-        fnm(fnm),
-        oenv(oenv),
-        mdrunOptions(mdrunOptions),
-        startingBehavior(startingBehavior),
-        vsite(vsite),
-        constr(constr),
-        enforcedRotation(enforcedRotation),
-        deform(deform),
-        outputProvider(outputProvider),
-        mdModulesNotifiers(mdModulesNotifiers),
-        inputrec(inputrec),
-        imdSession(imdSession),
-        pull_work(pull_work),
-        swap(swap),
-        top_global(top_global),
-        top(top),
-        state_global(state_global),
-        state(state),
-        observablesHistory(observablesHistory),
-        mdAtoms(mdAtoms),
-        nrnb(nrnb),
-        wcycle(wcycle),
-        fr(fr),
-        enerd(enerd),
-        observablesReducerBuilder(observablesReducerBuilder),
-        ekind(ekind),
-        runScheduleWork(runScheduleWork),
-        replExParams(replExParams),
-        membed(membed),
-        walltime_accounting(walltime_accounting),
-        stopHandlerBuilder(std::move(stopHandlerBuilder)),
-        doRerun(doRerun)
+        fpLog_(fplog),
+        cr_(cr),
+        ms_(ms),
+        mdLog_(mdlog),
+        nFile_(nfile),
+        fnm_(fnm),
+        oenv_(oenv),
+        mdrunOptions_(mdrunOptions),
+        startingBehavior_(startingBehavior),
+        virtualSites_(vsite),
+        constr_(constr),
+        enforcedRotation_(enforcedRotation),
+        deform_(deform),
+        outputProvider_(outputProvider),
+        mdModulesNotifiers_(mdModulesNotifiers),
+        inputRec_(inputrec),
+        imdSession_(imdSession),
+        pullWork_(pull_work),
+        swap_(swap),
+        topGlobal_(top_global),
+        top_(top),
+        stateGlobal_(state_global),
+        state_(state),
+        observablesHistory_(observablesHistory),
+        mdAtoms_(mdAtoms),
+        nrnb_(nrnb),
+        wallCycleCounters_(wcycle),
+        fr_(fr),
+        enerd_(enerd),
+        observablesReducerBuilder_(observablesReducerBuilder),
+        ekind_(ekind),
+        runScheduleWork_(runScheduleWork),
+        replExParams_(replExParams),
+        membed_(membed),
+        wallTimeAccounting_(walltime_accounting),
+        stopHandlerBuilder_(std::move(stopHandlerBuilder)),
+        doRerun_(doRerun)
     {
     }
 
     //! Handles logging.
-    FILE* fplog;
+    FILE* fpLog_;
     //! Handles communication.
-    t_commrec* cr;
+    t_commrec* cr_;
     //! Coordinates multi-simulations.
-    const gmx_multisim_t* ms;
+    const gmx_multisim_t* ms_;
     //! Handles logging.
-    const MDLogger& mdlog;
+    const MDLogger& mdLog_;
     //! Count of input file options.
-    int nfile;
+    int nFile_;
     //! Content of input file options.
-    const t_filenm* fnm;
+    const t_filenm* fnm_;
     //! Handles writing text output.
-    const gmx_output_env_t* oenv;
+    const gmx_output_env_t* oenv_;
     //! Contains command-line options to mdrun.
-    const MdrunOptions& mdrunOptions;
+    const MdrunOptions& mdrunOptions_;
     //! Whether the simulation will start afresh, or restart with/without appending.
-    const StartingBehavior startingBehavior;
+    const StartingBehavior startingBehavior_;
     //! Handles virtual sites.
-    VirtualSitesHandler* vsite;
+    VirtualSitesHandler* virtualSites_;
     //! Handles constraints.
-    Constraints* constr;
+    Constraints* constr_;
     //! Handles enforced rotation.
-    gmx_enfrot* enforcedRotation;
+    gmx_enfrot* enforcedRotation_;
     //! Handles box deformation.
-    BoxDeformation* deform;
+    BoxDeformation* deform_;
     //! Handles writing output files.
-    IMDOutputProvider* outputProvider;
+    IMDOutputProvider* outputProvider_;
     //! Handles notifications to MDModules for checkpoint writing
-    const MDModulesNotifiers& mdModulesNotifiers;
+    const MDModulesNotifiers& mdModulesNotifiers_;
     //! Contains user input mdp options. Note: The const-ness is casted away in a few instances, see #3854.
-    const t_inputrec* inputrec;
+    const t_inputrec* inputRec_;
     //! The Interactive Molecular Dynamics session.
-    ImdSession* imdSession;
+    ImdSession* imdSession_;
     //! The pull work object.
-    pull_t* pull_work;
+    pull_t* pullWork_;
     //! The coordinate-swapping session.
-    t_swap* swap;
+    t_swap* swap_;
     //! Full system topology.
-    const gmx_mtop_t& top_global;
+    const gmx_mtop_t& topGlobal_;
     //! Handle to local simulation topology.
-    gmx_localtop_t* top;
+    gmx_localtop_t* top_;
     //! Full simulation state (only non-nullptr on main rank).
-    t_state* state_global;
+    t_state* stateGlobal_;
     //! Handle to local state of the simulation.
-    t_state* state;
+    t_state* state_;
     //! History of simulation observables.
-    ObservablesHistory* observablesHistory;
+    ObservablesHistory* observablesHistory_;
     //! Atom parameters for this domain.
-    MDAtoms* mdAtoms;
+    MDAtoms* mdAtoms_;
     //! Manages flop accounting.
-    t_nrnb* nrnb;
+    t_nrnb* nrnb_;
     //! Manages wall cycle accounting.
-    gmx_wallcycle* wcycle;
+    gmx_wallcycle* wallCycleCounters_;
     //! Parameters for force calculations.
-    t_forcerec* fr;
+    t_forcerec* fr_;
     //! Data for energy output.
-    gmx_enerdata_t* enerd;
+    gmx_enerdata_t* enerd_;
     //! Builder for coordinator of reduction for observables
-    ObservablesReducerBuilder* observablesReducerBuilder;
+    ObservablesReducerBuilder* observablesReducerBuilder_;
     //! Kinetic energy data.
-    gmx_ekindata_t* ekind;
+    gmx_ekindata_t* ekind_;
     //! Schedule of work for each MD step for this task.
-    MdrunScheduleWorkload* runScheduleWork;
+    MdrunScheduleWorkload* runScheduleWork_;
     //! Parameters for replica exchange algorihtms.
-    const ReplicaExchangeParameters& replExParams;
+    const ReplicaExchangeParameters& replExParams_;
     //! Parameters for membrane embedding.
-    gmx_membed_t* membed;
+    gmx_membed_t* membed_;
     //! Manages wall time accounting.
-    gmx_walltime_accounting* walltime_accounting;
+    gmx_walltime_accounting* wallTimeAccounting_;
     //! Registers stop conditions
-    std::unique_ptr<StopHandlerBuilder> stopHandlerBuilder;
+    std::unique_ptr<StopHandlerBuilder> stopHandlerBuilder_;
     //! Whether we're doing a rerun.
-    bool doRerun;
+    bool doRerun_;
 };
 
 } // namespace gmx

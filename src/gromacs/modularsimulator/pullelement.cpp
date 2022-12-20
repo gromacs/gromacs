@@ -168,12 +168,12 @@ ISimulatorElement* PullElement::getElementPointerImpl(LegacySimulatorData* legac
                                                       ObservablesReducer* /*observablesReducer*/)
 {
     auto* pullElement = builderHelper->storeElement(std::make_unique<PullElement>(
-            legacySimulatorData->inputrec->pull->bSetPbcRefToPrevStepCOM,
-            legacySimulatorData->inputrec->pbcType,
+            legacySimulatorData->inputRec_->pull->bSetPbcRefToPrevStepCOM,
+            legacySimulatorData->inputRec_->pbcType,
             statePropagatorData,
-            legacySimulatorData->pull_work,
-            legacySimulatorData->cr,
-            legacySimulatorData->mdAtoms));
+            legacySimulatorData->pullWork_,
+            legacySimulatorData->cr_,
+            legacySimulatorData->mdAtoms_));
     // Printing output is scheduled after the step
     builderHelper->registerPostStepScheduling(
             [pullElement](Step step, Time time, const RegisterRunFunction& registerRunFunction) {

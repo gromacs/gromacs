@@ -352,16 +352,16 @@ ISimulatorElement* ParrinelloRahmanBarostat::getElementPointerImpl(
         const PropagatorTag& propagatorTag)
 {
     auto* element  = builderHelper->storeElement(std::make_unique<ParrinelloRahmanBarostat>(
-            legacySimulatorData->inputrec->pressureCouplingOptions.nstpcouple,
+            legacySimulatorData->inputRec_->pressureCouplingOptions.nstpcouple,
             offset,
-            legacySimulatorData->inputrec->delta_t
-                    * legacySimulatorData->inputrec->pressureCouplingOptions.nstpcouple,
-            legacySimulatorData->inputrec->init_step,
+            legacySimulatorData->inputRec_->delta_t
+                    * legacySimulatorData->inputRec_->pressureCouplingOptions.nstpcouple,
+            legacySimulatorData->inputRec_->init_step,
             statePropagatorData,
             energyData,
-            legacySimulatorData->mdlog,
-            legacySimulatorData->inputrec,
-            legacySimulatorData->mdAtoms));
+            legacySimulatorData->mdLog_,
+            legacySimulatorData->inputRec_,
+            legacySimulatorData->mdAtoms_));
     auto* barostat = static_cast<ParrinelloRahmanBarostat*>(element);
     builderHelper->registerTemperaturePressureControl(
             [barostat, propagatorTag](const PropagatorConnection& connection) {
