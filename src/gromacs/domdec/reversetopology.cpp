@@ -122,10 +122,10 @@ bool dd_check_ftype(const int ftype, const ReverseTopOptions& rtOptions)
 {
     return ((((interaction_function[ftype].flags & IF_BOND) != 0U)
              && ((interaction_function[ftype].flags & IF_VSITE) == 0U)
-             && ((rtOptions.ddBondedChecking == DDBondedChecking::All)
+             && ((rtOptions.ddBondedChecking_ == DDBondedChecking::All)
                  || ((interaction_function[ftype].flags & IF_LIMZERO) == 0U)))
-            || (rtOptions.includeConstraints && (ftype == F_CONSTR || ftype == F_CONSTRNC))
-            || (rtOptions.includeSettles && ftype == F_SETTLE));
+            || (rtOptions.includeConstraints_ && (ftype == F_CONSTR || ftype == F_CONSTRNC))
+            || (rtOptions.includeSettles_ && ftype == F_SETTLE));
 }
 
 MolecularTopologyAtomIndices globalAtomIndexToMoltypeIndices(const gmx::ArrayRef<const MolblockIndices> molblockIndices,
@@ -193,8 +193,8 @@ static void low_make_reverse_ilist(const InteractionLists&  il_mt,
                                    const AtomLinkRule       atomLinkRule,
                                    const bool               assignReverseIlist)
 {
-    const bool includeConstraints = rtOptions.includeConstraints;
-    const bool includeSettles     = rtOptions.includeSettles;
+    const bool includeConstraints = rtOptions.includeConstraints_;
+    const bool includeSettles     = rtOptions.includeSettles_;
 
     for (int ftype = 0; ftype < F_NRE; ftype++)
     {

@@ -651,7 +651,7 @@ static int make_bondeds_zone(const gmx_reverse_top_t&           rt,
                              int                                izone,
                              const gmx::Range<int>&             atomRange)
 {
-    const auto ddBondedChecking = rt.options().ddBondedChecking;
+    const auto ddBondedChecking = rt.options().ddBondedChecking_;
 
     int numBondedInteractions = 0;
 
