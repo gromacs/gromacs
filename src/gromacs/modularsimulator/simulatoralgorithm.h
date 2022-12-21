@@ -263,23 +263,23 @@ private:
     //! Name of the topology
     std::string topologyName_;
     //! Handles logging.
-    FILE* fplog;
+    FILE* fpLog_;
     //! Handles communication.
-    t_commrec* cr;
+    t_commrec* cr_;
     //! Handles logging.
-    const MDLogger& mdlog;
+    const MDLogger& mdLog_;
     //! Contains command-line options to mdrun.
-    const MdrunOptions& mdrunOptions;
+    const MdrunOptions& mdrunOptions_;
     //! Contains user input mdp options.
-    const t_inputrec* inputrec;
+    const t_inputrec* inputRec_;
     //! Manages flop accounting.
-    t_nrnb* nrnb;
+    t_nrnb* nrnb_;
     //! Manages wall cycle accounting.
-    gmx_wallcycle* wcycle;
+    gmx_wallcycle* wallCycle_;
     //! Parameters for force calculations.
-    t_forcerec* fr;
+    t_forcerec* fr_;
     //! Manages wall time accounting.
-    gmx_walltime_accounting* walltime_accounting;
+    gmx_walltime_accounting* wallTimeAccounting_;
 };
 
 /*! \internal

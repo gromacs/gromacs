@@ -105,15 +105,15 @@ ModularSimulatorAlgorithm::ModularSimulatorAlgorithm(std::string              to
     step_(-1),
     runFinished_(false),
     topologyName_(std::move(topologyName)),
-    fplog(fplog),
-    cr(cr),
-    mdlog(mdlog),
-    mdrunOptions(mdrunOptions),
-    inputrec(inputrec),
-    nrnb(nrnb),
-    wcycle(wcycle),
-    fr(fr),
-    walltime_accounting(walltime_accounting)
+    fpLog_(fplog),
+    cr_(cr),
+    mdLog_(mdlog),
+    mdrunOptions_(mdrunOptions),
+    inputRec_(inputrec),
+    nrnb_(nrnb),
+    wallCycle_(wcycle),
+    fr_(fr),
+    wallTimeAccounting_(walltime_accounting)
 {
     signalHelper_ = std::make_unique<SignalHelper>();
 }
@@ -185,69 +185,70 @@ void ModularSimulatorAlgorithm::teardown()
 
 void ModularSimulatorAlgorithm::simulatorSetup()
 {
-    if (!mdrunOptions.writeConfout)
+    if (!mdrunOptions_.writeConfout)
     {
         // This is on by default, and the main known use case for
         // turning it off is for convenience in benchmarking, which is
         // something that should not show up in the general user
         // interface.
-        GMX_LOG(mdlog.info)
+        GMX_LOG(mdLog_.info)
                 .asParagraph()
                 .appendText(
                         "The -noconfout functionality is deprecated, and "
                         "may be removed in a future version.");
     }
 
-    if (MAIN(cr))
+    if (MAIN(cr_))
     {
         char        sbuf[STEPSTRSIZE], sbuf2[STEPSTRSIZE];
         std::string timeString;
         fprintf(stderr, "starting mdrun '%s'\n", topologyName_.c_str());
-        if (inputrec->nsteps >= 0)
+        if (inputRec_->nsteps >= 0)
         {
-            timeString = formatString(
-                    "%8.1f", static_cast<double>(inputrec->init_step + inputrec->nsteps) * inputrec->delta_t);
+            timeString = formatString("%8.1f",
+                                      static_cast<double>(inputRec_->init_step + inputRec_->nsteps)
+                                              * inputRec_->delta_t);
         }
         else
         {
             timeString = "infinite";
         }
-        if (inputrec->init_step > 0)
+        if (inputRec_->init_step > 0)
         {
             fprintf(stderr,
                     "%s steps, %s ps (continuing from step %s, %8.1f ps).\n",
-                    gmx_step_str(inputrec->init_step + inputrec->nsteps, sbuf),
+                    gmx_step_str(inputRec_->init_step + inputRec_->nsteps, sbuf),
                     timeString.c_str(),
-                    gmx_step_str(inputrec->init_step, sbuf2),
-                    inputrec->init_step * inputrec->delta_t);
+                    gmx_step_str(inputRec_->init_step, sbuf2),
+                    inputRec_->init_step * inputRec_->delta_t);
         }
         else
         {
-            fprintf(stderr, "%s steps, %s ps.\n", gmx_step_str(inputrec->nsteps, sbuf), timeString.c_str());
+            fprintf(stderr, "%s steps, %s ps.\n", gmx_step_str(inputRec_->nsteps, sbuf), timeString.c_str());
         }
-        fprintf(fplog, "\n");
+        fprintf(fpLog_, "\n");
     }
 
-    walltime_accounting_start_time(walltime_accounting);
-    wallcycle_start(wcycle, WallCycleCounter::Run);
-    print_start(fplog, cr, walltime_accounting, "mdrun");
+    walltime_accounting_start_time(wallTimeAccounting_);
+    wallcycle_start(wallCycle_, WallCycleCounter::Run);
+    print_start(fpLog_, cr_, wallTimeAccounting_, "mdrun");
 
-    step_ = inputrec->init_step;
+    step_ = inputRec_->init_step;
 }
 
 void ModularSimulatorAlgorithm::simulatorTeardown()
 {
 
     // Stop measuring walltime
-    walltime_accounting_end_time(walltime_accounting);
+    walltime_accounting_end_time(wallTimeAccounting_);
 
-    if (!thisRankHasDuty(cr, DUTY_PME))
+    if (!thisRankHasDuty(cr_, DUTY_PME))
     {
         /* Tell the PME only node to finish */
-        gmx_pme_send_finish(cr);
+        gmx_pme_send_finish(cr_);
     }
 
-    walltime_accounting_set_nsteps_done(walltime_accounting, step_ - inputrec->init_step);
+    walltime_accounting_set_nsteps_done(wallTimeAccounting_, step_ - inputRec_->init_step);
 }
 
 void ModularSimulatorAlgorithm::preStep(Step step, Time gmx_unused time, bool isNeighborSearchingStep)
@@ -267,7 +268,7 @@ void ModularSimulatorAlgorithm::preStep(Step step, Time gmx_unused time, bool is
         return;
     }
 
-    resetHandler_->setSignal(walltime_accounting);
+    resetHandler_->setSignal(wallTimeAccounting_);
     // This is a hack to avoid having to rewrite StopHandler to be a NeighborSearchSignaller
     // and accept the step as input. Eventually, we want to do that, but currently this would
     // require introducing NeighborSearchSignaller in the legacy do_md or a lot of code
@@ -276,49 +277,49 @@ void ModularSimulatorAlgorithm::preStep(Step step, Time gmx_unused time, bool is
     stophandlerCurrentStep_ = step;
     stopHandler_->setSignal();
 
-    wallcycle_start(wcycle, WallCycleCounter::Step);
+    wallcycle_start(wallCycle_, WallCycleCounter::Step);
 }
 
 void ModularSimulatorAlgorithm::postStep(Step step, Time gmx_unused time)
 {
     // Output stuff
-    if (MAIN(cr))
+    if (MAIN(cr_))
     {
-        if (do_per_step(step, inputrec->nstlog))
+        if (do_per_step(step, inputRec_->nstlog))
         {
-            if (fflush(fplog) != 0)
+            if (fflush(fpLog_) != 0)
             {
                 gmx_fatal(FARGS, "Cannot flush logfile - maybe you are out of disk space?");
             }
         }
     }
-    const bool do_verbose = mdrunOptions.verbose
-                            && (step % mdrunOptions.verboseStepPrintInterval == 0
-                                || step == inputrec->init_step || step == signalHelper_->lastStep_);
+    const bool do_verbose = mdrunOptions_.verbose
+                            && (step % mdrunOptions_.verboseStepPrintInterval == 0
+                                || step == inputRec_->init_step || step == signalHelper_->lastStep_);
     // Print the remaining wall clock time for the run
-    if (MAIN(cr) && (do_verbose || gmx_got_usr_signal())
+    if (MAIN(cr_) && (do_verbose || gmx_got_usr_signal())
         && !(pmeLoadBalanceHelper_ && pmeLoadBalanceHelper_->pmePrinting()))
     {
-        print_time(stderr, walltime_accounting, step, inputrec, cr);
+        print_time(stderr, wallTimeAccounting_, step, inputRec_, cr_);
     }
 
-    double cycles = wallcycle_stop(wcycle, WallCycleCounter::Step);
-    if (haveDDAtomOrdering(*cr) && wcycle)
+    double cycles = wallcycle_stop(wallCycle_, WallCycleCounter::Step);
+    if (haveDDAtomOrdering(*cr_) && wallCycle_)
     {
-        dd_cycles_add(cr->dd, static_cast<float>(cycles), ddCyclStep);
+        dd_cycles_add(cr_->dd, static_cast<float>(cycles), ddCyclStep);
     }
 
     resetHandler_->resetCounters(step,
-                                 step - inputrec->init_step,
-                                 mdlog,
-                                 fplog,
-                                 cr,
-                                 fr->nbv.get(),
-                                 nrnb,
-                                 fr->pmedata,
+                                 step - inputRec_->init_step,
+                                 mdLog_,
+                                 fpLog_,
+                                 cr_,
+                                 fr_->nbv.get(),
+                                 nrnb_,
+                                 fr_->pmedata,
                                  pmeLoadBalanceHelper_ ? pmeLoadBalanceHelper_->loadBalancingObject() : nullptr,
-                                 wcycle,
-                                 walltime_accounting);
+                                 wallCycle_,
+                                 wallTimeAccounting_);
 }
 
 void ModularSimulatorAlgorithm::populateTaskQueue()
@@ -333,8 +334,8 @@ void ModularSimulatorAlgorithm::populateTaskQueue()
         taskQueue_.emplace_back(std::move(function));
     };
 
-    Time startTime = inputrec->init_t;
-    Time timeStep  = inputrec->delta_t;
+    Time startTime = inputRec_->init_t;
+    Time timeStep  = inputRec_->delta_t;
     Time time      = startTime + step_ * timeStep;
 
     // Run an initial call to the signallers
