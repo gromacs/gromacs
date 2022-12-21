@@ -542,12 +542,12 @@ void printBinaryInformation(TextWriter*                      writer,
                 formatString("%sExecutable:   %s%s", prefix, binaryPath.u8string().c_str(), suffix));
     }
     const gmx::InstallationPrefixInfo installPrefix = programContext.installationPrefix();
-    if (!installPrefix.path.empty())
+    if (!installPrefix.path_.empty())
     {
         writer->writeLine(formatString("%sData prefix:  %s%s%s",
                                        prefix,
-                                       installPrefix.path.u8string().c_str(),
-                                       installPrefix.bSourceLayout ? " (source tree)" : "",
+                                       installPrefix.path_.u8string().c_str(),
+                                       installPrefix.sourceLayoutTreeLike_ ? " (source tree)" : "",
                                        suffix));
     }
     const auto workingDir = std::filesystem::current_path();

@@ -80,10 +80,10 @@ public:
 std::filesystem::path DataFileFinder::Impl::getDefaultPath()
 {
     const InstallationPrefixInfo installPrefix = getProgramContext().installationPrefix();
-    if (!installPrefix.path.empty())
+    if (!installPrefix.path_.empty())
     {
-        const char* const dataPath = installPrefix.bSourceLayout ? "share" : GMX_INSTALL_GMXDATADIR;
-        return std::filesystem::path(installPrefix.path).append(dataPath).append("top");
+        const char* const dataPath = installPrefix.sourceLayoutTreeLike_ ? "share" : GMX_INSTALL_GMXDATADIR;
+        return std::filesystem::path(installPrefix.path_).append(dataPath).append("top");
     }
     return std::filesystem::path();
 }

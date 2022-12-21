@@ -60,7 +60,7 @@ struct InstallationPrefixInfo
 {
     //! Initializes the structure with given values.
     InstallationPrefixInfo(const std::filesystem::path& path, bool bSource) :
-        path(path), bSourceLayout(bSource)
+        path_(path), sourceLayoutTreeLike_(bSource)
     {
     }
 
@@ -71,7 +71,7 @@ struct InstallationPrefixInfo
      * install tree and \Gromacs functions that access such files may fail.
      * This can also contain a path to the source tree (see \a bSourceLayout).
      */
-    std::filesystem::path path;
+    std::filesystem::path path_;
     /*! \brief
      * Whether \a path points to a source tree -like layout.
      *
@@ -81,7 +81,7 @@ struct InstallationPrefixInfo
      * should be searched using the layout of the source tree instead of the
      * installation.
      */
-    const bool bSourceLayout;
+    const bool sourceLayoutTreeLike_;
 };
 
 

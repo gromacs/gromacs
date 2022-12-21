@@ -231,10 +231,10 @@ static std::filesystem::path getSourceRootPath(const std::string& sourceRelative
     {
         /* Normal way of getting ocl_root_dir. First get the right
            root path from the path to the binary that is running. */
-        InstallationPrefixInfo info           = getProgramContext().installationPrefix();
-        std::string            dataPathSuffix = (info.bSourceLayout ? "src" : GMX_INSTALL_OCLDIR);
+        InstallationPrefixInfo info = getProgramContext().installationPrefix();
+        std::string dataPathSuffix  = (info.sourceLayoutTreeLike_ ? "src" : GMX_INSTALL_OCLDIR);
         sourceRootPath =
-                std::filesystem::path(info.path).append(dataPathSuffix).append(sourceRelativePath);
+                std::filesystem::path(info.path_).append(dataPathSuffix).append(sourceRelativePath);
     }
     else
     {
