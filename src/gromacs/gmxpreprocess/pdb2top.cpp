@@ -151,7 +151,7 @@ choose_ff_impl(const char* ffsel, char* forcefield, int ff_maxlen, const gmx::MD
     ffs.reserve(ffdirs.size());
     for (int i = 0; i < nff; ++i)
     {
-        ffs.push_back(gmx::stripSuffixIfPresent(ffdirs[i].name.u8string(),
+        ffs.push_back(gmx::stripSuffixIfPresent(ffdirs[i].name_.u8string(),
                                                 fflib_forcefield_dir_ext().u8string().c_str()));
     }
 
@@ -169,7 +169,7 @@ choose_ff_impl(const char* ffsel, char* forcefield, int ff_maxlen, const gmx::MD
                 sel = i;
                 nfound++;
 
-                if (ffdirs[i].dir == ".")
+                if (ffdirs[i].dir_ == ".")
                 {
                     cwdsel = i;
                 }
@@ -221,8 +221,8 @@ choose_ff_impl(const char* ffsel, char* forcefield, int ff_maxlen, const gmx::MD
         desc.reserve(ffdirs.size());
         for (int i = 0; i < nff; ++i)
         {
-            auto docFileName = std::filesystem::path(ffdirs[i].dir)
-                                       .append(ffdirs[i].name.string())
+            auto docFileName = std::filesystem::path(ffdirs[i].dir_)
+                                       .append(ffdirs[i].name_.string())
                                        .append(fflib_forcefield_doc().string());
             // TODO: Just try to open the file with a method that does not
             // throw/bail out with a fatal error instead of multiple checks.
@@ -248,12 +248,12 @@ choose_ff_impl(const char* ffsel, char* forcefield, int ff_maxlen, const gmx::MD
         {
             for (int j = i + 1; j < nff; ++j)
             {
-                if (ffdirs[i].dir == ffdirs[j].dir
+                if (ffdirs[i].dir_ == ffdirs[j].dir_
                     && ((desc[i][0] == '[' && desc[j][0] != '[')
                         || ((desc[i][0] == '[' || desc[j][0] != '[')
                             && gmx_strcasecmp(desc[i].c_str(), desc[j].c_str()) > 0)))
                 {
-                    std::swap(ffdirs[i].name, ffdirs[j].name);
+                    std::swap(ffdirs[i].name_, ffdirs[j].name_);
                     std::swap(ffs[i], ffs[j]);
                     std::swap(desc[i], desc[j]);
                 }
@@ -263,9 +263,9 @@ choose_ff_impl(const char* ffsel, char* forcefield, int ff_maxlen, const gmx::MD
         GMX_LOG(logger.info).asParagraph().appendTextFormatted("Select the Force Field:");
         for (int i = 0; i < nff; ++i)
         {
-            if (i == 0 || ffdirs[i - 1].dir != ffdirs[i].dir)
+            if (i == 0 || ffdirs[i - 1].dir_ != ffdirs[i].dir_)
             {
-                if (ffdirs[i].dir == ".")
+                if (ffdirs[i].dir_ == ".")
                 {
                     GMX_LOG(logger.info)
                             .asParagraph()
@@ -275,7 +275,7 @@ choose_ff_impl(const char* ffsel, char* forcefield, int ff_maxlen, const gmx::MD
                 {
                     GMX_LOG(logger.info)
                             .asParagraph()
-                            .appendTextFormatted("From '%s':", ffdirs[i].dir.u8string().c_str());
+                            .appendTextFormatted("From '%s':", ffdirs[i].dir_.u8string().c_str());
                 }
             }
             GMX_LOG(logger.info).asParagraph().appendTextFormatted("%2d: %s", i + 1, desc[i].c_str());
@@ -334,13 +334,13 @@ choose_ff_impl(const char* ffsel, char* forcefield, int ff_maxlen, const gmx::MD
     strcpy(forcefield, ffs[sel].c_str());
 
     std::filesystem::path ffpath;
-    if (ffdirs[sel].bFromDefaultDir)
+    if (ffdirs[sel].fromDefaultDir_)
     {
-        ffpath = ffdirs[sel].name;
+        ffpath = ffdirs[sel].name_;
     }
     else
     {
-        ffpath = std::filesystem::path(ffdirs[sel].dir).append(ffdirs[sel].name.string());
+        ffpath = std::filesystem::path(ffdirs[sel].dir_).append(ffdirs[sel].name_.string());
     }
     return ffpath;
 }

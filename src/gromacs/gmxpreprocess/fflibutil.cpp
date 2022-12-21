@@ -107,7 +107,7 @@ std::vector<gmx::DataFileInfo> fflib_enumerate_forcefields()
     std::vector<gmx::DataFileInfo> result;
     for (const auto& candidate : candidates)
     {
-        auto testPath = std::filesystem::path(candidate.dir) / candidate.name / filename;
+        auto testPath = std::filesystem::path(candidate.dir_) / candidate.name_ / filename;
         // TODO: Consider also checking that the directory can be listed.
         if (gmx::File::exists(testPath, gmx::File::returnFalseOnError))
         {

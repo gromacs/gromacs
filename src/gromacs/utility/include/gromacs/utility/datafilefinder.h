@@ -125,7 +125,7 @@ struct DataFileInfo
 {
     //! Initializes the structure with given values.
     DataFileInfo(const std::filesystem::path& dir, const std::filesystem::path& name, bool bDefault) :
-        dir(dir), name(name), bFromDefaultDir(bDefault)
+        dir_(dir), name_(name), fromDefaultDir_(bDefault)
     {
     }
 
@@ -136,11 +136,11 @@ struct DataFileInfo
      * In other cases, this will be a full path (except if the user-provided
      * search path contains relative paths).
      */
-    std::filesystem::path dir;
+    std::filesystem::path dir_;
     /*! \brief
      * Name of the file without any directory name.
      */
-    std::filesystem::path name;
+    std::filesystem::path name_;
     /*! \brief
      * Whether the file was found from the default directory.
      *
@@ -151,7 +151,7 @@ struct DataFileInfo
      * Consider replacing with an enum that identifies the source (current dir,
      * GMXLIB, default).
      */
-    bool bFromDefaultDir;
+    bool fromDefaultDir_;
 };
 
 /*! \brief
