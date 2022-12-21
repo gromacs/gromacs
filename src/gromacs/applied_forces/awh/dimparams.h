@@ -92,7 +92,7 @@ private:
      * Private constructor called by public builder functions for PullDimParams and FepLambdaDimParams.
      */
     DimParams(double conversionFactor, std::variant<PullDimParams, FepDimParams> dimParams) :
-        dimParams(std::move(dimParams)), userCoordUnitsToInternal(conversionFactor)
+        dimParams_(std::move(dimParams)), userCoordUnitsToInternal_(conversionFactor)
     {
     }
 
@@ -126,35 +126,41 @@ public:
     }
 
     //! Returns whether this dimension is coupled to a pull coordinate.
-    bool isPullDimension() const { return std::holds_alternative<PullDimParams>(dimParams); }
+    bool isPullDimension() const { return std::holds_alternative<PullDimParams>(dimParams_); }
 
     //! Returns whether this dimension has lambda states and thereby is a dimension coupled to lambda.
-    bool isFepLambdaDimension() const { return std::holds_alternative<FepDimParams>(dimParams); }
+    bool isFepLambdaDimension() const { return std::holds_alternative<FepDimParams>(dimParams_); }
 
     //! Returns pull dimension parameters, only call for pull dimensions
-    const PullDimParams& pullDimParams() const { return std::get<PullDimParams>(dimParams); }
+    const PullDimParams& pullDimParams() const { return std::get<PullDimParams>(dimParams_); }
 
     //! Returns FEP dimension parameters, only call for FEP dimensions
-    const FepDimParams& fepDimParams() const { return std::get<FepDimParams>(dimParams); }
+    const FepDimParams& fepDimParams() const { return std::get<FepDimParams>(dimParams_); }
 
     /*! \brief Convert internal coordinate units to external, user coordinate units.
      *
      * \param[in] value               Value to convert.
      * \returns the converted value.
      */
-    double scaleInternalToUserInput(double value) const { return value / userCoordUnitsToInternal; }
+    double scaleInternalToUserInput(double value) const
+    {
+        return value / userCoordUnitsToInternal_;
+    }
 
     /*! \brief Convert external, user coordinate units to internal coordinate units.
      *
      * \param[in] value               Value to convert.
      * \returns the converted value.
      */
-    double scaleUserInputToInternal(double value) const { return value * userCoordUnitsToInternal; }
+    double scaleUserInputToInternal(double value) const
+    {
+        return value * userCoordUnitsToInternal_;
+    }
 
     //! Parameters for pull dimensions, either type pull or free-energy lambda
-    const std::variant<PullDimParams, FepDimParams> dimParams;
+    const std::variant<PullDimParams, FepDimParams> dimParams_;
     //! Conversion factor for ordinate units
-    const double userCoordUnitsToInternal;
+    const double userCoordUnitsToInternal_;
 };
 
 } // namespace gmx
