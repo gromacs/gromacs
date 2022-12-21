@@ -133,7 +133,7 @@ const std::vector<real>& ChargesAsAmplitudes::operator()(ArrayRef<const real> ch
     std::transform(std::begin(localIndex),
                    std::end(localIndex),
                    std::begin(amplitude_),
-                   [&chargeA](gmx::index index) { return chargeA[index]; });
+                   [&chargeA](gmx::Index index) { return chargeA[index]; });
     return amplitude_;
 }
 
@@ -169,7 +169,7 @@ const std::vector<real>& MassesAsAmplitudes::operator()(ArrayRef<const real> /*c
     std::transform(std::begin(localIndex),
                    std::end(localIndex),
                    std::begin(amplitude_),
-                   [&massT](gmx::index index) { return massT[index]; });
+                   [&massT](gmx::Index index) { return massT[index]; });
     return amplitude_;
 }
 

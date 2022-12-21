@@ -102,11 +102,11 @@ public:
     //! Return the exclusion mask for \c index
     unsigned int& excl(int index) { return list_[index].excl; }
     //! Return the size of the list (not the number of packed elements)
-    gmx::index size() const noexcept { return list_.size(); }
+    gmx::Index size() const noexcept { return list_.size(); }
     //! Return whether the list is empty
     bool empty() const noexcept { return size() == 0; }
     //! Resize the list
-    void resize(gmx::index count) { list_.resize(count); }
+    void resize(gmx::Index count) { list_.resize(count); }
     //! Add a new element to the list
     void push_back(const decltype(list_)::value_type& value) { list_.push_back(value); }
 };
@@ -252,11 +252,11 @@ public:
         return list_[index / c_nbnxnGpuJgroupSize].imei[0].imask;
     }
     //! Return the size of the list (not the number of packed elements)
-    gmx::index size() const noexcept { return list_.size(); }
+    gmx::Index size() const noexcept { return list_.size(); }
     //! Return whether the list is empty
     bool empty() const noexcept { return size() == 0; }
     //! Resize the packed list
-    void resize(gmx::index count) { list_.resize(count); }
+    void resize(gmx::Index count) { list_.resize(count); }
     //! Add a new element to the packed list
     void push_back(const decltype(list_)::value_type& value) { list_.push_back(value); }
 };

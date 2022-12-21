@@ -214,7 +214,7 @@ void pr_listoflists(FILE* fp, int indent, const char* title, const gmx::ListOfLi
     if (available(fp, lists, indent, title))
     {
         indent = pr_listoflists_title(fp, indent, title, lists);
-        for (gmx::index i = 0; i < lists->ssize(); i++)
+        for (gmx::Index i = 0; i < lists->ssize(); i++)
         {
             int                      size = pr_indent(fp, indent);
             gmx::ArrayRef<const int> list = (*lists)[i];

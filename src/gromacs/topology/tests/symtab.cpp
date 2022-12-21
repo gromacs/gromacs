@@ -376,7 +376,7 @@ TEST_F(StringTableTest, RoundtripWithCorrectStringIndices)
     InMemoryDeserializer          reader(buffer, false);
     StringTable                   readInTable(&reader);
     std::vector<StringTableEntry> deserializedEntries;
-    for (index gmx_unused i = 0; i < gmx::ssize(testEntries); i++)
+    for (Index gmx_unused i = 0; i < gmx::ssize(testEntries); i++)
     {
         deserializedEntries.emplace_back(readStringTableEntry(&reader, readInTable));
     }

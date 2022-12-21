@@ -314,7 +314,7 @@ void init_dfhist_state(t_state* state, int dfhistNumLambda);
 void comp_state(const t_state* st1, const t_state* st2, bool bRMSD, real ftol, real abstol);
 
 /*! \brief Allocates an rvec pointer and copy the contents of v to it */
-rvec* makeRvecArray(gmx::ArrayRef<const gmx::RVec> v, gmx::index n);
+rvec* makeRvecArray(gmx::ArrayRef<const gmx::RVec> v, gmx::Index n);
 
 /*! \brief Determine the relative box components
  *

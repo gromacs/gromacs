@@ -118,7 +118,7 @@ TEST_P(BiasStateTest, InitializesFromFile)
      * The target is (index + 1)/120.
      */
     double msdPmf = 0;
-    for (index i = 0; i < points.ssize(); i++)
+    for (Index i = 0; i < points.ssize(); i++)
     {
         msdPmf += gmx::square(points[i].logPmfSum() - points[0].logPmfSum() + 0.5 * i) / points.size();
         EXPECT_DOUBLE_EQ(points[i].target(), (i + 1) / 120.0);

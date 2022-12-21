@@ -71,7 +71,7 @@ public:
     /*! \brief Add a new atom set to be managed and give back a handle.
      *
      * \todo remove this routine once all indices are represented as
-     *       gmx::index instead of int.
+     *       gmx::Index instead of int.
      *
      * \note Not created if the internal int type does match index
      *
@@ -82,7 +82,7 @@ public:
      * \param[in] globalAtomIndex Indices of the atoms to be managed
      * \returns Handle to LocalAtomSet.
      */
-    template<typename T = void, typename U = std::enable_if_t<!std::is_same_v<int, index>, T>>
+    template<typename T = void, typename U = std::enable_if_t<!std::is_same_v<int, Index>, T>>
     LocalAtomSet add(ArrayRef<const int> globalAtomIndex);
 #endif
     /*! \brief Add a new atom set to be managed and give back a handle.
@@ -90,7 +90,7 @@ public:
      * \param[in] globalAtomIndex Indices of the atoms to be managed
      * \returns Handle to LocalAtomSet.
      */
-    LocalAtomSet add(ArrayRef<const index> globalAtomIndex);
+    LocalAtomSet add(ArrayRef<const Index> globalAtomIndex);
 
     /*! \brief Recalculate local and collective indices from ga2la.
      * Uses global atom to local atom lookup structure to

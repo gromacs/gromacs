@@ -151,7 +151,7 @@ TEST(MtopTest, CanFindResidueStartAndEndAtoms)
 
     auto atomRanges = atomRangeOfEachResidue(mtop.moltype[0]);
     ASSERT_EQ(atomRanges.size(), expectedResidueRange.size());
-    for (gmx::index i = 0; i < gmx::ssize(atomRanges); i++)
+    for (gmx::Index i = 0; i < gmx::ssize(atomRanges); i++)
     {
         EXPECT_EQ(atomRanges[i].begin(), expectedResidueRange[i].begin());
         EXPECT_EQ(atomRanges[i].end(), expectedResidueRange[i].end());

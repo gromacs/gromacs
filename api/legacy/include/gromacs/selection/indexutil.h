@@ -110,7 +110,7 @@ public:
      * \returns atom indices of the selected index group
      * \throws if groupName is not present as index group
      */
-    std::vector<index> indices(const std::string& groupName) const;
+    std::vector<Index> indices(const std::string& groupName) const;
 
 private:
     std::vector<IndexGroup> indexGroups_;

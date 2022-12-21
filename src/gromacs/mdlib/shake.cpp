@@ -104,7 +104,7 @@ static int pcomp(const void* p1, const void* p2)
 static void pr_sortblock(FILE* fp, const char* title, gmx::ArrayRef<const t_sortblock> sb)
 {
     fprintf(fp, "%s\n", title);
-    for (gmx::index i = 0; i < sb.ssize(); i++)
+    for (gmx::Index i = 0; i < sb.ssize(); i++)
     {
         fprintf(fp,
                 "i: %5td, iatom: (%5d %5d %5d), blocknr: %5d\n",

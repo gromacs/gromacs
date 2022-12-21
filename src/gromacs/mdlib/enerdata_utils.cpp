@@ -206,7 +206,7 @@ void ForeignLambdaTerms::finalizePotentialContributions(gmx::ArrayRef<const doub
            lambda are automatically zeroed */
 
         double enerpart_lambda = 0;
-        for (gmx::index j = 0; j < lambda.ssize(); j++)
+        for (gmx::Index j = 0; j < lambda.ssize(); j++)
         {
             /* Note that this loop is over all dhdl components, not just the separated ones */
             const double dlam = fepvals.all_lambda[j][i] - lambda[j];

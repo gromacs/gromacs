@@ -126,7 +126,7 @@ void StringTable::serializeStringTable(gmx::ISerializer* serializer)
     }
 }
 
-StringTableEntry StringTable::at(gmx::index index) const
+StringTableEntry StringTable::at(gmx::Index index) const
 {
     if (index >= gmx::ssize(table_))
     {
@@ -135,7 +135,7 @@ StringTableEntry StringTable::at(gmx::index index) const
     return StringTableEntry(table_[index], index);
 }
 
-StringTableEntry StringTable::operator[](gmx::index index) const
+StringTableEntry StringTable::operator[](gmx::Index index) const
 {
     GMX_ASSERT(index < gmx::ssize(table_), "Can't read beyond last entry");
     return StringTableEntry(table_[index], index);

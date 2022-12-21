@@ -78,7 +78,7 @@ TEST(EmptyConstArrayRefWithPaddingTest, IsEmpty)
 typedef ::testing::Types<ArrayRefWithPadding<int32_t>, ArrayRefWithPadding<float>, ArrayRefWithPadding<double>> ArrayRefTypes;
 
 //! Helper constant used in the text fixture.
-constexpr index aSize = 3;
+constexpr Index aSize = 3;
 
 /*! \brief Permit all the tests to run on all kinds of ArrayRefWithPadding types
  *
@@ -110,7 +110,7 @@ public:
         auto unpaddedArrayRef = arrayRefWithPadding.unpaddedArrayRef();
         auto paddedArrayRef   = arrayRefWithPadding.paddedArrayRef();
         EXPECT_LE(unpaddedArrayRef.size(), paddedArrayRef.size());
-        for (index i = 0; i != aSize; ++i)
+        for (Index i = 0; i != aSize; ++i)
         {
             EXPECT_EQ(paddedArrayRef[i], unpaddedArrayRef[i]);
             EXPECT_EQ(a[i], unpaddedArrayRef[i]);
@@ -121,7 +121,7 @@ public:
             // Check that we can make a padded view that refers to const elements
             ConstArrayRefWithPaddingType constArrayRefWithPadding =
                     arrayRefWithPadding.constArrayRefWithPadding();
-            for (index i = 0; i != aSize; ++i)
+            for (Index i = 0; i != aSize; ++i)
             {
                 EXPECT_EQ(a[i], constArrayRefWithPadding.paddedArrayRef()[i]);
             }
@@ -130,7 +130,7 @@ public:
         {
             // Check that we can implicitly make a padded view that refers to const elements
             ConstArrayRefWithPaddingType constArrayRefWithPadding = arrayRefWithPadding;
-            for (index i = 0; i != aSize; ++i)
+            for (Index i = 0; i != aSize; ++i)
             {
                 EXPECT_EQ(a[i], constArrayRefWithPadding.paddedArrayRef()[i]);
             }
@@ -148,7 +148,7 @@ public:
             view.swap(arrayRefWithPadding);
             EXPECT_TRUE(arrayRefWithPadding.empty());
             EXPECT_LE(aSize, view.size());
-            for (index i = 0; i != v.size(); ++i)
+            for (Index i = 0; i != v.size(); ++i)
             {
                 EXPECT_EQ(v[i], view.paddedArrayRef()[i]);
             }

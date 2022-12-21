@@ -1099,7 +1099,7 @@ static void calc_initial_lb_coeffs(gmx::ArrayRef<real>       coefficient,
                                    gmx::ArrayRef<const real> local_c6,
                                    gmx::ArrayRef<const real> local_sigma)
 {
-    for (gmx::index i = 0; i < coefficient.ssize(); ++i)
+    for (gmx::Index i = 0; i < coefficient.ssize(); ++i)
     {
         real sigma4    = local_sigma[i];
         sigma4         = sigma4 * sigma4;
@@ -1111,7 +1111,7 @@ static void calc_initial_lb_coeffs(gmx::ArrayRef<real>       coefficient,
 /*! \brief Calculate next Lorentz-Berthelot coefficients for LJ-PME */
 static void calc_next_lb_coeffs(gmx::ArrayRef<real> coefficient, gmx::ArrayRef<const real> local_sigma)
 {
-    for (gmx::index i = 0; i < coefficient.ssize(); ++i)
+    for (gmx::Index i = 0; i < coefficient.ssize(); ++i)
     {
         coefficient[i] *= local_sigma[i];
     }

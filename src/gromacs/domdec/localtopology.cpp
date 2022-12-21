@@ -338,13 +338,13 @@ static void combine_idef(InteractionDefinitions* dest, gmx::ArrayRef<const threa
     for (int ftype = 0; ftype < F_NRE; ftype++)
     {
         int n = 0;
-        for (gmx::index s = 1; s < src.ssize(); s++)
+        for (gmx::Index s = 1; s < src.ssize(); s++)
         {
             n += src[s].idef.il[ftype].size();
         }
         if (n > 0)
         {
-            for (gmx::index s = 1; s < src.ssize(); s++)
+            for (gmx::Index s = 1; s < src.ssize(); s++)
             {
                 dest->il[ftype].append(src[s].idef.il[ftype]);
             }
@@ -357,12 +357,12 @@ static void combine_idef(InteractionDefinitions* dest, gmx::ArrayRef<const threa
                         (ftype == F_POSRES ? dest->iparams_posres : dest->iparams_fbposres);
 
                 /* Set nposres to the number of original position restraints in dest */
-                for (gmx::index s = 1; s < src.ssize(); s++)
+                for (gmx::Index s = 1; s < src.ssize(); s++)
                 {
                     nposres -= src[s].idef.il[ftype].size() / 2;
                 }
 
-                for (gmx::index s = 1; s < src.ssize(); s++)
+                for (gmx::Index s = 1; s < src.ssize(); s++)
                 {
                     const std::vector<t_iparams>& iparams_src =
                             (ftype == F_POSRES ? src[s].idef.iparams_posres : src[s].idef.iparams_fbposres);
@@ -732,7 +732,7 @@ static void make_exclusions_zone(ArrayRef<const int>               globalAtomInd
 {
     const auto& jAtomRange = zones.iZones[iz].jAtomRange;
 
-    const gmx::index oldNumLists = lexcls->ssize();
+    const gmx::Index oldNumLists = lexcls->ssize();
 
     std::vector<int> exclusionsForAtom;
     for (int at = at_start; at < at_end; at++)

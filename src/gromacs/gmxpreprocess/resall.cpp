@@ -580,7 +580,7 @@ std::string searchResidueDatabase(const std::string&                     key,
         {
             /* Allow a mismatch of at most a sign character (with warning) */
             int n = neq_str_sign(key.c_str(), it->resname.c_str());
-            if (n >= best && n + 1 >= gmx::index(key.length()) && n + 1 >= gmx::index(it->resname.length()))
+            if (n >= best && n + 1 >= gmx::Index(key.length()) && n + 1 >= gmx::Index(it->resname.length()))
             {
                 if (n == best)
                 {

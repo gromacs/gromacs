@@ -64,7 +64,7 @@ void addGroupToBlocka(t_blocka* b, gmx::ArrayRef<const int> indices)
 {
     srenew(b->index, b->nr + 2);
     srenew(b->a, b->nra + indices.size());
-    for (index i = 0; i < indices.ssize(); i++)
+    for (Index i = 0; i < indices.ssize(); i++)
     {
         b->a[b->nra++] = indices[i];
     }
@@ -77,7 +77,7 @@ int fillExclusionBlock(gmx::ArrayRef<ExclusionBlock> b)
 {
     std::vector<std::vector<int>> indices = { { 0, 4, 7 }, { 1, 5, 8, 10 }, { 2, 6, 9, 11, 12 } };
     int                           nra     = 0;
-    for (index i = 0; i < b.ssize(); i++)
+    for (Index i = 0; i < b.ssize(); i++)
     {
         b[i].atomNumber.clear();
         for (const auto& j : indices[i])
@@ -131,7 +131,7 @@ public:
 
     void compareBlocks()
     {
-        for (index i = 0; i < ssize(b_); i++)
+        for (Index i = 0; i < ssize(b_); i++)
         {
             int index = ba_.index[i];
             for (int j = 0; j < b_[i].nra(); j++)
@@ -146,7 +146,7 @@ public:
     void compareBlocksAndList()
     {
         GMX_RELEASE_ASSERT(ssize(b_) == list_.ssize(), "The list counts should match");
-        for (index i = 0; i < ssize(b_); i++)
+        for (Index i = 0; i < ssize(b_); i++)
         {
             gmx::ArrayRef<const int> jList = list_[i];
             ASSERT_EQ(b_[i].nra(), jList.ssize()) << "Block size mismatch at " << i << ".";

@@ -119,7 +119,7 @@ struct PaddingTraits<BasicVector<double>>
  *                         (ie >= numElements).
  */
 template<typename T>
-index computePaddedSize(index numElements)
+Index computePaddedSize(Index numElements)
 {
     // We don't need padding if there is no access.
     if (numElements == 0)
@@ -130,7 +130,7 @@ index computePaddedSize(index numElements)
     // We sometimes load a whole extra element when doing 4-wide SIMD
     // operations (which might e.g. be an RVec) so we need to pad for
     // that.
-    index simdScatterAccessSize = numElements + 1;
+    Index simdScatterAccessSize = numElements + 1;
 
     // For SIMD updates based on RVec, we might load starting from
     // the last RVec element, so that sets the minimum extent of the
@@ -144,14 +144,14 @@ index computePaddedSize(index numElements)
     // SIMD width of the base type, so we use maximum for the base
     // type via the traits. A little extra padding won't really hurt.
     constexpr int maxSimdWidth = PaddingTraits<T>::maxSimdWidthOfBaseType;
-    index simdFlatAccessSize   = (numElements + (maxSimdWidth - 1)) / maxSimdWidth * maxSimdWidth;
+    Index simdFlatAccessSize   = (numElements + (maxSimdWidth - 1)) / maxSimdWidth * maxSimdWidth;
 
     return std::max(simdScatterAccessSize, simdFlatAccessSize);
 }
 
 //! Helper function to insert padding elements for most T.
 template<typename T, typename AllocatorType>
-inline void insertPaddingElements(std::vector<T, AllocatorType>* v, index newPaddedSize)
+inline void insertPaddingElements(std::vector<T, AllocatorType>* v, Index newPaddedSize)
 {
     // Ensure the padding region is initialized to zero. There is no
     // way to insert a number of default-initialized elements. So we
@@ -162,7 +162,7 @@ inline void insertPaddingElements(std::vector<T, AllocatorType>* v, index newPad
 
 //! Specialization of helper function to insert padding elements, used for BasicVector<T>.
 template<typename T, typename AllocatorType>
-inline void insertPaddingElements(std::vector<BasicVector<T>, AllocatorType>* v, index newPaddedSize)
+inline void insertPaddingElements(std::vector<BasicVector<T>, AllocatorType>* v, Index newPaddedSize)
 {
     // Ensure the padding region is initialized to zero.
     v->insert(v->end(), newPaddedSize - v->size(), BasicVector<T>(0, 0, 0));
@@ -216,7 +216,7 @@ public:
     //! \{
     using value_type      = T;
     using allocator_type  = Allocator;
-    using size_type       = index;
+    using size_type       = Index;
     using reference       = value_type&;
     using const_reference = const value_type&;
     using storage_type    = std::vector<T, allocator_type>;

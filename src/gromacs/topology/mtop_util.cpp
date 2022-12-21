@@ -850,7 +850,7 @@ bool havePerturbedConstraints(const gmx_mtop_t& mtop)
     // This code assumes that all perturbed constraints parameters are actually used
     const auto& ffparams = mtop.ffparams;
 
-    for (gmx::index i = 0; i < gmx::ssize(ffparams.functype); i++)
+    for (gmx::Index i = 0; i < gmx::ssize(ffparams.functype); i++)
     {
         if (ffparams.functype[i] == F_CONSTR || ffparams.functype[i] == F_CONSTRNC)
         {

@@ -187,7 +187,7 @@ void dispatchFreeEnergyKernel(gmx::ArrayRef<const std::unique_ptr<t_nblist>>   n
                "Number of lists should be same as number of NB threads");
 
 #pragma omp parallel for schedule(static) num_threads(nbl_fep.ssize())
-    for (gmx::index th = 0; th < nbl_fep.ssize(); th++)
+    for (gmx::Index th = 0; th < nbl_fep.ssize(); th++)
     {
         try
         {
@@ -244,7 +244,7 @@ void dispatchFreeEnergyKernel(gmx::ArrayRef<const std::unique_ptr<t_nblist>>   n
         const int kernelFlags = (donb_flags & ~(GMX_NONBONDED_DO_FORCE | GMX_NONBONDED_DO_SHIFTFORCE))
                                 | GMX_NONBONDED_DO_FOREIGNLAMBDA;
 
-        for (gmx::index i = 0; i < 1 + enerd->foreignLambdaTerms.numLambdas(); i++)
+        for (gmx::Index i = 0; i < 1 + enerd->foreignLambdaTerms.numLambdas(); i++)
         {
             std::fill(std::begin(dvdl_nb), std::end(dvdl_nb), 0);
             for (int j = 0; j < static_cast<int>(FreeEnergyPerturbationCouplingType::Count); j++)
@@ -253,7 +253,7 @@ void dispatchFreeEnergyKernel(gmx::ArrayRef<const std::unique_ptr<t_nblist>>   n
             }
 
 #pragma omp parallel for schedule(static) num_threads(nbl_fep.ssize())
-            for (gmx::index th = 0; th < nbl_fep.ssize(); th++)
+            for (gmx::Index th = 0; th < nbl_fep.ssize(); th++)
             {
                 try
                 {
@@ -379,7 +379,7 @@ void FreeEnergyDispatch::dispatchFreeEnergyKernels(const PairlistSets& pairlistS
             // With a non-empty pairlist we do this in dispatchFreeEnergyKernel()
             // to avoid the overhead of an extra openMP parallel loop
 #pragma omp parallel for schedule(static) num_threads(fepPairlists.ssize())
-            for (gmx::index th = 0; th < fepPairlists.ssize(); th++)
+            for (gmx::Index th = 0; th < fepPairlists.ssize(); th++)
             {
                 try
                 {

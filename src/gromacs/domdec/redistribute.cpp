@@ -88,7 +88,7 @@ static void copyMovedAtomsToBufferPerAtom(gmx::ArrayRef<const int> move,
 {
     int pos_vec[DIM * 2] = { 0 };
 
-    for (gmx::index i = 0; i < move.ssize(); i++)
+    for (gmx::Index i = 0; i < move.ssize(); i++)
     {
         /* Skip moved atoms */
         const int m = move[i];
@@ -109,7 +109,7 @@ static void copyMovedUpdateGroupCogs(gmx::ArrayRef<const int>       move,
 {
     int pos_vec[DIM * 2] = { 0 };
 
-    for (gmx::index g = 0; g < move.ssize(); g++)
+    for (gmx::Index g = 0; g < move.ssize(); g++)
     {
         /* Skip moved atoms */
         const int m = move[g];
@@ -130,7 +130,7 @@ static void clear_and_mark_ind(gmx::ArrayRef<const int> move,
                                gmx_ga2la_t*             ga2la,
                                int*                     cell_index)
 {
-    for (gmx::index a = 0; a < move.ssize(); a++)
+    for (gmx::Index a = 0; a < move.ssize(); a++)
     {
         if (move[a] >= 0)
         {
@@ -694,7 +694,7 @@ void dd_redistribute_cg(FILE*         fplog,
             std::vector<int>& cggl_flag = comm->cggl_flag[mc];
 
             /* TODO: See if we can use push_back instead */
-            if ((nat[mc] + 1) * DD_CGIBS > gmx::index(cggl_flag.size()))
+            if ((nat[mc] + 1) * DD_CGIBS > gmx::Index(cggl_flag.size()))
             {
                 cggl_flag.resize((nat[mc] + 1) * DD_CGIBS);
             }
@@ -938,7 +938,7 @@ void dd_redistribute_cg(FILE*         fplog,
             else
             {
                 /* Reallocate the buffers if necessary  */
-                if ((nat[mc] + 1) * DD_CGIBS > gmx::index(comm->cggl_flag[mc].size()))
+                if ((nat[mc] + 1) * DD_CGIBS > gmx::Index(comm->cggl_flag[mc].size()))
                 {
                     comm->cggl_flag[mc].resize((nat[mc] + 1) * DD_CGIBS);
                 }

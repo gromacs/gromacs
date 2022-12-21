@@ -342,7 +342,7 @@ static void dd_pmeredist_pos_coeffs(gmx_pme_t*                     pme,
     }
 
     local_pos = 0;
-    for (gmx::index i = 0; i < x.ssize(); i++)
+    for (gmx::Index i = 0; i < x.ssize(); i++)
     {
         const int slabIndex = atc->pd[i];
         if (slabIndex == atc->slabIndex)
@@ -433,7 +433,7 @@ void dd_pmeredist_f(struct gmx_pme_t* pme, PmeAtomComm* atc, gmx::ArrayRef<gmx::
     local_pos = 0;
     if (bAddF)
     {
-        for (gmx::index i = 0; i < f.ssize(); i++)
+        for (gmx::Index i = 0; i < f.ssize(); i++)
         {
             const int slabIndex = atc->pd[i];
             if (slabIndex == atc->slabIndex)
@@ -452,7 +452,7 @@ void dd_pmeredist_f(struct gmx_pme_t* pme, PmeAtomComm* atc, gmx::ArrayRef<gmx::
     }
     else
     {
-        for (gmx::index i = 0; i < f.ssize(); i++)
+        for (gmx::Index i = 0; i < f.ssize(); i++)
         {
             const int slabIndex = atc->pd[i];
             if (slabIndex == atc->slabIndex)

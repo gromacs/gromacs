@@ -79,7 +79,7 @@ LocalAtomSet LocalAtomSetManager::add<void, void>(ArrayRef<const int> globalAtom
     return LocalAtomSet(*impl_->atomSetData_.back());
 }
 
-LocalAtomSet LocalAtomSetManager::add(ArrayRef<const index> globalAtomIndex)
+LocalAtomSet LocalAtomSetManager::add(ArrayRef<const Index> globalAtomIndex)
 {
     impl_->atomSetData_.push_back(std::make_unique<internal::LocalAtomSetData>(globalAtomIndex));
     return LocalAtomSet(*impl_->atomSetData_.back());

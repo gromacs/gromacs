@@ -253,7 +253,7 @@ mdspan<const float, dynamic_extent, dynamic_extent>
 OuterProductEvaluator::operator()(ArrayRef<const float> x, ArrayRef<const float> y)
 {
     data_.resize(ssize(x), ssize(y));
-    for (gmx::index xIndex = 0; xIndex < ssize(x); ++xIndex)
+    for (gmx::Index xIndex = 0; xIndex < ssize(x); ++xIndex)
     {
         const auto xValue = x[xIndex];
         std::transform(std::begin(y), std::end(y), begin(data_.asView()[xIndex]), [xValue](float yValue) {

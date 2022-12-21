@@ -2713,7 +2713,7 @@ static void combine_nblists(gmx::ArrayRef<const NbnxnPairlistGpu> nbls, NbnxnPai
     const int gmx_unused nthreads = gmx_omp_nthreads_get(ModuleMultiThread::Pairsearch);
 
 #pragma omp parallel for num_threads(nthreads) schedule(static)
-    for (gmx::index n = 0; n < nbls.ssize(); n++)
+    for (gmx::Index n = 0; n < nbls.ssize(); n++)
     {
         try
         {
@@ -2724,7 +2724,7 @@ static void combine_nblists(gmx::ArrayRef<const NbnxnPairlistGpu> nbls, NbnxnPai
             int cjPacked_offset = ncjPacked;
             int excl_offset     = nexcl;
 
-            for (gmx::index i = n; i < nbls.ssize(); i++)
+            for (gmx::Index i = n; i < nbls.ssize(); i++)
             {
                 sci_offset -= nbls[i].sci.size();
                 cjPacked_offset -= nbls[i].cjPacked.size();
@@ -2740,7 +2740,7 @@ static void combine_nblists(gmx::ArrayRef<const NbnxnPairlistGpu> nbls, NbnxnPai
                 nblc->sci[sci_offset + i].cjPackedEnd += cjPacked_offset;
             }
 
-            for (gmx::index jPacked = 0; jPacked < nbli.cjPacked.size(); jPacked++)
+            for (gmx::Index jPacked = 0; jPacked < nbli.cjPacked.size(); jPacked++)
             {
                 nblc->cjPacked.list_[cjPacked_offset + jPacked] = nbli.cjPacked.list_[jPacked];
                 for (int splitIdx = 0; splitIdx < c_nbnxnGpuClusterpairSplit; splitIdx++)
@@ -3807,7 +3807,7 @@ static void rebalanceSimpleLists(gmx::ArrayRef<const NbnxnPairlistCpu> srcSet,
 
             if (cjGlobal + src->ncjInUse > cjStart)
             {
-                for (gmx::index i = 0; i < gmx::ssize(src->ci) && cjGlobal < cjEnd; i++)
+                for (gmx::Index i = 0; i < gmx::ssize(src->ci) && cjGlobal < cjEnd; i++)
                 {
                     const nbnxn_ci_t* srcCi = &src->ci[i];
                     int               ncj   = srcCi->cj_ind_end - srcCi->cj_ind_start;
@@ -3882,7 +3882,7 @@ static bool checkRebalanceSimpleLists(gmx::ArrayRef<const NbnxnPairlistCpu> list
  */
 static void sort_sci(NbnxnPairlistGpu* nbl)
 {
-    if (nbl->cjPacked.size() <= gmx::index(nbl->sci.size()))
+    if (nbl->cjPacked.size() <= gmx::Index(nbl->sci.size()))
     {
         /* nsci = 0 or all sci have size 1, sorting won't change the order */
         return;
@@ -3909,7 +3909,7 @@ static void sort_sci(NbnxnPairlistGpu* nbl)
     /* Calculate the offset for each count */
     int s0  = sort[m];
     sort[m] = 0;
-    for (gmx::index i = m - 1; i >= 0; i--)
+    for (gmx::Index i = m - 1; i >= 0; i--)
     {
         int s1  = sort[i];
         sort[i] = sort[i + 1] + s0;

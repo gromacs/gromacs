@@ -688,7 +688,7 @@ static void make_gname(int n, gmx::ArrayRef<char*> names, char* gname)
 static void copy_group(gmx::ArrayRef<const int> group, int* nr, int* index)
 {
     *nr = gmx::ssize(group);
-    for (gmx::index i = 0; i < *nr; i++)
+    for (gmx::Index i = 0; i < *nr; i++)
     {
         index[i] = group[i];
     }

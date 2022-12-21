@@ -669,7 +669,7 @@ static void chk_ndx(const char* fn)
         printf("Contents of index file %s\n", fn);
         printf("--------------------------------------------------\n");
         printf("Nr.   Group               #Entries   First    Last\n");
-        for (gmx::index i = 0; i < gmx::ssize(grps); i++)
+        for (gmx::Index i = 0; i < gmx::ssize(grps); i++)
         {
             printf("%4td  %-20s%8td%8d%8d\n",
                    i,

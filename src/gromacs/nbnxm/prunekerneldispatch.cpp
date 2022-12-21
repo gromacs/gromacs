@@ -64,7 +64,7 @@ void PairlistSet::dispatchPruneKernel(const nbnxn_atomdata_t* nbat, gmx::ArrayRe
                "Here we should either have an empty ci list or ciOuter should be >= ci");
 
     int gmx_unused nthreads = gmx_omp_nthreads_get(ModuleMultiThread::Nonbonded);
-    GMX_ASSERT(nthreads == static_cast<gmx::index>(cpuLists_.size()),
+    GMX_ASSERT(nthreads == static_cast<gmx::Index>(cpuLists_.size()),
                "The number of threads should match the number of lists");
 #pragma omp parallel for schedule(static) num_threads(nthreads)
     for (int i = 0; i < nthreads; i++)

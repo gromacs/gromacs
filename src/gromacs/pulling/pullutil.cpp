@@ -229,7 +229,7 @@ static void make_cyl_refgrps(const t_commrec*     cr,
             pdyna.dv.resize(localAtomIndices.size());
 
             /* loop over all atoms in the main ref group */
-            for (gmx::index indexInSet = 0; indexInSet < localAtomIndices.ssize(); indexInSet++)
+            for (gmx::Index indexInSet = 0; indexInSet < localAtomIndices.ssize(); indexInSet++)
             {
                 int  atomIndex = localAtomIndices[indexInSet];
                 rvec dx;
@@ -847,7 +847,7 @@ static bool pullGroupObeysPbcRestrictions(const pull_group_work_t& group,
     }
 
     auto localAtomIndices = group.atomSet.localIndex();
-    for (gmx::index indexInSet = 0; indexInSet < localAtomIndices.ssize(); indexInSet++)
+    for (gmx::Index indexInSet = 0; indexInSet < localAtomIndices.ssize(); indexInSet++)
     {
         rvec dx;
         pbc_dx(&pbc, x[localAtomIndices[indexInSet]], x_pbc, dx);
@@ -995,7 +995,7 @@ enum class PullBackupCOM
 template<PullBackupCOM pullBackupToState>
 static void updatePrevStepPullComImpl(pull_t* pull, gmx::ArrayRef<double> comPreviousStep)
 {
-    for (gmx::index g = 0; g < gmx::ssize(pull->group); g++)
+    for (gmx::Index g = 0; g < gmx::ssize(pull->group); g++)
     {
         if (pull->group[g].needToCalcCom)
         {
@@ -1026,7 +1026,7 @@ void updatePrevStepPullCom(pull_t* pull, std::optional<gmx::ArrayRef<double>> co
 std::vector<double> prevStepPullCom(const pull_t* pull)
 {
     std::vector<double> pullCom(pull->group.size() * DIM, 0.0);
-    for (gmx::index g = 0; g < gmx::ssize(pull->group); g++)
+    for (gmx::Index g = 0; g < gmx::ssize(pull->group); g++)
     {
         for (int j = 0; j < DIM; j++)
         {
@@ -1040,7 +1040,7 @@ void setPrevStepPullCom(pull_t* pull, gmx::ArrayRef<const double> prevStepPullCo
 {
     GMX_RELEASE_ASSERT(prevStepPullCom.size() >= pull->group.size() * DIM,
                        "Pull COM vector size mismatch.");
-    for (gmx::index g = 0; g < gmx::ssize(pull->group); g++)
+    for (gmx::Index g = 0; g < gmx::ssize(pull->group); g++)
     {
         for (int j = 0; j < DIM; j++)
         {

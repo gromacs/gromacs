@@ -113,7 +113,7 @@ public:
     void processMask();
 
     //! Returns the size of the force buffer in number of atoms
-    index size() const { return numAtoms_; }
+    Index size() const { return numAtoms_; }
 
     //! Clears all force and energy buffers
     void clearForcesAndEnergies();

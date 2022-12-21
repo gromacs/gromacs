@@ -587,7 +587,7 @@ real** matrix2real(t_matrix* in, real** out)
 
     std::vector<real> rmap(in->map.size());
 
-    for (gmx::index i = 0; i != ssize(in->map); ++i)
+    for (gmx::Index i = 0; i != ssize(in->map); ++i)
     {
         if ((in->map[i].desc == nullptr) || (sscanf(in->map[i].desc, "%lf", &tmp) != 1))
         {
@@ -858,7 +858,7 @@ static void writeXpmAxis(FILE* out, const char* axis, ArrayRef<const real> label
     {
         return;
     }
-    for (gmx::index i = 0; i != ssize(label); ++i)
+    for (gmx::Index i = 0; i != ssize(label); ++i)
     {
         if (i % 80 == 0)
         {

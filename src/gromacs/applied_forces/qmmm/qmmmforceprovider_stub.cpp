@@ -76,7 +76,7 @@ QMMMForceProvider::QMMMForceProvider(const QMMMParameters& parameters,
 QMMMForceProvider::~QMMMForceProvider() {}
 
 // NOLINTNEXTLINE(readability-convert-member-functions-to-static)
-bool QMMMForceProvider::isQMAtom(index /*globalAtomIndex*/)
+bool QMMMForceProvider::isQMAtom(Index /*globalAtomIndex*/)
 {
     GMX_THROW(
             InternalError("CP2K has not been linked into GROMACS, QMMM simulation is not "

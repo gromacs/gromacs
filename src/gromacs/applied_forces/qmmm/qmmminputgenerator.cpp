@@ -76,7 +76,7 @@ QMMMInputGenerator::QMMMInputGenerator(const QMMMParameters& parameters,
     computeQMBox(sc_qmBoxScale, sc_qmBoxMinLength);
 }
 
-bool QMMMInputGenerator::isQMAtom(index globalAtomIndex) const
+bool QMMMInputGenerator::isQMAtom(Index globalAtomIndex) const
 {
     return (qmAtoms_.find(globalAtomIndex) != qmAtoms_.end());
 }
@@ -279,7 +279,7 @@ std::string QMMMInputGenerator::generateQMMMSection() const
             // Loop over all QM atoms indexes
             for (size_t j = 0; j < nQm; j++)
             {
-                if (parameters_.atomNumbers_[parameters_.qmIndices_[j]] == static_cast<index>(i))
+                if (parameters_.atomNumbers_[parameters_.qmIndices_[j]] == static_cast<Index>(i))
                 {
                     res += formatString(" %d", static_cast<int>(parameters_.qmIndices_[j] + 1));
                 }

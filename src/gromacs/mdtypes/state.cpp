@@ -335,7 +335,7 @@ void comp_state(const t_state* st1, const t_state* st2, gmx_bool bRMSD, real fto
     }
 }
 
-rvec* makeRvecArray(gmx::ArrayRef<const gmx::RVec> v, gmx::index n)
+rvec* makeRvecArray(gmx::ArrayRef<const gmx::RVec> v, gmx::Index n)
 {
     GMX_ASSERT(v.ssize() >= n, "We can't copy more elements than the vector size");
 
@@ -344,7 +344,7 @@ rvec* makeRvecArray(gmx::ArrayRef<const gmx::RVec> v, gmx::index n)
     snew(dest, n);
 
     const rvec* vPtr = as_rvec_array(v.data());
-    for (gmx::index i = 0; i < n; i++)
+    for (gmx::Index i = 0; i < n; i++)
     {
         copy_rvec(vPtr[i], dest[i]);
     }

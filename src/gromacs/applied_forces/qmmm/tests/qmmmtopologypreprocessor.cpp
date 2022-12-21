@@ -106,7 +106,7 @@ public:
 
 protected:
     gmx::test::TestFileManager fileManager_;
-    std::vector<index>         qmIndices_;
+    std::vector<Index>         qmIndices_;
     gmx_mtop_t                 mtop_;
 };
 

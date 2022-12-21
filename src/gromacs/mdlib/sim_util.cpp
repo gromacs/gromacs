@@ -266,7 +266,7 @@ static void print_large_forces(FILE*                fp,
                                ArrayRef<const RVec> f)
 {
     real       force2Tolerance = gmx::square(forceTolerance);
-    gmx::index numNonFinite    = 0;
+    gmx::Index numNonFinite    = 0;
     for (int i = 0; i < md->homenr; i++)
     {
         real force2    = norm2(f[i]);
@@ -471,7 +471,7 @@ static inline void clearRVecs(ArrayRef<RVec> v, const bool useOpenmpThreading)
     else
     {
 #pragma omp parallel for num_threads(nth) schedule(static)
-        for (gmx::index i = 0; i < v.ssize(); i++)
+        for (gmx::Index i = 0; i < v.ssize(); i++)
         {
             clear_rvec(v[i]);
         }

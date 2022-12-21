@@ -74,7 +74,7 @@ public:
     //! Type of values stored in the reference.
     using value_type = T;
     //! Type for representing size of the reference.
-    using size_type = index;
+    using size_type = Index;
     //! Const pointer to an element.
     using const_pointer = const T*;
     //! Const iterator type to an element.

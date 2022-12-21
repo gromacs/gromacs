@@ -128,7 +128,7 @@ void sumPmf(gmx::ArrayRef<PointState> pointState, int numSharedUpdate, const Bia
 
     /* Take log again to get (non-normalized) PMF */
     double normFac = 1.0 / numSharedUpdate;
-    for (gmx::index i = 0; i < pointState.ssize(); i++)
+    for (gmx::Index i = 0; i < pointState.ssize(); i++)
     {
         if (pointState[i].inTargetRegion())
         {
@@ -526,7 +526,7 @@ double BiasState::moveUmbrella(ArrayRef<const DimParams> dimParams,
         at steps when the reference value has been moved. E.g. if the ref. value
         is set every step to (coord dvalue +/- delta) would give zero force.
      */
-    for (gmx::index d = 0; d < biasForce.ssize(); d++)
+    for (gmx::Index d = 0; d < biasForce.ssize(); d++)
     {
         /* Average of the current and new force */
         biasForce[d] = 0.5 * (biasForce[d] + newForce[d]);

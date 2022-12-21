@@ -94,7 +94,7 @@ TEST(Range, IsInRangeWorks)
 
 TEST(Range, IteratorWorks)
 {
-    const Range<index> range(-1, 3);
+    const Range<Index> range(-1, 3);
 
     int minValue = std::numeric_limits<int>::max();
     int maxValue = std::numeric_limits<int>::min();

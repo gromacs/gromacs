@@ -136,7 +136,7 @@ void checkParticleValue(TestReferenceChecker* checker,
 
 void checkParticleMiscInfo(TestReferenceChecker* checker,
                            ParticleType          type,
-                           gmx::index            resind,
+                           gmx::Index            resind,
                            int                   atomnumber,
                            const std::string&    elem)
 {

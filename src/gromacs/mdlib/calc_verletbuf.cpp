@@ -664,14 +664,14 @@ static real energyDrift(gmx::ArrayRef<const VerletbufAtomtype> att,
 
     // Here add up the contribution of all atom pairs in the system to
     // (estimated) energy drift by looping over all atom type pairs.
-    for (gmx::index i = 0; i < att.ssize(); i++)
+    for (gmx::Index i = 0; i < att.ssize(); i++)
     {
         // Get the thermal displacement variance for the i-atom type
         const atom_nonbonded_kinetic_prop_t* prop_i = &att[i].prop;
         real                                 s2i_2d, s2i_3d;
         get_atom_sigma2(kT_fac, prop_i, &s2i_2d, &s2i_3d);
 
-        for (gmx::index j = i; j < att.ssize(); j++)
+        for (gmx::Index j = i; j < att.ssize(); j++)
         {
             // Get the thermal displacement variance for the j-atom type
             const atom_nonbonded_kinetic_prop_t* prop_j = &att[j].prop;

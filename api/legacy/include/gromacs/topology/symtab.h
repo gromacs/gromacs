@@ -103,9 +103,9 @@ public:
      *           with the index needed during (de-)serialization.
      *  \throws  On index being out of range.
      */
-    StringTableEntry at(gmx::index index) const;
+    StringTableEntry at(gmx::Index index) const;
     //! Bracket operator.
-    StringTableEntry operator[](gmx::index index) const;
+    StringTableEntry operator[](gmx::Index index) const;
     //! Handle file IO.
     void serializeStringTable(gmx::ISerializer* serializer);
 

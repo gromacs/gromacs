@@ -100,7 +100,7 @@ TEST(ForceBuffers, CopyWorks)
 
     forceBuffers.resize(2);
     auto  force = forceBuffers.view().force();
-    index i     = 0;
+    Index i     = 0;
     for (RVec& v : force)
     {
         v = c_forces[i];
@@ -111,7 +111,7 @@ TEST(ForceBuffers, CopyWorks)
     forceBuffersCopy = forceBuffers;
     auto forceCopy   = forceBuffersCopy.view().force();
     EXPECT_EQ(forceBuffersCopy.view().force().size(), 2);
-    for (index i = 0; i < ssize(forceCopy); i++)
+    for (Index i = 0; i < ssize(forceCopy); i++)
     {
         for (int d = 0; d < DIM; d++)
         {

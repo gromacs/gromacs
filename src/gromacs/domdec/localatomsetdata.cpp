@@ -57,7 +57,7 @@ namespace internal
  * LocalAtomSetData
  */
 
-LocalAtomSetData::LocalAtomSetData(ArrayRef<const index> globalIndex) :
+LocalAtomSetData::LocalAtomSetData(ArrayRef<const Index> globalIndex) :
     globalIndex_(globalIndex.begin(), globalIndex.end()),
     localIndex_(globalIndex.begin(), globalIndex.end())
 {

@@ -208,14 +208,14 @@ static void normalizeBlock(AwhEnergyBlock* block, const Bias& bias)
             break;
         case Normalization::FreeEnergy:
             /* Normalize free energy values by subtracting the minimum value */
-            for (gmx::index index = 0; index < data.ssize(); index++)
+            for (gmx::Index index = 0; index < data.ssize(); index++)
             {
                 if (bias.state().points()[index].inTargetRegion() && data[index] < minValue)
                 {
                     minValue = data[index];
                 }
             }
-            for (gmx::index index = 0; index < data.ssize(); index++)
+            for (gmx::Index index = 0; index < data.ssize(); index++)
             {
                 if (bias.state().points()[index].inTargetRegion())
                 {
@@ -243,7 +243,7 @@ static void normalizeBlock(AwhEnergyBlock* block, const Bias& bias)
     }
 }
 
-void BiasWriter::transferMetaDataToWriter(gmx::index        metaDataIndex,
+void BiasWriter::transferMetaDataToWriter(gmx::Index        metaDataIndex,
                                           AwhOutputMetaData metaDataType,
                                           const Bias&       bias)
 {

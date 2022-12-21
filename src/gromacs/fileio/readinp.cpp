@@ -283,7 +283,7 @@ int search_einp(gmx::ArrayRef<const t_inpfile> inp, const char* name)
     {
         return -1;
     }
-    for (gmx::index i = 0; i < inp.ssize(); i++)
+    for (gmx::Index i = 0; i < inp.ssize(); i++)
     {
         if (gmx_strcasecmp_min(name, inp[i].name_.c_str()) == 0)
         {

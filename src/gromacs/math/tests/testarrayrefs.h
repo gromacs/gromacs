@@ -87,7 +87,7 @@ template<typename T>
 void compareViews(ArrayRef<T> input, ArrayRef<T> output)
 {
     ASSERT_EQ(input.size(), output.size());
-    for (index i = 0; i != input.ssize(); ++i)
+    for (Index i = 0; i != input.ssize(); ++i)
     {
         EXPECT_EQ(input[i], output[i]) << "for index " << i;
     }
@@ -99,7 +99,7 @@ typename std::enable_if_t<std::is_same_v<std::remove_const_t<T>, std::remove_con
 compareViewsIgnoreConst(ArrayRef<T> input, ArrayRef<U> output)
 {
     ASSERT_EQ(input.size(), output.size());
-    for (index i = 0; i != input.ssize(); ++i)
+    for (Index i = 0; i != input.ssize(); ++i)
     {
         EXPECT_EQ(input[i], output[i]) << "for index " << i;
     }
@@ -110,7 +110,7 @@ template<typename T>
 void compareViews(ArrayRef<BasicVector<T>> input, ArrayRef<BasicVector<T>> output)
 {
     ASSERT_EQ(input.size(), output.size());
-    for (index i = 0; i != input.ssize(); ++i)
+    for (Index i = 0; i != input.ssize(); ++i)
     {
         EXPECT_EQ(input[i][XX], output[i][XX]) << "for index " << i;
         EXPECT_EQ(input[i][YY], output[i][YY]) << "for index " << i;

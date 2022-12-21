@@ -1337,7 +1337,7 @@ void gmx_tng_setup_atom_subgroup(gmx_tng_trajectory_t gmx_tng, gmx::ArrayRef<con
         tng_molecule_name_set(tng, mol, name);
         tng_molecule_chain_add(tng, mol, "", &chain);
 
-        for (gmx::index i = 0; i < ind.ssize(); i++)
+        for (gmx::Index i = 0; i < ind.ssize(); i++)
         {
             char temp_name[256], temp_type[256];
 

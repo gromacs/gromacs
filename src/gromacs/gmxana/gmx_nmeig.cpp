@@ -167,7 +167,7 @@ static void nma_full_hessian(real*                    hess,
     {
         for (int i = 0; i < (end - begin + 1); i++)
         {
-            for (gmx::index j = 0; j < atom_index.ssize(); j++)
+            for (gmx::Index j = 0; j < atom_index.ssize(); j++)
             {
                 size_t aj = atom_index[j];
                 mass_fac  = gmx::invsqrt(top->atoms.atom[aj].m);
@@ -232,7 +232,7 @@ static void nma_sparse_hessian(gmx_sparsematrix_t*      sparse_hessian,
     {
         for (i = 0; i < neig; i++)
         {
-            for (gmx::index j = 0; j < atom_index.ssize(); j++)
+            for (gmx::Index j = 0; j < atom_index.ssize(); j++)
             {
                 size_t aj = atom_index[j];
                 mass_fac  = gmx::invsqrt(top->atoms.atom[aj].m);

@@ -65,7 +65,7 @@ void ReferenceTemperatureManager::setReferenceTemperature(ArrayRef<const real> n
     GMX_RELEASE_ASSERT(newReferenceTemperatures.ssize() == ekindata_->numTemperatureCouplingGroups(),
                        "Expected one new reference temperature per temperature group.");
 
-    for (gmx::index i = 0; i < gmx::ssize(newReferenceTemperatures); i++)
+    for (gmx::Index i = 0; i < gmx::ssize(newReferenceTemperatures); i++)
     {
         ekindata_->setCurrentReferenceTemperature(i, newReferenceTemperatures[i]);
     }

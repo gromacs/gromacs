@@ -725,8 +725,8 @@ void QMMMOptions::readInternalParametersFromKvt(const KeyValueTreeObject& tree)
                    [](const KeyValueTreeValue& val) { return val.cast<std::int64_t>(); });
 
     // Try to read Link Frontier (two separate vectors and then combine)
-    std::vector<index> qmLink;
-    std::vector<index> mmLink;
+    std::vector<Index> qmLink;
+    std::vector<Index> mmLink;
 
     if (!tree.keyExists(c_qmmmCP2KModuleName + "-" + c_qmLinkTag_))
     {

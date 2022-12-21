@@ -125,7 +125,7 @@ static void bonded_cg_distance_mol(const gmx_moltype_t*   molt,
     if (bExcl)
     {
         const auto& excls = molt->excls;
-        for (gmx::index ai = 0; ai < excls.ssize(); ai++)
+        for (gmx::Index ai = 0; ai < excls.ssize(); ai++)
         {
             for (const int aj : excls[ai])
             {

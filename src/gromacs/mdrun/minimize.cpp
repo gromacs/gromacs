@@ -717,7 +717,7 @@ static bool do_em_step(const t_commrec*                          cr,
         {
             /* OpenMP does not supported unsigned loop variables */
 #pragma omp for schedule(static) nowait
-            for (gmx::index i = 0; i < gmx::ssize(s2->cg_gl); i++)
+            for (gmx::Index i = 0; i < gmx::ssize(s2->cg_gl); i++)
             {
                 s2->cg_gl[i] = s1->cg_gl[i];
             }
@@ -3318,7 +3318,7 @@ void LegacySimulator::do_nm()
     bool bNS          = true;
     auto state_work_x = makeArrayRef(state_work.s.x);
     auto state_work_f = state_work.f.view().force();
-    for (index aid = cr->nodeid; aid < ssize(atom_index); aid += nnodes)
+    for (Index aid = cr->nodeid; aid < ssize(atom_index); aid += nnodes)
     {
         size_t atom = atom_index[aid];
         for (size_t d = 0; d < DIM; d++)
@@ -3414,7 +3414,7 @@ void LegacySimulator::do_nm()
             }
             else
             {
-                for (index node = 0; (node < nnodes && aid + node < ssize(atom_index)); node++)
+                for (Index node = 0; (node < nnodes && aid + node < ssize(atom_index)); node++)
                 {
                     if (node > 0)
                     {

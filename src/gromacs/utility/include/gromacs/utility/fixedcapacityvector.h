@@ -129,7 +129,7 @@ public:
      */
     size_type size() const noexcept { return end_ - data(); }
     //! Returns the signed size
-    index ssize() const noexcept { return end_ - data(); }
+    Index ssize() const noexcept { return end_ - data(); }
     //! Returns whether the vector is empty
     bool empty() const noexcept { return data() == end_; }
 

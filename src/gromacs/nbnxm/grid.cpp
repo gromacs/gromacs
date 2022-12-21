@@ -1261,8 +1261,8 @@ void Grid::calcColumnIndices(const Grid::Dimensions&        gridDims,
         cxy_na[i] = 0;
     }
 
-    // Use gmx::index to avoid overflow of int with large atom and thread counts
-    const gmx::index rangeSize     = atomRange.size();
+    // Use gmx::Index to avoid overflow of int with large atom and thread counts
+    const gmx::Index rangeSize     = atomRange.size();
     const int        taskAtomStart = *atomRange.begin() + ((thread + 0) * rangeSize) / nthread;
     const int        taskAtomEnd   = *atomRange.begin() + ((thread + 1) * rangeSize) / nthread;
 
@@ -1447,7 +1447,7 @@ void Grid::setCellIndices(int                            ddZone,
 
     /* Make sure the work array for sorting is large enough */
     const int worstCaseSortBufferSize = ncz_max * numAtomsPerCell * c_sortGridMaxSizeFactor;
-    if (worstCaseSortBufferSize > gmx::index(gridWork[0].sortBuffer.size()))
+    if (worstCaseSortBufferSize > gmx::Index(gridWork[0].sortBuffer.size()))
     {
         for (GridWork& work : gridWork)
         {

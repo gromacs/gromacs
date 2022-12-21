@@ -90,7 +90,7 @@ private:
     /*!\brief Check if atom belongs to the global index of qmAtoms_
      * \param[in] globalAtomIndex global index of the atom to check
      */
-    bool isQMAtom(index globalAtomIndex);
+    bool isQMAtom(Index globalAtomIndex);
 
     /*!\brief Initialization of QM program.
      * \param[in] cr connection record structure

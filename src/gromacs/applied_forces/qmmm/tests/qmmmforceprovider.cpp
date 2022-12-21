@@ -72,10 +72,10 @@ public:
     void setDefaultParameters()
     {
         parameters_.active_                = true;
-        std::vector<gmx::index> qmIndicies = { 0, 1, 2 };
-        std::vector<gmx::index> mmIndicies = { 3, 4, 5 };
-        LocalAtomSet            set1 = atomSetManager_.add(ArrayRef<const gmx::index>(qmIndicies));
-        LocalAtomSet            set2 = atomSetManager_.add(ArrayRef<const gmx::index>(mmIndicies));
+        std::vector<gmx::Index> qmIndicies = { 0, 1, 2 };
+        std::vector<gmx::Index> mmIndicies = { 3, 4, 5 };
+        LocalAtomSet            set1 = atomSetManager_.add(ArrayRef<const gmx::Index>(qmIndicies));
+        LocalAtomSet            set2 = atomSetManager_.add(ArrayRef<const gmx::Index>(mmIndicies));
         qmAtomSet_                   = std::make_unique<LocalAtomSet>(set1);
         mmAtomSet_                   = std::make_unique<LocalAtomSet>(set2);
     }

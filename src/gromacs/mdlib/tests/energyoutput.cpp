@@ -497,7 +497,7 @@ public:
             ekindata_.setCurrentReferenceTemperature(i, *testValue);
         }
 
-        for (index k = 0; k < ssize(mtop_.groups.groups[SimulationAtomGroupType::TemperatureCoupling])
+        for (Index k = 0; k < ssize(mtop_.groups.groups[SimulationAtomGroupType::TemperatureCoupling])
                                       * inputrec_.opts.nhchainlength;
              k++)
         {

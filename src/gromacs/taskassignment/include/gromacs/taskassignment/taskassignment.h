@@ -205,7 +205,7 @@ private:
      *
      * This is useful for indexing into \c
      * assignmentForAllRanksOnThisNode_. */
-    index indexOfThisRank_ = -1;
+    Index indexOfThisRank_ = -1;
     //! Number of GPU tasks on this node.
     size_t numGpuTasksOnThisNode_ = 0;
     //! Number of ranks on this physical node.

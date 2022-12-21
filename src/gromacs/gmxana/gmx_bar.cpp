@@ -1044,7 +1044,7 @@ static void sim_data_histogram(sim_data_t* sd, const char* filename, int nbin_de
 
             sample_coll_make_hist(sc, &hist, &dx, &minval, nbin_default);
 
-            for (gmx::index i = 0; i < gmx::ssize(hist); i++)
+            for (gmx::Index i = 0; i < gmx::ssize(hist); i++)
             {
                 double xmin = i * dx + minval;
                 double xmax = (i + 1) * dx + minval;
@@ -2865,7 +2865,7 @@ static void read_edr_rawdh_block(samples_t**   smp,
     }
 
     /* make room for the data */
-    if (gmx::index(s->ndu_alloc) < s->ndu + blk->sub[2].nr)
+    if (gmx::Index(s->ndu_alloc) < s->ndu + blk->sub[2].nr)
     {
         s->ndu_alloc += (s->ndu_alloc < static_cast<size_t>(blk->sub[2].nr)) ? blk->sub[2].nr * 2
                                                                              : s->ndu_alloc;

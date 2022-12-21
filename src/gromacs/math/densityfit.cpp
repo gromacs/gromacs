@@ -249,7 +249,7 @@ CrossCorrelationEvaluationHelperValues evaluateHelperValues(DensitySimilarityMea
 {
     CrossCorrelationEvaluationHelperValues helperValues;
 
-    index i = 0;
+    Index i = 0;
 
     const auto* referenceIterator = begin(reference);
     for (const real comp : compared)

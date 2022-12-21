@@ -171,7 +171,7 @@ private:
      * \param[in] metaDataType   The type of meta data to write.
      * \param[in] bias           The AWH Bias.
      */
-    void transferMetaDataToWriter(gmx::index metaDataIndex, AwhOutputMetaData metaDataType, const Bias& bias);
+    void transferMetaDataToWriter(gmx::Index metaDataIndex, AwhOutputMetaData metaDataType, const Bias& bias);
 
     /*! \brief Transfer AWH point data to writer data blocks.
      *

@@ -216,7 +216,7 @@ static int get_bounds(real** bounds, int** index, int** dr_pair, int* npairs, co
 
     /* Fill the bound array */
     nb = 0;
-    for (gmx::index i = 0; i < functype.ssize(); i++)
+    for (gmx::Index i = 0; i < functype.ssize(); i++)
     {
         ftype = functype[i];
         if (ftype == F_DISRES)

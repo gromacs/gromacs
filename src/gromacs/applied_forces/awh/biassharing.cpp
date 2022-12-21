@@ -159,7 +159,7 @@ BiasSharing::BiasSharing(const AwhParams& awhParams, const t_commrec& commRecord
             {
                 const auto& findBiasIndex =
                         std::find(localShareIndices.begin(), localShareIndices.end(), shareIndex);
-                const index localBiasIndex = (findBiasIndex == localShareIndices.end()
+                const Index localBiasIndex = (findBiasIndex == localShareIndices.end()
                                                       ? -1
                                                       : findBiasIndex - localShareIndices.begin());
                 MPI_Comm    splitComm;

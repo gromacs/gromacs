@@ -108,7 +108,7 @@ QMMMForceProvider::~QMMMForceProvider()
     }
 }
 
-bool QMMMForceProvider::isQMAtom(index globalAtomIndex)
+bool QMMMForceProvider::isQMAtom(Index globalAtomIndex)
 {
     return std::find(qmAtoms_.globalIndex().begin(), qmAtoms_.globalIndex().end(), globalAtomIndex)
            != qmAtoms_.globalIndex().end();

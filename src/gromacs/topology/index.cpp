@@ -141,7 +141,7 @@ static bool grp_cmp(gmx::ArrayRef<const IndexGroup> indexGroups, gmx::ArrayRef<c
     {
         return false;
     }
-    for (gmx::index i = 0; i < a.ssize(); i++)
+    for (gmx::Index i = 0; i < a.ssize(); i++)
     {
         if (a[i] != indexGroup[i])
         {
@@ -637,7 +637,7 @@ std::vector<IndexGroup> analyse(const t_atoms* atoms, gmx_bool bASK, gmx_bool bV
     int nwater = 0;
     int nion   = 0;
 
-    for (gmx::index i = 0; i < gmx::ssize(indexGroups); i++)
+    for (gmx::Index i = 0; i < gmx::ssize(indexGroups); i++)
     {
         if (!gmx_strcasecmp(indexGroups[i].name.c_str(), "Water"))
         {
@@ -774,7 +774,7 @@ static int findGroupTemplated(const char* s, gmx::ArrayRef<T> indexGroups)
     int       aa        = -1;
     /* first look for whole name match */
     {
-        for (gmx::index i = 0; i < indexGroups.ssize(); i++)
+        for (gmx::Index i = 0; i < indexGroups.ssize(); i++)
         {
             if (gmx_strcasecmp_min(s, indexGroupName(indexGroups[i])) == 0)
             {
@@ -789,7 +789,7 @@ static int findGroupTemplated(const char* s, gmx::ArrayRef<T> indexGroups)
     /* particleIndices look for first string match */
     if (aa == -1)
     {
-        for (gmx::index i = 0; i < indexGroups.ssize(); i++)
+        for (gmx::Index i = 0; i < indexGroups.ssize(); i++)
         {
             if (gmx_strncasecmp_min(s, indexGroupName(indexGroups[i]), n) == 0)
             {
@@ -809,7 +809,7 @@ static int findGroupTemplated(const char* s, gmx::ArrayRef<T> indexGroups)
         key[STRLEN - 1] = '\0';
         upstring(key);
         minstring(key);
-        for (gmx::index i = 0; i < indexGroups.ssize(); i++)
+        for (gmx::Index i = 0; i < indexGroups.ssize(); i++)
         {
             strncpy(string, indexGroupName(indexGroups[i]), STRLEN - 1);
             upstring(string);
@@ -886,7 +886,7 @@ static void rd_groups(gmx::ArrayRef<const IndexGroup> indexGroups,
     {
         gmx_fatal(FARGS, "Error: no groups in indexfile");
     }
-    for (gmx::index i = 0; i < indexGroups.ssize(); i++)
+    for (gmx::Index i = 0; i < indexGroups.ssize(); i++)
     {
         fprintf(stderr,
                 "Group %5zd (%15s) has %5zd elements\n",
@@ -958,7 +958,7 @@ t_cluster_ndx cluster_index(FILE* fplog, const char* ndx)
 
     c.clusters                = init_index(ndx);
     c.maxframe                = -1;
-    gmx::index totalNumFrames = 0;
+    gmx::Index totalNumFrames = 0;
     for (const auto& cluster : c.clusters)
     {
         for (const int frame : cluster.particleIndices)

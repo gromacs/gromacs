@@ -448,7 +448,7 @@ public:
     {
 
         // Test if all the constraints are satisfied
-        for (index c = 0; c < ssize(testData.constraints_) / 3; c++)
+        for (Index c = 0; c < ssize(testData.constraints_) / 3; c++)
         {
             real r0 = testData.constraintsR0_.at(testData.constraints_.at(3 * c));
             int  i  = testData.constraints_.at(3 * c + 1);
@@ -493,7 +493,7 @@ public:
     static void checkConstrainsDirection(const ConstraintsTestData& testData, t_pbc pbc)
     {
 
-        for (index c = 0; c < ssize(testData.constraints_) / 3; c++)
+        for (Index c = 0; c < ssize(testData.constraints_) / 3; c++)
         {
             int  i = testData.constraints_.at(3 * c + 1);
             int  j = testData.constraints_.at(3 * c + 2);

@@ -266,7 +266,7 @@ void SelectionCollectionDataTest::runParser(const gmx::ArrayRef<const char* cons
     TestReferenceChecker compound(checker_.checkCompound("ParsedSelections", "Parsed"));
     size_t               varcount = 0;
     count_                        = 0;
-    for (gmx::index i = 0; i < selections.ssize(); ++i)
+    for (gmx::Index i = 0; i < selections.ssize(); ++i)
     {
         SCOPED_TRACE(std::string("Parsing selection \"") + selections[i] + "\"");
         gmx::SelectionList result;

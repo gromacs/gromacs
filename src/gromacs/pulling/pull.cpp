@@ -1156,7 +1156,7 @@ static void do_constraint(struct pull_t* pull,
         /* update the atom positions */
         auto localAtomIndices = pgrp->atomSet.localIndex();
         copy_dvec(dr, tmp);
-        for (gmx::index j = 0; j < localAtomIndices.ssize(); j++)
+        for (gmx::Index j = 0; j < localAtomIndices.ssize(); j++)
         {
             ii = localAtomIndices[j];
             if (!pgrp->localWeights.empty())
@@ -1662,7 +1662,7 @@ void pull_apply_forces(struct pull_t*        pull,
     matrix     virial        = { { 0 } };
 
     /* Applying forces needs to loop backward to apply transformation coordinate forces */
-    for (gmx::index i = gmx::ssize(pull->coord) - 1; i >= 0; i--)
+    for (gmx::Index i = gmx::ssize(pull->coord) - 1; i >= 0; i--)
     {
         pull_coord_work_t& pcrd = pull->coord[i];
 

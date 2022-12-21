@@ -580,7 +580,7 @@ static void compareMoltypes(FILE*                              fp,
 static void compareMoletypeAB(FILE* fp, gmx::ArrayRef<const gmx_moltype_t> mt1, real relativeTolerance, real absoluteTolerance)
 {
     fprintf(fp, "comparing free energy molecule types\n");
-    for (gmx::index i = 0; i < mt1.ssize(); i++)
+    for (gmx::Index i = 0; i < mt1.ssize(); i++)
     {
         compareAtoms(fp, &mt1[i].atoms, nullptr, relativeTolerance, absoluteTolerance);
     }
@@ -673,7 +673,7 @@ void compareAtomGroups(FILE* fp, const SimulationGroups& g0, const SimulationGro
         cmp_int(fp, buf.c_str(), -1, g0.groups[group].size(), g1.groups[group].size());
         if (g0.groups[group].size() == g1.groups[group].size())
         {
-            for (gmx::index j = 0; j < gmx::ssize(g0.groups[group]); j++)
+            for (gmx::Index j = 0; j < gmx::ssize(g0.groups[group]); j++)
             {
                 buf = gmx::formatString("grps[%d].name[%zd]", static_cast<int>(group), j);
                 cmp_str(fp,

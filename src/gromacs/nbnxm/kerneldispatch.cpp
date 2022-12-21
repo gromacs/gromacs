@@ -264,7 +264,7 @@ static void nbnxn_kernel_cpu(const PairlistSet&             pairlistSet,
     int gmx_unused nthreads = gmx_omp_nthreads_get(ModuleMultiThread::Nonbonded);
     wallcycle_sub_start(wcycle, WallCycleSubCounter::NonbondedClear);
 #pragma omp parallel for schedule(static) num_threads(nthreads)
-    for (gmx::index nb = 0; nb < pairlists.ssize(); nb++)
+    for (gmx::Index nb = 0; nb < pairlists.ssize(); nb++)
     {
         // Presently, the kernels do not call C++ code that can throw,
         // so no need for a try/catch pair in this OpenMP region.

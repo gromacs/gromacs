@@ -169,7 +169,7 @@ MolecularTopologyAtomIndices globalAtomIndexToMoltypeIndices(const gmx::ArrayRef
 static int getMaxNumExclusionsPerAtom(const ListOfLists<int>& excls)
 {
     int maxNumExcls = 0;
-    for (gmx::index at = 0; at < excls.ssize(); at++)
+    for (gmx::Index at = 0; at < excls.ssize(); at++)
     {
         const auto list     = excls[at];
         const int  numExcls = list.ssize();

@@ -465,7 +465,7 @@ static void restoreAtomGroups(gmx_domdec_t* dd, const t_state* state)
     /* Copy back the global charge group indices from state
      * and rebuild the local charge group to atom index.
      */
-    for (gmx::index i = 0; i < atomGroupsState.ssize(); i++)
+    for (gmx::Index i = 0; i < atomGroupsState.ssize(); i++)
     {
         globalAtomGroupIndices[i] = atomGroupsState[i];
     }
@@ -2537,7 +2537,7 @@ static void orderVector(gmx::ArrayRef<const gmx_cgsort_t> sort,
                         gmx::ArrayRef<T>                  vectorToSort,
                         std::vector<T>*                   workVector)
 {
-    if (gmx::index(workVector->size()) < sort.ssize())
+    if (gmx::Index(workVector->size()) < sort.ssize())
     {
         workVector->resize(sort.size());
     }

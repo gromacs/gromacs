@@ -62,7 +62,7 @@ struct DensityFittingParameters
     //! Indicate if density fitting is active
     bool active_ = false;
     //! Indices of the atoms that shall be fit to the density
-    std::vector<index> indices_;
+    std::vector<Index> indices_;
     //! Determines how to measure similarity between simulated and reference density
     DensitySimilarityMeasureMethod similarityMeasureMethod_ = DensitySimilarityMeasureMethod::innerProduct;
     //! Determines with what weight atoms are spread

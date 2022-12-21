@@ -594,7 +594,7 @@ int gmx_genion(int argc, char* argv[])
             sfree(index);
         }
 
-        for (gmx::index i = 1; i < gmx::ssize(solventGroup); i++)
+        for (gmx::Index i = 1; i < gmx::ssize(solventGroup); i++)
         {
             if (solventGroup[i] != solventGroup[i - 1] + 1)
             {

@@ -254,7 +254,7 @@ static void leg_continuous(t_psdata*                      ps,
 {
     real       xx0;
     real       yhh, boxxh, boxyh;
-    gmx::index mapIndex = gmx::ssize(map) - mapoffset;
+    gmx::Index mapIndex = gmx::ssize(map) - mapoffset;
 
     boxyh = fontsize;
     if (x < 8 * fontsize)
@@ -272,7 +272,7 @@ static void leg_continuous(t_psdata*                      ps,
     /* LANDSCAPE */
     xx0 = x0 - (mapIndex * boxxh) / 2.0;
 
-    for (gmx::index i = 0; (i < mapIndex); i++)
+    for (gmx::Index i = 0; (i < mapIndex); i++)
     {
         ps_rgb(ps, &(map[i + mapoffset].rgb));
         ps_fillbox(ps, xx0 + i * boxxh, y0, xx0 + (i + 1) * boxxh, y0 + boxyh);
@@ -640,8 +640,8 @@ static std::vector<t_mapping> add_maps(gmx::ArrayRef<t_mapping> map1, gmx::Array
            map1.size(),
            map2.size(),
            map.size());
-    gmx::index k = 0;
-    for (gmx::index j = 0; j < gmx::ssize(map1) && k < gmx::ssize(map); ++j, ++k)
+    gmx::Index k = 0;
+    for (gmx::Index j = 0; j < gmx::ssize(map1) && k < gmx::ssize(map); ++j, ++k)
     {
         map[k].code.c1 = mapper[k % nsymbols];
         if (map.size() > nsymbols)
@@ -653,7 +653,7 @@ static std::vector<t_mapping> add_maps(gmx::ArrayRef<t_mapping> map1, gmx::Array
         map[k].rgb.b = map1[j].rgb.b;
         map[k].desc  = map1[j].desc;
     }
-    for (gmx::index j = 0; j < gmx::ssize(map2) && k < gmx::ssize(map); ++j, ++k)
+    for (gmx::Index j = 0; j < gmx::ssize(map2) && k < gmx::ssize(map); ++j, ++k)
     {
         map[k].code.c1 = mapper[k % nsymbols];
         if (map.size() > nsymbols)
@@ -687,7 +687,7 @@ static void xpm_mat(const char*             outf,
 
     GMX_RELEASE_ASSERT(mat.size() == mat2.size(),
                        "Combined matrix write requires matrices of the same size");
-    for (gmx::index i = 0; i != gmx::ssize(mat); ++i)
+    for (gmx::Index i = 0; i != gmx::ssize(mat); ++i)
     {
         // Color maps that differ only in RGB value are considered different
         if (mat2.empty() || std::equal(mat[i].map.begin(), mat[i].map.end(), mat2[i].map.begin()))
@@ -926,7 +926,7 @@ static void ps_mat(const char*             outf,
         draw_boxes(&out, x0, y0, w, mat, psr);
     }
 
-    for (gmx::index i = 0; i != gmx::ssize(mat); ++i)
+    for (gmx::Index i = 0; i != gmx::ssize(mat); ++i)
     {
         if (bTitle || (bTitleOnce && i == gmx::ssize(mat) - 1))
         {
@@ -1075,7 +1075,7 @@ static void prune_mat(gmx::ArrayRef<t_matrix> mat, gmx::ArrayRef<t_matrix> mat2,
 {
     GMX_RELEASE_ASSERT(mat.size() == mat2.size() || mat2.empty(),
                        "Matrix pruning requires matrices of the same size");
-    for (gmx::index i = 0; i != gmx::ssize(mat); ++i)
+    for (gmx::Index i = 0; i != gmx::ssize(mat); ++i)
     {
         fprintf(stderr,
                 "converting %dx%d matrix to %dx%d\n",
@@ -1132,7 +1132,7 @@ static void prune_mat(gmx::ArrayRef<t_matrix> mat, gmx::ArrayRef<t_matrix> mat2,
 static void zero_lines(gmx::ArrayRef<t_matrix> mat, gmx::ArrayRef<t_matrix> mat2)
 {
     GMX_RELEASE_ASSERT(mat.size() == mat2.size(), "zero_lines requires matrices of the same size");
-    for (gmx::index i = 0; i != gmx::ssize(mat); ++i)
+    for (gmx::Index i = 0; i != gmx::ssize(mat); ++i)
     {
         for (int m = 0; m < (!mat2.empty() ? 2 : 1); m++)
         {
@@ -1183,7 +1183,7 @@ static void write_combined_matrix(int                     ecombine,
     out = gmx_ffopen(fn, "w");
     GMX_RELEASE_ASSERT(mat1.size() == mat2.size(),
                        "Combined matrix write requires matrices of the same size");
-    for (gmx::index k = 0; k != gmx::ssize(mat1); k++)
+    for (gmx::Index k = 0; k != gmx::ssize(mat1); k++)
     {
         if (mat2[k].nx != mat1[k].nx || mat2[k].ny != mat1[k].ny)
         {
@@ -1284,7 +1284,7 @@ static void do_mat(gmx::ArrayRef<t_matrix> mat,
                        "Combined matrix write requires matrices of the same size");
     if (!mat2.empty())
     {
-        for (gmx::index k = 0; k != gmx::ssize(mat); k++)
+        for (gmx::Index k = 0; k != gmx::ssize(mat); k++)
         {
             if ((mat2[k].nx != mat[k].nx) || (mat2[k].ny != mat[k].ny))
             {
@@ -1306,7 +1306,7 @@ static void do_mat(gmx::ArrayRef<t_matrix> mat,
             }
         }
     }
-    for (gmx::index i = 0; i != gmx::ssize(mat); i++)
+    for (gmx::Index i = 0; i != gmx::ssize(mat); i++)
     {
         fprintf(stderr, "Matrix %zd is %d x %d\n", i, mat[i].nx, mat[i].ny);
     }

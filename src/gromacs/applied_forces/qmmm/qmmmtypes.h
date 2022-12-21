@@ -62,9 +62,9 @@ namespace gmx
 struct LinkFrontier
 {
     //! Global index of QM atom at Frontier
-    index qm;
+    Index qm;
     //! Global index of MM atom at Frontier
-    index mm;
+    Index mm;
 };
 
 /*! \brief Enumerator for supported QM methods
@@ -107,9 +107,9 @@ struct QMMMParameters
     //! Indicate if QM/MM is active (default false)
     bool active_ = false;
     //! Indices of the atoms that are part of the QM region (default whole System)
-    std::vector<index> qmIndices_;
+    std::vector<Index> qmIndices_;
     //! Indices of the atoms that are part of the MM region (default no MM atoms)
-    std::vector<index> mmIndices_;
+    std::vector<Index> mmIndices_;
     //! Vector with pairs of indicies defining broken bonds in QMMM (default determined from topology)
     std::vector<LinkFrontier> link_;
     //! Vector with atomic numbers of all atoms in the system (default determined from topology)

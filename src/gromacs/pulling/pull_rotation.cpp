@@ -615,7 +615,7 @@ real add_rot_forces(gmx_enfrot* er, gmx::ArrayRef<gmx::RVec> force, const t_comm
         gmx_enfrotgrp* erg = &ergRef;
         Vrot += erg->V; /* add the local parts from the nodes */
         const auto& localRotationGroupIndex = erg->atomSet->localIndex();
-        for (gmx::index l = 0; l < localRotationGroupIndex.ssize(); l++)
+        for (gmx::Index l = 0; l < localRotationGroupIndex.ssize(); l++)
         {
             /* Get the right index of the local force */
             int ii = localRotationGroupIndex[l];
@@ -2046,7 +2046,7 @@ static real do_flex2_lowlevel(gmx_enfrotgrp*                 erg,
     const auto& localRotationGroupIndex      = erg->atomSet->localIndex();
     const auto& collectiveRotationGroupIndex = erg->atomSet->collectiveIndex();
 
-    for (gmx::index j = 0; j < localRotationGroupIndex.ssize(); j++)
+    for (gmx::Index j = 0; j < localRotationGroupIndex.ssize(); j++)
     {
         /* Local index of a rotation group atom  */
         ii = localRotationGroupIndex[j];
@@ -2305,7 +2305,7 @@ static real do_flex_lowlevel(gmx_enfrotgrp* erg,
     const auto& localRotationGroupIndex      = erg->atomSet->localIndex();
     const auto& collectiveRotationGroupIndex = erg->atomSet->collectiveIndex();
 
-    for (gmx::index j = 0; j < localRotationGroupIndex.ssize(); j++)
+    for (gmx::Index j = 0; j < localRotationGroupIndex.ssize(); j++)
     {
         /* Local index of a rotation group atom  */
         int ii = localRotationGroupIndex[j];
@@ -2995,7 +2995,7 @@ static void do_radial_motion_pf(gmx_enfrotgrp*                 erg,
     /* Each process calculates the forces on its local atoms */
     const auto& localRotationGroupIndex      = erg->atomSet->localIndex();
     const auto& collectiveRotationGroupIndex = erg->atomSet->collectiveIndex();
-    for (gmx::index j = 0; j < localRotationGroupIndex.ssize(); j++)
+    for (gmx::Index j = 0; j < localRotationGroupIndex.ssize(); j++)
     {
         /* Local index of a rotation group atom  */
         int ii = localRotationGroupIndex[j];
@@ -3184,7 +3184,7 @@ static void do_radial_motion2(gmx_enfrotgrp*                 erg,
     /* Each process calculates the forces on its local atoms */
     const auto& localRotationGroupIndex      = erg->atomSet->localIndex();
     const auto& collectiveRotationGroupIndex = erg->atomSet->collectiveIndex();
-    for (gmx::index j = 0; j < localRotationGroupIndex.ssize(); j++)
+    for (gmx::Index j = 0; j < localRotationGroupIndex.ssize(); j++)
     {
         if (bPF)
         {
@@ -3858,7 +3858,7 @@ static void rotate_local_reference(gmx_enfrotgrp* erg)
 static void choose_pbc_image(gmx::ArrayRef<const gmx::RVec> coords, gmx_enfrotgrp* erg, const matrix box, int npbcdim)
 {
     const auto& localRotationGroupIndex = erg->atomSet->localIndex();
-    for (gmx::index i = 0; i < localRotationGroupIndex.ssize(); i++)
+    for (gmx::Index i = 0; i < localRotationGroupIndex.ssize(); i++)
     {
         /* Index of a rotation group atom  */
         int ii = localRotationGroupIndex[i];
@@ -3945,7 +3945,7 @@ void do_rotation(const t_commrec*               cr,
             if (bNS)
             {
                 const auto& collectiveRotationGroupIndex = erg->atomSet->collectiveIndex();
-                for (gmx::index i = 0; i < collectiveRotationGroupIndex.ssize(); i++)
+                for (gmx::Index i = 0; i < collectiveRotationGroupIndex.ssize(); i++)
                 {
                     /* Index of local atom w.r.t. the collective rotation group */
                     int ii        = collectiveRotationGroupIndex[i];

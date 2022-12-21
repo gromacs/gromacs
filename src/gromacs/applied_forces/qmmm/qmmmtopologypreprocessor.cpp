@@ -53,7 +53,7 @@
 namespace gmx
 {
 
-QMMMTopologyPreprocessor::QMMMTopologyPreprocessor(ArrayRef<const index> qmIndices) :
+QMMMTopologyPreprocessor::QMMMTopologyPreprocessor(ArrayRef<const Index> qmIndices) :
     qmIndices_(qmIndices.begin(), qmIndices.end())
 {
 }
@@ -111,7 +111,7 @@ ArrayRef<const LinkFrontier> QMMMTopologyPreprocessor::linkFrontier() const
     return linkFrontier_;
 }
 
-bool QMMMTopologyPreprocessor::isQMAtom(index globalAtomIndex)
+bool QMMMTopologyPreprocessor::isQMAtom(Index globalAtomIndex)
 {
     return (qmIndices_.find(globalAtomIndex) != qmIndices_.end());
 }
@@ -120,7 +120,7 @@ void QMMMTopologyPreprocessor::splitQMblocks(gmx_mtop_t* mtop)
 {
 
     // Global counter of atoms
-    index iAt = 0;
+    Index iAt = 0;
 
     /* Counter of molecules point to the specific moltype
      * i.e molblock 0 has 2 molecules have moltype 0 and molblock 2 has 1 additional molecule of type 0

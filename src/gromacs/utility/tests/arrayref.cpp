@@ -150,7 +150,7 @@ typedef ::testing::Types<ArrayRef<char>,
                          ArrayRef<const double>>
         ArrayRefTypes;
 
-constexpr index aSize = 3;
+constexpr Index aSize = 3;
 
 /*! \brief Permit all the tests to run on all kinds of ArrayRefs
  *
@@ -176,7 +176,7 @@ public:
         EXPECT_EQ(aData, arrayRef.data());
         EXPECT_EQ(a[0], arrayRef.front());
         EXPECT_EQ(a[aSize - 1], arrayRef.back());
-        for (index i = 0; i != aSize; ++i)
+        for (Index i = 0; i != aSize; ++i)
         {
             EXPECT_EQ(a[i], arrayRef[i]);
         }

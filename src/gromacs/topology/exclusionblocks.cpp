@@ -52,7 +52,7 @@ namespace
 //! Converts ListOfLists to a list of ExclusionBlocks
 void listOfListsToExclusionBlocks(const ListOfLists<int>& b, gmx::ArrayRef<ExclusionBlock> b2)
 {
-    for (gmx::index i = 0; i < b.ssize(); i++)
+    for (gmx::Index i = 0; i < b.ssize(); i++)
     {
         for (int jAtom : b[i])
         {

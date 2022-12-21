@@ -113,7 +113,7 @@ public:
      * \note Use ssize for any expression involving arithmetic operations
      * (including loop indices).
      */
-    index ssize() const { return index(listRanges_.size()) - 1; }
+    Index ssize() const { return Index(listRanges_.size()) - 1; }
 
     //! Returns whether the list holds no lists
     bool empty() const { return listRanges_.size() == 1; }

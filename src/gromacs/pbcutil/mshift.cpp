@@ -272,7 +272,7 @@ static gmx_bool determine_graph_parts(const EdgesGenerator& edgesG, ArrayRef<int
     {
         haveMultipleParts = false;
         numAtomsChanged   = 0;
-        for (gmx::index at_i = 0; at_i < gmx::ssize(edgesG.edges()); at_i++)
+        for (gmx::Index at_i = 0; at_i < gmx::ssize(edgesG.edges()); at_i++)
         {
             for (const int at_i2 : edgesG.edges()[at_i])
             {
@@ -650,9 +650,9 @@ static int mk_grey(ArrayRef<egCol> edgeColor,
 /* Return the first node/atom with colour Col starting at fC.
  * return -1 if none found.
  */
-static gmx::index first_colour(const int fC, const egCol Col, const t_graph* g, ArrayRef<const egCol> edgeColor)
+static gmx::Index first_colour(const int fC, const egCol Col, const t_graph* g, ArrayRef<const egCol> edgeColor)
 {
-    for (gmx::index i = fC; i < gmx::ssize(g->edges); i++)
+    for (gmx::Index i = fC; i < gmx::ssize(g->edges); i++)
     {
         if (!g->edges[i].empty() && edgeColor[i] == Col)
         {

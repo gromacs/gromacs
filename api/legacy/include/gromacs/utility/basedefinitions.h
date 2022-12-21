@@ -65,11 +65,11 @@ namespace gmx
  *
  * Same as ptrdiff_t.
  */
-using index = std::ptrdiff_t;
+using Index = std::ptrdiff_t;
 
 //! Return signed size of container
 template<typename T>
-index ssize(const T& t)
+Index ssize(const T& t)
 {
     return t.size();
 }

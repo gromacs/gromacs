@@ -3259,11 +3259,11 @@ static void calc_nrdf(const gmx_mtop_t* mtop, t_inputrec* ir, gmx::ArrayRef<cons
     snew(na_vcm, groups.groups[SimulationAtomGroupType::MassCenterVelocityRemoval].size() + 1);
     snew(nrdf_vcm_sub, groups.groups[SimulationAtomGroupType::MassCenterVelocityRemoval].size() + 1);
 
-    for (gmx::index i = 0; i < gmx::ssize(groups.groups[SimulationAtomGroupType::TemperatureCoupling]); i++)
+    for (gmx::Index i = 0; i < gmx::ssize(groups.groups[SimulationAtomGroupType::TemperatureCoupling]); i++)
     {
         nrdf_tc[i] = 0;
     }
-    for (gmx::index i = 0;
+    for (gmx::Index i = 0;
          i < gmx::ssize(groups.groups[SimulationAtomGroupType::MassCenterVelocityRemoval]) + 1;
          i++)
     {
@@ -3442,7 +3442,7 @@ static void calc_nrdf(const gmx_mtop_t* mtop, t_inputrec* ir, gmx::ArrayRef<cons
          * translation is removed and 6 when rotation is removed as well.
          * Note that we do not and should not include the rest group here.
          */
-        for (gmx::index j = 0;
+        for (gmx::Index j = 0;
              j < gmx::ssize(groups.groups[SimulationAtomGroupType::MassCenterVelocityRemoval]);
              j++)
         {
@@ -3464,12 +3464,12 @@ static void calc_nrdf(const gmx_mtop_t* mtop, t_inputrec* ir, gmx::ArrayRef<cons
             }
         }
 
-        for (gmx::index i = 0;
+        for (gmx::Index i = 0;
              i < gmx::ssize(groups.groups[SimulationAtomGroupType::TemperatureCoupling]);
              i++)
         {
             /* Count the number of atoms of TC group i for every VCM group */
-            for (gmx::index j = 0;
+            for (gmx::Index j = 0;
                  j < gmx::ssize(groups.groups[SimulationAtomGroupType::MassCenterVelocityRemoval]) + 1;
                  j++)
             {
@@ -3489,7 +3489,7 @@ static void calc_nrdf(const gmx_mtop_t* mtop, t_inputrec* ir, gmx::ArrayRef<cons
              */
             nrdf_uc    = nrdf_tc[i];
             nrdf_tc[i] = 0;
-            for (gmx::index j = 0;
+            for (gmx::Index j = 0;
                  j < gmx::ssize(groups.groups[SimulationAtomGroupType::MassCenterVelocityRemoval]) + 1;
                  j++)
             {

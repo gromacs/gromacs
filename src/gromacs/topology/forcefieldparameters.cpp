@@ -48,7 +48,7 @@ static void pr_cmap(FILE* fp, int indent, const char* title, const gmx_cmap_t* c
     {
         fprintf(fp, "%s\n", title);
 
-        for (gmx::index i = 0; i < gmx::ssize(cmap_grid->cmapdata); i++)
+        for (gmx::Index i = 0; i < gmx::ssize(cmap_grid->cmapdata); i++)
         {
             real idx = -180.0;
             fprintf(fp, "%8s %8s %8s %8s\n", "V", "dVdx", "dVdy", "d2dV");

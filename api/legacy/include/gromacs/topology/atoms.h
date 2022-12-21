@@ -212,7 +212,7 @@ public:
     //! Access particle type.
     ParticleType ptype() const { return particleType_; }
     //! Access residue index.
-    gmx::index resind() const { return residueIndex_; }
+    gmx::Index resind() const { return residueIndex_; }
     //! Access atomic number.
     int atomnumber() const { return atomicNumber_; }
     //! Access element name.
@@ -237,7 +237,7 @@ public:
                        const std::optional<ParticleTypeName>  particleTypeName,
                        NameHolder                             particleName,
                        ParticleType                           particleType,
-                       gmx::index                             residueIndex,
+                       gmx::Index                             residueIndex,
                        int                                    atomicNumber,
                        const std::string&                     elementName) :
         mass_(mass.has_value() ? *mass : ParticleMass()),
