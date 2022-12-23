@@ -1774,8 +1774,9 @@ defaultInteractionsOfType(int                               ftype,
         {
             pos = std::find_if(bondType[ftype].interactionTypes.begin(),
                                bondType[ftype].interactionTypes.end(),
-                               [&atomTypes, &nmatch_max](const auto& bondType) {
-                                   return (findNumberOfDihedralAtomMatches(bondType, atomTypes) > nmatch_max);
+                               [&atomTypes, &nmatch_max](const auto& elemBondType) {
+                                   return (findNumberOfDihedralAtomMatches(elemBondType, atomTypes)
+                                           > nmatch_max);
                                });
             if (pos != bondType[ftype].interactionTypes.end())
             {

@@ -122,7 +122,8 @@ RVec calculateCOM(ArrayRef<const RVec> x, const gmx_moltype_t& moltype, const in
 
 void shiftAtoms(const RVec& shift, ArrayRef<RVec> x)
 {
-    std::transform(std::begin(x), std::end(x), std::begin(x), [shift](RVec x) { return x + shift; });
+    std::transform(
+            std::begin(x), std::end(x), std::begin(x), [shift](RVec elemX) { return elemX + shift; });
 }
 
 void placeCoordinatesWithCOMInBox(const PbcType&      pbcType,
