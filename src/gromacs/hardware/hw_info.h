@@ -55,8 +55,8 @@ struct DeviceInformation;
  *       be shared among all threads) */
 struct gmx_hw_info_t
 {
-    gmx_hw_info_t(std::unique_ptr<gmx::CpuInfo>          cpuInfo,
-                  std::unique_ptr<gmx::HardwareTopology> hardwareTopology);
+    gmx_hw_info_t(std::unique_ptr<gmx::CpuInfo>          theCpuInfo,
+                  std::unique_ptr<gmx::HardwareTopology> theHardwareTopology);
     ~gmx_hw_info_t();
 
     /* Data for our local physical node */

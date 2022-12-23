@@ -66,9 +66,9 @@
 #    include <unistd.h> // sysconf()
 #endif
 
-gmx_hw_info_t::gmx_hw_info_t(std::unique_ptr<gmx::CpuInfo>          cpuInfo,
-                             std::unique_ptr<gmx::HardwareTopology> hardwareTopology) :
-    cpuInfo(std::move(cpuInfo)), hardwareTopology(std::move(hardwareTopology))
+gmx_hw_info_t::gmx_hw_info_t(std::unique_ptr<gmx::CpuInfo>          theCpuInfo,
+                             std::unique_ptr<gmx::HardwareTopology> theHardwareTopology) :
+    cpuInfo(std::move(theCpuInfo)), hardwareTopology(std::move(theHardwareTopology))
 {
 }
 
