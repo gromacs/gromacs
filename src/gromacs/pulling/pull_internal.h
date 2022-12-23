@@ -101,18 +101,18 @@ struct pull_group_work_t
     //! Returns the number of threads to use for local atom operations based on the local atom count
     int numThreads() const
     {
-        return atomSet.numAtomsLocal() <= c_pullMaxNumLocalAtomsSingleThreaded ? 1 : maxNumThreads;
+        return atomSet_.numAtomsLocal() <= c_pullMaxNumLocalAtomsSingleThreaded ? 1 : maxNumThreads_;
     }
 
     /* Data only modified at initialization */
-    const t_pull_group params;   /**< The pull group parameters */
+    const t_pull_group params_;  /**< The pull group parameters */
     const int          epgrppbc; /**< The type of pbc for this pull group, see enum above */
-    const int maxNumThreads; /**< The maximum number of threads to use for operations on x and f */
+    const int maxNumThreads_; /**< The maximum number of threads to use for operations on x and f */
     bool      needToCalcCom; /**< Do we need to calculate the COM? (Not for group 0 or if only used as cylinder group) */
     std::vector<real> globalWeights; /**< Weights per atom set by the user and/or mass/friction coefficients, if empty all weights are equal */
 
     /* Data modified only at init or at domain decomposition */
-    gmx::LocalAtomSet                  atomSet;      /**< Global to local atom set mapper */
+    gmx::LocalAtomSet                  atomSet_;     /**< Global to local atom set mapper */
     std::vector<real>                  localWeights; /**< Weights for the local atoms */
     std::unique_ptr<gmx::LocalAtomSet> pbcAtomSet;   /**< Keeps index of the pbc reference atom.
                                                           The stored LocalAtomSet consists of exactly   one atom when pbc reference atom is required.

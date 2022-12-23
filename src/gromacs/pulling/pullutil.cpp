@@ -135,7 +135,7 @@ static void setPbcAtomCoords(const pull_group_work_t& pgrp, ArrayRef<const RVec>
     }
     else
     {
-        copy_rvec(x[pgrp.params.pbcatom], x_pbc);
+        copy_rvec(x[pgrp.params_.pbcatom], x_pbc);
     }
 }
 
@@ -219,7 +219,7 @@ static void make_cyl_refgrps(const t_commrec*     cr,
                 reference[m] = pgrp.x[m] - pcrd.spatialData.vec[m] * pcrd.value_ref;
             }
 
-            auto localAtomIndices = pref.atomSet.localIndex();
+            auto localAtomIndices = pref.atomSet_.localIndex();
 
             /* This actually only needs to be done at init or DD time,
              * but resizing with the same size does not cause much overhead.
@@ -379,7 +379,7 @@ static void sum_com_part(const pull_group_work_t* pgrp,
     dvec   sum_wmx  = { 0, 0, 0 };
     dvec   sum_wmxp = { 0, 0, 0 };
 
-    auto localAtomIndices = pgrp->atomSet.localIndex();
+    auto localAtomIndices = pgrp->atomSet_.localIndex();
     for (int i = ind_start; i < ind_end; i++)
     {
         int  ii = localAtomIndices[i];
@@ -465,7 +465,7 @@ static void sum_com_part_cosweight(const pull_group_work_t* pgrp,
     double sum_cmp = 0;
     double sum_smp = 0;
 
-    auto localAtomIndices = pgrp->atomSet.localIndex();
+    auto localAtomIndices = pgrp->atomSet_.localIndex();
 
     for (int i = ind_start; i < ind_end; i++)
     {
@@ -560,7 +560,7 @@ void pull_calc_coms(const t_commrec*     cr,
          */
         if (pgrp->epgrppbc == epgrppbcCOS)
         {
-            pgrp->localWeights.resize(pgrp->atomSet.localIndex().size());
+            pgrp->localWeights.resize(pgrp->atomSet_.localIndex().size());
         }
 
         auto comBuffer = gmx::arrayRefFromArray(comm->comBuffer.data() + g * c_comBufferStride,
@@ -592,8 +592,8 @@ void pull_calc_coms(const t_commrec*     cr,
                  * Note that with constraint pulling the mass does matter, but
                  * in that case a check group mass != 0 has been done before.
                  */
-                if (pgrp->params.ind.size() == 1 && pgrp->atomSet.numAtomsLocal() == 1
-                    && masses[pgrp->atomSet.localIndex()[0]] == 0)
+                if (pgrp->params_.ind.size() == 1 && pgrp->atomSet_.numAtomsLocal() == 1
+                    && masses[pgrp->atomSet_.localIndex()[0]] == 0)
                 {
                     GMX_ASSERT(xp.empty(),
                                "We should not have groups with zero mass with constraints, i.e. "
@@ -602,15 +602,15 @@ void pull_calc_coms(const t_commrec*     cr,
                     /* Copy the single atom coordinate */
                     for (int d = 0; d < DIM; d++)
                     {
-                        comSumsTotal.sum_wmx[d] = x[pgrp->atomSet.localIndex()[0]][d];
+                        comSumsTotal.sum_wmx[d] = x[pgrp->atomSet_.localIndex()[0]][d];
                     }
                     /* Set all mass factors to 1 to get the correct COM */
                     comSumsTotal.sum_wm  = 1;
                     comSumsTotal.sum_wwm = 1;
                 }
-                else if (pgrp->atomSet.numAtomsLocal() <= c_pullMaxNumLocalAtomsSingleThreaded)
+                else if (pgrp->atomSet_.numAtomsLocal() <= c_pullMaxNumLocalAtomsSingleThreaded)
                 {
-                    sum_com_part(pgrp, 0, pgrp->atomSet.numAtomsLocal(), x, xp, masses, pbc, x_pbc, &comSumsTotal);
+                    sum_com_part(pgrp, 0, pgrp->atomSet_.numAtomsLocal(), x, xp, masses, pbc, x_pbc, &comSumsTotal);
                 }
                 else
                 {
@@ -618,8 +618,8 @@ void pull_calc_coms(const t_commrec*     cr,
 #pragma omp parallel for num_threads(numThreads) schedule(static)
                     for (int thread = 0; thread < numThreads; thread++)
                     {
-                        int ind_start = (pgrp->atomSet.numAtomsLocal() * (thread + 0)) / numThreads;
-                        int ind_end   = (pgrp->atomSet.numAtomsLocal() * (thread + 1)) / numThreads;
+                        int ind_start = (pgrp->atomSet_.numAtomsLocal() * (thread + 0)) / numThreads;
+                        int ind_end = (pgrp->atomSet_.numAtomsLocal() * (thread + 1)) / numThreads;
                         sum_com_part(
                                 pgrp, ind_start, ind_end, x, xp, masses, pbc, x_pbc, &pull->comSums[thread]);
                     }
@@ -658,8 +658,8 @@ void pull_calc_coms(const t_commrec*     cr,
 #pragma omp parallel for num_threads(numThreads) schedule(static)
                 for (int thread = 0; thread < numThreads; thread++)
                 {
-                    int ind_start = (pgrp->atomSet.numAtomsLocal() * (thread + 0)) / numThreads;
-                    int ind_end   = (pgrp->atomSet.numAtomsLocal() * (thread + 1)) / numThreads;
+                    int ind_start = (pgrp->atomSet_.numAtomsLocal() * (thread + 0)) / numThreads;
+                    int ind_end   = (pgrp->atomSet_.numAtomsLocal() * (thread + 1)) / numThreads;
                     sum_com_part_cosweight(
                             pgrp, ind_start, ind_end, pull->cosdim, twopi_box, x, xp, masses, &pull->comSums[thread]);
                 }
@@ -709,7 +709,7 @@ void pull_calc_coms(const t_commrec*     cr,
         pgrp = &pull->group[g];
         if (pgrp->needToCalcCom)
         {
-            GMX_ASSERT(!pgrp->params.ind.empty(),
+            GMX_ASSERT(!pgrp->params_.ind.empty(),
                        "Normal pull groups should have atoms, only group 0, which should have "
                        "bCalcCom=FALSE has nat=0");
 
@@ -770,9 +770,9 @@ void pull_calc_coms(const t_commrec*     cr,
                 /* Set the weights for the local atoms */
                 csw *= pgrp->invtm;
                 snw *= pgrp->invtm;
-                for (size_t i = 0; i < pgrp->atomSet.numAtomsLocal(); i++)
+                for (size_t i = 0; i < pgrp->atomSet_.numAtomsLocal(); i++)
                 {
-                    int ii                = pgrp->atomSet.localIndex()[i];
+                    int ii                = pgrp->atomSet_.localIndex()[i];
                     pgrp->localWeights[i] = csw * std::cos(twopi_box * x[ii][pull->cosdim])
                                             + snw * std::sin(twopi_box * x[ii][pull->cosdim]);
                 }
@@ -846,7 +846,7 @@ static bool pullGroupObeysPbcRestrictions(const pull_group_work_t& group,
         }
     }
 
-    auto localAtomIndices = group.atomSet.localIndex();
+    auto localAtomIndices = group.atomSet_.localIndex();
     for (gmx::Index indexInSet = 0; indexInSet < localAtomIndices.ssize(); indexInSet++)
     {
         rvec dx;
@@ -1092,7 +1092,7 @@ void initPullComFromPrevStep(const t_commrec*     cr,
 
         if (pgrp->needToCalcCom && pgrp->epgrppbc == epgrppbcPREVSTEPCOM)
         {
-            GMX_ASSERT(pgrp->params.ind.size() > 1,
+            GMX_ASSERT(pgrp->params_.ind.size() > 1,
                        "Groups with no atoms, or only one atom, should not "
                        "use the COM from the previous step as reference.");
 
@@ -1104,9 +1104,9 @@ void initPullComFromPrevStep(const t_commrec*     cr,
             /* The final sums should end up in sum_com[0] */
             ComSums& comSumsTotal = pull->comSums[0];
 
-            if (pgrp->atomSet.numAtomsLocal() <= c_pullMaxNumLocalAtomsSingleThreaded)
+            if (pgrp->atomSet_.numAtomsLocal() <= c_pullMaxNumLocalAtomsSingleThreaded)
             {
-                sum_com_part(pgrp, 0, pgrp->atomSet.numAtomsLocal(), x, {}, masses, pbc, x_pbc, &comSumsTotal);
+                sum_com_part(pgrp, 0, pgrp->atomSet_.numAtomsLocal(), x, {}, masses, pbc, x_pbc, &comSumsTotal);
             }
             else
             {
@@ -1114,8 +1114,8 @@ void initPullComFromPrevStep(const t_commrec*     cr,
 #pragma omp parallel for num_threads(numThreads) schedule(static)
                 for (int t = 0; t < numThreads; t++)
                 {
-                    int ind_start = (pgrp->atomSet.numAtomsLocal() * (t + 0)) / numThreads;
-                    int ind_end   = (pgrp->atomSet.numAtomsLocal() * (t + 1)) / numThreads;
+                    int ind_start = (pgrp->atomSet_.numAtomsLocal() * (t + 0)) / numThreads;
+                    int ind_end   = (pgrp->atomSet_.numAtomsLocal() * (t + 1)) / numThreads;
                     sum_com_part(pgrp, ind_start, ind_end, x, {}, masses, pbc, x_pbc, &pull->comSums[t]);
                 }
 

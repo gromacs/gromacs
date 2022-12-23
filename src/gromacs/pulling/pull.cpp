@@ -128,11 +128,11 @@ pull_group_work_t::pull_group_work_t(const t_pull_group& params,
                                      gmx::LocalAtomSet   atomSet,
                                      bool                bSetPbcRefToPrevStepCOM,
                                      int                 maxNumThreads) :
-    params(params),
+    params_(params),
     epgrppbc(groupPbcFromParams(params, bSetPbcRefToPrevStepCOM)),
-    maxNumThreads(maxNumThreads),
+    maxNumThreads_(maxNumThreads),
     needToCalcCom(false),
-    atomSet(atomSet),
+    atomSet_(atomSet),
     mwscale(0),
     wscale(0),
     invtm(0)
@@ -188,7 +188,7 @@ static void apply_forces_grp_part(const pull_group_work_t& pgrp,
 {
     const double inv_wm = pgrp.mwscale;
 
-    auto localAtomIndices = pgrp.atomSet.localIndex();
+    auto localAtomIndices = pgrp.atomSet_.localIndex();
     for (int i = ind_start; i < ind_end; i++)
     {
         int    ii    = localAtomIndices[i];
@@ -212,9 +212,9 @@ static void apply_forces_grp(const pull_group_work_t& pgrp,
                              const int                sign,
                              rvec*                    f)
 {
-    auto localAtomIndices = pgrp.atomSet.localIndex();
+    auto localAtomIndices = pgrp.atomSet_.localIndex();
 
-    if (pgrp.params.ind.size() == 1 && pgrp.atomSet.numAtomsLocal() == 1)
+    if (pgrp.params_.ind.size() == 1 && pgrp.atomSet_.numAtomsLocal() == 1)
     {
         /* Only one atom and our rank has this atom: we can skip
          * the mass weighting, which means that this code also works
@@ -256,7 +256,7 @@ static void apply_forces_cyl_grp(const pull_group_work_t& pgrp,
 {
     const double inv_wm = pgrp.mwscale;
 
-    auto localAtomIndices = pgrp.atomSet.localIndex();
+    auto localAtomIndices = pgrp.atomSet_.localIndex();
 
     /* The cylinder group is always a slab in the system, thus large.
      * Therefore we always thread-parallelize this group.
@@ -368,7 +368,7 @@ static void apply_forces_coord(const pull_coord_work_t&          pcrd,
             apply_forces_vec_torque(pcrd, pullGroups, masses, f);
         }
 
-        if (!pullGroups[pcrd.params_.group[0]].params.ind.empty())
+        if (!pullGroups[pcrd.params_.group[0]].params_.ind.empty())
         {
             apply_forces_grp(pullGroups[pcrd.params_.group[0]], masses, forces.force01, -1, f);
         }
@@ -479,7 +479,7 @@ static void low_get_pull_coord_dr(const pull_t&            pull,
     dvec xrefr;
 
     /* Only the first group can be an absolute reference, in that case nat=0 */
-    if (pgrp0.params.ind.empty())
+    if (pgrp0.params_.ind.empty())
     {
         for (int m = 0; m < DIM; m++)
         {
@@ -1154,7 +1154,7 @@ static void do_constraint(struct pull_t* pull,
         }
 
         /* update the atom positions */
-        auto localAtomIndices = pgrp->atomSet.localIndex();
+        auto localAtomIndices = pgrp->atomSet_.localIndex();
         copy_dvec(dr, tmp);
         for (gmx::Index j = 0; j < localAtomIndices.ssize(); j++)
         {
@@ -1738,10 +1738,10 @@ void dd_make_local_pull_groups(const t_commrec* cr, struct pull_t* pull)
     {
         if (!group.globalWeights.empty())
         {
-            group.localWeights.resize(group.atomSet.numAtomsLocal());
-            for (size_t i = 0; i < group.atomSet.numAtomsLocal(); ++i)
+            group.localWeights.resize(group.atomSet_.numAtomsLocal());
+            for (size_t i = 0; i < group.atomSet_.numAtomsLocal(); ++i)
             {
-                group.localWeights[i] = group.globalWeights[group.atomSet.collectiveIndex()[i]];
+                group.localWeights[i] = group.globalWeights[group.atomSet_.collectiveIndex()[i]];
             }
         }
 
@@ -1751,7 +1751,7 @@ void dd_make_local_pull_groups(const t_commrec* cr, struct pull_t* pull)
 
         /* We should participate if we have pull or pbc atoms */
         if (!bMustParticipate
-            && (group.atomSet.numAtomsLocal() > 0
+            && (group.atomSet_.numAtomsLocal() > 0
                 || (group.epgrppbc == epgrppbcREFAT && group.pbcAtomSet->numAtomsLocal() > 0)))
         {
             bMustParticipate = TRUE;
@@ -1869,7 +1869,7 @@ static void init_pull_group_index(FILE*              fplog,
      * But we still want to have the correct mass-weighted COMs.
      * So we store the real masses in the weights.
      */
-    const bool setWeights = (!pg->params.weight.empty() || EI_ENERGY_MINIMIZATION(ir->eI)
+    const bool setWeights = (!pg->params_.weight.empty() || EI_ENERGY_MINIMIZATION(ir->eI)
                              || ir->eI == IntegrationAlgorithm::BD);
 
     /* In parallel, store we need to extract localWeights from weights at DD time */
@@ -1883,9 +1883,9 @@ static void init_pull_group_index(FILE*              fplog,
     double wmass   = 0;
     double wwmass  = 0;
     int    molb    = 0;
-    for (int i = 0; i < int(pg->params.ind.size()); i++)
+    for (int i = 0; i < int(pg->params_.ind.size()); i++)
     {
-        int ii = pg->params.ind[i];
+        int ii = pg->params_.ind[i];
         if (bConstraint && ir->opts.nFreeze)
         {
             for (int d = 0; d < DIM; d++)
@@ -1908,9 +1908,9 @@ static void init_pull_group_index(FILE*              fplog,
             m = (1 - lambda) * atom.m + lambda * atom.mB;
         }
         real w;
-        if (!pg->params.weight.empty())
+        if (!pg->params_.weight.empty())
         {
-            w = pg->params.weight[i];
+            w = pg->params_.weight[i];
         }
         else
         {
@@ -1958,7 +1958,7 @@ static void init_pull_group_index(FILE*              fplog,
         /* We can have single atom groups with zero mass with potential pulling
          * without cosine weighting.
          */
-        if (pg->params.ind.size() == 1 && !bConstraint && pg->epgrppbc != epgrppbcCOS)
+        if (pg->params_.ind.size() == 1 && !bConstraint && pg->epgrppbc != epgrppbcCOS)
         {
             /* With one atom the mass doesn't matter */
             wwmass = 1;
@@ -1967,14 +1967,14 @@ static void init_pull_group_index(FILE*              fplog,
         {
             gmx_fatal(FARGS,
                       "The total%s mass of pull group %d is zero",
-                      !pg->params.weight.empty() ? " weighted" : "",
+                      !pg->params_.weight.empty() ? " weighted" : "",
                       g);
         }
     }
     if (fplog)
     {
-        fprintf(fplog, "Pull group %d: %5zu atoms, mass %9.3f", g, pg->params.ind.size(), tmass);
-        if (!pg->params.weight.empty() || EI_ENERGY_MINIMIZATION(ir->eI)
+        fprintf(fplog, "Pull group %d: %5zu atoms, mass %9.3f", g, pg->params_.ind.size(), tmass);
+        if (!pg->params_.weight.empty() || EI_ENERGY_MINIMIZATION(ir->eI)
             || ir->eI == IntegrationAlgorithm::BD)
         {
             fprintf(fplog, ", weighted mass %9.3f", wmass * wmass / wwmass);
@@ -1996,7 +1996,7 @@ static void init_pull_group_index(FILE*              fplog,
         int ndim = 0;
         for (int d = 0; d < DIM; d++)
         {
-            ndim += pulldim_con[d] * pg->params.ind.size();
+            ndim += pulldim_con[d] * pg->params_.ind.size();
         }
         if (fplog && nfrozen > 0 && nfrozen < ndim)
         {
@@ -2050,7 +2050,7 @@ struct pull_t* init_pull(FILE*                     fplog,
             {
                 /* pbcAtomSet consists of a single atom */
                 group.pbcAtomSet = std::make_unique<gmx::LocalAtomSet>(
-                        atomSets->add({ &group.params.pbcatom, &group.params.pbcatom + 1 }));
+                        atomSets->add({ &group.params_.pbcatom, &group.params_.pbcatom + 1 }));
             }
         }
     }
@@ -2062,7 +2062,7 @@ struct pull_t* init_pull(FILE*                     fplog,
     pull->bXOutAverage = pull_params->bXOutAverage;
     pull->bFOutAverage = pull_params->bFOutAverage;
 
-    GMX_RELEASE_ASSERT(pull->group[0].params.ind.empty(),
+    GMX_RELEASE_ASSERT(pull->group[0].params_.ind.empty(),
                        "pull group 0 is an absolute reference group and should not contain atoms");
 
     pull->numCoordinatesWithExternalPotential = 0;
@@ -2216,8 +2216,8 @@ struct pull_t* init_pull(FILE*                     fplog,
         bAbs = FALSE;
         for (const pull_coord_work_t& coord : pull->coord)
         {
-            if (pull->group[coord.params_.group[0]].params.ind.empty()
-                || pull->group[coord.params_.group[1]].params.ind.empty())
+            if (pull->group[coord.params_.group[0]].params_.ind.empty()
+                || pull->group[coord.params_.group[1]].params_.ind.empty())
             {
                 bAbs = TRUE;
             }
@@ -2250,7 +2250,7 @@ struct pull_t* init_pull(FILE*                     fplog,
         // Don't include the reference group 0 in loop
         for (size_t g = 1; g < pull->group.size(); g++)
         {
-            if (pull->group[g].params.ind.size() > 1 && pull->group[g].params.pbcatom < 0)
+            if (pull->group[g].params_.ind.size() > 1 && pull->group[g].params_.pbcatom < 0)
             {
                 /* We are using cosine weighting */
                 fprintf(fplog, "Cosine weighting is used for group %zu\n", g);
@@ -2270,7 +2270,7 @@ struct pull_t* init_pull(FILE*                     fplog,
         pull_group_work_t* pgrp;
 
         pgrp = &pull->group[g];
-        if (!pgrp->params.ind.empty())
+        if (!pgrp->params_.ind.empty())
         {
             /* There is an issue when a group is used in multiple coordinates
              * and constraints are applied in different dimensions with atoms
@@ -2326,7 +2326,7 @@ struct pull_t* init_pull(FILE*                     fplog,
             {
                 case epgrppbcREFAT: pull->bRefAt = TRUE; break;
                 case epgrppbcCOS:
-                    if (!pgrp->params.weight.empty())
+                    if (!pgrp->params_.weight.empty())
                     {
                         gmx_fatal(FARGS,
                                   "Pull groups can not have relative weights and cosine weighting "
@@ -2369,7 +2369,7 @@ struct pull_t* init_pull(FILE*                     fplog,
         {
             if (coord.params_.eGeom == PullGroupGeometry::Cylinder)
             {
-                if (pull->group[coord.params_.group[0]].params.ind.empty())
+                if (pull->group[coord.params_.group[0]].params_.ind.empty())
                 {
                     gmx_fatal(FARGS,
                               "A cylinder pull group is not supported when using absolute "
@@ -2378,7 +2378,7 @@ struct pull_t* init_pull(FILE*                     fplog,
             }
             const auto& group0  = pull->group[coord.params_.group[0]];
             coord.dynamicGroup0 = std::make_unique<pull_group_work_t>(
-                    group0.params, group0.atomSet, pull->params.bSetPbcRefToPrevStepCOM, maxNumThreads);
+                    group0.params_, group0.atomSet_, pull->params.bSetPbcRefToPrevStepCOM, maxNumThreads);
         }
     }
 
