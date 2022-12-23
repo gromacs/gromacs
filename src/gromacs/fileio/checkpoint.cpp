@@ -386,7 +386,7 @@ enum class StatePullCommunicationEntry : int
 enum class CptElementType
 {
     integer,  //!< integer
-    real,     //!< float or double, not linked to precision of type real
+    realnum,  //!< float or double, not linked to precision of type real
     real3,    //!< float[3] or double[3], not linked to precision of type real
     matrix3x3 //!< float[3][3] or double[3][3], not linked to precision of type real
 };
@@ -875,7 +875,7 @@ template<typename T, typename Enum>
 static int doVector(XDR* xd, Enum ecpt, int sflags, std::vector<T>* vector, FILE* list, int numElements = -1)
 {
     return doVectorLow<T>(
-            xd, ecpt, sflags, numElements, nullptr, nullptr, vector, list, CptElementType::real);
+            xd, ecpt, sflags, numElements, nullptr, nullptr, vector, list, CptElementType::realnum);
 }
 
 //! \brief Read/Write an ArrayRef<real>.
@@ -884,7 +884,7 @@ static int doRealArrayRef(XDR* xd, Enum ecpt, int sflags, gmx::ArrayRef<real> ve
 {
     real* v_real = vector.data();
     return doVectorLow<real, std::allocator<real>>(
-            xd, ecpt, sflags, vector.size(), nullptr, &v_real, nullptr, list, CptElementType::real);
+            xd, ecpt, sflags, vector.size(), nullptr, &v_real, nullptr, list, CptElementType::realnum);
 }
 
 //! Convert from view of RVec to view of real.
@@ -915,7 +915,7 @@ static int doRvecVector(XDR* xd, Enum ecpt, int sflags, PaddedVectorOfRVecType* 
         using realAllocator =
                 typename std::allocator_traits<typename PaddedVectorOfRVecType::allocator_type>::template rebind_alloc<real>;
         return doVectorLow<real, realAllocator>(
-                xd, ecpt, sflags, numReals, nullptr, nullptr, nullptr, list, CptElementType::real);
+                xd, ecpt, sflags, numReals, nullptr, nullptr, nullptr, list, CptElementType::realnum);
     }
 }
 
@@ -927,14 +927,14 @@ template<typename Enum>
 static int do_cpte_reals(XDR* xd, Enum ecpt, int sflags, int n, real** v, FILE* list)
 {
     return doVectorLow<real, std::allocator<real>>(
-            xd, ecpt, sflags, n, nullptr, v, nullptr, list, CptElementType::real);
+            xd, ecpt, sflags, n, nullptr, v, nullptr, list, CptElementType::realnum);
 }
 
 template<typename Enum>
 static int do_cpte_real(XDR* xd, Enum ecpt, int sflags, real* r, FILE* list)
 {
     return doVectorLow<real, std::allocator<real>>(
-            xd, ecpt, sflags, 1, nullptr, &r, nullptr, list, CptElementType::real);
+            xd, ecpt, sflags, 1, nullptr, &r, nullptr, list, CptElementType::realnum);
 }
 
 template<typename Enum>
@@ -963,7 +963,7 @@ template<typename Enum>
 static int do_cpte_doubles(XDR* xd, Enum ecpt, int sflags, int n, double** v, FILE* list)
 {
     return doVectorLow<double, std::allocator<double>>(
-            xd, ecpt, sflags, n, nullptr, v, nullptr, list, CptElementType::real);
+            xd, ecpt, sflags, n, nullptr, v, nullptr, list, CptElementType::realnum);
 }
 
 template<typename Enum>
