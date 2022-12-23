@@ -155,7 +155,7 @@ static gmx_bool do_xdr(t_fileio*       fio,
     char           cdum, *cptr;
     bool_t         res = 0;
     float          fvec[DIM];
-    double         dvec[DIM];
+    double         dfvec[DIM];
     int            m, *iptr, idum;
     int32_t        s32dum;
     int64_t        s64dum;
@@ -309,11 +309,11 @@ static gmx_bool do_xdr(t_fileio*       fio,
                 {
                     for (m = 0; (m < DIM); m++)
                     {
-                        dvec[m] = (static_cast<real*>(item))[m];
+                        dfvec[m] = (static_cast<real*>(item))[m];
                     }
                 }
                 res = xdr_vector(fio->xdr,
-                                 reinterpret_cast<char*>(dvec),
+                                 reinterpret_cast<char*>(dfvec),
                                  DIM,
                                  static_cast<unsigned int>(sizeof(double)),
                                  reinterpret_cast<xdrproc_t>(xdr_double));
@@ -321,7 +321,7 @@ static gmx_bool do_xdr(t_fileio*       fio,
                 {
                     for (m = 0; (m < DIM); m++)
                     {
-                        (static_cast<real*>(item))[m] = dvec[m];
+                        (static_cast<real*>(item))[m] = dfvec[m];
                     }
                 }
             }
