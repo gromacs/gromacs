@@ -179,13 +179,13 @@ bool AbstractCompositeHelpTopic::writeSubTopicList(const HelpWriterContext& cont
     file.writeLine(title);
     for (topic = impl_->subTopicMap_.begin(); topic != impl_->subTopicMap_.end(); ++topic)
     {
-        const char* const name  = topic->first.c_str();
-        const char* const title = topic->second->title();
-        if (!isNullOrEmpty(title))
+        const char* const topicName  = topic->first.c_str();
+        const char* const topicTitle = topic->second->title();
+        if (!isNullOrEmpty(topicTitle))
         {
             formatter.clear();
-            formatter.addColumnLine(0, name);
-            formatter.addColumnLine(1, title);
+            formatter.addColumnLine(0, topicName);
+            formatter.addColumnLine(1, topicTitle);
             file.writeString(formatter.formatRow());
         }
     }
