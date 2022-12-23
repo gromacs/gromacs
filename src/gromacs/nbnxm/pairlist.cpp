@@ -722,7 +722,7 @@ PairlistSet::PairlistSet(const PairlistParams& pairlistParams) :
             gpuLists_.emplace_back(gmx::PinningPolicy::CannotBePinned);
         }
     }
-    if (params_.haveFep)
+    if (params_.haveFep_)
     {
         fepLists_.resize(numLists);
 
@@ -4019,7 +4019,7 @@ void PairlistSet::constructPairlists(gmx::InteractionLocality      locality,
             clear_pairlist(&gpuLists_[th]);
         }
 
-        if (params_.haveFep)
+        if (params_.haveFep_)
         {
             clear_pairlist_fep(fepLists_[th].get());
         }

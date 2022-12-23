@@ -108,7 +108,7 @@ public:
 
         return (params_.useDynamicPruning && age > 0 && age < params_.lifetime
                 && step % params_.mtsFactor == 0
-                && (params_.haveMultipleDomains || age % (2 * params_.mtsFactor) == 0));
+                && (params_.haveMultipleDomains_ || age % (2 * params_.mtsFactor) == 0));
     }
 
     //! Changes the pair-list outer and inner radius

@@ -134,13 +134,13 @@ struct PairlistParams
     //! The type of cluster-pair list
     PairlistType pairlistType;
     //! Tells whether we have perturbed interactions
-    bool haveFep;
+    bool haveFep_;
     //! Cut-off of the larger, outer pair-list
     real rlistOuter;
     //! Cut-off of the smaller, inner pair-list
     real rlistInner;
     //! True when using DD with multiple domains
-    bool haveMultipleDomains;
+    bool haveMultipleDomains_;
     //! Are we using dynamic pair-list pruning
     bool useDynamicPruning;
     //! The interval in steps for computing non-bonded interactions, =1 without MTS

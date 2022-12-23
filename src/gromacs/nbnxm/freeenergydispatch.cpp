@@ -106,7 +106,7 @@ void FreeEnergyDispatch::setupFepThreadedForceBuffer(const int numAtomsForce, co
         setReductionMaskFromFepPairlist(
                 *pairlistSets.pairlistSet(gmx::InteractionLocality::Local).fepLists()[th],
                 &threadForceBuffer);
-        if (pairlistSets.params().haveMultipleDomains)
+        if (pairlistSets.params().haveMultipleDomains_)
         {
             setReductionMaskFromFepPairlist(
                     *pairlistSets.pairlistSet(gmx::InteractionLocality::NonLocal).fepLists()[th],
@@ -121,7 +121,7 @@ void FreeEnergyDispatch::setupFepThreadedForceBuffer(const int numAtomsForce, co
 
 void nonbonded_verlet_t::setupFepThreadedForceBuffer(const int numAtomsForce)
 {
-    if (!pairlistSets_->params().haveFep)
+    if (!pairlistSets_->params().haveFep_)
     {
         return;
     }
@@ -329,11 +329,11 @@ void FreeEnergyDispatch::dispatchFreeEnergyKernels(const PairlistSets& pairlistS
                                                    t_nrnb*                        nrnb,
                                                    gmx_wallcycle*                 wcycle)
 {
-    GMX_ASSERT(pairlistSets.params().haveFep, "We should have a free-energy pairlist");
+    GMX_ASSERT(pairlistSets.params().haveFep_, "We should have a free-energy pairlist");
 
     wallcycle_sub_start(wcycle, WallCycleSubCounter::NonbondedFep);
 
-    const int numLocalities = (pairlistSets.params().haveMultipleDomains ? 2 : 1);
+    const int numLocalities = (pairlistSets.params().haveMultipleDomains_ ? 2 : 1);
     // The first call to dispatchFreeEnergyKernel() should clear the buffers. Clearing happens
     // inside that function to avoid an extra OpenMP parallel region here. We need a boolean
     // to track the need for clearing.
@@ -428,7 +428,7 @@ void nonbonded_verlet_t::dispatchFreeEnergyKernels(const gmx::ArrayRefWithPaddin
                                                    const gmx::StepWorkload&       stepWork,
                                                    t_nrnb*                        nrnb)
 {
-    if (!pairlistSets_->params().haveFep)
+    if (!pairlistSets_->params().haveFep_)
     {
         return;
     }
