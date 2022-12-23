@@ -87,7 +87,7 @@ static void addToPullxHistory(pull_t* pull)
             pcrdHistory.dr23[m] += pcrd.spatialData.dr23[m];
             pcrdHistory.dr45[m] += pcrd.spatialData.dr45[m];
         }
-        if (pcrd.params.eGeom == PullGroupGeometry::Cylinder)
+        if (pcrd.params_.eGeom == PullGroupGeometry::Cylinder)
         {
             for (int m = 0; m < DIM; m++)
             {
@@ -209,21 +209,21 @@ static void pull_print_x(FILE* out, pull_t* pull, double t)
 
             numValuesInSum = pull->coordForceHistory->numValuesInXSum;
             pull_print_coord_dr(
-                    out, pull->params, pcrd.params, *pcrdHistory, pcrdHistory->valueRef, numValuesInSum);
+                    out, pull->params, pcrd.params_, *pcrdHistory, pcrdHistory->valueRef, numValuesInSum);
         }
         else
         {
             pull_print_coord_dr(
-                    out, pull->params, pcrd.params, pcrd.spatialData, pcrd.value_ref, numValuesInSum);
+                    out, pull->params, pcrd.params_, pcrd.spatialData, pcrd.value_ref, numValuesInSum);
         }
 
         if (pull->params.bPrintCOM)
         {
-            if (pcrd.params.eGeom == PullGroupGeometry::Cylinder)
+            if (pcrd.params_.eGeom == PullGroupGeometry::Cylinder)
             {
                 for (int m = 0; m < DIM; m++)
                 {
-                    if (pcrd.params.dim[m])
+                    if (pcrd.params_.dim[m])
                     {
                         /* This equates to if (pull->bXOutAverage) */
                         if (pcrdHistory)
@@ -241,38 +241,38 @@ static void pull_print_x(FILE* out, pull_t* pull, double t)
             {
                 for (int m = 0; m < DIM; m++)
                 {
-                    if (pcrd.params.dim[m])
+                    if (pcrd.params_.dim[m])
                     {
                         if (pull->bXOutAverage)
                         {
                             fprintf(out,
                                     "\t%g",
-                                    pull->coordForceHistory->pullGroupSums[pcrd.params.group[0]].x[m]
+                                    pull->coordForceHistory->pullGroupSums[pcrd.params_.group[0]].x[m]
                                             / numValuesInSum);
                         }
                         else
                         {
-                            fprintf(out, "\t%g", pull->group[pcrd.params.group[0]].x[m]);
+                            fprintf(out, "\t%g", pull->group[pcrd.params_.group[0]].x[m]);
                         }
                     }
                 }
             }
-            for (int g = 1; g < pcrd.params.ngroup; g++)
+            for (int g = 1; g < pcrd.params_.ngroup; g++)
             {
                 for (int m = 0; m < DIM; m++)
                 {
-                    if (pcrd.params.dim[m])
+                    if (pcrd.params_.dim[m])
                     {
                         if (pull->bXOutAverage)
                         {
                             fprintf(out,
                                     "\t%g",
-                                    pull->coordForceHistory->pullGroupSums[pcrd.params.group[g]].x[m]
+                                    pull->coordForceHistory->pullGroupSums[pcrd.params_.group[g]].x[m]
                                             / numValuesInSum);
                         }
                         else
                         {
-                            fprintf(out, "\t%g", pull->group[pcrd.params.group[g]].x[m]);
+                            fprintf(out, "\t%g", pull->group[pcrd.params_.group[g]].x[m]);
                         }
                     }
                 }
@@ -361,16 +361,16 @@ static void set_legend_for_coord_components(const pull_coord_work_t*  pcrd,
                                             std::vector<std::string>* setname)
 {
     /*  Loop over the distance vectors and print their components. Each vector is made up of two consecutive groups. */
-    for (int g = 0; g < pcrd->params.ngroup; g += 2)
+    for (int g = 0; g < pcrd->params_.ngroup; g += 2)
     {
         /* Loop over the components */
         for (int m = 0; m < DIM; m++)
         {
-            if (pcrd->params.dim[m])
+            if (pcrd->params_.dim[m])
             {
                 std::string legend;
 
-                if (g == 0 && pcrd->params.ngroup <= 2)
+                if (g == 0 && pcrd->params_.ngroup <= 2)
                 {
                     /*  For the simplest case we print a simplified legend without group indices,
                        just the cooordinate index and which dimensional component it is. */
@@ -446,7 +446,7 @@ static FILE* open_pull_out(const char*             fn,
 
                 /* The pull coord distance */
                 setname.emplace_back(gmx::formatString("%zu", c + 1));
-                if (pull->params.bPrintRefValue && pull->coord[c].params.eType != PullingAlgorithm::External)
+                if (pull->params.bPrintRefValue && pull->coord[c].params_.eType != PullingAlgorithm::External)
                 {
                     setname.emplace_back(gmx::formatString("%zu ref", c + 1));
                 }
@@ -457,12 +457,12 @@ static FILE* open_pull_out(const char*             fn,
 
                 if (pull->params.bPrintCOM)
                 {
-                    for (int g = 0; g < pull->coord[c].params.ngroup; g++)
+                    for (int g = 0; g < pull->coord[c].params_.ngroup; g++)
                     {
                         /* Legend for reference group position */
                         for (m = 0; m < DIM; m++)
                         {
-                            if (pull->coord[c].params.dim[m])
+                            if (pull->coord[c].params_.dim[m])
                             {
                                 setname.emplace_back(
                                         gmx::formatString("%zu g %d %c", c + 1, g + 1, 'X' + m));

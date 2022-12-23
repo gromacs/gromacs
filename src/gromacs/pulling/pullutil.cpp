@@ -193,11 +193,11 @@ static void make_cyl_refgrps(const t_commrec*     cr,
         clear_dvec(radf_fac0);
         clear_dvec(radf_fac1);
 
-        if (pcrd.params.eGeom == PullGroupGeometry::Cylinder)
+        if (pcrd.params_.eGeom == PullGroupGeometry::Cylinder)
         {
             /* pref will be the same group for all pull coordinates */
-            const pull_group_work_t& pref  = pull->group[pcrd.params.group[0]];
-            const pull_group_work_t& pgrp  = pull->group[pcrd.params.group[1]];
+            const pull_group_work_t& pref  = pull->group[pcrd.params_.group[0]];
+            const pull_group_work_t& pgrp  = pull->group[pcrd.params_.group[1]];
             pull_group_work_t&       pdyna = *pcrd.dynamicGroup0;
             rvec                     direction;
             copy_dvec_to_rvec(pcrd.spatialData.vec, direction);
@@ -208,10 +208,10 @@ static void make_cyl_refgrps(const t_commrec*     cr,
              * here we already have the COM of the pull group. This resolves
              * any PBC issues and we don't need to use a PBC-atom here.
              */
-            if (pcrd.params.rate != 0)
+            if (pcrd.params_.rate != 0)
             {
                 /* With rate=0, value_ref is set initially */
-                pcrd.value_ref = pcrd.params.init + pcrd.params.rate * t;
+                pcrd.value_ref = pcrd.params_.init + pcrd.params_.rate * t;
             }
             rvec reference;
             for (int m = 0; m < DIM; m++)
@@ -309,10 +309,10 @@ static void make_cyl_refgrps(const t_commrec*     cr,
     bufferOffset = 0;
     for (pull_coord_work_t& pcrd : pull->coord)
     {
-        if (pcrd.params.eGeom == PullGroupGeometry::Cylinder)
+        if (pcrd.params_.eGeom == PullGroupGeometry::Cylinder)
         {
             pull_group_work_t&    dynamicGroup0 = *pcrd.dynamicGroup0;
-            pull_group_work_t&    group1        = pull->group[pcrd.params.group[1]];
+            pull_group_work_t&    group1        = pull->group[pcrd.params_.group[1]];
             PullCoordSpatialData& spatialData   = pcrd.spatialData;
 
             auto buffer = gmx::constArrayRefFromArray(comm->cylinderBuffer.data() + bufferOffset,
@@ -895,7 +895,7 @@ int pullCheckPbcWithinGroups(const pull_t& pull, ArrayRef<const RVec> x, const t
     std::vector<BoolVec> dimUsed(pull.group.size(), { false, false, false });
     for (const pull_coord_work_t& pcrd : pull.coord)
     {
-        const t_pull_coord& coordParams = pcrd.params;
+        const t_pull_coord& coordParams = pcrd.params_;
         for (int groupIndex = 0; groupIndex < coordParams.ngroup; groupIndex++)
         {
             for (int d = 0; d < DIM; d++)
@@ -942,7 +942,7 @@ bool pullCheckPbcWithinGroup(const pull_t& pull, ArrayRef<const RVec> x, const t
     BoolVec dimUsed = { false, false, false };
     for (const pull_coord_work_t& pcrd : pull.coord)
     {
-        const t_pull_coord& coordParams = pcrd.params;
+        const t_pull_coord& coordParams = pcrd.params_;
         for (int groupIndex = 0; groupIndex < coordParams.ngroup; groupIndex++)
         {
             if (coordParams.group[groupIndex] == groupNr)

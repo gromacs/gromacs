@@ -150,7 +150,7 @@ struct pull_coord_work_t
 {
     //! Constructor
     pull_coord_work_t(const t_pull_coord& params, const bool allowTimeAsTransformationVariable = true) :
-        params(params),
+        params_(params),
         value_ref(0),
         spatialData(),
         scalarForce(0),
@@ -163,7 +163,7 @@ struct pull_coord_work_t
     }
 
     //! Pull coordinate parameters
-    const t_pull_coord params;
+    const t_pull_coord params_;
 
     //! Dynamic pull group 0 for this coordinate with dynamic weights, only present when needed */
     std::unique_ptr<pull_group_work_t> dynamicGroup0;

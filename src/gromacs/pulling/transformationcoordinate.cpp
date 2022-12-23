@@ -52,7 +52,7 @@ namespace
 //! Calculates the value a for transformation pull coordinate
 double getTransformationPullCoordinateValue(pull_coord_work_t* coord)
 {
-    const int transformationPullCoordinateIndex = coord->params.coordIndex;
+    const int transformationPullCoordinateIndex = coord->params_.coordIndex;
     GMX_ASSERT(ssize(coord->transformationVariables) == transformationPullCoordinateIndex + 1,
                "We need as many variables as the transformation pull coordinate index plus one");
     double result = 0;
@@ -88,7 +88,7 @@ double getTransformationPullCoordinateValue(pull_coord_work_t*                co
                                             ArrayRef<const pull_coord_work_t> variableCoords,
                                             const double                      t)
 {
-    GMX_ASSERT(ssize(variableCoords) == coord->params.coordIndex,
+    GMX_ASSERT(ssize(variableCoords) == coord->params_.coordIndex,
                "We need as many variables as the transformation pull coordinate index");
     int coordIndex = 0;
     for (const auto& variableCoord : variableCoords)
@@ -112,14 +112,14 @@ double getTransformationPullCoordinateValue(pull_coord_work_t*                co
  */
 static double computeDerivativeForTransformationPullCoord(pull_coord_work_t* coord, const int variablePcrdIndex)
 {
-    GMX_ASSERT(variablePcrdIndex >= 0 && variablePcrdIndex < coord->params.coordIndex,
+    GMX_ASSERT(variablePcrdIndex >= 0 && variablePcrdIndex < coord->params_.coordIndex,
                "The variable index should be in range of the transformation coordinate");
 
     // epsilon for numerical differentiation.
     const double transformationPcrdValue = coord->spatialData.value;
     // Perform numerical differentiation of 1st order
     const double valueBackup = coord->transformationVariables[variablePcrdIndex];
-    double       dx          = coord->params.dx;
+    double       dx          = coord->params_.dx;
     coord->transformationVariables[variablePcrdIndex] += dx;
     double transformationPcrdValueEps = getTransformationPullCoordinateValue(coord);
     double derivative                 = (transformationPcrdValueEps - transformationPcrdValue) / dx;
@@ -131,9 +131,9 @@ static double computeDerivativeForTransformationPullCoord(pull_coord_work_t* coo
 void distributeTransformationPullCoordForce(pull_coord_work_t*               pcrd,
                                             gmx::ArrayRef<pull_coord_work_t> variableCoords)
 {
-    GMX_ASSERT(pcrd->params.eGeom == PullGroupGeometry::Transformation,
+    GMX_ASSERT(pcrd->params_.eGeom == PullGroupGeometry::Transformation,
                "We shouldn't end up here when not using a transformation pull coordinate.");
-    GMX_ASSERT(ssize(variableCoords) == pcrd->params.coordIndex,
+    GMX_ASSERT(ssize(variableCoords) == pcrd->params_.coordIndex,
                "We should have as many variable coords as the coord index of the transformation "
                "coordinate");
 
@@ -142,7 +142,7 @@ void distributeTransformationPullCoordForce(pull_coord_work_t*               pcr
     for (auto& variableCoord : variableCoords)
     {
         const double derivative =
-                computeDerivativeForTransformationPullCoord(pcrd, variableCoord.params.coordIndex);
+                computeDerivativeForTransformationPullCoord(pcrd, variableCoord.params_.coordIndex);
         const double variablePcrdForce = transformationCoordForce * derivative;
         /* Since we loop over all pull coordinates with smaller index, there can be ones
          * that are not referenced by the transformation coordinate. Avoid apply forces
@@ -158,8 +158,8 @@ void distributeTransformationPullCoordForce(pull_coord_work_t*               pcr
                         "force "
                         "%4.4f\n",
                         transformationCoordForce,
-                        pcrd->params.coordIndex,
-                        variableCoord.params.coordIndex,
+                        pcrd->params_.coordIndex,
+                        variableCoord.params_.coordIndex,
                         variablePcrdForce);
             }
             // Note that we add to the force here, in case multiple biases act on the same pull
