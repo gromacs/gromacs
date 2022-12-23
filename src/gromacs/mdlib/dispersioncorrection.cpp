@@ -405,7 +405,7 @@ void DispersionCorrection::setInteractionParameters(InteractionParams*         i
         /* TODO This code depends on the logic in tables.c that
            constructs the table layout, which should be made
            explicit in future cleanup. */
-        GMX_ASSERT(iParams->dispersionCorrectionTable_->interaction == TableInteraction::VdwRepulsionVdwDispersion,
+        GMX_ASSERT(iParams->dispersionCorrectionTable_->interaction_ == TableInteraction::VdwRepulsionVdwDispersion,
                    "Dispersion-correction code needs a table with both repulsion and dispersion "
                    "terms");
         const real  scale  = iParams->dispersionCorrectionTable_->scale;

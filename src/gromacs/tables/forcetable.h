@@ -90,9 +90,9 @@ struct t_forcetable
     ~t_forcetable();
 
     //! Types of interactions stored in this table
-    TableInteraction interaction;
+    TableInteraction interaction_;
     //! Interpolation type and data format
-    TableFormat format;
+    TableFormat format_;
     //! range of the table
     real interactionRange;
     //! n+1 is the number of table points

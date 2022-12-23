@@ -1408,7 +1408,7 @@ makeDispersionCorrectionTable(FILE* fp, const interaction_const_t* ic, real rtab
      * data to be aligned to 32-byte boundaries.
      */
     std::unique_ptr<t_forcetable> dispersionCorrectionTable = std::make_unique<t_forcetable>(
-            TableInteraction::VdwRepulsionVdwDispersion, fullTable->format);
+            TableInteraction::VdwRepulsionVdwDispersion, fullTable->format_);
     dispersionCorrectionTable->interactionRange = fullTable->interactionRange;
     dispersionCorrectionTable->numTablePoints   = fullTable->numTablePoints;
     dispersionCorrectionTable->scale            = fullTable->scale;
@@ -1430,8 +1430,8 @@ makeDispersionCorrectionTable(FILE* fp, const interaction_const_t* ic, real rtab
 }
 
 t_forcetable::t_forcetable(enum TableInteraction interaction, enum TableFormat format) :
-    interaction(interaction),
-    format(format),
+    interaction_(interaction),
+    format_(format),
     interactionRange(0),
     numTablePoints(0),
     scale(0),
