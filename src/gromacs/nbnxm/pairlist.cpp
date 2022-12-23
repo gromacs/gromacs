@@ -1292,7 +1292,7 @@ struct JListRanges
 {
     /*! \brief Constructs a j-list range from \p cjList with the given index range */
     template<typename JClusterListType>
-    JListRanges(int cjIndexStart, int cjIndexEnd, const JClusterListType& cjList);
+    JListRanges(int indexStart, int indexEnd, const JClusterListType& cjList);
 
     int cjIndexStart; //!< The start index in the j-list
     int cjIndexEnd;   //!< The end index in the j-list
@@ -1303,19 +1303,19 @@ struct JListRanges
 
 #ifndef DOXYGEN
 template<typename JClusterListType>
-JListRanges::JListRanges(int cjIndexStart, int cjIndexEnd, const JClusterListType& cjList) :
-    cjIndexStart(cjIndexStart), cjIndexEnd(cjIndexEnd)
+JListRanges::JListRanges(int indexStart, int indexEnd, const JClusterListType& cjList) :
+    cjIndexStart(indexStart), cjIndexEnd(indexEnd)
 {
-    GMX_ASSERT(cjIndexEnd > cjIndexStart, "JListRanges should only be called with non-empty lists");
+    GMX_ASSERT(indexEnd > indexStart, "JListRanges should only be called with non-empty lists");
 
-    cjFirst = cjList.cj(cjIndexStart);
-    cjLast  = cjList.cj(cjIndexEnd - 1);
+    cjFirst = cjList.cj(indexStart);
+    cjLast  = cjList.cj(indexEnd - 1);
 
     /* Determine how many contiguous j-cells we have starting
      * from the first i-cell. This number can be used to directly
      * calculate j-cell indices for excluded atoms.
      */
-    numDirect = numContiguousJClusters(cjIndexStart, cjIndexEnd, cjList);
+    numDirect = numContiguousJClusters(indexStart, indexEnd, cjList);
 }
 #endif // !DOXYGEN
 
