@@ -300,16 +300,16 @@ class TopologyData
 public:
     //! Build collection from simulation data.
     TopologyData(const gmx_mtop_t& globalTopology, gmx_localtop_t* localTopology, MDAtoms* mdAtoms) :
-        top_global(globalTopology), localTopology(localTopology), mdAtoms(mdAtoms)
+        globalTopology_(globalTopology), localTopology_(localTopology), mdAtoms_(mdAtoms)
     {
     }
 
     //! Handle to global simulation topology.
-    const gmx_mtop_t& top_global;
+    const gmx_mtop_t& globalTopology_;
     //! Handle to local simulation topology.
-    gmx_localtop_t* localTopology;
+    gmx_localtop_t* localTopology_;
     //! Handle to information about MDAtoms.
-    MDAtoms* mdAtoms;
+    MDAtoms* mdAtoms_;
 };
 
 /*! \brief
