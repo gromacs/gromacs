@@ -205,10 +205,10 @@ TranslateAndScale& TranslateAndScale::operator=(TranslateAndScale&&) noexcept = 
  * AffineTransformation
  */
 
-AffineTransformation::AffineTransformation(Matrix3x3ConstSpan matrix, const RVec& translation) :
+AffineTransformation::AffineTransformation(Matrix3x3ConstSpan mat, const RVec& translation) :
     translation_{ translation }
 {
-    std::copy(begin(matrix), end(matrix), begin(matrix_));
+    std::copy(begin(mat), end(mat), begin(matrix_));
 }
 
 void AffineTransformation::operator()(ArrayRef<RVec> vectors) const

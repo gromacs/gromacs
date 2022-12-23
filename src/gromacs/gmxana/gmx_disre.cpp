@@ -555,7 +555,7 @@ static void dump_disre_matrix(const char*                   fn,
     int    n_res, a_offset, mol, a;
     int    i, j, nra, nratoms, tp, ri, rj, index, nlabel, label;
     int    ai, aj, *ptr;
-    real **matrix, *t_res, hi, *w_dr, rav, rviol;
+    real **mat, *t_res, hi, *w_dr, rav, rviol;
     t_rgb  rlo = { 1, 1, 1 };
     t_rgb  rhi = { 0, 0, 0 };
     if (fn == nullptr)
@@ -585,10 +585,10 @@ static void dump_disre_matrix(const char*                   fn,
     {
         t_res[i] = i + 1;
     }
-    snew(matrix, n_res);
+    snew(mat, n_res);
     for (i = 0; (i < n_res); i++)
     {
-        snew(matrix[i], n_res);
+        snew(mat[i], n_res);
     }
     nratoms = interaction_function[F_DISRES].nratoms;
     nra     = (idef.il[F_DISRES].size() / (nratoms + 1));
@@ -649,10 +649,10 @@ static void dump_disre_matrix(const char*                   fn,
                 fprintf(debug, "DR %d, atoms %d, %d, distance %g\n", i, ai, aj, rav);
             }
             rviol = std::max(0.0_real, rav - idef.iparams[tp].disres.up1);
-            matrix[ri][rj] += w_dr[i] * rviol;
-            matrix[rj][ri] += w_dr[i] * rviol;
-            hi = std::max(hi, matrix[ri][rj]);
-            hi = std::max(hi, matrix[rj][ri]);
+            mat[ri][rj] += w_dr[i] * rviol;
+            mat[rj][ri] += w_dr[i] * rviol;
+            hi = std::max(hi, mat[ri][rj]);
+            hi = std::max(hi, mat[rj][ri]);
         }
     }
 
@@ -681,7 +681,7 @@ static void dump_disre_matrix(const char*                   fn,
               n_res,
               t_res,
               t_res,
-              matrix,
+              mat,
               0,
               hi,
               rlo,

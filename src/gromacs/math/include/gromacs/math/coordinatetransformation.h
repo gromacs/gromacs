@@ -148,10 +148,10 @@ class AffineTransformation
 {
 public:
     /*! \brief Construct a three-dimensional affine transformation.
-     * \param[in] matrix to be applied to the vectors
+     * \param[in] mat to be applied to the vectors
      * \param[in] translation to be performed on the vectors
      */
-    AffineTransformation(Matrix3x3ConstSpan matrix, const RVec& translation);
+    AffineTransformation(Matrix3x3ConstSpan mat, const RVec& translation);
 
     /*! \brief Perform an affine transformation on input vectors.
      * \param[in,out] vectors to be transformed in-place

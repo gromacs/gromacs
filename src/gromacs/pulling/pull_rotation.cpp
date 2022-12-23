@@ -1304,12 +1304,12 @@ static void swap_col(double** mat, int i, int j)
 
 
 /* Eigenvectors are stored in columns of eigen_vec */
-static void diagonalize_symmetric(double** matrix, double** eigen_vec, double eigenval[3])
+static void diagonalize_symmetric(double** mat, double** eigen_vec, double eigenval[3])
 {
     int n_rot;
 
 
-    jacobi(matrix, 3, eigenval, eigen_vec, &n_rot);
+    jacobi(mat, 3, eigenval, eigen_vec, &n_rot);
 
     /* sort in ascending order */
     if (eigenval[0] > eigenval[1])
