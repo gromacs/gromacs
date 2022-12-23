@@ -185,16 +185,16 @@ class Profiling
 public:
     //! Build profiling information collection.
     Profiling(t_nrnb* nrnb, gmx_walltime_accounting* walltimeAccounting, gmx_wallcycle* wallCycle) :
-        nrnb(nrnb), wallCycle(wallCycle), walltimeAccounting(walltimeAccounting)
+        nrnb_(nrnb), wallCycle_(wallCycle), wallTimeAccounting_(walltimeAccounting)
     {
     }
 
     //! Handle to datastructure.
-    t_nrnb* nrnb;
+    t_nrnb* nrnb_;
     //! Handle to wallcycle stuff.
-    gmx_wallcycle* wallCycle;
+    gmx_wallcycle* wallCycle_;
     //! Handle to wallcycle time accounting stuff.
-    gmx_walltime_accounting* walltimeAccounting;
+    gmx_walltime_accounting* wallTimeAccounting_;
 };
 
 /*! \brief
