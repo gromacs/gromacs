@@ -295,18 +295,18 @@ void SelectionTreeElement::fillNameIfMissing(const char* selectionText)
     {
         // Check whether the actual selection given was from an external group,
         // and if so, use the name of the external group.
-        SelectionTreeElementPointer child = this->child;
-        if (_gmx_selelem_is_default_kwpos(*child) && child->child
-            && child->child->type == SEL_SUBEXPRREF && child->child->child)
+        SelectionTreeElementPointer childElem = this->child;
+        if (_gmx_selelem_is_default_kwpos(*childElem) && childElem->child
+            && childElem->child->type == SEL_SUBEXPRREF && childElem->child->child)
         {
-            if (child->child->child->type == SEL_CONST && child->child->child->v.type == GROUP_VALUE)
+            if (childElem->child->child->type == SEL_CONST && childElem->child->child->v.type == GROUP_VALUE)
             {
-                setName(child->child->child->name());
+                setName(childElem->child->child->name());
                 return;
             }
             // If the group reference is still unresolved, leave the name empty
             // and fill it later.
-            if (child->child->child->type == SEL_GROUPREF)
+            if (childElem->child->child->type == SEL_GROUPREF)
             {
                 return;
             }
@@ -347,11 +347,11 @@ SelectionTopologyProperties SelectionTreeElement::requiredTopologyProperties() c
             props.merge(SelectionTopologyProperties::masses());
         }
     }
-    SelectionTreeElementPointer child = this->child;
-    while (child && !props.hasAll())
+    SelectionTreeElementPointer childElem = this->child;
+    while (childElem && !props.hasAll())
     {
-        props.merge(child->requiredTopologyProperties());
-        child = child->next;
+        props.merge(childElem->requiredTopologyProperties());
+        childElem = childElem->next;
     }
     return props;
 }
@@ -368,11 +368,11 @@ void SelectionTreeElement::checkUnsortedAtoms(bool bUnsortedAllowed, ExceptionIn
     // TODO: For some complicated selections, this may result in the same
     // index group reference being flagged as an error multiple times for the
     // same selection.
-    SelectionTreeElementPointer child = this->child;
-    while (child)
+    SelectionTreeElementPointer childElem = this->child;
+    while (childElem)
     {
-        child->checkUnsortedAtoms(bUnsortedAllowed && bUnsortedSupported, errors);
-        child = child->next;
+        childElem->checkUnsortedAtoms(bUnsortedAllowed && bUnsortedSupported, errors);
+        childElem = childElem->next;
     }
 
     // The logic here is simplified by the fact that only constant groups can
@@ -396,14 +396,14 @@ bool SelectionTreeElement::requiresIndexGroups() const
     {
         return true;
     }
-    SelectionTreeElementPointer child = this->child;
-    while (child)
+    SelectionTreeElementPointer childElem = this->child;
+    while (childElem)
     {
-        if (child->requiresIndexGroups())
+        if (childElem->requiresIndexGroups())
         {
             return true;
         }
-        child = child->next;
+        childElem = childElem->next;
     }
     return false;
 }
