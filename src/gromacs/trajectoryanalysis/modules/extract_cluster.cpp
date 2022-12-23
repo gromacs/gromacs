@@ -114,7 +114,7 @@ void ExtractCluster::initOptions(IOptionsContainer* options, TrajectoryAnalysisS
     };
 
     options->addOption(FileNameOption("clusters")
-                               .filetype(OptionFileType::Index)
+                               .filetype(OptionFileType::AtomIndex)
                                .inputFile()
                                .required()
                                .store(&indexFileName_)

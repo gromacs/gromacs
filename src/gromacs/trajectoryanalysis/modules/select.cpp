@@ -436,7 +436,7 @@ void Select::initOptions(IOptionsContainer* options, TrajectoryAnalysisSettings*
                                .defaultBasename("index")
                                .description("Indices selected by each selection"));
     options->addOption(FileNameOption("on")
-                               .filetype(OptionFileType::Index)
+                               .filetype(OptionFileType::AtomIndex)
                                .outputFile()
                                .store(&fnNdx_)
                                .defaultBasename("index")

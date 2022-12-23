@@ -116,7 +116,7 @@ TEST_F(FileNameOptionManagerTest, GivesErrorOnMissingInputFile)
 {
     std::string value;
     ASSERT_NO_THROW_GMX(options_.addOption(
-            FileNameOption("f").store(&value).filetype(gmx::OptionFileType::Index).inputFile()));
+            FileNameOption("f").store(&value).filetype(gmx::OptionFileType::AtomIndex).inputFile()));
     EXPECT_TRUE(value.empty());
 
     gmx::OptionsAssigner assigner(&options_);
@@ -152,7 +152,7 @@ TEST_F(FileNameOptionManagerTest, GivesErrorOnMissingDefaultInputFile)
 {
     std::string value;
     ASSERT_NO_THROW_GMX(options_.addOption(
-            FileNameOption("f").store(&value).filetype(gmx::OptionFileType::Index).inputFile().defaultBasename("missing")));
+            FileNameOption("f").store(&value).filetype(gmx::OptionFileType::AtomIndex).inputFile().defaultBasename("missing")));
 
     gmx::OptionsAssigner assigner(&options_);
     EXPECT_NO_THROW_GMX(assigner.start());
@@ -168,7 +168,7 @@ TEST_F(FileNameOptionManagerTest, GivesErrorOnMissingRequiredInputFile)
     ASSERT_NO_THROW_GMX(options_.addOption(FileNameOption("f")
                                                    .store(&value)
                                                    .required()
-                                                   .filetype(gmx::OptionFileType::Index)
+                                                   .filetype(gmx::OptionFileType::AtomIndex)
                                                    .inputFile()
                                                    .defaultBasename("missing")));
     EXPECT_EQ("missing.ndx", value);
@@ -183,7 +183,7 @@ TEST_F(FileNameOptionManagerTest, AcceptsMissingInputFileIfSpecified)
 {
     std::string value;
     ASSERT_NO_THROW_GMX(options_.addOption(
-            FileNameOption("f").store(&value).filetype(gmx::OptionFileType::Index).inputFile().allowMissing()));
+            FileNameOption("f").store(&value).filetype(gmx::OptionFileType::AtomIndex).inputFile().allowMissing()));
     EXPECT_TRUE(value.empty());
 
     gmx::OptionsAssigner assigner(&options_);
@@ -202,7 +202,7 @@ TEST_F(FileNameOptionManagerTest, AcceptsMissingDefaultInputFileIfSpecified)
     std::string value;
     ASSERT_NO_THROW_GMX(options_.addOption(FileNameOption("f")
                                                    .store(&value)
-                                                   .filetype(gmx::OptionFileType::Index)
+                                                   .filetype(gmx::OptionFileType::AtomIndex)
                                                    .inputFile()
                                                    .defaultBasename("missing")
                                                    .allowMissing()));
@@ -223,7 +223,7 @@ TEST_F(FileNameOptionManagerTest, AcceptsMissingRequiredInputFileIfSpecified)
     ASSERT_NO_THROW_GMX(options_.addOption(FileNameOption("f")
                                                    .store(&value)
                                                    .required()
-                                                   .filetype(gmx::OptionFileType::Index)
+                                                   .filetype(gmx::OptionFileType::AtomIndex)
                                                    .inputFile()
                                                    .defaultBasename("missing")
                                                    .allowMissing()));
@@ -351,7 +351,7 @@ TEST_F(FileNameOptionManagerTest, DefaultNameOptionWorksWithoutInputChecking)
     ASSERT_NO_THROW_GMX(options_.addOption(FileNameOption("f")
                                                    .store(&value)
                                                    .required()
-                                                   .filetype(gmx::OptionFileType::Index)
+                                                   .filetype(gmx::OptionFileType::AtomIndex)
                                                    .inputFile()
                                                    .defaultBasename("default")
                                                    .allowMissing()));

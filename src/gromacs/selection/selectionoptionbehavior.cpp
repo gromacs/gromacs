@@ -189,7 +189,7 @@ SelectionOptionBehavior::~SelectionOptionBehavior() {}
 void SelectionOptionBehavior::initOptions(IOptionsContainer* options)
 {
     options->addOption(FileNameOption("n")
-                               .filetype(OptionFileType::Index)
+                               .filetype(OptionFileType::AtomIndex)
                                .inputFile()
                                .store(&impl_->ndxfile_)
                                .defaultBasename("index")

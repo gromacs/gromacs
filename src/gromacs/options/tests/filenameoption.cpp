@@ -119,7 +119,7 @@ TEST(FileNameOptionTest, HandlesOptionalDefaultValueWithoutExtension)
     gmx::Options options;
     std::string  value;
     ASSERT_NO_THROW_GMX(options.addOption(
-            FileNameOption("f").store(&value).filetype(gmx::OptionFileType::Index).outputFile().defaultBasename("testfile")));
+            FileNameOption("f").store(&value).filetype(gmx::OptionFileType::AtomIndex).outputFile().defaultBasename("testfile")));
     EXPECT_TRUE(value.empty());
 
     gmx::OptionsAssigner assigner(&options);
@@ -180,7 +180,7 @@ TEST(FileNameOptionTest, GivesErrorOnUnknownFileSuffix)
     gmx::Options options;
     std::string  value;
     ASSERT_NO_THROW_GMX(options.addOption(
-            FileNameOption("f").store(&value).filetype(gmx::OptionFileType::Index).outputFile()));
+            FileNameOption("f").store(&value).filetype(gmx::OptionFileType::AtomIndex).outputFile()));
     EXPECT_TRUE(value.empty());
 
     gmx::OptionsAssigner assigner(&options);

@@ -349,7 +349,7 @@ void ConvertTpr::initOptions(IOptionsContainer* options, ICommandLineOptionsModu
                                .defaultBasename("topol")
                                .description("Run input file to modify"));
     options->addOption(FileNameOption("n")
-                               .filetype(OptionFileType::Index)
+                               .filetype(OptionFileType::AtomIndex)
                                .inputFile()
                                .store(&inputIndexFileName_)
                                .storeIsSet(&haveReadIndexFile_)

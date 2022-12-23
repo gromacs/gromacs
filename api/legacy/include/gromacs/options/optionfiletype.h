@@ -57,7 +57,7 @@ enum class OptionFileType : int
     Trajectory,
     Energy,
     PDB,
-    Index,
+    AtomIndex,
     Plot,
     GenericData,
     Csv,
