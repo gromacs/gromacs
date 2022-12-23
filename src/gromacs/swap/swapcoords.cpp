@@ -174,7 +174,7 @@ typedef struct swap_group
     swap_group(const gmx::LocalAtomSet& atomset);
     char* molname = nullptr;        /**< Name of the group or ion type                         */
     int   apm     = 0;              /**< Number of atoms in each molecule                      */
-    gmx::LocalAtomSet atomset;      /**< The atom indices in the swap group                    */
+    gmx::LocalAtomSet atomSet;      /**< The atom indices in the swap group                    */
     rvec*             xc = nullptr; /**< Collective array of group atom positions (size nat)   */
     ivec*   xc_shifts    = nullptr; /**< Current (collective) shifts (size nat)                */
     ivec*   xc_eshifts   = nullptr; /**< Extra shifts since last DD step (size nat)            */
@@ -197,7 +197,7 @@ typedef struct swap_group
     int nCylBoth = 0; /**< Ions assigned to cyl0 and cyl1. Not good.             */
 } t_swapgrp;
 
-t_swapgrp::swap_group(const gmx::LocalAtomSet& atomset) : atomset{ atomset }
+t_swapgrp::swap_group(const gmx::LocalAtomSet& atomset) : atomSet{ atomset }
 {
     center[0] = 0;
     center[1] = 0;
@@ -731,7 +731,7 @@ static void sortMoleculesIntoCompartments(t_swapgrp*          g,
         nMolNotInComp[comp] = 0; /* consistency check */
 
         /* Loop over the molecules and atoms of this group */
-        for (int iMol = 0, iAtom = 0; iAtom < static_cast<int>(g->atomset.numAtomsGlobal());
+        for (int iMol = 0, iAtom = 0; iAtom < static_cast<int>(g->atomSet.numAtomsGlobal());
              iAtom += g->apm, iMol++)
         {
             real dist;
@@ -747,7 +747,7 @@ static void sortMoleculesIntoCompartments(t_swapgrp*          g,
                 /* Main also checks for ion groups through which channel each ion has passed */
                 if (MAIN(cr) && (g->comp_now != nullptr) && !bIsSolvent)
                 {
-                    int globalAtomNr = g->atomset.globalIndex()[iAtom] + 1; /* PDB index starts at 1 ... */
+                    int globalAtomNr = g->atomSet.globalIndex()[iAtom] + 1; /* PDB index starts at 1 ... */
                     detect_flux_per_channel(g,
                                             globalAtomNr,
                                             comp,
@@ -809,7 +809,7 @@ static void sortMoleculesIntoCompartments(t_swapgrp*          g,
     }
 
     /* Consistency checks */
-    const auto numMolecules = static_cast<int>(g->atomset.numAtomsGlobal() / g->apm);
+    const auto numMolecules = static_cast<int>(g->atomSet.numAtomsGlobal() / g->apm);
     if (nMolNotInComp[Compartment::A] + nMolNotInComp[Compartment::B] != numMolecules)
     {
         fprintf(stderr,
@@ -856,9 +856,9 @@ static void get_initial_ioncounts(const t_inputrec* ir,
 
         /* Copy the initial positions of the atoms in the group
          * to the collective array so that we can compartmentalize */
-        for (size_t i = 0; i < g->atomset.numAtomsGlobal(); i++)
+        for (size_t i = 0; i < g->atomSet.numAtomsGlobal(); i++)
         {
-            int ind = g->atomset.globalIndex()[i];
+            int ind = g->atomSet.globalIndex()[i];
             copy_rvec(x[ind], g->xc[i]);
         }
 
@@ -1008,10 +1008,10 @@ static void check_swap_groups(t_swap* s, int nat, gmx_bool bVerbose)
     for (int i = 0; i < s->ngrp; i++)
     {
         t_swapgrp* g = &s->group[i];
-        for (size_t j = 0; j < g->atomset.numAtomsGlobal(); j++)
+        for (size_t j = 0; j < g->atomSet.numAtomsGlobal(); j++)
         {
             /* Get the global index of this atom of this group: */
-            ind = g->atomset.globalIndex()[j];
+            ind = g->atomSet.globalIndex()[j];
             nGroup[ind]++;
         }
     }
@@ -1050,8 +1050,8 @@ static void check_swap_groups(t_swap* s, int nat, gmx_bool bVerbose)
 static int get_group_apm_check(int igroup, t_swap* s, gmx_bool bVerbose, const gmx_mtop_t& mtop)
 {
     t_swapgrp* g   = &s->group[igroup];
-    const int* ind = s->group[igroup].atomset.globalIndex().data();
-    int        nat = s->group[igroup].atomset.numAtomsGlobal();
+    const int* ind = s->group[igroup].atomSet.globalIndex().data();
+    int        nat = s->group[igroup].atomSet.numAtomsGlobal();
 
     /* Determine the number of solvent atoms per solvent molecule from the
      * first solvent atom: */
@@ -1181,15 +1181,15 @@ static void detect_flux_per_channel_init(t_swap* s, swaphistory_t* swapstate, co
         }
         else /* allocate memory for molecule counts */
         {
-            snew(g->comp_from, g->atomset.numAtomsGlobal() / g->apm);
+            snew(g->comp_from, g->atomSet.numAtomsGlobal() / g->apm);
             gs->comp_from = g->comp_from;
-            snew(g->channel_label, g->atomset.numAtomsGlobal() / g->apm);
+            snew(g->channel_label, g->atomSet.numAtomsGlobal() / g->apm);
             gs->channel_label = g->channel_label;
         }
-        snew(g->comp_now, g->atomset.numAtomsGlobal() / g->apm);
+        snew(g->comp_now, g->atomSet.numAtomsGlobal() / g->apm);
 
         /* Initialize the channel and domain history counters */
-        for (size_t i = 0; i < g->atomset.numAtomsGlobal() / g->apm; i++)
+        for (size_t i = 0; i < g->atomSet.numAtomsGlobal() / g->apm; i++)
         {
             g->comp_now[i] = Domain::Notset;
             if (!isRestart)
@@ -1311,12 +1311,12 @@ static void init_swapstate(swaphistory_t*    swapstate,
     {
         /* Copy the last whole positions of each channel from .cpt */
         g = &(s->group[static_cast<int>(SwapGroupSplittingType::Split0)]);
-        for (size_t i = 0; i < g->atomset.numAtomsGlobal(); i++)
+        for (size_t i = 0; i < g->atomSet.numAtomsGlobal(); i++)
         {
             copy_rvec(swapstate->xc_old_whole[Channel::Zero][i], g->xc_old[i]);
         }
         g = &(s->group[static_cast<int>(SwapGroupSplittingType::Split1)]);
-        for (size_t i = 0; i < g->atomset.numAtomsGlobal(); i++)
+        for (size_t i = 0; i < g->atomSet.numAtomsGlobal(); i++)
         {
             copy_rvec(swapstate->xc_old_whole[Channel::One][i], g->xc_old[i]);
         }
@@ -1356,18 +1356,18 @@ static void init_swapstate(swaphistory_t*    swapstate,
              ig++)
         {
             g = &(s->group[ig]);
-            for (size_t i = 0; i < g->atomset.numAtomsGlobal(); i++)
+            for (size_t i = 0; i < g->atomSet.numAtomsGlobal(); i++)
             {
-                copy_rvec(x_pbc[g->atomset.globalIndex()[i]], g->xc_old[i]);
+                copy_rvec(x_pbc[g->atomSet.globalIndex()[i]], g->xc_old[i]);
             }
         }
         sfree(x_pbc);
 
         /* Prepare swapstate arrays for later checkpoint writing */
         swapstate->nat[Channel::Zero] =
-                s->group[static_cast<int>(SwapGroupSplittingType::Split0)].atomset.numAtomsGlobal();
+                s->group[static_cast<int>(SwapGroupSplittingType::Split0)].atomSet.numAtomsGlobal();
         swapstate->nat[Channel::One] =
-                s->group[static_cast<int>(SwapGroupSplittingType::Split1)].atomset.numAtomsGlobal();
+                s->group[static_cast<int>(SwapGroupSplittingType::Split1)].atomSet.numAtomsGlobal();
     }
 
     /* For subsequent checkpoint writing, set the swapstate pointers to the xc_old
@@ -1598,7 +1598,7 @@ t_swap* init_swapcoords(FILE*                       fplog,
     for (int i = 0; i < s->ngrp; i++)
     {
         g = &s->group[i];
-        snew(g->xc, g->atomset.numAtomsGlobal());
+        snew(g->xc, g->atomSet.numAtomsGlobal());
 
         /* For the split groups (the channels) we need some extra memory to
          * be able to make the molecules whole even if they span more than
@@ -1606,9 +1606,9 @@ t_swap* init_swapcoords(FILE*                       fplog,
         if ((i == static_cast<int>(SwapGroupSplittingType::Split0))
             || (i == static_cast<int>(SwapGroupSplittingType::Split1)))
         {
-            snew(g->xc_shifts, g->atomset.numAtomsGlobal());
-            snew(g->xc_eshifts, g->atomset.numAtomsGlobal());
-            snew(g->xc_old, g->atomset.numAtomsGlobal());
+            snew(g->xc_shifts, g->atomSet.numAtomsGlobal());
+            snew(g->xc_eshifts, g->atomSet.numAtomsGlobal());
+            snew(g->xc_old, g->atomSet.numAtomsGlobal());
         }
     }
 
@@ -1632,7 +1632,7 @@ t_swap* init_swapcoords(FILE*                       fplog,
              ig++)
         {
             g = &(s->group[ig]);
-            gmx_bcast((g->atomset.numAtomsGlobal()) * sizeof((g->xc_old)[0]), g->xc_old, cr->mpi_comm_mygroup);
+            gmx_bcast((g->atomSet.numAtomsGlobal()) * sizeof((g->xc_old)[0]), g->xc_old, cr->mpi_comm_mygroup);
         }
     }
 
@@ -1652,7 +1652,7 @@ t_swap* init_swapcoords(FILE*                       fplog,
         int molb = 0;
         for (int j = 0; j < g->apm; j++)
         {
-            const t_atom& atom = mtopGetAtomParameters(mtop, g->atomset.globalIndex()[j], &molb);
+            const t_atom& atom = mtopGetAtomParameters(mtop, g->atomSet.globalIndex()[j], &molb);
             g->m[j]            = atom.m;
             charge += atom.q;
         }
@@ -1670,11 +1670,11 @@ t_swap* init_swapcoords(FILE*                       fplog,
         if (sc->massw_split[j])
         {
             /* Save the split group masses if mass-weighting is requested */
-            snew(g->m, g->atomset.numAtomsGlobal());
+            snew(g->m, g->atomSet.numAtomsGlobal());
             int molb = 0;
-            for (size_t i = 0; i < g->atomset.numAtomsGlobal(); i++)
+            for (size_t i = 0; i < g->atomSet.numAtomsGlobal(); i++)
             {
-                g->m[i] = mtopGetAtomMass(mtop, g->atomset.globalIndex()[i], &molb);
+                g->m[i] = mtopGetAtomMass(mtop, g->atomSet.globalIndex()[i], &molb);
             }
         }
     }
@@ -1710,8 +1710,8 @@ t_swap* init_swapcoords(FILE*                       fplog,
                         ig < static_cast<int>(SwapGroupSplittingType::Count) ? enumValueToString(enumValue)
                                                                              : "Ion",
                         g->molname,
-                        static_cast<int>(g->atomset.numAtomsGlobal()),
-                        (g->atomset.numAtomsGlobal() > 1) ? "s" : "");
+                        static_cast<int>(g->atomSet.numAtomsGlobal()),
+                        (g->atomSet.numAtomsGlobal() > 1) ? "s" : "");
                 if (!(SwapGroupSplittingType::Split0 == enumValue
                       || SwapGroupSplittingType::Split1 == enumValue))
                 {
@@ -1733,13 +1733,13 @@ t_swap* init_swapcoords(FILE*                       fplog,
         {
             auto enumValue = static_cast<SwapGroupSplittingType>(j);
             g              = &(s->group[j]);
-            for (size_t i = 0; i < g->atomset.numAtomsGlobal(); i++)
+            for (size_t i = 0; i < g->atomSet.numAtomsGlobal(); i++)
             {
                 copy_rvec(globalState->x[sc->grp[j].ind[i]], g->xc[i]);
             }
             /* xc has the correct PBC representation for the two channels, so we do
              * not need to correct for that */
-            get_center(g->xc, g->m, g->atomset.numAtomsGlobal(), g->center);
+            get_center(g->xc, g->m, g->atomSet.numAtomsGlobal(), g->center);
             if (!restartWithAppending)
             {
                 fprintf(s->fpout,
@@ -2010,8 +2010,8 @@ static void translate_positions(rvec* x, int apm, rvec old_com, rvec new_com, t_
 /*! \brief Write back the modified local positions from the collective array to the official positions. */
 static void apply_modified_positions(swap_group* g, rvec x[])
 {
-    auto collectiveIndex = g->atomset.collectiveIndex().begin();
-    for (const auto localIndex : g->atomset.localIndex())
+    auto collectiveIndex = g->atomSet.collectiveIndex().begin();
+    for (const auto localIndex : g->atomSet.localIndex())
     {
         /* Copy the possibly modified position */
         copy_rvec(g->xc[*collectiveIndex], x[localIndex]);
@@ -2057,14 +2057,14 @@ gmx_bool do_swapcoords(t_commrec*        cr,
                                     g->xc_eshifts,
                                     TRUE,
                                     x,
-                                    g->atomset.numAtomsGlobal(),
-                                    g->atomset.numAtomsLocal(),
-                                    g->atomset.localIndex().data(),
-                                    g->atomset.collectiveIndex().data(),
+                                    g->atomSet.numAtomsGlobal(),
+                                    g->atomSet.numAtomsLocal(),
+                                    g->atomSet.localIndex().data(),
+                                    g->atomSet.collectiveIndex().data(),
                                     g->xc_old,
                                     box);
 
-        get_center(g->xc, g->m, g->atomset.numAtomsGlobal(), g->center); /* center of split groups == channels */
+        get_center(g->xc, g->m, g->atomSet.numAtomsGlobal(), g->center); /* center of split groups == channels */
     }
 
     /* Assemble the positions of the ions (ig = 3, 4, ...). These molecules should
@@ -2079,10 +2079,10 @@ gmx_bool do_swapcoords(t_commrec*        cr,
                                     nullptr,
                                     FALSE,
                                     x,
-                                    g->atomset.numAtomsGlobal(),
-                                    g->atomset.numAtomsLocal(),
-                                    g->atomset.localIndex().data(),
-                                    g->atomset.collectiveIndex().data(),
+                                    g->atomSet.numAtomsGlobal(),
+                                    g->atomSet.numAtomsLocal(),
+                                    g->atomSet.localIndex().data(),
+                                    g->atomSet.collectiveIndex().data(),
                                     nullptr,
                                     nullptr);
 
@@ -2116,10 +2116,10 @@ gmx_bool do_swapcoords(t_commrec*        cr,
                                     nullptr,
                                     FALSE,
                                     x,
-                                    g->atomset.numAtomsGlobal(),
-                                    g->atomset.numAtomsLocal(),
-                                    g->atomset.localIndex().data(),
-                                    g->atomset.collectiveIndex().data(),
+                                    g->atomSet.numAtomsGlobal(),
+                                    g->atomSet.numAtomsLocal(),
+                                    g->atomSet.localIndex().data(),
+                                    g->atomSet.collectiveIndex().data(),
                                     nullptr,
                                     nullptr);
 
