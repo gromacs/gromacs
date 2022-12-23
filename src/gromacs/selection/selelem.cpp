@@ -136,12 +136,12 @@ const char* _gmx_selelem_boolean_type_str(const gmx::SelectionTreeElement& sel)
 namespace gmx
 {
 
-SelectionTreeElement::SelectionTreeElement(e_selelem_t type, const SelectionLocation& location) :
+SelectionTreeElement::SelectionTreeElement(e_selelem_t elemType, const SelectionLocation& location) :
     location_(location)
 {
-    this->type  = type;
-    this->flags = (type != SEL_ROOT) ? SEL_ALLOCVAL : 0;
-    if (type == SEL_BOOLEAN)
+    this->type  = elemType;
+    this->flags = (elemType != SEL_ROOT) ? SEL_ALLOCVAL : 0;
+    if (elemType == SEL_BOOLEAN)
     {
         this->v.type = GROUP_VALUE;
         this->flags |= SEL_ALLOCDATA;
