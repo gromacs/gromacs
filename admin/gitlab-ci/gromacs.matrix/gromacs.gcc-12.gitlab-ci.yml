@@ -7,45 +7,45 @@
 #   HW: AMD GPU
 #   Scope: configure, build, unit tests, regression tests
 # Test implementation choices (free to change as needed):
-#   OS: Ubuntu 20.04
+#   OS: Ubuntu 22.04
 #   Build type: Debug
-#   Compiler: GCC 11
+#   Compiler: GCC 12
 #   MPI: thread_MPI
 #   SIMD: AVX_512
 #   Parallelism nt/ntomp: 4/2 (unit tests)
 #   Parallelism nt/ntomp: 2/1 (regression tests)
 
-gromacs:gcc-11:configure:
+gromacs:gcc-12:configure:
   extends:
     - .gromacs:base:configure
     - .use-gcc:base
     - .use-opencl
     - .rules:merge-and-post-merge-acceptance
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-gcc-11
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-22.04-gcc-12-rocm-5.4.1
   variables:
     CMAKE: /usr/local/cmake-3.18.4/bin/cmake
     CMAKE_SIMD_OPTIONS: "-DGMX_SIMD=AVX_512"
     CMAKE_EXTRA_OPTIONS: "-DGMX_EXTERNAL_CLFFT=ON"
-    COMPILER_MAJOR_VERSION: 11
+    COMPILER_MAJOR_VERSION: 12
 
-gromacs:gcc-11:build:
+gromacs:gcc-12:build:
   extends:
     - .variables:default
     - .gromacs:base:build
     - .before_script:default
     - .use-ccache
     - .rules:merge-and-post-merge-acceptance
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-gcc-11
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-22.04-gcc-12-rocm-5.4.1
   variables:
     CMAKE: /usr/local/cmake-3.18.4/bin/cmake
   needs:
-    - job: gromacs:gcc-11:configure
+    - job: gromacs:gcc-12:configure
 
-gromacs:gcc-11:test:
+gromacs:gcc-12:test:
   extends:
     - .gromacs:base:test
     - .rules:merge-requests
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-gcc-11
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-22.04-gcc-12-rocm-5.4.1
   variables:
     CMAKE: /usr/local/cmake-3.18.4/bin/cmake
     KUBERNETES_EXTENDED_RESOURCE_NAME: "amd.com/gpu"
@@ -57,13 +57,13 @@ gromacs:gcc-11:test:
   tags:
     - k8s-scilifelab
   needs:
-    - job: gromacs:gcc-11:build
+    - job: gromacs:gcc-12:build
 
-gromacs:gcc-11:regressiontest:
+gromacs:gcc-12:regressiontest:
   extends:
     - .gromacs:base:regressiontest
     - .rules:post-merge-acceptance
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-gcc-11
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-22.04-gcc-12-rocm-5.4.1
   variables:
     CMAKE: /usr/local/cmake-3.18.4/bin/cmake
     KUBERNETES_EXTENDED_RESOURCE_NAME: "amd.com/gpu"
@@ -76,6 +76,6 @@ gromacs:gcc-11:regressiontest:
   tags:
     - k8s-scilifelab
   needs:
-    - job: gromacs:gcc-11:build
+    - job: gromacs:gcc-12:build
     - job: regressiontests:prepare
 
