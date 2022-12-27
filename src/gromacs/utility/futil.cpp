@@ -423,6 +423,7 @@ FILE* gmx_ffopen(const std::filesystem::path& file, const char* mode)
             }
             else
             {
+                // Note: this leaks memory, because one has to free ptr after closing the file.
                 char* ptr = nullptr;
                 snew(ptr, bs + 8);
                 if (setvbuf(ff, ptr, _IOFBF, bs) != 0)

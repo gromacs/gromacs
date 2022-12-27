@@ -152,6 +152,9 @@ DeviceBuffer<T>& DeviceBuffer<T>::operator=(std::nullptr_t nullPtr)
  * accessors can be created outside SYCL kernels, which is helpful if we want to pass them as
  * function arguments.
  *
+ * The accessor is valid to use only when the resource from which it
+ * was created is valid to use.
+ *
  * \tparam T Type of buffer content.
  * \tparam mode Access mode.
  */
@@ -182,11 +185,12 @@ public:
     __attribute__((always_inline)) ValueType& operator[](size_t index) const { return ptr_[index]; }
 
 private:
-    //! Helper function to get sycl:global_ptr object from DeviceBuffer wrapper, with a sanity check.
+    /*! \brief Helper function to get sycl:global_ptr object from DeviceBuffer wrapper
+     *
+     * \returns Device pointer when \c buffer is valid, otherwise nullptr */
     static inline sycl::global_ptr<T> getPointer(const DeviceBuffer<T>& buffer)
     {
-        GMX_ASSERT(bool(buffer), "Trying to use an uninitialized buffer");
-        return buffer.buffer_->ptr_;
+        return bool(buffer) ? buffer.buffer_->ptr_ : nullptr;
     }
     T* ptr_;
 };
@@ -414,15 +418,33 @@ void copyFromDeviceBuffer(ValueType*               hostBuffer,
  * \tparam        ValueType                Raw value type of the \p buffer.
  */
 template<typename ValueType>
-void copyBetweenDeviceBuffers(DeviceBuffer<ValueType>* /* destinationDeviceBuffer */,
-                              DeviceBuffer<ValueType>* /* sourceDeviceBuffer */,
-                              size_t /* numValues */,
-                              const DeviceStream& /* deviceStream */,
-                              GpuApiCallBehavior /* transferKind */,
-                              CommandEvent* /*timingEvent*/)
+void copyBetweenDeviceBuffers(DeviceBuffer<ValueType>* destinationDeviceBuffer,
+                              DeviceBuffer<ValueType>* sourceDeviceBuffer,
+                              size_t                   numValues,
+                              const DeviceStream&      deviceStream,
+                              GpuApiCallBehavior       transferKind,
+                              CommandEvent* gmx_unused timingEvent)
 {
-    // SYCL-TODO
-    gmx_fatal(FARGS, "D2D copy stub was called. Not yet implemented in SYCL.");
+    if (numValues == 0)
+    {
+        return; // such calls are actually made with empty domains
+    }
+    GMX_ASSERT(destinationDeviceBuffer, "needs a destination buffer pointer");
+    GMX_ASSERT(sourceDeviceBuffer, "needs a source buffer pointer");
+
+    const ValueType* srcPtr = sourceDeviceBuffer->buffer_->ptr_;
+    ValueType*       dstPtr = destinationDeviceBuffer->buffer_->ptr_;
+    const size_t     size   = numValues * sizeof(ValueType);
+    if (transferKind == GpuApiCallBehavior::Sync)
+    {
+        deviceStream.stream().submit([&](sycl::handler& cgh) { cgh.memcpy(dstPtr, srcPtr, size); }).wait_and_throw();
+    }
+    else
+    {
+        deviceStream.stream().submit(GMX_SYCL_DISCARD_EVENT[&](sycl::handler & cgh) {
+            cgh.memcpy(dstPtr, srcPtr, size);
+        });
+    }
 }
 
 /*! \brief

@@ -399,6 +399,7 @@ if (SPHINX_FOUND)
         release-notes/2022/major/portability.rst
         release-notes/2022/major/miscellaneous.rst
         release-notes/2022/major/api.rst
+        release-notes/2021/2021.7.rst
         release-notes/2021/2021.6.rst
         release-notes/2021/2021.5.rst
         release-notes/2021/2021.4.rst
@@ -766,7 +767,7 @@ set(HTML_BUILD_IS_POSSIBLE ON)
 set(HTML_BUILD_NOT_POSSIBLE_REASON)
 set(HTML_BUILD_WARNINGS)
 
-# Next, turn it off if any of the preconditions are unsatisified
+# Next, turn it off if any of the preconditions are unsatisfied
 if (NOT Python3_Interpreter_FOUND)
     set(HTML_BUILD_IS_POSSIBLE OFF)
     set(HTML_BUILD_NOT_POSSIBLE_REASON "Python is required")

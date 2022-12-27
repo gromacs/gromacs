@@ -58,7 +58,7 @@ static inline short avx512Mask2Int(__mmask16 m)
 
 /*! \brief Return AVX-512 mask from integer
  *
- *  \param m  Short integer
+ *  \param i  Short integer
  *
  *  \return Mask suitable for use with AVX-512 instructions.
  */

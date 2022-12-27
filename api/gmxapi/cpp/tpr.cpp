@@ -287,7 +287,7 @@ GmxapiType mdParamToType(const std::string& name)
         throw ValueError("Named parameter has unknown type mapping.");
     }
     return entry->second;
-};
+}
 
 
 /*!
@@ -735,7 +735,7 @@ GmxMdParams::GmxMdParams(std::unique_ptr<GmxMdParamsImpl>&& impl)
     // to worry about the restrictions on Deleters.
     // Ref: https://en.cppreference.com/w/cpp/memory/unique_ptr/unique_ptr
     params_.swap(impl);
-};
+}
 
 // maybe this should return a handle to the new file?
 bool copy_tprfile(const gmxapicompat::TprReadHandle& input, const std::string& outFile)

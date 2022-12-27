@@ -2391,7 +2391,7 @@ protein dynamics and random diffusion," *Phys. Rev. **E***, **62**
 .. _refMu2005a:
 
 :sup:`172` Y. Mu, P.H. Nguyen, and G. Stock, "Energy landscape of a
-small peptide revelaed by dihedral angle principal component analysis,"
+small peptide revealed by dihedral angle principal component analysis,"
 *PROTEINS: Struct. Funct. Gen.*, **58** 45–52 (2005).
 
 .. raw:: html

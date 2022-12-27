@@ -61,7 +61,8 @@ if(NOT GMXAPI_PYTEST_FOUND)
 endif()
 
 add_custom_target(gmxapi_pytest
-                  COMMAND ${PYTHON_EXECUTABLE} -m pytest --log-cli-level ERROR ${CMAKE_CURRENT_SOURCE_DIR}
+                  COMMAND ${PYTHON_EXECUTABLE} -m pytest
+                    -rA -l --log-cli-level ERROR ${CMAKE_CURRENT_SOURCE_DIR}
                   DEPENDS _gmxapi
                   WORKING_DIRECTORY ${GMXAPI_PYTHON_STAGING_DIR})
 # The current test fixtures require the `gmx` tool-wrapper executable.
@@ -96,8 +97,8 @@ if(MPIEXEC_EXECUTABLE)
     #    make the non-root rank less noisy by providing different argv after a colon (`:`)
     #    (https://www.open-mpi.org/doc/v3.0/man1/mpiexec.1.php)
     add_custom_target(gmxapi_pytest_mpi
-                      COMMAND ${MPIEXEC_EXECUTABLE} -n 2
-                        ${PYTHON_EXECUTABLE} -m mpi4py -m pytest -x --log-cli-level ERROR
+                      COMMAND ${MPIEXEC_EXECUTABLE} -n 4
+                        ${PYTHON_EXECUTABLE} -m mpi4py -m pytest -x -rA -l --log-cli-level ERROR
                         ${CMAKE_CURRENT_SOURCE_DIR}
                       DEPENDS _gmxapi
                       WORKING_DIRECTORY ${GMXAPI_PYTHON_STAGING_DIR})

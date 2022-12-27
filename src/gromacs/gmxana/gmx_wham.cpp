@@ -246,7 +246,7 @@ typedef struct UmbrellaOptions // NOLINT(clang-analyzer-optin.performance.Paddin
     gmx_bool bAuto;                  //!< determine min and max automatically but do not exit
 
     gmx_bool          verbose;    //!< more noisy wham mode
-    int               stepchange; //!< print maximum change in prof after how many interations
+    int               stepchange; //!< print maximum change in prof after how many interactions
     gmx_output_env_t* oenv;       //!< xvgr options
     /*!\}*/
     /*!
@@ -1465,7 +1465,7 @@ static void do_bootstrapping(const char*        fnres,
         bsProfiles_av[i] /= opt->nBootStrap;
         bsProfiles_av2[i] /= opt->nBootStrap;
         tmp    = bsProfiles_av2[i] - gmx::square(bsProfiles_av[i]);
-        stddev = (tmp >= 0.) ? std::sqrt(tmp) : 0.; /* Catch rouding errors */
+        stddev = (tmp >= 0.) ? std::sqrt(tmp) : 0.; /* Catch rounding errors */
         fprintf(fp, "%e\t%e\t%e\n", (i + 0.5) * opt->dz + opt->min, bsProfiles_av[i], stddev);
     }
     xvgrclose(fp);
@@ -1616,7 +1616,7 @@ static void read_tpr_header(const char* fn, t_UmbrellaHeader* header, t_Umbrella
             {
                 gmx_fatal(FARGS,
                           "%s: Pull coordinate %d is of type \"%s\", expected \"umbrella\". Only "
-                          "umbrella coodinates can enter WHAM.\n"
+                          "umbrella coordinates can enter WHAM.\n"
                           "If you have umbrella and non-umbrella coordinates, you can select the "
                           "umbrella coordinates with gmx wham -is\n",
                           fn,

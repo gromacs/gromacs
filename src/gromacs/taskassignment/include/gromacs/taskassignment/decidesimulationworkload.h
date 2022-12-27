@@ -64,7 +64,7 @@ struct DevelopmentFeatureFlags;
  * \param[in] haveSeparatePmeRank Whether separate PME rank(s) are used in this run.
  * \param[in] useGpuForNonbonded Whether we have short-range nonbonded interactions
  *                               calculations on GPU(s).
- * \param[in] pmeRunMode         Run mode indicating what resource is PME execured on.
+ * \param[in] pmeRunMode         Run mode indicating what resource is PME executed on.
  * \param[in] useGpuForBonded    Whether bonded interactions are calculated on GPU(s).
  * \param[in] useGpuForUpdate    Whether coordinate update and constraint solving is performed on
  *                               GPU(s).

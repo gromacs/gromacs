@@ -182,7 +182,7 @@ t_oriresdata::t_oriresdata(FILE*                     fplog,
 
     snew(orderTensors, numExperiments);
     /* When not doing time averaging, the instaneous and time averaged data
-     * are indentical and the pointers can point to the same memory.
+     * are identical and the pointers can point to the same memory.
      */
     snew(DTensors, numRestraints);
 

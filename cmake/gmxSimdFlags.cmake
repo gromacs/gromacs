@@ -312,8 +312,8 @@ function(gmx_find_simd_arm_sve_flags C_FLAGS_RESULT CXX_FLAGS_RESULT C_FLAGS_VAR
         "#include <stdbool.h>
          #include<arm_sve.h>
          typedef svfloat32_t float32_vec_t __attribute__((arm_sve_vector_bits(${GMX_SIMD_ARM_SVE_LENGTH_VALUE})));
-	 /* check the existence of the svdup_n_b32() intrinsic - currently not implemented by LLVM 12 */
-	 svbool_t duplicate(const bool b) { return svdup_n_b32(b); }
+         /* check the existence of the svdup_n_b32() intrinsic - currently not implemented by LLVM 12 */
+         svbool_t duplicate(const bool b) { return svdup_n_b32(b); }
          int main(){float32_vec_t x = svdup_f32(0.5f); return 0;}"
         TOOLCHAIN_C_FLAGS TOOLCHAIN_CXX_FLAGS
         SIMD_ARM_SVE_C_FLAGS SIMD_ARM_SVE_CXX_FLAGS

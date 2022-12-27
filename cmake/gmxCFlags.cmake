@@ -61,7 +61,6 @@ ENDMACRO(GMX_TEST_CXXFLAG VARIABLE FLAGS CXXFLAGSVAR)
 function(gmx_target_compile_options_inner)
     set(CFLAGS
             ${SIMD_C_FLAGS}
-            ${MPI_C_COMPILE_OPTIONS}
             ${EXTRA_C_FLAGS}
             ${GMXC_CFLAGS}
          PARENT_SCOPE)
@@ -71,7 +70,6 @@ function(gmx_target_compile_options_inner)
     # enable SYCL for the few files using it, as well as the linker.
     set(CXXFLAGS
             ${SIMD_CXX_FLAGS}
-            ${MPI_CXX_COMPILE_OPTIONS}
             ${DISABLE_SYCL_CXX_FLAGS}
             ${EXTRA_CXX_FLAGS}
             ${GMXC_CXXFLAGS}
@@ -111,6 +109,20 @@ function(gmx_target_compile_options TARGET)
             $<$<AND:$<COMPILE_LANGUAGE:CXX>,$<CONFIG:${build_type}>>:${GMXC_CXXFLAGS_${build_type}}>
             )
     endforeach()
+    # TODO: Restrict the scope of MPI dependence.
+    # Targets that actually need MPI headers and build tool flags should
+    # manage their own `target_link_libraries` locally. Such a change is beyond
+    # the scope of the bug fix for #4678.
+    if (GMX_LIB_MPI AND TARGET ${TARGET})
+        target_link_libraries(
+            ${TARGET} PRIVATE
+            $<$<LINK_LANGUAGE:CXX>:MPI::MPI_CXX>
+            # We don't know whether we have sought the MPI::C component at all, or at least
+            # by the time we process these lines.
+            $<$<AND:$<TARGET_EXISTS:MPI::MPI_C>,$<LINK_LANGUAGE:C>>:MPI::MPI_C>
+            $<$<LINK_LANGUAGE:CUDA>:MPI::MPI_CXX>
+        )
+    endif ()
     # Add the release-configuration compiler options to build
     # configurations that derive from it.
     foreach(build_type RELWITHDEBINFO RELWITHASSERT MINSIZEREL PROFILE)

@@ -1,0 +1,94 @@
+# Test goal: Release build with GCC and OpenCL
+# Test intents (should change rarely and conservatively):
+#   OS: Ubuntu oldest supported
+#   Compiler: GCC newest supported
+#   GPU: OpenCL
+#   HW: AMD GPU
+#   Scope: configure, build, unit tests, regression tests
+# Test implementation choices (free to change as needed):
+#   OS: Ubuntu 22.04
+#   Build type: RelWithAssert
+#   Compiler: GCC 12
+#   MPI: thread_MPI
+#   SIMD: AVX2_256
+#   FFT: FFTW3
+#   Parallelism nt/ntomp: 4/2 (unit tests)
+#   Parallelism nt/ntomp: 2/1 (regression tests)
+
+gromacs:gcc-12:release:configure:
+  extends:
+    - .gromacs:base:release:configure
+    - .use-gcc:base
+    - .use-opencl
+    - .rules:nightly-only-for-release
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-22.04-gcc-12-rocm-5.4.1
+  variables:
+    CMAKE: /usr/local/cmake-3.18.4/bin/cmake
+    COMPILER_MAJOR_VERSION: 12
+    RELEASE_BUILD_DIR: release-builds-gcc
+    CMAKE_BUILD_TYPE_OPTIONS: "-DCMAKE_BUILD_TYPE=RelWithAssert"
+  dependencies:
+    - archive:package
+    - regressiontests:package
+    - prepare-release-version
+
+gromacs:gcc-12:release:build:
+  # Test using configuration: gromacs:gcc-12:release:configure
+  # Test scope: build
+  extends:
+    - .variables:default
+    - .gromacs:base:build
+    - .before_script:default
+    - .use-ccache
+    - .rules:nightly-only-for-release
+  stage: release-build
+  variables:
+    CMAKE: /usr/local/cmake-3.18.4/bin/cmake
+    BUILD_DIR: release-builds-gcc
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-22.04-gcc-12-rocm-5.4.1
+  needs:
+    - job: gromacs:gcc-12:release:configure
+
+gromacs:gcc-12:release:test:
+  extends:
+    - .gromacs:base:test
+    - .rules:nightly-only-for-release
+  stage: release-tests
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-22.04-gcc-12-rocm-5.4.1
+  variables:
+    CMAKE: /usr/local/cmake-3.18.4/bin/cmake
+    BUILD_DIR: release-builds-gcc
+    KUBERNETES_EXTENDED_RESOURCE_NAME: "amd.com/gpu"
+    KUBERNETES_EXTENDED_RESOURCE_LIMIT: 1
+    LD_LIBRARY_PATH: "/opt/rocm/opencl/lib"
+    ROC_ENABLE_PRE_VEGA: 1
+    GMX_TEST_LABELS: "QuickGpuTest|SlowGpuTest"
+    GMX_FORCE_UPDATE_DEFAULT_CPU: 1
+  tags:
+    - k8s-scilifelab
+  needs:
+    - job: gromacs:gcc-12:release:configure
+    - job: gromacs:gcc-12:release:build
+
+gromacs:gcc-12:release:regressiontest:
+  extends:
+    - .gromacs:base:regressiontest
+    - .rules:nightly-only-for-release
+  stage: release-tests
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-22.04-gcc-12-rocm-5.4.1
+  variables:
+    CMAKE: /usr/local/cmake-3.18.4/bin/cmake
+    BUILD_DIR: release-builds-gcc
+    KUBERNETES_EXTENDED_RESOURCE_NAME: "amd.com/gpu"
+    KUBERNETES_EXTENDED_RESOURCE_LIMIT: 1
+    REGRESSIONTEST_PME_RANK_NUMBER: 0
+    REGRESSIONTEST_TOTAL_RANK_NUMBER: 2
+    REGRESSIONTEST_OMP_RANK_NUMBER: 1
+    LD_LIBRARY_PATH: "/opt/rocm/opencl/lib"
+    ROC_ENABLE_PRE_VEGA: 1
+  tags:
+    - k8s-scilifelab
+  needs:
+    - job: gromacs:gcc-12:release:build
+    - job: regressiontests:package
+

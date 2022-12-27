@@ -109,7 +109,7 @@ void fillSingleQuadraticSplineTableData(const std::function<double(double)>& fun
 
             // Calculate third derivative term (2nd derivative of the derivative)
             // Make sure we stay in range. In practice this means we use one-sided
-            // interpolation at the interval endpoints (indentical to an offset for 3-point formula)
+            // interpolation at the interval endpoints (identical to an offset for 3-point formula)
             const double h = std::pow(GMX_DOUBLE_EPS, 0.25);
             double       y = std::min(std::max(x, range.first + h), range.second - h);
             double       thirdDerivativeValue =

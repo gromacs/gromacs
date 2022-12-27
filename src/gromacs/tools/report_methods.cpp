@@ -181,7 +181,7 @@ private:
 void ReportMethods::initOptions(IOptionsContainer* options, ICommandLineOptionsModuleSettings* settings)
 {
     const char* const desc[] = { "[THISMODULE] reports basic system information for the run input",
-                                 "file specfied with [TT]-s[tt] either to the",
+                                 "file specified with [TT]-s[tt] either to the",
                                  "terminal, to a LaTeX formatted output file if run with",
                                  "the [TT]-m[tt] option or to an unformatted file with",
                                  "the [TT]-o[tt] option.",

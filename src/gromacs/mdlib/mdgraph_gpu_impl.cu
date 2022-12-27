@@ -230,6 +230,8 @@ void MdGpuGraph::Impl::startRecord(GpuEventSynchronizer* xReadyOnDeviceEvent)
         helperEvent_->markEvent(deviceStreamManager_.stream(gmx::DeviceStreamType::NonBondedLocal));
         enqueueRank0EventToAllPpStreams(
                 helperEvent_.get(), deviceStreamManager_.stream(gmx::DeviceStreamType::NonBondedLocal));
+        // The synchronization below should not be needed, see #4674
+        MPI_Barrier(mpiComm_);
 
         // Fork NB non-local stream from NB local stream on each rank
         helperEvent_->markEvent(deviceStreamManager_.stream(gmx::DeviceStreamType::NonBondedLocal));

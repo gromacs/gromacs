@@ -81,8 +81,6 @@ struct DevelopmentFeatureFlags
     //! True if the Buffer ops development feature is enabled
     // TODO: when the trigger of the buffer ops offload is fully automated this should go away
     bool enableGpuBufferOps = false;
-    //! If true, forces 'mdrun -update auto' default to 'gpu'
-    bool forceGpuUpdateDefault = false;
     //! True if the GPU-aware MPI can be used for GPU direct communication feature
     bool canUseGpuAwareMpi = false;
     //! True if GPU PME-decomposition is enabled
@@ -139,7 +137,6 @@ bool decideWhetherToUseGpusForNonbondedWithThreadMpi(TaskTarget              non
  * \param[in]  pmeFftTarget              The user's choice for mdrun -pmefft for where to run FFT.
  * \param[in]  numDevicesToUse           The number of compatible GPUs that the user permitted us to use.
  * \param[in]  userGpuTaskAssignment     The user-specified assignment of GPU tasks to device IDs.
- * \param[in]  hardwareInfo              Hardware information
  * \param[in]  inputrec                  The user input
  * \param[in]  numRanksPerSimulation     The number of ranks in each simulation.
  * \param[in]  numPmeRanksPerSimulation  The number of PME ranks in each simulation.
@@ -153,7 +150,6 @@ bool decideWhetherToUseGpusForPmeWithThreadMpi(bool                    useGpuFor
                                                TaskTarget              pmeFftTarget,
                                                int                     numDevicesToUse,
                                                const std::vector<int>& userGpuTaskAssignment,
-                                               const gmx_hw_info_t&    hardwareInfo,
                                                const t_inputrec&       inputrec,
                                                int                     numRanksPerSimulation,
                                                int                     numPmeRanksPerSimulation);
@@ -212,7 +208,6 @@ bool decideWhetherToUseGpusForNonbonded(TaskTarget              nonbondedTarget,
  * \param[in]  pmeTarget                 The user's choice for mdrun -pme for where to assign long-ranged PME nonbonded interaction tasks.
  * \param[in]  pmeFftTarget              The user's choice for mdrun -pmefft for where to do FFT for PME.
  * \param[in]  userGpuTaskAssignment     The user-specified assignment of GPU tasks to device IDs.
- * \param[in]  hardwareInfo              Hardware information
  * \param[in]  inputrec                  The user input
  * \param[in]  numRanksPerSimulation     The number of ranks in each simulation.
  * \param[in]  numPmeRanksPerSimulation  The number of PME ranks in each simulation.
@@ -226,7 +221,6 @@ bool decideWhetherToUseGpusForPme(bool                    useGpuForNonbonded,
                                   TaskTarget              pmeTarget,
                                   TaskTarget              pmeFftTarget,
                                   const std::vector<int>& userGpuTaskAssignment,
-                                  const gmx_hw_info_t&    hardwareInfo,
                                   const t_inputrec&       inputrec,
                                   int                     numRanksPerSimulation,
                                   int                     numPmeRanksPerSimulation,
@@ -283,29 +277,29 @@ bool decideWhetherToUseGpusForBonded(bool              useGpuForNonbonded,
  * \param[in]  useEssentialDynamics         If essential dynamics is active.
  * \param[in]  doOrientationRestraints      If orientation restraints are enabled.
  * \param[in]  haveFrozenAtoms              If this simulation has frozen atoms (see Issue #3920).
+ * \param[in]  useModularSimulator          Whether the modular simulator is used
  * \param[in]  doRerun                      It this is a rerun.
- * \param[in]  devFlags                     GPU development / experimental feature flags.
  * \param[in]  mdlog                        MD logger.
  *
  * \returns    Whether complete simulation can be run on GPU.
  * \throws     std::bad_alloc            If out of memory
  *             InconsistentInputError    If the user requirements are inconsistent.
  */
-bool decideWhetherToUseGpuForUpdate(bool                           isDomainDecomposition,
-                                    bool                           useUpdateGroups,
-                                    PmeRunMode                     pmeRunMode,
-                                    bool                           havePmeOnlyRank,
-                                    bool                           useGpuForNonbonded,
-                                    TaskTarget                     updateTarget,
-                                    bool                           gpusWereDetected,
-                                    const t_inputrec&              inputrec,
-                                    const gmx_mtop_t&              mtop,
-                                    bool                           useEssentialDynamics,
-                                    bool                           doOrientationRestraints,
-                                    bool                           haveFrozenAtoms,
-                                    bool                           doRerun,
-                                    const DevelopmentFeatureFlags& devFlags,
-                                    const gmx::MDLogger&           mdlog);
+bool decideWhetherToUseGpuForUpdate(bool                 isDomainDecomposition,
+                                    bool                 useUpdateGroups,
+                                    PmeRunMode           pmeRunMode,
+                                    bool                 havePmeOnlyRank,
+                                    bool                 useGpuForNonbonded,
+                                    TaskTarget           updateTarget,
+                                    bool                 gpusWereDetected,
+                                    const t_inputrec&    inputrec,
+                                    const gmx_mtop_t&    mtop,
+                                    bool                 useEssentialDynamics,
+                                    bool                 doOrientationRestraints,
+                                    bool                 haveFrozenAtoms,
+                                    bool                 useModularSimulator,
+                                    bool                 doRerun,
+                                    const gmx::MDLogger& mdlog);
 
 /*! \brief Decide whether direct GPU communication can be used.
  *

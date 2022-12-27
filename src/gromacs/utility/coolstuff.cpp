@@ -1240,7 +1240,7 @@ std::string getCoolQuote()
         { "C is not a high-level language.", "Brian Kernighan, C author" },
         { "I will not be a lemming and follow the crowd over the cliff and into the C.",
           "John Beidler" },
-        { "C is quirky, flawed, and an enourmous success.", "Dennis Ritchie, C author" },
+        { "C is quirky, flawed, and an enormous success.", "Dennis Ritchie, C author" },
         { "A C program is like a fast dance on a newly waxed dance floor by people carrying "
           "razors.",
           "Waldi Ravens" },

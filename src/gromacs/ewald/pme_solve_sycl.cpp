@@ -134,17 +134,19 @@ auto makeSolveKernel(sycl::handler&                    cgh,
         sycl::global_ptr<float> gm_fourierGrid = a_fourierGrid.get_pointer();
 
         /* Various grid sizes and indices */
-        const int localOffsetMinor = 0, localOffsetMajor = 0, localOffsetMiddle = 0;
-        const int localSizeMinor   = solveKernelParams.complexGridSizePadded[minorDim];
-        const int localSizeMiddle  = solveKernelParams.complexGridSizePadded[middleDim];
-        const int localCountMiddle = solveKernelParams.complexGridSize[middleDim];
-        const int localCountMinor  = solveKernelParams.complexGridSize[minorDim];
-        const int nMajor           = solveKernelParams.realGridSize[majorDim];
-        const int nMiddle          = solveKernelParams.realGridSize[middleDim];
-        const int nMinor           = solveKernelParams.realGridSize[minorDim];
-        const int maxkMajor        = (nMajor + 1) / 2;  // X or Y
-        const int maxkMiddle       = (nMiddle + 1) / 2; // Y OR Z => only check for !YZX
-        const int maxkMinor        = (nMinor + 1) / 2;  // Z or X => only check for YZX
+        const int localOffsetMinor  = solveKernelParams.kOffsets[minorDim];
+        const int localOffsetMiddle = solveKernelParams.kOffsets[middleDim];
+        const int localOffsetMajor  = solveKernelParams.kOffsets[majorDim];
+        const int localSizeMinor    = solveKernelParams.complexGridSizePadded[minorDim];
+        const int localSizeMiddle   = solveKernelParams.complexGridSizePadded[middleDim];
+        const int localCountMiddle  = solveKernelParams.complexGridSize[middleDim];
+        const int localCountMinor   = solveKernelParams.complexGridSize[minorDim];
+        const int nMajor            = solveKernelParams.realGridSize[majorDim];
+        const int nMiddle           = solveKernelParams.realGridSize[middleDim];
+        const int nMinor            = solveKernelParams.realGridSize[minorDim];
+        const int maxkMajor         = (nMajor + 1) / 2;  // X or Y
+        const int maxkMiddle        = (nMiddle + 1) / 2; // Y OR Z => only check for !YZX
+        const int maxkMinor         = (nMinor + 1) / 2;  // Z or X => only check for YZX
 
         const int threadLocalId     = itemIdx.get_local_linear_id();
         const int gridLineSize      = localCountMinor;
@@ -402,8 +404,9 @@ void PmeSolveKernel<gridOrdering, computeEnergyAndVirial, gridIndex, subGroupSiz
         gridParams_                              = &params->grid;
         solveKernelParams_.ewaldFactor           = params->grid.ewaldFactor;
         solveKernelParams_.realGridSize          = params->grid.realGridSize;
-        solveKernelParams_.complexGridSize       = params->grid.complexGridSize;
-        solveKernelParams_.complexGridSizePadded = params->grid.complexGridSizePadded;
+        solveKernelParams_.kOffsets              = params->grid.kOffsets;
+        solveKernelParams_.complexGridSize       = params->grid.localComplexGridSize;
+        solveKernelParams_.complexGridSizePadded = params->grid.localComplexGridSizePadded;
         solveKernelParams_.splineValuesOffset    = params->grid.splineValuesOffset;
         solveKernelParams_.recipBox[XX]          = params->current.recipBox[XX];
         solveKernelParams_.recipBox[YY]          = params->current.recipBox[YY];

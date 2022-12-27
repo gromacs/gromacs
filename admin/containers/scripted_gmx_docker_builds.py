@@ -116,7 +116,7 @@ _common_packages = [
 
 _opencl_extra_packages = [
     "nvidia-opencl-dev",
-    # The following require apt_ppas=['ppa:intel-opencl/intel-opencl']
+    # The following require apt_ppas=['ppa:intel-opencl/intel-opencl'] on Ubuntu prior to 22.04
     "intel-opencl-icd",
     "ocl-icd-libopencl1",
     "ocl-icd-opencl-dev",
@@ -167,6 +167,7 @@ _intel_compute_runtime_extra_packages = [
 ]
 
 # Extra packages needed to build Python installations from source.
+# For Ubuntu 22.04, 'python-*' is later replaced with 'python3-*'
 _python_extra_packages = [
     "build-essential",
     "ca-certificates",
@@ -265,7 +266,12 @@ def hpccm_distro_name(args) -> str:
         else:
             raise RuntimeError("Logic error: unsupported CentOS distribution selected.")
     elif args.ubuntu is not None:
-        name_mapping = {"20.04": "ubuntu20", "18.04": "ubuntu18", "16.04": "ubuntu16"}
+        name_mapping = {
+            "22.04": "ubuntu22",
+            "20.04": "ubuntu20",
+            "18.04": "ubuntu18",
+            "16.04": "ubuntu16",
+        }
         if args.ubuntu in name_mapping:
             hpccm_name = name_mapping[args.ubuntu]
         else:
@@ -310,7 +316,14 @@ def get_rocm_packages(args) -> typing.List[str]:
 
 
 def get_rocm_repository(args) -> "hpccm.building_blocks.base":
-    dist_string = "ubuntu"
+    if args.ubuntu is None:
+        raise RuntimeError("ROCm only supported on Ubuntu")
+    else:
+        rocm_version = [int(i) for i in args.rocm.split(".")]
+        if rocm_version[0] < 5 or (rocm_version[0] == 5 and rocm_version[1] < 3):
+            dist_string = "ubuntu"
+        else:
+            dist_string = {"20.04": "focal", "22.04": "jammy"}[args.ubuntu]
     return hpccm.building_blocks.packages(
         apt_keys=["http://repo.radeon.com/rocm/rocm.gpg.key"],
         apt_repositories=[
@@ -802,7 +815,9 @@ def add_intel_llvm_compiler_build_stage(
 
     if args.rocm is not None:
         llvm_stage += get_rocm_repository(args)
-        llvm_stage += hpccm.building_blocks.packages(ospackages=get_rocm_packages(args))
+        llvm_stage += hpccm.building_blocks.packages(
+            ospackages=get_rocm_packages(args), aptitude=True
+        )
         buildbot_flags.extend(["--hip", "--hip-platform", "AMD"])
 
     llvm_stage += hpccm.building_blocks.generic_build(
@@ -940,7 +955,12 @@ def add_python_stages(
     pyenv_stage += hpccm.primitives.baseimage(
         image=base, _distro=hpccm_distro_name(input_args), _as="pyenv"
     )
-    pyenv_stage += hpccm.building_blocks.packages(ospackages=_python_extra_packages)
+    python_extra_packages = _python_extra_packages
+    if input_args.ubuntu is not None and input_args.ubuntu == "22.04":
+        python_extra_packages = [
+            i.replace("python-", "python3-") for i in python_extra_packages
+        ]
+    pyenv_stage += hpccm.building_blocks.packages(ospackages=python_extra_packages)
 
     for version in [
         packaging.version.parse(py_ver) for py_ver in sorted(input_args.venvs)
@@ -950,7 +970,7 @@ def add_python_stages(
         stage += hpccm.primitives.baseimage(
             image=base, _distro=hpccm_distro_name(input_args), _as=stage_name
         )
-        stage += hpccm.building_blocks.packages(ospackages=_python_extra_packages)
+        stage += hpccm.building_blocks.packages(ospackages=python_extra_packages)
 
         # TODO: Use a non-root user for testing and Python virtual environments.
         stage += hpccm.primitives.shell(
@@ -1133,9 +1153,16 @@ def build_stages(args) -> typing.Iterable["hpccm.Stage"]:
     if args.rocm is not None:
         building_blocks["extra_packages"] += get_rocm_repository(args)
 
-    building_blocks["extra_packages"] += hpccm.building_blocks.packages(
-        ospackages=os_packages, apt_ppas=["ppa:intel-opencl/intel-opencl"]
-    )
+    if args.ubuntu is not None and args.ubuntu != "22.04":
+        building_blocks["extra_packages"] += hpccm.building_blocks.packages(
+            ospackages=os_packages, apt_ppas=["ppa:intel-opencl/intel-opencl"]
+        )
+    else:
+        # For 22.04, everything is packaged. Therefore, we don't need Intel repo, but we need to
+        # use aptitude to resolve the conflicts between Ubuntu ROCm packages and AMD ROCm packages.
+        building_blocks["extra_packages"] += hpccm.building_blocks.packages(
+            ospackages=os_packages, aptitude=True
+        )
 
     building_blocks["CP2K"] = get_cp2k(args)
 

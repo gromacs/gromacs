@@ -74,6 +74,8 @@
 #cmakedefine01 GMX_GPU_FFT_MKL
 /* Use rocFFT library for FFT on GPUs */
 #cmakedefine01 GMX_GPU_FFT_ROCFFT
+/* Use double-batched FFT library for FFT on GPUs */
+#cmakedefine01 GMX_GPU_FFT_DBFFT
 
 /* VKFFT Library version */
 #define vkfft_VERSION "@vkfft_VERSION@"
@@ -83,6 +85,9 @@
 
 /* HeFFTe version */
 #define Heffte_VERSION "@Heffte_VERSION@"
+
+/* Double-Batched FFT Library version (still called bbfft in the implementation) */
+#define dbfft_VERSION "@bbfft-sycl_VERSION@"
 
 /* Target platform is x86 or x86_64 */
 #cmakedefine01 GMX_TARGET_X86
@@ -263,6 +268,7 @@
 #cmakedefine01 HAVE_MPI_EXT
 #cmakedefine01 MPI_SUPPORTS_CUDA_AWARE_DETECTION
 #cmakedefine01 MPI_SUPPORTS_HIP_AWARE_DETECTION
+#cmakedefine01 MPI_SUPPORTS_ROCM_AWARE_DETECTION
 #cmakedefine01 MPI_SUPPORTS_ZE_AWARE_DETECTION
 
 /* Define if HeFFTe library found */
@@ -435,6 +441,12 @@
 
 /* Define if we have MKL available */
 #cmakedefine01 HAVE_LIBMKL
+
+// Describes the origin of BLAS routines
+#define GMX_DESCRIBE_BLAS "@GMX_DESCRIBE_BLAS@"
+
+// Describes the origin of LAPACK routines
+#define GMX_DESCRIBE_LAPACK "@GMX_DESCRIBE_LAPACK@"
 
 /* Define if we have lmfit support */
 #cmakedefine01 HAVE_LMFIT

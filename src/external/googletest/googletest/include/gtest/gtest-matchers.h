@@ -298,8 +298,18 @@ class MatcherBase : private MatcherDescriberInterface {
     Init(std::forward<M>(m));
   }
 
+#ifdef __GNUC__
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wpragmas"
+#pragma GCC diagnostic ignored "-Wunknown-warning-option"
+#pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
+#pragma GCC diagnostic ignored "-Wuninitialized"
+#endif
   MatcherBase(const MatcherBase& other)
       : vtable_(other.vtable_), buffer_(other.buffer_) {
+#ifdef __GNUC__
+#pragma GCC diagnostic pop
+#endif
 #ifndef __clang_analyzer__
     if (IsShared()) buffer_.shared->Ref();
 #endif

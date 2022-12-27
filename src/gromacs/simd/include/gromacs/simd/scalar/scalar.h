@@ -1019,4 +1019,4 @@ static inline bool cvtIB2B(bool a)
 } // namespace gmx
 
 
-#endif // GMX_SIMD_SCALAR_FLOAT_H
+#endif // GMX_SIMD_SCALAR_H

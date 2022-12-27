@@ -459,4 +459,4 @@ private:
 
 } // namespace gmx
 
-#endif // GMX_MDRUN_SIMULATORBUILDER_SIMULATORBUILDER_H
+#endif // GMX_MDRUN_SIMULATORBUILDER_H

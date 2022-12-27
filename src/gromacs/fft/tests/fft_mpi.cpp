@@ -180,7 +180,7 @@ public:
 
         int sizeInReals = realGridSizePadded[0] * realGridSizePadded[1] * realGridSizePadded[2];
 
-        // initialze random input data
+        // initialize random input data
         std::vector<real>                in(sizeInReals);
         std::uniform_real_distribution<> dis(-10.0f, 10.0f);
         std::minstd_rand                 gen(time(NULL) + rank);
@@ -236,7 +236,18 @@ std::vector<GpuFftTestGridParams> const inputGrids{ { IVec{ 5, 6, 9 }, 4, 1 },
 std::vector<FftBackend> const           inputBackends
 {
 #if GMX_USE_Heffte
+#    if GMX_GPU_CUDA
     FftBackend::HeFFTe_CUDA,
+#    endif
+#    if GMX_GPU_SYCL && GMX_GPU_FFT_MKL
+            FftBackend::HeFFTe_OneApi,
+#    endif
+#    if GMX_GPU_SYCL && GMX_GPU_FFT_ROCFFT
+            FftBackend::HeFFTe_Sycl_Rocfft,
+#    endif
+#    if GMX_GPU_SYCL && GMX_GPU_FFT_CUFFT
+            FftBackend::HeFFTe_Sycl_cuFFT,
+#    endif
 #endif
 #if GMX_USE_cuFFTMp
             FftBackend::CuFFTMp,

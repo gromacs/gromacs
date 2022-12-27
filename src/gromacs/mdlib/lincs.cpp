@@ -84,10 +84,11 @@
 #include "gromacs/utility/listoflists.h"
 #include "gromacs/utility/pleasecite.h"
 
-namespace gmx
+namespace
 {
 
-//! \internal Indices of the two atoms involved in a single constraint
+//! \internal \brief Indices of the two atoms involved in a single constraint
+//! \warning Not to be confused with gmx::AtomPair used in other translation units.
 struct AtomPair
 {
     //! \brief Constructor, does not initialize to catch bugs and faster construction
@@ -116,13 +117,18 @@ struct Task
     std::vector<int> updateConstraintIndices1;
     //! Constraint indices for updating atom data, second group.
     std::vector<int> updateConstraintIndices2;
-    //! Temporay constraint indices for setting up updating of atom data.
+    //! Temporary constraint indices for setting up updating of atom data.
     std::vector<int> updateConstraintIndicesRest;
     //! Temporary variable for virial calculation.
     tensor vir_r_m_dr = { { 0 } };
     //! Temporary variable for lambda derivative.
     real dhdlambda;
 };
+
+} // namespace
+
+namespace gmx
+{
 
 /*! \brief Data for LINCS algorithm.
  */
@@ -296,7 +302,7 @@ static void lincs_matrix_expand(const Lincs&              lincsd,
         /* Perform an extra nrec recursions for only the constraints
          * involved in rigid triangles.
          * In this way their accuracy should come close to those of the other
-         * constraints, since traingles of constraints can produce eigenvalues
+         * constraints, since triangles of constraints can produce eigenvalues
          * around 0.7, while the effective eigenvalue for bond constraints
          * is around 0.4 (and 0.7*0.7=0.5).
          */
@@ -2351,7 +2357,7 @@ static void lincs_warning(gmx_domdec_t*                 dd,
     }
 }
 
-//! Status information about how well LINCS satisified the constraints in this domain
+//! Status information about how well LINCS satisfied the constraints in this domain
 struct LincsDeviations
 {
     //! The maximum over all bonds in this domain of the relative deviation in bond lengths

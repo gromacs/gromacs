@@ -71,8 +71,23 @@ gromacs:gcc-9-cuda-11.0.3:test-gpucommupd:
     CMAKE: /usr/local/cmake-3.18.4/bin/cmake
     KUBERNETES_EXTENDED_RESOURCE_NAME: "nvidia.com/gpu"
     KUBERNETES_EXTENDED_RESOURCE_LIMIT: 1
-    GMX_FORCE_UPDATE_DEFAULT_GPU: 1
     GMX_TEST_LABELS: "QuickGpuTest|SlowGpuTest"
+  tags:
+    - k8s-scilifelab
+  needs:
+    - job: gromacs:gcc-9-cuda-11.0.3:build
+
+gromacs:gcc-9-cuda-11.0.3:test-gpucommupd-cuda-sanitizer:
+  extends:
+    - .gromacs:base:test
+    - .rules:post-merge-acceptance
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-gcc-9-cuda-11.0.3
+  variables:
+    CMAKE: /usr/local/cmake-3.21.2/bin/cmake # We need newer CMake for Compute Sanitizer support
+    KUBERNETES_EXTENDED_RESOURCE_NAME: "nvidia.com/gpu"
+    KUBERNETES_EXTENDED_RESOURCE_LIMIT: 1
+  script:
+    - bash -x admin/ci-scripts/gromacs-base-cuda-sanitizer-test.sh
   tags:
     - k8s-scilifelab
   needs:
@@ -108,7 +123,6 @@ gromacs:gcc-9-cuda-11.0.3:regressiontest-gpucommupd-tMPI:
     REGRESSIONTEST_PME_RANK_NUMBER: 0
     REGRESSIONTEST_TOTAL_RANK_NUMBER: 4
     REGRESSIONTEST_OMP_RANK_NUMBER: 1
-    GMX_FORCE_UPDATE_DEFAULT_GPU: 1
   tags:
     - k8s-scilifelab
   needs:
@@ -131,7 +145,6 @@ gromacs:gcc-9-cuda-11.0.3:regressiontest-upd-tMPI:
     REGRESSIONTEST_PME_RANK_NUMBER: 0
     REGRESSIONTEST_TOTAL_RANK_NUMBER: 4
     REGRESSIONTEST_OMP_RANK_NUMBER: 1
-    GMX_FORCE_UPDATE_DEFAULT_GPU: 1
   tags:
     - k8s-scilifelab
   needs:

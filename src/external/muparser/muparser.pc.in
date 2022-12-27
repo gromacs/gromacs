@@ -8,4 +8,4 @@ Description: Mathematical expressions parser library
 Version: @MUPARSER_VERSION@
 Requires:
 Libs: -L${libdir} -lmuparser
-Cflags: -I${includedir}
+Cflags: -I${includedir} @PKG_CONFIG_FLAGS@

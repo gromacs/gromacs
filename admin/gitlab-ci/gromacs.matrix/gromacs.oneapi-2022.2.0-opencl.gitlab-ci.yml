@@ -45,6 +45,7 @@ gromacs:oneapi-2022.2.0-opencl:test:
   image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-oneapi-2022.2.0-intel-compute-runtime
   variables:
     CMAKE: /usr/local/cmake-3.18.4/bin/cmake
+    GMX_FORCE_UPDATE_DEFAULT_CPU: 1
   needs:
     - job: gromacs:oneapi-2022.2.0-opencl:build
 

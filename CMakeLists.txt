@@ -107,11 +107,15 @@ include(gmxBuildTypeMSAN)
 include(gmxBuildTypeUBSAN)
 include(gmxBuildTypeReleaseWithAssert)
 
+set(valid_build_types "Debug" "Release" "MinSizeRel" "RelWithDebInfo" "Reference" "RelWithAssert" "Profile" "TSAN" "ASAN" "MSAN" "UBSAN")
 if(NOT CMAKE_BUILD_TYPE)
-    set(CMAKE_BUILD_TYPE "Release" CACHE STRING "Choose the type of build, options are: Debug Release RelWithDebInfo MinSizeRel Reference RelWithAssert Profile TSAN ASAN MSAN UBSAN." FORCE)
+    set(CMAKE_BUILD_TYPE "Release" CACHE STRING "Choose the type of build, options are: ${valid_build_types}." FORCE)
     # Set the possible values of build type for cmake-gui
-    set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "Debug" "Release"
-        "MinSizeRel" "RelWithDebInfo" "Reference" "RelWithAssert" "Profile" "TSAN" "ASAN" "MSAN" "UBSAN")
+    set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS ${valid_build_types})
+endif()
+if(NOT "${CMAKE_BUILD_TYPE}" IN_LIST valid_build_types)
+    message(FATAL_ERROR "Unsupported value of -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}. "
+        "Only ${valid_build_types} are allowed (case-sensitive)")
 endif()
 if(CMAKE_CONFIGURATION_TYPES)
     # Add appropriate GROMACS-specific build types for the Visual
@@ -254,7 +258,7 @@ gmx_dependent_option(
     GMX_USE_HEFFTE
     "Use HeFFTe for distributed FFT support. Used with CUDA backend"
     OFF
-    "GMX_GPU STREQUAL CUDA;GMX_MPI")
+    "GMX_GPU STREQUAL CUDA OR GMX_GPU STREQUAL SYCL;GMX_MPI")
 gmx_dependent_option(
     GMX_USE_CUFFTMP
     "Use cuFFTMp for distributed FFT support. Used with CUDA backend"
@@ -294,13 +298,16 @@ if (GMX_GPU)
         GMX_GPU_FFT_LIBRARY
         "GPU FFT library"
         "${GMX_GPU_FFT_LIBRARY_DEFAULT}"
-        cuFFT clFFT VkFFT MKL rocFFT none)
+        cuFFT clFFT VkFFT MKL rocFFT dbFFT none)
     # The validity of chosen option is later verified by the selected backend
 
-    foreach (_gpu_fft_library cuFFT clFFT VkFFT MKL rocFFT)
+    foreach (_gpu_fft_library cuFFT clFFT VkFFT MKL rocFFT dbFFT)
         string(TOUPPER "${_gpu_fft_library}" _gpu_fft_library_upper)
         if (GMX_GPU_FFT_LIBRARY STREQUAL ${_gpu_fft_library_upper})
-            message(STATUS "Selected GPU FFT library - ${_gpu_fft_library}")
+            if (NOT GMX_GPU_FFT_QUIET_AFTER_FIRST_RUN)
+                message(STATUS "Selected GPU FFT library - ${_gpu_fft_library}")
+            endif()
+            set(GMX_GPU_FFT_QUIET_AFTER_FIRST_RUN TRUE CACHE INTERNAL "Be quiet during future runs of cmake")
             set(_value TRUE)
         else()
             set(_value FALSE)
@@ -731,6 +738,9 @@ endif()
 set(GMX_GPU_NB_NUM_CLUSTER_PER_CELL_X 2 CACHE STRING "Number of clusters along X in a pair-search grid cell for GPU lists")
 set(GMX_GPU_NB_NUM_CLUSTER_PER_CELL_Y 2 CACHE STRING "Number of clusters along Y in a pair-search grid cell for GPU lists")
 set(GMX_GPU_NB_NUM_CLUSTER_PER_CELL_Z 2 CACHE STRING "Number of clusters along Z in a pair-search grid cell for GPU lists")
+mark_as_advanced(GMX_GPU_NB_NUM_CLUSTER_PER_CELL_X)
+mark_as_advanced(GMX_GPU_NB_NUM_CLUSTER_PER_CELL_Y)
+mark_as_advanced(GMX_GPU_NB_NUM_CLUSTER_PER_CELL_Z)
 
 # For build with CUDA/SYCL and Lib-MPI, check if underlying MPI implementation is GPU-aware
 # GPU-aware MPI allows direct GPU communication without staging data through host
@@ -752,13 +762,33 @@ if(GMX_GPU_CUDA AND NOT GMX_GPU_FFT_CUFFT)
 endif()
 
 if(GMX_USE_HEFFTE)
-    if(NOT GMX_GPU_CUDA)
-        message(FATAL_ERROR "HeFFTe support requires a CUDA build")
+    if(NOT GMX_GPU_CUDA AND NOT GMX_GPU_SYCL)
+        message(FATAL_ERROR "HeFFTe support requires a CUDA or SYCL build")
     endif()
     if(NOT GMX_LIB_MPI)
         message(FATAL_ERROR "HeFFTe support requires a library MPI build")
     endif()
-    find_package(Heffte 2.2.0 REQUIRED CUDA)
+    # Find quietly the second time.
+    if (Heffte_FIND_QUIETLY_AFTER_FIRST_RUN)
+        set(Heffte_FIND_QUIETLY TRUE)
+    endif()
+    if(GMX_GPU_CUDA)
+        find_package(Heffte 2.2.0 REQUIRED CUDA)
+    elseif(GMX_GPU_SYCL)
+        if(GMX_GPU_FFT_ROCFFT)
+            find_package(Heffte 2.2.0 REQUIRED ROCM)
+        elseif(GMX_GPU_FFT_CUFFT)
+            find_package(Heffte 2.2.0 REQUIRED CUDA)
+            if (NOT DEFINED ENV{GITLAB_CI}) # Don't warn in CI builds
+                message(WARNING "HeFFTe with cuFFT backend should be used in a CUDA build")
+            endif()
+        elseif(GMX_GPU_FFT_MKL)
+            find_package(Heffte 2.2.0 REQUIRED ONEAPI)
+        else()
+            message(FATAL_ERROR "Your GPU FFT library is incompatible for use in a GROMACS SYCL build with heFFTe. "
+                    "Use -DGMX_GPU_FFT_LIBRARY=rocFFT or -DGMX_GPU_FFT_LIBRARY=MKL or -DGMX_GPU_FFT_LIBRARY=CUFFT")
+        endif()
+    endif()
     set(GMX_USE_Heffte ${Heffte_FOUND})
 endif()
 
@@ -886,22 +916,31 @@ endif()
 
 # # # # # # # # # # NO MORE TESTS AFTER THIS LINE! # # # # # # # # # # #
 # these are set after everything else
+if (GMX_LIB_MPI)
+    # TODO: Restrict the scope of MPI dependence.
+    # Targets that actually need MPI headers and build tool flags should
+    # manage their own `target_link_libraries` locally. Such a change is beyond
+    # the scope of the bug fix for #4678.
+    set(_gmx_mpi_cxx_link_flags "${MPI_CXX_LINK_FLAGS}")
+    set(_gmx_mpi_c_compile_flags "${MPI_C_COMPILE_OPTIONS};${MPI_C_COMPILE_DEFINITIONS}")
+    set(_gmx_mpi_cxx_compile_flags "${MPI_CXX_COMPILE_OPTIONS};${MPI_CXX_COMPILE_DEFINITIONS}")
+endif ()
 if (NOT GMX_SKIP_DEFAULT_CFLAGS)
     #TODO(#3672): Use target_link_libraries(... MPI::MPI_CXX) instead of ${MPI_CXX_LINK_FLAGS}
-    set(CMAKE_EXE_LINKER_FLAGS "${FFT_LINKER_FLAGS} ${MPI_CXX_LINK_FLAGS} ${CMAKE_EXE_LINKER_FLAGS} ${DISABLE_SYCL_CXX_FLAGS}")
-    set(CMAKE_SHARED_LINKER_FLAGS "${FFT_LINKER_FLAGS} ${MPI_CXX_LINK_FLAGS} ${CMAKE_SHARED_LINKER_FLAGS} ${DISABLE_SYCL_CXX_FLAGS}")
+    set(CMAKE_EXE_LINKER_FLAGS "${FFT_LINKER_FLAGS} ${_gmx_mpi_cxx_link_flags} ${CMAKE_EXE_LINKER_FLAGS} ${DISABLE_SYCL_CXX_FLAGS}")
+    set(CMAKE_SHARED_LINKER_FLAGS "${FFT_LINKER_FLAGS} ${_gmx_mpi_cxx_link_flags} ${CMAKE_SHARED_LINKER_FLAGS} ${DISABLE_SYCL_CXX_FLAGS}")
 else()
     message("Recommended flags which are not added because GMX_SKIP_DEFAULT_CFLAGS=yes:")
-    message("CMAKE_C_FLAGS: ${SIMD_C_FLAGS};${MPI_COMPILE_FLAGS};${EXTRA_C_FLAGS};${GMXC_CFLAGS}")
+    message("CMAKE_C_FLAGS: ${SIMD_C_FLAGS};${_gmx_mpi_c_compile_flags};${EXTRA_C_FLAGS};${GMXC_CFLAGS}")
     foreach(build_type ${build_types_with_explicit_flags})
         message("CMAKE_C_FLAGS_${build_type}: ${GMXC_CFLAGS_${build_type}}")
     endforeach()
-    message("CMAKE_CXX_FLAGS: ${SIMD_CXX_FLAGS};${MPI_COMPILE_FLAGS};${EXTRA_CXX_FLAGS};${GMXC_CXXFLAGS}")
+    message("CMAKE_CXX_FLAGS: ${SIMD_CXX_FLAGS};${_gmx_mpi_cxx_compile_flags};${EXTRA_CXX_FLAGS};${GMXC_CXXFLAGS}")
     foreach(build_type ${build_types_with_explicit_flags})
         message("CMAKE_CXX_FLAGS_${build_type}: ${GMXC_CXXFLAGS_${build_type}}")
     endforeach()
-    message("CMAKE_EXE_LINKER_FLAGS: ${FFT_LINKER_FLAGS} ${MPI_CXX_LINK_FLAGS}")
-    message("CMAKE_SHARED_LINKER_FLAGS: ${FFT_LINKER_FLAGS} ${MPI_CXX_LINK_FLAGS}")
+    message("CMAKE_EXE_LINKER_FLAGS: ${FFT_LINKER_FLAGS} ${_gmx_mpi_cxx_link_flags}")
+    message("CMAKE_SHARED_LINKER_FLAGS: ${FFT_LINKER_FLAGS} ${_gmx_mpi_cxx_link_flags}")
 endif()
 # Allow `admin` directory to be easily conveyed to nested CMake commands.
 set(GMX_ADMIN_DIR ${CMAKE_SOURCE_DIR}/admin)
@@ -948,6 +987,7 @@ option(GMX_PYTHON_PACKAGE
 mark_as_advanced(GMX_PYTHON_PACKAGE)
 
 find_package(ImageMagick QUIET COMPONENTS convert)
+mark_as_advanced(ImageMagick_EXECUTABLE_DIR)
 include(gmxTestImageMagick)
 GMX_TEST_IMAGEMAGICK(IMAGE_CONVERT_POSSIBLE)
 add_subdirectory(share)

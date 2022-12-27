@@ -731,7 +731,7 @@ gmx::MultiDimArray<std::vector<double>, gmx::dynamicExtents2D> readXvgDataIntern
     char* tmpbuf;
     int   len = STRLEN;
 
-    //! This only gets properly set after the first line of data is read
+    // This only gets properly set after the first line of data is read
     int numColumns = 0;
     int numRows    = 0;
     snew(tmpbuf, len);

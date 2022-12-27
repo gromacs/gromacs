@@ -236,7 +236,7 @@ std::string getCpuFftDescriptionString()
 #if GMX_FFT_FFTPACK
     return "fftpack (built-in)";
 #endif
-};
+}
 
 //! Construct a string that describes the library that provides GPU FFT support to this build
 std::string getGpuFftDescriptionString()
@@ -263,6 +263,10 @@ std::string getGpuFftDescriptionString()
         {
             return std::string("rocFFT ") + rocfft_VERSION;
         }
+        else if (GMX_GPU_FFT_DBFFT)
+        {
+            return std::string("Double-Batched FFT Library ") + dbfft_VERSION;
+        }
         else
         {
             /* Some SYCL builds (e.g., Intel DPC++ for AMD devices) have no support for GPU FFT,
@@ -284,7 +288,24 @@ std::string getMultiGpuFftDescriptionString()
 {
     if (GMX_USE_Heffte)
     {
-        return gmx::formatString("HeFFTe %s with cuFFT backend", Heffte_VERSION);
+        if (GMX_GPU_FFT_CUFFT)
+        {
+            // This could be either in a CUDA or SYCL build, but the
+            // distinction does not matter here.
+            return gmx::formatString("HeFFTe %s with cuFFT backend", Heffte_VERSION);
+        }
+        else if (GMX_GPU_SYCL && GMX_GPU_FFT_MKL)
+        {
+            return gmx::formatString("HeFFTe %s with oneMKL backend", Heffte_VERSION);
+        }
+        else if (GMX_GPU_SYCL && GMX_GPU_FFT_ROCFFT)
+        {
+            return gmx::formatString("HeFFTe %s with rocFFT backend", Heffte_VERSION);
+        }
+        else
+        {
+            return gmx::formatString("HeFFTe %s with unknown backend", Heffte_VERSION);
+        }
     }
     else if (GMX_USE_cuFFTMp)
     {
@@ -294,7 +315,7 @@ std::string getMultiGpuFftDescriptionString()
     {
         return "none";
     }
-};
+}
 
 void gmx_print_version_info(gmx::TextWriter* writer)
 {
@@ -393,15 +414,27 @@ void gmx_print_version_info(gmx::TextWriter* writer)
     writer->writeLine(formatString("C++ compiler:       %s", BUILD_CXX_COMPILER));
     writer->writeLine(formatString(
             "C++ compiler flags: %s %s", BUILD_CXXFLAGS, CMAKE_BUILD_CONFIGURATION_CXX_FLAGS));
-#if HAVE_LIBMKL
-    /* MKL might be used for LAPACK/BLAS even if FFTs use FFTW, so keep it separate */
-    MKLVersion mklVersion;
-    mkl_get_version(&mklVersion);
-    writer->writeLine(formatString("Intel MKL version:  %d.%d.%d",
-                                   mklVersion.MajorVersion,
-                                   mklVersion.MinorVersion,
-                                   mklVersion.UpdateVersion));
-#endif
+
+    // Describe the BLAS and LAPACK libraries. We generally don't know
+    // much about what external library was detected, but we do in the
+    // case of MKL so then it is reported.
+    if (HAVE_LIBMKL && std::strstr(GMX_DESCRIBE_BLAS, "MKL") != nullptr)
+    {
+        writer->writeLine(formatString("BLAS library:       %s", describeMkl().c_str()));
+    }
+    else
+    {
+        writer->writeLine(formatString("BLAS library:       %s", GMX_DESCRIBE_BLAS));
+    }
+    if (HAVE_LIBMKL && std::strstr(GMX_DESCRIBE_LAPACK, "MKL") != nullptr)
+    {
+        writer->writeLine(formatString("LAPACK library:     %s", describeMkl().c_str()));
+    }
+    else
+    {
+        writer->writeLine(formatString("LAPACK library:     %s", GMX_DESCRIBE_LAPACK));
+    }
+
 #if GMX_GPU_OPENCL
     writer->writeLine(formatString("OpenCL include dir: %s", OPENCL_INCLUDE_DIR));
     writer->writeLine(formatString("OpenCL library:     %s", OPENCL_LIBRARY));

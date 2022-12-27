@@ -52,6 +52,7 @@ gromacs:clang-14-cuda-11.4.3:test:
     KUBERNETES_EXTENDED_RESOURCE_NAME: "nvidia.com/gpu"
     KUBERNETES_EXTENDED_RESOURCE_LIMIT: 1
     GMX_TEST_LABELS: "QuickGpuTest|SlowGpuTest"
+    GMX_FORCE_UPDATE_DEFAULT_CPU: 1
   tags:
     - k8s-scilifelab
   needs:
@@ -74,21 +75,3 @@ gromacs:clang-14-cuda-11.4.3:regressiontest:
   needs:
     - job: gromacs:clang-14-cuda-11.4.3:build
     - job: regressiontests:prepare
-
-gromacs:clang-14-cuda-11.4.3:test-gpucommupd-cuda-sanitizer:
-  extends:
-    - .gromacs:base:test
-    - .rules:post-merge-acceptance
-  image:  ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-llvm-14-cuda-11.4.3-hipsycl-ee45074-rocm-5.1
-  variables:
-    CMAKE: /usr/local/cmake-3.24.0/bin/cmake
-    KUBERNETES_EXTENDED_RESOURCE_NAME: "nvidia.com/gpu"
-    KUBERNETES_EXTENDED_RESOURCE_LIMIT: 1
-    GMX_FORCE_UPDATE_DEFAULT_GPU: 1
-  script:
-    - bash -x admin/ci-scripts/gromacs-base-cuda-sanitizer-test.sh
-  tags:
-    - k8s-scilifelab
-  needs:
-    - job: gromacs:clang-14-cuda-11.4.3:configure
-    - job: gromacs:clang-14-cuda-11.4.3:build

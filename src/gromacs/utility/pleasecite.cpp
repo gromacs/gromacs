@@ -307,7 +307,7 @@ void please_cite(FILE* fp, const char* key)
           "3358-3363" },
         { "Mu2005a",
           "Y. Mu, P. H. Nguyen and G. Stock",
-          "Energy landscape of a small peptide revelaed by dihedral angle principal component "
+          "Energy landscape of a small peptide revealed by dihedral angle principal component "
           "analysis",
           "Prot. Struct. Funct. Bioinf.",
           58,

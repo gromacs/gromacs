@@ -40,6 +40,7 @@ Context or its own Context, also implemented in this module.
 
 __all__ = ["mdrun", "SimulationError"]
 
+import hashlib
 import inspect
 import os
 import typing
@@ -54,7 +55,7 @@ import gmxapi.abc
 import gmxapi.operation as _op
 from gmxapi import exceptions
 from gmxapi import logger as root_logger
-from gmxapi.runtime import scoped_resources
+from gmxapi.runtime import scoped_resources, ResourceAssignment
 
 from . import fileio
 from . import workflow
@@ -135,6 +136,10 @@ class OutputDataProxy(_op.DataProxyBase, descriptors=_output_descriptors):
         trajectory (str): Full path to trajectory output (corresponding to the ``-o``
             flag, if provided).
 
+    Notes:
+        For multi-rank MPI-enabled simulators, *stderr* and *stdout* are reported
+        for the root rank only, in line with how |Gromacs| behaves.
+
     .. versionchanged:: 0.4
 
         Added *directory* output, replacing an earlier "hidden" *_work_dir* output.
@@ -206,10 +211,39 @@ class SimulationError(exceptions.Error):
 
 
 class LegacyImplementationSubscription(object):
-    """Input type representing a subscription to 0.0.7 implementation in gmxapi.operation.
+    """Input type representing a subscription to the 0.0.7 implementation.
 
-    This input resource is a subscription to work that is dispatched to a sub-context.
-    The resource can be created from the standard data of the simulation module.
+    This class provides the input parameter type for the gmxapi.mdrun run time
+    resource builder. However, the mdrun operation was never fully ported from
+    gmxapi 0.0.x to 0.x.
+
+    The current gmxapi.mdrun implementation is mostly a wrapper for the 0.0.7
+    implementation. The actual simulation work is performed in this overloaded
+    resource factory.
+
+    The gmxapi.mdrun input resource can be created from the standard data of
+    the simulation module. The actual simulation work is performed while
+    preparing this input resource so that the gmxapi.mdrun operation itself
+    merely publishes the results produced here.
+
+    See Also:
+        * :issue:`3145`
+        * :issue:`3147`
+        * :issue:`4079`
+
+    """
+
+    ensemble_rank: typing.Optional[int] = None
+    """Member index of the simulation within an ensemble.
+    
+    The ensemble communicator rank (of the root simulator rank) determines the
+    ensemble_rank of all ranks in a simulator.
+
+    Only the first MPI rank of each Simulator is allowed to talk to the other
+    Simulators on the ensemble communicator, but it is convenient to use this
+    identifier to group all resources associated with a simulation ensemble member.
+    
+    *ensemble_rank* is either the ensemble member ID or None.
     """
 
     workdir: typing.List[str]  # Simulation working directories.
@@ -217,6 +251,7 @@ class LegacyImplementationSubscription(object):
     runtime_args: typing.List[dict]  # CLI args passed as gmxapi 0.0.7 work params.
 
     def __init__(self, resource_manager: _op.ResourceManager):
+        # Avoid importing C++ extension modules until they are clearly needed.
         from .context import Context as LegacyContext
         import gmxapi._gmxapi as _gmxapi
         from mpi4py.MPI import Comm as mpi4py_Comm
@@ -248,8 +283,10 @@ class LegacyImplementationSubscription(object):
             "{node}_{member}".format(node=resource_manager.operation_id, member=member)
             for member in range(ensemble_width)
         ]
+        # Define container references of appropriate type for later MPI calls.
         parameters_dict_list = [{}] * ensemble_width
         runtime_args_list = [{}] * ensemble_width
+        tpr_filenames = [""] * ensemble_width
 
         # This is a reasonable place to start using MPI ensemble implementation details.
         # We will want better abstraction in the future, but it is best if related filesystem
@@ -264,26 +301,47 @@ class LegacyImplementationSubscription(object):
         # serialization of the input resolution prevents CPUs from being oversubscribed
         # at run time.
         base_context = gmxapi.runtime.BaseContext.instance()
+        # Derive resources for the simulation task directly from the base resources.
         base_comm = base_context.communicator()
         assert isinstance(base_comm, mpi4py_Comm)
         base_rank = base_comm.Get_rank()
 
         # Get resources for the entire ensemble of tasks (the session).
-        requirements = gmxapi.runtime.ResourceRequirements(comm_size=ensemble_width)
+        # Each simulator gets an MPI communicator for the ranks it can use.
+        # Additionally, some ensemble simulations are coupled parallel tasks,
+        # requiring one rank each in a session-wide communicator. We want an
+        # identifier for each ensemble scope, but to make it useful as an MPI_Split
+        # color we convert the operation_id string to a 16-bit integer node_id.
+        # We don't currently have a specification for
+        # identifying which simulations do or do not require the ensemble communicator,
+        # so we just make one available to all simulations.
+        node_id = int.from_bytes(
+            hashlib.md5(resource_manager.operation_id.encode("utf8")).digest(),
+            byteorder="little",
+            signed=False,
+        ) % int(2**16)
+        communicator_requirements = tuple(
+            {"ensemble_comm": node_id, "subtask_comm": True}
+            for _ in range(ensemble_width)
+        )
+        requirements = gmxapi.runtime.ResourceRequirements(
+            communication=communicator_requirements
+        )
         with scoped_resources(
             base_context, requirements=requirements
         ) as session_resources:
-            session_comm: mpi4py_Comm = session_resources.communicator()
-            if base_rank < ensemble_width:
-                assert hasattr(session_comm, "Get_size")
-                assert hasattr(session_comm, "Get_rank")
-                # Note that in the current implementation, we assign one rank to each ensemble member.
-                assert session_comm.Get_size() == ensemble_width
-                ensemble_rank = session_comm.Get_rank()
-            else:
-                # Extra ranks have nothing to do, but they may have a dummy communicator.
-                # Explicitly set to `None` to skip those members of the base_comm.
-                ensemble_rank = None
+            assert isinstance(session_resources, ResourceAssignment)
+            # If a rank participates in the work, it will have a non-null task communicator.
+            # The root rank of each task communicator will also have an ensemble communicator.
+            # The ensemble member ID of each participating process is the ensemble communicator rank
+            # of the root rank of its task communicator.
+            # However, to avoid unnecessary MPI communication, we have stashed this information in
+            # the ResourceAssignment.
+            simulator_comm: mpi4py_Comm = session_resources.communicator()
+            _current_rank_participates = bool(simulator_comm)
+            if _current_rank_participates:
+                self.ensemble_rank = session_resources.subtask_id()
+                assert self.ensemble_rank < ensemble_width
 
             source_file, parameters, runtime_args = None, None, None
             # For the interim subscription system between MPI ranks, to synchronize
@@ -291,26 +349,29 @@ class LegacyImplementationSubscription(object):
             # on *all* ranks once for each member (participating rank).
             for ensemble_member in range(ensemble_width):
                 with resource_manager.local_input(member=ensemble_member) as input_pack:
-                    if ensemble_member == ensemble_rank:
+                    if ensemble_member == self.ensemble_rank:
                         source_file = input_pack.kwargs["_simulation_input"]
                         parameters = input_pack.kwargs["parameters"]
                         runtime_args = input_pack.kwargs["runtime_args"]
                         # If there are any other key word arguments to process from the
                         # gmxapi.mdrun factory call, do it here.
 
-            _current_rank_participates = ensemble_rank is not None
             if _current_rank_participates:
                 # TODO: This should be a richer object that includes at least host information
                 #  and preferably the full gmxapi Future interface.
-                workdir = os.path.abspath(workdir_list[ensemble_rank])
+                workdir = os.path.abspath(workdir_list[self.ensemble_rank])
 
                 # TODO: We should really name this file with a useful input-dependent tag.
                 tprfile = os.path.join(workdir, "topol.tpr")
 
                 expected_working_files = [tprfile]
 
-                if os.path.exists(workdir):
-                    if os.path.isdir(workdir):
+                if session_resources.is_subtask_root():
+                    if os.path.exists(workdir):
+                        if not os.path.isdir(workdir):
+                            raise exceptions.ApiError(
+                                f"Chosen working directory path exists but is not a directory: {workdir}"
+                            )
                         # Confirm that this is a restarted simulation.
                         # It is unspecified by the API, but at least through gmxapi 0.1,
                         # all simulations are initialized with a checkpoint file named state.cpt
@@ -330,62 +391,76 @@ class LegacyImplementationSubscription(object):
                                     f"Cannot determine working directory state: {workdir}"
                                 )
                     else:
-                        raise exceptions.ApiError(
-                            f"Chosen working directory path exists but is not a directory: {workdir}"
-                        )
-                else:
-                    # Build the working directory and input files.
-                    os.mkdir(workdir)
-                    sim_input = fileio.read_tpr(source_file)
-                    # TODO(#3295): insertion point for updated positions and velocities.
-                    for key, value in parameters.items():
-                        try:
-                            sim_input.parameters.set(key=key, value=value)
-                        except _gmxapi.Exception as e:
-                            raise exceptions.ApiError(
-                                "Bug encountered. Unknown error when trying to set simulation "
-                                "parameter {} to {}".format(key, value)
-                            ) from e
+                        # Build the working directory and input files.
+                        os.mkdir(workdir)
+                        sim_input = fileio.read_tpr(source_file)
+                        # TODO(#3295): insertion point for updated positions and velocities.
+                        for key, value in parameters.items():
+                            try:
+                                sim_input.parameters.set(key=key, value=value)
+                            except _gmxapi.Exception as e:
+                                raise exceptions.ApiError(
+                                    "Bug encountered. Unknown error when trying to set simulation "
+                                    "parameter {} to {}".format(key, value)
+                                ) from e
 
-                    fileio.write_tpr_file(output=tprfile, input=sim_input)
-                logger.info("Created {} on rank {}".format(tprfile, base_rank))
+                        fileio.write_tpr_file(output=tprfile, input=sim_input)
+                        logger.info("Created {} on rank {}".format(tprfile, base_rank))
 
-                # Gather the actual outputs from the ensemble members.
-                if hasattr(session_comm, "allgather"):
+                # When the workflow is using dynamically generated / temporary
+                # directories, there may be path elements that are created
+                # differently on different ranks. This should not generally matter
+                # to us because filesystem I/O is confined to the root rank of
+                # each simulator. However, consistency is important for two reasons.
+                # 1. Results (which include absolute paths) should be consistently reported.
+                # 2. The gmxapi 0.0.7 representation of ensemble work is decoupled from
+                #    the resource assignment, and all participating processes receive a
+                #    complete representation that is assumed to be consistent across members.
+                # Also, debugging is a lot easier if log messages and local variables are
+                # consistent across processes.
+
+                # Gather the actual outputs from the ensemble members,
+                # then share to participating processes.
+                ensemble_comm = session_resources.ensemble_communicator()
+                if ensemble_comm:
                     # We should not assume that abspath expands the same on different MPI ranks.
-                    workdir_list = session_comm.allgather(workdir)
-                    tpr_filenames = session_comm.allgather(tprfile)
+                    # Let each simulation master rank determine its own working directory, etc,
+                    # report to the root rank of the parent communicator, then broadcast
+                    # to all interpreter processes for consistent results.
+                    workdir_list = ensemble_comm.allgather(workdir)
+                    tpr_filenames = ensemble_comm.allgather(tprfile)
                     parameters = fileio.read_tpr(tprfile).parameters.extract()
-                    parameters_dict_list = session_comm.allgather(parameters)
-                    runtime_args_list = session_comm.allgather(runtime_args)
-                else:
-                    workdir_list = [
-                        os.path.abspath(_workdir) for _workdir in workdir_list
-                    ]
-                    # TODO: If we use better input file names, they need to be updated in multiple places.
-                    tpr_filenames = [
-                        os.path.join(_workdir, "topol.tpr") for _workdir in workdir_list
-                    ]
-                    parameters_dict_list = [
-                        fileio.read_tpr(tprfile).parameters.extract()
-                        for tprfile in tpr_filenames
-                    ]
-                    if isinstance(runtime_args, (list, tuple)):
-                        runtime_args_list = list(runtime_args)
-                    else:
-                        assert isinstance(runtime_args, dict)
-                        runtime_args_list = list(
-                            runtime_args.copy() for _ in range(ensemble_width)
-                        )
+                    parameters_dict_list = ensemble_comm.allgather(parameters)
+                    runtime_args_list = ensemble_comm.allgather(runtime_args)
+                    for _data in (
+                        workdir_list,
+                        tpr_filenames,
+                        parameters_dict_list,
+                        runtime_args_list,
+                    ):
+                        assert len(_data) == ensemble_width
+
+                workdir_list = simulator_comm.bcast(workdir_list)
+                tpr_filenames = simulator_comm.bcast(tpr_filenames)
+                parameters_dict_list = simulator_comm.bcast(parameters_dict_list)
+                runtime_args_list = simulator_comm.bcast(runtime_args_list)
+                for _data in (
+                    workdir_list,
+                    tpr_filenames,
+                    parameters_dict_list,
+                    runtime_args_list,
+                ):
+                    assert len(_data) == ensemble_width
 
                 logger.debug(
                     "Context rank {} acknowledges working directories {}".format(
                         base_rank, workdir_list
                     )
                 )
+                workdir = workdir_list[self.ensemble_rank]
                 logger.debug(
                     "Operation {}:{} will use {}".format(
-                        resource_manager.operation_id, ensemble_rank, workdir
+                        resource_manager.operation_id, self.ensemble_rank, workdir
                     )
                 )
                 if hasattr(resource_manager, "mdrun_kwargs"):
@@ -396,7 +471,7 @@ class LegacyImplementationSubscription(object):
                         )
                     )
                 # TODO(#3718): Normalize the way we pass run time parameters to mdrun.
-                kwargs = runtime_args_list[ensemble_rank].copy()
+                kwargs = runtime_args_list[self.ensemble_rank].copy()
                 for key, value in runtime_args.items():
                     logger.debug(
                         "Adding mdrun run time argument from user input: {}".format(
@@ -414,7 +489,7 @@ class LegacyImplementationSubscription(object):
                 context = LegacyContext(
                     work=self.workspec,
                     workdir_list=workdir_list,
-                    communicator=session_comm,
+                    resources=session_resources,
                 )
                 self.simulation_module_context = context
                 # Note: The redirection of stdout and stderr here is a workaround (#4541) for
@@ -423,48 +498,44 @@ class LegacyImplementationSubscription(object):
                 # least to set and use file descriptors managed through the output_env or program_context,
                 # but, as of resolution of #4541, there are no near term plans to make such changes.
                 # See also #1505, #2585, #2999, #3015, #3035
-                with redirect_stdio(FD.STDOUT, os.path.join(workdir, "stdout.txt")):
-                    with redirect_stdio(FD.STDERR, os.path.join(workdir, "stderr.txt")):
+                outfile = "stdout.txt"
+                errfile = "stderr.txt"
+                if session_resources.subtask_rank() != 0:
+                    outfile = f"stdout_rank{session_resources.subtask_rank()}.txt"
+                    errfile = f"stderr_rank{session_resources.subtask_rank()}.txt"
+                with redirect_stdio(FD.STDOUT, os.path.join(workdir, outfile)):
+                    with redirect_stdio(FD.STDERR, os.path.join(workdir, errfile)):
                         with self.simulation_module_context as session:
                             session.run()
                 logger.debug(
-                    f"workdir[{ensemble_rank}] = {workdir_list[ensemble_rank]}"
+                    f"workdir[{self.ensemble_rank}] = {workdir_list[self.ensemble_rank]}"
                 )
                 logger.debug(
-                    f"parameters[{ensemble_rank}] = {parameters_dict_list[ensemble_rank]}"
+                    f"parameters[{self.ensemble_rank}] = {parameters_dict_list[self.ensemble_rank]}"
                 )
                 logger.debug(
-                    f"runtime_args[{ensemble_rank}] = {runtime_args_list[ensemble_rank]}"
+                    f"runtime_args[{self.ensemble_rank}] = {runtime_args_list[self.ensemble_rank]}"
                 )
                 # end if _current_rank_participates
 
-            # end scoped_communicator: session_comm
+            # end scoped_resources: session_resources
 
         # Info from other ranks might not have been available when we originally constructed
         # the list(s)
-        if hasattr(base_comm, "Get_size"):
-            base_comm_size = base_comm.Get_size()
-            if base_comm_size > ensemble_width:
-                # Extra unused ranks will not participate in the collective work, but they should
-                # still have representations of the ensemble work.
-                assert isinstance(base_comm, mpi4py_Comm)
-                synched_objects = (
-                    workdir_list,
-                    parameters_dict_list,
-                    runtime_args_list,
-                )
-                if base_rank == 0:
-                    for inactive_member in range(ensemble_width, base_comm_size):
-                        for obj in synched_objects:
-                            base_comm.send(obj, inactive_member)
-                elif base_rank in range(ensemble_width, base_comm_size):
-                    workdir_list = base_comm.recv(source=0)
-                    parameters_dict_list = base_comm.recv(source=0)
-                    runtime_args_list = base_comm.recv(source=0)
-        if hasattr(base_comm, "barrier"):
+        if base_comm:
             logger.debug(
                 "Waiting for simulations to complete on all ranks before publishing results."
             )
+            # Extra unused ranks will not participate in the collective work,
+            # but all Python interpreter processes are expected to behave consistently
+            # with respect to references to results.
+            # We don't know whether there are non-participating ranks, so we make this
+            # collective call, even though it may be unnecessary.
+            assert isinstance(base_comm, mpi4py_Comm)
+            workdir_list = base_comm.bcast(workdir_list)
+            parameters_dict_list = base_comm.bcast(parameters_dict_list)
+            runtime_args_list = base_comm.bcast(runtime_args_list)
+        if hasattr(base_comm, "barrier"):
             # This is heavy-handed. Hopefully we can replace the explicit MPI calls with a Future
             # abstraction and only wait on individual results when they are actually consumed.
             # As of gmxapi 0.3, SubscriptionPublishingRunner takes responsibility for the full
@@ -706,21 +777,23 @@ class StandardInputDescription(_op.InputDescription):
     # Without fingerprinting, we cannot consistently hash *input* across processes,
     # but we can consistently generate integers in the same sequence the first time
     # we see each distinct input.
-    _next_uid: typing.ClassVar[int] = 0
-    _uids: typing.ClassVar[typing.MutableMapping[int, int]] = {}
+    _number_issued: typing.ClassVar[int] = 0
+    _uids: typing.ClassVar[typing.MutableMapping[int, bytes]] = {}
 
     @classmethod
     def _make_uid(cls, input) -> str:
-        # TODO: Use input fingerprint for more useful identification.
         # WARNING: The built-in hash will use memory locations, and so will not be consistent across
         # process ranks, even if the input should be the same.
-        salt = hash(input)
-        if salt not in cls._uids:
-            cls._uids[salt] = cls._next_uid
-            cls._next_uid += 1
+        # Note also that that hash() has internal salt that is regenerated for every process.
+        # TODO: Use input fingerprint for more useful identification.
+        # 8 bytes is probably enough.
+        uid = hashlib.md5("mdrun{cls._number_issued}".encode("utf8")).digest()
+        if input not in cls._uids:
+            cls._uids[input] = uid
+            cls._number_issued += 1
         else:
-            logger.debug(f"Reissuing uid for mdrun({input}): {cls._uids[salt]}")
-        new_uid = "mdrun_{}".format(cls._uids[salt])
+            logger.debug(f"Reissuing uid for mdrun({input}): {uid.hex()}")
+        new_uid = f"mdrun_{uid.hex()}"
         return new_uid
 
     def signature(self) -> _op.InputCollectionDescription:

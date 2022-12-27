@@ -148,8 +148,22 @@ if(NEED_TO_FIND_GPLUSPLUS)
         get_filename_component(GMX_GPLUSPLUS_PATH "${GMX_GPLUSPLUS_PATH}" REALPATH)
         get_filename_component(GMX_GPLUSPLUS_PATH "${GMX_GPLUSPLUS_PATH}" DIRECTORY) #strip g++
         get_filename_component(GMX_GPLUSPLUS_PATH "${GMX_GPLUSPLUS_PATH}" DIRECTORY) #strip bin
-        if (NOT EXISTS "${GMX_GPLUSPLUS_PATH}/include/c++")
-            message(FATAL_ERROR "${GMX_GPLUSPLUS_PATH}/include/c++ doesn't exist even though it should. "
+        set(GMX_GPLUSPLUS_INCLUDE_PATH_FOUND FALSE)
+        # On some Cray systems, we have a symlink /foo/bin/g++, while the real installation is in /foo/snos/
+        foreach (INFIX "/" "/snos/")
+            foreach (INCLUDE_DIR in "include/c++" "include/g++")
+                if (EXISTS "${GMX_GPLUSPLUS_PATH}${INFIX}${INCLUDE_DIR}")
+                    set(GMX_GPLUSPLUS_INCLUDE_PATH_FOUND TRUE)
+                    break()
+                endif()
+            endforeach()
+            if(GMX_GPLUSPLUS_INCLUDE_PATH_FOUND)
+                set(GMX_GPLUSPLUS_PATH "${GMX_GPLUSPLUS_PATH}${INFIX}")
+                break()
+            endif()
+        endforeach()
+        if(NOT GMX_GPLUSPLUS_INCLUDE_PATH_FOUND)
+            message(FATAL_ERROR "Directory ${GMX_GPLUSPLUS_PATH}/include/c++ doesn't exist even though it should. "
                 "Please report to developers.")
         endif()
     endif()

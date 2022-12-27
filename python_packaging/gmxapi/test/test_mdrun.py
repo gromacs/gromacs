@@ -47,7 +47,6 @@ import pytest
 
 import gmxapi as gmx
 
-# Configure the `logging` module before proceeding any further.
 from gmxapi.utility import join_path
 from gmxapi.version import api_is_at_least
 
@@ -77,20 +76,12 @@ else:
 #    logging.getLogger().addHandler(ch)
 
 
-mpi_support = pytest.mark.skipif(
-    comm_size > 1
-    and gmx.utility.config()["gmx_mpi_type"] == "library"
-    and not gmx.version.has_feature("mpi_comm_integration"),
-    reason="Multi-rank MPI contexts require gmxapi 0.4.",
-)
-
-
-@mpi_support
 @pytest.mark.usefixtures("cleandir")
 def test_run_from_tpr(spc_water_box, mdrun_kwargs):
     assert os.path.exists(spc_water_box)
 
-    # TODO(#4422): provide MPI communicator to make the most of available resources.
+    assert gmx.version.has_feature("mpi_comm_integration")
+
     md = gmx.mdrun(spc_water_box, runtime_args=mdrun_kwargs)
     md.run()
 
@@ -109,7 +100,6 @@ def test_run_from_tpr(spc_water_box, mdrun_kwargs):
         assert "starting mdrun" in fh.read()
 
 
-@mpi_support
 @pytest.mark.usefixtures("cleandir")
 def test_mdrun_runtime_args(spc_water_box, caplog, mdrun_kwargs):
     """Test that *runtime_args* is respected.
@@ -152,7 +142,6 @@ def test_mdrun_runtime_args(spc_water_box, caplog, mdrun_kwargs):
                 )
 
 
-@mpi_support
 @pytest.mark.withmpi_only
 @pytest.mark.usefixtures("cleandir")
 def test_mdrun_parallel_runtime_args(spc_water_box, mdrun_kwargs):
@@ -165,19 +154,23 @@ def test_mdrun_parallel_runtime_args(spc_water_box, mdrun_kwargs):
     assert comm_size > 1
     assert api_is_at_least(0, 3)
 
+    ensemble_size = 2
+
     tpr = gmx.read_tpr(spc_water_box)
-    output_files = [f"traj{i}.trr" for i in range(comm_size)]
+    output_files = [f"traj{i}.trr" for i in range(ensemble_size)]
     # Take care not to reference the same dictionary object.
-    runtime_args = list(mdrun_kwargs.copy() for _ in range(comm_size))
+    runtime_args = list(mdrun_kwargs.copy() for _ in range(ensemble_size))
     for i, name in enumerate(output_files):
         runtime_args[i].update({"-o": name})
     md = gmx.mdrun(tpr, runtime_args=runtime_args)
     md.run()
+    # TODO: Update the message to make more sense with comm_size > ensemble_size
     logging.getLogger().debug(f"testing rank {rank_number} with comm size {comm_size}.")
-    output = md.output.trajectory.result()[rank_number]
-    assert str(output).endswith(f"traj{rank_number}.trr")
-    assert os.path.exists(output)
-    assert md.output.trajectory.result()[0] != md.output.trajectory.result()[1]
+    for _rank in range(ensemble_size):
+        output = md.output.trajectory.result()[_rank]
+        assert str(output).endswith(f"traj{_rank}.trr")
+        assert os.path.exists(output)
+        assert md.output.trajectory.result()[0] != md.output.trajectory.result()[1]
 
     tpr = gmx.read_tpr([spc_water_box] * comm_size)
     output_files = [f"traj{i}.trr" for i in range(comm_size)]
@@ -187,14 +180,13 @@ def test_mdrun_parallel_runtime_args(spc_water_box, mdrun_kwargs):
     md = gmx.mdrun(tpr, runtime_args=runtime_args)
     md.run()
     logging.getLogger().debug(f"testing rank {rank_number} with comm size {comm_size}.")
-    assert comm_size > 1
-    output = md.output.trajectory.result()[rank_number]
-    assert str(output).endswith(f"traj{rank_number}.trr")
-    assert os.path.exists(output)
-    assert md.output.trajectory.result()[0] != md.output.trajectory.result()[1]
+    for _rank in range(comm_size):
+        output = md.output.trajectory.result()[_rank]
+        assert str(output).endswith(f"traj{_rank}.trr")
+        assert os.path.exists(output)
+        assert md.output.trajectory.result()[0] != md.output.trajectory.result()[1]
 
 
-@mpi_support
 @pytest.mark.usefixtures("cleandir")
 def test_extend_simulation_via_checkpoint(spc_water_box, mdrun_kwargs, caplog):
     assert os.path.exists(spc_water_box)
@@ -229,7 +221,6 @@ def test_extend_simulation_via_checkpoint(spc_water_box, mdrun_kwargs, caplog):
             # TODO: Check more rigorously when we can read trajectory files.
 
 
-@mpi_support
 @pytest.mark.withmpi_only
 @pytest.mark.usefixtures("cleandir")
 def test_run_trivial_ensemble(spc_water_box, caplog, mdrun_kwargs):
@@ -264,12 +255,11 @@ def test_run_trivial_ensemble(spc_water_box, caplog, mdrun_kwargs):
             # the end of the job if running in temporary directories becomes an
             # important use case outside of testing.
             assert output_directory[0] != output_directory[1]
-            if rank_number < ensemble_width:
-                assert os.path.exists(output_directory[rank_number])
-                assert os.path.exists(md.output.trajectory.result()[rank_number])
+            for _rank in range(ensemble_width):
+                assert os.path.exists(output_directory[_rank])
+                assert os.path.exists(md.output.trajectory.result()[_rank])
 
 
-@mpi_support
 @pytest.mark.usefixtures("cleandir")
 def test_run_from_read_tpr_op(spc_water_box, caplog, mdrun_kwargs):
     with caplog.at_level(logging.DEBUG):
@@ -278,11 +268,9 @@ def test_run_from_read_tpr_op(spc_water_box, caplog, mdrun_kwargs):
             md = gmx.mdrun(input=simulation_input, runtime_args=mdrun_kwargs)
 
             md.run()
-            if rank_number == 0:
-                assert os.path.exists(md.output.trajectory.result())
+            assert os.path.exists(md.output.trajectory.result())
 
 
-@mpi_support
 @pytest.mark.usefixtures("cleandir")
 def test_run_from_modify_input_op(spc_water_box, caplog, mdrun_kwargs):
     with caplog.at_level(logging.DEBUG):

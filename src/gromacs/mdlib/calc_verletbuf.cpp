@@ -354,7 +354,7 @@ static std::vector<VerletbufAtomtype> getVerletBufferAtomtypes(const gmx_mtop_t&
             {
                 const t_iparams& ip = mtop.ffparams.iparams[il.iatoms[i]];
                 /* When using free-energy perturbation constraint can be perturbed.
-                 * As we can have a dynamic lamdba, we might not know the constraint length.
+                 * As we can have a dynamic lambda, we might not know the constraint length.
                  * And even with fixed lambda we would here need to have the constraint lambda
                  * value. So we skip the optimization for a perturbed constraint, this results in a
                  * more conservative buffer estimate.

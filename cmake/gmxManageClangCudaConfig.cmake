@@ -50,25 +50,24 @@ if (GMX_CUDA_TARGET_COMPUTE)
     message(WARNING "Values passed in GMX_CUDA_TARGET_COMPUTE will be ignored; clang will by default include PTX in the binary.")
 endif()
 
-if (CUDA_VERSION VERSION_GREATER 10.1)
-    # At the time of writing, the latest versions are Clang 11 and CUDA 11.2.
-    if (CMAKE_CXX_COMPILER_VERSION VERSION_GREATER 11.0)
-        # We don't know about the future Clang versions, but so far Clang 12 docs state that only CUDA versions 7.0-10.1 are supported.
+# At the time of writing, the latest released versions are Clang 15 and CUDA 11.8.
+# Clang <14 support only CUDA 7.0-10.1; Clang 14-16 support CUDA 7.0-11.5.
+# GROMACS requires CUDA 11.0, so no need to check for earlier versions
+if ((CMAKE_CXX_COMPILER_VERSION VERSION_LESS 14.0) OR (CUDA_VERSION VERSION_GREATER 11.5))
+    if (CMAKE_CXX_COMPILER_VERSION VERSION_GREATER 15.0)
+        # We don't know about the future Clang versions, but so far Clang 16 docs state that only CUDA 7.0-11.5 are supported.
         set(_support_status "likely incompatible")
+    elseif(CUDA_VERSION VERSION_GREATER 11.8)
+        # No idea about future CUDA versions.
+        set(_support_status "officially incompatible")
     else()
-        if (CUDA_VERSION VERSION_GREATER 11.2)
-            # No idea about future CUDA versions.
-            set(_support_status "officially incompatible")
-        else()
-            # Our experience and multiple reports on the internet indicate that it works just fine.
-            set(_support_status "officially incompatible (but generally working)")
-        endif()
+        # Our experience and multiple reports on the internet indicate that it works just fine.
+        set(_support_status "officially incompatible (but generally working)")
     endif()
     message(NOTICE "Using ${_support_status} version of CUDA with Clang.")
     message(NOTICE "If Clang fails to recognize CUDA version, consider creating doing "
       "`echo \"CUDA Version ${CUDA_VERSION}\" | sudo tee \"${CUDA_TOOLKIT_ROOT_DIR}/version.txt\"`")
     list(APPEND _CUDA_CLANG_FLAGS "-Wno-unknown-cuda-version")
-
 endif()
 
 if (GMX_CUDA_TARGET_SM)
@@ -78,9 +77,6 @@ if (GMX_CUDA_TARGET_SM)
         list(APPEND _CUDA_CLANG_GENCODE_FLAGS "--cuda-gpu-arch=sm_${_target}")
     endforeach()
 else()
-    if (CUDA_VERSION VERSION_LESS 11.0)
-        list(APPEND _CUDA_CLANG_GENCODE_FLAGS "--cuda-gpu-arch=sm_30")
-    endif()
     list(APPEND _CUDA_CLANG_GENCODE_FLAGS "--cuda-gpu-arch=sm_35")
     # clang 6.0 + CUDA 9.0 seems to have issues generating code for sm_37
     if (CMAKE_CXX_COMPILER_VERSION VERSION_LESS 6.0 OR CMAKE_CXX_COMPILER_VERSION VERSION_GREATER 6.0.999)
@@ -91,17 +87,26 @@ else()
     list(APPEND _CUDA_CLANG_GENCODE_FLAGS "--cuda-gpu-arch=sm_60")
     list(APPEND _CUDA_CLANG_GENCODE_FLAGS "--cuda-gpu-arch=sm_61")
     list(APPEND _CUDA_CLANG_GENCODE_FLAGS "--cuda-gpu-arch=sm_70")
-    if (NOT CUDA_VERSION VERSION_LESS 10.0)
-        list(APPEND _CUDA_CLANG_GENCODE_FLAGS "--cuda-gpu-arch=sm_75")
+    list(APPEND _CUDA_CLANG_GENCODE_FLAGS "--cuda-gpu-arch=sm_75")
+    if(NOT CMAKE_CXX_COMPILER_VERSION VERSION_LESS 14.0) # Clang 13 and earlier fail to recognize CUDA 11
+        if(NOT CUDA_VERSION VERSION_LESS 11.0)
+            list(APPEND _CUDA_CLANG_GENCODE_FLAGS "--cuda-gpu-arch=sm_80")
+        endif()
+        if(NOT CUDA_VERSION VERSION_LESS 11.1)
+            list(APPEND _CUDA_CLANG_GENCODE_FLAGS "--cuda-gpu-arch=sm_86")
+        endif()
     endif()
-    # Enable this when clang (12.0 ?) properly recognizes CUDA 11.0
-    #if(NOT CUDA_VERSION VERSION_LESS 11.0)
-    #    list(APPEND _CUDA_CLANG_GENCODE_FLAGS "--cuda-gpu-arch=sm_80")
-    #endif()
-    # Enable this when clang (12.0 ?) introduces sm_86 support
-    #if(NOT CUDA_VERSION VERSION_LESS 11.1)
-    #    list(APPEND _CUDA_CLANG_GENCODE_FLAGS "--cuda-gpu-arch=sm_86")
-    #endif()
+    # Enable once Clang recognizes sm_87 (https://reviews.llvm.org/D135306)
+    # if(NOT CUDA_VERSION VERSION_LESS 11.4)
+    #       list(APPEND _CUDA_CLANG_GENCODE_FLAGS "--cuda-gpu-arch=sm_87")
+    #    endif()
+    # Enable once Clang recognizes CUDA 11.8 and newer (https://reviews.llvm.org/D135306)
+    # if(NOT CUDA_VERSION VERSION_LESS 11.8)
+    #     list(APPEND _CUDA_CLANG_GENCODE_FLAGS "--cuda-gpu-arch=sm_89")
+    # endif()
+    # if(NOT CUDA_VERSION VERSION_LESS 12.0)
+    #     list(APPEND _CUDA_CLANG_GENCODE_FLAGS "--cuda-gpu-arch=sm_90")
+    # endif()
 endif()
 if (GMX_CUDA_TARGET_SM)
     set_property(CACHE GMX_CUDA_TARGET_SM PROPERTY HELPSTRING "List of CUDA GPU architecture codes to compile for (without the sm_ prefix)")

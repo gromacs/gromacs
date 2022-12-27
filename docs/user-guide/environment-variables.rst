@@ -183,12 +183,6 @@ Performance and Run Control
         Use CUDA Graphs to schedule a graph on each step rather than multiple
         activities scheduled to multiple CUDA streams, if the run conditions allow. Experimental.
 
-``GMX_GPU_SYCL_USE_GPU_FFT``
-        enable the use of GPU FFT with DPC++ on Intel GPUs. Unless this variable is set, only Mixed Mode PME is
-        available on Intel GPUs. It has been tested with oneAPI 2022.0.1 and OpenCL backend; older oneAPI
-        versions will not work or will produce wrong results. For hipSYCL builds, GPU FFT is always enabled on AMD GPUs,
-        and not affected by this variable.
-
 ``GMX_CYCLE_ALL``
         times all code during runs.  Incompatible with threads.
 
@@ -256,13 +250,8 @@ Performance and Run Control
         GPU-aware, but |GROMACS| is not able to detect this. Note that only CUDA and SYCL builds 
         support such functionality.
 
-``GMX_FORCE_UPDATE_DEFAULT_GPU``
-        Force update to run on the GPU by default, overriding the ``mdrun -update auto`` option. Works similar to setting
-        ``mdrun -update gpu``, but (1) falls back to the CPU code-path, if set with input that is not supported and
-        (2) can be used to run update on GPUs in multi-rank cases. The latter case should be
-        considered experimental since it lacks substantial testing. Also, GPU update is only supported with the GPU direct
-        communications and ``GMX_FORCE_UPDATE_DEFAULT_GPU`` variable should be set simultaneously with
-        ``GMX_ENABLE_DIRECT_GPU_COMM`` environment variable in multi-rank cases using library-MPI. Does not override ``mdrun -update cpu``.
+``GMX_FORCE_UPDATE_DEFAULT_CPU``
+        Force update to run on the CPU by default, makes the ``mdrun -update auto`` behave as ``-update cpu``.
 
 ``GMX_GPU_ID``
         set in the same way as ``mdrun -gpu_id``, ``GMX_GPU_ID``

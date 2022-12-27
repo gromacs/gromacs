@@ -2731,7 +2731,8 @@ class ResourceManager(SourceResource[_OutputDataProxyType, _PublishingDataProxyT
 
     @property
     def operation_id(self):
-        # Note that duplicate work on multiple ranks, if allowed, will have the same ID.
+        # Note that duplicate work on multiple ranks, if allowed, will _not_ have the same ID
+        # unless the caller ensures the same ID is provided at initialization.
         return f"{self._base_operation_id}_i{self.__reset_counter}"
 
     def __repr__(self):

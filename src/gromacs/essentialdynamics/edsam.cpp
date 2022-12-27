@@ -1645,7 +1645,7 @@ static gmx_bool check_if_same(struct gmx_edx sref, struct gmx_edx sav)
         return FALSE;
     }
 
-    /* Now that we know that both stuctures have the same number of atoms,
+    /* Now that we know that both structures have the same number of atoms,
      * check if also the indices are identical */
     for (i = 0; i < sav.nr; i++)
     {

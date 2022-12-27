@@ -967,7 +967,7 @@ static DomainLifetimeWorkload setupDomainLifetimeWorkload(const t_inputrec&     
     return domainWork;
 }
 
-/*! \brief Set up force flag stuct from the force bitmask.
+/*! \brief Set up force flag struct from the force bitmask.
  *
  * \param[in]      legacyFlags          Force bitmask flags used to construct the new flags
  * \param[in]      mtsLevels            The multiple time-stepping levels, either empty or 2 levels

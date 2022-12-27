@@ -71,7 +71,6 @@ gromacs:oneapi-2022.2.0-sycl-nightly:test-opencl-upd:
   variables:
     CMAKE: /usr/local/cmake-3.18.4/bin/cmake
     SYCL_DEVICE_FILTER: "opencl:gpu"
-    GMX_FORCE_UPDATE_DEFAULT_GPU: 1
     # The following two variables are not used by k8s, since this job runs on a separate host
     # But it's easier to set them up and use the existing scripts for job preparation that rely on them
     KUBERNETES_EXTENDED_RESOURCE_NAME: "intel.com/gpu"
@@ -116,7 +115,6 @@ gromacs:oneapi-2022.2.0-sycl-nightly:regressiontest-opencl-singlerank-upd:
     # Default not working, see #2980
     REGRESSIONTEST_TOTAL_RANK_NUMBER: 1
     REGRESSIONTEST_OMP_RANK_NUMBER: 1
-    GMX_FORCE_UPDATE_DEFAULT_GPU: 1
     # The following two variables are not used by k8s, since this job runs on a separate host
     # But it's easier to set them up and use the existing scripts for job preparation that rely on them
     KUBERNETES_EXTENDED_RESOURCE_NAME: "intel.com/gpu"
@@ -140,7 +138,6 @@ gromacs:oneapi-2022.2.0-sycl-nightly:regressiontest-opencl-upd:
     # Default not working, see #2980
     REGRESSIONTEST_TOTAL_RANK_NUMBER: 2
     REGRESSIONTEST_OMP_RANK_NUMBER: 1
-    GMX_FORCE_UPDATE_DEFAULT_GPU: 1
     # The following two variables are not used by k8s, since this job runs on a separate host
     # But it's easier to set them up and use the existing scripts for job preparation that rely on them
     KUBERNETES_EXTENDED_RESOURCE_NAME: "intel.com/gpu"

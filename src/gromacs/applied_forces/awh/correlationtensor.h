@@ -178,7 +178,7 @@ public:
     const std::vector<double>& correlationIntegral() const { return correlationIntegral_; }
 
 private:
-    /* Weight sum data, indentical for all dimensions */
+    /* Weight sum data, identical for all dimensions */
     double blockSumWeight_;                 /**< Sum weights for current block. */
     double blockSumSquareWeight_;           /**< Sum weights^2 for current block. */
     double sumOverBlocksSquareBlockWeight_; /**< Sum over all blocks in the simulation of block weight^2. */

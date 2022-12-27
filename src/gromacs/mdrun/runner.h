@@ -213,7 +213,7 @@ private:
     //! Options for the domain decomposition.
     DomdecOptions domdecOptions;
 
-    /*! \brief Target short-range interations for "cpu", "gpu", or "auto". Default is "auto".
+    /*! \brief Target short-range interactions for "cpu", "gpu", or "auto". Default is "auto".
      *
      * \internal
      * \todo replace with string or enum class and initialize with sensible value.
@@ -234,7 +234,7 @@ private:
      */
     const char* pme_fft_opt = nullptr;
 
-    /*! \brief Target bonded interations for "cpu", "gpu", or "auto". Default is "auto".
+    /*! \brief Target bonded interactions for "cpu", "gpu", or "auto". Default is "auto".
      *
      * \internal
      * \todo replace with string or enum class and initialize with sensible value.

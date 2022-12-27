@@ -48,6 +48,7 @@ gromacs:clang-ASAN:test:
   variables:
     CMAKE: /usr/local/cmake-3.21.2/bin/cmake
     CTEST_RUN_MODE: "ExperimentalMemCheck"
+    GMX_FORCE_UPDATE_DEFAULT_CPU: 1
   tags:
     - k8s-scilifelab
   needs:

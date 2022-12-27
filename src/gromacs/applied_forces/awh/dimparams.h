@@ -79,7 +79,7 @@ struct DimParams
         const double userCoordUnitsToInternal; /**< Conversion factor coordinate units. */
     };
 
-    /*! \internal \brief Type for storing dimension parameters for free-energy lamdba type dimensions
+    /*! \internal \brief Type for storing dimension parameters for free-energy lambda type dimensions
      */
     struct FepDimParams
     {

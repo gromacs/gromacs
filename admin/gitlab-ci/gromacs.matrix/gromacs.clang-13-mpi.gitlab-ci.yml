@@ -65,6 +65,7 @@ gromacs:clang-13:regressiontest:
     CMAKE: /usr/local/cmake-3.18.4/bin/cmake
     REGRESSIONTEST_DOUBLE: "-double"
     REGRESSIONTEST_PARALLEL: "-np"
+    GMX_FORCE_UPDATE_DEFAULT_CPU: 1
   tags:
     - k8s-scilifelab
   needs:

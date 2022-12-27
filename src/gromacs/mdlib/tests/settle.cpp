@@ -152,7 +152,7 @@ public:
     /*! \brief Test setup function.
      *
      * Setting up the PBCs and algorithms. Note, that corresponding string keywords
-     * have to be explicitly specified when parameters are initialied.
+     * have to be explicitly specified when parameters are initialized.
      *
      */
     SettleTest() : checker_(refData_.rootChecker())

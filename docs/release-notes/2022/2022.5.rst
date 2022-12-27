@@ -16,6 +16,17 @@ in the :ref:`release-notes`.
 Fixes where mdrun could behave incorrectly
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Add missing net charge term when running PME on a GPU
+"""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+When PME was running on a GPU, the term due to a net charge of the system was missing.
+In normal runs this only changed the potential energy by a constant, which is usually
+not relevant. In free-energy calculations where the net charge of the systen changes,
+the would lead to incorrect dV/dlambda and Delta lambda values (but one should anyhow
+avoid changing the net charge of a system with free-energy calculations).
+
+:issue:`4668`
+
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -24,4 +35,12 @@ Fixes that affect portability
 
 Miscellaneous
 ^^^^^^^^^^^^^
+
+Improve muParser detection and bumped internal version to v2.3.4
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+Update internal muParser version that include all changes made by
+us. Use muParser's CMake config to detect external muParser. Update
+required version for external muParser to match the internal version.
+
+:issue:`4614`
 

@@ -212,7 +212,7 @@ t_swapgrp::swap_group(const gmx::LocalAtomSet& atomset) : atomset{ atomset }
         fluxfromAtoB[channel] = 0;
         nCyl[channel]         = 0;
     }
-};
+}
 
 /*! \internal \brief
  * Main (private) data structure for the position swapping protocol.

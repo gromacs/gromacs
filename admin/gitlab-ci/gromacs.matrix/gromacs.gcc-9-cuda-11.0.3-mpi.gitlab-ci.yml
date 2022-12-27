@@ -5,7 +5,7 @@
 #   GPU: CUDA oldest supported
 #   HW: NVIDIA GPU, single NVIDIA GPU
 #   MPI: OpenMPI
-#   Features: GPU direct communications + update (unit tests), HeFFTe support
+#   Features: GPU direct communications + update (unit tests), HeFFTe for GPU PME decomposition
 #   Scope: configure, build, unit tests
 # Test implementation choices (free to change as needed):
 #   OS: Ubuntu 20.04
@@ -53,6 +53,7 @@ gromacs:gcc-9-cuda-11.0.3:testMPI:
     KUBERNETES_EXTENDED_RESOURCE_NAME: "nvidia.com/gpu"
     KUBERNETES_EXTENDED_RESOURCE_LIMIT: 1
     GMX_ENABLE_DIRECT_GPU_COMM: 1
+    GMX_GPU_PME_DECOMPOSITION: 1
     GMX_TEST_LABELS: "QuickGpuTest|SlowGpuTest"
   tags:
     - k8s-scilifelab

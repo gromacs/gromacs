@@ -1,0 +1,59 @@
+# Test goal: CUDA Graphs codepath
+# Test intents (should change rarely and conservatively):
+#   OS: Ubuntu oldest supported
+#   GPU: CUDA newest supported with its newest supported gcc
+#   HW: NVIDIA GPU
+#   MPI: thread-MPI
+#   Features: Mdrun using CUDA Graphs (unit tests)
+#   Scope: configure, build, unit tests
+# Test implementation choices (free to change as needed):
+#   OS: Ubuntu 20.04
+#   Build type: RelWithDebInfo
+#   Compiler: GCC 11.1
+#   GPU: CUDA 11.7.1
+#   SIMD: SSE 4.1
+#   FFT: FFTW3
+
+gromacs:gcc-11-cuda-11.7.1:configure:
+  extends:
+    - .gromacs:base:configure
+    - .use-gcc:base
+    - .use-cuda
+    - .rules:post-merge-acceptance
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-gcc-11-cuda-11.7.1
+  variables:
+    CMAKE: /usr/local/cmake-3.18.4/bin/cmake
+    CMAKE_BUILD_TYPE_OPTIONS : "-DCMAKE_BUILD_TYPE=RelWithAssert"
+    CMAKE_SIMD_OPTIONS: "-DGMX_SIMD=SSE4.1"
+    COMPILER_MAJOR_VERSION: 11
+
+gromacs:gcc-11-cuda-11.7.1:build:
+  extends:
+    - .variables:default
+    - .gromacs:base:build
+    - .before_script:default
+    - .use-ccache
+    - .rules:post-merge-acceptance
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-gcc-11-cuda-11.7.1
+  variables:
+    CMAKE: /usr/local/cmake-3.18.4/bin/cmake
+  needs:
+    - job: gromacs:gcc-11-cuda-11.7.1:configure
+
+gromacs:gcc-11-cuda-11.7.1:test-cudagraph:
+  extends:
+    - .gromacs:base:test
+    - .rules:post-merge-acceptance
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-gcc-11-cuda-11.7.1
+  variables:
+    CMAKE: /usr/local/cmake-3.18.4/bin/cmake
+    KUBERNETES_EXTENDED_RESOURCE_NAME: "nvidia.com/gpu"
+    KUBERNETES_EXTENDED_RESOURCE_LIMIT: 1
+    GMX_ENABLE_DIRECT_GPU_COMM: 1
+    GMX_CUDA_GRAPH: 1
+    GMX_TEST_LABELS: "QuickGpuTest|SlowGpuTest"
+  tags:
+    - k8s-scilifelab
+  needs:
+    - job: gromacs:gcc-11-cuda-11.7.1:build
+

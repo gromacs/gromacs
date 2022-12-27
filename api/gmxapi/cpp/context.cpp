@@ -163,7 +163,7 @@ MpiContextManager::MpiContextManager(MPI_Comm communicator) :
         // Synchronise at the point of acquiring a MpiContextManager.
         gmx_barrier(this->communicator());
     }
-};
+}
 
 MpiContextManager::~MpiContextManager()
 {

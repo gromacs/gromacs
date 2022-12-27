@@ -210,4 +210,4 @@ private:
 
 } // namespace gmx
 
-#endif // GMX_MATH_RANDOM_H
+#endif // GMX_RANDOM_EXPONENTIALDISTRIBUTION_H

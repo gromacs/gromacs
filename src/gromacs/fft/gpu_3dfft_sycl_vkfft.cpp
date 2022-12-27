@@ -51,9 +51,9 @@
 
 #include "config.h"
 
-#include <string>
+#include <vkFFT.h>
 
-#include "../external/vkfft/vkFFT.h"
+#include <string>
 
 #include "gromacs/gpu_utils/device_stream.h"
 #include "gromacs/gpu_utils/devicebuffer.h"

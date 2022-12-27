@@ -337,7 +337,7 @@ real ewald_spline3_table_scale(const interaction_const_t& ic,
 
     if (generateCoulombTables)
     {
-        GMX_RELEASE_ASSERT(ic.ewaldcoeff_q > 0, "The Ewald coefficient shoule be positive");
+        GMX_RELEASE_ASSERT(ic.ewaldcoeff_q > 0, "The Ewald coefficient should be positive");
 
         double erf_x_d3 = 1.0522; /* max of (erf(x)/x)''' */
         double etol;
@@ -358,7 +358,7 @@ real ewald_spline3_table_scale(const interaction_const_t& ic,
 
     if (generateVdwTables)
     {
-        GMX_RELEASE_ASSERT(ic.ewaldcoeff_lj > 0, "The Ewald coefficient shoule be positive");
+        GMX_RELEASE_ASSERT(ic.ewaldcoeff_lj > 0, "The Ewald coefficient should be positive");
 
         double func_d3 = 0.42888; /* max of (x^-6 (1 - exp(-x^2)(1+x^2+x^4/2)))''' */
         double xrc2, etol;

@@ -41,7 +41,7 @@ set(GMX_GPU_SYCL ON)
 # CMake issue tracking the efforts to make a universal upstream module:
 # https://gitlab.kitware.com/cmake/cmake/-/issues/21711
 
-option(GMX_SYCL_HIPSYCL "Use hipSYCL instead of Intel/Clang for SYCL compilation" OFF)
+option(GMX_SYCL_HIPSYCL "Use hipSYCL instead of Intel oneAPI for SYCL compilation" OFF)
 
 if(GMX_DOUBLE)
     message(FATAL_ERROR "SYCL acceleration is not available in double precision")
@@ -73,6 +73,9 @@ function(_getHipSyclCmakeFlags RETURN_VAR)
 endfunction()
 
 if(GMX_SYCL_HIPSYCL)
+    if (NOT CMAKE_CXX_COMPILER_ID MATCHES "Clang" AND NOT CMAKE_CXX_COMPILER_ID MATCHES "IntelLLVM")
+        message(FATAL_ERROR "HipSYCL build requires Clang compiler, but ${CMAKE_CXX_COMPILER_ID} is used")
+    endif()
     set(HIPSYCL_CLANG "${CMAKE_CXX_COMPILER}")
     # -Wno-unknown-cuda-version because Clang often complains about the newest CUDA, despite working fine with it.
     # -Wno-unknown-attributes because hipSYCL does not support reqd_sub_group_size (because it can only do some sub group sizes).
@@ -204,30 +207,13 @@ if(GMX_SYCL_HIPSYCL)
 
 
     if(GMX_GPU_FFT_VKFFT)
-        # Use VkFFT with HIP back end as header-only library
-        set(vkfft_VERSION "1.2.26-b15cb0ca3e884bdb6c901a12d87aa8aadf7637d8")
+        include(gmxManageVkFft)
         if (GMX_HIPSYCL_HAVE_CUDA_TARGET)
-            set(_backend 1)
+            gmx_manage_vkfft("CUDA")
         elseif (GMX_HIPSYCL_HAVE_HIP_TARGET)
-            set(_backend 2)
+            gmx_manage_vkfft("HIP")
         else()
-            message(FATAL_ERROR "VkFFT can only be used with the HIP backend")
-        endif()
-        add_library(VkFFT INTERFACE)
-        target_compile_definitions(VkFFT INTERFACE VKFFT_BACKEND=${_backend})
-        target_include_directories(VkFFT INTERFACE ${CMAKE_PROJECT_ROOT}/src/external/VkFFT)
-        gmx_target_interface_warning_suppression(VkFFT "-Wno-unused-parameter" HAS_WARNING_NO_UNUSED_PARAMETER)
-        gmx_target_interface_warning_suppression(VkFFT "-Wno-unused-variable" HAS_WARNING_NO_UNUSED_VARIABLE)
-        gmx_target_interface_warning_suppression(VkFFT "-Wno-newline-eof" HAS_WARNING_NO_NEWLINE_EOF)
-        gmx_target_interface_warning_suppression(VkFFT "-Wno-old-style-cast" HAS_WARNING_NO_OLD_STYLE_CAST)
-        gmx_target_interface_warning_suppression(VkFFT "-Wno-zero-as-null-pointer-constant" HAS_WARNING_NO_ZERO_AS_NULL_POINTER_CONSTANT)
-        gmx_target_interface_warning_suppression(VkFFT "-Wno-unused-but-set-variable" HAS_WARNING_NO_UNUSED_BUT_SET_VARIABLE)
-        gmx_target_interface_warning_suppression(VkFFT "-Wno-sign-compare" HAS_WARNING_NO_SIGN_COMPARE)
-
-        if (GMX_HIPSYCL_HAVE_CUDA_TARGET)
-            # This is not ideal, because it uses some random version of CUDA. See #4621.
-            find_package(CUDAToolkit REQUIRED)
-            target_link_libraries(VkFFT INTERFACE CUDA::cuda_driver CUDA::nvrtc)
+            message(FATAL_ERROR "VkFFT can only be used with HIP or CUDA backends")
         endif()
         set(_sycl_has_valid_fft TRUE)
     endif()
@@ -239,12 +225,16 @@ if(GMX_SYCL_HIPSYCL)
         set(_enable_rdna_support_automatically OFF)
         # We assume that any GCN2-5 architecture (gfx7/8) and CDNA1-3 (gfx9 series) up until the time of writing of this conditional is 64-wide
         if (${HIPSYCL_TARGETS} MATCHES "gfx[7-8][0-9][0-9]|gfx9[0-4][0-9ac]")
-            set(GMX_GPU_NB_DISABLE_CLUSTER_PAIR_SPLIT ON CACHE BOOL "Disable NBNXM GPU cluster pair splitting. Only supported with SYCL and 64-wide GPU architectures (like AMD GCN/CDNA).")
+            option(GMX_GPU_NB_DISABLE_CLUSTER_PAIR_SPLIT
+                "Disable NBNXM GPU cluster pair splitting. Only supported with SYCL and 64-wide GPU architectures (like AMD GCN/CDNA)."
+                ON)
             mark_as_advanced(GMX_GPU_NB_DISABLE_CLUSTER_PAIR_SPLIT)
         endif()
     endif()
-    set(GMX_HIPSYCL_ENABLE_AMD_RDNA_SUPPORT ${_enable_rdna_support_automatically} CACHE BOOL
-        "Enable compiling kernels for AMD RDNA GPUs (gfx1xxx). When OFF, only CDNA and GCN are supported. Only used with hipSYCL.")
+    option(GMX_HIPSYCL_ENABLE_AMD_RDNA_SUPPORT
+        "Enable compiling kernels for AMD RDNA GPUs (gfx1xxx). When OFF, only CDNA and GCN are supported. Only used with hipSYCL."
+        ${_enable_rdna_support_automatically})
+    mark_as_advanced(GMX_HIPSYCL_ENABLE_AMD_RDNA_SUPPORT)
 
     # Find a suitable rocFFT when hipSYCL is targeting AMD devices
     if (GMX_HIPSYCL_HAVE_HIP_TARGET AND GMX_GPU_FFT_ROCFFT)
@@ -310,6 +300,15 @@ if(GMX_SYCL_HIPSYCL)
         set(FIND_ROCFFT_QUIETLY "QUIET")
         set(_sycl_has_valid_fft TRUE)
     endif()
+
+    # Mark hipsycl-related CMake options as "advanced"
+    get_cmake_property(_VARS VARIABLES)
+    foreach (_VARNAME ${_VARS})
+        if (_VARNAME MATCHES "^HIPSYCL")
+            mark_as_advanced(${_VARNAME})
+        endif()
+    endforeach()
+    mark_as_advanced(CLEAR HIPSYCL_TARGETS)
 else()
     if(WIN32)
         if(CMAKE_VERSION VERSION_LESS "3.23.0")
@@ -435,6 +434,7 @@ else()
         set(CMAKE_REQUIRED_FLAGS "${SYCL_TOOLCHAIN_CXX_FLAGS}")
         get_target_property(CMAKE_REQUIRED_LIBRARIES MKL::MKL INTERFACE_LINK_LIBRARIES)
         list(APPEND CMAKE_REQUIRED_LIBRARIES "${GMX_EXTRA_LIBRARIES}")
+        get_target_property(CMAKE_REQUIRED_INCLUDES MKL::MKL INTERFACE_INCLUDE_DIRECTORIES)
         check_cxx_source_compiles("
 #include <oneapi/mkl/dfti.hpp>
 int main() {
@@ -445,8 +445,22 @@ int main() {
           CAN_LINK_SYCL_MKL)
         unset(CMAKE_REQUIRED_FLAGS)
         unset(CMAKE_REQUIRED_LIBRARIES)
+        unset(CMAKE_REQUIRED_INCLUDES)
         if (NOT CAN_LINK_SYCL_MKL)
             message(FATAL_ERROR "Cannot link mkl_sycl. Make sure the MKL and compiler versions are compatible.")
+        endif()
+
+        set(_sycl_has_valid_fft TRUE)
+    endif()
+
+    if(GMX_GPU_FFT_DBFFT)
+        # The double-batched FFT library is still called by its former
+        # name bbfft in the implementation. For now, only the shared
+        # libraries can link into GROMACS shared libraries.
+        if (BUILD_SHARED_LIBS)
+            find_package(bbfft-sycl 0.3.1 REQUIRED shared)
+        else()
+            find_package(bbfft-sycl 0.3.1 REQUIRED)
         endif()
         set(_sycl_has_valid_fft TRUE)
     endif()
@@ -472,6 +486,13 @@ int main() {
             target_link_options(${ARGS_TARGET} PRIVATE ${SYCL_TOOLCHAIN_LINKER_FLAGS_LIST})
         endif()
     endfunction(add_sycl_to_target)
+endif()
+
+if (GMX_GPU_FFT_CUFFT AND GMX_USE_HEFFTE)
+    set(_sycl_has_valid_fft TRUE)
+    if (NOT DEFINED ENV{GITLAB_CI}) # Don't warn in CI builds
+        message(WARNING "SYCL build with HeFFTe and cuFFT should only ever be used for testing")
+    endif()
 endif()
 
 if(NOT ${_sycl_has_valid_fft} AND NOT GMX_GPU_FFT_LIBRARY STREQUAL "NONE")

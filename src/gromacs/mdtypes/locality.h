@@ -118,8 +118,9 @@ static inline InteractionLocality atomToInteractionLocality(const AtomLocality a
     }
     else
     {
-        GMX_THROW(gmx::InconsistentInputError(
-                "Only Local and NonLocal atom locities can be converted to interaction locality."));
+        GMX_THROW(
+                gmx::InconsistentInputError("Only Local and NonLocal atom localities can be "
+                                            "converted to interaction locality."));
     }
 }
 

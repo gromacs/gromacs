@@ -150,21 +150,14 @@ static bool grp_cmp(gmx::ArrayRef<const IndexGroup> indexGroups, gmx::ArrayRef<c
     }
     return true;
 }
-//! Print out how many residues of a certain type are present.
-static void p_status(gmx::ArrayRef<const std::string> restype, gmx::ArrayRef<const std::string> typenames)
+//! Print out how many residues of a certain molecule category are present.
+static void printMoleculeCategoryResidueCounts(gmx::ArrayRef<const std::pair<std::string, int>> moleculeCategoryCount)
 {
-    std::vector<int> counter(typenames.size(), 0);
-    std::transform(typenames.begin(), typenames.end(), counter.begin(), [&restype](const std::string& typenm) {
-        return std::count_if(restype.begin(), restype.end(), [&typenm](const std::string& res) {
-            return gmx_strcasecmp(res.c_str(), typenm.c_str()) == 0;
-        });
-    });
-
-    for (int i = 0; (i < typenames.ssize()); i++)
+    for (const auto& mcc : moleculeCategoryCount)
     {
-        if (counter[i] > 0)
+        if (mcc.second > 0)
         {
-            printf("There are: %5d %10s residues\n", counter[i], typenames[i].c_str());
+            printf("There are: %5d %10s residues\n", mcc.second, mcc.first.c_str());
         }
     }
 }
@@ -555,81 +548,84 @@ std::vector<IndexGroup> analyse(const t_atoms* atoms, gmx_bool bASK, gmx_bool bV
     /* For every residue, get a pointer to the residue type name */
     ResidueTypeMap residueTypeMap = residueTypeMapFromLibraryFile("residuetypes.dat");
 
-    std::vector<std::string> restype;
-    std::vector<std::string> previousTypename;
+    std::vector<std::string>                 moleculeCategoryOfResidues;
+    std::vector<std::pair<std::string, int>> moleculeCategoryCount;
     if (atoms->nres > 0)
     {
-        const char* resnm = *atoms->resinfo[0].name;
-        restype.emplace_back(typeOfNamedDatabaseResidue(residueTypeMap, resnm));
-        previousTypename.push_back(restype.back());
-
-        for (int i = 1; i < atoms->nres; i++)
+        for (int i = 0; i < atoms->nres; i++)
         {
             const char* resnm = *atoms->resinfo[i].name;
-            restype.emplace_back(typeOfNamedDatabaseResidue(residueTypeMap, resnm));
+            moleculeCategoryOfResidues.emplace_back(typeOfNamedDatabaseResidue(residueTypeMap, resnm));
 
             /* Note that this does not lead to a N*N loop, but N*K, where
              * K is the number of residue _types_, which is small and independent of N.
              */
             bool found = false;
-            for (size_t k = 0; k < previousTypename.size() && !found; k++)
+            for (auto& mcc : moleculeCategoryCount)
             {
-                found = strcmp(restype.back().c_str(), previousTypename[k].c_str()) == 0;
+                found = (moleculeCategoryOfResidues.back() == mcc.first);
+                if (found)
+                {
+                    mcc.second++;
+                    break;
+                }
             }
             if (!found)
             {
-                previousTypename.push_back(restype.back());
+                moleculeCategoryCount.emplace_back(moleculeCategoryOfResidues.back(), 1);
             }
         }
     }
 
     if (bVerb)
     {
-        p_status(restype, previousTypename);
+        printMoleculeCategoryResidueCounts(moleculeCategoryCount);
     }
 
     bool haveAnalysedOther = false;
-    for (gmx::index k = 0; k < gmx::ssize(previousTypename); k++)
+    for (const auto& mcc : moleculeCategoryCount)
     {
-        std::vector<int> aid = mk_aid(atoms, restype, previousTypename[k], TRUE);
+        const std::string& moleculeCategory = mcc.first;
+
+        std::vector<int> aid = mk_aid(atoms, moleculeCategoryOfResidues, moleculeCategory, TRUE);
 
         /* Check for special types to do fancy stuff with */
 
-        if (!gmx_strcasecmp(previousTypename[k].c_str(), "Protein") && !aid.empty())
+        if (!gmx_strcasecmp(moleculeCategory.c_str(), "Protein") && !aid.empty())
         {
             /* PROTEIN */
-            analyse_prot(restype, atoms, &indexGroups, bASK, bVerb);
+            analyse_prot(moleculeCategoryOfResidues, atoms, &indexGroups, bASK, bVerb);
 
             /* Create a Non-Protein group */
-            std::vector<int> aid = mk_aid(atoms, restype, "Protein", FALSE);
+            std::vector<int> aid = mk_aid(atoms, moleculeCategoryOfResidues, "Protein", FALSE);
             if ((!aid.empty()) && (gmx::ssize(aid) < atoms->nr))
             {
                 indexGroups.push_back({ "non-Protein", aid });
             }
         }
-        else if (!gmx_strcasecmp(previousTypename[k].c_str(), "Water") && !aid.empty())
+        else if (!gmx_strcasecmp(moleculeCategory.c_str(), "Water") && !aid.empty())
         {
-            indexGroups.push_back({ previousTypename[k], aid });
+            indexGroups.push_back({ moleculeCategory, aid });
             /* Add this group as 'SOL' too, for backward compatibility with older gromacs versions */
             indexGroups.push_back({ "SOL", aid });
 
 
             /* Solvent, create a negated group too */
-            std::vector<int> aid = mk_aid(atoms, restype, "Water", FALSE);
+            std::vector<int> aid = mk_aid(atoms, moleculeCategoryOfResidues, "Water", FALSE);
             if ((!aid.empty()) && (gmx::ssize(aid) < atoms->nr))
             {
                 indexGroups.push_back({ "non-Water", aid });
             }
         }
-        else if (!gmx_strcasecmp(previousTypename[k].c_str(), "Ion") && !aid.empty())
+        else if (!gmx_strcasecmp(moleculeCategory.c_str(), "Ion") && !aid.empty())
         {
-            indexGroups.push_back({ previousTypename[k], aid });
+            indexGroups.push_back({ moleculeCategory, aid });
         }
         else if (!aid.empty() && !haveAnalysedOther)
         {
             /* Other groups */
-            indexGroups.push_back({ previousTypename[k], aid });
-            analyse_other(restype, atoms, &indexGroups, bASK, bVerb);
+            indexGroups.push_back({ moleculeCategory, aid });
+            analyse_other(moleculeCategoryOfResidues, atoms, &indexGroups, bASK, bVerb);
             haveAnalysedOther = true;
         }
     }

@@ -111,7 +111,7 @@ public:
 
 /*! \libinternal
  * \brief Describes work done on this domain on every step of its lifetime,
- * but which might change after the next domain paritioning.
+ * but which might change after the next domain partitioning.
  *
  * This work description is based on the SimulationWorkload in the context of the
  * current particle interactions assigned to this domain. The latter might change
@@ -205,10 +205,10 @@ public:
     bool haveEwaldSurfaceContribution = false;
     //! Whether to use multiple time stepping
     bool useMts = false;
-    // Whether a GPU graph should be used to execute steps in the MD loop if run conditions allow.
+    //! Whether a GPU graph should be used to execute steps in the MD loop if run conditions allow.
     bool useMdGpuGraph = false;
 
-    // Whether PME GPU is active on this PP rank (note that currently only PP ranks use SimulationWorkload)
+    //! Whether PME GPU is active on this PP rank (note that currently only PP ranks use SimulationWorkload)
 #if !defined(_MSC_VER) // MSVC does not support __attribute__
     __attribute__((always_inline))
 #endif

@@ -36,7 +36,7 @@
  *
  *  The test sets up the rank topology and performs a coordinate halo
  *  exchange (for both CPU and GPU codepaths) for several 1D and 2D
- *  pulse configirations. Each pulse involves a few non-contiguous
+ *  pulse configurations. Each pulse involves a few non-contiguous
  *  indices. The sending rank, atom number and spatial 3D index are
  *  encoded in the x values, to allow correctness checking following
  *  the halo exchange.

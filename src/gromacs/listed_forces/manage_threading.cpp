@@ -188,7 +188,7 @@ static void divide_bondeds_by_locality(bonded_threading_t* bt, int numType, cons
 static bool ftypeHasPerturbedEntries(const InteractionDefinitions& idef, int ftype)
 {
     GMX_ASSERT(idef.ilsort == ilsortNO_FE || idef.ilsort == ilsortFE_SORTED,
-               "Perturbed interations should be sorted here");
+               "Perturbed interactions should be sorted here");
 
     const InteractionList& ilist = idef.il[ftype];
 

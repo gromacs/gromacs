@@ -54,6 +54,9 @@ if (GMX_FFT_MKL)
 endif()
 if(GMX_USE_Heffte)
     gmx_add_libgromacs_sources(gpu_3dfft_heffte.cpp)
+    if (GMX_GPU_SYCL)
+        _gmx_add_files_to_property(SYCL_SOURCES gpu_3dfft_heffte.cpp)
+    endif()
 endif()
 if (GMX_GPU_CUDA)
     if(GMX_USE_cuFFTMp)
@@ -94,6 +97,8 @@ elseif (GMX_GPU_SYCL)
     set(_sycl_fft_sources gpu_3dfft.cpp gpu_3dfft_impl.cpp gpu_3dfft_sycl.cpp)
     if (GMX_GPU_FFT_MKL)
         list(APPEND _sycl_fft_sources gpu_3dfft_sycl_mkl.cpp)
+    elseif(GMX_GPU_FFT_DBFFT)
+        list(APPEND _sycl_fft_sources gpu_3dfft_sycl_dbfft.cpp)
     elseif(GMX_GPU_FFT_ROCFFT)
         list(APPEND _sycl_fft_sources gpu_3dfft_sycl_rocfft.cpp)
     elseif(GMX_GPU_FFT_VKFFT)
@@ -123,6 +128,10 @@ target_link_libraries(fft INTERFACE
                       timing
                       utility
                       )
+
+if (GMX_GPU_FFT_DBFFT)
+    target_link_libraries(fft INTERFACE bbfft::bbfft-sycl)
+endif()
 
 # TODO: when fft is an OBJECT target
 #target_link_libraries(fft PUBLIC legacy_api)

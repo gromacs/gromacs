@@ -43,6 +43,8 @@ function(GMX_TEST_GPU_AWARE_MPI BACKEND)
   string(TOUPPER "${BACKEND}" BACKEND_UPPER)
   string(TOLOWER "${BACKEND}" BACKEND_LOWER)
 
+  # Note: MPI_COMPILE_FLAGS is an output variable controlled by FindMPI.cmake,
+  # but is deprecated since CMake 3.10.
   list(JOIN MPI_COMPILE_FLAGS " " CMAKE_REQUIRED_FLAGS)
   set(CMAKE_REQUIRED_INCLUDES ${MPI_INCLUDE_PATH})
   set(CMAKE_REQUIRED_LIBRARIES ${MPI_LIBRARIES})
@@ -95,11 +97,13 @@ endfunction()
 if (GMX_GPU_CUDA)
   gmx_test_gpu_aware_mpi(cuda)
   set(MPI_SUPPORTS_HIP_AWARE_DETECTION FALSE)
+  set(MPI_SUPPORTS_ROCM_AWARE_DETECTION FALSE)
   set(MPI_SUPPORTS_ZE_AWARE_DETECTION FALSE)
 endif()
 if(GMX_GPU_SYCL)
   gmx_test_gpu_aware_mpi(cuda)
-  gmx_test_gpu_aware_mpi(hip)
+  gmx_test_gpu_aware_mpi(hip) # MPICH has MPIX_Query_hip_support
+  gmx_test_gpu_aware_mpi(rocm) # OpenMPI has MPIX_Query_rocm_support
   gmx_test_gpu_aware_mpi(ze)
 endif()
 

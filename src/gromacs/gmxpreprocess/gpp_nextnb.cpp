@@ -259,7 +259,7 @@ static void nnb2excl(t_nextnb* nnb, gmx::ListOfLists<int>* excls)
  */
 static bool atom_is_present_in_nnb(const t_nextnb* nnb, int atom, int highest_order, int query)
 {
-    GMX_RELEASE_ASSERT(highest_order < nnb->nrex, "Inconsistent nnb seach parameters");
+    GMX_RELEASE_ASSERT(highest_order < nnb->nrex, "Inconsistent nnb search parameters");
 
     for (int order = 0; order <= highest_order; order++)
     {
