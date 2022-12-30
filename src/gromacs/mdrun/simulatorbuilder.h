@@ -286,10 +286,10 @@ class IonSwapping
 {
 public:
     //! Create handle.
-    IonSwapping(t_swap* ionSwap) : ionSwap(ionSwap) {}
+    IonSwapping(t_swap* ionSwap) : ionSwap_(ionSwap) {}
 
     //! Internal storage for handle.
-    t_swap* ionSwap;
+    t_swap* ionSwap_;
 };
 
 /*! \brief
