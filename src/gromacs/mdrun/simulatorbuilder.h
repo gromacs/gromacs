@@ -205,14 +205,14 @@ class ConstraintsParam
 public:
     //! Build collection with handle to actual objects.
     ConstraintsParam(Constraints* constraints, gmx_enfrot* enforcedRotation, VirtualSitesHandler* vSite) :
-        constr(constraints), enforcedRotation(enforcedRotation), vsite(vSite)
+        constr(constraints), enforcedRotation_(enforcedRotation), vsite(vSite)
     {
     }
 
     //! Handle to constraint object.
     Constraints* constr;
     //! Handle to information about using enforced rotation.
-    gmx_enfrot* enforcedRotation;
+    gmx_enfrot* enforcedRotation_;
     //! Handle to vsite stuff.
     VirtualSitesHandler* vsite;
 };
