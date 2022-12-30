@@ -225,7 +225,7 @@ class LegacyInput
 public:
     //! Build collection from legacy input data.
     LegacyInput(int filenamesSize, const t_filenm* filenamesData, t_inputrec* inputRec, t_forcerec* forceRec) :
-        numFile(filenamesSize), filenames(filenamesData), inputrec(inputRec), forceRec(forceRec)
+        numFile(filenamesSize), filenames(filenamesData), inputrec(inputRec), forceRec_(forceRec)
     {
     }
 
@@ -236,7 +236,7 @@ public:
     //! Handle to simulation input record.
     t_inputrec* inputrec;
     //! Handle to simulation force record.
-    t_forcerec* forceRec;
+    t_forcerec* forceRec_;
 };
 
 /*! \brief SimulatorBuilder parameter type for InteractiveMD.
