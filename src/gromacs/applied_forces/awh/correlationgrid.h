@@ -101,7 +101,7 @@ public:
      */
     void addData(int pointIndex, double weight, gmx::ArrayRef<const double> data, double t)
     {
-        tensors_[pointIndex].addData(weight, data, blockLengthMeasure == BlockLengthMeasure::Weight, t);
+        tensors_[pointIndex].addData(weight, data, blockLengthMeasure_ == BlockLengthMeasure::Weight, t);
     }
 
     /*! \brief Restores the correlation grid state from the correlation grid history.
@@ -149,8 +149,8 @@ public:
      */
     int getNumBlocks() const;
 
-    const double             dtSample;           /**< Time in between samples. */
-    const BlockLengthMeasure blockLengthMeasure; /**< The measure for the block length. */
+    const double             dtSample_;           /**< Time in between samples. */
+    const BlockLengthMeasure blockLengthMeasure_; /**< The measure for the block length. */
 private:
     std::vector<CorrelationTensor> tensors_; /**< Correlation tensor grid */
 };

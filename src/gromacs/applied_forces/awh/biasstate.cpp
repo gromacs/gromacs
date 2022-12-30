@@ -1582,7 +1582,7 @@ void BiasState::updateSharedCorrelationTensorTimeIntegral(const BiasParams&     
                 {
                     int index     = gridPointIndex * numCorrelation + correlationTensorIndex;
                     buffer[index] = forceCorrelation.tensors()[gridPointIndex].getTimeIntegral(
-                                            correlationTensorIndex, forceCorrelation.dtSample)
+                                            correlationTensorIndex, forceCorrelation.dtSample_)
                                     * points_[gridPointIndex].localWeightSum();
                 }
             }
@@ -1617,7 +1617,7 @@ void BiasState::updateSharedCorrelationTensorTimeIntegral(const BiasParams&     
             {
                 sharedCorrelationTensorTimeIntegral_[gridPointIndex][correlationTensorIndex] =
                         forceCorrelation.tensors()[gridPointIndex].getTimeIntegral(
-                                correlationTensorIndex, forceCorrelation.dtSample);
+                                correlationTensorIndex, forceCorrelation.dtSample_);
             }
         }
     }

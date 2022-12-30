@@ -418,7 +418,7 @@ void Bias::printInitializationToLog(FILE* fplog) const
                 "%s force correlation number of blocks = %d",
                 prefix.c_str(),
                 forceCorrelationGrid().getBlockLength(),
-                forceCorrelationGrid().blockLengthMeasure == CorrelationGrid::BlockLengthMeasure::Weight
+                forceCorrelationGrid().blockLengthMeasure_ == CorrelationGrid::BlockLengthMeasure::Weight
                         ? ""
                         : "ps",
                 prefix.c_str(),

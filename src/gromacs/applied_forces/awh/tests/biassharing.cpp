@@ -189,7 +189,7 @@ void sharingSamplesFrictionTest(const void* nStepsArg)
         rankWeightSumTot.push_back(bias.state().points()[pointIndex].weightSumTot());
         rankWeightSumIteration.push_back(bias.state().points()[pointIndex].weightSumIteration());
         rankLocalFriction.push_back(
-                forceCorrelation.tensors()[pointIndex].getVolumeElement(forceCorrelation.dtSample));
+                forceCorrelation.tensors()[pointIndex].getVolumeElement(forceCorrelation.dtSample_));
         std::vector correlationIntegral = bias.state().getSharedPointCorrelationIntegral(pointIndex);
         /* The volume element has units of (sqrt(time)*(units of data))^(ndim of data) */
         rankSharedFriction.push_back(getSqrtDeterminant(correlationIntegral));

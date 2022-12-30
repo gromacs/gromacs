@@ -84,7 +84,7 @@ CorrelationGrid::CorrelationGrid(int                numPoints,
                                  double             blockLengthInit,
                                  BlockLengthMeasure blockLengthMeasure,
                                  double             dtSample) :
-    dtSample(dtSample), blockLengthMeasure(blockLengthMeasure)
+    dtSample_(dtSample), blockLengthMeasure_(blockLengthMeasure)
 {
     /* Set the initial block length for the block averaging. The length doesn't really matter
        after the block length has been doubled a few times, as long as it's set small enough */
