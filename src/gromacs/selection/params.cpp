@@ -117,7 +117,7 @@ gmx_ana_selparam_t* gmx_ana_selparam_find(const char* name, int nparam, gmx_ana_
  */
 static void convert_value(SelectionParserValue* value, e_selvalue_t type, ExceptionInitializer* errors, void* scanner)
 {
-    if (value->type == type || type == NO_VALUE)
+    if (value->type_ == type || type == NO_VALUE)
     {
         return;
     }
@@ -125,11 +125,11 @@ static void convert_value(SelectionParserValue* value, e_selvalue_t type, Except
     {
         /* Conversion from atom selection to position using default
          * reference positions. */
-        if (value->type == GROUP_VALUE && type == POS_VALUE)
+        if (value->type_ == GROUP_VALUE && type == POS_VALUE)
         {
             try
             {
-                SelectionTreeElementPointer expr = _gmx_sel_init_position(value->expr, nullptr, scanner);
+                SelectionTreeElementPointer expr = _gmx_sel_init_position(value->expr_, nullptr, scanner);
                 *value                           = SelectionParserValue::createExpr(expr);
             }
             catch (UserInputError& ex)
@@ -145,14 +145,14 @@ static void convert_value(SelectionParserValue* value, e_selvalue_t type, Except
     else
     {
         /* Integers to floating point are easy */
-        if (value->type == INT_VALUE && type == REAL_VALUE)
+        if (value->type_ == INT_VALUE && type == REAL_VALUE)
         {
             *value = SelectionParserValue::createRealRange(
                     value->u.i.i1, value->u.i.i2, value->location());
             return;
         }
         /* Reals that are integer-valued can also be converted */
-        if (value->type == REAL_VALUE && type == INT_VALUE)
+        if (value->type_ == REAL_VALUE && type == INT_VALUE)
         {
             int i1 = static_cast<int>(value->u.r.r1);
             int i2 = static_cast<int>(value->u.r.r2);
@@ -276,7 +276,7 @@ static void parse_values_range(const SelectionParserValueList& values, gmx_ana_s
     SelectionParserValueList::const_iterator value;
     for (value = values.begin(); value != values.end(); ++value)
     {
-        GMX_RELEASE_ASSERT(value->type == param->val.type,
+        GMX_RELEASE_ASSERT(value->type_ == param->val.type,
                            "Invalid range value type (should have been caught earlier)");
         if (value->hasExpressionValue())
         {
@@ -433,7 +433,7 @@ static void parse_values_varnum(const SelectionParserValueList&    values,
         SelectionParserValueList::const_iterator value;
         for (value = values.begin(); value != values.end(); ++value)
         {
-            if (value->type == INT_VALUE && !value->hasExpressionValue())
+            if (value->type_ == INT_VALUE && !value->hasExpressionValue())
             {
                 valueCount += abs(value->u.i.i2 - value->u.i.i1);
             }
@@ -483,7 +483,7 @@ static void parse_values_varnum(const SelectionParserValueList&    values,
     SelectionParserValueList::const_iterator value;
     for (value = values.begin(); value != values.end(); ++value)
     {
-        GMX_RELEASE_ASSERT(value->type == param->val.type,
+        GMX_RELEASE_ASSERT(value->type_ == param->val.type,
                            "Invalid value type (should have been caught earlier)");
         if (value->hasExpressionValue())
         {
@@ -620,7 +620,7 @@ static void parse_values_varnum_expr(const SelectionParserValueList&    values,
     GMX_RELEASE_ASSERT(values.size() == 1 && values.front().hasExpressionValue(),
                        "Called with an invalid type of value");
 
-    SelectionTreeElementPointer child = add_child(root, param, values.front().expr, scanner);
+    SelectionTreeElementPointer child = add_child(root, param, values.front().expr_, scanner);
 
     /* Process single-valued expressions */
     /* TODO: We should also handle SEL_SINGLEVAL expressions here */
@@ -718,7 +718,7 @@ static void parse_values_std(const SelectionParserValueList&    values,
         }
         if (values.front().hasExpressionValue())
         {
-            SelectionTreeElementPointer child = add_child(root, param, values.front().expr, scanner);
+            SelectionTreeElementPointer child = add_child(root, param, values.front().expr_, scanner);
             child->flags |= SEL_ALLOCVAL;
             if (child->v.type != GROUP_VALUE && (child->flags & SEL_ATOMVAL))
             {
@@ -761,11 +761,11 @@ static void parse_values_std(const SelectionParserValueList&    values,
     SelectionParserValueList::const_iterator value;
     for (value = values.begin(); value != values.end() && i < param->val.nr; ++value)
     {
-        GMX_RELEASE_ASSERT(value->type == param->val.type,
+        GMX_RELEASE_ASSERT(value->type_ == param->val.type,
                            "Invalid value type (should have been caught earlier)");
         if (value->hasExpressionValue())
         {
-            SelectionTreeElementPointer child = add_child(root, param, value->expr, scanner);
+            SelectionTreeElementPointer child = add_child(root, param, value->expr_, scanner);
             set_expr_value_store(child, param, i, scanner);
             if (child->flags & SEL_DYNAMIC)
             {
@@ -775,7 +775,7 @@ static void parse_values_std(const SelectionParserValueList&    values,
         else
         {
             /* Value is not an expression */
-            switch (value->type)
+            switch (value->type_)
             {
                 case INT_VALUE:
                 {
@@ -862,7 +862,7 @@ static void parse_values_bool(const std::string&              name,
 {
     GMX_UNUSED_VALUE(scanner);
     GMX_ASSERT(param->val.type == NO_VALUE, "Boolean parser called for non-boolean parameter");
-    if (values.size() > 1 || (!values.empty() && values.front().type != INT_VALUE))
+    if (values.size() > 1 || (!values.empty() && values.front().type_ != INT_VALUE))
     {
         std::string message =
                 formatString("'%s' only accepts yes/no/on/off/0/1 (and empty) as a value", param->name);
@@ -905,7 +905,7 @@ static void parse_values_enum(const SelectionParserValueList& values, gmx_ana_se
         GMX_THROW(InvalidInputError("Only a single string value is supported in this context"));
     }
     const SelectionParserValue& value = values.front();
-    GMX_RELEASE_ASSERT(value.type == param->val.type,
+    GMX_RELEASE_ASSERT(value.type_ == param->val.type,
                        "Invalid value type (should have been caught earlier)");
     if (value.hasExpressionValue())
     {
@@ -950,9 +950,9 @@ static void convert_const_values(SelectionParserValueList* values)
     SelectionParserValueList::iterator value;
     for (value = values->begin(); value != values->end(); ++value)
     {
-        if (value->hasExpressionValue() && value->expr->v.type != GROUP_VALUE && value->expr->type == SEL_CONST)
+        if (value->hasExpressionValue() && value->expr_->v.type != GROUP_VALUE && value->expr_->type == SEL_CONST)
         {
-            SelectionTreeElementPointer expr     = value->expr;
+            SelectionTreeElementPointer expr     = value->expr_;
             const SelectionLocation&    location = value->location();
             switch (expr->v.type)
             {

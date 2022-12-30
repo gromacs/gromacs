@@ -217,21 +217,21 @@ public:
     //! Returns the location of this value in the parsed selection text.
     const SelectionLocation& location() const { return location_; }
     //! Returns true if the value comes from expression evaluation.
-    bool hasExpressionValue() const { return static_cast<bool>(expr); }
+    bool hasExpressionValue() const { return static_cast<bool>(expr_); }
 
     //! Returns the string value (\a type must be ::STR_VALUE).
     const std::string& stringValue() const
     {
-        GMX_ASSERT(type == STR_VALUE && !hasExpressionValue(),
+        GMX_ASSERT(type_ == STR_VALUE && !hasExpressionValue(),
                    "Attempted to retrieve string value from a non-string value");
         return str;
     }
 
     // TODO: boost::any or similar could be nicer for the implementation.
     //! Type of the value.
-    e_selvalue_t type;
+    e_selvalue_t type_;
     //! Expression pointer if the value is the result of an expression.
-    gmx::SelectionTreeElementPointer expr;
+    gmx::SelectionTreeElementPointer expr_;
     //! String value for \a type ::STR_VALUE.
     std::string str;
     //! The actual value if \a expr is NULL and \a type is not ::STR_VALUE.

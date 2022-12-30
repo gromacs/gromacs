@@ -327,13 +327,13 @@ namespace gmx
  */
 
 SelectionParserValue::SelectionParserValue(e_selvalue_t type, const SelectionLocation& location) :
-    type(type), location_(location)
+    type_(type), location_(location)
 {
     memset(&u, 0, sizeof(u));
 }
 
 SelectionParserValue::SelectionParserValue(const SelectionTreeElementPointer& expr) :
-    type(expr->v.type), expr(expr), location_(expr->location())
+    type_(expr->v.type), expr_(expr), location_(expr->location())
 {
     memset(&u, 0, sizeof(u));
 }

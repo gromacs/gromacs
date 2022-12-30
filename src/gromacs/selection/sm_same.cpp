@@ -248,11 +248,11 @@ void _gmx_selelem_custom_init_same(gmx_ana_selmethod_t**                        
 
     const gmx::SelectionParserValueList& kwvalues = params->front().values();
     if (kwvalues.size() != 1 || !kwvalues.front().hasExpressionValue()
-        || kwvalues.front().expr->type != SEL_EXPRESSION)
+        || kwvalues.front().expr_->type != SEL_EXPRESSION)
     {
         GMX_THROW(gmx::InvalidInputError("'same' should be followed by a single keyword"));
     }
-    gmx_ana_selmethod_t* kwmethod = kwvalues.front().expr->u.expr.method;
+    gmx_ana_selmethod_t* kwmethod = kwvalues.front().expr_->u.expr.method;
     if (kwmethod->type == STR_VALUE)
     {
         *method = &sm_same_str;
@@ -269,7 +269,7 @@ void _gmx_selelem_custom_init_same(gmx_ana_selmethod_t**                        
             GMX_THROW(gmx::InvalidInputError(
                     "'same ... as' should be followed by a single expression"));
         }
-        const gmx::SelectionTreeElementPointer& child = asvalues.front().expr;
+        const gmx::SelectionTreeElementPointer& child = asvalues.front().expr_;
         /* Create a second keyword evaluation element for the keyword given as
          * the first parameter, evaluating the keyword in the group given by the
          * second parameter. */
