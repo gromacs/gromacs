@@ -247,7 +247,7 @@ BiasParams::BiasParams(const AwhParams&          awhParams,
     initialHistogramSize(
             getInitialHistogramSizeEstimate(awhBiasParams, gridAxis, beta, numStepsSampleCoord_ * mdTimeStep)),
     convolveForce(awhParams.potential() == AwhPotentialType::Convolved),
-    biasIndex(biasIndex),
+    biasIndex_(biasIndex),
     disableUpdateSkips_(disableUpdateSkips == DisableUpdateSkips::yes)
 {
     if (beta <= 0)

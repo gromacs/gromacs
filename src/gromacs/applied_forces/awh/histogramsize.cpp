@@ -119,7 +119,7 @@ double HistogramSize::newHistogramSizeInitialStage(const BiasParams& params,
     /* Print information about coverings and if there was an exit. */
     if (fplog != nullptr)
     {
-        std::string prefix = gmx::formatString("\nawh%d:", params.biasIndex + 1);
+        std::string prefix = gmx::formatString("\nawh%d:", params.biasIndex_ + 1);
         fprintf(fplog, "%s covering at t = %g ps. Decreased the update size.\n", prefix.c_str(), t);
 
         if (exitInitialStage)
@@ -224,7 +224,7 @@ double HistogramSize::newHistogramSize(const BiasParams&          params,
 
             if (fplog != nullptr)
             {
-                std::string prefix = gmx::formatString("\nawh%d:", params.biasIndex + 1);
+                std::string prefix = gmx::formatString("\nawh%d:", params.biasIndex_ + 1);
                 if (!equilibrateHistogram_)
                 {
                     fprintf(fplog, "%s equilibrated histogram at t = %g ps.\n", prefix.c_str(), t);

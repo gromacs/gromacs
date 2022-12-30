@@ -223,7 +223,7 @@ private:
     awh_ivec coverRadius_; /**< The radius (in points) that needs to be sampled around a point before it is considered covered. */
 public:
     const bool convolveForce; /**< True if we convolve the force, false means use MC between umbrellas. */
-    const int biasIndex; /**< Index of the bias, used as a second random seed and for priting. */
+    const int biasIndex_; /**< Index of the bias, used as a second random seed and for priting. */
 private:
     const bool disableUpdateSkips_; /**< If true, we disallow update skips, even when the method supports it. */
 };

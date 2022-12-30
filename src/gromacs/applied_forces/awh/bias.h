@@ -283,7 +283,7 @@ public:
     inline const BiasState& state() const { return state_; }
 
     //! Returns the index of the bias.
-    inline int biasIndex() const { return params_.biasIndex; }
+    inline int biasIndex() const { return params_.biasIndex_; }
 
     /*! \brief Return the coordinate value for a grid point.
      *
