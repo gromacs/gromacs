@@ -96,9 +96,9 @@ public:
                     const gmx_domdec_zones_t* ddZones);
 
         //! The type of PBC
-        PbcType pbcType;
+        PbcType pbcType_;
         //! Tells whether we are doing test-particle insertion
-        bool doTestParticleInsertion;
+        bool doTestParticleInsertion_;
         //! Are there multiple domains?
         bool haveMultipleDomains;
         //! Are there multiple domains along each dimension?

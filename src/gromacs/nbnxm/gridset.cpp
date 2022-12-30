@@ -58,7 +58,7 @@ static int numGrids(const GridSet::DomainSetup& domainSetup)
 {
     // One grid for the test particle, one for the rest
     static constexpr int sc_numGridsForTestParticleInsertion = 2;
-    if (domainSetup.doTestParticleInsertion)
+    if (domainSetup.doTestParticleInsertion_)
     {
         return sc_numGridsForTestParticleInsertion;
     }
@@ -80,8 +80,8 @@ GridSet::DomainSetup::DomainSetup(const PbcType             pbcType,
                                   const bool                doTestParticleInsertion,
                                   const ivec*               numDDCells,
                                   const gmx_domdec_zones_t* ddZones) :
-    pbcType(pbcType),
-    doTestParticleInsertion(doTestParticleInsertion),
+    pbcType_(pbcType),
+    doTestParticleInsertion_(doTestParticleInsertion),
     haveMultipleDomains(numDDCells != nullptr
                         && (*numDDCells)[XX] * (*numDDCells)[YY] * (*numDDCells)[ZZ] > 1),
     zones(ddZones)
@@ -192,7 +192,7 @@ void GridSet::putOnGrid(const matrix                   box,
     /* We always use the home zone (grid[0]) for setting the cell size,
      * since determining densities for non-local zones is difficult.
      */
-    const int ddZone = (domainSetup_.doTestParticleInsertion ? 0 : gridIndex);
+    const int ddZone = (domainSetup_.doTestParticleInsertion_ ? 0 : gridIndex);
     // grid data used in GPU transfers inherits the gridset pinning policy
     auto pinPolicy = gridSetData_.cells.get_allocator().pinningPolicy();
     grid.setDimensions(

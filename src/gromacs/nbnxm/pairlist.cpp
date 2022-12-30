@@ -3201,7 +3201,7 @@ static void nbnxn_make_pairlist_part(const Nbnxm::GridSet&   gridSet,
         const real rlistFep = nbl->rlist + effective_buffer_1x1_vs_MxN(iGrid, jGrid);
 
         /* Make sure we don't go above the maximum allowed cut-off distance */
-        rl_fep2 = std::min(gmx::square(rlistFep), max_cutoff2(gridSet.domainSetup().pbcType, box));
+        rl_fep2 = std::min(gmx::square(rlistFep), max_cutoff2(gridSet.domainSetup().pbcType_, box));
 
         if (debug)
         {
@@ -3228,7 +3228,7 @@ static void nbnxn_make_pairlist_part(const Nbnxm::GridSet&   gridSet,
         /* Check if we need periodicity shifts.
          * Without PBC or with domain decomposition we don't need them.
          */
-        if (d >= numPbcDimensions(gridSet.domainSetup().pbcType)
+        if (d >= numPbcDimensions(gridSet.domainSetup().pbcType_)
             || gridSet.domainSetup().haveMultipleDomainsPerDim[d])
         {
             shp[d] = 0;
@@ -3932,7 +3932,7 @@ static void sort_sci(NbnxnPairlistGpu* nbl)
 static Range<int> getIZoneRange(const Nbnxm::GridSet::DomainSetup& domainSetup,
                                 const InteractionLocality          locality)
 {
-    if (domainSetup.doTestParticleInsertion)
+    if (domainSetup.doTestParticleInsertion_)
     {
         /* With TPI we do grid 1, the inserted molecule, versus grid 0, the rest */
         return { 1, 2 };
