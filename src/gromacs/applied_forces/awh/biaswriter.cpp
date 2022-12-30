@@ -123,7 +123,7 @@ float getNormalizationValue(AwhOutputEntryType outputType, const Bias& bias, int
 } // namespace
 
 AwhEnergyBlock::AwhEnergyBlock(int numPoints, Normalization normalizationType, float normalizationValue) :
-    normalizationType(normalizationType), normalizationValue(normalizationValue), data_(numPoints)
+    normalizationType_(normalizationType), normalizationValue_(normalizationValue), data_(numPoints)
 {
 }
 
@@ -196,14 +196,14 @@ static void normalizeBlock(AwhEnergyBlock* block, const Bias& bias)
     float  minValue  = GMX_FLOAT_MAX;
     float  recipNorm = 0;
 
-    switch (block->normalizationType)
+    switch (block->normalizationType_)
     {
         case Normalization::None: break;
         case Normalization::Coordinate:
             /* Normalize coordinate values by a scale factor */
             for (float& point : data)
             {
-                point *= block->normalizationValue;
+                point *= block->normalizationValue_;
             }
             break;
         case Normalization::FreeEnergy:
@@ -232,7 +232,7 @@ static void normalizeBlock(AwhEnergyBlock* block, const Bias& bias)
             }
             if (sum > 0)
             {
-                recipNorm = block->normalizationValue / static_cast<float>(sum);
+                recipNorm = block->normalizationValue_ / static_cast<float>(sum);
             }
             for (float& point : data)
             {

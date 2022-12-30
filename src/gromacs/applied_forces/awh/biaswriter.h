@@ -114,8 +114,8 @@ public:
      */
     gmx::ArrayRef<float> data() { return data_; }
 
-    const Normalization normalizationType;  /**< How to normalize the output data */
-    const float         normalizationValue; /**< The normalization value */
+    const Normalization normalizationType_;  /**< How to normalize the output data */
+    const float         normalizationValue_; /**< The normalization value */
 private:
     std::vector<float> data_; /**< The data, always float which is enough since this is statistical data */
 };
