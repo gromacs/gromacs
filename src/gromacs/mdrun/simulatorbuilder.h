@@ -249,10 +249,10 @@ class InteractiveMD
 {
 public:
     //! Create handle to IMD information.
-    explicit InteractiveMD(ImdSession* imdSession) : imdSession(imdSession) {}
+    explicit InteractiveMD(ImdSession* imdSession) : imdSession_(imdSession) {}
 
     //! Internal handle to IMD info.
-    ImdSession* imdSession;
+    ImdSession* imdSession_;
 };
 
 class SimulatorModules
