@@ -147,9 +147,9 @@ private:
     struct FrameModule
     {
         //! Initializes module, stolen from datamodulemanager.
-        explicit FrameModule(FrameConverterPointer module) : module(std::move(module)) {}
+        explicit FrameModule(FrameConverterPointer module) : module_(std::move(module)) {}
         //! Pointer to module.
-        FrameConverterPointer module;
+        FrameConverterPointer module_;
     };
     //! Shorthand for list of chained modules
     using FrameModuleList = std::vector<FrameModule>;

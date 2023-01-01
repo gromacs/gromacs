@@ -120,8 +120,8 @@ void ProcessFrameConversion::convertFrame(t_trxframe* input)
     addAndCheckGuarantee(guarantee());
     for (auto& method : moduleChain_)
     {
-        method.module->convertFrame(input);
-        addAndCheckGuarantee(method.module->guarantee());
+        method.module_->convertFrame(input);
+        addAndCheckGuarantee(method.module_->guarantee());
     }
 }
 } // namespace gmx
