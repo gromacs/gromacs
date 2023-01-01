@@ -188,7 +188,7 @@ public:
     //! Multi-sim support.
     const gmx_multisim_t* ms = nullptr;
     //! Pulling code object, if any.
-    pull_t* pull_work = nullptr;
+    pull_t* pullWork_ = nullptr;
     /*!\brief Input options.
      *
      * \todo Replace with IMdpOptions */
@@ -755,7 +755,7 @@ bool Constraints::Impl::apply(bool                      bLog,
 
     if (econq == ConstraintVariable::Positions)
     {
-        if (ir.bPull && pull_have_constraint(*pull_work))
+        if (ir.bPull && pull_have_constraint(*pullWork_))
         {
             if (EI_DYNAMICS(ir.eI))
             {
@@ -766,7 +766,7 @@ bool Constraints::Impl::apply(bool                      bLog,
                 t = ir.init_t;
             }
             set_pbc(&pbc, ir.pbcType, box);
-            pull_constraint(pull_work,
+            pull_constraint(pullWork_,
                             masses_,
                             pbc,
                             cr,
@@ -1101,7 +1101,7 @@ Constraints::Impl::Impl(const gmx_mtop_t&          mtop_p,
     log(log_p),
     cr(cr_p),
     ms(ms_p),
-    pull_work(pull_work),
+    pullWork_(pull_work),
     ir(ir_p),
     nrnb(nrnb_p),
     wcycle(wcycle_p)
