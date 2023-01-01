@@ -300,9 +300,9 @@ public:
     rvec* old_forces = nullptr;
 
     //! Logger
-    const MDLogger& mdlog;
+    const MDLogger& mdLog_;
     //! Commmunication object
-    const t_commrec* cr = nullptr;
+    const t_commrec* cr_ = nullptr;
     //! Wallcycle counting manager.
     gmx_wallcycle* wcycle = nullptr;
     //! Energy output handler
@@ -589,7 +589,7 @@ void ImdSession::Impl::prepareMainSocket()
     }
 
     /* The rest is identical, first create and bind a socket and set to listen then. */
-    GMX_LOG(mdlog.warning).appendTextFormatted("%s Setting up incoming socket.", IMDstr);
+    GMX_LOG(mdLog_.warning).appendTextFormatted("%s Setting up incoming socket.", IMDstr);
     socket = imdsock_create();
     if (!socket)
     {
@@ -613,7 +613,7 @@ void ImdSession::Impl::prepareMainSocket()
         gmx_fatal(FARGS, "%s Could not determine port number.\n", IMDstr);
     }
 
-    GMX_LOG(mdlog.warning).appendTextFormatted("%s Listening for IMD connection on port %d.", IMDstr, port);
+    GMX_LOG(mdLog_.warning).appendTextFormatted("%s Listening for IMD connection on port %d.", IMDstr, port);
 }
 
 
@@ -626,7 +626,7 @@ void ImdSession::Impl::disconnectClient()
     imdsock_shutdown(clientsocket);
     if (!imdsock_destroy(clientsocket))
     {
-        GMX_LOG(mdlog.warning).appendTextFormatted("%s Failed to destroy socket.", IMDstr);
+        GMX_LOG(mdLog_.warning).appendTextFormatted("%s Failed to destroy socket.", IMDstr);
     }
 
     /* then we reset the IMD step to its default, and reset the connection boolean */
@@ -638,9 +638,9 @@ void ImdSession::Impl::disconnectClient()
 
 void ImdSession::Impl::issueFatalError(const char* msg)
 {
-    GMX_LOG(mdlog.warning).appendTextFormatted("%s %s", IMDstr, msg);
+    GMX_LOG(mdLog_.warning).appendTextFormatted("%s %s", IMDstr, msg);
     disconnectClient();
-    GMX_LOG(mdlog.warning).appendTextFormatted("%s disconnected.", IMDstr);
+    GMX_LOG(mdLog_.warning).appendTextFormatted("%s disconnected.", IMDstr);
 }
 
 
@@ -652,7 +652,7 @@ bool ImdSession::Impl::tryConnect()
         clientsocket = imdsock_accept(socket);
         if (!clientsocket)
         {
-            GMX_LOG(mdlog.warning)
+            GMX_LOG(mdLog_.warning)
                     .appendTextFormatted("%s Accepting the connection on the socket failed.", IMDstr);
             return false;
         }
@@ -664,7 +664,7 @@ bool ImdSession::Impl::tryConnect()
             return false;
         }
 
-        GMX_LOG(mdlog.warning)
+        GMX_LOG(mdLog_.warning)
                 .appendTextFormatted("%s Connection established, checking if I got IMD_GO orders.", IMDstr);
 
         /* Check if we get the proper "GO" command from client. */
@@ -692,7 +692,7 @@ void ImdSession::Impl::blockConnect()
         return;
     }
 
-    GMX_LOG(mdlog.warning)
+    GMX_LOG(mdLog_.warning)
             .appendTextFormatted("%s Will wait until I have a connection and IMD_GO orders.", IMDstr);
 
     /* while we have no clientsocket... 2nd part: we should still react on ctrl+c */
@@ -940,7 +940,7 @@ void ImdSession::Impl::readCommand()
             case IMDMessageType::Kill:
                 if (bTerminatable)
                 {
-                    GMX_LOG(mdlog.warning)
+                    GMX_LOG(mdLog_.warning)
                             .appendTextFormatted(
                                     " %s Terminating connection and running simulation (if "
                                     "supported by integrator).",
@@ -950,7 +950,7 @@ void ImdSession::Impl::readCommand()
                 }
                 else
                 {
-                    GMX_LOG(mdlog.warning)
+                    GMX_LOG(mdLog_.warning)
                             .appendTextFormatted(
                                     " %s Set -imdterm command line switch to allow mdrun "
                                     "termination from within IMD.",
@@ -961,7 +961,7 @@ void ImdSession::Impl::readCommand()
 
             /* the client doen't want to talk to us anymore */
             case IMDMessageType::Disconnect:
-                GMX_LOG(mdlog.warning).appendTextFormatted(" %s Disconnecting client.", IMDstr);
+                GMX_LOG(mdLog_.warning).appendTextFormatted(" %s Disconnecting client.", IMDstr);
                 disconnectClient();
                 break;
 
@@ -975,12 +975,12 @@ void ImdSession::Impl::readCommand()
             case IMDMessageType::Pause:
                 if (IMDpaused)
                 {
-                    GMX_LOG(mdlog.warning).appendTextFormatted(" %s Un-pause command received.", IMDstr);
+                    GMX_LOG(mdLog_.warning).appendTextFormatted(" %s Un-pause command received.", IMDstr);
                     IMDpaused = false;
                 }
                 else
                 {
-                    GMX_LOG(mdlog.warning).appendTextFormatted(" %s Pause command received.", IMDstr);
+                    GMX_LOG(mdLog_.warning).appendTextFormatted(" %s Pause command received.", IMDstr);
                     IMDpaused = true;
                 }
 
@@ -990,13 +990,13 @@ void ImdSession::Impl::readCommand()
              * to the default. VMD filters 0 however */
             case IMDMessageType::TRate:
                 nstimd_new = (length > 0) ? length : defaultNstImd;
-                GMX_LOG(mdlog.warning)
+                GMX_LOG(mdLog_.warning)
                         .appendTextFormatted(" %s Update frequency will be set to %d.", IMDstr, nstimd_new);
                 break;
 
             /* Catch all rule for the remaining IMD types which we don't expect */
             default:
-                GMX_LOG(mdlog.warning)
+                GMX_LOG(mdLog_.warning)
                         .appendTextFormatted(
                                 " %s Received unexpected %s.", IMDstr, enumValueToString(itype));
                 issueFatalError("Terminating connection");
@@ -1064,7 +1064,7 @@ void ImdSession::Impl::openOutputFile(const char*                 fn,
 }
 
 
-ImdSession::Impl::Impl(const MDLogger& mdlog) : mdlog(mdlog)
+ImdSession::Impl::Impl(const MDLogger& mdlog) : mdLog_(mdlog)
 {
     init_block(&mols);
 }
@@ -1413,7 +1413,7 @@ std::unique_ptr<ImdSession> makeImdSession(const t_inputrec*              ir,
     {
         impl->port = options.port;
     }
-    impl->cr     = cr;
+    impl->cr_    = cr;
     impl->wcycle = wcycle;
     impl->enerd  = enerd;
 
@@ -1527,7 +1527,7 @@ bool ImdSession::Impl::run(int64_t step, bool bNS, const matrix box, gmx::ArrayR
     wallcycle_start(wcycle, WallCycleCounter::Imd);
 
     /* read command from client and check if new incoming connection */
-    if (MAIN(cr))
+    if (MAIN(cr_))
     {
         /* If not already connected, check for new connections */
         if (!clientsocket)
@@ -1556,7 +1556,7 @@ bool ImdSession::Impl::run(int64_t step, bool bNS, const matrix box, gmx::ArrayR
     if (imdstep)
     {
         /* First we sync all nodes to let everybody know whether we are connected to VMD */
-        syncNodes(cr, t);
+        syncNodes(cr_, t);
     }
 
     /* If a client is connected, we collect the positions
@@ -1566,10 +1566,10 @@ bool ImdSession::Impl::run(int64_t step, bool bNS, const matrix box, gmx::ArrayR
         /* Transfer the IMD positions to the main node. Every node contributes
          * its local positions x and stores them in the assembled xa array. */
         communicate_group_positions(
-                cr, xa, xa_shifts, xa_eshifts, true, as_rvec_array(coords.data()), nat, nat_loc, ind_loc, xa_ind, xa_old, box);
+                cr_, xa, xa_shifts, xa_eshifts, true, as_rvec_array(coords.data()), nat, nat_loc, ind_loc, xa_ind, xa_old, box);
 
         /* If connected and main -> remove shifts */
-        if ((imdstep && bConnected) && MAIN(cr))
+        if ((imdstep && bConnected) && MAIN(cr_))
         {
             removeMolecularShifts(box);
         }
@@ -1670,7 +1670,7 @@ void ImdSession::applyForces(gmx::ArrayRef<gmx::RVec> force)
 
         /* check if this is a local atom and find out locndx */
         const int*       locndx;
-        const t_commrec* cr = impl_->cr;
+        const t_commrec* cr = impl_->cr_;
         if (PAR(cr) && (locndx = cr->dd->ga2la->findHome(j)))
         {
             j = *locndx;
