@@ -72,12 +72,12 @@ public:
     {
         //! Initializes the module information.
         explicit ModuleInfo(AnalysisDataModulePointer module) :
-            module(std::move(module)), bParallel(false)
+            module_(std::move(module)), bParallel(false)
         {
         }
 
         //! Pointer to the actual module.
-        AnalysisDataModulePointer module;
+        AnalysisDataModulePointer module_;
         //! Whether the module supports parallel processing.
         bool bParallel;
     };
@@ -264,7 +264,7 @@ void AnalysisDataModuleManager::dataPropertyAboutToChange(DataProperty property,
         Impl::ModuleList::const_iterator i;
         for (i = impl_->modules_.begin(); i != impl_->modules_.end(); ++i)
         {
-            impl_->checkModuleProperty(*i->module, property, bSet);
+            impl_->checkModuleProperty(*i->module_, property, bSet);
         }
         impl_->bDataProperty_[property] = bSet;
     }
@@ -321,8 +321,8 @@ void AnalysisDataModuleManager::notifyDataStart(AbstractAnalysisData* data)
         // This should not fail, since addModule() and
         // dataPropertyAboutToChange() already do the checks, but kept here to
         // catch potential bugs (perhaps it would be best to assert on failure).
-        impl_->checkModuleProperties(*i->module);
-        i->module->dataStarted(data);
+        impl_->checkModuleProperties(*i->module_);
+        i->module_->dataStarted(data);
     }
 }
 
@@ -346,8 +346,8 @@ void AnalysisDataModuleManager::notifyParallelDataStart(AbstractAnalysisData*   
         // This should not fail, since addModule() and
         // dataPropertyAboutToChange() already do the checks, but kept here to
         // catch potential bugs (perhaps it would be best to assert on failure).
-        impl_->checkModuleProperties(*i->module);
-        i->bParallel = i->module->parallelDataStarted(data, options);
+        impl_->checkModuleProperties(*i->module_);
+        i->bParallel = i->module_->parallelDataStarted(data, options);
         if (i->bParallel)
         {
             impl_->bParallelModules_ = true;
@@ -373,7 +373,7 @@ void AnalysisDataModuleManager::notifyFrameStart(const AnalysisDataFrameHeader& 
         {
             if (!i->bParallel)
             {
-                i->module->frameStarted(header);
+                i->module_->frameStarted(header);
             }
         }
     }
@@ -388,7 +388,7 @@ void AnalysisDataModuleManager::notifyParallelFrameStart(const AnalysisDataFrame
         {
             if (i->bParallel)
             {
-                i->module->frameStarted(header);
+                i->module_->frameStarted(header);
             }
         }
     }
@@ -416,7 +416,7 @@ void AnalysisDataModuleManager::notifyPointsAdd(const AnalysisDataPointSetRef& p
         {
             if (!i->bParallel)
             {
-                i->module->pointsAdded(points);
+                i->module_->pointsAdded(points);
             }
         }
     }
@@ -441,7 +441,7 @@ void AnalysisDataModuleManager::notifyParallelPointsAdd(const AnalysisDataPointS
         {
             if (i->bParallel)
             {
-                i->module->pointsAdded(points);
+                i->module_->pointsAdded(points);
             }
         }
     }
@@ -464,14 +464,14 @@ void AnalysisDataModuleManager::notifyFrameFinish(const AnalysisDataFrameHeader&
         {
             if (!i->bParallel)
             {
-                i->module->frameFinished(header);
+                i->module_->frameFinished(header);
             }
         }
     }
     Impl::ModuleList::const_iterator i;
     for (i = impl_->modules_.begin(); i != impl_->modules_.end(); ++i)
     {
-        i->module->frameFinishedSerial(header.index());
+        i->module_->frameFinishedSerial(header.index());
     }
 }
 
@@ -485,7 +485,7 @@ void AnalysisDataModuleManager::notifyParallelFrameFinish(const AnalysisDataFram
         {
             if (i->bParallel)
             {
-                i->module->frameFinished(header);
+                i->module_->frameFinished(header);
             }
         }
     }
@@ -500,7 +500,7 @@ void AnalysisDataModuleManager::notifyDataFinish() const
     Impl::ModuleList::const_iterator i;
     for (i = impl_->modules_.begin(); i != impl_->modules_.end(); ++i)
     {
-        i->module->dataFinished();
+        i->module_->dataFinished();
     }
 }
 
