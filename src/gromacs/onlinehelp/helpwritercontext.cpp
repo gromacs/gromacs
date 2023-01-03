@@ -371,11 +371,11 @@ public:
     struct ReplaceItem
     {
         ReplaceItem(const std::string& search, const std::string& replace) :
-            search(search), replace(replace)
+            search_(search), replace_(replace)
         {
         }
-        std::string search;
-        std::string replace;
+        std::string search_;
+        std::string replace_;
     };
 
     //! Smart pointer type for managing the shared state.
@@ -440,7 +440,7 @@ void HelpWriterContext::Impl::processMarkup(const std::string& text, IWrapper* w
     std::string result(text);
     for (ReplaceList::const_iterator i = replacements_.begin(); i != replacements_.end(); ++i)
     {
-        result = replaceAll(result, i->search, i->replace);
+        result = replaceAll(result, i->search_, i->replace_);
     }
     switch (state_->format_)
     {
