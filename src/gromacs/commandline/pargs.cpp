@@ -259,10 +259,10 @@ private:
     struct FileNameData
     {
         //! Creates a conversion helper for a given `t_filenm` struct.
-        explicit FileNameData(t_filenm* fnm) : fnm(fnm), optionInfo(nullptr) {}
+        explicit FileNameData(t_filenm* fnm) : fnm_(fnm), optionInfo(nullptr) {}
 
         //! t_filenm structure to receive the final values.
-        t_filenm* fnm;
+        t_filenm* fnm_;
         //! Option info object for the created FileNameOption.
         FileNameOptionInfo* optionInfo;
         //! Value storage for the created FileNameOption.
@@ -408,9 +408,9 @@ void OptionsAdapter::copyValues()
     {
         if (file->optionInfo->isSet())
         {
-            file->fnm->flag |= ffSET;
+            file->fnm_->flag |= ffSET;
         }
-        file->fnm->filenames = file->values;
+        file->fnm_->filenames = file->values;
     }
     std::list<ProgramArgData>::const_iterator arg;
     for (arg = programArgs_.begin(); arg != programArgs_.end(); ++arg)
