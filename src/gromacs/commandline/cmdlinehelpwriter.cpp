@@ -196,9 +196,9 @@ void OptionsFilter::visitOption(const OptionInfo& option)
 class CommonFormatterData
 {
 public:
-    explicit CommonFormatterData(const char* timeUnit) : timeUnit(timeUnit) {}
+    explicit CommonFormatterData(const char* timeUnit) : timeUnit_(timeUnit) {}
 
-    const char* timeUnit;
+    const char* timeUnit_;
 };
 
 /********************************************************************
@@ -267,7 +267,7 @@ std::string descriptionWithOptionDetails(const CommonFormatterData& common, cons
         || (doubleOption != nullptr && doubleOption->isTime()))
     {
         // TODO: It could be nicer to have this in basicoptions.cpp.
-        description = replaceAll(description, "%t", common.timeUnit);
+        description = replaceAll(description, "%t", common.timeUnit_);
     }
 
     return description;
