@@ -272,12 +272,12 @@ private:
     {
         //! Creates a conversion helper for a given `t_pargs` struct.
         explicit ProgramArgData(t_pargs* pa) :
-            pa(pa), optionInfo(nullptr), enumIndex(0), boolValue(false)
+            pa_(pa), optionInfo(nullptr), enumIndex(0), boolValue(false)
         {
         }
 
         //! t_pargs structure to receive the final values.
-        t_pargs* pa;
+        t_pargs* pa_;
         //! Option info object for the created option.
         OptionInfo* optionInfo;
         //! Value storage for a non-enum StringOption (unused for other types).
@@ -415,23 +415,23 @@ void OptionsAdapter::copyValues()
     std::list<ProgramArgData>::const_iterator arg;
     for (arg = programArgs_.begin(); arg != programArgs_.end(); ++arg)
     {
-        arg->pa->bSet = arg->optionInfo->isSet();
-        switch (arg->pa->type)
+        arg->pa_->bSet = arg->optionInfo->isSet();
+        switch (arg->pa_->type)
         {
             case etSTR:
             {
-                if (arg->pa->bSet)
+                if (arg->pa_->bSet)
                 {
                     std::vector<const char*>::const_iterator pos =
                             std::find(argv_.begin(), argv_.end(), arg->stringValue);
                     GMX_RELEASE_ASSERT(pos != argv_.end(),
                                        "String argument got a value not in argv");
-                    *arg->pa->u.c = *pos;
+                    *arg->pa_->u.c = *pos;
                 }
                 break;
             }
-            case etBOOL: *arg->pa->u.b = arg->boolValue; break;
-            case etENUM: *arg->pa->u.c = arg->pa->u.c[arg->enumIndex + 1]; break;
+            case etBOOL: *arg->pa_->u.b = arg->boolValue; break;
+            case etENUM: *arg->pa_->u.c = arg->pa_->u.c[arg->enumIndex + 1]; break;
             default:
                 // For other types, there is nothing type-specific to do.
                 break;
