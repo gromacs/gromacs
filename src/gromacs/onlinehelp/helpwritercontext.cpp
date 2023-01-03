@@ -262,11 +262,11 @@ public:
     struct LinkItem
     {
         LinkItem(const std::string& linkName, const std::string& replacement) :
-            linkName(linkName), replacement(replacement)
+            linkName_(linkName), replacement_(replacement)
         {
         }
-        std::string linkName;
-        std::string replacement;
+        std::string linkName_;
+        std::string replacement_;
     };
 
     //! Shorthand for a list of links.
@@ -429,7 +429,7 @@ std::string HelpWriterContext::Impl::replaceLinks(const std::string& input) cons
         HelpLinks::Impl::LinkList::const_iterator link;
         for (link = state_->links_->impl_->links_.begin(); link != state_->links_->impl_->links_.end(); ++link)
         {
-            result = replaceAllWords(result, link->linkName, link->replacement);
+            result = replaceAllWords(result, link->linkName_, link->replacement_);
         }
     }
     return result;
