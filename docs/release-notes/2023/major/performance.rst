@@ -64,3 +64,12 @@ activated via the ``GMX_CUDA_GRAPH`` environment variable.
 
 :issue:`4277`
 
+VkFFT support
+"""""""""""""
+
+For AMD GPUs, VkFFT has been integrated to provide performance improvements.
+Using this library is supported in all non-decomposed PME simulations (either
+single rank or single separate PME rank) and can be enabled with ``-DGMX_GPU_FFT_LIBRARY=VKFFT``
+when using hipSYCL.
+
+:issue:`4052`
