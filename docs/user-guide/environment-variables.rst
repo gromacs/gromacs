@@ -1,7 +1,7 @@
 .. NOTE: Below is a useful bash one-liner to verify whether there are variables in this file
 ..        no longer present in the code.
 .. ( export INPUT_FILE='docs/user-guide/environment-variables.rst' GIT_PAGER="cat "; for s in $(grep '^`'  $INPUT_FILE | sed 's/`//g' | sed 's/,/ /g'); do count=$(git grep $s | grep -v $INPUT_FILE | wc -l); [ $count -eq 0 ] && printf "%-30s%s\n" $s $count; done ; )
-.. Another useful one-liner to find undocumentedvariables:
+.. Another useful one-liner to find undocumented variables:
 ..  ( export INPUT_FILE=docs/user-guide/environment-variables.rst; GIT_PAGER="cat ";   for ss in `for s in $(git grep getenv |  sed 's/.*getenv("\(.*\)".*/\1/' | sort -u  | grep '^[A-Z]'); do [ $(grep $s $INPUT_FILE -c) -eq 0 ] && echo $s; done `; do git grep $ss ; done )
 
 Environment Variables
@@ -186,6 +186,13 @@ Performance and Run Control
         runs with low atom counts (which are more sensitive to latency
         than bandwidth).
 
+``GMX_GPU_PME_DECOMPOSITION``
+        Enable the support for PME decomposition on GPU.
+        This feature is supported with CUDA and SYCL backends, and allows
+        using multiple PME ranks with GPU offload, which is expected to improve
+        performance when scaling over many GPUs. Note: this feature still lacks
+        substantial testing.
+
 ``GMX_CUDA_GRAPH``
         Use CUDA Graphs to schedule a graph on each step rather than multiple
         activities scheduled to multiple CUDA streams, if the run conditions allow. Experimental.
@@ -322,7 +329,7 @@ Performance and Run Control
         is default, but can be switched off with this environment variable.
 
 ``GMX_NO_LJ_COMB_RULE``
-        force the use of LJ paremeter lookup instead of using combination rules
+        force the use of LJ parameter lookup instead of using combination rules
         in the non-bonded kernels.
 
 ``GMX_NO_INT``, ``GMX_NO_TERM``, ``GMX_NO_USR1``
