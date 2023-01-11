@@ -569,4 +569,8 @@ function(gmx_warn_on_everything target)
     # It would be better to localize this exception.
     gmx_target_warning_suppression(${target} "-Wno-unused-macros" HAS_WARNING_NO_UNUSED_MACROS)
 
+    # The C++ Buffer hardening warning in Clang is still experimental as of January 2023.
+    # After it is more mature it would better to localize this exception.
+    gmx_target_warning_suppression(${target} "-Wno-unsafe-buffer-usage" HAS_WARNING_NO_UNSAFE_BUFFER_USAGE)
+
 endfunction()
