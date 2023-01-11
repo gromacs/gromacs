@@ -130,6 +130,13 @@ Performance and Run Control
         file. Normally, :mdp:`epsilon-r` must be greater than zero to prevent a fatal error.
         See webpage_ for example input files for a planetary simulation.
 
+``GMX_AWH_NO_POINT_LIMIT``
+        Removes the upper limit on the number of points in an AWH bias grid.
+        By default, an error is raised if the grid is unreasonably large and
+        can cause sampling problems. Setting this variable will only remove
+        this safety check. It is recommended instead to reduce the grid size,
+        e.g., by using lower force constants.
+
 ``GMX_BONDED_NTHREAD_UNIFORM``
         Value of the number of threads per rank from which to switch from uniform
         to localized bonded interaction distribution; optimal value dependent on
