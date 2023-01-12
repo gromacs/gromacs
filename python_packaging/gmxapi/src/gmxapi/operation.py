@@ -3345,7 +3345,7 @@ class OutputParameterRunner(PyFunctionRunner):
         self.function(**resources)
 
 
-class NoOpRunner(PyFunctionRunner):
+class NonDuplicatingRunnerWrapper(PyFunctionRunner):
     """Function runner that does not execute on the current rank.
 
     Alternative PyFunctionRunner for ranks where function should not be executed.
@@ -3353,8 +3353,19 @@ class NoOpRunner(PyFunctionRunner):
     Output will be synchronized separately through the ResourceManager facilities.
     """
 
+    def __init__(self, wrapped_runner: PyFunctionRunner, owning_rank: int):
+        self._runner = wrapped_runner
+        self._owning_rank = owning_rank
+        super().__init__(
+            function=wrapped_runner.function,
+            output_description=wrapped_runner.output_description,
+        )
+
     def __call__(self, resources: PyFunctionRunnerResources):
-        logger.debug(f"null runner received {resources}.")
+        if comm_world_rank() == self._owning_rank:
+            return self._runner(resources)
+        else:
+            logger.debug(f"null runner received {resources}.")
 
 
 def wrapped_function_runner(
@@ -3445,15 +3456,13 @@ def wrapped_function_runner(
             function=function,
             output_description=OutputCollectionDescription(data=return_type),
         )
-    if comm_world_rank() != owning_rank and not allow_duplicate:
+    if allow_duplicate:
+        return runner
+    else:
         # Only do actual execution on the root rank. This rank will subscribe to
         # results from the root rank.
-        # Replace the runner acquired above.
-        runner = NoOpRunner(
-            function=runner.function, output_description=runner.output_description
-        )
-
-    return runner
+        # Wrap the runner acquired above.
+        return NonDuplicatingRunnerWrapper(runner, owning_rank)
 
 
 # TODO: Refactor in terms of reference to a node in a Context.

@@ -52,6 +52,17 @@ effect for: first, similarity  measure ``inner-product`` as an effective
 force-constant scaling and, second, for all similarity measures where the sum
 of all voxel values was negative.   
 
+gmxapi Python package avoids unnecessary MPI initialization
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Delayed initialization of MPI (due to automatic behavior of :py:mod:`mpi4py`)
+avoids MPI initialization that previously occurred just by importing :py:mod:`gmxapi`.
+The previoius behavior has been seen to cause strange interactions with
+resource management libraries like ``libfabric`` at unexpected times
+(such as during package installation) with :py:mod:`gmxapi` version 0.3.
+
+:issue:`4693`
+
 Fail-safe check for perturbed exclusions beyond rlist
 """""""""""""""""""""""""""""""""""""""""""""""""""""
 
