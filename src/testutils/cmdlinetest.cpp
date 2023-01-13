@@ -293,13 +293,13 @@ public:
     struct OutputFileInfo
     {
         OutputFileInfo(const char* option, const std::string& path, FileMatcherPointer matcher) :
-            option(option), path(path), matcher(std::move(matcher))
+            option_(option), path_(path), matcher_(std::move(matcher))
         {
         }
 
-        std::string        option;
-        std::string        path;
-        FileMatcherPointer matcher;
+        std::string        option_;
+        std::string        path_;
+        FileMatcherPointer matcher_;
     };
 
     typedef std::vector<OutputFileInfo> OutputFileList;
@@ -435,8 +435,8 @@ void CommandLineTestHelper::checkOutputFiles(TestReferenceChecker checker) const
         TestReferenceChecker outputChecker(checker.checkCompound("OutputFiles", "Files"));
         for (const auto& outfile : impl_->outputFiles_)
         {
-            TestReferenceChecker fileChecker(outputChecker.checkCompound("File", outfile.option.c_str()));
-            outfile.matcher->checkFile(outfile.path, &fileChecker);
+            TestReferenceChecker fileChecker(outputChecker.checkCompound("File", outfile.option_.c_str()));
+            outfile.matcher_->checkFile(outfile.path_, &fileChecker);
         }
     }
 }
