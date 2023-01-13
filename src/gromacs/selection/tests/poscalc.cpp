@@ -108,13 +108,13 @@ private:
     struct PositionTest
     {
         PositionTest(PositionPointer pos, gmx_ana_poscalc_t* pc, const char* name) :
-            pos(std::move(pos)), pc(pc), name(name)
+            pos_(std::move(pos)), pc_(pc), name_(name)
         {
         }
 
-        PositionPointer    pos;
-        gmx_ana_poscalc_t* pc;
-        const char*        name;
+        PositionPointer    pos_;
+        gmx_ana_poscalc_t* pc_;
+        const char*        name_;
     };
 
     typedef std::vector<PositionTest> PositionTestList;
@@ -198,7 +198,7 @@ void PositionCalculationTest::checkInitialized()
     PositionTestList::const_iterator pi;
     for (pi = posList_.begin(); pi != posList_.end(); ++pi)
     {
-        checkPositions(&compound, pi->name, pi->pos.get(), false);
+        checkPositions(&compound, pi->name_, pi->pos_.get(), false);
     }
 }
 
