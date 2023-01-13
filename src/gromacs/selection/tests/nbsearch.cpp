@@ -104,10 +104,10 @@ public:
     {
         explicit TestPosition(const rvec x) : refMinDist(0.0), refNearestPoint(-1)
         {
-            copy_rvec(x, this->x);
+            copy_rvec(x, this->x_);
         }
 
-        rvec                 x;
+        rvec                 x_;
         real                 refMinDist;
         int                  refNearestPoint;
         std::vector<RefPair> refPairs;
@@ -128,7 +128,7 @@ public:
             testPos_.reserve(testPositions_.size());
             for (size_t i = 0; i < testPositions_.size(); ++i)
             {
-                testPos_.emplace_back(testPositions_[i].x);
+                testPos_.emplace_back(testPositions_[i].x_);
             }
         }
         return gmx::AnalysisNeighborhoodPositions(testPos_);
@@ -270,11 +270,11 @@ void NeighborhoodSearchTestData::computeReferencesInternal(t_pbc* pbc, bool bXY)
             rvec dx;
             if (pbc != nullptr)
             {
-                pbc_dx(pbc, testPos.x, refPos_[j], dx);
+                pbc_dx(pbc, testPos.x_, refPos_[j], dx);
             }
             else
             {
-                rvec_sub(testPos.x, refPos_[j], dx);
+                rvec_sub(testPos.x_, refPos_[j], dx);
             }
             // TODO: This may not work intuitively for 2D with the third box
             // vector not parallel to the Z axis, but neither does the actual
@@ -407,7 +407,7 @@ void NeighborhoodSearchTest::testIsWithin(gmx::AnalysisNeighborhoodSearch*  sear
     for (i = data.testPositions_.begin(); i != data.testPositions_.end(); ++i)
     {
         const bool bWithin = (i->refMinDist <= data.cutoff_);
-        EXPECT_EQ(bWithin, search->isWithin(i->x)) << "Distance is " << i->refMinDist;
+        EXPECT_EQ(bWithin, search->isWithin(i->x_)) << "Distance is " << i->refMinDist;
     }
 }
 
@@ -419,7 +419,7 @@ void NeighborhoodSearchTest::testMinimumDistance(gmx::AnalysisNeighborhoodSearch
     for (i = data.testPositions_.begin(); i != data.testPositions_.end(); ++i)
     {
         const real refDist = i->refMinDist;
-        EXPECT_REAL_EQ_TOL(refDist, search->minimumDistance(i->x), data.relativeTolerance());
+        EXPECT_REAL_EQ_TOL(refDist, search->minimumDistance(i->x_), data.relativeTolerance());
     }
 }
 
@@ -429,7 +429,7 @@ void NeighborhoodSearchTest::testNearestPoint(gmx::AnalysisNeighborhoodSearch*  
     NeighborhoodSearchTestData::TestPositionList::const_iterator i;
     for (i = data.testPositions_.begin(); i != data.testPositions_.end(); ++i)
     {
-        const gmx::AnalysisNeighborhoodPair pair = search->nearestPoint(i->x);
+        const gmx::AnalysisNeighborhoodPair pair = search->nearestPoint(i->x_);
         if (pair.isValid())
         {
             EXPECT_EQ(i->refNearestPoint, pair.refIndex());
@@ -627,7 +627,7 @@ void NeighborhoodSearchTest::testPairSearchFull(gmx::AnalysisNeighborhoodSearch*
     for (auto& entry : refPairs)
     {
         const int testIndex = entry.first;
-        checkAllPairsFound(entry.second, data.refPos_, testIndex, data.testPositions_[testIndex].x);
+        checkAllPairsFound(entry.second, data.refPos_, testIndex, data.testPositions_[testIndex].x_);
     }
 }
 
