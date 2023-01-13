@@ -94,21 +94,21 @@ public:
     //! Returns the number of columns in the point set.
     int size() const { return values_.size(); }
     //! Returns the value in column \p i.
-    real y(int i) const { return values_[i].y; }
+    real y(int i) const { return values_[i].y_; }
     //! Returns whether the error is present for column \p i.
-    bool hasError(int i) const { return values_[i].bError; }
+    bool hasError(int i) const { return values_[i].bError_; }
     //! Returns the error in column \p i.
-    real error(int i) const { return values_[i].error; }
+    real error(int i) const { return values_[i].error_; }
     //! Returns whether the value in column \p i is present.
     static bool present(int /*i*/) { return true; }
     //! Returns an AnalysisDataValue for column \p i.
     AnalysisDataValue value(int i) const
     {
         AnalysisDataValue result;
-        result.setValue(values_[i].y);
-        if (values_[i].bError)
+        result.setValue(values_[i].y_);
+        if (values_[i].bError_)
         {
-            result.setError(values_[i].error);
+            result.setError(values_[i].error_);
         }
         return result;
     }
@@ -124,13 +124,13 @@ private:
 
     struct Value
     {
-        Value() : y(0.0), error(0.0), bError(false) {}
-        explicit Value(real y) : y(y), error(0.0), bError(false) {}
-        Value(real y, real error) : y(y), error(error), bError(true) {}
+        Value() : y_(0.0), error_(0.0), bError_(false) {}
+        explicit Value(real y) : y_(y), error_(0.0), bError_(false) {}
+        Value(real y, real error) : y_(y), error_(error), bError_(true) {}
 
-        real y;
-        real error;
-        bool bError;
+        real y_;
+        real error_;
+        bool bError_;
     };
 
     int                index_;
