@@ -83,21 +83,21 @@ public:
     struct RefPair
     {
         RefPair(int refIndex, real distance) :
-            refIndex(refIndex), distance(distance), bFound(false), bExcluded(false), bIndexed(true)
+            refIndex_(refIndex), distance_(distance), bFound_(false), bExcluded_(false), bIndexed_(true)
         {
         }
 
-        bool operator<(const RefPair& other) const { return refIndex < other.refIndex; }
+        bool operator<(const RefPair& other) const { return refIndex_ < other.refIndex_; }
 
-        int  refIndex;
-        real distance;
+        int  refIndex_;
+        real distance_;
         // The variables below are state variables that are only used
         // during the actual testing after creating a copy of the reference
         // pair list, not as part of the reference data.
         // Simpler to have just a single structure for both purposes.
-        bool bFound;
-        bool bExcluded;
-        bool bIndexed;
+        bool bFound_;
+        bool bExcluded_;
+        bool bIndexed_;
     };
 
     struct TestPosition
@@ -156,7 +156,7 @@ public:
         const std::vector<RefPair>&          refPairs = testPositions_[testIndex].refPairs;
         std::vector<RefPair>::const_iterator foundRefPair =
                 std::lower_bound(refPairs.begin(), refPairs.end(), pair);
-        return !(foundRefPair == refPairs.end() || foundRefPair->refIndex != pair.refIndex);
+        return !(foundRefPair == refPairs.end() || foundRefPair->refIndex_ != pair.refIndex_);
     }
 
     // Return a tolerance that accounts for the magnitudes of the coordinates
@@ -335,10 +335,10 @@ void ExclusionsHelper::markExcludedPairs(RefPairList* refPairs, int testIndex, c
         NeighborhoodSearchTestData::RefPair searchPair(excludedIndex, 0.0);
         RefPairList::iterator               excludedRefPair =
                 std::lower_bound(refPairs->begin(), refPairs->end(), searchPair);
-        if (excludedRefPair != refPairs->end() && excludedRefPair->refIndex == excludedIndex)
+        if (excludedRefPair != refPairs->end() && excludedRefPair->refIndex_ == excludedIndex)
         {
-            excludedRefPair->bFound    = true;
-            excludedRefPair->bExcluded = true;
+            excludedRefPair->bFound_    = true;
+            excludedRefPair->bExcluded_ = true;
         }
     }
 }
@@ -463,7 +463,7 @@ void checkAllPairsFound(const RefPairList&            refPairs,
     RefPairList::const_iterator first;
     for (RefPairList::const_iterator i = refPairs.begin(); i != refPairs.end(); ++i)
     {
-        if (!i->bFound)
+        if (!i->bFound_)
         {
             ++count;
             first = i;
@@ -473,10 +473,10 @@ void checkAllPairsFound(const RefPairList&            refPairs,
     {
         ADD_FAILURE() << "Some pairs (" << count << "/" << refPairs.size() << ") "
                       << "within the cutoff were not found. First pair:\n"
-                      << " Ref: " << first->refIndex << " at "
-                      << formatVector(refPos[first->refIndex]) << "\n"
+                      << " Ref: " << first->refIndex_ << " at "
+                      << formatVector(refPos[first->refIndex_]) << "\n"
                       << "Test: " << testPosIndex << " at " << formatVector(testPos) << "\n"
-                      << "Dist: " << first->distance;
+                      << "Dist: " << first->distance_;
     }
 }
 
@@ -538,22 +538,22 @@ void NeighborhoodSearchTest::testPairSearchFull(gmx::AnalysisNeighborhoodSearch*
         {
             for (auto& refPair : entry.second)
             {
-                refPair.bIndexed = false;
+                refPair.bIndexed_ = false;
             }
             for (int index : refIndices)
             {
                 NeighborhoodSearchTestData::RefPair searchPair(index, 0.0);
                 auto refPair = std::lower_bound(entry.second.begin(), entry.second.end(), searchPair);
-                if (refPair != entry.second.end() && refPair->refIndex == index)
+                if (refPair != entry.second.end() && refPair->refIndex_ == index)
                 {
-                    refPair->bIndexed = true;
+                    refPair->bIndexed_ = true;
                 }
             }
             for (auto& refPair : entry.second)
             {
-                if (!refPair.bIndexed)
+                if (!refPair.bIndexed_)
                 {
-                    refPair.bFound = true;
+                    refPair.bFound_ = true;
                 }
             }
         }
@@ -581,25 +581,25 @@ void NeighborhoodSearchTest::testPairSearchFull(gmx::AnalysisNeighborhoodSearch*
         NeighborhoodSearchTestData::RefPair searchPair(refIndex, std::sqrt(pair.distance2()));
         const auto                          foundRefPair =
                 std::lower_bound(refPairs[testIndex].begin(), refPairs[testIndex].end(), searchPair);
-        if (foundRefPair == refPairs[testIndex].end() || foundRefPair->refIndex != refIndex)
+        if (foundRefPair == refPairs[testIndex].end() || foundRefPair->refIndex_ != refIndex)
         {
             ADD_FAILURE() << "Expected: Pair (ref: " << refIndex << ", test: " << testIndex
                           << ") is not within the cutoff.\n"
                           << "  Actual: It is returned.";
         }
-        else if (foundRefPair->bExcluded)
+        else if (foundRefPair->bExcluded_)
         {
             ADD_FAILURE() << "Expected: Pair (ref: " << refIndex << ", test: " << testIndex
                           << ") is excluded from the search.\n"
                           << "  Actual: It is returned.";
         }
-        else if (!foundRefPair->bIndexed)
+        else if (!foundRefPair->bIndexed_)
         {
             ADD_FAILURE() << "Expected: Pair (ref: " << refIndex << ", test: " << testIndex
                           << ") is not part of the indexed set.\n"
                           << "  Actual: It is returned.";
         }
-        else if (foundRefPair->bFound)
+        else if (foundRefPair->bFound_)
         {
             ADD_FAILURE() << "Expected: Pair (ref: " << refIndex << ", test: " << testIndex
                           << ") is returned only once.\n"
@@ -608,9 +608,9 @@ void NeighborhoodSearchTest::testPairSearchFull(gmx::AnalysisNeighborhoodSearch*
         }
         else
         {
-            foundRefPair->bFound = true;
+            foundRefPair->bFound_ = true;
 
-            EXPECT_REAL_EQ_TOL(foundRefPair->distance, searchPair.distance, data.relativeTolerance())
+            EXPECT_REAL_EQ_TOL(foundRefPair->distance_, searchPair.distance_, data.relativeTolerance())
                     << "Distance computed by the neighborhood search does not match.";
             if (selfPairs)
             {
@@ -619,7 +619,7 @@ void NeighborhoodSearchTest::testPairSearchFull(gmx::AnalysisNeighborhoodSearch*
                         refPairs[refIndex].begin(), refPairs[refIndex].end(), searchPair);
                 GMX_RELEASE_ASSERT(otherRefPair != refPairs[refIndex].end(),
                                    "Precomputed reference data is not symmetric");
-                otherRefPair->bFound = true;
+                otherRefPair->bFound_ = true;
             }
         }
     }
