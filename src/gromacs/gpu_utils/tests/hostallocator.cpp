@@ -115,14 +115,14 @@ void runTest(const DeviceContext&     deviceContext,
 
 struct MoveOnly
 {
-    MoveOnly(real x = 0) : x(x) {}
+    MoveOnly(real x = 0) : x_(x) {}
     MoveOnly(const MoveOnly&) = delete;
     MoveOnly(MoveOnly&&)      = default;
     MoveOnly& operator=(const MoveOnly&) = delete;
     MoveOnly& operator=(MoveOnly&&) = default;
-    bool      operator==(const MoveOnly& o) const { return x == o.x; }
-    real      operator*=(int scaleFactor) { return x *= scaleFactor; }
-    real      x;
+    bool      operator==(const MoveOnly& o) const { return x_ == o.x_; }
+    real      operator*=(int scaleFactor) { return x_ *= scaleFactor; }
+    real      x_;
 };
 
 } // namespace test
