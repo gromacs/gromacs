@@ -34,6 +34,9 @@
 include(CMakeParseArguments)
 include(gmxClangCudaUtils)
 
+set(GMX_TEST_TIMEOUT_FACTOR "1" CACHE STRING "Scaling factor to apply for test timeouts")
+mark_as_advanced(GMX_TEST_TIMEOUT_FACTOR)
+
 set(GMX_CAN_RUN_MPI_TESTS 1)
 if (GMX_MPI)
     set(_an_mpi_variable_had_content 0)
@@ -315,6 +318,7 @@ function (gmx_register_gtest_test NAME EXENAME)
         add_test(NAME ${NAME}
                  COMMAND ${_cmd} --gtest_output=xml:${_xml_path})
         set_tests_properties(${NAME} PROPERTIES LABELS "${_labels}")
+        math(EXPR _timeout "${_timeout} * ${GMX_TEST_TIMEOUT_FACTOR}")
         set_tests_properties(${NAME} PROPERTIES TIMEOUT ${_timeout})
         add_dependencies(tests ${EXENAME})
     endif()
