@@ -42,6 +42,8 @@
  *
  * \ingroup module_mdlib
  */
+#include "gmxpre.h"
+
 #include "lincs_gpu_internal.h"
 
 #include "gromacs/gpu_utils/cuda_arch_utils.cuh"
