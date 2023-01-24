@@ -189,7 +189,7 @@ static rvec** read_whole_trj(const char*             fn,
     {
         if (bPBC)
         {
-            gmx_rmpbc(gpbc, natom, box, x);
+            gmx_rmpbc_apply(gpbc, natom, box, x);
         }
         if (clusterIndex >= max_nf)
         {

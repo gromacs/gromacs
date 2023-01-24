@@ -1119,7 +1119,7 @@ static void do_dip(const t_topology*       top,
                 M_av[m] = 0;
             }
 
-            gmx_rmpbc(gpbc, natom, box, x);
+            gmx_rmpbc_apply(gpbc, natom, box, x);
 
             /* Begin loop of all molecules in frame */
             for (n = 0; (n < ncos); n++)

@@ -184,7 +184,7 @@ static void periodic_mindist_plot(const char*             trxfn,
     {
         if (nullptr != top)
         {
-            gmx_rmpbc(gpbc, natoms, box, x);
+            gmx_rmpbc_apply(gpbc, natoms, box, x);
         }
 
         periodic_dist(pbcType, box, x, n, index, &rmin, &rmax, ind_min);

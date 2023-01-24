@@ -905,7 +905,7 @@ int gmx_trjconv(int argc, char* argv[])
                store original location (to put structure back) */
             if (bRmPBC)
             {
-                gmx_rmpbc(gpbc, top->atoms.nr, top_box, xp);
+                gmx_rmpbc_apply(gpbc, top->atoms.nr, top_box, xp);
             }
             copy_rvec(xp[index[0]], x_shift);
             reset_x_ndim(nfitdim, ifit, ind_fit, atoms->nr, nullptr, xp, w_rls);

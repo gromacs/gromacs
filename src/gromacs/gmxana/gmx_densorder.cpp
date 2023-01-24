@@ -203,7 +203,7 @@ static void density_in_time(const char*             fn,
         bbww[XX] = box[ax1][ax1] / *xslices;
         bbww[YY] = box[ax2][ax2] / *yslices;
         bbww[ZZ] = box[axis][axis] / *zslices;
-        gmx_rmpbc(gpbc, top->atoms.nr, box, x0);
+        gmx_rmpbc_apply(gpbc, top->atoms.nr, box, x0);
         /*Reset Densslice every nsttblock steps*/
         /* The first conditional is for clang to understand that this branch is
          * always taken the first time. */

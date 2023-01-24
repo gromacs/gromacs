@@ -280,7 +280,7 @@ int gmx_sorient(int argc, char* argv[])
         if (bTPS)
         {
             /* make molecules whole again */
-            gmx_rmpbc(gpbc, natoms, box, x);
+            gmx_rmpbc_apply(gpbc, natoms, box, x);
         }
 
         set_pbc(&pbc, pbcType, box);

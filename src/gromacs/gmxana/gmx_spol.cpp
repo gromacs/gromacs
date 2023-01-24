@@ -272,7 +272,7 @@ int gmx_spol(int argc, char* argv[])
     do
     {
         /* make molecules whole again */
-        gmx_rmpbc(gpbc, natoms, box, x);
+        gmx_rmpbc_apply(gpbc, natoms, box, x);
 
         set_pbc(&pbc, ir->pbcType, box);
         if (bCom)

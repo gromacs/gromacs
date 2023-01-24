@@ -322,7 +322,7 @@ int gmx_mdmat(int argc, char* argv[])
     }
     do
     {
-        gmx_rmpbc(gpbc, trxnat, box, x);
+        gmx_rmpbc_apply(gpbc, trxnat, box, x);
         nframes++;
         calc_mat(nres, natoms, rndx, x, index, truncate, mdmat, nmat, pbcType, box);
         for (i = 0; (i < nres); i++)

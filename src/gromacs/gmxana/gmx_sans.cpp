@@ -224,7 +224,7 @@ int gmx_sans(int argc, char* argv[])
     if (bPBC)
     {
         gpbc = gmx_rmpbc_init(&top->idef, pbcType, top->atoms.nr);
-        gmx_rmpbc(gpbc, top->atoms.nr, box, x);
+        gmx_rmpbc_apply(gpbc, top->atoms.nr, box, x);
     }
 
     natoms = read_first_x(oenv, &status, fnTRX, &t, &x, box);
@@ -240,7 +240,7 @@ int gmx_sans(int argc, char* argv[])
     {
         if (bPBC)
         {
-            gmx_rmpbc(gpbc, top->atoms.nr, box, x);
+            gmx_rmpbc_apply(gpbc, top->atoms.nr, box, x);
         }
         /* allocate memory for pr */
         if (pr == nullptr)

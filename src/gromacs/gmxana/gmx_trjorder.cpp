@@ -258,7 +258,7 @@ int gmx_trjorder(int argc, char* argv[])
     gpbc = gmx_rmpbc_init(&top.idef, pbcType, natoms);
     do
     {
-        gmx_rmpbc(gpbc, natoms, box, x);
+        gmx_rmpbc_apply(gpbc, natoms, box, x);
         set_pbc(&pbc, pbcType, box);
 
         if (ref_a == -1)

@@ -357,7 +357,7 @@ int gmx_rmsf(int argc, char* argv[])
         if (bFit)
         {
             /* Remove periodic boundary */
-            gmx_rmpbc(gpbc, natom, box, x);
+            gmx_rmpbc_apply(gpbc, natom, box, x);
 
             /* Set center of mass to zero */
             sub_xcm(x, isize, index, top.atoms.atom, xcm, FALSE);

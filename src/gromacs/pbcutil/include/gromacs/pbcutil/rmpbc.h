@@ -50,7 +50,7 @@ gmx_rmpbc_t gmx_rmpbc_init(const t_idef* idef, PbcType pbcType, int natoms);
 
 void gmx_rmpbc_done(gmx_rmpbc_t gpbc);
 
-void gmx_rmpbc(gmx_rmpbc_t gpbc, int natoms, const matrix box, rvec x[]);
+void gmx_rmpbc_apply(gmx_rmpbc_t gpbc, int natoms, const matrix box, rvec x[]);
 /* Correct coordinates x for atoms within every molecule for the periodic
  * boundary conditions such that every molecule is whole.
  * natoms is the size x and can be smaller than the number

@@ -158,7 +158,7 @@ int gmx_principal(int argc, char* argv[])
 
     do
     {
-        gmx_rmpbc(gpbc, natoms, box, x);
+        gmx_rmpbc_apply(gpbc, natoms, box, x);
 
         calc_principal_axes(&top, x, index, gnx, axes, moi);
 

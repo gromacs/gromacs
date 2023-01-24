@@ -886,7 +886,7 @@ int gmx_disre(int argc, char* argv[])
             }
             else
             {
-                gmx_rmpbc(gpbc, natoms, box, x);
+                gmx_rmpbc_apply(gpbc, natoms, box, x);
             }
         }
 

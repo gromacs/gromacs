@@ -290,7 +290,7 @@ int gmx_polystat(int argc, char* argv[])
 
     do
     {
-        gmx_rmpbc(gpbc, natoms, box, x);
+        gmx_rmpbc_apply(gpbc, natoms, box, x);
 
         sum_eed2 = 0;
         for (d = 0; d < DIM; d++)

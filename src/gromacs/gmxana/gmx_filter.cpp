@@ -139,7 +139,7 @@ int gmx_filter(int argc, char* argv[])
         if (bTop)
         {
             gpbc = gmx_rmpbc_init(&top.idef, pbcType, top.atoms.nr);
-            gmx_rmpbc(gpbc, top.atoms.nr, topbox, xtop);
+            gmx_rmpbc_apply(gpbc, top.atoms.nr, topbox, xtop);
         }
     }
 
@@ -253,7 +253,7 @@ int gmx_filter(int argc, char* argv[])
         }
         if (bTop)
         {
-            gmx_rmpbc(gpbc, nat, box[nffr - 1], xn);
+            gmx_rmpbc_apply(gpbc, nat, box[nffr - 1], xn);
         }
         if (bFit)
         {

@@ -560,7 +560,7 @@ static void project(const char*             trajfile,
             {
                 if (top)
                 {
-                    gmx_rmpbc(gpbc, nat, box, xread);
+                    gmx_rmpbc_apply(gpbc, nat, box, xread);
                 }
                 if (nframes >= snew_size)
                 {
@@ -1310,7 +1310,7 @@ int gmx_anaeig(int argc, char* argv[])
         bTop = read_tps_conf(ftp2fn(efTPS, NFILE, fnm), &top, &pbcType, &xtop, nullptr, topbox, bM);
         atoms = &top.atoms;
         gpbc  = gmx_rmpbc_init(&top.idef, pbcType, atoms->nr);
-        gmx_rmpbc(gpbc, atoms->nr, topbox, xtop);
+        gmx_rmpbc_apply(gpbc, atoms->nr, topbox, xtop);
         /* Fitting is only required for the projection */
         if (bProj && bFit1)
         {

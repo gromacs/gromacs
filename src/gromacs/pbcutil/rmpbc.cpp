@@ -191,7 +191,7 @@ static PbcType gmx_rmpbc_ePBC(gmx_rmpbc_t gpbc, const matrix box)
     }
 }
 
-void gmx_rmpbc(gmx_rmpbc_t gpbc, int natoms, const matrix box, rvec x[])
+void gmx_rmpbc_apply(gmx_rmpbc_t gpbc, int natoms, const matrix box, rvec x[])
 {
     PbcType  pbcType;
     t_graph* gr;

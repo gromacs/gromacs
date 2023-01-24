@@ -115,7 +115,7 @@ static void find_tetra_order_grid(t_topology top,
     /* Must init pbc every step because of pressure coupling */
     set_pbc(&pbc, pbcType, box);
     gpbc = gmx_rmpbc_init(&top.idef, pbcType, natoms);
-    gmx_rmpbc(gpbc, natoms, box, x);
+    gmx_rmpbc_apply(gpbc, natoms, box, x);
 
     *sgmean = 0.0;
     *skmean = 0.0;

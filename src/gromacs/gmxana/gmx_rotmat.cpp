@@ -102,7 +102,7 @@ static void get_refx(gmx_output_env_t* oenv,
     {
         if (nfr_all % skip == 0)
         {
-            gmx_rmpbc(gpbc, natoms, box, x);
+            gmx_rmpbc_apply(gpbc, natoms, box, x);
             snew(xi[nfr], gnx);
             for (i = 0; i < gnx; i++)
             {
@@ -255,7 +255,7 @@ int gmx_rotmat(int argc, char* argv[])
 
     gpbc = gmx_rmpbc_init(&top.idef, pbcType, top.atoms.nr);
 
-    gmx_rmpbc(gpbc, top.atoms.nr, box, x_ref);
+    gmx_rmpbc_apply(gpbc, top.atoms.nr, box, x_ref);
 
     get_index(&top.atoms, ftp2fn_null(efNDX, NFILE, fnm), 1, &gnx, &index, &grpname);
 
@@ -290,7 +290,7 @@ int gmx_rotmat(int argc, char* argv[])
 
     do
     {
-        gmx_rmpbc(gpbc, natoms, box, x);
+        gmx_rmpbc_apply(gpbc, natoms, box, x);
 
         reset_x(gnx, index, natoms, nullptr, x, w_rls);
 

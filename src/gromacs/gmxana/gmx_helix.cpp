@@ -226,7 +226,7 @@ int gmx_helix(int argc, char* argv[])
             fprintf(stderr, "\rt=%.2f", t);
             fflush(stderr);
         }
-        gmx_rmpbc(gpbc, natoms, box, x);
+        gmx_rmpbc_apply(gpbc, natoms, box, x);
 
 
         calc_hxprops(nres, bb, x);

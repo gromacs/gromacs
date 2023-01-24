@@ -116,7 +116,7 @@ static void find_nearest_neighbours(PbcType     pbcType,
     /* Must init pbc every step because of pressure coupling */
     set_pbc(&pbc, pbcType, box);
 
-    gmx_rmpbc(gpbc, natoms, box, x);
+    gmx_rmpbc_apply(gpbc, natoms, box, x);
 
     nsgbin = 2001; // Calculated as (1 + 1/0.0005)
     snew(sgbin, nsgbin);

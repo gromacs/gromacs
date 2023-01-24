@@ -231,7 +231,7 @@ static void calc_electron_density(const char*             fn,
     /*********** Start processing trajectory ***********/
     do
     {
-        gmx_rmpbc(gpbc, natoms, box, x0);
+        gmx_rmpbc_apply(gpbc, natoms, box, x0);
 
         /* Translate atoms so the com of the center-group is in the
          * box geometrical center.
@@ -407,7 +407,7 @@ static void calc_density(const char*             fn,
 
     do
     {
-        gmx_rmpbc(gpbc, natoms, box, x0);
+        gmx_rmpbc_apply(gpbc, natoms, box, x0);
 
         /* Translate atoms so the com of the center-group is in the
          * box geometrical center.

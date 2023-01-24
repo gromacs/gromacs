@@ -133,7 +133,7 @@ static void calc_h2order(const char*             fn,
     {
         *slWidth = box[axis][axis] / (*nslices);
 
-        gmx_rmpbc(gpbc, natoms, box, x0);
+        gmx_rmpbc_apply(gpbc, natoms, box, x0);
 
         if (bMicel)
         {

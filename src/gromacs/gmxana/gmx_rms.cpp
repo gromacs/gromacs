@@ -444,7 +444,7 @@ int gmx_rms(int argc, char* argv[])
     if (bPBC)
     {
         gpbc = gmx_rmpbc_init(&top.idef, pbcType, top.atoms.nr);
-        gmx_rmpbc(gpbc, top.atoms.nr, box, xp);
+        gmx_rmpbc_apply(gpbc, top.atoms.nr, box, xp);
     }
     if (bReset)
     {
@@ -586,7 +586,7 @@ int gmx_rms(int argc, char* argv[])
     {
         if (bPBC)
         {
-            gmx_rmpbc(gpbc, natoms, box, x);
+            gmx_rmpbc_apply(gpbc, natoms, box, x);
         }
 
         if (bReset)
@@ -715,7 +715,7 @@ int gmx_rms(int argc, char* argv[])
         {
             if (bPBC)
             {
-                gmx_rmpbc(gpbc, natoms, box, x);
+                gmx_rmpbc_apply(gpbc, natoms, box, x);
             }
 
             if (bReset)
