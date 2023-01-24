@@ -108,7 +108,7 @@ int tMPI_Start_threads(tmpi_bool main_returns, int N,
 
 /* starter function for threads; takes a void pointer to a
       struct tmpi_starter_, which calls main() if tmpi_start_.fn == NULL */
-static void* tMPI_Thread_starter(void *arg);
+static void* tMPI_Thread_start(void *arg);
 
 /* allocate and initialize the data associated with a thread structure */
 static int tMPI_Thread_init(struct tmpi_thread *th);
@@ -380,7 +380,7 @@ static void tMPI_Global_destroy(struct tmpi_global *g)
 
 
 
-static void* tMPI_Thread_starter(void *arg)
+static void* tMPI_Thread_start(void *arg)
 {
     int                 ret;
     struct tmpi_thread *th = (struct tmpi_thread*)arg;
@@ -516,7 +516,7 @@ int tMPI_Start_threads(tmpi_bool main_returns, int N,
         for (i = 1; i < N; i++) /* zero is the main thread */
         {
             ret = tMPI_Thread_create(&(threads[i].thread_id),
-                                     tMPI_Thread_starter,
+                                     tMPI_Thread_start,
                                      (void*)&(threads[i]) );
 
             if (set_affinity)
@@ -532,7 +532,7 @@ int tMPI_Start_threads(tmpi_bool main_returns, int N,
            it to return */
         if (!main_returns)
         {
-            tMPI_Thread_starter((void*)&(threads[0]));
+            tMPI_Thread_start((void*)&(threads[0]));
 
         }
         else

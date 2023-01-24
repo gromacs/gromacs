@@ -200,7 +200,7 @@ struct tMPI_Thread_starter
 #ifdef __MINGW32__
 __attribute__((force_align_arg_pointer))
 #endif
-static void *tMPI_Thread_starter(void *arg)
+static void *tMPI_Thread_start(void *arg)
 {
     struct tMPI_Thread_starter *starter = (struct tMPI_Thread_starter *)arg;
     void *(*start_routine)(void*);
@@ -277,7 +277,7 @@ int tMPI_Thread_create(tMPI_Thread_t *thread, void *(*start_routine)(void *),
         return ret;
     }
 
-    ret = pthread_create(&((*thread)->th), NULL, tMPI_Thread_starter,
+    ret = pthread_create(&((*thread)->th), NULL, tMPI_Thread_start,
                          (void*)starter);
     if (ret != 0)
     {
