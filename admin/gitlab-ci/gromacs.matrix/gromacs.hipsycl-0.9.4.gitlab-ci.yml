@@ -5,9 +5,9 @@
 #   GPU: hipSYCL
 #   Scope: configure, build
 # Test implementation choices (free to change as needed):
-#   OS: Ubuntu 20.04
+#   OS: Ubuntu 22.04
 #   Build type: RelWithAssert
-#   Compiler: Clang 14
+#   Compiler: Clang 15
 #   MPI: CUDA-aware MPICH (NVIDIA build); threadMPI (AMD build)
 #   SIMD: AVX2_256
 
@@ -17,7 +17,7 @@ gromacs:hipsycl-rocm:configure:
     - .use-clang:base
     - .use-sycl
     - .rules:merge-and-post-merge-acceptance
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-llvm-14-cuda-11.4.3-hipsycl-ee45074-rocm-5.1
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-22.04-llvm-15-cuda-11.7.1-hipsycl-0.9.4-rocm-5.3.3
   variables:
     CMAKE: /usr/local/cmake-3.18.4/bin/cmake
     CMAKE_SIMD_OPTIONS: "-DGMX_SIMD=AVX2_256"
@@ -25,7 +25,7 @@ gromacs:hipsycl-rocm:configure:
     CMAKE_GPU_OPTIONS: "-DGMX_GPU=SYCL -DGMX_SYCL_HIPSYCL=ON -DHIPSYCL_TARGETS='hip:gfx900' -DGMX_GPU_FFT_LIBRARY=rocFFT"
     # Unset COMPILER_LAUNCHER (previously set to ccache) because it conflicts with hipSYCL's syclcc-launcher
     CMAKE_EXTRA_OPTIONS: "-DCMAKE_C_COMPILER_LAUNCHER= -DCMAKE_CXX_COMPILER_LAUNCHER="
-    COMPILER_MAJOR_VERSION: 14
+    COMPILER_MAJOR_VERSION: 15
 
 gromacs:hipsycl-rocm:build:
   extends:
@@ -34,7 +34,7 @@ gromacs:hipsycl-rocm:build:
     - .before_script:default
     # Not using ccache because it plays poorly with syclcc-launcher
     - .rules:merge-and-post-merge-acceptance
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-llvm-14-cuda-11.4.3-hipsycl-ee45074-rocm-5.1
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-22.04-llvm-15-cuda-11.7.1-hipsycl-0.9.4-rocm-5.3.3
   variables:
     CMAKE: /usr/local/cmake-3.18.4/bin/cmake
   tags:
@@ -49,7 +49,7 @@ gromacs:hipsycl-rocm-nightly:configure:
     - .use-clang:base
     - .use-sycl
     - .rules:nightly-not-for-release
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-llvm-14-cuda-11.4.3-hipsycl-ee45074-rocm-5.1
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-22.04-llvm-15-cuda-11.7.1-hipsycl-0.9.4-rocm-5.3.3
   variables:
     CMAKE: /usr/local/cmake-3.18.4/bin/cmake
     CMAKE_SIMD_OPTIONS: "-DGMX_SIMD=AVX2_256"
@@ -57,7 +57,7 @@ gromacs:hipsycl-rocm-nightly:configure:
     CMAKE_GPU_OPTIONS: "-DGMX_GPU=SYCL -DGMX_SYCL_HIPSYCL=ON -DHIPSYCL_TARGETS='hip:gfx906'"
     # Unset COMPILER_LAUNCHER (previously set to ccache) because it conflicts with hipSYCL's syclcc-launcher
     CMAKE_EXTRA_OPTIONS: "-DCMAKE_C_COMPILER_LAUNCHER= -DCMAKE_CXX_COMPILER_LAUNCHER="
-    COMPILER_MAJOR_VERSION: 14
+    COMPILER_MAJOR_VERSION: 15
 
 gromacs:hipsycl-rocm-nightly:build:
   extends:
@@ -66,7 +66,7 @@ gromacs:hipsycl-rocm-nightly:build:
     - .before_script:default
     # Not using ccache because it plays poorly with syclcc-launcher
     - .rules:nightly-not-for-release
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-llvm-14-cuda-11.4.3-hipsycl-ee45074-rocm-5.1
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-22.04-llvm-15-cuda-11.7.1-hipsycl-0.9.4-rocm-5.3.3
   variables:
     CMAKE: /usr/local/cmake-3.18.4/bin/cmake
   tags:
@@ -80,7 +80,7 @@ gromacs:hipsycl-rocm-nightly:test:
     - .gromacs:base:test
     # Not using ccache because it plays poorly with syclcc-launcher
     - .rules:nightly-not-for-release
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-llvm-14-cuda-11.4.3-hipsycl-ee45074-rocm-5.1
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-22.04-llvm-15-cuda-11.7.1-hipsycl-0.9.4-rocm-5.3.3
   variables:
     CMAKE: /usr/local/cmake-3.18.4/bin/cmake
     # The following two variables are not used by k8s, since this job runs on a separate host
@@ -103,7 +103,7 @@ gromacs:hipsycl-nvidia-mpi:configure:
     - .use-sycl
     - .use-mpi
     - .rules:weekly-not-for-release
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-llvm-14-cuda-11.4.3-hipsycl-ee45074-rocm-5.1
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-22.04-llvm-15-cuda-11.7.1-hipsycl-0.9.4-rocm-5.3.3
   variables:
     CMAKE: /usr/local/cmake-3.18.4/bin/cmake
     CMAKE_SIMD_OPTIONS: "-DGMX_SIMD=AVX2_256"
@@ -111,7 +111,7 @@ gromacs:hipsycl-nvidia-mpi:configure:
     CMAKE_GPU_OPTIONS: "-DGMX_GPU=SYCL -DGMX_SYCL_HIPSYCL=ON -DHIPSYCL_TARGETS='cuda:sm_50,sm_52,sm_60,sm_61,sm_70,sm_75' -DGMX_GPU_FFT_LIBRARY=VkFFT"
     # Unset COMPILER_LAUNCHER (previously set to ccache) because it conflicts with hipSYCL's syclcc-launcher
     CMAKE_EXTRA_OPTIONS: "-DCMAKE_C_COMPILER_LAUNCHER= -DCMAKE_CXX_COMPILER_LAUNCHER="
-    COMPILER_MAJOR_VERSION: 14
+    COMPILER_MAJOR_VERSION: 15
 
 gromacs:hipsycl-nvidia-mpi:build:
   extends:
@@ -120,7 +120,7 @@ gromacs:hipsycl-nvidia-mpi:build:
     - .before_script:default
     # Not using ccache because it plays poorly with syclcc-launcher
     - .rules:weekly-not-for-release
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-llvm-14-cuda-11.4.3-hipsycl-ee45074-rocm-5.1
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-22.04-llvm-15-cuda-11.7.1-hipsycl-0.9.4-rocm-5.3.3
   variables:
     CMAKE: /usr/local/cmake-3.18.4/bin/cmake
   tags:
@@ -132,7 +132,7 @@ gromacs:hipsycl-nvidia-mpi:test-gpucommupd-MPI:
   extends:
     - .gromacs:base:test
     - .rules:weekly-not-for-release
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-llvm-14-cuda-11.4.3-hipsycl-ee45074-rocm-5.1
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-22.04-llvm-15-cuda-11.7.1-hipsycl-0.9.4-rocm-5.3.3
   variables:
     CMAKE: /usr/local/cmake-3.18.4/bin/cmake
     KUBERNETES_EXTENDED_RESOURCE_NAME: "nvidia.com/gpu"
@@ -151,7 +151,7 @@ gromacs:hipsycl-nvidia-mpi:regressiontest-gpucommupd-MPI:
   extends:
     - .gromacs:base:regressiontest
     - .rules:weekly-not-for-release
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-llvm-14-cuda-11.4.3-hipsycl-ee45074-rocm-5.1
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-22.04-llvm-15-cuda-11.7.1-hipsycl-0.9.4-rocm-5.3.3
   variables:
     CMAKE: /usr/local/cmake-3.18.4/bin/cmake
     KUBERNETES_EXTENDED_RESOURCE_NAME: "nvidia.com/gpu"

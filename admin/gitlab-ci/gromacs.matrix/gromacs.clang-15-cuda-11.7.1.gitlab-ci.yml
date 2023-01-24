@@ -5,48 +5,48 @@
 #   HW: NVIDIA GPU
 #   Scope: configure, build, unit tests, regression tests
 # Test implementation choices (free to change as needed):
-#   OS: Ubuntu 20.04
+#   OS: Ubuntu 22.04
 #   Build type: RelWithDebInfo
-#   Compiler: Clang 14
+#   Compiler: Clang 15
 #   MPI: thread_MPI
-#   GPU: Clang CUDA 11.4.3, CUDA 11.4.3
+#   GPU: Clang CUDA 11.7.1, CUDA 11.7.1
 #   SIMD: AVX2_256, no kernels
 #   FFT: FFTW3
 #   Parallelism nt/ntomp: 4/2 (unit tests)
 #   Parallelism nt/ntomp: 2/1 (regression tests)
 
-gromacs:clang-14-cuda-11.4.3:configure:
+gromacs:clang-15-cuda-11.7.1:configure:
   extends:
     - .gromacs:base:configure
     - .use-clang:base
     - .use-cuda
     - .rules:post-merge-acceptance
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-llvm-14-cuda-11.4.3-hipsycl-ee45074-rocm-5.1
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-22.04-llvm-15-cuda-11.7.1-hipsycl-0.9.4-rocm-5.3.3
   variables:
     CMAKE: /usr/local/cmake-3.24.0/bin/cmake
     CMAKE_SIMD_OPTIONS: "-DGMX_USE_SIMD_KERNELS=off"
     CMAKE_EXTRA_OPTIONS: "-DGMX_CLANG_CUDA=ON"
     CMAKE_BUILD_TYPE_OPTIONS: "-DCMAKE_BUILD_TYPE=RelWithDebInfo"
-    COMPILER_MAJOR_VERSION: 14
+    COMPILER_MAJOR_VERSION: 15
 
-gromacs:clang-14-cuda-11.4.3:build:
+gromacs:clang-15-cuda-11.7.1:build:
   extends:
     - .variables:default
     - .gromacs:base:build
     - .use-clang:base
     - .use-ccache
     - .rules:post-merge-acceptance
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-llvm-14-cuda-11.4.3-hipsycl-ee45074-rocm-5.1
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-22.04-llvm-15-cuda-11.7.1-hipsycl-0.9.4-rocm-5.3.3
   variables:
     CMAKE: /usr/local/cmake-3.24.0/bin/cmake
   needs:
-    - job: gromacs:clang-14-cuda-11.4.3:configure
+    - job: gromacs:clang-15-cuda-11.7.1:configure
 
-gromacs:clang-14-cuda-11.4.3:test:
+gromacs:clang-15-cuda-11.7.1:test:
   extends:
     - .gromacs:base:test
     - .rules:post-merge-acceptance
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-llvm-14-cuda-11.4.3-hipsycl-ee45074-rocm-5.1
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-22.04-llvm-15-cuda-11.7.1-hipsycl-0.9.4-rocm-5.3.3
   variables:
     CMAKE: /usr/local/cmake-3.24.0/bin/cmake
     KUBERNETES_EXTENDED_RESOURCE_NAME: "nvidia.com/gpu"
@@ -56,13 +56,13 @@ gromacs:clang-14-cuda-11.4.3:test:
   tags:
     - k8s-scilifelab
   needs:
-    - job: gromacs:clang-14-cuda-11.4.3:build
+    - job: gromacs:clang-15-cuda-11.7.1:build
 
-gromacs:clang-14-cuda-11.4.3:regressiontest:
+gromacs:clang-15-cuda-11.7.1:regressiontest:
   extends:
     - .gromacs:base:regressiontest
     - .rules:post-merge-acceptance
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-llvm-14-cuda-11.4.3-hipsycl-ee45074-rocm-5.1
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-22.04-llvm-15-cuda-11.7.1-hipsycl-0.9.4-rocm-5.3.3
   variables:
     CMAKE: /usr/local/cmake-3.24.0/bin/cmake
     KUBERNETES_EXTENDED_RESOURCE_NAME: "nvidia.com/gpu"
@@ -73,5 +73,5 @@ gromacs:clang-14-cuda-11.4.3:regressiontest:
   tags:
     - k8s-scilifelab
   needs:
-    - job: gromacs:clang-14-cuda-11.4.3:build
+    - job: gromacs:clang-15-cuda-11.7.1:build
     - job: regressiontests:prepare

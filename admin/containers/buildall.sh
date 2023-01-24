@@ -23,7 +23,7 @@ args[${#args[@]}]="--llvm 13 --clfft --mpi openmpi --rocm"
 # Note that oneAPI currently only supports Ubuntu 20.04
 args[${#args[@]}]="--oneapi 2022.2.0 --intel-compute-runtime --ubuntu 20.04"
 args[${#args[@]}]="--llvm --doxygen --mpi openmpi --venvs 3.7.7 3.9.13"
-args[${#args[@]}]="--llvm 14 --cuda 11.4.3 --hipsycl ee45074 --rocm 5.1 --mpi mpich"
+args[${#args[@]}]="--ubuntu 22.04 --llvm 15 --cuda 11.7.1 --hipsycl 0.9.4 --rocm 5.3.3 --mpi mpich"
 args[${#args[@]}]="--intel-llvm 2022-09 --cuda 11.5.2 --rocm 5.3"
 
 echo
