@@ -39,6 +39,14 @@ avoid changing the net charge of a system with free-energy calculations).
 
 :issue:`4668`
 
+Foreign energy differences with the Gapsys soft-core function were zero
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+This caused all BAR and AWH non-bonded free-energy output to be zero,
+so it is unlikely that incorrect results would go unnoticed.
+
+:issue:`4705`
+
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
 
