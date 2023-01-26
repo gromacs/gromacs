@@ -329,7 +329,7 @@ static void printMissingInteractionsAtoms(const MDLogger&               mdlog,
     {
         errorMessage =
                 "One or more interactions were assigned to multiple domains of the domain "
-                "decompostion. Please report this bug.";
+                "decomposition. Please report this bug.";
     }
     else
     {
