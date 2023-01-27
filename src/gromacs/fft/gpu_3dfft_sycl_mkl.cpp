@@ -136,13 +136,16 @@ Gpu3dFft::ImplSyclMkl::ImplSyclMkl(bool allocateRealGrid,
                                          * complexGridSizePadded[ZZ] * 2),
                "Complex grid buffer is too small for the declared padded size");
 
+    // GROMACS doesn't use ILP64 for non-GPU interfaces (BLAS, FFT). The GPU/oneAPI interface assumes it.
+    // With LP64 on Windows MKL_LONG is 32-bit. Therefore we need to use int64_t and not MKL_LONG.
+
     // MKL expects row-major
-    const std::array<MKL_LONG, 4> realGridStrides = {
-        0, static_cast<MKL_LONG>(realGridSizePadded[YY] * realGridSizePadded[ZZ]), realGridSizePadded[ZZ], 1
+    const std::array<int64_t, 4> realGridStrides = {
+        0, static_cast<int64_t>(realGridSizePadded[YY] * realGridSizePadded[ZZ]), realGridSizePadded[ZZ], 1
     };
-    const std::array<MKL_LONG, 4> complexGridStrides = {
+    const std::array<int64_t, 4> complexGridStrides = {
         0,
-        static_cast<MKL_LONG>(complexGridSizePadded[YY] * complexGridSizePadded[ZZ]),
+        static_cast<int64_t>(complexGridSizePadded[YY] * complexGridSizePadded[ZZ]),
         complexGridSizePadded[ZZ],
         1
     };
