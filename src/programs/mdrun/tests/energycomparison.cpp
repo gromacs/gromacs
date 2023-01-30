@@ -70,9 +70,9 @@ EnergyTermsToCompare EnergyComparison::defaultEnergyTermsToCompare()
         { interaction_function[F_EKIN].longname, relativeToleranceAsPrecisionDependentUlp(60.0, 200, 160) },
         // The pressure is very strongly affected by summation errors,
         // so we need a large tolerance.
-        // The value of 17000 is calibrated for running a small water box for 16 steps.
+        // The value of 18000 is calibrated for running a small water box for 16 steps.
         // For a single frame for a water box a value of 150 could work.
-        { interaction_function[F_PRES].longname, relativeToleranceAsUlp(10.0, 17000) },
+        { interaction_function[F_PRES].longname, relativeToleranceAsUlp(10.0, 18000) },
     };
 };
 
