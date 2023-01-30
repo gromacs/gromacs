@@ -1,0 +1,45 @@
+# This CITATION.cff file was generated with cffinit.
+# Visit https://bit.ly/cffinit to generate yours today!
+
+cff-version: 1.2.0
+title: GROMACS 2022.5 source code
+message: >-
+  If you use GROMACS, please cite it using the
+  metadata from this file.
+  To help us fund GROMACS development, we humbly ask
+  that you also cite the research papers on the package,
+  see https://www.gromacs.org/articles.html.
+type: software
+authors:
+  - given-names: Paul
+    family-names: Bauer
+    affiliation: KTH Royal Institue of Technology
+  - given-names: Berk
+    family-names: Hess
+    affiliation: KTH Royal Institute of Technology
+    orcid: 'https://orcid.org/0000-0002-7498-7763'
+  - given-names: Erik
+    family-names: Lindahl
+    affiliation: KTH Royal Institute of Technology
+    orcid: 'https://orcid.org/0000-0002-2734-2794'
+identifiers:
+  - type: doi
+    value: 10.5281/zenodo.7586780
+  - type: url
+    value: >-
+      https://ftp.gromacs.org/gromacs/gromacs-2022.5.tar.gz
+    description: Download URL
+repository-code: 'https://gitlab.com/gromacs/gromacs'
+url: 'https://www.gromacs.org/'
+repository: 'https://manual.gromacs.org/2022.5/index.html'
+abstract: "GROMACS\_is a free, open-source and high-performance software suite for molecular dynamics simulation and analysis."
+keywords:
+  - molecular dynamics
+  - molecular simulation
+  - biomolecular simulation
+  - high performance computing
+  - free software
+license: LGPL-2.1
+commit: v2022.5
+version: '2022.5'
+date-released: '2023-02-01'
