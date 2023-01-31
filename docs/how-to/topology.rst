@@ -67,7 +67,7 @@ have a pre-equilibrated box of whatever solvent you need, and suitable parameter
 in a simulation.  One can then pass the solvent box to the -cs switch of :ref:`solvate <gmx solvate>` to accomplish solvation.
 
 A series of about 150 different equilibrated liquids validated for use with |Gromacs|,
-and for the OPLS/AA and GAFF force fields, can be found at `virtualchemistry <http://virtualchemistry.org/>`_.
+and for the OPLS/AA and GAFF force fields, can be found at `virtualchemistry <https://virtualchemistry.org/>`_.
 
 Making a non-aqueous solvent box
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
