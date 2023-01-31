@@ -793,13 +793,15 @@ cases.
     exceeded, DLB activates and shifts particles between ranks to improve
     performance. If available, using ``-bonded gpu`` is expected
     to improve the ability of DLB to maximize performance.
+    DLB is not compatible with GPU-resident parallelization (with ``-update gpu``)
+    and therefore it remains switched off in such simulations.
 
 During the simulation :ref:`gmx mdrun` must communicate between all
 PP ranks to compute quantities such as kinetic energy for log file
 reporting, or perhaps temperature coupling. By default, this happens
 whenever necessary to honor several :ref:`mdp options <mdp-general>`,
 so that the period between communication phases is the least common
-denominator of :mdp:`nstlist`, :mdp:`nstcalcenergy`,
+denominator of :mdp:`nstcalcenergy`,
 :mdp:`nsttcouple`, and :mdp:`nstpcouple`.
 
 Note that ``-tunepme`` has more effect when there is more than one
@@ -1056,7 +1058,7 @@ the short-range :ref:`nonbonded interactions in real space <gmx-gpu-pp>`,
 and :ref:`PME <gmx-gpu-pme>`.
 
 |Gromacs| supports two major offload modes: force-offload and GPU-resident.
-The former involves offloading interaction calculations with integration
+The former involves offloading some of or all interaction calculations with integration
 on the CPU (hence requiring per-step data movement). In the GPU-resident mode
 by offloading integration and constraints (when used) less data movement is
 necessary.
@@ -1211,7 +1213,7 @@ One overview over the possible task assignments is given below:
 
 |Gromacs| version 2021/2022:
 
-  Communication and auxiliary tasks can also be offloaded.
+  Communication and auxiliary tasks can also be offloaded in CUDA builds.
   In domain-decomposition halo exchange and PP-PME communication,
   instead of staging transfers between GPUs though the CPU,
   direct GPU--GPU communication is possible.
@@ -1225,6 +1227,9 @@ One overview over the possible task assignments is given below:
 
 |Gromacs| version 2023:
   Update now runs by default on the GPU with supported simulation settings; note that this is only available with CUDA and SYCL not with OpenCL.
+  
+  PME decomposition support adds additional parallelization-related auxiliary GPU tasks including grid packing and reduction operations
+  as well as distributed GPU FFT computation.
 
 
 Performance considerations for GPU tasks
@@ -1247,17 +1252,20 @@ Performance considerations for GPU tasks
    as efficient CPU-based kernels can complete the bonded computation
    before the GPU is done with other offloaded work. Therefore,
    `gmx mdrun` will default to no bonded offload when PME is offloaded.
-   Typical cases where performance can be improvement with bonded offload are:
+   Typical cases where performance can improve with bonded offload are:
    with significant bonded work (e.g. pure lipid or mostly polymer systems with little solvent),
    with very few and/or slow CPU cores per GPU, or when the CPU does
    other computation (e.g. PME, free energy).
 
-#) It *is* possible to use multiple GPUs with PME offload
-   by letting e.g.
-   3 MPI ranks use one GPU each for short-range interactions,
-   while a fourth rank does the PME on its GPU.
+#) On most modern hardware GPU-resident mode (default) is faster than force-offload mode,
+   although it may leave the CPU idle. Moving back the bonded work to the CPU (``-bonded cpu``) is a
+   better way to make use of a fast CPU than leaving integration and constraints on the CPU.
+   The only exception may be multi-simulations with a significant number of simulations assigned to each GPU.
 
-#) The only way to know for sure what alternative is best for
+#) Direct GPU communication will in most cases outperform staged communication (both with thread-MPI and MPI).
+   Ideally it should be combined with GPU-resident mode to maximize the benefit.
+
+#) The only way to know for sure which alternative is best for
    your machine is to test and check performance.
 
 .. todo:: we need to be more concrete here, i.e. what machine/software aspects to take into consideration, when will default run mode be using PME-GPU and when will it not, when/how should the user reason about testing different settings than the default.
