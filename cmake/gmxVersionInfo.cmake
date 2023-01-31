@@ -2,7 +2,7 @@
 # This file is part of the GROMACS molecular simulation package.
 #
 # Copyright (c) 2014,2015,2016,2017,2018 by the GROMACS development team.
-# Copyright (c) 2019,2020,2021,2022, by the GROMACS development team, led by
+# Copyright (c) 2019,2020,2021,2022,2023, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -235,7 +235,7 @@ set(REGRESSIONTEST_BRANCH "release-2021")
 # build the regressiontests tarball with all the right naming. The
 # naming affects the md5sum that has to go here, and if it isn't right
 # release workflow will report a failure.
-set(REGRESSIONTEST_MD5SUM "5f05ce3bb742b5db0ced02b34c8d1f1a" CACHE INTERNAL "MD5 sum of the regressiontests tarball for this GROMACS version")
+set(REGRESSIONTEST_MD5SUM "ff0a01050c3c8fd77806b7c70b423fc3" CACHE INTERNAL "MD5 sum of the regressiontests tarball for this GROMACS version")
 
 # If you are making a custom fork of GROMACS, please describe your
 # fork, perhaps with its version number, in the value of
@@ -285,8 +285,8 @@ if (GMX_VERSION_STRING_OF_FORK)
     set(GMX_MANUAL_DOI_INTERNAL "")
     set(GMX_SOURCE_DOI_INTERNAL "")
 else()
-    set(GMX_MANUAL_DOI_INTERNAL "") # Set correct doi string here
-    set(GMX_SOURCE_DOI_INTERNAL "") # Set correct doi string here
+    set(GMX_MANUAL_DOI_INTERNAL "10.5281/zenodo.7586709") # Set correct doi string here
+    set(GMX_SOURCE_DOI_INTERNAL "10.5281/zenodo.7586728") # Set correct doi string here
 endif()
 set(GMX_MANUAL_DOI ${GMX_MANUAL_DOI_INTERNAL} CACHE INTERNAL "reserved doi for GROMACS manual" FORCE)
 set(GMX_SOURCE_DOI ${GMX_SOURCE_DOI_INTERNAL} CACHE INTERNAL "reserved doi for GROMACS source code" FORCE)
