@@ -45,6 +45,7 @@
 #include "gromacs/mdlib/update.h"
 #include "gromacs/mdtypes/checkpointdata.h"
 #include "gromacs/mdtypes/commrec.h"
+#include "gromacs/mdtypes/df_history.h"
 #include "gromacs/mdtypes/forcerec.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/observableshistory.h"
@@ -137,6 +138,15 @@ void do_md_trajectory_writing(FILE*                          fplog,
                 state_global->ekinstate.bUpToDate = checkpointEkindata;
 
                 energyOutput.fillEnergyHistory(observablesHistory->energyHistory.get());
+
+                // DF history is maintained in state->dfhist, but state_global is what is sent to trajectory and log output
+                if (state->dfhist)
+                {
+                    GMX_RELEASE_ASSERT(
+                            state_global->dfhist != nullptr,
+                            "The global state should have dfhist when the local state has it");
+                    copy_df_history(state_global->dfhist, state->dfhist);
+                }
             }
         }
         // The current function is only called by legacy code, while
