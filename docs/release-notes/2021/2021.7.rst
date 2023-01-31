@@ -1,7 +1,7 @@
 GROMACS 2021.7 release notes
 ----------------------------
 
-This version was released on TODO, 2022. These release notes
+This version was released on January 31st, 2023. These release notes
 document the changes that have taken place in GROMACS since the
 previous 2021.6 version, to fix known issues. It also incorporates all
 fixes made in version 2020.7 and earlier, which you can find described
