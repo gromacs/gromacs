@@ -71,6 +71,7 @@ enum class MdpParameterDatabase
     Default,
     Pull,
     Awh,
+    ExpandedEnsemble,
     Count
 };
 

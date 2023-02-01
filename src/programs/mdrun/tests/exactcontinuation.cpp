@@ -438,6 +438,22 @@ TEST_P(MdrunNoAppendContinuationIsExact, WithinTolerances)
         }
     }
 
+    if (mdpFieldValues.count("free-energy") > 0 && mdpFieldValues.at("free-energy") != "no")
+    {
+        energyTermsToCompare.insert({ interaction_function[F_DVDL_COUL].longname,
+                                      relativeToleranceAsPrecisionDependentUlp(
+                                              10.0, ulpToleranceInMixed, ulpToleranceInDouble) });
+        energyTermsToCompare.insert({ interaction_function[F_DVDL_VDW].longname,
+                                      relativeToleranceAsPrecisionDependentUlp(
+                                              10.0, ulpToleranceInMixed, ulpToleranceInDouble) });
+        energyTermsToCompare.insert({ interaction_function[F_DVDL_BONDED].longname,
+                                      relativeToleranceAsPrecisionDependentUlp(
+                                              10.0, ulpToleranceInMixed, ulpToleranceInDouble) });
+        energyTermsToCompare.insert({ interaction_function[F_DVDL_RESTRAINT].longname,
+                                      relativeToleranceAsPrecisionDependentUlp(
+                                              10.0, ulpToleranceInMixed, ulpToleranceInDouble) });
+    }
+
     if (pressureCoupling == "parrinello-rahman")
     {
         energyTermsToCompare.insert({ "Box-Vel-XX",
@@ -536,6 +552,14 @@ INSTANTIATE_TEST_SUITE_P(Awh,
                                             ::testing::Values("v-rescale"),
                                             ::testing::Values("no"),
                                             ::testing::Values(MdpParameterDatabase::Awh)));
+
+INSTANTIATE_TEST_SUITE_P(ExpandedEnsemble,
+                         MdrunNoAppendContinuationIsExact,
+                         ::testing::Combine(::testing::Values("nonanol_vacuo"),
+                                            ::testing::Values("md-vv"),
+                                            ::testing::Values("v-rescale"),
+                                            ::testing::Values("no"),
+                                            ::testing::Values(MdpParameterDatabase::ExpandedEnsemble)));
 
 #else
 GTEST_ALLOW_UNINSTANTIATED_PARAMETERIZED_TEST(MdrunNoAppendContinuationIsExact);

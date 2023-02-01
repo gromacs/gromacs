@@ -47,6 +47,23 @@ so it is unlikely that incorrect results would go unnoticed.
 
 :issue:`4705`
 
+Fix checkpointing of expanded ensemble simulations with modular simulator
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Expanded ensemble simulations would fail to write checkpoint files when the
+modular simulator was used (which is the default setting for expanded ensemble
+in GROMACS 2022). The investigation lead to the discovery of another bug, which
+was also fixed: When restarting from checkpoint, a successful MC step in lambda
+space that had happened on the step on which the checkpoint was written would
+have been ignored. Since the checkpoint failed to be written in the first place,
+this is unlikely to have lead to wrong results in GROMACS 2022.
+
+The bug dropping successful MC steps on checkpoint steps upon simulation restarts
+is also present in the legacy code path, which was the default in GROMACS 2021.7
+and earlier.
+
+:issue:`4629`
+
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
 
