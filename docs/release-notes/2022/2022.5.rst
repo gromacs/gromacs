@@ -60,7 +60,8 @@ this is unlikely to have lead to wrong results in GROMACS 2022.
 
 The bug dropping successful MC steps on checkpoint steps upon simulation restarts
 is also present in the legacy code path, which was the default in GROMACS 2021.7
-and earlier.
+and earlier. Simulations using the legacy code path no longer write checkpoint
+files, and inform about this behavior in their log file.
 
 :issue:`4629`
 

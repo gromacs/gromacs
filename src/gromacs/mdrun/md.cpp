@@ -811,13 +811,28 @@ void gmx::LegacySimulator::do_md()
             bNS,
             walltime_accounting);
 
+    real checkpointPeriod = mdrunOptions.checkpointOptions.period;
+    if (ir->bExpanded)
+    {
+        GMX_LOG(mdlog.info)
+                .asParagraph()
+                .appendText(
+                        "Expanded ensemble with the legacy simulator does not always "
+                        "checkpoint correctly, so checkpointing is disabled. You will "
+                        "not be able to do a checkpoint restart of this simulation. "
+                        "If you use the modular simulator (e.g. by choosing md-vv integrator) "
+                        "then checkpointing is enabled. See "
+                        "https://gitlab.com/gromacs/gromacs/-/issues/4629 for details.");
+        // Use a negative period to disable checkpointing.
+        checkpointPeriod = -1;
+    }
     auto checkpointHandler = std::make_unique<CheckpointHandler>(
             compat::make_not_null<SimulationSignal*>(&signals[eglsCHKPT]),
             simulationsShareState,
             ir->nstlist == 0,
             MASTER(cr),
             mdrunOptions.writeConfout,
-            mdrunOptions.checkpointOptions.period);
+            checkpointPeriod);
 
     const bool resetCountersIsLocal = true;
     auto       resetHandler         = std::make_unique<ResetHandler>(
