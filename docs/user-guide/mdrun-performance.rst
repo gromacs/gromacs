@@ -1174,7 +1174,6 @@ However, in typical throughput cases where multiple runs are assigned to each GP
 offloading everything, especially without moving back some of the work to the CPU
 can perform worse than the parallelization mode where only force computation is offloaded.
 
-
 Assigning tasks to GPUs
 .......................
 
@@ -1231,6 +1230,8 @@ One overview over the possible task assignments is given below:
   PME decomposition support adds additional parallelization-related auxiliary GPU tasks including grid packing and reduction operations
   as well as distributed GPU FFT computation.
 
+  Experimental support for CUDA-graphs scheduling has been added, which supports most GPU-resident runs that don't require CPU force computation.
+
 
 Performance considerations for GPU tasks
 ........................................
@@ -1277,19 +1278,26 @@ Reducing overheads in GPU accelerated runs
 
 In order for CPU cores and GPU(s) to execute concurrently, tasks are
 launched and executed asynchronously on the GPU(s) while the CPU cores
-execute non-offloaded force computation (like long-range PME electrostatics).
-Asynchronous task launches are handled by GPU device driver and
-require CPU involvement. Therefore, the work of scheduling
-GPU tasks will incur an overhead that can in some cases significantly
-delay or interfere with the CPU execution.
+execute non-offloaded force computation (like computing bonded forces or free energy computation).
+Asynchronous task launches are handled by the GPU device driver and
+require CPU involvement. Therefore, scheduling
+GPU tasks requires CPU resources that can compete with other CPU tasks
+and cause interference that could lead to slowdown.
 
 Delays in CPU execution are caused by the latency of launching GPU tasks,
 an overhead that can become significant as simulation ns/day increases
 (i.e. with shorter wall-time per step).
-The overhead is measured by :ref:`gmx mdrun` and reported in the performance
-summary section of the log file ("Launch GPU ops" row).
-A few percent of runtime spent in this category is normal,
-but in fast-iterating and multi-GPU parallel runs 10% or larger overheads can be observed.
+The cost of launching GPU work is measured by :ref:`gmx mdrun` and reported in the performance
+summary section of the log file ("Launch PP GPU ops."/"Launch PME GPU ops." rows).
+A few percent of runtime spent in launching work is normal,
+but in fast-iterating and multi-GPU parallel runs, costs of 10% or larger can be observed.
+Whether this has a significant performance impact depends on how much work
+within the main MD step is assigned to the CPU. With most or all force computation offloaded,
+and when the CPU is not involved in communication (e.g. with thread-MPI and direct GPU communication enabled) 
+it may be that large launch costs do not lead to large performance losses.
+However, when the CPU is assigned computation (e.g. in free energy or pull/AWH simulations)
+or MPI communication is launched from the CPU (even with GPU-aware MPI), the
+GPU launch cost will compete with other CPU work and therefore represent overheads.
 In general, a user can do little to avoid such overheads, but there
 are a few cases where tweaks can give performance benefits.
 In OpenCL runs, timing of GPU tasks is by default enabled and,
@@ -1300,24 +1308,29 @@ environment variable.
 In parallel runs with many ranks sharing a GPU,
 launch overheads can also be reduced by starting fewer thread-MPI
 or MPI ranks per GPU; e.g. most often one rank per thread or core is not optimal.
+The CUDA graphs functionality (added in |Gromacs| 2023) targets reducing such
+overheads and improving GPU work scheduling efficiency and therefore
+it can provide significant improvements especially for small simulation systems
+running on fast GPUs. Since it is a new feature, in the 2023 release CUDA-graph support
+needs to be triggered using the ``GMX_CUDA_GRAPH`` environment variable.
 
-The second type of overhead, interference of the GPU driver with CPU computation,
+The second type of overhead, interference of the GPU runtime or driver with CPU computation,
 is caused by the scheduling and coordination of GPU tasks.
-A separate GPU driver thread can require CPU resources
-which may clash with the concurrently running non-offloaded tasks,
-potentially degrading the performance of PME or bonded force computation.
-This effect is most pronounced when using AMD GPUs with OpenCL with
-older driver releases (e.g. fglrx 12.15).
-To minimize the overhead it is recommended to
-leave a CPU hardware thread unused when launching :ref:`gmx mdrun`,
-especially on CPUs with high core counts and/or HyperThreading enabled.
-E.g. on a machine with a 4-core CPU and eight threads (via HyperThreading) and an AMD GPU,
-try ``gmx mdrun -ntomp 7 -pin on``.
-This will leave free CPU resources for the GPU task scheduling
-reducing interference with CPU computation.
+A separate GPU runtime/driver thread requires CPU resources
+which may compete with the concurrently running non-offloaded tasks (if present),
+potentially degrading the performance of this CPU work.
+To minimize the overhead it can be useful to
+leave at least one CPU hardware thread unused when launching :ref:`gmx mdrun`,
+especially on CPUs with high core counts and/or simultaneous multithreading enabled.
+E.g. on a machine with a 16-core CPU and 32 threads,
+try ``gmx mdrun -ntomp 31 -pin on``.
+This will leave some CPU resources for the GPU task scheduling
+potentially reducing interference with CPU computation.
 Note that assigning fewer resources to :ref:`gmx mdrun` CPU computation
-involves a tradeoff which may outweigh the benefits of reduced GPU driver overhead,
-in particular without HyperThreading and with few CPU cores.
+involves a tradeoff which, with many CPU cores per GPU, may not be significant,
+but in some cases (e.g. with multi-rank MPI runs) it may lead to complex
+resource assignment and may outweigh the benefits of reduced GPU scheduling overheads,
+so we recommend to test the alternatives before adopting such techniques.
 
 .. todo:: In future patch: any tips not covered above
 
