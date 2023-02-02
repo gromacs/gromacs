@@ -431,6 +431,39 @@ C++ compiler and standard library also. When targeting Intel GPUs, add
 folder>``. When targeting AMD GPUs, add ``-DHeffte_ENABLE_ROCM=ON
 -DHeffte_ROCM_ROOT=<path to ROCm folder>``.
 
+Using VkFFT
+~~~~~~~~~~~
+
+`VkFFT <https://github.com/DTolm/VkFFT>`_ is a multi-backend GPU-accelerated multidimensional
+Fast Fourier Transform library which aims to provide an open-source alternative to
+vendor libraries.
+
+|Gromacs| includes VkFFT support with two goals: portability across GPU platforms
+and performance improvements. VkFFT can be used with OpenCL and SYCL backends:
+
+* For SYCL builds, VkFFT provides a portable backend which currently can be used on AMD and
+  NVIDIA GPUs with hipSYCL; it generally outperforms rocFFT hence it is recommended as
+  default on AMD. Note that VkFFT is not supported with PME decomposition (which requires
+  HeFFTe) since HeFFTe does not have a VkFFT backend.
+* For OpenCL builds, VkFFT provides an alternative to ClFFT. It is
+  the default on macOS and when building with Visual Studio. On other platforms
+  it is not extensively tested, but it likely outperforms ClFFT and can be enabled
+  during cmake configuration.
+
+To enable VkFFT support, use the following CMake option:
+
+::
+        cmake -DGMX_GPU_FFT_LIBRARY=VKFFT
+
+|GROMACS| bundles VkFFT with its source code, but an external VkFFT can also be
+used (e.g. to benefit from improvements in VkFFT releases more recent than the bundled version)
+in the following manner:
+
+::
+        cmake -DGMX_GPU_FFT_LIBRARY=VKFFT \
+              -DGMX_EXTERNAL_VKFFT=ON -DVKFFT_INCLUDE_DIR=<path to VkFFT directory>
+
+
 Other optional build components
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -931,7 +964,7 @@ building |Gromacs| itself (set ``HIPSYCL_TARGETS`` to the target hardware):
    cmake .. -DCMAKE_C_COMPILER=${ROCM_PATH}/llvm/bin/clang -DCMAKE_CXX_COMPILER=${ROCM_PATH}/llvm/bin/clang++ \
             -DGMX_GPU=SYCL -DGMX_SYCL_HIPSYCL=ON -DHIPSYCL_TARGETS='hip:gfxXYZ'
 
-By default, `VkFFT <https://github.com/DTolm/VkFFT>`_ library is used to perform FFT on GPU.
+By default, `VkFFT <https://github.com/DTolm/VkFFT>`_  is used to perform FFT on GPU.
 You can switch to rocFFT by passing ``-DGMX_GPU_FFT_LIBRARY=rocFFT`` CMake flag.
 
 AMD GPUs can also be used when compiling with the open-source
