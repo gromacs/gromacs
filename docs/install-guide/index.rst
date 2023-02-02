@@ -258,10 +258,16 @@ been performed using these versions. OpenMPI with CUDA-aware support can
 be built following the procedure in `these OpenMPI build instructions
 <https://www.open-mpi.org/faq/?category=buildcuda>`_.
 
-With ``GMX_MPI=ON``, |Gromacs| attempts to automatically detect CUDA support
+For GPU-aware MPI support of Intel GPUs, use Intel MPI no earlier than
+version 2018.8. Such a version is found in the oneAPI SDKs starting
+from version 2023.0. At runtime, the LevelZero SYCL backend must be used
+and GPU-aware support in the MPI runtime `selected
+<https://www.intel.com/content/www/us/en/develop/documentation/mpi-developer-reference-linux/top/environment-variable-reference/gpu-support.html>`_.
+
+With ``GMX_MPI=ON``, |Gromacs| attempts to automatically detect GPU support
 in the underlying MPI library at compile time, and enables direct GPU 
-communication when this is detected.  However, there are some cases when
-GROMACS may fail to detect existing CUDA-aware support, in which case
+communication when this is detected. However, there are some cases when
+|Gromacs| may fail to detect existing GPU-aware MPI support, in which case
 it can be manually enabled by setting environment variable ``GMX_FORCE_GPU_AWARE_MPI=1``
 at runtime (although such cases still lack substantial
 testing, so we urge the user to carefully check correctness of results
