@@ -382,6 +382,15 @@ TEST_P(MdrunNoAppendContinuationIsExact, WithinTolerances)
         // This combination is not implemented in either legacy or modular simulator
         return;
     }
+    if (additionalMdpParameters == MdpParameterDatabase::ExpandedEnsemble
+        && (isGpuUpdateRequested || isModularSimulatorExplicitlyDisabled))
+    {
+        // Exact continuation is buggy in the legacy simulator (#4629),
+        // so we skip the test if it would run in the legacy simulator.
+        // With the current test system, this only happens if modular simulator
+        // is explicitly disabled, or if GPU update was requested (see #4711).
+        return;
+    }
 
     SCOPED_TRACE(
             formatString("Comparing normal and two-part run of simulation '%s' "
