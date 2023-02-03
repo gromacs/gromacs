@@ -269,7 +269,7 @@ static DevelopmentFeatureFlags manageDevelopmentFeatures(const gmx::MDLogger& md
                         .appendText(
                                 "This run has forced use of 'GPU-aware MPI'. "
                                 "However, GROMACS cannot determine if underlying MPI is GPU-aware. "
-                                "GROMACS recommends use of latest OpenMPI version for GPU-aware "
+                                "Check the GROMACS install guide for recommendations for GPU-aware "
                                 "support. If you observe failures at runtime, try unsetting the "
                                 "GMX_FORCE_GPU_AWARE_MPI environment variable.");
             }
@@ -288,11 +288,11 @@ static DevelopmentFeatureFlags manageDevelopmentFeatures(const gmx::MDLogger& md
                         .asParagraph()
                         .appendText(
                                 "GPU-aware MPI was not detected, will not use direct GPU "
-                                "communication. GROMACS recommends use of latest OpenMPI version "
+                                "communication. Check the GROMACS install guide for "
+                                "recommendations "
                                 "for GPU-aware support. If you are certain about GPU-aware support "
                                 "in your MPI library, you can force its use by setting the "
-                                "GMX_FORCE_GPU_AWARE_MPI environment variable. Note that such "
-                                "support is often called \"CUDA-aware MPI.\"");
+                                "GMX_FORCE_GPU_AWARE_MPI environment variable.");
             }
         }
         else if (haveDetectedGpuAwareMpi)
