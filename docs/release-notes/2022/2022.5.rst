@@ -1,10 +1,10 @@
 GROMACS 2022.5 release notes
 ----------------------------
 
-This version was released on TODO, 2023. These release notes
+This version was released on February 3rd, 2023. These release notes
 document the changes that have taken place in GROMACS since the
 previous 2022.4 version, to fix known issues. It also incorporates all
-fixes made in version 2021.6 and earlier, which you can find described
+fixes made in version 2021.7 and earlier, which you can find described
 in the :ref:`release-notes`.
 
 .. Note to developers!
