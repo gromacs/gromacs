@@ -1306,6 +1306,11 @@ void gmx::LegacySimulator::do_md()
                                                   state->v.rvec_array(),
                                                   md->homenr,
                                                   md->cTC);
+                /* history is maintained in state->dfhist, but state_global is what is sent to trajectory and log output */
+                if (MAIN(cr))
+                {
+                    copy_df_history(state_global->dfhist, state->dfhist);
+                }
             }
 
             // Copy coordinate from the GPU for the output/checkpointing if the update is offloaded

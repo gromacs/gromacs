@@ -74,8 +74,3 @@ will always trigger a fatal error when perturbed excluded pairs are beyond rlist
 :issue:`3403`
 :issue:`4321`
 :issue:`4461`
-
-Fix checkpointing of expanded ensemble simulations with the modular simulator and domain decomposition
-""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-
-:issue:`4629`
