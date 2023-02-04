@@ -130,7 +130,7 @@ static const gmx::EnumerationArray<DeviceStatus, const char*> c_deviceStateStrin
     "unavailable",
     "not in set of targeted devices",
     "incompatible (Level Zero backend is not stable with oneAPI 2022.0)", // Issue #4354
-    "incompatible (AMD RDNA devices are not supported)"                   // Issue #4521
+    "incompatible (AMD RDNA devices are not supported)",                  // Issue #4521
     // clang-format off
     // NOLINTNEXTLINE(bugprone-suspicious-missing-comma)
     "incompatible (please recompile with GMX" "_HIPSYCL_ENABLE_AMD_RDNA_SUPPORT)"
