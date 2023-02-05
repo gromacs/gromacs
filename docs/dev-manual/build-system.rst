@@ -336,11 +336,6 @@ Variables affecting compilation/linking
 
    Path to VMD plugins for molfile I/O. Only used when ``GMX_USE_PLUGINS`` is enabled.
 
-.. cmake:: GMX_XML
-
-   Currently, this option has no effect on the compilation or linking, since
-   there is no code outside the tests that would use :file:`libxml2`.
-
 Variables affecting the ``all`` target
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -566,7 +561,7 @@ tests
    See :doc:`testutils`.
 webpage
    Collection target that runs the other documentation targets to generate the
-   full set of HTML (and linked) documentaion.
+   full set of HTML (and linked) documentation.
    This target is used as part of the CI.
    All CMake code is in :file:`docs/`.
 webpage-sphinx
