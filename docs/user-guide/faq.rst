@@ -81,7 +81,7 @@ Questions concerning system preparation and preprocessing
    You don't need to prepare additional files if you already have all :ref:`itp` and :ref:`top` files prepared through other tools.
 
    Examples for those are `CHARMM-GUI <http://www.charmm-gui.org/>`__, `ATB (Automated Topology Builder) <https://atb.uq.edu.au/>`__,
-   `pmx <http://pmx.mpibpc.mpg.de/instructions.html>`__. and `PRODRG <http://davapc1.bioch.dundee.ac.uk/cgi-bin/prodrg>`__.
+   `pmx <http://pmx.mpibpc.mpg.de/instructions.html>`__, and `PRODRG <http://davapc1.bioch.dundee.ac.uk/cgi-bin/prodrg>`__.
 
 #. How can I build in missing atoms?
 

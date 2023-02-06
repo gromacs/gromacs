@@ -467,13 +467,15 @@ and performance improvements. VkFFT can be used with OpenCL and SYCL backends:
 To enable VkFFT support, use the following CMake option:
 
 ::
+
         cmake -DGMX_GPU_FFT_LIBRARY=VKFFT
 
-|GROMACS| bundles VkFFT with its source code, but an external VkFFT can also be
+|Gromacs| bundles VkFFT with its source code, but an external VkFFT can also be
 used (e.g. to benefit from improvements in VkFFT releases more recent than the bundled version)
 in the following manner:
 
 ::
+
         cmake -DGMX_GPU_FFT_LIBRARY=VKFFT \
               -DGMX_EXTERNAL_VKFFT=ON -DVKFFT_INCLUDE_DIR=<path to VkFFT directory>
 
@@ -1442,7 +1444,8 @@ A typical example for SLURM is
 
 ::
 
-     cmake .. -DGMX_MPI=on -DMPIEXEC=srun -DMPIEXEC_NUMPROC_FLAG=-n -DMPIEXEC_PREFLAGS= -DMPIEXEC_POSTFLAGS=
+     cmake .. -DGMX_MPI=on -DMPIEXEC=srun -DMPIEXEC_NUMPROC_FLAG=-n \
+              -DMPIEXEC_PREFLAGS= -DMPIEXEC_POSTFLAGS=
 
 
 Testing |Gromacs| for performance
