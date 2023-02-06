@@ -169,7 +169,8 @@ void LincsConstraintsRunner::applyConstraints(ConstraintsTestData* testData, t_p
                                    gmx::ConstraintVariable::Positions,
                                    &testData->nrnb_,
                                    maxwarn,
-                                   &warncount_lincs);
+                                   &warncount_lincs,
+                                   nullptr);
     EXPECT_TRUE(success) << "Test failed with a false return value in LINCS.";
     EXPECT_EQ(warncount_lincs, 0) << "There were warnings in LINCS.";
     done_lincs(lincsd);

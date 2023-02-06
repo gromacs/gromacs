@@ -156,6 +156,7 @@ enum class WallCycleSubCounter : int
     MdGpuGraphInstantiateOrUpdate,
     MdGpuGraphWaitBeforeLaunch,
     MdGpuGraphLaunch,
+    ConstrComm,
     Test,
     Count
 };
