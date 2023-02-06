@@ -14,27 +14,6 @@ We recommend using CUDA 11.4 or newer.
 
 :issue:`4037`
 
-Verlet buffer underestimated for inhomogeneous systems
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-The current Verlet buffer estimation code assumes that the density
-in the system is uniform. This leads to an underestimate of the buffer
-for strongly inhomogeneous systems. The temporary solution to this is
-to lower the verlet-buffer-tolerance parameter value by the factor between
-the uniform density and the local density. In the 2023 release this
-correction will be performed automatically.
-
-:issue:`4509`
-
-Verlet buffer underestimated when using only r^-12 potentials
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-When only the repulsive part of the Lennard-Jones potential is used,
-as can be the case in coarse-grained systems, the Verlet buffer can be
-underestimated due to the extremely non-linear nature of the r^-12 potential.
-A temporary solution is to decrease the verlet-buffer-tolerance until you
-get a non-zero Verlet buffer. This issue will be fixed in the 2023 release.
-
 The deform option is not suitable for flow
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -88,7 +67,6 @@ from CMake or later during build.
 
 :issue:`4574`
 
-
 "Cannot find a working standard library" error with ROCm Clang
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -97,3 +75,45 @@ In such cases, you might have to install ``g++`` and help CMake find it
 by setting ``-DGMX_GPLUSGPLUS_PATH=/path/to/bin/g++``. 
 
 :issue:`4679`
+
+Ryckaert-Bell dihedral potential calculated imprecisely on Gen9 Intel GPUs
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+In SYCL/oneAPI build, when bonded forces are offloaded to an Intel Gen9 GPU
+(HD Graphics 5xx to 7xx-series; Skylake to Gemini Lake) the Ryckaert-Bell potential
+is computed imprecisely. This is unlikely to lead to wrong results, but
+we still recommend disabling listed forces offload (``-bonded cpu``) when running
+on Gen9 Intel integrated GPUs, especially since offloading is unlikely to offer significant
+performance advantage on such devices.
+
+:issue:`4686`
+
+CPU FFT broken with MKL 2023.0
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+When built with MKL 2023.0, CPU FFT fails at plan creation. This is caught by unit tests
+(``make check``). We recommend using older version of MKL (2022.3 is known to work)
+or :ref:`switching to FFTW3 library <FFT support>`.
+
+:issue:`4691`
+
+Expanded ensemble does not checkpoint correctly
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+In the legacy simulator, because of shortcomings in the
+implementation, successful expanded-ensemble MC steps that occured on
+checkpoint steps were not recorded in the checkpoint. If that
+checkpoint was used for a restart, then it would not necessarily
+behave correctly and reproducibly afterwards. So checkpointing of
+expanded-ensemble simulations is disabled for the legacy simulator.
+
+Checkpointing of expanded ensemble in the modular simulator works
+correctly.
+
+To work around the issue, either avoid ``-update gpu`` (so that it
+uses the modular simulator path which does not have
+the bug), or use an older version of |Gromacs|
+(which does do the buggy checkpointing), or refrain from
+restarting from checkpoints in the affected case.
+
+:issue:`4629`

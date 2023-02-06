@@ -247,7 +247,17 @@ const MdpDatabase c_additionalMdpOptions{ { MdpParameterDatabase::Default, {} },
                                               { "awh2-dim1-start", "178" },
                                               { "awh2-dim1-end", "-178" },
                                               { "awh2-dim1-force-constant", "4000" },
-                                              { "awh2-dim1-diffusion", "0.1" } } } };
+                                              { "awh2-dim1-diffusion", "0.1" } } },
+                                          { MdpParameterDatabase::ExpandedEnsemble,
+                                            { { "free-energy", "expanded" },
+                                              { "nstcalcenergy", "1" },
+                                              { "nstexpanded", "1" },
+                                              { "lmc-stats", "weighted-wang-landau" },
+                                              { "lmc-move", "metropolized-gibbs" },
+                                              { "lmc-seed", "52435" },
+                                              // very large wang-landau incrementor to exaggerate effect
+                                              { "init-wl-delta", "10" },
+                                              { "nstlog", "1" } } } };
 
 /*! \brief Prepare default .mdp values
  *

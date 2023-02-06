@@ -77,39 +77,8 @@ from logging import getLogger, DEBUG, NullHandler
 
 # Define `logger` attribute that is used by submodules to create sub-loggers.
 logger = getLogger("gmxapi")
-# Prevent gmxapi logs from propagating to the root logger (and to sys.stderr)
+# Prevent gmxapi logs from reaching logging.lastResort (and printing to sys.stderr)
 # if the user does not take action to handle logging.
 logger.addHandler(NullHandler(level=DEBUG))
-
-try:
-    from mpi4py import MPI
-
-    rank_number = MPI.COMM_WORLD.Get_rank()
-    comm_size = MPI.COMM_WORLD.Get_size()
-except ImportError:
-    rank_number = 0
-    comm_size = 1
-    rank_tag = ""
-    MPI = None
-else:
-    rank_tag = "rank{}:".format(rank_number)
-
-old_factory = logging.getLogRecordFactory()
-
-
-def record_factory(*args, **kwargs):
-    record = old_factory(*args, **kwargs)
-    record.rank_tag = rank_tag
-    return record
-
-
-logging.setLogRecordFactory(record_factory)
-
-# We can't (and shouldn't) forcibly update the log handlers for the user, but we could
-# provide a utility function or at least advise that we have enabled an additional
-# logging tag.
-# log_format = '%(levelname)s %(name)s %(rank_tag)s%(message)s'
-# for handler in logging.getLogger().handlers:
-#     handler.setFormatter(logging.Formatter(log_format))
 
 logger.info("Importing gmxapi.")

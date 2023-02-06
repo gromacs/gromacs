@@ -109,7 +109,7 @@ void nblock_abc(bool isMainRank, MPI_Comm communicator, int numElements, std::ve
 //! \brief Broadcasts the, non-dynamic, state from the main to all ranks in cr->mpi_comm_mygroup
 //
 // This is intended to be used with MPI parallelization without
-// domain decompostion (currently with NM and TPI).
+// domain decomposition (currently with NM and TPI).
 void broadcastStateWithoutDynamics(MPI_Comm communicator,
                                    bool     useDomainDecomposition,
                                    bool     isParallelRun,

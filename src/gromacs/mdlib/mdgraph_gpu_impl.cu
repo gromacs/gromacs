@@ -41,6 +41,8 @@
  * \ingroup module_mdlib
  */
 
+#include "gmxpre.h"
+
 #include "mdgraph_gpu_impl.h"
 
 #include "gromacs/gpu_utils/device_stream.h"

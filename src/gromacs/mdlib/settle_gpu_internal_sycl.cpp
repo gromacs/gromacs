@@ -40,6 +40,8 @@
  * \ingroup module_mdlib
  */
 
+#include "gmxpre.h"
+
 #include "gromacs/gpu_utils/devicebuffer.h"
 #include "gromacs/gpu_utils/sycl_kernel_utils.h"
 #include "gromacs/pbcutil/pbc_aiuc_sycl.h"

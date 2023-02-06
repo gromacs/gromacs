@@ -545,29 +545,6 @@ include(gmxManageSuffixes)
 # Find external packages                                               #
 ########################################################################
 
-# Unconditionally find the package, as it is also required for unit
-# tests. This exports LIBXML2_FOUND, which we should not use because
-# it does not tell us that linking will succeed. Instead, we test that
-# next.
-#if(DEFINED LIBXML2_LIBRARIES)
-#  set(LibXml2_FIND_QUIETLY TRUE)
-#endif()
-#find_package(LibXml2)
-#include(gmxTestLibXml2)
-#gmx_test_libxml2(HAVE_LIBXML2)
-#option(GMX_XML "Use libxml2 to parse xml files (currently has no effect)" ${HAVE_LIBXML2})
-#set(PKG_XML "")
-#mark_as_advanced(GMX_XML)
-# Don't actually do anything, since libxml2 is currently not used by libgromacs
-#if(GMX_XML AND NOT HAVE_LIBXML2)
-#    message(FATAL_ERROR "libxml2 not found. Set GMX_XML=OFF to compile without XML support")
-#endif()
-#if(GMX_XML)
-#    include_directories(${LIBXML2_INCLUDE_DIR})
-#    set(PKG_XML libxml-2.0)
-#    set(XML_LIBRARIES ${LIBXML2_LIBRARIES})
-#endif()
-
 option(GMX_HWLOC "Use hwloc portable hardware locality library" OFF)
 
 if (GMX_HWLOC)
@@ -768,10 +745,6 @@ if(GMX_USE_HEFFTE)
     if(NOT GMX_LIB_MPI)
         message(FATAL_ERROR "HeFFTe support requires a library MPI build")
     endif()
-    # Find quietly the second time.
-    if (Heffte_FIND_QUIETLY_AFTER_FIRST_RUN)
-        set(Heffte_FIND_QUIETLY TRUE)
-    endif()
     if(GMX_GPU_CUDA)
         find_package(Heffte 2.2.0 REQUIRED CUDA)
     elseif(GMX_GPU_SYCL)
@@ -790,6 +763,8 @@ if(GMX_USE_HEFFTE)
         endif()
     endif()
     set(GMX_USE_Heffte ${Heffte_FOUND})
+    # Find quietly in subsequent passes
+    set(Heffte_FIND_QUIETLY TRUE CACHE INTERNAL "Find HeFFTe quietly in future CMake passes")
 endif()
 
 if(GMX_USE_CUFFTMP)

@@ -374,6 +374,7 @@ if (SPHINX_FOUND)
         release-notes/2024/major/portability.rst
         release-notes/2024/major/miscellaneous.rst
         release-notes/2024/major/api.rst
+        release-notes/2023/2023.1.rst
         release-notes/2023/major/highlights.rst
         release-notes/2023/major/features.rst
         release-notes/2023/major/performance.rst
@@ -389,6 +390,7 @@ if (SPHINX_FOUND)
         release-notes/2022/2022.3.rst
         release-notes/2022/2022.4.rst
         release-notes/2022/2022.5.rst
+        release-notes/2022/2022.6.rst
         release-notes/2022/major/highlights.rst
         release-notes/2022/major/features.rst
         release-notes/2022/major/performance.rst

@@ -52,6 +52,7 @@
 
 struct gmx_mtop_t;
 struct gmx_multisim_t;
+struct gmx_wallcycle;
 class InteractionDefinitions;
 struct t_commrec;
 struct t_inputrec;
@@ -120,7 +121,8 @@ bool constrain_lincs(bool                            computeRmsd,
                      ConstraintVariable              econq,
                      t_nrnb*                         nrnb,
                      int                             maxwarn,
-                     int*                            warncount);
+                     int*                            warncount,
+                     gmx_wallcycle*                  wcycle);
 
 } // namespace gmx
 

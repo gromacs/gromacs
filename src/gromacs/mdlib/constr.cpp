@@ -489,11 +489,13 @@ bool Constraints::Impl::apply(bool                      bLog,
      */
     if (havePPDomainDecomposition(cr))
     {
+        wallcycle_sub_start(wcycle, WallCycleSubCounter::ConstrComm);
         dd_move_x_constraints(cr->dd,
                               box,
                               x.unpaddedArrayRef(),
                               xprime.unpaddedArrayRef(),
                               econq == ConstraintVariable::Positions);
+        wallcycle_sub_stop(wcycle, WallCycleSubCounter::ConstrComm);
 
         if (!v.empty())
         {
@@ -529,7 +531,8 @@ bool Constraints::Impl::apply(bool                      bLog,
                               econq,
                               nrnb,
                               maxwarn,
-                              &warncount_lincs);
+                              &warncount_lincs,
+                              wcycle);
         if (!bOK && maxwarn < INT_MAX)
         {
             if (log != nullptr)

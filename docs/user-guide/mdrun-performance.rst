@@ -116,8 +116,15 @@ definitions. Experienced HPC users can skip this section.
         An open standard-based parallel computing framework that consists
         of a C99-based compiler and a programming API for targeting heterogeneous
         and accelerator hardware. |Gromacs| uses OpenCL for GPU acceleration
-        on AMD devices (both GPUs and APUs) and Intel integrated GPUs; NVIDIA
-        hardware is also supported.
+        on AMD devices (both GPUs and APUs), Intel integrated GPUs, and Apple
+        Silicon integrated GPUs; some NVIDIA hardware is also supported.
+        In |Gromacs|, OpenCL has been deprecated in favor of SYCL.
+
+    SYCL
+        An open standard based on C++17 for targeting heterogeneous systems.
+        SYCL has several implementations, of which |Gromacs| supports two:
+        `Intel oneAPI DPC++`_ and hipSYCL_. |Gromacs| uses SYCL for GPU acceleration
+        on AMD and Intel GPUs. There is experimental support for NVIDIA GPUs too.
 
     SIMD
         A type of CPU instruction by which modern CPU cores can execute multiple
@@ -305,7 +312,7 @@ While the automated CPU-GPU load balancing always attempts to find the optimal c
 it might not always be possible to balance CPU and GPU workload. This happens when the CPU threads
 finish calculating the bonded forces and PME faster than the GPU the non-bonded force calculation,
 even with the shortest possible cut-off. In such cases the CPU will wait for the GPU and this
-time will show up as ``Wait GPU local`` in the cycle and timing summary table at the end
+time will show up as ``Wait GPU NB local`` in the cycle and timing summary table at the end
 of the log file.
 
 Parallelization over multiple nodes via MPI
@@ -399,7 +406,7 @@ another. As PME requires all-to-all global communication, this is most of the ti
 factor to scaling on a large number of cores. By designating a subset of ranks for PME
 calculations only, performance of parallel runs can be greatly improved.
 
-OpenMP mutithreading in PME ranks is also possible.
+OpenMP multithreading in PME ranks is also possible.
 Using multi-threading in PME can can improve performance at high
 parallelization. The reason for this is that with N>1 threads the number of processes
 communicating, and therefore the number of messages, is reduced by a factor of N.
@@ -793,13 +800,15 @@ cases.
     exceeded, DLB activates and shifts particles between ranks to improve
     performance. If available, using ``-bonded gpu`` is expected
     to improve the ability of DLB to maximize performance.
+    DLB is not compatible with GPU-resident parallelization (with ``-update gpu``)
+    and therefore it remains switched off in such simulations.
 
 During the simulation :ref:`gmx mdrun` must communicate between all
 PP ranks to compute quantities such as kinetic energy for log file
 reporting, or perhaps temperature coupling. By default, this happens
 whenever necessary to honor several :ref:`mdp options <mdp-general>`,
 so that the period between communication phases is the least common
-denominator of :mdp:`nstlist`, :mdp:`nstcalcenergy`,
+denominator of :mdp:`nstcalcenergy`,
 :mdp:`nsttcouple`, and :mdp:`nstpcouple`.
 
 Note that ``-tunepme`` has more effect when there is more than one
@@ -925,7 +934,7 @@ in rows of the table.
 The table contains columns indicating the number of ranks and threads that
 executed the respective part of the run, wall-time and cycle
 count aggregates (across all threads and ranks) averaged over the entire run.
-The last column also shows what precentage of the total runtime each row represents.
+The last column also shows what percentage of the total runtime each row represents.
 Note that the :ref:`gmx mdrun` timer resetting functionalities (``-resethway`` and ``-resetstep``)
 reset the performance counters and therefore are useful to avoid startup overhead and
 performance instability (e.g. due to load balancing) at the beginning of the run.
@@ -971,6 +980,7 @@ The performance counters are:
 * Add rotational forces
 * Position swapping
 * Interactive MD
+* MD Graph
 
 As performance data is collected for every run, they are essential to assessing
 and tuning the performance of :ref:`gmx mdrun` performance. Therefore, they benefit
@@ -1056,7 +1066,7 @@ the short-range :ref:`nonbonded interactions in real space <gmx-gpu-pp>`,
 and :ref:`PME <gmx-gpu-pme>`.
 
 |Gromacs| supports two major offload modes: force-offload and GPU-resident.
-The former involves offloading interaction calculations with integration
+The former involves offloading some of or all interaction calculations with integration
 on the CPU (hence requiring per-step data movement). In the GPU-resident mode
 by offloading integration and constraints (when used) less data movement is
 necessary.
@@ -1068,7 +1078,7 @@ the features and parallelization modes and can be used to scale to large machine
 Simultaneously offloading both short-range nonbonded and long-range
 PME work to GPU accelerators has some restrictions in terms of feature and parallelization
 compatibility (please see the :ref:`section below <gmx-pme-gpu-limitations>`).
-Offloading (most types of) bonded interactions is only supported in CUDA.
+Offloading (most types of) bonded interactions is supported in CUDA and SYCL.
 The GPU-resident mode is supported with CUDA and SYCL, but it has additional limitations as
 described in :ref:`the GPU update section <gmx-gpu-update>`.
 
@@ -1092,7 +1102,7 @@ GPU accelerated calculation of PME
 
 .. todo:: again, extend this and add some actual useful information concerning performance etc...
 
-|Gromacs| now allows the offloading of the PME calculation
+|Gromacs| allows offloading of the PME calculation
 to the GPU, to further reduce the load on the CPU and improve usage overlap between
 CPU and GPU. Here, the solving of PME will be performed in addition to the calculation
 of the short range interactions on the same GPU as the short range interactions.
@@ -1106,26 +1116,31 @@ Known limitations
 
 - Only a PME order of 4 is supported on GPUs.
 
-- PME can run on a GPU only when exactly one rank has a
-  PME task, ie. decompositions with multiple ranks (hence multiple GPUs) computing
-  PME are not supported.
-  Note that experimental PME decomposition in hybrid mode (``-pmefft cpu``) is supported
-  from the 2022 release.
+- Multiple ranks (hence multiple GPUs) computing PME have limited support:
+  experimental PME decomposition in hybrid mode (``-pmefft cpu``) with
+  CUDA from the 2022 release and full GPU PME decomposition since the
+  2023 release with CUDA or SYCL (when GROMACS is built with
+  :ref:`cuFFTMp <cufftmp installation>` or
+  :ref:`HeFFTe <heffte installation>`).
 
 - Only dynamical integrators are supported (ie. leap-frog, Velocity Verlet,
   stochastic dynamics)
 
 - LJ PME is not supported on GPUs.
 
+- When GROMACS is built with SYCL using oneAPI for AMD/NVIDIA GPUs, only
+  hybrid mode (``-pmefft cpu``) is supported. Fully-offloaded PME is supported
+  when using oneAPI for Intel GPUs and hipSYCL for AMD/NVIDIA GPUs.
+
 .. _gmx-gpu-bonded:
 
-GPU accelerated calculation of bonded interactions (CUDA only)
-..............................................................
+GPU accelerated calculation of bonded interactions (CUDA and SYCL)
+.......................................................................
 
 .. todo:: again, extend this and add some actual useful information concerning performance etc...
 
-|Gromacs| now allows the offloading of the bonded part of the PP
-workload to a CUDA-compatible GPU. This is treated as part of the PP
+|Gromacs| allows the offloading of the bonded part of the PP
+workload to a compatible GPU. This is treated as part of the PP
 work, and requires that the short-ranged non-bonded task also runs on
 a GPU. Typically, there is a performance advantage to offloading
 bonded interactions in particular when the amount of CPU resources per GPU
@@ -1172,7 +1187,6 @@ However, in typical throughput cases where multiple runs are assigned to each GP
 offloading everything, especially without moving back some of the work to the CPU
 can perform worse than the parallelization mode where only force computation is offloaded.
 
-
 Assigning tasks to GPUs
 .......................
 
@@ -1211,7 +1225,7 @@ One overview over the possible task assignments is given below:
 
 |Gromacs| version 2021/2022:
 
-  Communication and auxiliary tasks can also be offloaded.
+  Communication and auxiliary tasks can also be offloaded in CUDA builds.
   In domain-decomposition halo exchange and PP-PME communication,
   instead of staging transfers between GPUs though the CPU,
   direct GPU--GPU communication is possible.
@@ -1224,7 +1238,13 @@ One overview over the possible task assignments is given below:
   on supported systems).
 
 |Gromacs| version 2023:
+
   Update now runs by default on the GPU with supported simulation settings; note that this is only available with CUDA and SYCL not with OpenCL.
+  
+  PME decomposition support adds additional parallelization-related auxiliary GPU tasks including grid packing and reduction operations
+  as well as distributed GPU FFT computation.
+
+  Experimental support for CUDA-graphs scheduling has been added, which supports most GPU-resident runs that don't require CPU force computation.
 
 
 Performance considerations for GPU tasks
@@ -1247,17 +1267,20 @@ Performance considerations for GPU tasks
    as efficient CPU-based kernels can complete the bonded computation
    before the GPU is done with other offloaded work. Therefore,
    `gmx mdrun` will default to no bonded offload when PME is offloaded.
-   Typical cases where performance can be improvement with bonded offload are:
+   Typical cases where performance can improve with bonded offload are:
    with significant bonded work (e.g. pure lipid or mostly polymer systems with little solvent),
    with very few and/or slow CPU cores per GPU, or when the CPU does
    other computation (e.g. PME, free energy).
 
-#) It *is* possible to use multiple GPUs with PME offload
-   by letting e.g.
-   3 MPI ranks use one GPU each for short-range interactions,
-   while a fourth rank does the PME on its GPU.
+#) On most modern hardware GPU-resident mode (default) is faster than force-offload mode,
+   although it may leave the CPU idle. Moving back the bonded work to the CPU (``-bonded cpu``) is a
+   better way to make use of a fast CPU than leaving integration and constraints on the CPU.
+   The only exception may be multi-simulations with a significant number of simulations assigned to each GPU.
 
-#) The only way to know for sure what alternative is best for
+#) Direct GPU communication will in most cases outperform staged communication (both with thread-MPI and MPI).
+   Ideally it should be combined with GPU-resident mode to maximize the benefit.
+
+#) The only way to know for sure which alternative is best for
    your machine is to test and check performance.
 
 .. todo:: we need to be more concrete here, i.e. what machine/software aspects to take into consideration, when will default run mode be using PME-GPU and when will it not, when/how should the user reason about testing different settings than the default.
@@ -1269,19 +1292,26 @@ Reducing overheads in GPU accelerated runs
 
 In order for CPU cores and GPU(s) to execute concurrently, tasks are
 launched and executed asynchronously on the GPU(s) while the CPU cores
-execute non-offloaded force computation (like long-range PME electrostatics).
-Asynchronous task launches are handled by GPU device driver and
-require CPU involvement. Therefore, the work of scheduling
-GPU tasks will incur an overhead that can in some cases significantly
-delay or interfere with the CPU execution.
+execute non-offloaded force computation (like computing bonded forces or free energy computation).
+Asynchronous task launches are handled by the GPU device driver and
+require CPU involvement. Therefore, scheduling
+GPU tasks requires CPU resources that can compete with other CPU tasks
+and cause interference that could lead to slowdown.
 
 Delays in CPU execution are caused by the latency of launching GPU tasks,
 an overhead that can become significant as simulation ns/day increases
 (i.e. with shorter wall-time per step).
-The overhead is measured by :ref:`gmx mdrun` and reported in the performance
-summary section of the log file ("Launch GPU ops" row).
-A few percent of runtime spent in this category is normal,
-but in fast-iterating and multi-GPU parallel runs 10% or larger overheads can be observed.
+The cost of launching GPU work is measured by :ref:`gmx mdrun` and reported in the performance
+summary section of the log file ("Launch PP GPU ops."/"Launch PME GPU ops." rows).
+A few percent of runtime spent in launching work is normal,
+but in fast-iterating and multi-GPU parallel runs, costs of 10% or larger can be observed.
+Whether this has a significant performance impact depends on how much work
+within the main MD step is assigned to the CPU. With most or all force computation offloaded,
+and when the CPU is not involved in communication (e.g. with thread-MPI and direct GPU communication enabled) 
+it may be that large launch costs do not lead to large performance losses.
+However, when the CPU is assigned computation (e.g. in free energy or pull/AWH simulations)
+or MPI communication is launched from the CPU (even with GPU-aware MPI), the
+GPU launch cost will compete with other CPU work and therefore represent overheads.
 In general, a user can do little to avoid such overheads, but there
 are a few cases where tweaks can give performance benefits.
 In OpenCL runs, timing of GPU tasks is by default enabled and,
@@ -1292,24 +1322,29 @@ environment variable.
 In parallel runs with many ranks sharing a GPU,
 launch overheads can also be reduced by starting fewer thread-MPI
 or MPI ranks per GPU; e.g. most often one rank per thread or core is not optimal.
+The CUDA graphs functionality (added in |Gromacs| 2023) targets reducing such
+overheads and improving GPU work scheduling efficiency and therefore
+it can provide significant improvements especially for small simulation systems
+running on fast GPUs. Since it is a new feature, in the 2023 release CUDA-graph support
+needs to be triggered using the ``GMX_CUDA_GRAPH`` environment variable.
 
-The second type of overhead, interference of the GPU driver with CPU computation,
+The second type of overhead, interference of the GPU runtime or driver with CPU computation,
 is caused by the scheduling and coordination of GPU tasks.
-A separate GPU driver thread can require CPU resources
-which may clash with the concurrently running non-offloaded tasks,
-potentially degrading the performance of PME or bonded force computation.
-This effect is most pronounced when using AMD GPUs with OpenCL with
-older driver releases (e.g. fglrx 12.15).
-To minimize the overhead it is recommended to
-leave a CPU hardware thread unused when launching :ref:`gmx mdrun`,
-especially on CPUs with high core counts and/or HyperThreading enabled.
-E.g. on a machine with a 4-core CPU and eight threads (via HyperThreading) and an AMD GPU,
-try ``gmx mdrun -ntomp 7 -pin on``.
-This will leave free CPU resources for the GPU task scheduling
-reducing interference with CPU computation.
+A separate GPU runtime/driver thread requires CPU resources
+which may compete with the concurrently running non-offloaded tasks (if present),
+potentially degrading the performance of this CPU work.
+To minimize the overhead it can be useful to
+leave at least one CPU hardware thread unused when launching :ref:`gmx mdrun`,
+especially on CPUs with high core counts and/or simultaneous multithreading enabled.
+E.g. on a machine with a 16-core CPU and 32 threads,
+try ``gmx mdrun -ntomp 31 -pin on``.
+This will leave some CPU resources for the GPU task scheduling
+potentially reducing interference with CPU computation.
 Note that assigning fewer resources to :ref:`gmx mdrun` CPU computation
-involves a tradeoff which may outweigh the benefits of reduced GPU driver overhead,
-in particular without HyperThreading and with few CPU cores.
+involves a tradeoff which, with many CPU cores per GPU, may not be significant,
+but in some cases (e.g. with multi-rank MPI runs) it may lead to complex
+resource assignment and may outweigh the benefits of reduced GPU scheduling overheads,
+so we recommend to test the alternatives before adopting such techniques.
 
 .. todo:: In future patch: any tips not covered above
 
@@ -1317,9 +1352,11 @@ Running the OpenCL version of mdrun
 -----------------------------------
 
 Currently supported hardware architectures are:
-- GCN-based AMD GPUs;
-- NVIDIA GPUs (with at least OpenCL 1.2 support);
+
+- GCN-based and CDNA-based AMD GPUs;
+- NVIDIA GPUs prior to Volta;
 - Intel iGPUs.
+
 Make sure that you have the latest drivers installed. For AMD GPUs,
 the compute-oriented `ROCm <https://rocm.github.io/>`_ stack is recommended;
 alternatively, the AMDGPU-PRO stack is also compatible; using the outdated
@@ -1361,6 +1398,8 @@ Known limitations of the OpenCL support
 Limitations in the current OpenCL support of interest to |Gromacs| users:
 
 - Intel integrated GPUs are supported. Intel CPUs and Xeon Phi are not supported.
+  Set ``-DGMX_GPU_NB_CLUSTER_SIZE=4`` when compiling |Gromacs| to run on consumer
+  Intel GPUs (as opposed to Ponte Vecchio / Data Center Max GPUs).
 - Due to blocking behavior of some asynchronous task enqueuing functions
   in the NVIDIA OpenCL runtime, with the affected driver versions there is
   almost no performance gain when using NVIDIA GPUs.
@@ -1373,11 +1412,20 @@ Limitations in the current OpenCL support of interest to |Gromacs| users:
   incorrect results with driver version up to 440.x (most likely due to compiler issues).
   Runs typically fail on these architectures.
 
-Limitations of interest to |Gromacs| developers:
+Running SYCL version of mdrun
+-----------------------------
 
-- The current implementation requires a minimum execution with of 16; kernels
-  compiled for narrower execution width (be it due to hardware requirements or
-  compiler choice) will not be suitable and will trigger a runtime error.
+Make sure that you have the latest drivers installed and check the :ref:`installation guide <SYCL GPU acceleration>`
+for the list of compatible hardware and software and the recommended compile-time options.
+
+Please keep in mind the following environment variables that might be useful:
+
+- When using oneAPI runtime:
+
+  - ``SYCL_CACHE_PERSISTENT=1``: enables caching of GPU kernels, reducing :ref:`gmx mdrun` startup time.
+
+In addition to ``-gpu_id`` option, backend-specific environment variables, like ``SYCL_DEVICE_FILTER``
+or ``ROCR_VISIBLE_DEVICES``, could be used to select GPUs.
 
 Performance checklist
 ---------------------
@@ -1408,7 +1456,7 @@ of 2. So it can be useful go through the checklist.
   * Use a recent GPU driver.
   * Make sure you use an :ref:`gmx mdrun` with ``GMX_SIMD`` appropriate for the CPU
     architecture; the log file will contain a warning note if suboptimal setting is used.
-    However, prefer ``AVX2` over ``AVX512`` in GPU or highly parallel MPI runs (for more
+    However, prefer ``AVX2`` over ``AVX512`` in GPU or highly parallel MPI runs (for more
     information see the :ref:`intra-core parallelization information <intra-core-parallelization>`).
   * If compiling on a cluster head node, make sure that ``GMX_SIMD``
     is appropriate for the compute nodes.
@@ -1462,7 +1510,7 @@ Checking and improving performance
       (e.g. ``nstlist=200-300`` with PME and default Verlet buffer tolerance).
 
 * If ``Comm. energies`` takes a lot of time (a note will be printed in the log
-  file), increase nstcalcenergy.
+  file), increase ``nstcalcenergy``.
 * If all communication takes a lot of time, you might be running on too many
   cores, or you could try running combined MPI/OpenMP parallelization with 2
   or 4 OpenMP threads per MPI process.

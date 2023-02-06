@@ -157,7 +157,7 @@ static const char* enumValueToString(PmeLoadBalancingLimit enumValue)
     constexpr gmx::EnumerationArray<PmeLoadBalancingLimit, const char*> pmeLoadBalancingLimitNames = {
         "no",
         "box size",
-        "domain decompostion",
+        "domain decomposition",
         "PME grid restriction",
         "maximum allowed grid scaling"
     };

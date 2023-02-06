@@ -407,7 +407,7 @@ Logging
 
 *gmxapi* uses the Python :py:mod:`logging` module to provide hierarchical
 logging, organized by submodule.
-You can access the logger at ``gmxapi.logger`` or, after importing *gmxapi*,
+You can access the logger at ``gmxapi.logger`` or
 through the Python logging framework::
 
     import gmxapi as gmx

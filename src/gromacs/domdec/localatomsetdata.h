@@ -65,7 +65,7 @@ public:
      * Prior to domain decomposition, local atom indices are global atom indices
      * and the collective index runs from 0..numberOfAtoms-1.
      * local and collective indices will be updated in setLocalAndCollectiveIndices
-     * to match domain decompostion if domain decomposition is performed.
+     * to match domain decomposition if domain decomposition is performed.
      *
      * \todo remove this constructor once all indices are represented
      *       as gmx::index instead of int.
@@ -88,7 +88,7 @@ public:
      * Prior to domain decomposition, local atom indices are global atom indices
      * and the collective index runs from 0..numberOfAtoms-1.
      * local and collective indices will be updated in setLocalAndCollectiveIndices
-     * to match domain decompostion if domain decomposition is performed.
+     * to match domain decomposition if domain decomposition is performed.
      *
      * \param[in] globalAtomIndex Indices of the atoms to be managed
      */

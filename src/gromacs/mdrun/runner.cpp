@@ -269,7 +269,7 @@ static DevelopmentFeatureFlags manageDevelopmentFeatures(const gmx::MDLogger& md
                         .appendText(
                                 "This run has forced use of 'GPU-aware MPI'. "
                                 "However, GROMACS cannot determine if underlying MPI is GPU-aware. "
-                                "GROMACS recommends use of latest OpenMPI version for GPU-aware "
+                                "Check the GROMACS install guide for recommendations for GPU-aware "
                                 "support. If you observe failures at runtime, try unsetting the "
                                 "GMX_FORCE_GPU_AWARE_MPI environment variable.");
             }
@@ -288,11 +288,11 @@ static DevelopmentFeatureFlags manageDevelopmentFeatures(const gmx::MDLogger& md
                         .asParagraph()
                         .appendText(
                                 "GPU-aware MPI was not detected, will not use direct GPU "
-                                "communication. GROMACS recommends use of latest OpenMPI version "
+                                "communication. Check the GROMACS install guide for "
+                                "recommendations "
                                 "for GPU-aware support. If you are certain about GPU-aware support "
                                 "in your MPI library, you can force its use by setting the "
-                                "GMX_FORCE_GPU_AWARE_MPI environment variable. Note that such "
-                                "support is often called \"CUDA-aware MPI.\"");
+                                "GMX_FORCE_GPU_AWARE_MPI environment variable.");
             }
         }
         else if (haveDetectedGpuAwareMpi)
@@ -1052,23 +1052,6 @@ int Mdrunner::mdrunner()
     const DevelopmentFeatureFlags devFlags = manageDevelopmentFeatures(
             mdlog, useGpuForNonbonded, pmeRunMode, cr->sizeOfDefaultCommunicator, domdecOptions.numPmeRanks);
 
-    if (hw_opt.threadAffinity == ThreadAffinity::On && devFlags.enableGpuPmeDecomposition && GMX_USE_cuFFTMp)
-    {
-        // cuFFTMp uses NVSHMEM which requires CPU proxy thread, this thread may cause contention
-        // with application thread with `-pin on`. Future versions of cuFFTMp will not require
-        // CPU proxy thread whenever it moves to NVSHMEM's GPU initiated communication transport
-        // then we can remove this warning accordingly.
-        GMX_LOG(mdlog.warning)
-                .asParagraph()
-                .appendTextFormatted(
-                        "Note: This run has enabled the GPU PME decomposition feature "
-                        "in combination with the cuFFTMp library and requested setting thread "
-                        "affinities ('-pin on') which may result in poor performance."
-                        "For best performance we recommend using the job scheduler or MPI launcher "
-                        "to set CPU, GPU and network affinities and omitting the '-pin on' "
-                        "option in runs with GPU PME decomposition using cuFFTMp.");
-    }
-
     const bool useModularSimulator = checkUseModularSimulator(false,
                                                               inputrec.get(),
                                                               doRerun,
@@ -1702,30 +1685,6 @@ int Mdrunner::mdrunner()
         setupGpuDevicePeerAccess(gpuTaskAssignments.deviceIdsAssigned(), mdlog);
     }
 
-    if (hw_opt.threadAffinity != ThreadAffinity::Off)
-    {
-        /* Before setting affinity, check whether the affinity has changed
-         * - which indicates that probably the OpenMP library has changed it
-         * since we first checked).
-         */
-        gmx_check_thread_affinity_set(
-                mdlog, &hw_opt, hwinfo_->hardwareTopology->maxThreads(), TRUE, libraryWorldCommunicator);
-
-        int numThreadsOnThisNode, intraNodeThreadOffset;
-        analyzeThreadsOnThisNode(
-                physicalNodeComm, numThreadsOnThisRank, &numThreadsOnThisNode, &intraNodeThreadOffset);
-
-        /* Set the CPU affinity */
-        gmx_set_thread_affinity(mdlog,
-                                cr,
-                                &hw_opt,
-                                *hwinfo_->hardwareTopology,
-                                numThreadsOnThisRank,
-                                numThreadsOnThisNode,
-                                intraNodeThreadOffset,
-                                nullptr);
-    }
-
     if (mdrunOptions.timingOptions.resetStep > -1)
     {
         GMX_LOG(mdlog.info)
@@ -2022,6 +1981,32 @@ int Mdrunner::mdrunner()
         }
     }
 
+    /* Set thread affinity after gmx_pme_init(), otherwise with cuFFTMp the NVSHMEM helper thread
+     * can be pinned to the same core as the PME thread, causing performance degradation.
+     */
+    if (hw_opt.threadAffinity != ThreadAffinity::Off)
+    {
+        /* Before setting affinity, check whether the affinity has changed
+         * - which indicates that probably the OpenMP library has changed it
+         * since we first checked).
+         */
+        gmx_check_thread_affinity_set(
+                mdlog, &hw_opt, hwinfo_->hardwareTopology->maxThreads(), TRUE, libraryWorldCommunicator);
+
+        int numThreadsOnThisNode, intraNodeThreadOffset;
+        analyzeThreadsOnThisNode(
+                physicalNodeComm, numThreadsOnThisRank, &numThreadsOnThisNode, &intraNodeThreadOffset);
+
+        /* Set the CPU affinity */
+        gmx_set_thread_affinity(mdlog,
+                                cr,
+                                &hw_opt,
+                                *hwinfo_->hardwareTopology,
+                                numThreadsOnThisRank,
+                                numThreadsOnThisNode,
+                                intraNodeThreadOffset,
+                                nullptr);
+    }
 
     if (EI_DYNAMICS(inputrec->eI))
     {

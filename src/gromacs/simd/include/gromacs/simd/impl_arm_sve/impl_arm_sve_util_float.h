@@ -49,7 +49,7 @@
 #include <cstddef>
 #include <cstdint>
 
-#include "gromacs/simd/impl_arm_sve_simd_float.h"
+#include "gromacs/simd/impl_arm_sve/impl_arm_sve_simd_float.h"
 #include "gromacs/utility/basedefinitions.h"
 
 namespace gmx

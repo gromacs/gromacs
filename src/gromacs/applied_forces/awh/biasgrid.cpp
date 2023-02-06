@@ -814,7 +814,7 @@ BiasGrid::BiasGrid(ArrayRef<const DimParams> dimParams, ArrayRef<const AwhDimPar
     GMX_RELEASE_ASSERT(dimParams.size() == awhDimParams.size(), "Dimensions needs to be equal");
     /* Define the discretization along each dimension */
     awh_dvec period;
-    int      numPoints = 1;
+    int64_t  numPoints = 1;
     for (int d = 0; d < gmx::ssize(awhDimParams); d++)
     {
         double origin = dimParams[d].scaleUserInputToInternal(awhDimParams[d].origin());
@@ -834,6 +834,22 @@ BiasGrid::BiasGrid(ArrayRef<const DimParams> dimParams, ArrayRef<const AwhDimPar
             axis_.emplace_back(origin, end, 0, dimParams[d].fepDimParams().numFepLambdaStates, true);
         }
         numPoints *= axis_[d].numPoints();
+    }
+
+    // Check for unreasonably large grids to avoid sampling and allocation problems
+    // 10^7 points are practically impossible to sample and use about 1 GB of data
+    const int64_t c_maxNumPoints = 10'000'000;
+    const char*   envVar         = "GMX_AWH_NO_POINT_LIMIT";
+    if (numPoints > c_maxNumPoints && getenv(envVar) == nullptr)
+    {
+        std::string mesg = gmx::formatString(
+                "An AWH bias grid has %" PRId64
+                " points, which seems unreasonable large. "
+                "This is often caused by a (too) large force constant. "
+                "You can set the '%s' environment variable to override this check.",
+                numPoints,
+                envVar);
+        GMX_THROW(InvalidInputError(mesg));
     }
 
     point_.resize(numPoints);

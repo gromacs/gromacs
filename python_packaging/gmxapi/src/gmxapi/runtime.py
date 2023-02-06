@@ -74,10 +74,12 @@ __all__ = (
 )
 
 import dataclasses
+import functools
 import threading
 import typing
 import warnings
 import weakref
+from typing import TYPE_CHECKING
 from _weakref import ReferenceType
 from contextlib import contextmanager
 
@@ -97,19 +99,38 @@ except ImportError:
 logger = root_logger.getChild(__name__)
 logger.info("Importing {}".format(__name__))
 
+
+if TYPE_CHECKING:
+    try:
+        import Comm as Communicator
+    except ImportError:
+        Communicator = None
+
+
 # gmxapi requires mpi4py, but it is useful to allow module-level imports to fail
 # so that documentation builds can succeed without package dependencies. It is
 # also helpful to retain the accompanying logic in case we want to decouple from
 # mpi4py at some point in the future.
-try:
-    import mpi4py.MPI as _MPI
-    from mpi4py.MPI import Comm as Communicator
-    from mpi4py.MPI import COMM_NULL as MPI_COMM_NULL
-    from mpi4py.MPI import COMM_WORLD as MPI_COMM_WORLD
-    from mpi4py.MPI import UNDEFINED as MPI_UNDEFINED
-except (ImportError, ModuleNotFoundError):
-    _MPI = None
-    Communicator = None
+@functools.lru_cache()
+def mpi_comm_world():
+    from mpi4py.MPI import COMM_WORLD
+
+    return COMM_WORLD
+
+
+@functools.lru_cache()
+def mpi_comm_null():
+    from mpi4py.MPI import COMM_NULL
+
+    return COMM_NULL
+
+
+@functools.lru_cache()
+def mpi_undefined():
+    from mpi4py.MPI import UNDEFINED
+
+    return UNDEFINED
+
 
 _context_lock = threading.Lock()
 """Use to avoid race conditions when changing singleton state."""
@@ -141,9 +162,8 @@ class ResourceAllocation(Protocol[CommunicatorT, ProvidesTokenT]):
 
 
 def _finalize_communicator(comm):
-    if _MPI is not None:
-        if comm == MPI_COMM_NULL:
-            return
+    if comm == mpi_comm_null():
+        return
     # noinspection PyBroadException
     try:
         comm.Free()
@@ -405,7 +425,6 @@ class ResourceAssignment(
                 "Implicit allocation is not currently available."
             )
         base_communicator = allocation.communicator()
-        assert isinstance(base_communicator, Communicator)
         base_comm_size = base_communicator.Get_size()
         base_comm_rank = base_communicator.Get_rank()
 
@@ -496,7 +515,7 @@ class ResourceAssignment(
                         color = tuple(subtask_id for subtask_id in group_ids)
                     else:
                         color = tuple(
-                            MPI_UNDEFINED if roots[i] is None else subtask_id
+                            mpi_undefined() if roots[i] is None else subtask_id
                             for i, subtask_id in enumerate(group_ids)
                         )
                     subtask_comm = base_communicator.Split(
@@ -530,7 +549,8 @@ class ResourceAssignment(
                     _resource_id = ensemble_labels.pop()
                     logger.debug(f"Resource ID: {_resource_id}")
                     color = tuple(
-                        MPI_UNDEFINED if _id is None else _resource_id for _id in roots
+                        mpi_undefined() if _id is None else _resource_id
+                        for _id in roots
                     )
 
                     ensemble_comm = base_communicator.Split(color[base_comm_rank])
@@ -573,7 +593,8 @@ class ResourceAssignment(
     def subtask_id(self):
         """Identifier for the (group of) resource participants.
 
-        Within the scope of a `resource_id`, callers participating in the same subtask can be identified by sharing the same subtask ID.
+        Within the scope of a `resource_id`, callers participating
+        in the same subtask can be identified by sharing the same subtask ID.
 
         Returns None for callers that are not participating.
         """
@@ -611,7 +632,7 @@ class BaseContext:
 
     __instance: typing.ClassVar[typing.Optional[weakref.ReferenceType]] = None
 
-    __mpi_communicator: typing.ClassVar[typing.Optional[Communicator]] = None
+    __mpi_communicator: typing.ClassVar[typing.Optional["Communicator"]] = None
 
     def __new__(cls, *args, **kwargs):
         # Check the weakref for a singleton instance, if any.
@@ -626,7 +647,7 @@ class BaseContext:
         return instance
 
     @classmethod
-    def communicator(cls) -> Communicator:
+    def communicator(cls) -> "Communicator":
         return cls.__mpi_communicator
 
     @classmethod
@@ -640,8 +661,8 @@ class BaseContext:
     @classmethod
     def instance(cls):
         """Get the singleton instance. (Finalize and instantiate if needed.)"""
-        if _MPI is not None and cls.__mpi_communicator is None:
-            cls.set_base_communicator(MPI_COMM_WORLD)
+        if cls.__mpi_communicator is None and mpi_comm_world() is not None:
+            cls.set_base_communicator(mpi_comm_world())
         return cls()
 
     def subscribe(self, subscriber):
@@ -687,7 +708,7 @@ class ResourceRequirements:
 
 @contextmanager
 def scoped_resources(
-    allocation: ResourceAllocation[Communicator, typing.Any],
+    allocation: ResourceAllocation["Communicator", typing.Any],
     requirements: ResourceRequirements,
 ):
     """Manage computing resources with a lifecycle.

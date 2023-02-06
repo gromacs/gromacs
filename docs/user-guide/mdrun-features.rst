@@ -69,31 +69,27 @@ simulations within the same invocation of mdrun are necessary or
 useful. Running a replica-exchange simulation requires it, as do
 simulations using ensemble-based distance or orientation restraints.
 Running a related series of lambda points for a free-energy
-computation is also convenient to do this way.
+computation is also convenient to do this way, but beware of the potential
+side-effects related to resource utilization and load balance discussed later.
 
 This feature requires
-:ref:`configuring |Gromacs| with an external MPI library <mpi-support>`
+configuring |Gromacs| with an :ref:`external MPI library <mpi-support>`
 so that the set of
 simulations can communicate. The ``n`` simulations within the set can
 use internal MPI parallelism also, so that ``mpirun -np x gmx_mpi mdrun``
 for ``x`` a multiple of ``n`` will use ``x/n`` ranks per simulation.
 
-There are two ways of organizing files when running such
-simulations. All of the normal mechanisms work in either case,
-including ``-deffnm``.
-
-``-multidir``
-   You must create a set of ``n`` directories for the ``n`` simulations,
-   place all the relevant input files in those directories (e.g. named
-   ``topol.tpr``), and run with
-   ``mpirun -np x gmx_mpi mdrun -s topol -multidir <names-of-directories>``.
-   If the order of the simulations
-   within the multi-simulation is significant, then you are responsible
-   for ordering their names when you provide them to ``-multidir``. Be
-   careful with shells that do filename globbing dictionary-style, e.g.
-   ``dir1 dir10 dir11 ... dir2 ...``. This option is generally the
-   most convenient to use. ``gmx mdrun -table`` for the group cutoff-scheme
-   works only in this mode.
+To launch a multi-simulation, the ``-multidir`` option is used.
+For the input and output files of a multi-simulation a set of ``n`` subdirectories is required,
+one for each simulation. 
+Place all the relevant input files in those directories (e.g. named
+``topol.tpr``), and launch a multi-simualtion with
+``mpirun -np x gmx_mpi mdrun -s topol -multidir <names-of-directories>``.
+If the order of the simulations
+within the multi-simulation is significant, you are responsible
+for ordering their names when you provide them to ``-multidir``. Be
+careful with shells that do filename globbing dictionary-style, e.g.
+``dir1 dir10 dir11 ... dir2 ...``.
 
 Examples running multi-simulations
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -129,6 +125,37 @@ input files. The random seed for replica exchange is set with
 ``-reseed``. After every exchange, the velocities are scaled and
 neighbor searching is performed. See the Reference Manual for more
 details on how replica exchange functions in |Gromacs|.
+
+Multi-simulation performance considerations 
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The frequency of communication across a multi-simulation can have an impact
+on performance. This is highly algorithm dependent, but in general it is
+recommended to set up a multi-simulation to do inter-simulation communication 
+as infrequently as possible but as frequently as necessary. 
+However, even when members of multi-simulation do not communicate frequently (or at all),
+and therefore the associated performance overhead is small or even negligible,
+load imbalance can still have a significant impact on performance and resource utilization.
+Current multi-simulation algorithms use a fixed interval for data exchange (e.g.
+replica exchange every ``N`` steps) and therefore all members of a multi-simulation
+need to reach this step before the collective communication can happen and
+any of them can proceed to step ``N+1``. Hence, the slowest member of the
+multi-simulation will determine the performance of the entire ensemble.
+This load imbalance will not only limit performance but will also leave resources
+idle; e.g. if one of the simulations in an ``n``-way multi-simulation runs at half
+the performance than the rest, the resources assigned to the ``n-1``
+faster running simulations will be left idle for approximately half of the
+wall-time of the entire multi-simulation job.
+The source of this imbalance can range from inherent workload imbalance across
+the simulations within a multi-simulation to differences in hardware speed or
+inter-node network performance variability affecting a subset of ranks and therefore
+only some of the simulations.
+Reducing the amount of resources left idle requires reducing the load imbalance,
+which may involve splitting up non-communicating multi-simulations, or making sure
+to request a "compact" allocation on a cluster (if the job scheduler allows).
+Note that imbalance also applies to non-communicating multi-simulations like FEP
+calculations since the resources assigned to earlier finishing simulations can not
+be relinquished until the entire MPI job can finish.
 
 Controlling the length of the simulation
 ----------------------------------------

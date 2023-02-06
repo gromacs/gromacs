@@ -2393,7 +2393,8 @@ void write_checkpoint_data(t_fileio*                         fp,
     }
 
     headerContents.flags_dfh = 0;
-    if (bExpanded)
+    // Modular simulator uses the modularSimulatorCheckpointData object to store the expanded ensemble history
+    if (bExpanded && !headerContents.isModularSimulatorCheckpoint)
     {
         headerContents.flags_dfh =
                 (enumValueToBitMask(StateFepEntry::IsEquilibrated)

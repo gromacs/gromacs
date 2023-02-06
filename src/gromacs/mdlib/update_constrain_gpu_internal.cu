@@ -39,6 +39,8 @@
  *
  * \ingroup module_mdlib
  */
+#include "gmxpre.h"
+
 #include "update_constrain_gpu_internal.h"
 
 #include "gromacs/gpu_utils/cudautils.cuh"

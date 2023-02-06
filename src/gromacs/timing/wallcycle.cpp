@@ -186,6 +186,7 @@ static const char* enumValuetoString(WallCycleSubCounter enumValue)
         "Graph instantiate/upd.",
         "Graph wait pre-launch",
         "Graph launch",
+        "Constraints Comm.", // constraints communication time, note that this counter will contain load imbalance
         "Test subcounter"
     };
     static_assert(checkStringsLengths<22>(wallCycleSubCounterNames));

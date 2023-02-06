@@ -98,18 +98,40 @@ from gmxapi.typing import valid_source_types
 logger = root_logger.getChild("operation")
 logger.info("Importing {}".format(__name__))
 
-try:
+
+@functools.lru_cache()
+def comm_world():
+    from mpi4py.MPI import COMM_WORLD
+
+    return COMM_WORLD
+
+
+@functools.lru_cache()
+def comm_world_rank():
     from mpi4py import MPI
 
-    # TODO: Allow user to specify communicator.
-    comm = MPI.COMM_WORLD
-    rank_number = comm.Get_rank()
-    comm_size = comm.Get_size()
-except ImportError:
-    comm = None
-    rank_number = 0
-    comm_size = 1
-    MPI = None
+    try:
+        return MPI.COMM_WORLD.Get_rank()
+    except MPI.Exception:
+        logger.exception(
+            "MPI may not be initialized. Either manage MPI initialization and "
+            "finalization or allow mpi4py to do it automatically."
+        )
+        raise
+
+
+@functools.lru_cache()
+def comm_world_size():
+    from mpi4py import MPI
+
+    try:
+        return MPI.COMM_WORLD.Get_size()
+    except MPI.Exception:
+        logger.exception(
+            "MPI may not be initialized. Either manage MPI initialization and "
+            "finalization or allow mpi4py to do it automatically."
+        )
+        raise
 
 
 class ResultDescription(typing.Generic[ResultTypeVar]):
@@ -2759,15 +2781,15 @@ class ResourceManager(SourceResource[_OutputDataProxyType, _PublishingDataProxyT
         # bringing output up to date, we need to break up this function into the separate required
         # protocols versus extensible behaviors.
 
-        if comm_size > 1:
+        if comm_world_size() > 1:
             logger.debug(f"Synchronizing {self.operation_id} update_output().")
 
         self._run_callbacks()
 
         # This is probably overly conservative, but we can revisit for optimization
         # after the gmxapi 0.3.0 release.
-        if comm_size > 1:
-            comm.barrier()
+        if comm_world_size() > 1:
+            comm_world().barrier()
             logger.debug("Passed barrier.")
 
     def width(self) -> int:
@@ -3142,7 +3164,7 @@ class ResourceManager(SourceResource[_OutputDataProxyType, _PublishingDataProxyT
         # self.publishing_resources() gets the (single-use) context manager
         # creation function (self.__publishing_context) that will take a member
         # id as an argument.
-        if comm_size > 1 and not self._allow_duplicate:
+        if comm_world_size() > 1 and not self._allow_duplicate:
             # owning_rank is the process where the work is actually executed. This is
             # hard-coded in the initial implementation. It is subject to optimization
             # and increased flexibility in future version.
@@ -3152,7 +3174,7 @@ class ResourceManager(SourceResource[_OutputDataProxyType, _PublishingDataProxyT
             logger.debug(f"Synchronizing {self} on all ranks with a Comm.barrier.")
             # This is probably overly conservative, but we can revisit for optimization
             # after the gmxapi 0.3.0 release.
-            comm.barrier()
+            comm_world().barrier()
 
             for member in range(self.ensemble_width):
                 for name, output in self._data.items():
@@ -3161,10 +3183,12 @@ class ResourceManager(SourceResource[_OutputDataProxyType, _PublishingDataProxyT
                     # For each member of OutputData, either add a publishing callback for the Future or a
                     # subscriber callback to the publishing resource factory.
                     # Set up proxy subscribers for each member of each OutputData
-                    if rank_number == owning_rank:
+                    if comm_world_rank() == owning_rank:
                         # Set up the callbacks for the owning rank to push updates.
                         for subscriber in [
-                            rank for rank in range(comm_size) if rank != owning_rank
+                            rank
+                            for rank in range(comm_world_size())
+                            if rank != owning_rank
                         ]:
                             outputdata_cb = functools.partial(
                                 _subscription_provider_callback,
@@ -3238,7 +3262,7 @@ def _subscription_provider_callback(
     if not isinstance(result, (str, bool, int, float, dict, list)):
         raise ApiError()
     logger.debug(f"Sending {obj.name}[{ensemble_member}]={result} to {subscriber}")
-    comm.send(result, dest=subscriber)
+    comm_world().send(result, dest=subscriber)
     logger.debug(f"Sent {obj.name}[{ensemble_member}] to {subscriber}")
 
 
@@ -3256,7 +3280,7 @@ def _subscriber_callback(
     # Note that PublishingDataProxies hide the ensemble dimension.
     # We account for that here in wrapping code.
     logger.debug(f"Waiting for {name}[{ensemble_member}] from {owner}")
-    result = comm.recv(source=owner)
+    result = comm_world().recv(source=owner)
     logger.debug(f"Received {name}[{ensemble_member}]={result}. Publishing locally.")
     setattr(output, name, result)
 
@@ -3321,7 +3345,7 @@ class OutputParameterRunner(PyFunctionRunner):
         self.function(**resources)
 
 
-class NoOpRunner(PyFunctionRunner):
+class NonDuplicatingRunnerWrapper(PyFunctionRunner):
     """Function runner that does not execute on the current rank.
 
     Alternative PyFunctionRunner for ranks where function should not be executed.
@@ -3329,8 +3353,19 @@ class NoOpRunner(PyFunctionRunner):
     Output will be synchronized separately through the ResourceManager facilities.
     """
 
+    def __init__(self, wrapped_runner: PyFunctionRunner, owning_rank: int):
+        self._runner = wrapped_runner
+        self._owning_rank = owning_rank
+        super().__init__(
+            function=wrapped_runner.function,
+            output_description=wrapped_runner.output_description,
+        )
+
     def __call__(self, resources: PyFunctionRunnerResources):
-        logger.debug(f"null runner received {resources}.")
+        if comm_world_rank() == self._owning_rank:
+            return self._runner(resources)
+        else:
+            logger.debug(f"null runner received {resources}.")
 
 
 def wrapped_function_runner(
@@ -3421,15 +3456,13 @@ def wrapped_function_runner(
             function=function,
             output_description=OutputCollectionDescription(data=return_type),
         )
-    if rank_number != owning_rank and not allow_duplicate:
+    if allow_duplicate:
+        return runner
+    else:
         # Only do actual execution on the root rank. This rank will subscribe to
         # results from the root rank.
-        # Replace the runner acquired above.
-        runner = NoOpRunner(
-            function=runner.function, output_description=runner.output_description
-        )
-
-    return runner
+        # Wrap the runner acquired above.
+        return NonDuplicatingRunnerWrapper(runner, owning_rank)
 
 
 # TODO: Refactor in terms of reference to a node in a Context.

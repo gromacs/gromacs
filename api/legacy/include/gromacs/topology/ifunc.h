@@ -84,7 +84,7 @@ constexpr unsigned int IF_LIMZERO    = 1 << 9;
  * a constraint or used for vsite parameter determination by grompp.
  * IF_LIMZERO indicates that for a bonded interaction the potential
  * does goes to zero for large distances, thus if such an interaction
- * it not assigned to any node by the domain decompostion, the simulation
+ * it not assigned to any node by the domain decomposition, the simulation
  * still continue, if mdrun has been told so.
  */
 

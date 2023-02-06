@@ -154,7 +154,7 @@ Preparing the input file for CPMD
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 This section will only describe the MiMiC-related input in CPMD - for the
 configuration of a DFT-related options - please refer to the `CPMD manual
-<https://www.cpmd.org/wordpress/CPMD/getFile.php?file=manual.pdf>`__.
+<https://www.cpmd.org/>`__.
 After preparing the input for GROMACS and having obtained the
 preprocessed topology file, simply run the Python
 preprocessor script provided within the MiMiC distribution to obtain
@@ -237,8 +237,7 @@ descriptions of keywords that can be found in this part of CPMD input:
 
 The ``&ATOMS`` section of CPMD input file contains all the QM atoms
 within the system and has a default CPMD formatting. Please refer
-to the `CPMD manual
-<https://www.cpmd.org/wordpress/CPMD/getFile.php?file=manual.pdf>`__
+to the `CPMD manual <https://www.cpmd.org/>`__
 to adjust it to your needs(one will need to set the correct pseudo-potential
 for each atom species).
 

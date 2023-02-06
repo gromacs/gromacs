@@ -1858,6 +1858,7 @@ pull-coord2-vec, pull-coord2-k, and so on.
    The pull coordinates are referred to as variables in the equation so that
    pull-coord1's value becomes 'x1', pull-coord2 value becomes 'x2' etc.
    Time can also be used a variable, becoming 't'.
+   Note that angular coordinates use units of radians in the expression.
    The mathematical expression are evaluated using muParser.
    Only relevant if :mdp:`pull-coord1-geometry` is set to :mdp-value:`transformation`.
 

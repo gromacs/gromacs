@@ -294,6 +294,7 @@ def get_llvm_packages(args) -> typing.Iterable[str]:
             packages += [
                 f"llvm-{args.llvm}-dev",
                 f"libclang-{args.llvm}-dev",
+                f"libclang-rt-{args.llvm}-dev",
                 f"lld-{args.llvm}",
             ]
         return packages
@@ -417,9 +418,9 @@ def get_ucx(args, compiler, gdrcopy):
             # We disable `-Werror`, since there are some unknown pragmas and unused variables which upset clang
             toolchain = copy.copy(compiler.toolchain)
             toolchain.CFLAGS = "-Wno-error"
-            # Version last updated July 15, 2022
+            # Version last updated January 24, 2023
             return hpccm.building_blocks.ucx(
-                toolchain=toolchain, gdrcopy=use_gdrcopy, version="1.13.0", cuda=True
+                toolchain=toolchain, gdrcopy=use_gdrcopy, version="1.13.1", cuda=True
             )
         else:
             raise RuntimeError("compiler is not an HPCCM compiler building block!")
@@ -565,14 +566,20 @@ def get_hipsycl(args):
             f"sed s/_OPENMP/__OPENMP_NVPTX__/ -i /usr/lib/llvm-{args.llvm}/lib/clang/*/include/__clang_cuda_complex_builtins.h",
         ]
 
+    hipsycl_version_opts = {}
+    if "." in args.hipsycl:
+        hipsycl_version_opts["branch"] = "v" + args.hipsycl
+    else:
+        hipsycl_version_opts["commit"] = args.hipsycl
+
     return hpccm.building_blocks.generic_cmake(
         repository="https://github.com/illuhad/hipSYCL.git",
         directory="/var/tmp/hipSYCL",
         prefix="/usr/local",
         recursive=True,
-        commit=args.hipsycl,
         cmake_opts=["-DCMAKE_BUILD_TYPE=Release", *cmake_opts],
         postinstall=postinstall,
+        **hipsycl_version_opts,
     )
 
 

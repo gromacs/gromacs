@@ -1,10 +1,10 @@
 GROMACS 2022.5 release notes
 ----------------------------
 
-This version was released on TODO, 2023. These release notes
+This version was released on February 3rd, 2023. These release notes
 document the changes that have taken place in GROMACS since the
 previous 2022.4 version, to fix known issues. It also incorporates all
-fixes made in version 2021.6 and earlier, which you can find described
+fixes made in version 2021.7 and earlier, which you can find described
 in the :ref:`release-notes`.
 
 .. Note to developers!
@@ -16,6 +16,18 @@ in the :ref:`release-notes`.
 Fixes where mdrun could behave incorrectly
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Fix perturbed exclusion handling across PBC in small systems
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Systems with up to a few hundred atoms where molecules with excluded
+perturbed atoms were split over periodic boundary conditions could
+have double counted Coulomb and LJ-PME interactions over long distances.
+This led to very large errors in the energy and forces with PME and
+reaction-field, which likely did not go unnoticed. With a plain Coulomb
+cut-off the error is small and might not be noticed.
+
+:issue:`4665`
+
 Add missing net charge term when running PME on a GPU
 """""""""""""""""""""""""""""""""""""""""""""""""""""
 
@@ -26,6 +38,32 @@ the would lead to incorrect dV/dlambda and Delta lambda values (but one should a
 avoid changing the net charge of a system with free-energy calculations).
 
 :issue:`4668`
+
+Foreign energy differences with the Gapsys soft-core function were zero
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+This caused all BAR and AWH non-bonded free-energy output to be zero,
+so it is unlikely that incorrect results would go unnoticed.
+
+:issue:`4705`
+
+Fix checkpointing of expanded ensemble simulations with modular simulator
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Expanded ensemble simulations would fail to write checkpoint files when the
+modular simulator was used (which is the default setting for expanded ensemble
+in GROMACS 2022). The investigation lead to the discovery of another bug, which
+was also fixed: When restarting from checkpoint, a successful MC step in lambda
+space that had happened on the step on which the checkpoint was written would
+have been ignored. Since the checkpoint failed to be written in the first place,
+this is unlikely to have lead to wrong results in GROMACS 2022.
+
+The bug dropping successful MC steps on checkpoint steps upon simulation restarts
+is also present in the legacy code path, which was the default in GROMACS 2021.7
+and earlier. Simulations using the legacy code path no longer write checkpoint
+files, and inform about this behavior in their log file.
+
+:issue:`4629`
 
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^

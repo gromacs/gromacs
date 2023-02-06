@@ -24,7 +24,7 @@ gromacs:intel-llvm-nvidia-weekly:configure:
     CMAKE: /usr/local/cmake-3.21.2/bin/cmake
     CMAKE_COMPILER_SCRIPT: -DCMAKE_C_COMPILER=/opt/intel-llvm/bin/clang -DCMAKE_CXX_COMPILER=/opt/intel-llvm/bin/clang++
     CMAKE_BUILD_TYPE_OPTIONS: "-DCMAKE_BUILD_TYPE=RelWithAssert"
-    CMAKE_EXTRA_OPTIONS: "-DSYCL_CXX_FLAGS_EXTRA=-fsycl-targets=nvptx64-nvidia-cuda -DGMX_GPU_NB_CLUSTER_SIZE=8 -DGMX_GPU_FFT_LIBRARY=NONE"
+    CMAKE_EXTRA_OPTIONS: "-DSYCL_CXX_FLAGS_EXTRA=-fsycl-targets=nvptx64-nvidia-cuda -DGMX_GPU_NB_CLUSTER_SIZE=8 -DGMX_GPU_FFT_LIBRARY=VkFFT"
   before_script:
     - source /opt/intel-llvm/setenv.sh
 

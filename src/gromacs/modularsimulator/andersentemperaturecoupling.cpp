@@ -38,6 +38,8 @@
  * \ingroup module_modularsimulator
  */
 
+#include "gmxpre.h"
+
 #include "andersentemperaturecoupling.h"
 
 #include <vector>

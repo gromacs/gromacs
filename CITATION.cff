@@ -1,0 +1,110 @@
+# This CITATION.cff file was generated with cffinit.
+# Visit https://bit.ly/cffinit to generate yours today!
+
+cff-version: 1.2.0
+title: GROMACS 2023.0 source code
+message: >-
+  If you use GROMACS, please cite it using the
+  metadata from this file.
+  To help us fund GROMACS development, we humbly ask
+  that you also cite the research papers on the package,
+  see https://www.gromacs.org/articles.html.
+type: software
+authors:
+  - given-names: Mark
+    family-names: Abraham
+  - given-names: Andrey
+    family-names: Alekseenko
+  - given-names: Cathrine
+    family-names: Bergh
+  - given-names: Christian
+    family-names: Blau
+  - given-names: Eliane
+    family-names: Briand
+  - given-names: Mahesh
+    family-names: Doijade
+  - given-names: Stefan
+    family-names: Fleischmann
+  - given-names: Vytautas
+    family-names: Gapsys
+  - given-names: Gaurav
+    family-names: Garg
+  - given-names: Sergey
+    family-names: Gorelov
+  - given-names: Gilles
+    family-names: Gouaillardet
+  - given-names: Alan
+    family-names: Gray
+  - given-names: M. Eric
+    family-names: Irrgang
+  - given-names: Farzaneh
+    family-names: Jalalypour
+  - given-names: Joe
+    family-names: Jordan
+  - given-names: Christoph
+    family-names: Junghans
+  - given-names: Prashanth
+    family-names: Kanduri
+  - given-names: Sebastian
+    family-names: Keller
+  - given-names: Carsten
+    family-names: Kutzner
+  - given-names: Justin A.
+    family-names: Lemkul
+  - given-names: Magnus
+    family-names: Lundborg
+  - given-names: Pascal
+    family-names: Merz
+  - given-names: Vedran
+    family-names: Miletic
+  - given-names: Dmitry
+    family-names: Morozov
+  - given-names: Szilard
+    family-names: Pall
+  - given-names: Roland
+    family-names: Schulz
+  - given-names: Michael
+    family-names: Shirts
+  - given-names: Alexey
+    family-names: Shvetsov
+  - given-names: Balint
+    family-names: Soproni
+  - given-names: David
+    family-names: van der Spoel
+  - given-names: Philip
+    family-names: Turner
+  - given-names: Carsten
+    family-names: Uphoff
+  - given-names: Alessandra
+    family-names: Villa
+  - given-names: Sebastian
+    family-names: Wingbermuehle
+  - given-names: Artem
+    family-names: Zhmurov
+  - given-names: Paul
+    family-names: Bauer
+  - given-names: Berk
+    family-names: Hess
+  - given-names: Erik
+    family-names: Lindahl
+identifiers:
+  - type: doi
+    value: 10.5281/zenodo.7588619
+  - type: url
+    value: >-
+      https://ftp.gromacs.org/gromacs/gromacs-2023.tar.gz
+    description: Download URL
+repository-code: 'https://gitlab.com/gromacs/gromacs'
+url: 'https://www.gromacs.org/'
+repository: 'https://manual.gromacs.org/2023/index.html'
+abstract: "GROMACS\_is a free, open-source and high-performance software suite for molecular dynamics simulation and analysis."
+keywords:
+  - molecular dynamics
+  - molecular simulation
+  - biomolecular simulation
+  - high performance computing
+  - free software
+license: LGPL-2.1
+commit: v2023
+version: '2023'
+date-released: '2023-02-06'

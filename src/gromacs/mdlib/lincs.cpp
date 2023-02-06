@@ -71,6 +71,7 @@
 #include "gromacs/simd/simd.h"
 #include "gromacs/simd/simd_math.h"
 #include "gromacs/simd/vector_operations.h"
+#include "gromacs/timing/wallcycle.h"
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/alignedallocator.h"
@@ -1033,7 +1034,8 @@ static void do_lincs(ArrayRefWithPadding<const RVec> xPadded,
                      real                            invdt,
                      ArrayRef<RVec>                  vRef,
                      bool                            bCalcVir,
-                     tensor                          vir_r_m_dr)
+                     tensor                          vir_r_m_dr,
+                     gmx_wallcycle*                  wcycle)
 {
     const rvec*        x  = as_rvec_array(xPadded.paddedArrayRef().data());
     rvec*              xp = as_rvec_array(xpPadded.paddedArrayRef().data());
@@ -1176,7 +1178,9 @@ static void do_lincs(ArrayRefWithPadding<const RVec> xPadded,
                 /* Communicate the corrected non-local coordinates */
                 if (haveDDAtomOrdering(*cr))
                 {
+                    wallcycle_sub_start(wcycle, WallCycleSubCounter::ConstrComm);
                     dd_move_x_constraints(cr->dd, box, xpPadded.unpaddedArrayRef(), ArrayRef<RVec>(), FALSE);
+                    wallcycle_sub_stop(wcycle, WallCycleSubCounter::ConstrComm);
                 }
             }
 #pragma omp barrier
@@ -2442,7 +2446,8 @@ bool constrain_lincs(bool                            computeRmsd,
                      ConstraintVariable              econq,
                      t_nrnb*                         nrnb,
                      int                             maxwarn,
-                     int*                            warncount)
+                     int*                            warncount,
+                     gmx_wallcycle*                  wcycle)
 {
     bool bOK = TRUE;
 
@@ -2548,7 +2553,8 @@ bool constrain_lincs(bool                            computeRmsd,
                          invdt,
                          v,
                          bCalcVir,
-                         th == 0 ? vir_r_m_dr : lincsd->task[th].vir_r_m_dr);
+                         th == 0 ? vir_r_m_dr : lincsd->task[th].vir_r_m_dr,
+                         wcycle);
             }
             GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR
         }

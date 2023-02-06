@@ -32,6 +32,8 @@
  * the research papers on the package. Check out https://www.gromacs.org.
  */
 
+#include "gmxpre.h"
+
 #include "gromacs/utility/mpiinfo.h"
 
 #include <cstdlib>
