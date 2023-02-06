@@ -112,7 +112,13 @@ SimulationWorkload createSimulationWorkload(const t_inputrec& inputrec,
             devFlags.enableCudaGraphs && useGpuForUpdate
             && (simulationWorkload.haveSeparatePmeRank ? simulationWorkload.useGpuPmePpCommunication : true)
             && (havePpDomainDecomposition ? simulationWorkload.useGpuHaloExchange : true)
-            && (havePpDomainDecomposition ? (GMX_THREAD_MPI > 0) : true);
+            && (havePpDomainDecomposition ? (GMX_THREAD_MPI > 0) : true)
+            // This is an incomplete list of cases where CPU force contributions are present;
+            // ideally, we'd like to determine the per-simulation equivalent of DomainLifetimeWorkload.haveCpuLocalForceWork
+            // but that requires a lot more information here, so for now we do this for the readily available cases.
+            // The rest of the cases will be disabled later by mdGraph[]->disableForDomainIfAnyPpRankHasCpuForces.
+            && (!simulationWorkload.useCpuNonbonded && simulationWorkload.useGpuBonded
+                && (pmeRunMode == PmeRunMode::GPU));
     return simulationWorkload;
 }
 
