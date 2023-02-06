@@ -52,57 +52,7 @@ Enforcing a consistent formatting has a few advantages:
   formatting after refactoring like renaming symbols or changing some
   parameters, without needing to manually do it all.
 
-A number of user provided set-ups are available for the correct settings of your
-favourite text editor. They are provided for convenience only, and may not
-exactly conform to the expectations of either formatting tool.
-
-Emacs formatting set-up
------------------------
-Insert the following into your .emacs configuration file::
-
-    (defun gromacs-c-mode-common-hook ()
-    ;; GROMACS customizations for c-mode
-
-    (c-set-offset 'substatement-open 0)
-    (c-set-offset 'innamespace 0)
-    ;; other customizations can go here
-
-    (setq c++-tab-always-indent t)
-    (setq c-basic-offset 4)                  ;; Default is 2
-    (setq c-indent-level 4)                  ;; Default is 2
-    (setq c-file-style "stroustrup")
-    (setq tab-stop-list '(4 8 12 16 20 24 28 32 36 40 44 48 52 56 60))
-    (setq tab-width 4)
-    (setq indent-tabs-mode nil)  ; use tabs if t
-    )
-    (add-hook 'c-mode-common-hook 'gromacs-c-mode-common-hook)
-
-    (defun gromacs-c++-mode-common-hook ()
-    ;; GROMACS customizations for c++-moe
-
-    (c++-set-offset 'substatement-open 0)
-    (c++-set-offset 'innamespace 0)
-    ;; other customizations can go here
-
-    (setq c++-tab-always-indent t)
-    (setq c++-basic-offset 4)                  ;; Default is 2
-    (setq c++-indent-level 4)                  ;; Default is 2
-    (setq c++-file-style "stroustrup")
-    
-    (setq tab-stop-list '(4 8 12 16 20 24 28 32 36 40 44 48 52 56 60))
-    (setq tab-width 4)
-    (setq indent-tabs-mode nil)  ; use tabs if t
-    )
-    
-    (add-hook 'c++-mode-common-hook 'gromacs-c++-mode-common-hook)
-
-This configuration is based on content from `stackoverflow`_.
-
-.. _stackoverflow: http://stackoverflow.com/questions/663588/emacs-c-mode-incorrect-indentation
-
-Eclipse/cdt formatting set-up
------------------------------
-
-For correct formatting, please use `this profile`_.
-
-.. _this profile: https://gist.github.com/rolandschulz/74f4fae8985d65f33ff6
+Many IDEs will detect ``.clang-format`` configuration files and be able to format
+the code automatically. However, clang-format behavior is very version-dependent,
+so there still might be some minor differences from what is enforced by our scripts
+and automated testing system.
