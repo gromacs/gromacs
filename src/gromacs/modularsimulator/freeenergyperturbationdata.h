@@ -224,10 +224,14 @@ private:
 
     //! Information about external lambda setting, set only if external lambda setting is enabled
     std::optional<FepStateSetting> externalFepStateSetting_;
+    //! The number of external lambda setting clients
+    int numExternalFepStateSettingClients_;
 
     //! Helper function to read from / write to CheckpointData
     template<CheckpointDataOperation operation>
     void doCheckpointData(CheckpointData<operation>* checkpointData);
+    //! Whether the element was restored from checkpoint
+    bool restoredFromCheckpoint_;
 };
 
 } // namespace gmx

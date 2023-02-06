@@ -98,7 +98,7 @@ void ExpandedEnsembleElement::elementSetup()
 
 void ExpandedEnsembleElement::scheduleTask(Step step, Time /*unused*/, const RegisterRunFunction& registerRunFunction)
 {
-    const bool isFirstStep  = (step == initialStep_);
+    const bool isFirstStep  = (step == initialStep_ && !restoredFromCheckpoint_);
     const bool doLambdaStep = (do_per_step(step, frequency_) && !isFirstStep);
     const bool doLog        = (isMainRank_ && step == nextLogWritingStep_ && (fplog_ != nullptr));
 

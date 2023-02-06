@@ -183,9 +183,10 @@ void FreeEnergyPerturbationData::Element::doCheckpointData(CheckpointData<operat
         // We can read the same key as above - we can only write it once, though!
         fileVersion = checkpointVersion(
                 checkpointData, "FreeEnergyPerturbationData version", c_currentVersion);
+        restoredFromCheckpoint_ = true;
     }
 
-    if (fileVersion > CheckpointVersion::AddedExternalLambdaSetting)
+    if (fileVersion >= CheckpointVersion::AddedExternalLambdaSetting)
     {
         // If checkpointing happens between receiving the request and actually setting the new
         // lambda state, we need to preserve this information.
@@ -193,14 +194,10 @@ void FreeEnergyPerturbationData::Element::doCheckpointData(CheckpointData<operat
         checkpointData->scalar("External lambda setting", &externalLambdaSetting);
         if constexpr (operation == CheckpointDataOperation::Read)
         {
-            GMX_RELEASE_ASSERT(
-                    !(externalLambdaSetting && !externalFepStateSetting_.has_value()),
-                    "Checkpoint mismatch: Checkpointed simulation used external lambda setting, "
-                    "while the current simulation does not.");
-            GMX_RELEASE_ASSERT(!(!externalLambdaSetting && externalFepStateSetting_.has_value()),
-                               "Checkpoint mismatch: Checkpointed simulation dit not use external "
-                               "lambda setting, "
-                               "while the current simulation does.");
+            if (externalLambdaSetting)
+            {
+                externalFepStateSetting_ = FepStateSetting();
+            }
         }
         if (externalFepStateSetting_.has_value()) // NOLINT(readability-misleading-indentation)
         {
@@ -261,12 +258,19 @@ DomDecCallback FreeEnergyPerturbationData::Element::registerDomDecCallback()
 
 FreeEnergyPerturbationData::Element::Element(FreeEnergyPerturbationData* freeEnergyPerturbationElement,
                                              double                      deltaLambda) :
-    freeEnergyPerturbationData_(freeEnergyPerturbationElement), doSlowGrowth_(deltaLambda != 0)
+    freeEnergyPerturbationData_(freeEnergyPerturbationElement),
+    doSlowGrowth_(deltaLambda != 0),
+    numExternalFepStateSettingClients_(0),
+    restoredFromCheckpoint_(false)
 {
 }
 
 void FreeEnergyPerturbationData::Element::elementSetup()
 {
+    // Sanity check ensuring that checkpointed data matches the algorithms that were set up
+    GMX_RELEASE_ASSERT(!(externalFepStateSetting_.has_value() && numExternalFepStateSettingClients_ == 0),
+                       "Checkpoint mismatch: Checkpointed simulation used external lambda setting, "
+                       "while the current simulation does not.");
     freeEnergyPerturbationData_->updateMDAtoms();
 }
 
@@ -280,9 +284,17 @@ FepStateSetting* FreeEnergyPerturbationData::Element::enableExternalFepStateSett
     GMX_RELEASE_ASSERT(!doSlowGrowth_,
                        "External FEP state setting is incompatible with slow growth.");
     // This could be implemented with some sanity checks, but there's no use case right now
-    GMX_RELEASE_ASSERT(!externalFepStateSetting_.has_value(),
+    GMX_RELEASE_ASSERT(numExternalFepStateSettingClients_ == 0,
                        "External FEP state setting by more than one element not supported.");
-    externalFepStateSetting_ = FepStateSetting();
+    numExternalFepStateSettingClients_++;
+    // externalFepStateSetting_ may already have been constructed from checkpoint
+    if (!externalFepStateSetting_.has_value())
+    {
+        GMX_RELEASE_ASSERT(!restoredFromCheckpoint_,
+                           "Checkpoint mismatch: Checkpointed simulation did not use external "
+                           "lambda setting, while the current simulation does.");
+        externalFepStateSetting_ = FepStateSetting();
+    }
     return &externalFepStateSetting_.value();
 }
 
