@@ -981,6 +981,12 @@ building |Gromacs| itself (set ``HIPSYCL_TARGETS`` to the target hardware):
             -DCMAKE_CXX_COMPILER=${ROCM_PATH}/llvm/bin/clang++ \
             -DGMX_GPU=SYCL -DGMX_SYCL_HIPSYCL=ON -DHIPSYCL_TARGETS='hip:gfxXYZ'
 
+Multiple target architectures can be specified, e.g.,
+``-DHIPSYCL_TARGETS='hip:gfx908,gfx90a'``. Having both RDNA (``gfx1xyz``)
+and GCN/CDNA (``gfx9xx``) devices in the same build is possible but will incur
+a minor performance penalty compared to building for GCN/CDNA devices only.
+
+
 By default, `VkFFT <https://github.com/DTolm/VkFFT>`_  is used to perform FFT on GPU.
 You can switch to rocFFT by passing ``-DGMX_GPU_FFT_LIBRARY=rocFFT`` CMake flag.
 
@@ -1091,8 +1097,8 @@ or DOI `10.1093/bioinformatics/bty484 <https://doi.org/10.1093/bioinformatics/bt
 gmxapi is not yet tested on Windows or with static linking, but these use cases
 are targeted for future versions.
 
-Portability aspects
-~~~~~~~~~~~~~~~~~~~
+Portability of a GROMACS build
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 A |Gromacs| build will normally not be portable, not even across
 hardware with the same base instruction set, like x86. Non-portable
@@ -1123,6 +1129,17 @@ the heterogeneous environment. By using custom binary and library
 suffixes (with CMake variables ``-DGMX_BINARY_SUFFIX=xxx`` and
 ``-DGMX_LIBS_SUFFIX=xxx``), these can be installed to the same
 location.
+
+Portability of binaries across GPUs is generally better, targeting
+multiple generations of GPUs from the same vendor is in most cases
+possible with a single |Gromacs| build.
+CUDA_ builds will by default be able to run on any NVIDIA GPU
+supported by the CUDA toolkit used since the |Gromacs| build
+system generates code for these at build-time. 
+With SYCL_ multiple target architectures of the same GPU vendor
+can be selected when using hipSYCL_ (i.e. only AMD or only NVIDIA).
+With OpenCL_, due to just-in-time compilation of GPU code for
+the device in use this is not a concern.
 
 Linear algebra libraries
 ~~~~~~~~~~~~~~~~~~~~~~~~
