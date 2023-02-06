@@ -70,6 +70,12 @@ function(gmx_manage_vkfft BACKEND_NAME)
         # This is not ideal, because it uses some random version of CUDA. See #4621.
         find_package(CUDAToolkit REQUIRED)
         target_link_libraries(VkFFT INTERFACE CUDA::cuda_driver CUDA::nvrtc)
+        if (NOT GMX_SYCL_HIPSYCL)
+            if(NOT DEFINED ENV{GITLAB_CI}) # Don't warn in CI builds
+                message(WARNING "The use of VkFFT with CUDA backend is experimental and not intended for production use")
+            endif()
+            target_link_libraries(VkFFT INTERFACE CUDA::cudart) # Needed only with DPC++
+        endif()
     elseif(BACKEND_NAME STREQUAL "HIP")
         target_compile_definitions(VkFFT INTERFACE VKFFT_BACKEND=2)
         # hipFree is marked `nodiscard` but VkFFT ignores it

@@ -62,8 +62,24 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
 
-#define VKFFT_ERROR_HANDLING_CASE(ERROR_NAME) \
-    case ERROR_NAME: error_string = #ERROR_NAME; break;
+#if VKFFT_BACKEND == 1 // CUDA
+using NativeDevice = int;
+#    if GMX_SYCL_HIPSYCL
+static constexpr auto sc_syclBackend = sycl::backend::cuda;
+#    elif GMX_SYCL_DPCPP
+static constexpr auto sc_syclBackend = sycl::backend::ext_oneapi_cuda;
+#    endif
+#elif VKFFT_BACKEND == 2 // HIP
+using NativeDevice                   = hipDevice_t;
+#    if GMX_SYCL_HIPSYCL
+static constexpr auto sc_syclBackend = sycl::backend::hip;
+#    elif GMX_SYCL_DPCPP
+#        include <sycl/ext/oneapi/backend/hip.hpp>
+static constexpr auto sc_syclBackend = sycl::backend::ext_oneapi_hip;
+#    endif
+#else
+#    error "VkFFT launcher in GROMACS does not support the selected VkFFT backend"
+#endif
 
 namespace gmx
 {
@@ -82,14 +98,6 @@ void handleFftError(VkFFTResult result, const std::string& msg)
             "%s: (error code %d - %s)\n", msg.c_str(), result, getVkFFTErrorString(result))));
 }
 } // namespace
-
-#if GMX_HIPSYCL_HAVE_CUDA_TARGET
-constexpr auto c_hipsyclBackend = sycl::backend::cuda;
-using NativeDevice              = int;
-#elif GMX_HIPSYCL_HAVE_HIP_TARGET
-constexpr auto c_hipsyclBackend = sycl::backend::hip;
-using NativeDevice              = hipDevice_t;
-#endif
 
 //! Impl class
 class Gpu3dFft::ImplSyclVkfft::Impl
@@ -162,7 +170,7 @@ Gpu3dFft::ImplSyclVkfft::Impl::Impl(bool allocateGrids,
     configuration_.size[2] = realGridSize[XX];
 
     configuration_.performR2C  = 1;
-    queue_device_              = sycl::get_native<c_hipsyclBackend>(queue_.get_device());
+    queue_device_              = sycl::get_native<sc_syclBackend>(queue_.get_device());
     configuration_.device      = &queue_device_;
     configuration_.num_streams = 1;
 
@@ -184,12 +192,17 @@ Gpu3dFft::ImplSyclVkfft::Impl::Impl(bool allocateGrids,
     configuration_.inputBufferStride[1] = realGridSizePadded[ZZ] * realGridSizePadded[YY];
     configuration_.inputBufferStride[2] =
             realGridSizePadded[ZZ] * realGridSizePadded[YY] * realGridSizePadded[XX];
+#if GMX_SYCL_DPCPP
+    VkFFTResult result = initializeVkFFT(&application_, configuration_);
+    handleFftError(result, "Initializing VkFFT");
+#elif GMX_SYCL_HIPSYCL
     queue_.submit([&](sycl::handler& cgh) {
               cgh.hipSYCL_enqueue_custom_operation([=](sycl::interop_handle& gmx_unused h) {
                   VkFFTResult result = initializeVkFFT(&application_, configuration_);
                   handleFftError(result, "Initializing VkFFT");
               });
           }).wait();
+#endif
 }
 
 
@@ -234,30 +247,54 @@ Gpu3dFft::ImplSyclVkfft::~ImplSyclVkfft()
     deallocateComplexGrid();
 }
 
+template<typename NativeQueue>
+static void launchVkFft(const DeviceBuffer<float>& realGrid,
+                        const DeviceBuffer<float>& complexGrid,
+                        NativeQueue                queue,
+                        gmx_fft_direction          fftDirection,
+                        VkFFTApplication*          application,
+                        VkFFTLaunchParams*         launchParams)
+{
+    void* d_complexGrid = reinterpret_cast<void*>(complexGrid.buffer_->ptr_);
+    void* d_realGrid    = reinterpret_cast<void*>(realGrid.buffer_->ptr_);
+    // based on: https://github.com/DTolm/VkFFT/issues/78
+    application->configuration.stream = &queue;
+    launchParams->inputBuffer         = &d_realGrid;
+    launchParams->buffer              = &d_complexGrid;
+    VkFFTResult result                = VKFFT_SUCCESS;
+    if (fftDirection == GMX_FFT_REAL_TO_COMPLEX)
+    {
+        result = VkFFTAppend(application, -1, launchParams);
+        handleFftError(result, "VkFFT: Real to complex");
+    }
+    else
+    {
+        result = VkFFTAppend(application, 1, launchParams);
+        handleFftError(result, "VkFFT: Complex to real");
+    }
+}
+
 void Gpu3dFft::ImplSyclVkfft::perform3dFft(gmx_fft_direction dir, CommandEvent* /*timingEvent*/)
 {
+#if GMX_SYCL_HIPSYCL // use hipSYCL_enqueue_custom_operation
     impl_->queue_.submit(GMX_SYCL_DISCARD_EVENT[&](sycl::handler & cgh) {
         cgh.hipSYCL_enqueue_custom_operation([=](sycl::interop_handle& h) {
-            void* d_complexGrid = reinterpret_cast<void*>(complexGrid_.buffer_->ptr_);
-            void* d_realGrid    = reinterpret_cast<void*>(impl_->realGrid_.buffer_->ptr_);
-            auto  stream        = h.get_native_queue<c_hipsyclBackend>();
-            // based on: https://github.com/DTolm/VkFFT/issues/78
-            impl_->application_.configuration.stream = &stream;
-            impl_->launchParams_.inputBuffer         = &d_realGrid;
-            impl_->launchParams_.buffer              = &d_complexGrid;
-            VkFFTResult result                       = VKFFT_SUCCESS;
-            if (dir == GMX_FFT_REAL_TO_COMPLEX)
-            {
-                result = VkFFTAppend(&impl_->application_, -1, &impl_->launchParams_);
-                handleFftError(result, "VkFFT: Real to complex");
-            }
-            else
-            {
-                result = VkFFTAppend(&impl_->application_, 1, &impl_->launchParams_);
-                handleFftError(result, "VkFFT: Complex to real");
-            }
+            launchVkFft(impl_->realGrid_,
+                        complexGrid_,
+                        h.get_native_queue<sc_syclBackend>(),
+                        dir,
+                        &impl_->application_,
+                        &impl_->launchParams_);
         });
     });
+#elif GMX_SYCL_DPCPP // submit directly
+    launchVkFft(impl_->realGrid_,
+                complexGrid_,
+                sycl::get_native<sc_syclBackend>(impl_->queue_),
+                dir,
+                &impl_->application_,
+                &impl_->launchParams_);
+#endif
 }
 
 } // namespace gmx
