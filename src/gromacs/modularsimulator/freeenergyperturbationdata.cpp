@@ -183,7 +183,6 @@ void FreeEnergyPerturbationData::Element::doCheckpointData(CheckpointData<operat
         // We can read the same key as above - we can only write it once, though!
         fileVersion = checkpointVersion(
                 checkpointData, "FreeEnergyPerturbationData version", c_currentVersion);
-        restoredFromCheckpoint_ = true;
     }
 
     if (fileVersion >= CheckpointVersion::AddedExternalLambdaSetting)
@@ -234,6 +233,14 @@ void FreeEnergyPerturbationData::Element::restoreCheckpointState(std::optional<R
         dd_bcast(cr->dd,
                  ssize(freeEnergyPerturbationData_->lambda_) * int(sizeof(real)),
                  freeEnergyPerturbationData_->lambda_.data());
+        auto externalLambdaSetting = int(externalFepStateSetting_.has_value());
+        dd_bcast(cr->dd, sizeof(int), &externalLambdaSetting);
+        if (!MAIN(cr) && externalLambdaSetting)
+        {
+            // Main rank constructed this while reading the
+            // checkpoint, but other ranks have to do this now.
+            externalFepStateSetting_ = FepStateSetting();
+        }
         if (externalFepStateSetting_.has_value())
         {
             dd_bcast(cr->dd,
@@ -244,6 +251,7 @@ void FreeEnergyPerturbationData::Element::restoreCheckpointState(std::optional<R
                      &externalFepStateSetting_->newFepStateStep);
         }
     }
+    restoredFromCheckpoint_ = true;
 }
 
 const std::string& FreeEnergyPerturbationData::Element::clientID()
