@@ -1197,7 +1197,7 @@ void fft5d_execute(fft5d_plan plan, int thread, fft5d_time times)
 #endif
         if ((plan->flags & FFT5D_DEBUG) && thread == 0)
         {
-            print_localdata(lout, "%d %d: FFT %d\n", s, plan);
+            print_localdata(lout, "%d %d: FFT\n", s, plan);
         }
         /* ---------- END FFT ------------ */
 
@@ -1366,11 +1366,10 @@ void fft5d_execute(fft5d_plan plan, int thread, fft5d_time times)
 #endif
         if ((plan->flags & FFT5D_DEBUG) && thread == 0)
         {
-            print_localdata(lin, "%d %d: tranposed %d\n", s + 1, plan);
+            print_localdata(lin, "%d %d: transposed\n", s + 1, plan);
         }
         /* ---------- END JOIN ------------ */
 
-        /*if (debug) print_localdata(lin, "%d %d: transposed x-z\n", N1, M0, K, ZYX, coor);*/
     } /* for(s=0;s<2;s++) */
 #ifdef NOGMX
     if (times != NULL && thread == 0)
