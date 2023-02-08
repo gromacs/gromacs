@@ -448,7 +448,8 @@ void gmx_print_version_info(gmx::TextWriter* writer)
     writer->writeLine("CUDA runtime:       " + gmx::getCudaRuntimeVersionString());
 #endif
 #if GMX_SYCL_DPCPP
-    writer->writeLine(formatString("SYCL DPC++ flags:   %s", SYCL_DPCPP_COMPILER_FLAGS));
+    writer->writeLine(formatString("SYCL compiler flags:%s", SYCL_DPCPP_COMPILER_FLAGS));
+    writer->writeLine(formatString("SYCL linker flags:  %s", SYCL_DPCPP_LINKER_FLAGS));
     writer->writeLine("SYCL DPC++ version: " + gmx::getSyclCompilerVersion());
 #endif
 #if GMX_SYCL_HIPSYCL

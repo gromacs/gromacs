@@ -444,6 +444,18 @@ int main() {
         set(_sycl_has_valid_fft TRUE)
     endif()
 
+    # convert the space-separated strings to lists
+    separate_arguments(SYCL_TOOLCHAIN_CXX_FLAGS)
+    list(APPEND SYCL_TOOLCHAIN_CXX_FLAGS ${SYCL_CXX_FLAGS_EXTRA})
+    separate_arguments(SYCL_TOOLCHAIN_LINKER_FLAGS)
+    list(APPEND SYCL_TOOLCHAIN_LINKER_FLAGS ${SYCL_CXX_FLAGS_EXTRA})
+
+    # Make strings for pretty-printing in gmx -version
+    string(REPLACE ";" " " SYCL_TOOLCHAIN_CXX_FLAGS_STR "${SYCL_TOOLCHAIN_CXX_FLAGS}")
+    string(STRIP "${SYCL_TOOLCHAIN_CXX_FLAGS_STR}" SYCL_TOOLCHAIN_CXX_FLAGS_STR)
+    string(REPLACE ";" " " SYCL_TOOLCHAIN_LINKER_FLAGS_STR "${SYCL_TOOLCHAIN_LINKER_FLAGS}")
+    string(STRIP "${SYCL_TOOLCHAIN_LINKER_FLAGS_STR}" SYCL_TOOLCHAIN_LINKER_FLAGS_STR)
+
     # Add function wrapper similar to the one used by ComputeCPP and hipSYCL
     function(add_sycl_to_target)
         cmake_parse_arguments(
@@ -453,13 +465,8 @@ int main() {
             "TARGET" # One-value keyword
             "SOURCES" # Multi-value keyword
             )
-        # convert the space-separated string to a list
-        separate_arguments(SYCL_TOOLCHAIN_CXX_FLAGS)
-        set_property(SOURCE ${ARGS_SOURCES} APPEND PROPERTY COMPILE_OPTIONS
-            ${SYCL_TOOLCHAIN_CXX_FLAGS}
-            ${SYCL_CXX_FLAGS_EXTRA})
-        string(REPLACE " " ";" SYCL_TOOLCHAIN_LINKER_FLAGS_LIST "${SYCL_TOOLCHAIN_LINKER_FLAGS} ${SYCL_CXX_FLAGS_EXTRA}")
-        target_link_options(${ARGS_TARGET} PRIVATE ${SYCL_TOOLCHAIN_LINKER_FLAGS_LIST})
+        set_property(SOURCE ${ARGS_SOURCES} APPEND PROPERTY COMPILE_OPTIONS ${SYCL_TOOLCHAIN_CXX_FLAGS})
+        target_link_options(${ARGS_TARGET} PRIVATE ${SYCL_TOOLCHAIN_LINKER_FLAGS})
     endfunction(add_sycl_to_target)
 endif()
 
