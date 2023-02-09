@@ -53,6 +53,15 @@ the build directory no longer existed.
 
 :issue:`4724`
 
+Fixed CPU FFT with MKL 2023.0
+"""""""""""""""""""""""""""""
+
+Previously, |Gromacs| would fail during the initialization of CPU FFT when it
+was compiled with oneMKL 2023.0. This is fixed now.
+
+:issue:`4691`
+
+
 Miscellaneous
 ^^^^^^^^^^^^^
 

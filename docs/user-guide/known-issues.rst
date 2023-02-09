@@ -88,15 +88,6 @@ performance advantage on such devices.
 
 :issue:`4686`
 
-CPU FFT broken with MKL 2023.0
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-When built with MKL 2023.0, CPU FFT fails at plan creation. This is caught by unit tests
-(``make check``). We recommend using older version of MKL (2022.3 is known to work)
-or :ref:`switching to FFTW3 library <FFT support>`.
-
-:issue:`4691`
-
 Expanded ensemble does not checkpoint correctly
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
