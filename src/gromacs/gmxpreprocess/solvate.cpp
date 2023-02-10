@@ -350,6 +350,13 @@ static void replicateSolventBox(t_atoms*           atoms,
     atoms->atom     = newAtoms.atom;
     atoms->atomname = newAtoms.atomname;
     atoms->resinfo  = newAtoms.resinfo;
+    if (atoms->havePdbInfo)
+    {
+        sfree(atoms->pdbinfo);
+        // gmx::AtomsBuilder does not fill pdbinfo, but let's copy nulls just in case.
+        atoms->pdbinfo     = newAtoms.pdbinfo;
+        atoms->havePdbInfo = newAtoms.havePdbInfo;
+    }
 
     newX.resize(atoms->nr);
     std::swap(*x, newX);

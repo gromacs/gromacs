@@ -27,6 +27,12 @@ multiple PP ranks.
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
 
+Fix crash in ``gmx solvate`` when using solvent box in PDB format
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Now a PDB file can be passed to the ``-cs`` option in ``gmx solvate``.
+In previous releases (since at least 2016) this lead to a segfault.
+
 Fixes that affect portability
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
