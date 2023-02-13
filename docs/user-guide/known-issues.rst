@@ -72,7 +72,11 @@ from CMake or later during build.
 
 Some Clang installations don't contain a compatible C++ standard library.
 In such cases, you might have to install ``g++`` and help CMake find it
-by setting ``-DGMX_GPLUSGPLUS_PATH=/path/to/bin/g++``. 
+by setting ``-DGMX_GPLUSGPLUS_PATH=/path/to/bin/g++``.
+
+On Ubuntu 22.04, installing GCC 12 standard library (with 
+``sudo apt install libstdc++-12-dev``) usually works well even without
+setting ``-DGMX_GPLUSGPLUS_PATH``.
 
 :issue:`4679`
 
