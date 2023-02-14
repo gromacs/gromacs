@@ -36,6 +36,16 @@ In previous releases (since at least 2016) this lead to a segfault.
 Fixes that affect portability
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Fixed abnormal termination during ``gmx`` startup
+"""""""""""""""""""""""""""""""""""""""""""""""""
+
+|Gromacs| made a call to ``std::filesystem::equivalent`` in a less than
+perfectly robust manner. This caused ``gmx`` to stop execution
+when linked against the (atypical) libc++ standard library when
+the build directory no longer existed.
+
+:issue:`4724`
+
 Miscellaneous
 ^^^^^^^^^^^^^
 
