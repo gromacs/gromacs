@@ -64,6 +64,48 @@
 static constexpr float c_deg2RadF = gmx::c_deg2Rad;
 constexpr float        c_Pi       = M_PI;
 
+/* Some SYCL targets have troubles optimizing the dynamic array
+ * member access despite the fact that all the loops are unrolled.
+ *
+ * See https://developer.nvidia.com/blog/fast-dynamic-indexing-private-arrays-cuda/
+ * for a details on why dynamic access is problematic.
+ *
+ * This seems to affect:
+ * - hipSYCL 0.9.4 + Clang 14-15 for AMD (but not NVIDIA),
+ * - IntelLLVM 2023-02 for NVIDIA and Arc (but to a much lesser extent PVC).
+ *
+ * This wrapper avoid dynamic accesses into the array, replacing them
+ * with a `switch` instead.
+ *
+ * Based on the optimization by AMD/StreamHPC for their HIP port.
+ */
+template<typename T>
+struct FTypeArray
+{
+    static_assert(gmx::numFTypesOnGpu == 8,
+                  "Please update the member initializer list and the switch below");
+    constexpr FTypeArray(const T in[gmx::numFTypesOnGpu]) :
+        data{ in[0], in[1], in[2], in[3], in[4], in[5], in[6], in[7] }
+    {
+    }
+    constexpr T operator[](int idx) const
+    {
+        __builtin_assume(idx >= 0 && idx < gmx::numFTypesOnGpu);
+        switch (idx)
+        {
+            case 0: return data[0];
+            case 1: return data[1];
+            case 2: return data[2];
+            case 3: return data[3];
+            case 4: return data[4];
+            case 5: return data[5];
+            case 6: return data[6];
+            default: return data[7];
+        }
+    }
+    T data[gmx::numFTypesOnGpu];
+};
+
 // \brief Staggered atomic force component accummulation into global memory to reduce clashes
 //
 // Reduce the number of atomic clashes by a theoretical max 3x by having consecutive threads
@@ -846,15 +888,18 @@ auto bondedKernel(sycl::handler&                                        cgh,
     a_f.bind(cgh);
     a_fShift.bind(cgh);
 
-    std::optional<DeviceAccessor<t_iatom, sycl::access_mode::read>> a_iatoms[numFTypesOnGpu];
+    sycl::global_ptr<const t_iatom> gm_iatomsTemp[numFTypesOnGpu];
     for (int i = 0; i < numFTypesOnGpu; i++)
     {
-        if (d_iatoms[i])
-        {
-            a_iatoms[i].emplace<DeviceAccessor<t_iatom, sycl::access_mode::read>>(d_iatoms[i]);
-            a_iatoms[i]->bind(cgh);
-        }
+        gm_iatomsTemp[i] = d_iatoms[i] ? d_iatoms[i].buffer_->ptr_ : nullptr;
     }
+    const FTypeArray<sycl::global_ptr<const t_iatom>> gm_iatoms(gm_iatomsTemp);
+
+    const FTypeArray<int> fTypeRangeStart(kernelParams.fTypeRangeStart);
+    const FTypeArray<int> fTypeRangeEnd(kernelParams.fTypeRangeEnd);
+    const FTypeArray<int> numFTypeBonds(kernelParams.numFTypeBonds);
+
+    const auto electrostaticsScaleFactor = kernelParams.electrostaticsScaleFactor;
 
     sycl_2020::local_accessor<Float3, 1> sm_fShiftLoc{ sycl::range<1>(c_numShiftVectors), cgh };
 
@@ -885,12 +930,12 @@ auto bondedKernel(sycl::handler&                                        cgh,
 #pragma unroll
         for (int j = 0; j < numFTypesOnGpu; j++)
         {
-            if (tid >= kernelParams.fTypeRangeStart[j] && tid <= kernelParams.fTypeRangeEnd[j])
+            if (tid >= fTypeRangeStart[j] && tid <= fTypeRangeEnd[j])
             {
-                const int numBonds = kernelParams.numFTypeBonds[j];
-                const int fTypeTid = tid - kernelParams.fTypeRangeStart[j];
-                const sycl::global_ptr<const t_iatom> iatoms = a_iatoms[j]->get_pointer();
-                fType                                        = fTypesOnGpu[j];
+                const int                             numBonds = numFTypeBonds[j];
+                const int                             fTypeTid = tid - fTypeRangeStart[j];
+                const sycl::global_ptr<const t_iatom> iatoms   = gm_iatoms[j];
+                fType                                          = fTypesOnGpu[j];
                 if (calcEner)
                 {
                     threadComputedPotential = true;
@@ -932,7 +977,7 @@ auto bondedKernel(sycl::handler&                                        cgh,
                                                      gm_f,
                                                      sm_fShiftLoc,
                                                      pbcAiuc,
-                                                     kernelParams.electrostaticsScaleFactor,
+                                                     electrostaticsScaleFactor,
                                                      &vtot_loc,
                                                      &vtotElec_loc,
                                                      localId);

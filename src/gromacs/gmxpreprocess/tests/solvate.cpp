@@ -120,4 +120,12 @@ TEST_F(SolvateTest, update_Topology_Works)
     runTest(CommandLine(cmdline));
 }
 
+TEST_F(SolvateTest, cs_pdb_big_box_Works)
+{
+    // use SPC216 solvent, but in PDB format
+    const char* const cmdline[] = { "solvate", "-box", "2" };
+    setInputFile("-cs", "spc216.pdb");
+    runTest(CommandLine(cmdline));
+}
+
 } // namespace

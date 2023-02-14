@@ -14,14 +14,37 @@ in the :ref:`release-notes`.
    a space between the colon and number!
 
 Fixes where mdrun could behave incorrectly
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Fix checkpointing of expanded ensemble simulations with domain decomposition
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Expanded-ensemble simulations can now restart from a checkpoint when running
+multiple PP ranks.
+
+:issue:`4629`
 
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
+
+Fix crash in ``gmx solvate`` when using solvent box in PDB format
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Now a PDB file can be passed to the ``-cs`` option in ``gmx solvate``.
+In previous releases (since at least 2016) this lead to a segfault.
 
 Fixes that affect portability
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Miscellaneous
 ^^^^^^^^^^^^^
+
+Workaround for strange compiler behavior to improve SYCL bonded kernel performance
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+For some SYCL targets (most notably, hipSYCL for AMD GPUs with ROCm 5.x),
+a very inefficient code was generated for bonded kernels.
+Now, bonded force calculation on GPU is expected to be up to 3 times faster.
+
+:issue:`3928`
 
