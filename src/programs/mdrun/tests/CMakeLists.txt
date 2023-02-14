@@ -119,6 +119,7 @@ set(exename "mdrun-single-rank-algorithms-test")
 
 gmx_add_gtest_executable(${exename}
     CPP_SOURCE_FILES
+        dispersion_correction.cpp
         ewaldsurfaceterm.cpp
         orires.cpp
         # pseudo-library for code for mdrun
