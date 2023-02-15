@@ -1,0 +1,12 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <OutputFiles Name="Files">
+    <File Name="-o">
+      <String Name="Contents"><![CDATA[
+[ System ]
+   1    2    3    4    5    6
+]]></String>
+    </File>
+  </OutputFiles>
+</ReferenceData>

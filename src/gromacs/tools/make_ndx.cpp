@@ -1508,5 +1508,13 @@ int gmx_make_ndx(int argc, char* argv[])
 
     write_index(ndxoutfile, indexGroups, bDuplicate, natoms);
 
+    if (stxfile)
+    {
+        sfree(v);
+        sfree(x);
+        done_atom(&atoms);
+    }
+    output_env_done(oenv);
+
     return 0;
 }
