@@ -249,7 +249,7 @@ rst_epilog += """
 .. _Ubuntu toolchain ppa page: https://launchpad.net/~ubuntu-toolchain-r/+archive/ubuntu/test
 .. _EPEL page: https://fedoraproject.org/wiki/EPEL
 .. _running CMake: http://www.cmake.org/runningcmake/
-.. _CMake environment variables: http://cmake.org/Wiki/CMake_Useful_Variables#Environment_Variables
+.. _CMake environment variables: https://gitlab.kitware.com/cmake/community/-/wikis/doc/cmake/Useful-Variables
 .. _FFTW: http://www.fftw.org
 .. _FFTW installation guide: http://www.fftw.org/doc/Installation-and-Customization.html#Installation-and-Customization
 .. _MKL: https://software.intel.com/en-us/intel-mkl
