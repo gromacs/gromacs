@@ -96,6 +96,78 @@ TEST(CStringUtilityTest, CaseInsensitiveComparisonInLength)
     EXPECT_FALSE(gmx_strncasecmp("foobar", "foo", 4) == 0);
 }
 
+template<typename F>
+void testInplace(F f, const char* input, const char* expectedOutput)
+{
+    char* tmp = strdup(input);
+    f(tmp);
+    EXPECT_STREQ(tmp, expectedOutput);
+    free(tmp);
+}
+
+TEST(CStringUtilityTest, strip_comment)
+{
+    EXPECT_NO_THROW(strip_comment(nullptr));
+
+    testInplace(strip_comment, "", "");
+    testInplace(strip_comment, "foo", "foo");
+    testInplace(strip_comment, "foo;", "foo");
+    testInplace(strip_comment, "foo;bar", "foo");
+    testInplace(strip_comment, ";foo", "");
+    testInplace(strip_comment, "foo;bar;baz", "foo");
+    testInplace(strip_comment, " foo ; bar", " foo ");
+}
+
+TEST(CStringUtilityTest, upstring)
+{
+    EXPECT_NO_THROW(upstring(nullptr));
+
+    testInplace(upstring, "", "");
+    testInplace(upstring, "foo", "FOO");
+    testInplace(upstring, "FOO", "FOO");
+    testInplace(upstring, "123", "123");
+    testInplace(upstring, "aBcDeF\n123", "ABCDEF\n123");
+}
+
+TEST(CStringUtilityTest, ltrim)
+{
+    EXPECT_NO_THROW(ltrim(nullptr));
+
+    testInplace(ltrim, "", "");
+    testInplace(ltrim, "    ", "");
+    testInplace(ltrim, "   \t ", "");
+    testInplace(ltrim, "foo", "foo");
+    testInplace(ltrim, "   foo  ", "foo  ");
+    testInplace(ltrim, "\tfoo\t", "foo\t");
+    testInplace(ltrim, " foo bar ", "foo bar ");
+}
+
+TEST(CStringUtilityTest, rtrim)
+{
+    EXPECT_NO_THROW(rtrim(nullptr));
+
+    testInplace(rtrim, "", "");
+    testInplace(rtrim, "    ", "");
+    testInplace(rtrim, "   \t ", "");
+    testInplace(rtrim, "foo", "foo");
+    testInplace(rtrim, "   foo  ", "   foo");
+    testInplace(rtrim, "\tfoo\t", "\tfoo");
+    testInplace(rtrim, " foo bar ", " foo bar");
+}
+
+TEST(CStringUtilityTest, trim)
+{
+    EXPECT_NO_THROW(trim(nullptr));
+
+    testInplace(trim, "", "");
+    testInplace(trim, "    ", "");
+    testInplace(trim, "   \t ", "");
+    testInplace(trim, "foo", "foo");
+    testInplace(trim, "   foo  ", "foo");
+    testInplace(trim, "\tfoo\t", "foo");
+    testInplace(trim, " foo bar ", "foo bar");
+}
+
 } // namespace
 } // namespace test
 } // namespace gmx

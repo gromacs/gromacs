@@ -124,7 +124,11 @@ void strip_comment(char* line)
 
 void upstring(char* str)
 {
-    for (int i = 0; (i < static_cast<int>(strlen(str))); i++)
+    if (nullptr == str)
+    {
+        return;
+    }
+    for (size_t i = 0; i < strlen(str); i++)
     {
         str[i] = toupper(str[i]);
     }
@@ -161,7 +165,7 @@ void rtrim(char* str)
     }
 
     int nul = strlen(str) - 1;
-    while ((nul > 0) && ((str[nul] == ' ') || (str[nul] == '\t')))
+    while ((nul >= 0) && ((str[nul] == ' ') || (str[nul] == '\t')))
     {
         str[nul] = '\0';
         nul--;
