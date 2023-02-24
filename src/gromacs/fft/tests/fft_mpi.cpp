@@ -240,7 +240,7 @@ std::vector<FftBackend> const           inputBackends
     FftBackend::HeFFTe_CUDA,
 #    endif
 #    if GMX_GPU_SYCL && GMX_GPU_FFT_MKL
-            FftBackend::HeFFTe_OneApi,
+            FftBackend::HeFFTe_Sycl_OneMkl,
 #    endif
 #    if GMX_GPU_SYCL && GMX_GPU_FFT_ROCFFT
             FftBackend::HeFFTe_Sycl_Rocfft,
