@@ -129,6 +129,12 @@ struct PmeGpuSpecific
     GpuEventSynchronizer pmeForcesReady;
     /*! \brief Triggered after the grid has been copied to the host (after the spreading stage). */
     GpuEventSynchronizer syncSpreadGridD2H;
+    /*! \brief Triggered after the end-of-step tasks in the PME stream are complete.
+     *
+     * Required only in case of GPU PME pipelining, when we launch Spread kernels in
+     * separate streams.
+     * */
+    GpuEventSynchronizer pmeGridsReadyForSpread;
 
     /* Settings which are set at the start of the run */
     /*! \brief A boolean which tells whether the complex and real grids for cu/clFFT are different or same. Currently false. */

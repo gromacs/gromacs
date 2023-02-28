@@ -16,6 +16,29 @@ in the :ref:`release-notes`.
 Fixes where mdrun could behave incorrectly
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Fix CUDA PME spread in multi-GPU runs (with >=3 GPUs)
+"""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Due to incorrect indexing of the second grid, spread could give incorrect
+with when separate PME ranks are used and pipelining is enabled.
+Runs with >=3 GPUs with direct GPU communication enabled
+(``GMX_ENABLE_DIRECT_GPU_COMM`` env. var.) are affected.
+
+:issue:`4732`
+
+
+Fix missing synchronization in GPU PME pipelining
+"""""""""""""""""""""""""""""""""""""""""""""""""
+
+A missing synchronization could have caused incorrect long-range PME electrostatics
+forces/energies to be produced when GPU PME pipelining was used.
+
+Only runs with >=3 GPUs and with direct GPU communication enabled 
+(``GMX_ENABLE_DIRECT_GPU_COMM`` env. var.) are affected.
+
+:issue:`4734`
+
+
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
 
