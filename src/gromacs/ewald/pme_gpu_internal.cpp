@@ -1529,7 +1529,11 @@ void pme_gpu_spread(const PmeGpu*                  pmeGpu,
                                             && !writeGlobalOrSaveSplines);
         if (kernelParamsPtr->usePipeline != 0)
         {
-            int numStagesInPipeline = pmeCoordinateReceiverGpu->ppCommNumSenderRanks();
+            const int numStagesInPipeline = pmeCoordinateReceiverGpu->ppCommNumSenderRanks();
+
+            GpuEventSynchronizer* gridsReadyForSpread = &pmeGpu->archSpecific->pmeGridsReadyForSpread;
+            gridsReadyForSpread->markEvent(pmeGpu->archSpecific->pmeStream_);
+            gridsReadyForSpread->setConsumptionLimits(numStagesInPipeline, numStagesInPipeline);
 
             for (int i = 0; i < numStagesInPipeline; i++)
             {
@@ -1544,16 +1548,18 @@ void pme_gpu_spread(const PmeGpu*                  pmeGpu,
                     senderRank = i;
                 }
 
+                DeviceStream* launchStream = pmeCoordinateReceiverGpu->ppCommStream(senderRank);
+                gridsReadyForSpread->enqueueWaitEvent(*launchStream);
+
                 // set kernel configuration options specific to this stage of the pipeline
                 std::tie(kernelParamsPtr->pipelineAtomStart, kernelParamsPtr->pipelineAtomEnd) =
                         pmeCoordinateReceiverGpu->ppCommAtomRange(senderRank);
-                const int blockCount       = static_cast<int>(std::ceil(
+                const int blockCount = static_cast<int>(std::ceil(
                         static_cast<float>(kernelParamsPtr->pipelineAtomEnd - kernelParamsPtr->pipelineAtomStart)
                         / atomsPerBlock));
-                auto      dimGrid          = pmeGpuCreateGrid(pmeGpu, blockCount);
-                config.gridSize[0]         = dimGrid.first;
-                config.gridSize[1]         = dimGrid.second;
-                DeviceStream* launchStream = pmeCoordinateReceiverGpu->ppCommStream(senderRank);
+                auto      dimGrid    = pmeGpuCreateGrid(pmeGpu, blockCount);
+                config.gridSize[0]   = dimGrid.first;
+                config.gridSize[1]   = dimGrid.second;
 
 
 #if c_canEmbedBuffers
