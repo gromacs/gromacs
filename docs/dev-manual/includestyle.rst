@@ -37,6 +37,22 @@ are generally included with quotes (whenever the include path is relative to
 included as if they were provided by the system.  The latter group currently
 includes gtest/gmock.
 
+In some cases, the include paths available to build targets may leak visibility
+of headers inappropriately. This is usually encountered as a header that can be
+used by an ``#include`` with an unusual or long path. If a header cannot be
+included as described above, check that the appropriate CMake target is referenced by a
+`target_link_libraries() <https://cmake.org/cmake/help/latest/command/target_link_libraries.html>`__
+command. Many modules provide their own CMake target. Additionally, note
+
+* The ``common`` CMake target provides access to :file:`gmxpre.h`, :file:`config.h`,
+  :file:`gmxpre-config.h`, :file:`buildinfo.h`, and :file:`contributors.h`
+* ``legacy_api`` provides access to those of the old :file:`gromacs/modulename` headers
+  that are in :file:`api/legacy/include`
+* ``legacy_modules`` adds :file:`src/` to the include path, exposing all headers in
+  :file:`gromacs/` and :file:`gromacs/*/` for ``#include`` lines that would appear
+  to comply with the guidelines above, but which may not be intended for "public" use.
+  (This target was intended as a temporary measure while working towards :issue:`3288`.)
+
 If there are any conditionally included headers (typically, only when some
 #defines from ``config.h`` are set), these should be included at the end of
 their respective group.  Note that the automatic checker/sorter script does not

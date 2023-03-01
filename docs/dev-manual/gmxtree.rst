@@ -3,6 +3,11 @@ Source tree checker scripts
 
 .. highlight:: bash
 
+.. warning::
+
+    This section is out of date. Several of the checks described are no longer performed
+    or are deprecated per :issue:`3288` and related issues.
+
 There is a set of Python scripts, currently under ``docs/doxygen/``, that check
 various aspects of the source tree for consistency.  The script is based on
 producing an abstract representation of the source tree from various sources:
