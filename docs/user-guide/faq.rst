@@ -21,7 +21,7 @@ Questions regarding |Gromacs| installation
    the main simulation engine :ref:`mdrun <gmx mdrun>`. Generally that
    is desirable when running on a multi-node cluster, and necessary
    when using multi-simulation algorithms. Usually also installing a
-   build of GROMACS configured without MPI is convenient for users.
+   build of |Gromacs| configured without MPI is convenient for users.
 
 
 #. Should my version be compiled using double precision?

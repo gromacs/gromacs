@@ -1,8 +1,8 @@
-GROMACS 2019.6 release notes
-----------------------------
+|Gromacs| 2019.6 release notes
+------------------------------
 
 This version was released on February 28th, 2020. These release notes
-document the changes that have taken place in GROMACS since the
+document the changes that have taken place in |Gromacs| since the
 previous 2019.5 version, to fix known issues. It also incorporates all
 fixes made in version 2018.8 and earlier, which you can find described
 in the :ref:`release-notes`.
@@ -39,7 +39,7 @@ Calculate Coulomb and LJ reciprocal terms in rerun
 """"""""""""""""""""""""""""""""""""""""""""""""""
 
 Reruns would not calculate Coulomb and LJ reciprocal terms, leading
-to wrong potential energies. This bug only showed up if GROMACS was
+to wrong potential energies. This bug only showed up if |Gromacs| was
 compiled without GPU support.
 
 :issue:`3400`

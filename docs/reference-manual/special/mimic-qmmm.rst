@@ -133,7 +133,7 @@ Preparing the input file for |Gromacs|
 In order to setup the :ref:`mdp` file for a MiMiC simulation one needs
 to add two options:
 
-#. :mdp-value:`integrator=mimic` to enable MiMiC workflow within GROMACS.
+#. :mdp-value:`integrator=mimic` to enable MiMiC workflow within |Gromacs|.
 #. ``QMMM-grps=<name_of_qm_index_group>`` to indicate all the atoms
    that are going to be handled by CPMD.
 
@@ -155,7 +155,7 @@ Preparing the input file for CPMD
 This section will only describe the MiMiC-related input in CPMD - for the
 configuration of a DFT-related options - please refer to the `CPMD manual
 <https://www.cpmd.org/>`__.
-After preparing the input for GROMACS and having obtained the
+After preparing the input for |Gromacs| and having obtained the
 preprocessed topology file, simply run the Python
 preprocessor script provided within the MiMiC distribution to obtain
 MiMiC-related part of the CPMD input file. The usage of the script is simple:

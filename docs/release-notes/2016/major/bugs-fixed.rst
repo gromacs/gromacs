@@ -140,7 +140,7 @@ The trr header-reading routine returned an "OK" value even if the
 magic number was wrong, which might lead to chaotic results
 everywhere.  This led to problems if other code (e.g. cpptraj)
 mistakenly wrote a wrong-endian trr file, which was then used with
-GROMACS. (This should never be a thing for XDR files, which are
+|Gromacs|. (This should never be a thing for XDR files, which are
 defined to be big endian, but such code has existed.)
 
 :issue:`1926`
@@ -209,7 +209,7 @@ Note that we still have 3 different sources for this count left.
 
 Added support for linking against external TinyXML-2
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-This permits convenient packaging of GROMACS by distributions, but
+This permits convenient packaging of |Gromacs| by distributions, but
 it got lost from gerrit while rebasing.
 
 :issue:`1956`

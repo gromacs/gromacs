@@ -14,7 +14,7 @@ Resources
 
 * |Gromacs| :doc:`/reference-manual/index/` - very detailed document that can also act as a very good introduction for :ref:`MD <gmx-md>` in general.
 * :doc:`Flow Chart </user-guide/flow>`- simple flow chart of a typical |Gromacs| MD run of a protein in a box of water.
-* Molecular dynamics simulations and GROMACS introduction
+* Molecular dynamics simulations and |Gromacs| introduction
   (`slides <https://extras.csc.fi/chem/courses/gmx2007/Berk_talks/forcef.pdf>`_,
   `video <https://video.csc.fi/playlist/dedicated/0_7z3nas0q/0_9aehv6v2>`_)
   - force fields, integrators, control of temperature and pressure (Berk Hess).

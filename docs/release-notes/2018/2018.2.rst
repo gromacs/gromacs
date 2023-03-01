@@ -1,8 +1,8 @@
-GROMACS 2018.2 release notes
-----------------------------
+|Gromacs| 2018.2 release notes
+------------------------------
 
 This version was released on June 14, 2018. These release notes document
-the changes that have taken place in GROMACS since version 2018.1, to fix known
+the changes that have taken place in |Gromacs| since version 2018.1, to fix known
 issues. It also incorporates all fixes made in version 2016.5 and
 earlier, which you can find described in the :ref:`release-notes`.
 
@@ -159,7 +159,7 @@ GnuInstallDirs.cmake is a better approach.
 Several documentation and output improvements
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
-* Updated top-level README file for latest GROMACS core publication.
+* Updated top-level README file for latest |Gromacs| core publication.
 * Reporting about GPU detection has improved.
 * ``gmx mindist -pi`` docs improved.
 * Docs for mdp options relating to bonds improved.

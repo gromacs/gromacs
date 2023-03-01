@@ -1,8 +1,8 @@
-GROMACS 2022.1 release notes
-----------------------------
+|Gromacs| 2022.1 release notes
+------------------------------
 
 This version was released on April 22th, 2022. These release notes
-document the changes that have taken place in GROMACS since the
+document the changes that have taken place in |Gromacs| since the
 previous 2022 version, to fix known issues. It also incorporates all
 fixes made in version 2021.5 and earlier, which you can find described
 in the :ref:`release-notes`.
@@ -16,13 +16,13 @@ in the :ref:`release-notes`.
 Note to developers and package maintainers
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Next release (GROMACS 2022.2) will rename master branch to main 
-"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+Next release (|Gromacs| 2022.2) will rename master branch to main 
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
 At the date of the next release we will rename the master branch to main to
 moving away from master / slave terminology.
 
-After the GROMACS 2022.2 patch release, developers are advised to delete their
+After the |Gromacs| 2022.2 patch release, developers are advised to delete their
 local master branch and fetch the remote main branch as in
 ``git branch -d master; git fetch; git checkout main``
 

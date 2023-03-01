@@ -1,8 +1,8 @@
-GROMACS 2022.5 release notes
-----------------------------
+|Gromacs| 2022.5 release notes
+------------------------------
 
 This version was released on February 3rd, 2023. These release notes
-document the changes that have taken place in GROMACS since the
+document the changes that have taken place in |Gromacs| since the
 previous 2022.4 version, to fix known issues. It also incorporates all
 fixes made in version 2021.7 and earlier, which you can find described
 in the :ref:`release-notes`.
@@ -52,14 +52,14 @@ Fix checkpointing of expanded ensemble simulations with modular simulator
 
 Expanded ensemble simulations would fail to write checkpoint files when the
 modular simulator was used (which is the default setting for expanded ensemble
-in GROMACS 2022). The investigation lead to the discovery of another bug, which
+in |Gromacs| 2022). The investigation lead to the discovery of another bug, which
 was also fixed: When restarting from checkpoint, a successful MC step in lambda
 space that had happened on the step on which the checkpoint was written would
 have been ignored. Since the checkpoint failed to be written in the first place,
-this is unlikely to have lead to wrong results in GROMACS 2022.
+this is unlikely to have lead to wrong results in |Gromacs| 2022.
 
 The bug dropping successful MC steps on checkpoint steps upon simulation restarts
-is also present in the legacy code path, which was the default in GROMACS 2021.7
+is also present in the legacy code path, which was the default in |Gromacs| 2021.7
 and earlier. Simulations using the legacy code path no longer write checkpoint
 files, and inform about this behavior in their log file.
 

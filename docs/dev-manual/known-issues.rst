@@ -5,7 +5,7 @@ Known issues relevant for developers
 
 This is a non-exhaustive list of known issues that have been observed
 and can be of interest for developers. These have not been solved
-because they are either outside the scope of the GROMACS project
+because they are either outside the scope of the |Gromacs| project
 or are are simply too difficult or tedious to address ourselves.
 
 Issues with GPU timer with OpenCL

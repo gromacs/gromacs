@@ -1,8 +1,8 @@
-GROMACS 2016.2 Release Notes
+|Gromacs| 2016.2 Release Notes
 ----------------------------------------
 
 This version was released on February 7, 2016. These release notes
-document the changes that have taken place in GROMACS since version
+document the changes that have taken place in |Gromacs| since version
 2016.1 to fix known issues. It also incorporates all fixes made in
 version 5.1.4 and several since.
 
@@ -190,7 +190,7 @@ Turn off hwloc support when static lib found
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 Hwloc dependencies are not resolved at CMake time when static
 libwloc.a is detected and in most of these cases link-time
-errors will prevent building GROMACS. As it is hard for a user to know
+errors will prevent building |Gromacs|. As it is hard for a user to know
 how to solve such cryptic errors and hwloc is not a required dependency,
 we turn off hwloc support when a static lib is detected. The user can
 override this on the cmake command line.

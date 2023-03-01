@@ -1,4 +1,4 @@
-Improvements to GROMACS tools
+Improvements to |Gromacs| tools
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Supported replacing solvent in ``gmx insert-molecules``

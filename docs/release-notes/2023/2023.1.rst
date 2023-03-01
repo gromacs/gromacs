@@ -1,8 +1,8 @@
-GROMACS 2023.1 release notes
-----------------------------
+|Gromacs| 2023.1 release notes
+------------------------------
 
 This version was released on TODO, 2023. These release notes
-document the changes that have taken place in GROMACS since the
+document the changes that have taken place in |Gromacs| since the
 previous 2023 version, to fix known issues. It also incorporates all
 fixes made in version 2022.5 and earlier, which you can find described
 in the :ref:`release-notes`.

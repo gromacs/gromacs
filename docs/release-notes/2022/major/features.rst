@@ -38,7 +38,7 @@ Replica-exchange molecular dynamics now works with GPU update.
 A new formulation of soft-core interactions for free energy calculations
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
-With this addition Gromacs allows to choose from two schemes to soften
+With this addition |Gromacs| allows to choose from two schemes to soften
 non-bonded interactions during alchemical perturbations:
 Beutler *et al.*\ :ref:`100 <refBeutler94>` and Gapsys *et al.*\ :ref:`185 <refGapsys2012>` soft-core functions.
 

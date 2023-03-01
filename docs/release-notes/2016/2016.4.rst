@@ -1,8 +1,8 @@
-GROMACS 2016.4 Release Notes
-----------------------------
+|Gromacs| 2016.4 Release Notes
+------------------------------
 
 This version was released on September 15, 2017. These release notes
-document the changes that have taken place in GROMACS since version
+document the changes that have taken place in |Gromacs| since version
 2016.3 to fix known issues. It also incorporates all fixes made in
 version 5.1.4 and several since.
 
@@ -111,7 +111,7 @@ situations such as:
     pullf.xvg
 
 where ``pullx.xvg`` and ``pullf.xvg`` are present and named exactly as
-listed, but GROMACS expects them to be named as ``-deffnm`` requested.
+listed, but |Gromacs| expects them to be named as ``-deffnm`` requested.
 
 The improved error message suggest to the user to check for that
 possibility.
@@ -264,7 +264,7 @@ The code was adapted to support changes to the nature of warp
 synchrony, without disturbing support for older GPUs and/or
 CUDA. Further improvements may be seen (e.g. in the 2017 release).
 
-Really enabled AVX512 in the GROMACS-managed build of FFTW
+Really enabled AVX512 in the |Gromacs|-managed build of FFTW
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 An earlier attempt to enable AVX512 on GCC 4.9 or newer and
 Clang 3.9 or newer was wrongly implemented. Now this works on
@@ -283,7 +283,7 @@ Fixed compiler flags for using MKL
 Fixes compilation issues with ARM SIMD
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 ARM_NEON has never supported double precision SIMD, so disabled it
-with GROMACS double-precision build.
+with |Gromacs| double-precision build.
 
 The maskzR* functions used the wrong argument order in the debug-mode
 pre-masking (and sometimes in a typo-ed syntax).

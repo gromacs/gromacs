@@ -65,11 +65,11 @@ Topology #include file mechanism
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 When constructing a system topology in a :ref:`top` file for presentation to grompp,
-GROMACS uses a built-in version of the so-called C preprocessor, cpp (in GROMACS 3, it really was cpp). cpp interprets lines like::
+|Gromacs| uses a built-in version of the so-called C preprocessor, cpp (in |Gromacs| 3, it really was cpp). cpp interprets lines like::
 
     #include "ions.itp"
 
-by looking for the indicated file in the current directory, the GROMACS share/top directory as indicated
+by looking for the indicated file in the current directory, the |Gromacs| share/top directory as indicated
 by the GMXLIB environment variable, and any directory indicated by a ``-I`` flag in the value of the
 include :mdp:`run parameter <include>` in the :ref:`mdp` file. It either finds this file or reports
 a warning. (Note that when you supply a directory name, you should use Unix-style forward

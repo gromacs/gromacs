@@ -4,7 +4,7 @@
 NBLIB API
 =========
 
-This documentation is part of the `GROMACS manual <http://manual.gromacs.org/current/>`_
+This documentation is part of the |Gromacs| `manual <http://manual.gromacs.org/current/>`_
 and describes the *nblib* API.
 
 

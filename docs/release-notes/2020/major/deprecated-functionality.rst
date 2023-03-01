@@ -37,7 +37,7 @@ Much functionality in ``trjconv``, ``editconf``, ``eneconv`` and ``trjcat``
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 The functionality in such tools is being separated to make it
 available in composable modules, that we plan to make available as
-simpler tools, and eventually via the GROMACS API that is under
+simpler tools, and eventually via the |Gromacs| API that is under
 development.
 
 ``gmx do_dssp`` to be replaced

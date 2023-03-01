@@ -90,7 +90,7 @@ PME decomposition support in mixed mode with CUDA and process-MPI
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
 PME decomposition is supported now in mixed mode with CUDA backend. 
-This is supported only if GROMACS is compiled with external process-MPI 
+This is supported only if |Gromacs| is compiled with external process-MPI 
 and underlying MPI implementation is CUDA-aware. This feature lacks substantial testing
 and has been disabled by default but can be enabled by setting GMX_GPU_PME_DECOMPOSITION=1 
 environment variable.

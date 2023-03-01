@@ -52,7 +52,7 @@ The environment variables that had exactly the same meaning in OpenCL and CUDA w
 Dysfunctional parts of the QMMM interface has been removed
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
-Currently, GROMACS supports QM/MM officially only via MiMiC; a new CP2K QM/MM interface is being
+Currently, |Gromacs| supports QM/MM officially only via MiMiC; a new CP2K QM/MM interface is being
 developed within BioExcel. All other QM/MM
 support has been untested and likely dysfunctional for years and has now been removed from .mdp
 input and output, resulting in smaller .mdp output files from grompp.

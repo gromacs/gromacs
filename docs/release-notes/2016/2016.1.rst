@@ -1,8 +1,8 @@
-GROMACS 2016.1 Release Notes
+|Gromacs| 2016.1 Release Notes
 ----------------------------------------
 
 This version was released on October 28, 2016. These release notes
-document the changes that have taken place in GROMACS since the
+document the changes that have taken place in |Gromacs| since the
 initial version 2016 to fix known issues. It also incorporates all
 fixes made in version 5.1.4.
 

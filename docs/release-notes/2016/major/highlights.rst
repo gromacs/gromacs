@@ -35,6 +35,6 @@ links below!
 * Checkpoint restarts work only in the cases where the implementation
   can always do what the user wants.
 * The version numbering has changed to be the year of the release,
-  plus (in future) a patch number. GROMACS 2016 will be the initial
-  release from this branch, then GROMACS 2016.1 will have the set of
-  bugs that have been fixed in GROMACS 2016, etc.
+  plus (in future) a patch number. |Gromacs| 2016 will be the initial
+  release from this branch, then |Gromacs| 2016.1 will have the set of
+  bugs that have been fixed in |Gromacs| 2016, etc.

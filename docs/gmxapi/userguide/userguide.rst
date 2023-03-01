@@ -9,7 +9,7 @@ Python User Guide
     usage
     pythonreference
 
-After installing GROMACS and the gmxapi Python package, use ``pydoc gmxapi``
+After installing |Gromacs| and the gmxapi Python package, use ``pydoc gmxapi``
 from the command line or ``import gmxapi; help(gmxapi)`` within Python for
 package and module documentation.
 

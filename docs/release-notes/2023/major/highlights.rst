@@ -15,7 +15,7 @@ simulations and hardware. The new features are:
 * The SYCL GPU implementation, which is the GPU portability layer that
   supports all major GPU platforms, has received major extensions
   in support for both platforms and features. To ensure portability
-  in practice, the GROMACS GPU portability layer
+  in practice, the |Gromacs| GPU portability layer
   is actively developed with multiple SYCL implementations (hipSYCL,
   oneAPI DPC++, IntelLLVM) and regularly tested on multiple GPU backends.
 

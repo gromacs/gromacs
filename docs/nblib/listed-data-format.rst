@@ -2,7 +2,7 @@ Design goals and motivation for the data format of bonded forces in NB-LIB
 --------------------------------------------------------------------------
 
 
-The current format for listed forces in GROMACS looks like this:
+The current format for listed forces in |Gromacs| looks like this:
 
 .. code:: cpp
 
@@ -16,7 +16,7 @@ The format covers all interaction types, i.e. \ ``t_iparams`` is a union
 type which can hold the parameters of any type.
 The other member called ``il`` contains the
 indices for each interaction type, where ``F_NRE`` is the number of
-interaction types that GROMACS supports. More precisely, each
+interaction types that |Gromacs| supports. More precisely, each
 member of ``il``, a ``std::vector<int>``, is a flattened list of all
 interactions for a given interaction type. The vector contains ``N+1`` integer indices
 for each interaction, where ``N`` is the number of particles that are
@@ -34,7 +34,7 @@ type system, most importantly static branching, for example with overload resolu
 As a consequence, only dynamic branching with ``if`` statements remains.
 
 Consider, for instance, the implementation of the top-level
-``calc_listed(const InteractionDefinitions& idef, ...)`` in GROMACS, which in its essence,
+``calc_listed(const InteractionDefinitions& idef, ...)`` in |Gromacs|, which in its essence,
 looks like this:
 
 .. code:: cpp
@@ -58,7 +58,7 @@ looks like this:
        // reduce thread output
    }
 
-GROMACS supports a lot of different listed interaction types, such as different
+|Gromacs| supports a lot of different listed interaction types, such as different
 types of bonds, angles and proper and improper dihedrals. These different types
 require different handling and finally the right force kernel chosen from a table
 of function pointers.
@@ -131,7 +131,7 @@ are, in brief:
   * Call interaction type kernel, store forces and return energy
 
 
-This procedure is identical to the current implementation in GROMACS.
+This procedure is identical to the current implementation in |Gromacs|.
 In actual code, the first step looks like this:
 
 .. code:: cpp
@@ -273,7 +273,7 @@ Notably, not a single ``if(ftype)`` is required to implement the control flow.
 The remaining parts for a feature complete implementation are
 overloads of ``dispatchInteraction`` for the 3- to 5-center interactions and
 the type-aware wrappers for all the different kernels implemented in
-GROMACS. They have been omitted for brevity.
+|Gromacs|. They have been omitted for brevity.
 
 A note on **multithreading**: multithreading is handled above the top-level
 ``reduceListedForces`` described here. For parallel execution, the
@@ -287,12 +287,12 @@ Summary
 -------
 
 NB-LIB listed forces employs a (C++)-type aware data format that
-is otherwise equivalent to its counter-part in GROMACS.
+is otherwise equivalent to its counter-part in |Gromacs|.
 The type-aware data format is then used to simplify the "routing" layer that
 connects data input to the appropriate kernels. Thanks to static branching and polymorphism,
 increased code reuse and simplified branching logic could be achieved.
 **The force kernels themselves do not need to be changed and NB-LIB refers to
-GROMACS for their implementation.**
+|Gromacs| for their implementation.**
 
 
 Outlook

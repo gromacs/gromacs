@@ -831,7 +831,7 @@ Another, rather different, scenario is to use a base time step of 0.5 fs
 with non-constrained harmonic bonds, and compute other interactions
 every second or fourth step. Despite these caveats, we encourage users to test
 the functionality, assess stability and energy drifts, and either discuss your
-experience in the GROMACS forums or suggest improvements to the documentation
+experience in the |Gromacs| forums or suggest improvements to the documentation
 so we can improve this guidance in the future.
 
 For using larger time steps for all interactions, and integration, angle

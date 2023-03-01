@@ -16,7 +16,7 @@ For getting, building and installing |Gromacs|, see the
 For background on algorithms and implementations, see the
 :ref:`reference manual part <gmx-reference-manual-rst>` of the documentation.
 If you have questions not answered by these resources, 
-please visit the `GROMACS users forum <https://gromacs.bioexcel.eu/>`_
+please visit the |Gromacs| `users forum <https://gromacs.bioexcel.eu/>`_
 and search for a potential answer or ask a question from the community.
 
 |GMX_MANUAL_DOI_STRING|

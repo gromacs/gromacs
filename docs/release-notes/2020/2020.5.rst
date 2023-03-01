@@ -1,8 +1,8 @@
-GROMACS 2020.5 release notes
-----------------------------
+|Gromacs| 2020.5 release notes
+------------------------------
 
 This version was released on January 6th, 2021. These release notes
-document the changes that have taken place in GROMACS since the
+document the changes that have taken place in |Gromacs| since the
 previous 2020.4 version, to fix known issues. It also incorporates all
 fixes made in version 2019.6 and earlier, which you can find described
 in the :ref:`release-notes`.
@@ -55,10 +55,10 @@ Fixed conserved energy for MTTK
 """""""""""""""""""""""""""""""
 
 When using `pcoupl=MTTK` and `tcoupl=nose-hoover`, the calculated conserved
-energy was incorrect due to two errors dating back to GROMACS 4.6 and 2018,
+energy was incorrect due to two errors dating back to |Gromacs| 4.6 and 2018,
 respectively. As a result, all reported conserved energies using this
-combination of temperature and pressure coupling algorithms in any GROMACS
-version since GROMACS 4.6 are likely to be wrong. Note that these errors did
+combination of temperature and pressure coupling algorithms in any |Gromacs|
+version since |Gromacs| 4.6 are likely to be wrong. Note that these errors did
 not impact the dynamics, as the conserved energy is only reported, but never
 used in calculations. Also note that this bug only affects this exact
 combination of temperature / pressure coupling algorithms.
@@ -70,9 +70,9 @@ Fixed conserved energy for Nose-Hoover
 
 When using `tcoupl=nose-hoover` and one or more temperature groups with
 non-integer number of degrees of freedom, the calculated conserved
-energy was incorrect due to an error dating back to GROMACS 2018.
+energy was incorrect due to an error dating back to |Gromacs| 2018.
 Reported conserved energies using Nose-Hoover temperature coupling and
-non-integer number of degrees of freedom since GROMACS 2018 are likely to
+non-integer number of degrees of freedom since |Gromacs| 2018 are likely to
 be slightly off. Note that this error does not impact the dynamics, as the
 conserved energy is only reported, but never used in calculations. Also note
 that this will only be noticeable when using small temperature groups or

@@ -8,18 +8,18 @@ for managing file revisions.
 Getting started
 ===============
 
-GROMACS development happens on gitlab at https://gitlab.com/gromacs/gromacs.
+|Gromacs| development happens on gitlab at https://gitlab.com/gromacs/gromacs.
 Create a user account at https://gitlab.com/users/sign_in#register-pane or use
 an existing account at gitlab.com. For more information on how to use gitlab have
 a look at their extensive user documentation at https://docs.gitlab.com/ee/user/index.html.
 We follow the workflow described in https://docs.gitlab.com/ee/topics/gitlab_flow.html. 
 
-If you do not already have a GROMACS repository set up, user 
-``git clone git@gitlab.com:gromacs/gromacs.git`` to obtain the current GROMACS
+If you do not already have a |Gromacs| repository set up, use 
+``git clone git@gitlab.com:gromacs/gromacs.git`` to obtain the current |Gromacs|
 repository from gitlab. Otherwise use 
 ``git remote add gitlab git@gitlab.com:gromacs/gromacs.git``. 
 
-Using gitlab, new code enters GROMACS by merging git development branches into
+Using gitlab, new code enters |Gromacs| by merging git development branches into
 the main branch. 
 
 To automatically detect issues in new code, it is tested within continuous
@@ -71,7 +71,7 @@ Keep the requirements for merging as they are set by default.
 You can also use ``git push`` on the command line directly and create a merge request 
 following the link that is output on the command line.
 
-Your repository should be in sync with the GROMACS repository. To ensure this,
+Your repository should be in sync with the |Gromacs| repository. To ensure this,
 use ``git fetch`` to obtain the newest branches, then merge the main branch
 into your branch with ``git merge main`` while on your branch.
 
@@ -98,12 +98,12 @@ Labels
 `Labels <https://docs.gitlab.com/ee/user/project/labels.html>`__
 help developers by allowing additional filtering of issues and merge requests.
 
-The GROMACS project `defines many labels <https://gitlab.com/gromacs/gromacs/-/labels>`__.
+The |Gromacs| project `defines many labels <https://gitlab.com/gromacs/gromacs/-/labels>`__.
 
 .. Note: labeling guidelines TBD. See https://gitlab.com/gromacs/gromacs/-/issues/3949 and open new issues as appropriate.
 
 To minimize duplicated documentation, refer to the
-`GROMACS Labels <https://gitlab.com/gromacs/gromacs/-/labels>`__ web interface for label descriptions.
+`GitLab project Labels <https://gitlab.com/gromacs/gromacs/-/labels>`__ web interface for label descriptions.
 
 When creating a new label, please provide a short description
 so that people can understand what the label is intended to convey,
@@ -111,7 +111,7 @@ and when they should apply it to their own issues or merge requests.
 
 In general:
 
-* Ongoing categorizations to help specify the GROMACS component or development area use the ``#7F8C8D`` color.
+* Ongoing categorizations to help specify the |Gromacs| component or development area use the ``#7F8C8D`` color.
 * Specific features or subproject areas targeting an upcoming release use the ``#8E44AD`` background color.
 * Status labels use ``#428BCA``. Note that Status labels are also used for Issues,
   and are used according to
@@ -148,7 +148,7 @@ Guide for reviewing
 -  First and foremost, check correctness to the extent possible;
 -  As portability and performance are the next most important things do check 
    for potential issues;
--  Check adherence to the :ref:`GROMACS coding standards <style-guidelines>`;
+-  Check adherence to the :ref:`coding standards <style-guidelines>`;
 -  We should try to ensure that commits that implement bugfixes (as
    well as important features and tasks) get an `issue tracker`_ entry created
    and linked. The linking is done **automatically** through

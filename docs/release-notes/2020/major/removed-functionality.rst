@@ -30,12 +30,12 @@ reaction field and computing the dielectric constant manually.
        
 gmx anadock
 """""""""""
-The gmx anadock tool was removed since it does not belong in gromacs
+The gmx anadock tool was removed since it does not belong in |Gromacs|
 (it analyzes AutoDock outputs).
 
 gmx dyndom
 """"""""""
-The gmx dyndom tool was removed since it does not belong in gromacs
+The gmx dyndom tool was removed since it does not belong in |Gromacs|
 (it analyzes DynDom outputs).
 
 gmx morph

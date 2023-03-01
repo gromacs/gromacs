@@ -998,7 +998,7 @@ for inclusion in eg. LaTeX documents, but also for other word processors.
 A sample Grace session with |Gromacs| data is shown below:
 
 .. image:: plots/xvgr.*
-   :alt:  Sample xvg graphic produced using the |Gromacs| tools
+   :alt:  Sample xvg graphic produced using the GROMACS tools
 
 .. raw:: latex
 

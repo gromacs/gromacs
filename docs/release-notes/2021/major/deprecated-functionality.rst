@@ -41,7 +41,7 @@ Much functionality in ``trjconv``, ``editconf``, ``eneconv`` and ``trjcat``
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 The functionality in such tools is being separated to make it
 available in composable modules, that we plan to make available as
-simpler tools, and eventually via the GROMACS API that is under
+simpler tools, and eventually via the |Gromacs| API that is under
 development.
 
 ``gmx do_dssp`` to be replaced
@@ -144,7 +144,7 @@ Reading .pdo files in ``gmx wham``
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 The pull code in |Gromacs| before version 4.0 wrote files in ``.pdo``
 format. Analyses of such files are likely no longer relevant, and if
-they are, using any older GROMACS version will work. ``gmx wham`` will be
+they are, using any older |Gromacs| version will work. ``gmx wham`` will be
 simpler to maintain and extend if we no longer support reading
 ``.pdo`` files.
 

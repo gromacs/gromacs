@@ -112,7 +112,7 @@ frequently provides the best performance.
 
 You should strive to use the most recent version of your
 compiler. Since we require full C++17 support the minimum
-compiler versions supported by the GROMACS team are
+compiler versions supported by the |Gromacs| team are
 
 * GNU (gcc/libstdc++) 9
 * LLVM (clang/libc++) 7
@@ -259,7 +259,7 @@ more details, see `Introduction to CUDA-aware MPI
 
 To use CUDA-aware MPI for direct GPU communication we recommend
 using the latest OpenMPI version (>=4.1.0) with the latest UCX version
-(>=1.10), since most GROMACS internal testing on CUDA-aware support has 
+(>=1.10), since most |Gromacs| internal testing on CUDA-aware support has 
 been performed using these versions. OpenMPI with CUDA-aware support can 
 be built following the procedure in `these OpenMPI build instructions
 <https://www.open-mpi.org/faq/?category=buildcuda>`_.
@@ -1103,8 +1103,8 @@ or DOI `10.1093/bioinformatics/bty484 <https://doi.org/10.1093/bioinformatics/bt
 gmxapi is not yet tested on Windows or with static linking, but these use cases
 are targeted for future versions.
 
-Portability of a GROMACS build
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Portability of a |Gromacs| build
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 A |Gromacs| build will normally not be portable, not even across
 hardware with the same base instruction set, like x86. Non-portable
@@ -1409,7 +1409,7 @@ that a tolerance is just a tiny bit too tight. Check the output files
 the script directs you too, and try a different or newer compiler if
 the errors appear to be real. If you cannot get it to pass the
 regression tests, you might try dropping a line to the
-`GROMACS users forum <https://gromacs.bioexcel.eu/c/gromacs-user-forum>`__,
+|Gromacs| `users forum <https://gromacs.bioexcel.eu/c/gromacs-user-forum>`__,
 but then you should include a detailed description of
 your hardware, and the output of ``gmx mdrun -version`` (which contains
 valuable diagnostic information in the header).
@@ -1585,7 +1585,7 @@ a version of oneAPI containing Intel's clang-based compiler.
 For this testing, we use Ubuntu 20.04 operating system.
 Other compiler, library, and OS versions are tested less frequently.
 For details, you can have a look at the
-`continuous integration server used by GROMACS <https://gitlab.com/gromacs/gromacs/>`_,
+`continuous integration server used by the GitLab project <https://gitlab.com/gromacs/gromacs/>`_,
 which uses GitLab runner on a local k8s x86 cluster with NVIDIA,
 AMD, and Intel GPU support.
 
@@ -1597,7 +1597,7 @@ Support
 -------
 
 Please refer to the `manual <http://manual.gromacs.org/>`_ for documentation,
-downloads, and release notes for any GROMACS release.
+downloads, and release notes for any |Gromacs| release.
 
 Visit the `user forums <http://forums.gromacs.org/>`_ for discussions and advice.
 

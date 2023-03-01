@@ -51,7 +51,7 @@ mathematically expected results:
   pressures) is known. Comparing two simulations at different state
   points therefore allows a validation of the sampled ensemble.
 
-The physical validation included in GROMACS tests a range of the
+The physical validation included in |Gromacs| tests a range of the
 most-used settings on several systems. The general philosophy is to
 leave most settings to default values with the exception of the ones
 explicitly tested in order to be sensitive to changes in the default
@@ -181,7 +181,7 @@ general usage information, and the ``--tests`` for more details on the
 available physical validations.
 
 The script requires a ``json`` file defining the tests as an input.
-Among other options, it allows to define the GROMACS binary and the
+Among other options, it allows to define the |Gromacs| binary and the
 working directory to be used, and to decide whether to only prepare
 the simulations, prepare and run the simulations, only analyze the
 simulations, or do all three steps at once.
@@ -193,7 +193,7 @@ Adding new tests
 The available tests are listed in the ``systems.json`` (tests
 standardly used for single precision builds) and ``systems_d.json``
 (tests standardly used for double precision builds) files in the same
-directory, the GROMACS files are in the folder ``systems/``.
+directory, the |Gromacs| files are in the folder ``systems/``.
 
 The ``json`` files lists the different test. Each test has a
 ``"name"`` attribute, which needs to be unique, a ``"dir"`` attribute,

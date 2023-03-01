@@ -82,13 +82,13 @@ as the issue is processed.
 * `Status::Resolved <https://gitlab.com/gromacs/gromacs/-/issues?label_name%5B%5D=Status%3A%3AResolved>`__:
   The issue will be closed if there is no further discussion.
 
-.. Text below is stolen from the old Gromacs web page
+.. Text below is stolen from the old |Gromacs| web page
 
 .. Before opening a new issue, take a minute and make it easy for everybody else (in particular the developers!) to help you - that way you are much more likely to get a solution to your problem.
 
 .. 1. Isolate the problem as far as possible. If you submit a huge tpr file that sometimes fails after a million steps, it is pretty much guaranteed that nobody is going to debug it.
 
-.. 2. Upload a single small example of how a simulation (or some other GROMACS program) crashes. This should ideally be a single (small) conf.gro file, topol.top, and grompp.mdp. Make sure that your input files are processed without warnings for the GROMACS version you are submitting a bug report for, and don't rely on some large external force field or long script. In most cases these additional files and warnings are of course completely unrelated to the problem, but particularly in that case you are helping others a lot by not having to take them into account.
+.. 2. Upload a single small example of how a simulation (or some other |Gromacs| program) crashes. This should ideally be a single (small) conf.gro file, topol.top, and grompp.mdp. Make sure that your input files are processed without warnings for the |Gromacs| version you are submitting a bug report for, and don't rely on some large external force field or long script. In most cases these additional files and warnings are of course completely unrelated to the problem, but particularly in that case you are helping others a lot by not having to take them into account.
 
 .. 3. Provide a very concise report of exactly what commands you used (so it can be reproduced), what behavour you expected, and what you got.
 

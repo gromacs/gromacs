@@ -49,7 +49,7 @@ to stack around your solute(s), and then to truncate to give the simulation volu
 using any 3-point model (e.g. ``SPC``, ``SPC/E`` or ``TIP3P``) you should specify ``-cs spc216.gro``
 which will take this file from ``the gromacs/share/top`` directory. Other water models (e.g.
 ``TIP4P`` and ``TIP5P``) are available as well. Check the contents of the ``/share/top`` subdirectory
-of your GROMACS installation. After solvation, you should then be sure to equilibrate for at
+of your |Gromacs| installation. After solvation, you should then be sure to equilibrate for at
 least 5-10ps at the desired temperature. You will need to select the right water model in your
 :ref:`top` file, either with the ``-water`` flag to :ref:`pdb2gmx <gmx pdb2gmx>`, or by editing
 your :ref:`top` file appropriately by hand.

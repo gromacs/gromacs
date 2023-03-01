@@ -2,7 +2,7 @@
 Using the Python package
 ========================
 
-After installing GROMACS, sourcing the "GMXRC" (see GROMACS docs), and installing
+After installing |Gromacs|, sourcing the "GMXRC" (see |Gromacs| docs), and installing
 the gmxapi Python package (see :doc:`install`), import the package in a Python
 script or interactive interpreter. This documentation assumes a convenient alias
 of ``gmx`` to refer to the ``gmxapi`` Python package.
@@ -19,14 +19,14 @@ Any Python *exception* raised by gmxapi
 should be descended from (and catchable as) :class:`gmxapi.exceptions.Error`.
 Additional status messages can be acquired through the :ref:`gmxapi logging`
 facility.
-Unfortunately, some errors occurring in the GROMACS library are not yet
-recoverable at the Python level, and much of the standard GROMACS terminal
+Unfortunately, some errors occurring in the |Gromacs| library are not yet
+recoverable at the Python level, and much of the standard |Gromacs| terminal
 output is not yet accessible through Python.
-If you find a particularly problematic scenario, please file a GROMACS bug report.
+If you find a particularly problematic scenario, please file a |Gromacs| bug report.
 
 During installation, the *gmxapi* Python package becomes tied to a specific
-GROMACS installation.
-If you would like to access multiple GROMACS installations
+|Gromacs| installation.
+If you would like to access multiple |Gromacs| installations
 from Python, build and install *gmxapi* in separate
 :ref:`virtual environments <gmxapi venv>`.
 
@@ -223,7 +223,7 @@ See also :ref:`parallelism`.
 Accessing command line tools
 ============================
 
-In *gmxapi* 0.1, most GROMACS tools are not yet exposed as *gmxapi* Python operations.
+In *gmxapi* 0.1, most |Gromacs| tools are not yet exposed as *gmxapi* Python operations.
 :class:`gmxapi.commandline_operation` provides a way to convert a :command:`gmx`
 (or other) command line tool into an operation that can be used in a *gmxapi*
 script.
@@ -452,6 +452,6 @@ Refer to the :doc:`pythonreference` for complete and granular documentation.
 
 For more information on writing or using pluggable simulation extension code,
 refer to https://gitlab.com/gromacs/gromacs/-/issues/3133.
-(For gmxapi 0.0.7 and GROMACS 2019, see https://github.com/kassonlab/sample_restraint)
+(For gmxapi 0.0.7 and |Gromacs| 2019, see https://github.com/kassonlab/sample_restraint)
 
 .. todo:: :issue:`3133`: Replace these links as resources for pluggable extension code become available.

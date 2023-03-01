@@ -1,8 +1,8 @@
-GROMACS 2021.3 release notes
-----------------------------
+|Gromacs| 2021.3 release notes
+------------------------------
 
 This version was released on August 18th, 2021. These release notes
-document the changes that have taken place in GROMACS since the
+document the changes that have taken place in |Gromacs| since the
 previous 2021.2 version, to fix known issues. It also incorporates all
 fixes made in version 2020.6 and earlier, which you can find described
 in the :ref:`release-notes`.
@@ -33,9 +33,9 @@ This meant that restraint potentials would silently fail to be applied with
 gmxapi versions >= 0.1.
 Updates have been applied internally to gmxapi.
 
-The gmxapi 0.2.2 Python package supports the updated GROMACS API and will
+The gmxapi 0.2.2 Python package supports the updated |Gromacs| API and will
 issue errors if a simulation attempts to bind external plugin code with
-a compatible-but-broken API (GROMACS 2021 through 2021.2).
+a compatible-but-broken API (|Gromacs| 2021 through 2021.2).
 
 Third party code should not need to be updated, but developers will
 note an additional "null restraint" in

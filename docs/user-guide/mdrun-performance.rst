@@ -1119,7 +1119,7 @@ Known limitations
 - Multiple ranks (hence multiple GPUs) computing PME have limited support:
   experimental PME decomposition in hybrid mode (``-pmefft cpu``) with
   CUDA from the 2022 release and full GPU PME decomposition since the
-  2023 release with CUDA or SYCL (when GROMACS is built with
+  2023 release with CUDA or SYCL (when |Gromacs| is built with
   :ref:`cuFFTMp <cufftmp installation>` or
   :ref:`HeFFTe <heffte installation>`).
 
@@ -1128,7 +1128,7 @@ Known limitations
 
 - LJ PME is not supported on GPUs.
 
-- When GROMACS is built with SYCL using oneAPI for AMD/NVIDIA GPUs, only
+- When |Gromacs| is built with SYCL using oneAPI for AMD/NVIDIA GPUs, only
   hybrid mode (``-pmefft cpu``) is supported. Fully-offloaded PME is supported
   when using oneAPI for Intel GPUs and hipSYCL for AMD/NVIDIA GPUs.
 

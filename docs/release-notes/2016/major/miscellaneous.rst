@@ -32,7 +32,7 @@ file.
 Work around glibc 2.23 with CUDA
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 glibc 2.23 changed the behaviour of string.h in a way that broke all
-versions of CUDA with all gcc compiler versions. The GROMACS build
+versions of CUDA with all gcc compiler versions. The |Gromacs| build
 system detects this glibc, and works around it by adding the
 _FORCE_INLINE preprocessor define to CUDA compilation.
 
@@ -69,13 +69,13 @@ Upgraded support for lmfit library
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 Now based on lmfit 6.1. The CMake option GMX_EXTERNAL_LMFIT permits
 linking an external lmfit package, rather than the one bundled in
-GROMACS.
+|Gromacs|.
 
 :issue:`1957`
 
 libxml2 is no longer a dependency
 """"""""""""""""""""""""""""""""""""""""""""""""""""""
-GROMACS used to use libxml2 for running its test code. This has been
+|Gromacs| used to use libxml2 for running its test code. This has been
 replaced by a bundled version of tinyxml2 (or optionally, a system
 version of that library).
 

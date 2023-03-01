@@ -190,7 +190,7 @@ MPI tests
 
 If your test makes specific requirements on the number of MPI ranks,
 or needs a communicator as part of its implementation, then there are
-GROMACS-specific extensions that make normal-looking GoogleTests work
+|Gromacs|-specific extensions that make normal-looking GoogleTests work
 well in these cases. Use ``GMX_TEST_MPI(RankRequirement)`` and declare
 the test with ``gmx_add_mpi_unit_test`` to teach ``CTest`` how to run
 the test regardless of whether the build is with thread-MPI or real

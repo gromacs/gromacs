@@ -1,8 +1,8 @@
-GROMACS 2018.5 release notes
-----------------------------
+|Gromacs| 2018.5 release notes
+------------------------------
 
 This version was released on January 22, 2019. These release notes document
-the changes that have taken place in GROMACS since version 2018.4, to fix known
+the changes that have taken place in |Gromacs| since version 2018.4, to fix known
 issues. A complete list of fixes and their descriptions can be found in
 the :ref:`release-notes`.
 

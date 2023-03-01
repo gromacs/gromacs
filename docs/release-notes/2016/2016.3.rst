@@ -1,8 +1,8 @@
-GROMACS 2016.3 Release Notes
-----------------------------
+|Gromacs| 2016.3 Release Notes
+------------------------------
 
 This version was released on March 14, 2017. These release notes
-document the changes that have taken place in GROMACS since version
+document the changes that have taken place in |Gromacs| since version
 2016.2 to fix known issues. It also incorporates all fixes made in
 version 5.1.4 and several since.
 
@@ -86,7 +86,7 @@ Enchanced documentation of solvate and insert-molecules, similarly.
 
 Documented that we now support AMD GCN on Mesa/LLVM
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-AMD GPUs using Mesa 17.0+ and LLVM 4.0+ run GROMACS using OpenCL.
+AMD GPUs using Mesa 17.0+ and LLVM 4.0+ run |Gromacs| using OpenCL.
 
 Documented running Clang static analyzer manually
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
@@ -94,15 +94,15 @@ Documented running Clang static analyzer manually
 Portability enhancements
 ^^^^^^^^^^^^^^^^^^^^^^^^
 
-Enabled avx512 in the GROMACS FFTW build only if the compiler supports it
-""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+Enabled avx512 in the |Gromacs| FFTW build only if the compiler supports it
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 Enabling avx512 requires GCC 4.9 or newer or Clang 3.9 or newer. Since
 we support compilers older than those, we can not afford to enable
 avx512 in ``GMX_BUILD_OWN_FFTW=on`` unconditionally.
 
 Worked around false positives in SIMD test from bug in xlc 13.1.5
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-atan2(0,0) should return 0.0, which the GROMACS simd implementation
+atan2(0,0) should return 0.0, which the |Gromacs| simd implementation
 does. However, since at least one compiler produces -nan for the
 standard library version it's better to compare with the known
 correct value rather than calling std:atan2(0,0).

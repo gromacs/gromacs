@@ -35,7 +35,7 @@ the simulation but not represented by other existing attributes of the
 gmxapi.mdrun now captures STDOUT and STDERR
 """""""""""""""""""""""""""""""""""""""""""
 
-The GROMACS library prints a lot of output directly to standard out and
+The |Gromacs| library prints a lot of output directly to standard out and
 standard error. Previously, this meant that simulator output that traditionally
 goes to the terminal would have to be caught from outside the Python
 interpreter. In mpi4py based ensembles, it could be challenging to catch the

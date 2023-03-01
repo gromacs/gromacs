@@ -254,7 +254,7 @@ Performance and Run Control
 ``GMX_FORCE_GPU_AWARE_MPI``
         Override the result of build- and runtime GPU-aware MPI detection and force the use of
         direct GPU MPI communication. Aimed at cases where the user knows that the MPI library is
-        GPU-aware, but |GROMACS| is not able to detect this. Note that only CUDA and SYCL builds 
+        GPU-aware, but |Gromacs| is not able to detect this. Note that only CUDA and SYCL builds 
         support such functionality.
 
 ``GMX_FORCE_UPDATE_DEFAULT_CPU``

@@ -5,7 +5,7 @@ gmxapi Python module reference
 .. Concise reference documentation extracted directly from code.
 .. For new and non-backwards-compatible features, API versions must be given.
 
-The Gromacs Python package includes a high-level scripting interface implemented
+The |Gromacs| Python package includes a high-level scripting interface implemented
 in pure Python and a lower-level API implemented as a C++ extension module.
 The pure Python implementation provides the basic ``gmxapi`` module and
 classes with a very stable syntax that can be maintained with maximal compatibility

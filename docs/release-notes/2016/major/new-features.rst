@@ -3,7 +3,7 @@ New and improved features
 
 Changed to require a C++11 compiler
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-GROMACS now requires both a C++11 and C99 compiler. For details, see
+|Gromacs| now requires both a C++11 and C99 compiler. For details, see
 the install guide.
 
 Changed to support only CUDA 5.0 and more recent versions
@@ -13,16 +13,16 @@ Changed to support only CUDA 5.0 and more recent versions
 
 Allowed rcoulomb > rvdw with PME
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-GROMACS has had kernels that support Coulomb PME + cut-off LJ
+|Gromacs| has had kernels that support Coulomb PME + cut-off LJ
 with rcoulomb > rvdw for a while, but these were only available via
 PME load balancing. Now we allow this setup to be chosen also
 through mdp options.
 
 Added optional support for portable hardware locality (hwloc)
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-Added CMake support to detect and build GROMACS with hwloc, which
-will improve GROMACS ability to recognize and take advantage of all
-the available hardware. If hwloc is unavailable, GROMACS will fall back
+Added CMake support to detect and build |Gromacs| with hwloc, which
+will improve |Gromacs| ability to recognize and take advantage of all
+the available hardware. If hwloc is unavailable, |Gromacs| will fall back
 on other detection routines.
 
 Made normal-mode calculations work with shells and vsites
@@ -159,7 +159,7 @@ doing.
 
 Added working directory to things reported in .log file
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-When running GROMACS via a batch script, it is useful to know which
+When running |Gromacs| via a batch script, it is useful to know which
 working directory is being used for relative paths (file names) in the
 command line. This is now written alongside other header information.
 
@@ -190,17 +190,17 @@ Preparation for hardware detection might try to force offline cores to work
 
 Hardware detection might be foiled by kernels that take cores offline
 when work is unavailable. We are not aware of any such platforms on which
-GROMACS is likely to be used, but we will probably start to see them
+|Gromacs| is likely to be used, but we will probably start to see them
 soon. On such platforms, if the number of cores physically present
 differs from the count that are online, we try to force them online
-before deciding how GROMACS will use the online cores. For now, no x86 or
+before deciding how |Gromacs| will use the online cores. For now, no x86 or
 PowerPC platforms need such code, so it will never run on those platforms.
 The good news is that we no longer have to risk making a confusing warning
 about such possibilities.
 
 Added new suggestion for users to try e.g. hyper-threading, if its disabled
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-GROMACS tends to perform best with several hardware threads available
+|Gromacs| tends to perform best with several hardware threads available
 per core (e.g. hyper-threading turned on, on x86), and now the log file
 will note explicitly when such opportunities exist.
 

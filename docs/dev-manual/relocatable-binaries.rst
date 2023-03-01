@@ -116,7 +116,7 @@ implementation, which works like this:
    found.  The installation directory for read-only architecture-independent
    data files can be customized during CMake configuration by setting
    ``CMAKE_INSTALL_DATADIR``, and the subdirectory under this that hosts the
-   GROMACS-specific data is set by ``GMX_INSTALL_DATASUBDIR``.
+   |Gromacs|-specific data is set by ``GMX_INSTALL_DATASUBDIR``.
 
    Note that this search does not resolve symbolic links or normalize the input
    path beforehand: if there are ``..`` components *and* symbolic links in the

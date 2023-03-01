@@ -47,7 +47,7 @@ CHARMM
 a software package for :ref:`molecular dynamics <gmx-md>` simulations and analysis. Includes united atom
 (CHARMM19) and all atom (CHARMM22, CHARMM27, CHARMM36) :ref:`force fields <gmx-force-field>`.  The CHARMM27 force field
 has been ported to |Gromacs| and is officially supported.  CHARMM36 force field files can be
-obtained from the `MacKerell lab website`_, which regularly produces up-to-date CHARMM force field files in GROMACS format.
+obtained from the `MacKerell lab website`_, which regularly produces up-to-date CHARMM force field files in |Gromacs| format.
 
 .. _CHARMM: http://www.charmm.org/
 .. _MacKerell lab website: http://mackerell.umaryland.edu/charmm_ff.shtml#gromacs
@@ -86,8 +86,8 @@ glasses and liquid crystals, to polymers and crystals and solutions of biomolecu
 for 43a1, 43a2, 45a3, 53a5, 53a6 and 54a7. The GROMOS force fields are
 :ref:`united atom force fields <gmx-force-field>`, i.e. without explicit aliphatic (non-polar) hydrogens.
 
-* GROMOS 53a6 - in GROMACS format (J. Comput. Chem. 2004 vol. 25 (13): 1656-1676).
-* GROMOS 53a5 - in GROMACS format (J. Comput. Chem. 2004 vol. 25 (13): 1656-1676).
+* GROMOS 53a6 - in |Gromacs| format (J. Comput. Chem. 2004 vol. 25 (13): 1656-1676).
+* GROMOS 53a5 - in |Gromacs| format (J. Comput. Chem. 2004 vol. 25 (13): 1656-1676).
 * GROMOS 43a1p - 43a1 modified to contain SEP (phosphoserine), TPO (phosphothreonine),
   and PTR (phosphotyrosine) (all PO42- forms), and SEPH, TPOH, PTRH (PO4H- forms).
 

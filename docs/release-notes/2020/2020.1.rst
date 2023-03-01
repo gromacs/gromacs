@@ -1,8 +1,8 @@
-GROMACS 2020.1 release notes
-----------------------------
+|Gromacs| 2020.1 release notes
+------------------------------
 
 This version was released on March 3rd, 2020. These release notes
-document the changes that have taken place in GROMACS since the
+document the changes that have taken place in |Gromacs| since the
 previous 2020 version, to fix known issues. It also incorporates all
 fixes made in version 2019.6 and earlier, which you can find described
 in the :ref:`release-notes`.
@@ -187,7 +187,7 @@ Add support for ICC NextGen
 """""""""""""""""""""""""""
 
 Add support for Intel Compiler based on LLVM technology.
-To compile GROMACS with this compiler use ``CXX=icpc CXXFLAGS=-qnextgen cmake``.
+To compile |Gromacs| with this compiler use ``CXX=icpc CXXFLAGS=-qnextgen cmake``.
 
 Document known issues with OpenCL on Volta and Turing
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

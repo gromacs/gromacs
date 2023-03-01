@@ -1,8 +1,8 @@
-GROMACS 2022.3 release notes
-----------------------------
+|Gromacs| 2022.3 release notes
+------------------------------
 
 This version was released on September 2nd, 2022. These release notes
-document the changes that have taken place in GROMACS since the
+document the changes that have taken place in |Gromacs| since the
 previous 2022.2 version, to fix known issues. It also incorporates all
 fixes made in version 2021.6 and earlier, which you can find described
 in the :ref:`release-notes`.

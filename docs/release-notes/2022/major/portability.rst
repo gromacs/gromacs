@@ -35,7 +35,7 @@ The ``sample_restraint`` sample project
 still has a primitive CMake-only build procedure.
 If you fork a project from this source, you may choose to modernize the build system (similarly to that of
 ``gmxapi``) or to bundle the pybind11 sources.
-Within the GROMACS repository, the ``sample_restraint`` option default is now ``GMXAPI_EXTENSION_DOWNLOAD_PYBIND=ON``.
+Within the |Gromacs| repository, the ``sample_restraint`` option default is now ``GMXAPI_EXTENSION_DOWNLOAD_PYBIND=ON``.
 
 :issue:`4092`
 
@@ -51,7 +51,7 @@ Instead a partial CMake cache file is installed to
 Client software may get CMake hints by configuring with ``-C /path/to/gromacs-hints.cmake``,
 instead of forcing a cross-compiling CMake configuration with ``-DCMAKE_TOOLCHAIN_FILE`` or ``--toolchain``.
 
-Client software bundled with GROMACS (the gmxapi Python package) no longer requires the toolchain file.
+Client software bundled with |Gromacs| (the gmxapi Python package) no longer requires the toolchain file.
 See :doc:`/gmxapi/userguide/install` for details.
 
 :issue:`4208`

@@ -80,7 +80,7 @@ module and documenting it.
 
   * Consistent usage of ::
 
-        #include "..." // This should be used for GROMACS headers
+        #include "..." // This should be used for internal (gromacs) headers
 
     and ::
 

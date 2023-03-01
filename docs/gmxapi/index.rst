@@ -4,7 +4,7 @@
 gmxapi Python package
 =====================
 
-This documentation is part of the `GROMACS manual <http://manual.gromacs.org/current/>`_
+This documentation is part of the |Gromacs| `manual <http://manual.gromacs.org/current/>`_
 and describes the *gmxapi* Python package.
 :py:mod:`gmxapi` allows molecular simulation and analysis work to
 be staged and run from Python.

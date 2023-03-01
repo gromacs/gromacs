@@ -1,8 +1,8 @@
-GROMACS 2018.7 release notes
-----------------------------
+|Gromacs| 2018.7 release notes
+------------------------------
 
 This version was released on May 29, 2019. These release notes document
-the changes that have taken place in GROMACS since version 2018.6, to fix known
+the changes that have taken place in |Gromacs| since version 2018.6, to fix known
 issues. It also incorporates all fixes made in previous versions,
 which you can find described in the :ref:`release-notes`.
 

@@ -44,7 +44,7 @@ Job parameters
 """"""""""""""
 
 Refer to https://docs.gitlab.com/ee/ci/yaml for complete documentation on
-GitLab CI job parameters, but note the following GROMACS-specific conventions.
+GitLab CI job parameters, but note the following |Gromacs|-specific conventions.
 
 .. glossary::
 
@@ -113,7 +113,7 @@ environment to jobs that run under the ``schedules``
 `condition <https://gitlab.com/help/ci/pipelines/schedules#using-only-and-except>`__.
 
 Nightly scheduled pipelines run against ``main`` and *release* branches in
-the GROMACS repository.
+the |Gromacs| repository.
 
 Some of the rules defined in :file:`rules.gitlab-ci.yml` restrict jobs
 to run *only* for scheduled pipelines, or only for *specific* schedules
@@ -208,7 +208,7 @@ Other important variable keys are as follows.
 
 .. glossary::
     BUILD_DIR
-        GROMACS specific directory to perform configuration, building and testing in.
+        |Gromacs| specific directory to perform configuration, building and testing in.
         Usually job dependent, needs to be the same for all tasks of dependent jobs.
 
     CI_PROJECT_NAMESPACE
@@ -237,7 +237,7 @@ Other important variable keys are as follows.
         :command:`cmake` calls in a job's *script*.
 
     CMAKE_MPI_OPTIONS
-        Provide CMake command line arguments to define GROMACS MPI build options.
+        Provide CMake command line arguments to define |Gromacs| MPI build options.
 
     DRY_RUN
         Read-only environment variable used to control behaviour of script uploading

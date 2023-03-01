@@ -4,7 +4,7 @@ Removed mdrun features
 Removed SD2 integrator
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 This integrator has known problems, and is in all ways inferior to
-sd. It has no tests, and was deprecated in GROMACS 5.0. There are no
+sd. It has no tests, and was deprecated in |Gromacs| 5.0. There are no
 plans to replace it.
 
 :issue:`1137`

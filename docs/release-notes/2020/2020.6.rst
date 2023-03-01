@@ -1,8 +1,8 @@
-GROMACS 2020.6 release notes
-----------------------------
+|Gromacs| 2020.6 release notes
+------------------------------
 
 This version was released on March 4th, 2021. These release notes
-document the changes that have taken place in GROMACS since the
+document the changes that have taken place in |Gromacs| since the
 previous 2020.5 version, to fix known issues.
 
 .. Note to developers!

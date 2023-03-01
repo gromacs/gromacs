@@ -11,7 +11,7 @@ Welcome to the |Gromacs| documentation!
     and http://www.gromacs.org/Documentation/Performance_checklist)
 
 The complete documentation is also available as a `printable PDF here`_. The documentation
-for other versions of |GROMACS| can be found at http://manual.gromacs.org/documentation
+for other versions of |Gromacs| can be found at http://manual.gromacs.org/documentation
 
 .. toctree::
    :maxdepth: 1

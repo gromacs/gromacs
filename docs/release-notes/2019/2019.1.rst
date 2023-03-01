@@ -1,8 +1,8 @@
-GROMACS 2019.1 release notes
-----------------------------
+|Gromacs| 2019.1 release notes
+------------------------------
 
 This version was released on February 15, 2019. These release notes
-document the changes that have taken place in GROMACS since the
+document the changes that have taken place in |Gromacs| since the
 initial version 2019, to fix known issues. It also incorporates all
 fixes made in version 2018.5 and earlier, which you can find described
 in the :ref:`release-notes`.
@@ -107,9 +107,9 @@ Fixes that affect portability
 With MSVC, disabled internal clFFT fallback used for OpenCL support
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
-GROMACS requires MSVC 2017, and the GROMACS OpenCL build requires
+|Gromacs| requires MSVC 2017, and the |Gromacs| OpenCL build requires
 clFFT. If clFFT is found on the user's system, then all may be well,
-but the version of clFFT bundled within GROMACS cannot be built
+but the version of clFFT bundled within |Gromacs| cannot be built
 because only MSVC 2010 is supported by clFFT at this time. A
 configure-time fatal error is now issued in this case.
 
@@ -118,7 +118,7 @@ configure-time fatal error is now issued in this case.
 Explicitly require 64-bit platforms for OpenCL
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
-A 64-bit OpenCL runtime is required by GROMACS.
+A 64-bit OpenCL runtime is required by |Gromacs|.
 All known OpenCL implementations on 64-bit platforms are 64-bit
 (and there are no known 32-bit platforms with 64-bit OpenCL),
 hence we require a 64-bit platform at configure-time in OpenCL builds.

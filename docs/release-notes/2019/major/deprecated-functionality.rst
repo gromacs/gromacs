@@ -1,5 +1,5 @@
-Changes anticipated to GROMACS 2019 functionality
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Changes anticipated to |Gromacs| 2019 functionality
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 ``gmx mdrun -membed``
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
@@ -24,7 +24,7 @@ Much functionality in ``trjconv``, ``editconf``, ``eneconv`` and ``trjcat``
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 The functionality in such tools is being separated to make it
 available in composable modules, that we plan to make available as
-simpler tools, and eventually via the GROMACS API that is under
+simpler tools, and eventually via the |Gromacs| API that is under
 development.
 
 ``gmx do_dssp`` to be replaced
@@ -34,8 +34,8 @@ obtain and install a separate DSSP binary, so we plan to replace the
 implementation at some point with a native implementation, likely
 based upon xssp, and make it available under a new gmx tool name.
 
-Functionality deprecated in GROMACS 2019
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Functionality deprecated in |Gromacs| 2019
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Generation of virtual sites to replace aromatic rings in standard residues
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
@@ -67,8 +67,8 @@ call to ``gmx grompp``. The convenience of this mdrun option was
 outweighted by the doubtful quality of its implementation, no clear
 record in the log file, and lack of maintenance.
 
-Functionality deprecated before GROMACS 2019
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Functionality deprecated before |Gromacs| 2019
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 This functionality has been declared as deprecated in previous versions
 of |Gromacs|, but has not yet been removed.
 
@@ -77,9 +77,9 @@ The group cutoff scheme
 All remaining aspects of the group cutoff scheme will be removed, once
 a few remaining features (e.g. tabulated interactions, energy-group
 exclusions, and vacuum simulations) are available with the Verlet
-scheme. Deprecated in GROMACS 5.1
+scheme. Deprecated in |Gromacs| 5.1
 
 QM/MM support for ORCA, GAMESS and MOPAC
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 These interfaces are untested, and no maintainer has been found for them.
-Deprecated in GROMACS 2018.
+Deprecated in |Gromacs| 2018.
