@@ -40,6 +40,16 @@ Fix creating index file from another index file
 
 :issue:`4717`
 
+Allow selection of energy term by full name in ``gmx energy`` 
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+It is now possible to select energy terms by full name. This is specifically helpful for terms starting
+with a number, such as "1/Viscosity" or "2CosZ*Vel-X", which could previously only be selected reliably
+by number.
+
+:issue:`4739`
+
+
 Fixes that affect portability
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
