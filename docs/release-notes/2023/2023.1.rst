@@ -24,6 +24,17 @@ multiple PP ranks.
 
 :issue:`4629`
 
+Fix PME pipelining support in SYCL
+""""""""""""""""""""""""""""""""""
+
+When PME pipelining was used, long-range PME electrostatics were producing
+incorrect results in SYCL.
+
+Only runs with >=3 GPUs and with direct GPU communication enabled
+(``GMX_ENABLE_DIRECT_GPU_COMM`` env. var.) are affected.
+
+:issue:`4733`
+
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
 

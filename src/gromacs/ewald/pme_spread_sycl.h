@@ -48,6 +48,13 @@ struct PmeGpuGridParams;
 struct PmeGpuAtomParams;
 struct PmeGpuDynamicParams;
 
+struct PmeGpuPipeliningParams
+{
+    int  pipelineAtomStart;
+    int  pipelineAtomEnd;
+    bool usePipeline;
+};
+
 template<int order, bool computeSplines, bool spreadCharges, bool wrapX, bool wrapY, int numGrids, bool writeGlobal, ThreadsPerAtom threadsPerAtom, int subGroupSize>
 class PmeSplineAndSpreadKernel : public ISyclKernelFunctor
 {
@@ -57,8 +64,10 @@ public:
     void launch(const KernelLaunchConfig& config, const DeviceStream& deviceStream) override;
 
 private:
-    PmeGpuGridParams*    gridParams_;
-    PmeGpuAtomParams*    atomParams_;
-    PmeGpuDynamicParams* dynamicParams_;
-    void                 reset();
+    PmeGpuGridParams*      gridParams_;
+    PmeGpuAtomParams*      atomParams_;
+    PmeGpuDynamicParams*   dynamicParams_;
+    PmeGpuPipeliningParams pipeliningParams_;
+
+    void reset();
 };
