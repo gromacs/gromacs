@@ -118,15 +118,15 @@ TEST_F(OriresTest, ExtractOrires)
 class EnergyTest : public CommandLineTestBase
 {
 public:
-    void runTest(const char* stringForStdin)
+    void runTest(const std::string& energyFile, const std::string& stringForStdin)
     {
         auto& cmdline = commandLine();
 
-        setInputFile("-f", "ener.edr");
+        setInputFile("-f", energyFile);
         setOutputFile("-o", "energy.xvg", XvgMatch());
 
         StdioTestHelper stdioHelper(&fileManager());
-        stdioHelper.redirectStringToStdin(stringForStdin);
+        stdioHelper.redirectStringToStdin(stringForStdin.c_str());
         ASSERT_EQ(0, gmx_energy(cmdline.argc(), cmdline.argv()));
 
         // All the .edr files used in the tests contain only
@@ -140,17 +140,27 @@ public:
 
 TEST_F(EnergyTest, ExtractEnergy)
 {
-    runTest("Potential\nKinetic-En.\nTotal-Energy\n");
+    runTest("ener.edr", "Potential\nKinetic-En.\nTotal-Energy\n");
 }
 
 TEST_F(EnergyTest, ExtractEnergyByNumber)
 {
-    runTest("4 6 9");
+    runTest("ener.edr", "4 6 9");
 }
 
 TEST_F(EnergyTest, ExtractEnergyMixed)
 {
-    runTest("Pressu\n7\nbox-z\nvol\n");
+    runTest("ener.edr", "Pressu\n7\nbox-z\nvol\n");
+}
+
+TEST_F(EnergyTest, ExtractEnergyWithNumberInName)
+{
+    runTest("ener_numberInName.edr", "1/Viscosity\n");
+}
+
+TEST_F(EnergyTest, ExtractEnergyWithNumberInNameAndAlsoByNumber)
+{
+    runTest("ener_numberInName.edr", "1/Viscosity\n7\n");
 }
 
 class ViscosityTest : public CommandLineTestBase

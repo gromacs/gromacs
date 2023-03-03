@@ -39,7 +39,7 @@
  */
 #include "gmxpre.h"
 
-#include "gromacs/gmxana/gmx_ana.h"
+#include "gromacs/tools/make_ndx.h"
 
 #include "testutils/cmdlinetest.h"
 #include "testutils/stdiohelper.h"
@@ -53,18 +53,31 @@ class GmxMakeNdx : public gmx::test::CommandLineTestBase
 {
 public:
     /*! \brief runs the test for the filename prefix \p sysName from the simulation data base
-        \param[in]   sysName   file name prefix sysName.g96 must be present in the simulation database
+        \param[in]   sysName        file name prefix sysName.g96 must be present in the simulation database
+        \param[in]   stdinContent   commands passed to the interactive prompt
+        \param[in]   useIndexInputOnly   whether to provide just an index as input (no structure file)
      */
-    void runTest(const std::string& sysName)
+    void runTest(const std::string& sysName,
+                 const std::string& stdinContent      = "q\n",
+                 bool               useIndexInputOnly = false)
     {
-        auto&       cmdline     = commandLine();
-        auto        groFileName = sysName + ".g96";
-        std::string ndxFileName = sysName + ".ndx";
-        setInputFile("-f", groFileName);
-        setOutputFile("-o", ndxFileName.c_str(), gmx::test::ExactTextMatch());
+        auto&       cmdline        = commandLine();
+        auto        groFileName    = sysName + ".g96";
+        std::string ndxFileName    = sysName + ".ndx";
+        std::string outputFileName = sysName + "_output.ndx";
+
+        if (useIndexInputOnly)
+        {
+            setInputFile("-n", ndxFileName);
+        }
+        else
+        {
+            setInputFile("-f", groFileName);
+        }
+        setOutputFile("-o", outputFileName.c_str(), gmx::test::ExactTextMatch());
 
         gmx::test::StdioTestHelper stdioHelper(&fileManager());
-        stdioHelper.redirectStringToStdin("q\n");
+        stdioHelper.redirectStringToStdin(stdinContent.c_str());
 
         ASSERT_EQ(0, gmx_make_ndx(cmdline.argc(), cmdline.argv()));
         checkOutputFiles();
@@ -75,6 +88,30 @@ TEST_F(GmxMakeNdx, WritesDefaultProteinIndexGroups)
 {
     std::string sysName("villin");
     runTest(sysName);
+}
+
+TEST_F(GmxMakeNdx, HandlesNoStructureInput)
+{
+    std::string sysName("alanine_vacuo");
+    runTest(sysName, "1|2\nq\n", true);
+}
+
+TEST_F(GmxMakeNdx, HandlesNotProtein)
+{
+    std::string sysName("spc-dimer");
+    runTest(sysName, "q\n", true);
+}
+
+TEST_F(GmxMakeNdx, HandlesEmptyIndexResult)
+{
+    std::string sysName("alanine_vacuo");
+    runTest(sysName, "4&8\nq\n", true);
+}
+
+TEST_F(GmxMakeNdx, HandlesEmptyIndexFile)
+{
+    std::string sysName("spc-dimer");
+    runTest(sysName, "del 0\nq\n", true);
 }
 
 } // namespace

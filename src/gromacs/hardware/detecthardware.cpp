@@ -287,7 +287,7 @@ static void gmx_collect_hardware_mpi(const gmx::CpuInfo&             cpuInfo,
     hardwareInfo->ncore_min            = -maxMinReduced[6];
     hardwareInfo->ncore_max            = maxMinReduced[0];
     hardwareInfo->nProcessingUnits_tot = countsReduced[2];
-    hardwareInfo->nProcessingUnits_min = maxMinReduced[7];
+    hardwareInfo->nProcessingUnits_min = -maxMinReduced[7];
     hardwareInfo->nProcessingUnits_max = maxMinReduced[1];
     hardwareInfo->maxThreads_tot       = countsReduced[3];
     hardwareInfo->maxThreads_min       = -maxMinReduced[8];

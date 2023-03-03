@@ -1376,19 +1376,20 @@ static void edit_index(int                      natoms,
     sfree(index2);
 }
 
-static int maxAtomIndex(gmx::ArrayRef<const IndexGroup> indexGroups)
+//! Find the number of atoms in the system implied by the largest atom index
+static int impliedNumberOfAtom(gmx::ArrayRef<const IndexGroup> indexGroups)
 {
-    int maxAtom = -1;
+    int maxAtomIndex = -1;
 
     for (const auto& indexGroup : indexGroups)
     {
         for (const int a : indexGroup.particleIndices)
         {
-            maxAtom = std::max(maxAtom, a);
+            maxAtomIndex = std::max(maxAtomIndex, a);
         }
     }
 
-    return maxAtom;
+    return maxAtomIndex + 1;
 }
 
 int gmx_make_ndx(int argc, char* argv[])
@@ -1500,12 +1501,20 @@ int gmx_make_ndx(int argc, char* argv[])
 
     if (!bNatoms)
     {
-        const int maxAtom = maxAtomIndex(indexGroups);
-        printf("Counted atom numbers up to %d in index file\n", 1 + maxAtom);
+        natoms = impliedNumberOfAtom(indexGroups);
+        printf("Deducing %d atoms in the system from indices in the index file\n", natoms);
     }
     edit_index(natoms, &atoms, x, &indexGroups, bVerbose);
 
     write_index(ndxoutfile, indexGroups, bDuplicate, natoms);
+
+    if (stxfile)
+    {
+        sfree(v);
+        sfree(x);
+        done_atom(&atoms);
+    }
+    output_env_done(oenv);
 
     return 0;
 }

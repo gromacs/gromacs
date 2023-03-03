@@ -244,7 +244,12 @@ std::filesystem::path findInstallationPrefixPath(const std::filesystem::path& bi
 #    else
         buildBinPath = std::filesystem::path(CMAKE_BINARY_DIR).append("bin");
 #    endif
-        if (std::filesystem::equivalent(searchPath, buildBinPath))
+        // If either path does not exist than an error is produced by
+        // equivalent(). When an error is produced, the non-throwing
+        // call to equivalent() returns false, which is what we want.
+        // We don't care what the error when we are merely finding a
+        // valid GROMACS installation prefix.
+        if (std::error_code c; std::filesystem::equivalent(searchPath, buildBinPath, c))
         {
             if (isAcceptableLibraryPath(std::filesystem::path(CMAKE_SOURCE_DIR).append("share/top")))
             {

@@ -786,11 +786,13 @@ static void pme_gpu_init_internal(PmeGpu* pmeGpu, const DeviceContext& deviceCon
      * TODO: PME could also try to pick up nice grid sizes (with factors of 2, 3, 5, 7).
      */
 
-#if GMX_GPU_CUDA
+#if GMX_GPU_CUDA || GMX_GPU_SYCL
     pmeGpu->kernelParams->usePipeline       = char(false);
     pmeGpu->kernelParams->pipelineAtomStart = 0;
     pmeGpu->kernelParams->pipelineAtomEnd   = 0;
-    pmeGpu->maxGridWidthX                   = deviceContext.deviceInfo().prop.maxGridSize[0];
+#endif
+#if GMX_GPU_CUDA
+    pmeGpu->maxGridWidthX = deviceContext.deviceInfo().prop.maxGridSize[0];
 #else
     // Use this path for any non-CUDA GPU acceleration
     // TODO: is there no really global work size limit in OpenCL?
@@ -1848,7 +1850,11 @@ void pme_gpu_spread(const PmeGpu*                  pmeGpu,
                                             && !writeGlobalOrSaveSplines);
         if (kernelParamsPtr->usePipeline != 0)
         {
-            int numStagesInPipeline = pmeCoordinateReceiverGpu->ppCommNumSenderRanks();
+            const int numStagesInPipeline = pmeCoordinateReceiverGpu->ppCommNumSenderRanks();
+
+            GpuEventSynchronizer* gridsReadyForSpread = &pmeGpu->archSpecific->pmeGridsReadyForSpread;
+            gridsReadyForSpread->markEvent(pmeGpu->archSpecific->pmeStream_);
+            gridsReadyForSpread->setConsumptionLimits(numStagesInPipeline, numStagesInPipeline);
 
             for (int i = 0; i < numStagesInPipeline; i++)
             {
@@ -1859,16 +1865,18 @@ void pme_gpu_spread(const PmeGpu*                  pmeGpu,
 
                 wallcycle_start(wcycle, WallCycleCounter::LaunchGpuPme);
 
+                DeviceStream* launchStream = pmeCoordinateReceiverGpu->ppCommStream(senderRank);
+                gridsReadyForSpread->enqueueWaitEvent(*launchStream);
+
                 // set kernel configuration options specific to this stage of the pipeline
                 std::tie(kernelParamsPtr->pipelineAtomStart, kernelParamsPtr->pipelineAtomEnd) =
                         pmeCoordinateReceiverGpu->ppCommAtomRange(senderRank);
-                const int blockCount       = static_cast<int>(std::ceil(
+                const int blockCount = static_cast<int>(std::ceil(
                         static_cast<float>(kernelParamsPtr->pipelineAtomEnd - kernelParamsPtr->pipelineAtomStart)
                         / atomsPerBlock));
-                auto      dimGrid          = pmeGpuCreateGrid(pmeGpu, blockCount);
-                config.gridSize[0]         = dimGrid.first;
-                config.gridSize[1]         = dimGrid.second;
-                DeviceStream* launchStream = pmeCoordinateReceiverGpu->ppCommStream(senderRank);
+                auto      dimGrid    = pmeGpuCreateGrid(pmeGpu, blockCount);
+                config.gridSize[0]   = dimGrid.first;
+                config.gridSize[1]   = dimGrid.second;
 
 
 #if c_canEmbedBuffers

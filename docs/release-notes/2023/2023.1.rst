@@ -24,6 +24,17 @@ multiple PP ranks.
 
 :issue:`4629`
 
+Fix PME pipelining support in SYCL
+""""""""""""""""""""""""""""""""""
+
+When PME pipelining was used, long-range PME electrostatics were producing
+incorrect results in SYCL.
+
+Only runs with >=3 GPUs and with direct GPU communication enabled
+(``GMX_ENABLE_DIRECT_GPU_COMM`` env. var.) are affected.
+
+:issue:`4733`
+
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -33,8 +44,44 @@ Fix crash in ``gmx solvate`` when using solvent box in PDB format
 Now a PDB file can be passed to the ``-cs`` option in ``gmx solvate``.
 In previous releases (since at least 2016) this lead to a segfault.
 
+Fix creating index file from another index file
+""""""""""""""""""""""""""""""""""""""""""""""""
+
+``gmx make_ndx`` can again accept an index file alone as input, without associated structure file.
+
+:issue:`4717`
+
+Allow selection of energy term by full name in ``gmx energy`` 
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+It is now possible to select energy terms by full name. This is specifically helpful for terms starting
+with a number, such as "1/Viscosity" or "2CosZ*Vel-X", which could previously only be selected reliably
+by number.
+
+:issue:`4739`
+
+
 Fixes that affect portability
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Fixed abnormal termination during ``gmx`` startup
+"""""""""""""""""""""""""""""""""""""""""""""""""
+
+|Gromacs| made a call to ``std::filesystem::equivalent`` in a less than
+perfectly robust manner. This caused ``gmx`` to stop execution
+when linked against the (atypical) libc++ standard library when
+the build directory no longer existed.
+
+:issue:`4724`
+
+Fixed CPU FFT with MKL 2023.0
+"""""""""""""""""""""""""""""
+
+Previously, |Gromacs| would fail during the initialization of CPU FFT when it
+was compiled with oneMKL 2023.0. This is fixed now.
+
+:issue:`4691`
+
 
 Miscellaneous
 ^^^^^^^^^^^^^

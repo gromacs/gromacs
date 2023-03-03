@@ -1,0 +1,38 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <OutputFiles Name="Files">
+    <File Name="-o">
+      <XvgLegend Name="Legend">
+        <String Name="XvgLegend"><![CDATA[
+title "GROMACS Energies"
+xaxis  label "Time (ps)"
+yaxis  label "(kJ/mol), (m s/kg)"
+TYPE xy
+s0 legend "LJ (SR)"
+s1 legend "1/Viscosity"
+]]></String>
+      </XvgLegend>
+      <XvgData Name="Data">
+        <Sequence Name="Row0">
+          <Int Name="Length">3</Int>
+          <Real>0.000000</Real>
+          <Real>-14.538815</Real>
+          <Real>70018.273438</Real>
+        </Sequence>
+        <Sequence Name="Row1">
+          <Int Name="Length">3</Int>
+          <Real>0.002000</Real>
+          <Real>-14.183230</Real>
+          <Real>59263.179688</Real>
+        </Sequence>
+        <Sequence Name="Row2">
+          <Int Name="Length">3</Int>
+          <Real>0.004000</Real>
+          <Real>-13.606602</Real>
+          <Real>44020.273438</Real>
+        </Sequence>
+      </XvgData>
+    </File>
+  </OutputFiles>
+</ReferenceData>

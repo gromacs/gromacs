@@ -223,15 +223,15 @@ __launch_bounds__(c_spreadMaxThreadsPerBlock) CLANG_DISABLE_OPTIMIZATION_ATTRIBU
 
     if (computeSplines)
     {
-        const float3* __restrict__ gm_coordinates =
-                asFloat3(&kernelParams.atoms.d_coordinates[kernelParams.pipelineAtomStart]);
+        const float3* __restrict__ gm_coordinates = asFloat3(kernelParams.atoms.d_coordinates);
         if (c_useAtomDataPrefetch)
         {
             // Coordinates
             __shared__ float3 sm_coordinates[atomsPerBlock];
 
             /* Staging coordinates */
-            pme_gpu_stage_atom_data<float3, atomsPerBlock, 1>(sm_coordinates, gm_coordinates);
+            pme_gpu_stage_atom_data<float3, atomsPerBlock, 1>(
+                    sm_coordinates, gm_coordinates + kernelParams.pipelineAtomStart);
             __syncthreads();
             atomX = sm_coordinates[atomIndexLocal];
         }
@@ -273,8 +273,8 @@ __launch_bounds__(c_spreadMaxThreadsPerBlock) CLANG_DISABLE_OPTIMIZATION_ATTRIBU
         __syncthreads();
         if (c_useAtomDataPrefetch)
         {
-            pme_gpu_stage_atom_data<float, atomsPerBlock, 1>(sm_coefficients,
-                                                             kernelParams.atoms.d_coefficients[1]);
+            pme_gpu_stage_atom_data<float, atomsPerBlock, 1>(
+                    sm_coefficients, &kernelParams.atoms.d_coefficients[1][kernelParams.pipelineAtomStart]);
             __syncthreads();
             atomCharge = sm_coefficients[atomIndexLocal];
         }

@@ -224,38 +224,39 @@ static int* select_by_name(int nre, gmx_enxnm_t* nm, int* nset)
             {
                 if (!bEOF)
                 {
-                    /* First try to read an integer */
-                    nss = sscanf(ptr, "%d", &nind);
-                    if (nss == 1)
+                    /* First, try to match an exact field name */
+                    nmatch = 0;
+                    for (nind = 0; nind < nre; nind++)
                     {
-                        /* Zero means end of input */
-                        if (nind == 0)
+                        if (gmx_strcasecmp(newnm[nind], ptr) == 0)
                         {
-                            bEOF = TRUE;
+                            bE[nind] = TRUE;
+                            nmatch++;
                         }
-                        else if ((1 <= nind) && (nind <= nre))
+                    }
+                    if (nmatch == 0)
+                    {
+                        /* Second, try to read an integer */
+                        nss = sscanf(ptr, "%d", &nind);
+                        if (nss == 1)
                         {
-                            bE[nind - 1] = TRUE;
+                            /* Zero means end of input */
+                            if (nind == 0)
+                            {
+                                bEOF = TRUE;
+                            }
+                            else if ((1 <= nind) && (nind <= nre))
+                            {
+                                bE[nind - 1] = TRUE;
+                            }
+                            else
+                            {
+                                fprintf(stderr, "number %d is out of range\n", nind);
+                            }
                         }
                         else
                         {
-                            fprintf(stderr, "number %d is out of range\n", nind);
-                        }
-                    }
-                    else
-                    {
-                        /* Now try to read a string */
-                        nmatch = 0;
-                        for (nind = 0; nind < nre; nind++)
-                        {
-                            if (gmx_strcasecmp(newnm[nind], ptr) == 0)
-                            {
-                                bE[nind] = TRUE;
-                                nmatch++;
-                            }
-                        }
-                        if (nmatch == 0)
-                        {
+                            /* Finally, match on part of the field name */
                             i      = std::strlen(ptr);
                             nmatch = 0;
                             for (nind = 0; nind < nre; nind++)
