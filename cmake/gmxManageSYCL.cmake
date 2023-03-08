@@ -490,12 +490,8 @@ int main() {
         set_property(SOURCE ${ARGS_SOURCES} APPEND PROPERTY COMPILE_OPTIONS
             ${SYCL_TOOLCHAIN_CXX_FLAGS}
             ${SYCL_CXX_FLAGS_EXTRA})
-        if (WIN32) # Linking flags handling is not reliable on Windows, so we pass the bare minimum
-            target_link_options(${ARGS_TARGET} PRIVATE ${SYCL_CXX_FLAGS})
-        else()
-            string(REPLACE " " ";" SYCL_TOOLCHAIN_LINKER_FLAGS_LIST "${SYCL_TOOLCHAIN_LINKER_FLAGS} ${SYCL_CXX_FLAGS_EXTRA}")
-            target_link_options(${ARGS_TARGET} PRIVATE ${SYCL_TOOLCHAIN_LINKER_FLAGS_LIST})
-        endif()
+        string(REPLACE " " ";" SYCL_TOOLCHAIN_LINKER_FLAGS_LIST "${SYCL_TOOLCHAIN_LINKER_FLAGS} ${SYCL_CXX_FLAGS_EXTRA}")
+        target_link_options(${ARGS_TARGET} PRIVATE ${SYCL_TOOLCHAIN_LINKER_FLAGS_LIST})
     endfunction(add_sycl_to_target)
 endif()
 
