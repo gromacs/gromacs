@@ -3,7 +3,7 @@
 #   OS: Ubuntu oldest supported
 #   Compiler: GCC newest supported
 #   GPU: OpenCL
-#   HW: AMD GPU
+#   HW: None, previously AMD GPU, see #4745
 #   Scope: configure, build, unit tests, regression tests
 # Test implementation choices (free to change as needed):
 #   OS: Ubuntu 22.04
@@ -58,11 +58,12 @@ gromacs:gcc-12:release:test:
   variables:
     CMAKE: /usr/local/cmake-3.18.4/bin/cmake
     BUILD_DIR: release-builds-gcc
-    KUBERNETES_EXTENDED_RESOURCE_NAME: "amd.com/gpu"
-    KUBERNETES_EXTENDED_RESOURCE_LIMIT: 1
-    LD_LIBRARY_PATH: "/opt/rocm/opencl/lib"
-    ROC_ENABLE_PRE_VEGA: 1
-    GMX_TEST_LABELS: "QuickGpuTest|SlowGpuTest"
+    # GPUs disabled! See #4745
+    #KUBERNETES_EXTENDED_RESOURCE_NAME: "amd.com/gpu"
+    #KUBERNETES_EXTENDED_RESOURCE_LIMIT: 1
+    #LD_LIBRARY_PATH: "/opt/rocm/opencl/lib"
+    #ROC_ENABLE_PRE_VEGA: 1
+    #GMX_TEST_LABELS: "QuickGpuTest|SlowGpuTest"
     GMX_FORCE_UPDATE_DEFAULT_CPU: 1
   tags:
     - k8s-scilifelab
@@ -79,13 +80,14 @@ gromacs:gcc-12:release:regressiontest:
   variables:
     CMAKE: /usr/local/cmake-3.18.4/bin/cmake
     BUILD_DIR: release-builds-gcc
-    KUBERNETES_EXTENDED_RESOURCE_NAME: "amd.com/gpu"
-    KUBERNETES_EXTENDED_RESOURCE_LIMIT: 1
+    # GPUs disabled! See #4745
+    #KUBERNETES_EXTENDED_RESOURCE_NAME: "amd.com/gpu"
+    #KUBERNETES_EXTENDED_RESOURCE_LIMIT: 1
+    #LD_LIBRARY_PATH: "/opt/rocm/opencl/lib"
+    #ROC_ENABLE_PRE_VEGA: 1
     REGRESSIONTEST_PME_RANK_NUMBER: 0
     REGRESSIONTEST_TOTAL_RANK_NUMBER: 2
     REGRESSIONTEST_OMP_RANK_NUMBER: 1
-    LD_LIBRARY_PATH: "/opt/rocm/opencl/lib"
-    ROC_ENABLE_PRE_VEGA: 1
   tags:
     - k8s-scilifelab
   needs:
