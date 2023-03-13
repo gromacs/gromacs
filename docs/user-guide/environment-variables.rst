@@ -429,6 +429,8 @@ compilation of OpenCL kernels, but they are also used in device selection.
 ..
    Please keep these in alphabetical order!
 
+
+
 ``GMX_OCL_DEBUG``
         Use in conjunction with ``OCL_FORCE_CPU`` or with an AMD device.
         It adds the debug flag to the compiler options (-g).
@@ -468,6 +470,11 @@ compilation of OpenCL kernels, but they are also used in device selection.
         kernels from a custom location. Use it only if you want to
         override |Gromacs| default behavior, or if you want to test
         your own kernels.
+
+``GMX_OCL_FORCE_AMD_WAVEFRONT64``
+        Force the use of Wave64 mode on AMD devices. This allows using
+        OpenCL on RDNA-family devices, but is not recommended.
+        For development use only.
 
 ``GMX_OCL_FORCE_CPU``
         Force the selection of a CPU device instead of a GPU.  This

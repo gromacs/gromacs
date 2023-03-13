@@ -199,6 +199,11 @@ static std::string selectCompilerOptions(DeviceVendor deviceVendor)
         compilerOptions += " -g";
     }
 
+    if (deviceVendor == DeviceVendor::Amd && getenv("GMX_OCL_FORCE_AMD_WAVEFRONT64"))
+    {
+        compilerOptions += " -Wf,-mwavefrontsize64";
+    }
+
     return compilerOptions;
 }
 

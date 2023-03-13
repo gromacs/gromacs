@@ -153,6 +153,11 @@ static int fillSupportedSubGroupSizes(const cl_device_id devId,
     {
         case DeviceVendor::Amd:
         {
+            if (getenv("GMX_OCL_FORCE_AMD_WAVEFRONT64"))
+            {
+                result[0] = 64;
+                return 1;
+            }
             cl_int status;
             // Try to query the device:
 #ifdef CL_DEVICE_WAVEFRONT_WIDTH_AMD
