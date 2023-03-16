@@ -162,7 +162,7 @@ function(gmx_add_nvcc_flag_if_supported _output_variable_name_to_append_to _flag
                 message(STATUS "Checking if nvcc accepts flags ${ARGN} - Failed")
             endif()
         endif()
-        set(${_flags_cache_variable_name} ${_cache_variable_value} CACHE BOOL "Whether NVCC supports flag(s) ${ARGN}")
+        set(${_flags_cache_variable_name} ${_cache_variable_value} CACHE INTERNAL "Whether NVCC supports flag(s) ${ARGN}")
     endif()
     # Append the flags to the output variable if they have been tested to work
     if (${_flags_cache_variable_name} OR WIN32)

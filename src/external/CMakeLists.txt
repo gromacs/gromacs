@@ -51,8 +51,11 @@ if(BUILD_TESTING AND GMX_BUILD_UNITTESTS)
         set(GTEST_IS_THREADSAFE 0)
     endif()
 
+    option(BUILD_GMOCK "googletest: Builds the googlemock subproject. GROMACS uses googlemock." ON)
+    option(INSTALL_GTEST "googletest: Enable installation of googletest. GROMACS uses it internally; installation not needed." OFF)
     add_subdirectory(googletest EXCLUDE_FROM_ALL)
     mark_as_advanced(BUILD_GMOCK)
+    mark_as_advanced(INSTALL_GTEST)
     target_compile_definitions(gmock
         PRIVATE
             _GNU_SOURCE=1

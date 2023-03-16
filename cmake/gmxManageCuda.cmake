@@ -45,6 +45,8 @@ if(${CUDA_VERSION} GREATER_EQUAL 11.1)
   set(GMX_HAVE_CUDA_GRAPH_SUPPORT ON)
 endif()
 
+mark_as_advanced(CUDA_SDK_ROOT_DIR CUDA_USE_STATIC_CUDA_RUNTIME)
+
 # Try to execute ${CUDA_NVCC_EXECUTABLE} --version and set the output
 # (or an error string) in the argument variable.
 # Note that semicolon is used as separator for nvcc.
