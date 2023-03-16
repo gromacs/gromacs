@@ -91,3 +91,18 @@
     - mkdir -p ccache
     - export CCACHE_BASEDIR=${PWD}
     - export CCACHE_DIR=${PWD}/ccache
+
+# Base definition for using oneAPI IntelLLVM
+.use-oneapi-intel-llvm:base:
+  variables:
+    # We need to add -isystem directories manually for OpenMP to work.
+    # With CMake 3.26+, OpenMP_*_INCLUDE_DIR could be used instead of CMAKE_*_FLAGS
+    CMAKE_COMPILER_SCRIPT: -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_C_FLAGS=-isystem/opt/intel/oneapi/compiler/latest/linux/compiler/include/ -DCMAKE_CXX_FLAGS=-isystem/opt/intel/oneapi/compiler/latest/linux/compiler/include/
+  before_script:
+    # Necessary to override gitlab default 'set -e' which breaks Intel's setvar.sh script
+    - set +e
+    - source /opt/intel/oneapi/setvars.sh --include-intel-llvm --force
+    - set -e
+    - mkdir -p ccache
+    - export CCACHE_BASEDIR=${PWD}
+    - export CCACHE_DIR=${PWD}/ccache

@@ -203,6 +203,20 @@ parser.add_argument(
 )
 
 parser.add_argument(
+    "--oneapi-plugin-nvidia",
+    action="store_true",
+    default=False,
+    help="Install Codeplay oneAPI NVIDIA plugin.",
+)
+
+parser.add_argument(
+    "--oneapi-plugin-amd",
+    action="store_true",
+    default=False,
+    help="Install Codeplay oneAPI AMD plugin.",
+)
+
+parser.add_argument(
     "--clfft",
     type=str,
     nargs="?",
