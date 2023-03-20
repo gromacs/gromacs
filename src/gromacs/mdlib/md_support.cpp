@@ -519,7 +519,7 @@ void set_state_entries(t_state* state, const t_inputrec* ir, bool useModularSimu
         state->flags |= enumValueToBitMask(StateEntry::FepState);
     }
     state->flags |= enumValueToBitMask(StateEntry::X);
-    GMX_RELEASE_ASSERT(state->x.size() == state->natoms,
+    GMX_RELEASE_ASSERT(state->x.size() == state->numAtoms(),
                        "We should start a run with an initialized state->x");
     if (EI_DYNAMICS(ir->eI))
     {

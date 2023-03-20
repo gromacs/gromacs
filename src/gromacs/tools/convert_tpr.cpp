@@ -457,7 +457,7 @@ int ConvertTpr::run()
         char*       grpname       = nullptr;
         const char* indexFilename = haveReadIndexFile_ ? inputIndexFileName_.c_str() : nullptr;
         get_index(&atoms, indexFilename, 1, &gnx, &index, &grpname);
-        bool bSel = (gnx != state.natoms);
+        bool bSel = (gnx != state.numAtoms());
         for (int i = 0; ((i < gnx) && (!bSel)); i++)
         {
             bSel = (i != index[i]);
@@ -470,7 +470,7 @@ int ConvertTpr::run()
                     grpname,
                     gnx);
             reduce_topology_x(gnx, index, &mtop, state.x.rvec_array(), state.v.rvec_array());
-            state.natoms = gnx;
+            state.changeNumAtoms(gnx);
         }
         else
         {

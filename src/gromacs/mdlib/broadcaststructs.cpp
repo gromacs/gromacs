@@ -66,7 +66,9 @@ void broadcastStateWithoutDynamics(MPI_Comm communicator,
     /* Broadcasts the state sizes and flags from the main to all ranks
      * in cr->mpi_comm_mygroup.
      */
-    block_bc(communicator, state->natoms);
+    int numAtoms = state->numAtoms();
+    block_bc(communicator, numAtoms);
+    state->changeNumAtoms(numAtoms);
     block_bc(communicator, state->flags);
 
     for (auto i : gmx::EnumerationArray<StateEntry, bool>::keys())
@@ -83,7 +85,7 @@ void broadcastStateWithoutDynamics(MPI_Comm communicator,
                 case StateEntry::FepState: block_bc(communicator, state->fep_state); break;
                 case StateEntry::Box: block_bc(communicator, state->box); break;
                 case StateEntry::X:
-                    bcastPaddedRVecVector(communicator, &state->x, state->natoms);
+                    bcastPaddedRVecVector(communicator, &state->x, state->numAtoms());
                     break;
                 default:
                     GMX_RELEASE_ASSERT(false,

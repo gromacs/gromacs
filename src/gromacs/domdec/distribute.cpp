@@ -259,7 +259,7 @@ static void dd_distribute_state(gmx_domdec_t* dd, const t_state* state, t_state*
     /* communicate df_history -- required for restarting from checkpoint */
     dd_distribute_dfhist(dd, state_local->dfhist);
 
-    state_change_natoms(state_local, dd->comm->atomRanges.numHomeAtoms());
+    state_local->changeNumAtoms(dd->comm->atomRanges.numHomeAtoms());
 
     if (state_local->flags & enumValueToBitMask(StateEntry::X))
     {

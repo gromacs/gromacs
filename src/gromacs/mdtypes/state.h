@@ -246,8 +246,17 @@ class t_state
 public:
     t_state();
 
-    // All things public
-    int natoms; //!< Number of atoms, local + non-local; this is the size of \p x, \p v and \p cg_p, when used
+    //! Returns the number of atoms represented by this state.
+    int numAtoms() const { return numAtoms_; }
+
+    //! Change the number of atoms represented by this state, allocating memory as needed.
+    void changeNumAtoms(int numAtoms);
+
+private:
+    int numAtoms_; //!< Number of atoms, local + non-local; this is the size of \p x, \p v and \p cg_p, when used
+
+    // The rest is still public
+public:
     int ngtc;          //!< The number of temperature coupling groups
     int nnhpres;       //!< The number of NH-chains for the MTTK barostat (always 1 or 0)
     int nhchainlength; //!< The NH-chain length for temperature coupling and MTTK barostat
@@ -269,8 +278,8 @@ public:
     double              baros_integral; //!< For Berendsen P-coupling conserved quantity
     real                veta;           //!< Trotter based isotropic P-coupling
     real                vol0; //!< Initial volume,required for computing MTTK conserved quantity
-    PaddedHostVector<gmx::RVec> x;    //!< The coordinates (natoms)
-    PaddedHostVector<gmx::RVec> v;    //!< The velocities (natoms)
+    PaddedHostVector<gmx::RVec> x;    //!< The coordinates (numAtoms_)
+    PaddedHostVector<gmx::RVec> v;    //!< The velocities (numAtoms_)
     PaddedHostVector<gmx::RVec> cg_p; //!< p vector for conjugate gradient minimization
 
     ekinstate_t ekinstate; //!< The state of the kinetic energy
@@ -303,9 +312,6 @@ struct t_extmass
 
 //! Resizes the T- and P-coupling state variables
 void init_gtc_state(t_state* state, int ngtc, int nnhpres, int nhchainlength);
-
-//! Change the number of atoms represented by this state, allocating memory as needed.
-void state_change_natoms(t_state* state, int natoms);
 
 //! Allocates memory for free-energy history
 void init_dfhist_state(t_state* state, int dfhistNumLambda);
@@ -352,7 +358,7 @@ static inline gmx::ArrayRef<const gmx::RVec> positionsFromStatePointer(const t_s
 {
     if (state)
     {
-        return gmx::makeConstArrayRef(state->x).subArray(0, state->natoms);
+        return gmx::makeConstArrayRef(state->x).subArray(0, state->numAtoms());
     }
     else
     {

@@ -159,8 +159,8 @@ void do_md_trajectory_writing(FILE*                          fplog,
                    output. This makes .cpt restarts look binary
                    identical, and makes .edr restarts binary
                    identical. */
-                snew(x_for_confout, state_global->natoms);
-                copy_rvecn(state_global->x.rvec_array(), x_for_confout, 0, state_global->natoms);
+                snew(x_for_confout, state_global->numAtoms());
+                copy_rvecn(state_global->x.rvec_array(), x_for_confout, 0, state_global->numAtoms());
             }
             else
             {

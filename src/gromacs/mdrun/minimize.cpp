@@ -451,10 +451,8 @@ static void init_em(FILE*                fplog,
     }
     else
     {
-        state_change_natoms(state_global, state_global->natoms);
         /* Just copy the state */
         ems->s = *state_global;
-        state_change_natoms(&ems->s, ems->s.natoms);
 
         mdAlgorithmsSetupAtomData(
                 cr, *ir, top_global, top, fr, &ems->f, mdAtoms, constr, vsite, shellfc ? *shellfc : nullptr);
@@ -650,10 +648,10 @@ static bool do_em_step(const t_commrec*                          cr,
 
     s2->flags = s1->flags;
 
-    if (s2->natoms != s1->natoms)
+    if (s2->numAtoms() != s1->numAtoms())
     {
-        state_change_natoms(s2, s1->natoms);
-        ems2->f.resize(s2->natoms);
+        s2->changeNumAtoms(s1->numAtoms());
+        ems2->f.resize(s2->numAtoms());
     }
     if (haveDDAtomOrdering(*cr) && s2->cg_gl.size() != s1->cg_gl.size())
     {
@@ -1288,7 +1286,7 @@ void LegacySimulator::do_cg()
         state_global->flags |= enumValueToBitMask(StateEntry::Cgp);
 
         // Ensure the extra per-atom state array gets allocated
-        state_change_natoms(state_global, state_global->natoms);
+        state_global->changeNumAtoms(state_global->numAtoms());
 
         // Initialize the search direction to zero
         for (RVec& cg_p : state_global->cg_p)
@@ -1422,7 +1420,7 @@ void LegacySimulator::do_cg()
 
     if (MAIN(cr))
     {
-        double sqrtNumAtoms = sqrt(static_cast<double>(state_global->natoms));
+        double sqrtNumAtoms = sqrt(static_cast<double>(state_global->numAtoms()));
         fprintf(stderr, "   F-max             = %12.5e on atom %d\n", s_min->fmax, s_min->a_fmax + 1);
         fprintf(stderr, "   F-Norm            = %12.5e\n", s_min->fnorm / sqrtNumAtoms);
         fprintf(stderr, "\n");
@@ -1835,7 +1833,7 @@ void LegacySimulator::do_cg()
         {
             if (mdrunOptions.verbose)
             {
-                double sqrtNumAtoms = sqrt(static_cast<double>(state_global->natoms));
+                double sqrtNumAtoms = sqrt(static_cast<double>(state_global->numAtoms()));
                 fprintf(stderr,
                         "\rStep %d, Epot=%12.6e, Fnorm=%9.3e, Fmax=%9.3e (atom %d)\n",
                         step,
@@ -1958,7 +1956,7 @@ void LegacySimulator::do_cg()
 
     if (MAIN(cr))
     {
-        double sqrtNumAtoms = sqrt(static_cast<double>(state_global->natoms));
+        double sqrtNumAtoms = sqrt(static_cast<double>(state_global->numAtoms()));
         print_converged(stderr, CG, inputrec->em_tol, step, converged, number_steps, s_min, sqrtNumAtoms);
         print_converged(fplog, CG, inputrec->em_tol, step, converged, number_steps, s_min, sqrtNumAtoms);
 
@@ -2004,7 +2002,7 @@ void LegacySimulator::do_lbfgs()
                 "do not use constraints, or use another minimizer (e.g. steepest descent).");
     }
 
-    const int n        = 3 * state_global->natoms;
+    const int n        = 3 * state_global->numAtoms();
     const int nmaxcorr = inputrec->nbfgscorr;
 
     std::vector<real> p(n);
@@ -2183,7 +2181,7 @@ void LegacySimulator::do_lbfgs()
 
     if (MAIN(cr))
     {
-        double sqrtNumAtoms = sqrt(static_cast<double>(state_global->natoms));
+        double sqrtNumAtoms = sqrt(static_cast<double>(state_global->numAtoms()));
         fprintf(stderr, "Using %d BFGS correction steps.\n\n", nmaxcorr);
         fprintf(stderr, "   F-max             = %12.5e on atom %d\n", ems.fmax, ems.a_fmax + 1);
         fprintf(stderr, "   F-Norm            = %12.5e\n", ems.fnorm / sqrtNumAtoms);
@@ -2664,7 +2662,7 @@ void LegacySimulator::do_lbfgs()
         {
             if (mdrunOptions.verbose)
             {
-                double sqrtNumAtoms = sqrt(static_cast<double>(state_global->natoms));
+                double sqrtNumAtoms = sqrt(static_cast<double>(state_global->numAtoms()));
                 fprintf(stderr,
                         "\rStep %d, Epot=%12.6e, Fnorm=%9.3e, Fmax=%9.3e (atom %d)\n",
                         step,
@@ -2780,7 +2778,7 @@ void LegacySimulator::do_lbfgs()
 
     if (MAIN(cr))
     {
-        double sqrtNumAtoms = sqrt(static_cast<double>(state_global->natoms));
+        double sqrtNumAtoms = sqrt(static_cast<double>(state_global->numAtoms()));
         print_converged(stderr, LBFGS, inputrec->em_tol, step, converged, number_steps, &ems, sqrtNumAtoms);
         print_converged(fplog, LBFGS, inputrec->em_tol, step, converged, number_steps, &ems, sqrtNumAtoms);
 
@@ -3108,7 +3106,7 @@ void LegacySimulator::do_steep()
 
     if (MAIN(cr))
     {
-        double sqrtNumAtoms = sqrt(static_cast<double>(state_global->natoms));
+        double sqrtNumAtoms = sqrt(static_cast<double>(state_global->numAtoms()));
 
         print_converged(stderr, SD, inputrec->em_tol, count, bDone, nsteps, s_min, sqrtNumAtoms);
         print_converged(fplog, SD, inputrec->em_tol, count, bDone, nsteps, s_min, sqrtNumAtoms);
@@ -3359,7 +3357,7 @@ void LegacySimulator::do_nm()
                                         top,
                                         constr,
                                         enerd,
-                                        state_work.s.natoms,
+                                        state_work.s.numAtoms(),
                                         state_work.s.x.arrayRefWithPadding(),
                                         state_work.s.v.arrayRefWithPadding(),
                                         state_work.s.box,

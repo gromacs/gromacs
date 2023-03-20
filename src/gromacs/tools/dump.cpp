@@ -148,8 +148,8 @@ void list_tpr(const char* fn,
             pr_doubles(stdout, indent, "nosehoover_xi", state.nosehoover_xi.data(), state.ngtc);
             /*pr_doubles(stdout,indent,"nosehoover_vxi",state.nosehoover_vxi,state.ngtc);*/
             /*pr_doubles(stdout,indent,"therm_integral",state.therm_integral,state.ngtc);*/
-            pr_rvecs(stdout, indent, "x", tpx.bX ? state.x.rvec_array() : nullptr, state.natoms);
-            pr_rvecs(stdout, indent, "v", tpx.bV ? state.v.rvec_array() : nullptr, state.natoms);
+            pr_rvecs(stdout, indent, "x", tpx.bX ? state.x.rvec_array() : nullptr, state.numAtoms());
+            pr_rvecs(stdout, indent, "v", tpx.bV ? state.v.rvec_array() : nullptr, state.numAtoms());
         }
 
         const SimulationGroups& groups = mtop.groups;

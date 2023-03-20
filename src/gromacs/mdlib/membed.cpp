@@ -279,14 +279,14 @@ static int init_ins_at(t_block*          ins_at,
                                     * determine the overlap between molecule to embed and membrane */
     const real fac_inp_size =
             1.000001; /* scaling factor to obtain input_size + 0.000001 (comparing reals) */
-    snew(rest_at->index, state->natoms);
+    snew(rest_at->index, state->numAtoms());
     auto x = makeArrayRef(state->x);
 
     xmin = xmax = x[ins_at->index[0]][XX];
     ymin = ymax = x[ins_at->index[0]][YY];
     zmin = zmax = x[ins_at->index[0]][ZZ];
 
-    for (i = 0; i < state->natoms; i++)
+    for (i = 0; i < state->numAtoms(); i++)
     {
         gid = groups->groupNumbers[SimulationAtomGroupType::Freeze][i];
         if (groups->groups[SimulationAtomGroupType::Freeze][gid] == ins_grp_id)
@@ -722,7 +722,7 @@ static void rm_group(SimulationGroups* groups,
     /* Construct the molecule range information */
     gmx::RangePartitioning molecules = gmx_mtop_molecules(*mtop);
 
-    snew(list, state->natoms);
+    snew(list, state->numAtoms());
     n = 0;
     for (int i = 0; i < rm_p->nr; i++)
     {
@@ -742,7 +742,7 @@ static void rm_group(SimulationGroups* groups,
      * because we still access the coordinate arrays for all positions
      * before removing the molecules we want to remove.
      */
-    const int newStateAtomNumber = state->natoms - n;
+    const int newStateAtomNumber = state->numAtoms() - n;
     snew(x_tmp, newStateAtomNumber);
     snew(v_tmp, newStateAtomNumber);
 
@@ -758,7 +758,7 @@ static void rm_group(SimulationGroups* groups,
     auto x = makeArrayRef(state->x);
     auto v = makeArrayRef(state->v);
     rm     = 0;
-    for (int i = 0; i < state->natoms; i++)
+    for (int i = 0; i < state->numAtoms(); i++)
     {
         bRM = FALSE;
         for (j = 0; j < n; j++)
@@ -801,13 +801,13 @@ static void rm_group(SimulationGroups* groups,
             }
         }
     }
-    state_change_natoms(state, newStateAtomNumber);
-    for (int i = 0; i < state->natoms; i++)
+    state->changeNumAtoms(newStateAtomNumber);
+    for (int i = 0; i < state->numAtoms(); i++)
     {
         copy_rvec(x_tmp[i], x[i]);
     }
     sfree(x_tmp);
-    for (int i = 0; i < state->natoms; i++)
+    for (int i = 0; i < state->numAtoms(); i++)
     {
         copy_rvec(v_tmp[i], v[i]);
     }

@@ -149,24 +149,24 @@ void init_gtc_state(t_state* state, int ngtc, int nnhpres, int nhchainlength)
 
 
 /* Checkpoint code relies on this function having no effect if
-   state->natoms is > 0 and passed as natoms. */
-void state_change_natoms(t_state* state, int natoms)
+   numAtoms_ is > 0 and passed as numAtoms. */
+void t_state::changeNumAtoms(const int numAtoms)
 {
-    state->natoms = natoms;
+    numAtoms_ = numAtoms;
 
     /* We need padding, since we might use SIMD access, but the
      * containers here all ensure that. */
-    if (state->flags & enumValueToBitMask(StateEntry::X))
+    if (flags & enumValueToBitMask(StateEntry::X))
     {
-        state->x.resizeWithPadding(natoms);
+        x.resizeWithPadding(numAtoms);
     }
-    if (state->flags & enumValueToBitMask(StateEntry::V))
+    if (flags & enumValueToBitMask(StateEntry::V))
     {
-        state->v.resizeWithPadding(natoms);
+        v.resizeWithPadding(numAtoms);
     }
-    if (state->flags & enumValueToBitMask(StateEntry::Cgp))
+    if (flags & enumValueToBitMask(StateEntry::Cgp))
     {
-        state->cg_p.resizeWithPadding(natoms);
+        cg_p.resizeWithPadding(numAtoms);
     }
 }
 
@@ -317,20 +317,20 @@ void comp_state(const t_state* st1, const t_state* st2, gmx_bool bRMSD, real fto
         }
     }
 
-    cmp_int(stdout, "natoms", -1, st1->natoms, st2->natoms);
-    if (st1->natoms == st2->natoms)
+    cmp_int(stdout, "natoms", -1, st1->numAtoms(), st2->numAtoms());
+    if (st1->numAtoms() == st2->numAtoms())
     {
         if ((st1->flags & enumValueToBitMask(StateEntry::X))
             && (st2->flags & enumValueToBitMask(StateEntry::X)))
         {
             fprintf(stdout, "comparing x\n");
-            cmp_rvecs(stdout, "x", st1->natoms, st1->x.rvec_array(), st2->x.rvec_array(), bRMSD, ftol, abstol);
+            cmp_rvecs(stdout, "x", st1->numAtoms(), st1->x.rvec_array(), st2->x.rvec_array(), bRMSD, ftol, abstol);
         }
         if ((st1->flags & enumValueToBitMask(StateEntry::V))
             && (st2->flags & enumValueToBitMask(StateEntry::V)))
         {
             fprintf(stdout, "comparing v\n");
-            cmp_rvecs(stdout, "v", st1->natoms, st1->v.rvec_array(), st2->v.rvec_array(), bRMSD, ftol, abstol);
+            cmp_rvecs(stdout, "v", st1->numAtoms(), st1->v.rvec_array(), st2->v.rvec_array(), bRMSD, ftol, abstol);
         }
     }
 }
@@ -353,7 +353,7 @@ rvec* makeRvecArray(gmx::ArrayRef<const gmx::RVec> v, gmx::Index n)
 }
 
 t_state::t_state() :
-    natoms(0),
+    numAtoms_(0),
     ngtc(0),
     nnhpres(0),
     nhchainlength(0),

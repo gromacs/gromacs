@@ -1320,11 +1320,7 @@ static int do_cpt_state(XDR* xd, int fflags, t_state* state, FILE* list)
 {
     int       ret    = 0;
     const int sflags = state->flags;
-    // If reading, state->natoms was probably just read, so
-    // allocations need to be managed. If writing, this won't change
-    // anything that matters.
     using StateFlags = gmx::EnumerationArray<StateEntry, bool>;
-    state_change_natoms(state, state->natoms);
     for (auto i = StateFlags::keys().begin(); (i != StateFlags::keys().end() && ret == 0); i++)
     {
         if (fflags & enumValueToBitMask(*i))
@@ -1378,10 +1374,10 @@ static int do_cpt_state(XDR* xd, int fflags, t_state* state, FILE* list)
                     ret = do_cpte_real(xd, *i, sflags, &state->vol0, list);
                     break;
                 case StateEntry::X:
-                    ret = doRvecVector(xd, *i, sflags, &state->x, state->natoms, list);
+                    ret = doRvecVector(xd, *i, sflags, &state->x, state->numAtoms(), list);
                     break;
                 case StateEntry::V:
-                    ret = doRvecVector(xd, *i, sflags, &state->v, state->natoms, list);
+                    ret = doRvecVector(xd, *i, sflags, &state->v, state->numAtoms(), list);
                     break;
                 /* The RNG entries are no longer written,
                  * the next 4 lines are only for reading old files.
@@ -2671,13 +2667,13 @@ static void read_checkpoint(const std::filesystem::path&   fn,
         fprintf(fplog, "\n");
     }
 
-    if (headerContents->natoms != state->natoms)
+    if (headerContents->natoms != state->numAtoms())
     {
         gmx_fatal(FARGS,
                   "Checkpoint file is for a system of %d atoms, while the current system consists "
                   "of %d atoms",
                   headerContents->natoms,
-                  state->natoms);
+                  state->numAtoms());
     }
     if (headerContents->ngtc != state->ngtc)
     {
@@ -2970,12 +2966,13 @@ static CheckpointHeaderContents read_checkpoint_data(t_fileio*                  
 {
     CheckpointHeaderContents headerContents;
     do_cpt_header(gmx_fio_getxdr(fp), TRUE, nullptr, &headerContents);
-    state->natoms        = headerContents.natoms;
+    const int numAtoms   = headerContents.natoms;
     state->ngtc          = headerContents.ngtc;
     state->nnhpres       = headerContents.nnhpres;
     state->nhchainlength = headerContents.nhchainlength;
     state->flags         = headerContents.flags_state;
-    int ret              = do_cpt_state(gmx_fio_getxdr(fp), state->flags, state, nullptr);
+    state->changeNumAtoms(numAtoms);
+    int ret = do_cpt_state(gmx_fio_getxdr(fp), state->flags, state, nullptr);
     if (ret)
     {
         cp_error();
@@ -3066,7 +3063,7 @@ void read_checkpoint_trxframe(t_fileio* fp, t_trxframe* fr)
         return;
     }
 
-    fr->natoms    = state.natoms;
+    fr->natoms    = state.numAtoms();
     fr->bStep     = TRUE;
     fr->step      = int64_to_int(headerContents.step, "conversion of checkpoint to trajectory");
     fr->bTime     = TRUE;
@@ -3078,12 +3075,12 @@ void read_checkpoint_trxframe(t_fileio* fp, t_trxframe* fr)
     fr->bX        = ((state.flags & enumValueToBitMask(StateEntry::X)) != 0);
     if (fr->bX)
     {
-        fr->x = makeRvecArray(state.x, state.natoms);
+        fr->x = makeRvecArray(state.x, state.numAtoms());
     }
     fr->bV = ((state.flags & enumValueToBitMask(StateEntry::V)) != 0);
     if (fr->bV)
     {
-        fr->v = makeRvecArray(state.v, state.natoms);
+        fr->v = makeRvecArray(state.v, state.numAtoms());
     }
     fr->bF   = FALSE;
     fr->bBox = ((state.flags & enumValueToBitMask(StateEntry::Box)) != 0);
@@ -3103,12 +3100,12 @@ void list_checkpoint(const std::filesystem::path& fn, FILE* out)
     fp = gmx_fio_open(fn, "r");
     CheckpointHeaderContents headerContents;
     do_cpt_header(gmx_fio_getxdr(fp), TRUE, out, &headerContents);
-    state.natoms        = headerContents.natoms;
     state.ngtc          = headerContents.ngtc;
     state.nnhpres       = headerContents.nnhpres;
     state.nhchainlength = headerContents.nhchainlength;
     state.flags         = headerContents.flags_state;
-    ret                 = do_cpt_state(gmx_fio_getxdr(fp), state.flags, &state, out);
+    state.changeNumAtoms(headerContents.natoms);
+    ret = do_cpt_state(gmx_fio_getxdr(fp), state.flags, &state, out);
     if (ret)
     {
         cp_error();

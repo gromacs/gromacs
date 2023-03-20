@@ -119,8 +119,8 @@ void integrateVVFirstStep(int64_t                   step,
              * revert back to the initial coordinates
              * so that the input is actually the initial step.
              */
-            snew(vbuf, state->natoms);
-            copy_rvecn(state->v.rvec_array(), vbuf, 0, state->natoms); /* should make this better for parallelizing? */
+            snew(vbuf, state->numAtoms());
+            copy_rvecn(state->v.rvec_array(), vbuf, 0, state->numAtoms()); /* should make this better for parallelizing? */
         }
         else
         {
@@ -294,7 +294,7 @@ void integrateVVFirstStep(int64_t                   step,
         /* if it's the initial step, we performed this first step just to get the constraint virial */
         if (ir->eI == IntegrationAlgorithm::VV && bInitStep)
         {
-            copy_rvecn(vbuf, state->v.rvec_array(), 0, state->natoms);
+            copy_rvecn(vbuf, state->v.rvec_array(), 0, state->numAtoms());
             sfree(vbuf);
         }
         wallcycle_stop(wcycle, WallCycleCounter::Update);

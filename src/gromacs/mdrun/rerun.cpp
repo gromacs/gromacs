@@ -153,7 +153,7 @@ static void prepareRerunState(const t_trxframe&          rerunFrame,
                               const VirtualSitesHandler* vsite)
 {
     auto x      = makeArrayRef(globalState->x);
-    auto rerunX = arrayRefFromArray(reinterpret_cast<gmx::RVec*>(rerunFrame.x), globalState->natoms);
+    auto rerunX = arrayRefFromArray(reinterpret_cast<gmx::RVec*>(rerunFrame.x), globalState->numAtoms());
     std::copy(rerunX.begin(), rerunX.end(), x.begin());
     copy_mat(rerunFrame.box, globalState->box);
 
@@ -343,7 +343,6 @@ void gmx::LegacySimulator::do_rerun()
     }
     else
     {
-        state_change_natoms(state_global, state_global->natoms);
         /* Copy the pointer to the global state */
         state = state_global;
 
@@ -618,7 +617,7 @@ void gmx::LegacySimulator::do_rerun()
                                 top,
                                 constr,
                                 enerd,
-                                state->natoms,
+                                state->numAtoms(),
                                 state->x.arrayRefWithPadding(),
                                 state->v.arrayRefWithPadding(),
                                 state->box,

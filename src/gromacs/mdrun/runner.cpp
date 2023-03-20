@@ -1141,7 +1141,7 @@ int Mdrunner::mdrunner()
                     .appendText(
                             "Rerun trajectory contains velocities. Rerun does only evaluate "
                             "potential energy and forces. The velocities will be ignored.");
-            for (int i = 0; i < globalState->natoms; i++)
+            for (int i = 0; i < globalState->numAtoms(); i++)
             {
                 clear_rvec(globalState->v[i]);
             }

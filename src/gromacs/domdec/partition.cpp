@@ -3135,7 +3135,7 @@ void dd_partition_system(FILE*                     fplog,
         dd_sort_state(dd, fr, state_local);
 
         /* After sorting and compacting we set the correct size */
-        state_change_natoms(state_local, comm->atomRanges.numHomeAtoms());
+        state_local->changeNumAtoms(comm->atomRanges.numHomeAtoms());
 
         /* Rebuild all the indices */
         dd->ga2la->clear(false);
@@ -3252,9 +3252,7 @@ void dd_partition_system(FILE*                     fplog,
     /* Make space for the extra coordinates for virtual site
      * or constraint communication.
      */
-    state_local->natoms = comm->atomRanges.numAtomsTotal();
-
-    state_change_natoms(state_local, state_local->natoms);
+    state_local->changeNumAtoms(comm->atomRanges.numAtomsTotal());
 
     int nat_f_novirsum;
     if (vsite && vsite->numInterUpdategroupVirtualSites())

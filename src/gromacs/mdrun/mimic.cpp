@@ -312,7 +312,6 @@ void gmx::LegacySimulator::do_mimic()
     }
     else
     {
-        state_change_natoms(state_global, state_global->natoms);
         mdAlgorithmsSetupAtomData(cr, *ir, top_global, top, fr, &f, mdAtoms, constr, vsite, shellfc);
     }
 
@@ -433,7 +432,7 @@ void gmx::LegacySimulator::do_mimic()
 
         if (MAIN(cr))
         {
-            MimicCommunicator::getCoords(state_global->x, state_global->natoms);
+            MimicCommunicator::getCoords(state_global->x, state_global->numAtoms());
         }
 
         if (ir->efep != FreeEnergyPerturbationType::No)
@@ -518,7 +517,7 @@ void gmx::LegacySimulator::do_mimic()
                                 top,
                                 constr,
                                 enerd,
-                                state->natoms,
+                                state->numAtoms(),
                                 state->x.arrayRefWithPadding(),
                                 state->v.arrayRefWithPadding(),
                                 state->box,
@@ -662,7 +661,7 @@ void gmx::LegacySimulator::do_mimic()
             if (MAIN(cr))
             {
                 MimicCommunicator::sendEnergies(enerd->term[F_EPOT]);
-                MimicCommunicator::sendForces(ftemp, state_global->natoms);
+                MimicCommunicator::sendForces(ftemp, state_global->numAtoms());
             }
         }
 

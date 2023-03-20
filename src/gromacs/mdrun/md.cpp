@@ -380,17 +380,15 @@ void gmx::LegacySimulator::do_md()
                             nrnb,
                             nullptr,
                             FALSE);
-        upd.updateAfterPartition(state->natoms, md->cFREEZE, md->cTC, md->cACC);
+        upd.updateAfterPartition(state->numAtoms(), md->cFREEZE, md->cTC, md->cACC);
         fr->longRangeNonbondeds->updateAfterPartition(*md);
     }
     else
     {
-        state_change_natoms(state_global, state_global->natoms);
-
         /* Generate and initialize new topology */
         mdAlgorithmsSetupAtomData(cr, *ir, top_global, top, fr, &f, mdAtoms, constr, vsite, shellfc);
 
-        upd.updateAfterPartition(state->natoms, md->cFREEZE, md->cTC, md->cACC);
+        upd.updateAfterPartition(state->numAtoms(), md->cFREEZE, md->cTC, md->cACC);
         fr->longRangeNonbondeds->updateAfterPartition(*md);
     }
 
@@ -1002,7 +1000,7 @@ void gmx::LegacySimulator::do_md()
                                     nrnb,
                                     wcycle,
                                     do_verbose && !bPMETunePrinting);
-                upd.updateAfterPartition(state->natoms, md->cFREEZE, md->cTC, md->cACC);
+                upd.updateAfterPartition(state->numAtoms(), md->cFREEZE, md->cTC, md->cACC);
                 fr->longRangeNonbondeds->updateAfterPartition(*md);
             }
         }
@@ -1175,7 +1173,7 @@ void gmx::LegacySimulator::do_md()
                                     top,
                                     constr,
                                     enerd,
-                                    state->natoms,
+                                    state->numAtoms(),
                                     state->x.arrayRefWithPadding(),
                                     state->v.arrayRefWithPadding(),
                                     state->box,
@@ -2038,7 +2036,7 @@ void gmx::LegacySimulator::do_md()
                                 nrnb,
                                 wcycle,
                                 FALSE);
-            upd.updateAfterPartition(state->natoms, md->cFREEZE, md->cTC, md->cACC);
+            upd.updateAfterPartition(state->numAtoms(), md->cFREEZE, md->cTC, md->cACC);
             fr->longRangeNonbondeds->updateAfterPartition(*md);
         }
 
