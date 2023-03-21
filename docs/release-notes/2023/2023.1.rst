@@ -95,3 +95,10 @@ Now, bonded force calculation on GPU is expected to be up to 3 times faster.
 
 :issue:`3928`
 
+Restored OpenMP acceleration of pulling routines
+""""""""""""""""""""""""""""""""""""""""""""""""
+
+During internal code reorganization, OpenMP acceleration was accidentally disabled
+for pulling force calculation in |Gromacs| 2023. This is now fixed.
+
+:issue:`4747`

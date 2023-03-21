@@ -44,6 +44,10 @@ if (BUILD_SHARED_LIBS)
     set_target_properties(pulling PROPERTIES POSITION_INDEPENDENT_CODE ON)
 endif()
 
+# Set required compile flags
+gmx_target_compile_options(pulling)
+target_compile_definitions(pulling PRIVATE HAVE_CONFIG_H)
+
 # Source files have the following dependencies on library infrastructure.
 target_link_libraries(pulling PRIVATE
                       common
@@ -67,6 +71,10 @@ target_include_directories(pulling PUBLIC
 target_link_libraries(pulling INTERFACE
                       legacy_api
                       )
+
+if (GMX_OPENMP)
+    target_link_libraries(pulling PRIVATE OpenMP::OpenMP_CXX)
+endif()
 
 # TODO: when pulling is an OBJECT target
 #target_link_libraries(pulling PUBLIC legacy_api)
