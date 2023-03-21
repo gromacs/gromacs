@@ -194,10 +194,10 @@ void init_disres(FILE*                 fplog,
 
         hist = &state->hist;
         /* Set the "history lack" factor to 1 */
-        state->flags |= enumValueToBitMask(StateEntry::DisreInitF);
+        state->addEntry(StateEntry::DisreInitF);
         hist->disre_initf = 1.0;
         /* Allocate space for the r^-3 time averages */
-        state->flags |= enumValueToBitMask(StateEntry::DisreRm3Tav);
+        state->addEntry(StateEntry::DisreRm3Tav);
         hist->disre_rm3tav.resize(dd->npair);
     }
     /* Allocate space for a copy of rm3tav,

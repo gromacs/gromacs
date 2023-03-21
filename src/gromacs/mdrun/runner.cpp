@@ -1133,7 +1133,7 @@ int Mdrunner::mdrunner()
     if (SIMMAIN(cr))
     {
         /* In rerun, set velocities to zero if present */
-        if (doRerun && ((globalState->flags & enumValueToBitMask(StateEntry::V)) != 0))
+        if (doRerun && globalState->hasEntry(StateEntry::V))
         {
             // rerun does not use velocities
             GMX_LOG(mdlog.info)
@@ -1145,7 +1145,7 @@ int Mdrunner::mdrunner()
             {
                 clear_rvec(globalState->v[i]);
             }
-            globalState->flags &= ~enumValueToBitMask(StateEntry::V);
+            globalState->setFlags(globalState->flags() & ~enumValueToBitMask(StateEntry::V));
         }
 
         /* now make sure the state is initialized and propagated */

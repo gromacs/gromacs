@@ -303,7 +303,7 @@ void dd_collect_state(gmx_domdec_t* dd, const t_state* state_local, t_state* sta
         state->baros_integral     = state_local->baros_integral;
         state->pull_com_prev_step = state_local->pull_com_prev_step;
     }
-    if (state_local->flags & enumValueToBitMask(StateEntry::X))
+    if (state_local->hasEntry(StateEntry::X))
     {
         auto globalXRef = state ? state->x : gmx::ArrayRef<gmx::RVec>();
         dd_collect_vec(dd,
@@ -313,7 +313,7 @@ void dd_collect_state(gmx_domdec_t* dd, const t_state* state_local, t_state* sta
                        state_local->x,
                        globalXRef);
     }
-    if (state_local->flags & enumValueToBitMask(StateEntry::V))
+    if (state_local->hasEntry(StateEntry::V))
     {
         auto globalVRef = state ? state->v : gmx::ArrayRef<gmx::RVec>();
         dd_collect_vec(dd,
@@ -323,7 +323,7 @@ void dd_collect_state(gmx_domdec_t* dd, const t_state* state_local, t_state* sta
                        state_local->v,
                        globalVRef);
     }
-    if (state_local->flags & enumValueToBitMask(StateEntry::Cgp))
+    if (state_local->hasEntry(StateEntry::Cgp))
     {
         auto globalCgpRef = state ? state->cg_p : gmx::ArrayRef<gmx::RVec>();
         dd_collect_vec(dd,

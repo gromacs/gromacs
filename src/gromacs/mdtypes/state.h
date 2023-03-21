@@ -252,16 +252,28 @@ public:
     //! Change the number of atoms represented by this state, allocating memory as needed.
     void changeNumAtoms(int numAtoms);
 
+    //! Returns whether entry \p entry is present
+    bool hasEntry(StateEntry entry) const { return (flags_ & enumValueToBitMask(entry)) != 0; }
+
+    //! Set entry \p entry to present, resizes corresponding vector to numAtoms() when relevant
+    void addEntry(StateEntry entry);
+
+    //! Return an integer with bits set for entries that are present
+    int flags() const { return flags_; }
+
+    //! Sets the present entries to the ones set in \p flags
+    void setFlags(int flags);
+
 private:
     int numAtoms_; //!< Number of atoms, local + non-local; this is the size of \p x, \p v and \p cg_p, when used
+    int flags_; //!< Set of bit-flags telling which entries are present, see enum at the top of the file
 
     // The rest is still public
 public:
     int ngtc;          //!< The number of temperature coupling groups
     int nnhpres;       //!< The number of NH-chains for the MTTK barostat (always 1 or 0)
     int nhchainlength; //!< The NH-chain length for temperature coupling and MTTK barostat
-    int flags; //!< Set of bit-flags telling which entries are present, see enum at the top of the file
-    int fep_state; //!< indicates which of the alchemical states we are in
+    int fep_state;     //!< indicates which of the alchemical states we are in
     gmx::EnumerationArray<FreeEnergyPerturbationCouplingType, real> lambda; //!< Free-energy lambda vector
     matrix                                                          box; //!< Matrix of box vectors
     //! Relative box vectors characteristic of the box shape, used to to preserve that box shape

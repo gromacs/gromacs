@@ -1694,11 +1694,11 @@ void Update::Impl::update_coords(const t_inputrec&                 inputRecord,
     real dt = inputRecord.delta_t;
 
     /* We need to update the NMR restraint history when time averaging is used */
-    if (state->flags & enumValueToBitMask(StateEntry::DisreRm3Tav))
+    if (state->hasEntry(StateEntry::DisreRm3Tav))
     {
         update_disres_history(*fcdata->disres, &state->hist);
     }
-    if (state->flags & enumValueToBitMask(StateEntry::OrireDtav))
+    if (state->hasEntry(StateEntry::OrireDtav))
     {
         GMX_ASSERT(fcdata, "Need valid fcdata");
         fcdata->orires->updateHistory();

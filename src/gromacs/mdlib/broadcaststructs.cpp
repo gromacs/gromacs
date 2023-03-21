@@ -69,11 +69,13 @@ void broadcastStateWithoutDynamics(MPI_Comm communicator,
     int numAtoms = state->numAtoms();
     block_bc(communicator, numAtoms);
     state->changeNumAtoms(numAtoms);
-    block_bc(communicator, state->flags);
+    int flags = state->flags();
+    block_bc(communicator, flags);
+    state->setFlags(flags);
 
     for (auto i : gmx::EnumerationArray<StateEntry, bool>::keys())
     {
-        if (state->flags & enumValueToBitMask(i))
+        if (state->hasEntry(i))
         {
             switch (i)
             {

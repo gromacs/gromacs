@@ -646,7 +646,7 @@ static bool do_em_step(const t_commrec*                          cr,
         gmx_incons("state mismatch in do_em_step");
     }
 
-    s2->flags = s1->flags;
+    s2->setFlags(s1->flags());
 
     if (s2->numAtoms() != s1->numAtoms())
     {
@@ -698,7 +698,7 @@ static bool do_em_step(const t_commrec*                          cr,
             GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR
         }
 
-        if (s2->flags & enumValueToBitMask(StateEntry::Cgp))
+        if (s2->hasEntry(StateEntry::Cgp))
         {
             /* Copy the CG p vector */
             const rvec* p1 = s1->cg_p.rvec_array();
@@ -1283,10 +1283,7 @@ void LegacySimulator::do_cg()
     if (MAIN(cr))
     {
         // In CG, the state is extended with a search direction
-        state_global->flags |= enumValueToBitMask(StateEntry::Cgp);
-
-        // Ensure the extra per-atom state array gets allocated
-        state_global->changeNumAtoms(state_global->numAtoms());
+        state_global->addEntry(StateEntry::Cgp);
 
         // Initialize the search direction to zero
         for (RVec& cg_p : state_global->cg_p)

@@ -223,20 +223,20 @@ static void print_cg_move(FILE*               fplog,
 
 static void rotate_state_atom(t_state* state, int a)
 {
-    if (state->flags & enumValueToBitMask(StateEntry::X))
+    if (state->hasEntry(StateEntry::X))
     {
         auto x = makeArrayRef(state->x);
         /* Rotate the complete state; for a rectangular box only */
         x[a][YY] = state->box[YY][YY] - x[a][YY];
         x[a][ZZ] = state->box[ZZ][ZZ] - x[a][ZZ];
     }
-    if (state->flags & enumValueToBitMask(StateEntry::V))
+    if (state->hasEntry(StateEntry::V))
     {
         auto v   = makeArrayRef(state->v);
         v[a][YY] = -v[a][YY];
         v[a][ZZ] = -v[a][ZZ];
     }
-    if (state->flags & enumValueToBitMask(StateEntry::Cgp))
+    if (state->hasEntry(StateEntry::Cgp))
     {
         auto cg_p   = makeArrayRef(state->cg_p);
         cg_p[a][YY] = -cg_p[a][YY];
@@ -566,8 +566,8 @@ void dd_redistribute_cg(FILE*         fplog,
     }
 
     // Positions are always present, so there's nothing to flag
-    bool bV   = (state->flags & enumValueToBitMask(StateEntry::V)) != 0;
-    bool bCGP = (state->flags & enumValueToBitMask(StateEntry::Cgp)) != 0;
+    const bool bV   = state->hasEntry(StateEntry::V);
+    const bool bCGP = state->hasEntry(StateEntry::Cgp);
 
     DDBufferAccess<int> moveBuffer(comm->intBuffer, dd->numHomeAtoms);
     gmx::ArrayRef<int>  move = moveBuffer.buffer;

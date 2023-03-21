@@ -1319,7 +1319,7 @@ static int do_cpt_footer(XDR* xd, CheckPointVersion file_version)
 static int do_cpt_state(XDR* xd, int fflags, t_state* state, FILE* list)
 {
     int       ret    = 0;
-    const int sflags = state->flags;
+    const int sflags = state->flags();
     using StateFlags = gmx::EnumerationArray<StateEntry, bool>;
     for (auto i = StateFlags::keys().begin(); (i != StateFlags::keys().end() && ret == 0); i++)
     {
@@ -2431,7 +2431,7 @@ void write_checkpoint_data(t_fileio*                         fp,
 
     do_cpt_header(gmx_fio_getxdr(fp), FALSE, nullptr, &headerContents);
 
-    if ((do_cpt_state(gmx_fio_getxdr(fp), state->flags, state, nullptr) < 0)
+    if ((do_cpt_state(gmx_fio_getxdr(fp), state->flags(), state, nullptr) < 0)
         || (do_cpt_ekinstate(gmx_fio_getxdr(fp), headerContents.flags_eks, &state->ekinstate, nullptr) < 0)
         || (do_cpt_enerhist(gmx_fio_getxdr(fp), FALSE, headerContents.flags_enh, enerhist, nullptr) < 0)
         || (doCptPullHist(gmx_fio_getxdr(fp), FALSE, headerContents.flagsPullHistory, pullHist, nullptr) < 0)
@@ -2717,7 +2717,7 @@ static void read_checkpoint(const std::filesystem::path&   fn,
     }
 
     // For modular simulator, no state object is populated, so we cannot do this check here!
-    if (headerContents->flags_state != state->flags && !useModularSimulator)
+    if (headerContents->flags_state != state->flags() && !useModularSimulator)
     {
         gmx_fatal(FARGS,
                   "Cannot change a simulation algorithm during a checkpoint restart. Perhaps you "
@@ -2966,13 +2966,12 @@ static CheckpointHeaderContents read_checkpoint_data(t_fileio*                  
 {
     CheckpointHeaderContents headerContents;
     do_cpt_header(gmx_fio_getxdr(fp), TRUE, nullptr, &headerContents);
-    const int numAtoms   = headerContents.natoms;
+    state->changeNumAtoms(headerContents.natoms);
     state->ngtc          = headerContents.ngtc;
     state->nnhpres       = headerContents.nnhpres;
     state->nhchainlength = headerContents.nhchainlength;
-    state->flags         = headerContents.flags_state;
-    state->changeNumAtoms(numAtoms);
-    int ret = do_cpt_state(gmx_fio_getxdr(fp), state->flags, state, nullptr);
+    state->setFlags(headerContents.flags_state);
+    int ret = do_cpt_state(gmx_fio_getxdr(fp), state->flags(), state, nullptr);
     if (ret)
     {
         cp_error();
@@ -3072,18 +3071,18 @@ void read_checkpoint_trxframe(t_fileio* fp, t_trxframe* fr)
     fr->lambda    = state.lambda[FreeEnergyPerturbationCouplingType::Fep];
     fr->fep_state = state.fep_state;
     fr->bAtoms    = FALSE;
-    fr->bX        = ((state.flags & enumValueToBitMask(StateEntry::X)) != 0);
+    fr->bX        = state.hasEntry(StateEntry::X);
     if (fr->bX)
     {
         fr->x = makeRvecArray(state.x, state.numAtoms());
     }
-    fr->bV = ((state.flags & enumValueToBitMask(StateEntry::V)) != 0);
+    fr->bV = state.hasEntry(StateEntry::V);
     if (fr->bV)
     {
         fr->v = makeRvecArray(state.v, state.numAtoms());
     }
     fr->bF   = FALSE;
-    fr->bBox = ((state.flags & enumValueToBitMask(StateEntry::Box)) != 0);
+    fr->bBox = state.hasEntry(StateEntry::Box);
     if (fr->bBox)
     {
         copy_mat(state.box, fr->box);
@@ -3100,12 +3099,12 @@ void list_checkpoint(const std::filesystem::path& fn, FILE* out)
     fp = gmx_fio_open(fn, "r");
     CheckpointHeaderContents headerContents;
     do_cpt_header(gmx_fio_getxdr(fp), TRUE, out, &headerContents);
+    state.changeNumAtoms(headerContents.natoms);
     state.ngtc          = headerContents.ngtc;
     state.nnhpres       = headerContents.nnhpres;
     state.nhchainlength = headerContents.nhchainlength;
-    state.flags         = headerContents.flags_state;
-    state.changeNumAtoms(headerContents.natoms);
-    ret = do_cpt_state(gmx_fio_getxdr(fp), state.flags, &state, out);
+    state.setFlags(headerContents.flags_state);
+    ret = do_cpt_state(gmx_fio_getxdr(fp), state.flags(), &state, out);
     if (ret)
     {
         cp_error();

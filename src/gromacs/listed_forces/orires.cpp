@@ -77,9 +77,9 @@ void extendStateWithOriresHistory(const gmx_mtop_t& mtop, const t_inputrec& ir, 
     if (numRestraints > 0 && ir.orires_tau > 0)
     {
         /* Extend the state with the orires history */
-        globalState->flags |= enumValueToBitMask(StateEntry::OrireInitF);
+        globalState->addEntry(StateEntry::OrireInitF);
         globalState->hist.orire_initf = 1;
-        globalState->flags |= enumValueToBitMask(StateEntry::OrireDtav);
+        globalState->addEntry(StateEntry::OrireDtav);
         globalState->hist.orire_Dtav.resize(numRestraints * 5);
     }
 }

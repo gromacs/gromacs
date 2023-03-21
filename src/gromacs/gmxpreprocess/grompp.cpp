@@ -713,10 +713,10 @@ static void new_status(const char*                           topfile,
     /* It would be nice to get rid of the copies below, but we don't know
      * a priori if the number of atoms in confin matches what we expect.
      */
-    state->flags |= enumValueToBitMask(StateEntry::X);
+    state->addEntry(StateEntry::X);
     if (EI_DYNAMICS(ir->eI))
     {
-        state->flags |= enumValueToBitMask(StateEntry::V);
+        state->addEntry(StateEntry::V);
     }
     state->changeNumAtoms(sys->natoms);
     std::copy(x, x + state->numAtoms(), state->x.data());
@@ -776,7 +776,7 @@ static void new_status(const char*                           topfile,
         {
             GMX_LOG(logger.info).asParagraph().appendTextFormatted("Setting gen_seed to %d", opts->seed);
         }
-        GMX_RELEASE_ASSERT((state->flags | enumValueToBitMask(StateEntry::V)) != 0,
+        GMX_RELEASE_ASSERT(state->hasEntry(StateEntry::V),
                            "Generate velocities only makes sense when they are used");
         maxwell_speed(opts->tempi, opts->seed, sys, state->v.rvec_array(), logger);
 

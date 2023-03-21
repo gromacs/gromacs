@@ -512,63 +512,63 @@ void set_state_entries(t_state* state, const t_inputrec* ir, bool useModularSimu
     /* The entries in the state in the tpx file might not correspond
      * with what is needed, so we correct this here.
      */
-    state->flags = 0;
+    int flags = 0;
     if (ir->efep != FreeEnergyPerturbationType::No || ir->bExpanded)
     {
-        state->flags |= enumValueToBitMask(StateEntry::Lambda);
-        state->flags |= enumValueToBitMask(StateEntry::FepState);
+        flags |= enumValueToBitMask(StateEntry::Lambda);
+        flags |= enumValueToBitMask(StateEntry::FepState);
     }
-    state->flags |= enumValueToBitMask(StateEntry::X);
+    flags |= enumValueToBitMask(StateEntry::X);
     GMX_RELEASE_ASSERT(state->x.size() == state->numAtoms(),
                        "We should start a run with an initialized state->x");
     if (EI_DYNAMICS(ir->eI))
     {
-        state->flags |= enumValueToBitMask(StateEntry::V);
+        flags |= enumValueToBitMask(StateEntry::V);
     }
 
     state->nnhpres = 0;
     if (ir->pbcType != PbcType::No)
     {
-        state->flags |= enumValueToBitMask(StateEntry::Box);
+        flags |= enumValueToBitMask(StateEntry::Box);
         if (shouldPreserveBoxShape(ir->pressureCouplingOptions, ir->deform))
         {
-            state->flags |= enumValueToBitMask(StateEntry::BoxRel);
+            flags |= enumValueToBitMask(StateEntry::BoxRel);
         }
         if ((ir->pressureCouplingOptions.epc == PressureCoupling::ParrinelloRahman)
             || (ir->pressureCouplingOptions.epc == PressureCoupling::Mttk))
         {
-            state->flags |= enumValueToBitMask(StateEntry::BoxV);
+            flags |= enumValueToBitMask(StateEntry::BoxV);
             if (!useModularSimulator)
             {
-                state->flags |= enumValueToBitMask(StateEntry::PressurePrevious);
+                flags |= enumValueToBitMask(StateEntry::PressurePrevious);
             }
         }
         if (inputrecNptTrotter(ir) || (inputrecNphTrotter(ir)))
         {
             state->nnhpres = 1;
-            state->flags |= enumValueToBitMask(StateEntry::Nhpresxi);
-            state->flags |= enumValueToBitMask(StateEntry::Nhpresvxi);
-            state->flags |= enumValueToBitMask(StateEntry::SVirPrev);
-            state->flags |= enumValueToBitMask(StateEntry::FVirPrev);
-            state->flags |= enumValueToBitMask(StateEntry::Veta);
-            state->flags |= enumValueToBitMask(StateEntry::Vol0);
+            flags |= enumValueToBitMask(StateEntry::Nhpresxi);
+            flags |= enumValueToBitMask(StateEntry::Nhpresvxi);
+            flags |= enumValueToBitMask(StateEntry::SVirPrev);
+            flags |= enumValueToBitMask(StateEntry::FVirPrev);
+            flags |= enumValueToBitMask(StateEntry::Veta);
+            flags |= enumValueToBitMask(StateEntry::Vol0);
         }
         if (ir->pressureCouplingOptions.epc == PressureCoupling::Berendsen
             || ir->pressureCouplingOptions.epc == PressureCoupling::CRescale)
         {
-            state->flags |= enumValueToBitMask(StateEntry::BarosInt);
+            flags |= enumValueToBitMask(StateEntry::BarosInt);
         }
     }
 
     if (ir->etc == TemperatureCoupling::NoseHoover)
     {
-        state->flags |= enumValueToBitMask(StateEntry::Nhxi);
-        state->flags |= enumValueToBitMask(StateEntry::Nhvxi);
+        flags |= enumValueToBitMask(StateEntry::Nhxi);
+        flags |= enumValueToBitMask(StateEntry::Nhvxi);
     }
 
     if (ir->etc == TemperatureCoupling::VRescale || ir->etc == TemperatureCoupling::Berendsen)
     {
-        state->flags |= enumValueToBitMask(StateEntry::ThermInt);
+        flags |= enumValueToBitMask(StateEntry::ThermInt);
     }
 
     init_gtc_state(state, state->ngtc, state->nnhpres, ir->opts.nhchainlength); /* allocate the space for nose-hoover chains */
@@ -582,6 +582,8 @@ void set_state_entries(t_state* state, const t_inputrec* ir, bool useModularSimu
 
     if (ir->pull && ir->pull->bSetPbcRefToPrevStepCOM)
     {
-        state->flags |= enumValueToBitMask(StateEntry::PullComPrevStep);
+        flags |= enumValueToBitMask(StateEntry::PullComPrevStep);
     }
+
+    state->setFlags(flags);
 }

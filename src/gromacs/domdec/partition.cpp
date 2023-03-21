@@ -2585,15 +2585,15 @@ static void dd_sort_state(gmx_domdec_t* dd, t_forcerec* fr, t_state* state)
     GMX_RELEASE_ASSERT(cgsort.ssize() == dd->numHomeAtoms,
                        "We should sort all the home atom groups");
 
-    if (state->flags & enumValueToBitMask(StateEntry::X))
+    if (state->hasEntry(StateEntry::X))
     {
         orderVector(cgsort, makeArrayRef(state->x), rvecBuffer.buffer);
     }
-    if (state->flags & enumValueToBitMask(StateEntry::V))
+    if (state->hasEntry(StateEntry::V))
     {
         orderVector(cgsort, makeArrayRef(state->v), rvecBuffer.buffer);
     }
-    if (state->flags & enumValueToBitMask(StateEntry::Cgp))
+    if (state->hasEntry(StateEntry::Cgp))
     {
         orderVector(cgsort, makeArrayRef(state->cg_p), rvecBuffer.buffer);
     }
