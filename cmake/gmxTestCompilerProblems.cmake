@@ -109,7 +109,8 @@ TestStruct::TestStruct() : b(0) {}
 #error Not Cray
 #endif
 int main(void){return 0;}" HAVE_CRAY_MACRO)
-        if (HAVE_CRAY_MACRO AND GMX_OPENMP AND GMX_THREAD_MPI)
+        # Later we will check if we can turn off GMX_THREAD_MPI but this check needs to run first
+        if (HAVE_CRAY_MACRO AND GMX_OPENMP AND GMX_THREAD_MPI AND NOT GMX_MPI)
             message(WARNING "Clang-based Cray compiler works poorly with OpenMP and threadMPI. Consider enabling libMPI with -DGMX_MPI=ON.")
         endif()
     endif()
