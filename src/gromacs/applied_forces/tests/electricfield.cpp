@@ -113,7 +113,7 @@ public:
         // Prepare a ForceProviderOutput
         PaddedVector<RVec>  f = { { 0, 0, 0 } };
         ForceWithVirial     forceWithVirial(f, true);
-        gmx_enerdata_t      enerdDummy(1, 0);
+        gmx_enerdata_t      enerdDummy(1, nullptr);
         ForceProviderOutput forceProviderOutput(&forceWithVirial, &enerdDummy);
 
         // Use the ForceProviders to calculate forces

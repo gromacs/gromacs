@@ -443,6 +443,7 @@ double BiasState::calcUmbrellaForceAndPotential(ArrayRef<const DimParams> dimPar
     {
         if (dimParams[d].isFepLambdaDimension())
         {
+            /* The force we set here is only used for computing the friction metric */
             if (!neighborLambdaDhdl.empty())
             {
                 const int coordpointLambdaIndex = grid.point(point).coordValue[d];

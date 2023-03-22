@@ -90,7 +90,7 @@ public:
         stepWork_ = createStepWorkload();
 
         // Set up gmx_enerdata_t (holds energy information)
-        enerd_ = gmx_enerdata_t{ numEnergyGroups, 0 };
+        enerd_ = gmx_enerdata_t{ numEnergyGroups, nullptr };
 
         // Construct pair lists
         std::vector<int> exclusionRanges_(exclusionRanges.begin(), exclusionRanges.end());
@@ -116,7 +116,7 @@ public:
     gmx::SimulationWorkload simulationWork_;
 
     //! Energies of different interaction types; currently only needed as an argument for dispatchNonbondedKernel
-    gmx_enerdata_t enerd_{ 1, 0 };
+    gmx_enerdata_t enerd_{ 1, nullptr };
 
     //! Non-bonded flop counter; currently only needed as an argument for dispatchNonbondedKernel
     t_nrnb nrnb_;

@@ -795,9 +795,8 @@ void ListedForces::calculate(struct gmx_wallcycle*                     wcycle,
                                    fcdata,
                                    global_atom_index);
                 sum_epot(*foreignEnergyGroups_, foreign_term.data());
-                const double dvdlSum = std::accumulate(std::begin(dvdl), std::end(dvdl), 0.);
+                enerd->foreignLambdaTerms.accumulate(i, foreign_term[F_EPOT], dvdl);
                 std::fill(std::begin(dvdl), std::end(dvdl), 0.0);
-                enerd->foreignLambdaTerms.accumulate(i, foreign_term[F_EPOT], dvdlSum);
             }
             wallcycle_sub_stop(wcycle, WallCycleSubCounter::ListedFep);
         }

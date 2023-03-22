@@ -301,7 +301,7 @@ static void setupAndRunInstance(const gmx::BenchmarkSystem& system,
 
     t_nrnb nrnb = { 0 };
 
-    gmx_enerdata_t enerd(1, 0);
+    gmx_enerdata_t enerd(1, nullptr);
 
     gmx::StepWorkload stepWork;
     stepWork.computeForces = true;

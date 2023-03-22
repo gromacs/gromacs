@@ -333,7 +333,7 @@ public:
 
         // Group pairs
         enerdata_ = std::make_unique<gmx_enerdata_t>(
-                mtop_.groups.groups[SimulationAtomGroupType::EnergyOutput].size(), 0);
+                mtop_.groups.groups[SimulationAtomGroupType::EnergyOutput].size(), nullptr);
 
         // Kinetic energy and related data
         ekindata_.tcstat.resize(mtop_.groups.groups[SimulationAtomGroupType::TemperatureCoupling].size());

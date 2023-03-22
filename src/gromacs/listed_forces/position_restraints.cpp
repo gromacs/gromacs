@@ -483,7 +483,7 @@ void posres_wrapper_lambda(struct gmx_wallcycle*         wcycle,
                                      fr->pbcType,
                                      fr->posres_com,
                                      fr->posres_comB);
-        foreignTerms.accumulate(i, v, dvdl);
+        foreignTerms.accumulate(i, FreeEnergyPerturbationCouplingType::Restraint, v, dvdl);
     }
     wallcycle_sub_stop(wcycle, WallCycleSubCounter::Restraints);
 }

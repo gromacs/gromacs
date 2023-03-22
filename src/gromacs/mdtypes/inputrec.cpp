@@ -35,6 +35,7 @@
 
 #include "gromacs/mdtypes/inputrec.h"
 
+#include <cmath>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -1814,4 +1815,38 @@ bool haveFreeEnergyType(const t_inputrec& ir, const int fepType)
         }
     }
     return false;
+}
+
+bool fepLambdasChangeAtSameRate(
+        const gmx::EnumerationArray<FreeEnergyPerturbationCouplingType, std::vector<double>>& allLambdas)
+{
+    const int numLambdas = gmx::ssize(allLambdas[FreeEnergyPerturbationCouplingType::Fep]);
+
+    // Check all lambda intervals
+    for (int i = 0; i < numLambdas - 1; i++)
+    {
+        double previousDiff = 0;
+
+        // Check if all lambda components have the same or zero difference
+        for (const auto& lambdas : allLambdas)
+        {
+            // The dhdl code takes the sign into account, so we allow
+            // different components to differ by a factor -1
+            const double diff = std::abs(lambdas[i + 1] - lambdas[i]);
+
+            // Lambda values are usually of order 1, so here we can,
+            // by exception, compare numbers directly to float epsilon
+            if (diff > GMX_FLOAT_EPS)
+            {
+                if (previousDiff > GMX_FLOAT_EPS && std::abs(diff - previousDiff) > GMX_FLOAT_EPS)
+                {
+                    return false;
+                }
+
+                previousDiff = diff;
+            }
+        }
+    }
+
+    return true;
 }

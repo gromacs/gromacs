@@ -82,9 +82,9 @@ class ForeignLambdaTerms
 public:
     /*! \brief Constructor
      *
-     * \param[in] numLambdas  The number of foreign lambda values
+     * \param[in] allLambdas  The list of lambda values for all lambda components, can be nullptr
      */
-    ForeignLambdaTerms(int numLambdas);
+    ForeignLambdaTerms(const gmx::EnumerationArray<FreeEnergyPerturbationCouplingType, std::vector<double>>* allLambdas);
 
     //! Returns the number of foreign lambda values
     int numLambdas() const { return numLambdas_; }
@@ -120,13 +120,33 @@ public:
      * The value passed as listIndex should be 0 for the current lambda
      * and 1+i for foreign lambda index i.
      */
-    void accumulate(int listIndex, double energy, double dvdl)
+    void accumulate(int listIndex, FreeEnergyPerturbationCouplingType couplingType, double energy, real dvdl)
     {
         GMX_ASSERT(!finalizedPotentialContributions_,
                    "Can only accumulate with an unfinalized object");
 
         energies_[listIndex] += energy;
-        dhdl_[listIndex] += dvdl;
+        dhdl_[listIndex][couplingType] += dvdl;
+    }
+
+    /*! \brief Adds an energy and dV/dl constribution to lambda list index \p listIndex
+     *
+     * This should only be used for terms with non-linear dependence on lambda
+     * The value passed as listIndex should be 0 for the current lambda
+     * and 1+i for foreign lambda index i.
+     */
+    void accumulate(int    listIndex,
+                    double energy,
+                    const gmx::EnumerationArray<FreeEnergyPerturbationCouplingType, real>& dvdl)
+    {
+        GMX_ASSERT(!finalizedPotentialContributions_,
+                   "Can only accumulate with an unfinalized object");
+
+        energies_[listIndex] += energy;
+        for (auto fepct : gmx::EnumerationWrapper<FreeEnergyPerturbationCouplingType>{})
+        {
+            dhdl_[listIndex][fepct] += dvdl[fepct];
+        }
     }
 
     /*! \brief Finalizes the potential (non-kinetic) terms
@@ -138,9 +158,10 @@ public:
      * \param[in] lambda      Lambda values for the efptNR contribution types
      * \param[in] fepvals     Free-energy parameters
      */
-    void finalizePotentialContributions(gmx::ArrayRef<const double> dvdlLinear,
-                                        gmx::ArrayRef<const real>   lambda,
-                                        const t_lambda&             fepvals);
+    void finalizePotentialContributions(
+            const gmx::EnumerationArray<FreeEnergyPerturbationCouplingType, double>& dvdlLinear,
+            gmx::ArrayRef<const real>                                                lambda,
+            const t_lambda&                                                          fepvals);
 
     /*! \brief Accumulates the kinetic and constraint free-energy contributions
      *
@@ -173,14 +194,16 @@ private:
     void accumulateKinetic(int listIndex, double energy, double dhdl);
 
     //! Add a dH/dl contribution that does not depend on lambda to all foreign dH/dl terms
-    void addConstantDhdl(double dhdl);
+    void addConstantDhdl(FreeEnergyPerturbationCouplingType couplingType, double dhdl);
 
     //! The number of foreign lambdas
     int numLambdas_;
+    //! The lambda vectors for all components
+    const gmx::EnumerationArray<FreeEnergyPerturbationCouplingType, std::vector<double>>* allLambdas_;
     //! Storage for foreign lambda energies
     std::vector<double> energies_;
     //! Storage for foreign lambda dH/dlambda
-    std::vector<double> dhdl_;
+    std::vector<gmx::EnumerationArray<FreeEnergyPerturbationCouplingType, double>> dhdl_;
     //! Tells whether all potential energy contributions have been accumulated
     bool finalizedPotentialContributions_ = false;
 };
@@ -192,9 +215,10 @@ struct gmx_enerdata_t
      * Constructor with specific number of energy groups and lambdas.
      *
      * \param[in] numEnergyGroups Number of energy groups used.
-     * \param[in] numFepLambdas   Number of free energy lambdas, zero if none.
+     * \param[in] allLambdas      The lambda vectors for every component, can be nullptr
      */
-    gmx_enerdata_t(int numEnergyGroups, int numFepLambdas);
+    gmx_enerdata_t(int numEnergyGroups,
+                   const gmx::EnumerationArray<FreeEnergyPerturbationCouplingType, std::vector<double>>* allLambdas);
 
     //! The energies for all different interaction types
     std::array<real, F_NRE> term = { 0 };
