@@ -1,3 +1,6 @@
+Deprecated functionality
+------------------------
+
 .. Note to developers!
    Please use """"""" to underline the individual entries for fixed issues in the subfolders,
    otherwise the formatting on the webpage is messed up.

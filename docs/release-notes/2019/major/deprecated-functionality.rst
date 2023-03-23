@@ -1,3 +1,6 @@
+Deprecated functionality
+------------------------
+
 Changes anticipated to |Gromacs| 2019 functionality
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
