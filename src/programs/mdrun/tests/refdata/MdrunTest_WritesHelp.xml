@@ -272,7 +272,8 @@ Other options:
  -pforce &lt;real&gt;             (-1)
            Print all forces larger than this (kJ/mol nm)
  -[no]reprod                (no)
-           Try to avoid optimizations that affect binary reproducibility
+           Avoid optimizations that affect binary reproducibility; this can
+           significantly reduce performance
  -cpt    &lt;real&gt;             (15)
            Checkpoint interval (minutes)
  -[no]cpnum                 (no)

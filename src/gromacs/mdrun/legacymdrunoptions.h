@@ -293,7 +293,8 @@ public:
           FALSE,
           etBOOL,
           { &mdrunOptions.reproducible },
-          "Try to avoid optimizations that affect binary reproducibility" },
+          "Avoid optimizations that affect binary reproducibility; "
+          "this can significantly reduce performance" },
         { "-cpt",
           FALSE,
           etREAL,

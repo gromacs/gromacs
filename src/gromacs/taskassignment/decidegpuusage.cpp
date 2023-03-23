@@ -125,11 +125,12 @@ bool decideWhetherToUseGpusForNonbondedWithThreadMpi(const TaskTarget        non
                                                      const EmulateGpuNonbonded emulateGpuNonbonded,
                                                      const bool buildSupportsNonbondedOnGpu,
                                                      const bool nonbondedOnGpuIsUseful,
+                                                     const bool binaryReproducibilityRequested,
                                                      const int  numRanksPerSimulation)
 {
     // First, exclude all cases where we can't run NB on GPUs.
     if (nonbondedTarget == TaskTarget::Cpu || emulateGpuNonbonded == EmulateGpuNonbonded::Yes
-        || !nonbondedOnGpuIsUseful || !buildSupportsNonbondedOnGpu)
+        || !nonbondedOnGpuIsUseful || binaryReproducibilityRequested || !buildSupportsNonbondedOnGpu)
     {
         // If the user required NB on GPUs, we issue an error later.
         return false;
@@ -312,6 +313,7 @@ bool decideWhetherToUseGpusForNonbonded(const TaskTarget          nonbondedTarge
                                         const EmulateGpuNonbonded emulateGpuNonbonded,
                                         const bool                buildSupportsNonbondedOnGpu,
                                         const bool                nonbondedOnGpuIsUseful,
+                                        const bool                binaryReproducibilityRequested,
                                         const bool                gpusWereDetected)
 {
     if (nonbondedTarget == TaskTarget::Cpu)
@@ -363,6 +365,18 @@ bool decideWhetherToUseGpusForNonbonded(const TaskTarget          nonbondedTarge
             GMX_THROW(InconsistentInputError(
                     "Nonbonded interactions on the GPU were required, but not supported for these "
                     "simulation settings. Change your settings, or do not require using GPUs."));
+        }
+
+        return false;
+    }
+
+    if (binaryReproducibilityRequested)
+    {
+        if (nonbondedTarget == TaskTarget::Gpu)
+        {
+            GMX_THROW(InconsistentInputError(
+                    "Nonbonded interactions on the GPU and binary reprocibility were required. "
+                    "These requirements are not compatible."));
         }
 
         return false;
