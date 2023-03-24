@@ -1,0 +1,165 @@
+[ defaults ]
+; nbfunc	comb-rule	gen-pairs	fudgeLJ	fudgeQQ
+1		3		yes		0.5	0.5
+
+[ atomtypes ]
+ opls_116   OW	8   15.99940    -0.820       A    3.16557e-01  6.50194e-01
+ opls_117   HW	1    1.00800     0.410       A    0.00000e+00  0.00000e+00
+ opls_136   CT	6   12.01100    -0.120       A    3.50000e-01  2.76144e-01
+ opls_140   HC	1    1.00800     0.060       A    2.50000e-01  1.25520e-01
+ opls_235   C   6   12.01100     0.500       A    3.75000e-01  4.39320e-01
+ opls_236   O   8   15.99940    -0.500       A    2.96000e-01  8.78640e-01
+ opls_237   N   7   14.00670    -0.760       A    3.25000e-01  7.11280e-01
+ opls_240   H   1    1.00800     0.380       A    0.00000e+00  0.00000e+00
+ opls_116d  OW	8   15.99940    -0.820       A    3.16557e-01  0.0
+ opls_117d  HW	1    1.00800     0.410       A    0.00000e+00  0.0
+ opls_136d  CT	6   12.01100    -0.120       A    3.50000e-01  0.0
+ opls_140d  HC	1    1.00800     0.060       A    2.50000e-01  0.0
+ opls_235d  C   6   12.01100     0.500       A    3.75000e-01  0.0
+ opls_236d  O   8   15.99940    -0.500       A    2.96000e-01  0.0
+ opls_237d  N   7   14.00670    -0.760       A    3.25000e-01  0.0
+ opls_240d  H   1    1.00800     0.380       A    0.00000e+00  0.00000e+00
+ opls_401   Cl- 17  35.45300    -1.000       A    4.41724e-01  4.92833e-01
+ opls_407   Na+ 11  22.98977     1.000       A    3.33045e-01  1.15980e-02
+
+
+[ bondtypes]
+  CT    HC      1    0.10900   284512.0   ; CHARMM 22 parameter file
+  CT    C       1    0.15220   265266.0   ; CHARMM 22 parameter file
+  C     O       1    0.12290   476976.0   ; URAGUA,CYT,AA
+  C     N       1    0.13350   410032.0   ; AA
+  H     N       1    0.10100   363171.2   ;
+
+[ angletypes ]
+  HC     CT     HC      1   107.800    276.144   
+  C      CT     HC      1   109.500    292.880   
+  CT     C      N       1   116.600    585.760   
+  CT     C      O       1   120.400    669.440   
+  C      N      H       1   119.800    292.880   
+  N      C      O       1   122.900    669.440   
+  H      N      H       1   120.000    292.880   
+
+[ dihedraltypes ]
+ HC    CT      C      O       3     20.50160   0.00000 -20.50160   0.00000   0.00000   0.00000 ; amides C-C(O)-N-H
+ HC    CT      C      N       3     20.50160   0.00000 -20.50160   0.00000   0.00000   0.00000 ; amides C-C(O)-N-H
+ CT     C      N      H       3     20.50160   0.00000 -20.50160   0.00000   0.00000   0.00000 ; amides C-C(O)-N-H
+  O     C      N      H       3     20.50160   0.00000 -20.50160   0.00000   0.00000   0.00000 ; amides C-C(O)-N-H
+ CT     N      O      C       1    180.0     43.93200   2
+  C     H      H      N       1    180.0     62.76000   2
+
+[ moleculetype ]
+; Name            nrexcl
+ASN             3
+
+[ atoms ]
+;   nr       type  resnr residue  atom   cgnr     charge       mass  typeB    chargeB      massB
+     1   opls_136      1   ASN      CB      1      -0.18     12.011
+     2   opls_140      1   ASN     HB1      1       0.06      1.008
+     3   opls_140      1   ASN     HB2      1       0.06      1.008
+     4   opls_140      1   ASN     HB3      1       0.06      1.008
+     5   opls_235      1   ASN      CG      2        0.5     12.011
+     6   opls_236      1   ASN     OD1      2       -0.5    15.9994
+     7   opls_237      1   ASN     ND2      3      -0.76    14.0067
+     8   opls_240      1   ASN    HD21      3       0.38      1.008
+     9   opls_240      1   ASN    HD22      3       0.38      1.008
+
+[ bonds ]
+;  ai    aj funct            c0            c1            c2            c3
+    1     2     1 
+    1     3     1 
+    1     4     1 
+    1     5     1 
+    5     6     1 
+    5     7     1 
+    7     8     1 
+    7     9     1 
+
+[ pairs ]
+;  ai    aj funct            c0            c1            c2            c3
+    1     8     1 
+    1     9     1 
+    2     6     1 
+    2     7     1 
+    3     6     1 
+    3     7     1 
+    4     6     1 
+    4     7     1 
+    6     8     1 
+    6     9     1 
+
+[ angles ]
+;  ai    aj    ak funct            c0            c1            c2            c3
+    2     1     3     1 
+    2     1     4     1 
+    2     1     5     1 
+    3     1     4     1 
+    3     1     5     1 
+    4     1     5     1 
+    1     5     6     1   
+    1     5     7     1 
+    6     5     7     1 
+    5     7     8     1 
+    5     7     9     1 
+    8     7     9     1 
+
+[ dihedrals ]
+;  ai    aj    ak    al funct            c0            c1            c2            c3            c4            c5
+    2     1     5     6     3 
+    2     1     5     7     3 
+    3     1     5     6     3 
+    3     1     5     7     3 
+    4     1     5     6     3 
+    4     1     5     7     3 
+    1     5     7     8     3 
+    1     5     7     9     3 
+    6     5     7     8     3 
+    6     5     7     9     3 
+
+[ dihedrals ]
+;  ai    aj    ak    al funct    c0            c1            c2
+    1     7     6     5     1    180.0     43.93200   2
+    5     9     8     7     1    180.0     62.76000   2
+
+[ moleculetype ]
+; molname   nrexcl
+NA          1
+
+[ atoms ]
+; id    at type     res nr  residu name at name  cg nr  charge   mass
+1       opls_407    1       NA          NA       1      1        22.98977     
+
+[ moleculetype ]
+; molname   nrexcl
+CL      1
+
+[ atoms ]
+; id    at type     res nr  residu name at name  cg nr  charge   mass
+1       opls_401    1       CL          CL       1      -1       35.45300
+
+[ moleculetype ]
+; molname	nrexcl
+SOL		2
+
+[ atoms ]
+;   nr   type  resnr residue  atom   cgnr     charge       mass
+     1  opls_116   1    SOL     OW      1      -0.8476
+     2  opls_117   1    SOL    HW1      1       0.4238
+     3  opls_117   1    SOL    HW2      1       0.4238
+
+[ settles ]
+; OW	funct	doh	dhh
+1	1	0.1	0.16330
+
+[ exclusions ]
+1	2	3
+2	1	3
+3	1	2
+
+[ system ]
+AA
+
+[ molecules ]
+ASN 1
+SOL 56
+NA  1
+CL  1
