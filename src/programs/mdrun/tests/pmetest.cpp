@@ -57,6 +57,7 @@
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/enumerationhelpers.h"
 #include "gromacs/utility/message_string_collector.h"
+#include "gromacs/utility/mpiinfo.h"
 #include "gromacs/utility/stringutil.h"
 
 #include "testutils/mpitest.h"
@@ -261,10 +262,25 @@ MessageStringCollector PmeTest::getSkipMessagesIfNecessary(const CommandLine& co
     {
         messages.appendIf(getCompatibleDevices(s_hwinfo->deviceInfoList).empty(),
                           "it targets GPU execution, but no compatible devices were detected");
-        if ((getenv("GMX_GPU_PME_DECOMPOSITION")) == nullptr)
+
+        if (!commandLineTargetsPmeOnlyRanks && numRanks > 1)
         {
-            messages.appendIf(!commandLineTargetsPmeOnlyRanks && numRanks > 1,
+            const bool pmeDecompositionSupported = GMX_USE_cuFFTMp || GMX_USE_Heffte;
+            messages.appendIf(!pmeDecompositionSupported,
                               "it targets PME decomposition, but that is not supported");
+            if (pmeDecompositionSupported)
+            {
+                const bool pmeDecompositionActive = (getenv("GMX_GPU_PME_DECOMPOSITION") != nullptr);
+                messages.appendIf(!pmeDecompositionActive,
+                                  "it targets PME decomposition, but that is not enabled");
+                // The check below only handles CUDA, see #4638
+                GpuAwareMpiStatus gpuAwareMpiStatus = checkMpiCudaAwareSupport();
+                const bool        gpuAwareMpiActive = gpuAwareMpiStatus == GpuAwareMpiStatus::Forced
+                                               || gpuAwareMpiStatus == GpuAwareMpiStatus::Supported;
+                messages.appendIf(!gpuAwareMpiActive,
+                                  "it targets PME decomposition, which requires GPU-aware MPI, but "
+                                  "that is not detected");
+            }
         }
 
         std::optional<std::string_view> pmeFftOptionArgument = commandLine.argumentOf("-pmefft");

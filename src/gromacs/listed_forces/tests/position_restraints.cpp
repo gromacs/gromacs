@@ -100,7 +100,7 @@ protected:
     TestReferenceData    refData_;
     TestReferenceChecker checker_;
 
-    PositionRestraintsTest() : idef_({}), enerd_(1, 0), checker_(refData_.rootChecker())
+    PositionRestraintsTest() : idef_({}), enerd_(1, nullptr), checker_(refData_.rootChecker())
     {
         refCoordScaling_ = std::get<0>(GetParam());
         pbcType_         = std::get<1>(GetParam());

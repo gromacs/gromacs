@@ -45,6 +45,9 @@ if (BUILD_SHARED_LIBS)
     set_target_properties(taskassignment PROPERTIES POSITION_INDEPENDENT_CODE ON)
 endif()
 
+gmx_target_compile_options(taskassignment)
+target_compile_definitions(taskassignment PRIVATE HAVE_CONFIG_H)
+
 # Note that this is a higher-level module that should not need
 # special compilation to suit e.g. GPU or MPI dependencies.
 # If you find you want to do that, consider a preliminary

@@ -16,6 +16,16 @@ in the :ref:`release-notes`.
 Fixes where mdrun could behave incorrectly
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+The AWH metric could be incorrect for free-energy lambda dimensions
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+When different lambda components had different values for the same lambda
+point index, the AWH metric used dH/dlambda as input that used
+the derivative with respect to all lambda components. Note that this
+only affected the metric, not the sampling nor the free energy values.
+
+:issue:`4730`
+
 Fix checkpointing of expanded ensemble simulations with domain decomposition
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
@@ -95,3 +105,10 @@ Now, bonded force calculation on GPU is expected to be up to 3 times faster.
 
 :issue:`3928`
 
+Restored OpenMP acceleration of pulling routines
+""""""""""""""""""""""""""""""""""""""""""""""""
+
+During internal code reorganization, OpenMP acceleration was accidentally disabled
+for pulling force calculation in |Gromacs| 2023. This is now fixed.
+
+:issue:`4747`

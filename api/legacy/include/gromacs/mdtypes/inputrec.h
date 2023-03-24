@@ -55,6 +55,8 @@ namespace gmx
 {
 class Awh;
 class AwhParams;
+template<typename T1, typename T2, T1 U>
+struct EnumerationArray;
 class KeyValueTreeObject;
 struct MtsLevel;
 } // namespace gmx
@@ -721,5 +723,19 @@ bool haveEwaldSurfaceContribution(const t_inputrec& ir);
  * \returns If the \p fepType is perturbed in this run.
  */
 bool haveFreeEnergyType(const t_inputrec& ir, int fepType);
+
+/*! \brief Checks whether all lambda components change at the same or zero rate
+ *
+ * Returns true when over each lambda interval the change in lambda is the same
+ * for all components. The change can differ by a factor -1 and it can be zero
+ * for some or all components. When this function returns true, the composed,
+ * total dH/lambda value will be correct and meaningful.
+ *
+ * \param[in] allLambdas  Sets of lambda values for all components, as used in \p t_lambda
+ *
+ * \returns Whether all lambda components change at the same or zero rate
+ */
+bool fepLambdasChangeAtSameRate(
+        const gmx::EnumerationArray<FreeEnergyPerturbationCouplingType, std::vector<double>>& allLambdas);
 
 #endif /* GMX_MDTYPES_INPUTREC_H */

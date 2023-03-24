@@ -35,17 +35,84 @@
 
 #include "enerdata_utils.h"
 
+#include <cmath>
+
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/enerdata.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/utility/enumerationhelpers.h"
 #include "gromacs/utility/fatalerror.h"
-#include "gromacs/utility/smalloc.h"
 
-ForeignLambdaTerms::ForeignLambdaTerms(int numLambdas) :
-    numLambdas_(numLambdas), energies_(1 + numLambdas), dhdl_(1 + numLambdas)
+ForeignLambdaTerms::ForeignLambdaTerms(
+        const gmx::EnumerationArray<FreeEnergyPerturbationCouplingType, std::vector<double>>* allLambdas) :
+    numLambdas_(allLambdas ? gmx::ssize((*allLambdas)[FreeEnergyPerturbationCouplingType::Fep]) : 0),
+    allLambdas_(allLambdas),
+    energies_(1 + numLambdas_),
+    dhdl_(1 + numLambdas_)
 {
+    if (allLambdas_)
+    {
+        for (const auto& foreignLambdas : *allLambdas_)
+        {
+            GMX_RELEASE_ASSERT(gmx::ssize(foreignLambdas) == numLambdas_,
+                               "All coupling types should have the same lambda count");
+        }
+    }
+}
+
+/*! \brief Composes dH/dlambda for the given lambda point \p lambdaIndex
+ *
+ * Different lambda components can be changed during different legs
+ * of the complete lambda path. Thus dH/dlambda should only contain
+ * contributions from components that are actually changed. Also when
+ * a component in opposite direction, the sign of the contribution changes.
+ *
+ * \param[in] lambdaIndex  The lambda point index
+ * \param[in] allLambdas   The lambda values for all points for all components
+ * \param[in] dhdl         The current dH/dlambda values for \p lambdaIndex
+ * \returns the composed dH/dlambda value
+ */
+static double
+composeDhdl(const int lambdaIndex,
+            const gmx::EnumerationArray<FreeEnergyPerturbationCouplingType, std::vector<double>>& allLambdas,
+            const gmx::EnumerationArray<FreeEnergyPerturbationCouplingType, double>& dhdl)
+{
+    const int numLambdaPoints = gmx::ssize(allLambdas[FreeEnergyPerturbationCouplingType::Fep]);
+
+    const bool isFirstLambdaIndex = (lambdaIndex == 0);
+    const bool isLastLambdaIndex  = (lambdaIndex == numLambdaPoints - 1);
+
+    // Loop over all lambda components and conditionally add their dhdl contributions
+    double dhdlSum = 0;
+    for (auto component : gmx::EnumerationWrapper<FreeEnergyPerturbationCouplingType>())
+    {
+        gmx::ArrayRef<const double> compLambdas = allLambdas[component];
+
+        // When this lambda changes from the previous and/or next point,
+        // we add dH/dlambda multiplied by a half for each side.
+        // We also change sign when lambda decreases with increasing index.
+        double fac = 0;
+        if (!isFirstLambdaIndex)
+        {
+            double diff = compLambdas[lambdaIndex] - compLambdas[lambdaIndex - 1];
+            if (diff != 0)
+            {
+                fac += std::copysign(isLastLambdaIndex ? 1.0 : 0.5, diff);
+            }
+        }
+        if (!isLastLambdaIndex)
+        {
+            double diff = compLambdas[lambdaIndex + 1] - compLambdas[lambdaIndex];
+            if (diff != 0)
+            {
+                fac += std::copysign(isFirstLambdaIndex ? 1.0 : 0.5, diff);
+            }
+        }
+        dhdlSum += fac * dhdl[component];
+    }
+
+    return dhdlSum;
 }
 
 std::pair<std::vector<double>, std::vector<double>> ForeignLambdaTerms::getTerms(const t_commrec* cr) const
@@ -57,7 +124,7 @@ std::pair<std::vector<double>, std::vector<double>> ForeignLambdaTerms::getTerms
     for (int i = 0; i < numLambdas_; i++)
     {
         data[i]               = energies_[1 + i] - energies_[0];
-        data[numLambdas_ + i] = dhdl_[1 + i];
+        data[numLambdas_ + i] = composeDhdl(i, *allLambdas_, dhdl_[1 + i]);
     }
     if (cr && cr->nnodes > 1)
     {
@@ -71,12 +138,17 @@ std::pair<std::vector<double>, std::vector<double>> ForeignLambdaTerms::getTerms
 void ForeignLambdaTerms::zeroAllTerms()
 {
     std::fill(energies_.begin(), energies_.end(), 0.0);
-    std::fill(dhdl_.begin(), dhdl_.end(), 0.0);
+    for (auto& dhdl : dhdl_)
+    {
+        std::fill(dhdl.begin(), dhdl.end(), 0.0);
+    }
     finalizedPotentialContributions_ = false;
 }
 
-gmx_enerdata_t::gmx_enerdata_t(int numEnergyGroups, int numFepLambdas) :
-    grpp(numEnergyGroups), foreignLambdaTerms(numFepLambdas)
+gmx_enerdata_t::gmx_enerdata_t(
+        int numEnergyGroups,
+        const gmx::EnumerationArray<FreeEnergyPerturbationCouplingType, std::vector<double>>* allLambdas) :
+    grpp(numEnergyGroups), foreignLambdaTerms(allLambdas)
 {
 }
 
@@ -165,29 +237,28 @@ static void set_dhdl_output(gmx_enerdata_t* enerd, FreeEnergyPerturbationCouplin
     }
 }
 
-void ForeignLambdaTerms::addConstantDhdl(const double dhdl)
+void ForeignLambdaTerms::addConstantDhdl(FreeEnergyPerturbationCouplingType couplingType, double dhdl)
 {
-    for (double& foreignDhdl : dhdl_)
+    for (auto& foreignDhdl : dhdl_)
     {
-        foreignDhdl += dhdl;
+        foreignDhdl[couplingType] += dhdl;
     }
 }
 
-void ForeignLambdaTerms::finalizePotentialContributions(gmx::ArrayRef<const double> dvdlLinear,
-                                                        gmx::ArrayRef<const real>   lambda,
-                                                        const t_lambda&             fepvals)
+void ForeignLambdaTerms::finalizePotentialContributions(
+        const gmx::EnumerationArray<FreeEnergyPerturbationCouplingType, double>& dvdlLinear,
+        gmx::ArrayRef<const real>                                                lambda,
+        const t_lambda&                                                          fepvals)
 {
     if (finalizedPotentialContributions_)
     {
         return;
     }
 
-    double dvdl_lin = 0;
-    for (int i = 0; i < static_cast<int>(FreeEnergyPerturbationCouplingType::Count); i++)
+    for (auto i : gmx::EnumerationWrapper<FreeEnergyPerturbationCouplingType>{})
     {
-        dvdl_lin += dvdlLinear[i];
+        addConstantDhdl(i, dvdlLinear[i]);
     }
-    addConstantDhdl(dvdl_lin);
 
     /* Sum the foreign lambda energy difference contributions.
      * Note that here we only add the potential energy components.
@@ -213,7 +284,7 @@ void ForeignLambdaTerms::finalizePotentialContributions(gmx::ArrayRef<const doub
 
             enerpart_lambda += dlam * dvdlLinear[j];
         }
-        accumulate(1 + i, enerpart_lambda, 0);
+        accumulate(1 + i, enerpart_lambda, gmx::EnumerationArray<FreeEnergyPerturbationCouplingType, real>());
     }
 
     finalizedPotentialContributions_ = true;
@@ -242,7 +313,7 @@ void accumulatePotentialEnergies(gmx_enerdata_t* enerd, gmx::ArrayRef<const real
 void ForeignLambdaTerms::accumulateKinetic(int listIndex, double energy, double dhdl)
 {
     energies_[listIndex] += energy;
-    dhdl_[listIndex] += dhdl;
+    dhdl_[listIndex][FreeEnergyPerturbationCouplingType::Temperature] += dhdl;
 }
 
 void ForeignLambdaTerms::finalizeKineticContributions(gmx::ArrayRef<const real> energyTerms,
@@ -251,7 +322,7 @@ void ForeignLambdaTerms::finalizeKineticContributions(gmx::ArrayRef<const real> 
                                                       const t_lambda&           fepvals)
 {
     // Add perturbed mass contributions
-    addConstantDhdl(dhdlMass);
+    addConstantDhdl(FreeEnergyPerturbationCouplingType::Mass, dhdlMass);
 
     // Treat current lambda, the deltaH contribution is 0 as delta-lambda=0 for the current lambda
     accumulateKinetic(0, 0.0, energyTerms[F_DVDL_CONSTR]);

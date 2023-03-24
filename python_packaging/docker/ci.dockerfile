@@ -58,13 +58,13 @@ COPY --from=gromacs /usr/local/gromacs /usr/local/gromacs
 
 RUN $VENV/bin/python -m pip install --upgrade pip setuptools wheel
 
-ADD --chown=testing:testing src /home/testing/gmxapi/src
-ADD --chown=testing:testing src/gmxapi /home/testing/gmxapi/src/gmxapi
-RUN $VENV/bin/python -m pip install --no-cache-dir --no-build-isolation -r /home/testing/gmxapi/gmxapi/requirements.txt
+ADD --chown=testing:testing gmxapi /home/testing/gmxapi
+ADD --chown=testing:testing sample_restraint /home/testing/sample_restraint
+RUN $VENV/bin/python -m pip install --no-cache-dir --no-build-isolation -r /home/testing/gmxapi/requirements.txt
 
 # We use "--no-cache-dir" to reduce Docker image size.
 RUN . $VENV/bin/activate && \
-    (cd $HOME/gmxapi/gmxapi && \
+    (cd $HOME/gmxapi && \
      CMAKE_ARGS="-Dgmxapi_ROOT=/usr/local/gromacs -C /usr/local/gromacs/share/cmake/gromacs/gromacs-hints.cmake" \
       pip install --no-cache-dir --verbose . \
     )

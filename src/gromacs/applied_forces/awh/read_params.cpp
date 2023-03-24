@@ -340,6 +340,13 @@ void checkFepLambdaDimParams(const std::string&               prefix,
                 "The force AWH bias force constant is not used with free energy lambda state as "
                 "coordinate provider.");
     }
+
+    if (!fepLambdasChangeAtSameRate(lambdaParams->all_lambda))
+    {
+        wi->addWarning(
+                "Some free-energy lambda components change at different rates over some lambda "
+                "interval. The friction metric will be incorrect for such intervals.");
+    }
 }
 
 /*! \brief
