@@ -31,9 +31,3 @@ Other releases can also be found at `GitHub <https://www.github.com/kassonlab/gm
     gmxapi: a high-level interface for advanced control and extension of molecular dynamics simulations.
     *Bioinformatics* 2018.
     DOI: `10.1093/bioinformatics/bty484 <https://doi.org/10.1093/bioinformatics/bty484>`_
-
-Indices and tables
-==================
-
-* :ref:`genindex`
-* :ref:`search`
