@@ -4,19 +4,30 @@
 gmxapi Python package
 =====================
 
-This documentation is part of the |Gromacs| `manual <http://manual.gromacs.org/current/>`_
-and describes the *gmxapi* Python package.
 :py:mod:`gmxapi` allows molecular simulation and analysis work to
 be staged and run from Python.
 
-From version 0.1, the latest official documentation is at http://manual.gromacs.org/current/gmxapi/.
-Other releases can also be found at `GitHub <https://www.github.com/kassonlab/gmxapi>`_.
+After installing |Gromacs| and the gmxapi Python package,
+you can use :command:`pydoc gmxapi` from the command line or
+``import gmxapi; help(gmxapi)`` within a Python interpreter
+for concise usage help.
+Complete documentation is collected in the following sections.
 
-..  toctree::
+.. toctree::
     :maxdepth: 2
-    :caption: Documentation sections
 
-    userguide/userguide.rst
+    userguide/install
+    userguide/usage
+    userguide/pythonreference
+
+To discuss *gmxapi*, use the ``#gmxapi`` `tag <https://gromacs.bioexcel.eu/tag/gmxapi>`__
+on the |Gromacs| `user discussion forum`_.
+Report bugs through the |Gromacs| `issue tracker`_.
+
+Complete documentation for the *gmxapi* Python package
+is part of the |Gromacs| `manual <http://manual.gromacs.org/current/>`_
+since *gmxapi* version 0.1.
+Other releases can also be found at `GitHub <https://www.github.com/kassonlab/gmxapi>`_.
 
 .. seealso::
 

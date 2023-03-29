@@ -587,7 +587,6 @@ if (SPHINX_FOUND)
             gmxapi/index.rst
             gmxapi/userguide/install.rst
             gmxapi/userguide/usage.rst
-            gmxapi/userguide/userguide.rst
     )
 
     if (GMX_PYTHON_PACKAGE)
