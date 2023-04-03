@@ -995,6 +995,8 @@ a minor performance penalty compared to building for GCN/CDNA devices only.
 
 By default, `VkFFT <https://github.com/DTolm/VkFFT>`_  is used to perform FFT on GPU.
 You can switch to rocFFT by passing ``-DGMX_GPU_FFT_LIBRARY=rocFFT`` CMake flag.
+Please note that rocFFT is not officially supported and tends not to work
+on most consumer GPUs.
 
 AMD GPUs can also be used with `Codeplay oneAPI for AMD GPUs <https://developer.codeplay.com/products/oneapi/amd/home/>`_,
 but this is experimental and does not support offloading FFTs to GPU. After installing Intel oneAPI toolkit 2023.0
