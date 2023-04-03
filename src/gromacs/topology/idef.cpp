@@ -366,7 +366,7 @@ void printInteractionParameters(gmx::TextWriter* writer, t_functype ftype, const
         case F_CMAP:
             writer->writeLineFormatted("cmapA=%1d, cmapB=%1d", iparams.cmap.cmapA, iparams.cmap.cmapB);
             break;
-        case F_RESTRANGLES: printHarmonicInteraction(writer, iparams, "ktheta", "costheta0"); break;
+        case F_RESTRANGLES: printHarmonicInteraction(writer, iparams, "costheta0", "ktheta"); break;
         case F_RESTRDIHS:
             writer->writeLineFormatted("phiA=%15.8e, cpA=%15.8e", iparams.pdihs.phiA, iparams.pdihs.cpA);
             break;
