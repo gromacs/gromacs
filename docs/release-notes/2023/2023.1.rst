@@ -120,3 +120,13 @@ During internal code reorganization, OpenMP acceleration was accidentally disabl
 for pulling force calculation in |Gromacs| 2023. This is now fixed.
 
 :issue:`4747`
+
+Added support for new cuFFTMp interface
+"""""""""""""""""""""""""""""""""""""""
+
+The interface to the cuFFTMp library has changed with its latest
+release in the the NVIDIA HPC SDK version 23.3, which is required for
+NVIDIA Hopper GPU support. We have now added default support to the
+new interface, while retaining support for the legacy interface. 
+
+:issue:`4731`

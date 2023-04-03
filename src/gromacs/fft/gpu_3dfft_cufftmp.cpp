@@ -48,6 +48,55 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
 
+#if CUFFT_VERSION >= 11005
+// Extra interface which maps legacy cufftXtSetDistribution API to the updated version
+// first introduced in the NVIDIA HPC SDK 23.3 (cuFFT/cuFFTMp version 11.0.5).
+
+/*! \brief Definition of box type for input or output of FFT operation, with lower and upper indices and strides */
+typedef struct cufftBox3d_t
+{
+    //! Lower indices in each of 3 dimensions for 3D box
+    size_t lower[3];
+    //! Upper indices in each of 3 dimensions for 3D box
+    size_t upper[3];
+    //! Strides in each of 3 dimensions for 3D box
+    size_t strides[3];
+} cufftBox3d;
+
+/*! \brief
+ * Interface the legacy cufftXtSetDistribution call to the new version
+ * \param [in] plan         Plan for FFT
+ * \param [in] inputBox     Input box for FFT
+ * \param [in] outputBox    Output box for FFT
+ * \returns cufftResult_t   Result code
+ */
+static cufftResult_t cufftXtSetDistribution(cufftHandle plan, const cufftBox3d* inputBox, cufftBox3d* outputBox)
+{
+
+    long long int inputLower[3];
+    long long int inputUpper[3];
+    long long int inputStrides[3];
+    long long int outputLower[3];
+    long long int outputUpper[3];
+    long long int outputStrides[3];
+
+    for (int i = 0; i < 3; i++)
+    {
+        inputLower[i]    = inputBox->lower[i];
+        inputUpper[i]    = inputBox->upper[i];
+        inputStrides[i]  = inputBox->strides[i];
+        outputLower[i]   = outputBox->lower[i];
+        outputUpper[i]   = outputBox->upper[i];
+        outputStrides[i] = outputBox->strides[i];
+    }
+
+    cufftResult_t result = cufftXtSetDistribution(
+            plan, 3, inputLower, inputUpper, outputLower, outputUpper, inputStrides, outputStrides);
+
+    return result;
+}
+#endif
+
 namespace gmx
 {
 static void handleCufftError(cufftResult_t status, const char* msg)
