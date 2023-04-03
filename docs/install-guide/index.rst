@@ -704,6 +704,7 @@ lead to performance loss, e.g. on Intel Skylake-X/SP and AMD Zen (first generati
    (e.g. Xeon Bronze and Silver) come with only one AVX512 FMA unit
    and therefore on these processors ``AVX2_256`` is faster
    (compile- and runtime checks try to inform about such cases).
+   On AMD it is beneficial to use starting with Zen4.
    Additionally, with GPU accelerated runs ``AVX2_256`` can also be
    faster on high-end Skylake CPUs with both 512-bit FMA units enabled.
 9. ``AVX_512_KNL`` Knights Landing Xeon Phi processors.
