@@ -77,6 +77,12 @@ void FileTypeTest::runTest(const TypeAndName& params)
     // also test
 }
 
+TEST_P(FileTypeTest, CorrectValueForNullptr)
+{
+    // A lot of places in the code still call fn2ftp(nullptr).
+    ASSERT_EQ(fn2ftp(nullptr), efNR);
+}
+
 TEST_F(FileTypeTest, CorrectValueForEmptyString)
 {
     runTest({ efNR, "" });

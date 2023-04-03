@@ -70,6 +70,14 @@ by number.
 
 :issue:`4739`
 
+Fix early crash in ``gmx anaeig``
+"""""""""""""""""""""""""""""""""
+
+An internal change in |Gromacs| 2023 caused improper handling of optional program arguments leading 
+to a crash in the program. This might have affected some other analysis tools.
+
+:issue:`4756`
+
 
 Fixes that affect portability
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
