@@ -71,6 +71,10 @@ class TrjconvWithDifferentInputFormats :
 
 TEST_P(TrjconvWithDifferentInputFormats, WithIndexGroupSubset)
 {
+    if (!GMX_USE_TNG && std::strstr(GetParam(), ".tng") != nullptr)
+    {
+        GTEST_SKIP() << "Cannot test TNG reading if TNG support is not configured";
+    }
     auto& cmdline = commandLine();
 
     setInputFile("-s", "spc2.gro");
@@ -95,17 +99,13 @@ TEST_P(TrjconvWithDifferentInputFormats, WithIndexGroupSubset)
 
 TEST_P(TrjconvWithDifferentInputFormats, WithoutTopologyFile)
 {
-    const char* fileName = GetParam();
-    if (!GMX_USE_TNG)
+    if (!GMX_USE_TNG && std::strstr(GetParam(), ".tng") != nullptr)
     {
-        if (std::strstr(fileName, ".tng") != nullptr)
-        {
-            GTEST_SKIP() << "Cannot test TNG reading if TNG support is not configured";
-        }
+        GTEST_SKIP() << "Cannot test TNG reading if TNG support is not configured";
     }
     auto& cmdline = commandLine();
 
-    setInputFile("-f", fileName);
+    setInputFile("-f", GetParam());
     setInputFile("-n", "spc2.ndx");
     std::string outputFile = setOutputFile("-o", "spc-traj.trr", NoTextMatch());
 
@@ -162,6 +162,10 @@ class TrjconvDumpTest :
 
 TEST_P(TrjconvDumpTest, DumpsFrame)
 {
+    if (!GMX_USE_TNG && std::strstr(std::get<0>(GetParam()), ".tng") != nullptr)
+    {
+        GTEST_SKIP() << "Cannot test TNG reading if TNG support is not configured";
+    }
     auto& cmdline = commandLine();
 
     setInputFile("-f", std::get<0>(GetParam()));

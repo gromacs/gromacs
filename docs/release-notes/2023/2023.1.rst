@@ -82,6 +82,11 @@ to a crash in the program. This might have affected some other analysis tools.
 Fixes that affect portability
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Fixed GMX_USE_TNG=off build
+"""""""""""""""""""""""""""
+
+|Gromacs| can again be built without TNG support.
+
 Fixed abnormal termination during ``gmx`` startup
 """""""""""""""""""""""""""""""""""""""""""""""""
 

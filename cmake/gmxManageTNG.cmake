@@ -66,6 +66,11 @@ if(GMX_USE_TNG)
             endif()
         endif()
     endif()
+else()
+    # We are building without TNG support, but we need still need a
+    # do-nothing linker target to link GROMACS modules against, which
+    # is set up here.
+    add_library(tng_io INTERFACE)
 endif()
 
 function(gmx_setup_tng_for_libgromacs)

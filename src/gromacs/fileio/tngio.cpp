@@ -111,6 +111,17 @@ static const char* modeToVerb(char mode)
 }
 #endif
 
+#if !GMX_USE_TNG && defined(__clang__)
+/* gmx_tng_open will not return when the build configuration did not
+ * support TNG at all. That leads to warnings that suggest using
+ * [[noreturn]]. But that attribute also has to be used in the header
+ * file, and we do not want the header file to depend on the build
+ * configuration. So we suppress the warning that gives the
+ * suggestion. */
+#    pragma clang diagnostic push
+#    pragma clang diagnostic ignored "-Wmissing-noreturn"
+#endif
+
 void gmx_tng_open(const std::filesystem::path& filename, char mode, gmx_tng_trajectory_t* gmx_tng)
 {
 #if GMX_USE_TNG
@@ -188,6 +199,10 @@ void gmx_tng_open(const std::filesystem::path& filename, char mode, gmx_tng_traj
     GMX_UNUSED_VALUE(gmx_tng);
 #endif
 }
+
+#if !GMX_USE_TNG && defined(__clang__)
+#    pragma clang diagnostic pop
+#endif
 
 void gmx_tng_close(gmx_tng_trajectory_t* gmx_tng)
 {
