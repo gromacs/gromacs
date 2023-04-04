@@ -141,7 +141,15 @@ void PmePpCommGpu::Impl::receiveForceFromPmePeerToPeer(bool receivePmeForceToGpu
 
 void PmePpCommGpu::Impl::receiveForceFromPmeGpuAwareMpi(Float3* pmeForcePtr, int recvSize)
 {
-#if GMX_MPI
+#if GMX_LIB_MPI
+
+    // Wait on previous non-blocking coordinate send. This already must have completed for PME
+    // forces to be ready, but the wait is necessary to avoid issues with certain MPI libraries.
+    GMX_ASSERT(coordinateSendRequestIsActive_,
+               "A coordinate send request should be active before force is recieved");
+    MPI_Wait(&coordinateSendRequest_, MPI_STATUS_IGNORE);
+    coordinateSendRequestIsActive_ = false;
+
     if (!stageLibMpiGpuCpuComm_)
     {
         MPI_Recv(pmeForcePtr, recvSize * DIM, MPI_FLOAT, pmeRank_, 0, comm_, MPI_STATUS_IGNORE);
@@ -190,10 +198,13 @@ void PmePpCommGpu::Impl::sendCoordinatesToPmeGpuAwareMpi(Float3*               s
         coordinatesReadyOnDeviceEvent->waitForEvent();
     }
 
-#if GMX_MPI
+#if GMX_LIB_MPI
     Float3* sendptr_x = sendPtr;
-
-    MPI_Send(sendptr_x, sendSize * DIM, MPI_FLOAT, pmeRank_, eCommType_COORD_GPU, comm_);
+    // The corresponding wait for the below non-blocking coordinate send is in receiveForceFromPmeGpuAwareMpi.
+    // Strictly, a wait is not necessary since the recieve must complete before PME forces are calculated,
+    // but it is required to avoid issues in certain MPI libraries.
+    MPI_Isend(sendptr_x, sendSize * DIM, MPI_FLOAT, pmeRank_, eCommType_COORD_GPU, comm_, &coordinateSendRequest_);
+    coordinateSendRequestIsActive_ = true;
 #else
     GMX_UNUSED_VALUE(sendPtr);
     GMX_UNUSED_VALUE(sendSize);
