@@ -139,6 +139,7 @@ void PmePpCommGpu::Impl::receiveForceFromPmePeerToPeer(bool receivePmeForceToGpu
 #endif
 }
 
+// NOLINTNEXTLINE readability-convert-member-functions-to-static
 void PmePpCommGpu::Impl::receiveForceFromPmeGpuAwareMpi(Float3* pmeForcePtr, int recvSize)
 {
 #if GMX_LIB_MPI
@@ -188,6 +189,7 @@ void PmePpCommGpu::Impl::receiveForceFromPme(Float3* recvPtr, int recvSize, bool
     }
 }
 
+// NOLINTNEXTLINE readability-convert-member-functions-to-static
 void PmePpCommGpu::Impl::sendCoordinatesToPmeGpuAwareMpi(Float3*               sendPtr,
                                                          int                   sendSize,
                                                          GpuEventSynchronizer* coordinatesReadyOnDeviceEvent)
