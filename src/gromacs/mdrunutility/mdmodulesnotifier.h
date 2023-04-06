@@ -102,7 +102,7 @@ public:
      *
      * \param[in] callParameter of the function to be called back
      */
-    void notify(CallParameter callParameter) const
+    void notify(const CallParameter callParameter) const
     {
         for (auto& callBack : callBackFunctions_)
         {
@@ -115,7 +115,7 @@ public:
      *
      * \param[in] callBackFunction to be called
      */
-    void subscribe(std::function<void(CallParameter)> callBackFunction)
+    void subscribe(std::function<void(const CallParameter)> callBackFunction)
     {
         callBackFunctions_.emplace_back(callBackFunction);
     }
