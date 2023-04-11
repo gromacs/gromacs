@@ -166,13 +166,13 @@ def spc_water_box_collection(gmxcli, tmp_path_factory):
             output_files={"-o": tprfile},
             env={"PATH": os.getenv("PATH")},
         )
-        logging.debug(grompp.output.stdout.result())
-        tprfilename = grompp.output.file["-o"].result()
         if grompp.output.returncode.result() != 0:
+            logging.error(grompp.output.stdout.result())
             logging.error(grompp.output.stderr.result())
             raise RuntimeError("grompp failed in spc_water_box testing fixture.")
+        logging.debug(grompp.output.stdout.result())
 
-        # TODO: more inspection of grompp errors...
+        tprfilename = grompp.output.file["-o"].result()
         assert os.path.exists(tprfilename)
         collection = {
             "tpr_filename": tprfilename,
