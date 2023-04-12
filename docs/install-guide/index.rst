@@ -991,7 +991,10 @@ Multiple target architectures can be specified, e.g.,
 ``-DHIPSYCL_TARGETS='hip:gfx908,gfx90a'``. Having both RDNA (``gfx1xyz``)
 and GCN/CDNA (``gfx9xx``) devices in the same build is possible but will incur
 a minor performance penalty compared to building for GCN/CDNA devices only.
-
+If you have multiple AMD GPUs of different generations in the same system
+(e.g., integrated APU and a discrete GPU) the ROCm runtime requires code to be available
+for each device at runtime, so you need to specify every device in ``HIPSYCL_TARGETS``
+when compiling to avoid ROCm crashes at initialization.
 
 By default, `VkFFT <https://github.com/DTolm/VkFFT>`_  is used to perform FFT on GPU.
 You can switch to rocFFT by passing ``-DGMX_GPU_FFT_LIBRARY=rocFFT`` CMake flag.
