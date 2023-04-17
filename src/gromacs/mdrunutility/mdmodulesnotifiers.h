@@ -252,19 +252,23 @@ notifier =>> moduleC [label="returns"];
 struct MDModulesNotifiers
 {
     /*! \brief Pre-processing callback functions.
-     * CoordinatesAndBoxPreprocessed Allows modules to access coordinates,
-     *                                box and pbc during grompp
-     * MDLogger Allows MdModule to use standard logging class for messages output
-     * warninp* Allows modules to make grompp warnings, notes and errors
-     * EnergyCalculationFrequencyErrors* allows modules to check if they match
-     *                                   their required calculation frequency
-     *                                   and add their error message if needed
-     *                                   to the collected error messages
-     * gmx_mtop_t* Allows modules to modify the topology during pre-processing
-     * IndexGroupsAndNames provides modules with atom indices and their names
-     * KeyValueTreeObjectBuilder enables writing of module internal data to
-     *                           .tpr files.
-     * QMInputFileName Allows QMMM module to know if user provided external QM input file
+     *
+     * \tparam CoordinatesAndBoxPreprocessed
+     *                              Allows modules to access coordinates,
+     *                              box and PBC during grompp
+     * \tparam MDLogger             Allows MdModule to use standard logging class for
+     *                              output of messages
+     * \tparam warninp*             Allows modules to make grompp warnings, notes and errors
+     * \tparam EnergyCalculationFrequencyErrors*
+     *                              Allows modules to check if they match their required calculation
+     *                              frequency and add their error message if needed to the
+     *                              collected error messages
+     * \tparam gmx_mtop_t*          Allows modules to modify the topology during pre-processing
+     * \tparam IndexGroupsAndNames  Provides modules with atom indices and their names
+     * \tparam KeyValueTreeObjectBuilder
+     *                              Enables writing of module internal data to .tpr files.
+     * \tparam QMInputFileName      Allows the QMMM module to know if the user has provided
+     *                              an external QM input file
      */
     BuildMDModulesNotifier<const CoordinatesAndBoxPreprocessed&,
                            const MDLogger&,
@@ -277,13 +281,14 @@ struct MDModulesNotifiers
 
     /*! \brief Handles subscribing and calling checkpointing callback functions.
      *
-     * MDModulesCheckpointReadingDataOnMain   provides modules with their
-     *                                        checkpointed data on the main
-     *                                        node and checkpoint file version
-     * MDModulesCheckpointReadingBroadcast provides modules with a communicator
-     *                                     and the checkpoint file version to
-     *                                     distribute their data
-     * MDModulesWriteCheckpointData provides the modules with a key-value-tree
+     * \tparam MDModulesCheckpointReadingDataOnMain
+     *                              Provides modules with their checkpointed data
+     *                              on the main node and checkpoint file version
+     * \tparam MDModulesCheckpointReadingBroadcast
+     *                              Provides modules with a communicator and the
+     *                              checkpoint file version to distribute their data
+     * \tparam MDModulesWriteCheckpointData
+     *                              Provides the modules with a key-value-tree
      *                              builder to store their checkpoint data and
      *                              the checkpoint file version
      */
@@ -292,28 +297,29 @@ struct MDModulesNotifiers
 
     /*! \brief Handles subscribing and calling callbacks during simulation setup.
      *
-     * const KeyValueTreeObject& provides modules with the internal data they
-     *                           wrote to .tpr files
-     * LocalAtomSetManager* enables modules to add atom indices to local atom sets
-     *                      to be managed
-     * const MDLogger& Allows MdModule to use standard logging class for messages output
-     * const gmx_mtop_t& provides the topology of the system to the modules
-     * MDModulesEnergyOutputToDensityFittingRequestChecker* enables modules to
-     *                      report if they want to write their energy output
-     *                      to the density fitting field in the energy files
-     * MDModulesEnergyOutputToQMMMRequestChecker* enables QMMM module to
-     *                      report if it want to write their energy output
-     *                      to the "Quantum En." field in the energy files
-     * SeparatePmeRanksPermitted* enables modules to report if they want
-     *                      to disable dedicated PME ranks
-     * const PbcType& provides modules with the periodic boundary condition type
-     *                that is used during the simulation
-     * const SimulationTimeStep& provides modules with the simulation time-step
-     *                           that allows them to interconvert between step
-     *                           time information
-     * const t_commrec& provides a communicator to the modules during simulation
-     *                  setup
-     * const MdRunInputFilename& Allows modules to know .tpr filename during mdrun
+     * \tparam KeyValueTreeObject&  Provides modules with the internal data they
+     *                              wrote to .tpr files
+     * \tparam LocalAtomSetManager* Enables modules to add atom indices to local atom sets
+     *                              to be managed
+     * \tparam MDLogger&            Allows MdModule to use standard logging class for messages
+     *                              output
+     * \tparam gmx_mtop_t&          Provides the topology of the system to the modules
+     * \tparam MDModulesEnergyOutputToDensityFittingRequestChecker*
+     *                              Enables modules to report if they want to write their
+     *                              energy output to the density fitting field in the energy files
+     * \tparam MDModulesEnergyOutputToQMMMRequestChecker*
+     *                              Enables QMMM module to report if it wants to write its energy
+     *                              output to the "Quantum En." field in the energy files
+     * \tparam SeparatePmeRanksPermitted*
+     *                              Enables modules to report if they want to disable dedicated
+     *                              PME ranks
+     * \tparam PbcType&             Provides modules with the periodic boundary condition type
+     *                              that is used during the simulation
+     * \tparam SimulationTimeStep&  Provides modules with the simulation time-step that allows
+     *                              them to interconvert between step and time information
+     * \tparam t_commrec&           Provides a communicator to the modules during simulation
+     *                              setup
+     * \tparam MdRunInputFilename&  Allows modules to know .tpr filename during mdrun
      */
     BuildMDModulesNotifier<const KeyValueTreeObject&,
                            LocalAtomSetManager*,
