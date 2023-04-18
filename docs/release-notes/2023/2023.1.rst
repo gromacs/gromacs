@@ -45,6 +45,15 @@ Only runs with >=3 GPUs and with direct GPU communication enabled
 
 :issue:`4733`
 
+Fix checkpointing of AWH friction metric for dimensions > 1.
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+The friction metric checkpoint i/o was wrong for dimensions > 1. This did
+not affect the AWH PMF or sampling, but would result in nonsense if the
+AWH friction tensors were used to calculate the diffusion in dimensions > 1.
+
+:issue:`4723`
+
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -61,7 +70,7 @@ Fix creating index file from another index file
 
 :issue:`4717`
 
-Allow selection of energy term by full name in ``gmx energy`` 
+Allow selection of energy term by full name in ``gmx energy``
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
 It is now possible to select energy terms by full name. This is specifically helpful for terms starting
