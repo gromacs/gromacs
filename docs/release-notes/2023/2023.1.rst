@@ -152,3 +152,15 @@ NVIDIA Hopper GPU support. We have now added default support to the
 new interface, while retaining support for the legacy interface. 
 
 :issue:`4731`
+
+Document workaround when MPI detection fails
+""""""""""""""""""""""""""""""""""""""""""""
+
+MPI is an optional dependency of gmxapi even when building GROMACS
+without support for an MPI library. CMake's mechanism to find MPI can
+choke on broken MPI installations in ways that could be confusing. Now
+a work-around is documented for the convenience of a user who was not
+intending to use MPI.
+
+:issue:`4699`
+
