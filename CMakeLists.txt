@@ -47,7 +47,11 @@ endif()
 
 # CMake modules/macros are in a subdirectory to keep this file cleaner
 # This needs to be set before project() in order to pick up toolchain files
-list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake ${CMAKE_CURRENT_SOURCE_DIR}/cmake/Platform)
+list(APPEND CMAKE_MODULE_PATH
+    ${CMAKE_CURRENT_SOURCE_DIR}/cmake
+    ${CMAKE_CURRENT_SOURCE_DIR}/cmake/Platform
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/external/cmake
+    )
 
 if(APPLE)
     if(CMAKE_OSX_DEPLOYMENT_TARGET)
