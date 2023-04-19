@@ -186,6 +186,8 @@ Variables affecting compilation/linking
 
    If set ``ON``, |Gromacs| build system will download and build FFTW from source
    automatically. Not supported on Windows or with ``ninja`` build system.
+   In complicated scenarios (e.g., when cross-compiling or using a toolchain
+   file), we recommend not relying on this feature and building FFTW manually.
 
 .. cmake:: GMX_BUILD_SHARED_EXE
 

@@ -340,18 +340,21 @@ and follow the `FFTW installation guide`_. Choose the precision for
 FFTW (i.e. single/float vs. double) to match whether you will later
 use mixed or double precision for |Gromacs|. There is no need to
 compile FFTW with threading or MPI support, but it does no harm. On
-x86 hardware, compile with *both* ``--enable-sse2`` and
-``--enable-avx`` for FFTW-3.3.4 and earlier. From FFTW-3.3.5, you
-should also add ``--enable-avx2`` also. On Intel processors supporting
-512-wide AVX, including KNL, add ``--enable-avx512`` also.
+x86 hardware, compile with all of ``--enable-sse2``, ``--enable-avx``,
+and ``--enable-avx2`` flags. On Intel processors supporting
+512-wide AVX, including KNL, add ``--enable-avx512`` too.
 FFTW will create a fat library with codelets for all different instruction sets,
 and pick the fastest supported one at runtime.
-On ARM architectures with SIMD support and IBM Power8 and later, you
-definitely want version 3.3.5 or later,
-and to compile it with ``--enable-neon`` and ``--enable-vsx``, respectively, for
-SIMD support. If you are using a Cray, there is a special modified
+On ARM architectures with SIMD support use ``--enable-neon`` flag;
+on IBM Power8 and later, use ``--enable-vsx`` flag.
+If you are using a Cray, there is a special modified
 (commercial) version of FFTs using the FFTW interface which can be
 slightly faster.
+
+Relying on ``-DGMX_BUILD_OWN_FFTW=ON`` works well in typical situations,
+but does not work on Windows, when using ``ninja`` build system, when
+cross-compiling, with custom toolchain configurations, etc. In such
+cases, please build FFTW manually.
 
 Using MKL
 ~~~~~~~~~
