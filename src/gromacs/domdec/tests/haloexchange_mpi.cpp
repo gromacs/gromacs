@@ -60,7 +60,7 @@
 #include "gromacs/domdec/atomdistribution.h"
 #include "gromacs/domdec/domdec_internal.h"
 #include "gromacs/domdec/gpuhaloexchange.h"
-#if GMX_GPU_CUDA || GMX_GPU_SYCL
+#if GMX_GPU_CUDA
 #    include "gromacs/gpu_utils/device_stream.h"
 #    include "gromacs/gpu_utils/devicebuffer.h"
 #endif
@@ -116,12 +116,13 @@ void initHaloData(RVec* x, const int numHomeAtoms, const int numAtomsTotal)
  * \param [in] dd             Domain decomposition object
  * \param [in] box            Box matrix
  * \param [in] h_x            Atom coordinate data array on host
- * \param [in] numHomeAtoms   Number of home atoms
  * \param [in] numAtomsTotal  Total number of atoms, including halo
  */
-void gpuHalo(gmx_domdec_t* dd, matrix box, HostVector<RVec>* h_x, int numHomeAtoms, int numAtomsTotal)
+void gpuHalo(gmx_domdec_t* dd, matrix box, HostVector<RVec>* h_x, int numAtomsTotal)
 {
-#if (GMX_GPU_CUDA || GMX_GPU_SYCL)
+#if (GMX_GPU_CUDA && GMX_THREAD_MPI)
+    // pin memory if possible
+    changePinningPolicy(h_x, PinningPolicy::PinnedIfSupported);
     // Set up GPU hardware environment and assign this MPI rank to a device
     int rank;
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
@@ -129,10 +130,6 @@ void gpuHalo(gmx_domdec_t* dd, matrix box, HostVector<RVec>* h_x, int numHomeAto
     const auto& testDevice = getTestHardwareEnvironment()->getTestDeviceList()[rank % numDevices];
     const auto& deviceContext = testDevice->deviceContext();
     testDevice->activate();
-    // pin memory if possible
-    changePinningPolicy(h_x, PinningPolicy::PinnedIfSupported);
-    // Re-initialize input
-    initHaloData(h_x->data(), numHomeAtoms, numAtomsTotal);
     DeviceStream deviceStream(deviceContext, DeviceStreamPriority::Normal, false);
 
     // Set up GPU buffer and copy input data from host
@@ -183,12 +180,11 @@ void gpuHalo(gmx_domdec_t* dd, matrix box, HostVector<RVec>* h_x, int numHomeAto
     copyFromDeviceBuffer(
             h_x->data(), &d_x, 0, numAtomsTotal, deviceStream, GpuApiCallBehavior::Sync, nullptr);
 
-    freeDeviceBuffer(&d_x);
+    freeDeviceBuffer(d_x);
 #else
     GMX_UNUSED_VALUE(dd);
     GMX_UNUSED_VALUE(box);
     GMX_UNUSED_VALUE(h_x);
-    GMX_UNUSED_VALUE(numHomeAtoms);
     GMX_UNUSED_VALUE(numAtomsTotal);
 #endif
 }
@@ -555,7 +551,7 @@ TEST(HaloExchangeTest, Coordinates1dHaloWith1Pulse)
     // Check results
     checkResults1dHaloWith1Pulse(h_x.data(), &dd, numHomeAtoms);
 
-    if (GMX_GPU_CUDA || GMX_GPU_SYCL) // repeat with GPU halo codepath
+    if (GMX_GPU_CUDA && GMX_THREAD_MPI) // repeat with GPU halo codepath
     {
         // early return if no devices are available.
         if (getTestHardwareEnvironment()->getTestDeviceList().empty())
@@ -567,7 +563,7 @@ TEST(HaloExchangeTest, Coordinates1dHaloWith1Pulse)
         initHaloData(h_x.data(), numHomeAtoms, numAtomsTotal);
 
         // Perform GPU halo exchange
-        gpuHalo(&dd, box, &h_x, numHomeAtoms, numAtomsTotal);
+        gpuHalo(&dd, box, &h_x, numAtomsTotal);
 
         // Check results
         checkResults1dHaloWith1Pulse(h_x.data(), &dd, numHomeAtoms);
@@ -610,7 +606,7 @@ TEST(HaloExchangeTest, Coordinates1dHaloWith2Pulses)
     // Check results
     checkResults1dHaloWith2Pulses(h_x.data(), &dd, numHomeAtoms);
 
-    if (GMX_GPU_CUDA || GMX_GPU_SYCL) // repeat with GPU halo codepath
+    if (GMX_GPU_CUDA && GMX_THREAD_MPI) // repeat with GPU halo codepath
     {
         // early return if no devices are available.
         if (getTestHardwareEnvironment()->getTestDeviceList().empty())
@@ -622,7 +618,7 @@ TEST(HaloExchangeTest, Coordinates1dHaloWith2Pulses)
         initHaloData(h_x.data(), numHomeAtoms, numAtomsTotal);
 
         // Perform GPU halo exchange
-        gpuHalo(&dd, box, &h_x, numHomeAtoms, numAtomsTotal);
+        gpuHalo(&dd, box, &h_x, numAtomsTotal);
 
         // Check results
         checkResults1dHaloWith2Pulses(h_x.data(), &dd, numHomeAtoms);
@@ -666,7 +662,7 @@ TEST(HaloExchangeTest, Coordinates2dHaloWith1PulseInEachDim)
     // Check results
     checkResults2dHaloWith1PulseInEachDim(h_x.data(), &dd, numHomeAtoms);
 
-    if (GMX_GPU_CUDA || GMX_GPU_SYCL) // repeat with GPU halo codepath
+    if (GMX_GPU_CUDA && GMX_THREAD_MPI) // repeat with GPU halo codepath
     {
         // early return if no devices are available.
         if (getTestHardwareEnvironment()->getTestDeviceList().empty())
@@ -678,7 +674,7 @@ TEST(HaloExchangeTest, Coordinates2dHaloWith1PulseInEachDim)
         initHaloData(h_x.data(), numHomeAtoms, numAtomsTotal);
 
         // Perform GPU halo exchange
-        gpuHalo(&dd, box, &h_x, numHomeAtoms, numAtomsTotal);
+        gpuHalo(&dd, box, &h_x, numAtomsTotal);
 
         // Check results
         checkResults2dHaloWith1PulseInEachDim(h_x.data(), &dd, numHomeAtoms);
@@ -721,7 +717,7 @@ TEST(HaloExchangeTest, Coordinates2dHaloWith2PulsesInDim1)
     // Check results
     checkResults2dHaloWith2PulsesInDim1(h_x.data(), &dd, numHomeAtoms);
 
-    if (GMX_GPU_CUDA || GMX_GPU_SYCL) // repeat with GPU halo codepath
+    if (GMX_GPU_CUDA && GMX_THREAD_MPI) // repeat with GPU halo codepath
     {
         // early return if no devices are available.
         if (getTestHardwareEnvironment()->getTestDeviceList().empty())
@@ -733,7 +729,7 @@ TEST(HaloExchangeTest, Coordinates2dHaloWith2PulsesInDim1)
         initHaloData(h_x.data(), numHomeAtoms, numAtomsTotal);
 
         // Perform GPU halo exchange
-        gpuHalo(&dd, box, &h_x, numHomeAtoms, numAtomsTotal);
+        gpuHalo(&dd, box, &h_x, numAtomsTotal);
 
         // Check results
         checkResults2dHaloWith2PulsesInDim1(h_x.data(), &dd, numHomeAtoms);
