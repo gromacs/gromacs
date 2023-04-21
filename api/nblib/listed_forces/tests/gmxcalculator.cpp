@@ -78,8 +78,6 @@ ListedGmxCalculator::ListedGmxCalculator(const ListedInteractionData& interactio
 
     ListedForces::InteractionSelection interactionSelection = ListedForces::interactionSelectionAll();
 
-    // no foreign lambdas
-    fepvals_.n_lambda = 0;
     // no distance restraints
     disres_.nres   = 0;
     fcdata_.disres = &disres_;
@@ -134,7 +132,6 @@ void ListedGmxCalculator::compute(gmx::ArrayRef<const gmx::RVec>     x,
 
     gmxListedForces_->calculate(wcycle.get(),
                                 box_.legacyMatrix(),
-                                &fepvals_,
                                 &cr,
                                 nullptr,
                                 { x.data(), x.data() + x.size(), x.data() + x.size() },

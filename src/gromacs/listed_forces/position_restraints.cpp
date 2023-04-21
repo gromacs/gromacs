@@ -453,7 +453,6 @@ void posres_wrapper(t_nrnb*                       nrnb,
 }
 
 void posres_wrapper_lambda(struct gmx_wallcycle*         wcycle,
-                           const t_lambda*               fepvals,
                            const InteractionDefinitions& idef,
                            const struct t_pbc*           pbc,
                            const rvec                    x[],
@@ -470,7 +469,8 @@ void posres_wrapper_lambda(struct gmx_wallcycle*         wcycle,
 
         const real lambda_dum =
                 (i == 0 ? lambda[static_cast<int>(FreeEnergyPerturbationCouplingType::Restraint)]
-                        : fepvals->all_lambda[FreeEnergyPerturbationCouplingType::Restraint][i - 1]);
+                        : enerd->foreignLambdaTerms.foreignLambdas(
+                                FreeEnergyPerturbationCouplingType::Restraint)[i - 1]);
         const real v = posres<false>(idef.il[F_POSRES].size(),
                                      idef.il[F_POSRES].iatoms.data(),
                                      idef.iparams_posres.data(),

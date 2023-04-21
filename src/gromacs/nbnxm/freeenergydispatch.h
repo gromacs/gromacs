@@ -90,7 +90,6 @@ public:
                                    gmx::ArrayRef<const real>      chargeB,
                                    gmx::ArrayRef<const int>       typeA,
                                    gmx::ArrayRef<const int>       typeB,
-                                   t_lambda*                      fepvals,
                                    gmx::ArrayRef<const real>      lambda,
                                    gmx_enerdata_t*                enerd,
                                    const gmx::StepWorkload&       stepWork,

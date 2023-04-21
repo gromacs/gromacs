@@ -54,7 +54,6 @@
 #include "gromacs/mdtypes/fcdata.h"
 #include "gromacs/mdtypes/forceoutput.h"
 #include "gromacs/mdtypes/forcerec.h"
-#include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/mdatom.h"
 #include "gromacs/mdtypes/simulation_workload.h"
 #include "gromacs/pbcutil/pbc.h"
@@ -111,7 +110,6 @@ private:
     t_forcerec   fr;
     t_disresdata disres_;
     t_fcdata     fcdata_;
-    t_lambda     fepvals_;
     t_mdatoms    mdatoms_;
 
     t_pbc                          pbc;

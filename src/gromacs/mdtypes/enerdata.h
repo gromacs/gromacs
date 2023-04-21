@@ -89,6 +89,14 @@ public:
     //! Returns the number of foreign lambda values
     int numLambdas() const { return numLambdas_; }
 
+    //! Returns the foreign lambda values for the given perturbation type
+    gmx::ArrayRef<const double> foreignLambdas(FreeEnergyPerturbationCouplingType couplingType)
+    {
+        GMX_ASSERT(allLambdas_, "This method should only be called when lambdas have been set");
+
+        return (*allLambdas_)[couplingType];
+    }
+
     //! Returns the H(lambdaIndex) - H(lambda_current)
     double deltaH(int lambdaIndex) const { return energies_[1 + lambdaIndex] - energies_[0]; }
 

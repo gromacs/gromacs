@@ -55,7 +55,6 @@ struct gmx_enerdata_t;
 struct gmx_wallcycle;
 struct t_forcerec;
 class InteractionDefinitions;
-struct t_lambda;
 struct t_nrnb;
 struct t_pbc;
 
@@ -77,7 +76,6 @@ void posres_wrapper(t_nrnb*                       nrnb,
 /*! \brief Helper function that wraps calls to posres for free-energy
     pertubation */
 void posres_wrapper_lambda(struct gmx_wallcycle*         wcycle,
-                           const t_lambda*               fepvals,
                            const InteractionDefinitions& idef,
                            const struct t_pbc*           pbc,
                            const rvec                    x[],

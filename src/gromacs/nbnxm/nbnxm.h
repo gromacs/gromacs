@@ -134,7 +134,6 @@ struct nonbonded_verlet_t;
 class PairSearch;
 class PairlistSets;
 struct t_commrec;
-struct t_lambda;
 struct t_nrnb;
 struct t_forcerec;
 struct t_inputrec;
@@ -409,7 +408,6 @@ public:
                                    gmx::ArrayRef<const real>      chargeB,
                                    gmx::ArrayRef<const int>       typeA,
                                    gmx::ArrayRef<const int>       typeB,
-                                   t_lambda*                      fepvals,
                                    gmx::ArrayRef<const real>      lambda,
                                    gmx_enerdata_t*                enerd,
                                    const gmx::StepWorkload&       stepWork,
