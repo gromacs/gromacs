@@ -267,6 +267,18 @@ const char* ftp2defopt(int ftp)
     }
 }
 
+int fn2ftp(const char* path)
+{
+    if (path == nullptr)
+    {
+        return efNR;
+    }
+    else
+    {
+        return fn2ftp(std::filesystem::path{ path });
+    }
+}
+
 int fn2ftp(const std::filesystem::path& fn)
 {
     if (fn.empty())

@@ -46,5 +46,6 @@ simple-build:
       junit: $BUILD_DIR/JUnitTestResults.xml
     paths:
       - $BUILD_DIR/*log
+      - $BUILD_DIR/CMakeFiles/*log
     when: always
     expire_in: 1 week

@@ -195,6 +195,10 @@ private:
     //! small atom counts where latency is more important than
     //! bandwidth.
     bool stageLibMpiGpuCpuComm_ = true;
+    // MPI Request associated with non-blocking coordinate send
+    MPI_Request coordinateSendRequest_;
+    // Flag on whether a non-blocking coordinate send is active
+    bool coordinateSendRequestIsActive_ = false;
 };
 
 } // namespace gmx

@@ -1,0 +1,17 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Sequence Name="tensorCorrelationIntegrals">
+    <Int Name="Length">10</Int>
+    <Real>0.00034274796576879915</Real>
+    <Real>0.00085695679785830641</Real>
+    <Real>0.001159762708664038</Real>
+    <Real>0.00053975704021681076</Real>
+    <Real>0.000676962440272559</Real>
+    <Real>0.00088540947710439742</Real>
+    <Real>0.0010207227891156454</Real>
+    <Real>0.0018099979511520482</Real>
+    <Real>0.00059629377947669534</Real>
+    <Real>0.0001722332202111609</Real>
+  </Sequence>
+</ReferenceData>

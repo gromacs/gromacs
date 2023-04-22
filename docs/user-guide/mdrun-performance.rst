@@ -913,16 +913,45 @@ GPUs, but there is no need to specify ``-gpu_id`` for the
 normal case where all the GPUs on the node are available
 for use.
 
-Approaching the scaling limit
------------------------------
+Avoiding communication for constraints
+--------------------------------------
 
-There are several aspects of running a |Gromacs| simulation that are important as the number
-of atoms per core approaches the current scaling limit of ~100 atoms/core.
+Because of the very short time it takes to perform an MD step,
+in particular close to the scaling limit, any communication will
+have a negative effect on performance due to latency overhead
+and synchronization. Most of the communication can not be avoided,
+but sometimes one can completely avoid communication of coordinates
+for constraints. The points listed below will improve performance
+in general and can have a particularly strong effect at the scaling
+limit which is around ~100 atoms/core or ~10000 atoms/GPU. Simulations
+that need to be done as fast as possible, or strong-scaling benchmarks
+should be constructed with these points in mind.
 
-One of these is that the use of ``constraints = all-bonds``  with P-LINCS
-sets an artificial minimum on the size of domains. You should reconsider the use
-of constraints to all bonds (and bear in mind possible consequences on the safe maximum for dt),
-or change lincs_order and lincs_iter suitably.
+When possible, one should avoid the use of ``constraints = all-bonds``
+with P-LINCS. This not only requires a lot of communication, it also
+sets an artificial minimum on the size of domains. If you are using
+an atomistic force field and integrating with a time step of 2 fs,
+you can usually change to constraints ``constraints = h-bonds``
+without changing other settings. These are
+actually the settings most force fields were parameterized with,
+so this is also scientifically better.
+
+To completely avoid communication for constraints and/or to have
+the update run on a GPU, the system needs to support so-called
+"update groups" (or no constraints at all). Update groups are
+supported when all atoms involved in coupled constraints are
+coupled directly to one central atom and consecutively ordered,
+not interdispersed with non-constrained atoms. An example is a
+compactly described methyl group. For atomistic
+force fields with ``constraints = h-bonds`` this means in practice
+that in the topology hydrogens come adjacent to their connected heavy atom.
+In addition, when virtual sites are present,
+the constructing atoms should all be constrained together and
+the virtual site and constructing atoms should be consecutive,
+but the order does not matter.
+The TIP4P water model is an example of this.
+Whether or not update groups are used is noted in the log file.
+When they cannot be used, the reason for disabling them is also noted.
 
 Finding out how to run :ref:`mdrun <gmx mdrun>` better
 ------------------------------------------------------

@@ -40,10 +40,18 @@ cmake_policy(SET CMP0074 NEW) # From CMake 3.12
 if(POLICY CMP0131) # From CMake 3.24
     cmake_policy(SET CMP0131 NEW)
 endif()
+if(POLICY CMP0135) # From CMake 3.24
+    # We don't care about DOWNLOAD_EXTRACT_TIMESTAMP; prefer the new behavior
+    cmake_policy(SET CMP0135 NEW)
+endif()
 
 # CMake modules/macros are in a subdirectory to keep this file cleaner
 # This needs to be set before project() in order to pick up toolchain files
-list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake ${CMAKE_CURRENT_SOURCE_DIR}/cmake/Platform)
+list(APPEND CMAKE_MODULE_PATH
+    ${CMAKE_CURRENT_SOURCE_DIR}/cmake
+    ${CMAKE_CURRENT_SOURCE_DIR}/cmake/Platform
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/external/cmake
+    )
 
 if(APPLE)
     if(CMAKE_OSX_DEPLOYMENT_TARGET)

@@ -1,7 +1,7 @@
 |Gromacs| 2023.1 release notes
 ------------------------------
 
-This version was released on TODO, 2023. These release notes
+This version was released on April 21st, 2023. These release notes
 document the changes that have taken place in |Gromacs| since the
 previous 2023 version, to fix known issues. It also incorporates all
 fixes made in version 2022.5 and earlier, which you can find described
@@ -15,6 +15,14 @@ in the :ref:`release-notes`.
 
 Fixes where mdrun could behave incorrectly
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Parallelization of TPI an normal modes working again
+""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+When running TPI or normal mode analysis with multiple MPI ranks
+mdrun would exit with an assertion failure.
+
+:issue:`4770`
 
 The AWH metric could be incorrect for free-energy lambda dimensions
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
@@ -45,6 +53,15 @@ Only runs with >=3 GPUs and with direct GPU communication enabled
 
 :issue:`4733`
 
+Fix checkpointing of AWH friction metric for dimensions > 1.
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+The friction metric checkpoint i/o was wrong for dimensions > 1. This did
+not affect the AWH PMF or sampling, but would result in nonsense if the
+AWH friction tensors were used to calculate the diffusion in dimensions > 1.
+
+:issue:`4723`
+
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -61,7 +78,7 @@ Fix creating index file from another index file
 
 :issue:`4717`
 
-Allow selection of energy term by full name in ``gmx energy`` 
+Allow selection of energy term by full name in ``gmx energy``
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
 It is now possible to select energy terms by full name. This is specifically helpful for terms starting
@@ -70,9 +87,22 @@ by number.
 
 :issue:`4739`
 
+Fix early crash in ``gmx anaeig``
+"""""""""""""""""""""""""""""""""
+
+An internal change in |Gromacs| 2023 caused improper handling of optional program arguments leading 
+to a crash in the program. This might have affected some other analysis tools.
+
+:issue:`4756`
+
 
 Fixes that affect portability
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Fixed GMX_USE_TNG=off build
+"""""""""""""""""""""""""""
+
+|Gromacs| can again be built without TNG support.
 
 Fixed abnormal termination during ``gmx`` startup
 """""""""""""""""""""""""""""""""""""""""""""""""
@@ -112,3 +142,25 @@ During internal code reorganization, OpenMP acceleration was accidentally disabl
 for pulling force calculation in |Gromacs| 2023. This is now fixed.
 
 :issue:`4747`
+
+Added support for new cuFFTMp interface
+"""""""""""""""""""""""""""""""""""""""
+
+The interface to the cuFFTMp library has changed with its latest
+release in the the NVIDIA HPC SDK version 23.3, which is required for
+NVIDIA Hopper GPU support. We have now added default support to the
+new interface, while retaining support for the legacy interface. 
+
+:issue:`4731`
+
+Document workaround when MPI detection fails
+""""""""""""""""""""""""""""""""""""""""""""
+
+MPI is an optional dependency of gmxapi even when building GROMACS
+without support for an MPI library. CMake's mechanism to find MPI can
+choke on broken MPI installations in ways that could be confusing. Now
+a work-around is documented for the convenience of a user who was not
+intending to use MPI.
+
+:issue:`4699`
+

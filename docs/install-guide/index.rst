@@ -707,6 +707,7 @@ lead to performance loss, e.g. on Intel Skylake-X/SP and AMD Zen (first generati
    (e.g. Xeon Bronze and Silver) come with only one AVX512 FMA unit
    and therefore on these processors ``AVX2_256`` is faster
    (compile- and runtime checks try to inform about such cases).
+   On AMD it is beneficial to use starting with Zen4.
    Additionally, with GPU accelerated runs ``AVX2_256`` can also be
    faster on high-end Skylake CPUs with both 512-bit FMA units enabled.
 9. ``AVX_512_KNL`` Knights Landing Xeon Phi processors.
@@ -993,10 +994,15 @@ Multiple target architectures can be specified, e.g.,
 ``-DHIPSYCL_TARGETS='hip:gfx908,gfx90a'``. Having both RDNA (``gfx1xyz``)
 and GCN/CDNA (``gfx9xx``) devices in the same build is possible but will incur
 a minor performance penalty compared to building for GCN/CDNA devices only.
-
+If you have multiple AMD GPUs of different generations in the same system
+(e.g., integrated APU and a discrete GPU) the ROCm runtime requires code to be available
+for each device at runtime, so you need to specify every device in ``HIPSYCL_TARGETS``
+when compiling to avoid ROCm crashes at initialization.
 
 By default, `VkFFT <https://github.com/DTolm/VkFFT>`_  is used to perform FFT on GPU.
 You can switch to rocFFT by passing ``-DGMX_GPU_FFT_LIBRARY=rocFFT`` CMake flag.
+Please note that rocFFT is not officially supported and tends not to work
+on most consumer GPUs.
 
 AMD GPUs can also be used with `Codeplay oneAPI for AMD GPUs <https://developer.codeplay.com/products/oneapi/amd/home/>`_,
 but this is experimental and does not support offloading FFTs to GPU. After installing Intel oneAPI toolkit 2023.0

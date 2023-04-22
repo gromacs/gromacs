@@ -439,13 +439,13 @@ else()
     include(gmxManageFFTLibraries)
 
     if(GMX_GPU_FFT_MKL)
-        if(MKL_VERSION VERSION_LESS "2023.0.0")
-            list(APPEND GMX_EXTRA_LIBRARIES "mkl_sycl;OpenCL")
-        endif()
+        #MKLROOT is set by gmxManageFFTLibraries.cmake
+        find_library(mkl_sycl_PATH mkl_sycl PATHS "${MKLROOT}/lib/intel64" REQUIRED)
+        mark_as_advanced(mkl_sycl_PATH)
+        list(APPEND GMX_EXTRA_LIBRARIES "${mkl_sycl_PATH};OpenCL")
+
         set(CMAKE_REQUIRED_FLAGS "${SYCL_TOOLCHAIN_CXX_FLAGS}")
-        get_target_property(CMAKE_REQUIRED_LIBRARIES MKL::MKL INTERFACE_LINK_LIBRARIES)
-        list(APPEND CMAKE_REQUIRED_LIBRARIES "${GMX_EXTRA_LIBRARIES}")
-        get_target_property(CMAKE_REQUIRED_INCLUDES MKL::MKL INTERFACE_INCLUDE_DIRECTORIES)
+        set(CMAKE_REQUIRED_LIBRARIES "${GMX_EXTRA_LIBRARIES};${FFT_LIBRARIES}")
         check_cxx_source_compiles("
 #include <oneapi/mkl/dfti.hpp>
 int main() {
