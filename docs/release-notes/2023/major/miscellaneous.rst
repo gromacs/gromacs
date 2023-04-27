@@ -26,3 +26,9 @@ the bias. In the AWH output only the shared friction output
 is written.
 
 :issue:`3842`
+
+Required ``gmx grompp -maxwarn`` to take a positive integer
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Previously -1 was accepted and suppressed all warnings. Now
+a positive integer must be chosen.
