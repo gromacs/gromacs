@@ -68,7 +68,7 @@ enum
 
 typedef struct
 {
-    int minCalpha, minC, H, N, C, O, Cn[MAXCHI + 3];
+    int minCalpha, minC, maxN, H, N, C, O, Cn[MAXCHI + 3];
 } t_dihatms; /* Cn[0]=N, Cn[1]=Ca, Cn[2]=Cb etc. */
 
 struct t_dlist
@@ -250,7 +250,7 @@ bool has_dihedral(int Dih, const t_dlist& dlist);
  * atom indices based on the atom names. Many fields of t_dlist are
  * not yet filled. */
 std::vector<t_dlist>
-mk_dlist(FILE* log, const t_atoms* atoms, bool bPhi, bool bPsi, bool bChi, bool bHChi, int maxchi, int r0);
+mk_dlist(FILE* log, const t_atoms* atoms, bool bPhi, bool bPsi, bool bChi, bool bHChi, int maxchi, int r0, int rN);
 
 void pr_dlist(FILE*                        fp,
               gmx::ArrayRef<const t_dlist> dlist,

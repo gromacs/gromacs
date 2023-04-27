@@ -148,7 +148,7 @@ static std::vector<int> make_chi_ind(gmx::ArrayRef<t_dlist> dlist)
     int n = 0;
     for (auto& dihedral : dlist)
     {
-        /* Phi, fake the first one */
+        /* Phi, fake for N-terminal residue */
         dihedral.j0[edPhi] = n / 4;
         if (dihedral.atm.minC >= 0)
         {
@@ -162,24 +162,20 @@ static std::vector<int> make_chi_ind(gmx::ArrayRef<t_dlist> dlist)
         id[n++] = dihedral.atm.Cn[1];
         id[n++] = dihedral.atm.C;
     }
+    for (auto& dihedral : dlist)
     {
-        int i = 0;
-        for (auto& dihedral : dlist)
+        /* Psi, fake for C-terminal residue */
+        dihedral.j0[edPsi] = n / 4;
+        id[n++]            = dihedral.atm.N;
+        id[n++]            = dihedral.atm.Cn[1];
+        id[n++]            = dihedral.atm.C;
+        if (dihedral.atm.maxN >= 0)
         {
-            /* Psi, fake the last one */
-            dihedral.j0[edPsi] = n / 4;
-            id[n++]            = dihedral.atm.N;
-            id[n++]            = dihedral.atm.Cn[1];
-            id[n++]            = dihedral.atm.C;
-            if (i < (gmx::ssize(dlist) - 1))
-            {
-                id[n++] = dlist[i + 1].atm.N;
-            }
-            else
-            {
-                id[n++] = dihedral.atm.O;
-            }
-            ++i;
+            id[n++] = dihedral.atm.maxN;
+        }
+        else
+        {
+            id[n++] = dihedral.atm.O;
         }
     }
     for (auto& dihedral : dlist)
@@ -414,13 +410,17 @@ static int reset_em_all(gmx::ArrayRef<const t_dlist> dlist, int nf, real** dih, 
         }
     }
     /* Psi */
-    for (size_t i = 0; i < dlist.size() - 1; ++i)
+    for (const auto& dihedral : dlist)
     {
-        reset_one(dih[j++], nf, 0);
+        if (dihedral.atm.maxN == -1)
+        {
+            reset_one(dih[j++], nf, M_PI);
+        }
+        else
+        {
+            reset_one(dih[j++], nf, 0);
+        }
     }
-    /* last Psi is faked from O */
-    reset_one(dih[j++], nf, M_PI);
-
     /* Omega */
     for (const auto& dihedral : dlist)
     {
@@ -1317,21 +1317,17 @@ int gmx_chi(int argc, char* argv[])
     };
 
     const char* bugs[] = {
-        "Produces MANY output files (up to about 4 times the number of residues in the "
-        "protein, twice that if autocorrelation functions are calculated). Typically "
-        "several hundred files are output.",
-        "[GRK]phi[grk] and [GRK]psi[grk] dihedrals are calculated in a "
+        "N-terminal [GRK]phi[grk] and C-terminal [GRK]psi[grk] dihedrals are calculated in a "
         "non-standard way, using H-N-CA-C for [GRK]phi[grk] instead of "
         "C(-)-N-CA-C, and N-CA-C-O for [GRK]psi[grk] instead of N-CA-C-N(+). "
         "This causes (usually small) discrepancies with the output of other "
         "tools like [gmx-rama].",
-        "[TT]-r0[tt] option does not work properly",
         "Rotamers with multiplicity 2 are printed in [TT]chi.log[tt] as if they had ",
         "multiplicity 3, with the 3rd (g(+)) always having probability 0"
     };
 
     /* defaults */
-    static int         r0 = 1, ndeg = 1, maxchi = 2;
+    static int         r0 = 1, rN = -1, ndeg = 1, maxchi = 2;
     static gmx_bool    bAll = FALSE;
     static gmx_bool    bPhi = FALSE, bPsi = FALSE, bOmega = FALSE;
     static real        bfac_init = -1.0, bfac_max = 0;
@@ -1341,6 +1337,7 @@ int gmx_chi(int argc, char* argv[])
     static real     core_frac = 0.5;
     t_pargs         pa[]      = {
         { "-r0", FALSE, etINT, { &r0 }, "starting residue" },
+        { "-rN", FALSE, etINT, { &rN }, "last residue" },
         { "-phi", FALSE, etBOOL, { &bPhi }, "Output for [GRK]phi[grk] dihedral angles" },
         { "-psi", FALSE, etBOOL, { &bPsi }, "Output for [GRK]psi[grk] dihedral angles" },
         { "-omega",
@@ -1508,7 +1505,7 @@ int gmx_chi(int argc, char* argv[])
     }
     fprintf(log, "Title: %s\n", name);
 
-    std::vector<t_dlist> dlist = mk_dlist(log, &atoms, bPhi, bPsi, bChi, bHChi, maxchi, r0);
+    std::vector<t_dlist> dlist = mk_dlist(log, &atoms, bPhi, bPsi, bChi, bHChi, maxchi, r0, rN);
     fprintf(stderr, "%zu residues with dihedrals found\n", dlist.size());
 
     if (dlist.empty())

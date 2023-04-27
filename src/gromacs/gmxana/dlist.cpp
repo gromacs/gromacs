@@ -48,7 +48,8 @@ std::vector<t_dlist> mk_dlist(FILE*          log,
                               gmx_bool       bChi,
                               gmx_bool       bHChi,
                               int            maxchi,
-                              int            r0)
+                              int            r0,
+                              int            rN)
 {
     int       i, j, ii;
     t_dihatms atm, prev;
@@ -58,6 +59,21 @@ std::vector<t_dlist> mk_dlist(FILE*          log,
     // be reduced to only handle those residues identified to contain
     // dihedrals.
     std::vector<t_dlist> dl(atoms->nres + 1);
+
+    /* Enforcing indexing rules for last residue */
+    if (rN != -1 && rN < r0)
+    {
+        gmx_fatal(
+                FARGS,
+                "Ending residue index (-rN) must be greater than beginning residue index (-r0).\n");
+    }
+    if (rN == -1)
+    {
+        /* rN is same default as size of dl */
+        rN = atoms->nres + 1;
+    }
+
+    fprintf(stderr, "Analyzing from residue %d to residue %d", r0, rN);
 
     prev.C = prev.Cn[1] = -1; /* Keep the compiler quiet */
     for (i = 0; (i < edMax); i++)
@@ -70,7 +86,7 @@ std::vector<t_dlist> mk_dlist(FILE*          log,
         int ires = atoms->atom[i].resind;
 
         /* Initiate all atom numbers to -1 */
-        atm.minC = atm.H = atm.N = atm.C = atm.O = atm.minCalpha = -1;
+        atm.minC = atm.maxN = atm.H = atm.N = atm.C = atm.O = atm.minCalpha = -1;
         for (j = 0; (j < MAXCHI + 3); j++)
         {
             atm.Cn[j] = -1;
@@ -80,74 +96,97 @@ std::vector<t_dlist> mk_dlist(FILE*          log,
         /* maybe should allow for chis to hydrogens? */
         while ((i < atoms->nr) && (atoms->atom[i].resind == ires))
         {
-            if ((std::strcmp(*(atoms->atomname[i]), "H") == 0)
-                || (std::strcmp(*(atoms->atomname[i]), "H1") == 0)
-                || (std::strcmp(*(atoms->atomname[i]), "HN") == 0))
+            /* look at residues within the region specified by
+               r0 - 1 and rN + 1 (includes previous and subsequent
+               residues for phi/psi/omega calculations). This does not affect
+               default behavior. Use ires + 1 because atoms->atom[i].resind
+               starts at 0. */
+            if ((ires + 1 >= r0 - 1) && (ires + 1 <= rN + 1))
             {
-                atm.H = i;
-            }
-            else if (std::strcmp(*(atoms->atomname[i]), "N") == 0)
-            {
-                atm.N = i;
-            }
-            else if (std::strcmp(*(atoms->atomname[i]), "C") == 0)
-            {
-                atm.C = i;
-            }
-            else if ((std::strcmp(*(atoms->atomname[i]), "O") == 0)
-                     || (std::strcmp(*(atoms->atomname[i]), "O1") == 0)
-                     || (std::strcmp(*(atoms->atomname[i]), "OC1") == 0)
-                     || (std::strcmp(*(atoms->atomname[i]), "OT1") == 0))
-            {
-                atm.O = i;
-            }
-            else if (std::strcmp(*(atoms->atomname[i]), "CA") == 0)
-            {
-                atm.Cn[1] = i;
-            }
-            else if (std::strcmp(*(atoms->atomname[i]), "CB") == 0)
-            {
-                atm.Cn[2] = i;
-            }
-            else if ((std::strcmp(*(atoms->atomname[i]), "CG") == 0)
-                     || (std::strcmp(*(atoms->atomname[i]), "CG1") == 0)
-                     || (std::strcmp(*(atoms->atomname[i]), "OG") == 0)
-                     || (std::strcmp(*(atoms->atomname[i]), "OG1") == 0)
-                     || (std::strcmp(*(atoms->atomname[i]), "SG") == 0))
-            {
-                atm.Cn[3] = i;
-            }
-            else if ((std::strcmp(*(atoms->atomname[i]), "CD") == 0)
-                     || (std::strcmp(*(atoms->atomname[i]), "CD1") == 0)
-                     || (std::strcmp(*(atoms->atomname[i]), "SD") == 0)
-                     || (std::strcmp(*(atoms->atomname[i]), "OD1") == 0)
-                     || (std::strcmp(*(atoms->atomname[i]), "ND1") == 0))
-            { // NOLINT bugprone-branch-clone
-                atm.Cn[4] = i;
-            }
-            /* by grs - split the Cn[4] into 2 bits to check allowing dih to H */
-            else if (bHChi
-                     && ((std::strcmp(*(atoms->atomname[i]), "HG") == 0)
-                         || (std::strcmp(*(atoms->atomname[i]), "HG1") == 0)))
-            {
-                atm.Cn[4] = i;
-            }
-            else if ((std::strcmp(*(atoms->atomname[i]), "CE") == 0)
-                     || (std::strcmp(*(atoms->atomname[i]), "CE1") == 0)
-                     || (std::strcmp(*(atoms->atomname[i]), "OE1") == 0)
-                     || (std::strcmp(*(atoms->atomname[i]), "NE") == 0))
-            {
-                atm.Cn[5] = i;
-            }
-            else if ((std::strcmp(*(atoms->atomname[i]), "CZ") == 0)
-                     || (std::strcmp(*(atoms->atomname[i]), "NZ") == 0))
-            {
-                atm.Cn[6] = i;
-            }
-            /* HChi flag here too */
-            else if (bHChi && (std::strcmp(*(atoms->atomname[i]), "NH1") == 0))
-            {
-                atm.Cn[7] = i;
+                if ((std::strcmp(*(atoms->atomname[i]), "H") == 0)
+                    || (std::strcmp(*(atoms->atomname[i]), "H1") == 0)
+                    || (std::strcmp(*(atoms->atomname[i]), "HN") == 0))
+                {
+                    atm.H = i;
+                }
+                else if (std::strcmp(*(atoms->atomname[i]), "N") == 0)
+                {
+                    atm.N = i;
+                    /* specify N for psi of previous residue */
+                    if (nl != 0)
+                    {
+                        dl[nl - 1].atm.maxN = i;
+                    }
+                }
+                else if (std::strcmp(*(atoms->atomname[i]), "C") == 0)
+                {
+                    atm.C = i;
+                    /* specify prev.C for nondefault r0 (phi & omega) */
+                    if (ires + 1 == r0 - 1)
+                    {
+                        prev.C = i;
+                    }
+                }
+                else if ((std::strcmp(*(atoms->atomname[i]), "O") == 0)
+                         || (std::strcmp(*(atoms->atomname[i]), "O1") == 0)
+                         || (std::strcmp(*(atoms->atomname[i]), "OC1") == 0)
+                         || (std::strcmp(*(atoms->atomname[i]), "OT1") == 0))
+                {
+                    atm.O = i;
+                }
+                else if (std::strcmp(*(atoms->atomname[i]), "CA") == 0)
+                {
+                    atm.Cn[1] = i;
+                    /* specify prev.Cn[1] (Calpha) for nondefault r0 */
+                    if (ires + 1 == r0 - 1)
+                    {
+                        prev.Cn[1] = i;
+                    }
+                }
+                else if (std::strcmp(*(atoms->atomname[i]), "CB") == 0)
+                {
+                    atm.Cn[2] = i;
+                }
+                else if ((std::strcmp(*(atoms->atomname[i]), "CG") == 0)
+                         || (std::strcmp(*(atoms->atomname[i]), "CG1") == 0)
+                         || (std::strcmp(*(atoms->atomname[i]), "OG") == 0)
+                         || (std::strcmp(*(atoms->atomname[i]), "OG1") == 0)
+                         || (std::strcmp(*(atoms->atomname[i]), "SG") == 0))
+                {
+                    atm.Cn[3] = i;
+                }
+                else if ((std::strcmp(*(atoms->atomname[i]), "CD") == 0)
+                         || (std::strcmp(*(atoms->atomname[i]), "CD1") == 0)
+                         || (std::strcmp(*(atoms->atomname[i]), "SD") == 0)
+                         || (std::strcmp(*(atoms->atomname[i]), "OD1") == 0)
+                         || (std::strcmp(*(atoms->atomname[i]), "ND1") == 0))
+                { // NOLINT bugprone-branch-clone
+                    atm.Cn[4] = i;
+                }
+                /* by grs - split the Cn[4] into 2 bits to check allowing dih to H */
+                else if (bHChi
+                         && ((std::strcmp(*(atoms->atomname[i]), "HG") == 0)
+                             || (std::strcmp(*(atoms->atomname[i]), "HG1") == 0)))
+                {
+                    atm.Cn[4] = i;
+                }
+                else if ((std::strcmp(*(atoms->atomname[i]), "CE") == 0)
+                         || (std::strcmp(*(atoms->atomname[i]), "CE1") == 0)
+                         || (std::strcmp(*(atoms->atomname[i]), "OE1") == 0)
+                         || (std::strcmp(*(atoms->atomname[i]), "NE") == 0))
+                {
+                    atm.Cn[5] = i;
+                }
+                else if ((std::strcmp(*(atoms->atomname[i]), "CZ") == 0)
+                         || (std::strcmp(*(atoms->atomname[i]), "NZ") == 0))
+                {
+                    atm.Cn[6] = i;
+                }
+                /* HChi flag here too */
+                else if (bHChi && (std::strcmp(*(atoms->atomname[i]), "NH1") == 0))
+                {
+                    atm.Cn[7] = i;
+                }
             }
             i++;
         }
@@ -185,46 +224,53 @@ std::vector<t_dlist> mk_dlist(FILE*          log,
         }
         prev = atm;
 
-        /* Check how many dihedrals we have */
-        if ((atm.N != -1) && (atm.Cn[1] != -1) && (atm.C != -1) && (atm.O != -1)
-            && ((atm.H != -1) || (atm.minC != -1)))
+        /* Check how many dihedrals we have. Use ires + 1 because
+           atoms->atom[i].resind starts at 0. Only consider residues
+           within range defined by r0 and rN in this case. */
+        if ((ires + 1 >= r0) && (ires + 1 <= rN))
         {
-            dl[nl].resnr     = ires + 1;
-            dl[nl].atm       = atm;
-            dl[nl].atm.Cn[0] = atm.N;
-            if ((atm.Cn[3] != -1) && (atm.Cn[2] != -1) && (atm.Cn[1] != -1))
+            if ((atm.N != -1) && (atm.Cn[1] != -1) && (atm.C != -1) && (atm.O != -1)
+                && ((atm.H != -1) || (atm.minC != -1)))
             {
-                nc[0]++;
-                if (atm.Cn[4] != -1)
+                dl[nl].resnr     = ires + 1;
+                dl[nl].atm       = atm;
+                dl[nl].atm.Cn[0] = atm.N;
+                if ((atm.Cn[3] != -1) && (atm.Cn[2] != -1) && (atm.Cn[1] != -1))
                 {
-                    nc[1]++;
-                    if (atm.Cn[5] != -1)
+                    nc[0]++;
+                    if (atm.Cn[4] != -1)
                     {
-                        nc[2]++;
-                        if (atm.Cn[6] != -1)
+                        nc[1]++;
+                        if (atm.Cn[5] != -1)
                         {
-                            nc[3]++;
-                            if (atm.Cn[7] != -1)
+                            nc[2]++;
+                            if (atm.Cn[6] != -1)
                             {
-                                nc[4]++;
-                                if (atm.Cn[8] != -1)
+                                nc[3]++;
+                                if (atm.Cn[7] != -1)
                                 {
-                                    nc[5]++;
+                                    nc[4]++;
+                                    if (atm.Cn[8] != -1)
+                                    {
+                                        nc[5]++;
+                                    }
                                 }
                             }
                         }
                     }
                 }
-            }
-            if ((atm.minC != -1) && (atm.minCalpha != -1))
-            {
-                nc[6]++;
-            }
+                if ((atm.minC != -1) && (atm.minCalpha != -1))
+                {
+                    nc[6]++;
+                }
 
-            dl[nl].residueName = thisres;
+                dl[nl].residueName = thisres;
 
-            sprintf(dl[nl].name, "%s%d", thisres, ires + r0);
-            nl++;
+                /* ires + 1 to correctly number residue files
+                   (atoms->atom[i].resind starts at zero)     */
+                sprintf(dl[nl].name, "%s%d", thisres, ires + 1);
+                nl++;
+            }
         }
         else if (debug)
         {
@@ -232,7 +278,7 @@ std::vector<t_dlist> mk_dlist(FILE*          log,
                     "Could not find N atom but could find other atoms"
                     " in residue %s%d\n",
                     thisres,
-                    ires + r0);
+                    ires + 1);
         }
     }
     // Leave only the residues that were recognized to contain dihedrals
