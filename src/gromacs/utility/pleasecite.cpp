@@ -567,6 +567,14 @@ void please_cite(FILE* fp, const char* key)
           154,
           2021,
           "204103" },
+        { "Kabsch1983",
+          "W. Kabsch, C. Sander",
+          "Dictionary of protein secondary structure: pattern recognition of hydrogen-bonded and "
+          "geometrical features.",
+          "Biopolymers",
+          22,
+          1983,
+          "2577-2637" },
     };
 #define NSTR static_cast<int>(asize(citedb))
 

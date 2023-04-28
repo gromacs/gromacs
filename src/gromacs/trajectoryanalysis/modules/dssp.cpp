@@ -63,6 +63,7 @@
 #include "gromacs/trajectoryanalysis/topologyinformation.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/pleasecite.h"
 
 namespace gmx
 {
@@ -1415,7 +1416,10 @@ void Dssp::analyzeFrame(int frnr, const t_trxframe& fr, t_pbc* pbc, TrajectoryAn
                              fr, pbc, nBSmode_, cutoff_, polyProHelices_, polyProStretch_));
 }
 
-void Dssp::finishAnalysis(int /*nframes*/) {}
+void Dssp::finishAnalysis(int /*nframes*/)
+{
+    please_cite(stdout, "Kabsch1983");
+}
 
 void Dssp::writeOutput()
 {
