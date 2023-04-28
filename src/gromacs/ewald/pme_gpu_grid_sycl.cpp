@@ -662,6 +662,7 @@ submit(const DeviceStream& deviceStream, size_t myGridX, size_t myGridY, sycl::u
     });
 }
 
+#if GMX_MPI
 /*! \brief
  * Utility function to send and recv halo data from neighboring ranks
  */
@@ -681,6 +682,7 @@ static void receiveAndSend(float*       sendBuf,
 
     MPI_Isend(sendBuf, sendCount, MPI_FLOAT, dest, tag, comm, sendRequest);
 }
+#endif
 
 void pmeGpuGridHaloExchange(const PmeGpu* pmeGpu, gmx_wallcycle* wcycle)
 {

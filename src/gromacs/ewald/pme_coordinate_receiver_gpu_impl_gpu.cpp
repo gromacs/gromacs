@@ -177,10 +177,10 @@ std::tuple<int, GpuEventSynchronizer*> PmeCoordinateReceiverGpu::Impl::receivePp
     // respective streams.
     senderRank = pipelineStage;
     MPI_Wait(&(requests_[senderRank]), MPI_STATUS_IGNORE);
-    return std::tie(senderRank, ppCommManagers_[senderRank].sync);
+    return std::make_tuple(senderRank, ppCommManagers_[senderRank].sync);
 #else
     GMX_UNUSED_VALUE(pipelineStage);
-    return std::tie(-1, nullptr);
+    return std::make_tuple(-1, nullptr);
 #endif
 }
 
