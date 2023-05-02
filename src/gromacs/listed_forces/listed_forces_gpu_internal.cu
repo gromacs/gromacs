@@ -114,9 +114,9 @@ harmonic_gpu(const float kA, const float xA, const float x, float* V, float* F)
 }
 
 template<bool calcVir, bool calcEner>
-__device__ __forceinline__ void bonds_gpu(const int       i,
-                                          float*          vtot_loc,
-                                          const int       numBonds,
+__device__ __forceinline__ void bonds_gpu(const int i,
+                                          float*    vtot_loc,
+
                                           const t_iatom   d_forceatoms[],
                                           const t_iparams d_forceparams[],
                                           const float4    gm_xq[],
@@ -124,41 +124,38 @@ __device__ __forceinline__ void bonds_gpu(const int       i,
                                           float3          sm_fShiftLoc[],
                                           const PbcAiuc   pbcAiuc)
 {
-    if (i < numBonds)
+    const int3 bondData = *(reinterpret_cast<const int3*>(d_forceatoms + 3 * i));
+    int        type     = bondData.x;
+    int        ai       = bondData.y;
+    int        aj       = bondData.z;
+
+    /* dx = xi - xj, corrected for periodic boundary conditions. */
+    float3 dx;
+    int    ki = pbcDxAiuc<calcVir>(pbcAiuc, gm_xq[ai], gm_xq[aj], dx);
+
+    float dr2 = norm2(dx);
+    float dr  = sqrt(dr2);
+
+    float vbond;
+    float fbond;
+    harmonic_gpu(d_forceparams[type].harmonic.krA, d_forceparams[type].harmonic.rA, dr, &vbond, &fbond);
+
+    if (calcEner)
     {
-        const int3 bondData = *(reinterpret_cast<const int3*>(d_forceatoms + 3 * i));
-        int        type     = bondData.x;
-        int        ai       = bondData.y;
-        int        aj       = bondData.z;
+        *vtot_loc += vbond;
+    }
 
-        /* dx = xi - xj, corrected for periodic boundary conditions. */
-        float3 dx;
-        int    ki = pbcDxAiuc<calcVir>(pbcAiuc, gm_xq[ai], gm_xq[aj], dx);
+    if (dr2 != 0.0F)
+    {
+        fbond *= rsqrtf(dr2);
 
-        float dr2 = norm2(dx);
-        float dr  = sqrt(dr2);
-
-        float vbond;
-        float fbond;
-        harmonic_gpu(d_forceparams[type].harmonic.krA, d_forceparams[type].harmonic.rA, dr, &vbond, &fbond);
-
-        if (calcEner)
+        float3 fij = fbond * dx;
+        staggeredAtomicAddForce(&gm_f[ai], fij);
+        staggeredAtomicAddForce(&gm_f[aj], -fij);
+        if (calcVir && ki != gmx::c_centralShiftIndex)
         {
-            *vtot_loc += vbond;
-        }
-
-        if (dr2 != 0.0F)
-        {
-            fbond *= rsqrtf(dr2);
-
-            float3 fij = fbond * dx;
-            staggeredAtomicAddForce(&gm_f[ai], fij);
-            staggeredAtomicAddForce(&gm_f[aj], -fij);
-            if (calcVir && ki != gmx::c_centralShiftIndex)
-            {
-                staggeredAtomicAddForce(&sm_fShiftLoc[ki], fij);
-                staggeredAtomicAddForce(&sm_fShiftLoc[gmx::c_centralShiftIndex], -fij);
-            }
+            staggeredAtomicAddForce(&sm_fShiftLoc[ki], fij);
+            staggeredAtomicAddForce(&sm_fShiftLoc[gmx::c_centralShiftIndex], -fij);
         }
     }
 }
@@ -185,9 +182,9 @@ __device__ __forceinline__ static float bond_angle_gpu(const float4   xi,
 }
 
 template<bool calcVir, bool calcEner>
-__device__ __forceinline__ void angles_gpu(const int       i,
-                                           float*          vtot_loc,
-                                           const int       numBonds,
+__device__ __forceinline__ void angles_gpu(const int i,
+                                           float*    vtot_loc,
+
                                            const t_iatom   d_forceatoms[],
                                            const t_iparams d_forceparams[],
                                            const float4    gm_xq[],
@@ -195,72 +192,69 @@ __device__ __forceinline__ void angles_gpu(const int       i,
                                            float3          sm_fShiftLoc[],
                                            const PbcAiuc   pbcAiuc)
 {
-    if (i < numBonds)
+    const int4 angleData = *(reinterpret_cast<const int4*>(d_forceatoms + 4 * i));
+    int        type      = angleData.x;
+    int        ai        = angleData.y;
+    int        aj        = angleData.z;
+    int        ak        = angleData.w;
+
+    float3 r_ij;
+    float3 r_kj;
+    float  cos_theta;
+    int    t1;
+    int    t2;
+    float  theta = bond_angle_gpu<calcVir>(
+            gm_xq[ai], gm_xq[aj], gm_xq[ak], pbcAiuc, &r_ij, &r_kj, &cos_theta, &t1, &t2);
+
+    float va;
+    float dVdt;
+    harmonic_gpu(d_forceparams[type].harmonic.krA,
+                 d_forceparams[type].harmonic.rA * CUDA_DEG2RAD_F,
+                 theta,
+                 &va,
+                 &dVdt);
+
+    if (calcEner)
     {
-        const int4 angleData = *(reinterpret_cast<const int4*>(d_forceatoms + 4 * i));
-        int        type      = angleData.x;
-        int        ai        = angleData.y;
-        int        aj        = angleData.z;
-        int        ak        = angleData.w;
+        *vtot_loc += va;
+    }
 
-        float3 r_ij;
-        float3 r_kj;
-        float  cos_theta;
-        int    t1;
-        int    t2;
-        float  theta = bond_angle_gpu<calcVir>(
-                gm_xq[ai], gm_xq[aj], gm_xq[ak], pbcAiuc, &r_ij, &r_kj, &cos_theta, &t1, &t2);
+    float cos_theta2 = cos_theta * cos_theta;
+    if (cos_theta2 < 1.0F)
+    {
+        float st    = dVdt * rsqrtf(1.0F - cos_theta2);
+        float sth   = st * cos_theta;
+        float nrij2 = norm2(r_ij);
+        float nrkj2 = norm2(r_kj);
 
-        float va;
-        float dVdt;
-        harmonic_gpu(d_forceparams[type].harmonic.krA,
-                     d_forceparams[type].harmonic.rA * CUDA_DEG2RAD_F,
-                     theta,
-                     &va,
-                     &dVdt);
+        float nrij_1 = rsqrtf(nrij2);
+        float nrkj_1 = rsqrtf(nrkj2);
 
-        if (calcEner)
+        float cik = st * nrij_1 * nrkj_1;
+        float cii = sth * nrij_1 * nrij_1;
+        float ckk = sth * nrkj_1 * nrkj_1;
+
+        float3 f_i = cii * r_ij - cik * r_kj;
+        float3 f_k = ckk * r_kj - cik * r_ij;
+        float3 f_j = -f_i - f_k;
+
+        staggeredAtomicAddForce(&gm_f[ai], f_i);
+        staggeredAtomicAddForce(&gm_f[aj], f_j);
+        staggeredAtomicAddForce(&gm_f[ak], f_k);
+
+        if (calcVir)
         {
-            *vtot_loc += va;
-        }
-
-        float cos_theta2 = cos_theta * cos_theta;
-        if (cos_theta2 < 1.0F)
-        {
-            float st    = dVdt * rsqrtf(1.0F - cos_theta2);
-            float sth   = st * cos_theta;
-            float nrij2 = norm2(r_ij);
-            float nrkj2 = norm2(r_kj);
-
-            float nrij_1 = rsqrtf(nrij2);
-            float nrkj_1 = rsqrtf(nrkj2);
-
-            float cik = st * nrij_1 * nrkj_1;
-            float cii = sth * nrij_1 * nrij_1;
-            float ckk = sth * nrkj_1 * nrkj_1;
-
-            float3 f_i = cii * r_ij - cik * r_kj;
-            float3 f_k = ckk * r_kj - cik * r_ij;
-            float3 f_j = -f_i - f_k;
-
-            staggeredAtomicAddForce(&gm_f[ai], f_i);
-            staggeredAtomicAddForce(&gm_f[aj], f_j);
-            staggeredAtomicAddForce(&gm_f[ak], f_k);
-
-            if (calcVir)
-            {
-                staggeredAtomicAddForce(&sm_fShiftLoc[t1], f_i);
-                staggeredAtomicAddForce(&sm_fShiftLoc[gmx::c_centralShiftIndex], f_j);
-                staggeredAtomicAddForce(&sm_fShiftLoc[t2], f_k);
-            }
+            staggeredAtomicAddForce(&sm_fShiftLoc[t1], f_i);
+            staggeredAtomicAddForce(&sm_fShiftLoc[gmx::c_centralShiftIndex], f_j);
+            staggeredAtomicAddForce(&sm_fShiftLoc[t2], f_k);
         }
     }
 }
 
 template<bool calcVir, bool calcEner>
-__device__ __forceinline__ void urey_bradley_gpu(const int       i,
-                                                 float*          vtot_loc,
-                                                 const int       numBonds,
+__device__ __forceinline__ void urey_bradley_gpu(const int i,
+                                                 float*    vtot_loc,
+
                                                  const t_iatom   d_forceatoms[],
                                                  const t_iparams d_forceparams[],
                                                  const float4    gm_xq[],
@@ -268,106 +262,103 @@ __device__ __forceinline__ void urey_bradley_gpu(const int       i,
                                                  float3          sm_fShiftLoc[],
                                                  const PbcAiuc   pbcAiuc)
 {
-    if (i < numBonds)
+    const int4 ubData = *(reinterpret_cast<const int4*>(d_forceatoms + 4 * i));
+    int        type   = ubData.x;
+    int        ai     = ubData.y;
+    int        aj     = ubData.z;
+    int        ak     = ubData.w;
+
+    float th0A = d_forceparams[type].u_b.thetaA * CUDA_DEG2RAD_F;
+    float kthA = d_forceparams[type].u_b.kthetaA;
+    float r13A = d_forceparams[type].u_b.r13A;
+    float kUBA = d_forceparams[type].u_b.kUBA;
+
+    float3 r_ij;
+    float3 r_kj;
+    float  cos_theta;
+    int    t1;
+    int    t2;
+    float  theta = bond_angle_gpu<calcVir>(
+            gm_xq[ai], gm_xq[aj], gm_xq[ak], pbcAiuc, &r_ij, &r_kj, &cos_theta, &t1, &t2);
+
+    float va;
+    float dVdt;
+    harmonic_gpu(kthA, th0A, theta, &va, &dVdt);
+
+    if (calcEner)
     {
-        const int4 ubData = *(reinterpret_cast<const int4*>(d_forceatoms + 4 * i));
-        int        type   = ubData.x;
-        int        ai     = ubData.y;
-        int        aj     = ubData.z;
-        int        ak     = ubData.w;
+        *vtot_loc += va;
+    }
 
-        float th0A = d_forceparams[type].u_b.thetaA * CUDA_DEG2RAD_F;
-        float kthA = d_forceparams[type].u_b.kthetaA;
-        float r13A = d_forceparams[type].u_b.r13A;
-        float kUBA = d_forceparams[type].u_b.kUBA;
+    float3 r_ik;
+    int    ki = pbcDxAiuc<calcVir>(pbcAiuc, gm_xq[ai], gm_xq[ak], r_ik);
 
-        float3 r_ij;
-        float3 r_kj;
-        float  cos_theta;
-        int    t1;
-        int    t2;
-        float  theta = bond_angle_gpu<calcVir>(
-                gm_xq[ai], gm_xq[aj], gm_xq[ak], pbcAiuc, &r_ij, &r_kj, &cos_theta, &t1, &t2);
+    float dr2 = norm2(r_ik);
+    float dr  = dr2 * rsqrtf(dr2);
 
-        float va;
-        float dVdt;
-        harmonic_gpu(kthA, th0A, theta, &va, &dVdt);
+    float vbond;
+    float fbond;
+    harmonic_gpu(kUBA, r13A, dr, &vbond, &fbond);
 
+    float cos_theta2 = cos_theta * cos_theta;
+
+    float3 f_i = make_float3(0.0F);
+    float3 f_j = make_float3(0.0F);
+    float3 f_k = make_float3(0.0F);
+
+    if (cos_theta2 < 1.0F)
+    {
+        float st  = dVdt * rsqrtf(1.0F - cos_theta2);
+        float sth = st * cos_theta;
+
+        float nrkj2 = norm2(r_kj);
+        float nrij2 = norm2(r_ij);
+
+        float cik = st * rsqrtf(nrkj2 * nrij2);
+        float cii = sth / nrij2;
+        float ckk = sth / nrkj2;
+
+        f_i = cii * r_ij - cik * r_kj;
+        f_k = ckk * r_kj - cik * r_ij;
+        f_j = -f_i - f_k;
+
+        if (calcVir)
+        {
+            staggeredAtomicAddForce(&sm_fShiftLoc[t1], f_i);
+            staggeredAtomicAddForce(&sm_fShiftLoc[gmx::c_centralShiftIndex], f_j);
+            staggeredAtomicAddForce(&sm_fShiftLoc[t2], f_k);
+        }
+    }
+
+    /* Time for the bond calculations */
+    if (dr2 != 0.0F)
+    {
         if (calcEner)
         {
-            *vtot_loc += va;
+            *vtot_loc += vbond;
         }
 
-        float3 r_ik;
-        int    ki = pbcDxAiuc<calcVir>(pbcAiuc, gm_xq[ai], gm_xq[ak], r_ik);
+        fbond *= rsqrtf(dr2);
 
-        float dr2 = norm2(r_ik);
-        float dr  = dr2 * rsqrtf(dr2);
+        float3 fik = fbond * r_ik;
+        f_i += fik;
+        f_k -= fik;
 
-        float vbond;
-        float fbond;
-        harmonic_gpu(kUBA, r13A, dr, &vbond, &fbond);
-
-        float cos_theta2 = cos_theta * cos_theta;
-
-        float3 f_i = make_float3(0.0F);
-        float3 f_j = make_float3(0.0F);
-        float3 f_k = make_float3(0.0F);
-
-        if (cos_theta2 < 1.0F)
+        if (calcVir && ki != gmx::c_centralShiftIndex)
         {
-            float st  = dVdt * rsqrtf(1.0F - cos_theta2);
-            float sth = st * cos_theta;
-
-            float nrkj2 = norm2(r_kj);
-            float nrij2 = norm2(r_ij);
-
-            float cik = st * rsqrtf(nrkj2 * nrij2);
-            float cii = sth / nrij2;
-            float ckk = sth / nrkj2;
-
-            f_i = cii * r_ij - cik * r_kj;
-            f_k = ckk * r_kj - cik * r_ij;
-            f_j = -f_i - f_k;
-
-            if (calcVir)
-            {
-                staggeredAtomicAddForce(&sm_fShiftLoc[t1], f_i);
-                staggeredAtomicAddForce(&sm_fShiftLoc[gmx::c_centralShiftIndex], f_j);
-                staggeredAtomicAddForce(&sm_fShiftLoc[t2], f_k);
-            }
+            staggeredAtomicAddForce(&sm_fShiftLoc[ki], fik);
+            staggeredAtomicAddForce(&sm_fShiftLoc[gmx::c_centralShiftIndex], -fik);
         }
+    }
+    if ((cos_theta2 < 1.0F) || (dr2 != 0.0F))
+    {
+        staggeredAtomicAddForce(&gm_f[ai], f_i);
+        staggeredAtomicAddForce(&gm_f[ak], f_k);
+    }
 
-        /* Time for the bond calculations */
-        if (dr2 != 0.0F)
-        {
-            if (calcEner)
-            {
-                *vtot_loc += vbond;
-            }
-
-            fbond *= rsqrtf(dr2);
-
-            float3 fik = fbond * r_ik;
-            f_i += fik;
-            f_k -= fik;
-
-            if (calcVir && ki != gmx::c_centralShiftIndex)
-            {
-                staggeredAtomicAddForce(&sm_fShiftLoc[ki], fik);
-                staggeredAtomicAddForce(&sm_fShiftLoc[gmx::c_centralShiftIndex], -fik);
-            }
-        }
-        if ((cos_theta2 < 1.0F) || (dr2 != 0.0F))
-        {
-            staggeredAtomicAddForce(&gm_f[ai], f_i);
-            staggeredAtomicAddForce(&gm_f[ak], f_k);
-        }
-
-        if (cos_theta2 < 1.0F)
-        {
-            staggeredAtomicAddForce(&gm_f[aj], f_j);
-        }
+    if (cos_theta2 < 1.0F)
+    {
+        staggeredAtomicAddForce(&gm_f[aj], f_j);
     }
 }
 
@@ -473,9 +464,9 @@ __device__ __forceinline__ static void do_dih_fup_gpu(const int            i,
 }
 
 template<bool calcVir, bool calcEner>
-__device__ __forceinline__ void pdihs_gpu(const int       i,
-                                          float*          vtot_loc,
-                                          const int       numBonds,
+__device__ __forceinline__ void pdihs_gpu(const int i,
+                                          float*    vtot_loc,
+
                                           const t_iatom   d_forceatoms[],
                                           const t_iparams d_forceparams[],
                                           const float4    gm_xq[],
@@ -483,48 +474,45 @@ __device__ __forceinline__ void pdihs_gpu(const int       i,
                                           float3          sm_fShiftLoc[],
                                           const PbcAiuc   pbcAiuc)
 {
-    if (i < numBonds)
+    int type = d_forceatoms[5 * i];
+    int ai   = d_forceatoms[5 * i + 1];
+    int aj   = d_forceatoms[5 * i + 2];
+    int ak   = d_forceatoms[5 * i + 3];
+    int al   = d_forceatoms[5 * i + 4];
+
+    float3 r_ij;
+    float3 r_kj;
+    float3 r_kl;
+    float3 m;
+    float3 n;
+    int    t1;
+    int    t2;
+    int    t3;
+    float  phi = dih_angle_gpu<calcVir>(
+            gm_xq[ai], gm_xq[aj], gm_xq[ak], gm_xq[al], pbcAiuc, &r_ij, &r_kj, &r_kl, &m, &n, &t1, &t2, &t3);
+
+    float vpd;
+    float ddphi;
+    dopdihs_gpu(d_forceparams[type].pdihs.cpA,
+                d_forceparams[type].pdihs.phiA,
+                d_forceparams[type].pdihs.mult,
+                phi,
+                &vpd,
+                &ddphi);
+
+    if (calcEner)
     {
-        int type = d_forceatoms[5 * i];
-        int ai   = d_forceatoms[5 * i + 1];
-        int aj   = d_forceatoms[5 * i + 2];
-        int ak   = d_forceatoms[5 * i + 3];
-        int al   = d_forceatoms[5 * i + 4];
-
-        float3 r_ij;
-        float3 r_kj;
-        float3 r_kl;
-        float3 m;
-        float3 n;
-        int    t1;
-        int    t2;
-        int    t3;
-        float  phi = dih_angle_gpu<calcVir>(
-                gm_xq[ai], gm_xq[aj], gm_xq[ak], gm_xq[al], pbcAiuc, &r_ij, &r_kj, &r_kl, &m, &n, &t1, &t2, &t3);
-
-        float vpd;
-        float ddphi;
-        dopdihs_gpu(d_forceparams[type].pdihs.cpA,
-                    d_forceparams[type].pdihs.phiA,
-                    d_forceparams[type].pdihs.mult,
-                    phi,
-                    &vpd,
-                    &ddphi);
-
-        if (calcEner)
-        {
-            *vtot_loc += vpd;
-        }
-
-        do_dih_fup_gpu<calcVir>(
-                ai, aj, ak, al, ddphi, r_ij, r_kj, r_kl, m, n, gm_f, sm_fShiftLoc, pbcAiuc, gm_xq, t1, t2, t3);
+        *vtot_loc += vpd;
     }
+
+    do_dih_fup_gpu<calcVir>(
+            ai, aj, ak, al, ddphi, r_ij, r_kj, r_kl, m, n, gm_f, sm_fShiftLoc, pbcAiuc, gm_xq, t1, t2, t3);
 }
 
 template<bool calcVir, bool calcEner>
-__device__ __forceinline__ void rbdihs_gpu(const int       i,
-                                           float*          vtot_loc,
-                                           const int       numBonds,
+__device__ __forceinline__ void rbdihs_gpu(const int i,
+                                           float*    vtot_loc,
+
                                            const t_iatom   d_forceatoms[],
                                            const t_iparams d_forceparams[],
                                            const float4    gm_xq[],
@@ -534,94 +522,91 @@ __device__ __forceinline__ void rbdihs_gpu(const int       i,
 {
     constexpr float c0 = 0.0F, c1 = 1.0F, c2 = 2.0F, c3 = 3.0F, c4 = 4.0F, c5 = 5.0F;
 
-    if (i < numBonds)
+    int type = d_forceatoms[5 * i];
+    int ai   = d_forceatoms[5 * i + 1];
+    int aj   = d_forceatoms[5 * i + 2];
+    int ak   = d_forceatoms[5 * i + 3];
+    int al   = d_forceatoms[5 * i + 4];
+
+    float3 r_ij;
+    float3 r_kj;
+    float3 r_kl;
+    float3 m;
+    float3 n;
+    int    t1;
+    int    t2;
+    int    t3;
+    float  phi = dih_angle_gpu<calcVir>(
+            gm_xq[ai], gm_xq[aj], gm_xq[ak], gm_xq[al], pbcAiuc, &r_ij, &r_kj, &r_kl, &m, &n, &t1, &t2, &t3);
+
+    /* Change to polymer convention */
+    if (phi < c0)
     {
-        int type = d_forceatoms[5 * i];
-        int ai   = d_forceatoms[5 * i + 1];
-        int aj   = d_forceatoms[5 * i + 2];
-        int ak   = d_forceatoms[5 * i + 3];
-        int al   = d_forceatoms[5 * i + 4];
+        phi += CUDART_PI_F;
+    }
+    else
+    {
+        phi -= CUDART_PI_F;
+    }
+    float cos_phi = cosf(phi);
+    /* Beware of accuracy loss, cannot use 1-sqrt(cos^2) ! */
+    float sin_phi = sinf(phi);
 
-        float3 r_ij;
-        float3 r_kj;
-        float3 r_kl;
-        float3 m;
-        float3 n;
-        int    t1;
-        int    t2;
-        int    t3;
-        float  phi = dih_angle_gpu<calcVir>(
-                gm_xq[ai], gm_xq[aj], gm_xq[ak], gm_xq[al], pbcAiuc, &r_ij, &r_kj, &r_kl, &m, &n, &t1, &t2, &t3);
+    float parm[NR_RBDIHS];
+    for (int j = 0; j < NR_RBDIHS; j++)
+    {
+        parm[j] = d_forceparams[type].rbdihs.rbcA[j];
+    }
+    /* Calculate cosine powers */
+    /* Calculate the energy */
+    /* Calculate the derivative */
+    float v      = parm[0];
+    float ddphi  = c0;
+    float cosfac = c1;
 
-        /* Change to polymer convention */
-        if (phi < c0)
-        {
-            phi += CUDART_PI_F;
-        }
-        else
-        {
-            phi -= CUDART_PI_F;
-        }
-        float cos_phi = cosf(phi);
-        /* Beware of accuracy loss, cannot use 1-sqrt(cos^2) ! */
-        float sin_phi = sinf(phi);
+    float rbp = parm[1];
+    ddphi += rbp * cosfac;
+    cosfac *= cos_phi;
+    if (calcEner)
+    {
+        v += cosfac * rbp;
+    }
+    rbp = parm[2];
+    ddphi += c2 * rbp * cosfac;
+    cosfac *= cos_phi;
+    if (calcEner)
+    {
+        v += cosfac * rbp;
+    }
+    rbp = parm[3];
+    ddphi += c3 * rbp * cosfac;
+    cosfac *= cos_phi;
+    if (calcEner)
+    {
+        v += cosfac * rbp;
+    }
+    rbp = parm[4];
+    ddphi += c4 * rbp * cosfac;
+    cosfac *= cos_phi;
+    if (calcEner)
+    {
+        v += cosfac * rbp;
+    }
+    rbp = parm[5];
+    ddphi += c5 * rbp * cosfac;
+    cosfac *= cos_phi;
+    if (calcEner)
+    {
+        v += cosfac * rbp;
+    }
 
-        float parm[NR_RBDIHS];
-        for (int j = 0; j < NR_RBDIHS; j++)
-        {
-            parm[j] = d_forceparams[type].rbdihs.rbcA[j];
-        }
-        /* Calculate cosine powers */
-        /* Calculate the energy */
-        /* Calculate the derivative */
-        float v      = parm[0];
-        float ddphi  = c0;
-        float cosfac = c1;
+    ddphi = -ddphi * sin_phi;
 
-        float rbp = parm[1];
-        ddphi += rbp * cosfac;
-        cosfac *= cos_phi;
-        if (calcEner)
-        {
-            v += cosfac * rbp;
-        }
-        rbp = parm[2];
-        ddphi += c2 * rbp * cosfac;
-        cosfac *= cos_phi;
-        if (calcEner)
-        {
-            v += cosfac * rbp;
-        }
-        rbp = parm[3];
-        ddphi += c3 * rbp * cosfac;
-        cosfac *= cos_phi;
-        if (calcEner)
-        {
-            v += cosfac * rbp;
-        }
-        rbp = parm[4];
-        ddphi += c4 * rbp * cosfac;
-        cosfac *= cos_phi;
-        if (calcEner)
-        {
-            v += cosfac * rbp;
-        }
-        rbp = parm[5];
-        ddphi += c5 * rbp * cosfac;
-        cosfac *= cos_phi;
-        if (calcEner)
-        {
-            v += cosfac * rbp;
-        }
-
-        ddphi = -ddphi * sin_phi;
-
-        do_dih_fup_gpu<calcVir>(
-                ai, aj, ak, al, ddphi, r_ij, r_kj, r_kl, m, n, gm_f, sm_fShiftLoc, pbcAiuc, gm_xq, t1, t2, t3);
-        if (calcEner)
-        {
-            *vtot_loc += v;
-        }
+    do_dih_fup_gpu<calcVir>(
+            ai, aj, ak, al, ddphi, r_ij, r_kj, r_kl, m, n, gm_f, sm_fShiftLoc, pbcAiuc, gm_xq, t1, t2, t3);
+    if (calcEner)
+    {
+        *vtot_loc += v;
     }
 }
 
@@ -639,9 +624,9 @@ __device__ __forceinline__ static void make_dp_periodic_gpu(float* dp)
 }
 
 template<bool calcVir, bool calcEner>
-__device__ __forceinline__ void idihs_gpu(const int       i,
-                                          float*          vtot_loc,
-                                          const int       numBonds,
+__device__ __forceinline__ void idihs_gpu(const int i,
+                                          float*    vtot_loc,
+
                                           const t_iatom   d_forceatoms[],
                                           const t_iparams d_forceparams[],
                                           const float4    gm_xq[],
@@ -649,56 +634,53 @@ __device__ __forceinline__ void idihs_gpu(const int       i,
                                           float3          sm_fShiftLoc[],
                                           const PbcAiuc   pbcAiuc)
 {
-    if (i < numBonds)
+    int type = d_forceatoms[5 * i];
+    int ai   = d_forceatoms[5 * i + 1];
+    int aj   = d_forceatoms[5 * i + 2];
+    int ak   = d_forceatoms[5 * i + 3];
+    int al   = d_forceatoms[5 * i + 4];
+
+    float3 r_ij;
+    float3 r_kj;
+    float3 r_kl;
+    float3 m;
+    float3 n;
+    int    t1;
+    int    t2;
+    int    t3;
+    float  phi = dih_angle_gpu<calcVir>(
+            gm_xq[ai], gm_xq[aj], gm_xq[ak], gm_xq[al], pbcAiuc, &r_ij, &r_kj, &r_kl, &m, &n, &t1, &t2, &t3);
+
+    /* phi can jump if phi0 is close to Pi/-Pi, which will cause huge
+     * force changes if we just apply a normal harmonic.
+     * Instead, we first calculate phi-phi0 and take it modulo (-Pi,Pi).
+     * This means we will never have the periodicity problem, unless
+     * the dihedral is Pi away from phiO, which is very unlikely due to
+     * the potential.
+     */
+    float kA = d_forceparams[type].harmonic.krA;
+    float pA = d_forceparams[type].harmonic.rA;
+
+    float phi0 = pA * CUDA_DEG2RAD_F;
+
+    float dp = phi - phi0;
+
+    make_dp_periodic_gpu(&dp);
+
+    float ddphi = -kA * dp;
+
+    do_dih_fup_gpu<calcVir>(
+            ai, aj, ak, al, -ddphi, r_ij, r_kj, r_kl, m, n, gm_f, sm_fShiftLoc, pbcAiuc, gm_xq, t1, t2, t3);
+
+    if (calcEner)
     {
-        int type = d_forceatoms[5 * i];
-        int ai   = d_forceatoms[5 * i + 1];
-        int aj   = d_forceatoms[5 * i + 2];
-        int ak   = d_forceatoms[5 * i + 3];
-        int al   = d_forceatoms[5 * i + 4];
-
-        float3 r_ij;
-        float3 r_kj;
-        float3 r_kl;
-        float3 m;
-        float3 n;
-        int    t1;
-        int    t2;
-        int    t3;
-        float  phi = dih_angle_gpu<calcVir>(
-                gm_xq[ai], gm_xq[aj], gm_xq[ak], gm_xq[al], pbcAiuc, &r_ij, &r_kj, &r_kl, &m, &n, &t1, &t2, &t3);
-
-        /* phi can jump if phi0 is close to Pi/-Pi, which will cause huge
-         * force changes if we just apply a normal harmonic.
-         * Instead, we first calculate phi-phi0 and take it modulo (-Pi,Pi).
-         * This means we will never have the periodicity problem, unless
-         * the dihedral is Pi away from phiO, which is very unlikely due to
-         * the potential.
-         */
-        float kA = d_forceparams[type].harmonic.krA;
-        float pA = d_forceparams[type].harmonic.rA;
-
-        float phi0 = pA * CUDA_DEG2RAD_F;
-
-        float dp = phi - phi0;
-
-        make_dp_periodic_gpu(&dp);
-
-        float ddphi = -kA * dp;
-
-        do_dih_fup_gpu<calcVir>(
-                ai, aj, ak, al, -ddphi, r_ij, r_kj, r_kl, m, n, gm_f, sm_fShiftLoc, pbcAiuc, gm_xq, t1, t2, t3);
-
-        if (calcEner)
-        {
-            *vtot_loc += -0.5F * ddphi * dp;
-        }
+        *vtot_loc += -0.5F * ddphi * dp;
     }
 }
 
 template<bool calcVir, bool calcEner>
-__device__ __forceinline__ void pairs_gpu(const int       i,
-                                          const int       numBonds,
+__device__ __forceinline__ void pairs_gpu(const int i,
+
                                           const t_iatom   d_forceatoms[],
                                           const t_iparams iparams[],
                                           const float4    gm_xq[],
@@ -709,50 +691,47 @@ __device__ __forceinline__ void pairs_gpu(const int       i,
                                           float*          vtotVdw_loc,
                                           float*          vtotElec_loc)
 {
-    if (i < numBonds)
+    // TODO this should be made into a separate type, the GPU and CPU sizes should be compared
+    const int3 pairData = *(reinterpret_cast<const int3*>(d_forceatoms + 3 * i));
+    int        type     = pairData.x;
+    int        ai       = pairData.y;
+    int        aj       = pairData.z;
+
+    float qq  = gm_xq[ai].w * gm_xq[aj].w;
+    float c6  = iparams[type].lj14.c6A;
+    float c12 = iparams[type].lj14.c12A;
+
+    /* Do we need to apply full periodic boundary conditions? */
+    float3 dr;
+    int    fshift_index = pbcDxAiuc<calcVir>(pbcAiuc, gm_xq[ai], gm_xq[aj], dr);
+
+    float r2    = norm2(dr);
+    float rinv  = rsqrtf(r2);
+    float rinv2 = rinv * rinv;
+    float rinv6 = rinv2 * rinv2 * rinv2;
+
+    /* Calculate the Coulomb force * r */
+    float velec = scale_factor * qq * rinv;
+
+    /* Calculate the LJ force * r and add it to the Coulomb part */
+    float fr = (12.0F * c12 * rinv6 - 6.0F * c6) * rinv6 + velec;
+
+    float  finvr = fr * rinv2;
+    float3 f     = finvr * dr;
+
+    /* Add the forces */
+    staggeredAtomicAddForce(&gm_f[ai], f);
+    staggeredAtomicAddForce(&gm_f[aj], -f);
+    if (calcVir && fshift_index != gmx::c_centralShiftIndex)
     {
-        // TODO this should be made into a separate type, the GPU and CPU sizes should be compared
-        const int3 pairData = *(reinterpret_cast<const int3*>(d_forceatoms + 3 * i));
-        int        type     = pairData.x;
-        int        ai       = pairData.y;
-        int        aj       = pairData.z;
+        staggeredAtomicAddForce(&sm_fShiftLoc[fshift_index], f);
+        staggeredAtomicAddForce(&sm_fShiftLoc[gmx::c_centralShiftIndex], -f);
+    }
 
-        float qq  = gm_xq[ai].w * gm_xq[aj].w;
-        float c6  = iparams[type].lj14.c6A;
-        float c12 = iparams[type].lj14.c12A;
-
-        /* Do we need to apply full periodic boundary conditions? */
-        float3 dr;
-        int    fshift_index = pbcDxAiuc<calcVir>(pbcAiuc, gm_xq[ai], gm_xq[aj], dr);
-
-        float r2    = norm2(dr);
-        float rinv  = rsqrtf(r2);
-        float rinv2 = rinv * rinv;
-        float rinv6 = rinv2 * rinv2 * rinv2;
-
-        /* Calculate the Coulomb force * r */
-        float velec = scale_factor * qq * rinv;
-
-        /* Calculate the LJ force * r and add it to the Coulomb part */
-        float fr = (12.0F * c12 * rinv6 - 6.0F * c6) * rinv6 + velec;
-
-        float  finvr = fr * rinv2;
-        float3 f     = finvr * dr;
-
-        /* Add the forces */
-        staggeredAtomicAddForce(&gm_f[ai], f);
-        staggeredAtomicAddForce(&gm_f[aj], -f);
-        if (calcVir && fshift_index != gmx::c_centralShiftIndex)
-        {
-            staggeredAtomicAddForce(&sm_fShiftLoc[fshift_index], f);
-            staggeredAtomicAddForce(&sm_fShiftLoc[gmx::c_centralShiftIndex], -f);
-        }
-
-        if (calcEner)
-        {
-            *vtotVdw_loc += (c12 * rinv6 - c6) * rinv6;
-            *vtotElec_loc += velec;
-        }
+    if (calcEner)
+    {
+        *vtotVdw_loc += (c12 * rinv6 - c6) * rinv6;
+        *vtotElec_loc += velec;
     }
 }
 
@@ -801,12 +780,17 @@ __global__ void bonded_kernel_gpu(BondedGpuKernelParameters kernelParams,
                 threadComputedPotential = true;
             }
 
+            if (fTypeTid >= numBonds)
+            {
+                break;
+            }
+
+
             switch (fType)
             {
                 case F_BONDS:
                     bonds_gpu<calcVir, calcEner>(fTypeTid,
                                                  &vtot_loc,
-                                                 numBonds,
                                                  iatoms,
                                                  kernelBuffers.d_forceParams,
                                                  gm_xq,
@@ -817,7 +801,6 @@ __global__ void bonded_kernel_gpu(BondedGpuKernelParameters kernelParams,
                 case F_ANGLES:
                     angles_gpu<calcVir, calcEner>(fTypeTid,
                                                   &vtot_loc,
-                                                  numBonds,
                                                   iatoms,
                                                   kernelBuffers.d_forceParams,
                                                   gm_xq,
@@ -828,7 +811,6 @@ __global__ void bonded_kernel_gpu(BondedGpuKernelParameters kernelParams,
                 case F_UREY_BRADLEY:
                     urey_bradley_gpu<calcVir, calcEner>(fTypeTid,
                                                         &vtot_loc,
-                                                        numBonds,
                                                         iatoms,
                                                         kernelBuffers.d_forceParams,
                                                         gm_xq,
@@ -840,7 +822,6 @@ __global__ void bonded_kernel_gpu(BondedGpuKernelParameters kernelParams,
                 case F_PIDIHS:
                     pdihs_gpu<calcVir, calcEner>(fTypeTid,
                                                  &vtot_loc,
-                                                 numBonds,
                                                  iatoms,
                                                  kernelBuffers.d_forceParams,
                                                  gm_xq,
@@ -851,7 +832,6 @@ __global__ void bonded_kernel_gpu(BondedGpuKernelParameters kernelParams,
                 case F_RBDIHS:
                     rbdihs_gpu<calcVir, calcEner>(fTypeTid,
                                                   &vtot_loc,
-                                                  numBonds,
                                                   iatoms,
                                                   kernelBuffers.d_forceParams,
                                                   gm_xq,
@@ -862,7 +842,6 @@ __global__ void bonded_kernel_gpu(BondedGpuKernelParameters kernelParams,
                 case F_IDIHS:
                     idihs_gpu<calcVir, calcEner>(fTypeTid,
                                                  &vtot_loc,
-                                                 numBonds,
                                                  iatoms,
                                                  kernelBuffers.d_forceParams,
                                                  gm_xq,
@@ -872,7 +851,6 @@ __global__ void bonded_kernel_gpu(BondedGpuKernelParameters kernelParams,
                     break;
                 case F_LJ14:
                     pairs_gpu<calcVir, calcEner>(fTypeTid,
-                                                 numBonds,
                                                  iatoms,
                                                  kernelBuffers.d_forceParams,
                                                  gm_xq,
