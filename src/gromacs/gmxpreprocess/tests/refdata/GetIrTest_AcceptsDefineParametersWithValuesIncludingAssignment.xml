@@ -137,7 +137,7 @@ pcoupl                   = No
 pcoupltype               = Isotropic
 nstpcouple               = -1
 ; Time constant (ps), compressibility (1/bar) and reference P (bar)
-tau-p                    = 1
+tau-p                    = 5
 compressibility          = 
 ref-p                    = 
 ; Scaling of reference coordinates, No, All or COM

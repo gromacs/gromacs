@@ -1212,7 +1212,7 @@ Pressure coupling
 
 .. mdp:: tau-p
 
-   (1) [ps]
+   (5) [ps]
    The time constant for pressure coupling (one value for all
    directions).
 
