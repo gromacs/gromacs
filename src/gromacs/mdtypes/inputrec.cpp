@@ -918,11 +918,15 @@ void pr_inputrec(FILE* fp, int indent, const char* title, const t_inputrec* ir, 
         PS("print-nose-hoover-chain-variables", EBOOL(ir->bPrintNHChains));
 
         PS("pcoupl", enumValueToString(ir->pressureCouplingOptions.epc));
-        PS("pcoupltype", enumValueToString(ir->pressureCouplingOptions.epct));
-        PI("nstpcouple", ir->pressureCouplingOptions.nstpcouple);
-        PR("tau-p", ir->pressureCouplingOptions.tau_p);
-        pr_matrix(fp, indent, "compressibility", ir->pressureCouplingOptions.compress, bMDPformat);
-        pr_matrix(fp, indent, "ref-p", ir->pressureCouplingOptions.ref_p, bMDPformat);
+        if (ir->pressureCouplingOptions.epc != PressureCoupling::No)
+        {
+            PS("pcoupltype", enumValueToString(ir->pressureCouplingOptions.epct));
+            PI("nstpcouple", ir->pressureCouplingOptions.nstpcouple);
+            PR("tau-p", ir->pressureCouplingOptions.tau_p);
+            pr_matrix(fp, indent, "compressibility", ir->pressureCouplingOptions.compress, bMDPformat);
+            pr_matrix(fp, indent, "ref-p", ir->pressureCouplingOptions.ref_p, bMDPformat);
+        }
+        // Refcoord-scaling is also needed for other algorithms that affect the box
         PS("refcoord-scaling", enumValueToString(ir->pressureCouplingOptions.refcoord_scaling));
 
         if (bMDPformat)
@@ -1055,6 +1059,25 @@ void pr_inputrec(FILE* fp, int indent, const char* title, const t_inputrec* ir, 
 #undef PS
 #undef PR
 #undef PI
+
+static void cmpPressureCouplingOptions(FILE*                          fp,
+                                       const PressureCouplingOptions& pco1,
+                                       const PressureCouplingOptions& pco2,
+                                       real                           ftol,
+                                       real                           abstol)
+{
+    GMX_RELEASE_ASSERT(pco1.epc != PressureCoupling::No && pco2.epc != PressureCoupling::No,
+                       "Need p-coupling");
+
+    cmpEnum(fp, "inputrec->pressureCouplingOptions.epct", pco1.epct, pco2.epct);
+    cmp_real(fp, "inputrec->pressureCouplingOptions.tau_p", -1, pco1.tau_p, pco2.tau_p, ftol, abstol);
+    cmp_rvec(fp, "inputrec->pressureCouplingOptions.ref_p(x)", -1, pco1.ref_p[XX], pco2.ref_p[XX], ftol, abstol);
+    cmp_rvec(fp, "inputrec->pressureCouplingOptions.ref_p(y)", -1, pco1.ref_p[YY], pco2.ref_p[YY], ftol, abstol);
+    cmp_rvec(fp, "inputrec->pressureCouplingOptions.ref_p(z)", -1, pco1.ref_p[ZZ], pco2.ref_p[ZZ], ftol, abstol);
+    cmp_rvec(fp, "inputrec->pressureCouplingOptions.compress(x)", -1, pco1.compress[XX], pco2.compress[XX], ftol, abstol);
+    cmp_rvec(fp, "inputrec->pressureCouplingOptions.compress(y)", -1, pco1.compress[YY], pco2.compress[YY], ftol, abstol);
+    cmp_rvec(fp, "inputrec->pressureCouplingOptions.compress(z)", -1, pco1.compress[ZZ], pco2.compress[ZZ], ftol, abstol);
+}
 
 static void cmp_grpopts(FILE* fp, const t_grpopts* opt1, const t_grpopts* opt2, real ftol, real abstol)
 {
@@ -1438,59 +1461,13 @@ void cmp_inputrec(FILE* fp, const t_inputrec* ir1, const t_inputrec* ir2, real f
             "inputrec->pressureCouplingOptions.epc",
             ir1->pressureCouplingOptions.epc,
             ir2->pressureCouplingOptions.epc);
-    cmpEnum(fp,
-            "inputrec->pressureCouplingOptions.epct",
-            ir1->pressureCouplingOptions.epct,
-            ir2->pressureCouplingOptions.epct);
-    cmp_real(fp,
-             "inputrec->pressureCouplingOptions.tau_p",
-             -1,
-             ir1->pressureCouplingOptions.tau_p,
-             ir2->pressureCouplingOptions.tau_p,
-             ftol,
-             abstol);
-    cmp_rvec(fp,
-             "inputrec->pressureCouplingOptions.ref_p(x)",
-             -1,
-             ir1->pressureCouplingOptions.ref_p[XX],
-             ir2->pressureCouplingOptions.ref_p[XX],
-             ftol,
-             abstol);
-    cmp_rvec(fp,
-             "inputrec->pressureCouplingOptions.ref_p(y)",
-             -1,
-             ir1->pressureCouplingOptions.ref_p[YY],
-             ir2->pressureCouplingOptions.ref_p[YY],
-             ftol,
-             abstol);
-    cmp_rvec(fp,
-             "inputrec->pressureCouplingOptions.ref_p(z)",
-             -1,
-             ir1->pressureCouplingOptions.ref_p[ZZ],
-             ir2->pressureCouplingOptions.ref_p[ZZ],
-             ftol,
-             abstol);
-    cmp_rvec(fp,
-             "inputrec->pressureCouplingOptions.compress(x)",
-             -1,
-             ir1->pressureCouplingOptions.compress[XX],
-             ir2->pressureCouplingOptions.compress[XX],
-             ftol,
-             abstol);
-    cmp_rvec(fp,
-             "inputrec->pressureCouplingOptions.compress(y)",
-             -1,
-             ir1->pressureCouplingOptions.compress[YY],
-             ir2->pressureCouplingOptions.compress[YY],
-             ftol,
-             abstol);
-    cmp_rvec(fp,
-             "inputrec->pressureCouplingOptions.compress(z)",
-             -1,
-             ir1->pressureCouplingOptions.compress[ZZ],
-             ir2->pressureCouplingOptions.compress[ZZ],
-             ftol,
-             abstol);
+    if (ir1->pressureCouplingOptions.epc != PressureCoupling::No
+        && ir2->pressureCouplingOptions.epc != PressureCoupling::No)
+    {
+        cmpPressureCouplingOptions(
+                fp, ir1->pressureCouplingOptions, ir2->pressureCouplingOptions, ftol, abstol);
+    }
+    // Refcoord-scaling is also needed for other algorithms that affect the box
     cmpEnum(fp,
             "refcoord_scaling",
             ir1->pressureCouplingOptions.refcoord_scaling,
