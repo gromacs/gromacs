@@ -1,0 +1,405 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Energy Name="Potential">
+    <Real Name="Time 0.002000 Step 0 in frame 0">572.00391309827864</Real>
+    <Real Name="Time 0.012000 Step 5 in frame 1">1931.3844919907519</Real>
+    <Real Name="Time 0.022000 Step 10 in frame 2">5651.5281825241145</Real>
+    <Real Name="Time 0.032000 Step 15 in frame 3">10481.193591338535</Real>
+    <Real Name="Time 0.042000 Step 20 in frame 4">14877.364219994275</Real>
+    <Real Name="Time 0.052000 Step 25 in frame 5">17609.956570347353</Real>
+  </Energy>
+  <Energy Name="COM Pull En.">
+    <Real Name="Time 0.002000 Step 0 in frame 0">572.00391309827864</Real>
+    <Real Name="Time 0.012000 Step 5 in frame 1">1931.3844919907519</Real>
+    <Real Name="Time 0.022000 Step 10 in frame 2">5651.5281825241145</Real>
+    <Real Name="Time 0.032000 Step 15 in frame 3">10481.193591338535</Real>
+    <Real Name="Time 0.042000 Step 20 in frame 4">14877.364219994275</Real>
+    <Real Name="Time 0.052000 Step 25 in frame 5">17609.956570347353</Real>
+  </Energy>
+  <Real Name="Time 0.002000 Step 0 Box[0][0]">8</Real>
+  <Real Name="Time 0.002000 Step 0 Box[0][1]">0</Real>
+  <Real Name="Time 0.002000 Step 0 Box[0][2]">0</Real>
+  <Real Name="Time 0.002000 Step 0 Box[1][0]">0</Real>
+  <Real Name="Time 0.002000 Step 0 Box[1][1]">8</Real>
+  <Real Name="Time 0.002000 Step 0 Box[1][2]">0</Real>
+  <Real Name="Time 0.002000 Step 0 Box[2][0]">0</Real>
+  <Real Name="Time 0.002000 Step 0 Box[2][1]">0</Real>
+  <Real Name="Time 0.002000 Step 0 Box[2][2]">8</Real>
+  <Sequence Name="Time 0.002000 Step 0 X">
+    <Int Name="Length">4</Int>
+    <Vector>
+      <Real Name="X">1.5</Real>
+      <Real Name="Y">1.5</Real>
+      <Real Name="Z">3.2000000000000002</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">3.8999999999999999</Real>
+      <Real Name="Y">5.7999999999999998</Real>
+      <Real Name="Z">3.5</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">4.7000000000000002</Real>
+      <Real Name="Y">6.2000000000000002</Real>
+      <Real Name="Z">2.1000000000000001</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">5.5</Real>
+      <Real Name="Y">4</Real>
+      <Real Name="Z">6.5999999999999996</Real>
+    </Vector>
+  </Sequence>
+  <Sequence Name="Time 0.002000 Step 0 F">
+    <Int Name="Length">4</Int>
+    <Vector>
+      <Real Name="X">15.946242063508526</Real>
+      <Real Name="Y">175.63244872591173</Real>
+      <Real Name="Z">-122.40371317177731</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">150.82774779275093</Real>
+      <Real Name="Y">-630.56033865557731</Real>
+      <Real Name="Z">370.09764317280116</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">-28.258146400217921</Real>
+      <Real Name="Y">-137.372481267708</Real>
+      <Real Name="Z">101.00103631187794</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">-138.51584345603897</Real>
+      <Real Name="Y">592.30037119737653</Real>
+      <Real Name="Z">-348.6949663129048</Real>
+    </Vector>
+  </Sequence>
+  <Real Name="Time 0.010000 Step 4 Box[0][0]">8</Real>
+  <Real Name="Time 0.010000 Step 4 Box[0][1]">0</Real>
+  <Real Name="Time 0.010000 Step 4 Box[0][2]">0</Real>
+  <Real Name="Time 0.010000 Step 4 Box[1][0]">0</Real>
+  <Real Name="Time 0.010000 Step 4 Box[1][1]">8</Real>
+  <Real Name="Time 0.010000 Step 4 Box[1][2]">0</Real>
+  <Real Name="Time 0.010000 Step 4 Box[2][0]">0</Real>
+  <Real Name="Time 0.010000 Step 4 Box[2][1]">0</Real>
+  <Real Name="Time 0.010000 Step 4 Box[2][2]">8</Real>
+  <Sequence Name="Time 0.010000 Step 4 X">
+    <Int Name="Length">4</Int>
+    <Vector>
+      <Real Name="X">1.5027292604327482</Real>
+      <Real Name="Y">1.5039200116288975</Real>
+      <Real Name="Z">3.1964769054364863</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">3.9023135815496981</Real>
+      <Real Name="Y">5.7881725479964432</Real>
+      <Real Name="Z">3.5071137741524714</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">4.6968661087019852</Real>
+      <Real Name="Y">6.1989850194641969</Real>
+      <Real Name="Z">2.1017212841232071</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">5.5005113125904757</Real>
+      <Real Name="Y">4.0056949584964068</Real>
+      <Real Name="Z">6.5960329234722366</Real>
+    </Vector>
+  </Sequence>
+  <Sequence Name="Time 0.010000 Step 4 F">
+    <Int Name="Length">4</Int>
+    <Vector>
+      <Real Name="X">273.52409824706575</Real>
+      <Real Name="Y">-79.971473930308676</Real>
+      <Real Name="Z">-37.860383462149457</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">66.557862319038335</Real>
+      <Real Name="Y">-714.41460178799105</Real>
+      <Real Name="Z">454.09044708564795</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">-947.60351772446825</Real>
+      <Real Name="Y">7.8333244430196398</Real>
+      <Real Name="Z">310.64562294614302</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">607.52155715836511</Real>
+      <Real Name="Y">786.55275127528205</Real>
+      <Real Name="Z">-726.87568656964311</Real>
+    </Vector>
+  </Sequence>
+  <Real Name="Time 0.018000 Step 8 Box[0][0]">8</Real>
+  <Real Name="Time 0.018000 Step 8 Box[0][1]">0</Real>
+  <Real Name="Time 0.018000 Step 8 Box[0][2]">0</Real>
+  <Real Name="Time 0.018000 Step 8 Box[1][0]">0</Real>
+  <Real Name="Time 0.018000 Step 8 Box[1][1]">8</Real>
+  <Real Name="Time 0.018000 Step 8 Box[1][2]">0</Real>
+  <Real Name="Time 0.018000 Step 8 Box[2][0]">0</Real>
+  <Real Name="Time 0.018000 Step 8 Box[2][1]">0</Real>
+  <Real Name="Time 0.018000 Step 8 Box[2][2]">8</Real>
+  <Sequence Name="Time 0.018000 Step 8 X">
+    <Int Name="Length">4</Int>
+    <Vector>
+      <Real Name="X">1.521660422583444</Real>
+      <Real Name="Y">1.5035552310166072</Real>
+      <Real Name="Z">3.1904097051277813</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">3.9066672231780823</Real>
+      <Real Name="Y">5.755542344075069</Real>
+      <Real Name="Z">3.5274160295572599</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">4.6754715044856434</Real>
+      <Real Name="Y">6.1976931371782236</Real>
+      <Real Name="Z">2.1097140737193034</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">5.509647654400867</Real>
+      <Real Name="Y">4.0230701673246463</Real>
+      <Real Name="Z">6.581404003649947</Real>
+    </Vector>
+  </Sequence>
+  <Sequence Name="Time 0.018000 Step 8 F">
+    <Int Name="Length">4</Int>
+    <Vector>
+      <Real Name="X">593.88317429972653</Real>
+      <Real Name="Y">-255.20645420484001</Real>
+      <Real Name="Z">-27.823421963348881</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">27.611924634050421</Real>
+      <Real Name="Y">-806.79834413510991</Real>
+      <Real Name="Z">528.66158787872314</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">-1790.146853460403</Real>
+      <Real Name="Y">-127.80411762907019</Real>
+      <Real Name="Z">681.9183629061813</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">1168.6517545266242</Real>
+      <Real Name="Y">1189.808915969023</Real>
+      <Real Name="Z">-1182.7565288215569</Real>
+    </Vector>
+  </Sequence>
+  <Real Name="Time 0.026000 Step 12 Box[0][0]">8</Real>
+  <Real Name="Time 0.026000 Step 12 Box[0][1]">0</Real>
+  <Real Name="Time 0.026000 Step 12 Box[0][2]">0</Real>
+  <Real Name="Time 0.026000 Step 12 Box[1][0]">0</Real>
+  <Real Name="Time 0.026000 Step 12 Box[1][1]">8</Real>
+  <Real Name="Time 0.026000 Step 12 Box[1][2]">0</Real>
+  <Real Name="Time 0.026000 Step 12 Box[2][0]">0</Real>
+  <Real Name="Time 0.026000 Step 12 Box[2][1]">0</Real>
+  <Real Name="Time 0.026000 Step 12 Box[2][2]">8</Real>
+  <Sequence Name="Time 0.026000 Step 12 X">
+    <Int Name="Length">4</Int>
+    <Vector>
+      <Real Name="X">1.575217838373735</Real>
+      <Real Name="Y">1.4888254162787171</Real>
+      <Real Name="Z">3.182377109689611</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">3.9119397897167234</Real>
+      <Real Name="Y">5.6994594174055591</Real>
+      <Real Name="Z">3.5630471251573859</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">4.6196652504876683</Real>
+      <Real Name="Y">6.1935238082075639</Real>
+      <Real Name="Z">2.1310957110324007</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">5.5354767076824531</Real>
+      <Real Name="Y">4.0579210810718678</Real>
+      <Real Name="Z">6.5495603767246031</Real>
+    </Vector>
+  </Sequence>
+  <Sequence Name="Time 0.026000 Step 12 F">
+    <Int Name="Length">4</Int>
+    <Vector>
+      <Real Name="X">930.10034586463485</Real>
+      <Real Name="Y">-324.8868713597646</Real>
+      <Real Name="Z">-93.442201048368531</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">39.164206991531202</Real>
+      <Real Name="Y">-891.30019893603924</Real>
+      <Real Name="Z">581.14539696018232</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">-2431.7872624439233</Real>
+      <Real Name="Y">-524.61729216940819</Real>
+      <Real Name="Z">1160.3406155942466</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">1462.5227095877547</Real>
+      <Real Name="Y">1740.804362465215</Real>
+      <Real Name="Z">-1648.0438115060615</Real>
+    </Vector>
+  </Sequence>
+  <Real Name="Time 0.034000 Step 16 Box[0][0]">8</Real>
+  <Real Name="Time 0.034000 Step 16 Box[0][1]">0</Real>
+  <Real Name="Time 0.034000 Step 16 Box[0][2]">0</Real>
+  <Real Name="Time 0.034000 Step 16 Box[1][0]">0</Real>
+  <Real Name="Time 0.034000 Step 16 Box[1][1]">8</Real>
+  <Real Name="Time 0.034000 Step 16 Box[1][2]">0</Real>
+  <Real Name="Time 0.034000 Step 16 Box[2][0]">0</Real>
+  <Real Name="Time 0.034000 Step 16 Box[2][1]">0</Real>
+  <Real Name="Time 0.034000 Step 16 Box[2][2]">8</Real>
+  <Sequence Name="Time 0.034000 Step 16 X">
+    <Int Name="Length">4</Int>
+    <Vector>
+      <Real Name="X">1.6827304518849129</Real>
+      <Real Name="Y">1.4557254785662423</Real>
+      <Real Name="Z">3.1686061969942019</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">3.918462388269043</Real>
+      <Real Name="Y">5.617505671985243</Real>
+      <Real Name="Z">3.6155087559201569</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">4.5171562878767881</Real>
+      <Real Name="Y">6.1788691124249935</Real>
+      <Real Name="Z">2.175035162424408</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">5.5822189769866597</Real>
+      <Real Name="Y">4.1181639600470721</Real>
+      <Real Name="Z">6.4938177009730644</Real>
+    </Vector>
+  </Sequence>
+  <Sequence Name="Time 0.034000 Step 16 F">
+    <Int Name="Length">4</Int>
+    <Vector>
+      <Real Name="X">1231.3073564745332</Real>
+      <Real Name="Y">-278.29554995465173</Real>
+      <Real Name="Z">-224.90541885507659</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">99.047688491419251</Real>
+      <Real Name="Y">-950.38197566334418</Real>
+      <Real Name="Z">600.57208761175616</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">-2772.3069017364978</Real>
+      <Real Name="Y">-1125.0117107090971</Real>
+      <Real Name="Z">1674.1101077182304</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">1441.9518567705411</Real>
+      <Real Name="Y">2353.6892363270949</Real>
+      <Real Name="Z">-2049.7767764749105</Real>
+    </Vector>
+  </Sequence>
+  <Real Name="Time 0.042000 Step 20 Box[0][0]">8</Real>
+  <Real Name="Time 0.042000 Step 20 Box[0][1]">0</Real>
+  <Real Name="Time 0.042000 Step 20 Box[0][2]">0</Real>
+  <Real Name="Time 0.042000 Step 20 Box[1][0]">0</Real>
+  <Real Name="Time 0.042000 Step 20 Box[1][1]">8</Real>
+  <Real Name="Time 0.042000 Step 20 Box[1][2]">0</Real>
+  <Real Name="Time 0.042000 Step 20 Box[2][0]">0</Real>
+  <Real Name="Time 0.042000 Step 20 Box[2][1]">0</Real>
+  <Real Name="Time 0.042000 Step 20 Box[2][2]">8</Real>
+  <Sequence Name="Time 0.042000 Step 20 X">
+    <Int Name="Length">4</Int>
+    <Vector>
+      <Real Name="X">1.8615013592775236</Real>
+      <Real Name="Y">1.4069428668207127</Real>
+      <Real Name="Z">3.1415376356936848</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">3.9279559666624397</Real>
+      <Real Name="Y">5.5079998587725054</Real>
+      <Real Name="Z">3.6853481052641839</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">4.3614378110445031</Real>
+      <Real Name="Y">6.1422197994575853</Real>
+      <Real Name="Z">2.2513741966801089</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">5.6495683185660219</Real>
+      <Real Name="Y">4.2125995043153805</Real>
+      <Real Name="Z">6.4084108909344044</Real>
+    </Vector>
+  </Sequence>
+  <Sequence Name="Time 0.042000 Step 20 F">
+    <Int Name="Length">4</Int>
+    <Vector>
+      <Real Name="X">1449.0659136809609</Real>
+      <Real Name="Y">-120.53013414576957</Real>
+      <Real Name="Z">-402.66854846314055</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">198.03340189787804</Real>
+      <Real Name="Y">-967.66467589133583</Real>
+      <Real Name="Z">579.09864996159786</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">-2747.9889980601592</Real>
+      <Real Name="Y">-1840.6387579368456</Real>
+      <Real Name="Z">2143.0888379779508</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">1100.8896824813173</Real>
+      <Real Name="Y">2928.8335679739516</Real>
+      <Real Name="Z">-2319.5189394764066</Real>
+    </Vector>
+  </Sequence>
+  <Real Name="Time 0.050000 Step 24 Box[0][0]">8</Real>
+  <Real Name="Time 0.050000 Step 24 Box[0][1]">0</Real>
+  <Real Name="Time 0.050000 Step 24 Box[0][2]">0</Real>
+  <Real Name="Time 0.050000 Step 24 Box[1][0]">0</Real>
+  <Real Name="Time 0.050000 Step 24 Box[1][1]">8</Real>
+  <Real Name="Time 0.050000 Step 24 Box[1][2]">0</Real>
+  <Real Name="Time 0.050000 Step 24 Box[2][0]">0</Real>
+  <Real Name="Time 0.050000 Step 24 Box[2][1]">0</Real>
+  <Real Name="Time 0.050000 Step 24 Box[2][2]">8</Real>
+  <Sequence Name="Time 0.050000 Step 24 X">
+    <Int Name="Length">4</Int>
+    <Vector>
+      <Real Name="X">2.1240175983187668</Real>
+      <Real Name="Y">1.3515637349829464</Real>
+      <Real Name="Z">3.0909516439051146</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">3.9432654874819368</Real>
+      <Real Name="Y">5.3704690442420171</Real>
+      <Real Name="Z">3.7719321413446774</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">4.1530104636464724</Real>
+      <Real Name="Y">6.0698619005506931</Real>
+      <Real Name="Z">2.3690885784173807</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">5.7326050089444855</Real>
+      <Real Name="Y">4.3494781187202358</Real>
+      <Real Name="Z">6.2894795845383458</Real>
+    </Vector>
+  </Sequence>
+  <Sequence Name="Time 0.050000 Step 24 F">
+    <Int Name="Length">4</Int>
+    <Vector>
+      <Real Name="X">1543.4913426802568</Real>
+      <Real Name="Y">128.09963814691761</Real>
+      <Real Name="Z">-599.89687299136381</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">320.990186700896</Real>
+      <Real Name="Y">-930.11899032105612</Real>
+      <Real Name="Z">513.08259798040547</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">-2339.8290861199839</Real>
+      <Real Name="Y">-2563.4219502848819</Real>
+      <Real Name="Z">2488.8909955632494</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">475.34755673882881</Real>
+      <Real Name="Y">3365.4413024590199</Real>
+      <Real Name="Z">-2402.0767205522889</Real>
+    </Vector>
+  </Sequence>
+</ReferenceData>
