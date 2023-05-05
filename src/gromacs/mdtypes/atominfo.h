@@ -43,6 +43,8 @@
 #ifndef GMX_MDTYPES_ATOMINFO_H
 #define GMX_MDTYPES_ATOMINFO_H
 
+#include <cstdint>
+
 #include <vector>
 
 namespace gmx

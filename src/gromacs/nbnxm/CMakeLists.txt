@@ -52,6 +52,7 @@ file(GLOB NBNXM_SOURCES
     pairlist.cpp
     pairlistparams.cpp
     pairlistset.cpp
+    pairlistwork.cpp
     pairlist_tuning.cpp
     pairsearch.cpp
     prunekerneldispatch.cpp

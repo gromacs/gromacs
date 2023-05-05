@@ -4046,7 +4046,10 @@ void PairlistSet::constructPairlists(gmx::InteractionLocality      locality,
                 fprintf(debug, "ns search grid %d vs %d\n", iZone, jZone);
             }
 
-            searchCycleCounting->start(enbsCCsearch);
+            if (searchCycleCounting)
+            {
+                searchCycleCounting->start(enbsCCsearch);
+            }
 
             const int ci_block =
                     get_ci_block_size(iGrid, gridSet.domainSetup().haveMultipleDomains, numLists);
@@ -4128,14 +4131,20 @@ void PairlistSet::constructPairlists(gmx::InteractionLocality      locality,
                 }
                 GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR
             }
-            searchCycleCounting->stop(enbsCCsearch);
+            if (searchCycleCounting)
+            {
+                searchCycleCounting->stop(enbsCCsearch);
+            }
 
             int np_tot = 0;
             int np_noq = 0;
             int np_hlj = 0;
             for (int th = 0; th < numLists; th++)
             {
-                inc_nrnb(nrnb, eNR_NBNXN_DIST2, searchWork[th].ndistc);
+                if (nrnb)
+                {
+                    inc_nrnb(nrnb, eNR_NBNXN_DIST2, searchWork[th].ndistc);
+                }
 
                 if (isCpuType_)
                 {
@@ -4162,11 +4171,17 @@ void PairlistSet::constructPairlists(gmx::InteractionLocality      locality,
             {
                 GMX_ASSERT(!isCpuType_, "Can only combine GPU lists");
 
-                searchCycleCounting->start(enbsCCcombine);
+                if (searchCycleCounting)
+                {
+                    searchCycleCounting->start(enbsCCcombine);
+                }
 
                 combine_nblists(gmx::constArrayRefFromArray(&gpuLists_[1], numLists - 1), &gpuLists_[0]);
 
-                searchCycleCounting->stop(enbsCCcombine);
+                if (searchCycleCounting)
+                {
+                    searchCycleCounting->stop(enbsCCcombine);
+                }
             }
         }
     }

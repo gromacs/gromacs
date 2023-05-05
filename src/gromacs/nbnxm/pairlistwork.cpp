@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright 1991- The GROMACS Authors
+ * Copyright 2023- The GROMACS Authors
  * and the project initiators Erik Lindahl, Berk Hess and David van der Spoel.
  * Consult the AUTHORS/COPYING files and https://www.gromacs.org for details.
  *
@@ -31,26 +31,33 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out https://www.gromacs.org.
  */
-#ifndef GMX_MDTYPES_NBLIST_H
-#define GMX_MDTYPES_NBLIST_H
 
-#include <vector>
+/*! \internal \file
+ * \brief
+ * Implements constructors for NbnxnPairlistGpuWork
+ *
+ * \author Berk Hess <hess@kth.se>
+ * \ingroup module_nbnxm
+ */
 
+#include "gmxpre.h"
 
-struct t_nblist
+#include "pairlistwork.h"
+
+#include "gromacs/simd/simd.h"
+
+#include "boundingboxes.h"
+
+NbnxnPairlistGpuWork::ISuperClusterData::ISuperClusterData() :
+    bb(c_gpuNumClusterPerCell),
+#if NBNXN_SEARCH_BB_SIMD4
+    bbPacked(c_gpuNumClusterPerCell / c_packedBoundingBoxesDimSize * c_packedBoundingBoxesSize),
+#endif
+    x(c_gpuNumClusterPerCell * c_nbnxnGpuClusterSize * DIM),
+    xSimd(c_gpuNumClusterPerCell * c_nbnxnGpuClusterSize * DIM)
 {
-    int              nri    = 0; /* Current number of i particles	   */
-    int              maxnri = 0; /* Max number of i particles	   */
-    int              nrj    = 0; /* Current number of j particles	   */
-    int              maxnrj = 0; /* ;Max number of j particles	   */
-    std::vector<int> iinr;       /* The i-elements                        */
-    std::vector<int> gid;        /* Index in energy arrays                */
-    std::vector<int> shift;      /* Shift vector index                    */
-    std::vector<int> jindex;     /* Index in jjnr                         */
-    std::vector<int> jjnr;       /* The j-atom list                       */
-    std::vector<int> excl_fep;   /* Exclusions for FEP with Verlet scheme */
-
-    int numExclusionsWithinRlist = 0; /* The number of exclusions at distance < rlist */
-};
-
-#endif /* GMX_MDTYPES_NBLIST_H */
+}
+NbnxnPairlistGpuWork::NbnxnPairlistGpuWork() :
+    distanceBuffer(c_gpuNumClusterPerCell), sci_sort({}, { gmx::PinningPolicy::PinnedIfSupported })
+{
+}

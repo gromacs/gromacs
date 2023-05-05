@@ -47,9 +47,6 @@
 #include <memory>
 #include <vector>
 
-#include "gromacs/simd/simd.h"
-
-#include "boundingboxes.h"
 #include "grid.h"
 #include "pairlist.h"
 
@@ -96,15 +93,7 @@ struct NbnxnPairlistGpuWork
 {
     struct ISuperClusterData
     {
-        ISuperClusterData() :
-            bb(c_gpuNumClusterPerCell),
-#if NBNXN_SEARCH_BB_SIMD4
-            bbPacked(c_gpuNumClusterPerCell / c_packedBoundingBoxesDimSize * c_packedBoundingBoxesSize),
-#endif
-            x(c_gpuNumClusterPerCell * c_nbnxnGpuClusterSize * DIM),
-            xSimd(c_gpuNumClusterPerCell * c_nbnxnGpuClusterSize * DIM)
-        {
-        }
+        ISuperClusterData();
 
         //! The bounding boxes, pbc shifted, for each cluster
         AlignedVector<Nbnxm::BoundingBox> bb;
@@ -116,10 +105,7 @@ struct NbnxnPairlistGpuWork
         AlignedVector<real> xSimd;
     };
 
-    NbnxnPairlistGpuWork() :
-        distanceBuffer(c_gpuNumClusterPerCell), sci_sort({}, { gmx::PinningPolicy::PinnedIfSupported })
-    {
-    }
+    NbnxnPairlistGpuWork();
 
     //! Protect data from cache pollution between threads
     gmx_cache_protect_t cp0;

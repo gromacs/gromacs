@@ -37,6 +37,9 @@
 
 #include <cstddef>
 
+#include <memory>
+#include <vector>
+
 #include "gromacs/gpu_utils/hostallocator.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/mdtypes/locality.h"
