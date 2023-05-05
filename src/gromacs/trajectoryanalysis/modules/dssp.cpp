@@ -50,6 +50,8 @@
 #include <iostream>
 #include <set>
 
+#include "gromacs/analysisdata/analysisdata.h"
+#include "gromacs/analysisdata/modules/plot.h"
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/math/units.h"
 #include "gromacs/options/basicoptions.h"
@@ -189,9 +191,23 @@ enum class SecondaryStructureTypes : std::size_t
 
 };
 
-//! String values corresponding to secondary structures' types.
+//! String values (symbols) corresponding to secondary structures' types.
 const gmx::EnumerationArray<SecondaryStructureTypes, const char> c_secondaryStructureTypeNames = {
     { '~', '=', 'S', 'T', 'P', 'I', 'G', 'E', 'B', 'H' }
+};
+
+//! String values (full) corresponding to secondary structures' types.
+const gmx::EnumerationArray<SecondaryStructureTypes, const char*> c_secondaryStructureTypeNamesFull = {
+    { "Loops",
+      "Breaks",
+      "Bends",
+      "Turns",
+      "PP_Helices",
+      "π-Helices",
+      "3⏨-Helices",
+      "β-Strands",
+      "β-Bridges",
+      "α-Helices" }
 };
 
 //! Enum of turns' types.
@@ -1298,6 +1314,7 @@ void SecondaryStructures::calculateHBondEnergy(ResInfo*          donor,
 class Dssp : public TrajectoryAnalysisModule
 {
 public:
+    Dssp();
     void initOptions(IOptionsContainer* options, TrajectoryAnalysisSettings* settings) override;
     void optionsFinished(TrajectoryAnalysisSettings* settings) override;
     void initAnalysis(const TrajectoryAnalysisSettings& settings, const TopologyInformation& top) override;
@@ -1321,11 +1338,20 @@ private:
     PPStretches polyProStretch_ = PPStretches::Default;
     //! String value that defines output filename. Set in initial options.
     std::string fnmDSSPOut_ = "dssp.dat";
+    //! String value that defines plot output filename. Set in initial options.
+    std::string fnmPlotOut_;
     //! Class that calculates h-bond patterns in secondary structure map based on original DSSP algorithm.
     SecondaryStructures patternSearch_;
     //! A storage that contains DSSP info_ from different frames.
     DsspStorage storage_;
+    //! Data container for raw data of number of secondary structures per frame.
+    AnalysisData ssNumPerFrame_;
 };
+
+Dssp::Dssp()
+{
+    registerAnalysisDataset(&ssNumPerFrame_, "secondaryStructuresNum");
+}
 
 void Dssp::initOptions(IOptionsContainer* options, TrajectoryAnalysisSettings* settings)
 {
@@ -1333,6 +1359,8 @@ void Dssp::initOptions(IOptionsContainer* options, TrajectoryAnalysisSettings* s
         "[THISMODULE] allows using the DSSP algorithm (namely, by detecting specific patterns of "
         "hydrogen bonds between amino acid residues) "
         "to determine the secondary structure of a protein.[PAR]"
+        "[TT]-num[tt] allows you to get a plot of the number of secondary structures of each type "
+        "as a function of time at the output.[PAR]"
         "[TT]-hmode[tt] selects between using hydrogen atoms directly from the structure "
         "(\"gromacs\" option) and using hydrogen pseudo-atoms based on C and O atom coordinates of "
         "previous residue (\"dssp\" option).[PAR]"
@@ -1359,6 +1387,13 @@ void Dssp::initOptions(IOptionsContainer* options, TrajectoryAnalysisSettings* s
                                .defaultBasename("dssp")
                                .filetype(OptionFileType::GenericData)
                                .description("Filename for DSSP output"));
+    options->addOption(FileNameOption("num")
+                               .filetype(OptionFileType::Plot)
+                               .outputFile()
+                               .store(&fnmPlotOut_)
+                               .defaultBasename("num")
+                               .description("Output file name for secondary structures statistics "
+                                            "for the trajectory"));
     options->addOption(SelectionOption("sel").store(&sel_).defaultSelectionText("Protein").description(
             "Group for DSSP"));
     options->addOption(EnumOption<HydrogenMode>("hmode")
@@ -1388,7 +1423,7 @@ void Dssp::optionsFinished(TrajectoryAnalysisSettings* /* settings */)
     }
 }
 
-void Dssp::initAnalysis(const TrajectoryAnalysisSettings& /* settings */, const TopologyInformation& top)
+void Dssp::initAnalysis(const TrajectoryAnalysisSettings& settings, const TopologyInformation& top)
 {
     patternSearch_.analyseTopology(top, sel_, hMode_);
 
@@ -1403,17 +1438,44 @@ void Dssp::initAnalysis(const TrajectoryAnalysisSettings& /* settings */, const 
         }
         GMX_THROW(InconsistentInputError(errorDesc));
     }
+
+    if (!fnmPlotOut_.empty())
+    {
+        ssNumPerFrame_.setColumnCount(0, static_cast<std::size_t>(SecondaryStructureTypes::Count));
+        AnalysisDataPlotModulePointer plotm(new AnalysisDataPlotModule(settings.plotSettings()));
+        plotm->setFileName(fnmPlotOut_);
+        plotm->setTitle("Number of Secondary Structures");
+        plotm->setXAxisIsTime();
+        plotm->setYLabel("Secondary Structures");
+        for (const auto& i : c_secondaryStructureTypeNamesFull)
+        {
+            plotm->appendLegend(i);
+        }
+        plotm->setYFormat(10, 0);
+        ssNumPerFrame_.addModule(plotm);
+    }
 }
 
 void Dssp::initAfterFirstFrame(const TrajectoryAnalysisSettings& /* settings */, const t_trxframe& /* fr */)
 {
 }
 
-void Dssp::analyzeFrame(int frnr, const t_trxframe& fr, t_pbc* pbc, TrajectoryAnalysisModuleData* /* pdata */)
+void Dssp::analyzeFrame(int frnr, const t_trxframe& fr, t_pbc* pbc, TrajectoryAnalysisModuleData* pdata)
 {
+    AnalysisDataHandle dhNum_ = pdata->dataHandle(ssNumPerFrame_);
     storage_.addData(frnr,
                      patternSearch_.performPatternSearch(
                              fr, pbc, nBSmode_, cutoff_, polyProHelices_, polyProStretch_));
+    if (!fnmPlotOut_.empty())
+    {
+        dhNum_.startFrame(frnr, fr.time);
+        const std::string& temp = storage_.getData().back().dsspData_;
+        for (std::size_t i = 0; i < static_cast<std::size_t>(SecondaryStructureTypes::Count); ++i)
+        {
+            dhNum_.setPoint(i, std::count(temp.begin(), temp.end(), c_secondaryStructureTypeNames[i]));
+        }
+        dhNum_.finishFrame();
+    }
 }
 
 void Dssp::finishAnalysis(int /*nframes*/)

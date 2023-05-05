@@ -55,6 +55,7 @@
 
 #include "testutils/cmdlinetest.h"
 #include "testutils/textblockmatchers.h"
+#include "testutils/xvgtest.h"
 
 #include "moduletest.h"
 
@@ -120,6 +121,9 @@ TEST_P(DsspModuleTestDsspNB, Works)
     command.addOption("-hmode", "dssp");
     command.addOption("-nb");
     command.addOption("-cutoff", std::get<1>(params));
+    setOutputFile("-num",
+                  formatString("%s-dssp-nb-%.1f.xvg", inputBasename.c_str(), std::get<1>(params)).c_str(),
+                  test::XvgMatch());
     runTest(command);
 }
 
@@ -164,6 +168,9 @@ TEST_P(DsspModuleTestGromacsNB, Works)
     command.addOption("-hmode", "gromacs");
     command.addOption("-nb");
     command.addOption("-cutoff", std::get<1>(params));
+    setOutputFile("-num",
+                  formatString("%s-dssp-nb-%.1f.xvg", inputBasename.c_str(), std::get<1>(params)).c_str(),
+                  test::XvgMatch());
     runTest(command);
 }
 
@@ -185,6 +192,8 @@ TEST_P(DsspModuleTestDsspNoNB, Works)
     setOutputFile("-o", formatString("%s-dssp-nonb.dat", inputBasename.c_str()).c_str(), ExactTextMatch());
     command.addOption("-hmode", "dssp");
     command.addOption("-nonb");
+    setOutputFile(
+            "-num", formatString("%s-dssp-nonb.xvg", inputBasename.c_str()).c_str(), test::XvgMatch());
     runTest(command);
 }
 
@@ -225,6 +234,8 @@ TEST_P(DsspModuleTestGromacsNoNB, Works)
             "-o", formatString("%s-gromacs-nonb.dat", inputBasename.c_str()).c_str(), ExactTextMatch());
     command.addOption("-hmode", "gromacs");
     command.addOption("-nonb");
+    setOutputFile(
+            "-num", formatString("%s-dssp-nonb.xvg", inputBasename.c_str()).c_str(), test::XvgMatch());
     runTest(command);
 }
 
