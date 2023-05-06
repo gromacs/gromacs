@@ -140,6 +140,12 @@ else()
     get_target_property(gmxapi_VERSION gmxapi VERSION)
 endif()
 
+# Note: this isn't exactly what we want, and we also need a GROMACS_DIR hint.
+# TODO: Consider the necessary hints and documentation.
+if(NOT gmxapi_ROOT AND gmxapi_DIR)
+    set(gmxapi_ROOT "${gmxapi_DIR}")
+endif()
+
 if(gmxapi_FOUND)
     set(_suffix "")
     # GROMACS main branch and development branches may have divergent
@@ -381,9 +387,11 @@ endif()
 if (GMXAPI_MAIN_PROJECT)
     set_target_properties(_gmxapi PROPERTIES BUILD_WITH_INSTALL_RPATH TRUE)
     set_target_properties(_gmxapi PROPERTIES INSTALL_RPATH_USE_LINK_PATH TRUE)
-    # The Python setup.py sets CMAKE_LIBRARY_OUTPUT_DIRECTORY and will be looking for generated files there.
-    file(COPY ${CMAKE_CURRENT_BINARY_DIR}/src/gmxapi/gmxconfig.json
-         DESTINATION ${CMAKE_LIBRARY_OUTPUT_DIRECTORY})
+    # Install phase does not affect sdist. Only wheel.
+    install(FILES ${CMAKE_CURRENT_BINARY_DIR}/src/gmxapi/gmxconfig.json DESTINATION ${SKBUILD_PROJECT_NAME})
+    install(TARGETS _gmxapi DESTINATION ${SKBUILD_PLATLIB_DIR}/${SKBUILD_PROJECT_NAME})
+    install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/src/gmxapi/ DESTINATION ${SKBUILD_PLATLIB_DIR}/${SKBUILD_PROJECT_NAME}
+            FILES_MATCHING PATTERN "*.py")
 else()
     # The rest of the logic in this conditional is to support the GMX_PYTHON_PACKAGE option
     # for testing the gmxapi Python packages within a full GROMACS project build_command and.
@@ -416,7 +424,6 @@ else()
         file(RELATIVE_PATH _relative_dir ${CMAKE_CURRENT_SOURCE_DIR}/src ${_absolute_dir})
         file(COPY ${_package_file} DESTINATION ${GMXAPI_PYTHON_STAGING_DIR}/${_relative_dir})
     endforeach()
-    file(COPY setup.py CMakeLists.txt DESTINATION ${GMXAPI_PYTHON_STAGING_DIR})
     file(COPY ${CMAKE_CURRENT_BINARY_DIR}/src/gmxapi/gmxconfig.json DESTINATION ${GMXAPI_PYTHON_STAGING_DIR}/gmxapi)
 
     # Unit test and build docs using PYTHONPATH=$CMAKE_CURRENT_BINARY_DIR/gmxapi_staging

@@ -1,7 +1,6 @@
 {
     "gmx_executable": "@_gmx_executable@",
     "gmx_bindir": "@_gmx_bindir@",
-    "gmx_cmake_hints": "@_setuppy_cmake_hints@",
     "gmx_cmake_toolchain": "@CMAKE_TOOLCHAIN_FILE@",
     "gmx_double": @_gmx_double@,
     "gmx_mpi_type": @_gmx_mpi_type@,

@@ -77,6 +77,10 @@ Set up a Python virtual environment
 Install the gmxapi Python package
 ---------------------------------
 
+Pull the ``gmxapi`` package from PyPI,
+build it for the |Gromacs| installation at :file:`/path/to/gromacs`,
+and install it to the Python prefix for the current environment.
+
 ::
 
     . /path/to/gromacs/bin/GMXRC
@@ -309,8 +313,11 @@ If |Gromacs| 2020 or higher is already installed,
 you can just source the :ref:`GMXRC <getting access to |Gromacs|>`
 (so that the Python package knows where to find |Gromacs|)
 and skip to the next section.
+Note that some |Gromacs| installations, such as in high-performance computing environments,
+may not install a :file:`GMXRC`, and may instead provide access to the |Gromacs|
+installation through a :command:`module load gromacs` or similar command.
 
-Otherwise, install a supported version of |Gromacs|.
+If necessary, install a supported version of |Gromacs|.
 When building |Gromacs| from source, be sure to configure cmake with the flag
 ``-DGMXAPI=ON`` (default).
 
@@ -471,28 +478,50 @@ provided to CMake when building the *gmxapi* package.
 
 .. _gmxapi cmake hints:
 
-gmxapi_ROOT
+CMake hints
 ~~~~~~~~~~~
+
+The :py:mod:`gmxapi` package is distributed with C++ source code that needs to be compiled
+against |Gromacs| libraries.
+The build system is configured using CMake, mediated by scikit-build-core.
+Refer to `scikit-build-core documentation
+<https://scikit-build-core.readthedocs.io/en/latest/configuration.html#configuring-cmake-arguments-and-defines>`__
+for the best information on passing build options through the Python package installer (*e.g.** pip_).
+(Be sure to look at the "config-settings" and "Environment" tabs.
+The "pyproject.toml" tabs is for package maintainers.)
+
+.. rubric:: gmxapi_ROOT
 
 If you have a single |Gromacs| installation at :file:`/path/to/gromacs`, it is usually
 sufficient to provide this location to :command:`pip` through the :envvar:`gmxapi_ROOT`
-environment variable.
+environment variable, or as a CMake variable definition. CMake definitions can be
+passed through the CMAKE_ARGS environment variable or with command line arguments to
+the package builder.
 
-Example::
+.. tab:: environment
 
-    gmxapi_ROOT=/path/to/gromacs pip install --no-cache-dir gmxapi
+    .. code-block:: shell
 
-Note that this is equivalent to providing the CMake variable definition::
+        gmxapi_ROOT=/path/to/gromacs pip install --no-cache-dir gmxapi
 
-    CMAKE_ARGS="-Dgmxapi_ROOT=/path/to/gromacs" pip install --no-cache-dir gmxapi
+.. tab:: CMAKE_ARGS
 
-|Gromacs| CMake hints
-~~~~~~~~~~~~~~~~~~~~~
+    .. code-block:: shell
+
+        CMAKE_ARGS="-Dgmxapi_ROOT=/path/to/gromacs" pip install --no-cache-dir gmxapi
+
+.. tab:: pip argument
+
+    .. code-block:: shell
+
+        pip install --no-cache-dir gmxapi --config-setting=cmake.define.gmxapi_ROOT=/path/to/gromacs
+
+.. rubric:: |Gromacs| CMake hints
 
 If you have multiple builds of |Gromacs| distinguished by suffixes
 (e.g. *_d*, *_mpi*, etcetera), or if you need to provide extra hints to :command:`pip`
 about the software tools that were used to build |Gromacs|, you can specify a
-CMake "hints" file by including a ``-C <initial-cache>`` option with your ``CMAKE_ARGS``.
+CMake "hints" file by including a ``-C<initial-cache>`` option with your ``CMAKE_ARGS``.
 (For more information, read about the ``-C``
 `command line option <https://cmake.org/cmake/help/latest/manual/cmake.1.html#options>`__
 for CMake.)
@@ -508,10 +537,26 @@ particular build of |Gromacs| you want to target (refer to |Gromacs| installatio
 instructions for more information.) ``${SUFFIX}`` may simply be empty, or ``''``.
 
 You can export ``CMAKE_ARGS`` in your environment, or just provide it at the beginning
-of the ``pip install`` command line::
+of the ``pip install`` command line.
 
-    CMAKE_ARGS="-Dgmxapi_ROOT=${UNIQUE_PREFIX} -C ${UNIQUE_PREFIX}/share/cmake/gromacs${SUFFIX}/gromacs-hints${SUFFIX}.cmake" \
-        pip install --no-cache-dir gmxapi
+.. tab:: environment
+
+    .. code-block:: shell
+
+        CMAKE_ARGS="-Dgmxapi_ROOT=${UNIQUE_PREFIX};-C${UNIQUE_PREFIX}/share/cmake/gromacs${SUFFIX}/gromacs-hints${SUFFIX}.cmake" \
+            pip install --no-cache-dir gmxapi
+
+.. tab:: pip
+
+    .. code-block:: shell
+
+        pip install gmxapi \
+          --config-settings=cmake.define.gmxapi_ROOT=${UNIQUE_PREFIX} \
+          --config-settings=cmake.args=-C${UNIQUE_PREFIX}/share/cmake/gromacs${SUFFIX}/gromacs-hints${SUFFIX}.cmake
+
+.. seealso:: `scikit-build-core config-settings
+             <https://scikit-build-core.readthedocs.io/en/latest/configuration.html#configuring-cmake-arguments-and-defines>`__
+
 
 Install from source
 -------------------

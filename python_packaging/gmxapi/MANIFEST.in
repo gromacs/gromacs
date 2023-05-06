@@ -1,6 +1,0 @@
-recursive-include src *.py *.cpp *.h *.in *.json
-global-include CMakeLists.txt *.cmake
-include test/conftest.py
-include test/pytest.ini
-include test/testdata.json
-global-exclude *.py[cod]

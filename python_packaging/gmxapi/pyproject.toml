@@ -1,3 +1,66 @@
 [build-system]
-requires = ["cmake>=3.16", "mpi4py", "pybind11>=2.6", "setuptools>=42.0", "wheel"]
-build-backend = "setuptools.build_meta"
+requires = ["mpi4py", "pybind11>=2.6", "scikit-build-core[pyproject]"]
+build-backend = "scikit_build_core.build"
+
+[project]
+name = "gmxapi"
+version = "0.4.1"
+description = "gmxapi Python interface for GROMACS."
+readme = "README.rst"
+license = { text = "GNU LESSER GENERAL PUBLIC LICENSE" }
+requires-python = ">=3.7"
+classifiers = [
+    "License :: OSI Approved :: GNU General Public License v2 or later (GPLv2+)"
+]
+authors = [
+    { name="GROMACS gmxapi team", email="info@gmxapi.org" },
+]
+dependencies = [
+    "mpi4py",
+    "packaging",
+    "networkx>=2.0",
+    "numpy>1.7"
+]
+
+[project.urls]
+homepage = "http://gmxapi.org/"
+"Bug tracker" = "https://gitlab.com/gromacs/gromacs/-/issues/?label_name[]=gmxapi%3A%3APython"
+documentation = "https://manual.gromacs.org/current/gmxapi/index.html"
+# The repository does not have any of the markers that identify it as a Python package.
+#repository = "https://gitlab.com/gromacs/gromacs.git"
+
+
+[tool.scikit-build]
+# Ref: https://scikit-build-core.readthedocs.io/en/latest/configuration.html
+
+# This provides some backward compatibility if set. Avoids surprises if default values change.
+minimum-version = "0.2"
+
+cmake.minimum-version = "3.18.4"
+cmake.build-type = "Release"
+
+# Include and exclude patterns, in gitignore syntax. Include overrides exclude.
+# Wheels include packages included in the sdist; CMake has the final say.
+sdist.include = [
+    "CMakeLists.txt",
+    "LICENSE",
+    "README.rst",
+    "pyproject.toml",
+    "src/cpp",
+    "src/gmxapi/*.py",
+    "src/gmxapi/*/*.py",
+    "src/gmxapi/gmxconfig.json.in",
+    "test/pytest.ini",
+    "test/testdata.json",
+    "test/*.py",
+]
+sdist.exclude = ["*"]
+
+# Make reproducible SDists (Python 3.9+ and UNIX recommended). Respects
+# SOURCE_DATE_EPOCH when true (the default).
+sdist.reproducible = true
+
+# The root-level packages to include. Special default: if not given, the package
+# is auto-discovered if it's name matches the main name.
+# We explicitly set an empty list to put CMake in charge (through `install` commands in CMakeLists.txt).
+wheel.packages = []
