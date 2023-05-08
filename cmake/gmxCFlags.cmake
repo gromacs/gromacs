@@ -65,12 +65,8 @@ function(gmx_target_compile_options_inner)
             ${GMXC_CFLAGS}
          PARENT_SCOPE)
 
-    # When SYCL support has been enabled (so the flag is non-empty), we still *disable* things
-    # by default to avoid running each file three passes through the compiler. Then we'll explicitly
-    # enable SYCL for the few files using it, as well as the linker.
     set(CXXFLAGS
             ${SIMD_CXX_FLAGS}
-            ${DISABLE_SYCL_CXX_FLAGS}
             ${EXTRA_CXX_FLAGS}
             ${GMXC_CXXFLAGS}
         PARENT_SCOPE)

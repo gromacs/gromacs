@@ -320,39 +320,7 @@ else()
         endif()
     endif()
     if(CMAKE_CXX_COMPILER MATCHES "dpcpp")
-        # At least Intel dpcpp defaults to having SYCL enabled for all code. This leads to two problems:
-        #
-        # 1. Compiles take ~3x longer, since every file has to be compiled for multiple targets.
-        # 2. We get a ton of warnings for the device-specific pass when the compiler sees our SIMD code.
-        #
-        # To avoid this, we attempt to find a flag to disable SYCL for non-SYCL files. Unfortunately,
-        # when using gmx_find_flag_for_source() that includes calling check_cxx_compiler_flag(),
-        # this in turn exposes a bug in dpcpp, where an object file compiles with -fno-sycl leads to
-        # a failed link stage (when the same flag is not used). Since none of this is critical, we handle
-        # it by merely checking if it works to compile a source fils with this flag, and choking if SYCL
-        # is still enabled.
-    
-        if(NOT CHECK_DISABLE_SYCL_CXX_FLAGS_QUIETLY)
-            message(STATUS "Checking for flags to disable SYCL")
-        endif()
-    
-        gmx_check_source_compiles_with_flags(
-            "int main() { return 0; }"
-            "-fno-sycl"
-            "CXX"
-            DISABLE_SYCL_CXX_FLAGS_RESULT)
-    
-        if(DISABLE_SYCL_CXX_FLAGS_RESULT)
-            set(SYCL_TOOLCHAIN_CXX_FLAGS "-fno-sycl")
-        endif()
-        if(NOT CHECK_DISABLE_SYCL_CXX_FLAGS_QUIETLY)
-            if(DISABLE_SYCL_CXX_FLAGS_RESULT)
-                message(STATUS "Checking for flags to disable SYCL - -fno-sycl")
-            else()
-                message(WARNING "Cannot find flags to disable SYCL for non-SYCL hardware-specific C++ code. Expect many warnings, but they are likely benign.")
-            endif()
-            set(CHECK_DISABLE_SYCL_CXX_FLAGS_QUIETLY 1 CACHE INTERNAL "Keep quiet on future calls to detect no-SYCL flags" FORCE)
-        endif()
+        message(FATAL_ERROR "Intel's \"dpcpp\" compiler is deprecated; please use \"icpx\" for SYCL builds")
     endif()
 
     # Find the flags to enable (or re-enable) SYCL with Intel extensions. In case we turned it off above,
