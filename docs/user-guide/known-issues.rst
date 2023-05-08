@@ -67,6 +67,16 @@ from CMake or later during build.
 
 :issue:`4574`
 
+FFT errors with NVIDIA RTX 40xx-series GPUs and CUDA 11.7 or earlier
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+cuFFT library only has full support for RTX 40xx GPUs since version 11.8.
+If you are using older CUDA, you might encounter ``cufftPlanMany R2C plan failure``
+error when running a simulation with PME on such a GPU.
+To resolve, upgrade to CUDA 11.8 or 12.x.
+
+:issue:`4759`
+
 "Cannot find a working standard library" error with ROCm Clang
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
