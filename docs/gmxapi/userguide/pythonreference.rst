@@ -147,6 +147,17 @@ Utilities
 
 .. autofunction:: make_constant
 
+Run time details
+----------------
+
+.. note:: The *gmxapi.runtime* Python module is evolving. Some details are not yet well specified.
+
+.. automodule:: gmxapi.runtime
+
+.. autofunction:: filtered_mpi_environ
+
+.. autodata:: filtered_prefixes
+
 Status messages and Logging
 ===========================
 
