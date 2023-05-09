@@ -48,7 +48,7 @@ def spc_water_box(gmxcli, tmp_path_factory):
 
     Prepare the MD input in a freshly created working directory.
     """
-    import gmxapi as gmx
+    import gmxapi.runtime
     from gmxapi.testsupport import scoped_chdir
 
     # TODO: (#2896) Fetch MD input from package / library data.
@@ -83,8 +83,8 @@ def spc_water_box(gmxcli, tmp_path_factory):
             fh.write("\n")
 
         assert os.path.exists(topfile)
-        assert gmx.version.api_is_at_least(0, 3, 1)
-        solvate = gmx.commandline_operation(
+        assert gmxapi.version.api_is_at_least(0, 3, 1)
+        solvate = gmxapi.commandline_operation(
             gmxcli,
             arguments=["solvate", "-box", "5", "5", "5"],
             # We use the default solvent instead of specifying one.
@@ -93,7 +93,6 @@ def spc_water_box(gmxcli, tmp_path_factory):
                 "-p": topfile,
                 "-o": structurefile,
             },
-            env={"PATH": os.getenv("PATH")},
         )
         assert os.path.exists(topfile)
 
@@ -128,7 +127,7 @@ def spc_water_box(gmxcli, tmp_path_factory):
         # it will be created in the current working directory.
         mdout_mdp = os.path.join(tempdir, "mdout.mdp")
 
-        grompp = gmx.commandline_operation(
+        grompp = gmxapi.commandline_operation(
             gmxcli,
             "grompp",
             input_files={
@@ -138,7 +137,6 @@ def spc_water_box(gmxcli, tmp_path_factory):
                 "-po": mdout_mdp,
             },
             output_files={"-o": tprfile},
-            env={"PATH": os.getenv("PATH")},
         )
         tprfilename = grompp.output.file["-o"].result()
         if grompp.output.returncode.result() != 0:

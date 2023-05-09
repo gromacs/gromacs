@@ -67,6 +67,8 @@ be taken with the Allocation and Assignment protocols in this module.
 """
 
 __all__ = (
+    "filtered_mpi_environ",
+    "filtered_prefixes",
     "scoped_resources",
     "ResourceAllocation",
     "ResourceAssignment",
@@ -75,12 +77,11 @@ __all__ = (
 
 import dataclasses
 import functools
+import os
 import threading
 import typing
 import warnings
 import weakref
-from typing import TYPE_CHECKING
-from _weakref import ReferenceType
 from contextlib import contextmanager
 
 import gmxapi.utility
@@ -100,9 +101,9 @@ logger = root_logger.getChild(__name__)
 logger.info("Importing {}".format(__name__))
 
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     try:
-        import Comm as Communicator
+        import mpi4py.MPI.Comm as Communicator
     except ImportError:
         Communicator = None
 
@@ -187,7 +188,7 @@ class ResourceAssignment(
     `add_finalizer` method.
     """
 
-    parent: "ReferenceType[ResourceAllocation[CommunicatorT, ReceivedTokenT]]"
+    parent: "weakref.ReferenceType[ResourceAllocation[CommunicatorT, ReceivedTokenT]]"
     """Resource allocation from which the current assignment is derived.
     
     Notes that this is a weak reference to the provided ResourceAllocation.
@@ -760,3 +761,43 @@ def scoped_resources(
         yield resources
     finally:
         resources.close()
+
+
+filtered_prefixes = (
+    "DCMF_",  # IBM
+    "MPICH_",
+    "MPIEXEC_",
+    "MPIO_",  # IBM
+    "MV2_",  # MVAPICH2 and some forks
+    "MVAPICH_",
+    "HYDRA_",  # MPICH
+    "OMPI_",  # OpenMPI
+    "PMI_",  # Process Management Interface
+    "PMIX_",  # Newer PMI and batch systems
+    "I_MPI_",  # Intel MPI
+)
+"""MPI-related environment variable prefixes.
+
+Environment variable prefixes known to be associated with MPI implementations,
+which may affect MPI context detection, and which should not matter outside of
+MPI contexts.
+
+References:
+    * :issue:`4423`
+    * :issue:`4736`
+
+"""
+
+
+def filtered_mpi_environ() -> dict:
+    """Return a filtered environment variables map with MPI-related entries removed.
+
+    See Also:
+        :py:data:`filtered_prefixes`
+
+    """
+    return {
+        key: value
+        for key, value in os.environ.items()
+        if not any(key.startswith(prefix) for prefix in filtered_prefixes)
+    }

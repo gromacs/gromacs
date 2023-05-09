@@ -385,6 +385,11 @@ def commandline_operation(
         If specified, *env* replaces the default environment variables map seen by *executable* in the
         subprocess.
 
+    .. versionchanged:: 0.4.1
+        If unspecified, *env* defaults to a **filtered** copy of the current environment
+        (with MPI-related environment variables removed).
+        See :py:func:`gmxapi.runtime.filtered_mpi_environ()`.
+
     In addition to controlling environment variables used for user-input, it may be
     necessary to adjust the environment to prevent the subprocess from inheriting variables that it
     should not. This is particularly relevant if the Python script is launched with ``mpiexec`` and
@@ -394,6 +399,9 @@ def commandline_operation(
     When overriding the environment variables, don't forget to include basic variables
     like PATH that are necessary for the executable to run. `os.getenv` can help.
     E.g. ``commandline_operation(..., env={'PATH': os.getenv('PATH'), ...})``
+
+    See Also:
+        :py:func:`gmxapi.runtime.filtered_mpi_environ()`.
 
     Output:
         The output node of the resulting operation handle contains
@@ -420,6 +428,7 @@ def commandline_operation(
     contacting the developers through any of the various GROMACS community
     channels to further discuss your use case.
     """
+    import gmxapi.runtime
 
     # Implementation details: When used in a script, this function returns an
     # instance of an operation. However, because of the dynamic specification of
@@ -507,16 +516,9 @@ def commandline_operation(
     shell = gmx.make_constant(False)
 
     if env is None:
-
-        @gmx.function_wrapper(
-            # allow_duplicate=True
-        )
-        def _env() -> dict:
-            import os
-
-            return dict(os.environ)
-
-        env = _env().output.data
+        env = gmx.function_wrapper(allow_duplicate=True)(
+            gmxapi.runtime.filtered_mpi_environ
+        )().output.data
     cli_args = {"command": command, "shell": shell, "env": env}
     cli_args.update(**kwargs)
     if stdin is not None:

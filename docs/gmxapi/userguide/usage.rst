@@ -128,6 +128,12 @@ from the Python interpreter from which they are launched, and an executable
 may think it was launched directly by :command:`mpiexec`, causing MPI errors when
 it tries to assert ownership of the MPI resources.
 
+When a gmxapi script is launched in an MPI context, it may be necessary to hide
+the MPI context from MPI-aware commands run in subprocesses, since `gmxapi.commandline_operation`
+executables are generally only launched on a single process.
+:py:func:`gmxapi.runtime.filtered_mpi_environ()` is available to provide a copy
+of the `os.environ` dictionary with known MPI-related environment variables filtered out.
+
 .. versionchanged:: 0.3.1
 
     You can use the *env* key word argument to `gmxapi.commandline_operation`
@@ -135,6 +141,10 @@ it tries to assert ownership of the MPI resources.
     the environment variables set by the MPI launcher, you can prevent the
     executable from automatically detecting an MPI context that it shouldn't use.
     See also :issue:`4421`
+
+.. versionchanged:: 0.4.1
+
+    Added :py:func:`gmxapi.runtime.filtered_mpi_environ()`.
 
 gmxapi does not currently have an abstraction for subprocess launch methods.
 While such a feature is under investigation, *allow_duplicate* (:py:func:`~gmxapi.function_wrapper`)
