@@ -990,13 +990,19 @@ def mdrun(
     For mdrun command line options that do not take a value (e.g. ``-noappend``),
     use ``None`` as the dictionary value.
 
-    Note:
-        New function names will be appearing to handle tasks that are separate
+    Warning:
+        Run time argument processing does not have Python bindings at this time.
+        key-value pairs are passed as plain text to the underlying library.
+        Usage errors can be hard to discover. Refer to the MD log file in the output
+        directory for messages regarding argument processing.
 
-        "simulate" is plausibly a dispatcher or base class for various tasks
-        dispatched by mdrun. Specific work factories are likely "minimize,"
-        "test_particle_insertion," "legacy_simulation" (do_md), or "simulation"
-        composition (which may be leap-frog, vv, and other algorithms)
+        Note, in particular, that the available ``mdrun`` arguments can depend on the
+        GROMACS build configuration, such as whether an MPI library or thread-MPI
+        is enabled.
+
+    See Also:
+        The :doc:`/onlinehelp/gmx-mdrun` command line tool.
+
     """
     # The job of this function is to arrange for the creation of a workflow node
     # by transforming arguments into a DataSourceCollection and providing the

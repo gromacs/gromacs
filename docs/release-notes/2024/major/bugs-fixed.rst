@@ -17,3 +17,17 @@ to prepare the subprocess environment of `gmxapi.commandline_operation`.
 This is a follow-up to :issue:`4423`, for which the original fix appeared to be insufficient.
 
 :issue:`4736`
+
+build-dependent checking for gmxapi runtime arguments
+"""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Depending on whether |Gromacs| was built with MPI support or thread-MPI support,
+some :doc:`/onlinehelp/gmx-mdrun` options are not defined.
+Such errors may only appear in the MD log file,
+and can thus be hard to identify in API use cases.
+
+Additional checking has been added to :py:func:`gmxapi.simulation.workflow.from_tpr`
+to try to preempt user errors,
+and additional usage notes have been added to `gmxapi.mdrun`.
+
+:issue:`4771`
