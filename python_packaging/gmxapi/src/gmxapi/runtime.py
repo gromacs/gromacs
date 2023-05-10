@@ -489,6 +489,7 @@ class ResourceAssignment(
                 possible. If pursued in the future, it could be appropriate to create
                 an additional resource layer comprising a parent MPI.Group for the
                 processes "owning" each subset of cores.
+
             """
 
             assert len(set(roots) - {None}) == n_subtasks

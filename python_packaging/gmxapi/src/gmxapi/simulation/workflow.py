@@ -687,12 +687,14 @@ def from_tpr(input=None, **kwargs):
         pme_ranks (int): number of separate ranks to be used for PME electrostatics. (-npme)
         threads_per_pme_rank (int): Number of OpenMP threads per PME rank. (-ntomp_pme)
         steps (int): Override input files and run for this many steps. (-nsteps; deprecated)
-        threads (int): Total number of threads to start. (-nt)
+        threads (int): Total number of threads to start for thread-MPI GROMACS. (-nt)
         threads_per_rank (int): number of OpenMP threads to start per MPI rank. (-ntomp)
         tmpi (int): number of thread-MPI ranks to start. (-ntmpi)
 
     ..  versionchanged:: 0.1
         *pme_threads_per_rank* renamed to *threads_per_pme_rank*.
+
+    Note that run time simulator arguments can also be provided through `gmxapi.mdrun` *runtime_args*.
 
     Returns:
         simulation member of a gmx.workflow.WorkSpec object
@@ -714,8 +716,10 @@ def from_tpr(input=None, **kwargs):
     Bugs: version 0.0.6
         * There is not a way to programatically check the current step number on disk.
           See https://github.com/kassonlab/gmxapi/issues/56 and https://github.com/kassonlab/gmxapi/issues/85
+
     """
     import os
+    from gmxapi.utility import config
 
     usage = "argument to from_tpr() should be a valid filename or list of filenames, followed by optional key word arguments."
 
@@ -734,6 +738,24 @@ def from_tpr(input=None, **kwargs):
             arg_path = os.path.abspath(arg)
             raise exceptions.UsageError(usage + " Got {}".format(arg_path))
 
+    # Prepare a message about the build configuration.
+    # From gmxapi/CMakeLists.txt, this is "library", "tmpi", or None
+    mpi_type = config().get("gmx_mpi_type")
+    mpi_message = ""
+    if not mpi_type:
+        mpi_message = "Currently using GROMACS that was built with no MPI."
+    elif mpi_type == "tmpi":
+        mpi_message = "Currently using GROMACS that was built with internal thread-MPI."
+    elif mpi_type == "library":
+        mpi_message = (
+            "Currently using GROMACS that was built against an external MPI library."
+        )
+    else:
+        warnings.warn(
+            f"The gmxapi Python package does not recognize the GROMACS library MPI type: {mpi_type}. "
+            "Compatibility checks may be impaired."
+        )
+
     # Note: These are runner parameters, not MD parameters, and should be in the call to gmx.run() instead of here.
     # Reference https://github.com/kassonlab/gmxapi/issues/95
     # Also note that it is not well defined whether or which arguments should be allowed to differ within
@@ -751,9 +773,19 @@ def from_tpr(input=None, **kwargs):
         elif arg_key == "pme_ranks" or arg_key == "npme":
             params["pme_ranks"] = int(kwargs[arg_key])
         elif arg_key == "threads" or arg_key == "nt":
-            params["threads"] = int(kwargs[arg_key])
+            if mpi_type == "tmpi":
+                params["threads"] = int(kwargs[arg_key])
+            else:
+                raise exceptions.ValueError(
+                    f"'{arg_key}' argument requires thread-MPI GROMACS. " + mpi_message
+                )
         elif arg_key == "tmpi" or arg_key == "ntmpi":
-            params["tmpi"] = int(kwargs[arg_key])
+            if mpi_type == "tmpi":
+                params["tmpi"] = int(kwargs[arg_key])
+            else:
+                raise exceptions.ValueError(
+                    f"'{arg_key}' argument requires thread-MPI GROMACS. " + mpi_message
+                )
         elif arg_key == "threads_per_rank" or arg_key == "ntomp":
             params["threads_per_rank"] = int(kwargs[arg_key])
         elif (
