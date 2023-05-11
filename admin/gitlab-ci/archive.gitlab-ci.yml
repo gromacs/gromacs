@@ -160,7 +160,7 @@ archive:configure:release:
     - cmake --build . --target install-guide -- -j4 2>&1 | tee installGuideBuildLogFile.log
     - cmake --build . --target package_source -- -j4 2>&1 | tee packageBuildLogFile.log
     - awk '/warning/,/warning.*generated|^$/' buildLogFile.log manBuildLogFile.log
-      completionBuildLogFile.log installGuideBuildLogFile.log checksumBuildLogFile.log
+      completionBuildLogFile.log installGuideBuildLogFile.log
       packageBuildLogFile.log | grep -v "CMake" | tee buildErrors.log || true
     - grep "cannot be built" buildLogFile.log manBuildLogFile.log
       completionBuildLogFile.log installGuideBuildLogFile.log
