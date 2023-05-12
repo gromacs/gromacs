@@ -168,9 +168,14 @@ def gmxconfig():
     yield config
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="function")
 def mdrun_kwargs(request, gmxconfig):
-    """pytest fixture to provide a mdrun_kwargs dictionary for the mdrun ResourceManager."""
+    """pytest fixture to provide a mdrun_kwargs dictionary for the mdrun ResourceManager.
+
+    .. versionchanged:: 0.4.1
+        Use function scope to avoid unexpectedly mutating the dictionary between tests.
+
+    """
     if gmxconfig is None:
         raise RuntimeError("--threads argument requires a usable gmxconfig.json")
     arg = request.config.getoption("--threads")

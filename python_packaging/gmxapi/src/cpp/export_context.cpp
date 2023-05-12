@@ -128,19 +128,9 @@ static std::vector<std::string> makeMDArgs_0_0_7(const py::dict& params)
     }
     if (params.contains("append_output"))
     {
-        try
+        if (!params["append_output"].cast<bool>())
         {
-            if (!params["append_output"].cast<bool>())
-            {
-                mdargs.emplace_back("-noappend");
-            }
-        }
-        catch (const py::cast_error& e)
-        {
-            // Couldn't cast to bool for some reason.
-            // Convert to gmxapi exception (not implemented)
-            // ref. https://github.com/kassonlab/gmxapi/issues/125
-            throw;
+            mdargs.emplace_back("-noappend");
         }
     }
     return mdargs;
@@ -176,16 +166,25 @@ static std::vector<std::string> makeMDArgs_CLI(const py::dict& params)
                 auto it = py::iter(value);
                 while (it != py::iterator::sentinel())
                 {
-                    mdargs.emplace_back(py::cast<std::string>(*it));
+                    mdargs.emplace_back(py::str(*it));
                     ++it;
                 }
                 continue;
             }
-            catch (py::type_error&)
+            catch (py::error_already_set& eas)
             {
+                // `py::iter` throws TypeError for bad arguments, but it comes through the C API,
+                // so pybind11 wraps it in py::error_already_set, not py::type_error. Ref:
+                // https://pybind11.readthedocs.io/en/stable/advanced/exceptions.html#handling-exceptions-from-python-in-c
+                // Only suppress TypeError.
+                if (!eas.matches(PyExc_TypeError))
+                {
+                    throw;
+                }
             }
-            // Otherwise, convert the value to string.
-            mdargs.emplace_back(py::cast<std::string>(value));
+            // Otherwise, cast the Python value to a Python string (which is implicitly convertible
+            // to std::string).
+            mdargs.emplace_back(py::str(value));
         }
     }
     return mdargs;
@@ -252,6 +251,17 @@ void export_context(pybind11::module& m, const pybind11::exception<Exception>& b
             "set",
             [](MDArgs* self, const py::dict& params) { setMDArgs(self, params); },
             "Assign parameters in MDArgs from Python dict.");
+    mdargs.def(
+            "get_args",
+            [](const MDArgs& self) {
+                auto args = py::list(self.size());
+                for (int i = 0; i < self.size(); ++i)
+                {
+                    args[i] = py::str(self[i]);
+                };
+                return args;
+            },
+            "Get an iterator of command line argument tokens, if possible and relevant.");
 
     // Export execution context class
     py::class_<PyContext, std::shared_ptr<PyContext>> context(m, "Context");
