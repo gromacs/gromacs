@@ -100,6 +100,35 @@ def test_run_from_tpr(spc_water_box, mdrun_kwargs):
         assert "starting mdrun" in fh.read()
 
 
+@pytest.mark.skipif(
+    not api_is_at_least(0, 4, 1), reason="runtime_args was refined for gmxapi 0.4.1."
+)
+def test_runtime_args(mdrun_kwargs):
+    import gmxapi._gmxapi as core
+
+    # Check the C++ bindings for our basic set of options.
+    mdargs = core.MDArgs()
+    mdargs.set(mdrun_kwargs)
+
+    # Before gmxapi 0.4.1, a non-string value was not handled properly.
+    mdrun_kwargs["-rdd"] = 2.5
+    mdargs = core.MDArgs()
+    mdargs.set(mdrun_kwargs)
+
+    # Test non-scalar argument value.
+    mdrun_kwargs["-dd"] = (1, 1, 1)
+    mdargs = core.MDArgs()
+    mdargs.set(mdrun_kwargs)
+
+    # Test flag-like argument with no value.
+    mdrun_kwargs["-noappend"] = None
+    mdargs.set(mdrun_kwargs)
+    assert all(arg != "" for arg in mdargs.get_args())
+
+    argstring = " ".join(mdargs.get_args())
+    assert "-dd 1 1 1" in argstring
+
+
 @pytest.mark.usefixtures("cleandir")
 def test_mdrun_runtime_args(spc_water_box, caplog, mdrun_kwargs):
     """Test that *runtime_args* is respected.
