@@ -368,7 +368,7 @@ e.g., through ``source /opt/intel/oneapi/setvars.sh`` or
 or manually setting environment variable ``MKLROOT=/full/path/to/mkl``.
 Then run CMake with setting ``-DGMX_FFT_LIBRARY=mkl`` and/or ``-DGMX_GPU_FFT_LIBRARY=mkl``.
 
-.. _dbfft installation:
+.. _bbfft installation:
 
 Using double-batched FFT library
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -380,8 +380,9 @@ very large FFT sizes in |Gromacs|.
 
 ::
 
-     cmake -DGMX_GPU_FFT_LIBRARY=DBFFT -DCMAKE_PREFIX_PATH=$PATH_TO_DBFFT_INSTALL
+     cmake -DGMX_GPU_FFT_LIBRARY=BBFFT -DCMAKE_PREFIX_PATH=$PATH_TO_BBFFT_INSTALL
 
+Note: in |Gromacs| 2023, the option was called ``DBFFT``.
 
 Using ARM Performance Libraries
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -962,7 +963,7 @@ we recommend passing additional flags for compatibility and improved performance
    cmake .. -DCMAKE_C_COMPILER=icx -DCMAKE_CXX_COMPILER=icpx -DGMX_GPU=SYCL \
             -DGMX_GPU_NB_NUM_CLUSTER_PER_CELL_X=1 -DGMX_GPU_NB_CLUSTER_SIZE=8
 
-You might also consider using :ref:`double-batched FFT library <dbfft installation>`.
+You might also consider using :ref:`double-batched FFT library <bbfft installation>`.
 
 SYCL GPU acceleration for AMD GPUs
 """"""""""""""""""""""""""""""""""

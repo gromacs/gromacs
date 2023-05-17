@@ -58,8 +58,8 @@
 #    include "gpu_3dfft_sycl.h"
 #    if GMX_GPU_FFT_MKL
 #        include "gpu_3dfft_sycl_mkl.h"
-#    elif GMX_GPU_FFT_DBFFT
-#        include "gpu_3dfft_sycl_dbfft.h"
+#    elif GMX_GPU_FFT_BBFFT
+#        include "gpu_3dfft_sycl_bbfft.h"
 #    elif GMX_GPU_FFT_ROCFFT
 #        include "gpu_3dfft_sycl_rocfft.h"
 #    elif GMX_GPU_FFT_VKFFT
@@ -198,9 +198,9 @@ Gpu3dFft::Gpu3dFft(FftBackend           backend,
                                                             realGrid,
                                                             complexGrid);
             break;
-#    elif GMX_GPU_FFT_DBFFT
-        case FftBackend::SyclDbfft:
-            impl_ = std::make_unique<Gpu3dFft::ImplSyclDbfft>(allocateRealGrid,
+#    elif GMX_GPU_FFT_BBFFT
+        case FftBackend::SyclBbfft:
+            impl_ = std::make_unique<Gpu3dFft::ImplSyclBbfft>(allocateRealGrid,
                                                               comm,
                                                               gridSizesInXForEachRank,
                                                               gridSizesInYForEachRank,

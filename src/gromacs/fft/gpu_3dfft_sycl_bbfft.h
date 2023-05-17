@@ -39,8 +39,8 @@
  *  \ingroup module_fft
  */
 
-#ifndef GMX_FFT_GPU_3DFFT_SYCL_DBFFT_H
-#define GMX_FFT_GPU_3DFFT_SYCL_DBFFT_H
+#ifndef GMX_FFT_GPU_3DFFT_SYCL_BBFFT_H
+#define GMX_FFT_GPU_3DFFT_SYCL_BBFFT_H
 
 #include <CL/sycl.hpp>
 #include <bbfft/plan.hpp>
@@ -63,11 +63,11 @@ namespace gmx
  * A 3D FFT wrapper class for performing R2C/C2R transforms using
  * SYCL + double-batched FFT library (internally known as bbfft).
  */
-class Gpu3dFft::ImplSyclDbfft : public Gpu3dFft::Impl
+class Gpu3dFft::ImplSyclBbfft : public Gpu3dFft::Impl
 {
 public:
     //! \copydoc Gpu3dFft::Impl::Impl
-    ImplSyclDbfft(bool                 allocateRealGrid,
+    ImplSyclBbfft(bool                 allocateRealGrid,
                   MPI_Comm             comm,
                   ArrayRef<const int>  gridSizesInXForEachRank,
                   ArrayRef<const int>  gridSizesInYForEachRank,
@@ -82,7 +82,7 @@ public:
                   DeviceBuffer<float>* complexGrid);
 
     //! \copydoc Gpu3dFft::Impl::~Impl
-    ~ImplSyclDbfft() override;
+    ~ImplSyclBbfft() override;
 
     //! \copydoc Gpu3dFft::Impl::perform3dFft
     void perform3dFft(gmx_fft_direction dir, CommandEvent* timingEvent) override;

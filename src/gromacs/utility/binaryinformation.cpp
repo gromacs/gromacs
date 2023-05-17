@@ -263,9 +263,9 @@ std::string getGpuFftDescriptionString()
         {
             return std::string("rocFFT ") + rocfft_VERSION;
         }
-        else if (GMX_GPU_FFT_DBFFT)
+        else if (GMX_GPU_FFT_BBFFT)
         {
-            return std::string("Double-Batched FFT Library ") + dbfft_VERSION;
+            return std::string("Double-Batched FFT Library ") + bbfft_VERSION;
         }
         else
         {

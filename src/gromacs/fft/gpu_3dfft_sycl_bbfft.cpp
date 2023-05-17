@@ -36,7 +36,7 @@
  *  \brief Implements GPU 3D FFT routines for SYCL.
  *  using the double-batched FFT library found at
  *  https://github.com/intel/double-batched-fft-library.
- *  MKL is expected to perform a bit better than dbfft
+ *  MKL is expected to perform a bit better than bbfft
  *  except for extremely large simulations.
  *
  *  \author Carsten Uphoff <carsten.uphoff@intel.com>
@@ -45,7 +45,7 @@
 
 #include "gmxpre.h"
 
-#include "gpu_3dfft_sycl_dbfft.h"
+#include "gpu_3dfft_sycl_bbfft.h"
 
 #include "config.h"
 
@@ -70,7 +70,7 @@ class DeviceContext;
 namespace gmx
 {
 
-Gpu3dFft::ImplSyclDbfft::ImplSyclDbfft(bool allocateRealGrid,
+Gpu3dFft::ImplSyclBbfft::ImplSyclBbfft(bool allocateRealGrid,
                                        MPI_Comm /*comm*/,
                                        ArrayRef<const int> gridSizesInXForEachRank,
                                        ArrayRef<const int> gridSizesInYForEachRank,
@@ -155,12 +155,12 @@ Gpu3dFft::ImplSyclDbfft::ImplSyclDbfft(bool allocateRealGrid,
     }
 }
 
-Gpu3dFft::ImplSyclDbfft::~ImplSyclDbfft()
+Gpu3dFft::ImplSyclBbfft::~ImplSyclBbfft()
 {
     deallocateComplexGrid();
 }
 
-void Gpu3dFft::ImplSyclDbfft::perform3dFft(gmx_fft_direction dir, CommandEvent* /*timingEvent*/)
+void Gpu3dFft::ImplSyclBbfft::perform3dFft(gmx_fft_direction dir, CommandEvent* /*timingEvent*/)
 {
     float* complexGrid = *complexGrid_.buffer_;
     switch (dir)

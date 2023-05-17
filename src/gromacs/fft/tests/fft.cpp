@@ -407,7 +407,7 @@ TEST_P(ParameterizedFFTTest3D, RunsOnHost)
  *  DPCPP uses oneMKL, which seems to have troubles with out-of-place
  *  transforms. */
 constexpr bool sc_performOutOfPlaceFFT =
-        (GMX_GPU_FFT_MKL == 0) && (GMX_GPU_FFT_DBFFT == 0); // NOLINT(misc-redundant-expression)
+        (GMX_GPU_FFT_MKL == 0) && (GMX_GPU_FFT_BBFFT == 0); // NOLINT(misc-redundant-expression)
 
 /*! \brief Return the output grid depending on whether in- or out-of
  * place FFT is used
@@ -420,7 +420,7 @@ constexpr bool sc_performOutOfPlaceFFT =
 template<bool performOutOfPlaceFFT>
 DeviceBuffer<float>* actualOutputGrid(DeviceBuffer<float>* realGrid, DeviceBuffer<float>* complexGrid);
 
-#    if GMX_SYCL_DPCPP && (GMX_GPU_FFT_MKL || GMX_GPU_FFT_DBFFT)
+#    if GMX_SYCL_DPCPP && (GMX_GPU_FFT_MKL || GMX_GPU_FFT_BBFFT)
 
 template<>
 DeviceBuffer<float>* actualOutputGrid<false>(DeviceBuffer<float>* realGrid,
@@ -501,8 +501,8 @@ TEST_P(ParameterizedFFTTest3D, RunsOnDevices)
 #    elif GMX_GPU_SYCL
 #        if GMX_GPU_FFT_MKL
         const FftBackend backend = FftBackend::SyclMkl;
-#        elif GMX_GPU_FFT_DBFFT
-        const FftBackend backend = FftBackend::SyclDbfft;
+#        elif GMX_GPU_FFT_BBFFT
+        const FftBackend backend = FftBackend::SyclBbfft;
 #        elif GMX_GPU_FFT_ROCFFT
         const FftBackend backend = FftBackend::SyclRocfft;
 #        elif GMX_GPU_FFT_VKFFT

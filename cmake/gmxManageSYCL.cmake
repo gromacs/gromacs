@@ -432,7 +432,7 @@ int main() {
         set(_sycl_has_valid_fft TRUE)
     endif()
 
-    if(GMX_GPU_FFT_DBFFT)
+    if(GMX_GPU_FFT_BBFFT)
         # The double-batched FFT library is still called by its former
         # name bbfft in the implementation. For now, only the shared
         # libraries can link into GROMACS shared libraries.

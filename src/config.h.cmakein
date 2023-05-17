@@ -74,8 +74,8 @@
 #cmakedefine01 GMX_GPU_FFT_MKL
 /* Use rocFFT library for FFT on GPUs */
 #cmakedefine01 GMX_GPU_FFT_ROCFFT
-/* Use double-batched FFT library for FFT on GPUs */
-#cmakedefine01 GMX_GPU_FFT_DBFFT
+/* Use double-batched FFT library (BBFFT) for FFT on GPUs */
+#cmakedefine01 GMX_GPU_FFT_BBFFT
 
 /* VKFFT Library version */
 #define vkfft_VERSION "@vkfft_VERSION@"
@@ -87,7 +87,7 @@
 #define Heffte_VERSION "@Heffte_VERSION@"
 
 /* Double-Batched FFT Library version (still called bbfft in the implementation) */
-#define dbfft_VERSION "@bbfft-sycl_VERSION@"
+#define bbfft_VERSION "@bbfft-sycl_VERSION@"
 
 /* Target platform is x86 or x86_64 */
 #cmakedefine01 GMX_TARGET_X86

@@ -777,9 +777,9 @@ static void pme_gpu_init_internal(PmeGpu* pmeGpu, const DeviceContext& deviceCon
     pmeGpu->archSpecific.reset(new PmeGpuSpecific(deviceContext, deviceStream));
     pmeGpu->kernelParams.reset(new PmeGpuKernelParams());
 
-    // Use in-place FFT with cuFFTMp or DBFFT.
+    // Use in-place FFT with cuFFTMp or BBFFT.
     pmeGpu->archSpecific->performOutOfPlaceFFT =
-            !((pmeGpu->settings.useDecomposition && GMX_USE_cuFFTMp) || GMX_GPU_FFT_DBFFT);
+            !((pmeGpu->settings.useDecomposition && GMX_USE_cuFFTMp) || GMX_GPU_FFT_BBFFT);
 
     /* This should give better performance, according to the cuFFT documentation.
      * The performance seems to be the same though.
@@ -885,9 +885,9 @@ static gmx::FftBackend getFftBackend(const PmeGpu* pmeGpu)
                         "PME decomposition on oneAPI-compatible GPUs"));
             }
         }
-        else if (GMX_GPU_FFT_DBFFT)
+        else if (GMX_GPU_FFT_BBFFT)
         {
-            return gmx::FftBackend::SyclDbfft;
+            return gmx::FftBackend::SyclBbfft;
         }
         else if (GMX_GPU_FFT_ROCFFT)
         {
