@@ -97,7 +97,7 @@ using DeviceBuffer = TypedClMemory<ValueType>;
 #elif GMX_GPU_SYCL
 
 /*! \libinternal \brief
- * A minimal wrapper around \c sycl::buffer to hide it away and simplify compilation.
+ * A minimal wrapper around SYCL USM memory and assistant data structures.
  */
 template<typename ValueType>
 struct DeviceBuffer

@@ -59,6 +59,7 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/strconvert.h"
 #include "gromacs/utility/stringutil.h"
+#include "gromacs/utility/unique_cptr.h"
 
 #include "device_information.h"
 
@@ -331,18 +332,22 @@ static bool isDeviceFunctional(const sycl::device& syclDevice, std::string* erro
     static const int numThreads = 8;
     try
     {
-        sycl::queue          queue(syclDevice);
-        sycl::buffer<int, 1> buffer(numThreads);
+        sycl::queue                                     queue(syclDevice);
+        std::unique_ptr<int, std::function<void(int*)>> buffer = {
+            sycl::malloc_device<int>(numThreads, queue), [=](int* ptr) { sycl::free(ptr, queue); }
+        };
+        int* d_buffer = buffer.get();
         queue.submit([&](sycl::handler& cgh) {
-                 auto           d_buffer = buffer.get_access(cgh, sycl::write_only, sycl::no_init);
                  sycl::range<1> range{ numThreads };
                  cgh.parallel_for<DummyKernel>(
                          range, [=](sycl::id<1> threadId) { d_buffer[threadId] = threadId.get(0); });
              }).wait_and_throw();
-        const auto h_Buffer = buffer.get_access<sycl::access_mode::read>();
+
+        std::vector<int> h_buffer(numThreads);
+        queue.copy<int>(d_buffer, h_buffer.data(), numThreads).wait_and_throw();
         for (int i = 0; i < numThreads; i++)
         {
-            if (h_Buffer[i] != i)
+            if (h_buffer[i] != i)
             {
                 if (errorMessage != nullptr)
                 {

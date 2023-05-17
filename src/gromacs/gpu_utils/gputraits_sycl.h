@@ -83,8 +83,9 @@ struct KernelLaunchConfig
 
 /*! \brief Sets whether device code can use arrays that are embedded in structs.
  *
- * That is not technically true for SYCL: the device code needs dedicated
- * \c sycl::buffer/accessor objects.
+ * That is not technically true for SYCL, since DeviceBuffer holds not only the memory pointer,
+ * but also the context.
+ *
  * But our \c prepareGpuKernelArguments and \c launchGpuKernel functions deal
  * with that, so we can pass embedded buffers to them, which is what this
  * constant actually controls.

@@ -63,24 +63,13 @@ void doDeviceTransfers(const DeviceContext&     deviceContext,
     {
         sycl::queue syclQueue(deviceContext.context(), deviceInfo.syclDevice);
 
-        sycl::property_list syclBufferProperties{ sycl::property::buffer::context_bound(
-                syclQueue.get_context()) };
+        sycl::global_ptr<char> d_buf = sycl::malloc_device<char>(input.size(), syclQueue);
 
-        sycl::buffer<char> syclBuffer(sycl::range<1>(input.size()), syclBufferProperties);
+        syclQueue.memcpy(d_buf, input.data(), input.size()).wait_and_throw();
 
-        syclQueue
-                .submit([&](sycl::handler& cgh) {
-                    auto accessor = syclBuffer.get_access(cgh, sycl::write_only, sycl::no_init);
-                    cgh.copy(input.data(), accessor);
-                })
-                .wait_and_throw();
+        syclQueue.memcpy(output.data(), d_buf, input.size()).wait_and_throw();
 
-        syclQueue
-                .submit([&](sycl::handler& cgh) {
-                    auto accessor = syclBuffer.get_access(cgh, sycl::read_only);
-                    cgh.copy(accessor, output.data());
-                })
-                .wait_and_throw();
+        sycl::free(d_buf, syclQueue);
     }
     catch (sycl::exception& e)
     {

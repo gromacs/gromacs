@@ -84,10 +84,6 @@ void LeapFrogGpu::integrate(DeviceBuffer<Float3>              d_x,
                    "Number of temperature scaling factors changed since it was set for the "
                    "last time.");
 
-        /* In SYCL, we could use host accessors here, without h_lambdas_.
-         * According to a quick test, host accessor is slightly faster when using DPC++ and
-         * LevelZero compared to using h_lambdas_ + cgh.copy. But with DPC++ and OpenCL, the host
-         * accessor waits for fReadyOnDevice in UpdateConstrainGpu::Impl::integrate. See #4023. */
         for (int i = 0; i < numTempScaleValues_; i++)
         {
             h_lambdas_[i] = tcstat[i].lambda;
