@@ -50,10 +50,16 @@ import os
 import sys
 
 # The following definitions are completed via CMake machinery.
+
+gmxapi_staging_path = "@GMXAPI_PYTHON_STAGING_DIR@"
+if gmxapi_staging_path and os.path.isdir(gmxapi_staging_path):
+    sys.path.append(gmxapi_staging_path)
+
+import gmxapi
+
 gmx_admin_scripts_path = "@GMX_ADMIN_DIR@"
 gmx_containers_path = "@GMX_ADMIN_DIR@/containers"
 gmx_sphinx_extension_path = "@SPHINX_EXTENSION_PATH@"
-gmxapi_staging_path = "@GMXAPI_PYTHON_STAGING_DIR@"
 releng_path = "@RELENG_PATH@"
 gmx_version_string = "@GMX_VERSION_STRING@"
 gmx_version_string_full = "@GMX_VERSION_STRING_FULL@"
@@ -83,8 +89,6 @@ sys.path.extend(
 )
 if releng_path and os.path.isdir(releng_path):
     sys.path.append(releng_path)
-if gmxapi_staging_path and os.path.isdir(gmxapi_staging_path):
-    sys.path.append(gmxapi_staging_path)
 
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
@@ -231,6 +235,7 @@ rst_epilog += """
 .. |gmx-source-package-ftp| replace:: As ftp ftp://ftp.gromacs.org/gromacs/gromacs-{gmx_version_string}.tar.gz
 .. |gmx-source-package-http| replace:: As https https://ftp.gromacs.org/gromacs/gromacs-{gmx_version_string}.tar.gz
 .. |gmx-regressiontests-package| replace:: https://ftp.gromacs.org/regressiontests/regressiontests-{regressiontest_version}.tar.gz
+.. |gmxapi-version| replace:: {gmxapi_version_string}
 .. _up-to-date installation instructions: https://manual.gromacs.org/documentation/current/install-guide/index.html
 .. _developer discussion forum: https://gromacs.bioexcel.eu/c/gromacs-developers/10
 .. _user discussion forum: https://gromacs.bioexcel.eu/c/gromacs-user-forum/5
@@ -264,6 +269,7 @@ rst_epilog += """
 .. |thisyear| replace:: {thisyear_string}
 """.format(
     gmx_version_string=gmx_version_string,
+    gmxapi_version_string=gmxapi.__version__,
     regressiontest_version=regressiontest_version,
     thisyear_string=thisyear_string,
 )

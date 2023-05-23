@@ -4,6 +4,8 @@
 gmxapi Python package
 =====================
 
+Version |gmxapi-version|.
+
 :py:mod:`gmxapi` allows molecular simulation and analysis work to
 be staged and run from Python.
 
@@ -27,7 +29,8 @@ Report bugs through the |Gromacs| `issue tracker`_.
 Complete documentation for the *gmxapi* Python package
 is part of the |Gromacs| `manual <http://manual.gromacs.org/current/>`_
 since *gmxapi* version 0.1.
-Other releases can also be found at `GitHub <https://www.github.com/kassonlab/gmxapi>`_.
+Older releases can also be found at `GitHub <https://www.github.com/kassonlab/gmxapi>`_.
+Pre-release documentation may be found at https://manual.gromacs.org/nightly/gmxapi/.
 
 .. seealso::
 
