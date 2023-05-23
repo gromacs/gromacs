@@ -893,9 +893,13 @@ Ewald
 .. mdp:: pme-order
 
    (4)
-   Interpolation order for PME. 4 equals cubic interpolation. You
-   might try 6/8/10 when running in parallel and simultaneously
-   decrease grid dimension.
+   The number of grid points along a dimension to which a charge is
+   mapped. The actual order of the PME interpolation is one less,
+   e.g. the default of 4 gives cubic interpolation. Supported values
+   are 3 to 12 (max 8 for P3M-AD). When running in parallel, it can be
+   worth to switch to 5 and simultaneously increase the grid spacing.
+   Note that on the CPU only values 4 and 5 have SIMD acceleration and
+   GPUs only support the value 4.
 
 .. mdp:: ewald-rtol
 

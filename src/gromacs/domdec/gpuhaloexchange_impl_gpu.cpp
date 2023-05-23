@@ -420,7 +420,8 @@ void GpuHaloExchange::Impl::communicateHaloCoordinatesOutOfPlace(DeviceBuffer<Fl
     }
     haloStream_->synchronize();
 #else
-    GMX_UNUSED_VALUE(sendPtr);
+    GMX_UNUSED_VALUE(d_sendPtr);
+    GMX_UNUSED_VALUE(sendSize);
     GMX_UNUSED_VALUE(sendRank);
     GMX_UNUSED_VALUE(recvSize);
     GMX_UNUSED_VALUE(recvRank);
@@ -458,7 +459,8 @@ void GpuHaloExchange::Impl::communicateHaloForcesOutOfPlace(DeviceBuffer<Float3>
     copyToDeviceBuffer(
             &d_recvBuf_, h_outOfPlaceRecvBuffer_.data(), 0, recvSize, *haloStream_, GpuApiCallBehavior::Async, nullptr);
 #else
-    GMX_UNUSED_VALUE(sendPtr);
+    GMX_UNUSED_VALUE(d_sendPtr);
+    GMX_UNUSED_VALUE(sendSize);
     GMX_UNUSED_VALUE(sendRank);
     GMX_UNUSED_VALUE(recvSize);
     GMX_UNUSED_VALUE(recvRank);

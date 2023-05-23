@@ -506,7 +506,12 @@ gmx_bool read_tps_conf(const std::filesystem::path& infile,
 
     *top = gmx_mtop_t_to_t_topology(&mtop, true);
 
-    tpx_make_chain_identifiers(&top->atoms, &top->mols);
+    // We can only generate chain identifiers when we have a list of molecules (haveTopology).
+    // This conditional has the side effect of preserving chain identifiers read from a PDB file.
+    if (haveTopology)
+    {
+        tpx_make_chain_identifiers(&top->atoms, &top->mols);
+    }
 
     if (requireMasses && !top->atoms.haveMass)
     {

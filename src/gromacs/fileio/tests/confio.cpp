@@ -209,4 +209,25 @@ INSTANTIATE_TEST_SUITE_P(WithDifferentFormats,
                          StructureIORoundtripTest,
                          ::testing::Values(efGRO, efG96, efPDB, efESP));
 
+
+TEST(StructureIOTest, ReadTpsConfRetainsChainids)
+{
+    std::filesystem::path simDB = gmx::test::TestFileManager::getTestSimulationDatabaseDirectory();
+
+    t_topology* top;
+    matrix      box;
+
+    snew(top, 1);
+    read_tps_conf(simDB.append("lysozyme.pdb"), top, nullptr, nullptr, nullptr, box, false);
+
+    const t_atoms& atoms = top->atoms;
+
+    ASSERT_FALSE(atoms.resinfo == nullptr);
+
+    EXPECT_EQ(atoms.resinfo[0].chainid, 'B');
+
+    done_top(top);
+    sfree(top);
+}
+
 } // namespace

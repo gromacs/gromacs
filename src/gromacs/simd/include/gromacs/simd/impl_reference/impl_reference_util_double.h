@@ -808,11 +808,11 @@ static inline void gmx_simdcall decr3Hsimd(double* m, SimdDouble a0, SimdDouble 
  * Available if \ref GMX_SIMD_HAVE_HSIMD_UTIL_DOUBLE is 1.
  */
 template<int align>
-static inline void gmx_simdcall gatherLoadTransposeHsimd(const double* base0,
-                                                         const double* base1,
-                                                         std::int32_t  offset[],
-                                                         SimdDouble*   v0,
-                                                         SimdDouble*   v1)
+static inline void gmx_simdcall gatherLoadTransposeHsimd(const double*      base0,
+                                                         const double*      base1,
+                                                         const std::int32_t offset[],
+                                                         SimdDouble*        v0,
+                                                         SimdDouble*        v1)
 {
     // Offset list must be aligned for half SIMD DINT32 width
     assert(std::size_t(offset) % (GMX_SIMD_DINT32_WIDTH / 2 * sizeof(std::int32_t)) == 0);

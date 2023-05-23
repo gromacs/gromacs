@@ -56,7 +56,14 @@ static void handleCufftError(cufftResult_t status, const char* msg)
 {
     if (status != CUFFT_SUCCESS)
     {
-        gmx_fatal(FARGS, "%s (error code %d)\n", msg, status);
+        // Clang-CUDA does not define __CUDACC_VER_x__, but it's for developers only anyway
+#if defined(__CUDACC_VER_MAJOR__) && (__CUDACC_VER_MAJOR__ == 11) && (__CUDACC_VER_MINOR__ < 8)
+        const char* suggestion =
+                "If you're using RTX 40-series card, consider updating to CUDA 11.8 or newer.\n"; // See #4759
+#else
+        const char* suggestion = "";
+#endif
+        gmx_fatal(FARGS, "%s (error code %d)\n%s", msg, status, suggestion);
     }
 }
 
