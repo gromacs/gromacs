@@ -310,7 +310,7 @@ You need a |Gromacs| installation that includes the gmxapi headers and library.
 
 If |Gromacs| 2020 or higher is already installed,
 *and* was configured with ``GMXAPI=ON`` at build time (the default),
-you can just source the :ref:`GMXRC <getting access to |Gromacs|>`
+you may be able to just source the :ref:`GMXRC <getting access to |Gromacs|>`
 (so that the Python package knows where to find |Gromacs|)
 and skip to the next section.
 Note that some |Gromacs| installations, such as in high-performance computing environments,
@@ -472,10 +472,6 @@ but :command:`pip` will ignore them unless you use the ``--pre`` flag::
 If :command:`pip` does not find your |Gromacs| installation, use one of the following
 environment variables to provide a hint.
 
-The installer will also look for a ``CMAKE_ARGS`` environment variable. If found,
-The ``$CMAKE_ARGS`` string will be split into additional arguments that will be
-provided to CMake when building the *gmxapi* package.
-
 .. _gmxapi cmake hints:
 
 CMake hints
@@ -494,21 +490,13 @@ The "pyproject.toml" tabs is for package maintainers.)
 
 If you have a single |Gromacs| installation at :file:`/path/to/gromacs`, it is usually
 sufficient to provide this location to :command:`pip` through the :envvar:`gmxapi_ROOT`
-environment variable, or as a CMake variable definition. CMake definitions can be
-passed through the CMAKE_ARGS environment variable or with command line arguments to
-the package builder.
+environment variable, or as a CMake variable definition.
 
 .. tab:: environment
 
     .. code-block:: shell
 
         gmxapi_ROOT=/path/to/gromacs pip install --no-cache-dir gmxapi
-
-.. tab:: CMAKE_ARGS
-
-    .. code-block:: shell
-
-        CMAKE_ARGS="-Dgmxapi_ROOT=/path/to/gromacs" pip install --no-cache-dir gmxapi
 
 .. tab:: pip argument
 
@@ -518,41 +506,41 @@ the package builder.
 
 .. rubric:: |Gromacs| CMake hints
 
-If you have multiple builds of |Gromacs| distinguished by suffixes
-(e.g. *_d*, *_mpi*, etcetera), or if you need to provide extra hints to :command:`pip`
-about the software tools that were used to build |Gromacs|, you can specify a
-CMake "hints" file by including a ``-C<initial-cache>`` option with your ``CMAKE_ARGS``.
+It can be important to use the same compiler tool chain for both |Gromacs|
+and for client software (the Python package C++ extension).
+
+You can check ``gmx --version`` to see what compilers your installation used,
+and make sure that you don't have incompatible compilers declared by environment
+variables such as ``$CXX``.
+
+You can also use the |Gromacs| provided CMake cache file
+to provide extra hints to the Python extension build system
+about the software tools that were used to build |Gromacs|.
 (For more information, read about the ``-C``
 `command line option <https://cmake.org/cmake/help/latest/manual/cmake.1.html#options>`__
 for CMake.)
 
-In the following example, ``${UNIQUE_PREFIX}`` is the path to the directory that holds the
-|Gromacs| ``bin``, ``lib``, ``share`` directories, *etc*.
-It is *unique* because |Gromacs| provides CMake support for only one build configuration at a time
-through ``.../share/cmake/gmxapi/``, even if there are multiple library configurations installed to
-the same location. See :issue:`4334`.
+In the following example,
 
-``${SUFFIX}`` is the suffix that distinguishes the
-particular build of |Gromacs| you want to target (refer to |Gromacs| installation
-instructions for more information.) ``${SUFFIX}`` may simply be empty, or ``''``.
+* ``${UNIQUE_PREFIX}`` is the path to the directory that holds the
+  |Gromacs| ``bin``, ``lib``, ``share`` directories, *etc*.
+  It is *unique* because |Gromacs| provides CMake support for only one build configuration at a time
+  through ``.../share/cmake/gmxapi/``, even if there are multiple library configurations installed to
+  the same location. See :issue:`4334`.
+* ``${SUFFIX}`` is the suffix (e.g. *_d*, *_mpi*, etcetera) that distinguishes the
+  particular build of |Gromacs| you want to target (refer to |Gromacs| installation
+  instructions for more information.) ``${SUFFIX}`` may simply be empty, or ``''``.
 
-You can export ``CMAKE_ARGS`` in your environment, or just provide it at the beginning
-of the ``pip install`` command line.
+.. code-block:: shell
 
-.. tab:: environment
+    pip install gmxapi \
+      --config-settings=cmake.define.gmxapi_ROOT=${UNIQUE_PREFIX} \
+      --config-settings=cmake.args=-C${UNIQUE_PREFIX}/share/cmake/gromacs${SUFFIX}/gromacs-hints${SUFFIX}.cmake
 
-    .. code-block:: shell
-
-        CMAKE_ARGS="-Dgmxapi_ROOT=${UNIQUE_PREFIX};-C${UNIQUE_PREFIX}/share/cmake/gromacs${SUFFIX}/gromacs-hints${SUFFIX}.cmake" \
-            pip install --no-cache-dir gmxapi
-
-.. tab:: pip
-
-    .. code-block:: shell
-
-        pip install gmxapi \
-          --config-settings=cmake.define.gmxapi_ROOT=${UNIQUE_PREFIX} \
-          --config-settings=cmake.args=-C${UNIQUE_PREFIX}/share/cmake/gromacs${SUFFIX}/gromacs-hints${SUFFIX}.cmake
+In sufficiently new ``pip`` versions, ``-C``
+`is a shorter alternative <https://pip.pypa.io/en/stable/cli/pip_install/#cmdoption-C>`__
+to ``--config-settings=``.
+Do not confuse the ``-C`` option to ``pip`` with the ``-C`` option to ``cmake``.
 
 .. seealso:: `scikit-build-core config-settings
              <https://scikit-build-core.readthedocs.io/en/latest/configuration.html#configuring-cmake-arguments-and-defines>`__

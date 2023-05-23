@@ -1,5 +1,5 @@
 [build-system]
-requires = ["mpi4py", "pybind11>=2.6", "scikit-build-core[pyproject]"]
+requires = ["mpi4py", "pybind11>=2.6", "scikit-build-core[pyproject]>=0.4"]
 build-backend = "scikit_build_core.build"
 
 [project]
@@ -34,7 +34,7 @@ documentation = "https://manual.gromacs.org/current/gmxapi/index.html"
 # Ref: https://scikit-build-core.readthedocs.io/en/latest/configuration.html
 
 # This provides some backward compatibility if set. Avoids surprises if default values change.
-minimum-version = "0.2"
+minimum-version = "0.4"
 
 cmake.minimum-version = "3.18.4"
 cmake.build-type = "Release"

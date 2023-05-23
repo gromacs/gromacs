@@ -58,6 +58,7 @@
     CMAKE_GPU_OPTIONS: -DGMX_GPU=SYCL
 
 # Base definition for using gcc.
+# Consumers must set job.variables.COMPILER_MAJOR_VERSION!
 .use-gcc:base:
   variables:
     CMAKE_COMPILER_SCRIPT: -DCMAKE_C_COMPILER=gcc-$COMPILER_MAJOR_VERSION -DCMAKE_CXX_COMPILER=g++-$COMPILER_MAJOR_VERSION
@@ -67,6 +68,7 @@
     - export CCACHE_DIR=${PWD}/ccache
 
 # Base definition for using clang.
+# Consumers must set job.variables.COMPILER_MAJOR_VERSION!
 .use-clang:base:
   variables:
     CMAKE_COMPILER_SCRIPT: -DCMAKE_C_COMPILER=clang-$COMPILER_MAJOR_VERSION -DCMAKE_CXX_COMPILER=clang++-$COMPILER_MAJOR_VERSION

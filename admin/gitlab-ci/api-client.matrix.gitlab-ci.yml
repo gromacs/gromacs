@@ -18,9 +18,11 @@
     - export GMX_DOUBLE
     - bash -x admin/ci-scripts/build-taf-template.sh
 
-.sample_restraint:
+# Consumers must set job.variables.COMPILER_MAJOR_VERSION!
+.sample_restraint:clang:
   extends:
     - .variables:default
+    - .use-clang:base
   stage: test
   variables:
     KUBERNETES_CPU_LIMIT: 2
@@ -34,6 +36,8 @@
     - source $VENVPATH/bin/activate
     - export GMX_SUFFIX
     - export KUBERNETES_CPU_REQUEST
+    - export CC=clang-${COMPILER_MAJOR_VERSION}
+    - export CXX=clang++-${COMPILER_MAJOR_VERSION}
     - |
       GROMACS_ROOT=$PWD/$INSTALL_DIR \
       OMP_NUM_THREADS=1 \

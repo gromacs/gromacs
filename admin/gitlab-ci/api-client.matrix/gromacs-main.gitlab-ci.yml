@@ -28,12 +28,12 @@ sample_taf:tmpi:
 
 sample_restraint:tmpi:
   extends:
-    - .sample_restraint
-    - .use-clang:base
+    - .sample_restraint:clang
     - .rules:merge-requests
   image: ${CI_REGISTRY_IMAGE}/ci-ubuntu-20.04-llvm-9-cuda-11.0.3
   variables:
     VENVPATH: "/root/venv/py3.7"
+    COMPILER_MAJOR_VERSION: 9
   needs:
     - job: gromacs:clang-9:build
       artifacts: true

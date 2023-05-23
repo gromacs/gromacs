@@ -34,11 +34,11 @@ sample_taf:openmpi-double:
 
 sample_restraint:openmpi-double:
   extends:
-    - .sample_restraint
-    - .use-clang:base
+    - .sample_restraint:clang
     - .rules:merge-requests
   image: ${CI_REGISTRY_IMAGE}/ci-ubuntu-20.04-llvm-13
   variables:
+    COMPILER_MAJOR_VERSION: 13
     KUBERNETES_CPU_LIMIT: 4
     KUBERNETES_CPU_REQUEST: 4
     GMX_SUFFIX: "_mpi_d"
