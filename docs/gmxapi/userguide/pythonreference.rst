@@ -2,6 +2,8 @@
 gmxapi Python module reference
 ==============================
 
+Version |gmxapi-version|.
+
 .. Concise reference documentation extracted directly from code.
 .. For new and non-backwards-compatible features, API versions must be given.
 

@@ -4,19 +4,33 @@
 gmxapi Python package
 =====================
 
-This documentation is part of the `GROMACS manual <http://manual.gromacs.org/current/>`_
-and describes the *gmxapi* Python package.
+Version |gmxapi-version|.
+
 :py:mod:`gmxapi` allows molecular simulation and analysis work to
 be staged and run from Python.
 
-From version 0.1, the latest official documentation is at http://manual.gromacs.org/current/gmxapi/.
-Other releases can also be found at `GitHub <https://www.github.com/kassonlab/gmxapi>`_.
+After installing |Gromacs| and the gmxapi Python package,
+you can use :command:`pydoc gmxapi` from the command line or
+``import gmxapi; help(gmxapi)`` within a Python interpreter
+for concise usage help.
+Complete documentation is collected in the following sections.
 
-..  toctree::
+.. toctree::
     :maxdepth: 2
-    :caption: Documentation sections
 
-    userguide/userguide.rst
+    userguide/install
+    userguide/usage
+    userguide/pythonreference
+
+To discuss *gmxapi*, use the ``#gmxapi`` `tag <https://gromacs.bioexcel.eu/tag/gmxapi>`__
+on the |Gromacs| `user discussion forum`_.
+Report bugs through the |Gromacs| `issue tracker`_.
+
+Complete documentation for the *gmxapi* Python package
+is part of the |Gromacs| `manual <http://manual.gromacs.org/current/>`_
+since *gmxapi* version 0.1.
+Older releases can also be found at `GitHub <https://www.github.com/kassonlab/gmxapi>`_.
+Pre-release documentation may be found at https://manual.gromacs.org/nightly/gmxapi/.
 
 .. seealso::
 
@@ -31,9 +45,3 @@ Other releases can also be found at `GitHub <https://www.github.com/kassonlab/gm
     gmxapi: a high-level interface for advanced control and extension of molecular dynamics simulations.
     *Bioinformatics* 2018.
     DOI: `10.1093/bioinformatics/bty484 <https://doi.org/10.1093/bioinformatics/bty484>`_
-
-Indices and tables
-==================
-
-* :ref:`genindex`
-* :ref:`search`
