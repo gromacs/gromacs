@@ -624,6 +624,8 @@ bool decideWhetherToUseGpuForUpdate(const bool           isDomainDecomposition,
     const bool pmeSpreadGatherUsesCpu = (pmeRunMode == PmeRunMode::CPU);
 
     std::string errorMessage;
+    // Flag to set if we do not want to log the error with `-update auto` (e.g., for non-GPU build)
+    bool silenceWarningMessageWithUpdateAuto = forceCpuUpdateDefault;
 
     if (isDomainDecomposition)
     {
@@ -663,14 +665,19 @@ bool decideWhetherToUseGpuForUpdate(const bool           isDomainDecomposition,
     {
         errorMessage +=
                 "Either PME or short-ranged non-bonded interaction tasks must run on the GPU.\n";
+        silenceWarningMessageWithUpdateAuto = true;
     }
     if (!gpusWereDetected)
     {
         errorMessage += "Compatible GPUs must have been found.\n";
+        silenceWarningMessageWithUpdateAuto = true;
     }
     if (!(GMX_GPU_CUDA || GMX_GPU_SYCL))
     {
         errorMessage += "Only CUDA and SYCL builds are supported.\n";
+        // Silence clang-analyzer deadcode.DeadStores warning about ignoring the previous assignments
+        GMX_UNUSED_VALUE(silenceWarningMessageWithUpdateAuto);
+        silenceWarningMessageWithUpdateAuto = true;
     }
     if (inputrec.eI != IntegrationAlgorithm::MD)
     {
@@ -762,7 +769,7 @@ bool decideWhetherToUseGpuForUpdate(const bool           isDomainDecomposition,
 
     if (!errorMessage.empty())
     {
-        if (updateTarget == TaskTarget::Auto && !forceCpuUpdateDefault)
+        if (updateTarget == TaskTarget::Auto && !silenceWarningMessageWithUpdateAuto)
         {
             GMX_LOG(mdlog.info)
                     .asParagraph()
