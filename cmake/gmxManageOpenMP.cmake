@@ -40,8 +40,10 @@ if(GMX_OPENMP)
     # OpenMP check must come before other CFLAGS!
     find_package(OpenMP)
     if(NOT OPENMP_FOUND)
-        message(WARNING "The compiler you are using does not support OpenMP parallelism. This might hurt your performance a lot, in particular with GPUs. Try using a more recent version, or a different compiler. For now, we are proceeding by turning off OpenMP.")
-        set(GMX_OPENMP OFF CACHE STRING "Whether GROMACS will use OpenMP parallelism." FORCE)
+        message(FATAL_ERROR "The compiler you are using does not support OpenMP parallelism. "
+            "This might hurt your performance a lot, in particular with GPUs. "
+            "Try using a more recent version, or a different compiler. "
+            "If you don't want to use OpenMP, disable it explicitly with -DGMX_OPENMP=OFF")
     endif()
 endif()
 gmx_dependent_cache_variable(GMX_OPENMP_MAX_THREADS
