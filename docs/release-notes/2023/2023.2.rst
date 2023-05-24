@@ -16,6 +16,15 @@ in the :ref:`release-notes`.
 Fixes where mdrun could behave incorrectly
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Fix numerical instability with free-energy and LJ-PME
+"""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+When combining free-energy calculation with PME for Lennard-Jones
+interactions, large rounding error would cause instabilities when
+two atoms were at short distance.
+
+:issue:`4780`
+
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
 

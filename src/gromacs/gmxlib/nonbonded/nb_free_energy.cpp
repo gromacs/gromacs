@@ -128,6 +128,19 @@ static inline void pmeLJCorrectionVF(const RealType rInv,
                                      const BoolType       mask,
                                      const BoolType       bIiEqJnr)
 {
+    // The expression 1 - exp(-x) * (1 + x + x^2/2) gives divergent
+    // rounding errors when x goes towards zero. To avoid this, we approximate
+    // this expression with its series expansion around x = 0:
+    //   x^3 (1/6 - x/8 + x^2/20 - x^3/72 + ...)
+    // The relative error of the full expression is x^-3 as x -> 0.
+    // The relative error of the quadratic approximation is 1/8 x^3.
+    // We set the switch point for coeffSqRSq such that the maximum error
+    // of rounding in the full term and the approximation error are equal.
+    // At this point both errors are sqrt(2)/4 sqrt(GMX_REAL_EPS).
+    // This error is large relative to this force component, but is small
+    // relative to the total forces on atoms.
+    const real c_coeffSqRSqSwitch = std::pow(8.0_real * GMX_REAL_EPS, 1.0_real / 6.0_real);
+
     // We mask rInv to get zero force and potential for masked out pair interactions
     const RealType rInvSq  = rInv * rInv;
     const RealType rInvSix = rInvSq * rInvSq * rInvSq;
@@ -135,14 +148,18 @@ static inline void pmeLJCorrectionVF(const RealType rInv,
     const RealType coeffSqRSq       = ewaldLJCoeffSq * gmx::selectByMask(rSq, mask);
     const RealType expNegCoeffSqRSq = gmx::exp(-coeffSqRSq);
     const RealType poly             = 1.0_real + coeffSqRSq + 0.5_real * coeffSqRSq * coeffSqRSq;
+    const RealType fullTerm         = rInvSix * (1.0_real - expNegCoeffSqRSq * poly);
+    const RealType approximation =
+            ewaldLJCoeffSixDivSix * (1.0_real + coeffSqRSq * (-0.75_real + 0.3_real * coeffSqRSq));
+    const RealType term = gmx::blend(fullTerm, approximation, coeffSqRSq < c_coeffSqRSqSwitch);
+
     if constexpr (computeForces)
     {
-        *force = rInvSix - expNegCoeffSqRSq * (rInvSix * poly + ewaldLJCoeffSixDivSix);
+        *force = term - expNegCoeffSqRSq * ewaldLJCoeffSixDivSix;
         *force = *force * rInvSq;
     }
     // The self interaction is the limit for r -> 0 which we need to compute separately
-    *pot = gmx::blend(
-            rInvSix * (1.0_real - expNegCoeffSqRSq * poly), 0.5_real * ewaldLJCoeffSixDivSix, bIiEqJnr);
+    *pot = gmx::blend(term, 0.5_real * ewaldLJCoeffSixDivSix, bIiEqJnr);
 }
 
 //! Computes r^(1/6) and 1/r^(1/6)
