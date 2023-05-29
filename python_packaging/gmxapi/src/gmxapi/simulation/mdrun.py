@@ -787,11 +787,19 @@ class StandardInputDescription(_op.InputDescription):
         # Note also that that hash() has internal salt that is regenerated for every process.
         # TODO: Use input fingerprint for more useful identification.
         # 8 bytes is probably enough.
-        uid = hashlib.md5(f"mdrun{cls._number_issued}".encode("utf8")).digest()
         if input not in cls._uids:
+            uid = hashlib.md5(f"mdrun{cls._number_issued}".encode("utf8")).digest()
+            existing = [key for key, value in cls._uids.items() if uid == value]
+            if existing:
+                raise exceptions.ProtocolError(
+                    f"Calculated uid {uid.hex()} for input {input}, but uid is already used by "
+                    + ", ".join(repr(edge) for edge in existing)
+                    + "."
+                )
             cls._uids[input] = uid
             cls._number_issued += 1
         else:
+            uid = cls._uids[input]
             logger.debug(f"Reissuing uid for mdrun({input}): {uid.hex()}")
         new_uid = f"mdrun_{uid.hex()}"
         return new_uid

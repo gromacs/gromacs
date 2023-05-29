@@ -80,3 +80,10 @@ to try to preempt user errors,
 and additional usage notes have been added to `gmxapi.mdrun`.
 
 :issue:`4771`
+
+gmxapi.mdrun task uniqueness
+""""""""""""""""""""""""""""
+
+Fix a bug in which all `gmxapi.mdrun` simulation tasks had the same ID (and working directory).
+
+:issue:`4795`
