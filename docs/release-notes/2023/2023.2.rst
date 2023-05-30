@@ -25,6 +25,15 @@ two atoms were at short distance.
 
 :issue:`4780`
 
+Fix mdrun domain decomposition setup limit of 715827882 atoms
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+An overflow in the domain decomposition grid setup limited
+the maximum number of atoms that could be simulated to max_int/3,
+unless the -dd option was specified.
+
+:issue:`4627`
+
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
 
