@@ -28,6 +28,14 @@ two atoms were at short distance.
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
 
+Avoid error in tools reading tpr files with energy minimization
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Many tools would exit with an error "No v in input file" when reading
+a tpr file with integrator set to energy minimization, NM or TPI.
+
+:issue:`4774`
+
 Tools now retain chain identifiers when reading PDB is used as input
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
