@@ -1124,10 +1124,7 @@ Pressure coupling
       Exponential relaxation pressure coupling with time constant
       :mdp:`tau-p`, including a stochastic term to enforce correct
       volume fluctuations.  The box is scaled every :mdp:`nstpcouple`
-      steps. It can be used for both equilibration and production,
-      but presently it cannot be used for full anisotropic coupling.
-      This requires a (constant or variable) ensemble temperature
-      to be available.
+      steps. It can be used for both equilibration and production.
 
    .. mdp-value:: Parrinello-Rahman
 
@@ -1136,7 +1133,7 @@ Pressure coupling
       atoms is coupled to this. No instantaneous scaling takes
       place. As for Nose-Hoover temperature coupling the time constant
       :mdp:`tau-p` is the period of pressure fluctuations at
-      equilibrium. This is probably a better method when you want to
+      equilibrium. This is a good method when you want to
       apply pressure scaling during data collection, but beware that
       you can get very large oscillations if you are starting from a
       different pressure. For simulations where the exact fluctations

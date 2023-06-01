@@ -3025,7 +3025,7 @@ static void do_tpx_state_second(gmx::ISerializer* serializer, TpxFileHeader* tpx
         serializer->doRvecArray(x, tpx->natoms);
     }
 
-    do_test(serializer, tpx->bV, v);
+    // We cannot call do_test() with v as some "integrators" don't use v
     if (tpx->bV)
     {
         if (serializer->reading())
@@ -3040,6 +3040,15 @@ static void do_tpx_state_second(gmx::ISerializer* serializer, TpxFileHeader* tpx
         else
         {
             serializer->doRvecArray(v, tpx->natoms);
+        }
+    }
+    else if (v)
+    {
+        // Velocities are not present in the tpr file, but v has been passed here.
+        // We clear v for backward compatibility.
+        for (int i = 0; i < tpx->natoms; i++)
+        {
+            clear_rvec(v[i]);
         }
     }
 

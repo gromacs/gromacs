@@ -1385,12 +1385,9 @@ void check_ir(const char*                    mdparin,
         sprintf(warn_buf,
                 "The %s barostat does not generate any strictly correct ensemble, "
                 "and should not be used for new production simulations (in our opinion). "
-                "For isotropic scaling we would recommend the %s barostat that also "
-                "ensures fast relaxation without oscillations, and for anisotropic "
-                "scaling you likely want to use the %s barostat.",
+                "We recommend using the %s barostat instead.",
                 enumValueToString(ir->pressureCouplingOptions.epc),
-                enumValueToString(PressureCoupling::CRescale),
-                enumValueToString(PressureCoupling::ParrinelloRahman));
+                enumValueToString(PressureCoupling::CRescale));
         wi->addWarning(warn_buf);
     }
 
