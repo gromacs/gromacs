@@ -50,6 +50,12 @@ template<typename>
 class ArrayRefWithPadding;
 } // namespace gmx
 
+/*! \brief The non-bonded free-energy kernel
+ *
+ * Note that this uses a regular atom pair, not cluster pair, list.
+ *
+ * \throws InvalidInputError when an excluded pair is beyond the rcoulomb with reaction-field.
+ */
 void gmx_nb_free_energy_kernel(const t_nblist&                                  nlist,
                                const gmx::ArrayRefWithPadding<const gmx::RVec>& coords,
                                bool                                             useSimd,

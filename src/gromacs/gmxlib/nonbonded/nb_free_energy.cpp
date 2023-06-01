@@ -57,6 +57,7 @@
 #include "gromacs/simd/simd.h"
 #include "gromacs/simd/simd_math.h"
 #include "gromacs/utility/arrayref.h"
+#include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
 
 #include "nb_softcore.h"
@@ -321,7 +322,7 @@ static void nb_free_energy_kernel(const t_nblist&                               
     const real            elecEpsilonFactor        = interactionParameters.epsfac;
     const real            rCoulomb                 = interactionParameters.rcoulomb;
     const real            reactionFieldCoefficient = interactionParameters.reactionFieldCoefficient;
-    const real            reactionFieldShift       = interactionParameters.reactionFieldShift;
+    const real gmx_unused reactionFieldShift       = interactionParameters.reactionFieldShift;
     const real gmx_unused shLjEwald                = interactionParameters.sh_lj_ewald;
     const real            rVdw                     = interactionParameters.rvdw;
     const real            dispersionShift          = interactionParameters.dispersion_shift.cpot;
@@ -445,6 +446,9 @@ static void nb_free_energy_kernel(const t_nblist&                               
             GMX_ASSERT(threadForceShiftBuffer != nullptr, "need a valid threadForceShiftBuffer");
         }
     }
+
+    // Used with reaction-field only
+    BoolType haveExcludedPairsBeyondCutoff = false;
 
     for (int n = 0; n < nri; n++)
     {
@@ -1003,35 +1007,46 @@ static void nb_free_energy_kernel(const t_nblist&                               
                 }
             } // end of block requiring bPairIncluded && withinCutoffMask
             /* In the following block bPairIncluded should be false in the masks. */
-            if (coulombInteractionType == NbkernelElecType::ReactionField)
+            if constexpr (!elecInteractionTypeIsEwald)
             {
-                const BoolType computeReactionField = bPairExcluded;
-
-                if (gmx::anyTrue(computeReactionField))
+                if (coulombInteractionType == NbkernelElecType::ReactionField)
                 {
-                    /* For excluded pairs we don't use soft-core.
-                     * As there is no singularity, there is no need for soft-core.
-                     */
-                    const RealType FF = -two * reactionFieldCoefficient;
-                    RealType       VV = reactionFieldCoefficient * rSq - reactionFieldShift;
+                    // With RF do not allow excluded pairs beyond the Coulomb cut-off, check this here.
+                    // We'd like to use !withinCutoffMask, but there is no negation operator for SimdFBool.
+                    // We need to use <= as this is the exact negation of the cutoff check.
+                    const BoolType beyondCutoff = (rCutoffCoul * rCutoffCoul <= rSq);
+                    haveExcludedPairsBeyondCutoff =
+                            haveExcludedPairsBeyondCutoff || (bPairExcluded && beyondCutoff);
 
-                    /* If ii == jnr the i particle (ii) has itself (jnr)
-                     * in its neighborlist. This corresponds to a self-interaction
-                     * that will occur twice. Scale it down by 50% to only include
-                     * it once.
-                     */
-                    VV = VV * gmx::blend(one, half, bIiEqJnr);
+                    const BoolType computeReactionField = bPairExcluded;
 
-                    for (int i = 0; i < NSTATES; i++)
+                    if (gmx::anyTrue(computeReactionField))
                     {
-                        vCoulTot = vCoulTot
-                                   + gmx::selectByMask(lambdaFactorCoul[i] * qq[i] * VV,
-                                                       computeReactionField);
-                        scalarForcePerDistance = scalarForcePerDistance
-                                                 + gmx::selectByMask(lambdaFactorCoul[i] * qq[i] * FF,
-                                                                     computeReactionField);
-                        dvdlCoul = dvdlCoul
-                                   + gmx::selectByMask(dLambdaFactor[i] * qq[i] * VV, computeReactionField);
+                        /* For excluded pairs we don't use soft-core.
+                         * As there is no singularity, there is no need for soft-core.
+                         */
+                        const RealType FF = -two * reactionFieldCoefficient;
+                        RealType       VV = reactionFieldCoefficient * rSq - reactionFieldShift;
+
+                        /* If ii == jnr the i particle (ii) has itself (jnr)
+                         * in its neighborlist. This corresponds to a self-interaction
+                         * that will occur twice. Scale it down by 50% to only include
+                         * it once.
+                         */
+                        VV = VV * gmx::blend(one, half, bIiEqJnr);
+
+                        for (int i = 0; i < NSTATES; i++)
+                        {
+                            vCoulTot = vCoulTot
+                                       + gmx::selectByMask(lambdaFactorCoul[i] * qq[i] * VV,
+                                                           computeReactionField);
+                            scalarForcePerDistance = scalarForcePerDistance
+                                                     + gmx::selectByMask(lambdaFactorCoul[i] * qq[i] * FF,
+                                                                         computeReactionField);
+                            dvdlCoul = dvdlCoul
+                                       + gmx::selectByMask(dLambdaFactor[i] * qq[i] * VV,
+                                                           computeReactionField);
+                        }
                     }
                 }
             }
@@ -1167,6 +1182,14 @@ static void nb_free_energy_kernel(const t_nblist&                               
      * TODO: Update the number of flops and/or use different counts for different code paths.
      */
     atomicNrnbIncrement(nrnb, eNR_NBKERNEL_FREE_ENERGY, nlist.nri * 12 + nlist.jindex[nri] * 150);
+
+    if (coulombInteractionType == NbkernelElecType::ReactionField
+        && gmx::anyTrue(haveExcludedPairsBeyondCutoff))
+    {
+        GMX_THROW(gmx::InvalidInputError(
+                "One or more excluded and perturbed atom pairs are beyond the Coulomb cut-off, "
+                "which is not allowed with reaction-field."));
+    }
 }
 
 typedef void (*KernelFunction)(const t_nblist&                                  nlist,
