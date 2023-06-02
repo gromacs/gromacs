@@ -177,6 +177,9 @@
    (MPI or thread_mpi) */
 #define GMX_MPI (GMX_LIB_MPI || GMX_THREAD_MPI)
 
+/* Use NVSHMEM for GPU data communication*/
+#cmakedefine01 GMX_NVSHMEM
+
 /* Use OpenMP multithreading */
 #cmakedefine01 GMX_OPENMP
 
