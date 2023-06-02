@@ -43,6 +43,8 @@ TODO: Factory accepts additional keyword input to indicate binding
 
 import logging
 import os
+import pathlib
+
 import pytest
 
 import gmxapi as gmx
@@ -245,6 +247,14 @@ def test_extend_simulation_via_checkpoint(spc_water_box, mdrun_kwargs, caplog):
             runtime_args.update(mdrun_kwargs)
             md2 = gmx.mdrun(input2, runtime_args=runtime_args)
             md2.run()
+
+            # Check for issue #4795 regression
+            output_dir1 = pathlib.Path(md1.output.directory.result()).resolve()
+            output_dir2 = pathlib.Path(md2.output.directory.result()).resolve()
+            assert output_dir1.exists()
+            assert output_dir2.exists()
+            assert output_dir2 != output_dir1
+
             # By inspection of the output, we can see that the second trajectory has continued
             # from the checkpoint, but we cannot programmatically confirm it at this point.
             # TODO: Check more rigorously when we can read trajectory files.
