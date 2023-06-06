@@ -786,7 +786,8 @@ int gmx_pmeonly(struct gmx_pme_t**              pmeFromRunnerPtr,
                                   wcycle,
                                   lambda_q,
                                   pme_pp->useGpuDirectComm,
-                                  pme_pp->pmeCoordinateReceiverGpu.get());
+                                  pme_pp->pmeCoordinateReceiverGpu.get(),
+                                  pme_pp->useMdGpuGraph);
             pme_gpu_launch_complex_transforms(pme, wcycle, stepWork);
             pme_gpu_launch_gather(pme, wcycle, lambda_q);
             output = pme_gpu_wait_finish_task(pme, computeEnergyAndVirial, lambda_q, wcycle);

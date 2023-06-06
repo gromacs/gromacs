@@ -87,3 +87,14 @@ gmxapi.mdrun task uniqueness
 Fix a bug in which all `gmxapi.mdrun` simulation tasks had the same ID (and working directory).
 
 :issue:`4795`
+
+Fix for crash when CUDA Graphs are enabled on multi-GPU
+=======================================================
+
+A bug was introduced into version 2023.1 resulting in a crash when the
+non-default CUDA Graphs experimental feature was enabled on multi-GPU,
+caused by the introduction of extra syncronization which is not
+required for the CUDA graphs codepath. This version fixes the issue by
+avoiding this syncronization when graphs are in use.
+
+:issue:`4786`
