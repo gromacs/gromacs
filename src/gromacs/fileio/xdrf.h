@@ -52,6 +52,13 @@
 #    include <rpc/xdr.h>
 #endif
 
+// The XTC logic allocates a buffer 1.2x larger than the natoms*3 and the size - in bytes - of the USED
+// part of this 32-bit-integer-containing buffer in bytes needs to be stored as an integer.
+// This means we MIGHT need 64-bit sizing if natoms is larger than (2^32)/(3*4*1.2)=298261617 atoms, and
+// since the exact size will vary from frame-to-frame, we need 64-bit indexing whenever it might happen,
+// so in that case the first entry will use 8 bytes and be incompatible with older 32-bit reading code.
+#define XTC_1995_MAX_NATOMS 298261617
+
 /* Read or write reduced precision *float* coordinates */
 int xdr3dfcoord(XDR* xdrs, float* fp, int* size, float* precision);
 

@@ -46,6 +46,7 @@
 #include "gromacs/utility/smalloc.h"
 
 #define XTC_MAGIC 1995
+#define XTC_NEW_MAGIC 2023 // 64-bit sizing for compressed data buffer
 
 
 static int xdr_r2f(XDR* xdrs, real* r, gmx_bool gmx_unused bRead)
@@ -83,9 +84,9 @@ void close_xtc(t_fileio* fio)
 
 static void check_xtc_magic(int magic)
 {
-    if (magic != XTC_MAGIC)
+    if (magic != XTC_MAGIC && magic != XTC_NEW_MAGIC)
     {
-        gmx_fatal(FARGS, "Magic Number Error in XTC file (read %d, should be %d)", magic, XTC_MAGIC);
+        gmx_fatal(FARGS, "Magic Number Error in XTC file (read %d, should be %d or %d)", magic, XTC_MAGIC, XTC_NEW_MAGIC);
     }
 }
 
@@ -198,7 +199,7 @@ static int xtc_coord(XDR* xd, int* natoms, rvec* box, rvec* x, real* prec, gmx_b
 
 int write_xtc(t_fileio* fio, int natoms, int64_t step, real time, const rvec* box, const rvec* x, real prec)
 {
-    int      magic_number = XTC_MAGIC;
+    int      magic_number = (natoms > XTC_1995_MAX_NATOMS) ? XTC_NEW_MAGIC : XTC_MAGIC;
     XDR*     xd;
     gmx_bool bDum;
     int      bOK;

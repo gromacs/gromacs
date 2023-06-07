@@ -93,32 +93,37 @@ static const int magicints[] = {
 #define LASTIDX static_cast<int>((sizeof(magicints) / sizeof(*magicints)))
 
 
+struct DataBuffer
+{
+    std::size_t    index;
+    int            lastbits;
+    unsigned int   lastbyte;
+    unsigned char* data;
+};
+
 /*____________________________________________________________________________
  |
  | sendbits - encode num into buf using the specified number of bits
  |
  | This routines appends the value of num to the bits already present in
- | the array buf. You need to give it the number of bits to use and you
+ | the databuffer. You need to give it the number of bits to use and you
  | better make sure that this number of bits is enough to hold the value
  | Also num must be positive.
  |
  */
 
-static void sendbits(int buf[], int num_of_bits, int num)
+static void sendbits(struct DataBuffer* buffer, int num_of_bits, int num)
 {
 
-    unsigned int   cnt, lastbyte;
-    int            lastbits;
-    unsigned char* cbuf;
+    unsigned int lastbyte;
+    int          lastbits;
 
-    cbuf     = (reinterpret_cast<unsigned char*>(buf)) + 3 * sizeof(*buf);
-    cnt      = static_cast<unsigned int>(buf[0]);
-    lastbits = buf[1];
-    lastbyte = static_cast<unsigned int>(buf[2]);
+    lastbits = buffer->lastbits;
+    lastbyte = buffer->lastbyte;
     while (num_of_bits >= 8)
     {
-        lastbyte    = (lastbyte << 8) | ((num >> (num_of_bits - 8)) /* & 0xff*/);
-        cbuf[cnt++] = lastbyte >> lastbits;
+        lastbyte                      = (lastbyte << 8) | ((num >> (num_of_bits - 8)) /* & 0xff*/);
+        buffer->data[buffer->index++] = lastbyte >> lastbits;
         num_of_bits -= 8;
     }
     if (num_of_bits > 0)
@@ -128,15 +133,14 @@ static void sendbits(int buf[], int num_of_bits, int num)
         if (lastbits >= 8)
         {
             lastbits -= 8;
-            cbuf[cnt++] = lastbyte >> lastbits;
+            buffer->data[buffer->index++] = lastbyte >> lastbits;
         }
     }
-    buf[0] = cnt;
-    buf[1] = lastbits;
-    buf[2] = lastbyte;
+    buffer->lastbits = lastbits;
+    buffer->lastbyte = lastbyte;
     if (lastbits > 0)
     {
-        cbuf[cnt] = lastbyte << (8 - lastbits);
+        buffer->data[buffer->index] = lastbyte << (8 - lastbits);
     }
 }
 
@@ -222,11 +226,11 @@ static int sizeofints(const int num_of_ints, const unsigned int sizes[])
  |
  */
 
-static void sendints(int          buf[],
-                     const int    num_of_ints,
-                     const int    num_of_bits,
-                     unsigned int sizes[],
-                     unsigned int nums[])
+static void sendints(struct DataBuffer* buffer,
+                     const int          num_of_ints,
+                     const int          num_of_bits,
+                     unsigned int       sizes[],
+                     unsigned int       nums[])
 {
 
     int          i, num_of_bytes, bytecnt;
@@ -270,47 +274,44 @@ static void sendints(int          buf[],
     {
         for (i = 0; i < num_of_bytes; i++)
         {
-            sendbits(buf, 8, bytes[i]);
+            sendbits(buffer, 8, bytes[i]);
         }
-        sendbits(buf, num_of_bits - num_of_bytes * 8, 0);
+        sendbits(buffer, num_of_bits - num_of_bytes * 8, 0);
     }
     else
     {
         for (i = 0; i < num_of_bytes - 1; i++)
         {
-            sendbits(buf, 8, bytes[i]);
+            sendbits(buffer, 8, bytes[i]);
         }
-        sendbits(buf, num_of_bits - (num_of_bytes - 1) * 8, bytes[i]);
+        sendbits(buffer, num_of_bits - (num_of_bytes - 1) * 8, bytes[i]);
     }
 }
 
 
 /*___________________________________________________________________________
  |
- | receivebits - decode number from buf using specified number of bits
+ | receivebits - decode number from buffer using specified number of bits
  |
- | extract the number of bits from the array buf and construct an integer
+ | extract the number of bits from the data array in buffer and construct an integer
  | from it. Return that value.
  |
  */
 
-static int receivebits(int buf[], int num_of_bits)
+static int receivebits(struct DataBuffer* buffer, int num_of_bits)
 {
 
-    int            cnt, num, lastbits;
-    unsigned int   lastbyte;
-    unsigned char* cbuf;
-    int            mask = (1 << num_of_bits) - 1;
+    int          num, lastbits;
+    unsigned int lastbyte;
+    int          mask = (1 << num_of_bits) - 1;
 
-    cbuf     = reinterpret_cast<unsigned char*>(buf) + 3 * sizeof(*buf);
-    cnt      = buf[0];
-    lastbits = static_cast<unsigned int>(buf[1]);
-    lastbyte = static_cast<unsigned int>(buf[2]);
+    lastbits = buffer->lastbits;
+    lastbyte = buffer->lastbyte;
 
     num = 0;
     while (num_of_bits >= 8)
     {
-        lastbyte = (lastbyte << 8) | cbuf[cnt++];
+        lastbyte = (lastbyte << 8) | buffer->data[buffer->index++];
         num |= (lastbyte >> lastbits) << (num_of_bits - 8);
         num_of_bits -= 8;
     }
@@ -319,15 +320,14 @@ static int receivebits(int buf[], int num_of_bits)
         if (lastbits < num_of_bits)
         {
             lastbits += 8;
-            lastbyte = (lastbyte << 8) | cbuf[cnt++];
+            lastbyte = (lastbyte << 8) | buffer->data[buffer->index++];
         }
         lastbits -= num_of_bits;
         num |= (lastbyte >> lastbits) & ((1 << num_of_bits) - 1);
     }
     num &= mask;
-    buf[0] = cnt;
-    buf[1] = lastbits;
-    buf[2] = lastbyte;
+    buffer->lastbits = lastbits;
+    buffer->lastbyte = lastbyte;
     return num;
 }
 
@@ -342,7 +342,11 @@ static int receivebits(int buf[], int num_of_bits)
  |
  */
 
-static void receiveints(int buf[], const int num_of_ints, int num_of_bits, const unsigned int sizes[], int nums[])
+static void receiveints(struct DataBuffer* buffer,
+                        const int          num_of_ints,
+                        int                num_of_bits,
+                        const unsigned int sizes[],
+                        int                nums[])
 {
     int bytes[32];
     int i, j, num_of_bytes, p, num;
@@ -351,12 +355,12 @@ static void receiveints(int buf[], const int num_of_ints, int num_of_bits, const
     num_of_bytes                              = 0;
     while (num_of_bits > 8)
     {
-        bytes[num_of_bytes++] = receivebits(buf, 8);
+        bytes[num_of_bytes++] = receivebits(buffer, 8);
         num_of_bits -= 8;
     }
     if (num_of_bits > 0)
     {
-        bytes[num_of_bytes++] = receivebits(buf, num_of_bits);
+        bytes[num_of_bytes++] = receivebits(buffer, num_of_bits);
     }
     for (i = num_of_ints - 1; i > 0; i--)
     {
@@ -402,35 +406,39 @@ static void receiveints(int buf[], const int num_of_ints, int num_of_bits, const
 
 int xdr3dfcoord(XDR* xdrs, float* fp, int* size, float* precision)
 {
-    int*     ip  = nullptr;
-    int*     buf = nullptr;
+    int*     ip = nullptr;
     gmx_bool bRead;
 
     /* preallocate a small buffer and ip on the stack - if we need more
        we can always malloc(). This is faster for small values of size: */
-    unsigned prealloc_size = 3 * 16;
-    int      prealloc_ip[3 * 16], prealloc_buf[3 * 20];
-    int      we_should_free = 0;
+    std::size_t prealloc_size = 3 * 16;
+    int         prealloc_ip[3 * 16], prealloc_buf[3 * 20];
+    int         we_should_free = 0;
 
     int          minint[3], maxint[3], mindiff, *lip, diff;
     int          lint1, lint2, lint3, oldlint1, oldlint2, oldlint3, smallidx;
     int          minidx, maxidx;
-    unsigned     sizeint[3], sizesmall[3], bitsizeint[3], size3, *luip;
+    unsigned     sizeint[3], sizesmall[3], bitsizeint[3], *luip;
     int          flag, k;
     int          smallnum, smaller, larger, i, is_small, is_smaller, run, prevrun;
     float *      lfp, lf;
     int          tmp, *thiscoord, prevcoord[3];
     unsigned int tmpcoord[30];
 
-    int          bufsize, lsize;
+    std::size_t  size3, bufsize;
+    int          lsize;
     unsigned int bitsize;
     float        inv_precision;
     int          errval = 1;
     int          rc;
+    std::size_t  offset, remain, batchsize;
+    unsigned int uint_batchsize;
 
     bRead         = (xdrs->x_op == XDR_DECODE);
     bitsizeint[0] = bitsizeint[1] = bitsizeint[2] = 0;
     prevcoord[0] = prevcoord[1] = prevcoord[2] = 0;
+
+    struct DataBuffer buffer;
 
     // The static analyzer warns about garbage values for thiscoord[] further
     // down. It might be thrown off by all the reinterpret_casts, but we might
@@ -468,23 +476,25 @@ int xdr3dfcoord(XDR* xdrs, float* fp, int* size, float* precision)
 
         if (size3 <= prealloc_size)
         {
-            ip  = prealloc_ip;
-            buf = prealloc_buf;
+            ip          = prealloc_ip;
+            buffer.data = reinterpret_cast<unsigned char*>(prealloc_buf);
         }
         else
         {
             we_should_free = 1;
-            bufsize        = static_cast<int>(size3 * 1.2);
+            bufsize        = size3 * 1.2;
             ip             = reinterpret_cast<int*>(malloc(size3 * sizeof(*ip)));
-            buf            = reinterpret_cast<int*>(malloc(bufsize * sizeof(*buf)));
-            if (ip == nullptr || buf == nullptr)
+            buffer.data    = reinterpret_cast<unsigned char*>(malloc(bufsize * XDR_INT_SIZE));
+            if (ip == nullptr || buffer.data == nullptr)
             {
                 fprintf(stderr, "malloc failed\n");
                 exit(1);
             }
         }
-        /* buf[0-2] are special and do not contain actual data */
-        buf[0] = buf[1] = buf[2] = 0;
+
+        buffer.index    = 0;
+        buffer.lastbits = 0;
+        buffer.lastbyte = 0;
         minint[0] = minint[1] = minint[2] = INT_MAX;
         maxint[0] = maxint[1] = maxint[2] = INT_MIN;
         prevrun                           = -1;
@@ -583,7 +593,7 @@ int xdr3dfcoord(XDR* xdrs, float* fp, int* size, float* precision)
             if (we_should_free)
             {
                 free(ip);
-                free(buf);
+                free(buffer.data);
             }
             return 0;
         }
@@ -624,7 +634,7 @@ int xdr3dfcoord(XDR* xdrs, float* fp, int* size, float* precision)
             if (we_should_free)
             {
                 free(ip);
-                free(buf);
+                free(buffer.data);
             }
             return 0;
         }
@@ -680,13 +690,13 @@ int xdr3dfcoord(XDR* xdrs, float* fp, int* size, float* precision)
             tmpcoord[2] = thiscoord[2] - minint[2];
             if (bitsize == 0)
             {
-                sendbits(buf, bitsizeint[0], tmpcoord[0]);
-                sendbits(buf, bitsizeint[1], tmpcoord[1]);
-                sendbits(buf, bitsizeint[2], tmpcoord[2]);
+                sendbits(&buffer, bitsizeint[0], tmpcoord[0]);
+                sendbits(&buffer, bitsizeint[1], tmpcoord[1]);
+                sendbits(&buffer, bitsizeint[2], tmpcoord[2]);
             }
             else
             {
-                sendints(buf, 3, bitsize, sizeint, tmpcoord);
+                sendints(&buffer, 3, bitsize, sizeint, tmpcoord);
             }
             prevcoord[0] = thiscoord[0];
             prevcoord[1] = thiscoord[1];
@@ -730,16 +740,16 @@ int xdr3dfcoord(XDR* xdrs, float* fp, int* size, float* precision)
             if (run != prevrun || is_smaller != 0)
             {
                 prevrun = run;
-                sendbits(buf, 1, 1); /* flag the change in run-length */
-                sendbits(buf, 5, run + is_smaller + 1);
+                sendbits(&buffer, 1, 1); /* flag the change in run-length */
+                sendbits(&buffer, 5, run + is_smaller + 1);
             }
             else
             {
-                sendbits(buf, 1, 0); /* flag the fact that runlength did not change */
+                sendbits(&buffer, 1, 0); /* flag the fact that runlength did not change */
             }
             for (k = 0; k < run; k += 3)
             {
-                sendints(buf, 3, smallidx, sizesmall, &tmpcoord[k]);
+                sendints(&buffer, 3, smallidx, sizesmall, &tmpcoord[k]);
             }
             if (is_smaller != 0)
             {
@@ -757,28 +767,54 @@ int xdr3dfcoord(XDR* xdrs, float* fp, int* size, float* precision)
                 sizesmall[0] = sizesmall[1] = sizesmall[2] = magicints[smallidx];
             }
         }
-        if (buf[1] != 0)
+        if (buffer.lastbits != 0)
         {
-            buf[0]++;
+            buffer.index++;
         }
-        /* buf[0] holds the length in bytes */
-        if (xdr_int(xdrs, &(buf[0])) == 0)
+
+        // Store the size of the buffer - either as 64 or 32-bit data
+        if (*size > XTC_1995_MAX_NATOMS)
+        {
+            rc = xdr_int64(xdrs, reinterpret_cast<int64_t*>(&buffer.index));
+        }
+        else
+        {
+            i  = static_cast<int>(buffer.index);
+            rc = xdr_int(xdrs, &i);
+        }
+
+        if (rc == 0)
         {
             if (we_should_free)
             {
                 free(ip);
-                free(buf);
+                free(buffer.data);
             }
             return 0;
         }
 
+        // Since this file is full of old code, and many signed-to-unsigned conversions, we
+        // read data in batches if the smallest number that is a multiple of 4 that
+        // fits in a signed integer to keep data access aligned if possible.
+        offset = 0;
+        remain = buffer.index;
 
-        rc = errval
-             * (xdr_opaque(xdrs, reinterpret_cast<char*>(&(buf[3])), static_cast<unsigned int>(buf[0])));
+        do
+        {
+            // Max batch size is largest 4-tuple that fits in signed 32-bit int
+            batchsize      = std::min(remain, static_cast<std::size_t>(2147483644));
+            uint_batchsize = static_cast<unsigned int>(batchsize);
+            rc = xdr_opaque(xdrs, reinterpret_cast<char*>(buffer.data + offset), uint_batchsize);
+            offset += batchsize;
+            remain -= batchsize;
+        } while (rc != 0 && remain > 0);
+
+        rc = rc * errval;
+
         if (we_should_free)
         {
             free(ip);
-            free(buf);
+            free(buffer.data);
         }
         return rc;
     }
@@ -817,23 +853,25 @@ int xdr3dfcoord(XDR* xdrs, float* fp, int* size, float* precision)
 
         if (size3 <= prealloc_size)
         {
-            ip  = prealloc_ip;
-            buf = prealloc_buf;
+            ip          = prealloc_ip;
+            buffer.data = reinterpret_cast<unsigned char*>(prealloc_buf);
         }
         else
         {
             we_should_free = 1;
-            bufsize        = static_cast<int>(size3 * 1.2);
+            bufsize        = size3 * 1.2;
             ip             = reinterpret_cast<int*>(malloc(size3 * sizeof(*ip)));
-            buf            = reinterpret_cast<int*>(malloc(bufsize * sizeof(*buf)));
-            if (ip == nullptr || buf == nullptr)
+            buffer.data    = reinterpret_cast<unsigned char*>(malloc(bufsize * XDR_INT_SIZE));
+            if (ip == nullptr || buffer.data == nullptr)
             {
                 fprintf(stderr, "malloc failed\n");
                 exit(1);
             }
         }
 
-        buf[0] = buf[1] = buf[2] = 0;
+        buffer.index    = 0;
+        buffer.lastbits = 0;
+        buffer.lastbyte = 0;
 
         if ((xdr_int(xdrs, &(minint[0])) == 0) || (xdr_int(xdrs, &(minint[1])) == 0)
             || (xdr_int(xdrs, &(minint[2])) == 0) || (xdr_int(xdrs, &(maxint[0])) == 0)
@@ -842,7 +880,7 @@ int xdr3dfcoord(XDR* xdrs, float* fp, int* size, float* precision)
             if (we_should_free)
             {
                 free(ip);
-                free(buf);
+                free(buffer.data);
             }
             return 0;
         }
@@ -869,7 +907,7 @@ int xdr3dfcoord(XDR* xdrs, float* fp, int* size, float* precision)
             if (we_should_free)
             {
                 free(ip);
-                free(buf);
+                free(buffer.data);
             }
             return 0;
         }
@@ -878,31 +916,52 @@ int xdr3dfcoord(XDR* xdrs, float* fp, int* size, float* precision)
         smallnum     = magicints[smallidx] / 2;
         sizesmall[0] = sizesmall[1] = sizesmall[2] = magicints[smallidx];
 
-        /* buf[0] holds the length in bytes */
+        if (*size > XTC_1995_MAX_NATOMS)
+        {
+            rc = xdr_int64(xdrs, reinterpret_cast<int64_t*>(&buffer.index));
+        }
+        else
+        {
+            rc           = xdr_int(xdrs, &i);
+            buffer.index = static_cast<std::size_t>(i);
+        }
 
-        if (xdr_int(xdrs, &(buf[0])) == 0)
+        if (rc == 0)
         {
             if (we_should_free)
             {
                 free(ip);
-                free(buf);
+                free(buffer.data);
             }
             return 0;
         }
 
+        offset = 0;
+        remain = buffer.index;
 
-        if (xdr_opaque(xdrs, reinterpret_cast<char*>(&(buf[3])), static_cast<unsigned int>(buf[0])) == 0)
+        do
+        {
+            // Max batch size is largest 4-tuple that fits in signed 32-bit int
+            batchsize      = std::min(remain, static_cast<std::size_t>(2147483644));
+            uint_batchsize = static_cast<unsigned int>(batchsize);
+            rc = xdr_opaque(xdrs, reinterpret_cast<char*>(buffer.data + offset), uint_batchsize);
+            offset += batchsize;
+            remain -= batchsize;
+        } while (rc != 0 && remain > 0);
+
+        if (rc == 0)
         {
             if (we_should_free)
             {
                 free(ip);
-                free(buf);
+                free(buffer.data);
             }
             return 0;
         }
 
-
-        buf[0] = buf[1] = buf[2] = 0;
+        buffer.index    = 0;
+        buffer.lastbits = 0;
+        buffer.lastbyte = 0;
 
         lfp           = fp;
         inv_precision = 1.0 / *precision;
@@ -915,13 +974,13 @@ int xdr3dfcoord(XDR* xdrs, float* fp, int* size, float* precision)
 
             if (bitsize == 0)
             {
-                thiscoord[0] = receivebits(buf, bitsizeint[0]);
-                thiscoord[1] = receivebits(buf, bitsizeint[1]);
-                thiscoord[2] = receivebits(buf, bitsizeint[2]);
+                thiscoord[0] = receivebits(&buffer, bitsizeint[0]);
+                thiscoord[1] = receivebits(&buffer, bitsizeint[1]);
+                thiscoord[2] = receivebits(&buffer, bitsizeint[2]);
             }
             else
             {
-                receiveints(buf, 3, bitsize, sizeint, thiscoord);
+                receiveints(&buffer, 3, bitsize, sizeint, thiscoord);
             }
 
             i++;
@@ -934,11 +993,11 @@ int xdr3dfcoord(XDR* xdrs, float* fp, int* size, float* precision)
             prevcoord[2] = thiscoord[2];
 
 
-            flag       = receivebits(buf, 1);
+            flag       = receivebits(&buffer, 1);
             is_smaller = 0;
             if (flag == 1)
             {
-                run        = receivebits(buf, 5);
+                run        = receivebits(&buffer, 5);
                 is_smaller = run % 3;
                 run -= is_smaller;
                 is_smaller--;
@@ -948,7 +1007,7 @@ int xdr3dfcoord(XDR* xdrs, float* fp, int* size, float* precision)
                 thiscoord += 3;
                 for (k = 0; k < run; k += 3)
                 {
-                    receiveints(buf, 3, smallidx, sizesmall, thiscoord);
+                    receiveints(&buffer, 3, smallidx, sizesmall, thiscoord);
                     i++;
                     thiscoord[0] += prevcoord[0] - smallnum;
                     thiscoord[1] += prevcoord[1] - smallnum;
@@ -1012,7 +1071,7 @@ int xdr3dfcoord(XDR* xdrs, float* fp, int* size, float* precision)
     if (we_should_free)
     {
         free(ip);
-        free(buf);
+        free(buffer.data);
     }
     return 1;
 }
@@ -1024,8 +1083,9 @@ int xdr3dfcoord(XDR* xdrs, float* fp, int* size, float* precision)
    They have a header of 16 bytes and the rest are
    the compressed coordinates of the files. Due to the
    compression 00 is not present in the coordinates.
-   The first 4 bytes of the header are the magic number
-   1995 (0x000007CB). If we find this number we are guaranteed
+   The first 4 bytes of the header are the magic numbers
+   1995 (0x000007CB) or 2023 (0x000007E7).
+   If we find one of these numbers we are guaranteed
    to be in the header, due to the presence of so many zeros.
    The second 4 bytes are the number of atoms in the frame, and is
    assumed to be constant. The third 4 bytes are the frame number.
@@ -1036,6 +1096,10 @@ int xdr3dfcoord(XDR* xdrs, float* fp, int* size, float* precision)
 /* Must match definition in xtcio.c */
 #ifndef XTC_MAGIC
 #    define XTC_MAGIC 1995
+#endif
+
+#ifndef XTC_NEW_MAGIC
+#    define XTC_NEW_MAGIC 2023
 #endif
 
 static const int header_size = 16;
@@ -1064,7 +1128,7 @@ static int xtc_at_header_start(FILE* fp, XDR* xdrs, int natoms, int* timestep, f
         }
     }
     /* quick return */
-    if (i_inp[0] != XTC_MAGIC)
+    if (i_inp[0] != XTC_MAGIC && i_inp[0] != XTC_NEW_MAGIC)
     {
         if (gmx_fseek(fp, off + XDR_INT_SIZE, SEEK_SET))
         {

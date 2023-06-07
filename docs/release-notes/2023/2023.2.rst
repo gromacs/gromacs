@@ -98,3 +98,20 @@ required for the CUDA graphs codepath. This version fixes the issue by
 avoiding this syncronization when graphs are in use.
 
 :issue:`4786`
+
+Enable XTC support for gigantic systems
+=======================================
+
+The (old) XTC format uses an internal char buffer whose size in
+bytes was stored as an integer in the file, which led to crashes
+when storing systems with more than roughly 300 million atoms.
+This version fixes the issue by introducing a 64-bit size only
+for large systems, and using a different magic number (2023) in
+the XTC header. This will only change the XTC format for large
+systems (which anyway would lead to crashes in the old version).
+Short-term the large system XTC files might not be readable by
+external tools (you will get errors about incorrect magic number),
+but we are working with external packages to update their
+implementations.
+
+:issue:`4628`
