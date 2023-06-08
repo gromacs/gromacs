@@ -385,7 +385,9 @@ void clearDeviceBufferAsync(DeviceBuffer<ValueType>* buffer,
     GMX_ASSERT(checkDeviceBuffer(*buffer, startingOffset + numValues),
                "buffer too small or not initialized");
 
-    deviceStream.stream().memset(buffer->buffer_->ptr_ + startingOffset, 0, numValues * sizeof(ValueType));
+    deviceStream.stream().submit(GMX_SYCL_DISCARD_EVENT[&](sycl::handler & cgh) {
+        cgh.memset(buffer->buffer_->ptr_ + startingOffset, 0, numValues * sizeof(ValueType));
+    });
 }
 
 /*! \brief Create a texture object for an array of type ValueType.
