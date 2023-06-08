@@ -1533,4 +1533,57 @@ void Grid::setCellIndices(int                            ddZone,
     }
 }
 
+void generateAndFill2DGrid(Grid*                          grid,
+                           gmx::ArrayRef<GridWork>        gridWork,
+                           gmx::HostVector<int>*          cells,
+                           const rvec                     lowerCorner,
+                           const rvec                     upperCorner,
+                           const gmx::UpdateGroupsCog*    updateGroupsCog,
+                           const gmx::Range<int>          atomRange,
+                           const real                     atomDensity,
+                           const real                     maxAtomGroupRadius,
+                           const bool                     haveFep,
+                           gmx::ArrayRef<const gmx::RVec> x,
+                           const int                      ddZone,
+                           const int*                     move,
+                           const int                      numAtomsMoved)
+{
+    const int n = atomRange.size();
+    // grid data used in GPU transfers inherits the gridset pinning policy
+    const auto pinPolicy = cells->get_allocator().pinningPolicy();
+
+    grid->setDimensions(
+            ddZone, n - numAtomsMoved, lowerCorner, upperCorner, atomDensity, maxAtomGroupRadius, haveFep, pinPolicy);
+
+    for (GridWork& work : gridWork)
+    {
+        work.numAtomsPerColumn.resize(grid->numColumns() + 1);
+    }
+
+    /* Make space for the new cell indices */
+    cells->resize(*atomRange.end());
+
+    const int nthread = gmx_omp_nthreads_get(ModuleMultiThread::Pairsearch);
+    GMX_ASSERT(nthread > 0, "We expect the OpenMP thread count to be set");
+
+#pragma omp parallel for num_threads(nthread) schedule(static)
+    for (int thread = 0; thread < nthread; thread++)
+    {
+        try
+        {
+            Grid::calcColumnIndices(grid->dimensions(),
+                                    updateGroupsCog,
+                                    atomRange,
+                                    x,
+                                    ddZone,
+                                    move,
+                                    thread,
+                                    nthread,
+                                    *cells,
+                                    gridWork[thread].numAtomsPerColumn);
+        }
+        GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR
+    }
+}
+
 } // namespace Nbnxm

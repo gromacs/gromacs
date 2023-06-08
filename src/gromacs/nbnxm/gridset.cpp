@@ -160,7 +160,6 @@ void GridSet::putOnGrid(const matrix                   box,
 {
     Nbnxm::Grid& grid               = grids_[gridIndex];
     const int    cellOffset         = getGridOffset(grids_, gridIndex);
-    const int    n                  = atomRange.size();
     real         maxAtomGroupRadius = NAN;
 
     if (gridIndex == 0)
@@ -193,40 +192,21 @@ void GridSet::putOnGrid(const matrix                   box,
      * since determining densities for non-local zones is difficult.
      */
     const int ddZone = (domainSetup_.doTestParticleInsertion_ ? 0 : gridIndex);
-    // grid data used in GPU transfers inherits the gridset pinning policy
-    auto pinPolicy = gridSetData_.cells.get_allocator().pinningPolicy();
-    grid.setDimensions(
-            ddZone, n - numAtomsMoved, lowerCorner, upperCorner, atomDensity, maxAtomGroupRadius, haveFep_, pinPolicy);
 
-    for (GridWork& work : gridWork_)
-    {
-        work.numAtomsPerColumn.resize(grid.numColumns() + 1);
-    }
-
-    /* Make space for the new cell indices */
-    gridSetData_.cells.resize(*atomRange.end());
-
-    const int nthread = gmx_omp_nthreads_get(ModuleMultiThread::Pairsearch);
-    GMX_ASSERT(nthread > 0, "We expect the OpenMP thread count to be set");
-
-#pragma omp parallel for num_threads(nthread) schedule(static)
-    for (int thread = 0; thread < nthread; thread++)
-    {
-        try
-        {
-            Grid::calcColumnIndices(grid.dimensions(),
-                                    updateGroupsCog,
-                                    atomRange,
-                                    x,
-                                    ddZone,
-                                    move,
-                                    thread,
-                                    nthread,
-                                    gridSetData_.cells,
-                                    gridWork_[thread].numAtomsPerColumn);
-        }
-        GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR
-    }
+    generateAndFill2DGrid(&grid,
+                          gridWork_,
+                          &gridSetData_.cells,
+                          lowerCorner,
+                          upperCorner,
+                          updateGroupsCog,
+                          atomRange,
+                          atomDensity,
+                          maxAtomGroupRadius,
+                          haveFep_,
+                          x,
+                          ddZone,
+                          move,
+                          numAtomsMoved);
 
     /* Copy the already computed cell indices to the grid and sort, when needed */
     grid.setCellIndices(
