@@ -911,7 +911,10 @@ void pr_inputrec(FILE* fp, int indent, const char* title, const t_inputrec* ir, 
 
         /* Options for weak coupling algorithms */
         PS("ensemble-temperature-setting", enumValueToString(ir->ensembleTemperatureSetting));
-        PR("ensemble-temperature", ir->ensembleTemperature);
+        if (ir->ensembleTemperatureSetting == EnsembleTemperatureSetting::Constant)
+        {
+            PR("ensemble-temperature", ir->ensembleTemperature);
+        }
         PS("tcoupl", enumValueToString(ir->etc));
         PI("nsttcouple", ir->nsttcouple);
         PI("nh-chain-length", ir->opts.nhchainlength);
@@ -1450,7 +1453,11 @@ void cmp_inputrec(FILE* fp, const t_inputrec* ir1, const t_inputrec* ir2, real f
             static_cast<int>(ir2->bContinuation));
     cmp_int(fp, "inputrec->bShakeSOR", -1, static_cast<int>(ir1->bShakeSOR), static_cast<int>(ir2->bShakeSOR));
     cmpEnum(fp, "inputrec->ensembleTemperatureSetting", ir1->ensembleTemperatureSetting, ir2->ensembleTemperatureSetting);
-    cmp_real(fp, "inputrec->ensembleTemperature", -1, ir1->ensembleTemperature, ir2->ensembleTemperature, ftol, abstol);
+    if (ir1->ensembleTemperatureSetting == EnsembleTemperatureSetting::Constant
+        && ir2->ensembleTemperatureSetting == EnsembleTemperatureSetting::Constant)
+    {
+        cmp_real(fp, "inputrec->ensembleTemperature", -1, ir1->ensembleTemperature, ir2->ensembleTemperature, ftol, abstol);
+    }
     cmpEnum(fp, "inputrec->etc", ir1->etc, ir2->etc);
     cmp_int(fp,
             "inputrec->bPrintNHChains",
