@@ -80,23 +80,6 @@
 namespace Nbnxm
 {
 
-static inline void issueClFlushInStream(const DeviceStream& deviceStream)
-{
-#if GMX_GPU_OPENCL
-    /* Based on the v1.2 section 5.13 of the OpenCL spec, a flush is needed
-     * in the stream after marking an event in it in order to be able to sync with
-     * the event from another stream.
-     */
-    cl_int cl_error = clFlush(deviceStream.stream());
-    if (cl_error != CL_SUCCESS)
-    {
-        GMX_THROW(gmx::InternalError("clFlush failed: " + ocl_get_error_string(cl_error)));
-    }
-#else
-    GMX_UNUSED_VALUE(deviceStream);
-#endif
-}
-
 static inline void init_ewald_coulomb_force_table(const EwaldCorrectionTables& tables,
                                                   NBParamGpu*                  nbp,
                                                   const DeviceContext&         deviceContext)

@@ -155,3 +155,5 @@ void DeviceStream::synchronize() const
      */
     sycl::queue(stream_).wait_and_throw();
 }
+
+void issueClFlushInStream(const DeviceStream& /*deviceStream*/) {}

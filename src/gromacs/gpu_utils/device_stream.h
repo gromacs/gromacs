@@ -153,4 +153,12 @@ private:
     GMX_DISALLOW_COPY_MOVE_AND_ASSIGN(DeviceStream);
 };
 
+/*! \brief Helper function to flush the commands in OpenCL. No-op in other backends.
+ *
+ * Based on the section 5.13 of the OpenCL 1.2 spec (section 5.15 in OpenCL 3.0 spec), a flush is
+ * needed in the stream after marking an event in it in order to be able to sync with
+ * the event from another stream.
+ */
+void issueClFlushInStream(const DeviceStream& deviceStream);
+
 #endif // GMX_GPU_UTILS_DEVICE_STREAM_H

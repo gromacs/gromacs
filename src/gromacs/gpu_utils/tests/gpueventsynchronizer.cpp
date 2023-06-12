@@ -98,6 +98,8 @@ TEST(GpuEventSynchronizerTest, BasicFunctionality)
             SCOPED_TRACE("Mark and enqueueWait");
             GpuEventSynchronizer gpuEventSynchronizer;
             gpuEventSynchronizer.markEvent(streamA);
+            // OpenCL standard requires explicit flush in such cases; no-op for CUDA and SYCL
+            issueClFlushInStream(streamA);
             gpuEventSynchronizer.enqueueWaitEvent(streamB);
             streamB.synchronize(); // Should return immediately
         }

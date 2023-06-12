@@ -57,4 +57,6 @@ bool DeviceStream::isValid() const
     return false;
 }
 
-void DeviceStream::synchronize() const {};
+void DeviceStream::synchronize() const {}
+
+void issueClFlushInStream(const DeviceStream& /*deviceStream*/) {}

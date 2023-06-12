@@ -44,6 +44,7 @@
 #include "gromacs/gpu_utils/device_context.h"
 #include "gromacs/gpu_utils/device_stream.h"
 #include "gromacs/gpu_utils/gputraits_ocl.h"
+#include "gromacs/gpu_utils/oclutils.h"
 #include "gromacs/hardware/device_information.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
@@ -95,4 +96,13 @@ void DeviceStream::synchronize() const
     GMX_RELEASE_ASSERT(
             CL_SUCCESS == clError,
             gmx::formatString("Error caught during clFinish (OpenCL error ID %d).", clError).c_str());
+}
+
+void issueClFlushInStream(const DeviceStream& deviceStream)
+{
+    cl_int cl_error = clFlush(deviceStream.stream());
+    if (cl_error != CL_SUCCESS)
+    {
+        GMX_THROW(gmx::InternalError("clFlush failed: " + ocl_get_error_string(cl_error)));
+    }
 }

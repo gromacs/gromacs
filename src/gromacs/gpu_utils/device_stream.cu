@@ -100,3 +100,5 @@ void DeviceStream::synchronize() const
     GMX_RELEASE_ASSERT(stat == cudaSuccess,
                        ("cudaStreamSynchronize failed. " + gmx::getDeviceErrorString(stat)).c_str());
 }
+
+void issueClFlushInStream(const DeviceStream& /*deviceStream*/) {}
