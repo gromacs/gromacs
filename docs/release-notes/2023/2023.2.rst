@@ -50,6 +50,15 @@ Tools now retain chain identifiers when reading PDB is used as input
 
 :issue:`4776`
 
+The gmx hbond tool could produce random ouput
+"""""""""""""""""""""""""""""""""""""""""""""
+
+Because memory was not initialized, the gmx hbond tool could produce
+random output. This would not go unnoticed. This also fixes issues
+with the -ac and -life options.
+
+:issue:`4801`
+
 Fixes that affect portability
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
