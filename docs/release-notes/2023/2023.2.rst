@@ -34,6 +34,11 @@ unless the -dd option was specified.
 
 :issue:`4627`
 
+Fix assertion failure with annealing and multiple T-coupling groups
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+:issue:`4800`
+
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
 
