@@ -71,58 +71,41 @@ using mode = sycl::access_mode;
  *
  *  Each GPU thread works with a single particle.
  *
- * \tparam        numTempScaleValues               The number of different T-couple values.
- * \tparam        parrinelloRahmanVelocityScaling  The properties of the Parrinello-Rahman velocity scaling matrix.
- * \param         cgh                              SYCL's command group handler.
- * \param[in,out] a_x                              Coordinates to update upon integration.
- * \param[out]    a_xp                             A copy of the coordinates before the integration (for constraints).
- * \param[in,out] a_v                              Velocities to update.
- * \param[in]     a_f                              Atomic forces.
- * \param[in]     a_inverseMasses                  Reciprocal masses.
- * \param[in]     dt                               Timestep.
- * \param[in]     a_lambdas                        Temperature scaling factors (one per group).
- * \param[in]     a_tempScaleGroups                Mapping of atoms into groups.
- * \param[in]     prVelocityScalingMatrixDiagonal  Diagonal elements of Parrinello-Rahman velocity scaling matrix.
+ * \tparam        numTempScaleValues                The number of different T-couple values.
+ * \tparam        parrinelloRahmanVelocityScaling   The properties of the Parrinello-Rahman velocity scaling matrix.
+ * \param[in,out] gm_x                              Coordinates to update upon integration.
+ * \param[out]    gm_xp                             A copy of the coordinates before the integration (for constraints).
+ * \param[in,out] gm_v                              Velocities to update.
+ * \param[in]     gm_f                              Atomic forces.
+ * \param[in]     gm_inverseMasses                  Reciprocal masses.
+ * \param[in]     dt                                Timestep.
+ * \param[in]     gm_lambdas                        Temperature scaling factors (one per group).
+ * \param[in]     gm_tempScaleGroups                Mapping of atoms into groups.
+ * \param[in]     prVelocityScalingMatrixDiagonal   Diagonal elements of Parrinello-Rahman velocity scaling matrix.
  */
 template<NumTempScaleValues numTempScaleValues, ParrinelloRahmanVelocityScaling parrinelloRahmanVelocityScaling>
-auto leapFrogKernel(
-        sycl::handler&                              cgh,
-        DeviceAccessor<Float3, mode::read_write>    a_x,
-        DeviceAccessor<Float3, mode::discard_write> a_xp,
-        DeviceAccessor<Float3, mode::read_write>    a_v,
-        DeviceAccessor<Float3, mode::read>          a_f,
-        DeviceAccessor<float, mode::read>           a_inverseMasses,
-        float                                       dt,
-        OptionalAccessor<float, mode::read, numTempScaleValues != NumTempScaleValues::None> a_lambdas,
-        OptionalAccessor<unsigned short, mode::read, numTempScaleValues == NumTempScaleValues::Multiple> a_tempScaleGroups,
-        Float3 prVelocityScalingMatrixDiagonal)
+auto leapFrogKernel(Float3* __restrict__ gm_x,
+                    Float3* __restrict__ gm_xp,
+                    Float3* __restrict__ gm_v,
+                    const Float3* __restrict__ gm_f,
+                    const float* __restrict__ gm_inverseMasses,
+                    float dt,
+                    const float* __restrict__ gm_lambdas /* used iff numTempScaleValues != None */,
+                    const unsigned short* __restrict__ gm_tempScaleGroups /* used iff numTempScaleValues == Multiple */,
+                    Float3 prVelocityScalingMatrixDiagonal)
 {
-    a_x.bind(cgh);
-    a_xp.bind(cgh);
-    a_v.bind(cgh);
-    a_f.bind(cgh);
-    a_inverseMasses.bind(cgh);
-    if constexpr (numTempScaleValues != NumTempScaleValues::None)
-    {
-        a_lambdas.bind(cgh);
-    }
-    if constexpr (numTempScaleValues == NumTempScaleValues::Multiple)
-    {
-        a_tempScaleGroups.bind(cgh);
-    }
-
     return [=](sycl::id<1> itemIdx) {
-        const Float3 x    = a_x[itemIdx];
-        const Float3 v    = a_v[itemIdx];
-        const Float3 f    = a_f[itemIdx];
-        const float  im   = a_inverseMasses[itemIdx];
+        const Float3 x    = gm_x[itemIdx];
+        const Float3 v    = gm_v[itemIdx];
+        const Float3 f    = gm_f[itemIdx];
+        const float  im   = gm_inverseMasses[itemIdx];
         const float  imdt = im * dt;
 
         // Swapping places for xp and x so that the x will contain the updated coordinates and xp -
         // the coordinates before update. This should be taken into account when (if) constraints
         // are applied after the update: x and xp have to be passed to constraints in the 'wrong'
         // order. See Issue #3727
-        a_xp[itemIdx] = x;
+        gm_xp[itemIdx] = x;
 
         const float lambda = [=]() {
             if constexpr (numTempScaleValues == NumTempScaleValues::None)
@@ -131,12 +114,12 @@ auto leapFrogKernel(
             }
             else if constexpr (numTempScaleValues == NumTempScaleValues::Single)
             {
-                return a_lambdas[0];
+                return gm_lambdas[0];
             }
             else if constexpr (numTempScaleValues == NumTempScaleValues::Multiple)
             {
-                const int tempScaleGroup = a_tempScaleGroups[itemIdx];
-                return a_lambdas[tempScaleGroup];
+                const int tempScaleGroup = gm_tempScaleGroups[itemIdx];
+                return gm_lambdas[tempScaleGroup];
             }
         }();
 
@@ -161,8 +144,8 @@ auto leapFrogKernel(
         }();
 
         const Float3 v_new = v * lambda - prVelocityDelta + f * imdt;
-        a_v[itemIdx]       = v_new;
-        a_x[itemIdx]       = x + v_new * dt;
+        gm_v[itemIdx]      = v_new;
+        gm_x[itemIdx]      = x + v_new * dt;
     };
 }
 
@@ -178,7 +161,7 @@ static void launchLeapFrogKernel(const DeviceStream& deviceStream, int numAtoms,
 
     q.submit(GMX_SYCL_DISCARD_EVENT[&](sycl::handler & cgh) {
         auto kernel = leapFrogKernel<numTempScaleValues, parrinelloRahmanVelocityScaling>(
-                cgh, std::forward<Args>(args)...);
+                std::forward<Args>(args)...);
         cgh.parallel_for<kernelNameType>(rangeAllAtoms, kernel);
     });
 }
@@ -245,14 +228,14 @@ void launchLeapFrogKernel(int                                   numAtoms,
                          parrinelloRahmanVelocityScaling,
                          deviceStream,
                          numAtoms,
-                         d_x,
-                         d_xp,
-                         d_v,
-                         d_f,
-                         d_inverseMasses,
+                         d_x.get_pointer(),
+                         d_xp.get_pointer(),
+                         d_v.get_pointer(),
+                         d_f.get_pointer(),
+                         d_inverseMasses.get_pointer(),
                          dt,
-                         d_lambdas,
-                         d_tempScaleGroups,
+                         d_lambdas.get_pointer(),
+                         d_tempScaleGroups.get_pointer(),
                          prVelocityScalingMatrixDiagonal);
 }
 

@@ -86,65 +86,44 @@ using mode = sycl::access_mode;
  * \tparam computeVirial           Whether virial tensor should be computed this step.
  * \tparam haveCoupledConstraints  If there are coupled constraints (i.e. LINCS iterations are needed).
  *
- * \param[in]     cgh                           SYCL handler.
- * \param[in]     numConstraintsThreads         Total number of threads.
- * \param[in]     a_constraints                 List of constrained atoms.
- * \param[in]     a_constraintsTargetLengths    Equilibrium distances for the constraints.
- * \param[in]     a_coupledConstraintsCounts    Number of constraints, coupled with the current one.
- * \param[in]     a_coupledConstraintsIndices   List of coupled with the current one.
- * \param[in]     a_massFactors                 Mass factors.
- * \param[in]     a_matrixA                     Elements of the coupling matrix.
- * \param[in]     a_inverseMasses               1/mass for all atoms.
- * \param[in]     numIterations                 Number of iterations used to correct the projection.
- * \param[in]     expansionOrder                Order of expansion when inverting the matrix.
- * \param[in]     a_x                           Unconstrained positions.
- * \param[in,out] a_xp                          Positions at the previous step, will be updated.
- * \param[in]     invdt                         Inverse timestep (needed to update velocities).
- * \param[in,out] a_v                           Velocities of atoms, will be updated if \c updateVelocities.
- * \param[in,out] a_virialScaled                Scaled virial tensor (6 floats: [XX, XY, XZ, YY, YZ, ZZ].
- *                                              Will be updated if \c updateVirial.
- * \param[in]     pbcAiuc                       Periodic boundary data.
+ * \param[in]     cgh                            SYCL handler.
+ * \param[in]     numConstraintsThreads          Total number of threads.
+ * \param[in]     gm_constraints                 List of constrained atoms.
+ * \param[in]     gm_constraintsTargetLengths    Equilibrium distances for the constraints.
+ * \param[in]     gm_coupledConstraintsCounts    Number of constraints, coupled with the current one.
+ * \param[in]     gm_coupledConstraintsIndices   List of coupled with the current one.
+ * \param[in]     gm_massFactors                 Mass factors.
+ * \param[in]     gm_matrixA                     Elements of the coupling matrix.
+ * \param[in]     gm_inverseMasses               1/mass for all atoms.
+ * \param[in]     numIterations                  Number of iterations used to correct the projection.
+ * \param[in]     expansionOrder                 Order of expansion when inverting the matrix.
+ * \param[in]     gm_x                           Unconstrained positions.
+ * \param[in,out] gm_xp                          Positions at the previous step, will be updated.
+ * \param[in]     invdt                          Inverse timestep (needed to update velocities).
+ * \param[in,out] gm_v                           Velocities of atoms, will be updated if \c updateVelocities.
+ * \param[in,out] gm_virialScaled                Scaled virial tensor (6 floats: [XX, XY, XZ, YY, YZ, ZZ]).
+ *                                               Will be updated if \c updateVirial.
+ * \param[in]     pbcAiuc                        Periodic boundary data.
  */
 template<bool updateVelocities, bool computeVirial, bool haveCoupledConstraints>
-auto lincsKernel(sycl::handler&                       cgh,
-                 const int                            numConstraintsThreads,
-                 DeviceAccessor<AtomPair, mode::read> a_constraints,
-                 DeviceAccessor<float, mode::read>    a_constraintsTargetLengths,
-                 OptionalAccessor<int, mode::read, haveCoupledConstraints> a_coupledConstraintsCounts,
-                 OptionalAccessor<int, mode::read, haveCoupledConstraints> a_coupledConstraintsIndices,
-                 OptionalAccessor<float, mode::read, haveCoupledConstraints>       a_massFactors,
-                 OptionalAccessor<float, mode::read_write, haveCoupledConstraints> a_matrixA,
-                 DeviceAccessor<float, mode::read>                                 a_inverseMasses,
-                 const int                                                         numIterations,
-                 const int                                                         expansionOrder,
-                 DeviceAccessor<Float3, mode::read>                                a_x,
-                 DeviceAccessor<Float3, mode::read_write>                          a_xp,
-                 const float                                                       invdt,
-                 OptionalAccessor<Float3, mode::read_write, updateVelocities>      a_v,
-                 OptionalAccessor<float, mode::read_write, computeVirial>          a_virialScaled,
-                 PbcAiuc                                                           pbcAiuc)
+auto lincsKernel(sycl::handler& cgh,
+                 const int      numConstraintsThreads,
+                 const AtomPair* __restrict__ gm_constraints,
+                 const float* __restrict__ gm_constraintsTargetLengths,
+                 const int* __restrict__ gm_coupledConstraintsCounts,
+                 const int* __restrict__ gm_coupledConstraintsIndices,
+                 const float* __restrict__ gm_massFactors,
+                 float* __restrict__ gm_matrixA,
+                 const float* __restrict__ gm_inverseMasses,
+                 const int numIterations,
+                 const int expansionOrder,
+                 const Float3* __restrict__ gm_x,
+                 Float3* __restrict__ gm_xp,
+                 const float invdt,
+                 Float3* __restrict__ gm_v,
+                 float* __restrict__ gm_virialScaled,
+                 PbcAiuc pbcAiuc)
 {
-    a_constraints.bind(cgh);
-    a_constraintsTargetLengths.bind(cgh);
-    if constexpr (haveCoupledConstraints)
-    {
-        a_coupledConstraintsCounts.bind(cgh);
-        a_coupledConstraintsIndices.bind(cgh);
-        a_massFactors.bind(cgh);
-        a_matrixA.bind(cgh);
-    }
-    a_inverseMasses.bind(cgh);
-    a_x.bind(cgh);
-    a_xp.bind(cgh);
-    if constexpr (updateVelocities)
-    {
-        a_v.bind(cgh);
-    }
-    if constexpr (computeVirial)
-    {
-        a_virialScaled.bind(cgh);
-    }
-
     /* Shared local memory buffer. Corresponds to sh_r, sm_rhs, and sm_threadVirial in CUDA.
      * sh_r: one Float3 per thread.
      * sh_rhs: two floats per thread.
@@ -160,7 +139,7 @@ auto lincsKernel(sycl::handler&                       cgh,
         const int threadIndex   = itemIdx.get_global_linear_id();
         const int threadInBlock = itemIdx.get_local_linear_id(); // Work-item index in work-group
 
-        AtomPair pair = a_constraints[threadIndex];
+        AtomPair pair = gm_constraints[threadIndex];
         int      i    = pair.i;
         int      j    = pair.j;
 
@@ -194,13 +173,13 @@ auto lincsKernel(sycl::handler&                       cgh,
         else
         {
             // Collecting data
-            targetLength    = a_constraintsTargetLengths[threadIndex];
-            inverseMassi    = a_inverseMasses[i];
-            inverseMassj    = a_inverseMasses[j];
+            targetLength    = gm_constraintsTargetLengths[threadIndex];
+            inverseMassi    = gm_inverseMasses[i];
+            inverseMassj    = gm_inverseMasses[j];
             sqrtReducedMass = sycl::rsqrt(inverseMassi + inverseMassj);
 
-            xi = a_x[i];
-            xj = a_x[j];
+            xi = gm_x[i];
+            xj = gm_x[j];
 
             Float3 dx;
             pbcDxAiucSycl(pbcAiuc, xi, xj, dx);
@@ -223,27 +202,27 @@ auto lincsKernel(sycl::handler&                       cgh,
         if constexpr (haveCoupledConstraints)
         {
             // Only non-zero values are saved (for coupled constraints)
-            coupledConstraintsCount = a_coupledConstraintsCounts[threadIndex];
+            coupledConstraintsCount = gm_coupledConstraintsCounts[threadIndex];
             for (int n = 0; n < coupledConstraintsCount; n++)
             {
                 int index = n * numConstraintsThreads + threadIndex;
-                int c1    = a_coupledConstraintsIndices[index];
+                int c1    = gm_coupledConstraintsIndices[index];
 
                 Float3 rc1{ sm_buffer[c1 * DIM + XX], sm_buffer[c1 * DIM + YY], sm_buffer[c1 * DIM + ZZ] };
-                a_matrixA[index] = a_massFactors[index]
-                                   * (rc[XX] * rc1[XX] + rc[YY] * rc1[YY] + rc[ZZ] * rc1[ZZ]);
+                gm_matrixA[index] = gm_massFactors[index]
+                                    * (rc[XX] * rc1[XX] + rc[YY] * rc1[YY] + rc[ZZ] * rc1[ZZ]);
             }
         }
 
         // Skipping in dummy threads
         if (!isDummyThread)
         {
-            xi[XX] = atomicLoad(a_xp[i][XX]);
-            xi[YY] = atomicLoad(a_xp[i][YY]);
-            xi[ZZ] = atomicLoad(a_xp[i][ZZ]);
-            xj[XX] = atomicLoad(a_xp[j][XX]);
-            xj[YY] = atomicLoad(a_xp[j][YY]);
-            xj[ZZ] = atomicLoad(a_xp[j][ZZ]);
+            xi[XX] = atomicLoad(gm_xp[i][XX]);
+            xi[YY] = atomicLoad(gm_xp[i][YY]);
+            xi[ZZ] = atomicLoad(gm_xp[i][ZZ]);
+            xj[XX] = atomicLoad(gm_xp[j][XX]);
+            xj[YY] = atomicLoad(gm_xp[j][YY]);
+            xj[ZZ] = atomicLoad(gm_xp[j][ZZ]);
         }
 
         Float3 dx;
@@ -270,10 +249,10 @@ auto lincsKernel(sycl::handler&                       cgh,
                 for (int n = 0; n < coupledConstraintsCount; n++)
                 {
                     int index = n * numConstraintsThreads + threadIndex;
-                    int c1    = a_coupledConstraintsIndices[index];
+                    int c1    = gm_coupledConstraintsIndices[index];
                     // Convolute current right-hand-side with A
                     // Different, non overlapping parts of sm_buffer[..] are read during odd and even iterations
-                    mvb = mvb + a_matrixA[index] * sm_buffer[c1 + c_threadsPerBlock * (rec % 2)];
+                    mvb = mvb + gm_matrixA[index] * sm_buffer[c1 + c_threadsPerBlock * (rec % 2)];
                 }
                 // 'Switch' rhs vectors, save current result
                 // These values will be accessed in the loop above during the next iteration.
@@ -296,12 +275,12 @@ auto lincsKernel(sycl::handler&                       cgh,
              * Note: Using memory_scope::work_group for atomic_ref can be better here,
              * but for now we re-use the existing function for memory_scope::device atomics.
              */
-            atomicFetchAdd(a_xp[i][XX], -tmp[XX] * inverseMassi);
-            atomicFetchAdd(a_xp[i][YY], -tmp[YY] * inverseMassi);
-            atomicFetchAdd(a_xp[i][ZZ], -tmp[ZZ] * inverseMassi);
-            atomicFetchAdd(a_xp[j][XX], tmp[XX] * inverseMassj);
-            atomicFetchAdd(a_xp[j][YY], tmp[YY] * inverseMassj);
-            atomicFetchAdd(a_xp[j][ZZ], tmp[ZZ] * inverseMassj);
+            atomicFetchAdd(gm_xp[i][XX], -tmp[XX] * inverseMassi);
+            atomicFetchAdd(gm_xp[i][YY], -tmp[YY] * inverseMassi);
+            atomicFetchAdd(gm_xp[i][ZZ], -tmp[ZZ] * inverseMassi);
+            atomicFetchAdd(gm_xp[j][XX], tmp[XX] * inverseMassj);
+            atomicFetchAdd(gm_xp[j][YY], tmp[YY] * inverseMassj);
+            atomicFetchAdd(gm_xp[j][ZZ], tmp[ZZ] * inverseMassj);
         }
 
         /*
@@ -315,12 +294,12 @@ auto lincsKernel(sycl::handler&                       cgh,
 
             if (!isDummyThread)
             {
-                xi[XX] = atomicLoad(a_xp[i][XX]);
-                xi[YY] = atomicLoad(a_xp[i][YY]);
-                xi[ZZ] = atomicLoad(a_xp[i][ZZ]);
-                xj[XX] = atomicLoad(a_xp[j][XX]);
-                xj[YY] = atomicLoad(a_xp[j][YY]);
-                xj[ZZ] = atomicLoad(a_xp[j][ZZ]);
+                xi[XX] = atomicLoad(gm_xp[i][XX]);
+                xi[YY] = atomicLoad(gm_xp[i][YY]);
+                xi[ZZ] = atomicLoad(gm_xp[i][ZZ]);
+                xj[XX] = atomicLoad(gm_xp[j][XX]);
+                xj[YY] = atomicLoad(gm_xp[j][YY]);
+                xj[ZZ] = atomicLoad(gm_xp[j][ZZ]);
             }
 
             Float3 dx;
@@ -357,9 +336,9 @@ auto lincsKernel(sycl::handler&                       cgh,
                     for (int n = 0; n < coupledConstraintsCount; n++)
                     {
                         int index = n * numConstraintsThreads + threadIndex;
-                        int c1    = a_coupledConstraintsIndices[index];
+                        int c1    = gm_coupledConstraintsIndices[index];
 
-                        mvb = mvb + a_matrixA[index] * sm_buffer[c1 + c_threadsPerBlock * (rec % 2)];
+                        mvb = mvb + gm_matrixA[index] * sm_buffer[c1 + c_threadsPerBlock * (rec % 2)];
                     }
 
                     sm_buffer[threadInBlock + c_threadsPerBlock * ((rec + 1) % 2)] = mvb;
@@ -376,12 +355,12 @@ auto lincsKernel(sycl::handler&                       cgh,
             if (!isDummyThread)
             {
                 Float3 tmp = rc * sqrtmu_sol;
-                atomicFetchAdd(a_xp[i][XX], -tmp[XX] * inverseMassi);
-                atomicFetchAdd(a_xp[i][YY], -tmp[YY] * inverseMassi);
-                atomicFetchAdd(a_xp[i][ZZ], -tmp[ZZ] * inverseMassi);
-                atomicFetchAdd(a_xp[j][XX], tmp[XX] * inverseMassj);
-                atomicFetchAdd(a_xp[j][YY], tmp[YY] * inverseMassj);
-                atomicFetchAdd(a_xp[j][ZZ], tmp[ZZ] * inverseMassj);
+                atomicFetchAdd(gm_xp[i][XX], -tmp[XX] * inverseMassi);
+                atomicFetchAdd(gm_xp[i][YY], -tmp[YY] * inverseMassi);
+                atomicFetchAdd(gm_xp[i][ZZ], -tmp[ZZ] * inverseMassi);
+                atomicFetchAdd(gm_xp[j][XX], tmp[XX] * inverseMassj);
+                atomicFetchAdd(gm_xp[j][YY], tmp[YY] * inverseMassj);
+                atomicFetchAdd(gm_xp[j][ZZ], tmp[ZZ] * inverseMassj);
             }
         }
 
@@ -391,12 +370,12 @@ auto lincsKernel(sycl::handler&                       cgh,
             if (!isDummyThread)
             {
                 Float3 tmp = rc * invdt * lagrangeScaled;
-                atomicFetchAdd(a_v[i][XX], -tmp[XX] * inverseMassi);
-                atomicFetchAdd(a_v[i][YY], -tmp[YY] * inverseMassi);
-                atomicFetchAdd(a_v[i][ZZ], -tmp[ZZ] * inverseMassi);
-                atomicFetchAdd(a_v[j][XX], tmp[XX] * inverseMassj);
-                atomicFetchAdd(a_v[j][YY], tmp[YY] * inverseMassj);
-                atomicFetchAdd(a_v[j][ZZ], tmp[ZZ] * inverseMassj);
+                atomicFetchAdd(gm_v[i][XX], -tmp[XX] * inverseMassi);
+                atomicFetchAdd(gm_v[i][YY], -tmp[YY] * inverseMassi);
+                atomicFetchAdd(gm_v[i][ZZ], -tmp[ZZ] * inverseMassi);
+                atomicFetchAdd(gm_v[j][XX], tmp[XX] * inverseMassj);
+                atomicFetchAdd(gm_v[j][YY], tmp[YY] * inverseMassj);
+                atomicFetchAdd(gm_v[j][ZZ], tmp[ZZ] * inverseMassj);
             }
         }
 
@@ -459,7 +438,7 @@ auto lincsKernel(sycl::handler&                       cgh,
             // First 6 threads in the block add the 6 components of virial to the global memory address
             if (tib < 6)
             {
-                atomicFetchAdd(a_virialScaled[tib], sm_buffer[tib * blockSize]);
+                atomicFetchAdd(gm_virialScaled[tib], sm_buffer[tib * blockSize]);
             }
         }
     };
@@ -515,20 +494,20 @@ void launchLincsGpuKernel(LincsGpuKernelParameters*   kernelParams,
                       kernelParams->haveCoupledConstraints,
                       deviceStream,
                       kernelParams->numConstraintsThreads,
-                      kernelParams->d_constraints,
-                      kernelParams->d_constraintsTargetLengths,
-                      kernelParams->d_coupledConstraintsCounts,
-                      kernelParams->d_coupledConstraintsIndices,
-                      kernelParams->d_massFactors,
-                      kernelParams->d_matrixA,
-                      kernelParams->d_inverseMasses,
+                      kernelParams->d_constraints.get_pointer(),
+                      kernelParams->d_constraintsTargetLengths.get_pointer(),
+                      kernelParams->d_coupledConstraintsCounts.get_pointer(),
+                      kernelParams->d_coupledConstraintsIndices.get_pointer(),
+                      kernelParams->d_massFactors.get_pointer(),
+                      kernelParams->d_matrixA.get_pointer(),
+                      kernelParams->d_inverseMasses.get_pointer(),
                       kernelParams->numIterations,
                       kernelParams->expansionOrder,
-                      d_x,
-                      d_xp,
+                      d_x.get_pointer(),
+                      d_xp.get_pointer(),
                       invdt,
-                      d_v,
-                      kernelParams->d_virialScaled,
+                      d_v.get_pointer(),
+                      kernelParams->d_virialScaled.get_pointer(),
                       kernelParams->pbcAiuc);
     return;
 }

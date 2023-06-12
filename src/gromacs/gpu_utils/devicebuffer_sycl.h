@@ -144,105 +144,19 @@ DeviceBuffer<T>& DeviceBuffer<T>::operator=(std::nullptr_t nullPtr)
     return *this;
 }
 
-/** \brief
- * Thin wrapper around placeholder accessor that allows implicit construction from \c DeviceBuffer.
- *
- * "Placeholder accessor" is an indicator of the intent to create an accessor for certain buffer
- * of a certain type, that is not yet bound to a specific command group handler (device). Such
- * accessors can be created outside SYCL kernels, which is helpful if we want to pass them as
- * function arguments.
- *
- * The accessor is valid to use only when the resource from which it
- * was created is valid to use.
- *
- * \tparam T Type of buffer content.
- * \tparam mode Access mode.
- */
-template<class T, sycl::access_mode mode>
-class DeviceAccessor
+//! Get the underlying device const pointer
+template<typename T>
+const T* DeviceBuffer<T>::get_pointer() const
 {
-public:
-    //! Construct DeviceAccessor from DeviceBuffer (must be initialized)
-    DeviceAccessor(DeviceBuffer<T>& buffer) : ptr_(getPointer(buffer)) {}
-    //! Construct read-only DeviceAccessor from a const DeviceBuffer (must be initialized)
-    DeviceAccessor(const DeviceBuffer<T>& buffer) : ptr_(getPointer(buffer))
-    {
-        static_assert(mode == sycl::access_mode::read,
-                      "Can not create non-read-only accessor from a const DeviceBuffer");
-    }
-    //! Construct DeviceAccessor from a raw pointer
-    DeviceAccessor(T* ptr) : ptr_(ptr) {}
-    __attribute__((always_inline)) void bind(sycl::handler& /*cgh*/)
-    {
-        // Do nothing
-    }
-    using ValueType = std::conditional_t<mode == sycl::access_mode::read, const T, T>;
-    __attribute__((always_inline)) ValueType* get_pointer() const noexcept { return ptr_; }
-    __attribute__((always_inline)) ValueType& operator[](sycl::id<1> index) const
-    {
-        return ptr_[index.get(0)];
-    }
-    __attribute__((always_inline)) ValueType& operator[](size_t index) const { return ptr_[index]; }
+    return buffer_ ? buffer_->ptr_ : nullptr;
+}
 
-private:
-    /*! \brief Helper function to get sycl:global_ptr object from DeviceBuffer wrapper
-     *
-     * \returns Device pointer when \c buffer is valid, otherwise nullptr */
-    static inline sycl::global_ptr<T> getPointer(const DeviceBuffer<T>& buffer)
-    {
-        return bool(buffer) ? buffer.buffer_->ptr_ : nullptr;
-    }
-    T* ptr_;
-};
-
-namespace gmx::internal
+//! Get the underlying device pointer
+template<typename T>
+T* DeviceBuffer<T>::get_pointer()
 {
-//! A non-functional class that can be used instead of real accessors
-template<class T>
-struct NullAccessor
-{
-    NullAccessor(const DeviceBuffer<T>& /*buffer*/) {}
-    //! Allow casting to nullptr
-    constexpr operator std::nullptr_t() const { return nullptr; }
-    //! Placeholder implementation of \c sycl::accessor::get_pointer.
-    T* get_pointer() const noexcept { return nullptr; }
-    //! Placeholder for \c sycl::handler::require.
-    void bind(sycl::handler& /*cgh*/) { assert(false); }
-};
-
-} // namespace gmx::internal
-
-/** \brief
- * Helper class to be used as function argument. Will either correspond to a device accessor, or an empty class.
- *
- * Example usage:
- * \code
-    template <bool doFoo>
-    void getBarKernel(handler& cgh, OptionalAccessor<float, mode::read, doFoo> a_fooPrms)
-    {
-        if constexpr (doFoo)
-            a_fooPrms.bind(cgh);
-        // Can only use a_fooPrms if doFoo == true
-    }
-
-    template <bool doFoo>
-    void callBar(DeviceBuffer<float> b_fooPrms)
-    {
-        // If doFoo is false, b_fooPrms will be ignored (can be not initialized).
-        // Otherwise, an accessor will be built (b_fooPrms must be a valid buffer).
-        auto kernel = getBarKernel<doFoo>(b_fooPrms);
-        // If the accessor in not enabled, anything can be passed as its ctor argument.
-        auto kernel2 = getBarKernel<false>(nullptr_t);
-    }
- * \endcode
- *
- * \tparam T Data type of the underlying buffer
- * \tparam mode Access mode of the accessor
- * \tparam enabled Compile-time flag indicating whether we want to actually create an accessor.
- */
-template<class T, sycl::access_mode mode, bool enabled>
-using OptionalAccessor =
-        std::conditional_t<enabled, DeviceAccessor<T, mode>, gmx::internal::NullAccessor<T>>;
+    return buffer_ ? buffer_->ptr_ : nullptr;
+}
 
 #endif // #ifndef DOXYGEN
 
@@ -520,7 +434,7 @@ void destroyParamLookupTable(DeviceBuffer<ValueType>* deviceBuffer, DeviceTextur
 template<typename ValueType>
 ValueType* asMpiPointer(DeviceBuffer<ValueType>& buffer)
 {
-    return buffer ? buffer.buffer_->ptr_ : nullptr;
+    return buffer.get_pointer();
 }
 
 #endif // GMX_GPU_UTILS_DEVICEBUFFER_SYCL_H

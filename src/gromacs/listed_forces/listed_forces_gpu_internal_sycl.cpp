@@ -151,17 +151,17 @@ static inline void harmonic_gpu(const float              kA,
 template<bool calcVir, bool calcEner>
 static inline void bonds_gpu(const int                                  i,
                              sycl::private_ptr<float>                   vtot_loc,
-                             const sycl::global_ptr<const t_iatom>      d_forceatoms,
-                             const sycl::global_ptr<const t_iparams>    d_forceparams,
+                             const sycl::global_ptr<const t_iatom>      gm_forceatoms,
+                             const sycl::global_ptr<const t_iparams>    gm_forceparams,
                              const sycl::global_ptr<const sycl::float4> gm_xq,
                              sycl::global_ptr<Float3>                   gm_f,
                              sycl::local_ptr<Float3>                    sm_fShiftLoc,
                              const PbcAiuc&                             pbcAiuc,
                              const int                                  localId)
 {
-    const int type = d_forceatoms[3 * i];
-    const int ai   = d_forceatoms[3 * i + 1];
-    const int aj   = d_forceatoms[3 * i + 2];
+    const int type = gm_forceatoms[3 * i];
+    const int ai   = gm_forceatoms[3 * i + 1];
+    const int aj   = gm_forceatoms[3 * i + 2];
 
     /* dx = xi - xj, corrected for periodic boundary conditions. */
     Float3 dx;
@@ -173,7 +173,7 @@ static inline void bonds_gpu(const int                                  i,
     float vbond;
     float fbond;
     harmonic_gpu<calcEner>(
-            d_forceparams[type].harmonic.krA, d_forceparams[type].harmonic.rA, dr, &vbond, &fbond);
+            gm_forceparams[type].harmonic.krA, gm_forceparams[type].harmonic.rA, dr, &vbond, &fbond);
 
     if (calcEner)
     {
@@ -278,8 +278,8 @@ static float bond_angle_gpu(const sycl::float4        xi,
 template<bool calcVir, bool calcEner>
 static void angles_gpu(const int                                  i,
                        sycl::private_ptr<float>                   vtot_loc,
-                       const sycl::global_ptr<const t_iatom>      d_forceatoms,
-                       const sycl::global_ptr<const t_iparams>    d_forceparams,
+                       const sycl::global_ptr<const t_iatom>      gm_forceatoms,
+                       const sycl::global_ptr<const t_iparams>    gm_forceparams,
                        const sycl::global_ptr<const sycl::float4> gm_xq,
                        sycl::global_ptr<Float3>                   gm_f,
                        sycl::local_ptr<Float3>                    sm_fShiftLoc,
@@ -287,7 +287,7 @@ static void angles_gpu(const int                                  i,
                        const int                                  localId)
 {
     sycl::int4 angleData;
-    angleData.load(i, d_forceatoms);
+    angleData.load(i, gm_forceatoms);
     const int type = angleData.x();
     const int ai   = angleData.y();
     const int aj   = angleData.z();
@@ -304,7 +304,7 @@ static void angles_gpu(const int                                  i,
     float va;
     float dVdt;
     harmonic_gpu<calcEner>(
-            d_forceparams[type].harmonic.krA, d_forceparams[type].harmonic.rA * c_deg2RadF, theta, &va, &dVdt);
+            gm_forceparams[type].harmonic.krA, gm_forceparams[type].harmonic.rA * c_deg2RadF, theta, &va, &dVdt);
 
     if (calcEner)
     {
@@ -346,8 +346,8 @@ static void angles_gpu(const int                                  i,
 template<bool calcVir, bool calcEner>
 static void urey_bradley_gpu(const int                                  i,
                              sycl::private_ptr<float>                   vtot_loc,
-                             const sycl::global_ptr<const t_iatom>      d_forceatoms,
-                             const sycl::global_ptr<const t_iparams>    d_forceparams,
+                             const sycl::global_ptr<const t_iatom>      gm_forceatoms,
+                             const sycl::global_ptr<const t_iparams>    gm_forceparams,
                              const sycl::global_ptr<const sycl::float4> gm_xq,
                              sycl::global_ptr<Float3>                   gm_f,
                              sycl::local_ptr<Float3>                    sm_fShiftLoc,
@@ -355,16 +355,16 @@ static void urey_bradley_gpu(const int                                  i,
                              const int                                  localId)
 {
     sycl::int4 ubData;
-    ubData.load(i, d_forceatoms);
+    ubData.load(i, gm_forceatoms);
     const int type = ubData.x();
     const int ai   = ubData.y();
     const int aj   = ubData.z();
     const int ak   = ubData.w();
 
-    const float th0A = d_forceparams[type].u_b.thetaA * c_deg2RadF;
-    const float kthA = d_forceparams[type].u_b.kthetaA;
-    const float r13A = d_forceparams[type].u_b.r13A;
-    const float kUBA = d_forceparams[type].u_b.kUBA;
+    const float th0A = gm_forceparams[type].u_b.thetaA * c_deg2RadF;
+    const float kthA = gm_forceparams[type].u_b.kthetaA;
+    const float r13A = gm_forceparams[type].u_b.r13A;
+    const float kUBA = gm_forceparams[type].u_b.kUBA;
 
     Float3 r_ij;
     Float3 r_kj;
@@ -562,19 +562,19 @@ static void do_dih_fup_gpu(const int                            i,
 template<bool calcVir, bool calcEner>
 static void pdihs_gpu(const int                                  i,
                       sycl::private_ptr<float>                   vtot_loc,
-                      const sycl::global_ptr<const t_iatom>      d_forceatoms,
-                      const sycl::global_ptr<const t_iparams>    d_forceparams,
+                      const sycl::global_ptr<const t_iatom>      gm_forceatoms,
+                      const sycl::global_ptr<const t_iparams>    gm_forceparams,
                       const sycl::global_ptr<const sycl::float4> gm_xq,
                       sycl::global_ptr<Float3>                   gm_f,
                       sycl::local_ptr<Float3>                    sm_fShiftLoc,
                       const PbcAiuc&                             pbcAiuc,
                       const int                                  localId)
 {
-    int type = d_forceatoms[5 * i];
-    int ai   = d_forceatoms[5 * i + 1];
-    int aj   = d_forceatoms[5 * i + 2];
-    int ak   = d_forceatoms[5 * i + 3];
-    int al   = d_forceatoms[5 * i + 4];
+    int type = gm_forceatoms[5 * i];
+    int ai   = gm_forceatoms[5 * i + 1];
+    int aj   = gm_forceatoms[5 * i + 2];
+    int ak   = gm_forceatoms[5 * i + 3];
+    int al   = gm_forceatoms[5 * i + 4];
 
     Float3 r_ij;
     Float3 r_kj;
@@ -589,9 +589,9 @@ static void pdihs_gpu(const int                                  i,
 
     float vpd;
     float ddphi;
-    dopdihs_gpu(d_forceparams[type].pdihs.cpA,
-                d_forceparams[type].pdihs.phiA,
-                d_forceparams[type].pdihs.mult,
+    dopdihs_gpu(gm_forceparams[type].pdihs.cpA,
+                gm_forceparams[type].pdihs.phiA,
+                gm_forceparams[type].pdihs.mult,
                 phi,
                 &vpd,
                 &ddphi);
@@ -608,8 +608,8 @@ static void pdihs_gpu(const int                                  i,
 template<bool calcVir, bool calcEner>
 static void rbdihs_gpu(const int                                  i,
                        sycl::private_ptr<float>                   vtot_loc,
-                       const sycl::global_ptr<const t_iatom>      d_forceatoms,
-                       const sycl::global_ptr<const t_iparams>    d_forceparams,
+                       const sycl::global_ptr<const t_iatom>      gm_forceatoms,
+                       const sycl::global_ptr<const t_iparams>    gm_forceparams,
                        const sycl::global_ptr<const sycl::float4> gm_xq,
                        sycl::global_ptr<Float3>                   gm_f,
                        sycl::local_ptr<Float3>                    sm_fShiftLoc,
@@ -619,11 +619,11 @@ static void rbdihs_gpu(const int                                  i,
     constexpr float c0 = 0.0F, c1 = 1.0F, c2 = 2.0F, c3 = 3.0F, c4 = 4.0F, c5 = 5.0F;
 
     {
-        int type = d_forceatoms[5 * i];
-        int ai   = d_forceatoms[5 * i + 1];
-        int aj   = d_forceatoms[5 * i + 2];
-        int ak   = d_forceatoms[5 * i + 3];
-        int al   = d_forceatoms[5 * i + 4];
+        int type = gm_forceatoms[5 * i];
+        int ai   = gm_forceatoms[5 * i + 1];
+        int aj   = gm_forceatoms[5 * i + 2];
+        int ak   = gm_forceatoms[5 * i + 3];
+        int al   = gm_forceatoms[5 * i + 4];
 
         Float3 r_ij;
         Float3 r_kj;
@@ -652,7 +652,7 @@ static void rbdihs_gpu(const int                                  i,
         float parm[NR_RBDIHS];
         for (int j = 0; j < NR_RBDIHS; j++)
         {
-            parm[j] = d_forceparams[type].rbdihs.rbcA[j];
+            parm[j] = gm_forceparams[type].rbdihs.rbcA[j];
         }
         /* Calculate cosine powers */
         /* Calculate the energy */
@@ -729,19 +729,19 @@ static constexpr float wrapAngle(float a)
 template<bool calcVir, bool calcEner>
 static void idihs_gpu(const int                                  i,
                       sycl::private_ptr<float>                   vtot_loc,
-                      const sycl::global_ptr<const t_iatom>      d_forceatoms,
-                      const sycl::global_ptr<const t_iparams>    d_forceparams,
+                      const sycl::global_ptr<const t_iatom>      gm_forceatoms,
+                      const sycl::global_ptr<const t_iparams>    gm_forceparams,
                       const sycl::global_ptr<const sycl::float4> gm_xq,
                       sycl::global_ptr<Float3>                   gm_f,
                       sycl::local_ptr<Float3>                    sm_fShiftLoc,
                       const PbcAiuc&                             pbcAiuc,
                       const int                                  localId)
 {
-    int type = d_forceatoms[5 * i];
-    int ai   = d_forceatoms[5 * i + 1];
-    int aj   = d_forceatoms[5 * i + 2];
-    int ak   = d_forceatoms[5 * i + 3];
-    int al   = d_forceatoms[5 * i + 4];
+    int type = gm_forceatoms[5 * i];
+    int ai   = gm_forceatoms[5 * i + 1];
+    int aj   = gm_forceatoms[5 * i + 2];
+    int ak   = gm_forceatoms[5 * i + 3];
+    int al   = gm_forceatoms[5 * i + 4];
 
     Float3 r_ij;
     Float3 r_kj;
@@ -761,8 +761,8 @@ static void idihs_gpu(const int                                  i,
      * the dihedral is Pi away from phiO, which is very unlikely due to
      * the potential.
      */
-    float kA = d_forceparams[type].harmonic.krA;
-    float pA = d_forceparams[type].harmonic.rA;
+    float kA = gm_forceparams[type].harmonic.krA;
+    float pA = gm_forceparams[type].harmonic.rA;
 
     float phi0 = pA * c_deg2RadF;
 
@@ -781,8 +781,8 @@ static void idihs_gpu(const int                                  i,
 
 template<bool calcVir, bool calcEner>
 static void pairs_gpu(const int                                  i,
-                      const sycl::global_ptr<const t_iatom>      d_forceatoms,
-                      const sycl::global_ptr<const t_iparams>    iparams,
+                      const sycl::global_ptr<const t_iatom>      gm_forceatoms,
+                      const sycl::global_ptr<const t_iparams>    gm_iparams,
                       const sycl::global_ptr<const sycl::float4> gm_xq,
                       sycl::global_ptr<Float3>                   gm_f,
                       sycl::local_ptr<Float3>                    sm_fShiftLoc,
@@ -792,13 +792,13 @@ static void pairs_gpu(const int                                  i,
                       sycl::private_ptr<float>                   vtotElec_loc,
                       const int                                  localId)
 {
-    int type = d_forceatoms[3 * i];
-    int ai   = d_forceatoms[3 * i + 1];
-    int aj   = d_forceatoms[3 * i + 2];
+    int type = gm_forceatoms[3 * i];
+    int ai   = gm_forceatoms[3 * i + 1];
+    int aj   = gm_forceatoms[3 * i + 2];
 
     float qq  = gm_xq[ai].w() * gm_xq[aj].w();
-    float c6  = iparams[type].lj14.c6A;
-    float c12 = iparams[type].lj14.c12A;
+    float c6  = gm_iparams[type].lj14.c6A;
+    float c12 = gm_iparams[type].lj14.c12A;
 
     /* Do we need to apply full periodic boundary conditions? */
     Float3 dr;
@@ -844,25 +844,19 @@ using sycl::access::fence_space;
 using mode = sycl::access_mode;
 
 template<bool calcVir, bool calcEner>
-auto bondedKernel(sycl::handler&                                        cgh,
-                  const BondedGpuKernelParameters&                      kernelParams,
-                  const DeviceBuffer<t_iatom>                           d_iatoms[numFTypesOnGpu],
-                  DeviceAccessor<float, sycl::access_mode::read_write>  a_vTot,
-                  DeviceAccessor<t_iparams, sycl::access_mode::read>    a_forceParams,
-                  DeviceAccessor<sycl::float4, sycl::access_mode::read> a_xq,
-                  DeviceAccessor<Float3, sycl::access_mode::read_write> a_f,
-                  DeviceAccessor<Float3, sycl::access_mode::read_write> a_fShift)
+auto bondedKernel(sycl::handler&                   cgh,
+                  const BondedGpuKernelParameters& kernelParams,
+                  const DeviceBuffer<t_iatom>      gm_iatoms_[numFTypesOnGpu],
+                  float* __restrict__ gm_vTot,
+                  const t_iparams* __restrict__ gm_forceParams_,
+                  const sycl::float4* __restrict__ gm_xq_,
+                  Float3* __restrict__ gm_f_,
+                  Float3* __restrict__ gm_fShift_)
 {
-    a_vTot.bind(cgh);
-    a_forceParams.bind(cgh);
-    a_xq.bind(cgh);
-    a_f.bind(cgh);
-    a_fShift.bind(cgh);
-
     sycl::global_ptr<const t_iatom> gm_iatomsTemp[numFTypesOnGpu];
     for (int i = 0; i < numFTypesOnGpu; i++)
     {
-        gm_iatomsTemp[i] = d_iatoms[i] ? d_iatoms[i].buffer_->ptr_ : nullptr;
+        gm_iatomsTemp[i] = gm_iatoms_[i].get_pointer();
     }
     const FTypeArray<sycl::global_ptr<const t_iatom>> gm_iatoms(gm_iatomsTemp);
 
@@ -877,10 +871,10 @@ auto bondedKernel(sycl::handler&                                        cgh,
     const PbcAiuc pbcAiuc = kernelParams.pbcAiuc;
 
     return [=](sycl::nd_item<1> itemIdx) {
-        sycl::global_ptr<const t_iparams> gm_forceParams = a_forceParams.get_pointer();
-        sycl::global_ptr<const Float4>    gm_xq          = a_xq.get_pointer();
-        sycl::global_ptr<Float3>          gm_f           = a_f.get_pointer();
-        sycl::global_ptr<Float3>          gm_fShift      = a_fShift.get_pointer();
+        sycl::global_ptr<const t_iparams> gm_forceParams = gm_forceParams_;
+        sycl::global_ptr<const Float4>    gm_xq          = gm_xq_;
+        sycl::global_ptr<Float3>          gm_f           = gm_f_;
+        sycl::global_ptr<Float3>          gm_fShift      = gm_fShift_;
 
         const int tid          = itemIdx.get_global_linear_id();
         const int localId      = itemIdx.get_local_linear_id();
@@ -971,10 +965,10 @@ auto bondedKernel(sycl::handler&                                        cgh,
             vtotElec_loc       = sycl::reduce_over_group(sg, vtotElec_loc, sycl::plus<float>());
             if (sg.leader())
             {
-                atomicFetchAdd(a_vTot[fType], vtot_loc);
+                atomicFetchAdd(gm_vTot[fType], vtot_loc);
                 if (fType == F_LJ14)
                 {
-                    atomicFetchAdd(a_vTot[F_COUL14], vtotElec_loc);
+                    atomicFetchAdd(gm_vTot[F_COUL14], vtotElec_loc);
                 }
             }
         }
@@ -1016,11 +1010,11 @@ void ListedForcesGpu::Impl::launchKernel()
         auto kernel = bondedKernel<calcVir, calcEner>(cgh,
                                                       kernelParams_,
                                                       kernelBuffers_.d_iatoms,
-                                                      kernelBuffers_.d_vTot,
-                                                      kernelBuffers_.d_forceParams,
-                                                      d_xq_,
-                                                      d_f_,
-                                                      d_fShift_);
+                                                      kernelBuffers_.d_vTot.get_pointer(),
+                                                      kernelBuffers_.d_forceParams.get_pointer(),
+                                                      d_xq_.get_pointer(),
+                                                      d_f_.get_pointer(),
+                                                      d_fShift_.get_pointer());
         cgh.parallel_for<kernelNameType>(rangeAll, kernel);
     });
 

@@ -60,28 +60,23 @@ namespace gmx
 {
 
 template<bool usePbc>
-auto packSendBufKernel(sycl::handler&                                        cgh,
-                       DeviceAccessor<Float3, sycl::access_mode::read_write> a_dataPacked,
-                       DeviceAccessor<Float3, sycl::access_mode::read>       a_data,
-                       DeviceAccessor<int, sycl::access_mode::read>          a_map,
-                       int                                                   mapSize,
-                       Float3                                                coordinateShift)
+static auto packSendBufKernel(Float3* __restrict__ gm_dataPacked,
+                              const Float3* __restrict__ gm_data,
+                              const int* __restrict__ gm_map,
+                              int    mapSize,
+                              Float3 coordinateShift)
 {
-    a_dataPacked.bind(cgh);
-    a_data.bind(cgh);
-    a_map.bind(cgh);
-
     return [=](sycl::id<1> itemIdx) {
         const int threadIndex = itemIdx;
         if (threadIndex < mapSize)
         {
             if constexpr (usePbc)
             {
-                a_dataPacked[itemIdx] = a_data[a_map[itemIdx]] + coordinateShift;
+                gm_dataPacked[itemIdx] = gm_data[gm_map[itemIdx]] + coordinateShift;
             }
             else
             {
-                a_dataPacked[itemIdx] = a_data[a_map[itemIdx]];
+                gm_dataPacked[itemIdx] = gm_data[gm_map[itemIdx]];
             }
         }
     };
@@ -89,34 +84,29 @@ auto packSendBufKernel(sycl::handler&                                        cgh
 
 /*! \brief unpack non-local force data buffer on the GPU using pre-populated "map" containing index
  * information.
- * \param[in]  cgh           SYCL's Command group handler
- * \param[out] a_data        full array of force values
- * \param[in]  a_dataPacked  packed array of force values to be transferred
- * \param[in]  a_map         array of indices defining mapping from full to packed array
- * \param[in]  mapSize       number of elements in map array
+ *
+ * \param[out] gm_data        full array of force values
+ * \param[in]  gm_dataPacked  packed array of force values to be transferred
+ * \param[in]  gm_map         array of indices defining mapping from full to packed array
+ * \param[in]  mapSize        number of elements in map array
  */
 template<bool accumulate>
-auto unpackRecvBufKernel(sycl::handler&                                        cgh,
-                         DeviceAccessor<Float3, sycl::access_mode::read_write> a_data,
-                         DeviceAccessor<Float3, sycl::access_mode::read>       a_dataPacked,
-                         DeviceAccessor<int, sycl::access_mode::read>          a_map,
-                         int                                                   mapSize)
+static auto unpackRecvBufKernel(Float3* __restrict__ gm_data,
+                                const Float3* __restrict__ gm_dataPacked,
+                                const int* __restrict__ gm_map,
+                                int mapSize)
 {
-    a_dataPacked.bind(cgh);
-    a_data.bind(cgh);
-    a_map.bind(cgh);
-
     return [=](sycl::id<1> itemIdx) {
         const int threadIndex = itemIdx;
         if (threadIndex < mapSize)
         {
             if constexpr (accumulate)
             {
-                a_data[a_map[itemIdx]] += a_dataPacked[itemIdx];
+                gm_data[gm_map[itemIdx]] += gm_dataPacked[itemIdx];
             }
             else
             {
-                a_data[a_map[itemIdx]] = a_dataPacked[itemIdx];
+                gm_data[gm_map[itemIdx]] = gm_dataPacked[itemIdx];
             }
         }
     };
@@ -132,7 +122,7 @@ static void launchPackSendBufKernel(const DeviceStream& deviceStream, int xSendS
     sycl::queue          q = deviceStream.stream();
 
     q.submit(GMX_SYCL_DISCARD_EVENT[&](sycl::handler & cgh) {
-        auto kernel = packSendBufKernel<usePbc>(cgh, std::forward<Args>(args)...);
+        auto kernel = packSendBufKernel<usePbc>(std::forward<Args>(args)...);
         cgh.parallel_for<kernelNameType>(range, kernel);
     });
 }
@@ -146,7 +136,7 @@ static void launchUnpackRecvBufKernel(const DeviceStream& deviceStream, int fRec
     sycl::queue          q = deviceStream.stream();
 
     q.submit(GMX_SYCL_DISCARD_EVENT[&](sycl::handler & cgh) {
-        auto kernel = unpackRecvBufKernel<accumulateForces>(cgh, std::forward<Args>(args)...);
+        auto kernel = unpackRecvBufKernel<accumulateForces>(std::forward<Args>(args)...);
         cgh.parallel_for<kernelNameType>(range, kernel);
     });
 }
@@ -169,13 +159,23 @@ void GpuHaloExchange::Impl::launchPackXKernel(const matrix box)
     {
         if (usePBC_)
         {
-            launchPackSendBufKernel<true>(
-                    *haloStream_, size, d_sendBuf_, d_x_, d_indexMap_, size, coordinateShift);
+            launchPackSendBufKernel<true>(*haloStream_,
+                                          size,
+                                          d_sendBuf_.get_pointer(),
+                                          d_x_.get_pointer(),
+                                          d_indexMap_.get_pointer(),
+                                          size,
+                                          coordinateShift);
         }
         else
         {
-            launchPackSendBufKernel<false>(
-                    *haloStream_, size, d_sendBuf_, d_x_, d_indexMap_, size, coordinateShift);
+            launchPackSendBufKernel<false>(*haloStream_,
+                                           size,
+                                           d_sendBuf_.get_pointer(),
+                                           d_x_.get_pointer(),
+                                           d_indexMap_.get_pointer(),
+                                           size,
+                                           coordinateShift);
         }
     }
 }
@@ -189,11 +189,21 @@ void GpuHaloExchange::Impl::launchUnpackFKernel(bool accumulateForces)
     {
         if (accumulateForces)
         {
-            launchUnpackRecvBufKernel<true>(*haloStream_, size, d_f_, d_recvBuf_, d_indexMap_, size);
+            launchUnpackRecvBufKernel<true>(*haloStream_,
+                                            size,
+                                            d_f_.get_pointer(),
+                                            d_recvBuf_.get_pointer(),
+                                            d_indexMap_.get_pointer(),
+                                            size);
         }
         else
         {
-            launchUnpackRecvBufKernel<false>(*haloStream_, size, d_f_, d_recvBuf_, d_indexMap_, size);
+            launchUnpackRecvBufKernel<false>(*haloStream_,
+                                             size,
+                                             d_f_.get_pointer(),
+                                             d_recvBuf_.get_pointer(),
+                                             d_indexMap_.get_pointer(),
+                                             size);
         }
     }
 }

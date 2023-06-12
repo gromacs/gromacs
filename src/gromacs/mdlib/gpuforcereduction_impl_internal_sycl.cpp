@@ -64,36 +64,27 @@ using mode = sycl::access_mode;
 
 //! \brief Function returning the force reduction kernel lambda.
 template<bool addRvecForce, bool accumulateForce>
-static auto reduceKernel(sycl::handler&                                     cgh,
-                         DeviceAccessor<Float3, mode::read>                 a_nbnxmForce,
-                         OptionalAccessor<Float3, mode::read, addRvecForce> a_rvecForceToAdd,
-                         DeviceAccessor<Float3, accumulateForce ? mode::read_write : mode::write> a_forceTotal,
-                         DeviceAccessor<int, mode::read> a_cell,
-                         const int                       atomStart)
+static auto reduceKernel(const Float3* __restrict__ gm_nbnxmForce,
+                         const Float3* __restrict__ gm_rvecForceToAdd /* used iff addRvecForce */,
+                         Float3* __restrict__ gm_forceTotal,
+                         const int* __restrict__ gm_cell,
+                         const int atomStart)
 {
-    a_nbnxmForce.bind(cgh);
-    if constexpr (addRvecForce)
-    {
-        a_rvecForceToAdd.bind(cgh);
-    }
-    a_forceTotal.bind(cgh);
-    a_cell.bind(cgh);
-
     return [=](sycl::id<1> itemIdx) {
         // Set to nbnxnm force, then perhaps accumulate further to it
-        Float3 temp = a_nbnxmForce[a_cell[itemIdx]];
+        Float3 temp = gm_nbnxmForce[gm_cell[itemIdx]];
 
         if constexpr (accumulateForce)
         {
-            temp += a_forceTotal[itemIdx + atomStart];
+            temp += gm_forceTotal[itemIdx + atomStart];
         }
 
         if constexpr (addRvecForce)
         {
-            temp += a_rvecForceToAdd[itemIdx + atomStart];
+            temp += gm_rvecForceToAdd[itemIdx + atomStart];
         }
 
-        a_forceTotal[itemIdx + atomStart] = temp;
+        gm_forceTotal[itemIdx + atomStart] = temp;
     };
 }
 
@@ -101,21 +92,21 @@ static auto reduceKernel(sycl::handler&                                     cgh,
 template<bool addRvecForce, bool accumulateForce>
 static void launchReductionKernel_(const int                   numAtoms,
                                    const int                   atomStart,
-                                   const DeviceBuffer<Float3>& b_nbnxmForce,
-                                   const DeviceBuffer<Float3>& b_rvecForceToAdd,
-                                   DeviceBuffer<Float3>&       b_forceTotal,
-                                   const DeviceBuffer<int>&    b_cell,
+                                   const DeviceBuffer<Float3>& d_nbnxmForce,
+                                   const DeviceBuffer<Float3>& d_rvecForceToAdd,
+                                   DeviceBuffer<Float3>&       d_forceTotal,
+                                   const DeviceBuffer<int>&    d_cell,
                                    const DeviceStream&         deviceStream)
 {
     const sycl::range<1> rangeNumAtoms(numAtoms);
     sycl::queue          queue = deviceStream.stream();
 
-    // We only need parts of b_rvecForceToAdd and b_forceTotal, so sub-buffers would be appropriate.
-    // But hipSYCL does not support them yet, nor plans to. See Issue #4019.
-
     queue.submit(GMX_SYCL_DISCARD_EVENT[&](sycl::handler & cgh) {
-        auto kernel = reduceKernel<addRvecForce, accumulateForce>(
-                cgh, b_nbnxmForce, b_rvecForceToAdd, b_forceTotal, b_cell, atomStart);
+        auto kernel = reduceKernel<addRvecForce, accumulateForce>(d_nbnxmForce.get_pointer(),
+                                                                  d_rvecForceToAdd.get_pointer(),
+                                                                  d_forceTotal.get_pointer(),
+                                                                  d_cell.get_pointer(),
+                                                                  atomStart);
         cgh.parallel_for<ReduceKernel<addRvecForce, accumulateForce>>(rangeNumAtoms, kernel);
     });
 }

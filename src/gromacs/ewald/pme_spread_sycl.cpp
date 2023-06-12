@@ -174,27 +174,26 @@ inline void spread_charges(const float                  atomCharge,
  * \tparam subGroupSize   Size of the sub-group.
  */
 template<int order, bool computeSplines, bool spreadCharges, bool wrapX, bool wrapY, int numGrids, bool writeGlobal, ThreadsPerAtom threadsPerAtom, int subGroupSize>
-auto pmeSplineAndSpreadKernel(
-        sycl::handler&                                                            cgh,
-        const int                                                                 nAtoms,
-        OptionalAccessor<float, mode::read_write, spreadCharges>                  a_realGrid_0,
-        OptionalAccessor<float, mode::read_write, numGrids == 2 && spreadCharges> a_realGrid_1,
-        OptionalAccessor<float, mode::read_write, writeGlobal || computeSplines>  a_theta,
-        OptionalAccessor<float, mode::write, computeSplines && writeGlobal>       a_dtheta,
-        OptionalAccessor<int, mode::write, writeGlobal>                           a_gridlineIndices,
-        OptionalAccessor<float, mode::read, computeSplines>                 a_fractShiftsTable,
-        OptionalAccessor<int, mode::read, computeSplines>                   a_gridlineIndicesTable,
-        DeviceAccessor<float, mode::read>                                   a_coefficients_0,
-        OptionalAccessor<float, mode::read, numGrids == 2 && spreadCharges> a_coefficients_1,
-        OptionalAccessor<Float3, mode::read, computeSplines>                a_coordinates,
-        const gmx::IVec                                                     tablesOffsets,
-        const gmx::IVec                                                     realGridSize,
-        const gmx::RVec                                                     realGridSizeFP,
-        const gmx::IVec                                                     realGridSizePadded,
-        const gmx::RVec                                                     currentRecipBox0,
-        const gmx::RVec                                                     currentRecipBox1,
-        const gmx::RVec                                                     currentRecipBox2,
-        const PmeGpuPipeliningParams                                        pipeliningParams)
+auto pmeSplineAndSpreadKernel(sycl::handler& cgh,
+                              const int      nAtoms,
+                              float* __restrict__ gm_realGrid_0,
+                              float* __restrict__ gm_realGrid_1,
+                              float* __restrict__ gm_theta,
+                              float* __restrict__ gm_dtheta,
+                              int* __restrict__ gm_gridlineIndices,
+                              const float* __restrict__ gm_fractShiftsTable,
+                              const int* __restrict__ gm_gridlineIndicesTable,
+                              const float* __restrict__ gm_coefficients_0,
+                              const float* __restrict__ gm_coefficients_1,
+                              const Float3* __restrict__ gm_coordinates,
+                              const gmx::IVec              tablesOffsets,
+                              const gmx::IVec              realGridSize,
+                              const gmx::RVec              realGridSizeFP,
+                              const gmx::IVec              realGridSizePadded,
+                              const gmx::RVec              currentRecipBox0,
+                              const gmx::RVec              currentRecipBox1,
+                              const gmx::RVec              currentRecipBox2,
+                              const PmeGpuPipeliningParams pipeliningParams)
 {
     constexpr int threadsPerAtomValue = (threadsPerAtom == ThreadsPerAtom::Order) ? order : order * order;
     constexpr int spreadMaxThreadsPerBlock = c_spreadMaxWarpsPerBlock * subGroupSize;
@@ -202,35 +201,6 @@ auto pmeSplineAndSpreadKernel(
     // Number of atoms processed by a single warp in spread and gather
     static_assert(subGroupSize >= threadsPerAtomValue);
     constexpr int atomsPerWarp = subGroupSize / threadsPerAtomValue;
-
-    if constexpr (spreadCharges)
-    {
-        a_realGrid_0.bind(cgh);
-    }
-    if constexpr (writeGlobal || computeSplines)
-    {
-        a_theta.bind(cgh);
-    }
-    if constexpr (computeSplines && writeGlobal)
-    {
-        a_dtheta.bind(cgh);
-    }
-    if constexpr (writeGlobal)
-    {
-        a_gridlineIndices.bind(cgh);
-    }
-    if constexpr (computeSplines)
-    {
-        a_fractShiftsTable.bind(cgh);
-        a_gridlineIndicesTable.bind(cgh);
-        a_coordinates.bind(cgh);
-    }
-    a_coefficients_0.bind(cgh);
-    if constexpr (numGrids == 2 && spreadCharges)
-    {
-        a_realGrid_1.bind(cgh);
-        a_coefficients_1.bind(cgh);
-    }
 
     // Gridline indices, ivec
     sycl_2020::local_accessor<int, 1> sm_gridlineIndices(sycl::range<1>(atomsPerBlock * DIM), cgh);
@@ -278,17 +248,16 @@ auto pmeSplineAndSpreadKernel(
         }
 
         /* Charges, required for both spline and spread */
-        pmeGpuStageAtomData<float, atomsPerBlock, 1>(
-                sm_coefficients.get_pointer(),
-                a_coefficients_0.get_pointer() + pipeliningParams.pipelineAtomStart,
-                itemIdx);
+        pmeGpuStageAtomData<float, atomsPerBlock, 1>(sm_coefficients.get_pointer(),
+                                                     gm_coefficients_0 + pipeliningParams.pipelineAtomStart,
+                                                     itemIdx);
         itemIdx.barrier(fence_space::local_space);
         const float atomCharge = sm_coefficients[atomIndexLocal];
 
         if constexpr (computeSplines)
         {
             // SYCL-TODO: Use prefetching? Issue #4153.
-            const Float3 atomX = a_coordinates[atomIndexGlobal];
+            const Float3 atomX = gm_coordinates[atomIndexGlobal];
             calculateSplines<order, atomsPerBlock, atomsPerWarp, false, writeGlobal, numGrids, subGroupSize>(
                     atomIndexOffset,
                     atomX,
@@ -298,11 +267,11 @@ auto pmeSplineAndSpreadKernel(
                     currentRecipBox0,
                     currentRecipBox1,
                     currentRecipBox2,
-                    a_theta.get_pointer(),
-                    a_dtheta.get_pointer(),
-                    a_gridlineIndices.get_pointer(),
-                    a_fractShiftsTable.get_pointer(),
-                    a_gridlineIndicesTable.get_pointer(),
+                    gm_theta,
+                    gm_dtheta,
+                    gm_gridlineIndices,
+                    gm_fractShiftsTable,
+                    gm_gridlineIndicesTable,
                     sm_theta.get_pointer(),
                     nullptr,
                     sm_gridlineIndices.get_pointer(),
@@ -317,11 +286,10 @@ auto pmeSplineAndSpreadKernel(
              * as in after running the spline kernel)
              */
             /* Spline data - only thetas (dthetas will only be needed in gather) */
-            pmeGpuStageAtomData<float, atomsPerBlock, DIM * order>(
-                    sm_theta.get_pointer(), a_theta.get_pointer(), itemIdx);
+            pmeGpuStageAtomData<float, atomsPerBlock, DIM * order>(sm_theta.get_pointer(), gm_theta, itemIdx);
             /* Gridline indices */
             pmeGpuStageAtomData<int, atomsPerBlock, DIM>(
-                    sm_gridlineIndices.get_pointer(), a_gridlineIndices.get_pointer(), itemIdx);
+                    sm_gridlineIndices.get_pointer(), gm_gridlineIndices, itemIdx);
 
             itemIdx.barrier(fence_space::local_space);
         }
@@ -335,7 +303,7 @@ auto pmeSplineAndSpreadKernel(
                         atomCharge,
                         realGridSize,
                         realGridSizePadded,
-                        a_realGrid_0.get_pointer(),
+                        gm_realGrid_0,
                         sm_gridlineIndices.get_pointer(),
                         sm_theta.get_pointer(),
                         itemIdx);
@@ -344,10 +312,9 @@ auto pmeSplineAndSpreadKernel(
         if constexpr (numGrids == 2 && spreadCharges)
         {
             itemIdx.barrier(fence_space::local_space);
-            pmeGpuStageAtomData<float, atomsPerBlock, 1>(
-                    sm_coefficients.get_pointer(),
-                    a_coefficients_1.get_pointer() + pipeliningParams.pipelineAtomStart,
-                    itemIdx);
+            pmeGpuStageAtomData<float, atomsPerBlock, 1>(sm_coefficients.get_pointer(),
+                                                         gm_coefficients_1 + pipeliningParams.pipelineAtomStart,
+                                                         itemIdx);
             itemIdx.barrier(fence_space::local_space);
             const float atomCharge = sm_coefficients[atomIndexLocal];
             if (atomIndexGlobal < nAtoms)
@@ -358,7 +325,7 @@ auto pmeSplineAndSpreadKernel(
                             atomCharge,
                             realGridSize,
                             realGridSizePadded,
-                            a_realGrid_1.get_pointer(),
+                            gm_realGrid_1,
                             sm_gridlineIndices.get_pointer(),
                             sm_theta.get_pointer(),
                             itemIdx);
@@ -418,16 +385,16 @@ void PmeSplineAndSpreadKernel<order, computeSplines, spreadCharges, wrapX, wrapY
                 pmeSplineAndSpreadKernel<order, computeSplines, spreadCharges, wrapX, wrapY, numGrids, writeGlobal, threadsPerAtom, subGroupSize>(
                         cgh,
                         atomParams_->nAtoms,
-                        gridParams_->d_realGrid[0],
-                        gridParams_->d_realGrid[1],
-                        atomParams_->d_theta,
-                        atomParams_->d_dtheta,
-                        atomParams_->d_gridlineIndices,
-                        gridParams_->d_fractShiftsTable,
-                        gridParams_->d_gridlineIndicesTable,
-                        atomParams_->d_coefficients[0],
-                        atomParams_->d_coefficients[1],
-                        atomParams_->d_coordinates,
+                        gridParams_->d_realGrid[0].get_pointer(),
+                        gridParams_->d_realGrid[1].get_pointer(),
+                        atomParams_->d_theta.get_pointer(),
+                        atomParams_->d_dtheta.get_pointer(),
+                        atomParams_->d_gridlineIndices.get_pointer(),
+                        gridParams_->d_fractShiftsTable.get_pointer(),
+                        gridParams_->d_gridlineIndicesTable.get_pointer(),
+                        atomParams_->d_coefficients[0].get_pointer(),
+                        atomParams_->d_coefficients[1].get_pointer(),
+                        atomParams_->d_coordinates.get_pointer(),
                         gridParams_->tablesOffsets,
                         gridParams_->realGridSize,
                         gridParams_->realGridSizeFP,

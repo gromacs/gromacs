@@ -54,47 +54,39 @@ namespace Nbnxm
 
 /*! \brief SYCL kernel for transforming position coordinates from rvec to nbnxm layout.
  *
- * \param         cgh                 SYCL's command group handler.
- * \param[out]    a_xq                Coordinates buffer in nbnxm layout.
- * \param[in]     a_x                 Coordinates buffer.
- * \param[in]     a_atomIndex         Atom index mapping.
- * \param[in]     a_numAtoms          Array of number of atoms.
- * \param[in]     a_cellIndex         Array of cell indices.
- * \param[in]     cellOffset          First cell.
- * \param[in]     numAtomsPerCell     Number of atoms per cell.
- * \param[in]     columnsOffset       Index if the first column in the cell.
+ * \param[out]    gm_xq                Coordinates buffer in nbnxm layout.
+ * \param[in]     gm_x                 Coordinates buffer.
+ * \param[in]     gm_atomIndex         Atom index mapping.
+ * \param[in]     gm_numAtoms          Array of number of atoms.
+ * \param[in]     gm_cellIndex         Array of cell indices.
+ * \param[in]     cellOffset           First cell.
+ * \param[in]     numAtomsPerCell      Number of atoms per cell.
+ * \param[in]     columnsOffset        Index if the first column in the cell.
  */
-static auto nbnxmKernelTransformXToXq(sycl::handler&                           cgh,
-                                      DeviceAccessor<Float4, mode::read_write> a_xq,
-                                      DeviceAccessor<Float3, mode::read>       a_x,
-                                      DeviceAccessor<int, mode::read>          a_atomIndex,
-                                      DeviceAccessor<int, mode::read>          a_numAtoms,
-                                      DeviceAccessor<int, mode::read>          a_cellIndex,
-                                      int                                      cellOffset,
-                                      int                                      numAtomsPerCell,
-                                      int                                      columnsOffset)
+static auto nbnxmKernelTransformXToXq(Float4* __restrict__ gm_xq,
+                                      const Float3* __restrict__ gm_x,
+                                      const int* __restrict__ gm_atomIndex,
+                                      const int* __restrict__ gm_numAtoms,
+                                      const int* __restrict__ gm_cellIndex,
+                                      int cellOffset,
+                                      int numAtomsPerCell,
+                                      int columnsOffset)
 {
-    a_xq.bind(cgh);
-    a_x.bind(cgh);
-    a_atomIndex.bind(cgh);
-    a_numAtoms.bind(cgh);
-    a_cellIndex.bind(cgh);
-
     return [=](sycl::id<2> itemIdx) {
         // Map cell-level parallelism to y component of block index.
         const int cxy = itemIdx.get(1) + columnsOffset;
 
-        const int numAtoms = a_numAtoms[cxy];
-        const int offset   = (cellOffset + a_cellIndex[cxy]) * numAtomsPerCell;
+        const int numAtoms = gm_numAtoms[cxy];
+        const int offset   = (cellOffset + gm_cellIndex[cxy]) * numAtomsPerCell;
 
         const int threadIndex = itemIdx.get(0);
 
         // Perform layout conversion of each element.
         if (threadIndex < numAtoms)
         {
-            const float  q             = a_xq[threadIndex + offset][3];
-            const Float3 xNew          = a_x[a_atomIndex[threadIndex + offset]];
-            a_xq[threadIndex + offset] = Float4(xNew[0], xNew[1], xNew[2], q);
+            const float  q              = gm_xq[threadIndex + offset][3];
+            const Float3 xNew           = gm_x[gm_atomIndex[threadIndex + offset]];
+            gm_xq[threadIndex + offset] = Float4(xNew[0], xNew[1], xNew[2], q);
         }
     };
 }
@@ -117,12 +109,11 @@ void launchNbnxmKernelTransformXToXq(const Grid&          grid,
     sycl::queue          q = deviceStream.stream();
 
     q.submit(GMX_SYCL_DISCARD_EVENT[&](sycl::handler & cgh) {
-        auto kernel = nbnxmKernelTransformXToXq(cgh,
-                                                nb->atdat->xq,
-                                                d_x,
-                                                nb->atomIndices,
-                                                nb->cxy_na,
-                                                nb->cxy_ind,
+        auto kernel = nbnxmKernelTransformXToXq(nb->atdat->xq.get_pointer(),
+                                                d_x.get_pointer(),
+                                                nb->atomIndices.get_pointer(),
+                                                nb->cxy_na.get_pointer(),
+                                                nb->cxy_ind.get_pointer(),
                                                 grid.cellOffset(),
                                                 grid.numAtomsPerCell(),
                                                 numColumnsMax * gridId);

@@ -61,19 +61,12 @@ using mode = sycl::access_mode;
  * \tparam     subGroupSize             Describes the width of a SYCL subgroup
  */
 template<GridOrdering gridOrdering, bool computeEnergyAndVirial, int subGroupSize>
-auto makeSolveKernel(sycl::handler&                    cgh,
-                     DeviceAccessor<float, mode::read> a_splineModuli,
-                     SolveKernelParams                 solveKernelParams,
-                     OptionalAccessor<float, mode::read_write, computeEnergyAndVirial> a_virialAndEnergy,
-                     DeviceAccessor<float, mode::read_write> a_fourierGrid)
+auto makeSolveKernel(sycl::handler& cgh,
+                     const float* __restrict__ gm_splineModuli,
+                     SolveKernelParams solveKernelParams,
+                     float* __restrict__ gm_virialAndEnergy,
+                     float* __restrict__ gm_fourierGrid_)
 {
-    a_splineModuli.bind(cgh);
-    if constexpr (computeEnergyAndVirial)
-    {
-        a_virialAndEnergy.bind(cgh);
-    }
-    a_fourierGrid.bind(cgh);
-
     /* Reduce 7 outputs per warp in the shared memory */
     const int stride =
             8; // this is c_virialAndEnergyCount==7 rounded up to power of 2 for convenience, hence the assert
@@ -113,11 +106,11 @@ auto makeSolveKernel(sycl::handler&                    cgh,
 
         /* Global memory pointers */
         const float* __restrict__ gm_splineValueMajor =
-                a_splineModuli.get_pointer() + solveKernelParams.splineValuesOffset[majorDim];
+                gm_splineModuli + solveKernelParams.splineValuesOffset[majorDim];
         const float* __restrict__ gm_splineValueMiddle =
-                a_splineModuli.get_pointer() + solveKernelParams.splineValuesOffset[middleDim];
+                gm_splineModuli + solveKernelParams.splineValuesOffset[middleDim];
         const float* __restrict__ gm_splineValueMinor =
-                a_splineModuli.get_pointer() + solveKernelParams.splineValuesOffset[minorDim];
+                gm_splineModuli + solveKernelParams.splineValuesOffset[minorDim];
         // The Fourier grid is allocated as float values, even though
         // it logically contains complex values. (It also can be
         // the same memory as the real grid for in-place transforms.)
@@ -131,7 +124,7 @@ auto makeSolveKernel(sycl::handler&                    cgh,
         // fail because of this mismatch. So, we extract the
         // underlying global_ptr and use that to construct
         // sycl::float2 values when needed.
-        sycl::global_ptr<float> gm_fourierGrid = a_fourierGrid.get_pointer();
+        sycl::global_ptr<float> gm_fourierGrid = gm_fourierGrid_;
 
         /* Various grid sizes and indices */
         const int localOffsetMinor  = solveKernelParams.kOffsets[minorDim];
@@ -379,7 +372,7 @@ auto makeSolveKernel(sycl::handler&                    cgh,
                 if (validComponentIndex)
                 {
                     SYCL_ASSERT(sycl_2020::isfinite(output));
-                    atomicFetchAdd(a_virialAndEnergy[componentIndex], output);
+                    atomicFetchAdd(gm_virialAndEnergy[componentIndex], output);
                 }
             }
         }
@@ -440,10 +433,10 @@ void PmeSolveKernel<gridOrdering, computeEnergyAndVirial, gridIndex, subGroupSiz
     q.submit(GMX_SYCL_DISCARD_EVENT[&](sycl::handler & cgh) {
         auto kernel = makeSolveKernel<gridOrdering, computeEnergyAndVirial, subGroupSize>(
                 cgh,
-                gridParams_->d_splineModuli[gridIndex],
+                gridParams_->d_splineModuli[gridIndex].get_pointer(),
                 solveKernelParams_,
-                constParams_->d_virialAndEnergy[gridIndex],
-                gridParams_->d_fftComplexGrid[gridIndex]);
+                constParams_->d_virialAndEnergy[gridIndex].get_pointer(),
+                gridParams_->d_fftComplexGrid[gridIndex].get_pointer());
         cgh.parallel_for<KernelNameType>(range, kernel);
     });
 

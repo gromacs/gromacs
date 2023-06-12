@@ -63,23 +63,17 @@ namespace Nbnxm
  *
  */
 template<bool haveFreshList>
-auto nbnxmKernelPruneOnly(sycl::handler&                                      cgh,
-                          DeviceAccessor<Float4, mode::read>                  a_xq,
-                          DeviceAccessor<Float3, mode::read>                  a_shiftVec,
-                          DeviceAccessor<nbnxn_cj_packed_t, mode::read_write> a_plistCJPacked,
-                          DeviceAccessor<nbnxn_sci_t, mode::read>             a_plistSci,
-                          DeviceAccessor<unsigned int, haveFreshList ? mode::write : mode::read> a_plistIMask,
+auto nbnxmKernelPruneOnly(sycl::handler& cgh,
+                          const Float4* __restrict__ gm_xq,
+                          const Float3* __restrict__ gm_shiftVec,
+                          nbnxn_cj_packed_t* __restrict__ gm_plistCJPacked,
+                          const nbnxn_sci_t* __restrict__ gm_plistSci,
+                          unsigned int* __restrict__ gm_plistIMask,
                           const float rlistOuterSq,
                           const float rlistInnerSq,
                           const int   numParts,
                           const int   part)
 {
-    a_xq.bind(cgh);
-    a_shiftVec.bind(cgh);
-    a_plistCJPacked.bind(cgh);
-    a_plistSci.bind(cgh);
-    a_plistIMask.bind(cgh);
-
     /* shmem buffer for i x+q pre-loading */
     sycl_2020::local_accessor<Float4, 1> sm_xq(
             sycl::range<1>(c_nbnxnGpuNumClusterPerSupercluster * c_clSize), cgh);
@@ -111,7 +105,7 @@ auto nbnxmKernelPruneOnly(sycl::handler&                                      cg
         const unsigned        widx = tidx / warpSize;
 
         // my i super-cluster's index = sciOffset + current bidx * numParts + part
-        const nbnxn_sci_t nbSci          = a_plistSci[bidx * numParts + part];
+        const nbnxn_sci_t nbSci          = gm_plistSci[bidx * numParts + part];
         const int         sci            = nbSci.sci;           /* super-cluster */
         const int         cijPackedBegin = nbSci.cjPackedBegin; /* first ...*/
         const int         cijPackedEnd   = nbSci.cjPackedEnd;   /* and last index of j clusters */
@@ -129,8 +123,8 @@ auto nbnxmKernelPruneOnly(sycl::handler&                                      cg
 
                 /* We don't need q, but using float4 in shmem avoids bank conflicts.
                    (but it also wastes L2 bandwidth). */
-                const Float4 xq    = a_xq[ai];
-                const Float3 shift = a_shiftVec[nbSci.shift];
+                const Float4 xq    = gm_xq[ai];
+                const Float3 shift = gm_shiftVec[nbSci.shift];
                 const Float4 xi(xq[0] + shift[0], xq[1] + shift[1], xq[2] + shift[2], xq[3]);
                 sm_xq[(tidxj + i) * c_clSize + tidxi] = xi;
             }
@@ -148,7 +142,7 @@ auto nbnxmKernelPruneOnly(sycl::handler&                                      cg
             if constexpr (haveFreshList)
             {
                 /* Read the mask from the list transferred from the CPU */
-                imaskFull = UNIFORM_LOAD_CLUSTER_PAIR_DATA(a_plistCJPacked[jPacked].imei[widx].imask);
+                imaskFull = UNIFORM_LOAD_CLUSTER_PAIR_DATA(gm_plistCJPacked[jPacked].imei[widx].imask);
                 /* We attempt to prune all pairs present in the original list */
                 imaskCheck = imaskFull;
                 imaskNew   = 0;
@@ -157,9 +151,9 @@ auto nbnxmKernelPruneOnly(sycl::handler&                                      cg
             {
                 /* Read the mask from the "warp-pruned" by rlistOuter mask array */
                 imaskFull = UNIFORM_LOAD_CLUSTER_PAIR_DATA(
-                        a_plistIMask[jPacked * c_nbnxnGpuClusterpairSplit + widx]);
+                        gm_plistIMask[jPacked * c_nbnxnGpuClusterpairSplit + widx]);
                 /* Read the old rolling pruned mask, use as a base for new */
-                imaskNew = UNIFORM_LOAD_CLUSTER_PAIR_DATA(a_plistCJPacked[jPacked].imei[widx].imask);
+                imaskNew = UNIFORM_LOAD_CLUSTER_PAIR_DATA(gm_plistCJPacked[jPacked].imei[widx].imask);
                 /* We only need to check pairs with different mask */
                 imaskCheck = (imaskNew ^ imaskFull);
             }
@@ -172,11 +166,11 @@ auto nbnxmKernelPruneOnly(sycl::handler&                                      cg
                     {
                         unsigned mask_ji = (1U << (jm * c_nbnxnGpuNumClusterPerSupercluster));
                         // SYCL-TODO: Reevaluate prefetching methods
-                        const int cj = a_plistCJPacked[jPacked].cj[jm];
+                        const int cj = gm_plistCJPacked[jPacked].cj[jm];
                         const int aj = cj * c_clSize + tidxj;
 
                         /* load j atom data */
-                        const Float4 tmp = a_xq[aj];
+                        const Float4 tmp = gm_xq[aj];
                         const Float3 xj(tmp[0], tmp[1], tmp[2]);
 
                         for (int i = 0; i < c_nbnxnGpuNumClusterPerSupercluster; i++)
@@ -213,10 +207,10 @@ auto nbnxmKernelPruneOnly(sycl::handler&                                      cg
                 if constexpr (haveFreshList)
                 {
                     /* copy the list pruned to rlistOuter to a separate buffer */
-                    a_plistIMask[jPacked * c_nbnxnGpuClusterpairSplit + widx] = imaskFull;
+                    gm_plistIMask[jPacked * c_nbnxnGpuClusterpairSplit + widx] = imaskFull;
                 }
                 /* update the imask with only the pairs up to rlistInner */
-                a_plistCJPacked[jPacked].imei[widx].imask = imaskNew;
+                gm_plistCJPacked[jPacked].imei[widx].imask = imaskNew;
             } // (imaskCheck)
         } // for (int jPacked = cijPackedBegin + tidxz; jPacked < cijPackedEnd; jPacked += c_syclPruneKernelJPackedConcurrency)
     };
@@ -272,11 +266,11 @@ void launchNbnxmKernelPruneOnly(NbnxmGpu*                 nb,
     chooseAndLaunchNbnxmKernelPruneOnly(haveFreshList,
                                         deviceStream,
                                         numSciInPart,
-                                        adat->xq,
-                                        adat->shiftVec,
-                                        plist->cjPacked,
-                                        plist->sci,
-                                        plist->imask,
+                                        adat->xq.get_pointer(),
+                                        adat->shiftVec.get_pointer(),
+                                        plist->cjPacked.get_pointer(),
+                                        plist->sci.get_pointer(),
+                                        plist->imask.get_pointer(),
                                         nbp->rlistOuter_sq,
                                         nbp->rlistInner_sq,
                                         numParts,

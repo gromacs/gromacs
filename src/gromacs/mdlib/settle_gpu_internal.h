@@ -68,7 +68,7 @@ namespace gmx
  * \param[in]     invdt             Reciprocal timestep (to scale Lagrange
  *                                  multipliers when velocities are updated)
  * \param[in]     computeVirial     If virial should be updated.
- * \param[in,out] virialScaled      Scaled virial tensor to be updated.
+ * \param[in,out] d_virialScaled      Scaled virial tensor to be updated.
  * \param[in]     pbcAiuc           PBC data.
  * \param[in]     deviceStream      Device stream to launch kernel in.
  */
@@ -81,7 +81,7 @@ void launchSettleGpuKernel(int                                numSettles,
                            DeviceBuffer<Float3>               d_v,
                            real                               invdt,
                            bool                               computeVirial,
-                           DeviceBuffer<float>                virialScaled,
+                           DeviceBuffer<float>                d_virialScaled,
                            const PbcAiuc&                     pbcAiuc,
                            const DeviceStream&                deviceStream);
 

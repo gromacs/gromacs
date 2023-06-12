@@ -73,51 +73,39 @@ public:
     /*! \brief
      * Returns the pack kernel
      *
-     * \param[in] cgh                       SYCL's command group handler.
-     * \param[in] myGridX,myGridY           Local domain size in X and Y dimension
-     * \param[in] pmeSize                   Local PME grid size
-     * \param[in] a_realGrid                PME device grid
-     * \param[out] a_transferGridUp         Device array used to pack data to go up
-     * \param[out] a_transferGridDown       Device array used to pack data to go down
-     * \param[out] a_transferGridLeft       Device array used to pack data to go left
-     * \param[out] a_transferGridRight      Device array used to pack data to go right
-     * \param[out] a_transferGridUpLeft     Device array used to pack data to go up+left
-     * \param[out] a_transferGridDownLeft   Device array used to pack data to go down+left
-     * \param[out] a_transferGridUpRight    Device array used to pack data to go up+right
-     * \param[out] a_transferGridDownRight  Device array used to pack data to go down+right
+     * \param[in] myGridX,myGridY            Local domain size in X and Y dimension
+     * \param[in] pmeSize                    Local PME grid size
+     * \param[in] gm_realGrid                PME device grid
+     * \param[out] gm_transferGridUp         Device array used to pack data to go up
+     * \param[out] gm_transferGridDown       Device array used to pack data to go down
+     * \param[out] gm_transferGridLeft       Device array used to pack data to go left
+     * \param[out] gm_transferGridRight      Device array used to pack data to go right
+     * \param[out] gm_transferGridUpLeft     Device array used to pack data to go up+left
+     * \param[out] gm_transferGridDownLeft   Device array used to pack data to go down+left
+     * \param[out] gm_transferGridUpRight    Device array used to pack data to go up+right
+     * \param[out] gm_transferGridDownRight  Device array used to pack data to go down+right
      * \param[in] overlapSizeUp,overlapSizeDown,overlapSizeLeft,overlapSizeRight
-     *                                      Halo size in 4 directions
-     * \tparam    subGroupSize              Size of the sub-group.
+     *                                       Halo size in 4 directions
+     * \tparam    subGroupSize               Size of the sub-group.
      */
     template<int subGroupSize>
-    static auto kernel(sycl::handler&                     cgh,
-                       size_t                             myGridX,
-                       size_t                             myGridY,
-                       sycl::uint3                        pmeSize,
-                       DeviceAccessor<float, mode::read>  a_realGrid,
-                       DeviceAccessor<float, mode::write> a_transferGridUp,
-                       DeviceAccessor<float, mode::write> a_transferGridDown,
-                       DeviceAccessor<float, mode::write> a_transferGridLeft,
-                       DeviceAccessor<float, mode::write> a_transferGridRight,
-                       DeviceAccessor<float, mode::write> a_transferGridUpLeft,
-                       DeviceAccessor<float, mode::write> a_transferGridDownLeft,
-                       DeviceAccessor<float, mode::write> a_transferGridUpRight,
-                       DeviceAccessor<float, mode::write> a_transferGridDownRight,
-                       const size_t                       overlapSizeUp,
-                       const size_t                       overlapSizeDown,
-                       const size_t                       overlapSizeLeft,
-                       const size_t                       overlapSizeRight)
+    static auto kernel(size_t      myGridX,
+                       size_t      myGridY,
+                       sycl::uint3 pmeSize,
+                       const float* __restrict__ gm_realGrid,
+                       float* __restrict__ gm_transferGridUp,
+                       float* __restrict__ gm_transferGridDown,
+                       float* __restrict__ gm_transferGridLeft,
+                       float* __restrict__ gm_transferGridRight,
+                       float* __restrict__ gm_transferGridUpLeft,
+                       float* __restrict__ gm_transferGridDownLeft,
+                       float* __restrict__ gm_transferGridUpRight,
+                       float* __restrict__ gm_transferGridDownRight,
+                       const size_t overlapSizeUp,
+                       const size_t overlapSizeDown,
+                       const size_t overlapSizeLeft,
+                       const size_t overlapSizeRight)
     {
-        a_realGrid.bind(cgh);
-        a_transferGridUp.bind(cgh);
-        a_transferGridDown.bind(cgh);
-        a_transferGridLeft.bind(cgh);
-        a_transferGridRight.bind(cgh);
-        a_transferGridUpLeft.bind(cgh);
-        a_transferGridDownLeft.bind(cgh);
-        a_transferGridUpRight.bind(cgh);
-        a_transferGridDownRight.bind(cgh);
-
         return [=](sycl::nd_item<3> item_ct1) [[intel::reqd_sub_group_size(subGroupSize)]]
         {
             size_t iz = item_ct1.get_local_id(2) + item_ct1.get_group(2) * item_ct1.get_local_range(2);
@@ -136,8 +124,8 @@ public:
             {
                 size_t pmeIndex = (ix + pmeSize.x() - overlapSizeUp) * pmeSize.y() * pmeSize.z()
                                   + iy * pmeSize.z() + iz;
-                size_t packedIndex            = ix * myGridY * pmeSize.z() + iy * pmeSize.z() + iz;
-                a_transferGridUp[packedIndex] = a_realGrid[pmeIndex];
+                size_t packedIndex             = ix * myGridY * pmeSize.z() + iy * pmeSize.z() + iz;
+                gm_transferGridUp[packedIndex] = gm_realGrid[pmeIndex];
             }
 
             // down
@@ -147,7 +135,7 @@ public:
                         (ix + overlapSizeDown) * pmeSize.y() * pmeSize.z() + iy * pmeSize.z() + iz;
                 size_t packedIndex = (ix - (myGridX - overlapSizeDown)) * myGridY * pmeSize.z()
                                      + iy * pmeSize.z() + iz;
-                a_transferGridDown[packedIndex] = a_realGrid[pmeIndex];
+                gm_transferGridDown[packedIndex] = gm_realGrid[pmeIndex];
             }
 
             // left
@@ -156,7 +144,7 @@ public:
                 size_t pmeIndex = ix * pmeSize.y() * pmeSize.z()
                                   + (iy + pmeSize.y() - overlapSizeLeft) * pmeSize.z() + iz;
                 size_t packedIndex = ix * overlapSizeLeft * pmeSize.z() + iy * pmeSize.z() + iz;
-                a_transferGridLeft[packedIndex] = a_realGrid[pmeIndex];
+                gm_transferGridLeft[packedIndex] = gm_realGrid[pmeIndex];
             }
 
             // right
@@ -166,7 +154,7 @@ public:
                         ix * pmeSize.y() * pmeSize.z() + (iy + overlapSizeRight) * pmeSize.z() + iz;
                 size_t packedIndex = ix * overlapSizeRight * pmeSize.z()
                                      + (iy - (myGridY - overlapSizeRight)) * pmeSize.z() + iz;
-                a_transferGridRight[packedIndex] = a_realGrid[pmeIndex];
+                gm_transferGridRight[packedIndex] = gm_realGrid[pmeIndex];
             }
 
             // up left
@@ -175,7 +163,7 @@ public:
                 size_t pmeIndex = (ix + pmeSize.x() - overlapSizeUp) * pmeSize.y() * pmeSize.z()
                                   + (iy + pmeSize.y() - overlapSizeLeft) * pmeSize.z() + iz;
                 size_t packedIndex = ix * overlapSizeLeft * pmeSize.z() + iy * pmeSize.z() + iz;
-                a_transferGridUpLeft[packedIndex] = a_realGrid[pmeIndex];
+                gm_transferGridUpLeft[packedIndex] = gm_realGrid[pmeIndex];
             }
 
             // down left
@@ -185,7 +173,7 @@ public:
                                   + (iy + pmeSize.y() - overlapSizeLeft) * pmeSize.z() + iz;
                 size_t packedIndex = (ix - (myGridX - overlapSizeDown)) * overlapSizeLeft * pmeSize.z()
                                      + iy * pmeSize.z() + iz;
-                a_transferGridDownLeft[packedIndex] = a_realGrid[pmeIndex];
+                gm_transferGridDownLeft[packedIndex] = gm_realGrid[pmeIndex];
             }
 
             // up right
@@ -195,7 +183,7 @@ public:
                                   + (iy + overlapSizeRight) * pmeSize.z() + iz;
                 size_t packedIndex = ix * overlapSizeRight * pmeSize.z()
                                      + (iy - (myGridY - overlapSizeRight)) * pmeSize.z() + iz;
-                a_transferGridUpRight[packedIndex] = a_realGrid[pmeIndex];
+                gm_transferGridUpRight[packedIndex] = gm_realGrid[pmeIndex];
             }
 
             // down right
@@ -205,7 +193,7 @@ public:
                                   + (iy + overlapSizeRight) * pmeSize.z() + iz;
                 size_t packedIndex = (ix - (myGridX - overlapSizeDown)) * overlapSizeRight * pmeSize.z()
                                      + (iy - (myGridY - overlapSizeRight)) * pmeSize.z() + iz;
-                a_transferGridDownRight[packedIndex] = a_realGrid[pmeIndex];
+                gm_transferGridDownRight[packedIndex] = gm_realGrid[pmeIndex];
             }
         };
     }
@@ -218,51 +206,39 @@ public:
     /*! \brief
      * Returns the unpack kernel
      *
-     * \param[in] cgh                       SYCL's command group handler.
-     * \param[in] myGridX,myGridY           Local domain size in X and Y dimension
-     * \param[in] pmeSize                   Local PME grid size
-     * \param[in] a_realGrid                PME device grid
-     * \param[out] a_transferGridUp         Device array used to pack data to go up
-     * \param[out] a_transferGridDown       Device array used to pack data to go down
-     * \param[out] a_transferGridLeft       Device array used to pack data to go left
-     * \param[out] a_transferGridRight      Device array used to pack data to go right
-     * \param[out] a_transferGridUpLeft     Device array used to pack data to go up+left
-     * \param[out] a_transferGridDownLeft   Device array used to pack data to go down+left
-     * \param[out] a_transferGridUpRight    Device array used to pack data to go up+right
-     * \param[out] a_transferGridDownRight  Device array used to pack data to go down+right
+     * \param[in] myGridX,myGridY            Local domain size in X and Y dimension
+     * \param[in] pmeSize                    Local PME grid size
+     * \param[in] gm_realGrid                PME device grid
+     * \param[out] gm_transferGridUp         Device array used to pack data to go up
+     * \param[out] gm_transferGridDown       Device array used to pack data to go down
+     * \param[out] gm_transferGridLeft       Device array used to pack data to go left
+     * \param[out] gm_transferGridRight      Device array used to pack data to go right
+     * \param[out] gm_transferGridUpLeft     Device array used to pack data to go up+left
+     * \param[out] gm_transferGridDownLeft   Device array used to pack data to go down+left
+     * \param[out] gm_transferGridUpRight    Device array used to pack data to go up+right
+     * \param[out] gm_transferGridDownRight  Device array used to pack data to go down+right
      * \param[in] overlapSizeUp,overlapSizeDown,overlapSizeLeft,overlapSizeRight
-     *                                      Halo size in 4 directions
-     * \tparam    subGroupSize              Size of the sub-group.
+     *                                       Halo size in 4 directions
+     * \tparam    subGroupSize               Size of the sub-group.
      */
     template<int subGroupSize>
-    static auto kernel(sycl::handler&                     cgh,
-                       size_t                             myGridX,
-                       size_t                             myGridY,
-                       sycl::uint3                        pmeSize,
-                       DeviceAccessor<float, mode::write> a_realGrid,
-                       DeviceAccessor<float, mode::read>  a_transferGridUp,
-                       DeviceAccessor<float, mode::read>  a_transferGridDown,
-                       DeviceAccessor<float, mode::read>  a_transferGridLeft,
-                       DeviceAccessor<float, mode::read>  a_transferGridRight,
-                       DeviceAccessor<float, mode::read>  a_transferGridUpLeft,
-                       DeviceAccessor<float, mode::read>  a_transferGridDownLeft,
-                       DeviceAccessor<float, mode::read>  a_transferGridUpRight,
-                       DeviceAccessor<float, mode::read>  a_transferGridDownRight,
-                       size_t                             overlapSizeUp,
-                       size_t                             overlapSizeDown,
-                       size_t                             overlapSizeLeft,
-                       size_t                             overlapSizeRight)
+    static auto kernel(size_t      myGridX,
+                       size_t      myGridY,
+                       sycl::uint3 pmeSize,
+                       float* __restrict__ gm_realGrid,
+                       const float* __restrict__ gm_transferGridUp,
+                       const float* __restrict__ gm_transferGridDown,
+                       const float* __restrict__ gm_transferGridLeft,
+                       const float* __restrict__ gm_transferGridRight,
+                       const float* __restrict__ gm_transferGridUpLeft,
+                       const float* __restrict__ gm_transferGridDownLeft,
+                       const float* __restrict__ gm_transferGridUpRight,
+                       const float* __restrict__ gm_transferGridDownRight,
+                       size_t overlapSizeUp,
+                       size_t overlapSizeDown,
+                       size_t overlapSizeLeft,
+                       size_t overlapSizeRight)
     {
-        a_realGrid.bind(cgh);
-        a_transferGridUp.bind(cgh);
-        a_transferGridDown.bind(cgh);
-        a_transferGridLeft.bind(cgh);
-        a_transferGridRight.bind(cgh);
-        a_transferGridUpLeft.bind(cgh);
-        a_transferGridDownLeft.bind(cgh);
-        a_transferGridUpRight.bind(cgh);
-        a_transferGridDownRight.bind(cgh);
-
         return [=](sycl::nd_item<3> item_ct1) [[intel::reqd_sub_group_size(subGroupSize)]]
         {
             size_t iz = item_ct1.get_local_id(2) + item_ct1.get_group(2) * item_ct1.get_local_range(2);
@@ -281,8 +257,8 @@ public:
             {
                 size_t pmeIndex = (ix + pmeSize.x() - overlapSizeUp) * pmeSize.y() * pmeSize.z()
                                   + iy * pmeSize.z() + iz;
-                size_t packedIndex   = ix * myGridY * pmeSize.z() + iy * pmeSize.z() + iz;
-                a_realGrid[pmeIndex] = a_transferGridUp[packedIndex];
+                size_t packedIndex    = ix * myGridY * pmeSize.z() + iy * pmeSize.z() + iz;
+                gm_realGrid[pmeIndex] = gm_transferGridUp[packedIndex];
             }
 
             // down
@@ -292,7 +268,7 @@ public:
                         (ix + overlapSizeDown) * pmeSize.y() * pmeSize.z() + iy * pmeSize.z() + iz;
                 size_t packedIndex = (ix - (myGridX - overlapSizeDown)) * myGridY * pmeSize.z()
                                      + iy * pmeSize.z() + iz;
-                a_realGrid[pmeIndex] = a_transferGridDown[packedIndex];
+                gm_realGrid[pmeIndex] = gm_transferGridDown[packedIndex];
             }
 
             // left
@@ -300,8 +276,8 @@ public:
             {
                 size_t pmeIndex = ix * pmeSize.y() * pmeSize.z()
                                   + (iy + pmeSize.y() - overlapSizeLeft) * pmeSize.z() + iz;
-                size_t packedIndex   = ix * overlapSizeLeft * pmeSize.z() + iy * pmeSize.z() + iz;
-                a_realGrid[pmeIndex] = a_transferGridLeft[packedIndex];
+                size_t packedIndex    = ix * overlapSizeLeft * pmeSize.z() + iy * pmeSize.z() + iz;
+                gm_realGrid[pmeIndex] = gm_transferGridLeft[packedIndex];
             }
 
             // right
@@ -311,7 +287,7 @@ public:
                         ix * pmeSize.y() * pmeSize.z() + (iy + overlapSizeRight) * pmeSize.z() + iz;
                 size_t packedIndex = ix * overlapSizeRight * pmeSize.z()
                                      + (iy - (myGridY - overlapSizeRight)) * pmeSize.z() + iz;
-                a_realGrid[pmeIndex] = a_transferGridRight[packedIndex];
+                gm_realGrid[pmeIndex] = gm_transferGridRight[packedIndex];
             }
 
             // up left
@@ -319,8 +295,8 @@ public:
             {
                 size_t pmeIndex = (ix + pmeSize.x() - overlapSizeUp) * pmeSize.y() * pmeSize.z()
                                   + (iy + pmeSize.y() - overlapSizeLeft) * pmeSize.z() + iz;
-                size_t packedIndex   = ix * overlapSizeLeft * pmeSize.z() + iy * pmeSize.z() + iz;
-                a_realGrid[pmeIndex] = a_transferGridUpLeft[packedIndex];
+                size_t packedIndex    = ix * overlapSizeLeft * pmeSize.z() + iy * pmeSize.z() + iz;
+                gm_realGrid[pmeIndex] = gm_transferGridUpLeft[packedIndex];
             }
 
             // down left
@@ -330,7 +306,7 @@ public:
                                   + (iy + pmeSize.y() - overlapSizeLeft) * pmeSize.z() + iz;
                 size_t packedIndex = (ix - (myGridX - overlapSizeDown)) * overlapSizeLeft * pmeSize.z()
                                      + iy * pmeSize.z() + iz;
-                a_realGrid[pmeIndex] = a_transferGridDownLeft[packedIndex];
+                gm_realGrid[pmeIndex] = gm_transferGridDownLeft[packedIndex];
             }
 
             // up right
@@ -340,7 +316,7 @@ public:
                                   + (iy + overlapSizeRight) * pmeSize.z() + iz;
                 size_t packedIndex = ix * overlapSizeRight * pmeSize.z()
                                      + (iy - (myGridY - overlapSizeRight)) * pmeSize.z() + iz;
-                a_realGrid[pmeIndex] = a_transferGridUpRight[packedIndex];
+                gm_realGrid[pmeIndex] = gm_transferGridUpRight[packedIndex];
             }
 
             // down right
@@ -350,7 +326,7 @@ public:
                                   + (iy + overlapSizeRight) * pmeSize.z() + iz;
                 size_t packedIndex = (ix - (myGridX - overlapSizeDown)) * overlapSizeRight * pmeSize.z()
                                      + (iy - (myGridY - overlapSizeRight)) * pmeSize.z() + iz;
-                a_realGrid[pmeIndex] = a_transferGridDownRight[packedIndex];
+                gm_realGrid[pmeIndex] = gm_transferGridDownRight[packedIndex];
             }
         };
     }
@@ -363,51 +339,39 @@ public:
     /*! \brief
      * Returns the unpack kernel
      *
-     * \param[in] cgh                       SYCL's command group handler.
-     * \param[in] myGridX,myGridY           Local domain size in X and Y dimension
-     * \param[in] pmeSize                   Local PME grid size
-     * \param[in] a_realGrid                PME device grid
-     * \param[out] a_transferGridUp         Device array used to pack data to go up
-     * \param[out] a_transferGridDown       Device array used to pack data to go down
-     * \param[out] a_transferGridLeft       Device array used to pack data to go left
-     * \param[out] a_transferGridRight      Device array used to pack data to go right
-     * \param[out] a_transferGridUpLeft     Device array used to pack data to go up+left
-     * \param[out] a_transferGridDownLeft   Device array used to pack data to go down+left
-     * \param[out] a_transferGridUpRight    Device array used to pack data to go up+right
-     * \param[out] a_transferGridDownRight  Device array used to pack data to go down+right
-     * \param[in] overlapSizeX,overlapSizeY,overlapUp, overlapLeft
-     *                                      Halo size in 4 directions
-     * \tparam    subGroupSize              Size of the sub-group.
+     * \param[in] myGridX,myGridY            Local domain size in X and Y dimension
+     * \param[in] pmeSize                    Local PME grid size
+     * \param[in] gm_realGrid                PME device grid
+     * \param[out] gm_transferGridUp         Device array used to pack data to go up
+     * \param[out] gm_transferGridDown       Device array used to pack data to go down
+     * \param[out] gm_transferGridLeft       Device array used to pack data to go left
+     * \param[out] gm_transferGridRight      Device array used to pack data to go right
+     * \param[out] gm_transferGridUpLeft     Device array used to pack data to go up+left
+     * \param[out] gm_transferGridDownLeft   Device array used to pack data to go down+left
+     * \param[out] gm_transferGridUpRight    Device array used to pack data to go up+right
+     * \param[out] gm_transferGridDownRight  Device array used to pack data to go down+right
+     * \param[in] overlapSizeX,overlapSizeY,overlapUp,overlapLeft
+     *                                       Halo size in 4 directions
+     * \tparam    subGroupSize               Size of the sub-group.
      */
     template<int subGroupSize>
-    static auto kernel(sycl::handler&                     cgh,
-                       size_t                             myGridX,
-                       size_t                             myGridY,
-                       sycl::uint3                        pmeSize,
-                       DeviceAccessor<float, mode::write> a_realGrid,
-                       DeviceAccessor<float, mode::read>  a_transferGridUp,
-                       DeviceAccessor<float, mode::read>  a_transferGridDown,
-                       DeviceAccessor<float, mode::read>  a_transferGridLeft,
-                       DeviceAccessor<float, mode::read>  a_transferGridRight,
-                       DeviceAccessor<float, mode::read>  a_transferGridUpLeft,
-                       DeviceAccessor<float, mode::read>  a_transferGridDownLeft,
-                       DeviceAccessor<float, mode::read>  a_transferGridUpRight,
-                       DeviceAccessor<float, mode::read>  a_transferGridDownRight,
-                       size_t                             overlapSizeX,
-                       size_t                             overlapSizeY,
-                       size_t                             overlapUp,
-                       size_t                             overlapLeft)
+    static auto kernel(size_t      myGridX,
+                       size_t      myGridY,
+                       sycl::uint3 pmeSize,
+                       float* __restrict__ gm_realGrid,
+                       const float* __restrict__ gm_transferGridUp,
+                       const float* __restrict__ gm_transferGridDown,
+                       const float* __restrict__ gm_transferGridLeft,
+                       const float* __restrict__ gm_transferGridRight,
+                       const float* __restrict__ gm_transferGridUpLeft,
+                       const float* __restrict__ gm_transferGridDownLeft,
+                       const float* __restrict__ gm_transferGridUpRight,
+                       const float* __restrict__ gm_transferGridDownRight,
+                       size_t overlapSizeX,
+                       size_t overlapSizeY,
+                       size_t overlapUp,
+                       size_t overlapLeft)
     {
-        a_realGrid.bind(cgh);
-        a_transferGridUp.bind(cgh);
-        a_transferGridDown.bind(cgh);
-        a_transferGridLeft.bind(cgh);
-        a_transferGridRight.bind(cgh);
-        a_transferGridUpLeft.bind(cgh);
-        a_transferGridDownLeft.bind(cgh);
-        a_transferGridUpRight.bind(cgh);
-        a_transferGridDownRight.bind(cgh);
-
         return [=](sycl::nd_item<3> item_ct1) [[intel::reqd_sub_group_size(subGroupSize)]]
         {
             size_t iz = item_ct1.get_local_id(2) + item_ct1.get_group(2) * item_ct1.get_local_range(2);
@@ -423,13 +387,13 @@ public:
 
             size_t pmeIndex = ix * pmeSize.y() * pmeSize.z() + iy * pmeSize.z() + iz;
 
-            float val = a_realGrid[pmeIndex];
+            float val = gm_realGrid[pmeIndex];
 
             // up rank
             if (ix < overlapSizeX)
             {
                 size_t packedIndex = ix * myGridY * pmeSize.z() + iy * pmeSize.z() + iz;
-                val += a_transferGridUp[packedIndex];
+                val += gm_transferGridUp[packedIndex];
             }
 
             // down rank
@@ -437,14 +401,14 @@ public:
             {
                 size_t packedIndex = (ix - (myGridX - overlapSizeX)) * myGridY * pmeSize.z()
                                      + iy * pmeSize.z() + iz;
-                val += a_transferGridDown[packedIndex];
+                val += gm_transferGridDown[packedIndex];
             }
 
             // left rank
             if (iy < overlapSizeY)
             {
                 size_t packedIndex = ix * overlapSizeY * pmeSize.z() + iy * pmeSize.z() + iz;
-                val += a_transferGridLeft[packedIndex];
+                val += gm_transferGridLeft[packedIndex];
             }
 
             // right rank
@@ -452,14 +416,14 @@ public:
             {
                 size_t packedIndex = ix * overlapSizeY * pmeSize.z()
                                      + (iy - (myGridY - overlapSizeY)) * pmeSize.z() + iz;
-                val += a_transferGridRight[packedIndex];
+                val += gm_transferGridRight[packedIndex];
             }
 
             // up left rank
             if (ix < overlapSizeX && iy < overlapSizeY)
             {
                 size_t packedIndex = ix * overlapSizeY * pmeSize.z() + iy * pmeSize.z() + iz;
-                val += a_transferGridUpLeft[packedIndex];
+                val += gm_transferGridUpLeft[packedIndex];
             }
 
             // up right rank
@@ -467,7 +431,7 @@ public:
             {
                 size_t packedIndex = ix * overlapSizeY * pmeSize.z()
                                      + (iy - (myGridY - overlapSizeY)) * pmeSize.z() + iz;
-                val += a_transferGridUpRight[packedIndex];
+                val += gm_transferGridUpRight[packedIndex];
             }
 
             // down left rank
@@ -475,7 +439,7 @@ public:
             {
                 size_t packedIndex = (ix - (myGridX - overlapSizeX)) * overlapSizeY * pmeSize.z()
                                      + iy * pmeSize.z() + iz;
-                val += a_transferGridDownLeft[packedIndex];
+                val += gm_transferGridDownLeft[packedIndex];
             }
 
             // down right rank
@@ -484,10 +448,10 @@ public:
             {
                 size_t packedIndex = (ix - (myGridX - overlapSizeX)) * overlapSizeY * pmeSize.z()
                                      + (iy - (myGridY - overlapSizeY)) * pmeSize.z() + iz;
-                val += a_transferGridDownRight[packedIndex];
+                val += gm_transferGridDownRight[packedIndex];
             }
 
-            a_realGrid[pmeIndex] = val;
+            gm_realGrid[pmeIndex] = val;
         };
     }
 };
@@ -499,58 +463,46 @@ public:
     /*! \brief
      * Returns the pack kernel
      *
-     * \param[in] cgh                       SYCL's command group handler.
-     * \param[in] myGridX,myGridY           Local domain size in X and Y dimension
-     * \param[in] pmeSize                   Local PME grid size
-     * \param[in] a_realGrid                PME device grid
-     * \param[out] a_transferGridUp         Device array used to pack data to go up
-     * \param[out] a_transferGridDown       Device array used to pack data to go down
-     * \param[out] a_transferGridLeft       Device array used to pack data to go left
-     * \param[out] a_transferGridRight      Device array used to pack data to go right
-     * \param[out] a_transferGridUpLeft     Device array used to pack data to go up+left
-     * \param[out] a_transferGridDownLeft   Device array used to pack data to go down+left
-     * \param[out] a_transferGridUpRight    Device array used to pack data to go up+right
-     * \param[out] a_transferGridDownRight  Device array used to pack data to go down+right
-     * \param[in] overlapSizeX,overlapSizeY,overlapUp, overlapLeft
-     *                                      Halo size in 4 directions
-     * \tparam    subGroupSize              Size of the sub-group.
+     * \param[in] myGridX,myGridY            Local domain size in X and Y dimension
+     * \param[in] pmeSize                    Local PME grid size
+     * \param[in] gm_realGrid                PME device grid
+     * \param[out] gm_transferGridUp         Device array used to pack data to go up
+     * \param[out] gm_transferGridDown       Device array used to pack data to go down
+     * \param[out] gm_transferGridLeft       Device array used to pack data to go left
+     * \param[out] gm_transferGridRight      Device array used to pack data to go right
+     * \param[out] gm_transferGridUpLeft     Device array used to pack data to go up+left
+     * \param[out] gm_transferGridDownLeft   Device array used to pack data to go down+left
+     * \param[out] gm_transferGridUpRight    Device array used to pack data to go up+right
+     * \param[out] gm_transferGridDownRight  Device array used to pack data to go down+right
+     * \param[in] overlapSizeX,overlapSizeY,overlapUp,overlapLeft
+     *                                       Halo size in 4 directions
+     * \tparam    subGroupSize               Size of the sub-group.
      */
     template<int subGroupSize>
-    static auto kernel(sycl::handler&                     cgh,
-                       size_t                             myGridX,
-                       size_t                             myGridY,
-                       sycl::uint3                        pmeSize,
-                       DeviceAccessor<float, mode::read>  a_realGrid,
-                       DeviceAccessor<float, mode::write> a_transferGridUp,
-                       DeviceAccessor<float, mode::write> a_transferGridDown,
-                       DeviceAccessor<float, mode::write> a_transferGridLeft,
-                       DeviceAccessor<float, mode::write> a_transferGridRight,
-                       DeviceAccessor<float, mode::write> a_transferGridUpLeft,
-                       DeviceAccessor<float, mode::write> a_transferGridDownLeft,
-                       DeviceAccessor<float, mode::write> a_transferGridUpRight,
-                       DeviceAccessor<float, mode::write> a_transferGridDownRight,
-                       size_t                             overlapSizeX,
-                       size_t                             overlapSizeY,
-                       size_t                             overlapUp,
-                       size_t                             overlapLeft)
+    static auto kernel(size_t      myGridX,
+                       size_t      myGridY,
+                       sycl::uint3 pmeSize,
+                       const float* __restrict__ gm_realGrid,
+                       float* __restrict__ gm_transferGridUp,
+                       float* __restrict__ gm_transferGridDown,
+                       float* __restrict__ gm_transferGridLeft,
+                       float* __restrict__ gm_transferGridRight,
+                       float* __restrict__ gm_transferGridUpLeft,
+                       float* __restrict__ gm_transferGridDownLeft,
+                       float* __restrict__ gm_transferGridUpRight,
+                       float* __restrict__ gm_transferGridDownRight,
+                       size_t overlapSizeX,
+                       size_t overlapSizeY,
+                       size_t overlapUp,
+                       size_t overlapLeft)
     {
-        a_realGrid.bind(cgh);
-        a_transferGridUp.bind(cgh);
-        a_transferGridDown.bind(cgh);
-        a_transferGridLeft.bind(cgh);
-        a_transferGridRight.bind(cgh);
-        a_transferGridUpLeft.bind(cgh);
-        a_transferGridDownLeft.bind(cgh);
-        a_transferGridUpRight.bind(cgh);
-        a_transferGridDownRight.bind(cgh);
-
         return [=](sycl::nd_item<3> item_ct1) [[intel::reqd_sub_group_size(subGroupSize)]]
         {
             size_t iz = item_ct1.get_local_id(2) + item_ct1.get_group(2) * item_ct1.get_local_range(2);
             size_t iy = item_ct1.get_local_id(1) + item_ct1.get_group(1) * item_ct1.get_local_range(1);
             size_t ix = item_ct1.get_local_id(0) + item_ct1.get_group(0) * item_ct1.get_local_range(0);
 
-            // we might get iz greather than pmeSize.z when pmeSize.z is not multiple of
+            // we might get iz greater than pmeSize.z when pmeSize.z is not multiple of
             // threadsAlongZDim(see below), same for iy when it's not multiple of threadsAlongYDim
             if (iz >= pmeSize.z() || iy >= myGridY)
             {
@@ -559,13 +511,13 @@ public:
 
             size_t pmeIndex = ix * pmeSize.y() * pmeSize.z() + iy * pmeSize.z() + iz;
 
-            float val = a_realGrid[pmeIndex];
+            float val = gm_realGrid[pmeIndex];
 
             // up rank
             if (ix < overlapSizeX)
             {
-                size_t packedIndex            = ix * myGridY * pmeSize.z() + iy * pmeSize.z() + iz;
-                a_transferGridUp[packedIndex] = val;
+                size_t packedIndex             = ix * myGridY * pmeSize.z() + iy * pmeSize.z() + iz;
+                gm_transferGridUp[packedIndex] = val;
             }
 
             // down rank
@@ -573,14 +525,14 @@ public:
             {
                 size_t packedIndex = (ix - (myGridX - overlapSizeX)) * myGridY * pmeSize.z()
                                      + iy * pmeSize.z() + iz;
-                a_transferGridDown[packedIndex] = val;
+                gm_transferGridDown[packedIndex] = val;
             }
 
             // left rank
             if (iy < overlapSizeY)
             {
                 size_t packedIndex = ix * overlapSizeY * pmeSize.z() + iy * pmeSize.z() + iz;
-                a_transferGridLeft[packedIndex] = val;
+                gm_transferGridLeft[packedIndex] = val;
             }
 
             // right rank
@@ -588,14 +540,14 @@ public:
             {
                 size_t packedIndex = ix * overlapSizeY * pmeSize.z()
                                      + (iy - (myGridY - overlapSizeY)) * pmeSize.z() + iz;
-                a_transferGridRight[packedIndex] = val;
+                gm_transferGridRight[packedIndex] = val;
             }
 
             // up left rank
             if (ix < overlapSizeX && iy < overlapSizeY)
             {
                 size_t packedIndex = ix * overlapSizeY * pmeSize.z() + iy * pmeSize.z() + iz;
-                a_transferGridUpLeft[packedIndex] = val;
+                gm_transferGridUpLeft[packedIndex] = val;
             }
 
             // down left rank
@@ -603,7 +555,7 @@ public:
             {
                 size_t packedIndex = (ix - (myGridX - overlapSizeX)) * overlapSizeY * pmeSize.z()
                                      + iy * pmeSize.z() + iz;
-                a_transferGridDownLeft[packedIndex] = val;
+                gm_transferGridDownLeft[packedIndex] = val;
             }
 
             // up right rank
@@ -611,7 +563,7 @@ public:
             {
                 size_t packedIndex = ix * overlapSizeY * pmeSize.z()
                                      + (iy - (myGridY - overlapSizeY)) * pmeSize.z() + iz;
-                a_transferGridUpRight[packedIndex] = val;
+                gm_transferGridUpRight[packedIndex] = val;
             }
 
             // down right rank
@@ -620,7 +572,7 @@ public:
             {
                 size_t packedIndex = (ix - (myGridX - overlapSizeX)) * overlapSizeY * pmeSize.z()
                                      + (iy - (myGridY - overlapSizeY)) * pmeSize.z() + iz;
-                a_transferGridDownRight[packedIndex] = val;
+                gm_transferGridDownRight[packedIndex] = val;
             }
         };
     }
@@ -657,7 +609,7 @@ submit(const DeviceStream& deviceStream, size_t myGridX, size_t myGridY, sycl::u
     sycl::queue q = deviceStream.stream();
     q.submit(GMX_SYCL_DISCARD_EVENT[&](sycl::handler & cgh) {
         auto kernel = Kernel::template kernel<subGroupSize>(
-                cgh, myGridX, myGridY, pmeSize, std::forward<Args>(args)...);
+                myGridX, myGridY, pmeSize, std::forward<Args>(args)...);
         cgh.parallel_for<Kernel>(range, kernel);
     });
 }
@@ -740,15 +692,19 @@ void pmeGpuGridHaloExchange(const PmeGpu* pmeGpu, gmx_wallcycle* wcycle)
                     myGridX,
                     myGridY,
                     localPmeSize,
-                    realGrid,
-                    pmeGpu->haloExchange->d_sendGrids[gmx::DirectionX::Up][gmx::DirectionY::Center],
-                    pmeGpu->haloExchange->d_sendGrids[gmx::DirectionX::Down][gmx::DirectionY::Center],
-                    pmeGpu->haloExchange->d_sendGrids[gmx::DirectionX::Center][gmx::DirectionY::Left],
-                    pmeGpu->haloExchange->d_sendGrids[gmx::DirectionX::Center][gmx::DirectionY::Right],
-                    pmeGpu->haloExchange->d_sendGrids[gmx::DirectionX::Up][gmx::DirectionY::Left],
-                    pmeGpu->haloExchange->d_sendGrids[gmx::DirectionX::Down][gmx::DirectionY::Left],
-                    pmeGpu->haloExchange->d_sendGrids[gmx::DirectionX::Up][gmx::DirectionY::Right],
-                    pmeGpu->haloExchange->d_sendGrids[gmx::DirectionX::Down][gmx::DirectionY::Right],
+                    realGrid.get_pointer(),
+                    pmeGpu->haloExchange->d_sendGrids[gmx::DirectionX::Up][gmx::DirectionY::Center].get_pointer(),
+                    pmeGpu->haloExchange->d_sendGrids[gmx::DirectionX::Down][gmx::DirectionY::Center]
+                            .get_pointer(),
+                    pmeGpu->haloExchange->d_sendGrids[gmx::DirectionX::Center][gmx::DirectionY::Left]
+                            .get_pointer(),
+                    pmeGpu->haloExchange
+                            ->d_sendGrids[gmx::DirectionX::Center][gmx::DirectionY::Right]
+                            .get_pointer(),
+                    pmeGpu->haloExchange->d_sendGrids[gmx::DirectionX::Up][gmx::DirectionY::Left].get_pointer(),
+                    pmeGpu->haloExchange->d_sendGrids[gmx::DirectionX::Down][gmx::DirectionY::Left].get_pointer(),
+                    pmeGpu->haloExchange->d_sendGrids[gmx::DirectionX::Up][gmx::DirectionY::Right].get_pointer(),
+                    pmeGpu->haloExchange->d_sendGrids[gmx::DirectionX::Down][gmx::DirectionY::Right].get_pointer(),
                     overlapUp,
                     overlapDown,
                     overlapLeft,
@@ -936,15 +892,15 @@ void pmeGpuGridHaloExchange(const PmeGpu* pmeGpu, gmx_wallcycle* wcycle)
                 myGridX,
                 myGridY,
                 localPmeSize,
-                realGrid,
-                pmeGpu->haloExchange->d_recvGrids[gmx::DirectionX::Up][gmx::DirectionY::Center],
-                pmeGpu->haloExchange->d_recvGrids[gmx::DirectionX::Down][gmx::DirectionY::Center],
-                pmeGpu->haloExchange->d_recvGrids[gmx::DirectionX::Center][gmx::DirectionY::Left],
-                pmeGpu->haloExchange->d_recvGrids[gmx::DirectionX::Center][gmx::DirectionY::Right],
-                pmeGpu->haloExchange->d_recvGrids[gmx::DirectionX::Up][gmx::DirectionY::Left],
-                pmeGpu->haloExchange->d_recvGrids[gmx::DirectionX::Down][gmx::DirectionY::Left],
-                pmeGpu->haloExchange->d_recvGrids[gmx::DirectionX::Up][gmx::DirectionY::Right],
-                pmeGpu->haloExchange->d_recvGrids[gmx::DirectionX::Down][gmx::DirectionY::Right],
+                realGrid.get_pointer(),
+                pmeGpu->haloExchange->d_recvGrids[gmx::DirectionX::Up][gmx::DirectionY::Center].get_pointer(),
+                pmeGpu->haloExchange->d_recvGrids[gmx::DirectionX::Down][gmx::DirectionY::Center].get_pointer(),
+                pmeGpu->haloExchange->d_recvGrids[gmx::DirectionX::Center][gmx::DirectionY::Left].get_pointer(),
+                pmeGpu->haloExchange->d_recvGrids[gmx::DirectionX::Center][gmx::DirectionY::Right].get_pointer(),
+                pmeGpu->haloExchange->d_recvGrids[gmx::DirectionX::Up][gmx::DirectionY::Left].get_pointer(),
+                pmeGpu->haloExchange->d_recvGrids[gmx::DirectionX::Down][gmx::DirectionY::Left].get_pointer(),
+                pmeGpu->haloExchange->d_recvGrids[gmx::DirectionX::Up][gmx::DirectionY::Right].get_pointer(),
+                pmeGpu->haloExchange->d_recvGrids[gmx::DirectionX::Down][gmx::DirectionY::Right].get_pointer(),
                 overlapX,
                 overlapY,
                 overlapUp,
@@ -1018,15 +974,19 @@ void pmeGpuGridHaloExchangeReverse(const PmeGpu* pmeGpu, gmx_wallcycle* wcycle)
                     myGridX,
                     myGridY,
                     localPmeSize,
-                    realGrid,
-                    pmeGpu->haloExchange->d_sendGrids[gmx::DirectionX::Up][gmx::DirectionY::Center],
-                    pmeGpu->haloExchange->d_sendGrids[gmx::DirectionX::Down][gmx::DirectionY::Center],
-                    pmeGpu->haloExchange->d_sendGrids[gmx::DirectionX::Center][gmx::DirectionY::Left],
-                    pmeGpu->haloExchange->d_sendGrids[gmx::DirectionX::Center][gmx::DirectionY::Right],
-                    pmeGpu->haloExchange->d_sendGrids[gmx::DirectionX::Up][gmx::DirectionY::Left],
-                    pmeGpu->haloExchange->d_sendGrids[gmx::DirectionX::Down][gmx::DirectionY::Left],
-                    pmeGpu->haloExchange->d_sendGrids[gmx::DirectionX::Up][gmx::DirectionY::Right],
-                    pmeGpu->haloExchange->d_sendGrids[gmx::DirectionX::Down][gmx::DirectionY::Right],
+                    realGrid.get_pointer(),
+                    pmeGpu->haloExchange->d_sendGrids[gmx::DirectionX::Up][gmx::DirectionY::Center].get_pointer(),
+                    pmeGpu->haloExchange->d_sendGrids[gmx::DirectionX::Down][gmx::DirectionY::Center]
+                            .get_pointer(),
+                    pmeGpu->haloExchange->d_sendGrids[gmx::DirectionX::Center][gmx::DirectionY::Left]
+                            .get_pointer(),
+                    pmeGpu->haloExchange
+                            ->d_sendGrids[gmx::DirectionX::Center][gmx::DirectionY::Right]
+                            .get_pointer(),
+                    pmeGpu->haloExchange->d_sendGrids[gmx::DirectionX::Up][gmx::DirectionY::Left].get_pointer(),
+                    pmeGpu->haloExchange->d_sendGrids[gmx::DirectionX::Down][gmx::DirectionY::Left].get_pointer(),
+                    pmeGpu->haloExchange->d_sendGrids[gmx::DirectionX::Up][gmx::DirectionY::Right].get_pointer(),
+                    pmeGpu->haloExchange->d_sendGrids[gmx::DirectionX::Down][gmx::DirectionY::Right].get_pointer(),
                     overlapX,
                     overlapY,
                     overlapUp,
@@ -1219,15 +1179,19 @@ void pmeGpuGridHaloExchangeReverse(const PmeGpu* pmeGpu, gmx_wallcycle* wcycle)
                     myGridX,
                     myGridY,
                     localPmeSize,
-                    realGrid,
-                    pmeGpu->haloExchange->d_recvGrids[gmx::DirectionX::Up][gmx::DirectionY::Center],
-                    pmeGpu->haloExchange->d_recvGrids[gmx::DirectionX::Down][gmx::DirectionY::Center],
-                    pmeGpu->haloExchange->d_recvGrids[gmx::DirectionX::Center][gmx::DirectionY::Left],
-                    pmeGpu->haloExchange->d_recvGrids[gmx::DirectionX::Center][gmx::DirectionY::Right],
-                    pmeGpu->haloExchange->d_recvGrids[gmx::DirectionX::Up][gmx::DirectionY::Left],
-                    pmeGpu->haloExchange->d_recvGrids[gmx::DirectionX::Down][gmx::DirectionY::Left],
-                    pmeGpu->haloExchange->d_recvGrids[gmx::DirectionX::Up][gmx::DirectionY::Right],
-                    pmeGpu->haloExchange->d_recvGrids[gmx::DirectionX::Down][gmx::DirectionY::Right],
+                    realGrid.get_pointer(),
+                    pmeGpu->haloExchange->d_recvGrids[gmx::DirectionX::Up][gmx::DirectionY::Center].get_pointer(),
+                    pmeGpu->haloExchange->d_recvGrids[gmx::DirectionX::Down][gmx::DirectionY::Center]
+                            .get_pointer(),
+                    pmeGpu->haloExchange->d_recvGrids[gmx::DirectionX::Center][gmx::DirectionY::Left]
+                            .get_pointer(),
+                    pmeGpu->haloExchange
+                            ->d_recvGrids[gmx::DirectionX::Center][gmx::DirectionY::Right]
+                            .get_pointer(),
+                    pmeGpu->haloExchange->d_recvGrids[gmx::DirectionX::Up][gmx::DirectionY::Left].get_pointer(),
+                    pmeGpu->haloExchange->d_recvGrids[gmx::DirectionX::Down][gmx::DirectionY::Left].get_pointer(),
+                    pmeGpu->haloExchange->d_recvGrids[gmx::DirectionX::Up][gmx::DirectionY::Right].get_pointer(),
+                    pmeGpu->haloExchange->d_recvGrids[gmx::DirectionX::Down][gmx::DirectionY::Right].get_pointer(),
                     overlapUp,
                     overlapDown,
                     overlapLeft,
@@ -1252,25 +1216,20 @@ public:
     /*! \brief
      * Returns the conversion kernel
      *
-     * \param[in] cgh                SYCL's command group handler.
      * \param[in] fftNData           Local FFT grid size without padding
-     * \param[inout] a_realGrid      Local PME grid
-     * \param[inout] a_fftGrid       Local FFT grid
+     * \param[inout] d_realGrid      Local PME grid
+     * \param[inout] d_fftGrid       Local FFT grid
      * \param[in] fftSize            Local FFT grid padded size
      * \param[in] pmeSize            Local PME grid padded size
      * \tparam    subGroupSize       Size of the sub-group.
      */
     template<int subGroupSize>
-    static auto convertKernel(sycl::handler&                                             cgh,
-                              sycl::uint3                                                fftNData,
-                              DeviceAccessor<float, pmeToFft ? mode::read : mode::write> a_realGrid,
-                              DeviceAccessor<float, pmeToFft ? mode::write : mode::read> a_fftGrid,
-                              sycl::uint3                                                fftSize,
-                              sycl::uint3                                                pmeSize)
+    static auto convertKernel(sycl::uint3 fftNData,
+                              float* __restrict__ d_realGrid,
+                              float* __restrict__ d_fftGrid,
+                              sycl::uint3 fftSize,
+                              sycl::uint3 pmeSize)
     {
-        a_realGrid.bind(cgh);
-        a_fftGrid.bind(cgh);
-
         return [=](sycl::nd_item<3> item_ct1) [[intel::reqd_sub_group_size(subGroupSize)]]
         {
             size_t iz = item_ct1.get_local_id(2) + item_ct1.get_group(2) * item_ct1.get_local_range(2);
@@ -1287,11 +1246,11 @@ public:
 
             if constexpr (pmeToFft)
             {
-                a_fftGrid[fftidx] = a_realGrid[pmeIndex];
+                d_fftGrid[fftidx] = d_realGrid[pmeIndex];
             }
             else
             {
-                a_realGrid[pmeIndex] = a_fftGrid[fftidx];
+                d_realGrid[pmeIndex] = d_fftGrid[fftidx];
             }
         };
     }
@@ -1323,7 +1282,7 @@ public:
         sycl::queue q = deviceStream.stream();
 
         q.submit(GMX_SYCL_DISCARD_EVENT[&](sycl::handler & cgh) {
-            auto kernel = convertKernel<subGroupSize>(cgh, localFftNData, std::forward<Args>(args)...);
+            auto kernel = convertKernel<subGroupSize>(localFftNData, std::forward<Args>(args)...);
             cgh.parallel_for<GridConverter<pmeToFft>>(range, kernel);
         });
     }
@@ -1380,7 +1339,7 @@ void convertPmeGridToFftGrid(const PmeGpu*         pmeGpu,
         GridConverter<pmeToFft>::template submit<sc_subGroupSize>(
                 pmeGpu->archSpecific->pmeStream_,
                 localFftNData,
-                pmeGpu->kernelParams->grid.d_realGrid[gridIndex],
+                pmeGpu->kernelParams->grid.d_realGrid[gridIndex].get_pointer(),
                 h_fftRealGrid,
                 localFftSize,
                 localPmeSize);
@@ -1434,8 +1393,8 @@ void convertPmeGridToFftGrid(const PmeGpu* pmeGpu, DeviceBuffer<float>* d_fftRea
         GridConverter<pmeToFft>::template submit<sc_subGroupSize>(
                 pmeGpu->archSpecific->pmeStream_,
                 localFftNData,
-                pmeGpu->kernelParams->grid.d_realGrid[gridIndex],
-                *d_fftRealGrid,
+                pmeGpu->kernelParams->grid.d_realGrid[gridIndex].get_pointer(),
+                d_fftRealGrid->get_pointer(),
                 localFftSize,
                 localPmeSize);
     }

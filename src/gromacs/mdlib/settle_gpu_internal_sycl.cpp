@@ -61,29 +61,17 @@ constexpr static int sc_workGroupSize = 256;
 
 //! \brief Function returning the SETTLE kernel lambda.
 template<bool updateVelocities, bool computeVirial>
-auto settleKernel(sycl::handler&                                               cgh,
-                  const int                                                    numSettles,
-                  DeviceAccessor<WaterMolecule, mode::read>                    a_settles,
-                  SettleParameters                                             pars,
-                  DeviceAccessor<Float3, mode::read>                           a_x,
-                  DeviceAccessor<Float3, mode::read_write>                     a_xp,
-                  float                                                        invdt,
-                  OptionalAccessor<Float3, mode::read_write, updateVelocities> a_v,
-                  OptionalAccessor<float, mode::read_write, computeVirial>     a_virialScaled,
-                  PbcAiuc                                                      pbcAiuc)
+auto settleKernel(sycl::handler& cgh,
+                  const int      numSettles,
+                  const WaterMolecule* __restrict__ gm_settles,
+                  SettleParameters pars,
+                  const Float3* __restrict__ gm_x,
+                  Float3* __restrict__ gm_xp,
+                  float invdt,
+                  Float3* __restrict__ gm_v,
+                  float* __restrict__ gm_virialScaled,
+                  PbcAiuc pbcAiuc)
 {
-    a_settles.bind(cgh);
-    a_x.bind(cgh);
-    a_xp.bind(cgh);
-    if constexpr (updateVelocities)
-    {
-        a_v.bind(cgh);
-    }
-    if constexpr (computeVirial)
-    {
-        a_virialScaled.bind(cgh);
-    }
-
     // shmem buffer for i x+q pre-loading
     auto sm_threadVirial = [&]() {
         if constexpr (computeVirial)
@@ -105,15 +93,15 @@ auto settleKernel(sycl::handler&                                               c
         // TODO Can be reduced to one integer if atoms are consecutive in memory.
         if (settleIdx < numSettles)
         {
-            WaterMolecule indices = a_settles[settleIdx];
+            WaterMolecule indices = gm_settles[settleIdx];
 
-            const Float3 x_ow1 = a_x[indices.ow1];
-            const Float3 x_hw2 = a_x[indices.hw2];
-            const Float3 x_hw3 = a_x[indices.hw3];
+            const Float3 x_ow1 = gm_x[indices.ow1];
+            const Float3 x_hw2 = gm_x[indices.hw2];
+            const Float3 x_hw3 = gm_x[indices.hw3];
 
-            const Float3 xprime_ow1 = a_xp[indices.ow1];
-            const Float3 xprime_hw2 = a_xp[indices.hw2];
-            const Float3 xprime_hw3 = a_xp[indices.hw3];
+            const Float3 xprime_ow1 = gm_xp[indices.ow1];
+            const Float3 xprime_hw2 = gm_xp[indices.hw2];
+            const Float3 xprime_hw3 = gm_xp[indices.hw3];
 
             Float3 dist21;
             pbcDxAiucSycl(pbcAiuc, x_hw2, x_ow1, dist21);
@@ -254,24 +242,24 @@ auto settleKernel(sycl::handler&                                               c
             const Float3 dxHw2 = b3 - b1;
             const Float3 dxHw3 = c3 - c1;
 
-            a_xp[indices.ow1] = xprime_ow1 + dxOw1;
-            a_xp[indices.hw2] = xprime_hw2 + dxHw2;
-            a_xp[indices.hw3] = xprime_hw3 + dxHw3;
+            gm_xp[indices.ow1] = xprime_ow1 + dxOw1;
+            gm_xp[indices.hw2] = xprime_hw2 + dxHw2;
+            gm_xp[indices.hw3] = xprime_hw3 + dxHw3;
 
             if constexpr (updateVelocities)
             {
-                Float3 v_ow1 = a_v[indices.ow1];
-                Float3 v_hw2 = a_v[indices.hw2];
-                Float3 v_hw3 = a_v[indices.hw3];
+                Float3 v_ow1 = gm_v[indices.ow1];
+                Float3 v_hw2 = gm_v[indices.hw2];
+                Float3 v_hw3 = gm_v[indices.hw3];
 
                 /* Add the position correction divided by dt to the velocity */
                 v_ow1 = dxOw1 * invdt + v_ow1;
                 v_hw2 = dxHw2 * invdt + v_hw2;
                 v_hw3 = dxHw3 * invdt + v_hw3;
 
-                a_v[indices.ow1] = v_ow1;
-                a_v[indices.hw2] = v_hw2;
-                a_v[indices.hw3] = v_hw3;
+                gm_v[indices.ow1] = v_ow1;
+                gm_v[indices.hw2] = v_hw2;
+                gm_v[indices.hw3] = v_hw3;
             }
 
             if constexpr (computeVirial)
@@ -343,7 +331,7 @@ auto settleKernel(sycl::handler&                                               c
             // First 6 threads in the block add the 6 components of virial to the global memory address
             if (threadIdx < 6)
             {
-                atomicFetchAdd(a_virialScaled[threadIdx], sm_threadVirial[threadIdx * blockSize]);
+                atomicFetchAdd(gm_virialScaled[threadIdx], sm_threadVirial[threadIdx * blockSize]);
             }
         }
     };
@@ -394,7 +382,7 @@ void launchSettleGpuKernel(const int                          numSettles,
                            DeviceBuffer<Float3>               d_v,
                            const real                         invdt,
                            const bool                         computeVirial,
-                           DeviceBuffer<float>                virialScaled,
+                           DeviceBuffer<float>                d_virialScaled,
                            const PbcAiuc&                     pbcAiuc,
                            const DeviceStream&                deviceStream)
 {
@@ -403,13 +391,13 @@ void launchSettleGpuKernel(const int                          numSettles,
                        computeVirial,
                        deviceStream,
                        numSettles,
-                       d_settles,
+                       d_settles.get_pointer(),
                        settleParameters,
-                       d_x,
-                       d_xp,
+                       d_x.get_pointer(),
+                       d_xp.get_pointer(),
                        invdt,
-                       d_v,
-                       virialScaled,
+                       d_v.get_pointer(),
+                       d_virialScaled.get_pointer(),
                        pbcAiuc);
     return;
 }

@@ -116,8 +116,14 @@ struct DeviceBuffer
     //! Helper function to get the size in bytes of a single element
     static constexpr size_t elementSize() { return sizeof(ValueType); }
 
-    // Both explicit and implicit casts to void* are used in MPI+CUDA code, this stub is necessary for compilation.
+    //! Both explicit and implicit casts to void* are used in MPI+CUDA code, this stub is necessary for compilation.
     operator void*() const { throw; }
+
+    //! Get underlying device const pointer
+    const ValueType* get_pointer() const;
+
+    //! Get underlying device pointer
+    ValueType* get_pointer();
 
     //! Allow implicit conversion to bool to check buffer status for compatibility with other implementations.
     operator bool() const { return buffer_.get() != nullptr; }

@@ -55,18 +55,14 @@ namespace gmx
 {
 
 //! \brief Function returning the scaling kernel lambda.
-static auto scaleKernel(sycl::handler&                                        cgh,
-                        DeviceAccessor<Float3, sycl::access_mode::read_write> a_x,
-                        const ScalingMatrix                                   scalingMatrix)
+static auto scaleKernel(Float3* gm_x, const ScalingMatrix scalingMatrix)
 {
-    a_x.bind(cgh);
-
     return [=](sycl::id<1> itemIdx) {
-        Float3 x     = a_x[itemIdx];
-        x[0]         = scalingMatrix.xx * x[0] + scalingMatrix.yx * x[1] + scalingMatrix.zx * x[2];
-        x[1]         = scalingMatrix.yy * x[1] + scalingMatrix.zy * x[2];
-        x[2]         = scalingMatrix.zz * x[2];
-        a_x[itemIdx] = x;
+        Float3 x      = gm_x[itemIdx];
+        x[0]          = scalingMatrix.xx * x[0] + scalingMatrix.yx * x[1] + scalingMatrix.zx * x[2];
+        x[1]          = scalingMatrix.yy * x[1] + scalingMatrix.zy * x[2];
+        x[2]          = scalingMatrix.zz * x[2];
+        gm_x[itemIdx] = x;
     };
 }
 
@@ -79,7 +75,7 @@ void launchScaleCoordinatesKernel(const int            numAtoms,
     sycl::queue          queue = deviceStream.stream();
 
     sycl::event e = queue.submit([&](sycl::handler& cgh) {
-        auto kernel = scaleKernel(cgh, d_coordinates, mu);
+        auto kernel = scaleKernel(d_coordinates.get_pointer(), mu);
         cgh.parallel_for<ScaleKernel>(rangeAllAtoms, kernel);
     });
     // TODO: Although this only happens on the pressure coupling steps, this synchronization
