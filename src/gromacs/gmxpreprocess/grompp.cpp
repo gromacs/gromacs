@@ -2650,6 +2650,10 @@ int gmx_grompp(int argc, char* argv[])
         copy_mat(state.box, coordinatesAndBoxPreprocessed.box_);
         coordinatesAndBoxPreprocessed.pbc_ = ir->pbcType;
         mdModules.notifiers().preProcessingNotifier_.notify(coordinatesAndBoxPreprocessed);
+
+        // Send also the constant ensemble temperature if available.
+        gmx::EnsembleTemperature ensembleTemperature(*ir);
+        mdModules.notifiers().preProcessingNotifier_.notify(ensembleTemperature);
     }
 
     // Add the md modules internal parameters that are not mdp options

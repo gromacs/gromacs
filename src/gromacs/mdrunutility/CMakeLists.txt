@@ -36,6 +36,7 @@ gmx_add_libgromacs_sources(
     freeenergy.cpp
     handlerestart.cpp
     logging.cpp
+    mdmodulesnotifiers.cpp
     multisim.cpp
     printtime.cpp
     threadaffinity.cpp
