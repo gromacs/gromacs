@@ -34,6 +34,17 @@ unless the -dd option was specified.
 
 :issue:`4627`
 
+Increase and check for atom count limits in output files
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+The maximum number of atoms in the checkpoint and trr files was
+715 827 882 and has been increased to 1 431 655 765 atoms. Now mdrun
+exits with a clear error message when these
+limits are exceeded. For XTC files, the limit is raised
+by a separate fix.
+
+:issue:`4627`
+
 Fix assertion failure with annealing and multiple T-coupling groups
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 

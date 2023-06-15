@@ -72,6 +72,7 @@
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/oenv.h"
 #include "gromacs/fileio/tpxio.h"
+#include "gromacs/fileio/trrio.h"
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/gmxlib/nrnb.h"
 #include "gromacs/gpu_utils/device_stream_manager.h"
@@ -927,6 +928,19 @@ int Mdrunner::mdrunner()
          */
         applyGlobalSimulationState(
                 *inputHolder_.get(), partialDeserializedTpr.get(), globalState.get(), inputrec.get(), &mtop);
+
+        static_assert(sc_trrMaxAtomCount == sc_checkpointMaxAtomCount);
+        if (mtop.natoms > sc_checkpointMaxAtomCount)
+        {
+            gmx_fatal(FARGS,
+                      "System has %d atoms, which is more than can be stored in checkpoint and trr "
+                      "files (max %" PRId64 ")",
+                      mtop.natoms,
+                      sc_checkpointMaxAtomCount);
+        }
+
+        // The XTC format has been updated to support up to 2^31-1 atoms, which is anyway the
+        // largest supported by GROMACS, so no need for any particular check here.
     }
 
     /* Check and update the hardware options for internal consistency */
