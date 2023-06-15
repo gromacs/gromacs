@@ -200,7 +200,7 @@ if(GMX_GPU_FFT_VKFFT)
     target_link_libraries(libgromacs PRIVATE VkFFT)
 endif()
 if(GMX_GPU_FFT_ROCFFT)
-    target_link_libraries(libgromacs PUBLIC roc::rocfft)
+    target_link_libraries(libgromacs PRIVATE roc::rocfft)
 endif()
 
 target_link_libraries(libgromacs PRIVATE $<BUILD_INTERFACE:common>)

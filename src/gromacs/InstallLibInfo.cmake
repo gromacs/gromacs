@@ -90,6 +90,12 @@ SET(MPI_CXX_COMPILER \"${MPI_CXX_COMPILER}\" CACHE FILEPATH \"FindMPI CXX compil
         set(_gmx_cuda_config
 "SET(CMAKE_CUDA_COMPILER \"${CMAKE_CUDA_COMPILER}\" CACHE FILEPATH \"Hint for enable_language(CUDA).\")")
     endif ()
+
+    if (hipsycl_FOUND)
+        set(_gmx_hipsycl_config
+            "SET(hipsycl_ROOT ${hipsycl_DIR} CACHE FILEPATH \"Hint for find_package(hipsycl)\")")
+    endif ()
+
     configure_file(gromacs-config.cmake.cmakein
                    gromacs-config.cmake @ONLY)
     configure_file(gromacs-config-version.cmake.cmakein
@@ -99,6 +105,7 @@ SET(MPI_CXX_COMPILER \"${MPI_CXX_COMPILER}\" CACHE FILEPATH \"FindMPI CXX compil
     unset(_gmx_cuda_config)
     unset(_gmx_mpi_config)
     unset(_gmx_osx_config)
+    unset(_gmx_hipsycl_config)
     option(GMX_REQUIRE_VALID_CMAKE_HINTS "Force CMake error if generated hints are not usable." OFF)
     mark_as_advanced(GMX_REQUIRE_VALID_CMAKE_HINTS)
     if (GMX_REQUIRE_VALID_CMAKE_HINTS)

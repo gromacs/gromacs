@@ -67,6 +67,18 @@ with the -ac and -life options.
 Fixes that affect portability
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+CMake config package
+""""""""""""""""""""
+
+Depending on the build environment, |Gromacs| 2023 and 2023.1 could install a malformed
+:file:`gromacs-config.cmake` file in :file:`{prefix}/share/cmake/gromacs{$SUFFIX}/` that
+could cause failure of the ``find_package(gromacs)`` CMake command.
+
+* ``rocfft`` is no longer ever a public dependency.
+* The config package file now fully express the dependency on hipSYCL (Open SYCL), when relevant.
+
+:issue:`4793`, :issue:`4797`
+
 Miscellaneous
 ^^^^^^^^^^^^^
 
