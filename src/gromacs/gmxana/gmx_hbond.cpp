@@ -146,8 +146,9 @@ typedef struct
     /* Bitmask array which tells whether a hbond is present
      * at a given time. Either of these may be NULL
      */
-    int            n0;                 /* First frame a HB was found     */
-    int            nframes, maxframes; /* Amount of frames in this hbond */
+    int            n0;        /* First frame a HB was found             */
+    int            nframes;   /* Number of frames minus one for h and g */
+    int            maxframes; /* Allocated size for h and g             */
     unsigned int** h;
     unsigned int** g;
     /* See Xu and Berne, JPCB 105 (2001), p. 11929. We define the
@@ -184,7 +185,7 @@ struct HydrogenBondData
     bool bHBmap, bDAnr;
     int  wordlen;
     /* The following arrays are nframes long */
-    int                               maxhydro = 0, maxFrames = 0;
+    int                               maxhydro = 0;
     std::vector<int>                  nhb;
     std::vector<int>                  ndist;
     std::vector<hydrogenID>           n_bound;
@@ -210,13 +211,12 @@ HydrogenBondData::HydrogenBondData(bool useHBondMap, bool useDAnr, bool useOneHB
 HydrogenBondData HydrogenBondData::perThreadCopy(const HydrogenBondData& old)
 {
     HydrogenBondData perThreadCopy(old.bHBmap, old.bDAnr, false);
-    perThreadCopy.wordlen   = old.wordlen;
-    perThreadCopy.maxhydro  = old.maxhydro;
-    perThreadCopy.maxFrames = old.maxFrames;
-    perThreadCopy.time      = old.time;
-    perThreadCopy.d         = old.d;
-    perThreadCopy.a         = old.a;
-    perThreadCopy.hbmap     = old.hbmap;
+    perThreadCopy.wordlen  = old.wordlen;
+    perThreadCopy.maxhydro = old.maxhydro;
+    perThreadCopy.time     = old.time;
+    perThreadCopy.d        = old.d;
+    perThreadCopy.a        = old.a;
+    perThreadCopy.hbmap    = old.hbmap;
     return perThreadCopy;
 }
 
@@ -249,20 +249,17 @@ static void mk_hbmap(HydrogenBondData* hb)
     }
 }
 
-static void add_frames(HydrogenBondData* hb, int nframes)
+// Resizes all vector in \p hb for \p nframes frames
+static void resize_hbdata(HydrogenBondData* hb, const int nframes)
 {
-    if (nframes >= hb->maxFrames)
+    hb->time.resize(nframes);
+    hb->nhb.resize(nframes);
+    hb->ndist.resize(nframes);
+    hb->n_bound.resize(nframes);
+    hb->nhx.resize(nframes);
+    if (hb->bDAnr)
     {
-        hb->maxFrames += 4096;
-        hb->time.reserve(hb->maxFrames);
-        hb->nhb.reserve(hb->maxFrames);
-        hb->ndist.reserve(hb->maxFrames);
-        hb->n_bound.reserve(hb->maxFrames);
-        hb->nhx.reserve(hb->maxFrames);
-        if (hb->bDAnr)
-        {
-            hb->danr.reserve(hb->maxFrames);
-        }
+        hb->danr.resize(nframes);
     }
 }
 
@@ -1491,7 +1488,7 @@ static void do_hblife(const char* fn, HydrogenBondData* hb, gmx_bool bMerge, gmx
     t_hbond*                   hbh;
 
     snew(h, hb->maxhydro);
-    snew(histo, nframes + 1);
+    snew(histo, nframes);
     /* Total number of hbonds analyzed here */
     for (i = 0; (i < gmx::ssize(hb->d.don)); i++)
     {
@@ -2348,24 +2345,6 @@ static void dump_hbmap(HydrogenBondData* hb,
     }
 }
 
-/* sync_hbdata() updates the parallel HydrogenBondData p_hb using hb as template.
- * It mimics add_frames() and init_frame() to some extent. */
-static void sync_hbdata(HydrogenBondData* p_hb, int nframes)
-{
-    if (nframes >= p_hb->maxFrames)
-    {
-        p_hb->maxFrames += 4096;
-        p_hb->nhb.reserve(p_hb->maxFrames);
-        p_hb->ndist.reserve(p_hb->maxFrames);
-        p_hb->n_bound.reserve(p_hb->maxFrames);
-        p_hb->nhx.reserve(p_hb->maxFrames);
-        if (p_hb->bDAnr)
-        {
-            p_hb->danr.reserve(p_hb->maxFrames);
-        }
-    }
-}
-
 int gmx_hbond(int argc, char* argv[])
 {
     const char* desc[] = {
@@ -2825,7 +2804,7 @@ int gmx_hbond(int argc, char* argv[])
             {
                 try
                 {
-                    sync_hbdata(&p_hb[threadNr], nframes);
+                    resize_hbdata(&p_hb[threadNr], nframes + 1);
                 }
                 GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR
             }
@@ -2841,7 +2820,7 @@ int gmx_hbond(int argc, char* argv[])
                         dump_grid(debug, ngrid, grid);
                     }
 
-                    add_frames(&hb, nframes);
+                    resize_hbdata(&hb, nframes + 1);
                     init_hbframe(&hb, nframes, output_env_conv_time(oenv, t));
 
                     if (hb.bDAnr)

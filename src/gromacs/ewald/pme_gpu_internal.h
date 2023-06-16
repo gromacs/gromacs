@@ -374,6 +374,7 @@ void pme_gpu_destroy_3dfft(const PmeGpu* pmeGpu);
  * \param[in]  useGpuDirectComm          Whether direct GPU PME-PP communication is active
  * \param[in]  pmeCoordinateReceiverGpu  Coordinate receiver object, which must be valid when
  *                                       direct GPU PME-PP communication is active
+ * \param[in]  useMdGpuGraph             Whether MD GPU Graph is in use.
  * \param[in]  wcycle                    The wallclock counter.
  */
 GPU_FUNC_QUALIFIER void pme_gpu_spread(const PmeGpu*         GPU_FUNC_ARGUMENT(pmeGpu),
@@ -385,6 +386,7 @@ GPU_FUNC_QUALIFIER void pme_gpu_spread(const PmeGpu*         GPU_FUNC_ARGUMENT(p
                                        real                  GPU_FUNC_ARGUMENT(lambda),
                                        bool                  GPU_FUNC_ARGUMENT(useGpuDirectComm),
                                        gmx::PmeCoordinateReceiverGpu* GPU_FUNC_ARGUMENT(pmeCoordinateReceiverGpu),
+                                       bool           GPU_FUNC_ARGUMENT(useMdGpuGraph),
                                        gmx_wallcycle* GPU_FUNC_ARGUMENT(wcycle)) GPU_FUNC_TERM;
 
 /*! \libinternal \brief

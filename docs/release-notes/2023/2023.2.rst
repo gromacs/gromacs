@@ -34,6 +34,22 @@ unless the -dd option was specified.
 
 :issue:`4627`
 
+Increase and check for atom count limits in output files
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+The maximum number of atoms in the checkpoint and trr files was
+715 827 882 and has been increased to 1 431 655 765 atoms. Now mdrun
+exits with a clear error message when these
+limits are exceeded. For XTC files, the limit is raised
+by a separate fix.
+
+:issue:`4627`
+
+Fix assertion failure with annealing and multiple T-coupling groups
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+:issue:`4800`
+
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -50,8 +66,29 @@ Tools now retain chain identifiers when reading PDB is used as input
 
 :issue:`4776`
 
+The gmx hbond tool could produce random ouput
+"""""""""""""""""""""""""""""""""""""""""""""
+
+Because memory was not initialized, the gmx hbond tool could produce
+random output. This would not go unnoticed. This also fixes issues
+with the -ac and -life options.
+
+:issue:`4801`
+
 Fixes that affect portability
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+CMake config package
+""""""""""""""""""""
+
+Depending on the build environment, |Gromacs| 2023 and 2023.1 could install a malformed
+:file:`gromacs-config.cmake` file in :file:`{prefix}/share/cmake/gromacs{$SUFFIX}/` that
+could cause failure of the ``find_package(gromacs)`` CMake command.
+
+* ``rocfft`` is no longer ever a public dependency.
+* The config package file now fully express the dependency on hipSYCL (Open SYCL), when relevant.
+
+:issue:`4793`, :issue:`4797`
 
 Miscellaneous
 ^^^^^^^^^^^^^
@@ -87,3 +124,33 @@ gmxapi.mdrun task uniqueness
 Fix a bug in which all `gmxapi.mdrun` simulation tasks had the same ID (and working directory).
 
 :issue:`4795`
+
+Fix for crash when CUDA Graphs are enabled on multi-GPU
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+A bug was introduced into version 2023.1 resulting in a crash when the
+non-default CUDA Graphs experimental feature was enabled on multi-GPU,
+caused by the introduction of extra synchronization which is not
+required for the CUDA graphs codepath. This version fixes the issue by
+avoiding this synchronization when graphs are in use.
+
+:issue:`4786`
+
+Enable XTC support for gigantic systems
+"""""""""""""""""""""""""""""""""""""""
+
+The (old) XTC format uses an internal char buffer whose size in
+bytes was stored as an integer in the file, which led to crashes
+when storing systems with more than roughly 300 million atoms.
+This version fixes the issue by introducing a 64-bit size only
+for large systems, and using a different magic number (2023) in
+the XTC header. This will only change the XTC format for large
+systems (which anyway would lead to crashes in the old version).
+Short-term the large system XTC files might not be readable by
+external tools (you will get errors about incorrect magic number),
+but we are working with external packages to update their
+implementations.
+
+:issue:`4628`
+
+

@@ -1741,6 +1741,7 @@ void pme_gpu_spread(const PmeGpu*                  pmeGpu,
                     const real                     lambda,
                     const bool                     useGpuDirectComm,
                     gmx::PmeCoordinateReceiverGpu* pmeCoordinateReceiverGpu,
+                    const bool                     useMdGpuGraph,
                     gmx_wallcycle*                 wcycle)
 {
     GMX_ASSERT(
@@ -1853,8 +1854,14 @@ void pme_gpu_spread(const PmeGpu*                  pmeGpu,
             const int numStagesInPipeline = pmeCoordinateReceiverGpu->ppCommNumSenderRanks();
 
             GpuEventSynchronizer* gridsReadyForSpread = &pmeGpu->archSpecific->pmeGridsReadyForSpread;
-            gridsReadyForSpread->markEvent(pmeGpu->archSpecific->pmeStream_);
-            gridsReadyForSpread->setConsumptionLimits(numStagesInPipeline, numStagesInPipeline);
+            // Sync on grid zeroing is required except when GPU graphs are in use,
+            // In which case the sync is already present through the zeroing being
+            // explicitly included in the graph
+            if (!useMdGpuGraph)
+            {
+                gridsReadyForSpread->markEvent(pmeGpu->archSpecific->pmeStream_);
+                gridsReadyForSpread->setConsumptionLimits(numStagesInPipeline, numStagesInPipeline);
+            }
 
             for (int i = 0; i < numStagesInPipeline; i++)
             {
@@ -1866,8 +1873,10 @@ void pme_gpu_spread(const PmeGpu*                  pmeGpu,
                 wallcycle_start(wcycle, WallCycleCounter::LaunchGpuPme);
 
                 DeviceStream* launchStream = pmeCoordinateReceiverGpu->ppCommStream(senderRank);
-                gridsReadyForSpread->enqueueWaitEvent(*launchStream);
-
+                if (!useMdGpuGraph)
+                {
+                    gridsReadyForSpread->enqueueWaitEvent(*launchStream);
+                }
                 // set kernel configuration options specific to this stage of the pipeline
                 std::tie(kernelParamsPtr->pipelineAtomStart, kernelParamsPtr->pipelineAtomEnd) =
                         pmeCoordinateReceiverGpu->ppCommAtomRange(senderRank);

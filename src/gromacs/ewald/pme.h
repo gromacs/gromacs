@@ -406,14 +406,15 @@ GPU_FUNC_QUALIFIER void pme_gpu_prepare_computation(gmx_pme_t*     GPU_FUNC_ARGU
  * \param[in] useGpuDirectComm               Whether direct GPU PME-PP communication is active
  * \param[in]  pmeCoordinateReceiverGpu      Coordinate receiver object, which must be valid when
  *                                           direct GPU PME-PP communication is active
+ * \param[in] useMdGpuGraph                  Whether MD GPU Graph is in use.
  */
-GPU_FUNC_QUALIFIER void pme_gpu_launch_spread(
-        gmx_pme_t*                     GPU_FUNC_ARGUMENT(pme),
-        GpuEventSynchronizer*          GPU_FUNC_ARGUMENT(xReadyOnDevice),
-        gmx_wallcycle*                 GPU_FUNC_ARGUMENT(wcycle),
-        real                           GPU_FUNC_ARGUMENT(lambdaQ),
-        bool                           GPU_FUNC_ARGUMENT(useGpuDirectComm),
-        gmx::PmeCoordinateReceiverGpu* GPU_FUNC_ARGUMENT(pmeCoordinateReceiverGpu)) GPU_FUNC_TERM;
+GPU_FUNC_QUALIFIER void pme_gpu_launch_spread(gmx_pme_t*            GPU_FUNC_ARGUMENT(pme),
+                                              GpuEventSynchronizer* GPU_FUNC_ARGUMENT(xReadyOnDevice),
+                                              gmx_wallcycle*        GPU_FUNC_ARGUMENT(wcycle),
+                                              real                  GPU_FUNC_ARGUMENT(lambdaQ),
+                                              bool GPU_FUNC_ARGUMENT(useGpuDirectComm),
+                                              gmx::PmeCoordinateReceiverGpu* GPU_FUNC_ARGUMENT(pmeCoordinateReceiverGpu),
+                                              bool GPU_FUNC_ARGUMENT(useMdGpuGraph)) GPU_FUNC_TERM;
 
 /*! \brief
  * Launches middle stages of PME (FFT R2C, solving, FFT C2R) either on GPU or on CPU, depending on the run mode.

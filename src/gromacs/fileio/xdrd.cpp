@@ -54,7 +54,7 @@ int xdr_real(XDR* xdrs, real* r)
 #endif
 }
 
-int xdr3drcoord(XDR* xdrs, real* fp, int* size, real* precision)
+int xdr3drcoord(XDR* xdrs, real* fp, int* size, real* precision, int magic_number)
 {
 #if GMX_DOUBLE
     float* ffp;
@@ -74,7 +74,7 @@ int xdr3drcoord(XDR* xdrs, real* fp, int* size, real* precision)
         ffp[i] = fp[i];
     }
     fprec = *precision;
-    ret   = xdr3dfcoord(xdrs, ffp, size, &fprec);
+    ret   = xdr3dfcoord(xdrs, ffp, size, &fprec, magic_number);
 
     *precision = fprec;
     for (i = 0; (i < isize); i++)
@@ -85,7 +85,8 @@ int xdr3drcoord(XDR* xdrs, real* fp, int* size, real* precision)
     sfree(ffp);
     return ret;
 #else
-    return xdr3dfcoord(xdrs, reinterpret_cast<float*>(fp), size, reinterpret_cast<float*>(precision));
+    return xdr3dfcoord(
+            xdrs, reinterpret_cast<float*>(fp), size, reinterpret_cast<float*>(precision), magic_number);
 #endif
 }
 

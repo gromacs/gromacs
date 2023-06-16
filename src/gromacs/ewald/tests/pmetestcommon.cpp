@@ -370,6 +370,7 @@ void pmePerformSplineAndSpread(gmx_pme_t* pme,
                            lambdaQ,
                            useGpuDirectComm,
                            pmeCoordinateReceiverGpu,
+                           false,
                            nullptr);
         }
         break;

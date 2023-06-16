@@ -37,6 +37,7 @@
 
 #include <cstdio>
 
+#include <limits>
 #include <vector>
 
 #include "gromacs/compat/pointers.h"
@@ -65,6 +66,9 @@ struct MDModulesNotifiers;
 class KeyValueTreeObject;
 class ReadCheckpointDataHolder;
 class WriteCheckpointDataHolder;
+
+//! The maximum number of atoms that can be stored in a checkpoint file
+static constexpr int64_t sc_checkpointMaxAtomCount = std::numeric_limits<unsigned int>::max() / 3;
 
 /*! \brief Read to a key-value-tree value used for checkpointing.
  *

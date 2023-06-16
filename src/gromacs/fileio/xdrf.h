@@ -52,16 +52,41 @@
 #    include <rpc/xdr.h>
 #endif
 
+// Magic number used for traditional XTC files with 32-bit data buffer size
+#define XTC_MAGIC 1995
+// New magic number used for (very) large XTC files with 64-bit data buffer size
+#define XTC_NEW_MAGIC 2023
+
+/* Until june 2023, the old XDR format could only store up to ~300M atoms.
+ * To handle larger systems, we use a newer magic number (2023 instead of 1995).
+ * By default we only need this for large systems, but to enable us to check
+ * the code without using gigantic test files, we select the version to
+ * read/write by providing either XDR_MAGIC XDR_NEW_MAGIC as the last argument.
+ * This should always match what you read/write in the xdr file header.
+ *
+ * The reason for the format update is that XTC logic allocates a buffer 1.2x
+ * larger than the natoms*3 and the size - in bytes - of the USED
+ * part of this 32-bit-integer-containing buffer in bytes needs to be stored as
+ * an integer. This means we MIGHT need 64-bit sizing if natoms is larger than
+ * (2^32)/(3*4*1.2)=298261617 atoms, and since the exact size will vary from
+ * frame-to-frame, we need 64-bit indexing whenever it might happen,
+ * so in that case the first entry will use 8 bytes and be incompatible with
+ * older 32-bit reading code. It is up to the calling code to ensure you select
+ * the new magic number for systems larger than this - but we will double-check
+ * it internally and exit if you forgot.
+ */
+#define XTC_1995_MAX_NATOMS 298261617
+
 /* Read or write reduced precision *float* coordinates */
-int xdr3dfcoord(XDR* xdrs, float* fp, int* size, float* precision);
+int xdr3dfcoord(XDR* xdrs, float* fp, int* size, float* precision, int magic_number);
 
 
 /* Read or write a *real* value (stored as float) */
 int xdr_real(XDR* xdrs, real* r);
 
-
-/* Read or write reduced precision *real* coordinates */
-int xdr3drcoord(XDR* xdrs, real* fp, int* size, real* precision);
+/* Read or write reduced precision *real* coordinates.
+ */
+int xdr3drcoord(XDR* xdrs, real* fp, int* size, real* precision, int magic_number);
 
 
 //! Read or write a int32_t value.

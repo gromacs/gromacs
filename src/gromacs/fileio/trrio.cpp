@@ -42,6 +42,7 @@
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
+#include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
 
 static int nFloatSize(gmx_trr_header_t* sh)
@@ -54,15 +55,15 @@ static int nFloatSize(gmx_trr_header_t* sh)
     }
     else if (sh->x_size)
     {
-        nflsize = sh->x_size / (sh->natoms * DIM);
+        nflsize = sh->x_size / (static_cast<unsigned int>(sh->natoms) * DIM);
     }
     else if (sh->v_size)
     {
-        nflsize = sh->v_size / (sh->natoms * DIM);
+        nflsize = sh->v_size / (static_cast<unsigned int>(sh->natoms) * DIM);
     }
     else if (sh->f_size)
     {
-        nflsize = sh->f_size / (sh->natoms * DIM);
+        nflsize = sh->f_size / (static_cast<unsigned int>(sh->natoms) * DIM);
     }
     else
     {
@@ -123,17 +124,20 @@ static gmx_bool do_trr_frame_header(t_fileio* fio, bool bRead, gmx_trr_header_t*
         sprintf(buf, "GMX_trn_file");
         *bOK = *bOK && gmx_fio_do_string(fio, buf);
     }
-    *bOK = *bOK && gmx_fio_do_int(fio, sh->ir_size);
-    *bOK = *bOK && gmx_fio_do_int(fio, sh->e_size);
-    *bOK = *bOK && gmx_fio_do_int(fio, sh->box_size);
-    *bOK = *bOK && gmx_fio_do_int(fio, sh->vir_size);
-    *bOK = *bOK && gmx_fio_do_int(fio, sh->pres_size);
-    *bOK = *bOK && gmx_fio_do_int(fio, sh->top_size);
-    *bOK = *bOK && gmx_fio_do_int(fio, sh->sym_size);
-    *bOK = *bOK && gmx_fio_do_int(fio, sh->x_size);
-    *bOK = *bOK && gmx_fio_do_int(fio, sh->v_size);
-    *bOK = *bOK && gmx_fio_do_int(fio, sh->f_size);
-    *bOK = *bOK && gmx_fio_do_int(fio, sh->natoms);
+    *bOK             = *bOK && gmx_fio_do_int(fio, sh->ir_size);
+    *bOK             = *bOK && gmx_fio_do_int(fio, sh->e_size);
+    *bOK             = *bOK && gmx_fio_do_int(fio, sh->box_size);
+    *bOK             = *bOK && gmx_fio_do_int(fio, sh->vir_size);
+    *bOK             = *bOK && gmx_fio_do_int(fio, sh->pres_size);
+    *bOK             = *bOK && gmx_fio_do_int(fio, sh->top_size);
+    *bOK             = *bOK && gmx_fio_do_int(fio, sh->sym_size);
+    int* xSizeIntPtr = reinterpret_cast<int*>(&sh->x_size);
+    *bOK             = *bOK && gmx_fio_do_int(fio, *xSizeIntPtr);
+    int* vSizeIntPtr = reinterpret_cast<int*>(&sh->v_size);
+    *bOK             = *bOK && gmx_fio_do_int(fio, *vSizeIntPtr);
+    int* fSizeIntPtr = reinterpret_cast<int*>(&sh->f_size);
+    *bOK             = *bOK && gmx_fio_do_int(fio, *fSizeIntPtr);
+    *bOK             = *bOK && gmx_fio_do_int(fio, sh->natoms);
 
     if (!*bOK)
     {
@@ -212,6 +216,9 @@ static gmx_bool do_trr_frame(t_fileio* fio,
     snew(sh, 1);
     if (!bRead)
     {
+        GMX_RELEASE_ASSERT(*natoms < sc_trrMaxAtomCount,
+                           "Can not write more than max_int/3 atoms to trr");
+
         sh->box_size = (box) ? sizeof(matrix) : 0;
         sh->x_size   = ((x) ? (*natoms * sizeof(x[0])) : 0);
         sh->v_size   = ((v) ? (*natoms * sizeof(v[0])) : 0);
