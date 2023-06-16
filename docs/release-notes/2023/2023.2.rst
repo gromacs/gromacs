@@ -126,18 +126,18 @@ Fix a bug in which all `gmxapi.mdrun` simulation tasks had the same ID (and work
 :issue:`4795`
 
 Fix for crash when CUDA Graphs are enabled on multi-GPU
-=======================================================
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
 A bug was introduced into version 2023.1 resulting in a crash when the
 non-default CUDA Graphs experimental feature was enabled on multi-GPU,
-caused by the introduction of extra syncronization which is not
+caused by the introduction of extra synchronization which is not
 required for the CUDA graphs codepath. This version fixes the issue by
-avoiding this syncronization when graphs are in use.
+avoiding this synchronization when graphs are in use.
 
 :issue:`4786`
 
 Enable XTC support for gigantic systems
-=======================================
+"""""""""""""""""""""""""""""""""""""""
 
 The (old) XTC format uses an internal char buffer whose size in
 bytes was stored as an integer in the file, which led to crashes
@@ -152,3 +152,5 @@ but we are working with external packages to update their
 implementations.
 
 :issue:`4628`
+
+
