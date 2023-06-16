@@ -16,6 +16,11 @@ in the :ref:`release-notes`.
 Fixes where mdrun could behave incorrectly
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Fix mdrun segfault when perturbing only LJ-14 parameters
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+:issue:`4769`
+
 Fix numerical instability with free-energy and LJ-PME
 """""""""""""""""""""""""""""""""""""""""""""""""""""
 

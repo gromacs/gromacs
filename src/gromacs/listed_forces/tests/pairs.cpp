@@ -328,16 +328,15 @@ protected:
         std::vector<int>            ddgatindex = { 0, 1, 2 };
         std::vector<real>           chargeA    = { 1.0, -0.5, -0.5 };
         std::vector<real>           chargeB    = { 0.0, 0.0, 0.0 };
+        std::vector<BoolType>       perturbed  = { true, true, true };
         std::vector<unsigned short> egrp       = { 0, 0, 0 };
         t_mdatoms                   mdatoms    = { 0 };
 
-        mdatoms.chargeA = chargeA;
-        mdatoms.chargeB = chargeB;
-        mdatoms.cENER   = egrp;
-        // nPerturbed is not decisive for fep to be used; it is overruled by
-        // other conditions in do_pairs_general; just here to not segfault
-        // upon query
-        mdatoms.nPerturbed = 0;
+        mdatoms.chargeA    = chargeA;
+        mdatoms.chargeB    = chargeB;
+        mdatoms.bPerturbed = perturbed;
+        mdatoms.cENER      = egrp;
+        mdatoms.nPerturbed = 3;
 
         t_forcerec* fr = frHelper.get();
         fr->efep = input_.fep ? FreeEnergyPerturbationType::Yes : FreeEnergyPerturbationType::No;
