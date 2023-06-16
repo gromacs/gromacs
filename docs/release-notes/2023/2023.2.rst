@@ -158,4 +158,11 @@ implementations.
 
 :issue:`4628`
 
+Fix resource leak in OpenCL
+"""""""""""""""""""""""""""
+
+``gmx mdrun`` built with OpenCL was slowly leaking memory when
+running on GPUs. That's fixed now.
+
+:issue:`4807`
 

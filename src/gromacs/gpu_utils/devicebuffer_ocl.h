@@ -268,9 +268,8 @@ void clearDeviceBufferAsync(DeviceBuffer<ValueType>* buffer,
     const int       pattern       = 0;
     const cl_uint   numWaitEvents = 0;
     const cl_event* waitEvents    = nullptr;
-    cl_event        commandEvent;
-    cl_int          clError = clEnqueueFillBuffer(
-            deviceStream.stream(), *buffer, &pattern, sizeof(pattern), offset, bytes, numWaitEvents, waitEvents, &commandEvent);
+    cl_int          clError       = clEnqueueFillBuffer(
+            deviceStream.stream(), *buffer, &pattern, sizeof(pattern), offset, bytes, numWaitEvents, waitEvents, nullptr);
     GMX_RELEASE_ASSERT(clError == CL_SUCCESS,
                        gmx::formatString("Couldn't clear the device buffer (OpenCL error %d: %s)",
                                          clError,
