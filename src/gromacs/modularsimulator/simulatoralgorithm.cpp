@@ -603,6 +603,7 @@ ModularSimulatorAlgorithm ModularSimulatorAlgorithmBuilder::build()
                                            legacySimulatorData_->mdLog_,
                                            legacySimulatorData_->constr_,
                                            legacySimulatorData_->inputRec_,
+                                           legacySimulatorData_->mdModulesNotifiers_,
                                            legacySimulatorData_->mdAtoms_,
                                            legacySimulatorData_->nrnb_,
                                            legacySimulatorData_->wallCycleCounters_,

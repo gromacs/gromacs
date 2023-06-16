@@ -66,6 +66,7 @@ class ArrayRefWithPadding;
 class Constraints;
 class ForceBuffersView;
 class ImdSession;
+struct MDModulesNotifiers;
 class MdrunScheduleWorkload;
 class VirtualSitesHandler;
 } // namespace gmx
@@ -96,6 +97,7 @@ void relax_shell_flexcon(FILE*                               log,
                          gmx_enfrot*                         enforcedRotation,
                          int64_t                             mdstep,
                          const t_inputrec*                   inputrec,
+                         const gmx::MDModulesNotifiers&      mdModulesNotifiers,
                          gmx::ImdSession*                    imdSession,
                          pull_t*                             pull_work,
                          gmx_bool                            bDoNS,

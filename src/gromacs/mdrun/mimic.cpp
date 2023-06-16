@@ -297,6 +297,7 @@ void gmx::LegacySimulator::do_mimic()
                             stateGlobal_,
                             topGlobal_,
                             *ir,
+                            mdModulesNotifiers_,
                             imdSession_,
                             pullWork_,
                             state_,
@@ -312,7 +313,8 @@ void gmx::LegacySimulator::do_mimic()
     }
     else
     {
-        mdAlgorithmsSetupAtomData(cr_, *ir, topGlobal_, top_, fr_, &f, mdAtoms_, constr_, virtualSites_, shellfc);
+        mdAlgorithmsSetupAtomData(
+                cr_, *ir, topGlobal_, top_, fr_, &f, mdAtoms_, constr_, virtualSites_, shellfc);
     }
 
     auto* mdatoms = mdAtoms_->mdatoms();
@@ -442,7 +444,8 @@ void gmx::LegacySimulator::do_mimic()
 
         if (MAIN(cr_))
         {
-            const bool constructVsites = ((virtualSites_ != nullptr) && mdrunOptions_.rerunConstructVsites);
+            const bool constructVsites =
+                    ((virtualSites_ != nullptr) && mdrunOptions_.rerunConstructVsites);
             if (constructVsites && haveDDAtomOrdering(*cr_))
             {
                 gmx_fatal(FARGS,
@@ -453,7 +456,8 @@ void gmx::LegacySimulator::do_mimic()
             if (constructVsites)
             {
                 wallcycle_start(wallCycleCounters_, WallCycleCounter::VsiteConstr);
-                virtualSites_->construct(state_->x, state_->v, state_->box, VSiteOperation::PositionsAndVelocities);
+                virtualSites_->construct(
+                        state_->x, state_->v, state_->box, VSiteOperation::PositionsAndVelocities);
                 wallcycle_stop(wallCycleCounters_, WallCycleCounter::VsiteConstr);
             }
         }
@@ -470,6 +474,7 @@ void gmx::LegacySimulator::do_mimic()
                                 stateGlobal_,
                                 topGlobal_,
                                 *ir,
+                                mdModulesNotifiers_,
                                 imdSession_,
                                 pullWork_,
                                 state_,
@@ -510,6 +515,7 @@ void gmx::LegacySimulator::do_mimic()
                                 enforcedRotation_,
                                 step,
                                 ir,
+                                mdModulesNotifiers_,
                                 imdSession_,
                                 pullWork_,
                                 bNS,
@@ -550,6 +556,7 @@ void gmx::LegacySimulator::do_mimic()
                      cr_,
                      ms_,
                      *ir,
+                     mdModulesNotifiers_,
                      awh,
                      enforcedRotation_,
                      imdSession_,

@@ -60,6 +60,7 @@ class FreeEnergyPerturbationData;
 class ImdSession;
 class MDAtoms;
 class MDLogger;
+struct MDModulesNotifiers;
 class StatePropagatorData;
 class TopologyHolder;
 class VirtualSitesHandler;
@@ -93,6 +94,7 @@ public:
                  const MDLogger&               mdlog,
                  Constraints*                  constr,
                  const t_inputrec*             inputrec,
+                 const MDModulesNotifiers&     mdModulesNotifiers,
                  MDAtoms*                      mdAtoms,
                  t_nrnb*                       nrnb,
                  gmx_wallcycle*                wcycle,
@@ -150,6 +152,8 @@ private:
     Constraints* constr_;
     //! Contains user input mdp options.
     const t_inputrec* inputrec_;
+    //! Handles notifications for MDModules
+    const MDModulesNotifiers& mdModulesNotifiers_;
     //! Atom parameters for this domain.
     MDAtoms* mdAtoms_;
     //! Manages flop accounting.

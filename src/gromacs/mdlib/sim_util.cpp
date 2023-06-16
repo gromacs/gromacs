@@ -82,6 +82,7 @@
 #include "gromacs/mdlib/vsite.h"
 #include "gromacs/mdlib/wall.h"
 #include "gromacs/mdlib/wholemoleculetransform.h"
+#include "gromacs/mdrunutility/mdmodulesnotifiers.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/enerdata.h"
 #include "gromacs/mdtypes/forcebuffers.h"
@@ -1375,6 +1376,7 @@ void do_force(FILE*                               fplog,
               const t_commrec*                    cr,
               const gmx_multisim_t*               ms,
               const t_inputrec&                   inputrec,
+              const gmx::MDModulesNotifiers&      mdModulesNotifiers,
               gmx::Awh*                           awh,
               gmx_enfrot*                         enforcedRotation,
               gmx::ImdSession*                    imdSession,
@@ -1477,6 +1479,14 @@ void do_force(FILE*                               fplog,
                                  x.unpaddedArrayRef().subArray(0, mdatoms->homenr),
                                  gmx_omp_nthreads_get(ModuleMultiThread::Default));
             inc_nrnb(nrnb, eNR_SHIFTX, mdatoms->homenr);
+        }
+
+        if (stepWork.doNeighborSearch && !haveDDAtomOrdering(*cr))
+        {
+            // Atoms might have changed periodic image, signal MDModules
+            gmx::MDModulesAtomsRedistributedSignal mdModulesAtomsRedistributedSignal(
+                    box, x.unpaddedArrayRef().subArray(0, mdatoms->homenr));
+            mdModulesNotifiers.simulationSetupNotifier_.notify(mdModulesAtomsRedistributedSignal);
         }
     }
 

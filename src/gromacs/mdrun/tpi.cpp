@@ -750,6 +750,7 @@ void LegacySimulator::do_tpi()
                      cr_,
                      ms_,
                      *inputRec_,
+                     mdModulesNotifiers_,
                      nullptr,
                      nullptr,
                      imdSession_,

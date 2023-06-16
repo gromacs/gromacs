@@ -72,6 +72,7 @@ class Awh;
 class ForceBuffersView;
 class ForceWithVirial;
 class ImdSession;
+struct MDModulesNotifiers;
 class MdrunScheduleWorkload;
 class MDLogger;
 class StepWorkload;
@@ -104,6 +105,7 @@ void do_force(FILE*                               log,
               const t_commrec*                    cr,
               const gmx_multisim_t*               ms,
               const t_inputrec&                   inputrec,
+              const gmx::MDModulesNotifiers&      mdModulesNotifiers,
               gmx::Awh*                           awh,
               gmx_enfrot*                         enforcedRotation,
               gmx::ImdSession*                    imdSession,

@@ -113,6 +113,7 @@
 #include "shellfc.h"
 
 using gmx::ArrayRef;
+using gmx::MDModulesNotifiers;
 using gmx::MdrunScheduleWorkload;
 using gmx::RVec;
 using gmx::VirtualSitesHandler;
@@ -360,24 +361,25 @@ static void get_state_f_norm_max(const t_commrec* cr, const t_grpopts* opts, t_m
 }
 
 //! Initialize the energy minimization
-static void init_em(FILE*                fplog,
-                    const gmx::MDLogger& mdlog,
-                    const char*          title,
-                    const t_commrec*     cr,
-                    const t_inputrec*    ir,
-                    gmx::ImdSession*     imdSession,
-                    pull_t*              pull_work,
-                    t_state*             state_global,
-                    const gmx_mtop_t&    top_global,
-                    em_state_t*          ems,
-                    gmx_localtop_t*      top,
-                    t_nrnb*              nrnb,
-                    t_forcerec*          fr,
-                    gmx::MDAtoms*        mdAtoms,
-                    gmx_global_stat_t*   gstat,
-                    VirtualSitesHandler* vsite,
-                    gmx::Constraints*    constr,
-                    gmx_shellfc_t**      shellfc)
+static void init_em(FILE*                     fplog,
+                    const gmx::MDLogger&      mdlog,
+                    const char*               title,
+                    const t_commrec*          cr,
+                    const t_inputrec*         ir,
+                    const MDModulesNotifiers& mdModulesNotifiers,
+                    gmx::ImdSession*          imdSession,
+                    pull_t*                   pull_work,
+                    t_state*                  state_global,
+                    const gmx_mtop_t&         top_global,
+                    em_state_t*               ems,
+                    gmx_localtop_t*           top,
+                    t_nrnb*                   nrnb,
+                    t_forcerec*               fr,
+                    gmx::MDAtoms*             mdAtoms,
+                    gmx_global_stat_t*        gstat,
+                    VirtualSitesHandler*      vsite,
+                    gmx::Constraints*         constr,
+                    gmx_shellfc_t**           shellfc)
 {
     real dvdl_constr;
 
@@ -435,6 +437,7 @@ static void init_em(FILE*                fplog,
                             state_global,
                             top_global,
                             *ir,
+                            mdModulesNotifiers,
                             imdSession,
                             pull_work,
                             &ems->s,
@@ -772,12 +775,14 @@ static bool do_em_step(const t_commrec*                          cr,
 }
 
 //! Prepare EM for using domain decomposition parallellization
-static void em_dd_partition_system(FILE*                fplog,
-                                   const gmx::MDLogger& mdlog,
-                                   int                  step,
-                                   const t_commrec*     cr,
-                                   const gmx_mtop_t&    top_global,
-                                   const t_inputrec*    ir,
+static void em_dd_partition_system(FILE*                     fplog,
+                                   const gmx::MDLogger&      mdlog,
+                                   int                       step,
+                                   const t_commrec*          cr,
+                                   const gmx_mtop_t&         top_global,
+                                   const t_inputrec*         ir,
+                                   const MDModulesNotifiers& mdModulesNotifiers,
+
                                    gmx::ImdSession*     imdSession,
                                    pull_t*              pull_work,
                                    em_state_t*          ems,
@@ -798,6 +803,7 @@ static void em_dd_partition_system(FILE*                fplog,
                         nullptr,
                         top_global,
                         *ir,
+                        mdModulesNotifiers,
                         imdSession,
                         pull_work,
                         &ems->s,
@@ -903,6 +909,8 @@ public:
     gmx_localtop_t* top;
     //! User input options.
     const t_inputrec* inputrec;
+    // Handles notifications for MDModules
+    const MDModulesNotifiers& mdModulesNotifiers;
     //! The Interactive Molecular Dynamics session.
     gmx::ImdSession* imdSession;
     //! The pull work object.
@@ -977,6 +985,7 @@ void EnergyEvaluator::run(em_state_t* ems, rvec mu_tot, tensor vir, tensor pres,
                                    cr,
                                    top_global,
                                    inputrec,
+                                   mdModulesNotifiers,
                                    imdSession,
                                    pull_work,
                                    ems,
@@ -1017,6 +1026,7 @@ void EnergyEvaluator::run(em_state_t* ems, rvec mu_tot, tensor vir, tensor pres,
              cr,
              ms,
              *inputrec,
+             mdModulesNotifiers,
              nullptr,
              nullptr,
              imdSession,
@@ -1307,6 +1317,7 @@ void LegacySimulator::do_cg()
             CG,
             cr_,
             inputRec_,
+            mdModulesNotifiers_,
             imdSession_,
             pullWork_,
             stateGlobal_,
@@ -1367,6 +1378,7 @@ void LegacySimulator::do_cg()
                                      topGlobal_,
                                      top_,
                                      inputRec_,
+                                     mdModulesNotifiers_,
                                      imdSession_,
                                      pullWork_,
                                      nrnb_,
@@ -1561,6 +1573,7 @@ void LegacySimulator::do_cg()
                                    cr_,
                                    topGlobal_,
                                    inputRec_,
+                                   mdModulesNotifiers_,
                                    imdSession_,
                                    pullWork_,
                                    s_min,
@@ -1677,6 +1690,7 @@ void LegacySimulator::do_cg()
                                            cr_,
                                            topGlobal_,
                                            inputRec_,
+                                           mdModulesNotifiers_,
                                            imdSession_,
                                            pullWork_,
                                            s_min,
@@ -2030,6 +2044,7 @@ void LegacySimulator::do_lbfgs()
             LBFGS,
             cr_,
             inputRec_,
+            mdModulesNotifiers_,
             imdSession_,
             pullWork_,
             stateGlobal_,
@@ -2128,6 +2143,7 @@ void LegacySimulator::do_lbfgs()
                                      topGlobal_,
                                      top_,
                                      inputRec_,
+                                     mdModulesNotifiers_,
                                      imdSession_,
                                      pullWork_,
                                      nrnb_,
@@ -2824,6 +2840,7 @@ void LegacySimulator::do_steep()
             SD,
             cr_,
             inputRec_,
+            mdModulesNotifiers_,
             imdSession_,
             pullWork_,
             stateGlobal_,
@@ -2890,6 +2907,7 @@ void LegacySimulator::do_steep()
                                      topGlobal_,
                                      top_,
                                      inputRec_,
+                                     mdModulesNotifiers_,
                                      imdSession_,
                                      pullWork_,
                                      nrnb_,
@@ -3039,6 +3057,7 @@ void LegacySimulator::do_steep()
                                        cr_,
                                        topGlobal_,
                                        inputRec_,
+                                       mdModulesNotifiers_,
                                        imdSession_,
                                        pullWork_,
                                        s_min,
@@ -3170,6 +3189,7 @@ void LegacySimulator::do_nm()
             NM,
             cr_,
             inputRec_,
+            mdModulesNotifiers_,
             imdSession_,
             pullWork_,
             stateGlobal_,
@@ -3277,6 +3297,7 @@ void LegacySimulator::do_nm()
                                      topGlobal_,
                                      top_,
                                      inputRec_,
+                                     mdModulesNotifiers_,
                                      imdSession_,
                                      pullWork_,
                                      nrnb_,
@@ -3355,6 +3376,7 @@ void LegacySimulator::do_nm()
                                         nullptr,
                                         step,
                                         inputRec_,
+                                        mdModulesNotifiers_,
                                         imdSession_,
                                         pullWork_,
                                         bNS,

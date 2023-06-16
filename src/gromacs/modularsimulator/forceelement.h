@@ -72,6 +72,7 @@ class GlobalCommunicationHelper;
 class ImdSession;
 class LegacySimulatorData;
 class MDAtoms;
+struct MDModulesNotifiers;
 class MdrunScheduleWorkload;
 class ModularSimulatorAlgorithmBuilderHelper;
 class ObservablesReducer;
@@ -102,6 +103,7 @@ public:
                  FILE*                       fplog,
                  const t_commrec*            cr,
                  const t_inputrec*           inputrec,
+                 const MDModulesNotifiers&   mdModulesNotifiers,
                  const MDAtoms*              mdAtoms,
                  t_nrnb*                     nrnb,
                  t_forcerec*                 fr,
@@ -212,6 +214,8 @@ private:
     const t_commrec* cr_;
     //! Contains user input mdp options.
     const t_inputrec* inputrec_;
+    //! Notifiers for MDModules
+    const MDModulesNotifiers& mdModulesNotifiers_;
     //! Atom parameters for this domain.
     const MDAtoms* mdAtoms_;
     //! Manages flop accounting.

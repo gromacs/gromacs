@@ -328,6 +328,7 @@ void gmx::LegacySimulator::do_rerun()
                             stateGlobal_,
                             topGlobal_,
                             *ir,
+                            mdModulesNotifiers_,
                             imdSession_,
                             pullWork_,
                             state_,
@@ -346,7 +347,8 @@ void gmx::LegacySimulator::do_rerun()
         /* Copy the pointer to the global state */
         state_ = stateGlobal_;
 
-        mdAlgorithmsSetupAtomData(cr_, *ir, topGlobal_, top_, fr_, &f, mdAtoms_, constr_, virtualSites_, shellfc);
+        mdAlgorithmsSetupAtomData(
+                cr_, *ir, topGlobal_, top_, fr_, &f, mdAtoms_, constr_, virtualSites_, shellfc);
     }
 
     auto* mdatoms = mdAtoms_->mdatoms();
@@ -545,7 +547,8 @@ void gmx::LegacySimulator::do_rerun()
 
         if (MAIN(cr_))
         {
-            const bool constructVsites = ((virtualSites_ != nullptr) && mdrunOptions_.rerunConstructVsites);
+            const bool constructVsites =
+                    ((virtualSites_ != nullptr) && mdrunOptions_.rerunConstructVsites);
             if (constructVsites && haveDDAtomOrdering(*cr_))
             {
                 gmx_fatal(FARGS,
@@ -570,6 +573,7 @@ void gmx::LegacySimulator::do_rerun()
                                 stateGlobal_,
                                 topGlobal_,
                                 *ir,
+                                mdModulesNotifiers_,
                                 imdSession_,
                                 pullWork_,
                                 state_,
@@ -610,6 +614,7 @@ void gmx::LegacySimulator::do_rerun()
                                 enforcedRotation_,
                                 step,
                                 ir,
+                                mdModulesNotifiers_,
                                 imdSession_,
                                 pullWork_,
                                 bNS,
@@ -652,6 +657,7 @@ void gmx::LegacySimulator::do_rerun()
                          cr_,
                          ms_,
                          *ir,
+                         mdModulesNotifiers_,
                          awh,
                          enforcedRotation_,
                          imdSession_,

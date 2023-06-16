@@ -48,6 +48,7 @@
 #include <vector>
 
 #include "gromacs/math/arrayrefwithpadding.h"
+#include "gromacs/math/matrix.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/mdrunutility/mdmodulesnotifier.h"
 
@@ -70,6 +71,27 @@ class SeparatePmeRanksPermitted;
 struct MDModulesCheckpointReadingDataOnMain;
 struct MDModulesCheckpointReadingBroadcast;
 struct MDModulesWriteCheckpointData;
+
+/*! \libinternal \brief Notification that atoms may have been redistributed
+ *
+ * This notification is emitted at the end of the DD (re)partioning
+ * or without DD right after atoms have put into the box.
+ * The local atom sets are updated for the new atom order when this signal is emitted.
+ * The coordinates of atoms can be shifted by periodic vectors
+ * before the signal was emitted.
+ */
+struct MDModulesAtomsRedistributedSignal
+{
+    MDModulesAtomsRedistributedSignal(const matrix box, gmx::ArrayRef<const RVec> x) :
+        box_(createMatrix3x3FromLegacyMatrix(box)), x_(x)
+    {
+    }
+
+    //! The simulation unit cell
+    const Matrix3x3 box_;
+    //! List of local atom coordinates after partitioning
+    gmx::ArrayRef<const RVec> x_;
+};
 
 /*! \libinternal \brief Check if module outputs energy to a specific field.
  *
@@ -337,6 +359,7 @@ struct MDModulesNotifiers
                            LocalAtomSetManager*,
                            const MDLogger&,
                            const gmx_mtop_t&,
+                           const MDModulesAtomsRedistributedSignal,
                            MDModulesEnergyOutputToDensityFittingRequestChecker*,
                            MDModulesEnergyOutputToQMMMRequestChecker*,
                            SeparatePmeRanksPermitted*,

@@ -369,6 +369,7 @@ void gmx::LegacySimulator::do_md()
                             stateGlobal_,
                             topGlobal_,
                             *ir,
+                            mdModulesNotifiers_,
                             imdSession_,
                             pullWork_,
                             state_,
@@ -387,7 +388,8 @@ void gmx::LegacySimulator::do_md()
     else
     {
         /* Generate and initialize new topology */
-        mdAlgorithmsSetupAtomData(cr_, *ir, topGlobal_, top_, fr_, &f, mdAtoms_, constr_, virtualSites_, shellfc);
+        mdAlgorithmsSetupAtomData(
+                cr_, *ir, topGlobal_, top_, fr_, &f, mdAtoms_, constr_, virtualSites_, shellfc);
 
         upd.updateAfterPartition(state_->numAtoms(), md->cFREEZE, md->cTC, md->cACC);
         fr_->longRangeNonbondeds->updateAfterPartition(*md);
@@ -947,11 +949,11 @@ void gmx::LegacySimulator::do_md()
             wallcycle_start(wallCycleCounters_, WallCycleCounter::VsiteConstr);
             // md-vv calculates virtual velocities once it has full-step real velocities
             virtualSites_->construct(state_->x,
-                              state_->v,
-                              state_->box,
-                              (!EI_VV(inputRec_->eI) && needVirtualVelocitiesThisStep)
-                                      ? VSiteOperation::PositionsAndVelocities
-                                      : VSiteOperation::Positions);
+                                     state_->v,
+                                     state_->box,
+                                     (!EI_VV(inputRec_->eI) && needVirtualVelocitiesThisStep)
+                                             ? VSiteOperation::PositionsAndVelocities
+                                             : VSiteOperation::Positions);
             wallcycle_stop(wallCycleCounters_, WallCycleCounter::VsiteConstr);
         }
 
@@ -989,6 +991,7 @@ void gmx::LegacySimulator::do_md()
                                     stateGlobal_,
                                     topGlobal_,
                                     *ir,
+                                    mdModulesNotifiers_,
                                     imdSession_,
                                     pullWork_,
                                     state_,
@@ -1167,6 +1170,7 @@ void gmx::LegacySimulator::do_md()
                                     enforcedRotation_,
                                     step,
                                     ir,
+                                    mdModulesNotifiers_,
                                     imdSession_,
                                     pullWork_,
                                     bNS,
@@ -1218,6 +1222,7 @@ void gmx::LegacySimulator::do_md()
                          cr_,
                          ms_,
                          *ir,
+                         mdModulesNotifiers_,
                          awh.get(),
                          enforcedRotation_,
                          imdSession_,
@@ -1646,8 +1651,12 @@ void gmx::LegacySimulator::do_md()
                                               constr_,
                                               do_log,
                                               do_ene);
-                    upd.finish_update(
-                            *ir, md->havePartiallyFrozenAtoms, md->homenr, state_, wallCycleCounters_, constr_ != nullptr);
+                    upd.finish_update(*ir,
+                                      md->havePartiallyFrozenAtoms,
+                                      md->homenr,
+                                      state_,
+                                      wallCycleCounters_,
+                                      constr_ != nullptr);
                 }
 
                 if (ir->bPull && ir->pull->bSetPbcRefToPrevStepCOM)
@@ -2027,6 +2036,7 @@ void gmx::LegacySimulator::do_md()
                                 stateGlobal_,
                                 topGlobal_,
                                 *ir,
+                                mdModulesNotifiers_,
                                 imdSession_,
                                 pullWork_,
                                 state_,
