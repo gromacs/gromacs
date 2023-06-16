@@ -32,9 +32,8 @@
 # the research papers on the package. Check out https://www.gromacs.org.
 
 # This package tries to find an external lmfit library, version
-# 7. Note that pkg-config support was removed before version 7, so is
-# no longer supported here. Upon exit, the following variables may be
-# set:
+# 7 and newer (tested up to 9.0.0).
+# Upon exit, the following variables may be set:
 #
 # LMFIT_FOUND       - lmfit was found
 # LMFIT_INCLUDE_DIR - lmfit include directory
@@ -80,7 +79,7 @@ if (LMFIT_INCLUDE_DIR AND LMFIT_LIBRARY)
 endif()
 
 include(FindPackageHandleStandardArgs)
-find_package_handle_standard_args(lmfit
+find_package_handle_standard_args(Lmfit
     FOUND_VAR
     LMFIT_FOUND
     REQUIRED_VARS

@@ -5,11 +5,11 @@
  *
  * Contents:  Declarations for Levenberg-Marquardt minimization.
  *
- * Copyright: Joachim Wuttke, Forschungszentrum Juelich GmbH (2004-2013)
+ * Copyright: Joachim Wuttke, Forschungszentrum Juelich GmbH (2004-2018)
  *
  * License:   see ../COPYING (FreeBSD)
  *
- * Homepage:  apps.jcns.fz-juelich.de/lmfit
+ * Homepage:  https://jugit.fz-juelich.de/mlz/lmfit
  */
 
 #ifndef LMMIN_H
@@ -18,13 +18,14 @@
 #include "lmstruct.h"
 
 /* Levenberg-Marquardt minimization. */
-void lmmin(
-    const int n_par, double* par, const int m_dat, const double* y,
-    const void* data,
-    void (*evaluate)(
-        const double* par, const int m_dat, const void* data,
-        double* fvec, int* userbreak),
-    const lm_control_struct* control, lm_status_struct* status);
+void lmmin2(
+    const int n_par, double *const par, double *const parerr,
+    double *const covar, const int m_dat, const double *const y,
+    const void *const data,
+    void (*const evaluate)(
+        const double *const par, const int m_dat, const void *const data,
+        double *const fvec, int *const userbreak),
+    const lm_control_struct *const control, lm_status_struct *const status);
 /*
  *   This routine contains the core algorithm of our library.
  *
@@ -41,7 +42,13 @@ void lmmin(
  *        On input it must be set to an estimated solution.
  *        On output it yields the final estimate of the solution.
  *
- *      m_dat is the number of functions to be minimized (INPUT, positive integer).
+ *      parerr (either NULL or OUTPUT array of length n)
+ *        yields parameter error estimates.
+ *
+ *      covar (either NULL or OUTPUT array of length n*n)
+ *        yields the parameter covariance matrix (not yet implemented).
+ *
+ *      m_dat is the number of functions to be minimized (INPUT, integer).
  *        It must fulfill m>=n.
  *
  *      y contains data to be fitted. Use a null pointer if there are no data.
@@ -65,8 +72,17 @@ void lmmin(
  *        as declared and explained in lmstruct.h
  */
 
+/* old, simpler interface, preserved for API compatibility */
+void lmmin(
+    const int n_par, double *const par, const int m_dat, const double *const y,
+    const void *const data,
+    void (*const evaluate)(
+        const double *const par, const int m_dat, const void *const data,
+        double *const fvec, int *const userbreak),
+    const lm_control_struct *const control, lm_status_struct *const status);
+
 /* Refined calculation of Eucledian norm. */
-double lm_enorm(const int, const double*);
-double lm_fnorm(const int, const double*, const double*);
+double lm_enorm(const int, const double *const);
+double lm_fnorm(const int, const double *const, const double *const);
 
 #endif /* LMMIN_H */

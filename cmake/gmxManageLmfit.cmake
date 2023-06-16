@@ -31,8 +31,8 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out https://www.gromacs.org.
 
-# Note that lmfit does not have a stable API, so GROMACS only supports
-# the same version that it bundles.
+# Note that lmfit does not have a stable API, but we know it works
+# with version from 7.0 to 9.0. We're bundling 9.0.0 with GROMACS.
 set(GMX_LMFIT_REQUIRED_VERSION "7.0")
 
 include(gmxOptionUtilities)

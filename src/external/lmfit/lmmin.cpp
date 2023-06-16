@@ -6,19 +6,20 @@
  * Contents:  Levenberg-Marquardt minimization.
  *
  * Copyright: MINPACK authors, The University of Chikago (1980-1999)
- *            Joachim Wuttke, Forschungszentrum Juelich GmbH (2004-2013)
+ *            Joachim Wuttke, Forschungszentrum Juelich GmbH (2004-2018)
  *
  * License:   see ../COPYING (FreeBSD)
  *
- * Homepage:  apps.jcns.fz-juelich.de/lmfit
+ * Homepage:  https://jugit.fz-juelich.de/mlz/lmfit
  */
 
+#include "lmmin.h"
 #include <assert.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
 #include <math.h>
 #include <float.h>
-#include "lmmin.h"
 
 #define MIN(a,b) (((a)<=(b)) ? (a) : (b))
 #define MAX(a,b) (((a)>=(b)) ? (a) : (b))
@@ -127,18 +128,33 @@ static void lm_print_pars(const int nout, const double *par, FILE* fout)
 
 
 /*****************************************************************************/
-/*  lmmin (main minimization routine)                                        */
+/*  lmmin (simple/legacy API)                                                */
 /*****************************************************************************/
 
 void lmmin(
-    const int n, double *const x, const int m, const double* y,
+    const int n, double *const x, const int m, const double *const y,
     const void *const data,
     void (*const evaluate)(
         const double *const par, const int m_dat, const void *const data,
         double *const fvec, int *const userbreak),
     const lm_control_struct *const C, lm_status_struct *const S)
 {
-    int j, i;
+    lmmin2(n, x, NULL, NULL, m, y, data, evaluate, C, S);
+}
+
+/*****************************************************************************/
+/*  lmmin2 (main minimization routine)                                       */
+/*****************************************************************************/
+
+void lmmin2(
+    const int n, double *const x, double *const dx, double *const covar,
+    const int m, const double *const y, const void *const data,
+    void (*const evaluate)(
+        const double *const par, const int m_dat, const void *const data,
+        double *const fvec, int *const userbreak),
+    const lm_control_struct *const C, lm_status_struct *const S)
+{
+    int i, j, k, failure;
     double actred, dirder, fnorm, fnorm1, gnorm, pnorm,
         prered, ratio, step, sum, temp, temp1, temp2, temp3;
     static double p1 = 0.1, p0001 = 1.0e-4;
@@ -193,7 +209,7 @@ void lmmin(
         return;
     }
     if (C->scale_diag != 0 && C->scale_diag != 1) {
-        fprintf(stderr, "lmmin: logical variable scale_diag=%i, "
+        fprintf(stderr, "lmmin: control parameter scale_diag=%i, "
                 "should be 0 or 1\n", C->scale_diag);
         S->outcome = 10;
         return;
@@ -202,9 +218,9 @@ void lmmin(
 /***  Allocate work space.  ***/
 
     /* Allocate total workspace with just one system call */
-    char *ws;
-    if ( ( ws = static_cast<char *>(malloc(
-               (2*m+5*n+m*n)*sizeof(double) + n*sizeof(int)) ) ) == NULL ) {
+    // GROMACS: Don't allocate extra 3*n*n for error estimation
+    char *ws = static_cast<char*>(malloc((2*m+5*n+m*n/*+3*n*n*/)*sizeof(double) + n*sizeof(int)));
+    if (ws  == NULL) {
         S->outcome = 9;
         return;
     }
@@ -218,6 +234,11 @@ void lmmin(
     double *wa1  = (double*) pws; pws += n * sizeof(double)/sizeof(char);
     double *wa2  = (double*) pws; pws += n * sizeof(double)/sizeof(char);
     double *wa3  = (double*) pws; pws += n * sizeof(double)/sizeof(char);
+#if 0 // GROMACS: not used
+    double *hesse= (double*) pws; pws += n*n*sizeof(double)/sizeof(char);
+    double *wh1  = (double*) pws; pws += n*n*sizeof(double)/sizeof(char);
+    double *wh2  = (double*) pws; pws += n*n*sizeof(double)/sizeof(char);
+#endif
     double *wf   = (double*) pws; pws += m * sizeof(double)/sizeof(char);
     int    *ipvt = (int*)    pws; /*pws += n * sizeof(int)   /sizeof(char);*/
 
@@ -235,16 +256,14 @@ void lmmin(
     if( C->verbosity&2 )
         lm_print_pars(nout, x, msgfile);
     (*evaluate)(x, m, data, fvec, &(S->userbreak));
-    if( C->verbosity&8 )
-    {
-        if (y) {
+    if( C->verbosity&8 ) {
+        if (y)
             for( i=0; i<m; ++i )
                 fprintf(msgfile, "    i, f, y-f: %4i %18.8g %18.8g\n",
                         i, fvec[i], y[i]-fvec[i]);
-        } else {
+        else
             for( i=0; i<m; ++i )
                 fprintf(msgfile, "    i, f: %4i %18.8g\n", i, fvec[i]);
-        }
     }
     S->nfev = 1;
     if ( S->userbreak )
@@ -286,12 +305,12 @@ void lmmin(
         }
         if ( C->verbosity&16 ) {
             /* print the entire matrix */
-            printf("Jacobian\n");
+            fprintf(msgfile, "Jacobian\n");
             for (i = 0; i < m; i++) {
-                printf("  ");
+                fprintf(msgfile, "  ");
                 for (j = 0; j < n; j++)
-                    printf("%.5e ", fjac[j*m+i]);
-                printf("\n");
+                    fprintf(msgfile, "%.5e ", fjac[j*m+i]);
+                fprintf(msgfile, "\n");
             }
         }
 
@@ -375,7 +394,7 @@ void lmmin(
             } else {
                 xnorm = lm_enorm(n, x);
             }
-            if( !isfinite(xnorm) ){
+            if( !isfinite(xnorm) ) {
                 if( C->verbosity )
                     fprintf(msgfile, "nan case 2\n");
                 S->outcome = 12; /* nan */
@@ -434,7 +453,7 @@ void lmmin(
                 goto terminate;
             }
             prered = temp1 + 2 * temp2;
-            dirder = -temp1 + temp2; /* scaled directional derivative */
+            dirder = -temp1 - temp2; /* scaled directional derivative */
 
             /* at first call, adjust the initial step bound. */
             if ( !outer && !inner && pnorm < delta )
@@ -456,27 +475,25 @@ void lmmin(
 /***  [inner]  Evaluate the scaled reduction.  ***/
 
             /* actual scaled reduction (supports even the case fnorm1=infty) */
-	    if (p1 * fnorm1 < fnorm)
-		actred = 1 - SQR(fnorm1 / fnorm);
-	    else
-		actred = -1;
+            if (p1 * fnorm1 < fnorm)
+                actred = 1 - SQR(fnorm1 / fnorm);
+            else
+                actred = -1;
 
             /* ratio of actual to predicted reduction */
             ratio = prered ? actred/prered : 0;
 
             if( C->verbosity&32 ) {
-                if (y) {
+                if (y)
                     for( i=0; i<m; ++i )
                         fprintf(msgfile, "    i, f, y-f: %4i %18.8g %18.8g\n",
                                 i, fvec[i], y[i]-fvec[i]);
-                } else {
+                else
                     for( i=0; i<m; ++i )
-                        fprintf(msgfile, "    i, f, y-f: %4i %18.8g\n",
-                                i, fvec[i]);
-                }
+                        fprintf(msgfile, "    i, f: %4i %18.8g\n", i, fvec[i]);
             }
             if( C->verbosity&2 ) {
-                printf("%3i %2i %9.2g %9.2g %9.2g %14.6g"
+                fprintf(msgfile, "%3i %2i %9.2g %9.2g %9.2g %14.6g"
                        " %9.2g %10.3e %10.3e %21.15e",
                        outer, inner, lmpar, prered, actred, ratio,
                        dirder, delta, pnorm, fnorm1);
@@ -486,19 +503,19 @@ void lmmin(
             }
 
             /* update the step bound */
-	    if (ratio <= 0.25) {
-		if (actred >= 0)
-		    temp = 0.5;
-		else
-		    temp = 0.5 * dirder / (dirder + 0.5 * actred);
-		if (p1 * fnorm1 >= fnorm || temp < p1)
-		    temp = p1;
-		delta = temp * MIN(delta, pnorm / p1);
-		lmpar /= temp;
-	    } else if (lmpar == 0 || ratio >= 0.75) {
-		delta = 2 * pnorm;
-		lmpar *= 0.5;
-	    }
+            if (ratio <= 0.25) {
+                if (actred >= 0)
+                    temp = 0.5;
+                else
+                    temp = 0.5 * dirder / (dirder + 0.5 * actred);
+                if (p1 * fnorm1 >= fnorm || temp < p1)
+                    temp = p1;
+                delta = temp * MIN(delta, pnorm / p1);
+                lmpar /= temp;
+            } else if (lmpar == 0 || ratio >= 0.75) {
+                delta = 2 * pnorm;
+                lmpar *= 0.5;
+            }
 
 /***  [inner]  On success, update solution, and test for convergence.  ***/
 
@@ -568,27 +585,76 @@ void lmmin(
 /***  [outer]  End of the loop. ***/
 
     };
-
 terminate:
+
+/***  Set status.  ***/
     S->fnorm = lm_fnorm(m, fvec, y);
+    if ( S->userbreak ) /* user-requested break */
+        S->outcome = 11;
+
+/***  Compute error estimates.  ***/
+    if (dx || covar) {
+        assert(false); // GROMACS: This functionality is not used
+#if 0
+        if( S->fnorm <= LM_DWARF )
+            goto no_error_estimate;
+        failure = 0;
+        for (j = 0; j < n; j++) {
+            temp = x[j];
+            step = MAX(eps*eps, eps * fabs(temp));
+            x[j] += step; /* replace temporarily */
+            (*evaluate)(x, m, data, wf, &failure);
+            if ( failure )
+                goto no_error_estimate;
+            for (i = 0; i < m; i++)
+                fjac[j*m+i] = (wf[i] - fvec[i]) / step;
+            x[j] = temp; /* restore */
+        }
+        for (j = 0; j < n; j++) {
+            for (k = 0; k < n; k++) {
+                sum = 0;
+                for (i = 0; i < m; i++)
+                    sum += fjac[j*m+i]*fjac[k*m+i];
+                hesse[j*n+k] = sum;
+            }
+        }
+        lm_invert(hesse, n, ipvt, wh1, wh2, &failure);
+        if ( failure )
+            goto no_error_estimate;
+        if (dx)
+            for (j = 0; j < n; j++)
+                dx[j] = sqrt(wh2[j*n+j] * S->fnorm * S->fnorm / (m-n));
+        if (covar)
+            memcpy(covar, wh2, n*n*sizeof(double));
+        goto end_error_estimate;
+    no_error_estimate:
+        if (dx)
+            for (j = 0; j < n; j++)
+                dx[j] = 0.;
+        if (covar)
+            for (i = 0; i < n*n; i++)
+                covar[i] = 0.;
+#endif
+    }
+end_error_estimate:
+    ;
+
+/***  Messages.  ***/
     if( C->verbosity&1 )
         fprintf(msgfile, "lmmin terminates with outcome %i\n", S->outcome);
     if( C->verbosity&2 )
         lm_print_pars(nout, x, msgfile);
     if( C->verbosity&8 ) {
-        if (y) {
+        if (y)
             for( i=0; i<m; ++i )
                 fprintf(msgfile, "    i, f, y-f: %4i %18.8g %18.8g\n",
                         i, fvec[i], y[i]-fvec[i] );
-        } else {
+        else
             for( i=0; i<m; ++i )
-                fprintf(msgfile, "    i, f, y-f: %4i %18.8g\n", i, fvec[i]);
-        }
+                fprintf(msgfile, "    i, f: %4i %18.8g\n", i, fvec[i]);
     }
     if( C->verbosity&2 )
         fprintf(msgfile, "  fnorm=%24.16g xnorm=%24.16g\n", S->fnorm, xnorm);
-    if ( S->userbreak ) /* user-requested break */
-        S->outcome = 11;
 
 /***  Deallocate the workspace.  ***/
     free(ws);
@@ -1211,7 +1277,7 @@ double lm_enorm(const int n, const double *const x)
 
 
 /*****************************************************************************/
-/*  lm_fnorm (Euclidean norm of difference)                                                */
+/*  lm_fnorm (Euclidean norm of difference)                                  */
 /*****************************************************************************/
 
 double lm_fnorm(const int n, const double *const x, const double *const y)
