@@ -404,7 +404,7 @@ static void receiveints(struct DataBuffer* buffer,
  |
  */
 
-int xdr3dfcoord(XDR* xdrs, float* fp, int* size, float* precision)
+int xdr3dfcoord(XDR* xdrs, float* fp, int* size, float* precision, int magic_number)
 {
     int*     ip = nullptr;
     gmx_bool bRead;
@@ -437,6 +437,26 @@ int xdr3dfcoord(XDR* xdrs, float* fp, int* size, float* precision)
     bRead         = (xdrs->x_op == XDR_DECODE);
     bitsizeint[0] = bitsizeint[1] = bitsizeint[2] = 0;
     prevcoord[0] = prevcoord[1] = prevcoord[2] = 0;
+
+    if (magic_number != XTC_MAGIC && magic_number != XTC_NEW_MAGIC)
+    {
+        fprintf(stderr,
+                "Invalid magic number (%d) requested (should be %d or %d).\n",
+                magic_number,
+                XTC_MAGIC,
+                XTC_NEW_MAGIC);
+        exit(1);
+    }
+
+    if (*size > XTC_1995_MAX_NATOMS && magic_number != XTC_NEW_MAGIC)
+    {
+        fprintf(stderr,
+                "Inconsistent input or file format. Cannot read/write a system\n"
+                "with %d atoms in a frame without using the new XTC magic number (%d).\n",
+                *size,
+                XTC_NEW_MAGIC);
+        exit(1);
+    }
 
     struct DataBuffer buffer;
 
@@ -772,13 +792,19 @@ int xdr3dfcoord(XDR* xdrs, float* fp, int* size, float* precision)
             buffer.index++;
         }
 
-        // Store the size of the buffer - either as 64 or 32-bit data
-        if (*size > XTC_1995_MAX_NATOMS)
+        // Store the size of the buffer as 64-bit for the new XTC format.
+        // Since this only has advantages for gigantic (>300M atoms) systems,
+        // it is not used by default for smaller-size systems.
+        // This is mostly useful so we can test the new format without using
+        // gigantic files, but it also avoids potential inconsistencies by
+        // only having one indicator (the magic number) for the size of the data.
+        if (magic_number == XTC_NEW_MAGIC)
         {
             rc = xdr_int64(xdrs, reinterpret_cast<int64_t*>(&buffer.index));
         }
         else
         {
+            // Plain old XTC format uses 32-bit sizing
             i  = static_cast<int>(buffer.index);
             rc = xdr_int(xdrs, &i);
         }
@@ -916,7 +942,10 @@ int xdr3dfcoord(XDR* xdrs, float* fp, int* size, float* precision)
         smallnum     = magicints[smallidx] / 2;
         sizesmall[0] = sizesmall[1] = sizesmall[2] = magicints[smallidx];
 
-        if (*size > XTC_1995_MAX_NATOMS)
+        // Upon reading, we just adapt to whatever the magic number is in
+        // the file - for the new magic number the data is always 64-bit,
+        // no matter how large the system happens to be.
+        if (magic_number == XTC_NEW_MAGIC)
         {
             rc = xdr_int64(xdrs, reinterpret_cast<int64_t*>(&buffer.index));
         }
@@ -1092,15 +1121,6 @@ int xdr3dfcoord(XDR* xdrs, float* fp, int* size, float* precision)
    The last 4 bytes are a floating point representation of the time.
 
  ********************************************************************/
-
-/* Must match definition in xtcio.c */
-#ifndef XTC_MAGIC
-#    define XTC_MAGIC 1995
-#endif
-
-#ifndef XTC_NEW_MAGIC
-#    define XTC_NEW_MAGIC 2023
-#endif
 
 static const int header_size = 16;
 

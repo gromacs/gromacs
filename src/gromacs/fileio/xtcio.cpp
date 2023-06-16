@@ -45,10 +45,6 @@
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
 
-#define XTC_MAGIC 1995
-#define XTC_NEW_MAGIC 2023 // 64-bit sizing for compressed data buffer
-
-
 static int xdr_r2f(XDR* xdrs, real* r, gmx_bool gmx_unused bRead)
 {
 #if GMX_DOUBLE
@@ -137,7 +133,7 @@ static int xtc_header(XDR* xd, int* magic, int* natoms, int64_t* step, real* tim
     return result;
 }
 
-static int xtc_coord(XDR* xd, int* natoms, rvec* box, rvec* x, real* prec, gmx_bool bRead)
+static int xtc_coord(XDR* xd, int* natoms, rvec* box, rvec* x, real* prec, int magic_number, gmx_bool bRead)
 {
     int i, j, result;
 #if GMX_DOUBLE
@@ -175,7 +171,7 @@ static int xtc_coord(XDR* xd, int* natoms, rvec* box, rvec* x, real* prec, gmx_b
         }
         fprec = *prec;
     }
-    result = XTC_CHECK("x", xdr3dfcoord(xd, ftmp, natoms, &fprec));
+    result = XTC_CHECK("x", xdr3dfcoord(xd, ftmp, natoms, &fprec, magic_number));
 
     /* Copy from temp. array if reading */
     if (bRead)
@@ -190,7 +186,7 @@ static int xtc_coord(XDR* xd, int* natoms, rvec* box, rvec* x, real* prec, gmx_b
     }
     sfree(ftmp);
 #else
-    result = XTC_CHECK("x", xdr3dfcoord(xd, x[0], natoms, prec));
+    result = XTC_CHECK("x", xdr3dfcoord(xd, x[0], natoms, prec, magic_number));
 #endif
 
     return result;
@@ -199,6 +195,10 @@ static int xtc_coord(XDR* xd, int* natoms, rvec* box, rvec* x, real* prec, gmx_b
 
 int write_xtc(t_fileio* fio, int natoms, int64_t step, real time, const rvec* box, const rvec* x, real prec)
 {
+    // By default we only write the new format for very large systems, but since the reading code
+    // will adapt to whatever magic number is present in the header you could generate frames
+    // for small systems that use the new format (which is useful for testing), and those should
+    // be readable by normal implementations no matter how many atoms are present in the file.
     int      magic_number = (natoms > XTC_1995_MAX_NATOMS) ? XTC_NEW_MAGIC : XTC_MAGIC;
     XDR*     xd;
     gmx_bool bDum;
@@ -220,7 +220,7 @@ int write_xtc(t_fileio* fio, int natoms, int64_t step, real time, const rvec* bo
     }
 
     /* write data */
-    bOK = xtc_coord(xd, &natoms, const_cast<rvec*>(box), const_cast<rvec*>(x), &prec, FALSE); /* bOK will be 1 if writing went well */
+    bOK = xtc_coord(xd, &natoms, const_cast<rvec*>(box), const_cast<rvec*>(x), &prec, magic_number, FALSE); /* bOK will be 1 if writing went well */
 
     if (bOK)
     {
@@ -251,7 +251,7 @@ int read_first_xtc(t_fileio* fio, int* natoms, int64_t* step, real* time, matrix
 
     snew(*x, *natoms);
 
-    *bOK = (xtc_coord(xd, natoms, box, *x, prec, TRUE) != 0);
+    *bOK = (xtc_coord(xd, natoms, box, *x, prec, magic, TRUE) != 0);
 
     return static_cast<int>(*bOK);
 }
@@ -279,7 +279,7 @@ int read_next_xtc(t_fileio* fio, int natoms, int64_t* step, real* time, matrix b
         gmx_fatal(FARGS, "Frame contains more atoms (%d) than expected (%d)", n, natoms);
     }
 
-    *bOK = (xtc_coord(xd, &natoms, box, x, prec, TRUE) != 0);
+    *bOK = (xtc_coord(xd, &natoms, box, x, prec, magic, TRUE) != 0);
 
     return static_cast<int>(*bOK);
 }
