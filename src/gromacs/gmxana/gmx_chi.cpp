@@ -1713,11 +1713,5 @@ int gmx_chi(int argc, char* argv[])
     }
     sfree(dih);
 
-
-    fprintf(stderr,
-            "\ngmx chi is deprecated.\n"
-            "See https://gitlab.com/gromacs/gromacs/-/issues/4108 if\n"
-            "you are interested in preserving it!\n");
-
     return 0;
 }

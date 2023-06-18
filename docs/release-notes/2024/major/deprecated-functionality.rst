@@ -10,6 +10,14 @@ Deprecated functionality
 Changes anticipated to |Gromacs| 2024 functionality
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+The analysis tool ``gmx chi`` no longer deprecated
+""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Given the community interest, the decision was made to keep ``gmx chi``.
+
+:issue:`4108`
+
+
 Functionality deprecated in |Gromacs| 2024
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
