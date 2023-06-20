@@ -176,7 +176,9 @@ void gmx_tmpnam(char* buf);
 void gmx_file_rename(const std::filesystem::path& oldname, const std::filesystem::path& newname);
 
 /*! \brief
- * Copies a file (data only) oldname to newname.
+ * Copies a file (data only) \p oldname to \p newname.
+ *
+ * If \p newname exists, it is overwritten.
  *
  * If \p copy_if_empty is `false`, the file won't be copied if it's empty.
  */

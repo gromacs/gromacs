@@ -55,6 +55,16 @@ Fix assertion failure with annealing and multiple T-coupling groups
 
 :issue:`4800`
 
+
+Properly update the backup checkpoint
+"""""""""""""""""""""""""""""""""""""
+
+In 2023 and 2023.1, the ``state_prev.cpt`` file was never 
+overwritten, and thus always contained the very first checkpoint
+for the run.
+
+:issue:`4810`
+
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
 
