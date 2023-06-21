@@ -176,7 +176,11 @@ UpdateConstrainGpu::Impl::Impl(const t_inputrec&    ir,
     }
 }
 
-UpdateConstrainGpu::Impl::~Impl() {}
+UpdateConstrainGpu::Impl::~Impl()
+{
+    freeDeviceBuffer(&d_xp_);
+    freeDeviceBuffer(&d_inverseMasses_);
+}
 
 void UpdateConstrainGpu::Impl::set(DeviceBuffer<Float3>          d_x,
                                    DeviceBuffer<Float3>          d_v,

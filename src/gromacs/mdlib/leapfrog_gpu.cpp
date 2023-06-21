@@ -129,7 +129,10 @@ void LeapFrogGpu::integrate(DeviceBuffer<Float3>              d_x,
 LeapFrogGpu::LeapFrogGpu(const DeviceContext& deviceContext,
                          const DeviceStream&  deviceStream,
                          const int            numTempScaleValues) :
-    deviceContext_(deviceContext), deviceStream_(deviceStream), numTempScaleValues_(numTempScaleValues)
+    deviceContext_(deviceContext),
+    deviceStream_(deviceStream),
+    numTempScaleValues_(numTempScaleValues),
+    d_lambdas_(nullptr)
 {
     numAtoms_ = 0;
 
@@ -149,6 +152,7 @@ LeapFrogGpu::~LeapFrogGpu()
     // Wait for all the tasks to complete before freeing the memory. See #4519.
     deviceStream_.synchronize();
     freeDeviceBuffer(&d_inverseMasses_);
+    freeDeviceBuffer(&d_lambdas_);
 }
 
 void LeapFrogGpu::set(const int                            numAtoms,

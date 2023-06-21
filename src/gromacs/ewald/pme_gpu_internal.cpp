@@ -1442,8 +1442,11 @@ void pme_gpu_reinit_atoms(PmeGpu* pmeGpu, const int nAtoms, const real* chargesA
         /* FIXME: This should be avoided by making a separate templated version of the
          * relevant kernel(s) (probably only pme_gather_kernel). That would require a
          * reduction of the current number of templated parameters of that kernel. */
-        pme_gpu_realloc_and_copy_input_coefficients(
-                pmeGpu, reinterpret_cast<const float*>(chargesA), gridIndex);
+        if (pmeGpu->common->ngrids > 1)
+        {
+            pme_gpu_realloc_and_copy_input_coefficients(
+                    pmeGpu, reinterpret_cast<const float*>(chargesA), gridIndex);
+        }
     }
 #endif
 

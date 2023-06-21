@@ -78,7 +78,7 @@ public:
      */
     Impl(const DeviceContext& deviceContext, const DeviceStream& deviceStream, gmx_wallcycle* wcycle);
 
-    ~Impl() = default;
+    ~Impl();
     /*! \brief Register a nbnxm-format force to be reduced
      *
      * \param [in] forcePtr  Pointer to force to be reduced

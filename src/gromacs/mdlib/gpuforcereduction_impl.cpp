@@ -63,6 +63,7 @@ GpuForceReduction::Impl::Impl(const DeviceContext& deviceContext,
     rvecForceToAdd_(),
     wcycle_(wcycle)
 {
+    cellInfo_.d_cell = nullptr;
 }
 
 void GpuForceReduction::Impl::reinit(DeviceBuffer<Float3>  baseForcePtr,
@@ -162,6 +163,11 @@ void GpuForceReduction::Impl::execute()
 
     wallcycle_sub_stop(wcycle_, WallCycleSubCounter::LaunchGpuNBFBufOps);
     wallcycle_stop(wcycle_, WallCycleCounter::LaunchGpuPp);
+}
+
+GpuForceReduction::Impl::~Impl()
+{
+    freeDeviceBuffer(&cellInfo_.d_cell);
 }
 
 GpuForceReduction::GpuForceReduction(const DeviceContext& deviceContext,

@@ -168,18 +168,21 @@ void SettleGpu::set(const InteractionDefinitions& idef)
     int                 nral1       = localSettleData.nral;
     ArrayRef<const int> iatoms      = localSettleAtoms(idef);
 
-    reallocateDeviceBuffer(&d_atomIds_, numSettles_, &numAtomIds_, &numAtomIdsAlloc_, deviceContext_);
-    h_atomIds_.resize(numSettles_);
-    for (int i = 0; i < numSettles_; i++)
+    if (numSettles_)
     {
-        WaterMolecule settler;
-        settler.ow1   = iatoms[i * nral1 + 1]; // Oxygen index
-        settler.hw2   = iatoms[i * nral1 + 2]; // First hydrogen index
-        settler.hw3   = iatoms[i * nral1 + 3]; // Second hydrogen index
-        h_atomIds_[i] = settler;
+        reallocateDeviceBuffer(&d_atomIds_, numSettles_, &numAtomIds_, &numAtomIdsAlloc_, deviceContext_);
+        h_atomIds_.resize(numSettles_);
+        for (int i = 0; i < numSettles_; i++)
+        {
+            WaterMolecule settler;
+            settler.ow1   = iatoms[i * nral1 + 1]; // Oxygen index
+            settler.hw2   = iatoms[i * nral1 + 2]; // First hydrogen index
+            settler.hw3   = iatoms[i * nral1 + 3]; // Second hydrogen index
+            h_atomIds_[i] = settler;
+        }
+        copyToDeviceBuffer(
+                &d_atomIds_, h_atomIds_.data(), 0, numSettles_, deviceStream_, GpuApiCallBehavior::Sync, nullptr);
     }
-    copyToDeviceBuffer(
-            &d_atomIds_, h_atomIds_.data(), 0, numSettles_, deviceStream_, GpuApiCallBehavior::Sync, nullptr);
 }
 
 } // namespace gmx

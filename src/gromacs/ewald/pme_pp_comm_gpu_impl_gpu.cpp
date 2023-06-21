@@ -78,7 +78,10 @@ PmePpCommGpu::Impl::Impl(MPI_Comm                    comm,
     stageLibMpiGpuCpuComm_ = (getenv("GMX_DISABLE_STAGED_GPU_TO_CPU_PMEPP_COMM") == nullptr);
 }
 
-PmePpCommGpu::Impl::~Impl() = default;
+PmePpCommGpu::Impl::~Impl()
+{
+    freeDeviceBuffer(&d_pmeForces_);
+}
 
 void PmePpCommGpu::Impl::reinit(int size)
 {

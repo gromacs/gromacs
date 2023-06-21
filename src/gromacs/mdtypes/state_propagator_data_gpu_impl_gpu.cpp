@@ -132,7 +132,12 @@ StatePropagatorDataGpu::Impl::Impl(const DeviceStream*  pmeStream,
     fCopyStreams_[AtomLocality::All]      = nullptr;
 }
 
-StatePropagatorDataGpu::Impl::~Impl() {}
+StatePropagatorDataGpu::Impl::~Impl()
+{
+    freeDeviceBuffer(&d_x_);
+    freeDeviceBuffer(&d_v_);
+    freeDeviceBuffer(&d_f_);
+}
 
 void StatePropagatorDataGpu::Impl::reinit(int numAtomsLocal, int numAtomsAll)
 {

@@ -1170,6 +1170,7 @@ void gpu_free(NbnxmGpu* nb)
     freeDeviceBuffer(&plist->cjPacked);
     freeDeviceBuffer(&plist->imask);
     freeDeviceBuffer(&plist->excl);
+    freeDeviceBuffer(&plist->d_rollingPruningPart);
     delete plist;
     if (nb->bUseTwoStreams)
     {
@@ -1178,9 +1179,13 @@ void gpu_free(NbnxmGpu* nb)
         freeDeviceBuffer(&plist_nl->cjPacked);
         freeDeviceBuffer(&plist_nl->imask);
         freeDeviceBuffer(&plist_nl->excl);
+        freeDeviceBuffer(&plist_nl->d_rollingPruningPart);
         delete plist_nl;
     }
 
+    freeDeviceBuffer(&nb->cxy_na);
+    freeDeviceBuffer(&nb->cxy_ind);
+    freeDeviceBuffer(&nb->atomIndices);
     /* Free nbst */
     pfree(nb->nbst.eLJ);
     nb->nbst.eLJ = nullptr;
