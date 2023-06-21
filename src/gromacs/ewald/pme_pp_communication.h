@@ -43,6 +43,9 @@
  * \ingroup module_ewald
  */
 
+#ifndef GMX_EWALD_PME_PP_COMMUNICATION_H
+#define GMX_EWALD_PME_PP_COMMUNICATION_H
+
 #include "gromacs/math/vectypes.h"
 #include "gromacs/mdlib/sighandler.h"
 #include "gromacs/utility/real.h"
@@ -140,3 +143,5 @@ struct gmx_pme_comm_vir_ene_t
     float         cycles;    /**< Counter of CPU cycles used */
     StopCondition stop_cond; /**< Flag used in responding to an external signal to terminate */
 };
+
+#endif
