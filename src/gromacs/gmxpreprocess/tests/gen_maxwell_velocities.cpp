@@ -69,7 +69,7 @@ namespace
  *
  * Order is: temperature, seed, numWaters
  */
-using MaxwellTestParams = std::tuple<real, unsigned int, int>;
+using MaxwellTestParams = std::tuple<real, int, int>;
 
 class MaxwellTest : public ::testing::Test, public ::testing::WithParamInterface<MaxwellTestParams>
 {
@@ -81,7 +81,7 @@ public:
     //! Initialize topology with \p numWaters.
     void initMtop(int numWaters);
     //! Run test with specific \p temp and \p seed.
-    void runTest(real temp, unsigned int seed);
+    void runTest(real temp, int seed);
 
 private:
     //! System topology.
@@ -106,7 +106,7 @@ void MaxwellTest::initMtop(int numWaters)
     v.resize(mtop_.natoms);
 }
 
-void MaxwellTest::runTest(real temp, unsigned int seed)
+void MaxwellTest::runTest(real temp, int seed)
 {
     MDLogger logger;
     maxwell_speed(temp, seed, &mtop_, as_rvec_array(v.data()), logger);
@@ -118,10 +118,10 @@ void MaxwellTest::runTest(real temp, unsigned int seed)
 
 TEST_P(MaxwellTest, CreationWorks)
 {
-    const auto&        params    = GetParam();
-    const real         temp      = std::get<0>(params);
-    const unsigned int seed      = std::get<1>(params);
-    const int          numWaters = std::get<2>(params);
+    const auto& params    = GetParam();
+    const real  temp      = std::get<0>(params);
+    const int   seed      = std::get<1>(params);
+    const int   numWaters = std::get<2>(params);
     initMtop(numWaters);
 
     runTest(temp, seed);

@@ -51,12 +51,13 @@ class MDLogger;
  * Generate Maxwellian velocities.
  *
  * \param[in] tempi Temperature to generate around
- * \param[in] seed  Random number generator seed
+ * \param[in] seed  Random number generator seed. A new one is
+ *                  generated if this is -1.
  * \param[in] mtop  Molecular Topology
  * \param[out] v    Velocities
  * \param[in] logger Handle to logging interface.
  */
-void maxwell_speed(real tempi, unsigned int seed, gmx_mtop_t* mtop, rvec v[], const gmx::MDLogger& logger);
+void maxwell_speed(real tempi, int seed, gmx_mtop_t* mtop, rvec v[], const gmx::MDLogger& logger);
 
 /*! \brief
  * Remove the center of mass motion in a set of coordinates.

@@ -176,3 +176,13 @@ running on GPUs. That's fixed now.
 
 :issue:`4807`
 
+Allow convert-tpr to assign initial velocities
+""""""""""""""""""""""""""""""""""""""""""""""
+
+To help ensemble projects like free energy that sometimes rely on thousands of
+simulations for each system, we now allow convert-tpr to assign a new set
+of random velocities rather than using grompp to regenerate the full tpr.
+This also fixes a bug where using 0 for velocity seed in the mdp file would
+have the same effect as -1 and cause a new seed to be generated from the OS.
+
+:issue:`4809`

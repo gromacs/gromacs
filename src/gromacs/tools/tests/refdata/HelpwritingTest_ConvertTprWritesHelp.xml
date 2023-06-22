@@ -6,6 +6,8 @@ SYNOPSIS
 
 test convert-tpr [-s [<.tpr/.gro/...>]] [-n [<.ndx>]] [-o [<.tpr/.gro/...>]]
              [-extend <time>] [-until <time>] [-nsteps <int>]
+             [-[no]generate_velocities] [-velocity_temp <real>]
+             [-velocity_seed <int>]
 
 DESCRIPTION
 
@@ -45,5 +47,12 @@ Other options:
            Extend runtime until this ending time (ps)
  -nsteps <int>              (0)
            Change the number of steps remaining to be made
+ -[no]generate_velocities   (no)
+           Reassign velocities, using a generated seed unless one is
+           explicitly set
+ -velocity_temp <real>      (300)
+           Temperature to use when generating velocities
+ -velocity_seed <int>       (-1)
+           Random seed for velocities. If value is -1, a new one is generated
 ]]></String>
 </ReferenceData>

@@ -99,10 +99,10 @@ static void low_mspeed(real tempi, gmx_mtop_t* mtop, rvec v[], gmx::ThreeFry2x64
     }
 }
 
-void maxwell_speed(real tempi, unsigned int seed, gmx_mtop_t* mtop, rvec v[], const gmx::MDLogger& logger)
+void maxwell_speed(real tempi, int seed, gmx_mtop_t* mtop, rvec v[], const gmx::MDLogger& logger)
 {
 
-    if (seed == 0)
+    if (seed == -1)
     {
         seed = static_cast<int>(gmx::makeRandomSeed());
         GMX_LOG(logger.info)
