@@ -638,9 +638,11 @@ static void pr_awh_bias(FILE* fp, int indent, const gmx::AwhBiasParams& awhBiasP
     PR(opt, awhBiasParams.initialErrorEstimate());
     sprintf(opt, "%s-growth", prefix);
     PS(opt, enumValueToString(awhBiasParams.growthType()));
+    sprintf(opt, "%s-growth-factor", prefix);
+    PR(opt, awhBiasParams.growthFactor());
     sprintf(opt, "%s-target", prefix);
     PS(opt, enumValueToString(awhBiasParams.targetDistribution()));
-    sprintf(opt, "%s-target-beta-scalng", prefix);
+    sprintf(opt, "%s-target-beta-scaling", prefix);
     PR(opt, awhBiasParams.targetBetaScaling());
     sprintf(opt, "%s-target-cutoff", prefix);
     PR(opt, awhBiasParams.targetCutoff());
@@ -1204,6 +1206,13 @@ static void cmp_awhBiasParams(FILE*                     fp,
                abstol);
     cmpEnum<gmx::AwhHistogramGrowthType>(
             fp, "inputrec->awhParams->biaseGrowth", bias1.growthType(), bias2.growthType());
+    cmp_double(fp,
+               "inputrec->awhParams->biasGrowthFactor",
+               biasIndex,
+               bias1.growthFactor(),
+               bias2.growthFactor(),
+               ftol,
+               abstol);
     cmp_bool(fp, "inputrec->awhParams->biasbUserData", biasIndex, bias1.userPMFEstimate(), bias2.userPMFEstimate());
     cmp_double(fp,
                "inputrec->awhParams->biaserror_initial",

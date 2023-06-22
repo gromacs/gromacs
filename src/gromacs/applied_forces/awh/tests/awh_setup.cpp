@@ -117,6 +117,7 @@ static std::vector<char> awhBiasParamSerialized(AwhHistogramGrowthType          
     double                 targetBetaScaling    = 0;
     double                 targetCutoff         = 0;
     AwhHistogramGrowthType eGrowth              = eawhgrowth;
+    double                 growthFactor         = 3.0;
     bool                   bUserData            = inputUserData;
     double                 errorInitial         = inputErrorScaling / beta;
     bool                   equilibrateHistogram = false;
@@ -126,6 +127,7 @@ static std::vector<char> awhBiasParamSerialized(AwhHistogramGrowthType          
     serializer.doDouble(&targetBetaScaling);
     serializer.doDouble(&targetCutoff);
     serializer.doEnumAsInt(&eGrowth);
+    serializer.doDouble(&growthFactor);
     int temp = static_cast<int>(bUserData);
     serializer.doInt(&temp);
     serializer.doDouble(&errorInitial);
@@ -189,7 +191,7 @@ static std::vector<char> awhParamSerialized(AwhHistogramGrowthType            ea
     return awhParamBuffer;
 }
 
-AwhTestParameters::AwhTestParameters(ISerializer* serializer) : awhParams(serializer) {}
+AwhTestParameters::AwhTestParameters(ISerializer* serializer) : awhParams(serializer, false) {}
 /*! \brief
  * Helper function to set up the C-style AWH parameters for the test.
  *
@@ -254,7 +256,7 @@ TEST(SerializationTest, CanSerializeBiasParams)
     auto awhBiasBuffer  = awhBiasParamSerialized(
             AwhHistogramGrowthType::ExponentialLinear, 0.4, 0.5, awhDimArrayRef, 0, false);
     gmx::InMemoryDeserializer deserializer(awhBiasBuffer, false);
-    AwhBiasParams             awhBiasParams(&deserializer);
+    AwhBiasParams             awhBiasParams(&deserializer, false);
     EXPECT_EQ(awhBiasParams.ndim(), 1);
     EXPECT_EQ(awhBiasParams.targetDistribution(), AwhTargetType::Constant);
     EXPECT_FLOAT_EQ(awhBiasParams.targetBetaScaling(), 0);
@@ -293,7 +295,7 @@ TEST(SerializationTest, CanSerializeAwhParams)
                                              0,
                                              false);
     gmx::InMemoryDeserializer deserializer(awhParamBuffer, false);
-    AwhParams                 awhParams(&deserializer);
+    AwhParams                 awhParams(&deserializer, false);
     EXPECT_EQ(awhParams.numBias(), 1);
     EXPECT_EQ(awhParams.seed(), 1337);
     EXPECT_EQ(awhParams.nstout(), 0);

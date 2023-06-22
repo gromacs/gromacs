@@ -211,7 +211,8 @@ a convolved bias potential is chosen to be used along the other dimensions
         shown as :math:`\times`-markers of different colors. At these times the
         free energy update size :math:`\sim 1/N`, where :math:`N` is the size of
         the weight histogram, is decreased by scaling :math:`N` by a factor of
-        :math:`\gamma=3`.
+        :math:`\gamma=3` (note that the default value of :math:`\gamma` 
+        is 2 since |Gromacs| 2024).
 
 .. _fig-awhbiasevolution3:
 
@@ -254,7 +255,7 @@ In the initial stage the update size is kept constant (by keeping
 has been detected, a “covering”. For the definition of a covering, see
 :eq:`Eq. %s <eqawhcovering>` below. After a covering has
 occurred, :math:`N_n` is scaled up by a constant “growth factor”
-:math:`\gamma`, chosen heuristically as :math:`\gamma=3`. Thus, in the
+:math:`\gamma`, which by default has the value of 2. Thus, in the
 initial stage :math:`N_n` is set dynamically as
 :math:`N_{n} = \gamma^{m} N_0`, where :math:`m` is the number of
 coverings. Since the update size scales as :math:`1/N` (

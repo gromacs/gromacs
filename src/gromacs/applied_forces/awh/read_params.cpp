@@ -430,6 +430,12 @@ void checkBiasParams(const AwhBiasParams& awhBiasParams,
         wi->addError(gmx::formatString("%s needs to be > 0.", opt.c_str()));
     }
 
+    if (awhBiasParams.growthFactor() <= 1)
+    {
+        opt = prefix + "-growth-factor";
+        wi->addError(gmx::formatString("%s needs to be > 1.", opt.c_str()));
+    }
+
     opt = prefix + "-equilibrate-histogram";
     if (awhBiasParams.equilibrateHistogram()
         && awhBiasParams.growthType() != AwhHistogramGrowthType::ExponentialLinear)
@@ -763,6 +769,13 @@ AwhBiasParams::AwhBiasParams(std::vector<t_inpfile>* inp, const std::string& pre
 
     if (bComment)
     {
+        printStringNoNewline(inp, "Growth factor during the exponential growth phase");
+    }
+    opt           = prefix + "-growth-factor";
+    growthFactor_ = get_ereal(inp, opt, 2, wi);
+
+    if (bComment)
+    {
         printStringNoNewline(inp,
                              "Start the simulation by equilibrating histogram towards the target "
                              "distribution: no or yes");
@@ -828,7 +841,7 @@ AwhBiasParams::AwhBiasParams(std::vector<t_inpfile>* inp, const std::string& pre
     }
 }
 
-AwhBiasParams::AwhBiasParams(ISerializer* serializer)
+AwhBiasParams::AwhBiasParams(ISerializer* serializer, const bool tprWithoutGrowthFactor)
 {
     GMX_RELEASE_ASSERT(serializer->reading(),
                        "Can not use writing serializer to create datastructure");
@@ -836,6 +849,15 @@ AwhBiasParams::AwhBiasParams(ISerializer* serializer)
     serializer->doDouble(&targetBetaScaling_);
     serializer->doDouble(&targetCutoff_);
     serializer->doEnumAsInt(&eGrowth_);
+    if (tprWithoutGrowthFactor)
+    {
+        // A factor 3 was the old, hard-coded value
+        growthFactor_ = 3;
+    }
+    else
+    {
+        serializer->doDouble(&growthFactor_);
+    }
     int temp = 0;
     serializer->doInt(&temp);
     bUserData_ = static_cast<bool>(temp);
@@ -859,6 +881,7 @@ void AwhBiasParams::serialize(ISerializer* serializer)
     serializer->doDouble(&targetBetaScaling_);
     serializer->doDouble(&targetCutoff_);
     serializer->doEnumAsInt(&eGrowth_);
+    serializer->doDouble(&growthFactor_);
     int temp = static_cast<int>(bUserData_);
     serializer->doInt(&temp);
     serializer->doDouble(&errorInitial_);
@@ -931,7 +954,7 @@ AwhParams::AwhParams(std::vector<t_inpfile>* inp, WarningHandler* wi)
     checkInputConsistencyAwh(*this, wi);
 }
 
-AwhParams::AwhParams(ISerializer* serializer)
+AwhParams::AwhParams(ISerializer* serializer, const bool tprWithoutGrowthFactor)
 {
     GMX_RELEASE_ASSERT(serializer->reading(),
                        "Can not use writing serializer to read AWH parameters");
@@ -948,7 +971,7 @@ AwhParams::AwhParams(ISerializer* serializer)
     {
         for (int k = 0; k < numberOfBiases; k++)
         {
-            awhBiasParams_.emplace_back(serializer);
+            awhBiasParams_.emplace_back(serializer, tprWithoutGrowthFactor);
         }
     }
 }

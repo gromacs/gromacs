@@ -139,6 +139,7 @@ enum tpxv
     tpxv_RemoveTholeRfac,             /**< Remove unused rfac parameter from thole listed force */
     tpxv_RemoveAtomtypes,             /**< Remove unused atomtypes parameter from mtop */
     tpxv_EnsembleTemperature,         /**< Add ensemble temperature settings */
+    tpxv_AwhGrowthFactor,             /**< Add AWH growth factor */
     tpxv_Count                        /**< the total number of tpxv versions */
 };
 
@@ -1530,7 +1531,8 @@ static void do_inputrec(gmx::ISerializer* serializer, t_inputrec* ir, int file_v
         {
             if (serializer->reading())
             {
-                ir->awhParams = std::make_unique<gmx::AwhParams>(serializer);
+                ir->awhParams = std::make_unique<gmx::AwhParams>(
+                        serializer, file_version < tpxv_AwhGrowthFactor);
             }
             else
             {

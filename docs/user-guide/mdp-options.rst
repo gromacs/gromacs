@@ -2069,6 +2069,12 @@ AWH adaptive biasing
    knowledge (see :mdp:`awh1-error-init`) which eliminates the need for an initial stage. This is also
    the setting compatible with :mdp-value:`awh1-target=local-boltzmann`.
 
+.. mdp:: awh1-growth-factor
+
+   (2) []
+   The growth factor :math:`\gamma` during the exponential phase with :mdp-value:`awh1-growth=exp-linear`.
+   Should be larger than 1.
+
 .. mdp:: awh1-equilibrate-histogram
 
    .. mdp-value:: no

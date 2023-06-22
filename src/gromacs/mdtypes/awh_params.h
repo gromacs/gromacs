@@ -180,7 +180,7 @@ public:
     //! Constructor from input file.
     AwhBiasParams(std::vector<t_inpfile>* inp, const std::string& prefix, WarningHandler* wi, bool bComment);
     //! Constructor to generate from file reading.
-    explicit AwhBiasParams(ISerializer* serializer);
+    explicit AwhBiasParams(ISerializer* serializer, bool tprWithoutGrowthFactor);
 
     //! Move constructor.
     AwhBiasParams(AwhBiasParams&&) = default;
@@ -199,6 +199,8 @@ public:
     double targetCutoff() const { return targetCutoff_; }
     //! Which kind of growth to use.
     AwhHistogramGrowthType growthType() const { return eGrowth_; }
+    //! The histogram growth factor during the initial phase
+    double growthFactor() const { return growthFactor_; }
     //! User provided PMF estimate.
     bool userPMFEstimate() const { return bUserData_; }
     //! Estimated initial free energy error in kJ/mol.
@@ -227,6 +229,8 @@ private:
     double targetCutoff_;
     //! How the biasing histogram grows.
     AwhHistogramGrowthType eGrowth_;
+    //! The histogram growth factor during the initial phase
+    double growthFactor_;
     //! Is there a user-defined initial PMF estimate and target estimate?
     bool bUserData_;
     //! Estimated initial free energy error in kJ/mol.
@@ -245,7 +249,7 @@ public:
     //! Constructor from input file.
     AwhParams(std::vector<t_inpfile>* inp, WarningHandler* wi);
     //! Constructor used to generate awh parameter from file reading.
-    explicit AwhParams(ISerializer* serializer);
+    explicit AwhParams(ISerializer* serializer, bool tprWithoutGrowthFactor);
 
     //! Move constructor.
     AwhParams(AwhParams&&) = default;
