@@ -186,3 +186,12 @@ This also fixes a bug where using 0 for velocity seed in the mdp file would
 have the same effect as -1 and cause a new seed to be generated from the OS.
 
 :issue:`4809`
+
+Correct formulas for Nosé-Hoover thermostat
+"""""""""""""""""""""""""""""""""""""""""""
+
+Several formulas describing Nosé-Hoover temperature coupling contained 
+inconsistencies. The reference manual was updated to match the actual 
+implementation. 
+
+:issue:`4695`
