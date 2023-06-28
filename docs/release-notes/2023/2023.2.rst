@@ -195,3 +195,11 @@ inconsistencies. The reference manual was updated to match the actual
 implementation. 
 
 :issue:`4695`
+
+Fix commandline-test on broken gcc versions
+"""""""""""""""""""""""""""""""""""""""""""
+
+gcc 9.3.1 would fail generating proper paths for comparison, resulting
+in test failures.
+
+:issue:`4785`
