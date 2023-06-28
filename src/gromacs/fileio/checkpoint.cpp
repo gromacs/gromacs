@@ -737,7 +737,7 @@ static int doVectorLow(XDR*                           xd,
         if (nval >= 0)
         {
             // Remove this check when we store int64_t in the file
-            GMX_RELEASE_ASSERT(nval <= gmx::sc_checkpointMaxAtomCount,
+            GMX_RELEASE_ASSERT(nval <= std::numeric_limits<unsigned int>::max(),
                                "Vector size in checkpoint beyond max uint");
 
             numElemInTheFile = nval;
@@ -1317,7 +1317,7 @@ static int do_cpt_state(XDR* xd, int fflags, t_state* state, FILE* list)
 {
     GMX_RELEASE_ASSERT(
             static_cast<unsigned int>(state->natoms) <= std::numeric_limits<unsigned int>::max() / 3,
-            "Can not write more than max_int/3 atoms to checkpoint");
+            "Can not write more than max_uint/3 atoms to checkpoint");
 
     int       ret    = 0;
     const int sflags = state->flags;

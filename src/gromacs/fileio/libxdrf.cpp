@@ -476,7 +476,7 @@ int xdr3dfcoord(XDR* xdrs, float* fp, int* size, float* precision, int magic_num
         {
             return 0;
         }
-        size3 = *size * 3;
+        size3 = static_cast<std::size_t>(*size) * 3;
         /* when the number of coordinates is small, don't try to compress; just
          * write them as floats using xdr_vector
          */
@@ -669,7 +669,7 @@ int xdr3dfcoord(XDR* xdrs, float* fp, int* size, float* precision, int magic_num
         while (i < *size)
         {
             is_small  = 0;
-            thiscoord = reinterpret_cast<int*>(luip) + i * 3;
+            thiscoord = reinterpret_cast<int*>(luip) + static_cast<std::size_t>(i) * 3;
             if (smallidx < maxidx && i >= 1 && std::abs(thiscoord[0] - prevcoord[0]) < larger
                 && std::abs(thiscoord[1] - prevcoord[1]) < larger
                 && std::abs(thiscoord[2] - prevcoord[2]) < larger)
@@ -862,7 +862,7 @@ int xdr3dfcoord(XDR* xdrs, float* fp, int* size, float* precision, int magic_num
                     lsize);
         }
         *size = lsize;
-        size3 = *size * 3;
+        size3 = static_cast<std::size_t>(*size) * 3;
         if (*size <= 9)
         {
             *precision = -1;
@@ -999,7 +999,7 @@ int xdr3dfcoord(XDR* xdrs, float* fp, int* size, float* precision, int magic_num
         lip           = ip;
         while (i < lsize)
         {
-            thiscoord = reinterpret_cast<int*>(lip) + i * 3;
+            thiscoord = reinterpret_cast<int*>(lip) + static_cast<std::size_t>(i) * 3;
 
             if (bitsize == 0)
             {
