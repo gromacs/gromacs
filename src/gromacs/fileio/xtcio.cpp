@@ -158,7 +158,7 @@ static int xtc_coord(XDR* xd, int* natoms, rvec* box, rvec* x, real* prec, int m
 
 #if GMX_DOUBLE
     /* allocate temp. single-precision array */
-    snew(ftmp, (*natoms) * DIM);
+    snew(ftmp, static_cast<std::size_t>(*natoms) * DIM);
 
     /* Copy data to temp. array if writing */
     if (!bRead)
