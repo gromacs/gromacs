@@ -1435,10 +1435,13 @@ void do_force(FILE*                               fplog,
         pme_gpu_set_device_x(fr->pmedata, stateGpu->getCoordinates());
     }
 
-    auto* localXReadyOnDevice =
-            (stepWork.haveGpuPmeOnThisRank || stepWork.useGpuXBufferOps || simulationWork.useGpuUpdate)
-                    ? stateGpu->getCoordinatesReadyOnDeviceEvent(AtomLocality::Local, simulationWork, stepWork)
-                    : nullptr;
+    const bool pmeSendCoordinatesFromGpu =
+            simulationWork.useGpuPmePpCommunication && !stepWork.doNeighborSearch;
+    auto* localXReadyOnDevice = (stepWork.haveGpuPmeOnThisRank || stepWork.useGpuXBufferOps
+                                 || simulationWork.useGpuUpdate || pmeSendCoordinatesFromGpu)
+                                        ? stateGpu->getCoordinatesReadyOnDeviceEvent(
+                                                AtomLocality::Local, simulationWork, stepWork)
+                                        : nullptr;
 
     if (stepWork.clearGpuFBufferEarly)
     {
@@ -1494,11 +1497,6 @@ void do_force(FILE*                               fplog,
 
     nbnxn_atomdata_copy_shiftvec(stepWork.haveDynamicBox, fr->shift_vec, nbv->nbat.get());
 
-    const bool pmeSendCoordinatesFromGpu =
-            simulationWork.useGpuPmePpCommunication && !(stepWork.doNeighborSearch);
-    const bool reinitGpuPmePpComms =
-            simulationWork.useGpuPmePpCommunication && (stepWork.doNeighborSearch);
-
     GMX_ASSERT(simulationWork.useGpuHaloExchange
                        == ((cr->dd != nullptr) && (!cr->dd->gpuHaloExchange[0].empty())),
                "The GPU halo exchange is active, but it has not been constructed.");
@@ -1523,7 +1521,7 @@ void do_force(FILE*                               fplog,
     // The local coordinates can be copied right away.
     // NOTE: Consider moving this copy to right after they are updated and constrained,
     //       if the later is not offloaded.
-    if (stepWork.haveGpuPmeOnThisRank || stepWork.useGpuXBufferOps)
+    if (stepWork.haveGpuPmeOnThisRank || stepWork.useGpuXBufferOps || pmeSendCoordinatesFromGpu)
     {
         GMX_ASSERT(stateGpu != nullptr, "stateGpu should not be null");
         const int expectedLocalXReadyOnDeviceConsumptionCount =
@@ -1556,6 +1554,8 @@ void do_force(FILE*                               fplog,
             stateGpu->waitCoordinatesReadyOnHost(AtomLocality::Local);
         }
 
+        const bool reinitGpuPmePpComms =
+                simulationWork.useGpuPmePpCommunication && stepWork.doNeighborSearch;
         gmx_pme_send_coordinates(fr,
                                  cr,
                                  box,
