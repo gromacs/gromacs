@@ -299,6 +299,24 @@ Performance and Run Control
         runtime permits this variable to be different for different ranks. Cannot be used
         in conjunction with ``mdrun -gputasks``. Has all the same requirements as ``mdrun -gputasks``.
 
+.. _HeFFTe docs: https://mkstoyanov.bitbucket.io/heffte/structheffte_1_1plan__options.html
+
+``GMX_HEFFTE_RESHAPE_ALGORITHM``
+        Sets ``heffte::plan_options::reshape_algorithm`` to ``p2p`` (the default) or ``p2p_plined``, ``alltoallv``, or ``alltoall``.
+        See the `HeFFTe docs`_ for details.
+
+``GMX_HEFFTE_USE_GPU_AWARE``
+        Sets ``heffte::plan_options::use_gpu_aware`` to ``true`` (the default) or ``false``.
+        See the `HeFFTe docs`_ for details.
+
+``GMX_HEFFTE_USE_PENCILS``
+        Sets ``heffte::plan_options::use_pencils`` to ``true`` or ``false`` (the default).
+        See the `HeFFTe docs`_ for details.
+
+``GMX_HEFFTE_USE_REORDER``
+        Sets ``heffte::plan_options::use_reorder`` to ``true`` (the default) or ``false``.
+        See the `HeFFTe docs`_ for details.
+
 ``GMX_IGNORE_FSYNC_FAILURE_ENV``
         allow :ref:`gmx mdrun` to continue even if
         a file is missing.
