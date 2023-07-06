@@ -1,0 +1,2545 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <String Name="CommandLine">hbond2 -r Protein -t Protein -nom</String>
+  <OutputData Name="Data">
+    <AnalysisData Name="hbang">
+      <DataFrame Name="Frame0">
+        <Real Name="X">0</Real>
+        <DataValues>
+          <Int Name="Count">54</Int>
+          <DataValue>
+            <Real Name="Value">7.5810661</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">1.3411795</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">8.1008234</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">29.644718</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">10.519477</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">18.779119</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">23.459585</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">19.788082</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">4.7032518</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">24.797888</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">4.4439492</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">25.716797</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">13.524575</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">27.523472</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">18.371309</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame1">
+        <Real Name="X">10</Real>
+        <DataValues>
+          <Int Name="Count">54</Int>
+          <DataValue>
+            <Real Name="Value">3.1108415</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">13.096106</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">5.9236226</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">17.417143</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">12.453703</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">10.886598</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">24.390835</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">27.675726</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">17.713289</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">13.39174</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">17.742365</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">19.970621</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">8.780757</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+    </AnalysisData>
+    <AnalysisData Name="hbdan">
+      <DataFrame Name="Frame0">
+        <Real Name="X">0</Real>
+        <DataValues>
+          <Int Name="Count">2</Int>
+          <DataValue>
+            <Real Name="Value">15</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">14</Real>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame1">
+        <Real Name="X">10</Real>
+        <DataValues>
+          <Int Name="Count">2</Int>
+          <DataValue>
+            <Real Name="Value">13</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">12</Real>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+    </AnalysisData>
+    <AnalysisData Name="hbdist">
+      <DataFrame Name="Frame0">
+        <Real Name="X">0</Real>
+        <DataValues>
+          <Int Name="Count">54</Int>
+          <DataValue>
+            <Real Name="Value">0.29255763</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.3100225</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.30462769</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.28466654</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.27788487</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.28049421</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.29245344</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.30174986</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.28139296</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.30991125</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.30200821</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.30732897</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.30312058</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.31156051</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.27366766</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame1">
+        <Real Name="X">10</Real>
+        <DataValues>
+          <Int Name="Count">54</Int>
+          <DataValue>
+            <Real Name="Value">0.28873</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.29772636</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.28360006</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.31080052</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.29411891</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.29933441</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.31219545</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.28290287</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.29302904</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.28586897</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.2785624</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.29038766</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.27463982</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Bool Name="Present">false</Bool>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+    </AnalysisData>
+    <AnalysisData Name="hbnum">
+      <DataFrame Name="Frame0">
+        <Real Name="X">0</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">15</Real>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame1">
+        <Real Name="X">10</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">13</Real>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+    </AnalysisData>
+    <AnalysisData Name="histogram_ang">
+      <DataFrame Name="Frame0">
+        <Real Name="X">0.5</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Real Name="Error">0</Real>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame1">
+        <Real Name="X">1.5</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0.035714287</Real>
+            <Real Name="Error">0.050507627</Real>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame2">
+        <Real Name="X">2.5</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Real Name="Error">0</Real>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame3">
+        <Real Name="X">3.5</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0.035714287</Real>
+            <Real Name="Error">0.050507627</Real>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame4">
+        <Real Name="X">4.5</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0.071428575</Real>
+            <Real Name="Error">0.10101525</Real>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame5">
+        <Real Name="X">5.5</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0.035714287</Real>
+            <Real Name="Error">0.050507627</Real>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame6">
+        <Real Name="X">6.5</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Real Name="Error">0</Real>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame7">
+        <Real Name="X">7.5</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0.035714287</Real>
+            <Real Name="Error">0.050507627</Real>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame8">
+        <Real Name="X">8.5</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0.071428575</Real>
+            <Real Name="Error">0</Real>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame9">
+        <Real Name="X">9.5</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Real Name="Error">0</Real>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame10">
+        <Real Name="X">10.5</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0.071428575</Real>
+            <Real Name="Error">0</Real>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame11">
+        <Real Name="X">11.5</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Real Name="Error">0</Real>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame12">
+        <Real Name="X">12.5</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0.035714287</Real>
+            <Real Name="Error">0.050507627</Real>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame13">
+        <Real Name="X">13.5</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0.10714287</Real>
+            <Real Name="Error">0.050507627</Real>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame14">
+        <Real Name="X">14.5</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Real Name="Error">0</Real>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame15">
+        <Real Name="X">15.5</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Real Name="Error">0</Real>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame16">
+        <Real Name="X">16.5</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Real Name="Error">0</Real>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame17">
+        <Real Name="X">17.5</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0.10714287</Real>
+            <Real Name="Error">0.15152287</Real>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame18">
+        <Real Name="X">18.5</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0.071428575</Real>
+            <Real Name="Error">0.10101525</Real>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame19">
+        <Real Name="X">19.5</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0.071428575</Real>
+            <Real Name="Error">0</Real>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame20">
+        <Real Name="X">20.5</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Real Name="Error">0</Real>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame21">
+        <Real Name="X">21.5</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Real Name="Error">0</Real>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame22">
+        <Real Name="X">22.5</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Real Name="Error">0</Real>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame23">
+        <Real Name="X">23.5</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0.035714287</Real>
+            <Real Name="Error">0.050507627</Real>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame24">
+        <Real Name="X">24.5</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0.071428575</Real>
+            <Real Name="Error">0</Real>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame25">
+        <Real Name="X">25.5</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0.035714287</Real>
+            <Real Name="Error">0.050507627</Real>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame26">
+        <Real Name="X">26.5</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Real Name="Error">0</Real>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame27">
+        <Real Name="X">27.5</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0.071428575</Real>
+            <Real Name="Error">0</Real>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame28">
+        <Real Name="X">28.5</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Real Name="Error">0</Real>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame29">
+        <Real Name="X">29.5</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0.035714287</Real>
+            <Real Name="Error">0.050507627</Real>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+    </AnalysisData>
+    <AnalysisData Name="histogram_dist">
+      <DataFrame Name="Frame0">
+        <Real Name="X">0.0024999999</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Real Name="Error">0</Real>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame1">
+        <Real Name="X">0.0074999998</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Real Name="Error">0</Real>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame2">
+        <Real Name="X">0.012499999</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Real Name="Error">0</Real>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame3">
+        <Real Name="X">0.0175</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Real Name="Error">0</Real>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame4">
+        <Real Name="X">0.022499999</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Real Name="Error">0</Real>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame5">
+        <Real Name="X">0.027499998</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Real Name="Error">0</Real>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame6">
+        <Real Name="X">0.032499999</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Real Name="Error">0</Real>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame7">
+        <Real Name="X">0.037500001</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Real Name="Error">0</Real>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame8">
+        <Real Name="X">0.0425</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Real Name="Error">0</Real>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame9">
+        <Real Name="X">0.047499999</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Real Name="Error">0</Real>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame10">
+        <Real Name="X">0.052499998</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Real Name="Error">0</Real>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame11">
+        <Real Name="X">0.057500001</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Real Name="Error">0</Real>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame12">
+        <Real Name="X">0.0625</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Real Name="Error">0</Real>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame13">
+        <Real Name="X">0.067499995</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Real Name="Error">0</Real>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame14">
+        <Real Name="X">0.072499998</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Real Name="Error">0</Real>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame15">
+        <Real Name="X">0.077499993</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Real Name="Error">0</Real>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame16">
+        <Real Name="X">0.082499996</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Real Name="Error">0</Real>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame17">
+        <Real Name="X">0.087499999</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Real Name="Error">0</Real>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame18">
+        <Real Name="X">0.092499994</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Real Name="Error">0</Real>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame19">
+        <Real Name="X">0.097499996</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Real Name="Error">0</Real>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame20">
+        <Real Name="X">0.10249999</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Real Name="Error">0</Real>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame21">
+        <Real Name="X">0.10749999</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Real Name="Error">0</Real>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame22">
+        <Real Name="X">0.1125</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Real Name="Error">0</Real>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame23">
+        <Real Name="X">0.11749999</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Real Name="Error">0</Real>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame24">
+        <Real Name="X">0.12249999</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Real Name="Error">0</Real>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame25">
+        <Real Name="X">0.1275</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Real Name="Error">0</Real>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame26">
+        <Real Name="X">0.13249999</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Real Name="Error">0</Real>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame27">
+        <Real Name="X">0.13749999</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Real Name="Error">0</Real>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame28">
+        <Real Name="X">0.1425</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Real Name="Error">0</Real>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame29">
+        <Real Name="X">0.14749999</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Real Name="Error">0</Real>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame30">
+        <Real Name="X">0.15249999</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Real Name="Error">0</Real>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame31">
+        <Real Name="X">0.1575</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Real Name="Error">0</Real>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame32">
+        <Real Name="X">0.16249999</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Real Name="Error">0</Real>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame33">
+        <Real Name="X">0.16749999</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Real Name="Error">0</Real>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame34">
+        <Real Name="X">0.1725</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Real Name="Error">0</Real>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame35">
+        <Real Name="X">0.17749999</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Real Name="Error">0</Real>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame36">
+        <Real Name="X">0.18249999</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Real Name="Error">0</Real>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame37">
+        <Real Name="X">0.1875</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Real Name="Error">0</Real>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame38">
+        <Real Name="X">0.1925</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Real Name="Error">0</Real>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame39">
+        <Real Name="X">0.19749999</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Real Name="Error">0</Real>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame40">
+        <Real Name="X">0.20249999</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Real Name="Error">0</Real>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame41">
+        <Real Name="X">0.2075</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Real Name="Error">0</Real>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame42">
+        <Real Name="X">0.21249999</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Real Name="Error">0</Real>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame43">
+        <Real Name="X">0.21749999</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Real Name="Error">0</Real>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame44">
+        <Real Name="X">0.2225</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Real Name="Error">0</Real>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame45">
+        <Real Name="X">0.22749999</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Real Name="Error">0</Real>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame46">
+        <Real Name="X">0.23249999</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Real Name="Error">0</Real>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame47">
+        <Real Name="X">0.2375</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Real Name="Error">0</Real>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame48">
+        <Real Name="X">0.24249999</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Real Name="Error">0</Real>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame49">
+        <Real Name="X">0.24749999</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Real Name="Error">0</Real>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame50">
+        <Real Name="X">0.2525</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Real Name="Error">0</Real>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame51">
+        <Real Name="X">0.25749999</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Real Name="Error">0</Real>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame52">
+        <Real Name="X">0.26249999</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Real Name="Error">0</Real>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame53">
+        <Real Name="X">0.26749998</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Real Name="Error">0</Real>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame54">
+        <Real Name="X">0.27249998</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">14.285714</Real>
+            <Real Name="Error">0</Real>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame55">
+        <Real Name="X">0.2775</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">14.285714</Real>
+            <Real Name="Error">0</Real>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame56">
+        <Real Name="X">0.2825</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">35.714287</Real>
+            <Real Name="Error">10.101525</Real>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame57">
+        <Real Name="X">0.28749999</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">14.285714</Real>
+            <Real Name="Error">20.203051</Real>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame58">
+        <Real Name="X">0.29249999</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">35.714287</Real>
+            <Real Name="Error">10.101525</Real>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame59">
+        <Real Name="X">0.29749998</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">14.285714</Real>
+            <Real Name="Error">20.203051</Real>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame60">
+        <Real Name="X">0.30249998</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">28.571428</Real>
+            <Real Name="Error">40.406101</Real>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame61">
+        <Real Name="X">0.3075</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">14.285714</Real>
+            <Real Name="Error">20.203051</Real>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame62">
+        <Real Name="X">0.3125</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">28.571428</Real>
+            <Real Name="Error">0</Real>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame63">
+        <Real Name="X">0.3175</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Real Name="Error">0</Real>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame64">
+        <Real Name="X">0.32249999</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Real Name="Error">0</Real>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame65">
+        <Real Name="X">0.32749999</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Real Name="Error">0</Real>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame66">
+        <Real Name="X">0.33249998</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Real Name="Error">0</Real>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame67">
+        <Real Name="X">0.33749998</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Real Name="Error">0</Real>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame68">
+        <Real Name="X">0.3425</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Real Name="Error">0</Real>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame69">
+        <Real Name="X">0.3475</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">0</Real>
+            <Real Name="Error">0</Real>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+    </AnalysisData>
+  </OutputData>
+  <OutputFiles Name="Files">
+    <File Name="-o">
+      <String Name="Contents"><![CDATA[
+[ Protein ]
+    1     2     3     4     5     6     7     8     9    10    11    12    13    14    15
+   16    17    18    19    20    21    22    23    24    25    26    27    28    29    30
+   31    32    33    34    35    36    37    38    39    40    41    42    43    44    45
+   46    47    48    49    50    51    52    53    54    55    56    57    58    59    60
+   61    62    63    64    65    66    67    68    69    70    71    72    73    74    75
+   76    77    78    79    80    81    82    83    84    85    86    87    88    89    90
+   91    92    93    94    95    96    97    98    99   100   101   102   103   104   105
+  106   107   108   109   110   111   112   113   114   115   116   117   118   119   120
+  121   122   123   124   125   126   127   128   129   130   131   132   133   134   135
+  136   137   138   139   140   141   142   143   144   145   146   147   148   149   150
+  151   152   153   154   155   156   157   158   159   160   161   162   163   164   165
+  166   167   168   169   170   171   172   173   174   175   176   177   178   179   180
+  181   182   183   184   185   186   187   188   189   190   191   192   193   194   195
+  196   197   198   199   200   201   202   203   204   205   206   207   208   209   210
+  211   212   213   214   215   216   217   218   219   220   221   222   223   224   225
+  226   227   228   229   230   231   232   233   234   235   236   237   238   239   240
+  241   242   243   244   245   246   247   248   249   250   251   252   253   254   255
+  256   257   258   259   260   261   262   263   264   265   266   267   268   269   270
+  271   272   273   274   275   276   277   278   279   280   281   282   283   284   285
+  286   287   288   289   290   291   292   293   294   295   296   297   298   299   300
+  301   302   303   304
+[ donors_hydrogens_Protein ]
+    1    2    3    4
+   12   13   14
+   17   18
+   36   37
+   49   50
+   57   58
+   76   77
+   88   89   90
+   93   94
+  103  104
+  117  118
+  136  137
+  152  153  154  155
+  158  159
+  170  171
+  177  178
+  198  199
+  205  206
+  209  210
+  216  217
+  220  221
+  227  228
+  240  241
+  243  244  245
+  246  247  248
+  293  294
+  300  301
+[ acceptors_Protein ]
+    1    11    12    16    17    35    36    49    56    57    75    76    87    88    92
+   93   103   116   117   135   136   152   157   158   166   167   169   170   176   177
+  183   184   197   198   205   208   209   216   219   220   226   227   240   243   246
+  250   251   264   265   278   279   292   293   300   303   304
+[ hbonds_Protein ]
+     12     14    303
+     36     37     11
+     57     58     16
+     76     77     87
+     93     94     35
+    103    104    250
+    117    118     56
+    136    137     75
+    158    159     92
+    170    171    135
+    177    178    116
+    198    199    176
+    209    210    183
+    216    217    167
+    216    217    169
+    240    241    167
+    246    247    167
+]]></String>
+    </File>
+    <File Name="-num">
+      <XvgLegend Name="Legend">
+        <String Name="XvgLegend"><![CDATA[
+title "Number of hydrogen bonds"
+xaxis  label "Time (ps)"
+yaxis  label "Hbonds"
+TYPE xy
+s0 legend "Hydrogen bonds"
+]]></String>
+      </XvgLegend>
+      <XvgData Name="Data">
+        <Sequence Name="Row0">
+          <Int Name="Length">2</Int>
+          <Real>0.000</Real>
+          <Real>15</Real>
+        </Sequence>
+        <Sequence Name="Row1">
+          <Int Name="Length">2</Int>
+          <Real>10.000</Real>
+          <Real>13</Real>
+        </Sequence>
+      </XvgData>
+    </File>
+    <File Name="-dist">
+      <XvgLegend Name="Legend">
+        <String Name="XvgLegend"><![CDATA[
+title "Hydrogen Bond Distance Distribution Histogram"
+xaxis  label "Distance (nm)"
+yaxis  label "Probability"
+TYPE xy
+]]></String>
+      </XvgLegend>
+      <XvgData Name="Data">
+        <Sequence Name="Row0">
+          <Int Name="Length">2</Int>
+          <Real>0.0025</Real>
+          <Real>0.0000</Real>
+        </Sequence>
+        <Sequence Name="Row1">
+          <Int Name="Length">2</Int>
+          <Real>0.0075</Real>
+          <Real>0.0000</Real>
+        </Sequence>
+        <Sequence Name="Row2">
+          <Int Name="Length">2</Int>
+          <Real>0.0125</Real>
+          <Real>0.0000</Real>
+        </Sequence>
+        <Sequence Name="Row3">
+          <Int Name="Length">2</Int>
+          <Real>0.0175</Real>
+          <Real>0.0000</Real>
+        </Sequence>
+        <Sequence Name="Row4">
+          <Int Name="Length">2</Int>
+          <Real>0.0225</Real>
+          <Real>0.0000</Real>
+        </Sequence>
+        <Sequence Name="Row5">
+          <Int Name="Length">2</Int>
+          <Real>0.0275</Real>
+          <Real>0.0000</Real>
+        </Sequence>
+        <Sequence Name="Row6">
+          <Int Name="Length">2</Int>
+          <Real>0.0325</Real>
+          <Real>0.0000</Real>
+        </Sequence>
+        <Sequence Name="Row7">
+          <Int Name="Length">2</Int>
+          <Real>0.0375</Real>
+          <Real>0.0000</Real>
+        </Sequence>
+        <Sequence Name="Row8">
+          <Int Name="Length">2</Int>
+          <Real>0.0425</Real>
+          <Real>0.0000</Real>
+        </Sequence>
+        <Sequence Name="Row9">
+          <Int Name="Length">2</Int>
+          <Real>0.0475</Real>
+          <Real>0.0000</Real>
+        </Sequence>
+        <Sequence Name="Row10">
+          <Int Name="Length">2</Int>
+          <Real>0.0525</Real>
+          <Real>0.0000</Real>
+        </Sequence>
+        <Sequence Name="Row11">
+          <Int Name="Length">2</Int>
+          <Real>0.0575</Real>
+          <Real>0.0000</Real>
+        </Sequence>
+        <Sequence Name="Row12">
+          <Int Name="Length">2</Int>
+          <Real>0.0625</Real>
+          <Real>0.0000</Real>
+        </Sequence>
+        <Sequence Name="Row13">
+          <Int Name="Length">2</Int>
+          <Real>0.0675</Real>
+          <Real>0.0000</Real>
+        </Sequence>
+        <Sequence Name="Row14">
+          <Int Name="Length">2</Int>
+          <Real>0.0725</Real>
+          <Real>0.0000</Real>
+        </Sequence>
+        <Sequence Name="Row15">
+          <Int Name="Length">2</Int>
+          <Real>0.0775</Real>
+          <Real>0.0000</Real>
+        </Sequence>
+        <Sequence Name="Row16">
+          <Int Name="Length">2</Int>
+          <Real>0.0825</Real>
+          <Real>0.0000</Real>
+        </Sequence>
+        <Sequence Name="Row17">
+          <Int Name="Length">2</Int>
+          <Real>0.0875</Real>
+          <Real>0.0000</Real>
+        </Sequence>
+        <Sequence Name="Row18">
+          <Int Name="Length">2</Int>
+          <Real>0.0925</Real>
+          <Real>0.0000</Real>
+        </Sequence>
+        <Sequence Name="Row19">
+          <Int Name="Length">2</Int>
+          <Real>0.0975</Real>
+          <Real>0.0000</Real>
+        </Sequence>
+        <Sequence Name="Row20">
+          <Int Name="Length">2</Int>
+          <Real>0.1025</Real>
+          <Real>0.0000</Real>
+        </Sequence>
+        <Sequence Name="Row21">
+          <Int Name="Length">2</Int>
+          <Real>0.1075</Real>
+          <Real>0.0000</Real>
+        </Sequence>
+        <Sequence Name="Row22">
+          <Int Name="Length">2</Int>
+          <Real>0.1125</Real>
+          <Real>0.0000</Real>
+        </Sequence>
+        <Sequence Name="Row23">
+          <Int Name="Length">2</Int>
+          <Real>0.1175</Real>
+          <Real>0.0000</Real>
+        </Sequence>
+        <Sequence Name="Row24">
+          <Int Name="Length">2</Int>
+          <Real>0.1225</Real>
+          <Real>0.0000</Real>
+        </Sequence>
+        <Sequence Name="Row25">
+          <Int Name="Length">2</Int>
+          <Real>0.1275</Real>
+          <Real>0.0000</Real>
+        </Sequence>
+        <Sequence Name="Row26">
+          <Int Name="Length">2</Int>
+          <Real>0.1325</Real>
+          <Real>0.0000</Real>
+        </Sequence>
+        <Sequence Name="Row27">
+          <Int Name="Length">2</Int>
+          <Real>0.1375</Real>
+          <Real>0.0000</Real>
+        </Sequence>
+        <Sequence Name="Row28">
+          <Int Name="Length">2</Int>
+          <Real>0.1425</Real>
+          <Real>0.0000</Real>
+        </Sequence>
+        <Sequence Name="Row29">
+          <Int Name="Length">2</Int>
+          <Real>0.1475</Real>
+          <Real>0.0000</Real>
+        </Sequence>
+        <Sequence Name="Row30">
+          <Int Name="Length">2</Int>
+          <Real>0.1525</Real>
+          <Real>0.0000</Real>
+        </Sequence>
+        <Sequence Name="Row31">
+          <Int Name="Length">2</Int>
+          <Real>0.1575</Real>
+          <Real>0.0000</Real>
+        </Sequence>
+        <Sequence Name="Row32">
+          <Int Name="Length">2</Int>
+          <Real>0.1625</Real>
+          <Real>0.0000</Real>
+        </Sequence>
+        <Sequence Name="Row33">
+          <Int Name="Length">2</Int>
+          <Real>0.1675</Real>
+          <Real>0.0000</Real>
+        </Sequence>
+        <Sequence Name="Row34">
+          <Int Name="Length">2</Int>
+          <Real>0.1725</Real>
+          <Real>0.0000</Real>
+        </Sequence>
+        <Sequence Name="Row35">
+          <Int Name="Length">2</Int>
+          <Real>0.1775</Real>
+          <Real>0.0000</Real>
+        </Sequence>
+        <Sequence Name="Row36">
+          <Int Name="Length">2</Int>
+          <Real>0.1825</Real>
+          <Real>0.0000</Real>
+        </Sequence>
+        <Sequence Name="Row37">
+          <Int Name="Length">2</Int>
+          <Real>0.1875</Real>
+          <Real>0.0000</Real>
+        </Sequence>
+        <Sequence Name="Row38">
+          <Int Name="Length">2</Int>
+          <Real>0.1925</Real>
+          <Real>0.0000</Real>
+        </Sequence>
+        <Sequence Name="Row39">
+          <Int Name="Length">2</Int>
+          <Real>0.1975</Real>
+          <Real>0.0000</Real>
+        </Sequence>
+        <Sequence Name="Row40">
+          <Int Name="Length">2</Int>
+          <Real>0.2025</Real>
+          <Real>0.0000</Real>
+        </Sequence>
+        <Sequence Name="Row41">
+          <Int Name="Length">2</Int>
+          <Real>0.2075</Real>
+          <Real>0.0000</Real>
+        </Sequence>
+        <Sequence Name="Row42">
+          <Int Name="Length">2</Int>
+          <Real>0.2125</Real>
+          <Real>0.0000</Real>
+        </Sequence>
+        <Sequence Name="Row43">
+          <Int Name="Length">2</Int>
+          <Real>0.2175</Real>
+          <Real>0.0000</Real>
+        </Sequence>
+        <Sequence Name="Row44">
+          <Int Name="Length">2</Int>
+          <Real>0.2225</Real>
+          <Real>0.0000</Real>
+        </Sequence>
+        <Sequence Name="Row45">
+          <Int Name="Length">2</Int>
+          <Real>0.2275</Real>
+          <Real>0.0000</Real>
+        </Sequence>
+        <Sequence Name="Row46">
+          <Int Name="Length">2</Int>
+          <Real>0.2325</Real>
+          <Real>0.0000</Real>
+        </Sequence>
+        <Sequence Name="Row47">
+          <Int Name="Length">2</Int>
+          <Real>0.2375</Real>
+          <Real>0.0000</Real>
+        </Sequence>
+        <Sequence Name="Row48">
+          <Int Name="Length">2</Int>
+          <Real>0.2425</Real>
+          <Real>0.0000</Real>
+        </Sequence>
+        <Sequence Name="Row49">
+          <Int Name="Length">2</Int>
+          <Real>0.2475</Real>
+          <Real>0.0000</Real>
+        </Sequence>
+        <Sequence Name="Row50">
+          <Int Name="Length">2</Int>
+          <Real>0.2525</Real>
+          <Real>0.0000</Real>
+        </Sequence>
+        <Sequence Name="Row51">
+          <Int Name="Length">2</Int>
+          <Real>0.2575</Real>
+          <Real>0.0000</Real>
+        </Sequence>
+        <Sequence Name="Row52">
+          <Int Name="Length">2</Int>
+          <Real>0.2625</Real>
+          <Real>0.0000</Real>
+        </Sequence>
+        <Sequence Name="Row53">
+          <Int Name="Length">2</Int>
+          <Real>0.2675</Real>
+          <Real>0.0000</Real>
+        </Sequence>
+        <Sequence Name="Row54">
+          <Int Name="Length">2</Int>
+          <Real>0.2725</Real>
+          <Real>14.2857</Real>
+        </Sequence>
+        <Sequence Name="Row55">
+          <Int Name="Length">2</Int>
+          <Real>0.2775</Real>
+          <Real>14.2857</Real>
+        </Sequence>
+        <Sequence Name="Row56">
+          <Int Name="Length">2</Int>
+          <Real>0.2825</Real>
+          <Real>35.7143</Real>
+        </Sequence>
+        <Sequence Name="Row57">
+          <Int Name="Length">2</Int>
+          <Real>0.2875</Real>
+          <Real>14.2857</Real>
+        </Sequence>
+        <Sequence Name="Row58">
+          <Int Name="Length">2</Int>
+          <Real>0.2925</Real>
+          <Real>35.7143</Real>
+        </Sequence>
+        <Sequence Name="Row59">
+          <Int Name="Length">2</Int>
+          <Real>0.2975</Real>
+          <Real>14.2857</Real>
+        </Sequence>
+        <Sequence Name="Row60">
+          <Int Name="Length">2</Int>
+          <Real>0.3025</Real>
+          <Real>28.5714</Real>
+        </Sequence>
+        <Sequence Name="Row61">
+          <Int Name="Length">2</Int>
+          <Real>0.3075</Real>
+          <Real>14.2857</Real>
+        </Sequence>
+        <Sequence Name="Row62">
+          <Int Name="Length">2</Int>
+          <Real>0.3125</Real>
+          <Real>28.5714</Real>
+        </Sequence>
+        <Sequence Name="Row63">
+          <Int Name="Length">2</Int>
+          <Real>0.3175</Real>
+          <Real>0.0000</Real>
+        </Sequence>
+        <Sequence Name="Row64">
+          <Int Name="Length">2</Int>
+          <Real>0.3225</Real>
+          <Real>0.0000</Real>
+        </Sequence>
+        <Sequence Name="Row65">
+          <Int Name="Length">2</Int>
+          <Real>0.3275</Real>
+          <Real>0.0000</Real>
+        </Sequence>
+        <Sequence Name="Row66">
+          <Int Name="Length">2</Int>
+          <Real>0.3325</Real>
+          <Real>0.0000</Real>
+        </Sequence>
+        <Sequence Name="Row67">
+          <Int Name="Length">2</Int>
+          <Real>0.3375</Real>
+          <Real>0.0000</Real>
+        </Sequence>
+        <Sequence Name="Row68">
+          <Int Name="Length">2</Int>
+          <Real>0.3425</Real>
+          <Real>0.0000</Real>
+        </Sequence>
+        <Sequence Name="Row69">
+          <Int Name="Length">2</Int>
+          <Real>0.3475</Real>
+          <Real>0.0000</Real>
+        </Sequence>
+      </XvgData>
+    </File>
+    <File Name="-ang">
+      <XvgLegend Name="Legend">
+        <String Name="XvgLegend"><![CDATA[
+title "Hydrogen Bond Angle Distribution Histogram"
+xaxis  label "Hydrogen - Donor - Acceptor Angle (degrees)"
+yaxis  label "Probability"
+TYPE xy
+]]></String>
+      </XvgLegend>
+      <XvgData Name="Data">
+        <Sequence Name="Row0">
+          <Int Name="Length">2</Int>
+          <Real>0.5</Real>
+          <Real>0.0000000</Real>
+        </Sequence>
+        <Sequence Name="Row1">
+          <Int Name="Length">2</Int>
+          <Real>1.5</Real>
+          <Real>0.0357143</Real>
+        </Sequence>
+        <Sequence Name="Row2">
+          <Int Name="Length">2</Int>
+          <Real>2.5</Real>
+          <Real>0.0000000</Real>
+        </Sequence>
+        <Sequence Name="Row3">
+          <Int Name="Length">2</Int>
+          <Real>3.5</Real>
+          <Real>0.0357143</Real>
+        </Sequence>
+        <Sequence Name="Row4">
+          <Int Name="Length">2</Int>
+          <Real>4.5</Real>
+          <Real>0.0714286</Real>
+        </Sequence>
+        <Sequence Name="Row5">
+          <Int Name="Length">2</Int>
+          <Real>5.5</Real>
+          <Real>0.0357143</Real>
+        </Sequence>
+        <Sequence Name="Row6">
+          <Int Name="Length">2</Int>
+          <Real>6.5</Real>
+          <Real>0.0000000</Real>
+        </Sequence>
+        <Sequence Name="Row7">
+          <Int Name="Length">2</Int>
+          <Real>7.5</Real>
+          <Real>0.0357143</Real>
+        </Sequence>
+        <Sequence Name="Row8">
+          <Int Name="Length">2</Int>
+          <Real>8.5</Real>
+          <Real>0.0714286</Real>
+        </Sequence>
+        <Sequence Name="Row9">
+          <Int Name="Length">2</Int>
+          <Real>9.5</Real>
+          <Real>0.0000000</Real>
+        </Sequence>
+        <Sequence Name="Row10">
+          <Int Name="Length">2</Int>
+          <Real>10.5</Real>
+          <Real>0.0714286</Real>
+        </Sequence>
+        <Sequence Name="Row11">
+          <Int Name="Length">2</Int>
+          <Real>11.5</Real>
+          <Real>0.0000000</Real>
+        </Sequence>
+        <Sequence Name="Row12">
+          <Int Name="Length">2</Int>
+          <Real>12.5</Real>
+          <Real>0.0357143</Real>
+        </Sequence>
+        <Sequence Name="Row13">
+          <Int Name="Length">2</Int>
+          <Real>13.5</Real>
+          <Real>0.1071429</Real>
+        </Sequence>
+        <Sequence Name="Row14">
+          <Int Name="Length">2</Int>
+          <Real>14.5</Real>
+          <Real>0.0000000</Real>
+        </Sequence>
+        <Sequence Name="Row15">
+          <Int Name="Length">2</Int>
+          <Real>15.5</Real>
+          <Real>0.0000000</Real>
+        </Sequence>
+        <Sequence Name="Row16">
+          <Int Name="Length">2</Int>
+          <Real>16.5</Real>
+          <Real>0.0000000</Real>
+        </Sequence>
+        <Sequence Name="Row17">
+          <Int Name="Length">2</Int>
+          <Real>17.5</Real>
+          <Real>0.1071429</Real>
+        </Sequence>
+        <Sequence Name="Row18">
+          <Int Name="Length">2</Int>
+          <Real>18.5</Real>
+          <Real>0.0714286</Real>
+        </Sequence>
+        <Sequence Name="Row19">
+          <Int Name="Length">2</Int>
+          <Real>19.5</Real>
+          <Real>0.0714286</Real>
+        </Sequence>
+        <Sequence Name="Row20">
+          <Int Name="Length">2</Int>
+          <Real>20.5</Real>
+          <Real>0.0000000</Real>
+        </Sequence>
+        <Sequence Name="Row21">
+          <Int Name="Length">2</Int>
+          <Real>21.5</Real>
+          <Real>0.0000000</Real>
+        </Sequence>
+        <Sequence Name="Row22">
+          <Int Name="Length">2</Int>
+          <Real>22.5</Real>
+          <Real>0.0000000</Real>
+        </Sequence>
+        <Sequence Name="Row23">
+          <Int Name="Length">2</Int>
+          <Real>23.5</Real>
+          <Real>0.0357143</Real>
+        </Sequence>
+        <Sequence Name="Row24">
+          <Int Name="Length">2</Int>
+          <Real>24.5</Real>
+          <Real>0.0714286</Real>
+        </Sequence>
+        <Sequence Name="Row25">
+          <Int Name="Length">2</Int>
+          <Real>25.5</Real>
+          <Real>0.0357143</Real>
+        </Sequence>
+        <Sequence Name="Row26">
+          <Int Name="Length">2</Int>
+          <Real>26.5</Real>
+          <Real>0.0000000</Real>
+        </Sequence>
+        <Sequence Name="Row27">
+          <Int Name="Length">2</Int>
+          <Real>27.5</Real>
+          <Real>0.0714286</Real>
+        </Sequence>
+        <Sequence Name="Row28">
+          <Int Name="Length">2</Int>
+          <Real>28.5</Real>
+          <Real>0.0000000</Real>
+        </Sequence>
+        <Sequence Name="Row29">
+          <Int Name="Length">2</Int>
+          <Real>29.5</Real>
+          <Real>0.0357143</Real>
+        </Sequence>
+      </XvgData>
+    </File>
+    <File Name="-dan">
+      <XvgLegend Name="Legend">
+        <String Name="XvgLegend"><![CDATA[
+title "Number of Donors and Acceptors"
+xaxis  label "Time (ps)"
+yaxis  label "Donors/Acceptors"
+TYPE xy
+s0 legend "Number of Donors"
+s1 legend "Number of Acceptors"
+]]></String>
+      </XvgLegend>
+      <XvgData Name="Data">
+        <Sequence Name="Row0">
+          <Int Name="Length">3</Int>
+          <Real>0</Real>
+          <Real>15</Real>
+          <Real>14</Real>
+        </Sequence>
+        <Sequence Name="Row1">
+          <Int Name="Length">3</Int>
+          <Real>10</Real>
+          <Real>13</Real>
+          <Real>12</Real>
+        </Sequence>
+      </XvgData>
+    </File>
+  </OutputFiles>
+</ReferenceData>

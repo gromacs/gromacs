@@ -48,6 +48,7 @@
 #include "modules/dssp.h"
 #include "modules/extract_cluster.h"
 #include "modules/freevolume.h"
+#include "modules/hbond.h"
 #include "modules/msd.h"
 #include "modules/pairdist.h"
 #include "modules/rdf.h"
@@ -97,6 +98,7 @@ void registerTrajectoryAnalysisModules(CommandLineModuleManager* manager)
     registerModule<DsspInfo>(manager, group);
     registerModule<ExtractClusterInfo>(manager, group);
     registerModule<FreeVolumeInfo>(manager, group);
+    registerModule<HbondInfo>(manager, group);
     registerModule<MsdInfo>(manager, group);
     registerModule<PairDistanceInfo>(manager, group);
     registerModule<RdfInfo>(manager, group);
