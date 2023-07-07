@@ -65,6 +65,15 @@ for the run.
 
 :issue:`4810`
 
+Fix domain decomposition with bonded interactions with long distances
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+mdrun would exit with an error about missing bonded interactions
+when domain decomposition was used and bonded interactions involved
+distances longer than the pairlist cutoff.
+
+:issue:`4818`
+
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
 

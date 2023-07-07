@@ -63,7 +63,7 @@ using gmx::DDBondedChecking;
 static void check_link(std::vector<int>* links, const int atom)
 {
     const auto it = find(links->begin(), links->end(), atom);
-    if (it != links->end())
+    if (it == links->end())
     {
         links->push_back(atom);
     }
@@ -195,10 +195,10 @@ static gmx::ListOfLists<int> genBondedLinks(const gmx_mtop_t&                   
             {
                 for (int a = 0; a < molt.atoms.nr; a++)
                 {
-                    const int                      atomIndex = indexOfFirstAtomInMolecule + a;
+                    const int atomIndex = indexOfFirstAtomInMolecule + a;
+                    link.pushBackListOfSize(link[atomIndex - molt.atoms.nr].size());
                     const gmx::ArrayRef<const int> linksForAtomInPreviousMolecule =
                             link[atomIndex - molt.atoms.nr];
-                    link.pushBackListOfSize(linksForAtomInPreviousMolecule.size());
                     gmx::ArrayRef<int> linksForAtom = link.back();
                     std::transform(linksForAtomInPreviousMolecule.begin(),
                                    linksForAtomInPreviousMolecule.end(),
