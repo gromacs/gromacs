@@ -87,6 +87,9 @@ static void flagInteractionsForType(const int              ftype,
     const int nril_mol = ril.index[numAtomsPerMolecule];
     const int nral     = NRAL(ftype);
 
+    // Position restraints have different paremeter types in the local topology
+    const bool skipParameterTypeCheck = (ftype == F_POSRES || ftype == F_FBPOSRES);
+
     for (int i = 0; i < il.size(); i += 1 + nral)
     {
         // ia[0] is the interaction type, ia[1, ...] the atom indices
@@ -112,7 +115,8 @@ static void flagInteractionsForType(const int              ftype,
                  * not already been assigned, since we could have
                  * multiply defined interactions.
                  */
-                if (ftype == ftype_j && ia[0] == ril.il[j_mol + 1] && isAssigned[j] == 0)
+                if (ftype == ftype_j && (skipParameterTypeCheck || ia[0] == ril.il[j_mol + 1])
+                    && isAssigned[j] == 0)
                 {
                     /* Check the atoms */
                     found = true;
@@ -193,17 +197,17 @@ static std::string printMissingInteractionsMolblock(const t_commrec*         cr,
                     int a = 0;
                     for (; a < nral; a++)
                     {
-                        log.writeStringFormatted("%5d", ril.il[j_mol + 2 + a] + 1);
+                        log.writeStringFormatted(" %6d", ril.il[j_mol + 2 + a] + 1);
                     }
                     while (a < 4)
                     {
-                        log.writeString("     ");
+                        log.writeString("       ");
                         a++;
                     }
                     log.writeString(" global");
                     for (int a = 0; a < nral; a++)
                     {
-                        log.writeStringFormatted("%6d",
+                        log.writeStringFormatted(" %6d",
                                                  atomRange.begin() + mol * numAtomsPerMolecule
                                                          + ril.il[j_mol + 2 + a] + 1);
                     }
