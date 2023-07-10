@@ -50,19 +50,11 @@
 #include <gtest/gtest-param-test.h>
 #include <gtest/gtest.h>
 
-#include "gromacs/gmxpreprocess/editconf.h"
-#include "gromacs/gmxpreprocess/grompp.h"
-#include "gromacs/gmxpreprocess/pdb2gmx.h"
-#include "gromacs/gmxpreprocess/solvate.h"
 #include "gromacs/utility/stringutil.h"
-#include "gromacs/utility/textwriter.h"
 
 #include "testutils/cmdlinetest.h"
-#include "testutils/testfilemanager.h"
 #include "testutils/textblockmatchers.h"
 #include "testutils/xvgtest.h"
-
-#include "programs/mdrun/mdrun_main.h"
 
 #include "moduletest.h"
 
@@ -91,15 +83,15 @@ class HbondModuleTest :
 TEST_P(HbondModuleTest, Works)
 {
     std::tuple<std::string, std::tuple<std::string, std::string>, std::string> params = GetParam();
-    const char* const     cmdline[]     = { "hbond2" };
-    std::filesystem::path inputBasename = std::get<0>(params);
-    CommandLine           command(cmdline);
-    double                tolerance = 1e-2;
-    test::XvgMatch        matcher;
-    test::XvgMatch&       toleranceMatch =
+    const char* const cmdline[]     = { "hbond2" };
+    std::string       inputBasename = std::get<0>(params);
+    CommandLine       command(cmdline);
+    double            tolerance = 1e-2;
+    test::XvgMatch    matcher;
+    test::XvgMatch&   toleranceMatch =
             matcher.tolerance(gmx::test::relativeToleranceAsFloatingPoint(1, tolerance));
-    setTrajectory((std::string(inputBasename) + ".xtc").c_str());
-    setTopology((std::string(inputBasename) + ".tpr").c_str());
+    setTrajectory((inputBasename + ".xtc").c_str());
+    setTopology((inputBasename + ".tpr").c_str());
     std::string mergeCommand = "-" + std::get<2>(params);
     setOutputFile("-o",
                   formatString("%s-r%s-t%s%s.ndx",
