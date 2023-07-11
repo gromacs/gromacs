@@ -610,10 +610,10 @@ int gmx_enemat(int argc, char* argv[])
             if (bFree)
             {
                 fprintf(out, "%s%d%s \"%s\"\n", str1, j++, str2, "Free");
-            }
-            if (bFree)
-            {
-                fprintf(out, "%s%d%s \"%s\"\n", str1, j++, str2, "Diff");
+                if (bRef)
+                {
+                    fprintf(out, "%s%d%s \"%s\"\n", str1, j++, str2, "Diff");
+                }
             }
             fprintf(out, "@TYPE xy\n");
             fprintf(out, "#%3s", "grp");
@@ -628,10 +628,10 @@ int gmx_enemat(int argc, char* argv[])
             if (bFree)
             {
                 fprintf(out, " %9s", "Free");
-            }
-            if (bFree)
-            {
-                fprintf(out, " %9s", "Diff");
+                if (bRef)
+                {
+                    fprintf(out, " %9s", "Diff");
+                }
             }
             fprintf(out, "\n");
         }
@@ -648,10 +648,10 @@ int gmx_enemat(int argc, char* argv[])
             if (bFree)
             {
                 fprintf(out, " %9.5g", efree[i]);
-            }
-            if (bRef)
-            {
-                fprintf(out, " %9.5g", edif[i]);
+                if (bRef)
+                {
+                    fprintf(out, " %9.5g", edif[i]);
+                }
             }
             fprintf(out, "\n");
         }
