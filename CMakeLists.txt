@@ -50,7 +50,6 @@ endif()
 list(APPEND CMAKE_MODULE_PATH
     ${CMAKE_CURRENT_SOURCE_DIR}/cmake
     ${CMAKE_CURRENT_SOURCE_DIR}/cmake/Platform
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/external/cmake
     )
 
 if(APPLE)

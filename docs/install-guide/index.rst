@@ -143,8 +143,11 @@ these will be honored. For configuration of other compilers, read on.
 On Linux, the clang compilers typically use for their C++ library
 the libstdc++ which comes with g++. For |Gromacs|, we require
 the compiler to support libstc++ version 7.1 or higher. To select a
-particular libstdc++ library, provide the path to g++ with
-``-DGMX_GPLUSPLUS_PATH=/path/to/g++``.
+particular libstdc++ library for a compiler whose default standard
+library does not work, provide the path to g++ with
+``-DGMX_GPLUSPLUS_PATH=/path/to/g++``. Note that if you then build
+a further project that depends on |Gromacs| you will need to arrange
+to use the same compiler and libstdc++.
 
 To build with clang and llvm's libcxx standard library, use
 ``-DCMAKE_CXX_FLAGS=-stdlib=libc++``.

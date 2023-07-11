@@ -38,12 +38,12 @@
 # Does nothing if compiler includes std-library (e.g. GCC), or already
 # works, or compiler uses different std-library
 # (either because of different defaults (e.g. on MacOS) or user flags (e.g. -stdlib=libc++)).
-# The heuristic by the compiler of how to find libstdc++ is ignored. Any user-provided flags in
+# The heuristic by the compiler of how to find libstdc++ is honored. Any user-provided flags in
 # e.g. CXXFLAGS for the location of libstdc++ are honored. The user can choose the libstdc++ by setting
 # GMX_GPLUSPLUS_PATH, PATH or CMAKE_PREFIX_PATH to make sure the correct the g++ is found.
-# Gives error if no g++ is found or the g++ found isn't new enough (5.1 is required).
+# Gives error if no g++ is found or warns if the g++ found isn't new enough.
 # The location of g++ is cached as GMX_GPLUSPLUS_PATH making sure that the same libstdc++ is used
-# for builds at different times using the same cache file (so that e.g. module loading is
+# for builds at different times using the same cache file (so that e.g. loading a module is
 # not required for a reproducible build). Note that GMX_GPLUSPLUS_PATH is ignored if it is
 # not needed because the compiler already found a std library via some other mechanism.
 
@@ -122,7 +122,7 @@ if (TRY_TO_FIND_GPLUSPLUS)
             OUTPUT_STRIP_TRAILING_WHITESPACE)
         if (NOT "${GMX_GPLUSPLUS_VERSION}" MATCHES "^[0-9]+\\.[0-9]+\\.?[0-9]?$") #Should never happen
             message(FATAL_ERROR "Couldn't detect g++ version for ${GMX_GPLUSPLUS_PATH}. Version output: ${GMX_GPLUSPLUS_VERSION} "
-                ", error: ${GMX_GPLUSPLUS_VERSION_ERROR}. Please report to developers.${EXTRA_MESSAGE}")
+                ", error: ${GMX_GPLUSPLUS_VERSION_ERROR}. Please report to developers.")
         endif()
         # Cache this, so future configurations won't have to run g++ again.
         set(GMX_GPLUSPLUS_VERSION ${GMX_GPLUSPLUS_VERSION} CACHE STRING "Version of g++ from which libstdc++ is obtained")
@@ -130,7 +130,7 @@ if (TRY_TO_FIND_GPLUSPLUS)
     if (${GMX_GPLUSPLUS_VERSION} VERSION_LESS 9)
         message(WARNING "Found g++ at ${GMX_GPLUSPLUS_PATH}. Its version is ${GMX_GPLUSPLUS_VERSION}. "
             "GROMACS encourages at least version 9. "
-            "If you see problems, please specify a different g++ using GMX_GPLUSPLUS_PATH, PATH or CMAKE_PREFIX_PATH.${EXTRA_MESSAGE}")
+            "If you see problems, please specify a different g++ using GMX_GPLUSPLUS_PATH, PATH or CMAKE_PREFIX_PATH.")
     endif()
 
     # Now make some sanity checks on the compiler using libstdc++.
@@ -174,24 +174,6 @@ if (TRY_TO_FIND_GPLUSPLUS)
     endif()
 endif()
 
-# Maybe we just need to link an extra library for std::filesystem, perhaps via
-# the --gcc-toolchain that was just set up.
-find_package(Filesystem)
-if(CXX_FILESYSTEM_HAVE_FS)
-    cmake_push_check_state()
-    get_target_property(CMAKE_REQUIRED_LIBRARIES std::filesystem INTERFACE_LINK_LIBRARIES)
-    check_cxx_source_compiles("${SAMPLE_CODE_TO_TEST_CXX17}" CXX17_COMPILES_WHEN_LINKING_FS_LIBRARY)
-    cmake_pop_check_state()
-
-    if(CXX17_COMPILES_WHEN_LINKING_FS_LIBRARY)
-        # If we reach here, then we know that GROMACS targets need to
-        # link the std::filesystem target when such a library was found.
-        return()
-    else()
-        set(EXTRA_MESSAGE " even though a library for std::filesystem was found")
-    endif()
-endif()
-
 if (NOT USING_LIBSTDCXX)
     # Just linking an extra library for std::filesystem didn't help,
     # so let's try to narrow down what fails.
@@ -203,7 +185,7 @@ if (NOT USING_LIBSTDCXX)
             "Please use a working C++17 compiler and standard library.")
     else()
         message(FATAL_ERROR "The C++ compiler cannot find a working standard library "
-            "that supports std::filesystem${EXTRA_MESSAGE}. "
+            "that supports std::filesystem. "
             "The compiler was not trying to use libstdc++. "
             "The GROMACS build system cannot handle this case. "
             "Please use a working C++17 compiler and standard library.")
@@ -221,5 +203,5 @@ if (NOT CXX17_COMPILES_WITH_HELP)
         set (OTHER_EXTRA_MESSAGE " Check your toolchain documentation or environment flags so that they will find a suitable C++17 standard library.")
     endif()
     message(FATAL_ERROR "GROMACS requires C++17, but a test of such functionality in the C++ standard "
-        "library failed to compile ${EXTRA_MESSAGE}.${OTHER_EXTRA_MESSAGE}")
+        "library failed to compile.${OTHER_EXTRA_MESSAGE}")
 endif()
