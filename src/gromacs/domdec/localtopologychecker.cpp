@@ -50,6 +50,7 @@
 #include <vector>
 
 #include "gromacs/domdec/domdec_internal.h"
+#include "gromacs/domdec/options.h"
 #include "gromacs/domdec/reversetopology.h"
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/mdtypes/commrec.h"
@@ -366,6 +367,7 @@ public:
     Impl(const MDLogger&       mdlog,
          const t_commrec*      cr,
          const gmx_mtop_t&     mtop,
+         DDBondedChecking      ddBondedChecking,
          const gmx_localtop_t& localTopology,
          const t_state&        localState,
          bool                  useUpdateGroups);
@@ -402,6 +404,7 @@ public:
 /*! \brief Compute the total bonded interaction count
  *
  * \param[in] mtop              The global system topology
+ * \param[in] ddBondedChecking  Which interations to check
  * \param[in] useUpdateGroups   Whether update groups are in use
  *
  * When using domain decomposition without update groups,
@@ -409,9 +412,15 @@ public:
  * do not consider them in this correctness check. Otherwise, we
  * include them.
  */
-static int computeExpectedNumGlobalBondedInteractions(const gmx_mtop_t& mtop, const bool useUpdateGroups)
+static int computeExpectedNumGlobalBondedInteractions(const gmx_mtop_t&      mtop,
+                                                      const DDBondedChecking ddBondedChecking,
+                                                      const bool             useUpdateGroups)
 {
     int expectedNumGlobalBondedInteractions = gmx_mtop_interaction_count(mtop, IF_BOND);
+    if (ddBondedChecking == DDBondedChecking::ExcludeZeroLimit)
+    {
+        expectedNumGlobalBondedInteractions -= gmx_mtop_interaction_count(mtop, IF_BOND | IF_LIMZERO);
+    }
     if (useUpdateGroups)
     {
         expectedNumGlobalBondedInteractions += gmx_mtop_interaction_count(mtop, IF_CONSTRAINT);
@@ -419,29 +428,32 @@ static int computeExpectedNumGlobalBondedInteractions(const gmx_mtop_t& mtop, co
     return expectedNumGlobalBondedInteractions;
 }
 
-LocalTopologyChecker::Impl::Impl(const MDLogger&       mdlog,
-                                 const t_commrec*      cr,
-                                 const gmx_mtop_t&     mtop,
-                                 const gmx_localtop_t& localTopology,
-                                 const t_state&        localState,
-                                 bool                  useUpdateGroups) :
+LocalTopologyChecker::Impl::Impl(const MDLogger&        mdlog,
+                                 const t_commrec*       cr,
+                                 const gmx_mtop_t&      mtop,
+                                 const DDBondedChecking ddBondedChecking,
+                                 const gmx_localtop_t&  localTopology,
+                                 const t_state&         localState,
+                                 bool                   useUpdateGroups) :
     mdlog_(mdlog),
     cr_(cr),
     mtop_(mtop),
     localTopology_(localTopology),
     localState_(localState),
-    expectedNumGlobalBondedInteractions_(computeExpectedNumGlobalBondedInteractions(mtop, useUpdateGroups))
+    expectedNumGlobalBondedInteractions_(
+            computeExpectedNumGlobalBondedInteractions(mtop, ddBondedChecking, useUpdateGroups))
 {
 }
 
 LocalTopologyChecker::LocalTopologyChecker(const MDLogger&            mdlog,
                                            const t_commrec*           cr,
                                            const gmx_mtop_t&          mtop,
+                                           const DDBondedChecking     ddBondedChecking,
                                            const gmx_localtop_t&      localTopology,
                                            const t_state&             localState,
                                            const bool                 useUpdateGroups,
                                            ObservablesReducerBuilder* observablesReducerBuilder) :
-    impl_(std::make_unique<Impl>(mdlog, cr, mtop, localTopology, localState, useUpdateGroups))
+    impl_(std::make_unique<Impl>(mdlog, cr, mtop, ddBondedChecking, localTopology, localState, useUpdateGroups))
 {
     Impl*                                          impl = impl_.get();
     ObservablesReducerBuilder::CallbackFromBuilder callbackFromBuilder =

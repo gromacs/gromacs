@@ -55,6 +55,7 @@ class t_state;
 
 namespace gmx
 {
+enum class DDBondedChecking : bool;
 class MDLogger;
 class ObservablesReducerBuilder;
 } // namespace gmx
@@ -84,6 +85,7 @@ public:
      * \param[in]    mdlog            Logger
      * \param[in]    cr               Communication object
      * \param[in]    mtop             Global system topology
+     * \param[in]    ddBondedChecking Tells for which bonded interactions presence should be checked
      * \param[in]    localTopology    The local topology
      * \param[in]    localState       The local state
      * \param[in]    useUpdateGroups  Whether update groups are in use
@@ -92,6 +94,7 @@ public:
     LocalTopologyChecker(const MDLogger&            mdlog,
                          const t_commrec*           cr,
                          const gmx_mtop_t&          mtop,
+                         DDBondedChecking           ddBondedChecking,
                          const gmx_localtop_t&      localTopology,
                          const t_state&             localState,
                          bool                       useUpdateGroups,

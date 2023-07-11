@@ -39,6 +39,14 @@ unless the -dd option was specified.
 
 :issue:`4627`
 
+Allow bonded pair interactions to be missing
+""""""""""""""""""""""""""""""""""""""""""""
+
+With -noddcheck, mdrun did not allow bonded pair interactions to be missing.
+This is now allowed again.
+
+:issue:`4787`
+
 Increase and check for atom count limits in output files
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""
 
