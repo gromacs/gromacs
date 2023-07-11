@@ -246,7 +246,7 @@ static std::string detected_hardware_string(const gmx_hw_info_t* hwinfo, bool bF
         s += gmx::formatString("\n");
     }
 
-    if (cpuInfo.feature(gmx::CpuInfo::Feature::X86_Avx512F))
+    if (cpuInfo.feature(gmx::CpuInfo::Feature::X86_Avx512F) && cpuInfo.vendor() == gmx::CpuInfo::Vendor::Intel)
     {
         int avx512fmaunits = gmx::identifyAvx512FmaUnits();
         s += gmx::formatString("    Number of AVX-512 FMA units:");
@@ -255,7 +255,7 @@ static std::string detected_hardware_string(const gmx_hw_info_t* hwinfo, bool bF
             s += gmx::formatString(" %d", avx512fmaunits);
             if (avx512fmaunits == 1)
             {
-                s += gmx::formatString(" (AVX2 is faster w/o 2 AVX-512 FMA units)");
+                s += gmx::formatString(" (For Intel, AVX2 is faster w/o 2 AVX-512 FMA units)");
             }
         }
         else
@@ -423,7 +423,7 @@ void gmx_print_detected_hardware(FILE*                fplog,
      */
     if (cpuInfo.supportLevel() >= gmx::CpuInfo::SupportLevel::Features)
     {
-        gmx::simdCheck(static_cast<gmx::SimdType>(hwinfo->simd_suggest_min), fplog, warnToStdErr);
+        gmx::simdCheck(cpuInfo, static_cast<gmx::SimdType>(hwinfo->simd_suggest_min), fplog, warnToStdErr);
     }
 
     /* For RDTSCP we only check on our local node and skip the MPI reduction, only on x86 */

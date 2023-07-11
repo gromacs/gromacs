@@ -220,3 +220,17 @@ gcc 9.3.1 would fail generating proper paths for comparison, resulting
 in test failures.
 
 :issue:`4785`
+
+Fix SIMD detection/recommendation on AMD Zen 4 / Genoa
+""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Zen 4 provides a single AVX-512 unit, but in contrast to Intel chips it is
+still faster to use the single AVX-512 unit than the double AVX2 units,
+likely due to higher clock and lower instruction pressure. This change
+will select AVX-512 by default on Zen 4 (which can improve performance 5-10%),
+and it modifies the hardware detection so we only try to count AVX units on
+Intel CPUs. It also clarifies detection messages to make it clear it's based
+on expected performance rather than hardware support for a particular
+instruction set, and makes sure the stdout messages fit in a single line.
+
+:issue:`4715`
