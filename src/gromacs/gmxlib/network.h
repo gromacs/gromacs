@@ -66,25 +66,25 @@ void gmx_barrier(MPI_Comm communicator);
  *
  * Can be called with a single rank or without MPI
  */
-void gmx_bcast(int nbytes, void* b, MPI_Comm communicator);
+void gmx_bcast(std::size_t nbytes, void* b, MPI_Comm communicator);
 
 /*! \brief Calculate the global sum of an array of ints
  *
  * Can be called with a single rank or without MPI
  */
-void gmx_sumi(int nr, int r[], const struct t_commrec* cr);
+void gmx_sumi(std::size_t nr, int r[], const struct t_commrec* cr);
 
 /*! \brief Calculate the global sum of an array of floats
  *
  * Can be called with a single rank or without MPI
  */
-void gmx_sumf(int nr, float r[], const struct t_commrec* cr);
+void gmx_sumf(std::size_t nr, float r[], const struct t_commrec* cr);
 
 /*! \brief Calculate the global sum of an array of doubles
  *
  * Can be called with a single rank or without MPI
  */
-void gmx_sumd(int nr, double r[], const struct t_commrec* cr);
+void gmx_sumd(std::size_t nr, double r[], const struct t_commrec* cr);
 
 #if GMX_DOUBLE
 #    define gmx_sum gmx_sumd
