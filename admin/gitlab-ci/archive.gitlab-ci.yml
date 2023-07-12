@@ -175,6 +175,7 @@ archive:configure:release:
     - cd tempdir
     - tar -xf $SOURCETARBALL
     - rm -rf gromacs-*/$BUILD_DIR
+    - find gromacs-*/ -name __pycache__ -exec rm -rf '{}' '+'
     - tar -c --gzip -f $SOURCETARBALL gromacs-*/
     - mv $SOURCETARBALL ..
     - cd ..

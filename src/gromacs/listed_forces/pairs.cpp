@@ -566,6 +566,16 @@ static real do_pairs_general(int                                 ftype,
 
     if (fr->efep != FreeEnergyPerturbationType::No)
     {
+        if (atomIsPerturbed.empty())
+        {
+            // There are no perturbed atoms, chargeB is the same as chargeA
+            chargeB = chargeA;
+        }
+        else
+        {
+            GMX_ASSERT(nbonds == 0 || !chargeB.empty(), "With perturbed atoms we need chargeB");
+        }
+
         /* Lambda factor for state A=1-lambda and B=lambda */
         LFC[0] = 1.0 - lambda[static_cast<int>(FreeEnergyPerturbationCouplingType::Coul)];
         LFV[0] = 1.0 - lambda[static_cast<int>(FreeEnergyPerturbationCouplingType::Vdw)];

@@ -16,6 +16,11 @@ in the :ref:`release-notes`.
 Fixes where mdrun could behave incorrectly
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Fix mdrun segfault when perturbing only LJ-14 parameters
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+:issue:`4769`
+
 Fix numerical instability with free-energy and LJ-PME
 """""""""""""""""""""""""""""""""""""""""""""""""""""
 
@@ -34,6 +39,14 @@ unless the -dd option was specified.
 
 :issue:`4627`
 
+Allow bonded pair interactions to be missing
+""""""""""""""""""""""""""""""""""""""""""""
+
+With -noddcheck, mdrun did not allow bonded pair interactions to be missing.
+This is now allowed again.
+
+:issue:`4787`
+
 Increase and check for atom count limits in output files
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""
 
@@ -49,6 +62,25 @@ Fix assertion failure with annealing and multiple T-coupling groups
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
 :issue:`4800`
+
+
+Properly update the backup checkpoint
+"""""""""""""""""""""""""""""""""""""
+
+In 2023 and 2023.1, the ``state_prev.cpt`` file was never 
+overwritten, and thus always contained the very first checkpoint
+for the run.
+
+:issue:`4810`
+
+Fix domain decomposition with bonded interactions with long distances
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+mdrun would exit with an error about missing bonded interactions
+when domain decomposition was used and bonded interactions involved
+distances longer than the pairlist cutoff.
+
+:issue:`4818`
 
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
@@ -153,4 +185,52 @@ implementations.
 
 :issue:`4628`
 
+Fix resource leak in OpenCL
+"""""""""""""""""""""""""""
 
+``gmx mdrun`` built with OpenCL was slowly leaking memory when
+running on GPUs. That's fixed now.
+
+:issue:`4807`
+
+Allow convert-tpr to assign initial velocities
+""""""""""""""""""""""""""""""""""""""""""""""
+
+To help ensemble projects like free energy that sometimes rely on thousands of
+simulations for each system, we now allow convert-tpr to assign a new set
+of random velocities rather than using grompp to regenerate the full tpr.
+This also fixes a bug where using 0 for velocity seed in the mdp file would
+have the same effect as -1 and cause a new seed to be generated from the OS.
+
+:issue:`4809`
+
+Correct formulas for Nosé-Hoover thermostat
+"""""""""""""""""""""""""""""""""""""""""""
+
+Several formulas describing Nosé-Hoover temperature coupling contained 
+inconsistencies. The reference manual was updated to match the actual 
+implementation. 
+
+:issue:`4695`
+
+Fix commandline-test on broken gcc versions
+"""""""""""""""""""""""""""""""""""""""""""
+
+gcc 9.3.1 would fail generating proper paths for comparison, resulting
+in test failures.
+
+:issue:`4785`
+
+Fix SIMD detection/recommendation on AMD Zen 4 / Genoa
+""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Zen 4 provides a single AVX-512 unit, but in contrast to Intel chips it is
+still faster to use the single AVX-512 unit than the double AVX2 units,
+likely due to higher clock and lower instruction pressure. This change
+will select AVX-512 by default on Zen 4 (which can improve performance 5-10%),
+and it modifies the hardware detection so we only try to count AVX units on
+Intel CPUs. It also clarifies detection messages to make it clear it's based
+on expected performance rather than hardware support for a particular
+instruction set, and makes sure the stdout messages fit in a single line.
+
+:issue:`4715`

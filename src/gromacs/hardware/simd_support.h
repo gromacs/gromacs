@@ -78,13 +78,14 @@ SimdType simdSuggested(const CpuInfo& c);
 
 /*! \libinternal \brief Check if binary was compiled with the provided SIMD type
  *
+ *  \param cpuInfo        Information about the CPU we are running on
  *  \param wanted         SIMD type to query. If this matches the suggested type
  *                        for this cpu, the routine returns quietly.
  *  \param log            If not nullptr, statistics will be printed to the file.
  *                        If we do not have a match there will also be a warning.
  *  \param warnToStdErr   If true, warnings will also be printed to stderr.
  */
-bool simdCheck(SimdType wanted, FILE* log, bool warnToStdErr);
+bool simdCheck(const CpuInfo& cpuInfo, SimdType wanted, FILE* log, bool warnToStdErr);
 
 /*! \endcond */
 

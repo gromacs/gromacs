@@ -69,7 +69,7 @@ void block_bc(MPI_Comm communicator, T& data)
 }
 //! Convenience wrapper for gmx_bcast to communicator of a C-style array.
 template<typename T>
-void nblock_bc(MPI_Comm communicator, int numElements, T* data)
+void nblock_bc(MPI_Comm communicator, std::size_t numElements, T* data)
 {
     gmx_bcast(numElements * sizeof(T), static_cast<void*>(data), communicator);
 }
@@ -81,7 +81,7 @@ void nblock_bc(MPI_Comm communicator, gmx::ArrayRef<T> data)
 }
 //! Convenience wrapper for allocation with snew of vectors that need allocation on non-main ranks.
 template<typename T>
-void snew_bc(bool isMainRank, T*& data, int numElements)
+void snew_bc(bool isMainRank, T*& data, std::size_t numElements)
 {
     if (!isMainRank)
     {
@@ -90,14 +90,14 @@ void snew_bc(bool isMainRank, T*& data, int numElements)
 }
 //! Convenience wrapper for gmx_bcast of a C-style array which needs allocation on non-main ranks.
 template<typename T>
-void nblock_abc(bool isMainRank, MPI_Comm communicator, int numElements, T** v)
+void nblock_abc(bool isMainRank, MPI_Comm communicator, std::size_t numElements, T** v)
 {
     snew_bc(isMainRank, v, numElements);
     nblock_bc(communicator, numElements, *v);
 }
 //! Convenience wrapper for gmx_bcast of a std::vector which needs resizing on non-main ranks.
 template<typename T>
-void nblock_abc(bool isMainRank, MPI_Comm communicator, int numElements, std::vector<T>* v)
+void nblock_abc(bool isMainRank, MPI_Comm communicator, std::size_t numElements, std::vector<T>* v)
 {
     if (!isMainRank)
     {

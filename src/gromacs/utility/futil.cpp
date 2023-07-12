@@ -591,7 +591,8 @@ int gmx_file_copy(const std::filesystem::path& oldname, const std::filesystem::p
     std::error_code errorCode;
     if (!std::filesystem::is_empty(oldname) || copy_if_empty)
     {
-        std::filesystem::copy_file(oldname, newname, errorCode);
+        std::filesystem::copy_file(
+                oldname, newname, std::filesystem::copy_options::overwrite_existing, errorCode);
         return errorCode.value();
     }
     return 0;

@@ -2964,8 +2964,14 @@ std::unique_ptr<gmx_domdec_t> DomainDecompositionBuilder::Impl::build(LocalAtomS
 
     dd->atomSets = atomSets;
 
-    dd->localTopologyChecker = std::make_unique<LocalTopologyChecker>(
-            mdlog_, cr_, mtop_, localTopology, localState, dd->comm->systemInfo.useUpdateGroups, observablesReducerBuilder);
+    dd->localTopologyChecker = std::make_unique<LocalTopologyChecker>(mdlog_,
+                                                                      cr_,
+                                                                      mtop_,
+                                                                      options_.ddBondedChecking,
+                                                                      localTopology,
+                                                                      localState,
+                                                                      dd->comm->systemInfo.useUpdateGroups,
+                                                                      observablesReducerBuilder);
 
 #if GMX_MPI
     MPI_Type_contiguous(DIM, GMX_MPI_REAL, &dd->comm->mpiRVec);

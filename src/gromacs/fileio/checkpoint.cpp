@@ -737,7 +737,7 @@ static int doVectorLow(XDR*                           xd,
         if (nval >= 0)
         {
             // Remove this check when we store int64_t in the file
-            GMX_RELEASE_ASSERT(nval <= gmx::sc_checkpointMaxAtomCount,
+            GMX_RELEASE_ASSERT(nval <= std::numeric_limits<unsigned int>::max(),
                                "Vector size in checkpoint beyond max uint");
 
             numElemInTheFile = nval;

@@ -1030,11 +1030,13 @@ the global :ref:`MD scheme <gmx-md-scheme>` are replaced by:
 
 where the equation of motion for the heat bath parameter :math:`\xi` is:
 
-.. math:: \frac {{\mbox{d}}p_{\xi}}{{\mbox{d}}t} = \left( T - T_0 \right).
+.. math:: \frac {{\mbox{d}}p_{\xi}}{{\mbox{d}}t} = \left( T - T_0 \right)N_{f}k.
           :label: eqnNHheatbath
 
 The reference temperature is denoted :math:`T_0`, while :math:`T` is
-the current instantaneous temperature of the system. The strength of the
+the current instantaneous temperature of the system, :math:`N_f` is the total 
+number of degrees of freedom and :math:`k` is Boltzmann’s 
+constant (see chapter :ref:`defunits`). The strength of the
 coupling is determined by the constant :math:`Q` (usually called the
 *mass parameter* of the reservoir) in combination with the reference
 temperature.  [1]_
@@ -1043,10 +1045,8 @@ The conserved quantity for the Nosé-Hoover equations of motion is not
 the total energy, but rather
 
 .. math:: \begin{aligned}
-          H = \sum_{i=1}^{N} \frac{{{\mathbf{p}}}_i}{2m_i} + U\left({{\mathbf{r}}}_1,{{\mathbf{r}}}_2,\ldots,{{\mathbf{r}}}_N\right) +\frac{p_{\xi}^2}{2Q} + N_{f}kT\xi,\end{aligned}
+          H = \sum_{i=1}^{N} \frac{{{\mathbf{p}}}_i^2}{2m_i} + U\left({{\mathbf{r}}}_1,{{\mathbf{r}}}_2,\ldots,{{\mathbf{r}}}_N\right) +\frac{p_{\xi}^2}{2Q} + N_{f}kT\xi,\end{aligned}
           :label: eqnNHconservedbasic
-
-where :math:`N_f` is the total number of degrees of freedom.
 
 In our opinion, the mass parameter is a somewhat awkward way of
 describing coupling strength, especially due to its dependence on
@@ -1059,7 +1059,7 @@ prefer to let the |Gromacs| user work instead with the period
 and the reservoir instead. It is directly related to :math:`Q` and
 :math:`T_0` via:
 
-.. math:: Q = \frac {\tau_T^2 T_0}{4 \pi^2}.
+.. math:: Q = \frac {\tau_T^2N_fkT_0}{4 \pi^2}.
           :label: eqnNHQ
 
 This provides a much more intuitive way of selecting the Nosé-Hoover
@@ -1094,16 +1094,16 @@ particles \ :ref:`34 <refMartyna1992>`:
 
 .. math::  \begin{aligned}
            \frac {{\mbox{d}}^2\mathbf{r}_i}{{\mbox{d}}t^2} &~=~& \frac{\mathbf{F}_i}{m_i} - \frac{p_{{\xi}_1}}{Q_1} \frac{{\mbox{d}}\mathbf{r}_i}{{\mbox{d}}t} \nonumber \\
-           \frac {{\mbox{d}}p_{{\xi}_1}}{{\mbox{d}}t} &~=~& \left( T - T_0 \right) - p_{{\xi}_1} \frac{p_{{\xi}_2}}{Q_2} \nonumber \\
-           \frac {{\mbox{d}}p_{{\xi}_{i=2\ldots N}}}{{\mbox{d}}t} &~=~& \left(\frac{p_{\xi_{i-1}}^2}{Q_{i-1}} -kT\right) - p_{\xi_i} \frac{p_{\xi_{i+1}}}{Q_{i+1}} \nonumber \\
-           \frac {{\mbox{d}}p_{\xi_N}}{{\mbox{d}}t} &~=~& \left(\frac{p_{\xi_{N-1}}^2}{Q_{N-1}}-kT\right)
+           \frac {{\mbox{d}}p_{{\xi}_1}}{{\mbox{d}}t} &~=~& N_fk\left( T - T_0 \right) - p_{{\xi}_1} \frac{p_{{\xi}_2}}{Q_2} \nonumber \\
+           \frac {{\mbox{d}}p_{{\xi}_{i=2\ldots M-1}}}{{\mbox{d}}t} &~=~& \left(\frac{p_{\xi_{i-1}}^2}{Q_{i-1}} -kT_0\right) - p_{\xi_i} \frac{p_{\xi_{i+1}}}{Q_{i+1}} \nonumber \\
+           \frac {{\mbox{d}}p_{\xi_M}}{{\mbox{d}}t} &~=~& \left(\frac{p_{\xi_{N-1}}^2}{Q_{N-1}}-kT_0\right)
            \end{aligned}
            :label: eqnNHchaineqnofmotion
 
 The conserved quantity for Nosé-Hoover chains is
 
 .. math:: \begin{aligned}
-          H = \sum_{i=1}^{N} \frac{{{\mathbf{p}}}_i}{2m_i} + U\left({{\mathbf{r}}}_1,{{\mathbf{r}}}_2,\ldots,{{\mathbf{r}}}_N\right) +\sum_{k=1}^M\frac{p^2_{\xi_k}}{2Q^{\prime}_k} + N_fkT\xi_1 + kT\sum_{k=2}^M \xi_k \end{aligned}
+          H = \sum_{i=1}^{N} \frac{{{\mathbf{p}}}_i^2}{2m_i} + U\left({{\mathbf{r}}}_1,{{\mathbf{r}}}_2,\ldots,{{\mathbf{r}}}_N\right) +\sum_{k=1}^M\frac{p^2_{\xi_k}}{2Q_k} + N_fkT\xi_1 + kT\sum_{k=2}^M \xi_k \end{aligned}
           :label: eqnNHconservedquantity
 
 The values and velocities of the Nosé-Hoover thermostat variables are
@@ -1135,7 +1135,7 @@ where
 .. math:: \begin{aligned}
           iL_1 &=& \sum_{i=1}^N \left[\frac{{{\mathbf{p}}}_i}{m_i}\right]\cdot \frac{\partial}{\partial {{\mathbf{r}}}_i} \nonumber \\
           iL_2 &=& \sum_{i=1}^N {{\mathbf{F}}}_i\cdot \frac{\partial}{\partial {{\mathbf{p}}}_i} \nonumber \\
-          iL_{\mathrm{NHC}} &=& \sum_{i=1}^N-\frac{p_{\xi}}{Q}{{\mathbf{v}}}_i\cdot \nabla_{{{\mathbf{v}}}_i} +\frac{p_{\xi}}{Q}\frac{\partial }{\partial \xi} + \left( T - T_0 \right)\frac{\partial }{\partial p_{\xi}}\end{aligned}
+          iL_{\mathrm{NHC}} &=& \sum_{i=1}^N-\frac{p_{\xi}}{Q}{{\mathbf{v}}}_i\cdot \nabla_{{{\mathbf{v}}}_i} +\frac{p_{\xi}}{Q}\frac{\partial }{\partial \xi} + N_fk\left( T - T_0 \right)\frac{\partial }{\partial p_{\xi}}\end{aligned}
           :label: eqnNHTrotter2
 
 For standard velocity Verlet with Nosé-Hoover temperature control, this

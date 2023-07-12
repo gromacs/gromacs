@@ -42,6 +42,9 @@
 #include <cstdlib>
 #include <cstring>
 
+#include <algorithm>
+#include <limits>
+
 #include "gromacs/commandline/filenm.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/utility/basenetwork.h"
@@ -196,15 +199,23 @@ void gmx_barrier(MPI_Comm gmx_unused communicator)
 #endif
 }
 
-void gmx_bcast(int gmx_unused nbytes, void gmx_unused* b, MPI_Comm gmx_unused communicator)
+void gmx_bcast(std::size_t gmx_unused nbytes, void gmx_unused* b, MPI_Comm gmx_unused communicator)
 {
     // Without MPI we have a single rank, so bcast is a no-op
 #if GMX_MPI
-    MPI_Bcast(b, nbytes, MPI_BYTE, 0, communicator);
+    constexpr std::size_t maxSignedInt = std::numeric_limits<int>::max();
+    char*                 bytePtr      = reinterpret_cast<char*>(b);
+    for (std::size_t written = 0, remain = nbytes; remain > 0;)
+    {
+        std::size_t chunk = std::min(remain, maxSignedInt);
+        MPI_Bcast(bytePtr + written, chunk, MPI_BYTE, 0, communicator);
+        written += chunk;
+        remain -= chunk;
+    }
 #endif
 }
 
-void gmx_sumd(int gmx_unused nr, double gmx_unused r[], const t_commrec gmx_unused* cr)
+void gmx_sumd(std::size_t gmx_unused nr, double gmx_unused r[], const t_commrec gmx_unused* cr)
 {
     // Without MPI we have a single rank, so sum is a no-op
 #if GMX_MPI
@@ -213,31 +224,56 @@ void gmx_sumd(int gmx_unused nr, double gmx_unused r[], const t_commrec gmx_unus
         return;
     }
 
+    constexpr std::size_t maxSignedInt = std::numeric_limits<int>::max();
     if (cr->nc.bUse)
     {
         if (cr->nc.rank_intra == 0)
         {
-            /* Use two step summing. */
-            MPI_Reduce(MPI_IN_PLACE, r, nr, MPI_DOUBLE, MPI_SUM, 0, cr->nc.comm_intra);
-            /* Sum the roots of the internal (intra) buffers. */
-            MPI_Allreduce(MPI_IN_PLACE, r, nr, MPI_DOUBLE, MPI_SUM, cr->nc.comm_inter);
+            for (std::size_t written = 0, remain = nr; remain > 0;)
+            {
+                std::size_t chunk = std::min(remain, maxSignedInt);
+                /* Use two step summing. */
+                MPI_Reduce(MPI_IN_PLACE, r + written, chunk, MPI_DOUBLE, MPI_SUM, 0, cr->nc.comm_intra);
+                /* Sum the roots of the internal (intra) buffers. */
+                MPI_Allreduce(MPI_IN_PLACE, r + written, chunk, MPI_DOUBLE, MPI_SUM, cr->nc.comm_inter);
+                written += chunk;
+                remain -= chunk;
+            }
         }
         else
         {
-            /* This is here because of the silly MPI specification
-                that MPI_IN_PLACE should be put in sendbuf instead of recvbuf */
-            MPI_Reduce(r, nullptr, nr, MPI_DOUBLE, MPI_SUM, 0, cr->nc.comm_intra);
+            for (std::size_t written = 0, remain = nr; remain > 0;)
+            {
+                std::size_t chunk = std::min(remain, maxSignedInt);
+                /* This is here because of the silly MPI specification
+                   that MPI_IN_PLACE should be put in sendbuf instead of recvbuf */
+                MPI_Reduce(r + written, nullptr, chunk, MPI_DOUBLE, MPI_SUM, 0, cr->nc.comm_intra);
+                written += chunk;
+                remain -= chunk;
+            }
         }
-        MPI_Bcast(r, nr, MPI_DOUBLE, 0, cr->nc.comm_intra);
+        for (std::size_t written = 0, remain = nr; remain > 0;)
+        {
+            std::size_t chunk = std::min(remain, maxSignedInt);
+            MPI_Bcast(r + written, chunk, MPI_DOUBLE, 0, cr->nc.comm_intra);
+            written += chunk;
+            remain -= chunk;
+        }
     }
     else
     {
-        MPI_Allreduce(MPI_IN_PLACE, r, nr, MPI_DOUBLE, MPI_SUM, cr->mpi_comm_mygroup);
+        for (std::size_t written = 0, remain = nr; remain > 0;)
+        {
+            std::size_t chunk = std::min(remain, maxSignedInt);
+            MPI_Allreduce(MPI_IN_PLACE, r + written, chunk, MPI_DOUBLE, MPI_SUM, cr->mpi_comm_mygroup);
+            written += chunk;
+            remain -= chunk;
+        }
     }
 #endif
 }
 
-void gmx_sumf(int gmx_unused nr, float gmx_unused r[], const t_commrec gmx_unused* cr)
+void gmx_sumf(std::size_t gmx_unused nr, float gmx_unused r[], const t_commrec gmx_unused* cr)
 {
     // Without MPI we have a single rank, so sum is a no-op
 #if GMX_MPI
@@ -246,31 +282,56 @@ void gmx_sumf(int gmx_unused nr, float gmx_unused r[], const t_commrec gmx_unuse
         return;
     }
 
+    constexpr std::size_t maxSignedInt = std::numeric_limits<int>::max();
     if (cr->nc.bUse)
     {
         /* Use two step summing.  */
         if (cr->nc.rank_intra == 0)
         {
-            MPI_Reduce(MPI_IN_PLACE, r, nr, MPI_FLOAT, MPI_SUM, 0, cr->nc.comm_intra);
-            /* Sum the roots of the internal (intra) buffers */
-            MPI_Allreduce(MPI_IN_PLACE, r, nr, MPI_FLOAT, MPI_SUM, cr->nc.comm_inter);
+            for (std::size_t written = 0, remain = nr; remain > 0;)
+            {
+                std::size_t chunk = std::min(remain, maxSignedInt);
+                MPI_Reduce(MPI_IN_PLACE, r + written, chunk, MPI_FLOAT, MPI_SUM, 0, cr->nc.comm_intra);
+                /* Sum the roots of the internal (intra) buffers */
+                MPI_Allreduce(MPI_IN_PLACE, r + written, chunk, MPI_FLOAT, MPI_SUM, cr->nc.comm_inter);
+                written += chunk;
+                remain -= chunk;
+            }
         }
         else
         {
-            /* This is here because of the silly MPI specification
+            for (std::size_t written = 0, remain = nr; remain > 0;)
+            {
+                std::size_t chunk = std::min(remain, maxSignedInt);
+                /* This is here because of the silly MPI specification
                 that MPI_IN_PLACE should be put in sendbuf instead of recvbuf */
-            MPI_Reduce(r, nullptr, nr, MPI_FLOAT, MPI_SUM, 0, cr->nc.comm_intra);
+                MPI_Reduce(r + written, nullptr, chunk, MPI_FLOAT, MPI_SUM, 0, cr->nc.comm_intra);
+                written += chunk;
+                remain -= chunk;
+            }
         }
-        MPI_Bcast(r, nr, MPI_FLOAT, 0, cr->nc.comm_intra);
+        for (std::size_t written = 0, remain = nr; remain > 0;)
+        {
+            std::size_t chunk = std::min(remain, maxSignedInt);
+            MPI_Bcast(r + written, chunk, MPI_FLOAT, 0, cr->nc.comm_intra);
+            written += chunk;
+            remain -= chunk;
+        }
     }
     else
     {
-        MPI_Allreduce(MPI_IN_PLACE, r, nr, MPI_FLOAT, MPI_SUM, cr->mpi_comm_mygroup);
+        for (std::size_t written = 0, remain = nr; remain > 0;)
+        {
+            std::size_t chunk = std::min(remain, maxSignedInt);
+            MPI_Allreduce(MPI_IN_PLACE, r + written, chunk, MPI_FLOAT, MPI_SUM, cr->mpi_comm_mygroup);
+            written += chunk;
+            remain -= chunk;
+        }
     }
 #endif
 }
 
-void gmx_sumi(int gmx_unused nr, int gmx_unused r[], const t_commrec gmx_unused* cr)
+void gmx_sumi(std::size_t gmx_unused nr, int gmx_unused r[], const t_commrec gmx_unused* cr)
 {
     // Without MPI we have a single rank, so sum is a no-op
 #if GMX_MPI
@@ -279,26 +340,51 @@ void gmx_sumi(int gmx_unused nr, int gmx_unused r[], const t_commrec gmx_unused*
         return;
     }
 
+    constexpr std::size_t maxSignedInt = std::numeric_limits<int>::max();
     if (cr->nc.bUse)
     {
         /* Use two step summing */
         if (cr->nc.rank_intra == 0)
         {
-            MPI_Reduce(MPI_IN_PLACE, r, nr, MPI_INT, MPI_SUM, 0, cr->nc.comm_intra);
-            /* Sum with the buffers reversed */
-            MPI_Allreduce(MPI_IN_PLACE, r, nr, MPI_INT, MPI_SUM, cr->nc.comm_inter);
+            for (std::size_t written = 0, remain = nr; remain > 0;)
+            {
+                std::size_t chunk = std::min(remain, maxSignedInt);
+                MPI_Reduce(MPI_IN_PLACE, r + written, chunk, MPI_INT, MPI_SUM, 0, cr->nc.comm_intra);
+                /* Sum with the buffers reversed */
+                MPI_Allreduce(MPI_IN_PLACE, r + written, chunk, MPI_INT, MPI_SUM, cr->nc.comm_inter);
+                written += chunk;
+                remain -= chunk;
+            }
         }
         else
         {
-            /* This is here because of the silly MPI specification
-                that MPI_IN_PLACE should be put in sendbuf instead of recvbuf */
-            MPI_Reduce(r, nullptr, nr, MPI_INT, MPI_SUM, 0, cr->nc.comm_intra);
+            for (std::size_t written = 0, remain = nr; remain > 0;)
+            {
+                std::size_t chunk = std::min(remain, maxSignedInt);
+                /* This is here because of the silly MPI specification
+                   that MPI_IN_PLACE should be put in sendbuf instead of recvbuf */
+                MPI_Reduce(r + written, nullptr, chunk, MPI_INT, MPI_SUM, 0, cr->nc.comm_intra);
+                written += chunk;
+                remain -= chunk;
+            }
         }
-        MPI_Bcast(r, nr, MPI_INT, 0, cr->nc.comm_intra);
+        for (std::size_t written = 0, remain = nr; remain > 0;)
+        {
+            std::size_t chunk = std::min(remain, maxSignedInt);
+            MPI_Bcast(r + written, chunk, MPI_INT, 0, cr->nc.comm_intra);
+            written += chunk;
+            remain -= chunk;
+        }
     }
     else
     {
-        MPI_Allreduce(MPI_IN_PLACE, r, nr, MPI_INT, MPI_SUM, cr->mpi_comm_mygroup);
+        for (std::size_t written = 0, remain = nr; remain > 0;)
+        {
+            std::size_t chunk = std::min(remain, maxSignedInt);
+            MPI_Allreduce(MPI_IN_PLACE, r + written, chunk, MPI_INT, MPI_SUM, cr->mpi_comm_mygroup);
+            written += chunk;
+            remain -= chunk;
+        }
     }
 #endif
 }

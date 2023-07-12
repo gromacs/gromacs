@@ -545,7 +545,7 @@ static void distributeAtomGroups(const gmx::MDLogger& mdlog,
                 dd->numHomeAtoms,
                 dd->globalAtomGroupIndices.data());
 
-    if (debug)
+    if (gmx_debug_at)
     {
         fprintf(debug, "Home charge groups:\n");
         for (int i = 0; i < dd->numHomeAtoms; i++)

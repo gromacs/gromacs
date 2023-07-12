@@ -119,7 +119,7 @@ static void bc_tpxheader(MPI_Comm communicator, TpxFileHeader* tpx)
 
 static void bc_tprCharBuffer(MPI_Comm communicator, bool isMainRank, std::vector<char>* charBuffer)
 {
-    int elements = charBuffer->size();
+    std::size_t elements = charBuffer->size();
     block_bc(communicator, elements);
 
     nblock_abc(isMainRank, communicator, elements, charBuffer);

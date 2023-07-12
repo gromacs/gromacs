@@ -47,6 +47,7 @@
 #include "gromacs/topology/topology.h"
 
 #include "testutils/cmdlinetest.h"
+#include "testutils/refdata.h"
 #include "testutils/simulationdatabase.h"
 #include "testutils/tprfilegenerator.h"
 
@@ -67,20 +68,12 @@ protected:
 };
 
 
-void readTprInput(const char* filename, gmx_mtop_t* mtop, t_inputrec* ir)
-{
-    // read tpr into variables needed for output
-    {
-        t_state state;
-        read_tpx_state(filename, ir, &state, mtop);
-    }
-}
-
 TEST_F(ConvertTprTest, ExtendRuntimeExtensionTest)
 {
     gmx_mtop_t top;
     t_inputrec ir;
-    readTprInput(tprFileHandle.tprName().c_str(), &top, &ir);
+    t_state    state;
+    read_tpx_state(tprFileHandle.tprName().c_str(), &ir, &state, &top);
 
     const int64_t originalNStep = ir.nsteps;
 
@@ -100,7 +93,8 @@ TEST_F(ConvertTprTest, ExtendRuntimeExtensionTest)
     {
         gmx_mtop_t top_after;
         t_inputrec ir_after;
-        readTprInput(outTprFilename.c_str(), &top_after, &ir_after);
+        t_state    state_after;
+        read_tpx_state(outTprFilename.c_str(), &ir_after, &state_after, &top_after);
 
         EXPECT_EQ(ir_after.nsteps, originalNStep + gmx::roundToInt64(extendByPs / ir.delta_t));
     }
@@ -124,7 +118,8 @@ TEST_F(ConvertTprTest, ExtendRuntimeExtensionTest)
     {
         gmx_mtop_t top_after;
         t_inputrec ir_after;
-        readTprInput(anotherOutTprFilename.c_str(), &top_after, &ir_after);
+        t_state    state_after;
+        read_tpx_state(anotherOutTprFilename.c_str(), &ir_after, &state_after, &top_after);
 
         EXPECT_EQ(ir_after.nsteps, originalNStep + gmx::roundToInt64(2 * extendByPs / ir.delta_t));
     }
@@ -134,7 +129,8 @@ TEST_F(ConvertTprTest, UntilRuntimeExtensionTest)
 {
     gmx_mtop_t top;
     t_inputrec ir;
-    readTprInput(tprFileHandle.tprName().c_str(), &top, &ir);
+    t_state    state;
+    read_tpx_state(tprFileHandle.tprName().c_str(), &ir, &state, &top);
 
     const int64_t originalNStep = ir.nsteps;
 
@@ -157,7 +153,8 @@ TEST_F(ConvertTprTest, UntilRuntimeExtensionTest)
     {
         gmx_mtop_t top_after;
         t_inputrec ir_after;
-        readTprInput(outTprFilename.c_str(), &top_after, &ir_after);
+        t_state    state;
+        read_tpx_state(outTprFilename.c_str(), &ir_after, &state, &top_after);
 
         EXPECT_EQ(ir_after.nsteps, originalNStep + gmx::roundToInt64(untilPs / ir.delta_t));
     }
@@ -167,7 +164,8 @@ TEST_F(ConvertTprTest, nstepRuntimeExtensionTest)
 {
     gmx_mtop_t top;
     t_inputrec ir;
-    readTprInput(tprFileHandle.tprName().c_str(), &top, &ir);
+    t_state    state;
+    read_tpx_state(tprFileHandle.tprName().c_str(), &ir, &state, &top);
 
     const int64_t originalNStep = ir.nsteps;
 
@@ -190,9 +188,55 @@ TEST_F(ConvertTprTest, nstepRuntimeExtensionTest)
     {
         gmx_mtop_t top_after;
         t_inputrec ir_after;
-        readTprInput(outTprFilename.c_str(), &top_after, &ir_after);
+        t_state    state_after;
+        read_tpx_state(outTprFilename.c_str(), &ir_after, &state_after, &top_after);
 
         EXPECT_EQ(ir_after.nsteps, originalNStep + nsteps);
+    }
+}
+
+TEST_F(ConvertTprTest, generateVelocitiesTest)
+{
+    gmx_mtop_t top;
+    t_inputrec ir;
+    t_state    state;
+    read_tpx_state(tprFileHandle.tprName().c_str(), &ir, &state, &top);
+
+    TestFileManager fileManager;
+    std::string outTprFilename  = fileManager.getTemporaryFilePath("new_velocities.tpr").u8string();
+    const char* const command[] = { "convert-tpr",
+                                    "-s",
+                                    tprFileHandle.tprName().c_str(),
+                                    "-o",
+                                    outTprFilename.c_str(),
+                                    "-generate_velocities",
+                                    "-velocity_temp",
+                                    "300",
+                                    "-velocity_seed",
+                                    "12345" };
+    CommandLine       cmdline(command);
+
+    gmx::test::CommandLineTestHelper::runModuleFactory(&gmx::ConvertTprInfo::create, &cmdline);
+
+    {
+        gmx_mtop_t top_after;
+        t_inputrec ir_after;
+        t_state    state_after;
+        read_tpx_state(outTprFilename.c_str(), &ir_after, &state_after, &top_after);
+
+        gmx::test::TestReferenceData    data;
+        gmx::test::TestReferenceChecker checker(data.rootChecker());
+        std::vector<real>               result;
+        // Check that the X coordinates did NOT change
+        for (int i = 0; i < state.x.size(); i++)
+        {
+            for (int j = 0; j < DIM; j++)
+            {
+                EXPECT_EQ(state.x[i][j], state_after.x[i][j]);
+                result.push_back(state_after.v[i][j]);
+            }
+        }
+        checker.checkSequence(result.begin(), result.end(), "ConvertTprTestgenerateVelocitiesTestV");
     }
 }
 

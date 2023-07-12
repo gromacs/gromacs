@@ -107,7 +107,9 @@ public:
                 case efEmptyValue: break;
             }
         }
-        return filename.u8string();
+        // We usually use u8string() to allow conversion to char* (see #4635)
+        // But we don't convert it to char* here, and u8string is buggy in GCC 9.3 (see #4785).
+        return filename.string();
     }
 
     // This must be a member that persists until the end of the test,
@@ -413,8 +415,8 @@ TEST_F(ParseCommonArgsTest, HandlesCompressedFiles)
     expectedF                       = gmx::stripExtension(expectedF);
     expectedG                       = gmx::stripExtension(expectedG);
     parseFromArgs(0, fnm, {});
-    EXPECT_EQ(expectedF, opt2fn("-f", nfile(), fnm));
-    EXPECT_EQ(expectedG, opt2fn("-g", nfile(), fnm));
+    EXPECT_EQ(expectedF.u8string(), opt2fn("-f", nfile(), fnm));
+    EXPECT_EQ(expectedG.u8string(), opt2fn("-g", nfile(), fnm));
 }
 
 TEST_F(ParseCommonArgsTest, AcceptsUnknownTrajectoryExtension)

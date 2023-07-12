@@ -411,9 +411,6 @@ target_link_libraries(libgromacs PRIVATE
 if (GMX_OPENMP)
     target_link_libraries(libgromacs PUBLIC OpenMP::OpenMP_CXX)
 endif()
-if(CXX_FILESYSTEM_HAVE_FS)
-    target_link_libraries(libgromacs PUBLIC std::filesystem)
-endif()
 set_target_properties(libgromacs PROPERTIES
                       OUTPUT_NAME "gromacs${GMX_LIBS_SUFFIX}"
                       SOVERSION ${LIBRARY_SOVERSION_MAJOR}

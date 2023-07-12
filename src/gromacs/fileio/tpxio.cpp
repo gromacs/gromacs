@@ -565,7 +565,7 @@ static void do_fepvals(gmx::ISerializer* serializer, t_lambda* fepvals, int file
     }
     if (fepvals->sc_r_power != 6.0)
     {
-        gmx_fatal(FARGS, "sc-r-power=48 is no longer supported");
+        gmx_fatal(FARGS, "Only sc-r-power=6 is supported. Value in file is %f", fepvals->sc_r_power);
     }
     serializer->doReal(&fepvals->sc_sigma);
     if (serializer->reading())

@@ -37,11 +37,14 @@
 
 #include <cmath>
 
+#include <limits>
+
 #include "gromacs/commandline/cmdlineoptionsmodule.h"
 #include "gromacs/fileio/checkpoint.h"
 #include "gromacs/fileio/enxio.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trrio.h"
+#include "gromacs/gmxpreprocess/gen_maxwell_velocities.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
@@ -58,6 +61,7 @@
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
+#include "gromacs/utility/logger.h"
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/stringutil.h"
@@ -318,6 +322,12 @@ private:
     int64_t maxSteps_ = 0;
     //! If the option to use maximumstep number is set.
     bool maxStepsIsSet_ = false;
+    //! Reassign velocities
+    bool generateVelocities_ = false;
+    //! Temperature to use when reassigning veolocities.
+    real velocityTemperature_ = 300;
+    //! Seed to use for reassigning veolocities. -1 means generate.
+    int velocitySeed_ = -1;
 };
 
 void ConvertTpr::initOptions(IOptionsContainer* options, ICommandLineOptionsModuleSettings* settings)
@@ -375,6 +385,14 @@ void ConvertTpr::initOptions(IOptionsContainer* options, ICommandLineOptionsModu
                                .store(&maxSteps_)
                                .storeIsSet(&maxStepsIsSet_)
                                .description("Change the number of steps remaining to be made"));
+    options->addOption(
+            BooleanOption("generate_velocities").store(&generateVelocities_).defaultValue(false).description("Reassign velocities, using a generated seed unless one is explicitly set"));
+    options->addOption(RealOption("velocity_temp")
+                               .store(&velocityTemperature_)
+                               .defaultValue(300)
+                               .description("Temperature to use when generating velocities"));
+    options->addOption(
+            IntegerOption("velocity_seed").store(&velocitySeed_).description("Random seed for velocities. If value is -1, a new one is generated"));
 }
 
 void ConvertTpr::optionsFinished() {}
@@ -393,19 +411,51 @@ int ConvertTpr::run()
         return 1;
     }
 
-    if ((extendTimeIsSet_ || maxStepsIsSet_ || runToMaxTimeIsSet_) && haveReadIndexFile_)
+    if ((extendTimeIsSet_ || maxStepsIsSet_ || runToMaxTimeIsSet_ || generateVelocities_) && haveReadIndexFile_)
     {
-        printf("Cannot do both runtime modification and index group extraction in a "
+        printf("Cannot do runtime modification or velocity generation together with index group "
+               "extraction in a "
                "single call.\n");
         return 1;
     }
-
 
     t_inputrec  irInstance;
     t_inputrec* ir = &irInstance;
     read_tpx_state(inputTprFileName_.c_str(), ir, &state, &mtop);
 
-
+    if (generateVelocities_)
+    {
+        if (velocityTemperature_ < 0)
+        {
+            printf("Temperature used to generate velocities must be positive.\n");
+            return 1;
+        }
+        if (velocitySeed_ == -1)
+        {
+            velocitySeed_ = static_cast<int>(gmx::makeRandomSeed());
+            printf("Using random seed %d for generating velocities", velocitySeed_);
+        }
+        // Since there is no log in convert-tpr, we generate-and-print the seed here
+        maxwell_speed(velocityTemperature_, velocitySeed_, &mtop, state.v.rvec_array(), MDLogger());
+        // Remove c-o-m after maxwell-boltzmann generation so we stay consistent with grompp
+        atoms = gmx_mtop_global_atoms(mtop);
+        std::vector<real> mass;
+        mass.reserve(state.numAtoms());
+        for (int i = 0; i < state.numAtoms(); i++)
+        {
+            mass.push_back(atoms.atom[i].m);
+        }
+        done_atom(&atoms);
+        stop_cm(MDLogger(), state.numAtoms(), mass.data(), state.x.rvec_array(), state.v.rvec_array());
+        // Particles without mass should not have velocities adjusted
+        for (int i = 0; i < state.numAtoms(); i++)
+        {
+            if (mass[i] == 0)
+            {
+                clear_rvec(state.v.rvec_array()[i]);
+            }
+        }
+    }
     if (extendTimeIsSet_ || maxStepsIsSet_ || runToMaxTimeIsSet_)
     {
         // Doing runtime modification
@@ -449,7 +499,9 @@ int ConvertTpr::run()
         printf("\nOutput file:\n");
         print_runtime_info(ir);
     }
-    else
+    // This will write tpr files for subsets of the system that might be useful for analysis, but not simulations,
+    // and thus we do not allow it to be combined with options to create new/modified runs above.
+    if (!(extendTimeIsSet_ || maxStepsIsSet_ || runToMaxTimeIsSet_ || generateVelocities_))
     {
         atoms                     = gmx_mtop_global_atoms(mtop);
         int         gnx           = 0;
