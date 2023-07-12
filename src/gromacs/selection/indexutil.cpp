@@ -206,11 +206,7 @@ bool gmx_ana_indexgrps_extract(gmx_ana_index_t* dest, std::string* destName, gmx
         dest->isize = 0;
         return false;
     }
-
-    if (destName != nullptr)
-    {
-        *destName = src->names[n];
-    }
+    *destName = src->names[n];
     gmx_ana_index_copy(dest, &src->g[n], true);
     return true;
 }
