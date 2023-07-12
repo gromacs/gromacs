@@ -60,6 +60,7 @@ Patch releases
 .. toctree::
    :maxdepth: 1
 
+   2023/2023.3
    2023/2023.2
    2023/2023.1
 
