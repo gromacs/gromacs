@@ -382,6 +382,15 @@ macro (gmx_c_flags)
             endif()
             GMX_TEST_CXXFLAG(CXXFLAGS_WARN_EXTRA "-Wextra;-Wpointer-arith;-Wmissing-prototypes" GMXC_CXXFLAGS)
             GMX_TEST_CXXFLAG(CXXFLAGS_DEPRECATED "-Wdeprecated" GMXC_CXXFLAGS)
+
+            if (APPLE)
+                # macOS Ventura deprecated `sprintf` in favor of `snprintf`.
+                # This workaround suppresses the deprecation warnings.
+                GMX_TEST_CXXFLAG(CXXFLAGS_NO_DEPRECATED_DECLARATIONS "-Wno-deprecated-declarations" GMXC_CXXFLAGS)
+                # This warning is only useful for cross-compiling
+                GMX_TEST_CXXFLAG(CXXFLAGS_NO_POISON_SYSTEM_DIRECTORIES "-Wno-poison-system-directories" GMXC_CXXFLAGS)
+            endif()
+
             # Functions placed in headers for inlining are not always
             # used in every translation unit that includes the files,
             # so we must disable the warning that there are such
@@ -408,7 +417,7 @@ macro (gmx_c_flags)
     # Apple bastardized version of Clang
     if(${CMAKE_C_COMPILER_ID} MATCHES "AppleClang")
         if(${CMAKE_C_COMPILER_VERSION} VERSION_GREATER 11.0)
-            # Mac OS Catalina ships with a horribly broken compiler (version 11.0.0.11000033)
+            # macOS Catalina ships with a horribly broken compiler (version 11.0.0.11000033)
             # that checks stack alignment by default, but their own C library
             # does not align the stack properly. Embarrassing, Apple...
             GMX_TEST_CFLAG(CFLAG_NO_STACK_CHECK "-fno-stack-check" GMXC_CFLAGS)
@@ -417,26 +426,7 @@ macro (gmx_c_flags)
 
     if(${CMAKE_CXX_COMPILER_ID} MATCHES "AppleClang")
         if(${CMAKE_CXX_COMPILER_VERSION} VERSION_GREATER 11.0)
-            # Mac OS Catalina ships with a horribly broken compiler (version 11.0.0.11000033)
-            # that checks stack alignment by default, but their own C library
-            # does not align the stack properly. Embarrassing, Apple...
-            GMX_TEST_CXXFLAG(CXXFLAG_NO_STACK_CHECK "-fno-stack-check" GMXC_CXXFLAGS)
-        endif()
-    endif()
-
-    # Apple bastardized version of Clang
-    if(${CMAKE_C_COMPILER_ID} MATCHES "AppleClang")
-        if(${CMAKE_C_COMPILER_VERSION} VERSION_GREATER 11.0)
-            # Mac OS Catalina ships with a horribly broken compiler (version 11.0.0.11000033)
-            # that checks stack alignment by default, but their own C library
-            # does not align the stack properly. Embarrassing, Apple...
-            GMX_TEST_CFLAG(CFLAG_NO_STACK_CHECK "-fno-stack-check" GMXC_CFLAGS)
-        endif()
-    endif()
-
-    if(${CMAKE_CXX_COMPILER_ID} MATCHES "AppleClang")
-        if(${CMAKE_CXX_COMPILER_VERSION} VERSION_GREATER 11.0)
-            # Mac OS Catalina ships with a horribly broken compiler (version 11.0.0.11000033)
+            # macOS Catalina ships with a horribly broken compiler (version 11.0.0.11000033)
             # that checks stack alignment by default, but their own C library
             # does not align the stack properly. Embarrassing, Apple...
             GMX_TEST_CXXFLAG(CXXFLAG_NO_STACK_CHECK "-fno-stack-check" GMXC_CXXFLAGS)

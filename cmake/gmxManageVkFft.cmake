@@ -64,6 +64,11 @@ function(gmx_manage_vkfft BACKEND_NAME)
     gmx_target_interface_warning_suppression(VkFFT "-Wno-unused-but-set-variable" HAS_WARNING_NO_UNUSED_BUT_SET_VARIABLE)
     gmx_target_interface_warning_suppression(VkFFT "-Wno-sign-compare" HAS_WARNING_NO_SIGN_COMPARE)
 
+    if (APPLE)
+        # macOS Ventura because `sprintf` was deprecated in favor of `snprintf`.
+        gmx_target_interface_warning_suppression(VkFFT "-Wno-deprecated-declarations" HAS_WARNING_NO_DEPRECATED_DECLARATIONS)
+    endif()
+
     # Backend-specific settings and workarounds
     if (BACKEND_NAME STREQUAL "CUDA")
         target_compile_definitions(VkFFT INTERFACE VKFFT_BACKEND=1)
@@ -82,6 +87,8 @@ function(gmx_manage_vkfft BACKEND_NAME)
         gmx_target_interface_warning_suppression(VkFFT "-Wno-unused-result" HAS_WARNING_NO_UNUSED_RESULT)
     elseif(BACKEND_NAME STREQUAL "OpenCL")
         target_compile_definitions(VkFFT INTERFACE VKFFT_BACKEND=3)
+        # The "-Wcast-qual" warning appears when compiling VkFFT for OpenCL, but not for HIP.
+        gmx_target_interface_warning_suppression(VkFFT "-Wno-cast-qual" HAS_WARNING_NO_CAST_QUAL)
     elseif(BACKEND_NAME STREQUAL "LevelZero")
         target_compile_definitions(VkFFT INTERFACE VKFFT_BACKEND=4)
     else()
