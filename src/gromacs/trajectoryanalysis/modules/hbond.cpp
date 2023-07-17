@@ -547,24 +547,20 @@ void Hbond::linkDA(t_info* selectionTool)
         auto i = selectionTool->acceptors.begin();
         auto j = selectionTool->donors.begin();
 
-        while (i != selectionTool->acceptors.end() || j != selectionTool->donors.end())
+        while (i != selectionTool->acceptors.end() && j != selectionTool->donors.end())
         {
             if (i->ai == j->ai)
             {
                 i->isAlsoDonor = true;
             }
 
-            if (i->ai <= j->ai && i != selectionTool->acceptors.end())
+            if (i->ai <= j->ai)
             {
                 ++i;
             }
-            else if (i->ai >= j->ai && j != selectionTool->donors.end())
-            {
-                ++j;
-            }
             else
             {
-                break;
+                ++j;
             }
         }
     }
