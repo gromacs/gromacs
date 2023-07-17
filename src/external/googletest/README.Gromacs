@@ -1,25 +1,32 @@
 This directory contains source code for Google C++ Testing and Mocking
 Frameworks.
 
+GoogleTest promotes "live-at-head" approach, recommending regularly
+updating to the latest commit instead of using tagged releases.
+However, to reduce maintenance burden, we are updating bundled
+GoogleTest copy only occasionally, and prefer to use the latest
+release unless it is severely outdated or does not contain
+required features/bugfixes.
+
 The code has been copied verbatim from the GoogleTest repository
 (https://github.com/google/googletest). The currently bundled code
-is from git commit 96f4ce0, which needs to be manually synchronized
-with the reference in python_packaging/sample_restraint/tests/CMakeLists.txt
+is from git tag 1.13.0 (commit b796f7d446) which needs to be manually 
+synchronized with the reference in python_packaging/sample_restraint/CMakeLists.txt
 
-No files were omitted or changed, consistent with the live-at-head
-philosophy followed by GoogleTest.
+No files were omitted or changed, with a few exceptions listed below.
 
 This README.Gromacs file is new, of course.
 
 Conditional compilation based on __clang_analyzer__ is used to work
 around reports from the clang static analyzer in
 googletest/include/gtest/gtest.h,
-googletest/include/gtest/gtest-matchers.h, and
-googlemock/include/gmock/gmock-matchers.h.
+googletest/include/gtest/gtest-matchers.h,
+googlemock/include/gmock/gmock-matchers.h, and
+googlemock/include/gmock/gmock-spec-builders.h.
 
 Some warning-generation flags are removed from
 googletest/cmake/internal_utils.cmake because these are not always
-supported by compilers.
+supported by compilers (https://github.com/google/googletest/issues/4315).
 
 A clang-tidy suppression has been added to
 googletest/include/gtest/internal/gtest-internal.h.

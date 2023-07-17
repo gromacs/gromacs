@@ -84,6 +84,13 @@ if(BUILD_TESTING AND GMX_BUILD_UNITTESTS)
         gmx_target_warning_suppression(gtest -Wno-debug-disables-optimization HAVE_NO_DEBUG_DISABLES_OPTIMIZATION)
         gmx_target_warning_suppression(gmock -Wno-debug-disables-optimization HAVE_NO_DEBUG_DISABLES_OPTIMIZATION)
     endif()
+    if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+        # GoogleTest disables this warning for IntelLLVM, but old CMake versions identify it as plain Clang
+        # Remove when CMake 3.20+ is required
+        # https://github.com/google/googletest/issues/4315
+        gmx_target_warning_suppression(gtest -Wno-implicit-float-size-conversion HAVE_NO_IMPLICIT_FLOAT_SIZE_CONVERSION)
+        gmx_target_warning_suppression(gtest -Wno-implicit-int-float-conversion HAVE_NO_IMPLICIT_INT_FLOAT_CONVERSION)
+    endif()
 
     set(GTEST_IS_THREADSAFE "${GTEST_IS_THREADSAFE}" PARENT_SCOPE)
 endif()
