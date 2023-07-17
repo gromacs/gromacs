@@ -22,6 +22,13 @@ Fixes for ``gmx`` tools
 Fixes that affect portability
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+|Gromacs| automatically finds oneAPI libraries in new layout
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+MKL and SYCL-support libraries were reorganized in oneAPI 2023.2. Now
+|Gromacs| automatically finds the libraries it needs in both new and
+old layouts.
+
 Miscellaneous
 ^^^^^^^^^^^^^
 

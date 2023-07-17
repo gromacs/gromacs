@@ -440,7 +440,7 @@ else()
 
     if(GMX_GPU_FFT_MKL)
         #MKLROOT is set by gmxManageFFTLibraries.cmake
-        find_library(mkl_sycl_PATH mkl_sycl PATHS "${MKLROOT}/lib/intel64" REQUIRED)
+        find_library(mkl_sycl_PATH mkl_sycl PATHS "${MKLROOT}/lib" "${MKLROOT}/lib/intel64" REQUIRED)
         mark_as_advanced(mkl_sycl_PATH)
         list(APPEND GMX_EXTRA_LIBRARIES "${mkl_sycl_PATH};OpenCL")
 
