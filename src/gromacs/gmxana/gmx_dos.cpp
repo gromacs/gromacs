@@ -316,7 +316,7 @@ int gmx_dos(int argc, char* argv[])
           FALSE,
           etREAL,
           { &toler },
-          "[HIDDEN]Tolerance when computing the fluidicity using bisection algorithm" }
+          "HIDDENTolerance when computing the fluidicity using bisection algorithm" }
     };
 
     t_filenm fnm[] = {

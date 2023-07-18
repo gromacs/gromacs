@@ -63,7 +63,7 @@ int gmx_sans(int argc, char* argv[])
 {
     const char* desc[] = {
         "[THISMODULE] computes SANS spectra using Debye formula.",
-        "It currently uses topology file (since it need to assigne element for each atom).",
+        "It currently uses topology file (since it need to assign element for each atom).",
         "[PAR]",
         "Parameters:[PAR]",
         "[TT]-pr[tt] Computes normalized g(r) function averaged over trajectory[PAR]",
@@ -95,20 +95,20 @@ int gmx_sans(int argc, char* argv[])
     gmx_sans_t*                            gsans;
 
     t_pargs pa[] = {
-        { "-bin", FALSE, etREAL, { &binwidth }, "[HIDDEN]Binwidth (nm)" },
+        { "-bin", FALSE, etREAL, { &binwidth }, "HIDDENBinwidth (nm)" },
         { "-mode", FALSE, etENUM, { emode }, "Mode for sans spectra calculation" },
         { "-mcover",
           FALSE,
           etREAL,
           { &mcover },
           "Monte-Carlo coverage should be -1(default) or (0,1]" },
-        { "-method", FALSE, etENUM, { emethod }, "[HIDDEN]Method for sans spectra calculation" },
+        { "-method", FALSE, etENUM, { emethod }, "HIDDENMethod for sans spectra calculation" },
         { "-pbc",
           FALSE,
           etBOOL,
           { &bPBC },
           "Use periodic boundary conditions for computing distances" },
-        { "-grid", FALSE, etREAL, { &grid }, "[HIDDEN]Grid spacing (in nm) for FFTs" },
+        { "-grid", FALSE, etREAL, { &grid }, "HIDDENGrid spacing (in nm) for FFTs" },
         { "-startq", FALSE, etREAL, { &start_q }, "Starting q (1/nm) " },
         { "-endq", FALSE, etREAL, { &end_q }, "Ending q (1/nm)" },
         { "-qstep", FALSE, etREAL, { &q_step }, "Stepping in q (1/nm)" },
