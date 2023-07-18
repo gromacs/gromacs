@@ -39,6 +39,21 @@ force field please read the previous paragraph.
 GROMOS-96
 ~~~~~~~~~
 
+.. warning::
+    The GROMOS force fields have been parametrized with a physically
+    incorrect multiple-time-stepping scheme for a twin-range cut-off. When
+    used with a single-range cut-off (or a correct Trotter
+    multiple-time-stepping scheme), physical properties, such as the density,
+    might differ from the intended values. Since there are researchers
+    actively working on validating GROMOS with modern integrators we have not
+    yet removed the GROMOS force fields, but you should be aware of these
+    issues and check if molecules in your system are affected before
+    proceeding. Further information is available in
+    `GitLab Issue 2884 <https://gitlab.com/gromacs/gromacs/-/issues/2884>`_ , 
+    and a longer explanation of our
+    decision to remove physically incorrect algorithms can be found at
+    `DOI:10.26434/chemrxiv.11474583.v1 <https://doi.org/10.26434/chemrxiv.11474583.v1>`_ .
+
 |Gromacs| supports the GROMOS-96 force fields \ :ref:`77 <refgromos96>`. All
 parameters for the 43A1, 43A2 (development, improved alkane dihedrals),
 45A3, 53A5, and 53A6 parameter sets are included. All standard building
