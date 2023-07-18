@@ -152,9 +152,17 @@ to use the same compiler and libstdc++.
 To build with clang and llvm's libcxx standard library, use
 ``-DCMAKE_CXX_FLAGS=-stdlib=libc++``.
 
-If you are running on Mac OS X, the best option is gcc. The Apple
-clang compiler provided by MacPorts will work, but does not support
-OpenMP, so will probably not provide best performance.
+If you are running on Mac OS X, Apple has unfortunately explicitly disabled
+OpenMP support in their Clang-based compiler, and running without OpenMP
+support means you would need to use thread-MPI for any parallelism - which is
+the reason the |Gromacs| configuration script now stops rather than just
+issues a warning you might miss. Instead of turning off OpenMP, you can try to
+download the unsupported
+`libomp distributed by the R project <https://mac.r-project.org/openmp/>`_
+or compile your own version - but this will likely have to be updated any time
+you upgrade the major Mac OS version. Alternatively, you can download a
+version of gcc; just make sure you actually use your downloaded gcc version,
+since Apple by default links /usr/bin/gcc to their own compiler.
 
 For all non-x86 platforms, your best option is typically to use gcc or
 the vendor's default or recommended compiler, and check for
@@ -262,8 +270,8 @@ more details, see `Introduction to CUDA-aware MPI
 
 To use CUDA-aware MPI for direct GPU communication we recommend
 using the latest OpenMPI version (>=4.1.0) with the latest UCX version
-(>=1.10), since most |Gromacs| internal testing on CUDA-aware support has 
-been performed using these versions. OpenMPI with CUDA-aware support can 
+(>=1.10), since most |Gromacs| internal testing on CUDA-aware support has
+been performed using these versions. OpenMPI with CUDA-aware support can
 be built following the procedure in `these OpenMPI build instructions
 <https://www.open-mpi.org/faq/?category=buildcuda>`_.
 
@@ -277,10 +285,10 @@ and GPU-aware support in the MPI runtime `selected
 For GPU-aware MPI support on AMD GPUs, several MPI implementations with UCX support
 can work, we recommend the latest OpenMPI version (>=4.1.4) with the latest UCX (>=1.13)
 since most of our testing was done using these version.
-Other MPI flavors such as Cray MPICH are also GPU-aware and compatible with ROCm.  
+Other MPI flavors such as Cray MPICH are also GPU-aware and compatible with ROCm.
 
 With ``GMX_MPI=ON``, |Gromacs| attempts to automatically detect GPU support
-in the underlying MPI library at compile time, and enables direct GPU 
+in the underlying MPI library at compile time, and enables direct GPU
 communication when this is detected. However, there are some cases when
 |Gromacs| may fail to detect existing GPU-aware MPI support, in which case
 it can be manually enabled by setting environment variable ``GMX_FORCE_GPU_AWARE_MPI=1``
@@ -721,7 +729,7 @@ lead to performance loss, e.g. on Intel Skylake-X/SP and AMD Zen (first generati
     The SVE vector length is fixed at CMake configure time. The default vector
     length is automatically detected, and this can be changed via the
     ``GMX_SIMD_ARM_SVE_LENGTH`` CMake variable.
-    Minimum required compiler versions are GNU >= 10, LLVM >=13, or ARM >= 21.1. 
+    Minimum required compiler versions are GNU >= 10, LLVM >=13, or ARM >= 21.1.
     For maximum performance we strongly suggest the latest gcc compilers,
     or at least LLVM 14 or ARM 22.0.
     Lower performance has been observed with LLVM 13 and Arm compiler 21.1.
@@ -1138,7 +1146,7 @@ earlier hardware, because this will lead to programs (especially
 mdrun) that run slowly on the new hardware. Building two full
 installations and locally managing how to call the correct one
 (e.g. using a module system) is the recommended
-approach. Alternatively, one can use different suffixes to install 
+approach. Alternatively, one can use different suffixes to install
 several versions of |Gromacs| in the same location. To achieve this,
 one can first build a full installation with the
 least-common-denominator SIMD instruction set, e.g. ``-DGMX_SIMD=SSE2``,
@@ -1154,7 +1162,7 @@ multiple generations of GPUs from the same vendor is in most cases
 possible with a single |Gromacs| build.
 CUDA_ builds will by default be able to run on any NVIDIA GPU
 supported by the CUDA toolkit used since the |Gromacs| build
-system generates code for these at build-time. 
+system generates code for these at build-time.
 With SYCL_ multiple target architectures of the same GPU vendor
 can be selected when using hipSYCL_ (i.e. only AMD or only NVIDIA).
 With OpenCL_, due to just-in-time compilation of GPU code for
@@ -1207,7 +1215,7 @@ Building with CP2K QM/MM support
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 CP2K QM/MM interface integration will require linking against libcp2k
-library, that incorporates CP2K functionality into |Gromacs|. 
+library, that incorporates CP2K functionality into |Gromacs|.
 
 1. Download, compile and install CP2K (version 8.1 or higher is required).
 CP2K latest distribution can be downloaded `here <https://github.com/cp2k/cp2k/releases/>`_.
@@ -1223,14 +1231,14 @@ The library archive (*e.g.* :file:`libcp2k.a`) should appear in the :file:`{<cp2
 
 Build should be static: ``-DBUILD_SHARED_LIBS=OFF -DGMXAPI=OFF -DGMX_INSTALL_NBLIB_API=OFF``
 
-Double precision in general is better than single for QM/MM 
+Double precision in general is better than single for QM/MM
 (however both options are viable): ``-DGMX_DOUBLE=ON``
 
 FFT, BLAS and LAPACK libraries should be the same between CP2K and |Gromacs|.
 Use the following flags to do so:
 
 * ``-DGMX_FFT_LIBRARY=<your library like fftw3> -DFFTWF_LIBRARY=<path to library> -DFFTWF_INCLUDE_DIR=<path to directory with headers>``
-* ``-DGMX_BLAS_USER=<path to your BLAS>`` 
+* ``-DGMX_BLAS_USER=<path to your BLAS>``
 * ``-DGMX_LAPACK_USER=<path to your LAPACK>``
 
 4. Compilation of QM/MM interface is controled by the following flags.
@@ -1240,11 +1248,11 @@ Use the following flags to do so:
 ``-DCP2K_DIR="<path to cp2k>/lib/local/psmp``
     Directory with libcp2k.a library
 ``-DCP2K_LINKER_FLAGS="<combination of LDFLAGS and LIBS>"`` (optional for CP2K 9.1 or newer)
-    Other libraries used by CP2K. Typically that should be combination 
+    Other libraries used by CP2K. Typically that should be combination
     of LDFLAGS and LIBS from the ARCH file used for CP2K compilation.
     Sometimes ARCH file could have several lines defining LDFLAGS and LIBS
     or even split one line into several using "\\". In that case all of them
-    should be concatenated into one long string without any extra slashes 
+    should be concatenated into one long string without any extra slashes
     or quotes. For CP2K versions 9.1 or newer, CP2K_LINKER_FLAGS is not required
     but still might be used in very specific situations.
 

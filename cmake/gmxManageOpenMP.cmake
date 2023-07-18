@@ -40,10 +40,18 @@ if(GMX_OPENMP)
     # OpenMP check must come before other CFLAGS!
     find_package(OpenMP)
     if(NOT OPENMP_FOUND)
-        message(FATAL_ERROR "The compiler you are using does not support OpenMP parallelism. "
-            "This might hurt your performance a lot, in particular with GPUs. "
-            "Try using a more recent version, or a different compiler. "
-            "If you don't want to use OpenMP, disable it explicitly with -DGMX_OPENMP=OFF")
+        if(CMAKE_CXX_COMPILER_ID MATCHES "AppleClang")
+            message(FATAL_ERROR "The compiler you are using does not support OpenMP parallelism, "
+                "Apple has unfortunately explicitly disabled OpenMP in their clang-derived compiler. "
+                "You can disable OpenMP in Gromacs with -DGMX_OPENMP=OFF, but instead "
+                "we recommend installing the unsupported library distributed by the R "
+                "project from https://mac.r-project.org/openmp/ - or switch to gcc.")
+        else()
+            message(FATAL_ERROR "The compiler you are using does not support OpenMP parallelism. "
+                "This might hurt your performance a lot, in particular with GPUs. "
+                "Try using a more recent version, or a different compiler. "
+                "If you don't want to use OpenMP, disable it explicitly with -DGMX_OPENMP=OFF")
+        endif()
     endif()
 endif()
 gmx_dependent_cache_variable(GMX_OPENMP_MAX_THREADS
