@@ -206,20 +206,11 @@ ReferenceDataEntry::EntryPointer readReferenceDataFile(const std::string& path)
     document.LoadFile(path.c_str());
     if (document.Error())
     {
-        const char* errorStr1 = document.GetErrorStr1();
-        const char* errorStr2 = document.GetErrorStr2();
+        const char* errorStr = document.ErrorStr();
         std::string errorString("Error was ");
-        if (errorStr1)
+        if (errorStr)
         {
-            errorString += errorStr1;
-        }
-        if (errorStr2)
-        {
-            errorString += errorStr2;
-        }
-        if (!errorStr1 && !errorStr2)
-        {
-            errorString += "not specified.";
+            errorString += errorStr;
         }
         GMX_THROW(TestException("Reference data not parsed successfully: " + path + "\n."
                                 + errorString + "\n"));
@@ -371,7 +362,7 @@ void writeReferenceDataFile(const std::string& path, const ReferenceDataEntry& r
     XMLElementPtr rootElement = createRootElement(&document);
     createChildElements(rootElement, rootEntry);
 
-    if (document.SaveFile(path.c_str()) != tinyxml2::XML_NO_ERROR)
+    if (document.SaveFile(path.c_str()) != tinyxml2::XML_SUCCESS)
     {
         GMX_THROW(TestException("Reference data saving failed in " + path));
     }

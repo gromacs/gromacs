@@ -1,4 +1,4 @@
-This is version 3.0.0 of tinyxml2, modified only so that
+This is version 9.0.0 of tinyxml2, modified only so that
 XMLPrinter::PrintSpace will write XML files with nesting indentation
 of 2 spaces rather than 4, to match existing XML files in the GROMACS
 repo.
