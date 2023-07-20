@@ -508,7 +508,8 @@ def get_oneapi_plugins(args):
             raise RuntimeError(
                 "Need CODEPLAY_API_TOKEN env. variable to install oneAPI plugins"
             )
-        url = f"https://developer.codeplay.com/api/v1/products/download?product=oneapi&filters[]=linux&variant={variant}&aat={token}"
+        backend_version = {"nvidia": args.cuda, "amd": args.rocm}[variant]
+        url = f"https://developer.codeplay.com/api/v1/products/download?product=oneapi&variant={variant}&filters[]=linux&filters[]={backend_version}&aat={token}"
         outfile = f"/tmp/oneapi_plugin_{variant}.sh"
         blocks.append(
             hpccm.primitives.shell(

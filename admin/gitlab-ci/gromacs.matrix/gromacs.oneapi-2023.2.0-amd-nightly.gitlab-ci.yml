@@ -6,45 +6,45 @@
 #   GPU: SYCL DPC++ (oneAPI AMD backends)
 #   Scope: configure, build, unit tests, regression tests
 # Test implementation choices (free to change as needed):
-#   OS: Ubuntu 20.04
+#   OS: Ubuntu 22.04
 #   Build type: RelWithAssert
-#   Compiler: ICPX 2023.0.0
+#   Compiler: ICPX 2023.2.0
 #   MPI: thread_MPI
 #   SIMD: AVX2_256
 #   Parallelism nt/ntomp: 2/1 and 2/2
 
-gromacs:oneapi-2023.0.0-amd-nightly:configure:
+gromacs:oneapi-2023.2.0-amd-nightly:configure:
   extends:
    - .gromacs:base:configure
    - .use-oneapi-intel-llvm:base
    - .use-sycl
    - .rules:nightly-not-for-release
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-oneapi-2023.0.0-intel-compute-runtime-rocm-4.5.2:latest
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-22.04-oneapi-2023.2.0-intel-compute-runtime-rocm-5.4.3:latest
   variables:
     CMAKE: /usr/local/cmake-3.18.4/bin/cmake
     CMAKE_BUILD_TYPE_OPTIONS: "-DCMAKE_BUILD_TYPE=RelWithAssert"
     CMAKE_EXTRA_OPTIONS: "-DSYCL_CXX_FLAGS_EXTRA=-fsycl-targets=amdgcn-amd-amdhsa;-Xsycl-target-backend=amdgcn-amd-amdhsa;--offload-arch=gfx1034 -DGMX_GPU_NB_CLUSTER_SIZE=8 -DGMX_GPU_FFT_LIBRARY=None"
     COMPILER_MAJOR_VERSION: 2023
 
-gromacs:oneapi-2023.0.0-amd-nightly:build:
+gromacs:oneapi-2023.2.0-amd-nightly:build:
   extends:
     - .variables:default
     - .gromacs:base:build
     - .use-ccache
     - .use-oneapi-intel-llvm:base
     - .rules:nightly-not-for-release
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-oneapi-2023.0.0-intel-compute-runtime-rocm-4.5.2:latest
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-22.04-oneapi-2023.2.0-intel-compute-runtime-rocm-5.4.3:latest
   variables:
     CMAKE: /usr/local/cmake-3.18.4/bin/cmake
   needs:
-    - job: gromacs:oneapi-2023.0.0-amd-nightly:configure
+    - job: gromacs:oneapi-2023.2.0-amd-nightly:configure
 
-gromacs:oneapi-2023.0.0-amd-nightly:test:
+gromacs:oneapi-2023.2.0-amd-nightly:test:
   extends:
     - .gromacs:base:test
     - .use-oneapi-intel-llvm:base
     - .rules:nightly-not-for-release
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-oneapi-2023.0.0-intel-compute-runtime-rocm-4.5.2:latest
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-22.04-oneapi-2023.2.0-intel-compute-runtime-rocm-5.4.3:latest
   variables:
     CMAKE: /usr/local/cmake-3.18.4/bin/cmake
     SYCL_DEVICE_FILTER: "ext_oneapi_hip:gpu"
@@ -52,14 +52,14 @@ gromacs:oneapi-2023.0.0-amd-nightly:test:
     KUBERNETES_EXTENDED_RESOURCE_LIMIT: 1
     GMX_TEST_LABELS: "QuickGpuTest|SlowGpuTest"
   needs:
-    - job: gromacs:oneapi-2023.0.0-amd-nightly:build
+    - job: gromacs:oneapi-2023.2.0-amd-nightly:build
 
-gromacs:oneapi-2023.0.0-amd-nightly:regressiontest:
+gromacs:oneapi-2023.2.0-amd-nightly:regressiontest:
   extends:
     - .gromacs:base:regressiontest
     - .use-oneapi-intel-llvm:base
     - .rules:nightly-not-for-release
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-oneapi-2023.0.0-intel-compute-runtime-rocm-4.5.2:latest
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-22.04-oneapi-2023.2.0-intel-compute-runtime-rocm-5.4.3:latest
   variables:
     CMAKE: /usr/local/cmake-3.18.4/bin/cmake
     SYCL_DEVICE_FILTER: "ext_oneapi_hip:gpu"
@@ -69,6 +69,6 @@ gromacs:oneapi-2023.0.0-amd-nightly:regressiontest:
     KUBERNETES_EXTENDED_RESOURCE_NAME: "amd.com/gpu"
     KUBERNETES_EXTENDED_RESOURCE_LIMIT: 1
   needs:
-    - job: gromacs:oneapi-2023.0.0-amd-nightly:build
+    - job: gromacs:oneapi-2023.2.0-amd-nightly:build
     - job: regressiontests:prepare
 
