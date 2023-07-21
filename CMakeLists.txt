@@ -44,6 +44,10 @@ if(POLICY CMP0135) # From CMake 3.24
     # We don't care about DOWNLOAD_EXTRACT_TIMESTAMP; prefer the new behavior
     cmake_policy(SET CMP0135 NEW)
 endif()
+if(POLICY CMP0146) # From CMake 3.27
+    # We still use FindCUDA
+    cmake_policy(SET CMP0146 OLD)
+endif()
 
 # CMake modules/macros are in a subdirectory to keep this file cleaner
 # This needs to be set before project() in order to pick up toolchain files
