@@ -33,28 +33,12 @@
 
 # Perform Python installation discovery early and in one place, for consistency.
 
-if($<VERSION_GREATER_EQUAL:${CMAKE_VERSION},"3.18">)
-    # With embedded packages in this repository, the module-scoped default behavior of
-    # FindPython3 version/component requirements and artifact specification is likely
-    # confusing (at best) or leading to bad logic (at worst).
-    # https://cmake.org/cmake/help/latest/module/FindPython3.html#artifacts-specification
-    option(Python3_ARTIFACTS_INTERACTIVE TRUE
-           "Make artifacts specification global and cached.")
-elseif(NOT FIND_PACKAGE_MESSAGE_DETAILS_Python3)
-    # On first run, check whether the user has triggered the behavior described above.
-    if (Python3_EXECUTABLE
-            OR Python3_COMPILER
-            OR Python3_DOTNET_LAUNCHER
-            OR Python3_LIBRARY
-            OR Python3_INCLUDE_DIR
-            OR Python3_NumPy_INCLUDE_DIR)
-        message(WARNING
-                "Specifying FindPython3 artifacts may complicate consistent Python detection "
-                "in projects bundled with GROMACS. See "
-                "https://cmake.org/cmake/help/latest/module/FindPython3.html#artifacts-specification"
-                )
-    endif ()
-endif()
+# With embedded packages in this repository, the module-scoped default behavior of
+# FindPython3 version/component requirements and artifact specification is likely
+# confusing (at best) or leading to bad logic (at worst).
+# https://cmake.org/cmake/help/latest/module/FindPython3.html#artifacts-specification
+option(Python3_ARTIFACTS_INTERACTIVE TRUE
+       "Make artifacts specification global and cached.")
 
 # Note: If necessary, the Python location can be hinted with Python3_ROOT_DIR
 # For additional parameters affecting Python installation discovery, see

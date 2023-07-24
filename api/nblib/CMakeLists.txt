@@ -68,13 +68,8 @@ set_target_properties(nblib PROPERTIES
         OUTPUT_NAME "nblib_gmx")
 
 if (GMX_GPU_CUDA)
-    if(${CMAKE_VERSION} VERSION_LESS "3.17.0")
-        find_package(CUDA)
-        target_include_directories(nblib PRIVATE "${CUDA_INCLUDE_DIRS}")
-    else()
-        find_package(CUDAToolkit)
-        target_link_libraries(nblib PRIVATE CUDA::cudart)
-    endif()
+    find_package(CUDAToolkit)
+    target_link_libraries(nblib PRIVATE CUDA::cudart)
 endif()
 
 target_sources(nblib
