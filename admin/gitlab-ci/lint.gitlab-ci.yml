@@ -123,13 +123,20 @@ clang-format:
       fi
     - echo "Revision used for branch point is $REV"
     - git show -s $REV
-    - CLANG_FORMAT=clang-format-$COMPILER_MAJOR_VERSION admin/clang-format.sh check --rev=$REV --warnings=clang-format.log
+    - HAVE_ERROR=
+    - CLANG_FORMAT=clang-format-$COMPILER_MAJOR_VERSION admin/clang-format.sh check --rev=$REV --warnings=clang-format.log || HAVE_ERROR=1
     - grep -i "needs formatting" clang-format.log | tee formatting.txt || true
-    - if [ -s formatting.txt ] ; then echo "clang-format.sh found issues"; exit 1; fi
+    - if [ -n "${HAVE_ERROR}" -o -s formatting.txt ] ; then
+      echo "clang-format.sh found issues!" ;
+      echo "🩹🩹🩹 Patch below (can also be downloaded from artifacts) 🩹🩹🩹" ;
+      CLANG_FORMAT=clang-format-$COMPILER_MAJOR_VERSION admin/clang-format.sh --rev=$REV diff | tee clang-format.patch ;
+      exit 1 ;
+      fi
   artifacts:
     when: on_failure
     paths:
       - clang-format.log
+      - clang-format.patch
       - formatting.txt
 
 python-format:
@@ -145,10 +152,16 @@ python-format:
     KUBERNETES_CPU_REQUEST: 1
     KUBERNETES_MEMORY_REQUEST: 2Gi
   script:
-    - BLACK="/root/venv/py3.9/bin/python -m black --config .black.toml -W $KUBERNETES_CPU_LIMIT "
+    - BLACK="/root/venv/py3.9/bin/python -m black --config .black.toml -W $KUBERNETES_CPU_LIMIT"
     - echo "Using 'black' version " $($BLACK --version)
-    - $BLACK --check --verbose --diff . > black-format.log
-    - if [ -s black-format.log ] ; then echo "Python formatter found issues (see black-format.log)"; exit 1; fi
+    - HAVE_ERROR=
+    - $BLACK --check --verbose --diff . > black-format.log || HAVE_ERROR=1
+    - if [ -n "${HAVE_ERROR}" -o -s black-format.log ] ; then
+      echo "Python formatter found issues (see black-format.log)" ;
+      echo "🩹🩹🩹 Patch below (can also be downloaded from artifacts) 🩹🩹🩹" ;
+      cat black-format.log ;
+      exit 1 ;
+      fi
   artifacts:
     when: on_failure
     paths:
