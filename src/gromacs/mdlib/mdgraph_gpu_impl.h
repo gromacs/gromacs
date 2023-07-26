@@ -56,7 +56,7 @@ enum class GraphState : int
     Invalid,      //!< Invalid, i.e before recording has started (including after reset)
     Recording,    //!< Recording is underway and has not yet finished
     Recorded,     //!< Recording has finished, but graph is not yet instantiated
-    Instantiated, //!< Instatiated and ready to launch
+    Instantiated, //!< Instantiated and ready to launch
     Count         //!< Number of valid values
 };
 
@@ -178,8 +178,6 @@ private:
     int ppRank_ = 0;
     //! Number of PP ranks in use
     int ppSize_ = 1;
-    //! CUDA status object
-    cudaError_t stat_;
     //! Temporary event used for forking and joining streams in graph
     std::unique_ptr<GpuEventSynchronizer> helperEvent_;
     //! Whether step is even or odd, where different graphs are used for each

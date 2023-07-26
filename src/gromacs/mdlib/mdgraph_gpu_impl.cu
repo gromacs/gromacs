@@ -81,19 +81,19 @@ MdGpuGraph::Impl::Impl(const DeviceStreamManager& deviceStreamManager,
 
 MdGpuGraph::Impl::~Impl()
 {
-    stat_ = cudaDeviceSynchronize();
-    CU_RET_ERR(stat_, "cudaDeviceSynchronize during MD graph cleanup failed.");
+    cudaError_t stat = cudaDeviceSynchronize();
+    CU_RET_ERR(stat, "cudaDeviceSynchronize during MD graph cleanup failed.");
 
     if (graphAllocated_)
     {
-        stat_ = cudaGraphDestroy(graph_);
-        CU_RET_ERR(stat_, "cudaGraphDestroy during MD graph cleanup failed.");
+        stat = cudaGraphDestroy(graph_);
+        CU_RET_ERR(stat, "cudaGraphDestroy during MD graph cleanup failed.");
     }
 
     if (graphInstanceAllocated_)
     {
-        stat_ = cudaGraphExecDestroy(instance_);
-        CU_RET_ERR(stat_, "cudaGraphExecDestroy diring MD graph cleanup failed.");
+        stat = cudaGraphExecDestroy(instance_);
+        CU_RET_ERR(stat, "cudaGraphExecDestroy during MD graph cleanup failed.");
     }
 }
 
@@ -215,10 +215,10 @@ void MdGpuGraph::Impl::startRecord(GpuEventSynchronizer* xReadyOnDeviceEvent)
     // Begin stream capture on PP rank 0 only. We use a single graph across all ranks.
     if (ppRank_ == 0)
     {
-        stat_ = cudaStreamBeginCapture(
+        cudaError_t stat = cudaStreamBeginCapture(
                 deviceStreamManager_.stream(gmx::DeviceStreamType::NonBondedLocal).stream(),
                 cudaStreamCaptureModeGlobal);
-        CU_RET_ERR(stat_, "cudaStreamBeginCapture in MD graph definition initialization failed.");
+        CU_RET_ERR(stat, "cudaStreamBeginCapture in MD graph definition initialization failed.");
     }
 
     // Start artificial fork of rank>0 PP tasks from rank 0 PP
@@ -306,12 +306,12 @@ void MdGpuGraph::Impl::endRecord()
     {
         if (graphAllocated_)
         {
-            stat_ = cudaGraphDestroy(graph_);
-            CU_RET_ERR(stat_, "cudaGraphDestroy in MD graph definition finalization failed.");
+            cudaError_t stat = cudaGraphDestroy(graph_);
+            CU_RET_ERR(stat, "cudaGraphDestroy in MD graph definition finalization failed.");
         }
-        stat_ = cudaStreamEndCapture(
+        cudaError_t stat = cudaStreamEndCapture(
                 deviceStreamManager_.stream(gmx::DeviceStreamType::NonBondedLocal).stream(), &graph_);
-        CU_RET_ERR(stat_, "cudaStreamEndCapture in MD graph definition finalization failed.");
+        CU_RET_ERR(stat, "cudaStreamEndCapture in MD graph definition finalization failed.");
         graphAllocated_ = true;
     }
 
@@ -352,19 +352,18 @@ void MdGpuGraph::Impl::createExecutableGraph(bool forceGraphReinstantiation)
         {
             cudaGraphNode_t           hErrorNode_out;
             cudaGraphExecUpdateResult updateResult_out;
-            stat_ = cudaGraphExecUpdate(instance_, graph_, &hErrorNode_out, &updateResult_out);
-            CU_RET_ERR(stat_, "cudaGraphExecUpdate in MD graph definition finalization failed.");
+            cudaError_t stat = cudaGraphExecUpdate(instance_, graph_, &hErrorNode_out, &updateResult_out);
+            CU_RET_ERR(stat, "cudaGraphExecUpdate in MD graph definition finalization failed.");
         }
         else
         {
             if (graphInstanceAllocated_)
             {
-                stat_ = cudaGraphExecDestroy(instance_);
-                CU_RET_ERR(stat_,
-                           "cudaGraphExecDestroy in MD graph definition finalization failed.");
+                cudaError_t stat = cudaGraphExecDestroy(instance_);
+                CU_RET_ERR(stat, "cudaGraphExecDestroy in MD graph definition finalization failed.");
             }
-            stat_ = cudaGraphInstantiate(&instance_, graph_, nullptr, nullptr, 0);
-            CU_RET_ERR(stat_, "cudaGraphInstantiate in MD graph definition finalization failed.");
+            cudaError_t stat = cudaGraphInstantiate(&instance_, graph_, nullptr, nullptr, 0);
+            CU_RET_ERR(stat, "cudaGraphInstantiate in MD graph definition finalization failed.");
             graphInstanceAllocated_ = true;
         }
     }
@@ -443,8 +442,8 @@ void MdGpuGraph::Impl::launchGraphMdStep(GpuEventSynchronizer* xUpdatedOnDeviceE
 
     if (ppRank_ == 0)
     {
-        stat_ = cudaGraphLaunch(instance_, thisLaunchStream->stream());
-        CU_RET_ERR(stat_, "cudaGraphLaunch in MD graph definition finalization failed.");
+        cudaError_t stat = cudaGraphLaunch(instance_, thisLaunchStream->stream());
+        CU_RET_ERR(stat, "cudaGraphLaunch in MD graph definition finalization failed.");
         helperEvent_->markEvent(*thisLaunchStream);
     }
 
