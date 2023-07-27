@@ -63,11 +63,12 @@
     const int cj = l_cj[cjind].cj;
 
     /* Atom indices (of the first atom in the cluster) */
-    const int gmx_unused aj = cj * UNROLLJ;
+    const int gmx_unused aj = cj * c_jClusterSize;
 
-    const int ajx = (UNROLLJ == STRIDE ? aj * DIM : (cj >> 1) * DIM * STRIDE + (cj & 1) * UNROLLJ);
-    const int ajy = ajx + STRIDE;
-    const int ajz = ajy + STRIDE;
+    const int ajx =
+            (c_jClusterSize == c_stride ? aj * DIM : (cj >> 1) * DIM * c_stride + (cj & 1) * c_jClusterSize);
+    const int ajy = ajx + c_stride;
+    const int ajz = ajy + c_stride;
 
     /* Interaction (non-exclusion) mask of all 1's or 0's */
     const auto interactV = loadSimdPairInteractionMasks<c_needToCheckExclusions, kernelLayout>(
@@ -219,13 +220,13 @@
         int aj2;
         if constexpr (ljCombinationRule != LJCombinationRule::None || haveLJEwaldGeometric)
         {
-            if constexpr (GMX_SIMD_REAL_WIDTH == GMX_SIMD_J_UNROLL_SIZE * STRIDE)
+            if constexpr (GMX_SIMD_REAL_WIDTH == c_numJClustersPerSimdRegister * c_stride)
             {
                 aj2 = aj * 2;
             }
             else
             {
-                aj2 = (cj >> 1) * 2 * STRIDE + (cj & 1) * UNROLLJ;
+                aj2 = (cj >> 1) * 2 * c_stride + (cj & 1) * c_jClusterSize;
             }
         }
 
@@ -257,7 +258,7 @@
             {
                 // Load j-atom sqrt(6*C6) and sqrt(12*C12)
                 SimdReal c6J  = loadJAtomData<kernelLayout>(ljc, aj2 + 0);
-                SimdReal c12J = loadJAtomData<kernelLayout>(ljc, aj2 + STRIDE);
+                SimdReal c12J = loadJAtomData<kernelLayout>(ljc, aj2 + c_stride);
                 // Compute the combined 6*C6 and 12*C12
                 c6V  = genArr<c_nRLJ>([&](int i) { return c6GeomV[i] * c6J; });
                 c12V = genArr<c_nRLJ>([&](int i) { return c12GeomV[i] * c12J; });
@@ -271,7 +272,7 @@
         if constexpr (ljCombinationRule == LJCombinationRule::LorentzBerthelot)
         {
             const SimdReal halfSigmaJ   = loadJAtomData<kernelLayout>(ljc, aj2 + 0);
-            const SimdReal sqrtEpsilonJ = loadJAtomData<kernelLayout>(ljc, aj2 + STRIDE);
+            const SimdReal sqrtEpsilonJ = loadJAtomData<kernelLayout>(ljc, aj2 + c_stride);
 
             const auto sigmaV = genArr<c_nRLJ>([&](int i) { return halfSigmaIV[i] + halfSigmaJ; });
             const auto epsilonV =
@@ -326,7 +327,7 @@
     if constexpr (calculateEnergies)
     {
         /* Energy group indices for two atoms packed into one int */
-        std::array<int, useEnergyGroups ? UNROLLJ / 2 : 0> gmx_unused egp_jj;
+        std::array<int, useEnergyGroups ? c_jClusterSize / 2 : 0> gmx_unused egp_jj;
 
         if constexpr (useEnergyGroups)
         {
@@ -334,21 +335,21 @@
              * Energy groups are stored per i-cluster, so things get
              * complicated when the i- and j-cluster size don't match.
              */
-            static_assert(UNROLLJ == 2 || UNROLLI <= UNROLLJ);
+            static_assert(c_jClusterSize == 2 || c_iClusterSize <= c_jClusterSize);
 
-            if constexpr (UNROLLJ == 2)
+            if constexpr (c_jClusterSize == 2)
             {
                 const int egps_j = nbatParams.energrp[cj >> 1];
                 egp_jj[0] = ((egps_j >> ((cj & 1) * egps_jshift)) & egps_jmask) * egps_jstride;
             }
             else
             {
-                for (int jdi = 0; jdi < UNROLLJ / UNROLLI; jdi++)
+                for (int jdi = 0; jdi < c_jClusterSize / c_iClusterSize; jdi++)
                 {
-                    const int egps_j = nbatParams.energrp[cj * (UNROLLJ / UNROLLI) + jdi];
-                    for (int jj = 0; jj < (UNROLLI / 2); jj++)
+                    const int egps_j = nbatParams.energrp[cj * (c_jClusterSize / c_iClusterSize) + jdi];
+                    for (int jj = 0; jj < (c_iClusterSize / 2); jj++)
                     {
-                        egp_jj[jdi * (UNROLLI / 2) + jj] =
+                        egp_jj[jdi * (c_iClusterSize / 2) + jj] =
                                 ((egps_j >> (jj * egps_jshift)) & egps_jmask) * egps_jstride;
                     }
                 }

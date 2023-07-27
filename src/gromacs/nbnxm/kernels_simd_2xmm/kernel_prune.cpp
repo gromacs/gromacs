@@ -55,15 +55,15 @@ void nbnxn_kernel_prune_2xnn(NbnxnPairlistCpu*              nbl,
     constexpr KernelLayout kernelLayout = KernelLayout::r2xMM;
 
     // The number of j-clusters stored in a SIMD register
-    constexpr int GMX_SIMD_J_UNROLL_SIZE = (kernelLayout == KernelLayout::r2xMM ? 2 : 1);
+    constexpr int c_numJClustersPerSimdRegister = (kernelLayout == KernelLayout::r2xMM ? 2 : 1);
 
     // The i-cluster size
-    constexpr int UNROLLI = 4;
+    constexpr int c_iClusterSize = 4;
     // The j-cluster size
-    constexpr int UNROLLJ(GMX_SIMD_REAL_WIDTH / GMX_SIMD_J_UNROLL_SIZE);
+    constexpr int c_jClusterSize(GMX_SIMD_REAL_WIDTH / c_numJClustersPerSimdRegister);
 
     // The stride of all atom data arrays
-    constexpr int STRIDE = std::max(UNROLLI, UNROLLJ);
+    constexpr int c_stride = std::max(c_iClusterSize, c_jClusterSize);
 
     /* We avoid push_back() for efficiency reasons and resize after filling */
     nbl->ci.resize(nbl->ciOuter.size());
@@ -101,18 +101,18 @@ void nbnxn_kernel_prune_2xnn(NbnxnPairlistCpu*              nbl,
         SimdReal shZ_S = SimdReal(shiftvec[ish][ZZ]);
 
         int scix;
-        if constexpr (UNROLLJ <= 4)
+        if constexpr (c_jClusterSize <= 4)
         {
-            scix = ci * STRIDE * DIM;
+            scix = ci * c_stride * DIM;
         }
         else
         {
-            scix = (ci >> 1) * STRIDE * DIM + (ci & 1) * (STRIDE >> 1);
+            scix = (ci >> 1) * c_stride * DIM + (ci & 1) * (c_stride >> 1);
         }
 
         /* Load i atom data */
-        int      sciy  = scix + STRIDE;
-        int      sciz  = sciy + STRIDE;
+        int      sciy  = scix + c_stride;
+        int      sciz  = sciy + c_stride;
         SimdReal ix_S0 = loadU1DualHsimd(x + scix) + shX_S;
         SimdReal ix_S2 = loadU1DualHsimd(x + scix + 2) + shX_S;
         SimdReal iy_S0 = loadU1DualHsimd(x + sciy) + shY_S;
@@ -127,17 +127,17 @@ void nbnxn_kernel_prune_2xnn(NbnxnPairlistCpu*              nbl,
 
             /* Atom indices (of the first atom in the cluster) */
             int ajx;
-            if constexpr (UNROLLJ == STRIDE)
+            if constexpr (c_jClusterSize == c_stride)
             {
-                int aj = cj * UNROLLJ;
+                int aj = cj * c_jClusterSize;
                 ajx    = aj * DIM;
             }
             else
             {
-                ajx = (cj >> 1) * DIM * STRIDE + (cj & 1) * UNROLLJ;
+                ajx = (cj >> 1) * DIM * c_stride + (cj & 1) * c_jClusterSize;
             }
-            int ajy = ajx + STRIDE;
-            int ajz = ajy + STRIDE;
+            int ajy = ajx + c_stride;
+            int ajz = ajy + c_stride;
 
             /* load j atom coordinates */
             SimdReal jx_S = loadDuplicateHsimd(x + ajx);

@@ -119,22 +119,22 @@ void nbnxmKernelSimd(const NbnxnPairlistCpu*    nbl,
                      const rvec*                shift_vec,
                      nbnxn_atomdata_output_t*   out)
 {
-    constexpr int GMX_SIMD_J_UNROLL_SIZE = (kernelLayout == KernelLayout::r2xMM ? 2 : 1);
+    constexpr int c_numJClustersPerSimdRegister = (kernelLayout == KernelLayout::r2xMM ? 2 : 1);
 
     // The i-cluster size
-    constexpr int UNROLLI = 4;
+    constexpr int c_iClusterSize = 4;
     // The j-cluster size
-    constexpr int UNROLLJ(GMX_SIMD_REAL_WIDTH / GMX_SIMD_J_UNROLL_SIZE);
+    constexpr int c_jClusterSize(GMX_SIMD_REAL_WIDTH / c_numJClustersPerSimdRegister);
 
     // The ratio of cluster sizes
     constexpr KernelLayoutClusterRatio clusterRatio = kernelLayoutClusterRatio<kernelLayout>();
 
     // The stride of all atom data arrays
-    constexpr int STRIDE = std::max(UNROLLI, UNROLLJ);
+    constexpr int c_stride = std::max(c_iClusterSize, c_jClusterSize);
 
     /* The number of 'i' SIMD registers */
-    static_assert(UNROLLI % GMX_SIMD_J_UNROLL_SIZE == 0);
-    constexpr int nR = UNROLLI / GMX_SIMD_J_UNROLL_SIZE;
+    static_assert(c_iClusterSize % c_numJClustersPerSimdRegister == 0);
+    constexpr int nR = c_iClusterSize / c_numJClustersPerSimdRegister;
 
     constexpr bool haveVdwCutoffCheck = (vdwCutoffCheck != VdwCutoffCheck::No);
 
@@ -204,11 +204,11 @@ void nbnxmKernelSimd(const NbnxnPairlistCpu*    nbl,
     for (int i = 0; i < nR; i++)
     {
 #if GMX_SIMD_HAVE_INT32_LOGICAL
-        exclusionFilterV[i] = load<SimdBitMask>(
-                reinterpret_cast<const int*>(exclusion_filter + i * GMX_SIMD_J_UNROLL_SIZE * UNROLLJ));
+        exclusionFilterV[i] = load<SimdBitMask>(reinterpret_cast<const int*>(
+                exclusion_filter + i * c_numJClustersPerSimdRegister * c_jClusterSize));
 #else
-        exclusionFilterV[i] = load<SimdBitMask>(
-                reinterpret_cast<const real*>(exclusion_filter + i * GMX_SIMD_J_UNROLL_SIZE * UNROLLJ));
+        exclusionFilterV[i] = load<SimdBitMask>(reinterpret_cast<const real*>(
+                exclusion_filter + i * c_numJClustersPerSimdRegister * c_jClusterSize));
 #endif
     }
 
@@ -264,7 +264,7 @@ void nbnxmKernelSimd(const NbnxnPairlistCpu*    nbl,
     const int egps_imask   = (1 << egps_ishift) - 1;
     const int egps_jshift  = 2 * nbatParams.neg_2log;
     const int egps_jmask   = (1 << egps_jshift) - 1;
-    const int egps_jstride = (UNROLLJ >> 1) * UNROLLJ;
+    const int egps_jstride = (c_jClusterSize >> 1) * c_jClusterSize;
     /* Major division is over i-particle energy groups, determine the stride */
     const int Vstride_i = nbatParams.nenergrp * (1 << nbatParams.neg_2log) * egps_jstride;
 
@@ -287,18 +287,18 @@ void nbnxmKernelSimd(const NbnxnPairlistCpu*    nbl,
         int sci;
         int scix;
         int sci2;
-        if constexpr (UNROLLJ <= 4)
+        if constexpr (c_jClusterSize <= 4)
         {
-            sci  = ci * STRIDE;
+            sci  = ci * c_stride;
             scix = sci * DIM;
             sci2 = sci * 2;
         }
         else
         {
-            sci  = (ci >> 1) * STRIDE;
-            scix = sci * DIM + (ci & 1) * (STRIDE >> 1);
-            sci2 = sci * 2 + (ci & 1) * (STRIDE >> 1);
-            sci += (ci & 1) * (STRIDE >> 1);
+            sci  = (ci >> 1) * c_stride;
+            scix = sci * DIM + (ci & 1) * (c_stride >> 1);
+            sci2 = sci * 2 + (ci & 1) * (c_stride >> 1);
+            sci += (ci & 1) * (c_stride >> 1);
         }
 
         /* We have 5 LJ/C combinations, but use only three inner loops,
@@ -311,13 +311,13 @@ void nbnxmKernelSimd(const NbnxnPairlistCpu*    nbl,
         const bool do_coul = ((ciEntry.shift & NBNXN_CI_DO_COUL(0)) != 0);
         const bool half_LJ = (((ciEntry.shift & NBNXN_CI_HALF_LJ(0)) != 0) || !do_LJ) && do_coul;
 
-        std::array<real*, useEnergyGroups ? UNROLLI : 0> gmx_unused vvdwtp;
-        std::array<real*, useEnergyGroups ? UNROLLI : 0> gmx_unused vctp;
-        int                                                         egps_i;
+        std::array<real*, useEnergyGroups ? c_iClusterSize : 0> gmx_unused vvdwtp;
+        std::array<real*, useEnergyGroups ? c_iClusterSize : 0> gmx_unused vctp;
+        int                                                                egps_i;
         if constexpr (useEnergyGroups)
         {
             egps_i = nbatParams.energrp[ci];
-            for (int ia = 0; ia < UNROLLI; ia++)
+            for (int ia = 0; ia < c_iClusterSize; ia++)
             {
                 int egp_ia = (egps_i >> (ia * egps_ishift)) & egps_imask;
                 vvdwtp[ia] = Vvdw + egp_ia * Vstride_i;
@@ -336,7 +336,7 @@ void nbnxmKernelSimd(const NbnxnPairlistCpu*    nbl,
                 {
                     const real Vc_sub_self = coulombCalculator.selfEnergy();
 
-                    for (int ia = 0; ia < UNROLLI; ia++)
+                    for (int ia = 0; ia < c_iClusterSize; ia++)
                     {
                         const real qi = q[sci + ia];
                         if constexpr (useEnergyGroups)
@@ -353,7 +353,7 @@ void nbnxmKernelSimd(const NbnxnPairlistCpu*    nbl,
 
                 if constexpr (haveLJEwaldGeometric)
                 {
-                    for (int ia = 0; ia < UNROLLI; ia++)
+                    for (int ia = 0; ia < c_iClusterSize; ia++)
                     {
                         real c6_i =
                                 nbatParams.nbfp[nbatParams.type[sci + ia] * (nbatParams.numTypes + 1) * 2]
@@ -374,8 +374,8 @@ void nbnxmKernelSimd(const NbnxnPairlistCpu*    nbl,
         } // calulateEnergies
 
         /* Load i atom data */
-        const int sciy = scix + STRIDE;
-        const int sciz = sciy + STRIDE;
+        const int sciy = scix + c_stride;
+        const int sciz = sciy + c_stride;
 
         const auto ixV =
                 genArr<nR>([&](int i) { return loadIAtomData<kernelLayout>(x, scix, i) + iShiftX; });
@@ -397,13 +397,13 @@ void nbnxmKernelSimd(const NbnxnPairlistCpu*    nbl,
         std::array<SimdReal, c_ljCombLB ? nR : 0> gmx_unused sqrtEpsilonIV;
         std::array<SimdReal, (ljCombinationRule == LJCombinationRule::Geometric || haveLJEwaldGeometric) ? nR : 0> gmx_unused c6GeomV;
         std::array<SimdReal, (ljCombinationRule == LJCombinationRule::Geometric) ? nR : 0> gmx_unused c12GeomV;
-        std::array<const real*, (ljCombinationRule == LJCombinationRule::None) ? UNROLLI : 0> gmx_unused nbfpI;
+        std::array<const real*, (ljCombinationRule == LJCombinationRule::None) ? c_iClusterSize : 0> gmx_unused nbfpI;
         if constexpr (c_ljCombLB)
         {
             for (int i = 0; i < nR; i++)
             {
                 halfSigmaIV[i]   = loadIAtomData<kernelLayout>(ljc, sci2, i);
-                sqrtEpsilonIV[i] = loadIAtomData<kernelLayout>(ljc, sci2 + STRIDE, i);
+                sqrtEpsilonIV[i] = loadIAtomData<kernelLayout>(ljc, sci2 + c_stride, i);
             }
         }
         else if constexpr (ljCombinationRule == LJCombinationRule::Geometric)
@@ -411,13 +411,13 @@ void nbnxmKernelSimd(const NbnxnPairlistCpu*    nbl,
             for (int i = 0; i < nR; i++)
             {
                 c6GeomV[i]  = loadIAtomData<kernelLayout>(ljc, sci2, i);
-                c12GeomV[i] = loadIAtomData<kernelLayout>(ljc, sci2 + STRIDE, i);
+                c12GeomV[i] = loadIAtomData<kernelLayout>(ljc, sci2 + c_stride, i);
             }
         }
         else
         {
             const int numTypes = nbatParams.numTypes;
-            for (int i = 0; i < UNROLLI; i++)
+            for (int i = 0; i < c_iClusterSize; i++)
             {
                 nbfpI[i] = nbfp_ptr + type[sci + i] * numTypes * c_simdBestPairAlignment;
             }
@@ -525,7 +525,7 @@ void nbnxmKernelSimd(const NbnxnPairlistCpu*    nbl,
         real fShiftX;
         real fShiftY;
         real fShiftZ;
-        if constexpr (GMX_SIMD_J_UNROLL_SIZE == 1)
+        if constexpr (c_numJClustersPerSimdRegister == 1)
         {
             fShiftX = reduceIncr4ReturnSum(f + scix, forceIXV[0], forceIXV[1], forceIXV[2], forceIXV[3]);
             fShiftY = reduceIncr4ReturnSum(f + sciy, forceIYV[0], forceIYV[1], forceIYV[2], forceIYV[3]);
