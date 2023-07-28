@@ -1248,7 +1248,7 @@ static void yydestruct(const char* yymsg, int yytype, YYSTYPE* yyvaluep, YYLTYPE
         case 6:      /* STR  */
 #line 178 "parser.y" /* yacc.c:1257  */
         {
-		std::free(((*yyvaluep).str));
+            std::free(((*yyvaluep).str));
         }
 #line 1313 "parser.cpp" /* yacc.c:1257  */
         break;
@@ -1256,7 +1256,7 @@ static void yydestruct(const char* yymsg, int yytype, YYSTYPE* yyvaluep, YYLTYPE
         case 7:      /* IDENTIFIER  */
 #line 178 "parser.y" /* yacc.c:1257  */
         {
-		std::free(((*yyvaluep).str));
+            std::free(((*yyvaluep).str));
         }
 #line 1319 "parser.cpp" /* yacc.c:1257  */
         break;
@@ -1264,7 +1264,7 @@ static void yydestruct(const char* yymsg, int yytype, YYSTYPE* yyvaluep, YYLTYPE
         case 16:     /* KEYWORD_POS  */
 #line 178 "parser.y" /* yacc.c:1257  */
         {
-		std::free(((*yyvaluep).str));
+            std::free(((*yyvaluep).str));
         }
 #line 1325 "parser.cpp" /* yacc.c:1257  */
         break;
@@ -1281,7 +1281,7 @@ static void yydestruct(const char* yymsg, int yytype, YYSTYPE* yyvaluep, YYLTYPE
         case 26:     /* CMP_OP  */
 #line 178 "parser.y" /* yacc.c:1257  */
         {
-		std::free(((*yyvaluep).str));
+            std::free(((*yyvaluep).str));
         }
 #line 1337 "parser.cpp" /* yacc.c:1257  */
         break;
@@ -1321,7 +1321,7 @@ static void yydestruct(const char* yymsg, int yytype, YYSTYPE* yyvaluep, YYLTYPE
         case 57:     /* string  */
 #line 178 "parser.y" /* yacc.c:1257  */
         {
-		std::free(((*yyvaluep).str));
+            std::free(((*yyvaluep).str));
         }
 #line 1367 "parser.cpp" /* yacc.c:1257  */
         break;

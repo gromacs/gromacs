@@ -1,6 +1,5 @@
-#include <cstdlib>
-
 #include <cmath>
+#include <cstdlib>
 
 #include "../gmx_lapack.h"
 
