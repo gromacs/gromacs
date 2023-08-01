@@ -370,3 +370,19 @@ currently also checks the copyright headers.
 The filter allows one to transparently merge branches that have not been run
 through the source checkers, and is applied more consistently (the pre-commit hook is
 not run for every commit, e.g., during a rebase).
+
+Hiding formatting commits from ``git blame``
+--------------------------------------------
+
+A large-scale code reformatting, for example, when switching to a new clang-format
+version, might make the output of ``git blame``/``git praise`` hard to parse, since
+many lines will be touched by reformatting without any functional change.
+
+A manually-managed list of such formatting-only commits is kept in the
+``.git-blame-ignore-revs`` file. Please run the following command in the repository
+root to instruct Git to "skip" the listed commits and instead show the earlier commit
+from which the line originates ::
+
+    git config blame.ignoreRevsFile .git-blame-ignore-revs
+
+To temporarily disable this option, use ``git blame --ignore-revs-file=`` (without any argument).
