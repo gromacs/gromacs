@@ -1,6 +1,7 @@
 # Generic rules
 *.c     filter=complete_formatting gmx-doxygen
 *.cpp   filter=complete_formatting gmx-doxygen
+*.hpp   filter=complete_formatting gmx-doxygen
 *.cu    filter=complete_formatting
 *.cl    filter=complete_formatting
 *.h     filter=complete_formatting gmx-doxygen
