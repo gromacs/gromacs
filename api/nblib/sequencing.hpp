@@ -52,12 +52,12 @@
 #include <unordered_map>
 #include <vector>
 
+#include "listed_forces/transformations.h"
+
 #include "gromacs/utility/listoflists.h"
 
 #include "nblib/molecules.h"
 #include "nblib/particlesequencer.h"
-
-#include "listed_forces/transformations.h"
 
 namespace nblib
 {
@@ -67,10 +67,9 @@ namespace detail
 
 /*! \brief Extract all interactions of type I from a vector of molecules.
  *
- * The second argument tuple element specifies multiples of the molecule given as first tuple element.
- * Let (S, I) denote the return value tuple.
- * Then J[i] = I[S[i]] for all i in 0...S.size() is the full sequence of BondType
- * instances as they occur in the input tuple
+ * The second argument tuple element specifies multiples of the molecule given as first tuple
+ * element. Let (S, I) denote the return value tuple. Then J[i] = I[S[i]] for all i in 0...S.size()
+ * is the full sequence of BondType instances as they occur in the input tuple
  */
 template<class I>
 std::tuple<std::vector<size_t>, std::vector<I>>
@@ -106,7 +105,7 @@ collectInteractions(const std::vector<std::tuple<Molecule, int>>& molecules)
  * such that the BondType instance at aggregatedBonds[i] is equal to U[S[i]]
  * returns std::tuple(S, U)
  */
- template<class I>
+template<class I>
 std::tuple<std::vector<size_t>, std::vector<I>> eliminateDuplicateInteractions(const std::vector<I>& aggregatedInteractions)
 {
     std::vector<size_t> uniqueIndices(aggregatedInteractions.size());
@@ -122,8 +121,11 @@ std::tuple<std::vector<size_t>, std::vector<I>> eliminateDuplicateInteractions(c
 
     std::vector<std::tuple<I, size_t>> enumeratedBonds(aggregatedInteractions.size());
     // append each interaction with its index
-    std::transform(begin(aggregatedInteractions), end(aggregatedInteractions), begin(uniqueIndices),
-                   begin(enumeratedBonds), [](I b, size_t i) { return std::make_tuple(b, i); });
+    std::transform(begin(aggregatedInteractions),
+                   end(aggregatedInteractions),
+                   begin(uniqueIndices),
+                   begin(enumeratedBonds),
+                   [](I b, size_t i) { return std::make_tuple(b, i); });
 
     auto sortKey = [](const auto& t1, const auto& t2) { return std::get<0>(t1) < std::get<0>(t2); };
     // sort w.r.t bonds. the result will contain contiguous segments of identical bond instances
@@ -168,8 +170,8 @@ namespace sequence_detail
 template<class Tuple, class F, class... Args, size_t... Is>
 auto stringsToIndices_impl(const Tuple& tuple, [[maybe_unused]] std::index_sequence<Is...> is, F&& f, Args... args)
 {
-    return std::array<int, sizeof...(Is)>{ f(args..., std::get<2 * Is + 1>(tuple),
-                                             std::get<2 * Is>(tuple))... };
+    return std::array<int, sizeof...(Is)>{ f(
+            args..., std::get<2 * Is + 1>(tuple), std::get<2 * Is>(tuple))... };
 }
 
 /*! \brief
@@ -200,7 +202,8 @@ std::vector<CoordinateIndex<B>> sequenceIDs(const std::vector<std::tuple<Molecul
 {
     std::vector<CoordinateIndex<B>> coordinateIndices;
 
-    auto callSequencer = [&particleSequencer](const MoleculeName& moleculeName, int i,
+    auto callSequencer = [&particleSequencer](const MoleculeName& moleculeName,
+                                              int                 i,
                                               const ResidueName&  residueName,
                                               const ParticleName& particleName) {
         return particleSequencer(moleculeName, i, residueName, particleName);

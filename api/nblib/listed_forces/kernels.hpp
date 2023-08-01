@@ -48,6 +48,7 @@
 
 #include "gromacs/math/functions.h"
 #include "gromacs/math/vectypes.h"
+
 #include "nblib/listed_forces/bondtypes.h"
 
 namespace nblib
@@ -62,14 +63,14 @@ namespace nblib
  *
  * \return tuple<force, potential energy>
  */
-template <class T>
+template<class T>
 inline std::tuple<T, T> harmonicScalarForce(T k, T x0, T x)
 {
     T dx  = x - x0;
     T dx2 = dx * dx;
 
     T force = -k * dx;
-    T epot = 0.5 * k * dx2;
+    T epot  = 0.5 * k * dx2;
 
     return std::make_tuple(force, epot);
 
@@ -88,7 +89,7 @@ inline std::tuple<T, T> harmonicScalarForce(T k, T x0, T x)
  *
  * \return tuple<force, potential energy, lambda-interpolated energy>
  */
-template <class T>
+template<class T>
 inline std::tuple<T, T, T> harmonicScalarForce(T kA, T kB, T xA, T xB, T x, T lambda)
 {
     // code unchanged relative to Gromacs
@@ -110,7 +111,7 @@ inline std::tuple<T, T, T> harmonicScalarForce(T kA, T kB, T xA, T xB, T x, T la
 }
 
 //! abstraction layer for different 2-center bonds
-template <class T>
+template<class T>
 inline auto bondKernel(T dr, const HarmonicBondType& bond)
 {
     return harmonicScalarForce(bond.forceConstant(), bond.equilConstant(), dr);
@@ -126,14 +127,14 @@ inline auto bondKernel(T dr, const HarmonicBondType& bond)
  *
  * \return tuple<force, potential energy>
  */
-template <class T>
+template<class T>
 inline std::tuple<T, T> g96ScalarForce(T k, T x0, T x)
 {
     T dx  = x - x0;
     T dx2 = dx * dx;
 
     T force = -k * dx;
-    T epot = 0.5 * k * dx2;
+    T epot  = 0.5 * k * dx2;
 
     return std::make_tuple(force, epot);
 
@@ -152,7 +153,7 @@ inline std::tuple<T, T> g96ScalarForce(T k, T x0, T x)
  *
  * \return tuple<force, potential energy, lambda-interpolated energy>
  */
-template <class T>
+template<class T>
 inline std::tuple<T, T, T> g96ScalarForce(T kA, T kB, T xA, T xB, T x, T lambda)
 {
     T L1 = 1.0 - lambda;
@@ -163,7 +164,7 @@ inline std::tuple<T, T, T> g96ScalarForce(T kA, T kB, T xA, T xB, T x, T lambda)
     T dx2 = dx * dx;
 
     T force = -kk * dx;
-    T epot = 0.5 * kk * dx2;
+    T epot  = 0.5 * kk * dx2;
     // TODO: Check if this is 1/2 or 1/4
     T dvdlambda = 0.5 * (kB - kA) * dx2 + (xA - xB) * kk * dx;
 
@@ -173,12 +174,12 @@ inline std::tuple<T, T, T> g96ScalarForce(T kA, T kB, T xA, T xB, T x, T lambda)
 }
 
 //! Abstraction layer for different 2-center bonds. Fourth power case
-template <class T>
+template<class T>
 inline auto bondKernel(T dr, const G96BondType& bond)
 {
-    auto [force, ePot] = g96ScalarForce(bond.forceConstant(), bond.equilConstant(), dr*dr);
+    auto [force, ePot] = g96ScalarForce(bond.forceConstant(), bond.equilConstant(), dr * dr);
     force *= dr;
-    ePot  *= 0.5;
+    ePot *= 0.5;
     return std::make_tuple(force, ePot);
 }
 
@@ -193,15 +194,15 @@ inline auto bondKernel(T dr, const G96BondType& bond)
  *
  * \return tuple<force, potential energy>
  */
-template <class T>
+template<class T>
 inline std::tuple<T, T> morseScalarForce(T k, T beta, T x0, T x)
 {
-    T exponent = std::exp(-beta * (x - x0));      /* 12 */
-    T omexp = 1.0 - exponent;                     /*  1 */
-    T kexp = k * omexp;                           /*  1 */
+    T exponent = std::exp(-beta * (x - x0)); /* 12 */
+    T omexp    = 1.0 - exponent;             /*  1 */
+    T kexp     = k * omexp;                  /*  1 */
 
-    T epot = kexp * omexp;                        /*  1 */
-    T force = -2.0 * beta * exponent * kexp;      /*  4 */
+    T epot  = kexp * omexp;                  /*  1 */
+    T force = -2.0 * beta * exponent * kexp; /*  4 */
 
     return std::make_tuple(force, epot);
 
@@ -222,24 +223,23 @@ inline std::tuple<T, T> morseScalarForce(T k, T beta, T x0, T x)
  *
  * \return tuple<force, potential energy, lambda-interpolated energy>
  */
-template <class T>
+template<class T>
 inline std::tuple<T, T, T> morseScalarForce(T kA, T kB, T betaA, T betaB, T xA, T xB, T x, T lambda)
 {
-    T L1 = 1.0 - lambda;                          /* 1 */
-    T x0 = L1 * xA + lambda * xB;                 /* 3 */
-    T beta = L1 * betaA + lambda * betaB;         /* 3 */
-    T k = L1 * kA + lambda * kB;                  /* 3 */
+    T L1   = 1.0 - lambda;                /* 1 */
+    T x0   = L1 * xA + lambda * xB;       /* 3 */
+    T beta = L1 * betaA + lambda * betaB; /* 3 */
+    T k    = L1 * kA + lambda * kB;       /* 3 */
 
-    T exponent = std::exp(-beta * (x - x0));      /* 12 */
-    T omexp = 1.0 - exponent;                     /*  1 */
-    T kexp = k * omexp;                           /*  1 */
+    T exponent = std::exp(-beta * (x - x0)); /* 12 */
+    T omexp    = 1.0 - exponent;             /*  1 */
+    T kexp     = k * omexp;                  /*  1 */
 
-    T epot = kexp * omexp;                        /*  1 */
-    T force = -2.0 * beta * exponent * kexp;      /*  4 */
+    T epot  = kexp * omexp;                  /*  1 */
+    T force = -2.0 * beta * exponent * kexp; /*  4 */
 
     T dvdlambda = (kB - kA) * omexp * omexp
-                    - (2.0 - 2.0 * omexp) * omexp * k
-                    * ((xB - xA) * beta - (betaB - betaA) * (x - x0)); /* 15 */
+                  - (2.0 - 2.0 * omexp) * omexp * k * ((xB - xA) * beta - (betaB - betaA) * (x - x0)); /* 15 */
 
     return std::make_tuple(force, epot, dvdlambda);
 
@@ -247,7 +247,7 @@ inline std::tuple<T, T, T> morseScalarForce(T kA, T kB, T betaA, T betaB, T xA, 
 }
 
 //! Abstraction layer for different 2-center bonds. Morse case
-template <class T>
+template<class T>
 inline auto bondKernel(T dr, const MorseBondType& bond)
 {
     return morseScalarForce(bond.forceConstant(), bond.exponent(), bond.equilDistance(), dr);
@@ -261,19 +261,19 @@ inline auto bondKernel(T dr, const MorseBondType& bond)
  *
  * \return tuple<force, potential energy>
  */
-template <class T>
+template<class T>
 inline std::tuple<T, T> pairLJScalarForce(C6 c6, C12 c12, T r)
 {
-    T rinv  = 1./r;                           /* 1 */
-    T rinv2 = rinv * rinv;                    /* 1 */
-    T rinv6 = rinv2 * rinv2 * rinv2;          /* 2 */
+    T rinv  = 1. / r;                /* 1 */
+    T rinv2 = rinv * rinv;           /* 1 */
+    T rinv6 = rinv2 * rinv2 * rinv2; /* 2 */
 
-    T epot  = rinv6*(c12*rinv6 - c6);         /* 3 */
+    T epot = rinv6 * (c12 * rinv6 - c6); /* 3 */
 
-    T c6_     = 6.*c6;                        /* 1 */
-    T c12_    = 12.*c12;                      /* 1 */
+    T c6_  = 6. * c6;   /* 1 */
+    T c12_ = 12. * c12; /* 1 */
 
-    T force = rinv6*(c12_*rinv6 - c6_)*rinv;  /* 4 */
+    T force = rinv6 * (c12_ * rinv6 - c6_) * rinv; /* 4 */
 
     return std::make_tuple(force, epot);
 
@@ -281,7 +281,7 @@ inline std::tuple<T, T> pairLJScalarForce(C6 c6, C12 c12, T r)
 }
 
 //! Abstraction layer for different 2-center bonds. 1-4 LJ pair interactions case
-template <class T>
+template<class T>
 inline auto bondKernel(T dr, const PairLJType& bond)
 {
     return pairLJScalarForce(bond.c6(), bond.c12(), dr);
@@ -297,15 +297,15 @@ inline auto bondKernel(T dr, const PairLJType& bond)
  *
  * \return tuple<force, potential energy>
  */
-template <class T>
+template<class T>
 inline std::tuple<T, T> FENEScalarForce(T k, T x0, T x)
 {
     T x02 = x0 * x0;
-    T x2 = x * x;
+    T x2  = x * x;
 
     T omx2_ox02 = 1.0 - (x2 / x02);
 
-    T epot = -0.5 * k * x02 * std::log(omx2_ox02);
+    T epot  = -0.5 * k * x02 * std::log(omx2_ox02);
     T force = -k / omx2_ox02;
 
     return std::make_tuple(force, epot);
@@ -316,7 +316,7 @@ inline std::tuple<T, T> FENEScalarForce(T k, T x0, T x)
 // TODO: Implement the free energy version of FENE (finitely extensible nonlinear elastic) bond types
 
 //! Abstraction layer for different 2-center bonds. FENE case
-template <class T>
+template<class T>
 inline auto bondKernel(T dr, const FENEBondType& bond)
 {
     auto [force, ePot] = FENEScalarForce(bond.forceConstant(), bond.equilConstant(), dr);
@@ -335,16 +335,16 @@ inline auto bondKernel(T dr, const FENEBondType& bond)
  *
  * \return tuple<force, potential energy>
  */
-template <class T>
+template<class T>
 inline std::tuple<T, T> cubicScalarForce(T kc, T kq, T x0, T x)
 {
     T dx = x - x0;
-    //T dx2 = dx * dx;
+    // T dx2 = dx * dx;
 
     T kdist  = kq * dx;
     T kdist2 = kdist * dx;
 
-    T epot = kdist2 + (kc * kdist2 * dx);
+    T epot  = kdist2 + (kc * kdist2 * dx);
     T force = -((2.0 * kdist) + (3.0 * kdist2 * kc));
 
     return std::make_tuple(force, epot);
@@ -354,10 +354,11 @@ inline std::tuple<T, T> cubicScalarForce(T kc, T kq, T x0, T x)
 
 // TODO: Implement the free energy version of Cubic bond types
 
-template <class T>
+template<class T>
 inline auto bondKernel(T dr, const CubicBondType& bond)
 {
-    return cubicScalarForce(bond.cubicForceConstant(), bond.quadraticForceConstant(), bond.equilDistance(), dr);
+    return cubicScalarForce(
+            bond.cubicForceConstant(), bond.quadraticForceConstant(), bond.equilDistance(), dr);
 }
 
 
@@ -370,15 +371,15 @@ inline auto bondKernel(T dr, const CubicBondType& bond)
  *
  * \return tuple<force, potential energy>
  */
-template <class T>
+template<class T>
 inline std::tuple<T, T> halfAttractiveScalarForce(T k, T x0, T x)
 {
-    T dx = x - x0;
+    T dx  = x - x0;
     T dx2 = dx * dx;
     T dx3 = dx2 * dx;
     T dx4 = dx2 * dx2;
 
-    T epot = -0.5 * k * dx4;
+    T epot  = -0.5 * k * dx4;
     T force = -2.0 * k * dx3;
 
     return std::make_tuple(force, epot);
@@ -398,7 +399,7 @@ inline std::tuple<T, T> halfAttractiveScalarForce(T k, T x0, T x)
  *
  * \return tuple<force, potential energy, lambda-interpolated energy>
  */
-template <class T>
+template<class T>
 inline std::tuple<T, T, T> halfAttractiveScalarForce(T kA, T kB, T xA, T xB, T x, T lambda)
 {
     T L1 = 1.0 - lambda;
@@ -410,8 +411,8 @@ inline std::tuple<T, T, T> halfAttractiveScalarForce(T kA, T kB, T xA, T xB, T x
     T dx3 = dx2 * dx;
     T dx4 = dx2 * dx2;
 
-    T epot = -0.5 * kk * dx4;
-    T force = -2.0 * kk * dx3;
+    T epot      = -0.5 * kk * dx4;
+    T force     = -2.0 * kk * dx3;
     T dvdlambda = 0.5 * (kB - kA) * dx4 + (2.0 * (xA - xB) * kk * dx3);
 
     return std::make_tuple(force, epot, dvdlambda);
@@ -419,7 +420,7 @@ inline std::tuple<T, T, T> halfAttractiveScalarForce(T kA, T kB, T xA, T xB, T x
     /* That was 29 flops */
 }
 
-template <class T>
+template<class T>
 inline auto bondKernel(T dr, const HalfAttractiveQuarticBondType& bond)
 {
     return halfAttractiveScalarForce(bond.forceConstant(), bond.equilConstant(), dr);
@@ -437,7 +438,7 @@ inline auto bondKernel(T dr, const HalfAttractiveQuarticBondType& bond)
  *
  * \return tuple<force, potential energy>
  */
-template <class T>
+template<class T>
 inline std::tuple<T, T, T> linearAnglesScalarForce(T k, T a0, T angle)
 {
     T b = T(1.0) - a0;
@@ -453,31 +454,31 @@ inline std::tuple<T, T, T> linearAnglesScalarForce(T k, T a0, T angle)
     /* That was 5 flops */
 }
 
-template <class T>
+template<class T>
 inline auto threeCenterKernel(T dr, const LinearAngle& angle)
 {
     return linearAnglesScalarForce(angle.forceConstant(), angle.equilConstant(), dr);
 }
 
 //! Harmonic Angle
-template <class T>
+template<class T>
 inline auto threeCenterKernel(T dr, const HarmonicAngle& angle)
 {
     return harmonicScalarForce(angle.forceConstant(), angle.equilConstant(), dr);
 }
 
 //! Cosine based (GROMOS-96) Angle
-template <class T>
+template<class T>
 inline auto threeCenterKernel(T dr, const G96Angle& angle)
 {
     auto costheta = std::cos(dr);
-    auto feTuple = g96ScalarForce(angle.forceConstant(), angle.equilConstant(), costheta);
+    auto feTuple  = g96ScalarForce(angle.forceConstant(), angle.equilConstant(), costheta);
 
     // The above kernel call effectively computes the derivative of the potential with respect to
-    // cos(theta). However, we need the derivative with respect to theta. We use this extra -sin(theta)
-    // factor to account for this before the forces are spread between the particles.
+    // cos(theta). However, we need the derivative with respect to theta. We use this extra
+    // -sin(theta) factor to account for this before the forces are spread between the particles.
 
-    std::get<0>(feTuple) *= -std::sqrt(1 - costheta*costheta);
+    std::get<0>(feTuple) *= -std::sqrt(1 - costheta * costheta);
     return feTuple;
 }
 
@@ -493,7 +494,7 @@ inline auto threeCenterKernel(T dr, const G96Angle& angle)
  * \return tuple<force scalar i, force scalar k, potential energy>
  */
 
-template <class T>
+template<class T>
 inline std::tuple<T, T, T> crossBondBondScalarForce(T k, T r0ij, T r0kj, T rij, T rkj)
 {
     T si = rij - r0ij;
@@ -510,10 +511,14 @@ inline std::tuple<T, T, T> crossBondBondScalarForce(T k, T r0ij, T r0kj, T rij, 
 }
 
 //! Cross bond-bond interaction
-template <class T>
+template<class T>
 inline auto threeCenterKernel(T drij, T drkj, const CrossBondBond& crossBondBond)
 {
-    return crossBondBondScalarForce(crossBondBond.forceConstant(), crossBondBond.equilDistanceIJ(), crossBondBond.equilDistanceKJ(), drij, drkj);
+    return crossBondBondScalarForce(crossBondBond.forceConstant(),
+                                    crossBondBond.equilDistanceIJ(),
+                                    crossBondBond.equilDistanceKJ(),
+                                    drij,
+                                    drkj);
 }
 
 /*! \brief kernel to calculate the scalar part for cross bond-angle forces
@@ -530,7 +535,7 @@ inline auto threeCenterKernel(T drij, T drkj, const CrossBondBond& crossBondBond
  * \return tuple<atom i force, atom j force, atom k force, potential energy>
  */
 
-template <class T>
+template<class T>
 inline std::tuple<T, T, T, T> crossBondAngleScalarForce(T k, T r0ij, T r0kj, T r0ik, T rij, T rkj, T rik)
 {
     T sij = rij - r0ij;
@@ -549,27 +554,33 @@ inline std::tuple<T, T, T, T> crossBondAngleScalarForce(T k, T r0ij, T r0kj, T r
 }
 
 //! Cross bond-bond interaction
-template <class T>
+template<class T>
 inline auto threeCenterKernel(T drij, T drkj, T drik, const CrossBondAngle& crossBondAngle)
 {
-    return crossBondAngleScalarForce(crossBondAngle.forceConstant(), crossBondAngle.equilDistanceIJ(), crossBondAngle.equilDistanceKJ(), crossBondAngle.equilDistanceIK(), drij, drkj, drik);
+    return crossBondAngleScalarForce(crossBondAngle.forceConstant(),
+                                     crossBondAngle.equilDistanceIJ(),
+                                     crossBondAngle.equilDistanceKJ(),
+                                     crossBondAngle.equilDistanceIK(),
+                                     drij,
+                                     drkj,
+                                     drik);
 }
 
 //! Quartic Angle
-template <class T>
+template<class T>
 inline auto threeCenterKernel(T dr, const QuarticAngle& angle)
 {
-    T dt = dr - angle.equilConstant();       /*  1          */
+    T dt = dr - angle.equilConstant(); /*  1          */
 
     T force  = 0;
     T energy = angle.forceConstant(0);
-    T dtp  = 1.0;
+    T dtp    = 1.0;
     for (auto j = 1; j <= 4; j++)
     { /* 24     */
         T c = angle.forceConstant(j);
-        force -= j * c * dtp;               /*  3          */
-        dtp *= dt;                          /*  1          */
-        energy += c * dtp;                  /*  2          */
+        force -= j * c * dtp; /*  3          */
+        dtp *= dt;            /*  1          */
+        energy += c * dtp;    /*  2          */
     }
 
     /* TOTAL 25 */
@@ -577,10 +588,10 @@ inline auto threeCenterKernel(T dr, const QuarticAngle& angle)
 }
 
 //! \brief Restricted Angle potential. Returns scalar force and energy
-template <class T>
+template<class T>
 inline auto threeCenterKernel(T theta, const RestrictedAngle& angle)
 {
-    T costheta = std::cos(theta);
+    T costheta         = std::cos(theta);
     auto [force, ePot] = harmonicScalarForce(angle.forceConstant(), angle.equilConstant(), costheta);
 
     // The above kernel call effectively computes the derivative of the potential with respect to
@@ -588,20 +599,20 @@ inline auto threeCenterKernel(T theta, const RestrictedAngle& angle)
     // This introduces the extra (cos(theta)*cos(eqAngle) - 1)/(sin(theta)^3 factor for the force
     // The call also computes the potential energy without the sin(theta)^-2 factor
 
-    T sintheta2 = (1 - costheta*costheta);
+    T sintheta2 = (1 - costheta * costheta);
     T sintheta  = std::sqrt(sintheta2);
-    force *= (costheta*angle.equilConstant() - 1)/(sintheta2*sintheta);
+    force *= (costheta * angle.equilConstant() - 1) / (sintheta2 * sintheta);
     ePot /= sintheta2;
     return std::make_tuple(force, ePot);
 }
 
 //! \brief Computes and returns the proper dihedral force
-template <class T>
+template<class T>
 inline auto fourCenterKernel(T phi, const ProperDihedral& properDihedral)
 {
     T deltaPhi = properDihedral.multiplicity() * phi - properDihedral.equilDistance();
     T force = -properDihedral.forceConstant() * properDihedral.multiplicity() * std::sin(deltaPhi);
-    T ePot = properDihedral.forceConstant() * ( 1 + std::cos(deltaPhi) );
+    T ePot  = properDihedral.forceConstant() * (1 + std::cos(deltaPhi));
     return std::make_tuple(force, ePot);
 }
 
@@ -681,14 +692,14 @@ inline T basicVectorAngle(gmx::BasicVector<T> a, gmx::BasicVector<T> b)
  * \return          the angle between m and n
  */
 template<class T>
-inline T dihedralPhi(gmx::BasicVector<T> dxIJ,
-                     gmx::BasicVector<T> dxKJ,
-                     gmx::BasicVector<T> dxKL,
+inline T dihedralPhi(gmx::BasicVector<T>  dxIJ,
+                     gmx::BasicVector<T>  dxKJ,
+                     gmx::BasicVector<T>  dxKL,
                      gmx::BasicVector<T>* m,
                      gmx::BasicVector<T>* n)
 {
-    *m = cross(dxIJ, dxKJ);
-    *n = cross(dxKJ, dxKL);
+    *m     = cross(dxIJ, dxKJ);
+    *n     = cross(dxKJ, dxKL);
     T phi  = basicVectorAngle(*m, *n);
     T ipr  = dot(dxIJ, *n);
     T sign = (ipr < 0.0) ? -1.0 : 1.0;
@@ -697,27 +708,27 @@ inline T dihedralPhi(gmx::BasicVector<T> dxIJ,
 }
 
 //! \brief Computes and returns the improper dihedral force
-template <class T>
+template<class T>
 inline auto fourCenterKernel(T phi, const ImproperDihedral& improperDihedral)
 {
     T deltaPhi = phi - improperDihedral.equilConstant();
     /* deltaPhi cannot be outside (-pi,pi) */
     makeAnglePeriodic(deltaPhi);
-    const T force = -improperDihedral.forceConstant()  * deltaPhi;
-    const T ePot = 0.5 * improperDihedral.forceConstant() * deltaPhi * deltaPhi;
+    const T force = -improperDihedral.forceConstant() * deltaPhi;
+    const T ePot  = 0.5 * improperDihedral.forceConstant() * deltaPhi * deltaPhi;
     return std::make_tuple(force, ePot);
 }
 
 //! \brief Computes and returns the Ryckaert-Belleman dihedral force
-template <class T>
+template<class T>
 inline auto fourCenterKernel(T phi, const RyckaertBellemanDihedral& ryckaertBellemanDihedral)
 {
     /* Change to polymer convention */
-    const T localPhi = (phi < 0) ? (phi += M_PI) : (phi -= M_PI);
-    T cos_phi = std::cos(localPhi);
-    T ePot = ryckaertBellemanDihedral[0];
-    T force = 0;
-    T cosineFactor = 1;
+    const T localPhi     = (phi < 0) ? (phi += M_PI) : (phi -= M_PI);
+    T       cos_phi      = std::cos(localPhi);
+    T       ePot         = ryckaertBellemanDihedral[0];
+    T       force        = 0;
+    T       cosineFactor = 1;
 
     for (int i = 1; i < int(ryckaertBellemanDihedral.size()); i++)
     {
@@ -734,16 +745,14 @@ inline auto fourCenterKernel(T phi, const RyckaertBellemanDihedral& ryckaertBell
 
 //! \brief add shift forces, if requested (static compiler decision)
 template<class T, class ShiftForce>
-inline void
-addShiftForce(const gmx::BasicVector<T>& interactionForce, ShiftForce* shiftForce)
+inline void addShiftForce(const gmx::BasicVector<T>& interactionForce, ShiftForce* shiftForce)
 {
     *shiftForce += interactionForce;
 }
 
 //! \brief this will be called if shift forces are not computed (and removed by the compiler)
 template<class T>
-inline void addShiftForce([[maybe_unused]] const gmx::BasicVector<T>& fij,
-                          [[maybe_unused]] std::nullptr_t*)
+inline void addShiftForce([[maybe_unused]] const gmx::BasicVector<T>& fij, [[maybe_unused]] std::nullptr_t*)
 {
 }
 
@@ -757,8 +766,8 @@ inline void addShiftForce([[maybe_unused]] const gmx::BasicVector<T>& fij,
  * \param shf_ik     Shift force between centers i and j
  * \param shf_c      Shift force at the "center" of the two center interaction
  */
-template <class T, class ShiftForce>
-inline void spreadTwoCenterForces(const T force,
+template<class T, class ShiftForce>
+inline void spreadTwoCenterForces(const T                    force,
                                   const gmx::BasicVector<T>& dx,
                                   gmx::BasicVector<T>*       force_i,
                                   gmx::BasicVector<T>*       force_j,
@@ -770,7 +779,7 @@ inline void spreadTwoCenterForces(const T force,
     *force_j -= fij;
 
     addShiftForce(fij, shf_ij);
-    addShiftForce(T(-1.0)*fij, shf_c);
+    addShiftForce(T(-1.0) * fij, shf_c);
     /* 15 Total */
 }
 
@@ -790,7 +799,7 @@ inline void spreadTwoCenterForces(const T force,
  * \param shf_kj     Shift force between centers k and j
  * \param shf_c      Shift force at the center subtending the angle
  */
-template <class T, class ShiftForce>
+template<class T, class ShiftForce>
 inline void spreadThreeCenterForces(T                          cos_theta,
                                     T                          force,
                                     const gmx::BasicVector<T>& dxIJ,
@@ -803,16 +812,16 @@ inline void spreadThreeCenterForces(T                          cos_theta,
                                     ShiftForce*                shf_c)
 {
     T cos_theta2 = cos_theta * cos_theta;
-    if (cos_theta2 < 1)                              /*   1		*/
+    if (cos_theta2 < 1) /*   1		*/
     {
         T st    = force / std::sqrt(1 - cos_theta2); /*  12		*/
         T sth   = st * cos_theta;                    /*   1		*/
         T nrij2 = dot(dxIJ, dxIJ);                   /*   5		*/
         T nrkj2 = dot(dxKJ, dxKJ);                   /*   5		*/
 
-        T cik = st / std::sqrt(nrij2 * nrkj2);       /*  11		*/
-        T cii = sth / nrij2;                         /*   1		*/
-        T ckk = sth / nrkj2;                         /*   1		*/
+        T cik = st / std::sqrt(nrij2 * nrkj2); /*  11		*/
+        T cii = sth / nrij2;                   /*   1		*/
+        T ckk = sth / nrkj2;                   /*   1		*/
 
         /*  33 */
         gmx::BasicVector<T> f_i = cii * dxIJ - cik * dxKJ;
@@ -848,48 +857,48 @@ inline void spreadThreeCenterForces(T                          cos_theta,
  * \param shf_lj     Shift force between centers k and j
  * \param shf_c      Shift force at the center subtending the angle
  */
-template <class T, class ShiftForce>
-inline void spreadFourCenterForces(T force,
+template<class T, class ShiftForce>
+inline void spreadFourCenterForces(T                          force,
                                    const gmx::BasicVector<T>& dxIJ,
                                    const gmx::BasicVector<T>& dxJK,
                                    const gmx::BasicVector<T>& dxKL,
                                    const gmx::BasicVector<T>& m,
                                    const gmx::BasicVector<T>& n,
-                                   gmx::BasicVector<T>* force_i,
-                                   gmx::BasicVector<T>* force_j,
-                                   gmx::BasicVector<T>* force_k,
-                                   gmx::BasicVector<T>* force_l,
-                                   ShiftForce* shf_ij,
-                                   ShiftForce* shf_kj,
-                                   ShiftForce* shf_lj,
-                                   ShiftForce* shf_c)
+                                   gmx::BasicVector<T>*       force_i,
+                                   gmx::BasicVector<T>*       force_j,
+                                   gmx::BasicVector<T>*       force_k,
+                                   gmx::BasicVector<T>*       force_l,
+                                   ShiftForce*                shf_ij,
+                                   ShiftForce*                shf_kj,
+                                   ShiftForce*                shf_lj,
+                                   ShiftForce*                shf_c)
 {
-    T norm2_m = dot(m, m);                             /* 5 */
-    T norm2_n = dot(n, n);                             /* 5 */
-    T norm2_jk = dot(dxJK, dxJK);                      /* 5 */
-    T toler = norm2_jk * GMX_REAL_EPS;
+    T norm2_m  = dot(m, m);       /* 5 */
+    T norm2_n  = dot(n, n);       /* 5 */
+    T norm2_jk = dot(dxJK, dxJK); /* 5 */
+    T toler    = norm2_jk * GMX_REAL_EPS;
     if ((norm2_m > toler) && (norm2_n > toler))
     {
-        T rcp_norm2_jk = 1.0f / norm2_jk;              /* 1 */
-        T norm_jk = std::sqrt(norm2_jk);               /* 10 */
+        T rcp_norm2_jk = 1.0f / norm2_jk;     /* 1 */
+        T norm_jk      = std::sqrt(norm2_jk); /* 10 */
 
-        T a = -force * norm_jk / norm2_m;              /* 11 */
-        gmx::BasicVector<T> f_i = a * m;               /* 3 */
+        T                   a   = -force * norm_jk / norm2_m; /* 11 */
+        gmx::BasicVector<T> f_i = a * m;                      /* 3 */
 
-        T b = force * norm_jk / norm2_n;               /* 11 */
-        gmx::BasicVector<T> f_l = b * n;               /* 3 */
+        T                   b   = force * norm_jk / norm2_n; /* 11 */
+        gmx::BasicVector<T> f_l = b * n;                     /* 3 */
 
-        T p = rcp_norm2_jk * dot(dxIJ, dxJK);          /* 6 */
-        T q = rcp_norm2_jk * dot(dxKL, dxJK);          /* 6 */
-        gmx::BasicVector<T> svec = p * f_i - q * f_l;  /* 9 */
+        T                   p    = rcp_norm2_jk * dot(dxIJ, dxJK); /* 6 */
+        T                   q    = rcp_norm2_jk * dot(dxKL, dxJK); /* 6 */
+        gmx::BasicVector<T> svec = p * f_i - q * f_l;              /* 9 */
 
-        gmx::BasicVector<T> f_j = svec - f_i;          /* 3 */
-        gmx::BasicVector<T> f_k = T(-1.0)*svec - f_l;  /* 6 */
+        gmx::BasicVector<T> f_j = svec - f_i;           /* 3 */
+        gmx::BasicVector<T> f_k = T(-1.0) * svec - f_l; /* 6 */
 
-        *force_i += f_i;                               /* 3 */
-        *force_j += f_j;                               /* 3 */
-        *force_k += f_k;                               /* 3 */
-        *force_l += f_l;                               /* 3 */
+        *force_i += f_i; /* 3 */
+        *force_j += f_j; /* 3 */
+        *force_k += f_k; /* 3 */
+        *force_l += f_l; /* 3 */
 
         addShiftForce(f_i, shf_ij);
         addShiftForce(f_j, shf_c);

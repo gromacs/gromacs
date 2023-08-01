@@ -189,8 +189,8 @@ using AccessTypeMemberIfPresent_t = typename AccessTypeMemberIfPresent<T>::type;
  */
 template<int N, typename T, typename Tuple>
 struct MatchTypeOrTypeMember :
-        std::disjunction<std::is_same<T, std::tuple_element_t<N, Tuple>>,
-                std::is_same<T, AccessTypeMemberIfPresent_t<std::tuple_element_t<N, Tuple>>>>
+    std::disjunction<std::is_same<T, std::tuple_element_t<N, Tuple>>,
+                     std::is_same<T, AccessTypeMemberIfPresent_t<std::tuple_element_t<N, Tuple>>>>
 {
 };
 
@@ -203,7 +203,7 @@ struct MatchField_ : std::integral_constant<size_t, MatchField_<N + 1, T, Tuple,
 //! \brief recursion stop when Comparison<N, T, Tuple>::value is true
 template<int N, class T, class Tuple, template<int, class, class> class Comparison>
 struct MatchField_<N, T, Tuple, Comparison, std::enable_if_t<Comparison<N, T, Tuple>{}>> :
-        std::integral_constant<size_t, N>
+    std::integral_constant<size_t, N>
 {
 };
 

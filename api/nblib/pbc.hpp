@@ -46,11 +46,12 @@
 #ifndef NBLIB_PBC_HPP
 #define NBLIB_PBC_HPP
 
-#include "nblib/box.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/pbcutil/pbc_aiuc.h"
+
+#include "nblib/box.h"
 
 namespace nblib
 {
@@ -74,7 +75,7 @@ public:
     }
 
 private:
-   PbcAiuc m_pbc;
+    PbcAiuc m_pbc;
 };
 
 /*! \brief life-time manager for t_pbc
@@ -91,8 +92,7 @@ public:
 
     //! \brief calculate pbc-aware r1-r2, including the shift index
     template<class T>
-    inline int dxAiuc(const gmx::BasicVector<T>& r1, const gmx::BasicVector<T>& r2,
-                      gmx::BasicVector<T>& dr) const
+    inline int dxAiuc(const gmx::BasicVector<T>& r1, const gmx::BasicVector<T>& r2, gmx::BasicVector<T>& dr) const
     {
         return pbc_dx_aiuc(&m_pbc, r1.as_vec(), r2.as_vec(), dr.as_vec());
     }
@@ -107,7 +107,6 @@ private:
 class NoPbc
 {
 public:
-
     //! \brief calculate r1-r2, ignore pbc
     template<class T>
     inline int dxAiuc(const gmx::BasicVector<T>& r1, const gmx::BasicVector<T>& r2, gmx::BasicVector<T>& dr) const

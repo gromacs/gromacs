@@ -158,8 +158,7 @@ std::string formatString(std::string fmt, Args... args)
     std::ostringstream os;
     std::string        delimiter = "{}";
 
-    auto next_token = [](std::string& s, const std::string& delimiter_)
-    {
+    auto next_token = [](std::string& s, const std::string& delimiter_) {
         std::string token = s.substr(0, s.find(delimiter_));
 
         std::size_t next = s.find(delimiter_);
@@ -171,8 +170,7 @@ std::string formatString(std::string fmt, Args... args)
         return token;
     };
 
-    [[maybe_unused]]
-    std::initializer_list<int> unused{ 0, (os << next_token(fmt, delimiter) << args, 0)... };
+    [[maybe_unused]] std::initializer_list<int> unused{ 0, (os << next_token(fmt, delimiter) << args, 0)... };
 
     os << next_token(fmt, delimiter);
 

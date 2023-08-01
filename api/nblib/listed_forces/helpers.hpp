@@ -89,11 +89,9 @@ class ForceBufferProxy
     using HashMap = std::unordered_map<int, T>;
 
 public:
-    ForceBufferProxy() : rangeStart_(0), rangeEnd_(0) { }
+    ForceBufferProxy() : rangeStart_(0), rangeEnd_(0) {}
 
-    ForceBufferProxy(int rangeStart, int rangeEnd) : rangeStart_(rangeStart), rangeEnd_(rangeEnd)
-    {
-    }
+    ForceBufferProxy(int rangeStart, int rangeEnd) : rangeStart_(rangeStart), rangeEnd_(rangeEnd) {}
 
     void clearOutliers() { outliers.clear(); }
 
@@ -119,14 +117,17 @@ public:
     typename HashMap::const_iterator begin() { return outliers.begin(); }
     typename HashMap::const_iterator end() { return outliers.end(); }
 
-    [[nodiscard]] bool inRange(int index) const { return (index >= rangeStart_ && index < rangeEnd_); }
+    [[nodiscard]] bool inRange(int index) const
+    {
+        return (index >= rangeStart_ && index < rangeEnd_);
+    }
 
     void setMainBuffer(gmx::ArrayRef<T> buffer) { mainForceBuffer = buffer; }
 
 private:
     gmx::ArrayRef<T> mainForceBuffer;
-    int rangeStart_;
-    int rangeEnd_;
+    int              rangeStart_;
+    int              rangeEnd_;
 
     HashMap outliers;
 };
@@ -156,10 +157,9 @@ static int computeChunkIndex(int index, int totalRange, int nSplits)
  * \param nSplits number to divide the total work by
  * \return
  */
-inline
-std::vector<ListedInteractionData> splitListedWork(const ListedInteractionData& interactions,
-                                                   int                          totalRange,
-                                                   int                          nSplits)
+inline std::vector<ListedInteractionData> splitListedWork(const ListedInteractionData& interactions,
+                                                          int                          totalRange,
+                                                          int                          nSplits)
 {
     std::vector<ListedInteractionData> workDivision(nSplits);
 

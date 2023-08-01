@@ -44,10 +44,11 @@
 #ifndef NBLIB_LINEAR_CHAIN_DATA_HPP
 #define NBLIB_LINEAR_CHAIN_DATA_HPP
 
+#include "listed_forces/traits.h"
+
 #include "nblib/box.h"
 
 #include "topologyhelpers.h"
-#include "listed_forces/traits.h"
 
 namespace nblib
 {
@@ -131,4 +132,3 @@ public:
 } // namespace nblib
 
 #endif // NBLIB_LINEAR_CHAIN_DATA_HPP
-
