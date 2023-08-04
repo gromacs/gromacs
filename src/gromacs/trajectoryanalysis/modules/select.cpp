@@ -500,9 +500,9 @@ void Select::initAnalysis(const TrajectoryAnalysisSettings& settings, const Topo
 {
     bResInd_ = (resNumberType_ == ResidueNumbering::ByIndex);
 
-    for (SelectionList::iterator i = sel_.begin(); i != sel_.end(); ++i)
+    for (auto& i : sel_)
     {
-        i->initCoveredFraction(CFRAC_SOLIDANGLE);
+        i.initCoveredFraction(CFRAC_SOLIDANGLE);
     }
 
     // TODO: For large systems, a float may not have enough precision

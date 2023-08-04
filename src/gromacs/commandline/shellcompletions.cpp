@@ -255,10 +255,10 @@ void ShellCompletionWriter::writeWrapperCompletions(const ModuleNameList& module
     OptionsListWriter lister;
     lister.visitSection(options.rootSection());
     std::string completions(lister.optionList());
-    for (ModuleNameList::const_iterator i = modules.begin(); i != modules.end(); ++i)
+    for (const auto& moduleName : modules)
     {
         completions.append("\\n");
-        completions.append(*i);
+        completions.append(moduleName);
     }
     impl_->file_->writeLine("COMPREPLY=( $(compgen -S ' ' -W $'" + completions + "' -- $c) )");
     impl_->file_->writeLine("return 0");
@@ -267,9 +267,9 @@ void ShellCompletionWriter::writeWrapperCompletions(const ModuleNameList& module
     impl_->file_->writeLine("COMP_WORDS=( \"${COMP_WORDS[@]}\" )");
     impl_->file_->writeLine("COMP_CWORD=$((COMP_CWORD-i))");
     impl_->file_->writeLine("case \"$m\" in");
-    for (ModuleNameList::const_iterator i = modules.begin(); i != modules.end(); ++i)
+    for (const auto& moduleName : modules)
     {
-        const char* const name = i->c_str();
+        const char* const name = moduleName.c_str();
         impl_->file_->writeLine(
                 formatString("%s) %s ;;", name, impl_->completionFunctionName(name).c_str()));
     }

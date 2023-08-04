@@ -92,9 +92,9 @@ public:
     ManagerType* get() const
     {
         ManagerType* result = nullptr;
-        for (ListType::const_iterator i = list_.begin(); i != list_.end(); ++i)
+        for (const auto& i : list_)
         {
-            ManagerType* curr = dynamic_cast<ManagerType*>(*i);
+            ManagerType* curr = dynamic_cast<ManagerType*>(i);
             if (curr != nullptr)
             {
                 GMX_RELEASE_ASSERT(result == nullptr,

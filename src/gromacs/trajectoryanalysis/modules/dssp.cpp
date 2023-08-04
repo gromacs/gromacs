@@ -566,12 +566,11 @@ void SecondaryStructures::analyseTopology(const TopologyInformation& top,
     hMode_ = transferredHMode;
     int resicompare =
             top.atoms()->atom[static_cast<std::size_t>(*(sel.atomIndices().begin()))].resind - 1;
-    for (gmx::ArrayRef<const int>::iterator ai = sel.atomIndices().begin(); ai != sel.atomIndices().end();
-         ++ai)
+    for (const auto& ai : sel.atomIndices())
     {
-        if (resicompare != top.atoms()->atom[static_cast<std::size_t>(*ai)].resind)
+        if (resicompare != top.atoms()->atom[static_cast<std::size_t>(ai)].resind)
         {
-            resicompare = top.atoms()->atom[static_cast<std::size_t>(*ai)].resind;
+            resicompare = top.atoms()->atom[static_cast<std::size_t>(ai)].resind;
             topologyVector_.emplace_back();
             topologyVector_.back().info_ = &(top.atoms()->resinfo[resicompare]);
             std::string residueName      = *(topologyVector_.back().info_->name);
@@ -580,31 +579,31 @@ void SecondaryStructures::analyseTopology(const TopologyInformation& top,
                 topologyVector_.back().isProline_ = true;
             }
         }
-        std::string atomName(*(top.atoms()->atomname[static_cast<std::size_t>(*ai)]));
+        std::string atomName(*(top.atoms()->atomname[static_cast<std::size_t>(ai)]));
         if (atomName == c_backboneAtomTypeNames[BackboneAtomTypes::AtomCA])
         {
-            topologyVector_.back().setIndex(BackboneAtomTypes::AtomCA, *ai);
+            topologyVector_.back().setIndex(BackboneAtomTypes::AtomCA, ai);
         }
         else if (atomName == c_backboneAtomTypeNames[BackboneAtomTypes::AtomC])
         {
-            topologyVector_.back().setIndex(BackboneAtomTypes::AtomC, *ai);
+            topologyVector_.back().setIndex(BackboneAtomTypes::AtomC, ai);
         }
         else if (atomName == c_backboneAtomTypeNames[BackboneAtomTypes::AtomO])
         {
-            topologyVector_.back().setIndex(BackboneAtomTypes::AtomO, *ai);
+            topologyVector_.back().setIndex(BackboneAtomTypes::AtomO, ai);
         }
         else if (atomName == c_backboneAtomTypeNames[BackboneAtomTypes::AtomN])
         {
-            topologyVector_.back().setIndex(BackboneAtomTypes::AtomN, *ai);
+            topologyVector_.back().setIndex(BackboneAtomTypes::AtomN, ai);
             if (hMode_ == HydrogenMode::Dssp)
             {
-                topologyVector_.back().setIndex(BackboneAtomTypes::AtomH, *ai);
+                topologyVector_.back().setIndex(BackboneAtomTypes::AtomH, ai);
             }
         }
         else if (hMode_ == HydrogenMode::Gromacs
                  && atomName == c_backboneAtomTypeNames[BackboneAtomTypes::AtomH])
         {
-            topologyVector_.back().setIndex(BackboneAtomTypes::AtomH, *ai);
+            topologyVector_.back().setIndex(BackboneAtomTypes::AtomH, ai);
         }
     }
     if (clearStructure)

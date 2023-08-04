@@ -90,9 +90,9 @@ protected:
         fileName.push_back(test::TestFileManager::getInputFilePath("testINVEXP79.xvg").u8string());
         fileName.push_back(test::TestFileManager::getInputFilePath("testERF.xvg").u8string());
         fileName.push_back(test::TestFileManager::getInputFilePath("testERREST.xvg").u8string());
-        for (std::vector<std::string>::iterator i = fileName.begin(); i < fileName.end(); ++i)
+        for (const auto& aName : fileName)
         {
-            const char* name = i->c_str();
+            const char* name = aName.c_str();
             int         nrColumns;
             ExpfitData  ed;
             ed.nrLines_   = read_xvg(name, &tempValues, &nrColumns);

@@ -238,10 +238,8 @@ void FreeVolume::initAnalysis(const TrajectoryAnalysisSettings& settings, const 
     // Loop over atoms in the selection using an iterator
     const int           maxnovdw = 10;
     ArrayRef<const int> atomind  = sel_.atomIndices();
-    for (ArrayRef<const int>::iterator ai = atomind.begin(); (ai < atomind.end()); ++ai)
+    for (const auto& i : atomind)
     {
-        // Dereference the iterator to obtain an atom number
-        int  i     = *ai;
         real value = 0;
 
         // Lookup the Van der Waals radius of this atom
