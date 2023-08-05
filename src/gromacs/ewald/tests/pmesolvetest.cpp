@@ -332,11 +332,11 @@ public:
         {
             // we want an additional safeguard for denormal numbers as they cause an exception in string conversion;
             // however, using GMX_REAL_MIN causes an "unused item warning" for single precision builds
-            if (fabs(point.second.re) >= GMX_FLOAT_MIN)
+            if (std::fabs(point.second.re) >= GMX_FLOAT_MIN)
             {
                 gridValuesChecker.checkReal(point.second.re, (point.first + " re").c_str());
             }
-            if (fabs(point.second.im) >= GMX_FLOAT_MIN)
+            if (std::fabs(point.second.im) >= GMX_FLOAT_MIN)
             {
                 gridValuesChecker.checkReal(point.second.im, (point.first + " im").c_str());
             }

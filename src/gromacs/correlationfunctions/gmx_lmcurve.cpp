@@ -185,7 +185,7 @@ bool lmfit_exp(int          nfit,
             printf("\n");
         }
         j++;
-        bCont = (fabs(ochisq - chisq) > fabs(control.ftol * chisq));
+        bCont = (std::fabs(ochisq - chisq) > std::fabs(control.ftol * chisq));
     } while (bCont && (j < maxiter));
 
     sfree(status);

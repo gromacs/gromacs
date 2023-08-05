@@ -264,7 +264,7 @@ static void normalize_acf(int nout, real corr[])
     /* Normalisation makes that c[0] = 1.0 and that other points are scaled
      * accordingly.
      */
-    if (fabs(corr[0]) < 1e-5)
+    if (std::fabs(corr[0]) < 1e-5)
     {
         c0 = 1.0;
     }

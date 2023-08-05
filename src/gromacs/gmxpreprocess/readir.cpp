@@ -5103,7 +5103,7 @@ void triple_check(const char* mdparin, t_inputrec* ir, gmx_mtop_t* sys, WarningH
         }
         for (m = 0; (m < DIM); m++)
         {
-            if (fabs(acceleration[m]) > 1e-6)
+            if (std::fabs(acceleration[m]) > 1e-6)
             {
                 const char* dim[DIM] = { "X", "Y", "Z" };
                 fprintf(stderr,

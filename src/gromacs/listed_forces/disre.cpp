@@ -520,7 +520,7 @@ real ta_disres(int              nfa,
             if (!bMixed)
             {
                 f_scal = -k0 * tav_viol;
-                violtot += fabs(tav_viol) * pairFac;
+                violtot += std::fabs(tav_viol) * pairFac;
             }
             else
             {

@@ -130,7 +130,7 @@ void ewald_LRcorrection(const int                      numAtomsLocal,
             for (int q = 0; q < (bHaveChargePerturbed ? 2 : 1); q++)
             {
                 /* Avoid charge corrections with near-zero net charge */
-                if (fabs(qsum[q]) > 1e-4)
+                if (std::fabs(qsum[q]) > 1e-4)
                 {
                     chargecorr[q] = 2 * dipole_coeff * qsum[q];
                 }

@@ -181,12 +181,12 @@ static void chk_coords(int frame, int natoms, rvec* x, matrix box, real fac, rea
     {
         for (j = 0; (j < DIM); j++)
         {
-            if ((vol > 0) && (fabs(x[i][j]) > fac * box[j][j]))
+            if ((vol > 0) && (std::fabs(x[i][j]) > fac * box[j][j]))
             {
                 printf("Warning at frame %d: coordinates for atom %d are large (%g)\n", frame, i, x[i][j]);
             }
         }
-        if ((fabs(x[i][XX]) < tol) && (fabs(x[i][YY]) < tol) && (fabs(x[i][ZZ]) < tol))
+        if ((std::fabs(x[i][XX]) < tol) && (std::fabs(x[i][YY]) < tol) && (std::fabs(x[i][ZZ]) < tol))
         {
             nNul++;
         }
@@ -205,7 +205,7 @@ static void chk_vels(int frame, int natoms, rvec* v)
     {
         for (j = 0; (j < DIM); j++)
         {
-            if (fabs(v[i][j]) > 500)
+            if (std::fabs(v[i][j]) > 500)
             {
                 printf("Warning at frame %d. Velocities for atom %d are large (%g)\n", frame, i, v[i][j]);
             }
@@ -221,7 +221,7 @@ static void chk_forces(int frame, int natoms, rvec* f)
     {
         for (j = 0; (j < DIM); j++)
         {
-            if (fabs(f[i][j]) > 10000)
+            if (std::fabs(f[i][j]) > 10000)
             {
                 printf("Warning at frame %d. Forces for atom %d are large (%g)\n", frame, i, f[i][j]);
             }
@@ -709,8 +709,8 @@ static void chk_enx(const char* fn)
     {
         if (fnr >= 2)
         {
-            if (fabs((fr->t - old_t1) - (old_t1 - old_t2))
-                > 0.1 * (fabs(fr->t - old_t1) + std::fabs(old_t1 - old_t2)))
+            if (std::fabs((fr->t - old_t1) - (old_t1 - old_t2))
+                > 0.1 * (std::fabs(fr->t - old_t1) + std::fabs(old_t1 - old_t2)))
             {
                 bShowTStep = FALSE;
                 fprintf(stderr, "\nTimesteps at t=%g don't match (%g, %g)\n", old_t1, old_t1 - old_t2, fr->t - old_t1);

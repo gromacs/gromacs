@@ -1082,7 +1082,7 @@ static void do_constraint(struct pull_t* pull,
             switch (coord.params_.eGeom)
             {
                 case PullGroupGeometry::Distance:
-                    bConverged = fabs(dnorm(unc_ij) - coord.value_ref) < pull->params.constr_tol;
+                    bConverged = std::fabs(dnorm(unc_ij) - coord.value_ref) < pull->params.constr_tol;
                     break;
                 case PullGroupGeometry::Direction:
                 case PullGroupGeometry::DirectionPBC:
@@ -1093,7 +1093,7 @@ static void do_constraint(struct pull_t* pull,
                     }
                     inpr = diprod(unc_ij, vec);
                     dsvmul(inpr, vec, unc_ij);
-                    bConverged = fabs(diprod(unc_ij, vec) - coord.value_ref) < pull->params.constr_tol;
+                    bConverged = std::fabs(diprod(unc_ij, vec) - coord.value_ref) < pull->params.constr_tol;
                     break;
                 default:
                     GMX_ASSERT(false,

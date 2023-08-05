@@ -1540,7 +1540,7 @@ void LegacySimulator::do_cg()
         {
             for (m = 0; m < DIM; m++)
             {
-                tmp = fabs(s_min_x[i][m]);
+                tmp = std::fabs(s_min_x[i][m]);
                 if (tmp < 1.0)
                 {
                     tmp = 1.0;
@@ -1638,7 +1638,7 @@ void LegacySimulator::do_cg()
         }
 
         /* This is the max amount of increase in energy we tolerate */
-        tmp = std::sqrt(GMX_REAL_EPS) * fabs(s_a->epot);
+        tmp = std::sqrt(GMX_REAL_EPS) * std::fabs(s_a->epot);
 
         /* Accept the step if the energy is lower, or if it is not significantly higher
          * and the line derivative is still negative.
@@ -1787,7 +1787,7 @@ void LegacySimulator::do_cg()
                 nminstep++;
             } while ((epot_repl > s_a->epot || epot_repl > s_c->epot) && (nminstep < 20));
 
-            if (std::fabs(epot_repl - s_min->epot) < fabs(s_min->epot) * GMX_REAL_EPS || nminstep >= 20)
+            if (std::fabs(epot_repl - s_min->epot) < std::fabs(s_min->epot) * GMX_REAL_EPS || nminstep >= 20)
             {
                 /* OK. We couldn't find a significantly lower energy.
                  * If beta==0 this was steepest descent, and then we give up.
@@ -1856,7 +1856,7 @@ void LegacySimulator::do_cg()
             beta = pr_beta(cr_, &inputRec_->opts, mdatoms, topGlobal_, s_min, s_b);
         }
         /* Limit beta to prevent oscillations */
-        if (fabs(beta) > 5.0)
+        if (std::fabs(beta) > 5.0)
         {
             beta = 0.0;
         }
@@ -2327,7 +2327,7 @@ void LegacySimulator::do_lbfgs()
         double minstep = 0;
         for (int i = 0; i < n; i++)
         {
-            double tmp = fabs(xx[i]);
+            double tmp = std::fabs(xx[i]);
             if (tmp < 1.0)
             {
                 tmp = 1.0;
@@ -2435,7 +2435,7 @@ void LegacySimulator::do_lbfgs()
         // This is the max amount of increase in energy we tolerate.
         // By allowing VERY small changes (close to numerical precision) we
         // frequently find even better (lower) final energies.
-        double tmp = std::sqrt(GMX_REAL_EPS) * fabs(sa->epot);
+        double tmp = std::sqrt(GMX_REAL_EPS) * std::fabs(sa->epot);
 
         // Accept the step if the energy is lower in the new position C (compared to A),
         // or if it is not significantly higher and the line derivative is still negative.

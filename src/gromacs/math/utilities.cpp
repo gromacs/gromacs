@@ -51,7 +51,7 @@ constexpr int c_FPexceptions = FE_DIVBYZERO | FE_INVALID | FE_OVERFLOW;
 bool gmx_within_tol(double f1, double f2, double tol)
 {
     /* The or-equal is important - otherwise we return false if f1==f2==0 */
-    return fabs(f1 - f2) <= tol * 0.5 * (fabs(f1) + fabs(f2));
+    return std::fabs(f1 - f2) <= tol * 0.5 * (std::fabs(f1) + std::fabs(f2));
 }
 
 bool gmx_numzero(double a)

@@ -1288,8 +1288,8 @@ static real ener_tensor_diag(int          n,
             && std::strncmp(enm1[ind1[i]].name, enm1[ind1[j]].name, len - 2) == 0
             && (tensi[j] == d1 * DIM + d1 || tensi[j] == d2 * DIM + d2))
         {
-            prod1 *= fabs(e1[ind1[j]].e);
-            prod2 *= fabs(e2[ind2[j]].e);
+            prod1 *= std::fabs(e1[ind1[j]].e);
+            prod2 *= std::fabs(e2[ind2[j]].e);
             nfound++;
         }
     }

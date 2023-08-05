@@ -1011,17 +1011,17 @@ static char** read_topol(const char*                           infile,
         title = put_symtab(symtab, "");
     }
 
-    if (fabs(qt) > 1e-4)
+    if (std::fabs(qt) > 1e-4)
     {
         sprintf(warn_buf, "System has non-zero total charge: %.6f\n%s\n", qt, floating_point_arithmetic_tip);
         wi->addNote(warn_buf);
     }
-    if (fabs(qBt) > 1e-4 && !gmx_within_tol(qBt, qt, 1e-6))
+    if (std::fabs(qBt) > 1e-4 && !gmx_within_tol(qBt, qt, 1e-6))
     {
         sprintf(warn_buf, "State B has non-zero total charge: %.6f\n%s\n", qBt, floating_point_arithmetic_tip);
         wi->addNote(warn_buf);
     }
-    if (usingFullRangeElectrostatics && (fabs(qt) > 1e-4 || fabs(qBt) > 1e-4))
+    if (usingFullRangeElectrostatics && (std::fabs(qt) > 1e-4 || std::fabs(qBt) > 1e-4))
     {
         wi->addWarning(
                 "You are using Ewald electrostatics in a system with net charge. This can lead to "

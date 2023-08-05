@@ -204,13 +204,13 @@ static double safe_expm1(double x)
 /*! \brief Compute y = exp(-x/|a0|) */
 static double lmc_exp_one_parm(double x, const double* a)
 {
-    return safe_exp(-x / fabs(a[0]));
+    return safe_exp(-x / std::fabs(a[0]));
 }
 
 /*! \brief Compute y = a1 exp(-x/|a0|) */
 static double lmc_exp_two_parm(double x, const double* a)
 {
-    return a[1] * safe_exp(-x / fabs(a[0]));
+    return a[1] * safe_exp(-x / std::fabs(a[0]));
 }
 
 /*! \brief Compute y = a1 exp(-x/|a0|) + (1-a1) exp(-x/|a2|) */
@@ -218,8 +218,8 @@ static double lmc_exp_exp(double x, const double* a)
 {
     double e1, e2;
 
-    e1 = safe_exp(-x / fabs(a[0]));
-    e2 = safe_exp(-x / (fabs(a[0]) + fabs(a[2])));
+    e1 = safe_exp(-x / std::fabs(a[0]));
+    e2 = safe_exp(-x / (std::fabs(a[0]) + std::fabs(a[2])));
     return a[1] * e1 + (1 - a[1]) * e2;
 }
 
@@ -228,8 +228,8 @@ static double lmc_exp_5_parm(double x, const double* a)
 {
     double e1, e2;
 
-    e1 = safe_exp(-x / fabs(a[1]));
-    e2 = safe_exp(-x / (fabs(a[1]) + fabs(a[3])));
+    e1 = safe_exp(-x / std::fabs(a[1]));
+    e2 = safe_exp(-x / (std::fabs(a[1]) + std::fabs(a[3])));
     return a[0] * e1 + a[2] * e2 + a[4];
 }
 
@@ -243,9 +243,9 @@ static double lmc_exp_7_parm(double x, const double* a)
     double e1, e2, e3;
     double fa1, fa3, fa5;
 
-    fa1 = fabs(a[1]);
-    fa3 = fa1 + fabs(a[3]);
-    fa5 = fa3 + fabs(a[5]);
+    fa1 = std::fabs(a[1]);
+    fa3 = fa1 + std::fabs(a[3]);
+    fa5 = fa3 + std::fabs(a[5]);
     e1  = safe_exp(-x / fa1);
     e2  = safe_exp(-x / fa3);
     e3  = safe_exp(-x / fa5);
@@ -262,10 +262,10 @@ static double lmc_exp_9_parm(double x, const double* a)
     double e1, e2, e3, e4;
     double fa1, fa3, fa5, fa7;
 
-    fa1 = fabs(a[1]);
-    fa3 = fa1 + fabs(a[3]);
-    fa5 = fa3 + fabs(a[5]);
-    fa7 = fa5 + fabs(a[7]);
+    fa1 = std::fabs(a[1]);
+    fa3 = fa1 + std::fabs(a[3]);
+    fa5 = fa3 + std::fabs(a[5]);
+    fa7 = fa5 + std::fabs(a[7]);
 
     e1 = safe_exp(-x / fa1);
     e2 = safe_exp(-x / fa3);
@@ -283,16 +283,16 @@ static double lmc_pres_6_parm(double x, const double* a)
     term3 = 0;
     if ((a[4] != 0) && (a[0] != 0))
     {
-        double power = std::min(fabs(a[5]), pow_max);
-        term3        = a[0] * safe_exp(-pow((x / fabs(a[4])), power));
+        double power = std::min(std::fabs(a[5]), pow_max);
+        term3        = a[0] * safe_exp(-pow((x / std::fabs(a[4])), power));
     }
 
     term1 = 1 - a[0];
     term2 = 0;
     if ((term1 != 0) && (a[2] != 0))
     {
-        double power = std::min(fabs(a[3]), pow_max);
-        term2        = safe_exp(-pow((x / fabs(a[2])), power)) * cos(x * fabs(a[1]));
+        double power = std::min(std::fabs(a[3]), pow_max);
+        term2        = safe_exp(-pow((x / std::fabs(a[2])), power)) * cos(x * std::fabs(a[1]));
     }
 
     return term1 * term2 + term3;
@@ -319,12 +319,12 @@ static double lmc_vac_2_parm(double x, const double* a)
     double y, v, det, omega, wv, em, ec, es;
     double wv_max = 100;
 
-    v   = x / (2 * fabs(a[0]));
+    v   = x / (2 * std::fabs(a[0]));
     det = 1 - a[1];
     em  = safe_exp(-v);
     if (det != 0)
     {
-        omega = sqrt(fabs(det));
+        omega = sqrt(std::fabs(det));
         wv    = std::min(omega * v, wv_max);
 
         if (det > 0)
@@ -350,9 +350,9 @@ static double lmc_vac_2_parm(double x, const double* a)
 static double lmc_errest_3_parm(double x, const double* a)
 {
     double e1, e2, v1, v2;
-    double fa0 = fabs(a[0]);
+    double fa0 = std::fabs(a[0]);
     double fa1;
-    double fa2 = fa0 + fabs(a[2]);
+    double fa2 = fa0 + std::fabs(a[2]);
 
     if (a[0] != 0)
     {
@@ -436,29 +436,29 @@ static void initiate_fit_params(int eFitFn, double params[])
                  * params[2]-params[0] and in the add add in params[0]
                  * again.
                  */
-                params[2] = std::max(fabs(params[2]) - params[0], params[0]);
+                params[2] = std::max(std::fabs(params[2]) - params[0], params[0]);
             }
             break;
         case effnEXP5:
         case effnEXP7:
         case effnEXP9:
             GMX_ASSERT(params[1] >= 0, "parameters should be >= 0");
-            params[1] = fabs(params[1]);
+            params[1] = std::fabs(params[1]);
             if (nparm > 3)
             {
                 GMX_ASSERT(params[3] >= 0, "parameters should be >= 0");
                 /* See comment under effnEXPEXP */
-                params[3] = std::max(fabs(params[3]) - params[1], params[1]);
+                params[3] = std::max(std::fabs(params[3]) - params[1], params[1]);
                 if (nparm > 5)
                 {
                     GMX_ASSERT(params[5] >= 0, "parameters should be >= 0");
                     /* See comment under effnEXPEXP */
-                    params[5] = std::max(fabs(params[5]) - params[3], params[3]);
+                    params[5] = std::max(std::fabs(params[5]) - params[3], params[3]);
                     if (nparm > 7)
                     {
                         GMX_ASSERT(params[7] >= 0, "parameters should be >= 0");
                         /* See comment under effnEXPEXP */
-                        params[7] = std::max(fabs(params[7]) - params[5], params[5]);
+                        params[7] = std::max(std::fabs(params[7]) - params[5], params[5]);
                     }
                 }
             }
@@ -468,7 +468,7 @@ static void initiate_fit_params(int eFitFn, double params[])
             GMX_ASSERT(params[1] >= 0 && params[1] <= 1, "parameter 1 should in 0 .. 1");
             GMX_ASSERT(params[2] >= 0, "parameters should be >= 0");
             /* See comment under effnEXPEXP */
-            params[2] = fabs(params[2]) - params[0];
+            params[2] = std::fabs(params[2]) - params[0];
             break;
         case effnPRES:
             for (i = 1; (i < nparm); i++)
@@ -492,41 +492,41 @@ static void extract_fit_params(int eFitFn, double params[])
 
     switch (eFitFn)
     {
-        case effnVAC: params[0] = fabs(params[0]); break;
+        case effnVAC: params[0] = std::fabs(params[0]); break;
         case effnEXP1:
         case effnEXP2:
         case effnEXPEXP:
-            params[0] = fabs(params[0]);
+            params[0] = std::fabs(params[0]);
             if (nparm > 2)
             {
                 /* Back conversion of parameters from the fitted difference
                  * to the absolute value.
                  */
-                params[2] = fabs(params[2]) + params[0];
+                params[2] = std::fabs(params[2]) + params[0];
             }
             break;
         case effnEXP5:
         case effnEXP7:
         case effnEXP9:
-            params[1] = fabs(params[1]);
+            params[1] = std::fabs(params[1]);
             if (nparm > 3)
             {
                 /* See comment under effnEXPEXP */
-                params[3] = fabs(params[3]) + params[1];
+                params[3] = std::fabs(params[3]) + params[1];
                 if (nparm > 5)
                 {
                     /* See comment under effnEXPEXP */
-                    params[5] = fabs(params[5]) + params[3];
+                    params[5] = std::fabs(params[5]) + params[3];
                     if (nparm > 7)
                     {
                         /* See comment under effnEXPEXP */
-                        params[7] = fabs(params[7]) + params[5];
+                        params[7] = std::fabs(params[7]) + params[5];
                     }
                 }
             }
             break;
         case effnERREST:
-            params[0] = fabs(params[0]);
+            params[0] = std::fabs(params[0]);
             if (params[1] < 0)
             {
                 params[1] = 0;
@@ -536,12 +536,12 @@ static void extract_fit_params(int eFitFn, double params[])
                 params[1] = 1;
             }
             /* See comment under effnEXPEXP */
-            params[2] = params[0] + fabs(params[2]);
+            params[2] = params[0] + std::fabs(params[2]);
             break;
         case effnPRES:
             for (i = 1; (i < nparm); i++)
             {
-                params[i] = fabs(params[i]);
+                params[i] = std::fabs(params[i]);
             }
             break;
         default: break;

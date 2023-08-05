@@ -689,7 +689,7 @@ TEST_P(ConstraintsTest, SatisfiesConstraints)
         // SHAKE tolerance=0.00002: 0.1
         const float virialRelativeTolerance = (runner->name().substr(0, 5) == "SHAKE" ? 0.1F : 0.02F);
         FloatingPointTolerance virialTolerance =
-                absoluteTolerance(fabs(virialTrace) / 3 * virialRelativeTolerance);
+                absoluteTolerance(std::fabs(virialTrace) / 3 * virialRelativeTolerance);
 
         checker_.setDefaultTolerance(virialTolerance);
         checkVirialTensor(testData);

@@ -279,7 +279,7 @@ void print_atoms(FILE* out, PreprocessingAtomTypes* atype, t_atoms* at, int* cgn
                         at->resinfo[ri].nr,
                         *at->resinfo[ri].name,
                         *at->resinfo[ri].rtp);
-                if (fabs(qres) < 0.001)
+                if (std::fabs(qres) < 0.001)
                 {
                     fprintf(out, " %s", "0.0");
                 }
@@ -325,7 +325,7 @@ void print_atoms(FILE* out, PreprocessingAtomTypes* atype, t_atoms* at, int* cgn
             qtot += static_cast<double>(at->atom[i].q);
             // Round it to zero if it is close to zero, because
             // printing -9.34e-5 confuses users.
-            if (fabs(qtot) < 0.0001)
+            if (std::fabs(qtot) < 0.0001)
             {
                 qtot = 0;
             }

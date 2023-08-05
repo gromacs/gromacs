@@ -125,7 +125,7 @@ static int assign_param(t_functype                ftype,
          * zero parameters (e.g. an index to a Cmap interaction, or LJ parameters), but
          * we use it for angles and torsions that are typically generated automatically.
          */
-        all_param_zero = all_param_zero && fabs(old[j]) < GMX_REAL_MIN;
+        all_param_zero = all_param_zero && std::fabs(old[j]) < GMX_REAL_MIN;
     }
 
     if (all_param_zero)
@@ -293,7 +293,7 @@ static int assign_param(t_functype                ftype,
             /* If both force constants are zero there is no interaction. Return -1 to signal
              * this entry should NOT be added.
              */
-            if (fabs(newparam->pdihs.cpA) < GMX_REAL_MIN && fabs(newparam->pdihs.cpB) < GMX_REAL_MIN)
+            if (std::fabs(newparam->pdihs.cpA) < GMX_REAL_MIN && std::fabs(newparam->pdihs.cpB) < GMX_REAL_MIN)
             {
                 return -1;
             }

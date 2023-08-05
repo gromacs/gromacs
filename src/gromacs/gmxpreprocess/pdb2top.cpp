@@ -137,7 +137,7 @@ bool is_int(double x)
     }
     ix = gmx::roundToInt(x);
 
-    return (fabs(x - ix) < tol);
+    return (std::fabs(x - ix) < tol);
 }
 
 static std::filesystem::path

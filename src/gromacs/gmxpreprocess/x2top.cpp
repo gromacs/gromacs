@@ -81,7 +81,7 @@ static bool is_bond(int nnm, t_nm2type nmt[], char* ai, char* aj, real blen)
                   && (gmx::equalCaseInsensitive(aj, nmt[i].bond[j], 1)))
                  || ((gmx::equalCaseInsensitive(ai, nmt[i].bond[j], 1))
                      && (gmx::equalCaseInsensitive(aj, nmt[i].elem, 1))))
-                && (fabs(blen - nmt[i].blen[j]) <= 0.1 * nmt[i].blen[j]))
+                && (std::fabs(blen - nmt[i].blen[j]) <= 0.1 * nmt[i].blen[j]))
             {
                 return TRUE;
             }

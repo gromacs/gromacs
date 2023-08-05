@@ -393,7 +393,7 @@ static void crattle(const int            iatom[],
             const real constraint_distance_squared_ll = constraint_distance_squared[ll];
 
             /* iconv is zero when the error is smaller than a bound */
-            const real iconvf = fabs(vpijd) * (distance_squared_tolerance[ll] / invdt);
+            const real iconvf = std::fabs(vpijd) * (distance_squared_tolerance[ll] / invdt);
 
             if (iconvf > 1.0_real)
             {

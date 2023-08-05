@@ -628,7 +628,7 @@ static void override_nsteps_cmdline(const gmx::MDLogger& mdlog, int64_t nsteps_c
             sprintf(sbuf_msg,
                     "Overriding nsteps with value passed on the command line: %s steps, %.3g ps",
                     gmx_step_str(nsteps_cmdline, sbuf_steps),
-                    fabs(nsteps_cmdline * ir->delta_t));
+                    std::fabs(nsteps_cmdline * ir->delta_t));
         }
         else
         {

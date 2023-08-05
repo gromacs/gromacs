@@ -128,7 +128,7 @@ void generate_nbparams(CombinationRule         comb,
                             cj0           = cPrefetch[j].first;
                             ci1           = cPrefetch[i].second;
                             cj1           = cPrefetch[j].second;
-                            forceParam[0] = (fabs(ci0) + fabs(cj0)) * 0.5;
+                            forceParam[0] = (std::fabs(ci0) + std::fabs(cj0)) * 0.5;
                             /* Negative sigma signals that c6 should be set to zero later,
                              * so we need to propagate that through the combination rules.
                              */

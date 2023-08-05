@@ -61,11 +61,11 @@ using namespace gmx;
 
 static real safe_asin(real f)
 {
-    if ((fabs(f) < 1.00))
+    if ((std::fabs(f) < 1.00))
     {
         return (asin(f));
     }
-    GMX_ASSERT(fabs(f) - 1.0 > DP_TOL, "Invalid argument");
+    GMX_ASSERT(std::fabs(f) - 1.0 > DP_TOL, "Invalid argument");
     return (M_PI_2);
 }
 

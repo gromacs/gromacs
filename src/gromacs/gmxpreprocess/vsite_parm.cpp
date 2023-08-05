@@ -739,7 +739,7 @@ static bool calc_vsite4fdn_param(InteractionOfType*                          vsi
         /* Calculate component of bond j-m along the direction i-j */
         pm = -bjm * std::cos(aijm);
 
-        if (fabs(pl) < 1000 * GMX_REAL_MIN || fabs(pm) < 1000 * GMX_REAL_MIN)
+        if (std::fabs(pl) < 1000 * GMX_REAL_MIN || std::fabs(pm) < 1000 * GMX_REAL_MIN)
         {
             GMX_LOG(logger.warning)
                     .asParagraph()

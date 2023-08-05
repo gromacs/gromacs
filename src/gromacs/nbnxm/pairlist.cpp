@@ -3295,7 +3295,7 @@ static void nbnxn_make_pairlist_part(const Nbnxm::GridSet&   gridSet,
         {
             const real listRangeCellToCell =
                     listRangeForGridCellToGridCell(rlist, iGrid.dimensions(), jGrid.dimensions());
-            if (d == XX && box[XX][XX] - fabs(box[YY][XX]) - fabs(box[ZZ][XX]) < listRangeCellToCell)
+            if (d == XX && box[XX][XX] - std::fabs(box[YY][XX]) - std::fabs(box[ZZ][XX]) < listRangeCellToCell)
             {
                 shp[d] = 2;
             }

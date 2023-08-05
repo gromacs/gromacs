@@ -350,7 +350,7 @@ real DensitySimilarityCrossCorrelation::similarity(density comparedDensity)
     // To avoid numerical instability due to large squared density value sums
     // division is re-written to avoid multiplying two large numbers
     // as product of two separate divisions of smaller numbers
-    const real covarianceSqrt = sqrt(fabs(helperValues.covariance));
+    const real covarianceSqrt = sqrt(std::fabs(helperValues.covariance));
     const int  sign           = helperValues.covariance > 0 ? 1 : -1;
     return sign * (covarianceSqrt / sqrt(helperValues.referenceSquaredSum))
            * (covarianceSqrt / sqrt(helperValues.comparisonSquaredSum));

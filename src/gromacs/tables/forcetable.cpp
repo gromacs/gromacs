@@ -641,7 +641,7 @@ static std::vector<t_tabledata> read_tables(FILE* fp, const char* filename, int 
                 dx0 = yy[0][i - 1] - yy[0][i - 2];
                 dx1 = yy[0][i] - yy[0][i - 1];
                 /* Check for 1% deviation in spacing */
-                if (fabs(dx1 - dx0) >= 0.005 * (fabs(dx0) + fabs(dx1)))
+                if (std::fabs(dx1 - dx0) >= 0.005 * (std::fabs(dx0) + std::fabs(dx1)))
                 {
                     gmx_fatal(FARGS,
                               "In table file '%s' the x values are not equally spaced: %f %f %f",
@@ -701,7 +701,7 @@ static std::vector<t_tabledata> read_tables(FILE* fp, const char* filename, int 
                     numf = -(vp - vm) * 0.5 * tabscale;
                     if (f + numf != 0)
                     {
-                        ssd += fabs(2 * (f - numf) / (f + numf));
+                        ssd += std::fabs(2 * (f - numf) / (f + numf));
                     }
                     ns++;
                 }

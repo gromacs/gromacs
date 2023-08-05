@@ -486,7 +486,7 @@ RVec computeQMBoxVec(const RVec& a, const RVec& b, const RVec& c, real h, real m
     dx /= dx.norm();
 
     // Transform a
-    res = h / static_cast<real>(fabs(vec0.dot(dx))) * a;
+    res = h / std::fabs(vec0.dot(dx)) * a;
 
     // If vector is smaller than minL then scale it up
     if (res.norm() < minNorm)

@@ -708,9 +708,9 @@ static gmx_bool UpdateWeights(int           nlim,
             varm_array[nval]     = varianceToLower;
             if (numObservationsLowerState > 0)
             {
-                dwm_array[nval] =
-                        fabs((cnval + std::log((1.0 * numObservationsCurrentState) / numObservationsLowerState))
-                             - lam_dg[fep_state - 1]);
+                dwm_array[nval] = std::fabs(
+                        (cnval + std::log((1.0 * numObservationsCurrentState) / numObservationsLowerState))
+                        - lam_dg[fep_state - 1]);
             }
             else
             {
@@ -729,9 +729,9 @@ static gmx_bool UpdateWeights(int           nlim,
             varp_array[nval]     = varianceToHigher;
             if ((numObservationsHigherState > 0) && (numObservationsCurrentState > 0))
             {
-                dwp_array[nval] =
-                        fabs((cnval + std::log((1.0 * numObservationsHigherState) / numObservationsCurrentState))
-                             - lam_dg[fep_state]);
+                dwp_array[nval] = std::fabs(
+                        (cnval + std::log((1.0 * numObservationsHigherState) / numObservationsCurrentState))
+                        - lam_dg[fep_state]);
             }
             else
             {
