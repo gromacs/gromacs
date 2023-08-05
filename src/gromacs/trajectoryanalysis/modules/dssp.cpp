@@ -839,7 +839,7 @@ void SecondaryStructures::analyzeBridgesAndStrandsPatterns()
                         for (const size_t jPartner : jPartners)
                         {
 
-                            int delta = abs(static_cast<int>(iPartner) - static_cast<int>(jPartner));
+                            int delta = std::abs(static_cast<int>(iPartner) - static_cast<int>(jPartner));
                             if (delta < 6)
                             {
                                 int secondStrandStart = iPartner;

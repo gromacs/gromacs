@@ -305,7 +305,7 @@ int gmx_rms(int argc, char* argv[])
         fprintf(stderr,
                 "WARNING: using option -prev with large trajectories will\n"
                 "         require a lot of memory and could lead to crashes\n");
-        prev = abs(prev);
+        prev = std::abs(prev);
         if (freq != 1)
         {
             fprintf(stderr, "WARNING: option -skip also applies to -prev\n");

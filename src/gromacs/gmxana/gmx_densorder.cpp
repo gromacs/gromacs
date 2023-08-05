@@ -424,7 +424,7 @@ static void interfaces_txy(real****                Densmap,
                        if(debug){
                        printf("Alpha, Deltandx  %f %i\n", alpha,deltandx);
                        }
-                       if(abs(alpha)>1.0 || abs(deltandx)>3){
+                       if(std::abs(alpha)>1.0 || std::abs(deltandx)>3){
                        pos=zperm[ndx1];
                        spread=-1;
                        }

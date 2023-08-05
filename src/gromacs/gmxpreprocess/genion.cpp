@@ -535,8 +535,8 @@ int gmx_genion(int argc, char* argv[])
         /* Compute number of ions to be added */
         vol   = det(box);
         nsalt = gmx::roundToInt(conc * vol * gmx::c_avogadro / 1e24);
-        p_num = abs(nsalt * n_q);
-        n_num = abs(nsalt * p_q);
+        p_num = std::abs(nsalt * n_q);
+        n_num = std::abs(nsalt * p_q);
     }
     if (bNeutral)
     {

@@ -353,7 +353,7 @@ std::vector<real> SimdMathTest::generateTestPoints(Range inputRange, std::size_t
                  */
                 conv0.r = vref[i];
                 conv1.r = vtst[i];
-                ulpDiff = llabs(conv0.i - conv1.i);
+                ulpDiff = std::llabs(conv0.i - conv1.i);
                 if (ulpDiff > maxUlpDiff)
                 {
                     maxUlpDiff        = ulpDiff;

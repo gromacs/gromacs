@@ -668,7 +668,7 @@ static void add_vsites(gmx::ArrayRef<InteractionsOfType> plist,
             gmx_incons("Undetected error in setting up virtual sites");
         }
         bool bSwapParity      = (ftype < 0);
-        vsite_type[Hatoms[i]] = ftype = abs(ftype);
+        vsite_type[Hatoms[i]] = ftype = std::abs(ftype);
         if (ftype == F_BONDS)
         {
             if ((nrheavies != 1) && (nrHatoms != 1))
@@ -1643,7 +1643,7 @@ static bool is_vsite(int vsite_type)
     {
         return FALSE;
     }
-    switch (abs(vsite_type))
+    switch (std::abs(vsite_type))
     {
         case F_VSITE3:
         case F_VSITE3FD:

@@ -435,7 +435,7 @@ static void parse_values_varnum(const SelectionParserValueList&    values,
         {
             if (value->type_ == INT_VALUE && !value->hasExpressionValue())
             {
-                valueCount += abs(value->u.i.i2 - value->u.i.i1);
+                valueCount += std::abs(value->u.i.i2 - value->u.i.i1);
             }
         }
     }
