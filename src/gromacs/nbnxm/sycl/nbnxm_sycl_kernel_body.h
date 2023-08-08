@@ -382,16 +382,16 @@ static inline void reduceForceJShuffle(Float3                   f,
     static_assert(c_clSize == 8 || c_clSize == 4);
     sycl::sub_group sg = itemIdx.get_sub_group();
 
-    f[0] += sycl_2020::shift_left(sg, f[0], 1);
-    f[1] += sycl_2020::shift_right(sg, f[1], 1);
-    f[2] += sycl_2020::shift_left(sg, f[2], 1);
+    f[0] += sycl::shift_group_left(sg, f[0], 1);
+    f[1] += sycl::shift_group_right(sg, f[1], 1);
+    f[2] += sycl::shift_group_left(sg, f[2], 1);
     if (tidxi & 1)
     {
         f[0] = f[1];
     }
 
-    f[0] += sycl_2020::shift_left(sg, f[0], 2);
-    f[2] += sycl_2020::shift_right(sg, f[2], 2);
+    f[0] += sycl::shift_group_left(sg, f[0], 2);
+    f[2] += sycl::shift_group_right(sg, f[2], 2);
     if (tidxi & 2)
     {
         f[0] = f[2];
@@ -399,7 +399,7 @@ static inline void reduceForceJShuffle(Float3                   f,
 
     if constexpr (c_clSize == 8)
     {
-        f[0] += sycl_2020::shift_left(sg, f[0], 4);
+        f[0] += sycl::shift_group_left(sg, f[0], 4);
     }
 
     if (tidxi < 3)
@@ -594,8 +594,8 @@ static inline void reduceForceIAndFShiftGeneric(sycl::local_ptr<float>   sm_buf,
                  * but it is unlikely to make a big difference and thus was not evaluated.
                  */
                 auto sg = itemIdx.get_sub_group();
-                fShiftBuf += sycl_2020::shift_left(sg, fShiftBuf, 1);
-                fShiftBuf += sycl_2020::shift_left(sg, fShiftBuf, 2);
+                fShiftBuf += sycl::shift_group_left(sg, fShiftBuf, 1);
+                fShiftBuf += sycl::shift_group_left(sg, fShiftBuf, 2);
                 if (tidxi == 0)
                 {
                     atomicFetchAdd(a_fShift[shift][tidxj], fShiftBuf);
@@ -715,16 +715,16 @@ typename std::enable_if_t<numShuffleReductionSteps != 1, void> static inline red
         float     fz   = fCiBufZ(ciOffset);
 
         // First reduction step
-        fx += sycl_2020::shift_left(sg, fx, c_clSize);
-        fy += sycl_2020::shift_right(sg, fy, c_clSize);
-        fz += sycl_2020::shift_left(sg, fz, c_clSize);
+        fx += sycl::shift_group_left(sg, fx, c_clSize);
+        fy += sycl::shift_group_right(sg, fy, c_clSize);
+        fz += sycl::shift_group_left(sg, fz, c_clSize);
         if (tidxj & 1)
         {
             fx = fy;
         }
         // Second reduction step
-        fx += sycl_2020::shift_left(sg, fx, 2 * c_clSize);
-        fz += sycl_2020::shift_right(sg, fz, 2 * c_clSize);
+        fx += sycl::shift_group_left(sg, fx, 2 * c_clSize);
+        fz += sycl::shift_group_right(sg, fz, 2 * c_clSize);
         if (tidxj & 2)
         {
             fx = fz;
@@ -732,7 +732,7 @@ typename std::enable_if_t<numShuffleReductionSteps != 1, void> static inline red
         // Third reduction step if possible
         if constexpr (numShuffleReductionSteps == 3)
         {
-            fx += sycl_2020::shift_left(sg, fx, 4 * c_clSize);
+            fx += sycl::shift_group_left(sg, fx, 4 * c_clSize);
         }
         // Threads 0,1,2 (and 4,5,6 in case of numShuffleReductionSteps == 2) increment X, Y, Z for their sub-groups
         if ((tidxj & threadBitMask) < 3)
@@ -798,9 +798,9 @@ typename std::enable_if_t<numShuffleReductionSteps == 1, void> static inline red
         float     fy   = fCiBufY(ciOffset);
         float     fz   = fCiBufZ(ciOffset);
         // First reduction step
-        fx += sycl_2020::shift_left(sg, fx, c_clSize);
-        fy += sycl_2020::shift_right(sg, fy, c_clSize);
-        fz += sycl_2020::shift_left(sg, fz, c_clSize);
+        fx += sycl::shift_group_left(sg, fx, c_clSize);
+        fy += sycl::shift_group_right(sg, fy, c_clSize);
+        fz += sycl::shift_group_left(sg, fz, c_clSize);
         if (tidxj & 1)
         {
             fx = fy;

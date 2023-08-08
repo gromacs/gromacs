@@ -300,13 +300,13 @@ auto makeSolveKernel(sycl::handler& cgh,
             sycl::sub_group sg = itemIdx.get_sub_group();
 
             /* Making pair sums */
-            virxx += sycl_2020::shift_left(sg, virxx, 1);
-            viryy += sycl_2020::shift_right(sg, viryy, 1);
-            virzz += sycl_2020::shift_left(sg, virzz, 1);
-            virxy += sycl_2020::shift_right(sg, virxy, 1);
-            virxz += sycl_2020::shift_left(sg, virxz, 1);
-            viryz += sycl_2020::shift_right(sg, viryz, 1);
-            energy += sycl_2020::shift_left(sg, energy, 1);
+            virxx += sycl::shift_group_left(sg, virxx, 1);
+            viryy += sycl::shift_group_right(sg, viryy, 1);
+            virzz += sycl::shift_group_left(sg, virzz, 1);
+            virxy += sycl::shift_group_right(sg, virxy, 1);
+            virxz += sycl::shift_group_left(sg, virxz, 1);
+            viryz += sycl::shift_group_right(sg, viryz, 1);
+            energy += sycl::shift_group_left(sg, energy, 1);
             if (threadLocalId & 1)
             {
                 virxx = viryy; // virxx now holds virxx and viryy pair sums
@@ -315,10 +315,10 @@ auto makeSolveKernel(sycl::handler& cgh,
             }
 
             /* Making quad sums */
-            virxx += sycl_2020::shift_left(sg, virxx, 2);
-            virzz += sycl_2020::shift_right(sg, virzz, 2);
-            virxz += sycl_2020::shift_left(sg, virxz, 2);
-            energy += sycl_2020::shift_right(sg, energy, 2);
+            virxx += sycl::shift_group_left(sg, virxx, 2);
+            virzz += sycl::shift_group_right(sg, virzz, 2);
+            virxz += sycl::shift_group_left(sg, virxz, 2);
+            energy += sycl::shift_group_right(sg, energy, 2);
             if (threadLocalId & 2)
             {
                 virxx = virzz; // virxx now holds quad sums of virxx, virxy, virzz and virxy
@@ -326,8 +326,8 @@ auto makeSolveKernel(sycl::handler& cgh,
             }
 
             /* Making octet sums */
-            virxx += sycl_2020::shift_left(sg, virxx, 4);
-            virxz += sycl_2020::shift_right(sg, virxz, 4);
+            virxx += sycl::shift_group_left(sg, virxx, 4);
+            virxz += sycl::shift_group_right(sg, virxz, 4);
             if (threadLocalId & 4)
             {
                 virxx = virxz; // virxx now holds all 7 components' octet sums + unused paddings
@@ -337,7 +337,7 @@ auto makeSolveKernel(sycl::handler& cgh,
 #pragma unroll
             for (int delta = 8; delta < width; delta <<= 1)
             {
-                virxx += sycl_2020::shift_left(sg, virxx, delta);
+                virxx += sycl::shift_group_left(sg, virxx, delta);
             }
             /* Now first 7 threads of each warp have the full output contributions in virxx */
 
@@ -377,7 +377,7 @@ auto makeSolveKernel(sycl::handler& cgh,
 #pragma unroll
                 for (int delta = stride; delta < subGroupSize; delta <<= 1)
                 {
-                    output += sycl_2020::shift_left(sg, output, delta);
+                    output += sycl::shift_group_left(sg, output, delta);
                 }
                 /* Final output */
                 if (validComponentIndex)

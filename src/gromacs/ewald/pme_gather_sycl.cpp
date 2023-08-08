@@ -118,15 +118,15 @@ inline void reduceAtomForces(sycl::nd_item<3>        itemIdx,
                   "TODO: rework for atomDataSize > subGroupSize (order 8 or larger)");
     static_assert(gmx::isPowerOfTwo(atomDataSize));
 
-    fx += sycl_2020::shift_left(sg, fx, 1);
-    fy += sycl_2020::shift_right(sg, fy, 1);
-    fz += sycl_2020::shift_left(sg, fz, 1);
+    fx += sycl::shift_group_left(sg, fx, 1);
+    fy += sycl::shift_group_right(sg, fy, 1);
+    fz += sycl::shift_group_left(sg, fz, 1);
     if (splineIndex & 1)
     {
         fx = fy;
     }
-    fx += sycl_2020::shift_left(sg, fx, 2);
-    fz += sycl_2020::shift_right(sg, fz, 2);
+    fx += sycl::shift_group_left(sg, fx, 2);
+    fz += sycl::shift_group_right(sg, fz, 2);
     if (splineIndex & 2)
     {
         fx = fz;
@@ -135,7 +135,7 @@ inline void reduceAtomForces(sycl::nd_item<3>        itemIdx,
     // We have to just further reduce those groups of 4
     for (int delta = 4; delta < atomDataSize; delta *= 2)
     {
-        fx += sycl_2020::shift_left(sg, fx, delta);
+        fx += sycl::shift_group_left(sg, fx, delta);
     }
     const int dimIndex = splineIndex;
     if (dimIndex < DIM)

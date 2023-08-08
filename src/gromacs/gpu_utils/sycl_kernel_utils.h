@@ -383,62 +383,6 @@ __device__ __host__
 namespace sycl_2020
 {
 #if GMX_SYCL_HIPSYCL
-__device__ __host__ static inline float shift_left(sycl::sub_group, float var, sycl::sub_group::linear_id_type delta)
-{
-    // No sycl::sub_group::shift_left / shuffle_down in hipSYCL yet
-#    ifdef SYCL_DEVICE_ONLY
-#        if defined(HIPSYCL_PLATFORM_CUDA) && defined(__HIPSYCL_ENABLE_CUDA_TARGET__)
-    return __shfl_down_sync(c_cudaFullWarpMask, var, delta);
-#        elif defined(HIPSYCL_PLATFORM_ROCM) && defined(__HIPSYCL_ENABLE_HIP_TARGET__)
-    // Do we need more ifdefs? https://github.com/ROCm-Developer-Tools/HIP/issues/1491
-    return __shfl_down(var, delta);
-#        else
-#            error "Unsupported hipSYCL target"
-#        endif
-#    else
-    // Should never be called
-    GMX_UNUSED_VALUE(var);
-    GMX_UNUSED_VALUE(delta);
-    SYCL_ASSERT(false);
-    return NAN;
-#    endif
-}
-#elif GMX_SYCL_DPCPP
-static inline float shift_left(sycl::sub_group sg, float var, sycl::sub_group::linear_id_type delta)
-{
-    return sg.shuffle_down(var, delta);
-}
-#endif
-
-#if GMX_SYCL_HIPSYCL
-__device__ __host__ static inline float shift_right(sycl::sub_group, float var, sycl::sub_group::linear_id_type delta)
-{
-    // No sycl::sub_group::shift_right / shuffle_up in hipSYCL yet
-#    ifdef SYCL_DEVICE_ONLY
-#        if defined(HIPSYCL_PLATFORM_CUDA) && defined(__HIPSYCL_ENABLE_CUDA_TARGET__)
-    return __shfl_up_sync(c_cudaFullWarpMask, var, delta);
-#        elif defined(HIPSYCL_PLATFORM_ROCM) && defined(__HIPSYCL_ENABLE_HIP_TARGET__)
-    // Do we need more ifdefs? https://github.com/ROCm-Developer-Tools/HIP/issues/1491
-    return __shfl_up(var, delta);
-#        else
-#            error "Unsupported hipSYCL target"
-#        endif
-#    else
-    // Should never be called
-    SYCL_ASSERT(false);
-    GMX_UNUSED_VALUE(var);
-    GMX_UNUSED_VALUE(delta);
-    return NAN;
-#    endif
-}
-#elif GMX_SYCL_DPCPP
-static inline float shift_right(sycl::sub_group sg, float var, sycl::sub_group::linear_id_type delta)
-{
-    return sg.shuffle_up(var, delta);
-}
-#endif
-
-#if GMX_SYCL_HIPSYCL
 /*! \brief Polyfill for sycl::isfinite missing from hipSYCL
  *
  * Does not follow GROMACS style because it should follow the name for
