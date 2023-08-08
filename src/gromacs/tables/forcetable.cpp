@@ -874,7 +874,7 @@ static void fill_table(t_tabledata* td, int tp, const interaction_const_t* ic, g
                 Vcut = -rc6;
                 break;
             case etabLJ6Ewald:
-                Vcut = -rc6 * exp(-ewclj * ewclj * rc2)
+                Vcut = -rc6 * std::exp(-ewclj * ewclj * rc2)
                        * (1 + ewclj * ewclj * rc2 + gmx::power4(ewclj) * rc2 * rc2 / 2);
                 break;
             case etabLJ12:
@@ -893,7 +893,7 @@ static void fill_table(t_tabledata* td, int tp, const interaction_const_t* ic, g
                 /* No need for preventing the usage of modifiers with RF */
                 Vcut = 0.0;
                 break;
-            case etabEXPMIN: Vcut = exp(-rc); break;
+            case etabEXPMIN: Vcut = std::exp(-rc); break;
             default:
                 gmx_fatal(FARGS,
                           "Cannot apply new potential-shift modifier to interaction type '%s' yet. "
@@ -1001,19 +1001,19 @@ static void fill_table(t_tabledata* td, int tp, const interaction_const_t* ic, g
             case etabEwald:
             case etabEwaldSwitch:
                 Vtab = std::erfc(ewc * r) / r;
-                Ftab = std::erfc(ewc * r) / r2 + exp(-(ewc * ewc * r2)) * ewc * M_2_SQRTPI / r;
+                Ftab = std::erfc(ewc * r) / r2 + std::exp(-(ewc * ewc * r2)) * ewc * M_2_SQRTPI / r;
                 break;
             case etabEwaldUser:
             case etabEwaldUserSwitch:
                 /* Only calculate the negative of the reciprocal space contribution */
                 Vtab = -std::erf(ewc * r) / r;
-                Ftab = -std::erf(ewc * r) / r2 + exp(-(ewc * ewc * r2)) * ewc * M_2_SQRTPI / r;
+                Ftab = -std::erf(ewc * r) / r2 + std::exp(-(ewc * ewc * r2)) * ewc * M_2_SQRTPI / r;
                 break;
             case etabLJ6Ewald:
-                Vtab = -r6 * exp(-ewclj * ewclj * r2)
+                Vtab = -r6 * std::exp(-ewclj * ewclj * r2)
                        * (1 + ewclj * ewclj * r2 + gmx::power4(ewclj) * r2 * r2 / 2);
                 Ftab = 6.0 * Vtab / r
-                       - r6 * exp(-ewclj * ewclj * r2) * gmx::power5(ewclj) * ewclj * r2 * r2 * r;
+                       - r6 * std::exp(-ewclj * ewclj * r2) * gmx::power5(ewclj) * ewclj * r2 * r2 * r;
                 break;
             case etabRF:
             case etabRF_ZERO:
@@ -1026,7 +1026,7 @@ static void fill_table(t_tabledata* td, int tp, const interaction_const_t* ic, g
                 }
                 break;
             case etabEXPMIN:
-                expr = exp(-r);
+                expr = std::exp(-r);
                 Vtab = expr;
                 Ftab = expr;
                 break;

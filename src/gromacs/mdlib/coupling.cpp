@@ -523,11 +523,11 @@ static void NHC_trotter(const t_grpopts*      opts,
                 ivxi[nh - 1] += 0.25 * dt * GQ[nh - 1];
                 for (j = nh - 1; j > 0; j--)
                 {
-                    Efac        = exp(-0.125 * dt * ivxi[j]);
+                    Efac        = std::exp(-0.125 * dt * ivxi[j]);
                     ivxi[j - 1] = Efac * (ivxi[j - 1] * Efac + 0.25 * dt * GQ[j - 1]);
                 }
 
-                Efac = exp(-0.5 * dt * ivxi[0]);
+                Efac = std::exp(-0.5 * dt * ivxi[0]);
                 if (bBarostat)
                 {
                     *veta *= Efac;
@@ -552,7 +552,7 @@ static void NHC_trotter(const t_grpopts*      opts,
 
                 for (j = 0; j < nh - 1; j++)
                 {
-                    Efac    = exp(-0.125 * dt * ivxi[j + 1]);
+                    Efac    = std::exp(-0.125 * dt * ivxi[j + 1]);
                     ivxi[j] = Efac * (ivxi[j] * Efac + 0.25 * dt * GQ[j]);
                     if (iQinv[j + 1] > 0)
                     {
@@ -2169,7 +2169,7 @@ real vrescale_resamplekin(real kk, real sigma, real ndeg, real taut, int64_t ste
 
     if (taut > 0.1)
     {
-        factor = exp(-1.0 / taut);
+        factor = std::exp(-1.0 / taut);
     }
     else
     {

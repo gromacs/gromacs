@@ -134,7 +134,7 @@ static double myexp(double x, double A, double tau)
     {
         return 0;
     }
-    return A * exp(-x / tau);
+    return A * std::exp(-x / tau);
 }
 
 /*! \brief Compute y=(a0+a1)/2-(a0-a1)/2*erf((x-a2)/a3^2) */
@@ -170,15 +170,15 @@ static double safe_exp(double x)
     double exp_min = -exp_max;
     if (x <= exp_min)
     {
-        return exp(exp_min);
+        return std::exp(exp_min);
     }
     else if (x >= exp_max)
     {
-        return exp(exp_max);
+        return std::exp(exp_max);
     }
     else
     {
-        return exp(x);
+        return std::exp(x);
     }
 }
 
@@ -193,7 +193,7 @@ static double safe_expm1(double x)
     }
     else if (x >= exp_max)
     {
-        return exp(exp_max);
+        return std::exp(exp_max);
     }
     else
     {

@@ -693,7 +693,7 @@ static inline real gaussian_weight(rvec curr_x, const gmx_enfrotgrp* erg, int n)
     /* Define the sigma value */
     sigma = 0.7 * erg->rotg->slab_dist;
     /* Calculate the Gaussian value of slab n for position curr_x */
-    return norm * exp(-0.5 * gmx::square(calc_beta(curr_x, erg, n) / sigma));
+    return norm * std::exp(-0.5 * gmx::square(calc_beta(curr_x, erg, n) / sigma));
 }
 
 

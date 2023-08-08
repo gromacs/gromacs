@@ -644,7 +644,7 @@ extern double CMSF(gmx_structurefactors_t* gsf, int type, int nh, double lambda,
         tmp = c;
         for (i = 0; (i < 4); i++)
         {
-            tmp += a[i] * exp(-b[i] * k2);
+            tmp += a[i] * std::exp(-b[i] * k2);
         }
     }
     return tmp;

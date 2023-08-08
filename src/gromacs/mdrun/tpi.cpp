@@ -872,7 +872,7 @@ void LegacySimulator::do_tpi()
             else
             {
                 // Exponent argument is fine in SP range, but output can be in DP range
-                embU = exp(static_cast<double>(-beta * epot));
+                embU = std::exp(static_cast<double>(-beta * epot));
                 sum_embU += embU;
                 /* Determine the weighted energy contributions of each energy group */
                 e = 0;
@@ -1053,7 +1053,11 @@ void LegacySimulator::do_tpi()
         for (i = nbin - 1; i > 0; i--)
         {
             bUlogV = -i / invbinw + bU_logV_bin_limit - refvolshift + log(V_all / frame);
-            fprintf(fp_tpi, "%6.2f %10d %12.5e\n", bUlogV, roundToInt(bin[i]), bin[i] * exp(-bUlogV) * V_all / VembU_all);
+            fprintf(fp_tpi,
+                    "%6.2f %10d %12.5e\n",
+                    bUlogV,
+                    roundToInt(bin[i]),
+                    bin[i] * std::exp(-bUlogV) * V_all / VembU_all);
         }
         xvgrclose(fp_tpi);
     }

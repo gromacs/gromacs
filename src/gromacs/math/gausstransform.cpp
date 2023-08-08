@@ -147,10 +147,10 @@ void GaussianOn1DLattice::Impl::spread(double amplitude, real dx)
      * Requiring only two exp evaluations per spreading operation.
      *
      */
-    const double e1 = amplitude * exp(-0.5 * dx * dx / square(sigma_)) / (sqrt(2 * M_PI) * sigma_);
+    const double e1 = amplitude * std::exp(-0.5 * dx * dx / square(sigma_)) / (sqrt(2 * M_PI) * sigma_);
     spreadingResult_[numGridPointsForSpreadingHalfWidth_] = e1;
 
-    const double e2 = exp(dx / square(sigma_));
+    const double e2 = std::exp(dx / square(sigma_));
 
     double e2pow = e2; //< powers of e2, e2^offset
 

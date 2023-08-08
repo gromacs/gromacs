@@ -119,7 +119,8 @@ TEST(DensityFittingForce, pullsTowardsDerivative)
 
     const RVec result =
             forceEvaluator.evaluateForce({ gridCenter, 1. }, densityDerivative.asConstView());
-    real expected = -1 / sqrt(2 * 2 * 2 * M_PI * M_PI * M_PI) * exp(-0.5) * exp(-0.5) * exp(-0.5);
+    real expected = -1 / sqrt(2 * 2 * 2 * M_PI * M_PI * M_PI) * std::exp(-0.5) * std::exp(-0.5)
+                    * std::exp(-0.5);
 
     EXPECT_FLOAT_EQ(expected, result[XX]);
     EXPECT_FLOAT_EQ(expected, result[YY]);
