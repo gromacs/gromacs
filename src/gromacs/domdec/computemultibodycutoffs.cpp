@@ -318,8 +318,8 @@ void dd_bonded_cg_distance(const gmx::MDLogger&   mdlog,
                 *mtop.intermolecular_ilist, ddBondedChecking, x, inputrec.pbcType, box, &bd_2b, &bd_mb);
     }
 
-    *r_2b = sqrt(bd_2b.r2);
-    *r_mb = sqrt(bd_mb.r2);
+    *r_2b = std::sqrt(bd_2b.r2);
+    *r_mb = std::sqrt(bd_mb.r2);
 
     if (*r_2b > 0 || *r_mb > 0)
     {

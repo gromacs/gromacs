@@ -79,7 +79,7 @@ TEST_F(StructureSimilarityTest, StructureComparedToSelfHasZeroRho)
 
 TEST_F(StructureSimilarityTest, YieldsCorrectRMSD)
 {
-    EXPECT_REAL_EQ_TOL(sqrt(2.0), rmsdev(c_nAtoms, m_, x1_, x2_), defaultRealTolerance());
+    EXPECT_REAL_EQ_TOL(std::sqrt(2.0), rmsdev(c_nAtoms, m_, x1_, x2_), defaultRealTolerance());
 }
 
 TEST_F(StructureSimilarityTest, YieldsCorrectRho)
@@ -89,8 +89,9 @@ TEST_F(StructureSimilarityTest, YieldsCorrectRho)
 
 TEST_F(StructureSimilarityTest, YieldsCorrectRMSDWithIndex)
 {
-    EXPECT_REAL_EQ_TOL(
-            sqrt(2.0), rmsdev_ind(index_.size(), index_.data(), m_, x1_, x2_), defaultRealTolerance());
+    EXPECT_REAL_EQ_TOL(std::sqrt(2.0),
+                       rmsdev_ind(index_.size(), index_.data(), m_, x1_, x2_),
+                       defaultRealTolerance());
 }
 
 TEST_F(StructureSimilarityTest, YieldsCorrectRhoWidthIndex)

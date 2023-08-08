@@ -110,7 +110,7 @@ double v_q_ewald_lr(double beta, double r)
 {
     if (r == 0)
     {
-        return beta * 2 / sqrt(M_PI);
+        return beta * 2 / std::sqrt(M_PI);
     }
     else
     {
@@ -303,7 +303,7 @@ static double spline3_table_scale(double third_deriv_max, double x_scale, double
 
     /* Force tolerance: single precision accuracy */
     deriv_tol = GMX_FLOAT_EPS;
-    sc_deriv  = sqrt(third_deriv_max / (6 * 4 * deriv_tol * x_scale)) * x_scale;
+    sc_deriv  = std::sqrt(third_deriv_max / (6 * 4 * deriv_tol * x_scale)) * x_scale;
 
     /* Don't try to be more accurate on energy than the precision */
     func_tol = std::max(func_tol, static_cast<double>(GMX_REAL_EPS));

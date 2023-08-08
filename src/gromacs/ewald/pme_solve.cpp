@@ -273,7 +273,7 @@ calc_exponentials_lj(int start, int end, ArrayRef<real> r, ArrayRef<real> tmp2, 
     for (kx = start; kx < end; kx++)
     {
         mk       = tmp2[kx];
-        tmp2[kx] = sqrt(M_PI) * mk * std::erfc(mk);
+        tmp2[kx] = std::sqrt(M_PI) * mk * std::erfc(mk);
     }
 }
 #endif
@@ -622,7 +622,8 @@ int PmeSolve::solveLJYZX(const gmx_pme_t&              pme,
             my = (ky - ny);
         }
 
-        by = 3.0 * vol * pme.bsp_mod[YY][ky] / (M_PI * sqrt(M_PI) * ewaldcoeff * ewaldcoeff * ewaldcoeff);
+        by = 3.0 * vol * pme.bsp_mod[YY][ky]
+             / (M_PI * std::sqrt(M_PI) * ewaldcoeff * ewaldcoeff * ewaldcoeff);
 
         kz = iz + local_offset[ZZ];
 
@@ -662,7 +663,7 @@ int PmeSolve::solveLJYZX(const gmx_pme_t&              pme,
                 m2[kx]    = m2k;
                 denom[kx] = bz * by * pme.bsp_mod[XX][kx];
                 tmp1[kx]  = -factor * m2k;
-                tmp2[kx]  = sqrt(factor * m2k);
+                tmp2[kx]  = std::sqrt(factor * m2k);
             }
 
             for (kx = maxkx; kx < kxend; kx++)
@@ -679,7 +680,7 @@ int PmeSolve::solveLJYZX(const gmx_pme_t&              pme,
                 m2[kx]    = m2k;
                 denom[kx] = bz * by * pme.bsp_mod[XX][kx];
                 tmp1[kx]  = -factor * m2k;
-                tmp2[kx]  = sqrt(factor * m2k);
+                tmp2[kx]  = std::sqrt(factor * m2k);
             }
             /* Clear padding elements to avoid (harmless) fp exceptions */
             const int kxendSimd = roundUpToMultipleOfFactor<c_simdWidth>(kxend);
@@ -809,7 +810,7 @@ int PmeSolve::solveLJYZX(const gmx_pme_t&              pme,
                 m2[kx]    = m2k;
                 denom[kx] = bz * by * pme.bsp_mod[XX][kx];
                 tmp1[kx]  = -factor * m2k;
-                tmp2[kx]  = sqrt(factor * m2k);
+                tmp2[kx]  = std::sqrt(factor * m2k);
             }
 
             for (kx = maxkx; kx < kxend; kx++)
@@ -823,7 +824,7 @@ int PmeSolve::solveLJYZX(const gmx_pme_t&              pme,
                 m2[kx]    = m2k;
                 denom[kx] = bz * by * pme.bsp_mod[XX][kx];
                 tmp1[kx]  = -factor * m2k;
-                tmp2[kx]  = sqrt(factor * m2k);
+                tmp2[kx]  = std::sqrt(factor * m2k);
             }
             /* Clear padding elements to avoid (harmless) fp exceptions */
             const int kxendSimd = roundUpToMultipleOfFactor<c_simdWidth>(kxend);

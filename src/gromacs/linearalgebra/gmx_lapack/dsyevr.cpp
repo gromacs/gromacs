@@ -204,7 +204,7 @@ void F77_FUNC(dsyevr, DSYEVR)(const char* jobz,
     bignum = 1. / smlnum;
     rmin   = std::sqrt(smlnum);
 
-    d__1 = std::sqrt(bignum), d__2 = 1. / std::sqrt(sqrt(safmin));
+    d__1 = std::sqrt(bignum), d__2 = 1. / std::sqrt(std::sqrt(safmin));
     rmax = (d__1 < d__2) ? d__1 : d__2;
 
     iscale = 0;

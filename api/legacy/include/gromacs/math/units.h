@@ -55,7 +55,7 @@
 #endif
 
 #ifndef M_SQRT2
-#    define M_SQRT2 sqrt(2.0)
+#    define M_SQRT2 std::sqrt(2.0)
 #endif
 
 #ifndef M_1_PI

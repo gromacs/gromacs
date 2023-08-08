@@ -214,9 +214,9 @@ static real free_energy_evaluate_single(real                                    
     c12[0] = c12A;
     c12[1] = c12B;
 
-    const real rpm2 = r2 * r2;   /* r4 */
-    const real rp   = rpm2 * r2; /* r6 */
-    const real r    = sqrt(r2);  /* r1 */
+    const real rpm2 = r2 * r2;       /* r4 */
+    const real rp   = rpm2 * r2;     /* r6 */
+    const real r    = std::sqrt(r2); /* r1 */
 
     /* Loop over state A(0) and B(1) */
     for (i = 0; i < 2; i++)
@@ -676,7 +676,7 @@ static real do_pairs_general(int                                 ftype,
              * disadvantage is that the warning is printed twice */
             if (!warned_rlimit)
             {
-                warning_rlimit(x, ai, aj, global_atom_index, sqrt(r2), fr->pairsTable->interactionRange);
+                warning_rlimit(x, ai, aj, global_atom_index, std::sqrt(r2), fr->pairsTable->interactionRange);
                 warned_rlimit = TRUE;
             }
             continue;

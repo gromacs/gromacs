@@ -324,7 +324,7 @@ static double lmc_vac_2_parm(double x, const double* a)
     em  = safe_exp(-v);
     if (det != 0)
     {
-        omega = sqrt(std::fabs(det));
+        omega = std::sqrt(std::fabs(det));
         wv    = std::min(omega * v, wv_max);
 
         if (det > 0)
@@ -845,7 +845,7 @@ real fit_acf(int                     ncorr,
         /* Generate more or less appropriate sigma's */
         for (i = 0; i < ncorr; i++)
         {
-            sig[i] = sqrt(ct_estimate + dt * i);
+            sig[i] = std::sqrt(ct_estimate + dt * i);
         }
 
         nf_int    = std::min(ncorr, static_cast<int>((tStart + 1e-4) / dt));

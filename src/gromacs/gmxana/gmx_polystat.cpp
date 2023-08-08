@@ -407,7 +407,7 @@ int gmx_polystat(int argc, char* argv[])
                 "%10.3f %8.4f %8.4f %8.4f %8.4f %8.4f",
                 t * output_env_get_time_factor(oenv),
                 std::sqrt(sum_eed2),
-                sqrt(sum_gyro),
+                std::sqrt(sum_gyro),
                 std::sqrt(eig[ord[0]]),
                 std::sqrt(eig[ord[1]]),
                 std::sqrt(eig[ord[2]]));

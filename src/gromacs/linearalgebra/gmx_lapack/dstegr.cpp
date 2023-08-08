@@ -158,7 +158,7 @@ void F77_FUNC(dstegr, DSTEGR)(const char* jobz,
     smlnum = safmin / eps;
     bignum = 1. / smlnum;
     rmin   = std::sqrt(smlnum);
-    d__1 = std::sqrt(bignum), d__2 = 1. / std::sqrt(sqrt(safmin));
+    d__1 = std::sqrt(bignum), d__2 = 1. / std::sqrt(std::sqrt(safmin));
     rmax  = (d__1 < d__2) ? d__1 : d__2;
     scale = 1.;
     tnrm  = F77_FUNC(dlanst, DLANST)("M", n, &d__[1], &e[1]);

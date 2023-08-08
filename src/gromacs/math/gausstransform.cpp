@@ -114,7 +114,7 @@ GaussianOn1DLattice::Impl::Impl(int numGridPointsForSpreadingHalfWidth, real sig
                      static_cast<int>(std::floor(4 * square(sigma) * c_logMaxFloat)) - 1);
     maxEvaluatedSpreadDistance_ =
             std::min(maxEvaluatedSpreadDistance_,
-                     static_cast<int>(std::floor(sigma * sqrt(-2.0 * c_logMinFloat))) - 1);
+                     static_cast<int>(std::floor(sigma * std::sqrt(-2.0 * c_logMinFloat))) - 1);
 
     std::generate_n(
             std::back_inserter(e3_), maxEvaluatedSpreadDistance_ + 1, [sigma, latticeIndex = 0]() mutable {
@@ -147,7 +147,8 @@ void GaussianOn1DLattice::Impl::spread(double amplitude, real dx)
      * Requiring only two exp evaluations per spreading operation.
      *
      */
-    const double e1 = amplitude * std::exp(-0.5 * dx * dx / square(sigma_)) / (sqrt(2 * M_PI) * sigma_);
+    const double e1 =
+            amplitude * std::exp(-0.5 * dx * dx / square(sigma_)) / (std::sqrt(2 * M_PI) * sigma_);
     spreadingResult_[numGridPointsForSpreadingHalfWidth_] = e1;
 
     const double e2 = std::exp(dx / square(sigma_));

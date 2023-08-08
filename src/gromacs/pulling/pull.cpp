@@ -527,8 +527,8 @@ static void low_get_pull_coord_dr(const pull_t&            pull,
                   "box size (%f).\n%s",
                   pcrd.params_.group[groupIndex0],
                   pcrd.params_.group[groupIndex1],
-                  sqrt(dr2),
-                  sqrt(0.98 * 0.98 * max_dist2),
+                  std::sqrt(dr2),
+                  std::sqrt(0.98 * 0.98 * max_dist2),
                   pcrd.params_.eGeom == PullGroupGeometry::Direction
                           ? "You might want to consider using \"pull-geometry = "
                             "direction-periodic\" instead.\n"

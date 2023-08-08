@@ -420,7 +420,7 @@ void rad_project(const t_edpar& edi, rvec* x, t_eigvec* vec)
         vec->refproj[i] = projectx(edi, x, vec->vec[i]);
         rad += gmx::square((vec->refproj[i] - vec->xproj[i]));
     }
-    vec->radius = sqrt(rad);
+    vec->radius = std::sqrt(rad);
 
     /* Add average positions */
     for (i = 0; i < edi.sav.nr; i++)
@@ -491,7 +491,7 @@ real calc_radius(const t_eigvec& vec)
         rad += gmx::square((vec.refproj[i] - vec.xproj[i]));
     }
 
-    return sqrt(rad);
+    return std::sqrt(rad);
 }
 } // namespace
 
@@ -1366,7 +1366,7 @@ static void init_edi(const gmx_mtop_t& mtop, t_edpar* edi)
         edi->sav.m[i] = mtopGetAtomMass(mtop, edi->sav.anrs[i], &molb);
         if (edi->pcamas)
         {
-            edi->sav.sqrtm[i] = sqrt(edi->sav.m[i]);
+            edi->sav.sqrtm[i] = std::sqrt(edi->sav.m[i]);
         }
         else
         {
@@ -1970,7 +1970,7 @@ static real rmsd_from_structure(rvec*           x, /* The positions under consid
     }
 
     rmsd /= static_cast<real>(s->nr);
-    rmsd = sqrt(rmsd);
+    rmsd = std::sqrt(rmsd);
 
     return rmsd;
 }
@@ -2133,7 +2133,7 @@ static void do_radfix(rvec* xcoll, t_edpar* edi)
         rad += gmx::square(proj[i] - edi->vecs.radfix.refproj[i]);
     }
 
-    rad   = sqrt(rad);
+    rad   = std::sqrt(rad);
     ratio = (edi->vecs.radfix.stpsz[0] + edi->vecs.radfix.radius) / rad - 1.0;
     edi->vecs.radfix.radius += edi->vecs.radfix.stpsz[0];
 
@@ -2177,7 +2177,7 @@ static void do_radacc(rvec* xcoll, t_edpar* edi)
         proj[i] = projectx(*edi, xcoll, edi->vecs.radacc.vec[i]);
         rad += gmx::square(proj[i] - edi->vecs.radacc.refproj[i]);
     }
-    rad = sqrt(rad);
+    rad = std::sqrt(rad);
 
     /* only correct when radius decreased */
     if (rad < edi->vecs.radacc.radius)
@@ -2249,7 +2249,7 @@ static void do_radcon(rvec* xcoll, t_edpar* edi)
         loc->proj[i] = projectx(*edi, xcoll, edi->vecs.radcon.vec[i]);
         rad += gmx::square(loc->proj[i] - edi->vecs.radcon.refproj[i]);
     }
-    rad = sqrt(rad);
+    rad = std::sqrt(rad);
     /* only correct when radius increased */
     if (rad > edi->vecs.radcon.radius)
     {

@@ -120,7 +120,7 @@ static void constr_recur(const ListOfLists<int>&        at2con,
                             "Found longer constraint distance: r0 %5.3f r1 %5.3f rmax %5.3f\n",
                             rn0,
                             rn1,
-                            sqrt(*r2max));
+                            std::sqrt(*r2max));
                     for (int a1 = 0; a1 < depth; a1++)
                     {
                         fprintf(debug,
@@ -191,7 +191,7 @@ static real constr_r_max_moltype(const gmx_moltype_t*           molt,
     }
     if (ir->efep == FreeEnergyPerturbationType::No)
     {
-        rmax = sqrt(r2maxA);
+        rmax = std::sqrt(r2maxA);
     }
     else
     {
@@ -209,7 +209,7 @@ static real constr_r_max_moltype(const gmx_moltype_t*           molt,
         {
             lam0 += ir->init_step * ir->fepvals->delta_lambda;
         }
-        rmax = (1 - lam0) * sqrt(r2maxA) + lam0 * sqrt(r2maxB);
+        rmax = (1 - lam0) * std::sqrt(r2maxA) + lam0 * std::sqrt(r2maxB);
         if (EI_DYNAMICS(ir->eI))
         {
             lam1 = ir->fepvals->init_lambda + (ir->init_step + ir->nsteps) * ir->fepvals->delta_lambda;

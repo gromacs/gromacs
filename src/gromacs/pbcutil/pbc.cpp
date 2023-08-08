@@ -469,7 +469,7 @@ static void low_set_pbc(t_pbc* pbc, PbcType pbcType, const ivec dd_pbc, const ma
             if (debug)
             {
                 pr_rvecs(debug, 0, "Box", box, DIM);
-                fprintf(debug, "max cutoff %.3f\n", sqrt(pbc->max_cutoff2));
+                fprintf(debug, "max cutoff %.3f\n", std::sqrt(pbc->max_cutoff2));
             }
             /* We will only need single shifts here */
             for (int kk = 0; kk < 3; kk++)
@@ -576,8 +576,8 @@ static void low_set_pbc(t_pbc* pbc, PbcType pbcType, const ivec dd_pbc, const ma
                                                     i,
                                                     j,
                                                     k,
-                                                    sqrt(d2old),
-                                                    sqrt(d2new),
+                                                    std::sqrt(d2old),
+                                                    std::sqrt(d2new),
                                                     trial[XX],
                                                     trial[YY],
                                                     trial[ZZ],

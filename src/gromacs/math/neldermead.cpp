@@ -226,7 +226,7 @@ real NelderMeadSimplex::orientedLength() const
                 });
         result = std::max(result, thisLength);
     }
-    return sqrt(result);
+    return std::sqrt(result);
 }
 
 void NelderMeadSimplex::updateCentroidAndReflectionPoint()
