@@ -310,22 +310,22 @@ auto pmeGatherKernel(sycl::handler& cgh,
     constexpr int gridlineIndicesSize = atomsPerBlock * DIM;
 
     // Gridline indices, ivec
-    sycl_2020::local_accessor<int, 1> sm_gridlineIndices(sycl::range<1>(atomsPerBlock * DIM), cgh);
+    sycl::local_accessor<int, 1> sm_gridlineIndices(sycl::range<1>(atomsPerBlock * DIM), cgh);
     // Spline values
-    sycl_2020::local_accessor<float, 1> sm_theta(sycl::range<1>(atomsPerBlock * DIM * order), cgh);
+    sycl::local_accessor<float, 1> sm_theta(sycl::range<1>(atomsPerBlock * DIM * order), cgh);
     // Spline derivatives
-    sycl_2020::local_accessor<float, 1> sm_dtheta(sycl::range<1>(atomsPerBlock * DIM * order), cgh);
+    sycl::local_accessor<float, 1> sm_dtheta(sycl::range<1>(atomsPerBlock * DIM * order), cgh);
     // Coefficients prefetch cache
-    sycl_2020::local_accessor<float, 1> sm_coefficients(sycl::range<1>(atomsPerBlock), cgh);
+    sycl::local_accessor<float, 1> sm_coefficients(sycl::range<1>(atomsPerBlock), cgh);
     // Coordinates prefetch cache
-    sycl_2020::local_accessor<Float3, 1> sm_coordinates(sycl::range<1>(atomsPerBlock), cgh);
+    sycl::local_accessor<Float3, 1> sm_coordinates(sycl::range<1>(atomsPerBlock), cgh);
     // Reduction of partial force contributions
-    sycl_2020::local_accessor<Float3, 1> sm_forces(sycl::range<1>(atomsPerBlock), cgh);
+    sycl::local_accessor<Float3, 1> sm_forces(sycl::range<1>(atomsPerBlock), cgh);
 
     auto sm_fractCoords = [&]() {
         if constexpr (!readGlobal)
         {
-            return sycl_2020::local_accessor<float, 1>(sycl::range<1>(atomsPerBlock * DIM), cgh);
+            return sycl::local_accessor<float, 1>(sycl::range<1>(atomsPerBlock * DIM), cgh);
         }
         else
         {

@@ -126,18 +126,18 @@ constexpr bool skipKernelCompilation()
     return false;
 }
 
-template<typename T, sycl_2020::memory_scope MemoryScope, sycl::access::address_space AddressSpace>
+template<typename T, sycl::memory_scope MemoryScope, sycl::access::address_space AddressSpace>
 static inline void atomicAddDefault(T& val, const T delta)
 {
-    using sycl_2020::memory_order;
-    sycl_2020::atomic_ref<T, memory_order::relaxed, MemoryScope, AddressSpace> ref(val);
+    using sycl::memory_order;
+    sycl::atomic_ref<T, memory_order::relaxed, MemoryScope, AddressSpace> ref(val);
     ref.fetch_add(delta);
 }
 
 /*! \brief Convenience wrapper to do atomic addition to a global buffer.
  */
 template<typename T,
-         sycl_2020::memory_scope     MemoryScope  = sycl_2020::memory_scope::device,
+         sycl::memory_scope          MemoryScope  = sycl::memory_scope::device,
          sycl::access::address_space AddressSpace = sycl::access::address_space::global_space>
 static inline void atomicFetchAdd(T& val, const T delta)
 {
@@ -166,13 +166,12 @@ static inline void atomicFetchAdd(T& val, const T delta)
 template<typename T>
 static inline void atomicFetchAddLocal(T& val, const T delta)
 {
-    atomicFetchAdd<T, sycl_2020::memory_scope::work_group, sycl::access::address_space::local_space>(
-            val, delta);
+    atomicFetchAdd<T, sycl::memory_scope::work_group, sycl::access::address_space::local_space>(val, delta);
 }
 
 /*! \brief Convenience wrapper to do atomic loads from a global buffer.
  */
-template<typename T, sycl_2020::memory_scope MemoryScope = sycl_2020::memory_scope::device>
+template<typename T, sycl::memory_scope MemoryScope = sycl::memory_scope::device>
 static inline T atomicLoad(T& val)
 {
 #if GMX_SYCL_HIPSYCL && GMX_HIPSYCL_HAVE_CUDA_TARGET
@@ -189,8 +188,7 @@ static inline T atomicLoad(T& val)
     return val;
 #else
     using sycl::access::address_space;
-    sycl_2020::atomic_ref<T, sycl_2020::memory_order::relaxed, MemoryScope, address_space::global_space> ref(
-            val);
+    sycl::atomic_ref<T, sycl::memory_order::relaxed, MemoryScope, address_space::global_space> ref(val);
     return ref.load();
 #endif
 }

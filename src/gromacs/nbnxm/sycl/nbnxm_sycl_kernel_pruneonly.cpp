@@ -75,7 +75,7 @@ auto nbnxmKernelPruneOnly(sycl::handler& cgh,
                           const int   part)
 {
     /* shmem buffer for i x+q pre-loading */
-    sycl_2020::local_accessor<Float4, 1> sm_xq(
+    sycl::local_accessor<Float4, 1> sm_xq(
             sycl::range<1>(c_nbnxnGpuNumClusterPerSupercluster * c_clSize), cgh);
 
     constexpr int warpSize = c_clSize * c_splitClSize;

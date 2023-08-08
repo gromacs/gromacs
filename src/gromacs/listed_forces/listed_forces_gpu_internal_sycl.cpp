@@ -897,7 +897,7 @@ auto bondedKernel(sycl::handler&                   cgh,
 
     const auto electrostaticsScaleFactor = kernelParams.electrostaticsScaleFactor;
 
-    sycl_2020::local_accessor<Float3, 1> sm_fShiftLoc{ sycl::range<1>(c_numShiftVectors), cgh };
+    sycl::local_accessor<Float3, 1> sm_fShiftLoc{ sycl::range<1>(c_numShiftVectors), cgh };
 
     const PbcAiuc pbcAiuc = kernelParams.pbcAiuc;
 

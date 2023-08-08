@@ -203,15 +203,15 @@ auto pmeSplineAndSpreadKernel(sycl::handler& cgh,
     constexpr int atomsPerWarp = subGroupSize / threadsPerAtomValue;
 
     // Gridline indices, ivec
-    sycl_2020::local_accessor<int, 1> sm_gridlineIndices(sycl::range<1>(atomsPerBlock * DIM), cgh);
+    sycl::local_accessor<int, 1> sm_gridlineIndices(sycl::range<1>(atomsPerBlock * DIM), cgh);
     // Charges
-    sycl_2020::local_accessor<float, 1> sm_coefficients(sycl::range<1>(atomsPerBlock), cgh);
+    sycl::local_accessor<float, 1> sm_coefficients(sycl::range<1>(atomsPerBlock), cgh);
     // Spline values
-    sycl_2020::local_accessor<float, 1> sm_theta(sycl::range<1>(atomsPerBlock * DIM * order), cgh);
-    auto                                sm_fractCoords = [&]() {
+    sycl::local_accessor<float, 1> sm_theta(sycl::range<1>(atomsPerBlock * DIM * order), cgh);
+    auto                           sm_fractCoords = [&]() {
         if constexpr (computeSplines)
         {
-            return sycl_2020::local_accessor<float, 1>(sycl::range<1>(atomsPerBlock * DIM), cgh);
+            return sycl::local_accessor<float, 1>(sycl::range<1>(atomsPerBlock * DIM), cgh);
         }
         else
         {

@@ -77,7 +77,7 @@ auto makeSolveKernel(sycl::handler& cgh,
     auto sm_virialAndEnergy = [&]() {
         if constexpr (computeEnergyAndVirial)
         {
-            return sycl_2020::local_accessor<float, 1>(sycl::range<1>(reductionBufferSize), cgh);
+            return sycl::local_accessor<float, 1>(sycl::range<1>(reductionBufferSize), cgh);
         }
         else
         {
@@ -253,7 +253,7 @@ auto makeSolveKernel(sycl::handler& cgh,
                 SYCL_ASSERT(m2k != 0.0F);
                 float denom = m2k * float(M_PI) * solveKernelParams.boxVolume * gm_splineValueMajor[kMajor]
                               * gm_splineValueMiddle[kMiddle] * gm_splineValueMinor[kMinor];
-                SYCL_ASSERT(sycl_2020::isfinite(denom));
+                SYCL_ASSERT(sycl::isfinite(denom));
                 SYCL_ASSERT(denom != 0.0F);
 
                 const float tmp1   = sycl::exp(-solveKernelParams.ewaldFactor * m2k);
@@ -382,7 +382,7 @@ auto makeSolveKernel(sycl::handler& cgh,
                 /* Final output */
                 if (validComponentIndex)
                 {
-                    SYCL_ASSERT(sycl_2020::isfinite(output));
+                    SYCL_ASSERT(sycl::isfinite(output));
                     atomicFetchAdd(gm_virialAndEnergy[componentIndex], output);
                 }
             }

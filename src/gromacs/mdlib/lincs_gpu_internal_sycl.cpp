@@ -130,10 +130,9 @@ auto lincsKernel(sycl::handler& cgh,
      * sm_threadVirial: six floats per thread.
      * So, without virials we need max(1*3, 2) floats, and with virials we need max(1*3, 2, 6) floats.
      */
-    static constexpr int                smBufferElementsPerThread = computeVirial ? 6 : 3;
-    sycl_2020::local_accessor<float, 1> sm_buffer{
-        sycl::range<1>(c_threadsPerBlock * smBufferElementsPerThread), cgh
-    };
+    static constexpr int           smBufferElementsPerThread = computeVirial ? 6 : 3;
+    sycl::local_accessor<float, 1> sm_buffer{ sycl::range<1>(c_threadsPerBlock * smBufferElementsPerThread),
+                                              cgh };
 
     return [=](sycl::nd_item<1> itemIdx) {
         const int threadIndex   = itemIdx.get_global_linear_id();

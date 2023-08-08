@@ -95,40 +95,6 @@
 #    endif
 #endif
 
-/* Exposing Intel-specific extensions in a manner compatible with SYCL2020 provisional spec.
- * Despite ICPX (up to 2021.3.0 at the least) having SYCL_LANGUAGE_VERSION=202001,
- * some parts of the spec are still in custom sycl::ONEAPI namespace (sycl::ext::oneapi in beta versions),
- * and some functions have different names. To make things easier to upgrade
- * in the future, this thin layer is added.
- * */
-namespace sycl_2020
-{
-namespace detail
-{
-#if GMX_SYCL_DPCPP && defined(__INTEL_LLVM_COMPILER) && (__INTEL_LLVM_COMPILER < 20220100)
-namespace origin = sycl::ext::oneapi;
-#elif GMX_SYCL_HIPSYCL || GMX_SYCL_DPCPP
-namespace origin = ::sycl;
-#else
-#    error "Unsupported version of SYCL compiler"
-#endif
-} // namespace detail
-
-using detail::origin::atomic_ref;
-using detail::origin::memory_order;
-using detail::origin::memory_scope;
-
-#if GMX_SYCL_DPCPP
-template<typename dataT, int dimensions = 1>
-using local_accessor =
-        sycl::accessor<dataT, dimensions, sycl::access_mode::read_write, sycl::target::local>;
-#elif GMX_SYCL_HIPSYCL
-template<typename dataT, int dimensions = 1>
-using local_accessor = sycl::local_accessor<dataT, dimensions>;
-#endif
-
-} // namespace sycl_2020
-
 /* Macro to optimize runtime performance by not recording unnecessary events.
  *
  * It relies on the availability of HIPSYCL_EXT_CG_PROPERTY_* extension, and is no-op for
