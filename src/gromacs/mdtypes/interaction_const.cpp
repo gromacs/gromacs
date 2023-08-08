@@ -223,9 +223,9 @@ static void force_switch_constants(real p, real rsw, real rc, shift_consts_t* sc
      * force/p   = r^-(p+1) + c2*r^2 + c3*r^3
      * potential = r^-p + c2/3*r^3 + c3/4*r^4 + cpot
      */
-    sc->c2   = ((p + 1) * rsw - (p + 4) * rc) / (pow(rc, p + 2) * gmx::square(rc - rsw));
-    sc->c3   = -((p + 1) * rsw - (p + 3) * rc) / (pow(rc, p + 2) * gmx::power3(rc - rsw));
-    sc->cpot = -pow(rc, -p) + p * sc->c2 / 3 * gmx::power3(rc - rsw)
+    sc->c2   = ((p + 1) * rsw - (p + 4) * rc) / (std::pow(rc, p + 2) * gmx::square(rc - rsw));
+    sc->c3   = -((p + 1) * rsw - (p + 3) * rc) / (std::pow(rc, p + 2) * gmx::power3(rc - rsw));
+    sc->cpot = -std::pow(rc, -p) + p * sc->c2 / 3 * gmx::power3(rc - rsw)
                + p * sc->c3 / 4 * gmx::power4(rc - rsw);
 }
 

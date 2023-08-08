@@ -284,7 +284,7 @@ static double lmc_pres_6_parm(double x, const double* a)
     if ((a[4] != 0) && (a[0] != 0))
     {
         double power = std::min(std::fabs(a[5]), pow_max);
-        term3        = a[0] * safe_exp(-pow((x / std::fabs(a[4])), power));
+        term3        = a[0] * safe_exp(-std::pow((x / std::fabs(a[4])), power));
     }
 
     term1 = 1 - a[0];
@@ -292,7 +292,7 @@ static double lmc_pres_6_parm(double x, const double* a)
     if ((term1 != 0) && (a[2] != 0))
     {
         double power = std::min(std::fabs(a[3]), pow_max);
-        term2        = safe_exp(-pow((x / std::fabs(a[2])), power)) * cos(x * std::fabs(a[1]));
+        term2        = safe_exp(-std::pow((x / std::fabs(a[2])), power)) * cos(x * std::fabs(a[1]));
     }
 
     return term1 * term2 + term3;

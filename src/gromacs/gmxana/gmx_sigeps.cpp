@@ -46,7 +46,7 @@
 
 static real pot(real x, real qq, real c6, real cn, int npow)
 {
-    return cn * pow(x, -npow) - c6 / gmx::power6(x) + qq * gmx::c_one4PiEps0 / x;
+    return cn * std::pow(x, -npow) - c6 / gmx::power6(x) + qq * gmx::c_one4PiEps0 / x;
 }
 
 static real bhpot(real x, real A, real B, real C)

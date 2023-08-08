@@ -180,7 +180,7 @@ static std::vector<real> make_p3m_bspline_moduli_dim(int n, int order)
         zai            = zarg * i;
         sinzai         = sin(zai);
         infl           = do_p3m_influence(sinzai, order);
-        bsp_mod[n + i] = infl * infl * pow(sinzai / zai, -2.0 * order);
+        bsp_mod[n + i] = infl * infl * std::pow(sinzai / zai, -2.0 * order);
     }
     bsp_mod[0] = 1.0;
     for (i = 1; i < maxk; i++)
@@ -188,7 +188,7 @@ static std::vector<real> make_p3m_bspline_moduli_dim(int n, int order)
         zai        = zarg * i;
         sinzai     = sin(zai);
         infl       = do_p3m_influence(sinzai, order);
-        bsp_mod[i] = infl * infl * pow(sinzai / zai, -2.0 * order);
+        bsp_mod[i] = infl * infl * std::pow(sinzai / zai, -2.0 * order);
     }
 
     return bsp_mod;

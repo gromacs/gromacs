@@ -1298,7 +1298,7 @@ real getDistanceScaleFactor(gmx_tng_trajectory_t in)
     {
         case 9: distanceScaleFactor = gmx::c_nano / gmx::c_nano; break;
         case 10: distanceScaleFactor = gmx::c_nano / gmx::c_angstrom; break;
-        default: distanceScaleFactor = pow(10.0, exp + 9.0);
+        default: distanceScaleFactor = std::pow(10.0, exp + 9.0);
     }
 
     return distanceScaleFactor;

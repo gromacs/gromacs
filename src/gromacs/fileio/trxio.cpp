@@ -234,7 +234,7 @@ int prec2ndec(real prec)
 
 real ndec2prec(int ndec)
 {
-    return pow(10.0, ndec);
+    return std::pow(10.0, ndec);
 }
 
 t_fileio* trx_get_fileio(t_trxstatus* status)

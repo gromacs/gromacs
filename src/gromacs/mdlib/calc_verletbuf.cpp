@@ -916,10 +916,10 @@ static real md3_force_switch(real p, real rswitch, real rc)
     real a, b;
     real md3_pot, md3_sw;
 
-    a = -((p + 4) * rc - (p + 1) * rswitch) / (pow(rc, p + 2) * gmx::square(rc - rswitch));
-    b = ((p + 3) * rc - (p + 1) * rswitch) / (pow(rc, p + 2) * gmx::power3(rc - rswitch));
+    a = -((p + 4) * rc - (p + 1) * rswitch) / (std::pow(rc, p + 2) * gmx::square(rc - rswitch));
+    b = ((p + 3) * rc - (p + 1) * rswitch) / (std::pow(rc, p + 2) * gmx::power3(rc - rswitch));
 
-    md3_pot = (p + 2) * (p + 1) * p * pow(rc, p + 3);
+    md3_pot = (p + 2) * (p + 1) * p * std::pow(rc, p + 3);
     md3_sw  = 2 * a + 6 * b * (rc - rswitch);
 
     return md3_pot + md3_sw;
@@ -978,7 +978,7 @@ static std::pair<pot_derivatives_t, pot_derivatives_t> getVdwDerivatives(const t
         // -dV/dr of g(br)*r^-6 [where g(x) = exp(-x^2)(1+x^2+x^4/2),
         // see LJ-PME equations in manual] and r^-reppow
         ljDisp.md1 = -std::exp(-br2) * (br6 + 3.0 * br4 + 6.0 * br2 + 6.0) * std::pow(r, -7.0);
-        ljRep.md1  = repPow * pow(r, -(repPow + 1));
+        ljRep.md1  = repPow * std::pow(r, -(repPow + 1));
         // The contribution of the higher derivatives is negligible
     }
     else

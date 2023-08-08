@@ -289,11 +289,13 @@ TEST_F(SimdFloatingpointTest, ldexp)
 {
     SimdReal one = setSimdRealFrom1R(1.0);
 
-    GMX_EXPECT_SIMD_REAL_EQ(setSimdRealFrom3R(pow(2.0, 60.0), pow(2.0, -41.0), pow(2.0, 54.0)),
-                            ldexp<MathOptimization::Unsafe>(one, setSimdIntFrom3I(60, -41, 54)));
+    GMX_EXPECT_SIMD_REAL_EQ(
+            setSimdRealFrom3R(std::pow(2.0, 60.0), std::pow(2.0, -41.0), std::pow(2.0, 54.0)),
+            ldexp<MathOptimization::Unsafe>(one, setSimdIntFrom3I(60, -41, 54)));
 #        if GMX_SIMD_HAVE_DOUBLE && GMX_DOUBLE
-    GMX_EXPECT_SIMD_REAL_EQ(setSimdRealFrom3R(pow(2.0, 587.0), pow(2.0, -462.0), pow(2.0, 672.0)),
-                            ldexp<MathOptimization::Unsafe>(one, setSimdIntFrom3I(587, -462, 672)));
+    GMX_EXPECT_SIMD_REAL_EQ(
+            setSimdRealFrom3R(std::pow(2.0, 587.0), std::pow(2.0, -462.0), std::pow(2.0, 672.0)),
+            ldexp<MathOptimization::Unsafe>(one, setSimdIntFrom3I(587, -462, 672)));
 #        endif
     // The default safe version must be able to handle very negative arguments too
     GMX_EXPECT_SIMD_REAL_EQ(setZero(), ldexp(one, setSimdIntFrom3I(-2000, -1000000, -1000000000)));

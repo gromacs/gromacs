@@ -379,7 +379,7 @@ static inline real eps_self(real m,     /* grid coordinate in certain direction 
 
 
     tmp  = 2.0 * M_PI * m / K;
-    tmp1 = pow(tmp, -n);
+    tmp1 = std::pow(tmp, -n);
     denom += tmp1;
 
     return 2.0 * M_PI * nom / denom * K;

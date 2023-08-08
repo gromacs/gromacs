@@ -504,7 +504,7 @@ bool AnalysisNeighborhoodSearchImpl::initGridCells(const matrix box, bool bSingl
         {
             break;
         }
-        targetsize   = pow(volume * 10 / posCount, static_cast<real>(1. / dimCount));
+        targetsize   = std::pow(volume * 10 / posCount, static_cast<real>(1. / dimCount));
         prevDimCount = dimCount;
     }
 

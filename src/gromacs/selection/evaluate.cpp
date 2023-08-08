@@ -1187,7 +1187,7 @@ void _gmx_sel_evaluate_arithmetic(gmx_sel_evaluate_t*                     data,
             case ARITH_NEG: val = -lval; break;
             case ARITH_MULT: val = lval * rval; break;
             case ARITH_DIV: val = lval / rval; break;
-            case ARITH_EXP: val = pow(lval, rval); break;
+            case ARITH_EXP: val = std::pow(lval, rval); break;
         }
         sel->v.u.r[i] = val;
         if (!(left->flags & SEL_SINGLEVAL))
