@@ -445,7 +445,7 @@ void F77_FUNC(sstebz, SSTEBZ)(const char* range,
             nwu += iwork[in + 1];
             iwoff = *m - iwork[1];
 
-            itmax = (int)((log(gu - gl + pivmin) - log(pivmin)) / log(2.)) + 2;
+            itmax = (int)((std::log(gu - gl + pivmin) - std::log(pivmin)) / std::log(2.)) + 2;
             F77_FUNC(slaebz, SLAEBZ)
             (&c__2,
              &itmax,

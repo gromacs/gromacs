@@ -674,7 +674,7 @@ static double calc_beta_max(real min_gaussian, real slab_dist)
         gmx_fatal(FARGS, "min_gaussian of flexible rotation groups must be <%g", GAUSS_NORM);
     }
 
-    return std::sqrt(-2.0 * sigma * sigma * log(min_gaussian / GAUSS_NORM));
+    return std::sqrt(-2.0 * sigma * sigma * std::log(min_gaussian / GAUSS_NORM));
 }
 
 
