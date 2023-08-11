@@ -142,7 +142,7 @@ static bool chk_hbonds(int i, t_atoms* pdba, rvec x[], const bool ad[], bool hbo
                 d2 = distance2(x[i], x[j]);
                 rvec_sub(x[i], xh, nh);
                 rvec_sub(x[aj], xh, oh);
-                a = gmx::c_rad2Deg * acos(cos_angle(nh, oh));
+                a = gmx::c_rad2Deg * std::acos(cos_angle(nh, oh));
                 if ((d2 < dist2) && (a > angle))
                 {
                     hbond[i] = TRUE;

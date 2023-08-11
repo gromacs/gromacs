@@ -90,8 +90,8 @@ static void gen_waterhydrogen(int nh, rvec xa[], rvec xh[], int* l)
 
 void calc_h_pos(int nht, rvec xa[], rvec xh[], int* l)
 {
-#define alfaH (acos(-1 / 3.0)) /* 109.47 degrees */
-#define alfaHpl (2 * M_PI / 3) /* 120 degrees */
+#define alfaH (std::acos(-1 / 3.0)) /* 109.47 degrees */
+#define alfaHpl (2 * M_PI / 3)      /* 120 degrees */
 #define distH 0.1
 
 #define alfaCOM (gmx::c_deg2Rad * 117)
@@ -175,26 +175,26 @@ void calc_h_pos(int nht, rvec xa[], rvec xh[], int* l)
         case 2: /* one single hydrogen, e.g. hydroxyl */
             for (d = 0; (d < DIM); d++)
             {
-                xH1[d] = xAI[d] + distH * std::sin(alfaH) * sb[d] - distH * cos(alfaH) * sij[d];
+                xH1[d] = xAI[d] + distH * std::sin(alfaH) * sb[d] - distH * std::cos(alfaH) * sij[d];
             }
             break;
         case 3: /* two planar hydrogens, e.g. -NH2 */
             for (d = 0; (d < DIM); d++)
             {
-                xH1[d] = xAI[d] - distH * std::sin(alfaHpl) * sb[d] - distH * cos(alfaHpl) * sij[d];
-                xH2[d] = xAI[d] + distH * std::sin(alfaHpl) * sb[d] - distH * cos(alfaHpl) * sij[d];
+                xH1[d] = xAI[d] - distH * std::sin(alfaHpl) * sb[d] - distH * std::cos(alfaHpl) * sij[d];
+                xH2[d] = xAI[d] + distH * std::sin(alfaHpl) * sb[d] - distH * std::cos(alfaHpl) * sij[d];
             }
             break;
         case 4: /* two or three tetrahedral hydrogens, e.g. -CH3 */
             for (d = 0; (d < DIM); d++)
             {
-                xH1[d] = xAI[d] + distH * std::sin(alfaH) * sb[d] - distH * cos(alfaH) * sij[d];
+                xH1[d] = xAI[d] + distH * std::sin(alfaH) * sb[d] - distH * std::cos(alfaH) * sij[d];
                 xH2[d] = (xAI[d] - distH * std::sin(alfaH) * 0.5 * sb[d]
-                          + distH * std::sin(alfaH) * s6 * sa[d] - distH * cos(alfaH) * sij[d]);
+                          + distH * std::sin(alfaH) * s6 * sa[d] - distH * std::cos(alfaH) * sij[d]);
                 if (xH3[XX] != NOTSET && xH3[YY] != NOTSET && xH3[ZZ] != NOTSET)
                 {
                     xH3[d] = (xAI[d] - distH * std::sin(alfaH) * 0.5 * sb[d]
-                              - distH * std::sin(alfaH) * s6 * sa[d] - distH * cos(alfaH) * sij[d]);
+                              - distH * std::sin(alfaH) * s6 * sa[d] - distH * std::cos(alfaH) * sij[d]);
                 }
             }
             break;
@@ -234,9 +234,9 @@ void calc_h_pos(int nht, rvec xa[], rvec xh[], int* l)
             for (d = 0; (d < DIM); d++)
             {
                 xH1[d] = xAI[d]
-                         + distH * (cos(alfaH / 2.0) * rBB[d] / bb + std::sin(alfaH / 2.0) * rNN[d] / nn);
+                         + distH * (std::cos(alfaH / 2.0) * rBB[d] / bb + std::sin(alfaH / 2.0) * rNN[d] / nn);
                 xH2[d] = xAI[d]
-                         + distH * (cos(alfaH / 2.0) * rBB[d] / bb - std::sin(alfaH / 2.0) * rNN[d] / nn);
+                         + distH * (std::cos(alfaH / 2.0) * rBB[d] / bb - std::sin(alfaH / 2.0) * rNN[d] / nn);
             }
             break;
         }
@@ -246,8 +246,10 @@ void calc_h_pos(int nht, rvec xa[], rvec xh[], int* l)
         case 8: /* two carboxyl oxygens, -COO- */
             for (d = 0; (d < DIM); d++)
             {
-                xH1[d] = xAI[d] - distOM * std::sin(alfaCOM) * sb[d] - distOM * cos(alfaCOM) * sij[d];
-                xH2[d] = xAI[d] + distOM * std::sin(alfaCOM) * sb[d] - distOM * cos(alfaCOM) * sij[d];
+                xH1[d] = xAI[d] - distOM * std::sin(alfaCOM) * sb[d]
+                         - distOM * std::cos(alfaCOM) * sij[d];
+                xH2[d] = xAI[d] + distOM * std::sin(alfaCOM) * sb[d]
+                         - distOM * std::cos(alfaCOM) * sij[d];
             }
             break;
         case 9: /* carboxyl oxygens and hydrogen, -COOH */
@@ -257,8 +259,9 @@ void calc_h_pos(int nht, rvec xa[], rvec xh[], int* l)
             /* first add two oxygens */
             for (d = 0; (d < DIM); d++)
             {
-                xH1[d] = xAI[d] - distO * std::sin(alfaCO) * sb[d] - distO * cos(alfaCO) * sij[d];
-                xH2[d] = xAI[d] + distOA * std::sin(alfaCOA) * sb[d] - distOA * cos(alfaCOA) * sij[d];
+                xH1[d] = xAI[d] - distO * std::sin(alfaCO) * sb[d] - distO * std::cos(alfaCO) * sij[d];
+                xH2[d] = xAI[d] + distOA * std::sin(alfaCOA) * sb[d]
+                         - distOA * std::cos(alfaCOA) * sij[d];
             }
 
             /* now use rule 2 to add hydrogen to 2nd oxygen */

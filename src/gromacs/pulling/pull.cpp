@@ -1313,7 +1313,7 @@ static PullCoordVectorForces calculateVectorForces(const pull_coord_work_t& pcrd
 
         double cos_theta, cos_theta2;
 
-        cos_theta  = cos(spatialData.value);
+        cos_theta  = std::cos(spatialData.value);
         cos_theta2 = gmx::square(cos_theta);
 
         /* The force at theta = 0, pi is undefined so we should not apply any force.
@@ -1358,7 +1358,7 @@ static PullCoordVectorForces calculateVectorForces(const pull_coord_work_t& pcrd
 
         /* The angle-axis force is exactly the same as the angle force (above) except that in
            this case the second vector (dr23) is replaced by the pull vector. */
-        cos_theta  = cos(spatialData.value);
+        cos_theta  = std::cos(spatialData.value);
         cos_theta2 = gmx::square(cos_theta);
 
         if (cos_theta2 < 1)

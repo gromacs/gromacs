@@ -800,7 +800,7 @@ static void calc_rotmat(const rvec vec,
     copy_rvec(vec, rot_vec);
 
     /* Precompute some variables: */
-    cosa   = cos(radangle);
+    cosa   = std::cos(radangle);
     sina   = std::sin(radangle);
     OMcosa = 1.0 - cosa;
     dumxy  = rot_vec[XX] * rot_vec[YY] * OMcosa;
@@ -1351,7 +1351,7 @@ static void align_with_z(rvec* s, /* Structure to align */
 
     /* Calculate the angle for the fitting procedure */
     cprod(axis, zet, rot_axis);
-    angle = acos(axis[2]);
+    angle = std::acos(axis[2]);
     if (angle < 0.0)
     {
         angle += M_PI;
@@ -1577,7 +1577,7 @@ static real opt_angle_analytic(rvec*      ref_s,
     }
 
     /* Determine the optimal rotation angle: */
-    opt_angle = (-1.0) * acos(rot_matrix[0][0]) * 180.0 / M_PI;
+    opt_angle = (-1.0) * std::acos(rot_matrix[0][0]) * 180.0 / M_PI;
     if (rot_matrix[0][1] < 0.0)
     {
         opt_angle = (-1.0) * opt_angle;

@@ -186,10 +186,11 @@ void matrix_convert(matrix box, const rvec vec, const rvec angleInDegrees)
     rvec angle;
     svmul(gmx::c_deg2Rad, angleInDegrees, angle);
     box[XX][XX] = vec[XX];
-    box[YY][XX] = vec[YY] * cos(angle[ZZ]);
+    box[YY][XX] = vec[YY] * std::cos(angle[ZZ]);
     box[YY][YY] = vec[YY] * std::sin(angle[ZZ]);
-    box[ZZ][XX] = vec[ZZ] * cos(angle[YY]);
-    box[ZZ][YY] = vec[ZZ] * (cos(angle[XX]) - cos(angle[YY]) * cos(angle[ZZ])) / std::sin(angle[ZZ]);
+    box[ZZ][XX] = vec[ZZ] * std::cos(angle[YY]);
+    box[ZZ][YY] = vec[ZZ] * (std::cos(angle[XX]) - std::cos(angle[YY]) * std::cos(angle[ZZ]))
+                  / std::sin(angle[ZZ]);
     box[ZZ][ZZ] =
             std::sqrt(gmx::square(vec[ZZ]) - box[ZZ][XX] * box[ZZ][XX] - box[ZZ][YY] * box[ZZ][YY]);
 }

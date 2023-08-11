@@ -61,7 +61,7 @@ static std::vector<real> make_dft_mod(gmx::ArrayRef<const double> data, int spli
         for (int j = 0; j < splineOrder; j++)
         {
             double arg = (2.0 * M_PI * i * (j + 1)) / ndata;
-            sc += data[j] * cos(arg);
+            sc += data[j] * std::cos(arg);
             ss += data[j] * std::sin(arg);
         }
         mod[i] = sc * sc + ss * ss;

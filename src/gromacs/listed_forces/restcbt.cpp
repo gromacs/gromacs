@@ -79,7 +79,7 @@ void compute_factors_restangles(int             type,
     k_bending          = forceparams[type].harmonic.krA;
     theta_equil        = forceparams[type].harmonic.rA * gmx::c_deg2Rad;
     theta_equil        = M_PI - theta_equil;
-    cosine_theta_equil = cos(theta_equil);
+    cosine_theta_equil = std::cos(theta_equil);
 
     c_ante = iprod(delta_ante, delta_ante);
     c_cros = iprod(delta_ante, delta_post);
@@ -135,7 +135,7 @@ void compute_factors_restrdihs(int             type,
 
     /* Read parameters phi0 and k_torsion */
     phi0        = forceparams[type].pdihs.phiA * gmx::c_deg2Rad;
-    cosine_phi0 = cos(phi0);
+    cosine_phi0 = std::cos(phi0);
     k_torsion   = forceparams[type].pdihs.cpA;
 
     /* Computation of the cosine of the dihedral angle. The scalar ("dot") product  method

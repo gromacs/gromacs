@@ -106,7 +106,7 @@ static void low_do_four_core(int nframes, real c1[], real cfour[], int nCos)
         case enCos:
             for (i = 0; (i < nframes); i++)
             {
-                data[0][i] = cos(c1[i]);
+                data[0][i] = std::cos(c1[i]);
             }
             break;
         case enSin:

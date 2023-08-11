@@ -72,40 +72,40 @@ static real safe_asin(real f)
 /* routines for dot distributions on the surface of the unit sphere */
 static real icosaeder_vertices(real* xus)
 {
-    const real rh = std::sqrt(1. - 2. * cos(TORAD(72.))) / (1. - cos(TORAD(72.)));
-    const real rg = cos(TORAD(72.)) / (1. - cos(TORAD(72.)));
+    const real rh = std::sqrt(1. - 2. * std::cos(TORAD(72.))) / (1. - std::cos(TORAD(72.)));
+    const real rg = std::cos(TORAD(72.)) / (1. - std::cos(TORAD(72.)));
     /* icosaeder vertices */
     xus[0]  = 0.;
     xus[1]  = 0.;
     xus[2]  = 1.;
-    xus[3]  = rh * cos(TORAD(72.));
+    xus[3]  = rh * std::cos(TORAD(72.));
     xus[4]  = rh * std::sin(TORAD(72.));
     xus[5]  = rg;
-    xus[6]  = rh * cos(TORAD(144.));
+    xus[6]  = rh * std::cos(TORAD(144.));
     xus[7]  = rh * std::sin(TORAD(144.));
     xus[8]  = rg;
-    xus[9]  = rh * cos(TORAD(216.));
+    xus[9]  = rh * std::cos(TORAD(216.));
     xus[10] = rh * std::sin(TORAD(216.));
     xus[11] = rg;
-    xus[12] = rh * cos(TORAD(288.));
+    xus[12] = rh * std::cos(TORAD(288.));
     xus[13] = rh * std::sin(TORAD(288.));
     xus[14] = rg;
     xus[15] = rh;
     xus[16] = 0;
     xus[17] = rg;
-    xus[18] = rh * cos(TORAD(36.));
+    xus[18] = rh * std::cos(TORAD(36.));
     xus[19] = rh * std::sin(TORAD(36.));
     xus[20] = -rg;
-    xus[21] = rh * cos(TORAD(108.));
+    xus[21] = rh * std::cos(TORAD(108.));
     xus[22] = rh * std::sin(TORAD(108.));
     xus[23] = -rg;
     xus[24] = -rh;
     xus[25] = 0;
     xus[26] = -rg;
-    xus[27] = rh * cos(TORAD(252.));
+    xus[27] = rh * std::cos(TORAD(252.));
     xus[28] = rh * std::sin(TORAD(252.));
     xus[29] = -rg;
-    xus[30] = rh * cos(TORAD(324.));
+    xus[30] = rh * std::cos(TORAD(324.));
     xus[31] = rh * std::sin(TORAD(324.));
     xus[32] = -rg;
     xus[33] = 0.;
@@ -133,7 +133,7 @@ divarc(real x1, real y1, real z1, real x2, real y2, real z2, int div1, int div2,
     real phi        = safe_asin(dd / std::sqrt(d1 * d2));
     phi             = phi * (static_cast<real>(div1)) / (static_cast<real>(div2));
     const real sphi = std::sin(phi);
-    const real cphi = cos(phi);
+    const real cphi = std::cos(phi);
     const real s    = (x1 * xd + y1 * yd + z1 * zd) / dd;
 
     const real x   = xd * s * (1. - cphi) / dd + x1 * cphi + (yd * z1 - y1 * zd) * sphi / dd;
@@ -168,7 +168,7 @@ static std::vector<real> ico_dot_arc(int densit)
     if (tess > 1)
     {
         int        tn = 12;
-        const real a  = rh * rh * 2. * (1. - cos(TORAD(72.)));
+        const real a  = rh * rh * 2. * (1. - std::cos(TORAD(72.)));
         /* calculate tessalation of icosaeder edges */
         for (int i = 0; i < 11; i++)
         {
@@ -348,7 +348,7 @@ static std::vector<real> ico_dot_dod(int densit)
 
     int tn = 12;
     /* square of the edge of an icosaeder */
-    a = rh * rh * 2. * (1. - cos(TORAD(72.)));
+    a = rh * rh * 2. * (1. - std::cos(TORAD(72.)));
     /* dodecaeder vertices */
     for (int i = 0; i < 10; i++)
     {
@@ -400,7 +400,8 @@ static std::vector<real> ico_dot_dod(int densit)
     {
         int tn = 32;
         /* square of the edge of an dodecaeder */
-        const real adod = 4. * (cos(TORAD(108.)) - cos(TORAD(120.))) / (1. - cos(TORAD(120.)));
+        const real adod =
+                4. * (std::cos(TORAD(108.)) - std::cos(TORAD(120.))) / (1. - std::cos(TORAD(120.)));
         /* square of the distance of two adjacent vertices of ico- and dodecaeder */
         const real ai_d = 2. * (1. - std::sqrt(1. - a / 3.));
 

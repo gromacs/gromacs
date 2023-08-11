@@ -387,7 +387,7 @@ int gmx_bundle(int argc, char* argv[])
             fprintf(flen, " %6g", bun.len[i]);
             fprintf(fdist, " %6g", norm(bun.mid[i]));
             fprintf(fz, " %6g", bun.mid[i][ZZ]);
-            fprintf(ftilt, " %6g", gmx::c_rad2Deg * acos(bun.dir[i][ZZ]));
+            fprintf(ftilt, " %6g", gmx::c_rad2Deg * std::acos(bun.dir[i][ZZ]));
             comp = bun.mid[i][XX] * bun.dir[i][XX] + bun.mid[i][YY] * bun.dir[i][YY];
             fprintf(ftiltr, " %6g", gmx::c_rad2Deg * std::asin(comp / std::hypot(comp, bun.dir[i][ZZ])));
             comp = bun.mid[i][YY] * bun.dir[i][XX] - bun.mid[i][XX] * bun.dir[i][YY];
@@ -398,7 +398,7 @@ int gmx_bundle(int argc, char* argv[])
                 rvec_sub(bun.end[2][i], bun.end[1][i], vb);
                 unitv(va, va);
                 unitv(vb, vb);
-                fprintf(fkink, " %6g", gmx::c_rad2Deg * acos(iprod(va, vb)));
+                fprintf(fkink, " %6g", gmx::c_rad2Deg * std::acos(iprod(va, vb)));
                 cprod(va, vb, vc);
                 copy_rvec(bun.mid[i], vr);
                 vr[ZZ] = 0;

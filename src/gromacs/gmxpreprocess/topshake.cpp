@@ -161,7 +161,7 @@ void make_shake(gmx::ArrayRef<InteractionsOfType> plist, t_atoms* atoms, int nsh
                                     {
                                         real param = std::sqrt(
                                                 b_ij * b_ij + b_jk * b_jk
-                                                - 2.0 * b_ij * b_jk * cos(gmx::c_deg2Rad * ang->c0()));
+                                                - 2.0 * b_ij * b_jk * std::cos(gmx::c_deg2Rad * ang->c0()));
                                         std::vector<real> forceParm = { param, param };
                                         if (ftype == F_CONNBONDS || ftype_a == F_CONNBONDS)
                                         {

@@ -54,17 +54,17 @@ static void low_rotate_conf(int natom, rvec* x, real alfa, real beta, real gamma
         copy_rvec(x[i], x_old);
         /*calculate new x[i] by rotation alfa around the x-axis*/
         x[i][XX] = x_old[XX];
-        x[i][YY] = cos(alfa) * x_old[YY] - std::sin(alfa) * x_old[ZZ];
-        x[i][ZZ] = std::sin(alfa) * x_old[YY] + cos(alfa) * x_old[ZZ];
+        x[i][YY] = std::cos(alfa) * x_old[YY] - std::sin(alfa) * x_old[ZZ];
+        x[i][ZZ] = std::sin(alfa) * x_old[YY] + std::cos(alfa) * x_old[ZZ];
         copy_rvec(x[i], x_old);
         /*calculate new x[i] by rotation beta around the y-axis*/
-        x[i][XX] = cos(beta) * x_old[XX] + std::sin(beta) * x_old[ZZ];
+        x[i][XX] = std::cos(beta) * x_old[XX] + std::sin(beta) * x_old[ZZ];
         x[i][YY] = x_old[YY];
-        x[i][ZZ] = -std::sin(beta) * x_old[XX] + cos(beta) * x_old[ZZ];
+        x[i][ZZ] = -std::sin(beta) * x_old[XX] + std::cos(beta) * x_old[ZZ];
         copy_rvec(x[i], x_old);
         /*calculate new x[i] by rotation gamma around the z-axis*/
-        x[i][XX] = x_old[XX] * cos(gamma) - x_old[YY] * std::sin(gamma);
-        x[i][YY] = x_old[XX] * std::sin(gamma) + x_old[YY] * cos(gamma);
+        x[i][XX] = x_old[XX] * std::cos(gamma) - x_old[YY] * std::sin(gamma);
+        x[i][YY] = x_old[XX] * std::sin(gamma) + x_old[YY] * std::cos(gamma);
         x[i][ZZ] = x_old[ZZ];
     }
 }
