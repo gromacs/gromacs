@@ -264,10 +264,9 @@ const char* RootHelpTopic::name() const
 
 void RootHelpTopic::exportHelp(IHelpExport* exporter)
 {
-    std::vector<std::string>::const_iterator topicName;
-    for (topicName = exportedTopics_.begin(); topicName != exportedTopics_.end(); ++topicName)
+    for (const auto& topicName : exportedTopics_)
     {
-        const IHelpTopic* topic = findSubTopic(topicName->c_str());
+        const IHelpTopic* topic = findSubTopic(topicName.c_str());
         GMX_RELEASE_ASSERT(topic != nullptr, "Exported help topic no longer found");
         exporter->exportTopic(*topic);
     }
@@ -371,13 +370,12 @@ void CommandsHelpTopic::writeHelp(const HelpWriterContext& context) const
     {
         GMX_THROW(NotImplementedError("Module list is not implemented for this output format"));
     }
-    int                                  maxNameLength = 0;
-    const CommandLineModuleMap&          modules       = helpModule_.modules_;
-    CommandLineModuleMap::const_iterator module;
-    for (module = modules.begin(); module != modules.end(); ++module)
+    int                         maxNameLength = 0;
+    const CommandLineModuleMap& modules       = helpModule_.modules_;
+    for (const auto& [moduleName, modulePtr] : modules)
     {
-        int nameLength = static_cast<int>(module->first.length());
-        if (module->second->shortDescription() != nullptr && nameLength > maxNameLength)
+        int nameLength = static_cast<int>(moduleName.length());
+        if (modulePtr->shortDescription() != nullptr && nameLength > maxNameLength)
         {
             maxNameLength = nameLength;
         }
@@ -390,14 +388,13 @@ void CommandsHelpTopic::writeHelp(const HelpWriterContext& context) const
     formatter.addColumn(nullptr, maxNameLength + 1, false);
     formatter.addColumn(nullptr, 72 - maxNameLength, true);
     formatter.setFirstColumnIndent(4);
-    for (module = modules.begin(); module != modules.end(); ++module)
+    for (const auto& [moduleName, modulePtr] : modules)
     {
-        const char* name        = module->first.c_str();
-        const char* description = module->second->shortDescription();
+        const char* description = modulePtr->shortDescription();
         if (description != nullptr)
         {
             formatter.clear();
-            formatter.addColumnLine(0, name);
+            formatter.addColumnLine(0, moduleName);
             formatter.addColumnLine(1, description);
             file.writeString(formatter.formatRow());
         }
@@ -466,14 +463,13 @@ void ModuleHelpTopic::writeHelp(const HelpWriterContext& /*context*/) const
  */
 void initProgramLinks(HelpLinks* links, const CommandLineHelpModuleImpl& helpModule)
 {
-    const char* const                    program = helpModule.binaryName_.c_str();
-    CommandLineModuleMap::const_iterator module;
-    for (module = helpModule.modules_.begin(); module != helpModule.modules_.end(); ++module)
+    const char* const program = helpModule.binaryName_.c_str();
+    for (const auto& [moduleName, modulePtr] : helpModule.modules_)
     {
-        if (module->second->shortDescription() != nullptr)
+        if (modulePtr->shortDescription() != nullptr)
         {
-            std::string linkName("[gmx-" + module->first + "]");
-            const char* name = module->first.c_str();
+            std::string linkName("[gmx-" + moduleName + "]");
+            const char* name = moduleName.c_str();
             std::string reference(formatString(":doc:`%s %s <%s-%s>`", program, name, program, name));
             std::string displayName(formatString("[TT]%s %s[tt]", program, name));
             links->addLink(linkName, reference, displayName);
@@ -609,11 +605,9 @@ void HelpExportReStructuredText::exportModuleGroup(const char* title, const Modu
     manPagesFile_->writeLine(title);
     manPagesFile_->writeLine(std::string(std::strlen(title), '^'));
 
-    ModuleGroupContents::const_iterator module;
-    for (module = modules.begin(); module != modules.end(); ++module)
+    for (const auto& [tag, description] : modules)
     {
-        const std::string& tag(module->first);
-        std::string        displayName(tag);
+        std::string displayName(tag);
         // TODO: This does not work if the binary name would contain a dash,
         // but that is not currently the case.
         const size_t dashPos = displayName.find('-');
@@ -621,8 +615,8 @@ void HelpExportReStructuredText::exportModuleGroup(const char* title, const Modu
                            "There should always be at least one dash in the tag");
         displayName[dashPos] = ' ';
         indexFile_->writeLine(formatString(
-                ":doc:`%s </onlinehelp/%s>`\n  %s", displayName.c_str(), tag.c_str(), module->second));
-        manPagesFile_->writeLine(formatString(":manpage:`%s(1)`\n  %s", tag.c_str(), module->second));
+                ":doc:`%s </onlinehelp/%s>`\n  %s", displayName.c_str(), tag.c_str(), description));
+        manPagesFile_->writeLine(formatString(":manpage:`%s(1)`\n  %s", tag.c_str(), description));
     }
 }
 
@@ -753,24 +747,21 @@ void CommandLineHelpModuleImpl::exportHelp(IHelpExport* exporter)
     const char* const program = binaryName_.c_str();
 
     exporter->startModuleExport();
-    CommandLineModuleMap::const_iterator module;
-    for (module = modules_.begin(); module != modules_.end(); ++module)
+    for (const auto& [moduleName, modulePtr] : modules_)
     {
-        if (module->second->shortDescription() != nullptr)
+        if (modulePtr->shortDescription() != nullptr)
         {
-            const char* const moduleName = module->first.c_str();
-            std::string       tag(formatString("%s-%s", program, moduleName));
-            std::string       displayName(formatString("%s %s", program, moduleName));
-            exporter->exportModuleHelp(*module->second, tag, displayName);
+            std::string tag(formatString("%s-%s", program, moduleName.c_str()));
+            std::string displayName(formatString("%s %s", program, moduleName.c_str()));
+            exporter->exportModuleHelp(*modulePtr, tag, displayName);
         }
     }
     exporter->finishModuleExport();
 
     exporter->startModuleGroupExport();
-    CommandLineModuleGroupList::const_iterator group;
-    for (group = groups_.begin(); group != groups_.end(); ++group)
+    for (const auto& group : groups_)
     {
-        exporter->exportModuleGroup((*group)->title(), (*group)->modules());
+        exporter->exportModuleGroup(group->title(), group->modules());
     }
     exporter->finishModuleGroupExport();
 
