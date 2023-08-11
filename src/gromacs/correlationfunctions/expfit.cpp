@@ -335,7 +335,7 @@ static double lmc_vac_2_parm(double x, const double* a)
         else
         {
             ec = em * cos(wv);
-            es = em * sin(wv) / omega;
+            es = em * std::sin(wv) / omega;
         }
         y = ec + es;
     }

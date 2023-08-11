@@ -109,20 +109,20 @@ void gmx_mat4_init_rotation(int axis, real angle, mat4 A)
     {
         case XX:
             A[YY][YY] = cos(angle);
-            A[YY][ZZ] = -sin(angle);
-            A[ZZ][YY] = sin(angle);
+            A[YY][ZZ] = -std::sin(angle);
+            A[ZZ][YY] = std::sin(angle);
             A[ZZ][ZZ] = cos(angle);
             break;
         case YY:
             A[XX][XX] = cos(angle);
-            A[XX][ZZ] = sin(angle);
-            A[ZZ][XX] = -sin(angle);
+            A[XX][ZZ] = std::sin(angle);
+            A[ZZ][XX] = -std::sin(angle);
             A[ZZ][ZZ] = cos(angle);
             break;
         case ZZ:
             A[XX][XX] = cos(angle);
-            A[XX][YY] = -sin(angle);
-            A[YY][XX] = sin(angle);
+            A[XX][YY] = -std::sin(angle);
+            A[YY][XX] = std::sin(angle);
             A[YY][YY] = cos(angle);
             break;
         default: gmx_fatal(FARGS, "Error: invalid axis: %d", axis);

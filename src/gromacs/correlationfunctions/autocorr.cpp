@@ -112,7 +112,7 @@ static void low_do_four_core(int nframes, real c1[], real cfour[], int nCos)
         case enSin:
             for (i = 0; (i < nframes); i++)
             {
-                data[0][i] = sin(c1[i]);
+                data[0][i] = std::sin(c1[i]);
             }
             break;
         default: gmx_fatal(FARGS, "nCos = %d, %s %d", nCos, __FILE__, __LINE__);

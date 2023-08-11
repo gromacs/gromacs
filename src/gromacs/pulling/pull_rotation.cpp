@@ -801,7 +801,7 @@ static void calc_rotmat(const rvec vec,
 
     /* Precompute some variables: */
     cosa   = cos(radangle);
-    sina   = sin(radangle);
+    sina   = std::sin(radangle);
     OMcosa = 1.0 - cosa;
     dumxy  = rot_vec[XX] * rot_vec[YY] * OMcosa;
     dumxz  = rot_vec[XX] * rot_vec[ZZ] * OMcosa;

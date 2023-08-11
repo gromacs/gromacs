@@ -63,7 +63,7 @@ static real safe_asin(real f)
 {
     if ((std::fabs(f) < 1.00))
     {
-        return (asin(f));
+        return (std::asin(f));
     }
     GMX_ASSERT(std::fabs(f) - 1.0 > DP_TOL, "Invalid argument");
     return (M_PI_2);
@@ -79,34 +79,34 @@ static real icosaeder_vertices(real* xus)
     xus[1]  = 0.;
     xus[2]  = 1.;
     xus[3]  = rh * cos(TORAD(72.));
-    xus[4]  = rh * sin(TORAD(72.));
+    xus[4]  = rh * std::sin(TORAD(72.));
     xus[5]  = rg;
     xus[6]  = rh * cos(TORAD(144.));
-    xus[7]  = rh * sin(TORAD(144.));
+    xus[7]  = rh * std::sin(TORAD(144.));
     xus[8]  = rg;
     xus[9]  = rh * cos(TORAD(216.));
-    xus[10] = rh * sin(TORAD(216.));
+    xus[10] = rh * std::sin(TORAD(216.));
     xus[11] = rg;
     xus[12] = rh * cos(TORAD(288.));
-    xus[13] = rh * sin(TORAD(288.));
+    xus[13] = rh * std::sin(TORAD(288.));
     xus[14] = rg;
     xus[15] = rh;
     xus[16] = 0;
     xus[17] = rg;
     xus[18] = rh * cos(TORAD(36.));
-    xus[19] = rh * sin(TORAD(36.));
+    xus[19] = rh * std::sin(TORAD(36.));
     xus[20] = -rg;
     xus[21] = rh * cos(TORAD(108.));
-    xus[22] = rh * sin(TORAD(108.));
+    xus[22] = rh * std::sin(TORAD(108.));
     xus[23] = -rg;
     xus[24] = -rh;
     xus[25] = 0;
     xus[26] = -rg;
     xus[27] = rh * cos(TORAD(252.));
-    xus[28] = rh * sin(TORAD(252.));
+    xus[28] = rh * std::sin(TORAD(252.));
     xus[29] = -rg;
     xus[30] = rh * cos(TORAD(324.));
-    xus[31] = rh * sin(TORAD(324.));
+    xus[31] = rh * std::sin(TORAD(324.));
     xus[32] = -rg;
     xus[33] = 0.;
     xus[34] = 0.;
@@ -132,7 +132,7 @@ divarc(real x1, real y1, real z1, real x2, real y2, real z2, int div1, int div2,
 
     real phi        = safe_asin(dd / std::sqrt(d1 * d2));
     phi             = phi * (static_cast<real>(div1)) / (static_cast<real>(div2));
-    const real sphi = sin(phi);
+    const real sphi = std::sin(phi);
     const real cphi = cos(phi);
     const real s    = (x1 * xd + y1 * yd + z1 * zd) / dd;
 

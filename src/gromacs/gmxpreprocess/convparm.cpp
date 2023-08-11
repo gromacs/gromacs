@@ -419,7 +419,7 @@ static int assign_param(t_functype                ftype,
             break;
         case F_VSITE3FAD:
             newparam->vsite.a = old[1] * cos(gmx::c_deg2Rad * old[0]);
-            newparam->vsite.b = old[1] * sin(gmx::c_deg2Rad * old[0]);
+            newparam->vsite.b = old[1] * std::sin(gmx::c_deg2Rad * old[0]);
             newparam->vsite.c = old[2];
             newparam->vsite.d = old[3];
             newparam->vsite.e = old[4];
