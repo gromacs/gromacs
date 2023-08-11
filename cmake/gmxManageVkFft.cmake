@@ -39,7 +39,7 @@ function(gmx_manage_vkfft BACKEND_NAME)
 
     if (NOT GMX_EXTERNAL_VKFFT)
         set(vkfft_DIR ${PROJECT_SOURCE_DIR}/src/external/vkfft)
-        set(vkfft_VERSION "internal (1.2.26-b15cb0ca3e884bdb6c901a12d87aa8aadf7637d8) with ${BACKEND_NAME} backend" PARENT_SCOPE)
+        set(vkfft_VERSION "internal (1.3.1) with ${BACKEND_NAME} backend" PARENT_SCOPE)
     else()
         find_path(vkfft_DIR
             NAMES vkFFT.h
