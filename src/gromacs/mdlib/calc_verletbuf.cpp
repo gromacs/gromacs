@@ -1119,7 +1119,7 @@ static real computeEffectiveAtomDensity(gmx::ArrayRef<const gmx::RVec> coordinat
     for (int d = 0; d < DIM; d++)
     {
         GMX_RELEASE_ASSERT(cutoff < box[d][d], "The cutoff should be smaller than the boxsize");
-        numCells[d]    = int(lround(box[d][d] / cutoff));
+        numCells[d]    = int(std::lround(box[d][d] / cutoff));
         invCellSize[d] = numCells[d] / box[d][d];
     }
 

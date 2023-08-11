@@ -766,7 +766,7 @@ bool rewrite_tprfile(const std::string& inFile, const std::string& outFile, doub
 
     double run_t = irInstance.init_step * irInstance.delta_t + irInstance.init_t;
 
-    irInstance.nsteps = lround((endTime - run_t) / irInstance.delta_t);
+    irInstance.nsteps = std::lround((endTime - run_t) / irInstance.delta_t);
 
     write_tpx_state(outFile.c_str(), &irInstance, &state, mtop);
 

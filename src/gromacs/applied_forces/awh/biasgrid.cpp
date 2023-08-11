@@ -783,7 +783,7 @@ GridAxis::GridAxis(double origin, double end, double period, double pointDensity
         spacing_ = period_ / numPointsInPeriod_;
 
         /* Modify the number of grid axis points to be compatible with the period dependent spacing. */
-        numPoints_ = std::min(static_cast<int>(round(length_ / spacing_)) + 1, numPointsInPeriod_);
+        numPoints_ = std::min(static_cast<int>(std::round(length_ / spacing_)) + 1, numPointsInPeriod_);
     }
     else
     {

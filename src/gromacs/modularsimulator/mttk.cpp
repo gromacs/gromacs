@@ -186,7 +186,7 @@ void MttkData::calculateIntegralIfNeeded()
 {
     // Check whether coordinate time divided by the time step is close to integer
     const bool calculationNeeded = timesClose(
-            lround(etaVelocityTime_ / couplingTimeStep_) * couplingTimeStep_, etaVelocityTime_);
+            std::lround(etaVelocityTime_ / couplingTimeStep_) * couplingTimeStep_, etaVelocityTime_);
 
     if (calculationNeeded)
     {
