@@ -356,7 +356,7 @@ static double atan2_0_2pi(double y, double x)
 {
     double a;
 
-    a = atan2(y, x);
+    a = std::atan2(y, x);
     if (a < 0)
     {
         a += 2.0 * M_PI;

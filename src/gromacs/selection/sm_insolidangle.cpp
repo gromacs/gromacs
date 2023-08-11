@@ -662,7 +662,7 @@ static int find_surface_bin(t_methoddata_insolidangle* surf, rvec x)
     int  tbin, pbin;
 
     theta = std::acos(x[ZZ]);
-    phi   = atan2(x[YY], x[XX]);
+    phi   = std::atan2(x[YY], x[XX]);
     tbin  = static_cast<int>(std::floor(theta / surf->tbinsize));
     if (tbin >= surf->ntbins)
     {
@@ -856,7 +856,7 @@ static void store_surface_point(t_methoddata_insolidangle* surf, rvec x)
     int  tbin;
 
     theta = std::acos(x[ZZ]);
-    phi   = atan2(x[YY], x[XX]);
+    phi   = std::atan2(x[YY], x[XX]);
     /* Find the maximum extent in the phi direction */
     if (theta <= surf->angcut)
     {
