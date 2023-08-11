@@ -158,7 +158,7 @@ static std::vector<real> ico_dot_arc(int densit)
 
     /* calculate tessalation level */
     const real a    = std::sqrt(((static_cast<real>(densit)) - 2.) / 10.);
-    const int  tess = static_cast<int>(ceil(a));
+    const int  tess = static_cast<int>(std::ceil(a));
     const int  ndot = 10 * tess * tess + 2;
     GMX_RELEASE_ASSERT(ndot >= densit, "Inconsistent surface dot formula");
 
@@ -339,7 +339,7 @@ static std::vector<real> ico_dot_dod(int densit)
 
     /* calculate tesselation level */
     real      a    = std::sqrt(((static_cast<real>(densit)) - 2.) / 30.);
-    const int tess = std::max(static_cast<int>(ceil(a)), 1);
+    const int tess = std::max(static_cast<int>(std::ceil(a)), 1);
     const int ndot = 30 * tess * tess + 2;
     GMX_RELEASE_ASSERT(ndot >= densit, "Inconsistent surface dot formula");
 

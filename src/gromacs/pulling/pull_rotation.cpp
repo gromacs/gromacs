@@ -2551,7 +2551,7 @@ static inline int get_first_slab(const gmx_enfrotgrp* erg,
                                  const gmx::RVec& firstatom) /* First atom after sorting along the rotation vector v */
 {
     /* Find the first slab for the first atom */
-    return static_cast<int>(ceil(
+    return static_cast<int>(std::ceil(
             static_cast<double>((iprod(firstatom, erg->vec) - erg->max_beta) / erg->rotg->slab_dist)));
 }
 
