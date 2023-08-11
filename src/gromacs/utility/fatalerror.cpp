@@ -102,11 +102,11 @@ static void default_error_handler(const char*                  title,
 {
     if (log_file)
     {
-        gmx::internal::printFatalErrorHeader(log_file, title, nullptr, file, line);
+        gmx::internal::printFatalErrorHeader(log_file, title, nullptr, file.string().c_str(), line);
         gmx::internal::printFatalErrorMessageLine(log_file, msg.c_str(), 0);
         gmx::internal::printFatalErrorFooter(log_file);
     }
-    gmx::internal::printFatalErrorHeader(stderr, title, nullptr, file, line);
+    gmx::internal::printFatalErrorHeader(stderr, title, nullptr, file.string().c_str(), line);
     gmx::internal::printFatalErrorMessageLine(stderr, msg.c_str(), 0);
     gmx::internal::printFatalErrorFooter(stderr);
 }

@@ -523,9 +523,9 @@ void printFatalErrorMessage(FILE* fp, const std::exception& ex)
     {
         bPrintType = true;
     }
-    const char*           func = nullptr;
-    std::filesystem::path file;
-    int                   line = 0;
+    const char* func = nullptr;
+    const char* file = nullptr;
+    int         line = 0;
     if (gmxEx != nullptr)
     {
         const ThrowLocation* loc = gmxEx->getInfo<ExceptionInfoLocation>();

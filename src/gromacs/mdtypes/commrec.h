@@ -36,6 +36,8 @@
 
 #include <cstddef>
 
+#include <memory>
+
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/gmxmpi.h"
 

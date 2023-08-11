@@ -43,8 +43,6 @@
 
 #include <cstdio>
 
-#include <filesystem>
-
 namespace gmx
 {
 
@@ -59,7 +57,7 @@ namespace internal
  *
  * \ingroup module_utility
  */
-void printFatalErrorHeader(FILE* fp, const char* title, const char* func, const std::filesystem::path& file, int line);
+void printFatalErrorHeader(FILE* fp, const char* title, const char* func, const char* file, int line);
 /*! \brief
  * Formats a line of fatal error message text.
  *
