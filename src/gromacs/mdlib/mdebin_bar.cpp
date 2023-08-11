@@ -168,7 +168,7 @@ static void mde_delta_h_make_hist(t_mde_delta_h* dh, int hi, gmx_bool invert)
        Get this start value in number of histogram dxs from zero,
        as an integer.*/
 
-    dh->x0[hi] = static_cast<int64_t>(floor(min_dh / dx));
+    dh->x0[hi] = static_cast<int64_t>(std::floor(min_dh / dx));
 
     min_dh_hist = (dh->x0[hi]) * dx;
     max_dh_hist = (dh->x0[hi] + dh->nbins + 1) * dx;

@@ -687,7 +687,7 @@ int AnalysisNeighborhoodSearchImpl::getGridCellIndex(const rvec cell) const
     ivec icell;
     for (int dd = 0; dd < DIM; ++dd)
     {
-        int cellIndex = static_cast<int>(floor(cell[dd]));
+        int cellIndex = static_cast<int>(std::floor(cell[dd]));
         if (!bGridPBC_[dd])
         {
             const int cellCount = ncelldim_[dd];
@@ -767,8 +767,8 @@ void AnalysisNeighborhoodSearchImpl::initCellRange(const rvec centerCell, ivec c
             endOffset = cellCount - 1;
         }
     }
-    currCell[dim]   = static_cast<int>(floor(startOffset));
-    upperBound[dim] = static_cast<int>(floor(endOffset));
+    currCell[dim]   = static_cast<int>(std::floor(startOffset));
+    upperBound[dim] = static_cast<int>(std::floor(endOffset));
 }
 
 real AnalysisNeighborhoodSearchImpl::computeCutoffExtent(const RVec centerCell, const ivec cell, int dim) const

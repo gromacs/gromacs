@@ -632,17 +632,17 @@ static std::vector<real> make_unsp(int densit, int cubus)
     std::vector<int> work;
     for (int l = 0; l < ndot; l++)
     {
-        int i = std::max(static_cast<int>(floor((1. + xus[3 * l]) / del_cube)), 0);
+        int i = std::max(static_cast<int>(std::floor((1. + xus[3 * l]) / del_cube)), 0);
         if (i >= ico_cube)
         {
             i = ico_cube - 1;
         }
-        int j = std::max(static_cast<int>(floor((1. + xus[1 + 3 * l]) / del_cube)), 0);
+        int j = std::max(static_cast<int>(std::floor((1. + xus[1 + 3 * l]) / del_cube)), 0);
         if (j >= ico_cube)
         {
             j = ico_cube - 1;
         }
-        int k = std::max(static_cast<int>(floor((1. + xus[2 + 3 * l]) / del_cube)), 0);
+        int k = std::max(static_cast<int>(std::floor((1. + xus[2 + 3 * l]) / del_cube)), 0);
         if (k >= ico_cube)
         {
             k = ico_cube - 1;

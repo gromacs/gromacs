@@ -2559,7 +2559,7 @@ static inline int get_first_slab(const gmx_enfrotgrp* erg,
 static inline int get_last_slab(const gmx_enfrotgrp* erg, const gmx::RVec& lastatom) /* Last atom along v */
 {
     /* Find the last slab for the last atom */
-    return static_cast<int>(floor(
+    return static_cast<int>(std::floor(
             static_cast<double>((iprod(lastatom, erg->vec) + erg->max_beta) / erg->rotg->slab_dist)));
 }
 
