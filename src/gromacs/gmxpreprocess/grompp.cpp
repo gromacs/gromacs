@@ -2232,7 +2232,7 @@ int gmx_grompp(int argc, char* argv[])
                           "From GROMACS-2018, you need to specify the position restraint "
                           "coordinate files explicitly to avoid mistakes, although you can "
                           "still use the same file as you specify for the -c option.",
-                          fn);
+                          fnB);
             }
         }
         else
