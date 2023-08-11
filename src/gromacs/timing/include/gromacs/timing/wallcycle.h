@@ -171,34 +171,73 @@ static constexpr int sc_numWallCycleCountersSquared = sc_numWallCycleCounters * 
 static constexpr bool sc_useCycleSubcounters = GMX_CYCLE_SUBCOUNTERS;
 //! Whether wallcycle debugging is enabled.
 constexpr bool sc_enableWallcycleDebug = (DEBUG_WCYCLE != 0);
-//! Maximum depth of counters for debugging.
-static constexpr int sc_maxWallCycleDepth = sc_enableWallcycleDebug ? 6 : 0;
 
-
+//! Counters for an individual wallcycle timing region
 struct wallcc_t
 {
-    int          n;
-    gmx_cycles_t c;
+    //! Counter for number of times this timing region has been opened
+    int n = 0;
+    //! Counter for total number of cycles in this timing region
+    gmx_cycles_t c = 0;
+    //! Start time (in cycles) for the last time this timing region was opened
     gmx_cycles_t start;
 };
 
 struct gmx_wallcycle
 {
+    /*! \brief Methods used when debugging wallcycle counting
+     *
+     *  \todo Make these private when the functions they are called
+     *  from become class methods. */
+    //! \{
+    //! Check the start preconditions
+    void checkStart(WallCycleCounter ewc);
+    //! Check the stop preconditions
+    void checkStop(WallCycleCounter ewc);
+    //! \}
+
+public:
+    //! Storage for wallcycle counters
     gmx::EnumerationArray<WallCycleCounter, wallcc_t> wcc;
-    /* did we detect one or more invalid cycle counts */
-    bool haveInvalidCount;
-    /* variables for testing/debugging */
-    bool                                                 wc_barrier;
-    std::vector<wallcc_t>                                wcc_all;
-    int                                                  wc_depth;
-    std::array<WallCycleCounter, sc_maxWallCycleDepth>   counterlist;
-    int                                                  count_depth;
-    bool                                                 isMainRank;
-    WallCycleCounter                                     ewc_prev;
-    gmx_cycles_t                                         cycle_prev;
-    int64_t                                              reset_counters;
-    const t_commrec*                                     cr;
+    //! The step count at which counter reset will happen
+    int64_t reset_counters;
+    //! Storage for wallcycle subcounters
     gmx::EnumerationArray<WallCycleSubCounter, wallcc_t> wcsc;
+
+    // The remaining fields are only used in special cases or in
+    // printing summary output.
+
+    //! Commrec for communicator used when using wallcycle barriers
+    const t_commrec* cr;
+
+    //! Used when doing "all" wallcycle counting
+    //! \{
+    //! All counters
+    std::vector<wallcc_t> wcc_all;
+    //! Counter depth
+    int wc_depth = 0;
+    //! Previous counter index
+    WallCycleCounter ewc_prev = WallCycleCounter::Count;
+    //! Previous cycle count value
+    gmx_cycles_t cycle_prev;
+    //! \}
+
+    //! Did we detect one or more invalid cycle counts?
+    bool haveInvalidCount = false;
+    //! Add extra barriers during testing
+    bool wc_barrier = false;
+
+    //! Used when debugging wallcycle counting
+    //! \{
+    //! Maximum depth of counters
+    static constexpr int sc_maxDepth = sc_enableWallcycleDebug ? 6 : 0;
+    //! Counters
+    std::array<WallCycleCounter, sc_maxDepth> counterlist;
+    //! Counter depth
+    int count_depth = 0;
+    //! Whether this rank is the main rank of the simulation
+    bool isMainRank = false;
+    //! \}
 };
 
 //! Returns if cycle counting is supported
@@ -227,11 +266,6 @@ inline void wallcycle_all_stop(gmx_wallcycle* wc, WallCycleCounter ewc, gmx_cycl
     wc->wcc_all[prev * sc_numWallCycleCounters + current].c += cycle - wc->cycle_prev;
 }
 
-//! Start debug for wallcycle counter.
-void debug_start_check(gmx_wallcycle* wc, WallCycleCounter ewc);
-//! End debug for wallcycle counter.
-void debug_stop_check(gmx_wallcycle* wc, WallCycleCounter ewc);
-
 //! Starts the cycle counter (and increases the call count)
 inline void wallcycle_start(gmx_wallcycle* wc, WallCycleCounter ewc)
 {
@@ -244,7 +278,7 @@ inline void wallcycle_start(gmx_wallcycle* wc, WallCycleCounter ewc)
 
     if constexpr (sc_enableWallcycleDebug)
     {
-        debug_start_check(wc, ewc);
+        wc->checkStart(ewc);
     }
     gmx_cycles_t cycle = gmx_cycles_read();
     wc->wcc[ewc].start = cycle;
@@ -287,7 +321,7 @@ inline double wallcycle_stop(gmx_wallcycle* wc, WallCycleCounter ewc)
 
     if constexpr (sc_enableWallcycleDebug)
     {
-        debug_stop_check(wc, ewc);
+        wc->checkStop(ewc);
     }
 
     /* When processes or threads migrate between cores, the cycle counting

@@ -61,9 +61,9 @@
 #include "gromacs/utility/stringutil.h"
 
 //! True if only the main rank should print debugging output
-constexpr bool onlyMainDebugPrints = true;
+static constexpr bool sc_onlyMainDebugPrints = true;
 //! True if cycle counter nesting depth debugging prints are enabled
-constexpr bool debugPrintDepth = false;
+static constexpr bool sc_debugPrintDepth = false;
 
 template<int maxLength, typename Container>
 static constexpr bool checkStringsLengths(const Container& strings)
@@ -221,12 +221,8 @@ std::unique_ptr<gmx_wallcycle> wallcycle_init(FILE* fplog, int resetstep, const 
 
     wc = std::make_unique<gmx_wallcycle>();
 
-    wc->haveInvalidCount = false;
-    wc->wc_barrier       = false;
-    wc->wc_depth         = 0;
-    wc->ewc_prev         = WallCycleCounter::Count;
-    wc->reset_counters   = resetstep;
-    wc->cr               = cr;
+    wc->reset_counters = resetstep;
+    wc->cr             = cr;
 
 
 #if GMX_MPI
@@ -252,67 +248,58 @@ std::unique_ptr<gmx_wallcycle> wallcycle_init(FILE* fplog, int resetstep, const 
     // NOLINTNEXTLINE(readability-misleading-indentation)
     if constexpr (sc_enableWallcycleDebug)
     {
-        wc->count_depth = 0;
-        wc->isMainRank  = MAIN(cr);
+        wc->isMainRank = (cr == nullptr) || MAIN(cr);
     }
 
     return wc;
 }
 
-void debug_start_check(gmx_wallcycle* wc, WallCycleCounter ewc)
+void gmx_wallcycle::checkStart(WallCycleCounter ewc)
 {
     // NOLINTNEXTLINE(readability-misleading-indentation)
     if constexpr (sc_enableWallcycleDebug)
     {
         // NOLINTNEXTLINE(misc-redundant-expression)
-        if (wc->count_depth < 0 || wc->count_depth >= sc_maxWallCycleDepth)
+        if (count_depth < 0 || count_depth >= sc_maxDepth)
         {
-            gmx_fatal(FARGS, "wallcycle counter depth out of range: %d", wc->count_depth + 1);
+            gmx_fatal(FARGS, "wallcycle counter depth out of range: %d", count_depth + 1);
         }
-        wc->counterlist[wc->count_depth] = ewc;
-        wc->count_depth++;
+        counterlist[count_depth] = ewc;
+        count_depth++;
 
-        if (debugPrintDepth && (!onlyMainDebugPrints || wc->isMainRank))
+        if (sc_debugPrintDepth && (!sc_onlyMainDebugPrints || isMainRank))
         {
-            std::string indentStr(4 * wc->count_depth, ' ');
-            fprintf(stderr,
-                    "%swcycle_start depth %d, %s\n",
-                    indentStr.c_str(),
-                    wc->count_depth,
-                    enumValuetoString(ewc));
+            std::string indentStr(4 * count_depth, ' ');
+            fprintf(stderr, "%swcycle_start depth %d, %s\n", indentStr.c_str(), count_depth, enumValuetoString(ewc));
         }
     }
 }
 
-void debug_stop_check(gmx_wallcycle* wc, WallCycleCounter ewc)
+void gmx_wallcycle::checkStop(WallCycleCounter ewc)
 {
     // NOLINTNEXTLINE(readability-misleading-indentation)
     if constexpr (sc_enableWallcycleDebug)
     {
-        if (debugPrintDepth && (!onlyMainDebugPrints || wc->isMainRank))
+        if (sc_debugPrintDepth && (!sc_onlyMainDebugPrints || isMainRank))
         {
-            std::string indentStr(4 * wc->count_depth, ' ');
-            fprintf(stderr,
-                    "%swcycle_stop  depth %d, %s\n",
-                    indentStr.c_str(),
-                    wc->count_depth,
-                    enumValuetoString(ewc));
+            std::string indentStr(4 * count_depth, ' ');
+            fprintf(stderr, "%swcycle_stop  depth %d, %s\n", indentStr.c_str(), count_depth, enumValuetoString(ewc));
         }
 
-        wc->count_depth--;
+        count_depth--;
 
-        if (wc->count_depth < 0)
+        if (count_depth < 0)
         {
             gmx_fatal(FARGS,
                       "wallcycle counter depth out of range when stopping %s: %d",
                       enumValuetoString(ewc),
-                      wc->count_depth);
+                      count_depth);
         }
-        if (wc->counterlist[wc->count_depth] != ewc)
+        if (counterlist[count_depth] != ewc)
         {
             gmx_fatal(FARGS,
                       "wallcycle mismatch at stop, start %s, stop %s",
-                      enumValuetoString(wc->counterlist[wc->count_depth]),
+                      enumValuetoString(counterlist[count_depth]),
                       enumValuetoString(ewc));
         }
     }
