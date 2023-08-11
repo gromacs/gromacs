@@ -19,6 +19,14 @@ Fixes where mdrun could behave incorrectly
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
 
+Correctly dump VSITE2FD virtual sites
+"""""""""""""""""""""""""""""""""""""
+
+Systems with virtual site VSITE2FD (2 atoms with fixed distance) could previously
+not be handled by ``gmx dump``. Note that this had no effect on simulation.
+
+:issue:`4845`
+
 Fixes that affect portability
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
