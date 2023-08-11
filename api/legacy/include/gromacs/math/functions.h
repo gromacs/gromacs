@@ -455,22 +455,22 @@ constexpr int64_t exactDiv(int64_t a, int64_t b)
  */
 static inline int roundToInt(float x)
 {
-    return static_cast<int>(rintf(x));
+    return static_cast<int>(std::rintf(x));
 }
 //! Round double to int
 static inline int roundToInt(double x)
 {
-    return static_cast<int>(rint(x));
+    return static_cast<int>(std::rint(x));
 }
 //! Round float to int64_t
 static inline int64_t roundToInt64(float x)
 {
-    return static_cast<int64_t>(rintf(x));
+    return static_cast<int64_t>(std::rintf(x));
 }
 //! Round double to int64_t
 static inline int64_t roundToInt64(double x)
 {
-    return static_cast<int64_t>(rint(x));
+    return static_cast<int64_t>(std::rint(x));
 }
 
 //! \brief Check whether \p v is an integer power of 2.

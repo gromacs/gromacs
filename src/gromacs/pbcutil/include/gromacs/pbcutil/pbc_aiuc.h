@@ -156,16 +156,16 @@ static inline void pbcDxAiuc(const PbcAiuc& pbcAiuc, const rvec& r1, const rvec&
     dr[YY] = r1[YY] - r2[YY];
     dr[ZZ] = r1[ZZ] - r2[ZZ];
 
-    float shz = rintf(dr[ZZ] * pbcAiuc.invBoxDiagZ);
+    float shz = std::rintf(dr[ZZ] * pbcAiuc.invBoxDiagZ);
     dr[XX] -= shz * pbcAiuc.boxZX;
     dr[YY] -= shz * pbcAiuc.boxZY;
     dr[ZZ] -= shz * pbcAiuc.boxZZ;
 
-    float shy = rintf(dr[YY] * pbcAiuc.invBoxDiagY);
+    float shy = std::rintf(dr[YY] * pbcAiuc.invBoxDiagY);
     dr[XX] -= shy * pbcAiuc.boxYX;
     dr[YY] -= shy * pbcAiuc.boxYY;
 
-    float shx = rintf(dr[XX] * pbcAiuc.invBoxDiagX);
+    float shx = std::rintf(dr[XX] * pbcAiuc.invBoxDiagX);
     dr[XX] -= shx * pbcAiuc.boxXX;
 }
 
