@@ -40,3 +40,9 @@ old layouts.
 Miscellaneous
 ^^^^^^^^^^^^^
 
+Fix compilation for VMD plugin
+""""""""""""""""""""""""""""""
+
+This got broken with the changes for path handling.
+
+Fixes :issue:`4832`

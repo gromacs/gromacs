@@ -128,7 +128,7 @@ static int register_cb(void* v, vmdplugin_t* p)
     const char*      key       = p->name;
     gmx_vmdplugin_t* vmdplugin = static_cast<gmx_vmdplugin_t*>(v);
 
-    if (strcmp(key, vmdplugin->filetype) == 0)
+    if (strcmp(key, vmdplugin->filetype.u8string().c_str()) == 0)
     {
         vmdplugin->api = reinterpret_cast<molfile_plugin_t*>(p);
     }
@@ -391,7 +391,7 @@ int read_first_vmd_frame(const std::filesystem::path& fn, gmx_vmdplugin_t** vmdp
     molfile_timestep_metadata_t* metadata = nullptr;
     gmx_vmdplugin_t*             vmdplugin;
 
-    snew(vmdplugin, 1);
+    vmdplugin   = new gmx_vmdplugin_t;
     *vmdpluginp = vmdplugin;
     if (!load_vmd_library(fn, vmdplugin))
     {
