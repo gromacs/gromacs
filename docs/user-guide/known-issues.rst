@@ -90,18 +90,6 @@ setting ``-DGMX_GPLUSGPLUS_PATH``.
 
 :issue:`4679`
 
-Ryckaert-Bell dihedral potential calculated imprecisely on Gen9 Intel GPUs
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-In SYCL/oneAPI build, when bonded forces are offloaded to an Intel Gen9 GPU
-(HD Graphics 5xx to 7xx-series; Skylake to Gemini Lake) the Ryckaert-Bell potential
-is computed imprecisely. This is unlikely to lead to wrong results, but
-we still recommend disabling listed forces offload (``-bonded cpu``) when running
-on Gen9 Intel integrated GPUs, especially since offloading is unlikely to offer significant
-performance advantage on such devices.
-
-:issue:`4686`
-
 Expanded ensemble does not checkpoint correctly
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 

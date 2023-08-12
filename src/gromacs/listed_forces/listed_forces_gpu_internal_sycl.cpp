@@ -485,6 +485,46 @@ static float dih_angle_gpu(const T                   xi,
     return phi;
 }
 
+template<bool returnShift, typename T>
+static float dih_angle_gpu_sincos(const T                   xi,
+                                  const T                   xj,
+                                  const T                   xk,
+                                  const T                   xl,
+                                  const PbcAiuc&            pbcAiuc,
+                                  sycl::private_ptr<Float3> r_ij,
+                                  sycl::private_ptr<Float3> r_kj,
+                                  sycl::private_ptr<Float3> r_kl,
+                                  sycl::private_ptr<Float3> m,
+                                  sycl::private_ptr<Float3> n,
+                                  sycl::private_ptr<int>    t1,
+                                  sycl::private_ptr<int>    t2,
+                                  sycl::private_ptr<float>  cosval)
+{
+    *t1 = pbcDxAiucSycl<returnShift>(pbcAiuc, xi, xj, *r_ij);
+    *t2 = pbcDxAiucSycl<returnShift>(pbcAiuc, xk, xj, *r_kj);
+    pbcDxAiucSycl<returnShift>(pbcAiuc, xk, xl, *r_kl);
+
+    *m = r_ij->cross(*r_kj);
+    *n = r_kj->cross(*r_kl);
+
+    Float3 w = m->cross(*n);
+
+    float wlen = sycl::sqrt(w.norm2());
+    float s    = m->dot(*n);
+
+    float mLenSq = m->norm2();
+    float nLenSq = n->norm2();
+    float mnInv  = sycl::rsqrt(mLenSq * nLenSq);
+
+    *cosval      = s * mnInv;
+    float sinval = wlen * mnInv;
+
+    float ipr  = r_ij->dot(*n);
+    float sign = (ipr < 0.0F) ? -1.0F : 1.0F;
+
+    return sign * sinval;
+}
+
 
 static void dopdihs_gpu(const float              cpA,
                         const float              phiA,
@@ -632,24 +672,14 @@ static void rbdihs_gpu(const int                                  i,
         Float3 n;
         int    t1;
         int    t2;
-        int    t3;
-        float  phi = dih_angle_gpu<calcVir>(
-                gm_xq[ai], gm_xq[aj], gm_xq[ak], gm_xq[al], pbcAiuc, &r_ij, &r_kj, &r_kl, &m, &n, &t1, &t2, &t3);
+        float  cos_phi;
 
-        /* Change to polymer convention */
-        if (phi < c0)
-        {
-            phi += c_Pi;
-        }
-        else
-        {
-            phi -= c_Pi;
-        }
-        float cos_phi = sycl::cos(phi);
-        /* Beware of accuracy loss, cannot use 1-sqrt(cos^2) ! */
-        float sin_phi = sycl::sin(phi);
+        const float sin_phi = dih_angle_gpu_sincos<calcVir>(
+                gm_xq[ai], gm_xq[aj], gm_xq[ak], gm_xq[al], pbcAiuc, &r_ij, &r_kj, &r_kl, &m, &n, &t1, &t2, &cos_phi);
+        cos_phi *= -1;
 
         float parm[NR_RBDIHS];
+#pragma unroll NR_RBDIHS
         for (int j = 0; j < NR_RBDIHS; j++)
         {
             parm[j] = gm_forceparams[type].rbdihs.rbcA[j];
@@ -697,7 +727,7 @@ static void rbdihs_gpu(const int                                  i,
             v += cosfac * rbp;
         }
 
-        ddphi = -ddphi * sin_phi;
+        ddphi = ddphi * sin_phi;
 
         do_dih_fup_gpu<calcVir>(
                 ai, aj, ak, al, ddphi, r_ij, r_kj, r_kl, m, n, gm_f, sm_fShiftLoc, pbcAiuc, gm_xq, t1, t2, localId);
