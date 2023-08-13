@@ -210,7 +210,7 @@ std::string formatString(gmx_fmtstr const char* fmt, ...) gmx_format(printf, 1, 
  * instead of requiring a preallocated buffer.  Arbitrary length output is
  * supported.
  */
-std::string formatStringV(const char* fmt, va_list ap);
+std::string formatStringV(const char* fmt, std::va_list ap);
 
 /*! \brief Function object that wraps a call to formatString() that
  * expects a single conversion argument, for use with algorithms. */

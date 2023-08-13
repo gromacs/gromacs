@@ -402,8 +402,8 @@ void gmx_fatal_collective(int                    f_errno,
                           gmx_fmtstr const char* fmt,
                           ...)
 {
-    va_list  ap;
-    gmx_bool bFinalize;
+    std::va_list ap;
+    gmx_bool     bFinalize;
 #if GMX_MPI
     int result;
     /* Check if we are calling on all processes in MPI_COMM_WORLD */

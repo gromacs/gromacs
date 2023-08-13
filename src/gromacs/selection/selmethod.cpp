@@ -77,7 +77,7 @@ static void report_error(FILE* fp, const char* name, gmx_fmtstr const char* fmt,
 
 static void report_error(FILE* fp, const char* name, gmx_fmtstr const char* fmt, ...)
 {
-    va_list ap;
+    std::va_list ap;
     va_start(ap, fmt);
     if (fp)
     {
@@ -95,7 +95,7 @@ static void report_param_error(FILE* fp, const char* mname, const char* pname, g
         gmx_format(printf, 4, 5);
 static void report_param_error(FILE* fp, const char* mname, const char* pname, gmx_fmtstr const char* fmt, ...)
 {
-    va_list ap;
+    std::va_list ap;
     va_start(ap, fmt);
     if (fp)
     {

@@ -58,7 +58,7 @@ ILogTarget::~ILogTarget() {}
 
 LogEntryWriter& LogEntryWriter::appendTextFormatted(gmx_fmtstr const char* fmt, ...)
 {
-    va_list ap;
+    std::va_list ap;
 
     va_start(ap, fmt);
     entry_.text.append(formatStringV(fmt, ap));

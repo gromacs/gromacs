@@ -157,7 +157,7 @@ enum ExitType
                                    gmx_bool                     bMain,
                                    gmx_bool                     bFinalize,
                                    const char*                  fmt,
-                                   va_list                      ap);
+                                   std::va_list                 ap);
 
 /*! \brief
  * Fatal error reporting routine for \Gromacs.

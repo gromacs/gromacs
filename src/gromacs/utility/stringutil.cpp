@@ -131,16 +131,16 @@ std::string stripString(const std::string& str)
 
 std::string formatString(gmx_fmtstr const char* fmt, ...)
 {
-    va_list ap;
+    std::va_list ap;
     va_start(ap, fmt);
     std::string result = formatStringV(fmt, ap);
     va_end(ap);
     return result;
 }
 
-std::string formatStringV(const char* fmt, va_list ap)
+std::string formatStringV(const char* fmt, std::va_list ap)
 {
-    va_list           ap_copy;
+    std::va_list      ap_copy;
     char              staticBuf[1024];
     int               length = 1024;
     std::vector<char> dynamicBuf;

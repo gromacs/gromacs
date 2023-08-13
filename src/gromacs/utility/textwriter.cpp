@@ -167,7 +167,7 @@ void TextWriter::writeString(const std::string& str)
 
 void TextWriter::writeStringFormatted(const char* fmt, ...)
 {
-    va_list ap;
+    std::va_list ap;
 
     va_start(ap, fmt);
     writeString(formatStringV(fmt, ap));
@@ -188,7 +188,7 @@ void TextWriter::writeLine(const std::string& line)
 
 void TextWriter::writeLineFormatted(const char* fmt, ...)
 {
-    va_list ap;
+    std::va_list ap;
 
     va_start(ap, fmt);
     writeString(formatStringV(fmt, ap));

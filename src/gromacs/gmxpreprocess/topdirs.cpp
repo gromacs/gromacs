@@ -293,9 +293,9 @@ static gmx::EnumerationArray<Directive, Directive*> necessary = { { nullptr } };
 static void set_nec(Directive** n, ...)
 /* Must always have at least one extra argument */
 {
-    va_list   ap;
-    int       ind = 0;
-    Directive d;
+    std::va_list ap;
+    int          ind = 0;
+    Directive    d;
 
     va_start(ap, n);
     do
