@@ -72,7 +72,7 @@ const char* enumValueToString(XdrDataType enumValue)
 // 32-bit integer. There is no need to ensure we are within the range
 // of ints with exact floating-point representations. However, we should
 // reject all floats above that which converts to an in-range 32-bit integer.
-const float maxAbsoluteInt = nextafterf(float(INT_MAX), 0.F); // NOLINT(cert-err58-cpp)
+const float maxAbsoluteInt = std::nextafterf(float(INT_MAX), 0.F); // NOLINT(cert-err58-cpp)
 
 #ifndef SQR
 #    define SQR(x) ((x) * (x))
