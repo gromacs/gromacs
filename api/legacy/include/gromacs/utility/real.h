@@ -172,9 +172,9 @@ typedef float real;
  * constant in double even if all variables are real. A constant shouldn't be real when used with
  * double operands, because then the constant is less accurate with GMX_DOUBLE=no.
  *
- * See https://en.cppreference.com/w/cpp/language/user_literal for details on this lanuage feature.
+ * See https://en.cppreference.com/w/cpp/language/user_literal for details on this language feature.
  */
-constexpr real operator"" _real(long double x)
+constexpr real operator""_real(long double x)
 {
     return real(x);
 }
