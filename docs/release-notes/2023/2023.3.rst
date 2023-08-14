@@ -46,3 +46,11 @@ Fix compilation for VMD plugin
 This got broken with the changes for path handling.
 
 Fixes :issue:`4832`
+
+Unsupported anisotropic C-rescale rejected at preprocessing time
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+This pressure coupling setting previously resulted in an error at 
+simulation runtime instead.
+
+Fixes :issue:`4847`

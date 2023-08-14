@@ -1399,6 +1399,21 @@ void check_ir(const char*                    mdparin,
                 "changing \"Isotropic\" to \"Berendsen\"\n");
     }
 
+    if (ir->pressureCouplingOptions.epc == PressureCoupling::CRescale)
+    {
+        switch (ir->pressureCouplingOptions.epct)
+        {
+            case PressureCouplingType::Isotropic:
+            case PressureCouplingType::SemiIsotropic:
+            case PressureCouplingType::SurfaceTension: break; // supported
+            default:
+                sprintf(err_buf,
+                        "C-rescale does not support pressure coupling type %s yet\n",
+                        enumValueToString(ir->pressureCouplingOptions.epct));
+                wi->addError(err_buf);
+        }
+    }
+
     if (ir->pressureCouplingOptions.epc != PressureCoupling::No)
     {
         dt_pcoupl = ir->pressureCouplingOptions.nstpcouple * ir->delta_t;
