@@ -104,9 +104,10 @@
 /*! \brief Main PP-PME communication data structure */
 struct gmx_pme_pp
 {
+    gmx_pme_pp(MPI_Comm simulationCommunicator, std::vector<PpRanks>&& ppRanks);
     MPI_Comm             mpi_comm_mysim; /**< MPI communicator for this simulation */
     std::vector<PpRanks> ppRanks;        /**< The PP partner ranks                 */
-    int                  peerRankId;     /**< The peer PP rank id                  */
+    int                  peerRankId;     /**< The peer PP rank id (the last one)   */
     //@{
     /**< Vectors of A- and B-state parameters used to transfer vectors to PME ranks  */
     gmx::PaddedHostVector<real> chargeA;
@@ -137,31 +138,31 @@ struct gmx_pme_pp
     bool useMdGpuGraph = false;
 };
 
-/*! \brief Initialize the PME-only side of the PME <-> PP communication */
-static std::unique_ptr<gmx_pme_pp> gmx_pme_pp_init(const t_commrec* cr)
+static std::vector<PpRanks> makePpRanks(const t_commrec* cr)
 {
-    auto pme_pp = std::make_unique<gmx_pme_pp>();
-
+    std::vector<PpRanks> ppRanks;
 #if GMX_MPI
     int rank;
-
-    pme_pp->mpi_comm_mysim = cr->mpi_comm_mysim;
     MPI_Comm_rank(cr->mpi_comm_mygroup, &rank);
-    auto ppRanks = get_pme_ddranks(cr, rank);
-    pme_pp->ppRanks.reserve(ppRanks.size());
-    for (const auto& ppRankId : ppRanks)
+    std::vector<int> ppRankIds = get_pme_ddranks(cr, rank);
+    ppRanks.reserve(ppRanks.size());
+    for (const auto& ppRankId : ppRankIds)
     {
-        pme_pp->ppRanks.push_back({ ppRankId, 0 });
+        ppRanks.push_back({ ppRankId, 0 });
     }
-    // The peer PP rank is the last one.
-    pme_pp->peerRankId = pme_pp->ppRanks.back().rankId;
-    pme_pp->req.resize(eCommType_NR * pme_pp->ppRanks.size());
-    pme_pp->stat.resize(eCommType_NR * pme_pp->ppRanks.size());
 #else
     GMX_UNUSED_VALUE(cr);
 #endif
+    return ppRanks;
+}
 
-    return pme_pp;
+gmx_pme_pp::gmx_pme_pp(MPI_Comm simulationCommunicator, std::vector<PpRanks>&& ppRanksArg) :
+    mpi_comm_mysim(simulationCommunicator),
+    ppRanks(std::move(ppRanksArg)),
+    peerRankId(ppRanks.back().rankId),
+    req(eCommType_NR * ppRanks.size()),
+    stat(eCommType_NR * ppRanks.size())
+{
 }
 
 static void reset_pmeonly_counters(gmx_wallcycle*            wcycle,
@@ -657,7 +658,7 @@ int gmx_pmeonly(struct gmx_pme_t**              pmeFromRunnerPtr,
     std::vector<gmx_pme_t*> pmedata;
     pmedata.push_back(pmeFromRunner);
 
-    auto pme_pp = gmx_pme_pp_init(cr);
+    auto pme_pp = std::make_unique<gmx_pme_pp>(cr->mpi_comm_mysim, makePpRanks(cr));
 
     std::unique_ptr<gmx::StatePropagatorDataGpu> stateGpu;
     // TODO the variable below should be queried from the task assignment info
