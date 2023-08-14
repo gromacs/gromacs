@@ -92,13 +92,6 @@
 #include "pme_internal.h"
 #include "pme_solve.h"
 
-/*! \brief
- * CUDA only
- * Atom limit above which it is advantageous to turn on the
- * recalculating of the splines in the gather and using less threads per atom in the spline and spread
- */
-constexpr int c_pmeGpuPerformanceAtomLimit = 23000;
-
 /*! \internal \brief
  * Wrapper for getting a pointer to the plain C++ part of the GPU kernel parameters structure.
  *
@@ -1276,7 +1269,7 @@ static void pme_gpu_copy_common_data_from(const gmx_pme_t* pme)
 static void pme_gpu_select_best_performing_pme_spreadgather_kernels(PmeGpu* pmeGpu)
 {
     if (((GMX_GPU_CUDA != 0) || (GMX_GPU_SYCL != 0))
-        && pmeGpu->kernelParams->atoms.nAtoms > c_pmeGpuPerformanceAtomLimit)
+        && pmeGpu->kernelParams->atoms.nAtoms > pmeGpu->minParticleCountToRecalculateSplines)
     {
         pmeGpu->settings.threadsPerAtom     = ThreadsPerAtom::Order;
         pmeGpu->settings.recalculateSplines = true;

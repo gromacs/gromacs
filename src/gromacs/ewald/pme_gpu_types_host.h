@@ -199,6 +199,18 @@ struct PmeGpu
      */
     std::intmax_t maxGridWidthX;
 
+    /*! \brief Minimum particle count to prefer recalculating splines.
+     *
+     * The gather kernel can either recalculate the splines or load
+     * those saved during the spline (and spread)
+     * kernel. Recalculating is advantageous when there are enough
+     * particles. When so doing, it is best to use fewer threads per
+     * atom in the spline and spread.
+     *
+     * This feature is supported by CUDA and SYCL. Spread pipelining
+     * requires spline recalculation. */
+    int minParticleCountToRecalculateSplines = 23000;
+
     /*! \brief A single structure encompassing all the PME data used on GPU.
      * Its value is the only argument to all the PME GPU kernels.
      * \todo Test whether this should be copied to the constant GPU memory once for each computation
