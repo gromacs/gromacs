@@ -35,6 +35,12 @@
  * \brief
  * Tests for simple math functions.
  *
+ * Theoretically we'd like all math functions to match exactly, even in
+ * floating-point, but that is not realistic without excessive corrections to
+ * get the last ulp right - so in practice we target 1-2 ulp, which is VERY
+ * tight. However, to avoid worrying users we are a bit more generous and
+ * use 5-10 ulp as tolerance for the actual tests users will run through.
+ *
  * \author Erik Lindahl <erik.lindahl@gmail.com>
  * \ingroup module_math
  */
@@ -134,6 +140,7 @@ TEST(FunctionTest, InvsqrtFloat)
     {
         result.push_back(gmx::invsqrt(f));
     }
+    checker.setDefaultTolerance(gmx::test::ulpTolerance(5));
     checker.checkSequence(result.begin(), result.end(), "InvsqrtFloat");
 }
 
@@ -147,6 +154,7 @@ TEST(FunctionTest, InvsqrtDouble)
     {
         result.push_back(gmx::invsqrt(f));
     }
+    checker.setDefaultTolerance(gmx::test::ulpTolerance(5));
     checker.checkSequence(result.begin(), result.end(), "InvsqrtDouble");
 }
 
@@ -160,6 +168,7 @@ TEST(FunctionTest, InvsqrtInteger)
     {
         result.push_back(gmx::invsqrt(i));
     }
+    checker.setDefaultTolerance(gmx::test::ulpTolerance(5));
     checker.checkSequence(result.begin(), result.end(), "InvsqrtInteger");
 }
 
@@ -173,6 +182,7 @@ TEST(FunctionTest, InvcbrtFloat)
     {
         result.push_back(gmx::invcbrt(f));
     }
+    checker.setDefaultTolerance(gmx::test::ulpTolerance(5));
     checker.checkSequence(result.begin(), result.end(), "InvcbrtFloat");
 }
 
@@ -186,6 +196,7 @@ TEST(FunctionTest, InvcbrtDouble)
     {
         result.push_back(gmx::invcbrt(d));
     }
+    checker.setDefaultTolerance(gmx::test::ulpTolerance(5));
     checker.checkSequence(result.begin(), result.end(), "InvcbrtDouble");
 }
 
@@ -199,6 +210,7 @@ TEST(FunctionTest, InvcbrtInteger)
     {
         result.push_back(gmx::invcbrt(i));
     }
+    checker.setDefaultTolerance(gmx::test::ulpTolerance(5));
     checker.checkSequence(result.begin(), result.end(), "InvcbrtInteger");
 }
 
@@ -213,6 +225,7 @@ TEST(FunctionTest, SixthrootFloat)
     {
         result.push_back(gmx::sixthroot(f));
     }
+    checker.setDefaultTolerance(gmx::test::ulpTolerance(5));
     checker.checkSequence(result.begin(), result.end(), "SixthrootFloat");
 }
 
@@ -226,6 +239,7 @@ TEST(FunctionTest, SixthrootDouble)
     {
         result.push_back(gmx::sixthroot(d));
     }
+    checker.setDefaultTolerance(gmx::test::ulpTolerance(5));
     checker.checkSequence(result.begin(), result.end(), "SixthrootDouble");
 }
 
@@ -240,6 +254,7 @@ TEST(FunctionTest, SixthrootInteger)
     {
         result.push_back(gmx::sixthroot(i));
     }
+    checker.setDefaultTolerance(gmx::test::ulpTolerance(5));
     checker.checkSequence(result.begin(), result.end(), "SixthrootInteger");
 }
 
@@ -253,6 +268,7 @@ TEST(FunctionTest, InvsixthrootFloat)
     {
         result.push_back(gmx::invsixthroot(f));
     }
+    checker.setDefaultTolerance(gmx::test::ulpTolerance(5));
     checker.checkSequence(result.begin(), result.end(), "InvsixthrootFloat");
 }
 
@@ -266,6 +282,7 @@ TEST(FunctionTest, InvsixthrootDouble)
     {
         result.push_back(gmx::invsixthroot(d));
     }
+    checker.setDefaultTolerance(gmx::test::ulpTolerance(5));
     checker.checkSequence(result.begin(), result.end(), "InvsixthrootDouble");
 }
 
@@ -279,6 +296,7 @@ TEST(FunctionTest, InvsixthrootInteger)
     {
         result.push_back(gmx::invsixthroot(i));
     }
+    checker.setDefaultTolerance(gmx::test::ulpTolerance(5));
     checker.checkSequence(result.begin(), result.end(), "InvsixthrootInteger");
 }
 
@@ -314,6 +332,7 @@ TEST(FunctionTest, ErfInvFloat)
 
         result.push_back(gmx::erfinv(r));
     }
+    checker.setDefaultTolerance(gmx::test::ulpTolerance(5));
     checker.checkSequence(result.begin(), result.end(), "ErfInvFloat");
 }
 
@@ -327,9 +346,9 @@ TEST(FunctionTest, ErfInvDouble)
     for (int i = 0; i < npoints; i++)
     {
         double r = double(2 * i - npoints + 1) / npoints;
-
         result.push_back(gmx::erfinv(r));
     }
+    checker.setDefaultTolerance(gmx::test::ulpTolerance(5));
     checker.checkSequence(result.begin(), result.end(), "ErfInvDouble");
 }
 
@@ -340,6 +359,9 @@ TEST(FunctionTest, ErfAndErfInvAreInversesFloat)
     for (int i = 0; i < npoints; i++)
     {
         float r = float(2 * i - npoints + 1) / float(npoints);
+        // There is extra rounding when we do two function calls,
+        // and since the derivative is >1 we lose a few ulp extra
+        // when going back to r.
         EXPECT_FLOAT_EQ_TOL(r, std::erf(gmx::erfinv(r)), gmx::test::ulpTolerance(10));
     }
 }
@@ -351,6 +373,9 @@ TEST(FunctionTest, ErfAndErfInvAreInversesDouble)
     for (int i = 0; i < npoints; i++)
     {
         double r = double(2 * i - npoints + 1) / npoints;
+        // There is extra rounding when we do two function calls,
+        // and since the derivative is >1 we lose a few ulp extra
+        // when going back to r.
         EXPECT_DOUBLE_EQ_TOL(r, std::erf(gmx::erfinv(r)), gmx::test::ulpTolerance(10));
     }
 }

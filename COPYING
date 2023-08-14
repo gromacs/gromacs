@@ -687,6 +687,7 @@ Erik Lindahl, 2008-10-07.
 
    Files: src/gromacs/utility/current_function.h
           src/gromacs/utility/path.cpp
+	  src/gromacs/math/functions.cpp (erfinv algorithm & constants)
 
 Boost Software License - Version 1.0 - August 17th, 2003
 
