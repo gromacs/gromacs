@@ -1,0 +1,18 @@
+These files are semi-automatic translations by f2c from the original netlib BLAS library.
+The source has been modified to (mostly) use modern C formatting, and to get rid of
+compiler warnings. Any errors in doing this should be blamed on the GROMACS developers, and
+not the reference BLAS implementation.
+
+The reference BLAS implementation is available from http://www.netlib.org/blas
+
+BLAS does not come with a formal named "license", but a general statement that
+
+"The reference BLAS is a freely-available software package. It is available from netlib
+via anonymous ftp and the World Wide Web. Thus, it can be included in commercial software
+packages (and has been). We only ask that proper credit be given to the authors."
+
+While the rest of GROMACS is LGPL, we think it's only fair to give you the same rights to
+our modified BLAS files as the original netlib versions, so do what you want with them.
+However, be warned that we have only tested that they do the right thing in the cases used
+in GROMACS (primarily full & sparse matrix diagonalization), so in most cases it is a much
+better idea to use the full reference implementation.

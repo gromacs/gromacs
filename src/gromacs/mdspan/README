@@ -6,9 +6,6 @@ The full version is available from
 https://github.com/ORNL/cpp-proposals-pub/tree/master/P0009
 SHA1 of the commit used is f433984ba897298069b510aa1311145040dd860c.
 
-This work orginated from "Kokkos" and is distributed under the BSD license as
-stated in COPYING.
-
 The following modifications were carried out:
 * Add extensions.h with further mdspan functionality from the GROMACS team
 * reformatted code with uncrustify
