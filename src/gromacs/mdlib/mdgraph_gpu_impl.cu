@@ -362,7 +362,17 @@ void MdGpuGraph::Impl::createExecutableGraph(bool forceGraphReinstantiation)
                 cudaError_t stat = cudaGraphExecDestroy(instance_);
                 CU_RET_ERR(stat, "cudaGraphExecDestroy in MD graph definition finalization failed.");
             }
-            cudaError_t stat = cudaGraphInstantiate(&instance_, graph_, nullptr, nullptr, 0);
+            // Instantiate using existing CUDA stream priorities for relative node priorities within graph
+            cudaError_t stat = cudaGraphInstantiate(&instance_,
+                                                    graph_,
+#if CUDART_VERSION >= 12000
+                                                    cudaGraphInstantiateFlagUseNodePriority
+#else
+                                                    nullptr,
+                                                    nullptr,
+                                                    0
+#endif
+            );
             CU_RET_ERR(stat, "cudaGraphInstantiate in MD graph definition finalization failed.");
             graphInstanceAllocated_ = true;
         }
