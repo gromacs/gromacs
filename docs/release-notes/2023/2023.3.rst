@@ -54,3 +54,13 @@ This pressure coupling setting previously resulted in an error at
 simulation runtime instead.
 
 Fixes :issue:`4847`
+
+Update CUDA Graphs on Virial Steps
+""""""""""""""""""""""""""""""""""
+
+When using the experimental CUDA Graphs feature, previously the code
+would crash for runs where steps that involve virial calculations do
+not coincide with neighbour search steps. This issue is fixed by
+ensuring that CUDA Graphs are suitably updated on virial steps.
+
+Fixes :issue:`4813`
