@@ -338,7 +338,7 @@ public:
      * \param[in] numAtoms         The number of atoms to put onto this grid
      * \param[in] lowerCorner      The minimum Cartesian coordinates of the grid
      * \param[in] upperCorner      The maximum Cartesian coordinates of the grid
-     * \param[in] atomDensity      The atom density, will be computed when <= 0
+     * \param[in,out] atomDensity  The atom density, will be computed when <= 0
      * \param[in] maxAtomGroupRadius  The maximum radius of atom groups
      * \param[in] haveFep          Whether non-bonded parameters are perturbed
      * \param[in] pinningPolicy    The pinning policy for memory
@@ -347,7 +347,7 @@ public:
                        int                numAtoms,
                        gmx::RVec          lowerCorner,
                        gmx::RVec          upperCorner,
-                       real               atomDensity,
+                       real*              atomDensity,
                        real               maxAtomGroupRadius,
                        bool               haveFep,
                        gmx::PinningPolicy pinningPolicy);
@@ -472,28 +472,32 @@ private:
  * \param[in] upperCorner   The maximum Cartesian coordinates of the grid
  * \param[in] updateGroupsCog  The center of geometry of update groups, can be nullptr
  * \param[in] atomRange     The range of atoms to put on this grid
- * \param[in] atomDensity   The atom density
+ * \param[in,out] atomDensity  The atom density, will be computed when <= 0
  * \param[in] maxAtomGroupRadius  The maximum radius of atom groups
  * \param[in] haveFep       Whether non-bonded parameters are perturbed
  * \param[in] x             The coordinates of the atoms
  * \param[in] ddZone        The domain decomposition zone
  * \param[in] move          Tells whether atoms have moved to another DD domain
  * \param[in] numAtomsMoved  The number of atoms that moved to another DD domain
+ * \param[in] computeGridDensityRatio  When true, return the grid density ratio
+ *
+ * \returns When \p computeGridDensityRatio==true, the ratio of the effective 2D grid density and the uniform grid density
  */
-void generateAndFill2DGrid(Grid*                          grid,
+real generateAndFill2DGrid(Grid*                          grid,
                            gmx::ArrayRef<GridWork>        gridWork,
                            gmx::HostVector<int>*          cells,
                            const rvec                     lowerCorner,
                            const rvec                     upperCorner,
                            const gmx::UpdateGroupsCog*    updateGroupsCog,
                            gmx::Range<int>                atomRange,
-                           real                           atomDensity,
+                           real*                          atomDensity,
                            real                           maxAtomGroupRadius,
                            bool                           haveFep,
                            gmx::ArrayRef<const gmx::RVec> x,
                            int                            ddZone,
                            const int*                     move,
-                           int                            numAtomsMoved);
+                           int                            numAtomsMoved,
+                           bool                           computeGridDensityRatio);
 
 } // namespace Nbnxm
 

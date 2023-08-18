@@ -7,6 +7,14 @@ Performance improvements
    Also, please use the syntax :issue:`number` to reference issues on GitLab, without
    a space between the colon and number!
 
+Improved performance for inhomogeneous systems
+""""""""""""""""""""""""""""""""""""""""""""""
+
+The performance of systems with a lot of empty space is improved
+by optimizing the pair search grid for the effective atom density.
+
+:issue:`4805`
+
 HeFFTe multi-GPU FFT plan options are now configurable
 """"""""""""""""""""""""""""""""""""""""""""""""""""""
 

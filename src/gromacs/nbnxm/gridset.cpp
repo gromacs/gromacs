@@ -193,20 +193,55 @@ void GridSet::putOnGrid(const matrix                   box,
      */
     const int ddZone = (domainSetup_.doTestParticleInsertion_ ? 0 : gridIndex);
 
-    generateAndFill2DGrid(&grid,
-                          gridWork_,
-                          &gridSetData_.cells,
-                          lowerCorner,
-                          upperCorner,
-                          updateGroupsCog,
-                          atomRange,
-                          atomDensity,
-                          maxAtomGroupRadius,
-                          haveFep_,
-                          x,
-                          ddZone,
-                          move,
-                          numAtomsMoved);
+    /* The search grid/cells should be optimized to be as close to cubic
+     * as possible. This is not possible to achieve in a single go
+     * in cases where the particles are not distributed homogeneously.
+     * Thus we put the particles on the 2D-grid in 1 or 2 iterations for zone 0.
+     * We first generate a grid that is optimal for a homogeneous particle
+     * density. We then compute the effective grid density. If this is more
+     * than a factor 1.5 higher than the homogeneous density, we use a finer grid
+     * based on the newly computed density.
+     */
+    const real c_gridDensityRatioThreshold = 1.5_real;
+    const bool optimizeDensity             = (ddZone == 0 && !atomRange.empty());
+    real       gridDensityRatio            = 0;
+    int        iteration                   = 0;
+
+    while (iteration == 0
+           || (optimizeDensity && iteration == 1 && gridDensityRatio > c_gridDensityRatioThreshold))
+    {
+        if (iteration == 1)
+        {
+            /* The effective 2D grid density is higher than the uniform density.
+             * So we need to increase the 3D density, but we only know about
+             * the density in 2D. If the inhomogeneity is 2D only (unlikely),
+             * we need to correct with a factor gridDensityRatio. If we have
+             * a sphere-like concentration of particles, the correction factor
+             * should be gridDensityRatio^3/2. We use the average exponent.
+             */
+            atomDensity *= std::pow(gridDensityRatio, 1.25_real);
+        }
+
+        const bool computeGridDensityRatio = (iteration == 0 && optimizeDensity);
+
+        gridDensityRatio = generateAndFill2DGrid(&grid,
+                                                 gridWork_,
+                                                 &gridSetData_.cells,
+                                                 lowerCorner,
+                                                 upperCorner,
+                                                 updateGroupsCog,
+                                                 atomRange,
+                                                 &atomDensity,
+                                                 maxAtomGroupRadius,
+                                                 haveFep_,
+                                                 x,
+                                                 ddZone,
+                                                 move,
+                                                 numAtomsMoved,
+                                                 computeGridDensityRatio);
+
+        iteration++;
+    }
 
     /* Copy the already computed cell indices to the grid and sort, when needed */
     grid.setCellIndices(

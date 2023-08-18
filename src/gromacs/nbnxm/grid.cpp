@@ -136,7 +136,7 @@ void Grid::setDimensions(const int          ddZone,
                          const int          numAtoms,
                          gmx::RVec          lowerCorner,
                          gmx::RVec          upperCorner,
-                         real               atomDensity,
+                         real*              atomDensity,
                          const real         maxAtomGroupRadius,
                          const bool         haveFep,
                          gmx::PinningPolicy pinningPolicy)
@@ -162,12 +162,13 @@ void Grid::setDimensions(const int          ddZone,
     }
 
     /* For the home zone we compute the density when not set (=-1) or when =0 */
-    if (ddZone == 0 && atomDensity <= 0)
+    GMX_ASSERT(atomDensity, "atomDensity cannot be nullptr");
+    if (ddZone == 0 && *atomDensity <= 0)
     {
-        atomDensity = gridAtomDensity(numAtoms, lowerCorner, upperCorner);
+        *atomDensity = gridAtomDensity(numAtoms, lowerCorner, upperCorner);
     }
 
-    dimensions_.atomDensity        = atomDensity;
+    dimensions_.atomDensity        = *atomDensity;
     dimensions_.maxAtomGroupRadius = maxAtomGroupRadius;
 
     rvec size;
@@ -175,10 +176,10 @@ void Grid::setDimensions(const int          ddZone,
 
     if (numAtoms > geometry_.numAtomsPerCell)
     {
-        GMX_ASSERT(atomDensity > 0, "With one or more atoms, the density should be positive");
+        GMX_ASSERT(*atomDensity > 0, "With one or more atoms, the density should be positive");
 
         /* target cell length */
-        const std::array<real, DIM - 1> tlen = getTargetCellLength(geometry_, atomDensity);
+        const std::array<real, DIM - 1> tlen = getTargetCellLength(geometry_, *atomDensity);
 
         /* We round ncx and ncy down, because we get less cell pairs
          * in the pairlist when the fixed cell dimensions (x,y) are
@@ -1533,20 +1534,21 @@ void Grid::setCellIndices(int                            ddZone,
     }
 }
 
-void generateAndFill2DGrid(Grid*                          grid,
+real generateAndFill2DGrid(Grid*                          grid,
                            gmx::ArrayRef<GridWork>        gridWork,
                            gmx::HostVector<int>*          cells,
                            const rvec                     lowerCorner,
                            const rvec                     upperCorner,
                            const gmx::UpdateGroupsCog*    updateGroupsCog,
                            const gmx::Range<int>          atomRange,
-                           const real                     atomDensity,
+                           real*                          atomDensity,
                            const real                     maxAtomGroupRadius,
                            const bool                     haveFep,
                            gmx::ArrayRef<const gmx::RVec> x,
                            const int                      ddZone,
                            const int*                     move,
-                           const int                      numAtomsMoved)
+                           const int                      numAtomsMoved,
+                           const bool                     computeGridDensityRatio)
 {
     const int n = atomRange.size();
     // grid data used in GPU transfers inherits the gridset pinning policy
@@ -1584,6 +1586,32 @@ void generateAndFill2DGrid(Grid*                          grid,
         }
         GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR
     }
+
+    real gridDensityRatio = 0;
+
+    if (computeGridDensityRatio)
+    {
+        // Compute the effective density ratio on the current grid
+        int64_t sumAtomsInColumnSquared = 0;
+        for (int i = 0; i < grid->numColumns(); i++)
+        {
+            int64_t numAtomsInColumn = 0;
+            for (int thread = 0; thread < nthread; thread++)
+            {
+                numAtomsInColumn += gridWork[thread].numAtomsPerColumn[i];
+            }
+            sumAtomsInColumnSquared += gmx::square(numAtomsInColumn);
+        }
+        // The effective density divided by the uniform density
+        gridDensityRatio =
+                sumAtomsInColumnSquared * grid->numColumns() / gmx::square(real(atomRange.size()));
+        if (debug)
+        {
+            fprintf(debug, "ns grid effective density ratio %f\n", gridDensityRatio);
+        }
+    }
+
+    return gridDensityRatio;
 }
 
 } // namespace Nbnxm
