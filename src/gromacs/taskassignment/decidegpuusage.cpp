@@ -143,8 +143,8 @@ bool decideWhetherToUseGpusForNonbondedWithThreadMpi(const TaskTarget        non
         // Specifying -gputasks requires specifying everything.
         if (nonbondedTarget == TaskTarget::Auto || numRanksPerSimulation < 1)
         {
-            GMX_THROW(InconsistentInputError(
-                    formatString(g_specifyEverythingFormatString, "-nb and -ntmpi")));
+            GMX_THROW(InconsistentInputError(formatString(
+                    g_specifyEverythingFormatString, GMX_THREAD_MPI ? "-nb and -ntmpi" : "-nb")));
         }
         return true;
     }
@@ -387,8 +387,8 @@ bool decideWhetherToUseGpusForNonbonded(const TaskTarget          nonbondedTarge
         // Specifying -gputasks requires specifying everything.
         if (nonbondedTarget == TaskTarget::Auto)
         {
-            GMX_THROW(InconsistentInputError(
-                    formatString(g_specifyEverythingFormatString, "-nb and -ntmpi")));
+            GMX_THROW(InconsistentInputError(formatString(
+                    g_specifyEverythingFormatString, GMX_THREAD_MPI ? "-nb and -ntmpi" : "-nb")));
         }
 
         return true;
@@ -455,8 +455,9 @@ bool decideWhetherToUseGpusForPme(const bool              useGpuForNonbonded,
         // Specifying -gputasks requires specifying everything.
         if (pmeTarget == TaskTarget::Auto)
         {
-            GMX_THROW(InconsistentInputError(formatString(
-                    g_specifyEverythingFormatString, "all of -nb, -pme, and -ntmpi"))); // TODO ntmpi?
+            GMX_THROW(InconsistentInputError(
+                    formatString(g_specifyEverythingFormatString,
+                                 GMX_THREAD_MPI ? "all of -nb, -pme, and -ntmpi" : "-nb and -pme")));
         }
 
         return true;

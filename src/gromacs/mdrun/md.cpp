@@ -1130,7 +1130,9 @@ void gmx::LegacySimulator::do_md()
 
         if (simulationWork.useMdGpuGraph)
         {
-            if (bNS)
+            // Reset graph on search step (due to changing neighbour list etc)
+            // or virial step (due to changing shifts and box).
+            if (bNS || bCalcVir)
             {
                 fr_->mdGraph[MdGraphEvenOrOddStep::EvenStep]->reset();
                 fr_->mdGraph[MdGraphEvenOrOddStep::OddStep]->reset();
@@ -1139,7 +1141,7 @@ void gmx::LegacySimulator::do_md()
             {
                 mdGraph->setUsedGraphLastStep(usedMdGpuGraphLastStep);
                 bool canUseMdGpuGraphThisStep =
-                        !bCalcVir && !doTemperatureScaling && !doParrinelloRahman && !bGStat
+                        !bNS && !bCalcVir && !doTemperatureScaling && !doParrinelloRahman && !bGStat
                         && !needHalfStepKineticEnergy && !do_per_step(step, ir->nstxout)
                         && !do_per_step(step, ir->nstxout_compressed)
                         && !do_per_step(step, ir->nstvout) && !do_per_step(step, ir->nstfout)

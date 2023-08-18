@@ -3,15 +3,15 @@
 <ReferenceData>
   <Sequence Name="ErfInvFloat">
     <Int Name="Length">10</Int>
-    <Real>-1.163087</Real>
+    <Real>-1.1630871</Real>
     <Real>-0.73286909</Real>
     <Real>-0.47693628</Real>
     <Real>-0.27246273</Real>
-    <Real>-0.088855989</Real>
-    <Real>0.088855989</Real>
+    <Real>-0.088856004</Real>
+    <Real>0.088856004</Real>
     <Real>0.27246273</Real>
     <Real>0.47693628</Real>
     <Real>0.73286909</Real>
-    <Real>1.163087</Real>
+    <Real>1.1630871</Real>
   </Sequence>
 </ReferenceData>

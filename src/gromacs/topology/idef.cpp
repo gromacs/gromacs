@@ -339,7 +339,8 @@ void printInteractionParameters(gmx::TextWriter* writer, t_functype ftype, const
             writer->writeLineFormatted("doh=%15.8e, dhh=%15.8e", iparams.settle.doh, iparams.settle.dhh);
             break;
         case F_VSITE1: writer->ensureEmptyLine(); break;
-        case F_VSITE2: writer->writeLineFormatted("a=%15.8e", iparams.vsite.a); break;
+        case F_VSITE2:
+        case F_VSITE2FD: writer->writeLineFormatted("a=%15.8e", iparams.vsite.a); break;
         case F_VSITE3:
         case F_VSITE3FD:
         case F_VSITE3FAD:

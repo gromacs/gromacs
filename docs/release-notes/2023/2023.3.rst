@@ -19,9 +19,48 @@ Fixes where mdrun could behave incorrectly
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
 
+Correctly dump VSITE2FD virtual sites
+"""""""""""""""""""""""""""""""""""""
+
+Systems with virtual site VSITE2FD (2 atoms with fixed distance) could previously
+not be handled by ``gmx dump``. Note that this had no effect on simulation.
+
+:issue:`4845`
+
 Fixes that affect portability
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+|Gromacs| automatically finds oneAPI libraries in new layout
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+MKL and SYCL-support libraries were reorganized in oneAPI 2023.2. Now
+|Gromacs| automatically finds the libraries it needs in both new and
+old layouts.
 
 Miscellaneous
 ^^^^^^^^^^^^^
 
+Fix compilation for VMD plugin
+""""""""""""""""""""""""""""""
+
+This got broken with the changes for path handling.
+
+Fixes :issue:`4832`
+
+Unsupported anisotropic C-rescale rejected at preprocessing time
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+This pressure coupling setting previously resulted in an error at 
+simulation runtime instead.
+
+Fixes :issue:`4847`
+
+Update CUDA Graphs on Virial Steps
+""""""""""""""""""""""""""""""""""
+
+When using the experimental CUDA Graphs feature, previously the code
+would crash for runs where steps that involve virial calculations do
+not coincide with neighbour search steps. This issue is fixed by
+ensuring that CUDA Graphs are suitably updated on virial steps.
+
+Fixes :issue:`4813`

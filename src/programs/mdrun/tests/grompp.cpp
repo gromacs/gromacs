@@ -171,6 +171,22 @@ TEST_F(GromppTest, InvalidTransformationCoord)
     ASSERT_THROW(runTest(), gmx::InconsistentInputError);
     done_inputrec_strings(); // This allows grompp to be called again in another test
 }
+
+TEST_F(GromppTest, RejectCRescaleAndAnisotropic)
+{
+    const char* inputMdpFile[] = { "integrator              = md",
+                                   "nsteps                  = 1",
+                                   "tcoupl                  = v-rescale",
+                                   "tc-grps                 = System ",
+                                   "ref-t                   = 300  ",
+                                   "tau-t                   = 0.1 ",
+                                   "pcoupl                  = C-rescale",
+                                   "pcoupltype              = anisotropic",
+                                   "compressibility         = 1.0 1.0 1.0 1.0 1.0 1.0",
+                                   "ref-p                   = 1.0 1.0 1.0 0.0 0.0 0.0" };
+    runner_.useStringAsMdpFile(gmx::joinStrings(inputMdpFile, "\n"));
+    GMX_EXPECT_DEATH_IF_SUPPORTED(runTest(), "C-rescale does not support pressure coupling type");
+}
 #endif // HAVE_MUPARSER
 
 
