@@ -1435,11 +1435,10 @@ void do_force(FILE*                               fplog,
         pme_gpu_set_device_x(fr->pmedata, stateGpu->getCoordinates());
     }
 
-    auto* localXReadyOnDevice = (stepWork.haveGpuPmeOnThisRank || simulationWork.useGpuXBufferOpsWhenAllowed
-                                 || simulationWork.useGpuUpdate)
-                                        ? stateGpu->getCoordinatesReadyOnDeviceEvent(
-                                                AtomLocality::Local, simulationWork, stepWork)
-                                        : nullptr;
+    auto* localXReadyOnDevice =
+            (stepWork.haveGpuPmeOnThisRank || stepWork.useGpuXBufferOps || simulationWork.useGpuUpdate)
+                    ? stateGpu->getCoordinatesReadyOnDeviceEvent(AtomLocality::Local, simulationWork, stepWork)
+                    : nullptr;
 
     if (stepWork.clearGpuFBufferEarly)
     {
