@@ -23,7 +23,7 @@ gromacs:oneapi-2023.2.0-amd-nightly:configure:
   variables:
     CMAKE: /usr/local/cmake-3.18.4/bin/cmake
     CMAKE_BUILD_TYPE_OPTIONS: "-DCMAKE_BUILD_TYPE=RelWithAssert"
-    CMAKE_EXTRA_OPTIONS: "-DSYCL_CXX_FLAGS_EXTRA=-fsycl-targets=amdgcn-amd-amdhsa;-Xsycl-target-backend=amdgcn-amd-amdhsa;--offload-arch=gfx1034 -DGMX_GPU_NB_CLUSTER_SIZE=8 -DGMX_GPU_FFT_LIBRARY=None"
+    CMAKE_EXTRA_OPTIONS: "-DSYCL_CXX_FLAGS_EXTRA=-fsycl-targets=amdgcn-amd-amdhsa;-Xsycl-target-backend=amdgcn-amd-amdhsa;--offload-arch=gfx1034 -DGMX_GPU_NB_CLUSTER_SIZE=8 -DGMX_GPU_FFT_LIBRARY=vkfft"
     COMPILER_MAJOR_VERSION: 2023
 
 gromacs:oneapi-2023.2.0-amd-nightly:build:

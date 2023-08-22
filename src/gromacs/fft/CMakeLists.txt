@@ -132,6 +132,9 @@ target_link_libraries(fft INTERFACE
 if (GMX_GPU_FFT_BBFFT)
     target_link_libraries(fft INTERFACE bbfft::bbfft-sycl)
 endif()
+if (GMX_GPU_FFT_VKFFT)
+    target_link_libraries(fft INTERFACE VkFFT)
+endif()
 
 # TODO: when fft is an OBJECT target
 #target_link_libraries(fft PUBLIC legacy_api)

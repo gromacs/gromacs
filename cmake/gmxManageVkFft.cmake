@@ -83,6 +83,17 @@ function(gmx_manage_vkfft BACKEND_NAME)
         endif()
     elseif(BACKEND_NAME STREQUAL "HIP")
         target_compile_definitions(VkFFT INTERFACE VKFFT_BACKEND=2)
+        if (NOT GMX_SYCL_HIPSYCL)
+            # HIP does not include hiprtc CMake config prior to version 5.6
+            # https://github.com/ROCm-Developer-Tools/HIP/issues/3131
+            # Using find_package(HIP) pulls in too many dependencies, in particular clang_rt.
+            # Once we require ROCm 5.6 or newer, we can simply do
+            # find_package(hiprtc REQUIRED)
+            # target_link_libraries(VkFFT INTERFACE hiprtc::hiprtc)
+            # But for now, we use our custom cmake/FindHip.cmake module:
+            find_package(Hip REQUIRED COMPONENTS hiprtc)
+            target_link_libraries(VkFFT INTERFACE Hip::amdhip Hip::hiprtc)
+        endif()
         # hipFree is marked `nodiscard` but VkFFT ignores it
         gmx_target_interface_warning_suppression(VkFFT "-Wno-unused-result" HAS_WARNING_NO_UNUSED_RESULT)
     elseif(BACKEND_NAME STREQUAL "OpenCL")
