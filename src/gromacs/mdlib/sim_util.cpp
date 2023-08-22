@@ -1004,14 +1004,14 @@ static StepWorkload setupStepWorkload(const int                     legacyFlags,
             && !(simulationWork.computeNonbondedAtMtsLevel1 && !computeSlowForces);
     flags.computeDhdl = ((legacyFlags & GMX_FORCE_DHDL) != 0);
 
-    if (simulationWork.useGpuXBufferOps || simulationWork.useGpuFBufferOps)
+    if (simulationWork.useGpuXBufferOpsWhenAllowed || simulationWork.useGpuFBufferOpsWhenAllowed)
     {
         GMX_ASSERT(simulationWork.useGpuNonbonded,
                    "Can only offload buffer ops if nonbonded computation is also offloaded");
     }
-    flags.useGpuXBufferOps = simulationWork.useGpuXBufferOps && !flags.doNeighborSearch;
+    flags.useGpuXBufferOps = simulationWork.useGpuXBufferOpsWhenAllowed && !flags.doNeighborSearch;
     // on virial steps the CPU reduction path is taken
-    flags.useGpuFBufferOps = simulationWork.useGpuFBufferOps && !flags.computeVirial;
+    flags.useGpuFBufferOps = simulationWork.useGpuFBufferOpsWhenAllowed && !flags.computeVirial;
     flags.useGpuPmeFReduction =
             flags.computeSlowForces && flags.useGpuFBufferOps
             && (simulationWork.haveGpuPmeOnPpRank() || simulationWork.useGpuPmePpCommunication);
@@ -1435,10 +1435,11 @@ void do_force(FILE*                               fplog,
         pme_gpu_set_device_x(fr->pmedata, stateGpu->getCoordinates());
     }
 
-    auto* localXReadyOnDevice =
-            (stepWork.haveGpuPmeOnThisRank || simulationWork.useGpuXBufferOps || simulationWork.useGpuUpdate)
-                    ? stateGpu->getCoordinatesReadyOnDeviceEvent(AtomLocality::Local, simulationWork, stepWork)
-                    : nullptr;
+    auto* localXReadyOnDevice = (stepWork.haveGpuPmeOnThisRank || simulationWork.useGpuXBufferOpsWhenAllowed
+                                 || simulationWork.useGpuUpdate)
+                                        ? stateGpu->getCoordinatesReadyOnDeviceEvent(
+                                                AtomLocality::Local, simulationWork, stepWork)
+                                        : nullptr;
 
     if (stepWork.clearGpuFBufferEarly)
     {
@@ -1665,12 +1666,16 @@ void do_force(FILE*                               fplog,
         wallcycle_sub_stop(wcycle, WallCycleSubCounter::NBSSearchLocal);
         wallcycle_stop(wcycle, WallCycleCounter::NS);
 
-        if (simulationWork.useGpuXBufferOps)
+        // Do setup work for GPU X buffer ops for the lifetime of this
+        // partitioning, even though it is not active on this step.
+        if (simulationWork.useGpuXBufferOpsWhenAllowed)
         {
             nbv->atomdata_init_copy_x_to_nbat_x_gpu();
         }
 
-        if (simulationWork.useGpuFBufferOps)
+        // Do setup work for GPU F buffer ops for the lifetime of this
+        // partitioning, even though we might not use it on this step.
+        if (simulationWork.useGpuFBufferOpsWhenAllowed)
         {
             setupLocalGpuForceReduction(runScheduleWork,
                                         fr->nbv.get(),

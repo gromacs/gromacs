@@ -99,11 +99,11 @@ SimulationWorkload createSimulationWorkload(const t_inputrec& inputrec,
     simulationWorkload.haveEwaldSurfaceContribution = haveEwaldSurfaceContribution(inputrec);
     simulationWorkload.useMts                       = inputrec.useMts;
     const bool featuresRequireGpuBufferOps = useGpuForUpdate || simulationWorkload.useGpuDirectCommunication;
-    simulationWorkload.useGpuXBufferOps =
+    simulationWorkload.useGpuXBufferOpsWhenAllowed =
             (devFlags.enableGpuBufferOps || featuresRequireGpuBufferOps) && !inputrec.useMts;
-    simulationWorkload.useGpuFBufferOps =
+    simulationWorkload.useGpuFBufferOpsWhenAllowed =
             (devFlags.enableGpuBufferOps || featuresRequireGpuBufferOps) && !inputrec.useMts;
-    if (simulationWorkload.useGpuXBufferOps || simulationWorkload.useGpuFBufferOps)
+    if (simulationWorkload.useGpuXBufferOpsWhenAllowed || simulationWorkload.useGpuFBufferOpsWhenAllowed)
     {
         GMX_ASSERT(simulationWorkload.useGpuNonbonded,
                    "Can only offload X/F buffer ops if nonbonded computation is also offloaded");

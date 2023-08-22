@@ -352,8 +352,9 @@ void gmx::LegacySimulator::do_md()
     ObservablesReducer observablesReducer = observablesReducerBuilder_->build();
 
     ForceBuffers     f(simulationWork.useMts,
-                   (simulationWork.useGpuFBufferOps || useGpuForUpdate) ? PinningPolicy::PinnedIfSupported
-                                                                            : PinningPolicy::CannotBePinned);
+                   (simulationWork.useGpuFBufferOpsWhenAllowed || useGpuForUpdate)
+                               ? PinningPolicy::PinnedIfSupported
+                               : PinningPolicy::CannotBePinned);
     const t_mdatoms* md = mdAtoms_->mdatoms();
     if (haveDDAtomOrdering(*cr_))
     {
@@ -419,7 +420,7 @@ void gmx::LegacySimulator::do_md()
         GMX_RELEASE_ASSERT(ir->eConstrAlg != ConstraintAlgorithm::Shake || constr_ == nullptr
                                    || constr_->numConstraintsTotal() == 0,
                            "SHAKE is not supported with GPU update.");
-        GMX_RELEASE_ASSERT(useGpuForPme || (useGpuForNonbonded && simulationWork.useGpuXBufferOps),
+        GMX_RELEASE_ASSERT(useGpuForPme || (useGpuForNonbonded && simulationWork.useGpuXBufferOpsWhenAllowed),
                            "Either PME or short-ranged non-bonded interaction tasks must run on "
                            "the GPU to use GPU update.\n");
         GMX_RELEASE_ASSERT(ir->eI == IntegrationAlgorithm::MD,
@@ -478,7 +479,7 @@ void gmx::LegacySimulator::do_md()
         integrator->setPbc(PbcType::Xyz, state_->box);
     }
 
-    if (useGpuForPme || simulationWork.useGpuXBufferOps || useGpuForUpdate)
+    if (useGpuForPme || simulationWork.useGpuXBufferOpsWhenAllowed || useGpuForUpdate)
     {
         changePinningPolicy(&state_->x, PinningPolicy::PinnedIfSupported);
     }

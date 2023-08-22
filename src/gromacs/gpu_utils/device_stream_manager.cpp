@@ -108,7 +108,7 @@ DeviceStreamManager::Impl::Impl(const DeviceInformation& deviceInfo,
                     std::make_unique<DeviceStream>(context_, DeviceStreamPriority::High, useTiming);
         }
         // Update stream is used both for coordinates transfers and for GPU update/constraints
-        if (simulationWork.useGpuPme || simulationWork.useGpuUpdate || simulationWork.useGpuXBufferOps)
+        if (simulationWork.useGpuPme || simulationWork.useGpuUpdate || simulationWork.useGpuXBufferOpsWhenAllowed)
         {
             streams_[DeviceStreamType::UpdateAndConstraints] =
                     std::make_unique<DeviceStream>(context_, DeviceStreamPriority::Normal, useTiming);

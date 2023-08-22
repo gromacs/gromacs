@@ -2154,7 +2154,7 @@ int Mdrunner::mdrunner()
             makeBondedLinks(cr->dd, mtop, fr->atomInfoForEachMoleculeBlock);
         }
 
-        if (runScheduleWork.simulationWork.useGpuFBufferOps)
+        if (runScheduleWork.simulationWork.useGpuFBufferOpsWhenAllowed)
         {
             fr->gpuForceReduction[gmx::AtomLocality::Local] = std::make_unique<gmx::GpuForceReduction>(
                     deviceStreamManager->context(),
