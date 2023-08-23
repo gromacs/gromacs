@@ -65,7 +65,11 @@
  *
  * Significant approximations used:
  *
- * Uniform particle density. UNDERESTIMATES the drift by rho_global/rho_local.
+ * A uniform effective particle density is used to determine what the density
+ * of particles around each particle is. When there are regions with higher
+ * and lower, but non-zero, particle density in the system, this approximation
+ * can slightly OVER/UNDERESTIMATE the drift, depending on the differences
+ * in properties of the particles between those regions.
  *
  * Interactions don't affect particle motion. OVERESTIMATES the drift on longer
  * time scales. This approximation probably introduces the largest errors.
