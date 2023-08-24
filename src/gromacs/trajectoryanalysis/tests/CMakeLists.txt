@@ -50,6 +50,7 @@ gmx_add_gtest_executable(trajectoryanalysis-test
         rdf.cpp
         sasa.cpp
         select.cpp
+	scattering.cpp
         surfacearea.cpp
         topologyinformation.cpp
         trajectory.cpp

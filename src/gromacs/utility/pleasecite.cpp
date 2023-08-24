@@ -575,6 +575,14 @@ void please_cite(FILE* fp, const char* key)
           22,
           1983,
           "2577-2637" },
+        { "Shvetsov2013",
+          "A. V. Shvetsov, A. E. Schmidt, D. V. Lebedev & V. V. Isaev-Ivanov",
+          "Method for calculating small-angle neutron scattering spectra using all-atom molecular "
+          "dynamics trajectories",
+          "Journal of Surface Investigation. X-ray, Synchrotron and Neutron Techniques",
+          7,
+          2013,
+          "1124–1127" },
     };
 #define NSTR static_cast<int>(asize(citedb))
 
