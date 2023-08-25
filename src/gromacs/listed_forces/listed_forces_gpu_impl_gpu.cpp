@@ -209,6 +209,25 @@ static inline int roundUpToFactor(const int input, const int factor)
     return (input + (factor - remainder));
 }
 
+void ListedForcesGpu::Impl::updateHaveInteractions(const InteractionDefinitions& idef)
+{
+    haveInteractions_ = false;
+
+    for (int fType : fTypesOnGpu)
+    {
+        /* Perturbation is not implemented in the GPU bonded kernels.
+         * But instead of doing all interactions on the CPU, we can
+         * still easily handle the types that have no perturbed
+         * interactions on the GPU. */
+        if (!idef.il[fType].empty() && !fTypeHasPerturbedEntries(idef, fType))
+        {
+            haveInteractions_ = true;
+            return;
+        }
+    }
+}
+
+
 // TODO Consider whether this function should be a factory method that
 // makes an object that is the only one capable of the device
 // operations needed for the lifetime of an interaction list. This
@@ -229,8 +248,8 @@ void ListedForcesGpu::Impl::updateInteractionListsAndDeviceBuffers(ArrayRef<cons
                                                                    DeviceBuffer<RVec>   d_fShiftPtr)
 {
     // TODO wallcycle sub start
-    haveInteractions_ = false;
-    int fTypesCounter = 0;
+    bool haveGpuInteractions = false;
+    int  fTypesCounter       = 0;
 
     for (int fType : fTypesOnGpu)
     {
@@ -242,7 +261,7 @@ void ListedForcesGpu::Impl::updateInteractionListsAndDeviceBuffers(ArrayRef<cons
          * interactions on the GPU. */
         if (!idef.il[fType].empty() && !fTypeHasPerturbedEntries(idef, fType))
         {
-            haveInteractions_ = true;
+            haveGpuInteractions = true;
 
             convertIlistToNbnxnOrder(idef.il[fType], &iList, NRAL(fType), nbnxnAtomOrder);
         }
@@ -307,6 +326,9 @@ void ListedForcesGpu::Impl::updateInteractionListsAndDeviceBuffers(ArrayRef<cons
 
     kernelBuffers_.d_forceParams = d_forceParams_;
     kernelBuffers_.d_vTot        = d_vTot_;
+
+    GMX_RELEASE_ASSERT(haveGpuInteractions == haveInteractions_,
+                       "inconsistent haveInteractions flags encountered.");
 
     // TODO wallcycle sub stop
 }
@@ -382,6 +404,11 @@ ListedForcesGpu::ListedForcesGpu(const gmx_ffparams_t&    ffparams,
 }
 
 ListedForcesGpu::~ListedForcesGpu() = default;
+
+void ListedForcesGpu::updateHaveInteractions(const InteractionDefinitions& idef)
+{
+    impl_->updateHaveInteractions(idef);
+}
 
 void ListedForcesGpu::updateInteractionListsAndDeviceBuffers(ArrayRef<const int> nbnxnAtomOrder,
                                                              const InteractionDefinitions& idef,
