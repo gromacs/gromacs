@@ -156,10 +156,10 @@ function(gmx_add_nvcc_flag_if_supported _output_variable_name_to_append_to _flag
             # Convert the success value to a boolean and report status
             if (_cuda_success EQUAL 0)
                 set(_cache_variable_value TRUE)
-                message(STATUS "Checking if nvcc accepts flags ${ARGN} - Success")
+                message(STATUS "Checking if nvcc accepts flags ${ARGN} - Yes")
             else()
                 set(_cache_variable_value FALSE)
-                message(STATUS "Checking if nvcc accepts flags ${ARGN} - Failed")
+                message(STATUS "Checking if nvcc accepts flags ${ARGN} - No")
             endif()
         endif()
         set(${_flags_cache_variable_name} ${_cache_variable_value} CACHE INTERNAL "Whether NVCC supports flag(s) ${ARGN}")
