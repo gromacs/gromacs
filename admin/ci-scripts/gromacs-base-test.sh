@@ -9,7 +9,7 @@ export OMPI_ALLOW_RUN_AS_ROOT_CONFIRM=1
 export ASAN_OPTIONS="check_initialization_order=1:detect_invalid_pointer_pairs=1:strict_init_order=true:strict_string_checks=true:detect_stack_use_after_return=true"
 # If $GMX_TEST_REQUIRED_NUMBER_OF_DEVICES is not set and we have GPUs, set it
 if [ -z $GMX_TEST_REQUIRED_NUMBER_OF_DEVICES ] && [ -n $KUBERNETES_EXTENDED_RESOURCE_NAME ] ; then
-    if grep -q '/gpu$' <<< "$KUBERNETES_EXTENDED_RESOURCE_NAME"; then
+    if grep -qw 'gpu' <<< "$KUBERNETES_EXTENDED_RESOURCE_NAME"; then
         echo "export GMX_TEST_REQUIRED_NUMBER_OF_DEVICES=\"$KUBERNETES_EXTENDED_RESOURCE_LIMIT\"";
         export GMX_TEST_REQUIRED_NUMBER_OF_DEVICES="$KUBERNETES_EXTENDED_RESOURCE_LIMIT";
     fi
@@ -41,7 +41,7 @@ fi
 if grep -qF 'amd.com/gpu' <<< "$KUBERNETES_EXTENDED_RESOURCE_NAME"; then
     clinfo -l || true;
 fi
-if grep -qF 'intel.com/gpu' <<< "$KUBERNETES_EXTENDED_RESOURCE_NAME"; then
+if grep -qF 'gpu.intel.com/i915' <<< "$KUBERNETES_EXTENDED_RESOURCE_NAME"; then
     sycl-ls || true;
     export SYCL_CACHE_PERSISTENT=1; # Issue #4218
 fi

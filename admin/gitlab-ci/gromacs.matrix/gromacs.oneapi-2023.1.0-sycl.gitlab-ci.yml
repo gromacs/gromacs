@@ -3,11 +3,11 @@
 #   OS: Ubuntu oldest supported
 #   Compiler: ICPX newest supported
 #   FFT: MKL
-#   GPU: SYCL
+#   GPU: SYCL with Intel GPUs
 #   Scope: configure, build, unit tests, regression tests
 # Test implementation choices (free to change as needed):
 #   OS: Ubuntu 22.04
-#   Build type: Debug
+#   Build type: RelWithAssert
 #   Compiler: ICPX 2023.1
 #   MPI: thread_MPI
 #   SIMD: AVX2_256
@@ -22,7 +22,8 @@ gromacs:oneapi-2023.1.0-sycl:configure:
   image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-22.04-oneapi-2023.1.0-intel-compute-runtime
   variables:
     CMAKE: /usr/local/cmake-3.18.4/bin/cmake
-    COMPILER_MAJOR_VERSION: 2021
+    CMAKE_BUILD_TYPE_OPTIONS: "-DCMAKE_BUILD_TYPE=RelWithAssert"
+    COMPILER_MAJOR_VERSION: 2022
 
 gromacs:oneapi-2023.1.0-sycl:build:
   extends:
@@ -46,6 +47,31 @@ gromacs:oneapi-2023.1.0-sycl:test:
   variables:
     CMAKE: /usr/local/cmake-3.18.4/bin/cmake
     GMX_TEST_LABELS: "QuickGpuTest|SlowGpuTest"
+    SYCL_DEVICE_FILTER: "opencl:gpu"
+    KUBERNETES_EXTENDED_RESOURCE_NAME: "gpu.intel.com/i915"
+    KUBERNETES_EXTENDED_RESOURCE_LIMIT: 1
+    # https://github.com/intel/compute-runtime/issues/622
+    NEOReadDebugKeys: 1
+    ResolveDependenciesViaPipeControls: 0
+  needs:
+    - job: gromacs:oneapi-2023.1.0-sycl:build
+
+gromacs:oneapi-2023.1.0-sycl:test-update-cpu:
+  extends:
+    - .gromacs:base:test
+    - .use-oneapi:base
+    - .rules:post-merge-acceptance
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-22.04-oneapi-2023.1.0-intel-compute-runtime
+  variables:
+    CMAKE: /usr/local/cmake-3.18.4/bin/cmake
+    GMX_TEST_LABELS: "QuickGpuTest|SlowGpuTest"
+    SYCL_DEVICE_FILTER: "opencl:gpu"
+    KUBERNETES_EXTENDED_RESOURCE_NAME: "gpu.intel.com/i915"
+    KUBERNETES_EXTENDED_RESOURCE_LIMIT: 1
+    GMX_FORCE_UPDATE_DEFAULT_CPU: 1
+    # https://github.com/intel/compute-runtime/issues/622
+    NEOReadDebugKeys: 1
+    ResolveDependenciesViaPipeControls: 0
   needs:
     - job: gromacs:oneapi-2023.1.0-sycl:build
 
@@ -57,8 +83,35 @@ gromacs:oneapi-2023.1.0-sycl:regressiontest:
   image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-22.04-oneapi-2023.1.0-intel-compute-runtime
   variables:
     CMAKE: /usr/local/cmake-3.18.4/bin/cmake
+    SYCL_DEVICE_FILTER: "opencl:gpu"
+    REGRESSIONTEST_TOTAL_RANK_NUMBER: 2
+    REGRESSIONTEST_OMP_RANK_NUMBER: 1
+    KUBERNETES_EXTENDED_RESOURCE_NAME: "gpu.intel.com/i915"
+    KUBERNETES_EXTENDED_RESOURCE_LIMIT: 2
+    # https://github.com/intel/compute-runtime/issues/622
+    NEOReadDebugKeys: 1
+    ResolveDependenciesViaPipeControls: 0
   needs:
     - job: gromacs:oneapi-2023.1.0-sycl:build
     - job: regressiontests:prepare
 
-
+gromacs:oneapi-2023.1.0-sycl:regressiontest-singlerank:
+  extends:
+    - .gromacs:base:regressiontest
+    - .use-oneapi:base
+    - .rules:post-merge-acceptance
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-22.04-oneapi-2023.1.0-intel-compute-runtime:latest
+  variables:
+    CMAKE: /usr/local/cmake-3.18.4/bin/cmake
+    SYCL_DEVICE_FILTER: "opencl:gpu"
+    # Default not working, see #2980
+    REGRESSIONTEST_TOTAL_RANK_NUMBER: 1
+    REGRESSIONTEST_OMP_RANK_NUMBER: 1
+    KUBERNETES_EXTENDED_RESOURCE_NAME: "gpu.intel.com/i915"
+    KUBERNETES_EXTENDED_RESOURCE_LIMIT: 1
+    # https://github.com/intel/compute-runtime/issues/622
+    NEOReadDebugKeys: 1
+    ResolveDependenciesViaPipeControls: 0
+  needs:
+    - job: gromacs:oneapi-2023.1.0-sycl:build
+    - job: regressiontests:prepare

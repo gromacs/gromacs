@@ -217,7 +217,6 @@ include:
   - local: '/admin/gitlab-ci/gromacs.matrix/gromacs.oneapi-2023.1.0-opencl.gitlab-ci.yml'
   - local: '/admin/gitlab-ci/gromacs.matrix/gromacs.oneapi-2023.1.0-opencl-release.gitlab-ci.yml'
   - local: '/admin/gitlab-ci/gromacs.matrix/gromacs.oneapi-2023.1.0-sycl.gitlab-ci.yml'
-  - local: '/admin/gitlab-ci/gromacs.matrix/gromacs.oneapi-2023.1.0-sycl-nightly.gitlab-ci.yml'
   - local: '/admin/gitlab-ci/gromacs.matrix/gromacs.oneapi-2023.2.0-amd-nightly.gitlab-ci.yml'
   - local: '/admin/gitlab-ci/gromacs.matrix/gromacs.intel-llvm-nvidia-nightly.gitlab-ci.yml'
   - local: '/admin/gitlab-ci/gromacs.matrix/gromacs-gcc-9-cp2k-8.2-nightly.gitlab-ci.yml'
