@@ -94,6 +94,7 @@ private:
     cufftHandle    planR2C_;
     cufftHandle    planC2R_;
     cudaLibXtDesc* desc_;
+    MPI_Comm       comm_;
 };
 
 } // namespace gmx

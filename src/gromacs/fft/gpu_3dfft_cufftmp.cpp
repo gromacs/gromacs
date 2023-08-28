@@ -227,10 +227,14 @@ Gpu3dFft::ImplCuFftMp::ImplCuFftMp(bool                allocateRealGrid,
     handleCufftError(cufftCreate(&planR2C_), "cufftCreate R2C plan failure");
     handleCufftError(cufftCreate(&planC2R_), "cufftCreate C2R plan failure");
 
+    // Duplicate the existing communicator for cuFFTMp usage as the communicator should
+    // remain valid from cuFFTMp plan creation to destruction and should remain in scope.
+    MPI_Comm_dup(comm, &comm_);
+
     // Attach the MPI communicator to the plans
-    handleCufftError(cufftMpAttachComm(planR2C_, CUFFT_COMM_MPI, &comm),
+    handleCufftError(cufftMpAttachComm(planR2C_, CUFFT_COMM_MPI, &comm_),
                      "cufftMpAttachComm R2C plan failure");
-    handleCufftError(cufftMpAttachComm(planC2R_, CUFFT_COMM_MPI, &comm),
+    handleCufftError(cufftMpAttachComm(planC2R_, CUFFT_COMM_MPI, &comm_),
                      "cufftMpAttachComm C2R plan failure");
 
     // Describe the data distribution
@@ -280,6 +284,7 @@ Gpu3dFft::ImplCuFftMp::~ImplCuFftMp()
 
     handleCufftError(cufftDestroy(planR2C_), "cufftDestroy R2C plan failure");
     handleCufftError(cufftDestroy(planC2R_), "cufftDestroy C2R plan failure");
+    MPI_Comm_free(&comm_);
 }
 
 void Gpu3dFft::ImplCuFftMp::perform3dFft(gmx_fft_direction dir, CommandEvent* /*timingEvent*/)

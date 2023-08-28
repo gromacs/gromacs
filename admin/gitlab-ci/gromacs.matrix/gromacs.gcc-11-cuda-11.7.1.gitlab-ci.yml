@@ -60,6 +60,13 @@ gromacs:gcc-11-cuda-11.7.1:testMPI:
     # cuFFTMp uses NVSHMEM, which in turn will use NCCL on single-node when available
     # But NCCL has extra restrictions (such as only 1 rank per GPU) so we disable for CI
     NVSHMEM_DISABLE_NCCL: 1
+    # Default NVSHMEM_SYMMETRIC_SIZE is around 1.5GB which causes mem allocation error on CI
+    # GPUs having 4GB vidmem also this size is overkill for PME decomp tests, hence we
+    # restrict the default NVSHMEM heap size to 32MB.
+    NVSHMEM_SYMMETRIC_SIZE: 32M
+    # set CUDA Module load to be lazy in order to save on CUDA libraries memory footprint
+    # as without lazy loading whole cuFFTMp library may get loaded into GPU RAM.
+    CUDA_MODULE_LOADING: LAZY
     GMX_TEST_LABELS: "QuickGpuTest|SlowGpuTest"
   tags:
     - k8s-scilifelab
