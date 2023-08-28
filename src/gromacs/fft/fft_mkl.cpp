@@ -154,12 +154,12 @@ int gmx_fft_init_1d(gmx_fft_t* pfft, int nxInt, gmx_fft_flag gmx_unused flags)
 
     if (status == 0)
     {
-        DftiSetValue(fft->ooplace[0], DFTI_PLACEMENT, DFTI_NOT_INPLACE);
+        status = DftiSetValue(fft->ooplace[0], DFTI_PLACEMENT, DFTI_NOT_INPLACE);
     }
 
     if (status == 0)
     {
-        DftiCommitDescriptor(fft->ooplace[0]);
+        status = DftiCommitDescriptor(fft->ooplace[0]);
     }
 
 
