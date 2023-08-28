@@ -370,8 +370,7 @@ void dd_move_f(gmx_domdec_t* dd, gmx::ForceWithShiftForces* forceWithShiftForces
            consider PBC in the treatment of fshift */
         const bool shiftForcesNeedPbc =
                 (forceWithShiftForces->computeVirial() && dd->ci[dd->dim[d]] == 0);
-        const bool applyScrewPbc =
-                (shiftForcesNeedPbc && dd->unitCellInfo.haveScrewPBC && dd->dim[d] == XX);
+        const bool applyScrewPbc = (dd->unitCellInfo.haveScrewPBC && dd->dim[d] == XX);
         /* Determine which shift vector we need */
         ivec vis        = { 0, 0, 0 };
         vis[dd->dim[d]] = 1;
@@ -411,7 +410,7 @@ void dd_move_f(gmx_domdec_t* dd, gmx::ForceWithShiftForces* forceWithShiftForces
             ddSendrecv(dd, d, dddirForward, sendBuffer, receiveBuffer);
             /* Add the received forces */
             int n = 0;
-            if (!shiftForcesNeedPbc)
+            if (!applyScrewPbc && !shiftForcesNeedPbc)
             {
                 for (int j : ind.index)
                 {
