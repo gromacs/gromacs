@@ -1207,7 +1207,6 @@ void gmx::LegacySimulator::do_md()
                                     imdSession_,
                                     pullWork_,
                                     bNS,
-                                    legacyForceFlags,
                                     top_,
                                     constr_,
                                     enerd_,
@@ -1280,7 +1279,6 @@ void gmx::LegacySimulator::do_md()
                          t,
                          ed ? ed->getLegacyED() : nullptr,
                          fr_->longRangeNonbondeds.get(),
-                         legacyForceFlags,
                          ddBalanceRegionHandler);
             }
 

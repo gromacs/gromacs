@@ -1077,8 +1077,6 @@ void EnergyEvaluator::run(em_state_t* ems, rvec mu_tot, tensor vir, tensor pres,
              t,
              ed,
              fr->longRangeNonbondeds.get(),
-             GMX_FORCE_STATECHANGED | GMX_FORCE_ALLFORCES | GMX_FORCE_VIRIAL | GMX_FORCE_ENERGY
-                     | (bNS ? GMX_FORCE_NS : 0),
              DDBalanceRegionHandler(cr));
 
     /* Clear the unused shake virial and pressure */
@@ -3378,9 +3376,8 @@ void LegacySimulator::do_nm()
         size_t atom = atom_index[aid];
         for (size_t d = 0; d < DIM; d++)
         {
-            int64_t step    = 0;
-            int force_flags = GMX_FORCE_STATECHANGED | GMX_FORCE_ALLFORCES | (bNS ? GMX_FORCE_NS : 0);
-            double t        = 0;
+            int64_t step = 0;
+            double  t    = 0;
 
             x_min = state_work_x[atom][d];
 
@@ -3411,7 +3408,6 @@ void LegacySimulator::do_nm()
                                         imdSession_,
                                         pullWork_,
                                         bNS,
-                                        force_flags,
                                         top_,
                                         constr_,
                                         enerd_,

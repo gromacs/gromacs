@@ -544,7 +544,6 @@ void gmx::LegacySimulator::do_mimic()
                                 imdSession_,
                                 pullWork_,
                                 bNS,
-                                force_flags,
                                 top_,
                                 constr_,
                                 enerd_,
@@ -606,7 +605,6 @@ void gmx::LegacySimulator::do_mimic()
                      t,
                      ed,
                      fr_->longRangeNonbondeds.get(),
-                     GMX_FORCE_NS | force_flags,
                      ddBalanceRegionHandler);
         }
 

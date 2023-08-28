@@ -940,7 +940,6 @@ void relax_shell_flexcon(FILE*                          fplog,
                          gmx::ImdSession*               imdSession,
                          pull_t*                        pull_work,
                          gmx_bool                       bDoNS,
-                         int                            force_flags,
                          const gmx_localtop_t*          top,
                          gmx::Constraints*              constr,
                          gmx_enerdata_t*                enerd,
@@ -1090,7 +1089,6 @@ void relax_shell_flexcon(FILE*                          fplog,
              t,
              nullptr,
              longRangeNonbondeds,
-             force_flags,
              ddBalanceRegionHandler);
 
     sf_dir = 0;
@@ -1239,7 +1237,6 @@ void relax_shell_flexcon(FILE*                          fplog,
                  t,
                  nullptr,
                  longRangeNonbondeds,
-                 force_flags,
                  ddBalanceRegionHandler);
         // revert stepWork
         runScheduleWork->stepWork = stepWorkBackup;
