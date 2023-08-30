@@ -438,10 +438,10 @@ static void analyse_prot(gmx::ArrayRef<const std::string> restype,
             if (gmx_ask_yesno(bASK))
             {
                 aid.clear();
-                for (int n = 0; ((atoms->atom[n].resind < npres) && (n < atoms->nr));)
+                for (int n = 0; ((n < atoms->nr) && (atoms->atom[n].resind < npres));)
                 {
                     int resind = atoms->atom[n].resind;
-                    for (; ((atoms->atom[n].resind == resind) && (n < atoms->nr)); n++)
+                    for (; ((n < atoms->nr) && (atoms->atom[n].resind == resind)); n++)
                     {
                         bool match = false;
                         for (int j = 0; (j < constructing_data[i].num_defining_atomnames); j++)
@@ -479,11 +479,11 @@ static void analyse_prot(gmx::ArrayRef<const std::string> restype,
         {
             /* Make swap sidechain C=O index */
             aid.clear();
-            for (int n = 0; ((atoms->atom[n].resind < npres) && (n < atoms->nr));)
+            for (int n = 0; ((n < atoms->nr) && (atoms->atom[n].resind < npres));)
             {
                 int resind = atoms->atom[n].resind;
                 int hold   = -1;
-                for (; ((atoms->atom[n].resind == resind) && (n < atoms->nr)); n++)
+                for (; ((n < atoms->nr) && (atoms->atom[n].resind == resind)); n++)
                 {
                     if (strcmp("CA", *atoms->atomname[n]) == 0)
                     {
