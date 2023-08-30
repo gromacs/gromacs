@@ -227,16 +227,12 @@ const int gmxCacheLineSize = 64;
 //! Set up coordinate communication
 static void setup_coordinate_communication(PmeAtomComm* atc)
 {
-    int nslab, n, i;
-    int fw, bw;
-
-    nslab = atc->nslab;
-
-    n = 0;
-    for (i = 1; i <= nslab / 2; i++)
+    const int nslab = atc->nslab;
+    int       n     = 0;
+    for (int i = 1; i <= nslab / 2; i++)
     {
-        fw = (atc->slabIndex + i) % nslab;
-        bw = (atc->slabIndex - i + nslab) % nslab;
+        int fw = (atc->slabIndex + i) % nslab;
+        int bw = (atc->slabIndex - i + nslab) % nslab;
         if (n < nslab - 1)
         {
             atc->slabCommSetup[n].node_dest = fw;
@@ -261,15 +257,12 @@ static int mult_up(int n, int f)
 /*! \brief Return estimate of the load imbalance from the PME grid not being a good match for the number of PME ranks */
 static double estimate_pme_load_imbalance(struct gmx_pme_t* pme)
 {
-    int    nma, nmi;
-    double n1, n2, n3;
+    const int nma = pme->nnodes_major;
+    const int nmi = pme->nnodes_minor;
 
-    nma = pme->nnodes_major;
-    nmi = pme->nnodes_minor;
-
-    n1 = mult_up(pme->nkx, nma) * mult_up(pme->nky, nmi) * pme->nkz;
-    n2 = mult_up(pme->nkx, nma) * mult_up(pme->nkz, nmi) * pme->nky;
-    n3 = mult_up(pme->nky, nma) * mult_up(pme->nkz, nmi) * pme->nkx;
+    const double n1 = mult_up(pme->nkx, nma) * mult_up(pme->nky, nmi) * pme->nkz;
+    const double n2 = mult_up(pme->nkx, nma) * mult_up(pme->nkz, nmi) * pme->nky;
+    const double n3 = mult_up(pme->nky, nma) * mult_up(pme->nkz, nmi) * pme->nkx;
 
     /* pme_solve is roughly double the cost of an fft */
 
@@ -336,8 +329,6 @@ PmeAtomComm::PmeAtomComm(MPI_Comm   PmeMpiCommunicator,
 /*! \brief Initialize data structure for communication */
 static void init_overlap_comm(pme_overlap_t* ol, int norder, MPI_Comm comm, int nnodes, int nodeid, int ndata, int commplainsize)
 {
-    gmx_bool bCont;
-
     ol->mpi_comm = comm;
     ol->nnodes   = nnodes;
     ol->nodeid   = nodeid;
@@ -378,17 +369,18 @@ static void init_overlap_comm(pme_overlap_t* ol, int norder, MPI_Comm comm, int 
     }
 
     /* Determine with how many nodes we need to communicate the grid overlap */
-    int testRankCount = 0;
+    int  testRankCount = 0;
+    bool bCont;
     do
     {
         testRankCount++;
-        bCont = FALSE;
+        bCont = false;
         for (int i = 0; i < nnodes; i++)
         {
             if ((i + testRankCount < nnodes && ol->s2g1[i] > ol->s2g0[i + testRankCount])
                 || (i + testRankCount >= nnodes && ol->s2g1[i] > ol->s2g0[i + testRankCount - nnodes] + ndata))
             {
-                bCont = TRUE;
+                bCont = true;
             }
         }
     } while (bCont && testRankCount < nnodes);
@@ -463,7 +455,7 @@ int minimalPmeGridSize(int pmeOrder)
      * But we use the maximum for simplicity since in practice there is not
      * much performance difference between pme_order and 2*(pme_order -1).
      */
-    int minimalSize = 2 * (pmeOrder - 1);
+    const int minimalSize = 2 * (pmeOrder - 1);
 
     GMX_RELEASE_ASSERT(pmeOrder >= 3, "pmeOrder has to be >= 3");
     GMX_RELEASE_ASSERT(minimalSize >= pmeOrder + 1, "The grid size should be >= pmeOrder + 1");
@@ -592,9 +584,6 @@ gmx_pme_t* gmx_pme_init(const t_commrec*     cr,
                         const PmeGpuProgram* pmeGpuProgram,
                         const gmx::MDLogger& mdlog)
 {
-    int  use_threads, sum_use_threads, i;
-    ivec ndata;
-
     if (debug)
     {
         fprintf(debug, "Creating PME data structures.\n");
@@ -605,7 +594,7 @@ gmx_pme_t* gmx_pme_init(const t_commrec*     cr,
     pme->buf_nalloc = 0;
 
     pme->nnodes  = 1;
-    pme->bPPnode = TRUE;
+    pme->bPPnode = true;
 
     pme->nnodes_major = numPmeDomains.x;
     pme->nnodes_minor = numPmeDomains.y;
@@ -688,7 +677,8 @@ gmx_pme_t* gmx_pme_init(const t_commrec*     cr,
     pme->nthread = nthread;
 
     /* Check if any of the PME MPI ranks uses threads */
-    use_threads = (pme->nthread > 1 ? 1 : 0);
+    int use_threads = (pme->nthread > 1 ? 1 : 0);
+    int sum_use_threads;
 #if GMX_MPI
     if (pme->nnodes > 1)
     {
@@ -758,7 +748,7 @@ gmx_pme_t* gmx_pme_init(const t_commrec*     cr,
 
         GMX_RELEASE_ASSERT(gridSpacing > 0, "Computed value of grid spacing is 0");
 
-        int pmeGpuGridHalo = numGridLinesForExtendedHaloRegion(
+        const int pmeGpuGridHalo = numGridLinesForExtendedHaloRegion(
                 ir->pme_order, haloExtentForAtomDisplacement, gridSpacing);
 
         if (debug)
@@ -899,6 +889,7 @@ gmx_pme_t* gmx_pme_init(const t_commrec*     cr,
 
     pme->spline_work = make_pme_spline_work(pme->pme_order);
 
+    ivec ndata;
     ndata[0] = pme->nkx;
     ndata[1] = pme->nky;
     ndata[2] = pme->nkz;
@@ -917,7 +908,7 @@ gmx_pme_t* gmx_pme_init(const t_commrec*     cr,
     snew(pme->cfftgrid, pme->ngrids);
     snew(pme->pfft_setup, pme->ngrids);
 
-    for (i = 0; i < pme->ngrids; ++i)
+    for (int i = 0; i < pme->ngrids; ++i)
     {
         if ((i < DO_Q && pme->doCoulomb && (i == 0 || bFreeEnergy_q))
             || (i >= DO_Q && pme->doLJ
@@ -1037,7 +1028,7 @@ void gmx_pme_reinit(struct gmx_pme_t** pmedata,
                                 pme_src->haloExtentForAtomDisplacement,
                                 pme_src->bFEP_q,
                                 pme_src->bFEP_lj,
-                                FALSE,
+                                false,
                                 ewaldcoeff_q,
                                 ewaldcoeff_lj,
                                 pme_src->nthread,
@@ -1065,8 +1056,6 @@ void gmx_pme_reinit(struct gmx_pme_t** pmedata,
 
 real gmx_pme_calc_energy(gmx_pme_t* pme, gmx::ArrayRef<const gmx::RVec> x, gmx::ArrayRef<const real> q)
 {
-    pmegrids_t* grid;
-
     if (pme->nnodes > 1)
     {
         gmx_incons("gmx_pme_calc_energy called in parallel");
@@ -1086,10 +1075,11 @@ real gmx_pme_calc_energy(gmx_pme_t* pme, gmx::ArrayRef<const gmx::RVec> x, gmx::
     atc->coefficient = q;
 
     /* We only use the A-charges grid */
-    grid = &pme->pmegrid[PME_GRID_QA];
+    const pmegrids_t* grid    = &pme->pmegrid[PME_GRID_QA];
+    real*             fftGrid = pme->fftgrid[PME_GRID_QA];
 
     /* Only calculate the spline coefficients, don't actually spread */
-    spread_on_grid(pme, atc, nullptr, TRUE, FALSE, pme->fftgrid[PME_GRID_QA], FALSE, PME_GRID_QA);
+    spread_on_grid(pme, atc, nullptr, true, false, fftGrid, false, PME_GRID_QA);
 
     return gather_energy_bsplines(pme, grid->grid.grid, atc);
 }
@@ -1145,19 +1135,6 @@ int gmx_pme_do(struct gmx_pme_t*              pme,
     GMX_ASSERT(pme->runMode == PmeRunMode::CPU,
                "gmx_pme_do should not be called on the GPU PME run.");
 
-    PmeAtomComm&              atc     = pme->atc[0];
-    pmegrids_t*               pmegrid = nullptr;
-    real*                     grid    = nullptr;
-    gmx::ArrayRef<const real> coefficient;
-    std::array<PmeOutput, 2>  output; // The second is used for the B state with FEP
-    gmx_parallel_3dfft_t      pfft_setup;
-    real*                     fftgrid;
-    t_complex*                cfftgrid;
-    int                       thread;
-    const int                 fep_states_lj = pme->bFEP_lj ? 2 : 1;
-    // There's no support for computing energy without virial, or vice versa
-    const bool computeEnergyAndVirial = (stepWork.computeEnergy || stepWork.computeVirial);
-
     /* We could be passing lambda!=0 while no q or LJ is actually perturbed */
     if (!pme->bFEP_q)
     {
@@ -1170,6 +1147,8 @@ int gmx_pme_do(struct gmx_pme_t*              pme,
 
     assert(pme->nnodes > 0);
     assert(pme->nnodes == 1 || pme->ndecompdim > 0);
+
+    PmeAtomComm& atc = pme->atc[0];
 
     if (pme->nnodes > 1)
     {
@@ -1216,7 +1195,10 @@ int gmx_pme_do(struct gmx_pme_t*              pme,
 
     /* If we are doing LJ-PME with LB, we only do Q here */
     const int max_grid_index = (pme->ljpme_combination_rule == LongRangeVdW::LB) ? DO_Q : DO_Q_AND_LJ;
-    bool      bClearF;
+    std::array<PmeOutput, 2> output; // The second is used for the B state with FEP
+
+    // There's no support for computing energy without virial, or vice versa
+    const bool computeEnergyAndVirial = (stepWork.computeEnergy || stepWork.computeVirial);
     for (int grid_index = 0; grid_index < max_grid_index; ++grid_index)
     {
         /* Check if we should do calculations at this grid_index
@@ -1229,11 +1211,7 @@ int gmx_pme_do(struct gmx_pme_t*              pme,
         {
             continue;
         }
-        /* Unpack structure */
-        pmegrid    = &pme->pmegrid[grid_index];
-        fftgrid    = pme->fftgrid[grid_index];
-        cfftgrid   = pme->cfftgrid[grid_index];
-        pfft_setup = pme->pfft_setup[grid_index];
+        gmx::ArrayRef<const real> coefficient;
         switch (grid_index)
         {
             case 0: coefficient = chargeA; break;
@@ -1241,8 +1219,6 @@ int gmx_pme_do(struct gmx_pme_t*              pme,
             case 2: coefficient = c6A; break;
             case 3: coefficient = c6B; break;
         }
-
-        grid = pmegrid->grid.grid;
 
         if (pme->nnodes == 1)
         {
@@ -1256,16 +1232,24 @@ int gmx_pme_do(struct gmx_pme_t*              pme,
             wallcycle_stop(wcycle, WallCycleCounter::PmeRedistXF);
         }
 
+        /* Unpack structure */
+        pmegrids_t*          pmegrid    = &pme->pmegrid[grid_index];
+        real*                fftgrid    = pme->fftgrid[grid_index];
+        t_complex*           cfftgrid   = pme->cfftgrid[grid_index];
+        gmx_parallel_3dfft_t pfft_setup = pme->pfft_setup[grid_index];
+
         wallcycle_start(wcycle, WallCycleCounter::PmeSpread);
 
         /* Spread the coefficients on a grid */
-        spread_on_grid(pme, &atc, pmegrid, bFirst, TRUE, fftgrid, bDoSplines, grid_index);
+        spread_on_grid(pme, &atc, pmegrid, bFirst, true, fftgrid, bDoSplines, grid_index);
 
         if (bFirst)
         {
             inc_nrnb(nrnb, eNR_WEIGHTS, DIM * atc.numAtoms());
         }
         inc_nrnb(nrnb, eNR_SPREADBSP, pme->pme_order * pme->pme_order * pme->pme_order * atc.numAtoms());
+
+        real* grid = pmegrid->grid.grid;
 
         if (!pme->bUseThreads)
         {
@@ -1289,12 +1273,11 @@ int gmx_pme_do(struct gmx_pme_t*              pme,
         */
 
         /* Here we start a large thread parallel region */
-#pragma omp parallel num_threads(pme->nthread) private(thread)
+#pragma omp parallel num_threads(pme->nthread)
         {
             try
             {
-                thread = gmx_omp_get_thread_num();
-                int loop_count;
+                const int thread = gmx_omp_get_thread_num();
 
                 /* do 3d-fft */
                 if (thread == 0)
@@ -1314,6 +1297,7 @@ int gmx_pme_do(struct gmx_pme_t*              pme,
                             wcycle,
                             (grid_index < DO_Q ? WallCycleCounter::PmeSolve : WallCycleCounter::LJPme));
                 }
+                int loop_count;
                 if (grid_index < DO_Q)
                 {
                     loop_count = solve_pme_yzx(pme,
@@ -1328,7 +1312,7 @@ int gmx_pme_do(struct gmx_pme_t*              pme,
                     loop_count =
                             solve_pme_lj_yzx(pme,
                                              &cfftgrid,
-                                             FALSE,
+                                             false,
                                              scaledBox[XX][XX] * scaledBox[YY][YY] * scaledBox[ZZ][ZZ],
                                              computeEnergyAndVirial,
                                              pme->nthread,
@@ -1392,10 +1376,10 @@ int gmx_pme_do(struct gmx_pme_t*              pme,
              * atc->f is the actual force array, not a buffer,
              * therefore we should not clear it.
              */
-            real lambda = grid_index < DO_Q ? lambda_q : lambda_lj;
-            bClearF     = (bFirst && PAR(cr));
+            const real lambda  = grid_index < DO_Q ? lambda_q : lambda_lj;
+            const bool bClearF = (bFirst && PAR(cr));
 #pragma omp parallel for num_threads(pme->nthread) schedule(static)
-            for (thread = 0; thread < pme->nthread; thread++)
+            for (int thread = 0; thread < pme->nthread; thread++)
             {
                 try
                 {
@@ -1430,7 +1414,7 @@ int gmx_pme_do(struct gmx_pme_t*              pme,
                 get_pme_ener_vir_lj(pme->solve_work, pme->nthread, &output[grid_index % 2]);
             }
         }
-        bFirst = FALSE;
+        bFirst = false;
     } /* of grid_index-loop */
 
     /* For Lorentz-Berthelot combination rules in LJ-PME, we need to calculate
@@ -1438,6 +1422,7 @@ int gmx_pme_do(struct gmx_pme_t*              pme,
 
     if (pme->doLJ && pme->ljpme_combination_rule == LongRangeVdW::LB)
     {
+        const int fep_states_lj = pme->bFEP_lj ? 2 : 1;
         /* Loop over A- and B-state if we are doing FEP */
         for (int fep_state = 0; fep_state < fep_states_lj; ++fep_state)
         {
@@ -1489,7 +1474,7 @@ int gmx_pme_do(struct gmx_pme_t*              pme,
                     local_c6[i] = atc.coefficient[i];
                 }
 
-                do_redist_pos_coeffs(pme, cr, FALSE, coordinates, RedistSigma);
+                do_redist_pos_coeffs(pme, cr, false, coordinates, RedistSigma);
                 local_sigma.assign(pme->lb_buf2.begin(), pme->lb_buf2.end());
                 for (int i = 0; i < atc.numAtoms(); ++i)
                 {
@@ -1505,15 +1490,15 @@ int gmx_pme_do(struct gmx_pme_t*              pme,
             for (int grid_index = 2; grid_index < 9; ++grid_index)
             {
                 /* Unpack structure */
-                pmegrid    = &pme->pmegrid[grid_index];
-                fftgrid    = pme->fftgrid[grid_index];
-                pfft_setup = pme->pfft_setup[grid_index];
+                const pmegrids_t*          pmegrid    = &pme->pmegrid[grid_index];
+                real*                      fftgrid    = pme->fftgrid[grid_index];
+                const gmx_parallel_3dfft_t pfft_setup = pme->pfft_setup[grid_index];
                 calc_next_lb_coeffs(coefficientBuffer, local_sigma);
-                grid = pmegrid->grid.grid;
+                real* grid = pmegrid->grid.grid;
 
                 wallcycle_start(wcycle, WallCycleCounter::PmeSpread);
                 /* Spread the c6 on a grid */
-                spread_on_grid(pme, &atc, pmegrid, bFirst, TRUE, fftgrid, bDoSplines, grid_index);
+                spread_on_grid(pme, &atc, pmegrid, bFirst, true, fftgrid, bDoSplines, grid_index);
 
                 if (bFirst)
                 {
@@ -1536,11 +1521,11 @@ int gmx_pme_do(struct gmx_pme_t*              pme,
                 wallcycle_stop(wcycle, WallCycleCounter::PmeSpread);
 
                 /*Here we start a large thread parallel region*/
-#pragma omp parallel num_threads(pme->nthread) private(thread)
+#pragma omp parallel num_threads(pme->nthread)
                 {
                     try
                     {
-                        thread = gmx_omp_get_thread_num();
+                        const int thread = gmx_omp_get_thread_num();
                         /* do 3d-fft */
                         if (thread == 0)
                         {
@@ -1555,15 +1540,15 @@ int gmx_pme_do(struct gmx_pme_t*              pme,
                     }
                     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR
                 }
-                bFirst = FALSE;
+                bFirst = false;
             }
             /* solve in k-space for our local cells */
-#pragma omp parallel num_threads(pme->nthread) private(thread)
+#pragma omp parallel num_threads(pme->nthread)
             {
                 try
                 {
-                    int loop_count;
-                    thread = gmx_omp_get_thread_num();
+                    int       loop_count;
+                    const int thread = gmx_omp_get_thread_num();
                     if (thread == 0)
                     {
                         wallcycle_start(wcycle, WallCycleCounter::LJPme);
@@ -1572,7 +1557,7 @@ int gmx_pme_do(struct gmx_pme_t*              pme,
                     loop_count =
                             solve_pme_lj_yzx(pme,
                                              &pme->cfftgrid[2],
-                                             TRUE,
+                                             true,
                                              scaledBox[XX][XX] * scaledBox[YY][YY] * scaledBox[ZZ][ZZ],
                                              computeEnergyAndVirial,
                                              pme->nthread,
@@ -1599,16 +1584,16 @@ int gmx_pme_do(struct gmx_pme_t*              pme,
             for (int grid_index = 8; grid_index >= 2; --grid_index)
             {
                 /* Unpack structure */
-                pmegrid    = &pme->pmegrid[grid_index];
-                fftgrid    = pme->fftgrid[grid_index];
-                pfft_setup = pme->pfft_setup[grid_index];
-                grid       = pmegrid->grid.grid;
+                pmegrids_t*                pmegrid    = &pme->pmegrid[grid_index];
+                const real*                fftgrid    = pme->fftgrid[grid_index];
+                const gmx_parallel_3dfft_t pfft_setup = pme->pfft_setup[grid_index];
+                real*                      grid       = pmegrid->grid.grid;
                 calc_next_lb_coeffs(coefficientBuffer, local_sigma);
-#pragma omp parallel num_threads(pme->nthread) private(thread)
+#pragma omp parallel num_threads(pme->nthread)
                 {
                     try
                     {
-                        thread = gmx_omp_get_thread_num();
+                        const int thread = gmx_omp_get_thread_num();
                         /* do 3d-invfft */
                         if (thread == 0)
                         {
@@ -1646,12 +1631,12 @@ int gmx_pme_do(struct gmx_pme_t*              pme,
                 if (stepWork.computeForces)
                 {
                     /* interpolate forces for our local atoms */
-                    bClearF    = (bFirst && PAR(cr));
-                    real scale = pme->bFEP ? (fep_state < 1 ? 1.0 - lambda_lj : lambda_lj) : 1.0;
+                    bool bClearF = (bFirst && PAR(cr));
+                    real scale   = pme->bFEP ? (fep_state < 1 ? 1.0 - lambda_lj : lambda_lj) : 1.0;
                     scale *= lb_scale_factor[grid_index - 2];
 
 #pragma omp parallel for num_threads(pme->nthread) schedule(static)
-                    for (thread = 0; thread < pme->nthread; thread++)
+                    for (int thread = 0; thread < pme->nthread; thread++)
                     {
                         try
                         {
@@ -1668,7 +1653,7 @@ int gmx_pme_do(struct gmx_pme_t*              pme,
                 }
                 wallcycle_stop(wcycle, WallCycleCounter::PmeGather);
 
-                bFirst = FALSE;
+                bFirst = false;
             } /* for (grid_index = 8; grid_index >= 2; --grid_index) */
         }     /* for (fep_state = 0; fep_state < fep_states_lj; ++fep_state) */
     }         /* if (pme->doLJ && pme->ljpme_combination_rule == LongRangeVdW::LB) */
