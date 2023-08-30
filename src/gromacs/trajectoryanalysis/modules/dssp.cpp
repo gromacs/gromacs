@@ -909,19 +909,6 @@ std::string SecondaryStructures::performPatternSearch(const t_trxframe& fr,
             }
         }
     }
-    if (piHelixPreference_)
-    {
-        for (std::size_t j = 0; j < secondaryStructuresStatusVector_.size(); ++j)
-        {
-            if (secondaryStructuresStatusVector_[j].getSecondaryStructure() == SecondaryStructureTypes::Helix_5
-                && secondaryStructuresStatusVector_[j].getSecondaryStructure()
-                           == SecondaryStructureTypes::Helix_4)
-            {
-                secondaryStructuresStringLine_[j] =
-                        c_secondaryStructureTypeNames[SecondaryStructureTypes::Helix_5];
-            }
-        }
-    }
     if (secondaryStructuresStatusVector_.size() > 1)
     {
         for (std::size_t i = 0, lineFactor = 1; i + 1 < secondaryStructuresStatusVector_.size(); ++i)
@@ -1309,7 +1296,7 @@ private:
     //! Selections for DSSP output. Set in initial options.
     Selection sel_;
     //! Boolean value for Preferring P-Helices mode. Set in initial options.
-    bool polyProHelices_ = true;
+    bool polyProHelices_ = false;
     //! Enum value for creating hydrogen atoms mode. Very useful for structures without hydrogen atoms. Set in initial options.
     HydrogenMode hMode_ = HydrogenMode::Gromacs;
     //! Boolean value determines different calculation methods for searching neighbor residues. Set in initial options.
@@ -1370,7 +1357,7 @@ void Dssp::initOptions(IOptionsContainer* options, TrajectoryAnalysisSettings* s
     options->addOption(RealOption("cutoff").store(&cutoff_).required().defaultValue(0.9).description(
             "Distance from residue to its neighbor residue in neighbor search. Must be >= 0.9"));
     options->addOption(
-            BooleanOption("pihelix").store(&polyProHelices_).defaultValue(true).description("Prefer Pi Helices"));
+            BooleanOption("pihelix").store(&polyProHelices_).defaultValue(false).description("Prefer Pi Helices"));
     options->addOption(EnumOption<PPStretches>("ppstretch")
                                .store(&polyProStretch_)
                                .defaultValue(PPStretches::Default)

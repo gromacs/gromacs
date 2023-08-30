@@ -39,6 +39,14 @@ not be handled by ``gmx dump``. Note that this had no effect on simulation.
 
 :issue:`4845`
 
+Fix DSSP tool
+"""""""""""""
+
+Fixed handling of Pi-helices in ``gmx dssp`` tool so now it produces output
+identical to original DSSP v4.1+.
+
+:issue:`4811`
+
 Fixes that affect portability
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
