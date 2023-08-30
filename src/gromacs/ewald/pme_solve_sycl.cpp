@@ -71,8 +71,19 @@ auto makeSolveKernel(sycl::handler& cgh,
     const int stride =
             8; // this is c_virialAndEnergyCount==7 rounded up to power of 2 for convenience, hence the assert
     static_assert(c_virialAndEnergyCount == 7);
-    const int                           reductionBufferSize = c_solveMaxWarpsPerBlock * stride;
-    sycl_2020::local_accessor<float, 1> sm_virialAndEnergy(sycl::range<1>(reductionBufferSize), cgh);
+    const int reductionBufferSize = c_solveMaxWarpsPerBlock * stride;
+
+    // Help compiler eliminate local buffer when it is unused.
+    auto sm_virialAndEnergy = [&]() {
+        if constexpr (computeEnergyAndVirial)
+        {
+            return sycl_2020::local_accessor<float, 1>(sycl::range<1>(reductionBufferSize), cgh);
+        }
+        else
+        {
+            return nullptr;
+        }
+    }();
 
     /* Each thread works on one cell of the Fourier space complex 3D grid (gm_grid).
      * Each block handles up to c_solveMaxWarpsPerBlock * subGroupSize cells -
