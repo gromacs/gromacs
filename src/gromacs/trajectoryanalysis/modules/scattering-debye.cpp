@@ -45,6 +45,8 @@
 
 #include <cmath>
 
+#include <numeric>
+
 #include "gromacs/random/threefry.h"
 #include "gromacs/random/uniformintdistribution.h"
 #include "gromacs/topology/topology.h"

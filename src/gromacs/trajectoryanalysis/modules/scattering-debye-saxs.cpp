@@ -47,6 +47,8 @@
 
 #include <vector>
 
+#include "gromacs/math/units.h"
+
 namespace gmx
 {
 
