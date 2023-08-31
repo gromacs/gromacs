@@ -1490,9 +1490,9 @@ int gmx_pme_do(struct gmx_pme_t*              pme,
             for (int grid_index = 2; grid_index < 9; ++grid_index)
             {
                 /* Unpack structure */
-                const pmegrids_t*          pmegrid    = &pme->pmegrid[grid_index];
-                real*                      fftgrid    = pme->fftgrid[grid_index];
-                const gmx_parallel_3dfft_t pfft_setup = pme->pfft_setup[grid_index];
+                const pmegrids_t*    pmegrid    = &pme->pmegrid[grid_index];
+                real*                fftgrid    = pme->fftgrid[grid_index];
+                gmx_parallel_3dfft_t pfft_setup = pme->pfft_setup[grid_index];
                 calc_next_lb_coeffs(coefficientBuffer, local_sigma);
                 real* grid = pmegrid->grid.grid;
 
@@ -1584,10 +1584,10 @@ int gmx_pme_do(struct gmx_pme_t*              pme,
             for (int grid_index = 8; grid_index >= 2; --grid_index)
             {
                 /* Unpack structure */
-                pmegrids_t*                pmegrid    = &pme->pmegrid[grid_index];
-                const real*                fftgrid    = pme->fftgrid[grid_index];
-                const gmx_parallel_3dfft_t pfft_setup = pme->pfft_setup[grid_index];
-                real*                      grid       = pmegrid->grid.grid;
+                pmegrids_t*          pmegrid    = &pme->pmegrid[grid_index];
+                const real*          fftgrid    = pme->fftgrid[grid_index];
+                gmx_parallel_3dfft_t pfft_setup = pme->pfft_setup[grid_index];
+                real*                grid       = pmegrid->grid.grid;
                 calc_next_lb_coeffs(coefficientBuffer, local_sigma);
 #pragma omp parallel num_threads(pme->nthread)
                 {
