@@ -885,12 +885,16 @@ std::vector<HBond> Hbond::prepareFrameData(const std::vector<HbondStorageFrame>&
     if (isTwoDiffGroups_ && mergeHydrogens_)
     {
         printf("Merging hbonds with Acceptor and Donor swapped\n");
-        for (std::vector<HBond>::iterator i = temp.begin(); i != temp.end(); ++i)
+        for (std::vector<HBond>::iterator i = temp.begin(); i != temp.end();)
         {
             auto find = std::equal_range(i, temp.end(), !(*i));
             if (find.first != find.second)
             {
-                temp.erase(find.first, find.second);
+                i = temp.erase(find.first, find.second);
+            }
+            else
+            {
+                ++i;
             }
         }
     }
@@ -915,12 +919,16 @@ std::vector<HBond> Hbond::prepareFrameData(const std::vector<HBond>& data) const
     temp.erase(std::unique(temp.begin(), temp.end()), temp.end());
     if (isTwoDiffGroups_ && mergeHydrogens_)
     {
-        for (std::vector<HBond>::iterator i = temp.begin(); i != temp.end(); ++i)
+        for (std::vector<HBond>::iterator i = temp.begin(); i != temp.end();)
         {
             auto find = std::equal_range(i, temp.end(), !(*i));
             if (find.first != find.second)
             {
-                temp.erase(find.first, find.second);
+                i = temp.erase(find.first, find.second);
+            }
+            else
+            {
+                ++i;
             }
         }
     }
