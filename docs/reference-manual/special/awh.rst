@@ -19,10 +19,16 @@ the reaction coordinate may be chosen freely.
 Basics of the method
 ^^^^^^^^^^^^^^^^^^^^
 
-Rather than biasing the reaction coordinate :math:`\xi(x)` directly, AWH
-acts on a *reference coordinate* :math:`\lambda`. The fundamentals of the
-method is based on the connection between atom coordinates and :math:`\lambda` and
-is established through the extended ensemble \ :ref:`68 <refLyubartsev1992>`,
+The AWH method can act on two different types of reaction coordinates.
+It can work directly on a discrete reaction coordinate :math:`\lambda`
+in case this is the free-energy coupling parameter :ref:`187 <reflundborg2021>`.
+And it can act on reaction coordinates that are (continuous) functions of the coordinates:
+:math:`\xi(x)`. In this case AWH acts on a *reference coordinate* :math:`\lambda` which
+takes discrete values and is coupled to :math:`\xi(x)` using an umbrella function :math:`Q`.
+We will now describe the method for the most general case. When acting directly
+on :math:`\lambda`, the function :math:`Q` is zero. The fundamentals of the
+method are based on the connection between atom coordinates and :math:`\lambda` and
+are established through the extended ensemble :ref:`68 <refLyubartsev1992>`,
 
 .. math:: P(x,\lambda) = \frac{1}{\mathcal{Z}}e^{g(\lambda) - Q(\xi(x),\lambda) - V(x)},
           :label: eqawhpxlambda
@@ -63,16 +69,12 @@ determined accurately. Thus, AWH adaptively calculates
 :math:`F(\lambda)` and simultaneously converges :math:`P(\lambda)`
 toward :math:`\rho(\lambda)`.
 
-It is also possible to directly control the :math:`\lambda` state
-of, e.g., alchemical free energy perturbations :ref:`187 <reflundborg2021>`. In that case there is no harmonic
-potential and :math:`\lambda` changes in discrete steps along the reaction coordinate
-depending on the biased free energy difference between the :math:`\lambda` states.
-N.b., it is not yet possible to use AWH in combination with perturbed masses or
-constraints.
-
 For a multidimensional reaction coordinate :math:`\xi`, the sampling
 interval is the Cartesian product :math:`I=\Pi_{\mu} I_{\mu}` (a rectangular
 domain).
+
+N.b., it is not yet possible to use AWH for alchemical transformations
+that involve perturbed masses or constraints.
 
 The free energy update
 ^^^^^^^^^^^^^^^^^^^^^^
@@ -656,6 +658,13 @@ discretized sampling interval :math:`I`. In general however, it should
 not affect the performance of the simulation noticeably because the AWH
 update is implemented such that only sampled points are accessed at free
 energy update time.
+
+For an alchemical free-energy dimension, AWH accessess all
+:math:`\lambda` points at every sampling step. Because the number of
+:math:`\lambda` points is usually far below 100, there is no significant
+cost to this in the AWH method itself. However, foreign energy differences
+need to be computed for every :math:`\lambda` value used, which can
+become somewhat costly.
 
 As with any method, the choice of reaction coordinate(s) is critical. If
 a single reaction coordinate does not suffice, identifying a second
