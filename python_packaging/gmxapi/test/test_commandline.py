@@ -43,6 +43,8 @@ import logging
 import os
 import shutil
 import stat
+import tempfile
+from pathlib import Path
 
 import pytest
 
@@ -125,6 +127,51 @@ def test_command_with_arguments(cleandir):
         kwargs["env"] = dict(os.environ)
     operation = commandline.cli(**kwargs)
     assert operation.output.returncode.result() == 0
+
+
+def test_command_with_input_files(cleandir):
+    """Test handling of *input_file* arguments.
+
+    Generate a file and provide it as a relative path to a simple command line tool.
+    Confirm that the relative path (valid for the script working directory but not
+    for the Task working directory) is correctly normalized to an absolute path.
+
+    Check for #4827 regression.
+    """
+    with tempfile.NamedTemporaryFile(mode="w", delete=False) as fh:
+        fh.write("hi\nthere\n")
+        fh.flush()
+    assert fh.closed
+    actual_path = Path(fh.name).resolve()
+    try:
+        with open(actual_path, "r") as fh:
+            num_lines = len(fh.readlines())
+        relative_path = os.path.relpath(actual_path, start=cleandir)
+        # Overload the input files facility to trigger path normalization.
+        # `wc` implementations are fairly consistent as far as providing a
+        # `-l` option and accepting a positional file argument.
+        cmd = commandline.commandline_operation(
+            executable="wc", input_files={"-l": relative_path}
+        )
+        # We want to find a relative path from the current directory that would
+        # not resolve correctly from the generated Task directory. We will now
+        # double-check that the relative path _would have_ caused the test to fail
+        # if the absolute path conversion (#4827) were not working correctly.
+        workdir = cmd.output.directory.result()
+        assert not Path(workdir).joinpath(relative_path).exists()
+        # Uncomment the following for additional debugging.
+        # actual_relative_path = os.path.relpath(actual_path, start=workdir)
+        # returncode = cmd.output.returncode.result()
+        # error = cmd.output.stderr.result()
+
+        # Check that the file whose lines we counted has the expected number of lines.
+        output = cmd.output.stdout.result()
+        # For `wc -l filename` on a 2-line file, we expect output
+        # similar to "      2 filename\n".
+        # Check the first non-whitespace field.
+        assert output.split()[0] == str(num_lines)
+    finally:
+        os.unlink(actual_path)
 
 
 def test_command_with_stdin(cleandir):

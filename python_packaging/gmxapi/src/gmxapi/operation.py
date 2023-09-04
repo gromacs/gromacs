@@ -1624,7 +1624,8 @@ class OperationDetailsBase(
     ) -> _PublishingDataProxyType:
         """Factory for Operation output publishing resources.
 
-        Used internally when the operation is run with resources provided by instance."""
+        Used internally when the operation is run with resources provided by instance.
+        """
         ...
 
     @abc.abstractmethod

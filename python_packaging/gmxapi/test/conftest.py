@@ -85,7 +85,6 @@ def spc_water_box_collection(gmxcli, tmp_path_factory):
     #     from gmx.data import tprfilename
 
     with scoped_chdir(tmp_path_factory.mktemp("spc_water_box")) as tempdir:
-
         testdir = os.path.dirname(__file__)
         with open(os.path.join(testdir, "testdata.json"), "r") as fh:
             testdata = json.load(fh)
