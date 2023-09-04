@@ -107,7 +107,7 @@ void maxwell_speed(real tempi, int seed, gmx_mtop_t* mtop, rvec v[], const gmx::
         seed = static_cast<int>(gmx::makeRandomSeed());
         GMX_LOG(logger.info)
                 .asParagraph()
-                .appendTextFormatted("Using random seed %u for generating velocities", seed);
+                .appendTextFormatted("Using random seed %d for generating velocities", seed);
     }
     gmx::ThreeFry2x64<> rng(seed, gmx::RandomDomain::MaxwellVelocities);
 

@@ -122,6 +122,13 @@ public:
          gmx_wallcycle*           wcycle);
     //! \brief Destructor, non-default needed for freeing device-side buffers
     ~Impl();
+
+    /*! \brief Update flag that tells whether there are bonded interactions suitable for the GPU.
+     *
+     * Intended to be called early during search steps so domainWork flags can be populated.
+     */
+    void updateHaveInteractions(const InteractionDefinitions& idef);
+
     /*! \brief Update lists of interactions from idef suitable for the GPU,
      * using the data structures prepared for PP work.
      *

@@ -783,7 +783,7 @@ static int doVectorLow(XDR*                           xd,
             {
                 gmx_fatal(FARGS,
                           "Count mismatch for state entry %s, code count is %" PRId64
-                          ", file count is %d\n",
+                          ", file count is %u\n",
                           enumValueToString(ecpt),
                           nval,
                           numElemInTheFile);

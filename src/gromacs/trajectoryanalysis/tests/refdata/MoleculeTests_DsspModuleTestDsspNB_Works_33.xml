@@ -18,13 +18,13 @@
             <Real Name="Value">18</Real>
           </DataValue>
           <DataValue>
-            <Real Name="Value">38</Real>
+            <Real Name="Value">39</Real>
           </DataValue>
           <DataValue>
             <Real Name="Value">0</Real>
           </DataValue>
           <DataValue>
-            <Real Name="Value">5</Real>
+            <Real Name="Value">0</Real>
           </DataValue>
           <DataValue>
             <Real Name="Value">15</Real>
@@ -36,7 +36,7 @@
             <Real Name="Value">2</Real>
           </DataValue>
           <DataValue>
-            <Real Name="Value">233</Real>
+            <Real Name="Value">237</Real>
           </DataValue>
         </DataValues>
       </DataFrame>
@@ -45,7 +45,7 @@
   <OutputFiles Name="Files">
     <File Name="-o">
       <String Name="Contents"><![CDATA[
-~~~HHHHHHHHHHHHH~TTHHHHHHTS~HHHHHHHHHHHHHHHHHHHHHH~TTS~HHHHHHHHHHHHHHTTSTT~~~~~S~TT~TTHHHHHTTHHHHHHHHTS~HHHHHHHHHHHHHHHHHHHHHHHHHHHS~~~~~SHHHHHHHHIIIIIHHHHHHHHHHHHTTSB~GGGTS~HHHHHHHHHHHHHHHHHHTHHHHHTTT~~~S~HHHHTTT~SSGGGGGSGGGHHHHHHHHHHHHHHHHTTHHHHHHHHTTB~SHHHHHHHHHHHHHHHHHHHHHTT~GGGGTS~~~~~HHHHHHHHHHTSS~HHHHHHHHHHHHHHHHHH~~TTSTTHHHHHHHHHHHHHHHHHH~~
+~~~HHHHHHHHHHHHH~TTHHHHHHTS~HHHHHHHHHHHHHHHHHHHHHH~TTS~HHHHHHHHHHHHHHTTSTT~~~~~S~TT~TTHHHHHTTHHHHHHHHTS~HHHHHHHHHHHHHHHHHHHHHHHHHHHS~~~~~SHHHHHHHHHHTHHHHHHHHHHHHHHTTSB~GGGTS~HHHHHHHHHHHHHHHHHHTHHHHHTTT~~~S~HHHHTTT~SSGGGGGSGGGHHHHHHHHHHHHHHHHTTHHHHHHHHTTB~SHHHHHHHHHHHHHHHHHHHHHTT~GGGGTS~~~~~HHHHHHHHHHTSS~HHHHHHHHHHHHHHHHHH~~TTSTTHHHHHHHHHHHHHHHHHH~~
 ]]></String>
     </File>
     <File Name="-num">
@@ -74,13 +74,13 @@ s9 legend "α-Helices"
           <Real>39</Real>
           <Real>0</Real>
           <Real>18</Real>
-          <Real>38</Real>
+          <Real>39</Real>
           <Real>0</Real>
-          <Real>5</Real>
+          <Real>0</Real>
           <Real>15</Real>
           <Real>0</Real>
           <Real>2</Real>
-          <Real>233</Real>
+          <Real>237</Real>
         </Sequence>
       </XvgData>
     </File>

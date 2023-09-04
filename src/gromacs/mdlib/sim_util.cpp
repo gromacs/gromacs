@@ -1417,8 +1417,19 @@ void do_force(FILE*                               fplog,
 
     const SimulationWorkload& simulationWork = runScheduleWork->simulationWork;
 
-    runScheduleWork->stepWork = setupStepWorkload(
-            legacyFlags, inputrec.mtsLevels, step, runScheduleWork->domainWork, simulationWork);
+    if ((legacyFlags & GMX_FORCE_NS) != 0) // Update domainWork on Neighbor Search steps
+    {
+        if (fr->listedForcesGpu)
+        {
+            fr->listedForcesGpu->updateHaveInteractions(top->idef);
+        }
+        runScheduleWork->domainWork =
+                setupDomainLifetimeWorkload(inputrec, *fr, pull_work, ed, *mdatoms, simulationWork);
+    }
+    const gmx::DomainLifetimeWorkload& domainWork = runScheduleWork->domainWork;
+
+    runScheduleWork->stepWork =
+            setupStepWorkload(legacyFlags, inputrec.mtsLevels, step, domainWork, simulationWork);
     const StepWorkload& stepWork = runScheduleWork->stepWork;
 
     if (stepWork.doNeighborSearch && gmx::needStateGpu(simulationWork))
@@ -1584,8 +1595,6 @@ void do_force(FILE*                               fplog,
                            wcycle);
     }
 
-    const gmx::DomainLifetimeWorkload& domainWork = runScheduleWork->domainWork;
-
     /* do gridding for pair search */
     if (stepWork.doNeighborSearch)
     {
@@ -1649,11 +1658,6 @@ void do_force(FILE*                               fplog,
                         nbv->getGridIndices(), top->idef, Nbnxm::gpuGetNBAtomData(nbv->gpu_nbv));
             }
         }
-
-        // Need to run after the GPU-offload bonded interaction lists
-        // are set up to be able to determine whether there is bonded work.
-        runScheduleWork->domainWork =
-                setupDomainLifetimeWorkload(inputrec, *fr, pull_work, ed, *mdatoms, simulationWork);
 
         wallcycle_start_nocount(wcycle, WallCycleCounter::NS);
         wallcycle_sub_start(wcycle, WallCycleSubCounter::NBSSearchLocal);

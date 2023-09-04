@@ -16,6 +16,18 @@ in the :ref:`release-notes`.
 Fixes where mdrun could behave incorrectly
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Fix missing force buffer clearing with GPU DD and CPU bonded interactions
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+In simulations with domain decomposition using direct GPU communication for halo exchange
+(feature enabled with the GMX_ENABLE_DIRECT_GPU_COMM variable), a missing force buffer clearing prior to
+force halo exchange could lead to incorrect forces in cases where during a decomposition
+phase CPU-computed bonded interactions are not present whereas during the previous
+decomposition there were. Such errors are made significantly less likely by the lack of
+dynamic load balancing support with GPU-resident simulations that use GPU halo exchange.
+
+:issue:`4858`
+
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -26,6 +38,14 @@ Systems with virtual site VSITE2FD (2 atoms with fixed distance) could previousl
 not be handled by ``gmx dump``. Note that this had no effect on simulation.
 
 :issue:`4845`
+
+Fix DSSP tool
+"""""""""""""
+
+Fixed handling of Pi-helices in ``gmx dssp`` tool so now it produces output
+identical to original DSSP v4.1+.
+
+:issue:`4811`
 
 Fixes that affect portability
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
