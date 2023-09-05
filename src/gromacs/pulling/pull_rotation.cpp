@@ -3891,6 +3891,8 @@ void do_rotation(const t_commrec*               cr,
     gmx_potfit* fit = nullptr; /* For fit type 'potential' determine the fit
                                     angle via the potential minimum            */
 
+    GMX_ASSERT(er, "Enforced rotation needs a valid pointer to its data object");
+
 #ifdef TAKETIME
     double t0;
 #endif

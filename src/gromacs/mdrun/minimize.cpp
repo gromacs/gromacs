@@ -909,6 +909,8 @@ public:
     gmx::ImdSession* imdSession;
     //! The pull work object.
     pull_t* pull_work;
+    //! Data for rotational pulling.
+    gmx_enfrot* enforcedRotation;
     //! Manages flop accounting.
     t_nrnb* nrnb;
     //! Manages wall cycle accounting.
@@ -1020,7 +1022,7 @@ void EnergyEvaluator::run(em_state_t* ems, rvec mu_tot, tensor vir, tensor pres,
              ms,
              *inputrec,
              nullptr,
-             nullptr,
+             enforcedRotation,
              imdSession,
              pull_work,
              count,
@@ -1374,6 +1376,7 @@ void LegacySimulator::do_cg()
                                      inputrec,
                                      imdSession,
                                      pull_work,
+                                     enforcedRotation,
                                      nrnb,
                                      wcycle,
                                      gstat,
@@ -2134,6 +2137,7 @@ void LegacySimulator::do_lbfgs()
                                      inputrec,
                                      imdSession,
                                      pull_work,
+                                     enforcedRotation,
                                      nrnb,
                                      wcycle,
                                      gstat,
@@ -2896,6 +2900,7 @@ void LegacySimulator::do_steep()
                                      inputrec,
                                      imdSession,
                                      pull_work,
+                                     enforcedRotation,
                                      nrnb,
                                      wcycle,
                                      gstat,
@@ -3276,6 +3281,7 @@ void LegacySimulator::do_nm()
                                      inputrec,
                                      imdSession,
                                      pull_work,
+                                     enforcedRotation,
                                      nrnb,
                                      wcycle,
                                      gstat,

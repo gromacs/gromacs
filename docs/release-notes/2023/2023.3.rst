@@ -16,6 +16,13 @@ in the :ref:`release-notes`.
 Fixes where mdrun could behave incorrectly
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Allow restraining the rotation of a group of atoms during energy minimization
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Avoid a segfault when using energy minimization together with enforced rotation. 
+
+:issue:`4865`
+
 Fix missing force buffer clearing with GPU DD and CPU bonded interactions
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
