@@ -1641,7 +1641,6 @@ private:
     real short_bond_dist_;
 
     std::string indexOutputFile_;
-    std::string outputFile_;
     std::string topologyFile_;
     std::string includeTopologyFile_;
     std::string outputConfFile_;

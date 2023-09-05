@@ -88,7 +88,6 @@ typedef struct lambda_vec_t
 typedef struct xvg_t
 {
     const char*   filename;
-    int           ftp;          /* file type */
     int           nset;         /* number of lambdas, including dhdl */
     int*          np;           /* number of data points (du or hists) per lambda */
     double        temp;         /* temperature */
@@ -99,7 +98,6 @@ typedef struct xvg_t
                                    the native lambda and the 'foreign' lambdas. */
     lambda_vec_t native_lambda; /* the native lambda */
 
-    struct xvg_t *next, *prev; /*location in the global linked list of xvg_ts*/
 } xvg_t;
 
 

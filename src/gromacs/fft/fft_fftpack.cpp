@@ -62,7 +62,6 @@ struct gmx_fft_fftpack
 struct gmx_fft
 #endif
 {
-    int             ndim;     /**< Dimensions, including our subdimensions.  */
     int             n;        /**< Number of points in this dimension.       */
     int             ifac[15]; /**< 15 bytes needed for cfft and rfft         */
     struct gmx_fft* next;     /**< Pointer to next dimension, or NULL.       */

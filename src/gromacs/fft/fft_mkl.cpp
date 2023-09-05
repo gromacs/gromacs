@@ -99,7 +99,6 @@ struct gmx_fft
     int              ndim;       /**< Number of dimensions in FFT  */
     int              nx;         /**< Length of X transform        */
     int              ny;         /**< Length of Y transform        */
-    int              nz;         /**< Length of Z transform        */
     int              real_fft;   /**< 1 if real FFT, otherwise 0   */
     DFTI_DESCRIPTOR* inplace[3]; /**< in-place FFT                 */
     DFTI_DESCRIPTOR* ooplace[4]; /**< out-of-place FFT             */

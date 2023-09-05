@@ -69,7 +69,6 @@ struct ScalarDataTypes
     using IntType  = int;  //!< The data type to use as int.
     using BoolType = bool; //!< The data type to use as bool for real value comparison.
     static constexpr int simdRealWidth = 1; //!< The width of the RealType.
-    static constexpr int simdIntWidth  = 1; //!< The width of the IntType.
 };
 
 #if GMX_SIMD_HAVE_REAL && GMX_SIMD_HAVE_INT32_ARITHMETICS

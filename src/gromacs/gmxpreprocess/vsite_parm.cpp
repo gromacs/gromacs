@@ -127,8 +127,6 @@ struct VsiteBondParameter
  */
 struct Atom2VsiteBond
 {
-    //! Function type for conversion.
-    int ftype;
     //! The vsite parameters in a list.
     std::vector<VsiteBondParameter> vSiteBondedParameters;
 };
