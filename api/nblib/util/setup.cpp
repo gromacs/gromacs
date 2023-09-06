@@ -122,19 +122,19 @@ std::vector<Vec3> generateVelocity(real tempi, unsigned int seed, std::vector<re
 }
 
 //! Check within the container of gmx::RVecs for a NaN or inf
+//! (so the contrary of isfinite, see https://en.cppreference.com/w/cpp/numeric/math/isfinite)
 bool isRealValued(gmx::ArrayRef<const Vec3> values)
 {
-    for (auto val : values)
-    {
-        for (int m = 0; (m < dimSize); m++)
+    return std::all_of(values.begin(), values.end(), [](const Vec3& val) {
+        for (int m = 0; m < dimSize; ++m)
         {
-            if (std::isnan(val[m]) or std::isinf(val[m]))
+            if (!std::isfinite(val[m]))
             {
                 return false;
             }
         }
-    }
-    return true;
+        return true;
+    });
 }
 
 void zeroCartesianArray(gmx::ArrayRef<Vec3> cartesianArray)
