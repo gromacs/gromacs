@@ -146,7 +146,7 @@ const SimulatorRunFunction* ModularSimulatorAlgorithm::getNextTask()
 {
     if (!taskQueue_.empty())
     {
-        taskIterator_++;
+        ++taskIterator_;
     }
     if (taskIterator_ == taskQueue_.end())
     {
