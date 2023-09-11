@@ -813,8 +813,14 @@ static int constr_vsiten(const t_iatom*            ia,
     const int n3 = 3 * ip[ia[0]].vsiten.n;
     const int av = ia[1];
     int       ai = ia[2];
-    copy_rvec(x[ai], x1);
-    copy_rvec(v[ai], v1);
+    if (calculatePosition == VSiteCalculatePosition::Yes)
+    {
+        copy_rvec(x[ai], x1);
+    }
+    if (calculateVelocity == VSiteCalculateVelocity::Yes)
+    {
+        copy_rvec(v[ai], v1);
+    }
     clear_dvec(dsum);
     for (int i = 3; i < n3; i += 3)
     {

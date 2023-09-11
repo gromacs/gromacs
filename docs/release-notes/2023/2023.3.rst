@@ -91,3 +91,12 @@ not coincide with neighbour search steps. This issue is fixed by
 ensuring that CUDA Graphs are suitably updated on virial steps.
 
 Fixes :issue:`4813`
+
+Fix velocity vector copying in constr_vsiten
+""""""""""""""""""""""""""""""""""""""""""""
+
+Fixed velocity vector copying in the function ``constr_vsiten``
+because an energy minimization doesn't need a velocity vector.
+The fix avoids copying an empty vector and the corresponding SegFault.
+
+Fixes :issue:`4814`
