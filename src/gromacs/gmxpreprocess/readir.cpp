@@ -3086,7 +3086,7 @@ int getGroupIndex(const std::string& s, gmx::ArrayRef<const IndexGroup> indexGro
     }
 
     gmx_fatal(FARGS,
-              "Group %s referenced in the .mdp file was not found in the index file.\n"
+              "Group %s referenced in the .mdp file was not found in the list of index groups.\n"
               "Group names must match either [moleculetype] names or custom index group\n"
               "names, in which case you must supply an index file to the '-n' option\n"
               "of grompp.",

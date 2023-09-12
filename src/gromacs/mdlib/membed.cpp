@@ -1112,7 +1112,7 @@ gmx_membed_t* init_membed(FILE*          fplog,
         if (found == gnames.end())
         {
             gmx_fatal(FARGS,
-                      "Group %s selected for embedding was not found in the index file.\n"
+                      "Group %s selected for embedding was not found in the list of index groups.\n"
                       "Group names must match either [moleculetype] names or custom index group\n"
                       "names, in which case you must supply an index file to the '-n' option\n"
                       "of grompp.",
