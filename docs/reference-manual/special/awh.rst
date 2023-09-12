@@ -645,6 +645,21 @@ can be obtaining from an AWH simulation with the :ref:`gmx awh` tool.
 :math:`\varepsilon_0` on the other hand, should be a rough estimate
 of the initial error.
 
+Estimating errors
+^^^^^^^^^^^^^^^^^
+
+As with any adaptive method, estimating errors for AWH is difficult from
+data of a single simulation only. We are looking into methods to do this.
+For now, the only safe way to estimate errors is to run multiple completely
+independent simulations and compute a standard error estimate.
+Note that for the simulations to be really independent, they should start
+from different, equilibrated states along the reaction coordinate(s).
+In practice, this is often difficult to achieve, in particular in the common
+case that you only know the starting state along the reaction coordinate.
+The exit from the initial phase of AWH is designed such that, in most cases,
+such systematic errors are as small as the noise when exiting the initial phase,
+but it cannot be excluded that some effects are still present.
+
 Tips for efficient sampling
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
