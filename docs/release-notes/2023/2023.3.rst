@@ -16,6 +16,14 @@ in the :ref:`release-notes`.
 Fixes where mdrun could behave incorrectly
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Enable AWH to read 3D or higher-dimension user data
+"""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Mdrun could not start due to an error when reading in awh input data
+with dimensionality larger than two.
+
+:issue:`4828`
+
 Allow restraining the rotation of a group of atoms during energy minimization
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
