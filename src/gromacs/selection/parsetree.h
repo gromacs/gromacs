@@ -545,9 +545,9 @@ bool _gmx_sel_parser_should_finish(void* scanner);
 
 /* In params.c */
 /** Initializes an array of parameters based on input from the selection parser. */
-void _gmx_sel_parse_params(const gmx::SelectionParserParameterList& params,
+void _gmx_sel_parse_params(const gmx::SelectionParserParameterList& pparams,
                            int                                      nparam,
-                           struct gmx_ana_selparam_t*               param,
+                           struct gmx_ana_selparam_t*               params,
                            const gmx::SelectionTreeElementPointer&  root,
                            void*                                    scanner);
 

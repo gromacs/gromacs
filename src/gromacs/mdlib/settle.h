@@ -108,7 +108,7 @@ struct SettleParameters
  * \param[in]  dOH    Target O-H bond length
  * \param[in]  dHH    Target H-H bond length
  */
-SettleParameters settleParameters(real mO, real mH, real dOH, real invmO, real invmH, real dHH);
+SettleParameters settleParameters(real mO, real mH, real invmO, real invmH, real dOH, real dHH);
 
 /*! \libinternal
  * \brief Data for executing SETTLE constraining
