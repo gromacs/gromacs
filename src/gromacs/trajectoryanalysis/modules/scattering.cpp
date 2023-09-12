@@ -99,8 +99,6 @@ public:
 private:
     SelectionList                                        sel_;
     std::string                                          fnScattering_;
-    std::string                                          fnAll_;
-    std::string                                          fnStructureFactor_;
     double                                               startQ_;
     double                                               endQ_;
     double                                               qSpacing_;
@@ -115,7 +113,6 @@ private:
     AnalysisData                                         intensity_;
     AnalysisDataAverageModulePointer                     averageModule_;
     std::vector<double>                                  qList_;
-    std::vector<double>                                  scatteringDifferences_;
     std::vector<double>                                  scatteringAtQ0_;
     std::vector<std::unique_ptr<ComputeDebyeScattering>> computeScattering_;
 };
