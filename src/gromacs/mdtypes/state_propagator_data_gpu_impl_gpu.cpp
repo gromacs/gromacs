@@ -134,6 +134,18 @@ StatePropagatorDataGpu::Impl::Impl(const DeviceStream*  pmeStream,
 
 StatePropagatorDataGpu::Impl::~Impl()
 {
+    // Flush all the streams before freeing memory. See #4519.
+    const std::array<const DeviceStream*, 6> allStreams{ pmeStream_,          localStream_,
+                                                         nonLocalStream_,     updateStream_,
+                                                         copyInStream_.get(), memsetStream_.get() };
+    for (const DeviceStream* stream : allStreams)
+    {
+        if (stream)
+        {
+            stream->synchronize();
+        }
+    }
+
     freeDeviceBuffer(&d_x_);
     freeDeviceBuffer(&d_v_);
     freeDeviceBuffer(&d_f_);
