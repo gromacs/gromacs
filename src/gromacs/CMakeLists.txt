@@ -386,6 +386,8 @@ if (GMX_INTERNAL_XDR)
     target_include_directories(libgromacs SYSTEM PRIVATE ${_xdr_dir})
 endif()
 
+gmx_manage_hdf5()
+
 target_link_libraries(libgromacs
                       PRIVATE
                       ${EXTRAE_LIBRARIES}
