@@ -44,6 +44,7 @@ gmx_add_gtest_executable(trajectoryanalysis-test
         dssp.cpp
         extract_cluster.cpp
         freevolume.cpp
+	gyrate.cpp
         hbond.cpp
         msd.cpp
         pairdist.cpp

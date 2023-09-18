@@ -1,0 +1,79 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <String Name="CommandLine">gyrate-taf -sel Protein</String>
+  <OutputData Name="Data">
+    <AnalysisData Name="gyrate">
+      <DataFrame Name="Frame0">
+        <Real Name="X">0</Real>
+        <DataValues>
+          <Int Name="Count">4</Int>
+          <DataValue>
+            <Real Name="Value">0.69806677693553476</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.5975967449798163</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.50325732124446931</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.60349370263963831</Real>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame1">
+        <Real Name="X">10</Real>
+        <DataValues>
+          <Int Name="Count">4</Int>
+          <DataValue>
+            <Real Name="Value">0.69967938910414484</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.59819288723308051</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.51253060868154154</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.59881561427753194</Real>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+    </AnalysisData>
+  </OutputData>
+  <OutputFiles Name="Files">
+    <File Name="-o">
+      <XvgLegend Name="Legend">
+        <String Name="XvgLegend"><![CDATA[
+title "Radius of gyration (total and around axes)"
+xaxis  label "Time (ps)"
+yaxis  label "Radius (nm)"
+TYPE xy
+s0 legend "Rg"
+s1 legend "Rg/sX/N"
+s2 legend "Rg/sY/N"
+s3 legend "Rg/sZ/N"
+]]></String>
+      </XvgLegend>
+      <XvgData Name="Data">
+        <Sequence Name="Row0">
+          <Int Name="Length">5</Int>
+          <Real>0.000</Real>
+          <Real>0.698067</Real>
+          <Real>0.597597</Real>
+          <Real>0.503257</Real>
+          <Real>0.603494</Real>
+        </Sequence>
+        <Sequence Name="Row1">
+          <Int Name="Length">5</Int>
+          <Real>10.000</Real>
+          <Real>0.699679</Real>
+          <Real>0.598193</Real>
+          <Real>0.512531</Real>
+          <Real>0.598816</Real>
+        </Sequence>
+      </XvgData>
+    </File>
+  </OutputFiles>
+</ReferenceData>
