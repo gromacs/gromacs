@@ -366,7 +366,8 @@ gmx_bool gro_next_x_or_v(FILE* status, t_trxframe* fr)
     snew(atoms.resinfo, fr->natoms);
     snew(atoms.atomname, fr->natoms);
 
-    fr->bV = get_w_conf(status, std::string(title), title, &symtab, &atoms, &ndec, fr->x, fr->v, fr->box);
+    const std::filesystem::path fakePath{ "unknown_file" }; // get_w_conf needs a filename for error messages
+    fr->bV    = get_w_conf(status, fakePath, title, &symtab, &atoms, &ndec, fr->x, fr->v, fr->box);
     fr->bPrec = TRUE;
     fr->prec  = 1;
     /* prec = 10^ndec: */
