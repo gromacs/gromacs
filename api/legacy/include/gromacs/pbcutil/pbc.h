@@ -325,10 +325,19 @@ void put_atoms_in_box(PbcType pbcType, const matrix box, gmx::ArrayRef<gmx::RVec
  *
  * \param[in]     pbcType    The pbc type
  * \param[in]     box        The simulation box
+ * \param[in]     haveBoxDeformation  Whether the box is being continously deformed
+ * \param[in]     boxDeformation      The deformation speed of the box components in units of nm/ps
  * \param[in,out] x          The coordinates of the atoms
+ * \param[in,out] v          The velocities of the atoms
  * \param[in]     nth        number of threads to be used in the given module
  */
-void put_atoms_in_box_omp(PbcType pbcType, const matrix box, gmx::ArrayRef<gmx::RVec> x, gmx_unused int nth);
+void put_atoms_in_box_omp(PbcType                  pbcType,
+                          const matrix             box,
+                          bool                     haveBoxDeformation,
+                          const matrix             boxDeformation,
+                          gmx::ArrayRef<gmx::RVec> x,
+                          gmx::ArrayRef<gmx::RVec> v,
+                          gmx_unused int           nth);
 
 /*! \brief Put atoms inside triclinic box
  *
@@ -357,11 +366,21 @@ void put_atoms_in_compact_unitcell(PbcType pbcType, int ecenter, const matrix bo
  *
  * \param[in]     fplog     Log file
  * \param[in]     pbcType   The PBC type
+ * \param[in]     correctVelocitiesForBoxDeformation  Whether to correct the velocities for continous box deformation
+ * \param[in]     boxDeformation  The box deformation velocity
  * \param[in]     box       The simulation box
  * \param[in]     mtop      System topology definition
  * \param[in,out] x         The coordinates of the atoms
+ * \param[in,out] v         The velocities of the atoms, needed with correctVelocitiesForBoxDeformation
  */
-void do_pbc_first_mtop(FILE* fplog, PbcType pbcType, const matrix box, const gmx_mtop_t* mtop, rvec x[]);
+void do_pbc_first_mtop(FILE*                    fplog,
+                       PbcType                  pbcType,
+                       bool                     correctVelocitiesForBoxDeformation,
+                       const matrix             boxDeformation,
+                       const matrix             box,
+                       const gmx_mtop_t*        mtop,
+                       gmx::ArrayRef<gmx::RVec> x,
+                       gmx::ArrayRef<gmx::RVec> v);
 
 /*! \brief Make molecules consisting of multiple charge groups whole by shifting positions
  *
@@ -371,5 +390,40 @@ void do_pbc_first_mtop(FILE* fplog, PbcType pbcType, const matrix box, const gmx
  * \param[in,out] x         The coordinates of the atoms
  */
 void do_pbc_mtop(PbcType pbcType, const matrix box, const gmx_mtop_t* mtop, rvec x[]);
+
+
+/*! \brief Sets the box deformation rate
+ *
+ * \param[in]      boxDeformation      The deformation speed of the box components in units of nm/ps
+ * \param[in]      box                 The box
+ * \param[out]     boxDeformationRate  The deformation rate of the box in units of 1/ps
+ */
+void setBoxDeformationRate(const matrix boxDeformation, const matrix box, matrix boxDeformationRate);
+
+/*! \brief Correct the velocity of a particle for displacement along a flow field
+ *
+ * \tparam         invertDisplacement  When true, correct for -displacement
+ * \param[in]      boxDeformationRate  The deformation rate of the box in units of 1/ps
+ * \param[in,out]  v                   The velocity field to be corrected
+ * \param[in]      displacement        The coordinate displacement to correct for
+ */
+template<bool invertDisplacement>
+static inline void correctVelocityForDisplacement(const matrix boxDeformationRate, rvec v, const rvec displacement)
+{
+    for (int d1 = 0; d1 < DIM; d1++)
+    {
+        for (int d2 = 0; d2 <= d1; d2++)
+        {
+            if constexpr (invertDisplacement)
+            {
+                v[d2] -= boxDeformationRate[d1][d2] * displacement[d1];
+            }
+            else
+            {
+                v[d2] += boxDeformationRate[d1][d2] * displacement[d1];
+            }
+        }
+    }
+}
 
 #endif

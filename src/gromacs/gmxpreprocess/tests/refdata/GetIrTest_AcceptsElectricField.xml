@@ -272,6 +272,7 @@ freezegrps               =
 freezedim                = 
 cos-acceleration         = 0
 deform                   = 
+deform-init-flow         = no
 
 ; simulated tempering variables
 simulated-tempering      = no

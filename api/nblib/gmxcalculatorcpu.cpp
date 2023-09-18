@@ -145,7 +145,8 @@ void GmxNBForceCalculatorCpu::CpuImpl::updatePairlist(gmx::ArrayRef<gmx::RVec> c
     const real particleDensity = static_cast<real>(coordinates.size()) / det(legacyBox);
 
     // If particles are too far outside the box, the grid setup can fail
-    put_atoms_in_box_omp(PbcType::Xyz, box.legacyMatrix(), coordinates, backend_.numThreads_);
+    put_atoms_in_box_omp(
+            PbcType::Xyz, box.legacyMatrix(), false, nullptr, coordinates, {}, backend_.numThreads_);
 
     // Put particles on a grid based on bounds specified by the box
     nbnxn_put_on_grid(backend_.nbv_.get(),

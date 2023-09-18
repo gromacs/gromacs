@@ -567,6 +567,7 @@ void gmx::LegacySimulator::do_mimic()
                      top_,
                      state_->box,
                      state_->x.arrayRefWithPadding(),
+                     state_->v.arrayRefWithPadding().unpaddedArrayRef(),
                      &state_->hist,
                      &f.view(),
                      force_vir,

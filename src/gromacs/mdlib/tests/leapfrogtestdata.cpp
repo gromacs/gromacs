@@ -84,6 +84,7 @@ LeapFrogTestData::LeapFrogTestData(int        numAtoms,
     kineticEnergyData_(std::vector<real>(numTCoupleGroups == 0 ? 1 : numTCoupleGroups, 0),
                        EnsembleTemperatureSetting::NotAvailable,
                        0.0,
+                       false,
                        0.0,
                        1),
     numTCoupleGroups_(numTCoupleGroups)

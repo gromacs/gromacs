@@ -50,11 +50,13 @@
 gmx_ekindata_t::gmx_ekindata_t(gmx::ArrayRef<const real>        referenceTemperature,
                                const EnsembleTemperatureSetting ensembleTemperatureSetting,
                                const real                       ensembleTemperature,
+                               const bool                       haveBoxDeformation,
                                const real                       cosineAcceleration,
                                const int                        numThreads) :
     currentReferenceTemperature_(referenceTemperature.begin(), referenceTemperature.end()),
     ensembleTemperatureSetting_(ensembleTemperatureSetting),
     currentEnsembleTemperature_(ensembleTemperature),
+    haveBoxDeformation_(haveBoxDeformation),
     nthreads_(numThreads)
 {
     tcstat.resize(numTemperatureCouplingGroups());
@@ -72,6 +74,12 @@ gmx_ekindata_t::gmx_ekindata_t(gmx::ArrayRef<const real>        referenceTempera
     snew(ekin_work_alloc, nthreads_);
     snew(ekin_work, nthreads_);
     snew(dekindl_work, nthreads_);
+
+    if (haveBoxDeformation_)
+    {
+        systemMomenta = std::make_unique<SystemMomenta>();
+        systemMomentumWork.resize(numThreads);
+    }
 
 #pragma omp parallel for num_threads(nthreads_) schedule(static)
     for (int thread = 0; thread < nthreads_; thread++)
@@ -92,6 +100,11 @@ gmx_ekindata_t::gmx_ekindata_t(gmx::ArrayRef<const real>        referenceTempera
              * as the per-thread accumulation tensors for ekin[fh],
              * because they are accumulated in the same loop. */
             dekindl_work[thread] = &(ekin_work[thread][ngtc][0][0]);
+
+            if (haveBoxDeformation)
+            {
+                systemMomentumWork[thread] = std::make_unique<SystemMomentum>();
+            }
         }
         GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR
     }

@@ -1389,6 +1389,7 @@ void do_force(FILE*                               fplog,
               const gmx_localtop_t*               top,
               const matrix                        box,
               gmx::ArrayRefWithPadding<gmx::RVec> x,
+              gmx::ArrayRef<gmx::RVec>            v,
               const history_t*                    hist,
               gmx::ForceBuffersView*              forceView,
               tensor                              vir_force,
@@ -1492,7 +1493,10 @@ void do_force(FILE*                               fplog,
         {
             put_atoms_in_box_omp(fr->pbcType,
                                  box,
+                                 fr->haveBoxDeformation,
+                                 inputrec.deform,
                                  x.unpaddedArrayRef().subArray(0, mdatoms->homenr),
+                                 v.empty() ? ArrayRef<RVec>() : v.subArray(0, mdatoms->homenr),
                                  gmx_omp_nthreads_get(ModuleMultiThread::Default));
             inc_nrnb(nrnb, eNR_SHIFTX, mdatoms->homenr);
         }

@@ -154,7 +154,9 @@ void global_stat(const gmx_global_stat&   gs,
 {
     int ie = 0, ifv = 0, isv = 0;
     int idedl = 0, idedlo = 0, idvdll = 0, idvdlnl = 0, iepl = 0, icm = 0, imass = 0, ica = 0;
-    int isig = -1;
+    int iMomentumOld = 0;
+    int iMomentum    = 0;
+    int isig         = -1;
     int icj = -1, ici = -1, icx = -1;
 
     bool bVV         = EI_VV(inputrec.eI);
@@ -226,6 +228,27 @@ void global_stat(const gmx_global_stat&   gs,
             if (ekind->cosacc.cos_accel != 0)
             {
                 ica = add_binr(rb, 1, &(ekind->cosacc.mvcos));
+            }
+
+            if (ekind->systemMomenta)
+            {
+                constexpr int numDoubles = SystemMomentum::numDoubles();
+
+                if (bSumEkinhOld)
+                {
+                    iMomentumOld = add_bind(
+                            rb, numDoubles, ekind->systemMomenta->momentumOldHalfStep.bufferPtr());
+                }
+                if (bEkinAveVel && !bReadEkin)
+                {
+                    iMomentum = add_bind(
+                            rb, numDoubles, ekind->systemMomenta->momentumFullStep.bufferPtr());
+                }
+                else if (!bReadEkin)
+                {
+                    iMomentum = add_bind(
+                            rb, numDoubles, ekind->systemMomenta->momentumHalfStep.bufferPtr());
+                }
             }
         }
     }
@@ -324,6 +347,27 @@ void global_stat(const gmx_global_stat&   gs,
             if (ekind->cosacc.cos_accel != 0)
             {
                 extract_binr(rb, ica, 1, &(ekind->cosacc.mvcos));
+            }
+
+            if (ekind->systemMomenta)
+            {
+                constexpr int numDoubles = SystemMomentum::numDoubles();
+
+                if (bSumEkinhOld)
+                {
+                    extract_bind(rb,
+                                 iMomentumOld,
+                                 numDoubles,
+                                 ekind->systemMomenta->momentumOldHalfStep.bufferPtr());
+                }
+                if (bEkinAveVel && !bReadEkin)
+                {
+                    extract_bind(rb, iMomentum, numDoubles, ekind->systemMomenta->momentumFullStep.bufferPtr());
+                }
+                else if (!bReadEkin)
+                {
+                    extract_bind(rb, iMomentum, numDoubles, ekind->systemMomenta->momentumHalfStep.bufferPtr());
+                }
             }
         }
     }

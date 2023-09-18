@@ -101,6 +101,7 @@ struct t_gromppopts
     int                couple_lam0      = 0;
     int                couple_lam1      = 0;
     bool               bCoupleIntra     = false;
+    bool               deformInitFlow   = false;
 };
 
 /*! \brief Initialise object to hold strings parsed from an .mdp file */

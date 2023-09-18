@@ -1020,8 +1020,13 @@ void relax_shell_flexcon(FILE*                          fplog,
          * before do_force is called, which normally puts all
          * charge groups in the box.
          */
-        put_atoms_in_box_omp(
-                fr->pbcType, box, x.subArray(0, md.homenr), gmx_omp_nthreads_get(ModuleMultiThread::Default));
+        put_atoms_in_box_omp(fr->pbcType,
+                             box,
+                             fr->haveBoxDeformation,
+                             inputrec->deform,
+                             x.subArray(0, md.homenr),
+                             v.empty() ? ArrayRef<RVec>() : v.subArray(0, md.homenr),
+                             gmx_omp_nthreads_get(ModuleMultiThread::Default));
     }
 
     if (nflexcon)
@@ -1069,6 +1074,7 @@ void relax_shell_flexcon(FILE*                          fplog,
              top,
              box,
              xPadded,
+             vPadded.unpaddedArrayRef(),
              hist,
              &forceViewInit,
              force_vir,
@@ -1211,6 +1217,7 @@ void relax_shell_flexcon(FILE*                          fplog,
                  top,
                  box,
                  posWithPadding[Try],
+                 {},
                  hist,
                  &forceViewTry,
                  force_vir,

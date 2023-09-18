@@ -455,6 +455,11 @@ struct DDSystemInfo
     bool filterBondedCommunication = false;
     //! Whether to increase the multi-body cut-off beyond the minimum required
     bool increaseMultiBodyCutoff = false;
+
+    //! Whether we have continous box deformation
+    bool haveBoxDeformation;
+    //! The box deformation rate in units of 1/ps
+    matrix boxDeformationRate;
 };
 
 /*! \brief Settings that affect the behavior of the domain decomposition

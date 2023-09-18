@@ -34,6 +34,7 @@
 #ifndef GMX_MDTYPES_GROUP_H
 #define GMX_MDTYPES_GROUP_H
 
+#include <memory>
 #include <vector>
 
 #include "gromacs/math/vectypes.h"
@@ -72,6 +73,43 @@ struct t_grp_tcstat
     double vscale_nhc = 0;
 };
 
+/*! \brief The momentum and mass of the whole system
+ *
+ * Note that the momentum and mass are stored consecutively in this struct
+ * to enable passing a double pointer for global reduction.
+ */
+struct SystemMomentum
+{
+    //! Clears the momentum and mass
+    void clear()
+    {
+        momentum = { 0.0, 0.0, 0.0 };
+        mass     = 0.0;
+    }
+
+    //! Returns the number of doubles contained in this struct
+    static constexpr int numDoubles() { return sizeof(SystemMomentum) / sizeof(double); }
+
+    //! Returns a pointer of a list of \p numDoubles() doubles covering all data in this struct
+    double* bufferPtr() { return &momentum[0]; }
+
+    //! The system momentum
+    gmx::DVec momentum = { 0.0, 0.0, 0.0 };
+    //! The system mass
+    double mass = 0.0;
+};
+
+//! System momenta used with with the box deform option
+struct SystemMomenta
+{
+    //! Momentum to be used with ekinh in t_grp_tcstat
+    SystemMomentum momentumHalfStep;
+    //! Momentum to be used with ekinh_old in t_grp_tcstat
+    SystemMomentum momentumOldHalfStep;
+    //! Momentum to be used with ekinf in t_grp_tcstat
+    SystemMomentum momentumFullStep;
+};
+
 struct t_cos_acc
 {
     //! The acceleration for the cosine profile
@@ -88,6 +126,7 @@ public:
     gmx_ekindata_t(gmx::ArrayRef<const real>  referenceTemperature,
                    EnsembleTemperatureSetting ensembleTemperatureSetting,
                    real                       ensembleTemperature,
+                   bool                       haveBoxDeformation,
                    real                       cosineAcceleration,
                    int                        numThreads);
 
@@ -150,6 +189,9 @@ private:
     real currentEnsembleTemperature_;
 
 public:
+    //! Returns whether  the box is continuously deformed
+    bool haveBoxDeformation() const { return haveBoxDeformation_; }
+
     //! T-coupling data
     std::vector<t_grp_tcstat> tcstat;
     //! Allocated locations for *_work members
@@ -166,12 +208,18 @@ public:
     real dekindl = 0;
     //! dEkin/dlambda at old half step
     real dekindl_old = 0;
+    //! The momenta of the system, needed with deform
+    std::unique_ptr<SystemMomenta> systemMomenta;
+    //! Thread work buffer for the momentum of the system
+    std::vector<std::unique_ptr<SystemMomentum>> systemMomentumWork;
     //! Cosine acceleration data
     t_cos_acc cosacc;
 
     ~gmx_ekindata_t();
 
 private:
+    //! Whether the box is continuously deformed
+    bool haveBoxDeformation_;
     //! For size of ekin_work
     int nthreads_ = 0;
 };

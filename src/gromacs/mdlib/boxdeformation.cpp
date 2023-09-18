@@ -80,6 +80,18 @@ std::unique_ptr<BoxDeformation> buildBoxDeformation(const Matrix3x3&  initialBox
                 "Box deformation is only supported with dynamical integrators"));
     }
 
+    // Do not allow reading old tpr files from versions where deform scaled the flow field,
+    // as the velocities will not obey the flow field.
+    // There tpr file was not updated with the deform change, but version < 130 separates releases.
+    if (inputrec.tpxFileVersion < 130)
+    {
+        GMX_THROW(InvalidInputError(
+                "The implementation of the deform functionality has changed between the GROMACS "
+                "versions used to generate the tpr file and this binary. Please read the "
+                "documentation and regenerate the tpr file with a newer version of GROMACS to set "
+                "up the initial flow field."));
+    }
+
     Matrix3x3 box;
     // Only the rank that read the tpr has the global state, and thus
     // the initial box, so we pass that around.
@@ -110,7 +122,7 @@ BoxDeformation::BoxDeformation(const double     timeStep,
 {
 }
 
-void BoxDeformation::apply(ArrayRef<RVec> x, Matrix3x3* box, const int64_t step)
+void BoxDeformation::apply(Matrix3x3* box, const int64_t step)
 {
     const real elapsedTime = (step + 1 - initialStep_) * timeStep_;
     Matrix3x3  updatedBox  = *box;
@@ -146,16 +158,21 @@ void BoxDeformation::apply(ArrayRef<RVec> x, Matrix3x3* box, const int64_t step)
             }
         }
     }
-    // Update the positions
-    Matrix3x3 mu = multiplyBoxMatrices(updatedBox, invertBoxMatrix(*box));
-    for (auto& thisX : x)
-    {
-        thisX[XX] = mu(XX, XX) * thisX[XX] + mu(YY, XX) * thisX[YY] + mu(ZZ, XX) * thisX[ZZ];
-        thisX[YY] = mu(YY, YY) * thisX[YY] + mu(ZZ, YY) * thisX[ZZ];
-        thisX[ZZ] = mu(ZZ, ZZ) * thisX[ZZ];
-    }
+
     // Return the updated box
     *box = updatedBox;
+}
+
+void setBoxDeformationFlowMatrix(const matrix boxDeformationVelocity, const matrix box, matrix flowMatrix)
+{
+    for (int d1 = 0; d1 < DIM; d1++)
+    {
+        for (int d2 = 0; d2 < DIM; d2++)
+        {
+            // The flow matrix is transposed with respect to the deform matrix
+            flowMatrix[d1][d2] = boxDeformationVelocity[d2][d1] / box[d2][d2];
+        }
+    }
 }
 
 } // namespace gmx

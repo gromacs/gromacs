@@ -1869,7 +1869,14 @@ int Mdrunner::mdrunner()
             /* Make molecules whole at start of run */
             if (fr->pbcType != PbcType::No)
             {
-                do_pbc_first_mtop(fplog, inputrec->pbcType, box, &mtop, globalState->x.rvec_array());
+                do_pbc_first_mtop(fplog,
+                                  inputrec->pbcType,
+                                  ir_haveBoxDeformation(*inputrec),
+                                  inputrec->deform,
+                                  box,
+                                  &mtop,
+                                  globalState->x,
+                                  globalState->v);
             }
             if (vsite)
             {
@@ -2127,6 +2134,7 @@ int Mdrunner::mdrunner()
         gmx_ekindata_t ekind(gmx::constArrayRefFromArray(inputrec->opts.ref_t, inputrec->opts.ngtc),
                              inputrec->ensembleTemperatureSetting,
                              inputrec->ensembleTemperature,
+                             fr->haveBoxDeformation,
                              inputrec->cos_accel,
                              gmx_omp_nthreads_get(ModuleMultiThread::Update));
 

@@ -150,7 +150,11 @@ void do_md_trajectory_writing(FILE*                          fplog,
                 fplog, cr, outf, mdof_flags, top_global.natoms, step, t, state, state_global, observablesHistory, f, &checkpointDataHolder);
         if (bLastStep && step_rel == ir->nsteps && bDoConfOut && MAIN(cr) && !bRerunMD)
         {
-            if (fr->bMolPBC && state == state_global)
+            // With box deformation we would have to correct the output velocities, which is tedious
+            const bool makeMoleculesWholeInConfout =
+                    (fr->bMolPBC && !ir->bPeriodicMols && !ir_haveBoxDeformation(*ir));
+
+            if (makeMoleculesWholeInConfout && state == state_global)
             {
                 /* This (single-rank) run needs to allocate a
                    temporary array of size natoms so that any
@@ -174,7 +178,7 @@ void do_md_trajectory_writing(FILE*                          fplog,
              * at the last step.
              */
             fprintf(stderr, "\nWriting final coordinates.\n");
-            if (fr->bMolPBC && !ir->bPeriodicMols)
+            if (makeMoleculesWholeInConfout)
             {
                 /* Make molecules whole only for confout writing */
                 do_pbc_mtop(ir->pbcType, state->box, &top_global, x_for_confout);
@@ -186,7 +190,7 @@ void do_md_trajectory_writing(FILE*                          fplog,
                                 state_global->v.rvec_array(),
                                 ir->pbcType,
                                 state->box);
-            if (fr->bMolPBC && state == state_global)
+            if (makeMoleculesWholeInConfout && state == state_global)
             {
                 sfree(x_for_confout);
             }

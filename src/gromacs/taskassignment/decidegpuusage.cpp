@@ -715,6 +715,10 @@ bool decideWhetherToUseGpuForUpdate(const bool           isDomainDecomposition,
     {
         errorMessage += "Acceleration is not supported.\n";
     }
+    if (ir_haveBoxDeformation(inputrec))
+    {
+        errorMessage += "Box deformation is not supported.\n";
+    }
     if (usingPmeOrEwald(inputrec.coulombtype) && inputrec.epsilon_surface != 0)
     {
         // The graph is needed, but not supported

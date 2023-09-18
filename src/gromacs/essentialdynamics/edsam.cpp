@@ -2715,7 +2715,6 @@ std::unique_ptr<gmx::EssentialDynamics> init_edsam(const gmx::MDLogger&        m
                                                    const gmx::StartingBehavior startingBehavior)
 {
     int    i, avindex;
-    rvec*  x_pbc = nullptr; /* positions of the whole MD system with pbc removed  */
     rvec * xfit = nullptr, *xstart = nullptr; /* dummy arrays to determine initial RMSDs  */
     rvec   fit_transvec;                      /* translation ... */
     matrix fit_rotmat;                        /* ... and rotation from fit to reference structure */
@@ -2765,6 +2764,8 @@ std::unique_ptr<gmx::EssentialDynamics> init_edsam(const gmx::MDLogger&        m
         }
     }
 
+    std::vector<gmx::RVec> x_pbc; /* positions of the whole MD system with pbc removed  */
+
     /* The main does the work here. The other nodes get the positions
      * not before dd_partition_system which is called after init_edsam */
     if (MAIN(cr))
@@ -2774,9 +2775,9 @@ std::unique_ptr<gmx::EssentialDynamics> init_edsam(const gmx::MDLogger&        m
         if (!EDstate->bFromCpt)
         {
             /* Remove PBC, make molecule(s) subject to ED whole. */
-            snew(x_pbc, mtop.natoms);
-            copy_rvecn(globalState->x.rvec_array(), x_pbc, 0, mtop.natoms);
-            do_pbc_first_mtop(nullptr, ir.pbcType, globalState->box, &mtop, x_pbc);
+            x_pbc.resize(mtop.natoms);
+            std::copy(globalState->x.begin(), globalState->x.end(), x_pbc.begin());
+            do_pbc_first_mtop(nullptr, ir.pbcType, false, nullptr, globalState->box, &mtop, x_pbc, {});
         }
         /* Reset pointer to first ED data set which contains the actual ED data */
         auto edi = ed->edpar.begin();
@@ -2976,10 +2977,6 @@ std::unique_ptr<gmx::EssentialDynamics> init_edsam(const gmx::MDLogger&        m
             ++edi;
         }
         /* Cleaning up on the main node: */
-        if (!EDstate->bFromCpt)
-        {
-            sfree(x_pbc);
-        }
         sfree(xfit);
         sfree(xstart);
 

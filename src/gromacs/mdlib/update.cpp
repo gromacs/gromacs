@@ -101,6 +101,16 @@ struct gmx_stochd_t
     explicit gmx_stochd_t(const t_inputrec& inputRecord);
 };
 
+/*! \brief Sets the NEMD acceleration type */
+enum class AccelerationType
+{
+    None,
+    Group,
+    Cosine,
+    BoxDeformation,
+    Count
+};
+
 //! pImpled implementation for Update
 class Update::Impl
 {
@@ -175,6 +185,8 @@ public:
     gmx::ArrayRef<const unsigned short> cAcceleration_;
 
 private:
+    //! Type of acceleration used in the simulation
+    AccelerationType accelerationType_;
     //! stochastic dynamics struct
     gmx_stochd_t sd_;
     //! xprime for constraint algorithms
@@ -526,15 +538,6 @@ updateMDLeapfrogSimpleSimd(int                               start,
     }
 }
 
-/*! \brief Sets the NEMD acceleration type */
-enum class AccelerationType
-{
-    None,
-    Group,
-    Cosine,
-    Count
-};
-
 /*! \brief Integrate using leap-frog with support for everything.
  *
  * \tparam        accelerationType  Type of NEMD acceleration.
@@ -547,6 +550,7 @@ enum class AccelerationType
  * \param[in]     cTC               Temperature coupling group indices
  * \param[in]     cAcceleration     Acceleration group indices
  * \param[in]     acceleration      Acceleration per group.
+ * \param[in]     boxDeformation    Velocity of box components in units of nm/ps
  * \param[in]     invMassPerDim     Inverse mass per dimension
  * \param[in]     ekind             Kinetic energy data.
  * \param[in]     box               The box dimensions.
@@ -567,6 +571,7 @@ static void updateMDLeapfrogGeneral(int                                 start,
                                     gmx::ArrayRef<const unsigned short> cTC,
                                     gmx::ArrayRef<const unsigned short> cAcceleration,
                                     const rvec* gmx_restrict            acceleration,
+                                    const matrix                        boxDeformation,
                                     gmx::ArrayRef<const gmx::RVec>      invMassPerDim,
                                     const gmx_ekindata_t*               ekind,
                                     const matrix                        box,
@@ -586,6 +591,21 @@ static void updateMDLeapfrogGeneral(int                                 start,
 
     gmx::ArrayRef<const t_grp_tcstat> tcstat = ekind->tcstat;
 
+    // Matrix that multiplied with the velocity gives the flow
+    matrix deformFlowMatrix;
+    // The velocity of the system COM after subtracting the flow profile
+    rvec systemVelocity;
+    if (accelerationType == AccelerationType::BoxDeformation)
+    {
+        setBoxDeformationFlowMatrix(boxDeformation, box, deformFlowMatrix);
+
+        const SystemMomentum& systemMomentum = ekind->systemMomenta->momentumHalfStep;
+        for (int d = 0; d < DIM; d++)
+        {
+            systemVelocity[d] = systemMomentum.momentum[d] / systemMomentum.mass;
+        }
+    }
+
     /* Initialize group values, changed later when multiple groups are used */
     int ga = 0;
     int gt = 0;
@@ -601,25 +621,31 @@ static void updateMDLeapfrogGeneral(int                                 start,
         real lg = tcstat[gt].lambda;
 
         rvec vRel;
+        rvec vFlow;
         real cosineZ, vCosine;
+        copy_rvec(v[n], vRel);
         switch (accelerationType)
         {
-            case AccelerationType::None: copy_rvec(v[n], vRel); break;
+            case AccelerationType::None: break;
             case AccelerationType::Group:
                 if (!cAcceleration.empty())
                 {
                     ga = cAcceleration[n];
                 }
                 /* With constant acceleration we do scale the velocity of the accelerated groups */
-                copy_rvec(v[n], vRel);
                 break;
             case AccelerationType::Cosine:
                 cosineZ = std::cos(x[n][ZZ] * omega_Z);
                 vCosine = cosineZ * ekind->cosacc.vcos;
                 /* Avoid scaling the cosine profile velocity */
-                copy_rvec(v[n], vRel);
                 vRel[XX] -= vCosine;
                 break;
+            case AccelerationType::BoxDeformation:
+                for (int d = 0; d < DIM; d++)
+                {
+                    vFlow[d] = iprod(x[n], deformFlowMatrix[d]) - systemVelocity[d];
+                    vRel[d] -= vFlow[d];
+                }
         }
 
         real factorNH = 0.0;
@@ -654,6 +680,7 @@ static void updateMDLeapfrogGeneral(int                                 start,
                         vNew += vCosine + cosineZ * ekind->cosacc.cos_accel * dt;
                     }
                     break;
+                case AccelerationType::BoxDeformation: vNew += vFlow[d]; break;
             }
             v[n][d]      = vNew;
             xprime[n][d] = x[n][d] + vNew * dt;
@@ -675,9 +702,10 @@ static void do_update_md(int                                  start,
                          const int                            nsttcouple,
                          const int                            nstpcouple,
                          gmx::ArrayRef<const unsigned short>  cTC,
-                         const bool                           useConstantAcceleration,
+                         const AccelerationType               simulationAccelerationType,
                          gmx::ArrayRef<const unsigned short>  cAcceleration,
                          const rvec*                          acceleration,
+                         const matrix                         boxDeformation,
                          gmx::ArrayRef<const real> gmx_unused invmass,
                          gmx::ArrayRef<const gmx::RVec>       invMassPerDim,
                          const gmx_ekindata_t*                ekind,
@@ -705,14 +733,20 @@ static void do_update_md(int                                  start,
     real dtPressureCouple =
             ((parrinelloRahmanVelocityScaling != ParrinelloRahmanVelocityScaling::No) ? nstpcouple * dt : 0);
 
-    /* NEMD (also cosine) acceleration is applied in updateMDLeapFrogGeneral */
-    AccelerationType accelerationType =
-            (useConstantAcceleration ? AccelerationType::Group
-                                     : ((ekind->cosacc.cos_accel != 0) ? AccelerationType::Cosine
-                                                                       : AccelerationType::None));
+    /* The forces for constant and cosine acceleration are applied in update, so we need to use
+     * the general update function as that is the only one that implements acceleration.
+     * With box deformation, the temperature coupling should not scale the flow profile,
+     * so we need to subtract that which is only done in the general update function.
+     * At non Tcouple steps we should do a normal update to avoid accessing invalid
+     * flow data.
+     */
+    const AccelerationType stepAccelerationType =
+            (simulationAccelerationType == AccelerationType::BoxDeformation && !doTempCouple
+                     ? AccelerationType::None
+                     : simulationAccelerationType);
 
     if (doNoseHoover || (parrinelloRahmanVelocityScaling == ParrinelloRahmanVelocityScaling::Anisotropic)
-        || accelerationType != AccelerationType::None)
+        || stepAccelerationType != AccelerationType::None)
     {
         // If there's no Parrinello-Rahman scaling this step, we need to pass a zero matrix instead
         Matrix3x3        zero = { { 0._real } };
@@ -721,27 +755,28 @@ static void do_update_md(int                                  start,
                                                                                        : zero;
 
         dispatchTemplatedFunction(
-                [=](auto accelerationType) {
-                    return updateMDLeapfrogGeneral<accelerationType>(start,
-                                                                     nrend,
-                                                                     doNoseHoover,
-                                                                     dt,
-                                                                     dtPressureCouple,
-                                                                     cTC,
-                                                                     cAcceleration,
-                                                                     acceleration,
-                                                                     invMassPerDim,
-                                                                     ekind,
-                                                                     box,
-                                                                     x,
-                                                                     xprime,
-                                                                     v,
-                                                                     f,
-                                                                     nh_vxi,
-                                                                     nsttcouple,
-                                                                     parrinelloRahmanMToUseThisStep);
+                [=](auto stepAccelerationType) {
+                    return updateMDLeapfrogGeneral<stepAccelerationType>(start,
+                                                                         nrend,
+                                                                         doNoseHoover,
+                                                                         dt,
+                                                                         dtPressureCouple,
+                                                                         cTC,
+                                                                         cAcceleration,
+                                                                         acceleration,
+                                                                         boxDeformation,
+                                                                         invMassPerDim,
+                                                                         ekind,
+                                                                         box,
+                                                                         x,
+                                                                         xprime,
+                                                                         v,
+                                                                         f,
+                                                                         nh_vxi,
+                                                                         nsttcouple,
+                                                                         parrinelloRahmanMToUseThisStep);
                 },
-                accelerationType);
+                stepAccelerationType);
     }
     else
     {
@@ -1042,7 +1077,14 @@ void Update::Impl::update_temperature_constants(const t_inputrec& inputRecord, c
 }
 
 Update::Impl::Impl(const t_inputrec& inputRecord, const gmx_ekindata_t& ekind, BoxDeformation* boxDeformation) :
-    sd_(inputRecord), deform_(boxDeformation)
+    accelerationType_(inputRecord.useConstantAcceleration
+                              ? AccelerationType::Group
+                              : ((inputRecord.cos_accel != 0) ? AccelerationType::Cosine
+                                                              : (ir_haveBoxDeformation(inputRecord)
+                                                                         ? AccelerationType::BoxDeformation
+                                                                         : AccelerationType::None))),
+    sd_(inputRecord),
+    deform_(boxDeformation)
 {
     update_temperature_constants(inputRecord, ekind);
     xp_.resizeWithPadding(0);
@@ -1736,9 +1778,10 @@ void Update::Impl::update_coords(const t_inputrec&                 inputRecord,
                                  inputRecord.nsttcouple,
                                  inputRecord.pressureCouplingOptions.nstpcouple,
                                  cTC_,
-                                 inputRecord.useConstantAcceleration,
+                                 accelerationType_,
                                  cAcceleration_,
                                  inputRecord.opts.acceleration,
+                                 inputRecord.deform,
                                  invMass,
                                  invMassPerDim,
                                  ekind,

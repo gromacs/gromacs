@@ -192,7 +192,7 @@ public:
     TestReferenceChecker checker_;
 
     EnergyOutputTest() :
-        ekindata_(tcgInit_, EnsembleTemperatureSetting::NotAvailable, -1.0_real, cosAccel_, 1),
+        ekindata_(tcgInit_, EnsembleTemperatureSetting::NotAvailable, -1.0_real, false, cosAccel_, 1),
         logFilename_(fileManager_.getTemporaryFilePath(".log").u8string()),
         edrFilename_(fileManager_.getTemporaryFilePath(".edr").u8string()),
         log_(std::fopen(logFilename_.c_str(), "w")),

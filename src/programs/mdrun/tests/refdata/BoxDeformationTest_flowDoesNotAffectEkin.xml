@@ -1,0 +1,9 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Simulation Name="argon12">
+    <Energy Name="Kinetic En.">
+      <Real Name="Time 0.000000 Step 0 in frame 0">0.0</Real>
+    </Energy>
+  </Simulation>
+</ReferenceData>

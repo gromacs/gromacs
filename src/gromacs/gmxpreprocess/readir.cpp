@@ -1745,6 +1745,24 @@ void check_ir(const char*                    mdparin,
     {
         wi->addError("cos-acceleration is only supported by integrator = md");
     }
+
+    // do checks on the initialization of the flow profile with deform
+    if (ir_haveBoxDeformation(*ir) && !opts->deformInitFlow)
+    {
+        if (opts->bGenVel)
+        {
+            wi->addError(
+                    "When the box is deformed and velocities are generated, the flow profile "
+                    "should be initialized by setting deform-init-flow=yes");
+        }
+        else if (!ir->bContinuation)
+        {
+            wi->addNote(
+                    "Unless the velocities in the initial configuration already obey the flow "
+                    "profile, the flow profile should be initialized by setting "
+                    "deform-init-flow=yes when using the deform option");
+        }
+    }
 }
 
 /* interpret a number of doubles from a string and put them in an array,
@@ -2593,6 +2611,7 @@ void get_ir(const char*     mdparin,
     setStringEntry(&inp, "freezedim", inputrecStrings->frdim, nullptr);
     ir->cos_accel = get_ereal(&inp, "cos-acceleration", 0, wi);
     setStringEntry(&inp, "deform", inputrecStrings->deform, nullptr);
+    opts->deformInitFlow = (getEnum<Boolean>(&inp, "deform-init-flow", wi) != Boolean::No);
 
     /* simulated tempering variables */
     printStringNewline(&inp, "simulated tempering variables");
@@ -5150,6 +5169,46 @@ void triple_check(const char* mdparin, t_inputrec* ir, gmx_mtop_t* sys, WarningH
     if (ir->bDoAwh && !haveConstantEnsembleTemperature(*ir))
     {
         wi->addError("With AWH a constant ensemble temperature is required");
+    }
+
+    if (ir_haveBoxDeformation(*ir))
+    {
+        if (EI_DYNAMICS(ir->eI) && ir->eI != IntegrationAlgorithm::MD
+            && (EI_SD(ir->eI) || ir->etc != TemperatureCoupling::No))
+        {
+            sprintf(warn_buf,
+                    "With all integrators except for %s, the whole velocity including the flow "
+                    "driven by the deform option is scaled by the thermostat (note that the "
+                    "reported kinetic energies and temperature are always computed excluding the "
+                    "flow profile)",
+                    enumValueToString(IntegrationAlgorithm::MD));
+            wi->addNote(warn_buf);
+        }
+
+        if (ir->opts.ngtc != 1)
+        {
+            wi->addError("With box deformation, a single temperature coupling group is required");
+        }
+    }
+
+    int numAccelerationAlgorithms = 0;
+    if (ir->useConstantAcceleration)
+    {
+        numAccelerationAlgorithms++;
+    }
+    if (ir->cos_accel != 0)
+    {
+        numAccelerationAlgorithms++;
+    }
+    if (ir_haveBoxDeformation(*ir))
+    {
+        numAccelerationAlgorithms++;
+    }
+    if (numAccelerationAlgorithms > 1)
+    {
+        wi->addError(
+                "Only one of the following three non-equilibrium methods is supported at a time: "
+                "constant acceleration groups, cosine acceleration, box deformation");
     }
 
     check_disre(*sys);

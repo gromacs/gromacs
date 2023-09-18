@@ -535,17 +535,35 @@ static void calcGroupMove(FILE*                     fplog,
 
 static void applyPbcAndSetMoveFlags(const gmx::UpdateGroupsCog&     updateGroupsCog,
                                     gmx::ArrayRef<const PbcAndFlag> pbcAndFlags,
+                                    const bool                      haveBoxDeformation,
+                                    const matrix                    boxDeformationRate,
                                     int                             atomBegin,
                                     int                             atomEnd,
                                     gmx::ArrayRef<gmx::RVec>        atomCoords,
+                                    gmx::ArrayRef<gmx::RVec>        atomVelocities,
                                     gmx::ArrayRef<int>              move)
 {
-    for (int a = atomBegin; a < atomEnd; a++)
+    if (!haveBoxDeformation)
     {
-        const PbcAndFlag& pbcAndFlag = pbcAndFlags[updateGroupsCog.cogIndex(a)];
-        rvec_inc(atomCoords[a], pbcAndFlag.pbcShift);
-        /* Temporarily store the flag in move */
-        move[a] = pbcAndFlag.moveFlag;
+        for (int a = atomBegin; a < atomEnd; a++)
+        {
+            const PbcAndFlag& pbcAndFlag = pbcAndFlags[updateGroupsCog.cogIndex(a)];
+            rvec_inc(atomCoords[a], pbcAndFlag.pbcShift);
+            /* Temporarily store the flag in move */
+            move[a] = pbcAndFlag.moveFlag;
+        }
+    }
+    else
+    {
+        for (int a = atomBegin; a < atomEnd; a++)
+        {
+            const PbcAndFlag& pbcAndFlag = pbcAndFlags[updateGroupsCog.cogIndex(a)];
+            rvec_inc(atomCoords[a], pbcAndFlag.pbcShift);
+            // Correct the velocity for the position change along the flow profile
+            correctVelocityForDisplacement<false>(boxDeformationRate, atomVelocities[a], pbcAndFlag.pbcShift);
+            /* Temporarily store the flag in move */
+            move[a] = pbcAndFlag.moveFlag;
+        }
     }
 }
 
@@ -648,9 +666,12 @@ void dd_redistribute_cg(FILE*         fplog,
                 const int numHomeAtoms = comm->atomRanges.numHomeAtoms();
                 applyPbcAndSetMoveFlags(updateGroupsCog,
                                         pbcAndFlags,
+                                        comm->systemInfo.haveBoxDeformation,
+                                        comm->systemInfo.boxDeformationRate,
                                         (thread * numHomeAtoms) / nthread,
                                         ((thread + 1) * numHomeAtoms) / nthread,
                                         state->x,
+                                        state->v,
                                         move);
             }
             else

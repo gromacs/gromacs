@@ -779,6 +779,9 @@ void init_forcerec(FILE*                            fplog,
     forcerec->rc_scaling = inputrec.pressureCouplingOptions.refcoord_scaling;
     copy_rvec(inputrec.posres_com, forcerec->posres_com);
     copy_rvec(inputrec.posres_comB, forcerec->posres_comB);
+
+    forcerec->haveBoxDeformation = ir_haveBoxDeformation(inputrec);
+
     forcerec->rlist                  = cutoff_inf(inputrec.rlist);
     forcerec->ljpme_combination_rule = inputrec.ljpme_combination_rule;
 

@@ -3692,8 +3692,7 @@ std::unique_ptr<gmx::EnforcedRotation> init_rot(FILE*                       fplo
                                                 const gmx::MdrunOptions&    mdrunOptions,
                                                 const gmx::StartingBehavior startingBehavior)
 {
-    int   nat_max = 0;       /* Size of biggest rotation group */
-    rvec* x_pbc   = nullptr; /* Space for the pbc-correct atom positions */
+    int nat_max = 0; /* Size of biggest rotation group */
 
     if (MAIN(cr) && mdrunOptions.verbose)
     {
@@ -3736,13 +3735,16 @@ std::unique_ptr<gmx::EnforcedRotation> init_rot(FILE*                       fplo
         er->out_slabs = open_slab_out(opt2fn("-rs", nfile, fnm), er);
     }
 
+    /* Space for the pbc-correct atom positions */
+    std::vector<gmx::RVec> x_pbc;
+
     if (MAIN(cr))
     {
         /* Remove pbc, make molecule whole.
          * When ir->bContinuation=TRUE this has already been done, but ok. */
-        snew(x_pbc, mtop.natoms);
-        copy_rvecn(globalState->x.rvec_array(), x_pbc, 0, mtop.natoms);
-        do_pbc_first_mtop(nullptr, ir->pbcType, globalState->box, &mtop, x_pbc);
+        x_pbc.resize(mtop.natoms);
+        std::copy(globalState->x.begin(), globalState->x.end(), x_pbc.begin());
+        do_pbc_first_mtop(nullptr, ir->pbcType, false, nullptr, globalState->box, &mtop, x_pbc, {});
         /* All molecules will be whole now, but not necessarily in the home box.
          * Additionally, if a rotation group consists of more than one molecule
          * (e.g. two strands of DNA), each one of them can end up in a different
@@ -3776,7 +3778,7 @@ std::unique_ptr<gmx::EnforcedRotation> init_rot(FILE*                       fplo
             init_rot_group(fplog,
                            cr,
                            erg,
-                           x_pbc,
+                           as_rvec_array(x_pbc.data()),
                            mtop,
                            mdrunOptions.verbose,
                            er->out_slabs,
@@ -3827,8 +3829,6 @@ std::unique_ptr<gmx::EnforcedRotation> init_rot(FILE*                       fplo
                 er->out_torque = open_torque_out(opt2fn("-rt", nfile, fnm), er);
             }
         }
-
-        sfree(x_pbc);
     }
     return enforcedRotation;
 }

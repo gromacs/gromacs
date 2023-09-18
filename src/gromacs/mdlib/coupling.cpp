@@ -384,9 +384,8 @@ void update_pcouple_after_coordinates(FILE*                               fplog,
 
     if (boxDeformation)
     {
-        auto localX   = makeArrayRef(state->x).subArray(start, homenr);
         auto localBox = gmx::createMatrix3x3FromLegacyMatrix(state->box);
-        boxDeformation->apply(localX, &localBox, step);
+        boxDeformation->apply(&localBox, step);
         fillLegacyMatrix(localBox, state->box);
     }
 }

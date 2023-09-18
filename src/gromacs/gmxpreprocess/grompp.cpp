@@ -1864,6 +1864,31 @@ static void checkExclusionDistances(const gmx_mtop_t&              mtop,
     }
 }
 
+//! Add the velocity profile of \p deform to the velocities in \p state
+static void deformInitFlow(t_state* state, const matrix deform)
+{
+    // Deform gives the speed of box vector elements, we need to scale relative to the box size
+    matrix coordToVelocity;
+    for (int d1 = 0; d1 < DIM; d1++)
+    {
+        for (int d2 = 0; d2 < DIM; d2++)
+        {
+            coordToVelocity[d1][d2] = deform[d1][d2] / state->box[d1][d1];
+        }
+    }
+
+    for (int i = 0; i < state->numAtoms(); i++)
+    {
+        for (int d1 = 0; d1 < DIM; d1++)
+        {
+            for (int d2 = 0; d2 < DIM; d2++)
+            {
+                state->v[i][d2] += coordToVelocity[d1][d2] * state->x[i][d1];
+            }
+        }
+    }
+}
+
 int gmx_grompp(int argc, char* argv[])
 {
     const char* desc[] = {
@@ -2452,6 +2477,12 @@ int gmx_grompp(int argc, char* argv[])
 
     /* Init the temperature coupling state */
     init_gtc_state(&state, ir->opts.ngtc, 0, ir->opts.nhchainlength); /* need to add nnhpres here? */
+
+    /* After we are done with all checks on the state, we can add the flow profile */
+    if (opts->deformInitFlow)
+    {
+        deformInitFlow(&state, ir->deform);
+    }
 
     if (debug)
     {

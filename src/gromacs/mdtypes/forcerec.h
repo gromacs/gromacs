@@ -148,6 +148,9 @@ struct t_forcerec
     gmx::RVec       posres_com  = { 0, 0, 0 };
     gmx::RVec       posres_comB = { 0, 0, 0 };
 
+    // Tells whether the box is continuosly deformed
+    bool haveBoxDeformation = false;
+
     bool use_simd_kernels = false;
 
     /* Interaction for calculated in kernels. In many cases this is similar to

@@ -761,6 +761,7 @@ void LegacySimulator::do_tpi()
                      top_,
                      stateGlobal_->box,
                      stateGlobal_->x.arrayRefWithPadding(),
+                     stateGlobal_->v.arrayRefWithPadding().unpaddedArrayRef(),
                      &stateGlobal_->hist,
                      &f.view(),
                      force_vir,

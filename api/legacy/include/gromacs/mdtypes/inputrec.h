@@ -738,4 +738,7 @@ bool haveFreeEnergyType(const t_inputrec& ir, int fepType);
 bool fepLambdasChangeAtSameRate(
         const gmx::EnumerationArray<FreeEnergyPerturbationCouplingType, std::vector<double>>& allLambdas);
 
+//! Return whether the box is continuously deformed
+bool ir_haveBoxDeformation(const t_inputrec& ir);
+
 #endif /* GMX_MDTYPES_INPUTREC_H */

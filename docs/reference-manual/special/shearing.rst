@@ -19,6 +19,10 @@ the unit cell directly using the ``deform`` option in the :ref:`mdp` file,
 or this can be driven by applying an off-diagonal stress through pressure
 coupling. In the former case, one can measure the viscosity through
 the stress, in the latter case through measuring the shear rate.
+Note that the with the ``deform`` option, :ref:`gmx mdrun` corrects
+the velocities of particles that are moved by a periodic vector
+for the difference in flow velocity. Such a correction is not applied
+when using a stress to generate a flow.
 
 For measuring the viscosity of simple liquids one can use a cosine-shaped
 acceleration profile, which can be specified using the ``cos-acceleration``

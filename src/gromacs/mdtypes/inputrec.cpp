@@ -260,6 +260,22 @@ gmx_bool ir_vdw_might_be_zero_at_cutoff(const t_inputrec* ir)
     return (ir_vdw_is_zero_at_cutoff(ir) || ir->vdwtype == VanDerWaalsType::User);
 }
 
+bool ir_haveBoxDeformation(const t_inputrec& ir)
+{
+    for (int i = 0; i < DIM; i++)
+    {
+        for (int j = 0; j < DIM; j++)
+        {
+            if (ir.deform[i][j] != 0.0_real)
+            {
+                return true;
+            }
+        }
+    }
+
+    return false;
+}
+
 static void done_t_rot(t_rot* rot)
 {
     if (rot == nullptr)
