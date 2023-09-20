@@ -1429,7 +1429,8 @@ static void putAtomsInBoxTemplated(PbcType                  pbcType,
         GMX_ASSERT(v.size() == x.size(), "Need velocities for box deformation");
     }
 
-    int npbcdim, m, d;
+    // NOLINTNEXTLINE(readability-misleading-indentation)
+    int npbcdim;
 
     if (pbcType == PbcType::Screw)
     {
@@ -1445,32 +1446,25 @@ static void putAtomsInBoxTemplated(PbcType                  pbcType,
         npbcdim = 3;
     }
 
+    gmx::RVec invBox;
+    for (int m = 0; m < npbcdim; ++m)
+    {
+        invBox[m] = 1 / box[m][m];
+    }
+
     if (TRICLINIC(box))
     {
-        for (gmx::Index i = 0; (i < x.ssize()); ++i)
+        for (gmx::Index i = 0; i < x.ssize(); i++)
         {
-            for (m = npbcdim - 1; m >= 0; m--)
+            for (int m = npbcdim - 1; m >= 0; m--)
             {
-                while (x[i][m] < 0)
+                const auto boxVectorShift = std::floor(x[i][m] * invBox[m]);
+                for (int d = 0; d <= m; d++)
                 {
-                    for (d = 0; d <= m; d++)
+                    x[i][d] -= boxVectorShift * box[m][d];
+                    if constexpr (haveBoxDeformation)
                     {
-                        x[i][d] += box[m][d];
-                        if constexpr (haveBoxDeformation)
-                        {
-                            v[i][d] += boxDeformation[m][d];
-                        }
-                    }
-                }
-                while (x[i][m] >= box[m][m])
-                {
-                    for (d = 0; d <= m; d++)
-                    {
-                        x[i][d] -= box[m][d];
-                        if constexpr (haveBoxDeformation)
-                        {
-                            v[i][d] -= boxDeformation[m][d];
-                        }
+                        v[i][d] -= boxVectorShift * boxDeformation[m][d];
                     }
                 }
             }
@@ -1478,30 +1472,17 @@ static void putAtomsInBoxTemplated(PbcType                  pbcType,
     }
     else
     {
-        for (gmx::Index i = 0; (i < x.ssize()); ++i)
+        for (gmx::Index i = 0; i < x.ssize(); i++)
         {
-            for (d = 0; d < npbcdim; d++)
+            for (int d = 0; d < npbcdim; d++)
             {
-                while (x[i][d] < 0)
+                const auto boxVectorShift = std::floor(x[i][d] * invBox[d]);
+                x[i][d] -= boxVectorShift * box[d][d];
+                if constexpr (haveBoxDeformation)
                 {
-                    x[i][d] += box[d][d];
-                    if constexpr (haveBoxDeformation)
+                    for (int d2 = 0; d2 <= d; d2++)
                     {
-                        for (int d2 = 0; d2 <= d; d2++)
-                        {
-                            v[i][d2] += boxDeformation[d][d2];
-                        }
-                    }
-                }
-                while (x[i][d] >= box[d][d])
-                {
-                    x[i][d] -= box[d][d];
-                    if constexpr (haveBoxDeformation)
-                    {
-                        for (int d2 = 0; d2 <= d; d2++)
-                        {
-                            v[i][d2] -= boxDeformation[d][d2];
-                        }
+                        v[i][d2] -= boxVectorShift * boxDeformation[d][d2];
                     }
                 }
             }
