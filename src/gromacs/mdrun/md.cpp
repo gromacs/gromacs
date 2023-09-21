@@ -931,6 +931,11 @@ void gmx::LegacySimulator::do_md()
         // exchange).
         if (useGpuForUpdate && bNS && !bFirstStep && !bExchanged)
         {
+            if (usedMdGpuGraphLastStep)
+            {
+                // Wait on coordinates produced from GPU graph
+                stateGpu->waitCoordinatesUpdatedOnDevice();
+            }
             stateGpu->copyVelocitiesFromGpu(state->v, AtomLocality::Local);
             stateGpu->copyCoordinatesFromGpu(state->x, AtomLocality::Local);
             stateGpu->waitVelocitiesReadyOnHost(AtomLocality::Local);

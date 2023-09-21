@@ -90,13 +90,16 @@ simulation runtime instead.
 
 Fixes :issue:`4847`
 
-Update CUDA Graphs on Virial Steps
-""""""""""""""""""""""""""""""""""
+CUDA Graph fixes related to neighbour search steps
+""""""""""""""""""""""""""""""""""""""""""""""""""
 
 When using the experimental CUDA Graphs feature, previously the code
-would crash for runs where steps that involve virial calculations do
-not coincide with neighbour search steps. This issue is fixed by
-ensuring that CUDA Graphs are suitably updated on virial steps.
+would crash for: runs where steps that involve virial calculations do
+not coincide with neighbour search (NS) steps - this issue is fixed by
+ensuring that CUDA Graphs are suitably updated on virial steps; and
+for runs where CUDA graphs are active on steps immediately preceding
+NS steps - this issue is fixed by adding necessary synchronization at
+the start of NS steps.
 
 Fixes :issue:`4813`
 
