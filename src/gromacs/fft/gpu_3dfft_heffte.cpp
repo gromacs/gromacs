@@ -36,6 +36,7 @@
  *  \brief Implements GPU 3D FFT routines using HeFFTe.
  *
  *  \author Gaurav Garg <gaugarg@nvidia.com>
+ *  \author Mark Abraham <mark.j.abraham@gmail.com>
  *  \ingroup module_fft
  */
 
@@ -247,7 +248,13 @@ Gpu3dFft::ImplHeFfte<backend_tag>::ImplHeFfte(bool                 allocateRealG
 }
 
 template<typename backend_tag>
-Gpu3dFft::ImplHeFfte<backend_tag>::~ImplHeFfte<backend_tag>() = default;
+Gpu3dFft::ImplHeFfte<backend_tag>::~ImplHeFfte<backend_tag>()
+{
+#if GMX_GPU_SYCL
+    freeDeviceBuffer(&localRealGrid_);
+    freeDeviceBuffer(&localComplexGrid_);
+#endif
+}
 
 template<typename backend_tag>
 void Gpu3dFft::ImplHeFfte<backend_tag>::perform3dFft(gmx_fft_direction dir, CommandEvent* /*timingEvent*/)
