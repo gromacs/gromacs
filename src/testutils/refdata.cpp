@@ -391,6 +391,8 @@ public:
     static const char* const cBooleanNodeName;
     //! String constant for naming XML elements for string values.
     static const char* const cStringNodeName;
+    //! String constant for naming XML elements for single char values.
+    static const char* const cCharNodeName;
     //! String constant for naming XML elements for unsigned char values.
     static const char* const cUCharNodeName;
     //! String constant for naming XML elements for integer values.
@@ -566,6 +568,7 @@ public:
 
 const char* const TestReferenceChecker::Impl::cBooleanNodeName    = "Bool";
 const char* const TestReferenceChecker::Impl::cStringNodeName     = "String";
+const char* const TestReferenceChecker::Impl::cCharNodeName       = "Char";
 const char* const TestReferenceChecker::Impl::cUCharNodeName      = "UChar";
 const char* const TestReferenceChecker::Impl::cIntegerNodeName    = "Int";
 const char* const TestReferenceChecker::Impl::cInt32NodeName      = "Int32";
@@ -905,6 +908,13 @@ void TestReferenceChecker::checkTextBlock(const std::string& value, const char* 
 }
 
 
+void TestReferenceChecker::checkChar(char value, const char* id)
+{
+    EXPECT_PLAIN(impl_->processItem(
+            Impl::cCharNodeName, id, ExactStringChecker(formatString("%c", value))));
+}
+
+
 void TestReferenceChecker::checkUChar(unsigned char value, const char* id)
 {
     EXPECT_PLAIN(impl_->processItem(
@@ -1024,6 +1034,14 @@ void TestReferenceChecker::checkAny(const Any& any, const char* id)
     if (any.isType<bool>())
     {
         checkBoolean(any.cast<bool>(), id);
+    }
+    else if (any.isType<char>())
+    {
+        checkChar(any.cast<char>(), id);
+    }
+    else if (any.isType<unsigned char>())
+    {
+        checkUChar(any.cast<unsigned char>(), id);
     }
     else if (any.isType<int>())
     {

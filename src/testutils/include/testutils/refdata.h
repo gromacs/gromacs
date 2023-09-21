@@ -381,6 +381,8 @@ public:
      * is easier to edit by hand to set the desired output formatting.
      */
     void checkTextBlock(const std::string& value, const char* id);
+    //! Check a single char value.
+    void checkChar(char value, const char* id);
     //! Check a single unsigned char value.
     void checkUChar(unsigned char value, const char* id);
     //! Check a single integer value.

@@ -66,7 +66,7 @@ public:
 
     void doBool(bool* value) override { checker_.checkBoolean(*value, nullptr); }
     void doUChar(unsigned char* value) override { checker_.checkUChar(*value, nullptr); }
-    void doChar(char* /* value */) override { raiseAssert(); }
+    void doChar(char* value) override { checker_.checkChar(*value, nullptr); }
     void doUShort(unsigned short* /* value */) override { raiseAssert(); }
     void doInt(int* value) override { checker_.checkInteger(*value, nullptr); }
     void doInt32(int32_t* value) override { checker_.checkInt32(*value, nullptr); }
@@ -122,6 +122,8 @@ TEST_F(KeyValueTreeSerializerTest, EmptyTree)
 
 TEST_F(KeyValueTreeSerializerTest, SimpleObject)
 {
+    builder_.rootObject().addValue<char>("c", 'x');
+    builder_.rootObject().addValue<unsigned char>("u", 0170);
     builder_.rootObject().addValue<int>("foo", 1);
     builder_.rootObject().addValue<int32_t>("foo32", 1);
     builder_.rootObject().addValue<int64_t>("foo64", 1);

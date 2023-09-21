@@ -170,6 +170,33 @@ struct SerializationTraits<bool>
 };
 
 template<>
+struct SerializationTraits<char>
+{
+    static void serialize(char value, ISerializer* serializer) { serializer->doChar(&value); }
+    static void deserialize(KeyValueTreeValueBuilder* builder, ISerializer* serializer)
+    {
+        char value = ' ';
+        serializer->doChar(&value);
+        builder->setValue<char>(value);
+    }
+};
+
+template<>
+struct SerializationTraits<unsigned char>
+{
+    static void serialize(unsigned char value, ISerializer* serializer)
+    {
+        serializer->doUChar(&value);
+    }
+    static void deserialize(KeyValueTreeValueBuilder* builder, ISerializer* serializer)
+    {
+        unsigned char value = '\0';
+        serializer->doUChar(&value);
+        builder->setValue<unsigned char>(value);
+    }
+};
+
+template<>
 struct SerializationTraits<int>
 {
     static void serialize(int value, ISerializer* serializer) { serializer->doInt(&value); }
@@ -245,6 +272,8 @@ void ValueSerializer::initSerializers()
         SERIALIZER('A', KeyValueTreeArray),
         SERIALIZER('s', std::string),
         SERIALIZER('b', bool),
+        SERIALIZER('c', char),
+        SERIALIZER('u', unsigned char),
         SERIALIZER('i', int),
         SERIALIZER('l', int64_t),
         SERIALIZER('f', float),

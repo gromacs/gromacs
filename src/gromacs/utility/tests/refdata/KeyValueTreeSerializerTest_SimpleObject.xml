@@ -2,6 +2,8 @@
 <?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
 <ReferenceData>
   <Object Name="Input">
+    <Char Name="c">x</Char>
+    <UChar Name="u">120</UChar>
     <Int Name="foo">1</Int>
     <Int Name="foo32">1</Int>
     <Int64 Name="foo64">1</Int64>
@@ -10,7 +12,13 @@
     <Real Name="d">2.5</Real>
   </Object>
   <SerializedData Name="Stream">
-    <Int>6</Int>
+    <Int>8</Int>
+    <String>c</String>
+    <UChar>99</UChar>
+    <Char>x</Char>
+    <String>u</String>
+    <UChar>117</UChar>
+    <UChar>120</UChar>
     <String>foo</String>
     <UChar>105</UChar>
     <Int>1</Int>
