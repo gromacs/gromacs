@@ -402,6 +402,9 @@ public:
      */
     int numAtomsAll() const;
 
+    /*! \brief Wait until coordinates are updated on the device. */
+    void waitCoordinatesUpdatedOnDevice();
+
 private:
     class Impl;
     std::unique_ptr<Impl> impl_;

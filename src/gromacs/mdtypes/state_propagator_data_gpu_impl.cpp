@@ -308,6 +308,13 @@ int StatePropagatorDataGpu::numAtomsAll() const
     return 0;
 }
 
+void StatePropagatorDataGpu::waitCoordinatesUpdatedOnDevice()
+{
+    GMX_ASSERT(!impl_,
+               "A CPU stub method from GPU state propagator data was called instead of one from "
+               "GPU implementation.");
+}
+
 } // namespace gmx
 
 #endif // !GMX_GPU

@@ -16,6 +16,21 @@ in the :ref:`release-notes`.
 Fixes where mdrun could behave incorrectly
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Enable AWH to read 3D or higher-dimension user data
+"""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Mdrun could not start due to an error when reading in awh input data
+with dimensionality larger than two.
+
+:issue:`4828`
+
+Allow restraining the rotation of a group of atoms during energy minimization
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Avoid a segfault when using energy minimization together with enforced rotation. 
+
+:issue:`4865`
+
 Fix missing force buffer clearing with GPU DD and CPU bonded interactions
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
@@ -75,12 +90,24 @@ simulation runtime instead.
 
 Fixes :issue:`4847`
 
-Update CUDA Graphs on Virial Steps
-""""""""""""""""""""""""""""""""""
+CUDA Graph fixes related to neighbour search steps
+""""""""""""""""""""""""""""""""""""""""""""""""""
 
 When using the experimental CUDA Graphs feature, previously the code
-would crash for runs where steps that involve virial calculations do
-not coincide with neighbour search steps. This issue is fixed by
-ensuring that CUDA Graphs are suitably updated on virial steps.
+would crash for: runs where steps that involve virial calculations do
+not coincide with neighbour search (NS) steps - this issue is fixed by
+ensuring that CUDA Graphs are suitably updated on virial steps; and
+for runs where CUDA graphs are active on steps immediately preceding
+NS steps - this issue is fixed by adding necessary synchronization at
+the start of NS steps.
 
 Fixes :issue:`4813`
+
+Fix velocity vector copying in constr_vsiten
+""""""""""""""""""""""""""""""""""""""""""""
+
+Fixed velocity vector copying in the function ``constr_vsiten``
+because an energy minimization doesn't need a velocity vector.
+The fix avoids copying an empty vector and the corresponding SegFault.
+
+Fixes :issue:`4814`

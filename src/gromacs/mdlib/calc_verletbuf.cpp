@@ -649,9 +649,9 @@ static real energyDriftAtomPair(bool                     isConstrained_i,
 static real energyDrift(gmx::ArrayRef<const VerletbufAtomtype> att,
                         const gmx_ffparams_t*                  ffp,
                         real                                   kT_fac,
-                        const pot_derivatives_t*               ljDisp,
-                        const pot_derivatives_t*               ljRep,
-                        const pot_derivatives_t*               elec,
+                        const pot_derivatives_t&               ljDisp,
+                        const pot_derivatives_t&               ljRep,
+                        const pot_derivatives_t&               elec,
                         real                                   rlj,
                         real                                   rcoulomb,
                         real                                   rlist,
@@ -689,17 +689,17 @@ static real energyDrift(gmx::ArrayRef<const VerletbufAtomtype> att,
             real              c6  = ffp->iparams[prop_i->type * ffp->atnr + prop_j->type].lj.c6;
             real              c12 = ffp->iparams[prop_i->type * ffp->atnr + prop_j->type].lj.c12;
             pot_derivatives_t lj;
-            lj.md1 = c6 * ljDisp->md1 + c12 * ljRep->md1;
-            lj.d2  = c6 * ljDisp->d2 + c12 * ljRep->d2;
-            lj.md3 = c6 * ljDisp->md3 + c12 * ljRep->md3;
+            lj.md1 = c6 * ljDisp.md1 + c12 * ljRep.md1;
+            lj.d2  = c6 * ljDisp.d2 + c12 * ljRep.d2;
+            lj.md3 = c6 * ljDisp.md3 + c12 * ljRep.md3;
 
             real pot_lj = energyDriftAtomPair(
                     prop_i->bConstr, prop_j->bConstr, s2, s2i_2d, s2j_2d, rlist - rlj, &lj);
 
             // Set -V' and V'' at the cut-off for Coulomb
             pot_derivatives_t elec_qq;
-            elec_qq.md1 = elec->md1 * prop_i->q * prop_j->q;
-            elec_qq.d2  = elec->d2 * prop_i->q * prop_j->q;
+            elec_qq.md1 = elec.md1 * prop_i->q * prop_j->q;
+            elec_qq.d2  = elec.d2 * prop_i->q * prop_j->q;
             elec_qq.md3 = 0;
 
             real pot_q = energyDriftAtomPair(
@@ -801,6 +801,126 @@ static real md3_force_switch(real p, real rswitch, real rc)
     md3_sw  = 2 * a + 6 * b * (rc - rswitch);
 
     return md3_pot + md3_sw;
+}
+
+// Returns the derivatives of the Van der Waals dispersion and repulsion
+static std::pair<pot_derivatives_t, pot_derivatives_t> getVdwDerivatives(const t_inputrec& ir,
+                                                                         const real        repPow)
+{
+    pot_derivatives_t ljDisp = { 0, 0, 0 };
+    pot_derivatives_t ljRep  = { 0, 0, 0 };
+
+    if (ir.vdwtype == VanDerWaalsType::Cut)
+    {
+        real sw_range, md3_pswf;
+
+        switch (ir.vdw_modifier)
+        {
+            case InteractionModifiers::None:
+            case InteractionModifiers::PotShift:
+                /* -dV/dr of -r^-6 and r^-reppow */
+                ljDisp.md1 = -6 * std::pow(ir.rvdw, -7.0);
+                ljRep.md1  = repPow * std::pow(ir.rvdw, -(repPow + 1));
+                /* The contribution of the higher derivatives is negligible */
+                break;
+            case InteractionModifiers::ForceSwitch:
+                /* At the cut-off: V=V'=V''=0, so we use only V''' */
+                ljDisp.md3 = -md3_force_switch(6.0, ir.rvdw_switch, ir.rvdw);
+                ljRep.md3  = md3_force_switch(repPow, ir.rvdw_switch, ir.rvdw);
+                break;
+            case InteractionModifiers::PotSwitch:
+                /* At the cut-off: V=V'=V''=0.
+                 * V''' is given by the original potential times
+                 * the third derivative of the switch function.
+                 */
+                sw_range = ir.rvdw - ir.rvdw_switch;
+                md3_pswf = 60.0 / gmx::power3(sw_range);
+
+                ljDisp.md3 = -std::pow(ir.rvdw, -6.0) * md3_pswf;
+                ljRep.md3  = std::pow(ir.rvdw, -repPow) * md3_pswf;
+                break;
+            default: gmx_incons("Unimplemented VdW modifier");
+        }
+    }
+    else if (usingLJPme(ir.vdwtype))
+    {
+        real b   = calc_ewaldcoeff_lj(ir.rvdw, ir.ewald_rtol_lj);
+        real r   = ir.rvdw;
+        real br  = b * r;
+        real br2 = br * br;
+        real br4 = br2 * br2;
+        real br6 = br4 * br2;
+        // -dV/dr of g(br)*r^-6 [where g(x) = exp(-x^2)(1+x^2+x^4/2),
+        // see LJ-PME equations in manual] and r^-reppow
+        ljDisp.md1 = -std::exp(-br2) * (br6 + 3.0 * br4 + 6.0 * br2 + 6.0) * std::pow(r, -7.0);
+        ljRep.md1  = repPow * pow(r, -(repPow + 1));
+        // The contribution of the higher derivatives is negligible
+    }
+    else
+    {
+        gmx_fatal(FARGS,
+                  "Energy drift calculation is only implemented for plain cut-off Lennard-Jones "
+                  "interactions");
+    }
+
+    return { ljDisp, ljRep };
+}
+
+// Returns the derivatives of the Electrostatics interaction function, including 4 pi eps0 / eps_r
+static pot_derivatives_t getElecDerivatives(const t_inputrec& ir)
+{
+    const real elfac = gmx::c_one4PiEps0 / ir.epsilon_r;
+
+    pot_derivatives_t elec = { 0, 0, 0 };
+
+    if (ir.coulombtype == CoulombInteractionType::Cut || usingRF(ir.coulombtype))
+    {
+        real eps_rf, k_rf;
+
+        if (ir.coulombtype == CoulombInteractionType::Cut)
+        {
+            eps_rf = 1;
+            k_rf   = 0;
+        }
+        else
+        {
+            eps_rf = ir.epsilon_rf / ir.epsilon_r;
+            if (eps_rf != 0)
+            {
+                k_rf = (eps_rf - ir.epsilon_r) / (gmx::power3(ir.rcoulomb) * (2 * eps_rf + ir.epsilon_r));
+            }
+            else
+            {
+                /* reactionFieldPermitivity = infinity */
+                k_rf = 0.5 / gmx::power3(ir.rcoulomb);
+            }
+        }
+
+        if (eps_rf > 0)
+        {
+            elec.md1 = elfac * (1.0 / gmx::square(ir.rcoulomb) - 2 * k_rf * ir.rcoulomb);
+        }
+        elec.d2 = elfac * (2.0 / gmx::power3(ir.rcoulomb) + 2 * k_rf);
+    }
+    else if (usingPme(ir.coulombtype) || ir.coulombtype == CoulombInteractionType::Ewald)
+    {
+        real b, rc, br;
+
+        b        = calc_ewaldcoeff_q(ir.rcoulomb, ir.ewald_rtol);
+        rc       = ir.rcoulomb;
+        br       = b * rc;
+        elec.md1 = elfac * (b * std::exp(-br * br) * M_2_SQRTPI / rc + std::erfc(br) / (rc * rc));
+        elec.d2  = elfac / (rc * rc)
+                  * (2 * b * (1 + br * br) * std::exp(-br * br) * M_2_SQRTPI + 2 * std::erfc(br) / rc);
+    }
+    else
+    {
+        gmx_fatal(FARGS,
+                  "Energy drift calculation is only implemented for Reaction-Field and Ewald "
+                  "electrostatics");
+    }
+
+    return elec;
 }
 
 /* Returns the variance of the atomic displacement over timePeriod.
@@ -941,7 +1061,6 @@ real calcVerletBufferSize(const gmx_mtop_t&         mtop,
     real particle_distance;
     real nb_clust_frac_pairs_not_in_list_at_cutoff;
 
-    real elfac;
     int  ib0, ib1, ib;
     real rb, rl;
     real drift;
@@ -1018,114 +1137,12 @@ real calcVerletBufferSize(const gmx_mtop_t&         mtop,
         fprintf(debug, "energy drift atom types: %zu\n", att.size());
     }
 
-    pot_derivatives_t ljDisp = { 0, 0, 0 };
-    pot_derivatives_t ljRep  = { 0, 0, 0 };
-    real              repPow = mtop.ffparams.reppow;
-
-    if (ir.vdwtype == VanDerWaalsType::Cut)
-    {
-        real sw_range, md3_pswf;
-
-        switch (ir.vdw_modifier)
-        {
-            case InteractionModifiers::None:
-            case InteractionModifiers::PotShift:
-                /* -dV/dr of -r^-6 and r^-reppow */
-                ljDisp.md1 = -6 * std::pow(ir.rvdw, -7.0);
-                ljRep.md1  = repPow * std::pow(ir.rvdw, -(repPow + 1));
-                /* The contribution of the higher derivatives is negligible */
-                break;
-            case InteractionModifiers::ForceSwitch:
-                /* At the cut-off: V=V'=V''=0, so we use only V''' */
-                ljDisp.md3 = -md3_force_switch(6.0, ir.rvdw_switch, ir.rvdw);
-                ljRep.md3  = md3_force_switch(repPow, ir.rvdw_switch, ir.rvdw);
-                break;
-            case InteractionModifiers::PotSwitch:
-                /* At the cut-off: V=V'=V''=0.
-                 * V''' is given by the original potential times
-                 * the third derivative of the switch function.
-                 */
-                sw_range = ir.rvdw - ir.rvdw_switch;
-                md3_pswf = 60.0 / gmx::power3(sw_range);
-
-                ljDisp.md3 = -std::pow(ir.rvdw, -6.0) * md3_pswf;
-                ljRep.md3  = std::pow(ir.rvdw, -repPow) * md3_pswf;
-                break;
-            default: gmx_incons("Unimplemented VdW modifier");
-        }
-    }
-    else if (usingLJPme(ir.vdwtype))
-    {
-        real b   = calc_ewaldcoeff_lj(ir.rvdw, ir.ewald_rtol_lj);
-        real r   = ir.rvdw;
-        real br  = b * r;
-        real br2 = br * br;
-        real br4 = br2 * br2;
-        real br6 = br4 * br2;
-        // -dV/dr of g(br)*r^-6 [where g(x) = exp(-x^2)(1+x^2+x^4/2),
-        // see LJ-PME equations in manual] and r^-reppow
-        ljDisp.md1 = -std::exp(-br2) * (br6 + 3.0 * br4 + 6.0 * br2 + 6.0) * std::pow(r, -7.0);
-        ljRep.md1  = repPow * pow(r, -(repPow + 1));
-        // The contribution of the higher derivatives is negligible
-    }
-    else
-    {
-        gmx_fatal(FARGS,
-                  "Energy drift calculation is only implemented for plain cut-off Lennard-Jones "
-                  "interactions");
-    }
-
-    elfac = gmx::c_one4PiEps0 / ir.epsilon_r;
+    pot_derivatives_t ljDisp;
+    pot_derivatives_t ljRep;
+    std::tie(ljDisp, ljRep) = getVdwDerivatives(ir, mtop.ffparams.reppow);
 
     // Determine the 1st and 2nd derivative for the electostatics
-    pot_derivatives_t elec = { 0, 0, 0 };
-
-    if (ir.coulombtype == CoulombInteractionType::Cut || usingRF(ir.coulombtype))
-    {
-        real eps_rf, k_rf;
-
-        if (ir.coulombtype == CoulombInteractionType::Cut)
-        {
-            eps_rf = 1;
-            k_rf   = 0;
-        }
-        else
-        {
-            eps_rf = ir.epsilon_rf / ir.epsilon_r;
-            if (eps_rf != 0)
-            {
-                k_rf = (eps_rf - ir.epsilon_r) / (gmx::power3(ir.rcoulomb) * (2 * eps_rf + ir.epsilon_r));
-            }
-            else
-            {
-                /* reactionFieldPermitivity = infinity */
-                k_rf = 0.5 / gmx::power3(ir.rcoulomb);
-            }
-        }
-
-        if (eps_rf > 0)
-        {
-            elec.md1 = elfac * (1.0 / gmx::square(ir.rcoulomb) - 2 * k_rf * ir.rcoulomb);
-        }
-        elec.d2 = elfac * (2.0 / gmx::power3(ir.rcoulomb) + 2 * k_rf);
-    }
-    else if (usingPme(ir.coulombtype) || ir.coulombtype == CoulombInteractionType::Ewald)
-    {
-        real b, rc, br;
-
-        b        = calc_ewaldcoeff_q(ir.rcoulomb, ir.ewald_rtol);
-        rc       = ir.rcoulomb;
-        br       = b * rc;
-        elec.md1 = elfac * (b * std::exp(-br * br) * M_2_SQRTPI / rc + std::erfc(br) / (rc * rc));
-        elec.d2  = elfac / (rc * rc)
-                  * (2 * b * (1 + br * br) * std::exp(-br * br) * M_2_SQRTPI + 2 * std::erfc(br) / rc);
-    }
-    else
-    {
-        gmx_fatal(FARGS,
-                  "Energy drift calculation is only implemented for Reaction-Field and Ewald "
-                  "electrostatics");
-    }
+    const pot_derivatives_t elec = getElecDerivatives(ir);
 
     /* Determine the variance of the atomic displacement
      * over list_lifetime steps: kT_fac
@@ -1157,7 +1174,7 @@ real calcVerletBufferSize(const gmx_mtop_t&         mtop,
          * of the nstlist steps at which the pair-list is used.
          */
         drift = energyDrift(
-                att, &mtop.ffparams, kT_fac, &ljDisp, &ljRep, &elec, ir.rvdw, ir.rcoulomb, rl, mtop.natoms, effectiveAtomDensity);
+                att, &mtop.ffparams, kT_fac, ljDisp, ljRep, elec, ir.rvdw, ir.rcoulomb, rl, mtop.natoms, effectiveAtomDensity);
 
         /* Correct for the fact that we are using a Ni x Nj particle pair list
          * and not a 1 x 1 particle pair list. This reduces the drift.

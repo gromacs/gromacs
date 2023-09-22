@@ -187,6 +187,9 @@ public:
                                                            const StepWorkload&       stepWork,
                                                            GpuEventSynchronizer* gpuCoordinateHaloLaunched = nullptr);
 
+    /*! \brief Wait until coordinates are available on the device. */
+    void waitCoordinatesUpdatedOnDevice() { xUpdatedOnDeviceEvent_->waitForEvent(); }
+
     /*! \brief Blocking wait until coordinates are copied to the device.
      *
      * Synchronizes the stream in which the copy was executed.

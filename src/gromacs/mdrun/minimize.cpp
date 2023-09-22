@@ -915,6 +915,8 @@ public:
     gmx::ImdSession* imdSession;
     //! The pull work object.
     pull_t* pull_work;
+    //! Data for rotational pulling.
+    gmx_enfrot* enforcedRotation;
     //! Manages flop accounting.
     t_nrnb* nrnb;
     //! Manages wall cycle accounting.
@@ -1028,7 +1030,7 @@ void EnergyEvaluator::run(em_state_t* ems, rvec mu_tot, tensor vir, tensor pres,
              *inputrec,
              mdModulesNotifiers,
              nullptr,
-             nullptr,
+             enforcedRotation,
              imdSession,
              pull_work,
              count,
@@ -1382,6 +1384,7 @@ void LegacySimulator::do_cg()
                                      mdModulesNotifiers_,
                                      imdSession_,
                                      pullWork_,
+                                     enforcedRotation_,
                                      nrnb_,
                                      wallCycleCounters_,
                                      gstat,
@@ -2147,6 +2150,7 @@ void LegacySimulator::do_lbfgs()
                                      mdModulesNotifiers_,
                                      imdSession_,
                                      pullWork_,
+                                     enforcedRotation_,
                                      nrnb_,
                                      wallCycleCounters_,
                                      gstat,
@@ -2911,6 +2915,7 @@ void LegacySimulator::do_steep()
                                      mdModulesNotifiers_,
                                      imdSession_,
                                      pullWork_,
+                                     enforcedRotation_,
                                      nrnb_,
                                      wallCycleCounters_,
                                      gstat,
@@ -3301,6 +3306,7 @@ void LegacySimulator::do_nm()
                                      mdModulesNotifiers_,
                                      imdSession_,
                                      pullWork_,
+                                     enforcedRotation_,
                                      nrnb_,
                                      wallCycleCounters_,
                                      gstat,

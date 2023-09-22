@@ -817,6 +817,11 @@ int StatePropagatorDataGpu::numAtomsAll() const
     return impl_->numAtomsAll();
 }
 
+void StatePropagatorDataGpu::waitCoordinatesUpdatedOnDevice()
+{
+    impl_->waitCoordinatesUpdatedOnDevice();
+}
+
 } // namespace gmx
 
 #endif // GMX_GPU

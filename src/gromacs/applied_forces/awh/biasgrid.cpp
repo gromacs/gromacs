@@ -899,9 +899,9 @@ void mapGridToDataGrid(std::vector<int>* gridpointToDatapoint,
         } while (pointIndex < numDataPoints
                  && !gmx_within_tol(firstValue, dataView[d][pointIndex], GMX_REAL_EPS));
 
-        /* The stride in dimension dimension d - 1 equals the number of points
-           dimension d. */
-        stride = numPointsInDim;
+        /* The stride in dimension d equals the number of points
+           accumulated multiplicatively in previous dimensions. */
+        stride *= numPointsInDim;
 
         numPointsCounted = (numPointsCounted == 0) ? numPointsInDim : numPointsCounted * numPointsInDim;
 
