@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
 <ReferenceData>
-  <String Name="CommandLine">dssp -hmode dssp -nb -cutoff 2 -clear</String>
+  <String Name="CommandLine">dssp -hmode dssp -nb -cutoff 2 -hbond geometry -clear</String>
   <OutputData Name="Data">
     <AnalysisData Name="secondaryStructuresNum">
       <DataFrame Name="Frame0">
@@ -9,34 +9,34 @@
         <DataValues>
           <Int Name="Count">10</Int>
           <DataValue>
-            <Real Name="Value">107</Real>
+            <Real Name="Value">56</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">2</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">35</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">44</Real>
           </DataValue>
           <DataValue>
             <Real Name="Value">3</Real>
           </DataValue>
           <DataValue>
-            <Real Name="Value">62</Real>
+            <Real Name="Value">0</Real>
           </DataValue>
           <DataValue>
-            <Real Name="Value">38</Real>
-          </DataValue>
-          <DataValue>
-            <Real Name="Value">20</Real>
+            <Real Name="Value">25</Real>
           </DataValue>
           <DataValue>
             <Real Name="Value">0</Real>
           </DataValue>
           <DataValue>
-            <Real Name="Value">45</Real>
+            <Real Name="Value">0</Real>
           </DataValue>
           <DataValue>
-            <Real Name="Value">171</Real>
-          </DataValue>
-          <DataValue>
-            <Real Name="Value">24</Real>
-          </DataValue>
-          <DataValue>
-            <Real Name="Value">188</Real>
+            <Real Name="Value">280</Real>
           </DataValue>
         </DataValues>
       </DataFrame>
@@ -45,7 +45,7 @@
   <OutputFiles Name="Files">
     <File Name="-o">
       <String Name="Contents"><![CDATA[
-~PPPP~SS~GGGG~BPBPPS~~~HHHHHHHHHHHHHHHHTT~SEEEGGGGT~~BSEEEE~SSSSSSS~EEEEEEEEEEEE~~B~~EEEETTEEEEEEE~~B~SEEEEEEE~TTS~EEEEEEEHHHHHHHHHHHHHHBT~~GGGGS~HHHHHHHHHHHHHHHHH~=~~~~SS~GGGSBBPBPPS~~~HHHHHHHHHHHHHHHHHT~SEEEGGGGT~~B~EEEE~SSSSSSS~EEEEEEEEEEEEEEE~~EE~~TTSTT~~EE~~EEEEEEEEEE~TTS~EEEEEEEHHHHHHHHHHHHHHBT~~GGGGS~HHHHHHHHHHHHHHHHT~=~~S~~~~SS~GGGSBBPBPPS~~~HHHHHHHHHHHHHHHHTT~SEEEGGGGT~~BSEEEE~SSSSSTT~EEEEEEEEEEEES~B~~EEE~TTSTT~EEE~~B~SEEEEEEE~TTS~EEEEEEEHHHHHHHHHHHHHHBT~~GGGGS~HHHHHHHHHHHHHHHHH~=~~PPP~SS~GGGSPBPBPPS~~~HHHHHHHHHHHHHHHHTT~SEEEGGGGT~~B~EEEEESSSSSSSEEEEEEEEEEEEE~~B~~EEEETTEEEEEEE~~B~SEEEEEEE~TTS~EEEEEE~HHHHHHHHHHHHHHBT~~GGGGS~HHHHHHHHHHHHHHHHH~
+~~SS~~HHHHHHHHTSS~HHHHHHHHHHHHHHTT~SS~~~HHHHHHTS~HHHHHHGGG~TT~HHHHHHHHHHHHHHTTS~HHHHHHHHTTT~HHHHHHGGG~S~HHHHHHHHHHHHHHHTT~HHHHHHHHHTT~HHHHHGGG~SS~GGGS~HHHHHHHHHHHHHTT~~~SSPPPHHHHHHHHHHHHHHTTSS~HHHHHHHHHHHHHHTSS~HHHHHHHHTTS~HHHHHHGGG~S~HHHHHHHHHHHHHHTTS~HHHHHHHHHTTGGGGHHHHTT~SSHHHHHHHHHHHHTTTTS~HHHHHHHHHTT~HHHHHHHHHSS~HHHHHHHHHHHHHHHHS~~HHHHHHHHTTT~HHHHHHGGG~S~SHHHHHHHHHHHHHHHHHGGGT~HHHHHHHHHTTSHHHHHHHTTS~SSHHHHHHHHHHHHHH~~=~~SS~~~~~=~~TT~~~~
 ]]></String>
     </File>
     <File Name="-num">
@@ -71,16 +71,16 @@ s9 legend "α-Helices"
         <Sequence Name="Row0">
           <Int Name="Length">11</Int>
           <Real>0.000</Real>
-          <Real>107</Real>
+          <Real>56</Real>
+          <Real>2</Real>
+          <Real>35</Real>
+          <Real>44</Real>
           <Real>3</Real>
-          <Real>62</Real>
-          <Real>38</Real>
-          <Real>20</Real>
           <Real>0</Real>
-          <Real>45</Real>
-          <Real>171</Real>
-          <Real>24</Real>
-          <Real>188</Real>
+          <Real>25</Real>
+          <Real>0</Real>
+          <Real>0</Real>
+          <Real>280</Real>
         </Sequence>
       </XvgData>
     </File>

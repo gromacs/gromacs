@@ -70,10 +70,10 @@ namespace
  * Tests for gmx::analysismodules::Dssp.
  */
 
-using DsspTestParamsDsspNB      = std::tuple<std::string, real, std::string>;
-using DsspTestParamsGromacsNB   = std::tuple<std::string, real, std::string>;
-using DsspTestParamsDsspNoNB    = std::tuple<std::string, std::string>;
-using DsspTestParamsGromacsNoNB = std::tuple<std::string, std::string>;
+using DsspTestParamsDsspNB      = std::tuple<std::string, real, std::string, std::string>;
+using DsspTestParamsGromacsNB   = std::tuple<std::string, real, std::string, std::string>;
+using DsspTestParamsDsspNoNB    = std::tuple<std::string, std::string, std::string>;
+using DsspTestParamsGromacsNoNB = std::tuple<std::string, std::string, std::string>;
 
 //! Test fixture for the dssp analysis module.
 class DsspModuleTestDsspNB :
@@ -108,29 +108,32 @@ class DsspModuleTestGromacsNoNB :
 // NOLINTNEXTLINE(cppcoreguidelines-owning-memory)
 TEST_P(DsspModuleTestDsspNB, Works)
 {
-    std::tuple<std::string, real, std::string> params    = GetParam();
-    const char* const                          cmdline[] = { "dssp" };
-    std::string                                inputFilename(std::get<0>(params));
-    std::filesystem::path                      inputBasename = stripExtension(inputFilename);
-    CommandLine                                command(cmdline);
+    std::tuple<std::string, real, std::string, std::string> params    = GetParam();
+    const char* const                                       cmdline[] = { "dssp" };
+    std::string                                             inputFilename(std::get<0>(params));
+    std::filesystem::path inputBasename = stripExtension(inputFilename);
+    CommandLine           command(cmdline);
     setTopology(inputFilename.c_str());
     setTrajectory(inputFilename.c_str());
     setOutputFile("-o",
-                  formatString("%s-dssp-nb-%.1f-%s.dat",
+                  formatString("%s-dssp-nb-%.1f-%s-%s.dat",
                                inputBasename.c_str(),
                                std::get<1>(params),
-                               std::get<2>(params).c_str())
+                               std::get<2>(params).c_str(),
+                               std::get<3>(params).c_str())
                           .c_str(),
                   ExactTextMatch());
     command.addOption("-hmode", "dssp");
     command.addOption("-nb");
     command.addOption("-cutoff", std::get<1>(params));
-    command.addOption(std::string("-" + std::get<2>(params)).c_str());
+    command.addOption("-hbond", std::get<2>(params));
+    command.addOption(std::string("-" + std::get<3>(params)).c_str());
     setOutputFile("-num",
-                  formatString("%s-dssp-nb-%.1f-%s.xvg",
+                  formatString("%s-dssp-nb-%.1f-%s-%s.xvg",
                                inputBasename.c_str(),
                                std::get<1>(params),
-                               std::get<2>(params).c_str())
+                               std::get<2>(params).c_str(),
+                               std::get<3>(params).c_str())
                           .c_str(),
                   test::XvgMatch());
     runTest(command);
@@ -159,35 +162,39 @@ INSTANTIATE_TEST_SUITE_P(MoleculeTests,
                                                               "5t8z.pdb",
                                                               "6jet.pdb"),
                                             ::testing::Values(0.9, 2.0),
+                                            ::testing::Values("energy", "geometry"),
                                             ::testing::Values("clear", "noclear")));
 
 
 // NOLINTNEXTLINE(cppcoreguidelines-owning-memory)
 TEST_P(DsspModuleTestGromacsNB, Works)
 {
-    std::tuple<std::string, real, std::string> params    = GetParam();
-    const char* const                          cmdline[] = { "dssp" };
-    std::string                                inputFilename(std::get<0>(params));
-    std::filesystem::path                      inputBasename = stripExtension(inputFilename);
-    CommandLine                                command(cmdline);
+    std::tuple<std::string, real, std::string, std::string> params    = GetParam();
+    const char* const                                       cmdline[] = { "dssp" };
+    std::string                                             inputFilename(std::get<0>(params));
+    std::filesystem::path inputBasename = stripExtension(inputFilename);
+    CommandLine           command(cmdline);
     setTopology(inputFilename.c_str());
     setTrajectory(inputFilename.c_str());
     setOutputFile("-o",
-                  formatString("%s-gromacs-nb-%.1f-%s.dat",
+                  formatString("%s-gromacs-nb-%.1f-%s-%s.dat",
                                inputBasename.c_str(),
                                std::get<1>(params),
-                               std::get<2>(params).c_str())
+                               std::get<2>(params).c_str(),
+                               std::get<3>(params).c_str())
                           .c_str(),
                   ExactTextMatch());
     command.addOption("-hmode", "gromacs");
     command.addOption("-nb");
     command.addOption("-cutoff", std::get<1>(params));
-    command.addOption(std::string("-" + std::get<2>(params)).c_str());
+    command.addOption("-hbond", std::get<2>(params));
+    command.addOption(std::string("-" + std::get<3>(params)).c_str());
     setOutputFile("-num",
-                  formatString("%s-gromacs-nb-%.1f-%s.xvg",
+                  formatString("%s-gromacs-nb-%.1f-%s-%s.xvg",
                                inputBasename.c_str(),
                                std::get<1>(params),
-                               std::get<2>(params).c_str())
+                               std::get<2>(params).c_str(),
+                               std::get<3>(params).c_str())
                           .c_str(),
                   test::XvgMatch());
     runTest(command);
@@ -198,30 +205,37 @@ INSTANTIATE_TEST_SUITE_P(
         DsspModuleTestGromacsNB,
         ::testing::Combine(::testing::Values("hdac.pdb", "RNAseA.pdb", "zyncfinger.pdb"),
                            ::testing::Values(0.9, 2.0),
+                           ::testing::Values("energy", "geometry"),
                            ::testing::Values("clear", "noclear")));
 
 // NOLINTNEXTLINE(cppcoreguidelines-owning-memory)
 TEST_P(DsspModuleTestDsspNoNB, Works)
 {
-    std::tuple<std::string, std::string> params    = GetParam();
-    const char* const                    cmdline[] = { "dssp" };
-    std::string                          inputFilename(std::get<0>(params));
-    std::filesystem::path                inputBasename = stripExtension(inputFilename);
-    CommandLine                          command(cmdline);
+    const char* const                                 cmdline[]     = { "dssp" };
+    std::tuple<std::string, std::string, std::string> params        = GetParam();
+    std::string                                       inputFilename = std::get<0>(params);
+    std::filesystem::path                             inputBasename = stripExtension(inputFilename);
+    CommandLine                                       command(cmdline);
     setTopology(inputFilename.c_str());
     setTrajectory(inputFilename.c_str());
-    setOutputFile(
-            "-o",
-            formatString("%s-dssp-nonb-%s.dat", inputBasename.c_str(), std::get<1>(params).c_str()).c_str(),
-            ExactTextMatch());
+    setOutputFile("-o",
+                  formatString("%s-dssp-nonb-%s-%s.dat",
+                               inputBasename.c_str(),
+                               std::get<1>(params).c_str(),
+                               std::get<2>(params).c_str())
+                          .c_str(),
+                  ExactTextMatch());
     command.addOption("-hmode", "dssp");
     command.addOption("-nonb");
-    command.addOption(std::string("-" + std::get<1>(params)).c_str());
-    setOutputFile(
-            "-num",
-            formatString("%s-dssp-nonb-%s.xvg", inputBasename.c_str(), std::get<1>(params).c_str()).c_str(),
-            test::XvgMatch());
-
+    command.addOption("-hbond", std::get<1>(params));
+    command.addOption(std::string("-" + std::get<2>(params)).c_str());
+    setOutputFile("-num",
+                  formatString("%s-dssp-nonb-%s-%s.xvg",
+                               inputBasename.c_str(),
+                               std::get<1>(params).c_str(),
+                               std::get<2>(params).c_str())
+                          .c_str(),
+                  test::XvgMatch());
     runTest(command);
 }
 
@@ -247,28 +261,36 @@ INSTANTIATE_TEST_SUITE_P(MoleculeTests,
                                                               "5i2b.pdb",
                                                               "5t8z.pdb",
                                                               "6jet.pdb"),
+                                            ::testing::Values("energy", "geometry"),
                                             ::testing::Values("clear", "noclear")));
 
 
 // NOLINTNEXTLINE(cppcoreguidelines-owning-memory)
 TEST_P(DsspModuleTestGromacsNoNB, Works)
 {
-    std::tuple<std::string, std::string> params    = GetParam();
-    const char* const                    cmdline[] = { "dssp" };
-    std::string                          inputFilename(std::get<0>(params));
-    std::filesystem::path                inputBasename = stripExtension(inputFilename);
-    CommandLine                          command(cmdline);
+    const char* const                                 cmdline[]     = { "dssp" };
+    std::tuple<std::string, std::string, std::string> params        = GetParam();
+    std::string                                       inputFilename = std::get<0>(params);
+    std::filesystem::path                             inputBasename = stripExtension(inputFilename);
+    CommandLine                                       command(cmdline);
     setTopology(inputFilename.c_str());
     setTrajectory(inputFilename.c_str());
     setOutputFile("-o",
-                  formatString("%s-gromacs-nonb-%s.dat", inputBasename.c_str(), std::get<1>(params).c_str())
+                  formatString("%s-gromacs-nonb-%s-%s.dat",
+                               inputBasename.c_str(),
+                               std::get<1>(params).c_str(),
+                               std::get<2>(params).c_str())
                           .c_str(),
                   ExactTextMatch());
     command.addOption("-hmode", "gromacs");
     command.addOption("-nonb");
-    command.addOption(std::string("-" + std::get<1>(params)).c_str());
+    command.addOption("-hbond", std::get<1>(params));
+    command.addOption(std::string("-" + std::get<2>(params)).c_str());
     setOutputFile("-num",
-                  formatString("%s-gromacs-nonb-%s.xvg", inputBasename.c_str(), std::get<1>(params).c_str())
+                  formatString("%s-gromacs-nonb-%s-%s.xvg",
+                               inputBasename.c_str(),
+                               std::get<1>(params).c_str(),
+                               std::get<2>(params).c_str())
                           .c_str(),
                   test::XvgMatch());
     runTest(command);
@@ -278,6 +300,7 @@ INSTANTIATE_TEST_SUITE_P(
         MoleculeTests,
         DsspModuleTestGromacsNoNB,
         ::testing::Combine(::testing::Values("hdac.pdb", "RNAseA.pdb", "zyncfinger.pdb"),
+                           ::testing::Values("energy", "geometry"),
                            ::testing::Values("clear", "noclear")));
 
 } // namespace
