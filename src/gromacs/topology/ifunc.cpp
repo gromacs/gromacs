@@ -36,78 +36,78 @@
 
 #include "gromacs/topology/ifunc.h"
 
-constexpr t_interaction_function def_bonded(const char* str, const char* lstr, int nra, int nrpa, int nrpb)
+static constexpr t_interaction_function def_bonded(const char* str, const char* lstr, int nra, int nrpa, int nrpb)
 {
     return t_interaction_function{ str, lstr, nra, nrpa, nrpb, IF_BOND };
 }
 
-constexpr t_interaction_function def_pair(const char* str, const char* lstr, int nra, int nrpa, int nrpb)
+static constexpr t_interaction_function def_pair(const char* str, const char* lstr, int nra, int nrpa, int nrpb)
 {
     return t_interaction_function{ str, lstr, nra, nrpa, nrpb, IF_BOND | IF_PAIR | IF_LIMZERO };
 }
 
-constexpr t_interaction_function def_bondedt(const char* str, const char* lstr, int nra, int nrpa, int nrpb)
+static constexpr t_interaction_function def_bondedt(const char* str, const char* lstr, int nra, int nrpa, int nrpb)
 {
     return t_interaction_function{ str, lstr, nra, nrpa, nrpb, IF_BOND | IF_TABULATED };
 }
 
-constexpr t_interaction_function def_bondedtz(const char* str, const char* lstr, int nra, int nrpa, int nrpb)
+static constexpr t_interaction_function def_bondedtz(const char* str, const char* lstr, int nra, int nrpa, int nrpb)
 {
     return t_interaction_function{ str, lstr, nra, nrpa, nrpb, IF_BOND | IF_TABULATED | IF_LIMZERO };
 }
 
-constexpr t_interaction_function def_angle(const char* str, const char* lstr, int nra, int nrpa, int nrpb)
+static constexpr t_interaction_function def_angle(const char* str, const char* lstr, int nra, int nrpa, int nrpb)
 {
     return t_interaction_function{ str, lstr, nra, nrpa, nrpb, IF_BOND | IF_ATYPE };
 }
 
-constexpr t_interaction_function def_dihedral(const char* str, const char* lstr, int nra, int nrpa, int nrpb)
+static constexpr t_interaction_function def_dihedral(const char* str, const char* lstr, int nra, int nrpa, int nrpb)
 {
     return t_interaction_function{ str, lstr, nra, nrpa, nrpb, IF_BOND | IF_DIHEDRAL };
 }
 
-constexpr t_interaction_function
+static constexpr t_interaction_function
 def_dihedral_tabulated(const char* str, const char* lstr, int nra, int nrpa, int nrpb)
 {
     return t_interaction_function{ str, lstr, nra, nrpa, nrpb, IF_BOND | IF_DIHEDRAL | IF_TABULATED };
 }
 
-constexpr t_interaction_function def_bond(const char* str, const char* lstr, int nra, int nrpa, int nrpb)
+static constexpr t_interaction_function def_bond(const char* str, const char* lstr, int nra, int nrpa, int nrpb)
 {
     return t_interaction_function{ str, lstr, nra, nrpa, nrpb, IF_BOND | IF_CHEMBOND | IF_BTYPE };
 }
 
-constexpr t_interaction_function def_bondt(const char* str, const char* lstr, int nra, int nrpa, int nrpb)
+static constexpr t_interaction_function def_bondt(const char* str, const char* lstr, int nra, int nrpa, int nrpb)
 {
     return t_interaction_function{ str, lstr, nra, nrpa, nrpb, IF_BOND | IF_CHEMBOND | IF_TABULATED };
 }
 
-constexpr t_interaction_function def_bondnb(const char* str, const char* lstr, int nra, int nrpa, int nrpb)
+static constexpr t_interaction_function def_bondnb(const char* str, const char* lstr, int nra, int nrpa, int nrpb)
 {
     return t_interaction_function{ str, lstr, nra, nrpa, nrpb, IF_BOND | IF_CHEMBOND };
 }
 
-constexpr t_interaction_function def_vsite(const char* str, const char* lstr, int nra, int nrpa)
+static constexpr t_interaction_function def_vsite(const char* str, const char* lstr, int nra, int nrpa)
 {
     return t_interaction_function{ str, lstr, nra, nrpa, 0, IF_VSITE };
 }
 
-constexpr t_interaction_function def_shk(const char* str, const char* lstr, int nra, int nrpa, int nrpb)
+static constexpr t_interaction_function def_shk(const char* str, const char* lstr, int nra, int nrpa, int nrpb)
 {
     return t_interaction_function{ str, lstr, nra, nrpa, nrpb, IF_CONSTRAINT };
 }
 
-constexpr t_interaction_function def_shkcb(const char* str, const char* lstr, int nra, int nrpa, int nrpb)
+static constexpr t_interaction_function def_shkcb(const char* str, const char* lstr, int nra, int nrpa, int nrpb)
 {
     return t_interaction_function{ str, lstr, nra, nrpa, nrpb, IF_CONSTRAINT | IF_CHEMBOND };
 }
 
-constexpr t_interaction_function def_nb(const char* str, const char* lstr, int nra, int nrpa)
+static constexpr t_interaction_function def_nb(const char* str, const char* lstr, int nra, int nrpa)
 {
     return t_interaction_function{ str, lstr, nra, nrpa, 0, IF_NULL };
 }
 
-constexpr t_interaction_function def_nofc(const char* str, const char* lstr)
+static constexpr t_interaction_function def_nofc(const char* str, const char* lstr)
 {
     return t_interaction_function{ str, lstr, 0, 0, 0, IF_NULL };
 }
