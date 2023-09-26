@@ -672,9 +672,10 @@ static void rbdihs_gpu(const int                                  i,
         Float3 n;
         int    t1;
         int    t2;
-        float  cos_phi;
 
-        const float sin_phi = dih_angle_gpu_sincos<calcVir>(
+        // Changing the sign of sin and cos to convert to polymer convention
+        float       cos_phi;
+        const float negative_sin_phi = dih_angle_gpu_sincos<calcVir>(
                 gm_xq[ai], gm_xq[aj], gm_xq[ak], gm_xq[al], pbcAiuc, &r_ij, &r_kj, &r_kl, &m, &n, &t1, &t2, &cos_phi);
         cos_phi *= -1;
 
@@ -727,7 +728,7 @@ static void rbdihs_gpu(const int                                  i,
             v += cosfac * rbp;
         }
 
-        ddphi = ddphi * sin_phi;
+        ddphi = ddphi * negative_sin_phi;
 
         do_dih_fup_gpu<calcVir>(
                 ai, aj, ak, al, ddphi, r_ij, r_kj, r_kl, m, n, gm_f, sm_fShiftLoc, pbcAiuc, gm_xq, t1, t2, localId);

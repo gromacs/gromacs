@@ -390,6 +390,43 @@ __device__ __forceinline__ static float dih_angle_gpu(const T        xi,
 
     return phi;
 }
+template<bool returnShift, typename T>
+__device__ __forceinline__ static float dih_angle_gpu_sincos(const T        xi,
+                                                             const T        xj,
+                                                             const T        xk,
+                                                             const T        xl,
+                                                             const PbcAiuc& pbcAiuc,
+                                                             float3*        r_ij,
+                                                             float3*        r_kj,
+                                                             float3*        r_kl,
+                                                             float3*        m,
+                                                             float3*        n,
+                                                             int*           t1,
+                                                             int*           t2,
+                                                             float*         cosval)
+{
+    *t1 = pbcDxAiuc<returnShift>(pbcAiuc, xi, xj, *r_ij);
+    *t2 = pbcDxAiuc<returnShift>(pbcAiuc, xk, xj, *r_kj);
+    pbcDxAiuc<returnShift>(pbcAiuc, xk, xl, *r_kl);
+
+    *m = cprod(*r_ij, *r_kj);
+    *n = cprod(*r_kj, *r_kl);
+
+    float3 w    = cprod(*m, *n);
+    float  wLen = norm(w);
+    float  s    = iprod(*m, *n);
+
+    float mLenSq = norm2(*m);
+    float nLenSq = norm2(*n);
+    float mnInv  = rsqrtf(mLenSq * nLenSq);
+
+    *cosval      = s * mnInv;
+    float sinval = wLen * mnInv;
+
+    float ipr  = iprod(*r_ij, *n);
+    float sign = (ipr < 0.0F) ? -1.0F : 1.0F;
+    return sign * sinval;
+}
 
 
 __device__ __forceinline__ static void
@@ -404,23 +441,22 @@ dopdihs_gpu(const float cpA, const float phiA, const int mult, const float phi, 
 }
 
 template<bool calcVir>
-__device__ __forceinline__ static void do_dih_fup_gpu(const int            i,
-                                                      const int            j,
-                                                      const int            k,
-                                                      const int            l,
-                                                      const float          ddphi,
-                                                      const float3         r_ij,
-                                                      const float3         r_kj,
-                                                      const float3         r_kl,
-                                                      const float3         m,
-                                                      const float3         n,
-                                                      float3               gm_f[],
-                                                      float3               sm_fShiftLoc[],
-                                                      const PbcAiuc&       pbcAiuc,
-                                                      const float4         gm_xq[],
-                                                      const int            t1,
-                                                      const int            t2,
-                                                      const int gmx_unused t3)
+__device__ __forceinline__ static void do_dih_fup_gpu(const int      i,
+                                                      const int      j,
+                                                      const int      k,
+                                                      const int      l,
+                                                      const float    ddphi,
+                                                      const float3   r_ij,
+                                                      const float3   r_kj,
+                                                      const float3   r_kl,
+                                                      const float3   m,
+                                                      const float3   n,
+                                                      float3         gm_f[],
+                                                      float3         sm_fShiftLoc[],
+                                                      const PbcAiuc& pbcAiuc,
+                                                      const float4   gm_xq[],
+                                                      const int      t1,
+                                                      const int      t2)
 {
     float iprm  = norm2(m);
     float iprn  = norm2(n);
@@ -506,7 +542,7 @@ __device__ __forceinline__ void pdihs_gpu(const int i,
     }
 
     do_dih_fup_gpu<calcVir>(
-            ai, aj, ak, al, ddphi, r_ij, r_kj, r_kl, m, n, gm_f, sm_fShiftLoc, pbcAiuc, gm_xq, t1, t2, t3);
+            ai, aj, ak, al, ddphi, r_ij, r_kj, r_kl, m, n, gm_f, sm_fShiftLoc, pbcAiuc, gm_xq, t1, t2);
 }
 
 template<bool calcVir, bool calcEner>
@@ -535,22 +571,13 @@ __device__ __forceinline__ void rbdihs_gpu(const int i,
     float3 n;
     int    t1;
     int    t2;
-    int    t3;
-    float  phi = dih_angle_gpu<calcVir>(
-            gm_xq[ai], gm_xq[aj], gm_xq[ak], gm_xq[al], pbcAiuc, &r_ij, &r_kj, &r_kl, &m, &n, &t1, &t2, &t3);
 
-    /* Change to polymer convention */
-    if (phi < c0)
-    {
-        phi += CUDART_PI_F;
-    }
-    else
-    {
-        phi -= CUDART_PI_F;
-    }
-    float cos_phi = cosf(phi);
-    /* Beware of accuracy loss, cannot use 1-sqrt(cos^2) ! */
-    float sin_phi = sinf(phi);
+    float cos_phi;
+    // Changing the sign of sin and cos to convert to polymer convention
+    float negative_sin_phi = dih_angle_gpu_sincos<calcVir>(
+            gm_xq[ai], gm_xq[aj], gm_xq[ak], gm_xq[al], pbcAiuc, &r_ij, &r_kj, &r_kl, &m, &n, &t1, &t2, &cos_phi);
+    cos_phi *= -1;
+
 
     float parm[NR_RBDIHS];
     for (int j = 0; j < NR_RBDIHS; j++)
@@ -600,10 +627,10 @@ __device__ __forceinline__ void rbdihs_gpu(const int i,
         v += cosfac * rbp;
     }
 
-    ddphi = -ddphi * sin_phi;
+    ddphi = ddphi * negative_sin_phi;
 
     do_dih_fup_gpu<calcVir>(
-            ai, aj, ak, al, ddphi, r_ij, r_kj, r_kl, m, n, gm_f, sm_fShiftLoc, pbcAiuc, gm_xq, t1, t2, t3);
+            ai, aj, ak, al, ddphi, r_ij, r_kj, r_kl, m, n, gm_f, sm_fShiftLoc, pbcAiuc, gm_xq, t1, t2);
     if (calcEner)
     {
         *vtot_loc += v;
@@ -670,7 +697,7 @@ __device__ __forceinline__ void idihs_gpu(const int i,
     float ddphi = -kA * dp;
 
     do_dih_fup_gpu<calcVir>(
-            ai, aj, ak, al, -ddphi, r_ij, r_kj, r_kl, m, n, gm_f, sm_fShiftLoc, pbcAiuc, gm_xq, t1, t2, t3);
+            ai, aj, ak, al, -ddphi, r_ij, r_kj, r_kl, m, n, gm_f, sm_fShiftLoc, pbcAiuc, gm_xq, t1, t2);
 
     if (calcEner)
     {
