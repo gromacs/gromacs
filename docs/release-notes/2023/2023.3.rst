@@ -65,6 +65,15 @@ identical to original DSSP v4.1+.
 Fixes that affect portability
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+|Gromacs| can be compiled with Clang 16 with libc++ standard library
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Unlike libstd++, libc++ follows C++ standards more strictly and therefore
+doesn't provide removed standard library classes. To enable compiling of
+|Gromacs| with Clang 16 and libc++, legacy symbols were replaced with modern
+C++17 equivalents in the bundled clFFT sources. The issue only
+affected OpenCL builds of |Gromacs|. 
+
 |Gromacs| automatically finds oneAPI libraries in new layout
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
