@@ -32,3 +32,11 @@
  * the research papers on the package. Check out https://www.gromacs.org.
  */
 /* This file was inspired by ch5md by Pierre de Buyl (BSD license). */
+
+#include "gmxpre.h"
+
+#include "hdf5md.h"
+
+#include "config.h"
+
+#include "h5xx/h5xx.hpp"

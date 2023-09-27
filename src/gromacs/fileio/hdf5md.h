@@ -33,26 +33,25 @@
  */
 /* This file was inspired by ch5md by Pierre de Buyl (BSD license). */
 
+#ifdef GMX_USE_HDF5
+
 #ifndef GMX_FILEIO_HDF5MD_H
 #define GMX_FILEIO_HDF5MD_H
 
 #include <string>
-#include <H5Cpp.h>
 
-#ifndef H5_NO_NAMESPACE
-    using namespace H5;
-#endif
+#include <h5xx/h5xx.hpp>
 
 class GmxHdf5MdElement
 {
 private:
-    hid_t group;
-    hid_t step;
-    hid_t time;
-    hid_t value;
-    hid_t datatype;
-    int is_time;
-    int current_step;
+    h5xx::attribute group;
+    h5xx::attribute step;
+    h5xx::attribute time;
+    h5xx::attribute value;
+    h5xx::datatype datatype;
+    int isTime;
+    int currentStep;
     GmxHdf5MdParticlesGroup *particlesGroup;
 public:
     GmxHdf5MdElement();
@@ -63,9 +62,9 @@ public:
 class GmxHdf5MdParticlesGroup
 {
 private:
-    hid_t group;
+    h5xx::attribute group;
     GmxHdf5MdElement position;
-    hid_t box;
+    h5xx::attribute box;
     GmxHdf5MdElement boxEdges;
     GmxHdf5MdElement image;
     GmxHdf5MdElement velocity;
@@ -78,26 +77,28 @@ private:
 public:
     GmxHdf5MdParticlesGroup();
     ~GmxHdf5MdParticlesGroup();
-    int createBox(int dim, char *boundary[], bool is_time, double value[], GmxHdf5MdElement *link);
+    int createBox(int dim, char *boundary[], bool isTime, double value[], GmxHdf5MdElement *link);
 }
 class GmxHdf5MdFile
 {
 private:
-    hid_t id;
-    hid_t particles;
-    hid_t observables;
-    hid_t parameters;
+    h5xx::attribute id;
+    h5xx::attribute particles;
+    h5xx::attribute observables;
+    h5xx::attribute parameters;
 public:
     GmxHdf5MdFile();
     GmxHdf5MdFile(std::string fileName);
     ~GmxHdf5MdFile();
     int createParticlesGroup(std::string name);
-    GmxHdf5MdElement createTimeData(hid_t loc, std::string name, int rank, int dims[], hid_t datatype, GmxHdf5MdElement *link);
-    GmxHdf5MdElement createFixedDataSimple(hid_t loc, std::string name, int rank, int dims[], hid_t datatype, void *data);
-    GmxHdf5MdElement createFixedDataScalar(hid_t loc, std::string name, hid_t datatype, void *data);
-    int writeStringAttribute(hid_t loc, std::string objectName, std::string attributeName, std::string value);
+//     GmxHdf5MdElement createTimeData(hid_t loc, std::string name, int rank, int dims[], hid_t datatype, GmxHdf5MdElement *link);
+//     GmxHdf5MdElement createFixedDataSimple(hid_t loc, std::string name, int rank, int dims[], hid_t datatype, void *data);
+//     GmxHdf5MdElement createFixedDataScalar(hid_t loc, std::string name, hid_t datatype, void *data);
+//     int writeStringAttribute(hid_t loc, std::string objectName, std::string attributeName, std::string value);
 };
 
 
 
-#endif
+#endif // GMX_FILEIO_HDF5MD_H
+
+#endif // GMX_USE_HDF5

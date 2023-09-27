@@ -1,0 +1,15 @@
+@PACKAGE_INIT@
+
+include("${CMAKE_CURRENT_LIST_DIR}/@PROJECT_NAME@Targets.cmake")
+check_required_components("@PROJECT_NAME@")
+
+get_target_property(H5XX_INCLUDE_DIRS h5xx INTERFACE_INCLUDE_DIRECTORIES)
+# there is only one include directoy, but for some reason it is duplicated in the list
+list(GET H5XX_INCLUDE_DIRS 0 H5XX_INCLUDE_DIR)
+unset(H5XX_INCLUDE_DIRS)
+message(STATUS "Found h5xx library: ${H5XX_INCLUDE_DIR}/h5xx/h5xx.hpp (version ${H5XX_VERSION})")
+
+find_package(HDF5 COMPONENTS C REQUIRED)
+include_directories(SYSTEM "${HDF5_INCLUDE_DIRS}")
+
+target_link_libraries(h5xx INTERFACE ${HDF5_C_LIBRARIES})
