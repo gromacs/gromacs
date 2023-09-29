@@ -105,10 +105,12 @@ CUDA Graph fixes related to neighbour search steps
 When using the experimental CUDA Graphs feature, previously the code
 would crash for: runs where steps that involve virial calculations do
 not coincide with neighbour search (NS) steps - this issue is fixed by
-ensuring that CUDA Graphs are suitably updated on virial steps; and
-for runs where CUDA graphs are active on steps immediately preceding
-NS steps - this issue is fixed by adding necessary synchronization at
-the start of NS steps.
+ensuring that CUDA Graphs are suitably updated on virial steps; runs
+where CUDA graphs are active on steps immediately preceding NS steps -
+this issue is fixed by adding necessary synchronization at the start
+of NS steps; and runs with an odd nstlist value - this is fixed by
+forcing graph reinstantiation rather than graph update in this case to
+correctly capture the odd/even pruning pattern into the graph.
 
 Fixes :issue:`4813`
 

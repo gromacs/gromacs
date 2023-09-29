@@ -1672,9 +1672,13 @@ void gmx::LegacySimulator::do_md()
             if (mdGraph->graphIsCapturingThisStep())
             {
                 mdGraph->endRecord();
-                // Force graph reinstantiation (instead of graph exec update) with PME tuning,
-                // since the GPU kernels chosen by the FFT library can vary with grid size
-                bool forceGraphReinstantiation = pme_loadbal_is_active(pme_loadbal);
+                // Force graph reinstantiation (instead of graph exec
+                // update): with PME tuning, since the GPU kernels
+                // chosen by the FFT library can vary with grid size;
+                // or with an odd nstlist, since the odd/even step
+                // pruning pattern will change
+                bool forceGraphReinstantiation =
+                        pme_loadbal_is_active(pme_loadbal) || ((ir->nstlist % 2) == 1);
                 mdGraph->createExecutableGraph(forceGraphReinstantiation);
             }
             if (mdGraph->useGraphThisStep())
