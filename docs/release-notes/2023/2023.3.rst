@@ -162,3 +162,14 @@ because an energy minimization doesn't need a velocity vector.
 The fix avoids copying an empty vector and the corresponding SegFault.
 
 Fixes :issue:`4814`
+
+Work around the performance regression on AMD MI250X with ROCm 5.5 or newer
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+With ROCm 5.5 and 5.6, some NBNXM kernels experienced up to 23% performance
+regression on MI250X compared to ROCm 5.3. We backported a patch from
+the 2024 branch that mostly mitigates this effect. There can still be
+a slowdown around 2% with ROCm 5.5+ (up to 5% for the force switch kernels).
+
+:issue:`4874`
+
