@@ -561,7 +561,7 @@ herr_t find_name_of_type_impl(hid_t g_id, char const* name, H5L_info_t const* in
     H5O_info_t obj_info;
 
     /** returns non-negative upon success, negative if failed */
-    herr_t retval = H5Oget_info_by_name(g_id, name, &obj_info, H5P_DEFAULT);
+    herr_t retval = H5Oget_info_by_name3(g_id, name, &obj_info, H5O_INFO_BASIC, H5P_DEFAULT);
 
     /** check retval */
     if(retval >= 0) {

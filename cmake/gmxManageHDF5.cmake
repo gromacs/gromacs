@@ -32,16 +32,25 @@
 # the research papers on the package. Check out https://www.gromacs.org.
 
 set(GMX_HDF5_REQUIRED_VERSION "1.10.0")
+set(GMX_BOOST_REQUIRED_VERSION "1.40.0")
 
-gmx_option_multichoice(GMX_USE_HDF5
-    "How to handle the HDF5 dependency of GROMACS"
-    EXTERNAL
-    EXTERNAL NONE)
+option(GMX_USE_HDF5
+    "Use HDF5 (if available)"
+    ON)
 mark_as_advanced(GMX_USE_HDF5)
 
 function(gmx_manage_hdf5)
-    # Find an external hdf5 library.
-    find_package(HDF5 ${GMX_HDF5_REQUIRED_VERSION} REQUIRED)
-    set(HAVE_HDF5 1 CACHE INTERNAL "Is hdf5 found?")
-    mark_as_advanced(HAVE_HDF5)
+    if(GMX_USE_HDF5)
+        # Find an external hdf5 library.
+        find_package(HDF5 ${GMX_HDF5_REQUIRED_VERSION})
+        if(NOT HDF5_FOUND OR HDF5_VERSION VERSION_LESS GMX_HDF5_REQUIRED_VERSION)
+            message("Cannot find HDF5 (version required ${GMX_HDF5_REQUIRED_VERSION}). Disabling features requiring HDF5.")
+            set(GMX_USE_HDF5 OFF CACHE BOOL "Use HDF5 (if available)" FORCE)
+        endif()
+        find_package(Boost ${GMX_BOOST_REQUIRED_VERSION})
+        if(NOT Boost_FOUND OR Boost_VERSION VERSION_LESS GMX_BOOST_REQUIRED_VERSION)
+            message("Cannot find Boost (version required ${GMX_BOOST_REQUIRED_VERSION}). Boost is required for full HDF5 functionality. Disabling features requiring HDF5.")
+            set(GMX_USE_HDF5 OFF CACHE BOOL "Use HDF5 (if available)" FORCE)
+        endif()
+    endif()
 endfunction()
