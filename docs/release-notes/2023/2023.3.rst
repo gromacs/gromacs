@@ -62,6 +62,15 @@ identical to original DSSP v4.1+.
 
 :issue:`4811`
 
+Fix editconf -d with -noc
+"""""""""""""""""""""""""
+
+Unit cell vectors are now correctly output when running ``gmx editconf -noc -d`` 
+which sets the box size to the largest dimensions of the system, but without
+centering.
+
+:issue:`4875`
+
 Fixes that affect portability
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 

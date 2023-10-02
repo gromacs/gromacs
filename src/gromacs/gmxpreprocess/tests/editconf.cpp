@@ -111,6 +111,26 @@ TEST_P(EditconfTest, ProducesMatchingOutputStructureFileUsingIndexGroup)
     runTest("Output file type using index group");
 }
 
+TEST_P(EditconfTest, HandlesCenter)
+{
+    commandLine().addOption("-c");
+    runTest("Correct box dimensions with -c");
+}
+
+TEST_P(EditconfTest, HandlesCenterAndDiameter)
+{
+    commandLine().addOption("-c");
+    commandLine().addOption("-d", 2.0);
+    runTest("Correct box dimensions with -c and -d");
+}
+
+TEST_P(EditconfTest, HandlesBothNoCenterAndDiameter)
+{
+    commandLine().addOption("-noc");
+    commandLine().addOption("-d", 1.5);
+    runTest("Correct box dimensions with -d and -noc");
+}
+
 // TODO These reproduce slightly differently in double precision, and
 // we don't yet have a precision-agnostic way to check on the output
 // coordinates. It's better to run the tests only in single than not
