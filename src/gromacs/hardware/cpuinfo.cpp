@@ -1256,7 +1256,7 @@ int main(int argc, char** argv)
                "{\n");
         for (const auto& t : cpuInfo.logicalProcessors())
         {
-            printf("    { %3u , { %3u, %3u, %3u } },\n", t.osId, t.packageIdInMachine, t.coreIdInPackage, t.puIdInCore);
+            printf("    { %3d , { %3d, %3d, %3d } },\n", t.osId, t.packageIdInMachine, t.coreIdInPackage, t.puIdInCore);
         }
         printf("};\n");
     }

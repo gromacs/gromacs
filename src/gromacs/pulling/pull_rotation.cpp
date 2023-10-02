@@ -4052,7 +4052,11 @@ void do_rotation(const t_commrec*               cr,
 #ifdef TAKETIME
     if (MAIN(cr))
     {
-        fprintf(stderr, "%s calculation (step %d) took %g seconds.\n", RotStr, step, MPI_Wtime() - t0);
+        fprintf(stderr,
+                "%s calculation (step %" PRId64 ") took %g seconds.\n",
+                RotStr.c_str(),
+                step,
+                MPI_Wtime() - t0);
     }
 #endif
 }
