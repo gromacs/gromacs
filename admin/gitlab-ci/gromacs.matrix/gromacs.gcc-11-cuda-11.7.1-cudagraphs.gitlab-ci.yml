@@ -8,7 +8,7 @@
 #   Scope: configure, build, unit tests
 # Test implementation choices (free to change as needed):
 #   OS: Ubuntu 20.04
-#   Build type: RelWithDebInfo
+#   Build type: RelWithAssert
 #   Compiler: GCC 11.1
 #   GPU: CUDA 11.7.1
 #   SIMD: SSE 4.1
@@ -57,3 +57,54 @@ gromacs:gcc-11-cuda-11.7.1:test-cudagraph:
   needs:
     - job: gromacs:gcc-11-cuda-11.7.1:build
 
+gromacs:gcc-11-cuda-11.7.1:regressiontest-cudagraph:
+  # single-rank regression tests
+  extends:
+    - .gromacs:base:regressiontest
+    - .rules:post-merge-acceptance
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-gcc-11-cuda-11.7.1
+  variables:
+    CMAKE: /usr/local/cmake-3.18.4/bin/cmake
+    KUBERNETES_EXTENDED_RESOURCE_NAME: "nvidia.com/gpu"
+    KUBERNETES_EXTENDED_RESOURCE_LIMIT: 1
+    REGRESSIONTEST_PME_RANK_NUMBER: 0
+    REGRESSIONTEST_TOTAL_RANK_NUMBER: 1
+    REGRESSIONTEST_OMP_RANK_NUMBER: 2
+    GMX_CUDA_GRAPH: 1
+  tags:
+    - k8s-scilifelab
+  needs:
+    - job: gromacs:gcc-11-cuda-11.7.1:build
+    - job: regressiontests:prepare
+  artifacts:
+    paths:
+      - regressiontests
+    when: always
+    expire_in: 1 week
+
+gromacs:gcc-11-cuda-11.7.1:regressiontest-cudagraph-gpucomm:
+  # multi-rank regression tests: 1PP + 1PME
+  # Note that we'd like to run 3+1 but that hangs in CI
+  extends:
+    - .gromacs:base:regressiontest
+    - .rules:post-merge-acceptance
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-gcc-11-cuda-11.7.1
+  variables:
+    CMAKE: /usr/local/cmake-3.18.4/bin/cmake
+    KUBERNETES_EXTENDED_RESOURCE_NAME: "nvidia.com/gpu"
+    KUBERNETES_EXTENDED_RESOURCE_LIMIT: 2
+    REGRESSIONTEST_PME_RANK_NUMBER: 1
+    REGRESSIONTEST_TOTAL_RANK_NUMBER: 2
+    REGRESSIONTEST_OMP_RANK_NUMBER: 1
+    GMX_CUDA_GRAPH: 1
+    GMX_ENABLE_DIRECT_GPU_COMM: 1
+  tags:
+    - k8s-scilifelab
+  needs:
+    - job: gromacs:gcc-11-cuda-11.7.1:build
+    - job: regressiontests:prepare
+  artifacts:
+    paths:
+      - regressiontests
+    when: always
+    expire_in: 1 week
