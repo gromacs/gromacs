@@ -843,6 +843,11 @@ static void alternatePmeNbGpuWaitReduce(nonbonded_verlet_t* nbv,
             auto&             forceBuffersNonbonded = forceOutputsNonbonded->forceWithShiftForces();
             GpuTaskCompletion completionType =
                     (isPmeGpuDone) ? GpuTaskCompletion::Wait : GpuTaskCompletion::Check;
+            // To get the wcycle call count right, when in GpuTaskCompletion::Check mode,
+            // we start without counting and only when the task finished we issue a
+            // start/stop to increment.
+            // GpuTaskCompletion::Wait mode the timing is expected to be done in the caller.
+            wallcycle_start_nocount(wcycle, WallCycleCounter::WaitGpuNbL);
             isNbGpuDone = Nbnxm::gpu_try_finish_task(
                     nbv->gpu_nbv,
                     stepWork,
@@ -850,11 +855,12 @@ static void alternatePmeNbGpuWaitReduce(nonbonded_verlet_t* nbv,
                     enerd->grpp.energyGroupPairTerms[NonBondedEnergyTerms::LJSR].data(),
                     enerd->grpp.energyGroupPairTerms[NonBondedEnergyTerms::CoulombSR].data(),
                     forceBuffersNonbonded.shiftForces(),
-                    completionType,
-                    wcycle);
+                    completionType);
+            wallcycle_stop(wcycle, WallCycleCounter::WaitGpuNbL);
 
             if (isNbGpuDone)
             {
+                wallcycle_increment_event_count(wcycle, WallCycleCounter::WaitGpuNbL);
                 nbv->atomdata_add_nbat_f_to_f(AtomLocality::Local, forceBuffersNonbonded.force());
             }
         }

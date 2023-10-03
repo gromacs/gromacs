@@ -193,7 +193,6 @@ void gpu_launch_cpyback(NbnxmGpu gmx_unused* nb,
  * \param[out] e_el           Pointer to the electrostatics energy output to accumulate into
  * \param[out] shiftForces    Shift forces buffer to accumulate into
  * \param[in]  completionKind Indicates whether nnbonded task completion should only be checked rather than waited for
- * \param[out] wcycle         Pointer to wallcycle data structure
  * \returns                   True if the nonbonded tasks associated with \p aloc locality have completed
  */
 GPU_FUNC_QUALIFIER
@@ -203,8 +202,7 @@ bool gpu_try_finish_task(NbnxmGpu gmx_unused*    nb,
                          real gmx_unused* e_lj,
                          real gmx_unused*                    e_el,
                          gmx::ArrayRef<gmx::RVec> gmx_unused shiftForces,
-                         GpuTaskCompletion gmx_unused        completionKind,
-                         gmx_wallcycle gmx_unused* wcycle) GPU_FUNC_TERM_WITH_RETURN(false);
+                         GpuTaskCompletion gmx_unused completionKind) GPU_FUNC_TERM_WITH_RETURN(false);
 
 /*! \brief  Completes the nonbonded GPU task blocking until GPU tasks and data
  * transfers to finish.

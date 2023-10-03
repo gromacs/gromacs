@@ -256,8 +256,7 @@ bool gpu_try_finish_task(NbnxmGpu*                nb,
                          real*                    e_lj,
                          real*                    e_el,
                          gmx::ArrayRef<gmx::RVec> shiftForces,
-                         GpuTaskCompletion        completionKind,
-                         gmx_wallcycle*           wcycle)
+                         GpuTaskCompletion        completionKind)
 {
     GMX_ASSERT(nb, "Need a valid nbnxn_gpu object");
 
@@ -283,22 +282,12 @@ bool gpu_try_finish_task(NbnxmGpu*                nb,
         // Query the state of the GPU stream and return early if we're not done
         if (completionKind == GpuTaskCompletion::Check)
         {
-            // To get the wcycle call count right, when in GpuTaskCompletion::Check mode,
-            // we start without counting and only when the task finished we issue a
-            // start/stop to increment.
-            // GpuTaskCompletion::Wait mode the timing is expected to be done in the caller.
-            wallcycle_start_nocount(wcycle, WallCycleCounter::WaitGpuNbL);
-
             if (!haveStreamTasksCompleted(*nb->deviceStreams[iLocality]))
             {
-                wallcycle_stop(wcycle, WallCycleCounter::WaitGpuNbL);
-
                 // Early return to skip the steps below that we have to do only
                 // after the NB task completed
                 return false;
             }
-
-            wallcycle_increment_event_count(wcycle, WallCycleCounter::WaitGpuNbL);
         }
         else if (haveResultToWaitFor)
         {
@@ -366,7 +355,7 @@ float gpu_wait_finish_task(NbnxmGpu*                nb,
                                 : WallCycleCounter::WaitGpuNbNL;
 
     wallcycle_start(wcycle, cycleCounter);
-    gpu_try_finish_task(nb, stepWork, aloc, e_lj, e_el, shiftForces, GpuTaskCompletion::Wait, wcycle);
+    gpu_try_finish_task(nb, stepWork, aloc, e_lj, e_el, shiftForces, GpuTaskCompletion::Wait);
     float waitTime = wallcycle_stop(wcycle, cycleCounter);
 
     return waitTime;
