@@ -42,6 +42,8 @@
  */
 #include "gmxpre.h"
 
+#include <cstdio>
+
 #include "gromacs/gpu_utils/device_context.h"
 #include "gromacs/gpu_utils/device_stream.h"
 #include "gromacs/utility/exceptions.h"
@@ -123,9 +125,16 @@ DeviceStream::~DeviceStream()
 {
 #if GMX_SYCL_HIPSYCL
     // Prevents use-after-free errors in hipSYCL's CUDA backend during unit tests
-    synchronize();
+    try
+    {
+        synchronize();
+    }
+    catch (sycl::exception& e)
+    {
+        std::fprintf(stderr, "Error in SYCL queue: %s\n", e.what());
+    }
 #endif
-};
+}
 
 // NOLINTNEXTLINE readability-convert-member-functions-to-static
 bool DeviceStream::isValid() const

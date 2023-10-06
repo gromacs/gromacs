@@ -44,6 +44,8 @@
 
 #include "device_stream_manager.h"
 
+#include <cstdio>
+
 #include "gromacs/gpu_utils/device_context.h"
 #include "gromacs/gpu_utils/device_stream.h"
 #include "gromacs/mdtypes/simulation_workload.h"
@@ -129,7 +131,14 @@ DeviceStreamManager::Impl::~Impl()
     {
         if (stream)
         {
-            stream->synchronize();
+            try
+            {
+                stream->synchronize();
+            }
+            catch (std::exception& e)
+            {
+                std::fprintf(stderr, "Error detected when destroying DeviceStreamManager: %s\n", e.what());
+            }
         }
     }
 }
