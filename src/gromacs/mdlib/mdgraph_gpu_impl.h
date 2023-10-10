@@ -194,6 +194,8 @@ private:
     bool graphInstanceAllocated_ = false;
     //! State of graph
     GraphState graphState_ = GraphState::Invalid;
+    //! Whether a perormance bug workaround is needed in graph update/reinstantiation
+    bool needOldDriverTransferWorkaround_ = false;
 };
 
 } // namespace gmx
