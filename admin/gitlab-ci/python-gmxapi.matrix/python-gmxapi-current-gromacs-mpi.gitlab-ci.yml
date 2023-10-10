@@ -9,17 +9,17 @@
 # Test implementation choices (free to change as needed):
 #   GROMACS branch: repository version
 #   gmxapi Python package: sources from python_packaging/
-#   compiler: clang-13
+#   compiler: clang-17
 #   Features: double precision FP
 
-.gmxapi:clang-13-mpi:
+.gmxapi:clang-17-mpi:
   extends:
     - .variables:default
     - .use-clang:base
-  image: ${CI_REGISTRY_IMAGE}/ci-ubuntu-20.04-llvm-13
+  image: ${CI_REGISTRY_IMAGE}/ci-ubuntu-20.04-llvm-17
   stage: test
   variables:
-    COMPILER_MAJOR_VERSION: 13
+    COMPILER_MAJOR_VERSION: 17
     KUBERNETES_CPU_LIMIT: 4
     KUBERNETES_CPU_REQUEST: 4
     KUBERNETES_MEMORY_LIMIT: 2Gi
@@ -40,12 +40,12 @@
     when: always
     expire_in: 1 week
   needs:
-    - job: gromacs:clang-13-mpi:build
+    - job: gromacs:clang-17-mpi:build
       artifacts: true
 
-gmxapi:clang-13-mpi:py-3.7:
+gmxapi:clang-17-mpi:py-3.7:
   extends:
-    - .gmxapi:clang-13-mpi
+    - .gmxapi:clang-17-mpi
     - .rules:merge-requests
   variables:
     VENVPATH: "/root/venv/py3.7"

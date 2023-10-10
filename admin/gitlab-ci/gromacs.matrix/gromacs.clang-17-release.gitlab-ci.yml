@@ -9,22 +9,22 @@
 # Test implementation choices (free to change as needed):
 #   OS: Ubuntu 20.04
 #   Build type: RelWithAssert
-#   Compiler: Clang 13
+#   Compiler: Clang 17
 #   MPI: OpenMPI 3.1
 #   SIMD: AVX_512
 #   FFT: FFTW3
 #   Parallelism np/ntomp: 4/2
 
-gromacs:clang-13:release:configure:
+gromacs:clang-17:release:configure:
   extends:
     - .gromacs:base:release:configure
     - .use-clang:base
     - .use-mpi
     - .rules:nightly-only-for-release
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-llvm-13
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-llvm-17
   variables:
     CMAKE: /usr/local/cmake-3.18.4/bin/cmake
-    COMPILER_MAJOR_VERSION: 13
+    COMPILER_MAJOR_VERSION: 17
     RELEASE_BUILD_DIR: release-builds-clang
     CMAKE_PRECISION_OPTIONS: "-DGMX_DOUBLE=ON"
     CMAKE_BUILD_TYPE_OPTIONS: "-DCMAKE_BUILD_TYPE=RelWithAssert"
@@ -34,7 +34,7 @@ gromacs:clang-13:release:configure:
     - regressiontests:package
     - prepare-release-version
 
-gromacs:clang-13:release:build:
+gromacs:clang-17:release:build:
   extends:
     - .variables:default
     - .gromacs:base:build
@@ -45,29 +45,29 @@ gromacs:clang-13:release:build:
   variables:
     CMAKE: /usr/local/cmake-3.18.4/bin/cmake
     BUILD_DIR: release-builds-clang
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-llvm-13
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-llvm-17
   needs:
-    - job: gromacs:clang-13:release:configure
+    - job: gromacs:clang-17:release:configure
 
-gromacs:clang-13:release:test:
+gromacs:clang-17:release:test:
   extends:
     - .gromacs:base:test
     - .rules:nightly-only-for-release
   stage: release-tests
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-llvm-13
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-llvm-17
   variables:
     CMAKE: /usr/local/cmake-3.18.4/bin/cmake
     BUILD_DIR: release-builds-clang
   needs:
-    - job: gromacs:clang-13:release:configure
-    - job: gromacs:clang-13:release:build
+    - job: gromacs:clang-17:release:configure
+    - job: gromacs:clang-17:release:build
 
-gromacs:clang-13:release:regressiontest:
+gromacs:clang-17:release:regressiontest:
   extends:
     - .gromacs:base:regressiontest
     - .rules:nightly-only-for-release
   stage: release-tests
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-llvm-13
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-llvm-17
   variables:
     CMAKE: /usr/local/cmake-3.18.4/bin/cmake
     BUILD_DIR: release-builds-clang
@@ -76,6 +76,6 @@ gromacs:clang-13:release:regressiontest:
   tags:
     - k8s-scilifelab
   needs:
-    - job: gromacs:clang-13:release:build
+    - job: gromacs:clang-17:release:build
     - job: regressiontests:package
 
