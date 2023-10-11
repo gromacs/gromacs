@@ -53,6 +53,25 @@
 template<bool doPruneNBL, bool doCalcEnergies, enum Nbnxm::ElecType elecType, enum Nbnxm::VdwType vdwType, int subGroupSize>
 class NbnxmKernel;
 
+/*! \brief Macro to control the enablement of manually-packed Float3 structure.
+ *
+ * If enabled (default), the explicit packed math will be used on devices where
+ * it is known to be beneficial (currently, AMD MI250X / gfx90a).
+ * If disabled, packed math will never be explicitly  used.
+ *
+ * This only controls the use of AmdPackedFloat3 datastructure, no the layout
+ * of fCi buffer.
+ *
+ * See issue #4854 */
+#define GMX_NBNXM_ENABLE_PACKED_FLOAT3 1
+
+
+#if (GMX_NBNXM_ENABLE_PACKED_FLOAT3 && defined(__AMDGCN__) && defined(__gfx90a__))
+using FCiFloat3 = AmdPackedFloat3;
+#else
+using FCiFloat3 = Float3;
+#endif
+
 namespace Nbnxm
 {
 
@@ -983,7 +1002,7 @@ static auto nbnxmKernel(sycl::handler& cgh,
         const unsigned imeiIdx = tidx / prunedClusterPairSize;
 
 #if defined(__SYCL_DEVICE_ONLY__) && defined(__AMDGCN__)
-        Float3 fCiBuf_[c_nbnxnGpuNumClusterPerSupercluster]; // i force buffer
+        FCiFloat3 fCiBuf_[c_nbnxnGpuNumClusterPerSupercluster]; // i force buffer
         for (int i = 0; i < c_nbnxnGpuNumClusterPerSupercluster; i++)
         {
             fCiBuf_[i] = { 0.0F, 0.0F, 0.0F };
@@ -1347,9 +1366,13 @@ static auto nbnxmKernel(sycl::handler& cgh,
                             /* accumulate j forces in registers */
                             fCjBuf -= forceIJ;
                             /* accumulate i forces in registers */
+#if defined(__SYCL_DEVICE_ONLY__) && defined(__AMDGCN__)
+                            fCiBuf_[i] += FCiFloat3(forceIJ);
+#else
                             fCiBufX(i) += forceIJ[0];
                             fCiBufY(i) += forceIJ[1];
                             fCiBufZ(i) += forceIJ[2];
+#endif
                         } // (r2 < rCoulombSq) && notExcluded
                     }     // (imask & maskJI)
                     /* shift the mask bit by 1 */
