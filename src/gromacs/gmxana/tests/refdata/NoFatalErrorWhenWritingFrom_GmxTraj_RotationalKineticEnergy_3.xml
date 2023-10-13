@@ -1,0 +1,19 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <OutputFiles Name="Files">
+    <File Name="-ekr">
+      <XvgLegend Name="Legend">
+        <String Name="XvgLegend"><![CDATA[
+title "Center of mass rotation"
+xaxis  label "Time (ps)"
+yaxis  label "Energy (kJ mol\S-1\N)"
+TYPE xy
+s0 legend "System"
+]]></String>
+      </XvgLegend>
+      <XvgData Name="Data"></XvgData>
+    </File>
+    <File Name="-ox"></File>
+  </OutputFiles>
+</ReferenceData>

@@ -71,6 +71,15 @@ centering.
 
 :issue:`4875`
 
+Fix calculation of rotational kinetic energy in gmx traj
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Computing the rotational kinetic energy using ``gmx traj -ekr ekr.xvg`` 
+now returns correct results.
+
+:issue:`4889`
+
+
 Fixes that affect portability
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 

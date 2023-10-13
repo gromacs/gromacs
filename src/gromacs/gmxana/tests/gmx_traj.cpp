@@ -47,6 +47,7 @@
 #include "testutils/simulationdatabase.h"
 #include "testutils/stdiohelper.h"
 #include "testutils/textblockmatchers.h"
+#include "testutils/xvgtest.h"
 
 namespace
 {
@@ -65,6 +66,7 @@ public:
         stdioHelper.redirectStringToStdin("0\n");
 
         ASSERT_EQ(0, gmx_traj(cmdline.argc(), cmdline.argv()));
+        checkOutputFiles();
     }
 };
 
@@ -79,16 +81,24 @@ TEST_P(GmxTraj, WithDifferentInputFormats)
     runTest(GetParam());
 }
 
+TEST_P(GmxTraj, RotationalKineticEnergy)
+{
+    setOutputFile("-ekr",
+                  "spc2_ekr.xvg",
+                  gmx::test::XvgMatch().tolerance(gmx::test::relativeToleranceAsFloatingPoint(1.0, 1e-4)));
+    runTest(GetParam());
+}
+
 /*! \brief Helper array of input files present in the source repo
  * database. These all have two identical frames of two SPC water
  * molecules, which were generated via trjconv from the .gro
  * version. */
-const char* const trajectoryFileNames[] = { "spc2-traj.trr",
+const char* const trajectoryFileNames[] = { "spc2-traj.trr", "spc2-traj.xtc", "spc2-traj.gro",
+                                            "spc2-traj.pdb", "spc2-traj.g96",
 #if GMX_USE_TNG
-                                            "spc2-traj.tng",
+                                            "spc2-traj.tng"
 #endif
-                                            "spc2-traj.xtc", "spc2-traj.gro",
-                                            "spc2-traj.pdb", "spc2-traj.g96" };
+};
 
 INSTANTIATE_TEST_SUITE_P(NoFatalErrorWhenWritingFrom, GmxTraj, ::testing::ValuesIn(trajectoryFileNames));
 
