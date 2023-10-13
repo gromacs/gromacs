@@ -62,8 +62,26 @@ identical to original DSSP v4.1+.
 
 :issue:`4811`
 
+Fix editconf -d with -noc
+"""""""""""""""""""""""""
+
+Unit cell vectors are now correctly output when running ``gmx editconf -noc -d`` 
+which sets the box size to the largest dimensions of the system, but without
+centering.
+
+:issue:`4875`
+
 Fixes that affect portability
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+|Gromacs| can be compiled with Clang 16 with libc++ standard library
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Unlike libstd++, libc++ follows C++ standards more strictly and therefore
+doesn't provide removed standard library classes. To enable compiling of
+|Gromacs| with Clang 16 and libc++, legacy symbols were replaced with modern
+C++17 equivalents in the bundled clFFT sources. The issue only
+affected OpenCL builds of |Gromacs|. 
 
 |Gromacs| automatically finds oneAPI libraries in new layout
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""
@@ -96,10 +114,12 @@ CUDA Graph fixes related to neighbour search steps
 When using the experimental CUDA Graphs feature, previously the code
 would crash for: runs where steps that involve virial calculations do
 not coincide with neighbour search (NS) steps - this issue is fixed by
-ensuring that CUDA Graphs are suitably updated on virial steps; and
-for runs where CUDA graphs are active on steps immediately preceding
-NS steps - this issue is fixed by adding necessary synchronization at
-the start of NS steps.
+ensuring that CUDA Graphs are suitably updated on virial steps; runs
+where CUDA graphs are active on steps immediately preceding NS steps -
+this issue is fixed by adding necessary synchronization at the start
+of NS steps; and runs with an odd nstlist value - this is fixed by
+forcing graph reinstantiation rather than graph update in this case to
+correctly capture the odd/even pruning pattern into the graph.
 
 Fixes :issue:`4813`
 

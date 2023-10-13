@@ -36,10 +36,10 @@
 //	of the timing class.
 //	Functor object to help with accumulating values in vectors
 template< typename A, typename R >
-class flopsFunc: public std::unary_function< A, R >
+class flopsFunc: public std::function< R(A) >
 {
 public:
-	virtual typename std::unary_function<A, R>::result_type operator( )( ) = 0;
+	virtual typename std::function<R(A)>::result_type operator( )( ) = 0;
 };
 
 /**

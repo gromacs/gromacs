@@ -62,7 +62,7 @@ function(gmx_manage_muparser)
         set(ENABLE_OPENMP ${GMX_OPENMP})
         set(ENABLE_WIDE_CHAR OFF)
         set(BUILD_TESTING OFF)
-        add_subdirectory(${muparser_SOURCE_DIR} ${muparser_BINARY_DIR})
+        add_subdirectory(${muparser_SOURCE_DIR} ${muparser_BINARY_DIR} EXCLUDE_FROM_ALL)
         if (BUILD_SHARED_LIBS)
             # Ensure muparser is in the export set called libgromacs,
             # so that it gets installed along with libgromacs.

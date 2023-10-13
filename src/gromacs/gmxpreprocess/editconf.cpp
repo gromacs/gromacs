@@ -779,7 +779,7 @@ int gmx_editconf(int argc, char* argv[])
         fprintf(stderr, "WARNING: setting -density overrides -scale\n");
     }
     bScale    = bScale || bRho;
-    bCalcGeom = bCenter || bRotate || bOrient || bScale;
+    bCalcGeom = bCenter || bRotate || bOrient || bScale || bDist;
 
     GMX_RELEASE_ASSERT(btype[0] != nullptr, "Option setting inconsistency; btype[0] is NULL");
 

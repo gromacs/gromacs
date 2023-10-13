@@ -1538,6 +1538,9 @@ Checking and improving performance
       startup can be conservative and larger value is often be optimal
       (e.g. ``nstlist=200-300`` with PME and default Verlet buffer tolerance).
 
+    * odd values of nstlist should be avoided when using CUDA Graphs
+      to minimize the overhead associated with graph instantiation.
+
 * If ``Comm. energies`` takes a lot of time (a note will be printed in the log
   file), increase ``nstcalcenergy``.
 * If all communication takes a lot of time, you might be running on too many
