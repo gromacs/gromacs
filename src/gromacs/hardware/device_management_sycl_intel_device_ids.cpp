@@ -90,7 +90,7 @@ enum class IntelProductConfig : unsigned int
 /*
  * Check out https://github.com/intel/compute-runtime, then use the following script:
  *
-#!/bin/bash
+#!/usr/bin/env bash
 set -euo pipefail
 IFS=$'\n\t'
 BIN="$(mktemp)"

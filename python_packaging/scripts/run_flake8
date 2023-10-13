@@ -1,4 +1,5 @@
-#!/bin/bash -x
+#!/usr/bin/env bash
+set -x
 
 # Note: E501 specifies a line length limit of 80 characters, but GROMACS allows more.
 #  Ref: http://manual.gromacs.org/current/dev-manual/formatting.html

@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # Entry point script for Docker containers.
 # See README.md and the gmxapi/ci-<option> Docker images.
 

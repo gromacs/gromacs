@@ -1,5 +1,6 @@
-#!/usr/bin/perl -w
+#!/usr/bin/env perl
 
+use warnings;
 # in: input filename
 $in = shift || die("Please specify input filename");
 # If your exchange was every N ps and you saved every M ps you can make for

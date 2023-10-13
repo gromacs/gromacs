@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 #
 # This script runs Bison and/or Flex to regenerate the files as follows:
 #   parser.y  -> parser.cpp, parser.h

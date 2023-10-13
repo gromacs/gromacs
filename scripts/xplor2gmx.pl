@@ -1,6 +1,7 @@
-#!/usr/bin/perl -w
+#!/usr/bin/env perl
 
 use strict;
+use warnings;
 #
 # This script reads an XPLOR input file with distance restraint data
 # as sometimes is found in the pdb database (http://www.pdb.org).
