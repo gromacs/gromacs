@@ -36,31 +36,38 @@
 #include "gmxpre.h"
 
 #include "hdf5mdio.h"
+#include "tngio.h"
 
 #include "config.h"
 
+#include <functional>
 #include <string>
 
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/stringutil.h"
-
-// FIXME: TEMPORARY FOR EASIER EDITIING:
-#define GMX_USE_HDF5 1
 
 #if GMX_USE_HDF5
 #    include <h5xx/h5xx.hpp>
 #endif
 
-static unsigned convertModeStringToInt(std::string modeString)
+static unsigned convertModeStringToInt(const std::string& modeString)
 {
 #if GMX_USE_HDF5
-    const gmx_unused int maxStringLength = 3;
+    const gmx_unused int maxStringLength = 4; // 3 is standard max, but there may also be a "+", which is ignored
     GMX_ASSERT(modeString.length() <= maxStringLength, "The mode string is too long");
     std::string modeStringLower = gmx::toLowerCase(modeString);
     unsigned mode = h5xx::file::in; // Reading is always enabled.
 
     std::size_t found = modeStringLower.find("w");
+    if(found < std::string::npos)
+    {
+        mode |= h5xx::file::out;
+    }
+    // Treat "a" (append) as write
+    found = modeStringLower.find("a");
     if(found < std::string::npos)
     {
         mode |= h5xx::file::out;
@@ -82,6 +89,21 @@ static unsigned convertModeStringToInt(std::string modeString)
 #endif
 }
 
+static void inline writeMultiScalarToDataset(const h5xx::group& group, const std::string& datasetName, const rvec *data, const int numElements)
+{
+#if GMX_USE_HDF5
+    for (int i = 0; i < numElements; i++)
+    {
+        for (int j = 0; j < DIM; j++)
+        {
+                h5xx::write_dataset(group, datasetName, data[i][j]);
+        }
+    }
+#else
+    gmx_file("GROMACS was compiled without HDF5 support, cannot handle this file type");
+#endif
+}
+
 GmxHdf5MdIo::GmxHdf5MdIo()
 {
 #ifdef GMX_USE_HDF5
@@ -94,6 +116,8 @@ GmxHdf5MdIo::GmxHdf5MdIo()
 GmxHdf5MdIo::GmxHdf5MdIo(const std::string &fileName, const std::string &modeString)
 {
 #ifdef GMX_USE_HDF5
+    printf("In constructor. %s (%s)\n", fileName.c_str(), modeString.c_str());
+    file_ = new h5xx::file();
     openFile(fileName, modeString);
 #else
     gmx_file("GROMACS was compiled without HDF5 support, cannot handle this file type");
@@ -103,7 +127,11 @@ GmxHdf5MdIo::GmxHdf5MdIo(const std::string &fileName, const std::string &modeStr
 GmxHdf5MdIo::~GmxHdf5MdIo()
 {
 #ifdef GMX_USE_HDF5
-
+    if(file_ != nullptr)
+    {
+        closeFile();
+        delete file_;
+    }
 #else
     gmx_file("GROMACS was compiled without HDF5 support, cannot handle this file type");
 #endif
@@ -112,8 +140,10 @@ GmxHdf5MdIo::~GmxHdf5MdIo()
 void GmxHdf5MdIo::openFile(const std::string &fileName, const std::string &modeString)
 {
 #ifdef GMX_USE_HDF5
+    printf("Opening %s with mode %s\n", fileName.c_str(), modeString.c_str());
     unsigned mode = convertModeStringToInt(modeString);
     file_->open(fileName, mode);
+    printf("Opened file\n");
 #else
     gmx_file("GROMACS was compiled without HDF5 support, cannot handle this file type");
 #endif
@@ -127,4 +157,65 @@ void GmxHdf5MdIo::closeFile()
 #else
     gmx_file("GROMACS was compiled without HDF5 support, cannot handle this file type");
 #endif
+}
+
+void GmxHdf5MdIo::flush()
+{
+#ifdef GMX_USE_HDF5
+    file_->flush();
+#else
+    gmx_file("GROMACS was compiled without HDF5 support, cannot handle this file type");
+#endif
+}
+
+void GmxHdf5MdIo::writeFrame(int64_t          step,
+                             real             time,
+                             real             lambda,
+                             const rvec*      box,
+                             int              natoms,
+                             const rvec*      x,
+                             const rvec*      v,
+                             const rvec*      f)
+{
+    std::string particlesGroupName = "particles";
+    h5xx::group particlesGroup(*file_, particlesGroupName);
+    printf("Created group. hid: %d\n", particlesGroup.hid());
+
+    std::string boxDatasetName = "box";
+    constexpr int c_boxDataSize = 3;
+    const int numFramesPerChunk = 5;
+
+    if (!h5xx::exists_dataset(particlesGroup, boxDatasetName))
+    {
+        std::vector<size_t> chunkDims{c_boxDataSize};
+        const real* boxPointer = reinterpret_cast<const real*>(box);
+        std::vector<real> boxVector (boxPointer, boxPointer + c_boxDataSize * DIM);
+        // std::vector<real> boxVector {0,1,2,3,4,5,6,7,8};
+        printf("%s, ChunkDims: %d %d\n", boxDatasetName.c_str(), chunkDims.data()[0], chunkDims.data()[1]);
+        h5xx::policy::storage::chunked storagePolicy(chunkDims);
+        // storagePolicy.add(h5xx::policy::filter::deflate());
+
+        h5xx::dataset boxDataset = h5xx::create_dataset<real, h5xx::group, h5xx::policy::storage::chunked>
+        (particlesGroup, boxDatasetName, storagePolicy);
+        // h5xx::dataset boxDataset = h5xx::create_dataset<h5xx::group, std::vector<real>>(particlesGroup, boxDatasetName, boxVector);
+        hid_t propertyListId(boxDataset.hid());
+        printf("%d\n", propertyListId);
+        storagePolicy.set_storage(propertyListId);
+        printf("Created box dataset\n");
+    }
+    writeMultiScalarToDataset(particlesGroup, boxDatasetName, box, c_boxDataSize);
+
+    std::string positionDatasetName = "position";
+    if (!h5xx::exists_dataset(particlesGroup, positionDatasetName))
+    {
+        std::vector<size_t> chunkDims{numFramesPerChunk, natoms * DIM};
+        printf("ChunkDims: %d %d %d\n", chunkDims.data()[0], chunkDims.data()[1], chunkDims.data()[2]);
+        h5xx::policy::storage::chunked storagePolicy(chunkDims);
+        // storagePolicy.add(h5xx::policy::filter::deflate());
+
+        h5xx::create_dataset<real, h5xx::group, h5xx::policy::storage::chunked>
+        (particlesGroup, positionDatasetName, storagePolicy);
+        printf("Created position dataset\n");
+    }
+    writeMultiScalarToDataset(particlesGroup, positionDatasetName, x, natoms);
 }

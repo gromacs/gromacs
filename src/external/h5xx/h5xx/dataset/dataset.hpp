@@ -128,6 +128,8 @@ dataset::dataset(
     hid_t dcpl_id = H5Pcreate(H5P_DATASET_CREATE);
     storage_policy.set_storage(dcpl_id);    // set storage and filters
 
+    printf("object.hid: %d, name: %s, dtype_id: %d, dspace_id: %d, lcpl_id %d, dcpl_id %d, dapl_id %d\n", object.hid(), name.c_str(), dtype.get_type_id(), dspace.hid(), lcpl_id, dcpl_id, dapl_id);
+
     // create dataset
     err |= (hid_ = H5Dcreate(
         object.hid(),       // hid_t loc_id IN: Location identifier

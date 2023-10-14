@@ -41,6 +41,9 @@
 
 #include <string>
 
+#include "gromacs/math/vectypes.h"
+#include "gromacs/utility/real.h"
+
 namespace h5xx
 {
     // class attribute;
@@ -101,6 +104,7 @@ private:
 #endif
 public:
     GmxHdf5MdIo();
+
     /*! Construct a GmxHdf5MdIo object and open a GmxHdf5 file.
      *
      * \param[in] fileName    Name of the file to open. The same as the file path.
@@ -112,6 +116,7 @@ public:
      *                        All these modes can be combined.
      */
     GmxHdf5MdIo(const std::string &fileName, const std::string &modeString);
+
     ~GmxHdf5MdIo();
 
     /*! Open an GmxHdf5 file.
@@ -125,7 +130,19 @@ public:
      *                        All these modes can be combined.
      */
     void openFile(const std::string &fileName, const std::string &modeString);
+
     void closeFile();
+
+    void flush();
+
+    void writeFrame(int64_t          step,
+                    real             time,
+                    real             lambda,
+                    const rvec*      box,
+                    int              natoms,
+                    const rvec*      x,
+                    const rvec*      v,
+                    const rvec*      f);
     // GmxHdf5MdParticlesGroup createParticlesGroup(std::string name);
 //     GmxHdf5MdElement createTimeData(hid_t loc, std::string name, int rank, int dims[], hid_t datatype, GmxHdf5MdElement *link);
 //     GmxHdf5MdElement createFixedDataSimple(hid_t loc, std::string name, int rank, int dims[], hid_t datatype, void *data);

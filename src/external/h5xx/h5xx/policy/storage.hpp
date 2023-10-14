@@ -230,8 +230,11 @@ public:
     void set_storage(hid_t plist) const
     {
         bool err = false;
+        printf("%d\n",err);
         err |= H5Pset_layout(plist, H5D_CHUNKED) < 0;
+        printf("%d\n",err);
         err |= H5Pset_chunk(plist, dims_.size(), &*dims_.begin()) < 0;
+        printf("%d\n",err);
         if (err) {
             throw error("setting chunked dataset layout failed");
         }

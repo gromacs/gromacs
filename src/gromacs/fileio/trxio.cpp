@@ -102,7 +102,7 @@ struct t_trxstatus
     t_trxframe*          xframe;
     t_fileio*            fio;
     gmx_tng_trajectory_t tng;
-    // GmxHdf5MdIo          hdf5md;
+    GmxHdf5MdIo*         hdf5Md;
     int                  natoms;
     char*                persistent_line; /* Persistent line for reading g96 trajectories */
 #if GMX_USE_PLUGINS
@@ -188,7 +188,7 @@ static void status_init(t_trxstatus* status)
     status->tf              = 0;
     status->persistent_line = nullptr;
     status->tng             = nullptr;
-    // status->hdf5md          = GmxHdf5MdIo();
+    // status->hdf5Md          = GmxHdf5MdIo();
 }
 
 

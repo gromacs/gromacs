@@ -561,6 +561,8 @@ herr_t find_name_of_type_impl(hid_t g_id, char const* name, H5L_info_t const* in
     H5O_info_t obj_info;
 
     /** returns non-negative upon success, negative if failed */
+    /** Modification by the GROMACS development team to work with HDF5 versions >= 1.12 by
+     *  explicitly using H5Oget_info_by_name3. */
     herr_t retval = H5Oget_info_by_name3(g_id, name, &obj_info, H5O_INFO_BASIC, H5P_DEFAULT);
 
     /** check retval */
