@@ -818,10 +818,13 @@ static std::pair<pot_derivatives_t, pot_derivatives_t> getVdwDerivatives(const t
         {
             case InteractionModifiers::None:
             case InteractionModifiers::PotShift:
-                /* -dV/dr of -r^-6 and r^-reppow */
+                /* Derivatives of -r^-6 and r^-reppow */
                 ljDisp.md1 = -6 * std::pow(ir.rvdw, -7.0);
+                ljDisp.d2  = 7 * ljDisp.md1 / ir.rvdw;
+                ljDisp.md3 = 8 * ljDisp.d2 / ir.rvdw;
                 ljRep.md1  = repPow * std::pow(ir.rvdw, -(repPow + 1));
-                /* The contribution of the higher derivatives is negligible */
+                ljRep.d2   = (repPow + 1) * ljRep.md1 / ir.rvdw;
+                ljRep.md3  = (repPow + 2) * ljRep.d2 / ir.rvdw;
                 break;
             case InteractionModifiers::ForceSwitch:
                 /* At the cut-off: V=V'=V''=0, so we use only V''' */

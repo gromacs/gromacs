@@ -43,6 +43,17 @@ dynamic load balancing support with GPU-resident simulations that use GPU halo e
 
 :issue:`4858`
 
+Improve Verlet buffer estimation for systems with no or weak electrostatics
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+For systems which are dominated by LJ interactions, e.g. coarse-grained,
+the Verlet buffer estimate could be too small, because only the first
+derivative of the potential was taken into account. Now also the second
+and third derivatives are added. This can have a minor negative effect
+on performance.
+
+:issue:`4885`
+
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
 
