@@ -37,6 +37,7 @@
 #define GMX_FILEIO_HDF5MDIO_H
 
 // FIXME: TEMPORARY FOR EASIER EDITIING:
+#include <sys/_types/_int64_t.h>
 #define GMX_USE_HDF5 1
 
 #include <string>
@@ -44,12 +45,7 @@
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/real.h"
 
-namespace h5xx
-{
-    // class attribute;
-    // class datatype;
-    class file;
-}
+typedef int64_t hid_t;
 
 class GmxHdf5MdElement
 {
@@ -70,7 +66,27 @@ public:
     void append(void *data, int step, double time);
 };
 
-class GmxHdf5MdParticlesGroup
+class GmxHdf5MdParticlesBox
+{
+private:
+    int64_t numDatasetFrames_;
+    int64_t numWrittenFrames_;
+    int     numFramesPerChunk_;
+    char    name_[16];
+    hid_t   datatype_;
+    void    initNumFramesPerChunk(int numFramesPerChunk);
+public:
+    GmxHdf5MdParticlesBox();
+    GmxHdf5MdParticlesBox(int numFramesPerChunk);
+    ~GmxHdf5MdParticlesBox();
+    void setupForWriting(int numFramesPerChunk);
+    void writeFrame(int64_t     step,
+                    real        time,
+                    hid_t       container,
+                    const rvec* box);
+};
+
+class GmxHdf5MdParticlesProperties
 {
 #ifdef GMX_USE_HDF5
 private:
@@ -86,18 +102,34 @@ private:
     GmxHdf5MdElement id_;
     GmxHdf5MdElement charge_;*/
     // int localSizeMax;
+    int64_t numDatasetFrames_;
+    int64_t numWrittenFrames_;
+    int     numFramesPerChunk_;
+    int64_t numAtoms_;
+    char    name_[16];
+    hid_t   datatype_;
+    void    initNumFramesPerChunkAndNumAtoms(int numFramesPerChunk, int64_t numAtoms);
 #endif
 public:
-    GmxHdf5MdParticlesGroup();
-    ~GmxHdf5MdParticlesGroup();
-    void createBox(int dim, char *boundary[], bool isTime, double value[], GmxHdf5MdElement *link);
+    GmxHdf5MdParticlesProperties();
+    GmxHdf5MdParticlesProperties(const char* name, int numFramesPerChunk, int64_t numAtoms);
+    ~GmxHdf5MdParticlesProperties();
+    void setupForWriting(int numFramesPerChunk, int64_t numAtoms);
+    void writeFrame(int64_t          step,
+                    real             time,
+                    hid_t            container,
+                    const rvec*      data);
 };
 
 class GmxHdf5MdIo
 {
 #ifdef GMX_USE_HDF5
 private:
-    h5xx::file      *file_;
+    hid_t   file_;
+    GmxHdf5MdParticlesBox box_;
+    GmxHdf5MdParticlesProperties x_;
+    GmxHdf5MdParticlesProperties v_;
+    GmxHdf5MdParticlesProperties f_;
     // h5xx::attribute *particles_;
     // h5xx::attribute *observables_;
     // h5xx::attribute *parameters_;
@@ -115,7 +147,7 @@ public:
      *                        'e' results in a failure if the file already exists.
      *                        All these modes can be combined.
      */
-    GmxHdf5MdIo(const std::string &fileName, const std::string &modeString);
+    GmxHdf5MdIo(const char* fileName, const char* modeString);
 
     ~GmxHdf5MdIo();
 
@@ -129,7 +161,7 @@ public:
      *                        'e' results in a failure if the file already exists.
      *                        All these modes can be combined.
      */
-    void openFile(const std::string &fileName, const std::string &modeString);
+    void openFile(const char* fileName, const char* modeString);
 
     void closeFile();
 
@@ -139,7 +171,7 @@ public:
                     real             time,
                     real             lambda,
                     const rvec*      box,
-                    int              natoms,
+                    int64_t          natoms,
                     const rvec*      x,
                     const rvec*      v,
                     const rvec*      f);
