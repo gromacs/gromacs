@@ -111,3 +111,12 @@ the bug), or use an older version of |Gromacs|
 restarting from checkpoints in the affected case.
 
 :issue:`4629`
+
+Compiling with GCC 12 on POWER9 architectures
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+There are multiple failing unit tests after compilation with GCC 12.2
+and 12.3 on POWER9 architectures. It is possible that other GCC 12 and
+newer versions are affected.
+
+:issue:`4823`
