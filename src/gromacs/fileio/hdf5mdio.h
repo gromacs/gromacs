@@ -63,10 +63,10 @@ public:
     ~GmxHdf5MdDataBlock()
     {};
     void setupForWriting(hsize_t numFramesPerChunk, hsize_t numEntries, hsize_t numValuesPerEntry = 1);
-    void writeFrame(int64_t          step,
-                    real             time,
-                    hid_t            container,
-                    const rvec*      data);
+
+    template <typename T>
+    void writeFrame(hid_t            container,
+                    const T*         data);
 };
 
 class GmxHdf5MdIo
@@ -77,6 +77,8 @@ private:
     GmxHdf5MdDataBlock x_;
     GmxHdf5MdDataBlock v_;
     GmxHdf5MdDataBlock f_;
+    GmxHdf5MdDataBlock charges_;
+    GmxHdf5MdDataBlock masses_;
 public:
     GmxHdf5MdIo();
 

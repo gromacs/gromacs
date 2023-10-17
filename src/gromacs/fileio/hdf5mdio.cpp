@@ -88,17 +88,16 @@ void GmxHdf5MdDataBlock::initDataProperties(hsize_t numFramesPerChunk, hsize_t n
 
 void GmxHdf5MdDataBlock::setupForWriting(hsize_t numFramesPerChunk, hsize_t numEntries, hsize_t numValuesPerEntry)
 {
-    printf("Setup for writing %" PRId64 "\n", numWrittenFrames_);
+    printf("Setup for writing\n");
     if (numWrittenFrames_ == 0)
     {
         initDataProperties(numFramesPerChunk, numEntries, numValuesPerEntry);
     }
 }
 
-void GmxHdf5MdDataBlock::writeFrame(int64_t          step,
-                                    real             time,
-                                    hid_t            container,
-                                    const rvec*      data)
+template<typename T>
+void GmxHdf5MdDataBlock::writeFrame(hid_t            container,
+                                    const T*         data)
 {
 #if GMX_USE_HDF5
     hid_t dataset = H5Dopen(container, name_, H5P_DEFAULT);
@@ -174,7 +173,9 @@ GmxHdf5MdIo::GmxHdf5MdIo() :
 box_("box", 1, 0),
 x_("positions", 1, 0),
 v_("velocities", 1, 0),
-f_("forces", 1, 0)
+f_("forces", 1, 0),
+charges_{"charges", 1, 0},
+masses_{"masses", 1, 0}
 {
     file_ = -1;
 }
@@ -183,7 +184,9 @@ GmxHdf5MdIo::GmxHdf5MdIo(const char* fileName, const char *modeString) :
 box_("box", 1, 0),
 x_("positions", 1, 0),
 v_("velocities", 1, 0),
-f_("forces", 1, 0)
+f_("forces", 1, 0),
+charges_{"charges", 1, 0},
+masses_{"masses", 1, 0}
 {
     printf("In constructor. %s (%s)\n", fileName, modeString);
     file_ = -1;
@@ -283,11 +286,42 @@ void GmxHdf5MdIo::setupMolecularSystem(const gmx_mtop_t& topology)
     atomCharges.reserve(topology.natoms);
     atomMasses.reserve(topology.natoms);
 
+    printf("Setup molsystem\n");
     for (const gmx_molblock_t& molBlock : topology.molblock)
     {
         const gmx_moltype_t* molType = &topology.moltype[molBlock.type];
-
+        for (int atomCounter = 0; atomCounter < molType->atoms.nr; atomCounter++)
+        {
+            atomCharges.push_back(molType->atoms.atom[atomCounter].q);
+            atomMasses.push_back(molType->atoms.atom[atomCounter].m);
+        }
+        for (int molCounter = 1; molCounter < molBlock.nmol; molCounter++)
+        {
+            std::copy_n(atomCharges.end() - molType->atoms.nr,
+                        molType->atoms.nr,
+                        std::back_inserter(atomCharges));
+            std::copy_n(atomMasses.end() - molType->atoms.nr, molType->atoms.nr, std::back_inserter(atomMasses));
+        }
     }
+
+    const char particlesGroupName[] = "particles";
+    hid_t particlesGroup = H5Gopen(file_, particlesGroupName, H5P_DEFAULT);
+    if (particlesGroup < 0)
+    {
+        hid_t linkPropertyList = H5Pcreate(H5P_LINK_CREATE);     // create group creation property list
+        H5Pset_create_intermediate_group(linkPropertyList, 1);   // set intermediate link creation
+        particlesGroup = H5Gcreate(file_, particlesGroupName, linkPropertyList, H5P_DEFAULT, H5P_DEFAULT);
+        if( particlesGroup < 0)
+        {
+            gmx_file("Cannot create particles group.");
+        }
+        printf("Created group. hid: %d\n", particlesGroup);
+    }
+    printf("Setting up for writing charges.");
+    charges_.setupForWriting(1, topology.natoms, 1);
+    charges_.writeFrame(particlesGroup, atomCharges.data());
+    masses_.setupForWriting(1, topology.natoms, 1);
+    masses_.writeFrame(particlesGroup, atomMasses.data());
 
 #else
     gmx_file("GROMACS was compiled without HDF5 support, cannot handle this file type");
@@ -326,14 +360,14 @@ void GmxHdf5MdIo::writeFrame(int64_t          step,
 
     if (box != nullptr)
     {
-        box_.setupForWriting(numFramesPerChunk, DIM);
-        box_.writeFrame(step, time, particlesGroup, box);
+        box_.setupForWriting(numFramesPerChunk, DIM, DIM);
+        box_.writeFrame(particlesGroup, box);
     }
 
     if (x != nullptr)
     {
-        x_.setupForWriting(numFramesPerChunk, numAtoms);
-        x_.writeFrame(step, time, particlesGroup, x);
+        x_.setupForWriting(numFramesPerChunk, numAtoms, DIM);
+        x_.writeFrame(particlesGroup, x);
     }
 #else
     gmx_file("GROMACS was compiled without HDF5 support, cannot handle this file type");
