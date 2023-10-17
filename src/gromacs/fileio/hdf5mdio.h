@@ -40,46 +40,29 @@
 
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/real.h"
+#include "trrio.h"
 
 struct gmx_mtop_t;
 typedef int64_t hid_t;
+typedef uint64_t hsize_t;
 
 
-class GmxHdf5MdParticlesBox
+class GmxHdf5MdDataBlock
 {
 private:
-    int64_t numDatasetFrames_;
-    int64_t numWrittenFrames_;
-    int     numFramesPerChunk_;
-    char    name_[16];
-    void    initNumFramesPerChunk(int numFramesPerChunk);
+    hsize_t  numDatasetFrames_;
+    hsize_t  numWrittenFrames_;
+    hsize_t  numFramesPerChunk_;
+    hsize_t  numEntries_;
+    hsize_t  numValuesPerEntry_;
+    char     name_[16];
+    void     initDataProperties(hsize_t numFramesPerChunk, hsize_t numEntries, hsize_t numValuesPerEntry = 1);
 public:
-    GmxHdf5MdParticlesBox();
-    GmxHdf5MdParticlesBox(int numFramesPerChunk);
-    ~GmxHdf5MdParticlesBox()
+    GmxHdf5MdDataBlock();
+    GmxHdf5MdDataBlock(const char* name, hsize_t numFramesPerChunk, hsize_t numEntries, hsize_t numValuesPerEntry = 1);
+    ~GmxHdf5MdDataBlock()
     {};
-    void setupForWriting(int numFramesPerChunk);
-    void writeFrame(int64_t     step,
-                    real        time,
-                    hid_t       container,
-                    const rvec* box);
-};
-
-class GmxHdf5MdParticlesProperties
-{
-private:
-    int64_t numDatasetFrames_;
-    int64_t numWrittenFrames_;
-    int     numFramesPerChunk_;
-    int64_t numAtoms_;
-    char    name_[16];
-    void    initNumFramesPerChunkAndNumAtoms(int numFramesPerChunk, int64_t numAtoms);
-public:
-    GmxHdf5MdParticlesProperties();
-    GmxHdf5MdParticlesProperties(const char* name, int numFramesPerChunk, int64_t numAtoms);
-    ~GmxHdf5MdParticlesProperties()
-    {};
-    void setupForWriting(int numFramesPerChunk, int64_t numAtoms);
+    void setupForWriting(hsize_t numFramesPerChunk, hsize_t numEntries, hsize_t numValuesPerEntry = 1);
     void writeFrame(int64_t          step,
                     real             time,
                     hid_t            container,
@@ -90,10 +73,10 @@ class GmxHdf5MdIo
 {
 private:
     hid_t   file_;
-    GmxHdf5MdParticlesBox box_;
-    GmxHdf5MdParticlesProperties x_;
-    GmxHdf5MdParticlesProperties v_;
-    GmxHdf5MdParticlesProperties f_;
+    GmxHdf5MdDataBlock box_;
+    GmxHdf5MdDataBlock x_;
+    GmxHdf5MdDataBlock v_;
+    GmxHdf5MdDataBlock f_;
 public:
     GmxHdf5MdIo();
 

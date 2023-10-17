@@ -42,6 +42,7 @@
 #include <functional>
 #include <string>
 
+#include "gromacs/topology/topology.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
@@ -53,144 +54,27 @@
 #include <hdf5.h>
 #endif
 
-GmxHdf5MdParticlesBox::GmxHdf5MdParticlesBox()
-{
-    strcpy(name_, "box");
-    numFramesPerChunk_ = 1;
-    numDatasetFrames_ = 0;
-    numWrittenFrames_ = 0;
-}
-
-GmxHdf5MdParticlesBox::GmxHdf5MdParticlesBox(int numFramesPerChunk)
-{
-    strcpy(name_, "box");
-    numFramesPerChunk_ = numFramesPerChunk;
-    numDatasetFrames_ = 0;
-    numWrittenFrames_ = 0;
-}
-
-void GmxHdf5MdParticlesBox::initNumFramesPerChunk(int numFramesPerChunk)
-{
-    if (numWrittenFrames_ != 0)
-    {
-        gmx_file("Cannot change number of frames per chunk after writing.");
-    }
-    numFramesPerChunk_ = numFramesPerChunk;
-}
-
-void GmxHdf5MdParticlesBox::setupForWriting(int numFramesPerChunk)
-{
-    if (numWrittenFrames_ == 0 )
-    {
-        initNumFramesPerChunk(numFramesPerChunk);
-    }
-}
-
-void GmxHdf5MdParticlesBox::writeFrame(int64_t          step,
-                                       real             time,
-                                       hid_t            container,
-                                       const rvec*      box)
-{
-#if GMX_USE_HDF5
-    hid_t boxDataset = H5Dopen(container, name_, H5P_DEFAULT);
-#if GMX_DOUBLE
-    const hid_t datatype = H5Tcopy(H5T_NATIVE_DOUBLE);
-#else
-    const hid_t datatype = H5Tcopy(H5T_NATIVE_FLOAT);
-#endif
-    if (boxDataset < 0)
-    {
-        hsize_t dataSize[3] = {numFramesPerChunk_, DIM, DIM};
-        hsize_t maxDims[3] = {H5S_UNLIMITED, DIM, DIM};
-        hid_t boxDataspace = H5Screate_simple(3, dataSize, maxDims);
-        if (boxDataspace < 0)
-        {
-            gmx_file("Cannot create box dataspace.");
-        }
-        hsize_t chunkDims[3] = {numFramesPerChunk_, DIM, DIM};
-        printf("%s, ChunkDims: %d %d %d\n", name_, chunkDims[0], chunkDims[1], chunkDims[2]);
-        hid_t boxPropertyList = H5Pcreate(H5P_DATASET_CREATE);
-        if (boxPropertyList < 0)
-        {
-            gmx_file("Cannot create box property list.");
-        }
-        if (H5Pset_chunk(boxPropertyList, 3, chunkDims) < 0)
-        {
-            gmx_file("Cannot set box chunk dimensions.");
-        }
-        if (H5Pset_deflate(boxPropertyList, 6) < 0)
-        {
-            gmx_file("Cannot set box GZIP compression.");
-        }
-
-        boxDataset = H5Dcreate(container, name_, datatype, boxDataspace, H5P_DEFAULT, boxPropertyList, H5P_DEFAULT);
-        if (boxDataset < 0)
-        {
-            gmx_file("Cannot create box dataset");
-        }
-        printf("Created box dataset\n");
-        numDatasetFrames_ = numFramesPerChunk_;
-        numWrittenFrames_ = 0;
-        // H5Dclose(boxPropertyList);
-        // H5Dclose(boxDataspace);
-    }
-    if(numWrittenFrames_ >= numDatasetFrames_)
-    {
-        printf("Extending size from %d ", numDatasetFrames_);
-        numDatasetFrames_ += numFramesPerChunk_;
-        printf("to %d\n", numDatasetFrames_);
-        hsize_t newDims[3] = {numDatasetFrames_, DIM, DIM};
-        H5Dset_extent(boxDataset, newDims);
-    }
-    hsize_t fileOffset[3] = {numWrittenFrames_, 0, 0};
-    hsize_t outputBlockSize[3] = {1, DIM, DIM};
-    hid_t boxDataspace = H5Dget_space(boxDataset);
-    if (boxDataspace < 0)
-    {
-        gmx_file("Cannot get dataspace of existing box dataset.");
-    }
-    H5Sselect_hyperslab(boxDataspace, H5S_SELECT_SET, fileOffset, NULL, outputBlockSize, NULL);
-
-    hid_t boxMemoryDataspace = H5Screate_simple(3, outputBlockSize, NULL);
-    printf("Writing box.\n");
-    H5Dwrite(boxDataset, datatype, boxMemoryDataspace, boxDataspace, H5P_DEFAULT, box);
-    printf("Box written\n");
-    numWrittenFrames_++;
-    H5Dclose(boxDataset);
-#else
-    gmx_file("GROMACS was compiled without HDF5 support, cannot handle this file type");
-#endif
-}
-
-GmxHdf5MdParticlesProperties::GmxHdf5MdParticlesProperties()
+GmxHdf5MdDataBlock::GmxHdf5MdDataBlock()
 {
     strcpy(name_, "");
     numFramesPerChunk_ = 1;
-    numAtoms_ = 0;
+    numEntries_ = 0;
+    numValuesPerEntry_ = 1;
     numDatasetFrames_ = 0;
     numWrittenFrames_ = 0;
-#if GMX_DOUBLE
-    const hid_t datatype_ = H5Tcopy(H5T_NATIVE_DOUBLE);
-#else
-    const hid_t datatype_ = H5Tcopy(H5T_NATIVE_FLOAT);
-#endif
 }
 
-GmxHdf5MdParticlesProperties::GmxHdf5MdParticlesProperties(const char* name, int numFramesPerChunk, int64_t numAtoms)
+GmxHdf5MdDataBlock::GmxHdf5MdDataBlock(const char* name, hsize_t numFramesPerChunk, hsize_t numEntries, hsize_t numValuesPerEntry)
 {
     strncpy(name_, name, 15);
     numFramesPerChunk_ = numFramesPerChunk;
-    numAtoms_ = numAtoms;
+    numEntries_ = numEntries;
+    numValuesPerEntry_ = numValuesPerEntry;
     numDatasetFrames_ = 0;
     numWrittenFrames_ = 0;
-#if GMX_DOUBLE
-    const hid_t datatype_ = H5Tcopy(H5T_NATIVE_DOUBLE);
-#else
-    const hid_t datatype_ = H5Tcopy(H5T_NATIVE_FLOAT);
-#endif
 }
 
-void GmxHdf5MdParticlesProperties::initNumFramesPerChunkAndNumAtoms(int numFramesPerChunk, int64_t numAtoms)
+void GmxHdf5MdDataBlock::initDataProperties(hsize_t numFramesPerChunk, hsize_t numEntries, hsize_t numValuesPerEntry)
 {
     if (numWrittenFrames_ != 0)
     {
@@ -198,21 +82,23 @@ void GmxHdf5MdParticlesProperties::initNumFramesPerChunkAndNumAtoms(int numFrame
     }
     printf("initNumFramesPerChunk\n");
     numFramesPerChunk_ = numFramesPerChunk;
-    numAtoms_ = numAtoms;
+    numEntries_ = numEntries;
+    numValuesPerEntry_ = numValuesPerEntry;
 }
 
-void GmxHdf5MdParticlesProperties::setupForWriting(int numFramesPerChunk, int64_t numAtoms)
+void GmxHdf5MdDataBlock::setupForWriting(hsize_t numFramesPerChunk, hsize_t numEntries, hsize_t numValuesPerEntry)
 {
-    printf("Setup for writing %d\n", numWrittenFrames_);
+    printf("Setup for writing %" PRId64 "\n", numWrittenFrames_);
     if (numWrittenFrames_ == 0)
     {
-        initNumFramesPerChunkAndNumAtoms(numFramesPerChunk, numAtoms);
+        initDataProperties(numFramesPerChunk, numEntries, numValuesPerEntry);
     }
 }
-void GmxHdf5MdParticlesProperties::writeFrame(int64_t          step,
-                                              real             time,
-                                              hid_t            container,
-                                              const rvec*      data)
+
+void GmxHdf5MdDataBlock::writeFrame(int64_t          step,
+                                    real             time,
+                                    hid_t            container,
+                                    const rvec*      data)
 {
 #if GMX_USE_HDF5
     hid_t dataset = H5Dopen(container, name_, H5P_DEFAULT);
@@ -223,15 +109,15 @@ void GmxHdf5MdParticlesProperties::writeFrame(int64_t          step,
 #endif
     if (dataset < 0)
     {
-        hsize_t dataSize[3] = {numFramesPerChunk_, numAtoms_, DIM};
-        hsize_t maxDims[3] = {H5S_UNLIMITED, numAtoms_, DIM};
+        hsize_t dataSize[3] = {numFramesPerChunk_, numEntries_, numValuesPerEntry_};
+        hsize_t maxDims[3] = {H5S_UNLIMITED, numEntries_, numValuesPerEntry_};
         hid_t dataspace = H5Screate_simple(3, dataSize, maxDims);
         if (dataspace < 0)
         {
             gmx_file("Cannot create dataspace.");
         }
-        hsize_t chunkDims[3] = {numFramesPerChunk_, numAtoms_, DIM};
-        printf("%s, ChunkDims: %d %d %d\n", name_, chunkDims[0], chunkDims[1], chunkDims[2]);
+        hsize_t chunkDims[3] = {numFramesPerChunk_, numEntries_, numValuesPerEntry_};
+        printf("%s, ChunkDims: %" PRId64 " %" PRId64 " %" PRId64 "\n", name_, chunkDims[0], chunkDims[1], chunkDims[2]);
         hid_t propertyList = H5Pcreate(H5P_DATASET_CREATE);
         if (propertyList < 0)
         {
@@ -258,14 +144,14 @@ void GmxHdf5MdParticlesProperties::writeFrame(int64_t          step,
     /* Resize the dataset if needed. */
     if(numWrittenFrames_ >= numDatasetFrames_)
     {
-        printf("Extending size from %d ", numDatasetFrames_);
+        printf("Extending size from %" PRId64 " ", numDatasetFrames_);
         numDatasetFrames_ += numFramesPerChunk_;
-        printf("to %d\n", numDatasetFrames_);
-        hsize_t newDims[3] = {numDatasetFrames_, numAtoms_, DIM};
+        printf("to % " PRId64 "\n", numDatasetFrames_);
+        hsize_t newDims[3] = {numDatasetFrames_, numEntries_, numValuesPerEntry_};
         H5Dset_extent(dataset, newDims);
     }
     hsize_t fileOffset[3] = {numWrittenFrames_, 0, 0};
-    hsize_t outputBlockSize[3] = {1, numAtoms_, DIM};
+    hsize_t outputBlockSize[3] = {1, numEntries_, numValuesPerEntry_};
     hid_t dataspace = H5Dget_space(dataset);
     if (dataspace < 0)
     {
@@ -285,7 +171,7 @@ void GmxHdf5MdParticlesProperties::writeFrame(int64_t          step,
 }
 
 GmxHdf5MdIo::GmxHdf5MdIo() :
-box_(),
+box_("box", 1, 0),
 x_("positions", 1, 0),
 v_("velocities", 1, 0),
 f_("forces", 1, 0)
@@ -294,7 +180,7 @@ f_("forces", 1, 0)
 }
 
 GmxHdf5MdIo::GmxHdf5MdIo(const char* fileName, const char *modeString) :
-box_(),
+box_("box", 1, 0),
 x_("positions", 1, 0),
 v_("velocities", 1, 0),
 f_("forces", 1, 0)
@@ -333,7 +219,7 @@ void GmxHdf5MdIo::openFile(const char* fileName, const char* modeString)
     }
     closeFile();
 
-    printf("Opening %s with mode %s == %d\n", fileName, modeString);
+    printf("Opening %s with mode %s\n", fileName, modeString);
     if (write)
     {
         if (append)
@@ -391,6 +277,17 @@ void GmxHdf5MdIo::flush()
 void GmxHdf5MdIo::setupMolecularSystem(const gmx_mtop_t& topology)
 {
 #if GMX_USE_HDF5
+    std::vector<real> atomCharges;
+    std::vector<real> atomMasses;
+
+    atomCharges.reserve(topology.natoms);
+    atomMasses.reserve(topology.natoms);
+
+    for (const gmx_molblock_t& molBlock : topology.molblock)
+    {
+        const gmx_moltype_t* molType = &topology.moltype[molBlock.type];
+
+    }
 
 #else
     gmx_file("GROMACS was compiled without HDF5 support, cannot handle this file type");
@@ -429,7 +326,7 @@ void GmxHdf5MdIo::writeFrame(int64_t          step,
 
     if (box != nullptr)
     {
-        box_.setupForWriting(numFramesPerChunk);
+        box_.setupForWriting(numFramesPerChunk, DIM);
         box_.writeFrame(step, time, particlesGroup, box);
     }
 
