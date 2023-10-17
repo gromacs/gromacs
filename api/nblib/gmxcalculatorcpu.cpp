@@ -149,18 +149,17 @@ void GmxNBForceCalculatorCpu::CpuImpl::updatePairlist(gmx::ArrayRef<gmx::RVec> c
             PbcType::Xyz, box.legacyMatrix(), false, nullptr, coordinates, {}, backend_.numThreads_);
 
     // Put particles on a grid based on bounds specified by the box
-    nbnxn_put_on_grid(backend_.nbv_.get(),
-                      legacyBox,
-                      0,
-                      lowerCorner,
-                      upperCorner,
-                      nullptr,
-                      { 0, int(coordinates.size()) },
-                      particleDensity,
-                      system_.particleInfo_,
-                      coordinates,
-                      0,
-                      nullptr);
+    backend_.nbv_->putAtomsOnGrid(legacyBox,
+                                  0,
+                                  lowerCorner,
+                                  upperCorner,
+                                  nullptr,
+                                  { 0, int(coordinates.size()) },
+                                  particleDensity,
+                                  system_.particleInfo_,
+                                  coordinates,
+                                  0,
+                                  nullptr);
 
     backend_.nbv_->constructPairlist(
             gmx::InteractionLocality::Local, backend_.exclusions_, 0, &backend_.nrnb_);
@@ -219,7 +218,7 @@ void GmxNBForceCalculatorCpu::CpuImpl::compute(gmx::ArrayRef<const gmx::RVec> co
     {
         // calculate shift forces and turn into an array ref
         std::vector<Vec3> shiftForcesVector(gmx::c_numShiftVectors, Vec3(0.0, 0.0, 0.0));
-        nbnxn_atomdata_add_nbat_fshift_to_fshift(*backend_.nbv_->nbat, shiftForcesVector);
+        nbnxn_atomdata_add_nbat_fshift_to_fshift(backend_.nbv_->nbat(), shiftForcesVector);
         auto shiftForcesRef = constArrayRefFromArray(shiftForcesVector.data(), shiftForcesVector.size());
 
         std::vector<Vec3> shiftVectorsArray(gmx::c_numShiftVectors);

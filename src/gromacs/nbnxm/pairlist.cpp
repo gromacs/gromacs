@@ -4351,7 +4351,7 @@ void nonbonded_verlet_t::constructPairlist(const InteractionLocality iLocality,
                                            int64_t                   step,
                                            t_nrnb*                   nrnb) const
 {
-    pairlistSets_->construct(iLocality, pairSearch_.get(), nbat.get(), exclusions, step, nrnb);
+    pairlistSets_->construct(iLocality, pairSearch_.get(), nbat_.get(), exclusions, step, nrnb);
 
     if (useGpu())
     {
@@ -4359,7 +4359,7 @@ void nonbonded_verlet_t::constructPairlist(const InteractionLocality iLocality,
          *
          * NOTE: The launch overhead is currently not timed separately
          */
-        Nbnxm::gpu_init_pairlist(gpu_nbv, pairlistSets().pairlistSet(iLocality).gpuList(), iLocality);
+        Nbnxm::gpu_init_pairlist(gpuNbv_, pairlistSets().pairlistSet(iLocality).gpuList(), iLocality);
     }
 
     /* With FEP we might need to check that we have all perturbed inclusions within rlist */

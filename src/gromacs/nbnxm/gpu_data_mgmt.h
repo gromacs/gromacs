@@ -89,7 +89,7 @@ void gpu_init_atomdata(NbnxmGpu gmx_unused* nb, const nbnxn_atomdata_t gmx_unuse
  *  electrostatic type switching to twin cut-off (or back) if needed.
  */
 GPU_FUNC_QUALIFIER
-void gpu_pme_loadbal_update_param(const struct nonbonded_verlet_t gmx_unused* nbv,
+void gpu_pme_loadbal_update_param(struct nonbonded_verlet_t gmx_unused* nbv,
                                   const interaction_const_t gmx_unused& ic) GPU_FUNC_TERM;
 
 /** Uploads shift vector to the GPU if the box is dynamic (otherwise just returns). */

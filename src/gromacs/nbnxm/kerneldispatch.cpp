@@ -400,7 +400,7 @@ static void accountFlops(t_nrnb*                    nrnb,
         enr_nbnxn_kernel_ljc = eNR_NBNXN_LJ_RF;
     }
     else if ((!usingGpuKernels && nbv.kernelSetup().ewaldExclusionType == Nbnxm::EwaldExclusionType::Analytical)
-             || (usingGpuKernels && Nbnxm::gpu_is_kernel_ewald_analytical(nbv.gpu_nbv)))
+             || (usingGpuKernels && Nbnxm::gpu_is_kernel_ewald_analytical(nbv.gpuNbv())))
     {
         enr_nbnxn_kernel_ljc = eNR_NBNXN_LJ_EWALD;
     }
@@ -462,7 +462,7 @@ void nonbonded_verlet_t::dispatchNonbondedKernel(gmx::InteractionLocality       
         case Nbnxm::KernelType::Cpu4xN_Simd_2xNN:
             nbnxn_kernel_cpu(pairlistSet,
                              kernelSetup(),
-                             nbat.get(),
+                             nbat_.get(),
                              ic,
                              shiftvec,
                              stepWork,
@@ -473,18 +473,18 @@ void nonbonded_verlet_t::dispatchNonbondedKernel(gmx::InteractionLocality       
             break;
 
         case Nbnxm::KernelType::Gpu8x8x8:
-            Nbnxm::gpu_launch_kernel(gpu_nbv, stepWork, iLocality);
+            Nbnxm::gpu_launch_kernel(gpuNbv_, stepWork, iLocality);
             break;
 
         case Nbnxm::KernelType::Cpu8x8x8_PlainC:
             nbnxn_kernel_gpu_ref(pairlistSet.gpuList(),
-                                 nbat.get(),
+                                 nbat_.get(),
                                  &ic,
                                  shiftvec,
                                  stepWork,
                                  clearF,
-                                 nbat->out[0].f,
-                                 nbat->out[0].fshift.data(),
+                                 nbat_->out[0].f,
+                                 nbat_->out[0].fshift.data(),
                                  CoulombSR.data(),
                                  repulsionDispersionSR.data());
             break;

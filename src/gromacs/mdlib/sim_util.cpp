@@ -849,7 +849,7 @@ static void alternatePmeNbGpuWaitReduce(nonbonded_verlet_t* nbv,
             // GpuTaskCompletion::Wait mode the timing is expected to be done in the caller.
             wallcycle_start_nocount(wcycle, WallCycleCounter::WaitGpuNbL);
             isNbGpuDone = Nbnxm::gpu_try_finish_task(
-                    nbv->gpu_nbv,
+                    nbv->gpuNbv(),
                     stepWork,
                     AtomLocality::Local,
                     enerd->grpp.energyGroupPairTerms[NonBondedEnergyTerms::LJSR].data(),
@@ -1062,7 +1062,7 @@ static void launchGpuEndOfStepTasks(nonbonded_verlet_t*               nbv,
         /* now clear the GPU outputs while we finish the step on the CPU */
         wallcycle_start_nocount(wcycle, WallCycleCounter::LaunchGpuPp);
         wallcycle_sub_start_nocount(wcycle, WallCycleSubCounter::LaunchGpuNonBonded);
-        Nbnxm::gpu_clear_outputs(nbv->gpu_nbv, runScheduleWork.stepWork.computeVirial);
+        Nbnxm::gpu_clear_outputs(nbv->gpuNbv(), runScheduleWork.stepWork.computeVirial);
         wallcycle_sub_stop(wcycle, WallCycleSubCounter::LaunchGpuNonBonded);
         wallcycle_stop(wcycle, WallCycleCounter::LaunchGpuPp);
     }
@@ -1262,7 +1262,7 @@ static void combineMtsForces(const int      numAtoms,
  * \param [in] dd                  Domain decomposition object
  */
 static void setupLocalGpuForceReduction(const gmx::MdrunScheduleWorkload* runScheduleWork,
-                                        const nonbonded_verlet_t*         nbv,
+                                        nonbonded_verlet_t*               nbv,
                                         gmx::StatePropagatorDataGpu*      stateGpu,
                                         gmx::GpuForceReduction*           gpuForceReduction,
                                         gmx::PmePpCommGpu*                pmePpCommGpu,
@@ -1284,7 +1284,7 @@ static void setupLocalGpuForceReduction(const gmx::MdrunScheduleWorkload* runSch
                               stateGpu->fReducedOnDevice(AtomLocality::Local));
 
     // register forces and add dependencies
-    gpuForceReduction->registerNbnxmForce(Nbnxm::gpu_get_f(nbv->gpu_nbv));
+    gpuForceReduction->registerNbnxmForce(Nbnxm::gpu_get_f(nbv->gpuNbv()));
 
     DeviceBuffer<gmx::RVec> pmeForcePtr;
     GpuEventSynchronizer*   pmeSynchronizer     = nullptr;
@@ -1345,7 +1345,7 @@ static void setupLocalGpuForceReduction(const gmx::MdrunScheduleWorkload* runSch
  * \param [in] dd                  Domain decomposition object
  */
 static void setupNonLocalGpuForceReduction(const gmx::MdrunScheduleWorkload* runScheduleWork,
-                                           const nonbonded_verlet_t*         nbv,
+                                           nonbonded_verlet_t*               nbv,
                                            gmx::StatePropagatorDataGpu*      stateGpu,
                                            gmx::GpuForceReduction*           gpuForceReduction,
                                            const gmx_domdec_t*               dd)
@@ -1361,7 +1361,7 @@ static void setupNonLocalGpuForceReduction(const gmx::MdrunScheduleWorkload* run
                               stateGpu->fReducedOnDevice(AtomLocality::NonLocal));
 
     // register forces and add dependencies
-    gpuForceReduction->registerNbnxmForce(Nbnxm::gpu_get_f(nbv->gpu_nbv));
+    gpuForceReduction->registerNbnxmForce(Nbnxm::gpu_get_f(nbv->gpuNbv()));
 
     if (runScheduleWork->domainWork.haveCpuNonLocalForceWork)
     {
@@ -1516,7 +1516,7 @@ void do_force(FILE*                               fplog,
         }
     }
 
-    nbnxn_atomdata_copy_shiftvec(stepWork.haveDynamicBox, fr->shift_vec, nbv->nbat.get());
+    nbnxn_atomdata_copy_shiftvec(stepWork.haveDynamicBox, fr->shift_vec, &nbv->nbat());
 
     GMX_ASSERT(simulationWork.useGpuHaloExchange
                        == ((cr->dd != nullptr) && (!cr->dd->gpuHaloExchange[0].empty())),
@@ -1619,18 +1619,17 @@ void do_force(FILE*                               fplog,
             const rvec vzero       = { 0.0_real, 0.0_real, 0.0_real };
             const rvec boxDiagonal = { box[XX][XX], box[YY][YY], box[ZZ][ZZ] };
             wallcycle_sub_start(wcycle, WallCycleSubCounter::NBSGridLocal);
-            nbnxn_put_on_grid(nbv,
-                              box,
-                              0,
-                              vzero,
-                              boxDiagonal,
-                              nullptr,
-                              { 0, mdatoms->homenr },
-                              -1,
-                              fr->atomInfo,
-                              x.unpaddedArrayRef(),
-                              0,
-                              nullptr);
+            nbv->putAtomsOnGrid(box,
+                                0,
+                                vzero,
+                                boxDiagonal,
+                                nullptr,
+                                { 0, mdatoms->homenr },
+                                -1,
+                                fr->atomInfo,
+                                x.unpaddedArrayRef(),
+                                0,
+                                nullptr);
             wallcycle_sub_stop(wcycle, WallCycleSubCounter::NBSGridLocal);
         }
         else
@@ -1650,7 +1649,7 @@ void do_force(FILE*                               fplog,
             // Note: cycle counting only nononbondeds, GPU listed forces counts internally
             wallcycle_start_nocount(wcycle, WallCycleCounter::LaunchGpuPp);
             wallcycle_sub_start_nocount(wcycle, WallCycleSubCounter::LaunchGpuNonBonded);
-            Nbnxm::gpu_init_atomdata(nbv->gpu_nbv, nbv->nbat.get());
+            Nbnxm::gpu_init_atomdata(nbv->gpuNbv(), &nbv->nbat());
             wallcycle_sub_stop(wcycle, WallCycleSubCounter::LaunchGpuNonBonded);
             wallcycle_stop(wcycle, WallCycleCounter::LaunchGpuPp);
 
@@ -1665,7 +1664,7 @@ void do_force(FILE*                               fplog,
                 // resources, so they should be maintained by a
                 // higher-level object than the nb module.
                 fr->listedForcesGpu->updateInteractionListsAndDeviceBuffers(
-                        nbv->getGridIndices(), top->idef, Nbnxm::gpuGetNBAtomData(nbv->gpu_nbv));
+                        nbv->getGridIndices(), top->idef, Nbnxm::gpuGetNBAtomData(nbv->gpuNbv()));
             }
         }
 
@@ -1733,10 +1732,10 @@ void do_force(FILE*                               fplog,
 
         wallcycle_start(wcycle, WallCycleCounter::LaunchGpuPp);
         wallcycle_sub_start(wcycle, WallCycleSubCounter::LaunchGpuNonBonded);
-        Nbnxm::gpu_upload_shiftvec(nbv->gpu_nbv, nbv->nbat.get());
+        Nbnxm::gpu_upload_shiftvec(nbv->gpuNbv(), &nbv->nbat());
         if (!stepWork.useGpuXBufferOps)
         {
-            Nbnxm::gpu_copy_xq_to_gpu(nbv->gpu_nbv, nbv->nbat.get(), AtomLocality::Local);
+            Nbnxm::gpu_copy_xq_to_gpu(nbv->gpuNbv(), &nbv->nbat(), AtomLocality::Local);
         }
         wallcycle_sub_stop(wcycle, WallCycleSubCounter::LaunchGpuNonBonded);
         wallcycle_stop(wcycle, WallCycleCounter::LaunchGpuPp);
@@ -1855,7 +1854,7 @@ void do_force(FILE*                               fplog,
             {
                 wallcycle_start(wcycle, WallCycleCounter::LaunchGpuPp);
                 wallcycle_sub_start(wcycle, WallCycleSubCounter::LaunchGpuNonBonded);
-                Nbnxm::gpu_copy_xq_to_gpu(nbv->gpu_nbv, nbv->nbat.get(), AtomLocality::NonLocal);
+                Nbnxm::gpu_copy_xq_to_gpu(nbv->gpuNbv(), &nbv->nbat(), AtomLocality::NonLocal);
                 wallcycle_sub_stop(wcycle, WallCycleSubCounter::LaunchGpuNonBonded);
                 wallcycle_stop(wcycle, WallCycleCounter::LaunchGpuPp);
             }
@@ -1891,9 +1890,9 @@ void do_force(FILE*                               fplog,
 
         if (simulationWork.havePpDomainDecomposition)
         {
-            Nbnxm::gpu_launch_cpyback(nbv->gpu_nbv, nbv->nbat.get(), stepWork, AtomLocality::NonLocal);
+            Nbnxm::gpu_launch_cpyback(nbv->gpuNbv(), &nbv->nbat(), stepWork, AtomLocality::NonLocal);
         }
-        Nbnxm::gpu_launch_cpyback(nbv->gpu_nbv, nbv->nbat.get(), stepWork, AtomLocality::Local);
+        Nbnxm::gpu_launch_cpyback(nbv->gpuNbv(), &nbv->nbat(), stepWork, AtomLocality::Local);
         wallcycle_sub_stop(wcycle, WallCycleSubCounter::LaunchGpuNonBonded);
 
         if (domainWork.haveGpuBondedWork && stepWork.computeEnergy)
@@ -2076,7 +2075,7 @@ void do_force(FILE*                               fplog,
             /* This is not in a subcounter because it takes a
                negligible and constant-sized amount of time */
             nbnxn_atomdata_add_nbat_fshift_to_fshift(
-                    *nbv->nbat, forceOutNonbonded->forceWithShiftForces().shiftForces());
+                    nbv->nbat(), forceOutNonbonded->forceWithShiftForces().shiftForces());
         }
     }
 
@@ -2268,7 +2267,7 @@ void do_force(FILE*                               fplog,
             if (simulationWork.useGpuNonbonded)
             {
                 cycles_wait_gpu += Nbnxm::gpu_wait_finish_task(
-                        nbv->gpu_nbv,
+                        nbv->gpuNbv(),
                         stepWork,
                         AtomLocality::NonLocal,
                         enerd->grpp.energyGroupPairTerms[NonBondedEnergyTerms::LJSR].data(),
@@ -2313,7 +2312,7 @@ void do_force(FILE*                               fplog,
 
             if (fr->nbv->emulateGpu() && stepWork.computeVirial)
             {
-                nbnxn_atomdata_add_nbat_fshift_to_fshift(*nbv->nbat, forceWithShiftForces.shiftForces());
+                nbnxn_atomdata_add_nbat_fshift_to_fshift(nbv->nbat(), forceWithShiftForces.shiftForces());
             }
         }
     }
@@ -2427,7 +2426,7 @@ void do_force(FILE*                               fplog,
          */
         const float gpuWaitApiOverheadMargin = 2e6F; /* cycles */
         const float waitCycles               = Nbnxm::gpu_wait_finish_task(
-                nbv->gpu_nbv,
+                nbv->gpuNbv(),
                 stepWork,
                 AtomLocality::Local,
                 enerd->grpp.energyGroupPairTerms[NonBondedEnergyTerms::LJSR].data(),

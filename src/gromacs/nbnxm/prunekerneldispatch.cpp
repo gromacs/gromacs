@@ -94,7 +94,7 @@ void PairlistSet::dispatchPruneKernel(const nbnxn_atomdata_t* nbat, gmx::ArrayRe
 void nonbonded_verlet_t::dispatchPruneKernelCpu(const gmx::InteractionLocality iLocality,
                                                 gmx::ArrayRef<const gmx::RVec> shift_vec) const
 {
-    pairlistSets_->dispatchPruneKernel(iLocality, nbat.get(), shift_vec);
+    pairlistSets_->dispatchPruneKernel(iLocality, nbat_.get(), shift_vec);
 }
 
 void nonbonded_verlet_t::dispatchPruneKernelGpu(int64_t step)
@@ -106,7 +106,7 @@ void nonbonded_verlet_t::dispatchPruneKernelGpu(int64_t step)
             (pairlistSets().numStepsWithPairlist(step) % (2 * pairlistSets().params().mtsFactor) == 0);
 
     Nbnxm::gpu_launch_kernel_pruneonly(
-            gpu_nbv,
+            gpuNbv_,
             stepIsEven ? gmx::InteractionLocality::Local : gmx::InteractionLocality::NonLocal,
             pairlistSets().params().numRollingPruningParts);
 

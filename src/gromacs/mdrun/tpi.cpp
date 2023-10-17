@@ -595,8 +595,8 @@ void LegacySimulator::do_tpi()
         /* Put all atoms except for the inserted ones on the grid */
         rvec vzero       = { 0, 0, 0 };
         rvec boxDiagonal = { box[XX][XX], box[YY][YY], box[ZZ][ZZ] };
-        nbnxn_put_on_grid(
-                fr_->nbv.get(), box, 0, vzero, boxDiagonal, nullptr, { 0, a_tp0 }, -1, fr_->atomInfo, x, 0, nullptr);
+        fr_->nbv->putAtomsOnGrid(
+                box, 0, vzero, boxDiagonal, nullptr, { 0, a_tp0 }, -1, fr_->atomInfo, x, 0, nullptr);
 
         step = cr_->nodeid * stepblocksize;
         while (step < nsteps)
@@ -667,8 +667,8 @@ void LegacySimulator::do_tpi()
                 }
 
                 /* Put the inserted molecule on it's own search grid */
-                nbnxn_put_on_grid(
-                        fr_->nbv.get(), box, 1, x_init, x_init, nullptr, { a_tp0, a_tp1 }, -1, fr_->atomInfo, x, 0, nullptr);
+                fr_->nbv->putAtomsOnGrid(
+                        box, 1, x_init, x_init, nullptr, { a_tp0, a_tp1 }, -1, fr_->atomInfo, x, 0, nullptr);
 
                 /* TODO: Avoid updating all atoms at every bNS step */
                 fr_->nbv->setAtomProperties(mdatoms->typeA, mdatoms->chargeA, fr_->atomInfo);

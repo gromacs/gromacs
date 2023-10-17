@@ -481,13 +481,13 @@ NbnxmGpu* gpu_init(const gmx::DeviceStreamManager& deviceStreamManager,
     return nb;
 }
 
-void gpu_pme_loadbal_update_param(const nonbonded_verlet_t* nbv, const interaction_const_t& ic)
+void gpu_pme_loadbal_update_param(nonbonded_verlet_t* nbv, const interaction_const_t& ic)
 {
     if (!nbv || !nbv->useGpu())
     {
         return;
     }
-    NbnxmGpu*   nb  = nbv->gpu_nbv;
+    NbnxmGpu*   nb  = nbv->gpuNbv();
     NBParamGpu* nbp = nb->nbparam;
 
     set_cutoff_parameters(nbp, ic, nbv->pairlistSets().params());
@@ -737,9 +737,9 @@ gmx_wallclock_gpu_nbnxn_t* gpu_get_timings(NbnxmGpu* nb)
 //! This function is documented in the header file
 void gpu_reset_timings(nonbonded_verlet_t* nbv)
 {
-    if (nbv->gpu_nbv && nbv->gpu_nbv->bDoTime)
+    if (nbv->gpuNbv() && nbv->gpuNbv()->bDoTime)
     {
-        init_timings(nbv->gpu_nbv->timings);
+        init_timings(nbv->gpuNbv()->timings);
     }
 }
 

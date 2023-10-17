@@ -3117,18 +3117,17 @@ void dd_partition_system(FILE*                     fplog,
 
         set_zones_size(dd, state_local->box, &ddbox, 0, 1, ncg_moved);
 
-        nbnxn_put_on_grid(fr->nbv.get(),
-                          state_local->box,
-                          0,
-                          comm->zones.size[0].bb_x0,
-                          comm->zones.size[0].bb_x1,
-                          comm->updateGroupsCog.get(),
-                          { 0, dd->numHomeAtoms },
-                          comm->zones.dens_zone0,
-                          fr->atomInfo,
-                          state_local->x,
-                          ncg_moved,
-                          bRedist ? comm->movedBuffer.data() : nullptr);
+        fr->nbv->putAtomsOnGrid(state_local->box,
+                                0,
+                                comm->zones.size[0].bb_x0,
+                                comm->zones.size[0].bb_x1,
+                                comm->updateGroupsCog.get(),
+                                { 0, dd->numHomeAtoms },
+                                comm->zones.dens_zone0,
+                                fr->atomInfo,
+                                state_local->x,
+                                ncg_moved,
+                                bRedist ? comm->movedBuffer.data() : nullptr);
 
         if (debug)
         {
