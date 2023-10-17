@@ -65,6 +65,14 @@ virtual site velocities are only used for output, they do not affect the positio
 
 :issue:`4879`
 
+Add workaround for OpenCL bug on AppleSilicon GPUs
+""""""""""""""""""""""""""""""""""""""""""""""""""
+
+After a resource leak was fixed in 2023.2, the OpenCL became broken
+on M1 Macs (and likely other AppleSilicon GPUs).
+
+:issue:`4852`
+
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
 

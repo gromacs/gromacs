@@ -262,19 +262,43 @@ void clearDeviceBufferAsync(DeviceBuffer<ValueType>* buffer,
     {
         return;
     }
+
+    /* Apple OpenCL breaks if clEnqueueFillBuffer does not return an event.
+     * Creating and releasing an event should not be necessary and potentially
+     * causes minor overhead, so we don't do it on other platforms.
+     * See #4852. */
+#ifdef __APPLE__
+    static constexpr bool sc_needAppleWorkaround = true;
+#else
+    static constexpr bool sc_needAppleWorkaround = false;
+#endif
+
     GMX_ASSERT(buffer, "needs a buffer pointer");
     const size_t    offset        = startingOffset * sizeof(ValueType);
     const size_t    bytes         = numValues * sizeof(ValueType);
     const int       pattern       = 0;
     const cl_uint   numWaitEvents = 0;
     const cl_event* waitEvents    = nullptr;
-    cl_int          clError       = clEnqueueFillBuffer(
-            deviceStream.stream(), *buffer, &pattern, sizeof(pattern), offset, bytes, numWaitEvents, waitEvents, nullptr);
+    cl_event        retEvent;
+
+    cl_int clError = clEnqueueFillBuffer(deviceStream.stream(),
+                                         *buffer,
+                                         &pattern,
+                                         sizeof(pattern),
+                                         offset,
+                                         bytes,
+                                         numWaitEvents,
+                                         waitEvents,
+                                         sc_needAppleWorkaround ? &retEvent : nullptr);
     GMX_RELEASE_ASSERT(clError == CL_SUCCESS,
                        gmx::formatString("Couldn't clear the device buffer (OpenCL error %d: %s)",
                                          clError,
                                          ocl_get_error_string(clError).c_str())
                                .c_str());
+    if (sc_needAppleWorkaround)
+    {
+        clReleaseEvent(retEvent);
+    }
 }
 
 #if defined(__clang__)
