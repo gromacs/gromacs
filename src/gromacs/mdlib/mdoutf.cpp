@@ -186,6 +186,7 @@ gmx_mdoutf_t init_mdoutf(FILE*                          fplog,
                 case efH5MD:
                     printf("Opening file %s (%s)\n", filename, filemode);
                     of->hdf5Md = new GmxHdf5MdIo(filename, filemode);
+                    of->hdf5Md->setupMolecularSystem(top_global);
                     break;
                 default: gmx_incons("Invalid reduced precision file format");
             }

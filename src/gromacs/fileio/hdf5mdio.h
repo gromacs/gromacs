@@ -36,35 +36,14 @@
 #ifndef GMX_FILEIO_HDF5MDIO_H
 #define GMX_FILEIO_HDF5MDIO_H
 
-// FIXME: TEMPORARY FOR EASIER EDITIING:
-#include <sys/_types/_int64_t.h>
-#define GMX_USE_HDF5 1
-
 #include <string>
 
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/real.h"
 
+struct gmx_mtop_t;
 typedef int64_t hid_t;
 
-class GmxHdf5MdElement
-{
-#ifdef GMX_USE_HDF5
-private:
-    // h5xx::attribute *group_;
-    // h5xx::attribute *step_;
-    // h5xx::attribute *time_;
-    // h5xx::attribute *value_;
-    // h5xx::datatype *datatype_;
-    int isTime_;
-    int currentStep_;
-    // GmxHdf5MdParticlesGroup *particlesGroup_;
-#endif
-public:
-    GmxHdf5MdElement();
-    ~GmxHdf5MdElement();
-    void append(void *data, int step, double time);
-};
 
 class GmxHdf5MdParticlesBox
 {
@@ -73,12 +52,12 @@ private:
     int64_t numWrittenFrames_;
     int     numFramesPerChunk_;
     char    name_[16];
-    hid_t   datatype_;
     void    initNumFramesPerChunk(int numFramesPerChunk);
 public:
     GmxHdf5MdParticlesBox();
     GmxHdf5MdParticlesBox(int numFramesPerChunk);
-    ~GmxHdf5MdParticlesBox();
+    ~GmxHdf5MdParticlesBox()
+    {};
     void setupForWriting(int numFramesPerChunk);
     void writeFrame(int64_t     step,
                     real        time,
@@ -88,32 +67,18 @@ public:
 
 class GmxHdf5MdParticlesProperties
 {
-#ifdef GMX_USE_HDF5
 private:
-    // h5xx::attribute *group_;
-    // GmxHdf5MdElement *position_;
-    // h5xx::attribute *box_;
-    // GmxHdf5MdElement *boxEdges_;
-    // GmxHdf5MdElement *image_;
-    // GmxHdf5MdElement *velocity_;
-    // GmxHdf5MdElement *force_;
-/*    GmxHdf5MdElement mass_;
-    GmxHdf5MdElement species_;
-    GmxHdf5MdElement id_;
-    GmxHdf5MdElement charge_;*/
-    // int localSizeMax;
     int64_t numDatasetFrames_;
     int64_t numWrittenFrames_;
     int     numFramesPerChunk_;
     int64_t numAtoms_;
     char    name_[16];
-    hid_t   datatype_;
     void    initNumFramesPerChunkAndNumAtoms(int numFramesPerChunk, int64_t numAtoms);
-#endif
 public:
     GmxHdf5MdParticlesProperties();
     GmxHdf5MdParticlesProperties(const char* name, int numFramesPerChunk, int64_t numAtoms);
-    ~GmxHdf5MdParticlesProperties();
+    ~GmxHdf5MdParticlesProperties()
+    {};
     void setupForWriting(int numFramesPerChunk, int64_t numAtoms);
     void writeFrame(int64_t          step,
                     real             time,
@@ -123,17 +88,12 @@ public:
 
 class GmxHdf5MdIo
 {
-#ifdef GMX_USE_HDF5
 private:
     hid_t   file_;
     GmxHdf5MdParticlesBox box_;
     GmxHdf5MdParticlesProperties x_;
     GmxHdf5MdParticlesProperties v_;
     GmxHdf5MdParticlesProperties f_;
-    // h5xx::attribute *particles_;
-    // h5xx::attribute *observables_;
-    // h5xx::attribute *parameters_;
-#endif
 public:
     GmxHdf5MdIo();
 
@@ -167,6 +127,8 @@ public:
 
     void flush();
 
+    void setupMolecularSystem(const gmx_mtop_t& topology);
+
     void writeFrame(int64_t          step,
                     real             time,
                     real             lambda,
@@ -175,11 +137,6 @@ public:
                     const rvec*      x,
                     const rvec*      v,
                     const rvec*      f);
-    // GmxHdf5MdParticlesGroup createParticlesGroup(std::string name);
-//     GmxHdf5MdElement createTimeData(hid_t loc, std::string name, int rank, int dims[], hid_t datatype, GmxHdf5MdElement *link);
-//     GmxHdf5MdElement createFixedDataSimple(hid_t loc, std::string name, int rank, int dims[], hid_t datatype, void *data);
-//     GmxHdf5MdElement createFixedDataScalar(hid_t loc, std::string name, hid_t datatype, void *data);
-//     int writeStringAttribute(hid_t loc, std::string objectName, std::string attributeName, std::string value);
 };
 
 #endif // GMX_FILEIO_HDF5MDIO_H

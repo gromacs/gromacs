@@ -84,8 +84,7 @@ if(GMX_USE_HDF5)
     target_include_directories(fileio INTERFACE
                            $<BUILD_INTERFACE:${HDF5_C_INCLUDE_DIR}>
                            $<BUILD_INTERFACE:${HDF5_INCLUDE_DIRS}>)
-    target_include_directories(fileio INTERFACE
-                           ${PROJECT_SOURCE_DIR}/src/external/h5xx)
+    message("HDF5: ${HDF5_C_LIBRARY_hdf5}")
     target_link_libraries(fileio INTERFACE ${HDF5_C_LIBRARY_hdf5})
 endif()
 # Source files have the following private module dependencies.

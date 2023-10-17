@@ -41,7 +41,6 @@
 
 #include <functional>
 #include <string>
-#include <sys/_types/_int64_t.h>
 
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/exceptions.h"
@@ -51,44 +50,8 @@
 #include "gromacs/utility/stringutil.h"
 
 #if GMX_USE_HDF5
-#    include <hdf5.h>
+#include <hdf5.h>
 #endif
-
-static unsigned convertModeStringToInt(const std::string& modeString)
-{
-#if GMX_USE_HDF5
-    const gmx_unused int maxStringLength = 4; // 3 is standard max, but there may also be a "+", which is ignored
-    GMX_ASSERT(modeString.length() <= maxStringLength, "The mode string is too long");
-    std::string modeStringLower = gmx::toLowerCase(modeString);
-    unsigned mode = H5F_ACC_RDONLY; // Reading is always enabled.
-
-    std::size_t found = modeStringLower.find("w");
-    if(found < std::string::npos)
-    {
-        mode |= H5F_ACC_TRUNC;
-    }
-    // Treat "a" (append) as write
-    found = modeStringLower.find("a");
-    if(found < std::string::npos)
-    {
-        mode |= H5F_ACC_TRUNC;
-    }
-    found = modeStringLower.find("t");
-    if(found < std::string::npos)
-    {
-        mode |= H5F_ACC_TRUNC;
-    }
-    found = modeStringLower.find("e");
-    if(found < std::string::npos)
-    {
-        mode |= H5F_ACC_EXCL;
-    }
-
-    return mode;
-#else
-    gmx_file("GROMACS was compiled without HDF5 support, cannot handle this file type");
-#endif
-}
 
 GmxHdf5MdParticlesBox::GmxHdf5MdParticlesBox()
 {
@@ -96,11 +59,6 @@ GmxHdf5MdParticlesBox::GmxHdf5MdParticlesBox()
     numFramesPerChunk_ = 1;
     numDatasetFrames_ = 0;
     numWrittenFrames_ = 0;
-#if GMX_DOUBLE
-    const hid_t datatype_ = H5Tcopy(H5T_NATIVE_DOUBLE);
-#else
-    const hid_t datatype_ = H5Tcopy(H5T_NATIVE_FLOAT);
-#endif
 }
 
 GmxHdf5MdParticlesBox::GmxHdf5MdParticlesBox(int numFramesPerChunk)
@@ -109,16 +67,11 @@ GmxHdf5MdParticlesBox::GmxHdf5MdParticlesBox(int numFramesPerChunk)
     numFramesPerChunk_ = numFramesPerChunk;
     numDatasetFrames_ = 0;
     numWrittenFrames_ = 0;
-#if GMX_DOUBLE
-    const hid_t datatype_ = H5Tcopy(H5T_NATIVE_DOUBLE);
-#else
-    const hid_t datatype_ = H5Tcopy(H5T_NATIVE_FLOAT);
-#endif
 }
 
 void GmxHdf5MdParticlesBox::initNumFramesPerChunk(int numFramesPerChunk)
 {
-    if (numWrittenFrames_ != 0 || numWrittenFrames_ != 0)
+    if (numWrittenFrames_ != 0)
     {
         gmx_file("Cannot change number of frames per chunk after writing.");
     }
@@ -127,7 +80,7 @@ void GmxHdf5MdParticlesBox::initNumFramesPerChunk(int numFramesPerChunk)
 
 void GmxHdf5MdParticlesBox::setupForWriting(int numFramesPerChunk)
 {
-    if (numWrittenFrames_ != 0 || numWrittenFrames_ != 0)
+    if (numWrittenFrames_ == 0 )
     {
         initNumFramesPerChunk(numFramesPerChunk);
     }
@@ -138,7 +91,13 @@ void GmxHdf5MdParticlesBox::writeFrame(int64_t          step,
                                        hid_t            container,
                                        const rvec*      box)
 {
+#if GMX_USE_HDF5
     hid_t boxDataset = H5Dopen(container, name_, H5P_DEFAULT);
+#if GMX_DOUBLE
+    const hid_t datatype = H5Tcopy(H5T_NATIVE_DOUBLE);
+#else
+    const hid_t datatype = H5Tcopy(H5T_NATIVE_FLOAT);
+#endif
     if (boxDataset < 0)
     {
         hsize_t dataSize[3] = {numFramesPerChunk_, DIM, DIM};
@@ -164,7 +123,7 @@ void GmxHdf5MdParticlesBox::writeFrame(int64_t          step,
             gmx_file("Cannot set box GZIP compression.");
         }
 
-        boxDataset = H5Dcreate(container, name_, datatype_, boxDataspace, H5P_DEFAULT, boxPropertyList, H5P_DEFAULT);
+        boxDataset = H5Dcreate(container, name_, datatype, boxDataspace, H5P_DEFAULT, boxPropertyList, H5P_DEFAULT);
         if (boxDataset < 0)
         {
             gmx_file("Cannot create box dataset");
@@ -194,10 +153,13 @@ void GmxHdf5MdParticlesBox::writeFrame(int64_t          step,
 
     hid_t boxMemoryDataspace = H5Screate_simple(3, outputBlockSize, NULL);
     printf("Writing box.\n");
-    H5Dwrite(boxDataset, datatype_, boxMemoryDataspace, boxDataspace, H5P_DEFAULT, box);
+    H5Dwrite(boxDataset, datatype, boxMemoryDataspace, boxDataspace, H5P_DEFAULT, box);
     printf("Box written\n");
     numWrittenFrames_++;
     H5Dclose(boxDataset);
+#else
+    gmx_file("GROMACS was compiled without HDF5 support, cannot handle this file type");
+#endif
 }
 
 GmxHdf5MdParticlesProperties::GmxHdf5MdParticlesProperties()
@@ -230,16 +192,19 @@ GmxHdf5MdParticlesProperties::GmxHdf5MdParticlesProperties(const char* name, int
 
 void GmxHdf5MdParticlesProperties::initNumFramesPerChunkAndNumAtoms(int numFramesPerChunk, int64_t numAtoms)
 {
-    if (numWrittenFrames_ != 0 || numWrittenFrames_ != 0)
+    if (numWrittenFrames_ != 0)
     {
         gmx_file("Cannot change number of frames per chunk after writing.");
     }
+    printf("initNumFramesPerChunk\n");
     numFramesPerChunk_ = numFramesPerChunk;
+    numAtoms_ = numAtoms;
 }
 
 void GmxHdf5MdParticlesProperties::setupForWriting(int numFramesPerChunk, int64_t numAtoms)
 {
-    if (numWrittenFrames_ != 0 || numWrittenFrames_ != 0)
+    printf("Setup for writing %d\n", numWrittenFrames_);
+    if (numWrittenFrames_ == 0)
     {
         initNumFramesPerChunkAndNumAtoms(numFramesPerChunk, numAtoms);
     }
@@ -249,7 +214,13 @@ void GmxHdf5MdParticlesProperties::writeFrame(int64_t          step,
                                               hid_t            container,
                                               const rvec*      data)
 {
+#if GMX_USE_HDF5
     hid_t dataset = H5Dopen(container, name_, H5P_DEFAULT);
+#if GMX_DOUBLE
+    const hid_t datatype = H5Tcopy(H5T_NATIVE_DOUBLE);
+#else
+    const hid_t datatype = H5Tcopy(H5T_NATIVE_FLOAT);
+#endif
     if (dataset < 0)
     {
         hsize_t dataSize[3] = {numFramesPerChunk_, numAtoms_, DIM};
@@ -275,7 +246,7 @@ void GmxHdf5MdParticlesProperties::writeFrame(int64_t          step,
             gmx_file("Cannot set GZIP compression.");
         }
 
-        dataset = H5Dcreate(container, name_, datatype_, dataspace, H5P_DEFAULT, propertyList, H5P_DEFAULT);
+        dataset = H5Dcreate(container, name_, datatype, dataspace, H5P_DEFAULT, propertyList, H5P_DEFAULT);
         if (dataset < 0)
         {
             gmx_file("Cannot create dataset");
@@ -303,51 +274,81 @@ void GmxHdf5MdParticlesProperties::writeFrame(int64_t          step,
     H5Sselect_hyperslab(dataspace, H5S_SELECT_SET, fileOffset, NULL, outputBlockSize, NULL);
 
     hid_t memoryDataspace = H5Screate_simple(3, outputBlockSize, NULL);
-    printf("Writing box.\n");
-    H5Dwrite(dataset, datatype_, memoryDataspace, dataspace, H5P_DEFAULT, data);
-    printf("Box written\n");
+    printf("Writing %s.\n", name_);
+    H5Dwrite(dataset, datatype, memoryDataspace, dataspace, H5P_DEFAULT, data);
+    printf("%s written\n", name_);
     numWrittenFrames_++;
     H5Dclose(dataset);
-}
-
-GmxHdf5MdIo::GmxHdf5MdIo()
-{
-#ifdef GMX_USE_HDF5
-    file_ = -1;
 #else
     gmx_file("GROMACS was compiled without HDF5 support, cannot handle this file type");
 #endif
 }
 
-GmxHdf5MdIo::GmxHdf5MdIo(const char* fileName, const char *modeString)
+GmxHdf5MdIo::GmxHdf5MdIo() :
+box_(),
+x_("positions", 1, 0),
+v_("velocities", 1, 0),
+f_("forces", 1, 0)
 {
-#ifdef GMX_USE_HDF5
+    file_ = -1;
+}
+
+GmxHdf5MdIo::GmxHdf5MdIo(const char* fileName, const char *modeString) :
+box_(),
+x_("positions", 1, 0),
+v_("velocities", 1, 0),
+f_("forces", 1, 0)
+{
     printf("In constructor. %s (%s)\n", fileName, modeString);
     file_ = -1;
     openFile(fileName, modeString);
-#else
-    gmx_file("GROMACS was compiled without HDF5 support, cannot handle this file type");
-#endif
 }
 
 GmxHdf5MdIo::~GmxHdf5MdIo()
 {
-#ifdef GMX_USE_HDF5
     if(file_ != -1)
     {
         closeFile();
     }
-#else
-    gmx_file("GROMACS was compiled without HDF5 support, cannot handle this file type");
-#endif
 }
 
 void GmxHdf5MdIo::openFile(const char* fileName, const char* modeString)
 {
-#ifdef GMX_USE_HDF5
-    unsigned mode = convertModeStringToInt(modeString);
-    printf("Opening %s with mode %s == %d\n", fileName, modeString, mode);
-    file_ = H5Fcreate(fileName, mode, H5P_DEFAULT, H5P_DEFAULT);
+#if GMX_USE_HDF5
+    std::string modeStringLower = gmx::toLowerCase(modeString);
+
+    bool read = true;
+    bool write = false;
+    bool append = false;
+    std::size_t found = modeStringLower.find("w");
+    if(found < std::string::npos)
+    {
+        write = true;
+    }
+    found = modeStringLower.find("a");
+    if(found < std::string::npos)
+    {
+        append = true;
+        write = true;
+    }
+    closeFile();
+
+    printf("Opening %s with mode %s == %d\n", fileName, modeString);
+    if (write)
+    {
+        if (append)
+        {
+            file_ = H5Fopen(fileName, H5F_ACC_RDWR, H5P_DEFAULT);
+        }
+        if (file_ < 0)
+        {
+            file_ = H5Fcreate(fileName, H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
+        }
+    }
+    else
+    {
+        file_ = H5Fopen(fileName, H5F_ACC_RDONLY, H5P_DEFAULT);
+    }
     if (file_ < 0)
     {
         gmx_file("Cannot open file.");
@@ -360,7 +361,7 @@ void GmxHdf5MdIo::openFile(const char* fileName, const char* modeString)
 
 void GmxHdf5MdIo::closeFile()
 {
-#ifdef GMX_USE_HDF5
+#if GMX_USE_HDF5
     if (file_ >= 0)
     {
         printf("Closing file, flushing.\n");
@@ -376,7 +377,7 @@ void GmxHdf5MdIo::closeFile()
 
 void GmxHdf5MdIo::flush()
 {
-#ifdef GMX_USE_HDF5
+#if GMX_USE_HDF5
     if (file_ >= 0)
     {
         printf("Flushing.\n");
@@ -387,6 +388,14 @@ void GmxHdf5MdIo::flush()
 #endif
 }
 
+void GmxHdf5MdIo::setupMolecularSystem(const gmx_mtop_t& topology)
+{
+#if GMX_USE_HDF5
+
+#else
+    gmx_file("GROMACS was compiled without HDF5 support, cannot handle this file type");
+#endif
+}
 
 void GmxHdf5MdIo::writeFrame(int64_t          step,
                              real             time,
@@ -397,6 +406,7 @@ void GmxHdf5MdIo::writeFrame(int64_t          step,
                              const rvec*      v,
                              const rvec*      f)
 {
+#if GMX_USE_HDF5
     if (file_ < 0)
     {
         gmx_file("No file open for writing");
@@ -417,28 +427,19 @@ void GmxHdf5MdIo::writeFrame(int64_t          step,
 
     const int numFramesPerChunk = 5;
 
-    // box_.setupForWriting(numFramesPerChunk);
-    // x_.setupForWriting(numFramesPerChunk, numAtoms);
-    //
-    // box_.writeFrame(step, time, particlesGroup, box);
-    // x_.writeFrame(step, time, particlesGroup, x);
-    // writeMultiScalarToDataset(particlesGroup, boxDatasetName, box, dataSize);
-    // H5Dclose(boxDataspace);
-    // H5Dclose(boxMemoryDataspace);
+    if (box != nullptr)
+    {
+        box_.setupForWriting(numFramesPerChunk);
+        box_.writeFrame(step, time, particlesGroup, box);
+    }
 
+    if (x != nullptr)
+    {
+        x_.setupForWriting(numFramesPerChunk, numAtoms);
+        x_.writeFrame(step, time, particlesGroup, x);
+    }
+#else
+    gmx_file("GROMACS was compiled without HDF5 support, cannot handle this file type");
+#endif
 
-    //
-    // std::string positionDatasetName = "position";
-    // if (!h5xx::exists_dataset(particlesGroup, positionDatasetName))
-    // {
-    //     std::vector<size_t> chunkDims{numFramesPerChunk, natoms * DIM};
-    //     printf("ChunkDims: %d %d %d\n", chunkDims.data()[0], chunkDims.data()[1], chunkDims.data()[2]);
-    //     h5xx::policy::storage::chunked storagePolicy(chunkDims);
-    //     // storagePolicy.add(h5xx::policy::filter::deflate());
-    //
-    //     h5xx::create_dataset<real, h5xx::group, h5xx::policy::storage::chunked>
-    //     (particlesGroup, positionDatasetName, storagePolicy);
-    //     printf("Created position dataset\n");
-    // }
-    // writeMultiScalarToDataset(particlesGroup, positionDatasetName, x, natoms);
 }
