@@ -97,8 +97,8 @@ void doDeviceTransfers(const DeviceContext&     deviceContext,
 
     status = clReleaseMemObject(devicePointer);
     throwUponFailure(status, "releasing buffer");
-    status = clReleaseContext(context);
-    throwUponFailure(status, "releasing context");
+    status = clReleaseCommandQueue(commandQueue);
+    throwUponFailure(status, "releasing command queue");
 }
 
 } // namespace gmx
