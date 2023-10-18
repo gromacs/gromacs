@@ -238,8 +238,8 @@ Other options:
  -gpu_id &lt;string&gt;
            List of unique GPU device IDs available to use
  -gputasks &lt;string&gt;
-           List of GPU device IDs, mapping each PP task on each node to a
-           device
+           List of GPU device IDs, mapping each task on a node to a device.
+           Tasks include PP and PME (if present).
  -[no]ddcheck               (yes)
            Check for all bonded interactions with DD
  -rdd    &lt;real&gt;             (0)
