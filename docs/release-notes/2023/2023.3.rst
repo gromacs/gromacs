@@ -76,6 +76,15 @@ on M1 Macs (and likely other AppleSilicon GPUs).
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
 
+Fix legends in AWH data XVG extracted from AWH energy file 
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+To avoid confusion, dimension legends, in the AWH data file XVG extracted from the AWH energy file
+with ``gmx awh``, now start from the second dimension (the first column cannot have a legend).
+Dimension legends have also been modified to awh-dim%d (where %d is the dimension number).
+
+:issue:`4873`
+
 Correctly dump VSITE2FD virtual sites
 """""""""""""""""""""""""""""""""""""
 
