@@ -376,7 +376,12 @@ void gmx_print_version_info(gmx::TextWriter* writer)
     writer->writeLine(formatString("GPU support:        %s", getGpuImplementationString()));
 #if GMX_GPU
     std::string infoStr = (GMX_GPU_NB_DISABLE_CLUSTER_PAIR_SPLIT) ? " (cluster-pair splitting off)" : "";
-    writer->writeLine(formatString("NB cluster size:    %d%s", GMX_GPU_NB_CLUSTER_SIZE, infoStr.c_str()));
+    writer->writeLine(formatString("NBNxM GPU setup:    super-cluster %dx%dx%d / cluster %d%s",
+                                   GMX_GPU_NB_NUM_CLUSTER_PER_CELL_X,
+                                   GMX_GPU_NB_NUM_CLUSTER_PER_CELL_Y,
+                                   GMX_GPU_NB_NUM_CLUSTER_PER_CELL_Z,
+                                   GMX_GPU_NB_CLUSTER_SIZE,
+                                   infoStr.c_str()));
 #endif
     writer->writeLine(formatString("SIMD instructions:  %s", GMX_SIMD_STRING));
     writer->writeLine(formatString("CPU FFT library:    %s", getCpuFftDescriptionString().c_str()));
