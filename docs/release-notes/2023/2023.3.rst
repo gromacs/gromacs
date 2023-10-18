@@ -16,6 +16,17 @@ in the :ref:`release-notes`.
 Fixes where mdrun could behave incorrectly
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+mdrun now prints an estimate of the pressure deviation due to cut-off effects
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Missing pair interactions due to using a constant pairlist over nstlist-1 steps
+cause a minor energy drift, but can in certain cases cause a measurable increase
+in pressure over the nstlist-1 steps due to missing Lennard-Jones interactions
+close to the cut-off. Now mdrun prints the average error in the pressure due to
+these missing LJ interactions.
+
+:issue:`4861`
+
 Enable AWH to read 3D or higher-dimension user data
 """""""""""""""""""""""""""""""""""""""""""""""""""
 

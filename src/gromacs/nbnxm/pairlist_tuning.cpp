@@ -630,3 +630,42 @@ void setupDynamicPairlistPruning(const gmx::MDLogger&       mdlog,
 
     GMX_LOG(mdlog.info).asParagraph().appendText(mesg);
 }
+
+void printNbnxmPressureError(const gmx::MDLogger&  mdlog,
+                             const t_inputrec&     inputrec,
+                             const gmx_mtop_t&     mtop,
+                             const real            effectiveAtomDensity,
+                             const PairlistParams& listParams)
+{
+    const VerletbufListSetup ls = { IClusterSizePerListType[listParams.pairlistType],
+                                    JClusterSizePerListType[listParams.pairlistType] };
+
+    real pressureError = verletBufferPressureError(
+            mtop, effectiveAtomDensity, inputrec, inputrec.nstlist, false, listParams.rlistOuter, ls);
+    if (listParams.useDynamicPruning)
+    {
+        /* Currently emulation mode does not support dual pair-lists */
+        const bool useGpuList = sc_isGpuPairListType[listParams.pairlistType];
+
+        // Add the error due to the pruning of the inner list.
+        // The errors are not completely independent, so this results
+        // in a (slight) overestimate.
+        pressureError += verletBufferPressureError(mtop,
+                                                   effectiveAtomDensity,
+                                                   inputrec,
+                                                   listParams.nstlistPrune,
+                                                   useGpuList,
+                                                   listParams.rlistInner,
+                                                   ls);
+    }
+
+    GMX_LOG(mdlog.info)
+            .asParagraph()
+            .appendText(gmx::formatString(
+                    "The non-bonded pair calculation algorithm tolerates a few missing pair "
+                    "interactions close to the cut-off. This can lead to a systematic "
+                    "overestimation of the pressure due to missing LJ interactions. "
+                    "The error in the average pressure due to missing LJ interactions is at most "
+                    "%.2f bar",
+                    pressureError));
+}

@@ -99,4 +99,23 @@ void setupDynamicPairlistPruning(const gmx::MDLogger&       mdlog,
                                  const interaction_const_t& interactionConst,
                                  PairlistParams*            listParams);
 
+/*! \brief Prints an estimate of the error in the pressure due to missing interactions
+ *
+ * The NBNxM algorithm tolerates a few missing pair interactions.
+ * Missing pair interactions will lead to a systematic overestimates of
+ * the pressure when dispersion forces dominate at the cut-off distance.
+ * This routine prints an overestimate of the error in the average pressure.
+ *
+ * \param[in,out] mdlog            MD logger
+ * \param[in]     inputrec         The input parameter record
+ * \param[in]     mtop             The global topology
+ * \param[in]     effectiveAtomDensity  The effective atom density of the system
+ * \param[in]     listParams       The list setup parameters
+ */
+void printNbnxmPressureError(const gmx::MDLogger&  mdlog,
+                             const t_inputrec&     inputrec,
+                             const gmx_mtop_t&     mtop,
+                             real                  effectiveAtomDensity,
+                             const PairlistParams& listParams);
+
 #endif /* NBNXM_PAIRLIST_TUNING_H */

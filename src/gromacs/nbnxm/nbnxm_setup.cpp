@@ -422,6 +422,11 @@ std::unique_ptr<nonbonded_verlet_t> init_nb_verlet(const gmx::MDLogger& mdlog,
 
     setupDynamicPairlistPruning(mdlog, inputrec, mtop, effectiveAtomDensity, *forcerec.ic, &pairlistParams);
 
+    if (EI_DYNAMICS(inputrec.eI))
+    {
+        printNbnxmPressureError(mdlog, inputrec, mtop, effectiveAtomDensity, pairlistParams);
+    }
+
     const int enbnxninitcombrule = getENbnxnInitCombRule(forcerec);
 
     auto pinPolicy = (useGpuForNonbonded ? gmx::PinningPolicy::PinnedIfSupported
