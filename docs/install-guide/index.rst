@@ -423,6 +423,14 @@ Also, since cuFFTMp internally uses `NVSHMEM <https://developer.nvidia.com/nvshm
 <https://docs.nvidia.com/hpc-sdk/nvshmem/api/faq.html#general-faqs>`_ for
 any issues faced at runtime.
 
+* cuFFTMp based PME decomposition build is broken with NVHPC SDK 23.3 or higher.
+  To work around this build issue one can compile on a node with CUDA drivers installed
+  or use the following additional flags:
+
+::
+
+-DCMAKE_CXX_FLAGS="-L <PATH_TO_CUDA_TOOLKIT>/lib64/stubs -lnvidia-ml -lcuda"
+
 .. _heffte installation:
 
 Using heFFTe
