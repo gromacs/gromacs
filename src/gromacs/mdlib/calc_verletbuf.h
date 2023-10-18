@@ -139,6 +139,7 @@ real computeEffectiveAtomDensity(gmx::ArrayRef<const gmx::RVec> coordinates,
  * \param[in] effectiveAtomDensity  The effective atom density, use computeEffectiveAtomDensity()
  * \param[in] inputrec      The input record
  * \param[in] nstlist       The pair list update frequency in steps (is not taken from \p inputrec)
+ * \param[in] pressureTolerance  The tolerance for the error in the average pressure, ignored when negative
  * \param[in] listLifetime  The lifetime of the pair-list, usually nstlist-1, but could be different
  *                          for dynamic pruning
  * \param[in] ensembleTemperature  The reference temperature for the ensemble
@@ -148,6 +149,7 @@ real computeEffectiveAtomDensity(gmx::ArrayRef<const gmx::RVec> coordinates,
 real calcVerletBufferSize(const gmx_mtop_t&         mtop,
                           real                      effectiveAtomDensity,
                           const t_inputrec&         inputrec,
+                          real                      pressureTolerance,
                           int                       nstlist,
                           int                       listLifetime,
                           real                      ensembleTemperature,

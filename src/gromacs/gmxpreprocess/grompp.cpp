@@ -1694,12 +1694,12 @@ static void set_verlet_buffer(const gmx_mtop_t*              mtop,
     listSetup1x1.cluster_size_i = 1;
     listSetup1x1.cluster_size_j = 1;
     const real rlist_1x1        = calcVerletBufferSize(
-            *mtop, effectiveAtomDensity, *ir, ir->nstlist, ir->nstlist - 1, buffer_temp, listSetup1x1);
+            *mtop, effectiveAtomDensity, *ir, -1, ir->nstlist, ir->nstlist - 1, buffer_temp, listSetup1x1);
 
     /* Set the pair-list buffer size in ir */
     VerletbufListSetup listSetup4x4 = verletbufGetSafeListSetup(ListSetupType::CpuNoSimd);
     ir->rlist                       = calcVerletBufferSize(
-            *mtop, effectiveAtomDensity, *ir, ir->nstlist, ir->nstlist - 1, buffer_temp, listSetup4x4);
+            *mtop, effectiveAtomDensity, *ir, -1, ir->nstlist, ir->nstlist - 1, buffer_temp, listSetup4x4);
 
     const int n_nonlin_vsite = gmx::countNonlinearVsites(*mtop);
     if (n_nonlin_vsite > 0)

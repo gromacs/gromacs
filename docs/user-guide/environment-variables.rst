@@ -337,7 +337,7 @@ Performance and Run Control
 ``GMX_NBNXN_SIMD_4XN``
         force the use of 4xN SIMD CPU non-bonded kernels,
         mutually exclusive of ``GMX_NBNXN_SIMD_2XNN``.
-
+	
 ``GMX_NO_CART_REORDER``
         used in initializing domain decomposition communicators. Rank reordering
         is default, but can be switched off with this environment variable.
@@ -401,6 +401,10 @@ Performance and Run Control
         should contain multiple masses used for test particle insertion into a cavity.
         The center of mass of the last atoms is used for insertion into the cavity.
 
+``GMX_VERLET_BUFFER_PRESSURE_TOLERANCE``
+        sets the maximum tolerated error in the pressure in bar for the
+        automated tuning of the Verlet pair-list buffering.
+        
 ``GMX_VERLET_BUFFER_RES``
         resolution of buffer size in Verlet cutoff scheme.  The default value is
         0.001, but can be overridden with this environment variable.

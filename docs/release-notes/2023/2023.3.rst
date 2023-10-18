@@ -27,6 +27,15 @@ these missing LJ interactions.
 
 :issue:`4861`
 
+The pressure deviation due to cut-off effects can now be controlled
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+As a temporary solution, the effect of missing Lennard-Jones interactions on
+the pressure can be limited by setting the environment variable
+GMX_VERLET_BUFFER_PRESSURE_TOLERANCE to the desired tolerance in bar.
+
+:issue:`4861`
+
 Enable AWH to read 3D or higher-dimension user data
 """""""""""""""""""""""""""""""""""""""""""""""""""
 
