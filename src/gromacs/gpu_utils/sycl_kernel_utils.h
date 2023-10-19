@@ -380,42 +380,4 @@ __device__ __host__
 }
 #endif
 
-namespace sycl_2020
-{
-#if GMX_SYCL_HIPSYCL
-/*! \brief Polyfill for sycl::isfinite missing from hipSYCL
- *
- * Does not follow GROMACS style because it should follow the name for
- * which it is a polyfill. */
-template<typename Real>
-__device__ __host__ static inline bool isfinite(Real value)
-{
-    // This is not yet implemented in hipSYCL pending
-    // https://github.com/illuhad/hipSYCL/issues/636
-#    ifdef SYCL_DEVICE_ONLY
-#        if defined(HIPSYCL_PLATFORM_CUDA) && defined(__HIPSYCL_ENABLE_CUDA_TARGET__)
-    return ::isfinite(value);
-#        elif defined(HIPSYCL_PLATFORM_ROCM) && defined(__HIPSYCL_ENABLE_HIP_TARGET__)
-    return ::isfinite(value);
-#        else
-#            error "Unsupported hipSYCL target"
-#        endif
-#    else
-    // Should never be called
-    SYCL_ASSERT(false);
-    GMX_UNUSED_VALUE(value);
-    return false;
-#    endif
-}
-#elif GMX_SYCL_DPCPP
-template<typename Real>
-static inline bool isfinite(Real value)
-{
-    return sycl::isfinite(value);
-}
-
-#endif
-
-} // namespace sycl_2020
-
 #endif /* GMX_GPU_UTILS_SYCL_KERNEL_UTILS_H */

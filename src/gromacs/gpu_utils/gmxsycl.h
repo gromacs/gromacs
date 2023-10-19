@@ -39,11 +39,8 @@
  * See https://github.com/intel/llvm/pull/2998 for better proposal.
  *
  * Intel SYCL headers use symbol DIM as a template parameter, which gets broken by macro DIM defined
- * in gromacs/math/vectypes.h. Here, we include the SYCL header while temporary undefining this macro.
- * See https://github.com/intel/llvm/issues/2981.
- *
- * Different compilers, at the time of writing, have different names for some of the proposed features
- * of the SYCL2020 standard. For uniformity, they are all aliased in our custom sycl_2020 namespace.
+ * in gromacs/math/vectypes.h. Here, we include the SYCL header while temporary undefining this
+ * macro. See https://github.com/intel/llvm/issues/2981.
  *
  * \inlibraryapi
  */
