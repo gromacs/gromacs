@@ -128,7 +128,8 @@ gcc.
 
 The xlc compiler is not supported and version 16.1 does not compile on
 POWER architectures for |Gromacs|\ -\ |version|. We recommend to use
-the gcc compiler instead, as it is being extensively tested.
+the GCC compiler, version 9.x to 11.x. Note: there are
+:ref:`known issues <gmx-users-known-issues>` with GCC 12 and newer.
 
 You may also need the most recent version of other compiler toolchain
 components beside the compiler itself (e.g. assembler or linker);
@@ -433,6 +434,14 @@ are met before trying to use GPU PME decomposition feature.
 Also, since cuFFTMp internally uses `NVSHMEM <https://developer.nvidia.com/nvshmem>`_ it is advisable to refer to the `NVSHMEM FAQ page
 <https://docs.nvidia.com/hpc-sdk/nvshmem/api/faq.html#general-faqs>`_ for
 any issues faced at runtime.
+
+* cuFFTMp based PME decomposition build is broken with NVHPC SDK 23.3 or higher.
+  To work around this build issue one can compile on a node with CUDA drivers installed
+  or use the following additional flags:
+
+::
+
+-DCMAKE_CXX_FLAGS="-L <PATH_TO_CUDA_TOOLKIT>/lib64/stubs -lnvidia-ml -lcuda"
 
 .. _heffte installation:
 

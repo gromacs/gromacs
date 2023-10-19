@@ -260,7 +260,7 @@ static void make_legend(FILE*                   fp,
 
 static real ekrot(rvec x[], rvec v[], const real mass[], int isize, const int index[])
 {
-    real   TCM[5][5], L[5][5];
+    real   TCM[DIM][DIM], L[DIM][DIM];
     double tm, m0, lxx, lxy, lxz, lyy, lyz, lzz, ekrot;
     rvec   a0, ocm;
     dvec   dx, b0;

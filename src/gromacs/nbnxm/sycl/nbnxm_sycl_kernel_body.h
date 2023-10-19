@@ -59,7 +59,7 @@ class NbnxmKernel;
  * it is known to be beneficial (currently, AMD MI250X / gfx90a).
  * If disabled, packed math will never be explicitly  used.
  *
- * This only controls the use of AmdPackedFloat3 datastructure, no the layout
+ * This only controls the use of AmdPackedFloat3 datastructure, not the layout
  * of fCi buffer.
  *
  * See issue #4854 */

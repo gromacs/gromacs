@@ -1,7 +1,7 @@
 GROMACS 2023.3 release notes
 ----------------------------
 
-This version was released on TODO, 2023. These release notes
+This version was released on October 19th, 2023. These release notes
 document the changes that have taken place in |Gromacs| since the
 previous 2023.2 version, to fix known issues. It also incorporates all
 fixes made in version 2022.6 and earlier, which you can find described
@@ -15,6 +15,26 @@ in the :ref:`release-notes`.
 
 Fixes where mdrun could behave incorrectly
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+mdrun now prints an estimate of the pressure deviation due to cut-off effects
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Missing pair interactions due to using a constant pairlist over nstlist-1 steps
+cause a minor energy drift, but can in certain cases cause a measurable increase
+in pressure over the nstlist-1 steps due to missing Lennard-Jones interactions
+close to the cut-off. Now mdrun prints the average error in the pressure due to
+these missing LJ interactions.
+
+:issue:`4861`
+
+The pressure deviation due to cut-off effects can now be controlled
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+As a temporary solution, the effect of missing Lennard-Jones interactions on
+the pressure can be limited by setting the environment variable
+GMX_VERLET_BUFFER_PRESSURE_TOLERANCE to the desired tolerance in bar.
+
+:issue:`4861`
 
 Enable AWH to read 3D or higher-dimension user data
 """""""""""""""""""""""""""""""""""""""""""""""""""
@@ -43,8 +63,47 @@ dynamic load balancing support with GPU-resident simulations that use GPU halo e
 
 :issue:`4858`
 
+Improve Verlet buffer estimation for systems with no or weak electrostatics
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+For systems which are dominated by LJ interactions, e.g. coarse-grained,
+the Verlet buffer estimate could be too small, because only the first
+derivative of the potential was taken into account. Now also the second
+and third derivatives are added. This can have a minor negative effect
+on performance.
+
+:issue:`4885`
+
+Update virtual site velocities to avoid constraint instabilities
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Virtual site velocities were only re-computed when writing velocities, but they are
+still integrated. This causes errors to accumulate. Now the velocities are updated
+at regular intervals in order to avoid (too) large velocities. This could cause
+runs to crash with a segmentation fault or domain decomposition error. Note that
+virtual site velocities are only used for output, they do not affect the positions.
+
+:issue:`4879`
+
+Add workaround for OpenCL bug on AppleSilicon GPUs
+""""""""""""""""""""""""""""""""""""""""""""""""""
+
+After a resource leak was fixed in 2023.2, the OpenCL became broken
+on M1 Macs (and likely other AppleSilicon GPUs).
+
+:issue:`4852`
+
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
+
+Fix legends in AWH data XVG extracted from AWH energy file 
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+To avoid confusion, dimension legends, in the AWH data file XVG extracted from the AWH energy file
+with ``gmx awh``, now start from the second dimension (the first column cannot have a legend).
+Dimension legends have also been modified to awh-dim%d (where %d is the dimension number).
+
+:issue:`4873`
 
 Correctly dump VSITE2FD virtual sites
 """""""""""""""""""""""""""""""""""""
@@ -70,6 +129,15 @@ which sets the box size to the largest dimensions of the system, but without
 centering.
 
 :issue:`4875`
+
+Fix calculation of rotational kinetic energy in gmx traj
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Computing the rotational kinetic energy using ``gmx traj -ekr ekr.xvg`` 
+now returns correct results.
+
+:issue:`4889`
+
 
 Fixes that affect portability
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -131,3 +199,14 @@ because an energy minimization doesn't need a velocity vector.
 The fix avoids copying an empty vector and the corresponding SegFault.
 
 Fixes :issue:`4814`
+
+Work around the performance regression on AMD MI250X with ROCm 5.5 or newer
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+With ROCm 5.5 and 5.6, some NBNXM kernels experienced up to 23% performance
+regression on MI250X compared to ROCm 5.3. We backported two patches from
+the 2024 branch that mostly mitigates this effect. There can still be
+a slowdown around 2% with ROCm 5.5+.
+
+:issue:`4874`
+

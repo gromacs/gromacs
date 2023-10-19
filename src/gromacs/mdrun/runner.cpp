@@ -536,7 +536,7 @@ static void prepare_verlet_scheme(FILE*                          fplog,
         VerletbufListSetup listSetup = verletbufGetSafeListSetup(listType);
 
         const real rlist_new = calcVerletBufferSize(
-                mtop, effectiveAtomDensity.value(), *ir, ir->nstlist, ir->nstlist - 1, -1, listSetup);
+                mtop, effectiveAtomDensity.value(), *ir, -1, ir->nstlist, ir->nstlist - 1, -1, listSetup);
 
         if (rlist_new != ir->rlist)
         {

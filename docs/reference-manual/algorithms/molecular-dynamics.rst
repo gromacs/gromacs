@@ -254,7 +254,11 @@ First we replace :math:`V(r_t)` by a Taylor expansion around
 
 .. math:: \begin{aligned}
           \langle \Delta V \rangle &\approx&
-          \int_{-\infty}^{r_c} \int_{r_\ell}^\infty 4 \pi r_0^2 \rho_2 \Big[ V'(r_c) (r_t - r_c) +
+          \int_{-\infty}^{r_c} \int_{r_\ell}^\infty 4 \pi r_0^2 \rho_2 \Big[ V(r_c) +
+          \nonumber\\
+          & &
+          \phantom{\int_{-\infty}^{r_c} \int_{r_\ell}^\infty 4 \pi r_0^2 \rho_2 \Big[}
+          V'(r_c) (r_t - r_c) +
           \nonumber\\
           & &
           \phantom{\int_{-\infty}^{r_c} \int_{r_\ell}^\infty 4 \pi r_0^2 \rho_2 \Big[}
@@ -277,7 +281,11 @@ integrals analytically:
           \langle \Delta V \rangle \!
           &\approx&
           4 \pi (r_\ell+\sigma)^2 \rho_2
-          \int_{-\infty}^{r_c} \int_{r_\ell}^\infty \Big[ V'(r_c) (r_t - r_c) +
+          \int_{-\infty}^{r_c} \int_{r_\ell}^\infty \Big[ V(r_c) +
+          \nonumber\\
+          & &
+          \phantom{4 \pi (r_\ell+\sigma)^2 \rho_2 \int_{-\infty}^{r_c} \int_{r_\ell}^\infty \Big[}
+          V'(r_c) (r_t - r_c) +
           \nonumber\\
           & &
           \phantom{4 \pi (r_\ell+\sigma)^2 \rho_2 \int_{-\infty}^{r_c} \int_{r_\ell}^\infty \Big[}
@@ -289,6 +297,10 @@ integrals analytically:
           d r_0 \, d r_t\\
           &=&
           4 \pi (r_\ell+\sigma)^2 \rho_2 \bigg\{
+          V(r_c)\left[\sigma G\!\left(\frac{r_b}{\sigma}\right) - r_b E\!\left(\frac{r_b}{\sigma}\right) \right] +
+          \nonumber\\
+          & &
+          \phantom{4 \pi (r_\ell+\sigma)^2 \rho_2 \bigg\{ }
           \frac{1}{2}V'(r_c)\left[r_b \sigma G\!\left(\frac{r_b}{\sigma}\right) - (r_b^2+\sigma^2)E\!\left(\frac{r_b}{\sigma}\right) \right] +
           \nonumber\\
           & &
@@ -306,8 +318,12 @@ integrals analytically:
           :label: eqnverletanalytical
 
 where :math:`G(x)` is a Gaussian distribution with 0 mean and unit
-variance and :math:`E(x)=\frac{1}{2}\mathrm{erfc}(x/\sqrt{2})`. We
-always want to achieve small energy error, so :math:`\sigma` will be
+variance and :math:`E(x)=\frac{1}{2}\mathrm{erfc}(x/\sqrt{2})`.
+Note the potential at the cut-off, :math:`V(r_c)`, is zero by definition.
+But the same formula can be used to estimate errors in the pressure
+and then the force is used for :math:`V` in these formulas and this leading
+term will generally not be zero.
+We always want to achieve small energy error, so :math:`\sigma` will be
 small compared to both :math:`r_c` and :math:`r_\ell`, thus the
 approximations in the equations above are good, since the Gaussian
 distribution decays rapidly. The energy error needs to be averaged over
@@ -321,6 +337,15 @@ inverted analytically, so we use bisection to obtain the buffer size
 we usually be much smaller than this estimate, as in the condensed phase
 particle displacements will be much smaller than for freely moving
 particles, which is the assumption used here.
+
+For inhomogeneous systems, using the global atom densities :math:`\rho`
+can lead to an underestimate of the energy drift. To avoid that,
+an effective density is used. This is computed by putting all atoms
+on a grid where the cells are approximately the size of the cut-off.
+The densities are then averaged over the cells weighted by the density
+of each cell. This provides accurate estimates for inhomogeneous systems,
+e.g. the effective density for a molecule or a droplet in an otherwise
+empty box does not depend on the size of the box.
 
 When (bond) constraints are present, some particles will have fewer
 degrees of freedom. This will reduce the energy errors. For simplicity,
@@ -419,6 +444,33 @@ distance smaller than the neighbor list cut-off (there are several ways
 to do this in |Gromacs|, see sec. :ref:`modnbint`). One then has a
 buffer with the size equal to the neighbor list cut-off less the longest
 interaction cut-off.
+
+Pressure deviations due to cut-off artifacts
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The pressure can be affected more than the energy by missing interactions
+close to the cut-off, as the force generally has a discontinuity at
+the cut-off. For Lennard-Jones forces this leads to a consistent increase
+in pressure as the age of the pair-list increases because all missing dispersion
+interactions have the same sign. The electrostatic forces are much larger
+at the cut-off, but here the errors tend to cancel out due to (local)
+electroneutrality. We have not observed errors larger than 0.1 bar due
+to missing electrostatic interactions in water with PME electrostatics.
+In practice the Lennard-Jones errors are small when electrostatics
+interactions are present, as there will be a sufficient buffer to keep
+the electrostatic energy drift below the tolerance. The only case where
+there can be significant errors in the pressure is when there are no
+electrostatic interactions at all or the Ewald relative tolerance
+parameter is very small, leading to no, or a very small, pair-list buffer.
+The most common case is coarse-grained systems.
+In the log file from :ref:`mdrun <gmx mdrun>` one can find an (over)estimate
+of the error in the average pressure due to missing Lennard-Jones interactions.
+The estimate uses :eq:`eqn. %s <eqnverletanalytical>` where we plug in
+the Lennard-Jones force for :math:`V`. The resulting force error is multiplied
+by the cut-off distance :math:`r_c` and divided by the effective box volume
+to get the (over)estimate for the error in the pressure. The effective box
+volume ignores empty space to get a better, higher, estimate of the local
+error in the pressure error in inhomogeneous systems.
 
 Simple search
 ^^^^^^^^^^^^^
