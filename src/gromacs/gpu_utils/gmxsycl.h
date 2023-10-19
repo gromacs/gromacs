@@ -35,13 +35,6 @@
  * \brief
  * Wraps the complexity of including SYCL in GROMACS.
  *
- * The __SYCL_COMPILER_VERSION macro is used to identify Intel DPCPP compiler.
- * See https://github.com/intel/llvm/pull/2998 for better proposal.
- *
- * Intel SYCL headers use symbol DIM as a template parameter, which gets broken by macro DIM defined
- * in gromacs/math/vectypes.h. Here, we include the SYCL header while temporary undefining this
- * macro. See https://github.com/intel/llvm/issues/2981.
- *
  * \inlibraryapi
  */
 
@@ -70,26 +63,14 @@
 #    pragma clang diagnostic ignored "-Wsuggest-override"
 #    pragma clang diagnostic ignored "-Wsuggest-destructor-override"
 #    pragma clang diagnostic ignored "-Wgcc-compat"
-#    include <SYCL/sycl.hpp>
+#    include <sycl/sycl.hpp>
 #    pragma clang diagnostic pop
 #else // DPC++
 // Needed for CUDA targets https://github.com/intel/llvm/issues/5936, enabled for SPIR automatically
 #    if defined(__SYCL_DEVICE_ONLY__) && defined(__NVPTX__)
 #        define SYCL_USE_NATIVE_FP_ATOMICS 1
 #    endif
-// DPC++ has issues with DIM macro (https://github.com/intel/llvm/issues/2981)
-// and has no SYCL/sycl.hpp up to oneAPI 2022.0
-#    ifdef DIM
-#        if DIM != 3
-#            error "The workaround here assumes we use DIM=3."
-#        else
-#            undef DIM
-#            include <CL/sycl.hpp>
-#            define DIM 3
-#        endif
-#    else
-#        include <CL/sycl.hpp>
-#    endif
+#    include <sycl/sycl.hpp>
 #endif
 
 /* Macro to optimize runtime performance by not recording unnecessary events.

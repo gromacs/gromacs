@@ -60,7 +60,7 @@ if(NOT CHECK_SYCL_CXX_FLAGS_QUIETLY)
     message(STATUS "Checking for flags to enable SYCL")
 endif()
 set(SAMPLE_SYCL_SOURCE
-    "#include <CL/sycl.hpp>
+    "#include <sycl/sycl.hpp>
          int main(){
              sycl::queue q(sycl::default_selector{});
              return 0;

@@ -42,8 +42,8 @@
 #ifndef GMX_FFT_GPU_3DFFT_SYCL_BBFFT_H
 #define GMX_FFT_GPU_3DFFT_SYCL_BBFFT_H
 
-#include <CL/sycl.hpp>
 #include <bbfft/plan.hpp>
+#include <sycl/sycl.hpp>
 
 #include "gromacs/fft/fft.h"
 #include "gromacs/gpu_utils/devicebuffer_datatype.h"
