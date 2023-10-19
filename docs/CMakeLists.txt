@@ -367,6 +367,7 @@ if (SPHINX_FOUND)
         release-notes/2023/2023.1.rst
         release-notes/2023/2023.2.rst
         release-notes/2023/2023.3.rst
+        release-notes/2023/2023.4.rst
         release-notes/2023/major/highlights.rst
         release-notes/2023/major/features.rst
         release-notes/2023/major/performance.rst
