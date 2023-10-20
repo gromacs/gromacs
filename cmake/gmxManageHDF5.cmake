@@ -42,3 +42,9 @@ function(gmx_manage_hdf5)
         set(GMX_USE_HDF5 OFF CACHE BOOL "Use HDF5 (is it available?)" FORCE)
     endif()
 endfunction()
+
+# FIXME: H5Z-SZ3 cannot be built using gcc on Mac OS X
+if(GMX_USE_HDF5)
+    SET(BUILD_H5Z_FILTER ON CACHE BOOL "build the H5Z-SZ3 filter")
+    add_subdirectory(${CMAKE_SOURCE_DIR}/src/external/SZ3)
+endif()
