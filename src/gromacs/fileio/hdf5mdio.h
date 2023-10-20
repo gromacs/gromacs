@@ -61,7 +61,7 @@ public:
     GmxHdf5MdDataBlock();
     GmxHdf5MdDataBlock(const char* name, hsize_t numFramesPerChunk, hsize_t numEntries, hsize_t numValuesPerEntry = 1);
     ~GmxHdf5MdDataBlock()
-    {};
+    {}
     void setupForWriting(hsize_t numFramesPerChunk, hsize_t numEntries, hsize_t numValuesPerEntry = 1);
 
     template <typename T>

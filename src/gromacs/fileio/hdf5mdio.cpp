@@ -52,6 +52,7 @@
 
 #if GMX_USE_HDF5
 #include <hdf5.h>
+#include "external/SZ3/tools/H5Z-SZ3/include/H5Z_SZ3.hpp"
 #endif
 
 GmxHdf5MdDataBlock::GmxHdf5MdDataBlock()
@@ -126,19 +127,45 @@ void GmxHdf5MdDataBlock::writeFrame(hid_t            container,
         {
             gmx_file("Cannot set chunk dimensions.");
         }
-        /* This gives a lossy compression with 0.001 precision. */
-        if (H5Pset_scaleoffset(propertyList, H5Z_SO_FLOAT_DSCALE, 3) < 0)
+
+        int sz_mode = 0; //0: ABS, 1: REL
+        size_t numCompressionSettingsElements;
+        unsigned int *compressionSettings = nullptr;
+        printf("Setting SZ_errConfigToCdArray\n");
+        SZ_errConfigToCdArray(&numCompressionSettingsElements, &compressionSettings, sz_mode, 0.001, 0.001, 0, 0);
+        printf("Setting SZ3 filter\n");
+        if (H5Pset_filter(propertyList, H5Z_FILTER_SZ3, H5Z_FLAG_MANDATORY, numCompressionSettingsElements, compressionSettings) < 0)
         {
-            gmx_file("Cannot set scale offset filter.");
+            gmx_file("Cannot set SZ3 compression.");
         }
-        if (H5Pset_shuffle(propertyList) < 0)
+        if(H5Zfilter_avail(H5Z_FILTER_SZ3))
         {
-            gmx_file("Cannot set shuffle filter.");
+            unsigned filterConfig;
+            H5Zget_filter_info(H5Z_FILTER_SZ3, &filterConfig);
+
+            if(filterConfig & H5Z_FILTER_CONFIG_ENCODE_ENABLED)
+            {
+                printf("SZ3 filter is available for encoding and decoding.\n");
+            }
+            else
+            {
+                printf("SZ3 filter is NOT available for encoding and decoding!\n");
+            }
         }
-        if (H5Pset_deflate(propertyList, 6) < 0)
-        {
-            gmx_file("Cannot set GZIP compression.");
-        }
+
+        // /* This gives a lossy compression with 0.001 precision. */
+        // if (H5Pset_scaleoffset(propertyList, H5Z_SO_FLOAT_DSCALE, 3) < 0)
+        // {
+        //     gmx_file("Cannot set scale offset filter.");
+        // }
+        // if (H5Pset_shuffle(propertyList) < 0)
+        // {
+        //     gmx_file("Cannot set shuffle filter.");
+        // }
+        // if (H5Pset_deflate(propertyList, 6) < 0)
+        // {
+        //     gmx_file("Cannot set GZIP compression.");
+        // }
 
         dataset = H5Dcreate(container, name_, datatype, dataspace, H5P_DEFAULT, propertyList, H5P_DEFAULT);
         if (dataset < 0)
@@ -165,9 +192,9 @@ void GmxHdf5MdDataBlock::writeFrame(hid_t            container,
     {
         gmx_file("Cannot get dataspace of existing dataset.");
     }
-    H5Sselect_hyperslab(dataspace, H5S_SELECT_SET, fileOffset, NULL, outputBlockSize, NULL);
+    H5Sselect_hyperslab(dataspace, H5S_SELECT_SET, fileOffset, nullptr, outputBlockSize, nullptr);
 
-    hid_t memoryDataspace = H5Screate_simple(3, outputBlockSize, NULL);
+    hid_t memoryDataspace = H5Screate_simple(3, outputBlockSize, nullptr);
     printf("Writing %s.\n", name_);
     H5Dwrite(dataset, datatype, memoryDataspace, dataspace, H5P_DEFAULT, data);
     printf("%s written\n", name_);
@@ -365,7 +392,7 @@ void GmxHdf5MdIo::writeFrame(int64_t          step,
         printf("Created group. hid: %d\n", particlesGroup);
     }
 
-    const int numFramesPerChunk = 5;
+    const int numFramesPerChunk = 7;
 
     if (box != nullptr)
     {
