@@ -126,6 +126,15 @@ void GmxHdf5MdDataBlock::writeFrame(hid_t            container,
         {
             gmx_file("Cannot set chunk dimensions.");
         }
+        /* This gives a lossy compression with 0.001 precision. */
+        if (H5Pset_scaleoffset(propertyList, H5Z_SO_FLOAT_DSCALE, 3) < 0)
+        {
+            gmx_file("Cannot set scale offset filter.");
+        }
+        if (H5Pset_shuffle(propertyList) < 0)
+        {
+            gmx_file("Cannot set shuffle filter.");
+        }
         if (H5Pset_deflate(propertyList, 6) < 0)
         {
             gmx_file("Cannot set GZIP compression.");
