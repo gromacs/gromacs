@@ -111,7 +111,7 @@ bool extensionMatches(const std::filesystem::path& path, const std::string_view 
 std::filesystem::path stripExtension(const std::filesystem::path& path)
 {
     auto              parentPath = path.parent_path();
-    const std::string stem       = path.stem().u8string();
+    const std::string stem       = path.stem().string();
     return parentPath.append(stem);
 }
 
@@ -198,7 +198,7 @@ void File::throwOnError(const NotFoundInfo& info)
     if (info.wasError_)
     {
         const std::string message = formatString(
-                "Failed to access file '%s'.\n%s", info.filename_.u8string().c_str(), info.message_);
+                "Failed to access file '%s'.\n%s", info.filename_.string().c_str(), info.message_);
         GMX_THROW_WITH_ERRNO(FileIOError(message), info.call_, info.err_);
     }
 }
@@ -207,7 +207,7 @@ void File::throwOnNotFound(const NotFoundInfo& info)
 {
     throwOnError(info);
     const std::string message = formatString("File '%s' does not exist or is not accessible.\n%s",
-                                             info.filename_.u8string().c_str(),
+                                             info.filename_.string().c_str(),
                                              info.message_);
     GMX_THROW_WITH_ERRNO(InvalidInputError(message), info.call_, info.err_);
 }
@@ -219,7 +219,7 @@ bool File::exists(const std::filesystem::path& filename, NotFoundHandler onNotFo
     {
         return false;
     }
-    FILE* test = std::fopen(filename.u8string().c_str(), "r");
+    FILE* test = std::fopen(filename.string().c_str(), "r");
     if (test == nullptr)
     {
         const bool   wasError = (errno != ENOENT && errno != ENOTDIR);

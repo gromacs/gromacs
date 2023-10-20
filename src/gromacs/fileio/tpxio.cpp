@@ -2767,7 +2767,7 @@ static void do_tpxheader(gmx::FileIOXdrSerializer*    serializer,
                     "Can not read file %s,\n"
                     "             this file is from a GROMACS version which is older than 2.0\n"
                     "             Make a new one with grompp or use a gro or pdb file, if possible",
-                    filename.u8string().c_str());
+                    filename.string().c_str());
         }
         // We need to know the precision used to write the TPR file, to match it
         // to the precision of the currently running binary. If the precisions match
@@ -2781,7 +2781,7 @@ static void do_tpxheader(gmx::FileIOXdrSerializer*    serializer,
             gmx_fatal(FARGS,
                       "Unknown precision in file %s: real is %d bytes "
                       "instead of %zu or %zu",
-                      filename.u8string().c_str(),
+                      filename.string().c_str(),
                       precision,
                       sizeof(float),
                       sizeof(double));
@@ -2789,7 +2789,7 @@ static void do_tpxheader(gmx::FileIOXdrSerializer*    serializer,
         gmx_fio_setprecision(fio, tpx->isDouble);
         fprintf(stderr,
                 "Reading file %s, %s (%s precision)\n",
-                filename.u8string().c_str(),
+                filename.string().c_str(),
                 buf.c_str(),
                 tpx->isDouble ? "double" : "single");
     }
@@ -2841,7 +2841,7 @@ static void do_tpxheader(gmx::FileIOXdrSerializer*    serializer,
                 gmx_fatal(FARGS,
                           "tpx tag/version mismatch: reading tpx file (%s) version %d, tag '%s' "
                           "with program for tpx version %d, tag '%s'",
-                          filename.u8string().c_str(),
+                          filename.string().c_str(),
                           tpx->fileVersion,
                           fileTag.c_str(),
                           tpx_version,
@@ -2856,7 +2856,7 @@ static void do_tpxheader(gmx::FileIOXdrSerializer*    serializer,
     {
         gmx_fatal(FARGS,
                   "reading tpx file (%s) version %d with version %d program",
-                  filename.u8string().c_str(),
+                  filename.string().c_str(),
                   tpx->fileVersion,
                   tpx_version);
     }

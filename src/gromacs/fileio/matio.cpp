@@ -127,7 +127,7 @@ static std::vector<t_mapping> getcmap(FILE* in, const std::filesystem::path& fn)
         gmx_fatal(FARGS,
                   "Not enough lines in colormap file %s"
                   "(just wanted to read number of entries)",
-                  fn.u8string().c_str());
+                  fn.string().c_str());
     }
     sscanf(line, "%d", &n);
     m.resize(n);
@@ -138,7 +138,7 @@ static std::vector<t_mapping> getcmap(FILE* in, const std::filesystem::path& fn)
             gmx_fatal(FARGS,
                       "Not enough lines in colormap file %s"
                       "(should be %d, found only %d)",
-                      fn.u8string().c_str(),
+                      fn.string().c_str(),
                       n + 1,
                       i);
         }

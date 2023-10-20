@@ -113,7 +113,7 @@ void write_sto_conf_indexed(const std::filesystem::path& outfile,
             gmx_fio_fclose(out);
             break;
         case efTPR:
-            gmx_fatal(FARGS, "Sorry, can not write a topology to %s", outfile.u8string().c_str());
+            gmx_fatal(FARGS, "Sorry, can not write a topology to %s", outfile.string().c_str());
         default: gmx_incons("Not supported in write_sto_conf_indexed");
     }
 }
@@ -165,7 +165,7 @@ void write_sto_conf(const std::filesystem::path& outfile,
             gmx_fio_fclose(out);
             break;
         case efTPR:
-            gmx_fatal(FARGS, "Sorry, can not write a topology to %s", outfile.u8string().c_str());
+            gmx_fatal(FARGS, "Sorry, can not write a topology to %s", outfile.string().c_str());
         default: gmx_incons("Not supported in write_sto_conf");
     }
 }
@@ -352,7 +352,7 @@ static void read_stx_conf(const std::filesystem::path& infile,
 
     if (atoms->nr == 0)
     {
-        fprintf(stderr, "Warning: Number of atoms in %s is 0\n", infile.u8string().c_str());
+        fprintf(stderr, "Warning: Number of atoms in %s is 0\n", infile.string().c_str());
     }
     else if (atoms->atom == nullptr)
     {

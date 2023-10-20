@@ -86,15 +86,15 @@ TEST_F(GromppDirectiveTest, edgeCaseAtomTypeNames)
     CommandLine cmdline;
     cmdline.addOption("grompp");
 
-    const std::string mdpInputFileName = fileManager_.getTemporaryFilePath("directives.mdp").u8string();
+    const std::string mdpInputFileName = fileManager_.getTemporaryFilePath("directives.mdp").string();
     gmx::TextWriter::writeFileFromString(mdpInputFileName, mdpContentString_);
     cmdline.addOption("-f", mdpInputFileName);
 
 
-    cmdline.addOption("-c", TestFileManager::getInputFilePath("directives.gro").u8string());
-    cmdline.addOption("-p", TestFileManager::getInputFilePath("directives.top").u8string());
+    cmdline.addOption("-c", TestFileManager::getInputFilePath("directives.gro").string());
+    cmdline.addOption("-p", TestFileManager::getInputFilePath("directives.top").string());
 
-    std::string outTprFilename = fileManager_.getTemporaryFilePath("directives.tpr").u8string();
+    std::string outTprFilename = fileManager_.getTemporaryFilePath("directives.tpr").string();
     cmdline.addOption("-o", outTprFilename);
 
     ASSERT_EQ(0, gmx_grompp(cmdline.argc(), cmdline.argv()));

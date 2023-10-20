@@ -75,7 +75,7 @@ std::vector<char> readCharBufferFromFile(const std::filesystem::path& filename)
     if (!gmx_fexist(filename))
     {
         GMX_THROW(FileIOError(gmx::formatString("Error while reading '%s' - file not found.",
-                                                filename.u8string().c_str())));
+                                                filename.string().c_str())));
     }
     t_fileio* mrcFile = gmx_fio_open(filename, "r");
 
@@ -93,7 +93,7 @@ std::vector<char> readCharBufferFromFile(const std::filesystem::path& filename)
     {
         GMX_THROW(FileIOError(gmx::formatString(
                 "Error while reading '%s' - file size and read buffer size do not match.",
-                filename.u8string().c_str())));
+                filename.string().c_str())));
     }
 
     return fileContentBuffer;
@@ -188,7 +188,7 @@ MrcDensityMapOfFloatFromFileReader::Impl::Impl(const std::filesystem::path& file
         {
             GMX_THROW(FileIOError(gmx::formatString(
                     "Header of '%s' fails sanity check for little- as well as big-endian reading.",
-                    filename.u8string().c_str())));
+                    filename.string().c_str())));
         }
     }
 
@@ -198,7 +198,7 @@ MrcDensityMapOfFloatFromFileReader::Impl::Impl(const std::filesystem::path& file
         GMX_THROW(
                 FileIOError(gmx::formatString("File header density extent information of '%s'"
                                               " does not match density data size",
-                                              filename.u8string().c_str())));
+                                              filename.string().c_str())));
     }
 }
 

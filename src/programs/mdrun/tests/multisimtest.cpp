@@ -106,7 +106,7 @@ MultiSimTest::MultiSimTest() :
     {
         mdrunCaller_->append(std::filesystem::path(originalTempDirectory)
                                      .append(formatString(directoryNameFormat, i))
-                                     .u8string());
+                                     .string());
     }
 }
 

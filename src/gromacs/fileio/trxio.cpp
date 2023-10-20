@@ -891,7 +891,7 @@ bool read_next_frame(const gmx_output_env_t* oenv, t_trxstatus* status, t_trxfra
                 gmx_fatal(FARGS,
                           "DEATH HORROR in read_next_frame ftp=%s,status=%s",
                           ftp2ext(gmx_fio_getftp(status->fio)),
-                          gmx_fio_getname(status->fio).u8string().c_str());
+                          gmx_fio_getname(status->fio).string().c_str());
 #endif
         }
         status->tf = fr->time;
@@ -1056,11 +1056,11 @@ bool read_first_frame(const gmx_output_env_t*      oenv,
                     "the VMD plug-ins.\n"
                     "This will only work in case the VMD plugins are found and it is a trajectory "
                     "format supported by VMD.\n",
-                    fn.u8string().c_str());
+                    fn.string().c_str());
             gmx_fio_fp_close(fio); /*only close the file without removing FIO entry*/
             if (!read_first_vmd_frame(fn, &(*status)->vmdplugin, fr))
             {
-                gmx_fatal(FARGS, "Not supported in read_first_frame: %s", fn.u8string().c_str());
+                gmx_fatal(FARGS, "Not supported in read_first_frame: %s", fn.string().c_str());
             }
 #else
             gmx_fatal(FARGS,
@@ -1070,7 +1070,7 @@ bool read_first_frame(const gmx_output_env_t*      oenv,
                       "non-GROMACS trajectory formats using the VMD plug-ins.\n"
                       "Please compile with plug-in support if you want to read non-GROMACS "
                       "trajectory formats.\n",
-                      fn.u8string().c_str());
+                      fn.string().c_str());
 #endif
     }
     (*status)->tf = fr->time;

@@ -217,7 +217,7 @@ void PmeTest::SetUpTestSuite()
 
         std::string tprFileNameSuffix = formatString("%s.tpr", enumValueToString(pmeTestFlavor));
         std::replace(tprFileNameSuffix.begin(), tprFileNameSuffix.end(), ' ', '_');
-        runner.tprFileName_ = s_testFileManager->getTemporaryFilePath(tprFileNameSuffix).u8string();
+        runner.tprFileName_ = s_testFileManager->getTemporaryFilePath(tprFileNameSuffix).string();
         // Note that only one rank actually generates a tpr file
         runner.callGrompp();
         s_tprFileNames[pmeTestFlavor] = runner.tprFileName_;

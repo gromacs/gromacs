@@ -69,7 +69,7 @@ public:
     //! Prepare test fixture topology to have atoms available.
     SetAtomsTest()
     {
-        topology_.fillFromInputFile(TestFileManager::getInputFilePath("lysozyme.pdb").u8string());
+        topology_.fillFromInputFile(TestFileManager::getInputFilePath("lysozyme.pdb").string());
     }
 
     /*! \brief

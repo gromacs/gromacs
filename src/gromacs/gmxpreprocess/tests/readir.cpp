@@ -106,11 +106,11 @@ public:
                                    || testBehavior == TestBehavior::NoErrorAndCompareOutput;
 
         WarningHandler wi{ false, 0 };
-        std::string    inputMdpFilename = fileManager_.getTemporaryFilePath("input.mdp").u8string();
+        std::string    inputMdpFilename = fileManager_.getTemporaryFilePath("input.mdp").string();
         std::string    outputMdpFilename;
         if (compareOutput)
         {
-            outputMdpFilename = fileManager_.getTemporaryFilePath("output.mdp").u8string();
+            outputMdpFilename = fileManager_.getTemporaryFilePath("output.mdp").string();
         }
         if (setGenVelSeedToKnownValue)
         {

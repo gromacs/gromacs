@@ -268,7 +268,7 @@ extern void set_reference_positions(t_rot* rot, rvec* x, matrix box, const char*
         /* Construct the name for the file containing the reference positions for this group: */
         const std::filesystem::path reffile =
                 gmx::concatenateBeforeExtension(fn, gmx::formatString(".%d", g));
-        const std::string reffileString = reffile.u8string();
+        const std::string reffileString = reffile.string();
 
         /* If the base filename for the reference position files was explicitly set by
          * the user, we issue a fatal error if the group file can not be found */

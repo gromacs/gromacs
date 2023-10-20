@@ -316,7 +316,7 @@ CommandLineProgramContext::Impl::Impl() : programName_("GROMACS"), bSourceLayout
 CommandLineProgramContext::Impl::Impl(int argc, const char* const argv[], ExecutableEnvironmentPointer env) :
     executableEnv_(std::move(env)), invokedName_(argc != 0 ? argv[0] : ""), bSourceLayout_(false)
 {
-    programName_ = invokedName_.filename().u8string();
+    programName_ = invokedName_.filename().string();
     programName_ = stripSuffixIfPresent(programName_, ".exe");
 
     commandLine_ = quoteIfNecessary(programName_.c_str());

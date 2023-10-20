@@ -399,9 +399,9 @@ static std::string makePreprocessorOptions(const std::filesystem::path& kernelRo
     preprocessorOptions += ' ';
     preprocessorOptions += selectCompilerOptions(deviceVendor);
     preprocessorOptions += ' ';
-    preprocessorOptions += makeKernelIncludePathOption(kernelRootPath.generic_u8string());
+    preprocessorOptions += makeKernelIncludePathOption(kernelRootPath.generic_string());
     preprocessorOptions += ' ';
-    preprocessorOptions += makeKernelIncludePathOption(includeRootPath.generic_u8string());
+    preprocessorOptions += makeKernelIncludePathOption(includeRootPath.generic_string());
 
     // Mac OS (and maybe some other implementations) does not accept double spaces in options
     removeExtraSpaces(&preprocessorOptions);
@@ -472,11 +472,11 @@ cl_program compileProgram(FILE*              fplog,
     if (program == nullptr)
     {
         // Compile OpenCL program from source
-        std::string kernelSource = TextReader::readFileToString(kernelFilename.u8string());
+        std::string kernelSource = TextReader::readFileToString(kernelFilename.string());
         if (kernelSource.empty())
         {
             GMX_THROW(FileIOError(gmx::formatString("Error loading OpenCL code %s",
-                                                    kernelFilename.u8string().c_str())));
+                                                    kernelFilename.string().c_str())));
         }
         const char* kernelSourcePtr  = kernelSource.c_str();
         size_t      kernelSourceSize = kernelSource.size();
@@ -497,7 +497,7 @@ cl_program compileProgram(FILE*              fplog,
     /* Write log first, and then throw exception that the user know what is
        the issue even if the build fails. */
     writeOclBuildLog(
-            fplog, program, deviceId, kernelFilename.u8string(), preprocessorOptions, buildStatus != CL_SUCCESS);
+            fplog, program, deviceId, kernelFilename.string(), preprocessorOptions, buildStatus != CL_SUCCESS);
 
     if (buildStatus != CL_SUCCESS)
     {

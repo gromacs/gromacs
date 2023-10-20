@@ -99,7 +99,7 @@ public:
         expectedExecutable_ = std::filesystem::path(env_->getWorkingDirectory())
                                       .append("bin/test-exe" EXECUTABLE_EXTENSION)
                                       .make_preferred()
-                                      .u8string();
+                                      .string();
     }
 
     void testBinaryPathSearch(const char* argv0)
@@ -116,8 +116,7 @@ public:
 
 TEST_F(CommandLineProgramContextTest, FindsBinaryWithAbsolutePath)
 {
-    testBinaryPathSearch(
-            std::filesystem::path(env_->getWorkingDirectory()).append("bin/test-exe").u8string());
+    testBinaryPathSearch(std::filesystem::path(env_->getWorkingDirectory()).append("bin/test-exe").string());
 }
 
 TEST_F(CommandLineProgramContextTest, FindsBinaryWithRelativePath)

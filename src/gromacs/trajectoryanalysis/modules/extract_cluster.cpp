@@ -160,7 +160,7 @@ void ExtractCluster::initAnalysis(const TrajectoryAnalysisSettings& /*settings*/
                 outputNamePrefix_, formatString("_%s", cluster.name.c_str()));
         writers_.emplace_back(createTrajectoryFrameWriter(top.mtop(),
                                                           sel_,
-                                                          outputName.u8string(),
+                                                          outputName.string(),
                                                           top.hasTopology() ? top.copyAtoms() : nullptr,
                                                           requirementsBuilder_.process()));
     }

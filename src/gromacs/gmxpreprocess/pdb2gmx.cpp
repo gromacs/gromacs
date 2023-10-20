@@ -1990,7 +1990,7 @@ int pdb2gmx::run()
     GMX_LOG(logger.info)
             .asParagraph()
             .appendTextFormatted(
-                    "Using the %s force field in directory %s", ffname_, ffdir_.u8string().c_str());
+                    "Using the %s force field in directory %s", ffname_, ffdir_.string().c_str());
 
     choose_watermodel(c_waterTypeNames[waterType_], ffdir_, &watermodel_, logger);
 
@@ -2020,16 +2020,16 @@ int pdb2gmx::run()
     ResidueTypeMap residueTypeMap = residueTypeMapFromLibraryFile("residuetypes.dat");
 
     /* Read residue renaming database(s), if present */
-    auto rrn = fflib_search_file_end(ffdir_.u8string(), ".r2b", FALSE);
+    auto rrn = fflib_search_file_end(ffdir_.string(), ".r2b", FALSE);
 
     std::vector<RtpRename> rtprename;
     for (const auto& filename : rrn)
     {
         GMX_LOG(logger.info)
                 .asParagraph()
-                .appendTextFormatted("going to rename %s", filename.u8string().c_str());
+                .appendTextFormatted("going to rename %s", filename.string().c_str());
         FILE* fp = fflib_open(filename);
-        read_rtprename(filename.u8string().c_str(), fp, &rtprename);
+        read_rtprename(filename.string().c_str(), fp, &rtprename);
         gmx_ffclose(fp);
     }
 
@@ -2705,7 +2705,7 @@ int pdb2gmx::run()
             posre_fn.append(".itp");
             if (posre_fn == itp_fn)
             {
-                posre_fn = gmx::concatenateBeforeExtension(posre_fn, "_pr").u8string();
+                posre_fn = gmx::concatenateBeforeExtension(posre_fn, "_pr").string();
             }
             incls_.emplace_back();
             incls_.back() = itp_fn;
@@ -2812,7 +2812,7 @@ int pdb2gmx::run()
                     "The topology file '%s' for the selected water "
                     "model '%s' can not be found in the force field "
                     "directory. Select a different water model.",
-                    waterFile.u8string().c_str(),
+                    waterFile.string().c_str(),
                     watermodel_);
             GMX_THROW(InconsistentInputError(message));
         }

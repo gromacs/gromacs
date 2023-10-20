@@ -274,7 +274,7 @@ void ColvarsOptions::processEdrFilename(const EdrOutputFilename& filename)
     GMX_RELEASE_ASSERT(!filename.edrOutputFilename_.empty(), "Empty name for the *.edr output file");
 
     outputPrefix_ =
-            stripExtension(std::filesystem::path(filename.edrOutputFilename_).filename()).u8string();
+            stripExtension(std::filesystem::path(filename.edrOutputFilename_).filename()).string();
 }
 
 

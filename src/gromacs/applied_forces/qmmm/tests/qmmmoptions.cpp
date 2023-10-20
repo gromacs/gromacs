@@ -297,7 +297,7 @@ TEST_F(QMMMOptionsTest, CP2KInputProcessing)
 
     // Path to the sample CP2K input file
     std::string cp2kInput =
-            gmx::test::TestFileManager::getInputFilePath("sample_cp2k_input.inp").u8string();
+            gmx::test::TestFileManager::getInputFilePath("sample_cp2k_input.inp").string();
 
     // Process input file
     qmmmOptions_.setQMExternalInputFile({ true, cp2kInput });

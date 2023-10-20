@@ -309,7 +309,7 @@ void QMMMOptions::processTprFilename(const MdRunInputFilename& tprFilename)
     parameters_.qmFileNameBase_ =
             stripExtension(std::filesystem::path(tprFilename.mdRunFilename_).filename())
                     .append("_cp2k")
-                    .u8string();
+                    .string();
 }
 
 void QMMMOptions::processExternalInputFile()

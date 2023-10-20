@@ -230,13 +230,13 @@ void runTest(TestFileManager*            fileManager,
     }
 
     // prepare some names for files to use with the two mdrun calls
-    std::string fullRunTprFileName      = fileManager->getTemporaryFilePath("full.tpr").u8string();
-    std::string firstPartRunTprFileName = fileManager->getTemporaryFilePath("firstpart.tpr").u8string();
-    std::string fullRunEdrFileName      = fileManager->getTemporaryFilePath("full.edr").u8string();
-    std::string firstPartRunEdrFileName = fileManager->getTemporaryFilePath("firstpart.edr").u8string();
+    std::string fullRunTprFileName      = fileManager->getTemporaryFilePath("full.tpr").string();
+    std::string firstPartRunTprFileName = fileManager->getTemporaryFilePath("firstpart.tpr").string();
+    std::string fullRunEdrFileName      = fileManager->getTemporaryFilePath("full.edr").string();
+    std::string firstPartRunEdrFileName = fileManager->getTemporaryFilePath("firstpart.edr").string();
     std::string firstPartRunCheckpointFileName =
-            fileManager->getTemporaryFilePath("firstpart.cpt").u8string();
-    std::string secondPartRunEdrFileName = fileManager->getTemporaryFilePath("secondpart").u8string();
+            fileManager->getTemporaryFilePath("firstpart.cpt").string();
+    std::string secondPartRunEdrFileName = fileManager->getTemporaryFilePath("secondpart").string();
 
     // prepare the full run .tpr file, which will be used for the full
     // run, and for the second part of the two-part run.

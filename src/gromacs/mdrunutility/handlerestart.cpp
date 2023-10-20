@@ -473,13 +473,13 @@ void lockLogFile(t_fileio* logfio, const std::filesystem::path& logFilename)
             auto message = formatString(
                     "Failed to lock: %s. Already running "
                     "simulation?",
-                    logFilename.u8string().c_str());
+                    logFilename.string().c_str());
             GMX_THROW(FileIOError(message));
         }
         else
         {
             auto message = formatString(
-                    "Failed to lock: %s. %s.", logFilename.u8string().c_str(), std::strerror(errno));
+                    "Failed to lock: %s. %s.", logFilename.string().c_str(), std::strerror(errno));
             GMX_THROW(FileIOError(message));
         }
     }

@@ -69,7 +69,7 @@ StdioTestHelper::~StdioTestHelper()
 
 void StdioTestHelper::redirectStringToStdin(const char* theString)
 {
-    const std::string fakeStdin = fileManager_.getTemporaryFilePath(".stdin").u8string();
+    const std::string fakeStdin = fileManager_.getTemporaryFilePath(".stdin").string();
     gmx::TextWriter::writeFileFromString(fakeStdin, theString);
     if (nullptr == std::freopen(fakeStdin.c_str(), "r", stdin))
     {

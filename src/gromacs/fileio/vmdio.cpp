@@ -128,7 +128,7 @@ static int register_cb(void* v, vmdplugin_t* p)
     const char*      key       = p->name;
     gmx_vmdplugin_t* vmdplugin = static_cast<gmx_vmdplugin_t*>(v);
 
-    if (strcmp(key, vmdplugin->filetype.u8string().c_str()) == 0)
+    if (strcmp(key, vmdplugin->filetype.string().c_str()) == 0)
     {
         vmdplugin->api = reinterpret_cast<molfile_plugin_t*>(p);
     }

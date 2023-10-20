@@ -275,7 +275,7 @@ TEST_P(RotationTest, CheckEnergiesForcesAndTraj)
         auto gromppCaller = CommandLine();
         auto rotrefFileName = std::filesystem::path(TestFileManager::getTestSimulationDatabaseDirectory())
                                       .append("rotref.trr");
-        gromppCaller.addOption("-ref", rotrefFileName.u8string());
+        gromppCaller.addOption("-ref", rotrefFileName.string());
         ASSERT_EQ(0, runner_.callGrompp(gromppCaller));
     }
 
@@ -284,7 +284,7 @@ TEST_P(RotationTest, CheckEnergiesForcesAndTraj)
     // Do a short MD simulation
     {
         auto mdrunCaller = CommandLine();
-        mdrunCaller.addOption("-ro", fn_xvg.u8string());
+        mdrunCaller.addOption("-ro", fn_xvg.string());
         ASSERT_EQ(0, runner_.callMdrun(mdrunCaller));
     }
 

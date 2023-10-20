@@ -95,7 +95,7 @@ private:
 void StringTableTest::checkTable(const StringTable& table)
 {
     TestFileManager files;
-    std::string     filename(files.getTemporaryFilePath("table.txt").u8string());
+    std::string     filename(files.getTemporaryFilePath("table.txt").string());
     FILE*           fp = fopen(filename.c_str(), "w");
     table.printStringTableStorageToFile(fp, 4, "Test title");
     fclose(fp);

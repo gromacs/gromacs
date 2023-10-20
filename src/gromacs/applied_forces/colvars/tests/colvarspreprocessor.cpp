@@ -80,17 +80,17 @@ public:
 
         // Generate empty mdp file
         const std::string mdpInputFileName =
-                fileManager_.getTemporaryFilePath(fileName + ".mdp").u8string();
+                fileManager_.getTemporaryFilePath(fileName + ".mdp").string();
         gmx::TextWriter::writeFileFromString(mdpInputFileName, mdpContent);
 
         // Generate tpr file
-        const std::string tprName = fileManager_.getTemporaryFilePath(fileName + ".tpr").u8string();
+        const std::string tprName = fileManager_.getTemporaryFilePath(fileName + ".tpr").string();
         {
             gmx::test::CommandLine caller;
             caller.append("grompp");
             caller.addOption("-f", mdpInputFileName);
-            caller.addOption("-p", (simData / fileName).replace_extension(".top").u8string());
-            caller.addOption("-c", (simData / fileName).replace_extension(".gro").u8string());
+            caller.addOption("-p", (simData / fileName).replace_extension(".top").string());
+            caller.addOption("-c", (simData / fileName).replace_extension(".gro").string());
             caller.addOption("-o", tprName);
             ASSERT_EQ(0, gmx_grompp(caller.argc(), caller.argv()));
         }
@@ -196,7 +196,7 @@ TEST_F(ColvarsPreProcessorTest, CheckNestedInputFiles)
               })";
 
     // Replace index.ndx by its absolute path so Colvars can parse it.
-    std::string pathIndex = gmx::test::TestFileManager::getInputFilePath("index.ndx").u8string();
+    std::string pathIndex = gmx::test::TestFileManager::getInputFilePath("index.ndx").string();
     size_t      index     = colvarsInput.find("<template_ndx>");
     colvarsInput.replace(index, std::string("<template_ndx>").length(), pathIndex);
 

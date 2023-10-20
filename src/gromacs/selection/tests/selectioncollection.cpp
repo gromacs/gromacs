@@ -131,7 +131,7 @@ void SelectionCollectionTest::setTopology()
 void SelectionCollectionTest::loadIndexGroups(const char* filename)
 {
     GMX_RELEASE_ASSERT(grps_ == nullptr, "External groups can only be loaded once");
-    std::string fullpath = gmx::test::TestFileManager::getInputFilePath(filename).u8string();
+    std::string fullpath = gmx::test::TestFileManager::getInputFilePath(filename).string();
     gmx_ana_indexgrps_init(&grps_, nullptr, fullpath.c_str());
     sc_.setIndexGroups(grps_);
 }

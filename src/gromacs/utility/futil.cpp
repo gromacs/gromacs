@@ -296,7 +296,7 @@ static FILE* uncompress(const std::filesystem::path& fn, const char* mode)
     fprintf(stderr, "Going to execute '%s'\n", buf.c_str());
     if ((fp = popen(buf.c_str(), mode)) == nullptr)
     {
-        gmx_open(fn.u8string());
+        gmx_open(fn.string());
     }
     push_ps(fp);
 
@@ -311,7 +311,7 @@ static FILE* gunzip(const std::filesystem::path& fn, const char* mode)
     fprintf(stderr, "Going to execute '%s'\n", buf.c_str());
     if ((fp = popen(buf.c_str(), mode)) == nullptr)
     {
-        gmx_open(fn.u8string());
+        gmx_open(fn.string());
     }
     push_ps(fp);
 
@@ -341,7 +341,7 @@ static std::filesystem::path backup_fn(const std::filesystem::path& file)
     }
     do
     {
-        buf = gmx::formatString("%s/#%s.%d#", directory.u8string().c_str(), fn.u8string().c_str(), count);
+        buf = gmx::formatString("%s/#%s.%d#", directory.string().c_str(), fn.string().c_str(), count);
         count++;
     } while ((count <= s_maxBackupCount) && gmx_fexist(buf));
 
@@ -354,7 +354,7 @@ static std::filesystem::path backup_fn(const std::filesystem::path& file)
                   "Won't make more than %d backups of %s for you.\n"
                   "The env.var. GMX_MAXBACKUP controls this maximum, -1 disables backups.",
                   s_maxBackupCount,
-                  fn.u8string().c_str());
+                  fn.string().c_str());
     }
 
     return buf;
@@ -375,15 +375,15 @@ void make_backup(const std::filesystem::path& name)
         {
             fprintf(stderr,
                     "\nBack Off! I just backed up %s to %s\n",
-                    name.u8string().c_str(),
-                    backup.u8string().c_str());
+                    name.string().c_str(),
+                    backup.string().c_str());
         }
         else
         {
             fprintf(stderr,
                     "\nSorry couldn't backup %s to %s\n",
-                    name.u8string().c_str(),
-                    backup.u8string().c_str());
+                    name.string().c_str(),
+                    backup.string().c_str());
         }
     }
 }
@@ -405,9 +405,9 @@ FILE* gmx_ffopen(const std::filesystem::path& file, const char* mode)
     bool bRead = (mode[0] == 'r' && mode[1] != '+');
     if (!bRead || gmx_fexist(file))
     {
-        if ((ff = fopen(file.u8string().c_str(), mode)) == nullptr)
+        if ((ff = fopen(file.string().c_str(), mode)) == nullptr)
         {
-            gmx_file(file.u8string());
+            gmx_file(file.string());
         }
         /* Check whether we should be using buffering (default) or not
          * (for debugging)
@@ -570,13 +570,13 @@ void gmx_file_rename(const std::filesystem::path& oldname, const std::filesystem
     /* This just lets the F@H checksumming system know about the rename */
     if (errorCode.value() == 0)
     {
-        fcRename(oldname.u8string().c_str(), newname.u8string().c_str());
+        fcRename(oldname.string().c_str(), newname.string().c_str());
     }
 #endif
     if (errorCode.value() != 0)
     {
         auto errorMsg = gmx::formatString(
-                "Failed to rename %s to %s.", oldname.u8string().c_str(), newname.u8string().c_str());
+                "Failed to rename %s to %s.", oldname.string().c_str(), newname.string().c_str());
         GMX_THROW(gmx::FileIOError(errorMsg));
     }
 }
@@ -653,7 +653,7 @@ void gmx_chdir(const std::filesystem::path& directory)
     if (errorCode.value() != 0)
     {
         auto message = gmx::formatString("Cannot change directory to '%s'. Reason: %s",
-                                         directory.u8string().c_str(),
+                                         directory.string().c_str(),
                                          errorCode.message().c_str());
         GMX_THROW(gmx::FileIOError(message));
     }

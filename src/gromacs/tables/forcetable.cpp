@@ -577,7 +577,7 @@ static std::vector<t_tabledata> read_tables(FILE* fp, const char* filename, int 
     {
         gmx_fatal(FARGS,
                   "Trying to read file %s, but nr columns = %d, should be %d",
-                  libfn.u8string().c_str(),
+                  libfn.string().c_str(),
                   numColumns,
                   nny);
     }
@@ -590,7 +590,7 @@ static std::vector<t_tabledata> read_tables(FILE* fp, const char* filename, int 
         {
             gmx_fatal(FARGS,
                       "The first distance in file %s is %f nm instead of %f nm",
-                      libfn.u8string().c_str(),
+                      libfn.string().c_str(),
                       yy[0][0],
                       0.0);
         }
@@ -610,7 +610,7 @@ static std::vector<t_tabledata> read_tables(FILE* fp, const char* filename, int 
         {
             gmx_fatal(FARGS,
                       "The angles in file %s should go from %f to %f instead of %f to %f\n",
-                      libfn.u8string().c_str(),
+                      libfn.string().c_str(),
                       start,
                       end,
                       yy[0][0],
@@ -622,7 +622,7 @@ static std::vector<t_tabledata> read_tables(FILE* fp, const char* filename, int 
 
     if (fp)
     {
-        fprintf(fp, "Read user tables from %s with %d data points.\n", libfn.u8string().c_str(), numRows);
+        fprintf(fp, "Read user tables from %s with %d data points.\n", libfn.string().c_str(), numRows);
         if (angle == 0)
         {
             fprintf(fp, "Tabscale = %g points/nm\n", tabscale);
@@ -715,7 +715,7 @@ static std::vector<t_tabledata> read_tables(FILE* fp, const char* filename, int 
                         "%% from minus the numerical derivative of the potential\n",
                         ns,
                         k,
-                        libfn.u8string().c_str(),
+                        libfn.string().c_str(),
                         gmx::roundToInt64(100 * ssd));
                 if (debug)
                 {
@@ -734,7 +734,7 @@ static std::vector<t_tabledata> read_tables(FILE* fp, const char* filename, int 
     }
     if (bAllZero && fp)
     {
-        fprintf(fp, "\nNOTE: All elements in table %s are zero\n\n", libfn.u8string().c_str());
+        fprintf(fp, "\nNOTE: All elements in table %s are zero\n\n", libfn.string().c_str());
     }
 
     std::vector<t_tabledata> td;

@@ -102,7 +102,7 @@ public:
         options_.addManager(&manager_);
         sc_.setReferencePosType("atom");
         sc_.setOutputPosType("atom");
-        top_.fillFromInputFile(TestFileManager::getInputFilePath("lysozyme.pdb").u8string());
+        top_.fillFromInputFile(TestFileManager::getInputFilePath("lysozyme.pdb").string());
         sc_.setTopology(top_.mtop(), 0);
     }
 
@@ -194,7 +194,7 @@ public:
     //! Add topology information to test if needed.
     void addTopology()
     {
-        dummyTopology_.fillFromInputFile(TestFileManager::getInputFilePath("lysozyme.pdb").u8string());
+        dummyTopology_.fillFromInputFile(TestFileManager::getInputFilePath("lysozyme.pdb").string());
     }
     //! Dummy topology to use to create CoordinateFile.
     TopologyInformation dummyTopology_;

@@ -610,23 +610,21 @@ void printBinaryInformation(TextWriter*                      writer,
     const auto& binaryPath = programContext.fullBinaryPath();
     if (!binaryPath.empty())
     {
-        writer->writeLine(
-                formatString("%sExecutable:   %s%s", prefix, binaryPath.u8string().c_str(), suffix));
+        writer->writeLine(formatString("%sExecutable:   %s%s", prefix, binaryPath.string().c_str(), suffix));
     }
     const gmx::InstallationPrefixInfo installPrefix = programContext.installationPrefix();
     if (!installPrefix.path_.empty())
     {
         writer->writeLine(formatString("%sData prefix:  %s%s%s",
                                        prefix,
-                                       installPrefix.path_.u8string().c_str(),
+                                       installPrefix.path_.string().c_str(),
                                        installPrefix.sourceLayoutTreeLike_ ? " (source tree)" : "",
                                        suffix));
     }
     const auto workingDir = std::filesystem::current_path();
     if (!workingDir.empty())
     {
-        writer->writeLine(
-                formatString("%sWorking dir:  %s%s", prefix, workingDir.u8string().c_str(), suffix));
+        writer->writeLine(formatString("%sWorking dir:  %s%s", prefix, workingDir.string().c_str(), suffix));
     }
     if (settings.bProcessId_)
     {

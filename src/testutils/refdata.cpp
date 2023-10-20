@@ -309,13 +309,13 @@ TestReferenceDataImpl::TestReferenceDataImpl(ReferenceDataMode                  
         case ReferenceDataMode::Compare:
             if (File::exists(fullFilename_, File::throwOnError))
             {
-                compareRootEntry_ = readReferenceDataFile(fullFilename_.u8string());
+                compareRootEntry_ = readReferenceDataFile(fullFilename_.string());
             }
             break;
         case ReferenceDataMode::CreateMissing:
             if (File::exists(fullFilename_, File::throwOnError))
             {
-                compareRootEntry_ = readReferenceDataFile(fullFilename_.u8string());
+                compareRootEntry_ = readReferenceDataFile(fullFilename_.string());
             }
             else
             {
@@ -326,7 +326,7 @@ TestReferenceDataImpl::TestReferenceDataImpl(ReferenceDataMode                  
         case ReferenceDataMode::UpdateChanged:
             if (File::exists(fullFilename_, File::throwOnError))
             {
-                compareRootEntry_ = readReferenceDataFile(fullFilename_.u8string());
+                compareRootEntry_ = readReferenceDataFile(fullFilename_.string());
             }
             else
             {
@@ -360,10 +360,10 @@ void TestReferenceDataImpl::onTestEnd(bool testPassed) const
                 if (!std::filesystem::create_directory(dirname))
                 {
                     GMX_THROW(TestException(gmx::formatString(
-                            "Creation of reference data directory failed: %s", dirname.u8string().c_str())));
+                            "Creation of reference data directory failed: %s", dirname.string().c_str())));
                 }
             }
-            writeReferenceDataFile(fullFilename_.u8string(), *outputRootEntry_);
+            writeReferenceDataFile(fullFilename_.string(), *outputRootEntry_);
         }
     }
     else if (compareRootEntry_)

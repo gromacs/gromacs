@@ -68,9 +68,9 @@ public:
     //! Execute the trajectory writing test
     void setupGrompp(const char* index_file, const char* top_file, const char* gro_file)
     {
-        runner_.topFileName_ = TestFileManager::getInputFilePath(top_file).u8string();
-        runner_.groFileName_ = TestFileManager::getInputFilePath(gro_file).u8string();
-        runner_.ndxFileName_ = TestFileManager::getInputFilePath(index_file).u8string();
+        runner_.topFileName_ = TestFileManager::getInputFilePath(top_file).string();
+        runner_.groFileName_ = TestFileManager::getInputFilePath(gro_file).string();
+        runner_.ndxFileName_ = TestFileManager::getInputFilePath(index_file).string();
         runner_.useStringAsMdpFile(
                 "integrator                = mimic\n"
                 "QMMM-grps                 = QMatoms");
@@ -81,7 +81,7 @@ public:
         CommandLine rerunCaller;
         rerunCaller.append("mdrun");
         rerunCaller.addOption("-rerun", runner_.groFileName_);
-        runner_.edrFileName_ = fileManager_.getTemporaryFilePath(".edr").u8string();
+        runner_.edrFileName_ = fileManager_.getTemporaryFilePath(".edr").string();
         return rerunCaller;
     }
     //! Check the output of mdrun

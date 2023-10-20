@@ -1007,7 +1007,7 @@ static void calc_cumulatives(t_UmbrellaWindow*  window,
             }
             fprintf(fp, "\n");
         }
-        printf("Wrote cumulative distribution functions to %s\n", fn.u8string().c_str());
+        printf("Wrote cumulative distribution functions to %s\n", fn.string().c_str());
         xvgrclose(fp);
     }
 }
@@ -1232,7 +1232,7 @@ static void print_histograms(const char*        fnhist,
     }
 
     xvgrclose(fp);
-    printf("Wrote %s\n", fn.u8string().c_str());
+    printf("Wrote %s\n", fn.string().c_str());
 }
 
 //! Make random weights for histograms for the Bayesian bootstrap of complete histograms)

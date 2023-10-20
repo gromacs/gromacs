@@ -179,36 +179,36 @@ TEST_P(MtsComparisonTest, WithinTolerances)
     auto simulator2EdrFileName        = fileManager_.getTemporaryFilePath("sim2.edr");
 
     // Run grompp
-    runner_.tprFileName_ = fileManager_.getTemporaryFilePath("sim.tpr").u8string();
+    runner_.tprFileName_ = fileManager_.getTemporaryFilePath("sim.tpr").string();
     runner_.useTopGroAndNdxFromDatabase(simulationName);
     runner_.useStringAsMdpFile(refMdpOptions);
     runGrompp(&runner_);
 
     // Do first mdrun
-    runner_.fullPrecisionTrajectoryFileName_ = simulator1TrajectoryFileName.u8string();
-    runner_.edrFileName_                     = simulator1EdrFileName.u8string();
+    runner_.fullPrecisionTrajectoryFileName_ = simulator1TrajectoryFileName.string();
+    runner_.edrFileName_                     = simulator1EdrFileName.string();
     runMdrun(&runner_);
 
     runner_.useStringAsMdpFile(mtsMdpOptions);
     runGrompp(&runner_);
 
     // Do second mdrun
-    runner_.fullPrecisionTrajectoryFileName_ = simulator2TrajectoryFileName.u8string();
-    runner_.edrFileName_                     = simulator2EdrFileName.u8string();
+    runner_.fullPrecisionTrajectoryFileName_ = simulator2TrajectoryFileName.string();
+    runner_.edrFileName_                     = simulator2EdrFileName.string();
     runMdrun(&runner_);
 
     // Compare simulation results at step 0, which should be identical
-    compareEnergies(simulator1EdrFileName.u8string(),
-                    simulator2EdrFileName.u8string(),
+    compareEnergies(simulator1EdrFileName.string(),
+                    simulator2EdrFileName.string(),
                     energyTermsToCompareStep0,
                     MaxNumFrames(1));
-    compareTrajectories(simulator1TrajectoryFileName.u8string(),
-                        simulator2TrajectoryFileName.u8string(),
+    compareTrajectories(simulator1TrajectoryFileName.string(),
+                        simulator2TrajectoryFileName.string(),
                         trajectoryComparison);
 
     // Compare energies at the last step (and step 0 again) with lower tolerance
-    compareEnergies(simulator1EdrFileName.u8string(),
-                    simulator2EdrFileName.u8string(),
+    compareEnergies(simulator1EdrFileName.string(),
+                    simulator2EdrFileName.string(),
                     energyTermsToCompareAllSteps,
                     MaxNumFrames::compareAllFrames());
 }

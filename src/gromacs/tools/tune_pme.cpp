@@ -1140,7 +1140,7 @@ static void make_benchmark_tprs(const char* fn_sim_tpr,  /* READ : User-provided
         /* Write the benchmark tpr file */
         fn_bench_tprs[j] =
                 gmx_strdup(gmx::concatenateBeforeExtension(fn_sim_tpr, gmx::formatString("_bench%.2d", j))
-                                   .u8string()
+                                   .string()
                                    .c_str());
 
         fprintf(stdout, "Writing benchmark tpr %s with nsteps=", fn_bench_tprs[j]);
