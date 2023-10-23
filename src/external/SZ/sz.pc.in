@@ -1,0 +1,10 @@
+includedir=@CMAKE_INSTALL_PREFIX@/@CMAKE_INSTALL_INCLUDEDIR@/sz
+libdir=@CMAKE_INSTALL_PREFIX@/@CMAKE_INSTALL_LIBDIR@
+
+Name: SZ
+Description: The SZ Error Bounded Lossy Compressor
+Version: @SZ_VERSION@
+URL: https://github.com/disheng222/SZ
+Cflags: -I${includedir}
+Libs: -L${libdir} -lSZ
+

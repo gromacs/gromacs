@@ -1,0 +1,35 @@
+##   COMPILERS
+CC	= gcc
+
+SZPATH =/ccs/home/shdi/SZ-install
+SZINC   = -I$(SZPATH)/include
+SZFLAGS = -L$(SZPATH)/lib -lSZ -lzlib -lzstd -Wl,-rpath,${SZPATH}/lib
+
+#Please modify NETCDFPATH based on your own installation of netcdf
+NETCDFPATH	=/ccs/home/shdi/netcdf-install
+
+NETCDFINC	= -I$(NETCDFPATH)/include
+NETCDFFLAGS = -L$(NETCDFPATH)/lib -lnetcdf -Wl,-rpath,$(NETCDFPATH)/lib
+SO_FLAGS	= -shared
+INC		= -I./include
+FLAGS		= -lnetcdfreader
+
+OBJS = src/NetCDFReader.o
+
+all:	libnetcdfreader.a libnetcdfreader.so test/test_NetCDFReader
+
+src/%.o:	src/%.c
+	$(CC) $(NETCDFINC) $(INC) -fPIC -c $<
+	mv *.o src/
+
+libnetcdfreader.a:		$(OBJS)
+	ar crvs $@ $^ 
+
+libnetcdfreader.so:	$(OBJS)
+	$(CC) $(SO_FLAGS) -Wl,-soname,libnetcdfreader.so -o $@ $^ -lc $(NETCDFFLAGS)
+
+test/test_NetCDFReader: test/test_NetCDFReader.c
+	$(CC) -o test/test_NetCDFReader test/test_NetCDFReader.c $(INC) -L. $(FLAGS) $(NETCDFINC) $(NETCDFFLAGS) $(SZINC) $(SZFLAGS) -Wl,-rpath,$(realpath .)
+	
+clean: 
+	rm -rf src/*.o *.a *.so test/test_NetCDFReader

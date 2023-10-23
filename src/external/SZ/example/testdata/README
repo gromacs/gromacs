@@ -1,0 +1,14 @@
+#README
+
+If the architecture of your processor is X86_32, X86_64 (such as AMD-64), ARM, DSP, or vc6, you should use the sample data files in the directory x86 for testing the compression/decompression, because they are stored in the format of "little endian".
+For example: 
+To compress data, go to the directory ./example, and then run the command like "./testdouble_compress sz.config testdata/x86/testdouble_8_8_128.dat 8 8 128"
+The compressed bytes will be stored in ./example/testdata/x86, such as testdata/x86/testdouble_8_8_128.dat.sz.
+
+If the architecture of your processor is PowerPC (PPC), MAC OS, or KEIL C51, you should use the data files in the directory ppc for testing the compression/decompression, because they are stored in the format of "big endian".
+
+# You can use "uname -p" to check the architecture of your processor, and then choose the correct data files for the testing.
+
+We provide three example data files, testdouble_8_8_128.dat, testdouble_8_8_8_128.dat, and testfloat_8_8_128.dat, which are all stored in binary format. 
+Their corresponding data values are presented in the three plain text files, testdata_8_8_128.txt, testdouble_8_8_8_128.txt, and testfloat_8_8_128.txt.
+

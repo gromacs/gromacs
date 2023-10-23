@@ -1,0 +1,56 @@
+## * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+##   Makefile to test SZ library.
+
+##   PLEASE SET THIS VARIABLE BEFORE COMPILING
+SZPATH          = /home/sdi/Install/sz-1.4.9-3-install
+CUnit_HOME	= /home/sdi/Install/CUnit-2.1.3-install
+##   COMPILERS
+CC              = gcc
+
+##   FLAGS
+# Compiling using shared library
+#SZFLAG         = -I$(SZPATH)/include -L$(SZPATH)/lib -lSZ
+# Compiling using static library
+SZFLAG		= -I$(SZPATH)/include $(SZPATH)/lib/libSZ.a $(SZPATH)/lib/libzlib.a -lm
+CUnit_FLAG 	= -I$(CUnit_HOME)/include $(CUnit_HOME)/lib/libcunit.a
+
+cunit_patch	= CUnit_Array.o
+
+##   TARGETS
+all: 		test_conf test_ByteToolkit test_dataCompression test_DynamicIntArray test_DynamicByteArray test_DynamicFloatArray test_DynamicDoubleArray test_rw test_Huffman test_TypeManager
+
+CUnit_Array.o:	CUnit_Array.c CUnit_Array.h
+	$(CC) -Wall -c CUnit_Array.c -I$(CUnit_HOME)/include
+
+test_conf:	test_conf.c
+	${CC} -Wall -g -o test_conf test_conf.c $(CUnit_FLAG) $(SZFLAG)
+
+test_ByteToolkit:	$(cunit_patch) test_ByteToolkit.c
+	${CC} -Wall -g -o test_ByteToolkit test_ByteToolkit.c $(cunit_patch) $(CUnit_FLAG) $(SZFLAG)
+
+test_dataCompression:	$(cunit_patch) test_dataCompression.c
+	${CC} -Wall -g -o test_dataCompression test_dataCompression.c $(cunit_patch) $(CUnit_FLAG) $(SZFLAG)
+
+test_DynamicIntArray:	$(cunit_patch) test_DynamicIntArray.c
+	${CC} -Wall -g -o test_DynamicIntArray test_DynamicIntArray.c $(cunit_patch) $(CUnit_FLAG) $(SZFLAG)
+
+test_DynamicByteArray:	$(cunit_patch) test_DynamicByteArray.c
+	${CC} -Wall -g -o test_DynamicByteArray test_DynamicByteArray.c $(cunit_patch) $(CUnit_FLAG) $(SZFLAG)
+
+test_DynamicFloatArray:	$(cunit_patch) test_DynamicFloatArray.c
+	${CC} -Wall -g -o test_DynamicFloatArray test_DynamicFloatArray.c $(cunit_patch) $(CUnit_FLAG) $(SZFLAG)
+
+test_DynamicDoubleArray:	$(cunit_patch) test_DynamicDoubleArray.c
+	${CC} -Wall -g -o test_DynamicDoubleArray test_DynamicDoubleArray.c $(cunit_patch) $(CUnit_FLAG) $(SZFLAG)
+
+test_Huffman:	$(cunit_patch) test_Huffman.c
+	${CC} -Wall -g -o test_Huffman test_Huffman.c $(cunit_patch) $(CUnit_FLAG) $(SZFLAG)
+
+test_TypeManager:	$(cunit_patch) test_TypeManager.c
+	${CC} -Wall -g -o test_TypeManager test_TypeManager.c $(cunit_patch) $(CUnit_FLAG) $(SZFLAG)
+
+test_rw:	$(cunit_patch) test_rw.c
+	${CC} -Wall -g -o test_rw test_rw.c $(cunit_patch) $(CUnit_FLAG) $(SZFLAG)
+
+clean:
+	rm -rf *.o test_conf test_ByteToolkit test_dataCompression test_DynamicIntArray test_DynamicByteArray test_DynamicFloatArray test_DynamicDoubleArray test_rw test_Huffman test_TypeManager

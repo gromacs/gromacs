@@ -52,6 +52,7 @@
 
 #if GMX_USE_HDF5
 #include <hdf5.h>
+#include "external/SZ/hdf5-filter/H5Z-SZ/include/H5Z_SZ.h"
 #include "external/SZ3/tools/H5Z-SZ3/include/H5Z_SZ3.hpp"
 #endif
 
@@ -132,26 +133,37 @@ void GmxHdf5MdDataBlock::writeFrame(hid_t            container,
         size_t numCompressionSettingsElements;
         unsigned int *compressionSettings = nullptr;
         printf("Setting SZ_errConfigToCdArray\n");
-        SZ_errConfigToCdArray(&numCompressionSettingsElements, &compressionSettings, sz_mode, 0.001, 0.001, 0, 0);
+        SZ_errConfigToCdArray(&numCompressionSettingsElements, &compressionSettings, sz_mode, 0.005, 0.005, 0, 0);
         printf("Setting SZ3 filter\n");
-        if (H5Pset_filter(propertyList, H5Z_FILTER_SZ3, H5Z_FLAG_MANDATORY, numCompressionSettingsElements, compressionSettings) < 0)
+        if (H5Pset_filter(propertyList, H5Z_FILTER_SZ, H5Z_FLAG_MANDATORY, numCompressionSettingsElements, compressionSettings) < 0)
         {
-            gmx_file("Cannot set SZ3 compression.");
+            gmx_file("Cannot set SZ compression.");
         }
-        if(H5Zfilter_avail(H5Z_FILTER_SZ3))
-        {
-            unsigned filterConfig;
-            H5Zget_filter_info(H5Z_FILTER_SZ3, &filterConfig);
 
-            if(filterConfig & H5Z_FILTER_CONFIG_ENCODE_ENABLED)
-            {
-                printf("SZ3 filter is available for encoding and decoding.\n");
-            }
-            else
-            {
-                printf("SZ3 filter is NOT available for encoding and decoding!\n");
-            }
-        }
+        // int sz3_mode = 0; //0: ABS, 1: REL
+        // size_t numCompressionSettingsElements;
+        // unsigned int *compressionSettings = nullptr;
+        // printf("Setting SZ3_errConfigToCdArray\n");
+        // SZ_errConfigToCdArray(&numCompressionSettingsElements, &compressionSettings, sz3_mode, 0.001, 0.001, 0, 0);
+        // printf("Setting SZ3 filter\n");
+        // if (H5Pset_filter(propertyList, H5Z_FILTER_SZ3, H5Z_FLAG_MANDATORY, numCompressionSettingsElements, compressionSettings) < 0)
+        // {
+        //     gmx_file("Cannot set SZ3 compression.");
+        // }
+        // if(H5Zfilter_avail(H5Z_FILTER_SZ3))
+        // {
+        //     unsigned filterConfig;
+        //     H5Zget_filter_info(H5Z_FILTER_SZ3, &filterConfig);
+        //
+        //     if(filterConfig & H5Z_FILTER_CONFIG_ENCODE_ENABLED)
+        //     {
+        //         printf("SZ3 filter is available for encoding and decoding.\n");
+        //     }
+        //     else
+        //     {
+        //         printf("SZ3 filter is NOT available for encoding and decoding!\n");
+        //     }
+        // }
 
         // /* This gives a lossy compression with 0.001 precision. */
         // if (H5Pset_scaleoffset(propertyList, H5Z_SO_FLOAT_DSCALE, 3) < 0)
@@ -392,7 +404,7 @@ void GmxHdf5MdIo::writeFrame(int64_t          step,
         printf("Created group. hid: %d\n", particlesGroup);
     }
 
-    const int numFramesPerChunk = 7;
+    const int numFramesPerChunk = 10;
 
     if (box != nullptr)
     {

@@ -1,0 +1,28 @@
+##   COMPILERS
+CC	= gcc
+
+NETCDFINC	= -I/usr/local/include
+NETCDFFLAGS = -lnetcdf
+DYLIB_FLAGS	= -dynamiclib
+INC			= -I./include
+FLAGS		= -lnetcdfreader
+
+OBJS = src/NetCDFReader.o
+
+all:	libnetcdfreader.a libnetcdfreader.dylib test/test_NetCDFReader
+
+src/%.o:	src/%.c
+	$(CC) $(NETCDFINC) $(INC) -fPIC -c $<
+	mv *.o src/
+
+libnetcdfreader.a:		$(OBJS)
+	ar crvs $@ $^
+
+libnetcdfreader.dylib:	$(OBJS)
+	$(CC) $(DYLIB_FLAGS) -o $@ $^ $(NETCDFFLAGS)
+
+test/test_NetCDFReader: test/test_NetCDFReader.c
+	$(CC) -o test/test_NetCDFReader test/test_NetCDFReader.c $(INC) -L. $(FLAGS)
+	
+clean: 
+	rm -rf src/*.o *.a *.dylib test/test_NetCDFReader

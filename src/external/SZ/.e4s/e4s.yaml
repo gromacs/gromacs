@@ -1,0 +1,6 @@
+- e4s_product: SZ
+  version: 1.2.12
+  type: Compression
+  website: https://szcompressor.org
+  docs: [README.md]
+  subrepo_urls: ["https://github.com/szcompressor/SZ", "https://github.com/szcompressor/SZ3", "https://github.com/szcompressor/SZx", "https://github.com/szcompressor/cuSZ", "https://github.com/szcompressor/SZauto", "https://github.com/szcompressor/MMD-SZ"]

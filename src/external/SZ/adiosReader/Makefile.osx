@@ -1,0 +1,31 @@
+##   COMPILERS
+CC	= gcc
+
+#Please change ADIOSDIR to your ADIOS installation path
+ADIOSDIR	= /Users/Devin/Documents/adios-1.13.0
+
+ADIOSINC	= -I$(ADIOSDIR)/include -D_NOMPI
+ADIOSFLAGS  = -L$(ADIOSDIR)/lib -ladios_nompi
+DYLIB_FLAGS	= -dynamiclib
+INC			= -I./include
+FLAGS		= -ladiosreader
+
+OBJS = src/adiosReader.o
+
+all:	libadiosreader.a libadiosreader.dylib test/test_adiosReader
+
+src/%.o:	src/%.c
+	$(CC) $(ADIOSINC) $(INC) -fPIC -c $<
+	mv *.o src/
+
+libadiosreader.a:		$(OBJS)
+	ar crvs $@ $^
+
+libadiosreader.dylib:	$(OBJS)
+	$(CC) $(DYLIB_FLAGS) -o $@ $^ $(ADIOSFLAGS)
+
+test/test_adiosReader: test/test_adiosReader.c
+	$(CC) -o test/test_adiosReader test/test_adiosReader.c $(INC) $(ADIOSINC) -L. $(FLAGS)
+	
+clean: 
+	rm -rf src/*.o *.a *.dylib test/test_adiosReader

@@ -1,0 +1,11 @@
+## Unit Testing Suite for SZ
+# Author: Sheng Di
+
+Use Makefile.bk to do the compilation, such as "make -f Makefile.bk". 
+You need to compile SZ first, before compiling the CUnit-testing codes. 
+Before executing "make -f Makefile.bk", please modify the SZPATH and CUnit_HOME in the Makefile.bk based on the setting of your local machine.
+
+Convert CUnit to JUnit for fitting Jenkin CI: 
+https://github.com/shawnliang/cunit-to-junit
+
+
