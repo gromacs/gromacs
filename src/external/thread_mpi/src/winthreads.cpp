@@ -245,7 +245,7 @@ func_DeleteProcThreadAttributeList_t        func_DeleteProcThreadAttributeList;
     This can happen if an API returned an error, a memory allocation failed, or
     we failed to initialize affinity mapping information.
  */
-int tMPI_Init_NUMA(void)
+static int tMPI_Init_NUMA(void)
 {
     /* module handle to kernel32.dll -- we already reference it, so it's already loaded */
     HMODULE hModKernel32 = NULL;

@@ -76,7 +76,8 @@ double gmx_cycles_calibrate(double sampletime)
     GMX_UNUSED_VALUE(sampletime);
 #else
 #    if ((defined(__GNUC__) || defined(__INTEL_COMPILER) || defined(__PATHSCALE__) || defined(__PGIC__)) \
-         && defined(__x86_64__) && !defined(__ILP32__) && !defined(_CRAYC))
+         && defined(__x86_64__) && !defined(__ILP32__) && !defined(_CRAYC))                              \
+            && !defined(__MINGW32__)
     long gmx_unused tmp;
     int             cpuid1;
     int gmx_unused  cpuid2;

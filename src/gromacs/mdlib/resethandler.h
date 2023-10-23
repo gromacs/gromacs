@@ -66,6 +66,8 @@
 #ifndef GMX_MDLIB_RESETHANDLER_H
 #define GMX_MDLIB_RESETHANDLER_H
 
+#include <cstdint>
+
 #include "gromacs/compat/pointers.h"
 #include "gromacs/mdlib/simulationsignal.h"
 #include "gromacs/utility/logger.h"
