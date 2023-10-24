@@ -143,8 +143,13 @@ using local_accessor = sycl::local_accessor<dataT, dimensions>;
  * performance degradation (specifically, in hipSYCL the synchronization will be sub-optimal).
  */
 #if GMX_SYCL_HIPSYCL
-#    define GMX_SYCL_DISCARD_EVENT \
-        sycl::property_list{ sycl::property::command_group::hipSYCL_coarse_grained_events() },
+namespace gmx::internal
+{
+static const sycl::property_list sc_syclDiscardEventProperty_list{
+    sycl::property::command_group::hipSYCL_coarse_grained_events()
+};
+}
+#    define GMX_SYCL_DISCARD_EVENT gmx::internal::sc_syclDiscardEventProperty_list,
 #else // IntelLLVM does not support command-group properties
 #    define GMX_SYCL_DISCARD_EVENT
 #endif
