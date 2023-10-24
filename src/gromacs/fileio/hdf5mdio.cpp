@@ -97,6 +97,16 @@ void GmxHdf5MdDataBlock::setupForWriting(hsize_t numFramesPerChunk, hsize_t numE
     }
 }
 
+#if GMX_USE_HDF5
+static void convertRealToInt32(const real* input, int32_t* output, hsize_t numValues, const float precision)
+{
+    for(hsize_t i = 0; i < numValues; i++)
+    {
+        output[i] = (input[i] + precision/2) / precision;
+    }
+}
+#endif
+
 template<typename T>
 void GmxHdf5MdDataBlock::writeFrame(hid_t            container,
                                     const T*         data)
@@ -108,6 +118,11 @@ void GmxHdf5MdDataBlock::writeFrame(hid_t            container,
 #else
     const hid_t datatype = H5Tcopy(H5T_NATIVE_FLOAT);
 #endif
+    int32_t* dataIntConv = new int32_t[numEntries_ * numValuesPerEntry_];
+    const hid_t copyDatatype = H5Tcopy(H5T_NATIVE_INT32);
+
+    convertRealToInt32(reinterpret_cast<const real*>(data), dataIntConv, numEntries_ * numValuesPerEntry_, 0.001);
+
     if (dataset < 0)
     {
         hsize_t dataSize[3] = {numFramesPerChunk_, numEntries_, numValuesPerEntry_};
@@ -129,16 +144,16 @@ void GmxHdf5MdDataBlock::writeFrame(hid_t            container,
             gmx_file("Cannot set chunk dimensions.");
         }
 
-        int sz_mode = 0; //0: ABS, 1: REL
-        size_t numCompressionSettingsElements;
-        unsigned int *compressionSettings = nullptr;
-        printf("Setting SZ_errConfigToCdArray\n");
-        SZ_errConfigToCdArray(&numCompressionSettingsElements, &compressionSettings, sz_mode, 0.005, 0.005, 0, 0);
-        printf("Setting SZ3 filter\n");
-        if (H5Pset_filter(propertyList, H5Z_FILTER_SZ, H5Z_FLAG_MANDATORY, numCompressionSettingsElements, compressionSettings) < 0)
-        {
-            gmx_file("Cannot set SZ compression.");
-        }
+        // int sz_mode = 0; //0: ABS, 1: REL
+        // size_t numCompressionSettingsElements;
+        // unsigned int *compressionSettings = nullptr;
+        // printf("Setting SZ_errConfigToCdArray\n");
+        // SZ_errConfigToCdArray(&numCompressionSettingsElements, &compressionSettings, sz_mode, 0.001, 0.001, 0, 0);
+        // printf("Setting SZ3 filter\n");
+        // if (H5Pset_filter(propertyList, H5Z_FILTER_SZ, H5Z_FLAG_MANDATORY, numCompressionSettingsElements, compressionSettings) < 0)
+        // {
+        //     gmx_file("Cannot set SZ compression.");
+        // }
 
         // int sz3_mode = 0; //0: ABS, 1: REL
         // size_t numCompressionSettingsElements;
@@ -150,36 +165,22 @@ void GmxHdf5MdDataBlock::writeFrame(hid_t            container,
         // {
         //     gmx_file("Cannot set SZ3 compression.");
         // }
-        // if(H5Zfilter_avail(H5Z_FILTER_SZ3))
-        // {
-        //     unsigned filterConfig;
-        //     H5Zget_filter_info(H5Z_FILTER_SZ3, &filterConfig);
-        //
-        //     if(filterConfig & H5Z_FILTER_CONFIG_ENCODE_ENABLED)
-        //     {
-        //         printf("SZ3 filter is available for encoding and decoding.\n");
-        //     }
-        //     else
-        //     {
-        //         printf("SZ3 filter is NOT available for encoding and decoding!\n");
-        //     }
-        // }
 
         // /* This gives a lossy compression with 0.001 precision. */
         // if (H5Pset_scaleoffset(propertyList, H5Z_SO_FLOAT_DSCALE, 3) < 0)
         // {
         //     gmx_file("Cannot set scale offset filter.");
         // }
-        // if (H5Pset_shuffle(propertyList) < 0)
-        // {
-        //     gmx_file("Cannot set shuffle filter.");
-        // }
-        // if (H5Pset_deflate(propertyList, 6) < 0)
-        // {
-        //     gmx_file("Cannot set GZIP compression.");
-        // }
+        if (H5Pset_shuffle(propertyList) < 0)
+        {
+            gmx_file("Cannot set shuffle filter.");
+        }
+        if (H5Pset_deflate(propertyList, 5) < 0)
+        {
+            gmx_file("Cannot set GZIP compression.");
+        }
 
-        dataset = H5Dcreate(container, name_, datatype, dataspace, H5P_DEFAULT, propertyList, H5P_DEFAULT);
+        dataset = H5Dcreate(container, name_, copyDatatype, dataspace, H5P_DEFAULT, propertyList, H5P_DEFAULT);
         if (dataset < 0)
         {
             gmx_file("Cannot create dataset");
@@ -208,9 +209,10 @@ void GmxHdf5MdDataBlock::writeFrame(hid_t            container,
 
     hid_t memoryDataspace = H5Screate_simple(3, outputBlockSize, nullptr);
     printf("Writing %s.\n", name_);
-    H5Dwrite(dataset, datatype, memoryDataspace, dataspace, H5P_DEFAULT, data);
+    H5Dwrite(dataset, copyDatatype, memoryDataspace, dataspace, H5P_DEFAULT, dataIntConv);
     printf("%s written\n", name_);
     numWrittenFrames_++;
+    delete [] dataIntConv;
     H5Dclose(dataset);
 #else
     gmx_file("GROMACS was compiled without HDF5 support, cannot handle this file type");
@@ -363,7 +365,7 @@ void GmxHdf5MdIo::setupMolecularSystem(const gmx_mtop_t& topology)
         {
             gmx_file("Cannot create particles group.");
         }
-        printf("Created group. hid: %d\n", particlesGroup);
+        printf("Created group. hid: %" PRId64 "\n", particlesGroup);
     }
     printf("Setting up for writing charges.");
     charges_.setupForWriting(1, topology.natoms, 1);
@@ -401,10 +403,10 @@ void GmxHdf5MdIo::writeFrame(int64_t          step,
         {
             gmx_file("Cannot create particles group.");
         }
-        printf("Created group. hid: %d\n", particlesGroup);
+        printf("Created group. hid: %" PRId64 "\n", particlesGroup);
     }
 
-    const int numFramesPerChunk = 10;
+    const int numFramesPerChunk = 5;
 
     if (box != nullptr)
     {
