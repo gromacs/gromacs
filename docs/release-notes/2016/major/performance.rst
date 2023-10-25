@@ -104,7 +104,7 @@ force update did a lot of vector operations without SIMD that are
 now fully replaced by SIMD operations.
 
 Added SIMD implementation of Lennard-Jones 1-4 interactions
-""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""-
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 The gives a few factors speed improvement. The main improvement comes
 from simplified analytical LJ instead of tables; SIMD helps a bit.
 
