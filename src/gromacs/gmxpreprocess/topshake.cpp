@@ -111,11 +111,10 @@ void make_shake(gmx::ArrayRef<InteractionsOfType> plist, t_atoms* atoms, int nsh
              */
             for (int ftype = 0; (ftype < F_NRE); ftype++)
             {
-                if (interaction_function[ftype].flags & IF_CHEMBOND)
+                const InteractionsOfType* bonds = &(plist[ftype]);
+                if ((interaction_function[ftype].flags & IF_CHEMBOND) && (bonds->size() > 0))
                 {
-                    InteractionsOfType* bonds = &(plist[ftype]);
-
-                    for (int ftype_a = 0; (gmx::ssize(*bonds) > 0 && ftype_a < F_NRE); ftype_a++)
+                    for (int ftype_a = 0; (ftype_a < F_NRE); ftype_a++)
                     {
                         if (interaction_function[ftype_a].flags & IF_ATYPE)
                         {
