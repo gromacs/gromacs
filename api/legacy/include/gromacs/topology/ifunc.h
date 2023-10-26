@@ -100,24 +100,6 @@ struct t_interaction_function // NOLINT (clang-analyzer-optin.performance.Paddin
     unsigned int flags; /* Flags (see above)                            */
 };
 
-#define NRFPA(ftype) (interaction_function[(ftype)].nrfpA)
-#define NRFPB(ftype) (interaction_function[(ftype)].nrfpB)
-#define NRFP(ftype) (NRFPA(ftype) + NRFPB(ftype))
-#define NRAL(ftype) (interaction_function[(ftype)].nratoms)
-
-#define IS_CHEMBOND(ftype) \
-    (interaction_function[(ftype)].nratoms == 2 && (interaction_function[(ftype)].flags & IF_CHEMBOND))
-/* IS_CHEMBOND tells if function type ftype represents a chemical bond */
-
-/* IS_ANGLE tells if a function type ftype represents an angle
- * Per Larsson, 2007-11-06
- */
-#define IS_ANGLE(ftype) \
-    (interaction_function[(ftype)].nratoms == 3 && (interaction_function[(ftype)].flags & IF_ATYPE))
-#define IS_VSITE(ftype) (interaction_function[(ftype)].flags & IF_VSITE)
-
-#define IS_TABULATED(ftype) (interaction_function[(ftype)].flags & IF_TABULATED)
-
 /* this MUST correspond to the
    t_interaction_function[F_NRE] in src/gromacs/topology/ifunc.cpp */
 enum
@@ -237,5 +219,49 @@ constexpr int NR_FOURDIHS   = 4;
 
 LIBGROMACS_EXPORT extern const t_interaction_function interaction_function[F_NRE];
 /* initialised interaction functions descriptor				*/
+
+static inline int NRFPA(int ftype)
+{
+    return interaction_function[ftype].nrfpA;
+}
+
+static inline int NRFPB(int ftype)
+{
+    return interaction_function[ftype].nrfpB;
+}
+
+static inline int NRFP(int ftype)
+{
+    return NRFPA(ftype) + NRFPB(ftype);
+}
+
+static inline int NRAL(int ftype)
+{
+    return interaction_function[ftype].nratoms;
+}
+
+static inline bool IS_CHEMBOND(int ftype)
+{
+    return interaction_function[ftype].nratoms == 2 && (interaction_function[ftype].flags & IF_CHEMBOND);
+}
+/* IS_CHEMBOND tells if function type ftype represents a chemical bond */
+
+/* IS_ANGLE tells if a function type ftype represents an angle
+ * Per Larsson, 2007-11-06
+ */
+static inline bool IS_ANGLE(int ftype)
+{
+    return interaction_function[ftype].nratoms == 3 && (interaction_function[ftype].flags & IF_ATYPE);
+}
+
+static inline bool IS_VSITE(int ftype)
+{
+    return interaction_function[ftype].flags & IF_VSITE;
+}
+
+static inline bool IS_TABULATED(int ftype)
+{
+    return interaction_function[ftype].flags & IF_TABULATED;
+}
 
 #endif
