@@ -1,6 +1,0 @@
-add_subdirectory (cunit-test/)
-option(INTEGRATION_TESTS "Run the integration tests which take a while" FALSE)
-if(INTEGRATION_TESTS)
-	add_subdirectory (travis-ci/)
-	add_subdirectory (regression-test/)
-endif()

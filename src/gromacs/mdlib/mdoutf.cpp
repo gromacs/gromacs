@@ -50,7 +50,7 @@
 #include "gromacs/fileio/checkpoint.h"
 #include "gromacs/fileio/filetypes.h"
 #include "gromacs/fileio/gmxfio.h"
-#include "gromacs/fileio/hdf5mdio.h"
+#include "gromacs/fileio/h5md_io.h"
 #include "gromacs/fileio/tngio.h"
 #include "gromacs/fileio/trrio.h"
 #include "gromacs/fileio/xtcio.h"
@@ -92,7 +92,7 @@ struct gmx_mdoutf
     t_fileio*                      fp_xtc;
     gmx_tng_trajectory_t           tng;
     gmx_tng_trajectory_t           tng_low_prec;
-    GmxHdf5MdIo*                   hdf5Md;
+    GmxH5mdIo*                     h5mdIo;
     int                            x_compression_precision; /* only used by XTC output */
     ener_file_t                    fp_ene;
     const char*                    fn_cpt;
@@ -142,7 +142,7 @@ gmx_mdoutf_t init_mdoutf(FILE*                          fplog,
     of->fp_xtc       = nullptr;
     of->tng          = nullptr;
     of->tng_low_prec = nullptr;
-    of->hdf5Md       = nullptr;
+    of->h5mdIo       = nullptr;
     of->fp_dhdl      = nullptr;
 
     of->eIntegrator             = ir->eI;
@@ -184,9 +184,7 @@ gmx_mdoutf_t init_mdoutf(FILE*                          fplog,
                     bCiteTng = TRUE;
                     break;
                 case efH5MD:
-                    printf("Opening file %s (%s)\n", filename, filemode);
-                    of->hdf5Md = new GmxHdf5MdIo(filename, filemode);
-                    of->hdf5Md->setupMolecularSystem(top_global);
+                    of->h5mdIo = new GmxH5mdIo(filename, filemode);
                     break;
                 default: gmx_incons("Invalid reduced precision file format");
             }
@@ -218,7 +216,7 @@ gmx_mdoutf_t init_mdoutf(FILE*                          fplog,
                     bCiteTng = TRUE;
                     break;
                 case efH5MD:
-                    of->hdf5Md = new GmxHdf5MdIo(filename, filemode);
+                    of->h5mdIo = new GmxH5mdIo(filename, filemode);
                     break;
                 default: gmx_incons("Invalid full precision file format");
             }
@@ -258,6 +256,15 @@ gmx_mdoutf_t init_mdoutf(FILE*                          fplog,
             {
                 of->natoms_x_compressed++;
             }
+        }
+        if(of->h5mdIo)
+        {
+            bool writeCoordinates = ir->nstxout > 0;
+            bool writeCoordinatesCompressed = ir->nstxout_compressed > 0;
+            bool writeForces = ir->nstfout > 0;
+            bool writeVelocities = ir->nstvout > 0;
+            of->h5mdIo->setupMolecularSystem(top_global);
+            of->h5mdIo->setUpParticlesDataBlocks(writeCoordinates, writeCoordinatesCompressed, writeForces, writeVelocities, of->natoms_global, of->natoms_x_compressed, 1/of->x_compression_precision);
         }
 
         if (ir->nstfout && haveDDAtomOrdering(*cr))
@@ -539,7 +546,10 @@ void mdoutf_write_checkpoint(gmx_mdoutf_t                    of,
 {
     fflush_tng(of->tng);
     fflush_tng(of->tng_low_prec);
-    of->hdf5Md->flush();
+    if(of->h5mdIo)
+    {
+        of->h5mdIo->flush();
+    }
     /* Write the checkpoint file.
      * When simulations share the state, an MPI barrier is applied before
      * renaming old and new checkpoint files to minimize the risk of
@@ -693,16 +703,16 @@ void mdoutf_write_to_trajectory_files(FILE*                           fplog,
                                v,
                                f);
             }
-            else if (of->hdf5Md)
+            else if (of->h5mdIo)
             {
-                of->hdf5Md->writeFrame(step,
+                of->h5mdIo->writeFrame(step,
                                        t,
                                        state_local->lambda[FreeEnergyPerturbationCouplingType::Fep],
                                        state_local->box,
-                                       natoms,
                                        x,
                                        v,
-                                       f);
+                                       f,
+                                       nullptr);
             }
         }
         if (mdof_flags & MDOF_X_COMPRESSED)
@@ -750,16 +760,16 @@ void mdoutf_write_to_trajectory_files(FILE*                           fplog,
                            xxtc,
                            nullptr,
                            nullptr);
-            if(of->hdf5Md)
+            if(of->h5mdIo)
             {
-                of->hdf5Md->writeFrame(step,
+                of->h5mdIo->writeFrame(step,
                                        t,
                                        state_local->lambda[FreeEnergyPerturbationCouplingType::Fep],
                                        state_local->box,
-                                       of->natoms_x_compressed,
-                                       xxtc,
                                        nullptr,
-                                       nullptr);
+                                       nullptr,
+                                       nullptr,
+                                       xxtc);
             }
             if (of->natoms_x_compressed != of->natoms_global)
             {
@@ -851,11 +861,11 @@ void done_mdoutf(gmx_mdoutf_t of)
     gmx_tng_close(&of->tng);
     gmx_tng_close(&of->tng_low_prec);
 
-    if(of->hdf5Md)
+    if(of->h5mdIo)
     {
-        of->hdf5Md->closeFile();
-        delete of->hdf5Md;
-        of->hdf5Md = nullptr;
+        of->h5mdIo->closeFile();
+        delete of->h5mdIo;
+        of->h5mdIo = nullptr;
     }
 
     sfree(of);

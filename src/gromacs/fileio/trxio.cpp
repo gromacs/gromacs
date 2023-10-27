@@ -54,7 +54,7 @@
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/gmxfio_xdr.h"
 #include "gromacs/fileio/groio.h"
-#include "gromacs/fileio/hdf5mdio.h"
+#include "gromacs/fileio/h5md_io.h"
 #include "gromacs/fileio/oenv.h"
 #include "gromacs/fileio/pdbio.h"
 #include "gromacs/fileio/timecontrol.h"
@@ -102,7 +102,7 @@ struct t_trxstatus
     t_trxframe*          xframe;
     t_fileio*            fio;
     gmx_tng_trajectory_t tng;
-    GmxHdf5MdIo*         hdf5Md;
+    GmxH5mdIo*           h5mdIo;
     int                  natoms;
     char*                persistent_line; /* Persistent line for reading g96 trajectories */
 #if GMX_USE_PLUGINS
@@ -188,7 +188,7 @@ static void status_init(t_trxstatus* status)
     status->tf              = 0;
     status->persistent_line = nullptr;
     status->tng             = nullptr;
-    // status->hdf5Md          = GmxHdf5MdIo();
+    // status->h5mdIo       = GmxH5mdIo();
 }
 
 

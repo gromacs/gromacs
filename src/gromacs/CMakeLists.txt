@@ -387,6 +387,7 @@ if (GMX_INTERNAL_XDR)
 endif()
 
 gmx_manage_hdf5()
+gmx_manage_sz3()
 
 target_link_libraries(libgromacs
                       PRIVATE
