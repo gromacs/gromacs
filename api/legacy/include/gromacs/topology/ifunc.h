@@ -242,7 +242,8 @@ static inline int NRAL(int ftype)
 
 static inline bool IS_CHEMBOND(int ftype)
 {
-    return interaction_function[ftype].nratoms == 2 && (interaction_function[ftype].flags & IF_CHEMBOND);
+    return interaction_function[ftype].nratoms == 2
+           && (interaction_function[ftype].flags & IF_CHEMBOND) != 0;
 }
 /* IS_CHEMBOND tells if function type ftype represents a chemical bond */
 
@@ -251,17 +252,17 @@ static inline bool IS_CHEMBOND(int ftype)
  */
 static inline bool IS_ANGLE(int ftype)
 {
-    return interaction_function[ftype].nratoms == 3 && (interaction_function[ftype].flags & IF_ATYPE);
+    return interaction_function[ftype].nratoms == 3 && (interaction_function[ftype].flags & IF_ATYPE) != 0;
 }
 
 static inline bool IS_VSITE(int ftype)
 {
-    return interaction_function[ftype].flags & IF_VSITE;
+    return (interaction_function[ftype].flags & IF_VSITE) != 0;
 }
 
 static inline bool IS_TABULATED(int ftype)
 {
-    return interaction_function[ftype].flags & IF_TABULATED;
+    return (interaction_function[ftype].flags & IF_TABULATED) != 0;
 }
 
 #endif
