@@ -40,6 +40,7 @@
 #include "config.h"
 #include <cmath>
 
+#include <functional>
 #include <string>
 
 #include "gromacs/topology/topology.h"
@@ -158,94 +159,39 @@ void GmxH5mdIo::flush()
 
 void GmxH5mdIo::setUpParticlesDataBlocks(bool writeCoordinates, bool writeCoordinatesCompressed, bool writeForces, bool writeVelocities, int numParticles, int numParticlesCompressed, double compressionError)
 {
-    if (writeCoordinates || writeForces || writeVelocities)
-    {
-        openOrCreateGroup(file_, "particles/system");
-        hid_t boxGroup = openOrCreateGroup(file_, "particles/system/box");
-        setAttribute(boxGroup, "dimension", DIM, H5T_NATIVE_INT);
-    }
-
 #if GMX_DOUBLE
     const hid_t datatype = H5Tcopy(H5T_NATIVE_DOUBLE);
 #else
     const hid_t datatype = H5Tcopy(H5T_NATIVE_FLOAT);
 #endif
+    hid_t systemGroup = openOrCreateGroup(file_, "particles/system");
+    hid_t boxGroup = openOrCreateGroup(systemGroup, "box");
+    setAttribute(boxGroup, "dimension", DIM, H5T_NATIVE_INT);
+    box_ = GmxH5mdDataBlock(boxGroup, "edges", "nm", 1, DIM, DIM, datatype, CompressionAlgorithm::LosslessNoShuffle, 0);
+    // TODO: Write box 'boundary' attribute ('periodic' or 'none')
+
     if (writeCoordinates)
     {
-        position_ = GmxH5mdDataBlock(file_, "/particles/system/position", "nm", 1, numParticles, DIM, datatype, CompressionAlgorithm::LosslessWithShuffle, 0);
+        position_ = GmxH5mdDataBlock(systemGroup, "position", "nm", 1, numParticles, DIM, datatype, CompressionAlgorithm::LosslessWithShuffle, 0);
     }
     if (writeForces)
     {
-        force_ = GmxH5mdDataBlock(file_, "/particles/system/force", "kJ/(mol*nm)", 1, numParticles, DIM, datatype, CompressionAlgorithm::LosslessWithShuffle, 0);
+        force_ = GmxH5mdDataBlock(systemGroup, "force", "kJ mol-1 nm-1)", 1, numParticles, DIM, datatype, CompressionAlgorithm::LosslessWithShuffle, 0);
     }
     if (writeVelocities)
     {
-        velocity_ = GmxH5mdDataBlock(file_, "/particles/system/velocity", "nm/ps", 1, numParticles, DIM, datatype, CompressionAlgorithm::LosslessWithShuffle, 0);
-    }
-    if (writeCoordinates || writeForces || writeVelocities)
-    {
-        box_ = GmxH5mdDataBlock(file_, "/particles/system/box/edges", "nm", 1, DIM, DIM, datatype, CompressionAlgorithm::LosslessNoShuffle, 0);
+        velocity_ = GmxH5mdDataBlock(systemGroup, "velocity", "nm ps-1", 1, numParticles, DIM, datatype, CompressionAlgorithm::LosslessWithShuffle, 0);
     }
     if (writeCoordinatesCompressed)
     {
-        openOrCreateGroup(file_, "particles/selection_compressed");
-        hid_t boxGroup = openOrCreateGroup(file_, "particles/selection_compressed/box");
+        hid_t compressedGroup = openOrCreateGroup(file_, "particles/selection_compressed");
+        hid_t boxGroup = openOrCreateGroup(compressedGroup, "box");
         setAttribute(boxGroup, "dimension", DIM, H5T_NATIVE_INT);
-        positionLossy_ = GmxH5mdDataBlock(file_, "/particles/selection_compressed/position", "nm", numFramesPerChunkCompressed_, numParticlesCompressed, DIM, datatype, CompressionAlgorithm::LossySz3, compressionError);
-        boxLossy_ = GmxH5mdDataBlock(file_, "/particles/selection_compressed/box/edges", "nm", numFramesPerChunkCompressed_, DIM, DIM, datatype, CompressionAlgorithm::LosslessNoShuffle, 0);
-    }
-}
+        boxLossy_ = GmxH5mdDataBlock(compressedGroup, "edges", "nm", numFramesPerChunkCompressed_, DIM, DIM, H5T_NATIVE_FLOAT, CompressionAlgorithm::LosslessNoShuffle, 0);
+        // TODO: Write box 'boundary' attribute ('periodic' or 'none')
 
-template <typename T>
-void GmxH5mdIo::setAttribute(hid_t container, const char *name, const T value, hid_t dataType)
-{
-    hid_t attribute = H5Aopen(container, name, H5P_DEFAULT);
-    if (attribute < 0)
-    {
-        hid_t propertyList = H5Pcreate(H5P_ATTRIBUTE_CREATE);
-        H5Pset_char_encoding(propertyList, H5T_CSET_UTF8);
-        hid_t dataspace = H5Screate(H5S_SCALAR);
-        attribute = H5Acreate2(container, name, dataType, dataspace, propertyList, H5P_DEFAULT);
-        if (attribute < 0)
-        {
-            H5Eprint2(H5E_DEFAULT, nullptr);
-            gmx_file("Cannot create attribute.");
-        }
+        positionLossy_ = GmxH5mdDataBlock(compressedGroup, "position", "nm", numFramesPerChunkCompressed_, numParticlesCompressed, DIM, H5T_NATIVE_FLOAT, CompressionAlgorithm::LossySz3, compressionError);
     }
-    if (H5Awrite(attribute, dataType, &value) < 0)
-    {
-        H5Eprint2(H5E_DEFAULT, nullptr);
-        gmx_file("Cannot write attribute.");
-    }
-    H5Aclose(attribute);
-}
-
-void GmxH5mdIo::setAttribute(hid_t container, const char *name, const char* value)
-{
-    size_t stringLength = strlen(value);
-    hid_t dataType = H5Tcopy(H5T_C_S1);
-    H5Tset_size(dataType, stringLength);
-    H5Tset_strpad(dataType, H5T_STR_NULLTERM);
-
-    hid_t attribute = H5Aopen(container, name, H5P_DEFAULT);
-    if (attribute < 0)
-    {
-        hid_t propertyList = H5Pcreate(H5P_ATTRIBUTE_CREATE);
-        H5Pset_char_encoding(propertyList, H5T_CSET_UTF8);
-        hid_t dataspace = H5Screate(H5S_SCALAR);
-        attribute = H5Acreate2(container, name, dataType, dataspace, propertyList, H5P_DEFAULT);
-        if (attribute < 0)
-        {
-            H5Eprint2(H5E_DEFAULT, nullptr);
-            gmx_file("Cannot create attribute.");
-        }
-    }
-    if (H5Awrite(attribute, dataType, value) < 0)
-    {
-        H5Eprint2(H5E_DEFAULT, nullptr);
-        gmx_file("Cannot write attribute.");
-    }
-    H5Aclose(attribute);
 }
 
 void GmxH5mdIo::setAuthorAndCreator()
@@ -279,12 +225,15 @@ void GmxH5mdIo::setupMolecularSystem(const gmx_mtop_t& topology)
 
     std::vector<real> atomCharges;
     std::vector<real> atomMasses;
+    std::vector<std::string> atomNames;
 
     atomCharges.reserve(topology.natoms);
     atomMasses.reserve(topology.natoms);
+    atomNames.reserve(topology.natoms);
 
     // TODO: Check this and set better values.
-    numFramesPerChunkCompressed_ = std::min(11, int(std::ceil(1000000/topology.natoms)) + 1);
+    // numFramesPerChunkCompressed_ = std::min(11, int(std::ceil(1000000/topology.natoms)) + 1);
+    numFramesPerChunkCompressed_ = 21;
 
     for (const gmx_molblock_t& molBlock : topology.molblock)
     {
@@ -293,6 +242,7 @@ void GmxH5mdIo::setupMolecularSystem(const gmx_mtop_t& topology)
         {
             atomCharges.push_back(molType->atoms.atom[atomCounter].q);
             atomMasses.push_back(molType->atoms.atom[atomCounter].m);
+            atomNames.push_back(*(molType->atoms.atomname[atomCounter]));
         }
         for (int molCounter = 1; molCounter < molBlock.nmol; molCounter++)
         {
@@ -300,17 +250,28 @@ void GmxH5mdIo::setupMolecularSystem(const gmx_mtop_t& topology)
                         molType->atoms.nr,
                         std::back_inserter(atomCharges));
             std::copy_n(atomMasses.end() - molType->atoms.nr, molType->atoms.nr, std::back_inserter(atomMasses));
+            std::copy_n(atomNames.end() - molType->atoms.nr, molType->atoms.nr, std::back_inserter(atomNames));
         }
     }
+    /* Is there a more convenient way to do this? std::string is nice above, but cannot be used for writing. */
+    std::vector<const char *> atomNamesChars(atomNames.size());
+    std::transform(atomNames.begin(), atomNames.end(), atomNamesChars.begin(), std::mem_fn(&std::string::c_str));
+
+    hid_t stringDataType = H5Tcopy(H5T_C_S1);
+    H5Tset_size(stringDataType, H5T_VARIABLE);
+    H5Tset_strpad(stringDataType, H5T_STR_NULLTERM);
+    H5Tset_cset(stringDataType, H5T_CSET_UTF8);
+    atomName_ = GmxH5mdDataBlock(file_, "/particles/system/atomname", "", 1, topology.natoms, 1, stringDataType, CompressionAlgorithm::LosslessNoShuffle, 0);
+    atomName_.writeFrame(atomNamesChars.data(), 0, 0);
 
 #if GMX_DOUBLE
-    const hid_t datatype = H5Tcopy(H5T_NATIVE_DOUBLE);
+    const hid_t floatDatatype = H5Tcopy(H5T_NATIVE_DOUBLE);
 #else
-    const hid_t datatype = H5Tcopy(H5T_NATIVE_FLOAT);
+    const hid_t floatDatatype = H5Tcopy(H5T_NATIVE_FLOAT);
 #endif
-    charge_ = GmxH5mdDataBlock(file_, "/particles/charge", "e", 1, topology.natoms, 1, datatype, CompressionAlgorithm::LosslessNoShuffle, 0);
+    charge_ = GmxH5mdDataBlock(file_, "/particles/system/charge", "e", 1, topology.natoms, 1, floatDatatype, CompressionAlgorithm::LosslessNoShuffle, 0);
     charge_.writeFrame(atomCharges.data(), 0, 0);
-    mass_ = GmxH5mdDataBlock(file_, "/particles/mass", "g/mol", 1, topology.natoms, 1, datatype, CompressionAlgorithm::LosslessNoShuffle, 0);
+    mass_ = GmxH5mdDataBlock(file_, "/particles/system/mass", "g mol-1", 1, topology.natoms, 1, floatDatatype, CompressionAlgorithm::LosslessNoShuffle, 0);
     mass_.writeFrame(atomMasses.data(), 0, 0);
 
 #else
@@ -362,3 +323,8 @@ void GmxH5mdIo::writeFrame(int64_t        step,
 #endif
 
 }
+
+extern template void setAttribute<int>(hid_t, const char*, int, hid_t);
+extern template void setAttribute<float>(hid_t, const char*, float, hid_t);
+extern template void setAttribute<double>(hid_t, const char*, double, hid_t);
+extern template void setAttribute<char *>(hid_t, const char*, char *, hid_t);

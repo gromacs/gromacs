@@ -75,9 +75,9 @@ GmxH5mdDataBlock::GmxH5mdDataBlock(hid_t container, const char* name, const char
     numEntries_ = numEntries;
     numValuesPerEntry_ = numValuesPerEntry;
     numWrittenFrames_ = 0;
+    datatype_ = datatype;
     compressionAlgorithm_ = compression;
     compressionAbsoluteError_ = compressionError;
-    datatype_ = datatype;
 }
 
 void GmxH5mdDataBlock::initDataProperties(hsize_t numFramesPerChunk, hsize_t numEntries, hsize_t numValuesPerEntry)
@@ -98,7 +98,6 @@ void GmxH5mdDataBlock::writeFrame(const void* data, int64_t step, real time, con
 #else
     const hid_t timeDatatype = H5Tcopy(H5T_NATIVE_FLOAT);
 #endif
-    // char valueName[] = "value";
     char stepName[] = "step";
     char timeName[] = "time";
     char timeUnit[] = "ps";

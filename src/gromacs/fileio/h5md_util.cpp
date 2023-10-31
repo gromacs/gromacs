@@ -149,15 +149,7 @@ void writeData(hid_t container, const char* name, const char* unit, const void* 
         if (unit != nullptr)
         {
             char unitElementString[] = "unit";
-            size_t unitStringLength = strlen(unit);
-            hid_t dataType = H5Tcopy(H5T_C_S1);
-            H5Tset_size(dataType, unitStringLength);
-            H5Tset_strpad(dataType, H5T_STR_NULLTERM);
-            hid_t propertyList = H5Pcreate(H5P_ATTRIBUTE_CREATE);
-            H5Pset_char_encoding(propertyList, H5T_CSET_UTF8);
-            hid_t dataspace = H5Screate(H5S_SCALAR);
-            hid_t attribute = H5Acreate2(dataset, unitElementString, dataType, dataspace, propertyList, H5P_DEFAULT);
-            H5Awrite(attribute, dataType, unit);
+            setAttribute(dataset, unitElementString, unit);
         }
     }
     hid_t dataspace = H5Dget_space(dataset);
@@ -188,3 +180,35 @@ void writeData(hid_t container, const char* name, const char* unit, const void* 
     gmx_file("GROMACS was compiled without HDF5 support, cannot handle this file type");
 #endif
 }
+
+template <typename T>
+void setAttribute(hid_t container, const char *name, const T value, hid_t dataType)
+{
+    hid_t attribute = H5Aopen(container, name, H5P_DEFAULT);
+    if (attribute < 0)
+    {
+        hid_t dataspace = H5Screate(H5S_SCALAR);
+        attribute = H5Acreate2(container, name, dataType, dataspace, H5P_DEFAULT, H5P_DEFAULT);
+    }
+    if (H5Awrite(attribute, dataType, &value) < 0)
+    {
+        H5Eprint2(H5E_DEFAULT, nullptr);
+        gmx_file("Cannot write attribute.");
+    }
+    H5Aclose(attribute);
+}
+
+void setAttribute(hid_t container, const char *name, const char* value)
+{
+    hid_t dataType = H5Tcopy(H5T_C_S1);
+    H5Tset_size(dataType, H5T_VARIABLE);
+    H5Tset_strpad(dataType, H5T_STR_NULLTERM);
+    H5Tset_cset(dataType, H5T_CSET_UTF8);
+
+    setAttribute(container, name, value, dataType);
+}
+
+template void setAttribute<int>(hid_t, const char*, int, hid_t);
+template void setAttribute<float>(hid_t, const char*, float, hid_t);
+template void setAttribute<double>(hid_t, const char*, double, hid_t);
+template void setAttribute<char *>(hid_t, const char*, char *, hid_t);

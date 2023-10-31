@@ -57,14 +57,11 @@ private:
     GmxH5mdDataBlock force_;
     GmxH5mdDataBlock box_;
     GmxH5mdDataBlock boxLossy_;
+    GmxH5mdDataBlock atomName_;
+    GmxH5mdDataBlock atomType_;
     GmxH5mdDataBlock charge_;
     GmxH5mdDataBlock mass_;
     hsize_t          numFramesPerChunkCompressed_;
-
-    template <typename T>
-    void setAttribute(hid_t container, const char *name, const T value, hid_t dataType);
-
-    void setAttribute(hid_t container, const char *name, const char* value);
 
     /*! Sets the author (user) and creator (application name) properties in the h5md group (h5mdGroup_). */
     void setAuthorAndCreator();

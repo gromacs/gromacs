@@ -62,4 +62,10 @@ hid_t openOrCreateGroup(hid_t container, const char *name);
 
 void writeData(hid_t container, const char* name, const char* unit, const void* data, hsize_t numFramesPerChunk, hsize_t numEntries, hsize_t numValuesPerEntry, hsize_t positionToWrite, hid_t datatype, CompressionAlgorithm compression, double compressionError);
 
+template <typename T>
+void setAttribute(hid_t container, const char *name, const T value, hid_t dataType);
+
+void setAttribute(hid_t container, const char *name, const char* value);
+
+
 #endif
