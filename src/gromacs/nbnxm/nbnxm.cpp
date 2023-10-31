@@ -123,7 +123,7 @@ bool nonbonded_verlet_t::isDynamicPruningStepGpu(int64_t step) const
 gmx::ArrayRef<const int> nonbonded_verlet_t::getLocalAtomOrder() const
 {
     /* Return the atom order for the home cell (index 0) */
-    const Nbnxm::Grid& grid = pairSearch_->gridSet().grids()[0];
+    const Nbnxm::Grid& grid = pairSearch_->gridSet().grid(0);
 
     const int numIndices = grid.atomIndexEnd() - grid.firstAtomInColumn(0);
 

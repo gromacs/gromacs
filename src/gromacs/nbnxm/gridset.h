@@ -155,6 +155,9 @@ public:
     //! Sets the order of the local atoms to the order grid atom ordering
     void setLocalAtomOrder();
 
+    //! Return a single grid
+    const Grid& grid(size_t idx) const { return grids_[idx]; }
+
     //! Returns the list of grids
     gmx::ArrayRef<const Grid> grids() const { return grids_; }
 

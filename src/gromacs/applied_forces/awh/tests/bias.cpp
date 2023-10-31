@@ -254,13 +254,13 @@ TEST(BiasTest, DetectsCovering)
                                                           false,
                                                           0.5,
                                                           0);
-    const AwhDimParams&     awhDimParams = params.awhParams.awhBiasParams()[0].dimParams()[0];
+    const AwhDimParams&     awhDimParams = params.awhParams.awhBiasParams(0).dimParams(0);
 
     constexpr double mdTimeStep = 0.1;
 
     Bias bias(-1,
               params.awhParams,
-              params.awhParams.awhBiasParams()[0],
+              params.awhParams.awhBiasParams(0),
               params.dimParams,
               params.beta,
               mdTimeStep,

@@ -532,7 +532,7 @@ void checkBiasParams(const AwhBiasParams& awhBiasParams,
     for (int d = 0; d < awhBiasParams.ndim(); d++)
     {
         std::string prefixdim = prefix + formatString("-dim%d", d + 1);
-        checkDimParams(prefixdim, awhBiasParams.dimParams()[d], ir, wi);
+        checkDimParams(prefixdim, awhBiasParams.dimParams(d), ir, wi);
     }
 }
 
@@ -545,7 +545,7 @@ void checkBiasParams(const AwhBiasParams& awhBiasParams,
 void checkInputConsistencyAwhBias(const AwhBiasParams& awhBiasParams, WarningHandler* wi)
 {
     /* Covering diameter and sharing warning. */
-    auto awhBiasDimensionParams = awhBiasParams.dimParams();
+    const auto awhBiasDimensionParams = awhBiasParams.dimParams();
     for (const auto& dimensionParam : awhBiasDimensionParams)
     {
         double coverDiameter = dimensionParam.coverDiameter();
@@ -568,8 +568,8 @@ void checkInputConsistencyAwh(const AwhParams& awhParams, WarningHandler* wi)
     /* Each pull coord can map to at most 1 AWH coord.
      * Check that we have a shared bias when requesting multisim sharing.
      */
-    bool haveSharedBias = false;
-    auto awhBiasParams  = awhParams.awhBiasParams();
+    bool       haveSharedBias = false;
+    const auto awhBiasParams  = awhParams.awhBiasParams();
     for (int k1 = 0; k1 < awhParams.numBias(); k1++)
     {
         const AwhBiasParams& awhBiasParams1 = awhBiasParams[k1];

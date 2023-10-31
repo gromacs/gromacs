@@ -198,7 +198,7 @@ Awh::Awh(FILE*                 fplog,
         {
             for (int k = 0; k < awhParams.numBias(); k++)
             {
-                const int shareGroup = awhParams.awhBiasParams()[k].shareGroup();
+                const int shareGroup = awhParams.awhBiasParams(k).shareGroup();
                 if (shareGroup > 0)
                 {
                     fprintf(fplog,

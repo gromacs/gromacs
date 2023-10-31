@@ -704,10 +704,11 @@ static void combine_bounding_box_pairs(const Grid&                      grid,
 /*! \brief Prints the average bb size, used for debug output */
 static void print_bbsizes_simple(FILE* fp, const Grid& grid)
 {
-    dvec ba = { 0 };
+    dvec       ba             = { 0 };
+    const auto iBoundingBoxes = grid.iBoundingBoxes();
     for (int c = 0; c < grid.numCells(); c++)
     {
-        const BoundingBox& bb = grid.iBoundingBoxes()[c];
+        const BoundingBox& bb = iBoundingBoxes[c];
         ba[XX] += bb.upper.x - bb.lower.x;
         ba[YY] += bb.upper.y - bb.lower.y;
         ba[ZZ] += bb.upper.z - bb.lower.z;

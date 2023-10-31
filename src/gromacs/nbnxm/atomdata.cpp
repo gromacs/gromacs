@@ -964,7 +964,7 @@ void nbnxn_atomdata_copy_x_to_nbat_x(const Nbnxm::GridSet&   gridSet,
         {
             for (int g : gridRange)
             {
-                const Nbnxm::Grid& grid       = gridSet.grids()[g];
+                const Nbnxm::Grid& grid       = gridSet.grid(g);
                 const int          numCellsXY = grid.numColumns();
 
                 const int cxy0 = (numCellsXY * th + nth - 1) / nth;

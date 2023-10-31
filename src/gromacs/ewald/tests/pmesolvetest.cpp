@@ -254,8 +254,9 @@ public:
             default: GMX_THROW(InternalError("Unknown PME solver"));
         }
 
-        const PmeTestHardwareContext& pmeTestHardwareContext = getPmeTestHardwareContexts()[contextIndex];
-        CodePath                      codePath               = pmeTestHardwareContext.codePath();
+        const auto                    pmeTestHardwareContextsAll = getPmeTestHardwareContexts();
+        const PmeTestHardwareContext& pmeTestHardwareContext = pmeTestHardwareContextsAll[contextIndex];
+        const CodePath                codePath               = pmeTestHardwareContext.codePath();
         MessageStringCollector        messages = getSkipMessagesIfNecessary(inputRec, codePath);
         messages.appendIf(!pmeTestHardwareContext.gpuId().has_value() && gridOrdering == GridOrdering::XYZ,
                           "CPU PME solve does not implement XYZ grid ordering");

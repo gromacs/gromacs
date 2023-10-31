@@ -213,8 +213,12 @@ public:
     bool equilibrateHistogram() const { return equilibrateHistogram_; }
     //! Access to dimension parameters.
     ArrayRef<AwhDimParams> dimParams() { return dimParams_; }
+    //! Access to dimension parameters for a specific dimension.
+    AwhDimParams& dimParams(size_t idx) { return dimParams_[idx]; }
     //! Const access to dimension parameters.
     ArrayRef<const AwhDimParams> dimParams() const { return dimParams_; }
+    //! Const access to dimension parameters for a specific dimension.
+    const AwhDimParams& dimParams(size_t idx) const { return dimParams_[idx]; }
     //! Write datastructure.
     void serialize(ISerializer* serializer);
 
@@ -264,8 +268,12 @@ public:
     int numBias() const { return awhBiasParams_.size(); }
     //! Get access to bias parameters.
     ArrayRef<AwhBiasParams> awhBiasParams() { return awhBiasParams_; }
+    //! Get access to specific bias parameters.
+    AwhBiasParams& awhBiasParams(size_t idx) { return awhBiasParams_[idx]; }
     //! Const access to bias parameters.
     ArrayRef<const AwhBiasParams> awhBiasParams() const { return awhBiasParams_; }
+    //! Const access to specific bias parameters.
+    const AwhBiasParams& awhBiasParams(size_t idx) const { return awhBiasParams_[idx]; }
     //! What king of potential is being used. \todo should use actual enum class.
     AwhPotentialType potential() const { return potentialEnum_; }
     //! Seed used for starting AWH.

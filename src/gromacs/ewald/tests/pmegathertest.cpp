@@ -348,8 +348,9 @@ public:
         inputRec.coulombtype = CoulombInteractionType::Pme;
         inputRec.epsilon_r   = 1.0;
 
-        const PmeTestHardwareContext& pmeTestHardwareContext = getPmeTestHardwareContexts()[contextIndex];
-        CodePath                      codePath               = pmeTestHardwareContext.codePath();
+        const auto                    pmeTestHardwareContextsAll = getPmeTestHardwareContexts();
+        const PmeTestHardwareContext& pmeTestHardwareContext = pmeTestHardwareContextsAll[contextIndex];
+        const CodePath                codePath               = pmeTestHardwareContext.codePath();
         MessageStringCollector        messages = getSkipMessagesIfNecessary(inputRec, codePath);
         if (!messages.isEmpty())
         {

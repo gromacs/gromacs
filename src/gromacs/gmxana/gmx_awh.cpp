@@ -412,7 +412,7 @@ AwhReader::AwhReader(const AwhParams&  awhParams,
     int subblockStart = 0;
     for (int k = 0; k < awhParams.numBias(); k++)
     {
-        const AwhBiasParams& awhBiasParams = awhParams.awhBiasParams()[k];
+        const AwhBiasParams& awhBiasParams = awhParams.awhBiasParams(k);
 
         int numSubBlocks = static_cast<int>(block->sub[subblockStart].fval[0]);
 
@@ -432,8 +432,8 @@ AwhReader::AwhReader(const AwhParams&  awhParams,
                     subblockStart, numSubBlocks, awhBiasParams, energyUnit, kT);
         }
 
-        biasOutputSetups_.emplace_back(BiasOutputSetup(
-                subblockStart, std::move(awhOutputFile), std::move(frictionOutputFile)));
+        biasOutputSetups_.emplace_back(
+                subblockStart, std::move(awhOutputFile), std::move(frictionOutputFile));
 
         subblockStart += numSubBlocks;
     }

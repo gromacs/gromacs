@@ -750,7 +750,7 @@ static void print_nblist_statistics(FILE*                   fp,
                                     const Nbnxm::GridSet&   gridSet,
                                     const real              rl)
 {
-    const Grid&             grid = gridSet.grids()[0];
+    const Grid&             grid = gridSet.grid(0);
     const Grid::Dimensions& dims = grid.dimensions();
 
     fprintf(fp, "nbl nci %zu ncj %d\n", nbl.ci.size(), nbl.ncjInUse);
@@ -810,7 +810,7 @@ static void print_nblist_statistics(FILE*                   fp,
                                     const Nbnxm::GridSet&   gridSet,
                                     const real              rl)
 {
-    const Grid&             grid = gridSet.grids()[0];
+    const Grid&             grid = gridSet.grid(0);
     const Grid::Dimensions& dims = grid.dimensions();
 
     fprintf(fp,
@@ -2559,7 +2559,7 @@ static void get_nsubpair_target(const Nbnxm::GridSet&     gridSet,
      */
     const int nsubpair_target_min = 36;
 
-    const Grid& grid = gridSet.grids()[0];
+    const Grid& grid = gridSet.grid(0);
 
     /* We don't need to balance list sizes if:
      * - We didn't request balancing.
@@ -4033,13 +4033,13 @@ void PairlistSet::constructPairlists(gmx::InteractionLocality      locality,
 
     for (const int iZone : iZoneRange)
     {
-        const Grid& iGrid = gridSet.grids()[iZone];
+        const Grid& iGrid = gridSet.grid(iZone);
 
         const auto jZoneRange = getJZoneRange(ddZones, locality, iZone);
 
         for (int jZone : jZoneRange)
         {
-            const Grid& jGrid = gridSet.grids()[jZone];
+            const Grid& jGrid = gridSet.grid(jZone);
 
             if (debug)
             {

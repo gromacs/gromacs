@@ -266,7 +266,7 @@ TEST(SerializationTest, CanSerializeBiasParams)
     EXPECT_FLOAT_EQ(awhBiasParams.initialErrorEstimate(), 0.5 / 0.4);
     EXPECT_EQ(awhBiasParams.shareGroup(), 0);
     EXPECT_EQ(awhBiasParams.equilibrateHistogram(), false);
-    const auto& awhDimParams = awhBiasParams.dimParams()[0];
+    const auto& awhDimParams = awhBiasParams.dimParams(0);
     EXPECT_EQ(awhDimParams.coordinateProvider(), AwhCoordinateProviderType::Pull);
     EXPECT_EQ(awhDimParams.coordinateIndex(), 0);
     EXPECT_FLOAT_EQ(awhDimParams.forceConstant(), 10);
@@ -303,7 +303,7 @@ TEST(SerializationTest, CanSerializeAwhParams)
     EXPECT_EQ(awhParams.numSamplesUpdateFreeEnergy(), 10);
     EXPECT_EQ(awhParams.potential(), AwhPotentialType::Convolved);
     EXPECT_EQ(awhParams.shareBiasMultisim(), false);
-    const auto& awhBiasParams = awhParams.awhBiasParams()[0];
+    const auto& awhBiasParams = awhParams.awhBiasParams(0);
     EXPECT_EQ(awhBiasParams.ndim(), 1);
     EXPECT_EQ(awhBiasParams.targetDistribution(), AwhTargetType::Constant);
     EXPECT_FLOAT_EQ(awhBiasParams.targetBetaScaling(), 0);
@@ -313,7 +313,7 @@ TEST(SerializationTest, CanSerializeAwhParams)
     EXPECT_FLOAT_EQ(awhBiasParams.initialErrorEstimate(), 0.5 / 0.4);
     EXPECT_EQ(awhBiasParams.shareGroup(), 0);
     EXPECT_EQ(awhBiasParams.equilibrateHistogram(), false);
-    const auto& awhDimParams = awhBiasParams.dimParams()[0];
+    const auto& awhDimParams = awhBiasParams.dimParams(0);
     EXPECT_EQ(awhDimParams.coordinateProvider(), AwhCoordinateProviderType::Pull);
     EXPECT_EQ(awhDimParams.coordinateIndex(), 0);
     EXPECT_FLOAT_EQ(awhDimParams.forceConstant(), 10);
