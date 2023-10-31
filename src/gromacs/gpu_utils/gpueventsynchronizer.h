@@ -147,7 +147,7 @@ public:
     //NOLINTNEXTLINE(readability-convert-member-functions-to-static)
     inline void markExternalEventWhileCapturingGraph(const DeviceStream& deviceStream)
     {
-#if GMX_HAVE_CUDA_GRAPH_SUPPORT
+#if GMX_HAVE_GPU_GRAPH_SUPPORT && GMX_GPU_CUDA
         event_.markExternalEventWhileCapturingGraph(deviceStream);
 #else
         GMX_UNUSED_VALUE(deviceStream);
@@ -219,7 +219,7 @@ public:
     //NOLINTNEXTLINE(readability-convert-member-functions-to-static)
     inline void enqueueExternalWaitEventWhileCapturingGraph(const DeviceStream& deviceStream)
     {
-#if GMX_HAVE_CUDA_GRAPH_SUPPORT
+#if GMX_HAVE_GPU_GRAPH_SUPPORT && GMX_GPU_CUDA
         event_.enqueueExternalWaitEventWhileCapturingGraph(deviceStream);
 #else
         GMX_UNUSED_VALUE(deviceStream);

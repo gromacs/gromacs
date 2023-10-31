@@ -78,7 +78,7 @@ public:
         }
         isMarked_ = true;
     }
-#    if GMX_HAVE_CUDA_GRAPH_SUPPORT
+#    if GMX_HAVE_GPU_GRAPH_SUPPORT
     //! Marks the synchronization point in the \p stream, for external event while capturing a CUDA graph.
     inline void markExternalEventWhileCapturingGraph(const DeviceStream& deviceStream)
     {
@@ -122,7 +122,7 @@ public:
             GMX_THROW(gmx::InternalError("cudaStreamWaitEvent failed: " + gmx::getDeviceErrorString(stat)));
         }
     }
-#    if GMX_HAVE_CUDA_GRAPH_SUPPORT
+#    if GMX_HAVE_GPU_GRAPH_SUPPORT
     //! Enqueues a wait for the recorded event in stream \p stream, for external event while capturing a CUDA graph.
     inline void enqueueExternalWaitEventWhileCapturingGraph(const DeviceStream& deviceStream)
     {

@@ -214,7 +214,7 @@ static DevelopmentFeatureFlags manageDevelopmentFeatures(const gmx::MDLogger& md
 
     if (getenv("GMX_CUDA_GRAPH") != nullptr)
     {
-        if (GMX_HAVE_CUDA_GRAPH_SUPPORT)
+        if (GMX_HAVE_GPU_GRAPH_SUPPORT)
         {
             devFlags.enableCudaGraphs = true;
             GMX_LOG(mdlog.warning)
@@ -227,12 +227,21 @@ static DevelopmentFeatureFlags manageDevelopmentFeatures(const gmx::MDLogger& md
         else
         {
             devFlags.enableCudaGraphs = false;
+            std::string errorReason;
+            if (GMX_GPU_CUDA)
+            {
+                errorReason = "the CUDA version in use is below the minimum requirement (11.1)";
+            }
+            else
+            {
+                errorReason = "GROMACS is built without CUDA";
+            }
             GMX_LOG(mdlog.warning)
                     .asParagraph()
-                    .appendText(
-                            "GMX_CUDA_GRAPH environment variable is detected, "
-                            "but the CUDA version in use is below the minumum requirement (11.1). "
-                            "CUDA Graphs will be disabled.");
+                    .appendTextFormatted(
+                            "GMX_CUDA_GRAPH environment variable is detected, but %s. GPU Graphs "
+                            "will be disabled.",
+                            errorReason.c_str());
         }
     }
 

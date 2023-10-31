@@ -49,6 +49,8 @@
 #include "gromacs/gpu_utils/gpueventsynchronizer.h"
 #include "gromacs/utility/gmxmpi.h"
 
+#if GMX_HAVE_GPU_GRAPH_SUPPORT
+
 namespace gmx
 {
 
@@ -359,18 +361,18 @@ void MdGpuGraph::Impl::createExecutableGraph(bool forceGraphReinstantiation)
         bool updateSuccessful = true;
         if (useGraphUpdate)
         {
-#if CUDART_VERSION >= 12000
+#    if CUDART_VERSION >= 12000
             cudaGraphExecUpdateResultInfo updateResultInfo_out;
             cudaError_t stat = cudaGraphExecUpdate(instance_, graph_, &updateResultInfo_out);
             bool        additionalCheck =
                     (updateResultInfo_out.result == cudaGraphExecUpdateErrorTopologyChanged);
-#else
+#    else
             // Use old API, which doesn't provide as detailed error information
             cudaGraphNode_t           hErrorNode_out;
             cudaGraphExecUpdateResult updateResult_out;
             cudaError_t stat = cudaGraphExecUpdate(instance_, graph_, &hErrorNode_out, &updateResult_out);
             bool        additionalCheck = true; // dummy
-#endif
+#    endif
             if ((stat == cudaErrorGraphExecUpdateFailure)
                 && (havePPDomainDecomposition_ || haveSeparatePmeRank_) && additionalCheck)
             {
@@ -393,13 +395,13 @@ void MdGpuGraph::Impl::createExecutableGraph(bool forceGraphReinstantiation)
             // Instantiate using existing CUDA stream priorities for relative node priorities within graph
             cudaError_t stat = cudaGraphInstantiate(&instance_,
                                                     graph_,
-#if CUDART_VERSION >= 12000
+#    if CUDART_VERSION >= 12000
                                                     cudaGraphInstantiateFlagUseNodePriority
-#else
+#    else
                                                     nullptr,
                                                     nullptr,
                                                     0
-#endif
+#    endif
             );
             CU_RET_ERR(stat, "cudaGraphInstantiate in MD graph definition finalization failed.");
             graphInstanceAllocated_ = true;
@@ -577,3 +579,5 @@ GpuEventSynchronizer* MdGpuGraph::getPpTaskCompletionEvent()
 }
 
 } // namespace gmx
+
+#endif // GMX_HAVE_GPU_GRAPH_SUPPORT

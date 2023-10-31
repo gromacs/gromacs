@@ -42,7 +42,7 @@
 
 #include <gtest/gtest.h>
 
-#if GMX_HAVE_CUDA_GRAPH_SUPPORT
+#if GMX_HAVE_GPU_GRAPH_SUPPORT
 
 #    include "gromacs/gpu_utils/device_stream.h"
 #    include "gromacs/gpu_utils/device_stream_manager.h"
@@ -301,4 +301,4 @@ TEST(MdGraphTest, MdGpuGraphCaptureAndUsageConsistency)
 } // namespace test
 } // namespace gmx
 
-#endif // GMX_GPU_CUDA
+#endif // GMX_HAVE_GPU_GRAPH_SUPPORT
