@@ -40,6 +40,7 @@
 #include "config.h"
 
 #include <string>
+#include <sys/_types/_int64_t.h>
 
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/fatalerror.h"
@@ -51,7 +52,29 @@
 #include "external/SZ3/tools/H5Z-SZ3/include/H5Z_SZ3.hpp"
 #endif
 
-
+static void setNumericFillValue(hid_t datasetCreatePropertyList, const hid_t datatype)
+{
+    if(H5Tequal(datatype, H5T_NATIVE_INT))
+    {
+        const int dataFill = -1;
+        H5Pset_fill_value(datasetCreatePropertyList, datatype, &dataFill);
+    }
+    else if(H5Tequal(datatype, H5T_NATIVE_INT64))
+    {
+        const int64_t dataFill = -1;
+        H5Pset_fill_value(datasetCreatePropertyList, datatype, &dataFill);
+    }
+    else if(H5Tequal(datatype, H5T_NATIVE_FLOAT))
+    {
+        const float dataFill = -1;
+        H5Pset_fill_value(datasetCreatePropertyList, datatype, &dataFill);
+    }
+    else if(H5Tequal(datatype, H5T_NATIVE_DOUBLE))
+    {
+        const double dataFill = -1;
+        H5Pset_fill_value(datasetCreatePropertyList, datatype, &dataFill);
+    }
+}
 
 hid_t openOrCreateGroup(hid_t container, const char *name)
 {
@@ -87,6 +110,7 @@ void writeData(hid_t container, const char* name, const char* unit, const void* 
         hsize_t chunkDims[3] = {numFramesPerChunk, numEntries, numValuesPerEntry};
         hid_t propertyList = H5Pcreate(H5P_DATASET_CREATE);
         H5Pset_chunk(propertyList, 3, chunkDims);
+        setNumericFillValue(propertyList, datatype);
 
         switch(compression)
         {
@@ -158,8 +182,8 @@ void writeData(hid_t container, const char* name, const char* unit, const void* 
     /* Resize the dataset if needed. */
     if(positionToWrite >= currentDims[0])
     {
-        // printf("Resizing dataset from %" PRId64" to %" PRId64 "\n", currentDims[0], currentDims[0] + numFramesPerChunk);
-        hsize_t newDims[3] = {currentDims[0] + numFramesPerChunk, currentDims[1], currentDims[2]};
+        hsize_t newDims[3] = {(positionToWrite / numFramesPerChunk + 1) * numFramesPerChunk, currentDims[1], currentDims[2]};
+        // printf("Resizing dataset from %" PRId64" to %" PRId64 "\n", currentDims[0], newDims[0]);
         H5Dset_extent(dataset, newDims);
         dataspace = H5Dget_space(dataset);
     }

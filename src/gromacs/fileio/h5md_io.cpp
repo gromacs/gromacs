@@ -231,9 +231,8 @@ void GmxH5mdIo::setupMolecularSystem(const gmx_mtop_t& topology)
     atomMasses.reserve(topology.natoms);
     atomNames.reserve(topology.natoms);
 
-    // TODO: Check this and set better values.
-    // numFramesPerChunkCompressed_ = std::min(11, int(std::ceil(1000000/topology.natoms)) + 1);
-    numFramesPerChunkCompressed_ = 21;
+    /* Use no more than 20 frames per chunk (compression unit). Use fewer frames per chunk if there are many atoms. */
+    numFramesPerChunkCompressed_ = std::min(20, int(std::ceil(1e6/topology.natoms)));
 
     for (const gmx_molblock_t& molBlock : topology.molblock)
     {
