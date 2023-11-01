@@ -44,25 +44,32 @@
 typedef int64_t hid_t;
 typedef uint64_t hsize_t;
 
+/*! \brief A class that handles H5MD data blocks with data can change during the MD trajectory. */
 class GmxH5mdDataBlock
 {
 private:
-    hid_t    container_;
-    char     name_[128];
-    char     unit_[64];
-    int      writingInterval_;
-    hsize_t  numFramesPerChunk_;
-    hsize_t  numEntries_;
-    hsize_t  numValuesPerEntry_;
-    hid_t    datatype_;
-    CompressionAlgorithm compressionAlgorithm_;
-    double compressionAbsoluteError_;
+    hid_t    container_; //!< The HDF5 container of this data block.
+    char     name_[128]; //!< The name of the data block, e.g. "position".
+    char     datasetName_[64]; //!< The label of the dataset in the data block, e.g. "value".
+    char     unit_[64]; //!< The unit of the data in the data block. The unit of the time records is automatically set to "ps".
+    int      writingInterval_; //!< The interval (in MD steps) between outputs.
+    hsize_t  numFramesPerChunk_; //!< Number of frames per HDF5 chunk, i.e. the blocks of data that are compressed, written and read together.
+    hsize_t  numEntries_; //!< The number of entries per frame. For particle data this is the number of atoms. For box dimensions in GROMACS it is DIM.
+    hsize_t  numValuesPerEntry_; //!< The dimensionality of each data value. For particle data it is often DIM or 1 (for e.g., masses).
+    hid_t    datatype_; //!< The HDF5 datatype of this data block.
+    CompressionAlgorithm compressionAlgorithm_; //!< The compression algorithm that should be used.
+    double compressionAbsoluteError_; //!< The absolute error of lossy compression algorithms.
 public:
-    // GmxH5mdDataBlock();
-    GmxH5mdDataBlock(hid_t container = -1, const char* name = "", const char* unit = "", int writingInterval = 0, hsize_t numFramesPerChunk = 1, hsize_t numEntries = 0, hsize_t numValuesPerEntry = 1, hid_t datatype = -1,
+    GmxH5mdDataBlock(hid_t container = -1, const char* name = "", const char* datasetName = "value", const char* unit = "", int writingInterval = 0, hsize_t numFramesPerChunk = 1, hsize_t numEntries = 0, hsize_t numValuesPerEntry = 1, hid_t datatype = -1,
                      CompressionAlgorithm compression = CompressionAlgorithm::None, double compressionError = 0.001);
 
-    void writeFrame(const void* data, int64_t step, real time, const char* valueName = "value");
+    /*! \brief Write a frame of data to the data block.
+     *
+     * \param[in] data The data that should be written.
+     * \param[in] step The MD simulation step of the data record.
+     * \param[in] time The time stamp (in ps) of the data record.
+     */
+    void writeFrame(const void* data, int64_t step, real time);
 };
 
 #endif // GMX_FILEIO_H5MD_DATABLOCK_H

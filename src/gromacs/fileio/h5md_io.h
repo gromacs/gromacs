@@ -46,27 +46,29 @@ struct gmx_mtop_t;
 typedef int64_t hid_t;
 typedef uint64_t hsize_t;
 
-/*! The container of the H5MD data. The class is designed to read/write data according to https://www.nongnu.org/h5md/h5md.html */
+/*! \brief The container of the H5MD data. The class is designed to read/write data according to de Buyl et al., 2014
+ * (https://www.sciencedirect.com/science/article/pii/S0010465514000447) and https://www.nongnu.org/h5md/h5md.html
+ * The class contains a number of standard data blocks that are commonly used by GROMACS. */
 class GmxH5mdIo
 {
 private:
     hid_t   file_;              //!< The HDF5 identifier of the file. This is the H5MD root.
-    GmxH5mdDataBlock position_;
-    GmxH5mdDataBlock positionLossy_;
-    GmxH5mdDataBlock velocity_;
-    GmxH5mdDataBlock force_;
-    GmxH5mdDataBlock box_;
-    GmxH5mdDataBlock boxLossy_;
-    GmxH5mdDataBlock atomName_;
-    GmxH5mdDataBlock atomType_;
-    GmxH5mdDataBlock charge_;
-    GmxH5mdDataBlock mass_;
+    GmxH5mdDataBlock position_; //!< The data block with lossless positions.
+    GmxH5mdDataBlock positionLossy_; //!< The data block with compressed (lossy compression) positions.
+    GmxH5mdDataBlock velocity_; //!< The data block with lossless velocities.
+    GmxH5mdDataBlock force_; //!< The data block with lossless forces.
+    GmxH5mdDataBlock box_; //!< The data block with the box shape written together with lossless positions.
+    GmxH5mdDataBlock boxLossy_; //!< The data block with the box shape written together with lossy (compressed) positions.
+    GmxH5mdDataBlock atomName_; //!< A data block with the names of all atoms in the system.
+    GmxH5mdDataBlock atomType_; //!< A data block with the atom type of all atoms in the system.
+    GmxH5mdDataBlock charge_; //!< A data block with the partial charges of all atoms in the system.
+    GmxH5mdDataBlock mass_; //!< A data block with the atom masses of all atoms in the system.
 
-    /*! Sets the author (user) and creator (application name) properties in the h5md group (h5mdGroup_). */
+    /*! \brief Sets the author (user) and creator (application name) properties in the h5md group (h5mdGroup_). */
     void setAuthorAndCreator();
 
 public:
-    /*! Construct a GmxH5mdIo object and open a GmxHdf5 file.
+    /*! \brief Construct a GmxH5mdIo object and open a GmxHdf5 file.
      *
      * \param[in] fileName    Name of the file to open. The same as the file path.
      * \param[in] mode        The mode to open the file, described by a lower-case letter
@@ -78,7 +80,7 @@ public:
 
     ~GmxH5mdIo();
 
-    /*! Open an GmxHdf5 file.
+    /*! \brief Open an H5MD file.
      *
      * \param[in] fileName    Name of the file to open. The same as the file path.
      * \param[in] mode        The mode to open the file, described by a case-insensitive string of
@@ -89,14 +91,45 @@ public:
      */
     void openFile(const char* fileName, const char mode);
 
+    /*! \brief Close the H5MD file. */
     void closeFile();
 
+    /*! \brief Write all unwritten data to the file. */
     void flush();
 
+    /*! \brief Write molecule system related data to the file.
+     *
+     * This is currently not updated during the trajectory. The data that is written are atom masses, atom charges and atom names.
+     *
+     * \param[in] topology The molecular topology describing the system.
+     */
     void setupMolecularSystem(const gmx_mtop_t& topology);
 
+    /*! \brief Set up data blocks related to particle data.
+     *
+     * This needs to be done before writing the particle data to the trajectory.
+     *
+     * \param[in] writeCoordinatesSteps The lossless coordinate output interval.
+     * \param[in] writeCoordinatesCompressedSteps The lossy compressed coordinate output interval.
+     * \param[in] writeForcesSteps The lossless force output interval.
+     * \param[in] writeVelocitiesSteps The lossless velocity output interval.
+     * \param[in] numParticles The number of particles/atoms in the system.
+     * \param[in] numParticlesCompressed The number of particles/atoms used for writing compressed coordinate data.
+     * \param[in] compressionError The required precision of the lossy compression.
+     */
     void setUpParticlesDataBlocks(int writeCoordinatesSteps, int writeCoordinatesCompressedSteps, int writeForcesSteps, int writeVelocitiesSteps, int numParticles, int numParticlesCompressed, double compressionError);
 
+    /*! \brief Write a trajectory frame to the file. Only writes the data that is passed as input
+     *
+     * \param[in] step The simulation step.
+     * \param[in] time The time stamp (in ps).
+     * \param[in] lambda The lambda state. FIXME: Currently not written.
+     * \param[in] box The box dimensions.
+     * \param[in] x The particle coordinates for lossless output.
+     * \param[in] v The particle velocities for lossless output.
+     * \param[in] f The particle forces for lossless output.
+     * \param[in] xLossy The particle coordinates for lossy (compressed) output.
+     */
     void writeFrame(int64_t          step,
                     real             time,
                     real             lambda,
