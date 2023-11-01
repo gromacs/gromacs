@@ -7,7 +7,7 @@
 
 #include "SZ3/def.hpp"
 
-namespace SZ {
+namespace SZ3 {
     namespace concepts {
 
         template<class T, uint N>

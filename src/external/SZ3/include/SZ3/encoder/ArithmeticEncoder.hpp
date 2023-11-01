@@ -6,7 +6,7 @@
 #include <cassert>
 #include <iostream>
 
-namespace SZ {
+namespace SZ3 {
 #define ONE_FOURTH (0x40000000000) //44 bits are absolutely enough to deal with a large dataset (support at most 16TB per process)
 #define ONE_HALF (0x80000000000)
 #define THREE_FOURTHS (0xC0000000000)

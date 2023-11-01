@@ -49,8 +49,8 @@ int main(int argc, char * argv[])
 		exit(0);
 	}
 
-	sprintf(hdf5FilePath, "%s", argv[1]);
-	sprintf(outputFilePath, "%s.out.h5", hdf5FilePath);
+	snprintf(hdf5FilePath, 640, "%s", argv[1]);
+	snprintf(outputFilePath, 640, "%s.out.h5", hdf5FilePath);
 
 	/*Open the hdf5 file with SZ-compressed data*/
     file = H5Fopen(hdf5FilePath, H5F_ACC_RDONLY, H5P_DEFAULT);
@@ -214,7 +214,7 @@ int main(int argc, char * argv[])
 			else if(dsize==8)
 			{
 				printf("data type: unsigned long\n");
-				unsigned long* data = (unsigned long*)malloc(sizeof(unsigned long)*nbEle);		
+				uint64_t* data = (uint64_t*)malloc(sizeof(uint64_t)*nbEle);
 				if(dorder==H5T_ORDER_LE)	
 					status = H5Dread(dset, H5T_STD_U64LE, H5S_ALL, H5S_ALL, H5P_DEFAULT, data);
 				else
@@ -277,7 +277,7 @@ int main(int argc, char * argv[])
 			else if(dsize==8)
 			{
 				printf("data type: long\n");
-				long *data = (long*)malloc(sizeof(long)*nbEle);
+				int64_t *data = (int64_t*)malloc(sizeof(int64_t)*nbEle);
 				if(dorder==H5T_ORDER_LE)	
 					status = H5Dread(dset, H5T_STD_I64LE, H5S_ALL, H5S_ALL, H5P_DEFAULT, data);
 				else

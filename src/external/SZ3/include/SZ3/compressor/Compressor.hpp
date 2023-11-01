@@ -4,7 +4,7 @@
 #include "SZ3/def.hpp"
 #include "SZ3/utils/Config.hpp"
 
-namespace SZ {
+namespace SZ3 {
     namespace concepts {
         template<class T>
         class CompressorInterface {

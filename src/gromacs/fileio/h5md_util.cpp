@@ -132,10 +132,11 @@ void writeData(hid_t container, const char* name, const char* unit, const void* 
         case CompressionAlgorithm::LossySz3:
         {
             int sz3_mode = 0; //0: ABS, 1: REL
-            size_t numCompressionSettingsElements;
-            unsigned int *compressionSettings = nullptr;
-            SZ_errConfigToCdArray(&numCompressionSettingsElements, &compressionSettings, sz3_mode, compressionError, compressionError, 0, 0);
-            if (H5Pset_filter(propertyList, H5Z_FILTER_SZ3, H5Z_FLAG_MANDATORY, numCompressionSettingsElements, compressionSettings) < 0)
+            // size_t numCompressionSettingsElements;
+            // unsigned int *compressionSettings = nullptr;
+            // SZ_errConfigToCdArray(&numCompressionSettingsElements, &compressionSettings, sz3_mode, compressionError, compressionError, 0, 0);
+            // if (H5Pset_filter(propertyList, H5Z_FILTER_SZ3, H5Z_FLAG_MANDATORY, numCompressionSettingsElements, compressionSettings) < 0)
+            if (H5Pset_filter(propertyList, H5Z_FILTER_SZ3, H5Z_FLAG_MANDATORY, 0, nullptr) < 0)
             {
                 H5Eprint2(H5E_DEFAULT, nullptr);
                 gmx_file("Cannot set SZ3 compression.");

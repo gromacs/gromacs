@@ -1,6 +1,7 @@
 #include <stdio.h> 
 #include <stdlib.h>
 #include <string.h>
+#include <cstdint>
 #include "hdf5.h"
 
 
@@ -103,7 +104,7 @@ int main(int argc, char* argv[]) {
 	int dim = computeDimension(r5, r4, r3, r2, r1);
 	size_t nbEle = computeDataLength(r5, r4, r3, r2, r1);
 
-	sprintf(outfile, "%s.h5", infile);
+	snprintf(outfile, 100, "%s.h5", infile);
 
 	/* Create a new file using default properties. */
 	file_id = H5Fcreate(outfile, H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
@@ -130,7 +131,7 @@ int main(int argc, char* argv[]) {
         dataspace_id = H5Screate_simple(dim, dims, NULL);
                                                                                
         /* Create the dataset. */
-        sprintf(database, "/%s", varName);
+        snprintf(database, 100, "/%s", varName);
 
 	if(strcmp(datatype, "-f") == 0){
 
@@ -183,8 +184,8 @@ int main(int argc, char* argv[]) {
 	else if(strcmp(datatype, "-i64") == 0){
         	FILE *f;                                          		
                 f = fopen(infile, "rb");
-                long *data = (long*)malloc(nbEle*sizeof(long));
-                fread(data, sizeof(long), nbEle, f);
+                int64_t *data = (int64_t*)malloc(nbEle*sizeof(int64_t));
+                fread(data, sizeof(int64_t), nbEle, f);
                 fclose(f);
         
 		dataset_id = H5Dcreate2(file_id, database, H5T_STD_I64LE, dataspace_id, 

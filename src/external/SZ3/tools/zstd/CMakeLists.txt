@@ -1,4 +1,9 @@
-add_library(zstd SHARED 
+if (MSVC)
+    set(ZSTD_BUILD_TYPE STATIC)
+else()
+    set(ZSTD_BUILD_TYPE SHARED)
+endif()
+add_library(zstd ${ZSTD_BUILD_TYPE}
   ./common/entropy_common.c
   ./common/pool.c
   ./common/threading.c

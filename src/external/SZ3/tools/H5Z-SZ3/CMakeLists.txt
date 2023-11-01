@@ -18,6 +18,10 @@ target_link_libraries(
         hdf5sz3
         PUBLIC SZ3 ${HDF5_LIBRARIES}
 )
+if(${HDF5_IS_PARALLEL})
+    find_package(MPI REQUIRED)
+    target_link_libraries(hdf5sz3 PUBLIC MPI::MPI_CXX)
+endif()
 
 target_include_directories(
         hdf5sz3

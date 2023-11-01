@@ -3,10 +3,23 @@
 #include <mdz.hpp>
 
 
-int main(int argc, char **argv) {
+void usage() {
+    printf("Usage: \n");
+    printf("For 1D input:   mdz file_path -1 n_atoms                 -r reb\n");
+    printf("For 2D input:   mdz file_path -2 n_frames n_atoms        -r reb\n");
+    printf("For 3D input:   mdz file_path -3 n_frames n_atoms n_dims(x,y,z) -r reb\n");
+    exit(0);
+}
 
+int main(int argc, char **argv) {
+    if (argc < 2) {
+        usage();
+    }
 
     int dim = atoi(argv[2] + 1);
+    if (dim > 3) {
+        usage();
+    }
     assert(1 <= dim && dim <= 2);
     int argp = 3;
     std::vector<size_t> dims(dim);
@@ -14,18 +27,24 @@ int main(int argc, char **argv) {
         dims[i] = atoi(argv[argp++]);
     }
 
-    SZ::Config conf({1, dims[0]});
+    SZ3::Config conf({1, dims[0]});
     if (dim == 2) {
-        conf = SZ::Config({dims[0], dims[1]});
+        conf = SZ3::Config({dims[0], dims[1]});
+    } else if (dim == 3) {
+        conf = SZ3::Config({dims[0], dims[1], dims[2]});
     }
+
     std::string input_path = argv[1];
 
+    if (argp >= argc) {
+        usage();
+    }
     char *eb_op = argv[argp++] + 1;
     if (*eb_op == 'a') {
-        conf.errorBoundMode = SZ::EB_ABS;
+        conf.errorBoundMode = SZ3::EB_ABS;
         conf.absErrorBound = atof(argv[argp++]);
     } else {
-        conf.errorBoundMode = SZ::EB_REL;
+        conf.errorBoundMode = SZ3::EB_REL;
         conf.relErrorBound = atof(argv[argp++]);
     }
     size_t batch_size = 0;
@@ -49,24 +68,26 @@ int main(int argc, char **argv) {
     std::vector<float> input2(input_data.get(), input_data.get() + conf.num);
     std::vector<float> dec_data(conf.num);
 
-    size_t compressed_size = MDZ_Compress<float, 2>(conf, input_data.get(), dec_data.data(), batch_size, method);
+    size_t compressed_size;
+    if (dim == 2) {
+        compressed_size = MDZ_Compress<float, 2>(conf, input_data.get(), dec_data.data(), batch_size, method);
+    } else if (dim == 3) {
+        compressed_size = MDZ_Compress<float, 3>(conf, input_data.get(), dec_data.data(), batch_size, method);
+    }
     float ratio = conf.num * 1.0 * sizeof(float) / compressed_size;
 
-//    std::stringstream ss;
-//    ss << input_path.substr(input_path.rfind('/') + 1)
-//       << ".b" << batch_size
-//       << "." << conf.relErrorBound << ".md-" << method << ".out";
-//    std::cout << "Decompressed file = " << ss.str() << std::endl;
-//    SZ::writefile(ss.str().data(), dec_data.data(), total_num);
-
     double max_diff, psnr, nrmse;
-    SZ::verify<float>(input2.data(), dec_data.data(), conf.num, psnr, nrmse, max_diff);
-    std::cout << "****************** Final ****************" << std::endl;
-    printf("method=md, file=%s, block=%lu, compression_ratio=%.3f, reb=%.1e, eb=%.6f, psnr=%.3f, nsmse=%e, compress_time=%.3f, decompress_time=%.3f, timestep_op=%d\n",
-           input_path.data(), batch_size,
-           ratio,
-           conf.relErrorBound,
-           max_diff, psnr, nrmse,
-           total_compress_time, total_decompress_time,
-           method);
+    printf("\nBatch=%lu\nCompression ratio=%.3f\nCompression time=%.3f\nDecompression time=%.3f\n",
+           (batch_size == 0 ? dims[0] : batch_size), ratio,
+           total_compress_time, total_decompress_time);
+
+    SZ3::verify<float>(input2.data(), dec_data.data(), conf.num, psnr, nrmse, max_diff);
+//    std::cout << "****************** Final ****************" << std::endl;
+//    printf("method=md, file=%s, block=%lu, compression_ratio=%.3f, reb=%.1e, eb=%.6f, psnr=%.3f, nsmse=%e, compress_time=%.3f, decompress_time=%.3f, timestep_op=%d\n",
+//           input_path.data(), batch_size,
+//           ratio,
+//           conf.relErrorBound,
+//           max_diff, psnr, nrmse,
+//           total_compress_time, total_decompress_time,
+//           method);
 }

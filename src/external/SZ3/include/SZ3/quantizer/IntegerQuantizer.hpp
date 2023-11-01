@@ -8,7 +8,7 @@
 #include "SZ3/def.hpp"
 #include "SZ3/quantizer/Quantizer.hpp"
 
-namespace SZ {
+namespace SZ3 {
 
     template<class T>
     class LinearQuantizer : public concepts::QuantizerInterface<T> {

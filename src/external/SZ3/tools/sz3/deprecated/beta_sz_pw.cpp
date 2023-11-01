@@ -29,7 +29,7 @@ float compression_time = 0;
 
 template<typename T, uint N, class Frontend, class Encoder, class Lossless>
 float SZ_compress(std::unique_ptr<T[]> const &data,
-                  SZ::Config &conf,
+                  SZ3::Config &conf,
                   Frontend frontend, Encoder encoder, Lossless lossless) {
 
     std::cout << "****************** Options ********************" << std::endl;
@@ -89,15 +89,15 @@ float SZ_compress(std::unique_ptr<T[]> const &data,
     }
 
 //    std::vector<T> data1 = std::vector<T>(data.get(), data.get() + conf.num);
-    auto sz = SZ::make_sz_general_compressor<T, N>(frontend, encoder, lossless);
+    auto sz = SZ3::make_sz_general_compressor<T, N>(frontend, encoder, lossless);
 
-    SZ::Timer timer;
+    SZ3::Timer timer;
     timer.start();
     std::cout << "****************** Compression ******************" << std::endl;
 
 
     size_t compressed_size = 0;
-    std::unique_ptr<SZ::uchar[]> compressed;
+    std::unique_ptr<SZ3::uchar[]> compressed;
     compressed.reset(sz->compress(conf, data.get(), compressed_size));
 
     compression_time = timer.stop("Compression");
@@ -113,16 +113,16 @@ float SZ_compress(std::unique_ptr<T[]> const &data,
     ss << src_file_name.substr(src_file_name.rfind('/') + 1)
        << "." << relative_error_bound << "." << dis(gen) << ".sz3";
     auto compressed_file_name = ss.str();
-    SZ::writefile(compressed_file_name.c_str(), compressed.get(), compressed_size);
+    SZ3::writefile(compressed_file_name.c_str(), compressed.get(), compressed_size);
     std::cout << "Compressed file = " << compressed_file_name << std::endl;
 
     std::cout << "****************** Decompression ****************" << std::endl;
-    compressed = SZ::readfile<SZ::uchar>(compressed_file_name.c_str(), compressed_size);
+    compressed = SZ3::readfile<SZ3::uchar>(compressed_file_name.c_str(), compressed_size);
 
     timer.start();
     T *dec_data = sz->decompress(compressed.get(), compressed_size, conf.num);
     timer.stop("Decompression");
-//    SZ::verify<T>(data1.data(), dec_data, conf.num);
+//    SZ3::verify<T>(data1.data(), dec_data, conf.num);
 
 //    float threshold = minLogValue;
     if (!positive) {
@@ -139,11 +139,11 @@ float SZ_compress(std::unique_ptr<T[]> const &data,
         }
     }
 
-    SZ::verify<T>(data_.data(), dec_data, conf.num);
+    SZ3::verify<T>(data_.data(), dec_data, conf.num);
 
     remove(compressed_file_name.c_str());
     auto decompressed_file_name = compressed_file_name + ".out";
-    SZ::writefile(decompressed_file_name.c_str(), dec_data, conf.num);
+    SZ3::writefile(decompressed_file_name.c_str(), dec_data, conf.num);
     std::cout << "Decompressed file = " << decompressed_file_name << std::endl;
 
     delete[] dec_data;
@@ -152,72 +152,72 @@ float SZ_compress(std::unique_ptr<T[]> const &data,
 
 template<typename T, uint N, class Frontend>
 float SZ_compress_build_backend(std::unique_ptr<T[]> const &data,
-                                SZ::Config &conf,
+                                SZ3::Config &conf,
                                 Frontend frontend) {
     if (conf.lossless == 1) {
         if (conf.encoder == 1) {
-            return SZ_compress<T, N>(data, conf, frontend, SZ::HuffmanEncoder<int>(), SZ::Lossless_zstd());
+            return SZ_compress<T, N>(data, conf, frontend, SZ3::HuffmanEncoder<int>(), SZ3::Lossless_zstd());
         } else if (conf.encoder == 2) {
-            return SZ_compress<T, N>(data, conf, frontend, SZ::ArithmeticEncoder<int>(true), SZ::Lossless_zstd());
+            return SZ_compress<T, N>(data, conf, frontend, SZ3::ArithmeticEncoder<int>(true), SZ3::Lossless_zstd());
         } else {
-            return SZ_compress<T, N>(data, conf, frontend, SZ::BypassEncoder<int>(), SZ::Lossless_zstd());
+            return SZ_compress<T, N>(data, conf, frontend, SZ3::BypassEncoder<int>(), SZ3::Lossless_zstd());
         }
     } else {
         if (conf.encoder == 1) {
-            return SZ_compress<T, N>(data, conf, frontend, SZ::HuffmanEncoder<int>(), SZ::Lossless_bypass());
+            return SZ_compress<T, N>(data, conf, frontend, SZ3::HuffmanEncoder<int>(), SZ3::Lossless_bypass());
         } else if (conf.encoder == 2) {
-            return SZ_compress<T, N>(data, conf, frontend, SZ::ArithmeticEncoder<int>(true), SZ::Lossless_bypass());
+            return SZ_compress<T, N>(data, conf, frontend, SZ3::ArithmeticEncoder<int>(true), SZ3::Lossless_bypass());
         } else {
-            return SZ_compress<T, N>(data, conf, frontend, SZ::BypassEncoder<int>(), SZ::Lossless_bypass());
+            return SZ_compress<T, N>(data, conf, frontend, SZ3::BypassEncoder<int>(), SZ3::Lossless_bypass());
         }
     }
 }
 
 template<typename T, uint N>
-float SZ_compress_build_frontend(std::unique_ptr<T[]> const &data, SZ::Config &conf) {
-    auto quantizer = SZ::LinearQuantizer<T>(conf.absErrorBound, conf.quantbinCnt / 2);
-    std::vector<std::shared_ptr<SZ::concepts::PredictorInterface<T, N>>> predictors;
+float SZ_compress_build_frontend(std::unique_ptr<T[]> const &data, SZ3::Config &conf) {
+    auto quantizer = SZ3::LinearQuantizer<T>(conf.absErrorBound, conf.quantbinCnt / 2);
+    std::vector<std::shared_ptr<SZ3::concepts::PredictorInterface<T, N>>> predictors;
 
     int use_single_predictor =
             (conf.lorenzo + conf.lorenzo2 + conf.regression) == 1;
     if (conf.lorenzo) {
         if (use_single_predictor) {
             return SZ_compress_build_backend<T, N>(data, conf,
-                                                   SZ::make_sz_general_frontend<T, N>(conf, SZ::LorenzoPredictor<T, N, 1>(conf.absErrorBound),
+                                                   SZ3::make_sz_general_frontend<T, N>(conf, SZ3::LorenzoPredictor<T, N, 1>(conf.absErrorBound),
                                                                               quantizer));
         } else {
-            predictors.push_back(std::make_shared<SZ::LorenzoPredictor<T, N, 1>>(conf.absErrorBound));
+            predictors.push_back(std::make_shared<SZ3::LorenzoPredictor<T, N, 1>>(conf.absErrorBound));
         }
     }
     if (conf.lorenzo2) {
         if (use_single_predictor) {
             return SZ_compress_build_backend<T, N>(data, conf,
-                                                   SZ::make_sz_general_frontend<T, N>(conf, SZ::LorenzoPredictor<T, N, 2>(conf.absErrorBound),
+                                                   SZ3::make_sz_general_frontend<T, N>(conf, SZ3::LorenzoPredictor<T, N, 2>(conf.absErrorBound),
                                                                               quantizer));
         } else {
-            predictors.push_back(std::make_shared<SZ::LorenzoPredictor<T, N, 2>>(conf.absErrorBound));
+            predictors.push_back(std::make_shared<SZ3::LorenzoPredictor<T, N, 2>>(conf.absErrorBound));
         }
     }
     if (conf.regression) {
         if (use_single_predictor) {
             return SZ_compress_build_backend<T, N>(data, conf,
-                                                   SZ::make_sz_general_frontend<T, N>(conf, SZ::RegressionPredictor<T, N>(conf.blockSize,
+                                                   SZ3::make_sz_general_frontend<T, N>(conf, SZ3::RegressionPredictor<T, N>(conf.blockSize,
                                                                                                                   conf.absErrorBound),
                                                                               quantizer));
         } else {
-            predictors.push_back(std::make_shared<SZ::RegressionPredictor<T, N>>(conf.blockSize, conf.absErrorBound));
+            predictors.push_back(std::make_shared<SZ3::RegressionPredictor<T, N>>(conf.blockSize, conf.absErrorBound));
         }
     }
 
     return SZ_compress_build_backend<T, N>(data, conf,
-                                           SZ::make_sz_general_frontend<T, N>(conf, SZ::ComposedPredictor<T, N>(predictors), quantizer));
+                                           SZ3::make_sz_general_frontend<T, N>(conf, SZ3::ComposedPredictor<T, N>(predictors), quantizer));
 }
 
 
 template<class T, uint N>
 float SZ_compress_parse_args(int argc, char **argv, int argp, std::unique_ptr<T[]> &data, float eb,
                              std::array<size_t, N> dims) {
-    SZ::Config conf;
+    SZ3::Config conf;
     conf.setDims(dims.begin(), dims.end());
     conf.absErrorBound = eb;
     if (argp < argc) {
@@ -272,7 +272,7 @@ int main(int argc, char **argv) {
     }
 
     size_t num = 0;
-    auto data = SZ::readfile<float>(argv[1], num);
+    auto data = SZ3::readfile<float>(argv[1], num);
     src_file_name = argv[1];
     std::cout << "Read " << num << " elements\n";
 

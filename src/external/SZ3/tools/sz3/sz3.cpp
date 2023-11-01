@@ -123,22 +123,22 @@ void usage_sz2() {
 }
 
 template<class T>
-void compress(char *inPath, char *cmpPath, SZ::Config conf) {
+void compress(char *inPath, char *cmpPath, SZ3::Config conf) {
     T *data = new T[conf.num];
-    SZ::readfile<T>(inPath, conf.num, data);
+    SZ3::readfile<T>(inPath, conf.num, data);
 
     size_t outSize;
-    SZ::Timer timer(true);
+    SZ3::Timer timer(true);
     char *bytes = SZ_compress<T>(conf, data, outSize);
     double compress_time = timer.stop();
 
     char outputFilePath[1024];
     if (cmpPath == nullptr) {
-        sprintf(outputFilePath, "%s.sz", inPath);
+        snprintf(outputFilePath, 1024, "%s.sz", inPath);
     } else {
         strcpy(outputFilePath, cmpPath);
     }
-    SZ::writefile(outputFilePath, bytes, outSize);
+    SZ3::writefile(outputFilePath, bytes, outSize);
 
     printf("compression ratio = %.2f \n", conf.num * 1.0 * sizeof(T) / outSize);
     printf("compression time = %f\n", compress_time);
@@ -150,33 +150,33 @@ void compress(char *inPath, char *cmpPath, SZ::Config conf) {
 
 template<class T>
 void decompress(char *inPath, char *cmpPath, char *decPath,
-                SZ::Config conf,
+                SZ3::Config conf,
                 int binaryOutput, int printCmpResults) {
 
     size_t cmpSize;
-    auto cmpData = SZ::readfile<char>(cmpPath, cmpSize);
+    auto cmpData = SZ3::readfile<char>(cmpPath, cmpSize);
 
-    SZ::Timer timer(true);
+    SZ3::Timer timer(true);
     T *decData = SZ_decompress<T>(conf, cmpData.get(), cmpSize);
     double compress_time = timer.stop();
 
     char outputFilePath[1024];
     if (decPath == nullptr) {
-        sprintf(outputFilePath, "%s.out", cmpPath);
+        snprintf(outputFilePath, 1024, "%s.out", cmpPath);
     } else {
         strcpy(outputFilePath, decPath);
     }
     if (binaryOutput == 1) {
-        SZ::writefile<T>(outputFilePath, decData, conf.num);
+        SZ3::writefile<T>(outputFilePath, decData, conf.num);
     } else {
-        SZ::writeTextFile<T>(outputFilePath, decData, conf.num);
+        SZ3::writeTextFile<T>(outputFilePath, decData, conf.num);
     }
     if (printCmpResults) {
         //compute the distortion / compression errors...
         size_t totalNbEle;
-        auto ori_data = SZ::readfile<T>(inPath, totalNbEle);
+        auto ori_data = SZ3::readfile<T>(inPath, totalNbEle);
         assert(totalNbEle == conf.num);
-        SZ::verify<T>(ori_data.get(), decData, conf.num);
+        SZ3::verify<T>(ori_data.get(), decData, conf.num);
     }
     delete[]decData;
 
@@ -379,7 +379,7 @@ int main(int argc, char *argv[]) {
     if (inPath != nullptr && cmpPath == nullptr && decPath != nullptr) {
         compression = true;
         decompression = true;
-        sprintf(cmpPathTmp, "%s.sz.tmp", inPath);
+        snprintf(cmpPathTmp, 1024, "%s.sz.tmp", inPath);
         cmpPath = cmpPathTmp;
         delCmpPath = true;
     }
@@ -391,15 +391,15 @@ int main(int argc, char *argv[]) {
         exit(0);
     }
 
-    SZ::Config conf;
+    SZ3::Config conf;
     if (r2 == 0) {
-        conf = SZ::Config(r1);
+        conf = SZ3::Config(r1);
     } else if (r3 == 0) {
-        conf = SZ::Config(r2, r1);
+        conf = SZ3::Config(r2, r1);
     } else if (r4 == 0) {
-        conf = SZ::Config(r3, r2, r1);
+        conf = SZ3::Config(r3, r2, r1);
     } else {
-        conf = SZ::Config(r4, r3, r2, r1);
+        conf = SZ3::Config(r4, r3, r2, r1);
     }
     if (compression && conPath != nullptr) {
         conf.loadcfg(conPath);
@@ -421,30 +421,30 @@ int main(int argc, char *argv[]) {
                 conf.l2normErrorBound = atof(normErrorBound);
             }
         }
-        if (strcmp(errBoundMode, SZ::EB_STR[SZ::EB_ABS]) == 0) {
-            conf.errorBoundMode = SZ::EB_ABS;
+        if (strcmp(errBoundMode, SZ3::EB_STR[SZ3::EB_ABS]) == 0) {
+            conf.errorBoundMode = SZ3::EB_ABS;
             if (errBound != nullptr) {
                 conf.absErrorBound = atof(errBound);
             }
-        } else if (strcmp(errBoundMode, SZ::EB_STR[SZ::EB_REL]) == 0 || strcmp(errBoundMode, "VR_REL") == 0) {
-            conf.errorBoundMode = SZ::EB_REL;
+        } else if (strcmp(errBoundMode, SZ3::EB_STR[SZ3::EB_REL]) == 0 || strcmp(errBoundMode, "VR_REL") == 0) {
+            conf.errorBoundMode = SZ3::EB_REL;
             if (errBound != nullptr) {
                 conf.relErrorBound = atof(errBound);
             }
-        } else if (strcmp(errBoundMode, SZ::EB_STR[SZ::EB_PSNR]) == 0) {
-            conf.errorBoundMode = SZ::EB_PSNR;
+        } else if (strcmp(errBoundMode, SZ3::EB_STR[SZ3::EB_PSNR]) == 0) {
+            conf.errorBoundMode = SZ3::EB_PSNR;
             if (errBound != nullptr) {
                 conf.psnrErrorBound = atof(errBound);
             }
-        } else if (strcmp(errBoundMode, SZ::EB_STR[SZ::EB_L2NORM]) == 0) {
-            conf.errorBoundMode = SZ::EB_L2NORM;
+        } else if (strcmp(errBoundMode, SZ3::EB_STR[SZ3::EB_L2NORM]) == 0) {
+            conf.errorBoundMode = SZ3::EB_L2NORM;
             if (errBound != nullptr) {
                 conf.l2normErrorBound = atof(errBound);
             }
-        } else if (strcmp(errBoundMode, SZ::EB_STR[SZ::EB_ABS_AND_REL]) == 0) {
-            conf.errorBoundMode = SZ::EB_ABS_AND_REL;
-        } else if (strcmp(errBoundMode, SZ::EB_STR[SZ::EB_ABS_OR_REL]) == 0) {
-            conf.errorBoundMode = SZ::EB_ABS_OR_REL;
+        } else if (strcmp(errBoundMode, SZ3::EB_STR[SZ3::EB_ABS_AND_REL]) == 0) {
+            conf.errorBoundMode = SZ3::EB_ABS_AND_REL;
+        } else if (strcmp(errBoundMode, SZ3::EB_STR[SZ3::EB_ABS_OR_REL]) == 0) {
+            conf.errorBoundMode = SZ3::EB_ABS_OR_REL;
         } else {
             printf("Error: wrong error bound mode setting by using the option '-M'\n");
             usage();

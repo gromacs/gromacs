@@ -5,7 +5,7 @@
 #include "SZ3/def.hpp"
 #include <vector>
 
-namespace SZ {
+namespace SZ3 {
 
     template<class T>
     class BypassEncoder : public concepts::EncoderInterface<T> {

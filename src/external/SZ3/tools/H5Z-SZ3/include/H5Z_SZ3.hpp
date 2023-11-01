@@ -22,6 +22,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
+#include <cstdint>
 
 
 
@@ -77,10 +78,10 @@ void init_dims_chunk(int dim, hsize_t dims[5], hsize_t chunk[5], size_t nbEle, s
 double bytesToDouble(unsigned char* bytes);
 void doubleToBytes(unsigned char *b, double num);
 
-void longToBytes_bigEndian(unsigned char *b, unsigned long num) ;
+void longToBytes_bigEndian(unsigned char *b, uint64_t num) ;
 
 int bytesToInt_bigEndian(unsigned char* bytes);
-long bytesToLong_bigEndian(unsigned char* b);
+int64_t bytesToLong_bigEndian(unsigned char* b);
 
 void detectSysEndianType();
 void symTransform_8bytes(unsigned char data[8]);

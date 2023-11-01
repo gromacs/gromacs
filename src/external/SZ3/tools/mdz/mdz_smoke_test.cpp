@@ -9,9 +9,9 @@ int main(int argc, char **argv) {
 
 
     std::vector<size_t> dims({100, 200});
-    SZ::Config conf({dims[0], dims[1]});
+    SZ3::Config conf({dims[0], dims[1]});
 
-    conf.errorBoundMode = SZ::EB_ABS;
+    conf.errorBoundMode = SZ3::EB_ABS;
     conf.absErrorBound = 1e-6;
 //    conf.blockSize = 128;
 //    conf.stride = 128;

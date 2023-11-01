@@ -9,7 +9,7 @@
 #include <iostream>
 #include <chrono>
 
-namespace SZ {
+namespace SZ3 {
     class Timer {
     public:
         Timer() = default;

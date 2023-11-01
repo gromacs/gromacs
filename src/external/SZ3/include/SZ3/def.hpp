@@ -3,7 +3,7 @@
 
 #include <cmath>
 
-namespace SZ {
+namespace SZ3 {
 
     typedef unsigned int uint;
     typedef unsigned char uchar;

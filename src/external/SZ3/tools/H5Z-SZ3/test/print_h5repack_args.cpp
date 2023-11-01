@@ -1,5 +1,6 @@
 #include <cstdio>
 #include <cstdlib>
+#include <cstdint>
 #include <cmath>
 #include <cstring>
 
@@ -21,7 +22,7 @@ int dataEndianType = LITTLE_ENDIAN_DATA;
 typedef union ldouble
 {
     double value;
-    unsigned long lvalue;
+    uint64_t lvalue;
     unsigned char byte[8];
 } ldouble;
 

@@ -18,7 +18,7 @@
 #include <set>
 
 
-namespace SZ {
+namespace SZ3 {
 
 
     template<class T>
@@ -87,7 +87,7 @@ namespace SZ {
         /**
          * build huffman tree using bins
          * @param bins
-         * @param stateNum is no longer needed
+         * @param stateNum
          */
         void preprocess_encode(const std::vector<T> &bins, int stateNum) {
             preprocess_encode(bins.data(), bins.size(), stateNum);
@@ -97,7 +97,7 @@ namespace SZ {
          * build huffman tree using bins
          * @param bins
          * @param num_bin
-         * @param stateNum is no longer needed
+         * @param stateNum
          */
         void preprocess_encode(const T *bins, size_t num_bin, int stateNum) {
             nodeCount = 0;
@@ -112,7 +112,7 @@ namespace SZ {
         }
 
         //save the huffman Tree in the compressed data
-        uint save(uchar *&c) {
+        void save(uchar *&c) {
             auto cc = c;
             write(offset, c);
             int32ToBytes_bigEndian(c, nodeCount);
@@ -128,7 +128,7 @@ namespace SZ {
             else
                 totalSize = convert_HuffTree_to_bytes_anyStates<unsigned int>(nodeCount, c);
             c += totalSize;
-            return c - cc;
+//            return c - cc;
         }
 
         size_t size_est() {

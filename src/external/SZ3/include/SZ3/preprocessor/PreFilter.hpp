@@ -7,7 +7,7 @@
 
 #include "SZ3/preprocessor/PreProcessor.hpp"
 
-namespace SZ {
+namespace SZ3 {
     template<class T, uint N>
 
     class PreFilter : public concepts::PreprocessorInterface<T, N> {

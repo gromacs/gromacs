@@ -6,7 +6,7 @@
 #include "SZ3/preprocessor/PreProcessor.hpp"
 #include <gsl/gsl_wavelet.h>
 
-namespace SZ {
+namespace SZ3 {
     template<class T, uint N>
 
     class Wavelet : public concepts::PreprocessorInterface<T, N> {

@@ -11,7 +11,7 @@
 #include "SZ3/def.hpp"
 #include <cstring>
 
-namespace SZ {
+namespace SZ3 {
     template<class T, uint N, class Frontend, class Encoder, class Lossless>
     class SZGeneralCompressor : public concepts::CompressorInterface<T> {
     public:
@@ -31,7 +31,7 @@ namespace SZ {
 
             std::vector<int> quant_inds = frontend.compress(data);
 
-            encoder.preprocess_encode(quant_inds, 0);
+            encoder.preprocess_encode(quant_inds, frontend.get_radius() * 2);
             size_t bufferSize = 1.2 * (frontend.size_est() + encoder.size_est() + sizeof(T) * quant_inds.size());
 
             uchar *buffer = new uchar[bufferSize];

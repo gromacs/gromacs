@@ -13,7 +13,7 @@
 #include "SZ3/def.hpp"
 #include <cstring>
 
-namespace SZ {
+namespace SZ3 {
     template<class T, uint N, class Lossless>
     class SZTruncateCompressor : public concepts::CompressorInterface<T> {
     public:

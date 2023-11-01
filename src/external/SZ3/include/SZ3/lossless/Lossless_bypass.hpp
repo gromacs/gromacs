@@ -11,7 +11,7 @@
 #include "SZ3/utils/FileUtil.hpp"
 #include "SZ3/lossless/Lossless.hpp"
 
-namespace SZ {
+namespace SZ3 {
     class Lossless_bypass : public concepts::LosslessInterface {
 
     public:

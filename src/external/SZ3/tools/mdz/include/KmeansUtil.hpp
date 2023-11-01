@@ -16,7 +16,7 @@
 #include <SZ3/def.hpp>
 
 
-namespace SZ {
+namespace SZ3 {
 
 /*
  *  Internal implementation of the SMAWK algorithm.
@@ -225,7 +225,7 @@ namespace SZ {
             return;
         }
         k = bestk;
-        std::cout << "# groups = " << k << std::endl;
+//        std::cout << "# groups = " << k << std::endl;
 
         // ***************************************************
         // * Extract cluster assignments by backtracking
@@ -308,7 +308,7 @@ namespace SZ {
                      size_t sample_num) {
         T max = *std::max_element(data, data + num);
         T min = *std::min_element(data, data + num);
-        SZ::Timer timer;
+        SZ3::Timer timer;
         timer.start();
         std::vector<T> sample;
         if (num == sample_num) {
@@ -327,7 +327,7 @@ namespace SZ {
 //        std::cout << std::endl;
             std::uniform_int_distribution<> dis2(0, num);
             std::unordered_set<size_t> sampledkeys;
-            printf("total_num=%lu, sample_num=%lu\n", num, sample_num);
+//            printf("total_num=%lu, sample_num=%lu\n", num, sample_num);
             for (size_t i = 0; i < sample_num; i++) {
                 do {
                     input_idx = dis2(gen);
@@ -354,7 +354,7 @@ namespace SZ {
 //    cluster(input.get(), num, 16, idx.data(), cents.data());
         timer.stop("kmeans1d");
         if (k == 150) {
-            std::cout << "No clusters are found." << std::endl;
+//            std::cout << "No clusters are found." << std::endl;
             level_num = 0;
             return;
 //            exit(0);

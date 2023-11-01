@@ -50,13 +50,13 @@ void writeByteData(unsigned char *bytes, size_t byteLength, char *tgtFilePath, i
     *status = 0;
 }
 
-using namespace SZ;
+using namespace SZ3;
 
 int main(int argc, char *argv[]) {
     int status = 0;
     char inputFile[100];
     size_t byteLen = 0;
-    sprintf(inputFile, "%s", argv[1]);
+    snprintf(inputFile, 100, "%s", argv[1]);
 //    unsigned char *bytes = readByteData(inputFile, &byteLen, &status);
 //    std::vector<int> codes(byteLen);
     size_t i = 0;
@@ -84,7 +84,7 @@ int main(int argc, char *argv[]) {
     size_t totalCmprSize = ariCoderBytes - cmprData;
 
     char cmprFile[100];
-    sprintf(cmprFile, "%s.ari", inputFile);
+    snprintf(cmprFile, 100, "%s.ari", inputFile);
     writefile(cmprFile, cmprData, totalCmprSize);
 
     printf("compressed data size is: %zu\n", totalCmprSize);

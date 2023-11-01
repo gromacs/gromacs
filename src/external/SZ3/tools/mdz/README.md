@@ -17,10 +17,14 @@ You'll find all the executables in [INSTALL_DIR]/tools/mdz and header files in [
 
 ## Testing Examples
 mdz datafile -2 dim1 dim2 -r reb buffer_size compressor
+
+mdz datafile -3 dim1 dim2 dim3 -r reb buffer_size compressor
+
 #### options:
 * datafile: FP32 binary format. Contains single axis (X or Y or Z) only.
 * dim1: number of timesteps
-* dim2: number of atoms 
+* dim2: number of atoms
+* dim3: number of atom dimensions (x,y,z,etc.)
 * reb: relative error bound, for example, 1E-3
 * buffer_size (optional): default 10
 * compressor (optional): -1:ADP, 0: VQ, 1:VQT, 2:MT, 3: Lorenzo+Regression;  
@@ -28,4 +32,4 @@ mdz datafile -2 dim1 dim2 -r reb buffer_size compressor
 #### examples:
 * mdz helium-mode-b-7852x1037/x.f32.dat -2 7852 1037 -r 1E-3
 * mdz helium-mode-b-7852x1037/x.f32.dat -2 7852 1037 -r 1E-3 10
-* mdz helium-mode-b-7852x1037/x.f32.dat -2 7852 1037 -r 1E-3 10 1
+* mdz helium-mode-b-7852x1037/xyz.f32.dat -3 7852 1037 3 -r 1E-3 10

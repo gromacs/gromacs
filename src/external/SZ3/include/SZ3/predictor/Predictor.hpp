@@ -4,7 +4,7 @@
 #include "SZ3/utils/Iterator.hpp"
 #include "SZ3/def.hpp"
 
-namespace SZ {
+namespace SZ3 {
 
 
     namespace concepts {
@@ -25,18 +25,47 @@ namespace SZ {
 
             virtual void postdecompress_data(const iterator &) const = 0;
 
-            virtual bool precompress_block(const std::shared_ptr<Range> &) = 0;
+            /**
+             * compute auxiliary info (e.g., coefficients) for the given data block
+             * @param iterator of the block
+             * @return whether the predictor is suitable for the block (e.g., data with 100x1 shape is not suitable for 2D regression)
+             */
 
+            virtual bool precompress_block(const std::shared_ptr<Range> & block) = 0;
+
+            /**
+             * store the auxiliary info (e.g., coefficients) to this class's internal storage
+             */
             virtual void precompress_block_commit() = 0;
 
             virtual bool predecompress_block(const std::shared_ptr<Range> &) = 0;
 
+            /**
+             * serialize the predictor and store it to a buffer
+             * @param c One large buffer is pre-allocated, and the start location of the serialized predictor in the buffer is indicated by c.
+             *          After saving the predictor to the buffer, this function should change c to indicate the next empty location in the buffer
+             */
             virtual void save(uchar *&c) const = 0;
 
+            /**
+             * deserialize the predictor from a buffer
+             * @param c start location of the predictor in the buffer
+             * @param remaining_length the remaining length of the buffer
+             */
             virtual void load(const uchar *&c, size_t &remaining_length) = 0;
 
+            /**
+             * predict the value for a single data point
+             * @param iter the iterator of the single data point
+             * @return the predicted value
+             */
             virtual T predict(const iterator &iter) const noexcept = 0;
 
+            /**
+             * estimate the prediction error ( |prediction value - read value|)  for a single data point
+             * @param iter the iterator of the single data point
+             * @return the estimated prediction error
+             */
             virtual T estimate_error(const iterator &iter) const noexcept = 0;
 
             virtual void print() const = 0;

@@ -11,7 +11,7 @@
 #include <SZ3/utils/Config.hpp>
 #include <SZ3/def.hpp>
 
-namespace SZ {
+namespace SZ3 {
     template<class T, uint N, class Quantizer, class Encoder, class Lossless>
     class SZ_Exaalt_Compressor {
     public:
@@ -116,7 +116,7 @@ namespace SZ {
             quantizer.save(compressed_data_pos);
 //            quantizer.print();
 
-            encoder.preprocess_encode(quant_inds, 4 * quantizer.get_radius());
+            encoder.preprocess_encode(quant_inds, 2 * quantizer.get_radius());
             encoder.save(compressed_data_pos);
             encoder.encode(quant_inds, compressed_data_pos);
             encoder.postprocess_encode();
@@ -143,9 +143,9 @@ namespace SZ {
             num_elements = 1;
             for (const auto &d: global_dimensions) {
                 num_elements *= d;
-                std::cout << d << " ";
+//                std::cout << d << " ";
             }
-            std::cout << std::endl;
+//            std::cout << std::endl;
             quantizer.load(compressed_data_pos, remaining_length);
             encoder.load(compressed_data_pos, remaining_length);
             auto quant_inds = encoder.decode(compressed_data_pos, num_elements);

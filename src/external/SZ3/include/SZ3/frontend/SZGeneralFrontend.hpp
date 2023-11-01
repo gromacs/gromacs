@@ -13,7 +13,7 @@
 #include "SZ3/utils/Config.hpp"
 #include "SZ3/utils/MemoryUtil.hpp"
 
-namespace SZ {
+namespace SZ3 {
 
 
     template<class T, uint N, class Predictor, class Quantizer>
@@ -33,10 +33,10 @@ namespace SZ {
 
         std::vector<int> compress(T *data) {
             std::vector<int> quant_inds(num_elements);
-            auto block_range = std::make_shared<SZ::multi_dimensional_range<T, N>>(
+            auto block_range = std::make_shared<multi_dimensional_range<T, N>>(
                     data, std::begin(global_dimensions), std::end(global_dimensions), block_size, 0);
 
-            auto element_range = std::make_shared<SZ::multi_dimensional_range<T, N>>(
+            auto element_range = std::make_shared<multi_dimensional_range<T, N>>(
                     data, std::begin(global_dimensions), std::end(global_dimensions), 1, 0);
 
             predictor.precompress_data(block_range->begin());
@@ -68,10 +68,10 @@ namespace SZ {
             int const *quant_inds_pos = (int const *) quant_inds.data();
             std::array<size_t, N> intra_block_dims;
 //            auto dec_data = new T[num_elements];
-            auto block_range = std::make_shared<SZ::multi_dimensional_range<T, N>>(
+            auto block_range = std::make_shared<multi_dimensional_range<T, N>>(
                     dec_data, std::begin(global_dimensions), std::end(global_dimensions), block_size, 0);
 
-            auto element_range = std::make_shared<SZ::multi_dimensional_range<T, N>>(
+            auto element_range = std::make_shared<multi_dimensional_range<T, N>>(
                     dec_data, std::begin(global_dimensions), std::end(global_dimensions), 1, 0);
 
             predictor.predecompress_data(block_range->begin());

@@ -7,7 +7,7 @@
 
 #include "Config.hpp"
 
-namespace SZ {
+namespace SZ3 {
     template<class T>
     T data_range(const T *data, size_t num) {
         T max = data[0];
@@ -31,23 +31,23 @@ namespace SZ {
     }
 
     template<class T>
-    void calAbsErrorBound(SZ::Config &conf, const T *data, T range = 0) {
+    void calAbsErrorBound(Config &conf, const T *data, T range = 0) {
         if (conf.errorBoundMode != EB_ABS) {
             if (conf.errorBoundMode == EB_REL) {
                 conf.errorBoundMode = EB_ABS;
-                conf.absErrorBound = conf.relErrorBound * ((range > 0) ? range : SZ::data_range(data, conf.num));
+                conf.absErrorBound = conf.relErrorBound * ((range > 0) ? range : data_range(data, conf.num));
             } else if (conf.errorBoundMode == EB_PSNR) {
                 conf.errorBoundMode = EB_ABS;
-                conf.absErrorBound = computeABSErrBoundFromPSNR(conf.psnrErrorBound, 0.99, ((range > 0) ? range : SZ::data_range(data, conf.num)));
+                conf.absErrorBound = computeABSErrBoundFromPSNR(conf.psnrErrorBound, 0.99, ((range > 0) ? range : data_range(data, conf.num)));
             } else if (conf.errorBoundMode == EB_L2NORM) {
                 conf.errorBoundMode = EB_ABS;
                 conf.absErrorBound = sqrt(3.0 / conf.num) * conf.l2normErrorBound;
             } else if (conf.errorBoundMode == EB_ABS_AND_REL) {
                 conf.errorBoundMode = EB_ABS;
-                conf.absErrorBound = std::min(conf.absErrorBound, conf.relErrorBound * ((range > 0) ? range : SZ::data_range(data, conf.num)));
+                conf.absErrorBound = std::min(conf.absErrorBound, conf.relErrorBound * ((range > 0) ? range : data_range(data, conf.num)));
             } else if (conf.errorBoundMode == EB_ABS_OR_REL) {
                 conf.errorBoundMode = EB_ABS;
-                conf.absErrorBound = std::max(conf.absErrorBound, conf.relErrorBound * ((range > 0) ? range : SZ::data_range(data, conf.num)));
+                conf.absErrorBound = std::max(conf.absErrorBound, conf.relErrorBound * ((range > 0) ? range : data_range(data, conf.num)));
             } else {
                 printf("Error, error bound mode not supported\n");
                 exit(0);

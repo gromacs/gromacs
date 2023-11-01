@@ -1,3 +1,4 @@
+import sys
 import ctypes
 from ctypes.util import find_library
 import numpy as np
@@ -8,11 +9,19 @@ Python API for SZ2/SZ3
 
 
 class SZ:
-    def __init__(self, szpath):
+    def __init__(self, szpath=None):
         """
         init SZ
         :param szpath: the path to SZ dynamic library
         """
+
+        if szpath is None:
+            szpath = {
+                "darwin": "libSZ3c.dylib",
+                "windows": "SZ3c.dll",
+            }.get(sys.platform, "libSZ3c.so")
+
+
         self.sz = ctypes.cdll.LoadLibrary(szpath)
 
         self.sz.SZ_compress_args.argtypes = (ctypes.c_int, ctypes.c_void_p, ctypes.POINTER(ctypes.c_size_t),
@@ -71,7 +80,7 @@ class SZ:
                                            data_cmpr.size,
                                            r5, r4, r3, r2, r1)
 
-        data_dec = np.array(data_dec_c[:np.prod(original_shape)]).reshape(original_shape)
+        data_dec = np.array(data_dec_c[:np.prod(original_shape)], dtype=original_dtype).reshape(original_shape)
         self.libc.free(data_dec_c)
         return data_dec
 

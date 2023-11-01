@@ -5,7 +5,7 @@
 #ifndef SZ_INTERPOLATORS_HPP
 #define SZ_INTERPOLATORS_HPP
 
-namespace SZ {
+namespace SZ3 {
     template<class T>
     inline T interp_linear(T a, T b) {
         return (a + b) / 2;

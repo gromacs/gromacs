@@ -4,7 +4,7 @@
 #include <vector>
 #include "SZ3/predictor/MetaLorenzoPredictor.hpp"
 
-namespace SZ {
+namespace SZ3 {
 
 #define QuantIntvMeanCapacity 8192
 #define QuantIntvSampleDistance 100

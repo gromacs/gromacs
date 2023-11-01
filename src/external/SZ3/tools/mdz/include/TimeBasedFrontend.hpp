@@ -10,7 +10,7 @@
 #include <SZ3/utils/Config.hpp>
 #include <SZ3/utils/MemoryUtil.hpp>
 
-namespace SZ {
+namespace SZ3 {
 
 
     template<class T, uint N, class Predictor, class Quantizer>
@@ -46,9 +46,9 @@ namespace SZ {
                     global_dims[i] = global_dimensions[i + 1];
                 };
 
-                auto inter_block_range = std::make_shared<SZ::multi_dimensional_range<T, N - 1>>(
+                auto inter_block_range = std::make_shared<SZ3::multi_dimensional_range<T, N - 1>>(
                         data, std::begin(global_dims), std::end(global_dims), stride, 0);
-                auto intra_block_range = std::make_shared<SZ::multi_dimensional_range<T, N - 1>>(
+                auto intra_block_range = std::make_shared<SZ3::multi_dimensional_range<T, N - 1>>(
                         data, std::begin(global_dims), std::end(global_dims), 1, 0);
 
 //                std::array<size_t, N - 1> intra_block_dims;
@@ -114,10 +114,10 @@ namespace SZ {
                 for (int i = 0; i < N - 1; i++) {
                     global_dims[i] = global_dimensions[i + 1];
                 };
-                auto inter_block_range = std::make_shared<SZ::multi_dimensional_range<T, N - 1>>(
+                auto inter_block_range = std::make_shared<SZ3::multi_dimensional_range<T, N - 1>>(
                         dec_data, std::begin(global_dims), std::end(global_dims), stride, 0);
 
-                auto intra_block_range = std::make_shared<SZ::multi_dimensional_range<T, N - 1>>(
+                auto intra_block_range = std::make_shared<SZ3::multi_dimensional_range<T, N - 1>>(
                         dec_data, std::begin(global_dims), std::end(global_dims), 1, 0);
 
                 predictor.predecompress_data(inter_block_range->begin());
@@ -175,9 +175,9 @@ namespace SZ {
             num_elements = 1;
             for (const auto &d: global_dimensions) {
                 num_elements *= d;
-                std::cout << d << " ";
+//                std::cout << d << " ";
             }
-            std::cout << std::endl;
+//            std::cout << std::endl;
             read(block_size, c, remaining_length);
             stride = block_size;
             predictor.load(c, remaining_length);

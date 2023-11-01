@@ -7,7 +7,7 @@
 #include <cassert>
 #include <cstring>
 #include "SZ3/def.hpp"
-namespace SZ {
+namespace SZ3 {
     // read array
     template<class T1>
     void read(T1 *array, size_t num_elements, uchar const *&compressed_data_pos, size_t &remaining_length) {

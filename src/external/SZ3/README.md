@@ -8,7 +8,11 @@ SZ3: A Modular Error-bounded Lossy Compression Framework for Scientific Datasets
 
 ## Citations
 
-**Kindly note**: If you mention SZ in your paper, the most appropriate citation is including these three references (**ICDE21, HPDC2020, Bigdata2018**), because they cover the design and implementation of the latest version of SZ.
+**Kindly note**: If you mention SZ in your paper, the most appropriate citation is including these three references (**TBD22, ICDE21, Bigdata18**), because they cover the design and implementation of the latest version of SZ.
+
+* SZ3 Framework: Xin Liang, Kai Zhao, Sheng Di, Sihuan Li, Robert Underwood, Ali M Gok, Jiannan Tian, Junjing Deng, Jon C Calhoun, Dingwen Tao, Zizhong Chen, and Franck Cappello.
+  "[SZ3: A modular framework for composing prediction-based error-bounded lossy compressors](https://ieeexplore.ieee.org/abstract/document/9866018)",
+  IEEE Transactions on Big Data (TBD 22).
 
 * SZ3 Algorithm: Kai Zhao, Sheng Di, Maxim Dmitriev, Thierry-Laurent D. Tonellot, Zizhong Chen, and Franck
   Cappello. "[Optimizing Error-Bounded Lossy Compression for Scientiﬁc Data by Dynamic Spline Interpolation](https://ieeexplore.ieee.org/document/9458791)"
@@ -122,3 +126,4 @@ Version New features
 * SZ 3.1.5 Support HDF5 by H5Z-SZ3. Please add "-DBUILD_H5Z_FILTER=ON" to enable this function for CMake.
 * SZ 3.1.6 Support C API and Python API.
 * SZ 3.1.7 Initial MDZ(https://github.com/szcompressor/SZ3/tree/master/tools/mdz) support.
+* SZ 3.1.8 namespace changed from SZ to SZ3. H5Z-SZ3 supports configuration file now.

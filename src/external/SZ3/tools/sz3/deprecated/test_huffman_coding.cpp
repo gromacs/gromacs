@@ -14,8 +14,8 @@ int main() {
 
     unsigned char *compressed = (unsigned char *) malloc(N * sizeof(int));
     {
-        SZ::HuffmanEncoder<int> encoder;
-        encoder.preprocess_encode(type, 0);
+        SZ3::HuffmanEncoder<int> encoder;
+        encoder.preprocess_encode(type, capacity);
         unsigned char *compressed_pos = compressed;
         cout << "save encoder" << endl;
         encoder.save(compressed_pos);
@@ -35,7 +35,7 @@ int main() {
         // }
     }
     {
-        SZ::HuffmanEncoder<int> encoder;
+        SZ3::HuffmanEncoder<int> encoder;
         const unsigned char *compressed_pos = compressed;
         size_t length = sizeof(int);
         cout << "load" << endl;
