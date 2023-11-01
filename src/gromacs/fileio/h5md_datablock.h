@@ -50,17 +50,16 @@ private:
     hid_t    container_;
     char     name_[128];
     char     unit_[64];
+    int      writingInterval_;
     hsize_t  numFramesPerChunk_;
     hsize_t  numEntries_;
     hsize_t  numValuesPerEntry_;
-    hsize_t  numWrittenFrames_;
     hid_t    datatype_;
-    void     initDataProperties(hsize_t numFramesPerChunk, hsize_t numEntries, hsize_t numValuesPerEntry = 1);
     CompressionAlgorithm compressionAlgorithm_;
     double compressionAbsoluteError_;
 public:
     // GmxH5mdDataBlock();
-    GmxH5mdDataBlock(hid_t container = -1, const char* name = "", const char* unit = "", hsize_t numFramesPerChunk = 1, hsize_t numEntries = 0, hsize_t numValuesPerEntry = 1, hid_t datatype = -1,
+    GmxH5mdDataBlock(hid_t container = -1, const char* name = "", const char* unit = "", int writingInterval = 0, hsize_t numFramesPerChunk = 1, hsize_t numEntries = 0, hsize_t numValuesPerEntry = 1, hid_t datatype = -1,
                      CompressionAlgorithm compression = CompressionAlgorithm::None, double compressionError = 0.001);
 
     void writeFrame(const void* data, int64_t step, real time, const char* valueName = "value");

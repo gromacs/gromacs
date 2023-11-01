@@ -60,6 +60,10 @@ enum class CompressionAlgorithm
     */
 hid_t openOrCreateGroup(hid_t container, const char *name);
 
+/*! \brief Registers the SZ3 filter by using the automatic registration mechanism by H5Pset_filter().
+ * Must be done before appending (e.g. when restarting from acheckpoint) to a compressed dataset. */
+void registerSz3FilterImplicitly();
+
 void writeData(hid_t container, const char* name, const char* unit, const void* data, hsize_t numFramesPerChunk, hsize_t numEntries, hsize_t numValuesPerEntry, hsize_t positionToWrite, hid_t datatype, CompressionAlgorithm compression, double compressionError);
 
 template <typename T>

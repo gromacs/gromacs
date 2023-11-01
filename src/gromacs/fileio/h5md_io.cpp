@@ -47,6 +47,7 @@
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/baseversion.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/futil.h"
 #include "gromacs/utility/programcontext.h"
 #include "gromacs/utility/sysinfo.h"
 
@@ -57,16 +58,16 @@
 
 #if GMX_USE_HDF5
 #include <hdf5.h>
+#include "external/SZ3/tools/H5Z-SZ3/include/H5Z_SZ3.hpp"
 #endif
 
 
-GmxH5mdIo::GmxH5mdIo(const char* fileName, const char *modeString)
+GmxH5mdIo::GmxH5mdIo(const char* fileName, const char mode)
 {
     file_ = -1;
-    numFramesPerChunkCompressed_ = 0;
     if (strlen(fileName) > 0)
     {
-        openFile(fileName, modeString);
+        openFile(fileName, mode);
     }
 }
 
@@ -78,43 +79,33 @@ GmxH5mdIo::~GmxH5mdIo()
     }
 }
 
-void GmxH5mdIo::openFile(const char* fileName, const char* modeString)
+void GmxH5mdIo::openFile(const char* fileName, const char mode)
 {
 #if GMX_USE_HDF5
     H5Eset_auto2(H5E_DEFAULT, nullptr, nullptr); // Disable HDF5 error output, e.g. when items are not found.
-    std::string modeStringLower = gmx::toLowerCase(modeString);
 
-    bool write = false;
-    bool append = false;
-    std::size_t found = modeStringLower.find("w");
-    if(found < std::string::npos)
-    {
-        write = true;
-    }
-    found = modeStringLower.find("a");
-    if(found < std::string::npos)
-    {
-        append = true;
-        write = true;
-    }
     closeFile();
 
-    printf("Opening %s with mode %s\n", fileName, modeString);
-    if (write)
+    if (debug)
     {
-        if (append)
+        fprintf(debug, "Opening H5MD file %s with mode %c\n", fileName, mode);
+    }
+    if (mode == 'w' || mode == 'a')
+    {
+        if (mode == 'w')
+        {
+            make_backup(fileName);
+            file_ = H5Fcreate(fileName, H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
+            setAuthorAndCreator();
+        }
+        else
         {
             file_ = H5Fopen(fileName, H5F_ACC_RDWR, H5P_DEFAULT);
         }
-        if (file_ < 0)
-        {
-            file_ = H5Fcreate(fileName, H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
-        }
-        /* Create H5MD groups */
+        /* Create H5MD groups. They should already be there if appending to a valid H5MD file, but it's better to be on the safe side. */
         openOrCreateGroup(file_, "h5md");
         openOrCreateGroup(file_, "particles");
         openOrCreateGroup(file_, "particles/system");
-        setAuthorAndCreator();
     }
     else
     {
@@ -135,7 +126,10 @@ void GmxH5mdIo::closeFile()
     if (file_ >= 0)
     {
         H5Fflush(file_, H5F_SCOPE_LOCAL);
-        printf("Closing file.\n");
+        if (debug)
+        {
+            fprintf(debug, "Closing H5MD file.\n");
+        }
         H5Fclose(file_);
         file_ = -1;
     }
@@ -149,7 +143,10 @@ void GmxH5mdIo::flush()
 #if GMX_USE_HDF5
     if (file_ >= 0)
     {
-        printf("Flushing.\n");
+        if (debug)
+        {
+            fprintf(debug, "Flushing H5MD file.\n");
+        }
         H5Fflush(file_, H5F_SCOPE_LOCAL);
     }
 #else
@@ -157,7 +154,7 @@ void GmxH5mdIo::flush()
 #endif
 }
 
-void GmxH5mdIo::setUpParticlesDataBlocks(bool writeCoordinates, bool writeCoordinatesCompressed, bool writeForces, bool writeVelocities, int numParticles, int numParticlesCompressed, double compressionError)
+void GmxH5mdIo::setUpParticlesDataBlocks(int writeCoordinatesSteps, int writeCoordinatesCompressedSteps, int writeForcesSteps, int writeVelocitiesSteps, int numParticles, int numParticlesCompressed, double compressionError)
 {
 #if GMX_DOUBLE
     const hid_t datatype = H5Tcopy(H5T_NATIVE_DOUBLE);
@@ -167,39 +164,44 @@ void GmxH5mdIo::setUpParticlesDataBlocks(bool writeCoordinates, bool writeCoordi
     hid_t systemGroup = openOrCreateGroup(file_, "particles/system");
     hid_t boxGroup = openOrCreateGroup(systemGroup, "box");
     setAttribute(boxGroup, "dimension", DIM, H5T_NATIVE_INT);
-    box_ = GmxH5mdDataBlock(boxGroup, "edges", "nm", 1, DIM, DIM, datatype, CompressionAlgorithm::LosslessNoShuffle, 0);
+    box_ = GmxH5mdDataBlock(boxGroup, "edges", "nm", writeCoordinatesSteps, 1, DIM, DIM, datatype, CompressionAlgorithm::LosslessNoShuffle, 0);
     // TODO: Write box 'boundary' attribute ('periodic' or 'none')
 
-    if (writeCoordinates)
+    if (writeCoordinatesSteps > 0)
     {
-        position_ = GmxH5mdDataBlock(systemGroup, "position", "nm", 1, numParticles, DIM, datatype, CompressionAlgorithm::LosslessWithShuffle, 0);
+        position_ = GmxH5mdDataBlock(systemGroup, "position", "nm", writeCoordinatesSteps, 1, numParticles, DIM, datatype, CompressionAlgorithm::LosslessWithShuffle, 0);
     }
-    if (writeForces)
+    if (writeForcesSteps > 0)
     {
-        force_ = GmxH5mdDataBlock(systemGroup, "force", "kJ mol-1 nm-1)", 1, numParticles, DIM, datatype, CompressionAlgorithm::LosslessWithShuffle, 0);
+        force_ = GmxH5mdDataBlock(systemGroup, "force", "kJ mol-1 nm-1)", writeForcesSteps, 1, numParticles, DIM, datatype, CompressionAlgorithm::LosslessWithShuffle, 0);
     }
-    if (writeVelocities)
+    if (writeVelocitiesSteps > 0)
     {
-        velocity_ = GmxH5mdDataBlock(systemGroup, "velocity", "nm ps-1", 1, numParticles, DIM, datatype, CompressionAlgorithm::LosslessWithShuffle, 0);
+        velocity_ = GmxH5mdDataBlock(systemGroup, "velocity", "nm ps-1", writeVelocitiesSteps, 1, numParticles, DIM, datatype, CompressionAlgorithm::LosslessWithShuffle, 0);
     }
-    if (writeCoordinatesCompressed)
+    if (writeCoordinatesCompressedSteps > 0)
     {
+        /* Use no more than 20 frames per chunk (compression unit). Use fewer frames per chunk if there are many atoms. */
+        hsize_t numFramesPerChunkCompressed = std::min(20, int(std::ceil(1e6/numParticlesCompressed)));
+
         hid_t compressedGroup = openOrCreateGroup(file_, "particles/selection_compressed");
         hid_t boxGroup = openOrCreateGroup(compressedGroup, "box");
         setAttribute(boxGroup, "dimension", DIM, H5T_NATIVE_INT);
-        boxLossy_ = GmxH5mdDataBlock(compressedGroup, "edges", "nm", numFramesPerChunkCompressed_, DIM, DIM, H5T_NATIVE_FLOAT, CompressionAlgorithm::LosslessNoShuffle, 0);
+        boxLossy_ = GmxH5mdDataBlock(compressedGroup, "edges", "nm", writeCoordinatesCompressedSteps, numFramesPerChunkCompressed, DIM, DIM, H5T_NATIVE_FLOAT, CompressionAlgorithm::LosslessNoShuffle, 0);
         // TODO: Write box 'boundary' attribute ('periodic' or 'none')
 
-        positionLossy_ = GmxH5mdDataBlock(compressedGroup, "position", "nm", numFramesPerChunkCompressed_, numParticlesCompressed, DIM, H5T_NATIVE_FLOAT, CompressionAlgorithm::LossySz3, compressionError);
+        /* Register the SZ3 filter. This is not necessary when creating a dataset with the filter, but must be done to append to an existing file (e.g. when restarting from checkpoint).*/
+        registerSz3FilterImplicitly();
+        positionLossy_ = GmxH5mdDataBlock(compressedGroup, "position", "nm", writeCoordinatesCompressedSteps, numFramesPerChunkCompressed, numParticlesCompressed, DIM, H5T_NATIVE_FLOAT, CompressionAlgorithm::LossySz3, compressionError);
     }
 }
 
 void GmxH5mdIo::setAuthorAndCreator()
 {
     const char* precisionString = "";
-#    if GMX_DOUBLE
-        precisionString = " (double precision)";
-#    endif
+#if GMX_DOUBLE
+    precisionString = " (double precision)";
+#endif
 
     char programInfo[128];
     sprintf(programInfo, "%.100s %.24s", gmx::getProgramContext().displayName(), precisionString);
@@ -231,9 +233,6 @@ void GmxH5mdIo::setupMolecularSystem(const gmx_mtop_t& topology)
     atomMasses.reserve(topology.natoms);
     atomNames.reserve(topology.natoms);
 
-    /* Use no more than 20 frames per chunk (compression unit). Use fewer frames per chunk if there are many atoms. */
-    numFramesPerChunkCompressed_ = std::min(20, int(std::ceil(1e6/topology.natoms)));
-
     for (const gmx_molblock_t& molBlock : topology.molblock)
     {
         const gmx_moltype_t* molType = &topology.moltype[molBlock.type];
@@ -260,7 +259,8 @@ void GmxH5mdIo::setupMolecularSystem(const gmx_mtop_t& topology)
     H5Tset_size(stringDataType, H5T_VARIABLE);
     H5Tset_strpad(stringDataType, H5T_STR_NULLTERM);
     H5Tset_cset(stringDataType, H5T_CSET_UTF8);
-    atomName_ = GmxH5mdDataBlock(file_, "/particles/system/atomname", "", 1, topology.natoms, 1, stringDataType, CompressionAlgorithm::LosslessNoShuffle, 0);
+    /* FIXME: Currently atom names cannot change during the simulation. */
+    atomName_ = GmxH5mdDataBlock(file_, "/particles/system/atomname", "", 0, 1, topology.natoms, 1, stringDataType, CompressionAlgorithm::LosslessNoShuffle, 0);
     atomName_.writeFrame(atomNamesChars.data(), 0, 0);
 
 #if GMX_DOUBLE
@@ -268,9 +268,10 @@ void GmxH5mdIo::setupMolecularSystem(const gmx_mtop_t& topology)
 #else
     const hid_t floatDatatype = H5Tcopy(H5T_NATIVE_FLOAT);
 #endif
-    charge_ = GmxH5mdDataBlock(file_, "/particles/system/charge", "e", 1, topology.natoms, 1, floatDatatype, CompressionAlgorithm::LosslessNoShuffle, 0);
+    /* FIXME: Currently charges and masses cannot change during the simulation. */
+    charge_ = GmxH5mdDataBlock(file_, "/particles/system/charge", "e", 0, 1, topology.natoms, 1, floatDatatype, CompressionAlgorithm::LosslessNoShuffle, 0);
     charge_.writeFrame(atomCharges.data(), 0, 0);
-    mass_ = GmxH5mdDataBlock(file_, "/particles/system/mass", "g mol-1", 1, topology.natoms, 1, floatDatatype, CompressionAlgorithm::LosslessNoShuffle, 0);
+    mass_ = GmxH5mdDataBlock(file_, "/particles/system/mass", "g mol-1", 0, 1, topology.natoms, 1, floatDatatype, CompressionAlgorithm::LosslessNoShuffle, 0);
     mass_.writeFrame(atomMasses.data(), 0, 0);
 
 #else
@@ -296,6 +297,7 @@ void GmxH5mdIo::writeFrame(int64_t        step,
     if (x != nullptr)
     {
         position_.writeFrame(x, step, time);
+        box_.writeFrame(box, step, time);
     }
     if (v != nullptr)
     {
@@ -304,10 +306,6 @@ void GmxH5mdIo::writeFrame(int64_t        step,
     if (f != nullptr)
     {
         force_.writeFrame(f, step, time);
-    }
-    if ((x != nullptr || v != nullptr || f != nullptr) && box != nullptr)
-    {
-        box_.writeFrame(box, step, time);
     }
     if (xLossy != nullptr)
     {

@@ -97,6 +97,21 @@ hid_t openOrCreateGroup(hid_t container, const char *name)
 #endif
 }
 
+void registerSz3FilterImplicitly()
+{
+#if GMX_USE_HDF5
+    hid_t propertyList = H5Pcreate(H5P_DATASET_CREATE);
+    int sz3_mode = 0; //0: ABS, 1: REL
+    size_t numCompressionSettingsElements;
+    unsigned int *compressionSettings = nullptr;
+    SZ_errConfigToCdArray(&numCompressionSettingsElements, &compressionSettings, sz3_mode, 0, 0, 0, 0);
+    if (H5Pset_filter(propertyList, H5Z_FILTER_SZ3, H5Z_FLAG_MANDATORY, numCompressionSettingsElements, compressionSettings) < 0)
+    {
+        H5Eprint2(H5E_DEFAULT, nullptr);
+        gmx_file("Cannot use SZ3 compression filter.");
+    }
+#endif
+}
 
 void writeData(hid_t container, const char* name, const char* unit, const void* data, hsize_t numFramesPerChunk, hsize_t numEntries, hsize_t numValuesPerEntry, hsize_t positionToWrite, hid_t datatype, CompressionAlgorithm compression, double compressionError)
 {
@@ -125,28 +140,14 @@ void writeData(hid_t container, const char* name, const char* unit, const void* 
                 H5Eprint2(H5E_DEFAULT, nullptr);
                 gmx_file("Cannot set SZ3 compression.");
             }
-            if(H5Zfilter_avail(H5Z_FILTER_SZ3))
+            if(H5Zfilter_avail(H5Z_FILTER_SZ3) < 0)
             {
-                unsigned filterConfig;
-                H5Zget_filter_info(H5Z_FILTER_SZ3, &filterConfig);
-
-                if(filterConfig & H5Z_FILTER_CONFIG_ENCODE_ENABLED)
-                {
-                    printf("SZ3 filter is available for encoding and decoding.\n");
-                }
-                else
-                {
-                    printf("SZ3 filter is NOT available for encoding and decoding!\n");
-                }
+                H5Eprint2(H5E_DEFAULT, nullptr);
+                gmx_file("SZ3 filter not available.");
             }
             break;
         }
         case CompressionAlgorithm::LosslessWithShuffle:
-            // /* This gives a lossy compression with 0.001 precision. */
-            // if (H5Pset_scaleoffset(propertyList, H5Z_SO_FLOAT_DSCALE, 3) < 0)
-            // {
-            //     gmx_file("Cannot set scale offset filter.");
-            // }
             if (H5Pset_shuffle(propertyList) < 0)
             {
                 gmx_file("Cannot set shuffle filter.");
@@ -163,6 +164,11 @@ void writeData(hid_t container, const char* name, const char* unit, const void* 
         }
 
         dataset = H5Dcreate(container, name, datatype, dataspace, H5P_DEFAULT, propertyList, H5P_DEFAULT);
+        if(dataset < 0)
+        {
+            H5Eprint2(H5E_DEFAULT, nullptr);
+            gmx_file("Cannot create dataset.");
+        }
 
         /* Set a reasonable cache based on chunk sizes */
         size_t cacheSize = sizeof(real) * chunkDims[0] * chunkDims[1] * chunkDims[2];
@@ -183,7 +189,10 @@ void writeData(hid_t container, const char* name, const char* unit, const void* 
     if(positionToWrite >= currentDims[0])
     {
         hsize_t newDims[3] = {(positionToWrite / numFramesPerChunk + 1) * numFramesPerChunk, currentDims[1], currentDims[2]};
-        // printf("Resizing dataset from %" PRId64" to %" PRId64 "\n", currentDims[0], newDims[0]);
+        if (debug)
+        {
+            fprintf(debug, "Resizing dataset from %" PRId64" to %" PRId64 "\n", currentDims[0], newDims[0]);
+        }
         H5Dset_extent(dataset, newDims);
         dataspace = H5Dget_space(dataset);
     }
@@ -197,7 +206,11 @@ void writeData(hid_t container, const char* name, const char* unit, const void* 
     H5Sselect_hyperslab(dataspace, H5S_SELECT_SET, fileOffset, nullptr, outputBlockSize, nullptr);
 
     hid_t memoryDataspace = H5Screate_simple(3, outputBlockSize, nullptr);
-    H5Dwrite(dataset, datatype, memoryDataspace, dataspace, H5P_DEFAULT, data);
+    if (H5Dwrite(dataset, datatype, memoryDataspace, dataspace, H5P_DEFAULT, data) < 0)
+    {
+        H5Eprint2(H5E_DEFAULT, nullptr);
+        gmx_file("Error writing data.");
+    }
 
     // It would be good to close the dataset here, but that means compressing and writing the whole chunk every time - very slow.
 #else

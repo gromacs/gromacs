@@ -42,6 +42,7 @@
 #include <string>
 
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/gmxassert.h"
 
 #include "h5md_util.h"
 
@@ -52,47 +53,24 @@
 #endif
 
 
-// GmxH5mdDataBlock::GmxH5mdDataBlock()
-// {
-//     container_ = -1;
-//     strcpy(name_, "");
-//     numFramesPerChunk_ = 1;
-//     numEntries_ = 0;
-//     numValuesPerEntry_ = 1;
-//     numWrittenFrames_ = 0;
-//     compressionAlgorithm_ = CompressionAlgorithm::None;
-//     compressionAbsoluteError_ = 0;
-//     datatype_ = -1;
-// }
-
-GmxH5mdDataBlock::GmxH5mdDataBlock(hid_t container, const char* name, const char* unit, hsize_t numFramesPerChunk, hsize_t numEntries,
+GmxH5mdDataBlock::GmxH5mdDataBlock(hid_t container, const char* name, const char* unit, int writingInterval, hsize_t numFramesPerChunk, hsize_t numEntries,
                                    hsize_t numValuesPerEntry, hid_t datatype, CompressionAlgorithm compression, double compressionError)
 {
     container_ = container;
     strncpy(name_, name, 128);
     strncpy(unit_, unit, 64);
+    writingInterval_ = writingInterval;
     numFramesPerChunk_ = numFramesPerChunk;
     numEntries_ = numEntries;
     numValuesPerEntry_ = numValuesPerEntry;
-    numWrittenFrames_ = 0;
     datatype_ = datatype;
     compressionAlgorithm_ = compression;
     compressionAbsoluteError_ = compressionError;
 }
 
-void GmxH5mdDataBlock::initDataProperties(hsize_t numFramesPerChunk, hsize_t numEntries, hsize_t numValuesPerEntry)
-{
-    if (numWrittenFrames_ != 0)
-    {
-        gmx_file("Cannot change number of frames per chunk after writing.");
-    }
-    numFramesPerChunk_ = numFramesPerChunk;
-    numEntries_ = numEntries;
-    numValuesPerEntry_ = numValuesPerEntry;
-}
-
 void GmxH5mdDataBlock::writeFrame(const void* data, int64_t step, real time, const char* valueName)
 {
+    GMX_ASSERT(step == 0 || writingInterval_ > 0, "Invalid writing interval when writing frame.");
 #if GMX_DOUBLE
     const hid_t timeDatatype = H5Tcopy(H5T_NATIVE_DOUBLE);
 #else
@@ -102,11 +80,11 @@ void GmxH5mdDataBlock::writeFrame(const void* data, int64_t step, real time, con
     char timeName[] = "time";
     char timeUnit[] = "ps";
     hid_t group = openOrCreateGroup(container_, name_);
+    int frameNumber = step > 0 ? step / writingInterval_ : 0;
 
-    writeData(group, valueName, unit_, data, numFramesPerChunk_, numEntries_, numValuesPerEntry_, numWrittenFrames_, datatype_, compressionAlgorithm_, compressionAbsoluteError_);
-    writeData(group, stepName, nullptr, &step, numFramesPerChunk_, 1, 1, numWrittenFrames_, H5T_NATIVE_INT64, CompressionAlgorithm::None, 0);
-    writeData(group, timeName, timeUnit, &time, numFramesPerChunk_, 1, 1, numWrittenFrames_, timeDatatype, CompressionAlgorithm::None, 0);
+    writeData(group, valueName, unit_, data, numFramesPerChunk_, numEntries_, numValuesPerEntry_, frameNumber, datatype_, compressionAlgorithm_, compressionAbsoluteError_);
+    writeData(group, stepName, nullptr, &step, numFramesPerChunk_, 1, 1, frameNumber, H5T_NATIVE_INT64, CompressionAlgorithm::None, 0);
+    writeData(group, timeName, timeUnit, &time, numFramesPerChunk_, 1, 1, frameNumber, timeDatatype, CompressionAlgorithm::None, 0);
     H5Gclose(group);
-    numWrittenFrames_++;
 }
 

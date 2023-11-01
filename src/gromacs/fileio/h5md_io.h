@@ -61,7 +61,6 @@ private:
     GmxH5mdDataBlock atomType_;
     GmxH5mdDataBlock charge_;
     GmxH5mdDataBlock mass_;
-    hsize_t          numFramesPerChunkCompressed_;
 
     /*! Sets the author (user) and creator (application name) properties in the h5md group (h5mdGroup_). */
     void setAuthorAndCreator();
@@ -70,28 +69,25 @@ public:
     /*! Construct a GmxH5mdIo object and open a GmxHdf5 file.
      *
      * \param[in] fileName    Name of the file to open. The same as the file path.
-     * \param[in] modeString  The mode to open the file, described by a case-insensitive string of
-     *                        letters, up to three characters long. Reading is always assumed.
-     *                        'w' means writing,
-     *                        't' means truncate, i.e., that existing files will be overwritten
-     *                        'e' results in a failure if the file already exists.
-     *                        All these modes can be combined.
+     * \param[in] mode        The mode to open the file, described by a lower-case letter
+     *                        'w' means writing (and reading), i.e. backup an existing file and replace it.
+     *                        'a' means appending (and reading), i.e., that existing files will be not be overwritten, but extended.
+     *                        'r' means only reading.
      */
-    GmxH5mdIo(const char* fileName = "", const char* modeString = "");
+    GmxH5mdIo(const char* fileName = "", const char mode = '\0');
 
     ~GmxH5mdIo();
 
     /*! Open an GmxHdf5 file.
      *
      * \param[in] fileName    Name of the file to open. The same as the file path.
-     * \param[in] modeString  The mode to open the file, described by a case-insensitive string of
+     * \param[in] mode        The mode to open the file, described by a case-insensitive string of
      *                        letters, up to three characters long. Reading is always assumed.
-     *                        'w' means writing,
-     *                        't' means truncate, i.e., that existing files will be overwritten
-     *                        'e' results in a failure if the file already exists.
-     *                        All these modes can be combined.
+     *                        'w' means writing, i.e. backup an existing file and replace it,
+     *                        'a' means truncate, i.e., that existing files will be overwritten
+     *                        'r' means only read.
      */
-    void openFile(const char* fileName, const char* modeString);
+    void openFile(const char* fileName, const char mode);
 
     void closeFile();
 
@@ -99,7 +95,7 @@ public:
 
     void setupMolecularSystem(const gmx_mtop_t& topology);
 
-    void setUpParticlesDataBlocks(bool writeCoordinates, bool writeCoordinatesCompressed, bool writeForces, bool writeVelocities, int numParticles, int numParticlesCompressed, double compressionError);
+    void setUpParticlesDataBlocks(int writeCoordinatesSteps, int writeCoordinatesCompressedSteps, int writeForcesSteps, int writeVelocitiesSteps, int numParticles, int numParticlesCompressed, double compressionError);
 
     void writeFrame(int64_t          step,
                     real             time,

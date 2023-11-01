@@ -184,7 +184,7 @@ gmx_mdoutf_t init_mdoutf(FILE*                          fplog,
                     bCiteTng = TRUE;
                     break;
                 case efH5MD:
-                    of->h5mdIo = new GmxH5mdIo(filename, filemode);
+                    of->h5mdIo = new GmxH5mdIo(filename, filemode[0]);
                     break;
                 default: gmx_incons("Invalid reduced precision file format");
             }
@@ -216,7 +216,7 @@ gmx_mdoutf_t init_mdoutf(FILE*                          fplog,
                     bCiteTng = TRUE;
                     break;
                 case efH5MD:
-                    of->h5mdIo = new GmxH5mdIo(filename, filemode);
+                    of->h5mdIo = new GmxH5mdIo(filename, filemode[0]);
                     break;
                 default: gmx_incons("Invalid full precision file format");
             }
@@ -259,12 +259,11 @@ gmx_mdoutf_t init_mdoutf(FILE*                          fplog,
         }
         if(of->h5mdIo)
         {
-            bool writeCoordinates = ir->nstxout > 0;
-            bool writeCoordinatesCompressed = ir->nstxout_compressed > 0;
-            bool writeForces = ir->nstfout > 0;
-            bool writeVelocities = ir->nstvout > 0;
-            of->h5mdIo->setupMolecularSystem(top_global);
-            of->h5mdIo->setUpParticlesDataBlocks(writeCoordinates, writeCoordinatesCompressed, writeForces, writeVelocities, of->natoms_global, of->natoms_x_compressed, 1/of->x_compression_precision);
+            of->h5mdIo->setUpParticlesDataBlocks(ir->nstxout, ir->nstxout_compressed, ir->nstfout, ir->nstvout, of->natoms_global, of->natoms_x_compressed, 1.0/of->x_compression_precision);
+            if (!restartWithAppending)
+            {
+                of->h5mdIo->setupMolecularSystem(top_global);
+            }
         }
 
         if (ir->nstfout && haveDDAtomOrdering(*cr))
