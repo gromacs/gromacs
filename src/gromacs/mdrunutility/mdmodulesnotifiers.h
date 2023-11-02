@@ -167,6 +167,14 @@ struct MdRunInputFilename
     std::string mdRunFilename_;
 };
 
+/*! \libinternal \brief Energy trajectory output filename from Mdrun.
+ */
+struct EdrOutputFilename
+{
+    //! The name of energy output file
+    std::string edrOutputFilename_;
+};
+
 /*! \libinternal \brief Notification for QM program input filename
  *  provided by user as command-line argument for grompp
  */
@@ -354,6 +362,7 @@ struct MDModulesNotifiers
      * \tparam t_commrec&           Provides a communicator to the modules during simulation
      *                              setup
      * \tparam MdRunInputFilename&  Allows modules to know .tpr filename during mdrun
+     * \tparam EdrOutputFilename&   Allows modules to know .edr filename during mdrun
      */
     BuildMDModulesNotifier<const KeyValueTreeObject&,
                            LocalAtomSetManager*,
@@ -366,7 +375,8 @@ struct MDModulesNotifiers
                            const PbcType&,
                            const SimulationTimeStep&,
                            const t_commrec&,
-                           const MdRunInputFilename&>::type simulationSetupNotifier_;
+                           const MdRunInputFilename&,
+                           const EdrOutputFilename&>::type simulationSetupNotifier_;
 };
 
 } // namespace gmx

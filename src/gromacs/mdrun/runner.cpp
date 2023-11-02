@@ -1144,10 +1144,12 @@ int Mdrunner::mdrunner()
         setupNotifier.notify(*inputrec->internalParameters);
     }
 
-    // Let MdModules know the .tpr filename
+    // Let MdModules know the .tpr input and .edr output filenames
     {
         gmx::MdRunInputFilename mdRunInputFilename = { ftp2fn(efTPR, filenames.size(), filenames.data()) };
         setupNotifier.notify(mdRunInputFilename);
+        gmx::EdrOutputFilename edrOutputFilename = { ftp2fn(efEDR, filenames.size(), filenames.data()) };
+        setupNotifier.notify(edrOutputFilename);
     }
 
     if (fplog != nullptr)
