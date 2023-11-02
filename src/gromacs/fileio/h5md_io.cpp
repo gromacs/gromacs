@@ -95,7 +95,12 @@ void GmxH5mdIo::openFile(const char* fileName, const char mode)
         if (mode == 'w')
         {
             make_backup(fileName);
-            file_ = H5Fcreate(fileName, H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
+            hid_t createPropertyList = H5Pcreate(H5P_FILE_CREATE);
+            if(H5Pset_file_space_strategy(createPropertyList, H5F_FSPACE_STRATEGY_FSM_AGGR, 1, 1) < 0)
+            {
+                printf("Cannot set H5MD file space strategy.\n");
+            }
+            file_ = H5Fcreate(fileName, H5F_ACC_TRUNC, createPropertyList, H5P_DEFAULT);
             setAuthorAndCreator();
         }
         else

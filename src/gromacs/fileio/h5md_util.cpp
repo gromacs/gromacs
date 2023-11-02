@@ -116,27 +116,31 @@ void registerSz3FilterImplicitly()
 void writeData(hid_t container, const char* name, const char* unit, const void* data, hsize_t numFramesPerChunk, hsize_t numEntries, hsize_t numValuesPerEntry, hsize_t positionToWrite, hid_t datatype, CompressionAlgorithm compression, double compressionError)
 {
 #if GMX_USE_HDF5
-    hid_t dataset = H5Dopen(container, name, H5P_DEFAULT);
+    /* Set a reasonable cache based on chunk sizes. The cache is not stored in file, so must be set when opening a dataset */
+    hsize_t chunkDims[3] = {numFramesPerChunk, numEntries, numValuesPerEntry};
+    size_t cacheSize = sizeof(real) * chunkDims[0] * chunkDims[1] * chunkDims[2];
+    hid_t accessPropertyList = H5Pcreate(H5P_DATASET_ACCESS);
+    H5Pset_chunk_cache(accessPropertyList, H5D_CHUNK_CACHE_NSLOTS_DEFAULT, cacheSize, H5D_CHUNK_CACHE_W0_DEFAULT);
+    hid_t dataset = H5Dopen(container, name, accessPropertyList);
     if (dataset < 0)
     {
         hsize_t dataSize[3] = {numFramesPerChunk, numEntries, numValuesPerEntry};
         hsize_t maxDims[3] = {H5S_UNLIMITED, numEntries, numValuesPerEntry};
         hid_t dataspace = H5Screate_simple(3, dataSize, maxDims);
-        hsize_t chunkDims[3] = {numFramesPerChunk, numEntries, numValuesPerEntry};
-        hid_t propertyList = H5Pcreate(H5P_DATASET_CREATE);
-        H5Pset_chunk(propertyList, 3, chunkDims);
-        setNumericFillValue(propertyList, datatype);
+        hid_t createPropertyList = H5Pcreate(H5P_DATASET_CREATE);
+        H5Pset_chunk(createPropertyList, 3, chunkDims);
+        setNumericFillValue(createPropertyList, datatype);
 
         switch(compression)
         {
         case CompressionAlgorithm::LossySz3:
         {
-            int sz3_mode = 0; //0: ABS, 1: REL
+            // int sz3_mode = 0; //0: ABS, 1: REL
             // size_t numCompressionSettingsElements;
             // unsigned int *compressionSettings = nullptr;
             // SZ_errConfigToCdArray(&numCompressionSettingsElements, &compressionSettings, sz3_mode, compressionError, compressionError, 0, 0);
-            // if (H5Pset_filter(propertyList, H5Z_FILTER_SZ3, H5Z_FLAG_MANDATORY, numCompressionSettingsElements, compressionSettings) < 0)
-            if (H5Pset_filter(propertyList, H5Z_FILTER_SZ3, H5Z_FLAG_MANDATORY, 0, nullptr) < 0)
+            // if (H5Pset_filter(createPropertyList, H5Z_FILTER_SZ3, H5Z_FLAG_MANDATORY, numCompressionSettingsElements, compressionSettings) < 0)
+            if (H5Pset_filter(createPropertyList, H5Z_FILTER_SZ3, H5Z_FLAG_MANDATORY, 0, nullptr) < 0)
             {
                 H5Eprint2(H5E_DEFAULT, nullptr);
                 gmx_file("Cannot set SZ3 compression.");
@@ -149,12 +153,12 @@ void writeData(hid_t container, const char* name, const char* unit, const void* 
             break;
         }
         case CompressionAlgorithm::LosslessWithShuffle:
-            if (H5Pset_shuffle(propertyList) < 0)
+            if (H5Pset_shuffle(createPropertyList) < 0)
             {
                 gmx_file("Cannot set shuffle filter.");
             }
         case CompressionAlgorithm::LosslessNoShuffle:
-            if (H5Pset_deflate(propertyList, 6) < 0)
+            if (H5Pset_deflate(createPropertyList, 6) < 0)
             {
                 H5Eprint2(H5E_DEFAULT, nullptr);
                 gmx_file("Cannot set GZIP compression.");
@@ -164,18 +168,12 @@ void writeData(hid_t container, const char* name, const char* unit, const void* 
             break;
         }
 
-        dataset = H5Dcreate(container, name, datatype, dataspace, H5P_DEFAULT, propertyList, H5P_DEFAULT);
+        dataset = H5Dcreate(container, name, datatype, dataspace, H5P_DEFAULT, createPropertyList, accessPropertyList);
         if(dataset < 0)
         {
             H5Eprint2(H5E_DEFAULT, nullptr);
             gmx_file("Cannot create dataset.");
         }
-
-        /* Set a reasonable cache based on chunk sizes */
-        size_t cacheSize = sizeof(real) * chunkDims[0] * chunkDims[1] * chunkDims[2];
-        hid_t accessPropertyList = H5Dget_access_plist (dataset);
-        H5Pset_chunk_cache(accessPropertyList, H5D_CHUNK_CACHE_NSLOTS_DEFAULT, cacheSize, H5D_CHUNK_CACHE_W0_DEFAULT);
-        // printf("numFramesPerChunk = %ld. Set chunk cache size to %ld\n", numFramesPerChunk, cacheSize);
 
         if (unit != nullptr)
         {

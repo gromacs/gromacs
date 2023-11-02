@@ -31,7 +31,7 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out https://www.gromacs.org.
 
-set(GMX_HDF5_REQUIRED_VERSION "1.10.0")
+set(GMX_HDF5_REQUIRED_VERSION "1.10.1")
 
 function(gmx_manage_hdf5)
     # Find an external hdf5 library.
