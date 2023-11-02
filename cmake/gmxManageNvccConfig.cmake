@@ -250,6 +250,16 @@ gmx_add_nvcc_flag_if_supported(GMX_CUDA_NVCC_FLAGS NVCC_HAS_PTXAS_WERROR -Xptxas
 # assemble the CUDA host compiler flags
 list(APPEND GMX_CUDA_NVCC_FLAGS "${CUDA_HOST_COMPILER_OPTIONS}")
 
+# Set the openmp host compilation flag if it has not been set automatically.
+# Some other compilation flags, mostly warnings are not automatically
+# propagated, but we do not set them all manually. See issue #4757 and the
+# MR discussion in !3780 for more information.
+if(GMX_OPENMP AND NOT "${OpenMP_CXX_FLAGS}" STREQUAL "")
+    if(NOT ${OpenMP_CXX_FLAGS} IN_LIST GMX_CUDA_NVCC_FLAGS)
+        list(APPEND GMX_CUDA_NVCC_FLAGS -Xcompiler ${OpenMP_CXX_FLAGS})
+    endif()
+endif()
+
 if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
     # CUDA header cuda_runtime_api.h in at least CUDA 10.1 uses 0
     # where nullptr would be preferable. GROMACS can't fix these, so
