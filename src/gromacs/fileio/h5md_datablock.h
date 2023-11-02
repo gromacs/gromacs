@@ -42,7 +42,7 @@
 #include "gromacs/utility/real.h"
 
 typedef int64_t hid_t;
-typedef uint64_t hsize_t;
+typedef unsigned long long hsize_t;
 
 /*! \brief A class that handles H5MD data blocks with data can change during the MD trajectory. */
 class GmxH5mdDataBlock
