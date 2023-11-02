@@ -43,12 +43,6 @@ endif ()
 if (WIN32)
     gmx_target_warning_suppression(modularsimulator /wd4244 HAS_NO_MSVC_LOSSY_CONVERSION)
     gmx_target_warning_suppression(modularsimulator /wd4996 HAS_NO_MSVC_UNSAFE_FUNCTION)
-else ()
-    # Several std::move uses are redundant in C++14, but clang before
-    # 3.9 had a bug that needed them. gcc 9 can warn about their use,
-    # which we need to supress. This suppression should be removed
-    # when GROMACS requires clang 3.9 or higher.
-    gmx_target_warning_suppression(modularsimulator "-Wno-redundant-move" HAS_NO_REDUNDANT_MOVE)
 endif ()
 
 target_include_directories(modularsimulator SYSTEM PRIVATE ${PROJECT_SOURCE_DIR}/src/external)
