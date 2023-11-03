@@ -130,7 +130,11 @@ void GmxH5mdIo::closeFile()
 #if GMX_USE_HDF5
     if (file_ >= 0)
     {
-        H5Fflush(file_, H5F_SCOPE_LOCAL);
+        if (H5Fflush(file_, H5F_SCOPE_LOCAL) < 0)
+        {
+            H5Eprint2(H5E_DEFAULT, nullptr);
+            gmx_file("Error flushing H5MD file when closing.");
+        }
         if (debug)
         {
             fprintf(debug, "Closing H5MD file.\n");
@@ -152,52 +156,65 @@ void GmxH5mdIo::flush()
         {
             fprintf(debug, "Flushing H5MD file.\n");
         }
-        H5Fflush(file_, H5F_SCOPE_LOCAL);
+        if (H5Fflush(file_, H5F_SCOPE_LOCAL) < 0)
+        {
+            H5Eprint2(H5E_DEFAULT, nullptr);
+            gmx_file("Error flushing H5MD file when closing.");
+        }
     }
 #else
     gmx_file("GROMACS was compiled without HDF5 support, cannot handle this file type");
 #endif
 }
 
-void GmxH5mdIo::setUpParticlesDataBlocks(int writeCoordinatesSteps, int writeCoordinatesCompressedSteps, int writeForcesSteps, int writeVelocitiesSteps, int numParticles, int numParticlesCompressed, double compressionError)
+void GmxH5mdIo::setUpParticlesDataBlocks(int writeCoordinatesSteps, int writeForcesSteps, int writeVelocitiesSteps, int numParticles, double compressionError)
 {
 #if GMX_DOUBLE
     const hid_t datatype = H5Tcopy(H5T_NATIVE_DOUBLE);
 #else
     const hid_t datatype = H5Tcopy(H5T_NATIVE_FLOAT);
 #endif
-    hid_t systemGroup = openOrCreateGroup(file_, "particles/system");
-    hid_t boxGroup = openOrCreateGroup(systemGroup, "box");
-    setAttribute(boxGroup, "dimension", DIM, H5T_NATIVE_INT);
-    box_ = GmxH5mdDataBlock(boxGroup, "edges", "value", "nm", writeCoordinatesSteps, 1, DIM, DIM, datatype, CompressionAlgorithm::LosslessNoShuffle, 0);
-    // TODO: Write box 'boundary' attribute ('periodic' or 'none')
+//     hid_t systemGroup = openOrCreateGroup(file_, "particles/system");
+//     hid_t boxGroup = openOrCreateGroup(systemGroup, "box");
+//     setAttribute(boxGroup, "dimension", DIM, H5T_NATIVE_INT);
+//     box_ = GmxH5mdDataBlock(boxGroup, "edges", "value", "nm", writeCoordinatesSteps, 1, DIM, DIM, datatype, CompressionAlgorithm::LosslessNoShuffle, 0);
+//     // TODO: Write box 'boundary' attribute ('periodic' or 'none')
 
+//     if (writeCoordinatesSteps > 0)
+//     {
+//         position_ = GmxH5mdDataBlock(systemGroup, "position", "value", "nm", writeCoordinatesSteps, 1, numParticles, DIM, datatype, CompressionAlgorithm::LosslessWithShuffle, 0);
+//     }
+//     if (writeForcesSteps > 0)
+//     {
+//         force_ = GmxH5mdDataBlock(systemGroup, "force", "value", "kJ mol-1 nm-1)", writeForcesSteps, 1, numParticles, DIM, datatype, CompressionAlgorithm::LosslessWithShuffle, 0);
+//     }
+//     if (writeVelocitiesSteps > 0)
+//     {
+//         velocity_ = GmxH5mdDataBlock(systemGroup, "velocity", "value", "nm ps-1", writeVelocitiesSteps, 1, numParticles, DIM, datatype, CompressionAlgorithm::LosslessWithShuffle, 0);
+//     }
     if (writeCoordinatesSteps > 0)
     {
-        position_ = GmxH5mdDataBlock(systemGroup, "position", "value", "nm", writeCoordinatesSteps, 1, numParticles, DIM, datatype, CompressionAlgorithm::LosslessWithShuffle, 0);
-    }
-    if (writeForcesSteps > 0)
-    {
-        force_ = GmxH5mdDataBlock(systemGroup, "force", "value", "kJ mol-1 nm-1)", writeForcesSteps, 1, numParticles, DIM, datatype, CompressionAlgorithm::LosslessWithShuffle, 0);
-    }
-    if (writeVelocitiesSteps > 0)
-    {
-        velocity_ = GmxH5mdDataBlock(systemGroup, "velocity", "value", "nm ps-1", writeVelocitiesSteps, 1, numParticles, DIM, datatype, CompressionAlgorithm::LosslessWithShuffle, 0);
-    }
-    if (writeCoordinatesCompressedSteps > 0)
-    {
         /* Use no more than 20 frames per chunk (compression unit). Use fewer frames per chunk if there are many atoms. */
-        hsize_t numFramesPerChunkCompressed = std::min(20, int(std::ceil(1e6/numParticlesCompressed)));
-
-        hid_t compressedGroup = openOrCreateGroup(file_, "particles/selection_compressed");
+        hsize_t numFramesPerChunkCompressed = std::min(20, int(std::ceil(1e6/numParticles)));
+        hid_t compressedGroup;
+        if (compressedSelectionGroupName_ != nullptr)
+        {
+            char name[128];
+            snprintf(name, 127, "particles/%s", compressedSelectionGroupName_);
+            compressedGroup = openOrCreateGroup(file_, name);
+        }
+        else
+        {
+            compressedGroup = openOrCreateGroup(file_, "particles/system");
+        }
         hid_t boxGroup = openOrCreateGroup(compressedGroup, "box");
         setAttribute(boxGroup, "dimension", DIM, H5T_NATIVE_INT);
-        boxLossy_ = GmxH5mdDataBlock(boxGroup, "edges", "value", "nm", writeCoordinatesCompressedSteps, numFramesPerChunkCompressed, DIM, DIM, datatype, CompressionAlgorithm::LosslessNoShuffle, 0);
+        boxLossy_ = GmxH5mdDataBlock(boxGroup, "edges", "value", "nm", writeCoordinatesSteps, numFramesPerChunkCompressed, DIM, DIM, datatype, CompressionAlgorithm::LosslessNoShuffle, 0);
         // TODO: Write box 'boundary' attribute ('periodic' or 'none')
 
         /* Register the SZ3 filter. This is not necessary when creating a dataset with the filter, but must be done to append to an existing file (e.g. when restarting from checkpoint).*/
         registerSz3FilterImplicitly();
-        positionLossy_ = GmxH5mdDataBlock(compressedGroup, "position", "value", "nm", writeCoordinatesCompressedSteps, numFramesPerChunkCompressed, numParticlesCompressed, DIM, datatype, CompressionAlgorithm::LossySz3, compressionError);
+        positionLossy_ = GmxH5mdDataBlock(compressedGroup, "position", "value", "nm", writeCoordinatesSteps, numFramesPerChunkCompressed, numParticles, DIM, datatype, CompressionAlgorithm::LossySz3, compressionError);
     }
 }
 
@@ -264,9 +281,14 @@ void GmxH5mdIo::setupMolecularSystem(const gmx_mtop_t& topology)
     H5Tset_size(stringDataType, H5T_VARIABLE);
     H5Tset_strpad(stringDataType, H5T_STR_NULLTERM);
     H5Tset_cset(stringDataType, H5T_CSET_UTF8);
+
+    /* Don't replace data that already exists and cannot (currently) change during the simulation */
     /* FIXME: Currently atom names cannot change during the simulation. */
-    atomName_ = GmxH5mdDataBlock(file_, "/particles/system/atomname", "value", "", 0, 1, topology.natoms, 1, stringDataType, CompressionAlgorithm::LosslessNoShuffle, 0);
-    atomName_.writeFrame(atomNamesChars.data(), 0, 0);
+    atomName_ = GmxH5mdDataBlock(file_, "/particles/system", "atomname", "", 0, 1, topology.natoms, 1, stringDataType, CompressionAlgorithm::LosslessNoShuffle, 0);
+    if (!atomName_.datasetExists())
+    {
+        atomName_.writeTimeIndependentData(atomNamesChars.data());
+    }
 
 #if GMX_DOUBLE
     const hid_t floatDatatype = H5Tcopy(H5T_NATIVE_DOUBLE);
@@ -274,10 +296,37 @@ void GmxH5mdIo::setupMolecularSystem(const gmx_mtop_t& topology)
     const hid_t floatDatatype = H5Tcopy(H5T_NATIVE_FLOAT);
 #endif
     /* FIXME: Currently charges and masses cannot change during the simulation. */
-    charge_ = GmxH5mdDataBlock(file_, "/particles/system/charge", "value", "e", 0, 1, topology.natoms, 1, floatDatatype, CompressionAlgorithm::LosslessNoShuffle, 0);
-    charge_.writeFrame(atomCharges.data(), 0, 0);
-    mass_ = GmxH5mdDataBlock(file_, "/particles/system/mass", "value", "g mol-1", 0, 1, topology.natoms, 1, floatDatatype, CompressionAlgorithm::LosslessNoShuffle, 0);
-    mass_.writeFrame(atomMasses.data(), 0, 0);
+    charge_ = GmxH5mdDataBlock(file_, "/particles/system", "charge", "e", 0, 1, topology.natoms, 1, floatDatatype, CompressionAlgorithm::LosslessNoShuffle, 0);
+    if (!charge_.datasetExists())
+    {
+        charge_.writeTimeIndependentData(atomCharges.data());
+    }
+    mass_ = GmxH5mdDataBlock(file_, "/particles/system", "mass", "g mol-1", 0, 1, topology.natoms, 1, floatDatatype, CompressionAlgorithm::LosslessNoShuffle, 0);
+    if (!mass_.datasetExists())
+    {
+        mass_.writeTimeIndependentData(atomMasses.data());
+    }
+
+    /* We only need to create a separate selection group entry if not all atoms are part of it. */
+    bool all_atoms_selected = true;
+    for (int i = 0; (i < topology.natoms); i++)
+    {
+        if (getGroupType(topology.groups, SimulationAtomGroupType::CompressedPositionOutput, i) != 0)
+        {
+            all_atoms_selected = false;
+            break;
+        }
+    }
+    if (topology.groups.numberOfGroupNumbers(SimulationAtomGroupType::CompressedPositionOutput) != 0 && !all_atoms_selected)
+    {
+        int nameIndex = topology.groups.groups[SimulationAtomGroupType::CompressedPositionOutput][0];
+        compressedSelectionGroupName_ = *topology.groups.groupNames[nameIndex];
+        printf("group name %s\n", compressedSelectionGroupName_);
+    }
+    else
+    {
+        compressedSelectionGroupName_ = nullptr;
+    }
 
 #else
     gmx_file("GROMACS was compiled without HDF5 support, cannot handle this file type");

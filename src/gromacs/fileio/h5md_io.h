@@ -64,6 +64,8 @@ private:
     GmxH5mdDataBlock charge_; //!< A data block with the partial charges of all atoms in the system.
     GmxH5mdDataBlock mass_; //!< A data block with the atom masses of all atoms in the system.
 
+    char* compressedSelectionGroupName_; //!< A pointer to the name of the selection group of compressed coordinates.
+
     /*! \brief Sets the author (user) and creator (application name) properties in the h5md group (h5mdGroup_). */
     void setAuthorAndCreator();
 
@@ -110,14 +112,12 @@ public:
      * This needs to be done before writing the particle data to the trajectory.
      *
      * \param[in] writeCoordinatesSteps The lossless coordinate output interval.
-     * \param[in] writeCoordinatesCompressedSteps The lossy compressed coordinate output interval.
      * \param[in] writeForcesSteps The lossless force output interval.
      * \param[in] writeVelocitiesSteps The lossless velocity output interval.
      * \param[in] numParticles The number of particles/atoms in the system.
-     * \param[in] numParticlesCompressed The number of particles/atoms used for writing compressed coordinate data.
      * \param[in] compressionError The required precision of the lossy compression.
      */
-    void setUpParticlesDataBlocks(int writeCoordinatesSteps, int writeCoordinatesCompressedSteps, int writeForcesSteps, int writeVelocitiesSteps, int numParticles, int numParticlesCompressed, double compressionError);
+    void setUpParticlesDataBlocks(int writeCoordinatesSteps, int writeForcesSteps, int writeVelocitiesSteps, int numParticles, double compressionError);
 
     /*! \brief Write a trajectory frame to the file. Only writes the data that is passed as input
      *

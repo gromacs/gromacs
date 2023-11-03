@@ -215,9 +215,7 @@ gmx_mdoutf_t init_mdoutf(FILE*                          fplog,
                     }
                     bCiteTng = TRUE;
                     break;
-                case efH5MD:
-                    of->h5mdIo = new GmxH5mdIo(filename, filemode[0]);
-                    break;
+                // FIXME: Add full precision H5MD output.
                 default: gmx_incons("Invalid full precision file format");
             }
         }
@@ -257,13 +255,12 @@ gmx_mdoutf_t init_mdoutf(FILE*                          fplog,
                 of->natoms_x_compressed++;
             }
         }
+        printf("of->natoms_x_compressed %d, numberOfGroupNumbers[%d]: %d\n", of->natoms_x_compressed, SimulationAtomGroupType::CompressedPositionOutput,
+               of->groups->numberOfGroupNumbers(SimulationAtomGroupType::CompressedPositionOutput));
         if(of->h5mdIo)
         {
-            of->h5mdIo->setUpParticlesDataBlocks(ir->nstxout, ir->nstxout_compressed, ir->nstfout, ir->nstvout, of->natoms_global, of->natoms_x_compressed, 1.0/of->x_compression_precision);
-            if (!restartWithAppending)
-            {
-                of->h5mdIo->setupMolecularSystem(top_global);
-            }
+            of->h5mdIo->setupMolecularSystem(top_global);
+            of->h5mdIo->setUpParticlesDataBlocks(ir->nstxout_compressed, 0, 0, of->natoms_x_compressed, 1.0/of->x_compression_precision);
         }
 
         if (ir->nstfout && haveDDAtomOrdering(*cr))
@@ -702,17 +699,18 @@ void mdoutf_write_to_trajectory_files(FILE*                           fplog,
                                v,
                                f);
             }
-            else if (of->h5mdIo)
-            {
-                of->h5mdIo->writeFrame(step,
-                                       t,
-                                       state_local->lambda[FreeEnergyPerturbationCouplingType::Fep],
-                                       state_local->box,
-                                       x,
-                                       v,
-                                       f,
-                                       nullptr);
-            }
+// Disabled for now. Only write compressed data,
+//             else if (of->h5mdIo)
+//             {
+//                 of->h5mdIo->writeFrame(step,
+//                                        t,
+//                                        state_local->lambda[FreeEnergyPerturbationCouplingType::Fep],
+//                                        state_local->box,
+//                                        x,
+//                                        v,
+//                                        f,
+//                                        nullptr);
+//             }
         }
         if (mdof_flags & MDOF_X_COMPRESSED)
         {

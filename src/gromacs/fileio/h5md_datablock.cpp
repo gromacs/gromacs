@@ -69,6 +69,13 @@ GmxH5mdDataBlock::GmxH5mdDataBlock(hid_t container, const char* name, const char
     compressionAbsoluteError_ = compressionError;
 }
 
+void GmxH5mdDataBlock::writeTimeIndependentData(const void* data)
+{
+    hid_t group = openOrCreateGroup(container_, name_);
+    writeData(group, datasetName_, unit_, data, 1, numEntries_, numValuesPerEntry_, 0, datatype_, compressionAlgorithm_, compressionAbsoluteError_);
+    H5Gclose(group);
+}
+
 void GmxH5mdDataBlock::writeFrame(const void* data, int64_t step, real time)
 {
     GMX_ASSERT(step == 0 || writingInterval_ > 0, "Invalid writing interval when writing frame.");
@@ -89,3 +96,14 @@ void GmxH5mdDataBlock::writeFrame(const void* data, int64_t step, real time)
     H5Gclose(group);
 }
 
+bool GmxH5mdDataBlock::datasetExists()
+{
+    hid_t group = openOrCreateGroup(container_, name_);
+    bool exists = false;
+    if(H5Lexists(group, datasetName_, H5P_DEFAULT) > 0)
+    {
+        exists = true;
+    }
+    H5Gclose(group);
+    return exists;
+}
