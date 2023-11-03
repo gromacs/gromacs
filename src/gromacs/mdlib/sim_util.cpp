@@ -2289,10 +2289,12 @@ void do_force(FILE*                               fplog,
      */
     if (stepWork.combineMtsForcesBeforeHaloExchange)
     {
+        wallcycle_start_nocount(wcycle, WallCycleCounter::Force);
         combineMtsForces(getLocalAtomCount(cr->dd, *mdatoms, simulationWork.havePpDomainDecomposition),
                          force.unpaddedArrayRef(),
                          forceView->forceMtsCombined(),
                          inputrec.mtsLevels[1].stepFactor);
+        wallcycle_stop(wcycle, WallCycleCounter::Force);
     }
 
     // With both nonbonded and PME offloaded a GPU on the same rank, we use
