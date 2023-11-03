@@ -409,7 +409,6 @@ static const int c_nbnxnGpuRollingListPruningInterval = 2;
 /*! \brief The minimum nstlist for dynamic pair list pruning on CPUs.
  *
  * In most cases going lower than 10 will lead to a too high pruning cost.
- * This value should be a multiple of \p c_nbnxnGpuRollingListPruningInterval
  */
 static const int c_nbnxnCpuDynamicListPruningMinLifetime = 10;
 
