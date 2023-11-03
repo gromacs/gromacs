@@ -192,12 +192,12 @@ void GmxH5mdIo::setUpParticlesDataBlocks(int writeCoordinatesSteps, int writeCoo
         hid_t compressedGroup = openOrCreateGroup(file_, "particles/selection_compressed");
         hid_t boxGroup = openOrCreateGroup(compressedGroup, "box");
         setAttribute(boxGroup, "dimension", DIM, H5T_NATIVE_INT);
-        boxLossy_ = GmxH5mdDataBlock(compressedGroup, "edges", "value", "nm", writeCoordinatesCompressedSteps, numFramesPerChunkCompressed, DIM, DIM, H5T_NATIVE_FLOAT, CompressionAlgorithm::LosslessNoShuffle, 0);
+        boxLossy_ = GmxH5mdDataBlock(boxGroup, "edges", "value", "nm", writeCoordinatesCompressedSteps, numFramesPerChunkCompressed, DIM, DIM, datatype, CompressionAlgorithm::LosslessNoShuffle, 0);
         // TODO: Write box 'boundary' attribute ('periodic' or 'none')
 
         /* Register the SZ3 filter. This is not necessary when creating a dataset with the filter, but must be done to append to an existing file (e.g. when restarting from checkpoint).*/
         registerSz3FilterImplicitly();
-        positionLossy_ = GmxH5mdDataBlock(compressedGroup, "position", "value", "nm", writeCoordinatesCompressedSteps, numFramesPerChunkCompressed, numParticlesCompressed, DIM, H5T_NATIVE_FLOAT, CompressionAlgorithm::LossySz3, compressionError);
+        positionLossy_ = GmxH5mdDataBlock(compressedGroup, "position", "value", "nm", writeCoordinatesCompressedSteps, numFramesPerChunkCompressed, numParticlesCompressed, DIM, datatype, CompressionAlgorithm::LossySz3, compressionError);
     }
 }
 
