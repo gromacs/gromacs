@@ -71,6 +71,7 @@
 #include "gromacs/gpu_utils/gpu_utils.h"
 #include "gromacs/imd/imd.h"
 #include "gromacs/listed_forces/listed_forces.h"
+#include "gromacs/listed_forces/listed_forces_gpu.h"
 #include "gromacs/math/boxmatrix.h"
 #include "gromacs/math/functions.h"
 #include "gromacs/math/vec.h"
@@ -117,6 +118,7 @@
 #include "gromacs/mdtypes/forcebuffers.h"
 #include "gromacs/mdtypes/forcerec.h"
 #include "gromacs/mdtypes/group.h"
+#include "gromacs/mdtypes/iforceprovider.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/interaction_const.h"
 #include "gromacs/mdtypes/md_enums.h"
@@ -136,6 +138,7 @@
 #include "gromacs/pulling/output.h"
 #include "gromacs/pulling/pull.h"
 #include "gromacs/swap/swapcoords.h"
+#include "gromacs/taskassignment/include/gromacs/taskassignment/decidesimulationworkload.h"
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/timing/walltime_accounting.h"
 #include "gromacs/topology/atoms.h"
@@ -1225,6 +1228,16 @@ void gmx::LegacySimulator::do_md()
                 if (awh && checkpointHandler->isCheckpointingStep() && MAIN(cr_))
                 {
                     awh->updateHistory(stateGlobal_->awhHistory.get());
+                }
+
+                if (bNS)
+                {
+                    if (fr_->listedForcesGpu)
+                    {
+                        fr_->listedForcesGpu->updateHaveInteractions(top_->idef);
+                    }
+                    runScheduleWork_->domainWork = setupDomainLifetimeWorkload(
+                            *ir, *fr_, pullWork_, ed ? ed->getLegacyED() : nullptr, *md, simulationWork);
                 }
 
                 /* The coordinates (x) are shifted (to get whole molecules)

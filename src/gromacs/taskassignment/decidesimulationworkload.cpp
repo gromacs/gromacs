@@ -32,18 +32,25 @@
  * the research papers on the package. Check out https://www.gromacs.org.
  */
 /*! \internal \file
- * \brief
- * Defines routine for building simulation workload task description.
+ * \brief Declares utility functions to manage step, domain-lifetime, and run workload data structures.
  *
  * \author Paul Bauer <paul.bauer.q@gmail.com>
+ * \author Szilárd Páll <pall.szilard@gmail.com>
  * \ingroup module_taskassignment
  */
 #include "gmxpre.h"
 
 #include "gromacs/taskassignment/decidesimulationworkload.h"
 
+#include "gromacs/essentialdynamics/edsam.h"
 #include "gromacs/ewald/pme.h"
+#include "gromacs/listed_forces/listed_forces.h"
+#include "gromacs/listed_forces/listed_forces_gpu.h"
+#include "gromacs/mdtypes/forcerec.h"
+#include "gromacs/mdtypes/iforceprovider.h"
+#include "gromacs/mdtypes/mdatom.h"
 #include "gromacs/mdtypes/multipletimestepping.h"
+#include "gromacs/pulling/pull.h"
 #include "gromacs/taskassignment/decidegpuusage.h"
 #include "gromacs/taskassignment/taskassignment.h"
 #include "gromacs/utility/arrayref.h"
@@ -115,5 +122,65 @@ SimulationWorkload createSimulationWorkload(const t_inputrec& inputrec,
             && (havePpDomainDecomposition ? (GMX_THREAD_MPI > 0) : true);
     return simulationWorkload;
 }
+
+
+/*! \brief Return true if there are special forces computed.
+ *
+ * The conditionals exactly correspond to those in sim_util.cpp:computeSpecialForces().
+ */
+static bool haveSpecialForces(const t_inputrec&          inputrec,
+                              const gmx::ForceProviders& forceProviders,
+                              const pull_t*              pull_work,
+                              const gmx_edsam*           ed)
+{
+
+    return ((forceProviders.hasForceProvider()) ||                 // forceProviders
+            (inputrec.bPull && pull_have_potential(*pull_work)) || // pull
+            inputrec.bRot ||                                       // enforced rotation
+            (ed != nullptr) ||                                     // flooding
+            (inputrec.bIMD));                                      // IMD
+}
+
+DomainLifetimeWorkload setupDomainLifetimeWorkload(const t_inputrec&         inputrec,
+                                                   const t_forcerec&         fr,
+                                                   const pull_t*             pull_work,
+                                                   const gmx_edsam*          ed,
+                                                   const t_mdatoms&          mdatoms,
+                                                   const SimulationWorkload& simulationWork)
+{
+    DomainLifetimeWorkload domainWork;
+    // Note that haveSpecialForces is constant over the whole run
+    domainWork.haveSpecialForces = haveSpecialForces(inputrec, *fr.forceProviders, pull_work, ed);
+    domainWork.haveCpuListedForceWork = false;
+    domainWork.haveCpuBondedWork      = false;
+    for (const auto& listedForces : fr.listedForces)
+    {
+        if (listedForces.haveCpuListedForces(*fr.fcdata))
+        {
+            domainWork.haveCpuListedForceWork = true;
+        }
+        if (listedForces.haveCpuBondeds())
+        {
+            domainWork.haveCpuBondedWork = true;
+        }
+    }
+    domainWork.haveGpuBondedWork =
+            ((fr.listedForcesGpu != nullptr) && fr.listedForcesGpu->haveInteractions());
+    // Note that haveFreeEnergyWork is constant over the whole run
+    domainWork.haveFreeEnergyWork =
+            (fr.efep != FreeEnergyPerturbationType::No && mdatoms.nPerturbed != 0);
+    // We assume we have local force work if there are CPU
+    // force tasks including PME or nonbondeds.
+    domainWork.haveCpuLocalForceWork =
+            domainWork.haveSpecialForces || domainWork.haveCpuListedForceWork
+            || domainWork.haveFreeEnergyWork || simulationWork.useCpuNonbonded || simulationWork.useCpuPme
+            || simulationWork.haveEwaldSurfaceContribution || inputrec.nwall > 0;
+    domainWork.haveCpuNonLocalForceWork = domainWork.haveCpuBondedWork || domainWork.haveFreeEnergyWork;
+    domainWork.haveLocalForceContribInCpuBuffer =
+            domainWork.haveCpuLocalForceWork || simulationWork.havePpDomainDecomposition;
+
+    return domainWork;
+}
+
 
 } // namespace gmx

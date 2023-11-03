@@ -173,7 +173,7 @@ private:
     std::array<HostInteractionList, F_NRE> iLists_;
 
     //! Tells whether there are any interaction in iLists.
-    bool haveInteractions_;
+    bool haveInteractions_ = false;
     //! Interaction lists on the device.
     std::array<DeviceBuffer<t_iatom>, F_NRE> d_iAtoms_      = {};
     std::array<int, F_NRE>                   d_iAtomsAlloc_ = {};

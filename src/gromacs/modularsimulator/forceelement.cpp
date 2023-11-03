@@ -43,6 +43,7 @@
 #include "forceelement.h"
 
 #include "gromacs/domdec/mdsetup.h"
+#include "gromacs/listed_forces/listed_forces_gpu.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/mdlib/constr.h"
 #include "gromacs/mdlib/force.h"
@@ -57,6 +58,8 @@
 #include "gromacs/mdtypes/mdrunoptions.h"
 #include "gromacs/mdtypes/simulation_workload.h"
 #include "gromacs/pbcutil/pbc.h"
+#include "gromacs/taskassignment/include/gromacs/taskassignment/decidesimulationworkload.h"
+#include "gromacs/topology/topology.h"
 
 #include "energydata.h"
 #include "freeenergyperturbationdata.h"
@@ -187,6 +190,18 @@ void ForceElement::run(Step step, Time time, unsigned int flags)
         auto* box = statePropagatorData_->box();
         correct_box(fplog_, step, box);
     }
+
+    if (flags & GMX_FORCE_NS)
+    {
+        if (fr_->listedForcesGpu)
+        {
+            fr_->listedForcesGpu->updateHaveInteractions(localTopology_->idef);
+        }
+        gmx_edsam* ed                = nullptr; // disabled
+        runScheduleWork_->domainWork = setupDomainLifetimeWorkload(
+                *inputrec_, *fr_, pull_work_, ed, *mdAtoms_->mdatoms(), runScheduleWork_->simulationWork);
+    }
+
 
     /* The coordinates (x) are shifted (to get whole molecules)
      * in do_force.

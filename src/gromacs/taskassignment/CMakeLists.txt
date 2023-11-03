@@ -63,6 +63,7 @@ target_link_libraries(taskassignment PRIVATE
                       legacy_api
                       legacy_modules
                       math
+                      pbcutil
                       pulling
                       timing
                       topology

@@ -569,23 +569,6 @@ static void checkPotentialEnergyValidity(int64_t step, const gmx_enerdata_t& ene
     }
 }
 
-/*! \brief Return true if there are special forces computed.
- *
- * The conditionals exactly correspond to those in computeSpecialForces().
- */
-static bool haveSpecialForces(const t_inputrec&          inputrec,
-                              const gmx::ForceProviders& forceProviders,
-                              const pull_t*              pull_work,
-                              const gmx_edsam*           ed)
-{
-
-    return ((forceProviders.hasForceProvider()) ||                 // forceProviders
-            (inputrec.bPull && pull_have_potential(*pull_work)) || // pull
-            inputrec.bRot ||                                       // enforced rotation
-            (ed != nullptr) ||                                     // flooding
-            (inputrec.bIMD));                                      // IMD
-}
-
 /*! \brief Compute forces and/or energies for special algorithms
  *
  * The intention is to collect all calls to algorithms that compute
@@ -930,50 +913,6 @@ static ForceOutputs setupForceOutputs(ForceHelperBuffers*                 forceH
 
     return ForceOutputs(
             forceWithShiftForces, forceHelperBuffers->haveDirectVirialContributions(), forceWithVirial);
-}
-
-
-/*! \brief Set up flags that have the lifetime of the domain indicating what type of work is there to compute.
- */
-static DomainLifetimeWorkload setupDomainLifetimeWorkload(const t_inputrec&         inputrec,
-                                                          const t_forcerec&         fr,
-                                                          const pull_t*             pull_work,
-                                                          const gmx_edsam*          ed,
-                                                          const t_mdatoms&          mdatoms,
-                                                          const SimulationWorkload& simulationWork)
-{
-    DomainLifetimeWorkload domainWork;
-    // Note that haveSpecialForces is constant over the whole run
-    domainWork.haveSpecialForces = haveSpecialForces(inputrec, *fr.forceProviders, pull_work, ed);
-    domainWork.haveCpuListedForceWork = false;
-    domainWork.haveCpuBondedWork      = false;
-    for (const auto& listedForces : fr.listedForces)
-    {
-        if (listedForces.haveCpuListedForces(*fr.fcdata))
-        {
-            domainWork.haveCpuListedForceWork = true;
-        }
-        if (listedForces.haveCpuBondeds())
-        {
-            domainWork.haveCpuBondedWork = true;
-        }
-    }
-    domainWork.haveGpuBondedWork =
-            ((fr.listedForcesGpu != nullptr) && fr.listedForcesGpu->haveInteractions());
-    // Note that haveFreeEnergyWork is constant over the whole run
-    domainWork.haveFreeEnergyWork =
-            (fr.efep != FreeEnergyPerturbationType::No && mdatoms.nPerturbed != 0);
-    // We assume we have local force work if there are CPU
-    // force tasks including PME or nonbondeds.
-    domainWork.haveCpuLocalForceWork =
-            domainWork.haveSpecialForces || domainWork.haveCpuListedForceWork
-            || domainWork.haveFreeEnergyWork || simulationWork.useCpuNonbonded || simulationWork.useCpuPme
-            || simulationWork.haveEwaldSurfaceContribution || inputrec.nwall > 0;
-    domainWork.haveCpuNonLocalForceWork = domainWork.haveCpuBondedWork || domainWork.haveFreeEnergyWork;
-    domainWork.haveLocalForceContribInCpuBuffer =
-            domainWork.haveCpuLocalForceWork || simulationWork.havePpDomainDecomposition;
-
-    return domainWork;
 }
 
 /*! \brief Set up force flag struct from the force bitmask.
@@ -1607,16 +1546,6 @@ void do_force(FILE*                               fplog,
     const SimulationWorkload& simulationWork = runScheduleWork->simulationWork;
 
     const gmx::DomainLifetimeWorkload& domainWork = runScheduleWork->domainWork;
-
-    if ((legacyFlags & GMX_FORCE_NS) != 0)
-    {
-        if (fr->listedForcesGpu)
-        {
-            fr->listedForcesGpu->updateHaveInteractions(top->idef);
-        }
-        runScheduleWork->domainWork =
-                setupDomainLifetimeWorkload(inputrec, *fr, pull_work, ed, *mdatoms, simulationWork);
-    }
 
     runScheduleWork->stepWork = setupStepWorkload(
             legacyFlags, inputrec.mtsLevels, step, runScheduleWork->domainWork, simulationWork);

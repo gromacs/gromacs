@@ -66,6 +66,7 @@
 #include "gromacs/gmxlib/nrnb.h"
 #include "gromacs/gpu_utils/gpu_utils.h"
 #include "gromacs/listed_forces/listed_forces.h"
+#include "gromacs/listed_forces/listed_forces_gpu.h"
 #include "gromacs/math/functions.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
@@ -119,6 +120,7 @@
 #include "gromacs/pulling/output.h"
 #include "gromacs/pulling/pull.h"
 #include "gromacs/swap/swapcoords.h"
+#include "gromacs/taskassignment/include/gromacs/taskassignment/decidesimulationworkload.h"
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/timing/walltime_accounting.h"
 #include "gromacs/topology/atoms.h"
@@ -604,6 +606,18 @@ void gmx::LegacySimulator::do_rerun()
                        | GMX_FORCE_VIRIAL | // TODO: Get rid of this once #2649 and #3400 are solved
                        GMX_FORCE_ENERGY | (doFreeEnergyPerturbation ? GMX_FORCE_DHDL : 0));
 
+        gmx_edsam* const ed = nullptr;
+
+        if (bNS)
+        {
+            if (fr_->listedForcesGpu)
+            {
+                fr_->listedForcesGpu->updateHaveInteractions(top_->idef);
+            }
+            runScheduleWork_->domainWork = setupDomainLifetimeWorkload(
+                    *ir, *fr_, pullWork_, ed, *mdatoms, runScheduleWork_->simulationWork);
+        }
+
         if (shellfc)
         {
             /* Now is the time to relax the shells */
@@ -649,8 +663,8 @@ void gmx::LegacySimulator::do_rerun()
              * This is parallellized as well, and does communication too.
              * Check comments in sim_util.c
              */
-            Awh*       awh = nullptr;
-            gmx_edsam* ed  = nullptr;
+            Awh* awh = nullptr;
+
             try
             {
                 do_force(fpLog_,

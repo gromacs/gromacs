@@ -59,6 +59,7 @@
 #include "gromacs/gmxlib/conformation_utilities.h"
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/gmxlib/nrnb.h"
+#include "gromacs/listed_forces/listed_forces.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/constr.h"
@@ -86,6 +87,7 @@
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/random/threefry.h"
 #include "gromacs/random/uniformrealdistribution.h"
+#include "gromacs/taskassignment/include/gromacs/taskassignment/decidesimulationworkload.h"
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/timing/walltime_accounting.h"
 #include "gromacs/topology/mtop_util.h"
@@ -436,6 +438,14 @@ void LegacySimulator::do_tpi()
     fr_->rlist = maxCutoff + inputRec_->rtpi + molRadius;
     fr_->nbv->changePairlistRadii(fr_->rlist, fr_->rlist);
 
+    // We don't compute listed forces, set up empty interaction lists
+    const gmx_ffparams_t         emptyFFParams;
+    const InteractionDefinitions emptyInteractionDefinitions(emptyFFParams);
+    for (auto& listedForces : fr_->listedForces)
+    {
+        listedForces.setup(emptyInteractionDefinitions, 0, false);
+    }
+
     ngid   = groups->groups[SimulationAtomGroupType::EnergyOutput].size();
     gid_tp = fr_->atomInfo[a_tp0] & gmx::sc_atomInfo_EnergyGroupIdMask;
     for (int a = a_tp0 + 1; a < a_tp1; a++)
@@ -597,6 +607,21 @@ void LegacySimulator::do_tpi()
         rvec boxDiagonal = { box[XX][XX], box[YY][YY], box[ZZ][ZZ] };
         fr_->nbv->putAtomsOnGrid(
                 box, 0, vzero, boxDiagonal, nullptr, { 0, a_tp0 }, -1, fr_->atomInfo, x, 0, nullptr);
+
+        gmx_edsam* const ed = nullptr;
+
+        // TPI does not support DD so we only call this once, on the first step
+        GMX_ASSERT(runScheduleWork_->simulationWork.havePpDomainDecomposition == false,
+                   "We should not be using PP domain decomposition here");
+        // TPI only computes non-bonded interaction energies, no other energies should be computed.
+
+        // Note that lot of fr_ internal data (such as bondeds) is not fully set up, and will
+        // not be set up later, because TPI runs only uses a narrow subset of functionality.
+        // TPI also uses a different definition of local an non-local atoms from the rest of the code,
+        // so care needs to be taken that members of domainWork get correctly initialized
+        // for the TPI use-case.
+        runScheduleWork_->domainWork = setupDomainLifetimeWorkload(
+                *inputRec_, *fr_, pullWork_, ed, *mdatoms, runScheduleWork_->simulationWork);
 
         step = cr_->nodeid * stepblocksize;
         while (step < nsteps)
@@ -773,7 +798,7 @@ void LegacySimulator::do_tpi()
                      nullptr,
                      mu_tot,
                      t,
-                     nullptr,
+                     ed,
                      fr_->longRangeNonbondeds.get(),
                      GMX_FORCE_NONBONDED | GMX_FORCE_ENERGY | (bStateChanged ? GMX_FORCE_STATECHANGED : 0),
                      DDBalanceRegionHandler(nullptr));
