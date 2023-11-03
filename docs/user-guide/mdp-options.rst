@@ -518,15 +518,14 @@ Neighbor searching
       Use no periodic boundary conditions, ignore the box. To simulate
       without cut-offs, set all cut-offs and :mdp:`nstlist` to 0. For
       best performance without cut-offs on a single MPI rank, set
-      :mdp:`nstlist` to zero and :mdp-value:`ns-type=simple`.
+      :mdp:`nstlist` to zero.
 
    .. mdp-value:: xy
 
-      Use periodic boundary conditions in x and y directions
-      only. This works only with :mdp-value:`ns-type=grid` and can be used
-      in combination with walls_. Without walls or with only one wall
-      the system size is infinite in the z direction. Therefore
-      pressure coupling or Ewald summation methods can not be
+      Use periodic boundary conditions in x and y directions only.
+      This can be used in combination with walls_. Without walls
+      or with only one wall the system size is infinite in the z direction.
+      Therefore pressure coupling or Ewald summation methods can not be
       used. These disadvantages do not apply when two walls are used.
 
 .. mdp:: periodic-molecules

@@ -156,7 +156,6 @@ std::map<std::string, GmxapiType> simulationParameterTypeMap()
         { "compressed-x-precision", GmxapiType::FLOAT64 },
         { "cutoff-scheme", GmxapiType::STRING },
         { "nstlist", GmxapiType::INT64 },
-        { "ns-type", GmxapiType::STRING },
         { "pbc", GmxapiType::STRING },
         { "periodic-molecules", GmxapiType::BOOL },
         //            TBD
