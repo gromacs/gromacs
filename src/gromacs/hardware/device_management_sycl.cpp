@@ -63,8 +63,56 @@
 
 #include "device_information.h"
 
+
+static std::optional<std::tuple<int, int>> parseHardwareVersionNvidia(const std::string& archName)
+{
+    // archName could be either '8.6' (DPC++) or 'sm_86' (AdaptiveCpp/hipSYCL)
+    try
+    {
+        if (gmx::startsWith(archName, "sm_"))
+        {
+            int numericCCBegin = 3; // first character after sm_
+            int numericCCEnd   = archName.length();
+            if (numericCCEnd - numericCCBegin >= 2)
+            {
+                std::string majorStr = archName.substr(numericCCBegin, numericCCEnd - numericCCBegin - 1);
+                std::string minorStr = archName.substr(numericCCEnd - 1, 1);
+                const int   major    = gmx::fromStdString<int>(majorStr);
+                const int   minor    = gmx::fromStdString<int>(minorStr);
+                return std::make_tuple(major, minor);
+            }
+        }
+        else if (gmx::contains(archName, "."))
+        {
+            const std::vector<std::string> ccTokens = gmx::splitDelimitedString(archName, '.');
+            if (ccTokens.size() == 2)
+            {
+                const int major = gmx::fromStdString<int>(ccTokens[0]);
+                const int minor = gmx::fromStdString<int>(ccTokens[1]);
+                return std::make_tuple(major, minor);
+            }
+        }
+    }
+    catch (gmx::InvalidInputError)
+    {
+        return std::nullopt;
+    }
+    return std::nullopt;
+}
+
+
 static std::optional<std::tuple<int, int>> getHardwareVersionNvidia(const sycl::device& device)
 {
+    /* First, check device::info::version:
+     * - AdaptiveCpp/hipSYCL supports that since AdaptiveCpp 2023.10.0 (merged in July 2023),
+     * - Intel DPC++ supports that since 2023.2.0 (merged in July 2023).
+     * If device::info::version cannot be parsed, fall back on backend-specific solutions.
+     * Fallbacks can be removed once we no longer support older versions. */
+    const std::string deviceVersion = device.get_info<sycl::info::device::version>();
+    if (auto result = parseHardwareVersionNvidia(deviceVersion); result.has_value())
+    {
+        return result;
+    }
 #if (GMX_SYCL_HIPSYCL && GMX_HIPSYCL_HAVE_CUDA_TARGET) // hipSYCL uses CUDA Runtime API
     const int             nativeDeviceId = sycl::get_native<sycl::backend::cuda>(device);
     struct cudaDeviceProp prop;
@@ -80,25 +128,8 @@ static std::optional<std::tuple<int, int>> getHardwareVersionNvidia(const sycl::
 #elif (GMX_SYCL_DPCPP && defined(SYCL_EXT_ONEAPI_BACKEND_CUDA))
     // oneAPI uses CUDA Driver API, but does not link the application to it
     // Instead, we have to use info::device::backend_version, and parse it
-    const std::string              ccStr = device.get_info<sycl::info::device::backend_version>();
-    const std::vector<std::string> ccTokens = gmx::splitDelimitedString(ccStr, '.');
-    if (ccTokens.size() == 2)
-    {
-        try
-        {
-            const int major = gmx::fromStdString<int>(ccTokens[0]);
-            const int minor = gmx::fromStdString<int>(ccTokens[1]);
-            return std::make_tuple(major, minor);
-        }
-        catch (gmx::InvalidInputError)
-        {
-            return std::nullopt;
-        }
-    }
-    else
-    {
-        return std::nullopt;
-    }
+    const std::string ccStr = device.get_info<sycl::info::device::backend_version>();
+    return parseHardwareVersionNvidia(ccStr);
 #else
     GMX_UNUSED_VALUE(device);
     return std::nullopt;
@@ -107,7 +138,7 @@ static std::optional<std::tuple<int, int>> getHardwareVersionNvidia(const sycl::
 
 static std::optional<std::tuple<int, int, int>> parseHardwareVersionAmd(const std::string& archName)
 {
-    // archName is something like 'gfx90a:sramecc+:xnack-'
+    // archName is something like 'gfx90a:sramecc+:xnack-' or 'gfx1034'
     std::vector<std::string> archNameTokens = gmx::splitDelimitedString(archName, ':');
     if (!gmx::startsWith(archNameTokens[0], "gfx"))
     {
@@ -147,7 +178,18 @@ static std::optional<std::tuple<int, int, int>> parseHardwareVersionAmd(const st
 
 static std::optional<std::tuple<int, int, int>> getHardwareVersionAmd(const sycl::device& device)
 {
+    /* First, check device::info::version:
+     * - AdaptiveCpp/hipSYCL supports that since AdaptiveCpp 2023.10.0 (merged in July 2023),
+     * - Intel DPC++ supports that since 2023.2.0 (merged in July 2023).
+     * If device::info::version cannot be parsed, fall back to backend-specific solutions.
+     * Fallbacks can be removed once we no longer support older versions. */
+    const std::string deviceVersion = device.get_info<sycl::info::device::version>();
+    if (auto result = parseHardwareVersionAmd(deviceVersion); result.has_value())
+    {
+        return result;
+    }
 #if (GMX_SYCL_HIPSYCL && GMX_HIPSYCL_HAVE_HIP_TARGET)
+    // Fall back on the native device query
     const int              nativeDeviceId = sycl::get_native<sycl::backend::hip>(device);
     struct hipDeviceProp_t prop;
     hipError_t             status = hipGetDeviceProperties(&prop, nativeDeviceId);
@@ -159,8 +201,8 @@ static std::optional<std::tuple<int, int, int>> getHardwareVersionAmd(const sycl
     // gcnArch is deprecated, so we have to parse gcnArchName
     return parseHardwareVersionAmd(prop.gcnArchName);
 #elif (GMX_SYCL_DPCPP)
-    // DPC++ puts architecture in the device name field, which is fine
-    const std::string deviceName = device.get_info<sycl::info::device::name>(); // gfx1032 or something
+    // Device name might contain the desired string, but it depends on the ROCm version
+    const std::string deviceName = device.get_info<sycl::info::device::version>();
     return parseHardwareVersionAmd(deviceName);
 #else
     GMX_UNUSED_VALUE(device);
@@ -170,7 +212,15 @@ static std::optional<std::tuple<int, int, int>> getHardwareVersionAmd(const sycl
 
 static std::optional<std::tuple<int, int, int>> getHardwareVersionIntel(const sycl::device& device)
 {
-    // For Intel, we have to parse and match PCI Express device ID
+    // ext::intel::info::device::device_id is supported since oneAPI 2023.1
+#if defined(SYCL_EXT_INTEL_DEVICE_INFO) && SYCL_EXT_INTEL_DEVICE_INFO >= 5
+    if (device.has(sycl::aspect::ext_intel_device_id))
+    {
+        auto pciId = device.get_info<sycl::ext::intel::info::device::device_id>();
+        return getIntelHardwareVersionFromPciExpressID(pciId);
+    }
+#endif
+    // Otherwise, try to find PCI ID in the device string. That only works for old drivers
     const std::string deviceName = device.get_info<sycl::info::device::name>();
     // Find " [0xABCD]" and extract 0xABCD:
     const size_t prefixStart = deviceName.find(" [0x");
@@ -191,6 +241,7 @@ static std::optional<std::tuple<int, int, int>> getHardwareVersionIntel(const sy
     {
         return std::nullopt;
     }
+
     // Now, find the matching device
     return getIntelHardwareVersionFromPciExpressID(pciId);
 }
