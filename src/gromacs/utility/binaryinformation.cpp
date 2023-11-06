@@ -409,6 +409,13 @@ void gmx_print_version_info(gmx::TextWriter* writer)
     writer->writeLine("Tracing support:    disabled");
 #endif
 
+#if GMX_USE_NVTX
+    writer->writeLine("Instrumention API:  NVTX");
+#elif GMX_USE_ROCTX
+    writer->writeLine("Instrumention API:  ROCTX");
+#elif GMX_USE_ITT
+    writer->writeLine("Instrumention API:  ITT");
+#endif
 
     /* TODO: The below strings can be quite long, so it would be nice to wrap
      * them. Can wait for later, as the main branch has ready code to do all

@@ -167,6 +167,15 @@
 /* Add support for tracing using Extrae */
 #cmakedefine01 HAVE_EXTRAE
 
+/* Enable NVIDIA NVTX instrumentation */
+#cmakedefine01 GMX_USE_NVTX
+
+/* Enable AMD ROCTX instrumentation */
+#cmakedefine01 GMX_USE_ROCTX
+
+/* Enable Intel ITT instrumentation */
+#cmakedefine01 GMX_USE_ITT
+
 /* Use MPI (with mpicc) for parallelization */
 #cmakedefine01 GMX_LIB_MPI
 

@@ -55,6 +55,61 @@ target_link_libraries(timing INTERFACE
                       legacy_api
                       )
 
+# Tracing support for NVTX / ROCTX / ITT (with some basic includ/lib detection support,
+# sufficient for most use-cases and this is a dev-feature anyway).
+if(GMX_USE_NVTX)
+    find_path (NVTX_INCLUDE_DIR
+        NAMES nvToolsExt.h
+        HINTS ENV CUDA_HOME "${CUDA_TOOLKIT_ROOT_DIR}"
+        PATH_SUFFIXES include include/nvtx3
+        REQUIRED
+        )
+    find_library (NVTX_LIBRARY
+        NAMES libnvToolsExt.so
+        HINTS ENV CUDA_HOME "${CUDA_TOOLKIT_ROOT_DIR}"
+        PATH_SUFFIXES lib64 lib
+        REQUIRED
+        )
+    target_include_directories(timing INTERFACE "${NVTX_INCLUDE_DIR}")
+    target_link_libraries(timing INTERFACE "${NVTX_LIBRARY}")
+    # As of CUDA 11.8, there are a lot of old-style casts in nvToolsExt.h
+    gmx_target_interface_warning_suppression(timing "-Wno-old-style-cast" HAS_WARNING_NO_OLD_STYLE_CAST)
+endif()
+
+if(GMX_USE_ROCTX)
+    find_path (ROCTX_INCLUDE_DIR
+        NAMES roctracer/roctx.h
+        HINTS ENV ROCM_PATH ENV ROCM_HOME "${HIPSYCL_SYCLCC_ROCM_PATH}"
+        PATH_SUFFIXES include
+        REQUIRED
+        )
+    find_library (ROCTX_LIBRARY
+        NAMES libroctx64.so
+        HINTS ENV ROCM_PATH ENV ROCM_HOME "${HIPSYCL_SYCLCC_ROCM_PATH}"
+        PATH_SUFFIXES roctracer/lib64 roctracer/lib lib64 lib
+        REQUIRED
+        )
+    target_include_directories(timing INTERFACE "${ROCTX_INCLUDE_DIR}")
+    target_link_libraries(timing INTERFACE "${ROCTX_LIBRARY}")
+endif()
+
+if(GMX_USE_ITT)
+    find_path (ITTNOTIFY_INCLUDE_DIR
+        NAMES ittnotify.h
+        HINTS ENV VTUNE_PROFILER_DIR
+        PATH_SUFFIXES include
+        REQUIRED
+        )
+    find_library (ITTNOTIFY_LIBRARY
+        NAMES libittnotify.a # We need the static library
+        HINTS ENV VTUNE_PROFILER_DIR
+        PATH_SUFFIXES lib64 lib
+        REQUIRED
+        )
+    target_include_directories(timing INTERFACE "${ITTNOTIFY_INCLUDE_DIR}" SYSTEM)
+    target_link_libraries(timing INTERFACE "${ITTNOTIFY_LIBRARY}")
+endif()
+
 # TODO: when timing is an OBJECT target
 #target_link_libraries(timing PUBLIC legacy_api)
 #target_link_libraries(timing PRIVATE common)
