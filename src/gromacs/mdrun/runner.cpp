@@ -2280,6 +2280,13 @@ int Mdrunner::mdrunner()
                     deviceStreamManager.get());
     }
 
+    if (!hwinfo_->deviceInfoList.empty())
+    {
+        /* stop the GPU profiler (only CUDA);
+         * Doing so here avoids including a lot of cleanup/freeing API calls in the trace. */
+        stopGpuProfiler();
+    }
+
     wallcycle_stop(wcycle.get(), WallCycleCounter::Run);
 
     /* Finish up, write some stuff
@@ -2318,12 +2325,6 @@ int Mdrunner::mdrunner()
 
     // Destroy streams after all the structures using them
     deviceStreamManager.reset(nullptr);
-
-    if (!hwinfo_->deviceInfoList.empty())
-    {
-        /* stop the GPU profiler (only CUDA) */
-        stopGpuProfiler();
-    }
 
     /* With tMPI we need to wait for all ranks to finish deallocation before
      * destroying the CUDA context as some tMPI ranks may be sharing
