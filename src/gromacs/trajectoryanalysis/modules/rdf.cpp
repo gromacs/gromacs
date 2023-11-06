@@ -643,6 +643,8 @@ void Rdf::finishAnalysis(int /*nframes*/)
         plotm->setSubtitle(formatString("reference %s", refSel_.name()));
         plotm->setXLabel("r (nm)");
         plotm->setYLabel("g(r)");
+        plotm->setXFormat(11, 6);
+        plotm->setYFormat(11, 6);
         for (size_t i = 0; i < sel_.size(); ++i)
         {
             plotm->appendLegend(sel_[i].name());
