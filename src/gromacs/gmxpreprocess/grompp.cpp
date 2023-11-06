@@ -63,6 +63,7 @@
 #include "gromacs/gmxpreprocess/gen_maxwell_velocities.h"
 #include "gromacs/gmxpreprocess/gpp_atomtype.h"
 #include "gromacs/gmxpreprocess/grompp_impl.h"
+#include "gromacs/gmxpreprocess/massrepartitioning.h"
 #include "gromacs/gmxpreprocess/notset.h"
 #include "gromacs/gmxpreprocess/readir.h"
 #include "gromacs/gmxpreprocess/tomorse.h"
@@ -2357,6 +2358,18 @@ int gmx_grompp(int argc, char* argv[])
     }
 
     checkForUnboundAtoms(&sys, bVerbose, &wi, logger);
+
+    // Now that we have the topology finalized and checked, we can repartition masses
+    if (ir->massRepartitionFactor > 1)
+    {
+        const bool useFep = (ir->efep != FreeEnergyPerturbationType::No);
+
+        gmx::repartitionAtomMasses(&sys, useFep, ir->massRepartitionFactor, &wi);
+    }
+    else if (ir->massRepartitionFactor < 1)
+    {
+        wi.addError("The mass repartitioning factor should be >= 1");
+    }
 
     if (EI_DYNAMICS(ir->eI) && ir->eI != IntegrationAlgorithm::BD)
     {

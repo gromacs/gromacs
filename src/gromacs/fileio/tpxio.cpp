@@ -140,6 +140,7 @@ enum tpxv
     tpxv_RemoveAtomtypes,             /**< Remove unused atomtypes parameter from mtop */
     tpxv_EnsembleTemperature,         /**< Add ensemble temperature settings */
     tpxv_AwhGrowthFactor,             /**< Add AWH growth factor */
+    tpxv_MassRepartitioning,          /**< Add mass repartitioning */
     tpxv_Count                        /**< the total number of tpxv versions */
 };
 
@@ -1090,6 +1091,15 @@ static void do_inputrec(gmx::ISerializer* serializer, t_inputrec* ir, int file_v
     {
         ir->useMts = false;
         ir->mtsLevels.clear();
+    }
+
+    if (file_version >= tpxv_MassRepartitioning)
+    {
+        serializer->doReal(&ir->massRepartitionFactor);
+    }
+    else
+    {
+        ir->massRepartitionFactor = 1;
     }
 
     if (file_version >= tpxv_EnsembleTemperature)

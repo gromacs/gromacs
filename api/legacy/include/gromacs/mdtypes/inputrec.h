@@ -377,8 +377,13 @@ struct t_inputrec // NOLINT (clang-analyzer-optin.performance.Padding)
     bool useMts = false;
     //! The multiple time stepping levels
     std::vector<gmx::MtsLevel> mtsLevels;
+
+    //! The factor for repartitioning atom masses
+    real massRepartitionFactor = 1;
+
     //! Precision of x in compressed trajectory file
     real x_compression_precision = 0;
+
     //! Requested fourier_spacing, when nk? not set
     real fourier_spacing = 0;
     //! Number of k vectors in x dimension for fourier methods for long range electrost.

@@ -268,6 +268,19 @@ Run control
       Interval for computing the forces in level 2 of the multiple time-stepping
       scheme
 
+.. mdp:: mass-repartitioning-factor
+
+      (1) []
+      Scales the masses of the lightest atoms in the system by this factor
+      to the mass mMin. All atoms with a mass lower than mMin also have
+      their mass set to that mMin. The mass change is subtracted from the mass
+      of the atom the light atom is bound to. If there is no bound atom a
+      warning is generated. If there is more than one atom bound an error is
+      generated. If the mass of the bound atom would become lower than mMin
+      an error is generated. For typical atomistic systems only the masses
+      of hydrogens are scaled. With h-bonds constrained a factor of 3 will
+      usually enable a time step of 4 fs.
+
 .. mdp:: comm-mode
 
    .. mdp-value:: Linear
