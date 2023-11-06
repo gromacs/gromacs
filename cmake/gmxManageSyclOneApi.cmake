@@ -183,6 +183,14 @@ list(APPEND SYCL_TOOLCHAIN_CXX_FLAGS ${SYCL_CXX_FLAGS_EXTRA})
 separate_arguments(SYCL_TOOLCHAIN_LINKER_FLAGS)
 list(APPEND SYCL_TOOLCHAIN_LINKER_FLAGS ${SYCL_CXX_FLAGS_EXTRA})
 
+# We disable warnings about functions deprecated in SYCL2020, because
+# sometimes there is no widely-supported alternative.
+# E.g., https://github.com/AdaptiveCpp/AdaptiveCpp/issues/1230.
+# It would be good to occasionally remove this macro and clean
+# up the code. But, as of November 2023, it produces too much noise
+# without offering a targeted way to suppress specific warnings.
+list(APPEND SYCL_TOOLCHAIN_CXX_FLAGS "-DSYCL2020_DISABLE_DEPRECATION_WARNINGS")
+
 # Make strings for pretty-printing in gmx -version
 string(REPLACE ";" " " SYCL_TOOLCHAIN_CXX_FLAGS_STR "${SYCL_TOOLCHAIN_CXX_FLAGS}")
 string(STRIP "${SYCL_TOOLCHAIN_CXX_FLAGS_STR}" SYCL_TOOLCHAIN_CXX_FLAGS_STR)
