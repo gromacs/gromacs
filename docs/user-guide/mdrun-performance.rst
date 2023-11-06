@@ -1501,6 +1501,9 @@ Run setup
   * it is necessary to be able to use GPU-resident mode;
   * and most force fields have been parametrized with only bonds involving hydrogens constrained.
 
+* You can often increase the time-step to 4 fs by repartitioning hydrogen
+  masses using the ``mass-repartition-factor`` mdp option. This does not
+  affect equilibrium distributions, but makes dynamics slightly slower.
 * You can increase the time-step to 4 or 5 fs when using virtual interaction
   sites (``gmx pdb2gmx -vsite h``).
 * For massively parallel runs with PME, you might need to try different numbers

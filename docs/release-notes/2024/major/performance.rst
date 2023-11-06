@@ -15,6 +15,16 @@ by optimizing the pair search grid for the effective atom density.
 
 :issue:`4805`
 
+Flexible hydrogen mass repartitioning using grompp
+""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Instead of using pdb2gmx, which modifies the topology, a flexible
+scheme for hydrogen mass repartitioning is now available in ``grompp``
+through the ``mass-repartition-factor`` ``mdp`` option. This provides
+easy access to a performance improvement of close to a factor two.
+
+:issue:`4866`
+
 HeFFTe multi-GPU FFT plan options are now configurable
 """"""""""""""""""""""""""""""""""""""""""""""""""""""
 
