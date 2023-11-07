@@ -45,6 +45,7 @@
 struct gmx_mtop_t;
 typedef int64_t hid_t;
 typedef unsigned long long hsize_t;
+enum class PbcType : int;
 
 /*! \brief The container of the H5MD data. The class is designed to read/write data according to de Buyl et al., 2014
  * (https://www.sciencedirect.com/science/article/pii/S0010465514000447) and https://www.nongnu.org/h5md/h5md.html
@@ -115,9 +116,10 @@ public:
      * \param[in] writeForcesSteps The lossless force output interval.
      * \param[in] writeVelocitiesSteps The lossless velocity output interval.
      * \param[in] numParticles The number of particles/atoms in the system.
+     * \param[in] pbcType The periodic boundary condition that is used.
      * \param[in] compressionError The required precision of the lossy compression.
      */
-    void setUpParticlesDataBlocks(int writeCoordinatesSteps, int writeForcesSteps, int writeVelocitiesSteps, int numParticles, double compressionError);
+    void setUpParticlesDataBlocks(int writeCoordinatesSteps, int writeForcesSteps, int writeVelocitiesSteps, int numParticles, PbcType pbcType, double compressionError);
 
     /*! \brief Write a trajectory frame to the file. Only writes the data that is passed as input
      *

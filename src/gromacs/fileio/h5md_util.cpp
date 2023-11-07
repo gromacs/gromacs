@@ -42,6 +42,7 @@
 #include <string>
 
 #include "gromacs/math/vectypes.h"
+#include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/utility/fatalerror.h"
 
 #define GMX_USE_HDF5 1 // FIXME: Temporary just for the editor
@@ -137,6 +138,7 @@ void writeData(hid_t container, const char* name, const char* unit, const void* 
             // int sz3_mode = 0; //0: ABS, 1: REL
             // size_t numCompressionSettingsElements;
             // unsigned int *compressionSettings = nullptr;
+            // FIXME: Compression error is set by config file.
             // SZ_errConfigToCdArray(&numCompressionSettingsElements, &compressionSettings, sz3_mode, compressionError, compressionError, 0, 0);
             // if (H5Pset_filter(createPropertyList, H5Z_FILTER_SZ3, H5Z_FLAG_MANDATORY, numCompressionSettingsElements, compressionSettings) < 0)
             if (H5Pset_filter(createPropertyList, H5Z_FILTER_SZ3, H5Z_FLAG_MANDATORY, 0, nullptr) < 0)
@@ -216,6 +218,28 @@ void writeData(hid_t container, const char* name, const char* unit, const void* 
 #endif
 }
 
+void setBoxGroupAttributes(hid_t boxGroup, PbcType pbcType)
+{
+    setAttribute(boxGroup, "dimension", DIM, H5T_NATIVE_INT);
+    static constexpr int c_pbcTypeStringLength = 9;
+    char boundaryAttributeString[DIM][c_pbcTypeStringLength] = {"periodic", "periodic", "periodic"};
+    switch(pbcType)
+    {
+    case PbcType::Xyz:
+        break;
+    case PbcType::XY:
+        strcpy(boundaryAttributeString[2], "none");
+        break;
+    default:
+        for (int i = 0; i < DIM; i++)
+        {
+            strcpy(boundaryAttributeString[i], "none");
+        }
+        break;
+    }
+    setAttributeStringList<DIM, c_pbcTypeStringLength>(boxGroup, "boundary", boundaryAttributeString);
+}
+
 template <typename T>
 void setAttribute(hid_t container, const char *name, const T value, hid_t dataType)
 {
@@ -241,6 +265,28 @@ void setAttribute(hid_t container, const char *name, const char* value)
     H5Tset_cset(dataType, H5T_CSET_UTF8);
 
     setAttribute(container, name, value, dataType);
+}
+
+template <hid_t numEntries, hid_t stringLength>
+void setAttributeStringList(hid_t container, const char *name, const char value[numEntries][stringLength])
+{
+    hid_t dataType = H5Tcopy(H5T_C_S1);
+    H5Tset_size(dataType, stringLength);
+    H5Tset_strpad(dataType, H5T_STR_NULLTERM);
+    H5Tset_cset(dataType, H5T_CSET_UTF8);
+    hid_t attribute = H5Aopen(container, name, H5P_DEFAULT);
+    if (attribute < 0)
+    {
+        hsize_t dataSize[1] = {numEntries};
+        hid_t dataspace = H5Screate_simple(1, dataSize, nullptr);
+        attribute = H5Acreate2(container, name, dataType, dataspace, H5P_DEFAULT, H5P_DEFAULT);
+    }
+    if (H5Awrite(attribute, dataType, &value[0]) < 0)
+    {
+        H5Eprint2(H5E_DEFAULT, nullptr);
+        gmx_file("Cannot write attribute.");
+    }
+    H5Aclose(attribute);
 }
 
 template void setAttribute<int>(hid_t, const char*, int, hid_t);

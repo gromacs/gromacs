@@ -255,12 +255,10 @@ gmx_mdoutf_t init_mdoutf(FILE*                          fplog,
                 of->natoms_x_compressed++;
             }
         }
-        printf("of->natoms_x_compressed %d, numberOfGroupNumbers[%d]: %d\n", of->natoms_x_compressed, SimulationAtomGroupType::CompressedPositionOutput,
-               of->groups->numberOfGroupNumbers(SimulationAtomGroupType::CompressedPositionOutput));
         if(of->h5mdIo)
         {
             of->h5mdIo->setupMolecularSystem(top_global);
-            of->h5mdIo->setUpParticlesDataBlocks(ir->nstxout_compressed, 0, 0, of->natoms_x_compressed, 1.0/of->x_compression_precision);
+            of->h5mdIo->setUpParticlesDataBlocks(ir->nstxout_compressed, 0, 0, of->natoms_x_compressed, ir->pbcType, 1.0/of->x_compression_precision);
         }
 
         if (ir->nstfout && haveDDAtomOrdering(*cr))

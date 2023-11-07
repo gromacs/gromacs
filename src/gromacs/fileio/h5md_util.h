@@ -43,6 +43,7 @@
 
 typedef int64_t hid_t;
 typedef unsigned long long hsize_t;
+enum class PbcType : int;
 
 /*! \brief An enumeration of compression options */
 enum class CompressionAlgorithm
@@ -81,10 +82,14 @@ void registerSz3FilterImplicitly();
  */
 void writeData(hid_t container, const char* name, const char* unit, const void* data, hsize_t numFramesPerChunk, hsize_t numEntries, hsize_t numValuesPerEntry, hsize_t positionToWrite, hid_t datatype, CompressionAlgorithm compression, double compressionError);
 
+void setBoxGroupAttributes(hid_t boxGroup, PbcType pbcType);
+
 template <typename T>
 void setAttribute(hid_t container, const char *name, const T value, hid_t dataType);
 
 void setAttribute(hid_t container, const char *name, const char* value);
 
+template <hid_t numEntries, hid_t stringLength>
+void setAttributeStringList(hid_t container, const char *name, const char value[numEntries][stringLength]);
 
 #endif

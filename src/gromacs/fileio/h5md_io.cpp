@@ -61,7 +61,6 @@
 #include "external/SZ3/tools/H5Z-SZ3/include/H5Z_SZ3.hpp"
 #endif
 
-
 GmxH5mdIo::GmxH5mdIo(const char* fileName, const char mode)
 {
     file_ = -1;
@@ -167,7 +166,7 @@ void GmxH5mdIo::flush()
 #endif
 }
 
-void GmxH5mdIo::setUpParticlesDataBlocks(int writeCoordinatesSteps, int writeForcesSteps, int writeVelocitiesSteps, int numParticles, double compressionError)
+void GmxH5mdIo::setUpParticlesDataBlocks(int writeCoordinatesSteps, int writeForcesSteps, int writeVelocitiesSteps, int numParticles, PbcType pbcType, double compressionError)
 {
 #if GMX_DOUBLE
     const hid_t datatype = H5Tcopy(H5T_NATIVE_DOUBLE);
@@ -208,9 +207,8 @@ void GmxH5mdIo::setUpParticlesDataBlocks(int writeCoordinatesSteps, int writeFor
             compressedGroup = openOrCreateGroup(file_, "particles/system");
         }
         hid_t boxGroup = openOrCreateGroup(compressedGroup, "box");
-        setAttribute(boxGroup, "dimension", DIM, H5T_NATIVE_INT);
+        setBoxGroupAttributes(boxGroup, pbcType);
         boxLossy_ = GmxH5mdDataBlock(boxGroup, "edges", "value", "nm", writeCoordinatesSteps, numFramesPerChunkCompressed, DIM, DIM, datatype, CompressionAlgorithm::LosslessNoShuffle, 0);
-        // TODO: Write box 'boundary' attribute ('periodic' or 'none')
 
         /* Register the SZ3 filter. This is not necessary when creating a dataset with the filter, but must be done to append to an existing file (e.g. when restarting from checkpoint).*/
         registerSz3FilterImplicitly();
@@ -321,7 +319,6 @@ void GmxH5mdIo::setupMolecularSystem(const gmx_mtop_t& topology)
     {
         int nameIndex = topology.groups.groups[SimulationAtomGroupType::CompressedPositionOutput][0];
         compressedSelectionGroupName_ = *topology.groups.groupNames[nameIndex];
-        printf("group name %s\n", compressedSelectionGroupName_);
     }
     else
     {
