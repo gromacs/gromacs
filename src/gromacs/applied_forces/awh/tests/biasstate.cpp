@@ -44,6 +44,7 @@
 #include <gtest/gtest.h>
 
 #include "gromacs/applied_forces/awh/biasgrid.h"
+#include "gromacs/applied_forces/awh/correlationgrid.h"
 #include "gromacs/applied_forces/awh/pointstate.h"
 #include "gromacs/applied_forces/awh/tests/awh_setup.h"
 #include "gromacs/math/functions.h"
@@ -102,10 +103,27 @@ public:
                 awhParams, awhBiasParams, dimParams, 1.0, 1.0, BiasParams::DisableUpdateSkips::no, 1, grid.axis(), 0);
         biasState_ = std::make_unique<BiasState>(awhBiasParams, 1.0, dimParams, grid, nullptr);
 
+        /* We let the correlation init function set its parameters
+         * to something useful for now.
+         */
+        double blockLength = 0;
+        double mdTimeStep  = 0.002;
+        /* Construct the force correlation object. */
+        CorrelationGrid forceCorrelationGrid = CorrelationGrid(biasState_->points().size(),
+                                                               dimParams.size(),
+                                                               blockLength,
+                                                               CorrelationGrid::BlockLengthMeasure::Time,
+                                                               awhParams.nstSampleCoord() * mdTimeStep);
+
         // Here we initialize the grid point state using the input file
         std::string filename = gmx::test::TestFileManager::getInputFilePath(GetParam()).u8string();
-        biasState_->initGridPointState(
-                awhBiasParams, dimParams, grid, biasParams, filename, params_->awhParams.numBias());
+        biasState_->initGridPointState(awhBiasParams,
+                                       dimParams,
+                                       grid,
+                                       biasParams,
+                                       forceCorrelationGrid,
+                                       filename,
+                                       params_->awhParams.numBias());
     }
 };
 

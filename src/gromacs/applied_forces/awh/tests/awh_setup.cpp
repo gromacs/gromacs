@@ -104,32 +104,38 @@ std::vector<char> awhDimParamSerialized(AwhCoordinateProviderType inputCoordinat
  * \param[in] dimensionParameterBuffers Buffers containing the dimension parameters.
  * \param[in] shareGroup share group for, potentially, sharing the bias between simulations
  * \param[in] inputUserData If there is a user provided PMF estimate.
+ * \param[in] eTargetType Target distribution type.
+ * \param[in] scaleTargetByMetric Whether to scale the target distribution based on the friction metric.
  */
 static std::vector<char> awhBiasParamSerialized(AwhHistogramGrowthType            eawhgrowth,
                                                 double                            beta,
                                                 double                            inputErrorScaling,
                                                 ArrayRef<const std::vector<char>> dimensionParameterBuffers,
                                                 int                               shareGroup,
-                                                bool                              inputUserData)
+                                                bool                              inputUserData,
+                                                AwhTargetType                     eTargetType,
+                                                bool scaleTargetByMetric)
 {
-    int                    ndim                 = dimensionParameterBuffers.size();
-    AwhTargetType          eTarget              = AwhTargetType::Constant;
-    double                 targetBetaScaling    = 0;
-    double                 targetCutoff         = 0;
-    AwhHistogramGrowthType eGrowth              = eawhgrowth;
-    double                 growthFactor         = 3.0;
-    bool                   bUserData            = inputUserData;
-    double                 errorInitial         = inputErrorScaling / beta;
-    bool                   equilibrateHistogram = false;
+    int                    ndim                     = dimensionParameterBuffers.size();
+    double                 targetBetaScaling        = 0;
+    double                 targetCutoff             = 0;
+    AwhHistogramGrowthType eGrowth                  = eawhgrowth;
+    double                 growthFactor             = 3.0;
+    bool                   bUserData                = inputUserData;
+    double                 errorInitial             = inputErrorScaling / beta;
+    bool                   equilibrateHistogram     = false;
+    double                 targetMetricScalingLimit = 10;
 
     gmx::InMemorySerializer serializer;
-    serializer.doEnumAsInt(&eTarget);
+    serializer.doEnumAsInt(&eTargetType);
     serializer.doDouble(&targetBetaScaling);
     serializer.doDouble(&targetCutoff);
     serializer.doEnumAsInt(&eGrowth);
     serializer.doDouble(&growthFactor);
     int temp = static_cast<int>(bUserData);
     serializer.doInt(&temp);
+    serializer.doBool(&scaleTargetByMetric);
+    serializer.doDouble(&targetMetricScalingLimit);
     serializer.doDouble(&errorInitial);
     serializer.doInt(&ndim);
     serializer.doInt(&shareGroup);
@@ -155,6 +161,8 @@ static std::vector<char> awhBiasParamSerialized(AwhHistogramGrowthType          
  * \param[in] dimensionParameterBuffers Buffers containing the dimension parameters.
  * \param[in] biasShareGroup share group for, potentially, sharing the bias over simulations
  * \param[in] inputUserData If there is a user provided PMF estimate.
+ * \param[in] eTargetType Target distribution type.
+ * \param[in] scaleTargetByMetric Whether to scale the target distribution based on the friction metric.
  */
 static std::vector<char> awhParamSerialized(AwhHistogramGrowthType            eawhgrowth,
                                             AwhPotentialType                  eawhpotential,
@@ -163,7 +171,9 @@ static std::vector<char> awhParamSerialized(AwhHistogramGrowthType            ea
                                             int64_t                           inputSeed,
                                             ArrayRef<const std::vector<char>> dimensionParameterBuffers,
                                             int                               biasShareGroup,
-                                            bool                              inputUserData)
+                                            bool                              inputUserData,
+                                            AwhTargetType                     eTargetType,
+                                            bool                              scaleTargetByMetric)
 {
     int              numBias                    = 1;
     int64_t          seed                       = inputSeed;
@@ -183,15 +193,23 @@ static std::vector<char> awhParamSerialized(AwhHistogramGrowthType            ea
     serializer.doBool(&shareBiasMultisim);
 
     auto awhParamBuffer = serializer.finishAndGetBuffer();
-    auto awhBiasBuffer  = awhBiasParamSerialized(
-            eawhgrowth, beta, inputErrorScaling, dimensionParameterBuffers, biasShareGroup, inputUserData);
+    auto awhBiasBuffer  = awhBiasParamSerialized(eawhgrowth,
+                                                beta,
+                                                inputErrorScaling,
+                                                dimensionParameterBuffers,
+                                                biasShareGroup,
+                                                inputUserData,
+                                                eTargetType,
+                                                scaleTargetByMetric);
 
     awhParamBuffer.insert(awhParamBuffer.end(), awhBiasBuffer.begin(), awhBiasBuffer.end());
 
     return awhParamBuffer;
 }
 
-AwhTestParameters::AwhTestParameters(ISerializer* serializer) : awhParams(serializer, false) {}
+AwhTestParameters::AwhTestParameters(ISerializer* serializer) : awhParams(serializer, false, false)
+{
+}
 /*! \brief
  * Helper function to set up the C-style AWH parameters for the test.
  *
@@ -205,14 +223,24 @@ AwhTestParameters getAwhTestParameters(AwhHistogramGrowthType            eawhgro
                                        bool                              useAwhFep,
                                        double                            inputErrorScaling,
                                        int                               numFepLambdaStates,
-                                       int                               biasShareGroup)
+                                       int                               biasShareGroup,
+                                       AwhTargetType                     eTargetType,
+                                       bool                              scaleTargetByMetric)
 {
     double  convFactor = 1;
     double  k          = 1000;
     int64_t seed       = 93471803;
 
-    auto awhParamBuffer = awhParamSerialized(
-            eawhgrowth, eawhpotential, beta, inputErrorScaling, seed, dimensionParameterBuffers, biasShareGroup, inputUserData);
+    auto                      awhParamBuffer = awhParamSerialized(eawhgrowth,
+                                             eawhpotential,
+                                             beta,
+                                             inputErrorScaling,
+                                             seed,
+                                             dimensionParameterBuffers,
+                                             biasShareGroup,
+                                             inputUserData,
+                                             eTargetType,
+                                             scaleTargetByMetric);
     gmx::InMemoryDeserializer deserializer(awhParamBuffer, false);
     AwhTestParameters         params(&deserializer);
 
@@ -254,14 +282,16 @@ TEST(SerializationTest, CanSerializeBiasParams)
     auto awhDimBuffer   = awhDimParamSerialized();
     auto awhDimArrayRef = gmx::arrayRefFromArray(&awhDimBuffer, 1);
     auto awhBiasBuffer  = awhBiasParamSerialized(
-            AwhHistogramGrowthType::ExponentialLinear, 0.4, 0.5, awhDimArrayRef, 0, false);
+            AwhHistogramGrowthType::ExponentialLinear, 0.4, 0.5, awhDimArrayRef, 0, false, AwhTargetType::Constant, false);
     gmx::InMemoryDeserializer deserializer(awhBiasBuffer, false);
-    AwhBiasParams             awhBiasParams(&deserializer, false);
+    AwhBiasParams             awhBiasParams(&deserializer, false, false);
     EXPECT_EQ(awhBiasParams.ndim(), 1);
     EXPECT_EQ(awhBiasParams.targetDistribution(), AwhTargetType::Constant);
     EXPECT_FLOAT_EQ(awhBiasParams.targetBetaScaling(), 0);
     EXPECT_FLOAT_EQ(awhBiasParams.targetCutoff(), 0);
     EXPECT_EQ(awhBiasParams.growthType(), AwhHistogramGrowthType::ExponentialLinear);
+    EXPECT_EQ(awhBiasParams.scaleTargetByMetric(), false);
+    EXPECT_FLOAT_EQ(awhBiasParams.targetMetricScalingLimit(), 10);
     EXPECT_EQ(awhBiasParams.userPMFEstimate(), 0);
     EXPECT_FLOAT_EQ(awhBiasParams.initialErrorEstimate(), 0.5 / 0.4);
     EXPECT_EQ(awhBiasParams.shareGroup(), 0);
@@ -293,9 +323,11 @@ TEST(SerializationTest, CanSerializeAwhParams)
                                              1337,
                                              awhDimArrayRef,
                                              0,
+                                             false,
+                                             AwhTargetType::Constant,
                                              false);
     gmx::InMemoryDeserializer deserializer(awhParamBuffer, false);
-    AwhParams                 awhParams(&deserializer, false);
+    AwhParams                 awhParams(&deserializer, false, false);
     EXPECT_EQ(awhParams.numBias(), 1);
     EXPECT_EQ(awhParams.seed(), 1337);
     EXPECT_EQ(awhParams.nstout(), 0);

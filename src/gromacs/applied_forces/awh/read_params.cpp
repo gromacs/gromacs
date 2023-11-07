@@ -823,6 +823,49 @@ AwhBiasParams::AwhBiasParams(std::vector<t_inpfile>* inp, const std::string& pre
 
     if (bComment)
     {
+        printStringNoNewline(inp,
+                             "Scale the target distribution (can be used to modify any target "
+                             "distribution type and can be combined with user data) based on "
+                             "the AWH friction metric: no or yes");
+    }
+    opt                  = prefix + "-target-metric-scaling";
+    scaleTargetByMetric_ = getEnum<Boolean>(inp, opt.c_str(), wi) != Boolean::No;
+
+    if (scaleTargetByMetric_
+        && (eTarget_ == AwhTargetType::Boltzmann || eTarget_ == AwhTargetType::LocalBoltzmann))
+    {
+        auto message = formatString(
+                "Combining a %s target distribution with scaling the target distribution "
+                "by the friction metric (%s) might result in a feedback loop between the two "
+                "adaptive update mechanisms.",
+                enumValueToString(eTarget_),
+                opt.c_str());
+        wi->addWarning(message);
+    }
+
+    if (bComment)
+    {
+        printStringNoNewline(inp,
+                             "Maximum factor when scaling the target distribution based on the "
+                             "friction metric. The inverse of the value is used as the lower "
+                             "limit for the scaling.");
+    }
+    opt                             = prefix + "-target-metric-scaling-limit";
+    double targetMetricScalingLimit = get_ereal(inp, opt, 10, wi);
+    if (scaleTargetByMetric_ && targetMetricScalingLimit <= 1)
+    {
+        auto message = formatString(
+                "%s (%g) must be > 1. Setting it to the default value 10. This may "
+                "not be optimal for your system.",
+                opt.c_str(),
+                targetMetricScalingLimit);
+        wi->addWarning(message);
+        targetMetricScalingLimit = 10;
+    }
+    targetMetricScalingLimit_ = targetMetricScalingLimit;
+
+    if (bComment)
+    {
         printStringNoNewline(inp, "Dimensionality of the coordinate");
     }
     opt      = prefix + "-ndim";
@@ -841,7 +884,9 @@ AwhBiasParams::AwhBiasParams(std::vector<t_inpfile>* inp, const std::string& pre
     }
 }
 
-AwhBiasParams::AwhBiasParams(ISerializer* serializer, const bool tprWithoutGrowthFactor)
+AwhBiasParams::AwhBiasParams(ISerializer* serializer,
+                             const bool   tprWithoutGrowthFactor,
+                             const bool   tprWithoutTargetMetricScaling)
 {
     GMX_RELEASE_ASSERT(serializer->reading(),
                        "Can not use writing serializer to create datastructure");
@@ -861,6 +906,16 @@ AwhBiasParams::AwhBiasParams(ISerializer* serializer, const bool tprWithoutGrowt
     int temp = 0;
     serializer->doInt(&temp);
     bUserData_ = static_cast<bool>(temp);
+    if (tprWithoutTargetMetricScaling)
+    {
+        scaleTargetByMetric_      = false;
+        targetMetricScalingLimit_ = 10;
+    }
+    else
+    {
+        serializer->doBool(&scaleTargetByMetric_);
+        serializer->doDouble(&targetMetricScalingLimit_);
+    }
     serializer->doDouble(&errorInitial_);
     int numDimensions = dimParams_.size();
     serializer->doInt(&numDimensions);
@@ -884,6 +939,8 @@ void AwhBiasParams::serialize(ISerializer* serializer)
     serializer->doDouble(&growthFactor_);
     int temp = static_cast<int>(bUserData_);
     serializer->doInt(&temp);
+    serializer->doBool(&scaleTargetByMetric_);
+    serializer->doDouble(&targetMetricScalingLimit_);
     serializer->doDouble(&errorInitial_);
     int numDimensions = ndim();
     serializer->doInt(&numDimensions);
@@ -954,7 +1011,7 @@ AwhParams::AwhParams(std::vector<t_inpfile>* inp, WarningHandler* wi)
     checkInputConsistencyAwh(*this, wi);
 }
 
-AwhParams::AwhParams(ISerializer* serializer, const bool tprWithoutGrowthFactor)
+AwhParams::AwhParams(ISerializer* serializer, const bool tprWithoutGrowthFactor, const bool tprWithoutTargetMetricScaling)
 {
     GMX_RELEASE_ASSERT(serializer->reading(),
                        "Can not use writing serializer to read AWH parameters");
@@ -971,7 +1028,7 @@ AwhParams::AwhParams(ISerializer* serializer, const bool tprWithoutGrowthFactor)
     {
         for (int k = 0; k < numberOfBiases; k++)
         {
-            awhBiasParams_.emplace_back(serializer, tprWithoutGrowthFactor);
+            awhBiasParams_.emplace_back(serializer, tprWithoutGrowthFactor, tprWithoutTargetMetricScaling);
         }
     }
 }

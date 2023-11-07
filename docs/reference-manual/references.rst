@@ -2544,7 +2544,7 @@ molecular dynamics simulations*, (2002).
 
 .. _refOrzechowski2008:
 
-:sup:`182` Orzechowski M, Tama F., "Flexible fitting of high-resolution x-ray 
+:sup:`182` Orzechowski M, Tama F., "Flexible fitting of high-resolution x-ray
 structures into cryoelectron microscopy maps using biased molecular dynamics simulations",
 *Biophysical journal*, *95*, 5692–705, (2008).
 
@@ -2640,7 +2640,7 @@ structures into cryoelectron microscopy maps using biased molecular dynamics sim
 
 .. _refGapsys2012:
 
-:sup:`185` V. Gapsys, D. Seeliger, and B.L. de Groot, 
+:sup:`185` V. Gapsys, D. Seeliger, and B.L. de Groot,
 "New Soft-Core Potential Function for Molecular Dynamics Based Alchemical Free Energy Calculations", *J. Chem. Theor. Comput.*, **8** 2373-2382 (2012).
 
 .. raw:: html
@@ -2651,7 +2651,7 @@ structures into cryoelectron microscopy maps using biased molecular dynamics sim
    <div id="refSpoel2020">
 
 .. _refSpoel2020:
-   
+
 :sup:`190` D. van der Spoel, H. Henschel, P. J. van Maaren, M. M. Ghahremanpour , and L. T. Costa, "A potential for molecular simulation of compounds with linear moieties", *J. Chem. Phys.*, **153** 084503 (2020).
 
 .. raw:: html
@@ -2675,6 +2675,14 @@ structures into cryoelectron microscopy maps using biased molecular dynamics sim
 :sup:`192` G. Fiorin, M. L. Klein, and J. Hénin, "Using collective variables to drive molecular dynamics simulations", *Mol. Phys.* **111** 3345-3362 (2013).
 
 .. raw:: html
+
+   </div>
+
+   <div id="ref-Lundborg2023">
+
+.. _refLundborg2023:
+
+:sup:`193` Lundborg M., Lidmar J. and Hess B., "On the Path to Optimal Alchemistry", *Protein J.*, **42**, 477–489 (2023).
 
    </div>
 

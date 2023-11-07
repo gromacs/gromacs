@@ -662,6 +662,10 @@ static void pr_awh_bias(FILE* fp, int indent, const gmx::AwhBiasParams& awhBiasP
     PR(opt, awhBiasParams.targetBetaScaling());
     sprintf(opt, "%s-target-cutoff", prefix);
     PR(opt, awhBiasParams.targetCutoff());
+    sprintf(opt, "%s-target-metric-scaling", prefix);
+    PS(opt, EBOOL(awhBiasParams.scaleTargetByMetric()));
+    sprintf(opt, "%s-target-metric-scaling-limit", prefix);
+    PR(opt, awhBiasParams.targetMetricScalingLimit());
     sprintf(opt, "%s-user-data", prefix);
     PS(opt, EBOOL(awhBiasParams.userPMFEstimate()));
     sprintf(opt, "%s-share-group", prefix);

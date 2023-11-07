@@ -18,7 +18,6 @@ It is set to 2 by default for increased stability.
 If the TPR was generated with an earlier |Gromacs| version,
 the old default value of 3 will be used.
 
-
 Added support for instrumentation based on wallcycle regions using NVTX/ROCTX/ITT
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
@@ -45,3 +44,15 @@ of the |Gromacs| doc along with the `Colvars doc page
 Additionally, messages in the |Gromacs| discussion forum can also be tagged
 with the `colvars keyword <https://gromacs.bioexcel.eu/tag/colvars>`_ for
 easier consultation.
+
+Automatic metric scaled AWH target distribution
+"""""""""""""""""""""""""""""""""""""""""""""""
+
+The AWH target distribution can now be automatically scaled by
+sqrt(AWH friction metric). Regions with higher friction (slower diffusion)
+will get a higher target distribution. This should generally lower the
+statistical error of the estimated free energy landscape. The new option is
+called 'awh1-target-metric-scaling' and can be applied to further modify all
+AWH target distributions and/or AWH user input, but is not recommended in
+general in combination with Boltzmann or Local-Boltzmann target distributions,
+due to the risk of feedback loops between the two adaptive update mechanisms.

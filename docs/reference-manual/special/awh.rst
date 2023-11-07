@@ -39,8 +39,8 @@ distribution along :math:`\lambda` can be tuned to be any predefined
 *target distribution* :math:`\rho(\lambda)` (often chosen to be flat) by
 choosing :math:`g(\lambda)` wisely. This is evident from
 
-.. math:: P(\lambda) = \int P(x,\lambda)  dx = 
-          \frac{1}{\mathcal{Z}}e^{g(\lambda)} \int e^{- Q(\xi(x),\lambda) - V(x)}  dx 
+.. math:: P(\lambda) = \int P(x,\lambda)  dx =
+          \frac{1}{\mathcal{Z}}e^{g(\lambda)} \int e^{- Q(\xi(x),\lambda) - V(x)}  dx
           \equiv \frac{1}{\mathcal{Z}}e^{g(\lambda) - F(\lambda)},
           :label: eqawhplambda
 
@@ -94,8 +94,8 @@ target distribution may be updated during the simulation (see examples
 in section :ref:`awhtargets`). Substituting this choice of :math:`g=g_n`
 back into :eq:`Eq. %s <eqawhplambda>` yields the simple free energy update
 
-.. math:: \Delta F_n(\lambda) 
-          = F(\lambda) - F_n(\lambda) 
+.. math:: \Delta F_n(\lambda)
+          = F(\lambda) - F_n(\lambda)
           = -\ln\frac{P_n(\lambda)}{\rho_n(\lambda)},
           :label: eqawhdfnaive
 
@@ -213,7 +213,7 @@ a convolved bias potential is chosen to be used along the other dimensions
         shown as :math:`\times`-markers of different colors. At these times the
         free energy update size :math:`\sim 1/N`, where :math:`N` is the size of
         the weight histogram, is decreased by scaling :math:`N` by a factor of
-        :math:`\gamma=3` (note that the default value of :math:`\gamma` 
+        :math:`\gamma=3` (note that the default value of :math:`\gamma`
         is 2 since |Gromacs| 2024).
 
 .. _fig-awhbiasevolution3:
@@ -376,7 +376,7 @@ free energy
 
 .. math:: \rho_{\mathrm{cut}}(\lambda) \propto \frac{1}{1+ e^{F(\lambda) - F_{\mathrm{cut}}}},
           :label: eqawhrhocut
-    
+
 
 where :math:`F_{\mathrm{cut}}` is a free energy cutoff (relative to
 :math:`\min_\lambda F(\lambda)`). Thus, regions of the sampling interval
@@ -409,7 +409,7 @@ success of well-tempered metadynamics, this is a special case worth
 considering. In this case :math:`\rho` is a function of the reference
 weight histogram
 
-.. math:: \rho_{\mathrm{Boltz,loc}}(\lambda) \propto W(\lambda), 
+.. math:: \rho_{\mathrm{Boltz,loc}}(\lambda) \propto W(\lambda),
           :label: eqnawhweighthistogram
 
 and the update of the weight histogram is modified (cf.
@@ -434,7 +434,7 @@ histogram applied in the initial stage is a global operation, which is
 incompatible :math:`\rho_{\mathrm{Boltz,loc}}` only depending locally on
 the sampling history.
 
-Lastly, the target distribution can be modulated by arbitrary
+The target distribution can also be modulated by arbitrary
 probability weights
 
 .. math:: \rho(\lambda) = \rho_0(\lambda) w_{\mathrm{user}}(\lambda).
@@ -443,6 +443,44 @@ probability weights
 where :math:`w_{\mathrm{user}}(\lambda)` is provided by user data and
 in principle :math:`\rho_0(\lambda)` can be any of the target
 distributions mentioned above.
+
+Lastly, it is possible to automatically scale the target distribution
+(:math:`\rho_0(\lambda)`) based on the AWH friction metric (see
+section :ref:`awhfriction`). This implies scaling the target
+distribution by the square root of the friction metric
+(see :eq:`Eq. %s <eqawhsqrtmetric>`),
+
+.. math:: \rho(\lambda) = \rho_0(\lambda) w_{\mathrm{user}}(\lambda) \sqrt{\det\eta_{\mu\nu}(\lambda)},
+          :label: eqnawhmetricopt
+
+where :math:`w_{\mathrm{user}}(\lambda)` can be uniform and
+\sqrt{\det\eta_{\mu\nu}(\lambda)} is the square root of the friction metric.
+This scaling of the target distribution, increasing the
+relative sampling of regions with slower diffusion, should generally lower the
+statistical error of the estimated free energy landscape.
+
+This modification is only applied after leaving the initial stage
+(section :ref:`awhinitialstage`), if applicable, and is performed when updating
+the target distribution, typically when also updating the free energy. The scaling
+is based on the relative difference of the local friction metric compared to the
+average friction metric (of points that have a non-zero friction metric).
+
+If any histograms have not been sampled enough to have a friction metric they
+will be scaled by the average friction metric, i.e., practically unscaled.
+Insufficient sampling can result in a too low, but still non-zero, friction metric.
+To address that, the scaling down of the target distribution (relative scaling < 1)
+is based on the local sampling of each point, so that the target distribution of
+points that have not been sampled much yet will be almost unaffected.
+Furthermore, the scaling can be limited by a maximum scaling factor
+(:mdp:`awh1-target-metric-scaling-limit`). The lower limit
+of the scaling is the inverse of the maximum scaling factor.
+
+More information about this scaling can be found in :ref:`193 <reflundborg2023>`.
+
+Scaling the target distribution based on the friction metric
+can be combined with Boltzmann or Local-Boltzmann target distributions.
+However, this is generally not recommended, due to the risk of feedback loops
+between the two adaptive update mechanisms.
 
 Multiple independent or sharing biases
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -526,7 +564,7 @@ biased data along :math:`u` and removes the effect of :math:`U_{n(t)}`
 by dividing the weight of samples :math:`u(t)` by
 :math:`e^{-U_{n(t)}(\xi(t))}`,
 
-.. math:: \hat{\Phi}(u)  = -\ln 
+.. math:: \hat{\Phi}(u)  = -\ln
           \sum_t 1_u(u(t))e^{U_{n(t)}(\xi(t)} \mathcal{Z}_{n(t)}.
           :label: eqawhunbias
 

@@ -209,7 +209,7 @@ gmx::ArrayRef<const double> Bias::calcForceAndUpdateBias(const awh_dvec         
     if (params_.isUpdateFreeEnergyStep(step))
     {
         state_.updateFreeEnergyAndAddSamplesToHistogram(
-                dimParams_, grid_, params_, t, step, fplog, &updateList_);
+                dimParams_, grid_, params_, forceCorrelationGrid(), t, step, fplog, &updateList_);
 
         if (params_.convolveForce)
         {
@@ -385,9 +385,6 @@ Bias::Bias(int                            biasIndexInCollection,
     /* For a global update updateList covers all points, so reserve that */
     updateList_.reserve(grid_.numPoints());
 
-    state_.initGridPointState(
-            awhBiasParams, dimParams_, grid_, params_, biasInitFilename, awhParams.numBias());
-
     /* Set up the force correlation object. */
 
     /* We let the correlation init function set its parameters
@@ -400,6 +397,14 @@ Bias::Bias(int                            biasIndexInCollection,
                                                               blockLength,
                                                               CorrelationGrid::BlockLengthMeasure::Time,
                                                               awhParams.nstSampleCoord() * mdTimeStep);
+
+    state_.initGridPointState(awhBiasParams,
+                              dimParams_,
+                              grid_,
+                              params_,
+                              forceCorrelationGrid(),
+                              biasInitFilename,
+                              awhParams.numBias());
 
     if (thisRankDoesIO_)
     {

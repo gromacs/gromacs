@@ -293,41 +293,84 @@ void BiasState::calcConvolvedPmf(ArrayRef<const DimParams> dimParams,
     }
 }
 
-namespace
+double BiasState::calculateAverageNonZeroMetric()
 {
-
-/*! \brief
- * Updates the target distribution for all points.
- *
- * The target distribution is always updated for all points
- * at the same time.
- *
- * \param[in,out] pointState  The state of all points.
- * \param[in]     params      The bias parameters.
- */
-void updateTargetDistribution(ArrayRef<PointState> pointState, const BiasParams& params)
-{
-    double freeEnergyCutoff = 0;
-    if (params.eTarget == AwhTargetType::Cutoff)
+    int    elementCount = 0;
+    double sumVolume    = 0;
+    for (gmx::Index pointIndex = 0; pointIndex < ssize(points_); pointIndex++)
     {
-        freeEnergyCutoff = freeEnergyMinimumValue(pointState) + params.freeEnergyCutoffInKT;
-    }
+        std::vector<double> correlationIntegral     = getSharedPointCorrelationIntegral(pointIndex);
+        double              correlationTensorVolume = getSqrtDeterminant(correlationIntegral);
 
-    double sumTarget = 0;
-    for (PointState& ps : pointState)
-    {
-        sumTarget += ps.updateTargetWeight(params, freeEnergyCutoff);
+        if (correlationTensorVolume > 0)
+        {
+            sumVolume += correlationTensorVolume;
+            elementCount++;
+        }
     }
-    GMX_RELEASE_ASSERT(sumTarget > 0, "We should have a non-zero distribution");
-
-    /* Normalize to 1 */
-    double invSum = 1.0 / sumTarget;
-    for (PointState& ps : pointState)
+    double averageVolume = 0;
+    if (elementCount != 0)
     {
-        ps.scaleTarget(invSum);
+        averageVolume = sumVolume / elementCount;
     }
+    return averageVolume;
 }
 
+double BiasState::scaleTargetByMetric(double targetMetricScalingLimit)
+{
+    GMX_RELEASE_ASSERT(targetMetricScalingLimit > 1,
+                       "When scaling by friction metric, the upper scaling limit must be > 1.");
+    /* Calculate the average of non-zero correlation tensor volume elements before
+     * scaling by the friction tensor. The average will be used to scale the target
+     * relatively and to avoid scaling (scaleFactor = 1) where there is not enough
+     * data (no valid correlationTensorVolume) to use for scaling. */
+    double averageVolume = calculateAverageNonZeroMetric();
+    if (averageVolume == 0)
+    {
+        averageVolume = 1;
+    }
+    double sumTarget = 0;
+
+    /* There is a global scaling factor limit. The lower limit can be modified per
+     * point depending on its sampling, but it cannot be lower than lowerScalingLimit. */
+    double upperScalingLimit = averageVolume * targetMetricScalingLimit;
+    double lowerScalingLimit = averageVolume / targetMetricScalingLimit;
+    for (gmx::Index pointIndex = 0; pointIndex < ssize(points_); pointIndex++)
+    {
+        PointState& ps = points_[pointIndex];
+
+        std::vector<double> correlationIntegral     = getSharedPointCorrelationIntegral(pointIndex);
+        double              correlationTensorVolume = getSqrtDeterminant(correlationIntegral);
+
+        /* Points may have a very low correlation tensor from not being sampled enough.
+         * This sets a lower limit on the scaling based on the amount of samples */
+        const double weightSumTot     = points_[pointIndex].weightSumTot();
+        double pointLowerScalingLimit = weightSumTot > 1 ? averageVolume / weightSumTot : averageVolume;
+        pointLowerScalingLimit        = std::max(lowerScalingLimit, pointLowerScalingLimit);
+
+        /* If there is no correlation tensor volume from this point use the average
+         * volume. This will result in no friction tensor scaling for the target
+         * distribution of this point. */
+        if (correlationTensorVolume == 0)
+        {
+            correlationTensorVolume = averageVolume;
+        }
+        /* Clamp the scaling to the allowed interval */
+        else
+        {
+            correlationTensorVolume =
+                    std::clamp(correlationTensorVolume, pointLowerScalingLimit, upperScalingLimit);
+        }
+        double scaleFactor = correlationTensorVolume / averageVolume;
+        ps.scaleTarget(scaleFactor);
+
+        sumTarget += ps.target();
+    }
+    return sumTarget;
+}
+
+namespace
+{
 /*! \brief
  * Puts together a string describing a grid point.
  *
@@ -358,6 +401,36 @@ std::string gridPointValueString(const BiasGrid& grid, int point)
 }
 
 } // namespace
+
+void BiasState::updateTargetDistribution(const BiasParams& params, const CorrelationGrid& forceCorrelation)
+{
+    double freeEnergyCutoff = 0;
+    if (params.eTarget == AwhTargetType::Cutoff)
+    {
+        freeEnergyCutoff = freeEnergyMinimumValue(points_) + params.freeEnergyCutoffInKT;
+    }
+
+    double sumTarget = 0;
+    for (PointState& ps : points_)
+    {
+        sumTarget += ps.updateTargetWeight(params, freeEnergyCutoff);
+    }
+    GMX_RELEASE_ASSERT(sumTarget > 0, "We should have a non-zero distribution");
+
+    /* Scale the target distribution by the friction metric - normalize afterwards */
+    if (params.scaleTargetByMetric && !inInitialStage())
+    {
+        updateSharedCorrelationTensorTimeIntegral(params, forceCorrelation);
+        sumTarget = scaleTargetByMetric(params.targetMetricScalingLimit);
+    }
+
+    /* Normalize to 1 */
+    double invSum = 1.0 / sumTarget;
+    for (PointState& ps : points_)
+    {
+        ps.scaleTarget(invSum);
+    }
+}
 
 int BiasState::warnForHistogramAnomalies(const BiasGrid& grid, int biasIndex, double t, FILE* fplog, int maxNumWarnings) const
 {
@@ -1077,6 +1150,7 @@ static void normalizeFreeEnergyAndPmfSum(std::vector<PointState>* pointState)
 void BiasState::updateFreeEnergyAndAddSamplesToHistogram(ArrayRef<const DimParams> dimParams,
                                                          const BiasGrid&           grid,
                                                          const BiasParams&         params,
+                                                         const CorrelationGrid&    forceCorrelation,
                                                          double                    t,
                                                          int64_t                   step,
                                                          FILE*                     fplog,
@@ -1123,8 +1197,10 @@ void BiasState::updateFreeEnergyAndAddSamplesToHistogram(ArrayRef<const DimParam
     }
 
     /* Update target distribution? */
+    bool doScaleTargetByMetric = params.scaleTargetByMetric && !inInitialStage();
     bool needToUpdateTargetDistribution =
-            (params.eTarget != AwhTargetType::Constant && params.isUpdateTargetStep(step));
+            ((params.eTarget != AwhTargetType::Constant || doScaleTargetByMetric)
+             && params.isUpdateTargetStep(step));
 
     /* In the initial stage, the histogram grows dynamically as a function of the number of coverings. */
     bool detectedCovering = false;
@@ -1203,7 +1279,7 @@ void BiasState::updateFreeEnergyAndAddSamplesToHistogram(ArrayRef<const DimParam
     if (needToUpdateTargetDistribution)
     {
         /* The target distribution is always updated for all points at once. */
-        updateTargetDistribution(points_, params);
+        updateTargetDistribution(params, forceCorrelation);
     }
 
     /* Update the bias. The bias is updated separately and last since it simply a function of
@@ -1903,6 +1979,7 @@ void BiasState::initGridPointState(const AwhBiasParams&      awhBiasParams,
                                    ArrayRef<const DimParams> dimParams,
                                    const BiasGrid&           grid,
                                    const BiasParams&         params,
+                                   const CorrelationGrid&    forceCorrelation,
                                    const std::string&        filename,
                                    int                       numBias)
 {
@@ -1920,7 +1997,7 @@ void BiasState::initGridPointState(const AwhBiasParams&      awhBiasParams,
                        "AWH reference weight histogram not initialized properly with local "
                        "Boltzmann target distribution.");
 
-    updateTargetDistribution(points_, params);
+    updateTargetDistribution(params, forceCorrelation);
 
     for (PointState& pointState : points_)
     {

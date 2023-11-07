@@ -583,6 +583,13 @@ void please_cite(FILE* fp, const char* key)
           7,
           2013,
           "1124–1127" },
+        { "Lundborg2023",
+          "M. Lundborg, J. Lidmar, B. Hess",
+          "On the Path to Optimal Alchemistry",
+          "Protein J.",
+          42,
+          2023,
+          "477-489" },
     };
 #define NSTR static_cast<int>(asize(citedb))
 

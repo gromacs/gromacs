@@ -141,6 +141,7 @@ enum tpxv
     tpxv_EnsembleTemperature,         /**< Add ensemble temperature settings */
     tpxv_AwhGrowthFactor,             /**< Add AWH growth factor */
     tpxv_MassRepartitioning,          /**< Add mass repartitioning */
+    tpxv_AwhTargetMetricScaling,      /**< Add AWH friction optimized target distribution */
     tpxv_Count                        /**< the total number of tpxv versions */
 };
 
@@ -1541,8 +1542,10 @@ static void do_inputrec(gmx::ISerializer* serializer, t_inputrec* ir, int file_v
         {
             if (serializer->reading())
             {
-                ir->awhParams = std::make_unique<gmx::AwhParams>(
-                        serializer, file_version < tpxv_AwhGrowthFactor);
+                ir->awhParams =
+                        std::make_unique<gmx::AwhParams>(serializer,
+                                                         file_version < tpxv_AwhGrowthFactor,
+                                                         file_version < tpxv_AwhTargetMetricScaling);
             }
             else
             {
