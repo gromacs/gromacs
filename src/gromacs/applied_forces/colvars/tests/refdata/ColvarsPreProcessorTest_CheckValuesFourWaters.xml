@@ -1,0 +1,24 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Vector Name="Coords Atom 4">
+    <Real Name="X">0.82499999999999996</Real>
+    <Real Name="Y">1.306</Real>
+    <Real Name="Z">1.5169999999999999</Real>
+  </Vector>
+  <Sequence Name="Index of colvars atoms">
+    <Int Name="Length">2</Int>
+    <Int>0</Int>
+    <Int>4</Int>
+  </Sequence>
+  <Sequence Name="Masses of colvars atoms">
+    <Int Name="Length">2</Int>
+    <Real>15.9994</Real>
+    <Real>1.008</Real>
+  </Sequence>
+  <Sequence Name="Charges of colvars atoms">
+    <Int Name="Length">2</Int>
+    <Real>-0.81999999999999995</Real>
+    <Real>0.40999999999999998</Real>
+  </Sequence>
+</ReferenceData>

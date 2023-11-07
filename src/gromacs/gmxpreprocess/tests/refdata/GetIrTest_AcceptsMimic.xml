@@ -312,5 +312,8 @@ density-guided-simulation-active = false
 
 ; QM/MM with CP2K
 qmmm-cp2k-active         = false
+
+; Colvars bias
+colvars-active           = false
 </String>
 </ReferenceData>

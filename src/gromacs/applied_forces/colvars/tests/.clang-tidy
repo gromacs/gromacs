@@ -1,0 +1,9 @@
+# List of rationales for check suppressions (where known).
+# This have to precede the list because inline comments are not
+# supported by clang-tidy.
+#
+#         -cppcoreguidelines-avoid-non-const-global-variables
+# There are quite a lot of static variables in the test code that
+# can not be replaced.
+Checks:  -cppcoreguidelines-avoid-non-const-global-variables,
+InheritParentConfig: true

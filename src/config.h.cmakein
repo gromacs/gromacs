@@ -467,6 +467,9 @@
 /* Define if we have muparser support */
 #cmakedefine01 HAVE_MUPARSER
 
+/* Define if we are building with Colvars */
+#cmakedefine01 HAVE_COLVARS
+
 /* Build using clang analyzer */
 #cmakedefine01 GMX_CLANG_ANALYZER
 

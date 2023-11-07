@@ -2668,3 +2668,13 @@ structures into cryoelectron microscopy maps using biased molecular dynamics sim
 
    </div>
 
+   <div id="refFiorin13">
+
+.. _refFiorin13:
+
+:sup:`192` G. Fiorin, M. L. Klein, and J. Hénin, "Using collective variables to drive molecular dynamics simulations", *Mol. Phys.* **111** 3345-3362 (2013).
+
+.. raw:: html
+
+   </div>
+

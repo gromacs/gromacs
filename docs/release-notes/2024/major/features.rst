@@ -28,3 +28,20 @@ The tracing instrumentation support can be enabled with one of the following CMa
 ``GMX_USE_NVTX``, ``GMX_USE_ROCTX``, ``GMX_USE_ITT``.
 
 :issue:`4446`
+
+Collective variables (Colvars) module support
+"""""""""""""""""""""""""""""""""""""""""""""
+
+The collective variables (`Colvars <https://colvars.github.io>`_) library for
+enhanced sampling simulations has a new and improved interface, which
+simplifies greatly its use and distribution with current and future |Gromacs|
+releases.  The new interface requires *no patching* and supports a full
+integration of the Colvars input and of its restart data with the |Gromacs|
+TPR and CPT files, respectively.
+
+For documentation and details, please see :ref:`this section <colvars>`
+of the |Gromacs| doc along with the `Colvars doc page
+<https://colvars.github.io/gromacs-2024/colvars-refman-gromacs.html>`_ for |Gromacs|.
+Additionally, messages in the |Gromacs| discussion forum can also be tagged
+with the `colvars keyword <https://gromacs.bioexcel.eu/tag/colvars>`_ for
+easier consultation.

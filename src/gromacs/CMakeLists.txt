@@ -190,8 +190,8 @@ if (GMX_GPU_CUDA)
     endif()
     if (GMX_NVSHMEM)
         set_target_properties(libgromacs PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
-        # -fvisibility=hidden is required to be passed during device link phase to hide the 
-        # libnvshmem_device.a symbols in libgromacs in order to allow application/tests to link 
+        # -fvisibility=hidden is required to be passed during device link phase to hide the
+        # libnvshmem_device.a symbols in libgromacs in order to allow application/tests to link
         # libnvshmem_device.a for their nvshmem kernel as well while linking with libgromacs.
         # not setting this causes runtime failure.
         target_link_options(libgromacs PRIVATE $<DEVICE_LINK:-fvisibility=hidden>)
@@ -417,6 +417,8 @@ set_target_properties(libgromacs PROPERTIES
 gmx_manage_lmfit()
 target_link_libraries(libgromacs PRIVATE lmfit)
 target_link_libraries(libgromacs PRIVATE muparser::muparser)
+gmx_manage_colvars()
+target_link_libraries(libgromacs PRIVATE colvars)
 
 # Make sure we fix "everything" found by compilers that support that
 gmx_warn_on_everything(libgromacs)

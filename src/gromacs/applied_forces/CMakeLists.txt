@@ -67,6 +67,7 @@ gmx_add_libgromacs_sources(
 add_subdirectory(awh)
 add_subdirectory(densityfitting)
 add_subdirectory(qmmm)
+add_subdirectory(colvars)
 
 if (BUILD_TESTING)
     add_subdirectory(tests)

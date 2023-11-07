@@ -1,0 +1,26 @@
+units gromacs
+colvar {
+
+    name one
+    width 0.5
+    dihedral {
+        group1 {
+            atomNumbers 1
+        }
+        group2 {
+            atomNumbers 5
+        }
+        group3 {
+            atomNumbers 11
+        }
+        group4 {
+            atomNumbers 12
+        }
+    }
+}
+
+harmonic {
+    colvars        one
+    centers        0.1
+    forceConstant  0.01
+}

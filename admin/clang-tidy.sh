@@ -171,7 +171,10 @@ touch $tmpdir/messages
 # Can only perform clang-tidy on a non-empty list of files
 cd $tmpdir/new
 if [[ $tidy_mode != "off" &&  -s $tmpdir/filelist_clangtidy ]] ; then
-    $RUN_CLANG_TIDY `cat $tmpdir/filelist_clangtidy` -header-filter=.* -j $concurrency -fix -quiet -extra-arg=--cuda-host-only -extra-arg=-nocudainc>$tmpdir/clang-tidy.out 2>&1
+    # Temporarily exclude Colvars headers to silence warnings from code that is not built with GROMACS
+    # TODO: remove this when clang-tidy >= 14 is used
+    HEADER_FILTER="^(?!.*src/external/colvars).*"
+    $RUN_CLANG_TIDY `cat $tmpdir/filelist_clangtidy` -header-filter=${HEADER_FILTER} -j $concurrency -fix -quiet -extra-arg=--cuda-host-only -extra-arg=-nocudainc>$tmpdir/clang-tidy.out 2>&1
     awk '/warning/,/clang-tidy|^$/' $tmpdir/clang-tidy.out | grep -v "warnings generated." | grep -v "Suppressed .* warnings" | grep -v "clang-analyzer"  | grep -v "to display errors from all non" | sed '/^\s*$/d' > $tmpdir/clang-tidy-warnings.out
     grep '\berror:' $tmpdir/clang-tidy.out > $tmpdir/clang-tidy-errors.out || true
     if [ -s $tmpdir/clang-tidy-errors.out ]; then
