@@ -1812,6 +1812,40 @@ void do_force(FILE*                               fplog,
         xWholeMolecules = fr->wholeMoleculeTransform->wholeMoleculeCoordinates(x.unpaddedArrayRef(), box);
     }
 
+    /* Start the force cycle counter.
+     * Note that a different counter is used for dynamic load balancing.
+     */
+    wallcycle_start(wcycle, WallCycleCounter::Force);
+
+    /* Set up and clear force outputs:
+     * forceOutMtsLevel0:  everything except what is in the other two outputs
+     * forceOutMtsLevel1:  PME-mesh and listed-forces group 1
+     * forceOutNonbonded: non-bonded forces
+     * Without multiple time stepping all point to the same object.
+     * With multiple time-stepping the use is different for MTS fast (level0 only) and slow steps.
+     */
+    ForceOutputs forceOutMtsLevel0 = setupForceOutputs(
+            &fr->forceHelperBuffers[0], force, domainWork, stepWork, simulationWork.havePpDomainDecomposition, wcycle);
+
+    // Force output for MTS combined forces, only set at level1 MTS steps
+    std::optional<ForceOutputs> forceOutMts =
+            (simulationWork.useMts && stepWork.computeSlowForces)
+                    ? std::optional(setupForceOutputs(&fr->forceHelperBuffers[1],
+                                                      forceView->forceMtsCombinedWithPadding(),
+                                                      domainWork,
+                                                      stepWork,
+                                                      simulationWork.havePpDomainDecomposition,
+                                                      wcycle))
+                    : std::nullopt;
+
+    ForceOutputs* forceOutMtsLevel1 =
+            simulationWork.useMts ? (stepWork.computeSlowForces ? &forceOutMts.value() : nullptr)
+                                  : &forceOutMtsLevel0;
+
+    const bool nonbondedAtMtsLevel1 = runScheduleWork->simulationWork.computeNonbondedAtMtsLevel1;
+
+    ForceOutputs* forceOutNonbonded = nonbondedAtMtsLevel1 ? forceOutMtsLevel1 : &forceOutMtsLevel0;
+
     // For the rest of the CPU tasks that depend on GPU-update produced coordinates,
     // this wait ensures that the D2H transfer is complete.
     if (simulationWork.useGpuUpdate && !stepWork.doNeighborSearch)
@@ -1828,9 +1862,9 @@ void do_force(FILE*                               fplog,
             stateGpu->waitCoordinatesReadyOnHost(AtomLocality::Local);
         }
     }
+    wallcycle_stop(wcycle, WallCycleCounter::Force);
 
     DipoleData dipoleData;
-
     if (simulationWork.computeMuTot)
     {
         const int start = 0;
@@ -1869,40 +1903,6 @@ void do_force(FILE*                               fplog,
         wallcycle_stop(wcycle, WallCycleCounter::Rot);
     }
 
-    /* Start the force cycle counter.
-     * Note that a different counter is used for dynamic load balancing.
-     */
-    wallcycle_start(wcycle, WallCycleCounter::Force);
-
-    /* Set up and clear force outputs:
-     * forceOutMtsLevel0:  everything except what is in the other two outputs
-     * forceOutMtsLevel1:  PME-mesh and listed-forces group 1
-     * forceOutNonbonded: non-bonded forces
-     * Without multiple time stepping all point to the same object.
-     * With multiple time-stepping the use is different for MTS fast (level0 only) and slow steps.
-     */
-    ForceOutputs forceOutMtsLevel0 = setupForceOutputs(
-            &fr->forceHelperBuffers[0], force, domainWork, stepWork, simulationWork.havePpDomainDecomposition, wcycle);
-
-    // Force output for MTS combined forces, only set at level1 MTS steps
-    std::optional<ForceOutputs> forceOutMts =
-            (simulationWork.useMts && stepWork.computeSlowForces)
-                    ? std::optional(setupForceOutputs(&fr->forceHelperBuffers[1],
-                                                      forceView->forceMtsCombinedWithPadding(),
-                                                      domainWork,
-                                                      stepWork,
-                                                      simulationWork.havePpDomainDecomposition,
-                                                      wcycle))
-                    : std::nullopt;
-
-    ForceOutputs* forceOutMtsLevel1 =
-            simulationWork.useMts ? (stepWork.computeSlowForces ? &forceOutMts.value() : nullptr)
-                                  : &forceOutMtsLevel0;
-
-    const bool nonbondedAtMtsLevel1 = runScheduleWork->simulationWork.computeNonbondedAtMtsLevel1;
-
-    ForceOutputs* forceOutNonbonded = nonbondedAtMtsLevel1 ? forceOutMtsLevel1 : &forceOutMtsLevel0;
-
     if (inputrec.bPull && pull_have_constraint(*pull_work))
     {
         clear_pull_forces(pull_work);
@@ -1920,17 +1920,18 @@ void do_force(FILE*                               fplog,
 
     if (!useOrEmulateGpuNb)
     {
+        wallcycle_start_nocount(wcycle, WallCycleCounter::Force);
         do_nb_verlet(fr, ic, enerd, stepWork, InteractionLocality::Local, enbvClearFYes, step, nrnb, wcycle);
+        wallcycle_stop(wcycle, WallCycleCounter::Force);
     }
 
     if (stepWork.useGpuXHalo && domainWork.haveCpuNonLocalForceWork)
     {
-        wallcycle_stop(wcycle, WallCycleCounter::Force);
         /* Wait for non-local coordinate data to be copied from device */
         stateGpu->waitCoordinatesReadyOnHost(AtomLocality::NonLocal);
-        wallcycle_start_nocount(wcycle, WallCycleCounter::Force);
     }
 
+    wallcycle_start_nocount(wcycle, WallCycleCounter::Force);
     if (fr->efep != FreeEnergyPerturbationType::No && stepWork.computeNonbondedForces)
     {
         /* Calculate the local and non-local free energy interactions here.
