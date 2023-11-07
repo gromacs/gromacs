@@ -13,8 +13,8 @@ we will avoid using some of them in |Gromacs| code. The basic principle is to ke
 as simple as possible.
 
 * MSVC supports only a subset of C99 and work-arounds are required in those cases.
-* We should be able to use virtually all C++17 features outside of OpenCL kernels
-  (which compile as C), and for consistency also in CUDA kernels.
+* We should be able to use virtually all C++17 features; see "GPU API considerations"
+  below for exceptions.
 
 C++ Standard Library
 --------------------
@@ -187,7 +187,7 @@ errors, ie. use exceptions.
   basic or nothrow guarantee to make this feasible.
 * Use std (or custom) containers wherever possible.
 * Use smart pointers for memory management. By default, use
-  ``std::unique_ptr`` and ``gmx::unique_cptr`` in assocation with any
+  ``std::unique_ptr`` and ``gmx::unique_cptr`` in association with any
   necessary raw ``new`` or ``snew`` calls. ``std::shared_ptr`` can be
   used wherever responsibility for lifetime must be shared.
   Never use ``malloc``.
@@ -204,6 +204,23 @@ errors, ie. use exceptions.
 * Functions / methods should be commented whether they are exception
   safe, whether they might throw an exception (even indirectly), and
   if so, which exception(s) they might throw.
+
+GPU API considerations
+^^^^^^^^^^^^^^^^^^^^^^
+
+* Write OpenCL as C (specifically, C99) code. Using C++ in OpenCL kernels
+  is not well supported.
+* Keep in mind that some combinations of CUDA and GCC do not handle the C++17 properly.
+  This causes minor issues like the need to use ``std::is_same::value``
+  (supported in C++14) instead of ``std::is_same_v`` (added in C++17)
+  in the glue code. This is caught by our CI.
+* Use SYCL 2020 standard. The vendor-specific extensions and backend-specific
+  code can be used when needed for performance, but a reasonable fallback
+  must be provided for all other supported targets.
+* Use USM and in-order queues in SYCL code instead of ``sycl::buffer``.
+  This makes the code more uniform across all GPU backends. Besides, buffers
+  are more challenging for the compilers to optimize in kernels, leading
+  to worse performance (as of 2022).
 
 Preprocessor considerations
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
