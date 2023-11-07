@@ -54,7 +54,7 @@ function(_getHipSyclCmakeFlags RETURN_VAR)
     set("${RETURN_VAR}" ${RESULT} PARENT_SCOPE)
 endfunction()
 
-if(NOT GMX_GPU_SYCL OR NOT GMX_SYCL_HIPSYCL)
+if(NOT GMX_GPU_SYCL OR GMX_SYCL_DPCPP OR NOT GMX_SYCL_ACPP)
     message(FATAL_ERROR "Internal error: hipSYCL configuration script was included when it should not")
 endif()
 

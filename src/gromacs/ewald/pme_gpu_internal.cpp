@@ -1169,6 +1169,7 @@ static void pme_gpu_reinit_grids(PmeGpu* pmeGpu)
         kernelParamsPtr->grid.complexGridSizePadded[i] = kernelParamsPtr->grid.realGridSize[i];
     }
     /* FFT: n real elements correspond to (n / 2 + 1) complex elements in minor dimension */
+    // NOLINTNEXTLINE(misc-redundant-expression)
     const bool needWorkaroundForOneMkl = (GMX_GPU_SYCL != 0) && (GMX_SYCL_DPCPP != 0)
                                          && pme_gpu_settings(pmeGpu).performGPUFFT; // Issue #4219.
     if (!pme_gpu_settings(pmeGpu).performGPUFFT || needWorkaroundForOneMkl)

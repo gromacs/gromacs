@@ -232,6 +232,30 @@ gmx_option_multichoice(
     "Framework for GPU acceleration"
     OFF
     OFF CUDA OpenCL SYCL)
+if(GMX_GPU STREQUAL SYCL)
+    gmx_option_multichoice(
+        GMX_SYCL
+        "SYCL implementation to use for GPU acceleration"
+        AUTO
+        DPCPP ACPP AUTO)
+    if (GMX_SYCL STREQUAL "AUTO")
+        if(GMX_SYCL_HIPSYCL) # Check legacy flag
+            message(WARNING "GMX_SYCL_HIPSYCL option is deprecated; please use -DGMX_SYCL=ACPP")
+            set(GMX_SYCL "ACPP")
+        else()
+            # Check direct compiler support (DPC++)
+            include(CheckCXXCompilerFlag)
+            check_cxx_compiler_flag("-fsycl" HAVE_SYCL_DPCPP)
+            if(HAVE_SYCL_DPCPP)
+                set(GMX_SYCL "DPCPP")
+                message(STATUS "GROMACS SYCL backend: Setting GMX_SYCL=DPCPP (Intel oneAPI DPC++)")
+            else()
+                set(GMX_SYCL "ACPP")
+                message(STATUS "GROMACS SYCL backend: Setting GMX_SYCL=ACPP (AdaptiveCpp/hipSYCL)")
+            endif()
+        endif ()
+    endif ()
+endif()
 
 gmx_option_multichoice(
     GMX_SIMD
@@ -298,7 +322,7 @@ if (GMX_GPU)
             set(GMX_GPU_FFT_LIBRARY_DEFAULT "clFFT")
         endif()
     elseif(GMX_GPU STREQUAL SYCL)
-        if(GMX_SYCL_HIPSYCL)
+        if(GMX_SYCL STREQUAL ACPP)
             set(GMX_GPU_FFT_LIBRARY_DEFAULT "VkFFT")
         else()
             set(GMX_GPU_FFT_LIBRARY_DEFAULT "MKL")
@@ -701,7 +725,7 @@ if(GMX_GPU)
             if(${_gmx_gpu_uppercase} STREQUAL "OPENCL")
                 set(_gmx_gpu_nb_cluster_size_value 8)
             elseif(GMX_GPU_SYCL)
-                if (GMX_SYCL_HIPSYCL AND NOT GMX_HIPSYCL_HAVE_LEVELZERO_TARGET)
+                if (GMX_SYCL_ACPP AND NOT GMX_HIPSYCL_HAVE_LEVELZERO_TARGET)
                     set(_gmx_gpu_nb_cluster_size_value 8)
                 else()
                     # Either DPCPP or hipSYCL targeting Intel Level0

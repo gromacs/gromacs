@@ -74,7 +74,7 @@ appropriate value instead of ``xxx`` :
 * ``-DGMX_GPU=CUDA`` to build with NVIDIA CUDA support enabled.
 * ``-DGMX_GPU=OpenCL`` to build with OpenCL_ support enabled.
 * ``-DGMX_GPU=SYCL`` to build with SYCL_ support enabled (using `Intel oneAPI DPC++`_ by default).
-* ``-DGMX_SYCL_HIPSYCL=on`` to build with SYCL_ support using hipSYCL_ (requires ``-DGMX_GPU=SYCL``).
+* ``-DGMX_SYCL=ACPP`` to build with SYCL_ support using hipSYCL_ (requires ``-DGMX_GPU=SYCL``).
 * ``-DGMX_SIMD=xxx`` to specify the level of `SIMD support`_ of the node on which |Gromacs| will run
 * ``-DGMX_DOUBLE=on`` to build |Gromacs| in double precision (slower, and not normally useful)
 * ``-DCMAKE_PREFIX_PATH=xxx`` to add a non-standard location for CMake to `search for libraries, headers or programs`_
@@ -970,14 +970,15 @@ must be set:
 
 ::
 
-   cmake .. -DCMAKE_C_COMPILER=icx -DCMAKE_CXX_COMPILER=icpx -DGMX_GPU=SYCL
+   cmake .. -DCMAKE_C_COMPILER=icx -DCMAKE_CXX_COMPILER=icpx -DGMX_GPU=SYCL -DGMX_SYCL=DPCPP
 
 When compiling for Intel Data Center GPU Max (also knows as Ponte Vecchio / PVC),
 we recommend passing additional flags for compatibility and improved performance:
 
 ::
 
-   cmake .. -DCMAKE_C_COMPILER=icx -DCMAKE_CXX_COMPILER=icpx -DGMX_GPU=SYCL \
+   cmake .. -DCMAKE_C_COMPILER=icx -DCMAKE_CXX_COMPILER=icpx \
+            -DGMX_GPU=SYCL -DGMX_SYCL=DPCPP \
             -DGMX_GPU_NB_NUM_CLUSTER_PER_CELL_X=1 -DGMX_GPU_NB_CLUSTER_SIZE=8
 
 You might also consider using :ref:`double-batched FFT library <bbfft installation>`.
@@ -1009,7 +1010,7 @@ building |Gromacs| itself (set ``HIPSYCL_TARGETS`` to the target hardware):
 
    cmake .. -DCMAKE_C_COMPILER=${ROCM_PATH}/llvm/bin/clang \
             -DCMAKE_CXX_COMPILER=${ROCM_PATH}/llvm/bin/clang++ \
-            -DGMX_GPU=SYCL -DGMX_SYCL_HIPSYCL=ON -DHIPSYCL_TARGETS='hip:gfxXYZ'
+            -DGMX_GPU=SYCL -DGMX_SYCL=ACPP -DHIPSYCL_TARGETS='hip:gfxXYZ'
 
 Multiple target architectures can be specified, e.g.,
 ``-DHIPSYCL_TARGETS='hip:gfx908,gfx90a'``. Having both RDNA (``gfx1xyz``)
@@ -1034,7 +1035,8 @@ an HPC system. Then, configure |Gromacs| using the following command (replace ``
 ::
 
    cmake .. -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ \
-            -DGMX_GPU=SYCL -DGMX_GPU_NB_CLUSTER_SIZE=8 -DGMX_GPU_FFT_LIBRARY=vkfft \
+            -DGMX_GPU=SYCL -DGMX_SYCL=DPCPP \
+            -DGMX_GPU_NB_CLUSTER_SIZE=8 -DGMX_GPU_FFT_LIBRARY=vkfft \
             -DSYCL_CXX_FLAGS_EXTRA='-fsycl-targets=amdgcn-amd-amdhsa;-Xsycl-target-backend;--offload-arch=gfxXYZ'
 
 SYCL GPU acceleration for NVIDIA GPUs
@@ -1058,7 +1060,8 @@ HPC system. Then, configure |Gromacs| using the following command:
 ::
 
    cmake .. -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ \
-            -DGMX_GPU=SYCL -DGMX_GPU_NB_CLUSTER_SIZE=8 -DGMX_GPU_FFT_LIBRARY=vkfft \
+            -DGMX_GPU=SYCL -GMX_SYCL=DPCPP \
+            -DGMX_GPU_NB_CLUSTER_SIZE=8 -DGMX_GPU_FFT_LIBRARY=vkfft \
             -DSYCL_CXX_FLAGS_EXTRA=-fsycl-targets=nvptx64-nvidia-cuda
 
 

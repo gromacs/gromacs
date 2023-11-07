@@ -36,7 +36,7 @@
 
 include(gmxFindFlagsForSource)
 
-if(NOT GMX_GPU_SYCL OR GMX_SYCL_HIPSYCL)
+if(NOT GMX_GPU_SYCL OR GMX_SYCL_ACPP OR NOT GMX_SYCL_DPCPP)
     message(FATAL_ERROR "Internal error: OneAPI configuration script was included when it should not")
 endif()
 
@@ -51,7 +51,7 @@ if(WIN32)
     endif()
 endif()
 if(CMAKE_CXX_COMPILER MATCHES "dpcpp")
-    message(FATAL_ERROR "Intel's \"dpcpp\" compiler is deprecated; please use \"icpx\" for SYCL builds")
+    message(FATAL_ERROR "Intel's \"dpcpp\" compiler is not supported; please use \"icpx\" for SYCL builds")
 endif()
 
 # Find the flags to enable (or re-enable) SYCL with Intel extensions. In case we turned it off above,

@@ -33,18 +33,22 @@
 
 set(GMX_GPU_SYCL ON)
 
-option(GMX_SYCL_HIPSYCL "Use hipSYCL instead of Intel oneAPI for SYCL compilation" OFF)
-
 if(GMX_DOUBLE)
     message(FATAL_ERROR "SYCL acceleration is not available in double precision")
 endif()
 
 set(_sycl_has_valid_fft FALSE)
 
-if(GMX_SYCL_HIPSYCL)
-    include(gmxManageSyclHipSycl)
-else()
+if(GMX_SYCL STREQUAL "ACPP")
+    set(GMX_SYCL_DPCPP OFF)
+    set(GMX_SYCL_ACPP ON)
+    include(gmxManageSyclAdaptiveCpp)
+elseif(GMX_SYCL STREQUAL "DPCPP")
+    set(GMX_SYCL_DPCPP ON)
+    set(GMX_SYCL_ACPP OFF)
     include(gmxManageSyclOneApi)
+else()
+    message(FATAL_ERROR "Unsupported value for GMX_SYCL: ${GMX_SYCL}. Please set either \"ACPP\" or \"DPCPP\"")
 endif()
 
 if (GMX_GPU_FFT_CUFFT AND GMX_USE_HEFFTE)
@@ -58,8 +62,8 @@ if(NOT ${_sycl_has_valid_fft} AND NOT GMX_GPU_FFT_LIBRARY STREQUAL "NONE")
     set(_hint "")
     if (GMX_GPU_FFT_CUFFT OR GMX_GPU_FFT_CLFFT)
         set(_hint " It is not supported with SYCL.")
-    elseif (GMX_SYCL_HIPSYCL AND GMX_GPU_FFT_MKL)
-        set(_hint " MKL is only supported with Intel DPC++ compiler, not with hipSYCL")
+    elseif (GMX_SYCL_ACPP AND GMX_GPU_FFT_MKL)
+        set(_hint " MKL is only supported with Intel DPC++ compiler, not with AdaptiveCpp/hipSYCL")
     endif()
     message(FATAL_ERROR "The selected GPU FFT library ${GMX_GPU_FFT_LIBRARY} is not compatible.${_hint}")
 endif()

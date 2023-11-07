@@ -75,7 +75,7 @@ function(gmx_manage_vkfft BACKEND_NAME)
         # This is not ideal, because it uses some random version of CUDA. See #4621.
         find_package(CUDAToolkit REQUIRED)
         target_link_libraries(VkFFT INTERFACE CUDA::cuda_driver CUDA::nvrtc)
-        if (NOT GMX_SYCL_HIPSYCL)
+        if (GMX_SYCL_DPCPP)
             if(NOT DEFINED ENV{GITLAB_CI}) # Don't warn in CI builds
                 message(WARNING "The use of VkFFT with CUDA backend is experimental and not intended for production use")
             endif()
@@ -83,7 +83,7 @@ function(gmx_manage_vkfft BACKEND_NAME)
         endif()
     elseif(BACKEND_NAME STREQUAL "HIP")
         target_compile_definitions(VkFFT INTERFACE VKFFT_BACKEND=2)
-        if (NOT GMX_SYCL_HIPSYCL)
+        if (GMX_SYCL_DPCPP)
             # HIP does not include hiprtc CMake config prior to version 5.6
             # https://github.com/ROCm-Developer-Tools/HIP/issues/3131
             # Using find_package(HIP) pulls in too many dependencies, in particular clang_rt.
