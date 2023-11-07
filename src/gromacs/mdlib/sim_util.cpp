@@ -868,8 +868,6 @@ static ForceOutputs setupForceOutputs(ForceHelperBuffers*                 forceH
                                       const bool                          havePpDomainDecomposition,
                                       gmx_wallcycle*                      wcycle)
 {
-    wallcycle_sub_start(wcycle, WallCycleSubCounter::ClearForceBuffer);
-
     /* NOTE: We assume fr->shiftForces is all zeros here */
     gmx::ForceWithShiftForces forceWithShiftForces(
             force, stepWork.computeVirial, forceHelperBuffers->shiftForces());
@@ -878,11 +876,13 @@ static ForceOutputs setupForceOutputs(ForceHelperBuffers*                 forceH
         && (domainWork.haveCpuLocalForceWork || !stepWork.useGpuFBufferOps
             || (havePpDomainDecomposition && !stepWork.useGpuFHalo)))
     {
+        wallcycle_sub_start(wcycle, WallCycleSubCounter::ClearForceBuffer);
         /* Clear the short- and long-range forces */
         clearRVecs(forceWithShiftForces.force(), true);
 
         /* Clear the shift forces */
         clearRVecs(forceWithShiftForces.shiftForces(), false);
+        wallcycle_sub_stop(wcycle, WallCycleSubCounter::ClearForceBuffer);
     }
 
     /* If we need to compute the virial, we might need a separate
@@ -901,15 +901,16 @@ static ForceOutputs setupForceOutputs(ForceHelperBuffers*                 forceH
 
     if (useSeparateForceWithVirialBuffer)
     {
+        wallcycle_sub_start_nocount(wcycle, WallCycleSubCounter::ClearForceBuffer);
         /* TODO: update comment
          * We only compute forces on local atoms. Note that vsites can
          * spread to non-local atoms, but that part of the buffer is
          * cleared separately in the vsite spreading code.
          */
         clearRVecs(forceWithVirial.force_, true);
+        wallcycle_sub_stop(wcycle, WallCycleSubCounter::ClearForceBuffer);
     }
 
-    wallcycle_sub_stop(wcycle, WallCycleSubCounter::ClearForceBuffer);
 
     return ForceOutputs(
             forceWithShiftForces, forceHelperBuffers->haveDirectVirialContributions(), forceWithVirial);
