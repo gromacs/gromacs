@@ -263,6 +263,7 @@ void MdGpuGraph::Impl::startRecord(GpuEventSynchronizer* xReadyOnDeviceEvent)
     helperEvent_->enqueueWaitEvent(deviceStreamManager_.stream(gmx::DeviceStreamType::UpdateAndConstraints));
 
     // Re-mark xReadyOnDeviceEvent to allow full isolation within graph capture
+    xReadyOnDeviceEvent->reset();
     xReadyOnDeviceEvent->markEvent(deviceStreamManager_.stream(gmx::DeviceStreamType::UpdateAndConstraints));
     graphState_ = GraphState::Recording;
 };
@@ -491,6 +492,7 @@ void MdGpuGraph::Impl::launchGraphMdStep(GpuEventSynchronizer* xUpdatedOnDeviceE
     // TODO: This is actually only required on steps that don't have graph usage in
     // their following step, but it is harmless to do it on all steps for the time being.
     enqueueRank0EventToAllPpStreams(helperEvent_.get(), *thisLaunchStream);
+    xUpdatedOnDeviceEvent->reset();
     xUpdatedOnDeviceEvent->markEvent(*thisLaunchStream);
 
     wallcycle_sub_stop(wcycle_, WallCycleSubCounter::MdGpuGraphLaunch);

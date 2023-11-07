@@ -1009,7 +1009,8 @@ static void launchGpuEndOfStepTasks(nonbonded_verlet_t*               nbv,
     if (runScheduleWork.stepWork.haveGpuPmeOnThisRank)
     {
         wallcycle_start_nocount(wcycle, WallCycleCounter::PmeGpuMesh);
-        pme_gpu_reinit_computation(pmedata, runScheduleWork.simulationWork.useMdGpuGraph, wcycle);
+        bool gpuGraphWithSeparatePmeRank = false;
+        pme_gpu_reinit_computation(pmedata, gpuGraphWithSeparatePmeRank, wcycle);
         wallcycle_stop(wcycle, WallCycleCounter::PmeGpuMesh);
     }
 

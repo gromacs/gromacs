@@ -165,7 +165,7 @@ void pme_gpu_free_energy_virial(PmeGpu* pmeGpu)
     }
 }
 
-void pme_gpu_clear_energy_virial(const PmeGpu* pmeGpu, const bool useMdGpuGraph)
+void pme_gpu_clear_energy_virial(const PmeGpu* pmeGpu, const bool gpuGraphWithSeparatePmeRank)
 {
     for (int gridIndex = 0; gridIndex < pmeGpu->common->ngrids; gridIndex++)
     {
@@ -174,7 +174,7 @@ void pme_gpu_clear_energy_virial(const PmeGpu* pmeGpu, const bool useMdGpuGraph)
                                c_virialAndEnergyCount,
                                pmeGpu->archSpecific->pmeStream_);
     }
-    if (pmeGpu->settings.useGpuForceReduction && useMdGpuGraph)
+    if (pmeGpu->settings.useGpuForceReduction && gpuGraphWithSeparatePmeRank)
     {
         // Mark forces ready event after this clearing, otherwise CUDA graph capture fails due to unjoined work
         pmeGpu->archSpecific->pmeForcesReady.markEvent(pmeGpu->archSpecific->pmeStream_);

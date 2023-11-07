@@ -139,10 +139,10 @@ void pme_gpu_free_energy_virial(PmeGpu* pmeGpu);
  * Clears the energy and virial memory on GPU with 0.
  * Should be called at the end of PME computation which returned energy/virial.
  *
- * \param[in] pmeGpu            The PME GPU structure.
- * \param[in] useMdGpuGraph     Whether MD GPU Graph is in use.
+ * \param[in] pmeGpu                          The PME GPU structure.
+ * \param[in] gpuGraphWithSeparatePmeRank     Whether MD GPU Graph with separate PME rank is in use.
  */
-void pme_gpu_clear_energy_virial(const PmeGpu* pmeGpu, bool useMdGpuGraph);
+void pme_gpu_clear_energy_virial(const PmeGpu* pmeGpu, bool gpuGraphWithSeparatePmeRank);
 
 /*! \libinternal \brief
  * Reallocates and copies the pre-computed B-spline values to the GPU.

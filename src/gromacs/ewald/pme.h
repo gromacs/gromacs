@@ -496,12 +496,12 @@ GPU_FUNC_QUALIFIER void pme_gpu_wait_and_reduce(gmx_pme_t*               GPU_FUN
  * \todo Rename this function to *clear* -- it clearly only does output resetting
  * and we should be clear about what the function does..
  *
- * \param[in] pme              The PME data structure.
- * \param[in] useMdGpuGraph    Whether MD GPU Graph is in use.
- * \param[in] wcycle           The wallclock counter.
+ * \param[in] pme                            The PME data structure.
+ * \param[in] gpuGraphWithSeparatePmeRank    Whether MD GPU Graph with separate PME rank is in use.
+ * \param[in] wcycle                         The wallclock counter.
  */
 GPU_FUNC_QUALIFIER void pme_gpu_reinit_computation(const gmx_pme_t* GPU_FUNC_ARGUMENT(pme),
-                                                   bool           GPU_FUNC_ARGUMENT(useMdGpuGraph),
+                                                   bool GPU_FUNC_ARGUMENT(gpuGraphWithSeparatePmeRank),
                                                    gmx_wallcycle* GPU_FUNC_ARGUMENT(wcycle)) GPU_FUNC_TERM;
 
 /*! \brief Set pointer to device copy of coordinate data.
