@@ -46,6 +46,7 @@
 #include "gromacs/ewald/pme.h"
 #include "gromacs/listed_forces/listed_forces.h"
 #include "gromacs/listed_forces/listed_forces_gpu.h"
+#include "gromacs/mdlib/force_flags.h"
 #include "gromacs/mdtypes/forcerec.h"
 #include "gromacs/mdtypes/iforceprovider.h"
 #include "gromacs/mdtypes/mdatom.h"
@@ -182,5 +183,64 @@ DomainLifetimeWorkload setupDomainLifetimeWorkload(const t_inputrec&         inp
     return domainWork;
 }
 
+/*! \brief Set up force flag struct from the force bitmask.
+ *
+ * \param[in]      legacyFlags          Force bitmask flags used to construct the new flags
+ * \param[in]      mtsLevels            The multiple time-stepping levels, either empty or 2 levels
+ * \param[in]      step                 The current MD step
+ * \param[in]      domainWork           Domain lifetime workload description.
+ * \param[in]      simulationWork       Simulation workload description.
+ *
+ * \returns New Stepworkload description.
+ */
+StepWorkload setupStepWorkload(const int                     legacyFlags,
+                               ArrayRef<const gmx::MtsLevel> mtsLevels,
+                               const int64_t                 step,
+                               const DomainLifetimeWorkload& domainWork,
+                               const SimulationWorkload&     simulationWork)
+{
+    GMX_ASSERT(mtsLevels.empty() || mtsLevels.size() == 2, "Expect 0 or 2 MTS levels");
+    const bool computeSlowForces = (mtsLevels.empty() || step % mtsLevels[1].stepFactor == 0);
+
+    StepWorkload flags;
+    flags.stateChanged                  = ((legacyFlags & GMX_FORCE_STATECHANGED) != 0);
+    flags.haveDynamicBox                = ((legacyFlags & GMX_FORCE_DYNAMICBOX) != 0);
+    flags.doNeighborSearch              = ((legacyFlags & GMX_FORCE_NS) != 0);
+    flags.computeSlowForces             = computeSlowForces;
+    flags.computeVirial                 = ((legacyFlags & GMX_FORCE_VIRIAL) != 0);
+    flags.computeEnergy                 = ((legacyFlags & GMX_FORCE_ENERGY) != 0);
+    flags.computeForces                 = ((legacyFlags & GMX_FORCE_FORCES) != 0);
+    flags.useOnlyMtsCombinedForceBuffer = ((legacyFlags & GMX_FORCE_DO_NOT_NEED_NORMAL_FORCE) != 0);
+    flags.computeListedForces           = ((legacyFlags & GMX_FORCE_LISTED) != 0);
+    flags.computeNonbondedForces =
+            ((legacyFlags & GMX_FORCE_NONBONDED) != 0) && simulationWork.computeNonbonded
+            && !(simulationWork.computeNonbondedAtMtsLevel1 && !computeSlowForces);
+    flags.computeDhdl = ((legacyFlags & GMX_FORCE_DHDL) != 0);
+
+    if (simulationWork.useGpuXBufferOpsWhenAllowed || simulationWork.useGpuFBufferOpsWhenAllowed)
+    {
+        GMX_ASSERT(simulationWork.useGpuNonbonded,
+                   "Can only offload buffer ops if nonbonded computation is also offloaded");
+    }
+    flags.useGpuXBufferOps = simulationWork.useGpuXBufferOpsWhenAllowed && !flags.doNeighborSearch;
+    // on virial steps the CPU reduction path is taken
+    flags.useGpuFBufferOps = simulationWork.useGpuFBufferOpsWhenAllowed && !flags.computeVirial;
+    flags.useGpuPmeFReduction =
+            flags.computeSlowForces && flags.useGpuFBufferOps
+            && (simulationWork.haveGpuPmeOnPpRank() || simulationWork.useGpuPmePpCommunication);
+    flags.useGpuXHalo              = simulationWork.useGpuHaloExchange && !flags.doNeighborSearch;
+    flags.useGpuFHalo              = simulationWork.useGpuHaloExchange && flags.useGpuFBufferOps;
+    flags.haveGpuPmeOnThisRank     = simulationWork.haveGpuPmeOnPpRank() && flags.computeSlowForces;
+    flags.computePmeOnSeparateRank = simulationWork.haveSeparatePmeRank && flags.computeSlowForces;
+    flags.combineMtsForcesBeforeHaloExchange =
+            (flags.computeForces && simulationWork.useMts && flags.computeSlowForces
+             && flags.useOnlyMtsCombinedForceBuffer
+             && !(flags.computeVirial || simulationWork.useGpuNonbonded || flags.haveGpuPmeOnThisRank));
+    // On NS steps, the buffer is cleared in stateGpu->reinit, no need to clear it twice.
+    flags.clearGpuFBufferEarly =
+            flags.useGpuFHalo && !domainWork.haveCpuLocalForceWork && !flags.doNeighborSearch;
+
+    return flags;
+}
 
 } // namespace gmx

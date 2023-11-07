@@ -56,6 +56,7 @@
 #include "gromacs/mdtypes/interaction_const.h"
 #include "gromacs/mdtypes/mdatom.h"
 #include "gromacs/mdtypes/mdrunoptions.h"
+#include "gromacs/mdtypes/multipletimestepping.h"
 #include "gromacs/mdtypes/simulation_workload.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/taskassignment/include/gromacs/taskassignment/decidesimulationworkload.h"
@@ -154,10 +155,11 @@ void ForceElement::scheduleTask(Step step, Time time, const RegisterRunFunction&
 {
     unsigned int flags =
             (GMX_FORCE_STATECHANGED | GMX_FORCE_ALLFORCES | (isDynamicBox_ ? GMX_FORCE_DYNAMICBOX : 0)
+             | (doShellFC_ && isVerbose_ ? GMX_FORCE_ENERGY : 0)
              | (nextVirialCalculationStep_ == step ? GMX_FORCE_VIRIAL : 0)
              | (nextEnergyCalculationStep_ == step ? GMX_FORCE_ENERGY : 0)
              | (nextFreeEnergyCalculationStep_ == step ? GMX_FORCE_DHDL : 0)
-             | (!doShellFC_ && nextNSStep_ == step ? GMX_FORCE_NS : 0));
+             | (nextNSStep_ == step ? GMX_FORCE_NS : 0));
 
     registerRunFunction([this, step, time, flags]() {
         if (doShellFC_)
@@ -202,6 +204,8 @@ void ForceElement::run(Step step, Time time, unsigned int flags)
                 *inputrec_, *fr_, pull_work_, ed, *mdAtoms_->mdatoms(), runScheduleWork_->simulationWork);
     }
 
+    runScheduleWork_->stepWork = setupStepWorkload(
+            flags, inputrec_->mtsLevels, step, runScheduleWork_->domainWork, runScheduleWork_->simulationWork);
 
     /* The coordinates (x) are shifted (to get whole molecules)
      * in do_force.

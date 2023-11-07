@@ -56,6 +56,8 @@ struct t_mdatoms;
 namespace gmx
 {
 
+template<typename T>
+class ArrayRef;
 struct DevelopmentFeatureFlags;
 
 /*! \brief
@@ -113,6 +115,23 @@ DomainLifetimeWorkload setupDomainLifetimeWorkload(const t_inputrec&         inp
                                                    const gmx_edsam*          ed,
                                                    const t_mdatoms&          mdatoms,
                                                    const SimulationWorkload& simulationWork);
+
+/*! \brief Set up force flag struct from the force bitmask.
+ *
+ * \param[in]      legacyFlags          Force bitmask flags used to construct the new flags
+ * \param[in]      mtsLevels            The multiple time-stepping levels, either empty or 2 levels
+ * \param[in]      step                 The current MD step
+ * \param[in]      domainWork           Domain lifetime workload description.
+ * \param[in]      simulationWork       Simulation workload description.
+ *
+ * \returns New Stepworkload description.
+ */
+StepWorkload setupStepWorkload(int                           legacyFlags,
+                               ArrayRef<const gmx::MtsLevel> mtsLevels,
+                               int64_t                       step,
+                               const DomainLifetimeWorkload& domainWork,
+                               const SimulationWorkload&     simulationWork);
+
 } // namespace gmx
 
 #endif

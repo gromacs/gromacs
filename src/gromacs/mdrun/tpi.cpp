@@ -82,6 +82,7 @@
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/mdtypes/mdatom.h"
 #include "gromacs/mdtypes/mdrunoptions.h"
+#include "gromacs/mdtypes/multipletimestepping.h"
 #include "gromacs/mdtypes/state.h"
 #include "gromacs/nbnxm/nbnxm.h"
 #include "gromacs/pbcutil/pbc.h"
@@ -771,6 +772,14 @@ void LegacySimulator::do_tpi()
             // might raise, then restore the old behaviour.
             std::fenv_t floatingPointEnvironment;
             std::feholdexcept(&floatingPointEnvironment);
+
+            const int legacyForceFlags = GMX_FORCE_NONBONDED | GMX_FORCE_ENERGY
+                                         | (bStateChanged ? GMX_FORCE_STATECHANGED : 0);
+            runScheduleWork_->stepWork = setupStepWorkload(legacyForceFlags,
+                                                           inputRec_->mtsLevels,
+                                                           step,
+                                                           runScheduleWork_->domainWork,
+                                                           runScheduleWork_->simulationWork);
             do_force(fpLog_,
                      cr_,
                      ms_,
@@ -800,7 +809,7 @@ void LegacySimulator::do_tpi()
                      t,
                      ed,
                      fr_->longRangeNonbondeds.get(),
-                     GMX_FORCE_NONBONDED | GMX_FORCE_ENERGY | (bStateChanged ? GMX_FORCE_STATECHANGED : 0),
+                     legacyForceFlags,
                      DDBalanceRegionHandler(nullptr));
             std::feclearexcept(FE_DIVBYZERO | FE_INVALID | FE_OVERFLOW);
             std::feupdateenv(&floatingPointEnvironment);
