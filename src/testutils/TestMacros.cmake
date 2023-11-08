@@ -78,7 +78,7 @@ function (gmx_add_unit_test_library NAME)
         endif()
         if(GMX_CLANG_TIDY)
             set_target_properties(${NAME} PROPERTIES CXX_CLANG_TIDY
-                "${CLANG_TIDY_EXE};-warnings-as-errors=*;-header-filter=.*")
+                "${CLANG_TIDY_EXE};-warnings-as-errors=*;-header-filter=^(?!.*src/external/colvars).*")
         endif()
         gmx_warn_on_everything(${NAME})
         if (HAS_WARNING_EVERYTHING)
@@ -235,7 +235,7 @@ function (gmx_add_gtest_executable EXENAME)
 
         if(GMX_CLANG_TIDY)
             set_target_properties(${EXENAME} PROPERTIES CXX_CLANG_TIDY
-                "${CLANG_TIDY_EXE};-warnings-as-errors=*;-header-filter=.*")
+                "${CLANG_TIDY_EXE};-warnings-as-errors=*;-header-filter=^(?!.*src/external/colvars).*")
         endif()
         gmx_warn_on_everything(${EXENAME})
         if (HAS_WARNING_EVERYTHING)

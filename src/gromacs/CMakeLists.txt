@@ -452,8 +452,10 @@ if (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
 endif()
 
 if (GMX_CLANG_TIDY)
+   # Temporarily exclude Colvars headers to silence warnings from code that is not built with GROMACS
+   # TODO: remove this when clang-tidy >= 14 is used
    set_target_properties(libgromacs PROPERTIES CXX_CLANG_TIDY
-       "${CLANG_TIDY_EXE};-warnings-as-errors=*")
+       "${CLANG_TIDY_EXE};-warnings-as-errors=*;-header-filter=^(?!.*src/external/colvars).*")
 endif()
 
 # TODO: Stop installing libgromacs. Possibly allow installation during deprecation period with GMX_INSTALL_LEGACY_API.
