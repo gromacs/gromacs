@@ -49,23 +49,32 @@
 #define GMX_USE_HDF5 1 // FIXME: Temporary just for the editor
 
 #if GMX_USE_HDF5
-#include <hdf5.h>
+#    include <hdf5.h>
 #endif
 
 
-GmxH5mdDataBlock::GmxH5mdDataBlock(hid_t container, const char* name, const char* datasetName, const char* unit, int writingInterval, hsize_t numFramesPerChunk, hsize_t numEntries,
-                                   hsize_t numValuesPerEntry, hid_t datatype, CompressionAlgorithm compression, double compressionError)
+GmxH5mdDataBlock::GmxH5mdDataBlock(hid_t                container,
+                                   const char*          name,
+                                   const char*          datasetName,
+                                   const char*          unit,
+                                   int                  writingInterval,
+                                   hsize_t              numFramesPerChunk,
+                                   hsize_t              numEntries,
+                                   hsize_t              numValuesPerEntry,
+                                   hid_t                datatype,
+                                   CompressionAlgorithm compression,
+                                   double               compressionError)
 {
     container_ = container;
     strncpy(name_, name, 128);
     strncpy(datasetName_, datasetName, 64);
     strncpy(unit_, unit, 64);
-    writingInterval_ = writingInterval;
-    numFramesPerChunk_ = numFramesPerChunk;
-    numEntries_ = numEntries;
-    numValuesPerEntry_ = numValuesPerEntry;
-    datatype_ = datatype;
-    compressionAlgorithm_ = compression;
+    writingInterval_          = writingInterval;
+    numFramesPerChunk_        = numFramesPerChunk;
+    numEntries_               = numEntries;
+    numValuesPerEntry_        = numValuesPerEntry;
+    datatype_                 = datatype;
+    compressionAlgorithm_     = compression;
     compressionAbsoluteError_ = compressionError;
 }
 
@@ -84,23 +93,43 @@ void GmxH5mdDataBlock::writeFrame(const void* data, int64_t step, real time)
 #else
     const hid_t timeDatatype = H5Tcopy(H5T_NATIVE_FLOAT);
 #endif
-    char stepName[] = "step";
-    char timeName[] = "time";
-    char timeUnit[] = "ps";
-    hid_t group = openOrCreateGroup(container_, name_);
-    int frameNumber = step > 0 ? step / writingInterval_ : 0;
+    char  stepName[]  = "step";
+    char  timeName[]  = "time";
+    char  timeUnit[]  = "ps";
+    hid_t group       = openOrCreateGroup(container_, name_);
+    int   frameNumber = step > 0 ? step / writingInterval_ : 0;
 
-    writeData(group, datasetName_, unit_, data, numFramesPerChunk_, numEntries_, numValuesPerEntry_, frameNumber, datatype_, compressionAlgorithm_, compressionAbsoluteError_);
-    writeData(group, stepName, nullptr, &step, numFramesPerChunk_, 1, 1, frameNumber, H5T_NATIVE_INT64, CompressionAlgorithm::None, 0);
+    writeData(group,
+              datasetName_,
+              unit_,
+              data,
+              numFramesPerChunk_,
+              numEntries_,
+              numValuesPerEntry_,
+              frameNumber,
+              datatype_,
+              compressionAlgorithm_,
+              compressionAbsoluteError_);
+    writeData(group,
+              stepName,
+              nullptr,
+              &step,
+              numFramesPerChunk_,
+              1,
+              1,
+              frameNumber,
+              H5T_NATIVE_INT64,
+              CompressionAlgorithm::None,
+              0);
     writeData(group, timeName, timeUnit, &time, numFramesPerChunk_, 1, 1, frameNumber, timeDatatype, CompressionAlgorithm::None, 0);
     H5Gclose(group);
 }
 
 bool GmxH5mdDataBlock::datasetExists()
 {
-    hid_t group = openOrCreateGroup(container_, name_);
-    bool exists = false;
-    if(H5Lexists(group, datasetName_, H5P_DEFAULT) > 0)
+    hid_t group  = openOrCreateGroup(container_, name_);
+    bool  exists = false;
+    if (H5Lexists(group, datasetName_, H5P_DEFAULT) > 0)
     {
         exists = true;
     }

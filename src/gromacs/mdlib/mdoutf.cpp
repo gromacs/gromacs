@@ -183,9 +183,7 @@ gmx_mdoutf_t init_mdoutf(FILE*                          fplog,
                     }
                     bCiteTng = TRUE;
                     break;
-                case efH5MD:
-                    of->h5mdIo = new GmxH5mdIo(filename, filemode[0]);
-                    break;
+                case efH5MD: of->h5mdIo = new GmxH5mdIo(filename, filemode[0]); break;
                 default: gmx_incons("Invalid reduced precision file format");
             }
         }
@@ -255,10 +253,11 @@ gmx_mdoutf_t init_mdoutf(FILE*                          fplog,
                 of->natoms_x_compressed++;
             }
         }
-        if(of->h5mdIo)
+        if (of->h5mdIo)
         {
             of->h5mdIo->setupMolecularSystem(top_global);
-            of->h5mdIo->setUpParticlesDataBlocks(ir->nstxout_compressed, 0, 0, of->natoms_x_compressed, ir->pbcType, 1.0/of->x_compression_precision);
+            of->h5mdIo->setUpParticlesDataBlocks(
+                    ir->nstxout_compressed, 0, 0, of->natoms_x_compressed, ir->pbcType, 1.0 / of->x_compression_precision);
         }
 
         if (ir->nstfout && haveDDAtomOrdering(*cr))
@@ -540,7 +539,7 @@ void mdoutf_write_checkpoint(gmx_mdoutf_t                    of,
 {
     fflush_tng(of->tng);
     fflush_tng(of->tng_low_prec);
-    if(of->h5mdIo)
+    if (of->h5mdIo)
     {
         of->h5mdIo->flush();
     }
@@ -697,18 +696,18 @@ void mdoutf_write_to_trajectory_files(FILE*                           fplog,
                                v,
                                f);
             }
-// Disabled for now. Only write compressed data,
-//             else if (of->h5mdIo)
-//             {
-//                 of->h5mdIo->writeFrame(step,
-//                                        t,
-//                                        state_local->lambda[FreeEnergyPerturbationCouplingType::Fep],
-//                                        state_local->box,
-//                                        x,
-//                                        v,
-//                                        f,
-//                                        nullptr);
-//             }
+            // Disabled for now. Only write compressed data,
+            //             else if (of->h5mdIo)
+            //             {
+            //                 of->h5mdIo->writeFrame(step,
+            //                                        t,
+            //                                        state_local->lambda[FreeEnergyPerturbationCouplingType::Fep],
+            //                                        state_local->box,
+            //                                        x,
+            //                                        v,
+            //                                        f,
+            //                                        nullptr);
+            //             }
         }
         if (mdof_flags & MDOF_X_COMPRESSED)
         {
@@ -755,7 +754,7 @@ void mdoutf_write_to_trajectory_files(FILE*                           fplog,
                            xxtc,
                            nullptr,
                            nullptr);
-            if(of->h5mdIo)
+            if (of->h5mdIo)
             {
                 of->h5mdIo->writeFrame(step,
                                        t,
@@ -856,7 +855,7 @@ void done_mdoutf(gmx_mdoutf_t of)
     gmx_tng_close(&of->tng);
     gmx_tng_close(&of->tng_low_prec);
 
-    if(of->h5mdIo)
+    if (of->h5mdIo)
     {
         of->h5mdIo->closeFile();
         delete of->h5mdIo;

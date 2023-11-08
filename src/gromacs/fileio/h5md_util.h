@@ -41,26 +41,26 @@
 #include "gromacs/utility/real.h"
 
 
-typedef int64_t hid_t;
+typedef int64_t            hid_t;
 typedef unsigned long long hsize_t;
 enum class PbcType : int;
 
 /*! \brief An enumeration of compression options */
 enum class CompressionAlgorithm
 {
-    None, //!< No compression
-    LosslessNoShuffle, //!< Lossless, only gzip (deflate)
+    None,                //!< No compression
+    LosslessNoShuffle,   //!< Lossless, only gzip (deflate)
     LosslessWithShuffle, //!< Lossless, byte shuffle followed by gzip (deflate)
-    LossySz3 //!< Lossy SZ3 compression.
+    LossySz3             //!< Lossy SZ3 compression.
 };
 
 /*! \brief Open an existing HDF5 group or create it if it did not exist already.
-*
-* \param[in] container  The container where the group is located, or should be created.
-* \param[in] name       The name of the group.
-* \returns the ID of the group.
-*/
-hid_t openOrCreateGroup(hid_t container, const char *name);
+ *
+ * \param[in] container  The container where the group is located, or should be created.
+ * \param[in] name       The name of the group.
+ * \returns the ID of the group.
+ */
+hid_t openOrCreateGroup(hid_t container, const char* name);
 
 /*! \brief Registers the SZ3 filter by using the automatic registration mechanism by H5Pset_filter().
  * Must be done before appending (e.g. when restarting from acheckpoint) to a compressed dataset. */
@@ -80,16 +80,26 @@ void registerSz3FilterImplicitly();
  * \param[in] compression The compression algorithm to use.
  * \param[in] compressionError The required precision of lossy compression.
  */
-void writeData(hid_t container, const char* name, const char* unit, const void* data, hsize_t numFramesPerChunk, hsize_t numEntries, hsize_t numValuesPerEntry, hsize_t positionToWrite, hid_t datatype, CompressionAlgorithm compression, double compressionError);
+void writeData(hid_t                container,
+               const char*          name,
+               const char*          unit,
+               const void*          data,
+               hsize_t              numFramesPerChunk,
+               hsize_t              numEntries,
+               hsize_t              numValuesPerEntry,
+               hsize_t              positionToWrite,
+               hid_t                datatype,
+               CompressionAlgorithm compression,
+               double               compressionError);
 
 void setBoxGroupAttributes(hid_t boxGroup, PbcType pbcType);
 
-template <typename T>
-void setAttribute(hid_t container, const char *name, const T value, hid_t dataType);
+template<typename T>
+void setAttribute(hid_t container, const char* name, const T value, hid_t dataType);
 
-void setAttribute(hid_t container, const char *name, const char* value);
+void setAttribute(hid_t container, const char* name, const char* value);
 
-template <hid_t numEntries, hid_t stringLength>
-void setAttributeStringList(hid_t container, const char *name, const char value[numEntries][stringLength]);
+template<hid_t numEntries, hid_t stringLength>
+void setAttributeStringList(hid_t container, const char* name, const char value[numEntries][stringLength]);
 
 #endif

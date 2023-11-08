@@ -40,10 +40,11 @@
 
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/real.h"
+
 #include "h5md_datablock.h"
 
 struct gmx_mtop_t;
-typedef int64_t hid_t;
+typedef int64_t            hid_t;
 typedef unsigned long long hsize_t;
 enum class PbcType : int;
 
@@ -53,17 +54,17 @@ enum class PbcType : int;
 class GmxH5mdIo
 {
 private:
-    hid_t   file_;              //!< The HDF5 identifier of the file. This is the H5MD root.
-    GmxH5mdDataBlock position_; //!< The data block with lossless positions.
+    hid_t            file_;          //!< The HDF5 identifier of the file. This is the H5MD root.
+    GmxH5mdDataBlock position_;      //!< The data block with lossless positions.
     GmxH5mdDataBlock positionLossy_; //!< The data block with compressed (lossy compression) positions.
-    GmxH5mdDataBlock velocity_; //!< The data block with lossless velocities.
-    GmxH5mdDataBlock force_; //!< The data block with lossless forces.
+    GmxH5mdDataBlock velocity_;      //!< The data block with lossless velocities.
+    GmxH5mdDataBlock force_;         //!< The data block with lossless forces.
     GmxH5mdDataBlock box_; //!< The data block with the box shape written together with lossless positions.
     GmxH5mdDataBlock boxLossy_; //!< The data block with the box shape written together with lossy (compressed) positions.
     GmxH5mdDataBlock atomName_; //!< A data block with the names of all atoms in the system.
     GmxH5mdDataBlock atomType_; //!< A data block with the atom type of all atoms in the system.
     GmxH5mdDataBlock charge_; //!< A data block with the partial charges of all atoms in the system.
-    GmxH5mdDataBlock mass_; //!< A data block with the atom masses of all atoms in the system.
+    GmxH5mdDataBlock mass_;   //!< A data block with the atom masses of all atoms in the system.
 
     char* compressedSelectionGroupName_; //!< A pointer to the name of the selection group of compressed coordinates.
 
@@ -75,9 +76,9 @@ public:
      *
      * \param[in] fileName    Name of the file to open. The same as the file path.
      * \param[in] mode        The mode to open the file, described by a lower-case letter
-     *                        'w' means writing (and reading), i.e. backup an existing file and replace it.
-     *                        'a' means appending (and reading), i.e., that existing files will be not be overwritten, but extended.
-     *                        'r' means only reading.
+     *                        'w' means writing (and reading), i.e. backup an existing file and
+     * replace it. 'a' means appending (and reading), i.e., that existing files will be not be
+     * overwritten, but extended. 'r' means only reading.
      */
     GmxH5mdIo(const char* fileName = "", const char mode = '\0');
 
@@ -119,7 +120,12 @@ public:
      * \param[in] pbcType The periodic boundary condition that is used.
      * \param[in] compressionError The required precision of the lossy compression.
      */
-    void setUpParticlesDataBlocks(int writeCoordinatesSteps, int writeForcesSteps, int writeVelocitiesSteps, int numParticles, PbcType pbcType, double compressionError);
+    void setUpParticlesDataBlocks(int     writeCoordinatesSteps,
+                                  int     writeForcesSteps,
+                                  int     writeVelocitiesSteps,
+                                  int     numParticles,
+                                  PbcType pbcType,
+                                  double  compressionError);
 
     /*! \brief Write a trajectory frame to the file. Only writes the data that is passed as input
      *
@@ -132,14 +138,14 @@ public:
      * \param[in] f The particle forces for lossless output.
      * \param[in] xLossy The particle coordinates for lossy (compressed) output.
      */
-    void writeFrame(int64_t          step,
-                    real             time,
-                    real             lambda,
-                    const rvec*      box,
-                    const rvec*      x,
-                    const rvec*      v,
-                    const rvec*      f,
-                    const rvec*      xLossy);
+    void writeFrame(int64_t     step,
+                    real        time,
+                    real        lambda,
+                    const rvec* box,
+                    const rvec* x,
+                    const rvec* v,
+                    const rvec* f,
+                    const rvec* xLossy);
 };
 
 #endif // GMX_FILEIO_H5MD_IO_H

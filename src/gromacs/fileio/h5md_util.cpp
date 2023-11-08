@@ -48,44 +48,45 @@
 #define GMX_USE_HDF5 1 // FIXME: Temporary just for the editor
 
 #if GMX_USE_HDF5
-#include <hdf5.h>
-#include "external/SZ3/tools/H5Z-SZ3/include/H5Z_SZ3.hpp"
+#    include <hdf5.h>
+
+#    include "external/SZ3/tools/H5Z-SZ3/include/H5Z_SZ3.hpp"
 #endif
 
 static void setNumericFillValue(hid_t datasetCreatePropertyList, const hid_t datatype)
 {
-    if(H5Tequal(datatype, H5T_NATIVE_INT))
+    if (H5Tequal(datatype, H5T_NATIVE_INT))
     {
         const int dataFill = -1;
         H5Pset_fill_value(datasetCreatePropertyList, datatype, &dataFill);
     }
-    else if(H5Tequal(datatype, H5T_NATIVE_INT64))
+    else if (H5Tequal(datatype, H5T_NATIVE_INT64))
     {
         const int64_t dataFill = -1;
         H5Pset_fill_value(datasetCreatePropertyList, datatype, &dataFill);
     }
-    else if(H5Tequal(datatype, H5T_NATIVE_FLOAT))
+    else if (H5Tequal(datatype, H5T_NATIVE_FLOAT))
     {
         const float dataFill = -1;
         H5Pset_fill_value(datasetCreatePropertyList, datatype, &dataFill);
     }
-    else if(H5Tequal(datatype, H5T_NATIVE_DOUBLE))
+    else if (H5Tequal(datatype, H5T_NATIVE_DOUBLE))
     {
         const double dataFill = -1;
         H5Pset_fill_value(datasetCreatePropertyList, datatype, &dataFill);
     }
 }
 
-hid_t openOrCreateGroup(hid_t container, const char *name)
+hid_t openOrCreateGroup(hid_t container, const char* name)
 {
 #if GMX_USE_HDF5
     hid_t group = H5Gopen(container, name, H5P_DEFAULT);
     if (group < 0)
     {
-        hid_t linkPropertyList = H5Pcreate(H5P_LINK_CREATE);     // create group creation property list
-        H5Pset_create_intermediate_group(linkPropertyList, 1);   // set intermediate link creation
+        hid_t linkPropertyList = H5Pcreate(H5P_LINK_CREATE); // create group creation property list
+        H5Pset_create_intermediate_group(linkPropertyList, 1); // set intermediate link creation
         group = H5Gcreate(container, name, linkPropertyList, H5P_DEFAULT, H5P_DEFAULT);
-        if( group < 0)
+        if (group < 0)
         {
             H5Eprint2(H5E_DEFAULT, nullptr);
             gmx_file("Cannot create group.");
@@ -100,12 +101,13 @@ hid_t openOrCreateGroup(hid_t container, const char *name)
 void registerSz3FilterImplicitly()
 {
 #if GMX_USE_HDF5
-    hid_t propertyList = H5Pcreate(H5P_DATASET_CREATE);
-    int sz3_mode = 0; //0: ABS, 1: REL
-    size_t numCompressionSettingsElements;
-    unsigned int *compressionSettings = nullptr;
+    hid_t         propertyList = H5Pcreate(H5P_DATASET_CREATE);
+    int           sz3_mode     = 0; // 0: ABS, 1: REL
+    size_t        numCompressionSettingsElements;
+    unsigned int* compressionSettings = nullptr;
     SZ_errConfigToCdArray(&numCompressionSettingsElements, &compressionSettings, sz3_mode, 0, 0, 0, 0);
-    if (H5Pset_filter(propertyList, H5Z_FILTER_SZ3, H5Z_FLAG_MANDATORY, numCompressionSettingsElements, compressionSettings) < 0)
+    if (H5Pset_filter(propertyList, H5Z_FILTER_SZ3, H5Z_FLAG_MANDATORY, numCompressionSettingsElements, compressionSettings)
+        < 0)
     {
         H5Eprint2(H5E_DEFAULT, nullptr);
         gmx_file("Cannot use SZ3 compression filter.");
@@ -113,64 +115,75 @@ void registerSz3FilterImplicitly()
 #endif
 }
 
-void writeData(hid_t container, const char* name, const char* unit, const void* data, hsize_t numFramesPerChunk, hsize_t numEntries, hsize_t numValuesPerEntry, hsize_t positionToWrite, hid_t datatype, CompressionAlgorithm compression, double compressionError)
+void writeData(hid_t                container,
+               const char*          name,
+               const char*          unit,
+               const void*          data,
+               hsize_t              numFramesPerChunk,
+               hsize_t              numEntries,
+               hsize_t              numValuesPerEntry,
+               hsize_t              positionToWrite,
+               hid_t                datatype,
+               CompressionAlgorithm compression,
+               double               compressionError)
 {
 #if GMX_USE_HDF5
     /* Set a reasonable cache based on chunk sizes. The cache is not stored in file, so must be set when opening a dataset */
-    hsize_t chunkDims[3] = {numFramesPerChunk, numEntries, numValuesPerEntry};
-    size_t cacheSize = sizeof(real) * chunkDims[0] * chunkDims[1] * chunkDims[2];
-    hid_t accessPropertyList = H5Pcreate(H5P_DATASET_ACCESS);
-    H5Pset_chunk_cache(accessPropertyList, H5D_CHUNK_CACHE_NSLOTS_DEFAULT, cacheSize, H5D_CHUNK_CACHE_W0_DEFAULT);
+    hsize_t chunkDims[3]       = { numFramesPerChunk, numEntries, numValuesPerEntry };
+    size_t  cacheSize          = sizeof(real) * chunkDims[0] * chunkDims[1] * chunkDims[2];
+    hid_t   accessPropertyList = H5Pcreate(H5P_DATASET_ACCESS);
+    H5Pset_chunk_cache(
+            accessPropertyList, H5D_CHUNK_CACHE_NSLOTS_DEFAULT, cacheSize, H5D_CHUNK_CACHE_W0_DEFAULT);
     hid_t dataset = H5Dopen(container, name, accessPropertyList);
     if (dataset < 0)
     {
-        hsize_t dataSize[3] = {numFramesPerChunk, numEntries, numValuesPerEntry};
-        hsize_t maxDims[3] = {H5S_UNLIMITED, numEntries, numValuesPerEntry};
-        hid_t dataspace = H5Screate_simple(3, dataSize, maxDims);
-        hid_t createPropertyList = H5Pcreate(H5P_DATASET_CREATE);
+        hsize_t dataSize[3]        = { numFramesPerChunk, numEntries, numValuesPerEntry };
+        hsize_t maxDims[3]         = { H5S_UNLIMITED, numEntries, numValuesPerEntry };
+        hid_t   dataspace          = H5Screate_simple(3, dataSize, maxDims);
+        hid_t   createPropertyList = H5Pcreate(H5P_DATASET_CREATE);
         H5Pset_chunk(createPropertyList, 3, chunkDims);
         setNumericFillValue(createPropertyList, datatype);
 
-        switch(compression)
+        switch (compression)
         {
-        case CompressionAlgorithm::LossySz3:
-        {
-            // int sz3_mode = 0; //0: ABS, 1: REL
-            // size_t numCompressionSettingsElements;
-            // unsigned int *compressionSettings = nullptr;
-            // FIXME: Compression error is set by config file.
-            // SZ_errConfigToCdArray(&numCompressionSettingsElements, &compressionSettings, sz3_mode, compressionError, compressionError, 0, 0);
-            // if (H5Pset_filter(createPropertyList, H5Z_FILTER_SZ3, H5Z_FLAG_MANDATORY, numCompressionSettingsElements, compressionSettings) < 0)
-            if (H5Pset_filter(createPropertyList, H5Z_FILTER_SZ3, H5Z_FLAG_MANDATORY, 0, nullptr) < 0)
+            case CompressionAlgorithm::LossySz3:
             {
-                H5Eprint2(H5E_DEFAULT, nullptr);
-                gmx_file("Cannot set SZ3 compression.");
+                // int sz3_mode = 0; //0: ABS, 1: REL
+                // size_t numCompressionSettingsElements;
+                // unsigned int *compressionSettings = nullptr;
+                // FIXME: Compression error is set by config file.
+                // SZ_errConfigToCdArray(&numCompressionSettingsElements, &compressionSettings, sz3_mode, compressionError, compressionError, 0, 0);
+                // if (H5Pset_filter(createPropertyList, H5Z_FILTER_SZ3, H5Z_FLAG_MANDATORY, numCompressionSettingsElements, compressionSettings) < 0)
+                if (H5Pset_filter(createPropertyList, H5Z_FILTER_SZ3, H5Z_FLAG_MANDATORY, 0, nullptr) < 0)
+                {
+                    H5Eprint2(H5E_DEFAULT, nullptr);
+                    gmx_file("Cannot set SZ3 compression.");
+                }
+                if (H5Zfilter_avail(H5Z_FILTER_SZ3) < 0)
+                {
+                    H5Eprint2(H5E_DEFAULT, nullptr);
+                    gmx_file("SZ3 filter not available.");
+                }
+                break;
             }
-            if(H5Zfilter_avail(H5Z_FILTER_SZ3) < 0)
-            {
-                H5Eprint2(H5E_DEFAULT, nullptr);
-                gmx_file("SZ3 filter not available.");
-            }
-            break;
-        }
-        case CompressionAlgorithm::LosslessWithShuffle:
-            if (H5Pset_shuffle(createPropertyList) < 0)
-            {
-                gmx_file("Cannot set shuffle filter.");
-            }
-        case CompressionAlgorithm::LosslessNoShuffle:
-            if (H5Pset_deflate(createPropertyList, 6) < 0)
-            {
-                H5Eprint2(H5E_DEFAULT, nullptr);
-                gmx_file("Cannot set GZIP compression.");
-            }
-            break;
-        case CompressionAlgorithm::None:
-            break;
+            case CompressionAlgorithm::LosslessWithShuffle:
+                if (H5Pset_shuffle(createPropertyList) < 0)
+                {
+                    gmx_file("Cannot set shuffle filter.");
+                }
+            case CompressionAlgorithm::LosslessNoShuffle:
+                if (H5Pset_deflate(createPropertyList, 6) < 0)
+                {
+                    H5Eprint2(H5E_DEFAULT, nullptr);
+                    gmx_file("Cannot set GZIP compression.");
+                }
+                break;
+            case CompressionAlgorithm::None: break;
         }
 
-        dataset = H5Dcreate(container, name, datatype, dataspace, H5P_DEFAULT, createPropertyList, accessPropertyList);
-        if(dataset < 0)
+        dataset = H5Dcreate(
+                container, name, datatype, dataspace, H5P_DEFAULT, createPropertyList, accessPropertyList);
+        if (dataset < 0)
         {
             H5Eprint2(H5E_DEFAULT, nullptr);
             gmx_file("Cannot create dataset.");
@@ -182,22 +195,24 @@ void writeData(hid_t container, const char* name, const char* unit, const void* 
             setAttribute(dataset, unitElementString, unit);
         }
     }
-    hid_t dataspace = H5Dget_space(dataset);
+    hid_t   dataspace = H5Dget_space(dataset);
     hsize_t currentDims[3], maxDims[3];
     H5Sget_simple_extent_dims(dataspace, currentDims, maxDims);
     /* Resize the dataset if needed. */
-    if(positionToWrite >= currentDims[0])
+    if (positionToWrite >= currentDims[0])
     {
-        hsize_t newDims[3] = {(positionToWrite / numFramesPerChunk + 1) * numFramesPerChunk, currentDims[1], currentDims[2]};
+        hsize_t newDims[3] = { (positionToWrite / numFramesPerChunk + 1) * numFramesPerChunk,
+                               currentDims[1],
+                               currentDims[2] };
         if (debug)
         {
-            fprintf(debug, "Resizing dataset from %" PRId64" to %" PRId64 "\n", currentDims[0], newDims[0]);
+            fprintf(debug, "Resizing dataset from %" PRId64 " to %" PRId64 "\n", currentDims[0], newDims[0]);
         }
         H5Dset_extent(dataset, newDims);
         dataspace = H5Dget_space(dataset);
     }
-    hsize_t fileOffset[3] = {positionToWrite, 0, 0};
-    hsize_t outputBlockSize[3] = {1, numEntries, numValuesPerEntry};
+    hsize_t fileOffset[3]      = { positionToWrite, 0, 0 };
+    hsize_t outputBlockSize[3] = { 1, numEntries, numValuesPerEntry };
     if (dataspace < 0)
     {
         H5Eprint2(H5E_DEFAULT, nullptr);
@@ -221,27 +236,26 @@ void writeData(hid_t container, const char* name, const char* unit, const void* 
 void setBoxGroupAttributes(hid_t boxGroup, PbcType pbcType)
 {
     setAttribute(boxGroup, "dimension", DIM, H5T_NATIVE_INT);
-    static constexpr int c_pbcTypeStringLength = 9;
-    char boundaryAttributeString[DIM][c_pbcTypeStringLength] = {"periodic", "periodic", "periodic"};
-    switch(pbcType)
+    static constexpr int c_pbcTypeStringLength                               = 9;
+    char                 boundaryAttributeString[DIM][c_pbcTypeStringLength] = { "periodic",
+                                                                 "periodic",
+                                                                 "periodic" };
+    switch (pbcType)
     {
-    case PbcType::Xyz:
-        break;
-    case PbcType::XY:
-        strcpy(boundaryAttributeString[2], "none");
-        break;
-    default:
-        for (int i = 0; i < DIM; i++)
-        {
-            strcpy(boundaryAttributeString[i], "none");
-        }
-        break;
+        case PbcType::Xyz: break;
+        case PbcType::XY: strcpy(boundaryAttributeString[2], "none"); break;
+        default:
+            for (int i = 0; i < DIM; i++)
+            {
+                strcpy(boundaryAttributeString[i], "none");
+            }
+            break;
     }
     setAttributeStringList<DIM, c_pbcTypeStringLength>(boxGroup, "boundary", boundaryAttributeString);
 }
 
-template <typename T>
-void setAttribute(hid_t container, const char *name, const T value, hid_t dataType)
+template<typename T>
+void setAttribute(hid_t container, const char* name, const T value, hid_t dataType)
 {
     hid_t attribute = H5Aopen(container, name, H5P_DEFAULT);
     if (attribute < 0)
@@ -257,7 +271,7 @@ void setAttribute(hid_t container, const char *name, const T value, hid_t dataTy
     H5Aclose(attribute);
 }
 
-void setAttribute(hid_t container, const char *name, const char* value)
+void setAttribute(hid_t container, const char* name, const char* value)
 {
     hid_t dataType = H5Tcopy(H5T_C_S1);
     H5Tset_size(dataType, H5T_VARIABLE);
@@ -267,8 +281,8 @@ void setAttribute(hid_t container, const char *name, const char* value)
     setAttribute(container, name, value, dataType);
 }
 
-template <hid_t numEntries, hid_t stringLength>
-void setAttributeStringList(hid_t container, const char *name, const char value[numEntries][stringLength])
+template<hid_t numEntries, hid_t stringLength>
+void setAttributeStringList(hid_t container, const char* name, const char value[numEntries][stringLength])
 {
     hid_t dataType = H5Tcopy(H5T_C_S1);
     H5Tset_size(dataType, stringLength);
@@ -277,8 +291,8 @@ void setAttributeStringList(hid_t container, const char *name, const char value[
     hid_t attribute = H5Aopen(container, name, H5P_DEFAULT);
     if (attribute < 0)
     {
-        hsize_t dataSize[1] = {numEntries};
-        hid_t dataspace = H5Screate_simple(1, dataSize, nullptr);
+        hsize_t dataSize[1] = { numEntries };
+        hid_t   dataspace   = H5Screate_simple(1, dataSize, nullptr);
         attribute = H5Acreate2(container, name, dataType, dataspace, H5P_DEFAULT, H5P_DEFAULT);
     }
     if (H5Awrite(attribute, dataType, &value[0]) < 0)
@@ -292,4 +306,4 @@ void setAttributeStringList(hid_t container, const char *name, const char value[
 template void setAttribute<int>(hid_t, const char*, int, hid_t);
 template void setAttribute<float>(hid_t, const char*, float, hid_t);
 template void setAttribute<double>(hid_t, const char*, double, hid_t);
-template void setAttribute<char *>(hid_t, const char*, char *, hid_t);
+template void setAttribute<char*>(hid_t, const char*, char*, hid_t);
