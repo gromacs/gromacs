@@ -36,6 +36,8 @@
 
 #include "gromacs/topology/ifunc.h"
 
+#include <string>
+
 static constexpr t_interaction_function def_bonded(const char* str, const char* lstr, int nra, int nrpa, int nrpb)
 {
     return t_interaction_function{ str, lstr, nra, nrpa, nrpb, IF_BOND };
@@ -120,7 +122,7 @@ static constexpr t_interaction_function def_nofc(const char* str, const char* ls
  * terminating '\0'). So please abbreviate accordingly,
  * e.g. "Conserved En."
  */
-const t_interaction_function interaction_function[F_NRE] = {
+constexpr t_interaction_function interaction_function[F_NRE] = {
     def_bond("BONDS", "Bond", 2, 2, 2),
     def_bond("G96BONDS", "G96Bond", 2, 2, 2),
     def_bond("MORSE", "Morse", 2, 3, 3),
@@ -149,22 +151,22 @@ const t_interaction_function interaction_function[F_NRE] = {
     def_dihedral("PIDIHS", "Per. Imp. Dih.", 4, 3, 3),
     def_dihedral_tabulated("TABDIHS", "Tab. Dih.", 4, 2, 2),
     def_dihedral("CMAP", "CMAP Dih.", 5, -1, -1),
-    def_nofc("GB12", "GB 1-2 Pol. (unused)"),
-    def_nofc("GB13", "GB 1-3 Pol. (unused)"),
-    def_nofc("GB14", "GB 1-4 Pol. (unused)"),
-    def_nofc("GBPOL", "GB Polarization (unused)"),
-    def_nofc("NPSOLVATION", "Nonpolar Sol. (unused)"),
+    def_nofc("GB12", "GB 1-2 Pol."),          /* unused */
+    def_nofc("GB13", "GB 1-3 Pol."),          /* unused */
+    def_nofc("GB14", "GB 1-4 Pol."),          /* unused */
+    def_nofc("GBPOL", "GB Polariz."),         /* unused */
+    def_nofc("NPSOLVATION", "Nonpolar Sol."), /* unused */
     def_pair("LJ14", "LJ-14", 2, 2, 2),
     def_nofc("COUL14", "Coulomb-14"),
     def_pair("LJC14_Q", "LJC-14 q", 2, 5, 0),
     def_pair("LJC_NB", "LJC Pairs NB", 2, 4, 0),
     def_nb("LJ_SR", "LJ (SR)", 2, 2),
     def_nb("BHAM", "Buck.ham (SR)", 2, 3),
-    def_nofc("LJ_LR", "LJ (unused)"),
-    def_nofc("BHAM_LR", "B.ham (unused)"),
+    def_nofc("LJ_LR", "LJ"),      /* unused */
+    def_nofc("BHAM_LR", "B.ham"), /* unused */
     def_nofc("DISPCORR", "Disper. corr."),
     def_nofc("COUL_SR", "Coulomb (SR)"),
-    def_nofc("COUL_LR", "Coul (unused)"),
+    def_nofc("COUL_LR", "Coul"), /* unused */
     def_nofc("RF_EXCL", "RF excl."),
     def_nofc("COUL_RECIP", "Coul. recip."),
     def_nofc("LJ_RECIP", "LJ recip."),
@@ -182,19 +184,19 @@ const t_interaction_function interaction_function[F_NRE] = {
     def_bonded("ANGRES", "Angle Rest.", 4, 3, 3),
     def_bonded("ANGRESZ", "Angle Rest. Z", 2, 3, 3),
     def_bonded("DIHRES", "Dih. Rest.", 4, 3, 3),
-    def_nofc("DIHRESVIOL", "Dih. Rest. Viol."), /* obsolete */
+    def_nofc("DIHRESVIOL", "Dih. Rest. Vi."), /* obsolete */
     def_shkcb("CONSTR", "Constraint", 2, 1, 1),
-    def_shk("CONSTRNC", "Constr. No Conn.", 2, 1, 1),
+    def_shk("CONSTRNC", "Constr. No Co.", 2, 1, 1),
     def_shkcb("SETTLE", "Settle", 3, 2, 0),
     def_vsite("VSITE1", "Virtual site 1", 2, 0),
     def_vsite("VSITE2", "Virtual site 2", 3, 1),
-    def_vsite("VSITE2FD", "Virtual site 2fd", 3, 1),
+    def_vsite("VSITE2FD", "Virt. site 2fd", 3, 1),
     def_vsite("VSITE3", "Virtual site 3", 4, 2),
-    def_vsite("VSITE3FD", "Virtual site 3fd", 4, 2),
-    def_vsite("VSITE3FAD", "Virtual site 3fad", 4, 2),
-    def_vsite("VSITE3OUT", "Virtual site 3out", 4, 3),
-    def_vsite("VSITE4FD", "Virtual site 4fd", 5, 3),
-    def_vsite("VSITE4FDN", "Virtual site 4fdn", 5, 3),
+    def_vsite("VSITE3FD", "Virt. site 3fd", 4, 2),
+    def_vsite("VSITE3FAD", "Vir. site 3fad", 4, 2),
+    def_vsite("VSITE3OUT", "Vir. site 3out", 4, 3),
+    def_vsite("VSITE4FD", "Virt. site 4fd", 5, 3),
+    def_vsite("VSITE4FDN", "Vir. site 4fdn", 5, 3),
     def_vsite("VSITEN", "Virtual site N", 2, 2),
     def_nofc("COM_PULL", "COM Pull En."),
     def_nofc("DENSITYFIT", "Dens. fitting"),
@@ -204,7 +206,7 @@ const t_interaction_function interaction_function[F_NRE] = {
     def_nofc("ETOT", "Total Energy"),
     def_nofc("ECONS", "Conserved En."),
     def_nofc("TEMP", "Temperature"),
-    def_nofc("VTEMP", "Vir. Temp. (not used)"),
+    def_nofc("VTEMP", "Vir. Temp."), /* unused */
     /* Note that pressure names can not be more than 8 char's,
      * because " (bar)" is appended to them.
      */
@@ -217,5 +219,21 @@ const t_interaction_function interaction_function[F_NRE] = {
     def_nofc("DVV/DL", "dVvdw/dl"),
     def_nofc("DVB/DL", "dVbonded/dl"),
     def_nofc("DVR/DL", "dVrestraint/dl"),
-    def_nofc("DVT/DL", "dVtemperature/dl")
+    def_nofc("DVT/DL", "dVtemp/dl")
 };
+
+template<int maxLength, typename Container>
+static constexpr bool checkStringsLengths(const Container& iFuncs)
+{
+    // NOLINTNEXTLINE(readability-use-anyofallof) // std::all_of is constexpr only since C++20
+    for (const t_interaction_function iFunc : iFuncs)
+    {
+        if (std::char_traits<char>::length(iFunc.longname) > maxLength)
+        {
+            return false;
+        }
+    }
+    return true;
+}
+
+static_assert(checkStringsLengths<14>(interaction_function));
