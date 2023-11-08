@@ -68,9 +68,11 @@ if(NOT CUDA_CLANG_WARNING_DISPLAYED STREQUAL _cuda_version_warning)
       "with Clang ${CMAKE_CXX_COMPILER_VERSION}.")
     message(NOTICE "If Clang fails to recognize CUDA version, consider creating doing "
       "`echo \"CUDA Version ${CUDA_VERSION}\" | sudo tee \"${CUDA_TOOLKIT_ROOT_DIR}/version.txt\"`")
+endif()
+set(CUDA_CLANG_WARNING_DISPLAYED "${_cuda_version_warning}" CACHE INTERNAL
+    "Don't warn about this Clang CUDA compatibility issue again" FORCE)
+if(CUDA_CLANG_WARNING_DISPLAYED)
     list(APPEND _CUDA_CLANG_FLAGS "-Wno-unknown-cuda-version")
-    set(CUDA_CLANG_WARNING_DISPLAYED "${_cuda_version_warning}" CACHE INTERNAL
-      "Don't warn about this Clang CUDA compatibility issue again" FORCE)
 endif()
 
 if (GMX_CUDA_TARGET_SM)
