@@ -248,7 +248,7 @@ void ListedForcesGpu::Impl::updateInteractionListsAndDeviceBuffers(ArrayRef<cons
                                                                    DeviceBuffer<RVec>   d_fPtr,
                                                                    DeviceBuffer<RVec>   d_fShiftPtr)
 {
-    // TODO wallcycle sub start
+    wallcycle_sub_start(wcycle_, WallCycleSubCounter::GpuBondedListUpdate);
     bool haveGpuInteractions = false;
     int  fTypesCounter       = 0;
 
@@ -331,7 +331,7 @@ void ListedForcesGpu::Impl::updateInteractionListsAndDeviceBuffers(ArrayRef<cons
     GMX_RELEASE_ASSERT(haveGpuInteractions == haveInteractions_,
                        "inconsistent haveInteractions flags encountered.");
 
-    // TODO wallcycle sub stop
+    wallcycle_sub_stop(wcycle_, WallCycleSubCounter::GpuBondedListUpdate);
 }
 
 void ListedForcesGpu::Impl::setPbc(PbcType pbcType, const matrix box, bool canMoleculeSpanPbc)
