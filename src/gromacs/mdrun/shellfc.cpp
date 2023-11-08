@@ -929,39 +929,39 @@ static void init_adir(gmx_shellfc_t*            shfc,
                   gmx::ConstraintVariable::Deriv_FlexCon);
 }
 
-void relax_shell_flexcon(FILE*                          fplog,
-                         const t_commrec*               cr,
-                         const gmx_multisim_t*          ms,
-                         gmx_bool                       bVerbose,
-                         gmx_enfrot*                    enforcedRotation,
-                         int64_t                        mdstep,
-                         const t_inputrec*              inputrec,
-                         const gmx::MDModulesNotifiers& mdModulesNotifiers,
-                         gmx::ImdSession*               imdSession,
-                         pull_t*                        pull_work,
-                         gmx_bool                       bDoNS,
-                         const gmx_localtop_t*          top,
-                         gmx::Constraints*              constr,
-                         gmx_enerdata_t*                enerd,
-                         int                            natoms,
-                         ArrayRefWithPadding<RVec>      xPadded,
-                         ArrayRefWithPadding<RVec>      vPadded,
-                         const matrix                   box,
-                         ArrayRef<real>                 lambda,
-                         const history_t*               hist,
-                         gmx::ForceBuffersView*         f,
-                         tensor                         force_vir,
-                         const t_mdatoms&               md,
-                         CpuPpLongRangeNonbondeds*      longRangeNonbondeds,
-                         t_nrnb*                        nrnb,
-                         gmx_wallcycle*                 wcycle,
-                         gmx_shellfc_t*                 shfc,
-                         t_forcerec*                    fr,
-                         gmx::MdrunScheduleWorkload*    runScheduleWork,
-                         double                         t,
-                         rvec                           mu_tot,
-                         gmx::VirtualSitesHandler*      vsite,
-                         const DDBalanceRegionHandler&  ddBalanceRegionHandler)
+void relax_shell_flexcon(FILE*                             fplog,
+                         const t_commrec*                  cr,
+                         const gmx_multisim_t*             ms,
+                         gmx_bool                          bVerbose,
+                         gmx_enfrot*                       enforcedRotation,
+                         int64_t                           mdstep,
+                         const t_inputrec*                 inputrec,
+                         const gmx::MDModulesNotifiers&    mdModulesNotifiers,
+                         gmx::ImdSession*                  imdSession,
+                         pull_t*                           pull_work,
+                         gmx_bool                          bDoNS,
+                         const gmx_localtop_t*             top,
+                         gmx::Constraints*                 constr,
+                         gmx_enerdata_t*                   enerd,
+                         int                               natoms,
+                         ArrayRefWithPadding<RVec>         xPadded,
+                         ArrayRefWithPadding<RVec>         vPadded,
+                         const matrix                      box,
+                         ArrayRef<real>                    lambda,
+                         const history_t*                  hist,
+                         gmx::ForceBuffersView*            f,
+                         tensor                            force_vir,
+                         const t_mdatoms&                  md,
+                         CpuPpLongRangeNonbondeds*         longRangeNonbondeds,
+                         t_nrnb*                           nrnb,
+                         gmx_wallcycle*                    wcycle,
+                         gmx_shellfc_t*                    shfc,
+                         t_forcerec*                       fr,
+                         const gmx::MdrunScheduleWorkload& runScheduleWork,
+                         double                            t,
+                         rvec                              mu_tot,
+                         gmx::VirtualSitesHandler*         vsite,
+                         const DDBalanceRegionHandler&     ddBalanceRegionHandler)
 {
     real Epot[2], df[2];
     real sf_dir, invdt;
@@ -1158,6 +1158,13 @@ void relax_shell_flexcon(FILE*                          fplog,
         fprintf(debug, "SHELLSTEP %s\n", gmx_step_str(mdstep, sbuf));
     }
 
+    // For subsequent calls of do_force() on search steps we need to turn off the
+    // the corresponding stepWork flag to avoid executing any (remaining) search-related
+    // operations in do_force().
+    // This copy can be removed when the doPairSearch() call is moved out of do_force().
+    gmx::MdrunScheduleWorkload runScheduleWorkWithoutNS = runScheduleWork;
+    runScheduleWorkWithoutNS.stepWork.doNeighborSearch  = false;
+
     /* First check whether we should do shells, or whether the force is
      * low enough even without minimization.
      */
@@ -1203,11 +1210,6 @@ void relax_shell_flexcon(FILE*                          fplog,
         /* Try the new positions */
         gmx::ForceBuffersView forceViewTry = gmx::ForceBuffersView(forceWithPadding[Try], {}, false);
 
-        // For this second call of do_force() on search steps we need to temporarily turn off the
-        // corresponding stepWork flag to avoid executing any (remaining) search-related operations
-        // in do_force().
-        const gmx::StepWorkload stepWorkBackup     = runScheduleWork->stepWork;
-        runScheduleWork->stepWork.doNeighborSearch = false;
         do_force(fplog,
                  cr,
                  ms,
@@ -1231,15 +1233,13 @@ void relax_shell_flexcon(FILE*                          fplog,
                  enerd,
                  lambda,
                  fr,
-                 runScheduleWork,
+                 runScheduleWorkWithoutNS,
                  vsite,
                  mu_tot,
                  t,
                  nullptr,
                  longRangeNonbondeds,
                  ddBalanceRegionHandler);
-        // revert stepWork
-        runScheduleWork->stepWork = stepWorkBackup;
         accumulatePotentialEnergies(enerd, lambda, inputrec->fepvals.get());
         if (gmx_debug_at)
         {

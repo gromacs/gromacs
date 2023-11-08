@@ -803,7 +803,7 @@ void LegacySimulator::do_tpi()
                      enerd_,
                      stateGlobal_->lambda,
                      fr_,
-                     runScheduleWork_,
+                     *runScheduleWork_,
                      nullptr,
                      mu_tot,
                      t,
