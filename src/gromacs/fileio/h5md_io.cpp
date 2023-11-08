@@ -41,6 +41,7 @@
 
 #include <cmath>
 
+#include <algorithm>
 #include <functional>
 #include <string>
 
@@ -215,31 +216,33 @@ void GmxH5mdIo::setUpParticlesDataBlocks(int     writeCoordinatesSteps,
         }
         hid_t boxGroup = openOrCreateGroup(compressedGroup, "box");
         setBoxGroupAttributes(boxGroup, pbcType);
-        boxLossy_ = GmxH5mdDataBlock(boxGroup,
-                                     "edges",
-                                     "value",
-                                     "nm",
-                                     writeCoordinatesSteps,
-                                     numFramesPerChunkCompressed,
-                                     DIM,
-                                     DIM,
-                                     datatype,
-                                     CompressionAlgorithm::LosslessNoShuffle,
-                                     0);
+        GmxH5mdDataBlock boxLossy(boxGroup,
+                                  "edges",
+                                  "value",
+                                  "nm",
+                                  writeCoordinatesSteps,
+                                  numFramesPerChunkCompressed,
+                                  DIM,
+                                  DIM,
+                                  datatype,
+                                  CompressionAlgorithm::LosslessNoShuffle,
+                                  0);
+        dataBlocks_.emplace_back(boxLossy);
 
         /* Register the SZ3 filter. This is not necessary when creating a dataset with the filter, but must be done to append to an existing file (e.g. when restarting from checkpoint).*/
         registerSz3FilterImplicitly();
-        positionLossy_ = GmxH5mdDataBlock(compressedGroup,
-                                          "position",
-                                          "value",
-                                          "nm",
-                                          writeCoordinatesSteps,
-                                          numFramesPerChunkCompressed,
-                                          numParticles,
-                                          DIM,
-                                          datatype,
-                                          CompressionAlgorithm::LossySz3,
-                                          compressionError);
+        GmxH5mdDataBlock positionLossy(compressedGroup,
+                                       "position",
+                                       "value",
+                                       "nm",
+                                       writeCoordinatesSteps,
+                                       numFramesPerChunkCompressed,
+                                       numParticles,
+                                       DIM,
+                                       datatype,
+                                       CompressionAlgorithm::LossySz3,
+                                       compressionError);
+        dataBlocks_.emplace_back(positionLossy);
     }
 }
 
@@ -310,21 +313,22 @@ void GmxH5mdIo::setupMolecularSystem(const gmx_mtop_t& topology)
 
     /* Don't replace data that already exists and cannot (currently) change during the simulation */
     /* FIXME: Currently atom names cannot change during the simulation. */
-    atomName_ = GmxH5mdDataBlock(file_,
-                                 "/particles/system",
-                                 "atomname",
-                                 "",
-                                 0,
-                                 1,
-                                 topology.natoms,
-                                 1,
-                                 stringDataType,
-                                 CompressionAlgorithm::LosslessNoShuffle,
-                                 0);
-    if (!atomName_.datasetExists())
+    GmxH5mdDataBlock atomName(file_,
+                              "/particles/system",
+                              "atomname",
+                              "",
+                              0,
+                              1,
+                              topology.natoms,
+                              1,
+                              stringDataType,
+                              CompressionAlgorithm::LosslessNoShuffle,
+                              0);
+    if (!atomName.dataSetExistedWhenCreating())
     {
-        atomName_.writeTimeIndependentData(atomNamesChars.data());
+        atomName.writeTimeIndependentData(atomNamesChars.data());
     }
+    dataBlocks_.emplace_back(atomName);
 
 #    if GMX_DOUBLE
     const hid_t floatDatatype = H5Tcopy(H5T_NATIVE_DOUBLE);
@@ -332,36 +336,39 @@ void GmxH5mdIo::setupMolecularSystem(const gmx_mtop_t& topology)
     const hid_t floatDatatype = H5Tcopy(H5T_NATIVE_FLOAT);
 #    endif
     /* FIXME: Currently charges and masses cannot change during the simulation. */
-    charge_ = GmxH5mdDataBlock(file_,
-                               "/particles/system",
-                               "charge",
-                               "e",
-                               0,
-                               1,
-                               topology.natoms,
-                               1,
-                               floatDatatype,
-                               CompressionAlgorithm::LosslessNoShuffle,
-                               0);
-    if (!charge_.datasetExists())
+    GmxH5mdDataBlock charge(file_,
+                            "/particles/system",
+                            "charge",
+                            "e",
+                            0,
+                            1,
+                            topology.natoms,
+                            1,
+                            floatDatatype,
+                            CompressionAlgorithm::LosslessNoShuffle,
+                            0);
+    if (!charge.dataSetExistedWhenCreating())
     {
-        charge_.writeTimeIndependentData(atomCharges.data());
+        charge.writeTimeIndependentData(atomCharges.data());
     }
-    mass_ = GmxH5mdDataBlock(file_,
-                             "/particles/system",
-                             "mass",
-                             "g mol-1",
-                             0,
-                             1,
-                             topology.natoms,
-                             1,
-                             floatDatatype,
-                             CompressionAlgorithm::LosslessNoShuffle,
-                             0);
-    if (!mass_.datasetExists())
+    dataBlocks_.emplace_back(charge);
+
+    GmxH5mdDataBlock mass(file_,
+                          "/particles/system",
+                          "mass",
+                          "g mol-1",
+                          0,
+                          1,
+                          topology.natoms,
+                          1,
+                          floatDatatype,
+                          CompressionAlgorithm::LosslessNoShuffle,
+                          0);
+    if (!mass.dataSetExistedWhenCreating())
     {
-        mass_.writeTimeIndependentData(atomMasses.data());
+        mass.writeTimeIndependentData(atomMasses.data());
     }
+    dataBlocks_.emplace_back(mass);
 
     /* We only need to create a separate selection group entry if not all atoms are part of it. */
     bool all_atoms_selected = true;
@@ -406,24 +413,34 @@ void GmxH5mdIo::writeFrame(int64_t     step,
 
     if (x != nullptr)
     {
-        position_.writeFrame(x, step, time);
-        box_.writeFrame(box, step, time);
+        // position_.writeFrame(x, step, time);
+        // box_.writeFrame(box, step, time);
     }
     if (v != nullptr)
     {
-        velocity_.writeFrame(v, step, time);
+        // velocity_.writeFrame(v, step, time);
     }
     if (f != nullptr)
     {
-        force_.writeFrame(f, step, time);
+        // force_.writeFrame(f, step, time);
     }
     if (xLossy != nullptr)
     {
-        positionLossy_.writeFrame(xLossy, step, time);
-        if (box != nullptr)
+        auto foundDataBlock =
+                std::find(dataBlocks_.begin(), dataBlocks_.end(), "/particles/system/position");
+        if (foundDataBlock == dataBlocks_.end())
         {
-            boxLossy_.writeFrame(box, step, time);
+            gmx_file("There should be a position datablock at this point");
         }
+        foundDataBlock->writeFrame(xLossy, step, time);
+
+        foundDataBlock =
+                std::find(dataBlocks_.begin(), dataBlocks_.end(), "/particles/system/box/edges");
+        if (foundDataBlock == dataBlocks_.end())
+        {
+            gmx_file("There should be a box datablock at this point");
+        }
+        foundDataBlock->writeFrame(box, step, time);
     }
 #else
     gmx_file("GROMACS was compiled without HDF5 support, cannot handle this file type");

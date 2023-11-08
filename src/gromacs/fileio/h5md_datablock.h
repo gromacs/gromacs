@@ -36,6 +36,7 @@
 #ifndef GMX_FILEIO_H5MD_DATABLOCK_H
 #define GMX_FILEIO_H5MD_DATABLOCK_H
 
+#include <list>
 #include <string>
 
 #include "gromacs/utility/real.h"
@@ -45,25 +46,30 @@
 typedef int64_t            hid_t;
 typedef unsigned long long hsize_t;
 
+constexpr int c_maxNameLength     = 128;
+constexpr int c_maxFullNameLength = 256;
+
 /*! \brief A class that handles H5MD data blocks with data can change during the MD trajectory. */
 class GmxH5mdDataBlock
 {
 private:
-    hid_t   container_;       //!< The HDF5 container of this data block.
-    char    name_[128];       //!< The name of the data block, e.g. "position".
-    char    datasetName_[64]; //!< The label of the dataset in the data block, e.g. "value".
-    char    unit_[64]; //!< The unit of the data in the data block. The unit of the time records is automatically set to "ps".
-    int     writingInterval_;   //!< The interval (in MD steps) between outputs.
-    hsize_t numFramesPerChunk_; //!< Number of frames per HDF5 chunk, i.e. the blocks of data that are compressed, written and read together.
-    hsize_t numEntries_; //!< The number of entries per frame. For particle data this is the number of atoms. For box dimensions in GROMACS it is DIM.
-    hsize_t numValuesPerEntry_; //!< The dimensionality of each data value. For particle data it is often DIM or 1 (for e.g., masses).
-    hid_t   datatype_;          //!< The HDF5 datatype of this data block.
-    CompressionAlgorithm compressionAlgorithm_; //!< The compression algorithm that should be used.
-    double compressionAbsoluteError_; //!< The absolute error of lossy compression algorithms.
+    hid_t container_;             //!< The HDF5 container of this data block.
+    char  name_[c_maxNameLength]; //!< The name of the data block, e.g. "position".
+    char  fullName_[c_maxFullNameLength];
+    hid_t group_;
+    hid_t mainDataSet_;
+    hid_t timeDataSet_;
+    hid_t stepDataSet_;
+    int   writingInterval_; //!< The interval (in MD steps) between outputs.
+    bool  dataSetExistedWhenCreating_; //!< Whether the data set already existed in the file when creating this data block.
+
+    /*! \brief Returns true if datasetName_ exists in the group [container_/name_]. */
+    bool datasetExists(const char* name);
+
 public:
     GmxH5mdDataBlock(hid_t                container         = -1,
                      const char*          name              = "",
-                     const char*          datasetName       = "value",
+                     const char*          mainDataSetName   = "value",
                      const char*          unit              = "",
                      int                  writingInterval   = 0,
                      hsize_t              numFramesPerChunk = 1,
@@ -73,6 +79,7 @@ public:
                      CompressionAlgorithm compression       = CompressionAlgorithm::None,
                      double               compressionError  = 0.001);
 
+    bool operator==(const char* fullSpecifier);
 
     /*! \brief Write a set of time independent data to the data block.
      *
@@ -87,8 +94,7 @@ public:
      */
     void writeFrame(const void* data, int64_t step, real time);
 
-    /*! \brief Returns true if datasetName_ exists in the group [container_/name_]. */
-    bool datasetExists();
+    bool dataSetExistedWhenCreating();
 };
 
 #endif // GMX_FILEIO_H5MD_DATABLOCK_H

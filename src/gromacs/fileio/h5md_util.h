@@ -66,31 +66,37 @@ hid_t openOrCreateGroup(hid_t container, const char* name);
  * Must be done before appending (e.g. when restarting from acheckpoint) to a compressed dataset. */
 void registerSz3FilterImplicitly();
 
-/*! \brief Writes an HDF5 data set, labelled by name, to the specified container.
+/*! \brief Open an existing dataset (called name, in container). If it does not exist create a new dataset.
  *
  * \param[in] container The ID of the container of the data. This can be a group in the HDF5 or the HDF5 file itself.
  * \param[in] name The name of the data set.
  * \param[in] unit The unit of the data. See de Buyl et al., 2014 (https://www.sciencedirect.com/science/article/pii/S0010465514000447) for more information.
- * \param[in] data The data to write.
+ * \param[in] datatype The HDF5 data type of the data.
  * \param[in] numFramesPerChunk The number of frames per chunk (compression unit) in the file.
  * \param[in] numEntries The number of particles, or similar.
  * \param[in] numValuesPerEntry The number of output values per entry (particle). This of often 1 or the number of dimensions, depending on the data.
- * \param[in] positionToWrite The frame number to write.
- * \param[in] datatype The HDF5 data type of the data.
  * \param[in] compression The compression algorithm to use.
  * \param[in] compressionError The required precision of lossy compression.
+ * \returns The ID of the dataset.
  */
-void writeData(hid_t                container,
-               const char*          name,
-               const char*          unit,
-               const void*          data,
-               hsize_t              numFramesPerChunk,
-               hsize_t              numEntries,
-               hsize_t              numValuesPerEntry,
-               hsize_t              positionToWrite,
-               hid_t                datatype,
-               CompressionAlgorithm compression,
-               double               compressionError);
+
+hid_t openOrCreateDataSet(hid_t                container,
+                          const char*          name,
+                          const char*          unit,
+                          hid_t                dataType,
+                          hsize_t              numFramesPerChunk,
+                          hsize_t              numEntries,
+                          hsize_t              numValuesPerEntry,
+                          CompressionAlgorithm compression,
+                          double               compressionError);
+
+/*! \brief Writes an HDF5 data set, labelled by name, to the specified container.
+ *
+ * \param[in] dataSet The ID of the dataset to write to.
+ * \param[in] data The data to write.
+ * \param[in] positionToWrite The frame number to write.
+ */
+void writeData(hid_t dataSet, const void* data, hsize_t positionToWrite);
 
 void setBoxGroupAttributes(hid_t boxGroup, PbcType pbcType);
 

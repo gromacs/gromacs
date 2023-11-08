@@ -44,6 +44,7 @@
 #include "gromacs/math/vectypes.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/gmxassert.h"
 
 #define GMX_USE_HDF5 1 // FIXME: Temporary just for the editor
 
@@ -53,27 +54,27 @@
 #    include "external/SZ3/tools/H5Z-SZ3/include/H5Z_SZ3.hpp"
 #endif
 
-static void setNumericFillValue(hid_t datasetCreatePropertyList, const hid_t datatype)
+static void setNumericFillValue(hid_t dataSetCreatePropertyList, const hid_t datatype)
 {
     if (H5Tequal(datatype, H5T_NATIVE_INT))
     {
         const int dataFill = -1;
-        H5Pset_fill_value(datasetCreatePropertyList, datatype, &dataFill);
+        H5Pset_fill_value(dataSetCreatePropertyList, datatype, &dataFill);
     }
     else if (H5Tequal(datatype, H5T_NATIVE_INT64))
     {
         const int64_t dataFill = -1;
-        H5Pset_fill_value(datasetCreatePropertyList, datatype, &dataFill);
+        H5Pset_fill_value(dataSetCreatePropertyList, datatype, &dataFill);
     }
     else if (H5Tequal(datatype, H5T_NATIVE_FLOAT))
     {
         const float dataFill = -1;
-        H5Pset_fill_value(datasetCreatePropertyList, datatype, &dataFill);
+        H5Pset_fill_value(dataSetCreatePropertyList, datatype, &dataFill);
     }
     else if (H5Tequal(datatype, H5T_NATIVE_DOUBLE))
     {
         const double dataFill = -1;
-        H5Pset_fill_value(datasetCreatePropertyList, datatype, &dataFill);
+        H5Pset_fill_value(dataSetCreatePropertyList, datatype, &dataFill);
     }
 }
 
@@ -115,34 +116,34 @@ void registerSz3FilterImplicitly()
 #endif
 }
 
-void writeData(hid_t                container,
-               const char*          name,
-               const char*          unit,
-               const void*          data,
-               hsize_t              numFramesPerChunk,
-               hsize_t              numEntries,
-               hsize_t              numValuesPerEntry,
-               hsize_t              positionToWrite,
-               hid_t                datatype,
-               CompressionAlgorithm compression,
-               double               compressionError)
+hid_t openOrCreateDataSet(hid_t                container,
+                          const char*          name,
+                          const char*          unit,
+                          hid_t                dataType,
+                          hsize_t              numFramesPerChunk,
+                          hsize_t              numEntries,
+                          hsize_t              numValuesPerEntry,
+                          CompressionAlgorithm compression,
+                          double               compressionError)
+
+
 {
-#if GMX_USE_HDF5
     /* Set a reasonable cache based on chunk sizes. The cache is not stored in file, so must be set when opening a dataset */
     hsize_t chunkDims[3]       = { numFramesPerChunk, numEntries, numValuesPerEntry };
     size_t  cacheSize          = sizeof(real) * chunkDims[0] * chunkDims[1] * chunkDims[2];
     hid_t   accessPropertyList = H5Pcreate(H5P_DATASET_ACCESS);
     H5Pset_chunk_cache(
             accessPropertyList, H5D_CHUNK_CACHE_NSLOTS_DEFAULT, cacheSize, H5D_CHUNK_CACHE_W0_DEFAULT);
-    hid_t dataset = H5Dopen(container, name, accessPropertyList);
-    if (dataset < 0)
+    hid_t dataSet = H5Dopen(container, name, accessPropertyList);
+
+    if (dataSet < 0)
     {
         hsize_t dataSize[3]        = { numFramesPerChunk, numEntries, numValuesPerEntry };
         hsize_t maxDims[3]         = { H5S_UNLIMITED, numEntries, numValuesPerEntry };
         hid_t   dataspace          = H5Screate_simple(3, dataSize, maxDims);
         hid_t   createPropertyList = H5Pcreate(H5P_DATASET_CREATE);
         H5Pset_chunk(createPropertyList, 3, chunkDims);
-        setNumericFillValue(createPropertyList, datatype);
+        setNumericFillValue(createPropertyList, dataType);
 
         switch (compression)
         {
@@ -181,24 +182,39 @@ void writeData(hid_t                container,
             case CompressionAlgorithm::None: break;
         }
 
-        dataset = H5Dcreate(
-                container, name, datatype, dataspace, H5P_DEFAULT, createPropertyList, accessPropertyList);
-        if (dataset < 0)
+        dataSet = H5Dcreate(
+                container, name, dataType, dataspace, H5P_DEFAULT, createPropertyList, accessPropertyList);
+        if (dataSet < 0)
         {
             H5Eprint2(H5E_DEFAULT, nullptr);
-            gmx_file("Cannot create dataset.");
+            gmx_file("Cannot create dataSet.");
         }
 
         if (unit != nullptr)
         {
             char unitElementString[] = "unit";
-            setAttribute(dataset, unitElementString, unit);
+            setAttribute(dataSet, unitElementString, unit);
         }
     }
-    hid_t   dataspace = H5Dget_space(dataset);
-    hsize_t currentDims[3], maxDims[3];
+    return dataSet;
+}
+
+void writeData(hid_t dataSet, const void* data, hsize_t positionToWrite)
+{
+#if GMX_USE_HDF5
+    GMX_ASSERT(dataSet >= 0, "Needs a valid dataSet to write data.");
+    GMX_ASSERT(data != nullptr_t, "Needs valid data to write.");
+
+    hid_t   dataspace          = H5Dget_space(dataSet);
+    hid_t   createPropertyList = H5Dget_create_plist(dataSet);
+    hsize_t currentDims[3], maxDims[3], chunkDims[3];
     H5Sget_simple_extent_dims(dataspace, currentDims, maxDims);
-    /* Resize the dataset if needed. */
+    H5Pget_chunk(createPropertyList, 3, chunkDims);
+    hsize_t numFramesPerChunk = chunkDims[0];
+    hsize_t numEntries        = currentDims[1];
+    hsize_t numValuesPerEntry = currentDims[2];
+
+    /* Resize the dataSet if needed. */
     if (positionToWrite >= currentDims[0])
     {
         hsize_t newDims[3] = { (positionToWrite / numFramesPerChunk + 1) * numFramesPerChunk,
@@ -206,22 +222,23 @@ void writeData(hid_t                container,
                                currentDims[2] };
         if (debug)
         {
-            fprintf(debug, "Resizing dataset from %" PRId64 " to %" PRId64 "\n", currentDims[0], newDims[0]);
+            fprintf(debug, "Resizing dataSet from %" PRId64 " to %" PRId64 "\n", currentDims[0], newDims[0]);
         }
-        H5Dset_extent(dataset, newDims);
-        dataspace = H5Dget_space(dataset);
+        H5Dset_extent(dataSet, newDims);
+        dataspace = H5Dget_space(dataSet);
     }
     hsize_t fileOffset[3]      = { positionToWrite, 0, 0 };
     hsize_t outputBlockSize[3] = { 1, numEntries, numValuesPerEntry };
     if (dataspace < 0)
     {
         H5Eprint2(H5E_DEFAULT, nullptr);
-        gmx_file("Cannot get dataspace of existing dataset.");
+        gmx_file("Cannot get dataspace of existing dataSet.");
     }
     H5Sselect_hyperslab(dataspace, H5S_SELECT_SET, fileOffset, nullptr, outputBlockSize, nullptr);
 
     hid_t memoryDataspace = H5Screate_simple(3, outputBlockSize, nullptr);
-    if (H5Dwrite(dataset, datatype, memoryDataspace, dataspace, H5P_DEFAULT, data) < 0)
+    hid_t dataType        = H5Dget_type(dataSet);
+    if (H5Dwrite(dataSet, dataType, memoryDataspace, dataspace, H5P_DEFAULT, data) < 0)
     {
         H5Eprint2(H5E_DEFAULT, nullptr);
         gmx_file("Error writing data.");

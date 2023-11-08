@@ -54,17 +54,8 @@ enum class PbcType : int;
 class GmxH5mdIo
 {
 private:
-    hid_t            file_;          //!< The HDF5 identifier of the file. This is the H5MD root.
-    GmxH5mdDataBlock position_;      //!< The data block with lossless positions.
-    GmxH5mdDataBlock positionLossy_; //!< The data block with compressed (lossy compression) positions.
-    GmxH5mdDataBlock velocity_;      //!< The data block with lossless velocities.
-    GmxH5mdDataBlock force_;         //!< The data block with lossless forces.
-    GmxH5mdDataBlock box_; //!< The data block with the box shape written together with lossless positions.
-    GmxH5mdDataBlock boxLossy_; //!< The data block with the box shape written together with lossy (compressed) positions.
-    GmxH5mdDataBlock atomName_; //!< A data block with the names of all atoms in the system.
-    GmxH5mdDataBlock atomType_; //!< A data block with the atom type of all atoms in the system.
-    GmxH5mdDataBlock charge_; //!< A data block with the partial charges of all atoms in the system.
-    GmxH5mdDataBlock mass_;   //!< A data block with the atom masses of all atoms in the system.
+    hid_t                       file_; //!< The HDF5 identifier of the file. This is the H5MD root.
+    std::list<GmxH5mdDataBlock> dataBlocks_;
 
     char* compressedSelectionGroupName_; //!< A pointer to the name of the selection group of compressed coordinates.
 
