@@ -49,6 +49,7 @@
 #include "gromacs/gpu_utils/device_stream.h"
 #include "gromacs/gpu_utils/devicebuffer.h"
 #include "gromacs/hardware/device_information.h"
+#include "gromacs/mdlib/gmx_omp_nthreads.h"
 #include "gromacs/mdtypes/enerdata.h"
 #include "gromacs/nbnxm/gpu_types_common.h"
 #include "gromacs/timing/wallcycle.h"
@@ -184,7 +185,7 @@ static void convertIlistToNbnxnOrder(const InteractionList& src,
 
     dest->iatoms.resize(src.size());
 
-    // TODO use OpenMP to parallelise this loop
+#pragma omp parallel for num_threads(gmx_omp_nthreads_get(ModuleMultiThread::Bonded)) schedule(static)
     for (int i = 0; i < src.size(); i += 1 + numAtomsPerInteraction)
     {
         dest->iatoms[i] = src.iatoms[i];
