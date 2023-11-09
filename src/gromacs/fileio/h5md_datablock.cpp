@@ -105,6 +105,18 @@ GmxH5mdTimeDataBlock::GmxH5mdTimeDataBlock(hid_t                container,
     }
 }
 
+GmxH5mdTimeDataBlock::GmxH5mdTimeDataBlock(const GmxH5mdTimeDataBlock& other) :
+    container_(other.container_),
+    group_(other.group_),
+    mainDataSet_(other.mainDataSet_),
+    timeDataSet_(other.timeDataSet_),
+    stepDataSet_(other.stepDataSet_),
+    writingInterval_(other.writingInterval_)
+{
+    strcpy(name_, other.name_);
+    strcpy(fullName_, other.fullName_);
+}
+
 void GmxH5mdTimeDataBlock::closeAllDataSets()
 {
     if (mainDataSet_ >= 0)

@@ -75,6 +75,8 @@ public:
                          CompressionAlgorithm compression       = CompressionAlgorithm::None,
                          double               compressionError  = 0.001);
 
+    GmxH5mdTimeDataBlock(const GmxH5mdTimeDataBlock& other);
+
     void closeAllDataSets();
 
     bool operator==(const char* fullSpecifier);
