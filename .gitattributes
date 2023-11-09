@@ -60,3 +60,6 @@ src/gromacs/selection/scanner_flex.h    -filter
 *.xtc                                   binary
 *.edr                                   binary
 *.cpt                                   binary
+# Merge release-notes with merge=union to resolve conflicts
+docs/release-notes/*/*.rst              merge=union
+docs/release-notes/*/*/*.rst            merge=union
