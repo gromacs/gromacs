@@ -472,6 +472,14 @@ to get the (over)estimate for the error in the pressure. The effective box
 volume ignores empty space to get a better, higher, estimate of the local
 error in the pressure error in inhomogeneous systems.
 
+When automatically setting the Verlet list life time and buffer, a tolerance
+on the error in the average pressure due to missing Lennard-Jones interactions
+can be provided. This uses the estimation formulas described above and puts
+an upper bound on the error of the pressure averaged over the lifetime of
+the pair list. The default value for this tolerance is 0.5 bar. For liquid
+water this corresponds to a maximum relative devatiation of the density of
+$2 \cdot 10^{-5}$.
+
 Simple search
 ^^^^^^^^^^^^^
 

@@ -421,7 +421,8 @@ Performance and Run Control
 
 ``GMX_VERLET_BUFFER_PRESSURE_TOLERANCE``
         sets the maximum tolerated error in the pressure in bar for the
-        automated tuning of the Verlet pair-list buffering.
+        automated tuning of the Verlet pair-list buffering. Can only be used
+        with system where this tolerance has not been set using the mdp parameter.
         
 ``GMX_VERLET_BUFFER_RES``
         resolution of buffer size in Verlet cutoff scheme.  The default value is

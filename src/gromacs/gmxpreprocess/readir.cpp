@@ -395,8 +395,9 @@ void check_ir(const char*                    mdparin,
         if (EI_TPI(ir->eI))
         {
             /* With TPI we set the pairlist cut-off later using the radius of the insterted molecule */
-            ir->verletbuf_tol = 0;
-            ir->rlist         = rc_max;
+            ir->verletbuf_tol                 = 0;
+            ir->verletBufferPressureTolerance = 0;
+            ir->rlist                         = rc_max;
         }
         else if (ir->verletbuf_tol <= 0)
         {
@@ -418,9 +419,25 @@ void check_ir(const char*                    mdparin,
                         "buffer. The cluster pair list does have a buffering effect, but choosing "
                         "a larger rlist might be necessary for good energy conservation.");
             }
+
+            if (ir->verletBufferPressureTolerance > 0)
+            {
+                if (ir->nstlist > 1)
+                {
+                    wi->addNote(
+                            "verlet-buffer-pressure-tolerance is ignored when "
+                            "verlet-buffer-tolerance < 0");
+                }
+                ir->verletBufferPressureTolerance = -1;
+            }
         }
         else
         {
+            if (ir->verletBufferPressureTolerance == 0)
+            {
+                wi->addError("verlet-buffer-pressure-tolerance cannot be exactly 0");
+            }
+
             if (ir->rlist > rc_max)
             {
                 wi->addNote(
@@ -2338,9 +2355,13 @@ void get_ir(const char*     mdparin,
     ir->pbcType       = static_cast<PbcType>(get_eeenum(&inp, "pbc", pbcTypesNamesChar.data(), wi));
     ir->bPeriodicMols = getEnum<Boolean>(&inp, "periodic-molecules", wi) != Boolean::No;
     printStringNoNewline(&inp,
-                         "Allowed energy error due to the Verlet buffer in kJ/mol/ps per atom,");
+                         "Allowed energy drift due to the Verlet buffer in kJ/mol/ps per atom,");
     printStringNoNewline(&inp, "a value of -1 means: use rlist");
     ir->verletbuf_tol = get_ereal(&inp, "verlet-buffer-tolerance", 0.005, wi);
+    printStringNoNewline(
+            &inp,
+            "Allowed error in the average pressure due to the Verlet buffer for LJ interactions");
+    ir->verletBufferPressureTolerance = get_ereal(&inp, "verlet-buffer-pressure-tolerance", 0.5, wi);
     printStringNoNewline(&inp, "nblist cut-off");
     ir->rlist = get_ereal(&inp, "rlist", 1.0, wi);
     printStringNoNewline(&inp, "long-range cut-off for switched potentials");

@@ -428,8 +428,10 @@ struct t_inputrec // NOLINT (clang-analyzer-optin.performance.Padding)
     rvec posres_comB = { 0, 0, 0 };
     //! Random seed for Andersen thermostat (obsolete)
     int andersen_seed = 0;
-    //! Per atom pair energy drift tolerance (kJ/mol/ps/atom) for list buffer
+    //! Per atom pair energy drift tolerance (kJ/mol/ps/atom) for the pairlist buffer
     real verletbuf_tol = 0;
+    //! The tolerance for the average LJ pressure deviation for the pairlist buffer
+    real verletBufferPressureTolerance = 0;
     //! Short range pairlist cut-off (nm)
     real rlist = 0;
     //! Radius for test particle insertion

@@ -142,6 +142,7 @@ enum tpxv
     tpxv_AwhGrowthFactor,             /**< Add AWH growth factor */
     tpxv_MassRepartitioning,          /**< Add mass repartitioning */
     tpxv_AwhTargetMetricScaling,      /**< Add AWH friction optimized target distribution */
+    tpxv_VerletBufferPressureTol,     /**< Add Verlet buffer pressure tolerance */
     tpxv_Count                        /**< the total number of tpxv versions */
 };
 
@@ -1180,6 +1181,14 @@ static void do_inputrec(gmx::ISerializer* serializer, t_inputrec* ir, int file_v
     else
     {
         ir->verletbuf_tol = 0;
+    }
+    if (file_version >= tpxv_VerletBufferPressureTol)
+    {
+        serializer->doReal(&ir->verletBufferPressureTolerance);
+    }
+    else
+    {
+        ir->verletBufferPressureTolerance = -1;
     }
     serializer->doReal(&ir->rlist);
     if (file_version >= 67 && file_version < tpxv_RemoveTwinRange)

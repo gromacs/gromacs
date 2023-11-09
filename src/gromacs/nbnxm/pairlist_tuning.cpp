@@ -120,18 +120,29 @@ static const float c_nbnxnListSizeFactorGPU = 1.4;
 //! Never increase the size of the pair-list more than the factor above plus this margin
 static const float c_nbnxnListSizeFactorMargin = 0.1;
 
-//! Returns the Verlet buffer pressure tolerance set by an env.var. or -1 when not set
-static real getPressureTolerance()
+//! Returns the Verlet buffer pressure tolerance set by an env.var. or from input
+static real getPressureTolerance(const real inputrecVerletBufferPressureTolerance)
 {
     const char* pressureToleranceString = getenv("GMX_VERLET_BUFFER_PRESSURE_TOLERANCE");
     real        pressureTolerance       = -1;
     if (pressureToleranceString != nullptr)
     {
+        if (inputrecVerletBufferPressureTolerance > 0)
+        {
+            GMX_THROW(gmx::InvalidInputError(
+                    "GMX_VERLET_BUFFER_PRESSURE_TOLERANCE cannot be used when "
+                    "verlet-buffer-pressure-tolerance is set in the tpr file"));
+        }
+
         pressureTolerance = std::stod(pressureToleranceString);
         if (pressureTolerance <= 0)
         {
             GMX_THROW(gmx::InvalidInputError("Max pressure error should be positive"));
         }
+    }
+    else
+    {
+        pressureTolerance = inputrecVerletBufferPressureTolerance;
     }
 
     return pressureTolerance;
@@ -261,7 +272,7 @@ void increaseNstlist(FILE*               fp,
             (useOrEmulateGpuForNonbondeds ? ListSetupType::Gpu : ListSetupType::CpuSimdWhenSupported);
     VerletbufListSetup listSetup = verletbufGetSafeListSetup(listType);
 
-    const real pressureTolerance = getPressureTolerance();
+    const real pressureTolerance = getPressureTolerance(ir->verletBufferPressureTolerance);
 
     /* Allow rlist to make the list a given factor larger than the list
      * would be with the reference value for nstlist (10*mtsFactor).
@@ -450,7 +461,7 @@ static void setDynamicPairlistPruningParameters(const t_inputrec&          input
      * do add up in practice, although not completely.
      */
 
-    real pressureTolerance = getPressureTolerance();
+    real pressureTolerance = getPressureTolerance(inputrec.verletBufferPressureTolerance);
     if (pressureTolerance > 0)
     {
         // The tolerance for the inner list is the total minus the contribution from the outer list
@@ -656,7 +667,7 @@ void setupDynamicPairlistPruning(const gmx::MDLogger&       mdlog,
     }
     if (supportsDynamicPairlistGenerationInterval(inputrec))
     {
-        const real pressureTolerance = getPressureTolerance();
+        const real pressureTolerance = getPressureTolerance(inputrec.verletBufferPressureTolerance);
 
         const VerletbufListSetup listSetup1x1 = { 1, 1 };
         const real               rlistOuter   = calcVerletBufferSize(mtop,
@@ -738,17 +749,7 @@ void printNbnxmPressureError(const gmx::MDLogger&  mdlog,
 
     GMX_LOG(mdlog.info)
             .asParagraph()
-            .appendText(gmx::formatString(
-                    "The non-bonded pair calculation algorithm tolerates a few missing pair "
-                    "interactions close to the cut-off. This can lead to a systematic "
-                    "overestimation of the pressure due to missing LJ interactions. "
-                    "The error in the average pressure due to missing LJ interactions is at most "
-                    "%.2f bar."
-                    "%s",
-                    pressureError,
-                    inputrec.verletbuf_tol > 0
-                            ? "\nThe pressure error can be controlled by setting the environment "
-                              "variable GMX_VERLET_BUFFER_PRESSURE_TOLERANCE to the allowed error "
-                              "in units of bar."
-                            : ""));
+            .appendText(gmx::formatString("The average pressure is off by at most %.2f bar due to "
+                                          "missing LJ interactions",
+                                          pressureError));
 }

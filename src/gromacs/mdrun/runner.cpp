@@ -544,8 +544,14 @@ static void prepare_verlet_scheme(FILE*                          fplog,
                 (makeGpuPairList ? ListSetupType::Gpu : ListSetupType::CpuSimdWhenSupported);
         VerletbufListSetup listSetup = verletbufGetSafeListSetup(listType);
 
-        const real rlist_new = calcVerletBufferSize(
-                mtop, effectiveAtomDensity.value(), *ir, -1, ir->nstlist, ir->nstlist - 1, -1, listSetup);
+        const real rlist_new = calcVerletBufferSize(mtop,
+                                                    effectiveAtomDensity.value(),
+                                                    *ir,
+                                                    ir->verletBufferPressureTolerance,
+                                                    ir->nstlist,
+                                                    ir->nstlist - 1,
+                                                    -1,
+                                                    listSetup);
 
         if (rlist_new != ir->rlist)
         {

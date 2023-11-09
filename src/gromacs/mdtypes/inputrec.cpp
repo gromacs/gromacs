@@ -891,6 +891,7 @@ void pr_inputrec(FILE* fp, int indent, const char* title, const t_inputrec* ir, 
         PS("pbc", c_pbcTypeNames[ir->pbcType].c_str());
         PS("periodic-molecules", EBOOL(ir->bPeriodicMols));
         PR("verlet-buffer-tolerance", ir->verletbuf_tol);
+        PR("verlet-buffer-pressure-tolerance", ir->verletBufferPressureTolerance);
         PR("rlist", ir->rlist);
 
         /* Options for electrostatics and VdW */
@@ -1513,6 +1514,13 @@ void cmp_inputrec(FILE* fp, const t_inputrec* ir1, const t_inputrec* ir2, real f
     cmp_rvec(fp, "inputrec->posres_com", -1, ir1->posres_com, ir2->posres_com, ftol, abstol);
     cmp_rvec(fp, "inputrec->posres_comB", -1, ir1->posres_comB, ir2->posres_comB, ftol, abstol);
     cmp_real(fp, "inputrec->verletbuf_tol", -1, ir1->verletbuf_tol, ir2->verletbuf_tol, ftol, abstol);
+    cmp_real(fp,
+             "inputrec->verlet-buffer-pressure-tolerance",
+             -1,
+             ir1->verletBufferPressureTolerance,
+             ir2->verletBufferPressureTolerance,
+             ftol,
+             abstol);
     cmp_real(fp, "inputrec->rlist", -1, ir1->rlist, ir2->rlist, ftol, abstol);
     cmp_real(fp, "inputrec->rtpi", -1, ir1->rtpi, ir2->rtpi, ftol, abstol);
     cmpEnum(fp, "inputrec->coulombtype", ir1->coulombtype, ir2->coulombtype);

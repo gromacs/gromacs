@@ -584,11 +584,27 @@ Neighbor searching
    scale. To override the automated buffer setting, use
    :mdp:`verlet-buffer-tolerance` =-1 and set :mdp:`rlist` manually.
 
+.. mdp:: verlet-buffer-pressure-tolerance
+
+   (0.5) [bar]
+
+   Used when performing a simulation with dynamics and only active when
+   :mdp:`verlet-buffer-tolerance` is positive. This sets the maximum
+   tolerated error in the average pressure due to missing Lennard-Jones
+   interactions of particle pairs that are not in the pair list, but
+   come within :mdp:`rvdw` range as the pair list ages. As for the drift
+   tolerance, the (over)estimate of the pressure error is tight at short
+   times. At longer time it turns into a significant overestimate,
+   because interactions limit the displacement of particles. Note that
+   the default tolerance of 0.5 bar corresponds to a maximum relative
+   deviation of the density of liquid water of 2e-5.
+
 .. mdp:: rlist
 
    (1) [nm]
    Cut-off distance for the short-range neighbor list. With dynamics,
-   this is by default set by the :mdp:`verlet-buffer-tolerance` option
+   this is by default set by the :mdp:`verlet-buffer-tolerance` and
+   :mdp:`verlet-buffer-pressure-tolerance` options
    and the value of :mdp:`rlist` is ignored. Without dynamics, this
    is by default set to the maximum cut-off plus 5% buffer, except
    for test particle insertion, where the buffer is managed exactly

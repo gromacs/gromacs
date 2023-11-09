@@ -25,6 +25,17 @@ easy access to a performance improvement of close to a factor two.
 
 :issue:`4866`
 
+Small performance regression to achieve more accurate pressure
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+To lower the effect on Lennard-Jones pair interaction on the pressure,
+the Verlet buffer has been increased for most simulations using default mdp settings.
+This can lead to a few percent performance loss, in particular when using GPUs.
+The effect will be strongest for systems with no or weak electrostatics,
+which includes most coarse-grained systems.
+
+:issue:`4861`
+       
 HeFFTe multi-GPU FFT plan options are now configurable
 """"""""""""""""""""""""""""""""""""""""""""""""""""""
 
