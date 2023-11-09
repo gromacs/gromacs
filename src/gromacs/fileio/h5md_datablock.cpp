@@ -53,28 +53,17 @@
 #endif
 
 
-bool GmxH5mdDataBlock::datasetExists(const char* name)
-{
-    bool exists = false;
-    if (H5Lexists(group_, name, H5P_DEFAULT) > 0)
-    {
-        exists = true;
-    }
-    return exists;
-}
-
-
-GmxH5mdDataBlock::GmxH5mdDataBlock(hid_t                container,
-                                   const char*          name,
-                                   const char*          mainDataSetName,
-                                   const char*          unit,
-                                   int                  writingInterval,
-                                   hsize_t              numFramesPerChunk,
-                                   hsize_t              numEntries,
-                                   hsize_t              numValuesPerEntry,
-                                   hid_t                datatype,
-                                   CompressionAlgorithm compression,
-                                   double               compressionAbsoluteError)
+GmxH5mdTimeDataBlock::GmxH5mdTimeDataBlock(hid_t                container,
+                                           const char*          name,
+                                           const char*          mainDataSetName,
+                                           const char*          unit,
+                                           int                  writingInterval,
+                                           hsize_t              numFramesPerChunk,
+                                           hsize_t              numEntries,
+                                           hsize_t              numValuesPerEntry,
+                                           hid_t                datatype,
+                                           CompressionAlgorithm compression,
+                                           double               compressionAbsoluteError)
 {
     container_ = container;
     strncpy(name_, name, 128);
@@ -82,8 +71,6 @@ GmxH5mdDataBlock::GmxH5mdDataBlock(hid_t                container,
 
     group_ = openOrCreateGroup(container_, name_);
     H5Iget_name(group_, fullName_, c_maxFullNameLength);
-
-    dataSetExistedWhenCreating_ = datasetExists(mainDataSetName);
 
     mainDataSet_ = openOrCreateDataSet(group_,
                                        mainDataSetName,
@@ -118,7 +105,23 @@ GmxH5mdDataBlock::GmxH5mdDataBlock(hid_t                container,
     }
 }
 
-bool GmxH5mdDataBlock::operator==(const char* fullNameComparison)
+void GmxH5mdTimeDataBlock::closeAllDataSets()
+{
+    if (mainDataSet_ >= 0)
+    {
+        H5Dclose(mainDataSet_);
+    }
+    if (timeDataSet_ >= 0)
+    {
+        H5Dclose(timeDataSet_);
+    }
+    if (stepDataSet_ >= 0)
+    {
+        H5Dclose(stepDataSet_);
+    }
+}
+
+bool GmxH5mdTimeDataBlock::operator==(const char* fullNameComparison)
 {
     if (strncmp(fullName_, fullNameComparison, c_maxFullNameLength) == 0)
     {
@@ -127,12 +130,7 @@ bool GmxH5mdDataBlock::operator==(const char* fullNameComparison)
     return false;
 }
 
-void GmxH5mdDataBlock::writeTimeIndependentData(const void* data)
-{
-    writeData(mainDataSet_, data, 0);
-}
-
-void GmxH5mdDataBlock::writeFrame(const void* data, int64_t step, real time)
+void GmxH5mdTimeDataBlock::writeFrame(const void* data, int64_t step, real time)
 {
     GMX_ASSERT(step == 0 || writingInterval_ > 0, "Invalid writing interval when writing frame.");
 
@@ -140,9 +138,4 @@ void GmxH5mdDataBlock::writeFrame(const void* data, int64_t step, real time)
     writeData(mainDataSet_, data, frameNumber);
     writeData(stepDataSet_, &step, frameNumber);
     writeData(timeDataSet_, &time, frameNumber);
-}
-
-bool GmxH5mdDataBlock::dataSetExistedWhenCreating()
-{
-    return dataSetExistedWhenCreating_;
 }

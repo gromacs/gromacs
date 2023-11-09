@@ -54,8 +54,8 @@ enum class PbcType : int;
 class GmxH5mdIo
 {
 private:
-    hid_t                       file_; //!< The HDF5 identifier of the file. This is the H5MD root.
-    std::list<GmxH5mdDataBlock> dataBlocks_;
+    hid_t file_; //!< The HDF5 identifier of the file. This is the H5MD root.
+    std::list<GmxH5mdTimeDataBlock> dataBlocks_;
 
     char* compressedSelectionGroupName_; //!< A pointer to the name of the selection group of compressed coordinates.
 

@@ -50,7 +50,7 @@ constexpr int c_maxNameLength     = 128;
 constexpr int c_maxFullNameLength = 256;
 
 /*! \brief A class that handles H5MD data blocks with data can change during the MD trajectory. */
-class GmxH5mdDataBlock
+class GmxH5mdTimeDataBlock
 {
 private:
     hid_t container_;             //!< The HDF5 container of this data block.
@@ -61,23 +61,21 @@ private:
     hid_t timeDataSet_;
     hid_t stepDataSet_;
     int   writingInterval_; //!< The interval (in MD steps) between outputs.
-    bool  dataSetExistedWhenCreating_; //!< Whether the data set already existed in the file when creating this data block.
-
-    /*! \brief Returns true if datasetName_ exists in the group [container_/name_]. */
-    bool datasetExists(const char* name);
 
 public:
-    GmxH5mdDataBlock(hid_t                container         = -1,
-                     const char*          name              = "",
-                     const char*          mainDataSetName   = "value",
-                     const char*          unit              = "",
-                     int                  writingInterval   = 0,
-                     hsize_t              numFramesPerChunk = 1,
-                     hsize_t              numEntries        = 0,
-                     hsize_t              numValuesPerEntry = 1,
-                     hid_t                datatype          = -1,
-                     CompressionAlgorithm compression       = CompressionAlgorithm::None,
-                     double               compressionError  = 0.001);
+    GmxH5mdTimeDataBlock(hid_t                container         = -1,
+                         const char*          name              = "",
+                         const char*          mainDataSetName   = "value",
+                         const char*          unit              = "",
+                         int                  writingInterval   = 0,
+                         hsize_t              numFramesPerChunk = 1,
+                         hsize_t              numEntries        = 0,
+                         hsize_t              numValuesPerEntry = 1,
+                         hid_t                datatype          = -1,
+                         CompressionAlgorithm compression       = CompressionAlgorithm::None,
+                         double               compressionError  = 0.001);
+
+    void closeAllDataSets();
 
     bool operator==(const char* fullSpecifier);
 
@@ -93,8 +91,6 @@ public:
      * \param[in] time The time stamp (in ps) of the data record.
      */
     void writeFrame(const void* data, int64_t step, real time);
-
-    bool dataSetExistedWhenCreating();
 };
 
 #endif // GMX_FILEIO_H5MD_DATABLOCK_H
