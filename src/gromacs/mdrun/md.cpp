@@ -1123,6 +1123,22 @@ void gmx::LegacySimulator::do_md()
             force_flags |= GMX_FORCE_DO_NOT_NEED_NORMAL_FORCE;
         }
 
+        if (bNS)
+        {
+            if (fr_->listedForcesGpu)
+            {
+                fr_->listedForcesGpu->updateHaveInteractions(top_->idef);
+            }
+            runScheduleWork_->domainWork = setupDomainLifetimeWorkload(
+                    *ir, *fr_, pullWork_, ed ? ed->getLegacyED() : nullptr, *md, simulationWork);
+        }
+
+        const int shellfcFlags = force_flags | (mdrunOptions_.verbose ? GMX_FORCE_ENERGY : 0);
+        const int legacyForceFlags = ((shellfc) ? shellfcFlags : force_flags) | (bNS ? GMX_FORCE_NS : 0);
+
+        runScheduleWork_->stepWork = setupStepWorkload(
+                legacyForceFlags, ir->mtsLevels, step, runScheduleWork_->domainWork, simulationWork);
+
         const bool doTemperatureScaling = (ir->etc != TemperatureCoupling::No
                                            && do_per_step(step + ir->nsttcouple - 1, ir->nsttcouple));
 
@@ -1163,32 +1179,11 @@ void gmx::LegacySimulator::do_md()
                         && !checkpointHandler->isCheckpointingStep();
                 if (mdGraph->captureThisStep(canUseMdGpuGraphThisStep))
                 {
-                    // getCoordinatesReadyOnDeviceEvent() uses stepWork.doNeighborSearch but this is not set until
-                    // later in do_force(), so preset this part here.
-                    // TODO remove this when stepWork initialization has been refactored to start of step.
-                    runScheduleWork_->stepWork.doNeighborSearch = false;
                     mdGraph->startRecord(stateGpu->getCoordinatesReadyOnDeviceEvent(
                             AtomLocality::Local, simulationWork, runScheduleWork_->stepWork));
                 }
             }
         }
-
-        if (bNS)
-        {
-            if (fr_->listedForcesGpu)
-            {
-                fr_->listedForcesGpu->updateHaveInteractions(top_->idef);
-            }
-            runScheduleWork_->domainWork = setupDomainLifetimeWorkload(
-                    *ir, *fr_, pullWork_, ed ? ed->getLegacyED() : nullptr, *md, simulationWork);
-        }
-
-        const int shellfcFlags = force_flags | (mdrunOptions_.verbose ? GMX_FORCE_ENERGY : 0);
-        const int legacyForceFlags = ((shellfc) ? shellfcFlags : force_flags) | (bNS ? GMX_FORCE_NS : 0);
-
-        runScheduleWork_->stepWork = setupStepWorkload(
-                legacyForceFlags, ir->mtsLevels, step, runScheduleWork_->domainWork, simulationWork);
-
         if (!simulationWork.useMdGpuGraph || mdGraph->graphIsCapturingThisStep()
             || !mdGraph->useGraphThisStep())
         {
