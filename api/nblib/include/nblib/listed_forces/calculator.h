@@ -47,11 +47,18 @@
 #ifndef NBLIB_LISTEDFORCES_CALCULATOR_H
 #define NBLIB_LISTEDFORCES_CALCULATOR_H
 
+#include <array>
 #include <memory>
 #include <unordered_map>
+#include <vector>
 
+#include "nblib/box.h"
 #include "nblib/listed_forces/definitions.h"
+#include "nblib/listed_forces/traits.h"
 #include "nblib/vector.h"
+
+enum class RefCoordScaling : int;
+enum class PbcType : int;
 
 namespace gmx
 {
@@ -61,8 +68,7 @@ class ArrayRef;
 
 namespace nblib
 {
-class Box;
-class PbcHolder;
+class PbcHolderAiuc;
 template<class T>
 class ForceBufferProxy;
 
@@ -72,12 +78,17 @@ class ForceBufferProxy;
 class ListedForceCalculator
 {
 public:
-    using EnergyType = std::array<real, std::tuple_size<ListedInteractionData>::value>;
-
     ListedForceCalculator(const ListedInteractionData& interactions,
                           size_t                       bufferSize,
                           int                          numThreads,
                           const Box&                   box);
+
+    ListedForceCalculator(const ListedInteractionData& interactions,
+                          size_t                       bufferSize,
+                          int                          numThreads,
+                          const Box&                   box,
+                          PbcType                      pbcType,
+                          RefCoordScaling              refcoord_scaling);
 
     /*! \brief Dispatch the listed force kernels and reduce the forces
      *
@@ -89,23 +100,46 @@ public:
      * This function also stores the forces and energies from listed interactions in the internal
      * buffer of the ListedForceCalculator object
      *
-     * \param[in]  coordinates     input coordinates for the force calculation
-     * \param[inout] forces        output for adding the forces
-     * \param[inout] shiftForces   output for adding shift forces
-     * \param[out] energies        output for potential energies
-     * \param[in]  usePbc          whether or not to consider periodic boundary conditions
+     * \param[in]     coordinates   input coordinates for the force calculation
+     * \param[in]     charges       input charges for the polarization force calculation
+     * \param[in/out] forces        output for adding the forces
+     * \param[in/out] shiftForces   output for adding shift forces
+     * \param[out]    energies      output for potential energies
      */
+    void compute(gmx::ArrayRef<const Vec3> coordinates,
+                 gmx::ArrayRef<const real> charges,
+                 gmx::ArrayRef<Vec3>       forces,
+                 gmx::ArrayRef<Vec3>       shiftForces,
+                 gmx::ArrayRef<real>       energies);
+
     void compute(gmx::ArrayRef<const Vec3> coordinates,
                  gmx::ArrayRef<Vec3>       forces,
                  gmx::ArrayRef<Vec3>       shiftForces,
-                 gmx::ArrayRef<real>       energies,
-                 bool                      usePbc = false);
+                 gmx::ArrayRef<real>       energies);
 
-    //! \brief Alternative overload without shift forces
     void compute(gmx::ArrayRef<const Vec3> coordinates,
                  gmx::ArrayRef<Vec3>       forces,
+                 gmx::ArrayRef<real>       virials,
                  gmx::ArrayRef<real>       energies,
-                 bool                      usePbc = false);
+                 Vec3                      com);
+
+    void compute(gmx::ArrayRef<const Vec3> coordinates,
+                 gmx::ArrayRef<Vec3>       forces,
+                 gmx::ArrayRef<Vec3>       shiftForces,
+                 gmx::ArrayRef<real>       virials,
+                 gmx::ArrayRef<real>       energies,
+                 Vec3                      com);
+
+    void compute(gmx::ArrayRef<const Vec3> coordinates,
+                 gmx::ArrayRef<const real> charges,
+                 gmx::ArrayRef<Vec3>       forces,
+                 gmx::ArrayRef<Vec3>       shiftForces,
+                 gmx::ArrayRef<real>       virials,
+                 gmx::ArrayRef<real>       energies,
+                 Vec3                      com);
+
+    //! \brief Alternative overload without shift forces
+    void compute(gmx::ArrayRef<const Vec3> coordinates, gmx::ArrayRef<Vec3> forces, gmx::ArrayRef<real> energies);
 
     //! \brief default, but moved to separate compilation unit
     ~ListedForceCalculator();
@@ -113,11 +147,11 @@ public:
 private:
     int numThreads;
 
-    //! holds the array of energies computed
-    EnergyType energyBuffer_;
-
     //! holds the listed interactions split into groups for multithreading
     std::vector<ListedInteractionData> threadedInteractions_;
+
+    //! reduction energy buffers
+    std::vector<ListedEnergies> threadedEnergyBuffers_;
 
     //! reduction force buffers
     std::vector<ForceBufferProxy<Vec3>> threadedForceBuffers_;
@@ -125,15 +159,26 @@ private:
     //! reduction shift force buffers
     std::vector<std::vector<Vec3>> threadedShiftForceBuffers_;
 
+    //! reduction shift force buffers
+    std::vector<std::vector<real>> threadedVirialsBuffers_;
+
+    PbcType pbcType_;
+
+    Box box_;
+
     //! PBC objects
-    std::unique_ptr<PbcHolder> pbcHolder_;
+    std::unique_ptr<PbcHolderAiuc> pbcHolder_;
+
+    RefCoordScaling refcoord_scaling_;
 
     //! compute listed forces and energies, overwrites the internal buffers
-    template<class ShiftForce>
+    template<class ShiftForce, class Charges, class Virial, class CenterOfMass>
     void computeForcesAndEnergies(gmx::ArrayRef<const Vec3>                  x,
+                                  gmx::ArrayRef<Charges>                     charges,
                                   gmx::ArrayRef<Vec3>                        forces,
                                   [[maybe_unused]] gmx::ArrayRef<ShiftForce> shiftForces,
-                                  bool                                       usePbc = false);
+                                  [[maybe_unused]] gmx::ArrayRef<Virial>     virials,
+                                  [[maybe_unused]] CenterOfMass              com);
 };
 
 } // namespace nblib

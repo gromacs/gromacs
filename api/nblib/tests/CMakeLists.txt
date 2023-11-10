@@ -42,16 +42,12 @@
 gmx_add_unit_test_library(nblib_test_infrastructure
         testsystems.cpp
     )
+target_include_directories(nblib_test_infrastructure PRIVATE ${PROJECT_SOURCE_DIR}/api)
 target_include_directories(nblib_test_infrastructure SYSTEM PRIVATE ${PROJECT_SOURCE_DIR}/src/external)
-target_include_directories(nblib_test_infrastructure PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 target_link_libraries(nblib_test_infrastructure PUBLIC
-    nblib
-    legacy_api
-    math
-    pbcutil
-    simd
-    topology
-    )
+        nblib
+        legacy_api
+        )
 
 set(testname "NbLibSetupTests")
 set(exename "nblib-setup-test")
@@ -70,7 +66,10 @@ gmx_add_gtest_executable(
         topology.cpp
         virials.cpp
     )
-target_link_libraries(${exename} PRIVATE mdrun_test_infrastructure)
+target_link_libraries(${exename} PRIVATE mdrun_test_infrastructure
+                                         pbcutil
+                                         simd
+                                         topology)
 target_link_libraries(${exename} PRIVATE nblib_test_infrastructure nblib)
 target_include_directories(${exename} PRIVATE ${PROJECT_SOURCE_DIR}/api)
 gmx_register_gtest_test(${testname} ${exename} INTEGRATION_TEST)
@@ -94,14 +93,18 @@ set(exename "nblib-integration-test")
 
 gmx_add_gtest_executable(
     ${exename}
+    HARDWARE_DETECTION
     CPP_SOURCE_FILES
     # files with code for tests
         gmxcalculator.cpp
         nbkernelsystem.cpp
         simstate.cpp
+    GPU_CPP_SOURCE_FILES
+	#gmxcalculator_gpu.cpp
     )
-target_link_libraries(${exename} PRIVATE nblib_test_infrastructure nblib)
-gmx_register_gtest_test(${testname} ${exename} INTEGRATION_TEST)
+target_link_libraries(${exename} PRIVATE nblib_test_infrastructure nblib topology)
+target_include_directories(${exename} PRIVATE ${PROJECT_SOURCE_DIR}/api)
+gmx_register_gtest_test(${testname} ${exename} INTEGRATION_TEST QUICK_GPU_TEST)
 add_dependencies(nblib-tests ${exename})
 
 # The integrator sometimes times out on TSAN so it gets its own test harness
@@ -110,10 +113,15 @@ set(exename "nblib-integrator-test")
 
 gmx_add_gtest_executable(
         ${exename}
+        HARDWARE_DETECTION
         CPP_SOURCE_FILES
         integrator.cpp
 )
 target_link_libraries(${exename} PRIVATE nblib_test_infrastructure nblib)
+if(GMX_GPU_CUDA)
+    target_link_libraries(${exename} PRIVATE nblib_test_infrastructure integrator)
+endif()
+target_include_directories(${exename} PRIVATE ${PROJECT_SOURCE_DIR}/api)
 gmx_register_gtest_test(${testname} ${exename} INTEGRATION_TEST)
 add_dependencies(nblib-tests ${exename})
 

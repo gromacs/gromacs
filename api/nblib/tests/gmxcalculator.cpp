@@ -40,6 +40,8 @@
  * \author Prashanth Kanduri <kanduri@cscs.ch>
  * \author Sebastian Keller <keller@cscs.ch>
  */
+#include <filesystem>
+
 #include <gtest/gtest.h>
 
 #include "gromacs/utility/arrayref.h"
@@ -47,9 +49,9 @@
 #include "nblib/gmxcalculatorcpu.h"
 #include "nblib/kerneloptions.h"
 #include "nblib/simulationstate.h"
+#include "nblib/tests/testhelpers.h"
+#include "nblib/tests/testsystems.h"
 
-#include "testhelpers.h"
-#include "testsystems.h"
 
 namespace nblib
 {
@@ -63,7 +65,6 @@ TEST(NBlibTest, GmxForceCalculatorCanCompute)
     SimulationState             simState = argonSystemBuilder.setupSimulationState();
     NBKernelOptions             options  = NBKernelOptions();
     options.nbnxmSimd                    = SimdKernels::SimdNo;
-
     std::unique_ptr<GmxNBForceCalculatorCpu> gmxForceCalculator =
             setupGmxForceCalculatorCpu(simState.topology(), options);
     gmxForceCalculator->updatePairlist(simState.coordinates(), simState.box());

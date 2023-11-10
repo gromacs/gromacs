@@ -43,6 +43,7 @@ set(exename "nblib-util-test")
 gmx_add_gtest_executable(
         ${exename}
         CPP_SOURCE_FILES
+        array.cpp
         setup.cpp
         traits.cpp
 )

@@ -65,9 +65,8 @@
 
 struct gmx_wallcycle;
 
-namespace
+namespace gmx
 {
-
 /*! \brief returns dx, rdist, and dpdl for functions posres() and fbposres()
  */
 void posres_dx(const rvec      x,
@@ -146,6 +145,10 @@ void posres_dx(const rvec      x,
         rvec_sub(x, pos, dx);
     }
 }
+} // namespace gmx
+
+namespace
+{
 
 /*! \brief Computes forces and potential for flat-bottom cylindrical restraints.
  *         Returns the flat-bottom potential. */
@@ -230,18 +233,18 @@ real fbposres(int                   nbonds,
         pr   = &forceparams[type];
 
         /* same calculation as for normal posres, but with identical A and B states, and lambda==0 */
-        posres_dx(x[ai],
-                  forceparams[type].fbposres.pos0,
-                  forceparams[type].fbposres.pos0,
-                  com_sc,
-                  com_sc,
-                  0.0,
-                  pbc,
-                  refcoord_scaling,
-                  npbcdim,
-                  dx,
-                  rdist,
-                  dpdl);
+        gmx::posres_dx(x[ai],
+                       forceparams[type].fbposres.pos0,
+                       forceparams[type].fbposres.pos0,
+                       com_sc,
+                       com_sc,
+                       0.0,
+                       pbc,
+                       refcoord_scaling,
+                       npbcdim,
+                       dx,
+                       rdist,
+                       dpdl);
 
         clear_rvec(fm);
         v = 0.0;
@@ -381,18 +384,18 @@ real posres(int                   nbonds,
         pr   = &forceparams[type];
 
         /* return dx, rdist, and dpdl */
-        posres_dx(x[ai],
-                  forceparams[type].posres.pos0A,
-                  forceparams[type].posres.pos0B,
-                  comA_sc,
-                  comB_sc,
-                  lambda,
-                  pbc,
-                  refcoord_scaling,
-                  npbcdim,
-                  dx,
-                  rdist,
-                  dpdl);
+        gmx::posres_dx(x[ai],
+                       forceparams[type].posres.pos0A,
+                       forceparams[type].posres.pos0B,
+                       comA_sc,
+                       comB_sc,
+                       lambda,
+                       pbc,
+                       refcoord_scaling,
+                       npbcdim,
+                       dx,
+                       rdist,
+                       dpdl);
 
         for (m = 0; (m < DIM); m++)
         {

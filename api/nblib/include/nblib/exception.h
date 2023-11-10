@@ -49,15 +49,14 @@
 namespace nblib
 {
 
-/*! \brief Base nblib exception class
+/*! \brief The exception type for user input errors
  *
- * All nblib exceptions derive from this class and simply forward their message. This allows
- * exceptions to be handled uniformly across different exception types.
+ * The message should give users some hint as to how to remedy the error.
  */
-class NbLibException : public std::exception
+class InputException : public std::exception
 {
 public:
-    [[maybe_unused]] explicit NbLibException(const std::string& message) :
+    [[maybe_unused]] explicit InputException(const std::string& message) :
         message_("NbLib Exception: " + message)
     {
     }
@@ -70,16 +69,6 @@ public:
 
 private:
     std::string message_;
-};
-
-/*! \brief The exception type for user input errors
- *
- * The message should give users some hint as to how to remedy the error.
- */
-class InputException final : public NbLibException
-{
-public:
-    using NbLibException::NbLibException;
 };
 
 } // namespace nblib

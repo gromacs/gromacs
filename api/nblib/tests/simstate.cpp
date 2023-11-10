@@ -47,11 +47,10 @@
 #include "nblib/box.h"
 #include "nblib/exception.h"
 #include "nblib/simulationstate.h"
+#include "nblib/simulationstateimpl.h"
+#include "nblib/tests/testhelpers.h"
+#include "nblib/tests/testsystems.h"
 #include "nblib/topology.h"
-
-#include "simulationstateimpl.h"
-#include "testhelpers.h"
-#include "testsystems.h"
 
 namespace nblib
 {

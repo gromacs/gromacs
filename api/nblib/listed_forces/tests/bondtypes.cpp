@@ -132,5 +132,4 @@ TEST(NBlibTest, BondTypesLessThanWorks)
     for_each_tuple([](const auto& b) { test_detail::testThreeParameterBondLessThan(b); }, bondList4);
 }
 
-
 } // namespace nblib

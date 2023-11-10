@@ -40,7 +40,6 @@
 target_sources(nblib
         PRIVATE
         calculator.cpp
-        transformations.cpp
         conversions.cpp
         convertGmxToNblib.cpp
         )

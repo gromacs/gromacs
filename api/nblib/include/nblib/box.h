@@ -43,6 +43,8 @@
 #ifndef NBLIB_BOX_H
 #define NBLIB_BOX_H
 
+#include <array>
+
 #include "nblib/basicdefinitions.h"
 
 namespace nblib
@@ -67,6 +69,9 @@ public:
     //! Construct a rectangular box.
     Box(real x, real y, real z);
 
+    //! Construct an arbitrary, possibly triclinic, box.
+    Box(std::array<real, 9> boxMatrix);
+
     //! Return the full matrix that specifies the box. Used for gromacs setup code.
     [[nodiscard]] LegacyMatrix const& legacyMatrix() const { return legacyMatrix_; }
 
@@ -77,6 +82,9 @@ private:
     //! Stores data in the GROMACS legacy data type
     LegacyMatrix legacyMatrix_;
 };
+
+//! copies an array into a 3x3 matrix
+void fillMatrix(std::array<real, 9> boxMatrix, Box::LegacyMatrix legacyMatrix);
 
 } // namespace nblib
 #endif // NBLIB_BOX_H

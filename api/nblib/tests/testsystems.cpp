@@ -41,7 +41,7 @@
  * \author Sebastian Keller <keller@cscs.ch>
  * \author Artem Zhmurov <zhmurov@gmail.com>
  */
-#include "testsystems.h"
+#include "nblib/tests/testsystems.h"
 
 #include "nblib/exception.h"
 

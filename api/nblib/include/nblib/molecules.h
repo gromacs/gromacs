@@ -123,7 +123,7 @@ class Molecule final
     };
 
     //! this creates a tuple containing an instance of InteractionType data for each supported listed type
-    using InteractionTuple = Reduce<std::tuple, Map<InteractionTypeData, SupportedListedTypes>>;
+    using InteractionTuple = Reduce<std::tuple, Map<InteractionTypeData, BasicListedTypes>>;
 
     //! \brief returns the default residue name if necessary
     ResidueName residueName(const ParticleIdentifier& particleIdentifier);

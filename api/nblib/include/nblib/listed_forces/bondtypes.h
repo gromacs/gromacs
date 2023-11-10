@@ -38,7 +38,7 @@
  * We choose to forward comparison operations to the
  * corresponding std::tuple comparison operations.
  * In order to do that without temporary copies,
- * we employ std::tie, which requires lvalues as input.
+ * we employ util::tie, which requires lvalues as input.
  * For this reason, bond type parameter getters are implemented
  * with a const lvalue reference return.
  *
@@ -55,11 +55,13 @@
 
 #include "nblib/exception.h"
 #include "nblib/particletype.h"
+#include "nblib/util/array.hpp"
+#include "nblib/util/tuple.hpp"
 #include "nblib/util/util.hpp"
 
 namespace nblib
 {
-using Name          = std::string;
+
 using ForceConstant = real;
 using EquilConstant = real;
 using Exponent      = real;
@@ -81,12 +83,19 @@ class TwoParameterInteraction
 {
 public:
     TwoParameterInteraction() = default;
+    HOST_DEVICE_FUN
     TwoParameterInteraction(ForceConstant f, EquilConstant d) : forceConstant_(f), equilConstant_(d)
     {
     }
 
-    [[nodiscard]] const ForceConstant& forceConstant() const { return forceConstant_; }
-    [[nodiscard]] const EquilConstant& equilConstant() const { return equilConstant_; }
+    [[nodiscard]] HOST_DEVICE_FUN const ForceConstant& forceConstant() const
+    {
+        return forceConstant_;
+    }
+    [[nodiscard]] HOST_DEVICE_FUN const EquilConstant& equilConstant() const
+    {
+        return equilConstant_;
+    }
 
 private:
     ForceConstant forceConstant_;
@@ -94,17 +103,19 @@ private:
 };
 
 template<class Phantom>
-inline bool operator<(const TwoParameterInteraction<Phantom>& a, const TwoParameterInteraction<Phantom>& b)
+HOST_DEVICE_FUN inline bool operator<(const TwoParameterInteraction<Phantom>& a,
+                                      const TwoParameterInteraction<Phantom>& b)
 {
-    return std::tie(a.forceConstant(), a.equilConstant())
-           < std::tie(b.forceConstant(), b.equilConstant());
+    return util::tie(a.forceConstant(), a.equilConstant())
+           < util::tie(b.forceConstant(), b.equilConstant());
 }
 
 template<class Phantom>
-inline bool operator==(const TwoParameterInteraction<Phantom>& a, const TwoParameterInteraction<Phantom>& b)
+HOST_DEVICE_FUN inline bool operator==(const TwoParameterInteraction<Phantom>& a,
+                                       const TwoParameterInteraction<Phantom>& b)
 {
-    return std::tie(a.forceConstant(), a.equilConstant())
-           == std::tie(b.forceConstant(), b.equilConstant());
+    return util::tie(a.forceConstant(), a.equilConstant())
+           == util::tie(b.forceConstant(), b.equilConstant());
 }
 
 /*! \brief harmonic bond type
@@ -125,7 +136,7 @@ class G96BondType : public TwoParameterInteraction<struct G96BondTypeParameter>
 public:
     G96BondType() = default;
     //! \brief Store square of equilibrium distance
-    G96BondType(ForceConstant f, EquilConstant equilConstant) :
+    HOST_DEVICE_FUN G96BondType(ForceConstant f, EquilConstant equilConstant) :
         TwoParameterInteraction<struct G96BondTypeParameter>{ f, equilConstant * equilConstant }
     {
     }
@@ -159,17 +170,23 @@ class CubicBondType
 {
 public:
     CubicBondType() = default;
-    CubicBondType(ForceConstant fq, ForceConstant fc, EquilConstant d) :
+    HOST_DEVICE_FUN CubicBondType(ForceConstant fq, ForceConstant fc, EquilConstant d) :
         quadraticForceConstant_(fq), cubicForceConstant_(fc), equilDistance_(d)
     {
     }
 
-    [[nodiscard]] const ForceConstant& quadraticForceConstant() const
+    [[nodiscard]] HOST_DEVICE_FUN const ForceConstant& quadraticForceConstant() const
     {
         return quadraticForceConstant_;
     }
-    [[nodiscard]] const ForceConstant& cubicForceConstant() const { return cubicForceConstant_; }
-    [[nodiscard]] const EquilConstant& equilDistance() const { return equilDistance_; }
+    [[nodiscard]] HOST_DEVICE_FUN const ForceConstant& cubicForceConstant() const
+    {
+        return cubicForceConstant_;
+    }
+    [[nodiscard]] HOST_DEVICE_FUN const EquilConstant& equilDistance() const
+    {
+        return equilDistance_;
+    }
 
 private:
     ForceConstant quadraticForceConstant_;
@@ -177,16 +194,16 @@ private:
     EquilConstant equilDistance_;
 };
 
-inline bool operator<(const CubicBondType& a, const CubicBondType& b)
+HOST_DEVICE_FUN inline bool operator<(const CubicBondType& a, const CubicBondType& b)
 {
-    return std::tie(a.quadraticForceConstant(), a.cubicForceConstant(), a.equilDistance())
-           < std::tie(b.quadraticForceConstant(), b.cubicForceConstant(), b.equilDistance());
+    return util::tie(a.quadraticForceConstant(), a.cubicForceConstant(), a.equilDistance())
+           < util::tie(b.quadraticForceConstant(), b.cubicForceConstant(), b.equilDistance());
 }
 
-inline bool operator==(const CubicBondType& a, const CubicBondType& b)
+HOST_DEVICE_FUN inline bool operator==(const CubicBondType& a, const CubicBondType& b)
 {
-    return std::tie(a.quadraticForceConstant(), a.cubicForceConstant(), a.equilDistance())
-           == std::tie(b.quadraticForceConstant(), b.cubicForceConstant(), b.equilDistance());
+    return util::tie(a.quadraticForceConstant(), a.cubicForceConstant(), a.equilDistance())
+           == util::tie(b.quadraticForceConstant(), b.cubicForceConstant(), b.equilDistance());
 }
 
 /*! \brief Morse bond type
@@ -198,14 +215,20 @@ class MorseBondType
 {
 public:
     MorseBondType() = default;
-    MorseBondType(ForceConstant f, Exponent e, EquilConstant d) :
+    HOST_DEVICE_FUN MorseBondType(ForceConstant f, Exponent e, EquilConstant d) :
         forceConstant_(f), exponent_(e), equilDistance_(d)
     {
     }
 
-    [[nodiscard]] const ForceConstant& forceConstant() const { return forceConstant_; }
-    [[nodiscard]] const Exponent&      exponent() const { return exponent_; }
-    [[nodiscard]] const EquilConstant& equilDistance() const { return equilDistance_; }
+    [[nodiscard]] HOST_DEVICE_FUN const ForceConstant& forceConstant() const
+    {
+        return forceConstant_;
+    }
+    [[nodiscard]] HOST_DEVICE_FUN const Exponent& exponent() const { return exponent_; }
+    [[nodiscard]] HOST_DEVICE_FUN const EquilConstant& equilDistance() const
+    {
+        return equilDistance_;
+    }
 
 private:
     ForceConstant forceConstant_;
@@ -213,16 +236,16 @@ private:
     EquilConstant equilDistance_;
 };
 
-inline bool operator<(const MorseBondType& a, const MorseBondType& b)
+HOST_DEVICE_FUN inline bool operator<(const MorseBondType& a, const MorseBondType& b)
 {
-    return std::tie(a.forceConstant(), a.exponent(), a.equilDistance())
-           < std::tie(b.forceConstant(), b.exponent(), b.equilDistance());
+    return util::tie(a.forceConstant(), a.exponent(), a.equilDistance())
+           < util::tie(b.forceConstant(), b.exponent(), b.equilDistance());
 }
 
-inline bool operator==(const MorseBondType& a, const MorseBondType& b)
+HOST_DEVICE_FUN inline bool operator==(const MorseBondType& a, const MorseBondType& b)
 {
-    return std::tie(a.forceConstant(), a.exponent(), a.equilDistance())
-           == std::tie(b.forceConstant(), b.exponent(), b.equilDistance());
+    return util::tie(a.forceConstant(), a.exponent(), a.equilDistance())
+           == util::tie(b.forceConstant(), b.exponent(), b.equilDistance());
 }
 
 /*! \brief Non-Bonded Pair Interaction Type
@@ -236,24 +259,97 @@ class PairLJType
 {
 public:
     PairLJType() = default;
-    PairLJType(C6 c6, C12 c12) : c6_(c6), c12_(c12) {}
+    HOST_DEVICE_FUN PairLJType(C6 c6, C12 c12) : c6_(c6), c12_(c12) {}
 
-    [[nodiscard]] const C6&  c6() const { return c6_; }
-    [[nodiscard]] const C12& c12() const { return c12_; }
+    [[nodiscard]] HOST_DEVICE_FUN const C6& c6() const { return c6_; }
+    [[nodiscard]] HOST_DEVICE_FUN const C12& c12() const { return c12_; }
 
 private:
     C6  c6_;
     C12 c12_;
 };
 
-inline bool operator<(const PairLJType& a, const PairLJType& b)
+HOST_DEVICE_FUN inline bool operator<(const PairLJType& a, const PairLJType& b)
 {
-    return std::tie(a.c6(), a.c12()) < std::tie(b.c6(), b.c12());
+    return util::tie(a.c6(), a.c12()) < util::tie(b.c6(), b.c12());
 }
 
-inline bool operator==(const PairLJType& a, const PairLJType& b)
+HOST_DEVICE_FUN inline bool operator==(const PairLJType& a, const PairLJType& b)
 {
-    return std::tie(a.c6(), a.c12()) == std::tie(b.c6(), b.c12());
+    return util::tie(a.c6(), a.c12()) == util::tie(b.c6(), b.c12());
+}
+
+/*! \brief Non-Bonded Pair Interaction Type
+ *
+ * It represents the interaction of the form
+ * of LJ interactions, but occur between atoms
+ * of the same bonded chain
+ * V(r, c_6, c_12) = c_12*(r^-12) - c_6*(r^-6)
+ */
+class PairLJChargeType
+{
+public:
+    using FudgeFactor  = real;
+    using Charge       = real;
+    PairLJChargeType() = default;
+    HOST_DEVICE_FUN PairLJChargeType(C6 c6, C12 c12, Charge qi, Charge qj, FudgeFactor ff) :
+        c6_(c6), c12_(c12), qi_(qi), qj_(qj), ff_(ff)
+    {
+    }
+
+    [[nodiscard]] HOST_DEVICE_FUN const C6& c6() const { return c6_; }
+    [[nodiscard]] HOST_DEVICE_FUN const C12& c12() const { return c12_; }
+    [[nodiscard]] HOST_DEVICE_FUN const Charge& qi() const { return qi_; }
+    [[nodiscard]] HOST_DEVICE_FUN const Charge& qj() const { return qj_; }
+    [[nodiscard]] HOST_DEVICE_FUN const FudgeFactor& ff() const { return ff_; }
+
+private:
+    C6          c6_;
+    C12         c12_;
+    Charge      qi_;
+    Charge      qj_;
+    FudgeFactor ff_;
+};
+
+HOST_DEVICE_FUN inline bool operator<(const PairLJChargeType& a, const PairLJChargeType& b)
+{
+    return util::tie(a.c6(), a.c12(), a.qi(), a.qj(), a.ff())
+           < util::tie(b.c6(), b.c12(), b.qi(), b.qj(), b.ff());
+}
+
+HOST_DEVICE_FUN inline bool operator==(const PairLJChargeType& a, const PairLJChargeType& b)
+{
+    return util::tie(a.c6(), a.c12(), a.qi(), a.qj(), a.ff())
+           == util::tie(b.c6(), b.c12(), b.qi(), b.qj(), b.ff());
+}
+
+/*! \brief Simple polarization
+ */
+class SimplePolarization
+{
+public:
+    SimplePolarization() = default;
+    HOST_DEVICE_FUN explicit SimplePolarization(ForceConstant alpha) :
+        alpha_(alpha), coefficient_(ONE_4PI_EPS0 / alpha)
+    {
+    }
+
+    [[nodiscard]] HOST_DEVICE_FUN const ForceConstant& alpha() const { return alpha_; }
+    [[nodiscard]] HOST_DEVICE_FUN const ForceConstant& coefficient() const { return coefficient_; }
+
+private:
+    ForceConstant alpha_;
+    ForceConstant coefficient_;
+};
+
+HOST_DEVICE_FUN inline bool operator<(const SimplePolarization& a, const SimplePolarization& b)
+{
+    return util::tie(a.alpha(), a.coefficient()) < util::tie(b.alpha(), b.coefficient());
+}
+
+HOST_DEVICE_FUN inline bool operator==(const SimplePolarization& a, const SimplePolarization& b)
+{
+    return util::tie(a.alpha(), a.coefficient()) == util::tie(b.alpha(), b.coefficient());
 }
 
 /*! \brief Basic template for interactions with 2 parameters named forceConstant and equilAngle
@@ -273,13 +369,13 @@ class AngleInteractionType : public TwoParameterInteraction<Phantom>
 public:
     AngleInteractionType() = default;
     //! \brief construct from angle given in radians
-    AngleInteractionType(ForceConstant f, Radians angle) :
+    HOST_DEVICE_FUN AngleInteractionType(ForceConstant f, Radians angle) :
         TwoParameterInteraction<Phantom>{ f, angle }
     {
     }
 
     //! \brief construct from angle given in degrees
-    AngleInteractionType(ForceConstant f, Degrees angle) :
+    HOST_DEVICE_FUN AngleInteractionType(ForceConstant f, Degrees angle) :
         TwoParameterInteraction<Phantom>{ f, angle * DEG2RAD }
     {
     }
@@ -291,6 +387,15 @@ public:
  * V(theta, forceConstant, equilConstant) = 0.5 * forceConstant * (theta - equilConstant)^2
  */
 using HarmonicAngle = AngleInteractionType<struct HarmonicAngleParameter>;
+
+/*! \brief Urey-Bradly Interactions
+ *
+ * Dummy no op placeholder but implemented internally as a combination of a harmonic bond
+ * and a harmonic angle
+ */
+class UreyBradley
+{
+};
 
 /*! \brief linear angle type
  *
@@ -309,13 +414,13 @@ class CosineParamAngle : public TwoParameterInteraction<Phantom>
 public:
     CosineParamAngle() = default;
     //! \brief construct from angle given in radians
-    CosineParamAngle(ForceConstant f, Radians angle) :
+    HOST_DEVICE_FUN CosineParamAngle(ForceConstant f, Radians angle) :
         TwoParameterInteraction<Phantom>{ f, std::cos(angle) }
     {
     }
 
     //! \brief construct from angle given in degrees
-    CosineParamAngle(ForceConstant f, Degrees angle) :
+    HOST_DEVICE_FUN CosineParamAngle(ForceConstant f, Degrees angle) :
         TwoParameterInteraction<Phantom>{ f, std::cos(angle * DEG2RAD) }
     {
     }
@@ -346,52 +451,70 @@ class QuarticAngle
 public:
     QuarticAngle() = default;
     //! \brief construct from given angle in radians
-    QuarticAngle(ForceConstant f0, ForceConstant f1, ForceConstant f2, ForceConstant f3, ForceConstant f4, Radians angle) :
+    HOST_DEVICE_FUN QuarticAngle(ForceConstant f0,
+                                 ForceConstant f1,
+                                 ForceConstant f2,
+                                 ForceConstant f3,
+                                 ForceConstant f4,
+                                 Radians       angle) :
         forceConstants_{ f0, f1, f2, f3, f4 }, equilConstant_(angle)
     {
     }
 
     //! \brief construct from given angle in degrees
-    QuarticAngle(ForceConstant f0, ForceConstant f1, ForceConstant f2, ForceConstant f3, ForceConstant f4, Degrees angle) :
+    HOST_DEVICE_FUN QuarticAngle(ForceConstant f0,
+                                 ForceConstant f1,
+                                 ForceConstant f2,
+                                 ForceConstant f3,
+                                 ForceConstant f4,
+                                 Degrees       angle) :
         forceConstants_{ f0, f1, f2, f3, f4 }, equilConstant_(angle * DEG2RAD)
     {
     }
 
-    [[nodiscard]] const std::array<ForceConstant, 5>& forceConstants() const
+    [[nodiscard]] HOST_DEVICE_FUN const ForceConstant& forceConstant(int order) const
     {
-        return forceConstants_;
+        assert(order < 5);
+        return forceConstants_[order];
     }
 
-    ForceConstant forceConstant(int order) const
-    {
-        switch (order)
-        {
-            case 0: return forceConstants_[0];
-            case 1: return forceConstants_[1];
-            case 2: return forceConstants_[2];
-            case 3: return forceConstants_[3];
-            case 4: return forceConstants_[4];
-            default:
-                throw InputException(
-                        "Please enter a value between 0-4 for the Quartic Angle force constants");
-        }
-    }
-
-    Radians equilConstant() const { return equilConstant_; }
+    [[nodiscard]] HOST_DEVICE_FUN const Radians& equilConstant() const { return equilConstant_; }
 
 private:
-    std::array<ForceConstant, 5> forceConstants_;
-    Radians                      equilConstant_;
+    ForceConstant forceConstants_[5];
+    Radians       equilConstant_;
 };
 
-inline bool operator<(const QuarticAngle& a, const QuarticAngle& b)
+HOST_DEVICE_FUN inline bool operator<(const QuarticAngle& a, const QuarticAngle& b)
 {
-    return (a.forceConstants() < b.forceConstants()) && (a.equilConstant() < b.equilConstant());
+    return util::tie(a.forceConstant(0),
+                     a.forceConstant(1),
+                     a.forceConstant(2),
+                     a.forceConstant(3),
+                     a.forceConstant(4),
+                     a.equilConstant())
+           < util::tie(b.forceConstant(0),
+                       b.forceConstant(1),
+                       b.forceConstant(2),
+                       b.forceConstant(3),
+                       b.forceConstant(4),
+                       b.equilConstant());
 }
 
-inline bool operator==(const QuarticAngle& a, const QuarticAngle& b)
+HOST_DEVICE_FUN inline bool operator==(const QuarticAngle& a, const QuarticAngle& b)
 {
-    return (a.forceConstants() == b.forceConstants()) && (a.equilConstant() == b.equilConstant());
+    return util::tie(a.forceConstant(0),
+                     a.forceConstant(1),
+                     a.forceConstant(2),
+                     a.forceConstant(3),
+                     a.forceConstant(4),
+                     a.equilConstant())
+           == util::tie(b.forceConstant(0),
+                        b.forceConstant(1),
+                        b.forceConstant(2),
+                        b.forceConstant(3),
+                        b.forceConstant(4),
+                        b.equilConstant());
 }
 
 
@@ -401,14 +524,17 @@ class CrossBondBond
 {
 public:
     CrossBondBond() = default;
-    CrossBondBond(ForceConstant f, EquilConstant r0ij, EquilConstant r0kj) :
+    HOST_DEVICE_FUN CrossBondBond(ForceConstant f, EquilConstant r0ij, EquilConstant r0kj) :
         forceConstant_(f), r0ij_(r0ij), r0kj_(r0kj)
     {
     }
 
-    [[nodiscard]] const ForceConstant& forceConstant() const { return forceConstant_; }
-    [[nodiscard]] const EquilConstant& equilDistanceIJ() const { return r0ij_; }
-    [[nodiscard]] const EquilConstant& equilDistanceKJ() const { return r0kj_; }
+    [[nodiscard]] HOST_DEVICE_FUN const ForceConstant& forceConstant() const
+    {
+        return forceConstant_;
+    }
+    [[nodiscard]] HOST_DEVICE_FUN const EquilConstant& equilDistanceIJ() const { return r0ij_; }
+    [[nodiscard]] HOST_DEVICE_FUN const EquilConstant& equilDistanceKJ() const { return r0kj_; }
 
 private:
     ForceConstant forceConstant_;
@@ -416,16 +542,16 @@ private:
     EquilConstant r0kj_;
 };
 
-inline bool operator<(const CrossBondBond& a, const CrossBondBond& b)
+HOST_DEVICE_FUN inline bool operator<(const CrossBondBond& a, const CrossBondBond& b)
 {
-    return std::tie(a.forceConstant(), a.equilDistanceIJ(), a.equilDistanceKJ())
-           < std::tie(b.forceConstant(), b.equilDistanceIJ(), b.equilDistanceKJ());
+    return util::tie(a.forceConstant(), a.equilDistanceIJ(), a.equilDistanceKJ())
+           < util::tie(b.forceConstant(), b.equilDistanceIJ(), b.equilDistanceKJ());
 }
 
-inline bool operator==(const CrossBondBond& a, const CrossBondBond& b)
+HOST_DEVICE_FUN inline bool operator==(const CrossBondBond& a, const CrossBondBond& b)
 {
-    return std::tie(a.forceConstant(), a.equilDistanceIJ(), a.equilDistanceKJ())
-           == std::tie(b.forceConstant(), b.equilDistanceIJ(), b.equilDistanceKJ());
+    return util::tie(a.forceConstant(), a.equilDistanceIJ(), a.equilDistanceKJ())
+           == util::tie(b.forceConstant(), b.equilDistanceIJ(), b.equilDistanceKJ());
 }
 
 /*! \brief Cross bond-angle interaction type
@@ -434,15 +560,18 @@ class CrossBondAngle
 {
 public:
     CrossBondAngle() = default;
-    CrossBondAngle(ForceConstant f, EquilConstant r0ij, EquilConstant r0kj, EquilConstant r0ik) :
+    HOST_DEVICE_FUN CrossBondAngle(ForceConstant f, EquilConstant r0ij, EquilConstant r0kj, EquilConstant r0ik) :
         forceConstant_(f), r0ij_(r0ij), r0kj_(r0kj), r0ik_(r0ik)
     {
     }
 
-    [[nodiscard]] const ForceConstant& forceConstant() const { return forceConstant_; }
-    [[nodiscard]] const EquilConstant& equilDistanceIJ() const { return r0ij_; }
-    [[nodiscard]] const EquilConstant& equilDistanceKJ() const { return r0kj_; }
-    [[nodiscard]] const EquilConstant& equilDistanceIK() const { return r0ik_; }
+    [[nodiscard]] HOST_DEVICE_FUN const ForceConstant& forceConstant() const
+    {
+        return forceConstant_;
+    }
+    [[nodiscard]] HOST_DEVICE_FUN const EquilConstant& equilDistanceIJ() const { return r0ij_; }
+    [[nodiscard]] HOST_DEVICE_FUN const EquilConstant& equilDistanceKJ() const { return r0kj_; }
+    [[nodiscard]] HOST_DEVICE_FUN const EquilConstant& equilDistanceIK() const { return r0ik_; }
 
 private:
     ForceConstant forceConstant_;
@@ -451,38 +580,40 @@ private:
     EquilConstant r0ik_;
 };
 
-inline bool operator<(const CrossBondAngle& a, const CrossBondAngle& b)
+HOST_DEVICE_FUN inline bool operator<(const CrossBondAngle& a, const CrossBondAngle& b)
 {
-    return std::tie(a.forceConstant(), a.equilDistanceIJ(), a.equilDistanceKJ(), a.equilDistanceIK())
-           < std::tie(b.forceConstant(), b.equilDistanceIJ(), b.equilDistanceKJ(), b.equilDistanceIK());
+    return util::tie(a.forceConstant(), a.equilDistanceIJ(), a.equilDistanceKJ(), a.equilDistanceIK())
+           < util::tie(b.forceConstant(), b.equilDistanceIJ(), b.equilDistanceKJ(), b.equilDistanceIK());
 }
 
-inline bool operator==(const CrossBondAngle& a, const CrossBondAngle& b)
+HOST_DEVICE_FUN inline bool operator==(const CrossBondAngle& a, const CrossBondAngle& b)
 {
-    return std::tie(a.forceConstant(), a.equilDistanceIJ(), a.equilDistanceKJ(), a.equilDistanceIK())
-           == std::tie(b.forceConstant(), b.equilDistanceIJ(), b.equilDistanceKJ(), b.equilDistanceIK());
+    return util::tie(a.forceConstant(), a.equilDistanceIJ(), a.equilDistanceKJ(), a.equilDistanceIK())
+           == util::tie(b.forceConstant(), b.equilDistanceIJ(), b.equilDistanceKJ(), b.equilDistanceIK());
 }
 
-/*! \brief Proper Dihedral Implementation
- */
-class ProperDihedral
+template<class Phantom>
+class DihedralInteraction
 {
 public:
     using Multiplicity = int;
 
-    ProperDihedral() = default;
-    ProperDihedral(Radians phi, ForceConstant f, Multiplicity m) :
+    DihedralInteraction() = default;
+    HOST_DEVICE_FUN DihedralInteraction(Radians phi, ForceConstant f, Multiplicity m) :
         phi_(phi), forceConstant_(f), multiplicity_(m)
     {
     }
-    ProperDihedral(Degrees phi, ForceConstant f, Multiplicity m) :
+    HOST_DEVICE_FUN DihedralInteraction(Degrees phi, ForceConstant f, Multiplicity m) :
         phi_(phi * DEG2RAD), forceConstant_(f), multiplicity_(m)
     {
     }
 
-    [[nodiscard]] const EquilConstant& equilDistance() const { return phi_; }
-    [[nodiscard]] const ForceConstant& forceConstant() const { return forceConstant_; }
-    [[nodiscard]] const Multiplicity&  multiplicity() const { return multiplicity_; }
+    [[nodiscard]] HOST_DEVICE_FUN const EquilConstant& equilDistance() const { return phi_; }
+    [[nodiscard]] HOST_DEVICE_FUN const ForceConstant& forceConstant() const
+    {
+        return forceConstant_;
+    }
+    [[nodiscard]] HOST_DEVICE_FUN const Multiplicity& multiplicity() const { return multiplicity_; }
 
 private:
     EquilConstant phi_;
@@ -490,18 +621,29 @@ private:
     Multiplicity  multiplicity_;
 };
 
-inline bool operator<(const ProperDihedral& a, const ProperDihedral& b)
+template<class Phantom>
+HOST_DEVICE_FUN inline bool operator<(const DihedralInteraction<Phantom>& a,
+                                      const DihedralInteraction<Phantom>& b)
 {
-    return std::tie(a.equilDistance(), a.forceConstant(), a.multiplicity())
-           < std::tie(b.equilDistance(), b.forceConstant(), b.multiplicity());
+    return util::tie(a.equilDistance(), a.forceConstant(), a.multiplicity())
+           < util::tie(b.equilDistance(), b.forceConstant(), b.multiplicity());
 }
 
-inline bool operator==(const ProperDihedral& a, const ProperDihedral& b)
+template<class Phantom>
+HOST_DEVICE_FUN inline bool operator==(const DihedralInteraction<Phantom>& a,
+                                       const DihedralInteraction<Phantom>& b)
 {
-    return std::tie(a.equilDistance(), a.forceConstant(), a.multiplicity())
-           == std::tie(b.equilDistance(), b.forceConstant(), b.multiplicity());
+    return util::tie(a.equilDistance(), a.forceConstant(), a.multiplicity())
+           == util::tie(b.equilDistance(), b.forceConstant(), b.multiplicity());
 }
 
+/*! \brief Proper Dihedral Implementation
+ */
+using ProperDihedral = DihedralInteraction<struct ProperDihedralParam>;
+
+/*! \brief Proper Dihedral Implementation
+ */
+using ImproperProperDihedral = DihedralInteraction<struct ImproperProperDihedralParam>;
 
 /*! \brief Improper Dihedral Implementation
  */
@@ -509,11 +651,11 @@ class ImproperDihedral : public TwoParameterInteraction<struct ImproperDihdedral
 {
 public:
     ImproperDihedral() = default;
-    ImproperDihedral(Radians phi, ForceConstant f) :
+    HOST_DEVICE_FUN ImproperDihedral(Radians phi, ForceConstant f) :
         TwoParameterInteraction<struct ImproperDihdedralParameter>{ f, phi }
     {
     }
-    ImproperDihedral(Degrees phi, ForceConstant f) :
+    HOST_DEVICE_FUN ImproperDihedral(Degrees phi, ForceConstant f) :
         TwoParameterInteraction<struct ImproperDihdedralParameter>{ f, phi * DEG2RAD }
     {
     }
@@ -524,30 +666,30 @@ public:
 class RyckaertBellemanDihedral
 {
 public:
+    static constexpr int RbNumParameters = 6;
+
     RyckaertBellemanDihedral() = default;
-    RyckaertBellemanDihedral(real p1, real p2, real p3, real p4, real p5, real p6) :
+    HOST_DEVICE_FUN RyckaertBellemanDihedral(real p1, real p2, real p3, real p4, real p5, real p6) :
         parameters_{ p1, p2, p3, p4, p5, p6 }
     {
     }
 
-    const real& operator[](std::size_t i) const { return parameters_[i]; }
+    HOST_DEVICE_FUN const real& operator[](std::size_t i) const { return parameters_[i]; }
 
-    [[nodiscard]] const std::array<real, 6>& parameters() const { return parameters_; }
-
-    [[nodiscard]] std::size_t size() const { return parameters_.size(); }
+    [[nodiscard]] HOST_DEVICE_FUN const real* parameters() const { return parameters_; }
 
 private:
-    std::array<real, 6> parameters_;
+    real parameters_[RbNumParameters];
 };
 
-inline bool operator<(const RyckaertBellemanDihedral& a, const RyckaertBellemanDihedral& b)
+HOST_DEVICE_FUN inline bool operator<(const RyckaertBellemanDihedral& a, const RyckaertBellemanDihedral& b)
 {
-    return a.parameters() < b.parameters();
+    return util::tie(a[0], a[1], a[2], a[3], a[4], a[5]) < util::tie(b[0], b[1], b[2], b[3], b[4], b[5]);
 }
 
-inline bool operator==(const RyckaertBellemanDihedral& a, const RyckaertBellemanDihedral& b)
+HOST_DEVICE_FUN inline bool operator==(const RyckaertBellemanDihedral& a, const RyckaertBellemanDihedral& b)
 {
-    return a.parameters() == b.parameters();
+    return util::tie(a[0], a[1], a[2], a[3], a[4], a[5]) == util::tie(b[0], b[1], b[2], b[3], b[4], b[5]);
 }
 
 
@@ -559,33 +701,183 @@ class Default5Center
 {
 public:
     Default5Center() = default;
-    Default5Center(Radians phi, Radians psi, ForceConstant fphi, ForceConstant fpsi) :
+    HOST_DEVICE_FUN Default5Center(Radians phi, Radians psi, ForceConstant fphi, ForceConstant fpsi) :
         phi_(phi), psi_(psi), fphi_(fphi), fpsi_(fpsi)
     {
     }
 
-    [[nodiscard]] const Radians&       phi() const { return phi_; }
-    [[nodiscard]] const Radians&       psi() const { return psi_; }
-    [[nodiscard]] const ForceConstant& fphi() const { return fphi_; }
-    [[nodiscard]] const ForceConstant& fpsi() const { return fpsi_; }
+    [[nodiscard]] HOST_DEVICE_FUN const Radians& phi() const { return phi_; }
+    [[nodiscard]] HOST_DEVICE_FUN const Radians& psi() const { return psi_; }
+    [[nodiscard]] HOST_DEVICE_FUN const ForceConstant& fphi() const { return fphi_; }
+    [[nodiscard]] HOST_DEVICE_FUN const ForceConstant& fpsi() const { return fpsi_; }
 
 private:
     Radians       phi_, psi_;
     ForceConstant fphi_, fpsi_;
 };
 
-inline bool operator<(const Default5Center& a, const Default5Center& b)
+HOST_DEVICE_FUN inline bool operator<(const Default5Center& a, const Default5Center& b)
 {
-    return std::tie(a.phi(), a.psi(), a.fphi(), a.fpsi())
-           < std::tie(b.phi(), b.psi(), b.fphi(), b.fpsi());
+    return util::tie(a.phi(), a.psi(), a.fphi(), a.fpsi())
+           < util::tie(b.phi(), b.psi(), b.fphi(), b.fpsi());
 }
 
-inline bool operator==(const Default5Center& a, const Default5Center& b)
+HOST_DEVICE_FUN inline bool operator==(const Default5Center& a, const Default5Center& b)
 {
-    return std::tie(a.phi(), a.psi(), a.fphi(), a.fpsi())
-           == std::tie(b.phi(), b.psi(), b.fphi(), b.fpsi());
+    return util::tie(a.phi(), a.psi(), a.fphi(), a.fpsi())
+           == util::tie(b.phi(), b.psi(), b.fphi(), b.fpsi());
 }
+
+class PositionRestraints
+{
+public:
+    PositionRestraints() = default;
+    HOST_DEVICE_FUN PositionRestraints(EquilConstant p0x,
+                                       EquilConstant p0y,
+                                       EquilConstant p0z,
+                                       ForceConstant fcx,
+                                       ForceConstant fcy,
+                                       ForceConstant fcz) :
+        position0_({ p0x, p0y, p0z }), forceConstant_({ fcx, fcy, fcz })
+    {
+    }
+
+    HOST_DEVICE_FUN const EquilConstant& position0(int index) const
+    {
+        assert(index < 3);
+        return position0_[index];
+    }
+
+    HOST_DEVICE_FUN const ForceConstant& forceConstant(int index) const
+    {
+        assert(index < 3);
+        return forceConstant_[index];
+    }
+
+private:
+    util::array<EquilConstant, dimSize> position0_;
+    util::array<ForceConstant, dimSize> forceConstant_;
+
+    friend HOST_DEVICE_FUN inline bool operator<(const PositionRestraints& a, const PositionRestraints& b)
+    {
+        return util::tie(a.position0_, a.forceConstant_) < util::tie(b.position0_, b.forceConstant_);
+    }
+
+    friend HOST_DEVICE_FUN inline bool operator==(const PositionRestraints& a, const PositionRestraints& b)
+    {
+        return util::tie(a.position0_, a.forceConstant_) == util::tie(b.position0_, b.forceConstant_);
+    }
+};
+
+/*! \brief Type for two-three-center aggregates
+ */
+template<class TwoCenterType, class ThreeCenterType>
+class ThreeCenterAggregate
+{
+public:
+    using CarrierType            = ThreeCenterType;
+    using TwoCenterAggregateType = TwoCenterType;
+
+    ThreeCenterAggregate() = default;
+    HOST_DEVICE_FUN ThreeCenterAggregate(const TwoCenterType& twoC, const ThreeCenterType& threeC) :
+        twoC_(twoC), threeC_(threeC)
+    {
+    }
+
+    HOST_DEVICE_FUN TwoCenterType& twoCenter() { return twoC_; }
+    HOST_DEVICE_FUN const TwoCenterType& twoCenter() const { return twoC_; }
+
+    HOST_DEVICE_FUN ThreeCenterType& carrier() { return threeC_; }
+    HOST_DEVICE_FUN const ThreeCenterType& carrier() const { return threeC_; }
+
+    enum Cargo : int
+    {
+        bond_ij  = 1 << 1,
+        bond_jk  = 1 << 2,
+        bond_jl  = 1 << 3,
+        has_bond = bond_ij + bond_jk + bond_jl
+    };
+
+    int manifest = 0;
+
+private:
+    TwoCenterType   twoC_;
+    ThreeCenterType threeC_;
+
+    using Aggregate = ThreeCenterAggregate<TwoCenterType, ThreeCenterType>;
+
+    friend HOST_DEVICE_FUN inline bool operator<(const Aggregate& a, const Aggregate& b)
+    {
+        return util::tie(a.twoC_, a.threeC_) < util::tie(b.twoC_, b.threeC_);
+    }
+
+    friend HOST_DEVICE_FUN inline bool operator==(const Aggregate& a, const Aggregate& b)
+    {
+        return util::tie(a.twoC_, a.threeC_) == util::tie(b.twoC_, b.threeC_);
+    }
+};
+
+/*! \brief Type for two-three-four-center aggregates
+ */
+template<class TwoCenterType, class ThreeCenterType, class PairType, class FourCenterType>
+class FourCenterAggregate
+{
+public:
+    using CarrierType              = FourCenterType;
+    using ThreeCenterAggregateType = ThreeCenterType;
+    using TwoCenterAggregateType   = TwoCenterType;
+    using PairAggregateType        = PairType;
+
+    FourCenterAggregate() = default;
+
+    HOST_DEVICE_FUN TwoCenterType& twoCenter() { return twoC_; }
+    HOST_DEVICE_FUN const TwoCenterType& twoCenter() const { return twoC_; }
+
+    HOST_DEVICE_FUN ThreeCenterType& threeCenter() { return threeC_; }
+    HOST_DEVICE_FUN const ThreeCenterType& threeCenter() const { return threeC_; }
+
+    HOST_DEVICE_FUN PairType& pair() { return pair_; }
+    HOST_DEVICE_FUN const PairType& pair() const { return pair_; }
+
+    HOST_DEVICE_FUN FourCenterType& carrier() { return fourC_; }
+    HOST_DEVICE_FUN const FourCenterType& carrier() const { return fourC_; }
+
+    enum Cargo : int
+    {
+        angle_j   = 1 << 1,
+        angle_k   = 1 << 2,
+        has_angle = angle_j + angle_k,
+        bond_ij   = 1 << 3,
+        bond_jk   = 1 << 4,
+        bond_jl   = 1 << 5,
+        has_bond  = bond_ij + bond_jk + bond_jl,
+        pair_14   = 1 << 6
+    };
+
+    int manifest = 0;
+
+private:
+    TwoCenterType   twoC_;
+    ThreeCenterType threeC_;
+    PairType        pair_;
+    FourCenterType  fourC_;
+
+    using Aggregate = FourCenterAggregate<TwoCenterType, ThreeCenterType, PairType, FourCenterType>;
+
+    friend HOST_DEVICE_FUN inline bool operator<(const Aggregate& a, const Aggregate& b)
+    {
+        return util::tie(a.twoC_, a.threeC_, a.pair_, a.fourC_, a.manifest)
+               < util::tie(b.twoC_, b.threeC_, b.pair_, b.fourC_, b.manifest);
+    }
+
+    friend HOST_DEVICE_FUN inline bool operator==(const Aggregate& a, const Aggregate& b)
+    {
+        return util::tie(a.twoC_, a.threeC_, a.pair_, a.fourC_, a.manifest)
+               == util::tie(b.twoC_, b.threeC_, b.pair_, b.fourC_, b.manifest);
+    }
+};
 
 
 } // namespace nblib
+
 #endif // NBLIB_LISTEDFORCES_BONDTYPES_H

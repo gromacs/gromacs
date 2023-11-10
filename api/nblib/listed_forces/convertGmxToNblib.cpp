@@ -51,10 +51,16 @@
 
 #include <memory>
 
-#include "listed_forces/conversionscommon.h"
+#include "nblib/listed_forces/conversionscommon.h"
 
 namespace nblib
 {
+
+//! \brief meta function return value for Urey-Bradley interactions
+template<>
+struct NCenter<UreyBradley> : std::integral_constant<std::size_t, 3>
+{
+};
 
 namespace detail
 {
@@ -65,21 +71,49 @@ inline void transferParametersGmxToNblib(const t_iparams& /* iparams */,
 {
 }
 
+//! \brief Position restraints parameter transfer function
+template<>
+inline void transferParametersGmxToNblib(const t_iparams&                    iparams,
+                                         ListedTypeData<PositionRestraints>& interactionData)
+{
+    PositionRestraints positionRestraintsA(iparams.posres.pos0A[0],
+                                           iparams.posres.pos0A[1],
+                                           iparams.posres.pos0A[2],
+                                           iparams.posres.fcA[0],
+                                           iparams.posres.fcA[1],
+                                           iparams.posres.fcA[2]);
+    interactionData.parametersA.push_back(positionRestraintsA);
+
+    PositionRestraints positionRestraintsB(iparams.posres.pos0B[0],
+                                           iparams.posres.pos0B[1],
+                                           iparams.posres.pos0B[2],
+                                           iparams.posres.fcB[0],
+                                           iparams.posres.fcB[1],
+                                           iparams.posres.fcB[2]);
+    interactionData.parametersB.push_back(positionRestraintsB);
+}
+
 //! \brief Harmonic Bonds parameter transfer function
 template<>
 inline void transferParametersGmxToNblib(const t_iparams&                  iparams,
                                          ListedTypeData<HarmonicBondType>& interactionData)
 {
-    HarmonicBondType harmonicBondType(iparams.harmonic.krA, iparams.harmonic.rA);
-    interactionData.parameters.push_back(harmonicBondType);
+    HarmonicBondType harmonicBondTypeA(iparams.harmonic.krA, iparams.harmonic.rA);
+    interactionData.parametersA.push_back(harmonicBondTypeA);
+
+    HarmonicBondType harmonicBondTypeB(iparams.harmonic.krB, iparams.harmonic.rB);
+    interactionData.parametersB.push_back(harmonicBondTypeB);
 }
 
 //! \brief G96 Bonds parameter transfer function
 template<>
 inline void transferParametersGmxToNblib(const t_iparams& iparams, ListedTypeData<G96BondType>& interactionData)
 {
-    G96BondType g96BondType(iparams.harmonic.krA, std::sqrt(iparams.harmonic.rA));
-    interactionData.parameters.push_back(g96BondType);
+    G96BondType g96BondTypeA(iparams.harmonic.krA, std::sqrt(iparams.harmonic.rA));
+    interactionData.parametersA.push_back(g96BondTypeA);
+
+    G96BondType g96BondTypeB(iparams.harmonic.krB, std::sqrt(iparams.harmonic.rB));
+    interactionData.parametersB.push_back(g96BondTypeB);
 }
 
 //! \brief FENE Bonds parameter transfer function
@@ -87,7 +121,8 @@ template<>
 inline void transferParametersGmxToNblib(const t_iparams& iparams, ListedTypeData<FENEBondType>& interactionData)
 {
     FENEBondType feneBondType(iparams.fene.kb, iparams.fene.bm);
-    interactionData.parameters.push_back(feneBondType);
+    interactionData.parametersA.push_back(feneBondType);
+    interactionData.parametersB.push_back(feneBondType);
 }
 
 //! \brief Cubic Bonds parameter transfer function
@@ -95,47 +130,87 @@ template<>
 inline void transferParametersGmxToNblib(const t_iparams& iparams, ListedTypeData<CubicBondType>& interactionData)
 {
     CubicBondType cubicBondType(iparams.cubic.kb, iparams.cubic.kcub, iparams.cubic.b0);
-    interactionData.parameters.push_back(cubicBondType);
+    interactionData.parametersA.push_back(cubicBondType);
+    interactionData.parametersB.push_back(cubicBondType);
 }
 
 //! \brief Morse Bonds parameter transfer function
 template<>
 inline void transferParametersGmxToNblib(const t_iparams& iparams, ListedTypeData<MorseBondType>& interactionData)
 {
-    MorseBondType morseBondType(iparams.morse.cbA, iparams.morse.betaA, iparams.morse.b0A);
-    interactionData.parameters.push_back(morseBondType);
+    MorseBondType morseBondTypeA(iparams.morse.cbA, iparams.morse.betaA, iparams.morse.b0A);
+    interactionData.parametersA.push_back(morseBondTypeA);
+
+    MorseBondType morseBondTypeB(iparams.morse.cbB, iparams.morse.betaB, iparams.morse.b0B);
+    interactionData.parametersB.push_back(morseBondTypeB);
 }
 
 //! \brief Lennard-Jones 1-4 pair interaction parameter transfer function
 template<>
 inline void transferParametersGmxToNblib(const t_iparams& iparams, ListedTypeData<PairLJType>& interactionData)
 {
-    PairLJType pairLjType(C6(iparams.lj14.c6A), C12(iparams.lj14.c12A));
-    interactionData.parameters.push_back(pairLjType);
+    PairLJType pairLjTypeA(C6(iparams.lj14.c6A), C12(iparams.lj14.c12A));
+    interactionData.parametersA.push_back(pairLjTypeA);
+
+    PairLJType pairLjTypeB(C6(iparams.lj14.c6B), C12(iparams.lj14.c12B));
+    interactionData.parametersB.push_back(pairLjTypeB);
+}
+
+//! \brief Lennard-Jones 1-4 pair interaction parameter transfer function
+template<>
+inline void transferParametersGmxToNblib(const t_iparams&                  iparams,
+                                         ListedTypeData<PairLJChargeType>& interactionData)
+{
+    PairLJChargeType pairLjChargeType(C6(iparams.ljc14.c6),
+                                      C12(iparams.ljc14.c12),
+                                      iparams.ljc14.qi,
+                                      iparams.ljc14.qj,
+                                      iparams.ljc14.fqq);
+    interactionData.parametersA.push_back(pairLjChargeType);
+    interactionData.parametersB.push_back(pairLjChargeType);
+}
+
+//! \brief Simple polarization parameter transfer function
+template<>
+inline void transferParametersGmxToNblib(const t_iparams&                    iparams,
+                                         ListedTypeData<SimplePolarization>& interactionData)
+{
+    SimplePolarization simplePolarization(iparams.polarize.alpha);
+    interactionData.parametersA.push_back(simplePolarization);
+    interactionData.parametersB.push_back(simplePolarization);
 }
 
 //! \brief Harmonic Angle parameter transfer function
 template<>
 inline void transferParametersGmxToNblib(const t_iparams& iparams, ListedTypeData<HarmonicAngle>& interactionData)
 {
-    HarmonicAngle harmonicAngle(iparams.harmonic.krA, Degrees(iparams.harmonic.rA));
-    interactionData.parameters.push_back(harmonicAngle);
+    HarmonicAngle harmonicAngleA(iparams.harmonic.krA, Degrees(iparams.harmonic.rA));
+    interactionData.parametersA.push_back(harmonicAngleA);
+
+    HarmonicAngle harmonicAngleB(iparams.harmonic.krB, Degrees(iparams.harmonic.rB));
+    interactionData.parametersB.push_back(harmonicAngleB);
 }
 
 //! \brief G96 Angle parameter transfer function
 template<>
 inline void transferParametersGmxToNblib(const t_iparams& iparams, ListedTypeData<G96Angle>& interactionData)
 {
-    G96Angle g96Angle(iparams.harmonic.krA, Radians(std::acos(iparams.harmonic.rA)));
-    interactionData.parameters.push_back(g96Angle);
+    G96Angle g96AngleA(iparams.harmonic.krA, Radians(std::acos(iparams.harmonic.rA)));
+    interactionData.parametersA.push_back(g96AngleA);
+
+    G96Angle g96AngleB(iparams.harmonic.krB, Radians(std::acos(iparams.harmonic.rB)));
+    interactionData.parametersB.push_back(g96AngleB);
 }
 
 //! \brief Linear Angle parameter transfer function
 template<>
 inline void transferParametersGmxToNblib(const t_iparams& iparams, ListedTypeData<LinearAngle>& interactionData)
 {
-    LinearAngle linearAngle(iparams.linangle.klinA, iparams.linangle.aA);
-    interactionData.parameters.push_back(linearAngle);
+    LinearAngle linearAngleA(iparams.linangle.klinA, iparams.linangle.aA);
+    interactionData.parametersA.push_back(linearAngleA);
+
+    LinearAngle linearAngleB(iparams.linangle.klinB, iparams.linangle.aB);
+    interactionData.parametersB.push_back(linearAngleB);
 }
 
 //! \brief Restricted Angle parameter transfer function
@@ -143,8 +218,11 @@ template<>
 inline void transferParametersGmxToNblib(const t_iparams&                 iparams,
                                          ListedTypeData<RestrictedAngle>& interactionData)
 {
-    RestrictedAngle restrictedAngle(iparams.harmonic.krA, Degrees(iparams.harmonic.rA));
-    interactionData.parameters.push_back(restrictedAngle);
+    RestrictedAngle restrictedAngleA(iparams.harmonic.krA, Degrees(iparams.harmonic.rA));
+    interactionData.parametersA.push_back(restrictedAngleA);
+
+    RestrictedAngle restrictedAngleB(iparams.harmonic.krB, Degrees(iparams.harmonic.rB));
+    interactionData.parametersB.push_back(restrictedAngleB);
 }
 
 //! \brief Quartic Angle parameter transfer function
@@ -157,7 +235,8 @@ inline void transferParametersGmxToNblib(const t_iparams& iparams, ListedTypeDat
                               iparams.qangle.c[3],
                               iparams.qangle.c[4],
                               Degrees(iparams.qangle.theta));
-    interactionData.parameters.push_back(quarticAngle);
+    interactionData.parametersA.push_back(quarticAngle);
+    interactionData.parametersB.push_back(quarticAngle);
 }
 
 //! \brief Cross Bond-Bond parameter transfer function
@@ -165,7 +244,8 @@ template<>
 inline void transferParametersGmxToNblib(const t_iparams& iparams, ListedTypeData<CrossBondBond>& interactionData)
 {
     CrossBondBond crossBondBond(iparams.cross_bb.krr, iparams.cross_bb.r1e, iparams.cross_bb.r2e);
-    interactionData.parameters.push_back(crossBondBond);
+    interactionData.parametersA.push_back(crossBondBond);
+    interactionData.parametersB.push_back(crossBondBond);
 }
 
 //! \brief Cross Bond-Angle parameter transfer function
@@ -175,7 +255,8 @@ inline void transferParametersGmxToNblib(const t_iparams&                iparams
 {
     CrossBondAngle crossBondAngle(
             iparams.cross_ba.krt, iparams.cross_ba.r1e, iparams.cross_ba.r2e, iparams.cross_ba.r3e);
-    interactionData.parameters.push_back(crossBondAngle);
+    interactionData.parametersA.push_back(crossBondAngle);
+    interactionData.parametersB.push_back(crossBondAngle);
 }
 
 //! \brief Proper Dihedral parameter transfer function
@@ -183,8 +264,37 @@ template<>
 inline void transferParametersGmxToNblib(const t_iparams&                iparams,
                                          ListedTypeData<ProperDihedral>& interactionData)
 {
-    ProperDihedral properDihedral(Degrees(iparams.pdihs.phiA), iparams.pdihs.cpA, iparams.pdihs.mult);
-    interactionData.parameters.push_back(properDihedral);
+    ProperDihedral properDihedralA(Degrees(iparams.pdihs.phiA), iparams.pdihs.cpA, iparams.pdihs.mult);
+    interactionData.parametersA.push_back(properDihedralA);
+
+    ProperDihedral properDihedralB(Degrees(iparams.pdihs.phiB), iparams.pdihs.cpB, iparams.pdihs.mult);
+    interactionData.parametersB.push_back(properDihedralA);
+}
+
+//! \brief Improper proper Dihedral parameter transfer function
+template<>
+inline void transferParametersGmxToNblib(const t_iparams&                        iparams,
+                                         ListedTypeData<ImproperProperDihedral>& interactionData)
+{
+    ImproperProperDihedral properDihedralA(
+            Degrees(iparams.pdihs.phiA), iparams.pdihs.cpA, iparams.pdihs.mult);
+    interactionData.parametersA.push_back(properDihedralA);
+
+    ImproperProperDihedral properDihedralB(
+            Degrees(iparams.pdihs.phiB), iparams.pdihs.cpB, iparams.pdihs.mult);
+    interactionData.parametersB.push_back(properDihedralA);
+}
+
+//! \brief Improper Dihedral parameter transfer function
+template<>
+inline void transferParametersGmxToNblib(const t_iparams&                  iparams,
+                                         ListedTypeData<ImproperDihedral>& interactionData)
+{
+    ImproperDihedral improperDihedralA(Degrees(iparams.harmonic.rA), iparams.harmonic.krA);
+    interactionData.parametersA.push_back(improperDihedralA);
+
+    ImproperDihedral improperDihedralB(Degrees(iparams.harmonic.rB), iparams.harmonic.krB);
+    interactionData.parametersB.push_back(improperDihedralA);
 }
 
 //! \brief Ryckaert-Bellman Dihedral parameter transfer function
@@ -192,17 +302,45 @@ template<>
 inline void transferParametersGmxToNblib(const t_iparams&                          iparams,
                                          ListedTypeData<RyckaertBellemanDihedral>& interactionData)
 {
-    RyckaertBellemanDihedral ryckaertBellemanDihedral(iparams.rbdihs.rbcA[0],
-                                                      iparams.rbdihs.rbcA[1],
-                                                      iparams.rbdihs.rbcA[2],
-                                                      iparams.rbdihs.rbcA[3],
-                                                      iparams.rbdihs.rbcA[4],
-                                                      iparams.rbdihs.rbcA[5]);
-    interactionData.parameters.push_back(ryckaertBellemanDihedral);
+    RyckaertBellemanDihedral ryckaertBellemanDihedralA(iparams.rbdihs.rbcA[0],
+                                                       iparams.rbdihs.rbcA[1],
+                                                       iparams.rbdihs.rbcA[2],
+                                                       iparams.rbdihs.rbcA[3],
+                                                       iparams.rbdihs.rbcA[4],
+                                                       iparams.rbdihs.rbcA[5]);
+    interactionData.parametersA.push_back(ryckaertBellemanDihedralA);
+
+    RyckaertBellemanDihedral ryckaertBellemanDihedralB(iparams.rbdihs.rbcB[0],
+                                                       iparams.rbdihs.rbcB[1],
+                                                       iparams.rbdihs.rbcB[2],
+                                                       iparams.rbdihs.rbcB[3],
+                                                       iparams.rbdihs.rbcB[4],
+                                                       iparams.rbdihs.rbcB[5]);
+    interactionData.parametersB.push_back(ryckaertBellemanDihedralB);
+}
+
+template<class OneCenterType>
+inline std::enable_if_t<Contains<OneCenterType, GmxToNblibMapping>{} && NCenter<OneCenterType>{} == 1>
+transferIndicesGmxToNblib(const InteractionDefinitions&  idef,
+                          ListedTypeData<OneCenterType>& interactionData,
+                          const std::vector<int>&        uniqueParamIndices)
+{
+    // copy indices
+    auto   gmxListedID           = FindIndex<OneCenterType, GmxToNblibMapping>::value;
+    size_t numInteractionsofType = idef.il[gmxListedID].iatoms.size() / 2;
+    for (size_t i = 0; i < numInteractionsofType; i++)
+    {
+        InteractionIndex<OneCenterType> indices;
+        indices[0]    = idef.il[gmxListedID].iatoms[2 * i + 1];
+        auto gmxIndex = idef.il[gmxListedID].iatoms[2 * i];
+        auto pointer = std::lower_bound(uniqueParamIndices.begin(), uniqueParamIndices.end(), gmxIndex);
+        indices[1] = pointer - uniqueParamIndices.begin();
+        interactionData.indices.push_back(indices);
+    }
 }
 
 template<class TwoCenterType>
-inline std::enable_if_t<Contains<TwoCenterType, GmxToNblibMapping>{} && Contains<TwoCenterType, SupportedTwoCenterTypes>{}>
+inline std::enable_if_t<Contains<TwoCenterType, GmxToNblibMapping>{} && NCenter<TwoCenterType>{} == 2>
 transferIndicesGmxToNblib(const InteractionDefinitions&  idef,
                           ListedTypeData<TwoCenterType>& interactionData,
                           const std::vector<int>&        uniqueParamIndices)
@@ -223,7 +361,7 @@ transferIndicesGmxToNblib(const InteractionDefinitions&  idef,
 }
 
 template<class ThreeCenterType>
-inline std::enable_if_t<Contains<ThreeCenterType, GmxToNblibMapping>{} && Contains<ThreeCenterType, SupportedThreeCenterTypes>{}>
+inline std::enable_if_t<Contains<ThreeCenterType, GmxToNblibMapping>{} && NCenter<ThreeCenterType>{} == 3>
 transferIndicesGmxToNblib(const InteractionDefinitions&    idef,
                           ListedTypeData<ThreeCenterType>& interactionData,
                           const std::vector<int>&          uniqueParamIndices)
@@ -245,7 +383,7 @@ transferIndicesGmxToNblib(const InteractionDefinitions&    idef,
 }
 
 template<class FourCenterType>
-inline std::enable_if_t<Contains<FourCenterType, GmxToNblibMapping>{} && Contains<FourCenterType, SupportedFourCenterTypes>{}>
+inline std::enable_if_t<Contains<FourCenterType, GmxToNblibMapping>{} && NCenter<FourCenterType>{} == 4>
 transferIndicesGmxToNblib(const InteractionDefinitions&   idef,
                           ListedTypeData<FourCenterType>& interactionData,
                           const std::vector<int>&         uniqueParamIndices)
@@ -270,11 +408,88 @@ transferIndicesGmxToNblib(const InteractionDefinitions&   idef,
 // TODO: 5 center interactions like CMAP params are stored differently
 //       Concrete logic to be implemented when supported in NBLIB
 template<class FiveCenterType>
-inline std::enable_if_t<Contains<FiveCenterType, GmxToNblibMapping>{} && Contains<FiveCenterType, SupportedFiveCenterTypes>{}>
+inline std::enable_if_t<Contains<FiveCenterType, GmxToNblibMapping>{} && NCenter<FiveCenterType>{} == 5>
 transferIndicesGmxToNblib(const InteractionDefinitions& /* idef */,
                           ListedTypeData<FiveCenterType>& /* interactionData */,
                           const std::vector<int>& /* uniqueParamIndices */)
 {
+}
+
+template<class InteractionType>
+inline std::vector<int> calculateUniqueParamIndices(const InteractionDefinitions& interactionDefinitions)
+{
+    constexpr size_t typeID             = FindIndex<InteractionType, GmxToNblibMapping>::value;
+    auto             indexVector        = interactionDefinitions.il[typeID].iatoms;
+    int              numCenters         = NCenter<InteractionType>{};
+    auto             numInstancesOfType = indexVector.size() / (numCenters + 1);
+
+    // initiate with a vector of param set IDs
+    std::vector<int> uniqueParamIndices(numInstancesOfType);
+    for (size_t i = 0; i < numInstancesOfType; i++)
+    {
+        uniqueParamIndices[i] = indexVector[i * (numCenters + 1)];
+    }
+
+    // remove duplicate param IDs
+    std::sort(uniqueParamIndices.begin(), uniqueParamIndices.end());
+    uniqueParamIndices.erase(std::unique(uniqueParamIndices.begin(), uniqueParamIndices.end()),
+                             uniqueParamIndices.end());
+
+    return uniqueParamIndices;
+}
+
+//! \brief Transfer UB interactions from GMX as a separate Harmonic Bond and Harmonic Angle in NBLIB
+static void transferUreyBradley(const InteractionDefinitions& interactionDefinitions,
+                                ListedInteractionData&        interactions)
+{
+    // check if UB interactions exist in the system
+    constexpr size_t gmxListedID = FindIndex<UreyBradley, GmxToNblibMapping>::value;
+    if (!interactionDefinitions.il[gmxListedID].iatoms.empty())
+    {
+        auto uniqueParamIndices = detail::calculateUniqueParamIndices<UreyBradley>(interactionDefinitions);
+        auto numHarmonicBonds  = pickType<HarmonicBondType>(interactions).parametersA.size();
+        auto numHarmonicAngles = pickType<HarmonicAngle>(interactions).parametersA.size();
+
+        // copy param sets
+        for (size_t i = 0; i < uniqueParamIndices.size(); i++)
+        {
+            auto param = interactionDefinitions.iparams[uniqueParamIndices[i]];
+            // push harmonic bond
+            HarmonicBondType harmonicBondTypeA(param.u_b.kUBA, param.u_b.r13A);
+            pickType<HarmonicBondType>(interactions).parametersA.push_back(harmonicBondTypeA);
+            HarmonicBondType harmonicBondTypeB(param.u_b.kUBB, param.u_b.r13B);
+            pickType<HarmonicBondType>(interactions).parametersB.push_back(harmonicBondTypeB);
+
+            // push harmonic angle
+            HarmonicAngle harmonicAngleA(param.u_b.kthetaA, Degrees(param.u_b.thetaA));
+            pickType<HarmonicAngle>(interactions).parametersA.push_back(harmonicAngleA);
+            HarmonicAngle harmonicAngleB(param.u_b.kthetaB, Degrees(param.u_b.thetaB));
+            pickType<HarmonicAngle>(interactions).parametersB.push_back(harmonicAngleB);
+        }
+
+        // copy index sets
+        size_t numUreyBradley = interactionDefinitions.il[gmxListedID].iatoms.size() / 4;
+        for (size_t i = 0; i < numUreyBradley; i++)
+        {
+            InteractionIndex<HarmonicBondType> hbIndices;
+            InteractionIndex<HarmonicAngle>    haIndices;
+
+            auto gmxIndex = interactionDefinitions.il[gmxListedID].iatoms[4 * i];
+            auto it = std::lower_bound(uniqueParamIndices.begin(), uniqueParamIndices.end(), gmxIndex);
+
+            hbIndices[0] = interactionDefinitions.il[gmxListedID].iatoms[4 * i + 1];
+            hbIndices[1] = interactionDefinitions.il[gmxListedID].iatoms[4 * i + 3];
+            hbIndices[2] = it - uniqueParamIndices.begin() + numHarmonicBonds;
+
+            haIndices[0] = interactionDefinitions.il[gmxListedID].iatoms[4 * i + 1];
+            haIndices[1] = interactionDefinitions.il[gmxListedID].iatoms[4 * i + 2];
+            haIndices[2] = interactionDefinitions.il[gmxListedID].iatoms[4 * i + 3];
+            haIndices[3] = it - uniqueParamIndices.begin() + numHarmonicAngles;
+
+            pickType<HarmonicBondType>(interactions).indices.push_back(hbIndices);
+            pickType<HarmonicAngle>(interactions).indices.push_back(haIndices);
+        }
+    }
 }
 
 } // namespace detail
@@ -288,34 +503,26 @@ ListedInteractionData convertToNblibInteractions(const InteractionDefinitions& i
 
         if constexpr (Contains<InteractionType, GmxToNblibMapping>{})
         {
-            constexpr size_t typeID     = FindIndex<InteractionType, GmxToNblibMapping>::value;
-            int              numCenters = NCenter<InteractionType>{};
-            auto numInstancesOfType = interactionDefinitions.il[typeID].size() / (numCenters + 1);
-            // calculate number of unique parameter sets
-            // initiate with a vector of param set IDs
-            std::vector<int> uniqueParamIndices(numInstancesOfType);
-            for (auto i = 0; i < numInstancesOfType; i++)
-            {
-                uniqueParamIndices[i] = interactionDefinitions.il[typeID].iatoms[i * (numCenters + 1)];
-            }
-            // remove duplicate param IDs
-            std::sort(uniqueParamIndices.begin(), uniqueParamIndices.end());
-            uniqueParamIndices.erase(std::unique(uniqueParamIndices.begin(), uniqueParamIndices.end()),
-                                     uniqueParamIndices.end());
+            // calculate vector of unique parameter sets
+            auto uniqueParamIndices =
+                    detail::calculateUniqueParamIndices<InteractionType>(interactionDefinitions);
 
-            size_t numUniqueParamSets = uniqueParamIndices.size();
-            // start filling params and indices into interactions
+            const auto& parameterSource = (Contains<InteractionType, RestraintTypes>{})
+                                                  ? interactionDefinitions.iparams_posres
+                                                  : interactionDefinitions.iparams;
             // copy param sets
-            for (size_t i = 0; i < numUniqueParamSets; i++)
+            for (size_t i = 0; i < uniqueParamIndices.size(); i++)
             {
-                detail::transferParametersGmxToNblib(
-                        interactionDefinitions.iparams[uniqueParamIndices[i]], interactionElement);
+                detail::transferParametersGmxToNblib(parameterSource[uniqueParamIndices[i]],
+                                                     interactionElement);
             }
             // copy index sets
             detail::transferIndicesGmxToNblib(interactionDefinitions, interactionElement, uniqueParamIndices);
         }
     };
     for_each_tuple(transferParamsAndIndices, interactions);
+
+    detail::transferUreyBradley(interactionDefinitions, interactions);
 
     return interactions;
 }

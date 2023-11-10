@@ -43,7 +43,6 @@
  */
 #include "nblib/integrator.h"
 
-#include "gromacs/pbcutil/pbc.h"
 #include "gromacs/utility/arrayref.h"
 
 #include "nblib/topology.h"
@@ -66,8 +65,13 @@ LeapFrog::LeapFrog(gmx::ArrayRef<const real> inverseMasses, const Box& box) :
 {
 }
 
-void LeapFrog::integrate(const real dt, gmx::ArrayRef<Vec3> x, gmx::ArrayRef<Vec3> v, gmx::ArrayRef<const Vec3> f)
+void LeapFrog::integrate(const real                dt,
+                         gmx::ArrayRef<Vec3>       x,
+                         gmx::ArrayRef<Vec3>       v,
+                         gmx::ArrayRef<const Vec3> f,
+                         [[maybe_unused]] int      numThreads)
 {
+#pragma omp parallel for num_threads(numThreads)
     for (size_t i = 0; i < x.size(); i++)
     {
         for (int dim = 0; dim < dimSize; dim++)

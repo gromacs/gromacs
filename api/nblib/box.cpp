@@ -44,6 +44,8 @@
 
 #include <cmath>
 
+#include <algorithm>
+
 #include "nblib/exception.h"
 
 namespace nblib
@@ -51,16 +53,31 @@ namespace nblib
 
 Box::Box(real l) : Box(l, l, l) {}
 
-Box::Box(real x, real y, real z) : legacyMatrix_{ { 0 } }
+Box::Box(real x, real y, real z) : Box({ x, 0, 0, 0, y, 0, 0, 0, z }) {}
+
+Box::Box(std::array<real, 9> boxMatrix) : legacyMatrix_{ { 0 } }
 {
-    if (std::isnan(x) || std::isinf(x) || std::isnan(y) || std::isinf(y) || std::isnan(z) || std::isinf(z))
+    bool hasNaN =
+            std::any_of(boxMatrix.begin(), boxMatrix.end(), [](auto val) { return std::isnan(val); });
+    bool hasInf =
+            std::any_of(boxMatrix.begin(), boxMatrix.end(), [](auto val) { return std::isinf(val); });
+    if (hasNaN || hasInf)
     {
         throw InputException("Cannot have NaN or Inf box length.");
     }
 
-    legacyMatrix_[dimX][dimX] = x;
-    legacyMatrix_[dimY][dimY] = y;
-    legacyMatrix_[dimZ][dimZ] = z;
+    fillMatrix(boxMatrix, legacyMatrix_);
+}
+
+void fillMatrix(std::array<real, 9> boxMatrix, Box::LegacyMatrix legacyMatrix)
+{
+    for (int i = 0; i < dimSize; ++i)
+    {
+        for (int j = 0; j < dimSize; ++j)
+        {
+            legacyMatrix[i][j] = boxMatrix[j + i * dimSize];
+        }
+    }
 }
 
 bool operator==(const Box& rhs, const Box& lhs)
