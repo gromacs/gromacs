@@ -1183,14 +1183,11 @@ static void setupLocalGpuForceReduction(const gmx::MdrunScheduleWorkload& runSch
     {
         pmeForcePtr = pmePpCommGpu->getGpuForceStagingPtr();
         GMX_ASSERT(pmeForcePtr, "PME force for reduction has no data");
-        if (pmeForcePtr)
+        if (GMX_THREAD_MPI)
         {
-            if (GMX_THREAD_MPI)
-            {
-                pmeSynchronizer = pmePpCommGpu->getForcesReadySynchronizer();
-            }
-            havePmeContribution = true;
+            pmeSynchronizer = pmePpCommGpu->getForcesReadySynchronizer();
         }
+        havePmeContribution = true;
     }
 
     if (havePmeContribution)
