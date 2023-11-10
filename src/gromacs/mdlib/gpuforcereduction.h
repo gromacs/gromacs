@@ -122,6 +122,8 @@ public:
     /*! \brief Execute the force reduction */
     void execute();
 
+    void registerForcesReadyNvshmemFlags(DeviceBuffer<uint64_t> syncObj);
+
 private:
     class Impl;
     std::unique_ptr<Impl> impl_;

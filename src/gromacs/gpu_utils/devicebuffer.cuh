@@ -95,7 +95,7 @@ void freeDeviceBuffer(DeviceBuffer* buffer)
     {
 #if GMX_NVSHMEM
         // Check if NVSHMEM is initialized, nvshmem_ptr() works only in such case.
-        if (nvshmemx_init_status())
+        if (nvshmemx_init_status() == NVSHMEM_STATUS_IS_INITIALIZED)
         {
             // nvshmem_ptr() returns NULL if it is not a NVSHMEM pointer.
             if (nvshmem_ptr(*buffer, nvshmem_my_pe()) != nullptr)
@@ -442,49 +442,6 @@ void allocateDeviceBufferNvShmem(DeviceBuffer<ValueType>* buffer,
     GMX_RELEASE_ASSERT(*buffer != nullptr, "Allocation of the nvshmem buffer failed.");
 }
 
-/*! \brief
- *  Reallocates the NVSHMEM buffer.
- *
- *  Reallocates the NVSHMEM memory pointed by \p buffer.
- *  Allocation is buffered and therefore freeing is only needed
- *  if the previously allocated space is not enough.
- *  \p currentNumValues and \p currentMaxNumValues are updated.
- *  TODO: \p currentNumValues, \p currentMaxNumValues, \p deviceContext
- *  should all be encapsulated in a host-side class together with the buffer.
- *  Note that, this is a collective operation requiring participation from all ranks.
- *
- *  \tparam        ValueType            Raw value type of the \p buffer.
- *  \param[in,out] buffer               Pointer to the NVSHMEM buffer
- *  \param[in]     numValues            Number of values to accommodate, should be same for each rank.
- *  \param[in,out] currentNumValues     The pointer to the buffer's number of values.
- *  \param[in,out] currentMaxNumValues  The pointer to the buffer's capacity.
- *  \param[in]     deviceContext        The buffer's device context.
- */
-template<typename ValueType>
-void reallocateDeviceBufferNvShmem(DeviceBuffer<ValueType>* buffer,
-                                   size_t                   numValues,
-                                   int*                     currentNumValues,
-                                   int*                     currentMaxNumValues,
-                                   const DeviceContext&     deviceContext)
-{
-    GMX_ASSERT(buffer, "needs a buffer pointer");
-    GMX_ASSERT(currentNumValues, "needs a size pointer");
-    GMX_ASSERT(currentMaxNumValues, "needs a capacity pointer");
-
-    /* reallocate only if the data does not fit */
-    if (static_cast<int>(numValues) > *currentMaxNumValues)
-    {
-        if (*currentMaxNumValues >= 0)
-        {
-            freeDeviceBuffer(buffer);
-        }
-
-        *currentMaxNumValues = over_alloc_large(numValues);
-        allocateDeviceBufferNvShmem(buffer, *currentMaxNumValues, deviceContext);
-    }
-    /* size could have changed without actual reallocation */
-    *currentNumValues = numValues;
-}
 #endif
 
 #endif

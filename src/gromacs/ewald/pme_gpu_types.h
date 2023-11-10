@@ -77,8 +77,12 @@ static_assert(sizeof(DeviceBuffer<float>) == 8,
               "DeviceBuffer is defined as an 8 byte stub for OpenCL C");
 static_assert(sizeof(DeviceBuffer<int>) == 8,
               "DeviceBuffer is defined as an 8 byte stub for OpenCL C");
+
+struct PpRanksSendFInfo;
 #else
 #    define HIDE_FROM_OPENCL_COMPILER(x) char8
+/*! \brief A dummy typedef for the PpRanksSendFInfo on OCL builds */
+typedef int PpRanksSendFInfo;
 #endif
 
 #ifndef NUMFEPSTATES
@@ -92,6 +96,7 @@ static_assert(sizeof(DeviceBuffer<int>) == 8,
  * The GPU-framework specifics (e.g. cudaTextureObject_t handles) are described
  * in the larger structure PmeGpuCudaKernelParams in the pme.cuh.
  */
+
 
 /*! \internal \brief
  * A GPU data structure for storing the constant PME data.
@@ -239,6 +244,15 @@ struct PmeGpuKernelParamsBase
     int pipelineAtomStart;
     /*! \brief End atom for this stage of pipeline */
     int pipelineAtomEnd;
+
+    /*! \brief PpRanksSendFInfo struct total size */
+    HIDE_FROM_OPENCL_COMPILER(int) ppRanksInfoSize;
+    /*! \brief PpRanksSendFInfo struct containing each PP rank forces buffer offsets */
+    HIDE_FROM_OPENCL_COMPILER(DeviceBuffer<PpRanksSendFInfo>) ppRanksInfo;
+    /*! \brief atomic counter used for tracking last processed block in pme gather kernel for each PP rank */
+    HIDE_FROM_OPENCL_COMPILER(DeviceBuffer<unsigned int>) lastProcessedBlockPerPpRank;
+    /*! \brief sync object used for nvshmem pme-pp force comm */
+    HIDE_FROM_OPENCL_COMPILER(DeviceBuffer<uint64_t>) forcesReadyNvshmemFlags;
 
     /* These texture objects are only used in CUDA and are related to the grid size. */
     /*! \brief Texture object for accessing grid.d_fractShiftsTable */

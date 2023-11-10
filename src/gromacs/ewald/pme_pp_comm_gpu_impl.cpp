@@ -65,7 +65,8 @@ PmePpCommGpu::PmePpCommGpu(MPI_Comm /* comm */,
                            int /* pmeRank */,
                            gmx::HostVector<gmx::RVec>* /* pmeCpuForceBuffer */,
                            const DeviceContext& /* deviceContext */,
-                           const DeviceStream& /* deviceStream */) :
+                           const DeviceStream& /* deviceStream */,
+                           const bool /*useNvshmem*/) :
     impl_(nullptr)
 {
     GMX_ASSERT(!impl_,
@@ -127,6 +128,15 @@ GpuEventSynchronizer* PmePpCommGpu::getForcesReadySynchronizer()
                "implementation.");
     return nullptr;
 }
+
+DeviceBuffer<uint64_t> PmePpCommGpu::getGpuForcesSyncObj()
+{
+    GMX_ASSERT(!impl_,
+               "A CPU stub for PME-PP GPU communication was called instead of the correct "
+               "implementation.");
+    return nullptr;
+}
+
 
 } // namespace gmx
 

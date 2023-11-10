@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright 2020- The GROMACS Authors
+ * Copyright 2023- The GROMACS Authors
  * and the project initiators Erik Lindahl, Berk Hess and David van der Spoel.
  * Consult the AUTHORS/COPYING files and https://www.gromacs.org for details.
  *
@@ -31,45 +31,52 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out https://www.gromacs.org.
  */
+
 /*! \libinternal \file
  *
- * \brief This file contains function declarations necessary for
- * running on an MPI rank doing only PME long-ranged work.
+ * \brief Definitions for NVSHMEM initialization/finalize class.
+ * gmxNvshmemHandle takes the MPI communicator and initializes the
+ * NVSHMEM over all the ranks involved in the given MPI communicator.
+ * This is a collective call for all the ranks in the given MPI comm.
+ * After NVSHMEM initialization all NVSHMEM APIs can be safely used.
  *
- * \author Berk Hess <hess@kth.se>
+ * \author Mahesh Doijade <mdoijade@nvidia.com>
+ *
+ * \ingroup module_gpu_utils
  * \inlibraryapi
- * \ingroup module_ewald
  */
 
-#ifndef GMX_EWALD_PME_ONLY_H
-#define GMX_EWALD_PME_ONLY_H
+#include "nvshmem_utils.h"
 
-#include <string>
+#include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/gmxassert.h"
+#if GMX_NVSHMEM
+#    include <nvshmem.h>
+#endif
 
-#include "gromacs/timing/walltime_accounting.h"
-
-struct t_commrec;
-struct t_inputrec;
-struct t_nrnb;
-struct gmx_pme_t;
-struct gmx_wallcycle;
-
-enum class PmeRunMode;
-namespace gmx
+gmxNvshmemHandle::gmxNvshmemHandle(MPI_Comm comm)
 {
-class DeviceStreamManager;
+#if GMX_NVSHMEM
+    // Duplicate the existing communicator for NVSHMEM usage as the communicator
+    // should remain valid from nvshmem init to destruction.
+    MPI_Comm_dup(comm, &nvshmem_mpi_comm_);
+    nvshmemx_init_attr_t attr;
+    attr.mpi_comm = (void*)&nvshmem_mpi_comm_;
+
+    int ret = nvshmemx_init_attr(NVSHMEMX_INIT_WITH_MPI_COMM, &attr);
+
+    GMX_RELEASE_ASSERT(ret == 0, "NVSHMEM init failed");
+#else
+    GMX_UNUSED_VALUE(nvshmem_mpi_comm_);
+    GMX_UNUSED_VALUE(comm);
+#endif
 }
 
-/*! \brief Called on the nodes that do PME exclusively */
-int gmx_pmeonly(gmx_pme_t**                     pme,
-                const t_commrec*                cr,
-                t_nrnb*                         mynrnb,
-                gmx_wallcycle*                  wcycle,
-                gmx_walltime_accounting_t       walltime_accounting,
-                t_inputrec*                     ir,
-                PmeRunMode                      runMode,
-                bool                            useGpuPmePpCommunication,
-                bool                            useNvshmem,
-                const gmx::DeviceStreamManager* deviceStreamManager);
-
+gmxNvshmemHandle::~gmxNvshmemHandle()
+{
+#if GMX_NVSHMEM
+    // Call nvshmem_finalize before destroying the MPI Comm.
+    nvshmem_finalize();
+    MPI_Comm_free(&nvshmem_mpi_comm_);
 #endif
+}

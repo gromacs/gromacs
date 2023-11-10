@@ -45,3 +45,4 @@
 #include "devicebuffer_sycl.h"
 
 template struct DeviceBuffer<gmx::RVec>;
+template struct DeviceBuffer<uint64_t>;

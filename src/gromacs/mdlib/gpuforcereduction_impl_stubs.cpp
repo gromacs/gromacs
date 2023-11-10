@@ -87,6 +87,12 @@ void GpuForceReduction::registerRvecForce(DeviceBuffer<gmx::RVec> /* forcePtr */
 }
 
 // NOLINTNEXTLINE readability-convert-member-functions-to-static
+void GpuForceReduction::registerForcesReadyNvshmemFlags(DeviceBuffer<uint64_t> /* forceSyncObjPtr */)
+{
+    GMX_RELEASE_ASSERT(false, "A CPU stub has been called instead of the correct implementation.");
+}
+
+// NOLINTNEXTLINE readability-convert-member-functions-to-static
 void GpuForceReduction::addDependency(GpuEventSynchronizer* const /* dependency */)
 {
     GMX_RELEASE_ASSERT(false, "A CPU stub has been called instead of the correct implementation.");

@@ -198,6 +198,17 @@ if (GMX_GPU_CUDA)
         set_target_properties(libgromacs PROPERTIES CUDA_RESOLVE_DEVICE_SYMBOLS ON)
         target_link_libraries(libgromacs PRIVATE nvshmem_host_lib nvshmem_device_lib)
     endif()
+    if (GMX_USE_cuFFTMp OR GMX_NVSHMEM)
+        # We need to PUBLIC link to the stub libraries nvml/cuda to WAR an issue
+        # with `bfd` linker which expects you always have dependencies on the link line.
+        # Also leaking path via the -rpath does not work with a stub library as the SONAME
+        # present inside these stub library (used by runtime) is *.so.1 instead of *.so as these
+        # stub library are meant only for compile time and the runtime version is a driver provided
+        # version which is not present on the system where driver is not installed.
+        # At some future release cmake will provide a workaround for this under the hood at which
+        # point we can use PRIVATE linking for these libs until then we stick with PUBLIC linking.
+        target_link_libraries(libgromacs PUBLIC cuda nvidia-ml)
+    endif()
 else()
     add_library(libgromacs ${LIBGROMACS_SOURCES})
 endif()

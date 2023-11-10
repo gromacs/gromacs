@@ -72,12 +72,14 @@ public:
      * \param[in] pmeCpuForceBuffer Buffer for PME force in CPU memory
      * \param[in] deviceContext     GPU context.
      * \param[in] deviceStream      GPU stream.
+     * \param[in] useNvshmem        NVSHMEM enable/disable for GPU comm.
      */
     PmePpCommGpu(MPI_Comm                    comm,
                  int                         pmeRank,
                  gmx::HostVector<gmx::RVec>* pmeCpuForceBuffer,
                  const DeviceContext&        deviceContext,
-                 const DeviceStream&         deviceStream);
+                 const DeviceStream&         deviceStream,
+                 bool                        useNvshmem);
     ~PmePpCommGpu();
 
     /*! \brief Perform steps required when buffer size changes
@@ -117,6 +119,11 @@ public:
      * Return pointer to event recorded when forces are ready
      */
     GpuEventSynchronizer* getForcesReadySynchronizer();
+
+    /*! \brief
+     * Return pointer to force synchronization NVSHMEM object
+     */
+    DeviceBuffer<uint64_t> getGpuForcesSyncObj();
 
 private:
     class Impl;

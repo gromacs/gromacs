@@ -59,6 +59,7 @@
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/gmxmpi.h"
 
+#include "pme_force_sender_gpu.h"
 #include "pme_gpu_settings.h"
 #include "pme_gpu_staging.h"
 
@@ -85,6 +86,19 @@ typedef int PmeGpuKernelParams;
 #endif
 
 struct DeviceInformation;
+
+/*! \internal \brief
+ * Contains information about the PP ranks that partners this PME rank.
+ * used in the pme gather kernel for nvshmem purpose*/
+struct PpRanksSendFInfo
+{
+    //! The MPI rank ID of this partner PP rank.
+    int rankId = -1;
+    //! The number of atoms to communicate with this partner PP rank.
+    int numAtoms = -1;
+    //! starting offset of this PP rank in the larger force buffer
+    int startAtomOffset = -1;
+};
 
 /*! \internal \brief
  * The PME GPU structure for all the data copied directly from the CPU PME structure.
@@ -159,6 +173,28 @@ struct PmeShared
     int gridHalo;
 };
 
+struct PmeNvshmemHost
+{
+    /*! \brief symmetric value across PME+PP ranks of max num atoms to allocate */
+    int nAtomsAlloc_symmetric;
+    /*! \brief PpRanks struct reference */
+    gmx::ArrayRef<PpRanks> ppRanksRef;
+    /*! \brief PpRanksSendFInfo struct containing info about each PP rank offsets */
+    PpRanksSendFInfo* ppRanksFInfo;
+    /*! \brief PpRanksSendFInfo struct allocation size tracker */
+    int ppRanksFInfoSize = 0;
+    /*! \brief PpRanksSendFInfo struct allocation size tracker */
+    int ppRanksFInfoSizeAlloc = 0;
+    /*! \brief per pp rank atomic counter allocation size tracker */
+    int lastProcessedBlockPerPpRankSize = 0;
+    /*! \brief per pp rank atomic counter allocation size tracker */
+    int lastProcessedBlockPerPpRankSizeAlloc = 0;
+    /*! \brief sync object for nvshmem based pme-pp force comm allocation size tracker */
+    int forcesReadyNvshmemFlagsSize = 0;
+    /*! \brief sync object for nvshmem based pme-pp force comm allocation size tracker */
+    int forcesReadyNvshmemFlagsSizeAlloc = 0;
+};
+
 /*! \internal \brief
  * The main PME GPU host structure, included in the PME CPU structure by pointer.
  */
@@ -223,6 +259,10 @@ struct PmeGpu
 
     /*! \brief The pointer to PME halo-exchange specific host-side data */
     std::unique_ptr<PmeGpuHaloExchange> haloExchange;
+
+    bool useNvshmem = false;
+
+    std::unique_ptr<PmeNvshmemHost> nvshmemParams;
 };
 
 #endif

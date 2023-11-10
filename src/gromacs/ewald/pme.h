@@ -350,6 +350,16 @@ inline bool pme_gpu_task_enabled(const gmx_pme_t* pme)
     return (pme != nullptr) && (pme_run_mode(pme) != PmeRunMode::CPU);
 }
 
+/*! \libinternal \brief
+ * Sets the nvshmem usage status, and allocates required structs
+ * if NVSHMEM should be used.
+ *
+ * \param[in] pmeGpu             The PME GPU structure.
+ * \param[in] useNvshmem         should use NVSHMEM.
+ */
+GPU_FUNC_QUALIFIER void pme_gpu_use_nvshmem(PmeGpu* GPU_FUNC_ARGUMENT(pmeGpu),
+                                            bool    GPU_FUNC_ARGUMENT(useNvshmem)) GPU_FUNC_TERM;
+
 /*! \brief Returns the block size requirement
  *
  * The GPU version of PME requires that the coordinates array have a

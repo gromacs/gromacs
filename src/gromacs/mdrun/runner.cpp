@@ -77,6 +77,7 @@
 #include "gromacs/gmxlib/nrnb.h"
 #include "gromacs/gpu_utils/device_stream_manager.h"
 #include "gromacs/gpu_utils/gpueventsynchronizer_helpers.h"
+#include "gromacs/gpu_utils/nvshmem_utils.h"
 #include "gromacs/hardware/cpuinfo.h"
 #include "gromacs/hardware/detecthardware.h"
 #include "gromacs/hardware/device_management.h"
@@ -328,6 +329,30 @@ static DevelopmentFeatureFlags manageDevelopmentFeatures(const gmx::MDLogger& md
                             "A CUDA or SYCL build with an external MPI library is required in "
                             "order to benefit from GMX_FORCE_GPU_AWARE_MPI. That environment "
                             "variable is being ignored because such a build is not in use.");
+        }
+    }
+
+    if (getenv("GMX_ENABLE_NVSHMEM") != nullptr)
+    {
+        if (GMX_LIB_MPI && GMX_NVSHMEM)
+        {
+            devFlags.enableNvshmem = true;
+            GMX_LOG(mdlog.warning)
+                    .asParagraph()
+                    .appendText(
+                            "GMX_ENABLE_NVSHMEM environment variable is detected. "
+                            "The experimental NVSHMEM feature will be used if run conditions "
+                            "allow.");
+        }
+        else
+        {
+            devFlags.enableNvshmem = false;
+            GMX_LOG(mdlog.warning)
+                    .asParagraph()
+                    .appendText(
+                            "GMX_ENABLE_NVSHMEM environment variable is detected, "
+                            "but GROMACS was built without NVSHMEM support. "
+                            "NVSHMEM will be disabled.");
         }
     }
 
@@ -1816,7 +1841,8 @@ int Mdrunner::mdrunner()
                     cr->dd->pme_nodeid,
                     &cr->dd->pmeForceReceiveBuffer,
                     deviceStreamManager->context(),
-                    deviceStreamManager->stream(DeviceStreamType::PmePpTransfer));
+                    deviceStreamManager->stream(DeviceStreamType::PmePpTransfer),
+                    runScheduleWork.simulationWork.useNvshmem);
         }
 
         fr->nbv = Nbnxm::init_nb_verlet(
@@ -2024,6 +2050,12 @@ int Mdrunner::mdrunner()
             }
             GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR
         }
+    }
+
+    std::unique_ptr<gmxNvshmemHandle> nvshmemHandlePtr;
+    if (runScheduleWork.simulationWork.useNvshmem)
+    {
+        nvshmemHandlePtr = std::make_unique<gmxNvshmemHandle>(cr->mpiDefaultCommunicator);
     }
 
     /* Set thread affinity after gmx_pme_init(), otherwise with cuFFTMp the NVSHMEM helper thread
@@ -2283,6 +2315,7 @@ int Mdrunner::mdrunner()
                     inputrec.get(),
                     pmeRunMode,
                     runScheduleWork.simulationWork.useGpuPmePpCommunication,
+                    runScheduleWork.simulationWork.useNvshmem,
                     deviceStreamManager.get());
     }
 

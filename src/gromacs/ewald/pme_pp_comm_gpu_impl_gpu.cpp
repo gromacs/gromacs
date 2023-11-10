@@ -67,13 +67,16 @@ PmePpCommGpu::Impl::Impl(MPI_Comm                    comm,
                          int                         pmeRank,
                          gmx::HostVector<gmx::RVec>* pmeCpuForceBuffer,
                          const DeviceContext&        deviceContext,
-                         const DeviceStream&         deviceStream) :
+                         const DeviceStream&         deviceStream,
+                         bool                        useNvshmem) :
     deviceContext_(deviceContext),
     pmePpCommStream_(deviceStream),
     comm_(comm),
     pmeRank_(pmeRank),
     pmeCpuForceBuffer_(pmeCpuForceBuffer),
-    d_pmeForces_(nullptr)
+    d_pmeForces_(nullptr),
+    forcesReadyNvshmemFlags(nullptr),
+    useNvshmem_(useNvshmem)
 {
     stageLibMpiGpuCpuComm_ = (getenv("GMX_DISABLE_STAGED_GPU_TO_CPU_PMEPP_COMM") == nullptr);
 }
@@ -85,8 +88,28 @@ PmePpCommGpu::Impl::~Impl()
 
 void PmePpCommGpu::Impl::reinit(int size)
 {
-    // Reallocate device buffer used for staging PME force
-    reallocateDeviceBuffer(&d_pmeForces_, size, &d_pmeForcesSize_, &d_pmeForcesSizeAlloc_, deviceContext_);
+    int newSize = size;
+    if (useNvshmem_)
+    {
+        MPI_Allreduce(&size, &newSize, 1, MPI_INT, MPI_MAX, comm_);
+
+        int numPpRanks = 0;
+        MPI_Bcast(&numPpRanks, 1, MPI_INT, pmeRank_, comm_);
+        // symmetric buffer used for synchronization purpose 1 to be used to signal PME to PP rank
+        // of put, and numPpRanks is intended to be used for each PP rank buffer consumption
+        // completion signal to PME to allow to produce it again. this a collective call.
+        reallocateDeviceBuffer(&forcesReadyNvshmemFlags,
+                               1 + numPpRanks,
+                               &forcesReadyNvshmemFlagsSize_,
+                               &forcesReadyNvshmemFlagsSizeAlloc_,
+                               deviceContext_,
+                               true);
+    }
+
+    // Reallocate device buffer used for staging PME force.
+    // if useNvshmem_ is true, this a collective call, resulting in symmetric allocation involving PME + PP ranks.
+    reallocateDeviceBuffer(
+            &d_pmeForces_, newSize, &d_pmeForcesSize_, &d_pmeForcesSizeAlloc_, deviceContext_, useNvshmem_);
 
     // This rank will access PME rank memory directly, so needs to receive the remote PME buffer addresses.
 #if GMX_THREAD_MPI
@@ -246,12 +269,18 @@ GpuEventSynchronizer* PmePpCommGpu::Impl::getForcesReadySynchronizer()
     }
 }
 
+DeviceBuffer<uint64_t> PmePpCommGpu::Impl::getGpuForcesSyncObj()
+{
+    return forcesReadyNvshmemFlags;
+}
+
 PmePpCommGpu::PmePpCommGpu(MPI_Comm                    comm,
                            int                         pmeRank,
                            gmx::HostVector<gmx::RVec>* pmeCpuForceBuffer,
                            const DeviceContext&        deviceContext,
-                           const DeviceStream&         deviceStream) :
-    impl_(new Impl(comm, pmeRank, pmeCpuForceBuffer, deviceContext, deviceStream))
+                           const DeviceStream&         deviceStream,
+                           bool                        useNvshmem) :
+    impl_(new Impl(comm, pmeRank, pmeCpuForceBuffer, deviceContext, deviceStream, useNvshmem))
 {
 }
 
@@ -287,6 +316,11 @@ DeviceBuffer<Float3> PmePpCommGpu::getGpuForceStagingPtr()
 GpuEventSynchronizer* PmePpCommGpu::getForcesReadySynchronizer()
 {
     return impl_->getForcesReadySynchronizer();
+}
+
+DeviceBuffer<uint64_t> PmePpCommGpu::getGpuForcesSyncObj()
+{
+    return impl_->getGpuForcesSyncObj();
 }
 
 } // namespace gmx

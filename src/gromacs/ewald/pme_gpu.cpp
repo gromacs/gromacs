@@ -465,3 +465,12 @@ GpuEventSynchronizer* pme_gpu_get_f_ready_synchronizer(const gmx_pme_t* pme)
 
     return pme_gpu_get_forces_ready_synchronizer(pme->gpu);
 }
+
+void pme_gpu_use_nvshmem(PmeGpu* pmeGpu, bool useNvshmem)
+{
+    pmeGpu->useNvshmem = useNvshmem;
+    if (useNvshmem)
+    {
+        pmeGpu->nvshmemParams = std::make_unique<PmeNvshmemHost>();
+    }
+}

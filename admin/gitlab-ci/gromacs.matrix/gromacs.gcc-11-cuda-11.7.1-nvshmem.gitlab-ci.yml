@@ -53,6 +53,15 @@ gromacs:gcc-11-cuda-11.7.1:testMPI-NVSHMEM:
     KUBERNETES_EXTENDED_RESOURCE_NAME: "nvidia.com/gpu"
     KUBERNETES_EXTENDED_RESOURCE_LIMIT: 2
     GMX_ENABLE_DIRECT_GPU_COMM: 1
+    GMX_ENABLE_NVSHMEM: 1
+    # Disable CUDA VMM usage of NVSHMEM until all the comm on the
+    # nvshmem allocated buffer does not happen with NVSHMEM as when using
+    # such buffer with MPI calls it results in several warnings from UCX.
+    NVSHMEM_DISABLE_CUDA_VMM: 1
+    # Default NVSHMEM_SYMMETRIC_SIZE is around 1.5GB which causes mem allocation error on CI
+    # GPUs having 4GB vidmem also this size is overkill for PME decomp tests, hence we
+    # restrict the default NVSHMEM heap size to 32MB.
+    NVSHMEM_SYMMETRIC_SIZE: 32M
     # if NVSHMEM uses NCCL it requires more than 4 GB of GPU RAM as min memory,
     # in CI we've GPUs like T400 which have 4 GB RAM so we disable NVSHMEM's
     # NCCL usage, as NCCL isn't required in our NVSHMEM usage.

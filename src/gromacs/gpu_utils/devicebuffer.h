@@ -80,17 +80,31 @@
  *  \param[in,out] currentNumValues     The pointer to the buffer's number of values.
  *  \param[in,out] currentMaxNumValues  The pointer to the buffer's capacity.
  *  \param[in]     deviceContext        The buffer's device context.
+ *  \param[in]     symmetricAlloc       Allocate symmetric buffer with NVSHMEM.
+ *                                      This is a collective call when true.
  */
 template<typename ValueType>
 void reallocateDeviceBuffer(DeviceBuffer<ValueType>* buffer,
                             size_t                   numValues,
                             int*                     currentNumValues,
                             int*                     currentMaxNumValues,
-                            const DeviceContext&     deviceContext)
+                            const DeviceContext&     deviceContext,
+                            const bool               symmetricAlloc = false)
 {
     GMX_ASSERT(buffer, "needs a buffer pointer");
     GMX_ASSERT(currentNumValues, "needs a size pointer");
     GMX_ASSERT(currentMaxNumValues, "needs a capacity pointer");
+
+    // If requested symmetricAlloc check if NVSHMEM is initialized to exit if it isn't and avoid nvshmem_malloc.
+    if (symmetricAlloc)
+    {
+#if GMX_NVSHMEM
+        GMX_RELEASE_ASSERT((nvshmemx_init_status() == NVSHMEM_STATUS_IS_INITIALIZED),
+                           "NVSHMEM is not initialized.");
+#else
+        GMX_RELEASE_ASSERT(0, "Symmetric allocation works with NVSHMEM builds.");
+#endif
+    }
 
     /* reallocate only if the data does not fit */
     if (static_cast<int>(numValues) > *currentMaxNumValues)
@@ -101,7 +115,17 @@ void reallocateDeviceBuffer(DeviceBuffer<ValueType>* buffer,
         }
 
         *currentMaxNumValues = over_alloc_large(numValues);
-        allocateDeviceBuffer(buffer, *currentMaxNumValues, deviceContext);
+
+        if (symmetricAlloc)
+        {
+#if GMX_NVSHMEM
+            allocateDeviceBufferNvShmem(buffer, *currentMaxNumValues, deviceContext);
+#endif
+        }
+        else
+        {
+            allocateDeviceBuffer(buffer, *currentMaxNumValues, deviceContext);
+        }
     }
     /* size could have changed without actual reallocation */
     *currentNumValues = numValues;

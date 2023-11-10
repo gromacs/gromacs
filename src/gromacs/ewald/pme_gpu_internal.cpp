@@ -238,13 +238,16 @@ void pme_gpu_free_bspline_values(const PmeGpu* pmeGpu)
 
 void pme_gpu_realloc_forces(PmeGpu* pmeGpu)
 {
-    const size_t newForcesSize = pmeGpu->nAtomsAlloc;
+    const size_t newForcesSize =
+            pmeGpu->useNvshmem ? pmeGpu->nvshmemParams->nAtomsAlloc_symmetric : pmeGpu->nAtomsAlloc;
     GMX_ASSERT(newForcesSize > 0, "Bad number of atoms in PME GPU");
     reallocateDeviceBuffer(&pmeGpu->kernelParams->atoms.d_forces,
                            newForcesSize,
                            &pmeGpu->archSpecific->forcesSize,
                            &pmeGpu->archSpecific->forcesSizeAlloc,
-                           pmeGpu->archSpecific->deviceContext_);
+                           pmeGpu->archSpecific->deviceContext_,
+                           pmeGpu->useNvshmem);
+
     pmeGpu->staging.h_forces.reserveWithPadding(pmeGpu->nAtomsAlloc);
     pmeGpu->staging.h_forces.resizeWithPadding(pmeGpu->kernelParams->atoms.nAtoms);
 }
@@ -1416,6 +1419,77 @@ void pme_gpu_reinit_atoms(PmeGpu* pmeGpu, const int nAtoms, const real* chargesA
     const int  nWarps                       = ((nAtoms + atomsPerWarp - 1) / atomsPerWarp);
     pmeGpu->archSpecific->splineCountActive = DIM * nWarps * atomsPerWarp * pmeGpu->common->pme_order;
 
+    if (pmeGpu->useNvshmem)
+    {
+        // find the max nAtomsAlloc among all the ranks for symmetric forces buffer allocation.
+        MPI_Allreduce(
+                &pmeGpu->nAtomsAlloc, &pmeGpu->nvshmemParams->nAtomsAlloc_symmetric, 1, MPI_INT, MPI_MAX, MPI_COMM_WORLD);
+
+        int myRank     = -1;
+        int numPpRanks = pmeGpu->nvshmemParams->ppRanksRef.size();
+        MPI_Comm_rank(MPI_COMM_WORLD, &myRank);
+        MPI_Bcast(&numPpRanks, 1, MPI_INT, myRank, MPI_COMM_WORLD);
+        // symmetric buffer allocation used for synchronization purpose
+        // 1 to be used to signal PME to PP rank of put, and
+        // numPpRanks is intended to be used for each PP rank buffer consumption completion
+        // signal to PME to allow to produce it again.
+        reallocateDeviceBuffer(&pmeGpu->kernelParams->forcesReadyNvshmemFlags,
+                               1 + numPpRanks,
+                               &pmeGpu->nvshmemParams->forcesReadyNvshmemFlagsSize,
+                               &pmeGpu->nvshmemParams->forcesReadyNvshmemFlagsSizeAlloc,
+                               pmeGpu->archSpecific->deviceContext_,
+                               true);
+
+        pme_gpu_realloc_forces(pmeGpu);
+
+        /* allocate the ppRanksFInfo host buffer */
+        kernelParamsPtr->ppRanksInfoSize = pmeGpu->nvshmemParams->ppRanksRef.size();
+
+        if (pmeGpu->nvshmemParams->ppRanksFInfo == nullptr)
+        {
+            pmalloc(reinterpret_cast<void**>(&pmeGpu->nvshmemParams->ppRanksFInfo),
+                    kernelParamsPtr->ppRanksInfoSize * sizeof(PpRanksSendFInfo));
+        }
+
+        // prepare the ppRanksFInfo struct for sending it to gpu.
+        int receiverIndex = 0;
+        for (const auto& receiver : pmeGpu->nvshmemParams->ppRanksRef)
+        {
+            auto& ppRankFInfo_prev = pmeGpu->nvshmemParams->ppRanksFInfo[receiverIndex - 1];
+            int   startIndex =
+                    receiverIndex ? ppRankFInfo_prev.startAtomOffset + ppRankFInfo_prev.numAtoms : 0;
+
+            pmeGpu->nvshmemParams->ppRanksFInfo[receiverIndex] = { receiver.rankId, receiver.numAtoms, startIndex };
+            receiverIndex++;
+        }
+
+        reallocateDeviceBuffer(&kernelParamsPtr->ppRanksInfo,
+                               kernelParamsPtr->ppRanksInfoSize,
+                               &pmeGpu->nvshmemParams->ppRanksFInfoSize,
+                               &pmeGpu->nvshmemParams->ppRanksFInfoSizeAlloc,
+                               pmeGpu->archSpecific->deviceContext_);
+        copyToDeviceBuffer(&kernelParamsPtr->ppRanksInfo,
+                           pmeGpu->nvshmemParams->ppRanksFInfo,
+                           0,
+                           kernelParamsPtr->ppRanksInfoSize,
+                           pmeGpu->archSpecific->pmeStream_,
+                           GpuApiCallBehavior::Async,
+                           nullptr);
+        reallocateDeviceBuffer(&kernelParamsPtr->lastProcessedBlockPerPpRank,
+                               kernelParamsPtr->ppRanksInfoSize,
+                               &pmeGpu->nvshmemParams->lastProcessedBlockPerPpRankSize,
+                               &pmeGpu->nvshmemParams->lastProcessedBlockPerPpRankSizeAlloc,
+                               pmeGpu->archSpecific->deviceContext_);
+        clearDeviceBufferAsync(&kernelParamsPtr->lastProcessedBlockPerPpRank,
+                               0,
+                               kernelParamsPtr->ppRanksInfoSize,
+                               pmeGpu->archSpecific->pmeStream_);
+    }
+    else if (haveToRealloc)
+    {
+        pme_gpu_realloc_forces(pmeGpu);
+    }
+
 #if GMX_DOUBLE
     GMX_RELEASE_ASSERT(false, "Only single precision supported");
     GMX_UNUSED_VALUE(charges);
@@ -1446,7 +1520,6 @@ void pme_gpu_reinit_atoms(PmeGpu* pmeGpu, const int nAtoms, const real* chargesA
 
     if (haveToRealloc)
     {
-        pme_gpu_realloc_forces(pmeGpu);
         pme_gpu_realloc_spline_data(pmeGpu);
         pme_gpu_realloc_grid_indices(pmeGpu);
     }

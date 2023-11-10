@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright 2020- The GROMACS Authors
+ * Copyright 2023- The GROMACS Authors
  * and the project initiators Erik Lindahl, Berk Hess and David van der Spoel.
  * Consult the AUTHORS/COPYING files and https://www.gromacs.org for details.
  *
@@ -31,45 +31,36 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out https://www.gromacs.org.
  */
+
 /*! \libinternal \file
  *
- * \brief This file contains function declarations necessary for
- * running on an MPI rank doing only PME long-ranged work.
+ * \brief Declarations for NVSHMEM initialization/finalize class.
+ * gmxNvshmemHandle takes the MPI communicator and initializes the
+ * NVSHMEM over all the ranks involved in the given MPI communicator.
+ * This is a collective call for all the ranks in the given MPI comm.
+ * After NVSHMEM initialization all NVSHMEM APIs can be safely used.
  *
- * \author Berk Hess <hess@kth.se>
+ * \author Mahesh Doijade <mdoijade@nvidia.com>
+ *
+ * \ingroup module_gpu_utils
  * \inlibraryapi
- * \ingroup module_ewald
  */
 
-#ifndef GMX_EWALD_PME_ONLY_H
-#define GMX_EWALD_PME_ONLY_H
+#ifndef GMX_NVSHMEM_UTILS_H_
+#define GMX_NVSHMEM_UTILS_H_
 
-#include <string>
+#include "gromacs/utility/gmxmpi.h"
 
-#include "gromacs/timing/walltime_accounting.h"
-
-struct t_commrec;
-struct t_inputrec;
-struct t_nrnb;
-struct gmx_pme_t;
-struct gmx_wallcycle;
-
-enum class PmeRunMode;
-namespace gmx
+class gmxNvshmemHandle
 {
-class DeviceStreamManager;
-}
 
-/*! \brief Called on the nodes that do PME exclusively */
-int gmx_pmeonly(gmx_pme_t**                     pme,
-                const t_commrec*                cr,
-                t_nrnb*                         mynrnb,
-                gmx_wallcycle*                  wcycle,
-                gmx_walltime_accounting_t       walltime_accounting,
-                t_inputrec*                     ir,
-                PmeRunMode                      runMode,
-                bool                            useGpuPmePpCommunication,
-                bool                            useNvshmem,
-                const gmx::DeviceStreamManager* deviceStreamManager);
+private:
+    MPI_Comm nvshmem_mpi_comm_;
+
+public:
+    gmxNvshmemHandle(MPI_Comm comm);
+
+    ~gmxNvshmemHandle();
+};
 
 #endif

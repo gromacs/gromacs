@@ -43,6 +43,7 @@ gmx_add_libgromacs_sources(
         hostallocator.cpp
         gpu_utils.cpp
         gpueventsynchronizer_helpers.cpp
+        nvshmem_utils.cpp
         )
 if(GMX_GPU_OPENCL)
     gmx_add_libgromacs_sources(

@@ -87,6 +87,8 @@ struct DevelopmentFeatureFlags
     bool enableGpuPmeDecomposition = false;
     //! True if CUDA Graphs are enabled
     bool enableCudaGraphs = false;
+    //! True if NVSHMEM can be used for GPU communication
+    bool enableNvshmem = false;
 };
 
 

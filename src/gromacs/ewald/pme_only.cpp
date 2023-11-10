@@ -136,6 +136,8 @@ struct gmx_pme_pp
     bool sendForcesDirectToPpGpu = false;
     /*! \brief Whether a GPU graph should be used to execute steps in the MD loop if run conditions allow */
     bool useMdGpuGraph = false;
+    /*! \brief Whether a NVSHMEM should be used for GPU communication if run conditions allow */
+    bool useNvshmem = false;
 };
 
 static std::vector<PpRanks> makePpRanks(const t_commrec* cr)
@@ -638,6 +640,7 @@ int gmx_pmeonly(struct gmx_pme_t**              pmeFromRunnerPtr,
                 t_inputrec*                     ir,
                 PmeRunMode                      runMode,
                 bool                            useGpuPmePpCommunication,
+                bool                            useNvshmem,
                 const gmx::DeviceStreamManager* deviceStreamManager)
 {
     int     ret;
@@ -682,6 +685,11 @@ int gmx_pmeonly(struct gmx_pme_t**              pmeFromRunnerPtr,
                     pme_pp->mpi_comm_mysim,
                     deviceStreamManager->context(),
                     pme_pp->ppRanks);
+            if (useNvshmem)
+            {
+                pme_gpu_use_nvshmem(pmeFromRunner->gpu, useNvshmem);
+                pmeFromRunner->gpu->nvshmemParams->ppRanksRef = pme_pp->ppRanks;
+            }
         }
         // TODO: Special PME-only constructor is used here. There is no mechanism to prevent from using the other constructor here.
         //       This should be made safer.

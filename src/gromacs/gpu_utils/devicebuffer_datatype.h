@@ -134,6 +134,7 @@ struct DeviceBuffer
 
 // Must explicitly instantiate for some types.
 extern template struct DeviceBuffer<gmx::RVec>;
+extern template struct DeviceBuffer<uint64_t>;
 
 #else
 
