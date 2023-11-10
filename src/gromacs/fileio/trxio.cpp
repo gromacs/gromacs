@@ -294,7 +294,7 @@ float trx_get_time_of_final_frame(t_trxstatus* status)
     }
     else
     {
-        gmx_incons("Only supported for TNG and XTC");
+        gmx_incons("Only supported for H5MD, TNG and XTC");
     }
     return lasttime;
 }
@@ -384,6 +384,7 @@ int write_trxframe_indexed(t_trxstatus* status, const t_trxframe* fr, int nind, 
     {
         case efTRR:
         case efTNG:
+        case efH5MD:
             if (fr->bV)
             {
                 snew(vout, nind);
@@ -425,6 +426,15 @@ int write_trxframe_indexed(t_trxstatus* status, const t_trxframe* fr, int nind, 
     switch (ftp)
     {
         case efTNG: gmx_write_tng_from_trxframe(status->tng, fr, nind); break;
+        case efH5MD: status->h5mdIo->writeFrame(fr->step,
+                                       fr->time,
+                                       0,
+                                       fr->box,
+                                       nullptr,
+                                       vout,
+                                       fout,
+                                       xout);
+
         case efXTC: write_xtc(status->fio, nind, fr->step, fr->time, fr->box, xout, prec); break;
         case efTRR:
             gmx_trr_write_frame(

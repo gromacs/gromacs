@@ -146,7 +146,7 @@ hid_t openOrCreateDataSet(hid_t                container,
         {
             maxDims[i] = chunkDims[i];
         }
-        hid_t dataspace          = H5Screate_simple(numDims, chunkDims, maxDims);
+        hid_t dataSpace          = H5Screate_simple(numDims, chunkDims, maxDims);
         hid_t createPropertyList = H5Pcreate(H5P_DATASET_CREATE);
         H5Pset_chunk(createPropertyList, numDims, chunkDims);
         setNumericFillValue(createPropertyList, dataType);
@@ -189,7 +189,7 @@ hid_t openOrCreateDataSet(hid_t                container,
         }
 
         dataSet = H5Dcreate(
-                container, name, dataType, dataspace, H5P_DEFAULT, createPropertyList, accessPropertyList);
+                container, name, dataType, dataSpace, H5P_DEFAULT, createPropertyList, accessPropertyList);
         if (dataSet < 0)
         {
             H5Eprint2(H5E_DEFAULT, nullptr);
@@ -212,10 +212,10 @@ void writeData(hid_t dataSet, const void* data, hsize_t positionToWrite)
     GMX_ASSERT(dataSet >= 0, "Needs a valid dataSet to write data.");
     GMX_ASSERT(data != nullptr_t, "Needs valid data to write.");
 
-    hid_t   dataspace          = H5Dget_space(dataSet);
+    hid_t   dataSpace          = H5Dget_space(dataSet);
     hid_t   createPropertyList = H5Dget_create_plist(dataSet);
-    hsize_t currentDims[numDims], maxDims[numDims], chunkDims[numDims];
-    H5Sget_simple_extent_dims(dataspace, currentDims, maxDims);
+    hsize_t currentDims[numDims], chunkDims[numDims];
+    H5Sget_simple_extent_dims(dataSpace, currentDims, nullptr);
     H5Pget_chunk(createPropertyList, numDims, chunkDims);
     const hsize_t numFramesPerChunk = chunkDims[0];
 
@@ -233,7 +233,7 @@ void writeData(hid_t dataSet, const void* data, hsize_t positionToWrite)
             fprintf(debug, "Resizing dataSet from %" PRId64 " to %" PRId64 "\n", currentDims[0], newDims[0]);
         }
         H5Dset_extent(dataSet, newDims);
-        dataspace = H5Dget_space(dataSet);
+        dataSpace = H5Dget_space(dataSet);
     }
     hsize_t fileOffset[numDims];
     fileOffset[0] = positionToWrite;
@@ -251,12 +251,12 @@ void writeData(hid_t dataSet, const void* data, hsize_t positionToWrite)
         fileOffset[i]      = 0;
         outputBlockSize[i] = currentDims[i];
     }
-    if (dataspace < 0)
+    if (dataSpace < 0)
     {
         H5Eprint2(H5E_DEFAULT, nullptr);
-        gmx_file("Cannot get dataspace of existing dataSet.");
+        gmx_file("Cannot get dataSpace of existing dataSet.");
     }
-    if (H5Sselect_hyperslab(dataspace, H5S_SELECT_SET, fileOffset, nullptr, outputBlockSize, nullptr) < 0)
+    if (H5Sselect_hyperslab(dataSpace, H5S_SELECT_SET, fileOffset, nullptr, outputBlockSize, nullptr) < 0)
     {
         H5Eprint2(H5E_DEFAULT, nullptr);
         gmx_file("Cannot select the output region.");
@@ -264,7 +264,7 @@ void writeData(hid_t dataSet, const void* data, hsize_t positionToWrite)
 
     hid_t memoryDataspace = H5Screate_simple(numDims, outputBlockSize, nullptr);
     hid_t dataType        = H5Dget_type(dataSet);
-    if (H5Dwrite(dataSet, dataType, memoryDataspace, dataspace, H5P_DEFAULT, data) < 0)
+    if (H5Dwrite(dataSet, dataType, memoryDataspace, dataSpace, H5P_DEFAULT, data) < 0)
     {
         H5Eprint2(H5E_DEFAULT, nullptr);
         gmx_file("Error writing data.");
@@ -273,18 +273,6 @@ void writeData(hid_t dataSet, const void* data, hsize_t positionToWrite)
     // It would be good to close the dataset here, but that means compressing and writing the whole chunk every time - very slow.
 #else
     gmx_file("GROMACS was compiled without HDF5 support, cannot handle this file type");
-#endif
-}
-
-hsize_t getNumberOfFramesInDataSet(hid_t dataSet)
-{
-#if GMX_USE_HDF5
-    GMX_ASSERT(dataSet >= 0, "Needs a valid dataSet to get the number of frames.");
-
-    hsize_t currentDims[3], maxDims[3];
-    hid_t   dataspace = H5Dget_space(dataSet);
-    H5Sget_simple_extent_dims(dataspace, currentDims, maxDims);
-    return currentDims[0];
 #endif
 }
 
@@ -315,8 +303,8 @@ void setAttribute(hid_t container, const char* name, const T value, hid_t dataTy
     hid_t attribute = H5Aopen(container, name, H5P_DEFAULT);
     if (attribute < 0)
     {
-        hid_t dataspace = H5Screate(H5S_SCALAR);
-        attribute = H5Acreate2(container, name, dataType, dataspace, H5P_DEFAULT, H5P_DEFAULT);
+        hid_t dataSpace = H5Screate(H5S_SCALAR);
+        attribute = H5Acreate2(container, name, dataType, dataSpace, H5P_DEFAULT, H5P_DEFAULT);
     }
     if (H5Awrite(attribute, dataType, &value) < 0)
     {
@@ -347,8 +335,8 @@ void setAttributeStringList(hid_t container, const char* name, const char value[
     if (attribute < 0)
     {
         hsize_t dataSize[1] = { numEntries };
-        hid_t   dataspace   = H5Screate_simple(1, dataSize, nullptr);
-        attribute = H5Acreate2(container, name, dataType, dataspace, H5P_DEFAULT, H5P_DEFAULT);
+        hid_t   dataSpace   = H5Screate_simple(1, dataSize, nullptr);
+        attribute = H5Acreate2(container, name, dataType, dataSpace, H5P_DEFAULT, H5P_DEFAULT);
     }
     if (H5Awrite(attribute, dataType, &value[0]) < 0)
     {

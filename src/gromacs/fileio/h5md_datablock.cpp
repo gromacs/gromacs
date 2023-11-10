@@ -158,36 +158,53 @@ int64_t GmxH5mdTimeDataBlock::getNumberOfFrames()
                "of frames.");
     if (stepDataSet_ >= 0)
     {
-        hid_t datatype;
-        datatype                            = H5T_NATIVE_INT64;
-        hsize_t          dataSetFrameDim    = getNumberOfFramesInDataSet(stepDataSet_);
+        hid_t dataSpace = H5Dget_space(stepDataSet_);
+        const int numDims = H5Sget_simple_extent_ndims(dataSpace);
+        if (numDims != 1)
+        {
+            gmx_file("The step data set should be one-dimensional.");
+        }
+        hsize_t dimExtents;
+        H5Sget_simple_extent_dims(dataSpace, &dimExtents, nullptr);
+        int64_t numValidFrames = dimExtents;
+
         hid_t            createPropertyList = H5Dget_create_plist(stepDataSet_);
         H5D_fill_value_t fillValueStatus;
         if (H5Pfill_value_defined(createPropertyList, &fillValueStatus) < 0
             || fillValueStatus == H5D_FILL_VALUE_UNDEFINED)
         {
-            return dataSetFrameDim;
+            return numValidFrames;
         }
+        hid_t datatype = H5T_NATIVE_INT64;
         int64_t fillValue;
         H5Pget_fill_value(createPropertyList, datatype, &fillValue);
-        int64_t* stepData;
-        snew(stepData, dataSetFrameDim);
-        if (H5Dread(stepDataSet_, datatype, H5S_ALL, H5S_ALL, H5P_DEFAULT, stepData) < 0)
-        {
-            gmx_file("Error reading step data set when determining the number of frames.");
-        }
-        int64_t numValidFrames = dataSetFrameDim;
-        while (numValidFrames > 0 && stepData[numValidFrames - 1] == fillValue)
-        {
+
+        int64_t stepData = fillValue;
+        do {
+            hsize_t location = numValidFrames - 1;
+            H5Sselect_elements(dataSpace, H5S_SELECT_SET, 1, &location);
+            if (H5Dread(stepDataSet_, datatype, dataSpace, H5S_ALL, H5P_DEFAULT, &stepData) < 0)
+            {
+                gmx_file("Error reading step data set when determining the number of frames.");
+            }
             numValidFrames--;
-        }
-        sfree(stepData);
+        } while (numValidFrames > 0 && stepData == fillValue);
+
         return numValidFrames;
     }
     else
     {
-        hsize_t dataSetFrameDim = getNumberOfFramesInDataSet(mainDataSet_);
-        return dataSetFrameDim;
+        hid_t dataSpace = H5Dget_space(stepDataSet_);
+        const int numDims = H5Sget_simple_extent_ndims(dataSpace);
+        if (numDims != 3)
+        {
+            gmx_file("The time dependent data set should be three-dimensional.");
+        }
+        hsize_t dimExtents[3];
+        H5Sget_simple_extent_dims(dataSpace, dimExtents, nullptr);
+        int64_t numValidFrames = dimExtents[0];
+
+        return numValidFrames;
     }
 }
 
