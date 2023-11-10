@@ -188,7 +188,7 @@ static void status_init(t_trxstatus* status)
     status->tf              = 0;
     status->persistent_line = nullptr;
     status->tng             = nullptr;
-    // status->h5mdIo       = GmxH5mdIo();
+    status->h5mdIo          = nullptr;
 }
 
 
@@ -284,6 +284,13 @@ float trx_get_time_of_final_frame(t_trxstatus* status)
             gmx_fatal(FARGS, "Error opening TNG file.");
         }
         lasttime = gmx_tng_get_time_of_final_frame(tng);
+    }
+    else if (filetype == efH5MD)
+    {
+        if (status->h5mdIo == nullptr)
+        {
+            gmx_fatal(FARGS, "Error opening H5MD file.");
+        }
     }
     else
     {

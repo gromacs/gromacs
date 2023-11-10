@@ -93,6 +93,8 @@ public:
      * \param[in] time The time stamp (in ps) of the data record.
      */
     void writeFrame(const void* data, int64_t step, real time);
+
+    int64_t getNumberOfFrames();
 };
 
 #endif // GMX_FILEIO_H5MD_DATABLOCK_H

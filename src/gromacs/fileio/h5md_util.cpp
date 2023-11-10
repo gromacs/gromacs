@@ -116,33 +116,39 @@ void registerSz3FilterImplicitly()
 #endif
 }
 
+template<int numDims>
 hid_t openOrCreateDataSet(hid_t                container,
                           const char*          name,
                           const char*          unit,
                           hid_t                dataType,
-                          hsize_t              numFramesPerChunk,
-                          hsize_t              numEntries,
-                          hsize_t              numValuesPerEntry,
+                          const hsize_t*       chunkDims,
                           CompressionAlgorithm compression,
                           double               compressionError)
 
 
 {
     /* Set a reasonable cache based on chunk sizes. The cache is not stored in file, so must be set when opening a dataset */
-    hsize_t chunkDims[3]       = { numFramesPerChunk, numEntries, numValuesPerEntry };
-    size_t  cacheSize          = sizeof(real) * chunkDims[0] * chunkDims[1] * chunkDims[2];
-    hid_t   accessPropertyList = H5Pcreate(H5P_DATASET_ACCESS);
+    size_t cacheSize = sizeof(real);
+    for (int i = 0; i < numDims; i++)
+    {
+        cacheSize *= chunkDims[i];
+    }
+    hid_t accessPropertyList = H5Pcreate(H5P_DATASET_ACCESS);
     H5Pset_chunk_cache(
             accessPropertyList, H5D_CHUNK_CACHE_NSLOTS_DEFAULT, cacheSize, H5D_CHUNK_CACHE_W0_DEFAULT);
     hid_t dataSet = H5Dopen(container, name, accessPropertyList);
 
     if (dataSet < 0)
     {
-        hsize_t dataSize[3]        = { numFramesPerChunk, numEntries, numValuesPerEntry };
-        hsize_t maxDims[3]         = { H5S_UNLIMITED, numEntries, numValuesPerEntry };
-        hid_t   dataspace          = H5Screate_simple(3, dataSize, maxDims);
-        hid_t   createPropertyList = H5Pcreate(H5P_DATASET_CREATE);
-        H5Pset_chunk(createPropertyList, 3, chunkDims);
+        hsize_t maxDims[numDims];
+        maxDims[0] = H5S_UNLIMITED;
+        for (int i = 1; i < numDims; i++)
+        {
+            maxDims[i] = chunkDims[i];
+        }
+        hid_t dataspace          = H5Screate_simple(numDims, chunkDims, maxDims);
+        hid_t createPropertyList = H5Pcreate(H5P_DATASET_CREATE);
+        H5Pset_chunk(createPropertyList, numDims, chunkDims);
         setNumericFillValue(createPropertyList, dataType);
 
         switch (compression)
@@ -199,6 +205,7 @@ hid_t openOrCreateDataSet(hid_t                container,
     return dataSet;
 }
 
+template<int numDims, bool writeFullDataSet>
 void writeData(hid_t dataSet, const void* data, hsize_t positionToWrite)
 {
 #if GMX_USE_HDF5
@@ -207,19 +214,20 @@ void writeData(hid_t dataSet, const void* data, hsize_t positionToWrite)
 
     hid_t   dataspace          = H5Dget_space(dataSet);
     hid_t   createPropertyList = H5Dget_create_plist(dataSet);
-    hsize_t currentDims[3], maxDims[3], chunkDims[3];
+    hsize_t currentDims[numDims], maxDims[numDims], chunkDims[numDims];
     H5Sget_simple_extent_dims(dataspace, currentDims, maxDims);
-    H5Pget_chunk(createPropertyList, 3, chunkDims);
-    hsize_t numFramesPerChunk = chunkDims[0];
-    hsize_t numEntries        = currentDims[1];
-    hsize_t numValuesPerEntry = currentDims[2];
+    H5Pget_chunk(createPropertyList, numDims, chunkDims);
+    const hsize_t numFramesPerChunk = chunkDims[0];
 
     /* Resize the dataSet if needed. */
     if (positionToWrite >= currentDims[0])
     {
-        hsize_t newDims[3] = { (positionToWrite / numFramesPerChunk + 1) * numFramesPerChunk,
-                               currentDims[1],
-                               currentDims[2] };
+        hsize_t newDims[numDims];
+        newDims[0] = (positionToWrite / numFramesPerChunk + 1) * numFramesPerChunk;
+        for (int i = 1; i < numDims; i++)
+        {
+            newDims[i] = currentDims[i];
+        }
         if (debug)
         {
             fprintf(debug, "Resizing dataSet from %" PRId64 " to %" PRId64 "\n", currentDims[0], newDims[0]);
@@ -227,16 +235,34 @@ void writeData(hid_t dataSet, const void* data, hsize_t positionToWrite)
         H5Dset_extent(dataSet, newDims);
         dataspace = H5Dget_space(dataSet);
     }
-    hsize_t fileOffset[3]      = { positionToWrite, 0, 0 };
-    hsize_t outputBlockSize[3] = { 1, numEntries, numValuesPerEntry };
+    hsize_t fileOffset[numDims];
+    fileOffset[0] = positionToWrite;
+    hsize_t outputBlockSize[numDims];
+    if constexpr (writeFullDataSet)
+    {
+        outputBlockSize[0] = currentDims[0];
+    }
+    else
+    {
+        outputBlockSize[0] = 1;
+    }
+    for (int i = 1; i < numDims; i++)
+    {
+        fileOffset[i]      = 0;
+        outputBlockSize[i] = currentDims[i];
+    }
     if (dataspace < 0)
     {
         H5Eprint2(H5E_DEFAULT, nullptr);
         gmx_file("Cannot get dataspace of existing dataSet.");
     }
-    H5Sselect_hyperslab(dataspace, H5S_SELECT_SET, fileOffset, nullptr, outputBlockSize, nullptr);
+    if (H5Sselect_hyperslab(dataspace, H5S_SELECT_SET, fileOffset, nullptr, outputBlockSize, nullptr) < 0)
+    {
+        H5Eprint2(H5E_DEFAULT, nullptr);
+        gmx_file("Cannot select the output region.");
+    }
 
-    hid_t memoryDataspace = H5Screate_simple(3, outputBlockSize, nullptr);
+    hid_t memoryDataspace = H5Screate_simple(numDims, outputBlockSize, nullptr);
     hid_t dataType        = H5Dget_type(dataSet);
     if (H5Dwrite(dataSet, dataType, memoryDataspace, dataspace, H5P_DEFAULT, data) < 0)
     {
@@ -247,6 +273,18 @@ void writeData(hid_t dataSet, const void* data, hsize_t positionToWrite)
     // It would be good to close the dataset here, but that means compressing and writing the whole chunk every time - very slow.
 #else
     gmx_file("GROMACS was compiled without HDF5 support, cannot handle this file type");
+#endif
+}
+
+hsize_t getNumberOfFramesInDataSet(hid_t dataSet)
+{
+#if GMX_USE_HDF5
+    GMX_ASSERT(dataSet >= 0, "Needs a valid dataSet to get the number of frames.");
+
+    hsize_t currentDims[3], maxDims[3];
+    hid_t   dataspace = H5Dget_space(dataSet);
+    H5Sget_simple_extent_dims(dataspace, currentDims, maxDims);
+    return currentDims[0];
 #endif
 }
 
@@ -319,6 +357,18 @@ void setAttributeStringList(hid_t container, const char* name, const char value[
     }
     H5Aclose(attribute);
 }
+
+template hid_t
+openOrCreateDataSet<1>(hid_t, const char*, const char*, hid_t, const hsize_t*, CompressionAlgorithm, double);
+template hid_t
+openOrCreateDataSet<2>(hid_t, const char*, const char*, hid_t, const hsize_t*, CompressionAlgorithm, double);
+template hid_t
+openOrCreateDataSet<3>(hid_t, const char*, const char*, hid_t, const hsize_t*, CompressionAlgorithm, double);
+
+template void writeData<1, false>(hid_t, const void*, hsize_t);
+template void writeData<1, true>(hid_t, const void*, hsize_t);
+template void writeData<2, false>(hid_t, const void*, hsize_t);
+template void writeData<3, false>(hid_t, const void*, hsize_t);
 
 template void setAttribute<int>(hid_t, const char*, int, hid_t);
 template void setAttribute<float>(hid_t, const char*, float, hid_t);

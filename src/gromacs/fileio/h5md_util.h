@@ -80,13 +80,12 @@ void registerSz3FilterImplicitly();
  * \returns The ID of the dataset.
  */
 
+template<int numDims>
 hid_t openOrCreateDataSet(hid_t                container,
                           const char*          name,
                           const char*          unit,
                           hid_t                dataType,
-                          hsize_t              numFramesPerChunk,
-                          hsize_t              numEntries,
-                          hsize_t              numValuesPerEntry,
+                          const hsize_t*       chunkDims,
                           CompressionAlgorithm compression,
                           double               compressionError);
 
@@ -96,7 +95,10 @@ hid_t openOrCreateDataSet(hid_t                container,
  * \param[in] data The data to write.
  * \param[in] positionToWrite The frame number to write.
  */
+template<int numDims, bool writeFullDataSet>
 void writeData(hid_t dataSet, const void* data, hsize_t positionToWrite);
+
+hsize_t getNumberOfFramesInDataSet(hid_t dataSet);
 
 void setBoxGroupAttributes(hid_t boxGroup, PbcType pbcType);
 

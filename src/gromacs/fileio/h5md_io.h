@@ -137,6 +137,8 @@ public:
                     const rvec* v,
                     const rvec* f,
                     const rvec* xLossy);
+
+    int64_t getNumberOfFrames(const char* dataBlockName);
 };
 
 #endif // GMX_FILEIO_H5MD_IO_H
