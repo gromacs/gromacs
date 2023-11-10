@@ -1182,6 +1182,7 @@ static void setupLocalGpuForceReduction(const gmx::MdrunScheduleWorkload& runSch
     else if (runScheduleWork.simulationWork.useGpuPmePpCommunication)
     {
         pmeForcePtr = pmePpCommGpu->getGpuForceStagingPtr();
+        GMX_ASSERT(pmeForcePtr, "PME force for reduction has no data");
         if (pmeForcePtr)
         {
             if (GMX_THREAD_MPI)
@@ -1394,9 +1395,9 @@ static void doPairSearch(const t_commrec*                    cr,
 
     if (simulationWork.useGpuFBufferOpsWhenAllowed)
     {
-        // with tMPI, direct GPU communication, and separate PME ranks we need
+        // with MPI, direct GPU communication, and separate PME ranks we need
         // gmx_pme_send_coordinates() to be called before we can set up force reduction
-        bool delaySetupLocalGpuForceReduction = GMX_THREAD_MPI && simulationWork.useGpuPmePpCommunication;
+        bool delaySetupLocalGpuForceReduction = GMX_MPI && simulationWork.useGpuPmePpCommunication;
         if (!delaySetupLocalGpuForceReduction)
         {
             setupLocalGpuForceReduction(runScheduleWork,
@@ -1407,6 +1408,7 @@ static void doPairSearch(const t_commrec*                    cr,
                                         fr->pmedata,
                                         cr->dd);
         }
+
         if (simulationWork.havePpDomainDecomposition)
         {
             setupNonLocalGpuForceReduction(runScheduleWork,
@@ -1616,13 +1618,12 @@ void do_force(FILE*                               fplog,
                                  wcycle);
     }
 
-
     if (simulationWork.useGpuFBufferOpsWhenAllowed && stepWork.doNeighborSearch)
     {
-        // with tMPI, direct GPU communication, and separate PME ranks we need
+        // with MPI, direct GPU communication, and separate PME ranks we need
         // gmx_pme_send_coordinates() to be called before we can set up force reduction
-        bool delaySetupLocalGpuForceReduction = GMX_THREAD_MPI && simulationWork.useGpuPmePpCommunication;
-        if (delaySetupLocalGpuForceReduction)
+        bool doSetupLocalGpuForceReduction = GMX_MPI && simulationWork.useGpuPmePpCommunication;
+        if (doSetupLocalGpuForceReduction)
         {
             setupLocalGpuForceReduction(runScheduleWork,
                                         fr->nbv.get(),
