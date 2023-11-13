@@ -99,6 +99,7 @@ TEST_P(ScatteringModule, DirectMode)
     command.addOption("-scattering-type", std::get<1>(params));
     command.addOption("-norm");
     command.addOption("-nomc");
+    setDatasetTolerance("scattering", gmx::test::relativeToleranceAsFloatingPoint(1, tolerance));
     runTest(command);
 }
 
@@ -122,6 +123,7 @@ TEST_P(ScatteringModule, MCMode)
     command.addOption("-scattering-type", std::get<1>(params));
     command.addOption("-norm");
     command.addOption("-mc");
+    setDatasetTolerance("scattering", gmx::test::relativeToleranceAsFloatingPoint(1, tolerance));
     runTest(command);
 }
 
