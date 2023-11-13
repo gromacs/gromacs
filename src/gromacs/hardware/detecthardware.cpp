@@ -220,6 +220,10 @@ static void gmx_collect_hardware_mpi(const gmx::CpuInfo&             cpuInfo,
     const bool cpuIsAmdZen1 = gmx::cpuIsAmdZen1(cpuInfo);
 
     int numCompatibleDevices = getCompatibleDevices(hardwareInfo->deviceInfoList).size();
+
+    // Collect information about GPU-aware MPI support
+    const gmx::GpuAwareMpiStatus gpuAwareMpiStatus =
+            getMinimalSupportedGpuAwareMpiStatus(hardwareInfo->deviceInfoList);
 #if GMX_LIB_MPI
     int gpu_hash;
 
@@ -258,7 +262,7 @@ static void gmx_collect_hardware_mpi(const gmx::CpuInfo&             cpuInfo,
         MPI_Allreduce(countsLocal.data(), countsReduced.data(), countsLocal.size(), MPI_INT, MPI_SUM, world);
     }
 
-    constexpr int                   numElementsMax = 13;
+    constexpr int                   numElementsMax = 14;
     std::array<int, numElementsMax> maxMinReduced;
     {
         std::array<int, numElementsMax> maxMinLocal;
@@ -278,6 +282,8 @@ static void gmx_collect_hardware_mpi(const gmx::CpuInfo&             cpuInfo,
         maxMinLocal[10] = -maxMinLocal[4];
         maxMinLocal[11] = -maxMinLocal[5];
         maxMinLocal[12] = (cpuIsAmdZen1 ? 1 : 0);
+        maxMinLocal[13] =
+                -static_cast<int>(gpuAwareMpiStatus); // Enum is ordinal, higher values mean better support
 
         MPI_Allreduce(maxMinLocal.data(), maxMinReduced.data(), maxMinLocal.size(), MPI_INT, MPI_MAX, world);
     }
@@ -299,6 +305,7 @@ static void gmx_collect_hardware_mpi(const gmx::CpuInfo&             cpuInfo,
     hardwareInfo->simd_suggest_max     = maxMinReduced[4];
     hardwareInfo->bIdenticalGPUs       = (maxMinReduced[5] == -maxMinReduced[11]);
     hardwareInfo->haveAmdZen1Cpu       = (maxMinReduced[12] > 0);
+    hardwareInfo->minGpuAwareMpiStatus = static_cast<gmx::GpuAwareMpiStatus>(-maxMinReduced[13]);
 
 #else
     hardwareInfo->nphysicalnode        = 1;
@@ -318,6 +325,7 @@ static void gmx_collect_hardware_mpi(const gmx::CpuInfo&             cpuInfo,
     hardwareInfo->simd_suggest_max     = static_cast<int>(simdSuggested(cpuInfo));
     hardwareInfo->bIdenticalGPUs       = TRUE;
     hardwareInfo->haveAmdZen1Cpu       = cpuIsAmdZen1;
+    hardwareInfo->minGpuAwareMpiStatus = gpuAwareMpiStatus;
     GMX_UNUSED_VALUE(physicalNodeComm);
 #endif
 

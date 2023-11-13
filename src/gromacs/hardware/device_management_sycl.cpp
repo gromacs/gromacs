@@ -57,6 +57,7 @@
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/mpiinfo.h"
 #include "gromacs/utility/strconvert.h"
 #include "gromacs/utility/stringutil.h"
 #include "gromacs/utility/unique_cptr.h"
@@ -244,6 +245,28 @@ static std::optional<std::tuple<int, int, int>> getHardwareVersionIntel(const sy
 
     // Now, find the matching device
     return getIntelHardwareVersionFromPciExpressID(pciId);
+}
+
+static gmx::GpuAwareMpiStatus getDeviceGpuAwareMpiStatus(const sycl::backend backend)
+{
+    if (GMX_LIB_MPI == 0)
+    {
+        return gmx::GpuAwareMpiStatus::NotSupported;
+    }
+    switch (backend)
+    {
+#if GMX_SYCL_DPCPP
+        case sycl::backend::opencl: return gmx::GpuAwareMpiStatus::NotSupported;
+        case sycl::backend::ext_oneapi_level_zero: return gmx::checkMpiZEAwareSupport();
+        case sycl::backend::ext_oneapi_cuda: return gmx::checkMpiCudaAwareSupport();
+        case sycl::backend::ext_oneapi_hip: return gmx::checkMpiHipAwareSupport();
+#elif GMX_SYCL_ACPP
+        case sycl::backend::cuda: return gmx::checkMpiCudaAwareSupport();
+        case sycl::backend::hip: return gmx::checkMpiHipAwareSupport();
+        case sycl::backend::level_zero: return gmx::checkMpiZEAwareSupport();
+#endif
+        default: return gmx::GpuAwareMpiStatus::NotSupported;
+    }
 }
 
 void warnWhenDeviceNotTargeted(const gmx::MDLogger& /* mdlog */, const DeviceInformation& /* deviceInfo */)
@@ -556,6 +579,8 @@ std::vector<std::unique_ptr<DeviceInformation>> findDevices()
         deviceInfos[i]->syclDevice = syclDevice;
         deviceInfos[i]->deviceVendor =
                 getDeviceVendor(syclDevice.get_info<sycl::info::device::vendor>().c_str());
+
+        deviceInfos[i]->gpuAwareMpiStatus = getDeviceGpuAwareMpiStatus(syclDevice.get_backend());
 
         deviceInfos[i]->supportedSubGroupSizesSize = 0;
         try

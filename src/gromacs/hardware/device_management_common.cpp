@@ -163,6 +163,24 @@ bool deviceIdIsCompatible(gmx::ArrayRef<const std::unique_ptr<DeviceInformation>
     return (*foundIt)->status == DeviceStatus::Compatible;
 }
 
+gmx::GpuAwareMpiStatus getMinimalSupportedGpuAwareMpiStatus(
+        gmx::ArrayRef<const std::unique_ptr<DeviceInformation>> deviceInfoList)
+{
+    if (deviceInfoList.empty())
+    {
+        return gmx::GpuAwareMpiStatus::NotSupported;
+    }
+    else
+    {
+        gmx::GpuAwareMpiStatus minVal = gmx::GpuAwareMpiStatus::Supported;
+        for (const auto& deviceInfo : deviceInfoList)
+        {
+            minVal = std::min(minVal, deviceInfo->gpuAwareMpiStatus);
+        }
+        return minVal;
+    }
+}
+
 std::string getDeviceCompatibilityDescription(const gmx::ArrayRef<const std::unique_ptr<DeviceInformation>> deviceInfoList,
                                               int deviceId)
 {

@@ -63,6 +63,7 @@
 #include "gromacs/gpu_utils/oclutils.h"
 #include "gromacs/hardware/device_management.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/mpiinfo.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/stringutil.h"
 
@@ -614,6 +615,8 @@ std::vector<std::unique_ptr<DeviceInformation>> findDevices()
                                     sizeof(size_t),
                                     &deviceInfoList[device_index]->maxWorkGroupSize,
                                     nullptr);
+
+                    deviceInfoList[device_index]->gpuAwareMpiStatus = gmx::GpuAwareMpiStatus::NotSupported;
 
                     deviceInfoList[device_index]->status =
                             gmx::checkGpu(device_index, *deviceInfoList[device_index]);

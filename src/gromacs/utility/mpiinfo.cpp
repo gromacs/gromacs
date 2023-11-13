@@ -59,7 +59,7 @@ GpuAwareMpiStatus checkMpiCudaAwareSupport()
     GpuAwareMpiStatus status = (MPIX_Query_cuda_support() == 1) ? GpuAwareMpiStatus::Supported
                                                                 : GpuAwareMpiStatus::NotSupported;
 #else
-    GpuAwareMpiStatus status = GpuAwareMpiStatus::NotKnown;
+    GpuAwareMpiStatus status = GpuAwareMpiStatus::NotSupported;
 #endif
 
     if (status != GpuAwareMpiStatus::Supported && getenv("GMX_FORCE_GPU_AWARE_MPI") != nullptr)
@@ -78,7 +78,7 @@ GpuAwareMpiStatus checkMpiHipAwareSupport()
     GpuAwareMpiStatus status = (MPIX_Query_rocm_support() == 1) ? GpuAwareMpiStatus::Supported
                                                                 : GpuAwareMpiStatus::NotSupported;
 #else
-    GpuAwareMpiStatus status = GpuAwareMpiStatus::NotKnown;
+    GpuAwareMpiStatus status = GpuAwareMpiStatus::NotSupported;
 #endif
 
     if (status != GpuAwareMpiStatus::Supported && getenv("GMX_FORCE_GPU_AWARE_MPI") != nullptr)
@@ -95,7 +95,7 @@ GpuAwareMpiStatus checkMpiZEAwareSupport()
     GpuAwareMpiStatus status = (MPIX_Query_ze_support() == 1) ? GpuAwareMpiStatus::Supported
                                                               : GpuAwareMpiStatus::NotSupported;
 #else
-    GpuAwareMpiStatus status = GpuAwareMpiStatus::NotKnown;
+    GpuAwareMpiStatus status = GpuAwareMpiStatus::NotSupported;
 #endif
 
     if (status != GpuAwareMpiStatus::Supported && getenv("GMX_FORCE_GPU_AWARE_MPI") != nullptr)

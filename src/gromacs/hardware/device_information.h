@@ -64,6 +64,7 @@
 
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/enumerationhelpers.h"
+#include "gromacs/utility/mpiinfo.h"
 
 //! Constant used to help minimize preprocessed code
 static constexpr bool c_binarySupportsGpus = (GMX_GPU != 0);
@@ -180,6 +181,7 @@ struct DeviceInformation
         return { supportedSubGroupSizesData.data(),
                  supportedSubGroupSizesData.data() + supportedSubGroupSizesSize };
     }
+    gmx::GpuAwareMpiStatus gpuAwareMpiStatus;
 #if GMX_GPU_CUDA
     //! CUDA device properties.
     cudaDeviceProp prop;

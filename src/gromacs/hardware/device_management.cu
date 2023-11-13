@@ -277,6 +277,9 @@ std::vector<std::unique_ptr<DeviceInformation>> findDevices()
     // We expect to start device support/sanity checks with a clean runtime error state
     gmx::ensureNoPendingDeviceError("Trying to find available CUDA devices.");
 
+    const gmx::GpuAwareMpiStatus gpuAwareMpiStatus =
+            GMX_LIB_MPI ? gmx::checkMpiCudaAwareSupport() : gmx::GpuAwareMpiStatus::NotSupported;
+
     std::vector<std::unique_ptr<DeviceInformation>> deviceInfoList(numDevices);
     for (int i = 0; i < numDevices; i++)
     {
@@ -291,6 +294,8 @@ std::vector<std::unique_ptr<DeviceInformation>> findDevices()
 
         deviceInfoList[i]->supportedSubGroupSizesSize    = 1;
         deviceInfoList[i]->supportedSubGroupSizesData[0] = 32;
+
+        deviceInfoList[i]->gpuAwareMpiStatus = gpuAwareMpiStatus;
 
         const DeviceStatus checkResult = (stat != cudaSuccess) ? DeviceStatus::NonFunctional
                                                                : checkDeviceStatus(*deviceInfoList[i]);
