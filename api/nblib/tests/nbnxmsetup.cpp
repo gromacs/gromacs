@@ -205,10 +205,6 @@ TEST(NbnxmSetupTest, canCreateKernelSetupGPU)
 TEST(NbnxmSetupTest, CanCreateDeviceStreamManager)
 {
     const auto& testDeviceList = gmx::test::getTestHardwareEnvironment()->getTestDeviceList();
-    if (testDeviceList.empty())
-    {
-        GTEST_SKIP() << "No compatible GPUs to test on.";
-    }
     for (const auto& testDevice : testDeviceList)
     {
         testDevice->activate();
@@ -221,10 +217,6 @@ TEST(NbnxmSetupTest, CanCreateDeviceStreamManager)
 TEST(NbnxmSetupTest, CanCreateNbnxmGPU)
 {
     const auto& testDeviceList = gmx::test::getTestHardwareEnvironment()->getTestDeviceList();
-    if (testDeviceList.empty())
-    {
-        GTEST_SKIP() << "No compatible GPUs to test on.";
-    }
     for (const auto& testDevice : testDeviceList)
     {
         testDevice->activate();

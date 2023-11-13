@@ -52,10 +52,10 @@
 
 #include "nblib/exception.h"
 #include "nblib/particletype.h"
-#include "nblib/topologyhelpers.h"
 #include "nblib/util/util.hpp"
 
 #include "sequencing.hpp"
+#include "topologyhelpers.h"
 
 namespace nblib
 {
@@ -117,7 +117,7 @@ ListedInteractionData TopologyBuilder::createInteractionData(const ParticleSeque
 {
     ListedInteractionData interactionData;
 
-    // this code is doing the compile-time equivalent of
+    // this code is doing the compile time equivalent of
     // for (int i = 0; i < interactionData.size(); ++i)
     //     create(get<i>(interactionData));
 
@@ -143,7 +143,7 @@ ListedInteractionData TopologyBuilder::createInteractionData(const ParticleSeque
                        [&S2 = expansionArrayStage2](size_t S1Element) { return S2[S1Element]; });
 
         // add data about InteractionType instances
-        interactionDataElement.parametersA = std::move(uniqueInteractionInstances);
+        interactionDataElement.parameters = std::move(uniqueInteractionInstances);
 
         interactionDataElement.indices.resize(expansionArray.size());
         // coordinateIndices contains the particle sequence IDs of all interaction coordinates of type <BondType>
@@ -154,7 +154,7 @@ ListedInteractionData TopologyBuilder::createInteractionData(const ParticleSeque
                        begin(expansionArray),
                        begin(interactionDataElement.indices),
                        [](auto coordinateIndex, auto interactionIndex) {
-                           IndexArray<coordinateIndex.size() + 1> ret{ 0 };
+                           std::array<int, coordinateIndex.size() + 1> ret{ 0 };
                            for (int i = 0; i < int(coordinateIndex.size()); ++i)
                            {
                                ret[i] = coordinateIndex[i];
@@ -164,8 +164,7 @@ ListedInteractionData TopologyBuilder::createInteractionData(const ParticleSeque
                        });
     };
 
-    auto computeIndices = subsetIndices(BasicListedTypes{}, AllListedTypes{});
-    for_each_tuple(create, tieElements(interactionData, computeIndices));
+    for_each_tuple(create, interactionData);
 
     return interactionData;
 }

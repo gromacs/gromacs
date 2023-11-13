@@ -40,13 +40,12 @@
  * \author Prashanth Kanduri <kanduri@cscs.ch>
  * \author Sebastian Keller <keller@cscs.ch>
  */
-#include <iostream>
+#include <cmath>
 
 #include "testutils/refdata.h"
 #include "testutils/testasserts.h"
 
 #include "nblib/pbc.hpp"
-#include "nblib/util/array.hpp"
 
 using gmx::test::defaultRealTolerance;
 
@@ -68,46 +67,6 @@ TEST(NBlibTest, PbcHolderWorks)
     EXPECT_REAL_EQ_TOL(ref[0], dx[0], gmx::test::relativeToleranceAsFloatingPoint(ref[0], 1e-6));
     EXPECT_REAL_EQ_TOL(ref[1], dx[1], gmx::test::relativeToleranceAsFloatingPoint(ref[0], 1e-6));
     EXPECT_REAL_EQ_TOL(ref[2], dx[2], gmx::test::relativeToleranceAsFloatingPoint(ref[0], 1e-6));
-}
-
-inline util::array<int, 3> shiftIndexToXyz(int s)
-{
-    int ix = s % gmx::detail::c_nBoxX;
-    int iy = ((s - ix) % (gmx::detail::c_nBoxY * gmx::detail::c_nBoxX)) / gmx::detail::c_nBoxX;
-    int iz = (s - ix - iy) / (gmx::detail::c_nBoxY * gmx::detail::c_nBoxX);
-
-    return { ix - gmx::c_dBoxX, iy - gmx::c_dBoxY, iz - gmx::c_dBoxZ };
-}
-
-TEST(NBlibTest, PbcShiftIndex)
-{
-    Box       box(10, 10, 10);
-    PbcHolder pbc(PbcType::Xyz, box);
-
-    gmx::RVec x1{ 1, 0, 0 }, x2{ 9, 0, 0 };
-    gmx::RVec dx;
-
-    int s1 = pbc.dxAiuc(x1, x2, dx);
-    int s2 = pbc.dxAiuc(x2, x1, dx);
-
-    auto xyz      = shiftIndexToXyz(s1);
-    int  s2decode = gmx::xyzToShiftIndex(-xyz[0], -xyz[1], -xyz[2]);
-    EXPECT_EQ(s2, s2decode);
-
-    std::vector<util::array<int, 3>> ivecs{
-        { 0, 0, 0 },   { 1, 0, 0 }, { -1, 0, 0 },  { 0, 1, 0 },  { 0, -1, 0 },  { 0, 0, 0 },
-        { 0, 0, -1 },  { 2, 0, 0 }, { -2, 0, 0 },  { 2, 0, 1 },  { -2, 0, 1 },  { 2, 1, 0 },
-        { -2, 1, 0 },  { 2, 1, 1 }, { -2, 1, 1 },  { 2, -1, 0 }, { -2, -1, 0 }, { 2, -1, 1 },
-        { -2, -1, 1 }, { 1, 1, 1 }, { -1, -1, -1 }
-    };
-
-    for (auto iv : ivecs)
-    {
-        int sIdx = gmx::xyzToShiftIndex(iv[0], iv[1], iv[2]);
-
-        auto decoded = shiftIndexToXyz(sIdx);
-        EXPECT_EQ(iv, decoded);
-    }
 }
 
 } // namespace nblib

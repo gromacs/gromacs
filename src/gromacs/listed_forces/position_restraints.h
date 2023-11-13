@@ -57,27 +57,11 @@ struct t_forcerec;
 class InteractionDefinitions;
 struct t_nrnb;
 struct t_pbc;
-enum class RefCoordScaling;
 
 namespace gmx
 {
 class ForceWithVirial;
-
-/*! \brief returns dx, rdist, and dpdl for functions posres() and fbposres()
- */
-void posres_dx(const rvec      x,
-               const rvec      pos0A,
-               const rvec      pos0B,
-               const rvec      comA_sc,
-               const rvec      comB_sc,
-               real            lambda,
-               const t_pbc*    pbc,
-               RefCoordScaling refcoord_scaling,
-               int             npbcdim,
-               rvec            dx,
-               rvec            rdist,
-               rvec            dpdl);
-} // namespace gmx
+}
 
 /*! \brief Helper function that wraps calls to posres */
 void posres_wrapper(t_nrnb*                       nrnb,

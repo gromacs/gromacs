@@ -46,15 +46,11 @@ gmx_add_gtest_executable(
         ${exename}
         CPP_SOURCE_FILES
         # files with code for tests
-        aggregate_transformations.cpp
         bondtypes.cpp
-        free_energy.cpp
         gmxcalculator.cpp
         helpers.cpp
         listedtesthelpers.cpp
         kernels.cpp
-        positionrestraints.cpp
-        posresdx.cpp
         typetests.cpp
         calculator.cpp
         conversions.cpp
@@ -63,74 +59,7 @@ gmx_add_gtest_executable(
 )
 target_link_libraries(${exename} PRIVATE nblib_test_infrastructure nblib
                       listed_forces
-                      mdtypes
                       pbcutil
                       timing)
 gmx_register_gtest_test(${testname} ${exename} INTEGRATION_TEST)
 add_dependencies(check-nblib ${exename})
-
-unset(testname)
-unset(exename)
-
-# separate compile target, makes it easy to choose compiler optimization and flags
-# and avoid dependencies on testing frameworks
-add_executable(listedperformance ../../topologyhelpers.cpp gmxcalculator.cpp performance.cpp)
-target_link_libraries(listedperformance PRIVATE nblib
-                                                common
-                                                libgromacs
-                                                math
-                                                pbcutil
-                                                timing
-                                                topology
-                                                utility)
-target_include_directories(listedperformance SYSTEM PRIVATE ${PROJECT_SOURCE_DIR} ${PROJECT_SOURCE_DIR}/src ${PROJECT_SOURCE_DIR}/src/external/thread_mpi/include)
-
-if(CMAKE_CUDA_COMPILER AND GMX_GPU_CUDA AND NOT ${CMAKE_VERSION} VERSION_LESS "3.17.0" AND NOT ${CMAKE_CXX_COMPILER_VERSION} VERSION_LESS "10.0.0")
-
-    set(exename "nblib-listed-gpu-test")
-    add_executable(${exename} listedgpu.cu)
-
-    target_link_libraries(${exename} PRIVATE nblib
-                                             common
-                                             libgromacs
-                                             math
-                                             pbcutil
-                                             timing
-                                             topology
-                                             utility
-                                             gtest_main)
-    target_include_directories(${exename} PRIVATE
-            ${PROJECT_SOURCE_DIR}
-            ${PROJECT_SOURCE_DIR}/api/legacy/include
-            ${PROJECT_SOURCE_DIR}/src
-            ${PROJECT_SOURCE_DIR}/src/external/thread_mpi/include)
-
-    set_property(TARGET ${exename} PROPERTY CUDA_ARCHITECTURES "35;60")
-    set_property(TARGET ${exename} PROPERTY CUDA_STANDARD 17)
-    target_compile_options(${exename} PRIVATE -Wno-deprecated-gpu-targets)
-
-    unset(exename)
-
-    set(exename gpu-listedperformance)
-    add_executable(${exename} ../gpu_interface.cu gpu_performance.cu)
-
-    target_link_libraries(${exename} PRIVATE nblib
-                                             common
-                                             libgromacs
-                                             math
-                                             pbcutil
-                                             timing
-                                             topology
-                                             utility)
-    target_include_directories(${exename} PRIVATE
-            ${PROJECT_SOURCE_DIR}
-            ${PROJECT_SOURCE_DIR}/api/legacy/include
-            ${PROJECT_SOURCE_DIR}/src
-            ${PROJECT_SOURCE_DIR}/src/external/thread_mpi/include)
-
-    set_property(TARGET ${exename} PROPERTY CUDA_ARCHITECTURES "35;60")
-    set_property(TARGET ${exename} PROPERTY CUDA_STANDARD 17)
-    target_compile_options(${exename} PRIVATE -Wno-deprecated-gpu-targets)
-
-    unset(exename)
-endif()

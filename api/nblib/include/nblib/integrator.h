@@ -94,8 +94,7 @@ public:
     void integrate(real                      dt,
                    gmx::ArrayRef<Vec3>       coordinates,
                    gmx::ArrayRef<Vec3>       velocities,
-                   gmx::ArrayRef<const Vec3> forces,
-                   [[maybe_unused]] int      numThreads = 1);
+                   gmx::ArrayRef<const Vec3> forces);
 
 private:
     //! 1/mass for all atoms

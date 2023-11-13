@@ -45,61 +45,43 @@
 
 #include "listedtesthelpers.h"
 
-#include "nblib/listed_forces/conversionscommon.h"
-#include "nblib/vector.h"
+#include "gromacs/utility/arrayref.h"
+
+#include "testutils/testasserts.h"
+#include "testutils/testmatchers.h"
 
 #include "gmxcalculator.h"
 
 namespace nblib
 {
 
-void compareNblibAndGmxListedImplementations(const ListedInteractionData& interactionData,
-                                             const std::vector<Vec3>&     coordinates,
-                                             const std::vector<real>&     charges,
-                                             size_t                       numParticles,
-                                             int                          numThreads,
-                                             const Box&                   box,
-                                             Vec3                         com,
-                                             real                         tolerance)
+void compareNblibAndGmxListedImplementations(const ListedInteractionData&  interactionData,
+                                             const std::vector<gmx::RVec>& coordinates,
+                                             size_t                        numParticles,
+                                             int                           numThreads,
+                                             const Box&                    box,
+                                             real                          tolerance)
 {
-    ListedForceCalculator calculator(
-            interactionData, numParticles, numThreads, box, PbcType::Xyz, RefCoordScaling::No);
+    ListedForceCalculator calculator(interactionData, numParticles, numThreads, box);
 
-    std::vector<Vec3> forces(numParticles, Vec3{ 0, 0, 0 });
-    std::vector<Vec3> shiftForces(gmx::c_numShiftVectors, Vec3{ 0, 0, 0 });
-    std::vector<real> virial(9, 0);
-    ListedEnergies    energies;
+    std::vector<gmx::RVec>            forces(numParticles, gmx::RVec{ 0, 0, 0 });
+    std::vector<gmx::RVec>            shiftForces(gmx::c_numShiftVectors, gmx::RVec{ 0, 0, 0 });
+    ListedForceCalculator::EnergyType energies;
 
-    if (!charges.empty())
-    {
-        calculator.compute(coordinates, charges, forces, shiftForces, virial, energies, com);
-    }
-    else
-    {
-        std::vector<real> zeroCharges(numParticles, 0.0);
-        calculator.compute(coordinates, zeroCharges, forces, shiftForces, virial, energies, com);
-    }
+    calculator.compute(coordinates, forces, shiftForces, energies, true);
 
-    auto [idef, ffparams] = convertToGmxInteractions(interactionData);
-    ListedGmxCalculator gmxCalculator(*idef, *ffparams, numParticles, numThreads, box);
+    ListedGmxCalculator gmxCalculator(interactionData, numParticles, numThreads, box);
 
-    std::vector<Vec3> gmxForces(numParticles, Vec3{ 0, 0, 0 });
-    std::vector<Vec3> gmxShiftForces(gmx::c_numShiftVectors, Vec3{ 0, 0, 0 });
-    ListedEnergies    gmxEnergies;
-    std::vector<real> gmxVirial(9, 0);
+    std::vector<gmx::RVec>            gmxForces(numParticles, gmx::RVec{ 0, 0, 0 });
+    std::vector<gmx::RVec>            gmxShiftForces(gmx::c_numShiftVectors, gmx::RVec{ 0, 0, 0 });
+    ListedForceCalculator::EnergyType gmxEnergies;
 
-    gmxCalculator.compute(coordinates, charges, gmxForces, gmxShiftForces, gmxVirial, gmxEnergies, com);
+    gmxCalculator.compute(coordinates, gmxForces, gmxShiftForces, gmxEnergies, true);
 
-    gmx::test::FloatingPointTolerance tolSetting(tolerance, tolerance, 1.0e-5, 1.0e-7, 200, 100, false);
+    gmx::test::FloatingPointTolerance tolSetting(tolerance, tolerance, 1.0e-5, 1.0e-8, 200, 100, false);
 
-    compareVectors(forces.begin(), forces.end(), gmxForces.begin(), tolSetting);
-    compareVectors(shiftForces.begin(), shiftForces.end(), gmxShiftForces.begin(), tolSetting);
-    compareEnergies(energies.begin(), energies.end(), gmxEnergies.begin(), tolSetting);
-
-    for (std::size_t i = 0; i < virial.size(); ++i)
-    {
-        EXPECT_REAL_EQ_TOL(virial[i], gmxVirial[i], tolSetting);
-    }
+    EXPECT_THAT(forces, Pointwise(gmx::test::RVecEq(tolSetting), gmxForces));
+    EXPECT_THAT(shiftForces, Pointwise(gmx::test::RVecEq(tolSetting), gmxShiftForces));
 }
 
 } // namespace nblib

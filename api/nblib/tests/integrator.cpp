@@ -43,26 +43,16 @@
  */
 #include "nblib/integrator.h"
 
-#include "gromacs/hardware/device_management.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/utility/arrayref.h"
+
+#include "testutils/testasserts.h"
 
 #include "nblib/molecules.h"
 #include "nblib/particletype.h"
 #include "nblib/simulationstate.h"
-#include "nblib/tests/testhelpers.h"
-#include "nblib/tests/testsystems.h"
 #include "nblib/topology.h"
 #include "nblib/vector.h"
-#if GMX_GPU_CUDA
-#    include "gromacs/gpu_utils/devicebuffer.h"
-#    include "gromacs/gpu_utils/devicebuffer_datatype.h"
-
-#    include "nblib/integrator_gpu.h"
-#endif
-
-#include "testutils/test_hardware_environment.h"
-#include "testutils/testasserts.h"
 
 namespace nblib
 {
@@ -145,177 +135,6 @@ TEST(NBlibTest, IntegratorWorks)
         }
     }
 }
-
-#if GMX_GPU_CUDA
-TEST(NBlibTest, CanSetupGpuIntegrator)
-{
-    ArgonSimulationStateBuilder argonSystemBuilder(fftypes::GROMOS43A1);
-    SimulationState             simState = argonSystemBuilder.setupSimulationState();
-    std::vector<real>           masses(simState.topology().numParticles());
-    const auto& testDeviceList = gmx::test::getTestHardwareEnvironment()->getTestDeviceList();
-    for (const auto& testDevice : testDeviceList)
-    {
-        const DeviceInformation& deviceInfo    = testDevice->deviceInfo();
-        const DeviceContext&     deviceContext = testDevice->deviceContext();
-        const DeviceStream&      deviceStream  = testDevice->deviceStream();
-        setActiveDevice(deviceInfo);
-        EXPECT_NO_THROW(LeapFrogGPU(simState.topology().numParticles(), masses, deviceContext, deviceStream));
-    }
-}
-
-TEST(NBlibTest, GPUIntegratorWorks)
-{
-    int  numAtoms = 1;
-    int  numSteps = 100;
-    real dt       = 0.001;
-
-    ParticleType particleType(ParticleTypeName("H"), Mass(1.0));
-    Molecule     molecule(MoleculeName("SomeMolecule"));
-    molecule.addParticle(ParticleName("SomeAtom"), particleType);
-
-    ParticleTypesInteractions interactions;
-    interactions.add(particleType.name(), C6{ 0 }, C12{ 0 });
-
-    TopologyBuilder topologyBuilder;
-    topologyBuilder.addMolecule(molecule, numAtoms);
-    topologyBuilder.addParticleTypesInteractions(interactions);
-    Topology    topology       = topologyBuilder.buildTopology();
-    const auto& testDeviceList = gmx::test::getTestHardwareEnvironment()->getTestDeviceList();
-    for (const auto& testDevice : testDeviceList)
-    {
-        const DeviceInformation& deviceInfo    = testDevice->deviceInfo();
-        const DeviceContext&     deviceContext = testDevice->deviceContext();
-        const DeviceStream&      deviceStream  = testDevice->deviceStream();
-        setActiveDevice(deviceInfo);
-
-        std::vector<Float4> xq_h(numAtoms, { 0.0, 0.0, 0.0, 0.0 });
-        std::vector<Vec3>   v_h(numAtoms, { 0.0, 0.0, 0.0 });
-        std::vector<Vec3>   f_h(numAtoms, { 1.0, 2.0, 0.0 });
-
-        DeviceBuffer<Float4> xq_d;
-        DeviceBuffer<Float3> v_d;
-        DeviceBuffer<Float3> f_d;
-        allocateDeviceBuffer(&xq_d, numAtoms, deviceContext);
-        allocateDeviceBuffer(&v_d, numAtoms, deviceContext);
-        allocateDeviceBuffer(&f_d, numAtoms, deviceContext);
-
-        Box box(100);
-
-        std::vector<Float4> xq0(xq_h);
-        std::vector<Vec3>   v0(v_h);
-
-        std::vector<Mass> masses = expandQuantity(topology, &ParticleType::mass);
-        std::vector<real> inverseMasses(masses.size());
-        std::transform(masses.begin(), masses.end(), inverseMasses.begin(), [](real mass) {
-            return 1.0 / mass;
-        });
-        LeapFrogGPU integrator(topology.numParticles(), inverseMasses, deviceContext, deviceStream);
-
-        // copy initial values for x,v,f to the device
-        copyToDeviceBuffer(&xq_d,
-                           reinterpret_cast<const Float4*>(xq_h.data()),
-                           0,
-                           numAtoms,
-                           deviceStream,
-                           GpuApiCallBehavior::Sync,
-                           nullptr);
-        copyToDeviceBuffer(&v_d,
-                           reinterpret_cast<const Float3*>(v_h.data()),
-                           0,
-                           numAtoms,
-                           deviceStream,
-                           GpuApiCallBehavior::Sync,
-                           nullptr);
-        copyToDeviceBuffer(&f_d,
-                           reinterpret_cast<const Float3*>(f_h.data()),
-                           0,
-                           numAtoms,
-                           deviceStream,
-                           GpuApiCallBehavior::Sync,
-                           nullptr);
-
-        gmx::test::FloatingPointTolerance tolerance = gmx::test::absoluteTolerance(numSteps * 0.000005);
-        for (int step = 0; step < numSteps; step++)
-        {
-            real totalTime = step * dt;
-
-            // download x_d, v_d, from current time step into x_h, v_h
-            copyFromDeviceBuffer(reinterpret_cast<Float4*>(xq_h.data()),
-                                 &xq_d,
-                                 0,
-                                 numAtoms,
-                                 deviceStream,
-                                 GpuApiCallBehavior::Sync,
-                                 nullptr);
-            copyFromDeviceBuffer(reinterpret_cast<Float3*>(v_h.data()),
-                                 &v_d,
-                                 0,
-                                 numAtoms,
-                                 deviceStream,
-                                 GpuApiCallBehavior::Sync,
-                                 nullptr);
-
-            // compare x_h, v_h, against analytical reference
-            for (int i = 0; i < numAtoms; i++)
-            {
-                // for (int d = 0; d < dimSize; d++)
-                // x-component (float4 does not support subscripting)
-                {
-                    // Analytical solution for constant-force particle movement
-                    int  typeIndex   = topology.getParticleTypeIdOfAllParticles()[i];
-                    real im          = 1.0 / topology.getParticleTypes()[typeIndex].mass();
-                    real xAnalytical = xq0[i].x + v0[i][0] * totalTime
-                                       + 0.5 * f_h[i][0] * totalTime * totalTime * im;
-                    real vAnalytical = v0[i][0] + f_h[i][0] * totalTime * im;
-
-                    EXPECT_REAL_EQ_TOL(xAnalytical, xq_h[i].x, tolerance) << formatString(
-                            "Coordinate {} of atom {} is different from analytical solution "
-                            "at step {}.",
-                            0,
-                            i,
-                            step);
-
-                    EXPECT_REAL_EQ_TOL(vAnalytical, v_h[i][0], tolerance) << formatString(
-                            "Velocity component {} of atom {} is different from analytical "
-                            "solution at step {}.",
-                            0,
-                            i,
-                            step);
-                }
-                // y-component
-                {
-                    // Analytical solution for constant-force particle movement
-                    int  typeIndex   = topology.getParticleTypeIdOfAllParticles()[i];
-                    real im          = 1.0 / topology.getParticleTypes()[typeIndex].mass();
-                    real xAnalytical = xq0[i].y + v0[i][1] * totalTime
-                                       + 0.5 * f_h[i][1] * totalTime * totalTime * im;
-                    real vAnalytical = v0[i][1] + f_h[i][1] * totalTime * im;
-
-                    EXPECT_REAL_EQ_TOL(xAnalytical, xq_h[i].y, tolerance) << formatString(
-                            "Coordinate {} of atom {} is different from analytical solution "
-                            "at step {}.",
-                            1,
-                            i,
-                            step);
-
-                    EXPECT_REAL_EQ_TOL(vAnalytical, v_h[i][1], tolerance) << formatString(
-                            "Velocity component {} of atom {} is different from analytical "
-                            "solution at step {}.",
-                            1,
-                            i,
-                            step);
-                }
-            }
-
-            integrator.integrate(dt, xq_d, v_d, f_d);
-        }
-
-        freeDeviceBuffer(&xq_d);
-        freeDeviceBuffer(&v_d);
-        freeDeviceBuffer(&f_d);
-    }
-}
-#endif
 
 } // namespace
 } // namespace test

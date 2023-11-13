@@ -44,13 +44,11 @@
 #ifndef NBLIB_LISTEDFORCES_DEFINITIONS_H
 #define NBLIB_LISTEDFORCES_DEFINITIONS_H
 
-#include <type_traits>
 #include <variant>
-#include <vector>
 
-#include "nblib/listed_forces/bondtypes.h"
-#include "nblib/util/array.hpp"
 #include "nblib/util/traits.hpp"
+
+#include "bondtypes.h"
 
 namespace nblib
 {
@@ -67,44 +65,17 @@ namespace nblib
  *  a kernel in kernels.hpp
  */
 
-//! \brief basic listed types without charges
 using SupportedTwoCenterTypes =
-        TypeList<HarmonicBondType, G96BondType, CubicBondType, MorseBondType, FENEBondType, HalfAttractiveQuarticBondType>;
+        TypeList<HarmonicBondType, G96BondType, CubicBondType, MorseBondType, FENEBondType, HalfAttractiveQuarticBondType, PairLJType>;
 using SupportedThreeCenterTypes =
         TypeList<HarmonicAngle, G96Angle, QuarticAngle, RestrictedAngle, CrossBondBond, CrossBondAngle, LinearAngle>;
-using SupportedFourCenterTypes =
-        TypeList<ProperDihedral, ImproperDihedral, ImproperProperDihedral, RyckaertBellemanDihedral>;
+using SupportedFourCenterTypes = TypeList<ProperDihedral, ImproperDihedral, RyckaertBellemanDihedral>;
 using SupportedFiveCenterTypes = TypeList<Default5Center>;
-
-
-//! \brief listed types with charges
-using PolarizationTypes = TypeList<SimplePolarization>;
-
-/*! \brief pairs with Van-der-Waals and Coulomb interactions
- *
- * Pairs have to be distinguished from other interactions with charges, because they describe
- * non-bonded forces whose energies are accounted separately from the other listed energies.
- */
-using PairListedTypes = TypeList<PairLJType, PairLJChargeType>;
-
-//! \brief restraint types
-using RestraintTypes = TypeList<PositionRestraints>;
-
-using AggregateTypes =
-        TypeList<FourCenterAggregate<HarmonicBondType, HarmonicAngle, PairLJType, ProperDihedral>,
-                 FourCenterAggregate<HarmonicBondType, HarmonicAngle, PairLJType, RyckaertBellemanDihedral>,
-                 FourCenterAggregate<HarmonicBondType, HarmonicAngle, PairLJType, ImproperDihedral>>;
 
 //***********************************************************************************
 
-using BasicListedTypes =
+using SupportedListedTypes =
         Fuse<SupportedTwoCenterTypes, SupportedThreeCenterTypes, SupportedFourCenterTypes, SupportedFiveCenterTypes>;
-
-using ChargedListedTypes = Fuse<PolarizationTypes, PairListedTypes, AggregateTypes>;
-
-using GpuListedTypes = Fuse<BasicListedTypes, PairListedTypes, AggregateTypes>;
-
-using AllListedTypes = Fuse<BasicListedTypes, ChargedListedTypes, RestraintTypes>;
 
 //! \brief meta function to map from an Interaction type to the number of interaction centers
 template<class Interaction, class = void>
@@ -112,68 +83,36 @@ struct NCenter
 {
 };
 
-//! \brief meta function return value for restraint interactions
-template<class Interaction>
-struct NCenter<Interaction, std::enable_if_t<Contains<Interaction, RestraintTypes>{}>> :
-    util::integral_constant<std::size_t, 1>
-{
-};
-
 //! \brief meta function return value for two-center interactions
 template<class Interaction>
 struct NCenter<Interaction, std::enable_if_t<Contains<Interaction, SupportedTwoCenterTypes>{}>> :
-    util::integral_constant<std::size_t, 2>
-{
-};
-
-template<>
-struct NCenter<SimplePolarization> : util::integral_constant<std::size_t, 2>
-{
-};
-
-template<>
-struct NCenter<PairLJType> : util::integral_constant<std::size_t, 2>
-{
-};
-
-template<>
-struct NCenter<PairLJChargeType> : util::integral_constant<std::size_t, 2>
+    std::integral_constant<std::size_t, 2>
 {
 };
 
 //! \brief meta function return value for three-center interactions
 template<class Interaction>
 struct NCenter<Interaction, std::enable_if_t<Contains<Interaction, SupportedThreeCenterTypes>{}>> :
-    util::integral_constant<std::size_t, 3>
-{
-};
-
-template<class Bond, class Angle>
-struct NCenter<ThreeCenterAggregate<Bond, Angle>> : util::integral_constant<std::size_t, 3>
+    std::integral_constant<std::size_t, 3>
 {
 };
 
 //! \brief meta function return value for four-center interactions
 template<class Interaction>
 struct NCenter<Interaction, std::enable_if_t<Contains<Interaction, SupportedFourCenterTypes>{}>> :
-    util::integral_constant<std::size_t, 4>
-{
-};
-
-template<class... Ts>
-struct NCenter<FourCenterAggregate<Ts...>> : util::integral_constant<std::size_t, 4>
+    std::integral_constant<std::size_t, 4>
 {
 };
 
 //! \brief meta function return value for five-center interactions
 template<class Interaction>
 struct NCenter<Interaction, std::enable_if_t<Contains<Interaction, SupportedFiveCenterTypes>{}>> :
-    util::integral_constant<std::size_t, 5>
+    std::integral_constant<std::size_t, 5>
 {
 };
 
 template<size_t N>
-using IndexArray = util::array<int, N>;
+using IndexArray = std::array<int, N>;
 
 /*! \brief encodes the number of integers needed to represent N-center interactions
  *
@@ -193,9 +132,8 @@ struct ListedTypeData
 {
     using type = InteractionType;
 
-    // vector of unique interaction parameters for states A & B
-    std::vector<InteractionType> parametersA;
-    std::vector<InteractionType> parametersB;
+    // vector of unique TwoCenterType instances
+    std::vector<InteractionType> parameters;
     // tuple format: <particleID i, particleID j, ..., InteractionInstanceIndex>
     std::vector<InteractionIndex<InteractionType>> indices;
 };
@@ -207,7 +145,7 @@ using FiveCenterInteraction  = Reduce<std::variant, SupportedFiveCenterTypes>;
 
 //! This is the complete type that holds all listed interaction data
 // result: std::tuple<ListedTypeData<SupportedListedType1>, ...>
-using ListedInteractionData = Reduce<std::tuple, Map<ListedTypeData, AllListedTypes>>;
+using ListedInteractionData = Reduce<std::tuple, Map<ListedTypeData, SupportedListedTypes>>;
 
 } // namespace nblib
 

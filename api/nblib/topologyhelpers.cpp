@@ -42,7 +42,7 @@
  * \author Artem Zhmurov <zhmurov@gmail.com>
  */
 
-#include "nblib/topologyhelpers.h"
+#include "topologyhelpers.h"
 
 #include <algorithm>
 

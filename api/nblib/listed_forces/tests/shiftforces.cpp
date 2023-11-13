@@ -43,9 +43,8 @@
 
 #include "testutils/testasserts.h"
 
-#include "nblib/pbc.hpp"
-
 #include "listedtesthelpers.h"
+#include "pbc.hpp"
 
 namespace nblib
 {
@@ -65,7 +64,7 @@ static ListedInteractionData createInteractionData(int numCoordinates)
             pickType<HarmonicBondType>(interactionData).indices.push_back({ i, j, 0 });
         }
     }
-    pickType<HarmonicBondType>(interactionData).parametersA.push_back(harmonicBond);
+    pickType<HarmonicBondType>(interactionData).parameters.push_back(harmonicBond);
 
     for (int i = 0; i < numCoordinates; ++i)
     {
@@ -77,7 +76,7 @@ static ListedInteractionData createInteractionData(int numCoordinates)
             }
         }
     }
-    pickType<HarmonicAngle>(interactionData).parametersA.push_back(harmonicAngle);
+    pickType<HarmonicAngle>(interactionData).parameters.push_back(harmonicAngle);
 
     for (int i = 0; i < numCoordinates; ++i)
     {
@@ -92,7 +91,7 @@ static ListedInteractionData createInteractionData(int numCoordinates)
             }
         }
     }
-    pickType<ProperDihedral>(interactionData).parametersA.push_back(properDihedral);
+    pickType<ProperDihedral>(interactionData).parameters.push_back(properDihedral);
 
     return interactionData;
 }
@@ -118,8 +117,7 @@ TEST(NBlibTest, shiftForcesAreCorrect)
     Box  box(1.0);
     auto coordinates = createTestCoordinates(numParticles);
 
-    compareNblibAndGmxListedImplementations(
-            interactionData, coordinates, std::vector<real>{}, numParticles, 1, box, {}, 1e-2);
+    compareNblibAndGmxListedImplementations(interactionData, coordinates, numParticles, 1, box, 1e-3);
 }
 
 } // namespace nblib

@@ -54,14 +54,13 @@
 
 #include "nblib/exception.h"
 #include "nblib/nbnxmsetuphelpers.h"
-#include "nblib/pbc.hpp"
 #include "nblib/topology.h"
 #include "nblib/tpr.h"
 
 #include "gmxbackenddata.h"
+#include "pbc.hpp"
 #include "systemdescription.h"
 #include "virials.h"
-
 
 namespace nblib
 {

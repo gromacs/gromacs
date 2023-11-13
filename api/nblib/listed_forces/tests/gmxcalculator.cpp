@@ -43,34 +43,29 @@
  */
 #include "gmxcalculator.h"
 
+#include "listed_forces/conversionscommon.h"
+
 #include "gromacs/listed_forces/listed_forces.h"
-#include "gromacs/mdtypes/interaction_const.h"
 #include "gromacs/pbcutil/ishift.h"
-#include "gromacs/tables/forcetable.h"
 #include "gromacs/timing/wallcycle.h"
 
 #include "nblib/exception.h"
-#include "nblib/listed_forces/conversionscommon.h"
 
 namespace nblib
 {
 
-ListedGmxCalculator::ListedGmxCalculator(const InteractionDefinitions& idefs,
-                                         const gmx_ffparams_t&         ffparams,
-                                         size_t                        nP,
-                                         int                           nThr,
-                                         const Box&                    box) :
-    idef_(std::make_unique<InteractionDefinitions>(idefs)),
-    ffparams_(std::make_unique<gmx_ffparams_t>(ffparams)),
+ListedGmxCalculator::ListedGmxCalculator(const ListedInteractionData& interactions,
+                                         int                          nP,
+                                         int                          nThr,
+                                         const Box&                   box) :
     numParticles(nP),
     numThreads(nThr),
     box_(box),
     shiftBuffer(gmx::c_numShiftVectors, gmx::RVec{ 0, 0, 0 }),
     forceBuffer(2 * numParticles, gmx::RVec{ 0, 0, 0 }),
-    charges_(nP, 0.0),
-    shiftProxy(gmx::ArrayRefWithPadding<gmx::RVec>(&forceBuffer[0],
-                                                   &forceBuffer[numParticles],
-                                                   &forceBuffer[2 * numParticles]),
+    shiftProxy(gmx::ArrayRefWithPadding<gmx::RVec>(forceBuffer.data(),
+                                                   forceBuffer.data() + numParticles,
+                                                   forceBuffer.data() + 2 * numParticles),
                true,
                shiftBuffer),
     virialProxy(forceBuffer, true),
@@ -78,7 +73,8 @@ ListedGmxCalculator::ListedGmxCalculator(const InteractionDefinitions& idefs,
     enerd(1, nullptr),
     lambdaBuffer(42) // values unused; just initialized with something larger than the number of enum types in FreeEnergyPerturbationCouplingType
 {
-    idef_->ilsort = ilsortNO_FE;
+    std::tie(idef, ffparams) = convertToGmxInteractions(interactions);
+    idef->ilsort             = ilsortNO_FE;
 
     ListedForces::InteractionSelection interactionSelection = ListedForces::interactionSelectionAll();
 
@@ -87,8 +83,8 @@ ListedGmxCalculator::ListedGmxCalculator(const InteractionDefinitions& idefs,
     fcdata_.disres = &disres_;
 
     gmxListedForces_ =
-            std::make_unique<ListedForces>(*ffparams_, 1, numThreads, interactionSelection, nullptr);
-    gmxListedForces_->setup(*idef_, numParticles, false);
+            std::make_unique<ListedForces>(*ffparams, 1, numThreads, interactionSelection, nullptr);
+    gmxListedForces_->setup(*idef, nP, false);
 
     wcycle = wallcycle_init(nullptr, 0, &cr);
     set_pbc(&pbc, PbcType::Xyz, box_.legacyMatrix());
@@ -99,30 +95,15 @@ ListedGmxCalculator::ListedGmxCalculator(const InteractionDefinitions& idefs,
     stepWork.computeEnergy       = true;
 
     fr.natoms_force = numParticles;
-    mdatoms_        = { 0 };
-    mdatoms_.nr     = nP;
-    energyGroup_.resize(nP, 0);
-    mdatoms_.cENER = energyGroup_;
 
-    interaction_const_t interactionConst;
-    interactionConst.vdwtype      = VanDerWaalsType::Cut;
-    interactionConst.vdw_modifier = InteractionModifiers::PotShift;
-    interactionConst.rvdw         = 1.0;
-    fr.ic = std::make_unique<interaction_const_t>(std::move(interactionConst));
-
-    real tableRange = 2.9;
-    fr.pairsTable   = make_tables(nullptr, fr.ic.get(), nullptr, tableRange, GMX_MAKETABLES_14ONLY);
-
-    mdatoms_.nPerturbed = 0;
+    mdatoms_.nr = nP;
 }
 
-void ListedGmxCalculator::compute(gmx::ArrayRef<const gmx::RVec> x,
-                                  gmx::ArrayRef<const real>      q,
-                                  gmx::ArrayRef<gmx::RVec>       forces,
-                                  gmx::ArrayRef<gmx::RVec>       shiftForces,
-                                  gmx::ArrayRef<real>            virials,
-                                  ListedEnergies&                energies,
-                                  gmx::RVec                      com)
+void ListedGmxCalculator::compute(gmx::ArrayRef<const gmx::RVec>     x,
+                                  gmx::ArrayRef<gmx::RVec>           forces,
+                                  gmx::ArrayRef<gmx::RVec>           shiftForces,
+                                  ListedForceCalculator::EnergyType& energies,
+                                  bool                               usePbc)
 {
     if (forces.size() != x.size() || forces.size() >= forceBuffer.size())
     {
@@ -130,12 +111,7 @@ void ListedGmxCalculator::compute(gmx::ArrayRef<const gmx::RVec> x,
     }
 
     // gmx listed forces only uses PBC if this flag is true
-    fr.bMolPBC     = true;
-    fr.rc_scaling  = RefCoordScaling::No;
-    fr.pbcType     = PbcType::Xyz;
-    fr.posres_com  = com;
-    fr.posres_comB = com;
-    fr.fudgeQQ     = 1.0;
+    fr.bMolPBC = usePbc;
 
     // the forceOutput proxies also have computeVirial flags, but they are not accessed
     // by gmx::ListedForces::calculate(), only stepWork matters
@@ -149,10 +125,9 @@ void ListedGmxCalculator::compute(gmx::ArrayRef<const gmx::RVec> x,
     }
 
     // zero output data structure
-    std::fill(energies.begin(), energies.end(), 0);
-    enerd.grpp.energyGroupPairTerms[NonBondedEnergyTerms::LJ14][0]      = 0;
-    enerd.grpp.energyGroupPairTerms[NonBondedEnergyTerms::Coulomb14][0] = 0;
-    std::fill(enerd.term.data(), enerd.term.data() + F_NRE, 0.0);
+    energies.fill(0);
+    std::fill(std::begin(enerd.term), std::end(enerd.term), 0.0);
+    std::fill(forceBuffer.begin(), forceBuffer.end(), gmx::RVec{ 0, 0, 0 });
     std::fill(shiftBuffer.begin(), shiftBuffer.end(), gmx::RVec{ 0, 0, 0 });
 
     gmxListedForces_->calculate(wcycle.get(),
@@ -169,8 +144,8 @@ void ListedGmxCalculator::compute(gmx::ArrayRef<const gmx::RVec> x,
                                 &enerd,
                                 &nrnb,
                                 lambdaBuffer,
-                                q,
-                                q,
+                                mdatoms_.chargeA,
+                                mdatoms_.chargeB,
                                 makeConstArrayRef(mdatoms_.bPerturbed),
                                 mdatoms_.cENER,
                                 mdatoms_.nPerturbed,
@@ -178,19 +153,15 @@ void ListedGmxCalculator::compute(gmx::ArrayRef<const gmx::RVec> x,
                                 stepWork);
 
     auto transferEnergy = [&energies, this](auto& interactionElement) {
-        using InteractionType = std::decay_t<decltype(interactionElement)>;
+        using InteractionType = typename std::decay_t<decltype(interactionElement)>::type;
         if constexpr (ListedTypeIsImplemented<InteractionType>{})
         {
-            int index = FindIndex<InteractionType, AllListedTypes>{};
-
-            auto gmxListedID = FindIndex<InteractionType, GmxToNblibMapping>::value;
-            energies[index]  = this->enerd.term[gmxListedID];
+            constexpr int index       = FindIndex<InteractionType, ListedInteractionData>::value;
+            auto          gmxListedID = FindIndex<InteractionType, GmxToNblibMapping>::value;
+            energies[index]           = this->enerd.term[gmxListedID];
         }
     };
-    for_each_tuple(transferEnergy, Reduce<std::tuple, AllListedTypes>{});
-    // We enforce that there is only one energy group in this calculator, so we don't need to accumulate
-    energies[VdwIndex{}] += enerd.grpp.energyGroupPairTerms[NonBondedEnergyTerms::LJ14][0];
-    energies[CoulombIndex{}] += enerd.grpp.energyGroupPairTerms[NonBondedEnergyTerms::Coulomb14][0];
+    for_each_tuple(transferEnergy, ListedInteractionData{});
 
     // add forces to output force buffers
     for (int pIndex = 0; pIndex < forces.ssize(); pIndex++)
@@ -203,43 +174,20 @@ void ListedGmxCalculator::compute(gmx::ArrayRef<const gmx::RVec> x,
     {
         shiftForces[i] += shiftBuffer[i];
     }
-
-    if (!virials.empty())
-    {
-        // add virial forces to the output buffer
-        auto virialMatrix = forceOutputs.forceWithVirial().getVirial();
-        // Only the diagonal elememts are populated by position restraints
-        virials[0] += virialMatrix[0][0];
-        virials[4] += virialMatrix[1][1];
-        virials[8] += virialMatrix[2][2];
-    }
 }
 
-void ListedGmxCalculator::compute(gmx::ArrayRef<const gmx::RVec> x,
-                                  gmx::ArrayRef<const real>      charges,
-                                  gmx::ArrayRef<gmx::RVec>       forces,
-                                  gmx::ArrayRef<gmx::RVec>       shiftForces,
-                                  ListedEnergies&                energies)
+void ListedGmxCalculator::compute(gmx::ArrayRef<const gmx::RVec>     x,
+                                  gmx::ArrayRef<gmx::RVec>           forces,
+                                  ListedForceCalculator::EnergyType& energies,
+                                  bool                               usePbc)
 {
-    compute(x, charges, forces, shiftForces, gmx::ArrayRef<real>{}, energies, {});
-}
-
-void ListedGmxCalculator::compute(gmx::ArrayRef<const gmx::RVec> x,
-                                  gmx::ArrayRef<gmx::RVec>       forces,
-                                  ListedEnergies&                energies)
-{
-    compute(x,
-            gmx::ArrayRef<real>{},
-            forces,
-            gmx::ArrayRef<gmx::RVec>{},
-            gmx::ArrayRef<real>{},
-            energies,
-            { 0, 0, 0 });
+    compute(x, forces, gmx::ArrayRef<gmx::RVec>{}, energies, usePbc);
 }
 
 const InteractionDefinitions& ListedGmxCalculator::getIdef() const
 {
-    return *idef_;
+    return *idef;
 }
+
 
 } // namespace nblib

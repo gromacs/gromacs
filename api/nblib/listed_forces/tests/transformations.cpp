@@ -40,16 +40,16 @@
  * \author Prashanth Kanduri <kanduri@cscs.ch>
  * \author Sebastian Keller <keller@cscs.ch>
  */
-#include "nblib/listed_forces/transformations.h"
+#include "listed_forces/transformations.h"
 
 #include <numeric>
 
 #include <gtest/gtest.h>
 
+#include "listed_forces/traits.h"
+
 #include "testutils/refdata.h"
 #include "testutils/testasserts.h"
-
-#include "nblib/listed_forces/traits.h"
 
 namespace nblib
 {
@@ -77,7 +77,7 @@ ListedInteractionData unsortedInteractions()
 TEST(ListedTransformations, SortInteractionIndices)
 {
     ListedInteractionData interactions = unsortedInteractions();
-    sortInteractions<ListedInteractionData>(interactions);
+    sortInteractions(interactions);
 
     std::vector<InteractionIndex<HarmonicBondType>> refBondIndices{ { 0, 1, 0 }, { 0, 2, 0 } };
     std::vector<InteractionIndex<HarmonicAngle>>  refAngleIndices{ { 1, 0, 2, 0 }, { 0, 1, 2, 0 } };

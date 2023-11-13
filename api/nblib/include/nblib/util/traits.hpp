@@ -47,11 +47,12 @@
 
 #include <cassert>
 
+#include <sstream>
+#include <string>
 #include <tuple>
 #include <type_traits>
+#include <vector>
 
-#include "nblib/util/annotation.hpp"
-#include "nblib/util/util.hpp"
 
 namespace nblib
 {
@@ -61,50 +62,6 @@ template<class... Ts>
 struct TypeList
 {
 };
-
-template<class TypeList>
-struct TypeListSize
-{
-};
-
-template<template<class...> class TypeList, class... Ts>
-struct TypeListSize<TypeList<Ts...>> : public util::integral_constant<std::size_t, sizeof...(Ts)>
-{
-};
-
-/*! \brief Element type retrieval: base template
- *
- * Same as std::tuple_element, but works for any type of type list
- */
-template<size_t I, class TL>
-struct TypeListElement
-{
-};
-
-//! \brief Element type retrieval: recursion, strip one element
-template<size_t I, template<class...> class TL, class Head, class... Tail>
-struct TypeListElement<I, TL<Head, Tail...>> : public TypeListElement<I - 1, TL<Tail...>>
-{
-};
-
-//! \brief Element type retrieval: endpoint, Head is the desired type
-template<class Head, template<class...> class TL, class... Tail>
-struct TypeListElement<0, TL<Head, Tail...>>
-{
-    using type = Head;
-};
-
-//! \brief Element type retrieval: out of bounds detection
-template<size_t I, template<class...> class TL>
-struct TypeListElement<I, TL<>>
-{
-    static_assert(I < TypeListSize<TL<>>{}, "TypeListElement access out of range");
-};
-
-//! \brief Element type retrieval: convenience alias
-template<size_t I, class TL>
-using TypeListElement_t = typename TypeListElement<I, TL>::type;
-
 
 namespace detail
 {
@@ -232,21 +189,21 @@ using AccessTypeMemberIfPresent_t = typename AccessTypeMemberIfPresent<T>::type;
  */
 template<int N, typename T, typename Tuple>
 struct MatchTypeOrTypeMember :
-    std::disjunction<std::is_same<T, TypeListElement_t<N, Tuple>>,
-                     std::is_same<T, AccessTypeMemberIfPresent_t<TypeListElement_t<N, Tuple>>>>
+    std::disjunction<std::is_same<T, std::tuple_element_t<N, Tuple>>,
+                     std::is_same<T, AccessTypeMemberIfPresent_t<std::tuple_element_t<N, Tuple>>>>
 {
 };
 
 //! \brief Recursion to check the next field N+1
 template<int N, class T, class Tuple, template<int, class, class> class Comparison, class Match = void>
-struct MatchField_ : util::integral_constant<size_t, MatchField_<N + 1, T, Tuple, Comparison>{}>
+struct MatchField_ : std::integral_constant<size_t, MatchField_<N + 1, T, Tuple, Comparison>{}>
 {
 };
 
 //! \brief recursion stop when Comparison<N, T, Tuple>::value is true
 template<int N, class T, class Tuple, template<int, class, class> class Comparison>
 struct MatchField_<N, T, Tuple, Comparison, std::enable_if_t<Comparison<N, T, Tuple>{}>> :
-    util::integral_constant<size_t, N>
+    std::integral_constant<size_t, N>
 {
 };
 
@@ -310,7 +267,7 @@ struct FindIndex
  *  and prevent an out of bounds tuple access compiler error.
  */
 template<typename T, template<class...> class TL, class... Ts, template<int, class, class> class Comparison>
-struct FindIndex<T, TL<Ts...>, Comparison> : detail::MatchField_<0, T, TL<Ts..., T>, Comparison>
+struct FindIndex<T, TL<Ts...>, Comparison> : detail::MatchField_<0, T, std::tuple<Ts..., T>, Comparison>
 {
 };
 
@@ -337,53 +294,14 @@ struct Contains
  * \tparam T   type to look for in TL
  * \tparam TL  a variadic type, such as std::tuple or TypeList
  * \tparam Ts  the template parameters of TL
+ *
+ * Note that this clang-format enforced formatting is unfortunate, it should be:
+ * struct Contains<T, TL<Ts...>> : std::bool_constant<FindIndex<T, TL<Ts...>>{} < sizeof...(Ts)>
  */
-// clang-format off
 template<class T, template<class...> class TL, class... Ts>
-struct Contains<T, TL<Ts...>> : util::integral_constant<int, FindIndex<T, TL<Ts...>>{} < sizeof...(Ts)>
+        struct Contains<T, TL<Ts...>> : std::bool_constant < FindIndex<T, TL<Ts...>>{}<sizeof...(Ts)>
 {
 };
-// clang-format on
-
-//! \brief trait to swap out the template parameter of Base with Arg
-template<class Base, class Arg>
-struct SwapArg
-{
-};
-
-//! \brief swap out first template param T with Arg
-template<template<class...> class Base, class T, class... Tail, class Arg>
-struct SwapArg<Base<T, Tail...>, Arg>
-{
-    using type = Base<Arg, Tail...>;
-};
-
-//! \brief swap out T with Arg if Base has a non-type template parameter
-template<template<class, std::size_t> class Base, class T, std::size_t I, class Arg>
-struct SwapArg<Base<T, I>, Arg>
-{
-    using type = Base<Arg, I>;
-};
-
-//! \brief return the index sequence of the subList entries in the baseList
-template<class... Ts1, class... Ts2>
-auto subsetIndices(TypeList<Ts1...> /*subList*/, TypeList<Ts2...> /*baseList*/)
-{
-    return std::index_sequence<FindIndex<Ts1, TypeList<Ts2...>>{}...>{};
-}
-
-//! \brief return a tuple of lvalue references for the specified indices of the argument tuple
-template<class... Ts, size_t... Is>
-auto tieElements(std::tuple<Ts...>& tuple, std::index_sequence<Is...>)
-{
-    return std::tie(std::get<Is>(tuple)...);
-}
-
-template<class... Ts, size_t... Is>
-auto tieElements(const std::tuple<Ts...>& tuple, std::index_sequence<Is...>)
-{
-    return std::tie(std::get<Is>(tuple)...);
-}
 
 } // namespace nblib
 

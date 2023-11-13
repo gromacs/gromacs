@@ -93,45 +93,6 @@ TEST(NBlibTest, CubicBoxWorks)
     }
 }
 
-TEST(NBlibTest, FillMatrixWorks)
-{
-    real length = 3;
-    real other  = drand48();
-
-    std::array<real, 9> boxMatrix = { length, other, 0, 0, length, 0, 0, 0, length };
-
-    Box::LegacyMatrix ref = { { length, other, 0 }, { 0, length, 0 }, { 0, 0, length } };
-    Box::LegacyMatrix test{ { 0 } };
-    fillMatrix(boxMatrix, test);
-
-    for (int i = 0; i < dimSize; ++i)
-    {
-        for (int j = 0; j < dimSize; ++j)
-        {
-            EXPECT_REAL_EQ_TOL(ref[i][j], test[i][j], defaultRealTolerance());
-        }
-    }
-}
-
-TEST(NBlibTest, TriclinicBoxWorks)
-{
-    std::array<real, 9> boxMatrix{ 0 };
-    Box::LegacyMatrix   ref = { { 0 } };
-
-    std::fill(boxMatrix.begin(), boxMatrix.end(), drand48());
-    fillMatrix(boxMatrix, ref);
-
-    Box test = Box(boxMatrix);
-
-    for (int i = 0; i < dimSize; ++i)
-    {
-        for (int j = 0; j < dimSize; ++j)
-        {
-            EXPECT_REAL_EQ_TOL(ref[i][j], test.legacyMatrix()[i][j], defaultRealTolerance());
-        }
-    }
-}
-
 TEST(NBlibTest, BoxEqual)
 {
     {

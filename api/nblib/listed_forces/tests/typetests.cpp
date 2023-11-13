@@ -40,116 +40,156 @@
  * \author Prashanth Kanduri <kanduri@cscs.ch>
  * \author Sebastian Keller <keller@cscs.ch>
  */
-#include <gtest/gtest.h>
+#include "listed_forces/dataflow.hpp"
+#include "listed_forces/tests/listedtesthelpers.h"
 
-#include "gromacs/topology/forcefieldparameters.h"
 #include "gromacs/utility/arrayref.h"
 
-#include "nblib/listed_forces/dataflow.hpp"
-#include "nblib/listed_forces/dataflowpolarization.hpp"
-#include "nblib/tests/testhelpers.h"
-#include "nblib/util/array.hpp"
+#include "testutils/refdata.h"
+#include "testutils/testasserts.h"
 
-#include "listedtesthelpers.h"
-#include "listedtypeinput.hpp"
+#include "testhelpers.h"
 
 namespace nblib
 {
 
-/*
-// This test uses charges and coordinates from the GROMACS test and not from the listedtypeinput.hpp
-static void compareForcesAndEnergy(TypeInput<PairLJType> input)
-{
-    gmx::ArrayRef<const PairLJType> paramsA(input.interactionData.parametersA);
+//! Coordinates for testing
+static const std::vector<gmx::RVec> c_coordinatesForDihTests = { { 0.0, 0.0, 0.0 },
+                                                                 { 0.0, 0.0, 0.2 },
+                                                                 { 0.005, 0.0, 0.1 },
+                                                                 { -0.001, 0.1, 0.0 } };
 
-    PbcHolder            pbcHolder(PbcType::Xyz, Box(1.0));
-    test::RefDataChecker refDataChecker(1e-4, "CompareTypes_ChargedLJPair.xml");
+//! Coordinates for testing angles
+static const std::vector<gmx::RVec> c_coordinatesForAngleTests = { { 1.382, 1.573, 1.482 },
+                                                                   { 1.281, 1.559, 1.596 },
+                                                                   { 1.292, 1.422, 1.663 } };
 
-    KernelEnergy<real> energy;
+//! Coordinates for testing bonds
+static const std::vector<gmx::RVec> c_coordinatesForBondTests = { { 1.382, 1.573, 1.482 },
+                                                                  { 1.281, 1.559, 1.596 } };
 
-    std::vector<real> charge = { 1.0, -0.5, -0.5 };
+//! Function types for testing Harmonic bonds
+static const std::vector<HarmonicBondType> c_InputHarmonicBonds = { { HarmonicBondType(500.0, 0.15) } };
 
-    std::vector<util::array<real, 3>> chargedPairCoordinates = { { 0.0, 0.0, 0.0 },
-                                                                 { 1.0, 1.0, 1.0 },
-                                                                 { 1.1, 1.2, 1.3 } };
+//! Function types for testing G96 bonds
+static const std::vector<G96BondType> c_InputG96Bonds = { { G96BondType(50.0, 0.15) } };
 
-    std::vector<util::array<real, 3>> forces(chargedPairCoordinates.size(),
-                                             util::array<real, 3>{ 0, 0, 0 });
+//! Function types for testing cubic bonds
+static const std::vector<CubicBondType> c_InputCubicBonds = { { CubicBondType(50.0, 2.0, 0.16) } };
 
-    std::vector<InteractionIndex<PairLJType>> chargedPairIndices = { { 1, 2, 0 }, { 0, 2, 0 } };
+//! Function types for testing Morse bonds
+static const std::vector<MorseBondType> c_InputMorseBonds = { { MorseBondType(30.0, 2.7, 0.15) } };
 
-    energy = computePolarizationForces(
-            gmx::ArrayRef<const InteractionIndex<PairLJType>>(chargedPairIndices),
-            paramsA,
-            paramsA,
-            gmx::ArrayRef<const util::array<real, 3>>(chargedPairCoordinates),
-            gmx::ArrayRef<real>(charge),
-            NoFepLambdaType{},
-            &forces,
-            gmx::ArrayRef<std::nullptr_t>{},
-            pbcHolder);
+//! Function types for testing FENE bonds
+static const std::vector<FENEBondType> c_InputFeneBonds = { { FENEBondType(5.0, 0.4) } };
 
-    refDataChecker.testReal(energy.eVdw(), "EVdw");
-    refDataChecker.testReal(energy.eCoul(), "ECoul");
-    refDataChecker.test3DVectors<util::array<real, 3>>(forces, "forces");
-}
- */
+//! Function types for testing Harmonic angles
+static const std::vector<HarmonicAngle> c_InputHarmonicAngles = { { HarmonicAngle(50.0, Degrees(100)) } };
 
-template<class Interaction>
-void compareForcesAndEnergy(TypeInput<Interaction> input)
-{
-    gmx::ArrayRef<const InteractionIndex<Interaction>> indices(input.interactionData.indices);
-    gmx::ArrayRef<const Interaction>                   paramsA(input.interactionData.parametersA);
-    gmx::ArrayRef<const gmx::RVec>                     x(input.coordinates);
+//! Function types for testing Linear angles
+static const std::vector<LinearAngle> c_InputLinearAngles = { { LinearAngle(50.0, 0.4) } };
 
-    PbcHolder                         pbcHolder(PbcType::Xyz, Box(1.5));
-    test::RefDataChecker              refDataChecker(1e-4, ("CompareTypes_" + input.name + ".xml"));
-    std::vector<util::array<real, 3>> forces(input.coordinates.size(), util::array<real, 3>{ 0, 0, 0 });
+//! Function types for testing G96 angles
+static const std::vector<G96Angle> c_InputG96Angles = { { G96Angle(50.0, Degrees(100)) } };
 
-    KernelEnergy<real> energy;
+//! Function types for testing Restricted angles
+static const std::vector<RestrictedAngle> c_InputRestrictedAngles = { { RestrictedAngle(50.0, Degrees(100)) } };
 
-    if constexpr (Contains<Interaction, BasicListedTypes>{})
-    {
-        energy = computeForces(indices, paramsA, x, &forces, pbcHolder);
-    }
-    if constexpr (Contains<Interaction, PolarizationTypes>{})
-    {
-        std::vector<real> charge = { 1.5, -2.0 };
-        energy                   = computePolarizationForces(
-                indices, paramsA, paramsA, x, charge, NoFepLambdaType{}, &forces, gmx::ArrayRef<std::nullptr_t>{}, pbcHolder);
-    }
-
-    refDataChecker.testReal(energy.potentialEnergy(), "Epot");
-    refDataChecker.test3DVectors<util::array<real, 3>>(forces, "forces");
-}
-
-// Tests for position restraints implemented in positionrestraints.cpp
-static void compareForcesAndEnergy(TypeInput<PositionRestraints> input)
-{
-    std::ignore = (input);
-}
-
-template<class Interaction>
-class TypeTests : public testing::Test
-{
-public:
-    void compareWithRefData()
-    {
-        TypeInput<Interaction> typeInput = pickType<Interaction>(TestInput);
-        compareForcesAndEnergy(typeInput);
-    }
+//! Function types for testing Quartic angles
+static const std::vector<QuarticAngle> c_InputQuarticAngles = {
+    { QuarticAngle(1.1, 2.3, 4.6, 7.8, 9.2, Degrees(87)) }
 };
 
-//! \brief test the listed force calculator output for each listed type one-by-one
-TYPED_TEST_SUITE_P(TypeTests);
+//! Function types for testing cross bond-bond interaction
+static const std::vector<CrossBondBond> c_InputCrossBondBond = { { CrossBondBond(45.0, 0.8, 0.7) } };
 
-TYPED_TEST_P(TypeTests, RefComp)
+//! Function types for testing cross bond-angle interaction
+static const std::vector<CrossBondAngle> c_InputCrossBondAngle = { { CrossBondAngle(45.0, 0.8, 0.7, 0.3) } };
+
+//! Function types for testing dihedrals
+static const std::vector<ProperDihedral> c_InputDihs = { { ProperDihedral(Degrees(-105.0), 15.0, 2) } };
+
+template<class Interaction, std::enable_if_t<Contains<Interaction, SupportedListedTypes>{}>* = nullptr>
+void checkForcesAndEnergiesWithRefData(std::vector<Interaction> input, gmx::ArrayRef<const gmx::RVec> x)
 {
-    this->compareWithRefData();
+    auto                   indices = indexVector<Interaction>();
+    PbcHolder              pbcHolder(PbcType::Xyz, Box(1.5));
+    test::RefDataChecker   refDataChecker(1e-4);
+    std::vector<gmx::RVec> forces(x.size(), gmx::RVec{ 0, 0, 0 });
+
+    auto energy = computeForces(gmx::ArrayRef<const InteractionIndex<Interaction>>(indices),
+                                gmx::ArrayRef<const Interaction>(input),
+                                x,
+                                &forces,
+                                pbcHolder);
+
+    refDataChecker.testReal(energy, "Epot");
+    refDataChecker.testArrays<gmx::RVec>(forces, "forces");
 }
 
-REGISTER_TYPED_TEST_SUITE_P(TypeTests, RefComp);
+TEST(FourCenter, ListedForcesProperDihedralTest)
+{
+    checkForcesAndEnergiesWithRefData(c_InputDihs, c_coordinatesForDihTests);
+}
 
-INSTANTIATE_TYPED_TEST_SUITE_P(CompareTypes, TypeTests, TestTypes);
+TEST(ThreeCenter, ListedForcesG96AngleTest)
+{
+    checkForcesAndEnergiesWithRefData(c_InputG96Angles, c_coordinatesForAngleTests);
+}
+
+TEST(ThreeCenter, ListedForcesHarmonicAngleTest)
+{
+    checkForcesAndEnergiesWithRefData(c_InputHarmonicAngles, c_coordinatesForAngleTests);
+}
+
+TEST(ThreeCenter, ListedForcesLinearAngleTest)
+{
+    checkForcesAndEnergiesWithRefData(c_InputLinearAngles, c_coordinatesForAngleTests);
+}
+
+TEST(ThreeCenter, ListedForcesCrossBondBondTest)
+{
+    checkForcesAndEnergiesWithRefData(c_InputCrossBondBond, c_coordinatesForAngleTests);
+}
+
+TEST(ThreeCenter, ListedForcesCrossBondAngleTest)
+{
+    checkForcesAndEnergiesWithRefData(c_InputCrossBondAngle, c_coordinatesForAngleTests);
+}
+
+TEST(ThreeCenter, ListedForcesQuarticAngleTest)
+{
+    checkForcesAndEnergiesWithRefData(c_InputQuarticAngles, c_coordinatesForAngleTests);
+}
+
+TEST(ThreeCenter, ListedForcesRestrictedAngleTest)
+{
+    checkForcesAndEnergiesWithRefData(c_InputRestrictedAngles, c_coordinatesForAngleTests);
+}
+
+TEST(TwoCenter, ListedForcesHarmonicBondTest)
+{
+    checkForcesAndEnergiesWithRefData(c_InputHarmonicBonds, c_coordinatesForBondTests);
+}
+
+TEST(TwoCenter, ListedForcesG96BondTest)
+{
+    checkForcesAndEnergiesWithRefData(c_InputG96Bonds, c_coordinatesForBondTests);
+}
+
+TEST(TwoCenter, ListedForcesCubicBondTest)
+{
+    checkForcesAndEnergiesWithRefData(c_InputCubicBonds, c_coordinatesForBondTests);
+}
+
+TEST(TwoCenter, ListedForcesMorseBondTest)
+{
+    checkForcesAndEnergiesWithRefData(c_InputMorseBonds, c_coordinatesForBondTests);
+}
+
+TEST(TwoCenter, ListedForcesFeneBondTest)
+{
+    checkForcesAndEnergiesWithRefData(c_InputFeneBonds, c_coordinatesForBondTests);
+}
 
 } // namespace nblib

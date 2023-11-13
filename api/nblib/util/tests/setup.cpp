@@ -46,7 +46,7 @@
 
 #include "testutils/testasserts.h"
 
-#include "nblib/tests/testhelpers.h"
+#include "testhelpers.h"
 
 
 namespace nblib

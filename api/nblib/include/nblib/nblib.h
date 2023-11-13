@@ -59,7 +59,9 @@
 #include "nblib/particletype.h"
 #include "nblib/simulationstate.h"
 #include "nblib/topology.h"
-#include "nblib/tpr.h"
 #include "nblib/util/setup.h"
+#include "nblib/util/traits.hpp"
+#include "nblib/util/util.hpp"
+#include "nblib/vector.h"
 
 #endif // NBLIB_HEADERS_H

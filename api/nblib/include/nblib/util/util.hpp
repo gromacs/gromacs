@@ -47,47 +47,11 @@
 
 #include <cassert>
 
-#include <limits>
 #include <sstream>
 #include <string>
 #include <tuple>
 #include <type_traits>
-
-#include "nblib/util/annotation.hpp"
-#include "nblib/util/tuple.hpp"
-
-namespace util
-{
-
-//! \brief like util::integral_constant, but device-qualified
-template<typename T, T v>
-struct integral_constant
-{
-    static constexpr T              value = v;
-    typedef T                       value_type;
-    typedef integral_constant<T, v> type;
-
-    HOST_DEVICE_FUN
-    constexpr operator value_type() const noexcept { return value; } // NOLINT
-};
-
-template<class... Ts, size_t... Is>
-HOST_DEVICE_FUN constexpr auto discardFirstImpl(const tuple<Ts...>& tuple, std::index_sequence<Is...>)
-{
-    return make_tuple(util::get<Is + 1>(tuple)...);
-}
-
-template<class... Ts>
-HOST_DEVICE_FUN constexpr auto discardFirstElement(const tuple<Ts...>& tuple)
-{
-    constexpr int tupleSize = std::tuple_size<util::tuple<Ts...>>::value;
-    static_assert(tupleSize > 1);
-
-    using Seq = std::make_index_sequence<tupleSize - 1>;
-    return discardFirstImpl(tuple, Seq{});
-}
-
-} // namespace util
+#include <vector>
 
 namespace nblib
 {
@@ -118,23 +82,22 @@ template<class T, class Phantom>
 struct StrongType
 {
     //! default ctor
-    StrongType() = default;
+    StrongType() : value_{} {}
     //! construction from the underlying type T, implicit conversions disabled
-    HOST_DEVICE_FUN explicit StrongType(T v) : value_(std::move(v)) {}
+    explicit StrongType(T v) : value_(std::move(v)) {}
 
     //! assignment from T
-    HOST_DEVICE_FUN StrongType& operator=(T v)
+    StrongType& operator=(T v)
     {
         value_ = std::move(v);
         return *this;
     }
 
     //! conversion to T
-    HOST_DEVICE_FUN operator T() const { return value_; } // NOLINT
+    operator T() const { return value_; }
 
     //! access the underlying value
-    HOST_DEVICE_FUN const T& value() const { return value_; }
-    HOST_DEVICE_FUN T& value() { return value_; }
+    T value() const { return value_; }
 
 private:
     T value_;
@@ -147,57 +110,23 @@ private:
  * parameters is desired, the underlying value attribute should be compared instead
  */
 template<class T, class Phantom>
-[[maybe_unused]] HOST_DEVICE_FUN inline bool operator==(const StrongType<T, Phantom>& lhs,
-                                                        const StrongType<T, Phantom>& rhs)
+[[maybe_unused]] inline bool operator==(const StrongType<T, Phantom>& lhs, const StrongType<T, Phantom>& rhs)
 {
     return lhs.value() == rhs.value();
 }
 
 //! comparison function <
 template<class T, class Phantom>
-HOST_DEVICE_FUN inline bool operator<(const StrongType<T, Phantom>& lhs, const StrongType<T, Phantom>& rhs)
+inline bool operator<(const StrongType<T, Phantom>& lhs, const StrongType<T, Phantom>& rhs)
 {
     return lhs.value() < rhs.value();
 }
 
 //! comparison function >
 template<class T, class Phantom>
-HOST_DEVICE_FUN inline bool operator>(const StrongType<T, Phantom>& lhs, const StrongType<T, Phantom>& rhs)
+inline bool operator>(const StrongType<T, Phantom>& lhs, const StrongType<T, Phantom>& rhs)
 {
     return lhs.value() > rhs.value();
-}
-
-/*! \brief create a switch on \p runtimeIndex with CompileTimeIndices as the possible cases
- *
- * \tparam CompileTimeIndices  integer sequence of possible switch case values
- * \tparam F                   callable object taking a compile time integer, e.g
- * integral_constant<int, N> \param runtimeIndex         runtime value to call f with \param f
- * callable of type F \return                     f(integral_constant<int, runtimeIndex>{})
- *
- * f is called with the compile time constant value of runtimeIndex.
- * This function (createSwitch) is equivalent to:
- *
- * switch(runtimeIndex)
- * {
- *   case 0: f(integral_constant<int, 0>{}); break;
- *   case 1: f(integral_constant<int, 1>{}); break;
- *   ...
- * }
- */
-template<int... CompileTimeIndices, class F>
-HOST_DEVICE_FUN auto createSwitch(int runtimeIndex, std::integer_sequence<int, CompileTimeIndices...>, F&& f)
-{
-    using ReturnType =
-            std::common_type_t<decltype(f(util::integral_constant<int, CompileTimeIndices>{}))...>;
-
-    ReturnType                                  ret;
-    [[maybe_unused]] std::initializer_list<int> list{ (
-            runtimeIndex == CompileTimeIndices
-            ? (ret = f(util::integral_constant<int, CompileTimeIndices>{})),
-            0
-            : 0)... };
-
-    return ret;
 }
 
 //! \brief Utility to call function with each element in tuple_
@@ -246,20 +175,6 @@ std::string formatString(std::string fmt, Args... args)
     os << next_token(fmt, delimiter);
 
     return os.str();
-}
-
-//! wrapper for std::numeric_limits<T> to avoid calling the host std::epsilon function in device code
-template<class T>
-struct MachineEpsilon
-{
-    static constexpr T value = std::numeric_limits<T>::epsilon();
-};
-
-//! \brief return ceil(dividend/divisor) as integer
-template<class I, std::enable_if_t<std::is_integral_v<I>, int> = 0>
-I iceil(I dividend, I divisor)
-{
-    return (dividend + divisor - 1) / divisor;
 }
 
 } // namespace nblib

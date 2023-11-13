@@ -44,18 +44,17 @@
 
 #include "nblib/listed_forces/calculator.h"
 
-#include <numeric>
 #include <valarray>
 
 #include <gtest/gtest.h>
 
+#include "listed_forces/dataflow.hpp"
+
 #include "testutils/refdata.h"
 #include "testutils/testasserts.h"
 
-#include "nblib/listed_forces/dataflow.hpp"
-#include "nblib/tests/testhelpers.h"
-
 #include "linear_chain_input.hpp"
+#include "testhelpers.h"
 
 
 namespace nblib
@@ -107,11 +106,11 @@ protected:
         std::vector<HarmonicAngle>                   angles{ angle };
         std::vector<InteractionIndex<HarmonicAngle>> angleIndices{ { 0, 1, 2, 0 } };
 
-        pickType<HarmonicBondType>(interactions).indices     = bondIndices;
-        pickType<HarmonicBondType>(interactions).parametersA = bonds;
+        pickType<HarmonicBondType>(interactions).indices    = bondIndices;
+        pickType<HarmonicBondType>(interactions).parameters = bonds;
 
-        pickType<HarmonicAngle>(interactions).indices     = angleIndices;
-        pickType<HarmonicAngle>(interactions).parametersA = angles;
+        pickType<HarmonicAngle>(interactions).indices    = angleIndices;
+        pickType<HarmonicAngle>(interactions).parameters = angles;
 
         // initial position for the methanol atoms from the spc-water example
         x = std::vector<gmx::RVec>{ { 1.97, 1.46, 1.209 }, { 1.978, 1.415, 1.082 }, { 1.905, 1.46, 1.03 } };
@@ -134,9 +133,8 @@ TEST_F(ListedExampleData, ComputeHarmonicBondForces)
 {
     gmx::ArrayRef<const InteractionIndex<HarmonicBondType>> indices =
             pickType<HarmonicBondType>(interactions).indices;
-    gmx::ArrayRef<const HarmonicBondType> bonds = pickType<HarmonicBondType>(interactions).parametersA;
-    gmx::ArrayRef<const gmx::RVec>        xref(x);
-    computeForces(indices, bonds, xref, &forces, *pbc);
+    gmx::ArrayRef<const HarmonicBondType> bonds = pickType<HarmonicBondType>(interactions).parameters;
+    computeForces(indices, bonds, x, &forces, *pbc);
 
     RefDataChecker vector3DTest(1e-3);
     vector3DTest.testArrays<Vec3>(forces, "Bond forces");
@@ -146,22 +144,19 @@ TEST_F(ListedExampleData, ComputeHarmonicBondEnergies)
 {
     gmx::ArrayRef<const InteractionIndex<HarmonicBondType>> indices =
             pickType<HarmonicBondType>(interactions).indices;
-    gmx::ArrayRef<const HarmonicBondType> bonds = pickType<HarmonicBondType>(interactions).parametersA;
-    gmx::ArrayRef<const gmx::RVec>        xref(x);
-
-    auto energy = computeForces(indices, bonds, xref, &forces, *pbc);
+    gmx::ArrayRef<const HarmonicBondType> bonds = pickType<HarmonicBondType>(interactions).parameters;
+    real                                  energy = computeForces(indices, bonds, x, &forces, *pbc);
 
     RefDataChecker vector3DTest(1e-4);
-    vector3DTest.testReal(energy.potentialEnergy(), "Bond energy");
+    vector3DTest.testReal(energy, "Bond energy");
 }
 
 TEST_F(ListedExampleData, ComputeHarmonicAngleForces)
 {
     gmx::ArrayRef<const InteractionIndex<HarmonicAngle>> indices =
             pickType<HarmonicAngle>(interactions).indices;
-    gmx::ArrayRef<const HarmonicAngle> angles = pickType<HarmonicAngle>(interactions).parametersA;
-    gmx::ArrayRef<const gmx::RVec>     xref(x);
-    computeForces(indices, angles, xref, &forces, *pbc);
+    gmx::ArrayRef<const HarmonicAngle> angles = pickType<HarmonicAngle>(interactions).parameters;
+    computeForces(indices, angles, x, &forces, *pbc);
 
     RefDataChecker vector3DTest(1e-4);
     vector3DTest.testArrays<Vec3>(forces, "Angle forces");
@@ -169,8 +164,7 @@ TEST_F(ListedExampleData, ComputeHarmonicAngleForces)
 
 TEST_F(ListedExampleData, CanReduceForces)
 {
-    gmx::ArrayRef<const gmx::RVec> xref(x);
-    reduceListedForces(interactions, xref, &forces, *pbc);
+    reduceListedForces(interactions, x, &forces, *pbc);
 
     RefDataChecker vector3DTest(1e-2);
     vector3DTest.testArrays<Vec3>(forces, "Reduced forces");
@@ -178,16 +172,16 @@ TEST_F(ListedExampleData, CanReduceForces)
 
 TEST_F(ListedExampleData, CanReduceEnergies)
 {
-    gmx::ArrayRef<const gmx::RVec> xref(x);
-    auto                           energies = reduceListedForces(interactions, xref, &forces, *pbc);
-    real totalEnergy = std::accumulate(energies.begin(), energies.end(), 0.0);
+    auto energies    = reduceListedForces(interactions, x, &forces, *pbc);
+    real totalEnergy = std::accumulate(begin(energies), end(energies), 0.0);
 
     RefDataChecker vector3DTest(1e-4);
     vector3DTest.testReal(totalEnergy, "Reduced energy");
 }
 
 
-void compareArray(const ListedEnergies& energies, const ListedEnergies& refEnergies)
+void compareArray(const ListedForceCalculator::EnergyType& energies,
+                  const ListedForceCalculator::EnergyType& refEnergies)
 {
     for (size_t i = 0; i < energies.size(); ++i)
     {
@@ -209,13 +203,15 @@ protected:
         x            = data.x;
         interactions = data.interactions;
         box          = data.box;
-        refForces.resize(data.nParticles, gmx::RVec{ 0, 0, 0 });
+        refForces    = data.forces;
 
-        gmx::ArrayRef<const gmx::RVec> xref(x);
-        refEnergies = reduceListedForces(interactions, xref, &refForces, PbcHolder(PbcType::Xyz, box));
+        refEnergies = reduceListedForces(interactions, x, &refForces, NoPbc{});
     }
 
-    void testEnergies(const ListedEnergies& energies) const { compareArray(energies, refEnergies); }
+    void testEnergies(const ListedForceCalculator::EnergyType& energies) const
+    {
+        compareArray(energies, refEnergies);
+    }
 
     void testForces(const std::vector<gmx::RVec>& forces) const
     {
@@ -224,19 +220,19 @@ protected:
 
     std::vector<gmx::RVec> x;
     ListedInteractionData  interactions;
-    Box                    box{ 0 };
+    std::shared_ptr<Box>   box;
 
 private:
-    std::vector<gmx::RVec> refForces;
-    ListedEnergies         refEnergies;
+    std::vector<gmx::RVec>            refForces;
+    ListedForceCalculator::EnergyType refEnergies;
 };
 
 TEST_F(LinearChainDataFixture, Multithreading)
 {
-    ListedForceCalculator lfCalculator(interactions, x.size(), 4, box);
+    ListedForceCalculator lfCalculator(interactions, x.size(), 4, *box);
 
-    std::vector<Vec3> forces(x.size(), Vec3{ 0, 0, 0 });
-    ListedEnergies    energies;
+    std::vector<Vec3>                 forces(x.size(), Vec3{ 0, 0, 0 });
+    ListedForceCalculator::EnergyType energies;
     lfCalculator.compute(x, forces, energies);
 
     testEnergies(energies);

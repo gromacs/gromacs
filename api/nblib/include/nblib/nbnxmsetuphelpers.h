@@ -42,8 +42,6 @@
 #ifndef NBLIB_NBNXMSETUPHELPERS_H
 #define NBLIB_NBNXMSETUPHELPERS_H
 
-#include <vector>
-
 #include "nblib/interactions.h"
 #include "nblib/kerneloptions.h"
 #include "nblib/particletype.h"

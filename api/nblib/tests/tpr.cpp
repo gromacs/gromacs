@@ -45,7 +45,6 @@
 #include <gtest/gtest.h>
 
 #include "gromacs/tools/convert_tpr.h"
-#include "gromacs/topology/forcefieldparameters.h"
 
 #include "testutils/cmdlinetest.h"
 #include "testutils/simulationdatabase.h"
@@ -53,7 +52,9 @@
 #include "programs/mdrun/tests/moduletest.h"
 
 #include "nblib/gmxcalculatorcpu.h"
-#include "nblib/tests/testhelpers.h"
+
+#include "testhelpers.h"
+#include "testsystems.h"
 
 namespace nblib
 {
@@ -88,7 +89,7 @@ TEST_F(TprReaderTest, Spc2Reads)
 {
     TprReader tprReader = makeTPRfromSimulationDatabase("spc2");
 
-    EXPECT_NO_THROW(auto __attribute__((unused)) numCoordinates = tprReader.coordinates_.size());
+    EXPECT_EQ(tprReader.coordinates_.size(), 6);
 }
 
 TEST_F(TprReaderTest, ArgonImportedDataIsCorrect)

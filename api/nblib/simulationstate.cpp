@@ -44,6 +44,7 @@
  */
 #include "nblib/simulationstate.h"
 
+#include <memory>
 #include <vector>
 
 #include "gromacs/pbcutil/pbc.h"

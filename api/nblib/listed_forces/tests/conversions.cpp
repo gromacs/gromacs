@@ -44,16 +44,16 @@
 
 #include <gtest/gtest.h>
 
+#include "listed_forces/conversionscommon.h"
+
 #include "gromacs/topology/forcefieldparameters.h"
 
 #include "testutils/testasserts.h"
 
 #include "nblib/box.h"
-#include "nblib/listed_forces/conversionscommon.h"
-#include "nblib/tests/testhelpers.h"
 
 #include "listedtesthelpers.h"
-#include "listedtypeinput.hpp"
+#include "testhelpers.h"
 
 namespace nblib
 {
@@ -68,12 +68,12 @@ ListedInteractionData someBondsAndAngles()
     HarmonicBondType              bond1{ 10, 0.1 };
     HarmonicBondType              bond2{ 20, 0.2 };
     std::vector<HarmonicBondType> bonds{ bond1, bond2 };
-    pickType<HarmonicBondType>(interactions).parametersA = bonds;
+    pickType<HarmonicBondType>(interactions).parameters = bonds;
 
     HarmonicAngle              angle1(100, Degrees(100));
     HarmonicAngle              angle2(200, Degrees(101));
     std::vector<HarmonicAngle> angles{ angle1, angle2 };
-    pickType<HarmonicAngle>(interactions).parametersA = angles;
+    pickType<HarmonicAngle>(interactions).parameters = angles;
 
     std::vector<InteractionIndex<HarmonicBondType>> bondIndices{ { 0, 1, 0 }, { 1, 2, 0 }, { 2, 3, 1 } };
     pickType<HarmonicBondType>(interactions).indices = std::move(bondIndices);
@@ -92,9 +92,9 @@ TEST(ListedShims, ParameterConversion)
 
     EXPECT_EQ(gmx_params->iparams.size(), 4);
     EXPECT_EQ(gmx_params->iparams[0].harmonic.rA,
-              pickType<HarmonicBondType>(interactions).parametersA[0].equilConstant());
+              pickType<HarmonicBondType>(interactions).parameters[0].equilConstant());
     EXPECT_REAL_EQ_TOL(gmx_params->iparams[2].harmonic.rA,
-                       pickType<HarmonicAngle>(interactions).parametersA[0].equilConstant() / DEG2RAD,
+                       pickType<HarmonicAngle>(interactions).parameters[0].equilConstant() / DEG2RAD,
                        gmx::test::defaultRealTolerance());
 
     EXPECT_EQ(idef->il[F_BONDS].iatoms.size(), 9);
@@ -121,16 +121,16 @@ TEST(ListedShims, GmxToNblibConversion)
     ListedInteractionData convertedData = convertToNblibInteractions(*idef);
 
     // compare some bond parameter data
-    size_t numHarmonicBondsOrig = pickType<HarmonicBondType>(interactions).parametersA.size();
-    size_t numHarmonicBondsConv = pickType<HarmonicBondType>(convertedData).parametersA.size();
+    size_t numHarmonicBondsOrig = pickType<HarmonicBondType>(interactions).parameters.size();
+    size_t numHarmonicBondsConv = pickType<HarmonicBondType>(convertedData).parameters.size();
     EXPECT_EQ(numHarmonicBondsOrig, numHarmonicBondsConv);
 
-    size_t numHarmonicAnglesOrig = pickType<HarmonicAngle>(interactions).parametersA.size();
-    size_t numHarmonicAnglesConv = pickType<HarmonicAngle>(convertedData).parametersA.size();
+    size_t numHarmonicAnglesOrig = pickType<HarmonicAngle>(interactions).parameters.size();
+    size_t numHarmonicAnglesConv = pickType<HarmonicAngle>(convertedData).parameters.size();
     EXPECT_EQ(numHarmonicAnglesOrig, numHarmonicAnglesConv);
 
-    HarmonicAngle harmonicAngleOrig0 = pickType<HarmonicAngle>(interactions).parametersA[0];
-    HarmonicAngle harmonicAngleConv0 = pickType<HarmonicAngle>(convertedData).parametersA[0];
+    HarmonicAngle harmonicAngleOrig0 = pickType<HarmonicAngle>(interactions).parameters[0];
+    HarmonicAngle harmonicAngleConv0 = pickType<HarmonicAngle>(convertedData).parameters[0];
     EXPECT_TRUE(harmonicAngleOrig0 == harmonicAngleConv0);
 
     // compare some index data
@@ -139,47 +139,77 @@ TEST(ListedShims, GmxToNblibConversion)
     EXPECT_EQ(haIndicesOrig, haIndicesConv);
 }
 
-TEST(ListedShims, UBInteractionConversion)
+std::vector<gmx::RVec> twoCenterCoordinates = { { 1.382, 1.573, 1.482 }, { 1.281, 1.559, 1.596 } };
+
+std::vector<gmx::RVec> threeCenterCoordinates = { { 1.382, 1.573, 1.482 },
+                                                  { 1.281, 1.559, 1.596 },
+                                                  { 1.292, 1.422, 1.663 } };
+
+std::vector<gmx::RVec> fourCentercoordinates = { { 1.382, 1.573, 1.482 },
+                                                 { 1.281, 1.559, 1.596 },
+                                                 { 1.292, 1.422, 1.663 },
+                                                 { 1.189, 1.407, 1.775 } };
+
+std::array<std::vector<gmx::RVec>, 3> NCenterCoordinates{ twoCenterCoordinates,
+                                                          threeCenterCoordinates,
+                                                          fourCentercoordinates };
+
+template<class Interaction>
+struct TypeInput
 {
-    gmx_ffparams_t ffparams;
-    t_iparams      param;
-    param.u_b.kUBA    = 50.0;
-    param.u_b.r13A    = 0.1;
-    param.u_b.kthetaA = 100.0;
-    param.u_b.thetaA  = 0.4;
-    ffparams.iparams.push_back(param);
-    InteractionDefinitions interactionDefinitions(ffparams);
+    typedef Interaction         type; // needed for pickType
+    ListedTypeData<Interaction> interactionData;
+    static constexpr int        MinimumCenterCount = 2;
+    // assign coordinates depending on the number of centers in the interaction type from the array above
+    std::vector<gmx::RVec> coordinates =
+            std::get<NCenter<Interaction>{} - MinimumCenterCount>(NCenterCoordinates);
+};
 
-    constexpr size_t gmxListedID = FindIndex<UreyBradley, GmxToNblibMapping>::value;
-    interactionDefinitions.il[gmxListedID].iatoms = { 0, 0, 1, 2 };
+std::tuple TestInput{
+    // Two Center Types
+    TypeInput<HarmonicBondType>{
+            { { { HarmonicBondType(500.0, 0.15) } }, { indexVector<HarmonicBondType>() } } },
+    TypeInput<G96BondType>{ { { { G96BondType(50.0, 0.15) } }, { indexVector<G96BondType>() } } },
+    TypeInput<CubicBondType>{ { { { CubicBondType(50.0, 2.0, 0.16) } }, { indexVector<CubicBondType>() } } },
+    TypeInput<MorseBondType>{ { { { MorseBondType(30.0, 2.7, 0.15) } }, { indexVector<MorseBondType>() } } },
+    TypeInput<FENEBondType>{ { { { FENEBondType(5.0, 0.4) } }, { indexVector<FENEBondType>() } } },
+    // Three Center Types
+    TypeInput<HarmonicAngle>{
+            { { { HarmonicAngle(2.2, Degrees(91.0)) } }, { indexVector<HarmonicAngle>() } } },
+    TypeInput<G96Angle>{ { { { G96Angle(50.0, Degrees(100)) } }, { indexVector<G96Angle>() } } },
+    TypeInput<RestrictedAngle>{
+            { { { RestrictedAngle(50.0, Degrees(100)) } }, { indexVector<RestrictedAngle>() } } },
+    TypeInput<LinearAngle>{ { { { LinearAngle(50.0, 0.4) } }, { indexVector<LinearAngle>() } } },
+    TypeInput<QuarticAngle>{ { { { QuarticAngle(1.1, 2.3, 4.6, 7.8, 9.2, Degrees(87)) } },
+                               { indexVector<QuarticAngle>() } } },
+    TypeInput<CrossBondBond>{ { { { CrossBondBond(45.0, 0.8, 0.7) } }, { indexVector<CrossBondBond>() } } },
+    TypeInput<CrossBondAngle>{
+            { { { CrossBondAngle(45.0, 0.8, 0.7, 0.3) } }, { indexVector<CrossBondAngle>() } } },
+    // Four Center Types
+    TypeInput<ProperDihedral>{
+            { { { ProperDihedral(Degrees(45), 2.3, 1) } }, { indexVector<ProperDihedral>() } } }
+};
 
-    ListedInteractionData convertedData = convertToNblibInteractions(interactionDefinitions);
+template<class... Ts>
+ListedInteractionData combineTestInput(std::tuple<Ts...> testInput)
+{
+    ListedInteractionData interactionData;
+    // transfer all elements of testInput into the returned ListedInteractionData
+    // use a lambda + for_each_tuple
+    auto copyParamsOneType = [&interactionData](const auto& typeInput) {
+        for (size_t i = 0; i < typeInput.interactionData.parameters.size(); i++)
+        {
+            auto interactionParams = typeInput.interactionData.parameters[i];
+            using InteractionType  = decltype(interactionParams);
+            pickType<InteractionType>(interactionData).parameters.push_back(interactionParams);
 
-    size_t numHarmonicBondsConv = pickType<HarmonicBondType>(convertedData).parametersA.size();
-    EXPECT_EQ(numHarmonicBondsConv, 1);
+            auto indices = typeInput.interactionData.indices[i];
+            pickType<InteractionType>(interactionData).indices.push_back(indices);
+        }
+    };
+    for_each_tuple(copyParamsOneType, testInput);
 
-    size_t numHarmonicAnglesConv = pickType<HarmonicAngle>(convertedData).parametersA.size();
-    EXPECT_EQ(numHarmonicAnglesConv, 1);
-
-    HarmonicBondType harmonicBondConv  = pickType<HarmonicBondType>(convertedData).parametersA[0];
-    HarmonicAngle    harmonicAngleConv = pickType<HarmonicAngle>(convertedData).parametersA[0];
-
-    EXPECT_EQ(harmonicBondConv.forceConstant(), param.u_b.kUBA);
-    EXPECT_EQ(harmonicBondConv.equilConstant(), param.u_b.r13A);
-
-    EXPECT_EQ(harmonicAngleConv.forceConstant(), param.u_b.kthetaA);
-    // Need to convert back to radians
-    EXPECT_EQ(harmonicAngleConv.equilConstant() / DEG2RAD, param.u_b.thetaA);
-
-    auto hbIndices = pickType<HarmonicBondType>(convertedData).indices[0];
-    auto haIndices = pickType<HarmonicAngle>(convertedData).indices[0];
-
-    EXPECT_EQ(hbIndices[0], 0);
-    EXPECT_EQ(hbIndices[1], 2);
-
-    EXPECT_EQ(haIndices[0], 0);
-    EXPECT_EQ(haIndices[1], 1);
-    EXPECT_EQ(haIndices[2], 2);
+    return interactionData;
 }
 
 TEST(NBlibTest, GmxToNblibConversionAllTypes)
@@ -192,11 +222,10 @@ TEST(NBlibTest, GmxToNblibConversionAllTypes)
     ListedInteractionData convertedData = convertToNblibInteractions(*idef);
 
     auto compareParamsAndIndices = [&convertedData](auto& original) {
-        if (!original.parametersA.empty())
+        if (!original.parameters.empty())
         {
             using InteractionType = typename std::decay_t<decltype(original)>::type;
-
-            auto converted = pickType<InteractionType>(convertedData);
+            const auto converted  = pickType<InteractionType>(convertedData);
 
             // compare parameters
             // comparing the two cosine angles with lower tolerance as this test introduces
@@ -204,10 +233,12 @@ TEST(NBlibTest, GmxToNblibConversionAllTypes)
             if constexpr (std::is_same<InteractionType, G96Angle>::value
                           || std::is_same<InteractionType, RestrictedAngle>::value)
             {
-                EXPECT_EQ(original.parametersA[0].forceConstant(),
-                          converted.parametersA[0].forceConstant());
-                real theta_orig = original.parametersA[0].equilConstant();
-                real theta_conv = converted.parametersA[0].equilConstant();
+                // There is only one interaction parameter checked per loop through the parameter
+                // list, so it is correct to only check the first element in the parameters list
+                // when we can't guaranteed equality as in the other conversions
+                EXPECT_EQ(original.parameters[0].forceConstant(), converted.parameters[0].forceConstant());
+                const real theta_orig = original.parameters[0].equilConstant();
+                const real theta_conv = converted.parameters[0].equilConstant();
                 EXPECT_FLOAT_DOUBLE_EQ_TOL(theta_conv,
                                            theta_orig,
                                            theta_orig,
@@ -215,30 +246,27 @@ TEST(NBlibTest, GmxToNblibConversionAllTypes)
             }
             else
             {
-                EXPECT_TRUE(original.parametersA[0] == converted.parametersA[0]);
+                EXPECT_TRUE(original.parameters == converted.parameters);
             }
 
             // compare indices
-            EXPECT_TRUE(original.indices[0] == converted.indices[0]);
+            EXPECT_TRUE(original.indices == converted.indices);
         }
     };
     for_each_tuple(compareParamsAndIndices, originalData);
 }
 
-//! \brief test forces of all listed types simultaneously
 TEST(NBlibTest, EndToEndListedComparison)
 {
-    int  numParticles    = 4;
-    auto interactionData = combineTestInput(TestInput);
+    int                   numParticles    = 4;
+    ListedInteractionData interactionData = combineTestInput(TestInput);
 
     Box                    box(1.0);
-    Vec3                   centerOfMass = { 0.5, 0.6, 0.0 };
-    std::vector<gmx::RVec> coordinates  = {
+    std::vector<gmx::RVec> coordinates = {
         { 1.382, 1.573, 1.482 }, { 1.281, 1.559, 1.596 }, { 1.292, 1.422, 1.663 }, { 1.189, 1.407, 1.775 }
     };
 
-    compareNblibAndGmxListedImplementations(
-            interactionData, coordinates, charges, numParticles, 1, box, centerOfMass, 1e-2);
+    compareNblibAndGmxListedImplementations(interactionData, coordinates, numParticles, 1, box, 1e-2);
 }
 
 template<typename Interaction>
@@ -247,27 +275,20 @@ class NblibGmxListed : public testing::Test
 public:
     void compareNblibAndGmx()
     {
-        ListedInteractionData interactionData;
-
-        TypeInput<Interaction> typeInput    = pickType<Interaction>(TestInput);
-        size_t                 numParticles = typeInput.coordinates.size();
-
+        ListedInteractionData  interactionData;
+        TypeInput<Interaction> typeInput       = pickType<Interaction>(TestInput);
         pickType<Interaction>(interactionData) = typeInput.interactionData;
-
-        // adjusting the charges vector size to the number of centers in the test case (1 to 4)
-        std::vector<real> chargesToSize = subsetVector(charges, numParticles);
-        compareNblibAndGmxListedImplementations(interactionData,
-                                                typeInput.coordinates,
-                                                chargesToSize,
-                                                typeInput.coordinates.size(),
-                                                1,
-                                                Box(1.0),
-                                                { 0.5, 0.6, 0.0 },
-                                                1e-4);
+        compareNblibAndGmxListedImplementations(
+                interactionData, typeInput.coordinates, typeInput.coordinates.size(), 1, Box(1.0), 1e-4);
     }
 };
 
-//! \brief test the listed force calculator output for each listed type one-by-one
+// Extract a typelist interaction types from the TestInput tuple
+template<class TestInputofInteractionType>
+using ExtractType = typename TestInputofInteractionType::type;
+using ListedTypes = Map<ExtractType, decltype(TestInput)>;
+using TestTypes   = Reduce<::testing::Types, ListedTypes>;
+
 TYPED_TEST_SUITE_P(NblibGmxListed);
 
 TYPED_TEST_P(NblibGmxListed, SameForcesOnBoth)

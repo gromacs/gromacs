@@ -47,17 +47,10 @@
 #include <string>
 #include <vector>
 
-#include "gromacs/topology/idef.h"
-
 #include "nblib/basicdefinitions.h"
 #include "nblib/box.h"
 #include "nblib/topology.h"
 #include "nblib/vector.h"
-
-struct gmx_ffparams_t;
-struct gmx_localtop_t;
-struct t_forcerec;
-struct gmx_mtop_t;
 
 namespace nblib
 {
@@ -78,8 +71,6 @@ struct TprReader
 public:
     TprReader(std::string filename);
 
-    ~TprReader();
-
     //! Particle info where all particles are marked to have Van der Waals interactions
     std::vector<int64_t> particleInteractionFlags_;
     //! particle type id of all particles
@@ -99,20 +90,16 @@ public:
     std::vector<Vec3> coordinates_;
     //! velocities
     std::vector<Vec3> velocities_;
-
-    //! Gmx force field params
-    std::unique_ptr<gmx_ffparams_t> ffparams_;
-    //! Gmx interaction definitions
-    std::unique_ptr<InteractionDefinitions> interactionDefinitions_;
+    //! listed forces data
+    ListedInteractionData listedInteractionData_;
 
     //! bounding box of particle coordinates
     [[nodiscard]] Box getBox() const;
 
 private:
-    std::array<real, 9> boxMatrix_;
-
-    class Impl;
-    std::unique_ptr<Impl> impl_;
+    real boxX_;
+    real boxY_;
+    real boxZ_;
 };
 
 } // namespace nblib

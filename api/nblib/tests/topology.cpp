@@ -304,12 +304,13 @@ TEST(NBlibTest, TopologyListedInteractions)
     auto& harmonicBonds   = pickType<HarmonicBondType>(interactionData);
 
     auto& indices = harmonicBonds.indices;
-    auto& bonds   = harmonicBonds.parametersA;
+    auto& bonds   = harmonicBonds.parameters;
 
-    std::map<IndexArray<2>, HarmonicBondType> interactions_test;
+    std::map<std::tuple<int, int>, HarmonicBondType> interactions_test;
     for (auto& ituple : indices)
     {
-        interactions_test[IndexArray<2>{ ituple[0], ituple[1] }] = bonds[ituple[2]];
+        interactions_test[std::make_tuple(std::get<0>(ituple), std::get<1>(ituple))] =
+                bonds[std::get<2>(ituple)];
     }
 
     // there should be 3 unique HarmonicBondType instances
@@ -321,7 +322,7 @@ TEST(NBlibTest, TopologyListedInteractions)
     HarmonicBondType ohBondMethanol(1.01, 1.02);
     HarmonicBondType ometBond(1.1, 1.2);
 
-    std::map<IndexArray<2>, HarmonicBondType> interactions_reference;
+    std::map<std::tuple<int, int>, HarmonicBondType> interactions_reference;
 
     int Ow = spcTopology.sequenceID(MoleculeName("SOL"), 0, ResidueName("SOL"), ParticleName("Oxygen"));
     int H1 = spcTopology.sequenceID(MoleculeName("SOL"), 0, ResidueName("SOL"), ParticleName("H1"));
@@ -337,12 +338,12 @@ TEST(NBlibTest, TopologyListedInteractions)
 
     /// \cond DO_NOT_DOCUMENT
 #define SORT(i, j) (i < j) ? i : j, (i < j) ? j : i
-    interactions_reference[IndexArray<2>{ SORT(Ow, H1) }]     = ohBond;
-    interactions_reference[IndexArray<2>{ SORT(Ow, H2) }]     = ohBond;
-    interactions_reference[IndexArray<2>{ SORT(MeO1, MeH1) }] = ohBondMethanol;
-    interactions_reference[IndexArray<2>{ SORT(MeO1, Me1) }]  = ometBond;
-    interactions_reference[IndexArray<2>{ SORT(MeO2, MeH2) }] = ohBondMethanol;
-    interactions_reference[IndexArray<2>{ SORT(MeO2, Me2) }]  = ometBond;
+    interactions_reference[std::make_tuple(SORT(Ow, H1))]     = ohBond;
+    interactions_reference[std::make_tuple(SORT(Ow, H2))]     = ohBond;
+    interactions_reference[std::make_tuple(SORT(MeO1, MeH1))] = ohBondMethanol;
+    interactions_reference[std::make_tuple(SORT(MeO1, Me1))]  = ometBond;
+    interactions_reference[std::make_tuple(SORT(MeO2, MeH2))] = ohBondMethanol;
+    interactions_reference[std::make_tuple(SORT(MeO2, Me2))]  = ometBond;
 #undef SORT
     /// \endcond
 
@@ -385,7 +386,7 @@ TEST(NBlibTest, TopologyListedInteractionsMultipleTypes)
     HarmonicBondType              ometBond(1.1, 1.2);
     std::vector<HarmonicBondType> harmonicBondsReference{ ohBond, ohBondMethanol, ometBond };
 
-    EXPECT_EQ(harmonicBonds.parametersA, harmonicBondsReference);
+    EXPECT_EQ(harmonicBonds.parameters, harmonicBondsReference);
 
     int H1 = topology.sequenceID(MoleculeName("SOL"), 0, ResidueName("SOL"), ParticleName("H1"));
     int H2 = topology.sequenceID(MoleculeName("SOL"), 0, ResidueName("SOL"), ParticleName("H2"));
@@ -399,7 +400,7 @@ TEST(NBlibTest, TopologyListedInteractionsMultipleTypes)
     std::vector<InteractionIndex<CubicBondType>> cubicIndicesReference{
         { std::min(H1, H2), std::max(H1, H2), 0 }
     };
-    EXPECT_EQ(cubicBondsReference, cubicBonds.parametersA);
+    EXPECT_EQ(cubicBondsReference, cubicBonds.parameters);
     EXPECT_EQ(cubicIndicesReference, cubicBonds.indices);
 
     HarmonicAngle                                methanolAngle(397.5, Degrees(108.52));
@@ -407,7 +408,7 @@ TEST(NBlibTest, TopologyListedInteractionsMultipleTypes)
     std::vector<InteractionIndex<HarmonicAngle>> angleIndicesReference{
         { std::min(H1, H2), Ow, std::max(H1, H2), 0 }, { std::min(MeH1, MeO1), Me1, std::max(MeO1, MeH1), 1 }
     };
-    EXPECT_EQ(angleReference, angleInteractions.parametersA);
+    EXPECT_EQ(angleReference, angleInteractions.parameters);
     EXPECT_EQ(angleIndicesReference, angleInteractions.indices);
 }
 

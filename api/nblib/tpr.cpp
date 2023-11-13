@@ -43,7 +43,10 @@
 
 #include "nblib/tpr.h"
 
+#include "listed_forces/conversionscommon.h"
+
 #include "gromacs/fileio/tpxio.h"
+#include "gromacs/gmxlib/network.h"
 #include "gromacs/listed_forces/listed_forces.h"
 #include "gromacs/mdlib/forcerec.h"
 #include "gromacs/mdlib/mdatoms.h"
@@ -54,7 +57,6 @@
 #include "gromacs/mdtypes/mdatom.h"
 #include "gromacs/mdtypes/simulation_workload.h"
 #include "gromacs/mdtypes/state.h"
-#include "gromacs/topology/forcefieldparameters.h"
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/logger.h"
@@ -64,95 +66,87 @@
 namespace nblib
 {
 
-class TprReader::Impl
+TprReader::TprReader(std::string filename)
 {
-public:
-    gmx_mtop_t molecularTopology_;
-    t_forcerec forceRecord_;
-    t_inputrec inputRecord_;
-    t_state    globalState_;
-
-    std::unique_ptr<gmx::MDAtoms>   mdAtoms_;
-    std::unique_ptr<gmx_localtop_t> localtopology_;
-};
-
-
-TprReader::TprReader(std::string filename) : impl_(new Impl)
-{
+    t_inputrec              inputRecord;
+    t_state                 globalState;
+    gmx_mtop_t              molecularTopology;
     gmx::SimulationWorkload simulationWorkload;
 
     // If the file does not exist, this function will throw
-    PartialDeserializedTprFile partialDeserializedTpr = read_tpx_state(
-            filename.c_str(), &impl_->inputRecord_, &impl_->globalState_, &impl_->molecularTopology_);
-
-    // Currently dispersion correction not supported by nblib
-    impl_->inputRecord_.eDispCorr = DispersionCorrectionType::No;
+    PartialDeserializedTprFile partialDeserializedTpr =
+            read_tpx_state(filename.c_str(), &inputRecord, &globalState, &molecularTopology);
 
     // init forcerec
+    t_forcerec          forceRecord;
     t_commrec           commrec{};
     gmx::ForceProviders forceProviders;
-    impl_->forceRecord_.forceProviders = &forceProviders;
+    forceRecord.forceProviders = &forceProviders;
     init_forcerec(nullptr,
                   gmx::MDLogger(),
                   simulationWorkload,
-                  &impl_->forceRecord_,
-                  impl_->inputRecord_,
-                  impl_->molecularTopology_,
+                  &forceRecord,
+                  inputRecord,
+                  molecularTopology,
                   &commrec,
-                  impl_->globalState_.box,
+                  globalState.box,
                   nullptr,
                   nullptr,
                   gmx::ArrayRef<const std::string>{},
                   -1);
 
-    nonbondedParameters_ = makeNonBondedParameterLists(impl_->molecularTopology_.ffparams.atnr,
-                                                       impl_->molecularTopology_.ffparams.iparams,
-                                                       impl_->forceRecord_.haveBuckingham);
+    nonbondedParameters_ = makeNonBondedParameterLists(molecularTopology.ffparams.atnr,
+                                                       molecularTopology.ffparams.iparams,
+                                                       forceRecord.haveBuckingham);
 
-    impl_->localtopology_ = std::make_unique<gmx_localtop_t>(impl_->molecularTopology_.ffparams);
-    gmx_mtop_generate_local_top(impl_->molecularTopology_, impl_->localtopology_.get(), false);
-    exclusionListElements_ = std::vector<int>(impl_->localtopology_->excls.elementsView().begin(),
-                                              impl_->localtopology_->excls.elementsView().end());
-    exclusionListRanges_   = std::vector<int>(impl_->localtopology_->excls.listRangesView().begin(),
-                                            impl_->localtopology_->excls.listRangesView().end());
+    gmx_localtop_t localtop(molecularTopology.ffparams);
+    gmx_mtop_generate_local_top(molecularTopology, &localtop, false);
+    exclusionListElements_ = std::vector<int>(localtop.excls.elementsView().begin(),
+                                              localtop.excls.elementsView().end());
+    exclusionListRanges_   = std::vector<int>(localtop.excls.listRangesView().begin(),
+                                            localtop.excls.listRangesView().end());
 
-    int ntopatoms = impl_->molecularTopology_.natoms;
-    impl_->mdAtoms_ = gmx::makeMDAtoms(nullptr, impl_->molecularTopology_, impl_->inputRecord_, false);
-    atoms2md(impl_->molecularTopology_, impl_->inputRecord_, -1, {}, ntopatoms, impl_->mdAtoms_.get());
-    update_mdatoms(impl_->mdAtoms_->mdatoms(), impl_->inputRecord_.fepvals->init_lambda);
-    auto numParticles = impl_->mdAtoms_->mdatoms()->nr;
+    int                           ntopatoms = molecularTopology.natoms;
+    std::unique_ptr<gmx::MDAtoms> mdAtoms =
+            gmx::makeMDAtoms(nullptr, molecularTopology, inputRecord, false);
+    atoms2md(molecularTopology, inputRecord, -1, {}, ntopatoms, mdAtoms.get());
+    update_mdatoms(mdAtoms->mdatoms(), inputRecord.fepvals->init_lambda);
+    auto numParticles = mdAtoms->mdatoms()->nr;
     charges_.resize(numParticles);
     particleTypeIdOfAllParticles_.resize(numParticles);
     inverseMasses_.resize(numParticles);
     for (int i = 0; i < numParticles; i++)
     {
-        charges_[i]                      = impl_->mdAtoms_->mdatoms()->chargeA[i];
-        particleTypeIdOfAllParticles_[i] = impl_->mdAtoms_->mdatoms()->typeA[i];
-        inverseMasses_[i]                = impl_->mdAtoms_->mdatoms()->invmass[i];
+        charges_[i]                      = mdAtoms->mdatoms()->chargeA[i];
+        particleTypeIdOfAllParticles_[i] = mdAtoms->mdatoms()->typeA[i];
+        inverseMasses_[i]                = mdAtoms->mdatoms()->invmass[i];
     }
-    particleInteractionFlags_ = impl_->forceRecord_.atomInfo;
+    particleInteractionFlags_ = forceRecord.atomInfo;
 
-    for (int i = 0; i < dimSize; ++i)
+    if (TRICLINIC(globalState.box))
     {
-        for (int j = 0; j < dimSize; ++j)
-        {
-            boxMatrix_[j + i * dimSize] = impl_->globalState_.box[i][j];
-        }
+        throw InputException("Only rectangular unit-cells are supported here");
     }
-
-    coordinates_.assign(impl_->globalState_.x.begin(), impl_->globalState_.x.end());
-    velocities_.assign(impl_->globalState_.v.begin(), impl_->globalState_.v.end());
+    boxX_ = globalState.box[XX][XX];
+    boxY_ = globalState.box[YY][YY];
+    boxZ_ = globalState.box[ZZ][ZZ];
+    coordinates_.assign(globalState.x.begin(), globalState.x.end());
+    velocities_.assign(globalState.v.begin(), globalState.v.end());
 
     // Copy listed interactions data
-    interactionDefinitions_ = std::make_unique<InteractionDefinitions>(impl_->localtopology_->idef);
-    ffparams_               = std::make_unique<gmx_ffparams_t>(impl_->molecularTopology_.ffparams);
+    int listedInteractionCount = gmx_mtop_interaction_count(molecularTopology, IF_BOND)
+                                 + gmx_mtop_interaction_count(molecularTopology, IF_PAIR)
+                                 + gmx_mtop_interaction_count(molecularTopology, IF_DIHEDRAL);
+    if (listedInteractionCount != 0)
+    {
+        InteractionDefinitions interactionDefinitions = localtop.idef;
+        listedInteractionData_ = convertToNblibInteractions(interactionDefinitions);
+    }
 }
 
 Box TprReader::getBox() const
 {
-    return Box(boxMatrix_);
+    return Box(boxX_, boxY_, boxZ_);
 }
-
-TprReader::~TprReader() {}
 
 } // namespace nblib

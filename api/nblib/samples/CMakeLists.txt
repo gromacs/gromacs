@@ -35,51 +35,19 @@
 # \author Joe Jordan <ejjordan@kth.se>
 # \author Prashanth Kanduri <kanduri@cscs.ch>
 # \author Sebastian Keller <keller@cscs.ch>
-#
 
 set(argon "argon-forces-integration")
 add_executable(${argon} argon-forces-integration.cpp)
 
 target_link_libraries(${argon} PRIVATE nblib)
 
-#set(methane "methane-water-integration")
-#add_executable(${methane} methane-water-integration.cpp)
-#
-#target_link_libraries(${methane} PRIVATE nblib)
+set(methane "methane-water-integration")
+add_executable(${methane} methane-water-integration.cpp)
 
-set(benchmark_cpu "benchmark_cpu")
-add_executable(${benchmark_cpu} benchmark_cpu.cpp)
-
-target_link_libraries(${benchmark_cpu} PRIVATE nblib)
-
-if (GMX_GPU_CUDA)
-    add_executable(benchmark_gpu_host benchmark_gpu_host.cpp)
-    target_link_libraries(benchmark_gpu_host PRIVATE
-      CUDA::cudart
-      libgromacs
-      common
-      legacy_api
-      legacy_modules
-      nblib
-      utility
-      )
-
-    set(benchmark_gpu "benchmark_gpu")
-    add_executable(${benchmark_gpu} benchmark_gpu.cpp)
-    target_link_libraries(${benchmark_gpu} PRIVATE
-      CUDA::cudart
-      libgromacs
-      common
-      legacy_api
-      legacy_modules
-      nblib
-      utility
-      )
-endif()
+target_link_libraries(${methane} PRIVATE nblib)
 
 if(BUILD_TESTING)
     add_test(NAME NbLibSamplesTestArgon COMMAND ${argon})
-#    add_test(NAME NbLibSamplesTestMethaneWater COMMAND ${methane})
-#    add_dependencies(nblib-tests ${argon} ${methane})
-    add_dependencies(nblib-tests ${argon})
+    add_test(NAME NbLibSamplesTestMethaneWater COMMAND ${methane})
+    add_dependencies(nblib-tests ${argon} ${methane})
 endif()

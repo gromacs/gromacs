@@ -37,7 +37,6 @@
 # \author Sebastian Keller <keller@cscs.ch>
 #
 
-
 add_custom_target(nblib-tests
         COMMENT "Target to build all nblib tests including samples"
         )
@@ -71,34 +70,6 @@ set_target_properties(nblib PROPERTIES
 if (GMX_GPU_CUDA)
     find_package(CUDAToolkit)
     target_link_libraries(nblib PRIVATE CUDA::cudart)
-
-    enable_language(CUDA)
-    set(CMAKE_CUDA_ARCHITECTURES OFF)
-    set(CMAKE_CUDA_STANDARD 17)
-
-    # need to give sources here for this function to work
-    #gmx_cuda_add_library(integrator integrator_gpu_internal.cu)
-    add_library(integrator integrator_gpu_internal.cu)
-
-    target_sources(nblib
-            PRIVATE
-            gmxcalculatorgpu.cpp
-            integrator_gpu.cpp)
-    target_link_libraries(nblib PRIVATE integrator)
-
-    set_property(TARGET integrator PROPERTY CUDA_ARCHITECTURES "35;60;70;75;80")
-
-    target_include_directories(integrator PRIVATE ${PROJECT_SOURCE_DIR}/api)
-    target_compile_options(integrator PRIVATE -Wno-deprecated-gpu-targets)
-
-    target_link_libraries(integrator PRIVATE
-	  CUDA::cudart
-	  libgromacs
-	  common
-	  legacy_api
-	  legacy_modules
-	  utility
-	  )
     if(GMX_USE_cuFFTMp OR GMX_NVSHMEM)
         # We need to PUBLIC link to the stub libraries nvml/cuda to WAR an issue
         # with `bfd` linker which expects you always have dependencies on the link line.
@@ -131,31 +102,29 @@ target_sources(nblib
 
 gmx_target_compile_options(nblib)
 
-target_include_directories(nblib SYSTEM BEFORE PRIVATE ${PROJECT_SOURCE_DIR}/src/external/thread_mpi/include)
+target_link_libraries(nblib PRIVATE libgromacs)
 target_include_directories(nblib PUBLIC
                            $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
                            $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
                            $<INSTALL_INTERFACE:include>)
-target_link_libraries(nblib PRIVATE common
-                                    fileio
-                                    gmxlib
-                                    legacy_modules
-                                    libgromacs
-                                    listed_forces
-                                    math
-                                    mdlib
-                                    mdtypes
-                                    pbcutil
-                                    simd
-                                    timing
-                                    topology
-                                    utility)
+target_link_libraries(nblib PRIVATE common)
+target_link_libraries(nblib PRIVATE
+                      fileio
+                      gmxlib
+                      listed_forces
+                      math
+                      mdtypes
+                      mdlib
+                      pbcutil
+                      simd
+                      topology
+                      utility)
 
 # There are transitive interface dependencies on the legacy GROMACS headers.
 # TODO(#3288): Explicitly link specific modules for public API dependencies as legacy_api is removed.
 target_link_libraries(nblib PUBLIC legacy_api)
 # TODO: Explicitly link specific modules.
-#target_link_libraries(nblib PRIVATE legacy_modules)
+target_link_libraries(nblib PRIVATE legacy_modules)
 if (GMX_OPENMP)
     target_link_libraries(nblib PUBLIC OpenMP::OpenMP_CXX)
 endif()

@@ -46,89 +46,41 @@
 #ifndef NBLIB_LISTEDFORCES_LISTEDTESTHELPERS_H
 #define NBLIB_LISTEDFORCES_LISTEDTESTHELPERS_H
 
-#include "testutils/testasserts.h"
+#include "gromacs/math/vectypes.h"
 
 #include "nblib/listed_forces/definitions.h"
-#include "nblib/vector.h"
-
 
 namespace nblib
 {
 class Box;
 
-//! \brief Creates a default vector of indices for one-centered interactions
-template<class Interaction, std::enable_if_t<NCenter<Interaction>{} == 1, int> = 0>
-std::vector<InteractionIndex<Interaction>> indexVector()
-{
-    return { { 0, 0 } };
-}
-
 //! \brief Creates a default vector of indices for two-centered interactions
-template<class Interaction, std::enable_if_t<NCenter<Interaction>{} == 2, int> = 0>
+template<class Interaction, std::enable_if_t<Contains<Interaction, SupportedTwoCenterTypes>{}>* = nullptr>
 std::vector<InteractionIndex<Interaction>> indexVector()
 {
     return { { 0, 1, 0 } };
 }
 
 //! \brief Creates a default vector of indices for three-centered interactions
-template<class Interaction, std::enable_if_t<NCenter<Interaction>{} == 3, int> = 0>
+template<class Interaction, std::enable_if_t<Contains<Interaction, SupportedThreeCenterTypes>{}>* = nullptr>
 std::vector<InteractionIndex<Interaction>> indexVector()
 {
     return { { 0, 1, 2, 0 } };
 }
 
 //! \brief Creates a default vector of indices for four-centered interactions
-template<class Interaction, std::enable_if_t<NCenter<Interaction>{} == 4, int> = 0>
+template<class Interaction, std::enable_if_t<Contains<Interaction, SupportedFourCenterTypes>{}>* = nullptr>
 std::vector<InteractionIndex<Interaction>> indexVector()
 {
     return { { 0, 1, 2, 3, 0 } };
 }
 
-template<class Iterator1, class Iterator2, class Tolerance>
-void compareVectors(Iterator1 probeStart, Iterator1 probeEnd, Iterator2 referenceStart, Tolerance tolSetting)
-{
-    while (probeStart != probeEnd)
-    {
-        for (int m = 0; m < 3; ++m)
-        {
-            EXPECT_REAL_EQ_TOL((*probeStart)[m], (*referenceStart)[m], tolSetting);
-        }
-        probeStart++;
-        referenceStart++;
-    }
-}
-
-template<class Iterator1, class Iterator2, class Tolerance>
-void compareEnergies(Iterator1 probeStart, Iterator1 probeEnd, Iterator2 referenceStart, Tolerance tolSetting)
-{
-    while (probeStart != probeEnd)
-    {
-        EXPECT_REAL_EQ_TOL((*probeStart), (*referenceStart), tolSetting);
-        probeStart++;
-        referenceStart++;
-    }
-}
-
-template<class T>
-std::vector<T> subsetVector(std::vector<T> sourceArray, int n)
-{
-    if (size_t(n) > sourceArray.size())
-    {
-        throw InputException("Required array size larger than the source array!");
-    }
-
-    std::vector<T> subset(&sourceArray[0], &sourceArray[n]);
-    return subset;
-}
-
 //! \brief Sets up the calculation fixtures for both Nblib and GMX and compares the resultant forces
 void compareNblibAndGmxListedImplementations(const ListedInteractionData&  interactionData,
                                              const std::vector<gmx::RVec>& coordinates,
-                                             const std::vector<real>&      charges,
                                              size_t                        numParticles,
                                              int                           numThreads,
                                              const Box&                    box,
-                                             gmx::RVec                     centerOfMass,
                                              real                          tolerance);
 
 } // namespace nblib

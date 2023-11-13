@@ -45,14 +45,13 @@
 
 #include <algorithm>
 
+#include "listed_forces/dataflow.hpp"
+#include "listed_forces/helpers.hpp"
+
 #include "nblib/box.h"
 #include "nblib/exception.h"
-#include "nblib/listed_forces/dataflow.hpp"
-#include "nblib/listed_forces/dataflowpolarization.hpp"
-#include "nblib/listed_forces/dataflowrestraints.hpp"
-#include "nblib/listed_forces/helpers.hpp"
-#include "nblib/listed_forces/positionrestraints.hpp"
-#include "nblib/pbc.hpp"
+
+#include "pbc.hpp"
 
 namespace nblib
 {
@@ -61,19 +60,12 @@ ListedForceCalculator::~ListedForceCalculator() = default;
 
 ListedForceCalculator::ListedForceCalculator(const ListedInteractionData& interactions,
                                              size_t                       bufferSize,
-                                             int                          numThreads,
-                                             const Box&                   box,
-                                             PbcType                      pbcType,
-                                             RefCoordScaling              refcoord_scaling) :
-    numThreads(numThreads),
-    threadedEnergyBuffers_(numThreads),
+                                             int                          nthr,
+                                             const Box&                   box) :
+    numThreads(nthr),
     threadedForceBuffers_(numThreads),
     threadedShiftForceBuffers_(numThreads),
-    threadedVirialsBuffers_(numThreads),
-    pbcType_(pbcType),
-    box_(box),
-    pbcHolder_(std::make_unique<PbcHolderAiuc>(pbcType_, box_)),
-    refcoord_scaling_(refcoord_scaling)
+    pbcHolder_(std::make_unique<PbcHolder>(PbcType::Xyz, box))
 {
     // split up the work
     threadedInteractions_ = splitListedWork(interactions, bufferSize, numThreads);
@@ -93,30 +85,22 @@ ListedForceCalculator::ListedForceCalculator(const ListedInteractionData& intera
 
         threadedForceBuffers_[i]      = ForceBufferProxy<Vec3>(rangeStart, rangeEnd);
         threadedShiftForceBuffers_[i] = std::vector<Vec3>(gmx::c_numShiftVectors);
-        threadedVirialsBuffers_[i]    = std::vector<real>(9);
     }
 }
 
-ListedForceCalculator::ListedForceCalculator(const ListedInteractionData& interactions,
-                                             size_t                       bufferSize,
-                                             int                          numThreads,
-                                             const Box&                   box) :
-    ListedForceCalculator(interactions, bufferSize, numThreads, box, PbcType::Xyz, RefCoordScaling::Default)
-{
-}
-
-template<class ShiftForce, class Charges, class Virial, class CenterOfMass>
-void ListedForceCalculator::computeForcesAndEnergies(gmx::ArrayRef<const Vec3>               x,
-                                                     [[maybe_unused]] gmx::ArrayRef<Charges> charges,
-                                                     gmx::ArrayRef<Vec3>                     forces,
+template<class ShiftForce>
+void ListedForceCalculator::computeForcesAndEnergies(gmx::ArrayRef<const Vec3> x,
+                                                     gmx::ArrayRef<Vec3>       forces,
                                                      [[maybe_unused]] gmx::ArrayRef<ShiftForce> shiftForces,
-                                                     [[maybe_unused]] gmx::ArrayRef<Virial> virials,
-                                                     [[maybe_unused]] CenterOfMass          com)
+                                                     bool usePbc)
 {
     if (x.size() != forces.size())
     {
         throw InputException("Coordinates array and force buffer size mismatch");
     }
+
+    energyBuffer_.fill(0);
+    std::vector<std::array<real, std::tuple_size<ListedInteractionData>::value>> energiesPerThread(numThreads);
 
     constexpr bool haveShiftForces = !std::is_same_v<ShiftForce, std::nullptr_t>;
     if constexpr (haveShiftForces)
@@ -126,11 +110,6 @@ void ListedForceCalculator::computeForcesAndEnergies(gmx::ArrayRef<const Vec3>  
             throw InputException("Shift vectors array size mismatch");
         }
     }
-
-    constexpr bool haveVirials      = !std::is_same_v<Virial, std::nullptr_t>;
-    constexpr bool haveCenterOfMass = !std::is_same_v<CenterOfMass, std::nullptr_t>;
-    // check if charges are specified in the input, will determine if polarization is computed
-    constexpr bool haveCharges = std::is_same_v<Charges, const real>;
 
 #pragma omp parallel for num_threads(numThreads) schedule(static)
     for (int thread = 0; thread < numThreads; ++thread)
@@ -142,39 +121,23 @@ void ListedForceCalculator::computeForcesAndEnergies(gmx::ArrayRef<const Vec3>  
             std::fill(shiftForceBuffer.begin(), shiftForceBuffer.end(), Vec3{ 0, 0, 0 });
         }
 
-        std::conditional_t<haveVirials, gmx::ArrayRef<real>, gmx::ArrayRef<std::nullptr_t>> virialsBuffer;
-        if constexpr (haveVirials)
-        {
-            virialsBuffer = threadedVirialsBuffers_[thread];
-            std::fill(virialsBuffer.begin(), virialsBuffer.end(), 0);
-        }
-
         ForceBufferProxy<Vec3>* threadBuffer = &threadedForceBuffers_[thread];
 
         // forces in range of this thread are directly written into the output buffer
-        threadBuffer->setMasterBuffer(forces);
+        threadBuffer->setMainBuffer(forces);
 
         // zero out the outliers in the thread buffer
         threadBuffer->clearOutliers();
 
-        threadedEnergyBuffers_[thread] = reduceListedForces(
-                threadedInteractions_[thread], x, threadBuffer, shiftForceBuffer, *pbcHolder_);
-        if constexpr (haveVirials && haveCenterOfMass)
+        if (usePbc)
         {
-            threadedEnergyBuffers_[thread] += reduceRestraints(threadedInteractions_[thread],
-                                                               x,
-                                                               threadBuffer,
-                                                               virialsBuffer,
-                                                               *pbcHolder_,
-                                                               box_,
-                                                               pbcType_,
-                                                               refcoord_scaling_,
-                                                               com);
+            energiesPerThread[thread] = reduceListedForces(
+                    threadedInteractions_[thread], x, threadBuffer, shiftForceBuffer, *pbcHolder_);
         }
-        if constexpr (haveCharges)
+        else
         {
-            threadedEnergyBuffers_[thread] += reducePolarization(
-                    threadedInteractions_[thread], x, charges, threadBuffer, shiftForceBuffer, *pbcHolder_);
+            energiesPerThread[thread] = reduceListedForces(
+                    threadedInteractions_[thread], x, threadBuffer, shiftForceBuffer, NoPbc{});
         }
     }
 
@@ -195,26 +158,14 @@ void ListedForceCalculator::computeForcesAndEnergies(gmx::ArrayRef<const Vec3>  
         }
     }
 
-    // reduce virial
-    if constexpr (haveVirials)
+    // reduce energies
+    for (int thread = 0; thread < numThreads; ++thread)
     {
-        for (int i = 0; i < int(virials.size()); ++i)
+        for (int type = 0; type < int(energyBuffer_.size()); ++type)
         {
-            real threadSum = 0;
-            for (int thread = 0; thread < numThreads; ++thread)
-            {
-                threadSum += (threadedVirialsBuffers_[thread])[i];
-            }
-            virials[i] += threadSum;
+            energyBuffer_[type] += energiesPerThread[thread][type];
         }
     }
-
-    // reduce energies into buffer for thread 0
-    for (int thread = 1; thread < numThreads; ++thread)
-    {
-        threadedEnergyBuffers_[0] += threadedEnergyBuffers_[thread];
-    }
-
     // reduce forces
 #pragma omp parallel for num_threads(numThreads) schedule(static)
     for (int thread = 0; thread < numThreads; ++thread)
@@ -239,93 +190,27 @@ void ListedForceCalculator::computeForcesAndEnergies(gmx::ArrayRef<const Vec3>  
 }
 
 void ListedForceCalculator::compute(gmx::ArrayRef<const Vec3> coordinates,
-                                    gmx::ArrayRef<const real> charges,
                                     gmx::ArrayRef<Vec3>       forces,
                                     gmx::ArrayRef<Vec3>       shiftForces,
-                                    gmx::ArrayRef<real>       energies)
-{
-    computeForcesAndEnergies(
-            coordinates, charges, forces, shiftForces, gmx::ArrayRef<std::nullptr_t>{}, true);
-    if (!energies.empty())
-    {
-        std::copy(threadedEnergyBuffers_[0].begin(), threadedEnergyBuffers_[0].end(), energies.begin());
-    }
-}
-
-void ListedForceCalculator::compute(gmx::ArrayRef<const Vec3> coordinates,
-                                    gmx::ArrayRef<Vec3>       forces,
-                                    gmx::ArrayRef<Vec3>       shiftForces,
-                                    gmx::ArrayRef<real>       energies)
-{
-    computeForcesAndEnergies(coordinates,
-                             gmx::ArrayRef<std::nullptr_t>{},
-                             forces,
-                             shiftForces,
-                             gmx::ArrayRef<std::nullptr_t>{},
-                             std::nullptr_t{});
-    if (!energies.empty())
-    {
-        std::copy(threadedEnergyBuffers_[0].begin(), threadedEnergyBuffers_[0].end(), energies.begin());
-    }
-}
-
-void ListedForceCalculator::compute(gmx::ArrayRef<const Vec3> coordinates,
-                                    gmx::ArrayRef<Vec3>       forces,
-                                    gmx::ArrayRef<real>       virials,
                                     gmx::ArrayRef<real>       energies,
-                                    Vec3                      com)
+                                    bool                      usePbc)
 {
-    computeForcesAndEnergies(
-            coordinates, gmx::ArrayRef<std::nullptr_t>{}, forces, gmx::ArrayRef<std::nullptr_t>{}, virials, com);
+    computeForcesAndEnergies(coordinates, forces, shiftForces, usePbc);
     if (!energies.empty())
     {
-        std::copy(threadedEnergyBuffers_[0].begin(), threadedEnergyBuffers_[0].end(), energies.begin());
+        std::copy(energyBuffer_.begin(), energyBuffer_.end(), energies.begin());
     }
 }
 
 void ListedForceCalculator::compute(gmx::ArrayRef<const Vec3> coordinates,
                                     gmx::ArrayRef<Vec3>       forces,
-                                    gmx::ArrayRef<Vec3>       shiftForces,
-                                    gmx::ArrayRef<real>       virials,
                                     gmx::ArrayRef<real>       energies,
-                                    Vec3                      com)
+                                    bool                      usePbc)
 {
-    computeForcesAndEnergies(
-            coordinates, gmx::ArrayRef<std::nullptr_t>{}, forces, shiftForces, virials, com);
+    computeForcesAndEnergies(coordinates, forces, gmx::ArrayRef<std::nullptr_t>{}, usePbc);
     if (!energies.empty())
     {
-        std::copy(threadedEnergyBuffers_[0].begin(), threadedEnergyBuffers_[0].end(), energies.begin());
-    }
-}
-
-void ListedForceCalculator::compute(gmx::ArrayRef<const Vec3> coordinates,
-                                    gmx::ArrayRef<const real> charges,
-                                    gmx::ArrayRef<Vec3>       forces,
-                                    gmx::ArrayRef<Vec3>       shiftForces,
-                                    gmx::ArrayRef<real>       virials,
-                                    gmx::ArrayRef<real>       energies,
-                                    Vec3                      com)
-{
-    computeForcesAndEnergies(coordinates, charges, forces, shiftForces, virials, com);
-    if (!energies.empty())
-    {
-        std::copy(threadedEnergyBuffers_[0].begin(), threadedEnergyBuffers_[0].end(), energies.begin());
-    }
-}
-
-void ListedForceCalculator::compute(gmx::ArrayRef<const Vec3> coordinates,
-                                    gmx::ArrayRef<Vec3>       forces,
-                                    gmx::ArrayRef<real>       energies)
-{
-    computeForcesAndEnergies(coordinates,
-                             gmx::ArrayRef<std::nullptr_t>{},
-                             forces,
-                             gmx::ArrayRef<std::nullptr_t>{},
-                             gmx::ArrayRef<std::nullptr_t>{},
-                             std::nullptr_t{});
-    if (!energies.empty())
-    {
-        std::copy(threadedEnergyBuffers_[0].begin(), threadedEnergyBuffers_[0].end(), energies.begin());
+        std::copy(energyBuffer_.begin(), energyBuffer_.end(), energies.begin());
     }
 }
 

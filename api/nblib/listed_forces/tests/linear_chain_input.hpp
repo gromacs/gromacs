@@ -44,11 +44,11 @@
 #ifndef NBLIB_LINEAR_CHAIN_DATA_HPP
 #define NBLIB_LINEAR_CHAIN_DATA_HPP
 
-#include "gromacs/math/vectypes.h"
+#include "listed_forces/traits.h"
 
 #include "nblib/box.h"
-#include "nblib/listed_forces/traits.h"
-#include "nblib/topologyhelpers.h"
+
+#include "topologyhelpers.h"
 
 namespace nblib
 {
@@ -62,11 +62,11 @@ public:
         HarmonicBondType              bond1{ 376560, real(0.1001 * std::sqrt(3)) };
         HarmonicBondType              bond2{ 313800, real(0.1001 * std::sqrt(3)) };
         std::vector<HarmonicBondType> bonds{ bond1, bond2 };
-        pickType<HarmonicBondType>(interactions).parametersA = bonds;
+        pickType<HarmonicBondType>(interactions).parameters = bonds;
 
         HarmonicAngle              angle(397.5, Degrees(179.9));
         std::vector<HarmonicAngle> angles{ angle };
-        pickType<HarmonicAngle>(interactions).parametersA = angles;
+        pickType<HarmonicAngle>(interactions).parameters = angles;
 
         std::vector<InteractionIndex<HarmonicBondType>> bondIndices;
         for (int i = 0; i < nParticles - 1; ++i)
@@ -90,7 +90,9 @@ public:
             x[i] = real(i) * gmx::RVec{ 0.1, 0.1, 0.1 };
         }
 
-        box = Box(0.1 * (nParticles + 1), 0.1 * (nParticles + 1), 0.1 * (nParticles + 1));
+        forces = std::vector<gmx::RVec>(nParticles, gmx::RVec{ 0, 0, 0 });
+
+        box.reset(new Box(0.1 * (nParticles + 1), 0.1 * (nParticles + 1), 0.1 * (nParticles + 1)));
 
         addOutliers(outlierRatio);
     }
@@ -100,8 +102,8 @@ public:
     void addOutliers(float outlierRatio)
     {
         HarmonicBondType dummyBond{ 1e-6, real(0.1001 * std::sqrt(3)) };
-        pickType<HarmonicBondType>(interactions).parametersA.push_back(dummyBond);
-        int bondIndex = pickType<HarmonicBondType>(interactions).parametersA.size() - 1;
+        pickType<HarmonicBondType>(interactions).parameters.push_back(dummyBond);
+        int bondIndex = pickType<HarmonicBondType>(interactions).parameters.size() - 1;
 
         int nOutliers = nParticles * outlierRatio;
         srand(42);
@@ -120,10 +122,11 @@ public:
     int nParticles;
 
     std::vector<gmx::RVec> x;
+    std::vector<gmx::RVec> forces;
 
     ListedInteractionData interactions;
 
-    Box box{ 0 };
+    std::shared_ptr<Box> box;
 };
 
 } // namespace nblib

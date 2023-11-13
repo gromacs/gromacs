@@ -40,10 +40,7 @@
  * \author Prashanth Kanduri <kanduri@cscs.ch>
  * \author Sebastian Keller <keller@cscs.ch>
  */
-
-#include "nblib/listed_forces/kernels.hpp"
-
-#include <vector>
+#include "listed_forces/kernels.hpp"
 
 #include "testutils/testasserts.h"
 
@@ -57,7 +54,7 @@ TEST(Kernels, HarmonicScalarKernelCanCompute)
     real x  = 1.2;
 
     real force, epot;
-    std::tie(force, epot, std::ignore) = harmonicScalarForce(k, k, x0, x0, x, NoFepLambdaType{});
+    std::tie(force, epot) = harmonicScalarForce(k, x0, x);
 
     EXPECT_REAL_EQ_TOL(-k * (x - x0), force, gmx::test::absoluteTolerance(1e-4));
     EXPECT_REAL_EQ_TOL(0.5 * k * (x - x0) * (x - x0), epot, gmx::test::absoluteTolerance(1e-4));

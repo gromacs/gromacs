@@ -76,43 +76,32 @@ namespace nblib
 class ListedGmxCalculator
 {
 public:
-    ListedGmxCalculator(const InteractionDefinitions& idefs,
-                        const gmx_ffparams_t&         ffparams,
-                        size_t                        nP,
-                        int                           nThr,
-                        const Box&                    box);
+    ListedGmxCalculator(const ListedInteractionData& interactions, int nP, int nThr, const Box& box);
 
-    void compute(gmx::ArrayRef<const gmx::RVec> x,
-                 gmx::ArrayRef<const real>      q,
-                 gmx::ArrayRef<gmx::RVec>       forces,
-                 gmx::ArrayRef<gmx::RVec>       shiftForces,
-                 ListedEnergies&                energies);
+    void compute(gmx::ArrayRef<const gmx::RVec>     x,
+                 gmx::ArrayRef<gmx::RVec>           forces,
+                 gmx::ArrayRef<gmx::RVec>           shiftForces,
+                 ListedForceCalculator::EnergyType& energies,
+                 bool                               usePbc);
 
-    void compute(gmx::ArrayRef<const gmx::RVec> x,
-                 gmx::ArrayRef<const real>      q,
-                 gmx::ArrayRef<gmx::RVec>       forces,
-                 gmx::ArrayRef<gmx::RVec>       shiftForces,
-                 gmx::ArrayRef<real>            virials,
-                 ListedEnergies&                energies,
-                 gmx::RVec                      com);
-
-    void compute(gmx::ArrayRef<const gmx::RVec> x, gmx::ArrayRef<gmx::RVec> forces, ListedEnergies& energies);
+    void compute(gmx::ArrayRef<const gmx::RVec>     x,
+                 gmx::ArrayRef<gmx::RVec>           forces,
+                 ListedForceCalculator::EnergyType& energies,
+                 bool                               usePbc);
 
     [[nodiscard]] const InteractionDefinitions& getIdef() const;
 
 private:
-    std::unique_ptr<InteractionDefinitions> idef_;
-    std::unique_ptr<gmx_ffparams_t>         ffparams_;
-
     int numParticles;
     int numThreads;
 
     Box box_;
 
-    std::vector<gmx::RVec>      shiftBuffer;
-    std::vector<gmx::RVec>      forceBuffer;
-    std::vector<unsigned short> energyGroup_;
-    std::vector<real>           charges_;
+    std::unique_ptr<InteractionDefinitions> idef;
+    std::unique_ptr<gmx_ffparams_t>         ffparams;
+
+    std::vector<gmx::RVec> shiftBuffer;
+    std::vector<gmx::RVec> forceBuffer;
 
     gmx::ForceWithShiftForces shiftProxy;
     gmx::ForceWithVirial      virialProxy;

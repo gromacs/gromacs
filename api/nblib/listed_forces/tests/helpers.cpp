@@ -42,13 +42,13 @@
  */
 #include "gmxpre.h"
 
-#include "nblib/listed_forces/helpers.hpp"
+#include "listed_forces/helpers.hpp"
 
 #include <gtest/gtest.h>
 
-#include "testutils/testasserts.h"
+#include "listed_forces/traits.h"
 
-#include "nblib/listed_forces/traits.h"
+#include "testutils/testasserts.h"
 
 
 namespace nblib
@@ -104,15 +104,15 @@ TEST(NBlibTest, ListedForceBuffer)
     int ncoords = 20;
 
     T              vzero{ 0, 0, 0 };
-    std::vector<T> masterBuffer(ncoords, vzero);
+    std::vector<T> mainBuffer(ncoords, vzero);
 
-    // the ForceBufferProxy is going to access indices [10-15) through the masterBuffer
+    // the ForceBufferProxy is going to access indices [10-15) through the mainBuffer
     // and the outliers internally
     int rangeStart = 10;
     int rangeEnd   = 15;
 
     ForceBufferProxy<T> forceBuffer(rangeStart, rangeEnd);
-    forceBuffer.setMasterBuffer(masterBuffer);
+    forceBuffer.setMainBuffer(mainBuffer);
 
     // in range
     T internal1{ 1, 2, 3 };
@@ -124,16 +124,15 @@ TEST(NBlibTest, ListedForceBuffer)
     T outlier{ 0, 1, 2 };
     forceBuffer[5] = outlier;
 
-    std::vector<T> refMasterBuffer(ncoords, vzero);
-    refMasterBuffer[10] = internal1;
-    refMasterBuffer[14] = internal2;
+    std::vector<T> refMainBuffer(ncoords, vzero);
+    refMainBuffer[10] = internal1;
+    refMainBuffer[14] = internal2;
 
-    for (size_t i = 0; i < masterBuffer.size(); ++i)
+    for (size_t i = 0; i < mainBuffer.size(); ++i)
     {
         for (size_t m = 0; m < dimSize; ++m)
         {
-            EXPECT_REAL_EQ_TOL(
-                    refMasterBuffer[i][m], masterBuffer[i][m], gmx::test::defaultRealTolerance());
+            EXPECT_REAL_EQ_TOL(refMainBuffer[i][m], mainBuffer[i][m], gmx::test::defaultRealTolerance());
         }
     }
 

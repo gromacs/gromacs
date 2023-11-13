@@ -43,7 +43,7 @@
 
 #include "nblib/util/traits.hpp"
 
-#include "nblib/tests/testhelpers.h"
+#include "testhelpers.h"
 
 namespace nblib
 {
@@ -180,35 +180,5 @@ TEST(NblibTraitsUtils, FindIndexTypeListRepeated)
     EXPECT_EQ(3, outOfRange);
 }
 
-TEST(NblibTraitsUtils, TypeListElementAccess)
-{
-    using TupleType = TypeList<float, double, int, unsigned>;
-
-    static_assert(TypeListSize<TupleType>{} == 4);
-    static_assert(std::is_same_v<TypeListElement_t<0, TupleType>, float>);
-    static_assert(std::is_same_v<TypeListElement_t<1, TupleType>, double>);
-    static_assert(std::is_same_v<TypeListElement_t<2, TupleType>, int>);
-    static_assert(std::is_same_v<TypeListElement_t<3, TupleType>, unsigned>);
-}
-
-TEST(NblibTraitsUtils, SubsetIndices)
-{
-    using SubList  = TypeList<short, unsigned>;
-    using BaseList = TypeList<float, double, short, int, unsigned>;
-
-    [[maybe_unused]] auto indices = subsetIndices(SubList{}, BaseList{});
-    static_assert(std::is_same_v<decltype(indices), std::index_sequence<2, 4>>);
-}
-
-TEST(NblibTraitsUtils, SubsetIndicesOutOfRange)
-{
-    using SubList  = TypeList<short, unsigned>;
-    using BaseList = TypeList<float, double, short, int, unsigned>;
-
-    [[maybe_unused]] auto outOfRange = subsetIndices(BaseList{}, SubList{});
-
-    constexpr std::size_t length = TypeListSize<SubList>{};
-    static_assert(std::is_same_v<decltype(outOfRange), std::index_sequence<length, length, 0, length, 1>>);
-}
 
 } // namespace nblib
