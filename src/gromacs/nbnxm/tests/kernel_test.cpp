@@ -781,12 +781,12 @@ void registerTestsDynamically()
                                                  CoulombKernelType::TableTwin
 #endif
                                                  ),
-                               ::testing::Values(vdwktLJCUT_COMBGEOM,
-                                                 vdwktLJCUT_COMBLB,
-                                                 vdwktLJCUT_COMBNONE,
-                                                 vdwktLJFORCESWITCH,
-                                                 vdwktLJPOTSWITCH,
-                                                 vdwktLJEWALDCOMBGEOM)));
+                               ::testing::Values(static_cast<int>(vdwktLJCUT_COMBGEOM),
+                                                 static_cast<int>(vdwktLJCUT_COMBLB),
+                                                 static_cast<int>(vdwktLJCUT_COMBNONE),
+                                                 static_cast<int>(vdwktLJFORCESWITCH),
+                                                 static_cast<int>(vdwktLJPOTSWITCH),
+                                                 static_cast<int>(vdwktLJEWALDCOMBGEOM))));
 
     registerTests<NbnxmKernelTest, NbnxmKernelTestBody, decltype(testCombinations)>(
             "NbnxmKernelTest", nameOfTest, fullNameOfTest, testCombinations);
