@@ -185,7 +185,7 @@ public:
         gridIndexToDataIndex_ = std::vector<int>(grid_->numPoints());
 
         // Here we read the input file
-        filename_ = gmx::test::TestFileManager::getInputFilePath(GetParam()).u8string();
+        filename_ = gmx::test::TestFileManager::getInputFilePath(GetParam());
 
         data_       = readXvgData(filename_);
         numColumns_ = data_.extent(0);
@@ -217,7 +217,7 @@ TEST_P(UserInputTest, ParsesUser3DInput)
     std::string     correctFormatMessage;
     /* Get a data point for each AWH grid point so that they all get data. */
     EXPECT_NO_THROW(mapGridToDataGrid(
-            &gridIndexToDataIndex_, data_, numRows_, filename_, grid, correctFormatMessage));
+            &gridIndexToDataIndex_, data_, numRows_, filename_.u8string(), grid, correctFormatMessage));
     EXPECT_EQ(numRows_, 30);
     EXPECT_EQ(numColumns_, 8);
 }
