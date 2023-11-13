@@ -220,16 +220,11 @@ const char* lookup_kernel_name(const KernelType kernelType)
     switch (kernelType)
     {
         case KernelType::NotSet: return "not set";
-        case KernelType::Cpu4x4_PlainC: return "plain C";
-        case KernelType::Cpu4xN_Simd_4xN:
-        case KernelType::Cpu4xN_Simd_2xNN:
-#if GMX_SIMD
-            return "SIMD";
-#else  // GMX_SIMD
-            return "not available";
-#endif // GMX_SIMD
+        case KernelType::Cpu4x4_PlainC: return "plain-C";
+        case KernelType::Cpu4xN_Simd_4xN: return "SIMD4xM";
+        case KernelType::Cpu4xN_Simd_2xNN: return "SIMD2xMM";
         case KernelType::Gpu8x8x8: return "GPU";
-        case KernelType::Cpu8x8x8_PlainC: return "plain C";
+        case KernelType::Cpu8x8x8_PlainC: return "plain-C";
 
         default: gmx_fatal(FARGS, "Illegal kernel type selected");
     }

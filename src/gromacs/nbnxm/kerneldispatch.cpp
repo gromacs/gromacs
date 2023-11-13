@@ -492,5 +492,8 @@ void nonbonded_verlet_t::dispatchNonbondedKernel(gmx::InteractionLocality       
         default: GMX_RELEASE_ASSERT(false, "Invalid nonbonded kernel type passed!");
     }
 
-    accountFlops(nrnb, pairlistSet, *this, ic, stepWork);
+    if (nrnb)
+    {
+        accountFlops(nrnb, pairlistSet, *this, ic, stepWork);
+    }
 }
