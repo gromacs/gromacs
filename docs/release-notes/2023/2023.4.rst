@@ -29,5 +29,10 @@ links to the relevant pages in the current documentation.
 Fixes that affect portability
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Fixed compilation with Boost 1.83
+"""""""""""""""""""""""""""""""""
+
+:issue:`4909`
+
 Miscellaneous
 ^^^^^^^^^^^^^
