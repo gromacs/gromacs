@@ -93,6 +93,7 @@ struct gmx_mdoutf
     gmx_tng_trajectory_t           tng;
     gmx_tng_trajectory_t           tng_low_prec;
     GmxH5mdIo*                     h5mdIo;
+    GmxH5mdIo*                     h5mdIoLowPrec;
     int                            x_compression_precision; /* only used by XTC output */
     ener_file_t                    fp_ene;
     const char*                    fn_cpt;
@@ -137,13 +138,14 @@ gmx_mdoutf_t init_mdoutf(FILE*                          fplog,
 
     snew(of, 1);
 
-    of->fp_trn       = nullptr;
-    of->fp_ene       = nullptr;
-    of->fp_xtc       = nullptr;
-    of->tng          = nullptr;
-    of->tng_low_prec = nullptr;
-    of->h5mdIo       = nullptr;
-    of->fp_dhdl      = nullptr;
+    of->fp_trn        = nullptr;
+    of->fp_ene        = nullptr;
+    of->fp_xtc        = nullptr;
+    of->tng           = nullptr;
+    of->tng_low_prec  = nullptr;
+    of->h5mdIo        = nullptr;
+    of->h5mdIoLowPrec = nullptr;
+    of->fp_dhdl       = nullptr;
 
     of->eIntegrator             = ir->eI;
     of->bExpanded               = ir->bExpanded;
@@ -183,7 +185,7 @@ gmx_mdoutf_t init_mdoutf(FILE*                          fplog,
                     }
                     bCiteTng = TRUE;
                     break;
-                case efH5MD: of->h5mdIo = new GmxH5mdIo(filename, filemode[0]); break;
+                case efH5MD: of->h5mdIoLowPrec = new GmxH5mdIo(filename, filemode[0]); break;
                 default: gmx_incons("Invalid reduced precision file format");
             }
         }
@@ -213,7 +215,19 @@ gmx_mdoutf_t init_mdoutf(FILE*                          fplog,
                     }
                     bCiteTng = TRUE;
                     break;
-                // FIXME: Add full precision H5MD output.
+                case efH5MD:
+                    if (of->h5mdIoLowPrec != nullptr)
+                    {
+                        if (strcmp(filename, ftp2fn(efCOMPRESSED, nfile, fnm)) == 0)
+                        {
+                            gmx_incons(
+                                    "Cannot write compressed coordinates together with "
+                                    "uncompressed coordinates, forces or velocities to the same "
+                                    "H5MD file.");
+                        }
+                    }
+                    of->h5mdIo = new GmxH5mdIo(filename, filemode[0]);
+                    break;
                 default: gmx_incons("Invalid full precision file format");
             }
         }
@@ -256,7 +270,13 @@ gmx_mdoutf_t init_mdoutf(FILE*                          fplog,
         if (of->h5mdIo)
         {
             of->h5mdIo->setupMolecularSystem(top_global);
+
             of->h5mdIo->setUpParticlesDataBlocks(
+                    ir->nstxout, ir->nstvout, ir->nstfout, of->natoms_global, ir->pbcType, 0);
+        }
+        if (of->h5mdIoLowPrec && ir->nstxout_compressed > 0)
+        {
+            of->h5mdIoLowPrec->setUpParticlesDataBlocks(
                     ir->nstxout_compressed, 0, 0, of->natoms_x_compressed, ir->pbcType, 1.0 / of->x_compression_precision);
         }
 
@@ -543,6 +563,10 @@ void mdoutf_write_checkpoint(gmx_mdoutf_t                    of,
     {
         of->h5mdIo->flush();
     }
+    if (of->h5mdIoLowPrec)
+    {
+        of->h5mdIoLowPrec->flush();
+    }
     /* Write the checkpoint file.
      * When simulations share the state, an MPI barrier is applied before
      * renaming old and new checkpoint files to minimize the risk of
@@ -696,18 +720,16 @@ void mdoutf_write_to_trajectory_files(FILE*                           fplog,
                                v,
                                f);
             }
-            // Disabled for now. Only write compressed data,
-            //             else if (of->h5mdIo)
-            //             {
-            //                 of->h5mdIo->writeFrame(step,
-            //                                        t,
-            //                                        state_local->lambda[FreeEnergyPerturbationCouplingType::Fep],
-            //                                        state_local->box,
-            //                                        x,
-            //                                        v,
-            //                                        f,
-            //                                        nullptr);
-            //             }
+            else if (of->h5mdIo)
+            {
+                of->h5mdIo->writeFrame(step,
+                                       t,
+                                       state_local->lambda[FreeEnergyPerturbationCouplingType::Fep],
+                                       state_local->box,
+                                       x,
+                                       v,
+                                       f);
+            }
         }
         if (mdof_flags & MDOF_X_COMPRESSED)
         {
@@ -754,16 +776,15 @@ void mdoutf_write_to_trajectory_files(FILE*                           fplog,
                            xxtc,
                            nullptr,
                            nullptr);
-            if (of->h5mdIo)
+            if (of->h5mdIoLowPrec)
             {
-                of->h5mdIo->writeFrame(step,
-                                       t,
-                                       state_local->lambda[FreeEnergyPerturbationCouplingType::Fep],
-                                       state_local->box,
-                                       nullptr,
-                                       nullptr,
-                                       nullptr,
-                                       xxtc);
+                of->h5mdIoLowPrec->writeFrame(step,
+                                              t,
+                                              state_local->lambda[FreeEnergyPerturbationCouplingType::Fep],
+                                              state_local->box,
+                                              xxtc,
+                                              nullptr,
+                                              nullptr);
             }
             if (of->natoms_x_compressed != of->natoms_global)
             {

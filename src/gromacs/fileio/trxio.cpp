@@ -426,14 +426,7 @@ int write_trxframe_indexed(t_trxstatus* status, const t_trxframe* fr, int nind, 
     switch (ftp)
     {
         case efTNG: gmx_write_tng_from_trxframe(status->tng, fr, nind); break;
-        case efH5MD: status->h5mdIo->writeFrame(fr->step,
-                                       fr->time,
-                                       0,
-                                       fr->box,
-                                       nullptr,
-                                       vout,
-                                       fout,
-                                       xout);
+        case efH5MD: status->h5mdIo->writeFrame(fr->step, fr->time, 0, fr->box, xout, vout, fout);
 
         case efXTC: write_xtc(status->fio, nind, fr->step, fr->time, fr->box, xout, prec); break;
         case efTRR:

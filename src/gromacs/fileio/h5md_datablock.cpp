@@ -158,8 +158,8 @@ int64_t GmxH5mdTimeDataBlock::getNumberOfFrames()
                "of frames.");
     if (stepDataSet_ >= 0)
     {
-        hid_t dataSpace = H5Dget_space(stepDataSet_);
-        const int numDims = H5Sget_simple_extent_ndims(dataSpace);
+        hid_t     dataSpace = H5Dget_space(stepDataSet_);
+        const int numDims   = H5Sget_simple_extent_ndims(dataSpace);
         if (numDims != 1)
         {
             gmx_file("The step data set should be one-dimensional.");
@@ -175,12 +175,13 @@ int64_t GmxH5mdTimeDataBlock::getNumberOfFrames()
         {
             return numValidFrames;
         }
-        hid_t datatype = H5T_NATIVE_INT64;
+        hid_t   datatype = H5T_NATIVE_INT64;
         int64_t fillValue;
         H5Pget_fill_value(createPropertyList, datatype, &fillValue);
 
         int64_t stepData = fillValue;
-        do {
+        do
+        {
             hsize_t location = numValidFrames - 1;
             H5Sselect_elements(dataSpace, H5S_SELECT_SET, 1, &location);
             if (H5Dread(stepDataSet_, datatype, dataSpace, H5S_ALL, H5P_DEFAULT, &stepData) < 0)
@@ -194,8 +195,8 @@ int64_t GmxH5mdTimeDataBlock::getNumberOfFrames()
     }
     else
     {
-        hid_t dataSpace = H5Dget_space(stepDataSet_);
-        const int numDims = H5Sget_simple_extent_ndims(dataSpace);
+        hid_t     dataSpace = H5Dget_space(stepDataSet_);
+        const int numDims   = H5Sget_simple_extent_ndims(dataSpace);
         if (numDims != 3)
         {
             gmx_file("The time dependent data set should be three-dimensional.");

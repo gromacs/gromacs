@@ -105,15 +105,15 @@ public:
      * This needs to be done before writing the particle data to the trajectory.
      *
      * \param[in] writeCoordinatesSteps The lossless coordinate output interval.
-     * \param[in] writeForcesSteps The lossless force output interval.
      * \param[in] writeVelocitiesSteps The lossless velocity output interval.
+     * \param[in] writeForcesSteps The lossless force output interval.
      * \param[in] numParticles The number of particles/atoms in the system.
      * \param[in] pbcType The periodic boundary condition that is used.
      * \param[in] compressionError The required precision of the lossy compression.
      */
     void setUpParticlesDataBlocks(int     writeCoordinatesSteps,
-                                  int     writeForcesSteps,
                                   int     writeVelocitiesSteps,
+                                  int     writeForcesSteps,
                                   int     numParticles,
                                   PbcType pbcType,
                                   double  compressionError);
@@ -129,14 +129,7 @@ public:
      * \param[in] f The particle forces for lossless output.
      * \param[in] xLossy The particle coordinates for lossy (compressed) output.
      */
-    void writeFrame(int64_t     step,
-                    real        time,
-                    real        lambda,
-                    const rvec* box,
-                    const rvec* x,
-                    const rvec* v,
-                    const rvec* f,
-                    const rvec* xLossy);
+    void writeFrame(int64_t step, real time, real lambda, const rvec* box, const rvec* x, const rvec* v, const rvec* f);
 
     int64_t getNumberOfFrames(const char* dataBlockName);
 };
