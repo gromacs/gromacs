@@ -34,6 +34,8 @@
 #ifndef GMX_UTILITY_MPI_INFO_H
 #define GMX_UTILITY_MPI_INFO_H
 
+#include <string_view>
+
 namespace gmx
 {
 /*! \brief Enum describing GPU-aware support in underlying MPI library.
@@ -48,6 +50,11 @@ enum class GpuAwareMpiStatus : int
     Supported,        //!< GPU-aware support available.
 };
 
+//! Return the string obtained from the MPI library via MPI_Get_library_version
+std::string_view mpiLibraryVersionString();
+
+//! Return whether GROMACS is linked against an MPI library describing itself as Intel MPI
+bool usingIntelMpi();
 
 /*! \brief
  * Wrapper on top of \c MPIX_Query_cuda_support()
@@ -69,10 +76,11 @@ GpuAwareMpiStatus checkMpiCudaAwareSupport();
 GpuAwareMpiStatus checkMpiHipAwareSupport();
 
 /*! \brief
- * Wrapper on top of \c MPIX_Query_ze_support()
- * For MPI implementations which don't support this function, it returns \c NotSupported.
+ * Wrapper on top of \c MPIX_Query_ze_support() (for MPICH) or custom
+ * logic (for IntelMPI).
  *
- * Currently, this function is only supported by MPICH, not OpenMPI or IntelMPI.
+ * For other MPI implementations which perhaps don't support the above
+ * function, it returns NotSupported.
  *
  * \returns     LevelZero-aware status in MPI implementation */
 GpuAwareMpiStatus checkMpiZEAwareSupport();

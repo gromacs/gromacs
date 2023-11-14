@@ -38,6 +38,10 @@
 
 #include <cstdlib>
 
+#include <regex>
+#include <string>
+#include <string_view>
+
 // need to include gmxapi.h here as mpi.h needs to be included before mpi-ext.h
 #include "gromacs/utility/gmxmpi.h"
 
@@ -47,6 +51,50 @@
 
 namespace gmx
 {
+
+namespace
+{
+
+//! Return a copy of the version string from the MPI library or an empty string
+std::string findMpiLibraryVersionString()
+{
+    // All MPI libraries should define
+    // MPI_MAX_LIBRARY_VERSION_STRING because it is part of the
+    // standard, but we may as well check for it. This also makes
+    // this code safe for thread-MPI, which does not define this
+    // version string.
+#ifdef MPI_MAX_LIBRARY_VERSION_STRING
+    char versionString[MPI_MAX_LIBRARY_VERSION_STRING];
+    int  length = -1;
+    // Note this returns a zero-terminated string when called from
+    // C/C++.
+    MPI_Get_library_version(versionString, &length);
+    return versionString;
+#else
+    return "";
+#endif
+}
+
+} // namespace
+
+std::string_view mpiLibraryVersionString()
+{
+    // Avoid calling into the MPI library and then making a new
+    // std::string every time this function is called. C++ standard
+    // guarantees that this is thread-safe.
+    static const std::string cachedVersionString = findMpiLibraryVersionString();
+
+    return cachedVersionString;
+}
+
+bool usingIntelMpi()
+{
+    // Sample output from Intel MPI:
+    // 'Intel(R) MPI Library 2021.10 for Linux* OS
+    // '
+    // ie. it includes a newline!
+    return mpiLibraryVersionString().find("Intel(R) MPI Library") != std::string::npos;
+}
 
 GpuAwareMpiStatus checkMpiCudaAwareSupport()
 {
@@ -91,11 +139,53 @@ GpuAwareMpiStatus checkMpiHipAwareSupport()
 
 GpuAwareMpiStatus checkMpiZEAwareSupport()
 {
-#if MPI_SUPPORTS_ZE_AWARE_DETECTION
-    GpuAwareMpiStatus status = (MPIX_Query_ze_support() == 1) ? GpuAwareMpiStatus::Supported
-                                                              : GpuAwareMpiStatus::NotSupported;
-#else
     GpuAwareMpiStatus status = GpuAwareMpiStatus::NotSupported;
+#if MPI_SUPPORTS_ZE_AWARE_DETECTION
+    if (MPIX_Query_ze_support() == 1)
+    {
+        status = GpuAwareMpiStatus::Supported;
+    }
+#else
+    // Find if we are using Intel MPI
+    if (usingIntelMpi())
+    {
+        // If so, then we can decide whether it supports GPU-aware
+        // MPI. First, find the library major and minor version
+        // numbers.
+        //
+        // Sample output from Intel MPI:
+        // 'Intel(R) MPI Library 2021.10 for Linux* OS
+        // '
+        // ie. it includes a newline!
+        std::string versionString{ mpiLibraryVersionString() };
+        std::regex  re("Intel\\(R\\) MPI Library (.*)\\.(.*) for");
+        std::smatch match;
+        if (std::regex_search(versionString, match, re) && match.size() == 3)
+        {
+            // These will be zero in case of error, which will work
+            // correctly in the following logic.
+            int majorVersion = std::atoi(match.str(1).c_str());
+            int minorVersion = std::atoi(match.str(2).c_str());
+
+            // Technically 2021.8 had support, but it's so old and
+            // slow that GROMACS doesn't consider that to be support.
+            if ((majorVersion > 2021) || (majorVersion == 2021 && minorVersion >= 9))
+            {
+                // Now check whether the user may have asked Intel MPI to do
+                // GPU-aware MPI.
+                if (const char* environmentValueAsCString = std::getenv("I_MPI_OFFLOAD"))
+                {
+                    // Now check whether they did ask for GPU-aware MPI.  Note
+                    // std::atoi returns zero on error, so that works OK here
+                    // because I_MPI_OFFLOAD=0 means no GPU-aware support.
+                    if (std::atoi(environmentValueAsCString))
+                    {
+                        status = GpuAwareMpiStatus::Supported;
+                    }
+                }
+            }
+        }
+    }
 #endif
 
     if (status != GpuAwareMpiStatus::Supported && getenv("GMX_FORCE_GPU_AWARE_MPI") != nullptr)

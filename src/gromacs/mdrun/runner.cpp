@@ -365,8 +365,8 @@ static DevelopmentFeatureFlags manageDevelopmentFeatures(const gmx::MDLogger& md
                         "GMX_USE_GPU_BUFFER_OPS environment variable.");
     }
 
-    // PME decomposition is supported only with CUDA-backend in mixed mode
-    // CUDA-backend also needs GPU-aware MPI support for decomposition to work
+    // PME decomposition is supported only with CUDA or SYCL and also
+    // needs GPU-aware MPI support for it to work.
     const bool pmeGpuDecompositionRequested =
             (pmeRunMode == PmeRunMode::GPU || pmeRunMode == PmeRunMode::Mixed)
             && ((numRanksPerSimulation > 1 && numPmeRanksPerSimulation == 0)
