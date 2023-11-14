@@ -123,7 +123,6 @@ if (GMX_USE_SIMD_KERNELS)
         kernel_ElecRF_VdwLJPSw_VgrpF.cpp
         kernel_ElecRF_VdwLJ_VF.cpp
         kernel_ElecRF_VdwLJ_VgrpF.cpp
-        kernel_prune.cpp
         )
 endif()
 

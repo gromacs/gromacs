@@ -34,7 +34,7 @@
 
 #include "gmxpre.h"
 
-#include "kernel_prune.h"
+#include "simd_prune_kernel.h"
 
 #include "gromacs/nbnxm/atomdata.h"
 #include "gromacs/nbnxm/nbnxm_simd.h"
@@ -43,16 +43,33 @@
 #include "gromacs/simd/vector_operations.h"
 #include "gromacs/utility/gmxassert.h"
 
-/* Prune a single nbnxn_pairtlist_t entry with distance rlistInner */
-void nbnxn_kernel_prune_2xnn(NbnxnPairlistCpu*              nbl,
-                             const nbnxn_atomdata_t*        nbat,
-                             gmx::ArrayRef<const gmx::RVec> shiftvec,
-                             real                           rlistInner)
-{
-#if GMX_SIMD && GMX_SIMD_HAVE_HSIMD_UTIL_REAL
-    using namespace gmx;
+#if GMX_SIMD
+#    include "simd_load_store_functions.h"
+#endif
 
-    constexpr KernelLayout kernelLayout = KernelLayout::r2xMM;
+//! Returns the base 2 log of \p x
+template<int x>
+gmx_unused static constexpr int sc_log2()
+{
+    static_assert(x == 2 || x == 4);
+
+    switch (x)
+    {
+        case 2: return 1; break;
+        case 4: return 2; break;
+    }
+
+    return 0;
+}
+
+template<KernelLayout kernelLayout>
+void nbnxmSimdPruneKernel(NbnxnPairlistCpu*              nbl,
+                          const nbnxn_atomdata_t&        nbat,
+                          gmx::ArrayRef<const gmx::RVec> shiftvec,
+                          real                           rlistInner)
+{
+#if GMX_SIMD
+    using namespace gmx;
 
     // The number of j-clusters stored in a SIMD register
     constexpr int c_numJClustersPerSimdRegister = (kernelLayout == KernelLayout::r2xMM ? 2 : 1);
@@ -65,6 +82,9 @@ void nbnxn_kernel_prune_2xnn(NbnxnPairlistCpu*              nbl,
     // The stride of all atom data arrays
     constexpr int c_stride = std::max(c_iClusterSize, c_jClusterSize);
 
+    // The number of 'i' SIMD registers
+    constexpr int nR = c_iClusterSize / c_numJClustersPerSimdRegister;
+
     /* We avoid push_back() for efficiency reasons and resize after filling */
     nbl->ci.resize(nbl->ciOuter.size());
     nbl->cj.resize(nbl->cjOuter.size());
@@ -75,7 +95,7 @@ void nbnxn_kernel_prune_2xnn(NbnxnPairlistCpu*              nbl,
     const nbnxn_cj_t* gmx_restrict cjOuter = nbl->cjOuter.data();
     nbnxn_cj_t* gmx_restrict       cjInner = nbl->cj.list_.data();
 
-    const real* gmx_restrict x = nbat->x().data();
+    const real* gmx_restrict x = nbat.x().data();
 
     const SimdReal rlist2_S(rlistInner * rlistInner);
 
@@ -83,9 +103,9 @@ void nbnxn_kernel_prune_2xnn(NbnxnPairlistCpu*              nbl,
     int       nciInner = 0;
     int       ncjInner = 0;
     const int nciOuter = nbl->ciOuter.size();
-    for (int i = 0; i < nciOuter; i++)
+    for (int ciIndex = 0; ciIndex < nciOuter; ciIndex++)
     {
-        const nbnxn_ci_t* gmx_restrict ciEntry = &ciOuter[i];
+        const nbnxn_ci_t* gmx_restrict ciEntry = &ciOuter[ciIndex];
 
         /* Copy the original list entry to the pruned entry */
         ciInner[nciInner].ci           = ciEntry->ci;
@@ -93,15 +113,15 @@ void nbnxn_kernel_prune_2xnn(NbnxnPairlistCpu*              nbl,
         ciInner[nciInner].cj_ind_start = ncjInner;
 
         /* Extract shift data */
-        int ish = (ciEntry->shift & NBNXN_CI_SHIFT);
-        int ci  = ciEntry->ci;
+        const int ish = (ciEntry->shift & NBNXN_CI_SHIFT);
+        const int ci  = ciEntry->ci;
 
-        SimdReal shX_S = SimdReal(shiftvec[ish][XX]);
-        SimdReal shY_S = SimdReal(shiftvec[ish][YY]);
-        SimdReal shZ_S = SimdReal(shiftvec[ish][ZZ]);
+        const SimdReal iShiftX = SimdReal(shiftvec[ish][XX]);
+        const SimdReal iShiftY = SimdReal(shiftvec[ish][YY]);
+        const SimdReal iShiftZ = SimdReal(shiftvec[ish][ZZ]);
 
         int scix;
-        if constexpr (c_jClusterSize <= 4)
+        if constexpr (c_jClusterSize <= c_iClusterSize)
         {
             scix = ci * c_stride * DIM;
         }
@@ -111,14 +131,15 @@ void nbnxn_kernel_prune_2xnn(NbnxnPairlistCpu*              nbl,
         }
 
         /* Load i atom data */
-        int      sciy  = scix + c_stride;
-        int      sciz  = sciy + c_stride;
-        SimdReal ix_S0 = loadU1DualHsimd(x + scix) + shX_S;
-        SimdReal ix_S2 = loadU1DualHsimd(x + scix + 2) + shX_S;
-        SimdReal iy_S0 = loadU1DualHsimd(x + sciy) + shY_S;
-        SimdReal iy_S2 = loadU1DualHsimd(x + sciy + 2) + shY_S;
-        SimdReal iz_S0 = loadU1DualHsimd(x + sciz) + shZ_S;
-        SimdReal iz_S2 = loadU1DualHsimd(x + sciz + 2) + shZ_S;
+        int                                       sciy = scix + c_stride;
+        int                                       sciz = sciy + c_stride;
+        std::array<std::array<SimdReal, DIM>, nR> xi;
+        for (int i = 0; i < nR; i++)
+        {
+            xi[i][0] = loadIAtomData<kernelLayout>(x, scix, i) + iShiftX;
+            xi[i][1] = loadIAtomData<kernelLayout>(x, sciy, i) + iShiftY;
+            xi[i][2] = loadIAtomData<kernelLayout>(x, sciz, i) + iShiftZ;
+        }
 
         for (int cjind = ciEntry->cj_ind_start; cjind < ciEntry->cj_ind_end; cjind++)
         {
@@ -140,31 +161,47 @@ void nbnxn_kernel_prune_2xnn(NbnxnPairlistCpu*              nbl,
             int ajz = ajy + c_stride;
 
             /* load j atom coordinates */
-            SimdReal jx_S = loadDuplicateHsimd(x + ajx);
-            SimdReal jy_S = loadDuplicateHsimd(x + ajy);
-            SimdReal jz_S = loadDuplicateHsimd(x + ajz);
+            const SimdReal jx_S = loadJAtomData<kernelLayout>(x, ajx);
+            const SimdReal jy_S = loadJAtomData<kernelLayout>(x, ajy);
+            const SimdReal jz_S = loadJAtomData<kernelLayout>(x, ajz);
 
             /* Calculate distance */
-            SimdReal dx_S0 = ix_S0 - jx_S;
-            SimdReal dy_S0 = iy_S0 - jy_S;
-            SimdReal dz_S0 = iz_S0 - jz_S;
-            SimdReal dx_S2 = ix_S2 - jx_S;
-            SimdReal dy_S2 = iy_S2 - jy_S;
-            SimdReal dz_S2 = iz_S2 - jz_S;
+            std::array<std::array<SimdReal, DIM>, nR> d;
+            for (int i = 0; i < nR; i++)
+            {
+                d[i][0] = xi[i][0] - jx_S;
+                d[i][1] = xi[i][1] - jy_S;
+                d[i][2] = xi[i][2] - jz_S;
+            }
 
             /* rsq = dx*dx+dy*dy+dz*dz */
-            SimdReal rsq_S0 = norm2(dx_S0, dy_S0, dz_S0);
-            SimdReal rsq_S2 = norm2(dx_S2, dy_S2, dz_S2);
+            std::array<SimdReal, nR> rsq;
+            for (int i = 0; i < nR; i++)
+            {
+                rsq[i] = norm2(d[i][0], d[i][1], d[i][2]);
+            }
 
             /* Do the cut-off check */
-            SimdBool wco_S0 = (rsq_S0 < rlist2_S);
-            SimdBool wco_S2 = (rsq_S2 < rlist2_S);
+            std::array<SimdBool, nR> wco;
+            for (int i = 0; i < nR; i++)
+            {
+                wco[i] = (rsq[i] < rlist2_S);
+            }
 
-            wco_S0 = wco_S0 || wco_S2;
+            constexpr int numIterations = sc_log2<nR>();
+            for (int iter = 0; iter < numIterations; iter++)
+            {
+                const int offset = (1 << iter);
+
+                for (int i = 0; i < nR; i += 2 * offset)
+                {
+                    wco[i] = wco[i] || wco[i + offset];
+                }
+            }
 
             /* Putting the assignment inside the conditional is slower */
             cjInner[ncjInner] = cjOuter[cjind];
-            if (anyTrue(wco_S0))
+            if (anyTrue(wco[0]))
             {
                 ncjInner++;
             }
@@ -180,14 +217,28 @@ void nbnxn_kernel_prune_2xnn(NbnxnPairlistCpu*              nbl,
     nbl->ci.resize(nciInner);
     nbl->cj.resize(ncjInner);
 
-#else /* GMX_SIMD && GMX_SIMD_HAVE_HSIMD_UTIL_REAL */
+#else /* GMX_SIMD */
 
-    GMX_RELEASE_ASSERT(false, "2xNN kernel called without 2xNN support");
+    GMX_RELEASE_ASSERT(false, "SIMD prune kernel called without SIMD support");
 
     GMX_UNUSED_VALUE(nbl);
     GMX_UNUSED_VALUE(nbat);
     GMX_UNUSED_VALUE(shiftvec);
     GMX_UNUSED_VALUE(rlistInner);
 
-#endif /* GMX_SIMD && GMX_SIMD_HAVE_HSIMD_UTIL_REAL */
+#endif /* GMX_SIMD */
 }
+
+#if GMX_HAVE_NBNXM_SIMD_2XMM
+template void nbnxmSimdPruneKernel<KernelLayout::r2xMM>(NbnxnPairlistCpu*              nbl,
+                                                        const nbnxn_atomdata_t&        nbat,
+                                                        gmx::ArrayRef<const gmx::RVec> shiftvec,
+                                                        real                           rlistInner);
+#endif
+
+#if GMX_HAVE_NBNXM_SIMD_4XM
+template void nbnxmSimdPruneKernel<KernelLayout::r4xM>(NbnxnPairlistCpu*              nbl,
+                                                       const nbnxn_atomdata_t&        nbat,
+                                                       gmx::ArrayRef<const gmx::RVec> shiftvec,
+                                                       real                           rlistInner);
+#endif

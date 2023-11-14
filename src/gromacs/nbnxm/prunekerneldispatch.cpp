@@ -35,8 +35,6 @@
 #include "gmxpre.h"
 
 #include "kernels_reference/kernel_ref_prune.h"
-#include "kernels_simd_2xmm/kernel_prune.h"
-#include "kernels_simd_4xm/kernel_prune.h"
 
 #include "gromacs/mdlib/gmx_omp_nthreads.h"
 #include "gromacs/nbnxm/nbnxm.h"
@@ -48,6 +46,7 @@
 #include "nbnxm_simd.h"
 #include "pairlistset.h"
 #include "pairlistsets.h"
+#include "simd_prune_kernel.h"
 
 void PairlistSets::dispatchPruneKernel(const gmx::InteractionLocality iLocality,
                                        const nbnxn_atomdata_t*        nbat,
@@ -75,12 +74,12 @@ void PairlistSet::dispatchPruneKernel(const nbnxn_atomdata_t* nbat, gmx::ArrayRe
         {
 #if GMX_SIMD && GMX_HAVE_NBNXM_SIMD_4XM
             case ClusterDistanceKernelType::CpuSimd_4xM:
-                nbnxn_kernel_prune_4xn(nbl, nbat, shift_vec, rlistInner);
+                nbnxmSimdPruneKernel<KernelLayout::r4xM>(nbl, *nbat, shift_vec, rlistInner);
                 break;
 #endif
 #if GMX_SIMD && GMX_HAVE_NBNXM_SIMD_2XMM
             case ClusterDistanceKernelType::CpuSimd_2xMM:
-                nbnxn_kernel_prune_2xnn(nbl, nbat, shift_vec, rlistInner);
+                nbnxmSimdPruneKernel<KernelLayout::r2xMM>(nbl, *nbat, shift_vec, rlistInner);
                 break;
 #endif
             case ClusterDistanceKernelType::CpuPlainC:
