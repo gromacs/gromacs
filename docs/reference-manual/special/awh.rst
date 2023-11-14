@@ -618,8 +618,14 @@ centered at :math:`\lambda` and
 is the deviation of the force. The factors :math:`\omega(\lambda|x(t))`,
 see :eq:`Eq %s <eqawhomega>`, reweight the samples.
 :math:`\eta_{\mu\nu}(\lambda)` is a friction
-tensor :ref:`186 <reflindahl2018>` and :ref:`144 <refsivak2012thermodynamic>`. Its matrix elements are inversely proportional to local
-diffusion coefficients. A measure of sampling (in)efficiency at each
+tensor :ref:`186 <reflindahl2018>` and :ref:`144 <refsivak2012thermodynamic>`.
+The diffusion matrix, on the flattened landscape, is equal to $k_B T$ times
+the inverse of the friction metrix tensor:
+
+.. math:: \mathbf{D}(\lambda) = k_B T \mathbf{\eta}^{-1}(\lambda).
+          :label: eqawhdiffusionmatrix
+
+A measure of sampling (in)efficiency at each
 :math:`\lambda` is given by
 
 .. math:: \eta^{\frac{1}{2}}(\lambda) = \sqrt{\det\eta_{\mu\nu}(\lambda)}.
