@@ -479,9 +479,10 @@ static DeviceStatus checkDevice(size_t deviceId, const DeviceInformation& device
 /* In DPC++, the same physical device can appear as different virtual devices provided
  * by different backends (e.g., the same GPU can be accessible via both OpenCL and L0).
  * Thus, using devices from two backends is more likely to be a user error than the
- * desired behavior. In this function, we choose the backend with the most compatible
- * devices. In case of a tie, we choose OpenCL (if present), or some arbitrary backend
- * among those with the most devices.
+ * desired behavior. In this function, we choose L0 if the MPI library is Intel MPI and
+ * the user has opted into using its GPU-aware functionality. Otherwise, we choose the
+ * backend with the most compatible devices. In case of a tie, we choose OpenCL (if
+ * present), or some arbitrary backend among those with the most devices.
  *
  * In hipSYCL, this problem is unlikely to manifest. It has (as of 2021-03-03) another
  * issues: D2D copy between different backends is not allowed. We don't use D2D in
@@ -501,6 +502,19 @@ static std::optional<sycl::backend> chooseBestBackend(const std::vector<std::uni
             const sycl::backend backend = deviceInfo->syclDevice.get_platform().get_backend();
             ++countDevicesByBackend[backend];
         }
+    }
+    // Prefer L0 backend if GROMACS might be using GPU-aware Intel MPI.
+    if (const gmx::GpuAwareMpiStatus status = gmx::checkMpiZEAwareSupport();
+        gmx::usingIntelMpi()
+        && ((status == gmx::GpuAwareMpiStatus::Supported) || (status == gmx::GpuAwareMpiStatus::Forced)))
+    {
+        if (countDevicesByBackend[sycl::backend::ext_oneapi_level_zero] > 0)
+        {
+            return sycl::backend::ext_oneapi_level_zero;
+        }
+        // If we get here, then no devices with L0 backend were
+        // detected. This can be fine if the user is not running a
+        // simulation that will use GPU-aware MPI.
     }
     // If we have devices from more than one backend...
     if (countDevicesByBackend.size() > 1)
