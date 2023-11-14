@@ -291,6 +291,7 @@ float trx_get_time_of_final_frame(t_trxstatus* status)
         {
             gmx_fatal(FARGS, "Error opening H5MD file.");
         }
+        /* TODO! */
     }
     else
     {
@@ -401,15 +402,7 @@ int write_trxframe_indexed(t_trxstatus* status, const t_trxframe* fr, int nind, 
                     copy_rvec(fr->f[ind[i]], fout[i]);
                 }
             }
-            if (fr->bX)
-            {
-                snew(xout, nind);
-                for (i = 0; i < nind; i++)
-                {
-                    copy_rvec(fr->x[ind[i]], xout[i]);
-                }
-            }
-            break;
+            /* Fall through */
         case efXTC:
             if (fr->bX)
             {
@@ -426,8 +419,7 @@ int write_trxframe_indexed(t_trxstatus* status, const t_trxframe* fr, int nind, 
     switch (ftp)
     {
         case efTNG: gmx_write_tng_from_trxframe(status->tng, fr, nind); break;
-        case efH5MD: status->h5mdIo->writeFrame(fr->step, fr->time, 0, fr->box, xout, vout, fout);
-
+        case efH5MD: status->h5mdIo->writeFrame(fr->step, fr->time, 0, fr->box, xout, vout, fout); break;
         case efXTC: write_xtc(status->fio, nind, fr->step, fr->time, fr->box, xout, prec); break;
         case efTRR:
             gmx_trr_write_frame(
@@ -568,6 +560,7 @@ int write_trxframe(t_trxstatus* status, t_trxframe* fr, gmx_conect gc)
     switch (gmx_fio_getftp(status->fio))
     {
         case efTRR: break;
+        case efH5MD: break;
         default:
             if (!fr->bX)
             {
@@ -582,6 +575,9 @@ int write_trxframe(t_trxstatus* status, t_trxframe* fr, gmx_conect gc)
     {
         case efXTC:
             write_xtc(status->fio, fr->natoms, fr->step, fr->time, fr->box, fr->x, prec);
+            break;
+        case efH5MD:
+            status->h5mdIo->writeFrame(fr->step, fr->time, fr->lambda, fr->box, fr->bX ? fr->x : nullptr, fr->bV ? fr->v : nullptr, fr->bF ? fr->f : nullptr);
             break;
         case efTRR:
             gmx_trr_write_frame(status->fio,
