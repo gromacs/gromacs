@@ -7,7 +7,6 @@
 
 #include "SZ3/def.hpp"
 #include <cstring>
-#include <string>
 
 namespace SZ3 {
 
@@ -228,6 +227,68 @@ namespace SZ3 {
             lfBuf_cur.byte[i] = bytes[i];
         }
         return lfBuf_cur.value;
+    }
+
+    inline void writeBytesBit(uchar *&c, uchar val, uchar &mask, uchar &index) {
+
+        assert(val == 0 || val == 1);
+
+        mask |= val << index++;
+        if (index == 8) {
+            *c++ = mask;
+            mask = index = 0;
+        }
+    }
+
+    template<typename T>
+    inline void writeBytes(uchar *&c, T val, uchar len, uchar &mask, uchar &index) {
+
+        assert(len >= 1 && len <= sizeof(T) * 8);
+
+        if (len + index >= 8) {
+
+            mask |= (val & ((1 << (8 - index)) - 1)) << index;
+            val >>= 8 - index;
+            len -= 8 - index;
+            *c++ = mask;
+            mask = index = 0;
+
+            while (len >= 8) {
+
+                *c++ = val & (1 << 8) - 1;
+                val >>= 8;
+                len -= 8;
+            }
+        }
+
+        mask |= (val & (1 << len) - 1) << index;
+        index += len;
+
+        // for(int i=0;i<len;i++){
+        //     mask|=(val&1)<<index++;
+        //     if(index==8){
+        //         *c++=mask;
+        //         mask=index=0;
+        //     }
+        //     val>>=1;
+        // }
+    }
+
+    inline void writeBytesByte(uchar *&c, uchar val) {
+        *c++ = val;
+    }
+
+    inline void writeBytesClearMask(uchar *&c, uchar &mask, uchar &index) {
+
+        if (index > 0) {
+            *c++ = mask;
+            // mask=i=0;
+        }
+    }
+
+    inline uchar readBit(const uchar *const &c, int i) {
+
+        return ((*(c + (i >> 3))) >> (i & 7)) & 1;
     }
 
 };

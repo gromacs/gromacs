@@ -51,7 +51,7 @@
 #if GMX_USE_HDF5
 #    include <hdf5.h>
 
-#    include "external/SZ3/tools/H5Z-SZ3/include/H5Z_SZ3.hpp"
+#    include "external/SZ3-bio/tools/H5Z-SZ3/include/H5Z_SZ3.hpp"
 #endif
 
 static void setNumericFillValue(hid_t dataSetCreatePropertyList, const hid_t datatype)

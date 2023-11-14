@@ -9,7 +9,7 @@
 #include "SZ3/api/sz.hpp"
 #include "SZ3/utils/ByteUtil.hpp"
 
-#define CONFIG_PATH "sz3.config"
+
 
 int sysEndianType = LITTLE_ENDIAN_SYSTEM;
 int dataEndianType = LITTLE_ENDIAN_DATA;
@@ -21,7 +21,9 @@ using namespace SZ3;
 
 //load from "sz3.config" in local directory if 1 else use default values or cd values
 
-int loadConfigFile = 0;
+#define SZ3_CONFIG_PATH "SZ3_CONFIG_PATH"
+SZ3::Config sz3_conf;
+bool sz3_conf_loaded = false;
 int MAX_CHUNK_SIZE = INT_MAX;
 
 //filter definition
@@ -219,22 +221,30 @@ static herr_t H5Z_sz3_set_local(hid_t dcpl_id, hid_t type_id, hid_t chunk_space_
     if (0 > H5Pget_filter_by_id(dcpl_id, H5Z_FILTER_SZ3, &flags, &mem_cd_nelmts, mem_cd_values, 0, NULL, NULL))
         H5Z_SZ_PUSH_AND_GOTO(H5E_PLINE, H5E_CANTGET, 0, "unable to get current SZ cd_values");
 
-
-    if (mem_cd_nelmts == 0) //this means that the error information is missing from the cd_values
-    {
-        //printf("mem_cd_nelmets is 0, so let's try using sz3.config to load error configuration....\n");
-        std::ifstream f(CONFIG_PATH);
-        if (f.good()) {
-            printf("sz3.config found!\n");
-            loadConfigFile = 1;
-        } else
-            printf("sz3.config not found, using default parameters\n");
-        f.close();
-    } else //this means that the error information is included in the cd_values
-    {
-        loadConfigFile = 0;
-        //printf("mem_cd_nelmets is non-zero, so let's use the parameters set through cd_values.....\n");
+    //set default value for error bound
+    sz3_conf.errorBoundMode = EB_ABS;
+    sz3_conf.absErrorBound = 1e-3;
+    if (!sz3_conf_loaded) {
+        if (const char *conf_file = std::getenv(SZ3_CONFIG_PATH)) {
+            sz3_conf.loadcfg(conf_file);
+            sz3_conf_loaded = true;
+        }
     }
+//    if (mem_cd_nelmts == 0) //this means that the error information is missing from the cd_values
+//    {
+//        //printf("mem_cd_nelmets is 0, so let's try using sz3.config to load error configuration....\n");
+//        std::ifstream f(CONFIG_PATH);
+//        if (f.good()) {
+//            printf("sz3.config found!\n");
+//            sz3_conf_loaded = 1;
+//        } else
+//            printf("sz3.config not found, using default parameters\n");
+//        f.close();
+//    } else //this means that the error information is included in the cd_values
+//    {
+//        sz3_conf_loaded = 0;
+//        //printf("mem_cd_nelmets is non-zero, so let's use the parameters set through cd_values.....\n");
+//    }
     herr_t ret = H5Zregister(H5Z_SZ3);
 
     int dataType = SZ_FLOAT;
@@ -338,8 +348,8 @@ static size_t H5Z_filter_sz3(unsigned int flags, size_t cd_nelmts, const unsigne
 
     int withErrInfo = checkCDValuesWithErrors(cd_nelmts, cd_values);
     int error_mode = 0;
-    int cmp_algo = 1;
-    int interp_algo = 1;
+//    int cmp_algo = 1;
+//    int interp_algo = 1;
     double abs_error = 0, rel_error = 0, l2norm_error = 0, psnr = 0;
     if (withErrInfo)
         SZ_cdArrayToMetaDataErr(cd_nelmts, cd_values, &dimSize, &dataType, &r5, &r4, &r3, &r2, &r1, &error_mode, &abs_error, &rel_error,
@@ -351,7 +361,9 @@ static size_t H5Z_filter_sz3(unsigned int flags, size_t cd_nelmts, const unsigne
     for(i=0;i<cd_nelmts;i++)
     	printf("cd_values[%d]=%u\n", i, cd_values[i]);
     printf("dimSize=%d, r1=%u, r2=%u, r3=%u, r4=%u, r5=%u\n", dimSize, r1, r2, r3, r4, r5);*/
-
+    auto buff = (float *) *buf;
+//    printf("dimSize=%d, r1=%u, r2=%u, r3=%u, r4=%u, r5=%u nbytes %lu %.3f %.3f %.3f \n", dimSize, r1, r2, r3, r4, r5, nbytes, buff[10000],
+//           buff[20000], buff[30000]);
 
     size_t nbEle = computeDataLength(r5, r4, r3, r2, r1);
     if (nbEle < 20)
@@ -477,56 +489,39 @@ static size_t H5Z_filter_sz3(unsigned int flags, size_t cd_nelmts, const unsigne
             printf("Error: Number of Dimensions is <= 0");
             exit(0);
         }
-
-        SZ3::Config conf;
         //printf("\nDIMS_CMP:\n");
         //printf("r1 %u r2 %u r3 %u r4 %u r5 %u\n", r1,r2,r3,r4,r5);
-        if (r2 == 0) {
-            conf = SZ3::Config(r1);
-        } else if (r3 == 0) {
-            conf = SZ3::Config(r2, r1);
-        } else if (r4 == 0) {
-            conf = SZ3::Config(r3, r2, r1);
-        } else if (r5 == 0) {
-            conf = SZ3::Config(r4, r3, r2, r1);
-        } else {
-            conf = SZ3::Config(r5, r4, r3, r2, r1);
-        }
 
-        if (error_mode < 0 || error_mode > 5) {
-            printf("Invalid error mode: %i, error mode should be in [0,5]", error_mode);
-            exit(0);
+        SZ3::Config conf(sz3_conf);
+        std::vector<size_t> dims;
+        if (r2 == 0) {
+            dims = {r1};
+        } else if (r3 == 0) {
+            dims = {r2, r1};
+        } else if (r4 == 0) {
+            dims = {r3, r2, r1};
+        } else if (r5 == 0) {
+            dims = {r4, r3, r2, r1};
+        } else {
+            dims = {r5, r4, r3, r2, r1};
         }
+        conf.setDims(dims.begin(), dims.end());
+
+
 
         //if config file found and no user defined params, read the config file
-        if (loadConfigFile) {
-            //	printf("Loading sz3.config ...\n");
-            conf.loadcfg(CONFIG_PATH);
-        } else {
-
+        if (withErrInfo) {
+            if (error_mode < 0 || error_mode > 5) {
+                printf("Invalid error mode: %i, error mode should be in [0,5]", error_mode);
+                exit(0);
+            }
             conf.errorBoundMode = error_mode;
             conf.absErrorBound = abs_error;
             conf.relErrorBound = rel_error;
             conf.l2normErrorBound = l2norm_error;
             conf.psnrErrorBound = psnr;
-
-            //printf("PARAMS: mode|%i, abs_eb|%f, rel_eb|%f, l2_eb|%f, psnr_eb|%f\n", error_mode, abs_error, rel_error, l2norm_error, psnr);
-
-            if (cmp_algo < 0 || cmp_algo > 2) {
-                printf("Invalid compression algo: %i, should be in [0,2]", cmp_algo);
-                exit(0);
-            }
-
-            conf.cmprAlgo = cmp_algo;
-
-            if (interp_algo < 0 || interp_algo > 1) {
-                printf("Invalid interpolation algo: %i, should be either 0 or 1", interp_algo);
-                exit(0);
-            }
-
-            conf.interpAlgo = interp_algo;
-
         }
+        //printf("PARAMS: mode|%i, abs_eb|%f, rel_eb|%f, l2_eb|%f, psnr_eb|%f\n", error_mode, abs_error, rel_error, l2norm_error, psnr);
 
         size_t outSize = 0;
         char *compressedData = NULL;

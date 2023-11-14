@@ -1,0 +1,26 @@
+#H5Z-SZ3
+#the filter for integrating SZ3 into HDF5
+
+#Quick start
+
+Step 1: Build & install SZ3 with '-DBUILD_H5Z_FILTER=true' to enable the H5Z-SZ3 filter
+
+Step 2: Set HDF5_PLUGIN_PATH and LD_LIBRARY_PATH
+export HDF5_PLUGIN_PATH=$HDF5_PLUGIN_PATH:$<PATH_TO_YOUR_SZ3_INSTALL>/lib/
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$HDF5_HOME/lib:$<PATH_TO_YOUR_SZ3_INSTALL>/lib/
+
+Now, you have finished the installation of H5Z-SZ3 filter.
+
+
+H5Z-SZ3 parameter loading priority:
+1. (lowest priority) default setting:
+   error bound mode = ABS
+   absolute error bound = 1e-3
+   compression algorithm = ALGO_INTERP_LORENZO
+
+2. configuration file
+   The filter will read configuration file if its path is defined in the SZ3_CONFIG_PATH environment variable.
+   You can set the environment variable by "export SZ3_CONFIG_PATH=<PATH_TO_YOUR_SZ3_CONFIG_FILE>"
+
+3. (highest priority) cd_values
+   You can set error bound mode and error bound values through cd_values

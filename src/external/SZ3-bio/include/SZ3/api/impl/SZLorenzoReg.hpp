@@ -53,7 +53,7 @@ namespace SZ3 {
             if (use_single_predictor) {
                 return make_sz_general_compressor<T, N>(
                         make_sz_general_frontend<T, N>(conf, RegressionPredictor<T, N>(conf.blockSize, conf.absErrorBound),
-                                                            quantizer), encoder, lossless);
+                                                       quantizer), encoder, lossless);
             } else {
                 predictors.push_back(std::make_shared<RegressionPredictor<T, N>>(conf.blockSize, conf.absErrorBound));
             }
@@ -63,14 +63,14 @@ namespace SZ3 {
             if (use_single_predictor) {
                 return make_sz_general_compressor<T, N>(
                         make_sz_general_frontend<T, N>(conf, PolyRegressionPredictor<T, N>(conf.blockSize, conf.absErrorBound),
-                                                            quantizer), encoder, lossless);
+                                                       quantizer), encoder, lossless);
             } else {
                 predictors.push_back(std::make_shared<PolyRegressionPredictor<T, N>>(conf.blockSize, conf.absErrorBound));
             }
         }
         return make_sz_general_compressor<T, N>(
                 make_sz_general_frontend<T, N>(conf, ComposedPredictor<T, N>(predictors),
-                                                    quantizer), encoder, lossless);
+                                               quantizer), encoder, lossless);
     }
 
 
@@ -83,10 +83,10 @@ namespace SZ3 {
 
         char *cmpData;
         auto quantizer = LinearQuantizer<T>(conf.absErrorBound, conf.quantbinCnt / 2);
-        if (N == 3 && !conf.regression2) {
+        if (N == 3 && !conf.regression2 || (N == 1 && !conf.regression && !conf.regression2)) {
             // use fast version for 3D
             auto sz = make_sz_general_compressor<T, N>(make_sz_fast_frontend<T, N>(conf, quantizer), HuffmanEncoder<int>(),
-                                                            Lossless_zstd());
+                                                       Lossless_zstd());
             cmpData = (char *) sz->compress(conf, data, outSize);
         } else {
             auto sz = make_lorenzo_regression_compressor<T, N>(conf, quantizer, HuffmanEncoder<int>(), Lossless_zstd());
@@ -102,10 +102,10 @@ namespace SZ3 {
 
         uchar const *cmpDataPos = (uchar *) cmpData;
         LinearQuantizer<T> quantizer;
-        if (N == 3 && !conf.regression2) {
+        if (N == 3 && !conf.regression2 || (N == 1 && !conf.regression && !conf.regression2)) {
             // use fast version for 3D
             auto sz = make_sz_general_compressor<T, N>(make_sz_fast_frontend<T, N>(conf, quantizer),
-                                                            HuffmanEncoder<int>(), Lossless_zstd());
+                                                       HuffmanEncoder<int>(), Lossless_zstd());
             sz->decompress(cmpDataPos, cmpSize, decData);
             return;
 

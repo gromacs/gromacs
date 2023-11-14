@@ -65,7 +65,7 @@
 #if GMX_USE_HDF5
 #    include <hdf5.h>
 
-#    include "external/SZ3/tools/H5Z-SZ3/include/H5Z_SZ3.hpp"
+#    include "external/SZ3-bio/tools/H5Z-SZ3/include/H5Z_SZ3.hpp"
 #endif
 
 GmxH5mdIo::GmxH5mdIo(const char* fileName, const char mode)
