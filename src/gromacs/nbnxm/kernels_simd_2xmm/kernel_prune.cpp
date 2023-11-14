@@ -39,12 +39,9 @@
 #include "gromacs/nbnxm/atomdata.h"
 #include "gromacs/nbnxm/nbnxm_simd.h"
 #include "gromacs/nbnxm/pairlist.h"
+#include "gromacs/simd/simd.h"
+#include "gromacs/simd/vector_operations.h"
 #include "gromacs/utility/gmxassert.h"
-
-#ifdef GMX_NBNXN_SIMD_2XNN
-#    define GMX_SIMD_J_UNROLL_SIZE 2
-#    include "kernel_common.h"
-#endif
 
 /* Prune a single nbnxn_pairtlist_t entry with distance rlistInner */
 void nbnxn_kernel_prune_2xnn(NbnxnPairlistCpu*              nbl,
@@ -52,8 +49,21 @@ void nbnxn_kernel_prune_2xnn(NbnxnPairlistCpu*              nbl,
                              gmx::ArrayRef<const gmx::RVec> shiftvec,
                              real                           rlistInner)
 {
-#ifdef GMX_NBNXN_SIMD_2XNN
+#if GMX_SIMD && GMX_SIMD_HAVE_HSIMD_UTIL_REAL
     using namespace gmx;
+
+    constexpr KernelLayout kernelLayout = KernelLayout::r2xMM;
+
+    // The number of j-clusters stored in a SIMD register
+    constexpr int GMX_SIMD_J_UNROLL_SIZE = (kernelLayout == KernelLayout::r2xMM ? 2 : 1);
+
+    // The i-cluster size
+    constexpr int UNROLLI = 4;
+    // The j-cluster size
+    constexpr int UNROLLJ(GMX_SIMD_REAL_WIDTH / GMX_SIMD_J_UNROLL_SIZE);
+
+    // The stride of all atom data arrays
+    constexpr int STRIDE = std::max(UNROLLI, UNROLLJ);
 
     /* We avoid push_back() for efficiency reasons and resize after filling */
     nbl->ci.resize(nbl->ciOuter.size());
@@ -90,11 +100,15 @@ void nbnxn_kernel_prune_2xnn(NbnxnPairlistCpu*              nbl,
         SimdReal shY_S = SimdReal(shiftvec[ish][YY]);
         SimdReal shZ_S = SimdReal(shiftvec[ish][ZZ]);
 
-#    if UNROLLJ <= 4
-        int scix = ci * STRIDE * DIM;
-#    else
-        int scix = (ci >> 1) * STRIDE * DIM + (ci & 1) * (STRIDE >> 1);
-#    endif
+        int scix;
+        if constexpr (UNROLLJ <= 4)
+        {
+            scix = ci * STRIDE * DIM;
+        }
+        else
+        {
+            scix = (ci >> 1) * STRIDE * DIM + (ci & 1) * (STRIDE >> 1);
+        }
 
         /* Load i atom data */
         int      sciy  = scix + STRIDE;
@@ -112,12 +126,16 @@ void nbnxn_kernel_prune_2xnn(NbnxnPairlistCpu*              nbl,
             int cj = cjOuter[cjind].cj;
 
             /* Atom indices (of the first atom in the cluster) */
-#    if UNROLLJ == STRIDE
-            int aj  = cj * UNROLLJ;
-            int ajx = aj * DIM;
-#    else
-            int ajx = (cj >> 1) * DIM * STRIDE + (cj & 1) * UNROLLJ;
-#    endif
+            int ajx;
+            if constexpr (UNROLLJ == STRIDE)
+            {
+                int aj = cj * UNROLLJ;
+                ajx    = aj * DIM;
+            }
+            else
+            {
+                ajx = (cj >> 1) * DIM * STRIDE + (cj & 1) * UNROLLJ;
+            }
             int ajy = ajx + STRIDE;
             int ajz = ajy + STRIDE;
 
@@ -162,7 +180,7 @@ void nbnxn_kernel_prune_2xnn(NbnxnPairlistCpu*              nbl,
     nbl->ci.resize(nciInner);
     nbl->cj.resize(ncjInner);
 
-#else /* GMX_NBNXN_SIMD_2XNN */
+#else /* GMX_SIMD && GMX_SIMD_HAVE_HSIMD_UTIL_REAL */
 
     GMX_RELEASE_ASSERT(false, "2xNN kernel called without 2xNN support");
 
@@ -171,5 +189,5 @@ void nbnxn_kernel_prune_2xnn(NbnxnPairlistCpu*              nbl,
     GMX_UNUSED_VALUE(shiftvec);
     GMX_UNUSED_VALUE(rlistInner);
 
-#endif /* GMX_NBNXN_SIMD_2XNN */
+#endif /* GMX_SIMD && GMX_SIMD_HAVE_HSIMD_UTIL_REAL */
 }

@@ -111,7 +111,7 @@ enum class NbnxnLayout
     Gpu8x8x8   // i-cluster size 8, j-cluster size 8 + super-clustering
 };
 
-#if defined(GMX_NBNXN_SIMD_4XN) || defined(GMX_NBNXN_SIMD_2XNN)
+#if GMX_SIMD && GMX_USE_SIMD_KERNELS
 /* Returns the j-cluster size */
 template<NbnxnLayout layout>
 static constexpr int jClusterSize()
@@ -226,7 +226,7 @@ static inline int xIndexFromCj(int cj)
         return cj * STRIDE_P8;
     }
 }
-#endif // defined(GMX_NBNXN_SIMD_4XN) || defined(GMX_NBNXN_SIMD_2XNN)
+#endif // GMX_SIMD_HAVE_REAL
 
 static constexpr int sizeNeededForBufferFlags(const int numAtoms)
 {
@@ -1109,10 +1109,10 @@ static void makeClusterListSimple(const Grid&              jGrid,
     }
 }
 
-#ifdef GMX_NBNXN_SIMD_4XN
+#if GMX_HAVE_NBNXM_SIMD_4XM
 #    include "pairlist_simd_4xm.h"
 #endif
-#ifdef GMX_NBNXN_SIMD_2XNN
+#if GMX_HAVE_NBNXM_SIMD_2XMM
 #    include "pairlist_simd_2xmm.h"
 #endif
 
@@ -2400,17 +2400,15 @@ static void icell_set_x(int                             ci,
 {
     switch (kernelType)
     {
-#if GMX_SIMD
-#    ifdef GMX_NBNXN_SIMD_4XN
+#if GMX_HAVE_NBNXM_SIMD_4XM
         case ClusterDistanceKernelType::CpuSimd_4xM:
             icell_set_x_simd_4xn(ci, shx, shy, shz, stride, x, work);
             break;
-#    endif
-#    ifdef GMX_NBNXN_SIMD_2XNN
+#endif
+#if GMX_HAVE_NBNXM_SIMD_2XMM
         case ClusterDistanceKernelType::CpuSimd_2xMM:
             icell_set_x_simd_2xnn(ci, shx, shy, shz, stride, x, work);
             break;
-#    endif
 #endif
         case ClusterDistanceKernelType::CpuPlainC:
             icell_set_x_simple(ci, shx, shy, shz, stride, x, &work->iClusterData);
@@ -3032,13 +3030,13 @@ static void makeClusterListWrapper(NbnxnPairlistCpu* nbl,
             makeClusterListSimple(
                     jGrid, nbl, ci, firstCell, lastCell, excludeSubDiagonal, nbat->x().data(), rlist2, rbb2, numDistanceChecks);
             break;
-#ifdef GMX_NBNXN_SIMD_4XN
+#if GMX_HAVE_NBNXM_SIMD_4XM
         case ClusterDistanceKernelType::CpuSimd_4xM:
             makeClusterListSimd4xn(
                     jGrid, nbl, ci, firstCell, lastCell, excludeSubDiagonal, nbat->x().data(), rlist2, rbb2, numDistanceChecks);
             break;
 #endif
-#ifdef GMX_NBNXN_SIMD_2XNN
+#if GMX_HAVE_NBNXM_SIMD_2XMM
         case ClusterDistanceKernelType::CpuSimd_2xMM:
             makeClusterListSimd2xnn(
                     jGrid, nbl, ci, firstCell, lastCell, excludeSubDiagonal, nbat->x().data(), rlist2, rbb2, numDistanceChecks);

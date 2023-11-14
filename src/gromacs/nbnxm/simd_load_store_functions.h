@@ -52,6 +52,30 @@
 namespace gmx
 {
 
+/*! \brief Returns the j-cluster index for the given i-cluster index
+ *
+ * \tparam clusterRatio  The ratio of cluster size, supported are 0.5,1,2, checked at compile time
+ * \param  iCluster      The index of the i-cluster
+ * \returns the j-cluster index corresponding to \p iCluster
+ */
+template<KernelLayoutClusterRatio clusterRatio>
+static inline int cjFromCi(const int iCluster)
+{
+    if constexpr (clusterRatio == KernelLayoutClusterRatio::JSizeEqualsISize)
+    {
+        return iCluster;
+    }
+    else if constexpr (clusterRatio == KernelLayoutClusterRatio::JSizeIsDoubleISize)
+    {
+        return (iCluster >> 1);
+    }
+    else if constexpr (clusterRatio == KernelLayoutClusterRatio::JSizeIsHalfISize)
+    {
+        return (iCluster << 1);
+    }
+    // Note that this code will refuse to compile when none of the branches above is taken
+}
+
 //! Load a single real for an i-atom into \p iRegister
 template<KernelLayout kernelLayout>
 inline std::enable_if_t<kernelLayout == KernelLayout::r4xM, SimdReal> loadIAtomData(const real* ptr,

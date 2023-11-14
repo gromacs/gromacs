@@ -33,6 +33,18 @@
  */
 
 #include "gromacs/nbnxm/kernel_common.h"
+#include "gromacs/nbnxm/simd_coulomb_functions.h"
+
+namespace gmx
+{{
+enum class KernelCoulombType;
+
+template<KernelLayout kernelLayout, KernelCoulombType coulombType, VdwCutoffCheck vdwCutoffCheck, LJCombinationRule ljCombinationRule, InteractionModifiers vdwModifier, LJEwald ljEwald, EnergyOutput energyOutput>
+void nbnxmKernelSimd(const NbnxnPairlistCpu*    nbl,
+                     const nbnxn_atomdata_t*    nbat,
+                     const interaction_const_t* ic,
+                     const rvec*                shift_vec,
+                     nbnxn_atomdata_output_t*   out);
 
 /* Declare all the different kernel functions.
  */
@@ -44,11 +56,15 @@
  * The minor index of the array goes over both the LJ combination rules,
  * which is only supported by plain cut-off, and the LJ switch/PME functions.
  */
-static p_nbk_func_noener nbnxm_kernel_noener_simd_{1}[static_cast<int>(CoulombKernelType::Count)][vdwktNR] =
-{2}
-static p_nbk_func_ener nbnxm_kernel_ener_simd_{1}[static_cast<int>(CoulombKernelType::Count)][vdwktNR] =
-{3}
-static p_nbk_func_ener nbnxm_kernel_energrp_simd_{1}[static_cast<int>(CoulombKernelType::Count)][vdwktNR] =
-{4}
+static NbnxmKernelFunc* const nbnxmKernelNoenerSimd{1}[static_cast<int>(CoulombKernelType::Count)][vdwktNR] = {{
+{2}}};
+
+static NbnxmKernelFunc* const nbnxmKernelEnerSimd{1}[static_cast<int>(CoulombKernelType::Count)][vdwktNR] = {{
+{3}}};
+
+static NbnxmKernelFunc* const nbnxmKernelEnergrpSimd{1}[static_cast<int>(CoulombKernelType::Count)][vdwktNR] = {{
+{4}}};
 
 #endif /* INCLUDE_KERNELFUNCTION_TABLES */
+
+}} // namespace gmx

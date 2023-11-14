@@ -46,53 +46,53 @@
 
 //! All the different CPU reference kernel functions.
 //! \{
-nbk_func_noener nbnxn_kernel_ElecRF_VdwLJ_F_ref;
-nbk_func_noener nbnxn_kernel_ElecRF_VdwLJFsw_F_ref;
-nbk_func_noener nbnxn_kernel_ElecRF_VdwLJPsw_F_ref;
-nbk_func_noener nbnxn_kernel_ElecRF_VdwLJEwCombGeom_F_ref;
-nbk_func_noener nbnxn_kernel_ElecRF_VdwLJEwCombLB_F_ref;
-nbk_func_noener nbnxn_kernel_ElecQSTab_VdwLJ_F_ref;
-nbk_func_noener nbnxn_kernel_ElecQSTab_VdwLJFsw_F_ref;
-nbk_func_noener nbnxn_kernel_ElecQSTab_VdwLJPsw_F_ref;
-nbk_func_noener nbnxn_kernel_ElecQSTab_VdwLJEwCombGeom_F_ref;
-nbk_func_noener nbnxn_kernel_ElecQSTab_VdwLJEwCombLB_F_ref;
-nbk_func_noener nbnxn_kernel_ElecQSTabTwinCut_VdwLJ_F_ref;
-nbk_func_noener nbnxn_kernel_ElecQSTabTwinCut_VdwLJFsw_F_ref;
-nbk_func_noener nbnxn_kernel_ElecQSTabTwinCut_VdwLJPsw_F_ref;
-nbk_func_noener nbnxn_kernel_ElecQSTabTwinCut_VdwLJEwCombGeom_F_ref;
-nbk_func_noener nbnxn_kernel_ElecQSTabTwinCut_VdwLJEwCombLB_F_ref;
+NbnxmKernelFunc nbnxn_kernel_ElecRF_VdwLJ_F_ref;
+NbnxmKernelFunc nbnxn_kernel_ElecRF_VdwLJFsw_F_ref;
+NbnxmKernelFunc nbnxn_kernel_ElecRF_VdwLJPsw_F_ref;
+NbnxmKernelFunc nbnxn_kernel_ElecRF_VdwLJEwCombGeom_F_ref;
+NbnxmKernelFunc nbnxn_kernel_ElecRF_VdwLJEwCombLB_F_ref;
+NbnxmKernelFunc nbnxn_kernel_ElecQSTab_VdwLJ_F_ref;
+NbnxmKernelFunc nbnxn_kernel_ElecQSTab_VdwLJFsw_F_ref;
+NbnxmKernelFunc nbnxn_kernel_ElecQSTab_VdwLJPsw_F_ref;
+NbnxmKernelFunc nbnxn_kernel_ElecQSTab_VdwLJEwCombGeom_F_ref;
+NbnxmKernelFunc nbnxn_kernel_ElecQSTab_VdwLJEwCombLB_F_ref;
+NbnxmKernelFunc nbnxn_kernel_ElecQSTabTwinCut_VdwLJ_F_ref;
+NbnxmKernelFunc nbnxn_kernel_ElecQSTabTwinCut_VdwLJFsw_F_ref;
+NbnxmKernelFunc nbnxn_kernel_ElecQSTabTwinCut_VdwLJPsw_F_ref;
+NbnxmKernelFunc nbnxn_kernel_ElecQSTabTwinCut_VdwLJEwCombGeom_F_ref;
+NbnxmKernelFunc nbnxn_kernel_ElecQSTabTwinCut_VdwLJEwCombLB_F_ref;
 
-nbk_func_ener nbnxn_kernel_ElecRF_VdwLJ_VF_ref;
-nbk_func_ener nbnxn_kernel_ElecRF_VdwLJFsw_VF_ref;
-nbk_func_ener nbnxn_kernel_ElecRF_VdwLJPsw_VF_ref;
-nbk_func_ener nbnxn_kernel_ElecRF_VdwLJEwCombGeom_VF_ref;
-nbk_func_ener nbnxn_kernel_ElecRF_VdwLJEwCombLB_VF_ref;
-nbk_func_ener nbnxn_kernel_ElecQSTab_VdwLJ_VF_ref;
-nbk_func_ener nbnxn_kernel_ElecQSTab_VdwLJFsw_VF_ref;
-nbk_func_ener nbnxn_kernel_ElecQSTab_VdwLJPsw_VF_ref;
-nbk_func_ener nbnxn_kernel_ElecQSTab_VdwLJEwCombGeom_VF_ref;
-nbk_func_ener nbnxn_kernel_ElecQSTab_VdwLJEwCombLB_VF_ref;
-nbk_func_ener nbnxn_kernel_ElecQSTabTwinCut_VdwLJ_VF_ref;
-nbk_func_ener nbnxn_kernel_ElecQSTabTwinCut_VdwLJFsw_VF_ref;
-nbk_func_ener nbnxn_kernel_ElecQSTabTwinCut_VdwLJPsw_VF_ref;
-nbk_func_ener nbnxn_kernel_ElecQSTabTwinCut_VdwLJEwCombGeom_VF_ref;
-nbk_func_ener nbnxn_kernel_ElecQSTabTwinCut_VdwLJEwCombLB_VF_ref;
+NbnxmKernelFunc nbnxn_kernel_ElecRF_VdwLJ_VF_ref;
+NbnxmKernelFunc nbnxn_kernel_ElecRF_VdwLJFsw_VF_ref;
+NbnxmKernelFunc nbnxn_kernel_ElecRF_VdwLJPsw_VF_ref;
+NbnxmKernelFunc nbnxn_kernel_ElecRF_VdwLJEwCombGeom_VF_ref;
+NbnxmKernelFunc nbnxn_kernel_ElecRF_VdwLJEwCombLB_VF_ref;
+NbnxmKernelFunc nbnxn_kernel_ElecQSTab_VdwLJ_VF_ref;
+NbnxmKernelFunc nbnxn_kernel_ElecQSTab_VdwLJFsw_VF_ref;
+NbnxmKernelFunc nbnxn_kernel_ElecQSTab_VdwLJPsw_VF_ref;
+NbnxmKernelFunc nbnxn_kernel_ElecQSTab_VdwLJEwCombGeom_VF_ref;
+NbnxmKernelFunc nbnxn_kernel_ElecQSTab_VdwLJEwCombLB_VF_ref;
+NbnxmKernelFunc nbnxn_kernel_ElecQSTabTwinCut_VdwLJ_VF_ref;
+NbnxmKernelFunc nbnxn_kernel_ElecQSTabTwinCut_VdwLJFsw_VF_ref;
+NbnxmKernelFunc nbnxn_kernel_ElecQSTabTwinCut_VdwLJPsw_VF_ref;
+NbnxmKernelFunc nbnxn_kernel_ElecQSTabTwinCut_VdwLJEwCombGeom_VF_ref;
+NbnxmKernelFunc nbnxn_kernel_ElecQSTabTwinCut_VdwLJEwCombLB_VF_ref;
 
-nbk_func_ener nbnxn_kernel_ElecRF_VdwLJ_VgrpF_ref;
-nbk_func_ener nbnxn_kernel_ElecRF_VdwLJFsw_VgrpF_ref;
-nbk_func_ener nbnxn_kernel_ElecRF_VdwLJPsw_VgrpF_ref;
-nbk_func_ener nbnxn_kernel_ElecRF_VdwLJEwCombGeom_VgrpF_ref;
-nbk_func_ener nbnxn_kernel_ElecRF_VdwLJEwCombLB_VgrpF_ref;
-nbk_func_ener nbnxn_kernel_ElecQSTab_VdwLJ_VgrpF_ref;
-nbk_func_ener nbnxn_kernel_ElecQSTab_VdwLJFsw_VgrpF_ref;
-nbk_func_ener nbnxn_kernel_ElecQSTab_VdwLJPsw_VgrpF_ref;
-nbk_func_ener nbnxn_kernel_ElecQSTab_VdwLJEwCombGeom_VgrpF_ref;
-nbk_func_ener nbnxn_kernel_ElecQSTab_VdwLJEwCombLB_VgrpF_ref;
-nbk_func_ener nbnxn_kernel_ElecQSTabTwinCut_VdwLJ_VgrpF_ref;
-nbk_func_ener nbnxn_kernel_ElecQSTabTwinCut_VdwLJFsw_VgrpF_ref;
-nbk_func_ener nbnxn_kernel_ElecQSTabTwinCut_VdwLJPsw_VgrpF_ref;
-nbk_func_ener nbnxn_kernel_ElecQSTabTwinCut_VdwLJEwCombGeom_VgrpF_ref;
-nbk_func_ener nbnxn_kernel_ElecQSTabTwinCut_VdwLJEwCombLB_VgrpF_ref;
+NbnxmKernelFunc nbnxn_kernel_ElecRF_VdwLJ_VgrpF_ref;
+NbnxmKernelFunc nbnxn_kernel_ElecRF_VdwLJFsw_VgrpF_ref;
+NbnxmKernelFunc nbnxn_kernel_ElecRF_VdwLJPsw_VgrpF_ref;
+NbnxmKernelFunc nbnxn_kernel_ElecRF_VdwLJEwCombGeom_VgrpF_ref;
+NbnxmKernelFunc nbnxn_kernel_ElecRF_VdwLJEwCombLB_VgrpF_ref;
+NbnxmKernelFunc nbnxn_kernel_ElecQSTab_VdwLJ_VgrpF_ref;
+NbnxmKernelFunc nbnxn_kernel_ElecQSTab_VdwLJFsw_VgrpF_ref;
+NbnxmKernelFunc nbnxn_kernel_ElecQSTab_VdwLJPsw_VgrpF_ref;
+NbnxmKernelFunc nbnxn_kernel_ElecQSTab_VdwLJEwCombGeom_VgrpF_ref;
+NbnxmKernelFunc nbnxn_kernel_ElecQSTab_VdwLJEwCombLB_VgrpF_ref;
+NbnxmKernelFunc nbnxn_kernel_ElecQSTabTwinCut_VdwLJ_VgrpF_ref;
+NbnxmKernelFunc nbnxn_kernel_ElecQSTabTwinCut_VdwLJFsw_VgrpF_ref;
+NbnxmKernelFunc nbnxn_kernel_ElecQSTabTwinCut_VdwLJPsw_VgrpF_ref;
+NbnxmKernelFunc nbnxn_kernel_ElecQSTabTwinCut_VdwLJEwCombGeom_VgrpF_ref;
+NbnxmKernelFunc nbnxn_kernel_ElecQSTabTwinCut_VdwLJEwCombLB_VgrpF_ref;
 //! \}
 
 #ifdef INCLUDE_KERNELFUNCTION_TABLES
@@ -105,7 +105,7 @@ nbk_func_ener nbnxn_kernel_ElecQSTabTwinCut_VdwLJEwCombLB_VgrpF_ref;
  * advantage in using combination rules, so we (re-)use the same kernel.
  */
 //! \{
-static const p_nbk_func_noener nbnxn_kernel_noener_ref[static_cast<int>(CoulombKernelType::Count)][vdwktNR_ref] = {
+static NbnxmKernelFunc* const nbnxn_kernel_noener_ref[static_cast<int>(CoulombKernelType::Count)][vdwktNR_ref] = {
     { nbnxn_kernel_ElecRF_VdwLJ_F_ref,
       nbnxn_kernel_ElecRF_VdwLJ_F_ref,
       nbnxn_kernel_ElecRF_VdwLJ_F_ref,
@@ -143,7 +143,7 @@ static const p_nbk_func_noener nbnxn_kernel_noener_ref[static_cast<int>(CoulombK
       nbnxn_kernel_ElecQSTabTwinCut_VdwLJEwCombLB_F_ref }
 };
 
-static const p_nbk_func_ener nbnxn_kernel_ener_ref[static_cast<int>(CoulombKernelType::Count)][vdwktNR_ref] = {
+static NbnxmKernelFunc* const nbnxn_kernel_ener_ref[static_cast<int>(CoulombKernelType::Count)][vdwktNR_ref] = {
     { nbnxn_kernel_ElecRF_VdwLJ_VF_ref,
       nbnxn_kernel_ElecRF_VdwLJ_VF_ref,
       nbnxn_kernel_ElecRF_VdwLJ_VF_ref,
@@ -181,7 +181,7 @@ static const p_nbk_func_ener nbnxn_kernel_ener_ref[static_cast<int>(CoulombKerne
       nbnxn_kernel_ElecQSTabTwinCut_VdwLJEwCombLB_VF_ref }
 };
 
-static const p_nbk_func_ener nbnxn_kernel_energrp_ref[static_cast<int>(CoulombKernelType::Count)][vdwktNR_ref] = {
+static NbnxmKernelFunc* const nbnxn_kernel_energrp_ref[static_cast<int>(CoulombKernelType::Count)][vdwktNR_ref] = {
     { nbnxn_kernel_ElecRF_VdwLJ_VgrpF_ref,
       nbnxn_kernel_ElecRF_VdwLJ_VgrpF_ref,
       nbnxn_kernel_ElecRF_VdwLJ_VgrpF_ref,

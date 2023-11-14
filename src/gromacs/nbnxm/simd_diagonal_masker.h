@@ -50,47 +50,23 @@
 #include "gromacs/simd/simd.h"
 
 #include "atomdata.h"
+#include "nbnxm_simd.h"
 
 namespace gmx
 {
 
-//! List of type of Nbnxm kernel coulomb type implementations
-enum class DiagonalMaskType
-{
-    JSizeEqualsISize,   //!< j-cluster size = i-cluster size
-    JSizeIsDoubleISize, //!< j-cluster size = 2 * i-cluster size
-    JSizeIsHalfISize    //!< j-cluster size = i-cluster size / 2
-};
-
-//! Returns the diagonal mask type corresponding to the cluster sizes
-template<int iClusterSize, int jClusterSize>
-static inline constexpr DiagonalMaskType getDiagonalMaskType()
-{
-    if constexpr (jClusterSize == iClusterSize)
-    {
-        return DiagonalMaskType::JSizeEqualsISize;
-    }
-    else if constexpr (jClusterSize == iClusterSize * 2)
-    {
-        return DiagonalMaskType::JSizeIsDoubleISize;
-    }
-    else
-    {
-        static_assert(jClusterSize * 2 == iClusterSize);
-
-        return DiagonalMaskType::JSizeIsHalfISize;
-    }
-}
-
 //! Base Coulomb calculator class, only specializations are used
-template<int, KernelLayout, DiagonalMaskType>
+template<int, KernelLayout, KernelLayoutClusterRatio>
 class DiagonalMasker;
 
 //! Returns the diagonal filter masks
-template<int nR, KernelLayout kernelLayout, DiagonalMaskType diagonalMaskType>
-inline std::array<std::array<SimdBool, nR>, diagonalMaskType == DiagonalMaskType::JSizeEqualsISize ? 1 : 2>
+template<int nR, KernelLayout kernelLayout>
+inline std::array<std::array<SimdBool, nR>,
+                  kernelLayoutClusterRatio<kernelLayout>() == KernelLayoutClusterRatio::JSizeEqualsISize ? 1 : 2>
 generateDiagonalMasks(const nbnxn_atomdata_t::SimdMasks& simdMasks)
 {
+    constexpr KernelLayoutClusterRatio clusterRatio = kernelLayoutClusterRatio<kernelLayout>();
+
     /* Load j-i for the first i */
     SimdReal diagonalJMinusI = load<SimdReal>(kernelLayout == KernelLayout::r4xM
                                                       ? simdMasks.diagonal_4xn_j_minus_i.data()
@@ -100,16 +76,16 @@ generateDiagonalMasks(const nbnxn_atomdata_t::SimdMasks& simdMasks)
     const SimdReal iIndexIncrement(kernelLayout == KernelLayout::r4xM ? 1 : 2);
     const SimdReal zero(0.0_real);
     /* Generate all the diagonal masks as comparison results */
-    std::array<std::array<SimdBool, nR>, diagonalMaskType == DiagonalMaskType::JSizeEqualsISize ? 1 : 2> diagonalMaskVV;
+    std::array<std::array<SimdBool, nR>, clusterRatio == KernelLayoutClusterRatio::JSizeEqualsISize ? 1 : 2> diagonalMaskVV;
     for (int i = 0; i < nR; i++)
     {
         diagonalMaskVV[0][i] = (zero < diagonalJMinusI);
         diagonalJMinusI      = diagonalJMinusI - iIndexIncrement;
     }
     // NOLINTNEXTLINE(readability-misleading-indentation) remove when clang-tidy-13 is required
-    if constexpr (diagonalMaskType != DiagonalMaskType::JSizeEqualsISize)
+    if constexpr (clusterRatio != KernelLayoutClusterRatio::JSizeEqualsISize)
     {
-        if (diagonalMaskType == DiagonalMaskType::JSizeIsHalfISize)
+        if (clusterRatio == KernelLayoutClusterRatio::JSizeIsHalfISize)
         {
             /* Load j-i for the second half of the j-cluster */
             diagonalJMinusI = load<SimdReal>(simdMasks.diagonal_4xn_j_minus_i.data() + nR / 2);
@@ -126,12 +102,11 @@ generateDiagonalMasks(const nbnxn_atomdata_t::SimdMasks& simdMasks)
 
 //! Specialized masker for JSizeEqualsISize
 template<int nR, KernelLayout kernelLayout>
-class DiagonalMasker<nR, kernelLayout, DiagonalMaskType::JSizeEqualsISize>
+class DiagonalMasker<nR, kernelLayout, KernelLayoutClusterRatio::JSizeEqualsISize>
 {
 public:
     inline DiagonalMasker(const nbnxn_atomdata_t::SimdMasks& simdMasks) :
-        diagonalMaskV_(generateDiagonalMasks<nR, kernelLayout, DiagonalMaskType::JSizeEqualsISize>(
-                simdMasks)[0])
+        diagonalMaskV_(generateDiagonalMasks<nR, kernelLayout>(simdMasks)[0])
     {
     }
 
@@ -151,11 +126,11 @@ private:
 
 //! Specialized masker for JSizeIsDoubleISize
 template<int nR, KernelLayout kernelLayout>
-class DiagonalMasker<nR, kernelLayout, DiagonalMaskType::JSizeIsDoubleISize>
+class DiagonalMasker<nR, kernelLayout, KernelLayoutClusterRatio::JSizeIsDoubleISize>
 {
 public:
     inline DiagonalMasker(const nbnxn_atomdata_t::SimdMasks& simdMasks) :
-        diagonalMaskVV_(generateDiagonalMasks<nR, kernelLayout, DiagonalMaskType::JSizeIsDoubleISize>(simdMasks))
+        diagonalMaskVV_(generateDiagonalMasks<nR, kernelLayout>(simdMasks))
     {
     }
 
@@ -182,11 +157,11 @@ private:
 
 //! Specialized masker for JSizeIsHalfISize
 template<int nR, KernelLayout kernelLayout>
-class DiagonalMasker<nR, kernelLayout, DiagonalMaskType::JSizeIsHalfISize>
+class DiagonalMasker<nR, kernelLayout, KernelLayoutClusterRatio::JSizeIsHalfISize>
 {
 public:
     inline DiagonalMasker(const nbnxn_atomdata_t::SimdMasks& simdMasks) :
-        diagonalMaskVV_(generateDiagonalMasks<nR, kernelLayout, DiagonalMaskType::JSizeIsHalfISize>(simdMasks))
+        diagonalMaskVV_(generateDiagonalMasks<nR, kernelLayout>(simdMasks))
     {
     }
 

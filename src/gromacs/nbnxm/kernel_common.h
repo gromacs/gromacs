@@ -62,34 +62,7 @@ namespace Nbnxm
 enum class EwaldExclusionType : int;
 }
 
-// TODO: Consider using one nbk_func type now ener and noener are identical
-
-/*! \brief Pair-interaction kernel type that also calculates energies.
- */
-typedef void(nbk_func_ener)(const NbnxnPairlistCpu*    nbl,
-                            const nbnxn_atomdata_t*    nbat,
-                            const interaction_const_t* ic,
-                            const rvec*                shift_vec,
-                            nbnxn_atomdata_output_t*   out);
-
-/*! \brief Pointer to \p nbk_func_ener.
- */
-typedef nbk_func_ener* p_nbk_func_ener;
-
-/*! \brief Pair-interaction kernel type that does not calculates energies.
- */
-typedef void(nbk_func_noener)(const NbnxnPairlistCpu*    nbl,
-                              const nbnxn_atomdata_t*    nbat,
-                              const interaction_const_t* ic,
-                              const rvec*                shift_vec,
-                              nbnxn_atomdata_output_t*   out);
-
-/*! \brief Pointer to \p nbk_func_noener.
- */
-typedef nbk_func_noener* p_nbk_func_noener;
-
-/*! \brief Kinds of electrostatic treatments in SIMD Verlet kernels
- */
+//! \brief Kinds of electrostatic treatments in SIMD Verlet kernels
 enum class CoulombKernelType : int
 {
     ReactionField,
@@ -100,12 +73,41 @@ enum class CoulombKernelType : int
     Count
 };
 
+//! \brief Whether have a separate cut-off check for VDW interactions
+enum class VdwCutoffCheck : int
+{
+    No,
+    Yes
+};
+
+//! \brief Kind of Lennard-Jones Ewald treatments in NBNxM SIMD kernels
+enum class LJEwald : int
+{
+    None,
+    CombGeometric
+};
+
+enum class EnergyOutput : int
+{
+    None,
+    System,
+    GroupPairs
+};
+
+/*! \brief Pair-interaction kernel type that also calculates energies.
+ */
+typedef void(NbnxmKernelFunc)(const NbnxnPairlistCpu*    nbl,
+                              const nbnxn_atomdata_t*    nbat,
+                              const interaction_const_t* ic,
+                              const rvec*                shift_vec,
+                              nbnxn_atomdata_output_t*   out);
+
 //! \brief Lookup function for Coulomb kernel type
 CoulombKernelType getCoulombKernelType(Nbnxm::EwaldExclusionType ewaldExclusionType,
                                        CoulombInteractionType    coulombInteractionType,
                                        bool                      haveEqualCoulombVwdRadii);
 
-/*! \brief Kinds of Van der Waals treatments in SIMD Verlet kernels
+/*! \brief Kinds of Van der Waals treatments in NBNxM SIMD kernels
  *
  * The \p LJCUT_COMB refers to the LJ combination rule for the short range.
  * The \p EWALDCOMB refers to the combination rule for the grid part.

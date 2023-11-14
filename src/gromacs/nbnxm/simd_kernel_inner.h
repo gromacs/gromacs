@@ -39,11 +39,8 @@
  */
 #ifndef DOXYGEN
 
-/* This is the innermost loop contents for the 4 x N atom simd kernel.
- * This flavor of the kernel calculates interactions of 4 i-atoms
- * with N j-atoms stored in N wide simd registers.
+/* This is the innermost loop contents for the NBNxM SIMD kernels.
  */
-
 {
     /* Inner loop specific constexpr variables */
     static_assert(nR % 2 == 0);
@@ -67,11 +64,8 @@
 
     /* Atom indices (of the first atom in the cluster) */
     const int gmx_unused aj = cj * UNROLLJ;
-#    if UNROLLJ == STRIDE
-    const int ajx = aj * DIM;
-#    else
-    const int ajx = (cj >> 1) * DIM * STRIDE + (cj & 1) * UNROLLJ;
-#    endif
+
+    const int ajx = (UNROLLJ == STRIDE ? aj * DIM : (cj >> 1) * DIM * STRIDE + (cj & 1) * UNROLLJ);
     const int ajy = ajx + STRIDE;
     const int ajz = ajy + STRIDE;
 
@@ -168,7 +162,7 @@
         /* Electrostatic interactions, frcoul =  qi*qj*(1/r - fsub)*r */
         if constexpr (!calculateEnergies)
         {
-            frCoulombV = coulombCalculator.force<nR>(rSquaredV, rInvV, rInvExclV, withinCutoffV);
+            frCoulombV = coulombCalculator.template force<nR>(rSquaredV, rInvV, rInvExclV, withinCutoffV);
 
             frCoulombV = genArr<nR>([&](int i) { return qqV[i] * frCoulombV[i]; });
         }
@@ -177,7 +171,7 @@
             // The potential (RF or Ewald reciprocal) we need to subtract from 1/r
             std::array<SimdReal, nR> vCoulombCorrectionV;
 
-            coulombCalculator.forceAndCorrectionEnergy<nR>(
+            coulombCalculator.template forceAndCorrectionEnergy<nR>(
                     rSquaredV, rInvV, rInvExclV, withinCutoffV, frCoulombV, vCoulombCorrectionV);
 
             frCoulombV = genArr<nR>([&](int i) { return qqV[i] * frCoulombV[i]; });
@@ -209,8 +203,8 @@
 
     /* Lennard-Jones interaction */
     constexpr bool calculateLJInteractions = (c_iLJInteractions != ILJInteractions::None);
-    std::array<SimdReal, calculateLJInteractions ? c_nRLJ : 0>                        frLJV;
-    std::array<SimdReal, (calculateLJInteractions && calculateEnergies) ? c_nRLJ : 0> vLJV;
+    std::array<SimdReal, calculateLJInteractions ? c_nRLJ : 0> gmx_unused frLJV;
+    std::array<SimdReal, (calculateLJInteractions && calculateEnergies) ? c_nRLJ : 0> gmx_unused vLJV;
 
     if constexpr (calculateLJInteractions)
     {
@@ -270,7 +264,7 @@
             }
 
             // Compute the Lennard Jones force and optionally the energy
-            ljCalculator.forceC6C12<c_nRLJ, c_haveExclusionForces>(
+            ljCalculator.template forceC6C12<c_nRLJ, c_haveExclusionForces>(
                     rSquaredV, rInvV, rInvSquaredV, interactV, c6V, c12V, sixth_S, twelveth_S, frLJV, vLJV);
         }
 
@@ -283,7 +277,7 @@
             const auto epsilonV =
                     genArr<c_nRLJ>([&](int i) { return sqrtEpsilonIV[i] * sqrtEpsilonJ; });
 
-            ljCalculator.forceSigmaEpsilon<c_nRLJ, c_haveExclusionForces, haveVdwCutoffCheck>(
+            ljCalculator.template forceSigmaEpsilon<c_nRLJ, c_haveExclusionForces, haveVdwCutoffCheck>(
                     rInvV, interactV, withinVdwCutoffV.data(), sigmaV, epsilonV, sixth_S, twelveth_S, frLJV, vLJV);
         }
 
@@ -332,7 +326,7 @@
     if constexpr (calculateEnergies)
     {
         /* Energy group indices for two atoms packed into one int */
-        std::array<int, useEnergyGroups ? UNROLLJ / 2 : 0> egp_jj;
+        std::array<int, useEnergyGroups ? UNROLLJ / 2 : 0> gmx_unused egp_jj;
 
         if constexpr (useEnergyGroups)
         {
@@ -340,22 +334,25 @@
              * Energy groups are stored per i-cluster, so things get
              * complicated when the i- and j-cluster size don't match.
              */
-#    if UNROLLJ == 2
-            const int egps_j = nbatParams.energrp[cj >> 1];
-            egp_jj[0]        = ((egps_j >> ((cj & 1) * egps_jshift)) & egps_jmask) * egps_jstride;
-#    else
-            static_assert(UNROLLI <= UNROLLJ);
+            static_assert(UNROLLJ == 2 || UNROLLI <= UNROLLJ);
 
-            for (int jdi = 0; jdi < UNROLLJ / UNROLLI; jdi++)
+            if constexpr (UNROLLJ == 2)
             {
-                const int egps_j = nbatParams.energrp[cj * (UNROLLJ / UNROLLI) + jdi];
-                for (int jj = 0; jj < (UNROLLI / 2); jj++)
+                const int egps_j = nbatParams.energrp[cj >> 1];
+                egp_jj[0] = ((egps_j >> ((cj & 1) * egps_jshift)) & egps_jmask) * egps_jstride;
+            }
+            else
+            {
+                for (int jdi = 0; jdi < UNROLLJ / UNROLLI; jdi++)
                 {
-                    egp_jj[jdi * (UNROLLI / 2) + jj] =
-                            ((egps_j >> (jj * egps_jshift)) & egps_jmask) * egps_jstride;
+                    const int egps_j = nbatParams.energrp[cj * (UNROLLJ / UNROLLI) + jdi];
+                    for (int jj = 0; jj < (UNROLLI / 2); jj++)
+                    {
+                        egp_jj[jdi * (UNROLLI / 2) + jj] =
+                                ((egps_j >> (jj * egps_jshift)) & egps_jmask) * egps_jstride;
+                    }
                 }
             }
-#    endif
         }
 
         if constexpr (c_calculateCoulombInteractions)

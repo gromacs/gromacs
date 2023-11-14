@@ -41,41 +41,20 @@
 
 #include "gromacs/mdtypes/interaction_const.h"
 #include "gromacs/nbnxm/nbnxm_simd.h"
+#if {4}
+#    include "gromacs/nbnxm/simd_kernel.h"
 
-#define GMX_SIMD_J_UNROLL_SIZE {7}
-#include "{4}"
-
-{1}
-{2}
-{3}
-
-#ifdef {0}
-#include "kernel_common.h"
-#endif /* {0} */
-
-#ifdef CALC_ENERGIES
-void
-{5}(const NbnxnPairlistCpu    gmx_unused *nbl,
-{6}const nbnxn_atomdata_t    gmx_unused *nbat,
-{6}const interaction_const_t gmx_unused *ic,
-{6}const rvec                gmx_unused *shift_vec,
-{6}nbnxn_atomdata_output_t   gmx_unused *out)
-#else /* CALC_ENERGIES */
-void
-{5}(const NbnxnPairlistCpu    gmx_unused *nbl,
-{6}const nbnxn_atomdata_t    gmx_unused *nbat,
-{6}const interaction_const_t gmx_unused *ic,
-{6}const rvec                gmx_unused *shift_vec,
-{6}nbnxn_atomdata_output_t   gmx_unused *out)
-#endif /* CALC_ENERGIES */
-#ifdef {0}
-#include "kernel_outer.h"
-#else /* {0} */
+namespace gmx
 {{
-/* No need to call gmx_incons() here, because the only function
- * that calls this one is also compiled conditionally. When
- * {0} is not defined, it will call no kernel functions and
- * instead call gmx_incons().
- */
-}}
-#endif /* {0} */
+
+template void
+nbnxmKernelSimd<{0}, {1}, {2}, {3}>(
+        const NbnxnPairlistCpu*    nbl,
+        const nbnxn_atomdata_t*    nbat,
+        const interaction_const_t* ic,
+        const rvec*                shift_vec,
+        nbnxn_atomdata_output_t*   out);
+
+}} // namespace gmx
+
+#endif // {4}
