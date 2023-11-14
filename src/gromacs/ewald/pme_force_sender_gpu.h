@@ -109,6 +109,8 @@ public:
      */
     void sendFToPpGpuAwareMpi(DeviceBuffer<RVec> sendbuf, int offset, int numBytes, int ppRank, MPI_Request* request);
 
+    void waitForEvents();
+
 private:
     class Impl;
     std::unique_ptr<Impl> impl_;

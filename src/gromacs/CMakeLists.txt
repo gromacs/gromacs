@@ -176,7 +176,8 @@ if (GMX_GPU_CUDA)
     # Work around FindCUDA that prevents using target_link_libraries()
     # with keywords otherwise...
     set(CUDA_LIBRARIES PRIVATE ${CUDA_LIBRARIES})
-    if (NOT GMX_CLANG_CUDA)
+
+    if (NOT GMX_CLANG_CUDA AND NOT GMX_NVSHMEM)
         gmx_cuda_add_library(libgromacs ${LIBGROMACS_SOURCES})
     else()
         add_library(libgromacs ${LIBGROMACS_SOURCES})
@@ -197,6 +198,8 @@ if (GMX_GPU_CUDA)
         target_link_options(libgromacs PRIVATE $<DEVICE_LINK:-fvisibility=hidden>)
         set_target_properties(libgromacs PROPERTIES CUDA_RESOLVE_DEVICE_SYMBOLS ON)
         target_link_libraries(libgromacs PRIVATE nvshmem_host_lib nvshmem_device_lib)
+        # NVSHMEM only supports SM 60+ so we make use of filtered GMX_NVSHMEM_LINK_ARCHS
+        set_target_properties(libgromacs PROPERTIES CUDA_ARCHITECTURES "${GMX_NVSHMEM_LINK_ARCHS}")
     endif()
     if (GMX_USE_cuFFTMp OR GMX_NVSHMEM)
         # We need to PUBLIC link to the stub libraries nvml/cuda to WAR an issue

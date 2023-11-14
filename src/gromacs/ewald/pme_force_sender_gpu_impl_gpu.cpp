@@ -154,7 +154,6 @@ void PmeForceSenderGpu::Impl::sendFToPpGpuAwareMpi(DeviceBuffer<RVec> sendbuf,
     pmeForcesReady_->waitForEvent();
 
     MPI_Isend(asMpiPointer(sendbuf) + offset, numBytes, MPI_BYTE, ppRank, 0, comm_, request);
-
 #else
     GMX_UNUSED_VALUE(sendbuf);
     GMX_UNUSED_VALUE(offset);
@@ -163,6 +162,13 @@ void PmeForceSenderGpu::Impl::sendFToPpGpuAwareMpi(DeviceBuffer<RVec> sendbuf,
     GMX_UNUSED_VALUE(request);
 #endif
 }
+
+void PmeForceSenderGpu::Impl::waitForEvents()
+{
+    GMX_ASSERT(GMX_LIB_MPI, "waitForEvents is expected to be called only for Lib-MPI");
+    pmeForcesReady_->waitForEvent();
+}
+
 
 PmeForceSenderGpu::PmeForceSenderGpu(GpuEventSynchronizer*  pmeForcesReady,
                                      MPI_Comm               comm,
@@ -192,6 +198,11 @@ void PmeForceSenderGpu::sendFToPpGpuAwareMpi(DeviceBuffer<RVec> sendbuf,
 void PmeForceSenderGpu::sendFToPpPeerToPeer(int ppRank, int numAtoms, bool sendForcesDirectToPpGpu)
 {
     impl_->sendFToPpPeerToPeer(ppRank, numAtoms, sendForcesDirectToPpGpu);
+}
+
+void PmeForceSenderGpu::waitForEvents()
+{
+    impl_->waitForEvents();
 }
 
 

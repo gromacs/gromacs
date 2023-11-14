@@ -72,15 +72,19 @@ namespace gmx
  * \param d_baseForce Destination buffer for forces in linear layout.
  * \param d_cell Atom index to Nbnxm cell index.
  * \param deviceStream Device stream for kernel submission.
+ * \param d_forcesReadyNvshmemFlags  NVSHMEM signals from PME to PP force transfer.
+ * \param forcesReadyNvshmemFlagsCounter Tracks NVSHMEM signal from PME to PP force transfer.
  */
-void launchForceReductionKernel(int                  numAtoms,
-                                int                  atomStart,
-                                bool                 addRvecForce,
-                                bool                 accumulate,
-                                DeviceBuffer<Float3> d_nbnxmForceToAdd,
-                                DeviceBuffer<Float3> d_rvecForceToAdd,
-                                DeviceBuffer<Float3> d_baseForce,
-                                DeviceBuffer<int>    d_cell,
-                                const DeviceStream&  deviceStream);
+void launchForceReductionKernel(int                        numAtoms,
+                                int                        atomStart,
+                                bool                       addRvecForce,
+                                bool                       accumulate,
+                                const DeviceBuffer<Float3> d_nbnxmForceToAdd,
+                                const DeviceBuffer<Float3> d_rvecForceToAdd,
+                                DeviceBuffer<Float3>       d_baseForce,
+                                DeviceBuffer<int>          d_cell,
+                                const DeviceStream&        deviceStream,
+                                DeviceBuffer<uint64_t>     d_forcesReadyNvshmemFlags,
+                                const uint64_t             forcesReadyNvshmemFlagsCounter);
 
 } // namespace gmx

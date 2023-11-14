@@ -444,10 +444,12 @@ pme_gpu_launch_complex_transforms(gmx_pme_t*               GPU_FUNC_ARGUMENT(pme
  * \param[in] pme               The PME data structure.
  * \param[in] wcycle            The wallclock counter.
  * \param[in] lambdaQ           The Coulomb lambda to use when calculating the results.
+ * \param[in] computeVirial     Whether this is a virial step.
  */
 GPU_FUNC_QUALIFIER void pme_gpu_launch_gather(const gmx_pme_t* GPU_FUNC_ARGUMENT(pme),
                                               gmx_wallcycle*   GPU_FUNC_ARGUMENT(wcycle),
-                                              real GPU_FUNC_ARGUMENT(lambdaQ)) GPU_FUNC_TERM;
+                                              real             GPU_FUNC_ARGUMENT(lambdaQ),
+                                              bool GPU_FUNC_ARGUMENT(computeVirial)) GPU_FUNC_TERM;
 
 /*! \brief
  * Attempts to complete PME GPU tasks.

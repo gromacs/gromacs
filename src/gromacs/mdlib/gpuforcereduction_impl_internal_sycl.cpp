@@ -112,16 +112,20 @@ static void launchReductionKernel_(const int                   numAtoms,
 }
 
 /*! \brief Select templated Force reduction kernel and launch it. */
-void launchForceReductionKernel(int                  numAtoms,
-                                int                  atomStart,
-                                bool                 addRvecForce,
-                                bool                 accumulate,
-                                DeviceBuffer<Float3> d_nbnxmForceToAdd,
-                                DeviceBuffer<Float3> d_rvecForceToAdd,
-                                DeviceBuffer<Float3> d_baseForce,
-                                DeviceBuffer<int>    d_cell,
-                                const DeviceStream&  deviceStream)
+void launchForceReductionKernel(int                    numAtoms,
+                                int                    atomStart,
+                                bool                   addRvecForce,
+                                bool                   accumulate,
+                                DeviceBuffer<Float3>   d_nbnxmForceToAdd,
+                                DeviceBuffer<Float3>   d_rvecForceToAdd,
+                                DeviceBuffer<Float3>   d_baseForce,
+                                DeviceBuffer<int>      d_cell,
+                                const DeviceStream&    deviceStream,
+                                DeviceBuffer<uint64_t> d_forcesReadyNvshmemFlags,
+                                const uint64_t         forcesReadyNvshmemFlagsCounter)
 {
+    GMX_UNUSED_VALUE(d_forcesReadyNvshmemFlags);
+    GMX_UNUSED_VALUE(forcesReadyNvshmemFlagsCounter);
     dispatchTemplatedFunction(
             [&](auto addRvecForce_, auto accumulateForce_) {
                 return launchReductionKernel_<addRvecForce_, accumulateForce_>(

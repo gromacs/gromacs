@@ -61,6 +61,8 @@ GpuForceReduction::Impl::Impl(const DeviceContext& deviceContext,
     deviceStream_(deviceStream),
     nbnxmForceToAdd_(),
     rvecForceToAdd_(),
+    forcesReadyNvshmemFlags(nullptr),
+    forcesReadyNvshmemFlagsCounter(0),
     wcycle_(wcycle)
 {
     cellInfo_.d_cell = nullptr;
@@ -138,6 +140,11 @@ void GpuForceReduction::Impl::execute()
 
         const bool addRvecForce = static_cast<bool>(rvecForceToAdd_); // True iff initialized
 
+        if (addRvecForce && forcesReadyNvshmemFlags)
+        {
+            forcesReadyNvshmemFlagsCounter++;
+        }
+
         launchForceReductionKernel(numAtoms_,
                                    atomStart_,
                                    addRvecForce,
@@ -146,7 +153,9 @@ void GpuForceReduction::Impl::execute()
                                    rvecForceToAdd_,
                                    baseForce_,
                                    cellInfo_.d_cell,
-                                   deviceStream_);
+                                   deviceStream_,
+                                   forcesReadyNvshmemFlags,
+                                   forcesReadyNvshmemFlagsCounter);
     }
     else
     {

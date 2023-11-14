@@ -116,6 +116,8 @@ extern template __global__ void pme_solve_kernel<GridOrdering::YZX, true, c_stat
 template<int order, bool wrapX, bool wrapY, int nGrids, bool readGlobal, ThreadsPerAtom threadsPerAtom>
 __global__ void pme_gather_kernel(PmeGpuCudaKernelParams kernelParams);
 
+__global__ void nvshmemSignalKernel(PmeGpuCudaKernelParams kernelParams);
+
 // Add extern declarations to inform that there will be a definition
 // provided in another translation unit.
 // clang-format off
@@ -175,6 +177,9 @@ PmeGpuProgramImpl::PmeGpuProgramImpl(const DeviceContext& deviceContext) :
     solveXYZEnergyKernelB                             = pme_solve_kernel<GridOrdering::XYZ, true, c_stateB>;
     solveYZXKernelB                                   = pme_solve_kernel<GridOrdering::YZX, false, c_stateB>;
     solveYZXEnergyKernelB                             = pme_solve_kernel<GridOrdering::YZX, true, c_stateB>;
+
+    nvshmemSignalKern = nvshmemSignalKernel;
+
     // clang-format on
 }
 

@@ -166,6 +166,7 @@ struct PmeGpuProgramImpl
     PmeKernelHandle solveYZXEnergyKernelB;
     PmeKernelHandle solveXYZEnergyKernelB;
     //@}
+    PmeKernelHandle nvshmemSignalKern;
 
     PmeGpuProgramImpl() = delete;
     //! Constructor for the given device

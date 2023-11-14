@@ -48,6 +48,9 @@
 #include "pme.cuh"
 #include "pme_gpu_calculate_splines.cuh"
 #include "pme_grid.h"
+#if GMX_NVSHMEM
+#    include <nvshmemx.h>
+#endif
 
 /*! \brief
  * An inline CUDA function: unroll the dynamic index accesses to the constant grid sizes to avoid local memory operations.
@@ -327,6 +330,112 @@ __device__ __forceinline__ void calculateAndStoreGridForces(float3* __restrict__
     sm_forces[forceIndexLocal] = result;
 }
 
+
+template<int numIter, int iterThreads, int blockForcesSize>
+__device__ void findPPRankAndPutForces(const int threadLocalId,
+                                       const int ppRank,
+                                       const int startAtoms,
+                                       const int endAtoms,
+                                       float* __restrict__ gm_forces, // NOLINT(readability-non-const-parameter)
+                                       float* sm_forces) // NOLINT(readability-non-const-parameter)
+{
+#if GMX_NVSHMEM
+    int       haveAnyWorkFromThread = 0;
+    const int blockIndex            = blockIdx.y * gridDim.x + blockIdx.x;
+
+#    pragma unroll
+    for (int i = 0; i < numIter; i++)
+    {
+        const int outputIndexLocal  = i * iterThreads + threadLocalId;
+        const int outputIndexGlobal = blockIndex * blockForcesSize + outputIndexLocal;
+        haveAnyWorkFromThread += (((outputIndexGlobal < endAtoms)) && (outputIndexGlobal >= startAtoms));
+    }
+
+    const int haveAnyWorkInWarp = __any_sync(c_fullWarpMask, haveAnyWorkFromThread > 0);
+
+    if (haveAnyWorkInWarp)
+    {
+        float* gm_forcesRemote = (float*)nvshmem_ptr(gm_forces, ppRank);
+        // if gm_forcesRemote is non-null it implies the given ppRank is in the local node
+        // so we can use normal ld/st over the remote ppRank memory with gm_forcesRemote
+        const bool isPpRankIntraNode = (gm_forcesRemote != nullptr);
+        const int  remoteOffset      = isPpRankIntraNode ? startAtoms : 0;
+        float*     gm_forcesDest     = isPpRankIntraNode ? gm_forcesRemote : gm_forces;
+
+#    pragma unroll
+        for (int i = 0; i < numIter; i++)
+        {
+            const int outputIndexLocal  = i * iterThreads + threadLocalId;
+            const int outputIndexGlobal = blockIndex * blockForcesSize + outputIndexLocal;
+            if ((outputIndexGlobal < endAtoms) && (outputIndexGlobal >= startAtoms))
+            {
+                float outputForceComponent                      = sm_forces[outputIndexLocal];
+                gm_forcesDest[outputIndexGlobal - remoteOffset] = outputForceComponent;
+            }
+        }
+
+        if (!isPpRankIntraNode)
+        {
+            int totalAtomsWarpProcessed = haveAnyWorkFromThread;
+            // reduce to find total atoms processed by this block for this PP rank.
+            for (int mask = warp_size / 2; mask > 0; mask /= 2)
+            {
+                totalAtomsWarpProcessed += __shfl_xor_sync(c_fullWarpMask, totalAtomsWarpProcessed, mask);
+            }
+
+            __threadfence();
+
+            // start offset for source buffer.
+            const int startOffsetSrc = (startAtoms > (blockIndex * blockForcesSize))
+                                               ? startAtoms
+                                               : (blockIndex * blockForcesSize);
+            // start offset for dest buffer.
+            const int startOffsetDst = ((blockIndex * blockForcesSize) - startAtoms);
+
+            nvshmemx_float_put_nbi_warp(gm_forces + startOffsetDst,     // dest buffer
+                                        &gm_forcesDest[startOffsetSrc], // src buffer
+                                        totalAtomsWarpProcessed,
+                                        ppRank);
+        }
+    }
+#else
+    GMX_UNUSED_VALUE(threadLocalId);
+    GMX_UNUSED_VALUE(ppRank);
+    GMX_UNUSED_VALUE(startAtoms);
+    GMX_UNUSED_VALUE(endAtoms);
+    GMX_UNUSED_VALUE(gm_forces);
+    GMX_UNUSED_VALUE(sm_forces);
+#endif
+}
+
+// Add this prototype to fix clang warnings.
+__global__ void nvshmemSignalKernel(PmeGpuCudaKernelParams kernelParams);
+
+/*! \brief
+ * A CUDA kernel which signals to the corresponding PP ranks of pme forces transfer completion.
+ * This kernel should only be called after pme_gather kernel in the same stream.
+ * \param[in]  kernelParams         All the PME GPU data.
+ */
+__global__ void nvshmemSignalKernel(const PmeGpuCudaKernelParams kernelParams)
+{
+#if GMX_NVSHMEM
+    if (kernelParams.useNvshmem)
+    {
+        nvshmem_fence();
+        for (int rankId = threadIdx.x; rankId < kernelParams.ppRanksInfoSize; rankId += blockDim.x)
+        {
+            auto ppRankInfo = kernelParams.ppRanksInfo[rankId];
+            nvshmemx_signal_op(kernelParams.forcesReadyNvshmemFlags,
+                               kernelParams.forcesReadyNvshmemFlagsCounter,
+                               NVSHMEM_SIGNAL_SET,
+                               ppRankInfo.rankId);
+        }
+    }
+#else
+    GMX_UNUSED_VALUE(kernelParams);
+#endif
+}
+
 /*! \brief
  * A CUDA kernel which gathers the atom forces from the grid.
  * The grid is assumed to be wrapped in dimension Z.
@@ -534,18 +643,43 @@ __launch_bounds__(c_gatherMaxThreadsPerBlock, c_gatherMinBlocksPerMP) __global__
     assert(atomsPerBlock <= warp_size);
 
     /* Writing or adding the final forces component-wise, single warp */
-    const int blockForcesSize = atomsPerBlock * DIM;
-    const int numIter         = (blockForcesSize + warp_size - 1) / warp_size;
-    const int iterThreads     = blockForcesSize / numIter;
-    if (threadLocalId < iterThreads)
+    constexpr int blockForcesSize = atomsPerBlock * DIM;
+    constexpr int numIter         = (blockForcesSize + warp_size - 1) / warp_size;
+    constexpr int iterThreads     = blockForcesSize / numIter;
+
+#if GMX_NVSHMEM
+    if (!kernelParams.isVirialStep && kernelParams.useNvshmem)
     {
-#pragma unroll
-        for (int i = 0; i < numIter; i++)
+        if (threadLocalId < iterThreads)
         {
-            int   outputIndexLocal       = i * iterThreads + threadLocalId;
-            int   outputIndexGlobal      = blockIndex * blockForcesSize + outputIndexLocal;
-            float outputForceComponent   = (reinterpret_cast<float*>(sm_forces)[outputIndexLocal]);
-            gm_forces[outputIndexGlobal] = outputForceComponent;
+            for (int rankId = 0; rankId < kernelParams.ppRanksInfoSize; rankId++)
+            {
+                const auto ppRankInfo    = kernelParams.ppRanksInfo[rankId];
+                const int  endAtomOffset = ppRankInfo.startAtomOffset + ppRankInfo.numAtoms;
+
+                findPPRankAndPutForces<numIter, iterThreads, blockForcesSize>(
+                        threadLocalId,
+                        ppRankInfo.rankId,
+                        ppRankInfo.startAtomOffset * DIM,
+                        endAtomOffset * DIM,
+                        gm_forces,
+                        reinterpret_cast<float*>(sm_forces));
+            }
+        }
+    }
+    else
+#endif
+    {
+        if (threadLocalId < iterThreads)
+        {
+#pragma unroll
+            for (int i = 0; i < numIter; i++)
+            {
+                int   outputIndexLocal     = i * iterThreads + threadLocalId;
+                int   outputIndexGlobal    = blockIndex * blockForcesSize + outputIndexLocal;
+                float outputForceComponent = (reinterpret_cast<float*>(sm_forces)[outputIndexLocal]);
+                gm_forces[outputIndexGlobal] = outputForceComponent;
+            }
         }
     }
 

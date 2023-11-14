@@ -129,6 +129,8 @@ public:
      */
     void sendFToPpGpuAwareMpi(DeviceBuffer<RVec> sendbuf, int offset, int numBytes, int ppRank, MPI_Request* request);
 
+    void waitForEvents();
+
 private:
     //! Event indicating when PME forces are ready on the GPU in order for PP stream to sync with the PME stream
     GpuEventSynchronizer* pmeForcesReady_;

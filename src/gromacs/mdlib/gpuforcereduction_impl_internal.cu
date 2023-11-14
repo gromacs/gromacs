@@ -49,6 +49,10 @@
 #include "gromacs/gpu_utils/typecasts.cuh"
 #include "gromacs/gpu_utils/vectype_ops.cuh"
 
+#if GMX_NVSHMEM
+#    include <nvshmemx.h>
+#endif
+
 namespace gmx
 {
 
@@ -59,19 +63,32 @@ static __global__ void reduceKernel(const float3* __restrict__ gm_nbnxmForce,
                                     const float3* __restrict__ rvecForceToAdd,
                                     float3*    gm_fTotal,
                                     const int* gm_cell,
-                                    const int  numAtoms)
+                                    const int  numAtoms,
+                                    uint64_t* forcesReadyNvshmemFlags, // NOLINT(readability-non-const-parameter)
+                                    const uint64_t forcesReadyNvshmemFlagsCounter)
 {
-
     // map particle-level parallelism to 1D CUDA thread and block index
     const int threadIndex = blockIdx.x * blockDim.x + threadIdx.x;
+
+    float3* gm_fDest = &gm_fTotal[threadIndex];
+    float3  temp;
+
+    if (addRvecForce && forcesReadyNvshmemFlags)
+    {
+#if GMX_NVSHMEM
+        if (threadIdx.x == 0)
+        {
+            nvshmem_signal_wait_until(
+                    forcesReadyNvshmemFlags, NVSHMEM_CMP_EQ, forcesReadyNvshmemFlagsCounter);
+        }
+#else
+        GMX_UNUSED_VALUE(forcesReadyNvshmemFlagsCounter);
+#endif
+    }
 
     // perform addition for each particle
     if (threadIndex < numAtoms)
     {
-
-        float3* gm_fDest = &gm_fTotal[threadIndex];
-        float3  temp;
-
         // Accumulate or set nbnxm force
         if (accumulateForce)
         {
@@ -82,7 +99,17 @@ static __global__ void reduceKernel(const float3* __restrict__ gm_nbnxmForce,
         {
             temp = gm_nbnxmForce[gm_cell[threadIndex]];
         }
+    }
 
+    if (addRvecForce && forcesReadyNvshmemFlags)
+    {
+#if GMX_NVSHMEM
+        __syncthreads();
+#endif
+    }
+
+    if (threadIndex < numAtoms)
+    {
         if (addRvecForce)
         {
             temp += rvecForceToAdd[threadIndex];
@@ -100,7 +127,9 @@ void launchForceReductionKernel(int                        numAtoms,
                                 const DeviceBuffer<Float3> d_rvecForceToAdd,
                                 DeviceBuffer<Float3>       d_baseForce,
                                 DeviceBuffer<int>          d_cell,
-                                const DeviceStream&        deviceStream)
+                                const DeviceStream&        deviceStream,
+                                DeviceBuffer<uint64_t>     d_forcesReadyNvshmemFlags,
+                                const uint64_t             forcesReadyNvshmemFlagsCounter)
 {
     float3* d_baseForcePtr      = &(asFloat3(d_baseForce)[atomStart]);
     float3* d_nbnxmForcePtr     = asFloat3(d_nbnxmForceToAdd);
@@ -120,8 +149,15 @@ void launchForceReductionKernel(int                        numAtoms,
                             ? (accumulate ? reduceKernel<true, true> : reduceKernel<true, false>)
                             : (accumulate ? reduceKernel<false, true> : reduceKernel<false, false>);
 
-    const auto kernelArgs = prepareGpuKernelArguments(
-            kernelFn, config, &d_nbnxmForcePtr, &d_rvecForceToAddPtr, &d_baseForcePtr, &d_cell, &numAtoms);
+    const auto kernelArgs = prepareGpuKernelArguments(kernelFn,
+                                                      config,
+                                                      &d_nbnxmForcePtr,
+                                                      &d_rvecForceToAddPtr,
+                                                      &d_baseForcePtr,
+                                                      &d_cell,
+                                                      &numAtoms,
+                                                      &d_forcesReadyNvshmemFlags,
+                                                      &forcesReadyNvshmemFlagsCounter);
 
     launchGpuKernel(kernelFn, config, deviceStream, nullptr, "Force Reduction", kernelArgs);
 }

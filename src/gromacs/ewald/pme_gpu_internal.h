@@ -423,12 +423,14 @@ GPU_FUNC_QUALIFIER void pme_gpu_solve(const PmeGpu* GPU_FUNC_ARGUMENT(pmeGpu),
  * \param[in]     fftSetup                 Host-side FFT setup structure used in Mixed mode
  * \param[in]     lambda                   The lambda value to use.
  * \param[in]     wcycle                   The wallclock counter.
+ * \param[in]     computeVirial            Whether this is a virial step.
  */
 GPU_FUNC_QUALIFIER void pme_gpu_gather(PmeGpu*               GPU_FUNC_ARGUMENT(pmeGpu),
                                        float**               GPU_FUNC_ARGUMENT(h_grids),
                                        gmx_parallel_3dfft_t* GPU_FUNC_ARGUMENT(fftSetup),
                                        float                 GPU_FUNC_ARGUMENT(lambda),
-                                       gmx_wallcycle* GPU_FUNC_ARGUMENT(wcycle)) GPU_FUNC_TERM;
+                                       gmx_wallcycle*        GPU_FUNC_ARGUMENT(wcycle),
+                                       bool GPU_FUNC_ARGUMENT(computeVirial)) GPU_FUNC_TERM;
 
 
 /*! \brief Sets the device pointer to coordinate data
@@ -444,6 +446,9 @@ GPU_FUNC_QUALIFIER void pme_gpu_set_kernelparam_coordinates(const PmeGpu* GPU_FU
  */
 GPU_FUNC_QUALIFIER DeviceBuffer<gmx::RVec> pme_gpu_get_kernelparam_forces(const PmeGpu* GPU_FUNC_ARGUMENT(pmeGpu))
         GPU_FUNC_TERM_WITH_RETURN(DeviceBuffer<gmx::RVec>{});
+
+GPU_FUNC_QUALIFIER void pme_gpu_set_kernelparam_useNvshmem(const PmeGpu* GPU_FUNC_ARGUMENT(pmeGpu),
+                                                           bool GPU_FUNC_ARGUMENT(useNvshmem)) GPU_FUNC_TERM;
 
 /*! \brief Return pointer to the sync object triggered after the PME force calculation completion
  * \param[in] pmeGpu         The PME GPU structure.

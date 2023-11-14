@@ -544,7 +544,11 @@ static int gmx_pme_recv_coeffs_coords(struct gmx_pme_t*            pme,
 }
 
 /*! \brief Send the PME mesh force, virial and energy to the PP-only ranks. */
-static void gmx_pme_send_force_vir_ener(const gmx_pme_t& pme, gmx_pme_pp* pme_pp, const PmeOutput& output, float cycles)
+static void gmx_pme_send_force_vir_ener(const gmx_pme_t& pme,
+                                        gmx_pme_pp*      pme_pp,
+                                        const PmeOutput& output,
+                                        float            cycles,
+                                        const bool       computeVirial)
 {
 #if GMX_MPI
     gmx_pme_comm_vir_ene_t cve;
@@ -575,31 +579,38 @@ static void gmx_pme_send_force_vir_ener(const gmx_pme_t& pme, gmx_pme_pp* pme_pp
     }
     else
     {
-        for (const auto& receiver : pme_pp->ppRanks)
+        if (!computeVirial && pme_pp->useNvshmem)
         {
-            ind_start = ind_end;
-            ind_end   = ind_start + receiver.numAtoms;
-            if (pme_pp->useGpuDirectComm)
+            pme_pp->pmeForceSenderGpu->waitForEvents();
+        }
+        else
+        {
+            for (const auto& receiver : pme_pp->ppRanks)
             {
-                pme_pp->pmeForceSenderGpu->sendFToPpGpuAwareMpi(pme_gpu_get_device_f(&pme),
-                                                                ind_start,
-                                                                receiver.numAtoms * sizeof(rvec),
-                                                                receiver.rankId,
-                                                                &pme_pp->req[messages]);
+                ind_start = ind_end;
+                ind_end   = ind_start + receiver.numAtoms;
+                if (pme_pp->useGpuDirectComm)
+                {
+                    pme_pp->pmeForceSenderGpu->sendFToPpGpuAwareMpi(pme_gpu_get_device_f(&pme),
+                                                                    ind_start,
+                                                                    receiver.numAtoms * sizeof(rvec),
+                                                                    receiver.rankId,
+                                                                    &pme_pp->req[messages]);
+                }
+                else
+                {
+                    void* sendbuf = &output.forces_[ind_start];
+                    // Send using MPI
+                    MPI_Isend(sendbuf,
+                              receiver.numAtoms * sizeof(rvec),
+                              MPI_BYTE,
+                              receiver.rankId,
+                              0,
+                              pme_pp->mpi_comm_mysim,
+                              &pme_pp->req[messages]);
+                }
+                messages++;
             }
-            else
-            {
-                void* sendbuf = &output.forces_[ind_start];
-                // Send using MPI
-                MPI_Isend(sendbuf,
-                          receiver.numAtoms * sizeof(rvec),
-                          MPI_BYTE,
-                          receiver.rankId,
-                          0,
-                          pme_pp->mpi_comm_mysim,
-                          &pme_pp->req[messages]);
-            }
-            messages++;
         }
     }
 
@@ -629,6 +640,7 @@ static void gmx_pme_send_force_vir_ener(const gmx_pme_t& pme, gmx_pme_pp* pme_pp
     GMX_UNUSED_VALUE(pme_pp);
     GMX_UNUSED_VALUE(output);
     GMX_UNUSED_VALUE(cycles);
+    GMX_UNUSED_VALUE(computeVirial);
 #endif
 }
 
@@ -688,6 +700,7 @@ int gmx_pmeonly(struct gmx_pme_t**              pmeFromRunnerPtr,
             if (useNvshmem)
             {
                 pme_gpu_use_nvshmem(pmeFromRunner->gpu, useNvshmem);
+                pme_pp->useNvshmem                            = useNvshmem;
                 pmeFromRunner->gpu->nvshmemParams->ppRanksRef = pme_pp->ppRanks;
             }
         }
@@ -798,7 +811,7 @@ int gmx_pmeonly(struct gmx_pme_t**              pmeFromRunnerPtr,
                                   pme_pp->pmeCoordinateReceiverGpu.get(),
                                   pme_pp->useMdGpuGraph);
             pme_gpu_launch_complex_transforms(pme, wcycle, stepWork);
-            pme_gpu_launch_gather(pme, wcycle, lambda_q);
+            pme_gpu_launch_gather(pme, wcycle, lambda_q, stepWork.computeVirial);
             output = pme_gpu_wait_finish_task(pme, computeEnergyAndVirial, lambda_q, wcycle);
         }
         else
@@ -844,7 +857,7 @@ int gmx_pmeonly(struct gmx_pme_t**              pmeFromRunnerPtr,
             pme_gpu_reinit_computation(pme, pme_pp->useMdGpuGraph, wcycle);
         }
 
-        gmx_pme_send_force_vir_ener(*pme, pme_pp.get(), output, cycles);
+        gmx_pme_send_force_vir_ener(*pme, pme_pp.get(), output, cycles, stepWork.computeVirial);
 
         // Reinit after PME->PP force send so it is removed from the critical path
         if (useGpuForPme && !pme_pp->useMdGpuGraph)

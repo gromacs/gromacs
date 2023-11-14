@@ -2332,7 +2332,8 @@ void pme_gpu_gather(PmeGpu*               pmeGpu,
                     real**                h_grids,
                     gmx_parallel_3dfft_t* fftSetup,
                     const float           lambda,
-                    gmx_wallcycle*        wcycle)
+                    gmx_wallcycle*        wcycle,
+                    bool                  computeVirial)
 {
     GMX_ASSERT(
             pmeGpu->common->ngrids == 1 || pmeGpu->common->ngrids == 2,
@@ -2446,6 +2447,16 @@ void pme_gpu_gather(PmeGpu*               pmeGpu,
             kernelParamsPtr->current.scale = 1.0 - lambda;
         }
 
+#if GMX_NVSHMEM
+        kernelParamsPtr->isVirialStep = computeVirial;
+        if (!computeVirial && pmeGpu->useNvshmem)
+        {
+            kernelParamsPtr->forcesReadyNvshmemFlagsCounter++;
+        }
+#else
+        GMX_UNUSED_VALUE(computeVirial);
+#endif
+
 #if c_canEmbedBuffers
         const auto kernelArgs = prepareGpuKernelArguments(kernelPtr, config, kernelParamsPtr);
 #else
@@ -2464,6 +2475,20 @@ void pme_gpu_gather(PmeGpu*               pmeGpu,
 #endif
         launchGpuKernel(
                 kernelPtr, config, pmeGpu->archSpecific->pmeStream_, timingEvent, "PME gather", kernelArgs);
+        if (!computeVirial && pmeGpu->useNvshmem)
+        {
+            KernelLaunchConfig config;
+            config.blockSize[0] = 128;
+            config.blockSize[1] = 1;
+            config.blockSize[2] = 1;
+            config.gridSize[0]  = 1;
+            config.gridSize[1]  = 1;
+            auto kernelPtr_     = pmeGpu->programHandle_->impl_->nvshmemSignalKern;
+
+            const auto kernelArgs_ = prepareGpuKernelArguments(kernelPtr_, config, kernelParamsPtr);
+            launchGpuKernel(
+                    kernelPtr_, config, pmeGpu->archSpecific->pmeStream_, timingEvent, "PME gather", kernelArgs_);
+        }
         pme_gpu_stop_timing(pmeGpu, timingId);
     }
 
@@ -2488,6 +2513,18 @@ DeviceBuffer<gmx::RVec> pme_gpu_get_kernelparam_forces(const PmeGpu* pmeGpu)
     else
     {
         return DeviceBuffer<gmx::RVec>{};
+    }
+}
+
+void pme_gpu_set_kernelparam_useNvshmem(const PmeGpu* pmeGpu, bool useNvshmem)
+{
+    GMX_ASSERT(pmeGpu && pmeGpu->kernelParams,
+               "PME GPU NVSHMEM support can not be set in non-GPU builds or before the GPU PME was "
+               "initialized.");
+
+    if (pmeGpu && pmeGpu->kernelParams)
+    {
+        pmeGpu->kernelParams->useNvshmem = static_cast<int>(useNvshmem);
     }
 }
 

@@ -146,6 +146,8 @@ private:
     DeviceBuffer<RVec> rvecForceToAdd_;
     //! nvshmem sync object used in forces reduction kernel
     DeviceBuffer<uint64_t> forcesReadyNvshmemFlags;
+    //! nvshmem sync object tracker used in forces reduction kernel
+    uint64_t forcesReadyNvshmemFlagsCounter;
 
     //! event to be marked when reduction launch has been completed
     GpuEventSynchronizer* completionMarker_ = nullptr;

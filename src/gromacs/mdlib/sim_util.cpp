@@ -748,7 +748,7 @@ static void launchPmeGpuFftAndGather(gmx_pme_t*               pmedata,
 {
     wallcycle_start_nocount(wcycle, WallCycleCounter::PmeGpuMesh);
     pme_gpu_launch_complex_transforms(pmedata, wcycle, stepWork);
-    pme_gpu_launch_gather(pmedata, wcycle, lambdaQ);
+    pme_gpu_launch_gather(pmedata, wcycle, lambdaQ, stepWork.computeVirial);
     wallcycle_stop(wcycle, WallCycleCounter::PmeGpuMesh);
 }
 

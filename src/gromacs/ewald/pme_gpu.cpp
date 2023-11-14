@@ -235,6 +235,7 @@ void pme_gpu_launch_complex_transforms(gmx_pme_t* pme, gmx_wallcycle* wcycle, co
     const auto& settings = pmeGpu->settings;
     // There's no support for computing energy without virial, or vice versa
     const bool computeEnergyAndVirial = stepWork.computeEnergy || stepWork.computeVirial;
+
     if (!settings.performGPUFFT)
     {
         wallcycle_start(wcycle, WallCycleCounter::WaitGpuPmeGridD2hCopy);
@@ -277,7 +278,10 @@ void pme_gpu_launch_complex_transforms(gmx_pme_t* pme, gmx_wallcycle* wcycle, co
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
 }
 
-void pme_gpu_launch_gather(const gmx_pme_t* pme, gmx_wallcycle gmx_unused* wcycle, const real lambdaQ)
+void pme_gpu_launch_gather(const gmx_pme_t* pme,
+                           gmx_wallcycle gmx_unused* wcycle,
+                           const real                lambdaQ,
+                           const bool                computeVirial)
 {
     GMX_ASSERT(pme_gpu_active(pme), "This should be a GPU run of PME but it is not enabled.");
 
@@ -287,7 +291,7 @@ void pme_gpu_launch_gather(const gmx_pme_t* pme, gmx_wallcycle gmx_unused* wcycl
     }
 
     float** fftgrids = pme->fftgrid;
-    pme_gpu_gather(pme->gpu, fftgrids, pme->pfft_setup, lambdaQ, wcycle);
+    pme_gpu_gather(pme->gpu, fftgrids, pme->pfft_setup, lambdaQ, wcycle, computeVirial);
 }
 
 //! Accumulate the \c forcesToAdd to \c f, using the available threads.
@@ -469,6 +473,7 @@ GpuEventSynchronizer* pme_gpu_get_f_ready_synchronizer(const gmx_pme_t* pme)
 void pme_gpu_use_nvshmem(PmeGpu* pmeGpu, bool useNvshmem)
 {
     pmeGpu->useNvshmem = useNvshmem;
+    pme_gpu_set_kernelparam_useNvshmem(pmeGpu, useNvshmem);
     if (useNvshmem)
     {
         pmeGpu->nvshmemParams = std::make_unique<PmeNvshmemHost>();

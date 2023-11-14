@@ -246,13 +246,19 @@ struct PmeGpuKernelParamsBase
     int pipelineAtomEnd;
 
     /*! \brief PpRanksSendFInfo struct total size */
-    HIDE_FROM_OPENCL_COMPILER(int) ppRanksInfoSize;
+    int ppRanksInfoSize;
     /*! \brief PpRanksSendFInfo struct containing each PP rank forces buffer offsets */
     HIDE_FROM_OPENCL_COMPILER(DeviceBuffer<PpRanksSendFInfo>) ppRanksInfo;
     /*! \brief atomic counter used for tracking last processed block in pme gather kernel for each PP rank */
     HIDE_FROM_OPENCL_COMPILER(DeviceBuffer<unsigned int>) lastProcessedBlockPerPpRank;
-    /*! \brief sync object used for nvshmem pme-pp force comm */
+    /*! \brief sync object used for NVSHMEM pme-pp force comm */
     HIDE_FROM_OPENCL_COMPILER(DeviceBuffer<uint64_t>) forcesReadyNvshmemFlags;
+    /*! \brief sync object counter used for nvshmem pme-pp force comm */
+    HIDE_FROM_OPENCL_COMPILER(uint64_t) forcesReadyNvshmemFlagsCounter;
+    /*! \brief whether this is virial step */
+    int isVirialStep;
+    /*! \brief whether to use NVSHMEM for GPU comm*/
+    int useNvshmem;
 
     /* These texture objects are only used in CUDA and are related to the grid size. */
     /*! \brief Texture object for accessing grid.d_fractShiftsTable */
