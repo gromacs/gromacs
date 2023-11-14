@@ -166,19 +166,35 @@ bool deviceIdIsCompatible(gmx::ArrayRef<const std::unique_ptr<DeviceInformation>
 gmx::GpuAwareMpiStatus getMinimalSupportedGpuAwareMpiStatus(
         gmx::ArrayRef<const std::unique_ptr<DeviceInformation>> deviceInfoList)
 {
-    if (deviceInfoList.empty())
+    gmx::GpuAwareMpiStatus minVal                 = gmx::GpuAwareMpiStatus::Supported;
+    bool                   foundACompatibleDevice = false;
+    for (const auto& deviceInfo : deviceInfoList)
     {
-        return gmx::GpuAwareMpiStatus::NotSupported;
-    }
-    else
-    {
-        gmx::GpuAwareMpiStatus minVal = gmx::GpuAwareMpiStatus::Supported;
-        for (const auto& deviceInfo : deviceInfoList)
+        // In all cases, the level of GPU-aware support that is
+        // relevant for further GROMACS decision making is the minimal
+        // level found over the compatible devices.
+        //
+        // There can be incompatible devices detected for several
+        // reasons, including a mix of devices from a single vendor,
+        // of which some are too old.
+        //
+        // Also, by default dpcpp makes the same Intel GPU visible
+        // from two backends. In such cases, GROMACS chooses a
+        // preferred backend and leaves only the matching devices with
+        // DeviceStatus::Compatible.
+        if (deviceInfo->status == DeviceStatus::Compatible)
         {
-            minVal = std::min(minVal, deviceInfo->gpuAwareMpiStatus);
+            minVal                 = std::min(minVal, deviceInfo->gpuAwareMpiStatus);
+            foundACompatibleDevice = true;
         }
-        return minVal;
     }
+    // If there were no compatible devices, then there is no
+    // support for GPU-aware MPI.
+    if (!foundACompatibleDevice)
+    {
+        minVal = gmx::GpuAwareMpiStatus::NotSupported;
+    }
+    return minVal;
 }
 
 std::string getDeviceCompatibilityDescription(const gmx::ArrayRef<const std::unique_ptr<DeviceInformation>> deviceInfoList,

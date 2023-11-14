@@ -210,9 +210,10 @@ std::vector<int> getCompatibleDeviceIds(gmx::ArrayRef<const std::unique_ptr<Devi
 bool deviceIdIsCompatible(gmx::ArrayRef<const std::unique_ptr<DeviceInformation>> deviceInfoList,
                           int                                                     deviceId);
 
-/*! \brief Return whether all devices in \p deviceInfoList support GPU-aware MPI.
+/*! \brief Return whether all compatible devices in \p deviceInfoList support GPU-aware MPI.
  *
- * \return  Whether all devices in the list support GPU-aware MPI (both full support and forced support counts).
+ * \return  Whether all compatible devices in the list support GPU-aware MPI
+ *          (both full support and forced support counts).
  */
 gmx::GpuAwareMpiStatus getMinimalSupportedGpuAwareMpiStatus(
         gmx::ArrayRef<const std::unique_ptr<DeviceInformation>> deviceInfoList);
