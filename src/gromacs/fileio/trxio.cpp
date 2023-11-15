@@ -419,7 +419,9 @@ int write_trxframe_indexed(t_trxstatus* status, const t_trxframe* fr, int nind, 
     switch (ftp)
     {
         case efTNG: gmx_write_tng_from_trxframe(status->tng, fr, nind); break;
-        case efH5MD: status->h5mdIo->writeFrame(fr->step, fr->time, 0, fr->box, xout, vout, fout); break;
+        case efH5MD:
+            status->h5mdIo->writeFrame(fr->step, fr->time, 0, fr->box, xout, vout, fout);
+            break;
         case efXTC: write_xtc(status->fio, nind, fr->step, fr->time, fr->box, xout, prec); break;
         case efTRR:
             gmx_trr_write_frame(
@@ -577,7 +579,13 @@ int write_trxframe(t_trxstatus* status, t_trxframe* fr, gmx_conect gc)
             write_xtc(status->fio, fr->natoms, fr->step, fr->time, fr->box, fr->x, prec);
             break;
         case efH5MD:
-            status->h5mdIo->writeFrame(fr->step, fr->time, fr->lambda, fr->box, fr->bX ? fr->x : nullptr, fr->bV ? fr->v : nullptr, fr->bF ? fr->f : nullptr);
+            status->h5mdIo->writeFrame(fr->step,
+                                       fr->time,
+                                       fr->lambda,
+                                       fr->box,
+                                       fr->bX ? fr->x : nullptr,
+                                       fr->bV ? fr->v : nullptr,
+                                       fr->bF ? fr->f : nullptr);
             break;
         case efTRR:
             gmx_trr_write_frame(status->fio,
