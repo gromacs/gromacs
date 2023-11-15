@@ -75,6 +75,8 @@ function(gmx_manage_vkfft BACKEND_NAME)
         # This is not ideal, because it uses some random version of CUDA. See #4621.
         find_package(CUDAToolkit REQUIRED)
         target_link_libraries(VkFFT INTERFACE CUDA::cuda_driver CUDA::nvrtc)
+        list(APPEND GMX_PUBLIC_LIBRARIES CUDA::cuda_driver) # Workaround for #4902, #4922
+        set(GMX_PUBLIC_LIBRARIES ${GMX_PUBLIC_LIBRARIES} PARENT_SCOPE)
         if (GMX_SYCL_DPCPP)
             if(NOT DEFINED ENV{GITLAB_CI}) # Don't warn in CI builds
                 message(WARNING "The use of VkFFT with CUDA backend is experimental and not intended for production use")
