@@ -164,32 +164,29 @@ extern template void dd_scatterv(const gmx_domdec_t*      dd,
  *
  * \tparam T  Data type, can only be int or real
  *
- * See man MPI_Gatherv for details of how to construct scounts and disps.
+ * See man MPI_Gatherv for details of how to construct rcounts and disps.
  *
- * If scount==0, sbuf is allowed to be nullptr.
+ * sendBuffer is allowed to be empty.
  */
 template<typename T>
-void dd_gatherv(const gmx_domdec_t*      dd,
-                int                      scount,
-                const T*                 sbuf,
+void dd_gatherv(const gmx_domdec_t&      dd,
+                gmx::ArrayRef<const T>   sendBuffer,
                 gmx::ArrayRef<const int> rcounts,
                 gmx::ArrayRef<const int> disps,
-                T*                       rbuf);
+                gmx::ArrayRef<T>         receiveBuffer);
 
 //! Instantiation of \p dd_gatherv for type int
-extern template void dd_gatherv(const gmx_domdec_t*      dd,
-                                int                      scount,
-                                const int*               sbuf,
+extern template void dd_gatherv(const gmx_domdec_t&      dd,
+                                gmx::ArrayRef<const int> sendBuffer,
                                 gmx::ArrayRef<const int> rcounts,
                                 gmx::ArrayRef<const int> disps,
-                                int*                     rbuf);
+                                gmx::ArrayRef<int>       receiveBuffer);
 
 //! Instantiation of \p dd_gatherv for type real
-extern template void dd_gatherv(const gmx_domdec_t*      dd,
-                                int                      scount,
-                                const gmx::RVec*         sbuf,
-                                gmx::ArrayRef<const int> rcounts,
-                                gmx::ArrayRef<const int> disps,
-                                gmx::RVec*               rbuf);
+extern template void dd_gatherv(const gmx_domdec_t&            dd,
+                                gmx::ArrayRef<const gmx::RVec> sendBuffer,
+                                gmx::ArrayRef<const int>       rcounts,
+                                gmx::ArrayRef<const int>       disps,
+                                gmx::ArrayRef<gmx::RVec>       receiveBuffer);
 
 #endif

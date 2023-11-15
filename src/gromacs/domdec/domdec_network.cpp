@@ -329,55 +329,61 @@ template void dd_scatterv(const gmx_domdec_t*      dd,
                           gmx::RVec*               rbuf);
 
 template<typename T>
-void dd_gatherv(const gmx_domdec_t gmx_unused* dd,
-                int gmx_unused                 scount,
-                const T gmx_unused*                 sbuf,
-                gmx::ArrayRef<const int> gmx_unused rcounts,
+void dd_gatherv(const gmx_domdec_t gmx_unused&      dd,
+                gmx::ArrayRef<const T>              sendBuffer,
+                gmx::ArrayRef<const int>            rcounts,
                 gmx::ArrayRef<const int> gmx_unused disps,
-                T gmx_unused* rbuf)
+                gmx::ArrayRef<T>                    receiveBuffer)
 {
 #if GMX_MPI
     static_assert(std::is_same_v<T, int> || std::is_same_v<T, gmx::RVec>,
                   "Currently only support int and rvec equivalent");
-    MPI_Datatype mpiDatatype = (std::is_same_v<T, int> ? MPI_INT : dd->comm->mpiRVec);
+    MPI_Datatype mpiDatatype = (std::is_same_v<T, int> ? MPI_INT : dd.comm->mpiRVec);
 
-    if (dd->nnodes > 1)
+    if (dd.nnodes > 1)
     {
-        T dum;
+        T        dum;
+        const T* sendBufferPtr;
 
-        if (scount == 0)
+        if (sendBuffer.empty())
         {
             /* MPI does not allow NULL pointers */
-            sbuf = &dum;
+            sendBufferPtr = &dum;
+        }
+        else
+        {
+            sendBufferPtr = sendBuffer.data();
         }
         /* Some MPI implementations don't specify const */
-        MPI_Gatherv(const_cast<T*>(sbuf),
-                    scount,
+        MPI_Gatherv(const_cast<T*>(sendBufferPtr),
+                    sendBuffer.ssize(),
                     mpiDatatype,
-                    rbuf,
+                    receiveBuffer.data(),
                     const_cast<int*>(rcounts.data()),
                     const_cast<int*>(disps.data()),
                     mpiDatatype,
-                    DDMAINRANK(dd),
-                    dd->mpi_comm_all);
+                    DDMAINRANK(&dd),
+                    dd.mpi_comm_all);
     }
     else
 #endif
     {
-        memcpy(rbuf, sbuf, rcounts[0] * sizeof(T));
+        GMX_ASSERT(sendBuffer.ssize() >= rcounts[0], "Send buffer should be sufficiently large");
+        GMX_ASSERT(receiveBuffer.ssize() >= rcounts[0],
+                   "Receive buffer should be sufficiently large");
+
+        memcpy(receiveBuffer.data(), sendBuffer.data(), rcounts[0] * sizeof(T));
     }
 }
 
-template void dd_gatherv(const gmx_domdec_t*      dd,
-                         int                      scount,
-                         const int*               sbuf,
+template void dd_gatherv(const gmx_domdec_t&      dd,
+                         gmx::ArrayRef<const int> sendBuffer,
                          gmx::ArrayRef<const int> rcounts,
                          gmx::ArrayRef<const int> disps,
-                         int*                     rbuf);
+                         gmx::ArrayRef<int>       receiveBuffer);
 
-template void dd_gatherv(const gmx_domdec_t*      dd,
-                         int                      scount,
-                         const gmx::RVec*         sbuf,
-                         gmx::ArrayRef<const int> rcounts,
-                         gmx::ArrayRef<const int> disps,
-                         gmx::RVec*               rbuf);
+template void dd_gatherv(const gmx_domdec_t&            dd,
+                         gmx::ArrayRef<const gmx::RVec> sendBuffer,
+                         gmx::ArrayRef<const int>       rcounts,
+                         gmx::ArrayRef<const int>       disps,
+                         gmx::ArrayRef<gmx::RVec>       receiveBuffer);

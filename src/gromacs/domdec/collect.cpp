@@ -134,14 +134,13 @@ static void dd_collect_cg(gmx_domdec_t*            dd,
     }
 
     /* Collect the charge group indices on the main */
-    dd_gatherv(dd,
-               atomGroups.size(),
-               atomGroups.data(),
+    dd_gatherv(*dd,
+               atomGroups,
                DDMAIN(dd) ? gmx::makeArrayRef(ma->intBuffer).subArray(0, dd->nnodes)
                           : gmx::ArrayRef<int>(),
                DDMAIN(dd) ? gmx::makeArrayRef(ma->intBuffer).subArray(dd->nnodes, dd->nnodes)
                           : gmx::ArrayRef<int>(),
-               DDMAIN(dd) ? ma->atomGroups.data() : nullptr);
+               DDMAIN(dd) ? ma->atomGroups : gmx::ArrayRef<int>());
 
     dd->comm->main_cg_ddp_count = ddpCount;
 }
@@ -222,8 +221,11 @@ static void dd_collect_vec_gatherv(gmx_domdec_t*                  dd,
     }
 
     const int numHomeAtoms = dd->comm->atomRanges.numHomeAtoms();
-    dd_gatherv(
-            dd, numHomeAtoms, lv.data(), recvCounts, displacements, DDMAIN(dd) ? dd->ma->rvecBuffer.data() : nullptr);
+    dd_gatherv(*dd,
+               lv.subArray(0, numHomeAtoms),
+               recvCounts,
+               displacements,
+               DDMAIN(dd) ? dd->ma->rvecBuffer : gmx::ArrayRef<gmx::RVec>());
 
     if (DDMAIN(dd))
     {
