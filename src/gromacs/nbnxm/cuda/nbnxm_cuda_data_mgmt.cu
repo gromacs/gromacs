@@ -87,7 +87,15 @@ namespace Nbnxm
  * there is a bit of fluctuations in the generated block counts, we use
  * a target of 44 instead of the ideal value of 48.
  */
+
+#if GMX_PTX_ARCH <= 700
 static const unsigned int gpu_min_ci_balanced_factor = 44;
+#else
+/* Updated benchmarking on Ampere, Ada, Hopper shows the ideal count is
+ * between 61 and 83 depending on chip */
+static const unsigned int gpu_min_ci_balanced_factor = 61;
+#endif
+
 
 void gpu_init_platform_specific(NbnxmGpu* /* nb */)
 {
