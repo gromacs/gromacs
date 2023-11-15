@@ -48,6 +48,8 @@
 #include "nbnxm_cuda_types.h"
 
 // TODO Remove this comment when the above order issue is resolved
+#include <cub/device/device_scan.cuh>
+
 #include "gromacs/gpu_utils/cudautils.cuh"
 #include "gromacs/gpu_utils/device_context.h"
 #include "gromacs/gpu_utils/gpu_utils.h"
@@ -75,6 +77,10 @@
 #include "gromacs/utility/smalloc.h"
 
 #include "nbnxm_cuda.h"
+/* Required to stop gcc emitting multiple definition warnings as cuda_fp16.h, which is included by
+ * device_scan.cuh, doesn't undef __WSB_DEPRECATION_MESSAGE and this is later redefined in
+ * device_atomic_functions.h used by nbnxm_cuda_types.h. Seen in cuda 10 and 11 with gcc-11. */
+#undef __WSB_DEPRECATION_MESSAGE
 
 namespace Nbnxm
 {
@@ -113,6 +119,18 @@ int gpu_min_ci_balanced(NbnxmGpu* nb)
 {
     return nb != nullptr ? gpu_min_ci_balanced_factor * nb->deviceContext_->deviceInfo().prop.multiProcessorCount
                          : 0;
+}
+
+/* Calculate size of working memory required for exclusive sum, part of sorting the neighbour list,
+ * by calling exclusive sum with nullptr */
+void getExclusiveScanWorkingArraySize(size_t& scan_size, gpu_plist* d_plist, const DeviceStream& deviceStream)
+{
+    cub::DeviceScan::ExclusiveSum(nullptr,
+                                  scan_size,
+                                  d_plist->sorting.sciHistogram,
+                                  d_plist->sorting.sciOffset,
+                                  c_sciHistogramSize,
+                                  deviceStream.stream());
 }
 
 } // namespace Nbnxm

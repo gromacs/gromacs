@@ -35,6 +35,8 @@
 
 #include "nbnxm_cuda_kernel_pruneonly.cuh"
 
+#include "gromacs/nbnxm/gpu_types_common.h"
+
 #ifndef FUNCTION_DECLARATION_ONLY
 /* Instantiate external template functions */
 template __global__ void

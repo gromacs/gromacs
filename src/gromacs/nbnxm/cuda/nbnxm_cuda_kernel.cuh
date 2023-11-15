@@ -161,64 +161,71 @@ __launch_bounds__(THREADS_PER_BLOCK)
 #else
 {
     /* convenience variables */
-    const nbnxn_sci_t* pl_sci = plist.sci;
-#    ifndef PRUNE_NBL
+#    ifdef PRUNE_NBL
+    /* we can't use the sorted plist in this call as we need to use this kernel to perform counts
+     * which will be used in the sorting */
+    const nbnxn_sci_t*  pl_sci      = plist.sci;
+#    else
+    /* the sorted list has been generated using data from a previous call to this kernel */
+    const nbnxn_sci_t* pl_sci = plist.sorting.sciSorted;
     const
 #    endif
-            nbnxn_cj_packed_t* pl_cjPacked = plist.cjPacked;
-    const nbnxn_excl_t*        excl        = plist.excl;
+    nbnxn_cj_packed_t*  pl_cjPacked = plist.cjPacked;
+    const nbnxn_excl_t* excl        = plist.excl;
 #    ifndef LJ_COMB
-    const int*                 atom_types  = atdat.atomTypes;
-    int                        ntypes      = atdat.numTypes;
+    const int*          atom_types  = atdat.atomTypes;
+    int                 ntypes      = atdat.numTypes;
 #    else
     const float2* lj_comb = atdat.ljComb;
     float2        ljcp_i, ljcp_j;
 #    endif
-    const float4*              xq          = atdat.xq;
-    float3*                    f           = asFloat3(atdat.f);
-    const float3*              shift_vec   = asFloat3(atdat.shiftVec);
-    float                      rcoulomb_sq = nbparam.rcoulomb_sq;
+    const float4*       xq          = atdat.xq;
+    float3*             f           = asFloat3(atdat.f);
+    const float3*       shift_vec   = asFloat3(atdat.shiftVec);
+    float               rcoulomb_sq = nbparam.rcoulomb_sq;
 #    ifdef VDW_CUTOFF_CHECK
-    float                      rvdw_sq     = nbparam.rvdw_sq;
-    float                      vdw_in_range;
+    float               rvdw_sq     = nbparam.rvdw_sq;
+    float               vdw_in_range;
 #    endif
 #    ifdef LJ_EWALD
-    float                      lje_coeff2, lje_coeff6_6;
+    float               lje_coeff2, lje_coeff6_6;
 #    endif
 #    ifdef EL_RF
-    float                      two_k_rf = nbparam.two_k_rf;
+    float               two_k_rf    = nbparam.two_k_rf;
 #    endif
 #    ifdef EL_EWALD_ANA
-    float                      beta2    = nbparam.ewald_beta * nbparam.ewald_beta;
-    float                      beta3 = nbparam.ewald_beta * nbparam.ewald_beta * nbparam.ewald_beta;
+    float               beta2       = nbparam.ewald_beta * nbparam.ewald_beta;
+    float               beta3       = nbparam.ewald_beta * nbparam.ewald_beta * nbparam.ewald_beta;
 #    endif
 #    ifdef PRUNE_NBL
-    float                      rlist_sq    = nbparam.rlistOuter_sq;
+    float               rlist_sq    = nbparam.rlistOuter_sq;
 #    endif
 
 #    ifdef CALC_ENERGIES
 #        ifdef EL_EWALD_ANY
-    float                      beta        = nbparam.ewald_beta;
-    float                      ewald_shift = nbparam.sh_ewald;
+    float               beta        = nbparam.ewald_beta;
+    float               ewald_shift = nbparam.sh_ewald;
 #        else
     float                reactionFieldShift = nbparam.c_rf;
 #        endif /* EL_EWALD_ANY */
-    float*                     e_lj        = atdat.eLJ;
-    float*                     e_el        = atdat.eElec;
+    float*              e_lj        = atdat.eLJ;
+    float*              e_el        = atdat.eElec;
 #    endif     /* CALC_ENERGIES */
 
     /* thread/block/warp id-s */
-    unsigned int tidxi = threadIdx.x;
-    unsigned int tidxj = threadIdx.y;
-    unsigned int tidx  = threadIdx.y * blockDim.x + threadIdx.x;
+    unsigned int tidxi      = threadIdx.x;
+    unsigned int tidxj      = threadIdx.y;
+    unsigned int tidx       = threadIdx.y * blockDim.x + threadIdx.x;
 #    if NTHREAD_Z == 1
-    unsigned int tidxz = 0;
+    unsigned int tidxz      = 0;
 #    else
     unsigned int  tidxz = threadIdx.z;
 #    endif
-    unsigned int bidx  = blockIdx.x;
-    unsigned int widx  = tidx / warp_size; /* warp index */
-
+    unsigned int bidx       = blockIdx.x;
+    unsigned int widx       = tidx / warp_size; /* warp index */
+#    ifdef PRUNE_NBL
+    unsigned int tidxInWarp = tidx & (warp_size - 1);
+#    endif
     int          sci, ci, cj, ai, aj, cijPackedBegin, cijPackedEnd;
 #    ifndef LJ_COMB
     int          typei, typej;
@@ -342,6 +349,18 @@ __launch_bounds__(THREADS_PER_BLOCK)
         ljcpib[tidxj * c_clSize + tidxi] = lj_comb[ai];
 #    endif
     }
+
+#    ifdef PRUNE_NBL
+    /* Initialise one int for reducing prunedPairCount over warps */
+    int* sm_prunedPairCount = reinterpret_cast<int*>(sm_nextSlotPtr);
+    sm_nextSlotPtr += sizeof(*sm_prunedPairCount);
+    if (tidx == 0 && tidxz == 0)
+    {
+        *sm_prunedPairCount = 0;
+    }
+    int prunedPairCount = 0;
+#    endif
+
     __syncthreads();
 
     for (i = 0; i < c_nbnxnGpuNumClusterPerSupercluster; i++)
@@ -662,6 +681,7 @@ __launch_bounds__(THREADS_PER_BLOCK)
             /* Update the imask with the new one which does not contain the
                out of range clusters anymore. */
             pl_cjPacked[jPacked].imei[widx].imask = imask;
+            prunedPairCount += __popc(imask);
 #    endif
         }
         if (c_preloadCj)
@@ -696,6 +716,29 @@ __launch_bounds__(THREADS_PER_BLOCK)
 #    ifdef CALC_ENERGIES
     /* reduce the energies over warps and store into global memory */
     reduce_energy_warp_shfl(E_lj, E_el, e_lj, e_el, tidx, c_fullWarpMask);
+#    endif
+
+
+#    ifdef PRUNE_NBL
+    /* aggregate neighbour counts, to be used in bucket sci sort */
+    /* One thread in each warp contributes the count for that warp as soon as it reaches here.
+     * Masks are calculated per warp in a warp synchronising operation, so no syncthreads
+     * required here. */
+    if (tidxInWarp == 0)
+    {
+        atomicAdd(sm_prunedPairCount, prunedPairCount);
+    }
+    __syncthreads();
+    prunedPairCount = *sm_prunedPairCount;
+    if (tidxi == 0 && tidxj == 0 && tidxz == 0)
+    {
+        /* one thread in the block writes the final count for this sci */
+        int  index            = max(c_sciHistogramSize - prunedPairCount - 1, 0);
+        int* pl_sci_histogram = plist.sorting.sciHistogram;
+        atomicAdd(pl_sci_histogram + index, 1);
+        int* pl_sci_count  = plist.sorting.sciCount;
+        pl_sci_count[bidx] = index;
+    }
 #    endif
 }
 #endif /* FUNCTION_DECLARATION_ONLY */

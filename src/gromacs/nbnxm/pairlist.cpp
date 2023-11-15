@@ -3880,6 +3880,12 @@ static bool checkRebalanceSimpleLists(gmx::ArrayRef<const NbnxnPairlistCpu> list
  */
 static void sort_sci(NbnxnPairlistGpu* nbl)
 {
+    /* For CUDA version, sorting is done on the GPU */
+    if (GMX_GPU_CUDA)
+    {
+        return;
+    }
+
     if (nbl->cjPacked.size() <= gmx::Index(nbl->sci.size()))
     {
         /* nsci = 0 or all sci have size 1, sorting won't change the order */

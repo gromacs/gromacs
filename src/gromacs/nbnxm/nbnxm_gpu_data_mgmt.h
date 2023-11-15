@@ -63,6 +63,11 @@ void gpu_init_platform_specific(NbnxmGpu* nb);
 /*! \brief Releases the NBNXM GPU data structures. */
 void gpu_free_platform_specific(NbnxmGpu* nb);
 
+#if GMX_GPU_CUDA
+/*! Calculates working memory required for exclusive sum, used in neighbour list sorting */
+void getExclusiveScanWorkingArraySize(size_t& scan_size, gpu_plist* d_plist, const DeviceStream& deviceStream);
+#endif
+
 } // namespace Nbnxm
 
 #endif // GMX_NBNXM_NBNXM_GPU_DATA_MGMT_H

@@ -43,6 +43,9 @@
 #include <cassert>
 #include <cstdlib>
 
+#include <cub/device/device_scan.cuh>
+
+#include "gromacs/nbnxm/gpu_types_common.h"
 #include "gromacs/nbnxm/nbnxm_gpu.h"
 
 #if defined(_MSVC)
@@ -72,6 +75,7 @@
 #include "nbnxm_cuda_types.h"
 
 /***** The kernel declarations/definitions come here *****/
+
 
 /* Top-level kernel declaration generation: will generate through multiple
  * inclusion the following flavors for all kernel declarations:
@@ -110,6 +114,8 @@
 #    include "nbnxm_cuda_kernel_VF_prune.cu"
 #    include "nbnxm_cuda_kernel_pruneonly.cu"
 #endif /* GMX_CUDA_NB_SINGLE_COMPILATION_UNIT */
+
+#include "nbnxm_cuda_kernel_sci_sort.cuh"
 
 namespace Nbnxm
 {
@@ -413,9 +419,44 @@ static inline int calc_shmem_required_nonbonded(const int               num_thre
         /* i-atom types in shared memory */
         shmem += c_nbnxnGpuNumClusterPerSupercluster * c_clSize * sizeof(int);
     }
+    /* for reducing prunedPairListCount over all warps in the block, to be used in plist sorting */
+    shmem += 1 * sizeof(int);
 
     return shmem;
 }
+
+
+/*! \brief Calculates the amount of shared memory required by the nonbonded kernel in use.
+ *
+ * Take counts prepared in combined prune and interaction kernel and use them to sort plist.
+ * Note that this sorted list is not available in the combined prune and interaction kernel
+ * itself, which causes a performance degredation of 1-10% for that initial call */
+static inline void gpuLaunchKernelSciSort(gpu_plist* plist, const DeviceStream& deviceStream)
+{
+    size_t scanTemporarySize = static_cast<size_t>(plist->sorting.nscanTemporary);
+
+    cub::DeviceScan::ExclusiveSum(plist->sorting.scanTemporary,
+                                  scanTemporarySize,
+                                  plist->sorting.sciHistogram,
+                                  plist->sorting.sciOffset,
+                                  c_sciHistogramSize,
+                                  deviceStream.stream());
+
+    KernelLaunchConfig configSortSci;
+    configSortSci.blockSize[0] = c_sciSortingThreadsPerBlock;
+    configSortSci.blockSize[1] = 1;
+    configSortSci.blockSize[2] = 1;
+    configSortSci.gridSize[0] =
+            (plist->nsci + c_sciSortingThreadsPerBlock - 1) / c_sciSortingThreadsPerBlock;
+    configSortSci.sharedMemorySize = 0;
+
+    const auto kernelSciSort = nbnxnKernelBucketSciSort;
+
+    const auto kernelSciSortArgs = prepareGpuKernelArguments(kernelSciSort, configSortSci, plist);
+
+    launchGpuKernel(kernelSciSort, configSortSci, deviceStream, nullptr, "nbnxn_kernel_sci_sort", kernelSciSortArgs);
+}
+
 
 /*! As we execute nonbonded workload in separate streams, before launching
    the kernel we need to make sure that he following operations have completed:
@@ -519,16 +560,23 @@ void gpu_launch_kernel(NbnxmGpu* nb, const gmx::StepWorkload& stepWork, const In
                 config.sharedMemorySize);
     }
 
-    auto*      timingEvent = bDoTime ? timers->interaction[iloc].nb_k.fetchNextEvent() : nullptr;
-    const auto kernel =
-            select_nbnxn_kernel(nbp->elecType,
-                                nbp->vdwType,
-                                stepWork.computeEnergy,
-                                (plist->haveFreshList && !nb->timers->interaction[iloc].didPrune),
-                                &nb->deviceContext_->deviceInfo());
+    auto* timingEvent = bDoTime ? timers->interaction[iloc].nb_k.fetchNextEvent() : nullptr;
+
+    /* Whether we need to call a combined prune and interaction kernel or just an interaction
+     * kernel. bDoPrune being true implies we are not using dynamic pruning and are in the first
+     * call to the interaction kernel after a neighbour list step */
+    bool       bDoPrune = (plist->haveFreshList && !nb->timers->interaction[iloc].didPrune);
+    const auto kernel   = select_nbnxn_kernel(
+            nbp->elecType, nbp->vdwType, stepWork.computeEnergy, bDoPrune, &nb->deviceContext_->deviceInfo());
     const auto kernelArgs =
             prepareGpuKernelArguments(kernel, config, adat, nbp, plist, &stepWork.computeVirial);
     launchGpuKernel(kernel, config, deviceStream, timingEvent, "k_calc_nb", kernelArgs);
+
+    if (bDoPrune)
+    {
+        gpuLaunchKernelSciSort(plist, deviceStream);
+    }
+
 
     if (bDoTime)
     {
@@ -651,6 +699,11 @@ void gpu_launch_kernel_pruneonly(NbnxmGpu* nb, const InteractionLocality iloc, c
             plist->haveFreshList ? nbnxn_kernel_prune_cuda<true> : nbnxn_kernel_prune_cuda<false>;
     const auto kernelArgs = prepareGpuKernelArguments(kernel, config, adat, nbp, plist, &numParts);
     launchGpuKernel(kernel, config, deviceStream, timingEvent, kernelName, kernelArgs);
+
+    if (plist->haveFreshList)
+    {
+        gpuLaunchKernelSciSort(plist, deviceStream);
+    }
 
     /* TODO: consider a more elegant way to track which kernel has been called
        (combined or separate 1st pass prune, rolling prune). */

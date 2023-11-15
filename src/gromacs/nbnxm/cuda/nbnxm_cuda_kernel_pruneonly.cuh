@@ -135,7 +135,7 @@ nbnxn_kernel_prune_cuda<false>(const NBAtomDataGpu, const NBParamGpu, const Nbnx
     }
 
     /* convenience variables */
-    const nbnxn_sci_t* pl_sci      = plist.sci;
+    const nbnxn_sci_t* pl_sci      = haveFreshList ? plist.sci : plist.sorting.sciSorted;
     nbnxn_cj_packed_t* pl_cjPacked = plist.cjPacked;
     const float4*      xq          = atdat.xq;
     const float3*      shift_vec   = asFloat3(atdat.shiftVec);
@@ -144,15 +144,17 @@ nbnxn_kernel_prune_cuda<false>(const NBAtomDataGpu, const NBParamGpu, const Nbnx
     float rlistInner_sq = nbparam.rlistInner_sq;
 
     /* thread/block/warp id-s */
-    unsigned int tidxi = threadIdx.x;
-    unsigned int tidxj = threadIdx.y;
+    unsigned int tidxi      = threadIdx.x;
+    unsigned int tidxj      = threadIdx.y;
 #    if NTHREAD_Z == 1
-    unsigned int tidxz = 0;
+    unsigned int tidxz      = 0;
 #    else
     unsigned int tidxz = threadIdx.z;
 #    endif
-    unsigned int bidx  = blockIdx.x;
-    unsigned int widx  = (threadIdx.y * c_clSize) / warp_size; /* warp index */
+    unsigned int tidx       = tidxi + c_clSize * tidxj;
+    unsigned int bidx       = blockIdx.x;
+    unsigned int widx       = (threadIdx.y * c_clSize) / warp_size; /* warp index */
+    unsigned int tidxInWarp = tidx & (warp_size - 1);
 
     // cj preload is off in the following cases:
     // - sm_70 (V100), sm_8x (A100, GA100), sm_75 (TU102)
@@ -205,8 +207,17 @@ nbnxn_kernel_prune_cuda<false>(const NBAtomDataGpu, const NBParamGpu, const Nbnx
         float4 xi                     = tmp + shift_vec[nb_sci.shift];
         xib[tidxj * c_clSize + tidxi] = xi;
     }
+    /* Initialise one int for reducing prunedPairCount over warps */
+    int* sm_prunedPairCount = reinterpret_cast<int*>(sm_nextSlotPtr);
+    sm_nextSlotPtr += sizeof(*sm_prunedPairCount);
+    if (tidx == 0 && tidxz == 0)
+    {
+        *sm_prunedPairCount = 0;
+    }
+
     __syncthreads();
 
+    int prunedPairCount = 0;
     /* loop over the j clusters = seen by any of the atoms in the current super-cluster;
      * The loop stride NTHREAD_Z ensures that consecutive warps-pairs are assigned
      * consecutive jPacked's entries.
@@ -298,6 +309,8 @@ nbnxn_kernel_prune_cuda<false>(const NBAtomDataGpu, const NBParamGpu, const Nbnx
             {
                 /* copy the list pruned to rlistOuter to a separate buffer */
                 plist.imask[jPacked * c_nbnxnGpuClusterpairSplit + widx] = imaskFull;
+                /* add to neighbour count, to be used in bucket sci sort */
+                prunedPairCount += __popc(imaskNew);
             }
             /* update the imask with only the pairs up to rlistInner */
             plist.cjPacked[jPacked].imei[widx].imask = imaskNew;
@@ -307,6 +320,27 @@ nbnxn_kernel_prune_cuda<false>(const NBAtomDataGpu, const NBParamGpu, const Nbnx
             // avoid shared memory WAR hazards on sm_cjs between loop iterations
             __syncwarp(c_fullWarpMask);
         }
+    }
+
+    /* aggregate neighbour counts, to be used in bucket sci sort */
+    if (haveFreshList)
+    {
+        /* One thread in each warp contributes the count for that warp as soon as it reaches here.
+         * Masks are calculated per warp in a warp synchronising operation, so no syncthreads
+         * required here. */
+        if (tidxInWarp == 0)
+        {
+            atomicAdd(sm_prunedPairCount, prunedPairCount);
+        }
+        __syncthreads();
+        prunedPairCount = *sm_prunedPairCount;
+    }
+    if (haveFreshList && tidxi == 0 && tidxj == 0 && tidxz == 0)
+    {
+        /* one thread in the block writes the final count for this sci */
+        int index = max(c_sciHistogramSize - prunedPairCount - 1, 0);
+        atomicAdd(plist.sorting.sciHistogram + index, 1);
+        plist.sorting.sciCount[bidx * numParts + part] = index;
     }
 }
 #endif /* FUNCTION_DECLARATION_ONLY */

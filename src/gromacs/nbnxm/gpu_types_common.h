@@ -62,6 +62,21 @@
 #    include "gromacs/gpu_utils/gpuregiontimer_sycl.h"
 #endif
 
+/*! \brief Number of separate bins used during sorting of plist on gpu
+ *
+ * Ideally this number would be increased for very large system sizes (the cpu version of sorting
+ * uses 2 x avg(num cjPacked) but as sorting has negligible impact for very large system sizes we
+ * use a constant here for simplicity. On H100 sorting begins to have negligible effect for
+ * system sizes greater than ~400k atoms.
+ */
+static constexpr int c_sciHistogramSize = 8192;
+
+/*! \brief Number of threads per block used by the gpu sorting kernel
+ *
+ * TODO this is a reasonable default but the number has not been tuned
+ */
+static constexpr int c_sciSortingThreadsPerBlock = 256;
+
 /*! \brief Macro definining default for the prune kernel's jPacked processing concurrency.
  *
  *  The GMX_NBNXN_PRUNE_KERNEL_JPACKED_CONCURRENCY macro allows compile-time override with the default value of 4.
@@ -246,6 +261,56 @@ struct GpuTimers
     gmx::EnumerationArray<InteractionLocality, Nbnxm::GpuTimers::Interaction> interaction;
 };
 
+
+/*! \internal
+ * \brief Sorted pair list on GPU and data required for performing the sorting */
+struct gpuPlistSorting
+{
+    //! size of scanTemporary, working array used for exclusive prefix sum calculation
+    int nscanTemporary;
+
+    //! allocation size of scanTemporary
+    int scanTemporaryNalloc;
+
+    // //! Temporary data of scan algorithm
+    DeviceBuffer<char> scanTemporary;
+
+    //! number of buckets in histogram
+    int nsciHistogram;
+
+    //! allocation size of sciHistogram
+    int sciHistogramNalloc;
+
+    //! Histogram of sci nsp
+    DeviceBuffer<int> sciHistogram;
+
+    //! size of sciOffset, number of histogram buckets
+    int nsciOffset;
+
+    //! allocation size of sciOffset
+    int sciOffsetNalloc;
+
+    //! Sci offset, the exclusive prefix sum of sciHistogram
+    DeviceBuffer<int> sciOffset;
+
+    //! size of sci, # of i clusters in the list
+    int nsciCounted;
+
+    //! allocation size of sci
+    int sciCountedNalloc;
+
+    //! list of imask counts of sorted i-cluster ("super-clusters")
+    DeviceBuffer<int> sciCount;
+
+    //! size of sci, # of i clusters in the list
+    int nsciSorted;
+    //! allocation size of sci
+    int sciSortedNalloc;
+
+    //! list of sorted i-cluster ("super-clusters")
+    DeviceBuffer<nbnxn_sci_t> sciSorted;
+};
+
 /*! \internal
  * \brief GPU pair list structure */
 struct gpu_plist
@@ -259,6 +324,9 @@ struct gpu_plist
     int sci_nalloc;
     //! list of i-cluster ("super-clusters")
     DeviceBuffer<nbnxn_sci_t> sci;
+
+    //! sorted pair list and data used for sorting
+    gpuPlistSorting sorting;
 
     //! total # of packed j clusters
     int ncjPacked;
