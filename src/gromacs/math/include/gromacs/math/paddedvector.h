@@ -334,7 +334,7 @@ public:
     //! Return whether the storage is empty.
     bool empty() const { return storage_.empty(); }
     //! Swap two PaddedVectors
-    void swap(PaddedVector& x)
+    void swap(PaddedVector& x) noexcept
     {
         std::swap(storage_, x.storage_);
         std::swap(unpaddedEnd_, x.unpaddedEnd_);

@@ -184,7 +184,7 @@ public:
         return *this;
     }
     //! Swaps content with other
-    void swap(MultiDimArray& o)
+    void swap(MultiDimArray& o) noexcept
     {
         using std::swap;
         swap(data_, o.data_);

@@ -170,7 +170,7 @@ public:
      * The actual memory areas are not modified, only the references are
      * swapped.
      */
-    void swap(ArrayRefWithPadding<T>& other)
+    void swap(ArrayRefWithPadding<T>& other) noexcept
     {
         std::swap(begin_, other.begin_);
         std::swap(end_, other.end_);

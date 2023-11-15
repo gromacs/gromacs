@@ -570,7 +570,7 @@ SelectionCollection& SelectionCollection::operator=(SelectionCollection rhs)
     return *this;
 }
 
-void SelectionCollection::swap(SelectionCollection& rhs)
+void SelectionCollection::swap(SelectionCollection& rhs) noexcept
 {
     using std::swap;
     swap(impl_, rhs.impl_);
@@ -961,7 +961,7 @@ void SelectionCollection::printXvgrInfo(FILE* out) const
     std::fprintf(out, "#\n");
 }
 
-void swap(SelectionCollection& lhs, SelectionCollection& rhs)
+void swap(SelectionCollection& lhs, SelectionCollection& rhs) noexcept
 {
     lhs.swap(rhs);
 }

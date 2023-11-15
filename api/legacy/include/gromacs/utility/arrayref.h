@@ -284,7 +284,7 @@ public:
      * The actual memory areas are not modified, only the references are
      * swapped.
      */
-    void swap(ArrayRef<T>& other)
+    void swap(ArrayRef<T>& other) noexcept
     {
         std::swap(begin_, other.begin_);
         std::swap(end_, other.end_);
@@ -352,7 +352,7 @@ ArrayRef<const typename T::value_type> makeConstArrayRef(const T& c)
  * \ingroup module_utility
  */
 template<typename T>
-void swap(ArrayRef<T>& a, ArrayRef<T>& b)
+void swap(ArrayRef<T>& a, ArrayRef<T>& b) noexcept
 {
     a.swap(b);
 }

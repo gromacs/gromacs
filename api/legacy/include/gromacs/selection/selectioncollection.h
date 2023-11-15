@@ -143,7 +143,7 @@ public:
 
     SelectionCollection(const SelectionCollection& rhs);
     SelectionCollection& operator=(SelectionCollection rhs);
-    void                 swap(SelectionCollection& rhs);
+    void                 swap(SelectionCollection& rhs) noexcept;
 
     /*! \brief
      * Initializes options for setting global properties on the collection.
@@ -435,7 +435,7 @@ private:
     friend class SelectionEvaluator;
 };
 
-void swap(SelectionCollection& lhs, SelectionCollection& rhs);
+void swap(SelectionCollection& lhs, SelectionCollection& rhs) noexcept;
 
 } // namespace gmx
 
