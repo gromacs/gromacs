@@ -2,7 +2,7 @@
 # Visit https://bit.ly/cffinit to generate yours today!
 
 cff-version: 1.2.0
-title: GROMACS 2023.3 source code
+title: GROMACS 2024.0 source code
 message: >-
   If you use GROMACS, please cite it using the
   metadata from this file.
@@ -15,20 +15,20 @@ authors:
     family-names: Abraham
   - given-names: Andrey
     family-names: Alekseenko
+  - given-names: Vladimir
+    family-names: Basov
   - given-names: Cathrine
     family-names: Bergh
-  - given-names: Christian
-    family-names: Blau
   - given-names: Eliane
     family-names: Briand
+  - given-names: Ania
+    family-names: Brown
   - given-names: Mahesh
     family-names: Doijade
+  - given-names: Giacomo
+    family-names: Fiorin
   - given-names: Stefan
     family-names: Fleischmann
-  - given-names: Vytautas
-    family-names: Gapsys
-  - given-names: Gaurav
-    family-names: Garg
   - given-names: Sergey
     family-names: Gorelov
   - given-names: Gilles
@@ -41,12 +41,6 @@ authors:
     family-names: Jalalypour
   - given-names: Joe
     family-names: Jordan
-  - given-names: Christoph
-    family-names: Junghans
-  - given-names: Prashanth
-    family-names: Kanduri
-  - given-names: Sebastian
-    family-names: Keller
   - given-names: Carsten
     family-names: Kutzner
   - given-names: Justin A.
@@ -59,30 +53,28 @@ authors:
     family-names: Miletic
   - given-names: Dmitry
     family-names: Morozov
+  - given-names: Julien
+    family-names: Nabet
   - given-names: Szilard
     family-names: Pall
+  - given-names: Andrea
+    family-names: Pasquadibisceglie
+  - given-names: Michele
+    family-names: Pellegrino
+  - given-names: Hubert
+    family-names: Santuz
   - given-names: Roland
     family-names: Schulz
-  - given-names: Michael
-    family-names: Shirts
+  - given-names: Tatiana
+    family-names: Shugaeva
   - given-names: Alexey
     family-names: Shvetsov
-  - given-names: Balint
-    family-names: Soproni
-  - given-names: David
-    family-names: van der Spoel
   - given-names: Philip
     family-names: Turner
-  - given-names: Carsten
-    family-names: Uphoff
   - given-names: Alessandra
     family-names: Villa
   - given-names: Sebastian
     family-names: Wingbermuehle
-  - given-names: Artem
-    family-names: Zhmurov
-  - given-names: Paul
-    family-names: Bauer
   - given-names: Berk
     family-names: Hess
   - given-names: Erik
