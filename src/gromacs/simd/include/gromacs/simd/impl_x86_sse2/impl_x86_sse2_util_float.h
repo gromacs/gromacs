@@ -330,7 +330,7 @@ static inline void gmx_simdcall gatherLoadBySimdIntTranspose(const float* base,
     // the alignment scaling can often be done as part of the load instruction
     // (which is even cheaper than doing it in SIMD registers).
     alignas(GMX_SIMD_ALIGNMENT) std::int32_t ioffset[GMX_SIMD_FINT32_WIDTH];
-    _mm_store_si128((__m128i*)ioffset, offset.simdInternal_);
+    _mm_store_si128(reinterpret_cast<__m128i*>(ioffset), offset.simdInternal_);
     gatherLoadTranspose<align>(base, ioffset, v0, v1, v2, v3);
 }
 
@@ -344,7 +344,7 @@ gatherLoadBySimdIntTranspose(const float* base, SimdFInt32 offset, SimdFloat* v0
     // the alignment scaling can often be done as part of the load instruction
     // (which is even cheaper than doing it in SIMD registers).
     alignas(GMX_SIMD_ALIGNMENT) std::int32_t ioffset[GMX_SIMD_FINT32_WIDTH];
-    _mm_store_si128((__m128i*)ioffset, offset.simdInternal_);
+    _mm_store_si128(reinterpret_cast<__m128i*>(ioffset), offset.simdInternal_);
     gatherLoadTranspose<align>(base, ioffset, v0, v1);
 }
 
@@ -359,7 +359,7 @@ gatherLoadUBySimdIntTranspose(const float* base, SimdFInt32 offset, SimdFloat* v
     // the alignment scaling can often be done as part of the load instruction
     // (which is even cheaper than doing it in SIMD registers).
     alignas(GMX_SIMD_ALIGNMENT) std::int32_t ioffset[GMX_SIMD_FINT32_WIDTH];
-    _mm_store_si128((__m128i*)ioffset, offset.simdInternal_);
+    _mm_store_si128(reinterpret_cast<__m128i*>(ioffset), offset.simdInternal_);
     gatherLoadTranspose<align>(base, ioffset, v0, v1);
 }
 
