@@ -129,7 +129,7 @@ namespace SZ3 {
             std::vector<int> quant_bins(conf.num);
             auto dims = conf.dims;
             std::vector<size_t> stride({dims[1] * dims[2], dims[2], 1});
-            int site = cal_site_3d(data + stride[0], conf.dims);
+            site = cal_site_3d(data + stride[0], conf.dims);
             printf("# of site in the MD simulation guessed by SZ3 = %d\n", site);
             //TODO determine the # of system
             //i==0 & j==0
