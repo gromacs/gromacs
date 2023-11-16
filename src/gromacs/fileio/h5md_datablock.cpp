@@ -141,7 +141,6 @@ void GmxH5mdTimeDataBlock::writeFrame(const void* data, int64_t step, real time)
 
     /* If there is no specified writing interval for this data block, write after the previous output. */
     const int frameNumber = writingInterval_ > 0 ? step / writingInterval_ : lastWrittenFrame_ + 1;
-    printf("Writing framenumber %d\n", frameNumber);
 
     writeData<3, false>(mainDataSet_, data, frameNumber);
     writeData<1, false>(stepDataSet_, &step, frameNumber);
