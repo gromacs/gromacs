@@ -61,7 +61,7 @@ private:
     hid_t timeDataSet_;
     hid_t stepDataSet_;
     int   writingInterval_; //!< The interval (in MD steps) between outputs.
-    int   lastWrittenFrame_;
+    int   numWrittenFrames_;
 
 public:
     GmxH5mdTimeDataBlock(hid_t                container         = -1,
@@ -96,10 +96,11 @@ public:
      */
     void writeFrame(const void* data, int64_t step, real time);
 
-    void updateLastWrittenFrame();
+    void updateNumWrittenFrames();
 
-    int lastWrittenFrame() { return lastWrittenFrame_; }
-    int numberOfFrames() { return lastWrittenFrame_ + 1; }
+    real getTimeOfFrame(hsize_t frame) const;
+
+    int numberOfFrames() const { return numWrittenFrames_; }
 };
 
 #endif // GMX_FILEIO_H5MD_DATABLOCK_H

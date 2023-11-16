@@ -45,6 +45,7 @@
 #include <__config>
 #include <algorithm>
 #include <functional>
+#include <limits>
 #include <string>
 
 #include <sys/_types/_int64_t.h>
@@ -175,6 +176,16 @@ void GmxH5mdIo::flush()
 #else
     gmx_file("GROMACS was compiled without HDF5 support, cannot handle this file type");
 #endif
+}
+
+void GmxH5mdIo::initDataBlocksFromFile()
+{
+    hid_t particlesGroup = H5Gopen(file_, "particles", H5P_DEFAULT);
+    if (particlesGroup < 0)
+    {
+        H5Eprint2(H5E_DEFAULT, nullptr);
+        gmx_file("Cannot find particles group when initiating data blocks. Invalid H5MD file?");
+    }
 }
 
 void GmxH5mdIo::setUpParticlesDataBlocks(int     writeCoordinatesSteps,
@@ -395,6 +406,7 @@ void GmxH5mdIo::setupMolecularSystem(const gmx_mtop_t& topology)
     }
 
     /* We only need to create a separate selection group entry if not all atoms are part of it. */
+    /* TODO: Write atom name, charge and mass for the selection group as well. */
     bool all_atoms_selected = true;
     for (int i = 0; (i < topology.natoms); i++)
     {
@@ -497,26 +509,40 @@ void GmxH5mdIo::writeFrame(int64_t     step,
 
 int64_t GmxH5mdIo::getNumberOfFrames(const char* dataBlockName)
 {
-    char wantedName[c_maxFullNameLength];
-    if (dataBlockName == nullptr)
-    {
-        snprintf(wantedName,
-                 c_maxFullNameLength,
-                 "/particles/%s/position",
-                 compressedSelectionGroupName_ != nullptr ? compressedSelectionGroupName_ : "system");
-    }
-    else
-    {
-        strncpy(wantedName, dataBlockName, c_maxFullNameLength);
-    }
-    auto foundDataBlock = std::find(dataBlocks_.begin(), dataBlocks_.end(), wantedName);
+    GMX_ASSERT(dataBlockName != nullptr, "There must be a datablock name to look for.");
+
+    auto foundDataBlock = std::find(dataBlocks_.begin(), dataBlocks_.end(), dataBlockName);
     if (foundDataBlock == dataBlocks_.end())
     {
         gmx_file("Datablock not found");
     }
-    foundDataBlock->updateLastWrittenFrame();
+    foundDataBlock->updateNumWrittenFrames();
     return foundDataBlock->numberOfFrames();
 }
+
+real GmxH5mdIo::getFirstTime(const char* dataBlockName)
+{
+    GMX_ASSERT(dataBlockName != nullptr, "There must be a datablock name to look for.");
+
+    auto foundDataBlock = std::find(dataBlocks_.begin(), dataBlocks_.end(), dataBlockName);
+    if (foundDataBlock == dataBlocks_.end())
+    {
+        gmx_file("Datablock not found");
+    }
+    return foundDataBlock->getTimeOfFrame(0);
+}
+
+real GmxH5mdIo::getFirstTimeFromAllDataBlocks()
+{
+    real firstTime = std::numeric_limits<real>::max();
+    for (const auto& dataBlock : dataBlocks_)
+    {
+        real time = dataBlock.getTimeOfFrame(2);
+        firstTime = std::min(firstTime, time);
+    }
+    return firstTime;
+}
+
 
 extern template hid_t
 openOrCreateDataSet<1>(hid_t, const char*, const char*, hid_t, const hsize_t*, CompressionAlgorithm, double);

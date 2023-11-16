@@ -95,7 +95,7 @@ GmxH5mdTimeDataBlock::GmxH5mdTimeDataBlock(hid_t                container,
     timeDataSet_ = openOrCreateDataSet<1>(
             group_, c_timeName, c_timeUnit, timeDatatype, chunkDimsTimeStep, CompressionAlgorithm::None, 0);
 
-    lastWrittenFrame_ = -1;
+    numWrittenFrames_ = 0;
 }
 
 GmxH5mdTimeDataBlock::GmxH5mdTimeDataBlock(const GmxH5mdTimeDataBlock& other) :
@@ -140,69 +140,96 @@ void GmxH5mdTimeDataBlock::writeFrame(const void* data, int64_t step, real time)
     GMX_ASSERT(step >= 0, "Invalid step when writing frame.");
 
     /* If there is no specified writing interval for this data block, write after the previous output. */
-    const int frameNumber = writingInterval_ > 0 ? step / writingInterval_ : lastWrittenFrame_ + 1;
+    const int frameNumber = writingInterval_ > 0 ? step / writingInterval_ : numWrittenFrames_;
 
     writeData<3, false>(mainDataSet_, data, frameNumber);
     writeData<1, false>(stepDataSet_, &step, frameNumber);
     writeData<1, false>(timeDataSet_, &time, frameNumber);
-    ++lastWrittenFrame_;
+    ++numWrittenFrames_;
 }
 
-void GmxH5mdTimeDataBlock::updateLastWrittenFrame()
+void GmxH5mdTimeDataBlock::updateNumWrittenFrames()
 {
-    GMX_ASSERT(stepDataSet_ >= 0 || mainDataSet_ >= 0,
-               "There must be a data set with steps or data values to determine the actual number "
+    GMX_ASSERT(stepDataSet_ >= 0,
+               "There must be a data set with steps to determine the actual number "
                "of frames.");
-    int64_t numValidFrames = 0;
-    if (stepDataSet_ >= 0)
+    hid_t     dataSpace = H5Dget_space(stepDataSet_);
+    const int numDims   = H5Sget_simple_extent_ndims(dataSpace);
+    if (numDims != 1)
     {
-        hid_t     dataSpace = H5Dget_space(stepDataSet_);
-        const int numDims   = H5Sget_simple_extent_ndims(dataSpace);
-        if (numDims != 1)
-        {
-            gmx_file("The step data set should be one-dimensional.");
-        }
-        hsize_t dimExtents;
-        H5Sget_simple_extent_dims(dataSpace, &dimExtents, nullptr);
-        numValidFrames = dimExtents;
-
-        hid_t            createPropertyList = H5Dget_create_plist(stepDataSet_);
-        H5D_fill_value_t fillValueStatus;
-        if (H5Pfill_value_defined(createPropertyList, &fillValueStatus) < 0
-            || fillValueStatus == H5D_FILL_VALUE_UNDEFINED)
-        {
-            lastWrittenFrame_ = numValidFrames - 1;
-            return;
-        }
-        hid_t   datatype = H5T_NATIVE_INT64;
-        int64_t fillValue;
-        H5Pget_fill_value(createPropertyList, datatype, &fillValue);
-
-        int64_t stepData = fillValue;
-        do
-        {
-            hsize_t location = numValidFrames - 1;
-            H5Sselect_elements(dataSpace, H5S_SELECT_SET, 1, &location);
-            if (H5Dread(stepDataSet_, datatype, dataSpace, H5S_ALL, H5P_DEFAULT, &stepData) < 0)
-            {
-                gmx_file("Error reading step data set when determining the number of frames.");
-            }
-            numValidFrames--;
-        } while (numValidFrames > 0 && stepData == fillValue);
+        gmx_file("The step data set should be one-dimensional.");
     }
-    else
+    hsize_t dimExtents;
+    H5Sget_simple_extent_dims(dataSpace, &dimExtents, nullptr);
+    hsize_t numValidFrames = dimExtents;
+
+    hid_t            createPropertyList = H5Dget_create_plist(stepDataSet_);
+    H5D_fill_value_t fillValueStatus;
+    if (H5Pfill_value_defined(createPropertyList, &fillValueStatus) < 0
+        || fillValueStatus == H5D_FILL_VALUE_UNDEFINED)
     {
-        hid_t     dataSpace = H5Dget_space(stepDataSet_);
-        const int numDims   = H5Sget_simple_extent_ndims(dataSpace);
-        if (numDims != 3)
-        {
-            gmx_file("The time dependent data set should be three-dimensional.");
-        }
-        hsize_t dimExtents[3];
-        H5Sget_simple_extent_dims(dataSpace, dimExtents, nullptr);
-        numValidFrames = dimExtents[0];
+        numWrittenFrames_ = numValidFrames;
+        return;
     }
-    lastWrittenFrame_ = numValidFrames - 1;
+    hid_t   datatype = H5T_NATIVE_INT64;
+    int64_t fillValue;
+    H5Pget_fill_value(createPropertyList, datatype, &fillValue);
+
+    int64_t stepData = fillValue;
+    do
+    {
+        hsize_t location = numValidFrames - 1;
+        H5Sselect_elements(dataSpace, H5S_SELECT_SET, 1, &location);
+        if (H5Dread(stepDataSet_, datatype, dataSpace, H5S_ALL, H5P_DEFAULT, &stepData) < 0)
+        {
+            gmx_file("Error reading step data set when determining the number of frames.");
+        }
+        numValidFrames--;
+    } while (numValidFrames > 0 && stepData == fillValue);
+
+    numWrittenFrames_ = numValidFrames;
+}
+
+real GmxH5mdTimeDataBlock::getTimeOfFrame(hsize_t frame) const
+{
+    GMX_ASSERT(timeDataSet_ >= 0, "There must be a data set with time to get the time of a frame.");
+
+    hid_t     dataSpace = H5Dget_space(timeDataSet_);
+    const int numDims   = H5Sget_simple_extent_ndims(dataSpace);
+    if (numDims != 1)
+    {
+        gmx_file("The time data set should be one-dimensional.");
+    }
+    hsize_t dimExtents;
+    H5Sget_simple_extent_dims(dataSpace, &dimExtents, nullptr);
+    hsize_t maxNumFrames = dimExtents;
+    if (frame >= maxNumFrames)
+    {
+        gmx_file("Trying to read outside the valid frame range.");
+    }
+
+    H5Sselect_elements(dataSpace, H5S_SELECT_SET, 1, &frame);
+    hid_t  origDatatype   = H5Dget_type(timeDataSet_);
+    hid_t  nativeDatatype = H5Tget_native_type(origDatatype, H5T_DIR_DEFAULT);
+    size_t dataSize       = H5Tget_size(nativeDatatype);
+    void*  buffer         = malloc(dataSize);
+    if (H5Dread(timeDataSet_, nativeDatatype, dataSpace, H5S_ALL, H5P_DEFAULT, buffer) < 0)
+    {
+        gmx_file("Error reading time data set of frame.");
+    }
+
+    if (dataSize != 4 && dataSpace != 8)
+    {
+        gmx_file("Can only read float or double time data.");
+    }
+
+    if (dataSize == 4)
+    {
+        float* tmpFloatData = static_cast<float*>(buffer);
+        return *tmpFloatData;
+    }
+    double* tmpDoubleData = static_cast<double*>(buffer);
+    return *tmpDoubleData;
 }
 
 extern template hid_t

@@ -58,6 +58,7 @@
 #include "gromacs/fileio/enxio.h"
 #include "gromacs/fileio/filetypes.h"
 #include "gromacs/fileio/gmxfio.h"
+#include "gromacs/fileio/h5md_io.h"
 #include "gromacs/fileio/mtxio.h"
 #include "gromacs/fileio/tngio.h"
 #include "gromacs/fileio/tpxio.h"
@@ -437,6 +438,17 @@ void list_tng(const char* fn)
 #endif
 }
 
+void list_h5md(const char* fn)
+{
+#if GMX_USE_HDF5
+    GmxH5mdIo h5mdIo(fn, 'r');
+    real      time = h5mdIo.getFirstTimeFromAllDataBlocks();
+    printf("First time %f\n", time);
+#else
+    GMX_UNUSED_VALUE(fn);
+#endif
+}
+
 //! Dump a trajectory file
 void list_trx(const char* fn)
 {
@@ -445,6 +457,7 @@ void list_trx(const char* fn)
         case efXTC: list_xtc(fn); break;
         case efTRR: list_trr(fn); break;
         case efTNG: list_tng(fn); break;
+        case efH5MD: list_h5md(fn); break;
         default:
             fprintf(stderr, "File %s is of an unsupported type. Try using the command\n 'less %s'\n", fn, fn);
     }

@@ -92,13 +92,7 @@ public:
     /*! \brief Write all unwritten data to the file. */
     void flush();
 
-    /*! \brief Write molecule system related data to the file.
-     *
-     * This is currently not updated during the trajectory. The data that is written are atom masses, atom charges and atom names.
-     *
-     * \param[in] topology The molecular topology describing the system.
-     */
-    void setupMolecularSystem(const gmx_mtop_t& topology);
+    void initDataBlocksFromFile();
 
     /*! \brief Set up data blocks related to particle data.
      *
@@ -118,6 +112,14 @@ public:
                                   PbcType pbcType,
                                   double  compressionError);
 
+    /*! \brief Write molecule system related data to the file.
+     *
+     * This is currently not updated during the trajectory. The data that is written are atom masses, atom charges and atom names.
+     *
+     * \param[in] topology The molecular topology describing the system.
+     */
+    void setupMolecularSystem(const gmx_mtop_t& topology);
+
     /*! \brief Write a trajectory frame to the file. Only writes the data that is passed as input
      *
      * \param[in] step The simulation step.
@@ -132,6 +134,9 @@ public:
     void writeFrame(int64_t step, real time, real lambda, const rvec* box, const rvec* x, const rvec* v, const rvec* f);
 
     int64_t getNumberOfFrames(const char* dataBlockName);
+
+    real getFirstTime(const char* dataBlockName);
+    real getFirstTimeFromAllDataBlocks();
 };
 
 #endif // GMX_FILEIO_H5MD_IO_H
