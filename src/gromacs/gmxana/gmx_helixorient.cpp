@@ -134,7 +134,7 @@ int gmx_helixorient(int argc, char* argv[])
     static gmx_bool bSC          = FALSE;
     static gmx_bool bIncremental = FALSE;
 
-    static t_pargs pa[] = {
+    t_pargs pa[] = {
         { "-sidechain",
           FALSE,
           etBOOL,

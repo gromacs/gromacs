@@ -791,7 +791,7 @@ int gmx_check(int argc, char* argv[])
     real              abstol   = 0.001;
     gmx_bool          bCompAB  = FALSE;
     char*             lastener = nullptr;
-    static t_pargs    pa[]     = {
+    t_pargs           pa[]     = {
         { "-vdwfac",
           FALSE,
           etREAL,
