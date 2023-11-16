@@ -80,28 +80,22 @@ GmxH5mdTimeDataBlock::GmxH5mdTimeDataBlock(hid_t                container,
     mainDataSet_ = openOrCreateDataSet<3>(
             group_, mainDataSetName, unit, datatype, chunkDims, compression, compressionAbsoluteError);
 
-    if (writingInterval_ > 0)
-    {
-        hsize_t               chunkDimsTimeStep[1] = { numFramesPerChunk };
-        static constexpr char c_stepName[]         = "step";
-        stepDataSet_                               = openOrCreateDataSet<1>(
-                group_, c_stepName, nullptr, H5T_NATIVE_INT64, chunkDimsTimeStep, CompressionAlgorithm::None, 0);
+    hsize_t               chunkDimsTimeStep[1] = { numFramesPerChunk };
+    static constexpr char c_stepName[]         = "step";
+    stepDataSet_                               = openOrCreateDataSet<1>(
+            group_, c_stepName, nullptr, H5T_NATIVE_INT64, chunkDimsTimeStep, CompressionAlgorithm::None, 0);
 
-        static constexpr char c_timeName[] = "time";
-        static constexpr char c_timeUnit[] = "ps";
+    static constexpr char c_timeName[] = "time";
+    static constexpr char c_timeUnit[] = "ps";
 #if GMX_DOUBLE
-        const hid_t timeDatatype = H5Tcopy(H5T_NATIVE_DOUBLE);
+    const hid_t timeDatatype = H5Tcopy(H5T_NATIVE_DOUBLE);
 #else
-        const hid_t timeDatatype = H5Tcopy(H5T_NATIVE_FLOAT);
+    const hid_t timeDatatype = H5Tcopy(H5T_NATIVE_FLOAT);
 #endif
-        timeDataSet_ = openOrCreateDataSet<1>(
-                group_, c_timeName, c_timeUnit, timeDatatype, chunkDimsTimeStep, CompressionAlgorithm::None, 0);
-    }
-    else
-    {
-        timeDataSet_ = -1;
-        stepDataSet_ = -1;
-    }
+    timeDataSet_ = openOrCreateDataSet<1>(
+            group_, c_timeName, c_timeUnit, timeDatatype, chunkDimsTimeStep, CompressionAlgorithm::None, 0);
+
+    lastWrittenFrame_ = -1;
 }
 
 GmxH5mdTimeDataBlock::GmxH5mdTimeDataBlock(const GmxH5mdTimeDataBlock& other) :
@@ -143,19 +137,24 @@ bool GmxH5mdTimeDataBlock::operator==(const char* fullNameComparison)
 
 void GmxH5mdTimeDataBlock::writeFrame(const void* data, int64_t step, real time)
 {
-    GMX_ASSERT(step == 0 || writingInterval_ > 0, "Invalid writing interval when writing frame.");
+    GMX_ASSERT(step >= 0, "Invalid step when writing frame.");
 
-    int frameNumber = step > 0 ? step / writingInterval_ : 0;
+    /* If there is no specified writing interval for this data block, write after the previous output. */
+    const int frameNumber = writingInterval_ > 0 ? step / writingInterval_ : lastWrittenFrame_ + 1;
+    printf("Writing framenumber %d\n", frameNumber);
+
     writeData<3, false>(mainDataSet_, data, frameNumber);
     writeData<1, false>(stepDataSet_, &step, frameNumber);
     writeData<1, false>(timeDataSet_, &time, frameNumber);
+    ++lastWrittenFrame_;
 }
 
-int64_t GmxH5mdTimeDataBlock::getNumberOfFrames()
+void GmxH5mdTimeDataBlock::updateLastWrittenFrame()
 {
     GMX_ASSERT(stepDataSet_ >= 0 || mainDataSet_ >= 0,
                "There must be a data set with steps or data values to determine the actual number "
                "of frames.");
+    int64_t numValidFrames = 0;
     if (stepDataSet_ >= 0)
     {
         hid_t     dataSpace = H5Dget_space(stepDataSet_);
@@ -166,14 +165,15 @@ int64_t GmxH5mdTimeDataBlock::getNumberOfFrames()
         }
         hsize_t dimExtents;
         H5Sget_simple_extent_dims(dataSpace, &dimExtents, nullptr);
-        int64_t numValidFrames = dimExtents;
+        numValidFrames = dimExtents;
 
         hid_t            createPropertyList = H5Dget_create_plist(stepDataSet_);
         H5D_fill_value_t fillValueStatus;
         if (H5Pfill_value_defined(createPropertyList, &fillValueStatus) < 0
             || fillValueStatus == H5D_FILL_VALUE_UNDEFINED)
         {
-            return numValidFrames;
+            lastWrittenFrame_ = numValidFrames - 1;
+            return;
         }
         hid_t   datatype = H5T_NATIVE_INT64;
         int64_t fillValue;
@@ -190,8 +190,6 @@ int64_t GmxH5mdTimeDataBlock::getNumberOfFrames()
             }
             numValidFrames--;
         } while (numValidFrames > 0 && stepData == fillValue);
-
-        return numValidFrames;
     }
     else
     {
@@ -203,10 +201,9 @@ int64_t GmxH5mdTimeDataBlock::getNumberOfFrames()
         }
         hsize_t dimExtents[3];
         H5Sget_simple_extent_dims(dataSpace, dimExtents, nullptr);
-        int64_t numValidFrames = dimExtents[0];
-
-        return numValidFrames;
+        numValidFrames = dimExtents[0];
     }
+    lastWrittenFrame_ = numValidFrames - 1;
 }
 
 extern template hid_t

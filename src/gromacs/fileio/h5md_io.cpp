@@ -514,7 +514,8 @@ int64_t GmxH5mdIo::getNumberOfFrames(const char* dataBlockName)
     {
         gmx_file("Datablock not found");
     }
-    return foundDataBlock->getNumberOfFrames();
+    foundDataBlock->updateLastWrittenFrame();
+    return foundDataBlock->numberOfFrames();
 }
 
 extern template hid_t
