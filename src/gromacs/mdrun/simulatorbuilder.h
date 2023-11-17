@@ -40,8 +40,9 @@
 #ifndef GMX_MDRUN_SIMULATORBUILDER_H
 #define GMX_MDRUN_SIMULATORBUILDER_H
 
-#include <memory>
+#include <cstdio>
 
+#include <memory>
 
 class energyhistory_t;
 class gmx_ekindata_t;
