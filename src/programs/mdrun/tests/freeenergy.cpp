@@ -112,16 +112,16 @@ TEST_P(FreeEnergyReferenceTest, WithinTolerances)
     SCOPED_TRACE(formatString("Comparing FEP simulation '%s' to reference", simulationName.c_str()));
 
     // Tolerance set to pass with identical code version and a range of different test setups for most tests
-    const auto defaultEnergyTolerance = relativeToleranceAsFloatingPoint(50.0, GMX_DOUBLE ? 1e-5 : 1e-4);
+    const auto defaultEnergyTolerance = relativeToleranceAsFloatingPoint(100.0, GMX_DOUBLE ? 5e-6 : 5e-5);
     // Some simulations are significantly longer, so they need a larger tolerance
-    const auto longEnergyTolerance = relativeToleranceAsFloatingPoint(50.0, GMX_DOUBLE ? 1e-4 : 1e-3);
+    const auto longEnergyTolerance = relativeToleranceAsFloatingPoint(100.0, GMX_DOUBLE ? 2e-5 : 2e-4);
     const bool isLongSimulation    = (simulationName == "expanded");
     const auto energyTolerance = isLongSimulation ? longEnergyTolerance : defaultEnergyTolerance;
 
     EnergyTermsToCompare energyTermsToCompare{ { interaction_function[F_EPOT].longname, energyTolerance } };
     for (const auto& interaction : interactionsList)
     {
-        energyTermsToCompare.emplace(interaction_function[interaction].longname, defaultEnergyTolerance);
+        energyTermsToCompare.emplace(interaction_function[interaction].longname, energyTolerance);
     }
 
     // Specify how trajectory frame matching must work (only testing forces).
