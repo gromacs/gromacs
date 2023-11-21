@@ -9,18 +9,45 @@ functionality supported, whereas patch releases contain only fixes for
 issues identified in the corresponding major releases.
 
 Two version series of |Gromacs| are under active maintenance and
-within support lifetime at any time. In 2024, they are the 2024 series
-and the 2023 series. In the latter, only highly conservative fixes
+within support lifetime at any time. In 2025, they are the 2025 series
+and the 2024 series. In the latter, only highly conservative fixes
 will be made, and only to address issues that affect scientific
 correctness. Naturally, some of those releases will be made after the
-year 2023 ends, but we keep the year of the original release in the
+year 2024 ends, but we keep the year of the original release in the
 version name so that users understand how up to date their version
 is. Such fixes will also be incorporated into the more recent release
-series, as appropriate. Around the time the 2025 release is made, the
-2023 series will no longer be maintained.
+series, as appropriate. Around the time the 2026 release is made, the
+2024 series will no longer be maintained.
 
 Where issue numbers are reported in these release notes, more details
 can be found on the `issue tracker`_ at that issue number.
+
+|Gromacs| 2025 series
+---------------------
+
+.. todolist::
+
+Patch releases
+^^^^^^^^^^^^^^
+.. .. toctree::
+   :maxdepth: 1
+
+Major release
+^^^^^^^^^^^^^
+
+.. toctree::
+   :maxdepth: 1
+
+   2025/major/highlights
+   2025/major/features
+   2025/major/performance
+   2025/major/api
+   2025/major/tools
+   2025/major/bugs-fixed
+   2025/major/deprecated-functionality
+   2025/major/removed-functionality
+   2025/major/portability
+   2025/major/miscellaneous
 
 |Gromacs| 2024 series
 ---------------------
@@ -49,6 +76,9 @@ Major release
    2024/major/portability
    2024/major/miscellaneous
 
+
+Older (unmaintained) |Gromacs| series
+-------------------------------------------------------
 
 |Gromacs| 2023 series
 ---------------------
@@ -82,10 +112,6 @@ Major release
    2023/major/removed-functionality
    2023/major/portability
    2023/major/miscellaneous
-
-
-Older (unmaintained) |Gromacs| series
--------------------------------------------------------
 
 |Gromacs| 2022 series
 ---------------------
