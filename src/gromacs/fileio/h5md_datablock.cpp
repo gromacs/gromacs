@@ -109,19 +109,6 @@ GmxH5mdTimeDataBlock::GmxH5mdTimeDataBlock(hid_t                container,
     updateNumWrittenFrames();
 }
 
-GmxH5mdTimeDataBlock::GmxH5mdTimeDataBlock(const GmxH5mdTimeDataBlock& other) :
-    container_(other.container_),
-    name_(other.name_),
-    fullName_(other.fullName_),
-    group_(other.group_),
-    mainDataSet_(other.mainDataSet_),
-    timeDataSet_(other.timeDataSet_),
-    stepDataSet_(other.stepDataSet_),
-    writingInterval_(other.writingInterval_),
-    numWrittenFrames_(other.numWrittenFrames_)
-{
-}
-
 void GmxH5mdTimeDataBlock::closeAllDataSets()
 {
     if (mainDataSet_ >= 0)
