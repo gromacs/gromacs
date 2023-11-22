@@ -248,7 +248,6 @@ rst_epilog += """
 .. _hipSYCL: https://github.com/illuhad/hipSYCL
 .. _OpenMPI: http://www.open-mpi.org
 .. _MPICH: http://www.mpich.org
-.. _LAM-MPI: http://www.lam-mpi.org
 .. _OpenMP: http://en.wikipedia.org/wiki/OpenMP
 .. _CMake installation page: http://www.cmake.org/install/
 .. _Ubuntu toolchain ppa page: https://launchpad.net/~ubuntu-toolchain-r/+archive/ubuntu/test

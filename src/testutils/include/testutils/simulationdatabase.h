@@ -109,7 +109,7 @@ enum class MdpParameterDatabase
  * \return                              Mdp file values
  *
  * \throws  std::bad_alloc     if out of memory
- *          std::out_of_range  if \c simulationName is not in the database */
+ * \throws  std::out_of_range  if \c simulationName is not in the database */
 MdpFieldValues prepareMdpFieldValues(const std::string& simulationName,
                                      const std::string& integrator,
                                      const std::string& tcoupl,

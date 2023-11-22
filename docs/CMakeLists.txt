@@ -172,7 +172,6 @@ if (SPHINX_FOUND)
         # PNG formated plot files that don't need to be converted into PNG
         # for the web page.
         reference-manual/plots/GMX_logos/gmx_falcon_blue.png
-        reference-manual/plots/adress.png
         reference-manual/plots/plotje.png
         reference-manual/plots/xvgr.png
         )
