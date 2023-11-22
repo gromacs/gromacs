@@ -76,14 +76,12 @@ GmxH5mdTimeDataBlock::GmxH5mdTimeDataBlock(hid_t                container,
     H5Iget_name(group_, tmpFullName, c_maxFullNameLength);
     fullName_ = tmpFullName;
 
-    hsize_t chunkDims[3] = { numFramesPerChunk, numEntries, numValuesPerEntry };
-
     static constexpr char c_valueName[] = "value";
     static constexpr char c_stepName[]  = "step";
     static constexpr char c_timeName[]  = "time";
     static constexpr char c_timeUnit[]  = "ps";
 
-    if (datatype == -1 && (numFramesPerChunk == 0 || numEntries == 0 || numValuesPerEntry == 0))
+    if (datatype == -1 && numEntries == 0)
     {
         mainDataSet_ = H5Dopen(group_, c_valueName, H5P_DEFAULT);
         stepDataSet_ = H5Dopen(group_, c_stepName, H5P_DEFAULT);
@@ -91,6 +89,8 @@ GmxH5mdTimeDataBlock::GmxH5mdTimeDataBlock(hid_t                container,
     }
     else
     {
+        hsize_t chunkDims[3] = { numFramesPerChunk, numEntries, numValuesPerEntry };
+
         mainDataSet_ = openOrCreateDataSet<3>(
                 group_, c_valueName, unit.c_str(), datatype, chunkDims, compression, compressionAbsoluteError);
 
