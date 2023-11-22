@@ -14,13 +14,13 @@
 #   GROMACS branch: merge request target branch
 #   gmxapi Python package: according to merge request target branch
 #   sample code: according to merge request target branch
-#   compiler: clang-13
+#   compiler: clang-17
 
 sample_taf:openmpi-double:
   extends:
     - .sample_taf
     - .rules:merge-requests
-  image: ${CI_REGISTRY_IMAGE}/ci-ubuntu-20.04-llvm-13
+  image: ${CI_REGISTRY_IMAGE}/ci-ubuntu-20.04-llvm-17
   variables:
     KUBERNETES_CPU_LIMIT: 2
     KUBERNETES_CPU_REQUEST: 2
@@ -30,20 +30,20 @@ sample_taf:openmpi-double:
     GMX_SUFFIX: "_mpi_d"
     GMX_DOUBLE: "ON"
   needs:
-    - job: gromacs:clang-13-mpi:build
+    - job: gromacs:clang-17-mpi:build
 
 sample_restraint:openmpi-double:
   extends:
     - .sample_restraint:clang
     - .rules:merge-requests
-  image: ${CI_REGISTRY_IMAGE}/ci-ubuntu-20.04-llvm-13
+  image: ${CI_REGISTRY_IMAGE}/ci-ubuntu-20.04-llvm-17
   variables:
-    COMPILER_MAJOR_VERSION: 13
+    COMPILER_MAJOR_VERSION: 17
     KUBERNETES_CPU_LIMIT: 4
     KUBERNETES_CPU_REQUEST: 4
     GMX_SUFFIX: "_mpi_d"
     GMX_DOUBLE: "ON"
     VENVPATH: "/root/venv/py3.10"
   needs:
-    - job: gromacs:clang-13-mpi:build
+    - job: gromacs:clang-17-mpi:build
       artifacts: true

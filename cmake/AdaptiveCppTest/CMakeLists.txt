@@ -31,11 +31,14 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out https://www.gromacs.org.
 
-cmake_minimum_required(VERSION 3.0)
-project(HipSyclTest)
-find_package(hipsycl REQUIRED)
+cmake_minimum_required(VERSION 3.18)
+project(AdaptiveCppTest)
+find_package(adaptivecpp QUIET)
+if(NOT adaptivecpp_FOUND)
+    find_package(hipsycl REQUIRED)
+endif()
 
-# By default, this project will fail compilation if it can't use hipSYCL compiler.
+# By default, this project will fail compilation if it can't use AdaptiveCpp/hipSYCL compiler.
 # By defining CHECK_x_TARGET we can also make it fail if the specified backend is not among the compilation targets.
 
 if (CHECK_CUDA_TARGET)
@@ -47,5 +50,8 @@ endif()
 if (CHECK_LEVELZERO_TARGET)
     add_compile_definitions(CHECK_LEVELZERO_TARGET)
 endif()
-add_executable(HipSyclTest main.cpp)
-add_sycl_to_target(TARGET HipSyclTest SOURCES main.cpp)
+if (CHECK_GENERIC_TARGET)
+    add_compile_definitions(CHECK_GENERIC_TARGET)
+endif()
+add_executable(AdaptiveCppTest main.cpp)
+add_sycl_to_target(TARGET AdaptiveCppTest SOURCES main.cpp)

@@ -68,8 +68,8 @@
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
 
-#ifndef __HIPSYCL__
-#    error This file can only be compiled with hipSYCL enabled
+#if !defined(__HIPSYCL__) && !defined(__ADAPTIVECPP__)
+#    error This file can only be compiled with AdaptiveCpp/hipSYCL enabled
 #endif
 
 #if !defined HIPSYCL_PLATFORM_ROCM
