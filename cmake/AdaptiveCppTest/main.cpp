@@ -32,9 +32,9 @@
  * the research papers on the package. Check out https://www.gromacs.org.
  */
 
-// Always fail if we are not compiling with hipSYCL
-#if !defined(__HIPSYCL__)
-#    error "__HIPSYCL__ macro not defined. Please check your hipSYCL installation."
+// Always fail if we are not compiling with AdaptiveCpp/hipSYCL
+#if !defined(__HIPSYCL__) && !defined(__ADAPTIVECPP__)
+#    error "Neither __HIPSYCL__ nor __ADAPTIVECPP__ macro not defined. Please check your AdaptiveCpp/hipSYCL installation."
 #endif
 
 /* Next, we optionally check three backends.
@@ -42,12 +42,13 @@
  *  - If we are not compiling for CUDA (because we did not specify CUDA devices among targets),
  *  this test compilation will fail.
  *  - If we are compiling for CUDA, the compilation will proceed.
- * Same for HIP and LevelZero.
+ * Same for HIP, LevelZero (SPIR-V) and SSCP (generic).
  *
  * This allows us to compile this test file with different -DCHECK_x_TARGET flags to see which
  * backends we are compiling for and report it to CMake.
  * */
 
+// AdaptiveCpp 23.10.0 only defines __HIPSYCL_ENABLE_x_TARGET__
 #if defined(CHECK_CUDA_TARGET) && !defined(__HIPSYCL_ENABLE_CUDA_TARGET__)
 #    error "CUDA target not enabled";
 #endif
@@ -59,5 +60,10 @@
 #if defined(CHECK_LEVELZERO_TARGET) && !defined(__HIPSYCL_ENABLE_SPIRV_TARGET__)
 #    error "LevelZero (SPIR-V) target not enabled"
 #endif
+
+#if defined(CHECK_GENERIC_TARGET) && !defined(__HIPSYCL_ENABLE_LLVM_SSCP_TARGET__)
+#    error "Generic (SSCP) target not enabled"
+#endif
+
 
 int main() {}
