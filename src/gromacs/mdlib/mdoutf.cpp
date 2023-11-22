@@ -276,6 +276,8 @@ gmx_mdoutf_t init_mdoutf(FILE*                          fplog,
         }
         if (of->h5mdIoLowPrec && ir->nstxout_compressed > 0)
         {
+            of->h5mdIoLowPrec->setupMolecularSystem(top_global);
+
             of->h5mdIoLowPrec->setUpParticlesDataBlocks(
                     ir->nstxout_compressed, 0, 0, of->natoms_x_compressed, ir->pbcType, 1.0 / of->x_compression_precision);
         }

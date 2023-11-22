@@ -110,4 +110,7 @@ void setAttribute(hid_t container, const char* name, const char* value);
 template<hid_t numEntries, hid_t stringLength>
 void setAttributeStringList(hid_t container, const char* name, const char value[numEntries][stringLength]);
 
+bool objectExists(hid_t container, const char* name);
+
+
 #endif

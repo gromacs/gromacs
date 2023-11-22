@@ -372,7 +372,8 @@ int write_trxframe_indexed(t_trxstatus* status, const t_trxframe* fr, int nind, 
     switch (ftp)
     {
         case efTRR:
-        case efTNG: break;
+        case efTNG:
+        case efH5MD: break;
         default:
             if (!fr->bX)
             {
@@ -528,6 +529,31 @@ t_trxstatus* trjtools_gmx_prepare_tng_writing(const std::filesystem::path& filen
         gmx_prepare_tng_writing(
                 filename, filemode, nullptr, &out->tng, natoms, mtop, index, index_group_name);
     }
+    return out;
+}
+
+t_trxstatus* trjtools_gmx_prepare_h5md_writing(const std::filesystem::path& filename,
+                                               char                         filemode,
+                                               const gmx_mtop_t*            mtop,
+                                               gmx::ArrayRef<const int>     index,
+                                               const char*                  index_group_name)
+{
+    if (filemode != 'w' && filemode != 'a')
+    {
+        gmx_incons("Sorry, can only prepare for H5MD output.");
+    }
+    t_trxstatus* out;
+    snew(out, 1);
+    status_init(out);
+
+    out->h5mdIo = new GmxH5mdIo(filename, filemode);
+    if (mtop != nullptr)
+    {
+        out->h5mdIo->setupMolecularSystem(*mtop, index, index_group_name);
+    }
+    /* Assume that the box is periodic in all dimensions. FIXME: Currently using compression set to 0.001. */
+    out->h5mdIo->setUpParticlesDataBlocks(-1, -1, -1, mtop->natoms, PbcType::Xyz, 0.001);
+
     return out;
 }
 

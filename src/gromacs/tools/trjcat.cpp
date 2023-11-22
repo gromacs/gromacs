@@ -705,6 +705,19 @@ int gmx_trjcat(int argc, char* argv[])
                             out_file, 'w', nullptr, inFilesEdited[0].c_str(), -1, nullptr, {}, nullptr);
                 }
             }
+            else if (ftpout == efH5MD)
+            {
+                /* Read first frame here. */
+                if (bIndex)
+                {
+                    trxout = trjtools_gmx_prepare_h5md_writing(
+                            out_file, 'w', nullptr, gmx::arrayRefFromArray(index, isize), grpname);
+                }
+                else
+                {
+                    trxout = trjtools_gmx_prepare_h5md_writing(out_file, 'w', nullptr, {}, nullptr);
+                }
+            }
             else
             {
                 trxout = open_trx(out_file, "w");

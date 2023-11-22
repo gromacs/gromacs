@@ -351,6 +351,12 @@ void setAttributeStringList(hid_t container, const char* name, const char value[
     H5Aclose(attribute);
 }
 
+bool objectExists(hid_t container, const char* name)
+{
+    return H5Lexists(container, name, H5P_DEFAULT) >= 0
+           && H5Oexists_by_name(container, name, H5P_DEFAULT) >= 0;
+}
+
 template hid_t
 openOrCreateDataSet<1>(hid_t, const char*, const char*, hid_t, const hsize_t*, CompressionAlgorithm, double);
 template hid_t

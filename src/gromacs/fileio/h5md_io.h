@@ -39,6 +39,7 @@
 #include <string>
 
 #include "gromacs/math/vectypes.h"
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/real.h"
 
 #include "h5md_datablock.h"
@@ -57,7 +58,7 @@ private:
     hid_t file_; //!< The HDF5 identifier of the file. This is the H5MD root.
     std::list<GmxH5mdTimeDataBlock> dataBlocks_;
 
-    char* compressedSelectionGroupName_; //!< A pointer to the name of the selection group of compressed coordinates.
+    std::string compressedSelectionGroupName_; //!< The name of the selection group of compressed coordinates.
 
     /*! \brief Sets the author (user) and creator (application name) properties in the h5md group (h5mdGroup_). */
     void setAuthorAndCreator();
@@ -71,7 +72,7 @@ public:
      * replace it. 'a' means appending (and reading), i.e., that existing files will be not be
      * overwritten, but extended. 'r' means only reading.
      */
-    GmxH5mdIo(const char* fileName = "", const char mode = '\0');
+    GmxH5mdIo(const std::string fileName = "", const char mode = '\0');
 
     ~GmxH5mdIo();
 
@@ -84,7 +85,7 @@ public:
      *                        'a' means truncate, i.e., that existing files will be overwritten
      *                        'r' means only read.
      */
-    void openFile(const char* fileName, const char mode);
+    void openFile(const std::string fileName, const char mode);
 
     /*! \brief Close the H5MD file. */
     void closeFile();
@@ -92,7 +93,7 @@ public:
     /*! \brief Write all unwritten data to the file. */
     void flush();
 
-    void initDataBlocksFromFile();
+    void initParticleDataBlocksFromFile();
 
     /*! \brief Set up data blocks related to particle data.
      *
@@ -118,7 +119,9 @@ public:
      *
      * \param[in] topology The molecular topology describing the system.
      */
-    void setupMolecularSystem(const gmx_mtop_t& topology);
+    void setupMolecularSystem(const gmx_mtop_t&        topology,
+                              gmx::ArrayRef<const int> index            = {},
+                              const std::string        index_group_name = "");
 
     /*! \brief Write a trajectory frame to the file. Only writes the data that is passed as input
      *
@@ -133,10 +136,12 @@ public:
      */
     void writeFrame(int64_t step, real time, real lambda, const rvec* box, const rvec* x, const rvec* v, const rvec* f);
 
-    int64_t getNumberOfFrames(const char* dataBlockName);
+    int64_t getNumberOfFrames(const std::string dataBlockName);
 
-    real getFirstTime(const char* dataBlockName);
+    real getFirstTime(const std::string dataBlockName);
     real getFirstTimeFromAllDataBlocks();
+    real getFinalTime(const std::string dataBlockName);
+    real getFinalTimeFromAllDataBlocks();
 };
 
 #endif // GMX_FILEIO_H5MD_IO_H

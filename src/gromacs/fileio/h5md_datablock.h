@@ -53,21 +53,20 @@ constexpr int c_maxFullNameLength = 256;
 class GmxH5mdTimeDataBlock
 {
 private:
-    hid_t container_;             //!< The HDF5 container of this data block.
-    char  name_[c_maxNameLength]; //!< The name of the data block, e.g. "position".
-    char  fullName_[c_maxFullNameLength];
-    hid_t group_;
-    hid_t mainDataSet_;
-    hid_t timeDataSet_;
-    hid_t stepDataSet_;
-    int   writingInterval_; //!< The interval (in MD steps) between outputs.
-    int   numWrittenFrames_;
+    hid_t       container_; //!< The HDF5 container of this data block.
+    std::string name_;      //!< The name of the data block, e.g. "position".
+    std::string fullName_;
+    hid_t       group_;
+    hid_t       mainDataSet_;
+    hid_t       timeDataSet_;
+    hid_t       stepDataSet_;
+    int         writingInterval_; //!< The interval (in MD steps) between outputs.
+    int         numWrittenFrames_;
 
 public:
     GmxH5mdTimeDataBlock(hid_t                container         = -1,
-                         const char*          name              = "",
-                         const char*          mainDataSetName   = "value",
-                         const char*          unit              = "",
+                         const std::string    name              = "",
+                         const std::string    unit              = "",
                          int                  writingInterval   = 0,
                          hsize_t              numFramesPerChunk = 1,
                          hsize_t              numEntries        = 0,
@@ -80,7 +79,7 @@ public:
 
     void closeAllDataSets();
 
-    bool operator==(const char* fullSpecifier);
+    bool operator==(const std::string fullSpecifier);
 
     /*! \brief Write a set of time independent data to the data block.
      *
@@ -100,7 +99,8 @@ public:
 
     real getTimeOfFrame(hsize_t frame) const;
 
-    int numberOfFrames() const { return numWrittenFrames_; }
+    int         numberOfFrames() const { return numWrittenFrames_; }
+    std::string name() const { return name_; }
 };
 
 #endif // GMX_FILEIO_H5MD_DATABLOCK_H

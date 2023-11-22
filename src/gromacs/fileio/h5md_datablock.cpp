@@ -57,9 +57,8 @@
 
 
 GmxH5mdTimeDataBlock::GmxH5mdTimeDataBlock(hid_t                container,
-                                           const char*          name,
-                                           const char*          mainDataSetName,
-                                           const char*          unit,
+                                           const std::string    name,
+                                           const std::string    unit,
                                            int                  writingInterval,
                                            hsize_t              numFramesPerChunk,
                                            hsize_t              numEntries,
@@ -68,46 +67,59 @@ GmxH5mdTimeDataBlock::GmxH5mdTimeDataBlock(hid_t                container,
                                            CompressionAlgorithm compression,
                                            double               compressionAbsoluteError)
 {
-    container_ = container;
-    strncpy(name_, name, 128);
+    container_       = container;
+    name_            = name;
     writingInterval_ = writingInterval;
 
-    group_ = openOrCreateGroup(container_, name_);
-    H5Iget_name(group_, fullName_, c_maxFullNameLength);
+    group_ = openOrCreateGroup(container_, name_.c_str());
+    char tmpFullName[c_maxFullNameLength];
+    H5Iget_name(group_, tmpFullName, c_maxFullNameLength);
+    fullName_ = tmpFullName;
 
     hsize_t chunkDims[3] = { numFramesPerChunk, numEntries, numValuesPerEntry };
 
-    mainDataSet_ = openOrCreateDataSet<3>(
-            group_, mainDataSetName, unit, datatype, chunkDims, compression, compressionAbsoluteError);
+    static constexpr char c_valueName[] = "value";
+    static constexpr char c_stepName[]  = "step";
+    static constexpr char c_timeName[]  = "time";
+    static constexpr char c_timeUnit[]  = "ps";
 
-    hsize_t               chunkDimsTimeStep[1] = { numFramesPerChunk };
-    static constexpr char c_stepName[]         = "step";
-    stepDataSet_                               = openOrCreateDataSet<1>(
-            group_, c_stepName, nullptr, H5T_NATIVE_INT64, chunkDimsTimeStep, CompressionAlgorithm::None, 0);
+    if (datatype == -1 && (numFramesPerChunk == 0 || numEntries == 0 || numValuesPerEntry == 0))
+    {
+        mainDataSet_ = H5Dopen(group_, c_valueName, H5P_DEFAULT);
+        stepDataSet_ = H5Dopen(group_, c_stepName, H5P_DEFAULT);
+        timeDataSet_ = H5Dopen(group_, c_timeName, H5P_DEFAULT);
+    }
+    else
+    {
+        mainDataSet_ = openOrCreateDataSet<3>(
+                group_, c_valueName, unit.c_str(), datatype, chunkDims, compression, compressionAbsoluteError);
 
-    static constexpr char c_timeName[] = "time";
-    static constexpr char c_timeUnit[] = "ps";
+        hsize_t chunkDimsTimeStep[1] = { numFramesPerChunk };
+        stepDataSet_                 = openOrCreateDataSet<1>(
+                group_, c_stepName, nullptr, H5T_NATIVE_INT64, chunkDimsTimeStep, CompressionAlgorithm::None, 0);
+
 #if GMX_DOUBLE
-    const hid_t timeDatatype = H5Tcopy(H5T_NATIVE_DOUBLE);
+        const hid_t timeDatatype = H5Tcopy(H5T_NATIVE_DOUBLE);
 #else
-    const hid_t timeDatatype = H5Tcopy(H5T_NATIVE_FLOAT);
+        const hid_t timeDatatype = H5Tcopy(H5T_NATIVE_FLOAT);
 #endif
-    timeDataSet_ = openOrCreateDataSet<1>(
-            group_, c_timeName, c_timeUnit, timeDatatype, chunkDimsTimeStep, CompressionAlgorithm::None, 0);
-
-    numWrittenFrames_ = 0;
+        timeDataSet_ = openOrCreateDataSet<1>(
+                group_, c_timeName, c_timeUnit, timeDatatype, chunkDimsTimeStep, CompressionAlgorithm::None, 0);
+    }
+    updateNumWrittenFrames();
 }
 
 GmxH5mdTimeDataBlock::GmxH5mdTimeDataBlock(const GmxH5mdTimeDataBlock& other) :
     container_(other.container_),
+    name_(other.name_),
+    fullName_(other.fullName_),
     group_(other.group_),
     mainDataSet_(other.mainDataSet_),
     timeDataSet_(other.timeDataSet_),
     stepDataSet_(other.stepDataSet_),
-    writingInterval_(other.writingInterval_)
+    writingInterval_(other.writingInterval_),
+    numWrittenFrames_(other.numWrittenFrames_)
 {
-    strcpy(name_, other.name_);
-    strcpy(fullName_, other.fullName_);
 }
 
 void GmxH5mdTimeDataBlock::closeAllDataSets()
@@ -126,9 +138,9 @@ void GmxH5mdTimeDataBlock::closeAllDataSets()
     }
 }
 
-bool GmxH5mdTimeDataBlock::operator==(const char* fullNameComparison)
+bool GmxH5mdTimeDataBlock::operator==(const std::string fullNameComparison)
 {
-    if (strncmp(fullName_, fullNameComparison, c_maxFullNameLength) == 0)
+    if (fullName_ == fullNameComparison)
     {
         return true;
     }
@@ -176,18 +188,20 @@ void GmxH5mdTimeDataBlock::updateNumWrittenFrames()
     H5Pget_fill_value(createPropertyList, datatype, &fillValue);
 
     int64_t stepData = fillValue;
-    do
+    while (numValidFrames > 0 && stepData == fillValue)
     {
-        hsize_t location = numValidFrames - 1;
+        numValidFrames--;
+        hsize_t location = numValidFrames;
         H5Sselect_elements(dataSpace, H5S_SELECT_SET, 1, &location);
-        if (H5Dread(stepDataSet_, datatype, dataSpace, H5S_ALL, H5P_DEFAULT, &stepData) < 0)
+        const hsize_t memorySpaceSize = 1;
+        hid_t         memSpace        = H5Screate_simple(1, &memorySpaceSize, nullptr);
+        if (H5Dread(stepDataSet_, datatype, memSpace, dataSpace, H5P_DEFAULT, &stepData) < 0)
         {
+            H5Eprint2(H5E_DEFAULT, nullptr);
             gmx_file("Error reading step data set when determining the number of frames.");
         }
-        numValidFrames--;
-    } while (numValidFrames > 0 && stepData == fillValue);
-
-    numWrittenFrames_ = numValidFrames;
+    }
+    numWrittenFrames_ = numValidFrames + 1;
 }
 
 real GmxH5mdTimeDataBlock::getTimeOfFrame(hsize_t frame) const
@@ -209,12 +223,15 @@ real GmxH5mdTimeDataBlock::getTimeOfFrame(hsize_t frame) const
     }
 
     H5Sselect_elements(dataSpace, H5S_SELECT_SET, 1, &frame);
-    hid_t  origDatatype   = H5Dget_type(timeDataSet_);
-    hid_t  nativeDatatype = H5Tget_native_type(origDatatype, H5T_DIR_DEFAULT);
-    size_t dataSize       = H5Tget_size(nativeDatatype);
-    void*  buffer         = malloc(dataSize);
-    if (H5Dread(timeDataSet_, nativeDatatype, dataSpace, H5S_ALL, H5P_DEFAULT, buffer) < 0)
+    hid_t         origDatatype    = H5Dget_type(timeDataSet_);
+    hid_t         nativeDatatype  = H5Tget_native_type(origDatatype, H5T_DIR_DEFAULT);
+    size_t        dataSize        = H5Tget_size(nativeDatatype);
+    const hsize_t memorySpaceSize = 1;
+    hid_t         memSpace        = H5Screate_simple(1, &memorySpaceSize, nullptr);
+    void*         buffer          = malloc(dataSize);
+    if (H5Dread(timeDataSet_, nativeDatatype, memSpace, dataSpace, H5P_DEFAULT, buffer) < 0)
     {
+        H5Eprint2(H5E_DEFAULT, nullptr);
         gmx_file("Error reading time data set of frame.");
     }
 

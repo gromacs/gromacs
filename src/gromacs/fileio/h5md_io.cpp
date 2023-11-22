@@ -69,12 +69,64 @@
 #    include "external/SZ3-bio/tools/H5Z-SZ3/include/H5Z_SZ3.hpp"
 #endif
 
-GmxH5mdIo::GmxH5mdIo(const char* fileName, const char mode)
+/* Inspired by https://support.hdfgroup.org/ftp/HDF5/examples/examples-by-api/hdf5-examples/1_8/C/H5G/h5ex_g_traverse.c */
+static herr_t iterativeSetupParticlesDataBlocks(hid_t            locationId,
+                                                const char*      name,
+                                                const H5L_info_t gmx_unused* info,
+                                                void*                        operatorData)
+{
+    /*
+     * Get type of the object. The name of the object is passed to this function by
+     * the Library.
+     */
+    H5O_info_t infoBuffer;
+    H5Oget_info_by_name(locationId, name, &infoBuffer, H5O_INFO_BASIC, H5P_DEFAULT);
+    herr_t            returnVal        = 0;
+    const std::string stepDataSetName  = std::string(name) + std::string("/step");
+    const std::string timeDataSetName  = std::string(name) + std::string("/time");
+    const std::string valueDataSetName = std::string(name) + std::string("/value");
+    switch (infoBuffer.type)
+    {
+        case H5O_TYPE_GROUP:
+            // printf("Found group %s\n", name);
+            if (objectExists(locationId, stepDataSetName.c_str())
+                && objectExists(locationId, timeDataSetName.c_str())
+                && objectExists(locationId, valueDataSetName.c_str()))
+            {
+                char containerFullName[c_maxFullNameLength];
+                H5Iget_name(locationId, containerFullName, c_maxFullNameLength);
+                GmxH5mdTimeDataBlock dataBlock(
+                        locationId, name, "", 0, 0, 0, 0, -1, CompressionAlgorithm::None, -1);
+                std::list<GmxH5mdTimeDataBlock>* dataBlocks =
+                        static_cast<std::list<GmxH5mdTimeDataBlock>*>(operatorData);
+                dataBlocks->emplace_back(dataBlock);
+
+                returnVal = 0;
+            }
+            else
+            {
+                returnVal = H5Literate_by_name(locationId,
+                                               name,
+                                               H5_INDEX_NAME,
+                                               H5_ITER_NATIVE,
+                                               nullptr,
+                                               iterativeSetupParticlesDataBlocks,
+                                               operatorData,
+                                               H5P_DEFAULT);
+            }
+            break;
+        default: /* Ignore other contents */ break;
+    }
+    return returnVal;
+}
+
+
+GmxH5mdIo::GmxH5mdIo(const std::string fileName, const char mode)
 {
     file_ = -1;
-    if (strlen(fileName) > 0)
+    if (fileName.length() > 0)
     {
-        openFile(fileName, mode);
+        openFile(fileName.c_str(), mode);
     }
 }
 
@@ -86,33 +138,35 @@ GmxH5mdIo::~GmxH5mdIo()
     }
 }
 
-void GmxH5mdIo::openFile(const char* fileName, const char mode)
+void GmxH5mdIo::openFile(const std::string fileName, const char mode)
 {
 #if GMX_USE_HDF5
     H5Eset_auto2(H5E_DEFAULT, nullptr, nullptr); // Disable HDF5 error output, e.g. when items are not found.
 
     closeFile();
 
+    compressedSelectionGroupName_ = "";
+
     if (debug)
     {
-        fprintf(debug, "Opening H5MD file %s with mode %c\n", fileName, mode);
+        fprintf(debug, "Opening H5MD file %s with mode %c\n", fileName.c_str(), mode);
     }
     if (mode == 'w' || mode == 'a')
     {
         if (mode == 'w')
         {
-            make_backup(fileName);
+            make_backup(fileName.c_str());
             hid_t createPropertyList = H5Pcreate(H5P_FILE_CREATE);
             if (H5Pset_file_space_strategy(createPropertyList, H5F_FSPACE_STRATEGY_FSM_AGGR, 1, 1) < 0)
             {
                 printf("Cannot set H5MD file space strategy.\n");
             }
-            file_ = H5Fcreate(fileName, H5F_ACC_TRUNC, createPropertyList, H5P_DEFAULT);
+            file_ = H5Fcreate(fileName.c_str(), H5F_ACC_TRUNC, createPropertyList, H5P_DEFAULT);
             setAuthorAndCreator();
         }
         else
         {
-            file_ = H5Fopen(fileName, H5F_ACC_RDWR, H5P_DEFAULT);
+            file_ = H5Fopen(fileName.c_str(), H5F_ACC_RDWR, H5P_DEFAULT);
         }
         /* Create H5MD groups. They should already be there if appending to a valid H5MD file, but it's better to be on the safe side. */
         openOrCreateGroup(file_, "h5md");
@@ -121,7 +175,7 @@ void GmxH5mdIo::openFile(const char* fileName, const char mode)
     }
     else
     {
-        file_ = H5Fopen(fileName, H5F_ACC_RDONLY, H5P_DEFAULT);
+        file_ = H5Fopen(fileName.c_str(), H5F_ACC_RDONLY, H5P_DEFAULT);
     }
     if (file_ < 0)
     {
@@ -178,13 +232,26 @@ void GmxH5mdIo::flush()
 #endif
 }
 
-void GmxH5mdIo::initDataBlocksFromFile()
+void GmxH5mdIo::initParticleDataBlocksFromFile()
 {
     hid_t particlesGroup = H5Gopen(file_, "particles", H5P_DEFAULT);
     if (particlesGroup < 0)
     {
         H5Eprint2(H5E_DEFAULT, nullptr);
-        gmx_file("Cannot find particles group when initiating data blocks. Invalid H5MD file?");
+        gmx_file(
+                "Cannot find particles group when initializing particles data blocks. Invalid H5MD "
+                "file?");
+    }
+    if (H5Literate(particlesGroup,
+                   H5_INDEX_NAME,
+                   H5_ITER_NATIVE,
+                   nullptr,
+                   iterativeSetupParticlesDataBlocks,
+                   static_cast<void*>(&dataBlocks_))
+        < 0)
+    {
+        H5Eprint2(H5E_DEFAULT, nullptr);
+        gmx_file("Error iterating over particles data blocks.");
     }
 }
 
@@ -201,11 +268,10 @@ void GmxH5mdIo::setUpParticlesDataBlocks(int     writeCoordinatesSteps,
     const hid_t datatype = H5Tcopy(H5T_NATIVE_FLOAT);
 #endif
     hid_t systemGroup;
-    if (compressionError && compressedSelectionGroupName_ != nullptr)
+    if (compressionError && compressedSelectionGroupName_ != "")
     {
-        char name[128];
-        snprintf(name, 127, "particles/%s", compressedSelectionGroupName_);
-        systemGroup = openOrCreateGroup(file_, name);
+        std::string name = "particles/" + compressedSelectionGroupName_;
+        systemGroup      = openOrCreateGroup(file_, name.c_str());
     }
     else
     {
@@ -231,7 +297,6 @@ void GmxH5mdIo::setUpParticlesDataBlocks(int     writeCoordinatesSteps,
         setBoxGroupAttributes(boxGroup, pbcType);
         GmxH5mdTimeDataBlock box(boxGroup,
                                  "edges",
-                                 "value",
                                  "nm",
                                  writeCoordinatesSteps,
                                  numFramesPerChunk,
@@ -244,7 +309,6 @@ void GmxH5mdIo::setUpParticlesDataBlocks(int     writeCoordinatesSteps,
 
         GmxH5mdTimeDataBlock position(systemGroup,
                                       "position",
-                                      "value",
                                       "nm",
                                       writeCoordinatesSteps,
                                       numFramesPerChunk,
@@ -259,7 +323,6 @@ void GmxH5mdIo::setUpParticlesDataBlocks(int     writeCoordinatesSteps,
     {
         GmxH5mdTimeDataBlock force(systemGroup,
                                    "force",
-                                   "value",
                                    "kJ mol-1 nm-1",
                                    writeForcesSteps,
                                    numFramesPerChunk,
@@ -274,7 +337,6 @@ void GmxH5mdIo::setUpParticlesDataBlocks(int     writeCoordinatesSteps,
     {
         GmxH5mdTimeDataBlock velocity(systemGroup,
                                       "velocity",
-                                      "value",
                                       "nm ps-1",
                                       writeVelocitiesSteps,
                                       numFramesPerChunk,
@@ -289,26 +351,27 @@ void GmxH5mdIo::setUpParticlesDataBlocks(int     writeCoordinatesSteps,
 
 void GmxH5mdIo::setAuthorAndCreator()
 {
-    const char* precisionString = "";
+    std::string precisionString = "";
 #if GMX_DOUBLE
     precisionString = " (double precision)";
 #endif
 
-    char programInfo[128];
-    sprintf(programInfo, "%.100s %.24s", gmx::getProgramContext().displayName(), precisionString);
-    hid_t creatorGroup = openOrCreateGroup(file_, "h5md/creator");
-    setAttribute(creatorGroup, "name", programInfo);
-    const char* gmxVersion = gmx_version();
-    setAttribute(creatorGroup, "version", gmxVersion);
+    std::string programInfo  = gmx::getProgramContext().displayName() + precisionString;
+    hid_t       creatorGroup = openOrCreateGroup(file_, "h5md/creator");
+    setAttribute(creatorGroup, "name", programInfo.c_str());
+    const std::string gmxVersion = gmx_version();
+    setAttribute(creatorGroup, "version", gmxVersion.c_str());
     hid_t authorGroup = openOrCreateGroup(file_, "h5md/author");
-    char  username[256];
-    if (!gmx_getusername(username, 256))
+    char  username[c_maxFullNameLength];
+    if (!gmx_getusername(username, c_maxFullNameLength))
     {
         setAttribute(authorGroup, "name", username);
     }
 }
 
-void GmxH5mdIo::setupMolecularSystem(const gmx_mtop_t& topology)
+void GmxH5mdIo::setupMolecularSystem(const gmx_mtop_t&        topology,
+                                     gmx::ArrayRef<const int> index,
+                                     const std::string        index_group_name)
 {
 #if GMX_USE_HDF5
     if (file_ < 0)
@@ -407,24 +470,47 @@ void GmxH5mdIo::setupMolecularSystem(const gmx_mtop_t& topology)
 
     /* We only need to create a separate selection group entry if not all atoms are part of it. */
     /* TODO: Write atom name, charge and mass for the selection group as well. */
+    /* If a selection of atoms is explicitly provided then use that instead of the CompressedPositionOutput */
     bool all_atoms_selected = true;
-    for (int i = 0; (i < topology.natoms); i++)
+    if (index.ssize() > 0 && index.ssize() != topology.natoms)
     {
-        if (getGroupType(topology.groups, SimulationAtomGroupType::CompressedPositionOutput, i) != 0)
-        {
-            all_atoms_selected = false;
-            break;
-        }
-    }
-    if (topology.groups.numberOfGroupNumbers(SimulationAtomGroupType::CompressedPositionOutput) != 0
-        && !all_atoms_selected)
-    {
-        int nameIndex = topology.groups.groups[SimulationAtomGroupType::CompressedPositionOutput][0];
-        compressedSelectionGroupName_ = *topology.groups.groupNames[nameIndex];
+        all_atoms_selected = false;
     }
     else
     {
-        compressedSelectionGroupName_ = nullptr;
+        for (int i = 0; (i < topology.natoms); i++)
+        {
+            if (getGroupType(topology.groups, SimulationAtomGroupType::CompressedPositionOutput, i) != 0)
+            {
+                all_atoms_selected = false;
+                break;
+            }
+        }
+    }
+    bool setupSeparateOutputGroup = false;
+    if (!all_atoms_selected)
+    {
+        if (index.ssize() > 0 && index_group_name != "")
+        {
+            setupSeparateOutputGroup      = true;
+            compressedSelectionGroupName_ = index_group_name;
+        }
+        if (topology.groups.numberOfGroupNumbers(SimulationAtomGroupType::CompressedPositionOutput) != 0)
+        {
+            setupSeparateOutputGroup = true;
+            int nameIndex = topology.groups.groups[SimulationAtomGroupType::CompressedPositionOutput][0];
+            compressedSelectionGroupName_ = *topology.groups.groupNames[nameIndex];
+        }
+    }
+    if (setupSeparateOutputGroup)
+    {
+
+        std::string name = "particles/" + compressedSelectionGroupName_;
+        openOrCreateGroup(file_, name.c_str());
+    }
+    else
+    {
+        compressedSelectionGroupName_ = "";
     }
 
 #else
@@ -448,12 +534,11 @@ void GmxH5mdIo::writeFrame(int64_t     step,
 
     if (x != nullptr)
     {
-        char wantedName[c_maxFullNameLength];
-        snprintf(wantedName,
-                 c_maxFullNameLength,
-                 "/particles/%s/position",
-                 compressedSelectionGroupName_ != nullptr ? compressedSelectionGroupName_ : "system");
-        auto foundDataBlock = std::find(dataBlocks_.begin(), dataBlocks_.end(), wantedName);
+        std::string wantedName =
+                "/particles/"
+                + (compressedSelectionGroupName_ != "" ? compressedSelectionGroupName_ : "system")
+                + "/position";
+        auto foundDataBlock = std::find(dataBlocks_.begin(), dataBlocks_.end(), wantedName.c_str());
         if (foundDataBlock == dataBlocks_.end())
         {
             gmx_file("There should be a position datablock at this point");
@@ -462,11 +547,11 @@ void GmxH5mdIo::writeFrame(int64_t     step,
 
         if (box != nullptr)
         {
-            snprintf(wantedName,
-                     c_maxFullNameLength,
-                     "/particles/%s/box/edges",
-                     compressedSelectionGroupName_ != nullptr ? compressedSelectionGroupName_ : "system");
-            foundDataBlock = std::find(dataBlocks_.begin(), dataBlocks_.end(), wantedName);
+            std::string wantedName =
+                    "/particles/"
+                    + (compressedSelectionGroupName_ != "" ? compressedSelectionGroupName_ : "system")
+                    + "/box/edges";
+            foundDataBlock = std::find(dataBlocks_.begin(), dataBlocks_.end(), wantedName.c_str());
             if (foundDataBlock == dataBlocks_.end())
             {
                 gmx_file("There should be a box datablock at this point");
@@ -476,12 +561,11 @@ void GmxH5mdIo::writeFrame(int64_t     step,
     }
     if (v != nullptr)
     {
-        char wantedName[c_maxFullNameLength];
-        snprintf(wantedName,
-                 c_maxFullNameLength,
-                 "/particles/%s/velocity",
-                 compressedSelectionGroupName_ != nullptr ? compressedSelectionGroupName_ : "system");
-        auto foundDataBlock = std::find(dataBlocks_.begin(), dataBlocks_.end(), wantedName);
+        std::string wantedName =
+                "/particles/"
+                + (compressedSelectionGroupName_ != "" ? compressedSelectionGroupName_ : "system")
+                + "/velocity";
+        auto foundDataBlock = std::find(dataBlocks_.begin(), dataBlocks_.end(), wantedName.c_str());
         if (foundDataBlock == dataBlocks_.end())
         {
             gmx_file("There should be a velocity datablock at this point");
@@ -490,12 +574,11 @@ void GmxH5mdIo::writeFrame(int64_t     step,
     }
     if (f != nullptr)
     {
-        char wantedName[c_maxFullNameLength];
-        snprintf(wantedName,
-                 c_maxFullNameLength,
-                 "/particles/%s/force",
-                 compressedSelectionGroupName_ != nullptr ? compressedSelectionGroupName_ : "system");
-        auto foundDataBlock = std::find(dataBlocks_.begin(), dataBlocks_.end(), wantedName);
+        std::string wantedName =
+                "/particles/"
+                + (compressedSelectionGroupName_ != "" ? compressedSelectionGroupName_ : "system")
+                + "/force";
+        auto foundDataBlock = std::find(dataBlocks_.begin(), dataBlocks_.end(), wantedName.c_str());
         if (foundDataBlock == dataBlocks_.end())
         {
             gmx_file("There should be a force datablock at this point");
@@ -507,11 +590,11 @@ void GmxH5mdIo::writeFrame(int64_t     step,
 #endif
 }
 
-int64_t GmxH5mdIo::getNumberOfFrames(const char* dataBlockName)
+int64_t GmxH5mdIo::getNumberOfFrames(const std::string dataBlockName)
 {
-    GMX_ASSERT(dataBlockName != nullptr, "There must be a datablock name to look for.");
+    GMX_ASSERT(dataBlockName != "", "There must be a datablock name to look for.");
 
-    auto foundDataBlock = std::find(dataBlocks_.begin(), dataBlocks_.end(), dataBlockName);
+    auto foundDataBlock = std::find(dataBlocks_.begin(), dataBlocks_.end(), dataBlockName.c_str());
     if (foundDataBlock == dataBlocks_.end())
     {
         gmx_file("Datablock not found");
@@ -520,11 +603,11 @@ int64_t GmxH5mdIo::getNumberOfFrames(const char* dataBlockName)
     return foundDataBlock->numberOfFrames();
 }
 
-real GmxH5mdIo::getFirstTime(const char* dataBlockName)
+real GmxH5mdIo::getFirstTime(const std::string dataBlockName)
 {
-    GMX_ASSERT(dataBlockName != nullptr, "There must be a datablock name to look for.");
+    GMX_ASSERT(dataBlockName != "", "There must be a datablock name to look for.");
 
-    auto foundDataBlock = std::find(dataBlocks_.begin(), dataBlocks_.end(), dataBlockName);
+    auto foundDataBlock = std::find(dataBlocks_.begin(), dataBlocks_.end(), dataBlockName.c_str());
     if (foundDataBlock == dataBlocks_.end())
     {
         gmx_file("Datablock not found");
@@ -537,10 +620,38 @@ real GmxH5mdIo::getFirstTimeFromAllDataBlocks()
     real firstTime = std::numeric_limits<real>::max();
     for (const auto& dataBlock : dataBlocks_)
     {
-        real time = dataBlock.getTimeOfFrame(2);
+        real time = dataBlock.getTimeOfFrame(0);
         firstTime = std::min(firstTime, time);
     }
     return firstTime;
+}
+
+real GmxH5mdIo::getFinalTime(const std::string dataBlockName)
+{
+    GMX_ASSERT(dataBlockName != "", "There must be a datablock name to look for.");
+
+    auto foundDataBlock = std::find(dataBlocks_.begin(), dataBlocks_.end(), dataBlockName.c_str());
+    if (foundDataBlock == dataBlocks_.end())
+    {
+        gmx_file("Datablock not found");
+    }
+    return foundDataBlock->getTimeOfFrame(foundDataBlock->numberOfFrames() - 1);
+}
+
+real GmxH5mdIo::getFinalTimeFromAllDataBlocks()
+{
+    real finalTime = 0;
+    for (auto& dataBlock : dataBlocks_)
+    {
+        int numFrames = dataBlock.numberOfFrames();
+        if (numFrames < 1)
+        {
+            continue;
+        }
+        real time = dataBlock.getTimeOfFrame(numFrames - 1);
+        finalTime = std::max(finalTime, time);
+    }
+    return finalTime;
 }
 
 

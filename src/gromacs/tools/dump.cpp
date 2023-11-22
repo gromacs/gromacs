@@ -442,8 +442,11 @@ void list_h5md(const char* fn)
 {
 #if GMX_USE_HDF5
     GmxH5mdIo h5mdIo(fn, 'r');
-    real      time = h5mdIo.getFirstTimeFromAllDataBlocks();
-    printf("First time %f\n", time);
+    h5mdIo.initParticleDataBlocksFromFile();
+    real firstTime = h5mdIo.getFirstTimeFromAllDataBlocks();
+    real finalTime = h5mdIo.getFinalTimeFromAllDataBlocks();
+
+    printf("First time %f, final time %f\n", firstTime, finalTime);
 #else
     GMX_UNUSED_VALUE(fn);
 #endif

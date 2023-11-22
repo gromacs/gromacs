@@ -143,6 +143,13 @@ t_trxstatus* trjtools_gmx_prepare_tng_writing(const std::filesystem::path& filen
                                               gmx::ArrayRef<const int>     index,
                                               const char*                  index_group_name);
 
+t_trxstatus* trjtools_gmx_prepare_h5md_writing(const std::filesystem::path& filename,
+                                               char                         filemode,
+                                               const gmx_mtop_t*            mtop,
+                                               gmx::ArrayRef<const int>     index,
+                                               const char*                  index_group_name);
+
+
 /*! \brief Write a trxframe to the TNG file in status.
  *
  * This function is needed because both t_trxstatus and

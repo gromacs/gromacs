@@ -349,7 +349,7 @@ int gmx_trjconv(int argc, char* argv[])
 
         "The following formats are supported for input and output:",
         "[REF].xtc[ref], [REF].trr[ref], [REF].gro[ref], [TT].g96[tt],",
-        "[REF].pdb[ref] and [REF].tng[ref].",
+        "[REF].pdb[ref], [REF].h5md[ref] and [REF].tng[ref].",
         "The file formats are detected from the file extension.",
         "The precision of the [REF].xtc[ref] output is taken from the",
         "input file for [REF].xtc[ref], [REF].gro[ref] and [REF].pdb[ref],",
@@ -359,7 +359,8 @@ int gmx_trjconv(int argc, char* argv[])
         "output can be single or double precision, depending on the precision",
         "of the [THISMODULE] binary.",
         "Note that velocities are only supported in",
-        "[REF].trr[ref], [REF].tng[ref], [REF].gro[ref] and [TT].g96[tt] files.[PAR]",
+        "[REF].trr[ref], [REF].h5md[ref], [REF].tng[ref], [REF].gro[ref] and ",
+        "[TT].g96[tt] files.[PAR]",
 
         "Option [TT]-sep[tt] can be used to write every frame to a separate",
         "[TT].gro, .g96[tt] or [REF].pdb[ref] file. By default, all frames all written to ",
@@ -757,9 +758,9 @@ int gmx_trjconv(int argc, char* argv[])
         if (bVels)
         {
             /* check if velocities are possible in input and output files */
-            bVels = (ftp == efTRR || ftp == efGRO || ftp == efG96 || ftp == efTNG)
+            bVels = (ftp == efTRR || ftp == efGRO || ftp == efG96 || ftp == efTNG || ftp == efH5MD)
                     && (ftpin == efTRR || ftpin == efGRO || ftpin == efG96 || ftpin == efTNG
-                        || ftpin == efCPT);
+                        || ftpin == efH5MD || ftpin == efCPT);
         }
         if (bSeparate || bSplit)
         {
@@ -787,6 +788,7 @@ int gmx_trjconv(int argc, char* argv[])
         }
 
         std::unique_ptr<gmx_mtop_t> mtop = read_mtop_for_tng(top_file, in_file, out_file);
+        /* FIXME: This should be handled for H5MD as well. */
 
         /* Determine whether to read a topology */
         bTPS = (ftp2bSet(efTPS, NFILE, fnm) || bRmPBC || bReset || bPBCcomMol || bCluster
@@ -1076,6 +1078,10 @@ int gmx_trjconv(int argc, char* argv[])
                                                               mtop.get(),
                                                               gmx::arrayRefFromArray(index, nout),
                                                               grpnm);
+                    break;
+                case efH5MD:
+                    trxout = trjtools_gmx_prepare_h5md_writing(
+                            out_file, filemode[0], nullptr, gmx::arrayRefFromArray(index, nout), grpnm);
                     break;
                 case efXTC:
                 case efTRR:

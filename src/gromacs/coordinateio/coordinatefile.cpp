@@ -381,6 +381,21 @@ static t_trxstatus* openTNG(const std::string& name, const Selection& sel, const
     }
 }
 
+static t_trxstatus* openH5MD(const std::string& name, const Selection& sel, const gmx_mtop_t* mtop)
+{
+    const char* filemode = "w";
+    if (sel.isValid())
+    {
+        GMX_ASSERT(sel.hasOnlyAtoms(), "Can only work with selections consisting out of atoms");
+        return trjtools_gmx_prepare_h5md_writing(name, filemode[0], mtop, sel.atomIndices(), sel.name());
+    }
+    else
+    {
+        return trjtools_gmx_prepare_h5md_writing(
+                name, filemode[0], mtop, get_atom_index(*mtop), "System");
+    }
+}
+
 TrajectoryFileOpener::~TrajectoryFileOpener()
 {
     close_trx(outputFile_);
@@ -394,6 +409,7 @@ t_trxstatus* TrajectoryFileOpener::outputFile()
         switch (filetype_)
         {
             case (efTNG): outputFile_ = openTNG(outputFileName_, sel_, mtop_); break;
+            case (efH5MD): outputFile_ = openH5MD(outputFileName_, sel_, mtop_); break;
             case (efPDB):
             case (efGRO):
             case (efTRR):
