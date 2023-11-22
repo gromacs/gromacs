@@ -93,10 +93,13 @@ hid_t openOrCreateDataSet(hid_t                container,
  *
  * \param[in] dataSet The ID of the dataset to write to.
  * \param[in] data The data to write.
- * \param[in] positionToWrite The frame number to write.
+ * \param[in] frameToWrite The frame number to write (starting from 0).
  */
 template<int numDims, bool writeFullDataSet>
-void writeData(hid_t dataSet, const void* data, hsize_t positionToWrite);
+void writeData(hid_t dataSet, const void* data, hsize_t frameToWrite);
+
+template<int numDims, bool readFullDataSet>
+void readData(hid_t dataSet, hsize_t frameToRead, void** buffer, size_t* dataSize);
 
 hsize_t getNumberOfFramesInDataSet(hid_t dataSet);
 

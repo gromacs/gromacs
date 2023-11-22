@@ -211,11 +211,13 @@ hid_t openOrCreateDataSet(hid_t                container,
 }
 
 template<int numDims, bool writeFullDataSet>
-void writeData(hid_t dataSet, const void* data, hsize_t positionToWrite)
+void writeData(hid_t dataSet, const void* data, hsize_t frameToWrite)
 {
 #if GMX_USE_HDF5
     GMX_ASSERT(dataSet >= 0, "Needs a valid dataSet to write data.");
     GMX_ASSERT(data != nullptr_t, "Needs valid data to write.");
+    GMX_ASSERT(!writeFullDataSet || frameToWrite == 0,
+               "Must start writing from frame 0 if writing the whole data set.");
 
     hid_t   dataSpace          = H5Dget_space(dataSet);
     hid_t   createPropertyList = H5Dget_create_plist(dataSet);
@@ -225,10 +227,10 @@ void writeData(hid_t dataSet, const void* data, hsize_t positionToWrite)
     const hsize_t numFramesPerChunk = chunkDims[0];
 
     /* Resize the dataSet if needed. */
-    if (positionToWrite >= currentDims[0])
+    if (frameToWrite >= currentDims[0])
     {
         hsize_t newDims[numDims];
-        newDims[0] = (positionToWrite / numFramesPerChunk + 1) * numFramesPerChunk;
+        newDims[0] = (frameToWrite / numFramesPerChunk + 1) * numFramesPerChunk;
         for (int i = 1; i < numDims; i++)
         {
             newDims[i] = currentDims[i];
@@ -241,7 +243,7 @@ void writeData(hid_t dataSet, const void* data, hsize_t positionToWrite)
         dataSpace = H5Dget_space(dataSet);
     }
     hsize_t fileOffset[numDims];
-    fileOffset[0] = positionToWrite;
+    fileOffset[0] = frameToWrite;
     hsize_t outputBlockSize[numDims];
     if constexpr (writeFullDataSet)
     {
@@ -251,15 +253,11 @@ void writeData(hid_t dataSet, const void* data, hsize_t positionToWrite)
     {
         outputBlockSize[0] = 1;
     }
+
     for (int i = 1; i < numDims; i++)
     {
         fileOffset[i]      = 0;
         outputBlockSize[i] = currentDims[i];
-    }
-    if (dataSpace < 0)
-    {
-        H5Eprint2(H5E_DEFAULT, nullptr);
-        gmx_file("Cannot get dataSpace of existing dataSet.");
     }
     if (H5Sselect_hyperslab(dataSpace, H5S_SELECT_SET, fileOffset, nullptr, outputBlockSize, nullptr) < 0)
     {
@@ -279,6 +277,65 @@ void writeData(hid_t dataSet, const void* data, hsize_t positionToWrite)
 #else
     gmx_file("GROMACS was compiled without HDF5 support, cannot handle this file type");
 #endif
+}
+
+template<int numDims, bool readFullDataSet>
+void readData(hid_t dataSet, hsize_t frameToRead, void** buffer, size_t* dataSize)
+{
+    GMX_ASSERT(dataSet >= 0, "Needs a valid dataSet to write data.");
+    GMX_ASSERT(!readFullDataSet || frameToRead == 0,
+               "Must start reading from frame 0 if reading the whole data set.");
+
+    hid_t     dataSpace        = H5Dget_space(dataSet);
+    const int dataSpaceNumDims = H5Sget_simple_extent_ndims(dataSpace);
+    if (numDims != dataSpaceNumDims)
+    {
+        gmx_file("The data set dimensions do not match what is expected.");
+    }
+
+    hsize_t dimExtents[numDims];
+    H5Sget_simple_extent_dims(dataSpace, dimExtents, nullptr);
+    hsize_t maxNumFrames = dimExtents[0];
+    if (frameToRead >= maxNumFrames)
+    {
+        gmx_file("Trying to read outside the valid frame range.");
+    }
+
+    hsize_t fileOffset[numDims];
+    fileOffset[0] = frameToRead;
+    hsize_t inputBlockSize[numDims];
+    if constexpr (readFullDataSet)
+    {
+        inputBlockSize[0] = dimExtents[0];
+    }
+    else
+    {
+        inputBlockSize[0] = 1;
+    }
+
+    for (int i = 1; i < numDims; i++)
+    {
+        fileOffset[i]     = 0;
+        inputBlockSize[i] = dimExtents[i];
+    }
+    if (H5Sselect_hyperslab(dataSpace, H5S_SELECT_SET, fileOffset, nullptr, inputBlockSize, nullptr) < 0)
+    {
+        H5Eprint2(H5E_DEFAULT, nullptr);
+        gmx_file("Cannot select the input region.");
+    }
+
+    hid_t memoryDataspace = H5Screate_simple(numDims, inputBlockSize, nullptr);
+    hid_t origDatatype    = H5Dget_type(dataSet);
+    hid_t nativeDatatype  = H5Tget_native_type(origDatatype, H5T_DIR_DEFAULT);
+
+    *dataSize = H5Tget_size(nativeDatatype);
+
+    *buffer = malloc(*dataSize);
+    if (H5Dread(dataSet, nativeDatatype, memoryDataspace, dataSpace, H5P_DEFAULT, *buffer) < 0)
+    {
+        H5Eprint2(H5E_DEFAULT, nullptr);
+        gmx_file("Error reading time data set of frame.");
+    }
 }
 
 void setBoxGroupAttributes(hid_t boxGroup, PbcType pbcType)
@@ -366,8 +423,10 @@ openOrCreateDataSet<3>(hid_t, const char*, const char*, hid_t, const hsize_t*, C
 
 template void writeData<1, false>(hid_t, const void*, hsize_t);
 template void writeData<1, true>(hid_t, const void*, hsize_t);
-template void writeData<2, false>(hid_t, const void*, hsize_t);
 template void writeData<3, false>(hid_t, const void*, hsize_t);
+
+template void readData<1, false>(hid_t, hsize_t, void**, size_t*);
+template void readData<3, false>(hid_t, hsize_t, void**, size_t*);
 
 template void setAttribute<int>(hid_t, const char*, int, hid_t);
 template void setAttribute<float>(hid_t, const char*, float, hid_t);

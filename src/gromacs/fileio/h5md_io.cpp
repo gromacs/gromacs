@@ -95,7 +95,7 @@ static herr_t iterativeSetupParticlesDataBlocks(hid_t            locationId,
             {
                 char containerFullName[c_maxFullNameLength];
                 H5Iget_name(locationId, containerFullName, c_maxFullNameLength);
-                GmxH5mdTimeDataBlock dataBlock(locationId, name);
+                GmxH5mdTimeDataBlock             dataBlock(locationId, name);
                 std::list<GmxH5mdTimeDataBlock>* dataBlocks =
                         static_cast<std::list<GmxH5mdTimeDataBlock>*>(operatorData);
                 dataBlocks->emplace_back(dataBlock);

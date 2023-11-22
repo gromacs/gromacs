@@ -79,8 +79,8 @@ GmxH5mdTimeDataBlock::GmxH5mdTimeDataBlock(hid_t                container,
     static constexpr char c_valueName[] = "value";
     static constexpr char c_stepName[]  = "step";
     static constexpr char c_timeName[]  = "time";
-    static constexpr char c_timeUnit[]  = "ps";
 
+    /* With these default settings new data sets cannot be created. Just load existing from file (if any). */
     if (datatype == -1 && numEntries == 0)
     {
         mainDataSet_ = H5Dopen(group_, c_valueName, H5P_DEFAULT);
@@ -103,7 +103,8 @@ GmxH5mdTimeDataBlock::GmxH5mdTimeDataBlock(hid_t                container,
 #else
         const hid_t timeDatatype = H5Tcopy(H5T_NATIVE_FLOAT);
 #endif
-        timeDataSet_ = openOrCreateDataSet<1>(
+        static constexpr char c_timeUnit[] = "ps";
+        timeDataSet_                       = openOrCreateDataSet<1>(
                 group_, c_timeName, c_timeUnit, timeDatatype, chunkDimsTimeStep, CompressionAlgorithm::None, 0);
     }
     updateNumWrittenFrames();
@@ -195,34 +196,11 @@ real GmxH5mdTimeDataBlock::getTimeOfFrame(hsize_t frame) const
 {
     GMX_ASSERT(timeDataSet_ >= 0, "There must be a data set with time to get the time of a frame.");
 
-    hid_t     dataSpace = H5Dget_space(timeDataSet_);
-    const int numDims   = H5Sget_simple_extent_ndims(dataSpace);
-    if (numDims != 1)
-    {
-        gmx_file("The time data set should be one-dimensional.");
-    }
-    hsize_t dimExtents;
-    H5Sget_simple_extent_dims(dataSpace, &dimExtents, nullptr);
-    hsize_t maxNumFrames = dimExtents;
-    if (frame >= maxNumFrames)
-    {
-        gmx_file("Trying to read outside the valid frame range.");
-    }
+    void*  buffer;
+    size_t dataSize;
+    readData<1, false>(timeDataSet_, frame, &buffer, &dataSize);
 
-    H5Sselect_elements(dataSpace, H5S_SELECT_SET, 1, &frame);
-    hid_t         origDatatype    = H5Dget_type(timeDataSet_);
-    hid_t         nativeDatatype  = H5Tget_native_type(origDatatype, H5T_DIR_DEFAULT);
-    size_t        dataSize        = H5Tget_size(nativeDatatype);
-    const hsize_t memorySpaceSize = 1;
-    hid_t         memSpace        = H5Screate_simple(1, &memorySpaceSize, nullptr);
-    void*         buffer          = malloc(dataSize);
-    if (H5Dread(timeDataSet_, nativeDatatype, memSpace, dataSpace, H5P_DEFAULT, buffer) < 0)
-    {
-        H5Eprint2(H5E_DEFAULT, nullptr);
-        gmx_file("Error reading time data set of frame.");
-    }
-
-    if (dataSize != 4 && dataSpace != 8)
+    if (dataSize != 4 && dataSize != 8)
     {
         gmx_file("Can only read float or double time data.");
     }
@@ -243,3 +221,5 @@ openOrCreateDataSet<3>(hid_t, const char*, const char*, hid_t, const hsize_t*, C
 
 extern template void writeData<1, false>(hid_t, const void*, hsize_t);
 extern template void writeData<3, false>(hid_t, const void*, hsize_t);
+
+extern template void readData<1, false>(hid_t, hsize_t, void**, size_t*);
