@@ -136,6 +136,8 @@ public:
      */
     void writeFrame(int64_t step, real time, real lambda, const rvec* box, const rvec* x, const rvec* v, const rvec* f);
 
+    void readNextFrameOfStandardDataBlocks();
+
     int64_t getNumberOfFrames(const std::string dataBlockName);
 
     real getFirstTime(const std::string dataBlockName);

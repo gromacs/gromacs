@@ -280,9 +280,9 @@ void writeData(hid_t dataSet, const void* data, hsize_t frameToWrite)
 }
 
 template<int numDims, bool readFullDataSet>
-void readData(hid_t dataSet, hsize_t frameToRead, void** buffer, size_t* dataSize)
+void readData(hid_t dataSet, hsize_t frameToRead, void** buffer, size_t* dataTypeSize)
 {
-    GMX_ASSERT(dataSet >= 0, "Needs a valid dataSet to write data.");
+    GMX_ASSERT(dataSet >= 0, "Needs a valid dataSet to read data.");
     GMX_ASSERT(!readFullDataSet || frameToRead == 0,
                "Must start reading from frame 0 if reading the whole data set.");
 
@@ -312,11 +312,13 @@ void readData(hid_t dataSet, hsize_t frameToRead, void** buffer, size_t* dataSiz
     {
         inputBlockSize[0] = 1;
     }
+    size_t totalBlockSize = inputBlockSize[0];
 
     for (int i = 1; i < numDims; i++)
     {
         fileOffset[i]     = 0;
         inputBlockSize[i] = dimExtents[i];
+        totalBlockSize *= inputBlockSize[i];
     }
     if (H5Sselect_hyperslab(dataSpace, H5S_SELECT_SET, fileOffset, nullptr, inputBlockSize, nullptr) < 0)
     {
@@ -328,13 +330,14 @@ void readData(hid_t dataSet, hsize_t frameToRead, void** buffer, size_t* dataSiz
     hid_t origDatatype    = H5Dget_type(dataSet);
     hid_t nativeDatatype  = H5Tget_native_type(origDatatype, H5T_DIR_DEFAULT);
 
-    *dataSize = H5Tget_size(nativeDatatype);
+    *dataTypeSize = H5Tget_size(nativeDatatype);
 
-    *buffer = malloc(*dataSize);
+    /* TODO: Document that the memory must be freed by the caller. */
+    *buffer = malloc(*dataTypeSize * totalBlockSize);
     if (H5Dread(dataSet, nativeDatatype, memoryDataspace, dataSpace, H5P_DEFAULT, *buffer) < 0)
     {
         H5Eprint2(H5E_DEFAULT, nullptr);
-        gmx_file("Error reading time data set of frame.");
+        gmx_file("Error reading data set.");
     }
 }
 
@@ -360,13 +363,13 @@ void setBoxGroupAttributes(hid_t boxGroup, PbcType pbcType)
 }
 
 template<typename T>
-void setAttribute(hid_t container, const char* name, const T value, hid_t dataType)
+void setAttribute(hid_t dataSet, const char* name, const T value, hid_t dataType)
 {
-    hid_t attribute = H5Aopen(container, name, H5P_DEFAULT);
+    hid_t attribute = H5Aopen(dataSet, name, H5P_DEFAULT);
     if (attribute < 0)
     {
         hid_t dataSpace = H5Screate(H5S_SCALAR);
-        attribute = H5Acreate2(container, name, dataType, dataSpace, H5P_DEFAULT, H5P_DEFAULT);
+        attribute       = H5Acreate2(dataSet, name, dataType, dataSpace, H5P_DEFAULT, H5P_DEFAULT);
     }
     if (H5Awrite(attribute, dataType, &value) < 0)
     {
@@ -376,29 +379,58 @@ void setAttribute(hid_t container, const char* name, const T value, hid_t dataTy
     H5Aclose(attribute);
 }
 
-void setAttribute(hid_t container, const char* name, const char* value)
+void setAttribute(hid_t dataSet, const char* name, const char* value)
 {
     hid_t dataType = H5Tcopy(H5T_C_S1);
     H5Tset_size(dataType, H5T_VARIABLE);
     H5Tset_strpad(dataType, H5T_STR_NULLTERM);
     H5Tset_cset(dataType, H5T_CSET_UTF8);
 
-    setAttribute(container, name, value, dataType);
+    setAttribute(dataSet, name, value, dataType);
+}
+
+template<typename T>
+bool getAttribute(hid_t dataSet, const char* name, T* value, hid_t dataType)
+{
+    hid_t attribute = H5Aopen(dataSet, name, H5P_DEFAULT);
+    if (attribute < 0)
+    {
+        return false;
+    }
+    if (H5Aread(attribute, dataType, value) < 0)
+    {
+        return false;
+    }
+
+    H5Aclose(attribute);
+    return true;
+}
+
+bool getAttribute(hid_t dataSet, const char* name, char** value)
+{
+    if (!H5Aexists(dataSet, name))
+    {
+        return false;
+    }
+    hid_t attribute = H5Aopen(dataSet, name, H5P_DEFAULT);
+    hid_t dataType  = H5Aget_type(attribute);
+
+    return getAttribute(dataSet, name, value, dataType);
 }
 
 template<hid_t numEntries, hid_t stringLength>
-void setAttributeStringList(hid_t container, const char* name, const char value[numEntries][stringLength])
+void setAttributeStringList(hid_t dataSet, const char* name, const char value[numEntries][stringLength])
 {
     hid_t dataType = H5Tcopy(H5T_C_S1);
     H5Tset_size(dataType, stringLength);
     H5Tset_strpad(dataType, H5T_STR_NULLTERM);
     H5Tset_cset(dataType, H5T_CSET_UTF8);
-    hid_t attribute = H5Aopen(container, name, H5P_DEFAULT);
+    hid_t attribute = H5Aopen(dataSet, name, H5P_DEFAULT);
     if (attribute < 0)
     {
         hsize_t dataSize[1] = { numEntries };
         hid_t   dataSpace   = H5Screate_simple(1, dataSize, nullptr);
-        attribute = H5Acreate2(container, name, dataType, dataSpace, H5P_DEFAULT, H5P_DEFAULT);
+        attribute = H5Acreate2(dataSet, name, dataType, dataSpace, H5P_DEFAULT, H5P_DEFAULT);
     }
     if (H5Awrite(attribute, dataType, &value[0]) < 0)
     {

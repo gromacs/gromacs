@@ -99,7 +99,7 @@ template<int numDims, bool writeFullDataSet>
 void writeData(hid_t dataSet, const void* data, hsize_t frameToWrite);
 
 template<int numDims, bool readFullDataSet>
-void readData(hid_t dataSet, hsize_t frameToRead, void** buffer, size_t* dataSize);
+void readData(hid_t dataSet, hsize_t frameToRead, void** buffer, size_t* dataTypeSize);
 
 hsize_t getNumberOfFramesInDataSet(hid_t dataSet);
 
@@ -109,6 +109,11 @@ template<typename T>
 void setAttribute(hid_t container, const char* name, const T value, hid_t dataType);
 
 void setAttribute(hid_t container, const char* name, const char* value);
+
+template<typename T>
+bool getAttribute(hid_t dataSet, const char* name, T* value, hid_t dataType);
+
+bool getAttribute(hid_t dataSet, const char* name, char** value);
 
 template<hid_t numEntries, hid_t stringLength>
 void setAttributeStringList(hid_t container, const char* name, const char value[numEntries][stringLength]);

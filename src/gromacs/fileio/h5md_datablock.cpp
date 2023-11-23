@@ -86,14 +86,20 @@ GmxH5mdTimeDataBlock::GmxH5mdTimeDataBlock(hid_t                container,
         mainDataSet_ = H5Dopen(group_, c_valueName, H5P_DEFAULT);
         stepDataSet_ = H5Dopen(group_, c_stepName, H5P_DEFAULT);
         timeDataSet_ = H5Dopen(group_, c_timeName, H5P_DEFAULT);
+
+        updateUnitsFromFile();
+
+        printf("Dataset %s, units: %s and %s\n", name.c_str(), mainUnit_.c_str(), timeUnit_.c_str());
     }
     else
     {
+        mainUnit_ = unit;
+        timeUnit_ = "ps";
+
         hsize_t chunkDims[3] = { numFramesPerChunk, numEntries, numValuesPerEntry };
 
         mainDataSet_ = openOrCreateDataSet<3>(
-                group_, c_valueName, unit.c_str(), datatype, chunkDims, compression, compressionAbsoluteError);
-
+                group_, c_valueName, mainUnit_.c_str(), datatype, chunkDims, compression, compressionAbsoluteError);
         hsize_t chunkDimsTimeStep[1] = { numFramesPerChunk };
         stepDataSet_                 = openOrCreateDataSet<1>(
                 group_, c_stepName, nullptr, H5T_NATIVE_INT64, chunkDimsTimeStep, CompressionAlgorithm::None, 0);
@@ -103,9 +109,8 @@ GmxH5mdTimeDataBlock::GmxH5mdTimeDataBlock(hid_t                container,
 #else
         const hid_t timeDatatype = H5Tcopy(H5T_NATIVE_FLOAT);
 #endif
-        static constexpr char c_timeUnit[] = "ps";
-        timeDataSet_                       = openOrCreateDataSet<1>(
-                group_, c_timeName, c_timeUnit, timeDatatype, chunkDimsTimeStep, CompressionAlgorithm::None, 0);
+        timeDataSet_ = openOrCreateDataSet<1>(
+                group_, c_timeName, timeUnit_.c_str(), timeDatatype, chunkDimsTimeStep, CompressionAlgorithm::None, 0);
     }
     updateNumWrittenFrames();
 }
@@ -140,12 +145,54 @@ void GmxH5mdTimeDataBlock::writeFrame(const void* data, int64_t step, real time)
     GMX_ASSERT(step >= 0, "Invalid step when writing frame.");
 
     /* If there is no specified writing interval for this data block, write after the previous output. */
-    const int frameNumber = writingInterval_ > 0 ? step / writingInterval_ : numWrittenFrames_;
+    const int frameNumber = writingInterval_ > 0 ? step / writingInterval_ : writingFrameIndex_;
 
     writeData<3, false>(mainDataSet_, data, frameNumber);
     writeData<1, false>(stepDataSet_, &step, frameNumber);
     writeData<1, false>(timeDataSet_, &time, frameNumber);
-    ++numWrittenFrames_;
+    ++writingFrameIndex_;
+}
+
+void GmxH5mdTimeDataBlock::writeFrame(const void* data, int64_t step, real time, int frame)
+{
+    GMX_ASSERT(frame >= 0, "Invalid frame when writing.");
+
+    writeData<3, false>(mainDataSet_, data, frame);
+    writeData<1, false>(stepDataSet_, &step, frame);
+    writeData<1, false>(timeDataSet_, &time, frame);
+}
+
+void GmxH5mdTimeDataBlock::readFrame(const void* data, int frame)
+{
+    void*  buffer;
+    size_t dataTypeSize;
+
+    /* FIXME: Make the number of dimensions flexible */
+    readData<3, false>(timeDataSet_, frame, &buffer, &dataTypeSize);
+
+    /* FIXME: Not finished. */
+}
+
+void GmxH5mdTimeDataBlock::readNextFrame(const void* data)
+{
+    readFrame(data, readingFrameIndex_++);
+}
+
+void GmxH5mdTimeDataBlock::updateUnitsFromFile()
+{
+    char* tmpStr = nullptr;
+    if (getAttribute(mainDataSet_, "unit", &tmpStr))
+    {
+        mainUnit_ = tmpStr;
+        H5free_memory(tmpStr);
+        tmpStr = nullptr;
+    }
+    if (getAttribute(timeDataSet_, "unit", &tmpStr))
+    {
+        timeUnit_ = tmpStr;
+        H5free_memory(tmpStr);
+        tmpStr = nullptr;
+    }
 }
 
 void GmxH5mdTimeDataBlock::updateNumWrittenFrames()
@@ -168,7 +215,7 @@ void GmxH5mdTimeDataBlock::updateNumWrittenFrames()
     if (H5Pfill_value_defined(createPropertyList, &fillValueStatus) < 0
         || fillValueStatus == H5D_FILL_VALUE_UNDEFINED)
     {
-        numWrittenFrames_ = numValidFrames;
+        writingFrameIndex_ = numValidFrames;
         return;
     }
     hid_t   datatype = H5T_NATIVE_INT64;
@@ -189,7 +236,24 @@ void GmxH5mdTimeDataBlock::updateNumWrittenFrames()
             gmx_file("Error reading step data set when determining the number of frames.");
         }
     }
-    numWrittenFrames_ = numValidFrames + 1;
+    writingFrameIndex_ = numValidFrames + 1;
+    readingFrameIndex_ = 0;
+}
+
+size_t GmxH5mdTimeDataBlock::getNumParticles() const
+{
+    hid_t     dataSpace        = H5Dget_space(mainDataSet_);
+    const int dataSpaceNumDims = H5Sget_simple_extent_ndims(dataSpace);
+
+    if (dataSpaceNumDims < 2)
+    {
+        gmx_file("No atoms in time dependent data set.");
+    }
+    hsize_t* dimExtents;
+    snew(dimExtents, dataSpaceNumDims);
+    H5Sget_simple_extent_dims(dataSpace, dimExtents, nullptr);
+
+    return dimExtents[1];
 }
 
 real GmxH5mdTimeDataBlock::getTimeOfFrame(hsize_t frame) const
@@ -197,21 +261,27 @@ real GmxH5mdTimeDataBlock::getTimeOfFrame(hsize_t frame) const
     GMX_ASSERT(timeDataSet_ >= 0, "There must be a data set with time to get the time of a frame.");
 
     void*  buffer;
-    size_t dataSize;
-    readData<1, false>(timeDataSet_, frame, &buffer, &dataSize);
+    size_t dataTypeSize;
+    readData<1, false>(timeDataSet_, frame, &buffer, &dataTypeSize);
 
-    if (dataSize != 4 && dataSize != 8)
+    if (dataTypeSize != 4 && dataTypeSize != 8)
     {
         gmx_file("Can only read float or double time data.");
     }
 
-    if (dataSize == 4)
+    if (dataTypeSize == 4)
     {
         float* tmpFloatData = static_cast<float*>(buffer);
-        return *tmpFloatData;
+        float  tmpValue     = *tmpFloatData;
+        H5free_memory(tmpFloatData);
+        tmpFloatData = nullptr;
+        return tmpValue;
     }
     double* tmpDoubleData = static_cast<double*>(buffer);
-    return *tmpDoubleData;
+    double  tmpValue      = *tmpDoubleData;
+    H5free_memory(tmpDoubleData);
+    tmpDoubleData = nullptr;
+    return tmpValue;
 }
 
 extern template hid_t
@@ -223,3 +293,4 @@ extern template void writeData<1, false>(hid_t, const void*, hsize_t);
 extern template void writeData<3, false>(hid_t, const void*, hsize_t);
 
 extern template void readData<1, false>(hid_t, hsize_t, void**, size_t*);
+extern template void readData<3, false>(hid_t, hsize_t, void**, size_t*);

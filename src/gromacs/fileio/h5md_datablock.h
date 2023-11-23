@@ -56,12 +56,15 @@ private:
     hid_t       container_; //!< The HDF5 container of this data block.
     std::string name_;      //!< The name of the data block, e.g. "position".
     std::string fullName_;
+    std::string mainUnit_;
+    std::string timeUnit_;
     hid_t       group_;
     hid_t       mainDataSet_;
     hid_t       timeDataSet_;
     hid_t       stepDataSet_;
     int         writingInterval_; //!< The interval (in MD steps) between outputs.
-    int         numWrittenFrames_;
+    int         writingFrameIndex_;
+    int         readingFrameIndex_;
 
 public:
     GmxH5mdTimeDataBlock(hid_t                container         = -1,
@@ -93,12 +96,26 @@ public:
      */
     void writeFrame(const void* data, int64_t step, real time);
 
+    void writeFrame(const void* data, int64_t step, real time, int frame);
+
+    void readFrame(const void* data, int frame);
+
+    void readNextFrame(const void* data);
+
+    void updateUnitsFromFile();
+
     void updateNumWrittenFrames();
+
+    size_t getNumParticles() const;
 
     real getTimeOfFrame(hsize_t frame) const;
 
-    int         numberOfFrames() const { return numWrittenFrames_; }
+    int         numberOfFrames() const { return writingFrameIndex_; }
     std::string name() const { return name_; }
+    int         writingFrameIndex() const { return writingFrameIndex_; }
+    int         readingFrameIndex() const { return readingFrameIndex_; }
+    std::string mainUnit() const { return mainUnit_; }
+    std::string timeUnit() const { return timeUnit_; }
 };
 
 #endif // GMX_FILEIO_H5MD_DATABLOCK_H

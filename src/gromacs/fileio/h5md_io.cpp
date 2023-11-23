@@ -589,6 +589,37 @@ void GmxH5mdIo::writeFrame(int64_t     step,
 #endif
 }
 
+void GmxH5mdIo::readNextFrameOfStandardDataBlocks()
+{
+    real                            minTimeNextFrame = std::numeric_limits<real>::max();
+    std::list<std::string>          dataBlockNames{ "box", "position", "force", "velocity" };
+    std::list<GmxH5mdTimeDataBlock> dataBlocksNextFrame{};
+    for (std::string name : dataBlockNames)
+    {
+        printf("Searching for data block: %s\n", name.c_str());
+        auto foundDataBlock = std::find(dataBlocks_.begin(), dataBlocks_.end(), name.c_str());
+        if (foundDataBlock == dataBlocks_.end())
+        {
+            printf("Not found\n");
+            continue;
+        }
+        int  frameIndex = foundDataBlock->readingFrameIndex();
+        real time       = foundDataBlock->getTimeOfFrame(frameIndex);
+        /* Discard data sets that had a higher time stamp if an earlier data point has been found. */
+        if (time < minTimeNextFrame)
+        {
+            dataBlocksNextFrame.clear();
+            minTimeNextFrame = time;
+        }
+        if (time <= minTimeNextFrame)
+        {
+            dataBlocksNextFrame.emplace_back(*foundDataBlock);
+        }
+    }
+    for (auto dataBlock : dataBlocksNextFrame) {}
+}
+
+
 int64_t GmxH5mdIo::getNumberOfFrames(const std::string dataBlockName)
 {
     GMX_ASSERT(dataBlockName != "", "There must be a datablock name to look for.");
