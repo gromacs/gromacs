@@ -62,7 +62,7 @@ endif()
 set(SAMPLE_SYCL_SOURCE
     "#include <sycl/sycl.hpp>
          int main(){
-             sycl::queue q(sycl::default_selector{});
+             sycl::queue q(sycl::default_selector_v);
              return 0;
          }")
 set(SYCL_CXX_FLAGS "-fsycl")
