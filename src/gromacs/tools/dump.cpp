@@ -447,6 +447,67 @@ void list_h5md(const char* fn)
     real finalTime = h5mdIo.getFinalTimeFromAllDataBlocks();
 
     printf("First time %f, final time %f\n", firstTime, finalTime);
+
+    rvec*   x             = nullptr;
+    rvec*   v             = nullptr;
+    rvec*   f             = nullptr;
+    int64_t numXParticles = h5mdIo.getNumberOfParticles("position");
+    if (numXParticles > 0)
+    {
+        snew(x, numXParticles);
+    }
+    int64_t numVParticles = h5mdIo.getNumberOfParticles("velocity");
+    if (numVParticles > 0)
+    {
+        snew(v, numVParticles);
+    }
+    int64_t numFParticles = h5mdIo.getNumberOfParticles("force");
+    if (numFParticles > 0)
+    {
+        snew(f, numFParticles);
+    }
+    matrix  box;
+    bool    hasBox = false;
+    bool    hasX   = false;
+    bool    hasV   = false;
+    bool    hasF   = false;
+    int64_t step;
+    real    time;
+    int     nframe = 0;
+    while (h5mdIo.readNextFrameOfStandardDataBlocks(&step, &time, box, x, v, f, &hasBox, &hasX, &hasV, &hasF))
+    {
+        char buf[256];
+        sprintf(buf, "%s frame %d", fn, nframe++);
+        int indent = 0;
+        indent     = pr_title(stdout, indent, buf);
+        pr_indent(stdout, indent);
+        // fprintf(stdout,
+        //         "natoms=%10d  step=%10" PRId64 "  time=%12.7e  lambda=%10g\n",
+        //         numXParticles,
+        //         trrheader.step,
+        //         trrheader.t,
+        //         trrheader.lambda);
+        fprintf(stdout, "natoms=%10" PRId64 "  step=%10" PRId64 "  time=%12.7e\n", numXParticles, step, time);
+        if (hasBox)
+        {
+            pr_rvecs(stdout, indent, "box", box, DIM);
+        }
+        if (hasX)
+        {
+            pr_rvecs(stdout, indent, "x", x, numXParticles);
+        }
+        if (hasV)
+        {
+            pr_rvecs(stdout, indent, "v", v, numVParticles);
+        }
+        if (hasF)
+        {
+            pr_rvecs(stdout, indent, "f", f, numFParticles);
+        }
+    }
+    sfree(x);
+    sfree(v);
+    sfree(f);
 #else
     GMX_UNUSED_VALUE(fn);
 #endif

@@ -280,7 +280,7 @@ void writeData(hid_t dataSet, const void* data, hsize_t frameToWrite)
 }
 
 template<int numDims, bool readFullDataSet>
-void readData(hid_t dataSet, hsize_t frameToRead, void** buffer, size_t* dataTypeSize)
+void readData(hid_t dataSet, hsize_t frameToRead, void** buffer, size_t* totalNumElements, size_t* dataTypeSize)
 {
     GMX_ASSERT(dataSet >= 0, "Needs a valid dataSet to read data.");
     GMX_ASSERT(!readFullDataSet || frameToRead == 0,
@@ -330,7 +330,8 @@ void readData(hid_t dataSet, hsize_t frameToRead, void** buffer, size_t* dataTyp
     hid_t origDatatype    = H5Dget_type(dataSet);
     hid_t nativeDatatype  = H5Tget_native_type(origDatatype, H5T_DIR_DEFAULT);
 
-    *dataTypeSize = H5Tget_size(nativeDatatype);
+    *dataTypeSize     = H5Tget_size(nativeDatatype);
+    *totalNumElements = totalBlockSize;
 
     /* TODO: Document that the memory must be freed by the caller. */
     *buffer = malloc(*dataTypeSize * totalBlockSize);
@@ -457,8 +458,8 @@ template void writeData<1, false>(hid_t, const void*, hsize_t);
 template void writeData<1, true>(hid_t, const void*, hsize_t);
 template void writeData<3, false>(hid_t, const void*, hsize_t);
 
-template void readData<1, false>(hid_t, hsize_t, void**, size_t*);
-template void readData<3, false>(hid_t, hsize_t, void**, size_t*);
+template void readData<1, false>(hid_t, hsize_t, void**, size_t*, size_t*);
+template void readData<3, false>(hid_t, hsize_t, void**, size_t*, size_t*);
 
 template void setAttribute<int>(hid_t, const char*, int, hid_t);
 template void setAttribute<float>(hid_t, const char*, float, hid_t);

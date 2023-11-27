@@ -98,6 +98,7 @@ static herr_t iterativeSetupParticlesDataBlocks(hid_t            locationId,
                 GmxH5mdTimeDataBlock             dataBlock(locationId, name);
                 std::list<GmxH5mdTimeDataBlock>* dataBlocks =
                         static_cast<std::list<GmxH5mdTimeDataBlock>*>(operatorData);
+                dataBlock.updateNumWrittenFrames();
                 dataBlocks->emplace_back(dataBlock);
 
                 returnVal = 0;
@@ -589,34 +590,91 @@ void GmxH5mdIo::writeFrame(int64_t     step,
 #endif
 }
 
-void GmxH5mdIo::readNextFrameOfStandardDataBlocks()
+bool GmxH5mdIo::readNextFrameOfStandardDataBlocks(int64_t* step,
+                                                  real*    time,
+                                                  rvec*    box,
+                                                  rvec*    x,
+                                                  rvec*    v,
+                                                  rvec*    f,
+                                                  bool*    readBox,
+                                                  bool*    readX,
+                                                  bool*    readV,
+                                                  bool*    readF)
 {
-    real                            minTimeNextFrame = std::numeric_limits<real>::max();
-    std::list<std::string>          dataBlockNames{ "box", "position", "force", "velocity" };
+    std::string nameStem =
+            "/particles/" + (compressedSelectionGroupName_ != "" ? compressedSelectionGroupName_ : "system");
+    std::list<std::string>          dataBlockNames{ nameStem + "/box/edges",
+                                           nameStem + "/position",
+                                           nameStem + "/force",
+                                           nameStem + "/velocity" };
     std::list<GmxH5mdTimeDataBlock> dataBlocksNextFrame{};
+    int64_t                         minStepNextFrame = std::numeric_limits<real>::max();
     for (std::string name : dataBlockNames)
     {
-        printf("Searching for data block: %s\n", name.c_str());
         auto foundDataBlock = std::find(dataBlocks_.begin(), dataBlocks_.end(), name.c_str());
         if (foundDataBlock == dataBlocks_.end())
         {
-            printf("Not found\n");
             continue;
         }
-        int  frameIndex = foundDataBlock->readingFrameIndex();
-        real time       = foundDataBlock->getTimeOfFrame(frameIndex);
+        int     frameIndex = foundDataBlock->readingFrameIndex();
+        int64_t frameStep  = foundDataBlock->getStepOfFrame(frameIndex);
         /* Discard data sets that had a higher time stamp if an earlier data point has been found. */
-        if (time < minTimeNextFrame)
+        if (frameStep < minStepNextFrame)
         {
             dataBlocksNextFrame.clear();
-            minTimeNextFrame = time;
+            minStepNextFrame = frameStep;
+            *time            = foundDataBlock->getStepOfFrame(frameIndex);
         }
-        if (time <= minTimeNextFrame)
+        if (frameStep <= minStepNextFrame)
         {
             dataBlocksNextFrame.emplace_back(*foundDataBlock);
         }
     }
-    for (auto dataBlock : dataBlocksNextFrame) {}
+    *step             = minStepNextFrame;
+    bool didReadFrame = false;
+    for (std::list<GmxH5mdTimeDataBlock>::iterator dataBlock = dataBlocks_.begin();
+         dataBlock != dataBlocks_.end();
+         ++dataBlock)
+    {
+        /* FIXME: Can this be done more elegantly? */
+        if (box != nullptr && dataBlock->name() == "edges")
+        {
+            if (dataBlock->readNextFrame(static_cast<real*>(box[0])))
+            {
+                *readBox     = true;
+                didReadFrame = true;
+            }
+        }
+        else if (x != nullptr && dataBlock->name() == "position")
+        {
+            if (dataBlock->readNextFrame(static_cast<real*>(x[0])))
+            {
+                *readX       = true;
+                didReadFrame = true;
+            }
+        }
+        else if (v != nullptr && dataBlock->name() == "velocity")
+        {
+            if (dataBlock->readNextFrame(static_cast<real*>(v[0])))
+            {
+                *readV       = true;
+                didReadFrame = true;
+            }
+        }
+        else if (f != nullptr && dataBlock->name() == "force")
+        {
+            if (dataBlock->readNextFrame(static_cast<real*>(f[0])))
+            {
+                *readF       = true;
+                didReadFrame = true;
+            }
+        }
+        else
+        {
+            gmx_file("Unexpected data type.");
+        }
+    }
+    return didReadFrame;
 }
 
 
@@ -624,20 +682,44 @@ int64_t GmxH5mdIo::getNumberOfFrames(const std::string dataBlockName)
 {
     GMX_ASSERT(dataBlockName != "", "There must be a datablock name to look for.");
 
-    auto foundDataBlock = std::find(dataBlocks_.begin(), dataBlocks_.end(), dataBlockName.c_str());
+    std::string nameStem =
+            "/particles/" + (compressedSelectionGroupName_ != "" ? compressedSelectionGroupName_ : "system");
+    std::string wantedName = nameStem + "/" + dataBlockName;
+
+    auto foundDataBlock = std::find(dataBlocks_.begin(), dataBlocks_.end(), wantedName.c_str());
     if (foundDataBlock == dataBlocks_.end())
     {
         gmx_file("Datablock not found");
     }
-    foundDataBlock->updateNumWrittenFrames();
+    // foundDataBlock->updateNumWrittenFrames();
     return foundDataBlock->numberOfFrames();
+}
+
+int64_t GmxH5mdIo::getNumberOfParticles(const std::string dataBlockName)
+{
+    GMX_ASSERT(dataBlockName != "", "There must be a datablock name to look for.");
+
+    std::string nameStem =
+            "/particles/" + (compressedSelectionGroupName_ != "" ? compressedSelectionGroupName_ : "system");
+    std::string wantedName = nameStem + "/" + dataBlockName;
+
+    auto foundDataBlock = std::find(dataBlocks_.begin(), dataBlocks_.end(), wantedName.c_str());
+    if (foundDataBlock == dataBlocks_.end())
+    {
+        return 0;
+    }
+    return foundDataBlock->getNumParticles();
 }
 
 real GmxH5mdIo::getFirstTime(const std::string dataBlockName)
 {
     GMX_ASSERT(dataBlockName != "", "There must be a datablock name to look for.");
 
-    auto foundDataBlock = std::find(dataBlocks_.begin(), dataBlocks_.end(), dataBlockName.c_str());
+    std::string nameStem =
+            "/particles/" + (compressedSelectionGroupName_ != "" ? compressedSelectionGroupName_ : "system");
+    std::string wantedName = nameStem + "/" + dataBlockName;
+
+    auto foundDataBlock = std::find(dataBlocks_.begin(), dataBlocks_.end(), wantedName.c_str());
     if (foundDataBlock == dataBlocks_.end())
     {
         gmx_file("Datablock not found");
@@ -660,7 +742,11 @@ real GmxH5mdIo::getFinalTime(const std::string dataBlockName)
 {
     GMX_ASSERT(dataBlockName != "", "There must be a datablock name to look for.");
 
-    auto foundDataBlock = std::find(dataBlocks_.begin(), dataBlocks_.end(), dataBlockName.c_str());
+    std::string nameStem =
+            "/particles/" + (compressedSelectionGroupName_ != "" ? compressedSelectionGroupName_ : "system");
+    std::string wantedName = nameStem + "/" + dataBlockName;
+
+    auto foundDataBlock = std::find(dataBlocks_.begin(), dataBlocks_.end(), wantedName.c_str());
     if (foundDataBlock == dataBlocks_.end())
     {
         gmx_file("Datablock not found");

@@ -99,7 +99,7 @@ template<int numDims, bool writeFullDataSet>
 void writeData(hid_t dataSet, const void* data, hsize_t frameToWrite);
 
 template<int numDims, bool readFullDataSet>
-void readData(hid_t dataSet, hsize_t frameToRead, void** buffer, size_t* dataTypeSize);
+void readData(hid_t dataSet, hsize_t frameToRead, void** buffer, size_t* totalNumElements, size_t* dataTypeSize);
 
 hsize_t getNumberOfFramesInDataSet(hid_t dataSet);
 

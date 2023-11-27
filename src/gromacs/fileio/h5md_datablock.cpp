@@ -43,6 +43,7 @@
 
 #include <sys/_types/_int64_t.h>
 
+#include "gromacs/math/vectypes.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
@@ -74,7 +75,9 @@ GmxH5mdTimeDataBlock::GmxH5mdTimeDataBlock(hid_t                container,
     group_ = openOrCreateGroup(container_, name_.c_str());
     char tmpFullName[c_maxFullNameLength];
     H5Iget_name(group_, tmpFullName, c_maxFullNameLength);
-    fullName_ = tmpFullName;
+    fullName_          = tmpFullName;
+    readingFrameIndex_ = 0;
+    printf("In constructor\n");
 
     static constexpr char c_valueName[] = "value";
     static constexpr char c_stepName[]  = "step";
@@ -112,7 +115,6 @@ GmxH5mdTimeDataBlock::GmxH5mdTimeDataBlock(hid_t                container,
         timeDataSet_ = openOrCreateDataSet<1>(
                 group_, c_timeName, timeUnit_.c_str(), timeDatatype, chunkDimsTimeStep, CompressionAlgorithm::None, 0);
     }
-    updateNumWrittenFrames();
 }
 
 void GmxH5mdTimeDataBlock::closeAllDataSets()
@@ -162,20 +164,52 @@ void GmxH5mdTimeDataBlock::writeFrame(const void* data, int64_t step, real time,
     writeData<1, false>(timeDataSet_, &time, frame);
 }
 
-void GmxH5mdTimeDataBlock::readFrame(const void* data, int frame)
+bool GmxH5mdTimeDataBlock::readFrame(real* data, int frame)
 {
-    void*  buffer;
+    void*  buffer = nullptr;
+    size_t totalNumElements;
     size_t dataTypeSize;
 
     /* FIXME: Make the number of dimensions flexible */
-    readData<3, false>(timeDataSet_, frame, &buffer, &dataTypeSize);
+    readData<3, false>(mainDataSet_, frame, &buffer, &totalNumElements, &dataTypeSize);
 
-    /* FIXME: Not finished. */
+#if GMX_DOUBLE
+    if (dataTypeSize != 8)
+    {
+        for (size_t i = 0; i < totalNumElements; i++)
+        {
+            data[i] = static_cast<float*>(buffer)[i];
+        }
+    }
+    else
+    {
+        std::memcpy(data, buffer, totalNumElements * dataTypeSize);
+    }
+#else
+    if (dataTypeSize != 4)
+    {
+        for (size_t i = 0; i < totalNumElements; i++)
+        {
+            data[i] = static_cast<double*>(buffer)[i];
+        }
+    }
+    else
+    {
+        std::memcpy(data, buffer, totalNumElements * dataTypeSize);
+    }
+#endif
+
+    H5free_memory(buffer);
+    return true;
 }
 
-void GmxH5mdTimeDataBlock::readNextFrame(const void* data)
+bool GmxH5mdTimeDataBlock::readNextFrame(real* data)
 {
-    readFrame(data, readingFrameIndex_++);
+    if (readingFrameIndex_ >= writingFrameIndex_)
+    {
+        return false;
+    }
+    return readFrame(data, readingFrameIndex_++);
 }
 
 void GmxH5mdTimeDataBlock::updateUnitsFromFile()
@@ -237,7 +271,6 @@ void GmxH5mdTimeDataBlock::updateNumWrittenFrames()
         }
     }
     writingFrameIndex_ = numValidFrames + 1;
-    readingFrameIndex_ = 0;
 }
 
 size_t GmxH5mdTimeDataBlock::getNumParticles() const
@@ -256,13 +289,43 @@ size_t GmxH5mdTimeDataBlock::getNumParticles() const
     return dimExtents[1];
 }
 
+int64_t GmxH5mdTimeDataBlock::getStepOfFrame(hsize_t frame) const
+{
+    GMX_ASSERT(timeDataSet_ >= 0, "There must be a data set with time to get the time of a frame.");
+
+    void*  buffer;
+    size_t totalNumElements;
+    size_t dataTypeSize;
+    readData<1, false>(stepDataSet_, frame, &buffer, &totalNumElements, &dataTypeSize);
+
+    if (dataTypeSize != 4 && dataTypeSize != 8)
+    {
+        gmx_file("Can only read 32- or 64-bit step data.");
+    }
+
+    if (dataTypeSize == 4)
+    {
+        int* tmpIntData = static_cast<int*>(buffer);
+        int  tmpValue   = *tmpIntData;
+        H5free_memory(tmpIntData);
+        tmpIntData = nullptr;
+        return tmpValue;
+    }
+    int64_t* tmpIntData = static_cast<int64_t*>(buffer);
+    int64_t  tmpValue   = *tmpIntData;
+    H5free_memory(tmpIntData);
+    tmpIntData = nullptr;
+    return tmpValue;
+}
+
 real GmxH5mdTimeDataBlock::getTimeOfFrame(hsize_t frame) const
 {
     GMX_ASSERT(timeDataSet_ >= 0, "There must be a data set with time to get the time of a frame.");
 
     void*  buffer;
+    size_t totalNumElements;
     size_t dataTypeSize;
-    readData<1, false>(timeDataSet_, frame, &buffer, &dataTypeSize);
+    readData<1, false>(timeDataSet_, frame, &buffer, &totalNumElements, &dataTypeSize);
 
     if (dataTypeSize != 4 && dataTypeSize != 8)
     {
@@ -292,5 +355,5 @@ openOrCreateDataSet<3>(hid_t, const char*, const char*, hid_t, const hsize_t*, C
 extern template void writeData<1, false>(hid_t, const void*, hsize_t);
 extern template void writeData<3, false>(hid_t, const void*, hsize_t);
 
-extern template void readData<1, false>(hid_t, hsize_t, void**, size_t*);
-extern template void readData<3, false>(hid_t, hsize_t, void**, size_t*);
+extern template void readData<1, false>(hid_t, hsize_t, void**, size_t*, size_t*);
+extern template void readData<3, false>(hid_t, hsize_t, void**, size_t*, size_t*);

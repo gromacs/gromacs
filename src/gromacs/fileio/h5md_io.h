@@ -136,9 +136,20 @@ public:
      */
     void writeFrame(int64_t step, real time, real lambda, const rvec* box, const rvec* x, const rvec* v, const rvec* f);
 
-    void readNextFrameOfStandardDataBlocks();
+    bool readNextFrameOfStandardDataBlocks(int64_t* step,
+                                           real*    time,
+                                           rvec*    box,
+                                           rvec*    x,
+                                           rvec*    v,
+                                           rvec*    f,
+                                           bool*    readBox,
+                                           bool*    readX,
+                                           bool*    readV,
+                                           bool*    readF);
 
     int64_t getNumberOfFrames(const std::string dataBlockName);
+
+    int64_t getNumberOfParticles(const std::string dataBlockName);
 
     real getFirstTime(const std::string dataBlockName);
     real getFirstTimeFromAllDataBlocks();

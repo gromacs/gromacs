@@ -39,6 +39,9 @@
 #include <list>
 #include <string>
 
+#include <sys/_types/_int64_t.h>
+
+#include "gromacs/math/vectypes.h"
 #include "gromacs/utility/real.h"
 
 #include "h5md_util.h"
@@ -98,9 +101,9 @@ public:
 
     void writeFrame(const void* data, int64_t step, real time, int frame);
 
-    void readFrame(const void* data, int frame);
+    bool readFrame(real* data, int frame);
 
-    void readNextFrame(const void* data);
+    bool readNextFrame(real* data);
 
     void updateUnitsFromFile();
 
@@ -108,10 +111,13 @@ public:
 
     size_t getNumParticles() const;
 
+    int64_t getStepOfFrame(hsize_t frame) const;
+
     real getTimeOfFrame(hsize_t frame) const;
 
     int         numberOfFrames() const { return writingFrameIndex_; }
     std::string name() const { return name_; }
+    std::string fullName() const { return fullName_; }
     int         writingFrameIndex() const { return writingFrameIndex_; }
     int         readingFrameIndex() const { return readingFrameIndex_; }
     std::string mainUnit() const { return mainUnit_; }
