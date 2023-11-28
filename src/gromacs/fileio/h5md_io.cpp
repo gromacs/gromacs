@@ -145,7 +145,7 @@ void GmxH5mdIo::openFile(const std::string fileName, const char mode)
 
     closeFile();
 
-    compressedSelectionGroupName_ = "";
+    systemOutputName_ = "system";
 
     if (debug)
     {
@@ -268,15 +268,9 @@ void GmxH5mdIo::setUpParticlesDataBlocks(int     writeCoordinatesSteps,
     const hid_t datatype = H5Tcopy(H5T_NATIVE_FLOAT);
 #endif
     hid_t systemGroup;
-    if (compressionError && compressedSelectionGroupName_ != "")
-    {
-        std::string name = "particles/" + compressedSelectionGroupName_;
-        systemGroup      = openOrCreateGroup(file_, name.c_str());
-    }
-    else
-    {
-        systemGroup = openOrCreateGroup(file_, "particles/system");
-    }
+
+    std::string name = "particles/" + systemOutputName_;
+    systemGroup      = openOrCreateGroup(file_, name.c_str());
 
     hsize_t              numFramesPerChunk    = 1;
     CompressionAlgorithm compressionAlgorithm = CompressionAlgorithm::LosslessWithShuffle;
@@ -492,25 +486,25 @@ void GmxH5mdIo::setupMolecularSystem(const gmx_mtop_t&        topology,
     {
         if (index.ssize() > 0 && index_group_name != "")
         {
-            setupSeparateOutputGroup      = true;
-            compressedSelectionGroupName_ = index_group_name;
+            setupSeparateOutputGroup = true;
+            systemOutputName_        = index_group_name;
         }
-        if (topology.groups.numberOfGroupNumbers(SimulationAtomGroupType::CompressedPositionOutput) != 0)
+        else if (topology.groups.numberOfGroupNumbers(SimulationAtomGroupType::CompressedPositionOutput) != 0)
         {
             setupSeparateOutputGroup = true;
             int nameIndex = topology.groups.groups[SimulationAtomGroupType::CompressedPositionOutput][0];
-            compressedSelectionGroupName_ = *topology.groups.groupNames[nameIndex];
+            systemOutputName_ = *topology.groups.groupNames[nameIndex];
         }
     }
     if (setupSeparateOutputGroup)
     {
 
-        std::string name = "particles/" + compressedSelectionGroupName_;
+        std::string name = "particles/" + systemOutputName_;
         openOrCreateGroup(file_, name.c_str());
     }
     else
     {
-        compressedSelectionGroupName_ = "";
+        systemOutputName_ = "system";
     }
 
 #else
@@ -534,10 +528,7 @@ void GmxH5mdIo::writeFrame(int64_t     step,
 
     if (x != nullptr)
     {
-        std::string wantedName =
-                "/particles/"
-                + (compressedSelectionGroupName_ != "" ? compressedSelectionGroupName_ : "system")
-                + "/position";
+        std::string wantedName = "/particles/" + systemOutputName_ + "/position";
         auto foundDataBlock = std::find(dataBlocks_.begin(), dataBlocks_.end(), wantedName.c_str());
         if (foundDataBlock == dataBlocks_.end())
         {
@@ -547,10 +538,7 @@ void GmxH5mdIo::writeFrame(int64_t     step,
 
         if (box != nullptr)
         {
-            std::string wantedName =
-                    "/particles/"
-                    + (compressedSelectionGroupName_ != "" ? compressedSelectionGroupName_ : "system")
-                    + "/box/edges";
+            std::string wantedName = "/particles/" + systemOutputName_ + "/box/edges";
             foundDataBlock = std::find(dataBlocks_.begin(), dataBlocks_.end(), wantedName.c_str());
             if (foundDataBlock == dataBlocks_.end())
             {
@@ -561,10 +549,7 @@ void GmxH5mdIo::writeFrame(int64_t     step,
     }
     if (v != nullptr)
     {
-        std::string wantedName =
-                "/particles/"
-                + (compressedSelectionGroupName_ != "" ? compressedSelectionGroupName_ : "system")
-                + "/velocity";
+        std::string wantedName = "/particles/" + systemOutputName_ + "/velocity";
         auto foundDataBlock = std::find(dataBlocks_.begin(), dataBlocks_.end(), wantedName.c_str());
         if (foundDataBlock == dataBlocks_.end())
         {
@@ -574,10 +559,7 @@ void GmxH5mdIo::writeFrame(int64_t     step,
     }
     if (f != nullptr)
     {
-        std::string wantedName =
-                "/particles/"
-                + (compressedSelectionGroupName_ != "" ? compressedSelectionGroupName_ : "system")
-                + "/force";
+        std::string wantedName = "/particles/" + systemOutputName_ + "/force";
         auto foundDataBlock = std::find(dataBlocks_.begin(), dataBlocks_.end(), wantedName.c_str());
         if (foundDataBlock == dataBlocks_.end())
         {
@@ -601,8 +583,7 @@ bool GmxH5mdIo::readNextFrameOfStandardDataBlocks(int64_t* step,
                                                   bool*    readV,
                                                   bool*    readF)
 {
-    std::string nameStem =
-            "/particles/" + (compressedSelectionGroupName_ != "" ? compressedSelectionGroupName_ : "system");
+    std::string                     nameStem = "/particles/" + systemOutputName_;
     std::list<std::string>          dataBlockNames{ nameStem + "/box/edges",
                                            nameStem + "/position",
                                            nameStem + "/force",
@@ -682,9 +663,7 @@ int64_t GmxH5mdIo::getNumberOfFrames(const std::string dataBlockName)
 {
     GMX_ASSERT(dataBlockName != "", "There must be a datablock name to look for.");
 
-    std::string nameStem =
-            "/particles/" + (compressedSelectionGroupName_ != "" ? compressedSelectionGroupName_ : "system");
-    std::string wantedName = nameStem + "/" + dataBlockName;
+    std::string wantedName = "/particles/" + systemOutputName_ + "/" + dataBlockName;
 
     auto foundDataBlock = std::find(dataBlocks_.begin(), dataBlocks_.end(), wantedName.c_str());
     if (foundDataBlock == dataBlocks_.end())
@@ -699,9 +678,7 @@ int64_t GmxH5mdIo::getNumberOfParticles(const std::string dataBlockName)
 {
     GMX_ASSERT(dataBlockName != "", "There must be a datablock name to look for.");
 
-    std::string nameStem =
-            "/particles/" + (compressedSelectionGroupName_ != "" ? compressedSelectionGroupName_ : "system");
-    std::string wantedName = nameStem + "/" + dataBlockName;
+    std::string wantedName = "/particles/" + systemOutputName_ + "/" + dataBlockName;
 
     auto foundDataBlock = std::find(dataBlocks_.begin(), dataBlocks_.end(), wantedName.c_str());
     if (foundDataBlock == dataBlocks_.end())
@@ -715,9 +692,7 @@ real GmxH5mdIo::getFirstTime(const std::string dataBlockName)
 {
     GMX_ASSERT(dataBlockName != "", "There must be a datablock name to look for.");
 
-    std::string nameStem =
-            "/particles/" + (compressedSelectionGroupName_ != "" ? compressedSelectionGroupName_ : "system");
-    std::string wantedName = nameStem + "/" + dataBlockName;
+    std::string wantedName = "/particles/" + systemOutputName_ + "/" + dataBlockName;
 
     auto foundDataBlock = std::find(dataBlocks_.begin(), dataBlocks_.end(), wantedName.c_str());
     if (foundDataBlock == dataBlocks_.end())
@@ -742,9 +717,7 @@ real GmxH5mdIo::getFinalTime(const std::string dataBlockName)
 {
     GMX_ASSERT(dataBlockName != "", "There must be a datablock name to look for.");
 
-    std::string nameStem =
-            "/particles/" + (compressedSelectionGroupName_ != "" ? compressedSelectionGroupName_ : "system");
-    std::string wantedName = nameStem + "/" + dataBlockName;
+    std::string wantedName = "/particles/" + systemOutputName_ + "/" + dataBlockName;
 
     auto foundDataBlock = std::find(dataBlocks_.begin(), dataBlocks_.end(), wantedName.c_str());
     if (foundDataBlock == dataBlocks_.end())

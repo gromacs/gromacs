@@ -58,7 +58,7 @@ private:
     hid_t file_; //!< The HDF5 identifier of the file. This is the H5MD root.
     std::list<GmxH5mdTimeDataBlock> dataBlocks_;
 
-    std::string compressedSelectionGroupName_; //!< The name of the selection group of compressed coordinates.
+    std::string systemOutputName_; //!< The name of the selection of particles output. Defaults to "system"
 
     /*! \brief Sets the author (user) and creator (application name) properties in the h5md group (h5mdGroup_). */
     void setAuthorAndCreator();
