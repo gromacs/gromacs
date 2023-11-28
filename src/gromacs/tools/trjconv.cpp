@@ -1507,6 +1507,7 @@ int gmx_trjconv(int argc, char* argv[])
                                 write_tng_frame(trxout, &frout);
                                 // TODO when trjconv behaves better: work how to read and write lambda
                                 break;
+                            case efH5MD:
                             case efTRR:
                             case efXTC:
                                 if (bSplitHere)
@@ -1515,7 +1516,19 @@ int gmx_trjconv(int argc, char* argv[])
                                     {
                                         close_trx(trxout);
                                     }
-                                    trxout = open_trx(out_file2, filemode);
+                                    if (ftp == efH5MD)
+                                    {
+                                        trxout = trjtools_gmx_prepare_h5md_writing(
+                                                out_file2,
+                                                filemode[0],
+                                                nullptr,
+                                                gmx::arrayRefFromArray(index, nout),
+                                                grpnm);
+                                    }
+                                    else
+                                    {
+                                        trxout = open_trx(out_file2, filemode);
+                                    }
                                 }
                                 write_trxframe(trxout, &frout, gc);
                                 break;

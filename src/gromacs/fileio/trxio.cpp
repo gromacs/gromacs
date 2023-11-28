@@ -698,6 +698,10 @@ void close_trx(t_trxstatus* status)
         return;
     }
     gmx_tng_close(&status->tng);
+    if (status->h5mdIo)
+    {
+        status->h5mdIo->closeFile();
+    }
     if (status->fio)
     {
         gmx_fio_close(status->fio);
