@@ -263,7 +263,7 @@ private:
 /*! \brief Enum of dynamic load balancing states
  *
  * Allowed DLB states and transitions
- * - intialization at startup:
+ * - initialization at startup:
  *                             -> offUser ("-dlb no")
  *                             -> onUser  ("-dlb yes")
  *                             -> offCanTurnOn ("-dlb auto")

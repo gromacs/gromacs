@@ -83,7 +83,7 @@ struct AwhBiasStateHistory
     int     umbrellaGridpoint; /**< Index for the current umbrella reference coordinate point (for umbrella potential type) */
     int     origin_index_updatelist; /**< Point index of the origin of the subgrid that has been touched since last update. */
     int     end_index_updatelist; /**< Point index of the end of the subgrid that has been touched since last update. */
-    bool    in_initial;           /**< True if in the intial stage. */
+    bool    in_initial;           /**< True if in the initial stage. */
     bool    equilibrateHistogram; /**< True if histogram needs equilibration. */
     double  histSize;             /**< Size of reference weight histogram. */
     double  logScaledSampleWeight; /**< The log of the current sample weight, scaled because of the histogram rescaling. */

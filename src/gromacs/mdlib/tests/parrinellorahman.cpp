@@ -135,10 +135,10 @@ const char* enumValueToStringForTestName(const BoxShape enumValue)
 {
     static constexpr gmx::EnumerationArray<BoxShape, const char*> names = {
         "cubic",
-        "rect", // abbreivates "rectilinear"
+        "rect", // abbreviates "rectilinear"
         "rds",  // abbreviates "rhombic dodecahedron XY square"
         "rdh",  // abbreviates "rhombic dodecahedron XY hexagon"
-        "to",   // abbreviaites "truncated octahedron",
+        "to",   // abbreviates "truncated octahedron",
         "other"
     };
     return names[enumValue];

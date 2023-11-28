@@ -221,7 +221,7 @@ public:
     bool empty() const;
 
 private:
-    const IVec begin_; //< interger indices denoting begin of box
+    const IVec begin_; //< integer indices denoting begin of box
     const IVec end_;   //< integer indices denoting one-past end of box in any dimension
 };
 

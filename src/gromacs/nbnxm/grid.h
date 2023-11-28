@@ -128,7 +128,7 @@ struct BoundingBox
         float y;
         //! z coordinate
         float z;
-        //! padding, unused, but should be set to avoid operations on unitialized data
+        //! padding, unused, but should be set to avoid operations on uninitialized data
         float padding;
     };
 

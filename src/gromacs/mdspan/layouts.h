@@ -149,7 +149,7 @@ public:
          * \param[in] r current rank
          * \param[in] sum current sum up to this rank
          * \param[in] i index
-         * \oaram[in] indices The rest of the paramter pack.
+         * \oaram[in] indices The rest of the parameter pack.
          * \returns The offset.
          */
         template<class... Indices>

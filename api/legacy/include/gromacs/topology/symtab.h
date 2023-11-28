@@ -158,7 +158,7 @@ public:
 
     //! Compare entries by indices. Same string should always have same index.
     bool operator==(const StringTableEntry& o) const { return tableIndex_ == o.tableIndex_; }
-    //! Unequal comparisson.
+    //! Unequal comparison.
     bool operator!=(const StringTableEntry& o) const { return !(*this == o); }
     //! Access to underlying view.
     const std::string& operator*() const { return entry_; }

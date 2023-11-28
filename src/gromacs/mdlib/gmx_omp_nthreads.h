@@ -87,7 +87,7 @@ int gmx_omp_nthreads_get(ModuleMultiThread mod);
  *
  * When the, potentially, parallel task only consists of a loop of clear_rvec
  * or rvec_inc for nrvec elements, the OpenMP overhead might be higher than
- * the reduction in computional cost due to parallelization. This routine
+ * the reduction in computational cost due to parallelization. This routine
  * returns 1 when the overhead is expected to be higher than the gain.
  */
 static inline int gmx_omp_nthreads_get_simple_rvec_task(ModuleMultiThread mod, int nrvec)

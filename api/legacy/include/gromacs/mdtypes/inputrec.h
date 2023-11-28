@@ -175,7 +175,7 @@ struct t_expanded
     LambdaMoveCalculation elmcmove = LambdaMoveCalculation::Default;
     //! The method we use to decide of we have equilibrated the weights
     LambdaWeightWillReachEquilibrium elmceq = LambdaWeightWillReachEquilibrium::Default;
-    //! The minumum number of samples at each lambda for deciding whether we have reached a minimum
+    //! The minimum number of samples at each lambda for deciding whether we have reached a minimum
     int equil_n_at_lam = 0;
     //! Wang-Landau delta at which we stop equilibrating weights
     real equil_wl_delta = 0;
@@ -187,7 +187,7 @@ struct t_expanded
     int equil_samples = 0;
     //! Random number seed for lambda mc switches
     int lmc_seed = 0;
-    //! Whether to use minumum variance weighting
+    //! Whether to use minimum variance weighting
     bool minvar = false;
     //! The number of samples needed before kicking into minvar routine
     int minvarmin = 0;

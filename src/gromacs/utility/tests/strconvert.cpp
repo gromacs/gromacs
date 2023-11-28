@@ -91,7 +91,7 @@ TEST(StringConvert, StringIdentityTransformWithArrayThrows)
     // use the lambda due to aviod Macro substitution error with template function
     const auto& toTest = []() {
         return stringIdentityTransformWithArrayCheck<float, 3>(
-                "-10 5 4 1", "Here, I explain where the error occured: ");
+                "-10 5 4 1", "Here, I explain where the error occurred: ");
     };
     EXPECT_THROW(toTest(), InvalidInputError);
 }
@@ -101,7 +101,7 @@ TEST(StringConvert, StringIdentityTransformWithArrayOkay)
     // use the lambda due to aviod Macro substitution error with template function
     const std::string input("1.2\t\n  .5 -6e5");
     const std::string output = stringIdentityTransformWithArrayCheck<float, 3>(
-            input, "Here, I explain where the error occured: ");
+            input, "Here, I explain where the error occurred: ");
     EXPECT_EQ(input, output);
 }
 

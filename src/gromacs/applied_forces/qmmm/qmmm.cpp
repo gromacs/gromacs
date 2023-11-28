@@ -363,7 +363,7 @@ public:
         forceProviders->addForceProvider(forceProvider_.get());
     }
 
-    //! QMMM Module should not use OutputProvider as it will be removed in the furture
+    //! QMMM Module should not use OutputProvider as it will be removed in the future
     IMDOutputProvider* outputProvider() override { return &qmmmOutputProvider_; }
 
 private:

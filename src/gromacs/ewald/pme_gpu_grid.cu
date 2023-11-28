@@ -91,7 +91,7 @@ static __global__ void pmeGpuPackHaloExternal(const float* __restrict__ gm_realG
     int iy = threadIdx.y + blockIdx.y * blockDim.y;
     int ix = threadIdx.z + blockIdx.z * blockDim.z;
 
-    // we might get iz greather than pmeSize.z when pmeSize.z is not multiple of
+    // we might get iz greater than pmeSize.z when pmeSize.z is not multiple of
     // threadsAlongZDim(see below), same for iy when it's not multiple of threadsAlongYDim
     if (iz >= pmeSize.z || iy >= myGridY)
     {
@@ -201,7 +201,7 @@ static __global__ void pmeGpuUnpackHaloExternal(float* __restrict__ gm_realGrid,
     int iy = threadIdx.y + blockIdx.y * blockDim.y;
     int ix = threadIdx.z + blockIdx.z * blockDim.z;
 
-    // we might get iz greather than pmeSize.z when pmeSize.z is not multiple of
+    // we might get iz greater than pmeSize.z when pmeSize.z is not multiple of
     // threadsAlongZDim(see below), same for iy when it's not multiple of threadsAlongYDim
     if (iz >= pmeSize.z || iy >= myGridY)
     {
@@ -312,7 +312,7 @@ static __global__ void pmeGpuUnpackAndAddHaloInternal(float* __restrict__ gm_rea
     int iy = threadIdx.y + blockIdx.y * blockDim.y;
     int ix = threadIdx.z + blockIdx.z * blockDim.z;
 
-    // we might get iz greather than pmeSize.z when pmeSize.z is not multiple of
+    // we might get iz greater than pmeSize.z when pmeSize.z is not multiple of
     // threadsAlongZDim(see below), same for iy when it's not multiple of threadsAlongYDim
     if (iz >= pmeSize.z || iy >= myGridY)
     {
@@ -413,7 +413,7 @@ static __global__ void pmeGpuPackHaloInternal(const float* __restrict__ gm_realG
     int iy = threadIdx.y + blockIdx.y * blockDim.y;
     int ix = threadIdx.z + blockIdx.z * blockDim.z;
 
-    // we might get iz greather than pmeSize.z when pmeSize.z is not multiple of
+    // we might get iz greater than pmeSize.z when pmeSize.z is not multiple of
     // threadsAlongZDim(see below), same for iy when it's not multiple of threadsAlongYDim
     if (iz >= pmeSize.z || iy >= myGridY)
     {

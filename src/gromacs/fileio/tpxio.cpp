@@ -1713,7 +1713,7 @@ static void do_inputrec(gmx::ISerializer* serializer, t_inputrec* ir, int file_v
     }
 
     /* QMMM reading - despite defunct we require reading for backwards
-     * compability and correct serialization
+     * compatibility and correct serialization
      */
     {
         serializer->doBool(&ir->bQMMM);

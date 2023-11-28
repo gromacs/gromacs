@@ -87,7 +87,7 @@ constexpr bool is_resizable_v = is_resizable<T>::value;
  * swapping are designed to yield good performances in both cases, notably
  * foregoing the copy-swap idiom due to the bad performance in swapping std::array.
  *
- * This class avoids throwing exeptions, apart from the ones that might be thrown
+ * This class avoids throwing exceptions, apart from the ones that might be thrown
  * from the containers during resizing an allocation. (bad_malloc from std::vector
  * is a likely candidate)
  *
@@ -95,7 +95,7 @@ constexpr bool is_resizable_v = is_resizable<T>::value;
  * Holds as many elements as required by a multidimensional view.
  * \tparam TContainer   Data type container for the data to be stored
  *                      as MultiDimArray with random element access and
- *                      value_type, refence and const_reference exposed
+ *                      value_type, reference and const_reference exposed
  * \tparam Extents      An extents class describing the array dimensions
  *                      as used in module_mdspan
  * \tparam LayoutPolicy The data layout as in module_mdspan describes

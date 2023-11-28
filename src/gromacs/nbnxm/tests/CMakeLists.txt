@@ -35,7 +35,7 @@ gmx_add_unit_test(NbnxmTests nbnxm-test
     DYNAMIC_REGISTRATION
     CPP_SOURCE_FILES
         exclusions.cpp
-	kernel_test.cpp
+        kernel_test.cpp
         kernelsetup.cpp
         )
 target_link_libraries(nbnxm-test PRIVATE nbnxm pbcutil simd timing)

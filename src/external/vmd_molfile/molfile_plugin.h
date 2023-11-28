@@ -322,7 +322,7 @@ typedef struct {
   int *num_shells_per_atom; /**< number of shells per atom */
   int *num_prim_per_shell;  /**< number of shell primitives shell */
 
-  float *basis;             /**< contraction coeffients and exponents for
+  float *basis;             /**< contraction coefficients and exponents for
                              *   the basis functions in the form
                              *   { exp(1), c-coeff(1), exp(2), c-coeff(2), ....};
                              *   size=2*num_basis_funcs */

@@ -551,7 +551,7 @@ TEST_P(ObservablesReducerIntegrationTest, CanBuildAndUseWhenASubscriberUsesEvent
 
     // This will do nothing, as all the communication buffers are
     // empty, but we can't directly test that nothing
-    // occured. Instead, we will later do some
+    // occurred. Instead, we will later do some
     // ReductionRequirement::Soon work and observe that result is
     // consistent with exactly one reduction.
     fakeMpiAllReduce(reductionRequiredExternally);

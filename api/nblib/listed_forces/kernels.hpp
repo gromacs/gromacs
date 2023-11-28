@@ -118,7 +118,7 @@ inline auto bondKernel(T dr, const HarmonicBondType& bond)
 }
 
 
-/*! \brief kernel to calculate the scalar part for the forth power pontential bond forces
+/*! \brief kernel to calculate the scalar part for the forth power potential bond forces
  *         for lambda = 0
  *
  * \param k spring constant
@@ -141,7 +141,7 @@ inline std::tuple<T, T> g96ScalarForce(T k, T x0, T x)
     /* That was 6 flops */
 }
 
-/*! \brief kernel to calculate the scalar part for forth power pontential bond forces
+/*! \brief kernel to calculate the scalar part for forth power potential bond forces
  *         for non-zero lambda to interpolate between A and B states
  *
  * \param kA spring constant state A
@@ -184,7 +184,7 @@ inline auto bondKernel(T dr, const G96BondType& bond)
 }
 
 
-/*! \brief kernel to calculate the scalar part for the morse pontential bond forces
+/*! \brief kernel to calculate the scalar part for the morse potential bond forces
  *         for lambda = 0
  *
  * \param k force constant
@@ -288,7 +288,7 @@ inline auto bondKernel(T dr, const PairLJType& bond)
 }
 
 
-/*! \brief kernel to calculate the scalar part for the FENE pontential bond forces
+/*! \brief kernel to calculate the scalar part for the FENE potential bond forces
  *         for lambda = 0
  *
  * \param k spring constant

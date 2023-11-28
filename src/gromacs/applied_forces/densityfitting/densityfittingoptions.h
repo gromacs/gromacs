@@ -108,7 +108,7 @@ private:
     const std::string c_activeTag_ = "active";
 
     /*! \brief Denote the .mdp option that defines the group of fit atoms.
-     * \note Changing this string will break .tpr backwards compability
+     * \note Changing this string will break .tpr backwards compatibility
      */
     const std::string c_groupTag_  = "group";
     std::string       groupString_ = "protein";

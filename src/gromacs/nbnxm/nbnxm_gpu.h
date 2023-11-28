@@ -179,7 +179,7 @@ void gpu_launch_cpyback(NbnxmGpu gmx_unused* nb,
  *  - internal staging reduction of (\p fshift, \p e_el, \p e_lj).
  *
  * In GpuTaskCompletion::Check mode this function does the timing and keeps correct count
- * for the nonbonded task (incrementing only once per taks), in the GpuTaskCompletion::Wait mode
+ * for the nonbonded task (incrementing only once per task), in the GpuTaskCompletion::Wait mode
  * timing is expected to be done in the caller.
  *
  *  TODO: improve the handling of outputs e.g. by ensuring that this function explcitly returns the

@@ -71,7 +71,7 @@ public:
 
     /*! \brief Returns two-line string with the time interval and drift over the interval
      *
-     * \param[in] partName  A descriptive name for the period over which the tracking occured
+     * \param[in] partName  A descriptive name for the period over which the tracking occurred
      */
     std::string energyDriftString(const std::string& partName) const;
 

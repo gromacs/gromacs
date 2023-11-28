@@ -64,7 +64,7 @@ static const int __device__ c_clSizeLog2 = 3;
 static const int __device__ c_clSizeSq = c_clSize * c_clSize;
 /*! \brief j-cluster size after split (4 in the current implementation). */
 static const int __device__ c_splitClSize = c_clSize / c_nbnxnGpuClusterpairSplit;
-/*! \brief Stride in the force accumualation buffer */
+/*! \brief Stride in the force accumulation buffer */
 static const int __device__ c_fbufStride = c_clSizeSq;
 /*! \brief i-cluster interaction mask for a super-cluster with all c_nbnxnGpuNumClusterPerSupercluster=8 bits set */
 static const unsigned __device__ superClInteractionMask =

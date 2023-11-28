@@ -92,7 +92,7 @@ public:
         /* We test all combinations of:
          *   eawhgrowth:
          *     eawhgrowthLINEAR:     final, normal update phase
-         *     ewahgrowthEXP_LINEAR: intial phase, updated size is constant
+         *     ewahgrowthEXP_LINEAR: initial phase, updated size is constant
          *   eawhpotential (should only affect the force output):
          *     eawhpotentialUMBRELLA:  MC on lambda (umbrella potential location)
          *     eawhpotentialCONVOLVED: MD on a convolved potential landscape

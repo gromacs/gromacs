@@ -126,13 +126,13 @@ TEST_F(NelderMeadSimplexTest, EvaluateContractionPoint)
 TEST_F(NelderMeadSimplexTest, SwapOutWorst)
 {
     // introduce a new vertex that we know is better than any in the
-    // intial simplex
+    // initial simplex
     RealFunctionvalueAtCoordinate newVertex = { { 0 }, 0 };
     simplex_.swapOutWorst(newVertex);
     EXPECT_REAL_EQ(simplex_.bestVertex().coordinate_[0], 0);
     EXPECT_REAL_EQ(simplex_.bestVertex().value_, 0);
     // introduce a new vertex that we know is worse than any in the
-    // intial simplex
+    // initial simplex
     newVertex = { { 3 }, 6 };
     simplex_.swapOutWorst(newVertex);
     EXPECT_REAL_EQ(simplex_.worstVertex().coordinate_[0], 3);

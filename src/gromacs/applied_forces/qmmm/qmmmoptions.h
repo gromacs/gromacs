@@ -152,7 +152,7 @@ private:
     void processExternalInputFile();
 
     /*! \brief Following Tags denotes names of parameters from .mdp file
-     * \note Changing this strings will break .tpr backwards compability
+     * \note Changing this strings will break .tpr backwards compatibility
      */
     //! \{
     const std::string c_activeTag_              = "active";

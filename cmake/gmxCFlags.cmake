@@ -462,7 +462,7 @@ function(gmx_warn_on_everything target)
     # versions of any such compiler changes how the warnings
     # look/work.
 
-    # We have no intention of C++98 compability
+    # We have no intention of C++98 compatibility
     gmx_target_warning_suppression(${target} "-Wno-c++98-compat" HAS_WARNING_NO_CPLUSPLUS98_COMPAT)
     gmx_target_warning_suppression(${target} "-Wno-c++98-compat-pedantic" HAS_WARNING_NO_CPLUSPLUS98_COMPAT_PEDANTIC)
 

@@ -231,7 +231,7 @@ static void setMDArgs(std::vector<std::string>* mdargs, const py::dict& params)
     {
         // Before 0.3.0, mdrun parameters were strictly curated by gmxapi. The 0.3 Python package
         // introduced the `runtime_args` key word parameter to `gmxapi.simulation.mdrun()`, but if
-        // the gmxapi library is older than 0.3.0, only the gmxapi 0.0.7 mdrun paramters are
+        // the gmxapi library is older than 0.3.0, only the gmxapi 0.0.7 mdrun parameters are
         // supported.
         if (args_cli.size() > 0)
         {

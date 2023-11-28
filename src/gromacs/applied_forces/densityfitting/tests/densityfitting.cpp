@@ -108,7 +108,7 @@ public:
         assignOptionsFromKeyValueTree(&densityFittingModuleOptions, transformedMdpValues.object(), nullptr);
     }
 
-    void intializeForceProviders()
+    void initializeForceProviders()
     {
         densityFittingModule_->initForceProviders(&densityFittingForces_);
     }
@@ -127,7 +127,7 @@ TEST_F(DensityFittingTest, ForceProviderLackingInputThrows)
     makeDensityFittingModuleWithSetOptions();
 
     // Build the force provider, once all input data is gathered
-    EXPECT_ANY_THROW(intializeForceProviders());
+    EXPECT_ANY_THROW(initializeForceProviders());
 }
 
 TEST_F(DensityFittingTest, SingleAtom)
@@ -138,7 +138,7 @@ TEST_F(DensityFittingTest, SingleAtom)
 
     makeDensityFittingModuleWithSetOptions();
 
-    EXPECT_ANY_THROW(intializeForceProviders());
+    EXPECT_ANY_THROW(initializeForceProviders());
 }
 
 } // namespace

@@ -266,7 +266,7 @@ void Grid::setDimensions(const int          ddZone,
     copy_rvec(size, dimensions_.gridSize);
 }
 
-/* We need to sort paricles in grid columns on z-coordinate.
+/* We need to sort particles in grid columns on z-coordinate.
  * As particle are very often distributed homogeneously, we use a sorting
  * algorithm similar to pigeonhole sort. We multiply the z-coordinate
  * by a factor, cast to an int and try to store in that hole. If the hole
@@ -275,7 +275,7 @@ void Grid::setDimensions(const int          ddZone,
  * 4 is the optimal value for homogeneous particle distribution and allows
  * for an O(#particles) sort up till distributions were all particles are
  * concentrated in 1/4 of the space. No NlogN fallback is implemented,
- * as it can be expensive to detect imhomogeneous particle distributions.
+ * as it can be expensive to detect inhomogeneous particle distributions.
  */
 /*! \brief Ratio of grid cells to atoms */
 static constexpr int c_sortGridRatio = 4;

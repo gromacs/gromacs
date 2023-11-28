@@ -713,7 +713,7 @@ PMF landscape. If this is not the case, the distributions of the
 reaction coordinate :math:`\xi` and the reference coordinate
 :math:`\lambda`, will differ significantly and warnings will be printed
 in the log file. One can choose :math:`k` as large as the time step
-supports. This will neccessarily increase the number of points of the
+supports. This will necessarily increase the number of points of the
 discretized sampling interval :math:`I`. In general however, it should
 not affect the performance of the simulation noticeably because the AWH
 update is implemented such that only sampled points are accessed at free

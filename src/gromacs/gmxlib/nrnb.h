@@ -180,7 +180,7 @@ void print_nrnb(FILE* out, t_nrnb* nrnb);
 /*! \brief Increment the nonbonded kernel flop counters
  *
  * \param nrnb The nonbonded kernel flop counters.
- * \param index Which counter to incrememnt.
+ * \param index Which counter to increment.
  * \param increment How much to increment the counter by.
  */
 static inline void inc_nrnb(t_nrnb* nrnb, int index, int increment)
@@ -191,7 +191,7 @@ static inline void inc_nrnb(t_nrnb* nrnb, int index, int increment)
 /*! \brief Atomic increment of nonbonded kernel flop counters
  *
  * \param nrnb The nonbonded kernel flop counters.
- * \param index Which counter to incrememnt.
+ * \param index Which counter to increment.
  * \param increment How much to increment the counter by.
  *
  * Same as inc_nrnb but includes omp atomic pragma

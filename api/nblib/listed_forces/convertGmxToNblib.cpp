@@ -187,7 +187,7 @@ inline void transferParametersGmxToNblib(const t_iparams&                iparams
     interactionData.parameters.push_back(properDihedral);
 }
 
-//! \brief Ryckaert-Bellman Dihedral parameter transfer function
+//! \brief Ryckaert-Belleman Dihedral parameter transfer function
 template<>
 inline void transferParametersGmxToNblib(const t_iparams&                          iparams,
                                          ListedTypeData<RyckaertBellemanDihedral>& interactionData)

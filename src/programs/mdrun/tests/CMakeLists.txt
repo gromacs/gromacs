@@ -106,7 +106,7 @@ gmx_add_gtest_executable(${exename} MPI
         tabulated_bonded_interactions.cpp
         freezegroups.cpp
         constantacceleration.cpp
-	boxdeformation.cpp
+        boxdeformation.cpp
         # pseudo-library for code for mdrun
         $<TARGET_OBJECTS:mdrun_objlib>
     )

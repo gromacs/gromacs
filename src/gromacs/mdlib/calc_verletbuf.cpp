@@ -516,7 +516,7 @@ void constrained_atom_sigma2(real kT_fac, const atom_nonbonded_kinetic_prop_t* p
      * overestimate of the buffer size, since the Gaussian has a long tail,
      * whereas the actual distribution can not reach values larger than 2.
      */
-    /* Coeffients obtained from a Taylor expansion */
+    /* Coefficients obtained from a Taylor expansion */
     const real a = 1.0 / 3.0;
     const real b = 2.0 / 45.0;
 
