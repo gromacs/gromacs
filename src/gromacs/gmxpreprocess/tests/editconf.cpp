@@ -131,11 +131,13 @@ TEST_P(EditconfTest, HandlesBothNoCenterAndDiameter)
     runTest("Correct box dimensions with -d and -noc");
 }
 
-// TODO These reproduce slightly differently in double precision, and
-// we don't yet have a precision-agnostic way to check on the output
-// coordinates. It's better to run the tests only in single than not
-// have the tests.
-#if !GMX_DOUBLE
+// TODO These reproduce slightly differently in double precision or
+// with different compilers, and we don't yet have a
+// precision-agnostic way to check on the output coordinates. It's
+// better to run the tests only under some conditions than not have
+// the tests. When we improve the structure of the tests (#4926)
+// we can relax these restrictions.
+#if !GMX_DOUBLE && !(defined(__INTEL_LLVM_COMPILER) && (__INTEL_LLVM_COMPILER >= 20240000))
 INSTANTIATE_TEST_SUITE_P(SinglePeptideFragments,
                          EditconfTest,
                          ::testing::Combine(::testing::Values("A.pdb", "A.gro", "A.g96"),

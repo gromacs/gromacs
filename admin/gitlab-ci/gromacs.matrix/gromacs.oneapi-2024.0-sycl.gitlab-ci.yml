@@ -8,42 +8,42 @@
 # Test implementation choices (free to change as needed):
 #   OS: Ubuntu 22.04
 #   Build type: RelWithAssert
-#   Compiler: ICPX 2023.1
+#   Compiler: ICPX 2024.0
 #   MPI: thread_MPI
 #   SIMD: AVX2_256
 #   Parallelism nt/ntomp: 4/2
 
-gromacs:oneapi-2023.1.0-sycl:configure:
+gromacs:oneapi-2024.0-sycl:configure:
   extends:
    - .gromacs:base:configure
    - .use-oneapi:base
    - .use-sycl
    - .rules:merge-and-post-merge-acceptance
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-22.04-oneapi-2023.1.0-intel-compute-runtime
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-22.04-oneapi-2024.0-intel-compute-runtime
   variables:
     CMAKE: /usr/local/cmake-3.18.4/bin/cmake
     CMAKE_BUILD_TYPE_OPTIONS: "-DCMAKE_BUILD_TYPE=RelWithAssert"
-    COMPILER_MAJOR_VERSION: 2022
+    COMPILER_MAJOR_VERSION: 2024
 
-gromacs:oneapi-2023.1.0-sycl:build:
+gromacs:oneapi-2024.0-sycl:build:
   extends:
     - .variables:default
     - .gromacs:base:build
     - .use-ccache
     - .use-oneapi:base
     - .rules:merge-and-post-merge-acceptance
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-22.04-oneapi-2023.1.0-intel-compute-runtime
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-22.04-oneapi-2024.0-intel-compute-runtime
   variables:
     CMAKE: /usr/local/cmake-3.18.4/bin/cmake
   needs:
-    - job: gromacs:oneapi-2023.1.0-sycl:configure
+    - job: gromacs:oneapi-2024.0-sycl:configure
 
-gromacs:oneapi-2023.1.0-sycl:test:
+gromacs:oneapi-2024.0-sycl:test:
   extends:
     - .gromacs:base:test
     - .use-oneapi:base
     - .rules:post-merge-acceptance
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-22.04-oneapi-2023.1.0-intel-compute-runtime
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-22.04-oneapi-2024.0-intel-compute-runtime
   variables:
     CMAKE: /usr/local/cmake-3.18.4/bin/cmake
     GMX_TEST_LABELS: "QuickGpuTest|SlowGpuTest"
@@ -54,14 +54,14 @@ gromacs:oneapi-2023.1.0-sycl:test:
     NEOReadDebugKeys: 1
     ResolveDependenciesViaPipeControls: 0
   needs:
-    - job: gromacs:oneapi-2023.1.0-sycl:build
+    - job: gromacs:oneapi-2024.0-sycl:build
 
-gromacs:oneapi-2023.1.0-sycl:test-update-cpu:
+gromacs:oneapi-2024.0-sycl:test-update-cpu:
   extends:
     - .gromacs:base:test
     - .use-oneapi:base
     - .rules:post-merge-acceptance
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-22.04-oneapi-2023.1.0-intel-compute-runtime
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-22.04-oneapi-2024.0-intel-compute-runtime
   variables:
     CMAKE: /usr/local/cmake-3.18.4/bin/cmake
     GMX_TEST_LABELS: "QuickGpuTest|SlowGpuTest"
@@ -73,14 +73,14 @@ gromacs:oneapi-2023.1.0-sycl:test-update-cpu:
     NEOReadDebugKeys: 1
     ResolveDependenciesViaPipeControls: 0
   needs:
-    - job: gromacs:oneapi-2023.1.0-sycl:build
+    - job: gromacs:oneapi-2024.0-sycl:build
 
-gromacs:oneapi-2023.1.0-sycl:regressiontest:
+gromacs:oneapi-2024.0-sycl:regressiontest:
   extends:
     - .gromacs:base:regressiontest
     - .use-oneapi:base
     - .rules:post-merge-acceptance
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-22.04-oneapi-2023.1.0-intel-compute-runtime
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-22.04-oneapi-2024.0-intel-compute-runtime
   variables:
     CMAKE: /usr/local/cmake-3.18.4/bin/cmake
     SYCL_DEVICE_FILTER: "opencl:gpu"
@@ -92,15 +92,15 @@ gromacs:oneapi-2023.1.0-sycl:regressiontest:
     NEOReadDebugKeys: 1
     ResolveDependenciesViaPipeControls: 0
   needs:
-    - job: gromacs:oneapi-2023.1.0-sycl:build
+    - job: gromacs:oneapi-2024.0-sycl:build
     - job: regressiontests:prepare
 
-gromacs:oneapi-2023.1.0-sycl:regressiontest-singlerank:
+gromacs:oneapi-2024.0-sycl:regressiontest-singlerank:
   extends:
     - .gromacs:base:regressiontest
     - .use-oneapi:base
     - .rules:post-merge-acceptance
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-22.04-oneapi-2023.1.0-intel-compute-runtime:latest
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-22.04-oneapi-2024.0-intel-compute-runtime:latest
   variables:
     CMAKE: /usr/local/cmake-3.18.4/bin/cmake
     SYCL_DEVICE_FILTER: "opencl:gpu"
@@ -113,5 +113,5 @@ gromacs:oneapi-2023.1.0-sycl:regressiontest-singlerank:
     NEOReadDebugKeys: 1
     ResolveDependenciesViaPipeControls: 0
   needs:
-    - job: gromacs:oneapi-2023.1.0-sycl:build
+    - job: gromacs:oneapi-2024.0-sycl:build
     - job: regressiontests:prepare
