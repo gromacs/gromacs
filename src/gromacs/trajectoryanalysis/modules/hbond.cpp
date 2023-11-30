@@ -991,7 +991,7 @@ void Hbond::writeOutput()
         for (const auto& i : dataOut)
         {
             std::vector<HBond> tempFrameData = prepareFrameData(i.hbondData_);
-            fprintf(fp, "[ hbonds_%s_frame_№%i ]", selects.c_str(), i.frameNumber_);
+            fprintf(fp, "[ hbonds_%s_frame_%i ]", selects.c_str(), i.frameNumber_);
             for (const auto& j : tempFrameData)
             {
                 if (mergeHydrogens_)
