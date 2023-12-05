@@ -110,6 +110,17 @@ if (SYCL_FAST_MATH_CXX_FLAGS_RESULT)
     set(SYCL_TOOLCHAIN_CXX_FLAGS "${SYCL_TOOLCHAIN_CXX_FLAGS} ${SYCL_FAST_MATH_CXX_FLAGS}")
 endif()
 
+# We compile PME kernels for all possible sub-group sizes, so the warning is useless.
+# Added after oneAPI 2024.0 (https://github.com/intel/llvm/pull/11991).
+gmx_check_compiler_flag(
+    "-Wno-incorrect-sub-group-size"
+    "CXX"
+    HAVE_W_NO_INCORRECT_SUB_GROUP_SIZE_RESULT
+)
+if (HAVE_W_NO_INCORRECT_SUB_GROUP_SIZE_RESULT)
+    set(SYCL_TOOLCHAIN_CXX_FLAGS "${SYCL_TOOLCHAIN_CXX_FLAGS} -Wno-incorrect-sub-group-size")
+endif()
+
 if("${SYCL_CXX_FLAGS_EXTRA}" MATCHES "fsycl-targets=.*(nvptx64|amdgcn|amd_gpu|nvidia_gpu)")
     # When compiling for NVIDIA/AMD, Intel LLVM produces tons of harmless warnings, ignore them
     set(SYCL_WARNINGS_CXX_FLAGS "-Wno-linker-warnings -Wno-override-module -Wno-sycl-target")
