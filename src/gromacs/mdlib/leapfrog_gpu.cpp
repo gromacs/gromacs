@@ -63,7 +63,7 @@ namespace gmx
 {
 
 void LeapFrogGpu::integrate(DeviceBuffer<Float3>              d_x,
-                            DeviceBuffer<Float3>              d_xp,
+                            DeviceBuffer<Float3>              d_x0,
                             DeviceBuffer<Float3>              d_v,
                             const DeviceBuffer<Float3>        d_f,
                             const float                       dt,
@@ -112,7 +112,7 @@ void LeapFrogGpu::integrate(DeviceBuffer<Float3>              d_x,
 
     launchLeapFrogKernel(numAtoms_,
                          d_x,
-                         d_xp,
+                         d_x0,
                          d_v,
                          d_f,
                          d_inverseMasses_,

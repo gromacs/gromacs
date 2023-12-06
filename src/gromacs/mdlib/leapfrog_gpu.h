@@ -115,7 +115,7 @@ public:
      * Updates coordinates and velocities on the GPU. The current coordinates are saved for constraints.
      *
      * \param[in,out] d_x                      Coordinates to update
-     * \param[out]    d_xp                     Place to save the values of initial coordinates coordinates to.
+     * \param[out]    d_x0                     Place to save the values of initial coordinates coordinates to.
      * \param[in,out] d_v                      Velocities (will be updated).
      * \param[in]     d_f                      Forces.
      * \param[in]     dt                       Timestep.
@@ -126,7 +126,7 @@ public:
      * \param[in]     prVelocityScalingMatrix  Parrinello-Rahman velocity scaling matrix
      */
     void integrate(DeviceBuffer<Float3>              d_x,
-                   DeviceBuffer<Float3>              d_xp,
+                   DeviceBuffer<Float3>              d_x0,
                    DeviceBuffer<Float3>              d_v,
                    DeviceBuffer<Float3>              d_f,
                    float                             dt,

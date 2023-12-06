@@ -53,7 +53,7 @@ namespace gmx
  *
  * \param numAtoms Total number of atoms.
  * \param[in,out] d_x Buffer containing initial coordinates, and where the updated ones will be written.
- * \param[out] d_xp Buffer where a copy of the initial coordinates will be written.
+ * \param[out] d_x0 Buffer where a copy of the initial coordinates will be written.
  * \param[in,out] d_v Buffer containing initial velocities, and where the updated ones will be written.
  * \param[in]  d_f Buffer containing forces.
  * \param[in] d_inverseMasses Buffer containing atoms' reciprocal masses.
@@ -68,7 +68,7 @@ namespace gmx
  */
 void launchLeapFrogKernel(int                             numAtoms,
                           DeviceBuffer<Float3>            d_x,
-                          DeviceBuffer<Float3>            d_xp,
+                          DeviceBuffer<Float3>            d_x0,
                           DeviceBuffer<Float3>            d_v,
                           DeviceBuffer<Float3>            d_f,
                           DeviceBuffer<float>             d_inverseMasses,

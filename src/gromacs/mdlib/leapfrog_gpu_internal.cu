@@ -81,7 +81,7 @@ constexpr static int c_maxThreadsPerBlock = c_threadsPerBlock;
  * \tparam        parrinelloRahmanVelocityScaling  The properties of the Parrinello-Rahman velocity scaling matrix.
  * \param[in]     numAtoms                         Total number of atoms.
  * \param[in,out] gm_x                             Coordinates to update upon integration.
- * \param[out]    gm_xp                            A copy of the coordinates before the integration (for constraints).
+ * \param[out]    gm_x0                            A copy of the coordinates before the integration (for constraints).
  * \param[in,out] gm_v                             Velocities to update.
  * \param[in]     gm_f                             Atomic forces.
  * \param[in]     gm_inverseMasses                 Reciprocal masses.
@@ -94,7 +94,7 @@ template<NumTempScaleValues numTempScaleValues, ParrinelloRahmanVelocityScaling 
 __launch_bounds__(c_maxThreadsPerBlock) __global__
         void leapfrog_kernel(const int numAtoms,
                              float3* __restrict__ gm_x,
-                             float3* __restrict__ gm_xp,
+                             float3* __restrict__ gm_x0,
                              float3* __restrict__ gm_v,
                              const float3* __restrict__ gm_f,
                              const float* __restrict__ gm_inverseMasses,
@@ -112,11 +112,7 @@ __launch_bounds__(c_maxThreadsPerBlock) __global__
         float  im   = gm_inverseMasses[threadIndex];
         float  imdt = im * dt;
 
-        // Swapping places for xp and x so that the x will contain the updated coordinates and xp - the
-        // coordinates before update. This should be taken into account when (if) constraints are applied
-        // after the update: x and xp have to be passed to constraints in the 'wrong' order.
-        // TODO: Issue #3727
-        gm_xp[threadIndex] = x;
+        gm_x0[threadIndex] = x;
 
         if (numTempScaleValues != NumTempScaleValues::None
             || parrinelloRahmanVelocityScaling != ParrinelloRahmanVelocityScaling::No)

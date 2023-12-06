@@ -94,17 +94,14 @@ void UpdateConstrainGpu::Impl::integrate(GpuEventSynchronizer*             fRead
 
     if (numAtoms_ != 0)
     {
-        // The integrate should save a copy of the current coordinates in d_xp_ and write updated
-        // once into d_x_. The d_xp_ is only needed by constraints.
+        // A copy of the current coordinates is saved into d_x0_ by integrate(), and
+        // d_x_ is updated by integration and constraints.
         integrator_->integrate(
-                d_x_, d_xp_, d_v_, d_f_, dt, doTemperatureScaling, tcstat, doParrinelloRahman, dtPressureCouple, prVelocityScalingMatrix);
-        // Constraints need both coordinates before (d_x_) and after (d_xp_) update. However, after constraints
-        // are applied, the d_x_ can be discarded. So we intentionally swap the d_x_ and d_xp_ here to avoid the
-        // d_xp_ -> d_x_ copy after constraints. Note that the integrate saves them in the wrong order as well.
+                d_x_, d_x0_, d_v_, d_f_, dt, doTemperatureScaling, tcstat, doParrinelloRahman, dtPressureCouple, prVelocityScalingMatrix);
         if (sc_haveGpuConstraintSupport)
         {
-            lincsGpu_->apply(d_xp_, d_x_, updateVelocities, d_v_, 1.0 / dt, computeVirial, virial, pbcAiuc_);
-            settleGpu_->apply(d_xp_, d_x_, updateVelocities, d_v_, 1.0 / dt, computeVirial, virial, pbcAiuc_);
+            lincsGpu_->apply(d_x0_, d_x_, updateVelocities, d_v_, 1.0 / dt, computeVirial, virial, pbcAiuc_);
+            settleGpu_->apply(d_x0_, d_x_, updateVelocities, d_v_, 1.0 / dt, computeVirial, virial, pbcAiuc_);
         }
 
         // scaledVirial -> virial (methods above returns scaled values)
@@ -178,7 +175,7 @@ UpdateConstrainGpu::Impl::Impl(const t_inputrec&    ir,
 
 UpdateConstrainGpu::Impl::~Impl()
 {
-    freeDeviceBuffer(&d_xp_);
+    freeDeviceBuffer(&d_x0_);
     freeDeviceBuffer(&d_inverseMasses_);
 }
 
@@ -201,7 +198,7 @@ void UpdateConstrainGpu::Impl::set(DeviceBuffer<Float3>          d_x,
 
     numAtoms_ = md.homenr;
 
-    reallocateDeviceBuffer(&d_xp_, numAtoms_, &numXp_, &numXpAlloc_, deviceContext_);
+    reallocateDeviceBuffer(&d_x0_, numAtoms_, &numXp_, &numXpAlloc_, deviceContext_);
 
     reallocateDeviceBuffer(
             &d_inverseMasses_, numAtoms_, &numInverseMasses_, &numInverseMassesAlloc_, deviceContext_);

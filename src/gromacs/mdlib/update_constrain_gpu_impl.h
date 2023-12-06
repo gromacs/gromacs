@@ -195,8 +195,8 @@ private:
     //! Local copy of the pointer to the device forces buffer
     DeviceBuffer<Float3> d_f_;
 
-    //! Device buffer for intermediate positions (maintained internally)
-    DeviceBuffer<Float3> d_xp_;
+    //! Device buffer for storing a copy of previous coordinates (maintained internally)
+    DeviceBuffer<Float3> d_x0_;
     //! Number of elements in shifted coordinates buffer
     int numXp_ = -1;
     //! Allocation size for the shifted coordinates buffer
