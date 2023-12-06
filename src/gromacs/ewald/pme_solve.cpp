@@ -46,7 +46,6 @@
 #include "gromacs/simd/simd_math.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/exceptions.h"
-#include "gromacs/utility/smalloc.h"
 
 #include "pme_internal.h"
 #include "pme_output.h"
@@ -57,26 +56,6 @@
 #endif
 
 using namespace gmx; // TODO: Remove when this file is moved into gmx namespace
-
-struct pme_solve_work_t
-{
-    /* work data for solve_pme */
-    int   nalloc;
-    real* mhx;
-    real* mhy;
-    real* mhz;
-    real* m2;
-    real* denom;
-    real* tmp1;
-    real* tmp2;
-    real* eterm;
-    real* m2inv;
-
-    real   energy_q;
-    matrix vir_q;
-    real   energy_lj;
-    matrix vir_lj;
-};
 
 #ifdef PME_SIMD_SOLVE
 constexpr int c_simdWidth = GMX_SIMD_REAL_WIDTH;
@@ -97,118 +76,82 @@ static size_t roundUpToMultipleOfFactor(size_t number)
     return (number + factor - 1) & ~(factor - 1);
 }
 
-/* Allocate an aligned pointer for SIMD operations, including extra elements
- * at the end for padding.
- */
-/* TODO: Replace this SIMD reallocator with a general, C++ solution */
-static void reallocSimdAlignedAndPadded(real** ptr, int unpaddedNumElements)
+void pme_solve_work_t::resizeWhenNeeded(const int newSize)
 {
-    sfree_aligned(*ptr);
-    snew_aligned(*ptr,
-                 roundUpToMultipleOfFactor<c_simdWidth>(unpaddedNumElements),
-                 c_simdWidth * sizeof(real));
-}
+    const Index oldSize = gmx::ssize(mhx);
 
-static void realloc_work(struct pme_solve_work_t* work, int nkx)
-{
-    if (nkx > work->nalloc)
+    if (newSize <= oldSize)
     {
-        work->nalloc = nkx;
-        srenew(work->mhx, work->nalloc);
-        srenew(work->mhy, work->nalloc);
-        srenew(work->mhz, work->nalloc);
-        srenew(work->m2, work->nalloc);
-        reallocSimdAlignedAndPadded(&work->denom, work->nalloc);
-        reallocSimdAlignedAndPadded(&work->tmp1, work->nalloc);
-        reallocSimdAlignedAndPadded(&work->tmp2, work->nalloc);
-        reallocSimdAlignedAndPadded(&work->eterm, work->nalloc);
-        srenew(work->m2inv, work->nalloc);
+        return;
+    }
 
-        /* Init all allocated elements of denom to 1 to avoid 1/0 exceptions
-         * of simd padded elements.
-         */
-        for (size_t i = 0; i < roundUpToMultipleOfFactor<c_simdWidth>(work->nalloc); i++)
-        {
-            work->denom[i] = 1;
-        }
+    mhx.resize(newSize);
+    mhy.resize(newSize);
+    mhz.resize(newSize);
+    m2.resize(newSize);
+    denom.resizeWithPadding(newSize);
+    tmp1.resizeWithPadding(newSize);
+    tmp2.resizeWithPadding(newSize);
+    eterm.resizeWithPadding(newSize);
+    m2inv.resize(newSize);
+
+    /* Init all allocated elements of denom to 1 to avoid 1/0 exceptions
+     * of simd padded elements.
+     */
+    ArrayRef<real> denomPadded = denom.arrayRefWithPadding().paddedArrayRef();
+    for (real& d : denomPadded)
+    {
+        d = 1;
     }
 }
 
-void pme_init_all_work(struct pme_solve_work_t** work, int nthread, int nkx)
+void pme_init_all_work(std::vector<std::unique_ptr<pme_solve_work_t>>* work, int nthread, int nkx)
 {
     /* Use fft5d, order after FFT is y major, z, x minor */
 
-    snew(*work, nthread);
+    work->resize(nthread);
     /* Allocate the work arrays thread local to optimize memory access */
 #pragma omp parallel for num_threads(nthread) schedule(static)
     for (int thread = 0; thread < nthread; thread++)
     {
         try
         {
-            realloc_work(&((*work)[thread]), nkx);
+            (*work)[thread] = std::make_unique<pme_solve_work_t>();
+            (*work)[thread]->resizeWhenNeeded(nkx);
         }
         GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR
     }
 }
 
-static void free_work(struct pme_solve_work_t* work)
-{
-    if (work)
-    {
-        sfree(work->mhx);
-        sfree(work->mhy);
-        sfree(work->mhz);
-        sfree(work->m2);
-        sfree_aligned(work->denom);
-        sfree_aligned(work->tmp1);
-        sfree_aligned(work->tmp2);
-        sfree_aligned(work->eterm);
-        sfree(work->m2inv);
-    }
-}
-
-void pme_free_all_work(struct pme_solve_work_t** work, int nthread)
-{
-    if (*work)
-    {
-        for (int thread = 0; thread < nthread; thread++)
-        {
-            free_work(&(*work)[thread]);
-        }
-    }
-    sfree(*work);
-    *work = nullptr;
-}
-
-void get_pme_ener_vir_q(pme_solve_work_t* work, int nthread, PmeOutput* output)
+void get_pme_ener_vir_q(ArrayRef<const std::unique_ptr<pme_solve_work_t>> work, int nthread, PmeOutput* output)
 {
     GMX_ASSERT(output != nullptr, "Need valid output buffer");
     /* This function sums output over threads and should therefore
      * only be called after thread synchronization.
      */
-    output->coulombEnergy_ = work[0].energy_q;
-    copy_mat(work[0].vir_q, output->coulombVirial_);
+    output->coulombEnergy_ = work[0]->energy_q;
+    copy_mat(work[0]->vir_q, output->coulombVirial_);
 
     for (int thread = 1; thread < nthread; thread++)
     {
-        output->coulombEnergy_ += work[thread].energy_q;
-        m_add(output->coulombVirial_, work[thread].vir_q, output->coulombVirial_);
+        output->coulombEnergy_ += work[thread]->energy_q;
+        m_add(output->coulombVirial_, work[thread]->vir_q, output->coulombVirial_);
     }
 }
 
-void get_pme_ener_vir_lj(pme_solve_work_t* work, int nthread, PmeOutput* output)
+void get_pme_ener_vir_lj(ArrayRef<const std::unique_ptr<pme_solve_work_t>> work, int nthread, PmeOutput* output)
 {
     GMX_ASSERT(output != nullptr, "Need valid output buffer");
     /* This function sums output over threads and should therefore
      * only be called after thread synchronization.
      */
-    output->lennardJonesEnergy_ = work[0].energy_lj;
-    copy_mat(work[0].vir_lj, output->lennardJonesVirial_);
+    output->lennardJonesEnergy_ = work[0]->energy_lj;
+    copy_mat(work[0]->vir_lj, output->lennardJonesVirial_);
 
     for (int thread = 1; thread < nthread; thread++)
     {
-        output->lennardJonesEnergy_ += work[thread].energy_lj;
-        m_add(output->lennardJonesVirial_, work[thread].vir_lj, output->lennardJonesVirial_);
+        output->lennardJonesEnergy_ += work[thread]->energy_lj;
+        m_add(output->lennardJonesVirial_, work[thread]->vir_lj, output->lennardJonesVirial_);
     }
 }
 
@@ -328,24 +271,22 @@ int solve_pme_yzx(const gmx_pme_t* pme, t_complex* grid, real vol, bool computeE
 {
     /* do recip sum over local cells in grid */
     /* y major, z middle, x minor or continuous */
-    t_complex*               p0;
-    int                      kx, ky, kz, maxkx, maxky;
-    int                      nx, ny, nz, iyz0, iyz1, iyz, iy, iz, kxstart, kxend;
-    real                     mx, my, mz;
-    real                     ewaldcoeff = pme->ewaldcoeff_q;
-    real                     factor     = M_PI * M_PI / (ewaldcoeff * ewaldcoeff);
-    real                     ets2, struct2, vfactor, ets2vf;
-    real                     d1, d2, energy = 0;
-    real                     by, bz;
-    real                     virxx = 0, virxy = 0, virxz = 0, viryy = 0, viryz = 0, virzz = 0;
-    real                     rxx, ryx, ryy, rzx, rzy, rzz;
-    struct pme_solve_work_t* work;
-    real *                   mhx, *mhy, *mhz, *m2, *denom, *tmp1, *eterm, *m2inv;
-    real                     mhxk, mhyk, mhzk, m2k;
-    real                     corner_fac;
-    ivec                     complex_order;
-    ivec                     local_ndata, local_offset, local_size;
-    real                     elfac;
+    t_complex* p0;
+    int        kx, ky, kz, maxkx, maxky;
+    int        nx, ny, nz, iyz0, iyz1, iyz, iy, iz, kxstart, kxend;
+    real       mx, my, mz;
+    real       ewaldcoeff = pme->ewaldcoeff_q;
+    real       factor     = M_PI * M_PI / (ewaldcoeff * ewaldcoeff);
+    real       ets2, struct2, vfactor, ets2vf;
+    real       d1, d2, energy = 0;
+    real       by, bz;
+    real       virxx = 0, virxy = 0, virxz = 0, viryy = 0, viryz = 0, virzz = 0;
+    real       rxx, ryx, ryy, rzx, rzy, rzz;
+    real       mhxk, mhyk, mhzk, m2k;
+    real       corner_fac;
+    ivec       complex_order;
+    ivec       local_ndata, local_offset, local_size;
+    real       elfac;
 
     elfac = gmx::c_one4PiEps0 / pme->epsilon_r;
 
@@ -369,15 +310,16 @@ int solve_pme_yzx(const gmx_pme_t* pme, t_complex* grid, real vol, bool computeE
     maxkx = (nx + 1) / 2;
     maxky = (ny + 1) / 2;
 
-    work  = &pme->solve_work[thread];
-    mhx   = work->mhx;
-    mhy   = work->mhy;
-    mhz   = work->mhz;
-    m2    = work->m2;
-    denom = work->denom;
-    tmp1  = work->tmp1;
-    eterm = work->eterm;
-    m2inv = work->m2inv;
+    pme_solve_work_t& work = *pme->solve_work[thread];
+
+    real* gmx_restrict mhx   = work.mhx.data();
+    real* gmx_restrict mhy   = work.mhy.data();
+    real* gmx_restrict mhz   = work.mhz.data();
+    real* gmx_restrict m2    = work.m2.data();
+    real* gmx_restrict denom = work.denom.data();
+    real* gmx_restrict tmp1  = work.tmp1.data();
+    real* gmx_restrict eterm = work.eterm.data();
+    real* gmx_restrict m2inv = work.m2inv.data();
 
     iyz0 = local_ndata[YY] * local_ndata[ZZ] * thread / nthread;
     iyz1 = local_ndata[YY] * local_ndata[ZZ] * (thread + 1) / nthread;
@@ -570,15 +512,15 @@ int solve_pme_yzx(const gmx_pme_t* pme, t_complex* grid, real vol, bool computeE
          * experiencing problems on semiisotropic membranes.
          * IS THAT COMMENT STILL VALID??? (DvdS, 2001/02/07).
          */
-        work->vir_q[XX][XX] = 0.25 * virxx;
-        work->vir_q[YY][YY] = 0.25 * viryy;
-        work->vir_q[ZZ][ZZ] = 0.25 * virzz;
-        work->vir_q[XX][YY] = work->vir_q[YY][XX] = 0.25 * virxy;
-        work->vir_q[XX][ZZ] = work->vir_q[ZZ][XX] = 0.25 * virxz;
-        work->vir_q[YY][ZZ] = work->vir_q[ZZ][YY] = 0.25 * viryz;
+        work.vir_q[XX][XX] = 0.25 * virxx;
+        work.vir_q[YY][YY] = 0.25 * viryy;
+        work.vir_q[ZZ][ZZ] = 0.25 * virzz;
+        work.vir_q[XX][YY] = work.vir_q[YY][XX] = 0.25 * virxy;
+        work.vir_q[XX][ZZ] = work.vir_q[ZZ][XX] = 0.25 * virxz;
+        work.vir_q[YY][ZZ] = work.vir_q[ZZ][YY] = 0.25 * viryz;
 
         /* This energy should be corrected for a charged system */
-        work->energy_q = 0.5 * energy;
+        work.energy_q = 0.5 * energy;
     }
 
     /* Return the loop count */
@@ -598,23 +540,21 @@ int solve_pme_lj_yzx(const gmx_pme_t*              pme,
 
     /* do recip sum over local cells in grid */
     /* y major, z middle, x minor or continuous */
-    int                      ig, gcount;
-    int                      kx, ky, kz, maxkx, maxky;
-    int                      nx, ny, nz, iy, iyz0, iyz1, iyz, iz, kxstart, kxend;
-    real                     mx, my, mz;
-    real                     ewaldcoeff = pme->ewaldcoeff_lj;
-    real                     factor     = M_PI * M_PI / (ewaldcoeff * ewaldcoeff);
-    real                     ets2, ets2vf;
-    real                     eterm, vterm, d1, d2, energy = 0;
-    real                     by, bz;
-    real                     virxx = 0, virxy = 0, virxz = 0, viryy = 0, viryz = 0, virzz = 0;
-    real                     rxx, ryx, ryy, rzx, rzy, rzz;
-    real *                   mhx, *mhy, *mhz, *m2, *denom, *tmp1, *tmp2;
-    real                     mhxk, mhyk, mhzk, m2k;
-    struct pme_solve_work_t* work;
-    real                     corner_fac;
-    ivec                     complex_order;
-    ivec                     local_ndata, local_offset, local_size;
+    int  ig, gcount;
+    int  kx, ky, kz, maxkx, maxky;
+    int  nx, ny, nz, iy, iyz0, iyz1, iyz, iz, kxstart, kxend;
+    real mx, my, mz;
+    real ewaldcoeff = pme->ewaldcoeff_lj;
+    real factor     = M_PI * M_PI / (ewaldcoeff * ewaldcoeff);
+    real ets2, ets2vf;
+    real eterm, vterm, d1, d2, energy = 0;
+    real by, bz;
+    real virxx = 0, virxy = 0, virxz = 0, viryy = 0, viryz = 0, virzz = 0;
+    real rxx, ryx, ryy, rzx, rzy, rzz;
+    real mhxk, mhyk, mhzk, m2k;
+    real corner_fac;
+    ivec complex_order;
+    ivec local_ndata, local_offset, local_size;
     nx = pme->nkx;
     ny = pme->nky;
     nz = pme->nkz;
@@ -632,14 +572,15 @@ int solve_pme_lj_yzx(const gmx_pme_t*              pme,
     maxkx = (nx + 1) / 2;
     maxky = (ny + 1) / 2;
 
-    work  = &pme->solve_work[thread];
-    mhx   = work->mhx;
-    mhy   = work->mhy;
-    mhz   = work->mhz;
-    m2    = work->m2;
-    denom = work->denom;
-    tmp1  = work->tmp1;
-    tmp2  = work->tmp2;
+    pme_solve_work_t& work = *pme->solve_work[thread];
+
+    real* gmx_restrict mhx   = work.mhx.data();
+    real* gmx_restrict mhy   = work.mhy.data();
+    real* gmx_restrict mhz   = work.mhz.data();
+    real* gmx_restrict m2    = work.m2.data();
+    real* gmx_restrict denom = work.denom.data();
+    real* gmx_restrict tmp1  = work.tmp1.data();
+    real* gmx_restrict tmp2  = work.tmp2.data();
 
     iyz0 = local_ndata[YY] * local_ndata[ZZ] * thread / nthread;
     iyz1 = local_ndata[YY] * local_ndata[ZZ] * (thread + 1) / nthread;
@@ -905,15 +846,15 @@ int solve_pme_lj_yzx(const gmx_pme_t*              pme,
     }
     if (computeEnergyAndVirial)
     {
-        work->vir_lj[XX][XX] = 0.25 * virxx;
-        work->vir_lj[YY][YY] = 0.25 * viryy;
-        work->vir_lj[ZZ][ZZ] = 0.25 * virzz;
-        work->vir_lj[XX][YY] = work->vir_lj[YY][XX] = 0.25 * virxy;
-        work->vir_lj[XX][ZZ] = work->vir_lj[ZZ][XX] = 0.25 * virxz;
-        work->vir_lj[YY][ZZ] = work->vir_lj[ZZ][YY] = 0.25 * viryz;
+        work.vir_lj[XX][XX] = 0.25 * virxx;
+        work.vir_lj[YY][YY] = 0.25 * viryy;
+        work.vir_lj[ZZ][ZZ] = 0.25 * virzz;
+        work.vir_lj[XX][YY] = work.vir_lj[YY][XX] = 0.25 * virxy;
+        work.vir_lj[XX][ZZ] = work.vir_lj[ZZ][XX] = 0.25 * virxz;
+        work.vir_lj[YY][ZZ] = work.vir_lj[ZZ][YY] = 0.25 * viryz;
 
         /* This energy should be corrected for a charged system */
-        work->energy_lj = 0.5 * energy;
+        work.energy_lj = 0.5 * energy;
     }
     /* Return the loop count */
     return local_ndata[YY] * local_ndata[XX];

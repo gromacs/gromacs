@@ -515,9 +515,9 @@ GPU_FUNC_QUALIFIER void pme_gpu_getEnergyAndVirial(const gmx_pme_t& GPU_FUNC_ARG
  * \param[in] lambdaQ            The Coulomb lambda to use when finalizing the output.
  * \returns                           The output object.
  */
-GPU_FUNC_QUALIFIER PmeOutput pme_gpu_getOutput(const gmx_pme_t& GPU_FUNC_ARGUMENT(pme),
-                                               bool GPU_FUNC_ARGUMENT(computeEnergyAndVirial),
-                                               real GPU_FUNC_ARGUMENT(lambdaQ))
+GPU_FUNC_QUALIFIER PmeOutput pme_gpu_getOutput(gmx_pme_t* GPU_FUNC_ARGUMENT(pme),
+                                               bool       GPU_FUNC_ARGUMENT(computeEnergyAndVirial),
+                                               real       GPU_FUNC_ARGUMENT(lambdaQ))
         GPU_FUNC_TERM_WITH_RETURN(PmeOutput{});
 
 /*! \libinternal \brief

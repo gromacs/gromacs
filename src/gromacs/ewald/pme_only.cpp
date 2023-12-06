@@ -94,7 +94,6 @@
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/gmxmpi.h"
 #include "gromacs/utility/gmxomp.h"
-#include "gromacs/utility/smalloc.h"
 
 #include "pme_gpu_internal.h"
 #include "pme_internal.h"

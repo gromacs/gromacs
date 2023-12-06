@@ -1095,9 +1095,9 @@ static void pme_gpu_getForceOutput(PmeGpu* pmeGpu, PmeOutput* output)
     }
 }
 
-PmeOutput pme_gpu_getOutput(const gmx_pme_t& pme, const bool computeEnergyAndVirial, const real lambdaQ)
+PmeOutput pme_gpu_getOutput(gmx_pme_t* pme, const bool computeEnergyAndVirial, const real lambdaQ)
 {
-    PmeGpu* pmeGpu = pme.gpu;
+    PmeGpu* pmeGpu = pme->gpu;
 
     PmeOutput output;
 
@@ -1107,11 +1107,11 @@ PmeOutput pme_gpu_getOutput(const gmx_pme_t& pme, const bool computeEnergyAndVir
     {
         if (pme_gpu_settings(pmeGpu).performGPUSolve)
         {
-            pme_gpu_getEnergyAndVirial(pme, lambdaQ, &output);
+            pme_gpu_getEnergyAndVirial(*pme, lambdaQ, &output);
         }
         else
         {
-            get_pme_ener_vir_q(pme.solve_work, pme.nthread, &output);
+            get_pme_ener_vir_q(pme->solve_work, pme->nthread, &output);
         }
     }
     return output;

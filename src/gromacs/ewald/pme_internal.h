@@ -52,6 +52,7 @@
 
 #include "config.h"
 
+#include <memory>
 #include <vector>
 
 #include "gromacs/math/gmxcomplex.h"
@@ -396,8 +397,13 @@ struct gmx_pme_t
     // List of pointers pointing to the same data as cfftgrids in grids
     std::vector<t_complex*> cfftgrids;
 
-    std::vector<int>  nnx, nny, nnz;
-    std::vector<real> fshx, fshy, fshz;
+    std::vector<int> nnx;
+    std::vector<int> nny;
+    std::vector<int> nnz;
+
+    std::vector<real> fshx;
+    std::vector<real> fshy;
+    std::vector<real> fshz;
 
     std::vector<PmeAtomComm> atc; /* Indexed on decomposition index */
     matrix                   recipbox;
@@ -422,7 +428,7 @@ struct gmx_pme_t
     std::vector<real>      bufr; /* Communication buffer */
 
     /* thread local work data for solve_pme */
-    struct pme_solve_work_t* solve_work;
+    std::vector<std::unique_ptr<pme_solve_work_t>> solve_work;
 };
 
 //! @endcond

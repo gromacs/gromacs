@@ -45,7 +45,6 @@
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
-#include "gromacs/utility/smalloc.h"
 
 static std::vector<real> make_dft_mod(gmx::ArrayRef<const double> data, int splineOrder, int ndata)
 {

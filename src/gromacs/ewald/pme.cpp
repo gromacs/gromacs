@@ -110,7 +110,6 @@
 #include "gromacs/utility/logger.h"
 #include "gromacs/utility/message_string_collector.h"
 #include "gromacs/utility/real.h"
-#include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/unique_cptr.h"
 
 #include "calculate_spline_moduli.h"
@@ -987,7 +986,6 @@ gmx_pme_t* gmx_pme_init(const t_commrec*     cr,
         GMX_ASSERT(pme->gpu == nullptr, "Should not have PME GPU object when PME is on a CPU.");
     }
 
-
     pme_init_all_work(&pme->solve_work, pme->nthread, pme->nkx);
 
     // no exception was thrown during the init, so we hand over the PME structure handle
@@ -1762,11 +1760,6 @@ void gmx_pme_destroy(gmx_pme_t* pme, bool destroySharedData)
         {
             pmegrids_destroy(&grids.pmeGrids);
         }
-    }
-
-    if (pme->solve_work)
-    {
-        pme_free_all_work(&pme->solve_work, pme->nthread);
     }
 
     destroy_pme_spline_work(pme->spline_work);

@@ -34,7 +34,10 @@
 #ifndef GMX_EWALD_PME_SOLVE_H
 #define GMX_EWALD_PME_SOLVE_H
 
+#include <memory>
+
 #include "gromacs/math/gmxcomplex.h"
+#include "gromacs/math/paddedvector.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
@@ -49,30 +52,51 @@ template<typename>
 class ArrayRef;
 }
 
+struct pme_solve_work_t
+{
+    // Resizes the buffers to \p newSize when larger than the current size
+    void resizeWhenNeeded(const int newSize);
+
+    /* work data for solve_pme */
+    std::vector<real>       mhx;
+    std::vector<real>       mhy;
+    std::vector<real>       mhz;
+    std::vector<real>       m2;
+    gmx::PaddedVector<real> denom;
+    gmx::PaddedVector<real> tmp1;
+    gmx::PaddedVector<real> tmp2;
+    gmx::PaddedVector<real> eterm;
+    std::vector<real>       m2inv;
+
+    real   energy_q;
+    matrix vir_q;
+    real   energy_lj;
+    matrix vir_lj;
+};
+
 /*! \brief Allocates array of work structures
  *
  * Note that work is the address of a pointer allocated by
  * this function. Upon return it will point at
  * an array of work structures.
  */
-void pme_init_all_work(struct pme_solve_work_t** work, int nthread, int nkx);
-
-/*! \brief Frees array of work structures
- *
- * Frees work and sets it to NULL. */
-void pme_free_all_work(struct pme_solve_work_t** work, int nthread);
+void pme_init_all_work(std::vector<std::unique_ptr<pme_solve_work_t>>* work, int nthread, int nkx);
 
 /*! \brief Get energy and virial for electrostatics
  *
  * Note that work is an array of work structures
  */
-void get_pme_ener_vir_q(pme_solve_work_t* work, int nthread, PmeOutput* output);
+void get_pme_ener_vir_q(gmx::ArrayRef<const std::unique_ptr<pme_solve_work_t>> work,
+                        int                                                    nthread,
+                        PmeOutput*                                             output);
 
 /*! \brief Get energy and virial for L-J
  *
  * Note that work is an array of work structures
  */
-void get_pme_ener_vir_lj(pme_solve_work_t* work, int nthread, PmeOutput* output);
+void get_pme_ener_vir_lj(gmx::ArrayRef<const std::unique_ptr<pme_solve_work_t>> work,
+                         int                                                    nthread,
+                         PmeOutput*                                             output);
 
 int solve_pme_yzx(const gmx_pme_t* pme, t_complex* grid, real vol, bool computeEnergyAndVirial, int nthread, int thread);
 

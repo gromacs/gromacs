@@ -40,7 +40,6 @@
 #include "gromacs/simd/simd.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/gmxassert.h"
-#include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/typetraits.h"
 
 #include "pme_internal.h"
