@@ -17,6 +17,33 @@ Given the community interest, the decision was made to keep ``gmx chi``.
 
 :issue:`4108`
 
+The analysis tool ``gmx gyrate-legacy`` deprecated
+""""""""""""""""""""""""""""""""""""""""""""""""""
+
+``gmx gyrate`` has been partly re-implemented in the modern |Gromacs| analysis framework.
+The old implementation is still available as ``gmx gyrate-legacy``. Please plan to update to the new version.
+Please let the |Gromacs| developers know of desired functionality missing from, or broken in, the new implementation.
+
+
+:issue:`4927`
+
+The analysis tool ``gmx hbond-legacy`` deprecated
+"""""""""""""""""""""""""""""""""""""""""""""""""
+
+``gmx hbond`` has been partly re-implemented in the modern |Gromacs| analysis framework.
+The old implementation is still available as ``gmx hbond-legacy``. Please plan to update to the new version.
+Please let the |Gromacs| developers know of desired functionality missing from, or broken in, the new implementation.
+
+:issue:`4927`
+
+The analysis tools ``gmx sans`` and ``gmx saxs`` deprecated
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+``gmx sans`` and ``gmx saxs`` has been partly re-implemented under new name ``gmx scattering`` in the modern |Gromacs| analysis framework.
+The old implementations are still available as ``gmx sans-legacy`` and ``gmx saxs-legacy``. Please plan to update to the new version.
+Please let the |Gromacs| developers know of desired functionality missing from, or broken in, the new implementation.
+
+:issue:`4927`
 
 Functionality deprecated in |Gromacs| 2024
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

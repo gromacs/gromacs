@@ -157,6 +157,10 @@ int gmx_sans(int argc, char* argv[])
         return 0;
     }
 
+    std::fprintf(stdout,
+                 "You are going to use a deprecated gmx tool. Please migrate to the new one, gmx "
+                 "scattering");
+
     /* check that binwidth not smaller than smallers distance */
     check_binwidth(binwidth);
     check_mcover(mcover);

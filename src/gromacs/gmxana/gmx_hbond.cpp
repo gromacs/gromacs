@@ -2543,6 +2543,10 @@ int gmx_hbond(int argc, char* argv[])
         return 0;
     }
 
+    std::fprintf(
+            stdout,
+            "You are going to use a deprecated gmx tool. Please migrate to the new one, gmx hbond");
+
     if (bMerge && !bDA)
     {
         gmx_fatal(FARGS,

@@ -142,6 +142,10 @@ void Scattering::initOptions(IOptionsContainer* options, TrajectoryAnalysisSetti
         "[THISMODULE] calculates SANS and SAXS scattering curves using Debye method.[PAR]",
         "The scattering intensity, I(q), as a function of scattering angle q",
         "with averaging over frames. [PAR]",
+        "[PAR]",
+        "Note that this is a new implementation of the SANS/SAXS utilities added in",
+        "GROMACS 2024. If you need the old ones,",
+        "use [TT]gmx sans-legacy[tt] or [TT]gmx saxs-legacy[tt]."
     };
 
     settings->setHelpText(desc);

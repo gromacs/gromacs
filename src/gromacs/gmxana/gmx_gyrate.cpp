@@ -255,6 +255,11 @@ int gmx_gyrate(int argc, char* argv[])
         sfree(ppa);
         return 0;
     }
+
+    std::fprintf(stdout,
+                 "You are going to use a deprecated gmx tool. Please migrate to the new one, gmx "
+                 "gyrate");
+
     bACF = opt2bSet("-acf", NFILE, fnm);
     if (bACF && nmol != 1)
     {

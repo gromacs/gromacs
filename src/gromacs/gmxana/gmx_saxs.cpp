@@ -68,11 +68,16 @@ int gmx_saxs(int argc, char* argv[])
         { efXVG, "-sq", "sq", ffWRITE },
     };
 #define NFILE asize(fnm)
+
     if (!parse_common_args(
                 &argc, argv, PCA_CAN_TIME, NFILE, fnm, NPA, pa, asize(desc), desc, 0, nullptr, &oenv))
     {
         return 0;
     }
+
+    std::fprintf(stdout,
+                 "You are going to use a deprecated gmx tool. Please migrate to the new one, gmx "
+                 "scattering");
 
     fnTPS = ftp2fn(efTPS, NFILE, fnm);
     fnTRX = ftp2fn(efTRX, NFILE, fnm);
