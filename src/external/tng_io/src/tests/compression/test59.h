@@ -23,6 +23,6 @@
 #define INTMAX3 10000
 #define NFRAMES 1000
 #ifdef GEN
-#define TEST_FLOAT
+#    define TEST_FLOAT
 #endif
 #define EXPECTED_FILESIZE 6986313.

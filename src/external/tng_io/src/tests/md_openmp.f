@@ -35,9 +35,9 @@ c  Parameters:
 c
 c    None
 c
-      implicit none
+      use omp_lib
 
-      include 'omp_lib.h'
+      implicit none
 
       integer nd
       parameter ( nd = 3 )

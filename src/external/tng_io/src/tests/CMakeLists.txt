@@ -5,6 +5,12 @@ endif()
 add_definitions(-DTNG_EXAMPLE_FILES_DIR="${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/tests/example_files/") # Directory where to find input test files and save output files.
 
 if(TNG_BUILD_TEST)
+    #add googletest
+    Include(GoogleTest)
+    add_subdirectory(googletest)
+    enable_testing()
+    include_directories(${gtest_SOURCE_DIR}/include ${gtest_SOURCE_DIR})
+    
     add_executable(tng_testing tng_io_testing.c)
     target_link_libraries(tng_testing tng_io)
     if(UNIX)
@@ -18,6 +24,29 @@ if(TNG_BUILD_TEST)
     file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/../../example_files DESTINATION ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/tests/)
 
     set_property(TARGET tng_testing PROPERTY RUNTIME_OUTPUT_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/tests)
+
+    add_executable(tng_io_read_high_level tng_io_read_high_level.cpp)
+    target_link_libraries(tng_io_read_high_level tng_io)
+    if(UNIX)
+        target_link_libraries(tng_io_read_high_level m)
+    endif()
+    if(HAVE_INTTYPES_H)
+      set_property(TARGET tng_io_read_high_level APPEND PROPERTY COMPILE_DEFINITIONS USE_STD_INTTYPES_H=1)
+    endif()
+    set_property(TARGET tng_io_read_high_level PROPERTY RUNTIME_OUTPUT_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/tests)
+
+    add_executable(regtest regression_gtest.cpp)
+    target_link_libraries(regtest tng_io)
+    target_link_libraries(regtest gtest gtest_main)
+    gtest_discover_tests(regtest WORKING_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/tests)
+    if(UNIX)
+        target_link_libraries(regtest m)
+    endif()
+    if(HAVE_INTTYPES_H)
+      set_property(TARGET regtest APPEND PROPERTY COMPILE_DEFINITIONS USE_STD_INTTYPES_H=1)
+    endif()
+    set_property(TARGET regtest PROPERTY RUNTIME_OUTPUT_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/tests)
+    
 endif()
 
 if(TNG_BUILD_EXAMPLES)

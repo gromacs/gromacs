@@ -1,3 +1,1 @@
-void test_zlib(void)
-{
-}
+void test_zlib(void) {}

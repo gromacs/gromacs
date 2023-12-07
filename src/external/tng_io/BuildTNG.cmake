@@ -7,7 +7,7 @@ set(TNG_ROOT_BINARY_DIR ${CMAKE_BINARY_DIR}/${TNG_ROOT_BINARY_DIR})
 
 set(TNG_MAJOR_VERSION "1")
 set(TNG_MINOR_VERSION "8")
-set(TNG_VERSION_PATCH_LEVEL "1")
+set(TNG_VERSION_PATCH_LEVEL "4")
 set(TNG_IO_VERSION "${TNG_MAJOR_VERSION}.${TNG_MINOR_VERSION}.${TNG_VERSION_PATCH_LEVEL}")
 
 function (TNG_GENERATE_VERSION_H)
@@ -71,7 +71,7 @@ function(add_tng_io_library NAME)
     target_include_directories(${_build_target} PRIVATE
                                $<BUILD_INTERFACE:${TNG_ROOT_SOURCE_DIR}/include>
                                $<BUILD_INTERFACE:${TNG_ROOT_BINARY_DIR}/include>)
-    target_include_directories(${NAME} SYSTEM INTERFACE
+    target_include_directories(${NAME} INTERFACE
                                $<BUILD_INTERFACE:${TNG_ROOT_SOURCE_DIR}/include>
                                $<BUILD_INTERFACE:${TNG_ROOT_BINARY_DIR}/include>)
 
@@ -106,4 +106,10 @@ function(add_tng_io_library NAME)
         set_property(SOURCE ${TNG_ROOT_SOURCE_DIR}/src/lib/md5.c
                      APPEND PROPERTY COMPILE_DEFINITIONS TNG_INTEGER_BIG_ENDIAN)
     endif()
+
+    if (TNG_CLANG_TIDY)
+        set_target_properties(${NAME} PROPERTIES C_CLANG_TIDY
+       "${CLANG_TIDY_EXE};-warnings-as-errors=*;-header-filter=.*")
+    endif()
+
 endfunction()

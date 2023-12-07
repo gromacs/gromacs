@@ -1,13 +1,26 @@
-/* This code is part of the tng compression routines.
+/*
+ * This code is part of the tng binary trajectory format.
  *
- * Written by Daniel Spangberg
- * Copyright (c) 2010, 2013, The GROMACS development team.
+ * Copyright (c) 2010,2013, The GROMACS development team.
+ * Copyright (c) 2020, by the GROMACS development team.
+ * TNG was orginally written by Magnus Lundborg, Daniel Spångberg and
+ * Rossen Apostolov. The API is implemented mainly by Magnus Lundborg,
+ * Daniel Spångberg and Anders Gärdenäs.
  *
+ * Please see the AUTHORS file for more information.
  *
- * This program is free software; you can redistribute it and/or
+ * The TNG library is free software; you can redistribute it and/or
  * modify it under the terms of the Revised BSD License.
+ *
+ * To help us fund future development, we humbly ask that you cite
+ * the research papers on the package.
+ *
+ * Check out http://www.gromacs.org for more information.
  */
 
+/* This code is part of the tng compression routines
+ * Written by Daniel Spangberg
+ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -147,84 +160,103 @@ static void sort_strings(unsigned int *vals, int nvals,
 #define MAX_OFFSET 0xFFFF
 #define MAX_STRING_SEARCH 8
 
-static void add_circular(int *previous, const int v, const int i)
+static void add_circular(int* previous, const int v, const int i)
 {
-  if (previous[(NUM_PREVIOUS+3)*v+2]!=i-1)
+    if (previous[(NUM_PREVIOUS + 3) * v + 2] != i - 1)
     {
-      previous[(NUM_PREVIOUS+3)*v]++;
-      if (previous[(NUM_PREVIOUS+3)*v]>NUM_PREVIOUS)
-        previous[(NUM_PREVIOUS+3)*v]=NUM_PREVIOUS;
-      previous[(NUM_PREVIOUS+3)*v+3+previous[(NUM_PREVIOUS+3)*v+1]]=i;
-      previous[(NUM_PREVIOUS+3)*v+1]++;
-      if (previous[(NUM_PREVIOUS+3)*v+1]>=NUM_PREVIOUS)
-        previous[(NUM_PREVIOUS+3)*v+1]=0;
+        previous[(NUM_PREVIOUS + 3) * v]++;
+        if (previous[(NUM_PREVIOUS + 3) * v] > NUM_PREVIOUS)
+        {
+            previous[(NUM_PREVIOUS + 3) * v] = NUM_PREVIOUS;
+        }
+        previous[(NUM_PREVIOUS + 3) * v + 3 + previous[(NUM_PREVIOUS + 3) * v + 1]] = i;
+        previous[(NUM_PREVIOUS + 3) * v + 1]++;
+        if (previous[(NUM_PREVIOUS + 3) * v + 1] >= NUM_PREVIOUS)
+        {
+            previous[(NUM_PREVIOUS + 3) * v + 1] = 0;
+        }
     }
-  previous[(NUM_PREVIOUS+3)*v+2]=i;
+    previous[(NUM_PREVIOUS + 3) * v + 2] = i;
 }
 
-void Ptngc_comp_to_lz77(unsigned int *vals, const int nvals,
-                  unsigned int *data, int *ndata,
-                  unsigned int *len, int *nlens,
-                  unsigned int *offsets, int *noffsets)
+void Ptngc_comp_to_lz77(unsigned int* vals,
+                        const int     nvals,
+                        unsigned int* data,
+                        int*          ndata,
+                        unsigned int* len,
+                        int*          nlens,
+                        unsigned int* offsets,
+                        int*          noffsets)
 {
-  int noff=0;
-  int ndat=0;
-  int nlen=0;
-  int i,j;
-  int *previous=warnmalloc(0x20000*(NUM_PREVIOUS+3)*sizeof *previous);
+    int  noff = 0;
+    int  ndat = 0;
+    int  nlen = 0;
+    int  i, j;
+    int* previous = warnmalloc(0x20000 * (NUM_PREVIOUS + 3) * sizeof *previous);
 #if 0
   unsigned int *info=warnmalloc(2*nvals*sizeof *info);
   sort_strings(vals,nvals,info);
 #endif
-  for (i=0; i<0x20000; i++)
+    for (i = 0; i < 0x20000; i++)
     {
-      previous[(NUM_PREVIOUS+3)*i]=0; /* Number of items in a circular buffer */
-      previous[(NUM_PREVIOUS+3)*i+1]=0; /* Pointer to beginning of circular buffer. */
-      previous[(NUM_PREVIOUS+3)*i+2]=-2; /* Last offset that had this value. -2 is really never... */
+        previous[(NUM_PREVIOUS + 3) * i]     = 0; /* Number of items in a circular buffer */
+        previous[(NUM_PREVIOUS + 3) * i + 1] = 0; /* Pointer to beginning of circular buffer. */
+        previous[(NUM_PREVIOUS + 3) * i + 2] =
+                -2; /* Last offset that had this value. -2 is really never... */
     }
-  for (i=0; i<nvals; i++)
+    for (i = 0; i < nvals; i++)
     {
-      int k;
+        int k;
 #if 0
       int kmin,kmax;
 #endif
-      int firstoffset=i-MAX_OFFSET;
-      if (firstoffset<0)
-        firstoffset=0;
-      if (i!=0)
+        int firstoffset = i - MAX_OFFSET;
+        if (firstoffset < 0)
         {
-          int largest_len=0;
-          int largest_offset=0;
-          int icirc, ncirc;
-          /* Is this identical to a previous offset?  Prefer close
-             values for offset. Search through circular buffer for the
-             possible values for the start of this string. */
-          ncirc=previous[(NUM_PREVIOUS+3)*vals[i]];
-          for (icirc=0; icirc<ncirc; icirc++)
+            firstoffset = 0;
+        }
+        if (i != 0)
+        {
+            int largest_len    = 0;
+            int largest_offset = 0;
+            int icirc, ncirc;
+            /* Is this identical to a previous offset?  Prefer close
+               values for offset. Search through circular buffer for the
+               possible values for the start of this string. */
+            ncirc = previous[(NUM_PREVIOUS + 3) * vals[i]];
+            for (icirc = 0; icirc < ncirc; icirc++)
             {
-              int iptr=previous[(NUM_PREVIOUS+3)*vals[i]+1]-icirc-1;
-              if (iptr<0)
-                iptr+=NUM_PREVIOUS;
-              j=previous[(NUM_PREVIOUS+3)*vals[i]+3+iptr];
-              if (j<firstoffset)
-                break;
+                int iptr = previous[(NUM_PREVIOUS + 3) * vals[i] + 1] - icirc - 1;
+                if (iptr < 0)
+                {
+                    iptr += NUM_PREVIOUS;
+                }
+                j = previous[(NUM_PREVIOUS + 3) * vals[i] + 3 + iptr];
+                if (j < firstoffset)
+                {
+                    break;
+                }
 #if 0
               fprintf(stderr,"Starting search for %d at %d. Found %d\n",vals[i],j,vals[j]);
 #endif
-              while ((j<i) && (vals[j]==vals[i]))
+                while ((j < i) && (vals[j] == vals[i]))
                 {
-                  if (j>=firstoffset)
+                    if (j >= firstoffset)
                     {
-                      for (k=0; i+k<nvals; k++)
-                        if (vals[j+k]!=vals[i+k])
-                          break;
-                      if ((k>largest_len) && ((k>=(i-j)+16) || ((k>4) && (i-j==1))))
+                        for (k = 0; i + k < nvals; k++)
                         {
-                          largest_len=k;
-                          largest_offset=j;
+                            if (vals[j + k] != vals[i + k])
+                            {
+                                break;
+                            }
+                        }
+                        if ((k > largest_len) && ((k >= (i - j) + 16) || ((k > 4) && (i - j == 1))))
+                        {
+                            largest_len    = k;
+                            largest_offset = j;
                         }
                     }
-                  j++;
+                    j++;
                 }
             }
 #if 0
@@ -248,28 +280,30 @@ void Ptngc_comp_to_lz77(unsigned int *vals, const int nvals,
                     {
                       largest_len=m;
                       largest_offset=s;
-#if 0
+#    if 0
                       fprintf(stderr,"Offset: %d %d\n",m,i-s);
-#endif
+#    endif
                     }
                 }
             }
 #endif
-          /* Check how to write this info. */
-          if (largest_len>MAX_LEN)
-            largest_len=MAX_LEN;
-          if (largest_len)
+            /* Check how to write this info. */
+            if (largest_len > MAX_LEN)
             {
-              if (i-largest_offset==1)
+                largest_len = MAX_LEN;
+            }
+            if (largest_len)
+            {
+                if (i - largest_offset == 1)
                 {
-                  data[ndat++]=0;
+                    data[ndat++] = 0;
                 }
-              else
+                else
                 {
-                  data[ndat++]=1;
-                  offsets[noff++]=i-largest_offset;
+                    data[ndat++]    = 1;
+                    offsets[noff++] = i - largest_offset;
                 }
-              len[nlen++]=largest_len;
+                len[nlen++] = largest_len;
 #if 0
               fprintf(stderr,"l:o: %d:%d data=%d i=%d\n",largest_len,i-largest_offset,ndat,i);
               fflush(stderr);
@@ -278,71 +312,81 @@ void Ptngc_comp_to_lz77(unsigned int *vals, const int nvals,
 #if 0
               fprintf(stderr,"Found largest len %d at %d.\n",largest_len,i-largest_offset);
 #endif
-              /* Add these values to the circular buffer. */
-              for (k=0; k<largest_len; k++)
-                add_circular(previous,vals[i+k],i+k);
-              i+=largest_len-1;
+                /* Add these values to the circular buffer. */
+                for (k = 0; k < largest_len; k++)
+                {
+                    add_circular(previous, vals[i + k], i + k);
+                }
+                i += largest_len - 1;
             }
-          else
+            else
             {
-              data[ndat++]=vals[i]+2;
-              /* Add this value to circular buffer. */
-              add_circular(previous,vals[i],i);
+                data[ndat++] = vals[i] + 2;
+                /* Add this value to circular buffer. */
+                add_circular(previous, vals[i], i);
             }
         }
-      else
+        else
         {
-          data[ndat++]=vals[i]+2;
-          /* Add this value to circular buffer. */
-          add_circular(previous,vals[i],i);
+            data[ndat++] = vals[i] + 2;
+            /* Add this value to circular buffer. */
+            add_circular(previous, vals[i], i);
         }
     }
-  *noffsets=noff;
-  *ndata=ndat;
-  *nlens=nlen;
+    *noffsets = noff;
+    *ndata    = ndat;
+    *nlens    = nlen;
 #if 0
   free(info);
 #endif
-  free(previous);
+    free(previous);
 }
 
-void Ptngc_comp_from_lz77(unsigned int *data, const int ndata,
-                    unsigned int *len, const int nlens,
-                    unsigned int *offsets, const int noffsets,
-                    unsigned int *vals, const int nvals)
+void Ptngc_comp_from_lz77(const unsigned int* data,
+                          const int           ndata,
+                          const unsigned int* len,
+                          const int           nlens,
+                          const unsigned int* offsets,
+                          const int           noffsets,
+                          unsigned int*       vals,
+                          const int           nvals)
 {
-  int i=0;
-  int joff=0;
-  int jdat=0;
-  int jlen=0;
-  (void)ndata;
-  (void)nlens;
-  (void)noffsets;
-  while (i<nvals)
+    int i    = 0;
+    int joff = 0;
+    int jdat = 0;
+    int jlen = 0;
+    (void)ndata;
+    (void)nlens;
+    (void)noffsets;
+    while (i < nvals)
     {
-      unsigned int v=data[jdat++];
-      if (v<2)
+        unsigned int v = data[jdat++];
+        if (v < 2)
         {
-          int offset=1;
-          int k;
-          int length=(int)len[jlen++];
+            int offset = 1;
+            int k;
+            int length = (int)len[jlen++];
 #if 0
           fprintf(stderr,"len=%d off=%d i=%d\n",length,offset,i);
 #endif
-          if (v==1)
-            offset=offsets[joff++];
-          for (k=0; k<length; k++)
+            if (v == 1)
             {
-              vals[i]=vals[i-offset];
-              if (i>=nvals)
+                offset = offsets[joff++];
+            }
+            for (k = 0; k < length; k++)
+            {
+                vals[i] = vals[i - offset];
+                if (i >= nvals)
                 {
-                  fprintf(stderr,"too many vals.\n");
-                  exit(EXIT_FAILURE);
+                    fprintf(stderr, "too many vals.\n");
+                    exit(EXIT_FAILURE);
                 }
-              i++;
+                i++;
             }
         }
-      else
-        vals[i++]=v-2;
+        else
+        {
+            vals[i++] = v - 2;
+        }
     }
 }

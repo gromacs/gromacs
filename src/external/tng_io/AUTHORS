@@ -9,3 +9,4 @@ The API is implemented mainly by:
 Magnus Lundborg
 Daniel Spångberg (TNG-MF1 compression)
 Anders Gärdenäs (C++ wrapper)
+Hugo MacDermott-Opeskin (C++ conversion)
