@@ -1,4 +1,4 @@
-[ bondedtypes ] 
+[ bondedtypes ]
 ; Column 1 : default bondtype
 ; Column 2 : default angletype
 ; Column 3 : default proper dihedraltype
@@ -24,165 +24,165 @@
 
 [ ALA ]
  [ atoms ]
-	N	NH1	-0.47	0
-	HN	H	0.31	1
-	CA	CT1	0.07	2
-	HA	HB	0.09	3
-	CB	CT3	-0.27	4
-	HB1	HA	0.09	5
-	HB2	HA	0.09	6
-	HB3	HA	0.09	7
-	C	C	0.51	8
-	O	O	-0.51	9
+        N       NH1     -0.47   0
+        HN      H       0.31    1
+        CA      CT1     0.07    2
+        HA      HB      0.09    3
+        CB      CT3     -0.27   4
+        HB1     HA      0.09    5
+        HB2     HA      0.09    6
+        HB3     HA      0.09    7
+        C       C       0.51    8
+        O       O       -0.51   9
  [ bonds ]
-	CB	CA
-	N	HN
-	N	CA
-	C	CA
-	C	+N
-	CA	HA
-	CB	HB1
-	CB	HB2
-	CB	HB3
-	O	C
+        CB      CA
+        N       HN
+        N       CA
+        C       CA
+        C       +N
+        CA      HA
+        CB      HB1
+        CB      HB2
+        CB      HB3
+        O       C
  [ impropers ]
-	N	-C	CA	HN
-	C	CA	+N	O
+        N       -C      CA      HN
+        C       CA      +N      O
  [ cmap ]
-	-C	N	CA	C	+N
+        -C      N       CA      C       +N
 
 [ ARG ]
  [ atoms ]
-	N	NH1	-0.47	0
-	HN	H	0.31	1
-	CA	CT1	0.07	2
-	HA	HB	0.09	3
-	CB	CT2	-0.18	4
-	HB1	HA	0.09	5
-	HB2	HA	0.09	6
-	CG	CT2	-0.18	7
-	HG1	HA	0.09	8
-	HG2	HA	0.09	9
-	CD	CT2	0.20	10
-	HD1	HA	0.09	11
-	HD2	HA	0.09	12
-	NE	NC2	-0.70	13
-	HE	HC	0.44	14
-	CZ	C	0.64	15
-	NH1	NC2	-0.80	16
-	HH11	HC	0.46	17
-	HH12	HC	0.46	18
-	NH2	NC2	-0.80	19
-	HH21	HC	0.46	20
-	HH22	HC	0.46	21
-	C	C	0.51	22
-	O	O	-0.51	23
+        N       NH1     -0.47   0
+        HN      H       0.31    1
+        CA      CT1     0.07    2
+        HA      HB      0.09    3
+        CB      CT2     -0.18   4
+        HB1     HA      0.09    5
+        HB2     HA      0.09    6
+        CG      CT2     -0.18   7
+        HG1     HA      0.09    8
+        HG2     HA      0.09    9
+        CD      CT2     0.20    10
+        HD1     HA      0.09    11
+        HD2     HA      0.09    12
+        NE      NC2     -0.70   13
+        HE      HC      0.44    14
+        CZ      C       0.64    15
+        NH1     NC2     -0.80   16
+        HH11    HC      0.46    17
+        HH12    HC      0.46    18
+        NH2     NC2     -0.80   19
+        HH21    HC      0.46    20
+        HH22    HC      0.46    21
+        C       C       0.51    22
+        O       O       -0.51   23
  [ bonds ]
-	CB	CA
-	CG	CB
-	CD	CG
-	NE	CD
-	CZ	NE
-	NH2	CZ
-	N	HN
-	N	CA
-	C	CA
-	C	+N
-	CA	HA
-	CB	HB1
-	CB	HB2
-	CG	HG1
-	CG	HG2
-	CD	HD1
-	CD	HD2
-	NE	HE
-	NH1	HH11
-	NH1	HH12
-	NH2	HH21
-	NH2	HH22
-	O	C
-	CZ	NH1
+        CB      CA
+        CG      CB
+        CD      CG
+        NE      CD
+        CZ      NE
+        NH2     CZ
+        N       HN
+        N       CA
+        C       CA
+        C       +N
+        CA      HA
+        CB      HB1
+        CB      HB2
+        CG      HG1
+        CG      HG2
+        CD      HD1
+        CD      HD2
+        NE      HE
+        NH1     HH11
+        NH1     HH12
+        NH2     HH21
+        NH2     HH22
+        O       C
+        CZ      NH1
  [ impropers ]
-	N	-C	CA	HN
-	C	CA	+N	O
-	CZ	NH1	NH2	NE
+        N       -C      CA      HN
+        C       CA      +N      O
+        CZ      NH1     NH2     NE
  [ cmap ]
-	-C	N	CA	C	+N
+        -C      N       CA      C       +N
 
 [ ASN ]
  [ atoms ]
-	N	NH1	-0.47	0
-	HN	H	0.31	1
-	CA	CT1	0.07	2
-	HA	HB	0.09	3
-	CB	CT2	-0.18	4
-	HB1	HA	0.09	5
-	HB2	HA	0.09	6
-	CG	CC	0.55	7
-	OD1	O	-0.55	8
-	ND2	NH2	-0.62	9
-	HD21	H	0.32	10
-	HD22	H	0.30	11
-	C	C	0.51	12
-	O	O	-0.51	13
+        N       NH1     -0.47   0
+        HN      H       0.31    1
+        CA      CT1     0.07    2
+        HA      HB      0.09    3
+        CB      CT2     -0.18   4
+        HB1     HA      0.09    5
+        HB2     HA      0.09    6
+        CG      CC      0.55    7
+        OD1     O       -0.55   8
+        ND2     NH2     -0.62   9
+        HD21    H       0.32    10
+        HD22    H       0.30    11
+        C       C       0.51    12
+        O       O       -0.51   13
  [ bonds ]
-	CB	CA
-	CG	CB
-	ND2	CG
-	N	HN
-	N	CA
-	C	CA
-	C	+N
-	CA	HA
-	CB	HB1
-	CB	HB2
-	ND2	HD21
-	ND2	HD22
-	C	O
-	CG	OD1
+        CB      CA
+        CG      CB
+        ND2     CG
+        N       HN
+        N       CA
+        C       CA
+        C       +N
+        CA      HA
+        CB      HB1
+        CB      HB2
+        ND2     HD21
+        ND2     HD22
+        C       O
+        CG      OD1
  [ impropers ]
-	N	-C	CA	HN
-	C	CA	+N	O
-	CG	ND2	CB	OD1
-	CG	CB	ND2	OD1
-	ND2	CG	HD21	HD22
-	ND2	CG	HD22	HD21
+        N       -C      CA      HN
+        C       CA      +N      O
+        CG      ND2     CB      OD1
+        CG      CB      ND2     OD1
+        ND2     CG      HD21    HD22
+        ND2     CG      HD22    HD21
  [ cmap ]
-	-C	N	CA	C	+N
+        -C      N       CA      C       +N
 
 [ ASP ]
  [ atoms ]
-	N	NH1	-0.47	0
-	HN	H	0.31	1
-	CA	CT1	0.07	2
-	HA	HB	0.09	3
-	CB	CT2	-0.28	4
-	HB1	HA	0.09	5
-	HB2	HA	0.09	6
-	CG	CC	0.62	7
-	OD1	OC	-0.76	8
-	OD2	OC	-0.76	9
-	C	C	0.51	10
-	O	O	-0.51	11
+        N       NH1     -0.47   0
+        HN      H       0.31    1
+        CA      CT1     0.07    2
+        HA      HB      0.09    3
+        CB      CT2     -0.28   4
+        HB1     HA      0.09    5
+        HB2     HA      0.09    6
+        CG      CC      0.62    7
+        OD1     OC      -0.76   8
+        OD2     OC      -0.76   9
+        C       C       0.51    10
+        O       O       -0.51   11
  [ bonds ]
-	CB	CA
-	CG	CB
-	OD2	CG
-	N	HN
-	N	CA
-	C	CA
-	C	+N
-	CA	HA
-	CB	HB1
-	CB	HB2
-	O	C
-	CG	OD1
+        CB      CA
+        CG      CB
+        OD2     CG
+        N       HN
+        N       CA
+        C       CA
+        C       +N
+        CA      HA
+        CB      HB1
+        CB      HB2
+        O       C
+        CG      OD1
  [ impropers ]
-	N	-C	CA	HN
-	C	CA	+N	O
-	CG	CB	OD2	OD1
+        N       -C      CA      HN
+        C       CA      +N      O
+        CG      CB      OD2     OD1
  [ cmap ]
-	-C	N	CA	C	+N
+        -C      N       CA      C       +N
 
 [ ASPP ] ; protonated ASP
  [ atoms ]
@@ -222,34 +222,34 @@
 
 [ CYS ]
  [ atoms ]
-	N	NH1	-0.47	0
-	HN	H	0.31	1
-	CA	CT1	0.07	2
-	HA	HB	0.09	3
-	CB	CT2	-0.11	4
-	HB1	HA	0.09	5
-	HB2	HA	0.09	6
-	SG	S	-0.23	7
-	HG1	HS	0.16	8
-	C	C	0.51	9
-	O	O	-0.51	10
+        N       NH1     -0.47   0
+        HN      H       0.31    1
+        CA      CT1     0.07    2
+        HA      HB      0.09    3
+        CB      CT2     -0.11   4
+        HB1     HA      0.09    5
+        HB2     HA      0.09    6
+        SG      S       -0.23   7
+        HG1     HS      0.16    8
+        C       C       0.51    9
+        O       O       -0.51   10
  [ bonds ]
-	CB	CA
-	SG	CB
-	N	HN
-	N	CA
-	C	CA
-	C	+N
-	CA	HA
-	CB	HB1
-	CB	HB2
-	SG	HG1
-	O	C
+        CB      CA
+        SG      CB
+        N       HN
+        N       CA
+        C       CA
+        C       +N
+        CA      HA
+        CB      HB1
+        CB      HB2
+        SG      HG1
+        O       C
  [ impropers ]
-	N	-C	CA	HN
-	C	CA	+N	O
+        N       -C      CA      HN
+        C       CA      +N      O
  [ cmap ]
-	-C	N	CA	C	+N
+        -C      N       CA      C       +N
 
 [ CYS2 ]  ; disulfide cystine
  [ atoms ]
@@ -277,95 +277,95 @@
  [ impropers ]
         N       -C      CA      HN
         C       CA      +N      O
-[ cmap ]
+ [ cmap ]
         -C      N       CA      C       +N
 
 [ GLN ]
  [ atoms ]
-	N	NH1	-0.47	0
-	HN	H	0.31	1
-	CA	CT1	0.07	2
-	HA	HB	0.09	3
-	CB	CT2	-0.18	4
-	HB1	HA	0.09	5
-	HB2	HA	0.09	6
-	CG	CT2	-0.18	7
-	HG1	HA	0.09	8
-	HG2	HA	0.09	9
-	CD	CC	0.55	10
-	OE1	O	-0.55	11
-	NE2	NH2	-0.62	12
-	HE21	H	0.32	13
-	HE22	H	0.30	14
-	C	C	0.51	15
-	O	O	-0.51	16
+        N       NH1     -0.47   0
+        HN      H       0.31    1
+        CA      CT1     0.07    2
+        HA      HB      0.09    3
+        CB      CT2     -0.18   4
+        HB1     HA      0.09    5
+        HB2     HA      0.09    6
+        CG      CT2     -0.18   7
+        HG1     HA      0.09    8
+        HG2     HA      0.09    9
+        CD      CC      0.55    10
+        OE1     O       -0.55   11
+        NE2     NH2     -0.62   12
+        HE21    H       0.32    13
+        HE22    H       0.30    14
+        C       C       0.51    15
+        O       O       -0.51   16
  [ bonds ]
-	CB	CA
-	CG	CB
-	CD	CG
-	NE2	CD
-	N	HN
-	N	CA
-	C	CA
-	C	+N
-	CA	HA
-	CB	HB1
-	CB	HB2
-	CG	HG1
-	CG	HG2
-	NE2	HE21
-	NE2	HE22
-	O	C
-	CD	OE1
+        CB      CA
+        CG      CB
+        CD      CG
+        NE2     CD
+        N       HN
+        N       CA
+        C       CA
+        C       +N
+        CA      HA
+        CB      HB1
+        CB      HB2
+        CG      HG1
+        CG      HG2
+        NE2     HE21
+        NE2     HE22
+        O       C
+        CD      OE1
  [ impropers ]
-	N	-C	CA	HN
-	C	CA	+N	O
-	CD	NE2	CG	OE1
-	CD	CG	NE2	OE1
-	NE2	CD	HE21	HE22
-	NE2	CD	HE22	HE21
+        N       -C      CA      HN
+        C       CA      +N      O
+        CD      NE2     CG      OE1
+        CD      CG      NE2     OE1
+        NE2     CD      HE21    HE22
+        NE2     CD      HE22    HE21
  [ cmap ]
-	-C	N	CA	C	+N
+        -C      N       CA      C       +N
 
 [ GLU ]
  [ atoms ]
-	N	NH1	-0.47	0
-	HN	H	0.31	1
-	CA	CT1	0.07	2
-	HA	HB	0.09	3
-	CB	CT2	-0.18	4
-	HB1	HA	0.09	5
-	HB2	HA	0.09	6
-	CG	CT2	-0.28	7
-	HG1	HA	0.09	8
-	HG2	HA	0.09	9
-	CD	CC	0.62	10
-	OE1	OC	-0.76	11
-	OE2	OC	-0.76	12
-	C	C	0.51	13
-	O	O	-0.51	14
+        N       NH1     -0.47   0
+        HN      H       0.31    1
+        CA      CT1     0.07    2
+        HA      HB      0.09    3
+        CB      CT2     -0.18   4
+        HB1     HA      0.09    5
+        HB2     HA      0.09    6
+        CG      CT2     -0.28   7
+        HG1     HA      0.09    8
+        HG2     HA      0.09    9
+        CD      CC      0.62    10
+        OE1     OC      -0.76   11
+        OE2     OC      -0.76   12
+        C       C       0.51    13
+        O       O       -0.51   14
  [ bonds ]
-	CB	CA
-	CG	CB
-	CD	CG
-	OE2	CD
-	N	HN
-	N	CA
-	C	CA
-	C	+N
-	CA	HA
-	CB	HB1
-	CB	HB2
-	CG	HG1
-	CG	HG2
-	O	C
-	CD	OE1
+        CB      CA
+        CG      CB
+        CD      CG
+        OE2     CD
+        N       HN
+        N       CA
+        C       CA
+        C       +N
+        CA      HA
+        CB      HB1
+        CB      HB2
+        CG      HG1
+        CG      HG2
+        O       C
+        CD      OE1
  [ impropers ]
-	N	-C	CA	HN
-	C	CA	+N	O
-	CD	CG	OE2	OE1
+        N       -C      CA      HN
+        C       CA      +N      O
+        CD      CG      OE2     OE1
  [ cmap ]
-	-C	N	CA	C	+N
+        -C      N       CA      C       +N
 
 [ GLUP ] ; protonated GLU
  [ atoms ]
@@ -411,323 +411,323 @@
 
 [ GLY ]
  [ atoms ]
-	N	NH1	-0.47	0
-	HN	H	0.31	1
-	CA	CT2	-0.02	2
-	HA1	HB	0.09	3
-	HA2	HB	0.09	4
-	C	C	0.51	5
-	O	O	-0.51	6
+        N       NH1     -0.47   0
+        HN      H       0.31    1
+        CA      CT2     -0.02   2
+        HA1     HB      0.09    3
+        HA2     HB      0.09    4
+        C       C       0.51    5
+        O       O       -0.51   6
  [ bonds ]
-	N	HN
-	N	CA
-	C	CA
-	C	+N
-	CA	HA1
-	CA	HA2
-	O	C
+        N       HN
+        N       CA
+        C       CA
+        C       +N
+        CA      HA1
+        CA      HA2
+        O       C
  [ impropers ]
-	N	-C	CA	HN
-	C	CA	+N	O
+        N       -C      CA      HN
+        C       CA      +N      O
  [ cmap ]
-	-C	N	CA	C	+N
+        -C      N       CA      C       +N
 
 [ HSD ]
  [ atoms ]
-	N	NH1	-0.47	0
-	HN	H	0.31	1
-	CA	CT1	0.07	2
-	HA	HB	0.09	3
-	CB	CT2	-0.09	4
-	HB1	HA	0.09	5
-	HB2	HA	0.09	6
-	ND1	NR1	-0.36	7
-	HD1	H	0.32	8
-	CG	CPH1	-0.05	9
-	CE1	CPH2	0.25	10
-	HE1	HR1	0.13	11
-	NE2	NR2	-0.70	12
-	CD2	CPH1	0.22	13
-	HD2	HR3	0.10	14
-	C	C	0.51	15
-	O	O	-0.51	16
+        N       NH1     -0.47   0
+        HN      H       0.31    1
+        CA      CT1     0.07    2
+        HA      HB      0.09    3
+        CB      CT2     -0.09   4
+        HB1     HA      0.09    5
+        HB2     HA      0.09    6
+        ND1     NR1     -0.36   7
+        HD1     H       0.32    8
+        CG      CPH1    -0.05   9
+        CE1     CPH2    0.25    10
+        HE1     HR1     0.13    11
+        NE2     NR2     -0.70   12
+        CD2     CPH1    0.22    13
+        HD2     HR3     0.10    14
+        C       C       0.51    15
+        O       O       -0.51   16
  [ bonds ]
-	CB	CA
-	CG	CB
-	ND1	CG
-	CE1	ND1
-	NE2	CD2
-	N	HN
-	N	CA
-	C	CA
-	C	+N
-	CA	HA
-	CB	HB1
-	CB	HB2
-	ND1	HD1
-	CD2	HD2
-	CE1	HE1
-	O	C
-	CG	CD2
-	CE1	NE2
+        CB      CA
+        CG      CB
+        ND1     CG
+        CE1     ND1
+        NE2     CD2
+        N       HN
+        N       CA
+        C       CA
+        C       +N
+        CA      HA
+        CB      HB1
+        CB      HB2
+        ND1     HD1
+        CD2     HD2
+        CE1     HE1
+        O       C
+        CG      CD2
+        CE1     NE2
  [ impropers ]
-	ND1	CG	CE1	HD1
-	CD2	CG	NE2	HD2
-	CE1	ND1	NE2	HE1
-	ND1	CE1	CG	HD1
-	CD2	NE2	CG	HD2
-	CE1	NE2	ND1	HE1
-	N	-C	CA	HN
-	C	CA	+N	O
+        ND1     CG      CE1     HD1
+        CD2     CG      NE2     HD2
+        CE1     ND1     NE2     HE1
+        ND1     CE1     CG      HD1
+        CD2     NE2     CG      HD2
+        CE1     NE2     ND1     HE1
+        N       -C      CA      HN
+        C       CA      +N      O
  [ cmap ]
-	-C	N	CA	C	+N
+        -C      N       CA      C       +N
 
 [ HSE ]
  [ atoms ]
-	N	NH1	-0.47	0
-	HN	H	0.31	1
-	CA	CT1	0.07	2
-	HA	HB	0.09	3
-	CB	CT2	-0.08	4
-	HB1	HA	0.09	5
-	HB2	HA	0.09	6
-	ND1	NR2	-0.70	7
-	CG	CPH1	0.22	8
-	CE1	CPH2	0.25	9
-	HE1	HR1	0.13	10
-	NE2	NR1	-0.36	11
-	HE2	H	0.32	12
-	CD2	CPH1	-0.05	13
-	HD2	HR3	0.09	14
-	C	C	0.51	15
-	O	O	-0.51	16
+        N       NH1     -0.47   0
+        HN      H       0.31    1
+        CA      CT1     0.07    2
+        HA      HB      0.09    3
+        CB      CT2     -0.08   4
+        HB1     HA      0.09    5
+        HB2     HA      0.09    6
+        ND1     NR2     -0.70   7
+        CG      CPH1    0.22    8
+        CE1     CPH2    0.25    9
+        HE1     HR1     0.13    10
+        NE2     NR1     -0.36   11
+        HE2     H       0.32    12
+        CD2     CPH1    -0.05   13
+        HD2     HR3     0.09    14
+        C       C       0.51    15
+        O       O       -0.51   16
  [ bonds ]
-	CB	CA
-	CG	CB
-	ND1	CG
-	NE2	CD2
-	N	HN
-	N	CA
-	C	CA
-	C	+N
-	NE2	CE1
-	CA	HA
-	CB	HB1
-	CB	HB2
-	NE2	HE2
-	CD2	HD2
-	CE1	HE1
-	O	C
-	CD2	CG
-	CE1	ND1
+        CB      CA
+        CG      CB
+        ND1     CG
+        NE2     CD2
+        N       HN
+        N       CA
+        C       CA
+        C       +N
+        NE2     CE1
+        CA      HA
+        CB      HB1
+        CB      HB2
+        NE2     HE2
+        CD2     HD2
+        CE1     HE1
+        O       C
+        CD2     CG
+        CE1     ND1
  [ impropers ]
-	NE2	CD2	CE1	HE2
-	CD2	CG	NE2	HD2
-	CE1	ND1	NE2	HE1
-	NE2	CE1	CD2	HE2
-	CD2	NE2	CG	HD2
-	CE1	NE2	ND1	HE1
-	N	-C	CA	HN
-	C	CA	+N	O
+        NE2     CD2     CE1     HE2
+        CD2     CG      NE2     HD2
+        CE1     ND1     NE2     HE1
+        NE2     CE1     CD2     HE2
+        CD2     NE2     CG      HD2
+        CE1     NE2     ND1     HE1
+        N       -C      CA      HN
+        C       CA      +N      O
  [ cmap ]
-	-C	N	CA	C	+N
+        -C      N       CA      C       +N
 
 [ HSP ]
  [ atoms ]
-	N	NH1	-0.47	0
-	HN	H	0.31	1
-	CA	CT1	0.07	2
-	HA	HB	0.09	3
-	CB	CT2	-0.05	4
-	HB1	HA	0.09	5
-	HB2	HA	0.09	6
-	CD2	CPH1	0.19	7
-	HD2	HR1	0.13	8
-	CG	CPH1	0.19	9
-	NE2	NR3	-0.51	10
-	HE2	H	0.44	11
-	ND1	NR3	-0.51	12
-	HD1	H	0.44	13
-	CE1	CPH2	0.32	14
-	HE1	HR2	0.18	15
-	C	C	0.51	16
-	O	O	-0.51	17
+        N       NH1     -0.47   0
+        HN      H       0.31    1
+        CA      CT1     0.07    2
+        HA      HB      0.09    3
+        CB      CT2     -0.05   4
+        HB1     HA      0.09    5
+        HB2     HA      0.09    6
+        CD2     CPH1    0.19    7
+        HD2     HR1     0.13    8
+        CG      CPH1    0.19    9
+        NE2     NR3     -0.51   10
+        HE2     H       0.44    11
+        ND1     NR3     -0.51   12
+        HD1     H       0.44    13
+        CE1     CPH2    0.32    14
+        HE1     HR2     0.18    15
+        C       C       0.51    16
+        O       O       -0.51   17
  [ bonds ]
-	CB	CA
-	CG	CB
-	ND1	CG
-	CE1	ND1
-	NE2	CD2
-	N	HN
-	N	CA
-	C	CA
-	C	+N
-	CA	HA
-	CB	HB1
-	CB	HB2
-	ND1	HD1
-	NE2	HE2
-	CD2	HD2
-	CE1	HE1
-	O	C
-	CD2	CG
-	NE2	CE1
+        CB      CA
+        CG      CB
+        ND1     CG
+        CE1     ND1
+        NE2     CD2
+        N       HN
+        N       CA
+        C       CA
+        C       +N
+        CA      HA
+        CB      HB1
+        CB      HB2
+        ND1     HD1
+        NE2     HE2
+        CD2     HD2
+        CE1     HE1
+        O       C
+        CD2     CG
+        NE2     CE1
  [ impropers ]
-	ND1	CG	CE1	HD1
-	ND1	CE1	CG	HD1
-	NE2	CD2	CE1	HE2
-	NE2	CE1	CD2	HE2
-	N	-C	CA	HN
-	C	CA	+N	O
+        ND1     CG      CE1     HD1
+        ND1     CE1     CG      HD1
+        NE2     CD2     CE1     HE2
+        NE2     CE1     CD2     HE2
+        N       -C      CA      HN
+        C       CA      +N      O
  [ cmap ]
-	-C	N	CA	C	+N
+        -C      N       CA      C       +N
 
 [ ILE ]
  [ atoms ]
-	N	NH1	-0.47	0
-	HN	H	0.31	1
-	CA	CT1	0.07	2
-	HA	HB	0.09	3
-	CB	CT1	-0.09	4
-	HB	HA	0.09	5
-	CG2	CT3	-0.27	6
-	HG21	HA	0.09	7
-	HG22	HA	0.09	8
-	HG23	HA	0.09	9
-	CG1	CT2	-0.18	10
-	HG11	HA	0.09	11
-	HG12	HA	0.09	12
-	CD	CT3	-0.27	13
-	HD1	HA	0.09	14
-	HD2	HA	0.09	15
-	HD3	HA	0.09	16
-	C	C	0.51	17
-	O	O	-0.51	18
+        N       NH1     -0.47   0
+        HN      H       0.31    1
+        CA      CT1     0.07    2
+        HA      HB      0.09    3
+        CB      CT1     -0.09   4
+        HB      HA      0.09    5
+        CG2     CT3     -0.27   6
+        HG21    HA      0.09    7
+        HG22    HA      0.09    8
+        HG23    HA      0.09    9
+        CG1     CT2     -0.18   10
+        HG11    HA      0.09    11
+        HG12    HA      0.09    12
+        CD      CT3     -0.27   13
+        HD1     HA      0.09    14
+        HD2     HA      0.09    15
+        HD3     HA      0.09    16
+        C       C       0.51    17
+        O       O       -0.51   18
  [ bonds ]
-	CB	CA
-	CG1	CB
-	CG2	CB
-	CD	CG1
-	N	HN
-	N	CA
-	C	CA
-	C	+N
-	CA	HA
-	CB	HB
-	CG1	HG11
-	CG1	HG12
-	CG2	HG21
-	CG2	HG22
-	CG2	HG23
-	CD	HD1
-	CD	HD2
-	CD	HD3
-	O	C
+        CB      CA
+        CG1     CB
+        CG2     CB
+        CD      CG1
+        N       HN
+        N       CA
+        C       CA
+        C       +N
+        CA      HA
+        CB      HB
+        CG1     HG11
+        CG1     HG12
+        CG2     HG21
+        CG2     HG22
+        CG2     HG23
+        CD      HD1
+        CD      HD2
+        CD      HD3
+        O       C
  [ impropers ]
-	N	-C	CA	HN
-	C	CA	+N	O
+        N       -C      CA      HN
+        C       CA      +N      O
  [ cmap ]
-	-C	N	CA	C	+N
+        -C      N       CA      C       +N
 
 [ LEU ]
  [ atoms ]
-	N	NH1	-0.47	0
-	HN	H	0.31	1
-	CA	CT1	0.07	2
-	HA	HB	0.09	3
-	CB	CT2	-0.18	4
-	HB1	HA	0.09	5
-	HB2	HA	0.09	6
-	CG	CT1	-0.09	7
-	HG	HA	0.09	8
-	CD1	CT3	-0.27	9
-	HD11	HA	0.09	10
-	HD12	HA	0.09	11
-	HD13	HA	0.09	12
-	CD2	CT3	-0.27	13
-	HD21	HA	0.09	14
-	HD22	HA	0.09	15
-	HD23	HA	0.09	16
-	C	C	0.51	17
-	O	O	-0.51	18
+        N       NH1     -0.47   0
+        HN      H       0.31    1
+        CA      CT1     0.07    2
+        HA      HB      0.09    3
+        CB      CT2     -0.18   4
+        HB1     HA      0.09    5
+        HB2     HA      0.09    6
+        CG      CT1     -0.09   7
+        HG      HA      0.09    8
+        CD1     CT3     -0.27   9
+        HD11    HA      0.09    10
+        HD12    HA      0.09    11
+        HD13    HA      0.09    12
+        CD2     CT3     -0.27   13
+        HD21    HA      0.09    14
+        HD22    HA      0.09    15
+        HD23    HA      0.09    16
+        C       C       0.51    17
+        O       O       -0.51   18
  [ bonds ]
-	CB	CA
-	CG	CB
-	CD1	CG
-	CD2	CG
-	N	HN
-	N	CA
-	C	CA
-	C	+N
-	CA	HA
-	CB	HB1
-	CB	HB2
-	CG	HG
-	CD1	HD11
-	CD1	HD12
-	CD1	HD13
-	CD2	HD21
-	CD2	HD22
-	CD2	HD23
-	O	C
+        CB      CA
+        CG      CB
+        CD1     CG
+        CD2     CG
+        N       HN
+        N       CA
+        C       CA
+        C       +N
+        CA      HA
+        CB      HB1
+        CB      HB2
+        CG      HG
+        CD1     HD11
+        CD1     HD12
+        CD1     HD13
+        CD2     HD21
+        CD2     HD22
+        CD2     HD23
+        O       C
  [ impropers ]
-	N	-C	CA	HN
-	C	CA	+N	O
+        N       -C      CA      HN
+        C       CA      +N      O
  [ cmap ]
-	-C	N	CA	C	+N
+        -C      N       CA      C       +N
 
 [ LYS ]
  [ atoms ]
-	N	NH1	-0.47	0
-	HN	H	0.31	1
-	CA	CT1	0.07	2
-	HA	HB	0.09	3
-	CB	CT2	-0.18	4
-	HB1	HA	0.09	5
-	HB2	HA	0.09	6
-	CG	CT2	-0.18	7
-	HG1	HA	0.09	8
-	HG2	HA	0.09	9
-	CD	CT2	-0.18	10
-	HD1	HA	0.09	11
-	HD2	HA	0.09	12
-	CE	CT2	0.21	13
-	HE1	HA	0.05	14
-	HE2	HA	0.05	15
-	NZ	NH3	-0.30	16
-	HZ1	HC	0.33	17
-	HZ2	HC	0.33	18
-	HZ3	HC	0.33	19
-	C	C	0.51	20
-	O	O	-0.51	21
+        N       NH1     -0.47   0
+        HN      H       0.31    1
+        CA      CT1     0.07    2
+        HA      HB      0.09    3
+        CB      CT2     -0.18   4
+        HB1     HA      0.09    5
+        HB2     HA      0.09    6
+        CG      CT2     -0.18   7
+        HG1     HA      0.09    8
+        HG2     HA      0.09    9
+        CD      CT2     -0.18   10
+        HD1     HA      0.09    11
+        HD2     HA      0.09    12
+        CE      CT2     0.21    13
+        HE1     HA      0.05    14
+        HE2     HA      0.05    15
+        NZ      NH3     -0.30   16
+        HZ1     HC      0.33    17
+        HZ2     HC      0.33    18
+        HZ3     HC      0.33    19
+        C       C       0.51    20
+        O       O       -0.51   21
  [ bonds ]
-	CB	CA
-	CG	CB
-	CD	CG
-	CE	CD
-	NZ	CE
-	N	HN
-	N	CA
-	C	CA
-	C	+N
-	CA	HA
-	CB	HB1
-	CB	HB2
-	CG	HG1
-	CG	HG2
-	CD	HD1
-	CD	HD2
-	CE	HE1
-	CE	HE2
-	O	C
-	NZ	HZ1
-	NZ	HZ2
-	NZ	HZ3
+        CB      CA
+        CG      CB
+        CD      CG
+        CE      CD
+        NZ      CE
+        N       HN
+        N       CA
+        C       CA
+        C       +N
+        CA      HA
+        CB      HB1
+        CB      HB2
+        CG      HG1
+        CG      HG2
+        CD      HD1
+        CD      HD2
+        CE      HE1
+        CE      HE2
+        O       C
+        NZ      HZ1
+        NZ      HZ2
+        NZ      HZ3
  [ impropers ]
-	N	-C	CA	HN
-	C	CA	+N	O
+        N       -C      CA      HN
+        C       CA      +N      O
  [ cmap ]
-	-C	N	CA	C	+N
+        -C      N       CA      C       +N
 
 [ LSN ] ; neutral lysine residue
  [ atoms ]
@@ -777,856 +777,856 @@
  [ impropers ]
         N       -C      CA      HN
         C       CA      +N      O
-[ cmap ]
+ [ cmap ]
         -C      N       CA      C       +N
 
 [ MET ]
  [ atoms ]
-	N	NH1	-0.47	0
-	HN	H	0.31	1
-	CA	CT1	0.07	2
-	HA	HB	0.09	3
-	CB	CT2	-0.18	4
-	HB1	HA	0.09	5
-	HB2	HA	0.09	6
-	CG	CT2	-0.14	7
-	HG1	HA	0.09	8
-	HG2	HA	0.09	9
-	SD	S	-0.09	10
-	CE	CT3	-0.22	11
-	HE1	HA	0.09	12
-	HE2	HA	0.09	13
-	HE3	HA	0.09	14
-	C	C	0.51	15
-	O	O	-0.51	16
+        N       NH1     -0.47   0
+        HN      H       0.31    1
+        CA      CT1     0.07    2
+        HA      HB      0.09    3
+        CB      CT2     -0.18   4
+        HB1     HA      0.09    5
+        HB2     HA      0.09    6
+        CG      CT2     -0.14   7
+        HG1     HA      0.09    8
+        HG2     HA      0.09    9
+        SD      S       -0.09   10
+        CE      CT3     -0.22   11
+        HE1     HA      0.09    12
+        HE2     HA      0.09    13
+        HE3     HA      0.09    14
+        C       C       0.51    15
+        O       O       -0.51   16
  [ bonds ]
-	CB	CA
-	CG	CB
-	SD	CG
-	CE	SD
-	N	HN
-	N	CA
-	C	CA
-	C	+N
-	CA	HA
-	CB	HB1
-	CB	HB2
-	CG	HG1
-	CG	HG2
-	CE	HE1
-	CE	HE2
-	CE	HE3
-	O	C
+        CB      CA
+        CG      CB
+        SD      CG
+        CE      SD
+        N       HN
+        N       CA
+        C       CA
+        C       +N
+        CA      HA
+        CB      HB1
+        CB      HB2
+        CG      HG1
+        CG      HG2
+        CE      HE1
+        CE      HE2
+        CE      HE3
+        O       C
  [ impropers ]
-	N	-C	CA	HN
-	C	CA	+N	O
+        N       -C      CA      HN
+        C       CA      +N      O
  [ cmap ]
-	-C	N	CA	C	+N
+        -C      N       CA      C       +N
 
 [ PHE ]
  [ atoms ]
-	N	NH1	-0.47	0
-	HN	H	0.31	1
-	CA	CT1	0.07	2
-	HA	HB	0.09	3
-	CB	CT2	-0.18	4
-	HB1	HA	0.09	5
-	HB2	HA	0.09	6
-	CG	CA	0.00	7
-	CD1	CA	-0.115	8
-	HD1	HP	0.115	9
-	CE1	CA	-0.115	10
-	HE1	HP	0.115	11
-	CZ	CA	-0.115	12
-	HZ	HP	0.115	13
-	CD2	CA	-0.115	14
-	HD2	HP	0.115	15
-	CE2	CA	-0.115	16
-	HE2	HP	0.115	17
-	C	C	0.51	18
-	O	O	-0.51	19
+        N       NH1     -0.47   0
+        HN      H       0.31    1
+        CA      CT1     0.07    2
+        HA      HB      0.09    3
+        CB      CT2     -0.18   4
+        HB1     HA      0.09    5
+        HB2     HA      0.09    6
+        CG      CA      0.00    7
+        CD1     CA      -0.115  8
+        HD1     HP      0.115   9
+        CE1     CA      -0.115  10
+        HE1     HP      0.115   11
+        CZ      CA      -0.115  12
+        HZ      HP      0.115   13
+        CD2     CA      -0.115  14
+        HD2     HP      0.115   15
+        CE2     CA      -0.115  16
+        HE2     HP      0.115   17
+        C       C       0.51    18
+        O       O       -0.51   19
  [ bonds ]
-	CB	CA
-	CG	CB
-	CD2	CG
-	CE1	CD1
-	CZ	CE2
-	N	HN
-	N	CA
-	C	CA
-	C	+N
-	CA	HA
-	CB	HB1
-	CB	HB2
-	CD1	HD1
-	CD2	HD2
-	CE1	HE1
-	O	C
-	CD1	CG
-	CZ	CE1
-	CE2	CD2
-	CE2	HE2
-	CZ	HZ
+        CB      CA
+        CG      CB
+        CD2     CG
+        CE1     CD1
+        CZ      CE2
+        N       HN
+        N       CA
+        C       CA
+        C       +N
+        CA      HA
+        CB      HB1
+        CB      HB2
+        CD1     HD1
+        CD2     HD2
+        CE1     HE1
+        O       C
+        CD1     CG
+        CZ      CE1
+        CE2     CD2
+        CE2     HE2
+        CZ      HZ
  [ impropers ]
-	N	-C	CA	HN
-	C	CA	+N	O
+        N       -C      CA      HN
+        C       CA      +N      O
  [ cmap ]
-	-C	N	CA	C	+N
+        -C      N       CA      C       +N
 
 [ PRO ]
  [ atoms ]
-	N	N	-0.29	0
-	CD	CP3	0.00	1
-	HD1	HA	0.09	2
-	HD2	HA	0.09	3
-	CA	CP1	0.02	4
-	HA	HB	0.09	5
-	CB	CP2	-0.18	6
-	HB1	HA	0.09	7
-	HB2	HA	0.09	8
-	CG	CP2	-0.18	9
-	HG1	HA	0.09	10
-	HG2	HA	0.09	11
-	C	C	0.51	12
-	O	O	-0.51	13
+        N       N       -0.29   0
+        CD      CP3     0.00    1
+        HD1     HA      0.09    2
+        HD2     HA      0.09    3
+        CA      CP1     0.02    4
+        HA      HB      0.09    5
+        CB      CP2     -0.18   6
+        HB1     HA      0.09    7
+        HB2     HA      0.09    8
+        CG      CP2     -0.18   9
+        HG1     HA      0.09    10
+        HG2     HA      0.09    11
+        C       C       0.51    12
+        O       O       -0.51   13
  [ bonds ]
-	C	CA
-	C	+N
-	N	CA
-	CA	CB
-	CB	CG
-	CG	CD
-	N	CD
-	HA	CA
-	HG1	CG
-	HG2	CG
-	HD1	CD
-	HD2	CD
-	HB1	CB
-	HB2	CB
-	O	C
+        C       CA
+        C       +N
+        N       CA
+        CA      CB
+        CB      CG
+        CG      CD
+        N       CD
+        HA      CA
+        HG1     CG
+        HG2     CG
+        HD1     CD
+        HD2     CD
+        HB1     CB
+        HB2     CB
+        O       C
  [ impropers ]
-	N	-C	CA	CD
-	C	CA	+N	O
+        N       -C      CA      CD
+        C       CA      +N      O
  [ cmap ]
-	-C	N	CA	C	+N
+        -C      N       CA      C       +N
 
 [ SER ]
  [ atoms ]
-	N	NH1	-0.47	0
-	HN	H	0.31	1
-	CA	CT1	0.07	2
-	HA	HB	0.09	3
-	CB	CT2	0.05	4
-	HB1	HA	0.09	5
-	HB2	HA	0.09	6
-	OG	OH1	-0.66	7
-	HG1	H	0.43	8
-	C	C	0.51	9
-	O	O	-0.51	10
+        N       NH1     -0.47   0
+        HN      H       0.31    1
+        CA      CT1     0.07    2
+        HA      HB      0.09    3
+        CB      CT2     0.05    4
+        HB1     HA      0.09    5
+        HB2     HA      0.09    6
+        OG      OH1     -0.66   7
+        HG1     H       0.43    8
+        C       C       0.51    9
+        O       O       -0.51   10
  [ bonds ]
-	CB	CA
-	OG	CB
-	N	HN
-	N	CA
-	C	CA
-	C	+N
-	CA	HA
-	CB	HB1
-	CB	HB2
-	OG	HG1
-	O	C
+        CB      CA
+        OG      CB
+        N       HN
+        N       CA
+        C       CA
+        C       +N
+        CA      HA
+        CB      HB1
+        CB      HB2
+        OG      HG1
+        O       C
  [ impropers ]
-	N	-C	CA	HN
-	C	CA	+N	O
+        N       -C      CA      HN
+        C       CA      +N      O
  [ cmap ]
-	-C	N	CA	C	+N
+        -C      N       CA      C       +N
 
 [ THR ]
  [ atoms ]
-	N	NH1	-0.47	0
-	HN	H	0.31	1
-	CA	CT1	0.07	2
-	HA	HB	0.09	3
-	CB	CT1	0.14	4
-	HB	HA	0.09	5
-	OG1	OH1	-0.66	6
-	HG1	H	0.43	7
-	CG2	CT3	-0.27	8
-	HG21	HA	0.09	9
-	HG22	HA	0.09	10
-	HG23	HA	0.09	11
-	C	C	0.51	12
-	O	O	-0.51	13
+        N       NH1     -0.47   0
+        HN      H       0.31    1
+        CA      CT1     0.07    2
+        HA      HB      0.09    3
+        CB      CT1     0.14    4
+        HB      HA      0.09    5
+        OG1     OH1     -0.66   6
+        HG1     H       0.43    7
+        CG2     CT3     -0.27   8
+        HG21    HA      0.09    9
+        HG22    HA      0.09    10
+        HG23    HA      0.09    11
+        C       C       0.51    12
+        O       O       -0.51   13
  [ bonds ]
-	CB	CA
-	OG1	CB
-	CG2	CB
-	N	HN
-	N	CA
-	C	CA
-	C	+N
-	CA	HA
-	CB	HB
-	OG1	HG1
-	CG2	HG21
-	CG2	HG22
-	CG2	HG23
-	O	C
+        CB      CA
+        OG1     CB
+        CG2     CB
+        N       HN
+        N       CA
+        C       CA
+        C       +N
+        CA      HA
+        CB      HB
+        OG1     HG1
+        CG2     HG21
+        CG2     HG22
+        CG2     HG23
+        O       C
  [ impropers ]
-	N	-C	CA	HN
-	C	CA	+N	O
+        N       -C      CA      HN
+        C       CA      +N      O
  [ cmap ]
-	-C	N	CA	C	+N
+        -C      N       CA      C       +N
 
 [ TRP ]
  [ atoms ]
-	N	NH1	-0.47	0
-	HN	H	0.31	1
-	CA	CT1	0.07	2
-	HA	HB	0.09	3
-	CB	CT2	-0.18	4
-	HB1	HA	0.09	5
-	HB2	HA	0.09	6
-	CG	CY	-0.03	7
-	CD1	CA	0.035	8
-	HD1	HP	0.115	9
-	NE1	NY	-0.61	10
-	HE1	H	0.38	11
-	CE2	CPT	0.13	12
-	CD2	CPT	-0.02	13
-	CE3	CA	-0.115	14
-	HE3	HP	0.115	15
-	CZ3	CA	-0.115	16
-	HZ3	HP	0.115	17
-	CZ2	CA	-0.115	18
-	HZ2	HP	0.115	19
-	CH2	CA	-0.115	20
-	HH2	HP	0.115	21
-	C	C	0.51	22
-	O	O	-0.51	23
+        N       NH1     -0.47   0
+        HN      H       0.31    1
+        CA      CT1     0.07    2
+        HA      HB      0.09    3
+        CB      CT2     -0.18   4
+        HB1     HA      0.09    5
+        HB2     HA      0.09    6
+        CG      CY      -0.03   7
+        CD1     CA      0.035   8
+        HD1     HP      0.115   9
+        NE1     NY      -0.61   10
+        HE1     H       0.38    11
+        CE2     CPT     0.13    12
+        CD2     CPT     -0.02   13
+        CE3     CA      -0.115  14
+        HE3     HP      0.115   15
+        CZ3     CA      -0.115  16
+        HZ3     HP      0.115   17
+        CZ2     CA      -0.115  18
+        HZ2     HP      0.115   19
+        CH2     CA      -0.115  20
+        HH2     HP      0.115   21
+        C       C       0.51    22
+        O       O       -0.51   23
  [ bonds ]
-	CB	CA
-	CG	CB
-	CD2	CG
-	NE1	CD1
-	CZ2	CE2
-	N	HN
-	N	CA
-	C	CA
-	C	+N
-	CZ3	CH2
-	CD2	CE3
-	NE1	CE2
-	CA	HA
-	CB	HB1
-	CB	HB2
-	CD1	HD1
-	NE1	HE1
-	CE3	HE3
-	CZ2	HZ2
-	CZ3	HZ3
-	CH2	HH2
-	O	C
-	CD1	CG
-	CE2	CD2
-	CZ3	CE3
-	CH2	CZ2
+        CB      CA
+        CG      CB
+        CD2     CG
+        NE1     CD1
+        CZ2     CE2
+        N       HN
+        N       CA
+        C       CA
+        C       +N
+        CZ3     CH2
+        CD2     CE3
+        NE1     CE2
+        CA      HA
+        CB      HB1
+        CB      HB2
+        CD1     HD1
+        NE1     HE1
+        CE3     HE3
+        CZ2     HZ2
+        CZ3     HZ3
+        CH2     HH2
+        O       C
+        CD1     CG
+        CE2     CD2
+        CZ3     CE3
+        CH2     CZ2
  [ impropers ]
-	N	-C	CA	HN
-	C	CA	+N	O
+        N       -C      CA      HN
+        C       CA      +N      O
  [ cmap ]
-	-C	N	CA	C	+N
+        -C      N       CA      C       +N
 
 [ TYR ]
  [ atoms ]
-	N	NH1	-0.47	0
-	HN	H	0.31	1
-	CA	CT1	0.07	2
-	HA	HB	0.09	3
-	CB	CT2	-0.18	4
-	HB1	HA	0.09	5
-	HB2	HA	0.09	6
-	CG	CA	0.00	7
-	CD1	CA	-0.115	8
-	HD1	HP	0.115	9
-	CE1	CA	-0.115	10
-	HE1	HP	0.115	11
-	CZ	CA	0.11	12
-	OH	OH1	-0.54	13
-	HH	H	0.43	14
-	CD2	CA	-0.115	15
-	HD2	HP	0.115	16
-	CE2	CA	-0.115	17
-	HE2	HP	0.115	18
-	C	C	0.51	19
-	O	O	-0.51	20
+        N       NH1     -0.47   0
+        HN      H       0.31    1
+        CA      CT1     0.07    2
+        HA      HB      0.09    3
+        CB      CT2     -0.18   4
+        HB1     HA      0.09    5
+        HB2     HA      0.09    6
+        CG      CA      0.00    7
+        CD1     CA      -0.115  8
+        HD1     HP      0.115   9
+        CE1     CA      -0.115  10
+        HE1     HP      0.115   11
+        CZ      CA      0.11    12
+        OH      OH1     -0.54   13
+        HH      H       0.43    14
+        CD2     CA      -0.115  15
+        HD2     HP      0.115   16
+        CE2     CA      -0.115  17
+        HE2     HP      0.115   18
+        C       C       0.51    19
+        O       O       -0.51   20
  [ bonds ]
-	CB	CA
-	CG	CB
-	CD2	CG
-	CE1	CD1
-	CZ	CE2
-	OH	CZ
-	N	HN
-	N	CA
-	C	CA
-	C	+N
-	CA	HA
-	CB	HB1
-	CB	HB2
-	CD1	HD1
-	CD2	HD2
-	CE1	HE1
-	CE2	HE2
-	OH	HH
-	O	C
-	CD1	CG
-	CE1	CZ
-	CE2	CD2
+        CB      CA
+        CG      CB
+        CD2     CG
+        CE1     CD1
+        CZ      CE2
+        OH      CZ
+        N       HN
+        N       CA
+        C       CA
+        C       +N
+        CA      HA
+        CB      HB1
+        CB      HB2
+        CD1     HD1
+        CD2     HD2
+        CE1     HE1
+        CE2     HE2
+        OH      HH
+        O       C
+        CD1     CG
+        CE1     CZ
+        CE2     CD2
  [ impropers ]
-	N	-C	CA	HN
-	C	CA	+N	O
+        N       -C      CA      HN
+        C       CA      +N      O
  [ cmap ]
-	-C	N	CA	C	+N
+        -C      N       CA      C       +N
 
 [ VAL ]
  [ atoms ]
-	N	NH1	-0.47	0
-	HN	H	0.31	1
-	CA	CT1	0.07	2
-	HA	HB	0.09	3
-	CB	CT1	-0.09	4
-	HB	HA	0.09	5
-	CG1	CT3	-0.27	6
-	HG11	HA	0.09	7
-	HG12	HA	0.09	8
-	HG13	HA	0.09	9
-	CG2	CT3	-0.27	10
-	HG21	HA	0.09	11
-	HG22	HA	0.09	12
-	HG23	HA	0.09	13
-	C	C	0.51	14
-	O	O	-0.51	15
+        N       NH1     -0.47   0
+        HN      H       0.31    1
+        CA      CT1     0.07    2
+        HA      HB      0.09    3
+        CB      CT1     -0.09   4
+        HB      HA      0.09    5
+        CG1     CT3     -0.27   6
+        HG11    HA      0.09    7
+        HG12    HA      0.09    8
+        HG13    HA      0.09    9
+        CG2     CT3     -0.27   10
+        HG21    HA      0.09    11
+        HG22    HA      0.09    12
+        HG23    HA      0.09    13
+        C       C       0.51    14
+        O       O       -0.51   15
  [ bonds ]
-	CB	CA
-	CG1	CB
-	CG2	CB
-	N	HN
-	N	CA
-	C	CA
-	C	+N
-	CA	HA
-	CB	HB
-	CG1	HG11
-	CG1	HG12
-	CG1	HG13
-	CG2	HG21
-	CG2	HG22
-	CG2	HG23
-	O	C
+        CB      CA
+        CG1     CB
+        CG2     CB
+        N       HN
+        N       CA
+        C       CA
+        C       +N
+        CA      HA
+        CB      HB
+        CG1     HG11
+        CG1     HG12
+        CG1     HG13
+        CG2     HG21
+        CG2     HG22
+        CG2     HG23
+        O       C
  [ impropers ]
-	N	-C	CA	HN
-	C	CA	+N	O
+        N       -C      CA      HN
+        C       CA      +N      O
  [ cmap ]
-	-C	N	CA	C	+N
+        -C      N       CA      C       +N
 
 [ ALAD ] ; Alanine dipeptide
  [ atoms ]
-	CL	CT3	-0.27	0
-	HL1	HA	0.09	1
-	HL2	HA	0.09	2
-	HL3	HA	0.09	3
-	CLP	C	0.51	4
-	OL	O	-0.51	5
-	NL	NH1	-0.47	6
-	HL	H	0.31	7
-	CA	CT1	0.07	8
-	HA	HB	0.09	9
-	CB	CT3	-0.27	10
-	HB1	HA	0.09	11
-	HB2	HA	0.09	12
-	HB3	HA	0.09	13
-	CRP	C	0.51	14
-	OR	O	-0.51	15
-	NR	NH1	-0.47	16
-	HR	H	0.31	17
-	CR	CT3	-0.11	18
-	HR1	HA	0.09	19
-	HR2	HA	0.09	20
-	HR3	HA	0.09	21
+        CL      CT3     -0.27   0
+        HL1     HA      0.09    1
+        HL2     HA      0.09    2
+        HL3     HA      0.09    3
+        CLP     C       0.51    4
+        OL      O       -0.51   5
+        NL      NH1     -0.47   6
+        HL      H       0.31    7
+        CA      CT1     0.07    8
+        HA      HB      0.09    9
+        CB      CT3     -0.27   10
+        HB1     HA      0.09    11
+        HB2     HA      0.09    12
+        HB3     HA      0.09    13
+        CRP     C       0.51    14
+        OR      O       -0.51   15
+        NR      NH1     -0.47   16
+        HR      H       0.31    17
+        CR      CT3     -0.11   18
+        HR1     HA      0.09    19
+        HR2     HA      0.09    20
+        HR3     HA      0.09    21
  [ bonds ]
-	CL	CLP
-	CLP	NL
-	NL	CA
-	CA	CRP
-	CRP	NR
-	NR	CR
-	CLP	OL
-	CRP	OR
-	NL	HL
-	NR	HR
-	CA	HA
-	CA	CB
-	CL	HL1
-	CL	HL2
-	CL	HL3
-	CB	HB1
-	CB	HB2
-	CB	HB3
-	CR	HR1
-	CR	HR2
-	CR	HR3
+        CL      CLP
+        CLP     NL
+        NL      CA
+        CA      CRP
+        CRP     NR
+        NR      CR
+        CLP     OL
+        CRP     OR
+        NL      HL
+        NR      HR
+        CA      HA
+        CA      CB
+        CL      HL1
+        CL      HL2
+        CL      HL3
+        CB      HB1
+        CB      HB2
+        CB      HB3
+        CR      HR1
+        CR      HR2
+        CR      HR3
  [ impropers ]
-	CLP	CL	NL	OL
-	NL	CLP	CA	HL
-	CRP	CA	NR	OR
-	NR	CRP	CR	HR
+        CLP     CL      NL      OL
+        NL      CLP     CA      HL
+        CRP     CA      NR      OR
+        NR      CRP     CR      HR
  [ cmap ]
-	CLP	NL	CA	CRP	NR
+        CLP     NL      CA      CRP     NR
 
 [ HEME ]
  [ atoms ]
-	FE	FE	 0.24	0
-	NA	NPH	-0.18	1
-	NB	NPH	-0.18	2
-	NC	NPH	-0.18	3
-	ND	NPH	-0.18	4
-	C1A	CPA	 0.12	5
-	C2A	CPB	-0.06	6
-	C3A	CPB	-0.06	7
-	C4A	CPA	 0.12	8
-	C1B	CPA	 0.12	9
-	C2B	CPB	-0.06	10
-	C3B	CPB	-0.06	11
-	C4B	CPA	 0.12	12
-	C1C	CPA	 0.12	13
-	C2C	CPB	-0.06	14
-	C3C	CPB	-0.06	15
-	C4C	CPA	 0.12	16
-	C1D	CPA	 0.12	17
-	C2D	CPB	-0.06	18
-	C3D	CPB	-0.06	19
-	C4D	CPA	 0.12	20
-	CHA	CPM	-0.10	21
-	HA	HA	 0.10	22
-	CHB	CPM	-0.10	23
-	HB	HA	 0.10	24
-	CHC	CPM	-0.10	25
-	HC	HA	 0.10	26
-	CHD	CPM	-0.10	27
-	HD	HA	 0.10	28
-	CMA	CT3	-0.27	29
-	HMA1	HA	 0.09	30
-	HMA2	HA	 0.09	31
-	HMA3	HA	 0.09	32
-	CAA	CT2	-0.18	33
-	HAA1	HA	 0.09	34
-	HAA2	HA	 0.09	35
-	CBA	CT2	-0.28	36
-	HBA1	HA	 0.09	37
-	HBA2	HA	 0.09	38
-	CGA	CC	 0.62	39
-	O1A	OC	-0.76	40
-	O2A	OC	-0.76	41
-	CMB	CT3	-0.27	42
-	HMB1	HA	 0.09	43
-	HMB2	HA	 0.09	44
-	HMB3	HA	 0.09	45
-	CAB	CE1	-0.15	46
-	HAB	HE1	 0.15	47
-	CBB	CE2	-0.42	48
-	HBB1	HE2	 0.21	49
-	HBB2	HE2	 0.21	50
-	CMC	CT3	-0.27	51
-	HMC1	HA	 0.09	52
-	HMC2	HA	 0.09	53
-	HMC3	HA	 0.09	54
-	CAC	CE1	-0.15	55
-	HAC	HE1	 0.15	56
-	CBC	CE2	-0.42	57
-	HBC1	HE2	 0.21	58
-	HBC2	HE2	 0.21	59
-	CMD	CT3	-0.27	60
-	HMD1	HA	 0.09	61
-	HMD2	HA	 0.09	62
-	HMD3	HA	 0.09	63
-	CAD	CT2	-0.18	64
-	HAD1	HA	 0.09	65
-	HAD2	HA	 0.09	66
-	CBD	CT2	-0.28	67
-	HBD1	HA	 0.09	68
-	HBD2	HA	 0.09	69
-	CGD	CC	 0.62	70
-	O1D	OC	-0.76	71
-	O2D	OC	-0.76	72
+        FE      FE       0.24   0
+        NA      NPH     -0.18   1
+        NB      NPH     -0.18   2
+        NC      NPH     -0.18   3
+        ND      NPH     -0.18   4
+        C1A     CPA      0.12   5
+        C2A     CPB     -0.06   6
+        C3A     CPB     -0.06   7
+        C4A     CPA      0.12   8
+        C1B     CPA      0.12   9
+        C2B     CPB     -0.06   10
+        C3B     CPB     -0.06   11
+        C4B     CPA      0.12   12
+        C1C     CPA      0.12   13
+        C2C     CPB     -0.06   14
+        C3C     CPB     -0.06   15
+        C4C     CPA      0.12   16
+        C1D     CPA      0.12   17
+        C2D     CPB     -0.06   18
+        C3D     CPB     -0.06   19
+        C4D     CPA      0.12   20
+        CHA     CPM     -0.10   21
+        HA      HA       0.10   22
+        CHB     CPM     -0.10   23
+        HB      HA       0.10   24
+        CHC     CPM     -0.10   25
+        HC      HA       0.10   26
+        CHD     CPM     -0.10   27
+        HD      HA       0.10   28
+        CMA     CT3     -0.27   29
+        HMA1    HA       0.09   30
+        HMA2    HA       0.09   31
+        HMA3    HA       0.09   32
+        CAA     CT2     -0.18   33
+        HAA1    HA       0.09   34
+        HAA2    HA       0.09   35
+        CBA     CT2     -0.28   36
+        HBA1    HA       0.09   37
+        HBA2    HA       0.09   38
+        CGA     CC       0.62   39
+        O1A     OC      -0.76   40
+        O2A     OC      -0.76   41
+        CMB     CT3     -0.27   42
+        HMB1    HA       0.09   43
+        HMB2    HA       0.09   44
+        HMB3    HA       0.09   45
+        CAB     CE1     -0.15   46
+        HAB     HE1      0.15   47
+        CBB     CE2     -0.42   48
+        HBB1    HE2      0.21   49
+        HBB2    HE2      0.21   50
+        CMC     CT3     -0.27   51
+        HMC1    HA       0.09   52
+        HMC2    HA       0.09   53
+        HMC3    HA       0.09   54
+        CAC     CE1     -0.15   55
+        HAC     HE1      0.15   56
+        CBC     CE2     -0.42   57
+        HBC1    HE2      0.21   58
+        HBC2    HE2      0.21   59
+        CMD     CT3     -0.27   60
+        HMD1    HA       0.09   61
+        HMD2    HA       0.09   62
+        HMD3    HA       0.09   63
+        CAD     CT2     -0.18   64
+        HAD1    HA       0.09   65
+        HAD2    HA       0.09   66
+        CBD     CT2     -0.28   67
+        HBD1    HA       0.09   68
+        HBD2    HA       0.09   69
+        CGD     CC       0.62   70
+        O1D     OC      -0.76   71
+        O2D     OC      -0.76   72
  [ bonds ]
-	FE	NA
-	FE	NB
-	FE	NC
-	FE	ND
-	NA	C1A
-	C1A	C2A
-	C2A	C3A
-	C3A	C4A
-	NA	C4A
-	C2A	CAA
-	CAA	CBA
-	CBA	CGA
-	CGA	O1A
-	CGA	O2A
-	C3A	CMA
-	CHB	C4A
-	CHB	C1B
-	NB	C1B
-	C1B	C2B
-	C2B	C3B
-	C3B	C4B
-	NB	C4B
-	C2B	CMB
-	C3B	CAB
-	CAB	CBB
-	CHC	C4B
-	CHC	C1C
-	NC	C1C
-	C1C	C2C
-	C2C	C3C
-	C3C	C4C
-	NC	C4C
-	C2C	CMC
-	C3C	CAC
-	CAC	CBC
-	CHD	C4C
-	CHD	C1D
-	ND	C1D
-	C1D	C2D
-	C2D	C3D
-	C3D	C4D
-	ND	C4D
-	C2D	CMD
-	C3D	CAD
-	CAD	CBD
-	CBD	CGD
-	CGD	O1D
-	CGD	O2D
-	CHA	C4D
-	CHA	C1A
-	CHA	HA
-	CHB	HB
-	CHC	HC
-	CHD	HD
-	CAA	HAA1
-	CAA	HAA2
-	CBA	HBA1
-	CBA	HBA2
-	CMA	HMA1
-	CMA	HMA2
-	CMA	HMA3
-	CMB	HMB1
-	CMB	HMB2
-	CMB	HMB3
-	CAB	HAB
-	CBB	HBB1
-	CBB	HBB2
-	CMC	HMC1
-	CMC	HMC2
-	CMC	HMC3
-	CAC	HAC
-	CBC	HBC1
-	CBC	HBC2
-	CMD	HMD1
-	CMD	HMD2
-	CMD	HMD3
-	CAD	HAD1
-	CAD	HAD2
-	CBD	HBD1
-	CBD	HBD2 
+        FE      NA
+        FE      NB
+        FE      NC
+        FE      ND
+        NA      C1A
+        C1A     C2A
+        C2A     C3A
+        C3A     C4A
+        NA      C4A
+        C2A     CAA
+        CAA     CBA
+        CBA     CGA
+        CGA     O1A
+        CGA     O2A
+        C3A     CMA
+        CHB     C4A
+        CHB     C1B
+        NB      C1B
+        C1B     C2B
+        C2B     C3B
+        C3B     C4B
+        NB      C4B
+        C2B     CMB
+        C3B     CAB
+        CAB     CBB
+        CHC     C4B
+        CHC     C1C
+        NC      C1C
+        C1C     C2C
+        C2C     C3C
+        C3C     C4C
+        NC      C4C
+        C2C     CMC
+        C3C     CAC
+        CAC     CBC
+        CHD     C4C
+        CHD     C1D
+        ND      C1D
+        C1D     C2D
+        C2D     C3D
+        C3D     C4D
+        ND      C4D
+        C2D     CMD
+        C3D     CAD
+        CAD     CBD
+        CBD     CGD
+        CGD     O1D
+        CGD     O2D
+        CHA     C4D
+        CHA     C1A
+        CHA     HA
+        CHB     HB
+        CHC     HC
+        CHD     HD
+        CAA     HAA1
+        CAA     HAA2
+        CBA     HBA1
+        CBA     HBA2
+        CMA     HMA1
+        CMA     HMA2
+        CMA     HMA3
+        CMB     HMB1
+        CMB     HMB2
+        CMB     HMB3
+        CAB     HAB
+        CBB     HBB1
+        CBB     HBB2
+        CMC     HMC1
+        CMC     HMC2
+        CMC     HMC3
+        CAC     HAC
+        CBC     HBC1
+        CBC     HBC2
+        CMD     HMD1
+        CMD     HMD2
+        CMD     HMD3
+        CAD     HAD1
+        CAD     HAD2
+        CBD     HBD1
+        CBD     HBD2
  [ angles ]
-	;  ai    aj    ak   th0     cth     ub0	    cub  
-	   NA    FE    NC   180.0   0.0     0.0	    0.0
-	   NB    FE    ND   180.0   0.0     0.0	    0.0
+        ;  ai    aj    ak   th0     cth     ub0     cub
+           NA    FE    NC   180.0   0.0     0.0     0.0
+           NB    FE    ND   180.0   0.0     0.0     0.0
  [ impropers ]
-	C2A	C1A	C3A	CAA
-	C3A	C2A	C4A	CMA
-	C2B	C1B	C3B	CMB
-	C3B	C2B	C4B	CAB
-	C2C	C1C	C3C	CMC
-	C3C	C2C	C4C	CAC
-	C2D	C1D	C3D	CMD
-	C3D	C2D	C4D	CAD
-	CGA	CBA	O2A	O1A
-	CGD	CBD	O2D	O1D
-	C4A	NA	C1A	C2A
-	C1A	NA	C4A	C3A
-	C4B	NB	C1B	C2B
-	C1B	NB	C4B	C3B
-	C4C	NC	C1C	C2C
-	C1C	NC	C4C	C3C
-	C4D	ND	C1D	C2D
-	C1D	ND	C4D	C3D
-	NA	C1A	C2A	C3A
-	NA	C4A	C3A	C2A
-	NB	C1B	C2B	C3B
-	NB	C4B	C3B	C2B
-	NC	C1C	C2C	C3C
-	NC	C4C	C3C	C2C
-	ND	C1D	C2D	C3D
-	ND	C4D	C3D	C2D
-	NA	C1A	CHA	C4D
-	NA	C4A	CHB	C1B
-	NB	C1B	CHB	C4A
-	NB	C4B	CHC	C1C
-	NC	C1C	CHC	C4B
-	NC	C4C	CHD	C1D
-	ND	C1D	CHD	C4C
-	ND	C4D	CHA	C1A
-	CHA	C1A	C4D	HA
-	CHB	C1B	C4A	HB
-	CHC	C1C	C4B	HC
-	CHD	C1D	C4C	HD
-	C1A	C2A	CHA	NA
-	C4A	C3A	CHB	NA
-	C1B	C2B	CHB	NB
-	C4B	C3B	CHC	NB
-	C1C	C2C	CHC	NC
-	C4C	C3C	CHD	NC
-	C1D	C2D	CHD	ND
-	C4D	C3D	CHA	ND
-	NA	C1A	C4A	FE
-	NB	C1B	C4B	FE
-	NC	C1C	C4C	FE
-	ND	C1D	C4D	FE
+        C2A     C1A     C3A     CAA
+        C3A     C2A     C4A     CMA
+        C2B     C1B     C3B     CMB
+        C3B     C2B     C4B     CAB
+        C2C     C1C     C3C     CMC
+        C3C     C2C     C4C     CAC
+        C2D     C1D     C3D     CMD
+        C3D     C2D     C4D     CAD
+        CGA     CBA     O2A     O1A
+        CGD     CBD     O2D     O1D
+        C4A     NA      C1A     C2A
+        C1A     NA      C4A     C3A
+        C4B     NB      C1B     C2B
+        C1B     NB      C4B     C3B
+        C4C     NC      C1C     C2C
+        C1C     NC      C4C     C3C
+        C4D     ND      C1D     C2D
+        C1D     ND      C4D     C3D
+        NA      C1A     C2A     C3A
+        NA      C4A     C3A     C2A
+        NB      C1B     C2B     C3B
+        NB      C4B     C3B     C2B
+        NC      C1C     C2C     C3C
+        NC      C4C     C3C     C2C
+        ND      C1D     C2D     C3D
+        ND      C4D     C3D     C2D
+        NA      C1A     CHA     C4D
+        NA      C4A     CHB     C1B
+        NB      C1B     CHB     C4A
+        NB      C4B     CHC     C1C
+        NC      C1C     CHC     C4B
+        NC      C4C     CHD     C1D
+        ND      C1D     CHD     C4C
+        ND      C4D     CHA     C1A
+        CHA     C1A     C4D     HA
+        CHB     C1B     C4A     HB
+        CHC     C1C     C4B     HC
+        CHD     C1D     C4C     HD
+        C1A     C2A     CHA     NA
+        C4A     C3A     CHB     NA
+        C1B     C2B     CHB     NB
+        C4B     C3B     CHC     NB
+        C1C     C2C     CHC     NC
+        C4C     C3C     CHD     NC
+        C1D     C2D     CHD     ND
+        C4D     C3D     CHA     ND
+        NA      C1A     C4A     FE
+        NB      C1B     C4B     FE
+        NC      C1C     C4C     FE
+        ND      C1D     C4D     FE
 
 [ HEO2 ]
  [ atoms ]
-	FE	FE	 0.24	0
-	NA	NPH	-0.18	1
-	NB	NPH	-0.18	2
-	NC	NPH	-0.18	3
-	ND	NPH	-0.18	4
-	C1A	CPA	 0.12	5
-	C2A	CPB	-0.06	6
-	C3A	CPB	-0.06	7
-	C4A	CPA	 0.12	8
-	C1B	CPA	 0.12	9
-	C2B	CPB	-0.06	10
-	C3B	CPB	-0.06	11
-	C4B	CPA	 0.12	12
-	C1C	CPA	 0.12	13
-	C2C	CPB	-0.06	14
-	C3C	CPB	-0.06	15
-	C4C	CPA	 0.12	16
-	C1D	CPA	 0.12	17
-	C2D	CPB	-0.06	18
-	C3D	CPB	-0.06	19
-	C4D	CPA	 0.12	20
-	CHA	CPM	-0.10	21
-	HA	HA	 0.10	22
-	CHB	CPM	-0.10	23
-	HB	HA	 0.10	24
-	CHC	CPM	-0.10	25
-	HC	HA	 0.10	26
-	CHD	CPM	-0.10	27
-	HD	HA	 0.10	28
-	CMA	CT3	-0.27	29
-	HMA1	HA	 0.09	30
-	HMA2	HA	 0.09	31
-	HMA3	HA	 0.09	32
-	CAA	CT2	-0.18	33
-	HAA1	HA	 0.09	34
-	HAA2	HA	 0.09	35
-	CBA	CT2	-0.28	36
-	HBA1	HA	 0.09	37
-	HBA2	HA	 0.09	38
-	CGA	CC	 0.62	39
-	O1A	OC	-0.76	40
-	O2A	OC	-0.76	41
-	CMB	CT3	-0.27	42
-	HMB1	HA	 0.09	43
-	HMB2	HA	 0.09	44
-	HMB3	HA	 0.09	45
-	CAB	CE1	-0.15	46
-	HAB	HE1	 0.15	47
-	CBB	CE2	-0.42	48
-	HBB1	HE2	 0.21	49
-	HBB2	HE2	 0.21	50
-	CMC	CT3	-0.27	51
-	HMC1	HA	 0.09	52
-	HMC2	HA	 0.09	53
-	HMC3	HA	 0.09	54
-	CAC	CE1	-0.15	55
-	HAC	HE1	 0.15	56
-	CBC	CE2	-0.42	57
-	HBC1	HE2	 0.21	58
-	HBC2	HE2	 0.21	59
-	CMD	CT3	-0.27	60
-	HMD1	HA	 0.09	61
-	HMD2	HA	 0.09	62
-	HMD3	HA	 0.09	63
-	CAD	CT2	-0.18	64
-	HAD1	HA	 0.09	65
-	HAD2	HA	 0.09	66
-	CBD	CT2	-0.28	67
-	HBD1	HA	 0.09	68
-	HBD2	HA	 0.09	69
-	CGD	CC	 0.62	70
-	O1D	OC	-0.76	71
-	O2D	OC	-0.76	72
-	O1      OM      0.021   73
-	O2      OM     -0.021   74
+        FE      FE       0.24   0
+        NA      NPH     -0.18   1
+        NB      NPH     -0.18   2
+        NC      NPH     -0.18   3
+        ND      NPH     -0.18   4
+        C1A     CPA      0.12   5
+        C2A     CPB     -0.06   6
+        C3A     CPB     -0.06   7
+        C4A     CPA      0.12   8
+        C1B     CPA      0.12   9
+        C2B     CPB     -0.06   10
+        C3B     CPB     -0.06   11
+        C4B     CPA      0.12   12
+        C1C     CPA      0.12   13
+        C2C     CPB     -0.06   14
+        C3C     CPB     -0.06   15
+        C4C     CPA      0.12   16
+        C1D     CPA      0.12   17
+        C2D     CPB     -0.06   18
+        C3D     CPB     -0.06   19
+        C4D     CPA      0.12   20
+        CHA     CPM     -0.10   21
+        HA      HA       0.10   22
+        CHB     CPM     -0.10   23
+        HB      HA       0.10   24
+        CHC     CPM     -0.10   25
+        HC      HA       0.10   26
+        CHD     CPM     -0.10   27
+        HD      HA       0.10   28
+        CMA     CT3     -0.27   29
+        HMA1    HA       0.09   30
+        HMA2    HA       0.09   31
+        HMA3    HA       0.09   32
+        CAA     CT2     -0.18   33
+        HAA1    HA       0.09   34
+        HAA2    HA       0.09   35
+        CBA     CT2     -0.28   36
+        HBA1    HA       0.09   37
+        HBA2    HA       0.09   38
+        CGA     CC       0.62   39
+        O1A     OC      -0.76   40
+        O2A     OC      -0.76   41
+        CMB     CT3     -0.27   42
+        HMB1    HA       0.09   43
+        HMB2    HA       0.09   44
+        HMB3    HA       0.09   45
+        CAB     CE1     -0.15   46
+        HAB     HE1      0.15   47
+        CBB     CE2     -0.42   48
+        HBB1    HE2      0.21   49
+        HBB2    HE2      0.21   50
+        CMC     CT3     -0.27   51
+        HMC1    HA       0.09   52
+        HMC2    HA       0.09   53
+        HMC3    HA       0.09   54
+        CAC     CE1     -0.15   55
+        HAC     HE1      0.15   56
+        CBC     CE2     -0.42   57
+        HBC1    HE2      0.21   58
+        HBC2    HE2      0.21   59
+        CMD     CT3     -0.27   60
+        HMD1    HA       0.09   61
+        HMD2    HA       0.09   62
+        HMD3    HA       0.09   63
+        CAD     CT2     -0.18   64
+        HAD1    HA       0.09   65
+        HAD2    HA       0.09   66
+        CBD     CT2     -0.28   67
+        HBD1    HA       0.09   68
+        HBD2    HA       0.09   69
+        CGD     CC       0.62   70
+        O1D     OC      -0.76   71
+        O2D     OC      -0.76   72
+        O1      OM      0.021   73
+        O2      OM     -0.021   74
  [ bonds ]
-	FE	NA
-	FE	NB
-	FE	NC
-	FE	ND
-	NA	C1A
-	C1A	C2A
-	C2A	C3A
-	C3A	C4A
-	NA	C4A
-	C2A	CAA
-	CAA	CBA
-	CBA	CGA
-	CGA	O1A
-	CGA	O2A
-	C3A	CMA
-	CHB	C4A
-	CHB	C1B
-	NB	C1B
-	C1B	C2B
-	C2B	C3B
-	C3B	C4B
-	NB	C4B
-	C2B	CMB
-	C3B	CAB
-	CAB	CBB
-	CHC	C4B
-	CHC	C1C
-	NC	C1C
-	C1C	C2C
-	C2C	C3C
-	C3C	C4C
-	NC	C4C
-	C2C	CMC
-	C3C	CAC
-	CAC	CBC
-	CHD	C4C
-	CHD	C1D
-	ND	C1D
-	C1D	C2D
-	C2D	C3D
-	C3D	C4D
-	ND	C4D
-	C2D	CMD
-	C3D	CAD
-	CAD	CBD
-	CBD	CGD
-	CGD	O1D
-	CGD	O2D
-	CHA	C4D
-	CHA	C1A
-	CHA	HA
-	CHB	HB
-	CHC	HC
-	CHD	HD
-	CAA	HAA1
-	CAA	HAA2
-	CBA	HBA1
-	CBA	HBA2
-	CMA	HMA1
-	CMA	HMA2
-	CMA	HMA3
-	CMB	HMB1
-	CMB	HMB2
-	CMB	HMB3
-	CAB	HAB
-	CBB	HBB1
-	CBB	HBB2
-	CMC	HMC1
-	CMC	HMC2
-	CMC	HMC3
-	CAC	HAC
-	CBC	HBC1
-	CBC	HBC2
-	CMD	HMD1
-	CMD	HMD2
-	CMD	HMD3
-	CAD	HAD1
-	CAD	HAD2
-	CBD	HBD1
-	CBD	HBD2 
-	O1      O2
-	O1      FE
+        FE      NA
+        FE      NB
+        FE      NC
+        FE      ND
+        NA      C1A
+        C1A     C2A
+        C2A     C3A
+        C3A     C4A
+        NA      C4A
+        C2A     CAA
+        CAA     CBA
+        CBA     CGA
+        CGA     O1A
+        CGA     O2A
+        C3A     CMA
+        CHB     C4A
+        CHB     C1B
+        NB      C1B
+        C1B     C2B
+        C2B     C3B
+        C3B     C4B
+        NB      C4B
+        C2B     CMB
+        C3B     CAB
+        CAB     CBB
+        CHC     C4B
+        CHC     C1C
+        NC      C1C
+        C1C     C2C
+        C2C     C3C
+        C3C     C4C
+        NC      C4C
+        C2C     CMC
+        C3C     CAC
+        CAC     CBC
+        CHD     C4C
+        CHD     C1D
+        ND      C1D
+        C1D     C2D
+        C2D     C3D
+        C3D     C4D
+        ND      C4D
+        C2D     CMD
+        C3D     CAD
+        CAD     CBD
+        CBD     CGD
+        CGD     O1D
+        CGD     O2D
+        CHA     C4D
+        CHA     C1A
+        CHA     HA
+        CHB     HB
+        CHC     HC
+        CHD     HD
+        CAA     HAA1
+        CAA     HAA2
+        CBA     HBA1
+        CBA     HBA2
+        CMA     HMA1
+        CMA     HMA2
+        CMA     HMA3
+        CMB     HMB1
+        CMB     HMB2
+        CMB     HMB3
+        CAB     HAB
+        CBB     HBB1
+        CBB     HBB2
+        CMC     HMC1
+        CMC     HMC2
+        CMC     HMC3
+        CAC     HAC
+        CBC     HBC1
+        CBC     HBC2
+        CMD     HMD1
+        CMD     HMD2
+        CMD     HMD3
+        CAD     HAD1
+        CAD     HAD2
+        CBD     HBD1
+        CBD     HBD2
+        O1      O2
+        O1      FE
  [ angles ]
-	;  ai    aj    ak   th0     cth     ub0	    cub  
-	   NA    FE    NC   180.0   0.0     0.0	    0.0
-	   NB    FE    ND   180.0   0.0     0.0	    0.0
-	   FE    O1    O2   122.0   50.00   0.0     0.0
+        ;  ai    aj    ak   th0     cth     ub0     cub
+           NA    FE    NC   180.0   0.0     0.0     0.0
+           NB    FE    ND   180.0   0.0     0.0     0.0
+           FE    O1    O2   122.0   50.00   0.0     0.0
  [ impropers ]
-	C2A	C1A	C3A	CAA
-	C3A	C2A	C4A	CMA
-	C2B	C1B	C3B	CMB
-	C3B	C2B	C4B	CAB
-	C2C	C1C	C3C	CMC
-	C3C	C2C	C4C	CAC
-	C2D	C1D	C3D	CMD
-	C3D	C2D	C4D	CAD
-	CGA	CBA	O2A	O1A
-	CGD	CBD	O2D	O1D
-	C4A	NA	C1A	C2A
-	C1A	NA	C4A	C3A
-	C4B	NB	C1B	C2B
-	C1B	NB	C4B	C3B
-	C4C	NC	C1C	C2C
-	C1C	NC	C4C	C3C
-	C4D	ND	C1D	C2D
-	C1D	ND	C4D	C3D
-	NA	C1A	C2A	C3A
-	NA	C4A	C3A	C2A
-	NB	C1B	C2B	C3B
-	NB	C4B	C3B	C2B
-	NC	C1C	C2C	C3C
-	NC	C4C	C3C	C2C
-	ND	C1D	C2D	C3D
-	ND	C4D	C3D	C2D
-	NA	C1A	CHA	C4D
-	NA	C4A	CHB	C1B
-	NB	C1B	CHB	C4A
-	NB	C4B	CHC	C1C
-	NC	C1C	CHC	C4B
-	NC	C4C	CHD	C1D
-	ND	C1D	CHD	C4C
-	ND	C4D	CHA	C1A
-	CHA	C1A	C4D	HA
-	CHB	C1B	C4A	HB
-	CHC	C1C	C4B	HC
-	CHD	C1D	C4C	HD
-	C1A	C2A	CHA	NA
-	C4A	C3A	CHB	NA
-	C1B	C2B	CHB	NB
-	C4B	C3B	CHC	NB
-	C1C	C2C	CHC	NC
-	C4C	C3C	CHD	NC
-	C1D	C2D	CHD	ND
-	C4D	C3D	CHA	ND
-	NA	C1A	C4A	FE
-	NB	C1B	C4B	FE
-	NC	C1C	C4C	FE
-	ND	C1D	C4D	FE
+        C2A     C1A     C3A     CAA
+        C3A     C2A     C4A     CMA
+        C2B     C1B     C3B     CMB
+        C3B     C2B     C4B     CAB
+        C2C     C1C     C3C     CMC
+        C3C     C2C     C4C     CAC
+        C2D     C1D     C3D     CMD
+        C3D     C2D     C4D     CAD
+        CGA     CBA     O2A     O1A
+        CGD     CBD     O2D     O1D
+        C4A     NA      C1A     C2A
+        C1A     NA      C4A     C3A
+        C4B     NB      C1B     C2B
+        C1B     NB      C4B     C3B
+        C4C     NC      C1C     C2C
+        C1C     NC      C4C     C3C
+        C4D     ND      C1D     C2D
+        C1D     ND      C4D     C3D
+        NA      C1A     C2A     C3A
+        NA      C4A     C3A     C2A
+        NB      C1B     C2B     C3B
+        NB      C4B     C3B     C2B
+        NC      C1C     C2C     C3C
+        NC      C4C     C3C     C2C
+        ND      C1D     C2D     C3D
+        ND      C4D     C3D     C2D
+        NA      C1A     CHA     C4D
+        NA      C4A     CHB     C1B
+        NB      C1B     CHB     C4A
+        NB      C4B     CHC     C1C
+        NC      C1C     CHC     C4B
+        NC      C4C     CHD     C1D
+        ND      C1D     CHD     C4C
+        ND      C4D     CHA     C1A
+        CHA     C1A     C4D     HA
+        CHB     C1B     C4A     HB
+        CHC     C1C     C4B     HC
+        CHD     C1D     C4C     HD
+        C1A     C2A     CHA     NA
+        C4A     C3A     CHB     NA
+        C1B     C2B     CHB     NB
+        C4B     C3B     CHC     NB
+        C1C     C2C     CHC     NC
+        C4C     C3C     CHD     NC
+        C1D     C2D     CHD     ND
+        C4D     C3D     CHA     ND
+        NA      C1A     C4A     FE
+        NB      C1B     C4B     FE
+        NC      C1C     C4C     FE
+        ND      C1D     C4D     FE
 
 [ O2 ] ; O2 ligand for HEME
  [ atoms ]
-	O1      OM      0.021   0
-	O2      OM     -0.021   1
+        O1      OM      0.021   0
+        O2      OM     -0.021   1
  [ bonds ]
-	O1 O2
+        O1 O2
 
 [ CO ] ; CO ligand for HEME
  [ atoms ]
-	C       CM      0.021   0
-	O       OM     -0.021   1
+        C       CM      0.021   0
+        O       OM     -0.021   1
  [ bonds ]
-	C O
+        C O
 
 [ HOH ]
  [ atoms ]
@@ -1640,22 +1640,22 @@
 
 [ TIP3 ]
  [ atoms ]
-	OH2	OT	-0.834	0
-	H1	HT	0.417	1
-	H2	HT	0.417	2
+        OH2     OT      -0.834  0
+        H1      HT      0.417   1
+        H2      HT      0.417   2
  [ bonds ]
-	OH2	H1
-	OH2	H2
-	H1	H2
+        OH2     H1
+        OH2     H2
+        H1      H2
 
 [ TP3M ]
  [ atoms ]
-	OH2	OT	-0.834	0
-	H1	HT	0.417	1
-	H2	HT	0.417	2
+        OH2     OT      -0.834  0
+        H1      HT      0.417   1
+        H2      HT      0.417   2
  [ bonds ]
-	OH2	H1
-	OH2	H2
+        OH2     H1
+        OH2     H2
 
 [ HO4 ]
 ; TIP4P
@@ -1670,31 +1670,31 @@
 
 [ SOD ]
  [ atoms ]
-	SOD	SOD	1.00	0
+        SOD     SOD     1.00    0
 
 [ MG ]
  [ atoms ]
-	MG	MG	2.00	0
+        MG      MG      2.00    0
 
 [ POT ]
  [ atoms ]
-	POT	POT	1.00	0
+        POT     POT     1.00    0
 
 [ CES ]
  [ atoms ]
-	CES	CES	1.00	0
+        CES     CES     1.00    0
 
 [ CAL ]
  [ atoms ]
-	CAL	CAL	2.00	0
+        CAL     CAL     2.00    0
 
 [ CLA ]
  [ atoms ]
-	CLA	CLA	-1.00	0
+        CLA     CLA     -1.00   0
 
 [ ZN2 ]
  [ atoms ]
-	ZN	ZN	2.00	0
+        ZN      ZN      2.00    0
 
 [ ACE ]
  [ atoms ]

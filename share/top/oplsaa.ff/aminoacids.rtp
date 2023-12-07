@@ -1,9 +1,9 @@
 ; New format introduced in Gromacs 3.1.4.
 ; Dont use this forcefield with earlier versions.
 
-; This residue database includes new reparameterized sidechain dihedrals 
-; from Kaminski et al (JPCB, 2001) that override the default atomtype-based 
-; dihedrals. We use set 2 for SER and THR, set 2 for ASP, and the better 
+; This residue database includes new reparameterized sidechain dihedrals
+; from Kaminski et al (JPCB, 2001) that override the default atomtype-based
+; dihedrals. We use set 2 for SER and THR, set 2 for ASP, and the better
 ; separate dihedrals for LEU and VAL instead of the combined ones, since we
 ; can specify them here without using introducing extra atom types.
 ; (That was the reason they were combined in the paper).
@@ -50,19 +50,19 @@
    CH3  HH33
    CH3     C
      C     O
-[ impropers ]
-  CH3    +N    C      O     improper_O_C_X_Y 
+ [ impropers ]
+  CH3    +N    C      O     improper_O_C_X_Y
 
 [ ALA ]
- [ atoms ] 
+ [ atoms ]
      N    opls_238   -0.500     1
-     H    opls_241    0.300     1 
-    CA    opls_224B   0.140     1 
-    HA    opls_140    0.060     1 
-    CB    opls_135   -0.180     2 
-   HB1    opls_140    0.060     2 
-   HB2    opls_140    0.060     2 
-   HB3    opls_140    0.060     2 
+     H    opls_241    0.300     1
+    CA    opls_224B   0.140     1
+    HA    opls_140    0.060     1
+    CB    opls_135   -0.180     2
+   HB1    opls_140    0.060     2
+   HB2    opls_140    0.060     2
+   HB3    opls_140    0.060     2
      C    opls_235    0.500     3
      O    opls_236   -0.500     3
  [ bonds ]
@@ -77,23 +77,23 @@
      C     O
     -C     N
  [ impropers ]
-    -C    CA     N     H    improper_Z_N_X_Y 
-    CA    +N     C     O    improper_O_C_X_Y 
+    -C    CA     N     H    improper_Z_N_X_Y
+    CA    +N     C     O    improper_O_C_X_Y
 
 
 [ AIB ]
  [ atoms ]
      N    opls_238   -0.500     1
-     H    opls_241    0.300     1 
-    CA    opls_225B   0.200     1 
-   CB1    opls_135   -0.180     2 
-  HB11    opls_140    0.060     2 
-  HB12    opls_140    0.060     2 
-  HB13    opls_140    0.060     2 
-   CB2    opls_135   -0.180     3 
-  HB21    opls_140    0.060     3 
-  HB22    opls_140    0.060     3 
-  HB23    opls_140    0.060     3 
+     H    opls_241    0.300     1
+    CA    opls_225B   0.200     1
+   CB1    opls_135   -0.180     2
+  HB11    opls_140    0.060     2
+  HB12    opls_140    0.060     2
+  HB13    opls_140    0.060     2
+   CB2    opls_135   -0.180     3
+  HB21    opls_140    0.060     3
+  HB22    opls_140    0.060     3
+  HB23    opls_140    0.060     3
      C    opls_235    0.500     4
      O    opls_236   -0.500     4
  [ bonds ]
@@ -170,12 +170,12 @@
      N    CA    CB    CG    dih_ARG_chi1_N_C_C_C
     CG    CB    CA     C    dih_ARG_chi1_C_C_C_CO
  [ impropers ]
-    -C    CA     N     H    improper_Z_N_X_Y 
-    CA    +N     C     O    improper_O_C_X_Y 
-    CD    CZ    NE    HE    improper_Z_N_X_Y 
-    NE   NH1    CZ   NH2    improper_O_C_X_Y  
-    CZ  HH11   NH1  HH12    improper_Z_N_X_Y  
-    CZ  HH21   NH2  HH22    improper_Z_N_X_Y  
+    -C    CA     N     H    improper_Z_N_X_Y
+    CA    +N     C     O    improper_O_C_X_Y
+    CD    CZ    NE    HE    improper_Z_N_X_Y
+    NE   NH1    CZ   NH2    improper_O_C_X_Y
+    CZ  HH11   NH1  HH12    improper_Z_N_X_Y
+    CZ  HH21   NH2  HH22    improper_Z_N_X_Y
 
 [ ARGN ]
  [ atoms ]
@@ -227,11 +227,11 @@
      C     O
     -C     N
  [ impropers ]
-    -C    CA     N     H    improper_Z_N_X_Y 
-    CA    +N     C     O    improper_O_C_X_Y 
-    CD    CZ    NE    HE    improper_Z_N_X_Y 
-    NE   NH1    CZ   NH2    improper_O_C_X_Y 
-    CZ  HH21   NH2  HH22    improper_Z_N_X_Y 
+    -C    CA     N     H    improper_Z_N_X_Y
+    CA    +N     C     O    improper_O_C_X_Y
+    CD    CZ    NE    HE    improper_Z_N_X_Y
+    NE   NH1    CZ   NH2    improper_O_C_X_Y
+    CZ  HH21   NH2  HH22    improper_Z_N_X_Y
 
 
 [ ASN ]
@@ -270,10 +270,10 @@
     CG    CB    CA     C     dih_ASN_chi1_C_C_C_CO
     CA    CB    CG   ND2     dih_ASN_chi2_C_C_CO_N
  [ impropers ]
-    -C    CA     N     H     improper_Z_N_X_Y 
-    CA    +N     C     O     improper_O_C_X_Y 
-    CB   ND2    CG   OD1     improper_O_C_X_Y   
-    CG  HD21   ND2  HD22     improper_Z_N_X_Y   
+    -C    CA     N     H     improper_Z_N_X_Y
+    CA    +N     C     O     improper_O_C_X_Y
+    CB   ND2    CG   OD1     improper_O_C_X_Y
+    CG  HD21   ND2  HD22     improper_Z_N_X_Y
 
 [ ASP ]
  [ atoms ]
@@ -345,9 +345,9 @@
     CB    CG   OD2   HD2    dih_sidechain_COOH_C_C_O_H
    OD1    CG   OD2   HD2    dih_sidechain_COOH_O_C_O_H
  [ impropers ]
-    -C    CA     N     H    improper_Z_N_X_Y 
-    CA    +N     C     O    improper_O_C_X_Y 
-    CB   OD1    CG   OD2    improper_O_C_X_Y     
+    -C    CA     N     H    improper_Z_N_X_Y
+    CA    +N     C     O    improper_O_C_X_Y
+    CB   OD1    CG   OD2    improper_O_C_X_Y
 
 
 [ CYS2 ] ; aka CYX
@@ -377,8 +377,8 @@
      N    CA    CB    SG    dih_CYS_chi1_N_C_C_S
      C    CA    CB    SG    dih_CYS_chi1_CO_C_C_S
  [ impropers ]
-    -C    CA     N     H    improper_Z_N_X_Y 
-    CA    +N     C     O    improper_O_C_X_Y 
+    -C    CA     N     H    improper_Z_N_X_Y
+    CA    +N     C     O    improper_O_C_X_Y
 
 [ CYSH ]
  [ atoms ]
@@ -409,8 +409,8 @@
      N    CA    CB    SG    dih_CYS_chi1_N_C_C_S
      C    CA    CB    SG    dih_CYS_chi1_CO_C_C_S
  [ impropers ]
-    -C    CA     N     H    improper_Z_N_X_Y 
-    CA    +N     C     O    improper_O_C_X_Y 
+    -C    CA     N     H    improper_Z_N_X_Y
+    CA    +N     C     O    improper_O_C_X_Y
 
 [ GLN ]
  [ atoms ]
@@ -454,10 +454,10 @@
     CG    CB    CA     C    dih_GLN_chi1_C_C_C_CO
     CB    CG    CD   NE2    dih_GLN_chi3_C_C_CO_N
  [ impropers ]
-    -C    CA     N     H    improper_Z_N_X_Y 
-    CA    +N     C     O    improper_O_C_X_Y 
-    CG   NE2    CD   OE1    improper_O_C_X_Y  
-    CD  HE21   NE2  HE22    improper_Z_N_X_Y        
+    -C    CA     N     H    improper_Z_N_X_Y
+    CA    +N     C     O    improper_O_C_X_Y
+    CG   NE2    CD   OE1    improper_O_C_X_Y
+    CD  HE21   NE2  HE22    improper_Z_N_X_Y
 
 
 [ GLU ]
@@ -497,9 +497,9 @@
      N    CA    CB    CG    dih_GLU_chi1_N_C_C_C
     CG    CB    CA     C    dih_GLU_chi1_C_C_C_CO
  [ impropers ]
-    -C    CA     N     H    improper_Z_N_X_Y 
-    CA    +N     C     O    improper_O_C_X_Y 
-    CG   OE1    CD   OE2    improper_O_C_X_Y   
+    -C    CA     N     H    improper_Z_N_X_Y
+    CA    +N     C     O    improper_O_C_X_Y
+    CG   OE1    CD   OE2    improper_O_C_X_Y
 
 
 [ PGLU ]
@@ -538,9 +538,9 @@
      N    CA    CB    CG    dih_GLU_chi1_N_C_C_C
     CG    CB    CA     C    dih_GLU_chi1_C_C_C_CO
  [ impropers ]
-    -C    CA     N     H    improper_Z_N_X_Y 
-    CA    +N     C     O    improper_O_C_X_Y 
-;    CG   OE1    CD   OE2    improper_O_C_X_Y   
+    -C    CA     N     H    improper_Z_N_X_Y
+    CA    +N     C     O    improper_O_C_X_Y
+;    CG   OE1    CD   OE2    improper_O_C_X_Y
 
 
 [ GLUH ]
@@ -584,9 +584,9 @@
     CG    CD   OE2   HE2    dih_sidechain_COOH_C_C_O_H
    OE1    CD   OE2   HE2    dih_sidechain_COOH_O_C_O_H
  [ impropers ]
-    -C    CA     N     H    improper_Z_N_X_Y 
-    CA    +N     C     O    improper_O_C_X_Y 
-    CG   OE1    CD   OE2    improper_O_C_X_Y   
+    -C    CA     N     H    improper_Z_N_X_Y
+    CA    +N     C     O    improper_O_C_X_Y
+    CG   OE1    CD   OE2    improper_O_C_X_Y
 
 
 [ GLY ]
@@ -607,19 +607,19 @@
      C     O
     -C     N
  [ impropers ]
-    -C    CA     N     H    improper_Z_N_X_Y 
-    CA    +N     C     O    improper_O_C_X_Y 
+    -C    CA     N     H    improper_Z_N_X_Y
+    CA    +N     C     O    improper_O_C_X_Y
 
 
-[ HISD ] 
+[ HISD ]
  [ atoms ]
      N    opls_238   -0.500     1
      H    opls_241    0.300     1
     CA    opls_224B   0.140     1
     HA    opls_140    0.060     1
-    CB    opls_505   -0.005     2 
-   HB1    opls_140    0.060     2 
-   HB2    opls_140    0.060     2 
+    CB    opls_505   -0.005     2
+   HB1    opls_140    0.060     2
+   HB2    opls_140    0.060     2
     CG    opls_508    0.015     3
    ND1    opls_503   -0.570     4
    HD1    opls_504    0.420     4
@@ -705,12 +705,12 @@
     CG    CB    CA     C    dih_HIS_chi1_C_C_C_CO
     CA    CB    CG   ND1    dih_HIS_chi2_C_C_C_N
  [ impropers ]
-    -C    CA     N     H    improper_Z_N_X_Y  
-    CA    +N     C     O    improper_O_C_X_Y  
-   CE1   CD2   NE2   HE2    improper_Z_N_X_Y  
-    CG   NE2   CD2   HD2    improper_Z_CA_X_Y 
-   ND1   NE2   CE1   HE1    improper_Z_CA_X_Y        
-   ND1   CD2   CG     CB    improper_Z_CA_X_Y     
+    -C    CA     N     H    improper_Z_N_X_Y
+    CA    +N     C     O    improper_O_C_X_Y
+   CE1   CD2   NE2   HE2    improper_Z_N_X_Y
+    CG   NE2   CD2   HD2    improper_Z_CA_X_Y
+   ND1   NE2   CE1   HE1    improper_Z_CA_X_Y
+   ND1   CD2   CG     CB    improper_Z_CA_X_Y
 
 
 [ HISH ]  ; also known as HISP (or HIS+)
@@ -719,18 +719,18 @@
      H    opls_241    0.300     1
     CA    opls_224B   0.140     1
     HA    opls_140    0.060     1
-    CB    opls_505   -0.005     2 
+    CB    opls_505   -0.005     2
    HB1    opls_140    0.060     2
    HB2    opls_140    0.060     2
-    CG    opls_510    0.215     3 
+    CG    opls_510    0.215     3
    ND1    opls_512   -0.540     4
-   HD1    opls_513    0.460     4 
-   CD2    opls_510    0.215     5 
-   HD2    opls_146    0.115     5 
-   CE1    opls_509    0.385     6 
-   HE1    opls_146    0.115     6 
-   NE2    opls_512   -0.540     7 
-   HE2    opls_513    0.460     7 
+   HD1    opls_513    0.460     4
+   CD2    opls_510    0.215     5
+   HD2    opls_146    0.115     5
+   CE1    opls_509    0.385     6
+   HE1    opls_146    0.115     6
+   NE2    opls_512   -0.540     7
+   HE2    opls_513    0.460     7
      C    opls_235    0.500     8
      O    opls_236   -0.500     8
  [ bonds ]
@@ -757,16 +757,16 @@
      N    CA    CB    CG    dih_HIP_chi1_N_C_C_C
     CG    CB    CA     C    dih_HIP_chi1_C_C_C_CO
  [ impropers ]
-    -C    CA     N     H    improper_Z_N_X_Y  
-    CA    +N     C     O    improper_O_C_X_Y  
-    CG   CE1   ND1   HD1    improper_Z_N_X_Y       
-   CE1   CD2   NE2   HE2    improper_Z_N_X_Y  
-    CG   NE2   CD2   HD2    improper_Z_CA_X_Y 
-   ND1   NE2   CE1   HE1    improper_Z_CA_X_Y 
-   ND1   CD2    CG    CB    improper_Z_CA_X_Y     
+    -C    CA     N     H    improper_Z_N_X_Y
+    CA    +N     C     O    improper_O_C_X_Y
+    CG   CE1   ND1   HD1    improper_Z_N_X_Y
+   CE1   CD2   NE2   HE2    improper_Z_N_X_Y
+    CG   NE2   CD2   HD2    improper_Z_CA_X_Y
+   ND1   NE2   CE1   HE1    improper_Z_CA_X_Y
+   ND1   CD2    CG    CB    improper_Z_CA_X_Y
 
 
-[ HOH ] 
+[ HOH ]
 ; We believe SPC has slightly better properties than TIP3P...
  [ atoms ]
     OW   opls_116   -0.82      0
@@ -776,7 +776,7 @@
     OW   HW1
     OW   HW2
 
-[ HO4 ] 
+[ HO4 ]
 ; TIP4P
  [ atoms ]
     OW   opls_113    0.00      0
@@ -787,7 +787,7 @@
     OW   HW1
     OW   HW2
 
-[ HO5 ] 
+[ HO5 ]
 ; TIP5P
  [ atoms ]
     OW   opls_118    0.00      0
@@ -846,8 +846,8 @@
    CG1    CB    CA     C    dih_ILE_chi1_C_C_C_CO
    CG2    CB    CA     C    dih_ILE_chi1_C_C_C_CO
  [ impropers ]
-    -C    CA     N     H    improper_Z_N_X_Y 
-    CA    +N     C     O    improper_O_C_X_Y 
+    -C    CA     N     H    improper_Z_N_X_Y
+    CA    +N     C     O    improper_O_C_X_Y
 
 [ LEU ]
  [ atoms ]
@@ -894,8 +894,8 @@
      N    CA    CB    CG    dih_LEU_chi1_N_C_C_C
     CG    CB    CA     C    dih_LEU_chi1_C_C_C_CO
  [ impropers ]
-    -C    CA     N     H    improper_Z_N_X_Y 
-    CA    +N     C     O    improper_O_C_X_Y 
+    -C    CA     N     H    improper_Z_N_X_Y
+    CA    +N     C     O    improper_O_C_X_Y
 
 [ LYS ]
  [ atoms ]
@@ -915,9 +915,9 @@
     CE    opls_906    0.060     5
    HE1    opls_911    0.060     5
    HE2    opls_911    0.060     5
-    NZ    opls_900   -0.900     6 
-   HZ1    opls_909    0.360     6 
-   HZ2    opls_909    0.360     6 
+    NZ    opls_900   -0.900     6
+   HZ1    opls_909    0.360     6
+   HZ2    opls_909    0.360     6
      C    opls_235    0.500     7
      O    opls_236   -0.500     7
  [ bonds ]
@@ -948,8 +948,8 @@
     CD    CE    NZ   HZ1    dih_LYS_chi5_C_C_N_H
     CD    CE    NZ   HZ2    dih_LYS_chi5_C_C_N_H
  [ impropers ]
-    -C    CA     N     H    improper_Z_N_X_Y 
-    CA    +N     C     O    improper_O_C_X_Y 
+    -C    CA     N     H    improper_Z_N_X_Y
+    CA    +N     C     O    improper_O_C_X_Y
 
 
 [ LYSH ]
@@ -1006,8 +1006,8 @@
     CD    CE    NZ   HZ2    dih_LYS_chi5_C_C_N_H
     CD    CE    NZ   HZ3    dih_LYS_chi5_C_C_N_H
  [ impropers ]
-    -C    CA     N     H    improper_Z_N_X_Y 
-    CA    +N     C     O    improper_O_C_X_Y 
+    -C    CA     N     H    improper_Z_N_X_Y
+    CA    +N     C     O    improper_O_C_X_Y
 
 
 [ MET ]
@@ -1051,8 +1051,8 @@
      N    CA    CB    CG    dih_MET_chi1_N_C_C_C
     CG    CB    CA     C    dih_MET_chi1_C_C_C_CO
   [ impropers ]
-    -C    CA     N     H    improper_Z_N_X_Y 
-    CA    +N     C     O    improper_O_C_X_Y 
+    -C    CA     N     H    improper_Z_N_X_Y
+    CA    +N     C     O    improper_O_C_X_Y
 
 
 [ NAC ] ; metylamide, a.k.a NMA.
@@ -1116,8 +1116,8 @@
    CE1    opls_145   -0.115     5
    HE1    opls_146    0.115     5
    CE2    opls_145   -0.115     6
-   HE2    opls_146    0.115     6 
-    CZ    opls_145   -0.115     7 
+   HE2    opls_146    0.115     6
+    CZ    opls_145   -0.115     7
     HZ    opls_146    0.115     7
      C    opls_235    0.500     8
      O    opls_236   -0.500     8
@@ -1144,14 +1144,14 @@
      C     O
     -C     N
  [ impropers ]
-    -C    CA     N     H    improper_Z_N_X_Y  
-    CA    +N     C     O    improper_O_C_X_Y  
-    CG   CE2   CD2   HD2    improper_Z_CA_X_Y 
-   CD2    CZ   CE2   HE2    improper_Z_CA_X_Y 
-   CE1   CE2    CZ    HZ    improper_Z_CA_X_Y 
-   CD1    CZ   CE1   HE1    improper_Z_CA_X_Y 
-    CG   CE1   CD1   HD1    improper_Z_CA_X_Y 
-   CD1   CD2    CG    CB    improper_Z_CA_X_Y     
+    -C    CA     N     H    improper_Z_N_X_Y
+    CA    +N     C     O    improper_O_C_X_Y
+    CG   CE2   CD2   HD2    improper_Z_CA_X_Y
+   CD2    CZ   CE2   HE2    improper_Z_CA_X_Y
+   CE1   CE2    CZ    HZ    improper_Z_CA_X_Y
+   CD1    CZ   CE1   HE1    improper_Z_CA_X_Y
+    CG   CE1   CD1   HD1    improper_Z_CA_X_Y
+   CD1   CD2    CG    CB    improper_Z_CA_X_Y
 
 
 [ PRO ]
@@ -1187,9 +1187,9 @@
      C     O
     -C     N
  [ impropers ]
-    -C    CA     N    CD    improper_Z_N_X_Y 
-    CA    +N     C     O    improper_O_C_X_Y 
-     
+    -C    CA     N    CD    improper_Z_N_X_Y
+    CA    +N     C     O    improper_O_C_X_Y
+
 
 [ SER ]
  [ atoms ]
@@ -1221,8 +1221,8 @@
      C    CA    CB    OG    dih_SER_THR_chi1_CO_C_C_O
     CA    CB    OG    HG    dih_SER_THR_chi2_C_C_OH_HO
  [ impropers ]
-    -C    CA     N     H    improper_Z_N_X_Y 
-    CA    +N     C     O    improper_O_C_X_Y 
+    -C    CA     N     H    improper_Z_N_X_Y
+    CA    +N     C     O    improper_O_C_X_Y
 
 
 [ THR ]
@@ -1261,10 +1261,10 @@
      C    CA    CB   OG1    dih_SER_THR_chi1_CO_C_C_O
     CA    CB   OG1   HG1    dih_SER_THR_chi2_C_C_OH_HO
  [ impropers ]
-    -C    CA     N     H    improper_Z_N_X_Y 
-    CA    +N     C     O    improper_O_C_X_Y 
+    -C    CA     N     H    improper_Z_N_X_Y
+    CA    +N     C     O    improper_O_C_X_Y
 
-  
+
 [ TRP ]
  [ atoms ]
      N    opls_238   -0.500     1
@@ -1274,21 +1274,21 @@
     CB    opls_136   -0.120     2
    HB1    opls_140    0.060     2
    HB2    opls_140    0.060     2
-    CG    opls_500    0.075     3  
-   CD1    opls_514   -0.115     4 
-   HD1    opls_146    0.115     4  
+    CG    opls_500    0.075     3
+   CD1    opls_514   -0.115     4
+   HD1    opls_146    0.115     4
    CD2    opls_501   -0.055     5
-   NE1    opls_503   -0.570     6  
-   HE1    opls_504    0.420     6  
+   NE1    opls_503   -0.570     6
+   HE1    opls_504    0.420     6
    CE2    opls_502    0.130     6
-   CE3    opls_145   -0.115     7  
-   HE3    opls_146    0.115     7  
-   CZ2    opls_145   -0.115     8  
-   HZ2    opls_146    0.115     8   
-   CZ3    opls_145   -0.115     9  
-   HZ3    opls_146    0.115     9  
-   CH2    opls_145   -0.115     10  
-   HH2    opls_146    0.115     10 
+   CE3    opls_145   -0.115     7
+   HE3    opls_146    0.115     7
+   CZ2    opls_145   -0.115     8
+   HZ2    opls_146    0.115     8
+   CZ3    opls_145   -0.115     9
+   HZ3    opls_146    0.115     9
+   CH2    opls_145   -0.115     10
+   HH2    opls_146    0.115     10
      C    opls_235    0.500     11
      O    opls_236   -0.500     11
  [ bonds ]
@@ -1322,15 +1322,15 @@
      N    CA    CB    CG    dih_TRP_chi1_N_C_C_C
     CG    CB    CA     C    dih_TRP_chi1_C_C_C_CO
  [ impropers ]
-    -C    CA     N     H    improper_Z_N_X_Y  
-    CA    +N     C     O    improper_O_C_X_Y  
-   CD1   CE2   NE1   HE1    improper_Z_N_X_Y   
-   CE2   CH2   CZ2   HZ2    improper_Z_CA_X_Y 
-   CZ2   CZ3   CH2   HH2    improper_Z_CA_X_Y 
-   CH2   CE3   CZ3   HZ3    improper_Z_CA_X_Y 
-   CZ3   CD2   CE3   HE3    improper_Z_CA_X_Y 
-    CG   NE1   CD1   HD1    improper_Z_CA_X_Y 
-   CD1   CD2    CG    CB    improper_Z_CA_X_Y   
+    -C    CA     N     H    improper_Z_N_X_Y
+    CA    +N     C     O    improper_O_C_X_Y
+   CD1   CE2   NE1   HE1    improper_Z_N_X_Y
+   CE2   CH2   CZ2   HZ2    improper_Z_CA_X_Y
+   CZ2   CZ3   CH2   HH2    improper_Z_CA_X_Y
+   CH2   CE3   CZ3   HZ3    improper_Z_CA_X_Y
+   CZ3   CD2   CE3   HE3    improper_Z_CA_X_Y
+    CG   NE1   CD1   HD1    improper_Z_CA_X_Y
+   CD1   CD2    CG    CB    improper_Z_CA_X_Y
 
 
 [ TYR ]
@@ -1431,8 +1431,8 @@
    CG1    CB    CA     C    dih_VAL_chi1_C_C_C_CO
    CG2    CB    CA     C    dih_VAL_chi1_C_C_C_CO
  [ impropers ]
-    -C    CA     N     H    improper_Z_N_X_Y 
-    CA    +N     C     O    improper_O_C_X_Y 
+    -C    CA     N     H    improper_Z_N_X_Y
+    CA    +N     C     O    improper_O_C_X_Y
 
 
 [ F ]
