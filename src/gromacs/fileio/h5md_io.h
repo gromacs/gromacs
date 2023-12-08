@@ -109,7 +109,7 @@ public:
     void setUpParticlesDataBlocks(int     writeCoordinatesSteps,
                                   int     writeVelocitiesSteps,
                                   int     writeForcesSteps,
-                                  int     numParticles,
+                                  int64_t numParticles,
                                   PbcType pbcType,
                                   double  compressionError);
 
@@ -129,12 +129,21 @@ public:
      * \param[in] time The time stamp (in ps).
      * \param[in] lambda The lambda state. FIXME: Currently not written.
      * \param[in] box The box dimensions.
+     * \param[in] numParticles The number of particles in the system.
      * \param[in] x The particle coordinates for lossless output.
      * \param[in] v The particle velocities for lossless output.
      * \param[in] f The particle forces for lossless output.
-     * \param[in] xLossy The particle coordinates for lossy (compressed) output.
+     * \param[in] compressionError The required precision of the lossy compression.
      */
-    void writeFrame(int64_t step, real time, real lambda, const rvec* box, const rvec* x, const rvec* v, const rvec* f);
+    void writeFrame(int64_t     step,
+                    real        time,
+                    real        lambda,
+                    const rvec* box,
+                    int         numParticles,
+                    const rvec* x,
+                    const rvec* v,
+                    const rvec* f,
+                    double      compressionError);
 
     bool readNextFrameOfStandardDataBlocks(int64_t* step,
                                            real*    time,

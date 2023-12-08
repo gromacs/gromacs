@@ -746,7 +746,7 @@ int gmx_trjcat(int argc, char* argv[])
                 /* Fails if last frame is incomplete
                  * We can't do anything about it without overwriting
                  * */
-                if (filetype == efXTC || filetype == efTNG)
+                if (filetype == efXTC || filetype == efTNG || filetype == efH5MD)
                 {
                     lasttime = trx_get_time_of_final_frame(status);
                     fr.time  = lasttime;

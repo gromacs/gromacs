@@ -1080,8 +1080,10 @@ int gmx_trjconv(int argc, char* argv[])
                                                               grpnm);
                     break;
                 case efH5MD:
+                    printf("Setup writing. prec: %f\n", prec);
                     trxout = trjtools_gmx_prepare_h5md_writing(
                             out_file, filemode[0], nullptr, gmx::arrayRefFromArray(index, nout), grpnm);
+                    printf("After Setup writing\n");
                     break;
                 case efXTC:
                 case efTRR:
@@ -1518,6 +1520,7 @@ int gmx_trjconv(int argc, char* argv[])
                                     }
                                     if (ftp == efH5MD)
                                     {
+                                        printf("Preparing output\n");
                                         trxout = trjtools_gmx_prepare_h5md_writing(
                                                 out_file2,
                                                 filemode[0],
@@ -1530,7 +1533,9 @@ int gmx_trjconv(int argc, char* argv[])
                                         trxout = open_trx(out_file2, filemode);
                                     }
                                 }
+                                printf("Writing frame\n");
                                 write_trxframe(trxout, &frout, gc);
+                                printf("Written frame\n");
                                 break;
                             case efGRO:
                             case efG96:

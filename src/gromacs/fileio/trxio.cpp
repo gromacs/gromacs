@@ -291,7 +291,7 @@ float trx_get_time_of_final_frame(t_trxstatus* status)
         {
             gmx_fatal(FARGS, "Error opening H5MD file.");
         }
-        /* TODO! */
+        status->h5mdIo->getFinalTimeFromAllDataBlocks();
     }
     else
     {
@@ -360,6 +360,10 @@ int write_trxframe_indexed(t_trxstatus* status, const t_trxframe* fr, int nind, 
     {
         ftp = efTNG;
     }
+    else if (status->h5mdIo)
+    {
+        ftp = efH5MD;
+    }
     else if (status->fio)
     {
         ftp = gmx_fio_getftp(status->fio);
@@ -421,7 +425,8 @@ int write_trxframe_indexed(t_trxstatus* status, const t_trxframe* fr, int nind, 
     {
         case efTNG: gmx_write_tng_from_trxframe(status->tng, fr, nind); break;
         case efH5MD:
-            status->h5mdIo->writeFrame(fr->step, fr->time, 0, fr->box, xout, vout, fout);
+            status->h5mdIo->writeFrame(
+                    fr->step, fr->time, 0, fr->box, fr->natoms, xout, vout, fout, prec > 0 ? 1 / prec : 0);
             break;
         case efXTC: write_xtc(status->fio, nind, fr->step, fr->time, fr->box, xout, prec); break;
         case efTRR:
@@ -551,8 +556,10 @@ t_trxstatus* trjtools_gmx_prepare_h5md_writing(const std::filesystem::path& file
     {
         out->h5mdIo->setupMolecularSystem(*mtop, index, index_group_name);
     }
-    /* Assume that the box is periodic in all dimensions. FIXME: Currently using compression set to 0.001. */
-    out->h5mdIo->setUpParticlesDataBlocks(-1, -1, -1, mtop->natoms, PbcType::Xyz, 0.001);
+    // /* Assume that the box is periodic in all dimensions. */
+    // printf("Setting up datablocks. %ld\n", mtop != nullptr ? mtop->natoms : index.ssize());
+    // out->h5mdIo->setUpParticlesDataBlocks(-1, -1, -1, mtop != nullptr ? mtop->natoms :
+    // index.ssize(), PbcType::Xyz, compressionError); printf("After setting up datablocks\n");
 
     return out;
 }
@@ -585,10 +592,24 @@ int write_trxframe(t_trxstatus* status, t_trxframe* fr, gmx_conect gc)
         return 0;
     }
 
+    if (status->h5mdIo)
+    {
+        printf("H5MD file\n");
+        status->h5mdIo->writeFrame(fr->step,
+                                   fr->time,
+                                   fr->lambda,
+                                   fr->box,
+                                   fr->natoms,
+                                   fr->bX ? fr->x : nullptr,
+                                   fr->bV ? fr->v : nullptr,
+                                   fr->bF ? fr->f : nullptr,
+                                   prec > 0 ? 1 / prec : 0);
+        return 0;
+    }
+
     switch (gmx_fio_getftp(status->fio))
     {
         case efTRR: break;
-        case efH5MD: break;
         default:
             if (!fr->bX)
             {
@@ -603,15 +624,6 @@ int write_trxframe(t_trxstatus* status, t_trxframe* fr, gmx_conect gc)
     {
         case efXTC:
             write_xtc(status->fio, fr->natoms, fr->step, fr->time, fr->box, fr->x, prec);
-            break;
-        case efH5MD:
-            status->h5mdIo->writeFrame(fr->step,
-                                       fr->time,
-                                       fr->lambda,
-                                       fr->box,
-                                       fr->bX ? fr->x : nullptr,
-                                       fr->bV ? fr->v : nullptr,
-                                       fr->bF ? fr->f : nullptr);
             break;
         case efTRR:
             gmx_trr_write_frame(status->fio,
@@ -898,6 +910,10 @@ bool read_next_frame(const gmx_output_env_t* oenv, t_trxstatus* status, t_trxfra
             /* Special treatment for TNG files */
             ftp = efTNG;
         }
+        else if (status->h5mdIo)
+        {
+            ftp = efH5MD;
+        }
         else
         {
             ftp = gmx_fio_getftp(status->fio);
@@ -944,6 +960,10 @@ bool read_next_frame(const gmx_output_env_t* oenv, t_trxstatus* status, t_trxfra
                 }
                 break;
             case efTNG: bRet = gmx_read_next_tng_frame(status->tng, fr, nullptr, 0); break;
+            case efH5MD:
+                bRet = status->h5mdIo->readNextFrameOfStandardDataBlocks(
+                        &fr->step, &fr->time, fr->box, fr->x, fr->v, fr->f, &fr->bBox, &fr->bX, &fr->bV, &fr->bF);
+                break;
             case efPDB: bRet = pdb_next_x(status, gmx_fio_getfp(status->fio), fr); break;
             case efGRO: bRet = gro_next_x_or_v(gmx_fio_getfp(status->fio), fr); break;
             default:
@@ -1022,6 +1042,10 @@ bool read_first_frame(const gmx_output_env_t*      oenv,
         /* Special treatment for TNG files */
         gmx_tng_open(fn, 'r', &(*status)->tng);
     }
+    else if (efH5MD == ftp)
+    {
+        (*status)->h5mdIo = new GmxH5mdIo(fn, 'r');
+    }
     else
     {
         fio = (*status)->fio = gmx_fio_open(fn, "r");
@@ -1093,6 +1117,9 @@ bool read_first_frame(const gmx_output_env_t*      oenv,
                 printcount(*status, oenv, fr->time, FALSE);
             }
             bFirst = FALSE;
+            break;
+        case efH5MD:
+            printf("H5MD read first frame not implemented yet. %s: %d\n", __FILE__, __LINE__);
             break;
         case efPDB:
             pdb_first_x(*status, gmx_fio_getfp(fio), fr);

@@ -106,7 +106,7 @@ static const t_deffile deffile[efNR] = {
       trcompressed },
     { eftXDR, ".xtc", "traj", nullptr, "Compressed trajectory (portable xdr format): xtc" },
     { eftTNG, ".tng", "traj", nullptr, "Trajectory file (tng format)" },
-    { eftH5MD, ".h5md", "traj", nullptr, "Trajectory file (HDF5MD format)" },
+    { eftH5MD, ".h5md", "traj", nullptr, "Trajectory file (HDF5/H5MD format)" },
     { eftXDR, ".edr", "ener", nullptr, "Energy file" },
     { eftGEN, ".???", "conf", "-c", "Structure file", NSTXS, stxs },
     { eftGEN, ".???", "out", "-o", "Structure file", NSTOS, stos },

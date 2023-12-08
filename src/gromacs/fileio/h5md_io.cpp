@@ -50,6 +50,7 @@
 
 #include <sys/_types/_int64_t.h>
 
+#include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/baseversion.h"
@@ -258,7 +259,7 @@ void GmxH5mdIo::initParticleDataBlocksFromFile()
 void GmxH5mdIo::setUpParticlesDataBlocks(int     writeCoordinatesSteps,
                                          int     writeVelocitiesSteps,
                                          int     writeForcesSteps,
-                                         int     numParticles,
+                                         int64_t numParticles,
                                          PbcType pbcType,
                                          double  compressionError)
 {
@@ -267,10 +268,9 @@ void GmxH5mdIo::setUpParticlesDataBlocks(int     writeCoordinatesSteps,
 #else
     const hid_t datatype = H5Tcopy(H5T_NATIVE_FLOAT);
 #endif
-    hid_t systemGroup;
 
-    std::string name = "particles/" + systemOutputName_;
-    systemGroup      = openOrCreateGroup(file_, name.c_str());
+    std::string name        = "particles/" + systemOutputName_;
+    hid_t       systemGroup = openOrCreateGroup(file_, name.c_str());
 
     hsize_t              numFramesPerChunk    = 1;
     CompressionAlgorithm compressionAlgorithm = CompressionAlgorithm::LosslessWithShuffle;
@@ -278,6 +278,7 @@ void GmxH5mdIo::setUpParticlesDataBlocks(int     writeCoordinatesSteps,
     {
         if (compressionError != 0)
         {
+            /* Use no more than 20 frames per chunk (compression unit). Use fewer frames per chunk if there are many atoms. */
             numFramesPerChunk    = std::min(20, int(std::ceil(1e6 / numParticles)));
             compressionAlgorithm = CompressionAlgorithm::LossySz3;
 
@@ -286,7 +287,6 @@ void GmxH5mdIo::setUpParticlesDataBlocks(int     writeCoordinatesSteps,
         }
 
 
-        /* Use no more than 20 frames per chunk (compression unit). Use fewer frames per chunk if there are many atoms. */
         hid_t boxGroup = openOrCreateGroup(systemGroup, "box");
         setBoxGroupAttributes(boxGroup, pbcType);
         GmxH5mdTimeDataBlock box(boxGroup,
@@ -313,6 +313,8 @@ void GmxH5mdIo::setUpParticlesDataBlocks(int     writeCoordinatesSteps,
                                       compressionError);
         dataBlocks_.emplace_back(position);
     }
+    numFramesPerChunk    = 1;
+    compressionAlgorithm = CompressionAlgorithm::LosslessWithShuffle;
     if (writeForcesSteps > 0)
     {
         GmxH5mdTimeDataBlock force(systemGroup,
@@ -496,29 +498,27 @@ void GmxH5mdIo::setupMolecularSystem(const gmx_mtop_t&        topology,
             systemOutputName_ = *topology.groups.groupNames[nameIndex];
         }
     }
-    if (setupSeparateOutputGroup)
-    {
-
-        std::string name = "particles/" + systemOutputName_;
-        openOrCreateGroup(file_, name.c_str());
-    }
-    else
+    if (!setupSeparateOutputGroup)
     {
         systemOutputName_ = "system";
     }
+    std::string name = "particles/" + systemOutputName_;
+    openOrCreateGroup(file_, name.c_str());
 
 #else
     gmx_file("GROMACS was compiled without HDF5 support, cannot handle this file type");
 #endif
 }
 
-void GmxH5mdIo::writeFrame(int64_t     step,
-                           real        time,
-                           real        lambda,
-                           const rvec* box,
-                           const rvec* x,
-                           const rvec* v,
-                           const rvec* f)
+void GmxH5mdIo::writeFrame(int64_t      step,
+                           real         time,
+                           real         lambda,
+                           const rvec*  box,
+                           const int    numParticles,
+                           const rvec*  x,
+                           const rvec*  v,
+                           const rvec*  f,
+                           const double compressionError)
 {
 #if GMX_USE_HDF5
     if (file_ < 0)
@@ -526,13 +526,48 @@ void GmxH5mdIo::writeFrame(int64_t     step,
         gmx_file("No file open for writing");
     }
 
+#    if GMX_DOUBLE
+    const hid_t datatype = H5Tcopy(H5T_NATIVE_DOUBLE);
+#    else
+    const hid_t datatype      = H5Tcopy(H5T_NATIVE_FLOAT);
+#    endif
+
+    std::string name        = "particles/" + systemOutputName_;
+    hid_t       systemGroup = openOrCreateGroup(file_, name.c_str());
+
+    CompressionAlgorithm compressionAlgorithm = CompressionAlgorithm::LosslessWithShuffle;
+    hsize_t              numFramesPerChunk    = 1;
+    if (compressionError != 0)
+    {
+        /* Use no more than 20 frames per chunk (compression unit). Use fewer frames per chunk if there are many atoms. */
+        numFramesPerChunk    = std::min(20, int(std::ceil(1e6 / numParticles)));
+        compressionAlgorithm = CompressionAlgorithm::LossySz3;
+
+        /* Register the SZ3 filter. This is not necessary when creating a dataset with the filter, but must be done to append to an existing file (e.g. when restarting from checkpoint).*/
+        registerSz3FilterImplicitly();
+    }
     if (x != nullptr)
     {
         std::string wantedName = "/particles/" + systemOutputName_ + "/position";
         auto foundDataBlock = std::find(dataBlocks_.begin(), dataBlocks_.end(), wantedName.c_str());
         if (foundDataBlock == dataBlocks_.end())
         {
-            gmx_file("There should be a position datablock at this point");
+            GmxH5mdTimeDataBlock position(systemGroup,
+                                          "position",
+                                          "nm",
+                                          -1,
+                                          numFramesPerChunk,
+                                          numParticles,
+                                          DIM,
+                                          datatype,
+                                          compressionAlgorithm,
+                                          compressionError);
+            dataBlocks_.emplace_back(position);
+            foundDataBlock = std::find(dataBlocks_.begin(), dataBlocks_.end(), wantedName.c_str());
+            if (foundDataBlock == dataBlocks_.end())
+            {
+                gmx_file("Error creating position data block when writing frame.");
+            }
         }
         foundDataBlock->writeFrame(x, step, time);
 
@@ -542,7 +577,24 @@ void GmxH5mdIo::writeFrame(int64_t     step,
             foundDataBlock = std::find(dataBlocks_.begin(), dataBlocks_.end(), wantedName.c_str());
             if (foundDataBlock == dataBlocks_.end())
             {
-                gmx_file("There should be a box datablock at this point");
+                hid_t boxGroup = openOrCreateGroup(systemGroup, "box");
+                setBoxGroupAttributes(boxGroup, PbcType::Xyz);
+                GmxH5mdTimeDataBlock box(boxGroup,
+                                         "edges",
+                                         "nm",
+                                         -1,
+                                         numFramesPerChunk,
+                                         DIM,
+                                         DIM,
+                                         datatype,
+                                         CompressionAlgorithm::LosslessNoShuffle, // Never compress box output
+                                         0);
+                dataBlocks_.emplace_back(box);
+                foundDataBlock = std::find(dataBlocks_.begin(), dataBlocks_.end(), wantedName.c_str());
+                if (foundDataBlock == dataBlocks_.end())
+                {
+                    gmx_file("Error creating box data block when writing frame.");
+                }
             }
             foundDataBlock->writeFrame(box, step, time);
         }
@@ -553,7 +605,22 @@ void GmxH5mdIo::writeFrame(int64_t     step,
         auto foundDataBlock = std::find(dataBlocks_.begin(), dataBlocks_.end(), wantedName.c_str());
         if (foundDataBlock == dataBlocks_.end())
         {
-            gmx_file("There should be a velocity datablock at this point");
+            GmxH5mdTimeDataBlock velocity(systemGroup,
+                                          "velocity",
+                                          "nm ps-1",
+                                          -1,
+                                          numFramesPerChunk,
+                                          numParticles,
+                                          DIM,
+                                          datatype,
+                                          compressionAlgorithm,
+                                          compressionError);
+            dataBlocks_.emplace_back(velocity);
+            foundDataBlock = std::find(dataBlocks_.begin(), dataBlocks_.end(), wantedName.c_str());
+            if (foundDataBlock == dataBlocks_.end())
+            {
+                gmx_file("Error creating velocity data block when writing frame.");
+            }
         }
         foundDataBlock->writeFrame(v, step, time);
     }
@@ -563,7 +630,22 @@ void GmxH5mdIo::writeFrame(int64_t     step,
         auto foundDataBlock = std::find(dataBlocks_.begin(), dataBlocks_.end(), wantedName.c_str());
         if (foundDataBlock == dataBlocks_.end())
         {
-            gmx_file("There should be a force datablock at this point");
+            GmxH5mdTimeDataBlock force(systemGroup,
+                                       "force",
+                                       "kJ mol-1 nm-1",
+                                       -1,
+                                       numFramesPerChunk,
+                                       numParticles,
+                                       DIM,
+                                       datatype,
+                                       compressionAlgorithm,
+                                       compressionError);
+            dataBlocks_.emplace_back(force);
+            foundDataBlock = std::find(dataBlocks_.begin(), dataBlocks_.end(), wantedName.c_str());
+            if (foundDataBlock == dataBlocks_.end())
+            {
+                gmx_file("Error creating force data block when writing frame.");
+            }
         }
         foundDataBlock->writeFrame(f, step, time);
     }

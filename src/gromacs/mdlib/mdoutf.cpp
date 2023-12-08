@@ -728,9 +728,11 @@ void mdoutf_write_to_trajectory_files(FILE*                           fplog,
                                        t,
                                        state_local->lambda[FreeEnergyPerturbationCouplingType::Fep],
                                        state_local->box,
+                                       natoms,
                                        x,
                                        v,
-                                       f);
+                                       f,
+                                       0);
             }
         }
         if (mdof_flags & MDOF_X_COMPRESSED)
@@ -780,13 +782,16 @@ void mdoutf_write_to_trajectory_files(FILE*                           fplog,
                            nullptr);
             if (of->h5mdIoLowPrec)
             {
-                of->h5mdIoLowPrec->writeFrame(step,
-                                              t,
-                                              state_local->lambda[FreeEnergyPerturbationCouplingType::Fep],
-                                              state_local->box,
-                                              xxtc,
-                                              nullptr,
-                                              nullptr);
+                of->h5mdIoLowPrec->writeFrame(
+                        step,
+                        t,
+                        state_local->lambda[FreeEnergyPerturbationCouplingType::Fep],
+                        state_local->box,
+                        of->natoms_x_compressed,
+                        xxtc,
+                        nullptr,
+                        nullptr,
+                        of->x_compression_precision > 0 ? of->x_compression_precision : 0);
             }
             if (of->natoms_x_compressed != of->natoms_global)
             {
