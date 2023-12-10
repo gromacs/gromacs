@@ -594,7 +594,6 @@ int write_trxframe(t_trxstatus* status, t_trxframe* fr, gmx_conect gc)
 
     if (status->h5mdIo)
     {
-        printf("H5MD file\n");
         status->h5mdIo->writeFrame(fr->step,
                                    fr->time,
                                    fr->lambda,

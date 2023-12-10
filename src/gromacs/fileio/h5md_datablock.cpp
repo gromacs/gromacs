@@ -77,7 +77,7 @@ GmxH5mdTimeDataBlock::GmxH5mdTimeDataBlock(hid_t                container,
     H5Iget_name(group_, tmpFullName, c_maxFullNameLength);
     fullName_          = tmpFullName;
     readingFrameIndex_ = 0;
-    printf("In constructor\n");
+    writingFrameIndex_ = 0;
 
     static constexpr char c_valueName[] = "value";
     static constexpr char c_stepName[]  = "step";
@@ -91,8 +91,6 @@ GmxH5mdTimeDataBlock::GmxH5mdTimeDataBlock(hid_t                container,
         timeDataSet_ = H5Dopen(group_, c_timeName, H5P_DEFAULT);
 
         updateUnitsFromFile();
-
-        printf("Dataset %s, units: %s and %s\n", name.c_str(), mainUnit_.c_str(), timeUnit_.c_str());
     }
     else
     {
@@ -270,7 +268,7 @@ void GmxH5mdTimeDataBlock::updateNumWrittenFrames()
             gmx_file("Error reading step data set when determining the number of frames.");
         }
     }
-    writingFrameIndex_ = numValidFrames + 1;
+    writingFrameIndex_ = numValidFrames;
 }
 
 size_t GmxH5mdTimeDataBlock::getNumParticles() const

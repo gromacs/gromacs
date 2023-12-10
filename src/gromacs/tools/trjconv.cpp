@@ -1009,6 +1009,23 @@ int gmx_trjconv(int argc, char* argv[])
                 fprintf(stderr, "Using output precision of %g (nm)\n", 1 / prec);
             }
         }
+        else if (ftp == efH5MD)
+        {
+            if (bSetXtcPrec)
+            {
+                fprintf(stderr, "\nSetting output precision to %g (nm)\n", 1 / prec);
+            }
+            else if (fr.bPrec)
+            {
+                prec = fr.prec;
+            }
+            else
+            {
+                fprintf(stderr, "\nUsing lossless compression\n");
+                fr.prec = 0;
+                prec = 0;
+            }
+        }
 
         if (bHaveFirstFrame)
         {
@@ -1080,10 +1097,8 @@ int gmx_trjconv(int argc, char* argv[])
                                                               grpnm);
                     break;
                 case efH5MD:
-                    printf("Setup writing. prec: %f\n", prec);
                     trxout = trjtools_gmx_prepare_h5md_writing(
                             out_file, filemode[0], nullptr, gmx::arrayRefFromArray(index, nout), grpnm);
-                    printf("After Setup writing\n");
                     break;
                 case efXTC:
                 case efTRR:
@@ -1444,9 +1459,9 @@ int gmx_trjconv(int argc, char* argv[])
                         frout.bV     = (frout.bV && bVels);
                         frout.bF     = (frout.bF && bForce);
                         frout.natoms = nout;
-                        if (bNeedPrec && (bSetXtcPrec || !fr.bPrec))
+                        if ((bNeedPrec || ftp == efH5MD) && (bSetXtcPrec || !fr.bPrec))
                         {
-                            frout.bPrec = TRUE;
+                            frout.bPrec = true;
                             frout.prec  = prec;
                         }
                         if (bCopy)
@@ -1520,7 +1535,6 @@ int gmx_trjconv(int argc, char* argv[])
                                     }
                                     if (ftp == efH5MD)
                                     {
-                                        printf("Preparing output\n");
                                         trxout = trjtools_gmx_prepare_h5md_writing(
                                                 out_file2,
                                                 filemode[0],
@@ -1533,9 +1547,7 @@ int gmx_trjconv(int argc, char* argv[])
                                         trxout = open_trx(out_file2, filemode);
                                     }
                                 }
-                                printf("Writing frame\n");
                                 write_trxframe(trxout, &frout, gc);
-                                printf("Written frame\n");
                                 break;
                             case efGRO:
                             case efG96:
