@@ -230,7 +230,7 @@ public:
     {
     }
 
-    /*! \brief Smallest value that can be generated in normal distrubiton.
+    /*! \brief Smallest value that can be generated in normal distributon.
      *
      * \note The smallest value is not -infinity with a table, but it
      *       depends on the table resolution. With 14 bits, this is roughly

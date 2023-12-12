@@ -44,7 +44,7 @@
 
 #include "gromacs/utility/bitmask.h"
 
-//! Implemenation of BITMASK_CLASSNAME
+//! Implementation of BITMASK_CLASSNAME
 #define BITMASK_CLASSNAME_(S) BitmaskTest##S
 //! Returns name of Bitmask test fixture class
 #define BITMASK_CLASSNAME(S) BITMASK_CLASSNAME_(S)

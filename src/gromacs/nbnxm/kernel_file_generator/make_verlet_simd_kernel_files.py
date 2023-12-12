@@ -128,15 +128,15 @@ VdwTreatmentDict["VdwLJEwCombGeom"] = {
 # This is OK as an unordered dict
 EnergiesComputationDict = {
     "F": {
-        "function type": "NbnxmKernelFunc",
+        "function type": "void",
         "param": "EnergyOutput::None",
     },
     "VF": {
-        "function type": "NbnxmKernelFunc",
+        "function type": "void",
         "param": "EnergyOutput::System",
     },
     "VgrpF": {
-        "function type": "NbnxmKernelFunc",
+        "function type": "void",
         "param": "EnergyOutput::GroupPairs",
     },
 }
@@ -189,9 +189,10 @@ for type in VerletKernelTypeDict:
                 )
 
                 # Declare the kernel function
-                KernelDeclarations += "extern template {1}\n        {0};\n".format(
+                KernelDeclarations += "extern template {1}\n        {0}(\n".format(
                     KernelName, EnergiesComputationDict[ener]["function type"]
                 )
+                KernelDeclarations += "        const NbnxnPairlistCpu*    nbl,\n        const nbnxn_atomdata_t*    nbat,\n        const interaction_const_t* ic,\n        const rvec*                shift_vec,\n        nbnxn_atomdata_output_t*   out);\n\n"
 
                 # Write the file with the kernel definition
                 with open(

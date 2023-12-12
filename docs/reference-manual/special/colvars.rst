@@ -7,7 +7,7 @@ The Colvars module enables on-the-fly computation of low-dimension quantities (c
 variables or colvars) in simulations, the application of external forces (biases) to these
 colvars for restraining or enhanced sampling purposes, and the computation of free energy
 profiles and other properties.
-The Colvars library and module are described in ref. \ :ref:`192 <refFiorin13>`
+The Colvars library and module are described in ref. \ :ref:`195 <refFiorin13>`
 as well as in other references that are reported in the log file when the corresponding features
 are used.
 

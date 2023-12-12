@@ -147,7 +147,7 @@ public:
     /*! \brief Return true if two allocators are identical
      *
      * This is a member function of the left-hand-side allocator.
-     * Always true for stateless polcies. Has to be defined in the policy for stateful policies.
+     * Always true for stateless policies. Has to be defined in the policy for stateful policies.
      * FUTURE: Can be removed with C++17 (is_always_equal)
      *
      * \todo Use std::is_empty_v when CUDA 11 is a requirement.

@@ -19,7 +19,7 @@ a restart is less continuous than a normal MD step.
 
 Such a checkpoint file is also written periodically by :ref:`gmx
 mdrun` during the run. The interval is given by the ``-cpt`` flag to
-:ref:`gmx mdrun`. When :ref:`gmx mdrun` attemps to write each
+:ref:`gmx mdrun`. When :ref:`gmx mdrun` attempts to write each
 successive checkpoint file, it first renames the old file with the
 suffix ``_prev``, so that even if something goes wrong while writing
 the new checkpoint file, only recent progress can be lost.
@@ -183,7 +183,7 @@ The following factors affect the reproducibility of a simulation, and thus its o
   arithmetic means the result of a reduction depends on the order
   actually chosen
 * On GPUs, the reduction of e.g. non-bonded forces has a non-deterministic
-  summation order, so any fast implementation is non-reprodudible by
+  summation order, so any fast implementation is non-reproducible by
   design.
 
 The important question is whether it is a problem if simulations are

@@ -112,7 +112,7 @@ public:
             size_t iy = item_ct1.get_local_id(1) + item_ct1.get_group(1) * item_ct1.get_local_range(1);
             size_t ix = item_ct1.get_local_id(0) + item_ct1.get_group(0) * item_ct1.get_local_range(0);
 
-            // we might get iz greather than pmeSize.z when pmeSize.z is not multiple of
+            // we might get iz greater than pmeSize.z when pmeSize.z is not multiple of
             // threadsAlongZDim(see below), same for iy when it's not multiple of threadsAlongYDim
             if (iz >= pmeSize.z() || iy >= myGridY)
             {
@@ -245,7 +245,7 @@ public:
             size_t iy = item_ct1.get_local_id(1) + item_ct1.get_group(1) * item_ct1.get_local_range(1);
             size_t ix = item_ct1.get_local_id(0) + item_ct1.get_group(0) * item_ct1.get_local_range(0);
 
-            // we might get iz greather than pmeSize.z when pmeSize.z is not multiple of
+            // we might get iz greater than pmeSize.z when pmeSize.z is not multiple of
             // threadsAlongZDim(see below), same for iy when it's not multiple of threadsAlongYDim
             if (iz >= pmeSize.z() || iy >= myGridY)
             {
@@ -378,7 +378,7 @@ public:
             size_t iy = item_ct1.get_local_id(1) + item_ct1.get_group(1) * item_ct1.get_local_range(1);
             size_t ix = item_ct1.get_local_id(0) + item_ct1.get_group(0) * item_ct1.get_local_range(0);
 
-            // we might get iz greather than pmeSize.z when pmeSize.z is not multiple of
+            // we might get iz greater than pmeSize.z when pmeSize.z is not multiple of
             // threadsAlongZDim(see below), same for iy when it's not multiple of threadsAlongYDim
             if (iz >= pmeSize.z() || iy >= myGridY)
             {

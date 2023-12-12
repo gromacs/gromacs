@@ -90,6 +90,9 @@ public:
     //! Sums data of type long over the main ranks of all simulations sharing bias \p biasIndex
     void sumOverSharingMainRanks(ArrayRef<long> data, int biasIndex) const;
 
+    //! Sums data of type double over the main ranks of all simulations sharing bias \p biasIndex
+    void sumOverSharingMainRanks(ArrayRef<double> data, int biasIndex) const;
+
     /*! \brief Sums data of type int over all simulations sharing bias \p biasIndex
      *
      * The summing is performed over the main ranks of the simulations sharing bias \p biasIndex

@@ -317,31 +317,50 @@ std::string getMultiGpuFftDescriptionString()
     }
 }
 
+#if GMX_LIB_MPI
+//! Return a one-line string describing the MPI library
+std::string cleanMpiLibraryVersionString()
+{
+    std::string returnString(gmx::mpiLibraryVersionString());
+    // Replace embedded newlines or tabs with spaces
+    size_t currentPosition = 0;
+    size_t newLinePosition = returnString.find_first_of("\n\t", currentPosition);
+    while (newLinePosition != std::string::npos)
+    {
+        returnString[newLinePosition] = ' ';
+        currentPosition               = newLinePosition;
+        newLinePosition               = returnString.find_first_of("\n\t", currentPosition);
+    }
+    return returnString;
+}
+#endif
+
 void gmx_print_version_info(gmx::TextWriter* writer)
 {
-    writer->writeLine(formatString("GROMACS version:    %s", gmx_version()));
+    writer->writeLine(formatString("GROMACS version:     %s", gmx_version()));
     const char* const git_hash = gmx_version_git_full_hash();
     if (git_hash[0] != '\0')
     {
-        writer->writeLine(formatString("GIT SHA1 hash:      %s", git_hash));
+        writer->writeLine(formatString("GIT SHA1 hash:       %s", git_hash));
     }
     const char* const base_hash = gmx_version_git_central_base_hash();
     if (base_hash[0] != '\0')
     {
-        writer->writeLine(formatString("Branched from:      %s", base_hash));
+        writer->writeLine(formatString("Branched from:       %s", base_hash));
     }
 
 
 #if GMX_DOUBLE
-    writer->writeLine("Precision:          double");
+    writer->writeLine("Precision:           double");
 #else
-    writer->writeLine("Precision:          mixed");
+    writer->writeLine("Precision:           mixed");
 #endif
-    writer->writeLine(formatString("Memory model:       %u bit", static_cast<unsigned>(8 * sizeof(void*))));
+    writer->writeLine(
+            formatString("Memory model:        %u bit", static_cast<unsigned>(8 * sizeof(void*))));
 
 #if GMX_THREAD_MPI
-    writer->writeLine("MPI library:        thread_mpi");
-#elif GMX_MPI
+    writer->writeLine("MPI library:         thread_mpi");
+#elif GMX_LIB_MPI
     std::vector<std::string> gpuAwareBackendsSupported;
     if (gmx::checkMpiCudaAwareSupport() == gmx::GpuAwareMpiStatus::Supported)
     {
@@ -357,119 +376,120 @@ void gmx_print_version_info(gmx::TextWriter* writer)
     }
     if (!gpuAwareBackendsSupported.empty())
     {
-        writer->writeLine(formatString("MPI library:        MPI (GPU-aware: %s)",
+        writer->writeLine(formatString("MPI library:         MPI (GPU-aware: %s)",
                                        gmx::joinStrings(gpuAwareBackendsSupported, ", ").c_str()));
     }
     else
     {
-        writer->writeLine("MPI library:        MPI");
+        writer->writeLine("MPI library:         MPI");
     }
+    writer->writeLine(formatString("MPI library version: %s", cleanMpiLibraryVersionString().c_str()));
 #else
-    writer->writeLine("MPI library:        none");
+    writer->writeLine("MPI library:         none");
 #endif
 #if GMX_OPENMP
-    writer->writeLine(formatString("OpenMP support:     enabled (GMX_OPENMP_MAX_THREADS = %d)",
+    writer->writeLine(formatString("OpenMP support:      enabled (GMX_OPENMP_MAX_THREADS = %d)",
                                    GMX_OPENMP_MAX_THREADS));
 #else
-    writer->writeLine("OpenMP support:     disabled");
+    writer->writeLine("OpenMP support:      disabled");
 #endif
-    writer->writeLine(formatString("GPU support:        %s", getGpuImplementationString()));
+    writer->writeLine(formatString("GPU support:         %s", getGpuImplementationString()));
 #if GMX_GPU
     std::string infoStr = (GMX_GPU_NB_DISABLE_CLUSTER_PAIR_SPLIT) ? " (cluster-pair splitting off)" : "";
-    writer->writeLine(formatString("NBNxM GPU setup:    super-cluster %dx%dx%d / cluster %d%s",
+    writer->writeLine(formatString("NBNxM GPU setup:     super-cluster %dx%dx%d / cluster %d%s",
                                    GMX_GPU_NB_NUM_CLUSTER_PER_CELL_X,
                                    GMX_GPU_NB_NUM_CLUSTER_PER_CELL_Y,
                                    GMX_GPU_NB_NUM_CLUSTER_PER_CELL_Z,
                                    GMX_GPU_NB_CLUSTER_SIZE,
                                    infoStr.c_str()));
 #endif
-    writer->writeLine(formatString("SIMD instructions:  %s", GMX_SIMD_STRING));
-    writer->writeLine(formatString("CPU FFT library:    %s", getCpuFftDescriptionString().c_str()));
-    writer->writeLine(formatString("GPU FFT library:    %s", getGpuFftDescriptionString().c_str()));
-    writer->writeLine(formatString("Multi-GPU FFT:      %s", getMultiGpuFftDescriptionString().c_str()));
+    writer->writeLine(formatString("SIMD instructions:   %s", GMX_SIMD_STRING));
+    writer->writeLine(formatString("CPU FFT library:     %s", getCpuFftDescriptionString().c_str()));
+    writer->writeLine(formatString("GPU FFT library:     %s", getGpuFftDescriptionString().c_str()));
+    writer->writeLine(formatString("Multi-GPU FFT:       %s", getMultiGpuFftDescriptionString().c_str()));
 #if GMX_TARGET_X86
-    writer->writeLine(formatString("RDTSCP usage:       %s", GMX_USE_RDTSCP ? "enabled" : "disabled"));
+    writer->writeLine(formatString("RDTSCP usage:        %s", GMX_USE_RDTSCP ? "enabled" : "disabled"));
 #endif
 #if GMX_USE_TNG
-    writer->writeLine("TNG support:        enabled");
+    writer->writeLine("TNG support:         enabled");
 #else
-    writer->writeLine("TNG support:        disabled");
+    writer->writeLine("TNG support:         disabled");
 #endif
 #if GMX_USE_HWLOC
-    writer->writeLine(formatString("Hwloc support:      hwloc-%s", HWLOC_VERSION));
+    writer->writeLine(formatString("Hwloc support:       hwloc-%s", HWLOC_VERSION));
 #else
-    writer->writeLine("Hwloc support:      disabled");
+    writer->writeLine("Hwloc support:       disabled");
 #endif
 #if HAVE_EXTRAE
     unsigned major, minor, revision;
     Extrae_get_version(&major, &minor, &revision);
     writer->writeLine(formatString(
-            "Tracing support:    enabled. Using Extrae-%d.%d.%d", major, minor, revision));
+            "Tracing support:     enabled. Using Extrae-%d.%d.%d", major, minor, revision));
 #else
-    writer->writeLine("Tracing support:    disabled");
+    writer->writeLine("Tracing support:     disabled");
 #endif
 
 #if GMX_USE_NVTX
-    writer->writeLine("Instrumention API:  NVTX");
+    writer->writeLine("Instrumention API:   NVTX");
 #elif GMX_USE_ROCTX
-    writer->writeLine("Instrumention API:  ROCTX");
+    writer->writeLine("Instrumention API:   ROCTX");
 #elif GMX_USE_ITT
-    writer->writeLine("Instrumention API:  ITT");
+    writer->writeLine("Instrumention API:   ITT");
 #endif
 
     /* TODO: The below strings can be quite long, so it would be nice to wrap
      * them. Can wait for later, as the main branch has ready code to do all
      * that. */
-    writer->writeLine(formatString("C compiler:         %s", BUILD_C_COMPILER));
+    writer->writeLine(formatString("C compiler:          %s", BUILD_C_COMPILER));
     writer->writeLine(formatString(
-            "C compiler flags:   %s %s", BUILD_CFLAGS, CMAKE_BUILD_CONFIGURATION_C_FLAGS));
-    writer->writeLine(formatString("C++ compiler:       %s", BUILD_CXX_COMPILER));
+            "C compiler flags:    %s %s", BUILD_CFLAGS, CMAKE_BUILD_CONFIGURATION_C_FLAGS));
+    writer->writeLine(formatString("C++ compiler:        %s", BUILD_CXX_COMPILER));
     writer->writeLine(formatString(
-            "C++ compiler flags: %s %s", BUILD_CXXFLAGS, CMAKE_BUILD_CONFIGURATION_CXX_FLAGS));
+            "C++ compiler flags:  %s %s", BUILD_CXXFLAGS, CMAKE_BUILD_CONFIGURATION_CXX_FLAGS));
 
     // Describe the BLAS and LAPACK libraries. We generally don't know
     // much about what external library was detected, but we do in the
     // case of MKL so then it is reported.
     if (HAVE_LIBMKL && std::strstr(GMX_DESCRIBE_BLAS, "MKL") != nullptr)
     {
-        writer->writeLine(formatString("BLAS library:       %s", describeMkl().c_str()));
+        writer->writeLine(formatString("BLAS library:        %s", describeMkl().c_str()));
     }
     else
     {
-        writer->writeLine(formatString("BLAS library:       %s", GMX_DESCRIBE_BLAS));
+        writer->writeLine(formatString("BLAS library:        %s", GMX_DESCRIBE_BLAS));
     }
     if (HAVE_LIBMKL && std::strstr(GMX_DESCRIBE_LAPACK, "MKL") != nullptr)
     {
-        writer->writeLine(formatString("LAPACK library:     %s", describeMkl().c_str()));
+        writer->writeLine(formatString("LAPACK library:      %s", describeMkl().c_str()));
     }
     else
     {
-        writer->writeLine(formatString("LAPACK library:     %s", GMX_DESCRIBE_LAPACK));
+        writer->writeLine(formatString("LAPACK library:      %s", GMX_DESCRIBE_LAPACK));
     }
 
 #if GMX_GPU_OPENCL
-    writer->writeLine(formatString("OpenCL include dir: %s", OPENCL_INCLUDE_DIR));
-    writer->writeLine(formatString("OpenCL library:     %s", OPENCL_LIBRARY));
-    writer->writeLine(formatString("OpenCL version:     %s", OPENCL_VERSION_STRING));
+    writer->writeLine(formatString("OpenCL include dir:  %s", OPENCL_INCLUDE_DIR));
+    writer->writeLine(formatString("OpenCL library:      %s", OPENCL_LIBRARY));
+    writer->writeLine(formatString("OpenCL version:      %s", OPENCL_VERSION_STRING));
 #endif
 #if GMX_GPU_CUDA
-    writer->writeLine(formatString("CUDA compiler:      %s", CUDA_COMPILER_INFO));
+    writer->writeLine(formatString("CUDA compiler:       %s", CUDA_COMPILER_INFO));
     writer->writeLine(formatString(
             "CUDA compiler flags:%s %s", CUDA_COMPILER_FLAGS, CMAKE_BUILD_CONFIGURATION_CXX_FLAGS));
-    writer->writeLine("CUDA driver:        " + gmx::getCudaDriverVersionString());
-    writer->writeLine("CUDA runtime:       " + gmx::getCudaRuntimeVersionString());
+    writer->writeLine("CUDA driver:         " + gmx::getCudaDriverVersionString());
+    writer->writeLine("CUDA runtime:        " + gmx::getCudaRuntimeVersionString());
 #endif
 #if GMX_SYCL_DPCPP
-    writer->writeLine(formatString("SYCL compiler flags:%s", SYCL_DPCPP_COMPILER_FLAGS));
-    writer->writeLine(formatString("SYCL linker flags:  %s", SYCL_DPCPP_LINKER_FLAGS));
-    writer->writeLine("SYCL DPC++ version: " + gmx::getSyclCompilerVersion());
+    writer->writeLine(formatString("SYCL compiler flags: %s", SYCL_DPCPP_COMPILER_FLAGS));
+    writer->writeLine(formatString("SYCL linker flags:   %s", SYCL_DPCPP_LINKER_FLAGS));
+    writer->writeLine("SYCL DPC++ version:  " + gmx::getSyclCompilerVersion());
 #endif
 #if GMX_SYCL_HIPSYCL
-    writer->writeLine(formatString("hipSYCL launcher:   %s", SYCL_HIPSYCL_COMPILER_LAUNCHER));
-    writer->writeLine(formatString("hipSYCL flags:      %s", SYCL_HIPSYCL_COMPILER_FLAGS));
-    writer->writeLine(formatString("hipSYCL GPU flags:  %s", SYCL_HIPSYCL_DEVICE_COMPILER_FLAGS));
-    writer->writeLine(formatString("hipSYCL targets:    %s", SYCL_HIPSYCL_TARGETS));
-    writer->writeLine("hipSYCL version:    " + gmx::getSyclCompilerVersion());
+    writer->writeLine(formatString("hipSYCL launcher:    %s", SYCL_HIPSYCL_COMPILER_LAUNCHER));
+    writer->writeLine(formatString("hipSYCL flags:       %s", SYCL_HIPSYCL_COMPILER_FLAGS));
+    writer->writeLine(formatString("hipSYCL GPU flags:   %s", SYCL_HIPSYCL_DEVICE_COMPILER_FLAGS));
+    writer->writeLine(formatString("hipSYCL targets:     %s", SYCL_HIPSYCL_TARGETS));
+    writer->writeLine("hipSYCL version:     " + gmx::getSyclCompilerVersion());
 #endif
 }
 

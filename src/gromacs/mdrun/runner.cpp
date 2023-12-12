@@ -1956,7 +1956,7 @@ int Mdrunner::mdrunner()
         /* This is a PME only node */
 
         GMX_ASSERT(globalState == nullptr,
-                   "We don't need the state on a PME only rank and expect it to be unitialized");
+                   "We don't need the state on a PME only rank and expect it to be uninitialized");
 
         ewaldcoeff_q  = calc_ewaldcoeff_q(inputrec->rcoulomb, inputrec->ewald_rtol);
         ewaldcoeff_lj = calc_ewaldcoeff_lj(inputrec->rvdw, inputrec->ewald_rtol_lj);

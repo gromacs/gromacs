@@ -289,17 +289,16 @@ static inline double gmx_simdcall
 reduceIncr4ReturnSum(double* m, SimdDouble v0, SimdDouble v1, SimdDouble v2, SimdDouble v3)
 {
     assert(std::size_t(m) % 16 == 0);
-    svbool_t    pg = svptrue_b64();
-    svfloat64_t _m, _s;
-    double      sum[4];
+    svbool_t pg = svptrue_b64();
+    double   sum[4];
     sum[0] = svadda_f64(pg, 0.0, v0.simdInternal_);
     sum[1] = svadda_f64(pg, 0.0, v1.simdInternal_);
     sum[2] = svadda_f64(pg, 0.0, v2.simdInternal_);
     sum[3] = svadda_f64(pg, 0.0, v3.simdInternal_);
 #if GMX_SIMD_DOUBLE_WIDTH >= 4
-    pg = SVE_SIMD4_DOUBLE_MASK;
-    _m = svld1_f64(pg, m);
-    _s = svld1_f64(pg, sum);
+    pg             = SVE_SIMD4_DOUBLE_MASK;
+    svfloat64_t _m = svld1_f64(pg, m);
+    svfloat64_t _s = svld1_f64(pg, sum);
     svst1_f64(pg, m, svadd_f64_x(pg, _m, _s));
     return svadda_f64(pg, 0.0, _s);
 #else
@@ -373,9 +372,8 @@ static inline void gmx_simdcall decr3Hsimd(double* m, SimdDouble a0, SimdDouble 
 
 static inline double gmx_simdcall reduceIncr4ReturnSumHsimd(double* m, SimdDouble v0, SimdDouble v1)
 {
-    svbool_t    pg = SVE_SIMD_DOUBLE_HALF_MASK;
-    svfloat64_t _m, _s;
-    double      sum[4];
+    svbool_t pg = SVE_SIMD_DOUBLE_HALF_MASK;
+    double   sum[4];
     sum[0] = svadda_f64(pg, 0.0, v0.simdInternal_);
     sum[2] = svadda_f64(pg, 0.0, v1.simdInternal_);
     pg     = sveor_b_z(svptrue_b64(), pg, svptrue_b64());
@@ -383,9 +381,9 @@ static inline double gmx_simdcall reduceIncr4ReturnSumHsimd(double* m, SimdDoubl
     sum[3] = svadda_f64(pg, 0.0, v1.simdInternal_);
 
 #if GMX_SIMD_DOUBLE_WIDTH >= 4
-    pg = SVE_SIMD4_DOUBLE_MASK;
-    _m = svld1_f64(pg, m);
-    _s = svld1_f64(pg, sum);
+    pg             = SVE_SIMD4_DOUBLE_MASK;
+    svfloat64_t _m = svld1_f64(pg, m);
+    svfloat64_t _s = svld1_f64(pg, sum);
     svst1_f64(pg, m, svadd_f64_x(pg, _m, _s));
     return svadda_f64(pg, 0.0, _s);
 #else

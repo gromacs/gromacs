@@ -42,7 +42,7 @@ gmx_add_gtest_executable(gmxpreprocess-test
         gpp_bond_atomtype.cpp
         grompp_directives.cpp
         insert_molecules.cpp
-	massrepartitioning.cpp
+        massrepartitioning.cpp
         readir.cpp
         solvate.cpp
         topdirs.cpp

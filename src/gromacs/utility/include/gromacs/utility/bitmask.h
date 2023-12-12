@@ -204,7 +204,7 @@ inline static std::string to_hex_string(uint64_t m)
 {
     return gmx::formatString("%016" PRIx64, m);
 }
-//! Convert container of intergers to hex string
+//! Convert container of integers to hex string
 template<typename C>
 inline static std::string to_hex_string(C m)
 {

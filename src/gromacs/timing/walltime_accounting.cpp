@@ -69,11 +69,11 @@ struct gmx_walltime_accounting
     double start_time_stamp;
     /*! \brief Seconds since the epoch recorded at the reset of
      * counters for the simulation (or the start, if no reset has
-     * occured). */
+     * occurred). */
     double reset_time_stamp;
     /*! \brief Seconds since the epoch recorded at the reset of
      * counters for the simulation for this thread (or the start, if
-     * no reset has occured). */
+     * no reset has occurred). */
     double reset_time_stamp_per_thread;
     //! Total seconds elapsed over the simulation since counter reset
     double elapsed_time;

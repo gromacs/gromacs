@@ -371,7 +371,7 @@ interaction_const_t init_interaction_const(FILE* fp, const t_inputrec& ir, const
 
     if (ir.efep != FreeEnergyPerturbationType::No)
     {
-        GMX_RELEASE_ASSERT(ir.fepvals, "ir.fepvals should be set wth free-energy");
+        GMX_RELEASE_ASSERT(ir.fepvals, "ir.fepvals should be set with free-energy");
         interactionConst.softCoreParameters =
                 std::make_unique<interaction_const_t::SoftCoreParameters>(*ir.fepvals);
     }

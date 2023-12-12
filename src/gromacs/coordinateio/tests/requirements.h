@@ -140,7 +140,7 @@ public:
         assigner.finish();
     }
 
-    //! Storage of requirments.
+    //! Storage of requirements.
     OutputRequirementOptionDirector requirementsBuilder_;
     //! Options storage
     Options options_;

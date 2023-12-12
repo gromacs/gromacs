@@ -353,7 +353,7 @@ std::unique_ptr<nonbonded_verlet_t> createNbnxmGPU(const size_t               nu
     auto nbv = std::make_unique<nonbonded_verlet_t>(
             std::move(pairlistSets), std::move(pairSearch), std::move(atomData), kernelSetup, nbnxmGpu);
 
-    // Some paramters must be copied to NbnxmGpu to have a fully constructed nonbonded_verlet_t
+    // Some parameters must be copied to NbnxmGpu to have a fully constructed nonbonded_verlet_t
     Nbnxm::gpu_init_atomdata(nbv->gpuNbv(), &nbv->nbat());
 
     return nbv;

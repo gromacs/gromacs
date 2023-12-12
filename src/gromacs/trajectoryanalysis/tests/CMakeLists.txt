@@ -44,14 +44,14 @@ gmx_add_gtest_executable(trajectoryanalysis-test
         dssp.cpp
         extract_cluster.cpp
         freevolume.cpp
-	gyrate.cpp
+        gyrate.cpp
         hbond.cpp
         msd.cpp
         pairdist.cpp
         rdf.cpp
         sasa.cpp
         select.cpp
-	scattering.cpp
+        scattering.cpp
         surfacearea.cpp
         topologyinformation.cpp
         trajectory.cpp

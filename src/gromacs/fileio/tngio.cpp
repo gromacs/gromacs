@@ -1403,7 +1403,7 @@ void gmx_tng_setup_atom_subgroup(gmx_tng_trajectory_t gmx_tng, gmx::ArrayRef<con
 }
 
 /* TODO: If/when TNG acquires the ability to copy data blocks without
- * uncompressing them, then this implemenation should be reconsidered.
+ * uncompressing them, then this implementation should be reconsidered.
  * Ideally, gmx trjconv -f a.tng -o b.tng -b 10 -e 20 would be fast
  * and lose no information. */
 gmx_bool gmx_read_next_tng_frame(gmx_tng_trajectory_t gmx_tng_input,

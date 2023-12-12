@@ -64,7 +64,7 @@ namespace gmx
 std::unique_ptr<ISimulator> SimulatorBuilder::build(bool useModularSimulator)
 {
     // TODO: Reduce protocol complexity.
-    //     Investigate individual paramters. Identify default-constructable parameters and clarify
+    //     Investigate individual parameters. Identify default-constructable parameters and clarify
     //     usage requirements.
     if (!stopHandlerBuilder_)
     {

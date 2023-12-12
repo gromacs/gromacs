@@ -110,7 +110,7 @@ if (SYCL_FAST_MATH_CXX_FLAGS_RESULT)
     set(SYCL_TOOLCHAIN_CXX_FLAGS "${SYCL_TOOLCHAIN_CXX_FLAGS} ${SYCL_FAST_MATH_CXX_FLAGS}")
 endif()
 
-if("${SYCL_CXX_FLAGS_EXTRA}" MATCHES "fsycl-targets=.*(nvptx64|amdgcn)")
+if("${SYCL_CXX_FLAGS_EXTRA}" MATCHES "fsycl-targets=.*(nvptx64|amdgcn|amd_gpu|nvidia_gpu)")
     # When compiling for NVIDIA/AMD, Intel LLVM produces tons of harmless warnings, ignore them
     set(SYCL_WARNINGS_CXX_FLAGS "-Wno-linker-warnings -Wno-override-module -Wno-sycl-target")
     gmx_check_source_compiles_with_flags(
@@ -127,9 +127,9 @@ endif()
 
 if(GMX_GPU_FFT_VKFFT)
     include(gmxManageVkFft)
-    if ("${SYCL_CXX_FLAGS_EXTRA}" MATCHES "fsycl-targets=.*nvptx64")
+    if ("${SYCL_CXX_FLAGS_EXTRA}" MATCHES "fsycl-targets=.*(nvptx64|nvidia_gpu)")
         gmx_manage_vkfft("CUDA")
-    elseif ("${SYCL_CXX_FLAGS_EXTRA}" MATCHES "fsycl-targets=.*amdgcn")
+    elseif ("${SYCL_CXX_FLAGS_EXTRA}" MATCHES "fsycl-targets=.*(amdgcn|amd_gpu)")
         gmx_manage_vkfft("HIP")
     else()
         message(FATAL_ERROR "VkFFT can only be used with CUDA or HIP backend")

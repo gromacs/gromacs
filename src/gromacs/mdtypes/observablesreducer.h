@@ -306,7 +306,7 @@ public:
      *
      * When called, the status it returns can be used for checking the
      * internal expectations of the subscriber on whether reduction
-     * has already occured this step, or not. */
+     * has already occurred this step, or not. */
     using CallbackToRequireReduction = std::function<ObservablesReducerStatus(ReductionRequirement)>;
     /*! \brief Convenience type for the callback from the builder to
      * notify the subscribers of the callback they will own and later
@@ -463,7 +463,7 @@ public:
      * step that they expect.
      *
      * The ObservablesReducer keeps track of whether reduction has
-     * already occured this step, so that when modules request
+     * already occurred this step, so that when modules request
      * reduction it can notify them of that status. This permits them
      * to check their own requirements, e.g. that
      * ReductionRequirement::Soon will operate this step or next

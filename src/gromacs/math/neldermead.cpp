@@ -231,7 +231,7 @@ real NelderMeadSimplex::orientedLength() const
 
 void NelderMeadSimplex::updateCentroidAndReflectionPoint()
 {
-    // intialize with first vertex, then add up all other vertex coordinates
+    // initialize with first vertex, then add up all other vertex coordinates
     // expect last one
     centroidWithoutWorstPoint_ =
             std::accumulate(std::next(std::begin(simplex_)),

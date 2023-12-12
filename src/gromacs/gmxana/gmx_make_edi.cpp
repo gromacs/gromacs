@@ -298,14 +298,14 @@ static int sscan_list(int* list[], const char* str, const char* listname)
                 }
                 break;
 
-            /* format error occured */
+            /* format error occurred */
             case sError:
                 gmx_fatal(FARGS,
                           "Error in the list of eigenvectors for %s at pos %td with char %c",
                           listname,
                           pos - startpos,
                           *(pos - 1));
-            /* logical error occured */
+            /* logical error occurred */
             case sZero:
                 gmx_fatal(FARGS,
                           "Error in the list of eigenvectors for %s at pos %td: eigenvector 0 is "

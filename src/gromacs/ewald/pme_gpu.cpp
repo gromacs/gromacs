@@ -346,7 +346,7 @@ bool pme_gpu_try_finish_task(gmx_pme_t*               pme,
     // First, if possible, check whether all tasks on the stream have
     // completed, and return fast if not. Accumulate to wcycle the
     // time needed for that checking, but do not yet record that the
-    // gather has occured.
+    // gather has occurred.
     bool           needToSynchronize      = true;
     constexpr bool c_streamQuerySupported = GMX_GPU_CUDA;
 

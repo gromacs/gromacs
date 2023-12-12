@@ -1546,9 +1546,9 @@ void read_edvec(FILE* in, int nrAtoms, t_eigvec* tvec)
 
     scan_edvec(in, nrAtoms, &tvec->vec, tvec->neig);
 }
-/*!\brief Read an essential dynamics eigenvector and intial reference projections and slopes if available.
+/*!\brief Read an essential dynamics eigenvector and initial reference projections and slopes if available.
  *
- * Eigenvector and its intial reference and slope are stored on the
+ * Eigenvector and its initial reference and slope are stored on the
  * same line in the .edi format. To avoid re-winding the .edi file,
  * the reference eigen-vector and reference data are read in one go.
  *

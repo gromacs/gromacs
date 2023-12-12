@@ -308,7 +308,10 @@ void Hbond::initOptions(IOptionsContainer* options, TrajectoryAnalysisSettings* 
         "[TT]-ang[tt] allows you to get a plot of the angular distribution of all hydrogen bonds "
         "at the output.[PAR]"
         "[TT]-dan[tt] allows you to get a plot of the number of analyzed donors and acceptors for "
-        "each frame at the output.[PAR]"
+        "each frame at the output.[PAR]",
+        "[PAR]",
+        "Note that this is a new implementation of the hbond utility added in",
+        "GROMACS 2024. If you need the old one, use [TT]gmx hbond-legacy[tt]."
     };
 
     options->addOption(
@@ -991,7 +994,7 @@ void Hbond::writeOutput()
         for (const auto& i : dataOut)
         {
             std::vector<HBond> tempFrameData = prepareFrameData(i.hbondData_);
-            fprintf(fp, "[ hbonds_%s_frame_№%i ]", selects.c_str(), i.frameNumber_);
+            fprintf(fp, "[ hbonds_%s_frame_%i ]", selects.c_str(), i.frameNumber_);
             for (const auto& j : tempFrameData)
             {
                 if (mergeHydrogens_)
@@ -1032,7 +1035,7 @@ void Hbond::writeOutput()
 
 } // namespace
 
-const char HbondInfo::name[]             = "hbond2";
+const char HbondInfo::name[]             = "hbond";
 const char HbondInfo::shortDescription[] = "Compute and analyze hydrogen bonds.";
 
 TrajectoryAnalysisModulePointer HbondInfo::create()

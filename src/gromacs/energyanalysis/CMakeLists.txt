@@ -67,7 +67,7 @@ target_link_libraries(energyanalysis PRIVATE legacy_modules)
 
 if(GMX_INSTALL_LEGACY_API)
     install(FILES
-	    DESTINATION include/gromacs/energyanalysis)
+            DESTINATION include/gromacs/energyanalysis)
 endif()
 
 if (BUILD_TESTING)

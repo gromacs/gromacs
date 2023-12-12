@@ -133,7 +133,10 @@ void Gyrate::initOptions(IOptionsContainer* options, TrajectoryAnalysisSettings*
         "The axis components corresponds to the mass-weighted root-mean-square",
         "of the radii components orthogonal to each axis, for example:[PAR]",
         "Rg(x) = sqrt((sum_i w_i (R_i(y)^2 + R_i(z)^2))/(sum_i w_i)).[PAR]",
-        "where w_i is the weight value in the given situation (mass, charge, unit)"
+        "where w_i is the weight value in the given situation (mass, charge, unit)",
+        "[PAR]",
+        "Note that this is a new implementation of the gyrate utility added in",
+        "GROMACS 2024. If you need the old one, use [TT]gmx gyrate-legacy[tt]."
     };
 
     settings->setHelpText(desc);
@@ -239,7 +242,7 @@ void Gyrate::writeOutput() {}
 
 } // namespace
 
-const char GyrateInfo::name[]             = "gyrate-taf";
+const char GyrateInfo::name[]             = "gyrate";
 const char GyrateInfo::shortDescription[] = "Calculate radius of gyration of a molecule";
 
 TrajectoryAnalysisModulePointer GyrateInfo::create()
