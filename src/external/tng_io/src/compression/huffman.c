@@ -54,7 +54,8 @@ struct htree_node
     unsigned int          prob;
 };
 
-union htree_nodeleaf {
+union htree_nodeleaf
+{
     enum htree_type   nodeleaf;
     struct htree_node node;
     struct htree_leaf leaf;
@@ -214,25 +215,26 @@ static int comp_codes(const void* codeptr1, const void* codeptr2, const void* pr
 {
     const struct codelength* code1 = (struct codelength*)codeptr1;
     const struct codelength* code2 = (struct codelength*)codeptr2;
-    int                      rval  = 0; /* It shouldn't be possible to get equal here, though. */
     (void)private;
     if (code1->length > code2->length)
+    // NOLINTNEXTLINE(bugprone-branch-clone): if/else if/else structure used to reduce the risk of bugs here
     {
-        rval = 1;
+        return 1;
     }
-    if (code1->length < code2->length)
+    else if (code1->length < code2->length)
+    // NOLINTNEXTLINE(bugprone-branch-clone): if/else if/else structure used to reduce the risk of bugs here
     {
-        rval = -1;
+        return -1;
     }
-    if (code1->dict > code2->dict)
+    else if (code1->dict > code2->dict)
+    // NOLINTNEXTLINE(bugprone-branch-clone): if/else if/else structure used to reduce the risk of bugs here
     {
-        rval = 1;
+        return 1;
     }
     else
     {
-        rval = -1;
+        return -1;
     }
-    return rval;
 }
 
 static int comp_codes_value(const void* codeptr1, const void* codeptr2, const void* private)
