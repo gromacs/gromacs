@@ -16,6 +16,18 @@ in the :ref:`release-notes`.
 Fixes where mdrun could behave incorrectly
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Freezing AWH simulations with multiple MPI ranks per walker
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+AWH simulations with biases shared by multiple walkers and using
+multiple MPI ranks per walker would hang when outputting energy,
+i.e., already at step 0.
+
+There would not be any incorrect results.
+
+:issue:`4925`
+
+
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
 

@@ -1588,7 +1588,7 @@ void BiasState::updateSharedCorrelationTensorTimeIntegral(const BiasParams&     
             }
         }
 
-        biasSharing_->sumOverSharingSimulations(buffer, biasParams.biasIndex);
+        biasSharing_->sumOverSharingMainRanks(buffer, biasParams.biasIndex);
 
         for (int gridPointIndex = 0; gridPointIndex < numPoints; gridPointIndex++)
         {
