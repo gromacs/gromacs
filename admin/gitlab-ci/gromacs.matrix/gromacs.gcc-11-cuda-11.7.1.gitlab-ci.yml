@@ -39,6 +39,9 @@ gromacs:gcc-11-cuda-11.7.1:buildMPI:
   image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-gcc-11-cuda-11.7.1
   variables:
     CMAKE: /usr/local/cmake-3.18.4/bin/cmake
+    # This is a workaround for #4902
+    KUBERNETES_EXTENDED_RESOURCE_NAME: "nvidia.com/gpu"
+    KUBERNETES_EXTENDED_RESOURCE_LIMIT: 1
   needs:
     - job: gromacs:gcc-11-cuda-11.7.1:configureMPI
 
