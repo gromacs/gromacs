@@ -3577,7 +3577,7 @@ Collective variables (Colvars) module
 These options enable and control the features provided by the collective
 variables (Colvars) module (`link <https://colvars.github.io/>`_), a software
 library for enhanced sampling methods in molecular simulations.  The Colvars
-module is described in ref. \ :ref:`192 <refFiorin13>` as well as other
+module is described in ref. \ :ref:`195 <refFiorin13>` as well as other
 references that are reported in the log file when the corresponding features
 are used.
 For further details about Colvars interface implementation follow :ref:`colvars`.

@@ -42,6 +42,8 @@
 #ifndef GMX_UTILITY_FLAGS_H
 #define GMX_UTILITY_FLAGS_H
 
+#include <cstdint>
+
 namespace gmx
 {
 
@@ -122,7 +124,7 @@ private:
     //! Creates a flags object with the given flags.
     explicit FlagsTemplate(unsigned long flags) : flags_(flags) {}
 
-    uint64_t flags_;
+    std::uint64_t flags_;
 };
 
 } // namespace gmx

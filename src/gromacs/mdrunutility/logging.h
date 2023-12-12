@@ -42,6 +42,8 @@
 #ifndef GMX_MDRUNUTILITY_LOGGING_H
 #define GMX_MDRUNUTILITY_LOGGING_H
 
+#include <cstdio>
+
 #include <memory>
 
 #include "gromacs/utility/basedefinitions.h"
