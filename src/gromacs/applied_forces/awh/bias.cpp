@@ -463,7 +463,7 @@ void Bias::updateForceCorrelationGrid(gmx::ArrayRef<const double> probWeightNeig
 
 void Bias::updateBiasStateSharedCorrelationTensorTimeIntegral()
 {
-    state_.updateSharedCorrelationTensorTimeIntegral(params_, *forceCorrelationGrid_);
+    state_.updateSharedCorrelationTensorTimeIntegral(params_, *forceCorrelationGrid_, false);
 }
 
 /* Return the number of data blocks that have been prepared for writing. */

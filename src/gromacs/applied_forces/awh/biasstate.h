@@ -532,11 +532,13 @@ public:
 
     /*! \brief Updates sharedCorrelationTensorTimeIntegral_ for all points.
      *
-     * \param[in] biasParams       The bias parameters.
-     * \param[in] forceCorrelation The force correlation grid.
+     * \param[in] biasParams          The bias parameters.
+     * \param[in] forceCorrelation    The force correlation grid.
+     * \param[in] shareAcrossAllRanks Share the data across all ranks? Otherwise only the main ranks.
      */
     void updateSharedCorrelationTensorTimeIntegral(const BiasParams&      biasParams,
-                                                   const CorrelationGrid& forceCorrelation);
+                                                   const CorrelationGrid& forceCorrelation,
+                                                   bool                   shareAcrossAllRanks);
 
     /*! \brief Gets the time integral, shared across all ranks, of a tensor of a correlation grid point.
      *

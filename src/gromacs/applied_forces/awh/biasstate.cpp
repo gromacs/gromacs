@@ -420,7 +420,7 @@ void BiasState::updateTargetDistribution(const BiasParams& params, const Correla
     /* Scale the target distribution by the friction metric - normalize afterwards */
     if (params.scaleTargetByMetric && !inInitialStage())
     {
-        updateSharedCorrelationTensorTimeIntegral(params, forceCorrelation);
+        updateSharedCorrelationTensorTimeIntegral(params, forceCorrelation, true);
         sumTarget = scaleTargetByMetric(params.targetMetricScalingLimit);
     }
 
@@ -1623,7 +1623,8 @@ void BiasState::setFreeEnergyToConvolvedPmf(ArrayRef<const DimParams> dimParams,
 }
 
 void BiasState::updateSharedCorrelationTensorTimeIntegral(const BiasParams&      biasParams,
-                                                          const CorrelationGrid& forceCorrelation)
+                                                          const CorrelationGrid& forceCorrelation,
+                                                          bool shareAcrossAllRanks)
 {
     const int numCorrelation = forceCorrelation.tensorSize();
     const int numPoints      = points_.size();
@@ -1664,7 +1665,14 @@ void BiasState::updateSharedCorrelationTensorTimeIntegral(const BiasParams&     
             }
         }
 
-        biasSharing_->sumOverSharingSimulations(buffer, biasParams.biasIndex_);
+        if (shareAcrossAllRanks)
+        {
+            biasSharing_->sumOverSharingSimulations(buffer, biasParams.biasIndex_);
+        }
+        else
+        {
+            biasSharing_->sumOverSharingMainRanks(buffer, biasParams.biasIndex_);
+        }
 
         for (int gridPointIndex = 0; gridPointIndex < numPoints; gridPointIndex++)
         {

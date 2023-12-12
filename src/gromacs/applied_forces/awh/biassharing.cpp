@@ -279,6 +279,11 @@ void BiasSharing::sumOverSharingMainRanks(ArrayRef<long> data, const int biasInd
     sumOverSimulations(data, multiSimCommPerBias_[biasIndex], false, commRecord_);
 }
 
+void BiasSharing::sumOverSharingMainRanks(ArrayRef<double> data, const int biasIndex) const
+{
+    sumOverSimulations(data, multiSimCommPerBias_[biasIndex], false, commRecord_);
+}
+
 void BiasSharing::sumOverSharingSimulations(ArrayRef<int> data, const int biasIndex) const
 {
     sumOverSimulations(data, multiSimCommPerBias_[biasIndex], true, commRecord_);
