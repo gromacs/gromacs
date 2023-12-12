@@ -8,7 +8,7 @@ on the gradient of similarity between a simulated density and a reference densit
 
 By applying these forces protein structures can be made to "fit" densities
 from, e.g., cryo electron-microscopy. The implemented approach extends the ones
-described in \ :ref:`182 <refOrzechowski2008>`, and \ :ref:`183 <refIgaev2019>`.
+described in \ :ref:`192 <refOrzechowski2008>`, and \ :ref:`193 <refIgaev2019>`.
 
 Overview
 ^^^^^^^^

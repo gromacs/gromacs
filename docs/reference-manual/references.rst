@@ -2537,29 +2537,14 @@ molecular dynamics simulations*, (2002).
 
    </div>
 
-
 .. raw:: html
 
-   <div id="ref-Orzechowski2019">
+   <div id="ref-Gapsys2012">
 
-.. _refOrzechowski2008:
+.. _refGapsys2012:
 
-:sup:`182` Orzechowski M, Tama F., "Flexible fitting of high-resolution x-ray 
-structures into cryoelectron microscopy maps using biased molecular dynamics simulations",
-*Biophysical journal*, *95*, 5692–705, (2008).
-
-.. raw:: html
-
-   </div>
-
-.. raw:: html
-
-   <div id="ref-Igaev2019">
-
-.. _refIgaev2019:
-
-:sup:`183` Igaev, M., Kutzner, C., Bock, L. V., Vaiana, A. C., & Grubmüller, H.,
-"Automated cryo-EM structure refinement using correlation-driven molecular dynamics", *eLife*, **8**, e43542 (2019).
+:sup:`183` V. Gapsys, D. Seeliger, and B.L. de Groot,
+"New Soft-Core Potential Function for Molecular Dynamics Based Alchemical Free Energy Calculations", *J. Chem. Theor. Comput.*, **8** 2373-2382 (2012).
 
 .. raw:: html
 
@@ -2578,6 +2563,8 @@ structures into cryoelectron microscopy maps using biased molecular dynamics sim
 
    </div>
 
+.. raw:: html
+
   <div id="ref-Lidmar2012">
 
 .. _refLidmar2012:
@@ -2588,6 +2575,8 @@ structures into cryoelectron microscopy maps using biased molecular dynamics sim
 .. raw:: html
 
    </div>
+
+.. raw:: html
 
    <div id="ref-Lindahl2018">
 
@@ -2600,6 +2589,8 @@ structures into cryoelectron microscopy maps using biased molecular dynamics sim
 
    </div>
 
+.. raw:: html
+
    <div id="ref-LundBorg2021">
 
 .. _refLundborg2021:
@@ -2610,6 +2601,8 @@ structures into cryoelectron microscopy maps using biased molecular dynamics sim
 .. raw:: html
 
    </div>
+
+.. raw:: html
 
    <div id="refcp2k2020">
 
@@ -2622,6 +2615,8 @@ structures into cryoelectron microscopy maps using biased molecular dynamics sim
 .. raw:: html
 
    </div>
+
+.. raw:: html
 
    <div id="refLaino2005">
 
@@ -2636,33 +2631,50 @@ structures into cryoelectron microscopy maps using biased molecular dynamics sim
 
 .. raw:: html
 
-   <div id="ref-Gapsys2012">
-
-.. _refGapsys2012:
-
-:sup:`185` V. Gapsys, D. Seeliger, and B.L. de Groot, 
-"New Soft-Core Potential Function for Molecular Dynamics Based Alchemical Free Energy Calculations", *J. Chem. Theor. Comput.*, **8** 2373-2382 (2012).
-
-.. raw:: html
-
-   </div>
-
-
    <div id="refSpoel2020">
 
 .. _refSpoel2020:
-   
+
 :sup:`190` D. van der Spoel, H. Henschel, P. J. van Maaren, M. M. Ghahremanpour , and L. T. Costa, "A potential for molecular simulation of compounds with linear moieties", *J. Chem. Phys.*, **153** 084503 (2020).
 
 .. raw:: html
 
    </div>
 
+.. raw:: html
+
    <div id="refTuckerman92">
 
 .. _refTuckerman92:
 
 :sup:`191` M. Tuckerman, B. J. Berne, and G. J. Martyna, "Reversible multiple time scale molecular dynamics", *J. Chem. Phys.*, **97** 1990 (1992).
+
+.. raw:: html
+
+   </div>
+
+.. raw:: html
+
+   <div id="ref-Orzechowski2019">
+
+.. _refOrzechowski2008:
+
+:sup:`192` Orzechowski M, Tama F., "Flexible fitting of high-resolution x-ray
+structures into cryoelectron microscopy maps using biased molecular dynamics simulations",
+*Biophysical journal*, *95*, 5692–705, (2008).
+
+.. raw:: html
+
+   </div>
+
+.. raw:: html
+
+   <div id="ref-Igaev2019">
+
+.. _refIgaev2019:
+
+:sup:`193` Igaev, M., Kutzner, C., Bock, L. V., Vaiana, A. C., & Grubmüller, H.,
+"Automated cryo-EM structure refinement using correlation-driven molecular dynamics", *eLife*, **8**, e43542 (2019).
 
 .. raw:: html
 
