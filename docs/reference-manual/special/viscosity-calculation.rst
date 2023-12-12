@@ -30,8 +30,18 @@ and thus writing to energy file (``nstenergy``) can be done infrequently.
 This avoids the overhead of very large energy files that are needed
 with the autocorrelation function approach.
 
-|Gromacs| also has a non-equilibrium method for determining the
-viscosity \ :ref:`149 <refHess2002a>`. This makes use of the fact that energy, which is
+|Gromacs| also has two non-equilibrium methods for determining the viscosity.
+The recommended method is to apply a shear to the system, see the next section.
+The viscosity can the be measured as the stress of the corresponding
+off-diagonal element of the pressure tensor divided by the shear rate. This
+is a straightforward procedure. The only disadvantage is that one needs
+to balance the cost of long simulatiosn at low shear rate due to low signal
+to noise ratio to the risk of shear thinning appearing at higher shear rates.
+Running at multiple shear rates might be necessary to ensure that one is
+in the linear regime.
+
+The second non-equilibrium method is called "cosine acceleration".
+This makes use of the fact that energy, which is
 fed into system by external forces, is dissipated through viscous
 friction. The generated heat is removed by coupling to a heat bath. For
 a Newtonian liquid adding a small force will result in a velocity
