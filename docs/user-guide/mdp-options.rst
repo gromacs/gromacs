@@ -2041,8 +2041,10 @@ AWH adaptive biasing
 .. mdp:: awh1-error-init
 
    (10.0) [kJ mol\ :sup:`-1`]
-   Estimated initial average error of the PMF for this bias. This value together with the
-   given diffusion constant(s) :mdp:`awh1-dim1-diffusion` determine the initial biasing rate.
+   Estimated initial average error of the PMF for this bias. This value together with an
+   estimate of the crossing time, based on the length of the sampling interval and the
+   given diffusion constant(s) :mdp:`awh1-dim1-diffusion`, determine the initial biasing rate.
+   With multiple dimensions, the longest crossing time is used.
    The error is obviously not known *a priori*. Only a rough estimate of :mdp:`awh1-error-init`
    is needed however.
    As a  general guideline, leave :mdp:`awh1-error-init` to its default value when starting a new
