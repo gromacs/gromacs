@@ -54,27 +54,31 @@
 #    include "external/SZ3-bio/tools/H5Z-SZ3/include/H5Z_SZ3.hpp"
 #endif
 
-static void setNumericFillValue(hid_t dataSetCreatePropertyList, const hid_t datatype)
+/*! Set the fill value to -1 in a data set property list.
+ * \param[in] dataSetCreatePropertyList The propery list to update.
+ * \param[in] dataType The ID of the HDF5 data type of the data set.
+ */
+static void setNumericFillValue(hid_t dataSetCreatePropertyList, const hid_t dataType)
 {
-    if (H5Tequal(datatype, H5T_NATIVE_INT))
+    if (H5Tequal(dataType, H5T_NATIVE_INT))
     {
         const int dataFill = -1;
-        H5Pset_fill_value(dataSetCreatePropertyList, datatype, &dataFill);
+        H5Pset_fill_value(dataSetCreatePropertyList, dataType, &dataFill);
     }
-    else if (H5Tequal(datatype, H5T_NATIVE_INT64))
+    else if (H5Tequal(dataType, H5T_NATIVE_INT64))
     {
         const int64_t dataFill = -1;
-        H5Pset_fill_value(dataSetCreatePropertyList, datatype, &dataFill);
+        H5Pset_fill_value(dataSetCreatePropertyList, dataType, &dataFill);
     }
-    else if (H5Tequal(datatype, H5T_NATIVE_FLOAT))
+    else if (H5Tequal(dataType, H5T_NATIVE_FLOAT))
     {
         const float dataFill = -1;
-        H5Pset_fill_value(dataSetCreatePropertyList, datatype, &dataFill);
+        H5Pset_fill_value(dataSetCreatePropertyList, dataType, &dataFill);
     }
-    else if (H5Tequal(datatype, H5T_NATIVE_DOUBLE))
+    else if (H5Tequal(dataType, H5T_NATIVE_DOUBLE))
     {
         const double dataFill = -1;
-        H5Pset_fill_value(dataSetCreatePropertyList, datatype, &dataFill);
+        H5Pset_fill_value(dataSetCreatePropertyList, dataType, &dataFill);
     }
 }
 
@@ -191,6 +195,7 @@ hid_t openOrCreateDataSet(hid_t                container,
                 }
                 break;
             case CompressionAlgorithm::None: break;
+            default: gmx_file("Unrecognized compression mode.");
         }
 
         dataSet = H5Dcreate(

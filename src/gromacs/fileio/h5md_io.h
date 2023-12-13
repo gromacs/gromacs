@@ -56,7 +56,7 @@ class GmxH5mdIo
 {
 private:
     hid_t file_; //!< The HDF5 identifier of the file. This is the H5MD root.
-    std::list<GmxH5mdTimeDataBlock> dataBlocks_;
+    std::list<GmxH5mdTimeDataBlock> dataBlocks_; //!< A list of time dependent data blocks in the HDF5 file.
 
     std::string systemOutputName_; //!< The name of the selection of particles output. Defaults to "system"
 
@@ -93,6 +93,7 @@ public:
     /*! \brief Write all unwritten data to the file. */
     void flush();
 
+    /*! \brief Create and initialize time dependent particles data block objects from the H5MD file. */
     void initParticleDataBlocksFromFile();
 
     /*! \brief Set up data blocks related to particle data.
@@ -118,6 +119,8 @@ public:
      * This is currently not updated during the trajectory. The data that is written are atom masses, atom charges and atom names.
      *
      * \param[in] topology The molecular topology describing the system.
+     * \param[in] index    The selected atoms to include. If empty, use all atoms in the topology.
+     * \param[in] index_group_name The name of the atom selection specified by index.
      */
     void setupMolecularSystem(const gmx_mtop_t&        topology,
                               gmx::ArrayRef<const int> index            = {},
@@ -145,6 +148,20 @@ public:
                     const rvec* f,
                     double      compressionError);
 
+    /*! \brief Read the next frame of box, coordinates, velocities and forces. With next frame means
+     * the lowest step/time reading from the previous read frame of that data type. If data is written
+     * at different intervals the read data types will be different from one function call to the next.
+     * \param[out] step    The step number of the read data blocks.
+     * \param[out] time    The time of the read data blocks.
+     * \param[out] box     Read box data. Memory must be allocated by the caller.
+     * \param[out] x       Read coordinate data. Memory must be allocated by the caller.
+     * \param[out] v       Read velocity data. Memory must be allocated by the caller.
+     * \param[out] f       Read force data. Memory must be allocated by the caller.
+     * \param[out] readBox Whether box data was read or not, i.e. if there was box data matching step.
+     * \param[out] readX   Whether coordinate data was read or not, i.e. if there was coordinate data matching step.
+     * \param[out] readV   Whether velocity data was read or not, i.e. if there was velocity data matching step.
+     * \param[out] readF   Whether force data was read or not, i.e. if there was force data matching step.
+     */
     bool readNextFrameOfStandardDataBlocks(int64_t* step,
                                            real*    time,
                                            rvec*    box,
@@ -156,13 +173,38 @@ public:
                                            bool*    readV,
                                            bool*    readF);
 
+    /*! \brief Get the number of frames of a particles data block
+     * \param[in] dataBlockName The name of the data block.
+     * \returns the number of frames of the data block or -1 if not found.
+     */
     int64_t getNumberOfFrames(const std::string dataBlockName);
 
+    /*! \brief Get the number of particles of a particles data block
+     * \param[in] dataBlockName The name of the data block.
+     * \returns the number of particles of the data block or -1 if not found.
+     */
     int64_t getNumberOfParticles(const std::string dataBlockName);
 
+    /*! \brief Get the first time stamp of a particles data block
+     * \param[in] dataBlockName The name of the data block.
+     * \returns the first time of the data block or -1 if not found.
+     */
     real getFirstTime(const std::string dataBlockName);
+
+    /*! \brief Get the very first time stamp of all particles data blocks
+     * \returns the first time of all data blocks or -1 if no data blocks were found.
+     */
     real getFirstTimeFromAllDataBlocks();
+
+    /*! \brief Get the final time stamp of a particles data block
+     * \param[in] dataBlockName The name of the data block.
+     * \returns the final time of the data block or -1 if not found.
+     */
     real getFinalTime(const std::string dataBlockName);
+
+    /*! \brief Get the very last time stamp of all particles data blocks
+     * \returns the last time of all data blocks or -1 if no data blocks were found.
+     */
     real getFinalTimeFromAllDataBlocks();
 };
 

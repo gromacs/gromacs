@@ -1023,7 +1023,7 @@ int gmx_trjconv(int argc, char* argv[])
             {
                 fprintf(stderr, "\nUsing lossless compression\n");
                 fr.prec = 0;
-                prec = 0;
+                prec    = 0;
             }
         }
 

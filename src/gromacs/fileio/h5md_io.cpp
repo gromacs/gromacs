@@ -70,11 +70,14 @@
 #    include "external/SZ3-bio/tools/H5Z-SZ3/include/H5Z_SZ3.hpp"
 #endif
 
-/* Inspired by https://support.hdfgroup.org/ftp/HDF5/examples/examples-by-api/hdf5-examples/1_8/C/H5G/h5ex_g_traverse.c */
-static herr_t iterativeSetupParticlesDataBlocks(hid_t            locationId,
-                                                const char*      name,
-                                                const H5L_info_t gmx_unused* info,
-                                                void*                        operatorData)
+/*! \brief Iterates through groups with contents matching time dependent particles data blocks,
+ * i.e., "step", "time" and "value". Then it creates corresponding H5MD data blocks.
+ * Inspired by https://support.hdfgroup.org/ftp/HDF5/examples/examples-by-api/hdf5-examples/1_8/C/H5G/h5ex_g_traverse.c
+ */
+static herr_t iterativeSetupTimeDataBlocks(hid_t            locationId,
+                                           const char*      name,
+                                           const H5L_info_t gmx_unused* info,
+                                           void*                        operatorData)
 {
     /*
      * Get type of the object. The name of the object is passed to this function by
@@ -99,6 +102,7 @@ static herr_t iterativeSetupParticlesDataBlocks(hid_t            locationId,
                 GmxH5mdTimeDataBlock             dataBlock(locationId, name);
                 std::list<GmxH5mdTimeDataBlock>* dataBlocks =
                         static_cast<std::list<GmxH5mdTimeDataBlock>*>(operatorData);
+
                 dataBlock.updateNumWrittenFrames();
                 dataBlocks->emplace_back(dataBlock);
 
@@ -111,7 +115,7 @@ static herr_t iterativeSetupParticlesDataBlocks(hid_t            locationId,
                                                H5_INDEX_NAME,
                                                H5_ITER_NATIVE,
                                                nullptr,
-                                               iterativeSetupParticlesDataBlocks,
+                                               iterativeSetupTimeDataBlocks,
                                                operatorData,
                                                H5P_DEFAULT);
             }
@@ -247,7 +251,7 @@ void GmxH5mdIo::initParticleDataBlocksFromFile()
                    H5_INDEX_NAME,
                    H5_ITER_NATIVE,
                    nullptr,
-                   iterativeSetupParticlesDataBlocks,
+                   iterativeSetupTimeDataBlocks,
                    static_cast<void*>(&dataBlocks_))
         < 0)
     {
@@ -491,6 +495,7 @@ void GmxH5mdIo::setupMolecularSystem(const gmx_mtop_t&        topology,
             setupSeparateOutputGroup = true;
             systemOutputName_        = index_group_name;
         }
+        /* If no name was specified fall back to using the selection group name of compressed output, if any. */
         else if (topology.groups.numberOfGroupNumbers(SimulationAtomGroupType::CompressedPositionOutput) != 0)
         {
             setupSeparateOutputGroup = true;
@@ -686,7 +691,7 @@ bool GmxH5mdIo::readNextFrameOfStandardDataBlocks(int64_t* step,
         {
             dataBlocksNextFrame.clear();
             minStepNextFrame = frameStep;
-            *time            = foundDataBlock->getStepOfFrame(frameIndex);
+            *time            = foundDataBlock->getTimeOfFrame(frameIndex);
         }
         if (frameStep <= minStepNextFrame)
         {
@@ -750,9 +755,8 @@ int64_t GmxH5mdIo::getNumberOfFrames(const std::string dataBlockName)
     auto foundDataBlock = std::find(dataBlocks_.begin(), dataBlocks_.end(), wantedName.c_str());
     if (foundDataBlock == dataBlocks_.end())
     {
-        gmx_file("Datablock not found");
+        return -1;
     }
-    // foundDataBlock->updateNumWrittenFrames();
     return foundDataBlock->numberOfFrames();
 }
 
@@ -765,7 +769,7 @@ int64_t GmxH5mdIo::getNumberOfParticles(const std::string dataBlockName)
     auto foundDataBlock = std::find(dataBlocks_.begin(), dataBlocks_.end(), wantedName.c_str());
     if (foundDataBlock == dataBlocks_.end())
     {
-        return 0;
+        return -1;
     }
     return foundDataBlock->getNumParticles();
 }
@@ -779,7 +783,7 @@ real GmxH5mdIo::getFirstTime(const std::string dataBlockName)
     auto foundDataBlock = std::find(dataBlocks_.begin(), dataBlocks_.end(), wantedName.c_str());
     if (foundDataBlock == dataBlocks_.end())
     {
-        gmx_file("Datablock not found");
+        return -1;
     }
     return foundDataBlock->getTimeOfFrame(0);
 }
@@ -787,12 +791,18 @@ real GmxH5mdIo::getFirstTime(const std::string dataBlockName)
 real GmxH5mdIo::getFirstTimeFromAllDataBlocks()
 {
     real firstTime = std::numeric_limits<real>::max();
+    bool foundAny  = false;
     for (const auto& dataBlock : dataBlocks_)
     {
+        foundAny  = true;
         real time = dataBlock.getTimeOfFrame(0);
         firstTime = std::min(firstTime, time);
     }
-    return firstTime;
+    if (foundAny)
+    {
+        return firstTime;
+    }
+    return -1;
 }
 
 real GmxH5mdIo::getFinalTime(const std::string dataBlockName)
@@ -804,7 +814,7 @@ real GmxH5mdIo::getFinalTime(const std::string dataBlockName)
     auto foundDataBlock = std::find(dataBlocks_.begin(), dataBlocks_.end(), wantedName.c_str());
     if (foundDataBlock == dataBlocks_.end())
     {
-        gmx_file("Datablock not found");
+        return -1;
     }
     return foundDataBlock->getTimeOfFrame(foundDataBlock->numberOfFrames() - 1);
 }
@@ -812,6 +822,7 @@ real GmxH5mdIo::getFinalTime(const std::string dataBlockName)
 real GmxH5mdIo::getFinalTimeFromAllDataBlocks()
 {
     real finalTime = 0;
+    bool foundAny  = false;
     for (auto& dataBlock : dataBlocks_)
     {
         int numFrames = dataBlock.numberOfFrames();
@@ -819,10 +830,15 @@ real GmxH5mdIo::getFinalTimeFromAllDataBlocks()
         {
             continue;
         }
+        foundAny  = true;
         real time = dataBlock.getTimeOfFrame(numFrames - 1);
         finalTime = std::max(finalTime, time);
     }
-    return finalTime;
+    if (foundAny)
+    {
+        return finalTime;
+    }
+    return -1;
 }
 
 
