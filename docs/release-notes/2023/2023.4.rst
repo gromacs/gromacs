@@ -27,6 +27,13 @@ There would not be any incorrect results.
 
 :issue:`4925`
 
+With AWH for FE, mdrun could exit with an assertion failure
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+The would happen e.g. when using soft-core only for LJ, whereas it was
+also needed for Coulomb. Now a proper error message is generated.
+
+:issue:`4938`
 
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
