@@ -45,6 +45,11 @@ Two error messages used to contain links to the contents that are no longer
 available on the |Gromacs| website. These links have been replaced with the
 links to the relevant pages in the current documentation.
 
+Fixed a segmentation fault in grompp with AWH and FEP without FEP states
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+:issue:`4932`
+
 Fixes that affect portability
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
