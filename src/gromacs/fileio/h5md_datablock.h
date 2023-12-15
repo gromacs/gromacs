@@ -52,24 +52,43 @@ typedef unsigned long long hsize_t;
 constexpr int c_maxNameLength     = 128;
 constexpr int c_maxFullNameLength = 256;
 
-/*! \brief A class that handles H5MD data blocks with data can change during the MD trajectory. */
+/*! \brief A class that handles H5MD data blocks with data can change during the MD trajectory.
+ * Data is stored in three data sets, grouped together: main (value), time and step.
+ */
 class GmxH5mdTimeDataBlock
 {
 private:
-    hid_t       container_; //!< The HDF5 container of this data block.
-    std::string name_;      //!< The name of the data block, e.g. "position".
-    std::string fullName_;
-    std::string mainUnit_;
-    std::string timeUnit_;
-    hid_t       group_;
-    hid_t       mainDataSet_;
-    hid_t       timeDataSet_;
-    hid_t       stepDataSet_;
+    hid_t container_;   //!< The HDF5 container of this HDF5 group, storing the data sets.
+    hid_t group_;       //!< The HDF5 ID of the group storing the data sets.
+    hid_t mainDataSet_; //!< The ID of the main data set (values).
+    hid_t timeDataSet_; //!< The ID of the time data set.
+    hid_t stepDataSet_; //!< The ID of the data set storing simulation step numbers.
+
+    /*! The name of the data block, the HDF5 group containing the data sets, e.g. "position". */
+    std::string name_;
+    std::string fullName_;        //!< The full HDF5 path of the group storing the data sets.
+    std::string mainUnit_;        //!< The physical unit of the main (value) data.
+    std::string timeUnit_;        //!< The unit of the time data.
     int         writingInterval_; //!< The interval (in MD steps) between outputs.
-    int         writingFrameIndex_;
-    int         readingFrameIndex_;
+
+    /*! The index of the next frame to write. 0 when no frames have been written. */
+    int writingFrameIndex_;
+
+    /*! The index of the next frame to read, 0 or the frame after the previously read frame. */
+    int readingFrameIndex_;
 
 public:
+    /*! \brief Create a management entity for a time dependent set of data.
+     * \param[in] container The ID of the container (HDF5 group or file) of the data.
+     * \param[in] name The name of this set of time dependent data - the H5MD group.
+     * \param[in] unit The unit of the time dependent values.
+     * \param[in] writingInterval How many simulation steps there are between each output.
+     * \param[in] numFramesPerChunk Number of frames per chunk of data, relevant for compressed data.
+     * \param[in] numEntries Number of data entries per frame, e.g., the number of atoms.
+     * \param[in] numValuesPerEntry Number of data values per entry, e.g. 3 for 3D data.
+     * \param[in] compression The compression algorithm to use.
+     * \param[in] comopressionError The absolute error for lossy compression algorithms.
+     */
     GmxH5mdTimeDataBlock(hid_t                container         = -1,
                          const std::string    name              = "",
                          const std::string    unit              = "",
@@ -81,17 +100,14 @@ public:
                          CompressionAlgorithm compression       = CompressionAlgorithm::None,
                          double               compressionError  = 0.001);
 
+    /* Close the data sets: main (or value), step and time. */
     void closeAllDataSets();
 
     bool operator==(const std::string fullSpecifier);
 
-    /*! \brief Write a set of time independent data to the data block.
-     *
-     * \param[in] data The data that should be written.
-     */
-    void writeTimeIndependentData(const void* data);
-
     /*! \brief Write a frame of time dependent data to the data block.
+     * The frame number is deduced from the writingInterval_, if set, otherwise the frame
+     * after the previously written frame is written.
      *
      * \param[in] data The data that should be written.
      * \param[in] step The MD simulation step of the data record.
@@ -99,14 +115,36 @@ public:
      */
     void writeFrame(const void* data, int64_t step, real time);
 
+    /*! \brief Write a frame of time dependent data to the data block.
+     *
+     * \param[in] data The data that should be written.
+     * \param[in] step The MD simulation step of the data record.
+     * \param[in] time The time stamp (in ps) of the data record.
+     * \param[in] frame The frame number to write.
+     */
     void writeFrame(const void* data, int64_t step, real time, int frame);
 
+    /*! \brief Read a specific frame.
+     *
+     * \param[out] data The data that is read. Memory must be allocated beforehand.
+     * \param[in] frame The frame number to read.
+     */
     bool readFrame(real* data, int frame);
 
+    /*! \brief Read the next, or the first frame, frame.
+     *
+     * \param[out] data The data that is read. Memory must be allocated beforehand.
+     */
     bool readNextFrame(real* data);
 
+    /*! \brief Read the units properties from file and update mainUnit_ and timeUnit_ accordingly.
+     * FIXME There are no unit conversions yet.
+     */
     void updateUnitsFromFile();
 
+    /*! Find out how many frames are written, ignoring fill value frames at the end.
+     * Update writingFrameIndex_ to keep track of what is the next frame to write.
+     */
     void updateNumWrittenFrames();
 
     size_t getNumParticles() const;
