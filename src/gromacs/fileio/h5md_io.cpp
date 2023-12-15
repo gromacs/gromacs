@@ -42,13 +42,10 @@
 #include <cmath>
 #include <cstring>
 
-#include <__config>
 #include <algorithm>
 #include <functional>
 #include <limits>
 #include <string>
-
-#include <sys/_types/_int64_t.h>
 
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/topology/topology.h"
