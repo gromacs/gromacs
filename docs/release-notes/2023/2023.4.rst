@@ -31,7 +31,8 @@ With AWH for FE, mdrun could exit with an assertion failure
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
 The would happen e.g. when using soft-core only for LJ, whereas it was
-also needed for Coulomb. Now a proper error message is generated.
+also needed for Coulomb or when decoupling large molecules.
+Now proper error messages are generated.
 
 :issue:`4938`
 
