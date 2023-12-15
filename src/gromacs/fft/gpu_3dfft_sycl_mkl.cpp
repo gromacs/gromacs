@@ -39,11 +39,8 @@
  *  \author Mark Abraham <mark.j.abraham@gmail.com>
  *  \ingroup module_fft
  *
- *  In DPC++, we use Intel oneMKL to perform the FFT. It requires using the binary version of
- *  MKL, since the open-source one does not support FFT yet (https://github.com/oneapi-src/oneMKL/issues/27).
- *
- *  There are issues with out-of-place transform, existing in oneAPI 2021.2-2021.4, so
- *  we allow only in-place transforms for these versions.
+ *  In DPC++, we use Intel oneMKL to perform the FFT. Currently, we only support binary version
+ *  of oneMKL, see #4744.
  */
 
 #include "gmxpre.h"
@@ -72,14 +69,9 @@ class DeviceContext;
 #include <cstddef>
 #pragma clang diagnostic ignored "-Wsuggest-override" // can be removed when support for 2022.0 is dropped
 #pragma clang diagnostic ignored "-Wundefined-func-template"
-#include <mkl_version.h>
 
 #include <oneapi/mkl/dfti.hpp>
 #include <oneapi/mkl/exceptions.hpp>
-
-// oneAPI 2021.2.0 to 2021.4.0 have issues with backward out-of-place transform.
-// The issue is fixed in 2022.0.1 (20220000).
-static constexpr bool sc_mklHasBuggyOutOfPlaceFFT = (INTEL_MKL_VERSION <= 20210004);
 
 namespace gmx
 {
@@ -121,9 +113,6 @@ Gpu3dFft::ImplSyclMkl::ImplSyclMkl(bool allocateRealGrid,
     GMX_RELEASE_ASSERT(!allocateRealGrid, "Grids needs to be pre-allocated");
     GMX_RELEASE_ASSERT(gridSizesInXForEachRank.size() == 1 && gridSizesInYForEachRank.size() == 1,
                        "Multi-rank FFT decomposition not implemented with the SYCL MKL backend");
-
-    GMX_RELEASE_ASSERT(!(sc_mklHasBuggyOutOfPlaceFFT && performOutOfPlaceFFT),
-                       "The version of MKL used does not properly support out-of-place FFTs");
 
     GMX_ASSERT(checkDeviceBuffer(*realGrid,
                                  realGridSizePadded[XX] * realGridSizePadded[YY] * realGridSizePadded[ZZ]),

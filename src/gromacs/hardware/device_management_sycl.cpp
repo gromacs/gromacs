@@ -322,14 +322,6 @@ static DeviceStatus isDeviceCompatible(const sycl::device&           syclDevice,
             return DeviceStatus::Incompatible;
         }
 
-#if GMX_SYCL_DPCPP && defined(__INTEL_LLVM_COMPILER) && (__INTEL_LLVM_COMPILER == 20220000)
-        if (syclDevice.get_backend() == sycl::backend::ext_oneapi_level_zero)
-        {
-            // See Issue #4354
-            return DeviceStatus::IncompatibleLevelZeroAndOneApi2022;
-        }
-#endif
-
 // Ensure any changes are in sync with nbnxm_sycl_kernel.h
 #if GMX_GPU_NB_CLUSTER_SIZE == 4
         const std::vector<int> compiledNbnxmSubGroupSizes{ 8 };
