@@ -556,10 +556,6 @@ t_trxstatus* trjtools_gmx_prepare_h5md_writing(const std::filesystem::path& file
     {
         out->h5mdIo->setupMolecularSystem(*mtop, index, index_group_name);
     }
-    // /* Assume that the box is periodic in all dimensions. */
-    // printf("Setting up datablocks. %ld\n", mtop != nullptr ? mtop->natoms : index.ssize());
-    // out->h5mdIo->setUpParticlesDataBlocks(-1, -1, -1, mtop != nullptr ? mtop->natoms :
-    // index.ssize(), PbcType::Xyz, compressionError); printf("After setting up datablocks\n");
 
     return out;
 }
@@ -1044,6 +1040,7 @@ bool read_first_frame(const gmx_output_env_t*      oenv,
     else if (efH5MD == ftp)
     {
         (*status)->h5mdIo = new GmxH5mdIo(fn, 'r');
+        (*status)->h5mdIo->initParticleDataBlocksFromFile();
     }
     else
     {
@@ -1118,8 +1115,69 @@ bool read_first_frame(const gmx_output_env_t*      oenv,
             bFirst = FALSE;
             break;
         case efH5MD:
-            printf("H5MD read first frame not implemented yet. %s: %d\n", __FILE__, __LINE__);
+        {
+            int64_t numXParticles        = (*status)->h5mdIo->getNumberOfParticles("position");
+            int64_t numVParticles        = (*status)->h5mdIo->getNumberOfParticles("velocity");
+            int64_t numFParticles        = (*status)->h5mdIo->getNumberOfParticles("force");
+            bool    numParticlesMatching = true;
+            if (numXParticles > 0)
+            {
+                if ((numVParticles > 0 && numXParticles != numVParticles)
+                    || (numFParticles > 0 && numXParticles != numFParticles))
+                {
+                    numParticlesMatching = false;
+                }
+            }
+            if (numVParticles > 0)
+            {
+                if ((numXParticles > 0 && numVParticles != numXParticles)
+                    || (numFParticles > 0 && numVParticles != numFParticles))
+                {
+                    numParticlesMatching = false;
+                }
+            }
+            if (numFParticles > 0)
+            {
+                if ((numXParticles > 0 && numFParticles != numXParticles)
+                    || (numVParticles > 0 && numFParticles != numVParticles))
+                {
+                    numParticlesMatching = false;
+                }
+            }
+            if (!numParticlesMatching)
+            {
+                gmx_fatal(FARGS,
+                          "GROMACS cannot handle different number of particles/atoms in different "
+                          "data sets in the same H5MD file.");
+            }
+            if (numXParticles > 0)
+            {
+                fr->natoms = numXParticles;
+                snew(fr->x, numXParticles);
+            }
+            if (numVParticles > 0)
+            {
+                fr->natoms = numVParticles;
+                snew(fr->v, numVParticles);
+            }
+            if (numFParticles > 0)
+            {
+                fr->natoms = numFParticles;
+                snew(fr->f, numFParticles);
+            }
+            if (!(*status)->h5mdIo->readNextFrameOfStandardDataBlocks(
+                        &fr->step, &fr->time, fr->box, fr->x, fr->v, fr->f, &fr->bBox, &fr->bX, &fr->bV, &fr->bF))
+            {
+                fr->not_ok = DATA_NOT_OK;
+                printincomp(*status, fr);
+            }
+            else
+            {
+                printcount(*status, oenv, fr->time, false);
+            }
+            bFirst = false;
             break;
+        }
         case efPDB:
             pdb_first_x(*status, gmx_fio_getfp(fio), fr);
             if (fr->natoms)

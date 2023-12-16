@@ -266,7 +266,7 @@ void GmxH5mdTimeDataBlock::updateNumWrittenFrames()
             gmx_file("Error reading step data set when determining the number of frames.");
         }
     }
-    writingFrameIndex_ = numValidFrames;
+    writingFrameIndex_ = numValidFrames + 1;
 }
 
 size_t GmxH5mdTimeDataBlock::getNumParticles() const
