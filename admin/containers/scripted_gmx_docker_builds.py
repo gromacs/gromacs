@@ -576,15 +576,30 @@ def get_nvhpcsdk(args):
 def get_hipsycl(args):
     if args.hipsycl is None:
         return None
-    if args.llvm is None:
-        raise RuntimeError("Can not build hipSYCL without LLVM")
     if args.rocm is None:
         raise RuntimeError("hipSYCL requires the ROCm packages")
+    if args.llvm is None:
+        # We're using ROCm LLVM in this case, which is not compatible with CUDA
+        if args.cuda is not None:
+            raise RuntimeError("Can not build hipSYCL with CUDA and no upstream LLVM")
 
-    cmake_opts = [
-        "-DCMAKE_C_COMPILER=clang-{}".format(args.llvm),
-        "-DCMAKE_CXX_COMPILER=clang++-{}".format(args.llvm),
-        "-DLLVM_DIR=/usr/lib/llvm-{}/cmake/".format(args.llvm),
+    if args.llvm is not None:
+        cmake_opts = [
+            "-DCMAKE_C_COMPILER=clang-{}".format(args.llvm),
+            "-DCMAKE_CXX_COMPILER=clang++-{}".format(args.llvm),
+            "-DLLVM_DIR=/usr/lib/llvm-{}/cmake/".format(args.llvm),
+        ]
+    else:
+        cmake_opts = [
+            "-DCMAKE_C_COMPILER=/opt/rocm/bin/amdclang",
+            "-DCMAKE_CXX_COMPILER=/opt/rocm/bin/amdclang++",
+            "-DLLVM_DIR=/opt/rocm/llvm/lib/cmake/llvm",
+            "-DWITH_SSCP_COMPILER=OFF",
+            "-DWITH_OPENCL_BACKEND=OFF",
+            "-DWITH_LEVEL_ZERO_BACKEND=OFF",
+        ]
+
+    cmake_opts += [
         "-DCMAKE_PREFIX_PATH=/opt/rocm/lib/cmake",
         "-DWITH_ROCM_BACKEND=ON",
     ]
@@ -612,8 +627,8 @@ def get_hipsycl(args):
         hipsycl_version_opts["commit"] = args.hipsycl
 
     return hpccm.building_blocks.generic_cmake(
-        repository="https://github.com/illuhad/hipSYCL.git",
-        directory="/var/tmp/hipSYCL",
+        repository="https://github.com/AdaptiveCpp/AdaptiveCpp.git",
+        directory="/var/tmp/AdaptiveCpp",
         prefix="/usr/local",
         recursive=True,
         cmake_opts=["-DCMAKE_BUILD_TYPE=Release", *cmake_opts],

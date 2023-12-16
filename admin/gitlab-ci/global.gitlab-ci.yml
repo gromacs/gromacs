@@ -78,6 +78,16 @@
     - export CCACHE_DIR=${PWD}/ccache
     - export ASAN_SYMBOLIZER_PATH=/usr/local/bin/llvm-symbolizer
 
+# Base definition for using AMD Clang (amdclang).
+.use-amdclang:base:
+  variables:
+    CMAKE_COMPILER_SCRIPT: -DCMAKE_C_COMPILER=/opt/rocm/bin/amdclang -DCMAKE_CXX_COMPILER=/opt/rocm/bin/amdclang++
+  before_script:
+    - mkdir -p ccache
+    - export CCACHE_BASEDIR=${PWD}
+    - export CCACHE_DIR=${PWD}/ccache
+
+
 # Base definition for using oneAPI.
 .use-oneapi:base:
   variables:

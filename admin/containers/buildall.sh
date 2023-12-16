@@ -24,6 +24,7 @@ args[${#args[@]}]="--oneapi 2024.0 --intel-compute-runtime --ubuntu 22.04"
 args[${#args[@]}]="--oneapi 2023.2.0 --intel-compute-runtime --ubuntu 22.04 --rocm 5.4.3 --oneapi-plugin-amd"
 args[${#args[@]}]="--llvm --doxygen --mpi openmpi --venvs 3.7.7 3.9.13"
 args[${#args[@]}]="--ubuntu 22.04 --llvm 15 --cuda 11.7.1 --hipsycl 0.9.4 --rocm 5.3.3 --mpi mpich"
+args[${#args[@]}]="--ubuntu 22.04 --hipsycl 23.10.0 --rocm 5.7.1"
 args[${#args[@]}]="--intel-llvm 2022-09 --cuda 11.5.2 --rocm 5.3"
 
 echo
