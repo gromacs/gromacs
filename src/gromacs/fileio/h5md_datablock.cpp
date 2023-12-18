@@ -343,6 +343,7 @@ real GmxH5mdTimeDataBlock::getTimeOfFrame(hsize_t frame) const
     return tmpValue;
 }
 
+
 extern template hid_t
 openOrCreateDataSet<1>(hid_t, const char*, const char*, hid_t, const hsize_t*, CompressionAlgorithm, double);
 extern template hid_t

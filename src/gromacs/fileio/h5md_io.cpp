@@ -673,7 +673,7 @@ bool GmxH5mdIo::readNextFrameOfStandardDataBlocks(int64_t* step,
                                            nameStem + "/force",
                                            nameStem + "/velocity" };
     std::list<GmxH5mdTimeDataBlock> dataBlocksNextFrame{};
-    int64_t                         minStepNextFrame = std::numeric_limits<real>::max();
+    int64_t                         minStepNextFrame = std::numeric_limits<int64_t>::max();
     for (std::string name : dataBlockNames)
     {
         auto foundDataBlock = std::find(dataBlocks_.begin(), dataBlocks_.end(), name.c_str());
