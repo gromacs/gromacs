@@ -80,8 +80,8 @@ static herr_t iterativeSetupTimeDataBlocks(hid_t            locationId,
      * Get type of the object. The name of the object is passed to this function by
      * the Library.
      */
-    H5O_info_t infoBuffer;
-    H5Oget_info_by_name(locationId, name, &infoBuffer, H5O_INFO_BASIC, H5P_DEFAULT);
+    H5O_info1_t infoBuffer;
+    H5Oget_info_by_name1(locationId, name, &infoBuffer, H5P_DEFAULT);
     herr_t            returnVal        = 0;
     const std::string stepDataSetName  = std::string(name) + std::string("/step");
     const std::string timeDataSetName  = std::string(name) + std::string("/time");
