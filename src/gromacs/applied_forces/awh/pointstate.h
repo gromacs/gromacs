@@ -53,6 +53,7 @@
 
 #include "gromacs/mdtypes/awh_history.h"
 #include "gromacs/mdtypes/awh_params.h"
+#include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
 
 #include "biasparams.h"
@@ -352,9 +353,11 @@ private:
         double df = -std::log(weighthistSampled / weighthistTarget);
         freeEnergy_ += df;
 
-        GMX_RELEASE_ASSERT(std::abs(freeEnergy_) < detail::c_largePositiveExponent,
-                           "Very large free energy differences or badly normalized free energy in "
-                           "AWH update.");
+        if (std::abs(freeEnergy_) > detail::c_largePositiveExponent)
+        {
+            GMX_THROW(InvalidInputError(
+                    "An AWH free energy difference is larger than 700 kT, which is not supported"));
+        }
     }
 
     /*! \brief Update the reference weight histogram of a point.

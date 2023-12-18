@@ -246,6 +246,18 @@ unset(_gmx_mpi_type)
 unset(_gmx_double)
 unset(_gmxapi_level)
 
+# If libgromacs is not using an MPI library, then no MPI CMake targets
+# are defined. But gmxapi can optionally be built against MPI to
+# direct work done by multiple instances of such libgromacs, and if so
+# we need to find MPI and have it agree with that used for mpi4py.
+if (NOT TARGET MPI::MPI_CXX)
+    if (HAS_GROMACS_MPI)
+        message(WARNING "Inconsistency found! GROMACS does not have MPI support but "
+            "find_package(MPI) has been called and created the MPI::MPI_CXX target")
+    endif()
+    find_package(MPI COMPONENTS CXX)
+endif()
+
 # Detect mpi4py. Try to confirm compatibility of linked libraries.
 # For MPI-enabled GROMACS, enable mpi4py.h and bindings for
 # a `createContext(const ResourceAssignment& resources)` version.
@@ -336,7 +348,7 @@ else()
         find_package(MPI COMPONENTS CXX)
     else()
         # Building as part of GROMACS build tree.
-        if (_mpi4py_mpicxx AND NOT _mpi4py_compiler_warned)
+        if (_mpi4py_mpicxx AND MPI_CXX_COMPILER AND NOT _mpi4py_compiler_warned)
             if (CMAKE_VERSION VERSION_GREATER_EQUAL "3.19")
                 file(REAL_PATH ${_mpi4py_mpicxx} _mpi4py_mpicxx)
                 file(REAL_PATH ${MPI_CXX_COMPILER} MPI_CXX_COMPILER)
@@ -369,7 +381,7 @@ endif()
 target_link_libraries(_gmxapi PRIVATE Gromacs::gmxapi)
 
 # Enable MPI bindings, to the extent allowed by the Python and GROMACS environments.
-if (HAS_MPI4PY)
+if (HAS_MPI4PY AND TARGET MPI::MPI_CXX)
     target_include_directories(_gmxapi PRIVATE ${_mpi4py_include_path})
     target_sources(_gmxapi PRIVATE src/cpp/mpi_bindings.cpp)
     target_sources(_gmxapi PRIVATE src/cpp/pycontext_create.cpp)

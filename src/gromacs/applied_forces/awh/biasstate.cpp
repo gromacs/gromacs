@@ -204,9 +204,17 @@ double biasedLogWeightFromPoint(ArrayRef<const DimParams>  dimParams,
                 {
                     const int pointLambdaIndex     = grid.point(pointIndex).coordValue[d];
                     const int gridpointLambdaIndex = grid.point(gridpointIndex).coordValue[d];
-                    logWeight -= dimParams[d].fepDimParams().beta
-                                 * (neighborLambdaEnergies[pointLambdaIndex]
-                                    - neighborLambdaEnergies[gridpointLambdaIndex]);
+
+                    const double energyDiff = neighborLambdaEnergies[pointLambdaIndex]
+                                              - neighborLambdaEnergies[gridpointLambdaIndex];
+                    if (dimParams[d].fepDimParams().beta * energyDiff < -0.5 * detail::c_largePositiveExponent)
+                    {
+                        GMX_THROW(SimulationInstabilityError(gmx::formatString(
+                                "AWH lambda dimension encountered a too large negative neighbor "
+                                "energy difference of %f kJ/mol",
+                                energyDiff)));
+                    }
+                    logWeight -= dimParams[d].fepDimParams().beta * energyDiff;
                 }
             }
             else

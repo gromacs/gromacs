@@ -702,7 +702,7 @@ AwhDimParams::AwhDimParams(std::vector<t_inpfile>* inp, const std::string& prefi
                 "non-optimal for your system!",
                 opt.c_str(),
                 diffusion_default);
-        wi->addWarning(message);
+        wi->addNote(message);
         diffusionValue = diffusion_default;
     }
     diffusion_ = diffusionValue;
