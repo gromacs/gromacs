@@ -14,3 +14,13 @@ With a non-Windows installation, it is possible to invoke PLUMED directly from t
 ``-plumed`` option of the ``gmx mdrun`` command, followed by the path to a PLUMED input file.
 This can be done **without the need to apply a patch** as in previous |Gromacs| versions.
 Importantly, this interface is not feature complete, see :ref:`the section in the manual <plumed>` for the details.
+
+Support for amino-acid-specific energy correction maps (CMAPs)
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Previously, energy correction map (CMAP) types could only be specified using
+atom types and were applied to atoms in an amino-acid-agnostic way. CMAP types
+can now be specified using both atom types and residue types, which enables
+support for recent Amber force fields (ff19SB and later versions).
+
+:issue:`4430`

@@ -145,6 +145,8 @@ struct InteractionsOfType
     std::vector<real> cmap;
     //! The five atomtypes followed by a number that identifies the type.
     std::vector<int> cmapAtomTypes;
+    //! The five residue types followed by empty string for alignment with \link cmapAtomTypes \endlink.
+    std::vector<std::string> cmapResTypes_;
 
     //! Number of parameters.
     size_t size() const { return interactionTypes.size(); }
