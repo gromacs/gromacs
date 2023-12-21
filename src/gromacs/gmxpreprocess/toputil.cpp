@@ -163,7 +163,14 @@ static void print_bt(FILE*                                   out,
     /* print bondtypes */
     for (const auto& parm : bt->interactionTypes)
     {
-        bSwapParity                    = (parm.c0() == NOTSET) && (parm.c1() == -1);
+        if (ftype == F_CMAP)
+        {
+            bSwapParity = false;
+        }
+        else
+        {
+            bSwapParity = (parm.c0() == NOTSET) && (parm.c1() == -1);
+        }
         gmx::ArrayRef<const int> atoms = parm.atoms();
         if (!bDih)
         {

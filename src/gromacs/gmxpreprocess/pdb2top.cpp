@@ -1502,6 +1502,7 @@ static void gen_cmap(InteractionsOfType*                    psb,
                                cmap_atomid[2],
                                cmap_atomid[3],
                                cmap_atomid[4],
+                               {},
                                b.s.c_str());
             }
         }

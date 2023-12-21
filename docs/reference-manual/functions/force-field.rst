@@ -149,6 +149,27 @@ AMBER
 
 -  AMBERGS \ :ref:`117 <refGarcia2002>`
 
+AMBER19SB and newer versions provide support for amino-acid-specific
+energy correction maps (CMAPs). When these force fields are used with
+:ref:`pdb2gmx <gmx pdb2gmx>`, the default option is to enable CMAPs.
+If that is not the desired behavior, they can be disabled with ``-nocmap``
+parameters.
+
+CMAP types are specified using the following format:
+
+::
+
+    [ cmaptypes ]
+    C-* N-GLY XC-GLY C-GLY N-* 1 24 24\
+    3.44619344 4.59474328 4.73235504 5.80145072 8.84401368 ...
+
+where:
+
+- first five columns are pairs of atom and residue types,
+- sixth coulumn is function type (presently only ``1`` is supported),
+- seventh and eighth coulumns are grid size in ``x`` and ``y`` dimensions,
+- following ``grid size x * grid size y`` values constitute the CMAP grid.
+
 .. _charmmff:
 
 CHARMM

@@ -8999,7 +8999,7 @@ Protein_chain_A     3
   992   972   994   993     2
 
 [ cmap ]
-;  ai    aj    ak    al    am funct
+;  ai    aj    ak    al    am funct            c0            c1
    17    19    21    27    29     1
    27    29    31    48    50     1
    48    50    52    68    70     1

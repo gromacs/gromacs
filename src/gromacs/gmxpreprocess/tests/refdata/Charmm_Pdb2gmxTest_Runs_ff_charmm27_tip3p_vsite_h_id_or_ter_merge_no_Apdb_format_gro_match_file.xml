@@ -2431,7 +2431,7 @@ Protein             3
   266   259   268   267     2
 
 [ cmap ]
-;  ai    aj    ak    al    am funct
+;  ai    aj    ak    al    am funct            c0            c1
    15    17    19    26    28     1
    26    28    30    38    40     1
    38    40    42    53    55     1
