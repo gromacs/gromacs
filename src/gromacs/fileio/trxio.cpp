@@ -958,6 +958,8 @@ bool read_next_frame(const gmx_output_env_t* oenv, t_trxstatus* status, t_trxfra
             case efH5MD:
                 bRet = status->h5mdIo->readNextFrameOfStandardDataBlocks(
                         &fr->step, &fr->time, fr->box, fr->x, fr->v, fr->f, &fr->bBox, &fr->bX, &fr->bV, &fr->bF);
+                fr->bStep = bRet;
+                fr->bTime = bRet;
                 break;
             case efPDB: bRet = pdb_next_x(status, gmx_fio_getfp(status->fio), fr); break;
             case efGRO: bRet = gro_next_x_or_v(gmx_fio_getfp(status->fio), fr); break;
@@ -1174,6 +1176,8 @@ bool read_first_frame(const gmx_output_env_t*      oenv,
             else
             {
                 printcount(*status, oenv, fr->time, false);
+                fr->bStep = TRUE;
+                fr->bTime = TRUE;
             }
             bFirst = false;
             break;
