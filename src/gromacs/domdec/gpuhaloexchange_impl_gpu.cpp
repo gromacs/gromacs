@@ -138,6 +138,8 @@ void GpuHaloExchange::Impl::reinitHalo(DeviceBuffer<Float3> d_coordinatesBuffer,
     if (!receiveInPlace_)
     {
         // Same buffers will be used for both coordinates and forces
+        changePinningPolicy(&h_outOfPlaceRecvBuffer_, PinningPolicy::PinnedIfSupported);
+        changePinningPolicy(&h_outOfPlaceSendBuffer_, PinningPolicy::PinnedIfSupported);
         h_outOfPlaceSendBuffer_.resize(std::max(xSendSize_, fSendSize_));
         h_outOfPlaceRecvBuffer_.resize(std::max(xRecvSize_, fRecvSize_));
     }
