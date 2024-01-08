@@ -121,6 +121,9 @@ macro(manage_linear_algebra_library name function_in_library)
             endif()
             set(GMX_DESCRIBE_${name} "Internal")
         endif()
+    else()
+        # GMX_EXTERNAL_${name} is explicitly FALSE
+        set(GMX_DESCRIBE_${name} "Internal")
     endif()
 
     # Default behaviour is to try to use an external library, but fall

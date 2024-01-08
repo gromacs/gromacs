@@ -636,6 +636,20 @@ dynamics and long correlation times, which may require more sampling.
 
 .. _awhusage:
 
+Limitations
+~~~~~~~~~~~
+
+The only real limitation of the AWH implementation, apart from the not uncommon
+practical issue that the method might not converge sufficientcly fast, is a limit
+on the maximum free energy difference. This limit is set to 700 $k_B T$, because
+$e^700$ is close to the maximum value that can be accurately represented by
+a double precision floating point value. For physical reaction coordinates this
+is not a limit in practice. But for alchemical coordinates this does limit
+the range of applications. For instance, hydration free-energies of divalent
+cations with a pair of monovalent anions can exceed this limit. The limit can
+also be exceeded when decoupling large molecules from solvent, but this often
+coincides with the limit where the sampling becomes problematic.
+
 Usage
 ~~~~~
 

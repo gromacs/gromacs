@@ -42,11 +42,17 @@ else ()
     set(GMX_LIB_MPI 0)
 endif ()
 
+# If we aren't going to use an MPI library, then don't search for one
+if (NOT GMXAPI AND NOT GMX_LIB_MPI)
+    return()
+endif()
+
 # CMake's FindMPI.cmake is not robust enough to cope with a broken MPI
 # installation that a GROMACS user might not explicitly want to use,
-# but which are searched for because MPI is an optional dependency of
-# gmxapi.
-if (NOT GMX_MPI AND NOT CMAKE_DISABLE_FIND_PACKAGE_MPI AND NOT MPI_ALREADY_SEARCHED)
+# but which are searched for because an MPI library is an optional
+# dependency of gmxapi even when GROMACS is not built with an MPI
+# library.
+if (NOT GMX_LIB_MPI AND NOT CMAKE_DISABLE_FIND_PACKAGE_MPI AND NOT MPI_ALREADY_SEARCHED)
     message(STATUS "GROMACS is being built without library MPI support (-DGMX_MPI=no). However "
         "MPI is potentially useful for the gmxapi Python API, so we will search for MPI anyway.  "
         "If this causes problems, disable the check with -DCMAKE_DISABLE_FIND_PACKAGE_MPI=on.")

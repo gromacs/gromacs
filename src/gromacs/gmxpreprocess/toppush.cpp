@@ -1085,7 +1085,7 @@ void push_nbt(Directive d, t_nbparam** nbt, PreprocessingAtomTypes* atypes, char
         /* When the B topology parameters are not set,
          * copy them from topology A
          */
-        GMX_ASSERT(nrfp <= 4, "LJ-14 cannot have more than 4 parameters");
+        GMX_ASSERT(nrfp <= NRFP(F_LJ14), "LJ-14 cannot have more than 4 parameters");
         for (i = n; i < nrfp; i++)
         {
             c[i] = c[i - 2];
@@ -1183,6 +1183,8 @@ void push_cmaptype(Directive                         d,
                    char*                             line,
                    WarningHandler*                   wi)
 {
+    GMX_ASSERT(nral == NRAL(F_CMAP), "CMAP requires 5 atoms per interaction");
+
     const char* formal = "%s%s%s%s%s%s%s%s%n";
 
     int  ft, ftype, nn, nrfp, nrfpA, nrfpB;
@@ -1193,8 +1195,6 @@ void push_cmaptype(Directive                         d,
     /* Keep the compiler happy */
     read_cmap = 0;
     start     = 0;
-
-    GMX_ASSERT(nral == 5, "CMAP requires 5 atoms per interaction");
 
     /* Here we can only check for < 8 */
     if ((nn = sscanf(line, formal, alc[0], alc[1], alc[2], alc[3], alc[4], alc[5], alc[6], alc[7], &nchar_consumed))
@@ -1944,8 +1944,6 @@ void push_bond(Directive                         d,
         }
         for (int j = i + 1; (j < nral); j++)
         {
-            GMX_ASSERT(j < MAXATOMLIST + 1,
-                       "Values from nral=NRAL() will satisfy this, we assert to keep gcc 4 happy");
             if (aa[i] == aa[j])
             {
                 auto message = gmx::formatString(

@@ -1,0 +1,144 @@
+# Test goal: build with AdaptiveCpp/hipSYCL (ROCm backend) to check SYCL code compatibility
+# Test intents (should change rarely and conservatively):
+#   OS: Ubuntu newest supported
+#   Compiler: AMD Clang
+#   GPU: AdaptiveCpp
+#   Scope: configure, build
+# Test implementation choices (free to change as needed):
+#   OS: Ubuntu 22.04
+#   Build type: RelWithAssert
+#   Compiler: AMD Clang 16 from ROCm 5.7.1
+#   MPI: threadMPI (AMD build)
+#   SIMD: AVX2_128
+
+gromacs:acpp-rocm:configure:
+  extends:
+    - .gromacs:base:configure
+    - .use-amdclang:base
+    - .use-sycl
+    - .rules:merge-and-post-merge-acceptance
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-22.04-gcc-9-hipsycl-23.10.0-rocm-5.7.1
+  variables:
+    CMAKE: /usr/local/cmake-3.18.4/bin/cmake
+    CMAKE_SIMD_OPTIONS: "-DGMX_SIMD=AVX2_128"
+    CMAKE_BUILD_TYPE_OPTIONS: "-DCMAKE_BUILD_TYPE=RelWithAssert"
+    CMAKE_GPU_OPTIONS: "-DGMX_GPU=SYCL -DGMX_SYCL=ACPP -DACPP_TARGETS=hip:gfx906,gfx1034 -DGMX_GPU_FFT_LIBRARY=vkFFT"
+    # Unset COMPILER_LAUNCHER (previously set to ccache) because it conflicts with hipSYCL's syclcc-launcher
+    CMAKE_EXTRA_OPTIONS: "-DCMAKE_C_COMPILER_LAUNCHER= -DCMAKE_CXX_COMPILER_LAUNCHER= -DGMX_INSTALL_LEGACY_API=ON"
+
+gromacs:acpp-rocm:build:
+  extends:
+    - .variables:default
+    - .gromacs:base:build
+    - .before_script:default
+    # Not using ccache because it plays poorly with syclcc-launcher
+    - .rules:merge-and-post-merge-acceptance
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-22.04-gcc-9-hipsycl-23.10.0-rocm-5.7.1
+  variables:
+    CMAKE: /usr/local/cmake-3.18.4/bin/cmake
+  tags:
+    - k8s-scilifelab
+  needs:
+    - job: gromacs:acpp-rocm:configure
+
+gromacs:acpp-rocm:test:
+  extends:
+    - .variables:default
+    - .gromacs:base:test
+    - .rules:post-merge-acceptance
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-22.04-gcc-9-hipsycl-23.10.0-rocm-5.7.1
+  variables:
+    CMAKE: /usr/local/cmake-3.18.4/bin/cmake
+    KUBERNETES_EXTENDED_RESOURCE_NAME: "amd.com/gpu"
+    KUBERNETES_EXTENDED_RESOURCE_LIMIT: 1
+    GMX_TEST_LABELS: "QuickGpuTest|SlowGpuTest"
+  tags:
+    - k8s-scilifelab
+  needs:
+    - job: gromacs:acpp-rocm:build
+
+gromacs:acpp-rocm:regressiontest:
+  extends:
+    - .variables:default
+    - .gromacs:base:regressiontest
+    - .rules:post-merge-acceptance
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-22.04-gcc-9-hipsycl-23.10.0-rocm-5.7.1
+  variables:
+    CMAKE: /usr/local/cmake-3.18.4/bin/cmake
+    REGRESSIONTEST_TOTAL_RANK_NUMBER: 2
+    REGRESSIONTEST_OMP_RANK_NUMBER: 1
+    KUBERNETES_EXTENDED_RESOURCE_NAME: "amd.com/gpu"
+    KUBERNETES_EXTENDED_RESOURCE_LIMIT: 1
+  tags:
+    - k8s-scilifelab
+  needs:
+    - job: gromacs:acpp-rocm:build
+    - job: regressiontests:prepare
+
+
+gromacs:acpp-rocm-nightly:configure:
+  extends:
+    - .gromacs:base:configure
+    - .use-amdclang:base
+    - .use-sycl
+    - .rules:nightly-not-for-release
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-22.04-gcc-9-hipsycl-23.10.0-rocm-5.7.1
+  variables:
+    CMAKE: /usr/local/cmake-3.24.0/bin/cmake
+    CMAKE_SIMD_OPTIONS: "-DGMX_SIMD=AVX2_128"
+    CMAKE_BUILD_TYPE_OPTIONS: "-DCMAKE_BUILD_TYPE=RelWithAssert"
+    CMAKE_GPU_OPTIONS: "-DGMX_GPU=SYCL -DGMX_SYCL=ACPP -DACPP_TARGETS='hip:gfx906'"
+    # Unset COMPILER_LAUNCHER (previously set to ccache) because it conflicts with hipSYCL's syclcc-launcher
+    CMAKE_EXTRA_OPTIONS: "-DCMAKE_C_COMPILER_LAUNCHER= -DCMAKE_CXX_COMPILER_LAUNCHER="
+
+gromacs:acpp-rocm-nightly:build:
+  extends:
+    - .variables:default
+    - .gromacs:base:build
+    - .before_script:default
+    # Not using ccache because it plays poorly with syclcc-launcher
+    - .rules:nightly-not-for-release
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-22.04-gcc-9-hipsycl-23.10.0-rocm-5.7.1
+  variables:
+    CMAKE: /usr/local/cmake-3.24.0/bin/cmake
+  tags:
+    - k8s-scilifelab
+  needs:
+    - job: gromacs:acpp-rocm-nightly:configure
+
+gromacs:acpp-rocm-nightly:test:
+  extends:
+    - .variables:default
+    - .gromacs:base:test
+    - .rules:nightly-not-for-release
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-22.04-gcc-9-hipsycl-23.10.0-rocm-5.7.1
+  variables:
+    CMAKE: /usr/local/cmake-3.24.0/bin/cmake
+    # The following two variables are not used by k8s, since this job runs on a separate host
+    # But it's easier to set them up and use the existing scripts for job preparation that rely on them
+    KUBERNETES_EXTENDED_RESOURCE_NAME: "amd.com/gpu"
+    KUBERNETES_EXTENDED_RESOURCE_LIMIT: 2
+    GMX_TEST_LABELS: "QuickGpuTest|SlowGpuTest"
+  tags:
+    - amd-gpu-gfx906
+  needs:
+    - job: gromacs:acpp-rocm-nightly:build
+
+gromacs:acpp-rocm-nightly:regressiontest:
+  extends:
+    - .variables:default
+    - .gromacs:base:regressiontest
+    - .rules:nightly-not-for-release
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-22.04-gcc-9-hipsycl-23.10.0-rocm-5.7.1
+  variables:
+    CMAKE: /usr/local/cmake-3.24.0/bin/cmake
+    REGRESSIONTEST_TOTAL_RANK_NUMBER: 2
+    REGRESSIONTEST_OMP_RANK_NUMBER: 2
+    KUBERNETES_EXTENDED_RESOURCE_NAME: "amd.com/gpu"
+    KUBERNETES_EXTENDED_RESOURCE_LIMIT: 2
+  tags:
+    - k8s-scilifelab
+  needs:
+    - job: gromacs:acpp-rocm-nightly:build
+    - job: regressiontests:prepare
+

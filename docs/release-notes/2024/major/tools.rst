@@ -24,3 +24,13 @@ avoid rounding issues. These issues led to perceived erroneous shifts in
 the results.
 
 :issue:`4647`
+
+Handle CYX-CYX disulfide bonds in ``gmx pdb2gmx``
+"""""""""""""""""""""""""""""""""""""""""""""""""
+
+Naming CYS residues as CYX shows that they should form a disulfide bond.
+``gmx pdb2gmx`` will now correctly interpret them as disulfide bond forming
+residues.
+
+:issue:`4929`
+

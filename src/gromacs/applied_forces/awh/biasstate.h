@@ -575,7 +575,8 @@ private:
     const BiasSharing* biasSharing_;
 
     /* Correlation tensor time integral, for all points, shared across all ranks (weighted based on
-     * the local weight contribution). The structure is [points][correlationTensorIndex] */
+     * the local weight contribution). The structure is [points][correlationTensorIndex].
+     * This is only updated on the main MPI ranks.*/
     std::vector<std::vector<double>> sharedCorrelationTensorTimeIntegral_;
 };
 

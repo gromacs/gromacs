@@ -404,10 +404,10 @@ TEST_P(ParameterizedFFTTest3D, RunsOnHost)
 
 /*! \brief Whether the FFT is in- or out-of-place
  *
- *  DPCPP uses oneMKL, which seems to have troubles with out-of-place
- *  transforms. */
-constexpr bool sc_performOutOfPlaceFFT =
-        (GMX_GPU_FFT_MKL == 0) && (GMX_GPU_FFT_BBFFT == 0); // NOLINT(misc-redundant-expression)
+ * For real simulations, we use in-place FFT with BBFFT (see pme_gpu_init_internal)
+ * and out-of-place FFT otherwise, so that's what we test.
+ */
+constexpr bool sc_performOutOfPlaceFFT = (GMX_GPU_FFT_BBFFT == 0);
 
 /*! \brief Return the output grid depending on whether in- or out-of
  * place FFT is used
@@ -420,7 +420,7 @@ constexpr bool sc_performOutOfPlaceFFT =
 template<bool performOutOfPlaceFFT>
 DeviceBuffer<float>* actualOutputGrid(DeviceBuffer<float>* realGrid, DeviceBuffer<float>* complexGrid);
 
-#    if GMX_SYCL_DPCPP && (GMX_GPU_FFT_MKL || GMX_GPU_FFT_BBFFT)
+#    if GMX_SYCL_DPCPP && (GMX_GPU_FFT_BBFFT)
 
 template<>
 DeviceBuffer<float>* actualOutputGrid<false>(DeviceBuffer<float>* realGrid,

@@ -98,8 +98,6 @@ enum class DeviceStatus : int
      * See \c GMX_CUDA_TARGET_SM and \c GMX_CUDA_TARGET_COMPUTE CMake variables.
      */
     DeviceNotTargeted,
-    //! \brief LevelZero backend is known to cause errors with oneAPI 2022.0.1
-    IncompatibleLevelZeroAndOneApi2022,
     //! \brief AMD RDNA devices (gfx10xx, gfx11xx) with 32-wide execution are not supported with OpenCL,
     IncompatibleOclAmdRdna,
     //! \brief RDNA not targeted (SYCL)
@@ -130,8 +128,7 @@ static const gmx::EnumerationArray<DeviceStatus, const char*> c_deviceStateStrin
     "non-functional",
     "unavailable",
     "not in set of targeted devices",
-    "incompatible (Level Zero backend is not stable with oneAPI 2022.0)", // Issue #4354
-    "incompatible (AMD RDNA devices are not supported)",                  // Issue #4521
+    "incompatible (AMD RDNA devices are not supported)", // Issue #4521
     // clang-format off
     // NOLINTNEXTLINE(bugprone-suspicious-missing-comma)
     "incompatible (please recompile with GMX" "_ACPP_ENABLE_AMD_RDNA_SUPPORT)"
