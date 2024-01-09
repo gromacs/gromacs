@@ -640,7 +640,7 @@ Limitations
 ~~~~~~~~~~~
 
 The only real limitation of the AWH implementation, apart from the not uncommon
-practical issue that the method might not converge sufficientcly fast, is a limit
+practical issue that the method might not converge sufficiently fast, is a limit
 on the maximum free energy difference. This limit is set to 700 $k_B T$, because
 $e^700$ is close to the maximum value that can be accurately represented by
 a double precision floating point value. For physical reaction coordinates this
