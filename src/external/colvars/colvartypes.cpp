@@ -7,12 +7,8 @@
 // If you wish to distribute your changes, please submit them to the
 // Colvars repository at GitHub.
 
-#include <cstdlib>
-#include <cstring>
-
 #include "colvarmodule.h"
 #include "colvartypes.h"
-#include "colvarparse.h"
 #include "colvaratoms.h"
 #include "colvar_rotation_derivative.h"
 

@@ -93,8 +93,12 @@ public:
   //// Give the count at a given bin index.
   // FIXME this is currently 1D only
   virtual int bin_count(int bin_index);
+
   //// Share information between replicas, whatever it may be.
   virtual int replica_share();
+
+  /// Report the frequency at which this bias needs to communicate with replicas
+  virtual size_t replica_share_freq() const;
 
   /// Perform analysis tasks
   virtual void analyze() {}

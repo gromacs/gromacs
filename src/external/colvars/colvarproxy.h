@@ -12,7 +12,6 @@
 
 #include "colvarmodule.h"
 #include "colvartypes.h"
-#include "colvarvalue.h"
 #include "colvarproxy_io.h"
 #include "colvarproxy_system.h"
 #include "colvarproxy_tcl.h"
@@ -55,6 +54,9 @@ public:
   /// Check that this atom number is valid, but do not initialize the
   /// corresponding atom yet
   virtual int check_atom_id(int atom_number);
+
+  /// Check whether it is possible to select atoms by residue number name
+  virtual int check_atom_name_selections_available();
 
   /// Select this atom for collective variables calculation, using name and
   /// residue number.  Not all programs support this: leave this function as
@@ -477,7 +479,7 @@ public:
   bool b_smp_active;
 
   /// Whether threaded parallelization is available (TODO: make this a cvm::deps feature)
-  virtual int smp_enabled();
+  virtual int check_smp_enabled();
 
   /// Distribute calculation of colvars (and their components) across threads
   virtual int smp_colvars_loop();
@@ -602,6 +604,11 @@ public:
   /// Destructor
   ~colvarproxy() override;
 
+  inline std::string const &engine_name() const
+  {
+    return engine_name_;
+  }
+
   bool io_available() override;
 
   /// Request deallocation of the module (currently only implemented by VMD)
@@ -714,7 +721,10 @@ protected:
   /// Track which features have been acknowledged during the last run
   size_t features_hash;
 
-private:
+protected:
+
+  /// Name of the simulation engine that the derived proxy object supports
+  std::string engine_name_ = "standalone";
 
   /// Queue of config strings or files to be fed to the module
   void *config_queue_;

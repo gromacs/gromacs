@@ -11,6 +11,7 @@
 #define COLVAR_H
 
 #include <functional>
+#include <list>
 #include <iosfwd>
 #include <map>
 
@@ -249,6 +250,9 @@ public:
   /// Main init function
   int init(std::string const &conf);
 
+  /// Populate the map of available CVC types
+  void define_component_types();
+
   /// Parse the CVC configuration and allocate their data
   int init_components(std::string const &conf);
 
@@ -269,15 +273,12 @@ public:
 
 private:
 
-  /// Parse the CVC configuration for all components of a certain type
-  template<typename def_class_name> int init_components_type(std::string const & conf,
-                                                             char const *def_desc,
-                                                             char const *def_config_key);
+  /// Declare an available CVC type and its description, register them in the global map
+  template <typename def_class_name>
+  void add_component_type(char const *description, char const *config_key);
 
-  /// The names of all available components are registered in the global map
-  /// at first, and then the CVC configuration is parsed by this function
-  int init_components_type_from_global_map(const std::string& conf,
-                                           const char* def_config_key);
+  /// Initialize any CVC objects matching the given key
+  int init_components_type(const std::string &conf, const char *config_key);
 
 public:
 
@@ -688,8 +689,11 @@ protected:
 #endif
 
   /// A global mapping of cvc names to the cvc constructors
-  static std::map<std::string, std::function<colvar::cvc *(const std::string &subcv_conf)>>
+  static std::map<std::string, std::function<colvar::cvc *(const std::string &conf)>>
       global_cvc_map;
+
+  /// A global mapping of cvc names to the corresponding descriptions
+  static std::map<std::string, std::string> global_cvc_desc_map;
 
   /// Volmap numeric IDs, one for each CVC (-1 if not available)
   std::vector<int> volmap_ids_;

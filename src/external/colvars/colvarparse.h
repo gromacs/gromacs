@@ -11,6 +11,7 @@
 #define COLVARPARSE_H
 
 #include <cstring>
+#include <list>
 #include <string>
 
 #include "colvarmodule.h"

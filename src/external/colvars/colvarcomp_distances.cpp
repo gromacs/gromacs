@@ -11,7 +11,6 @@
 
 #include "colvarmodule.h"
 #include "colvarvalue.h"
-#include "colvarparse.h"
 #include "colvar.h"
 #include "colvarcomp.h"
 #include "colvar_rotation_derivative.h"
@@ -961,6 +960,7 @@ colvar::rmsd::rmsd(std::string const &conf)
   provide(f_cvc_inv_gradient);
 
   atoms = parse_group(conf, "atoms");
+  if (cvm::get_error()) return;
 
   if (!atoms || atoms->size() == 0) {
     cvm::error("Error: \"atoms\" must contain at least 1 atom to compute RMSD.");
@@ -1223,6 +1223,7 @@ colvar::eigenvector::eigenvector(std::string const &conf)
   x.type(colvarvalue::type_scalar);
 
   atoms = parse_group(conf, "atoms");
+  if (cvm::get_error()) return;
 
   {
     bool const b_inline = get_keyval(conf, "refPositions", ref_pos, ref_pos);

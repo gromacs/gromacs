@@ -10,13 +10,11 @@
 #include <numeric>
 #include <algorithm>
 #include <cmath>
-#include <cstdlib>
 #include <limits>
 #include <fstream>
 
 #include "colvarmodule.h"
 #include "colvarvalue.h"
-#include "colvarparse.h"
 #include "colvar.h"
 #include "colvarcomp.h"
 

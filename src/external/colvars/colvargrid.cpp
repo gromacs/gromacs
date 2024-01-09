@@ -8,13 +8,11 @@
 // Colvars repository at GitHub.
 
 #include <ctime>
-#include <fstream>
 
 #include "colvarmodule.h"
 #include "colvarvalue.h"
 #include "colvarparse.h"
 #include "colvar.h"
-#include "colvarcomp.h"
 #include "colvargrid.h"
 #include "colvargrid_def.h"
 
@@ -666,24 +664,23 @@ void integrate_potential::update_div_neighbors(const std::vector<int> &ix0)
 
 void integrate_potential::get_grad(cvm::real * g, std::vector<int> &ix)
 {
-  size_t count, i;
-  bool edge = gradients->wrap_edge(ix); // Detect edge if non-PBC
+    size_t count, i;
+    bool edge = gradients->wrap_edge(ix);
+    if (!edge) {
+        if (gradients->samples) {
+          count = gradients->samples->value(ix);
+        } else {
+          count = 1;
+        }
+        cvm::real fact = 0.0;
+        if (count) fact = 1.0 / count;
+        cvm::real const *grad = &(gradients->value(ix));
 
-  if (gradients->samples) {
-    count = gradients->samples->value(ix);
-  } else {
-    count = 1;
-  }
-
-  if (!edge && count) {
-    cvm::real const *grad = &(gradients->value(ix));
-    cvm::real const fact = 1.0 / count;
-    for ( i = 0; i<nd; i++ ) {
-      g[i] = fact * grad[i];
-    }
+        for ( i = 0; i<nd; i++ )
+          g[i] = fact * grad[i];
   } else {
     for ( i = 0; i<nd; i++ ) {
-      g[i] = 0.0;
+          g[i] = 0.0;
     }
   }
 }

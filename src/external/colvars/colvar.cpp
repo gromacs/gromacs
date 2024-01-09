@@ -18,13 +18,17 @@
 #include "colvarparse.h"
 #include "colvarcomp.h"
 #include "colvar.h"
-#include "colvarscript.h"
+#include "colvarbias.h"
 #include "colvars_memstream.h"
 
 
-std::map<std::string, std::function<colvar::cvc *(const std::string &subcv_conf)>>
+
+std::map<std::string, std::function<colvar::cvc *(const std::string &conf)>>
     colvar::global_cvc_map =
-        std::map<std::string, std::function<colvar::cvc *(const std::string &subcv_conf)>>();
+        std::map<std::string, std::function<colvar::cvc *(const std::string &conf)>>();
+
+std::map<std::string, std::string> colvar::global_cvc_desc_map =
+    std::map<std::string, std::string>();
 
 
 colvar::colvar()
@@ -748,20 +752,18 @@ int colvar::init_output_flags(std::string const &conf)
 
 
 template <typename def_class_name>
-int colvar::init_components_type(std::string const &, char const * /* def_desc */,
-                                 char const *def_config_key)
+void colvar::add_component_type(char const *def_description, char const *def_config_key)
 {
-  // global_cvc_map is only supported in the C++11 case
-  global_cvc_map[def_config_key] = [](const std::string &cvc_conf) {
-    return new def_class_name(cvc_conf);
-  };
-  // TODO: maybe it is better to do more check to avoid duplication in the map?
-  return COLVARS_OK;
+  if (global_cvc_map.count(def_config_key) == 0) {
+    global_cvc_map[def_config_key] = [](const std::string &cvc_conf) {
+      return new def_class_name(cvc_conf);
+    };
+    global_cvc_desc_map[def_config_key] = std::string(def_description);
+  }
 }
 
 
-int colvar::init_components_type_from_global_map(const std::string& conf,
-                                                 const char* def_config_key) {
+int colvar::init_components_type(const std::string& conf, const char* def_config_key) {
   size_t def_count = 0;
   std::string def_conf = "";
   size_t pos = 0;
@@ -774,38 +776,36 @@ int colvar::init_components_type_from_global_map(const std::string& conf,
              "a new \""+std::string(def_config_key)+"\" component"+
              (cvm::debug() ? ", with configuration:\n"+def_conf
               : ".\n"));
+    cvc *cvcp = global_cvc_map[def_config_key](def_conf);
     cvm::increase_depth();
-    // only the following line is different from init_components_type
-    // in the non-C++11 case
-    cvc *cvcp = global_cvc_map.at(def_config_key)(def_conf);
-    if (cvcp != NULL) {
+    if (cvcp) {
+      int error_code = cvcp->init_code;
       cvcs.push_back(cvcp);
-      cvcp->check_keywords(def_conf, def_config_key);
-      cvcp->set_function_type(def_config_key);
-      if (cvm::get_error()) {
-        cvm::error("Error: in setting up component \""+
-                   std::string(def_config_key)+"\".\n", COLVARS_INPUT_ERROR);
-        return COLVARS_INPUT_ERROR;
+      error_code |= cvcp->set_function_type(def_config_key);
+      if (error_code == COLVARS_OK) {
+        error_code |= cvcp->check_keywords(def_conf, def_config_key);
       }
-      cvm::decrease_depth();
+      if (error_code != COLVARS_OK) {
+        cvm::decrease_depth();
+        return cvm::error("Error: in setting up component \"" + std::string(def_config_key) +
+                              "\".\n",
+                          COLVARS_INPUT_ERROR);
+      }
     } else {
       cvm::decrease_depth();
-      cvm::error("Error: in allocating component \""+
-                   std::string(def_config_key)+"\".\n",
-                 COLVARS_MEMORY_ERROR);
-      return COLVARS_MEMORY_ERROR;
+      return cvm::error("Error: in allocating component \"" + std::string(def_config_key) + "\".\n",
+                        COLVARS_MEMORY_ERROR);
     }
 
-    if ( (cvcp->period != 0.0) || (cvcp->wrap_center != 0.0) ) {
-      if (! cvcp->is_enabled(f_cvc_periodic)) {
-        cvm::error("Error: invalid use of period and/or "
-                   "wrapAround in a \""+
-                   std::string(def_config_key)+
-                   "\" component.\n"+
-                   "Period: "+cvm::to_str(cvcp->period) +
-                   " wrapAround: "+cvm::to_str(cvcp->wrap_center),
-                   COLVARS_INPUT_ERROR);
-        return COLVARS_INPUT_ERROR;
+    if ((cvcp->period != 0.0) || (cvcp->wrap_center != 0.0)) {
+      if (!cvcp->is_enabled(f_cvc_periodic)) {
+        cvm::decrease_depth();
+        return cvm::error("Error: invalid use of period and/or "
+                          "wrapAround in a \"" +
+                              std::string(def_config_key) + "\" component.\n" +
+                              "Period: " + cvm::to_str(cvcp->period) +
+                              " wrapAround: " + cvm::to_str(cvcp->wrap_center),
+                          COLVARS_INPUT_ERROR);
       }
     }
 
@@ -818,137 +818,140 @@ int colvar::init_components_type_from_global_map(const std::string& conf,
 
     cvcs.back()->setup();
     if (cvm::debug()) {
-      cvm::log("Done initializing a \""+
-               std::string(def_config_key)+
-               "\" component"+
-               (cvm::debug() ?
-                ", named \""+cvcs.back()->name+"\""
-                : "")+".\n");
+      cvm::log("Done initializing a \"" + std::string(def_config_key) + "\" component" +
+               (cvm::debug() ? ", named \"" + cvcs.back()->name + "\"" : "") + ".\n");
     }
+
+    cvm::decrease_depth();
+
     def_conf = "";
     if (cvm::debug()) {
-      cvm::log("Parsed "+cvm::to_str(cvcs.size())+
-               " components at this time.\n");
+      cvm::log("Parsed " + cvm::to_str(cvcs.size()) + " components at this time.\n");
     }
   }
 
   return COLVARS_OK;
 }
 
+
+void colvar::define_component_types()
+{
+  colvarproxy *proxy = cvm::main()->proxy;
+
+  add_component_type<distance>("distance", "distance");
+  add_component_type<distance_vec>("distance vector", "distanceVec");
+  add_component_type<cartesian>("Cartesian coordinates", "cartesian");
+  add_component_type<distance_dir>("distance vector direction", "distanceDir");
+  add_component_type<distance_z>("distance projection on an axis", "distanceZ");
+  add_component_type<distance_xy>("distance projection on a plane", "distanceXY");
+  add_component_type<polar_theta>("spherical polar angle theta", "polarTheta");
+  add_component_type<polar_phi>("spherical azimuthal angle phi", "polarPhi");
+  add_component_type<distance_inv>("average distance weighted by inverse power", "distanceInv");
+  add_component_type<distance_pairs>("N1xN2-long vector of pairwise distances", "distancePairs");
+  add_component_type<dipole_magnitude>("dipole magnitude", "dipoleMagnitude");
+  add_component_type<coordnum>("coordination number", "coordNum");
+  add_component_type<selfcoordnum>("self-coordination number", "selfCoordNum");
+  add_component_type<groupcoordnum>("group-coordination number", "groupCoord");
+  add_component_type<angle>("angle", "angle");
+  add_component_type<dipole_angle>("dipole angle", "dipoleAngle");
+  add_component_type<dihedral>("dihedral", "dihedral");
+  add_component_type<h_bond>("hydrogen bond", "hBond");
+
+  if (proxy->check_atom_name_selections_available() == COLVARS_OK) {
+    add_component_type<alpha_angles>("alpha helix", "alpha");
+    add_component_type<dihedPC>("dihedral principal component", "dihedralPC");
+  }
+
+  add_component_type<orientation>("orientation", "orientation");
+  add_component_type<orientation_angle>("orientation angle", "orientationAngle");
+  add_component_type<orientation_proj>("orientation projection", "orientationProj");
+  add_component_type<tilt>("tilt", "tilt");
+  add_component_type<spin_angle>("spin angle", "spinAngle");
+  add_component_type<rmsd>("RMSD", "rmsd");
+  add_component_type<gyration>("radius of gyration", "gyration");
+  add_component_type<inertia>("moment of inertia", "inertia");
+  add_component_type<inertia_z>("moment of inertia around an axis", "inertiaZ");
+  add_component_type<eigenvector>("eigenvector", "eigenvector");
+  add_component_type<alch_lambda>("alchemical coupling parameter", "alchLambda");
+  add_component_type<alch_Flambda>("force on alchemical coupling parameter", "alchFLambda");
+  add_component_type<aspath>("arithmetic path collective variables (s)", "aspath");
+  add_component_type<azpath>("arithmetic path collective variables (z)", "azpath");
+  add_component_type<gspath>("geometrical path collective variables (s)", "gspath");
+  add_component_type<gzpath>("geometrical path collective variables (z)", "gzpath");
+  add_component_type<linearCombination>("linear combination of other collective variables", "linearCombination");
+  add_component_type<gspathCV>("geometrical path collective variables (s) for other CVs", "gspathCV");
+  add_component_type<gzpathCV>("geometrical path collective variables (z) for other CVs", "gzpathCV");
+  add_component_type<aspathCV>("arithmetic path collective variables (s) for other CVs", "aspathCV");
+  add_component_type<azpathCV>("arithmetic path collective variables (s) for other CVs", "azpathCV");
+  add_component_type<euler_phi>("euler phi angle of the optimal orientation", "eulerPhi");
+  add_component_type<euler_psi>("euler psi angle of the optimal orientation", "eulerPsi");
+  add_component_type<euler_theta>("euler theta angle of the optimal orientation", "eulerTheta");
+
+#ifdef LEPTON
+  add_component_type<customColvar>("CV with support of the Lepton custom function", "customColvar");
+#endif
+
+  add_component_type<neuralNetwork>("neural network CV for other CVs", "neuralNetwork");
+
+  if (proxy->check_volmaps_available() == COLVARS_OK) {
+    add_component_type<map_total>("total value of atomic map", "mapTotal");
+  }
+}
+
+
 int colvar::init_components(std::string const &conf)
 {
   int error_code = COLVARS_OK;
   size_t i = 0, j = 0;
 
-  // in the non-C++11 case, the components are initialized directly by init_components_type;
-  // in the C++11 case, the components are stored in the global_cvc_map at first
-  // by init_components_type, and then the map is iterated to initialize all components.
-  error_code |= init_components_type<distance>(conf, "distance", "distance");
-  error_code |= init_components_type<distance_vec>(conf, "distance vector", "distanceVec");
-  error_code |= init_components_type<cartesian>(conf, "Cartesian coordinates", "cartesian");
-  error_code |= init_components_type<distance_dir>(conf, "distance vector "
-    "direction", "distanceDir");
-  error_code |= init_components_type<distance_z>(conf, "distance projection "
-    "on an axis", "distanceZ");
-  error_code |= init_components_type<distance_xy>(conf, "distance projection "
-    "on a plane", "distanceXY");
-  error_code |= init_components_type<polar_theta>(conf, "spherical polar angle theta",
-    "polarTheta");
-  error_code |= init_components_type<polar_phi>(conf, "spherical azimuthal angle phi",
-    "polarPhi");
-  error_code |= init_components_type<distance_inv>(conf, "average distance "
-    "weighted by inverse power", "distanceInv");
-  error_code |= init_components_type<distance_pairs>(conf, "N1xN2-long vector "
-    "of pairwise distances", "distancePairs");
-  error_code |= init_components_type<dipole_magnitude>(conf, "dipole magnitude",
-    "dipoleMagnitude");
-  error_code |= init_components_type<coordnum>(conf, "coordination "
-    "number", "coordNum");
-  error_code |= init_components_type<selfcoordnum>(conf, "self-coordination "
-    "number", "selfCoordNum");
-  error_code |= init_components_type<groupcoordnum>(conf, "group-coordination "
-    "number", "groupCoord");
-  error_code |= init_components_type<angle>(conf, "angle", "angle");
-  error_code |= init_components_type<dipole_angle>(conf, "dipole angle", "dipoleAngle");
-  error_code |= init_components_type<dihedral>(conf, "dihedral", "dihedral");
-  error_code |= init_components_type<h_bond>(conf, "hydrogen bond", "hBond");
-  error_code |= init_components_type<alpha_angles>(conf, "alpha helix", "alpha");
-  error_code |= init_components_type<dihedPC>(conf, "dihedral "
-    "principal component", "dihedralPC");
-  error_code |= init_components_type<orientation>(conf, "orientation", "orientation");
-  error_code |= init_components_type<orientation_angle>(conf, "orientation "
-    "angle", "orientationAngle");
-  error_code |= init_components_type<orientation_proj>(conf, "orientation "
-    "projection", "orientationProj");
-  error_code |= init_components_type<tilt>(conf, "tilt", "tilt");
-  error_code |= init_components_type<spin_angle>(conf, "spin angle", "spinAngle");
-  error_code |= init_components_type<rmsd>(conf, "RMSD", "rmsd");
-  error_code |= init_components_type<gyration>(conf, "radius of "
-    "gyration", "gyration");
-  error_code |= init_components_type<inertia>(conf, "moment of "
-    "inertia", "inertia");
-  error_code |= init_components_type<inertia_z>(conf, "moment of inertia around an axis", "inertiaZ");
-  error_code |= init_components_type<eigenvector>(conf, "eigenvector", "eigenvector");
-  error_code |= init_components_type<alch_lambda>(conf, "alchemical coupling parameter", "alchLambda");
-  error_code |= init_components_type<alch_Flambda>(conf, "force on alchemical coupling parameter", "alchFLambda");
-  error_code |= init_components_type<aspath>(conf, "arithmetic path collective variables (s)", "aspath");
-  error_code |= init_components_type<azpath>(conf, "arithmetic path collective variables (z)", "azpath");
-  error_code |= init_components_type<gspath>(conf, "geometrical path collective variables (s)", "gspath");
-  error_code |= init_components_type<gzpath>(conf, "geometrical path collective variables (z)", "gzpath");
-  error_code |= init_components_type<linearCombination>(conf, "linear combination of other collective variables", "linearCombination");
-  error_code |= init_components_type<gspathCV>(conf, "geometrical path collective variables (s) for other CVs", "gspathCV");
-  error_code |= init_components_type<gzpathCV>(conf, "geometrical path collective variables (z) for other CVs", "gzpathCV");
-  error_code |= init_components_type<aspathCV>(conf, "arithmetic path collective variables (s) for other CVs", "aspathCV");
-  error_code |= init_components_type<azpathCV>(conf, "arithmetic path collective variables (s) for other CVs", "azpathCV");
-  error_code |= init_components_type<euler_phi>(conf, "euler phi angle of the optimal orientation", "eulerPhi");
-  error_code |= init_components_type<euler_psi>(conf, "euler psi angle of the optimal orientation", "eulerPsi");
-  error_code |= init_components_type<euler_theta>(conf, "euler theta angle of the optimal orientation", "eulerTheta");
-#ifdef LEPTON
-  error_code |= init_components_type<customColvar>(conf, "CV with support of the lepton custom function", "customColvar");
-#endif
-  error_code |= init_components_type<neuralNetwork>(conf, "neural network CV for other CVs", "NeuralNetwork");
-
-  error_code |= init_components_type<map_total>(conf, "total value of atomic map", "mapTotal");
+  if (global_cvc_map.empty()) {
+    define_component_types();
+  }
 
   // iterate over all available CVC in the map
   for (auto it = global_cvc_map.begin(); it != global_cvc_map.end(); ++it) {
-    error_code |= init_components_type_from_global_map(conf, it->first.c_str());
+    error_code |= init_components_type(conf, it->first.c_str());
     // TODO: is it better to check the error code here?
     if (error_code != COLVARS_OK) {
       cvm::log("Failed to initialize " + it->first + " with the following configuration:\n");
       cvm::log(conf);
       // TODO: should it stop here?
+      break;
     }
   }
 
-  if (!cvcs.size() || (error_code != COLVARS_OK)) {
-    cvm::error("Error: no valid components were provided "
-               "for this collective variable.\n",
-               COLVARS_INPUT_ERROR);
-    return COLVARS_INPUT_ERROR;
+  if (!cvcs.size()) {
+    std::string msg("Error: no valid components were provided for this collective variable.\n");
+    msg += "Currently available component types are: \n";
+    for (auto it = global_cvc_desc_map.begin(); it != global_cvc_desc_map.end(); ++it) {
+      msg += "    " + it->first + " -- " + it->second + "\n";
+    }
+    msg += "\nPlease note that some of the above types may still be unavailable, irrespective of this error.\n";
+    error_code |= cvm::error(msg, COLVARS_INPUT_ERROR);
   }
 
   // Check for uniqueness of CVC names (esp. if user-provided)
   for (i = 0; i < cvcs.size(); i++) {
-    for (j = i+1; j < cvcs.size(); j++) {
+    for (j = i + 1; j < cvcs.size(); j++) {
       if (cvcs[i]->name == cvcs[j]->name) {
-        cvm::error("Components " + cvm::to_str(i) + " and " + cvm::to_str(j) +\
-          " cannot have the same name \"" +  cvcs[i]->name+ "\".\n", COLVARS_INPUT_ERROR);
-        return COLVARS_INPUT_ERROR;
+        error_code |= cvm::error("Components " + cvm::to_str(i) + " and " + cvm::to_str(j) +
+                                     " cannot have the same name \"" + cvcs[i]->name + "\".\n",
+                                 COLVARS_INPUT_ERROR);
       }
     }
   }
 
-  n_active_cvcs = cvcs.size();
-
-  // Store list of children cvcs for dependency checking purposes
-  for (i = 0; i < cvcs.size(); i++) {
-    add_child(cvcs[i]);
+  if (error_code == COLVARS_OK) {
+    // Store list of children cvcs for dependency checking purposes
+    for (i = 0; i < cvcs.size(); i++) {
+      add_child(cvcs[i]);
+    }
+    // By default all CVCs are active at the start
+    n_active_cvcs = cvcs.size();
+    cvm::log("All components initialized.\n");
   }
 
-  cvm::log("All components initialized.\n");
-
-  return COLVARS_OK;
+  return error_code;
 }
 
 
@@ -1553,11 +1556,11 @@ int colvar::calc_cvc_gradients(int first_cvc, size_t num_cvcs)
         (cvcs[i])->debug_gradients();
     }
 
-    cvm::decrease_depth();
-
     if (cvm::debug())
       cvm::log("Done calculating gradients of colvar \""+this->name+"\".\n");
   }
+
+  cvm::decrease_depth();
 
   return COLVARS_OK;
 }

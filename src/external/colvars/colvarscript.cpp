@@ -7,8 +7,6 @@
 // If you wish to distribute your changes, please submit them to the
 // Colvars repository at GitHub.
 
-#include <cstdlib>
-#include <cstring>
 #include <sstream>
 
 #include "colvarproxy.h"
@@ -769,7 +767,7 @@ extern "C" int tcl_run_colvarscript_command(ClientData /* clientData */,
 int colvarscript::set_result_text_from_str(std::string const &x_str,
                                            unsigned char *obj) {
   if (obj) {
-    strcpy(reinterpret_cast<char *>(obj), x_str.c_str());
+    std::memcpy(reinterpret_cast<char *>(obj), x_str.c_str(), x_str.size());
   } else {
     set_result_str(x_str);
   }
