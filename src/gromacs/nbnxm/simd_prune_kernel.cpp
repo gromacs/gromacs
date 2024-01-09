@@ -36,6 +36,7 @@
 
 #include "simd_prune_kernel.h"
 
+#include "gromacs/math/functions.h"
 #include "gromacs/nbnxm/atomdata.h"
 #include "gromacs/nbnxm/nbnxm_simd.h"
 #include "gromacs/nbnxm/pairlist.h"
@@ -46,21 +47,6 @@
 #if GMX_SIMD
 #    include "simd_load_store_functions.h"
 #endif
-
-//! Returns the base 2 log of \p x
-template<int x>
-gmx_unused static constexpr int sc_log2()
-{
-    static_assert(x == 2 || x == 4);
-
-    switch (x)
-    {
-        case 2: return 1; break;
-        case 4: return 2; break;
-    }
-
-    return 0;
-}
 
 template<KernelLayout kernelLayout>
 void nbnxmSimdPruneKernel(NbnxnPairlistCpu*              nbl,
@@ -188,7 +174,7 @@ void nbnxmSimdPruneKernel(NbnxnPairlistCpu*              nbl,
                 wco[i] = (rsq[i] < rlist2_S);
             }
 
-            constexpr int numIterations = sc_log2<nR>();
+            constexpr int numIterations = gmx::StaticLog2<nR>::value;
             for (int iter = 0; iter < numIterations; iter++)
             {
                 const int offset = (1 << iter);
