@@ -99,7 +99,7 @@ public:
     //! Constructs default (uninitialized) vector.
     BasicVector() {}
     //! Constructs a vector from given values.
-    BasicVector(ValueType x, ValueType y, ValueType z) : x_{ x, y, z } {}
+    constexpr BasicVector(ValueType x, ValueType y, ValueType z) : x_{ x, y, z } {}
     /*! \brief
      * Constructs a vector from given values.
      *
@@ -107,58 +107,58 @@ public:
      * that allow, e.g., calling `std::vector<RVec>:``:push_back()` directly
      * with an `rvec` parameter.
      */
-    BasicVector(const RawArray x) : x_{ x[XX], x[YY], x[ZZ] } {}
+    constexpr BasicVector(const RawArray x) : x_{ x[XX], x[YY], x[ZZ] } {}
     //! Default copy constructor.
-    BasicVector(const BasicVector& src) = default;
+    constexpr BasicVector(const BasicVector& src) = default;
     //! Default copy assignment operator.
-    BasicVector& operator=(const BasicVector& v) = default;
+    constexpr BasicVector& operator=(const BasicVector& v) = default;
     //! Default move constructor.
-    BasicVector(BasicVector&& src) noexcept = default;
+    constexpr BasicVector(BasicVector&& src) noexcept = default;
     //! Default move assignment operator.
-    BasicVector& operator=(BasicVector&& v) noexcept = default;
+    constexpr BasicVector& operator=(BasicVector&& v) noexcept = default;
     //! Indexing operator to make the class work as the raw array.
-    ValueType& operator[](int i) { return x_[i]; }
+    constexpr ValueType& operator[](int i) { return x_[i]; }
     //! Indexing operator to make the class work as the raw array.
-    ValueType operator[](int i) const { return x_[i]; }
+    constexpr ValueType operator[](int i) const { return x_[i]; }
     //! Return whether all elements compare equal
-    bool operator==(const BasicVector<ValueType>& right)
+    constexpr bool operator==(const BasicVector<ValueType>& right) const
     {
         return x_[0] == right[0] && x_[1] == right[1] && x_[2] == right[2];
     }
     //! Return whether any elements compare unequal
-    bool operator!=(const BasicVector<ValueType>& right)
+    constexpr bool operator!=(const BasicVector<ValueType>& right) const
     {
         return x_[0] != right[0] || x_[1] != right[1] || x_[2] != right[2];
     }
     //! Allow inplace addition for BasicVector
-    BasicVector<ValueType>& operator+=(const BasicVector<ValueType>& right)
+    constexpr BasicVector<ValueType>& operator+=(const BasicVector<ValueType>& right)
     {
         return *this = *this + right;
     }
     //! Allow inplace subtraction for BasicVector
-    BasicVector<ValueType>& operator-=(const BasicVector<ValueType>& right)
+    constexpr BasicVector<ValueType>& operator-=(const BasicVector<ValueType>& right)
     {
         return *this = *this - right;
     }
     //! Allow vector addition
-    BasicVector<ValueType> operator+(const BasicVector<ValueType>& right) const
+    constexpr BasicVector<ValueType> operator+(const BasicVector<ValueType>& right) const
     {
         return { x_[0] + right[0], x_[1] + right[1], x_[2] + right[2] };
     }
     //! Allow vector subtraction
-    BasicVector<ValueType> operator-(const BasicVector<ValueType>& right) const
+    constexpr BasicVector<ValueType> operator-(const BasicVector<ValueType>& right) const
     {
         return { x_[0] - right[0], x_[1] - right[1], x_[2] - right[2] };
     }
     //! Allow vector scalar division
-    BasicVector<ValueType> operator/(const ValueType& right) const
+    constexpr BasicVector<ValueType> operator/(const ValueType& right) const
     {
         assert((right != 0 && "Cannot divide by zero"));
 
         return *this * (1 / right);
     }
     //! Scale vector by a scalar
-    BasicVector<ValueType>& operator*=(const ValueType& right)
+    constexpr BasicVector<ValueType>& operator*=(const ValueType& right)
     {
         x_[0] *= right;
         x_[1] *= right;
@@ -167,22 +167,22 @@ public:
         return *this;
     }
     //! Divide vector by a scalar
-    BasicVector<ValueType>& operator/=(const ValueType& right)
+    constexpr BasicVector<ValueType>& operator/=(const ValueType& right)
     {
         assert((right != 0 && "Cannot divide by zero"));
 
         return *this *= 1 / right;
     }
     //! Unary minus
-    BasicVector<ValueType> operator-() const { return { -x_[0], -x_[1], -x_[2] }; }
+    constexpr BasicVector<ValueType> operator-() const { return { -x_[0], -x_[1], -x_[2] }; }
     //! Return dot product
-    ValueType dot(const BasicVector<ValueType>& right) const
+    constexpr ValueType dot(const BasicVector<ValueType>& right) const
     {
         return x_[0] * right[0] + x_[1] * right[1] + x_[2] * right[2];
     }
 
     //! Allow vector vector multiplication (cross product)
-    BasicVector<ValueType> cross(const BasicVector<ValueType>& right) const
+    constexpr BasicVector<ValueType> cross(const BasicVector<ValueType>& right) const
     {
         return { x_[YY] * right.x_[ZZ] - x_[ZZ] * right.x_[YY],
                  x_[ZZ] * right.x_[XX] - x_[XX] * right.x_[ZZ],
@@ -190,7 +190,7 @@ public:
     }
 
     //! Return normalized to unit vector
-    BasicVector<ValueType> unitVector() const
+    constexpr BasicVector<ValueType> unitVector() const
     {
         const ValueType vectorNorm = norm();
         assert((vectorNorm != 0 && "unitVector() should not be called with a zero vector"));
@@ -199,31 +199,34 @@ public:
     }
 
     //! Length^2 of vector
-    ValueType norm2() const { return dot(*this); }
+    constexpr ValueType norm2() const { return dot(*this); }
 
     //! Norm or length of vector
-    ValueType norm() const { return std::sqrt(norm2()); }
+    constexpr ValueType norm() const { return std::sqrt(norm2()); }
 
     //! cast to RVec
-    BasicVector<real> toRVec() const { return { real(x_[0]), real(x_[1]), real(x_[2]) }; }
+    constexpr BasicVector<real> toRVec() const { return { real(x_[0]), real(x_[1]), real(x_[2]) }; }
 
     //! cast to IVec
-    BasicVector<int> toIVec() const
+    constexpr BasicVector<int> toIVec() const
     {
         return { static_cast<int>(x_[0]), static_cast<int>(x_[1]), static_cast<int>(x_[2]) };
     }
 
     //! cast to DVec
-    BasicVector<double> toDVec() const { return { double(x_[0]), double(x_[1]), double(x_[2]) }; }
+    constexpr BasicVector<double> toDVec() const
+    {
+        return { double(x_[0]), double(x_[1]), double(x_[2]) };
+    }
 
     //! Converts to a raw C array where implicit conversion does not work.
-    RawArray& as_vec() { return x_; }
+    constexpr RawArray& as_vec() { return x_; }
     //! Converts to a raw C array where implicit conversion does not work.
-    const RawArray& as_vec() const { return x_; }
+    constexpr const RawArray& as_vec() const { return x_; }
     //! Makes BasicVector usable in contexts where a raw C array is expected.
-    operator RawArray&() { return x_; }
+    constexpr operator RawArray&() { return x_; }
     //! Makes BasicVector usable in contexts where a raw C array is expected.
-    operator const RawArray&() const { return x_; }
+    constexpr operator const RawArray&() const { return x_; }
 
 private:
     RawArray x_;
@@ -231,14 +234,14 @@ private:
 
 //! Allow vector scalar multiplication
 template<typename ValueType>
-BasicVector<ValueType> operator*(const BasicVector<ValueType>& basicVector, const ValueType& scalar)
+constexpr BasicVector<ValueType> operator*(const BasicVector<ValueType>& basicVector, const ValueType& scalar)
 {
     return { basicVector[0] * scalar, basicVector[1] * scalar, basicVector[2] * scalar };
 }
 
 //! Allow scalar vector multiplication
 template<typename ValueType>
-BasicVector<ValueType> operator*(const ValueType& scalar, const BasicVector<ValueType>& basicVector)
+constexpr BasicVector<ValueType> operator*(const ValueType& scalar, const BasicVector<ValueType>& basicVector)
 {
     return { scalar * basicVector[0], scalar * basicVector[1], scalar * basicVector[2] };
 }
@@ -247,7 +250,7 @@ BasicVector<ValueType> operator*(const ValueType& scalar, const BasicVector<Valu
  * unitv for gmx::BasicVector
  */
 template<typename VectorType>
-static inline VectorType unitVector(const VectorType& v)
+static constexpr VectorType unitVector(const VectorType& v)
 {
     return v.unitVector();
 }
@@ -256,7 +259,7 @@ static inline VectorType unitVector(const VectorType& v)
  * norm for gmx::BasicVector
  */
 template<typename ValueType>
-static inline ValueType norm(BasicVector<ValueType> v)
+static constexpr ValueType norm(BasicVector<ValueType> v)
 {
     return v.norm();
 }
@@ -265,7 +268,7 @@ static inline ValueType norm(BasicVector<ValueType> v)
  * Square of the vector norm for gmx::BasicVector
  */
 template<typename ValueType>
-static inline ValueType norm2(BasicVector<ValueType> v)
+static constexpr ValueType norm2(BasicVector<ValueType> v)
 {
     return v.norm2();
 }
@@ -274,7 +277,7 @@ static inline ValueType norm2(BasicVector<ValueType> v)
  * cross product for gmx::BasicVector
  */
 template<typename VectorType>
-static inline VectorType cross(const VectorType& a, const VectorType& b)
+static constexpr VectorType cross(const VectorType& a, const VectorType& b)
 {
     return a.cross(b);
 }
@@ -283,7 +286,7 @@ static inline VectorType cross(const VectorType& a, const VectorType& b)
  * dot product for gmx::BasicVector
  */
 template<typename ValueType>
-static inline ValueType dot(BasicVector<ValueType> a, BasicVector<ValueType> b)
+static constexpr ValueType dot(BasicVector<ValueType> a, BasicVector<ValueType> b)
 {
     return a.dot(b);
 }
@@ -292,7 +295,7 @@ static inline ValueType dot(BasicVector<ValueType> a, BasicVector<ValueType> b)
  * Multiply two vectors element by element and return the result.
  */
 template<typename VectorType>
-static inline VectorType scaleByVector(const VectorType& a, const VectorType& b)
+static constexpr VectorType scaleByVector(const VectorType& a, const VectorType& b)
 {
     return { a[0] * b[0], a[1] * b[1], a[2] * b[2] };
 }
@@ -301,7 +304,7 @@ static inline VectorType scaleByVector(const VectorType& a, const VectorType& b)
  * Return the element-wise minimum of two vectors.
  */
 template<typename VectorType>
-static inline VectorType elementWiseMin(const VectorType& a, const VectorType& b)
+static constexpr VectorType elementWiseMin(const VectorType& a, const VectorType& b)
 {
     return { std::min(a[0], b[0]), std::min(a[1], b[1]), std::min(a[2], b[2]) };
 }
@@ -310,7 +313,7 @@ static inline VectorType elementWiseMin(const VectorType& a, const VectorType& b
  * Return the element-wise maximum of two vectors.
  */
 template<typename VectorType>
-static inline VectorType elementWiseMax(const VectorType& a, const VectorType& b)
+static constexpr VectorType elementWiseMax(const VectorType& a, const VectorType& b)
 {
     return { std::max(a[0], b[0]), std::max(a[1], b[1]), std::max(a[2], b[2]) };
 }

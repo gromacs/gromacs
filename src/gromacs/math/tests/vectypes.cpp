@@ -502,4 +502,23 @@ TEST(RVecTest, MoveAssignmentWorks)
     EXPECT_EQ(3, copy[ZZ]);
 }
 
+TEST(RVecTest, UsableInConstexpr)
+{
+    // Check that we can use gmx::RVec as constexpr and common operations work
+    constexpr std::array<RVec, 2> a{ RVec{ 0, 1, 2 }, RVec{ -1, -2, -3.3 } };
+    static_assert(a[0][0] == 0);
+    constexpr RVec b = [](RVec v) {
+        v *= 2;
+        return v;
+    }(a[0]);
+    static_assert(b == RVec{ 0, 2, 4 });
+    static_assert(b.toIVec() == IVec{ 0, 2, 4 });
+    static_assert(b.toDVec() == DVec{ 0, 2, 4 });
+    static_assert(scaleByVector(a[0], a[0]) == RVec{ 0, 1, 4 });
+    static_assert(a[0].norm2() == 5);
+    static_assert(a[0].dot(b) == 10);
+    static_assert(elementWiseMax(a[0], a[1]) == a[0]);
+    static_assert(elementWiseMin(a[0], a[1]) == a[1]);
+}
+
 } // namespace
