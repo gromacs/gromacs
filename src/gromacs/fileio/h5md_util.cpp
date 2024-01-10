@@ -448,30 +448,44 @@ void setAttributeStringList(hid_t dataSet, const char* name, const char value[nu
 
 real getDataSetSz3CompressionError(hid_t dataSet)
 {
-    hid_t propertyList = H5Dget_create_plist(dataSet);
-    unsigned int flags = 0;
-    size_t numCompressionSettingsElements = 9;
+    hid_t        propertyList                   = H5Dget_create_plist(dataSet);
+    unsigned int flags                          = 0;
+    size_t       numCompressionSettingsElements = 9;
     unsigned int compressionSettingsValues[16];
-    real compressionError = -1;
-    if (H5Pget_filter_by_id(propertyList, H5Z_FILTER_SZ3, &flags, &numCompressionSettingsElements, compressionSettingsValues, 0, nullptr, nullptr) < 0)
+    real         compressionError = -1;
+    if (H5Pget_filter_by_id(
+                propertyList, H5Z_FILTER_SZ3, &flags, &numCompressionSettingsElements, compressionSettingsValues, 0, nullptr, nullptr)
+        < 0)
     {
         return compressionError;
     }
-    int dimSize = 0;
-    int dataType = 0;
-    int errorMode = 0;
-    double absError = 0;
-    double relError = 0;
+    int    dimSize     = 0;
+    int    dataType    = 0;
+    int    errorMode   = 0;
+    double absError    = 0;
+    double relError    = 0;
     double l2normError = 0;
-    double psNr = 0;
+    double psNr        = 0;
     size_t r1 = 0, r2 = 0, r3 = 0, r4 = 0, r5 = 0;
     int withErrorInfo = checkCDValuesWithErrors(numCompressionSettingsElements, compressionSettingsValues);
     if (!withErrorInfo)
     {
         return -1;
     }
-    SZ_cdArrayToMetaDataErr(numCompressionSettingsElements, compressionSettingsValues, &dimSize, &dataType, &r5, &r4, &r3, &r2, &r1, &errorMode,
-                            &absError, &relError, &l2normError, &psNr);
+    SZ_cdArrayToMetaDataErr(numCompressionSettingsElements,
+                            compressionSettingsValues,
+                            &dimSize,
+                            &dataType,
+                            &r5,
+                            &r4,
+                            &r3,
+                            &r2,
+                            &r1,
+                            &errorMode,
+                            &absError,
+                            &relError,
+                            &l2normError,
+                            &psNr);
     if (errorMode == 0)
     {
         return absError;

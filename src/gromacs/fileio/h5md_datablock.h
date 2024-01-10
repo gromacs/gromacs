@@ -151,7 +151,7 @@ public:
 
     real getTimeOfFrame(hsize_t frame) const;
 
-    /*! \brief Returns the compression error of lossy SZ3 compression, or -1 if there is no lossy SZ3 compression.
+    /*! \brief Returns the compression error of lossy SZ3 compression, or -1 if there is no lossy SZ3 compression. */
     real getLossyCompressionError();
 
     int         numberOfFrames() const { return writingFrameIndex_; }

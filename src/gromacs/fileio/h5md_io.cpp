@@ -696,8 +696,8 @@ bool GmxH5mdIo::readNextFrameOfStandardDataBlocks(int64_t* step,
             dataBlocksNextFrame.emplace_back(*foundDataBlock);
         }
     }
-    *step             = minStepNextFrame;
-    bool didReadFrame = false;
+    *step                  = minStepNextFrame;
+    bool didReadFrame      = false;
     *xCompressionPrecision = -1;
     for (std::list<GmxH5mdTimeDataBlock>::iterator dataBlock = dataBlocks_.begin();
          dataBlock != dataBlocks_.end();
@@ -716,8 +716,8 @@ bool GmxH5mdIo::readNextFrameOfStandardDataBlocks(int64_t* step,
         {
             if (dataBlock->readNextFrame(static_cast<real*>(x[0])))
             {
-                *readX       = true;
-                didReadFrame = true;
+                *readX                 = true;
+                didReadFrame           = true;
                 *xCompressionPrecision = dataBlock->getLossyCompressionError();
             }
         }

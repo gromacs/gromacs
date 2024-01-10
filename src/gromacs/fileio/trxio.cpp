@@ -956,8 +956,17 @@ bool read_next_frame(const gmx_output_env_t* oenv, t_trxstatus* status, t_trxfra
                 break;
             case efTNG: bRet = gmx_read_next_tng_frame(status->tng, fr, nullptr, 0); break;
             case efH5MD:
-                bRet = status->h5mdIo->readNextFrameOfStandardDataBlocks(
-                        &fr->step, &fr->time, fr->box, fr->x, fr->v, fr->f, &fr->prec, &fr->bBox, &fr->bX, &fr->bV, &fr->bF);
+                bRet      = status->h5mdIo->readNextFrameOfStandardDataBlocks(&fr->step,
+                                                                         &fr->time,
+                                                                         fr->box,
+                                                                         fr->x,
+                                                                         fr->v,
+                                                                         fr->f,
+                                                                         &fr->prec,
+                                                                         &fr->bBox,
+                                                                         &fr->bX,
+                                                                         &fr->bV,
+                                                                         &fr->bF);
                 fr->bPrec = (bRet && fr->prec > 0);
                 if (fr->bPrec)
                 {
