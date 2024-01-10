@@ -308,7 +308,7 @@ int colvarproxy_smp::smp_colvars_loop()
   colvarmodule *cv = cvm::main();
   colvarproxy *proxy = cv->proxy;
 #pragma omp parallel for
-  for (size_t i = 0; i < cv->variables_active_smp()->size(); i++) {
+  for (int i = 0; i < static_cast<int>(cv->variables_active_smp()->size()); i++) {
     colvar *x = (*(cv->variables_active_smp()))[i];
     int x_item = (*(cv->variables_active_smp_items()))[i];
     if (cvm::debug()) {
@@ -333,7 +333,7 @@ int colvarproxy_smp::smp_biases_loop()
 #pragma omp parallel
   {
 #pragma omp for
-    for (size_t i = 0; i < cv->biases_active()->size(); i++) {
+    for (int i = 0; i < static_cast<int>(cv->biases_active()->size()); i++) {
       colvarbias *b = (*(cv->biases_active()))[i];
       if (cvm::debug()) {
         cvm::log("Calculating bias \""+b->name+"\" on thread "+
@@ -360,7 +360,7 @@ int colvarproxy_smp::smp_biases_script_loop()
       cv->calc_scripted_forces();
     }
 #pragma omp for
-    for (size_t i = 0; i < cv->biases_active()->size(); i++) {
+    for (int i = 0; i < static_cast<int>(cv->biases_active()->size()); i++) {
       colvarbias *b = (*(cv->biases_active()))[i];
       if (cvm::debug()) {
         cvm::log("Calculating bias \""+b->name+"\" on thread "+
