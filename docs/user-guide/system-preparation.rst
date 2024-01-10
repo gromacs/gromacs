@@ -54,12 +54,10 @@ simulations. Some stages are optional for some kinds of simulations.
 
 5. Obtain or generate the topology file for the system, using (for
    example) :ref:`gmx pdb2gmx`, :ref:`gmx x2top`, `SwissParam
-   <http://swissparam.ch/>`_ (for CHARMM forcefield), `PRODRG
-   <http://davapc1.bioch.dundee.ac.uk/cgi-bin/prodrg>`_ (for GROMOS96
-   43A1), `Automated Topology Builder
-   <https://atb.uq.edu.au/>`_ (for GROMOS96 53A6),
-   `MKTOP <http://www.aribeiro.net.br/mktop>`_ (for OPLS/AA) or your
-   favourite text editor in concert with chapter 5 of the |Gromacs|
+   <http://swissparam.ch/>`_ (for CHARMM forcefield), `CHARMM-GUI
+   <https://www.charmm-gui.org/>`_ , `Automated Topology Builder
+   <https://atb.uq.edu.au/>`_ (for GROMOS96 53A6) or your
+   favourite text editor in concert with :ref:`Chapter 5 <ff>` of the |Gromacs|
    `Reference Manual`_. For the AMBER force fields, `antechamber
    <https://ambermd.org/antechamber/antechamber.html>`__ or
    `acpype <https://github.com/alanwilter/acpype>`__

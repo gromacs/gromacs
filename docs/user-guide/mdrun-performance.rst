@@ -1387,7 +1387,7 @@ Currently supported hardware architectures are:
 - Intel iGPUs.
 
 Make sure that you have the latest drivers installed. For AMD GPUs,
-the compute-oriented `ROCm <https://rocm.github.io/>`_ stack is recommended;
+the compute-oriented `ROCm <https://rocm.docs.amd.com/en/latest/>`_ stack is recommended;
 alternatively, the AMDGPU-PRO stack is also compatible; using the outdated
 and unsupported ``fglrx`` proprietary driver and runtime is not recommended (but
 for certain older hardware that may be the only way to obtain support).
