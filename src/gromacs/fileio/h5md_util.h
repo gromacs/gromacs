@@ -165,6 +165,12 @@ bool getAttribute(hid_t dataSet, const char* name, char** value);
 template<hid_t numEntries, hid_t stringLength>
 void setAttributeStringList(hid_t dataSet, const char* name, const char value[numEntries][stringLength]);
 
+/*! Get the SZ3 lossy compression error setting (absolute or relative) from a data set.
+ * \param[in] dataSet The ID of the HDF5 data set.
+ * \returns The compression error setting of the data set or -1 if it is not SZ3 compressed or if the error is not absolute or relative.
+ */
+real getDataSetSz3CompressionError(hid_t dataSet);
+
 /*! Check if an object exists in a container
  * \param[in] container The ID of the HDF5 container.
  * \param[in] name The name of the HDF5 object to look for.

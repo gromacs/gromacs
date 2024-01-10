@@ -662,6 +662,7 @@ bool GmxH5mdIo::readNextFrameOfStandardDataBlocks(int64_t* step,
                                                   rvec*    x,
                                                   rvec*    v,
                                                   rvec*    f,
+                                                  real*    xCompressionPrecision,
                                                   bool*    readBox,
                                                   bool*    readX,
                                                   bool*    readV,
@@ -697,6 +698,7 @@ bool GmxH5mdIo::readNextFrameOfStandardDataBlocks(int64_t* step,
     }
     *step             = minStepNextFrame;
     bool didReadFrame = false;
+    *xCompressionPrecision = -1;
     for (std::list<GmxH5mdTimeDataBlock>::iterator dataBlock = dataBlocks_.begin();
          dataBlock != dataBlocks_.end();
          ++dataBlock)
@@ -716,6 +718,7 @@ bool GmxH5mdIo::readNextFrameOfStandardDataBlocks(int64_t* step,
             {
                 *readX       = true;
                 didReadFrame = true;
+                *xCompressionPrecision = dataBlock->getLossyCompressionError();
             }
         }
         else if (v != nullptr && dataBlock->name() == "velocity")

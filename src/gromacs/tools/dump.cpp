@@ -473,8 +473,9 @@ void list_h5md(const char* fn)
     bool    hasF   = false;
     int64_t step;
     real    time;
+    real    prec;
     int     nframe = 0;
-    while (h5mdIo.readNextFrameOfStandardDataBlocks(&step, &time, box, x, v, f, &hasBox, &hasX, &hasV, &hasF))
+    while (h5mdIo.readNextFrameOfStandardDataBlocks(&step, &time, box, x, v, f, &prec, &hasBox, &hasX, &hasV, &hasF))
     {
         char buf[256];
         sprintf(buf, "%s frame %d", fn, nframe++);
@@ -487,7 +488,12 @@ void list_h5md(const char* fn)
         //         trrheader.step,
         //         trrheader.t,
         //         trrheader.lambda);
-        fprintf(stdout, "natoms=%10" PRId64 "  step=%10" PRId64 "  time=%12.7e\n", numXParticles, step, time);
+        fprintf(stdout, "natoms=%10" PRId64 "  step=%10" PRId64 "  time=%12.7e", numXParticles, step, time);
+        if(prec > 0)
+        {
+            fprintf(stdout, "  x prec=%10g", 1/prec);
+        }
+        fprintf(stdout, "\n");
         if (hasBox)
         {
             pr_rvecs(stdout, indent, "box", box, DIM);

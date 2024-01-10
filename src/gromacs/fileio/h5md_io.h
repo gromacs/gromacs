@@ -157,6 +157,7 @@ public:
      * \param[out] x       Read coordinate data. Memory must be allocated by the caller.
      * \param[out] v       Read velocity data. Memory must be allocated by the caller.
      * \param[out] f       Read force data. Memory must be allocated by the caller.
+     * \param[out] xCompressionPrecision The error of lossy (SZ3) coordinate compression. <= 0 if no lossy SZ3 compression.
      * \param[out] readBox Whether box data was read or not, i.e. if there was box data matching step.
      * \param[out] readX   Whether coordinate data was read or not, i.e. if there was coordinate data matching step.
      * \param[out] readV   Whether velocity data was read or not, i.e. if there was velocity data matching step.
@@ -168,6 +169,7 @@ public:
                                            rvec*    x,
                                            rvec*    v,
                                            rvec*    f,
+                                           real*    xCompressionPrecision,
                                            bool*    readBox,
                                            bool*    readX,
                                            bool*    readV,

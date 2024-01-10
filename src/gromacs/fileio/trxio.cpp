@@ -957,7 +957,12 @@ bool read_next_frame(const gmx_output_env_t* oenv, t_trxstatus* status, t_trxfra
             case efTNG: bRet = gmx_read_next_tng_frame(status->tng, fr, nullptr, 0); break;
             case efH5MD:
                 bRet = status->h5mdIo->readNextFrameOfStandardDataBlocks(
-                        &fr->step, &fr->time, fr->box, fr->x, fr->v, fr->f, &fr->bBox, &fr->bX, &fr->bV, &fr->bF);
+                        &fr->step, &fr->time, fr->box, fr->x, fr->v, fr->f, &fr->prec, &fr->bBox, &fr->bX, &fr->bV, &fr->bF);
+                fr->bPrec = (bRet && fr->prec > 0);
+                if (fr->bPrec)
+                {
+                    fr->prec = 1 / fr->prec;
+                }
                 fr->bStep = bRet;
                 fr->bTime = bRet;
                 break;
@@ -1168,7 +1173,7 @@ bool read_first_frame(const gmx_output_env_t*      oenv,
                 snew(fr->f, numFParticles);
             }
             if (!(*status)->h5mdIo->readNextFrameOfStandardDataBlocks(
-                        &fr->step, &fr->time, fr->box, fr->x, fr->v, fr->f, &fr->bBox, &fr->bX, &fr->bV, &fr->bF))
+                        &fr->step, &fr->time, fr->box, fr->x, fr->v, fr->f, &fr->prec, &fr->bBox, &fr->bX, &fr->bV, &fr->bF))
             {
                 fr->not_ok = DATA_NOT_OK;
                 printincomp(*status, fr);
@@ -1176,6 +1181,11 @@ bool read_first_frame(const gmx_output_env_t*      oenv,
             else
             {
                 printcount(*status, oenv, fr->time, false);
+                fr->bPrec = (fr->prec > 0);
+                if (fr->bPrec)
+                {
+                    fr->prec = 1 / fr->prec;
+                }
                 fr->bStep = TRUE;
                 fr->bTime = TRUE;
             }
