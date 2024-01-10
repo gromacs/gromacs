@@ -185,8 +185,8 @@ private:
 
     //! \}
 
-    //! Colvars config filename, default colvars.dat
-    std::string colvarsFileName_ = "colvars.dat";
+    //! Colvars config filename
+    std::string colvarsFileName_;
 
 
     //! Colvars seed for Langevin integrator
