@@ -140,15 +140,18 @@ public:
      */
     void updateUnitsFromFile();
 
-    /*! Find out how many frames are written, ignoring fill value frames at the end.
+    /*! \brief Find out how many frames are written, ignoring fill value frames at the end.
      * Update writingFrameIndex_ to keep track of what is the next frame to write.
      */
     void updateNumWrittenFrames();
 
+    /*! \brief Return the number of particles in the data block. */
     size_t getNumParticles() const;
 
+    /*! \brief Return the MD simulation step of a given frame. */
     int64_t getStepOfFrame(hsize_t frame) const;
 
+    /*! \brief Get the time of a given frame. */
     real getTimeOfFrame(hsize_t frame) const;
 
     /*! \brief Returns the compression error of lossy SZ3 compression, or -1 if there is no lossy SZ3 compression. */
