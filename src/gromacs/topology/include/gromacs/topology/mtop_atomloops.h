@@ -43,7 +43,7 @@
 #ifndef GMX_TOPOLOGY_MTOP_ATOMLOOPS_H
 #define GMX_TOPOLOGY_MTOP_ATOMLOOPS_H
 
-#include <boost/stl_interfaces/iterator_interface.hpp>
+#include "external/boost/stl_interfaces/iterator_interface.hpp"
 
 #include "gromacs/topology/topology.h"
 #include "gromacs/topology/topology_enums.h"
@@ -85,10 +85,10 @@ private:
  * Object that allows looping over all atoms in an mtop.
  */
 class AtomIterator :
-    public boost::stl_interfaces::proxy_iterator_interface<AtomIterator, std::forward_iterator_tag, t_atom, AtomProxy>
+    public gmx::boost::stl_interfaces::proxy_iterator_interface<AtomIterator, std::forward_iterator_tag, t_atom, AtomProxy>
 {
     using Base =
-            boost::stl_interfaces::proxy_iterator_interface<AtomIterator, std::forward_iterator_tag, t_atom, AtomProxy>;
+            gmx::boost::stl_interfaces::proxy_iterator_interface<AtomIterator, std::forward_iterator_tag, t_atom, AtomProxy>;
 
 public:
     //! Construct from topology and optionalally a global atom number.
@@ -159,10 +159,10 @@ private:
  * Object that allows looping over all atoms in an mtop.
  */
 class IListIterator :
-    public boost::stl_interfaces::proxy_iterator_interface<IListIterator, std::forward_iterator_tag, InteractionLists, IListProxy>
+    public gmx::boost::stl_interfaces::proxy_iterator_interface<IListIterator, std::forward_iterator_tag, InteractionLists, IListProxy>
 {
     using Base =
-            boost::stl_interfaces::proxy_iterator_interface<IListIterator, std::forward_iterator_tag, InteractionLists, IListProxy>;
+            gmx::boost::stl_interfaces::proxy_iterator_interface<IListIterator, std::forward_iterator_tag, InteractionLists, IListProxy>;
 
 public:
     //! Construct from topology.

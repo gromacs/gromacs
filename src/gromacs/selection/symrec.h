@@ -47,7 +47,7 @@
 #include <memory>
 #include <string>
 
-#include <boost/stl_interfaces/iterator_interface.hpp>
+#include "external/boost/stl_interfaces/iterator_interface.hpp"
 
 #include "selelem.h"
 
@@ -142,10 +142,10 @@ private:
  * \ingroup module_selection
  */
 class SelectionParserSymbolIterator :
-    public boost::stl_interfaces::iterator_interface<SelectionParserSymbolIterator, std::forward_iterator_tag, const SelectionParserSymbol>
+    public gmx::boost::stl_interfaces::iterator_interface<SelectionParserSymbolIterator, std::forward_iterator_tag, const SelectionParserSymbol>
 {
     using Base =
-            boost::stl_interfaces::iterator_interface<SelectionParserSymbolIterator, std::forward_iterator_tag, const SelectionParserSymbol>;
+            gmx::boost::stl_interfaces::iterator_interface<SelectionParserSymbolIterator, std::forward_iterator_tag, const SelectionParserSymbol>;
 
 public:
     //! Creates an independent copy of an iterator.

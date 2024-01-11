@@ -92,10 +92,10 @@ private:
 
 template<typename T>
 class SimdIterator :
-    public boost::stl_interfaces::iterator_interface<SimdIterator<T>, std::random_access_iterator_tag, T, SimdReference<T>>
+    public gmx::boost::stl_interfaces::iterator_interface<SimdIterator<T>, std::random_access_iterator_tag, T, SimdReference<T>>
 {
     using Base =
-            boost::stl_interfaces::iterator_interface<SimdIterator<T>, std::random_access_iterator_tag, T, SimdReference<T>>;
+            gmx::boost::stl_interfaces::iterator_interface<SimdIterator<T>, std::random_access_iterator_tag, T, SimdReference<T>>;
     // pointer is T*
     using DataPointer = SimdTraitsT<T>*;
 

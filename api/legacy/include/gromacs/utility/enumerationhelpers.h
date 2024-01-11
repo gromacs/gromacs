@@ -83,8 +83,8 @@
 #include <iterator>
 #include <type_traits>
 
-#if __has_include(<boost/stl_interfaces/iterator_interface.hpp>)
-#    include <boost/stl_interfaces/iterator_interface.hpp>
+#if __has_include("external/boost/stl_interfaces/iterator_interface.hpp")
+#    include "external/boost/stl_interfaces/iterator_interface.hpp"
 #else // fallback for installed headers
 #    include <gromacs/external/boost/stl_interfaces/iterator_interface.hpp>
 #endif
@@ -113,7 +113,7 @@ namespace gmx
  */
 template<typename EnumType, EnumType Last = EnumType::Count, std::ptrdiff_t Step = 1>
 class EnumerationIterator final :
-    public boost::stl_interfaces::iterator_interface<EnumerationIterator<EnumType, Last, Step>, std::random_access_iterator_tag, EnumType>
+    public gmx::boost::stl_interfaces::iterator_interface<EnumerationIterator<EnumType, Last, Step>, std::random_access_iterator_tag, EnumType>
 {
 public:
     // TODO: Use std::is_enum_v when CUDA 11 is a requirement.
