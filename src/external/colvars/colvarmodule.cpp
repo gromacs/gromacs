@@ -1301,10 +1301,10 @@ int colvarmodule::reset()
   parse->clear();
 
   // Iterate backwards because we are deleting the elements as we go
-  for (std::vector<colvarbias *>::reverse_iterator bi = biases.rbegin();
-       bi != biases.rend();
-       bi++) {
-    delete *bi; // the bias destructor updates the biases array
+  while (!biases.empty()) {
+    colvarbias* tail = biases.back();
+    biases.pop_back();
+    delete tail; // the bias destructor updates the biases array
   }
   biases.clear();
   biases_active_.clear();
@@ -1313,11 +1313,11 @@ int colvarmodule::reset()
   reinterpret_cast<std::map<std::string, int> *>(num_biases_types_used_)->clear();
 
   // Iterate backwards because we are deleting the elements as we go
-  for (std::vector<colvar *>::reverse_iterator cvi = colvars.rbegin();
-       cvi != colvars.rend();
-       cvi++) {
-    delete *cvi; // the colvar destructor updates the colvars array
-  }
+  while (!colvars.empty()) {
+    colvar* cvi = colvars.back();
+    colvars.pop_back();
+    delete cvi; // the colvar destructor updates the colvars array
+  };
   colvars.clear();
 
   reset_index_groups();
