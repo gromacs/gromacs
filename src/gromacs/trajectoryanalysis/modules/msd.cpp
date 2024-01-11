@@ -63,6 +63,7 @@
 #include "gromacs/trajectory/trajectoryframe.h"
 #include "gromacs/trajectoryanalysis/analysissettings.h"
 #include "gromacs/trajectoryanalysis/topologyinformation.h"
+#include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/stringutil.h"
 
 namespace gmx
@@ -636,18 +637,35 @@ void Msd::initAnalysis(const TrajectoryAnalysisSettings& settings, const Topolog
     }
 }
 
-void Msd::initAfterFirstFrame(const TrajectoryAnalysisSettings gmx_unused& settings, const t_trxframe& fr)
+//! Helper function to round \c frame.time to nearest integer and check that it is lossless
+static real roundedFrameTime(const t_trxframe& frame)
 {
-    t0_ = std::round(fr.time);
+    constexpr real relTolerance = 0.1;
+    const real     roundedTime  = std::round(frame.time);
+    if (std::fabs(roundedTime - frame.time) > relTolerance * std::fabs(roundedTime + frame.time))
+    {
+        GMX_THROW(gmx::ToleranceError(gmx::formatString(
+                "Frame %" PRId64
+                " has non-integral time %f. 'gmx msd' uses time discretization internally and "
+                "cannot work if the time (usually measured in ps) is not integral. You can use "
+                "'gmx convert-trj -dt 1' to subsample your trajectory before the analysis.",
+                frame.step,
+                frame.time)));
+    }
+    return roundedTime;
 }
 
+void Msd::initAfterFirstFrame(const TrajectoryAnalysisSettings gmx_unused& settings, const t_trxframe& fr)
+{
+    t0_ = roundedFrameTime(fr);
+}
 
 void Msd::analyzeFrame(int gmx_unused                frameNumber,
                        const t_trxframe&             frame,
                        t_pbc*                        pbc,
                        TrajectoryAnalysisModuleData* pdata)
 {
-    const real time = std::round(frame.time);
+    const real time = roundedFrameTime(frame);
     // Need to populate dt on frame 2;
     if (!dt_.has_value() && !times_.empty())
     {

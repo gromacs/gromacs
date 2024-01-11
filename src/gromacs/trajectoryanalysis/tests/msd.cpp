@@ -42,6 +42,8 @@
 
 #include "gromacs/trajectoryanalysis/modules/msd.h"
 
+#include <gromacs/commandline/cmdlineoptionsmodule.h>
+#include <gromacs/trajectoryanalysis/cmdlinerunner.h>
 #include <gtest/gtest.h>
 
 #include "gromacs/gmxpreprocess/grompp.h"
@@ -231,6 +233,21 @@ TEST_F(MsdModuleTest, oneDimensionalDiffusionWithMaxTau)
     setInputFile("-n", "msd.ndx");
     const char* const cmdline[] = { "-trestart", "200", "-type", "x", "-sel", "0", "-maxtau", "5" };
     runTest(CommandLine(cmdline));
+}
+
+TEST_F(MsdModuleTest, roundingFail)
+{
+    // Check that a proper exception is throws when a trajectory is saved too often, #4694
+    setInputFile("-f", "msd_traj_rounding_fail.xtc");
+    setInputFile("-s", "msd_coords.gro");
+    setInputFile("-n", "msd.ndx");
+    CommandLine cmdline = commandLine();
+    cmdline.addOption("-sel", "0");
+
+    ICommandLineOptionsModulePointer runner(
+            TrajectoryAnalysisCommandLineRunner::createModule(createModule()));
+
+    EXPECT_THROW(CommandLineTestHelper::runModuleDirect(std::move(runner), &cmdline), gmx::ToleranceError);
 }
 
 

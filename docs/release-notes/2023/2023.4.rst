@@ -51,6 +51,18 @@ Fixed a segmentation fault in grompp with AWH and FEP without FEP states
 
 :issue:`4932`
 
+``gmx msd`` now raises a proper error when given incompatible trajectory
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+``gmx msd`` internally converts frame times to picoseconds. As a consequence, if
+the time cannot be expressed as an integral number of picoseconds (usually
+due to too frequent trajectory output), the tool would crash or produce an incorrect
+result.
+
+Now, an error is printed in such cases.
+
+:issue:`4694`
+
 Fixes that affect portability
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
