@@ -682,8 +682,12 @@ bool GmxH5mdIo::readNextFrameOfStandardDataBlocks(int64_t* step,
         {
             continue;
         }
-        int     frameIndex = foundDataBlock->readingFrameIndex();
-        int64_t frameStep  = foundDataBlock->getStepOfFrame(frameIndex);
+        int frameIndex = foundDataBlock->readingFrameIndex();
+        if (frameIndex >= foundDataBlock->writingFrameIndex())
+        {
+            continue;
+        }
+        int64_t frameStep = foundDataBlock->getStepOfFrame(frameIndex);
         /* Discard data sets that had a higher time stamp if an earlier data point has been found. */
         if (frameStep < minStepNextFrame)
         {
