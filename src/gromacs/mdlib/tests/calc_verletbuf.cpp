@@ -88,6 +88,51 @@ TEST(EffectiveAtomDensity, WeightingWorks)
     EXPECT_FLOAT_EQ(density, referenceDensity);
 }
 
+TEST(AtomNonbondedAndKineticProperties, IsAccurate)
+{
+    const real c_resolution = 0.1;
+
+    std::vector<real> invMasses = { 8.0, 10.149, 20.051 };
+    std::vector<real> charges   = { -2.0, 0.149, -0.951 };
+
+    for (Index i = 0; i < ssize(invMasses); i++)
+    {
+        AtomNonbondedAndKineticProperties props({ c_resolution, c_resolution, c_resolution });
+        props.setMassTypeCharge(1 / invMasses[i], 0, charges[i]);
+
+        EXPECT_LT(std::abs(props.invMass() - invMasses[i]), 0.5 * c_resolution);
+        EXPECT_LT(std::abs(props.charge() - charges[i]), 0.5 * c_resolution);
+    }
+}
+
+TEST(AtomNonbondedAndKineticProperties, ConstraintsWork)
+{
+    const real c_resolution = 0.1;
+
+    std::vector<real> invMasses = { 8.0, 10.149, 20.051 };
+    std::vector<real> lengths   = { 0.0, 3.2499, 4.9501 };
+
+    for (Index i = 0; i < ssize(invMasses); i++)
+    {
+        AtomNonbondedAndKineticProperties props({ c_resolution, c_resolution, c_resolution });
+        props.setMassTypeCharge(1 / invMasses[i], 0, 0);
+        if (i > 0)
+        {
+            // Add a first constraint with low mass
+            props.addConstraint(1 / invMasses[i], 1.0);
+            // Add a second one with higher mass that is the one that should be used
+            props.addConstraint(2 / invMasses[i], lengths[i]);
+        }
+
+        EXPECT_EQ(props.hasConstraint(), i > 0);
+        if (props.hasConstraint())
+        {
+            EXPECT_LT(std::abs(props.constraintInvMass() - 0.5 * invMasses[i]), 0.5 * c_resolution);
+            EXPECT_LT(std::abs(props.constraintLength() - lengths[i]), 0.5 * c_resolution);
+        }
+    }
+}
+
 class VerletBufferConstraintTest : public ::testing::Test
 {
 };
@@ -119,13 +164,15 @@ TEST_F(VerletBufferConstraintTest, EqualMasses)
     real mass = 10;
     real arm  = 0.1;
 
-    atom_nonbonded_kinetic_prop_t prop;
-    prop.mass     = mass;
-    prop.type     = -1;
-    prop.q        = 0;
-    prop.bConstr  = TRUE;
-    prop.con_mass = mass;
-    prop.con_len  = 2 * arm;
+    AtomNonbondedAndKineticPropertiesResolutions resolutions;
+
+    resolutions.invMassResolution          = 1 / mass * 0.01;
+    resolutions.chargeResolution           = 1;
+    resolutions.constraintLengthResolution = 2 * arm * 0.01;
+
+    AtomNonbondedAndKineticProperties prop(resolutions);
+    prop.setMassTypeCharge(mass, -1, 0);
+    prop.addConstraint(mass, 2 * arm);
 
     // We scan a range of rotation distributions by scanning over T.
     int  numPointsBeforeMax = 0;
@@ -139,7 +186,7 @@ TEST_F(VerletBufferConstraintTest, EqualMasses)
 
         // Get the estimate for the Cartesian displacement.
         real sigma2_2d, sigma2_3d;
-        constrained_atom_sigma2(ktFac, &prop, &sigma2_2d, &sigma2_3d);
+        constrained_atom_sigma2(ktFac, prop, &sigma2_2d, &sigma2_3d);
 
         // Check we are not decreasing sigma2_2d
         EXPECT_EQ(std::max(sigma2_2d_prev, sigma2_2d), sigma2_2d);

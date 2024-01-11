@@ -36,6 +36,15 @@ which includes most coarse-grained systems.
 
 :issue:`4861`
        
+Reduced grompp and mdrun setup time for systems with many atom types
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+The Verlet buffer calculation could take many minutes for systems with thousands
+of different Verlet buffer atom types (different atom type and charge).
+Such times have now been reduced to seconds.
+
+:issue:`4892`
+
 HeFFTe multi-GPU FFT plan options are now configurable
 """"""""""""""""""""""""""""""""""""""""""""""""""""""
 
