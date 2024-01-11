@@ -219,7 +219,7 @@ void dd_store_state(const gmx_domdec_t& dd, t_state* state)
     state->cg_gl.resize(dd.numHomeAtoms);
     for (int i = 0; i < dd.numHomeAtoms; i++)
     {
-        state->cg_gl[i] = dd.globalAtomGroupIndices[i];
+        state->cg_gl[i] = dd.globalAtomIndices[i];
     }
 
     state->ddp_count_cg_gl = dd.ddp_count;

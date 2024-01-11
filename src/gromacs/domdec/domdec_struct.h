@@ -215,8 +215,6 @@ struct gmx_domdec_t
 
     /* The number of home atoms */
     int numHomeAtoms = 0;
-    /* Global atom group indices for the home and all non-home groups */
-    std::vector<int> globalAtomGroupIndices;
 
     /* Index from the local atoms to the global atoms, covers home and received zones */
     std::vector<int> globalAtomIndices;

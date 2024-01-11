@@ -719,7 +719,7 @@ void dd_redistribute_cg(FILE*         fplog,
             {
                 cggl_flag.resize((nat[mc] + 1) * DD_CGIBS);
             }
-            cggl_flag[nat[mc] * DD_CGIBS]     = dd->globalAtomGroupIndices[cg];
+            cggl_flag[nat[mc] * DD_CGIBS]     = dd->globalAtomIndices[cg];
             cggl_flag[nat[mc] * DD_CGIBS + 1] = flag;
             nat[mc]++;
         }
@@ -776,8 +776,8 @@ void dd_redistribute_cg(FILE*         fplog,
 
     clear_and_mark_ind(move, dd->globalAtomIndices, dd->ga2la.get(), moved);
 
-    /* Now we can remove the excess global atom-group indices from the list */
-    dd->globalAtomGroupIndices.resize(dd->numHomeAtoms);
+    /* Now we can remove the excess global atom indices from the list */
+    dd->globalAtomIndices.resize(dd->numHomeAtoms);
 
     /* We reuse the intBuffer without reacquiring since we are in the same scope */
     DDBufferAccess<int>& flagBuffer = moveBuffer;
@@ -932,14 +932,13 @@ void dd_redistribute_cg(FILE*         fplog,
             if (mc == -1)
             {
                 /* Set the global charge group index and size */
-                const int globalAtomGroupIndex = flagBuffer.buffer[cg * DD_CGIBS];
-                dd->globalAtomGroupIndices.push_back(globalAtomGroupIndex);
+                const int globalAtomIndex = flagBuffer.buffer[cg * DD_CGIBS];
+                dd->globalAtomIndices.push_back(globalAtomIndex);
                 /* Skip the COG entry in the buffer */
                 buf_pos++;
 
                 /* Set the cginfo */
-                fr->atomInfo[home_pos_at] =
-                        ddGetAtomInfo(atomInfoForEachMoleculeBlock, globalAtomGroupIndex);
+                fr->atomInfo[home_pos_at] = ddGetAtomInfo(atomInfoForEachMoleculeBlock, globalAtomIndex);
 
                 auto  x       = makeArrayRef(state->x);
                 auto  v       = makeArrayRef(state->v);
