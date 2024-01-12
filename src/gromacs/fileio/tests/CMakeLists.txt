@@ -34,12 +34,16 @@
 if (GMX_USE_TNG)
     set(tng_sources tngio.cpp)
 endif()
+if (GMX_USE_HDF5)
+    set(h5md_sources h5mdio.cpp)
+endif()
 gmx_add_unit_test(FileIOTests fileio-test
     CPP_SOURCE_FILES
         checkpoint.cpp
         confio.cpp
         filemd5.cpp
         filetypes.cpp
+        ${h5md_sources}
         matio.cpp
         mrcserializer.cpp
         mrcdensitymap.cpp

@@ -19,7 +19,7 @@ Options to specify input files:
 
  -f      [<.xtc/.trr/...>]  (traj.xtc)       (Opt.)
            Input trajectory or single configuration: xtc trr cpt gro g96 pdb
-           tng
+           tng h5md
  -s      [<.tpr/.gro/...>]  (topol.tpr)      (Opt.)
            Input structure: tpr gro g96 pdb brk ent
  -n      [<.ndx>]           (index.ndx)      (Opt.)

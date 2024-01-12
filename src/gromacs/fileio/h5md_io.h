@@ -71,6 +71,7 @@ public:
      *                        'w' means writing (and reading), i.e. backup an existing file and
      * replace it. 'a' means appending (and reading), i.e., that existing files will be not be
      * overwritten, but extended. 'r' means only reading.
+     * \throws FileIOError if fileName is specified and the file cannot be opened.
      */
     GmxH5mdIo(const std::string fileName = "", const char mode = '\0');
 
@@ -92,6 +93,9 @@ public:
 
     /*! \brief Write all unwritten data to the file. */
     void flush();
+
+    /*! \brief Is there an open file? */
+    bool isFileOpen() const { return file_ > 0; }
 
     /*! \brief Create and initialize time dependent particles data block objects from the H5MD file. */
     void initParticleDataBlocksFromFile();

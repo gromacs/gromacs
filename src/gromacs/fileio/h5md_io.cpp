@@ -51,6 +51,7 @@
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/baseversion.h"
+#include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/programcontext.h"
@@ -181,7 +182,7 @@ void GmxH5mdIo::openFile(const std::string fileName, const char mode)
     }
     if (file_ < 0)
     {
-        gmx_file("Cannot open file.");
+        throw gmx::FileIOError("Cannot open H5MD file.");
     }
 #else
     gmx_file("GROMACS was compiled without HDF5 support, cannot handle this file type");
