@@ -117,6 +117,7 @@ public:
      * \param[in] numParticles The number of particles/atoms in the system.
      * \param[in] pbcType The periodic boundary condition that is used.
      * \param[in] compressionError The required precision of the lossy compression.
+     * \throws FileIOError If the data blocks could not be created.
      */
     void setUpParticlesDataBlocks(int     writeCoordinatesSteps,
                                   int     writeVelocitiesSteps,
@@ -176,7 +177,7 @@ public:
      * \param[out] readV   Whether velocity data was read or not, i.e. if there was velocity data matching step.
      * \param[out] readF   Whether force data was read or not, i.e. if there was force data matching step.
      * \returns Whether any frame was read or not.
-     * \throws FileIOError If the data type of the read data was unknown.
+     * \throws FileIOError If there was an error reading the next frame or if the data type of the read data was unknown.
      */
     bool readNextFrameOfStandardDataBlocks(int64_t* step,
                                            real*    time,
@@ -199,28 +200,34 @@ public:
     /*! \brief Get the number of particles of a particles data block
      * \param[in] dataBlockName The name of the data block.
      * \returns the number of particles of the data block or -1 if not found.
+     * \throws FileIOError    If there was an error reading the number of particles could not be read, such as no atom
+     *                        data in particles data blocks.
      */
     int64_t getNumberOfParticles(const std::string dataBlockName);
 
     /*! \brief Get the first time stamp of a particles data block
      * \param[in] dataBlockName The name of the data block.
      * \returns the first time of the data block or -1 if not found.
+     * \throws FileIOError    If there was an error determining the time of the first frame.
      */
     real getFirstTime(const std::string dataBlockName);
 
     /*! \brief Get the very first time stamp of all particles data blocks
      * \returns the first time of all data blocks or -1 if no data blocks were found.
+     * \throws FileIOError    If there was an error determining the time of the first frame.
      */
     real getFirstTimeFromAllDataBlocks();
 
     /*! \brief Get the final time stamp of a particles data block
      * \param[in] dataBlockName The name of the data block.
      * \returns the final time of the data block or -1 if not found.
+     * \throws FileIOError    If there was an error determining the time of the final frame.
      */
     real getFinalTime(const std::string dataBlockName);
 
     /*! \brief Get the very last time stamp of all particles data blocks
      * \returns the last time of all data blocks or -1 if no data blocks were found.
+     * \throws FileIOError    If there was an error determining the time of the final frame.
      */
     real getFinalTimeFromAllDataBlocks();
 };

@@ -42,7 +42,7 @@
 #include <string>
 
 #include "gromacs/math/vectypes.h"
-#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
 
@@ -234,7 +234,7 @@ void GmxH5mdTimeDataBlock::updateNumWrittenFrames()
     const int numDims   = H5Sget_simple_extent_ndims(dataSpace);
     if (numDims != 1)
     {
-        gmx_file("The step data set should be one-dimensional.");
+        throw gmx::FileIOError("The step data set should be one-dimensional.");
     }
     hsize_t dimExtents;
     H5Sget_simple_extent_dims(dataSpace, &dimExtents, nullptr);
@@ -263,7 +263,7 @@ void GmxH5mdTimeDataBlock::updateNumWrittenFrames()
         if (H5Dread(stepDataSet_, datatype, memSpace, dataSpace, H5P_DEFAULT, &stepData) < 0)
         {
             H5Eprint2(H5E_DEFAULT, nullptr);
-            gmx_file("Error reading step data set when determining the number of frames.");
+            throw gmx::FileIOError("Error reading step data set when determining the number of frames.");
         }
     }
     writingFrameIndex_ = numValidFrames + 1;
@@ -276,7 +276,7 @@ size_t GmxH5mdTimeDataBlock::getNumParticles() const
 
     if (dataSpaceNumDims < 2)
     {
-        gmx_file("No atoms in time dependent data set.");
+        throw gmx::FileIOError("No atoms in time dependent data set.");
     }
     hsize_t* dimExtents;
     snew(dimExtents, dataSpaceNumDims);
@@ -296,7 +296,7 @@ int64_t GmxH5mdTimeDataBlock::getStepOfFrame(hsize_t frame) const
 
     if (dataTypeSize != 4 && dataTypeSize != 8)
     {
-        gmx_file("Can only read 32- or 64-bit step data.");
+        throw gmx::FileIOError("Can only read 32- or 64-bit step data.");
     }
 
     if (dataTypeSize == 4)
@@ -325,7 +325,7 @@ real GmxH5mdTimeDataBlock::getTimeOfFrame(hsize_t frame) const
 
     if (dataTypeSize != 4 && dataTypeSize != 8)
     {
-        gmx_file("Can only read float or double time data.");
+        throw gmx::FileIOError("Can only read float or double time data.");
     }
 
     if (dataTypeSize == 4)

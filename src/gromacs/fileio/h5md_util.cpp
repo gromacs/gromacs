@@ -43,6 +43,7 @@
 
 #include "gromacs/math/vectypes.h"
 #include "gromacs/mdtypes/md_enums.h"
+#include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
 
@@ -94,12 +95,12 @@ hid_t openOrCreateGroup(hid_t container, const char* name)
         if (group < 0)
         {
             H5Eprint2(H5E_DEFAULT, nullptr);
-            gmx_file("Cannot create group.");
+            throw gmx::FileIOError("Cannot create group.");
         }
     }
     return group;
 #else
-    gmx_file("GROMACS was compiled without HDF5 support, cannot handle this file type");
+    throw gmx::FileIOError("GROMACS was compiled without HDF5 support, cannot handle this file type");
 #endif
 }
 
@@ -115,7 +116,7 @@ void registerSz3FilterImplicitly()
         < 0)
     {
         H5Eprint2(H5E_DEFAULT, nullptr);
-        gmx_file("Cannot use SZ3 compression filter.");
+        throw gmx::FileIOError("Cannot use SZ3 compression filter.");
     }
 #endif
 }
@@ -173,29 +174,29 @@ hid_t openOrCreateDataSet(hid_t                container,
                     < 0)
                 {
                     H5Eprint2(H5E_DEFAULT, nullptr);
-                    gmx_file("Cannot set SZ3 compression.");
+                    throw gmx::FileIOError("Cannot set SZ3 compression.");
                 }
                 if (H5Zfilter_avail(H5Z_FILTER_SZ3) < 0)
                 {
                     H5Eprint2(H5E_DEFAULT, nullptr);
-                    gmx_file("SZ3 filter not available.");
+                    throw gmx::FileIOError("SZ3 filter not available.");
                 }
                 break;
             }
             case CompressionAlgorithm::LosslessWithShuffle:
                 if (H5Pset_shuffle(createPropertyList) < 0)
                 {
-                    gmx_file("Cannot set shuffle filter.");
+                    throw gmx::FileIOError("Cannot set shuffle filter.");
                 }
             case CompressionAlgorithm::LosslessNoShuffle:
                 if (H5Pset_deflate(createPropertyList, 6) < 0)
                 {
                     H5Eprint2(H5E_DEFAULT, nullptr);
-                    gmx_file("Cannot set GZIP compression.");
+                    throw gmx::FileIOError("Cannot set GZIP compression.");
                 }
                 break;
             case CompressionAlgorithm::None: break;
-            default: gmx_file("Unrecognized compression mode.");
+            default: throw gmx::FileIOError("Unrecognized compression mode.");
         }
 
         dataSet = H5Dcreate(
@@ -203,7 +204,7 @@ hid_t openOrCreateDataSet(hid_t                container,
         if (dataSet < 0)
         {
             H5Eprint2(H5E_DEFAULT, nullptr);
-            gmx_file("Cannot create dataSet.");
+            throw gmx::FileIOError("Cannot create dataSet.");
         }
 
         if (unit != nullptr)
@@ -267,7 +268,7 @@ void writeData(hid_t dataSet, const void* data, hsize_t frameToWrite)
     if (H5Sselect_hyperslab(dataSpace, H5S_SELECT_SET, fileOffset, nullptr, outputBlockSize, nullptr) < 0)
     {
         H5Eprint2(H5E_DEFAULT, nullptr);
-        gmx_file("Cannot select the output region.");
+        throw gmx::FileIOError("Cannot select the output region.");
     }
 
     hid_t memoryDataspace = H5Screate_simple(numDims, outputBlockSize, nullptr);
@@ -275,12 +276,12 @@ void writeData(hid_t dataSet, const void* data, hsize_t frameToWrite)
     if (H5Dwrite(dataSet, dataType, memoryDataspace, dataSpace, H5P_DEFAULT, data) < 0)
     {
         H5Eprint2(H5E_DEFAULT, nullptr);
-        gmx_file("Error writing data.");
+        throw gmx::FileIOError("Error writing data.");
     }
 
     // It would be good to close the dataset here, but that means compressing and writing the whole chunk every time - very slow.
 #else
-    gmx_file("GROMACS was compiled without HDF5 support, cannot handle this file type");
+    throw gmx::FileIOError("GROMACS was compiled without HDF5 support, cannot handle this file type");
 #endif
 }
 
@@ -295,7 +296,7 @@ void readData(hid_t dataSet, hsize_t frameToRead, void** buffer, size_t* totalNu
     const int dataSpaceNumDims = H5Sget_simple_extent_ndims(dataSpace);
     if (numDims != dataSpaceNumDims)
     {
-        gmx_file("The data set dimensions do not match what is expected.");
+        throw gmx::FileIOError("The data set dimensions do not match what is expected.");
     }
 
     hsize_t dimExtents[numDims];
@@ -303,7 +304,7 @@ void readData(hid_t dataSet, hsize_t frameToRead, void** buffer, size_t* totalNu
     hsize_t maxNumFrames = dimExtents[0];
     if (frameToRead >= maxNumFrames)
     {
-        gmx_file("Trying to read outside the valid frame range.");
+        throw gmx::FileIOError("Trying to read outside the valid frame range.");
     }
 
     hsize_t fileOffset[numDims];
@@ -328,7 +329,7 @@ void readData(hid_t dataSet, hsize_t frameToRead, void** buffer, size_t* totalNu
     if (H5Sselect_hyperslab(dataSpace, H5S_SELECT_SET, fileOffset, nullptr, inputBlockSize, nullptr) < 0)
     {
         H5Eprint2(H5E_DEFAULT, nullptr);
-        gmx_file("Cannot select the input region.");
+        throw gmx::FileIOError("Cannot select the input region.");
     }
 
     hid_t memoryDataspace = H5Screate_simple(numDims, inputBlockSize, nullptr);
@@ -343,7 +344,7 @@ void readData(hid_t dataSet, hsize_t frameToRead, void** buffer, size_t* totalNu
     if (H5Dread(dataSet, nativeDatatype, memoryDataspace, dataSpace, H5P_DEFAULT, *buffer) < 0)
     {
         H5Eprint2(H5E_DEFAULT, nullptr);
-        gmx_file("Error reading data set.");
+        throw gmx::FileIOError("Error reading data set.");
     }
 }
 
@@ -380,7 +381,7 @@ void setAttribute(hid_t dataSet, const char* name, const T value, hid_t dataType
     if (H5Awrite(attribute, dataType, &value) < 0)
     {
         H5Eprint2(H5E_DEFAULT, nullptr);
-        gmx_file("Cannot write attribute.");
+        throw gmx::FileIOError("Cannot write attribute.");
     }
     H5Aclose(attribute);
 }
@@ -441,7 +442,7 @@ void setAttributeStringList(hid_t dataSet, const char* name, const char value[nu
     if (H5Awrite(attribute, dataType, &value[0]) < 0)
     {
         H5Eprint2(H5E_DEFAULT, nullptr);
-        gmx_file("Cannot write attribute.");
+        throw gmx::FileIOError("Cannot write attribute.");
     }
     H5Aclose(attribute);
 }
