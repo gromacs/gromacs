@@ -185,7 +185,8 @@ void GmxH5mdIo::openFile(const std::string fileName, const char mode)
         throw gmx::FileIOError("Cannot open H5MD file.");
     }
 #else
-    gmx_file("GROMACS was compiled without HDF5 support, cannot handle this file type");
+    throw gmx::FileIOError(
+            "GROMACS was compiled without HDF5 support, cannot handle this file type");
 #endif
 }
 
@@ -197,7 +198,7 @@ void GmxH5mdIo::closeFile()
         if (H5Fflush(file_, H5F_SCOPE_LOCAL) < 0)
         {
             H5Eprint2(H5E_DEFAULT, nullptr);
-            gmx_file("Error flushing H5MD file when closing.");
+            throw gmx::FileIOError("Error flushing H5MD file when closing.");
         }
         if (debug)
         {
@@ -211,7 +212,8 @@ void GmxH5mdIo::closeFile()
         file_ = -1;
     }
 #else
-    gmx_file("GROMACS was compiled without HDF5 support, cannot handle this file type");
+    throw gmx::FileIOError(
+            "GROMACS was compiled without HDF5 support, cannot handle this file type");
 #endif
 }
 
@@ -227,11 +229,12 @@ void GmxH5mdIo::flush()
         if (H5Fflush(file_, H5F_SCOPE_LOCAL) < 0)
         {
             H5Eprint2(H5E_DEFAULT, nullptr);
-            gmx_file("Error flushing H5MD file when closing.");
+            throw gmx::FileIOError("Error flushing H5MD file when closing.");
         }
     }
 #else
-    gmx_file("GROMACS was compiled without HDF5 support, cannot handle this file type");
+    throw gmx::FileIOError(
+            "GROMACS was compiled without HDF5 support, cannot handle this file type");
 #endif
 }
 
@@ -241,7 +244,7 @@ void GmxH5mdIo::initParticleDataBlocksFromFile()
     if (particlesGroup < 0)
     {
         H5Eprint2(H5E_DEFAULT, nullptr);
-        gmx_file(
+        throw gmx::FileIOError(
                 "Cannot find particles group when initializing particles data blocks. Invalid H5MD "
                 "file?");
     }
@@ -254,7 +257,7 @@ void GmxH5mdIo::initParticleDataBlocksFromFile()
         < 0)
     {
         H5Eprint2(H5E_DEFAULT, nullptr);
-        gmx_file("Error iterating over particles data blocks.");
+        throw gmx::FileIOError("Error iterating over particles data blocks.");
     }
 }
 
@@ -374,7 +377,7 @@ void GmxH5mdIo::setupMolecularSystem(const gmx_mtop_t&        topology,
 #if GMX_USE_HDF5
     if (file_ < 0)
     {
-        gmx_file("No file open for writing");
+        throw gmx::FileIOError("No file open for writing");
     }
 
     std::vector<real>        atomCharges;
@@ -509,7 +512,8 @@ void GmxH5mdIo::setupMolecularSystem(const gmx_mtop_t&        topology,
     openOrCreateGroup(file_, name.c_str());
 
 #else
-    gmx_file("GROMACS was compiled without HDF5 support, cannot handle this file type");
+    throw gmx::FileIOError(
+            "GROMACS was compiled without HDF5 support, cannot handle this file type");
 #endif
 }
 
@@ -526,7 +530,7 @@ void GmxH5mdIo::writeFrame(int64_t      step,
 #if GMX_USE_HDF5
     if (file_ < 0)
     {
-        gmx_file("No file open for writing");
+        throw gmx::FileIOError("No file open for writing");
     }
 
 #    if GMX_DOUBLE
@@ -569,7 +573,7 @@ void GmxH5mdIo::writeFrame(int64_t      step,
             foundDataBlock = std::find(dataBlocks_.begin(), dataBlocks_.end(), wantedName.c_str());
             if (foundDataBlock == dataBlocks_.end())
             {
-                gmx_file("Error creating position data block when writing frame.");
+                throw gmx::FileIOError("Error creating position data block when writing frame.");
             }
         }
         foundDataBlock->writeFrame(x, step, time);
@@ -596,7 +600,7 @@ void GmxH5mdIo::writeFrame(int64_t      step,
                 foundDataBlock = std::find(dataBlocks_.begin(), dataBlocks_.end(), wantedName.c_str());
                 if (foundDataBlock == dataBlocks_.end())
                 {
-                    gmx_file("Error creating box data block when writing frame.");
+                    throw gmx::FileIOError("Error creating box data block when writing frame.");
                 }
             }
             foundDataBlock->writeFrame(box, step, time);
@@ -622,7 +626,7 @@ void GmxH5mdIo::writeFrame(int64_t      step,
             foundDataBlock = std::find(dataBlocks_.begin(), dataBlocks_.end(), wantedName.c_str());
             if (foundDataBlock == dataBlocks_.end())
             {
-                gmx_file("Error creating velocity data block when writing frame.");
+                throw gmx::FileIOError("Error creating velocity data block when writing frame.");
             }
         }
         foundDataBlock->writeFrame(v, step, time);
@@ -647,13 +651,14 @@ void GmxH5mdIo::writeFrame(int64_t      step,
             foundDataBlock = std::find(dataBlocks_.begin(), dataBlocks_.end(), wantedName.c_str());
             if (foundDataBlock == dataBlocks_.end())
             {
-                gmx_file("Error creating force data block when writing frame.");
+                throw gmx::FileIOError("Error creating force data block when writing frame.");
             }
         }
         foundDataBlock->writeFrame(f, step, time);
     }
 #else
-    gmx_file("GROMACS was compiled without HDF5 support, cannot handle this file type");
+    throw gmx::FileIOError(
+            "GROMACS was compiled without HDF5 support, cannot handle this file type");
 #endif
 }
 
@@ -744,7 +749,7 @@ bool GmxH5mdIo::readNextFrameOfStandardDataBlocks(int64_t* step,
         }
         else
         {
-            gmx_file("Unexpected data type.");
+            throw gmx::FileIOError("Unexpected data type.");
         }
     }
     return didReadFrame;

@@ -85,19 +85,26 @@ public:
      *                        'w' means writing, i.e. backup an existing file and replace it,
      *                        'a' means truncate, i.e., that existing files will be overwritten
      *                        'r' means only read.
+     * \throws FileIOError    If the file cannot be opened.
      */
     void openFile(const std::string fileName, const char mode);
 
-    /*! \brief Close the H5MD file. */
+    /*! \brief Close the H5MD file.
+     * \throws FileIOError    If the file cannot be closed.
+     */
     void closeFile();
 
-    /*! \brief Write all unwritten data to the file. */
+    /*! \brief Write all unwritten data to the file.
+     * \throws FileIOError    If there were errors during flushing.
+     */
     void flush();
 
     /*! \brief Is there an open file? */
     bool isFileOpen() const { return file_ > 0; }
 
-    /*! \brief Create and initialize time dependent particles data block objects from the H5MD file. */
+    /*! \brief Create and initialize time dependent particles data block objects from the H5MD file.
+     * \throws FileIOError    If the particles data could not be read from the file. Invalid H5MD file?
+     */
     void initParticleDataBlocksFromFile();
 
     /*! \brief Set up data blocks related to particle data.
@@ -125,6 +132,7 @@ public:
      * \param[in] topology The molecular topology describing the system.
      * \param[in] index    The selected atoms to include. If empty, use all atoms in the topology.
      * \param[in] index_group_name The name of the atom selection specified by index.
+     * \throws FileIOError    If there is no file open.
      */
     void setupMolecularSystem(const gmx_mtop_t&        topology,
                               gmx::ArrayRef<const int> index            = {},
@@ -141,6 +149,7 @@ public:
      * \param[in] v The particle velocities for lossless output.
      * \param[in] f The particle forces for lossless output.
      * \param[in] compressionError The required precision of the lossy compression.
+     * \throws FileIOError    If there is no file open or if errors occured during writing.
      */
     void writeFrame(int64_t     step,
                     real        time,
@@ -166,6 +175,8 @@ public:
      * \param[out] readX   Whether coordinate data was read or not, i.e. if there was coordinate data matching step.
      * \param[out] readV   Whether velocity data was read or not, i.e. if there was velocity data matching step.
      * \param[out] readF   Whether force data was read or not, i.e. if there was force data matching step.
+     * \returns Whether any frame was read or not.
+     * \throws FileIOError If the data type of the read data was unknown.
      */
     bool readNextFrameOfStandardDataBlocks(int64_t* step,
                                            real*    time,

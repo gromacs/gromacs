@@ -40,13 +40,12 @@
  */
 #include "gmxpre.h"
 
-#include "gromacs/fileio/h5md_io.h"
-
 #include <string>
 
 #include <gtest/gtest.h>
 
 #include "gromacs/fileio/filetypes.h"
+#include "gromacs/fileio/h5md_io.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/utility/exceptions.h"
 
@@ -69,30 +68,12 @@ public:
         referenceFilename_ = fileManager_.getTemporaryFilePath(getFileSuffix("ref")).u8string();
         testFilename_      = fileManager_.getTemporaryFilePath(getFileSuffix("test")).u8string();
     }
-    void openReferenceFile(const char mode)
-    {
-        referenceH5mdIo_.openFile(referenceFilename_, mode);
-    }
-    void closeReferenceFile()
-    {
-        referenceH5mdIo_.closeFile();
-    }
-    bool isReferenceFileOpen()
-    {
-        return referenceH5mdIo_.isFileOpen();
-    }
-    void openTestFile(const char mode)
-    {
-        testH5mdIo_.openFile(testFilename_, mode);
-    }
-    void closeTestFile()
-    {
-        testH5mdIo_.closeFile();
-    }
-    bool isTestFileOpen()
-    {
-        return testH5mdIo_.isFileOpen();
-    }
+    void openReferenceFile(const char mode) { referenceH5mdIo_.openFile(referenceFilename_, mode); }
+    void closeReferenceFile() { referenceH5mdIo_.closeFile(); }
+    bool isReferenceFileOpen() { return referenceH5mdIo_.isFileOpen(); }
+    void openTestFile(const char mode) { testH5mdIo_.openFile(testFilename_, mode); }
+    void closeTestFile() { testH5mdIo_.closeFile(); }
+    bool isTestFileOpen() { return testH5mdIo_.isFileOpen(); }
 
 private:
     static std::string getFileSuffix(const char* type)
