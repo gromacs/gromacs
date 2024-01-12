@@ -183,7 +183,7 @@ static inline T atomicLoad(T& val)
      * Allegedly, datatypes up to 128 bytes should be fine, but we only use floats, so we have
      * a very concervative 4-byte limit here.
      * As a demonstration of correctness, we don't use atomic loads in CUDA and it's doing fine.
-     * See https://github.com/illuhad/hipSYCL/issues/752 */
+     * See https://github.com/AdaptiveCpp/AdaptiveCpp/issues/752 */
     static_assert(sizeof(T) <= 4);
     return val;
 #else

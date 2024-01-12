@@ -123,7 +123,7 @@ definitions. Experienced HPC users can skip this section.
     SYCL
         An open standard based on C++17 for targeting heterogeneous systems.
         SYCL has several implementations, of which |Gromacs| supports two:
-        `Intel oneAPI DPC++`_ and hipSYCL_. |Gromacs| uses SYCL for GPU acceleration
+        `Intel oneAPI DPC++`_ and AdaptiveCpp_. |Gromacs| uses SYCL for GPU acceleration
         on AMD and Intel GPUs. There is experimental support for NVIDIA GPUs too.
 
     SIMD
