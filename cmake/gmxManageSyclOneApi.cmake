@@ -134,6 +134,23 @@ if("${SYCL_CXX_FLAGS_EXTRA}" MATCHES "fsycl-targets=.*(nvptx64|amdgcn|amd_gpu|nv
         set(SYCL_TOOLCHAIN_CXX_FLAGS "${SYCL_TOOLCHAIN_CXX_FLAGS} ${SYCL_WARNINGS_CXX_FLAGS}")
         set(SYCL_TOOLCHAIN_LINKER_FLAGS "${SYCL_TOOLCHAIN_LINKER_FLAGS} ${SYCL_WARNINGS_CXX_FLAGS}")
     endif()
+
+    # Set GMX_GPU_NB_DISABLE_CLUSTER_PAIR_SPLIT when targetting only devices with 64-wide execution
+    set(_have_subgroup_not_64 OFF)
+    set(_have_subgroup_64 OFF)
+    if ("${SYCL_CXX_FLAGS_EXTRA}" MATCHES "gfx1[0-9][0-9][0-9]|nvptx64|nvidia_gpu|spir64")
+        set(_have_subgroup_not_64 ON) # We have AMD RDNA, NVIDIA, or Intel target(s)
+    endif()
+    # We assume that any GCN2-5 architecture (gfx7/8) and CDNA1-3 (gfx9 series) up until the time of writing of this conditional is 64-wide
+    if ("${SYCL_CXX_FLAGS_EXTRA}" MATCHES "gfx[7-8][0-9][0-9]|gfx9[0-4][0-9ac]")
+        set(_have_subgroup_64 ON) # We have AMD GCN/CDNA target(s)
+    endif()
+    if (_have_subgroup_64 AND NOT _have_subgroup_not_64)
+        option(GMX_GPU_NB_DISABLE_CLUSTER_PAIR_SPLIT
+            "Disable NBNXM GPU cluster pair splitting. Only supported with SYCL and 64-wide GPU architectures (like AMD GCN/CDNA)."
+            ON)
+        mark_as_advanced(GMX_GPU_NB_DISABLE_CLUSTER_PAIR_SPLIT)
+    endif()
 endif()
 
 if(GMX_GPU_FFT_VKFFT)
