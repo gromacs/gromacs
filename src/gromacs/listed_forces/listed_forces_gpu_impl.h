@@ -116,6 +116,7 @@ public:
     //! Constructor
     Impl(const gmx_ffparams_t&    ffparams,
          float                    electrostaticsScaleFactor,
+         int                      numEnergyGroupsForListedForces,
          const DeviceInformation& deviceInfo,
          const DeviceContext&     deviceContext,
          const DeviceStream&      deviceStream,

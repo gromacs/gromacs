@@ -114,15 +114,19 @@ public:
      *
      * \param[in] ffparams                   Force-field parameters.
      * \param[in] electrostaticsScaleFactor  Scaling factor for the electrostatic potential
+     * \param[in] numEnergyGroupsForListedForces  The number of energy groups used for listed forces
      *                                       (Coulomb constant, multiplied by the Fudge factor).
      * \param[in] deviceInfo                 GPU device handle.
      * \param[in] deviceContext              GPU device context (not used in CUDA).
      * \param[in] deviceStream               GPU device stream.
      * \param[in] wcycle                     The wallclock counter.
      *
+     * \note Only assigning all energies to energy group pair 0,0 is supported.
+     *       Passing numEnergyGroupsForListedForces>1 will lead to an assertion failure.
      */
     ListedForcesGpu(const gmx_ffparams_t&    ffparams,
                     float                    electrostaticsScaleFactor,
+                    int                      numEnergyGroupsForListedForces,
                     const DeviceInformation& deviceInfo,
                     const DeviceContext&     deviceContext,
                     const DeviceStream&      deviceStream,

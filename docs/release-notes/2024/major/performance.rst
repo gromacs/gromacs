@@ -45,6 +45,9 @@ Such times have now been reduced to seconds.
 
 :issue:`4892`
 
+With wall potentials, bonded interactions can now be run on GPUs
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
 HeFFTe multi-GPU FFT plan options are now configurable
 """"""""""""""""""""""""""""""""""""""""""""""""""""""
 

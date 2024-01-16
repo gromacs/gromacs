@@ -122,7 +122,8 @@ bool inputSupportsListedForcesGpu(const t_inputrec& ir, const gmx_mtop_t& mtop, 
             "a dynamical integrator (md, sd, etc).");
     errorReasons.appendIf(EI_MIMIC(ir.eI), "MiMiC");
     errorReasons.appendIf(ir.useMts, "Cannot run with multiple time stepping");
-    errorReasons.appendIf((ir.opts.ngener > 1), "Cannot run with multiple energy groups");
+    // There is one energy group for each wall and those are not used for 1-4 interactions
+    errorReasons.appendIf((ir.opts.ngener - ir.nwall > 1), "Cannot run with multiple energy groups");
     errorReasons.finishContext();
     if (error != nullptr)
     {
@@ -139,6 +140,7 @@ class ListedForcesGpu::Impl
 
 ListedForcesGpu::ListedForcesGpu(const gmx_ffparams_t& /* ffparams */,
                                  const float /* electrostaticsScaleFactor */,
+                                 const int /* numEnergyGroupsForListedForces */,
                                  const DeviceInformation& /*deviceInfo*/,
                                  const DeviceContext& /* deviceContext */,
                                  const DeviceStream& /* deviceStream */,

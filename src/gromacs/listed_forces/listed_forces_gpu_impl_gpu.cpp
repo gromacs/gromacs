@@ -89,12 +89,16 @@ static int chooseSubGroupSizeForDevice(const DeviceInformation& deviceInfo)
 
 ListedForcesGpu::Impl::Impl(const gmx_ffparams_t&    ffparams,
                             const float              electrostaticsScaleFactor,
+                            const int                numEnergyGroupsForListedForces,
                             const DeviceInformation& deviceInfo,
                             const DeviceContext&     deviceContext,
                             const DeviceStream&      deviceStream,
                             gmx_wallcycle*           wcycle) :
     deviceContext_(deviceContext), deviceStream_(deviceStream)
 {
+    GMX_RELEASE_ASSERT(numEnergyGroupsForListedForces == 1,
+                       "Only a single energy group is supported with listed forces on GPU");
+
     GMX_RELEASE_ASSERT(deviceStream.isValid(),
                        "Can't run GPU version of bonded forces in stream that is not valid.");
 
@@ -378,7 +382,6 @@ void ListedForcesGpu::Impl::waitAccumulateEnergyTerms(gmx_enerdata_t* enerd)
 
     // Note: We do not support energy groups here
     gmx_grppairener_t* grppener = &enerd->grpp;
-    GMX_RELEASE_ASSERT(grppener->nener == 1, "No energy group support for bondeds on the GPU");
     grppener->energyGroupPairTerms[NonBondedEnergyTerms::LJ14][0] += vTot_[F_LJ14];
     grppener->energyGroupPairTerms[NonBondedEnergyTerms::Coulomb14][0] += vTot_[F_COUL14];
 }
@@ -396,11 +399,12 @@ void ListedForcesGpu::Impl::clearEnergies()
 
 ListedForcesGpu::ListedForcesGpu(const gmx_ffparams_t&    ffparams,
                                  const float              electrostaticsScaleFactor,
+                                 const int                numEnergyGroupsForListedForces,
                                  const DeviceInformation& deviceInfo,
                                  const DeviceContext&     deviceContext,
                                  const DeviceStream&      deviceStream,
                                  gmx_wallcycle*           wcycle) :
-    impl_(new Impl(ffparams, electrostaticsScaleFactor, deviceInfo, deviceContext, deviceStream, wcycle))
+    impl_(new Impl(ffparams, electrostaticsScaleFactor, numEnergyGroupsForListedForces, deviceInfo, deviceContext, deviceStream, wcycle))
 {
 }
 
