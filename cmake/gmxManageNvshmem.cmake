@@ -49,7 +49,7 @@ if(GMX_NVSHMEM)
     set_target_properties(nvshmem_host_lib PROPERTIES IMPORTED_LOCATION ${NVSHMEM_HOST_LIBS})
     set_target_properties(nvshmem_host_lib PROPERTIES IMPORTED_LINK_INTERFACE_LANGUAGES CUDA)
     target_include_directories(nvshmem_host_lib INTERFACE $<BUILD_INTERFACE:${NVSHMEM_INCLUDE}>)
-    target_link_libraries(nvshmem_host_lib INTERFACE cuda nvidia-ml)
+    target_link_libraries(nvshmem_host_lib INTERFACE ${GMX_CUDA_DRV_LIB} ${GMX_NVIDIA_ML_LIB})
 
     add_library(nvshmem_device_lib STATIC IMPORTED GLOBAL)
     # cuda separable compilation is properly supported from 3.20.1

@@ -455,16 +455,6 @@ It is advisable to refer to the `NVSHMEM FAQ page
 <https://docs.nvidia.com/hpc-sdk/nvshmem/api/faq.html#general-faqs>`_ for
 any issues faced at runtime.
 
-* Note that, for NVHPC SDK 23.3 or higher, there is an issue compiling
-  with cuFFTMp support when building on a node without a CUDA driver
-  installed (e.g. the front end of an HPC cluster). To work around
-  this issue one can compile on a node that does have a CUDA driver
-  installed, or use the following additional flags:
-
-::
-
--DCMAKE_CXX_FLAGS="-L <PATH_TO_CUDA_TOOLKIT>/lib64/stubs -lnvidia-ml -lcuda"
-
 .. _heffte installation:
 
 Using heFFTe
