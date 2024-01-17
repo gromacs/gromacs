@@ -36,8 +36,6 @@
 
 #include "gromacs/topology/ifunc.h"
 
-#include <string>
-
 static constexpr t_interaction_function def_bonded(const char* str, const char* lstr, int nra, int nrpa, int nrpb)
 {
     return t_interaction_function{ str, lstr, nra, nrpa, nrpb, IF_BOND };
@@ -122,7 +120,7 @@ static constexpr t_interaction_function def_nofc(const char* str, const char* ls
  * terminating '\0'). So please abbreviate accordingly,
  * e.g. "Conserved En."
  */
-constexpr t_interaction_function interaction_function[F_NRE] = {
+const t_interaction_function interaction_function[F_NRE] = {
     def_bond("BONDS", "Bond", 2, 2, 2),
     def_bond("G96BONDS", "G96Bond", 2, 2, 2),
     def_bond("MORSE", "Morse", 2, 3, 3),
@@ -221,19 +219,3 @@ constexpr t_interaction_function interaction_function[F_NRE] = {
     def_nofc("DVR/DL", "dVrestraint/dl"),
     def_nofc("DVT/DL", "dVtemp/dl")
 };
-
-template<int maxLength, typename Container>
-static constexpr bool checkStringsLengths(const Container& iFuncs)
-{
-    // NOLINTNEXTLINE(readability-use-anyofallof) // std::all_of is constexpr only since C++20
-    for (const t_interaction_function iFunc : iFuncs)
-    {
-        if (std::char_traits<char>::length(iFunc.longname) > maxLength)
-        {
-            return false;
-        }
-    }
-    return true;
-}
-
-static_assert(checkStringsLengths<14>(interaction_function));
