@@ -234,6 +234,7 @@ void GmxH5mdTimeDataBlock::updateNumWrittenFrames()
     const int numDims   = H5Sget_simple_extent_ndims(dataSpace);
     if (numDims != 1)
     {
+        H5Eprint2(H5E_DEFAULT, nullptr);
         throw gmx::FileIOError("The step data set should be one-dimensional.");
     }
     hsize_t dimExtents;
@@ -263,7 +264,8 @@ void GmxH5mdTimeDataBlock::updateNumWrittenFrames()
         if (H5Dread(stepDataSet_, datatype, memSpace, dataSpace, H5P_DEFAULT, &stepData) < 0)
         {
             H5Eprint2(H5E_DEFAULT, nullptr);
-            throw gmx::FileIOError("Error reading step data set when determining the number of frames.");
+            throw gmx::FileIOError(
+                    "Error reading step data set when determining the number of frames.");
         }
     }
     writingFrameIndex_ = numValidFrames + 1;
@@ -271,7 +273,13 @@ void GmxH5mdTimeDataBlock::updateNumWrittenFrames()
 
 size_t GmxH5mdTimeDataBlock::getNumParticles() const
 {
-    hid_t     dataSpace        = H5Dget_space(mainDataSet_);
+    hid_t dataSpace = H5Dget_space(mainDataSet_);
+    if (dataSpace < 0)
+    {
+        H5Eprint2(H5E_DEFAULT, nullptr);
+        throw gmx::FileIOError(
+                "The main data block of the time dependent data set cannot be found.");
+    }
     const int dataSpaceNumDims = H5Sget_simple_extent_ndims(dataSpace);
 
     if (dataSpaceNumDims < 2)

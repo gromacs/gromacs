@@ -90,6 +90,11 @@ hid_t openOrCreateGroup(hid_t container, const char* name)
     if (group < 0)
     {
         hid_t linkPropertyList = H5Pcreate(H5P_LINK_CREATE); // create group creation property list
+        if (linkPropertyList < 0)
+        {
+            H5Eprint2(H5E_DEFAULT, nullptr);
+            throw gmx::FileIOError("Cannot create linkPropertyList when creating group.");
+        }
         H5Pset_create_intermediate_group(linkPropertyList, 1); // set intermediate link creation
         group = H5Gcreate(container, name, linkPropertyList, H5P_DEFAULT, H5P_DEFAULT);
         if (group < 0)
@@ -100,7 +105,8 @@ hid_t openOrCreateGroup(hid_t container, const char* name)
     }
     return group;
 #else
-    throw gmx::FileIOError("GROMACS was compiled without HDF5 support, cannot handle this file type");
+    throw gmx::FileIOError(
+            "GROMACS was compiled without HDF5 support, cannot handle this file type");
 #endif
 }
 
@@ -112,11 +118,17 @@ void registerSz3FilterImplicitly()
     size_t        numCompressionSettingsElements;
     unsigned int* compressionSettings = nullptr;
     SZ_errConfigToCdArray(&numCompressionSettingsElements, &compressionSettings, sz3_mode, 0, 0, 0, 0);
-    if (H5Pset_filter(propertyList, H5Z_FILTER_SZ3, H5Z_FLAG_MANDATORY, numCompressionSettingsElements, compressionSettings)
-        < 0)
+    herr_t status = H5Pset_filter(
+            propertyList, H5Z_FILTER_SZ3, H5Z_FLAG_MANDATORY, numCompressionSettingsElements, compressionSettings);
+
+    /* For some reason status is 0 even if the filter could not be found. Check if any HDF5 errors have occured */
+    ssize_t numHdf5Errors = H5Eget_num(H5E_DEFAULT);
+    if (status < 0 || numHdf5Errors > 0)
     {
         H5Eprint2(H5E_DEFAULT, nullptr);
-        throw gmx::FileIOError("Cannot use SZ3 compression filter.");
+        throw gmx::FileIOError(
+                "Cannot use SZ3 compression filter. Please check that the SZ3 filter is in "
+                "HDF5_PLUGIN_PATH.");
     }
 #endif
 }
@@ -281,7 +293,8 @@ void writeData(hid_t dataSet, const void* data, hsize_t frameToWrite)
 
     // It would be good to close the dataset here, but that means compressing and writing the whole chunk every time - very slow.
 #else
-    throw gmx::FileIOError("GROMACS was compiled without HDF5 support, cannot handle this file type");
+    throw gmx::FileIOError(
+            "GROMACS was compiled without HDF5 support, cannot handle this file type");
 #endif
 }
 
@@ -292,7 +305,13 @@ void readData(hid_t dataSet, hsize_t frameToRead, void** buffer, size_t* totalNu
     GMX_ASSERT(!readFullDataSet || frameToRead == 0,
                "Must start reading from frame 0 if reading the whole data set.");
 
-    hid_t     dataSpace        = H5Dget_space(dataSet);
+    hid_t dataSpace = H5Dget_space(dataSet);
+    if (dataSpace < 0)
+    {
+        H5Eprint2(H5E_DEFAULT, nullptr);
+        throw gmx::FileIOError(
+                "The main data block of the time dependent data set cannot be found.");
+    }
     const int dataSpaceNumDims = H5Sget_simple_extent_ndims(dataSpace);
     if (numDims != dataSpaceNumDims)
     {

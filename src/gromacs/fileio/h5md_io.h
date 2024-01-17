@@ -171,7 +171,7 @@ public:
      * \param[out] x       Read coordinate data. Memory must be allocated by the caller.
      * \param[out] v       Read velocity data. Memory must be allocated by the caller.
      * \param[out] f       Read force data. Memory must be allocated by the caller.
-     * \param[out] xCompressionPrecision The error of lossy (SZ3) coordinate compression. <= 0 if no lossy SZ3 compression.
+     * \param[out] xCompressionPrecision The error of lossy (SZ3) coordinate compression. -1 if no lossy SZ3 compression.
      * \param[out] readBox Whether box data was read or not, i.e. if there was box data matching step.
      * \param[out] readX   Whether coordinate data was read or not, i.e. if there was coordinate data matching step.
      * \param[out] readV   Whether velocity data was read or not, i.e. if there was velocity data matching step.
@@ -200,8 +200,8 @@ public:
     /*! \brief Get the number of particles of a particles data block
      * \param[in] dataBlockName The name of the data block.
      * \returns the number of particles of the data block or -1 if not found.
-     * \throws FileIOError    If there was an error reading the number of particles could not be read, such as no atom
-     *                        data in particles data blocks.
+     * \throws FileIOError    If there was an error reading the number of particles could not be
+     * read, such as no atom data in particles data blocks.
      */
     int64_t getNumberOfParticles(const std::string dataBlockName);
 

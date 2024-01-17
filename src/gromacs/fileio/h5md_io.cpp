@@ -90,7 +90,6 @@ static herr_t iterativeSetupTimeDataBlocks(hid_t            locationId,
     switch (infoBuffer.type)
     {
         case H5O_TYPE_GROUP:
-            // printf("Found group %s\n", name);
             if (objectExists(locationId, stepDataSetName.c_str())
                 && objectExists(locationId, timeDataSetName.c_str())
                 && objectExists(locationId, valueDataSetName.c_str()))
@@ -149,6 +148,7 @@ void GmxH5mdIo::openFile(const std::string fileName, const char mode)
     closeFile();
 
     systemOutputName_ = "system";
+    dataBlocks_.clear();
 
     if (debug)
     {
@@ -156,7 +156,8 @@ void GmxH5mdIo::openFile(const std::string fileName, const char mode)
     }
     if (mode == 'w' || mode == 'a')
     {
-        if (mode == 'w')
+        bool fileExists = gmx_fexist(fileName);
+        if (!fileExists || mode == 'w')
         {
             make_backup(fileName.c_str());
             hid_t createPropertyList = H5Pcreate(H5P_FILE_CREATE);
@@ -165,6 +166,10 @@ void GmxH5mdIo::openFile(const std::string fileName, const char mode)
                 printf("Cannot set H5MD file space strategy.\n");
             }
             file_ = H5Fcreate(fileName.c_str(), H5F_ACC_TRUNC, createPropertyList, H5P_DEFAULT);
+            if (file_ < 0)
+            {
+                throw gmx::FileIOError("Cannot create H5MD file.");
+            }
             setAuthorAndCreator();
         }
         else
@@ -268,6 +273,10 @@ void GmxH5mdIo::setUpParticlesDataBlocks(int     writeCoordinatesSteps,
                                          PbcType pbcType,
                                          double  compressionError)
 {
+    if (numParticles <= 0)
+    {
+        throw gmx::FileIOError("There must be particles/atoms when writing trajectory frames.");
+    }
 #if GMX_DOUBLE
     const hid_t datatype = H5Tcopy(H5T_NATIVE_DOUBLE);
 #else
@@ -281,13 +290,14 @@ void GmxH5mdIo::setUpParticlesDataBlocks(int     writeCoordinatesSteps,
     CompressionAlgorithm compressionAlgorithm = CompressionAlgorithm::LosslessWithShuffle;
     if (writeCoordinatesSteps > 0)
     {
-        if (compressionError != 0)
+        if (compressionError > 0)
         {
             /* Use no more than 20 frames per chunk (compression unit). Use fewer frames per chunk if there are many atoms. */
             numFramesPerChunk    = std::min(20, int(std::ceil(1e6 / numParticles)));
             compressionAlgorithm = CompressionAlgorithm::LossySz3;
 
-            /* Register the SZ3 filter. This is not necessary when creating a dataset with the filter, but must be done to append to an existing file (e.g. when restarting from checkpoint).*/
+            /* Register the SZ3 filter. This is not necessary when creating a dataset with the filter,
+             * but must be done to append to an existing file (e.g. when restarting from checkpoint). */
             registerSz3FilterImplicitly();
         }
 
@@ -528,10 +538,15 @@ void GmxH5mdIo::writeFrame(int64_t      step,
                            const double compressionError)
 {
 #if GMX_USE_HDF5
+    if (numParticles <= 0)
+    {
+        throw gmx::FileIOError("There must be particles/atoms when writing trajectory frames.");
+    }
     if (file_ < 0)
     {
         throw gmx::FileIOError("No file open for writing");
     }
+
 
 #    if GMX_DOUBLE
     const hid_t datatype = H5Tcopy(H5T_NATIVE_DOUBLE);
@@ -550,7 +565,8 @@ void GmxH5mdIo::writeFrame(int64_t      step,
         numFramesPerChunk    = std::min(20, int(std::ceil(1e6 / numParticles)));
         compressionAlgorithm = CompressionAlgorithm::LossySz3;
 
-        /* Register the SZ3 filter. This is not necessary when creating a dataset with the filter, but must be done to append to an existing file (e.g. when restarting from checkpoint).*/
+        /* Register the SZ3 filter. This is not necessary when creating a dataset with the filter,
+         * but must be done to append to an existing file (e.g. when restarting from checkpoint). */
         registerSz3FilterImplicitly();
     }
     if (x != nullptr)
