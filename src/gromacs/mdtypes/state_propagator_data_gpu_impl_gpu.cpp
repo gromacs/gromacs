@@ -191,6 +191,8 @@ void StatePropagatorDataGpu::Impl::reinit(int numAtomsLocal, int numAtomsAll)
     if (sc_haveGpuFBufferOps)
     {
         clearDeviceBufferAsync(&d_f_, 0, d_fCapacity_, *localStream_);
+        // We need to synchronize to avoid a data race with copyForcesToGpu(Local).
+        localStream_->synchronize();
     }
 
     wallcycle_sub_stop(wcycle_, WallCycleSubCounter::LaunchStatePropagatorData);

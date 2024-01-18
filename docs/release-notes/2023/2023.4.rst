@@ -36,6 +36,21 @@ Now proper error messages are generated.
 
 :issue:`4938`
 
+Missing force contribution on neighbor search steps with GPU update
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+On a neighbor search step, when virial is _not_ computed (i.e.,
+when `nstlist` is not a multiple of `nstpcouple`) and GPU update
+is used, there could have been a race between GPU buffer clearing and
+copying of forces computed on the CPU, leading to missing some of the
+force contribution on this step.
+
+This should not have ever happened unless the GPU was heavily
+oversubscribed or hipSYCL/AdaptiveCpp was used, and even in those cases,
+the problem was very unlikely to manifest.
+
+:issue:`4937`
+
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
 
