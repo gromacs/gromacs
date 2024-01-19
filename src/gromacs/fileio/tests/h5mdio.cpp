@@ -145,7 +145,7 @@ public:
         return referenceH5mdIo_.getFinalTimeFromAllDataBlocks();
     }
 
-    void readNextFrameAndCompareToReference(int64_t step, int64_t referenceNumFrames)
+    void readNextFrameAndCompareToReference(int64_t referenceStep, int64_t referenceNumFrames)
     {
         int64_t testStep;
         real    testTime;
@@ -170,9 +170,11 @@ public:
                                                            &testReadV,
                                                            &testReadF);
 
-        real referenceTime   = step * 10;
-        real referenceLambda = static_cast<real>(step) / referenceNumFrames;
+        real referenceTime   = referenceStep * 10;
+        real referenceLambda = static_cast<real>(referenceStep) / referenceNumFrames;
 
+        EXPECT_EQ(referenceStep, testStep);
+        EXPECT_REAL_EQ_TOL(referenceTime, testTime, gmx::test::defaultRealTolerance());
         EXPECT_TRUE(testReadBox);
         EXPECT_TRUE(testReadX);
         EXPECT_TRUE(testReadV);
