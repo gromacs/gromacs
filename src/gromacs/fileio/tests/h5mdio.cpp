@@ -43,7 +43,6 @@
 #include <string>
 
 #include <gtest/gtest.h>
-#include <sys/_types/_int64_t.h>
 
 #include "gromacs/fileio/filetypes.h"
 #include "gromacs/fileio/h5md_io.h"
