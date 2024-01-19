@@ -36,6 +36,7 @@
 #ifndef GMX_FILEIO_H5MD_DATABLOCK_H
 #define GMX_FILEIO_H5MD_DATABLOCK_H
 
+#include <cstring>
 #include <list>
 #include <string>
 
