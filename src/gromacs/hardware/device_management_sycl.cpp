@@ -398,7 +398,7 @@ static bool isDeviceFunctional(const sycl::device& syclDevice, std::string* erro
     static const int numThreads = 8;
     try
     {
-        sycl::queue                                     queue(syclDevice);
+        sycl::queue queue(syclDevice, { sycl::property::queue::in_order() });
         std::unique_ptr<int, std::function<void(int*)>> buffer = {
             sycl::malloc_device<int>(numThreads, queue), [=](int* ptr) { sycl::free(ptr, queue); }
         };
