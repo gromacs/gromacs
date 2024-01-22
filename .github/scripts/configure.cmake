@@ -48,6 +48,12 @@ set(path_separator ":")
 if ("$ENV{RUNNER_OS}" STREQUAL "Windows")
   set(path_separator ";")
 endif()
+if ("$ENV{RUNNER_OS}" STREQUAL "macOS")
+  # macOS supports RDTSCP, but there are issues with GitHub runners, #4896
+  set(RDTSCP_VAR OFF)
+else()
+  set(RDTSCP_VAR ON)
+endif()
 set(ENV{PATH} "$ENV{GITHUB_WORKSPACE}${path_separator}$ENV{PATH}")
 
 message(STATUS "Using GPU_VAR: $ENV{GPU_VAR}")
@@ -68,6 +74,7 @@ execute_process(
     -D GMX_FFT_LIBRARY=FFTPACK
     -D GMX_OPENMP=$ENV{OPENMP_VAR}
     -D REGRESSIONTEST_DOWNLOAD=ON
+    -D GMX_USE_RDTSCP=${RDTSCP_VAR}
   RESULT_VARIABLE result
 )
 if (NOT result EQUAL 0)
