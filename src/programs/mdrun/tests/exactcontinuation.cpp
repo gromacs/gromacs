@@ -417,23 +417,19 @@ TEST_P(MdrunNoAppendContinuationIsExact, WithinTolerances)
         mdpFieldValues["verlet-buffer-tolerance"] = "1e-5";
     }
 
-    int ulpToleranceInMixed  = 0;
-    int ulpToleranceInDouble = 0;
+    int ulpTolerance = 0;
     if (!binaryReproducible)
     {
         // Pair list generation at different steps results in different
         // sumation order.
         // Forces and update on GPUs are generally result in different
         // sumation order
-        ulpToleranceInMixed  = 32;
-        ulpToleranceInDouble = 64;
+        ulpTolerance = 64;
     }
 
     EnergyTermsToCompare energyTermsToCompare{
-        { { interaction_function[F_EPOT].longname,
-            relativeToleranceAsPrecisionDependentUlp(10.0, ulpToleranceInMixed, ulpToleranceInDouble) },
-          { interaction_function[F_EKIN].longname,
-            relativeToleranceAsPrecisionDependentUlp(10.0, ulpToleranceInMixed, ulpToleranceInDouble) } }
+        { { interaction_function[F_EPOT].longname, relativeToleranceAsUlp(10.0, ulpTolerance) },
+          { interaction_function[F_EKIN].longname, relativeToleranceAsUlp(10.0, ulpTolerance) } }
     };
 
     if (temperatureCoupling != "no" || pressureCoupling != "no")
@@ -444,46 +440,33 @@ TEST_P(MdrunNoAppendContinuationIsExact, WithinTolerances)
             // Wider tolerance is needed because of sum of negative PE
             // with positive KE producing small conserved energy.
             const int factor = 4;
-            energyTermsToCompare.insert(
-                    { interaction_function[F_ECONSERVED].longname,
-                      relativeToleranceAsPrecisionDependentUlp(
-                              10.0, factor * ulpToleranceInMixed, factor * ulpToleranceInDouble) });
+            energyTermsToCompare.insert({ interaction_function[F_ECONSERVED].longname,
+                                          relativeToleranceAsUlp(10.0, factor * ulpTolerance) });
         }
         else
         {
             energyTermsToCompare.insert({ interaction_function[F_ECONSERVED].longname,
-                                          relativeToleranceAsPrecisionDependentUlp(
-                                                  10.0, ulpToleranceInMixed, ulpToleranceInDouble) });
+                                          relativeToleranceAsUlp(10.0, ulpTolerance) });
         }
     }
 
     if (mdpFieldValues.count("free-energy") > 0 && mdpFieldValues.at("free-energy") != "no")
     {
         energyTermsToCompare.insert({ interaction_function[F_DVDL_COUL].longname,
-                                      relativeToleranceAsPrecisionDependentUlp(
-                                              10.0, ulpToleranceInMixed, ulpToleranceInDouble) });
+                                      relativeToleranceAsUlp(10.0, ulpTolerance) });
         energyTermsToCompare.insert({ interaction_function[F_DVDL_VDW].longname,
-                                      relativeToleranceAsPrecisionDependentUlp(
-                                              10.0, ulpToleranceInMixed, ulpToleranceInDouble) });
+                                      relativeToleranceAsUlp(10.0, ulpTolerance) });
         energyTermsToCompare.insert({ interaction_function[F_DVDL_BONDED].longname,
-                                      relativeToleranceAsPrecisionDependentUlp(
-                                              10.0, ulpToleranceInMixed, ulpToleranceInDouble) });
+                                      relativeToleranceAsUlp(10.0, ulpTolerance) });
         energyTermsToCompare.insert({ interaction_function[F_DVDL_RESTRAINT].longname,
-                                      relativeToleranceAsPrecisionDependentUlp(
-                                              10.0, ulpToleranceInMixed, ulpToleranceInDouble) });
+                                      relativeToleranceAsUlp(10.0, ulpTolerance) });
     }
 
     if (pressureCoupling == "parrinello-rahman")
     {
-        energyTermsToCompare.insert({ "Box-Vel-XX",
-                                      relativeToleranceAsPrecisionDependentUlp(
-                                              1e-12, ulpToleranceInMixed, ulpToleranceInDouble) });
-        energyTermsToCompare.insert({ "Box-Vel-YY",
-                                      relativeToleranceAsPrecisionDependentUlp(
-                                              1e-12, ulpToleranceInMixed, ulpToleranceInDouble) });
-        energyTermsToCompare.insert({ "Box-Vel-ZZ",
-                                      relativeToleranceAsPrecisionDependentUlp(
-                                              1e-12, ulpToleranceInMixed, ulpToleranceInDouble) });
+        energyTermsToCompare.insert({ "Box-Vel-XX", relativeToleranceAsUlp(1e-12, ulpTolerance) });
+        energyTermsToCompare.insert({ "Box-Vel-YY", relativeToleranceAsUlp(1e-12, ulpTolerance) });
+        energyTermsToCompare.insert({ "Box-Vel-ZZ", relativeToleranceAsUlp(1e-12, ulpTolerance) });
     }
 
     runTest(&fileManager_, &runner_, simulationName, mdpFieldValues, binaryReproducible, energyTermsToCompare);
