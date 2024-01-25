@@ -745,11 +745,17 @@ lead to performance loss, e.g. on Intel Skylake-X/SP and AMD Zen (first generati
    faster on high-end Skylake CPUs with both 512-bit FMA units enabled.
 9. ``AVX_512_KNL`` Knights Landing Xeon Phi processors.
 10. ``IBM_VSX`` Power7, Power8, Power9 and later have this.
-11. ``ARM_NEON_ASIMD`` 64-bit ARMv8 and later.
+11. ``ARM_NEON_ASIMD`` 64-bit ARMv8 and later. For maximum performance on NVIDIA 
+    Grace (ARMv9), we strongly suggest at least GNU >= 13, LLVM >= 16. 
 12. ``ARM_SVE`` 64-bit ARMv8 and later with the Scalable Vector Extensions (SVE).
     The SVE vector length is fixed at CMake configure time. The default vector
     length is automatically detected, and this can be changed via the
-    ``GMX_SIMD_ARM_SVE_LENGTH`` CMake variable.
+    ``GMX_SIMD_ARM_SVE_LENGTH`` CMake variable.  If compiling for a different 
+    target architecture than the compilation machine, ``GMX_SIMD_ARM_SVE_LENGTH`` 
+    should be set to the hardware vector length implemented by the target 
+    machine. There is no expected performance benefit from setting a smaller 
+    value than the implemented vector length, and setting a larger length can 
+    lead to unexpected crashes.
     Minimum required compiler versions are GNU >= 10, LLVM >=13, or ARM >= 21.1.
     For maximum performance we strongly suggest the latest gcc compilers,
     or at least LLVM 14 or ARM 22.0.
@@ -1564,6 +1570,26 @@ it is recommended that MCDRAM is configured in "Flat mode" and ``mdrun`` is
 bound to the appropriate NUMA node (use e.g. ``numactl --membind 1`` with
 quadrant clustering mode).
 
+NVIDIA Grace
+^^^^^^^^^^^^
+
+Summary: For best performance on Grace, run with GNU >= 13.1 
+and choose the ``-DCMAKE_CXX_FLAGS=-mcpu=neoverse-v2 
+-DCMAKE_C_FLAGS=-mcpu=neoverse-v2 -DGMX_SIMD=ARM_NEON_ASIMD`` CMake options.
+
+At minimum any compiler being used for Grace should implement
+neoverse-v2, such as GNU >= 12.3 and LLVM >= 16. There is a significant 
+improvement in Arm performance between gcc-13 and gcc-12 so
+GNU >= 13.1 is strongly recommended. The ``-mcpu=neoverse-v2`` flag 
+ensures that the compiler is not defaulting to the older Armv8-A target.
+
+On both GNU and LLVM, the |Gromacs| version implemented with ``NEON SIMD`` 
+instructions significantly outperforms the SVE version. This can be selected 
+by setting ``GMX_SIMD=ARM_NEON_ASIMD`` at compilation.
+
+These Grace specific config optimisations are most important when running in 
+CPU only mode, where much of the run time is spent in code which is sensitive to 
+SIMD performance.
 
 Tested platforms
 ----------------
