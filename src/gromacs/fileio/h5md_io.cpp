@@ -271,7 +271,7 @@ void GmxH5mdIo::setUpParticlesDataBlocks(int     writeCoordinatesSteps,
                                          int     writeForcesSteps,
                                          int64_t numParticles,
                                          PbcType pbcType,
-                                         double  compressionError)
+                                         double  xCompressionError)
 {
     if (numParticles <= 0)
     {
@@ -290,7 +290,7 @@ void GmxH5mdIo::setUpParticlesDataBlocks(int     writeCoordinatesSteps,
     CompressionAlgorithm compressionAlgorithm = CompressionAlgorithm::LosslessWithShuffle;
     if (writeCoordinatesSteps > 0)
     {
-        if (compressionError > 0)
+        if (xCompressionError > 0)
         {
             /* Use no more than 20 frames per chunk (compression unit). Use fewer frames per chunk if there are many atoms. */
             numFramesPerChunk    = std::min(20, int(std::ceil(1e6 / numParticles)));
@@ -325,7 +325,7 @@ void GmxH5mdIo::setUpParticlesDataBlocks(int     writeCoordinatesSteps,
                                       DIM,
                                       datatype,
                                       compressionAlgorithm,
-                                      compressionError);
+                                      xCompressionError);
         dataBlocks_.emplace_back(position);
     }
     numFramesPerChunk    = 1;
@@ -341,7 +341,7 @@ void GmxH5mdIo::setUpParticlesDataBlocks(int     writeCoordinatesSteps,
                                    DIM,
                                    datatype,
                                    compressionAlgorithm,
-                                   compressionError);
+                                   0);
         dataBlocks_.emplace_back(force);
     }
     if (writeVelocitiesSteps > 0)
@@ -355,7 +355,7 @@ void GmxH5mdIo::setUpParticlesDataBlocks(int     writeCoordinatesSteps,
                                       DIM,
                                       datatype,
                                       compressionAlgorithm,
-                                      compressionError);
+                                      0);
         dataBlocks_.emplace_back(velocity);
     }
 }
@@ -535,7 +535,7 @@ void GmxH5mdIo::writeFrame(int64_t      step,
                            const rvec*  x,
                            const rvec*  v,
                            const rvec*  f,
-                           const double compressionError)
+                           const double xCompressionError)
 {
 #if GMX_USE_HDF5
     if (numParticles <= 0)
@@ -559,7 +559,7 @@ void GmxH5mdIo::writeFrame(int64_t      step,
 
     CompressionAlgorithm compressionAlgorithm = CompressionAlgorithm::LosslessWithShuffle;
     hsize_t              numFramesPerChunk    = 1;
-    if (compressionError != 0)
+    if (xCompressionError != 0)
     {
         /* Use no more than 20 frames per chunk (compression unit). Use fewer frames per chunk if there are many atoms. */
         numFramesPerChunk    = std::min(20, int(std::ceil(1e6 / numParticles)));
@@ -584,7 +584,7 @@ void GmxH5mdIo::writeFrame(int64_t      step,
                                           DIM,
                                           datatype,
                                           compressionAlgorithm,
-                                          compressionError);
+                                          xCompressionError);
             dataBlocks_.emplace_back(position);
             foundDataBlock = std::find(dataBlocks_.begin(), dataBlocks_.end(), wantedName.c_str());
             if (foundDataBlock == dataBlocks_.end())
@@ -622,6 +622,8 @@ void GmxH5mdIo::writeFrame(int64_t      step,
             foundDataBlock->writeFrame(box, step, time);
         }
     }
+
+    compressionAlgorithm = CompressionAlgorithm::LosslessWithShuffle;
     if (v != nullptr)
     {
         std::string wantedName = "/particles/" + systemOutputName_ + "/velocity";
@@ -637,7 +639,7 @@ void GmxH5mdIo::writeFrame(int64_t      step,
                                           DIM,
                                           datatype,
                                           compressionAlgorithm,
-                                          compressionError);
+                                          0);
             dataBlocks_.emplace_back(velocity);
             foundDataBlock = std::find(dataBlocks_.begin(), dataBlocks_.end(), wantedName.c_str());
             if (foundDataBlock == dataBlocks_.end())
@@ -662,7 +664,7 @@ void GmxH5mdIo::writeFrame(int64_t      step,
                                        DIM,
                                        datatype,
                                        compressionAlgorithm,
-                                       compressionError);
+                                       0);
             dataBlocks_.emplace_back(force);
             foundDataBlock = std::find(dataBlocks_.begin(), dataBlocks_.end(), wantedName.c_str());
             if (foundDataBlock == dataBlocks_.end())
@@ -684,7 +686,7 @@ bool GmxH5mdIo::readNextFrameOfStandardDataBlocks(int64_t* step,
                                                   rvec*    x,
                                                   rvec*    v,
                                                   rvec*    f,
-                                                  real*    xCompressionPrecision,
+                                                  real*    xCompressionError,
                                                   bool*    readBox,
                                                   bool*    readX,
                                                   bool*    readV,
@@ -724,7 +726,7 @@ bool GmxH5mdIo::readNextFrameOfStandardDataBlocks(int64_t* step,
     }
     *step                  = minStepNextFrame;
     bool didReadFrame      = false;
-    *xCompressionPrecision = -1;
+    *xCompressionError = -1;
     for (std::list<GmxH5mdTimeDataBlock>::iterator dataBlock = dataBlocks_.begin();
          dataBlock != dataBlocks_.end();
          ++dataBlock)
@@ -744,7 +746,7 @@ bool GmxH5mdIo::readNextFrameOfStandardDataBlocks(int64_t* step,
             {
                 *readX                 = true;
                 didReadFrame           = true;
-                *xCompressionPrecision = dataBlock->getLossyCompressionError();
+                *xCompressionError = dataBlock->getLossyCompressionError();
             }
         }
         else if (v != nullptr && dataBlock->name() == "velocity")

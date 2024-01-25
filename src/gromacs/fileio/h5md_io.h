@@ -116,7 +116,7 @@ public:
      * \param[in] writeForcesSteps The lossless force output interval.
      * \param[in] numParticles The number of particles/atoms in the system.
      * \param[in] pbcType The periodic boundary condition that is used.
-     * \param[in] compressionError The required precision of the lossy compression.
+     * \param[in] xCompressionError The accepted error of the lossy compression of coordinates.
      * \throws FileIOError If the data blocks could not be created.
      */
     void setUpParticlesDataBlocks(int     writeCoordinatesSteps,
@@ -124,7 +124,7 @@ public:
                                   int     writeForcesSteps,
                                   int64_t numParticles,
                                   PbcType pbcType,
-                                  double  compressionError);
+                                  double  xCompressionError);
 
     /*! \brief Write molecule system related data to the file.
      *
@@ -149,7 +149,7 @@ public:
      * \param[in] x The particle coordinates for lossless output.
      * \param[in] v The particle velocities for lossless output.
      * \param[in] f The particle forces for lossless output.
-     * \param[in] compressionError The required precision of the lossy compression.
+     * \param[in] xCompressionError The accepted error of the lossy compression of coordinates.
      * \throws FileIOError    If there is no file open or if errors occured during writing.
      */
     void writeFrame(int64_t     step,
@@ -160,7 +160,7 @@ public:
                     const rvec* x,
                     const rvec* v,
                     const rvec* f,
-                    double      compressionError);
+                    double      xCompressionError);
 
     /*! \brief Read the next frame of box, coordinates, velocities and forces. With next frame means
      * the lowest step/time reading from the previous read frame of that data type. If data is written
@@ -171,7 +171,7 @@ public:
      * \param[out] x       Read coordinate data. Memory must be allocated by the caller.
      * \param[out] v       Read velocity data. Memory must be allocated by the caller.
      * \param[out] f       Read force data. Memory must be allocated by the caller.
-     * \param[out] xCompressionPrecision The error of lossy (SZ3) coordinate compression. -1 if no lossy SZ3 compression.
+     * \param[out] xCompressionError The error of lossy (SZ3) coordinate compression. -1 if no lossy SZ3 compression.
      * \param[out] readBox Whether box data was read or not, i.e. if there was box data matching step.
      * \param[out] readX   Whether coordinate data was read or not, i.e. if there was coordinate data matching step.
      * \param[out] readV   Whether velocity data was read or not, i.e. if there was velocity data matching step.
@@ -185,7 +185,7 @@ public:
                                            rvec*    x,
                                            rvec*    v,
                                            rvec*    f,
-                                           real*    xCompressionPrecision,
+                                           real*    xCompressionError,
                                            bool*    readBox,
                                            bool*    readX,
                                            bool*    readV,

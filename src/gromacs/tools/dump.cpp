@@ -492,7 +492,7 @@ void list_h5md(const char* fn)
         fprintf(stdout, "natoms=%10" PRId64 "  step=%10" PRId64 "  time=%12.7e", numXParticles, step, time);
         if (prec > 0)
         {
-            fprintf(stdout, "  x prec=%10g", 1 / prec);
+            fprintf(stdout, "  x prec=%10g", 1 / (prec * 2));
         }
         fprintf(stdout, "\n");
         if (hasBox)
