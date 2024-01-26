@@ -270,7 +270,7 @@ static inline void makeClusterListSimd4xn(const Grid&              jGrid,
             /* Store cj and the interaction mask */
             nbnxn_cj_t cjEntry;
             cjEntry.cj   = cjFromCi<NbnxnLayout::Simd4xN, 0>(jGrid.cellOffset()) + jcluster;
-            cjEntry.excl = get_imask_simd_4xn(excludeSubDiagonal, icluster, jcluster);
+            cjEntry.excl = getImask<4, GMX_SIMD_REAL_WIDTH>(excludeSubDiagonal, icluster, jcluster);
             nbl->cj.push_back(cjEntry);
         }
         /* Increase the closing index in the i list */

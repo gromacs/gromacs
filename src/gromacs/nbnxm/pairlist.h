@@ -98,6 +98,7 @@ class JClusterList
 public:
     //! The list of packed j-cluster groups
     FastVector<nbnxn_cj_t> list_;
+
     //! Return the j-cluster index for \c index from the pack list
     int cj(int index) const { return list_[index].cj; }
     //! Return the exclusion mask for \c index
@@ -139,18 +140,6 @@ public:
 // TODO: Rename according to convention when moving into Nbnxn namespace
 //! All interaction mask is the same for all kernels
 constexpr unsigned int NBNXN_INTERACTION_MASK_ALL = 0xffffffffU;
-//! 4x4 kernel diagonal mask
-constexpr unsigned int NBNXN_INTERACTION_MASK_DIAG = 0x08ceU;
-//! 4x2 kernel diagonal masks
-//! \{
-constexpr unsigned int NBNXN_INTERACTION_MASK_DIAG_J2_0 = 0x0002U;
-constexpr unsigned int NBNXN_INTERACTION_MASK_DIAG_J2_1 = 0x002fU;
-//! \}
-//! 4x8 kernel diagonal masks
-//! \{
-constexpr unsigned int NBNXN_INTERACTION_MASK_DIAG_J8_0 = 0xf0f8fcfeU;
-constexpr unsigned int NBNXN_INTERACTION_MASK_DIAG_J8_1 = 0x0080c0e0U;
-//! \}
 //! \}
 
 /*! \brief Lower limit for square interaction distances in nonbonded kernels.

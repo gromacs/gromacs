@@ -937,49 +937,106 @@ static void setSelfAndNewtonExclusionsGpu(NbnxnPairlistGpu* nbl,
     }
 }
 
-/* Returns a diagonal or off-diagonal interaction mask for plain C lists */
-static unsigned int get_imask(gmx_bool rdiag, int ci, int cj)
+/*! \brief Returns a diagonal interaction mask with atoms j<i masked out
+ *
+ * \tparam T             Integer type, should have at least iClusterSize*jClusterSize bits
+ * \tparam iClusterSize  The i-cluster size
+ * \tparam jClusterSize  The j-cluster size
+ *
+ * Condition: jClusterSize <= iClusterSize
+ */
+template<typename T, int iClusterSize, int jClusterSize>
+constexpr std::array<T, iClusterSize / jClusterSize> diagonalMaskJSmallerI()
 {
-    return (rdiag && ci == cj ? NBNXN_INTERACTION_MASK_DIAG : NBNXN_INTERACTION_MASK_ALL);
+    static_assert(jClusterSize <= iClusterSize);
+    static_assert(iClusterSize * jClusterSize <= sizeof(T) * 8);
+
+    // Call the constructor to initialize the array to zero
+    // to permit the function to be declared constexpr.
+    std::array<T, iClusterSize / jClusterSize> mask{};
+
+    for (int maskIndex = 0; maskIndex < iClusterSize / jClusterSize; maskIndex++)
+    {
+        for (int i = 0; i < iClusterSize; i++)
+        {
+            for (int j = maskIndex * jClusterSize + i + 1; j < jClusterSize; j++)
+            {
+                mask[maskIndex] |= (T(1) << (i * iClusterSize + j));
+            }
+        }
+    }
+
+    return mask;
 }
 
-/* Returns a diagonal or off-diagonal interaction mask for cj-size=2 */
-gmx_unused static unsigned int get_imask_simd_j2(gmx_bool rdiag, int ci, int cj)
+/*! \brief Returns a diagonal interaction mask with atoms j>i masked out
+ *
+ * \tparam T             Integer type, should have at least iClusterSize*jClusterSize bits
+ * \tparam iClusterSize  The i-cluster size
+ * \tparam jClusterSize  The j-cluster size
+ *
+ * Condition: jClusterSize >= iClusterSize
+ */
+template<typename T, int iClusterSize, int jClusterSize>
+constexpr std::array<T, jClusterSize / iClusterSize> diagonalMaskJLargerI()
 {
-    return (rdiag && ci * 2 == cj ? NBNXN_INTERACTION_MASK_DIAG_J2_0
-                                  : (rdiag && ci * 2 + 1 == cj ? NBNXN_INTERACTION_MASK_DIAG_J2_1
-                                                               : NBNXN_INTERACTION_MASK_ALL));
+    static_assert(jClusterSize >= iClusterSize);
+    static_assert(iClusterSize * jClusterSize <= sizeof(T) * 8);
+
+    // Call the constructor to initialize the array to zero
+    // to permit the function to be declared constexpr.
+    std::array<T, jClusterSize / iClusterSize> mask{};
+
+    for (int maskIndex = 0; maskIndex < jClusterSize / iClusterSize; maskIndex++)
+    {
+        for (int i = 0; i < iClusterSize; i++)
+        {
+            for (int j = maskIndex * iClusterSize + i + 1; j < jClusterSize; j++)
+            {
+                mask[maskIndex] |= (T(1) << (i * jClusterSize + j));
+            }
+        }
+    }
+
+    return mask;
 }
 
-/* Returns a diagonal or off-diagonal interaction mask for cj-size=4 */
-gmx_unused static unsigned int get_imask_simd_j4(gmx_bool rdiag, int ci, int cj)
+/*! \brief Returns a diagonal or off-diagonal interaction mask
+ *
+ * \tparam iClusterSize  The i-cluster size
+ * \tparam jClusterSize  The j-cluster size
+ * \param[in] maskOutSubDiagonal  Whether to mask out the sub-diagonal interactions
+ * \param[in] ci                  The i-cluster index
+ * \param[in] cj                  The j-cluster index
+ */
+template<int iClusterSize, int jClusterSize>
+static uint32_t getImask(const bool maskOutSubDiagonal, const int ci, const int cj)
 {
-    return (rdiag && ci == cj ? NBNXN_INTERACTION_MASK_DIAG : NBNXN_INTERACTION_MASK_ALL);
-}
+    if constexpr (jClusterSize >= iClusterSize)
+    {
+        // static, so the diagonal mask is only created once
+        static constexpr auto sc_diagonalMask =
+                diagonalMaskJLargerI<uint32_t, iClusterSize, jClusterSize>();
 
-/* Returns a diagonal or off-diagonal interaction mask for cj-size=8 */
-gmx_unused static unsigned int get_imask_simd_j8(gmx_bool rdiag, int ci, int cj)
-{
-    return (rdiag && ci == cj * 2 ? NBNXN_INTERACTION_MASK_DIAG_J8_0
-                                  : (rdiag && ci == cj * 2 + 1 ? NBNXN_INTERACTION_MASK_DIAG_J8_1
-                                                               : NBNXN_INTERACTION_MASK_ALL));
-}
+        constexpr int ratio = jClusterSize / iClusterSize;
+        const int     diff  = ci - cj * ratio;
 
-#if GMX_SIMD
-#    if GMX_SIMD_REAL_WIDTH == 2
-#        define get_imask_simd_4xn get_imask_simd_j2
-#    endif
-#    if GMX_SIMD_REAL_WIDTH == 4
-#        define get_imask_simd_4xn get_imask_simd_j4
-#    endif
-#    if GMX_SIMD_REAL_WIDTH == 8
-#        define get_imask_simd_4xn get_imask_simd_j8
-#        define get_imask_simd_2xnn get_imask_simd_j4
-#    endif
-#    if GMX_SIMD_REAL_WIDTH == 16
-#        define get_imask_simd_2xnn get_imask_simd_j8
-#    endif
-#endif
+        return (maskOutSubDiagonal && diff >= 0 && diff < ratio ? sc_diagonalMask[diff]
+                                                                : NBNXN_INTERACTION_MASK_ALL);
+    }
+    else
+    {
+        // static, so the diagonal mask is only created once
+        static constexpr auto sc_diagonalMask =
+                diagonalMaskJSmallerI<uint32_t, iClusterSize, jClusterSize>();
+
+        constexpr int ratio = iClusterSize / jClusterSize;
+        const int     diff  = cj - ci * ratio;
+
+        return (maskOutSubDiagonal && diff >= 0 && diff < ratio ? sc_diagonalMask[diff]
+                                                                : NBNXN_INTERACTION_MASK_ALL);
+    }
+}
 
 /* Plain C code for checking and adding cluster-pairs to the list.
  *
@@ -1101,7 +1158,8 @@ static void makeClusterListSimple(const Grid&              jGrid,
             /* Store cj and the interaction mask */
             nbnxn_cj_t cjEntry;
             cjEntry.cj   = jGrid.cellOffset() + jcluster;
-            cjEntry.excl = get_imask(excludeSubDiagonal, icluster, jcluster);
+            cjEntry.excl = getImask<c_nbnxnCpuIClusterSize, c_nbnxnCpuIClusterSize>(
+                    excludeSubDiagonal, icluster, jcluster);
             nbl->cj.list_.push_back(cjEntry);
         }
         /* Increase the closing index in the i list */
