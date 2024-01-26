@@ -2243,7 +2243,7 @@ int gmx_grompp(int argc, char* argv[])
                     "lead to instabilities. If you really want to combine position restraints with "
                     "pressure coupling, we suggest to use %s pressure coupling instead.",
                     enumValueToString(ir->pressureCouplingOptions.epc),
-                    enumValueToString(PressureCoupling::Berendsen));
+                    enumValueToString(PressureCoupling::CRescale));
             wi.addNote(warningMessage);
         }
 

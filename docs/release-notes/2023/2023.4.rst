@@ -1,7 +1,7 @@
 GROMACS 2023.4 release notes
 ----------------------------
 
-This version was released on TODO, 2024. These release notes
+This version was released on January 24th, 2024. These release notes
 document the changes that have taken place in |Gromacs| since the
 previous 2023.3 version, to fix known issues. It also incorporates all
 fixes made in version 2022.6 and earlier, which you can find described
@@ -88,3 +88,6 @@ Fixed compilation with Boost 1.83
 
 Miscellaneous
 ^^^^^^^^^^^^^
+A grompp warning when using Parinello-Rahman pressure coupling
+combining with position restraints suggested to use Berendsen
+instead. This suggestion has now been changed to C-rescale.
