@@ -97,12 +97,12 @@ const char* const g_specifyEverythingFormatString =
         "GPU_DEVICE_ORDINAL"
 #    elif GMX_GPU_SYCL && GMX_SYCL_DPCPP
         // https://github.com/intel/llvm/blob/sycl/sycl/doc/EnvironmentVariables.md
-        "SYCL_DEVICE_FILTER"
-#    elif GMX_GPU_SYCL && GMX_SYCL_HIPSYCL
-        // Not true if we use hipSYCL over CUDA or IntelLLVM, but in that case the user probably
-        // knows what they are doing.
-        // https://rocmdocs.amd.com/en/latest/Other_Solutions/Other-Solutions.html#hip-environment-variables
-        "HIP_VISIBLE_DEVICES"
+        "ONEAPI_DEVICE_SELECTOR"
+#    elif GMX_GPU_SYCL && GMX_SYCL_HIPSYCL && GMX_HIPSYCL_HAVE_HIP_TARGET
+        // https://rocm.docs.amd.com/en/latest/conceptual/gpu-isolation.html
+        "ROCR_VISIBLE_DEVICES"
+#    elif GMX_GPU_SYCL && GMX_SYCL_HIPSYCL && GMX_HIPSYCL_HAVE_CUDA_TARGET
+        "CUDA_VISIBLE_DEVIES"
 #    else
 #        error "Unreachable branch"
 #    endif
