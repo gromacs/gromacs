@@ -138,6 +138,9 @@ typedef unsigned long long     gmx_cycles_t;
 
 typedef unsigned long gmx_cycles_t;
 
+#elif defined(__loongarch__) && defined(__GNUC__)
+typedef unsigned long long gmx_cycles_t;
+
 #else
 /*! \brief Integer-like datatype for cycle counter values
  *
@@ -150,7 +153,7 @@ typedef unsigned long gmx_cycles_t;
  *  you run the calibration routine you can also multiply it with a factor to
  *  translate the cycle data to seconds.
  */
-typedef long gmx_cycles_t;
+typedef long                 gmx_cycles_t;
 
 #endif
 
@@ -394,6 +397,13 @@ static __inline gmx_cycles_t gmx_cycles_read(void)
     return ret;
 }
 
+#elif defined __loongarch__ && __loongarch64
+static __inline gmx_cycles_t gmx_cycles_read(void)
+{
+    gmx_cycles_t ret;
+    asm volatile("rdtime.d %0, $r0" : "=r"(ret));
+    return ret;
+}
 
 #else
 
@@ -565,6 +575,14 @@ static __inline__ bool gmx_cycles_have_counter(void)
     /* 64-bit RISC-V */
     return true;
 }
+
+#elif defined __loongarch__ && __loongarch64
+
+static __inline__ bool gmx_cycles_have_counter(void)
+{
+    return true;
+}
+
 #else
 static bool gmx_cycles_have_counter(void)
 {

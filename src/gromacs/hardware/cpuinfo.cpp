@@ -785,6 +785,9 @@ CpuInfo::Vendor detectProcCpuInfoVendor(const std::map<std::string, std::string>
         { "riscv64", CpuInfo::Vendor::RiscV64 },
         { "riscv32", CpuInfo::Vendor::RiscV32 },
         { "riscv", CpuInfo::Vendor::RiscV32 }, // Must come after riscv64 to avoid misidentification
+        { "Loongson", CpuInfo::Vendor::Loongson },
+        { "loongarch64", CpuInfo::Vendor::Loongson },
+        { "loong64", CpuInfo::Vendor::Loongson },
     };
 
     // For each label in /proc/cpuinfo, compare the value to the name in the
@@ -1038,6 +1041,10 @@ CpuInfo CpuInfo::detect()
         {
             result.vendor_ = CpuInfo::Vendor::RiscV64;
         }
+        else if (c_architecture == Architecture::Loongarch64)
+        {
+            result.vendor_ = CpuInfo::Vendor::Loongson;
+        }
 
 #if defined __aarch64__ || (defined _M_ARM && _M_ARM >= 8)
         result.features_.insert(Feature::Arm_Neon);      // ARMv8 always has Neon
@@ -1100,6 +1107,7 @@ const std::string& CpuInfo::vendorString() const
         { Vendor::Hygon, "Hygon" },
         { Vendor::RiscV32, "RISC-V 32" },
         { Vendor::RiscV64, "RISC-V 64" },
+        { Vendor::Loongson, "Loongson" },
     };
 
     return vendorStrings.at(vendor_);

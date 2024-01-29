@@ -78,16 +78,17 @@ public:
     /*! \brief Processor/system vendors */
     enum class Vendor
     {
-        Unknown, //!< Unidentified
-        Intel,   //!< GenuineIntel
-        Amd,     //!< AuthenticAMD
-        Fujitsu, //!< Only works on Linux (parsed from /proc/cpuinfo)
-        Ibm,     //!< Only works on Linux (parsed from /proc/cpuinfo)
-        Arm,     //!< Only works on Linux (parsed from /proc/cpuinfo)
-        Oracle,  //!< Cannot detect anything else yet (no /proc/cpuinfo available)
-        Hygon,   //!< HygonGenuine
-        RiscV32, //!< RISC-V 32 bit
-        RiscV64, //!< RISC-V 64 bit
+        Unknown,  //!< Unidentified
+        Intel,    //!< GenuineIntel
+        Amd,      //!< AuthenticAMD
+        Fujitsu,  //!< Only works on Linux (parsed from /proc/cpuinfo)
+        Ibm,      //!< Only works on Linux (parsed from /proc/cpuinfo)
+        Arm,      //!< Only works on Linux (parsed from /proc/cpuinfo)
+        Oracle,   //!< Cannot detect anything else yet (no /proc/cpuinfo available)
+        Hygon,    //!< HygonGenuine
+        RiscV32,  //!< RISC-V 32 bit
+        RiscV64,  //!< RISC-V 64 bit
+        Loongson, //!< Loongson
     };
 
     /*! \brief List of CPU features
