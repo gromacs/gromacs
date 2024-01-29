@@ -39,6 +39,14 @@ was executed on a GPU.
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
 
+Fix LJ combination rules mixup in nonbonded-benchmark tool
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+The gmx nonbonded-benchmark tool would use geometric LH combination rules instead
+of Lortenz-Berthelot and Lortenz-Berthelot instead of no combination rules.
+
+:issue:`4963`
+
 Fixes that affect portability
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
