@@ -378,9 +378,9 @@ static __inline gmx_cycles_t gmx_cycles_read(void)
     unsigned int long low, high1, high2;
     do
     {
-        asm volatile("csrrs %0, 0xc80, x0" : "=r"(high1));
-        asm volatile("csrrs %0, 0xc00, x0" : "=r"(low));
-        asm volatile("csrrs %0, 0xc80, x0" : "=r"(high2));
+        asm volatile("csrrs %0, 0xc81, x0" : "=r"(high1));
+        asm volatile("csrrs %0, 0xc01, x0" : "=r"(low));
+        asm volatile("csrrs %0, 0xc81, x0" : "=r"(high2));
     } while (high1 != high2);
 
     return (((gmx_cycles_t)high2) << 32) | (gmx_cycles_t)low;
@@ -390,7 +390,7 @@ static __inline gmx_cycles_t gmx_cycles_read(void)
 static __inline gmx_cycles_t gmx_cycles_read(void)
 {
     gmx_cycles_t ret;
-    asm volatile("csrrs %0, 0xc00, x0" : "=r"(ret));
+    asm volatile("csrrs %0, 0xc01, x0" : "=r"(ret));
     return ret;
 }
 
