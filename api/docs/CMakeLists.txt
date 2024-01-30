@@ -36,9 +36,17 @@
 ################################
 set(GMX_API_DOC_OUTPUT ${CMAKE_CURRENT_BINARY_DIR})
 
-find_package(Doxygen)
+find_package(Doxygen QUIET)
 if (NOT DOXYGEN_FOUND)
-    message(STATUS "Doxygen not found. Documentation targets will not be generated.")
+    function (add_disabled_doxygen_target TARGET)
+        add_custom_target(${TARGET}
+            COMMAND ${CMAKE_COMMAND} -E echo
+                "Cannot build/run target ${TARGET} because Doxygen is not available"
+            COMMENT "Doxygen not available" VERBATIM)
+    endfunction()
+    add_disabled_doxygen_target(public-api-xml)
+    add_disabled_doxygen_target(gmxapi-cppdocs)
+    add_disabled_doxygen_target(gmxapi-cppdocs-dev)
 else ()
     set(legacy_api_SOURCE_DIR ${CMAKE_SOURCE_DIR}/api/legacy)
     set(legacy_api_BINARY_DIR ${CMAKE_BINARY_DIR}/api/legacy)
