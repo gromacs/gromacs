@@ -270,20 +270,6 @@ TestSystem::TestSystem(const LJCombinationRule ljCombinationRule)
     }
 }
 
-//! Returns the enum value for initializing the combination rule for nbxnm_atomdata_t
-int combRuleInitFromCombRule(const LJCombinationRule ljCombinationRule)
-{
-    switch (ljCombinationRule)
-    {
-        case LJCombinationRule::Geometric: return enbnxninitcombruleGEOM;
-        case LJCombinationRule::LorentzBerthelot: return enbnxninitcombruleLB;
-        case LJCombinationRule::None: return enbnxninitcombruleNONE;
-        default: GMX_RELEASE_ASSERT(false, "Unhandled combination rule");
-    }
-
-    return enbnxninitcombruleDETECT;
-}
-
 //! Sets up and returns a Nbnxm object for the given benchmark options and system
 std::unique_ptr<nonbonded_verlet_t> setupNbnxmForBenchInstance(const KernelOptions& options,
                                                                const TestSystem&    system)
@@ -305,6 +291,8 @@ std::unique_ptr<nonbonded_verlet_t> setupNbnxmForBenchInstance(const KernelOptio
     const auto pinPolicy =
             (options.useGpu ? PinningPolicy::PinnedIfSupported : PinningPolicy::CannotBePinned);
     const int numThreads = options.numThreads;
+    // Note: the options and Nbnxm combination rule enums values should match
+    const int combinationRule = static_cast<int>(options.ljCombinationRule);
 
     PairlistParams pairlistParams(options.kernelSetup.kernelType, false, options.pairlistCutoff, false);
 
@@ -319,7 +307,7 @@ std::unique_ptr<nonbonded_verlet_t> setupNbnxmForBenchInstance(const KernelOptio
     auto atomData = std::make_unique<nbnxn_atomdata_t>(pinPolicy,
                                                        MDLogger(),
                                                        options.kernelSetup.kernelType,
-                                                       combRuleInitFromCombRule(options.ljCombinationRule),
+                                                       combinationRule,
                                                        system.numAtomTypes,
                                                        system.nonbondedParameters,
                                                        c_numEnergyGroups,
@@ -611,9 +599,7 @@ public:
             return;
         }
 
-        if (options_.kernelSetup.kernelType == Nbnxm::KernelType::Cpu4x4_PlainC
-            && (parameters_.vdwKernelType == vdwktLJCUT_COMBGEOM
-                || parameters_.vdwKernelType == vdwktLJCUT_COMBLB))
+        if (parameters_.vdwKernelType == vdwktLJCUT_COMBGEOM || parameters_.vdwKernelType == vdwktLJCUT_COMBLB)
         {
             // There are no combination rule versions of the plain-C kernel
             return;
