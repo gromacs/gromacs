@@ -1,7 +1,7 @@
 Highlights
 ^^^^^^^^^^
 
-|Gromacs| 2024 was released on INSERT DATE HERE. Patch releases may
+|Gromacs| 2024.0 was released on January 30th, 2024. Patch releases may
 have been made since then, please use the updated versions!  Here are
 some highlights of what you can expect, along with more detail in the
 links below!
