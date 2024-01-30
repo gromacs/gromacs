@@ -670,6 +670,7 @@ if (SPHINX_FOUND)
             -t do_text
             "${SPHINX_INPUT_DIR}/install-guide"
             "${TEXT_INSTALL_GUIDE_OUTPUT_DIR}"
+            "${SPHINX_INPUT_DIR}/install-guide/index.rst"
         COMMAND
             ${CMAKE_COMMAND} -E rename
             ${TEXT_INSTALL_GUIDE_OUTPUT_DIR}/index.txt
