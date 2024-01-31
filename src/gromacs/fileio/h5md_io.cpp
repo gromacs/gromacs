@@ -161,10 +161,6 @@ void GmxH5mdIo::openFile(const std::string fileName, const char mode)
         {
             make_backup(fileName.c_str());
             hid_t createPropertyList = H5Pcreate(H5P_FILE_CREATE);
-            if (H5Pset_file_space_strategy(createPropertyList, H5F_FSPACE_STRATEGY_FSM_AGGR, 1, 1) < 0)
-            {
-                printf("Cannot set H5MD file space strategy.\n");
-            }
             file_ = H5Fcreate(fileName.c_str(), H5F_ACC_TRUNC, createPropertyList, H5P_DEFAULT);
             if (file_ < 0)
             {
@@ -292,8 +288,8 @@ void GmxH5mdIo::setUpParticlesDataBlocks(int     writeCoordinatesSteps,
     {
         if (xCompressionError > 0)
         {
-            /* Use no more than 20 frames per chunk (compression unit). Use fewer frames per chunk if there are many atoms. */
-            numFramesPerChunk    = std::min(20, int(std::ceil(1e6 / numParticles)));
+            /* Use no more than 21 frames per chunk (compression unit). Use fewer frames per chunk if there are many atoms. */
+            numFramesPerChunk    = std::min(21, int(std::ceil(1e6 / numParticles)));
             compressionAlgorithm = CompressionAlgorithm::LossySz3;
 
             /* Register the SZ3 filter. This is not necessary when creating a dataset with the filter,
@@ -421,8 +417,12 @@ void GmxH5mdIo::setupMolecularSystem(const gmx_mtop_t&        topology,
     std::transform(
             atomNames.begin(), atomNames.end(), atomNamesChars.begin(), std::mem_fn(&std::string::c_str));
 
+
     hid_t stringDataType = H5Tcopy(H5T_C_S1);
-    H5Tset_size(stringDataType, H5T_VARIABLE);
+    /* Hard-code the atom name lengths to max 16. Flexible strings make a lot of unaccounted space,
+     * which is wasted. For strings that are numerous, such as atom names, it is better to use fixed-length. */
+    hsize_t atomNameLen = 16;
+    H5Tset_size(stringDataType, atomNameLen);
     H5Tset_strpad(stringDataType, H5T_STR_NULLTERM);
     H5Tset_cset(stringDataType, H5T_CSET_UTF8);
 

@@ -162,7 +162,7 @@ bool getAttribute(hid_t dataSet, const char* name, char** value);
  * \param[in] name The name of the attribute.
  * \param[in] value The list of string to set as attribute value.
  */
-template<hid_t numEntries, hid_t stringLength>
+template<hid_t numEntries, size_t stringLength>
 void setAttributeStringList(hid_t dataSet, const char* name, const char value[numEntries][stringLength]);
 
 /*! Get the SZ3 lossy compression error setting (absolute or relative) from a data set.

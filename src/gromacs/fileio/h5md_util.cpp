@@ -444,7 +444,7 @@ bool getAttribute(hid_t dataSet, const char* name, char** value)
     return getAttribute(dataSet, name, value, dataType);
 }
 
-template<hid_t numEntries, hid_t stringLength>
+template<hid_t numEntries, size_t stringLength>
 void setAttributeStringList(hid_t dataSet, const char* name, const char value[numEntries][stringLength])
 {
     hid_t dataType = H5Tcopy(H5T_C_S1);
