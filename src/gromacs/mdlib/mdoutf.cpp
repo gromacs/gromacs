@@ -278,8 +278,12 @@ gmx_mdoutf_t init_mdoutf(FILE*                          fplog,
         {
             of->h5mdIoLowPrec->setupMolecularSystem(top_global);
 
-            of->h5mdIoLowPrec->setUpParticlesDataBlocks(
-                    ir->nstxout_compressed, 0, 0, of->natoms_x_compressed, ir->pbcType, 1.0 / (of->x_compression_precision * 2));
+            of->h5mdIoLowPrec->setUpParticlesDataBlocks(ir->nstxout_compressed,
+                                                        0,
+                                                        0,
+                                                        of->natoms_x_compressed,
+                                                        ir->pbcType,
+                                                        1.0 / (of->x_compression_precision * 2));
         }
 
         if (ir->nstfout && haveDDAtomOrdering(*cr))

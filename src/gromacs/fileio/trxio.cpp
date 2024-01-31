@@ -598,7 +598,7 @@ int write_trxframe(t_trxstatus* status, t_trxframe* fr, gmx_conect gc)
                                    fr->bX ? fr->x : nullptr,
                                    fr->bV ? fr->v : nullptr,
                                    fr->bF ? fr->f : nullptr,
-                                   prec > 0 ? 1 / (prec * 2): 0);
+                                   prec > 0 ? 1 / (prec * 2) : 0);
         return 0;
     }
 
