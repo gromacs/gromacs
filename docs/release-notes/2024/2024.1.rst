@@ -25,3 +25,8 @@ Fixes that affect portability
 Miscellaneous
 ^^^^^^^^^^^^^
 
+Fixed nbnxm-test failure when bounds checking was enabled for stdlib
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+:issue:`4966`
+:issue:`4973`
