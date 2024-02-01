@@ -30,3 +30,12 @@ Fixed nbnxm-test failure when bounds checking was enabled for stdlib
 
 :issue:`4966`
 :issue:`4973`
+Increase tolerance of mdrun continuation tests in double precision
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+The mdrun continuation tests could fail in double precision with
+errors just above the tolerance.
+
+:issue:`4788`
+:issue:`4931`
+
