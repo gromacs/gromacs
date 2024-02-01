@@ -301,6 +301,7 @@ TEST_P(H5mdIoTest, HighLevelWriteRead)
         readNextFrameAndCompareToReference(i, numFrames);
     }
     closeReferenceFile();
+    EXPECT_FALSE(isReferenceFileOpen());
 }
 
 INSTANTIATE_TEST_SUITE_P(H5mdTestWriteReadCombinations,
