@@ -7,13 +7,9 @@
 // If you wish to distribute your changes, please submit them to the
 // Colvars repository at GitHub.
 
-#include <cstdlib>
-#include <cstring>
-#include <fstream>
 #include <iomanip>
 #include <iostream>
-#include <map>
-#include <sstream>
+#include <memory>
 #include <vector>
 
 #include "colvarmodule.h"
@@ -110,8 +106,14 @@ colvarmodule::colvarmodule(colvarproxy *proxy_in)
            "  https://doi.org/10.1080/00268976.2013.813594\n"
            "as well as all other papers listed below for individual features used.\n");
 
-  if (proxy->smp_enabled() == COLVARS_OK) {
-    cvm::log("SMP parallelism is enabled; if needed, use \"smp off\" to override this.\n");
+  if (proxy->check_smp_enabled() == COLVARS_NOT_IMPLEMENTED) {
+    cvm::log("SMP parallelism is not available in this build.\n");
+  } else {
+    if (proxy->check_smp_enabled() == COLVARS_OK) {
+      cvm::log("SMP parallelism is enabled (num threads = " + to_str(proxy->smp_num_threads()) + ").\n");
+    } else {
+      cvm::log("SMP parallelism is available in this build but not enabled.\n");
+    }
   }
 
 #if (__cplusplus >= 201103L)
@@ -406,6 +408,11 @@ int colvarmodule::parse_global_params(std::string const &conf)
 #if defined(COLVARS_TCL)
   parse->get_keyval(conf, "sourceTclFile", source_Tcl_script);
 #endif
+
+  if (proxy->engine_name() == "GROMACS" && proxy->version_number() >= 20231003) {
+    parse->get_keyval(conf, "defaultInputStateFile", default_input_state_file_,
+                      default_input_state_file_);
+  }
 
   return error_code;
 }
@@ -895,7 +902,7 @@ int colvarmodule::calc_colvars()
   }
 
   // if SMP support is available, split up the work
-  if (proxy->smp_enabled() == COLVARS_OK) {
+  if (proxy->check_smp_enabled() == COLVARS_OK) {
 
     // first, calculate how much work (currently, how many active CVCs) each colvar has
 
@@ -977,8 +984,15 @@ int colvarmodule::calc_biases()
     }
   }
 
-  // if SMP support is available, split up the work
-  if (proxy->smp_enabled() == COLVARS_OK) {
+  bool biases_need_io = false;
+  for (bi = biases_active()->begin(); bi != biases_active()->end(); bi++) {
+    if (((*bi)->replica_share_freq() > 0) && (step_absolute() % (*bi)->replica_share_freq() == 0)) {
+      biases_need_io = true;
+    }
+  }
+
+  // If SMP support is available, split up the work (unless biases need to use main thread's memory)
+  if (proxy->check_smp_enabled() == COLVARS_OK && !biases_need_io) {
 
     if (use_scripted_forces && !scripting_after_biases) {
       // calculate biases and scripted forces in parallel
@@ -994,10 +1008,12 @@ int colvarmodule::calc_biases()
       error_code |= calc_scripted_forces();
     }
 
+    // Straight loop over biases on a single thread
     cvm::increase_depth();
     for (bi = biases_active()->begin(); bi != biases_active()->end(); bi++) {
       error_code |= (*bi)->update();
       if (cvm::get_error()) {
+        cvm::decrease_depth();
         return error_code;
       }
     }
@@ -1285,10 +1301,10 @@ int colvarmodule::reset()
   parse->clear();
 
   // Iterate backwards because we are deleting the elements as we go
-  for (std::vector<colvarbias *>::reverse_iterator bi = biases.rbegin();
-       bi != biases.rend();
-       bi++) {
-    delete *bi; // the bias destructor updates the biases array
+  while (!biases.empty()) {
+    colvarbias* tail = biases.back();
+    biases.pop_back();
+    delete tail; // the bias destructor updates the biases array
   }
   biases.clear();
   biases_active_.clear();
@@ -1297,11 +1313,11 @@ int colvarmodule::reset()
   reinterpret_cast<std::map<std::string, int> *>(num_biases_types_used_)->clear();
 
   // Iterate backwards because we are deleting the elements as we go
-  for (std::vector<colvar *>::reverse_iterator cvi = colvars.rbegin();
-       cvi != colvars.rend();
-       cvi++) {
-    delete *cvi; // the colvar destructor updates the colvars array
-  }
+  while (!colvars.empty()) {
+    colvar* cvi = colvars.back();
+    colvars.pop_back();
+    delete cvi; // the colvar destructor updates the colvars array
+  };
   colvars.clear();
 
   reset_index_groups();
@@ -1317,7 +1333,13 @@ int colvarmodule::reset()
 
 int colvarmodule::setup_input()
 {
-  if (proxy->input_prefix().size()) {
+  if (proxy->input_prefix().empty() && (!proxy->input_stream_exists("input state string")) &&
+      input_state_buffer_.empty()) {
+    // If no input sources have been defined up to this point, use defaultInputStateFile
+    proxy->set_input_prefix(default_input_state_file_);
+  }
+
+  if (!proxy->input_prefix().empty()) {
 
     // Read state from a file
 
@@ -1378,13 +1400,22 @@ int colvarmodule::setup_input()
     }
     cvm::log(cvm::line_marker);
 
-    // Now that the explicit input file was read, we shall ignore any unformatted buffer
+    // Now that an explicit state file was read, we shall ignore any other restart info
+    if (proxy->input_stream_exists("input state string")) {
+      proxy->delete_input_stream("input state string");
+    }
     input_state_buffer_.clear();
 
     proxy->delete_input_stream(restart_in_name);
   }
 
   if (proxy->input_stream_exists("input state string")) {
+
+    if (!input_state_buffer_.empty()) {
+      return cvm::error("Error: formatted/text and unformatted/binary input state buffers are "
+                        "defined at the same time.\n",
+                        COLVARS_BUG_ERROR);
+    }
 
     cvm::log(cvm::line_marker);
     cvm::log("Loading state from formatted string.\n");
@@ -1394,7 +1425,7 @@ int colvarmodule::setup_input()
     proxy->delete_input_stream("input state string");
   }
 
-  if (input_state_buffer_.size() > 0) {
+  if (!input_state_buffer_.empty()) {
     cvm::log(cvm::line_marker);
     cvm::log("Loading state from unformatted memory.\n");
     cvm::memory_stream ms(input_state_buffer_.size(), input_state_buffer_.data());
@@ -1404,7 +1435,9 @@ int colvarmodule::setup_input()
     input_state_buffer_.clear();
   }
 
-  return cvm::get_error();
+  default_input_state_file_.clear();
+
+  return get_error();
 }
 
 
@@ -1932,7 +1965,7 @@ size_t & colvarmodule::depth()
 {
   // NOTE: do not call log() or error() here, to avoid recursion
   colvarmodule *cv = cvm::main();
-  if (proxy->smp_enabled() == COLVARS_OK) {
+  if (proxy->check_smp_enabled() == COLVARS_OK) {
     int const nt = proxy->smp_num_threads();
     if (int(cv->depth_v.size()) != nt) {
       proxy->smp_lock();

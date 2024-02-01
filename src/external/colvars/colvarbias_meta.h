@@ -52,6 +52,7 @@ public:
   virtual int update_bias();
   virtual int update_grid_data();
   virtual int replica_share();
+  virtual size_t replica_share_freq() const;
 
   virtual int calc_energy(std::vector<colvarvalue> const *values);
   virtual int calc_forces(std::vector<colvarvalue> const *values);
@@ -261,7 +262,7 @@ protected:
   std::vector<colvarbias_meta *> replicas;
 
   /// \brief Frequency at which data the "mirror" biases are updated
-  size_t                 replica_update_freq;
+  size_t replica_update_freq = 0;
 
   /// List of replicas (and their output list files): contents are
   /// copied into replicas_registry for convenience

@@ -81,14 +81,14 @@ authors:
     family-names: Lindahl
 identifiers:
   - type: doi
-    value: 10.5281/zenodo.10017686
+    value: 10.5281/zenodo.10589643
   - type: url
     value: >-
-      https://ftp.gromacs.org/gromacs/gromacs-2023.3.tar.gz
+      https://ftp.gromacs.org/gromacs/gromacs-2024.0.tar.gz
     description: Download URL
 repository-code: 'https://gitlab.com/gromacs/gromacs'
 url: 'https://www.gromacs.org/'
-repository: 'https://manual.gromacs.org/2023.3/index.html'
+repository: 'https://manual.gromacs.org/2024.0/index.html'
 abstract: "GROMACS\_is a free, open-source and high-performance software suite for molecular dynamics simulation and analysis."
 keywords:
   - molecular dynamics
@@ -97,6 +97,6 @@ keywords:
   - high performance computing
   - free software
 license: LGPL-2.1-or-later
-commit: v2023.3
-version: '2023.3'
-date-released: '2023-10-19'
+commit: v2024.0
+version: '2024.0'
+date-released: '2024-01-30'

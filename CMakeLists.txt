@@ -248,11 +248,16 @@ if(GMX_GPU STREQUAL SYCL)
             check_cxx_compiler_flag("-fsycl" HAVE_SYCL_DPCPP)
             if(HAVE_SYCL_DPCPP)
                 set(GMX_SYCL "DPCPP")
-                message(STATUS "GROMACS SYCL backend: Setting GMX_SYCL=DPCPP (Intel oneAPI DPC++)")
+                if (NOT "${GMX_REPORTED_SYCL_BACKEND}" STREQUAL ${GMX_SYCL})
+                    message(STATUS "GROMACS SYCL backend: Setting GMX_SYCL=DPCPP (Intel oneAPI DPC++)")
+                endif()
             else()
                 set(GMX_SYCL "ACPP")
-                message(STATUS "GROMACS SYCL backend: Setting GMX_SYCL=ACPP (AdaptiveCpp/hipSYCL)")
+                if (NOT "${GMX_REPORTED_SYCL_BACKEND}" STREQUAL ${GMX_SYCL})
+                    message(STATUS "GROMACS SYCL backend: Setting GMX_SYCL=ACPP (AdaptiveCpp/hipSYCL)")
+                endif()
             endif()
+            set(GMX_REPORTED_SYCL_BACKEND ${GMX_SYCL} CACHE INTERNAL "The most recent SYCL backend reported via CMake status message")
         endif ()
     endif ()
 endif()
@@ -694,8 +699,8 @@ if(GMX_GPU)
         include(gmxManageCuda)
     elseif(${_gmx_gpu_uppercase} STREQUAL "OPENCL")
         message(STATUS "GPU support with OpenCL is deprecated. It is still fully supported (and " 
-            "recommended for AMD, Intel, and Apple GPUs). It may be replaced by different "
-            "approaches in future releases of GROMACS.")
+            "recommended for Apple GPUs). Please use CUDA for running on NVIDIA GPUs and "
+            "SYCL for running on Intel and AMD GPUs.")
         include(gmxManageOpenCL)
     elseif(${_gmx_gpu_uppercase} STREQUAL "SYCL")
         include(gmxManageSycl)
@@ -828,8 +833,6 @@ gmx_add_cache_dependency(GMX_BUILD_UNITTESTS BOOL BUILD_TESTING OFF)
 ########################################################################
 # Our own GROMACS tests
 ########################################################################
-
-include_directories(SYSTEM ${CMAKE_SOURCE_DIR}/src/external)
 
 include(gmxTestInlineASM)
 gmx_test_inline_asm_gcc_x86(GMX_X86_GCC_INLINE_ASM)

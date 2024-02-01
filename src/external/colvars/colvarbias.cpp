@@ -447,10 +447,16 @@ int colvarbias::bin_count(int /* bin_index */)
   cvm::error("Error: bin_count() not implemented.\n");
   return COLVARS_NOT_IMPLEMENTED;
 }
+
 int colvarbias::replica_share()
 {
   cvm::error("Error: replica_share() not implemented.\n");
   return COLVARS_NOT_IMPLEMENTED;
+}
+
+size_t colvarbias::replica_share_freq() const
+{
+  return 0;
 }
 
 

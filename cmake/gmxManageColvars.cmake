@@ -54,6 +54,11 @@ function(gmx_manage_colvars)
         target_sources(colvars INTERFACE $<TARGET_OBJECTS:colvars_objlib>)
         target_include_directories(colvars SYSTEM INTERFACE $<BUILD_INTERFACE:${COLVARS_DIR}>)
 
+        if(GMX_OPENMP)
+            target_compile_options(colvars_objlib PRIVATE ${OpenMP_CXX_FLAGS})
+            target_link_libraries(colvars_objlib PRIVATE OpenMP::OpenMP_CXX)
+        endif()
+
     else()
         # Create a dummy link target so the calling code doesn't need to know
         # whether colvars support is being compiled.

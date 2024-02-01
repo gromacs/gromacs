@@ -57,7 +57,7 @@ that are known to be able to analyse |Gromacs| trajectory data.
 
 * `LOOS <http://loos.sourceforge.net/>`__
 * `MDAnalysis <https://www.mdanalysis.org/>`__
-* `MDTraj <http://mdtraj.org/latest/index.html>`__
+* `MDTraj <http://mdtraj.org/>`__
 * `Pteros <https://github.com/yesint/pteros/>`__
 
 

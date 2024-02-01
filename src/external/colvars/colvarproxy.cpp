@@ -13,8 +13,9 @@
 
 #include "colvarmodule.h"
 #include "colvarproxy.h"
+#include "colvar.h"
+#include "colvarbias.h"
 #include "colvarscript.h"
-#include "colvaratoms.h"
 #include "colvarmodule_utils.h"
 
 
@@ -68,6 +69,12 @@ int colvarproxy_atoms::init_atom(int /* atom_number */)
 
 
 int colvarproxy_atoms::check_atom_id(int /* atom_number */)
+{
+  return COLVARS_NOT_IMPLEMENTED;
+}
+
+
+int colvarproxy_atoms::check_atom_name_selections_available()
 {
   return COLVARS_NOT_IMPLEMENTED;
 }
@@ -282,7 +289,7 @@ colvarproxy_smp::~colvarproxy_smp()
 }
 
 
-int colvarproxy_smp::smp_enabled()
+int colvarproxy_smp::check_smp_enabled()
 {
 #if defined(_OPENMP)
   if (b_smp_active) {
@@ -301,7 +308,7 @@ int colvarproxy_smp::smp_colvars_loop()
   colvarmodule *cv = cvm::main();
   colvarproxy *proxy = cv->proxy;
 #pragma omp parallel for
-  for (size_t i = 0; i < cv->variables_active_smp()->size(); i++) {
+  for (int i = 0; i < static_cast<int>(cv->variables_active_smp()->size()); i++) {
     colvar *x = (*(cv->variables_active_smp()))[i];
     int x_item = (*(cv->variables_active_smp_items()))[i];
     if (cvm::debug()) {
@@ -326,7 +333,7 @@ int colvarproxy_smp::smp_biases_loop()
 #pragma omp parallel
   {
 #pragma omp for
-    for (size_t i = 0; i < cv->biases_active()->size(); i++) {
+    for (int i = 0; i < static_cast<int>(cv->biases_active()->size()); i++) {
       colvarbias *b = (*(cv->biases_active()))[i];
       if (cvm::debug()) {
         cvm::log("Calculating bias \""+b->name+"\" on thread "+
@@ -353,7 +360,7 @@ int colvarproxy_smp::smp_biases_script_loop()
       cv->calc_scripted_forces();
     }
 #pragma omp for
-    for (size_t i = 0; i < cv->biases_active()->size(); i++) {
+    for (int i = 0; i < static_cast<int>(cv->biases_active()->size()); i++) {
       colvarbias *b = (*(cv->biases_active()))[i];
       if (cvm::debug()) {
         cvm::log("Calculating bias \""+b->name+"\" on thread "+
@@ -486,8 +493,8 @@ colvarproxy::~colvarproxy()
 
 bool colvarproxy::io_available()
 {
-  return (smp_enabled() == COLVARS_OK && smp_thread_id() == 0) ||
-    (smp_enabled() != COLVARS_OK);
+  return (check_smp_enabled() == COLVARS_OK && smp_thread_id() == 0) ||
+    (check_smp_enabled() != COLVARS_OK);
 }
 
 

@@ -96,7 +96,7 @@ struct ewald_corr_thread_t
  * At fast steps (step % mtsFactor != 0), the fast force is returned in
  * force->force(). The force->forceMtsCombined() buffer is unused.
  * At slow steps, the normal force is returned in force->force(),
- * unless the \p GMX_FORCE_DO_NOT_NEED_NORMAL_FORCE is set in \p legacyFlags.
+ * unless the \p runScheduleWork.stepWork.useOnlyMtsCombinedForceBuffer==true.
  * A MTS-combined force, F_fast + mtsFactor*F_slow, is always returned in
  * force->forceMtsCombined(). This forceMts can be used directly in a standard
  * leap-frog integrator to do multiple time stepping.

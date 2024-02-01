@@ -129,7 +129,7 @@ TEST_P(ScatteringModule, MCMode)
 
 INSTANTIATE_TEST_SUITE_P(MoleculeTests,
                          ScatteringModule,
-                         ::testing::Combine(::testing::Values("zyncfinger.pdb"),
+                         ::testing::Combine(::testing::Values("lysozyme.pdb"),
                                             ::testing::Values("sans", "saxs")));
 
 

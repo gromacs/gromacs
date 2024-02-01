@@ -117,3 +117,9 @@ enable_language(CUDA)
 
 option(GMX_CUDA_NB_SINGLE_COMPILATION_UNIT "Whether to compile the CUDA non-bonded module using a single compilation unit." OFF)
 mark_as_advanced(GMX_CUDA_NB_SINGLE_COMPILATION_UNIT)
+
+# custom libcuda and libnvdia-ml stub lib finder as find_package(CUDA) doesn't support it.
+if (GMX_USE_CUFFTMP OR GMX_NVSHMEM)
+    find_library(GMX_CUDA_DRV_LIB cuda HINTS "${CUDA_TOOLKIT_ROOT_DIR}" PATH_SUFFIXES "lib64/stubs" REQUIRED)
+    find_library(GMX_NVIDIA_ML_LIB nvidia-ml HINTS "${CUDA_TOOLKIT_ROOT_DIR}" PATH_SUFFIXES "lib64/stubs" REQUIRED)
+endif()

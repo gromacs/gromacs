@@ -362,6 +362,7 @@ if (SPHINX_FOUND)
         how-to/special.rst
         how-to/visualize.rst
         install-guide/index.rst
+        install-guide/exotic.rst
         reference-manual/plots/GMX_logos/gmx_logo_blue.svg
         release-notes/index.rst
         release-notes/2025/major/highlights.rst
@@ -374,6 +375,7 @@ if (SPHINX_FOUND)
         release-notes/2025/major/portability.rst
         release-notes/2025/major/miscellaneous.rst
         release-notes/2025/major/api.rst
+        release-notes/2024/2024.1.rst
         release-notes/2024/major/highlights.rst
         release-notes/2024/major/features.rst
         release-notes/2024/major/performance.rst
@@ -388,6 +390,7 @@ if (SPHINX_FOUND)
         release-notes/2023/2023.2.rst
         release-notes/2023/2023.3.rst
         release-notes/2023/2023.4.rst
+        release-notes/2023/2023.5.rst
         release-notes/2023/major/highlights.rst
         release-notes/2023/major/features.rst
         release-notes/2023/major/performance.rst
@@ -677,6 +680,7 @@ if (SPHINX_FOUND)
             -t do_text
             "${SPHINX_INPUT_DIR}/install-guide"
             "${TEXT_INSTALL_GUIDE_OUTPUT_DIR}"
+            "${SPHINX_INPUT_DIR}/install-guide/index.rst"
         COMMAND
             ${CMAKE_COMMAND} -E rename
             ${TEXT_INSTALL_GUIDE_OUTPUT_DIR}/index.txt

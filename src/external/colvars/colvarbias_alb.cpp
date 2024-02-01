@@ -9,7 +9,6 @@
 
 #include <iostream>
 #include <iomanip>
-#include <cstdlib>
 
 #include "colvarmodule.h"
 #include "colvarproxy.h"

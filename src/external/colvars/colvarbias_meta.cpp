@@ -7,8 +7,6 @@
 // If you wish to distribute your changes, please submit them to the
 // Colvars repository at GitHub.
 
-#include <iostream>
-#include <sstream>
 #include <fstream>
 #include <iomanip>
 #include <algorithm>
@@ -64,7 +62,6 @@ colvarbias_meta::colvarbias_meta(char const *key)
 
   ebmeta_equil_steps = 0L;
 
-  replica_update_freq = 0;
   replica_id.clear();
 }
 
@@ -985,9 +982,9 @@ void colvarbias_meta::recount_hills_off_grid(colvarbias_meta::hill_iter  h_first
 int colvarbias_meta::replica_share()
 {
   int error_code = COLVARS_OK;
-  colvarproxy *proxy = cvm::proxy;
   // sync with the other replicas (if needed)
   if (comm == multiple_replicas) {
+    colvarproxy *proxy = cvm::main()->proxy;
     // reread the replicas registry
     error_code |= update_replicas_registry();
     // empty the output buffer
@@ -995,6 +992,12 @@ int colvarbias_meta::replica_share()
     error_code |= read_replica_files();
   }
   return error_code;
+}
+
+
+size_t colvarbias_meta::replica_share_freq() const
+{
+  return replica_update_freq;
 }
 
 

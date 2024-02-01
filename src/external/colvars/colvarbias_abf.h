@@ -133,8 +133,11 @@ private:
   bool    shared_on;
   size_t  shared_freq;
   cvm::step_number shared_last_step;
+
   // Share between replicas -- may be called independently of update
   virtual int replica_share();
+
+  virtual size_t replica_share_freq() const;
 
   // Store the last set for shared ABF
   colvar_grid_gradient  *last_gradients;

@@ -611,12 +611,12 @@ def get_hipsycl(args):
         ]
 
     postinstall = [
-        # https://github.com/illuhad/hipSYCL/issues/361#issuecomment-718943645
+        # https://github.com/AdaptiveCpp/AdaptiveCpp/issues/361#issuecomment-718943645
         'for f in /opt/rocm/amdgcn/bitcode/*.bc; do ln -s "$f" "/opt/rocm/lib/$(basename $f .bc).amdgcn.bc"; done'
     ]
     if args.cuda is not None:
         postinstall += [
-            # https://github.com/illuhad/hipSYCL/issues/410#issuecomment-743301929
+            # https://github.com/AdaptiveCpp/AdaptiveCpp/issues/410#issuecomment-743301929
             f"sed s/_OPENMP/__OPENMP_NVPTX__/ -i /usr/lib/llvm-{args.llvm}/lib/clang/*/include/__clang_cuda_complex_builtins.h",
         ]
 

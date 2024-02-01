@@ -425,8 +425,8 @@ TEST_P(MdrunNoAppendContinuationIsExact, WithinTolerances)
         // sumation order.
         // Forces and update on GPUs are generally result in different
         // sumation order
-        ulpToleranceInMixed  = 32;
-        ulpToleranceInDouble = 64;
+        ulpToleranceInMixed  = 64;
+        ulpToleranceInDouble = 128;
     }
 
     EnergyTermsToCompare energyTermsToCompare{

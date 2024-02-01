@@ -29,7 +29,7 @@
 #endif
 
 
-namespace boost { namespace stl_interfaces {
+namespace gmx { namespace boost { namespace stl_interfaces {
     inline namespace v1 {
 
         /** An enumeration used to indicate whether the underlying data have a
@@ -93,6 +93,6 @@ namespace boost { namespace stl_interfaces {
         }
 
     }
-}}
+}}}
 
 #endif

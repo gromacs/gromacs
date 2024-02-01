@@ -8,7 +8,6 @@
 // Colvars repository at GitHub.
 
 #include "colvarmodule.h"
-#include "colvarparse.h"
 #include "colvaratoms.h"
 #include "colvarvalue.h"
 #include "colvar.h"

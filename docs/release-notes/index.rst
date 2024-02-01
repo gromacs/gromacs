@@ -56,8 +56,10 @@ Major release
 
 Patch releases
 ^^^^^^^^^^^^^^
-.. .. toctree::
+.. toctree::
    :maxdepth: 1
+
+   2024/2024.1
 
 Major release
 ^^^^^^^^^^^^^
@@ -90,6 +92,7 @@ Patch releases
 .. toctree::
    :maxdepth: 1
 
+   2023/2023.5
    2023/2023.4
    2023/2023.3
    2023/2023.2

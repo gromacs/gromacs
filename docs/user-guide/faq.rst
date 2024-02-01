@@ -80,15 +80,14 @@ Questions concerning system preparation and preprocessing
 
    You don't need to prepare additional files if you already have all :ref:`itp` and :ref:`top` files prepared through other tools.
 
-   Examples for those are `CHARMM-GUI <http://www.charmm-gui.org/>`__, `ATB (Automated Topology Builder) <https://atb.uq.edu.au/>`__,
-   `pmx <http://pmx.mpibpc.mpg.de/instructions.html>`__, and `PRODRG <http://davapc1.bioch.dundee.ac.uk/cgi-bin/prodrg>`__.
-
+   Examples for those can be found in the :doc:`System Preparation section of this user guide <../user-guide/system-preparation>`.
+   
 #. How can I build in missing atoms?
 
    |Gromacs| has no support for building coordinates of missing non-hydrogen atoms. If your system is missing some part,
    you will have to add the missing pieces using external programs to avoid the :ref:`missing atom <gmx-atom-missing>`
    error. This can be done using programs such as `Chimera <https://www.cgl.ucsf.edu/chimera/>`__ in combination
-   with `Modeller <https://salilab.org/modeller/>`__, `Swiss PDB Viewer <https://spdbv.vital-it.ch/>`__,
+   with `Modeller <https://salilab.org/modeller/>`__, `Swiss PDB Viewer <https://spdbv.unil.ch/>`__,
    `Maestro <https://www.schrodinger.com/maestro>`__. **Do not run** a simulation that had missing atoms unless
    you know exactly why it will be stable.
 

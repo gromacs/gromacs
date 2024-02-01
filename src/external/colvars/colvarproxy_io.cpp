@@ -134,7 +134,9 @@ int colvarproxy_io::rename_file(char const *filename, char const *newfilename)
   int error_code = COLVARS_OK;
 #if defined(_WIN32) && !defined(__CYGWIN__)
   // On straight Windows, must remove the destination before renaming it
-  error_code |= remove_file(newfilename);
+  if (_access(newfilename, 00) == 0) {
+    error_code |= remove_file(newfilename);
+  }
 #endif
   int rename_exit_code = 0;
   while ((rename_exit_code = std::rename(filename, newfilename)) != 0) {

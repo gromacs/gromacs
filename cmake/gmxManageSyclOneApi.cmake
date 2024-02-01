@@ -62,7 +62,7 @@ endif()
 set(SAMPLE_SYCL_SOURCE
     "#include <sycl/sycl.hpp>
          int main(){
-             sycl::queue q(sycl::default_selector{});
+             sycl::queue q(sycl::default_selector_v);
              return 0;
          }")
 set(SYCL_CXX_FLAGS "-fsycl")
@@ -110,6 +110,17 @@ if (SYCL_FAST_MATH_CXX_FLAGS_RESULT)
     set(SYCL_TOOLCHAIN_CXX_FLAGS "${SYCL_TOOLCHAIN_CXX_FLAGS} ${SYCL_FAST_MATH_CXX_FLAGS}")
 endif()
 
+# We compile PME kernels for all possible sub-group sizes, so the warning is useless.
+# Added after oneAPI 2024.0 (https://github.com/intel/llvm/pull/11991).
+gmx_check_compiler_flag(
+    "-Wno-incorrect-sub-group-size"
+    "CXX"
+    HAVE_W_NO_INCORRECT_SUB_GROUP_SIZE_RESULT
+)
+if (HAVE_W_NO_INCORRECT_SUB_GROUP_SIZE_RESULT)
+    set(SYCL_TOOLCHAIN_CXX_FLAGS "${SYCL_TOOLCHAIN_CXX_FLAGS} -Wno-incorrect-sub-group-size")
+endif()
+
 if("${SYCL_CXX_FLAGS_EXTRA}" MATCHES "fsycl-targets=.*(nvptx64|amdgcn|amd_gpu|nvidia_gpu)")
     # When compiling for NVIDIA/AMD, Intel LLVM produces tons of harmless warnings, ignore them
     set(SYCL_WARNINGS_CXX_FLAGS "-Wno-linker-warnings -Wno-override-module -Wno-sycl-target")
@@ -122,6 +133,23 @@ if("${SYCL_CXX_FLAGS_EXTRA}" MATCHES "fsycl-targets=.*(nvptx64|amdgcn|amd_gpu|nv
     if (SYCL_WARNINGS_CXX_FLAGS_RESULT)
         set(SYCL_TOOLCHAIN_CXX_FLAGS "${SYCL_TOOLCHAIN_CXX_FLAGS} ${SYCL_WARNINGS_CXX_FLAGS}")
         set(SYCL_TOOLCHAIN_LINKER_FLAGS "${SYCL_TOOLCHAIN_LINKER_FLAGS} ${SYCL_WARNINGS_CXX_FLAGS}")
+    endif()
+
+    # Set GMX_GPU_NB_DISABLE_CLUSTER_PAIR_SPLIT when targetting only devices with 64-wide execution
+    set(_have_subgroup_not_64 OFF)
+    set(_have_subgroup_64 OFF)
+    if ("${SYCL_CXX_FLAGS_EXTRA}" MATCHES "gfx1[0-9][0-9][0-9]|nvptx64|nvidia_gpu|spir64")
+        set(_have_subgroup_not_64 ON) # We have AMD RDNA, NVIDIA, or Intel target(s)
+    endif()
+    # We assume that any GCN2-5 architecture (gfx7/8) and CDNA1-3 (gfx9 series) up until the time of writing of this conditional is 64-wide
+    if ("${SYCL_CXX_FLAGS_EXTRA}" MATCHES "gfx[7-8][0-9][0-9]|gfx9[0-4][0-9ac]")
+        set(_have_subgroup_64 ON) # We have AMD GCN/CDNA target(s)
+    endif()
+    if (_have_subgroup_64 AND NOT _have_subgroup_not_64)
+        option(GMX_GPU_NB_DISABLE_CLUSTER_PAIR_SPLIT
+            "Disable NBNXM GPU cluster pair splitting. Only supported with SYCL and 64-wide GPU architectures (like AMD GCN/CDNA)."
+            ON)
+        mark_as_advanced(GMX_GPU_NB_DISABLE_CLUSTER_PAIR_SPLIT)
     endif()
 endif()
 

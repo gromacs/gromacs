@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright 2013- The GROMACS Authors
+ * Copyright 2023- The GROMACS Authors
  * and the project initiators Erik Lindahl, Berk Hess and David van der Spoel.
  * Consult the AUTHORS/COPYING files and https://www.gromacs.org for details.
  *
@@ -33,38 +33,11 @@
  */
 /*! \internal \file
  * \brief
- * Tests for file I/O routines
- *
- * \author Mark Abraham <mark.j.abraham@gmail.com>
- * \ingroup module_fileio
+ * Tracks the Colvars GROMACS interface version; see https://github.com/Colvars/colvars
+
+ * \ingroup module_applied_forces
  */
-#include "gmxpre.h"
 
-#include "gromacs/fileio/tngio.h"
-
-#include <string>
-
-#include <gtest/gtest.h>
-
-#include "gromacs/utility/path.h"
-
-#include "testutils/simulationdatabase.h"
-#include "testutils/testfilemanager.h"
-
-namespace
-{
-
-class TngTest : public ::testing::Test
-{
-public:
-    TngTest() {}
-    gmx::test::TestFileManager fileManager_;
-};
-
-TEST_F(TngTest, CloseBeforeOpenIsNotFatal)
-{
-    gmx_tng_trajectory_t tng = nullptr;
-    gmx_tng_close(&tng);
-}
-
-} // namespace
+#ifndef COLVARPROXY_VERSION
+#define COLVARPROXY_VERSION "2023-11-28"
+#endif

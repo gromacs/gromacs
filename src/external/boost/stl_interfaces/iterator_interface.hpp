@@ -15,7 +15,7 @@
 #endif
 
 
-namespace boost { namespace stl_interfaces {
+namespace gmx { namespace boost { namespace stl_interfaces {
 
     /** A type for granting access to the private members of an iterator
         derived from `iterator_interface`. */
@@ -168,9 +168,9 @@ namespace boost { namespace stl_interfaces {
         }
     }
 
-}}
+}}}
 
-namespace boost { namespace stl_interfaces { inline namespace v1 {
+namespace gmx { namespace boost { namespace stl_interfaces { inline namespace v1 {
 
     /** A CRTP template that one may derive from to make defining iterators
         easier.
@@ -539,7 +539,7 @@ namespace boost { namespace stl_interfaces { inline namespace v1 {
         proxy_arrow_result<Reference>,
         DifferenceType>;
 
-}}}
+}}}}
 
 #ifdef BOOST_STL_INTERFACES_DOXYGEN
 

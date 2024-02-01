@@ -30,3 +30,14 @@ from NVIDIA (CC 7.0 and 7.5). This is an issue that affects certain flavors of
 the nonboded kernels, most likely a result of miscompilation, and there is no
 known workaround.
 
+PME decomposition automated task assignment broken
+--------------------------------------------------
+
+When there are two or more ranks on a node doing combined PP and PME
+work (i.e no separate PME ranks) and more GPUs are detected than
+ranks, the automated task assignment fails and |Gromacs| aborts with
+"Error in user input" message. You can work around
+this by using ``-gpu_id`` or ``GMX_GPU_ID`` or limiting the number of
+visible GPUs.
+
+:issue:`4684`

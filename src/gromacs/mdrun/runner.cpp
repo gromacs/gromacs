@@ -1873,12 +1873,14 @@ int Mdrunner::mdrunner()
             GMX_RELEASE_ASSERT(deviceStreamManager != nullptr,
                                "GPU device stream manager should be valid in order to use GPU "
                                "version of bonded forces.");
-            fr->listedForcesGpu = std::make_unique<ListedForcesGpu>(mtop.ffparams,
-                                                                    fr->ic->epsfac * fr->fudgeQQ,
-                                                                    *deviceInfo,
-                                                                    deviceStreamManager->context(),
-                                                                    deviceStreamManager->bondedStream(),
-                                                                    wcycle.get());
+            fr->listedForcesGpu =
+                    std::make_unique<ListedForcesGpu>(mtop.ffparams,
+                                                      fr->ic->epsfac * fr->fudgeQQ,
+                                                      inputrec->opts.ngener - inputrec->nwall,
+                                                      *deviceInfo,
+                                                      deviceStreamManager->context(),
+                                                      deviceStreamManager->bondedStream(),
+                                                      wcycle.get());
         }
         fr->longRangeNonbondeds = std::make_unique<CpuPpLongRangeNonbondeds>(fr->n_tpi,
                                                                              fr->ic->ewaldcoeff_q,

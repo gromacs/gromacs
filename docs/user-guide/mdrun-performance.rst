@@ -123,7 +123,7 @@ definitions. Experienced HPC users can skip this section.
     SYCL
         An open standard based on C++17 for targeting heterogeneous systems.
         SYCL has several implementations, of which |Gromacs| supports two:
-        `Intel oneAPI DPC++`_ and hipSYCL_. |Gromacs| uses SYCL for GPU acceleration
+        `Intel oneAPI DPC++`_ and AdaptiveCpp_. |Gromacs| uses SYCL for GPU acceleration
         on AMD and Intel GPUs. There is experimental support for NVIDIA GPUs too.
 
     SIMD
@@ -1387,7 +1387,7 @@ Currently supported hardware architectures are:
 - Intel iGPUs.
 
 Make sure that you have the latest drivers installed. For AMD GPUs,
-the compute-oriented `ROCm <https://rocm.github.io/>`_ stack is recommended;
+the compute-oriented `ROCm <https://rocm.docs.amd.com/en/latest/>`_ stack is recommended;
 alternatively, the AMDGPU-PRO stack is also compatible; using the outdated
 and unsupported ``fglrx`` proprietary driver and runtime is not recommended (but
 for certain older hardware that may be the only way to obtain support).

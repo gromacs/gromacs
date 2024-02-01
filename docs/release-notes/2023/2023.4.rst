@@ -1,7 +1,7 @@
 GROMACS 2023.4 release notes
 ----------------------------
 
-This version was released on TODO, 2024. These release notes
+This version was released on January 24th, 2024. These release notes
 document the changes that have taken place in |Gromacs| since the
 previous 2023.3 version, to fix known issues. It also incorporates all
 fixes made in version 2022.6 and earlier, which you can find described
@@ -36,6 +36,21 @@ Now proper error messages are generated.
 
 :issue:`4938`
 
+Missing force contribution on neighbor search steps with GPU update
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+On a neighbor search step, when virial is _not_ computed (i.e.,
+when `nstlist` is not a multiple of `nstpcouple`) and GPU update
+is used, there could have been a race between GPU buffer clearing and
+copying of forces computed on the CPU, leading to missing some of the
+force contribution on this step.
+
+This should not have ever happened unless the GPU was heavily
+oversubscribed or hipSYCL/AdaptiveCpp was used, and even in those cases,
+the problem was very unlikely to manifest.
+
+:issue:`4937`
+
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -51,6 +66,18 @@ Fixed a segmentation fault in grompp with AWH and FEP without FEP states
 
 :issue:`4932`
 
+``gmx msd`` now raises a proper error when given incompatible trajectory
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+``gmx msd`` internally converts frame times to picoseconds. As a consequence, if
+the time cannot be expressed as an integral number of picoseconds (usually
+due to too frequent trajectory output), the tool would crash or produce an incorrect
+result.
+
+Now, an error is printed in such cases.
+
+:issue:`4694`
+
 Fixes that affect portability
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -61,3 +88,6 @@ Fixed compilation with Boost 1.83
 
 Miscellaneous
 ^^^^^^^^^^^^^
+A grompp warning when using Parinello-Rahman pressure coupling
+combining with position restraints suggested to use Berendsen
+instead. This suggestion has now been changed to C-rescale.

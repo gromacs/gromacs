@@ -10,6 +10,8 @@
 #ifndef COLVARVALUE_H
 #define COLVARVALUE_H
 
+#include <list>
+
 #include "colvarmodule.h"
 #include "colvartypes.h"
 

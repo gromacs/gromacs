@@ -43,6 +43,8 @@
 
 #include <sstream>
 
+#include "colvarproxy_gromacs_version.h"
+
 
 namespace gmx
 {
@@ -57,6 +59,8 @@ ColvarProxyGromacs::ColvarProxyGromacs(const std::string& colvarsConfigString,
                                        int  seed) :
     gmxAtoms_(atoms), pbcType_(pbcType), logger_(logger), doParsing_(doParsing)
 {
+    engine_name_ = "GROMACS";
+    version_int  = get_version_from_string(COLVARPROXY_VERSION);
 
     //! From colvarproxy
     //! The 5 variables below are defined in the `colvarproxy` base class
@@ -128,7 +132,8 @@ ColvarProxyGromacs::ColvarProxyGromacs(const std::string& colvarsConfigString,
         // Citation Reporter
         cvm::log(std::string("\n") + colvars->feature_report(0) + std::string("\n"));
 
-        colvars->set_initial_step(static_cast<cvm::step_number>(0L));
+        // TODO get initial step number from MDModules
+        // colvars->set_initial_step(static_cast<cvm::step_number>(0L));
     }
 }
 

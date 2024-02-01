@@ -990,7 +990,7 @@ auto bondedKernel(sycl::handler&                   cgh,
 
         if (calcEner && threadComputedPotential)
         {
-            subGroupBarrier(itemIdx); // Should not be needed, but https://github.com/illuhad/hipSYCL/issues/823
+            subGroupBarrier(itemIdx); // Should not be needed, but https://github.com/AdaptiveCpp/AdaptiveCpp/issues/823
             sycl::sub_group sg = itemIdx.get_sub_group();
             vtot_loc           = sycl::reduce_over_group(sg, vtot_loc, sycl::plus<float>());
             vtotElec_loc       = sycl::reduce_over_group(sg, vtotElec_loc, sycl::plus<float>());

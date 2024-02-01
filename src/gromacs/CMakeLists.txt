@@ -210,7 +210,7 @@ if (GMX_GPU_CUDA)
         # version which is not present on the system where driver is not installed.
         # At some future release cmake will provide a workaround for this under the hood at which
         # point we can use PRIVATE linking for these libs until then we stick with PUBLIC linking.
-        target_link_libraries(libgromacs PUBLIC cuda nvidia-ml)
+        target_link_libraries(libgromacs PUBLIC ${GMX_CUDA_DRV_LIB} ${GMX_NVIDIA_ML_LIB})
     endif()
 else()
     add_library(libgromacs ${LIBGROMACS_SOURCES})

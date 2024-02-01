@@ -10,7 +10,7 @@
 #ifndef COLVARMODULE_H
 #define COLVARMODULE_H
 
-#include <cmath>
+#include <cstdint>
 
 #include "colvars_version.h"
 
@@ -19,9 +19,11 @@
 #endif
 
 /*! \mainpage Main page
-This is the Developer's documentation for the Collective Variables Module.
+This is the Developer's documentation for the Collective Variables module (Colvars).
 
 You can browse the class hierarchy or the list of source files.
+
+Please note that this documentation is only supported for the master branch, and its features may differ from those in a given release of a simulation package.
  */
 
 /// \file colvarmodule.h
@@ -33,16 +35,15 @@ You can browse the class hierarchy or the list of source files.
 /// shared between all object instances) to be accessed from other
 /// objects.
 
+#include <cmath>
+#include <iosfwd>
 #include <string>
 #include <vector>
-#include <list>
-#include <iosfwd>
 
 class colvarparse;
 class colvar;
 class colvarbias;
 class colvarproxy;
-class colvarscript;
 class colvarvalue;
 
 
@@ -80,8 +81,6 @@ public:
   }
 
   friend class colvarproxy;
-  // TODO colvarscript should be unaware of colvarmodule's internals
-  friend class colvarscript;
 
   /// Use a 64-bit integer to store the step number
   typedef long long step_number;
@@ -449,6 +448,9 @@ public:
 private:
 
   template <typename IST> IST & read_state_template_(IST &is);
+
+  /// Default input state file; if given, it is read unless the MD engine provides it
+  std::string default_input_state_file_;
 
   /// Internal state buffer, to be read as an unformatted stream
   std::vector<unsigned char> input_state_buffer_;

@@ -8,8 +8,6 @@
 // Colvars repository at GitHub.
 
 #include <vector>
-#include <sstream>
-#include <iostream>
 
 #include "colvarmodule.h"
 #include "colvarvalue.h"

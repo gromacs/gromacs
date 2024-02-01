@@ -8,6 +8,11 @@
 Installation guide
 ******************
 
+.. toctree::
+   :hidden:
+
+   exotic
+
 .. highlight:: bash
 
 Introduction to building |Gromacs|
@@ -74,12 +79,12 @@ appropriate value instead of ``xxx`` :
 * ``-DGMX_GPU=CUDA`` to build with NVIDIA CUDA support enabled.
 * ``-DGMX_GPU=OpenCL`` to build with OpenCL_ support enabled.
 * ``-DGMX_GPU=SYCL`` to build with SYCL_ support enabled (using `Intel oneAPI DPC++`_ by default).
-* ``-DGMX_SYCL=ACPP`` to build with SYCL_ support using hipSYCL_ (requires ``-DGMX_GPU=SYCL``).
+* ``-DGMX_SYCL=ACPP`` to build with SYCL_ support using AdaptiveCpp_ (hipSYCL), requires ``-DGMX_GPU=SYCL``.
 * ``-DGMX_SIMD=xxx`` to specify the level of `SIMD support`_ of the node on which |Gromacs| will run
 * ``-DGMX_DOUBLE=on`` to build |Gromacs| in double precision (slower, and not normally useful)
 * ``-DCMAKE_PREFIX_PATH=xxx`` to add a non-standard location for CMake to `search for libraries, headers or programs`_
 * ``-DCMAKE_INSTALL_PREFIX=xxx`` to install |Gromacs| to a `non-standard location`_ (default ``/usr/local/gromacs``)
-* ``-DBUILD_SHARED_LIBS=off`` to turn off the building of shared libraries to help with `static linking`_
+* ``-DBUILD_SHARED_LIBS=off`` to turn off the building of shared libraries to help with :ref:`static linking <install guide static linking>`
 * ``-DGMX_FFT_LIBRARY=xxx`` to select whether to use ``fftw3``, ``mkl`` or ``fftpack`` libraries for `FFT support`_
 * ``-DCMAKE_BUILD_TYPE=Debug`` to build |Gromacs| in debug mode
 
@@ -226,12 +231,11 @@ Since |Gromacs| 2023 the SYCL_ backend has matured to have
 near feature parity with the CUDA backend as well as broad platform support
 in both aspects more versatile than the OpenCL_ backend
 (notable exception is the Apple Silicon GPU which is only supported in OpenCL).
-However, SYCL_ does not fully replace OpenCL_ yet as a GPU portability backend since
-still lacks extensive testing.
 The current SYCL implementation can be compiled either with `Intel oneAPI DPC++`_
-compiler for Intel GPUs, or with hipSYCL_ compiler and ROCm runtime for
+compiler for Intel GPUs, or with AdaptiveCpp_ compiler and ROCm runtime for
 AMD GPUs (GFX9, CDNA 1/2, and RDNA1/2/3). Using other devices supported by
-these compilers is possible, but not recommended.
+these compilers is possible, but not recommended. Notably, SSCP/generic mode
+of AdaptiveCpp_ is not supported.
 
 It is not possible to configure several GPU backends in the same build
 of |Gromacs|.
@@ -279,7 +283,7 @@ be built following the procedure in `these OpenMPI build instructions
 For GPU-aware MPI support of Intel GPUs, use Intel MPI no earlier than
 version 2018.8. Such a version is found in the oneAPI SDKs starting
 from version 2023.0. At runtime, the LevelZero SYCL backend must be used
-(setting environment variable ``SYCL_DEVICE_FILTER=level_zero:gpu`` will typically suffice)
+(setting environment variable ``ONEAPI_DEVICE_SELECTOR=level_zero:gpu`` will typically suffice)
 and GPU-aware support in the MPI runtime `selected
 <https://www.intel.com/content/www/us/en/develop/documentation/mpi-developer-reference-linux/top/environment-variable-reference/gpu-support.html>`_.
 
@@ -451,16 +455,6 @@ It is advisable to refer to the `NVSHMEM FAQ page
 <https://docs.nvidia.com/hpc-sdk/nvshmem/api/faq.html#general-faqs>`_ for
 any issues faced at runtime.
 
-* Note that, for NVHPC SDK 23.3 or higher, there is an issue compiling
-  with cuFFTMp support when building on a node without a CUDA driver
-  installed (e.g. the front end of an HPC cluster). To work around
-  this issue one can compile on a node that does have a CUDA driver
-  installed, or use the following additional flags:
-
-::
-
--DCMAKE_CXX_FLAGS="-L <PATH_TO_CUDA_TOOLKIT>/lib64/stubs -lnvidia-ml -lcuda"
-
 .. _heffte installation:
 
 Using heFFTe
@@ -498,7 +492,7 @@ vendor libraries.
 and performance improvements. VkFFT can be used with OpenCL and SYCL backends:
 
 * For SYCL builds, VkFFT provides a portable backend which currently can be used on AMD and
-  NVIDIA GPUs with hipSYCL and DPC++; it generally outperforms rocFFT hence it is recommended as
+  NVIDIA GPUs with AdaptiveCpp_ and `Intel oneAPI DPC++`_; it generally outperforms rocFFT hence it is recommended as
   default on AMD. Note that VkFFT is not supported with PME decomposition (which requires
   HeFFTe) since HeFFTe does not have a VkFFT backend.
 * For OpenCL builds, VkFFT provides an alternative to ClFFT. It is
@@ -751,11 +745,17 @@ lead to performance loss, e.g. on Intel Skylake-X/SP and AMD Zen (first generati
    faster on high-end Skylake CPUs with both 512-bit FMA units enabled.
 9. ``AVX_512_KNL`` Knights Landing Xeon Phi processors.
 10. ``IBM_VSX`` Power7, Power8, Power9 and later have this.
-11. ``ARM_NEON_ASIMD`` 64-bit ARMv8 and later.
+11. ``ARM_NEON_ASIMD`` 64-bit ARMv8 and later. For maximum performance on NVIDIA 
+    Grace (ARMv9), we strongly suggest at least GNU >= 13, LLVM >= 16. 
 12. ``ARM_SVE`` 64-bit ARMv8 and later with the Scalable Vector Extensions (SVE).
     The SVE vector length is fixed at CMake configure time. The default vector
     length is automatically detected, and this can be changed via the
-    ``GMX_SIMD_ARM_SVE_LENGTH`` CMake variable.
+    ``GMX_SIMD_ARM_SVE_LENGTH`` CMake variable.  If compiling for a different 
+    target architecture than the compilation machine, ``GMX_SIMD_ARM_SVE_LENGTH`` 
+    should be set to the hardware vector length implemented by the target 
+    machine. There is no expected performance benefit from setting a smaller 
+    value than the implemented vector length, and setting a larger length can 
+    lead to unexpected crashes.
     Minimum required compiler versions are GNU >= 10, LLVM >=13, or ARM >= 21.1.
     For maximum performance we strongly suggest the latest gcc compilers,
     or at least LLVM 14 or ARM 22.0.
@@ -935,38 +935,37 @@ SYCL GPU acceleration
 SYCL_ is a modern portable heterogeneous acceleration API, with multiple
 implementations targeting different hardware platforms (similar to OpenCL_).
 
-|Gromacs| can be used with different SYCL compilers/runtimes and target the following hardware:
+|Gromacs| can be used with different SYCL compilers/runtimes to target the following hardware:
 
 * Intel GPUs using `Intel oneAPI DPC++`_ (both OpenCL and LevelZero backends),
-* AMD GPUs with hipSYCL_ (only discrete GPUs),
+* AMD GPUs with AdaptiveCpp_ (previously known as hipSYCL),
 
 There is also experimental support for:
 
-* AMD GPUs with `Codeplay oneAPI for AMD GPUs <https://developer.codeplay.com/products/oneapi/amd/home/>`_,
-* NVIDIA GPUs with either hipSYCL_ or `Codeplay oneAPI for NVIDIA GPUs <https://developer.codeplay.com/products/oneapi/nvidia/home/>`_.
+* AMD GPUs with oneAPI with `Codeplay AMD plugin <https://developer.codeplay.com/products/oneapi/amd/home/>`_,
+* NVIDIA GPUs with either AdaptiveCpp_ or oneAPI with `Codeplay NVIDIA plugin <https://developer.codeplay.com/products/oneapi/nvidia/home/>`_.
 
 In table form:
 
-==========  =============  =====================  =========================================================
-GPU vendor  hipSYCL_       `Intel oneAPI DPC++`_  `Codeplay oneAPI <https://developer.codeplay.com/products/oneapi/nvidia/home/>`_
-==========  =============  =====================  =========================================================
-Intel       not supported  supported              experimental (MKL installation required)
-AMD         supported      not supported          experimental
-NVIDIA      experimental   not supported          experimental
-==========  =============  =====================  =========================================================
+==========  ======================  ========================================================================================================
+GPU vendor  AdaptiveCpp_ (hipSYCL)  `Intel oneAPI DPC++`_
+==========  ======================  ========================================================================================================
+Intel       not supported           supported
+AMD         supported               experimental (requires `Codeplay plugin <https://developer.codeplay.com/products/oneapi/amd/home/>`_)
+NVIDIA      experimental            experimental (requires `Codeplay plugin <https://developer.codeplay.com/products/oneapi/nvidia/home/>`__)
+==========  ======================  ========================================================================================================
 
-Here, "experimental support" means that the combination has
-received limited testing and is expected to work (with possible limitations), but is not recommended
-for production use.
+Here, "experimental support" means that the combination has received limited testing and is expected to work
+(with possible limitations), but is not recommended for production use.
+Please refer to :ref:`a separate section in the installation guide <install guide exotic sycl>` to use them.
 
-The SYCL_ support in |Gromacs| is intended to eventually replace
-OpenCL_ as an acceleration mechanism for AMD and Intel hardware.
+The SYCL_ support in |Gromacs| is intended to replace OpenCL_ as an acceleration mechanism for AMD and Intel hardware.
 
 For NVIDIA GPUs, we strongly advise using CUDA.
 Apple M1/M2 GPUs are not supported with SYCL but can be used with OpenCL_.
 
 Codeplay ComputeCpp is not supported. Open-source `Intel LLVM <https://github.com/intel/llvm>`_
-can be used in the same way as Codeplay oneAPI for targeting AMD/NVIDIA devices.
+can be used in the same way as Intel oneAPI DPC++.
 
 Note: SYCL_ support in |Gromacs| and the underlying compilers and runtimes
 are less mature than either OpenCL or CUDA. Please, pay extra attention
@@ -1001,14 +1000,18 @@ we recommend passing additional flags for compatibility and improved performance
 
 You might also consider using :ref:`double-batched FFT library <bbfft installation>`.
 
+.. _SYCL GPU acceleration AMD:
+
 SYCL GPU acceleration for AMD GPUs
 """"""""""""""""""""""""""""""""""
 
-Using `hipSYCL 0.9.4 <https://github.com/illuhad/hipSYCL/releases/tag/v0.9.4>`_
-and ROCm 5.3-5.4 is recommended. We strongly recommend using the clang compiler bundled
-with ROCm for building both hipSYCL and |Gromacs|. Mainline Clang releases can also work.
+Using `AdaptiveCpp 23.10.0 <https://github.com/AdaptiveCpp/AdaptiveCpp/releases/tag/v23.10.0>`_
+and ROCm 5.3-5.7 is recommended. The earliest supported version is hipSYCL 0.9.4.
 
-The following CMake command can be used **when configuring hipSYCL** to ensure
+We strongly recommend using the clang compiler bundled
+with ROCm for building both AdaptiveCpp and |Gromacs|. Mainline Clang releases can also work.
+
+The following CMake command can be used **when configuring AdaptiveCpp** to ensure
 that the proper Clang is used (assuming ``ROCM_PATH``
 is set correctly, e.g. to ``/opt/rocm`` in the case of default installation):
 
@@ -1018,10 +1021,12 @@ is set correctly, e.g. to ``/opt/rocm`` in the case of default installation):
             -DCMAKE_CXX_COMPILER=${ROCM_PATH}/llvm/bin/clang++ \
             -DLLVM_DIR=${ROCM_PATH}/llvm/lib/cmake/llvm/
 
-If ROCm 5.0 or earlier is used, hipSYCL might require
-`additional build flags <https://github.com/illuhad/hipSYCL/blob/v0.9.4/doc/install-rocm.md>`_.
+If ROCm 5.0 or earlier is used, AdaptiveCpp might require
+`additional build flags <https://github.com/AdaptiveCpp/AdaptiveCpp/blob/v0.9.4/doc/install-rocm.md>`_.
+Using hipSYCL 0.9.4 with ROCm 5.7+ / Clang 17+ might also require
+`extra workarounds <https://github.com/AdaptiveCpp/AdaptiveCpp/wiki/Build-instructions-for-old-versions#hipsycl-094>`_.
 
-After compiling and installing hipSYCL, the following settings can be used for
+After compiling and installing AdaptiveCpp, the following settings can be used for
 building |Gromacs| itself (set ``HIPSYCL_TARGETS`` to the target hardware):
 
 ::
@@ -1044,44 +1049,8 @@ You can switch to rocFFT by passing ``-DGMX_GPU_FFT_LIBRARY=rocFFT`` CMake flag.
 Please note that rocFFT is not officially supported and tends not to work
 on most consumer GPUs.
 
-AMD GPUs can also be used with `Codeplay oneAPI for AMD GPUs <https://developer.codeplay.com/products/oneapi/amd/home/>`_,
-but this is experimental. After installing Intel oneAPI toolkit 2023.0
-or newer, a compatible ROCm version, and the Codeplay plugin, set up the environment by running
-``source /opt/intel/oneapi/setvars.sh --include-intel-llvm`` or loading an appropriate :command:`module load` on
-an HPC system. Then, configure |Gromacs| using the following command (replace ``gfxXYZ`` with the target architecture):
-
-::
-
-   cmake .. -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ \
-            -DGMX_GPU=SYCL -DGMX_SYCL=DPCPP \
-            -DGMX_GPU_NB_CLUSTER_SIZE=8 -DGMX_GPU_FFT_LIBRARY=vkfft \
-            -DSYCL_CXX_FLAGS_EXTRA='-fsycl-targets=amdgcn-amd-amdhsa;-Xsycl-target-backend;--offload-arch=gfxXYZ'
-
-SYCL GPU acceleration for NVIDIA GPUs
-"""""""""""""""""""""""""""""""""""""
-
-SYCL support for NVIDIA GPUs is highly experimental. For production, please use CUDA_
-(`CUDA GPU acceleration`_).
-
-NVIDIA GPUs can be used with either hipSYCL_ or
-`Codeplay oneAPI for NVIDIA GPUs <https://developer.codeplay.com/products/oneapi/nvidia/home/>`_.
-
-For hipSYCL, make sure that hipSYCL itself is compiled with CUDA support,
-and supply proper devices via ``HIPSYCL_TARGETS`` (e.g., ``-DHIPSYCL_TARGETS=cuda:sm_75``).
-When compiling for CUDA, we recommend using the mainline Clang, not the ROCm-bundled one.
-
-For `Codeplay oneAPI for NVIDIA GPUs <https://developer.codeplay.com/products/oneapi/nvidia/home/>`_, install Intel
-oneAPI toolkit 2023.0 or newer and the Codeplay plugin, set up the environment by running
-``source /opt/intel/oneapi/setvars.sh --include-intel-llvm`` or loading an appropriate :command:`module load` on an
-HPC system. Then, configure |Gromacs| using the following command:
-
-::
-
-   cmake .. -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ \
-            -DGMX_GPU=SYCL -GMX_SYCL=DPCPP \
-            -DGMX_GPU_NB_CLUSTER_SIZE=8 -DGMX_GPU_FFT_LIBRARY=vkfft \
-            -DSYCL_CXX_FLAGS_EXTRA=-fsycl-targets=nvptx64-nvidia-cuda
-
+AMD GPUs can also be targeted via `Intel oneAPI DPC++`_; please refer to
+:ref:`a separate section <install guide exotic sycl>` for the build instructions.
 
 SYCL GPU compilation options
 """"""""""""""""""""""""""""
@@ -1092,7 +1061,7 @@ The following flags can be passed to CMake in order to tune |Gromacs|:
       changes the data layout of non-bonded kernels. When compiling with
       `Intel oneAPI DPC++`_, the default value is 4, which is optimal for
       most Intel GPUs except Data Center MAX (Ponte Vecchio), for which 8
-      is better. When compiling with hipSYCL_, the default value is 8,
+      is better. When compiling with AdaptiveCpp_, the default value is 8,
       which is the only supported value for AMD and NVIDIA devices.
 
 ``-DGMX_GPU_NB_NUM_CLUSTER_PER_CELL_X``, ``-DGMX_GPU_NB_NUM_CLUSTER_PER_CELL_Y``, ``-DGMX_GPU_NB_NUM_CLUSTER_PER_CELL_Z``
@@ -1107,37 +1076,12 @@ The following flags can be passed to CMake in order to tune |Gromacs|:
      on GPUs with 64-wide execution like AMD GCN and CDNA family.
      This option is automatically enabled in all builds that target GCN or CDNA GPUs (but not RDNA).
 
+
 Static linking
 ~~~~~~~~~~~~~~
 
-Dynamic linking of the |Gromacs| executables will lead to a
-smaller disk footprint when installed, and so is the default on
-platforms where we believe it has been tested repeatedly and found to work.
-In general, this includes Linux, Windows, Mac OS X and BSD systems.
-Static binaries take more space, but on some hardware and/or under
-some conditions they are recommended or even necessary, most commonly when you are running large parallel
-simulation using MPI libraries (e.g. Cray).
+Please refer to :ref:`a dedicated section <install guide static linking>`.
 
-* To link |Gromacs| binaries statically against the internal |Gromacs|
-  libraries, set ``-DBUILD_SHARED_LIBS=OFF``.
-* To link statically against external (non-system) libraries as well,
-  set ``-DGMX_PREFER_STATIC_LIBS=ON``. Note, that in
-  general ``cmake`` picks up whatever is available, so this option only
-  instructs ``cmake`` to prefer static libraries when both static and
-  shared are available. If no static version of an external library is
-  available, even when the aforementioned option is ``ON``, the shared
-  library will be used. Also note that the resulting binaries will
-  still be dynamically linked against system libraries on platforms
-  where that is the default. To use static system libraries,
-  additional compiler/linker flags are necessary, e.g. ``-static-libgcc
-  -static-libstdc++``.
-* To attempt to link a fully static binary set
-  ``-DGMX_BUILD_SHARED_EXE=OFF``. This will prevent CMake from explicitly
-  setting any dynamic linking flags. This option also sets
-  ``-DBUILD_SHARED_LIBS=OFF`` and ``-DGMX_PREFER_STATIC_LIBS=ON`` by
-  default, but the above caveats apply. For compilers which don't
-  default to static linking, the required flags have to be specified. On
-  Linux, this is usually ``CFLAGS=-static CXXFLAGS=-static``.
 
 gmxapi C++ API
 ~~~~~~~~~~~~~~
@@ -1194,7 +1138,9 @@ CUDA_ builds will by default be able to run on any NVIDIA GPU
 supported by the CUDA toolkit used since the |Gromacs| build
 system generates code for these at build-time.
 With SYCL_ multiple target architectures of the same GPU vendor
-can be selected when using hipSYCL_ (i.e. only AMD or only NVIDIA).
+can be selected when using AdaptiveCpp_ (i.e. only AMD or only NVIDIA).
+The SSCP/generic compilation mode of AdaptiveCpp_ is currently
+not supported.
 With OpenCL_, due to just-in-time compilation of GPU code for
 the device in use this is not a concern.
 
@@ -1558,6 +1504,8 @@ follow these steps to find the solution:
 Special instructions for some platforms
 ---------------------------------------
 
+Some less common configurations are described in a :ref:`separate manual section <install guide exotic>`.
+
 Building on Windows
 ^^^^^^^^^^^^^^^^^^^
 
@@ -1602,15 +1550,6 @@ The ARM ThunderX2 Cray XC50 machines differ only in that the recommended
 compiler is the ARM HPC Compiler (``armclang``).
 
 
-Building on Solaris
-^^^^^^^^^^^^^^^^^^^
-
-The built-in |Gromacs| processor detection does not work on Solaris,
-so it is strongly recommended that you build |Gromacs| with
-``-DGMX_HWLOC=on`` and ensure that the ``CMAKE_PREFIX_PATH`` includes
-the path where the hwloc headers and libraries can be found. At least
-version 1.11.8 of hwloc is recommended.
-
 Intel Xeon Phi
 ^^^^^^^^^^^^^^
 
@@ -1631,6 +1570,26 @@ it is recommended that MCDRAM is configured in "Flat mode" and ``mdrun`` is
 bound to the appropriate NUMA node (use e.g. ``numactl --membind 1`` with
 quadrant clustering mode).
 
+NVIDIA Grace
+^^^^^^^^^^^^
+
+Summary: For best performance on Grace, run with GNU >= 13.1 
+and choose the ``-DCMAKE_CXX_FLAGS=-mcpu=neoverse-v2 
+-DCMAKE_C_FLAGS=-mcpu=neoverse-v2 -DGMX_SIMD=ARM_NEON_ASIMD`` CMake options.
+
+At minimum any compiler being used for Grace should implement
+neoverse-v2, such as GNU >= 12.3 and LLVM >= 16. There is a significant 
+improvement in Arm performance between gcc-13 and gcc-12 so
+GNU >= 13.1 is strongly recommended. The ``-mcpu=neoverse-v2`` flag 
+ensures that the compiler is not defaulting to the older Armv8-A target.
+
+On both GNU and LLVM, the |Gromacs| version implemented with ``NEON SIMD`` 
+instructions significantly outperforms the SVE version. This can be selected 
+by setting ``GMX_SIMD=ARM_NEON_ASIMD`` at compilation.
+
+These Grace specific config optimisations are most important when running in 
+CPU only mode, where much of the run time is spent in code which is sensitive to 
+SIMD performance.
 
 Tested platforms
 ----------------

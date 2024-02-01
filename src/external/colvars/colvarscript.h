@@ -16,7 +16,6 @@
 
 #include "colvarmodule.h"
 #include "colvarvalue.h"
-#include "colvarbias.h"
 #include "colvarproxy.h"
 
 
@@ -24,6 +23,8 @@
 #define COLVARSCRIPT_ERROR -1
 #define COLVARSCRIPT_OK 0
 
+
+class colvardeps;
 
 class colvarscript  {
 
