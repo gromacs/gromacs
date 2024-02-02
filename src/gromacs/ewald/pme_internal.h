@@ -387,8 +387,8 @@ struct gmx_pme_t
 
     gmx_parallel_3dfft_t* pfft_setup;
 
-    int * nnx, *nny, *nnz;
-    real *fshx, *fshy, *fshz;
+    std::vector<int>  nnx, nny, nnz;
+    std::vector<real> fshx, fshy, fshz;
 
     std::vector<PmeAtomComm> atc; /* Indexed on decomposition index */
     matrix                   recipbox;

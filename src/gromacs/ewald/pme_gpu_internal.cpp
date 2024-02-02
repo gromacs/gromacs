@@ -1248,15 +1248,24 @@ static void pme_gpu_copy_common_data_from(const gmx_pme_t* pme)
     {
         pmeGpu->common->bsp_mod[i].assign(pme->bsp_mod[i], pme->bsp_mod[i] + pmeGpu->common->nk[i]);
     }
-    const int cellCount = c_pmeNeighborUnitcellCount;
+    GMX_ASSERT(gmx::ssize(pme->fshx) == c_pmeNeighborUnitcellCount * pme->nkx,
+               "Unexpected fshx size");
+    GMX_ASSERT(gmx::ssize(pme->fshy) == c_pmeNeighborUnitcellCount * pme->nky,
+               "Unexpected fshy size");
+    GMX_ASSERT(gmx::ssize(pme->fshz) == c_pmeNeighborUnitcellCount * pme->nkz,
+               "Unexpected fshz size");
     pmeGpu->common->fsh.resize(0);
-    pmeGpu->common->fsh.insert(pmeGpu->common->fsh.end(), pme->fshx, pme->fshx + cellCount * pme->nkx);
-    pmeGpu->common->fsh.insert(pmeGpu->common->fsh.end(), pme->fshy, pme->fshy + cellCount * pme->nky);
-    pmeGpu->common->fsh.insert(pmeGpu->common->fsh.end(), pme->fshz, pme->fshz + cellCount * pme->nkz);
+    pmeGpu->common->fsh.insert(pmeGpu->common->fsh.end(), pme->fshx.begin(), pme->fshx.end());
+    pmeGpu->common->fsh.insert(pmeGpu->common->fsh.end(), pme->fshy.begin(), pme->fshy.end());
+    pmeGpu->common->fsh.insert(pmeGpu->common->fsh.end(), pme->fshz.begin(), pme->fshz.end());
+    pmeGpu->common->fsh.insert(pmeGpu->common->fsh.end(), pme->fshz.begin(), pme->fshz.end());
+    GMX_ASSERT(gmx::ssize(pme->nnx) == c_pmeNeighborUnitcellCount * pme->nkx, "Unexpected nnx size");
+    GMX_ASSERT(gmx::ssize(pme->nny) == c_pmeNeighborUnitcellCount * pme->nky, "Unexpected nny size");
+    GMX_ASSERT(gmx::ssize(pme->nnz) == c_pmeNeighborUnitcellCount * pme->nkz, "Unexpected nnz size");
     pmeGpu->common->nn.resize(0);
-    pmeGpu->common->nn.insert(pmeGpu->common->nn.end(), pme->nnx, pme->nnx + cellCount * pme->nkx);
-    pmeGpu->common->nn.insert(pmeGpu->common->nn.end(), pme->nny, pme->nny + cellCount * pme->nky);
-    pmeGpu->common->nn.insert(pmeGpu->common->nn.end(), pme->nnz, pme->nnz + cellCount * pme->nkz);
+    pmeGpu->common->nn.insert(pmeGpu->common->nn.end(), pme->nnx.begin(), pme->nnx.end());
+    pmeGpu->common->nn.insert(pmeGpu->common->nn.end(), pme->nny.begin(), pme->nny.end());
+    pmeGpu->common->nn.insert(pmeGpu->common->nn.end(), pme->nnz.begin(), pme->nnz.end());
     pmeGpu->common->runMode       = pme->runMode;
     pmeGpu->common->isRankPmeOnly = !pme->bPPnode;
     pmeGpu->common->boxScaler     = pme->boxScaler.get();

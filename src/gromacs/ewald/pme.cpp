@@ -870,20 +870,12 @@ gmx_pme_t* gmx_pme_init(const t_commrec*     cr,
     // The way PME decomposition is implemented for GPUs, gridline indices at borders should not be rounded
     const bool checkRoundingAtBoundary = (runMode == PmeRunMode::CPU);
 
-    make_gridindex_to_localindex(pme->nkx,
-                                 pme->pmegrid_start_ix,
-                                 pme->pmegrid_nx - (pme->pme_order - 1),
-                                 checkRoundingAtBoundary,
-                                 &pme->nnx,
-                                 &pme->fshx);
-    make_gridindex_to_localindex(pme->nky,
-                                 pme->pmegrid_start_iy,
-                                 pme->pmegrid_ny - (pme->pme_order - 1),
-                                 checkRoundingAtBoundary,
-                                 &pme->nny,
-                                 &pme->fshy);
-    make_gridindex_to_localindex(
-            pme->nkz, pme->pmegrid_start_iz, pme->pmegrid_nz_base, checkRoundingAtBoundary, &pme->nnz, &pme->fshz);
+    std::tie(pme->nnx, pme->fshx) = make_gridindex_to_localindex(
+            pme->nkx, pme->pmegrid_start_ix, pme->pmegrid_nx - (pme->pme_order - 1), checkRoundingAtBoundary);
+    std::tie(pme->nny, pme->fshy) = make_gridindex_to_localindex(
+            pme->nky, pme->pmegrid_start_iy, pme->pmegrid_ny - (pme->pme_order - 1), checkRoundingAtBoundary);
+    std::tie(pme->nnz, pme->fshz) = make_gridindex_to_localindex(
+            pme->nkz, pme->pmegrid_start_iz, pme->pmegrid_nz_base, checkRoundingAtBoundary);
 
     pme->spline_work = make_pme_spline_work(pme->pme_order);
 
@@ -1750,13 +1742,6 @@ void gmx_pme_destroy(gmx_pme_t* pme, bool destroySharedData)
     {
         return;
     }
-
-    sfree(pme->nnx);
-    sfree(pme->nny);
-    sfree(pme->nnz);
-    sfree(pme->fshx);
-    sfree(pme->fshy);
-    sfree(pme->fshz);
 
     if (destroySharedData)
     {

@@ -840,12 +840,8 @@ void pmegrids_destroy(pmegrids_t* grids)
     }
 }
 
-void make_gridindex_to_localindex(int    n,
-                                  int    local_start,
-                                  int    local_range,
-                                  bool   checkRoundingAtBoundary,
-                                  int**  global_to_local,
-                                  real** fraction_shift)
+std::tuple<std::vector<int>, std::vector<real>>
+make_gridindex_to_localindex(int n, int local_start, int local_range, bool checkRoundingAtBoundary)
 {
     /* Here we construct array for looking up the grid line index and
      * fraction for particles. This is done because it is slighlty
@@ -854,12 +850,9 @@ void make_gridindex_to_localindex(int    n,
      * We use an array size of c_pmeNeighborUnitcellCount times the grid size
      * to allow for particles to be out of the triclinic unit-cell.
      */
-    const int arraySize = c_pmeNeighborUnitcellCount * n;
-    int*      gtl;
-    real*     fsh;
-
-    snew(gtl, arraySize);
-    snew(fsh, arraySize);
+    const int         arraySize = c_pmeNeighborUnitcellCount * n;
+    std::vector<int>  gtl(arraySize);
+    std::vector<real> fsh(arraySize);
 
     for (int i = 0; i < arraySize; i++)
     {
@@ -899,8 +892,7 @@ void make_gridindex_to_localindex(int    n,
         }
     }
 
-    *global_to_local = gtl;
-    *fraction_shift  = fsh;
+    return { std::move(gtl), std::move(fsh) };
 }
 
 void reuse_pmegrids(const pmegrids_t* oldgrid, pmegrids_t* newgrid)

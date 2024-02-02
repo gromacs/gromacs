@@ -35,6 +35,9 @@
 #ifndef GMX_EWALD_PME_GRID_H
 #define GMX_EWALD_PME_GRID_H
 
+#include <tuple>
+#include <vector>
+
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
@@ -92,12 +95,8 @@ void pmegrids_init(pmegrids_t* grids,
 
 void pmegrids_destroy(pmegrids_t* grids);
 
-void make_gridindex_to_localindex(int    n,
-                                  int    local_start,
-                                  int    local_range,
-                                  bool   checkRoundingAtBoundary,
-                                  int**  global_to_local,
-                                  real** fraction_shift);
+std::tuple<std::vector<int>, std::vector<real>>
+make_gridindex_to_localindex(int n, int local_start, int local_range, bool checkRoundingAtBoundary);
 
 void set_grid_alignment(int* pmegrid_nz, int pme_order);
 
