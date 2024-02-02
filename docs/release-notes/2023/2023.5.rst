@@ -22,6 +22,16 @@ Fixes for ``gmx`` tools
 Fixes that affect portability
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Use RDTIME instead of RDCYCLE on RISC-V
+"""""""""""""""""""""""""""""""""""""""
+
+Starting with Linux 6.6, the ``rdcycle`` instruction cannot be called from
+userland for security reasons, making |Gromacs| fail with ``SIGILL``.
+Now it is replaced with ``rdtime``.
+
+
+:issue:`4967`
+
 Miscellaneous
 ^^^^^^^^^^^^^
 
