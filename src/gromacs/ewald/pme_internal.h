@@ -408,9 +408,8 @@ struct gmx_pme_t
     std::unique_ptr<PmeAtomComm> atc_energy;
 
     /* Communication buffers */
-    rvec* bufv;       /* Communication buffer */
-    real* bufr;       /* Communication buffer */
-    int   buf_nalloc; /* The communication buffer size */
+    std::vector<gmx::RVec> bufv; /* Communication buffer */
+    std::vector<real>      bufr; /* Communication buffer */
 
     /* thread local work data for solve_pme */
     struct pme_solve_work_t* solve_work;

@@ -591,8 +591,6 @@ gmx_pme_t* gmx_pme_init(const t_commrec*     cr,
 
     gmx::unique_cptr<gmx_pme_t, gmx_pme_destroy> pme(new gmx_pme_t());
 
-    pme->buf_nalloc = 0;
-
     pme->nnodes  = 1;
     pme->bPPnode = true;
 
@@ -1782,9 +1780,6 @@ void gmx_pme_destroy(gmx_pme_t* pme, bool destroySharedData)
     {
         sfree(pme->bsp_mod[i]);
     }
-
-    sfree(pme->bufv);
-    sfree(pme->bufr);
 
     if (pme->solve_work)
     {
