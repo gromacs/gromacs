@@ -418,7 +418,7 @@ public:
         }
     }
 
-    int           valueCount() override { return ssize(intStore_); }
+    int           valueCount() override { return gmx::ssize(intStore_); }
     ArrayRef<int> values() override { return intStore_; }
     void          clear() override
     {

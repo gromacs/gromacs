@@ -91,7 +91,7 @@ void AbstractAnalysisArrayData::setRowCount(int rowCount)
 {
     GMX_RELEASE_ASSERT(rowCount > 0, "Invalid number of rows");
     GMX_RELEASE_ASSERT(!isAllocated(), "Cannot change row count after data has been allocated");
-    GMX_RELEASE_ASSERT(bUniformX_ || xvalue_.empty() || rowCount == ssize(xvalue_),
+    GMX_RELEASE_ASSERT(bUniformX_ || xvalue_.empty() || rowCount == gmx::ssize(xvalue_),
                        "X axis set with setXAxisValue() does not match the row count");
     xvalue_.resize(rowCount);
     if (bUniformX_ && rowCount > rowCount_)
@@ -139,7 +139,7 @@ void AbstractAnalysisArrayData::setXAxisValue(int row, real value)
     {
         GMX_RELEASE_ASSERT(row >= 0 && row < rowCount(), "Row index out of range");
     }
-    else if (row >= ssize(xvalue_))
+    else if (row >= gmx::ssize(xvalue_))
     {
         xvalue_.resize(row + 1);
     }

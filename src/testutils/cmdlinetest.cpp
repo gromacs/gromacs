@@ -160,7 +160,7 @@ void CommandLine::initFromArray(const ArrayRef<const char* const>& cmdline)
 
 void CommandLine::append(const char* arg)
 {
-    GMX_RELEASE_ASSERT(impl_->argc_ == ssize(impl_->args_),
+    GMX_RELEASE_ASSERT(impl_->argc_ == gmx::ssize(impl_->args_),
                        "Command-line has been modified externally");
     size_t newSize = impl_->args_.size() + 1;
     impl_->args_.reserve(newSize);

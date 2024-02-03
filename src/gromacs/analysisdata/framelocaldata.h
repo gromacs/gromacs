@@ -216,7 +216,7 @@ public:
     void setColumnCount(int dataSet, int columnCount)
     {
         GMX_RELEASE_ASSERT(!isInitialized(), "Cannot change value count after init()");
-        GMX_RELEASE_ASSERT(dataSet >= 0 && dataSet < ssize(dataSetColumns_) - 1,
+        GMX_RELEASE_ASSERT(dataSet >= 0 && dataSet < gmx::ssize(dataSetColumns_) - 1,
                            "Invalid data set index");
         GMX_RELEASE_ASSERT(columnCount >= 0, "Invalid column count");
         dataSetColumns_[dataSet + 1] = columnCount;

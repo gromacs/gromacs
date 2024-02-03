@@ -151,7 +151,7 @@ public:
      */
     int sampleCount(int index) const
     {
-        GMX_ASSERT(index >= 0 && index <= ssize(values_), "Invalid column index");
+        GMX_ASSERT(index >= 0 && index <= gmx::ssize(values_), "Invalid column index");
         GMX_ASSERT(bFinished_, "Values available only after finished() has been called");
         return values_[index].samples;
     }

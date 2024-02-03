@@ -686,7 +686,8 @@ void pmeSetGridLineIndices(gmx_pme_t* pme, CodePath mode, const GridLineIndicesV
 {
     PmeAtomComm* atc       = &(pme->atc[0]);
     const Index  atomCount = atc->numAtoms();
-    GMX_RELEASE_ASSERT(atomCount == ssize(gridLineIndices), "Mismatch in gridline indices size");
+    GMX_RELEASE_ASSERT(atomCount == gmx::ssize(gridLineIndices),
+                       "Mismatch in gridline indices size");
 
     IVec paddedGridSizeUnused, gridSize(0, 0, 0);
     pmeGetRealGridSizesInternal(pme, mode, gridSize, paddedGridSizeUnused);

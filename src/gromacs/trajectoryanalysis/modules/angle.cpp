@@ -191,7 +191,7 @@ public:
     //! Returns the currently active selection.
     const Selection& currentSelection() const
     {
-        GMX_ASSERT(currentSelection_ < ssize(selections_), "Accessing an invalid selection");
+        GMX_ASSERT(currentSelection_ < gmx::ssize(selections_), "Accessing an invalid selection");
         return selections_[currentSelection_];
     }
     //! Returns the `i`th position for the current value.

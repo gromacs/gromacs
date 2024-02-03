@@ -305,7 +305,7 @@ double BiasState::calculateAverageNonZeroMetric()
 {
     int    elementCount = 0;
     double sumVolume    = 0;
-    for (gmx::Index pointIndex = 0; pointIndex < ssize(points_); pointIndex++)
+    for (gmx::Index pointIndex = 0; pointIndex < gmx::ssize(points_); pointIndex++)
     {
         std::vector<double> correlationIntegral     = getSharedPointCorrelationIntegral(pointIndex);
         double              correlationTensorVolume = getSqrtDeterminant(correlationIntegral);
@@ -343,7 +343,7 @@ double BiasState::scaleTargetByMetric(double targetMetricScalingLimit)
      * point depending on its sampling, but it cannot be lower than lowerScalingLimit. */
     double upperScalingLimit = averageVolume * targetMetricScalingLimit;
     double lowerScalingLimit = averageVolume / targetMetricScalingLimit;
-    for (gmx::Index pointIndex = 0; pointIndex < ssize(points_); pointIndex++)
+    for (gmx::Index pointIndex = 0; pointIndex < gmx::ssize(points_); pointIndex++)
     {
         PointState& ps = points_[pointIndex];
 

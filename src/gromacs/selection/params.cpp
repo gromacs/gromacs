@@ -427,7 +427,7 @@ static void parse_values_varnum(const SelectionParserValueList&    values,
 
     param->flags &= ~SPAR_DYNAMIC;
     /* Compute number of values, considering also integer ranges. */
-    int valueCount = ssize(values);
+    int valueCount = gmx::ssize(values);
     if (param->val.type == INT_VALUE)
     {
         SelectionParserValueList::const_iterator value;

@@ -3371,7 +3371,7 @@ void LegacySimulator::do_nm()
     bool bNS          = true;
     auto state_work_x = makeArrayRef(state_work.s.x);
     auto state_work_f = state_work.f.view().force();
-    for (Index aid = cr_->nodeid; aid < ssize(atom_index); aid += nnodes)
+    for (Index aid = cr_->nodeid; aid < gmx::ssize(atom_index); aid += nnodes)
     {
         size_t atom = atom_index[aid];
         for (size_t d = 0; d < DIM; d++)
@@ -3466,7 +3466,7 @@ void LegacySimulator::do_nm()
             }
             else
             {
-                for (Index node = 0; (node < nnodes && aid + node < ssize(atom_index)); node++)
+                for (Index node = 0; (node < nnodes && aid + node < gmx::ssize(atom_index)); node++)
                 {
                     if (node > 0)
                     {
@@ -3512,7 +3512,7 @@ void LegacySimulator::do_nm()
             fprintf(stderr,
                     "\rFinished step %d out of %td",
                     std::min<int>(atom + nnodes, atom_index.size()),
-                    ssize(atom_index));
+                    gmx::ssize(atom_index));
             fflush(stderr);
         }
     }

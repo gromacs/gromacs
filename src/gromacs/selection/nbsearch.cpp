@@ -1075,7 +1075,7 @@ bool AnalysisNeighborhoodPairSearchImpl::searchNext(Action action)
                 {
                     continue;
                 }
-                const int cellSize = ssize(search_.cells_[ci]);
+                const int cellSize = gmx::ssize(search_.cells_[ci]);
                 for (; cai < cellSize; ++cai)
                 {
                     const int i = search_.cells_[ci][cai];

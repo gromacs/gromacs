@@ -1193,7 +1193,7 @@ void EnergyOutput::printStepToEnergyFile(ener_file* fp_ene,
                                 : 0;
         block[enxORI] = orires.orientations.data();
         id[enxORI]    = enxORI;
-        nr[enxORT]    = ssize(orires.eigenOutput);
+        nr[enxORT]    = gmx::ssize(orires.eigenOutput);
         block[enxORT] = orires.eigenOutput.data();
         id[enxORT]    = enxORT;
     }

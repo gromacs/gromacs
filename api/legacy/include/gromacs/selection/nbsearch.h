@@ -123,7 +123,7 @@ public:
      * Initializes positions from a vector of position vectors.
      */
     AnalysisNeighborhoodPositions(const std::vector<RVec>& x) :
-        count_(ssize(x)), index_(-1), x_(as_rvec_array(x.data())), exclusionIds_(nullptr), indices_(nullptr)
+        count_(gmx::ssize(x)), index_(-1), x_(as_rvec_array(x.data())), exclusionIds_(nullptr), indices_(nullptr)
     {
     }
 

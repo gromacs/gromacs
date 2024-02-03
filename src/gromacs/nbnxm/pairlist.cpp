@@ -3953,7 +3953,7 @@ static void sort_sci(NbnxnPairlistGpu* nbl)
     NbnxnPairlistGpuWork& work = *nbl->work;
 
     /* We will distinguish differences up to double the average */
-    const int m = static_cast<int>((2 * ssize(nbl->cjPacked)) / ssize(nbl->sci));
+    const int m = static_cast<int>((2 * gmx::ssize(nbl->cjPacked)) / gmx::ssize(nbl->sci));
 
     /* Resize work.sci_sort so we can sort into it */
     work.sci_sort.resize(nbl->sci.size());

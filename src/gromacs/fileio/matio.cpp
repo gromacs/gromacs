@@ -469,11 +469,11 @@ static t_matrix read_xpm_entry(FILE* in)
             mm.axis_x.reserve(mm.nx + 1);
             while (sscanf(line, "%lf", &u) == 1)
             {
-                if (ssize(mm.axis_x) > mm.nx)
+                if (gmx::ssize(mm.axis_x) > mm.nx)
                 {
                     gmx_fatal(FARGS, "Too many x-axis labels in xpm (max %d)", mm.nx);
                 }
-                else if (ssize(mm.axis_x) == mm.nx)
+                else if (gmx::ssize(mm.axis_x) == mm.nx)
                 {
                     mm.flags |= MAT_SPATIAL_X;
                 }
@@ -488,11 +488,11 @@ static t_matrix read_xpm_entry(FILE* in)
             mm.axis_y.reserve(mm.ny + 1);
             while (sscanf(line, "%lf", &u) == 1)
             {
-                if (ssize(mm.axis_y) > mm.ny)
+                if (gmx::ssize(mm.axis_y) > mm.ny)
                 {
                     gmx_fatal(FARGS, "Too many y-axis labels in xpm (max %d)", mm.ny);
                 }
-                else if (ssize(mm.axis_y) == mm.ny)
+                else if (gmx::ssize(mm.axis_y) == mm.ny)
                 {
                     mm.flags |= MAT_SPATIAL_Y;
                 }
@@ -587,7 +587,7 @@ real** matrix2real(t_matrix* in, real** out)
 
     std::vector<real> rmap(in->map.size());
 
-    for (gmx::Index i = 0; i != ssize(in->map); ++i)
+    for (gmx::Index i = 0; i != gmx::ssize(in->map); ++i)
     {
         if ((in->map[i].desc == nullptr) || (sscanf(in->map[i].desc, "%lf", &tmp) != 1))
         {

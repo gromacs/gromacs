@@ -197,7 +197,7 @@ void IndexFileWriterModule::pointsAdded(const AnalysisDataPointSetRef& points)
     if (points.firstColumn() == 0)
     {
         ++currentGroup_;
-        GMX_RELEASE_ASSERT(currentGroup_ < ssize(groups_), "Too few groups initialized");
+        GMX_RELEASE_ASSERT(currentGroup_ < gmx::ssize(groups_), "Too few groups initialized");
         if (bFirstFrame || groups_[currentGroup_].bDynamic_)
         {
             if (!bFirstFrame || currentGroup_ > 0)

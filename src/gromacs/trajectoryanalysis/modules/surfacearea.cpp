@@ -610,7 +610,7 @@ static std::vector<real> make_unsp(int densit, int cubus)
         GMX_RELEASE_ASSERT(false, "Invalid unit sphere mode");
     }
 
-    const int ndot = ssize(xus) / 3;
+    const int ndot = gmx::ssize(xus) / 3;
 
     /* determine distribution of points in elementary cubes */
     if (cubus)

@@ -692,7 +692,7 @@ public:
         // Compare the forces to the forces computed with energies
         FloatingPointTolerance forcesOnlyTolerance(relativeToleranceAsUlp(1000.0, 10));
 
-        for (int i = 0; i < ssize(forces); i++)
+        for (int i = 0; i < gmx::ssize(forces); i++)
         {
             for (int d = 0; d < DIM; d++)
             {
@@ -714,7 +714,7 @@ public:
         std::vector<RVec> forces3(system_.coordinates.size(), { 0.0_real, 0.0_real, 0.0_real });
         nbv_->atomdata_add_nbat_f_to_f(AtomLocality::All, forces3);
 
-        for (int i = 0; i < ssize(forces); i++)
+        for (int i = 0; i < gmx::ssize(forces); i++)
         {
             for (int d = 0; d < DIM; d++)
             {
@@ -729,7 +729,7 @@ public:
         // Cross check the sum of group energies with the total energies
         real vVdwGrpsSum     = 0;
         real vCoulombGrpsSum = 0;
-        for (int gg = 0; gg < ssize(vVdwGrps); gg++)
+        for (int gg = 0; gg < gmx::ssize(vVdwGrps); gg++)
         {
             vVdwGrpsSum += vVdwGrps[gg];
             vCoulombGrpsSum += vCoulombGrps[gg];

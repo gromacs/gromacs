@@ -577,7 +577,7 @@ std::string EnumOptionStorage::formatExtraDescription() const
 
 std::string EnumOptionStorage::formatSingleValue(const int& value) const
 {
-    if (value < 0 || value >= ssize(allowed_))
+    if (value < 0 || value >= gmx::ssize(allowed_))
     {
         return std::string();
     }

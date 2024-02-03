@@ -221,7 +221,7 @@ int gmx_mdrun(MPI_Comm communicator, const gmx_hw_info_t& hwinfo, int argc, char
     }
 
     ArrayRef<const std::string> multiSimDirectoryNames =
-            opt2fnsIfOptionSet("-multidir", ssize(options.filenames), options.filenames.data());
+            opt2fnsIfOptionSet("-multidir", gmx::ssize(options.filenames), options.filenames.data());
 
     // The SimulationContext is necessary with gmxapi so that
     // resources owned by the client code can have suitable
@@ -237,7 +237,7 @@ int gmx_mdrun(MPI_Comm communicator, const gmx_hw_info_t& hwinfo, int argc, char
                                                              communicator,
                                                              ms,
                                                              options.mdrunOptions.appendingBehavior,
-                                                             ssize(options.filenames),
+                                                             gmx::ssize(options.filenames),
                                                              options.filenames.data());
 
     /* The named components for the builder exposed here are descriptive of the

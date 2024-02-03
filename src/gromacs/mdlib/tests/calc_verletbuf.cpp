@@ -95,7 +95,7 @@ TEST(AtomNonbondedAndKineticProperties, IsAccurate)
     std::vector<real> invMasses = { 8.0, 10.149, 20.051 };
     std::vector<real> charges   = { -2.0, 0.149, -0.951 };
 
-    for (Index i = 0; i < ssize(invMasses); i++)
+    for (Index i = 0; i < gmx::ssize(invMasses); i++)
     {
         AtomNonbondedAndKineticProperties props({ c_resolution, c_resolution, c_resolution });
         props.setMassTypeCharge(1 / invMasses[i], 0, charges[i]);
@@ -112,7 +112,7 @@ TEST(AtomNonbondedAndKineticProperties, ConstraintsWork)
     std::vector<real> invMasses = { 8.0, 10.149, 20.051 };
     std::vector<real> lengths   = { 0.0, 3.2499, 4.9501 };
 
-    for (Index i = 0; i < ssize(invMasses); i++)
+    for (Index i = 0; i < gmx::ssize(invMasses); i++)
     {
         AtomNonbondedAndKineticProperties props({ c_resolution, c_resolution, c_resolution });
         props.setMassTypeCharge(1 / invMasses[i], 0, 0);

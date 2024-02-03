@@ -351,8 +351,8 @@ std::shared_ptr<Session> ContextImpl::launch(const Workflow& work)
             return nullptr;
         }
 
-        ArrayRef<const std::string> multiSimDirectoryNames =
-                opt2fnsIfOptionSet("-multidir", ssize(options.filenames), options.filenames.data());
+        ArrayRef<const std::string> multiSimDirectoryNames = opt2fnsIfOptionSet(
+                "-multidir", gmx::ssize(options.filenames), options.filenames.data());
 
 
         // The SimulationContext is necessary with gmxapi so that
@@ -378,7 +378,7 @@ std::shared_ptr<Session> ContextImpl::launch(const Workflow& work)
                               simulationContext.simulationCommunicator_,
                               ms,
                               options.mdrunOptions.appendingBehavior,
-                              ssize(options.filenames),
+                              gmx::ssize(options.filenames),
                               options.filenames.data());
 
         auto builder = MdrunnerBuilder(std::move(mdModules),

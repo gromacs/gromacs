@@ -406,8 +406,8 @@ void NoseHooverGroup::doCheckpoint(CheckpointData<operation>* checkpointData)
 //! Broadcast values read from checkpoint over DD ranks
 void NoseHooverGroup::broadcastCheckpointValues(const gmx_domdec_t* dd)
 {
-    dd_bcast(dd, ssize(xi_) * int(sizeof(real)), xi_.data());
-    dd_bcast(dd, ssize(xiVelocities_) * int(sizeof(real)), xiVelocities_.data());
+    dd_bcast(dd, gmx::ssize(xi_) * int(sizeof(real)), xi_.data());
+    dd_bcast(dd, gmx::ssize(xiVelocities_) * int(sizeof(real)), xiVelocities_.data());
     dd_bcast(dd, int(sizeof(real)), &coordinateTime_);
 }
 

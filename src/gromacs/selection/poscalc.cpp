@@ -136,7 +136,7 @@ public:
         for (int i = 0; i < size; ++i)
         {
             const int ii = index[i];
-            GMX_ASSERT(ii >= 0 && ii <= ssize(mapToFrameAtoms_) && mapToFrameAtoms_[ii] != -1,
+            GMX_ASSERT(ii >= 0 && ii <= gmx::ssize(mapToFrameAtoms_) && mapToFrameAtoms_[ii] != -1,
                        "Invalid input atom index");
             tmpFrameAtoms_[i] = mapToFrameAtoms_[ii];
         }

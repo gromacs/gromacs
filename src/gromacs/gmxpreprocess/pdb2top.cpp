@@ -144,7 +144,7 @@ static std::filesystem::path
 choose_ff_impl(const char* ffsel, char* forcefield, int ff_maxlen, const gmx::MDLogger& logger)
 {
     std::vector<gmx::DataFileInfo> ffdirs = fflib_enumerate_forcefields();
-    const int                      nff    = ssize(ffdirs);
+    const int                      nff    = gmx::ssize(ffdirs);
 
     /* Store the force field names in ffs */
     std::vector<std::string> ffs;

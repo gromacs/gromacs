@@ -193,7 +193,7 @@ static void add_posres(int                     mol,
 
     /* Get the position restraint coordinates from the molblock */
     const int a_molb = mol * numAtomsInMolecule + a_mol;
-    GMX_ASSERT(a_molb < ssize(molb.posres_xA),
+    GMX_ASSERT(a_molb < gmx::ssize(molb.posres_xA),
                "We need a sufficient number of position restraint coordinates");
     /* Copy the force constants */
     t_iparams ip        = ip_in[iatoms[0]];
@@ -236,7 +236,7 @@ static void add_fbposres(int                     mol,
 
     /* Get the position restraint coordinats from the molblock */
     const int a_molb = mol * numAtomsInMolecule + a_mol;
-    GMX_ASSERT(a_molb < ssize(molb.posres_xA),
+    GMX_ASSERT(a_molb < gmx::ssize(molb.posres_xA),
                "We need a sufficient number of position restraint coordinates");
     /* Copy the force constants */
     t_iparams ip = ip_in[iatoms[0]];

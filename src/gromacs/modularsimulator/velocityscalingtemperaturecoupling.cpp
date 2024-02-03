@@ -704,7 +704,7 @@ void VelocityScalingTemperatureCoupling::restoreCheckpointState(std::optional<Re
     if (haveDDAtomOrdering(*cr))
     {
         dd_bcast(cr->dd,
-                 ssize(temperatureCouplingIntegral_) * int(sizeof(double)),
+                 gmx::ssize(temperatureCouplingIntegral_) * int(sizeof(double)),
                  temperatureCouplingIntegral_.data());
     }
     temperatureCouplingImpl_->readCheckpoint(

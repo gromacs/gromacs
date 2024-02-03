@@ -401,7 +401,7 @@ public:
 
         /* Explicitly copying the sample forces to be able to modify them */
         auto inputForcesFull(c_sampleForcesFull);
-        GMX_RELEASE_ASSERT(ssize(inputForcesFull) >= atomCount, "Bad input forces size");
+        GMX_RELEASE_ASSERT(gmx::ssize(inputForcesFull) >= atomCount, "Bad input forces size");
         auto forces = ForcesVector(inputForcesFull).subArray(0, atomCount);
 
         /* Running the force gathering itself */

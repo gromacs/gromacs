@@ -571,7 +571,7 @@ int gmx_trjcat(int argc, char* argv[])
         gmx_fatal(FARGS, "No input files!");
     }
 
-    if (bDeMux && ssize(inFiles) != nset)
+    if (bDeMux && gmx::ssize(inFiles) != nset)
     {
         gmx_fatal(FARGS, "You have specified %td files and %d entries in the demux table", inFiles.ssize(), nset);
     }
@@ -601,7 +601,7 @@ int gmx_trjcat(int argc, char* argv[])
         gmx_fatal(FARGS,
                   "Don't know what to do with more than 1 output file if  not demultiplexing");
     }
-    else if (bDeMux && ssize(outFiles) != nset && outFiles.size() != 1)
+    else if (bDeMux && gmx::ssize(outFiles) != nset && outFiles.size() != 1)
     {
         gmx_fatal(FARGS,
                   "Number of output files should be 1 or %d (#input files), not %td",

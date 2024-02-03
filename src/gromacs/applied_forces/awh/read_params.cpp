@@ -136,7 +136,7 @@ void checkMtsConsistency(const t_inputrec& inputrec, WarningHandler* wi)
                 "When AWH is applied to pull coordinates, pull and AWH should be computed at "
                 "the same MTS level");
     }
-    if (usesFep && awhMtsLevel != ssize(inputrec.mtsLevels) - 1)
+    if (usesFep && awhMtsLevel != gmx::ssize(inputrec.mtsLevels) - 1)
     {
         wi->addError(
                 "When AWH is applied to the free-energy lambda with MTS, AWH should be "
