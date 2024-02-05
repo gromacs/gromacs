@@ -482,7 +482,9 @@ TEST(RVecTest, CopyAssignmentWorks)
 TEST(RVecTest, MoveConstructorWorks)
 {
     RVec v(1, 2, 3);
-    RVec copy(v);
+    // We are testing for correctness and don't care about performance
+    // NOLINTNEXTLINE(performance-move-const-arg)
+    RVec copy(std::move(v));
     EXPECT_EQ(1, copy[XX]);
     EXPECT_EQ(2, copy[YY]);
     EXPECT_EQ(3, copy[ZZ]);
@@ -492,7 +494,9 @@ TEST(RVecTest, MoveAssignmentWorks)
 {
     RVec v(1, 2, 3);
     RVec copy;
-    copy = v;
+    // We are testing for correctness and don't care about performance
+    // NOLINTNEXTLINE(performance-move-const-arg)
+    copy = std::move(v);
     EXPECT_EQ(1, copy[XX]);
     EXPECT_EQ(2, copy[YY]);
     EXPECT_EQ(3, copy[ZZ]);
