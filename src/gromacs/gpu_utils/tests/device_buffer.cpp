@@ -200,12 +200,13 @@ TYPED_TEST(DeviceBufferTest, CanCopyToAndFromDeviceWithOffset)
             copyToDeviceBuffer(&buffer, valuesIn.data(), 0, numValues, deviceStream, transferKind, nullptr);
             copyToDeviceBuffer(
                     &buffer, valuesIn.data(), numValues, numValues, deviceStream, transferKind, nullptr);
-            // Wait until GPU is done andd o the same copying on the CPU, so we can test it works correctly.
+            // Wait until GPU is done and do the same copying on the CPU, so we can test it works correctly.
             if (transferKind == GpuApiCallBehavior::Async)
             {
                 deviceStream.synchronize();
             }
-            valuesIn.insert(valuesIn.end(), valuesIn.begin(), valuesIn.end());
+            HostVector<TypeParam> expectedResult = valuesIn;
+            expectedResult.insert(expectedResult.end(), valuesIn.begin(), valuesIn.end());
 
             copyFromDeviceBuffer(
                     valuesOut.data(), &buffer, 0, 2 * numValues, deviceStream, transferKind, nullptr);
@@ -213,7 +214,7 @@ TYPED_TEST(DeviceBufferTest, CanCopyToAndFromDeviceWithOffset)
             {
                 deviceStream.synchronize();
             }
-            EXPECT_THAT(valuesOut, Pointwise(Eq(), valuesIn))
+            EXPECT_THAT(valuesOut, Pointwise(Eq(), expectedResult))
                     << "Changed after H2D and D2H " << enumValueToString(transferKind) << " copy.";
 
             SCOPED_TRACE("Checking the copy respects the output range");
@@ -222,15 +223,15 @@ TYPED_TEST(DeviceBufferTest, CanCopyToAndFromDeviceWithOffset)
             // element, so we can check that a copy of all of the data
             // skipping the first element correctly over-writes exactly
             // all but one of the old values.
-            valuesIn.erase(valuesIn.begin());
-            valuesIn.push_back(valuesIn.back());
+            expectedResult.erase(expectedResult.begin());
+            expectedResult.push_back(expectedResult.back());
             copyFromDeviceBuffer(
                     valuesOut.data(), &buffer, 1, 2 * numValues - 1, deviceStream, transferKind, nullptr);
             if (transferKind == GpuApiCallBehavior::Async)
             {
                 deviceStream.synchronize();
             }
-            EXPECT_THAT(valuesOut, Pointwise(Eq(), valuesIn))
+            EXPECT_THAT(valuesOut, Pointwise(Eq(), expectedResult))
                     << "Changed after H2D and D2H " << enumValueToString(transferKind) << " copy.";
         }
     }
