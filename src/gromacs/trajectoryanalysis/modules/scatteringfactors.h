@@ -51,6 +51,7 @@ namespace gmx
 
 /*! \internal \brief
  * Cromer-Mann scattering factor parameters to compute structure factor dependent on Q
+ *
  * \f[s(q) = \sum_{i}^{4}  a_i * \exp(- b_i * (\frac{q}{4\pi})^2) + c\f]
  * s(q) units is number of electrons so s(0) ~ Z (atomic number)
  */
