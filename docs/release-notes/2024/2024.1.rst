@@ -30,6 +30,7 @@ Fixed nbnxm-test failure when bounds checking was enabled for stdlib
 
 :issue:`4966`
 :issue:`4973`
+
 Increase tolerance of mdrun continuation tests in double precision
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
@@ -38,4 +39,14 @@ errors just above the tolerance.
 
 :issue:`4788`
 :issue:`4931`
+
+Fix missing OpenMP initialization in grompp
+"""""""""""""""""""""""""""""""""""""""""""
+
+The problem only manifested as a pop-up message when running
+``gmx grompp`` built with Visual Studio. Since this message was
+blocking the application, it could mess up with test suite
+or automated scripts. No other deleterious effects noted.
+
+:issue:`4961`
 
