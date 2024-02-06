@@ -174,6 +174,64 @@ TEST(FixedCapacityVectorTest, ZeroCapacityWorks)
     EXPECT_TRUE(v.empty());
 }
 
+TEST(FixedCapacityVectorTest, CopyConstructorWorks)
+{
+    FixedCapacityVector<int, 4> v;
+    v.push_back(1);
+    v.push_back(2);
+    v.push_back(3);
+    FixedCapacityVector<int, 4> copy(v);
+    EXPECT_EQ(1, copy[0]);
+    EXPECT_EQ(2, copy[1]);
+    EXPECT_EQ(3, copy[2]);
+    EXPECT_EQ(3, copy.size());
+}
+
+TEST(FixedCapacityVectorTest, CopyAssignmentWorks)
+{
+    FixedCapacityVector<int, 4> v;
+    v.push_back(1);
+    v.push_back(2);
+    v.push_back(3);
+    FixedCapacityVector<int, 4> copy;
+    copy = v;
+    EXPECT_EQ(1, copy[0]);
+    EXPECT_EQ(2, copy[1]);
+    EXPECT_EQ(3, copy[2]);
+    EXPECT_EQ(3, copy.size());
+}
+
+TEST(FixedCapacityVectorTest, MoveConstructorWorks)
+{
+    FixedCapacityVector<int, 3> v;
+    v.push_back(1);
+    v.push_back(2);
+    v.push_back(3);
+    // We are testing for correctness and don't care about performance
+    // NOLINTNEXTLINE(performance-move-const-arg)
+    FixedCapacityVector<int, 3> copy(std::move(v));
+    EXPECT_EQ(1, copy[0]);
+    EXPECT_EQ(2, copy[1]);
+    EXPECT_EQ(3, copy[2]);
+    EXPECT_EQ(3, copy.size());
+}
+
+TEST(FixedCapacityVectorTest, MoveAssignmentWorks)
+{
+    FixedCapacityVector<int, 3> v;
+    v.push_back(1);
+    v.push_back(2);
+    v.push_back(3);
+    FixedCapacityVector<int, 3> copy;
+    // We are testing for correctness and don't care about performance
+    // NOLINTNEXTLINE(performance-move-const-arg)
+    copy = std::move(v);
+    EXPECT_EQ(1, copy[0]);
+    EXPECT_EQ(2, copy[1]);
+    EXPECT_EQ(3, copy[2]);
+    EXPECT_EQ(3, copy.size());
+}
+
 } // namespace
 
 } // namespace gmx

@@ -110,13 +110,13 @@ public:
     //! Returns an iterator to the beginning
     iterator begin() noexcept { return data(); }
     //! Returns a const iterator to the end
-    const_iterator end() const noexcept { return end_; }
+    const_iterator end() const noexcept { return data_.data() + size_; }
     //! Returns an iterator to the end
-    iterator end() noexcept { return end_; }
+    iterator end() noexcept { return data_.data() + size_; }
     //! Returns a const iterator to the reverse beginning
-    const_reverse_iterator rbegin() const noexcept { return reverse_iterator(end_); }
+    const_reverse_iterator rbegin() const noexcept { return reverse_iterator(end()); }
     //! Returns an iterator to the reverse beginning
-    reverse_iterator rbegin() noexcept { return reverse_iterator(end_); }
+    reverse_iterator rbegin() noexcept { return reverse_iterator(end()); }
     //! Returns a const iterator to the reverse end
     const_reverse_iterator rend() const noexcept { return reverse_iterator(begin()); }
     //! Returns an iterator to the reverse end
@@ -127,11 +127,11 @@ public:
      * \note Use ssize for any expression involving arithmetic operations
          (including loop indices).
      */
-    size_type size() const noexcept { return end_ - data(); }
+    size_type size() const noexcept { return size_; }
     //! Returns the signed size
-    Index ssize() const noexcept { return end_ - data(); }
+    Index ssize() const noexcept { return size_; }
     //! Returns whether the vector is empty
-    bool empty() const noexcept { return data() == end_; }
+    bool empty() const noexcept { return size_ == 0; }
 
     //! Returns the vector capacity (max. number of elements that can be stored)
     static constexpr size_type max_size() noexcept { return capacity_; }
@@ -169,9 +169,14 @@ public:
         return data_[n];
     }
     //! Returns the first element
-    reference front() const noexcept { return data_.front(); }
+    //! Returns the first element
+    reference front() noexcept { return data_.front(); }
+    //! Returns the first element (const version)
+    const_reference front() const noexcept { return data_.front(); }
     //! Returns the last element
-    reference back() const noexcept { return *(end_ - 1); }
+    reference back() noexcept { return data_[size_ - 1]; }
+    //! Returns the last element (const version)
+    const_reference back() const noexcept { return data_[size_ - 1]; }
 
     //! Returns a raw pointer to the contents of the array
     const T* data() const noexcept { return data_.data(); }
@@ -183,15 +188,15 @@ public:
     void push_back(const T& value) noexcept
     {
         GMX_ASSERT(size() < capacity_, "Cannot add more elements than the capacity");
-        *end_ = value;
-        end_++;
+        data_[size_] = value;
+        size_++;
     }
 
     //! Deletes last element
     void pop_back() noexcept
     {
         GMX_ASSERT(!empty(), "Can only delete last element when present");
-        end_--;
+        size_--;
     }
 
     //! Constructs an element at the end
@@ -201,25 +206,25 @@ public:
         GMX_ASSERT(size() < capacity_, "Cannot add more elements than the capacity");
         if (std::is_move_assignable<T>::value)
         {
-            *end_ = std::move(T(args...));
+            data_[size_] = std::move(T(args...));
         }
         else
         {
-            *end_ = T(args...);
+            data_[size_] = T(args...);
         }
-        end_++;
+        size_++;
 
         return back();
     }
 
     //! Clears content
-    void clear() noexcept { end_ = data(); }
+    void clear() noexcept { size_ = 0; }
 
 private:
     //! The elements, stored in a fixed size array
     std::array<T, capacity_> data_;
     //! The size of the vector
-    pointer end_ = data();
+    size_type size_ = 0;
 };
 
 } // namespace gmx
