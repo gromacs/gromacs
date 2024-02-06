@@ -125,7 +125,7 @@ GmxH5mdTimeDataBlock::GmxH5mdTimeDataBlock(hid_t                container,
     {
         cacheSize *= chunkDims[i];
     }
-    hid_t accessPropertyList = H5Pcreate(H5P_DATASET_ACCESS);
+    hid_t accessPropertyList = H5Dget_create_plist(mainDataSet_);
     H5Pset_chunk_cache(
             accessPropertyList, H5D_CHUNK_CACHE_NSLOTS_DEFAULT, cacheSize, H5D_CHUNK_CACHE_W0_DEFAULT);
 }
