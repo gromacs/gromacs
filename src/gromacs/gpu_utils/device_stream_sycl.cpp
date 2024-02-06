@@ -51,40 +51,24 @@
 
 static sycl::property_list makeQueuePropertyList(bool enableProfiling, DeviceStreamPriority priority)
 {
-    // If hipSYCL priority extension is present, extract the priority range
-    // and use the lowest or highest priority supported for DeviceStreamPriority::Low and
-    // DeviceStreamPriority::High, respectively.
-#ifdef HIPSYCL_EXT_QUEUE_PRIORITY
+#ifdef HIPSYCL_EXT_QUEUE_PRIORITY // Use AdaptiveCpp/hipSYCL extension
     // For simplicity, we assume 0 to be the default priority (guaranteed for CUDA, verified for HIP)
-    int defaultPrioValue = 0;
-    int highPrioValue    = 0;
-
-#    if GMX_HIPSYCL_HAVE_CUDA_TARGET || GMX_HIPSYCL_HAVE_HIP_TARGET
-#        if GMX_HIPSYCL_HAVE_CUDA_TARGET
-    const auto status         = cudaDeviceGetStreamPriorityRange(nullptr, &highPrioValue);
-    const auto apiSuccessCode = cudaSuccess;
-#        elif GMX_HIPSYCL_HAVE_HIP_TARGET
-    auto       status         = hipDeviceGetStreamPriorityRange(nullptr, &highPrioValue);
-    const auto apiSuccessCode = hipSuccess;
-#        endif
-    if (status != apiSuccessCode)
-    {
-        GMX_THROW(gmx::InternalError("[cuda|hip]DeviceGetStreamPriorityRange failed"));
-    }
-#    endif
-
-#    define HIPSYCL_PRIORITY_ATTRIBUTE_HIGH \
+    const int defaultPrioValue = 0;
+    // In both CUDA and HIP, lower value means higher priority, and values are automatically clamped
+    // to the valid range, so we just choose a large negative value here.
+    const int highPrioValue = -999;
+#    define PRIORITY_ATTRIBUTE_HIGH \
         sycl::property::queue::hipSYCL_priority { highPrioValue }
-#    define HIPSYCL_PRIORITY_ATTRIBUTE_DEFAULT \
+#    define PRIORITY_ATTRIBUTE_DEFAULT \
         sycl::property::queue::hipSYCL_priority { defaultPrioValue }
-#elif defined(SYCL_EXT_ONEAPI_QUEUE_PRIORITY)
-#    define HIPSYCL_PRIORITY_ATTRIBUTE_HIGH \
+#elif defined(SYCL_EXT_ONEAPI_QUEUE_PRIORITY) // Use oneAPI DPC++ extension
+#    define PRIORITY_ATTRIBUTE_HIGH \
         sycl::ext::oneapi::property::queue::priority_high {}
-#    define HIPSYCL_PRIORITY_ATTRIBUTE_DEFAULT \
+#    define PRIORITY_ATTRIBUTE_DEFAULT \
         sycl::ext::oneapi::property::queue::priority_normal {}
-#else
-#    define HIPSYCL_PRIORITY_ATTRIBUTE_HIGH
-#    define HIPSYCL_PRIORITY_ATTRIBUTE_DEFAULT
+#else // No way to specify the priority
+#    define PRIORITY_ATTRIBUTE_HIGH
+#    define PRIORITY_ATTRIBUTE_DEFAULT
 #endif
 
     if (enableProfiling)
@@ -93,28 +77,28 @@ static sycl::property_list makeQueuePropertyList(bool enableProfiling, DeviceStr
         {
             return { sycl::property::queue::in_order(),
                      sycl::property::queue::enable_profiling(),
-                     HIPSYCL_PRIORITY_ATTRIBUTE_HIGH };
+                     PRIORITY_ATTRIBUTE_HIGH };
         }
         else
         {
             return { sycl::property::queue::in_order(),
                      sycl::property::queue::enable_profiling(),
-                     HIPSYCL_PRIORITY_ATTRIBUTE_DEFAULT };
+                     PRIORITY_ATTRIBUTE_DEFAULT };
         }
     }
     else // !enableProfiling
     {
         if (priority == DeviceStreamPriority::High)
         {
-            return { sycl::property::queue::in_order(), HIPSYCL_PRIORITY_ATTRIBUTE_HIGH };
+            return { sycl::property::queue::in_order(), PRIORITY_ATTRIBUTE_HIGH };
         }
         else
         {
-            return { sycl::property::queue::in_order(), HIPSYCL_PRIORITY_ATTRIBUTE_DEFAULT };
+            return { sycl::property::queue::in_order(), PRIORITY_ATTRIBUTE_DEFAULT };
         }
     }
-#undef HIPSYCL_PRIORITY_ATTRIBUTE_HIGH
-#undef HIPSYCL_PRIORITY_ATTRIBUTE_DEFAULT
+#undef PRIORITY_ATTRIBUTE_HIGH
+#undef PRIORITY_ATTRIBUTE_DEFAULT
 }
 
 DeviceStream::DeviceStream(const DeviceContext& deviceContext, DeviceStreamPriority priority, const bool useTiming)
