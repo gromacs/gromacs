@@ -367,7 +367,6 @@ real gather_energy_bsplines(gmx_pme_t* pme, const real* grid, PmeAtomComm* atc)
     int           index_x, index_xy;
     int*          idxptr;
     real          energy, pot, tx, ty, coefficient, gval;
-    real *        thx, *thy, *thz;
     int           norder;
     int           order;
 
@@ -390,9 +389,9 @@ real gather_energy_bsplines(gmx_pme_t* pme, const real* grid, PmeAtomComm* atc)
             k0 = idxptr[ZZ];
 
             /* Pointer arithmetic alert, next three statements */
-            thx = spline->theta.coefficients[XX] + norder;
-            thy = spline->theta.coefficients[YY] + norder;
-            thz = spline->theta.coefficients[ZZ] + norder;
+            const real* thx = spline->theta.coefficients[XX] + norder;
+            const real* thy = spline->theta.coefficients[YY] + norder;
+            const real* thz = spline->theta.coefficients[ZZ] + norder;
 
             pot = 0;
             for (ithx = 0; (ithx < order); ithx++)

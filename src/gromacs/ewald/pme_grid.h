@@ -42,6 +42,7 @@
 #include "gromacs/utility/real.h"
 
 struct gmx_pme_t;
+struct PmeAndFftGrids;
 
 /*! \brief
  * We allow coordinates to be out the unit-cell by up to 2 box lengths,
@@ -60,9 +61,9 @@ struct pmegrids_t;
 
 void gmx_sum_qgrid_dd(gmx_pme_t* pme, real* grid, int direction);
 
-int copy_pmegrid_to_fftgrid(const gmx_pme_t* pme, const real* pmegrid, real* fftgrid, int grid_index);
+int copy_pmegrid_to_fftgrid(const gmx_pme_t* pme, PmeAndFftGrids* grids);
 
-int copy_fftgrid_to_pmegrid(gmx_pme_t* pme, const real* fftgrid, real* pmegrid, int grid_index, int nthread, int thread);
+int copy_fftgrid_to_pmegrid(const gmx_pme_t* pme, PmeAndFftGrids* grids, int nthread, int thread);
 
 void wrap_periodic_pmegrid(const gmx_pme_t* pme, real* pmegrid);
 

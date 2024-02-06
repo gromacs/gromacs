@@ -42,12 +42,15 @@
 #include "gromacs/math/units.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
 
-static void make_dft_mod(real* mod, const double* data, int splineOrder, int ndata)
+static std::vector<real> make_dft_mod(gmx::ArrayRef<const double> data, int splineOrder, int ndata)
 {
+    std::vector<real> mod(ndata);
+
     for (int i = 0; i < ndata; i++)
     {
         /* We use double precision, since this is only called once per grid.
@@ -79,16 +82,12 @@ static void make_dft_mod(real* mod, const double* data, int splineOrder, int nda
          */
         mod[ndata / 2] = (mod[ndata / 2 - 1] + mod[ndata / 2 + 1]) * 0.5;
     }
+
+    return mod;
 }
 
-void make_bspline_moduli(splinevec bsp_mod, int nx, int ny, int nz, int pme_order)
+std::array<std::vector<real>, 3> make_bspline_moduli(int nx, int ny, int nz, int pme_order)
 {
-    /* We use double precision, since this is only called once per grid.
-     * But for single precision bsp_mod, single precision also seems
-     * to give full accuracy.
-     */
-    double* data;
-
     /* In GROMACS we, confusingly, defined pme-order as the order
      * of the cardinal B-spline + 1. This probably happened because
      * the smooth PME paper only talks about "n" which is the number
@@ -96,7 +95,11 @@ void make_bspline_moduli(splinevec bsp_mod, int nx, int ny, int nz, int pme_orde
      */
     const int splineOrder = pme_order - 1;
 
-    snew(data, splineOrder);
+    /* We use double precision, since this is only called once per grid.
+     * But for single precision bsp_mod, single precision also seems
+     * to give full accuracy.
+     */
+    std::vector<double> data(splineOrder);
 
     data[0] = 1;
     for (int k = 1; k < splineOrder; k++)
@@ -114,11 +117,13 @@ void make_bspline_moduli(splinevec bsp_mod, int nx, int ny, int nz, int pme_orde
         data[0] = div * data[0];
     }
 
-    make_dft_mod(bsp_mod[XX], data, splineOrder, nx);
-    make_dft_mod(bsp_mod[YY], data, splineOrder, ny);
-    make_dft_mod(bsp_mod[ZZ], data, splineOrder, nz);
+    std::array<std::vector<real>, 3> bsp_mod;
 
-    sfree(data);
+    bsp_mod[XX] = make_dft_mod(data, splineOrder, nx);
+    bsp_mod[YY] = make_dft_mod(data, splineOrder, ny);
+    bsp_mod[ZZ] = make_dft_mod(data, splineOrder, nz);
+
+    return bsp_mod;
 }
 
 /* Return the P3M optimal influence function */
@@ -155,7 +160,7 @@ static double do_p3m_influence(double z, int order)
 }
 
 /* Calculate the P3M B-spline moduli for one dimension */
-static void make_p3m_bspline_moduli_dim(real* bsp_mod, int n, int order)
+static std::vector<real> make_p3m_bspline_moduli_dim(int n, int order)
 {
     double zarg, zai, sinzai, infl;
     int    maxk, i;
@@ -164,6 +169,8 @@ static void make_p3m_bspline_moduli_dim(real* bsp_mod, int n, int order)
     {
         GMX_THROW(gmx::InconsistentInputError("The current P3M code only supports orders up to 8"));
     }
+
+    std::vector<real> bsp_mod(n);
 
     zarg = M_PI / n;
 
@@ -184,12 +191,18 @@ static void make_p3m_bspline_moduli_dim(real* bsp_mod, int n, int order)
         infl       = do_p3m_influence(sinzai, order);
         bsp_mod[i] = infl * infl * pow(sinzai / zai, -2.0 * order);
     }
+
+    return bsp_mod;
 }
 
 /* Calculate the P3M B-spline moduli */
-void make_p3m_bspline_moduli(splinevec bsp_mod, int nx, int ny, int nz, int order)
+std::array<std::vector<real>, 3> make_p3m_bspline_moduli(int nx, int ny, int nz, int order)
 {
-    make_p3m_bspline_moduli_dim(bsp_mod[XX], nx, order);
-    make_p3m_bspline_moduli_dim(bsp_mod[YY], ny, order);
-    make_p3m_bspline_moduli_dim(bsp_mod[ZZ], nz, order);
+    std::array<std::vector<real>, 3> bsp_mod;
+
+    bsp_mod[XX] = make_p3m_bspline_moduli_dim(nx, order);
+    bsp_mod[YY] = make_p3m_bspline_moduli_dim(ny, order);
+    bsp_mod[ZZ] = make_p3m_bspline_moduli_dim(nz, order);
+
+    return bsp_mod;
 }

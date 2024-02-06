@@ -355,7 +355,7 @@ int solve_pme_yzx(const gmx_pme_t* pme, t_complex* grid, real vol, bool computeE
 
     /* Dimensions should be identical for A/B grid, so we just use A here */
     gmx_parallel_3dfft_complex_limits(
-            pme->pfft_setup[PME_GRID_QA], complex_order, local_ndata, local_offset, local_size);
+            pme->gridsCoulomb[0].pfft_setup.get(), complex_order, local_ndata, local_offset, local_size);
 
     rxx = pme->recipbox[XX][XX];
     ryx = pme->recipbox[YY][XX];
@@ -585,14 +585,17 @@ int solve_pme_yzx(const gmx_pme_t* pme, t_complex* grid, real vol, bool computeE
     return local_ndata[YY] * local_ndata[XX];
 }
 
-int solve_pme_lj_yzx(const gmx_pme_t* pme,
-                     t_complex**      grid,
-                     gmx_bool         bLB,
-                     real             vol,
-                     bool             computeEnergyAndVirial,
-                     int              nthread,
-                     int              thread)
+int solve_pme_lj_yzx(const gmx_pme_t*              pme,
+                     gmx::ArrayRef<PmeAndFftGrids> grids,
+                     gmx_bool                      bLB,
+                     real                          vol,
+                     bool                          computeEnergyAndVirial,
+                     int                           nthread,
+                     int                           thread)
 {
+    GMX_ASSERT(!bLB || gmx::ssize(grids) == sc_numGridsLJLB,
+               "Expect 7 grids for LJ with LB comb.rule.");
+
     /* do recip sum over local cells in grid */
     /* y major, z middle, x minor or continuous */
     int                      ig, gcount;
@@ -618,7 +621,7 @@ int solve_pme_lj_yzx(const gmx_pme_t* pme,
 
     /* Dimensions should be identical for A/B grid, so we just use A here */
     gmx_parallel_3dfft_complex_limits(
-            pme->pfft_setup[PME_GRID_C6A], complex_order, local_ndata, local_offset, local_size);
+            grids[0].pfft_setup.get(), complex_order, local_ndata, local_offset, local_size);
     rxx = pme->recipbox[XX][XX];
     ryx = pme->recipbox[YY][XX];
     ryy = pme->recipbox[YY][YY];
@@ -745,7 +748,7 @@ int solve_pme_lj_yzx(const gmx_pme_t* pme,
                 t_complex* p0;
                 real       struct2;
 
-                p0 = grid[0] + iy * local_size[ZZ] * local_size[XX] + iz * local_size[XX];
+                p0 = grids[0].cfftgrid + iy * local_size[ZZ] * local_size[XX] + iz * local_size[XX];
                 for (kx = kxstart; kx < kxend; kx++, p0++)
                 {
                     d1 = p0->re;
@@ -777,8 +780,9 @@ int solve_pme_lj_yzx(const gmx_pme_t* pme,
                     t_complex *p0, *p1;
                     real       scale;
 
-                    p0 = grid[ig] + iy * local_size[ZZ] * local_size[XX] + iz * local_size[XX];
-                    p1 = grid[6 - ig] + iy * local_size[ZZ] * local_size[XX] + iz * local_size[XX];
+                    p0 = grids[ig].cfftgrid + iy * local_size[ZZ] * local_size[XX] + iz * local_size[XX];
+                    p1 = grids[6 - ig].cfftgrid + iy * local_size[ZZ] * local_size[XX]
+                         + iz * local_size[XX];
                     scale = 2.0 * lb_scale_factor_symm[ig];
                     for (kx = kxstart; kx < kxend; ++kx, ++p0, ++p1)
                     {
@@ -789,7 +793,7 @@ int solve_pme_lj_yzx(const gmx_pme_t* pme,
                 {
                     t_complex* p0;
 
-                    p0 = grid[ig] + iy * local_size[ZZ] * local_size[XX] + iz * local_size[XX];
+                    p0 = grids[ig].cfftgrid + iy * local_size[ZZ] * local_size[XX] + iz * local_size[XX];
                     for (kx = kxstart; kx < kxend; kx++, p0++)
                     {
                         d1 = p0->re;
@@ -885,7 +889,7 @@ int solve_pme_lj_yzx(const gmx_pme_t* pme,
             {
                 t_complex* p0;
 
-                p0 = grid[ig] + iy * local_size[ZZ] * local_size[XX] + iz * local_size[XX];
+                p0 = grids[ig].cfftgrid + iy * local_size[ZZ] * local_size[XX] + iz * local_size[XX];
                 for (kx = kxstart; kx < kxend; kx++, p0++)
                 {
                     d1 = p0->re;

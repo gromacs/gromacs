@@ -38,9 +38,16 @@
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
-struct pme_solve_work_t;
 struct gmx_pme_t;
+struct PmeAndFftGrids;
+struct pme_solve_work_t;
 struct PmeOutput;
+
+namespace gmx
+{
+template<typename>
+class ArrayRef;
+}
 
 /*! \brief Allocates array of work structures
  *
@@ -69,12 +76,12 @@ void get_pme_ener_vir_lj(pme_solve_work_t* work, int nthread, PmeOutput* output)
 
 int solve_pme_yzx(const gmx_pme_t* pme, t_complex* grid, real vol, bool computeEnergyAndVirial, int nthread, int thread);
 
-int solve_pme_lj_yzx(const gmx_pme_t* pme,
-                     t_complex**      grid,
-                     gmx_bool         bLB,
-                     real             vol,
-                     bool             computeEnergyAndVirial,
-                     int              nthread,
-                     int              thread);
+int solve_pme_lj_yzx(const gmx_pme_t*              pme,
+                     gmx::ArrayRef<PmeAndFftGrids> grids,
+                     gmx_bool                      bLB,
+                     real                          vol,
+                     bool                          computeEnergyAndVirial,
+                     int                           nthread,
+                     int                           thread);
 
 #endif

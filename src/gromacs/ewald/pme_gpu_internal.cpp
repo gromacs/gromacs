@@ -1246,7 +1246,8 @@ static void pme_gpu_copy_common_data_from(const gmx_pme_t* pme)
     }
     for (int i = 0; i < DIM; i++)
     {
-        pmeGpu->common->bsp_mod[i].assign(pme->bsp_mod[i], pme->bsp_mod[i] + pmeGpu->common->nk[i]);
+        pmeGpu->common->bsp_mod[i].assign(pme->bsp_mod[i].data(),
+                                          pme->bsp_mod[i].data() + pmeGpu->common->nk[i]);
     }
     GMX_ASSERT(gmx::ssize(pme->fshx) == c_pmeNeighborUnitcellCount * pme->nkx,
                "Unexpected fshx size");
@@ -1813,8 +1814,7 @@ static int manageSyncWithPpCoordinateSenderGpu(const PmeGpu*                  pm
 
 void pme_gpu_spread(const PmeGpu*                  pmeGpu,
                     GpuEventSynchronizer*          xReadyOnDevice,
-                    real**                         h_grids,
-                    gmx_parallel_3dfft_t*          fftSetup,
+                    gmx::ArrayRef<PmeAndFftGrids>  h_grids,
                     bool                           computeSplines,
                     bool                           spreadCharges,
                     const real                     lambda,
@@ -2072,7 +2072,8 @@ void pme_gpu_spread(const PmeGpu*                  pmeGpu,
             // non-contiguous data - need to run kernel
             for (int gridIndex = 0; gridIndex < pmeGpu->common->ngrids; gridIndex++)
             {
-                float* h_grid = h_grids[gridIndex];
+                float* h_grid   = h_grids[gridIndex].fftgrid;
+                auto*  fftSetup = h_grids[gridIndex].pfft_setup.get();
 
                 convertPmeGridToFftGrid<true>(pmeGpu, h_grid, fftSetup, gridIndex);
             }
@@ -2081,7 +2082,8 @@ void pme_gpu_spread(const PmeGpu*                  pmeGpu,
         {
             for (int gridIndex = 0; gridIndex < pmeGpu->common->ngrids; gridIndex++)
             {
-                float* h_grid = h_grids[gridIndex];
+                float* h_grid = h_grids[gridIndex].fftgrid;
+
                 pme_gpu_copy_output_spread_grid(pmeGpu, h_grid, gridIndex);
             }
         }
@@ -2337,12 +2339,11 @@ inline auto selectGatherKernelPtr(const PmeGpu*  pmeGpu,
     return kernelPtr;
 }
 
-void pme_gpu_gather(PmeGpu*               pmeGpu,
-                    real**                h_grids,
-                    gmx_parallel_3dfft_t* fftSetup,
-                    const float           lambda,
-                    gmx_wallcycle*        wcycle,
-                    bool                  computeVirial)
+void pme_gpu_gather(PmeGpu*                       pmeGpu,
+                    gmx::ArrayRef<PmeAndFftGrids> h_grids,
+                    const float                   lambda,
+                    gmx_wallcycle*                wcycle,
+                    bool                          computeVirial)
 {
     GMX_ASSERT(
             pmeGpu->common->ngrids == 1 || pmeGpu->common->ngrids == 2,
@@ -2374,7 +2375,9 @@ void pme_gpu_gather(PmeGpu*               pmeGpu,
             // non-contiguous data - need to run kernel
             for (int gridIndex = 0; gridIndex < pmeGpu->common->ngrids; gridIndex++)
             {
-                float* h_grid = h_grids[gridIndex];
+                float* h_grid   = h_grids[gridIndex].fftgrid;
+                auto*  fftSetup = h_grids[gridIndex].pfft_setup.get();
+
                 convertPmeGridToFftGrid<false>(pmeGpu, h_grid, fftSetup, gridIndex);
             }
         }
@@ -2382,7 +2385,8 @@ void pme_gpu_gather(PmeGpu*               pmeGpu,
         {
             for (int gridIndex = 0; gridIndex < pmeGpu->common->ngrids; gridIndex++)
             {
-                const float* h_grid = h_grids[gridIndex];
+                float* h_grid = h_grids[gridIndex].fftgrid;
+
                 pme_gpu_copy_input_gather_grid(pmeGpu, h_grid, gridIndex);
             }
         }

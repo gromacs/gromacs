@@ -142,7 +142,7 @@ void inline parallel_3dfft_execute_gpu_wrapper(gmx_pme_t*             pme,
 #pragma omp parallel for num_threads(pme->nthread) schedule(static)
         for (int thread = 0; thread < pme->nthread; thread++)
         {
-            gmx_parallel_3dfft_execute(pme->pfft_setup[gridIndex], dir, thread, wcycle);
+            gmx_parallel_3dfft_execute(pme->gridsCoulomb[gridIndex].pfft_setup.get(), dir, thread, wcycle);
         }
         wallcycle_stop(wcycle, WallCycleCounter::PmeFftMixedMode);
     }
@@ -212,14 +212,12 @@ void pme_gpu_launch_spread(gmx_pme_t*                     pme,
      * grid_index=0: Coulomb PME with charges in the normal state or from FEP state A.
      * grid_index=1: Coulomb PME with charges from FEP state B.
      */
-    real** fftgrids = pme->fftgrid;
     /* Spread the coefficients on a grid */
     const bool computeSplines = true;
     const bool spreadCharges  = true;
     pme_gpu_spread(pmeGpu,
                    xReadyOnDevice,
-                   fftgrids,
-                   pme->pfft_setup,
+                   pme->gridsCoulomb,
                    computeSplines,
                    spreadCharges,
                    lambdaQ,
@@ -250,7 +248,7 @@ void pme_gpu_launch_complex_transforms(gmx_pme_t* pme, gmx_wallcycle* wcycle, co
         for (int gridIndex = 0; gridIndex < pmeGpu->common->ngrids; gridIndex++)
         {
             /* do R2C 3D-FFT */
-            t_complex* cfftgrid = pme->cfftgrid[gridIndex];
+            t_complex* cfftgrid = pme->gridsCoulomb[gridIndex].cfftgrid;
             parallel_3dfft_execute_gpu_wrapper(pme, gridIndex, GMX_FFT_REAL_TO_COMPLEX, wcycle);
 
             /* solve in k-space for our local cells */
@@ -278,10 +276,7 @@ void pme_gpu_launch_complex_transforms(gmx_pme_t* pme, gmx_wallcycle* wcycle, co
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
 }
 
-void pme_gpu_launch_gather(const gmx_pme_t* pme,
-                           gmx_wallcycle gmx_unused* wcycle,
-                           const real                lambdaQ,
-                           const bool                computeVirial)
+void pme_gpu_launch_gather(gmx_pme_t* pme, gmx_wallcycle gmx_unused* wcycle, const real lambdaQ, const bool computeVirial)
 {
     GMX_ASSERT(pme_gpu_active(pme), "This should be a GPU run of PME but it is not enabled.");
 
@@ -290,8 +285,7 @@ void pme_gpu_launch_gather(const gmx_pme_t* pme,
         return;
     }
 
-    float** fftgrids = pme->fftgrid;
-    pme_gpu_gather(pme->gpu, fftgrids, pme->pfft_setup, lambdaQ, wcycle, computeVirial);
+    pme_gpu_gather(pme->gpu, pme->gridsCoulomb, lambdaQ, wcycle, computeVirial);
 }
 
 //! Accumulate the \c forcesToAdd to \c f, using the available threads.

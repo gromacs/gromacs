@@ -1289,15 +1289,11 @@ public:
 };
 
 template<bool pmeToFft>
-void convertPmeGridToFftGrid(const PmeGpu*         pmeGpu,
-                             float*                h_fftRealGrid,
-                             gmx_parallel_3dfft_t* fftSetup,
-                             const int             gridIndex)
+void convertPmeGridToFftGrid(const PmeGpu* pmeGpu, float* h_fftRealGrid, gmx_parallel_3dfft* fftSetup, const int gridIndex)
 {
     ivec localFftNDataAsIvec, localFftOffset, localFftSizeAsIvec;
 
-    gmx_parallel_3dfft_real_limits(
-            fftSetup[gridIndex], localFftNDataAsIvec, localFftOffset, localFftSizeAsIvec);
+    gmx_parallel_3dfft_real_limits(fftSetup, localFftNDataAsIvec, localFftOffset, localFftSizeAsIvec);
     const sycl::uint3 localFftNData = { localFftNDataAsIvec[XX],
                                         localFftNDataAsIvec[YY],
                                         localFftNDataAsIvec[ZZ] };
@@ -1400,15 +1396,15 @@ void convertPmeGridToFftGrid(const PmeGpu* pmeGpu, DeviceBuffer<float>* d_fftRea
     }
 }
 
-template void convertPmeGridToFftGrid<true>(const PmeGpu*         pmeGpu,
-                                            float*                h_fftRealGrid,
-                                            gmx_parallel_3dfft_t* fftSetup,
-                                            const int             gridIndex);
+template void convertPmeGridToFftGrid<true>(const PmeGpu*       pmeGpu,
+                                            float*              h_fftRealGrid,
+                                            gmx_parallel_3dfft* fftSetup,
+                                            const int           gridIndex);
 
-template void convertPmeGridToFftGrid<false>(const PmeGpu*         pmeGpu,
-                                             float*                h_fftRealGrid,
-                                             gmx_parallel_3dfft_t* fftSetup,
-                                             const int             gridIndex);
+template void convertPmeGridToFftGrid<false>(const PmeGpu*       pmeGpu,
+                                             float*              h_fftRealGrid,
+                                             gmx_parallel_3dfft* fftSetup,
+                                             const int           gridIndex);
 
 template void convertPmeGridToFftGrid<true>(const PmeGpu*        pmeGpu,
                                             DeviceBuffer<float>* d_fftRealGrid,

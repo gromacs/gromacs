@@ -67,7 +67,7 @@ void pmeGpuGridHaloExchangeReverse(const PmeGpu* /*pmeGpu*/, gmx_wallcycle* /*wc
 template<bool forward>
 void convertPmeGridToFftGrid(const PmeGpu* /*pmeGpu*/,
                              float* /*h_fftRealGrid*/,
-                             gmx_parallel_3dfft_t* /*fftSetup*/,
+                             gmx_parallel_3dfft* /*fftSetup*/,
                              const int /*gridIndex*/)
 {
     GMX_THROW(gmx::NotImplementedError("PME decomposition is not implemented in OpenCL"));
@@ -81,12 +81,12 @@ void convertPmeGridToFftGrid(const PmeGpu* /*pmeGpu*/, DeviceBuffer<float>* /*d_
 
 template void convertPmeGridToFftGrid<true>(const PmeGpu* /*pmeGpu*/,
                                             float* /*h_fftRealGrid*/,
-                                            gmx_parallel_3dfft_t* /*fftSetup*/,
+                                            gmx_parallel_3dfft* /*fftSetup*/,
                                             const int /*gridIndex*/);
 
 template void convertPmeGridToFftGrid<false>(const PmeGpu* /*pmeGpu*/,
                                              float* /*h_fftRealGrid*/,
-                                             gmx_parallel_3dfft_t* /*fftSetup*/,
+                                             gmx_parallel_3dfft* /*fftSetup*/,
                                              const int /*gridIndex*/);
 
 template void convertPmeGridToFftGrid<true>(const PmeGpu* /*pmeGpu*/,

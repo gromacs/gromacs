@@ -164,7 +164,7 @@ void pmeInitAtoms(gmx_pme_t*               pme,
 //! PME spline computation and charge spreading
 void pmePerformSplineAndSpread(gmx_pme_t* pme, CodePath mode, bool computeSplines, bool spreadCharges);
 //! PME solving
-void pmePerformSolve(const gmx_pme_t*  pme,
+void pmePerformSolve(gmx_pme_t*        pme,
                      CodePath          mode,
                      PmeSolveAlgorithm method,
                      real              cellVolume,
@@ -189,8 +189,8 @@ void pmeSetSplineData(const gmx_pme_t*             pme,
 //! Setting gridline indices be used in spread/gather
 void pmeSetGridLineIndices(gmx_pme_t* pme, CodePath mode, const GridLineIndicesVector& gridLineIndices);
 //! Setting real grid to be used in gather
-void pmeSetRealGrid(const gmx_pme_t* pme, CodePath mode, const SparseRealGridValuesInput& gridValues);
-void pmeSetComplexGrid(const gmx_pme_t*                    pme,
+void pmeSetRealGrid(gmx_pme_t* pme, CodePath mode, const SparseRealGridValuesInput& gridValues);
+void pmeSetComplexGrid(gmx_pme_t*                          pme,
                        CodePath                            mode,
                        GridOrdering                        gridOrdering,
                        const SparseComplexGridValuesInput& gridValues);
@@ -202,9 +202,9 @@ SplineParamsDimVector pmeGetSplineData(const gmx_pme_t* pme, CodePath mode, PmeS
 //! Getting the gridline indices
 GridLineIndicesVector pmeGetGridlineIndices(const gmx_pme_t* pme, CodePath mode);
 //! Getting the real grid (spreading output of pmePerformSplineAndSpread())
-SparseRealGridValuesOutput pmeGetRealGrid(const gmx_pme_t* pme, CodePath mode);
+SparseRealGridValuesOutput pmeGetRealGrid(gmx_pme_t* pme, CodePath mode);
 //! Getting the complex grid output of pmePerformSolve()
-SparseComplexGridValuesOutput pmeGetComplexGrid(const gmx_pme_t* pme, CodePath mode, GridOrdering gridOrdering);
+SparseComplexGridValuesOutput pmeGetComplexGrid(gmx_pme_t* pme, CodePath mode, GridOrdering gridOrdering);
 //! Getting the reciprocal energy and virial
 PmeOutput pmeGetReciprocalEnergyAndVirial(const gmx_pme_t* pme, CodePath mode, PmeSolveAlgorithm method);
 

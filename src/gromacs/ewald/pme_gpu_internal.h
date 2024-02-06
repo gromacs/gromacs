@@ -59,6 +59,7 @@ class GpuEventSynchronizer;
 struct gmx_hw_info_t;
 struct gmx_pme_t; // only used in pme_gpu_reinit
 struct gmx_wallcycle;
+struct PmeAndFftGrids;
 class PmeAtomComm;
 enum class PmeForceOutputHandling;
 struct PmeGpu;
@@ -363,10 +364,9 @@ void pme_gpu_destroy_3dfft(const PmeGpu* pmeGpu);
  * \param[in]  xReadyOnDevice            Event synchronizer indicating that the coordinates are
  *                                       ready in the device memory; can be nullptr when invoked
  *                                       on a separate PME rank or from PME tests.
- * \param[out] h_grids                   The host-side grid buffers (used only if the result
- *                                       of the spread is expected on the host, e.g. testing
- *                                       or host-side FFT)
- * \param[in]  fftSetup                  Host-side FFT setup structure used in Mixed mode
+ * \param[out] h_grids                   The host-side grid buffers and FFT setup (used only
+ *                                       if the result of the spread is expected on the host,
+ *                                       e.g. testing or host-side FFT)
  * \param[in]  computeSplines            Should the computation of spline parameters and gridline
  *                                       indices be performed.
  * \param[in]  spreadCharges             Should the charges/coefficients be spread on the grid.
@@ -379,12 +379,11 @@ void pme_gpu_destroy_3dfft(const PmeGpu* pmeGpu);
  */
 GPU_FUNC_QUALIFIER void pme_gpu_spread(const PmeGpu*         GPU_FUNC_ARGUMENT(pmeGpu),
                                        GpuEventSynchronizer* GPU_FUNC_ARGUMENT(xReadyOnDevice),
-                                       float**               GPU_FUNC_ARGUMENT(h_grids),
-                                       gmx_parallel_3dfft_t* GPU_FUNC_ARGUMENT(fftSetup),
-                                       bool                  GPU_FUNC_ARGUMENT(computeSplines),
-                                       bool                  GPU_FUNC_ARGUMENT(spreadCharges),
-                                       real                  GPU_FUNC_ARGUMENT(lambda),
-                                       bool                  GPU_FUNC_ARGUMENT(useGpuDirectComm),
+                                       gmx::ArrayRef<PmeAndFftGrids> GPU_FUNC_ARGUMENT(h_grids),
+                                       bool GPU_FUNC_ARGUMENT(computeSplines),
+                                       bool GPU_FUNC_ARGUMENT(spreadCharges),
+                                       real GPU_FUNC_ARGUMENT(lambda),
+                                       bool GPU_FUNC_ARGUMENT(useGpuDirectComm),
                                        gmx::PmeCoordinateReceiverGpu* GPU_FUNC_ARGUMENT(pmeCoordinateReceiverGpu),
                                        bool           GPU_FUNC_ARGUMENT(useMdGpuGraph),
                                        gmx_wallcycle* GPU_FUNC_ARGUMENT(wcycle)) GPU_FUNC_TERM;
@@ -418,18 +417,16 @@ GPU_FUNC_QUALIFIER void pme_gpu_solve(const PmeGpu* GPU_FUNC_ARGUMENT(pmeGpu),
 /*! \libinternal \brief
  * A GPU force gathering function.
  *
- * \param[in]     pmeGpu                   The PME GPU structure.
- * \param[in]     h_grids                  The host-side grid buffer (used only in testing mode).
- * \param[in]     fftSetup                 Host-side FFT setup structure used in Mixed mode
- * \param[in]     lambda                   The lambda value to use.
- * \param[in]     wcycle                   The wallclock counter.
- * \param[in]     computeVirial            Whether this is a virial step.
+ * \param[in] pmeGpu   The PME GPU structure.
+ * \param[in] h_grids  The host-side grid buffers and FFT setup (used only in testing mode).
+ * \param[in] lambda   The lambda value to use.
+ * \param[in] wcycle   The wallclock counter.
+ * \param[in] computeVirial  Whether this is a virial step.
  */
-GPU_FUNC_QUALIFIER void pme_gpu_gather(PmeGpu*               GPU_FUNC_ARGUMENT(pmeGpu),
-                                       float**               GPU_FUNC_ARGUMENT(h_grids),
-                                       gmx_parallel_3dfft_t* GPU_FUNC_ARGUMENT(fftSetup),
-                                       float                 GPU_FUNC_ARGUMENT(lambda),
-                                       gmx_wallcycle*        GPU_FUNC_ARGUMENT(wcycle),
+GPU_FUNC_QUALIFIER void pme_gpu_gather(PmeGpu*                       GPU_FUNC_ARGUMENT(pmeGpu),
+                                       gmx::ArrayRef<PmeAndFftGrids> GPU_FUNC_ARGUMENT(h_grids),
+                                       float                         GPU_FUNC_ARGUMENT(lambda),
+                                       gmx_wallcycle*                GPU_FUNC_ARGUMENT(wcycle),
                                        bool GPU_FUNC_ARGUMENT(computeVirial)) GPU_FUNC_TERM;
 
 

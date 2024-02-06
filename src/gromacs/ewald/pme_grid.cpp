@@ -267,8 +267,11 @@ void gmx_sum_qgrid_dd(gmx_pme_t* pme, real* grid, const int direction)
 }
 
 
-int copy_pmegrid_to_fftgrid(const gmx_pme_t* pme, const real* pmegrid, real* fftgrid, int grid_index)
+int copy_pmegrid_to_fftgrid(const gmx_pme_t* pme, PmeAndFftGrids* grids)
 {
+    const real* gmx_restrict pmegrid = grids->pmeGrids.grid.grid;
+    real* gmx_restrict       fftgrid = grids->fftgrid;
+
     ivec local_fft_ndata, local_fft_offset, local_fft_size;
     ivec local_pme_size;
     int  ix, iy, iz;
@@ -276,7 +279,7 @@ int copy_pmegrid_to_fftgrid(const gmx_pme_t* pme, const real* pmegrid, real* fft
 
     /* Dimensions should be identical for A/B grid, so we just use A here */
     gmx_parallel_3dfft_real_limits(
-            pme->pfft_setup[grid_index], local_fft_ndata, local_fft_offset, local_fft_size);
+            grids->pfft_setup.get(), local_fft_ndata, local_fft_offset, local_fft_size);
 
     local_pme_size[0] = pme->pmegrid_nx;
     local_pme_size[1] = pme->pmegrid_ny;
@@ -363,8 +366,11 @@ static gmx_cycles_t omp_cyc_end(gmx_cycles_t c)
 #endif
 
 
-int copy_fftgrid_to_pmegrid(struct gmx_pme_t* pme, const real* fftgrid, real* pmegrid, int grid_index, int nthread, int thread)
+int copy_fftgrid_to_pmegrid(const gmx_pme_t* pme, PmeAndFftGrids* grids, int nthread, int thread)
 {
+    const real* gmx_restrict fftgrid = grids->fftgrid;
+    real* gmx_restrict       pmegrid = grids->pmeGrids.grid.grid;
+
     ivec local_fft_ndata, local_fft_offset, local_fft_size;
     ivec local_pme_size;
     int  ixy0, ixy1, ixy, ix, iy, iz;
@@ -380,7 +386,7 @@ int copy_fftgrid_to_pmegrid(struct gmx_pme_t* pme, const real* fftgrid, real* pm
 #endif
     /* Dimensions should be identical for A/B grid, so we just use A here */
     gmx_parallel_3dfft_real_limits(
-            pme->pfft_setup[grid_index], local_fft_ndata, local_fft_offset, local_fft_size);
+            grids->pfft_setup.get(), local_fft_ndata, local_fft_offset, local_fft_size);
 
     local_pme_size[0] = pme->pmegrid_nx;
     local_pme_size[1] = pme->pmegrid_ny;

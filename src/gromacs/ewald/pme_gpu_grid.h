@@ -46,7 +46,7 @@
 
 struct PmeGpu;
 struct gmx_wallcycle;
-typedef struct gmx_parallel_3dfft* gmx_parallel_3dfft_t;
+struct gmx_parallel_3dfft;
 
 /*! \libinternal \brief
  * Grid Halo exchange after PME spread
@@ -85,10 +85,7 @@ void pmeGpuGridHaloExchangeReverse(const PmeGpu* pmeGpu, gmx_wallcycle* wcycle);
  * \tparam  pmeToFft                  A boolean which tells if this is conversion from PME grid to FFT grid or reverse
  */
 template<bool pmetofft>
-void convertPmeGridToFftGrid(const PmeGpu*         pmeGpu,
-                             float*                h_fftRealGrid,
-                             gmx_parallel_3dfft_t* fftSetup,
-                             int                   gridIndex);
+void convertPmeGridToFftGrid(const PmeGpu* pmeGpu, float* h_fftRealGrid, gmx_parallel_3dfft* fftSetup, int gridIndex);
 
 /*! \libinternal \brief
  * Copy PME Grid with overlap region to device FFT grid and vice-versa. Used in full GPU PME decomposition
@@ -104,12 +101,12 @@ void convertPmeGridToFftGrid(const PmeGpu* pmeGpu, DeviceBuffer<float>* d_fftRea
 
 extern template void convertPmeGridToFftGrid<true>(const PmeGpu* /*pmeGpu*/,
                                                    float* /*h_fftRealGrid*/,
-                                                   gmx_parallel_3dfft_t* /*fftSetup*/,
+                                                   gmx_parallel_3dfft* /*fftSetup*/,
                                                    int /*gridIndex*/);
 
 extern template void convertPmeGridToFftGrid<false>(const PmeGpu* /*pmeGpu*/,
                                                     float* /*h_fftRealGrid*/,
-                                                    gmx_parallel_3dfft_t* /*fftSetup*/,
+                                                    gmx_parallel_3dfft* /*fftSetup*/,
                                                     int /*gridIndex*/);
 
 extern template void convertPmeGridToFftGrid<true>(const PmeGpu* /*pmeGpu*/,

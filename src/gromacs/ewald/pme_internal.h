@@ -60,8 +60,7 @@
 #include "gromacs/utility/defaultinitializationallocator.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/gmxmpi.h"
-
-#include "spline_vectors.h"
+#include "gromacs/utility/unique_cptr.h"
 
 //! A repeat of typedef from parallel_3dfft.h
 typedef struct gmx_parallel_3dfft* gmx_parallel_3dfft_t;
@@ -73,18 +72,8 @@ class EwaldBoxZScaler;
 enum class PmeRunMode;
 enum class LongRangeVdW : int;
 
-//@{
-//! Grid indices for A state for charge and Lennard-Jones C6
-#define PME_GRID_QA 0
-#define PME_GRID_C6A 2
-//@}
-
-//@{
-/*! \brief Flags that indicate the number of PME grids in use */
-#define DO_Q 2           /* Electrostatic grids have index q<2 */
-#define DO_Q_AND_LJ 4    /* non-LB LJ grids have index 2 <= q < 4 */
-#define DO_Q_AND_LJ_LB 9 /* With LB rules we need a total of 2+7 grids */
-//@}
+//! The number of grids for LJ-PME with LB combination rules
+static constexpr int sc_numGridsLJLB = 7;
 
 /*! \brief Pascal triangle coefficients scaled with (1/2)^6 for LJ-PME with LB-rules */
 static const real lb_scale_factor[] = { 1.0 / 64,  6.0 / 64, 15.0 / 64, 20.0 / 64,
@@ -159,7 +148,7 @@ public:
     void realloc(int nalloc);
 
     //! Pointers to the coefficient buffer for x, y, z
-    splinevec coefficients = { nullptr };
+    std::array<real*, DIM> coefficients = { { nullptr } };
 
 private:
     //! Storage for x coefficients
@@ -293,6 +282,25 @@ struct pmegrids_t
     ivec       nthread_comm; /* The number of threads to communicate with        */
 };
 
+/*! \brief Wrapper for gmx_parallel_3dfft_destroy to use as destructor with return type void */
+void parallel_3dfft_destroy(gmx_parallel_3dfft* pfft_setup);
+
+//! The data for PME spread/gather plus FFT grids for one set of coefficients
+struct PmeAndFftGrids
+{
+    // Grids on which we do spreading/interpolation, includes overlap
+    pmegrids_t pmeGrids;
+
+    // Pointer to the FFT grid, allocated along with pfft_setup
+    real* fftgrid = nullptr;
+
+    // Grid for complex FFT data
+    t_complex* cfftgrid = nullptr;
+
+    // The setup for the parallel 3D FFT
+    gmx::unique_cptr<gmx_parallel_3dfft, parallel_3dfft_destroy> pfft_setup;
+};
+
 /*! \brief Data structure for spline-interpolation working buffers */
 struct pme_spline_work;
 
@@ -357,18 +365,6 @@ struct gmx_pme_t
 
     LongRangeVdW ljpme_combination_rule; /* Type of combination rule in LJ-PME */
 
-    int ngrids; /* number of grids we maintain for pmegrid, (c)fftgrid and pfft_setups*/
-
-    std::array<pmegrids_t, DO_Q_AND_LJ_LB> pmegrid; /* Grids on which we do spreading/interpolation,
-                                                     * includes overlap Grid indices are ordered as
-                                                     * follows:
-                                                     * 0: Coloumb PME, state A
-                                                     * 1: Coloumb PME, state B
-                                                     * 2-8: LJ-PME
-                                                     * This can probably be done in a better way
-                                                     * but this simple hack works for now
-                                                     */
-
     /* The PME coefficient spreading grid sizes/strides, includes pme_order-1 */
     int pmegrid_nx, pmegrid_ny, pmegrid_nz;
     /* pmegrid_nz might be larger than strictly necessary to ensure
@@ -381,11 +377,24 @@ struct gmx_pme_t
     /* Work data for spreading and gathering */
     pme_spline_work* spline_work;
 
-    real** fftgrid; /* Grids for FFT. With 1D FFT decomposition this can be a pointer */
+    // PME and FFT grids for Coulomb, size ngrids, one without FEP, two with FEP
+    std::vector<PmeAndFftGrids> gridsCoulomb;
+    // PME and FFT grids for LJ
+    std::vector<PmeAndFftGrids> gridsLJ;
 
-    t_complex** cfftgrid; /* Grids for complex FFT data */
+    // Utility struct with references to grids to be used for combined Coulomb+LJ loop
+    struct GridsRef
+    {
+        PmeAndFftGrids& grids;      // The PME and FFT grids
+        bool            isCoulomb;  // true: Coulomb grids, false: LJ grids
+        int             gridsIndex; // gridsIndex=0: A-coefficients, gridsIndex=1: B-coefficients
+    };
 
-    gmx_parallel_3dfft_t* pfft_setup;
+    // List of references to Coulomb and/or LJ grids for convenient looping
+    std::vector<GridsRef> gridsRefs;
+
+    // List of pointers pointing to the same data as cfftgrids in grids
+    std::vector<t_complex*> cfftgrids;
 
     std::vector<int>  nnx, nny, nnz;
     std::vector<real> fshx, fshy, fshz;
@@ -393,7 +402,8 @@ struct gmx_pme_t
     std::vector<PmeAtomComm> atc; /* Indexed on decomposition index */
     matrix                   recipbox;
     real                     boxVolume;
-    splinevec                bsp_mod;
+    // The B-spline moduli coefficients
+    std::array<std::vector<real>, DIM> bsp_mod;
     /* Buffers to store data for local atoms for L-B combination rule
      * calculations in LJ-PME. lb_buf1 stores either the coefficients
      * for spreading/gathering (in serial), or the C6 coefficient for

@@ -245,7 +245,7 @@ void pmeInitAtoms(gmx_pme_t*               pme,
 static real* pmeGetRealGridInternal(const gmx_pme_t* pme)
 {
     const size_t gridIndex = 0;
-    return pme->fftgrid[gridIndex];
+    return pme->gridsCoulomb[gridIndex].fftgrid;
 }
 
 //! Getting local PME real grid dimensions
@@ -260,7 +260,7 @@ static void pmeGetRealGridSizesInternal(const gmx_pme_t* pme,
     {
         case CodePath::CPU:
             gmx_parallel_3dfft_real_limits(
-                    pme->pfft_setup[gridIndex], gridSize, gridOffsetUnused, paddedGridSize);
+                    pme->gridsCoulomb[gridIndex].pfft_setup.get(), gridSize, gridOffsetUnused, paddedGridSize);
             break;
 
         case CodePath::GPU:
@@ -272,10 +272,10 @@ static void pmeGetRealGridSizesInternal(const gmx_pme_t* pme,
 }
 
 //! Getting local PME complex grid pointer for test I/O
-static t_complex* pmeGetComplexGridInternal(const gmx_pme_t* pme)
+static t_complex* pmeGetComplexGridInternal(gmx_pme_t* pme)
 {
     const size_t gridIndex = 0;
-    return pme->cfftgrid[gridIndex];
+    return pme->gridsCoulomb[gridIndex].cfftgrid;
 }
 
 //! Getting local PME complex grid dimensions
@@ -285,13 +285,16 @@ static void pmeGetComplexGridSizesInternal(const gmx_pme_t* pme,
 {
     const size_t gridIndex = 0;
     IVec         gridOffsetUnused, complexOrderUnused;
-    gmx_parallel_3dfft_complex_limits(
-            pme->pfft_setup[gridIndex], complexOrderUnused, gridSize, gridOffsetUnused, paddedGridSize); // TODO: what about YZX ordering?
+    gmx_parallel_3dfft_complex_limits(pme->gridsCoulomb[gridIndex].pfft_setup.get(),
+                                      complexOrderUnused,
+                                      gridSize,
+                                      gridOffsetUnused,
+                                      paddedGridSize); // TODO: what about YZX ordering?
 }
 
 //! Getting the PME grid memory buffer and its sizes - template definition
 template<typename ValueType>
-static void pmeGetGridAndSizesInternal(const gmx_pme_t* /*unused*/,
+static void pmeGetGridAndSizesInternal(gmx_pme_t* /*unused*/,
                                        CodePath /*unused*/,
                                        ValueType*& /*unused*/, //NOLINT(google-runtime-references)
                                        IVec& /*unused*/,       //NOLINT(google-runtime-references)
@@ -299,7 +302,7 @@ static void pmeGetGridAndSizesInternal(const gmx_pme_t* /*unused*/,
 
 //! Getting the PME real grid memory buffer and its sizes
 template<>
-void pmeGetGridAndSizesInternal<real>(const gmx_pme_t* pme, CodePath mode, real*& grid, IVec& gridSize, IVec& paddedGridSize)
+void pmeGetGridAndSizesInternal<real>(gmx_pme_t* pme, CodePath mode, real*& grid, IVec& gridSize, IVec& paddedGridSize)
 {
     grid = pmeGetRealGridInternal(pme);
     pmeGetRealGridSizesInternal(pme, mode, gridSize, paddedGridSize);
@@ -307,7 +310,7 @@ void pmeGetGridAndSizesInternal<real>(const gmx_pme_t* pme, CodePath mode, real*
 
 //! Getting the PME complex grid memory buffer and its sizes
 template<>
-void pmeGetGridAndSizesInternal<t_complex>(const gmx_pme_t* pme,
+void pmeGetGridAndSizesInternal<t_complex>(gmx_pme_t* pme,
                                            CodePath /*unused*/,
                                            t_complex*& grid,
                                            IVec&       gridSize,
@@ -324,28 +327,19 @@ void pmePerformSplineAndSpread(gmx_pme_t* pme,
                                bool       spreadCharges)
 {
     GMX_RELEASE_ASSERT(pme != nullptr, "PME data is not initialized");
-    PmeAtomComm* atc                          = &(pme->atc[0]);
-    const size_t gridIndex                    = 0;
-    const bool   computeSplinesForZeroCharges = true;
-    real**       fftgrid                      = spreadCharges ? pme->fftgrid : nullptr;
-    real*        pmegrid                      = pme->pmegrid[gridIndex].grid.grid;
+    PmeAtomComm*    atc                          = &(pme->atc[0]);
+    const size_t    gridIndex                    = 0;
+    PmeAndFftGrids& grids                        = pme->gridsCoulomb[gridIndex];
+    const bool      computeSplinesForZeroCharges = true;
 
     switch (mode)
     {
         case CodePath::CPU:
-            spread_on_grid(pme,
-                           atc,
-                           &pme->pmegrid[gridIndex],
-                           computeSplines,
-                           spreadCharges,
-                           fftgrid != nullptr ? fftgrid[gridIndex] : nullptr,
-                           computeSplinesForZeroCharges,
-                           gridIndex);
+            spread_on_grid(pme, atc, &grids, computeSplines, spreadCharges, computeSplinesForZeroCharges);
             if (spreadCharges && !pme->bUseThreads)
             {
-                wrap_periodic_pmegrid(pme, pmegrid);
-                copy_pmegrid_to_fftgrid(
-                        pme, pmegrid, fftgrid != nullptr ? fftgrid[gridIndex] : nullptr, gridIndex);
+                wrap_periodic_pmegrid(pme, grids.pmeGrids.grid.grid);
+                copy_pmegrid_to_fftgrid(pme, &grids);
             }
             break;
 
@@ -363,8 +357,7 @@ void pmePerformSplineAndSpread(gmx_pme_t* pme,
 
             pme_gpu_spread(pme->gpu,
                            xReadyOnDevice,
-                           fftgrid,
-                           pme->pfft_setup,
+                           pme->gridsCoulomb,
                            computeSplines,
                            spreadCharges,
                            lambdaQ,
@@ -403,7 +396,7 @@ static real* pmeGetSplineDataInternal(const gmx_pme_t* pme, PmeSplineDataType ty
 }
 
 //! PME solving
-void pmePerformSolve(const gmx_pme_t*  pme,
+void pmePerformSolve(gmx_pme_t*        pme,
                      CodePath          mode,
                      PmeSolveAlgorithm method,
                      real              cellVolume,
@@ -428,13 +421,17 @@ void pmePerformSolve(const gmx_pme_t*  pme,
                     break;
 
                 case PmeSolveAlgorithm::LennardJones:
+                    // Swap the complex grid to be passed to solve with h_grid
+                    std::swap(pme->gridsLJ[0].cfftgrid, h_grid);
                     solve_pme_lj_yzx(pme,
-                                     &h_grid,
+                                     pme->gridsLJ,
                                      useLorentzBerthelot,
                                      cellVolume,
                                      computeEnergyAndVirial,
                                      pme->nthread,
                                      threadIndex);
+                    // Swap back
+                    std::swap(pme->gridsLJ[0].cfftgrid, h_grid);
                     break;
 
                 default: GMX_THROW(InternalError("Test not implemented for this mode"));
@@ -462,11 +459,11 @@ void pmePerformGather(gmx_pme_t* pme, CodePath mode, ForcesVector& forces)
     PmeAtomComm* atc       = &(pme->atc[0]);
     const Index  atomCount = atc->numAtoms();
     GMX_RELEASE_ASSERT(forces.ssize() == atomCount, "Invalid force buffer size");
-    const real   scale       = 1.0;
-    const size_t threadIndex = 0;
-    const size_t gridIndex   = 0;
-    real*        pmegrid     = pme->pmegrid[gridIndex].grid.grid;
-    real**       fftgrid     = pme->fftgrid;
+    const real      scale       = 1.0;
+    const size_t    threadIndex = 0;
+    const size_t    gridIndex   = 0;
+    PmeAndFftGrids& grids       = pme->gridsCoulomb[gridIndex];
+    real*           pmegrid     = grids.pmeGrids.grid.grid;
 
     switch (mode)
     {
@@ -477,7 +474,7 @@ void pmePerformGather(gmx_pme_t* pme, CodePath mode, ForcesVector& forces)
                 // something which is normally done in serial spline computation (make_thread_local_ind())
                 atc->spline[threadIndex].n = atomCount;
             }
-            copy_fftgrid_to_pmegrid(pme, fftgrid[gridIndex], pmegrid, gridIndex, pme->nthread, threadIndex);
+            copy_fftgrid_to_pmegrid(pme, &grids, pme->nthread, threadIndex);
             unwrap_periodic_pmegrid(pme, pmegrid);
             gather_f_bsplines(pme, pmegrid, true, atc, &atc->spline[threadIndex], scale);
             break;
@@ -493,7 +490,7 @@ void pmePerformGather(gmx_pme_t* pme, CodePath mode, ForcesVector& forces)
             PmeOutput  output = pme_gpu_getOutput(*pme, computeEnergyAndVirial, lambdaQ);
             GMX_ASSERT(forces.size() == output.forces_.size(),
                        "Size of force buffers did not match");
-            pme_gpu_gather(pme->gpu, fftgrid, pme->pfft_setup, lambdaQ, nullptr, computeEnergyAndVirial);
+            pme_gpu_gather(pme->gpu, pme->gridsCoulomb, lambdaQ, nullptr, computeEnergyAndVirial);
             std::copy(std::begin(output.forces_), std::end(output.forces_), std::begin(forces));
         }
         break;
@@ -738,7 +735,7 @@ inline size_t pmeGetGridPlainIndexInternal(const IVec& index, const IVec& padded
 
 //! Setting real or complex grid
 template<typename ValueType>
-static void pmeSetGridInternal(const gmx_pme_t*                        pme,
+static void pmeSetGridInternal(gmx_pme_t*                              pme,
                                CodePath                                mode,
                                GridOrdering                            gridOrdering,
                                const SparseGridValuesInput<ValueType>& gridValues)
@@ -770,13 +767,13 @@ static void pmeSetGridInternal(const gmx_pme_t*                        pme,
 }
 
 //! Setting real grid to be used in gather
-void pmeSetRealGrid(const gmx_pme_t* pme, CodePath mode, const SparseRealGridValuesInput& gridValues)
+void pmeSetRealGrid(gmx_pme_t* pme, CodePath mode, const SparseRealGridValuesInput& gridValues)
 {
     pmeSetGridInternal<real>(pme, mode, GridOrdering::XYZ, gridValues);
 }
 
 //! Setting complex grid to be used in solve
-void pmeSetComplexGrid(const gmx_pme_t*                    pme,
+void pmeSetComplexGrid(gmx_pme_t*                          pme,
                        CodePath                            mode,
                        GridOrdering                        gridOrdering,
                        const SparseComplexGridValuesInput& gridValues)
@@ -837,9 +834,7 @@ GridLineIndicesVector pmeGetGridlineIndices(const gmx_pme_t* pme, CodePath mode)
 
 //! Getting real or complex grid - only non zero values
 template<typename ValueType>
-static SparseGridValuesOutput<ValueType> pmeGetGridInternal(const gmx_pme_t* pme,
-                                                            CodePath         mode,
-                                                            GridOrdering     gridOrdering)
+static SparseGridValuesOutput<ValueType> pmeGetGridInternal(gmx_pme_t* pme, CodePath mode, GridOrdering gridOrdering)
 {
     IVec       gridSize(0, 0, 0), paddedGridSize(0, 0, 0);
     ValueType* grid;
@@ -876,13 +871,13 @@ static SparseGridValuesOutput<ValueType> pmeGetGridInternal(const gmx_pme_t* pme
 }
 
 //! Getting the real grid (spreading output of pmePerformSplineAndSpread())
-SparseRealGridValuesOutput pmeGetRealGrid(const gmx_pme_t* pme, CodePath mode)
+SparseRealGridValuesOutput pmeGetRealGrid(gmx_pme_t* pme, CodePath mode)
 {
     return pmeGetGridInternal<real>(pme, mode, GridOrdering::XYZ);
 }
 
 //! Getting the complex grid output of pmePerformSolve()
-SparseComplexGridValuesOutput pmeGetComplexGrid(const gmx_pme_t* pme, CodePath mode, GridOrdering gridOrdering)
+SparseComplexGridValuesOutput pmeGetComplexGrid(gmx_pme_t* pme, CodePath mode, GridOrdering gridOrdering)
 {
     return pmeGetGridInternal<t_complex>(pme, mode, gridOrdering);
 }

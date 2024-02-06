@@ -36,15 +36,24 @@
 
 #include "gromacs/utility/real.h"
 
-#include "pme_internal.h"
+struct gmx_pme_t;
+struct PmeAndFftGrids;
+class PmeAtomComm;
 
-void spread_on_grid(const gmx_pme_t*  pme,
-                    PmeAtomComm*      atc,
-                    const pmegrids_t* grids,
-                    gmx_bool          bCalcSplines,
-                    gmx_bool          bSpread,
-                    real*             fftgrid,
-                    gmx_bool          bDoSplines,
-                    int               grid_index);
+/*! \brief Spread coefficients on the grid
+ *
+ * \param[in]     pme    PME data
+ * \param[in,out] atc    Local and/or communicated atom to spread and their spline data
+ * \param[in,out] grids  The grids
+ * \param[in]     calculateSplines  Whether to calculate the splines
+ * \param[in]     doSpreading       Whether to spead on the grid
+ * \param[in]     computeAllSplineCoefficients  When false, only compute spline coefficients for atoms with non-zero coefficient
+ */
+void spread_on_grid(const gmx_pme_t* pme,
+                    PmeAtomComm*     atc,
+                    PmeAndFftGrids*  grids,
+                    bool             calculateSplines,
+                    bool             doSpreading,
+                    bool             computeAllSplineCoefficients);
 
 #endif

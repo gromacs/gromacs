@@ -117,7 +117,7 @@ public:
         const char* dimString[] = { "X", "Y", "Z" };
         for (int i = 0; i < DIM; i++)
         {
-            checker.checkSequenceArray(gridSize[i], pme->bsp_mod[i], dimString[i]);
+            checker.checkSequenceArray(gridSize[i], pme->bsp_mod[i].data(), dimString[i]);
         }
     }
 };

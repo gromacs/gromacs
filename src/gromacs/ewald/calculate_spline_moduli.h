@@ -34,12 +34,15 @@
 #ifndef GMX_EWALD_CALCULATE_SPLINE_MODULI_H
 #define GMX_EWALD_CALCULATE_SPLINE_MODULI_H
 
-#include "spline_vectors.h"
+#include <array>
+#include <vector>
+
+#include "gromacs/utility/real.h"
 
 /* Calulate plain SPME B-spline interpolation */
-void make_bspline_moduli(splinevec bsp_mod, int nx, int ny, int nz, int order);
+std::array<std::vector<real>, 3> make_bspline_moduli(int nx, int ny, int nz, int order);
 
 /* Calculate the P3M B-spline moduli */
-void make_p3m_bspline_moduli(splinevec bsp_mod, int nx, int ny, int nz, int order);
+std::array<std::vector<real>, 3> make_p3m_bspline_moduli(int nx, int ny, int nz, int order);
 
 #endif

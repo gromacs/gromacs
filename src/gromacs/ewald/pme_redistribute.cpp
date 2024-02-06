@@ -54,7 +54,6 @@
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxmpi.h"
-#include "gromacs/utility/smalloc.h"
 
 #include "pme_internal.h"
 
@@ -313,9 +312,8 @@ static void dd_pmeredist_pos_coeffs(gmx_pme_t*                     pme,
 
         if (nsend > gmx::ssize(pme->bufr) || nsend > gmx::ssize(pme->bufv))
         {
-            const size_t newAlloc = over_alloc_dd(nsend);
-            pme->bufr.resize(newAlloc);
-            pme->bufv.resize(newAlloc);
+            pme->bufv.resize(nsend);
+            pme->bufr.resize(nsend);
         }
 
         int numAtoms = sendCount[atc->slabIndex];
