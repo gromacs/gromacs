@@ -16,6 +16,16 @@ in the :ref:`release-notes`.
 Fixes where mdrun could behave incorrectly
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Correct forces with virtual_sites1
+""""""""""""""""""""""""""""""""""
+
+Virtual sites with a single constructing atom did not have their
+force distributed to the constructing atom. This likely did not cause
+silent errors, as this completely defeats the purpose of such virtual
+sites.
+
+:issue:`4978`
+
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
 
