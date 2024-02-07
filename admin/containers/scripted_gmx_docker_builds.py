@@ -129,12 +129,19 @@ _rocm_extra_packages = [
     #             apt_keys=['http://repo.radeon.com/rocm/rocm.gpg.key'],
     #             apt_repositories=['deb [arch=amd64] http://repo.radeon.com/rocm/apt/X.Y.Z/ ubuntu main']
     "clinfo",
-    "hipfft",
     "libelf1",
+]
+
+_rocm_version_dependent_packages = [
+    # The following require
+    #             apt_keys=['http://repo.radeon.com/rocm/rocm.gpg.key'],
+    #             apt_repositories=['deb [arch=amd64] http://repo.radeon.com/rocm/apt/X.Y.Z/ ubuntu main']
+    "hipfft",
+    "hipfft-dev",
     "rocfft",
     "rocfft-dev",
-    "rocm-opencl",
     "rocm-dev",
+    "rocm-opencl",
 ]
 
 # Extra packages required to build CP2K
@@ -314,7 +321,23 @@ def get_rocm_packages(args) -> typing.List[str]:
     if args.rocm is None:
         return []
     else:
-        return _rocm_extra_packages
+        packages = _rocm_extra_packages
+        packages.extend(get_rocm_version_dependent_packages(args))
+        return packages
+
+
+def get_rocm_version_dependent_packages(args) -> typing.List[str]:
+    packages = []
+    rocm_version = args.rocm
+    rocm_version_parsed = [int(i) for i in rocm_version.split(".")]
+    # if the version does not contain the final patch version, add it manually to make sure that
+    # we can install the packages
+    if len(rocm_version_parsed) < 3:
+        rocm_version = rocm_version + ".0"
+    for entry in _rocm_version_dependent_packages:
+        packages.append(entry + rocm_version)
+
+    return packages
 
 
 def get_rocm_repository(args) -> "hpccm.building_blocks.base":

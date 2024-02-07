@@ -26,6 +26,7 @@ args[${#args[@]}]="--llvm --doxygen --mpi openmpi --venvs 3.7.7 3.9.13"
 args[${#args[@]}]="--ubuntu 22.04 --llvm 15 --cuda 11.7.1 --hipsycl 0.9.4 --rocm 5.3.3 --mpi mpich"
 args[${#args[@]}]="--ubuntu 22.04 --hipsycl 23.10.0 --rocm 5.7.1"
 args[${#args[@]}]="--intel-llvm 2022-09 --cuda 11.5.2 --rocm 5.3"
+args[${#args[@]}]="--ubuntu 22.04 --rocm 6.0.2 --mpi"
 
 echo
 echo "Consider pulling the following images for build layer cache."
