@@ -85,15 +85,34 @@ GmxH5mdTimeDataBlock::GmxH5mdTimeDataBlock(hid_t                container,
     /* With these default settings new data sets cannot be created. Just load existing from file (if any). */
     if (datatype == -1 && numEntries == 0)
     {
-        mainDataSet_ = H5Dopen(group_, c_valueName, H5P_DEFAULT);
+        /* The chunk cache size must be set when opening the data set. We must first open and check the chunk size. */
+        hid_t tmpDataSet = H5Dopen(group_, c_valueName, H5P_DEFAULT);
+
+        hid_t createPropertyList = H5Dget_create_plist(tmpDataSet);
+        if (H5Pget_chunk(createPropertyList, DIM, chunkDims) < 0)
+        {
+            H5Eprint2(H5E_DEFAULT, nullptr);
+            throw gmx::FileIOError("Error getting chunk size of data set.");
+        }
+        H5Dclose(tmpDataSet);
+
+        size_t cacheSize = sizeof(real);
+        for (int i = 0; i < DIM; i++)
+        {
+            cacheSize *= chunkDims[i];
+        }
+        hid_t accessPropertyList = H5Pcreate(H5P_DATASET_ACCESS);
+        if (H5Pset_chunk_cache(accessPropertyList, H5D_CHUNK_CACHE_NSLOTS_DEFAULT, cacheSize, H5D_CHUNK_CACHE_W0_DEFAULT)
+            < 0)
+        {
+            H5Eprint2(H5E_DEFAULT, nullptr);
+            throw gmx::FileIOError("Error setting chunk size of data set.");
+        }
+        mainDataSet_ = H5Dopen(group_, c_valueName, accessPropertyList);
         stepDataSet_ = H5Dopen(group_, c_stepName, H5P_DEFAULT);
         timeDataSet_ = H5Dopen(group_, c_timeName, H5P_DEFAULT);
 
         updateUnitsFromFile();
-
-        hid_t dataSpace          = H5Dget_space(mainDataSet_);
-        hid_t createPropertyList = H5Dget_create_plist(mainDataSet_);
-        H5Pget_chunk(createPropertyList, DIM, chunkDims);
     }
     else
     {
@@ -118,16 +137,6 @@ GmxH5mdTimeDataBlock::GmxH5mdTimeDataBlock(hid_t                container,
         timeDataSet_ = openOrCreateDataSet<1>(
                 group_, c_timeName, timeUnit_.c_str(), timeDatatype, chunkDimsTimeStep, CompressionAlgorithm::None, 0);
     }
-
-    /* Set a reasonable cache based on chunk sizes. The cache is not stored in file, so must be set when opening a dataset */
-    size_t cacheSize = sizeof(real);
-    for (int i = 0; i < DIM; i++)
-    {
-        cacheSize *= chunkDims[i];
-    }
-    hid_t accessPropertyList = H5Dget_create_plist(mainDataSet_);
-    H5Pset_chunk_cache(
-            accessPropertyList, H5D_CHUNK_CACHE_NSLOTS_DEFAULT, cacheSize, H5D_CHUNK_CACHE_W0_DEFAULT);
 }
 
 void GmxH5mdTimeDataBlock::closeAllDataSets()
@@ -135,14 +144,17 @@ void GmxH5mdTimeDataBlock::closeAllDataSets()
     if (mainDataSet_ >= 0)
     {
         H5Dclose(mainDataSet_);
+        mainDataSet_ = -1;
     }
     if (timeDataSet_ >= 0)
     {
         H5Dclose(timeDataSet_);
+        timeDataSet_ = -1;
     }
     if (stepDataSet_ >= 0)
     {
         H5Dclose(stepDataSet_);
+        stepDataSet_ = -1;
     }
 }
 

@@ -161,6 +161,9 @@ hid_t openOrCreateDataSet(hid_t                container,
         H5Pset_chunk(createPropertyList, numDims, chunkDims);
         setNumericFillValue(createPropertyList, dataType);
 
+        /* Don't fill and compress partial chunks (usually at the end of the file). */
+        H5Pset_chunk_opts(createPropertyList, H5D_CHUNK_DONT_FILTER_PARTIAL_CHUNKS);
+
         switch (compression)
         {
             case CompressionAlgorithm::LossySz3:
@@ -193,6 +196,7 @@ hid_t openOrCreateDataSet(hid_t                container,
                 {
                     throw gmx::FileIOError("Cannot set shuffle filter.");
                 }
+                /* Fall through */
             case CompressionAlgorithm::LosslessNoShuffle:
                 if (H5Pset_deflate(createPropertyList, 6) < 0)
                 {
@@ -203,6 +207,14 @@ hid_t openOrCreateDataSet(hid_t                container,
             case CompressionAlgorithm::None: break;
             default: throw gmx::FileIOError("Unrecognized compression mode.");
         }
+        /* Set a reasonable cache based on chunk sizes. The cache is not stored in file, so must be set when opening a dataset */
+        size_t cacheSize = sizeof(real);
+        for (int i = 0; i < DIM; i++)
+        {
+            cacheSize *= chunkDims[i];
+        }
+        H5Pset_chunk_cache(
+                accessPropertyList, H5D_CHUNK_CACHE_NSLOTS_DEFAULT, cacheSize, H5D_CHUNK_CACHE_W0_DEFAULT);
 
         dataSet = H5Dcreate(
                 container, name, dataType, dataSpace, H5P_DEFAULT, createPropertyList, accessPropertyList);
@@ -248,7 +260,7 @@ void writeData(hid_t dataSet, const void* data, hsize_t frameToWrite)
         }
         if (debug)
         {
-            fprintf(debug, "Resizing dataSet from %" PRId64 " to %" PRId64 "\n", currentDims[0], newDims[0]);
+            fprintf(debug, "Resizing dataSet from %llu to %llu\n", currentDims[0], newDims[0]);
         }
         H5Dset_extent(dataSet, newDims);
         dataSpace = H5Dget_space(dataSet);

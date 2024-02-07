@@ -288,8 +288,8 @@ void GmxH5mdIo::setUpParticlesDataBlocks(int     writeCoordinatesSteps,
     {
         if (xCompressionError > 0)
         {
-            /* Use no more than 21 frames per chunk (compression unit). Use fewer frames per chunk if there are many atoms. */
-            numFramesPerChunk    = std::min(21, int(std::ceil(1e6f / numParticles)));
+            /* Use no more than 10 frames per chunk (compression unit). Use fewer frames per chunk if there are many atoms. */
+            numFramesPerChunk    = std::min(10, int(std::ceil(2e6f / numParticles)));
             compressionAlgorithm = CompressionAlgorithm::LossySz3;
 
             /* Register the SZ3 filter. This is not necessary when creating a dataset with the filter,
@@ -561,8 +561,8 @@ void GmxH5mdIo::writeFrame(int64_t      step,
     hsize_t              numFramesPerChunk    = 1;
     if (xCompressionError != 0)
     {
-        /* Use no more than 21 frames per chunk (compression unit). Use fewer frames per chunk if there are many atoms. */
-        numFramesPerChunk    = std::min(21, int(std::ceil(1e6f / numParticles)));
+        /* Use no more than 10 frames per chunk (compression unit). Use fewer frames per chunk if there are many atoms. */
+        numFramesPerChunk    = std::min(10, int(std::ceil(2e6f / numParticles)));
         compressionAlgorithm = CompressionAlgorithm::LossySz3;
 
         /* Register the SZ3 filter. This is not necessary when creating a dataset with the filter,
