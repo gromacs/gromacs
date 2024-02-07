@@ -6,20 +6,21 @@
 gmx [-s [&lt;.tpr&gt;]] [-cpi [&lt;.cpt&gt;]] [-table [&lt;.xvg&gt;]] [-tablep [&lt;.xvg&gt;]]
     [-tableb [&lt;.xvg&gt; [...]]] [-rerun [&lt;.xtc/.trr/...&gt;]] [-ei [&lt;.edi&gt;]]
     [-multidir [&lt;dir&gt; [...]]] [-awh [&lt;.xvg&gt;]] [-membed [&lt;.dat&gt;]]
-    [-mp [&lt;.top&gt;]] [-mn [&lt;.ndx&gt;]] [-o [&lt;.trr/.cpt/...&gt;]] [-x [&lt;.xtc/.tng&gt;]]
-    [-cpo [&lt;.cpt&gt;]] [-c [&lt;.gro/.g96/...&gt;]] [-e [&lt;.edr&gt;]] [-g [&lt;.log&gt;]]
-    [-dhdl [&lt;.xvg&gt;]] [-field [&lt;.xvg&gt;]] [-tpi [&lt;.xvg&gt;]] [-tpid [&lt;.xvg&gt;]]
-    [-eo [&lt;.xvg&gt;]] [-px [&lt;.xvg&gt;]] [-pf [&lt;.xvg&gt;]] [-ro [&lt;.xvg&gt;]]
-    [-ra [&lt;.log&gt;]] [-rs [&lt;.log&gt;]] [-rt [&lt;.log&gt;]] [-mtx [&lt;.mtx&gt;]]
-    [-if [&lt;.xvg&gt;]] [-swap [&lt;.xvg&gt;]] [-deffnm &lt;string&gt;] [-xvg &lt;enum&gt;]
-    [-dd &lt;vector&gt;] [-ddorder &lt;enum&gt;] [-npme &lt;int&gt;] [-nt &lt;int&gt;] [-ntmpi &lt;int&gt;]
-    [-ntomp &lt;int&gt;] [-ntomp_pme &lt;int&gt;] [-pin &lt;enum&gt;] [-pinoffset &lt;int&gt;]
-    [-pinstride &lt;int&gt;] [-gpu_id &lt;string&gt;] [-gputasks &lt;string&gt;] [-[no]ddcheck]
-    [-rdd &lt;real&gt;] [-rcon &lt;real&gt;] [-dlb &lt;enum&gt;] [-dds &lt;real&gt;] [-nb &lt;enum&gt;]
-    [-nstlist &lt;int&gt;] [-[no]tunepme] [-pme &lt;enum&gt;] [-pmefft &lt;enum&gt;]
-    [-bonded &lt;enum&gt;] [-update &lt;enum&gt;] [-[no]v] [-pforce &lt;real&gt;] [-[no]reprod]
-    [-cpt &lt;real&gt;] [-[no]cpnum] [-[no]append] [-nsteps &lt;int&gt;] [-maxh &lt;real&gt;]
-    [-replex &lt;int&gt;] [-nex &lt;int&gt;] [-reseed &lt;int&gt;]
+    [-mp [&lt;.top&gt;]] [-mn [&lt;.ndx&gt;]] [-o [&lt;.trr/.cpt/...&gt;]]
+    [-x [&lt;.xtc/.tng/...&gt;]] [-cpo [&lt;.cpt&gt;]] [-c [&lt;.gro/.g96/...&gt;]]
+    [-e [&lt;.edr&gt;]] [-g [&lt;.log&gt;]] [-dhdl [&lt;.xvg&gt;]] [-field [&lt;.xvg&gt;]]
+    [-tpi [&lt;.xvg&gt;]] [-tpid [&lt;.xvg&gt;]] [-eo [&lt;.xvg&gt;]] [-px [&lt;.xvg&gt;]]
+    [-pf [&lt;.xvg&gt;]] [-ro [&lt;.xvg&gt;]] [-ra [&lt;.log&gt;]] [-rs [&lt;.log&gt;]]
+    [-rt [&lt;.log&gt;]] [-mtx [&lt;.mtx&gt;]] [-if [&lt;.xvg&gt;]] [-swap [&lt;.xvg&gt;]]
+    [-deffnm &lt;string&gt;] [-xvg &lt;enum&gt;] [-dd &lt;vector&gt;] [-ddorder &lt;enum&gt;]
+    [-npme &lt;int&gt;] [-nt &lt;int&gt;] [-ntmpi &lt;int&gt;] [-ntomp &lt;int&gt;]
+    [-ntomp_pme &lt;int&gt;] [-pin &lt;enum&gt;] [-pinoffset &lt;int&gt;] [-pinstride &lt;int&gt;]
+    [-gpu_id &lt;string&gt;] [-gputasks &lt;string&gt;] [-[no]ddcheck] [-rdd &lt;real&gt;]
+    [-rcon &lt;real&gt;] [-dlb &lt;enum&gt;] [-dds &lt;real&gt;] [-nb &lt;enum&gt;] [-nstlist &lt;int&gt;]
+    [-[no]tunepme] [-pme &lt;enum&gt;] [-pmefft &lt;enum&gt;] [-bonded &lt;enum&gt;]
+    [-update &lt;enum&gt;] [-[no]v] [-pforce &lt;real&gt;] [-[no]reprod] [-cpt &lt;real&gt;]
+    [-[no]cpnum] [-[no]append] [-nsteps &lt;int&gt;] [-maxh &lt;real&gt;] [-replex &lt;int&gt;]
+    [-nex &lt;int&gt;] [-reseed &lt;int&gt;]
 
 DESCRIPTION
 
@@ -150,7 +151,7 @@ Options to specify input files:
  -tableb [&lt;.xvg&gt; [...]]     (table.xvg)      (Opt.)
            xvgr/xmgr file
  -rerun  [&lt;.xtc/.trr/...&gt;]  (rerun.xtc)      (Opt.)
-           Trajectory: xtc trr cpt gro g96 pdb tng
+           Trajectory: xtc trr cpt gro g96 pdb tng h5md
  -ei     [&lt;.edi&gt;]           (sam.edi)        (Opt.)
            ED sampling input
  -multidir [&lt;dir&gt; [...]]    (rundir)         (Opt.)
@@ -167,9 +168,10 @@ Options to specify input files:
 Options to specify output files:
 
  -o      [&lt;.trr/.cpt/...&gt;]  (traj.trr)
-           Full precision trajectory: trr cpt tng
- -x      [&lt;.xtc/.tng&gt;]      (traj_comp.xtc)  (Opt.)
-           Compressed trajectory (tng format or portable xdr format)
+           Full precision trajectory: trr cpt tng h5md
+ -x      [&lt;.xtc/.tng/...&gt;]  (traj_comp.xtc)  (Opt.)
+           Compressed trajectory (tng format or portable xdr format): xtc tng
+           h5md
  -cpo    [&lt;.cpt&gt;]           (state.cpt)      (Opt.)
            Checkpoint file
  -c      [&lt;.gro/.g96/...&gt;]  (confout.gro)
