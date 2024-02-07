@@ -19,6 +19,11 @@ Fixes where mdrun could behave incorrectly
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
 
+Fixed parsing of phases in gmx nmtraj
+"""""""""""""""""""""""""""""""""""""
+
+:issue:`4968`
+
 Fixes that affect portability
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
