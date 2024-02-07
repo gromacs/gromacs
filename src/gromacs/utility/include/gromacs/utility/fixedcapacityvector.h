@@ -130,11 +130,11 @@ public:
      * \note Use ssize for any expression involving arithmetic operations
          (including loop indices).
      */
-    size_type size() const noexcept { return size_; }
+    constexpr size_type size() const noexcept { return size_; }
     //! Returns the signed size
-    Index ssize() const noexcept { return size_; }
+    constexpr Index ssize() const noexcept { return size_; }
     //! Returns whether the vector is empty
-    bool empty() const noexcept { return size_ == 0; }
+    constexpr bool empty() const noexcept { return size_ == 0; }
 
     //! Returns the vector capacity (max. number of elements that can be stored)
     static constexpr size_type max_size() noexcept { return capacity_; }
@@ -142,19 +142,19 @@ public:
     static constexpr size_type capacity() noexcept { return capacity_; }
 
     //! Const access an element
-    const_reference operator[](size_type n) const noexcept
+    constexpr const_reference operator[](size_type n) const noexcept
     {
         GMX_ASSERT(n < size(), "Index should be in range");
         return data_[n];
     }
     //! Access an element
-    reference operator[](size_type n) noexcept
+    constexpr reference operator[](size_type n) noexcept
     {
         GMX_ASSERT(n < size(), "Index should be in range");
         return data_[n];
     }
     //! Const access an element, throws an out_of_range exception when out of range
-    const_reference at(size_type n) const
+    constexpr const_reference at(size_type n) const
     {
         if (n >= size())
         {
@@ -163,7 +163,7 @@ public:
         return data_[n];
     }
     //! Access an element, throws an out_of_range exception when out of range
-    reference at(size_type n)
+    constexpr reference at(size_type n)
     {
         if (n >= size())
         {
@@ -173,22 +173,22 @@ public:
     }
     //! Returns the first element
     //! Returns the first element
-    reference front() noexcept { return data_.front(); }
+    constexpr reference front() noexcept { return data_.front(); }
     //! Returns the first element (const version)
-    const_reference front() const noexcept { return data_.front(); }
+    constexpr const_reference front() const noexcept { return data_.front(); }
     //! Returns the last element
-    reference back() noexcept { return data_[size_ - 1]; }
+    constexpr reference back() noexcept { return data_[size_ - 1]; }
     //! Returns the last element (const version)
-    const_reference back() const noexcept { return data_[size_ - 1]; }
+    constexpr const_reference back() const noexcept { return data_[size_ - 1]; }
 
     //! Returns a raw pointer to the contents of the array
-    const T* data() const noexcept { return data_.data(); }
+    constexpr T* data() const noexcept { return data_.data(); }
 
     //! Returns a raw pointer to the contents of the array
-    T* data() noexcept { return data_.data(); }
+    constexpr T* data() noexcept { return data_.data(); }
 
     //! Adds element at the end
-    void push_back(const T& value) noexcept
+    constexpr void push_back(const T& value) noexcept
     {
         GMX_ASSERT(size() < capacity_, "Cannot add more elements than the capacity");
         data_[size_] = value;
@@ -196,7 +196,7 @@ public:
     }
 
     //! Deletes last element
-    void pop_back() noexcept
+    constexpr void pop_back() noexcept
     {
         GMX_ASSERT(!empty(), "Can only delete last element when present");
         if constexpr (!std::is_trivially_destructible_v<T>)
@@ -208,7 +208,7 @@ public:
 
     //! Constructs an element at the end
     template<class... Args>
-    reference emplace_back(Args&&... args)
+    constexpr reference emplace_back(Args&&... args)
     {
         GMX_ASSERT(size() < capacity_, "Cannot add more elements than the capacity");
         if constexpr (std::is_move_assignable<T>::value)
@@ -225,7 +225,7 @@ public:
     }
 
     //! Clears content
-    void clear() noexcept
+    constexpr void clear() noexcept
     {
         if constexpr (!std::is_trivially_destructible_v<T>)
         {
