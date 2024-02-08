@@ -161,8 +161,15 @@ hid_t openOrCreateDataSet(hid_t                container,
         H5Pset_chunk(createPropertyList, numDims, chunkDims);
         setNumericFillValue(createPropertyList, dataType);
 
-        /* Don't fill and compress partial chunks (usually at the end of the file). */
-        H5Pset_chunk_opts(createPropertyList, H5D_CHUNK_DONT_FILTER_PARTIAL_CHUNKS);
+        /* It would be nice to have an option not to write full incomplete edge chunks,
+         * but the closest option is:
+         * H5Pset_chunk_opts(createPropertyList, H5D_CHUNK_DONT_FILTER_PARTIAL_CHUNKS);
+         * But that only avoids compressing/decompressing the edge chunks.
+         * Keep an eye open for alternatives.
+         * TODO: It is possible that it would be time-efficient
+         * to avoid compressing edge chunks when writing checkpoints. Pros and cons for slightly
+         * larger files vs slightly faster checkpoint writing must be evaluated.
+         * Currently it seems like incomplete edge chunks are compressed even with this option. */
 
         switch (compression)
         {
