@@ -386,6 +386,7 @@ void GmxH5mdIo::setupMolecularSystem(const gmx_mtop_t&        topology,
         throw gmx::FileIOError("No file open for writing");
     }
 
+    /* Vectors are used to keep the values in a continuous memory block. */
     std::vector<real>        atomCharges;
     std::vector<real>        atomMasses;
     std::vector<std::string> atomNames;
@@ -394,6 +395,7 @@ void GmxH5mdIo::setupMolecularSystem(const gmx_mtop_t&        topology,
     atomMasses.reserve(topology.natoms);
     atomNames.reserve(topology.natoms);
 
+    /* FIXME: The names could be copied directly to a char array instead. */
     for (const gmx_molblock_t& molBlock : topology.molblock)
     {
         const gmx_moltype_t* molType = &topology.moltype[molBlock.type];
@@ -412,30 +414,34 @@ void GmxH5mdIo::setupMolecularSystem(const gmx_mtop_t&        topology,
             std::copy_n(atomNames.end() - molType->atoms.nr, molType->atoms.nr, std::back_inserter(atomNames));
         }
     }
-    /* Is there a more convenient way to do this? std::string is nice above, but cannot be used for writing. */
-    std::vector<const char*> atomNamesChars(atomNames.size());
-    std::transform(
-            atomNames.begin(), atomNames.end(), atomNamesChars.begin(), std::mem_fn(&std::string::c_str));
 
-
-    hid_t stringDataType = H5Tcopy(H5T_C_S1);
-    /* Hard-code the atom name lengths to max 16. Flexible strings make a lot of unaccounted space,
-     * which is wasted. For strings that are numerous, such as atom names, it is better to use fixed-length. */
-    hsize_t atomNameLen = 16;
-    H5Tset_size(stringDataType, atomNameLen);
-    H5Tset_strpad(stringDataType, H5T_STR_NULLTERM);
-    H5Tset_cset(stringDataType, H5T_CSET_UTF8);
-
-    // hsize_t atomPropertiesChunkDims[2];
-    // atomPropertiesChunkDims[0] = 1;
-    // atomPropertiesChunkDims[1] = topology.natoms;
     hsize_t atomPropertiesChunkDims[1];
-    atomPropertiesChunkDims[0] = topology.natoms;
 
     /* Don't replace data that already exists and cannot (currently) change during the simulation */
     /* FIXME: Currently atom names cannot change during the simulation. */
     if (!H5Lexists(file_, "/particles/system/atomname", H5P_DEFAULT))
     {
+        /* Is there a more convenient way to do this? std::string is nice above, but cannot be used for writing in HDF5. */
+        /* Hard-code the atom name lengths to max 17 (max 4 char 4-byte UTF8). Flexible strings make a lot of unaccounted space,
+         * which is wasted. For strings that are numerous, such as atom names, it is better to use fixed-length. */
+        constexpr size_t atomNameLen = 17;
+        char*            atomNamesChars;
+        snew(atomNamesChars, atomNames.size() * atomNameLen);
+        for (size_t i = 0; i < atomNames.size(); i++)
+        {
+            strncpy(&atomNamesChars[i * atomNameLen], atomNames[i].c_str(), atomNameLen);
+        }
+
+        hid_t stringDataType = H5Tcopy(H5T_C_S1);
+        H5Tset_size(stringDataType, atomNameLen);
+        // H5Tset_strpad(stringDataType, H5T_STR_NULLTERM);
+        H5Tset_cset(stringDataType, H5T_CSET_UTF8);
+
+        // hsize_t atomPropertiesChunkDims[2];
+        // atomPropertiesChunkDims[0] = 1;
+        // atomPropertiesChunkDims[1] = topology.natoms;
+        atomPropertiesChunkDims[0] = topology.natoms;
+
         hid_t atomName = openOrCreateDataSet<1>(file_,
                                                 "/particles/system/atomname",
                                                 "",
@@ -443,8 +449,11 @@ void GmxH5mdIo::setupMolecularSystem(const gmx_mtop_t&        topology,
                                                 atomPropertiesChunkDims,
                                                 CompressionAlgorithm::LosslessNoShuffle,
                                                 0);
-        writeData<1, true>(atomName, atomNamesChars.data(), 0);
+        // writeData<1, true>(atomName, atomNamesChars.data(), 0);
+        // printf("atomNamesChars.data()[0]: %s %s %s %s\n", atomNamesChars.data()[0], atomNamesChars.data()[1], atomNamesChars.data()[2], atomNamesChars.data()[3]);
+        writeData<1, true>(atomName, atomNamesChars, 0);
         H5Dclose(atomName);
+        sfree(atomNamesChars);
     }
 
 #    if GMX_DOUBLE
