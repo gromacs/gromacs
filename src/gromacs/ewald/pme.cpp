@@ -907,7 +907,7 @@ gmx_pme_t* gmx_pme_init(const t_commrec*     cr,
     std::tie(pme->nnz, pme->fshz) = make_gridindex_to_localindex(
             pme->nkz, pme->pmegrid_start_iz, pme->pmegrid_nz_base, checkRoundingAtBoundary);
 
-    pme->spline_work = make_pme_spline_work(pme->pme_order);
+    pme->spline_work = std::make_unique<pme_spline_work>(pme->pme_order);
 
     if (pme->doCoulomb)
     {
@@ -1755,8 +1755,6 @@ void gmx_pme_destroy(gmx_pme_t* pme, bool destroySharedData)
             pmegrids_destroy(&grids.pmeGrids);
         }
     }
-
-    destroy_pme_spline_work(pme->spline_work);
 
     if (pme->gpu != nullptr && destroySharedData)
     {

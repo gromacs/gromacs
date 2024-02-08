@@ -226,7 +226,7 @@ struct do_fspline
         const real* const gmx_restrict dthy = spline_->dtheta.coefficients[YY] + norder;
         const real* const gmx_restrict dthz = spline_->dtheta.coefficients[ZZ] + norder;
 
-        struct pme_spline_work* const work = pme_->spline_work;
+        const pme_spline_work& work = *pme_->spline_work;
 
         const int offset = idxZ & 3;
 
@@ -238,10 +238,10 @@ struct do_fspline
         loadOrderU(thz, order, offset, &tz_S0, &tz_S1);
         loadOrderU(dthz, order, offset, &dz_S0, &dz_S1);
 
-        tz_S0 = selectByMask(tz_S0, work->mask_S0[offset]);
-        dz_S0 = selectByMask(dz_S0, work->mask_S0[offset]);
-        tz_S1 = selectByMask(tz_S1, work->mask_S1[offset]);
-        dz_S1 = selectByMask(dz_S1, work->mask_S1[offset]);
+        tz_S0 = selectByMask(tz_S0, work.mask_S0[offset]);
+        dz_S0 = selectByMask(dz_S0, work.mask_S0[offset]);
+        tz_S1 = selectByMask(tz_S1, work.mask_S1[offset]);
+        dz_S1 = selectByMask(dz_S1, work.mask_S1[offset]);
 
         for (int ithx = 0; (ithx < order); ithx++)
         {

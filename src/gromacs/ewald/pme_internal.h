@@ -376,7 +376,7 @@ struct gmx_pme_t
     int pmegrid_start_ix, pmegrid_start_iy, pmegrid_start_iz;
 
     /* Work data for spreading and gathering */
-    pme_spline_work* spline_work;
+    std::unique_ptr<pme_spline_work> spline_work;
 
     // PME and FFT grids for Coulomb, size ngrids, one without FEP, two with FEP
     std::vector<PmeAndFftGrids> gridsCoulomb;

@@ -37,7 +37,6 @@
 #include "pme_spline_work.h"
 
 #include "gromacs/simd/simd.h"
-#include "gromacs/utility/alignedallocator.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
@@ -45,17 +44,13 @@
 
 using namespace gmx; // TODO: Remove when this file is moved into gmx namespace
 
-pme_spline_work* make_pme_spline_work(int gmx_unused order)
+pme_spline_work::pme_spline_work(int gmx_unused order)
 {
-    pme_spline_work* work;
-
 #ifdef PME_SIMD4_SPREAD_GATHER
     alignas(GMX_SIMD_ALIGNMENT) real tmp[GMX_SIMD4_WIDTH * 2];
     Simd4Real                        zero_S;
     Simd4Real                        real_mask_S0, real_mask_S1;
     int                              of, i;
-
-    work = new (gmx::AlignedAllocationPolicy::malloc(sizeof(pme_spline_work))) pme_spline_work;
 
     zero_S = setZero();
 
@@ -69,22 +64,10 @@ pme_spline_work* make_pme_spline_work(int gmx_unused order)
         {
             tmp[i] = (i >= of && i < of + order ? -1.0 : 1.0);
         }
-        real_mask_S0      = load4(tmp);
-        real_mask_S1      = load4(tmp + GMX_SIMD4_WIDTH);
-        work->mask_S0[of] = (real_mask_S0 < zero_S);
-        work->mask_S1[of] = (real_mask_S1 < zero_S);
+        real_mask_S0 = load4(tmp);
+        real_mask_S1 = load4(tmp + GMX_SIMD4_WIDTH);
+        mask_S0[of]  = (real_mask_S0 < zero_S);
+        mask_S1[of]  = (real_mask_S1 < zero_S);
     }
-#else
-    work = nullptr;
 #endif
-
-    return work;
-}
-
-void destroy_pme_spline_work(pme_spline_work* work)
-{
-    if (work != nullptr)
-    {
-        gmx::AlignedAllocationPolicy::free(work);
-    }
 }

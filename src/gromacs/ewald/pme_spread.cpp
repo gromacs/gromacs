@@ -321,10 +321,10 @@ static void make_bsplines(gmx::ArrayRef<real*> theta,
     }
 
 
-static void spread_coefficients_bsplines_thread(const pmegrid_t*       pmegrid,
-                                                const PmeAtomComm*     atc,
-                                                splinedata_t*          spline,
-                                                struct pme_spline_work gmx_unused* work)
+static void spread_coefficients_bsplines_thread(const pmegrid_t*      pmegrid,
+                                                const PmeAtomComm*    atc,
+                                                splinedata_t*         spline,
+                                                const pme_spline_work gmx_unused& work)
 {
 
     /* spread coefficients from home atoms to local grid */
@@ -990,7 +990,7 @@ void spread_on_grid(const gmx_pme_t* pme,
 #ifdef PME_TIME_SPREAD
                 ct1a = omp_cyc_start();
 #endif
-                spread_coefficients_bsplines_thread(grid, atc, spline, pme->spline_work);
+                spread_coefficients_bsplines_thread(grid, atc, spline, *pme->spline_work);
 
                 if (pme->bUseThreads)
                 {

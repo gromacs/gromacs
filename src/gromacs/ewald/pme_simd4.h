@@ -132,8 +132,8 @@
         tz_S1 = load4(thz_aligned + 4);
     }
 #    endif
-    tz_S0 = selectByMask(tz_S0, work->mask_S0[offset]);
-    tz_S1 = selectByMask(tz_S1, work->mask_S1[offset]);
+    tz_S0 = selectByMask(tz_S0, work.mask_S0[offset]);
+    tz_S1 = selectByMask(tz_S1, work.mask_S1[offset]);
 
     for (ithx = 0; (ithx < PME_ORDER); ithx++)
     {
