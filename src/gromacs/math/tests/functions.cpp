@@ -419,19 +419,20 @@ TYPED_TEST(FunctionTestIntegerTypes, IsPowerOfTwo)
 TYPED_TEST(FunctionTestIntegerTypes, DivideRoundUp)
 {
     // Test some reasonable values and edge-cases
+    // Constraint: the sum of numerator and denominator must fit into TypeParam
     EXPECT_EQ(gmx::divideRoundUp<TypeParam>(0, 1), 0);
     EXPECT_EQ(gmx::divideRoundUp<TypeParam>(0, 10), 0);
     EXPECT_EQ(gmx::divideRoundUp<TypeParam>(0, std::numeric_limits<TypeParam>::max()), 0);
     EXPECT_EQ(gmx::divideRoundUp<TypeParam>(1, 1), 1);
     EXPECT_EQ(gmx::divideRoundUp<TypeParam>(10, 1), 10);
-    EXPECT_EQ(gmx::divideRoundUp<TypeParam>(std::numeric_limits<TypeParam>::max(), 1),
-              std::numeric_limits<TypeParam>::max());
+    EXPECT_EQ(gmx::divideRoundUp<TypeParam>(std::numeric_limits<TypeParam>::max() - 1, 1),
+              std::numeric_limits<TypeParam>::max() - 1);
     EXPECT_EQ(gmx::divideRoundUp<TypeParam>(2, 2), 1);
     EXPECT_EQ(gmx::divideRoundUp<TypeParam>(3, 2), 2);
     EXPECT_EQ(gmx::divideRoundUp<TypeParam>(4, 2), 2);
     EXPECT_EQ(gmx::divideRoundUp<TypeParam>(5, 2), 3);
     EXPECT_EQ(gmx::divideRoundUp<TypeParam>(1, 10), 1);
-    EXPECT_EQ(gmx::divideRoundUp<TypeParam>(1, std::numeric_limits<TypeParam>::max()), 1);
+    EXPECT_EQ(gmx::divideRoundUp<TypeParam>(1, std::numeric_limits<TypeParam>::max() - 1), 1);
 
     // Test random inputs; up to square root of max value
     auto                                     rng = std::minstd_rand{};
