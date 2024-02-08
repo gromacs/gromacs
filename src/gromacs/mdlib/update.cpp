@@ -1553,7 +1553,7 @@ void restore_ekinstate_from_state(const t_commrec* cr, gmx_ekindata_t* ekind, co
 void getThreadAtomRange(int numThreads, int threadIndex, int numAtoms, int* startAtom, int* endAtom)
 {
     constexpr int blockSize = UpdateSimdTraits::width;
-    const int     numBlocks = (numAtoms + blockSize - 1) / blockSize;
+    const int     numBlocks = divideRoundUp(numAtoms, blockSize);
 
     *startAtom = ((numBlocks * threadIndex) / numThreads) * blockSize;
     *endAtom   = ((numBlocks * (threadIndex + 1)) / numThreads) * blockSize;

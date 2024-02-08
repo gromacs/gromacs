@@ -631,11 +631,6 @@ void pmegrid_init(pmegrid_t* grid,
     }
 }
 
-static int div_round_up(int enumerator, int denominator)
-{
-    return (enumerator + denominator - 1) / denominator;
-}
-
 static void make_subgrid_division(const ivec n, int ovl, int nthread, ivec nsub)
 {
     int   gsize_opt, gsize;
@@ -654,8 +649,8 @@ static void make_subgrid_division(const ivec n, int ovl, int nthread, ivec nsub)
                     nsz = nthread / (nsx * nsy);
 
                     /* Determine the number of grid points per thread */
-                    gsize = (div_round_up(n[XX], nsx) + ovl) * (div_round_up(n[YY], nsy) + ovl)
-                            * (div_round_up(n[ZZ], nsz) + ovl);
+                    gsize = (gmx::divideRoundUp(n[XX], nsx) + ovl) * (gmx::divideRoundUp(n[YY], nsy) + ovl)
+                            * (gmx::divideRoundUp(n[ZZ], nsz) + ovl);
 
                     /* Minimize the number of grids points per thread
                      * and, secondarily, the number of cuts in minor dimensions.
@@ -726,7 +721,7 @@ void pmegrids_init(pmegrids_t* grids,
 
         for (d = 0; d < DIM; d++)
         {
-            nst[d] = div_round_up(n[d], grids->nc[d]) + pme_order - 1;
+            nst[d] = gmx::divideRoundUp(n[d], grids->nc[d]) + pme_order - 1;
         }
         set_grid_alignment(&nst[ZZ], pme_order);
 

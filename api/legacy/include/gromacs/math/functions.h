@@ -484,6 +484,22 @@ __host__ __device__
     return (v > 0) && ((v & (v - 1)) == 0);
 }
 
+/*! \brief Return \p numerator divided by \p denominator rounded up to the next integer.
+ *
+ * \param[in] numerator   Numerator, a non-negative integer.
+ * \param[in] denominator Denominator, a positive integer.
+ *
+ * \warning The sum of \p numerator and \p denominator should fit into \c T
+ */
+template<typename T>
+constexpr T divideRoundUp(T numerator, T denominator)
+{
+    static_assert(std::is_integral_v<T>, "Only integer types are supported");
+    GMX_ASSERT(std::is_unsigned_v<T> || numerator >= 0, "Nominator should be non-negative");
+    GMX_ASSERT(denominator > 0, "Denominator should be positive");
+    return (numerator + denominator - 1) / denominator;
+}
+
 } // namespace gmx
 
 

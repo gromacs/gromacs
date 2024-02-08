@@ -38,6 +38,7 @@
 #include <csignal>
 #include <cstdlib>
 
+#include "gromacs/math/functions.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/mdtypes/pull_params.h"
@@ -47,7 +48,7 @@ static int div_nsteps(int nsteps, int nst)
 {
     if (nst > 0)
     {
-        return (1 + nsteps + nst - 1) / nst;
+        return gmx::divideRoundUp(1 + nsteps, nst);
     }
     else
     {

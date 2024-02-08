@@ -443,11 +443,10 @@ static inline void gpuLaunchKernelSciSort(gpu_plist* plist, const DeviceStream& 
                                   deviceStream.stream());
 
     KernelLaunchConfig configSortSci;
-    configSortSci.blockSize[0] = c_sciSortingThreadsPerBlock;
-    configSortSci.blockSize[1] = 1;
-    configSortSci.blockSize[2] = 1;
-    configSortSci.gridSize[0] =
-            (plist->nsci + c_sciSortingThreadsPerBlock - 1) / c_sciSortingThreadsPerBlock;
+    configSortSci.blockSize[0]     = c_sciSortingThreadsPerBlock;
+    configSortSci.blockSize[1]     = 1;
+    configSortSci.blockSize[2]     = 1;
+    configSortSci.gridSize[0]      = gmx::divideRoundUp(plist->nsci, c_sciSortingThreadsPerBlock);
     configSortSci.sharedMemorySize = 0;
 
     const auto kernelSciSort = nbnxnKernelBucketSciSort;

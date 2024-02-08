@@ -241,7 +241,7 @@ static void do_ac_core(int nframes, int nout, real corr[], real c1[], int nresta
     /* Correct for the number of points and copy results to the data array */
     for (j = 0; (j < nout); j++)
     {
-        n     = (nframes - j + (nrestart - 1)) / nrestart;
+        n     = gmx::divideRoundUp(nframes - j, nrestart);
         c1[j] = corr[j] / n;
     }
 }

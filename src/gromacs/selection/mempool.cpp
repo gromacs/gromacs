@@ -46,6 +46,7 @@
 
 #include <new>
 
+#include "gromacs/math/functions.h"
 #include "gromacs/selection/indexutil.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
@@ -125,10 +126,9 @@ void _gmx_sel_mempool_destroy(gmx_sel_mempool_t* mp)
 
 void* _gmx_sel_mempool_alloc(gmx_sel_mempool_t* mp, size_t size)
 {
-    void*  ptr = nullptr;
-    size_t size_walign;
+    void* ptr = nullptr;
 
-    size_walign = ((size + ALIGN_STEP - 1) / ALIGN_STEP) * ALIGN_STEP;
+    const size_t size_walign = gmx::divideRoundUp<size_t>(size, ALIGN_STEP) * ALIGN_STEP;
     if (mp->buffer)
     {
         if (mp->freesize < size)

@@ -602,8 +602,8 @@ submit(const DeviceStream& deviceStream, size_t myGridX, size_t myGridY, sycl::u
 
     const sycl::range<3>    localSize{ 1, threadsAlongYDim, threadsAlongZDim };
     const sycl::range<3>    groupRange{ myGridX,
-                                     (myGridY + threadsAlongYDim - 1) / threadsAlongYDim,
-                                     (pmeSize[ZZ] + threadsAlongZDim - 1) / threadsAlongZDim };
+                                     gmx::divideRoundUp<size_t>(myGridY, threadsAlongYDim),
+                                     gmx::divideRoundUp<size_t>(pmeSize[ZZ], threadsAlongZDim) };
     const sycl::nd_range<3> range{ groupRange * localSize, localSize };
 
     sycl::queue q = deviceStream.stream();
@@ -1275,8 +1275,8 @@ public:
 
         const sycl::range<3>    localSize{ 1, threadsAlongYDim, threadsAlongZDim };
         const sycl::range<3>    groupRange{ localFftNData[XX],
-                                         (localFftNData[YY] + threadsAlongYDim - 1) / threadsAlongYDim,
-                                         (localFftNData[ZZ] + threadsAlongZDim - 1) / threadsAlongZDim };
+                                         gmx::divideRoundUp<size_t>(localFftNData[YY], threadsAlongYDim),
+                                         gmx::divideRoundUp<size_t>(localFftNData[ZZ], threadsAlongZDim) };
         const sycl::nd_range<3> range{ groupRange * localSize, localSize };
 
         sycl::queue q = deviceStream.stream();

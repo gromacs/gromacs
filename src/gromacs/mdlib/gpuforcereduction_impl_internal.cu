@@ -140,7 +140,7 @@ void launchForceReductionKernel(int                        numAtoms,
     config.blockSize[0]     = c_threadsPerBlock;
     config.blockSize[1]     = 1;
     config.blockSize[2]     = 1;
-    config.gridSize[0]      = ((numAtoms + 1) + c_threadsPerBlock - 1) / c_threadsPerBlock;
+    config.gridSize[0]      = divideRoundUp((numAtoms + 1), c_threadsPerBlock);
     config.gridSize[1]      = 1;
     config.gridSize[2]      = 1;
     config.sharedMemorySize = 0;

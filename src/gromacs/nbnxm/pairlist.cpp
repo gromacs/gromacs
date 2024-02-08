@@ -230,7 +230,7 @@ static inline int xIndexFromCj(int cj)
 
 static constexpr int sizeNeededForBufferFlags(const int numAtoms)
 {
-    return (numAtoms + NBNXN_BUFFERFLAG_SIZE - 1) / NBNXN_BUFFERFLAG_SIZE;
+    return divideRoundUp(numAtoms, NBNXN_BUFFERFLAG_SIZE);
 }
 
 // Resets current flags to 0 and adds more flags if needed.
@@ -3018,7 +3018,7 @@ static int get_ci_block_size(const Grid& iGrid, const bool haveMultipleDomains, 
     /* Ensure the blocks are not too small: avoids cache invalidation */
     if (ci_block * numAtomsPerCell < ci_block_min_atoms)
     {
-        ci_block = (ci_block_min_atoms + numAtomsPerCell - 1) / numAtomsPerCell;
+        ci_block = divideRoundUp(ci_block_min_atoms, numAtomsPerCell);
     }
 
     /* Without domain decomposition
@@ -3026,7 +3026,7 @@ static int get_ci_block_size(const Grid& iGrid, const bool haveMultipleDomains, 
      */
     if (!haveMultipleDomains || numLists * 3 * ci_block > iGrid.numCells())
     {
-        ci_block = (iGrid.numCells() + numLists - 1) / numLists;
+        ci_block = divideRoundUp(iGrid.numCells(), numLists);
     }
 
     if (ci_block > 1 && (numLists - 1) * ci_block >= iGrid.numCells())

@@ -51,6 +51,7 @@
 #include "gromacs/fileio/warninp.h"
 #include "gromacs/fileio/writeps.h"
 #include "gromacs/gmxana/gmx_ana.h"
+#include "gromacs/math/functions.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/cstringutil.h"
@@ -1081,8 +1082,8 @@ static void prune_mat(gmx::ArrayRef<t_matrix> mat, gmx::ArrayRef<t_matrix> mat2,
                 "converting %dx%d matrix to %dx%d\n",
                 mat[i].nx,
                 mat[i].ny,
-                (mat[i].nx + skip - 1) / skip,
-                (mat[i].ny + skip - 1) / skip);
+                gmx::divideRoundUp(mat[i].nx, skip),
+                gmx::divideRoundUp(mat[i].ny, skip));
         /* walk through matrix */
         int xs = 0;
         for (int x = 0; (x < mat[i].nx); x++)
@@ -1119,12 +1120,12 @@ static void prune_mat(gmx::ArrayRef<t_matrix> mat, gmx::ArrayRef<t_matrix> mat2,
             }
         }
         /* adjust parameters */
-        mat[i].nx = (mat[i].nx + skip - 1) / skip;
-        mat[i].ny = (mat[i].ny + skip - 1) / skip;
+        mat[i].nx = gmx::divideRoundUp(mat[i].nx, skip);
+        mat[i].ny = gmx::divideRoundUp(mat[i].ny, skip);
         if (!mat2.empty())
         {
-            mat2[i].nx = (mat2[i].nx + skip - 1) / skip;
-            mat2[i].ny = (mat2[i].ny + skip - 1) / skip;
+            mat2[i].nx = gmx::divideRoundUp(mat2[i].nx, skip);
+            mat2[i].ny = gmx::divideRoundUp(mat2[i].ny, skip);
         }
     }
 }

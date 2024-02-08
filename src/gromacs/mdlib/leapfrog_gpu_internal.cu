@@ -232,7 +232,7 @@ void launchLeapFrogKernel(const int                             numAtoms,
 
     KernelLaunchConfig kernelLaunchConfig;
 
-    kernelLaunchConfig.gridSize[0]      = (numAtoms + c_threadsPerBlock - 1) / c_threadsPerBlock;
+    kernelLaunchConfig.gridSize[0]      = divideRoundUp(numAtoms, c_threadsPerBlock);
     kernelLaunchConfig.blockSize[0]     = c_threadsPerBlock;
     kernelLaunchConfig.blockSize[1]     = 1;
     kernelLaunchConfig.blockSize[2]     = 1;

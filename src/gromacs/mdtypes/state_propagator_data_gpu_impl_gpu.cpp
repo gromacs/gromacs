@@ -48,6 +48,8 @@
 #    include "gromacs/gpu_utils/device_stream_manager.h"
 #    include "gromacs/gpu_utils/devicebuffer.h"
 #    include "gromacs/gpu_utils/gpueventsynchronizer.h"
+#    include "gromacs/math/functions.h"
+#    include "gromacs/math/utilities.h"
 #    include "gromacs/math/vectypes.h"
 #    include "gromacs/mdtypes/state_propagator_data_gpu.h"
 #    include "gromacs/timing/wallcycle.h"
@@ -162,8 +164,7 @@ void StatePropagatorDataGpu::Impl::reinit(int numAtomsLocal, int numAtomsAll)
     int numAtomsPadded;
     if (allocationBlockSizeDivisor_ > 0)
     {
-        numAtomsPadded = ((numAtomsAll_ + allocationBlockSizeDivisor_ - 1) / allocationBlockSizeDivisor_)
-                         * allocationBlockSizeDivisor_;
+        numAtomsPadded = divideRoundUp(numAtomsAll_, allocationBlockSizeDivisor_) * allocationBlockSizeDivisor_;
     }
     else
     {

@@ -57,6 +57,7 @@
 #include "gromacs/domdec/options.h"
 #include "gromacs/ewald/pme.h"
 #include "gromacs/gmxlib/network.h"
+#include "gromacs/math/functions.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
@@ -254,12 +255,6 @@ static int guess_npme(const gmx::MDLogger& mdlog,
     return npme;
 }
 
-/*! \brief Return \p n divided by \p f rounded up to the next integer. */
-static int div_up(int n, int f)
-{
-    return (n + f - 1) / f;
-}
-
 real comm_box_frac(const gmx::IVec& dd_nc, real cutoff, const gmx_ddbox_t& ddbox)
 {
     rvec nw;
@@ -315,8 +310,8 @@ static float comm_pme_cost_vol(int npme, int a, int b, int c)
     /* We use a float here, since an integer might overflow */
     float comm_vol = npme - 1;
     comm_vol *= npme;
-    comm_vol *= div_up(a, npme);
-    comm_vol *= div_up(b, npme);
+    comm_vol *= gmx::divideRoundUp(a, npme);
+    comm_vol *= gmx::divideRoundUp(b, npme);
     comm_vol *= c;
 
     return comm_vol;

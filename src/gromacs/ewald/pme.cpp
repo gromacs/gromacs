@@ -250,7 +250,7 @@ static void setup_coordinate_communication(PmeAtomComm* atc)
 /*! \brief Round \p n up to the next multiple of \p f */
 static int mult_up(int n, int f)
 {
-    return ((n + f - 1) / f) * f;
+    return gmx::divideRoundUp(n, f) * f;
 }
 
 /*! \brief Return estimate of the load imbalance from the PME grid not being a good match for the number of PME ranks */
@@ -354,7 +354,7 @@ static void init_overlap_comm(pme_overlap_t* ol, int norder, MPI_Comm comm, int 
          * s2g0 down and s2g1 up.
          */
         ol->s2g0[i] = (i * ndata + 0) / nnodes;
-        ol->s2g1[i] = ((i + 1) * ndata + nnodes - 1) / nnodes + norder - 1;
+        ol->s2g1[i] = gmx::divideRoundUp((i + 1) * ndata, nnodes) + norder - 1;
 
         if (debug)
         {
@@ -557,12 +557,6 @@ bool gmx_pme_check_restrictions(int  pme_order,
     }
 
     return true;
-}
-
-/*! \brief Round \p enumerator */
-static int div_round_up(int enumerator, int denominator)
-{
-    return (enumerator + denominator - 1) / denominator;
 }
 
 static void initGrids(gmx::ArrayRef<PmeAndFftGrids> gridsSet, const gmx_pme_t& pme, const bool requestReproducibility)
@@ -859,7 +853,7 @@ gmx_pme_t* gmx_pme_init(const t_commrec*     cr,
                       pme->nnodes_major,
                       pme->nodeid_major,
                       pme->nkx,
-                      (div_round_up(pme->nky, pme->nnodes_minor) + pme->pme_order)
+                      (gmx::divideRoundUp(pme->nky, pme->nnodes_minor) + pme->pme_order)
                               * (pme->nkz + pme->pme_order - 1));
 
     /* Along overlap dim 1 we can send in multiple pulses in sum_fftgrid_dd.
@@ -872,7 +866,7 @@ gmx_pme_t* gmx_pme_init(const t_commrec*     cr,
                       pme->nnodes_minor,
                       pme->nodeid_minor,
                       pme->nky,
-                      (div_round_up(pme->nkx, pme->nnodes_major) + pme->pme_order + 1) * pme->nkz);
+                      (gmx::divideRoundUp(pme->nkx, pme->nnodes_major) + pme->pme_order + 1) * pme->nkz);
 
     /* Double-check for a limitation of the (current) sum_fftgrid_dd code.
      * Note that gmx_pme_check_restrictions checked for this already.

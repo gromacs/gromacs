@@ -52,6 +52,7 @@
 #include "gromacs/fft/parallel_3dfft.h"
 #include "gromacs/gpu_utils/cudautils.cuh"
 #include "gromacs/gpu_utils/devicebuffer.cuh"
+#include "gromacs/math/functions.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/timing/wallcycle.h"
 
@@ -554,8 +555,8 @@ static void packHaloDataExternal(const PmeGpu*       pmeGpu,
     config.blockSize[0]     = threadsAlongZDim;
     config.blockSize[1]     = threadsAlongYDim;
     config.blockSize[2]     = 1;
-    config.gridSize[0]      = (pmeSize[ZZ] + threadsAlongZDim - 1) / threadsAlongZDim;
-    config.gridSize[1]      = (myGridY + threadsAlongYDim - 1) / threadsAlongYDim;
+    config.gridSize[0]      = gmx::divideRoundUp(pmeSize[ZZ], threadsAlongZDim);
+    config.gridSize[1]      = gmx::divideRoundUp(myGridY, threadsAlongYDim);
     config.gridSize[2]      = myGridX;
     config.sharedMemorySize = 0;
 
@@ -619,8 +620,8 @@ static void packHaloDataInternal(const PmeGpu*       pmeGpu,
     config.blockSize[0]     = threadsAlongZDim;
     config.blockSize[1]     = threadsAlongYDim;
     config.blockSize[2]     = 1;
-    config.gridSize[0]      = (pmeSize[ZZ] + threadsAlongZDim - 1) / threadsAlongZDim;
-    config.gridSize[1]      = (myGridY + threadsAlongYDim - 1) / threadsAlongYDim;
+    config.gridSize[0]      = gmx::divideRoundUp(pmeSize[ZZ], threadsAlongZDim);
+    config.gridSize[1]      = gmx::divideRoundUp(myGridY, threadsAlongYDim);
     config.gridSize[2]      = myGridX;
     config.sharedMemorySize = 0;
 
@@ -685,8 +686,8 @@ static void unpackAndAddHaloDataInternal(const PmeGpu*       pmeGpu,
     config.blockSize[0]     = threadsAlongZDim;
     config.blockSize[1]     = threadsAlongYDim;
     config.blockSize[2]     = 1;
-    config.gridSize[0]      = (pmeSize[ZZ] + threadsAlongZDim - 1) / threadsAlongZDim;
-    config.gridSize[1]      = (myGridY + threadsAlongYDim - 1) / threadsAlongYDim;
+    config.gridSize[0]      = gmx::divideRoundUp(pmeSize[ZZ], threadsAlongZDim);
+    config.gridSize[1]      = gmx::divideRoundUp(myGridY, threadsAlongYDim);
     config.gridSize[2]      = myGridX;
     config.sharedMemorySize = 0;
 
@@ -752,8 +753,8 @@ static void unpackHaloDataExternal(const PmeGpu*       pmeGpu,
     config.blockSize[0]     = threadsAlongZDim;
     config.blockSize[1]     = threadsAlongYDim;
     config.blockSize[2]     = 1;
-    config.gridSize[0]      = (pmeSize[ZZ] + threadsAlongZDim - 1) / threadsAlongZDim;
-    config.gridSize[1]      = (myGridY + threadsAlongYDim - 1) / threadsAlongYDim;
+    config.gridSize[0]      = gmx::divideRoundUp(pmeSize[ZZ], threadsAlongZDim);
+    config.gridSize[1]      = gmx::divideRoundUp(myGridY, threadsAlongYDim);
     config.gridSize[2]      = myGridX;
     config.sharedMemorySize = 0;
 
@@ -1413,8 +1414,8 @@ void convertPmeGridToFftGrid(const PmeGpu* pmeGpu, float* h_fftRealGrid, gmx_par
         config.blockSize[0] = threadsAlongZDim;
         config.blockSize[1] = 4;
         config.blockSize[2] = 1;
-        config.gridSize[0]  = (localFftNData[ZZ] + config.blockSize[0] - 1) / config.blockSize[0];
-        config.gridSize[1]  = (localFftNData[YY] + config.blockSize[1] - 1) / config.blockSize[1];
+        config.gridSize[0]  = gmx::divideRoundUp<size_t>(localFftNData[ZZ], config.blockSize[0]);
+        config.gridSize[1]  = gmx::divideRoundUp<size_t>(localFftNData[YY], config.blockSize[1]);
         config.gridSize[2]  = localFftNData[XX];
         config.sharedMemorySize = 0;
 
@@ -1497,8 +1498,8 @@ void convertPmeGridToFftGrid(const PmeGpu* pmeGpu, DeviceBuffer<float>* d_fftRea
         config.blockSize[0] = threadsAlongZDim;
         config.blockSize[1] = 4;
         config.blockSize[2] = 1;
-        config.gridSize[0]  = (localFftNData[ZZ] + config.blockSize[0] - 1) / config.blockSize[0];
-        config.gridSize[1]  = (localFftNData[YY] + config.blockSize[1] - 1) / config.blockSize[1];
+        config.gridSize[0]  = gmx::divideRoundUp<size_t>(localFftNData[ZZ], config.blockSize[0]);
+        config.gridSize[1]  = gmx::divideRoundUp<size_t>(localFftNData[YY], config.blockSize[1]);
         config.gridSize[2]  = localFftNData[XX];
         config.sharedMemorySize = 0;
 

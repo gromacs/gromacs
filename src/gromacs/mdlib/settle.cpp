@@ -224,7 +224,7 @@ void SettleData::setConstraints(const InteractionList&    il_settle,
                                                        parametersAllMasses1_.dHH);
         }
 
-        const int paddedSize = ((nsettle + pack_size - 1) / pack_size) * pack_size;
+        const int paddedSize = divideRoundUp(nsettle, pack_size) * pack_size;
         ow1_.resize(paddedSize);
         hw2_.resize(paddedSize);
         hw3_.resize(paddedSize);
@@ -711,10 +711,10 @@ static void settleTemplateWrapper(const SettleData& settled,
                                   bool*             bErrorHasOccurred)
 {
     /* We need to assign settles to threads in groups of pack_size */
-    int numSettlePacks = (settled.numSettles() + packSize - 1) / packSize;
+    int numSettlePacks = divideRoundUp(settled.numSettles(), packSize);
     /* Round the end value up to give thread 0 more work */
-    int settleStart = ((numSettlePacks * thread + nthread - 1) / nthread) * packSize;
-    int settleEnd   = ((numSettlePacks * (thread + 1) + nthread - 1) / nthread) * packSize;
+    int settleStart = divideRoundUp(numSettlePacks * thread, nthread) * packSize;
+    int settleEnd   = divideRoundUp(numSettlePacks * (thread + 1), nthread) * packSize;
 
     if (v != nullptr)
     {
