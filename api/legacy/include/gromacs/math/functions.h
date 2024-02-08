@@ -45,6 +45,8 @@
 #include <cmath>
 #include <cstdint>
 
+#include <type_traits>
+
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/real.h"
 
