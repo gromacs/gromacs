@@ -183,7 +183,8 @@ if(REGRESSIONTEST_PATH)
             COMMAND perl "${REGRESSIONTEST_PATH}/gmxtest.pl" ${subtest} ${ARGS})
         set_tests_properties(regressiontests/${subtest} PROPERTIES
             ENVIRONMENT "PATH=${PATH}"
-            LABELS "SlowGpuTest")
+            LABELS "SlowGpuTest"
+            RUN_SERIAL TRUE)
     endforeach()
 else()
     gmx_add_missing_tests_notice("Regression tests have not been run. If you want to run them from the build system, get the correct version of the regression tests package and set REGRESSIONTEST_PATH in CMake to point to it, or set REGRESSIONTEST_DOWNLOAD=ON.")
@@ -331,7 +332,8 @@ if(GMX_PHYSICAL_VALIDATION)
                         COMMAND ${PYTHON_EXECUTABLE} "${PHYSVALTEST_SOURCE_PATH}/gmx_physicalvalidation.py" "${PHYSVALTEST_JSON}" -s ${testname} -a ${PARGS})
                 set_tests_properties(physicalvalidationtests/${testname} PROPERTIES
                         ENVIRONMENT "PATH=${PATH}"
-                        LABELS "PhysicalValidationTest")
+                        LABELS "PhysicalValidationTest"
+                        RUN_SERIAL TRUE)
             endif()
         endforeach()
 
@@ -370,4 +372,3 @@ else()
 endif()
 
 gmx_create_missing_tests_notice_target()
-
