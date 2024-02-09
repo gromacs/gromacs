@@ -72,6 +72,7 @@ struct PmeGpu;
 class EwaldBoxZScaler;
 enum class PmeRunMode;
 enum class LongRangeVdW : int;
+class PmeSolve;
 
 //! The number of grids for LJ-PME with LB combination rules
 static constexpr int sc_numGridsLJLB = 7;
@@ -428,7 +429,7 @@ struct gmx_pme_t
     std::vector<real>      bufr; /* Communication buffer */
 
     /* thread local work data for solve_pme */
-    std::vector<std::unique_ptr<pme_solve_work_t>> solve_work;
+    std::unique_ptr<PmeSolve> pmeSolve;
 };
 
 //! @endcond

@@ -1111,7 +1111,7 @@ PmeOutput pme_gpu_getOutput(gmx_pme_t* pme, const bool computeEnergyAndVirial, c
         }
         else
         {
-            get_pme_ener_vir_q(pme->solve_work, pme->nthread, &output);
+            pme->pmeSolve->getCoulombEnergyAndVirial(&output);
         }
     }
     return output;

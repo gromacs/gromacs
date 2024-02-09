@@ -980,7 +980,7 @@ gmx_pme_t* gmx_pme_init(const t_commrec*     cr,
         GMX_ASSERT(pme->gpu == nullptr, "Should not have PME GPU object when PME is on a CPU.");
     }
 
-    pme_init_all_work(&pme->solve_work, pme->nthread, pme->nkx);
+    pme->pmeSolve = std::make_unique<PmeSolve>(pme->nthread, pme->nkx);
 
     // no exception was thrown during the init, so we hand over the PME structure handle
     return pme.release();
@@ -1285,23 +1285,22 @@ int gmx_pme_do(struct gmx_pme_t*              pme,
                 int loop_count;
                 if (gridsRef.isCoulomb)
                 {
-                    loop_count = solve_pme_yzx(pme,
-                                               cfftgrid,
-                                               scaledBox[XX][XX] * scaledBox[YY][YY] * scaledBox[ZZ][ZZ],
-                                               computeEnergyAndVirial,
-                                               pme->nthread,
-                                               thread);
+                    loop_count = pme->pmeSolve->solveCoulombYZX(
+                            *pme,
+                            cfftgrid,
+                            scaledBox[XX][XX] * scaledBox[YY][YY] * scaledBox[ZZ][ZZ],
+                            computeEnergyAndVirial,
+                            thread);
                 }
                 else
                 {
-                    loop_count =
-                            solve_pme_lj_yzx(pme,
-                                             pme->gridsLJ,
-                                             false,
-                                             scaledBox[XX][XX] * scaledBox[YY][YY] * scaledBox[ZZ][ZZ],
-                                             computeEnergyAndVirial,
-                                             pme->nthread,
-                                             thread);
+                    loop_count = pme->pmeSolve->solveLJYZX(
+                            *pme,
+                            pme->gridsLJ,
+                            false,
+                            scaledBox[XX][XX] * scaledBox[YY][YY] * scaledBox[ZZ][ZZ],
+                            computeEnergyAndVirial,
+                            thread);
                 }
 
                 if (thread == 0)
@@ -1392,11 +1391,11 @@ int gmx_pme_do(struct gmx_pme_t*              pme,
              */
             if (gridsRef.isCoulomb)
             {
-                get_pme_ener_vir_q(pme->solve_work, pme->nthread, &output[gridsRef.gridsIndex]);
+                pme->pmeSolve->getCoulombEnergyAndVirial(&output[gridsRef.gridsIndex]);
             }
             else
             {
-                get_pme_ener_vir_lj(pme->solve_work, pme->nthread, &output[gridsRef.gridsIndex]);
+                pme->pmeSolve->getLJEnergyAndVirial(&output[gridsRef.gridsIndex]);
             }
         }
         bFirst = false;
@@ -1538,14 +1537,13 @@ int gmx_pme_do(struct gmx_pme_t*              pme,
                         wallcycle_start(wcycle, WallCycleCounter::LJPme);
                     }
 
-                    loop_count =
-                            solve_pme_lj_yzx(pme,
-                                             pme->gridsLJ,
-                                             true,
-                                             scaledBox[XX][XX] * scaledBox[YY][YY] * scaledBox[ZZ][ZZ],
-                                             computeEnergyAndVirial,
-                                             pme->nthread,
-                                             thread);
+                    loop_count = pme->pmeSolve->solveLJYZX(
+                            *pme,
+                            pme->gridsLJ,
+                            true,
+                            scaledBox[XX][XX] * scaledBox[YY][YY] * scaledBox[ZZ][ZZ],
+                            computeEnergyAndVirial,
+                            thread);
                     if (thread == 0)
                     {
                         wallcycle_stop(wcycle, WallCycleCounter::LJPme);
@@ -1560,7 +1558,7 @@ int gmx_pme_do(struct gmx_pme_t*              pme,
                 /* This should only be called on the main thread and
                  * after the threads have synchronized.
                  */
-                get_pme_ener_vir_lj(pme->solve_work, pme->nthread, &output[fep_state]);
+                pme->pmeSolve->getLJEnergyAndVirial(&output[fep_state]);
             }
 
             bFirst = !pme->doCoulomb;

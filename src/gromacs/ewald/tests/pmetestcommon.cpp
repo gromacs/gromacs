@@ -417,19 +417,15 @@ void pmePerformSolve(gmx_pme_t*        pme,
             switch (method)
             {
                 case PmeSolveAlgorithm::Coulomb:
-                    solve_pme_yzx(pme, h_grid, cellVolume, computeEnergyAndVirial, pme->nthread, threadIndex);
+                    pme->pmeSolve->solveCoulombYZX(
+                            *pme, h_grid, cellVolume, computeEnergyAndVirial, threadIndex);
                     break;
 
                 case PmeSolveAlgorithm::LennardJones:
                     // Swap the complex grid to be passed to solve with h_grid
                     std::swap(pme->gridsLJ[0].cfftgrid, h_grid);
-                    solve_pme_lj_yzx(pme,
-                                     pme->gridsLJ,
-                                     useLorentzBerthelot,
-                                     cellVolume,
-                                     computeEnergyAndVirial,
-                                     pme->nthread,
-                                     threadIndex);
+                    pme->pmeSolve->solveLJYZX(
+                            *pme, pme->gridsLJ, useLorentzBerthelot, cellVolume, computeEnergyAndVirial, threadIndex);
                     // Swap back
                     std::swap(pme->gridsLJ[0].cfftgrid, h_grid);
                     break;
@@ -893,11 +889,11 @@ PmeOutput pmeGetReciprocalEnergyAndVirial(const gmx_pme_t* pme, CodePath mode, P
             switch (method)
             {
                 case PmeSolveAlgorithm::Coulomb:
-                    get_pme_ener_vir_q(pme->solve_work, pme->nthread, &output);
+                    pme->pmeSolve->getCoulombEnergyAndVirial(&output);
                     break;
 
                 case PmeSolveAlgorithm::LennardJones:
-                    get_pme_ener_vir_lj(pme->solve_work, pme->nthread, &output);
+                    pme->pmeSolve->getLJEnergyAndVirial(&output);
                     break;
 
                 default: GMX_THROW(InternalError("Test not implemented for this mode"));

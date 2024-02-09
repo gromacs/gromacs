@@ -64,6 +64,70 @@ constexpr int c_simdWidth = GMX_SIMD_REAL_WIDTH;
 constexpr int c_simdWidth = 4;
 #endif
 
+// Work data for solve for a thread
+struct pme_solve_work_t
+{
+    // Constructor, \p nkx is the number of grid points along X
+    pme_solve_work_t(int nkx);
+
+    /* work data for solve_pme */
+    std::vector<real>       mhx;
+    std::vector<real>       mhy;
+    std::vector<real>       mhz;
+    std::vector<real>       m2;
+    gmx::PaddedVector<real> denom;
+    gmx::PaddedVector<real> tmp1;
+    gmx::PaddedVector<real> tmp2;
+    gmx::PaddedVector<real> eterm;
+    std::vector<real>       m2inv;
+
+    real   energy_q;
+    matrix vir_q;
+    real   energy_lj;
+    matrix vir_lj;
+};
+
+pme_solve_work_t::pme_solve_work_t(const int nkx)
+{
+    mhx.resize(nkx);
+    mhy.resize(nkx);
+    mhz.resize(nkx);
+    m2.resize(nkx);
+    denom.resizeWithPadding(nkx);
+    tmp1.resizeWithPadding(nkx);
+    tmp2.resizeWithPadding(nkx);
+    eterm.resizeWithPadding(nkx);
+    m2inv.resize(nkx);
+
+    /* Init all allocated elements of denom to 1 to avoid 1/0 exceptions
+     * of simd padded elements.
+     */
+    ArrayRef<real> denomPadded = denom.arrayRefWithPadding().paddedArrayRef();
+    for (real& d : denomPadded)
+    {
+        d = 1;
+    }
+}
+
+PmeSolve::PmeSolve(const int numThreads, const int nkx)
+{
+    /* Use fft5d, order after FFT is y major, z, x minor */
+
+    workData_.resize(numThreads);
+    /* Allocate the work arrays thread local to optimize memory access */
+#pragma omp parallel for num_threads(numThreads) schedule(static)
+    for (int thread = 0; thread < numThreads; thread++)
+    {
+        try
+        {
+            workData_[thread] = std::make_unique<pme_solve_work_t>(nkx);
+        }
+        GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR
+    }
+}
+
+PmeSolve::~PmeSolve() = default;
+
 /* Returns the smallest number >= \p that is a multiple of \p factor, \p factor must be a power of 2 */
 template<unsigned int factor>
 static size_t roundUpToMultipleOfFactor(size_t number)
@@ -76,82 +140,35 @@ static size_t roundUpToMultipleOfFactor(size_t number)
     return (number + factor - 1) & ~(factor - 1);
 }
 
-void pme_solve_work_t::resizeWhenNeeded(const int newSize)
-{
-    const Index oldSize = gmx::ssize(mhx);
-
-    if (newSize <= oldSize)
-    {
-        return;
-    }
-
-    mhx.resize(newSize);
-    mhy.resize(newSize);
-    mhz.resize(newSize);
-    m2.resize(newSize);
-    denom.resizeWithPadding(newSize);
-    tmp1.resizeWithPadding(newSize);
-    tmp2.resizeWithPadding(newSize);
-    eterm.resizeWithPadding(newSize);
-    m2inv.resize(newSize);
-
-    /* Init all allocated elements of denom to 1 to avoid 1/0 exceptions
-     * of simd padded elements.
-     */
-    ArrayRef<real> denomPadded = denom.arrayRefWithPadding().paddedArrayRef();
-    for (real& d : denomPadded)
-    {
-        d = 1;
-    }
-}
-
-void pme_init_all_work(std::vector<std::unique_ptr<pme_solve_work_t>>* work, int nthread, int nkx)
-{
-    /* Use fft5d, order after FFT is y major, z, x minor */
-
-    work->resize(nthread);
-    /* Allocate the work arrays thread local to optimize memory access */
-#pragma omp parallel for num_threads(nthread) schedule(static)
-    for (int thread = 0; thread < nthread; thread++)
-    {
-        try
-        {
-            (*work)[thread] = std::make_unique<pme_solve_work_t>();
-            (*work)[thread]->resizeWhenNeeded(nkx);
-        }
-        GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR
-    }
-}
-
-void get_pme_ener_vir_q(ArrayRef<const std::unique_ptr<pme_solve_work_t>> work, int nthread, PmeOutput* output)
+void PmeSolve::getCoulombEnergyAndVirial(PmeOutput* output) const
 {
     GMX_ASSERT(output != nullptr, "Need valid output buffer");
     /* This function sums output over threads and should therefore
      * only be called after thread synchronization.
      */
-    output->coulombEnergy_ = work[0]->energy_q;
-    copy_mat(work[0]->vir_q, output->coulombVirial_);
+    output->coulombEnergy_ = workData(0).energy_q;
+    copy_mat(workData(0).vir_q, output->coulombVirial_);
 
-    for (int thread = 1; thread < nthread; thread++)
+    for (int thread = 1; thread < numThreads(); thread++)
     {
-        output->coulombEnergy_ += work[thread]->energy_q;
-        m_add(output->coulombVirial_, work[thread]->vir_q, output->coulombVirial_);
+        output->coulombEnergy_ += workData(thread).energy_q;
+        m_add(output->coulombVirial_, workData(thread).vir_q, output->coulombVirial_);
     }
 }
 
-void get_pme_ener_vir_lj(ArrayRef<const std::unique_ptr<pme_solve_work_t>> work, int nthread, PmeOutput* output)
+void PmeSolve::getLJEnergyAndVirial(PmeOutput* output) const
 {
     GMX_ASSERT(output != nullptr, "Need valid output buffer");
     /* This function sums output over threads and should therefore
      * only be called after thread synchronization.
      */
-    output->lennardJonesEnergy_ = work[0]->energy_lj;
-    copy_mat(work[0]->vir_lj, output->lennardJonesVirial_);
+    output->lennardJonesEnergy_ = workData(0).energy_lj;
+    copy_mat(workData(0).vir_lj, output->lennardJonesVirial_);
 
-    for (int thread = 1; thread < nthread; thread++)
+    for (int thread = 1; thread < numThreads(); thread++)
     {
-        output->lennardJonesEnergy_ += work[thread]->energy_lj;
-        m_add(output->lennardJonesVirial_, work[thread]->vir_lj, output->lennardJonesVirial_);
+        output->lennardJonesEnergy_ += workData(thread).energy_lj;
+        m_add(output->lennardJonesVirial_, workData(thread).vir_lj, output->lennardJonesVirial_);
     }
 }
 
@@ -267,50 +284,54 @@ using PME_T = SimdReal;
 using PME_T = real;
 #endif
 
-int solve_pme_yzx(const gmx_pme_t* pme, t_complex* grid, real vol, bool computeEnergyAndVirial, int nthread, int thread)
+int PmeSolve::solveCoulombYZX(const gmx_pme_t& pme,
+                              t_complex*       grid,
+                              const real       vol,
+                              const bool       computeEnergyAndVirial,
+                              const int        thread)
 {
     /* do recip sum over local cells in grid */
     /* y major, z middle, x minor or continuous */
     t_complex* p0;
     int        kx, ky, kz, maxkx, maxky;
-    int        nx, ny, nz, iyz0, iyz1, iyz, iy, iz, kxstart, kxend;
+    int        iyz0, iyz1, iyz, iy, iz, kxstart, kxend;
     real       mx, my, mz;
-    real       ewaldcoeff = pme->ewaldcoeff_q;
+    real       ewaldcoeff = pme.ewaldcoeff_q;
     real       factor     = M_PI * M_PI / (ewaldcoeff * ewaldcoeff);
     real       ets2, struct2, vfactor, ets2vf;
     real       d1, d2, energy = 0;
     real       by, bz;
     real       virxx = 0, virxy = 0, virxz = 0, viryy = 0, viryz = 0, virzz = 0;
-    real       rxx, ryx, ryy, rzx, rzy, rzz;
     real       mhxk, mhyk, mhzk, m2k;
     real       corner_fac;
     ivec       complex_order;
     ivec       local_ndata, local_offset, local_size;
-    real       elfac;
 
-    elfac = gmx::c_one4PiEps0 / pme->epsilon_r;
+    const real elfac = gmx::c_one4PiEps0 / pme.epsilon_r;
 
-    nx = pme->nkx;
-    ny = pme->nky;
-    nz = pme->nkz;
+    const int nx = pme.nkx;
+    const int ny = pme.nky;
+    const int nz = pme.nkz;
 
     /* Dimensions should be identical for A/B grid, so we just use A here */
     gmx_parallel_3dfft_complex_limits(
-            pme->gridsCoulomb[0].pfft_setup.get(), complex_order, local_ndata, local_offset, local_size);
+            pme.gridsCoulomb[0].pfft_setup.get(), complex_order, local_ndata, local_offset, local_size);
 
-    rxx = pme->recipbox[XX][XX];
-    ryx = pme->recipbox[YY][XX];
-    ryy = pme->recipbox[YY][YY];
-    rzx = pme->recipbox[ZZ][XX];
-    rzy = pme->recipbox[ZZ][YY];
-    rzz = pme->recipbox[ZZ][ZZ];
+    const real rxx = pme.recipbox[XX][XX];
+    const real ryx = pme.recipbox[YY][XX];
+    const real ryy = pme.recipbox[YY][YY];
+    const real rzx = pme.recipbox[ZZ][XX];
+    const real rzy = pme.recipbox[ZZ][YY];
+    const real rzz = pme.recipbox[ZZ][ZZ];
 
     GMX_ASSERT(rxx != 0.0, "Someone broke the reciprocal box again");
 
     maxkx = (nx + 1) / 2;
     maxky = (ny + 1) / 2;
 
-    pme_solve_work_t& work = *pme->solve_work[thread];
+    const int nthread = numThreads();
+
+    pme_solve_work_t& work = workData(thread);
 
     real* gmx_restrict mhx   = work.mhx.data();
     real* gmx_restrict mhy   = work.mhy.data();
@@ -340,13 +361,13 @@ int solve_pme_yzx(const gmx_pme_t* pme, t_complex* grid, real vol, bool computeE
             my = (ky - ny);
         }
 
-        by = M_PI * vol * pme->bsp_mod[YY][ky];
+        by = M_PI * vol * pme.bsp_mod[YY][ky];
 
         kz = iz + local_offset[ZZ];
 
         mz = kz;
 
-        bz = pme->bsp_mod[ZZ][kz];
+        bz = pme.bsp_mod[ZZ][kz];
 
         /* 0.5 correction for corner points */
         corner_fac = 1;
@@ -391,7 +412,7 @@ int solve_pme_yzx(const gmx_pme_t* pme, t_complex* grid, real vol, bool computeE
                 mhy[kx]   = mhyk;
                 mhz[kx]   = mhzk;
                 m2[kx]    = m2k;
-                denom[kx] = m2k * bz * by * pme->bsp_mod[XX][kx];
+                denom[kx] = m2k * bz * by * pme.bsp_mod[XX][kx];
                 tmp1[kx]  = -factor * m2k;
             }
 
@@ -407,7 +428,7 @@ int solve_pme_yzx(const gmx_pme_t* pme, t_complex* grid, real vol, bool computeE
                 mhy[kx]   = mhyk;
                 mhz[kx]   = mhzk;
                 m2[kx]    = m2k;
-                denom[kx] = m2k * bz * by * pme->bsp_mod[XX][kx];
+                denom[kx] = m2k * bz * by * pme.bsp_mod[XX][kx];
                 tmp1[kx]  = -factor * m2k;
             }
 
@@ -468,7 +489,7 @@ int solve_pme_yzx(const gmx_pme_t* pme, t_complex* grid, real vol, bool computeE
                 mhyk      = mx * ryx + my * ryy;
                 mhzk      = mx * rzx + my * rzy + mz * rzz;
                 m2k       = mhxk * mhxk + mhyk * mhyk + mhzk * mhzk;
-                denom[kx] = m2k * bz * by * pme->bsp_mod[XX][kx];
+                denom[kx] = m2k * bz * by * pme.bsp_mod[XX][kx];
                 tmp1[kx]  = -factor * m2k;
             }
 
@@ -480,7 +501,7 @@ int solve_pme_yzx(const gmx_pme_t* pme, t_complex* grid, real vol, bool computeE
                 mhyk      = mx * ryx + my * ryy;
                 mhzk      = mx * rzx + my * rzy + mz * rzz;
                 m2k       = mhxk * mhxk + mhyk * mhyk + mhzk * mhzk;
-                denom[kx] = m2k * bz * by * pme->bsp_mod[XX][kx];
+                denom[kx] = m2k * bz * by * pme.bsp_mod[XX][kx];
                 tmp1[kx]  = -factor * m2k;
             }
 
@@ -527,52 +548,52 @@ int solve_pme_yzx(const gmx_pme_t* pme, t_complex* grid, real vol, bool computeE
     return local_ndata[YY] * local_ndata[XX];
 }
 
-int solve_pme_lj_yzx(const gmx_pme_t*              pme,
-                     gmx::ArrayRef<PmeAndFftGrids> grids,
-                     gmx_bool                      bLB,
-                     real                          vol,
-                     bool                          computeEnergyAndVirial,
-                     int                           nthread,
-                     int                           thread)
+int PmeSolve::solveLJYZX(const gmx_pme_t&              pme,
+                         gmx::ArrayRef<PmeAndFftGrids> grids,
+                         const bool                    useLBCombinationRule,
+                         const real                    vol,
+                         const bool                    computeEnergyAndVirial,
+                         const int                     thread)
 {
-    GMX_ASSERT(!bLB || gmx::ssize(grids) == sc_numGridsLJLB,
+    GMX_ASSERT(!useLBCombinationRule || gmx::ssize(grids) == sc_numGridsLJLB,
                "Expect 7 grids for LJ with LB comb.rule.");
 
     /* do recip sum over local cells in grid */
     /* y major, z middle, x minor or continuous */
-    int  ig, gcount;
     int  kx, ky, kz, maxkx, maxky;
-    int  nx, ny, nz, iy, iyz0, iyz1, iyz, iz, kxstart, kxend;
+    int  iy, iyz0, iyz1, iyz, iz, kxstart, kxend;
     real mx, my, mz;
-    real ewaldcoeff = pme->ewaldcoeff_lj;
+    real ewaldcoeff = pme.ewaldcoeff_lj;
     real factor     = M_PI * M_PI / (ewaldcoeff * ewaldcoeff);
     real ets2, ets2vf;
     real eterm, vterm, d1, d2, energy = 0;
     real by, bz;
     real virxx = 0, virxy = 0, virxz = 0, viryy = 0, viryz = 0, virzz = 0;
-    real rxx, ryx, ryy, rzx, rzy, rzz;
     real mhxk, mhyk, mhzk, m2k;
     real corner_fac;
     ivec complex_order;
     ivec local_ndata, local_offset, local_size;
-    nx = pme->nkx;
-    ny = pme->nky;
-    nz = pme->nkz;
+
+    const int nx = pme.nkx;
+    const int ny = pme.nky;
+    const int nz = pme.nkz;
 
     /* Dimensions should be identical for A/B grid, so we just use A here */
     gmx_parallel_3dfft_complex_limits(
             grids[0].pfft_setup.get(), complex_order, local_ndata, local_offset, local_size);
-    rxx = pme->recipbox[XX][XX];
-    ryx = pme->recipbox[YY][XX];
-    ryy = pme->recipbox[YY][YY];
-    rzx = pme->recipbox[ZZ][XX];
-    rzy = pme->recipbox[ZZ][YY];
-    rzz = pme->recipbox[ZZ][ZZ];
+    const real rxx = pme.recipbox[XX][XX];
+    const real ryx = pme.recipbox[YY][XX];
+    const real ryy = pme.recipbox[YY][YY];
+    const real rzx = pme.recipbox[ZZ][XX];
+    const real rzy = pme.recipbox[ZZ][YY];
+    const real rzz = pme.recipbox[ZZ][ZZ];
 
     maxkx = (nx + 1) / 2;
     maxky = (ny + 1) / 2;
 
-    pme_solve_work_t& work = *pme->solve_work[thread];
+    const int nthread = numThreads();
+
+    pme_solve_work_t& work = workData(thread);
 
     real* gmx_restrict mhx   = work.mhx.data();
     real* gmx_restrict mhy   = work.mhy.data();
@@ -601,13 +622,13 @@ int solve_pme_lj_yzx(const gmx_pme_t*              pme,
             my = (ky - ny);
         }
 
-        by = 3.0 * vol * pme->bsp_mod[YY][ky] / (M_PI * sqrt(M_PI) * ewaldcoeff * ewaldcoeff * ewaldcoeff);
+        by = 3.0 * vol * pme.bsp_mod[YY][ky] / (M_PI * sqrt(M_PI) * ewaldcoeff * ewaldcoeff * ewaldcoeff);
 
         kz = iz + local_offset[ZZ];
 
         mz = kz;
 
-        bz = pme->bsp_mod[ZZ][kz];
+        bz = pme.bsp_mod[ZZ][kz];
 
         /* 0.5 correction for corner points */
         corner_fac = 1;
@@ -639,7 +660,7 @@ int solve_pme_lj_yzx(const gmx_pme_t*              pme,
                 mhy[kx]   = mhyk;
                 mhz[kx]   = mhzk;
                 m2[kx]    = m2k;
-                denom[kx] = bz * by * pme->bsp_mod[XX][kx];
+                denom[kx] = bz * by * pme.bsp_mod[XX][kx];
                 tmp1[kx]  = -factor * m2k;
                 tmp2[kx]  = sqrt(factor * m2k);
             }
@@ -656,7 +677,7 @@ int solve_pme_lj_yzx(const gmx_pme_t*              pme,
                 mhy[kx]   = mhyk;
                 mhz[kx]   = mhzk;
                 m2[kx]    = m2k;
-                denom[kx] = bz * by * pme->bsp_mod[XX][kx];
+                denom[kx] = bz * by * pme.bsp_mod[XX][kx];
                 tmp1[kx]  = -factor * m2k;
                 tmp2[kx]  = sqrt(factor * m2k);
             }
@@ -684,7 +705,7 @@ int solve_pme_lj_yzx(const gmx_pme_t*              pme,
                 tmp2[kx] = vterm * denom[kx];
             }
 
-            if (!bLB)
+            if (!useLBCombinationRule)
             {
                 t_complex* p0;
                 real       struct2;
@@ -716,7 +737,7 @@ int solve_pme_lj_yzx(const gmx_pme_t*              pme,
                     struct2[kx] = 0.0;
                 }
                 /* Due to symmetry we only need to calculate 4 of the 7 terms */
-                for (ig = 0; ig <= 3; ++ig)
+                for (int ig = 0; ig <= 3; ++ig)
                 {
                     t_complex *p0, *p1;
                     real       scale;
@@ -730,7 +751,7 @@ int solve_pme_lj_yzx(const gmx_pme_t*              pme,
                         struct2[kx] += scale * (p0->re * p1->re + p0->im * p1->im);
                     }
                 }
-                for (ig = 0; ig <= 6; ++ig)
+                for (int ig = 0; ig <= 6; ++ig)
                 {
                     t_complex* p0;
 
@@ -786,7 +807,7 @@ int solve_pme_lj_yzx(const gmx_pme_t*              pme,
                 mhzk      = mx * rzx + my * rzy + mz * rzz;
                 m2k       = mhxk * mhxk + mhyk * mhyk + mhzk * mhzk;
                 m2[kx]    = m2k;
-                denom[kx] = bz * by * pme->bsp_mod[XX][kx];
+                denom[kx] = bz * by * pme.bsp_mod[XX][kx];
                 tmp1[kx]  = -factor * m2k;
                 tmp2[kx]  = sqrt(factor * m2k);
             }
@@ -800,7 +821,7 @@ int solve_pme_lj_yzx(const gmx_pme_t*              pme,
                 mhzk      = mx * rzx + my * rzy + mz * rzz;
                 m2k       = mhxk * mhxk + mhyk * mhyk + mhzk * mhzk;
                 m2[kx]    = m2k;
-                denom[kx] = bz * by * pme->bsp_mod[XX][kx];
+                denom[kx] = bz * by * pme.bsp_mod[XX][kx];
                 tmp1[kx]  = -factor * m2k;
                 tmp2[kx]  = sqrt(factor * m2k);
             }
@@ -825,8 +846,8 @@ int solve_pme_lj_yzx(const gmx_pme_t*              pme,
                 eterm    = -((1.0 - 2.0 * m2k) * tmp1[kx] + 2.0 * m2k * tmp2[kx]);
                 tmp1[kx] = eterm * denom[kx];
             }
-            gcount = (bLB ? 7 : 1);
-            for (ig = 0; ig < gcount; ++ig)
+            const int gcount = (useLBCombinationRule ? 7 : 1);
+            for (int ig = 0; ig < gcount; ++ig)
             {
                 t_complex* p0;
 

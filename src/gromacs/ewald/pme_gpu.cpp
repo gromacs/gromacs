@@ -265,7 +265,8 @@ void pme_gpu_launch_complex_transforms(gmx_pme_t* pme, gmx_wallcycle* wcycle, co
 #pragma omp parallel for num_threads(pme->nthread) schedule(static)
                 for (int thread = 0; thread < pme->nthread; thread++)
                 {
-                    solve_pme_yzx(pme, cfftgrid, pme->boxVolume, computeEnergyAndVirial, pme->nthread, thread);
+                    pme->pmeSolve->solveCoulombYZX(
+                            *pme, cfftgrid, pme->boxVolume, computeEnergyAndVirial, thread);
                 }
                 wallcycle_stop(wcycle, WallCycleCounter::PmeSolveMixedMode);
             }

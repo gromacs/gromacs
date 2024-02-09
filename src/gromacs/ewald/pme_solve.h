@@ -52,60 +52,54 @@ template<typename>
 class ArrayRef;
 }
 
-struct pme_solve_work_t
+//! Class for solving PME for Coulomb and LJ
+class PmeSolve
 {
-    // Resizes the buffers to \p newSize when larger than the current size
-    void resizeWhenNeeded(const int newSize);
+public:
+    /*! Constructor
+     *
+     * \param numThreads  The number of OpenMP threads used during solve
+     * \param nkx         The number of PME grid points along dimension X
+     */
+    PmeSolve(int numThreads, int nkx);
 
-    /* work data for solve_pme */
-    std::vector<real>       mhx;
-    std::vector<real>       mhy;
-    std::vector<real>       mhz;
-    std::vector<real>       m2;
-    gmx::PaddedVector<real> denom;
-    gmx::PaddedVector<real> tmp1;
-    gmx::PaddedVector<real> tmp2;
-    gmx::PaddedVector<real> eterm;
-    std::vector<real>       m2inv;
+    ~PmeSolve();
 
-    real   energy_q;
-    matrix vir_q;
-    real   energy_lj;
-    matrix vir_lj;
+    /*! \brief Solves PME for Coulomb
+     *
+     * \returns the number of grid elements solved
+     */
+    int solveCoulombYZX(const gmx_pme_t& pme, t_complex* grid, real vol, bool computeEnergyAndVirial, int thread);
+
+    /*! \brief Solves PME for LJ
+     *
+     * \returns the number of grid elements solved
+     */
+    int solveLJYZX(const gmx_pme_t&              pme,
+                   gmx::ArrayRef<PmeAndFftGrids> grids,
+                   bool                          useLBCombinationRule,
+                   real                          vol,
+                   bool                          computeEnergyAndVirial,
+                   int                           thread);
+
+    //! Get Coulomb energy and virial
+    void getCoulombEnergyAndVirial(PmeOutput* output) const;
+
+    //! Get LJ energy and virial
+    void getLJEnergyAndVirial(PmeOutput* output) const;
+
+private:
+    //! Returns the number of threads used for solve
+    int numThreads() const { return gmx::ssize(workData_); }
+
+    //! Returns the work data for thread \p thread
+    pme_solve_work_t& workData(int thread) { return *workData_[thread]; }
+
+    //! Returns the work data for thread \p thread
+    const pme_solve_work_t& workData(int thread) const { return *workData_[thread]; }
+
+    //! Work data for the threads, stored with unique_ptr for thread-local memory
+    std::vector<std::unique_ptr<pme_solve_work_t>> workData_;
 };
-
-/*! \brief Allocates array of work structures
- *
- * Note that work is the address of a pointer allocated by
- * this function. Upon return it will point at
- * an array of work structures.
- */
-void pme_init_all_work(std::vector<std::unique_ptr<pme_solve_work_t>>* work, int nthread, int nkx);
-
-/*! \brief Get energy and virial for electrostatics
- *
- * Note that work is an array of work structures
- */
-void get_pme_ener_vir_q(gmx::ArrayRef<const std::unique_ptr<pme_solve_work_t>> work,
-                        int                                                    nthread,
-                        PmeOutput*                                             output);
-
-/*! \brief Get energy and virial for L-J
- *
- * Note that work is an array of work structures
- */
-void get_pme_ener_vir_lj(gmx::ArrayRef<const std::unique_ptr<pme_solve_work_t>> work,
-                         int                                                    nthread,
-                         PmeOutput*                                             output);
-
-int solve_pme_yzx(const gmx_pme_t* pme, t_complex* grid, real vol, bool computeEnergyAndVirial, int nthread, int thread);
-
-int solve_pme_lj_yzx(const gmx_pme_t*              pme,
-                     gmx::ArrayRef<PmeAndFftGrids> grids,
-                     gmx_bool                      bLB,
-                     real                          vol,
-                     bool                          computeEnergyAndVirial,
-                     int                           nthread,
-                     int                           thread);
 
 #endif
