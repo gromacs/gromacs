@@ -49,6 +49,7 @@ if(GMX_GPU_OPENCL)
     gmx_add_libgromacs_sources(
         device_context_ocl.cpp
         device_stream_ocl.cpp
+        gpu_utils_impl.cpp
         pmalloc.cpp
         ocl_compiler.cpp
         ocl_caching.cpp
@@ -69,6 +70,7 @@ elseif(GMX_GPU_SYCL)
         devicebuffer_sycl.cpp
         device_context_sycl.cpp
         device_stream_sycl.cpp
+        gpu_utils_impl.cpp
         pmalloc_sycl.cpp
         )
     _gmx_add_files_to_property(SYCL_SOURCES
@@ -83,6 +85,7 @@ else()
     gmx_add_libgromacs_sources(
         device_context.cpp
         device_stream.cpp
+        gpu_utils_impl.cpp
         pmalloc.cpp
     )
 endif()

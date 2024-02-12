@@ -54,6 +54,7 @@
 #include "gromacs/gpu_utils/device_stream.h"
 #include "gromacs/hardware/device_information.h"
 #include "gromacs/hardware/device_management.h"
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/exceptions.h"
@@ -201,7 +202,7 @@ static void peerAccessCheckStat(const cudaError_t    stat,
     }
 }
 
-void setupGpuDevicePeerAccess(const std::vector<int>& gpuIdsToUse, const gmx::MDLogger& mdlog)
+void setupGpuDevicePeerAccess(gmx::ArrayRef<const int> gpuIdsToUse, const gmx::MDLogger& mdlog)
 {
     cudaError_t stat;
 

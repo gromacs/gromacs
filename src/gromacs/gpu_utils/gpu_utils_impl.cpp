@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright 2014- The GROMACS Authors
+ * Copyright 2024- The GROMACS Authors
  * and the project initiators Erik Lindahl, Berk Hess and David van der Spoel.
  * Consult the AUTHORS/COPYING files and https://www.gromacs.org for details.
  *
@@ -32,23 +32,27 @@
  * the research papers on the package. Check out https://www.gromacs.org.
  */
 /*! \internal \file
- *  \brief Declares functions that support JIT compilation (e.g. for OpenCL)
+ *  \brief Function stubs for build types that don't implement methods
  *
- *  \author Dimitrios Karkoulis <dimitris.karkoulis@gmail.com>
- *  \author Mark Abraham <mark.j.abraham@gmail.com>
- *
- * \ingroup module_nbnxm
+ *  \author Paul Bauer <paul.bauer.q@gmail.com>
  */
+#include "gmxpre.h"
 
-#ifndef GMX_NBNXM_GPU_JIT_SUPPORT_H
-#define GMX_NBNXM_GPU_JIT_SUPPORT_H
+#include "gpu_utils.h"
 
-#include "gromacs/gpu_utils/gpu_macros.h"
-#include "gromacs/utility/basedefinitions.h"
+void startGpuProfiler() {}
 
-struct NbnxmGpu;
+void stopGpuProfiler() {}
 
-/*! \brief Handles any JIT compilation of nbnxn kernels for the selected device */
-OPENCL_FUNC_QUALIFIER void nbnxn_gpu_compile_kernels(NbnxmGpu gmx_unused* nb) OPENCL_FUNC_TERM;
+void resetGpuProfiler() {}
 
-#endif
+bool isHostMemoryPinned(const void* /* h_ptr */)
+{
+    return false;
+}
+
+void checkPendingDeviceErrorBetweenSteps() {}
+
+void setupGpuDevicePeerAccess(gmx::ArrayRef<const int> /* gpuIdsToUse */, const gmx::MDLogger& /* mdlog */)
+{
+}

@@ -42,13 +42,7 @@
 #ifndef GMX_GPU_UTILS_GPU_UTILS_H
 #define GMX_GPU_UTILS_GPU_UTILS_H
 
-#include <cstdio>
-
-#include <string>
-#include <vector>
-
-#include "gromacs/gpu_utils/gpu_macros.h"
-#include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/arrayref.h"
 
 namespace gmx
 {
@@ -84,8 +78,7 @@ enum class GpuTaskCompletion
  *
  *  Note that this is implemented only for the CUDA API.
  */
-CUDA_FUNC_QUALIFIER
-void startGpuProfiler() CUDA_FUNC_TERM;
+void startGpuProfiler();
 
 
 /*! \brief Resets the GPU profiler if mdrun is being profiled.
@@ -98,8 +91,7 @@ void startGpuProfiler() CUDA_FUNC_TERM;
  *
  * Note that this is implemented only for the CUDA API.
  */
-CUDA_FUNC_QUALIFIER
-void resetGpuProfiler() CUDA_FUNC_TERM;
+void resetGpuProfiler();
 
 
 /*! \brief Stops the CUDA profiler if mdrun is being profiled.
@@ -110,20 +102,16 @@ void resetGpuProfiler() CUDA_FUNC_TERM;
  *
  *  Note that this is implemented only for the CUDA API.
  */
-CUDA_FUNC_QUALIFIER
-void stopGpuProfiler() CUDA_FUNC_TERM;
+void stopGpuProfiler();
 
 //! Tells whether the host buffer was pinned for non-blocking transfers. Only implemented for CUDA.
-CUDA_FUNC_QUALIFIER
-bool isHostMemoryPinned(const void* CUDA_FUNC_ARGUMENT(h_ptr)) CUDA_FUNC_TERM_WITH_RETURN(false);
+bool isHostMemoryPinned(const void* h_ptr);
 
 /*! \brief Enable peer access between GPUs where supported
  * \param[in] gpuIdsToUse   List of GPU IDs in use
  * \param[in] mdlog         Logger object
  */
-CUDA_FUNC_QUALIFIER
-void setupGpuDevicePeerAccess(const std::vector<int>& CUDA_FUNC_ARGUMENT(gpuIdsToUse),
-                              const gmx::MDLogger&    CUDA_FUNC_ARGUMENT(mdlog)) CUDA_FUNC_TERM;
+void setupGpuDevicePeerAccess(gmx::ArrayRef<const int> gpuIdsToUse, const gmx::MDLogger& mdlog);
 
 /*! \brief Check the platform-defaults and environment variable to decide whether GPU timings
  * should be enabled.
@@ -135,7 +123,6 @@ bool decideGpuTimingsUsage();
 
 /*! \brief Check for API errors to avoid propagating these across e.g. MD steps.
  */
-CUDA_FUNC_QUALIFIER
-void checkPendingDeviceErrorBetweenSteps() CUDA_FUNC_TERM;
+void checkPendingDeviceErrorBetweenSteps();
 
 #endif
