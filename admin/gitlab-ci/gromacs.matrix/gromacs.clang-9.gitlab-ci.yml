@@ -13,6 +13,7 @@
 #   FFT: FFTW3
 #   Parallelism nt/ntomp: 4/2
 #   TNG: build without TNG
+#   Colvars: build without internal colvars support
 
 gromacs:clang-9:configure:
   extends:
@@ -22,7 +23,7 @@ gromacs:clang-9:configure:
   image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-llvm-9-cuda-11.0.3
   variables:
     COMPILER_MAJOR_VERSION: 9
-    CMAKE_EXTRA_OPTIONS: -DGMX_INSTALL_LEGACY_API=ON -DGMX_USE_TNG=no
+    CMAKE_EXTRA_OPTIONS: -DGMX_INSTALL_LEGACY_API=ON -DGMX_USE_TNG=no -DGMX_USE_COLVARS=NONE
 
 gromacs:clang-9:build:
   extends:

@@ -55,3 +55,12 @@ or automated scripts. No other deleterious effects noted.
 
 :issue:`4961`
 
+Fix grompp & mdrun crash when GMX_USE_COLVARS=NONE
+""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Colvars MDModule was not properly constructed when the Colvars
+library was not compiled. Colvars mdp fields handler was returning
+a nullptr.
+
+:issue:`4980`
+
