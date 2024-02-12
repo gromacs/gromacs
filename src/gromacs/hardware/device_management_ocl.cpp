@@ -140,24 +140,21 @@ static bool runningOnCompatibleHWForNvidia(const DeviceInformation& deviceInfo)
 /*! \brief Return the list of sub-group sizes supported by the device
  * \param devId OpenCL device ID.
  * \param deviceVendor Device vendor.
- * \param resultCapacity The capacity of \p result. Program is aborted if device returns more.
- * \param result Pointer to pre-allocated result array, capable of holding at least \p resultCapacity elements.
- * \return Number of elements written to \p results, that is, the number of sub-group sizes supported.
+ * \return the list of sub-group sizes supported by the device
  */
-static int fillSupportedSubGroupSizes(const cl_device_id devId,
-                                      const DeviceVendor deviceVendor,
-                                      int                resultCapacity,
-                                      int*               result)
+static FixedCapacityVector<int, 10> fillSupportedSubGroupSizes(const cl_device_id devId,
+                                                               const DeviceVendor deviceVendor)
 {
-    GMX_ASSERT(resultCapacity > 0, "Cannot write to empty array");
+    FixedCapacityVector<int, 10> result;
+
     switch (deviceVendor)
     {
         case DeviceVendor::Amd:
         {
             if (getenv("GMX_OCL_FORCE_AMD_WAVEFRONT64"))
             {
-                result[0] = 64;
-                return 1;
+                result.push_back(64);
+                return result;
             }
             cl_int status;
             // Try to query the device:
@@ -167,8 +164,8 @@ static int fillSupportedSubGroupSizes(const cl_device_id devId,
                     devId, CL_DEVICE_WAVEFRONT_WIDTH_AMD, sizeof(waveFrontSize), &waveFrontSize, nullptr);
             if (status == CL_SUCCESS)
             {
-                result[0] = waveFrontSize;
-                return 1;
+                result.push_back(waveFrontSize);
+                return result;
             }
 #endif
             // We couldn't query the device directly, try compiling a kernel for it:
@@ -179,8 +176,8 @@ static int fillSupportedSubGroupSizes(const cl_device_id devId,
                 {
                     int warpSize = gmx::ocl::getDeviceWarpSize(context, devId);
                     clReleaseContext(context);
-                    result[0] = warpSize;
-                    return 1;
+                    result.push_back(warpSize);
+                    return result;
                 }
                 catch (const gmx::InternalError&)
                 {
@@ -189,14 +186,14 @@ static int fillSupportedSubGroupSizes(const cl_device_id devId,
                 }
             }
             // Everything else failed, make an educated guess:
-            result[0] = 64;
-            return 1;
+            result.push_back(64);
+            return result;
         }
         case DeviceVendor::Intel:
         {
             // Try to query the device:
 #ifdef CL_DEVICE_SUB_GROUP_SIZES_INTEL
-            std::vector<size_t> subGroupSizesTemp(resultCapacity);
+            std::vector<size_t> subGroupSizesTemp(result.capacity());
             size_t              subGroupSizesTempOutputInBytes;
             cl_int              status           = clGetDeviceInfo(devId,
                                             CL_DEVICE_SUB_GROUP_SIZES_INTEL,
@@ -206,23 +203,26 @@ static int fillSupportedSubGroupSizes(const cl_device_id devId,
             const size_t        numSubGroupSizes = subGroupSizesTempOutputInBytes / sizeof(size_t);
             if (status == CL_SUCCESS)
             {
-                GMX_RELEASE_ASSERT(static_cast<int>(numSubGroupSizes) <= resultCapacity,
+                GMX_RELEASE_ASSERT(numSubGroupSizes <= result.capacity(),
                                    "Device supports too many sub-group sizes");
-                std::copy(subGroupSizesTemp.begin(), subGroupSizesTemp.begin() + numSubGroupSizes, result);
-                return numSubGroupSizes;
+                for (int subGroupSize : subGroupSizesTemp)
+                {
+                    result.push_back(subGroupSize);
+                }
+                return result;
             }
 #endif
             // All Intel devices tested support those, and they are the only ones that matter to GROMACS
-            GMX_RELEASE_ASSERT(resultCapacity >= 3,
+            GMX_RELEASE_ASSERT(result.capacity() >= 3,
                                "Device supports (by our guess) too many sub-group sizes");
-            result[0] = 8;
-            result[1] = 16;
-            result[2] = 32;
-            return 3;
+            result.push_back(8);
+            result.push_back(16);
+            result.push_back(32);
+            return result;
         }
-        case DeviceVendor::Nvidia: result[0] = 32; return 1;
+        case DeviceVendor::Nvidia: result.push_back(32); return result;
         // Keep the list of sub-groups empty for unknown vendors
-        default: return 0;
+        default: return result;
     }
 }
 
@@ -235,7 +235,7 @@ static int fillSupportedSubGroupSizes(const cl_device_id devId,
  */
 static bool runningOnCompatibleHWForAmd(const DeviceInformation& deviceInfo)
 {
-    return (deviceInfo.supportedSubGroupSizesSize == 1 && deviceInfo.supportedSubGroupSizesData[0] == 64);
+    return (deviceInfo.supportedSubGroupSizes.size() == 1 && deviceInfo.supportedSubGroupSizes[0] == 64);
 }
 
 /*!
@@ -597,12 +597,8 @@ std::vector<std::unique_ptr<DeviceInformation>> findDevices()
                     deviceInfoList[device_index]->deviceVendor =
                             getDeviceVendor(deviceInfoList[device_index]->vendorName);
 
-                    deviceInfoList[device_index]->supportedSubGroupSizesSize =
-                            gmx::fillSupportedSubGroupSizes(
-                                    ocl_device_ids[j],
-                                    deviceInfoList[device_index]->deviceVendor,
-                                    deviceInfoList[device_index]->supportedSubGroupSizesData.size(),
-                                    deviceInfoList[device_index]->supportedSubGroupSizesData.data());
+                    deviceInfoList[device_index]->supportedSubGroupSizes = gmx::fillSupportedSubGroupSizes(
+                            ocl_device_ids[j], deviceInfoList[device_index]->deviceVendor);
 
                     clGetDeviceInfo(ocl_device_ids[j],
                                     CL_DEVICE_MAX_WORK_ITEM_SIZES,

@@ -292,8 +292,7 @@ std::vector<std::unique_ptr<DeviceInformation>> findDevices()
         deviceInfoList[i]->prop         = prop;
         deviceInfoList[i]->deviceVendor = DeviceVendor::Nvidia;
 
-        deviceInfoList[i]->supportedSubGroupSizesSize    = 1;
-        deviceInfoList[i]->supportedSubGroupSizesData[0] = 32;
+        deviceInfoList[i]->supportedSubGroupSizes.push_back(32);
 
         deviceInfoList[i]->gpuAwareMpiStatus = gpuAwareMpiStatus;
 

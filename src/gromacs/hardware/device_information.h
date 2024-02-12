@@ -64,6 +64,7 @@
 
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/enumerationhelpers.h"
+#include "gromacs/utility/fixedcapacityvector.h"
 #include "gromacs/utility/mpiinfo.h"
 
 //! Constant used to help minimize preprocessed code
@@ -170,14 +171,10 @@ struct DeviceInformation
     /*! \brief Warp/sub-group sizes supported by the device.
      *
      * \ref DeviceInformation must be serializable in CUDA, so we cannot use \c std::vector here.
-     * Arbitrarily limiting to 10. FixedCapacityVector uses pointers internally, so no good either. */
-    std::array<int, 10>      supportedSubGroupSizesData;
-    int                      supportedSubGroupSizesSize;
-    gmx::ArrayRef<const int> supportedSubGroupSizes() const
-    {
-        return { supportedSubGroupSizesData.data(),
-                 supportedSubGroupSizesData.data() + supportedSubGroupSizesSize };
-    }
+     * Arbitrarily limiting to 10.
+     */
+    gmx::FixedCapacityVector<int, 10> supportedSubGroupSizes;
+
     gmx::GpuAwareMpiStatus gpuAwareMpiStatus;
 #if GMX_GPU_CUDA
     //! CUDA device properties.
@@ -204,6 +201,6 @@ struct DeviceInformation
 };
 
 //! Whether \ref DeviceInformation can be serialized for sending via MPI.
-static constexpr bool c_canSerializeDeviceInformation = std::is_trivial_v<DeviceInformation>;
+static constexpr bool c_canSerializeDeviceInformation = std::is_trivially_copyable_v<DeviceInformation>;
 
 #endif // GMX_HARDWARE_DEVICE_INFORMATION_H

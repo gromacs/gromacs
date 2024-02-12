@@ -452,7 +452,7 @@ static DeviceStatus checkDevice(size_t deviceId, const DeviceInformation& device
 {
 
     DeviceStatus supportStatus = isDeviceCompatible(
-            deviceInfo.syclDevice, deviceInfo.deviceVendor, deviceInfo.supportedSubGroupSizes());
+            deviceInfo.syclDevice, deviceInfo.deviceVendor, deviceInfo.supportedSubGroupSizes);
     if (supportStatus != DeviceStatus::Compatible)
     {
         return supportStatus;
@@ -606,19 +606,20 @@ std::vector<std::unique_ptr<DeviceInformation>> findDevices()
 
         deviceInfos[i]->gpuAwareMpiStatus = getDeviceGpuAwareMpiStatus(syclDevice.get_backend());
 
-        deviceInfos[i]->supportedSubGroupSizesSize = 0;
+        deviceInfos[i]->supportedSubGroupSizes.clear();
         try
         {
             const auto sgSizes = syclDevice.get_info<sycl::info::device::sub_group_sizes>();
-            GMX_RELEASE_ASSERT(sgSizes.size() <= deviceInfos[i]->supportedSubGroupSizesData.size(),
+            GMX_RELEASE_ASSERT(sgSizes.size() <= deviceInfos[i]->supportedSubGroupSizes.capacity(),
                                "Device supports too many subgroup sizes");
-            deviceInfos[i]->supportedSubGroupSizesSize = sgSizes.size();
-            // TODO: check capacity, see MR !3208
-            std::copy(sgSizes.begin(), sgSizes.end(), deviceInfos[i]->supportedSubGroupSizesData.begin());
+            for (int sgSize : sgSizes)
+            {
+                deviceInfos[i]->supportedSubGroupSizes.push_back(sgSize);
+            }
         }
         catch (std::exception)
         {
-            deviceInfos[i]->supportedSubGroupSizesSize = 0;
+            deviceInfos[i]->supportedSubGroupSizes.clear();
             // The device will be marked incompatible by checkDevice below
         }
 

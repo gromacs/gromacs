@@ -52,11 +52,11 @@ namespace Nbnxm
 
 static int getNbnxmSubGroupSize(const DeviceInformation& deviceInfo)
 {
-    if (deviceInfo.supportedSubGroupSizesSize == 1)
+    if (deviceInfo.supportedSubGroupSizes.size() == 1)
     {
-        return deviceInfo.supportedSubGroupSizesData[0];
+        return deviceInfo.supportedSubGroupSizes[0];
     }
-    else if (deviceInfo.supportedSubGroupSizesSize > 1)
+    else if (deviceInfo.supportedSubGroupSizes.size() > 1)
     {
         switch (deviceInfo.deviceVendor)
         {
