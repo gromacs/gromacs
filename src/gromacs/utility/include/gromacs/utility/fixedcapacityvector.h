@@ -182,7 +182,7 @@ public:
     constexpr const_reference back() const noexcept { return data_[size_ - 1]; }
 
     //! Returns a raw pointer to the contents of the array
-    constexpr T* data() const noexcept { return data_.data(); }
+    constexpr const T* data() const noexcept { return data_.data(); }
 
     //! Returns a raw pointer to the contents of the array
     constexpr T* data() noexcept { return data_.data(); }

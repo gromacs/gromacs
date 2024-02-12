@@ -41,6 +41,8 @@
 
 #include "gromacs/utility/fixedcapacityvector.h"
 
+#include <utility>
+
 #include <gtest/gtest.h>
 
 #include "gromacs/utility/basedefinitions.h"
@@ -230,6 +232,47 @@ TEST(FixedCapacityVectorTest, MoveAssignmentWorks)
     EXPECT_EQ(2, copy[1]);
     EXPECT_EQ(3, copy[2]);
     EXPECT_EQ(3, copy.size());
+}
+
+TEST(FixedCapacityVectorTest, ElementAssignmentWorks)
+{
+    FixedCapacityVector<int, 4> v;
+    v.push_back(1);
+    v.push_back(2);
+    v[0]    = 11;
+    v.at(1) = 12;
+    EXPECT_EQ(11, v[0]);
+    EXPECT_EQ(12, v[1]);
+}
+
+TEST(FixedCapacityVectorTest, DataWorks)
+{
+    FixedCapacityVector<int, 4> v;
+    v.push_back(1);
+    v.push_back(2);
+    EXPECT_EQ(1, v.data()[0]);
+    EXPECT_EQ(2, v.data()[1]);
+}
+
+TEST(FixedCapacityVectorTest, ConstMethodsWork)
+{
+    FixedCapacityVector<int, 4> v;
+    v.push_back(1);
+    v.push_back(2);
+    v.push_back(3);
+    const FixedCapacityVector<int, 4> copy = v;
+    EXPECT_EQ(3, copy.size());
+    EXPECT_EQ(3, copy.ssize());
+    EXPECT_FALSE(copy.empty());
+    static_assert(copy.capacity() == 4);
+    static_assert(copy.max_size() == 4);
+    EXPECT_EQ(1, copy[0]);
+    EXPECT_EQ(2, copy.at(1));
+    EXPECT_EQ(3, copy.data()[2]);
+    for (const auto* it = copy.begin(); it != copy.end(); it++)
+    {
+        EXPECT_EQ(*it, (it - copy.begin() + 1));
+    }
 }
 
 } // namespace
