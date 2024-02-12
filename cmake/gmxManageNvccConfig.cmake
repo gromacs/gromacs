@@ -78,3 +78,8 @@ endif()
 
 # Disable cudafe warnings with nvc++ as a host compiler - warning #177-D
 gmx_add_cuda_flag_if_supported(NVCC_HAS_DIAG_SUPPRESS_177 -diag-suppress=177)
+# Allow constexpr functions with incompatible execution space (e.g. std::numeric_limits)
+# to be called from __host__ __device__ functions
+gmx_add_cuda_flag_if_supported(NVCC_HAS_EXPT_RELAXED_CONSTEXPR "--expt-relaxed-constexpr")
+# Avoid warning for partially overwriting virtual function in colvars
+gmx_add_cuda_flag_if_supported(NVCC_HAS_DIAG_SUPPRESS_611 -diag-suppress=611)
