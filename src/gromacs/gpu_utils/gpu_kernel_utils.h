@@ -54,10 +54,8 @@
 #endif
 
 #if GMX_GPU_SYCL
-#    define GMX_DEVICE_ATTRIBUTE
 #    include "sycl_kernel_utils.h"
 #elif GMX_GPU_HIP || GMX_GPU_CUDA
-#    define GMX_DEVICE_ATTRIBUTE __device__
 #    if GMX_GPU_HIP
 #        include "hip_kernel_utils.h"
 #    else
@@ -67,19 +65,13 @@
 #    error Including shared gpu kernel utilities header in unsupported build config
 #endif
 
-#ifdef _MSC_VER
-#    define GMX_ALWAYS_INLINE GMX_DEVICE_ATTRIBUTE __forceinline
-#else
-#    define GMX_ALWAYS_INLINE GMX_DEVICE_ATTRIBUTE __attribute__((always_inline))
-#endif
-
 class Float2Wrapper
 {
 public:
     GMX_DEVICE_ATTRIBUTE Float2Wrapper(Float2 input) : storage_(input) {}
 
     template<typename Index>
-    GMX_ALWAYS_INLINE float operator[](Index i) const
+    GMX_DEVICE_FUNC_ATTRIBUTE float operator[](Index i) const
     {
         switch (i)
         {
@@ -97,7 +89,7 @@ private:
     Float2 storage_;
 };
 
-static inline GMX_ALWAYS_INLINE float gmxGpuFDim(const float one, const float two)
+static inline GMX_DEVICE_FUNC_ATTRIBUTE float gmxGpuFDim(const float one, const float two)
 {
 #if GMX_GPU_SYCL
     return sycl::fdim(one, two);
@@ -107,7 +99,7 @@ static inline GMX_ALWAYS_INLINE float gmxGpuFDim(const float one, const float tw
 #endif
 }
 
-static inline GMX_ALWAYS_INLINE float gmxGpuExp(const float value)
+static inline GMX_DEVICE_FUNC_ATTRIBUTE float gmxGpuExp(const float value)
 {
 #if GMX_GPU_SYCL
     return sycl::exp(value);
@@ -121,7 +113,7 @@ static inline GMX_ALWAYS_INLINE float gmxGpuExp(const float value)
 }
 
 template<typename T>
-static inline GMX_ALWAYS_INLINE float gmxGpuFma(const T valueOne, const T valueTwo, const T valueThree)
+static inline GMX_DEVICE_FUNC_ATTRIBUTE float gmxGpuFma(const T valueOne, const T valueTwo, const T valueThree)
 {
 #if GMX_GPU_SYCL
     return sycl::fma(valueOne, valueTwo, valueThree);
@@ -139,12 +131,12 @@ static inline GMX_ALWAYS_INLINE float gmxGpuFma(const T valueOne, const T valueT
  *  Implements numeric equivalent of: (1-t)*d0 + t*d1.
  */
 template<typename T>
-static inline GMX_ALWAYS_INLINE T lerp(T d0, T d1, T t)
+static inline GMX_DEVICE_FUNC_ATTRIBUTE T lerp(T d0, T d1, T t)
 {
     return gmxGpuFma(t, d1, gmxGpuFma(-t, d0, d0));
 }
 
-static inline GMX_ALWAYS_INLINE Float2Wrapper fastLoad(const Float2* input, int offset)
+static inline GMX_DEVICE_FUNC_ATTRIBUTE Float2Wrapper fastLoad(const Float2* input, int offset)
 {
 #if GMX_GPU_SYCL
     return input[offset];

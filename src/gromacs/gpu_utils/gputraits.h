@@ -46,18 +46,24 @@
 
 #include "config.h"
 
+// The lightweight attribute macros (GMX_HOST_ATTRIBUTE, GMX_DEVICE_ATTRIBUTE,
+// GMX_KERNEL_ATTRIBUTE, GMX_HOSTDEVICE_ATTRIBUTE, GMX_FUNC_ATTRIBUTE, etc.)
+// live in their own header so they can be used without pulling in the heavy
+// GPU toolkit headers transitively included by the per-backend gputraits
+// variants below.
+#include "gromacs/gpu_utils/gpu_device_macros.h"
+
 #if GMX_GPU_CUDA
 #    include "gromacs/gpu_utils/gputraits.cuh"
 #elif GMX_GPU_OPENCL
 #    include "gromacs/gpu_utils/gputraits_ocl.h"
 #elif GMX_GPU_SYCL
 #    include "gromacs/gpu_utils/gputraits_sycl.h"
+#    include "gromacs/gpu_utils/syclutils.h"
 #elif GMX_GPU_HIP
 #    include "gromacs/gpu_utils/gputraits_hip.h"
+#    include "gromacs/gpu_utils/hiputils.h"
 #else
-
-#    define GMX_HOST_ATTRIBUTE
-#    define GMX_DEVICE_ATTRIBUTE
 
 using DeviceTexture = void*;
 
@@ -76,14 +82,6 @@ struct Float4
 };
 
 #endif // GMX_GPU
-
-#if defined(_MSC_VER) // MSVC does not support __attribute__ and always_inline
-#    define GMX_ALWAYS_INLINE_ATTRIBUTE __forceinline
-#else
-#    define GMX_ALWAYS_INLINE_ATTRIBUTE __attribute__((always_inline))
-#endif
-#define GMX_FUNC_ATTRIBUTE GMX_HOSTDEVICE_ATTRIBUTE GMX_ALWAYS_INLINE_ATTRIBUTE
-#define GMX_DEVICE_FUNC_ATTRIBUTE GMX_DEVICE_ATTRIBUTE GMX_ALWAYS_INLINE_ATTRIBUTE
 
 namespace gmx
 {

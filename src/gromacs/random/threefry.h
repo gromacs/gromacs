@@ -104,14 +104,21 @@
 #ifndef GMX_RANDOM_THREEFRY_H
 #define GMX_RANDOM_THREEFRY_H
 
+#include "config.h"
+
+#include <cassert>
+
 #include <array>
 #include <limits>
 #include <memory>
 
+#include "gromacs/gpu_utils/gpu_device_macros.h"
 #include "gromacs/math/functions.h"
 #include "gromacs/random/seed.h"
 #include "gromacs/utility/classhelpers.h"
 #include "gromacs/utility/exceptions.h"
+
+#if !defined DOXYGEN || !DOXYGEN
 
 /*
  * The GROMACS implementation of the ThreeFry random engine has been
@@ -172,7 +179,7 @@ struct highBitCounter
      *  \param         ctr       Reference to counter to check and clear.
      */
     template<class UIntType, std::size_t words, unsigned int highBits>
-    static bool checkAndClear(std::array<UIntType, words>* ctr)
+    GMX_FUNC_ATTRIBUTE static bool checkAndClear(UIntType* ctr)
     {
         const std::size_t bitsPerWord = std::numeric_limits<UIntType>::digits;
         const std::size_t bitsTotal   = bitsPerWord * words;
@@ -188,16 +195,16 @@ struct highBitCounter
 
         for (unsigned int i = words - 1; i > lastWordIdx; --i)
         {
-            if ((*ctr)[i])
+            if ((ctr)[i])
             {
-                isClear   = false;
-                (*ctr)[i] = 0;
+                isClear  = false;
+                (ctr)[i] = 0;
             }
         }
-        if (highBits > 0 && (*ctr)[lastWordIdx] >= lastWordOne)
+        if (highBits > 0 && (ctr)[lastWordIdx] >= lastWordOne)
         {
             isClear = false;
-            (*ctr)[lastWordIdx] &= mask;
+            (ctr)[lastWordIdx] &= mask;
         }
         return isClear;
     }
@@ -215,7 +222,7 @@ struct highBitCounter
      *  of internal counter bits that fits in the total counter.
      */
     template<class UIntType, std::size_t words, unsigned int highBits>
-    static void increment(std::array<UIntType, words>* ctr)
+    GMX_FUNC_ATTRIBUTE static void increment(UIntType* ctr)
     {
         const std::size_t bitsPerWord = std::numeric_limits<UIntType>::digits;
         const std::size_t bitsTotal   = bitsPerWord * words;
@@ -262,22 +269,22 @@ struct highBitCounter
 
         if (lastWordIdx >= words)
         {
-            GMX_THROW(InternalError(
-                    "Cannot increment random engine defined with 0 internal counter bits."));
+            GMX_HOST_DEVICE_THROW(
+                    "Cannot increment random engine defined with 0 internal counter bits.");
         }
 
         for (unsigned int i = words - 1; i > lastWordIdx; --i)
         {
-            (*ctr)[i]++;
-            if ((*ctr)[i])
+            (ctr)[i]++;
+            if ((ctr)[i])
             {
                 return; // No carry means we are done
             }
         }
-        (*ctr)[lastWordIdx] += lastWordOne;
-        if ((*ctr)[lastWordIdx] < lastWordOne)
+        (ctr)[lastWordIdx] += lastWordOne;
+        if ((ctr)[lastWordIdx] < lastWordOne)
         {
-            GMX_THROW(InternalError("Random engine stream ran out of internal counter space."));
+            GMX_HOST_DEVICE_THROW("Random engine stream ran out of internal counter space.");
         }
     }
 
@@ -295,28 +302,28 @@ struct highBitCounter
      *  of internal counter bits that fits in the total counter.
      */
     template<class UIntType, std::size_t words, unsigned int highBits>
-    static void increment(std::array<UIntType, words>* ctr, UIntType addend)
+    GMX_FUNC_ATTRIBUTE static void increment(UIntType* ctr, UIntType addend)
     {
         const std::size_t bitsPerWord = std::numeric_limits<UIntType>::digits;
         const std::size_t bitsTotal   = bitsPerWord * words;
 
         static_assert(highBits <= bitsTotal, "High bits do not fit in counter.");
 
-        const std::size_t lastWordIdx       = (bitsTotal - highBits) / bitsPerWord;
-        const std::size_t lastWordLowBitIdx = (bitsTotal - highBits) % bitsPerWord;
-        const UIntType    lastWordOne       = static_cast<UIntType>(1) << lastWordLowBitIdx;
-        const UIntType    lastWordMaxVal    = (~static_cast<UIntType>(0)) >> lastWordLowBitIdx;
+        const std::size_t         lastWordIdx       = (bitsTotal - highBits) / bitsPerWord;
+        const std::size_t         lastWordLowBitIdx = (bitsTotal - highBits) % bitsPerWord;
+        const UIntType            lastWordOne       = static_cast<UIntType>(1) << lastWordLowBitIdx;
+        const UIntType gmx_unused lastWordMaxVal = (~static_cast<UIntType>(0)) >> lastWordLowBitIdx;
 
         if (lastWordIdx >= words)
         {
-            GMX_THROW(InternalError(
-                    "Cannot increment random engine defined with 0 internal counter bits."));
+            GMX_HOST_DEVICE_THROW(
+                    "Cannot increment random engine defined with 0 internal counter bits.");
         }
 
         for (unsigned int i = words - 1; i > lastWordIdx; --i)
         {
-            (*ctr)[i] += addend;
-            addend = ((*ctr)[i] < addend); // 1 is the carry!
+            (ctr)[i] += addend;
+            addend = ((ctr)[i] < addend); // 1 is the carry!
             if (addend == 0)
             {
                 return;
@@ -325,15 +332,15 @@ struct highBitCounter
 
         if (addend > lastWordMaxVal)
         {
-            GMX_THROW(InternalError("Random engine stream ran out of internal counter space."));
+            GMX_HOST_DEVICE_THROW("Random engine stream ran out of internal counter space.");
         }
         addend *= lastWordOne;
 
-        (*ctr)[lastWordIdx] += addend;
+        (ctr)[lastWordIdx] += addend;
 
-        if ((*ctr)[lastWordIdx] < addend)
+        if ((ctr)[lastWordIdx] < addend)
         {
-            GMX_THROW(InternalError("Random engine stream ran out of internal counter space."));
+            GMX_HOST_DEVICE_THROW("Random engine stream ran out of internal counter space.");
         }
     }
 };
@@ -397,8 +404,20 @@ public:
 
     /*! \brief Integer type for output. */
     typedef uint64_t result_type;
-    /*! \brief Use array for counter & key states so it is allocated on the stack */
-    typedef std::array<result_type, 2> counter_type;
+    /*! \brief There is no CUDA equivalent of std::array. E.g., accessing elements using the []
+     *  operator triggers warnings about using a host function. Use a workaround (until it is
+     *  possible to use std::array in CUDA). */
+    typedef result_type counter_type[2];
+    /*! \brief Use a struct to allow returning it from functions. */
+    struct counter_struct
+    {
+        result_type                     counter_type[2];
+        GMX_FUNC_ATTRIBUTE result_type& operator[](std::size_t idx) { return counter_type[idx]; }
+        GMX_FUNC_ATTRIBUTE const result_type& operator[](std::size_t idx) const
+        {
+            return counter_type[idx];
+        }
+    };
 
 private:
     /*! \brief Rotate value left by specified number of bits
@@ -408,7 +427,7 @@ private:
      *
      *  \return Input value rotated 'bits' left.
      */
-    result_type rotLeft(result_type i, unsigned int bits)
+    GMX_FUNC_ATTRIBUTE result_type rotLeft(result_type i, unsigned int bits)
     {
         return (i << bits) | (i >> (std::numeric_limits<result_type>::digits - bits));
     }
@@ -425,10 +444,10 @@ private:
      *
      *  \return Newly encrypted 2x64 block, according to the class template parameters.
      */
-    counter_type generateBlock(const counter_type& key, const counter_type& ctr)
+    GMX_FUNC_ATTRIBUTE counter_struct generateBlock(const counter_type& key, const counter_type& ctr)
     {
         const unsigned int rotations[] = { 16, 42, 12, 31, 16, 32, 24, 21 };
-        counter_type       x           = ctr;
+        counter_struct     x           = { { ctr[0], ctr[1] } };
 
         result_type ks[3] = { 0x0, 0x0, 0x1bd11bdaa9fc1a22 };
 
@@ -591,12 +610,12 @@ private:
 
 public:
     //! \brief Smallest value that can be returned from random engine.
-#if !defined(_MSC_VER)
+#    if !defined(_MSC_VER)
     static constexpr
-#else
+#    else
     // Avoid constexpr bug in MSVC 2015, note that max() below does work
     static
-#endif
+#    endif
             result_type
             min()
     {
@@ -626,6 +645,7 @@ public:
      *          bits are nonzero.
      */
     //NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
+    GMX_HOSTDEVICE_ATTRIBUTE
     ThreeFry2x64General(uint64_t key0 = 0, RandomDomain domain = RandomDomain::Other)
     {
         seed(key0, domain);
@@ -645,6 +665,7 @@ public:
      *          bits are nonzero. To test arbitrary values, use 0 internal counter bits.
      */
     //NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
+    GMX_HOSTDEVICE_ATTRIBUTE
     ThreeFry2x64General(uint64_t key0, uint64_t key1) { seed(key0, key1); }
 
     /*! \brief Seed 2x64 random engine with two 64-bit key values
@@ -666,7 +687,7 @@ public:
      *  to save the user the trouble of making sure these are zero
      *  when using e.g. a random device, we just ignore them.
      */
-    void seed(uint64_t key0 = 0, RandomDomain domain = RandomDomain::Other)
+    GMX_FUNC_ATTRIBUTE void seed(uint64_t key0 = 0, RandomDomain domain = RandomDomain::Other)
     {
         seed(key0, static_cast<uint64_t>(domain));
     }
@@ -684,18 +705,19 @@ public:
      *  \throws InternalError if the high bits needed to encode the number of counter
      *          bits are nonzero. To test arbitrary values, use 0 internal counter bits.
      */
-    void seed(uint64_t key0, uint64_t key1)
+    GMX_FUNC_ATTRIBUTE void seed(uint64_t key0, uint64_t key1)
     {
         const unsigned int internalCounterBitsBits =
                 (internalCounterBits > 0) ? (StaticLog2<internalCounterBits>::value + 1) : 0;
 
-        key_ = { { key0, key1 } };
+        key_[0] = key0;
+        key_[1] = key1;
 
         if (internalCounterBits > 0)
         {
-            internal::highBitCounter::checkAndClear<result_type, 2, internalCounterBitsBits>(&key_);
+            internal::highBitCounter::checkAndClear<result_type, 2, internalCounterBitsBits>(key_);
             internal::highBitCounter::increment<result_type, 2, internalCounterBitsBits>(
-                    &key_, internalCounterBits - 1);
+                    key_, internalCounterBits - 1);
         }
         restart(0, 0);
     }
@@ -714,14 +736,15 @@ public:
      *         for the internal part of the counter are set. The number of
      *         reserved bits is to the last template parameter to the class.
      */
-    void restart(uint64_t ctr0 = 0, uint64_t ctr1 = 0)
+    GMX_FUNC_ATTRIBUTE void restart(uint64_t ctr0 = 0, uint64_t ctr1 = 0)
     {
 
-        counter_ = { { ctr0, ctr1 } };
-        if (!internal::highBitCounter::checkAndClear<result_type, 2, internalCounterBits>(&counter_))
+        counter_[0] = ctr0;
+        counter_[1] = ctr1;
+        if (!internal::highBitCounter::checkAndClear<result_type, 2, internalCounterBits>(counter_))
         {
-            GMX_THROW(InternalError(
-                    "High bits of counter are reserved for the internal stream counter."));
+            GMX_HOST_DEVICE_THROW(
+                    "High bits of counter are reserved for the internal stream counter.");
         }
         block_ = generateBlock(key_, counter_);
         index_ = 0;
@@ -735,11 +758,11 @@ public:
      *
      *  \throws InternalError if the internal counter space is exhausted.
      */
-    result_type operator()()
+    GMX_FUNC_ATTRIBUTE result_type operator()()
     {
         if (index_ >= c_resultsPerCounter_)
         {
-            internal::highBitCounter::increment<result_type, 2, internalCounterBits>(&counter_);
+            internal::highBitCounter::increment<result_type, 2, internalCounterBits>(counter_);
             block_ = generateBlock(key_, counter_);
             index_ = 0;
         }
@@ -757,7 +780,7 @@ public:
      *
      *  \throws InternalError if the internal counter space is exhausted.
      */
-    void discard(uint64_t n)
+    GMX_FUNC_ATTRIBUTE void discard(uint64_t n)
     {
         index_ += n % c_resultsPerCounter_;
         n /= c_resultsPerCounter_;
@@ -775,7 +798,7 @@ public:
             index_ = c_resultsPerCounter_;
             n--;
         }
-        internal::highBitCounter::increment<result_type, 2, internalCounterBits>(&counter_, n);
+        internal::highBitCounter::increment<result_type, 2, internalCounterBits>(counter_, n);
         block_ = generateBlock(key_, counter_);
     }
 
@@ -786,10 +809,11 @@ public:
      * This routine should return true if the two engines will generate
      * identical random streams when drawing.
      */
-    bool operator==(const ThreeFry2x64General<rounds, internalCounterBits>& x) const
+    GMX_FUNC_ATTRIBUTE bool operator==(const ThreeFry2x64General<rounds, internalCounterBits>& x) const
     {
         // block_ is uniquely specified by key_ and counter_.
-        return (key_ == x.key_ && counter_ == x.counter_ && index_ == x.index_);
+        return (key_[0] == x.key_[0] && key_[1] == x.key_[1] && counter_[0] == x.counter_[0]
+                && counter_[1] == x.counter_[1] && index_ == x.index_);
     }
 
     /*! \brief Return true of two ThreeFry2x64 engines are not identical
@@ -799,7 +823,7 @@ public:
      * This routine should return true if the two engines will generate
      * different random streams when drawing.
      */
-    bool operator!=(const ThreeFry2x64General<rounds, internalCounterBits>& x) const
+    GMX_FUNC_ATTRIBUTE bool operator!=(const ThreeFry2x64General<rounds, internalCounterBits>& x) const
     {
         return !operator==(x);
     }
@@ -825,7 +849,7 @@ private:
      */
     counter_type counter_;
     /*! \brief The present block encrypted from values of key and counter. */
-    counter_type block_;
+    counter_struct block_;
     /*! \brief Index of the next value in block_ to return from random engine */
     unsigned int index_;
 
@@ -862,6 +886,7 @@ public:
      *  \throws InternalError if the high bits needed to encode the number of counter
      *          bits are nonzero.
      */
+    GMX_HOSTDEVICE_ATTRIBUTE
     ThreeFry2x64(uint64_t key0 = 0, RandomDomain domain = RandomDomain::Other) :
         ThreeFry2x64General<20, internalCounterBits>(key0, domain)
     {
@@ -880,6 +905,7 @@ public:
      *  \throws InternalError if the high bits needed to encode the number of counter
      *          bits are nonzero. To test arbitrary values, use 0 internal counter bits.
      */
+    GMX_HOSTDEVICE_ATTRIBUTE
     ThreeFry2x64(uint64_t key0, uint64_t key1) :
         ThreeFry2x64General<20, internalCounterBits>(key0, key1)
     {
@@ -916,6 +942,7 @@ public:
      *  \throws InternalError if the high bits needed to encode the number of counter
      *          bits are nonzero.
      */
+    GMX_HOSTDEVICE_ATTRIBUTE
     ThreeFry2x64Fast(uint64_t key0 = 0, RandomDomain domain = RandomDomain::Other) :
         ThreeFry2x64General<13, internalCounterBits>(key0, domain)
     {
@@ -934,12 +961,12 @@ public:
      *  \throws InternalError if the high bits needed to encode the number of counter
      *          bits are nonzero. To test arbitrary values, use 0 internal counter bits.
      */
+    GMX_HOSTDEVICE_ATTRIBUTE
     ThreeFry2x64Fast(uint64_t key0, uint64_t key1) :
         ThreeFry2x64General<13, internalCounterBits>(key0, key1)
     {
     }
 };
-
 
 /*! \brief Default fast and accurate random engine in Gromacs
  *
@@ -950,5 +977,7 @@ public:
 typedef ThreeFry2x64Fast<> DefaultRandomEngine;
 
 } // namespace gmx
+
+#endif
 
 #endif // GMX_RANDOM_THREEFRY_H

@@ -48,9 +48,6 @@
 #include "gromacs/gpu_utils/gmxsycl.h"
 #include "gromacs/utility/vectypes.h"
 
-#define GMX_HOST_ATTRIBUTE
-#define GMX_DEVICE_ATTRIBUTE
-#define GMX_HOSTDEVICE_ATTRIBUTE GMX_HOST_ATTRIBUTE GMX_DEVICE_ATTRIBUTE
 #if defined(SYCL_EXT_ONEAPI_ASSERT) && SYCL_EXT_ONEAPI_ASSERT && !defined(NDEBUG)
 #    define GMX_DEVICE_ASSERT(condition) assert(condition)
 #else
