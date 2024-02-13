@@ -41,13 +41,19 @@ class PmeAtomComm;
 struct gmx_pme_t;
 struct splinedata_t;
 
-void gather_f_bsplines(const struct gmx_pme_t* pme,
-                       const real*             grid,
-                       gmx_bool                bClearF,
-                       const PmeAtomComm*      atc,
-                       const splinedata_t*     spline,
-                       real                    scale);
+namespace gmx
+{
+template<typename T>
+class ArrayRef;
+}
 
-real gather_energy_bsplines(struct gmx_pme_t* pme, const real* grid, PmeAtomComm* atc);
+void gather_f_bsplines(const struct gmx_pme_t*   pme,
+                       gmx::ArrayRef<const real> grid,
+                       gmx_bool                  bClearF,
+                       const PmeAtomComm*        atc,
+                       const splinedata_t*       spline,
+                       real                      scale);
+
+real gather_energy_bsplines(struct gmx_pme_t* pme, gmx::ArrayRef<const real> grid, PmeAtomComm* atc);
 
 #endif

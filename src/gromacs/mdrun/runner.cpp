@@ -2057,7 +2057,8 @@ int Mdrunner::mdrunner()
                                        deviceContext,
                                        pmeStream,
                                        pmeGpuProgram.get(),
-                                       mdlog);
+                                       mdlog,
+                                       nullptr);
             }
             GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR
         }

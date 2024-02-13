@@ -559,12 +559,27 @@ bool gmx_pme_check_restrictions(int  pme_order,
     return true;
 }
 
-static void initGrids(gmx::ArrayRef<PmeAndFftGrids> gridsSet, const gmx_pme_t& pme, const bool requestReproducibility)
+static void initGrids(gmx::ArrayRef<PmeAndFftGrids>                   gridsSet,
+                      const gmx_pme_t&                                pme,
+                      const bool                                      requestReproducibility,
+                      gmx::ArrayRef<std::vector<AlignedVector<real>>> gridsStorage)
 {
+    GMX_RELEASE_ASSERT(gridsStorage.size() == gridsSet.size(),
+                       "size of storage should match the grids");
+
     const ivec ndata = { pme.nkx, pme.nky, pme.nkz };
 
-    for (PmeAndFftGrids& grids : gridsSet)
+    auto gridsSetIt     = gridsSet.begin();
+    auto gridsStorageIt = gridsStorage.begin();
+    for (; gridsSetIt < gridsSet.end(); ++gridsSetIt, ++gridsStorageIt)
     {
+        PmeAndFftGrids& grids = *gridsSetIt;
+
+        if (gridsStorageIt->empty())
+        {
+            gridsStorageIt->resize(pme.bUseThreads ? 1 + pme.nthread : 1);
+        }
+
         pmegrids_init(&grids.pmeGrids,
                       pme.pmegrid_nx,
                       pme.pmegrid_ny,
@@ -574,7 +589,8 @@ static void initGrids(gmx::ArrayRef<PmeAndFftGrids> gridsSet, const gmx_pme_t& p
                       pme.bUseThreads,
                       pme.nthread,
                       pme.overlap[0].s2g1[pme.nodeid_major] - pme.overlap[0].s2g0[pme.nodeid_major + 1],
-                      pme.overlap[1].s2g1[pme.nodeid_minor] - pme.overlap[1].s2g0[pme.nodeid_minor + 1]);
+                      pme.overlap[1].s2g1[pme.nodeid_minor] - pme.overlap[1].s2g0[pme.nodeid_minor + 1],
+                      *gridsStorageIt);
         /* This routine will allocate the grid data to fit the FFTs */
         const auto  allocateRealGridForGpu = (pme.runMode == PmeRunMode::Mixed)
                                                      ? gmx::PinningPolicy::PinnedIfSupported
@@ -596,23 +612,24 @@ static void initGrids(gmx::ArrayRef<PmeAndFftGrids> gridsSet, const gmx_pme_t& p
     }
 }
 
-gmx_pme_t* gmx_pme_init(const t_commrec*     cr,
-                        const NumPmeDomains& numPmeDomains,
-                        const t_inputrec*    ir,
-                        const matrix         box,
-                        real                 haloExtentForAtomDisplacement,
-                        gmx_bool             bFreeEnergy_q,
-                        gmx_bool             bFreeEnergy_lj,
-                        gmx_bool             bReproducible,
-                        real                 ewaldcoeff_q,
-                        real                 ewaldcoeff_lj,
-                        int                  nthread,
-                        PmeRunMode           runMode,
-                        PmeGpu*              pmeGpu,
-                        const DeviceContext* deviceContext,
-                        const DeviceStream*  deviceStream,
-                        const PmeGpuProgram* pmeGpuProgram,
-                        const gmx::MDLogger& mdlog)
+gmx_pme_t* gmx_pme_init(const t_commrec*                 cr,
+                        const NumPmeDomains&             numPmeDomains,
+                        const t_inputrec*                ir,
+                        const matrix                     box,
+                        real                             haloExtentForAtomDisplacement,
+                        gmx_bool                         bFreeEnergy_q,
+                        gmx_bool                         bFreeEnergy_lj,
+                        gmx_bool                         bReproducible,
+                        real                             ewaldcoeff_q,
+                        real                             ewaldcoeff_lj,
+                        int                              nthread,
+                        PmeRunMode                       runMode,
+                        PmeGpu*                          pmeGpu,
+                        const DeviceContext*             deviceContext,
+                        const DeviceStream*              deviceStream,
+                        const PmeGpuProgram*             pmeGpuProgram,
+                        const gmx::MDLogger&             mdlog,
+                        std::shared_ptr<PmeGridsStorage> pmeGridsStoragePtr)
 {
     if (debug)
     {
@@ -620,6 +637,22 @@ gmx_pme_t* gmx_pme_init(const t_commrec*     cr,
     }
 
     gmx::unique_cptr<gmx_pme_t, gmx_pme_destroy> pme(new gmx_pme_t());
+
+    /* When pmeGridsStorage!=nullptr we reuse storage for the PME grids.
+     * We would like to reuse the fft grids, but that's harder
+     */
+
+    if (pmeGridsStoragePtr == nullptr)
+    {
+        // Create new storage
+        pme->pmeGridsStorage = std::make_shared<PmeGridsStorage>();
+    }
+    else
+    {
+        // Share the storage
+        pme->pmeGridsStorage = std::move(pmeGridsStoragePtr);
+    }
+    PmeGridsStorage& pmeGridsStorage = *pme->pmeGridsStorage;
 
     pme->nnodes  = 1;
     pme->bPPnode = true;
@@ -913,7 +946,17 @@ gmx_pme_t* gmx_pme_init(const t_commrec*     cr,
     {
         pme->gridsCoulomb.resize(bFreeEnergy_q ? 2 : 1);
 
-        initGrids(pme->gridsCoulomb, *pme, bReproducible);
+        if (pmeGridsStorage.coulomb.empty())
+        {
+            pmeGridsStorage.coulomb.resize(pme->gridsCoulomb.size());
+        }
+        else
+        {
+            GMX_RELEASE_ASSERT(pmeGridsStorage.coulomb.size() == pme->gridsCoulomb.size(),
+                               "Storage grid count should match the grid count");
+        }
+
+        initGrids(pme->gridsCoulomb, *pme, bReproducible, pmeGridsStorage.coulomb);
 
         int i = 0;
         for (auto& grids : pme->gridsCoulomb)
@@ -927,7 +970,17 @@ gmx_pme_t* gmx_pme_init(const t_commrec*     cr,
         const bool combRuleIsLB = (ir->ljpme_combination_rule == LongRangeVdW::LB);
         pme->gridsLJ.resize(combRuleIsLB ? sc_numGridsLJLB : (bFreeEnergy_lj ? 2 : 1));
 
-        initGrids(pme->gridsLJ, *pme, bReproducible);
+        if (pmeGridsStorage.lj.empty())
+        {
+            pmeGridsStorage.lj.resize(pme->gridsLJ.size());
+        }
+        else
+        {
+            GMX_RELEASE_ASSERT(pmeGridsStorage.lj.size() == pme->gridsLJ.size(),
+                               "Storage grid count should match the grid count");
+        }
+
+        initGrids(pme->gridsLJ, *pme, bReproducible, pmeGridsStorage.lj);
 
         if (!combRuleIsLB)
         {
@@ -994,6 +1047,8 @@ void gmx_pme_reinit(struct gmx_pme_t** pmedata,
                     real               ewaldcoeff_q,
                     real               ewaldcoeff_lj)
 {
+    GMX_RELEASE_ASSERT(pme_src != nullptr, "Need a source gmx_pme_t object");
+
     // Create a copy of t_inputrec fields that are used in gmx_pme_init().
     // TODO: This would be better as just copying a sub-structure that contains
     // all the PME parameters and nothing else.
@@ -1035,7 +1090,8 @@ void gmx_pme_reinit(struct gmx_pme_t** pmedata,
                                 nullptr,
                                 nullptr,
                                 nullptr,
-                                dummyLogger);
+                                dummyLogger,
+                                pme_src->pmeGridsStorage);
         /* When running PME on the CPU not using domain decomposition,
          * the atom data is allocated once only in gmx_pme_(re)init().
          */
@@ -1046,10 +1102,6 @@ void gmx_pme_reinit(struct gmx_pme_t** pmedata,
         // TODO this is mostly passing around current values
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR
-
-    /* We can easily reuse the allocated pme grids in pme_src */
-    reuse_pmegrids(&pme_src->gridsCoulomb[0].pmeGrids, &(*pmedata)->gridsCoulomb[0].pmeGrids);
-    /* We would like to reuse the fft grids, but that's harder */
 }
 
 real gmx_pme_calc_energy(gmx_pme_t* pme, gmx::ArrayRef<const gmx::RVec> x, gmx::ArrayRef<const real> q)
@@ -1073,12 +1125,12 @@ real gmx_pme_calc_energy(gmx_pme_t* pme, gmx::ArrayRef<const gmx::RVec> x, gmx::
     atc->coefficient = q;
 
     /* We only use the A-charges grid */
-    const pmegrids_t* grid = &pme->gridsCoulomb[0].pmeGrids;
+    PmeAndFftGrids& grids = pme->gridsCoulomb[0];
 
     /* Only calculate the spline coefficients, don't actually spread */
-    spread_on_grid(pme, atc, &pme->gridsCoulomb[0], true, false, false);
+    spread_on_grid(pme, atc, &grids, true, false, false);
 
-    return gather_energy_bsplines(pme, grid->grid.grid, atc);
+    return gather_energy_bsplines(pme, grids.pmeGrids.grid.grid, atc);
 }
 
 /*! \brief Calculate initial Lorentz-Berthelot coefficients for LJ-PME */
@@ -1219,7 +1271,7 @@ int gmx_pme_do(struct gmx_pme_t*              pme,
         }
 
         /* Unpack structure */
-        pmegrids_t*          pmegrid    = &gridsRef.grids.pmeGrids;
+        pmegrids_t&          pmegrid    = gridsRef.grids.pmeGrids;
         t_complex*           cfftgrid   = gridsRef.grids.cfftgrid;
         gmx_parallel_3dfft_t pfft_setup = gridsRef.grids.pfft_setup.get();
 
@@ -1234,7 +1286,7 @@ int gmx_pme_do(struct gmx_pme_t*              pme,
         }
         inc_nrnb(nrnb, eNR_SPREADBSP, pme->pme_order * pme->pme_order * pme->pme_order * atc.numAtoms());
 
-        real* grid = pmegrid->grid.grid;
+        gmx::ArrayRef<real> grid = pmegrid.grid.grid;
 
         if (!pme->bUseThreads)
         {
@@ -1368,7 +1420,7 @@ int gmx_pme_do(struct gmx_pme_t*              pme,
                 try
                 {
                     gather_f_bsplines(pme,
-                                      grid,
+                                      pmegrid.grid.grid,
                                       bClearF,
                                       &atc,
                                       &atc.spline[thread],
@@ -1477,7 +1529,7 @@ int gmx_pme_do(struct gmx_pme_t*              pme,
                 const pmegrids_t*    pmegrid    = &grids.pmeGrids;
                 gmx_parallel_3dfft_t pfft_setup = grids.pfft_setup.get();
                 calc_next_lb_coeffs(coefficientBuffer, local_sigma);
-                real* grid = pmegrid->grid.grid;
+                gmx::ArrayRef<real> grid = pmegrid->grid.grid;
 
                 wallcycle_start(wcycle, WallCycleCounter::PmeSpread);
                 /* Spread the c6 on a grid */
@@ -1568,9 +1620,9 @@ int gmx_pme_do(struct gmx_pme_t*              pme,
                 PmeAndFftGrids& grids = pme->gridsLJ[gridsIndex];
 
                 /* Unpack structure */
-                pmegrids_t*          pmegrid    = &grids.pmeGrids;
+                pmegrids_t&          pmegrid    = grids.pmeGrids;
                 gmx_parallel_3dfft_t pfft_setup = grids.pfft_setup.get();
-                real*                grid       = pmegrid->grid.grid;
+                gmx::ArrayRef<real>  grid       = pmegrid.grid.grid;
                 calc_next_lb_coeffs(coefficientBuffer, local_sigma);
 #pragma omp parallel num_threads(pme->nthread)
                 {
@@ -1623,8 +1675,12 @@ int gmx_pme_do(struct gmx_pme_t*              pme,
                     {
                         try
                         {
-                            gather_f_bsplines(
-                                    pme, grid, bClearF, &pme->atc[0], &pme->atc[0].spline[thread], scale);
+                            gather_f_bsplines(pme,
+                                              pmegrid.grid.grid,
+                                              bClearF,
+                                              &pme->atc[0],
+                                              &pme->atc[0].spline[thread],
+                                              scale);
                         }
                         GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR
                     }
@@ -1735,26 +1791,14 @@ void gmx_pme_destroy(gmx_pme_t* pme)
     gmx_pme_destroy(pme, true);
 }
 
-void gmx_pme_destroy(gmx_pme_t* pme, bool destroySharedData)
+void gmx_pme_destroy(gmx_pme_t* pme, bool destroyGpuData)
 {
     if (!pme)
     {
         return;
     }
 
-    if (destroySharedData)
-    {
-        for (auto& grids : pme->gridsCoulomb)
-        {
-            pmegrids_destroy(&grids.pmeGrids);
-        }
-        for (auto& grids : pme->gridsLJ)
-        {
-            pmegrids_destroy(&grids.pmeGrids);
-        }
-    }
-
-    if (pme->gpu != nullptr && destroySharedData)
+    if (pme->gpu != nullptr && destroyGpuData)
     {
         pme_gpu_destroy(pme->gpu);
     }

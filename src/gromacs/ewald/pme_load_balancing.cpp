@@ -78,7 +78,6 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/logger.h"
-#include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/strconvert.h"
 
 #include "pme_internal.h"

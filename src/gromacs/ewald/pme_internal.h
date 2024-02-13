@@ -97,6 +97,29 @@ static const real lb_scale_factor_symm[] = { 2.0 / 64, 12.0 / 64, 30.0 / 64, 20.
 
 //! @cond Doxygen_Suppress
 
+template<typename T>
+using AlignedVector = std::vector<T, gmx::AlignedAllocator<T>>;
+
+template<typename T>
+using FastVector = std::vector<T, gmx::DefaultInitializationAllocator<T>>;
+
+// Storage for all PME coefficient grids (not the FFT grids)
+struct PmeGridsStorage
+{
+    /* Storage for Coulomb coefficient grids.
+     * The major vector is for A and B charges, B is only present with perturbation.
+     * The middle vector has either size 1 grid (with single OpenMP thread) or 1 + #threads entries.
+     * The minor vector is for a grid, aligned for in case aligned SIMD load/stores are used.
+     */
+    std::vector<std::vector<AlignedVector<real>>> coulomb;
+    /* Storage for LJ coefficient grids.
+     * The major vector has size 1 with geometric combination rules and 6 with LB combination rules.
+     * The middle vector has either size 1 grid (with single OpenMP thread) or 1 + #threads entries.
+     * The minor vector is for a grid, aligned for in case aligned SIMD load/stores are used.
+     */
+    std::vector<std::vector<AlignedVector<real>>> lj;
+};
+
 /*! \brief Data structure for grid communication */
 struct pme_grid_comm_t
 {
@@ -122,12 +145,6 @@ struct pme_overlap_t
     std::vector<real>            sendbuf;   //!< Shared buffer for sending
     std::vector<real>            recvbuf;   //!< Shared buffer for receiving
 };
-
-template<typename T>
-using AlignedVector = std::vector<T, gmx::AlignedAllocator<T>>;
-
-template<typename T>
-using FastVector = std::vector<T, gmx::DefaultInitializationAllocator<T>>;
 
 /*! \brief Data structure for organizing particle allocation to threads */
 struct AtomToThreadMap
@@ -264,24 +281,25 @@ public:
 /*! \brief Data structure for a single PME grid */
 struct pmegrid_t
 {
-    ivec  ci;     /* The spatial location of this grid         */
-    ivec  n;      /* The used size of *grid, including order-1 */
-    ivec  offset; /* The grid offset from the full node grid   */
-    int   order;  /* PME spreading order                       */
-    ivec  s;      /* The allocated size of *grid, s >= n       */
-    real* grid;   /* The grid local thread, size n             */
+    ivec ci;     /* The spatial location of this grid         */
+    ivec n;      /* The used size of *grid, including order-1 */
+    ivec offset; /* The grid offset from the full node grid   */
+    int  order;  /* PME spreading order                       */
+    ivec s;      /* The allocated size of *grid, s >= n       */
+    // The local grid, used size n. Data owned by gmx_pme_t::pmeGridsStorage.
+    gmx::ArrayRef<real> grid;
 };
 
 /*! \brief Data structures for PME grids */
 struct pmegrids_t
 {
-    pmegrid_t  grid;         /* The full node grid (non thread-local)            */
-    int        nthread;      /* The number of threads operating on this grid     */
-    ivec       nc;           /* The local spatial decomposition over the threads */
-    pmegrid_t* grid_th;      /* Array of grids for each thread                   */
-    real*      grid_all;     /* Allocated array for the grids in *grid_th        */
-    int*       g2t[DIM];     /* The grid to thread index                         */
-    ivec       nthread_comm; /* The number of threads to communicate with        */
+    pmegrid_t              grid;    /* The full node grid (non thread-local)            */
+    int                    nthread; /* The number of threads operating on this grid     */
+    ivec                   nc;      /* The local spatial decomposition over the threads */
+    std::vector<pmegrid_t> grid_th; /* Array of grids for each thread                   */
+
+    std::array<std::vector<int>, DIM> g2t; /* The grid to thread index                         */
+    ivec nthread_comm;                     /* The number of threads to communicate with        */
 };
 
 /*! \brief Wrapper for gmx_parallel_3dfft_destroy to use as destructor with return type void */
@@ -379,7 +397,10 @@ struct gmx_pme_t
     /* Work data for spreading and gathering */
     std::unique_ptr<pme_spline_work> spline_work;
 
-    // PME and FFT grids for Coulomb, size ngrids, one without FEP, two with FEP
+    // Storage for all grids in gridCoulomb and GridsLJ, can be shared with other gmx_pme_t objects
+    std::shared_ptr<PmeGridsStorage> pmeGridsStorage;
+
+    // PME and FFT grids for Coulomb, one without FEP, two with FEP
     std::vector<PmeAndFftGrids> gridsCoulomb;
     // PME and FFT grids for LJ
     std::vector<PmeAndFftGrids> gridsLJ;

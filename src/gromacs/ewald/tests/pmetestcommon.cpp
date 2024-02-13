@@ -154,7 +154,8 @@ PmeSafePointer pmeInitWrapper(const t_inputrec*    inputRec,
                                          deviceContext,
                                          deviceStream,
                                          pmeGpuProgram,
-                                         dummyLogger);
+                                         dummyLogger,
+                                         nullptr);
     PmeSafePointer pme(pmeDataRaw); // taking ownership
 
     // TODO get rid of this with proper matrix type
@@ -459,7 +460,7 @@ void pmePerformGather(gmx_pme_t* pme, CodePath mode, ForcesVector& forces)
     const size_t    threadIndex = 0;
     const size_t    gridIndex   = 0;
     PmeAndFftGrids& grids       = pme->gridsCoulomb[gridIndex];
-    real*           pmegrid     = grids.pmeGrids.grid.grid;
+    ArrayRef<real>  pmegrid     = grids.pmeGrids.grid.grid;
 
     switch (mode)
     {

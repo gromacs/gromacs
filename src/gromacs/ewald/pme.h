@@ -64,6 +64,7 @@ struct gmx_mtop_t;
 struct gmx_pme_t;
 struct gmx_wallcycle;
 struct NumPmeDomains;
+struct PmeGridsStorage;
 
 class DeviceContext;
 class DeviceStream;
@@ -178,31 +179,35 @@ bool gmx_pme_check_restrictions(int  pme_order,
  * \throws   gmx::InconsistentInputError if input grid sizes/PME order are inconsistent.
  * \returns  Pointer to newly allocated and initialized PME data.
  *
+ * \p pmeGridsStorage can be nullptr, in which case new PmeGridsStorage is allocated.
+ * When \p pmeGridsStorage is not a nullptr, grid storage is taken from there.
+ *
  * \todo We should evolve something like a \c GpuManager that holds \c
  * DeviceInformation* and \c PmeGpuProgram* and perhaps other
  * related things whose lifetime can/should exceed that of a task (or
  * perhaps task manager). See Issue #2522.
  */
-gmx_pme_t* gmx_pme_init(const t_commrec*     cr,
-                        const NumPmeDomains& numPmeDomains,
-                        const t_inputrec*    ir,
-                        const matrix         box,
-                        real                 haloExtentForAtomDisplacement,
-                        gmx_bool             bFreeEnergy_q,
-                        gmx_bool             bFreeEnergy_lj,
-                        gmx_bool             bReproducible,
-                        real                 ewaldcoeff_q,
-                        real                 ewaldcoeff_lj,
-                        int                  nthread,
-                        PmeRunMode           runMode,
-                        PmeGpu*              pmeGpu,
-                        const DeviceContext* deviceContext,
-                        const DeviceStream*  deviceStream,
-                        const PmeGpuProgram* pmeGpuProgram,
-                        const gmx::MDLogger& mdlog);
+gmx_pme_t* gmx_pme_init(const t_commrec*                 cr,
+                        const NumPmeDomains&             numPmeDomains,
+                        const t_inputrec*                ir,
+                        const matrix                     box,
+                        real                             haloExtentForAtomDisplacement,
+                        gmx_bool                         bFreeEnergy_q,
+                        gmx_bool                         bFreeEnergy_lj,
+                        gmx_bool                         bReproducible,
+                        real                             ewaldcoeff_q,
+                        real                             ewaldcoeff_lj,
+                        int                              nthread,
+                        PmeRunMode                       runMode,
+                        PmeGpu*                          pmeGpu,
+                        const DeviceContext*             deviceContext,
+                        const DeviceStream*              deviceStream,
+                        const PmeGpuProgram*             pmeGpuProgram,
+                        const gmx::MDLogger&             mdlog,
+                        std::shared_ptr<PmeGridsStorage> pmeGridsStoragePtr);
 
-/*! \brief As gmx_pme_init, but takes most settings, except the grid/Ewald coefficients, from
- * pme_src. This is only called when the PME cut-off/grid size changes.
+/*! \brief As gmx_pme_init, but takes most settings, except the grid/Ewald coefficients,
+ * and the shared grid storage from pme_src.
  */
 void gmx_pme_reinit(gmx_pme_t**       pmedata,
                     const t_commrec*  cr,
@@ -212,17 +217,17 @@ void gmx_pme_reinit(gmx_pme_t**       pmedata,
                     real              ewaldcoeff_q,
                     real              ewaldcoeff_lj);
 
-/*! \brief Destroys the PME data structure (including shared data). */
+/*! \brief Destroys the PME data structure (including GPU data). */
 void gmx_pme_destroy(gmx_pme_t* pme);
 
 /*! \brief Destroys the PME data structure.
  *
- * \param pme               The data structure to destroy.
- * \param destroySharedData Set to \c false if \p pme is a copy created by \ref gmx_pme_reinit,
- * and only it should be destroyed, while shared data should be preserved. If \c true, the shared
- * data will be destroyed, like in \c gmx_pme_destroy(gmx_pme_t* pme).
- * */
-void gmx_pme_destroy(gmx_pme_t* pme, bool destroySharedData);
+ * \param pme             The data structure to destroy.
+ * \param destroyGpuData  Set to \c false if \p pme is a copy created by \ref gmx_pme_reinit,
+ * and only it should be destroyed, while shared GPU data should be preserved. If \c true,
+ * the shared data will be destroyed, like in \c gmx_pme_destroy(gmx_pme_t* pme).
+ */
+void gmx_pme_destroy(gmx_pme_t* pme, bool destroyGpuData);
 
 /*! \brief Do a PME calculation on a CPU for the long range electrostatics and/or LJ.
  *

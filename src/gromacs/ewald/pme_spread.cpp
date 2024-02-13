@@ -69,7 +69,6 @@ static void calc_interpolation_idx(const gmx_pme_t*  pme,
     real *      fptr, tx, ty, tz;
     real        rxx, ryx, ryy, rzx, rzy, rzz;
     int         nx, ny, nz;
-    int *       g2tx, *g2ty, *g2tz;
     gmx_bool    bThreads;
     int*        thread_idx = nullptr;
     int*        tpl_n      = nullptr;
@@ -86,9 +85,9 @@ static void calc_interpolation_idx(const gmx_pme_t*  pme,
     rzy = pme->recipbox[ZZ][YY];
     rzz = pme->recipbox[ZZ][ZZ];
 
-    g2tx = pmeGrids.g2t[XX];
-    g2ty = pmeGrids.g2t[YY];
-    g2tz = pmeGrids.g2t[ZZ];
+    const int* g2tx = pmeGrids.g2t[XX].data();
+    const int* g2ty = pmeGrids.g2t[YY].data();
+    const int* g2tz = pmeGrids.g2t[ZZ].data();
 
     bThreads = (atc->nthread > 1);
     if (bThreads)
@@ -321,14 +320,13 @@ static void make_bsplines(gmx::ArrayRef<real*> theta,
     }
 
 
-static void spread_coefficients_bsplines_thread(const pmegrid_t*      pmegrid,
+static void spread_coefficients_bsplines_thread(pmegrid_t*            pmegrid,
                                                 const PmeAtomComm*    atc,
                                                 splinedata_t*         spline,
                                                 const pme_spline_work gmx_unused& work)
 {
 
     /* spread coefficients from home atoms to local grid */
-    real*      grid;
     int        i, nn, n, ithx, ithy, ithz, i0, j0, k0;
     const int* idxptr;
     int        order, norder, index_x, index_xy, index_xyz;
@@ -349,7 +347,9 @@ static void spread_coefficients_bsplines_thread(const pmegrid_t*      pmegrid,
     offz = pmegrid->offset[ZZ];
 
     ndatatot = pnx * pny * pnz;
-    grid     = pmegrid->grid;
+
+    real* gmx_restrict grid = pmegrid->grid.data();
+
     for (i = 0; i < ndatatot; i++)
     {
         grid[i] = 0;
@@ -410,13 +410,12 @@ static void copy_local_grid(PmeAndFftGrids* grids, const int thread)
     const pmegrids_t*  pmegrids = &grids->pmeGrids;
     real* gmx_restrict fftgrid  = grids->fftgrid;
 
-    ivec  local_fft_ndata, local_fft_offset, local_fft_size;
-    int   fft_my, fft_mz;
-    int   nsy, nsz;
-    ivec  nf;
-    int   offx, offy, offz, x, y, z, i0, i0t;
-    int   d;
-    real* grid_th;
+    ivec local_fft_ndata, local_fft_offset, local_fft_size;
+    int  fft_my, fft_mz;
+    int  nsy, nsz;
+    ivec nf;
+    int  offx, offy, offz, x, y, z, i0, i0t;
+    int  d;
 
     gmx_parallel_3dfft_real_limits(
             grids->pfft_setup.get(), local_fft_ndata, local_fft_offset, local_fft_size);
@@ -440,7 +439,7 @@ static void copy_local_grid(PmeAndFftGrids* grids, const int thread)
     /* Directly copy the non-overlapping parts of the local grids.
      * This also initializes the full grid.
      */
-    grid_th = pmegrid->grid;
+    const real* gmx_restrict grid_th = pmegrid->grid.data();
     for (x = 0; x < nf[XX]; x++)
     {
         for (y = 0; y < nf[YY]; y++)
@@ -602,7 +601,7 @@ static void reduce_threadgrid_overlap(const gmx_pme_t* pme,
 
                 pmegrid_f = &pmegrids->grid_th[thread_f];
 
-                grid_th = pmegrid_f->grid;
+                grid_th = pmegrid_f->grid.data();
 
                 nsy = pmegrid_f->s[YY];
                 nsz = pmegrid_f->s[ZZ];
@@ -984,13 +983,13 @@ void spread_on_grid(const gmx_pme_t* pme,
             if (doSpreading)
             {
                 /* put local atoms on grid. */
-                const pmegrid_t* grid =
-                        pme->bUseThreads ? &grids->pmeGrids.grid_th[thread] : &grids->pmeGrids.grid;
+                pmegrid_t& grid =
+                        pme->bUseThreads ? grids->pmeGrids.grid_th[thread] : grids->pmeGrids.grid;
 
 #ifdef PME_TIME_SPREAD
                 ct1a = omp_cyc_start();
 #endif
-                spread_coefficients_bsplines_thread(grid, atc, spline, *pme->spline_work);
+                spread_coefficients_bsplines_thread(&grid, atc, spline, *pme->spline_work);
 
                 if (pme->bUseThreads)
                 {

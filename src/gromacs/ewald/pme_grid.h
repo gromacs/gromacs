@@ -38,11 +38,21 @@
 #include <tuple>
 #include <vector>
 
+#include "gromacs/utility/alignedallocator.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
 struct gmx_pme_t;
 struct PmeAndFftGrids;
+
+namespace gmx
+{
+template<typename>
+class ArrayRef;
+}
+
+template<typename T>
+using AlignedVector = std::vector<T, gmx::AlignedAllocator<T>>;
 
 /*! \brief
  * We allow coordinates to be out the unit-cell by up to 2 box lengths,
@@ -59,48 +69,38 @@ constexpr int c_pmeNeighborUnitcellCount = 2 * c_pmeMaxUnitcellShift + 1;
 struct pmegrid_t;
 struct pmegrids_t;
 
-void gmx_sum_qgrid_dd(gmx_pme_t* pme, real* grid, int direction);
+void gmx_sum_qgrid_dd(gmx_pme_t* pme, gmx::ArrayRef<real> grid, int direction);
 
 int copy_pmegrid_to_fftgrid(const gmx_pme_t* pme, PmeAndFftGrids* grids);
 
 int copy_fftgrid_to_pmegrid(const gmx_pme_t* pme, PmeAndFftGrids* grids, int nthread, int thread);
 
-void wrap_periodic_pmegrid(const gmx_pme_t* pme, real* pmegrid);
+void wrap_periodic_pmegrid(const gmx_pme_t* pme, gmx::ArrayRef<real> pmegrid);
 
-void unwrap_periodic_pmegrid(gmx_pme_t* pme, real* pmegrid);
+void unwrap_periodic_pmegrid(gmx_pme_t* pme, gmx::ArrayRef<real> pmegrid);
 
-void pmegrid_init(pmegrid_t* grid,
-                  int        cx,
-                  int        cy,
-                  int        cz,
-                  int        x0,
-                  int        y0,
-                  int        z0,
-                  int        x1,
-                  int        y1,
-                  int        z1,
-                  gmx_bool   set_alignment,
-                  int        pme_order,
-                  real*      ptr);
-
-void pmegrids_init(pmegrids_t* grids,
-                   int         nx,
-                   int         ny,
-                   int         nz,
-                   int         nz_base,
-                   int         pme_order,
-                   gmx_bool    bUseThreads,
-                   int         nthread,
-                   int         overlap_x,
-                   int         overlap_y);
-
-void pmegrids_destroy(pmegrids_t* grids);
+/*! \brief Initialized a PME grid struct
+ *
+ * The actual storage for the grids is passed through \p gridsStorage. This should have
+ * size 1 when a single thread is used and 1+nthread with OpenMP threading.
+ * When the vectors are empty, they are allocated. When they are not empty the are used
+ * and sufficient size is asserted upon.
+ */
+void pmegrids_init(pmegrids_t*                        grids,
+                   int                                nx,
+                   int                                ny,
+                   int                                nz,
+                   int                                nz_base,
+                   int                                pme_order,
+                   gmx_bool                           bUseThreads,
+                   int                                nthread,
+                   int                                overlap_x,
+                   int                                overlap_y,
+                   gmx::ArrayRef<AlignedVector<real>> gridsStorage);
 
 std::tuple<std::vector<int>, std::vector<real>>
 make_gridindex_to_localindex(int n, int local_start, int local_range, bool checkRoundingAtBoundary);
 
 void set_grid_alignment(int* pmegrid_nz, int pme_order);
-
-void reuse_pmegrids(const pmegrids_t* oldgrid, pmegrids_t* newgrid);
 
 #endif
