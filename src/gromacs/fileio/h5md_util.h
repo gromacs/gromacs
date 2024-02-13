@@ -100,6 +100,12 @@ hid_t openOrCreateDataSet(hid_t                container,
 template<int numDims, bool writeFullDataSet>
 void writeData(hid_t dataSet, const void* data, hsize_t frameToWrite);
 
+/*! \brief Returns the size of the data type used in a dataset.
+ * \param[in] The ID of the dataset.
+ * \returns the size of the data type used in the dataset.
+ */
+size_t getDataTypeSize(hid_t dataSet);
+
 /*! \brief Reads data from an HDF5 data set, labelled by name.
  *
  * \tparam numDims The number of dimensions of the data.
@@ -107,13 +113,13 @@ void writeData(hid_t dataSet, const void* data, hsize_t frameToWrite);
  *                         If true, frameToRead must be 0.
  * \param[in] dataSet The ID of the dataset to read from.
  * \param[in] frameToRead The frame number to read (starting from 0).
+ * \param[in] dataTypeSize The size (in bytes) per value.
  * \param[out] buffer The buffer to fill with the read data. Memory will be allocated.
  *                    Must be freed by the caller.
  * \param[out] totalNumElements The number of data values read.
- * \param[out] dataTypeSize The size (in bytes) per value.
  */
 template<int numDims, bool readFullDataSet>
-void readData(hid_t dataSet, hsize_t frameToRead, void** buffer, size_t* totalNumElements, size_t* dataTypeSize);
+void readData(hid_t dataSet, hsize_t frameToRead, size_t dataTypeSize, void** buffer, size_t* totalNumElements);
 
 /*! Set the periodic box attribute of a box group.
  * \param[in] boxGroup The ID of the box group.

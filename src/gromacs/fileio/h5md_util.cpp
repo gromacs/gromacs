@@ -310,8 +310,16 @@ void writeData(hid_t dataSet, const void* data, hsize_t frameToWrite)
 #endif
 }
 
+size_t getDataTypeSize(hid_t dataSet)
+{
+    hid_t origDatatype   = H5Dget_type(dataSet);
+    hid_t nativeDatatype = H5Tget_native_type(origDatatype, H5T_DIR_DEFAULT);
+
+    return H5Tget_size(nativeDatatype);
+}
+
 template<int numDims, bool readFullDataSet>
-void readData(hid_t dataSet, hsize_t frameToRead, void** buffer, size_t* totalNumElements, size_t* dataTypeSize)
+void readData(hid_t dataSet, hsize_t frameToRead, size_t dataTypeSize, void** buffer, size_t* totalNumElements)
 {
     GMX_ASSERT(dataSet >= 0, "Needs a valid dataSet to read data.");
     GMX_ASSERT(!readFullDataSet || frameToRead == 0,
@@ -367,10 +375,12 @@ void readData(hid_t dataSet, hsize_t frameToRead, void** buffer, size_t* totalNu
     hid_t origDatatype    = H5Dget_type(dataSet);
     hid_t nativeDatatype  = H5Tget_native_type(origDatatype, H5T_DIR_DEFAULT);
 
-    *dataTypeSize     = H5Tget_size(nativeDatatype);
     *totalNumElements = totalBlockSize;
 
-    *buffer = malloc(*dataTypeSize * totalBlockSize);
+    if (*buffer == nullptr)
+    {
+        *buffer = malloc(dataTypeSize * totalBlockSize);
+    }
     if (H5Dread(dataSet, nativeDatatype, memoryDataspace, dataSpace, H5P_DEFAULT, *buffer) < 0)
     {
         H5Eprint2(H5E_DEFAULT, nullptr);
@@ -545,8 +555,8 @@ template void writeData<1, false>(hid_t, const void*, hsize_t);
 template void writeData<1, true>(hid_t, const void*, hsize_t);
 template void writeData<3, false>(hid_t, const void*, hsize_t);
 
-template void readData<1, false>(hid_t, hsize_t, void**, size_t*, size_t*);
-template void readData<3, false>(hid_t, hsize_t, void**, size_t*, size_t*);
+template void readData<1, false>(hid_t, hsize_t, size_t, void**, size_t*);
+template void readData<3, false>(hid_t, hsize_t, size_t, void**, size_t*);
 
 template void setAttribute<int>(hid_t, const char*, int, hid_t);
 template void setAttribute<float>(hid_t, const char*, float, hid_t);

@@ -191,40 +191,45 @@ void GmxH5mdTimeDataBlock::writeFrame(const void* data, int64_t step, real time,
 
 bool GmxH5mdTimeDataBlock::readFrame(real* data, int frame)
 {
-    void*  buffer = nullptr;
     size_t totalNumElements;
-    size_t dataTypeSize;
+    size_t dataTypeSize = getDataTypeSize(mainDataSet_);
 
     /* FIXME: Make the number of dimensions flexible */
-    readData<3, false>(mainDataSet_, frame, &buffer, &totalNumElements, &dataTypeSize);
 
 #if GMX_DOUBLE
     if (dataTypeSize != 8)
     {
+        void* buffer = nullptr;
+        readData<3, false>(mainDataSet_, frame, dataTypeSize, &buffer, &totalNumElements);
         for (size_t i = 0; i < totalNumElements; i++)
         {
             data[i] = static_cast<float*>(buffer)[i];
         }
+        H5free_memory(buffer);
     }
     else
     {
-        std::memcpy(data, buffer, totalNumElements * dataTypeSize);
+        /* FIXME: Why doesn't static_cast<void**>(&data) work? */
+        readData<3, false>(mainDataSet_, frame, dataTypeSize, (void**)(&data), &totalNumElements);
     }
 #else
     if (dataTypeSize != 4)
     {
+        void* buffer = nullptr;
+        readData<3, false>(mainDataSet_, frame, dataTypeSize, &buffer, &totalNumElements);
         for (size_t i = 0; i < totalNumElements; i++)
         {
             data[i] = static_cast<double*>(buffer)[i];
         }
+        H5free_memory(buffer);
     }
     else
     {
-        std::memcpy(data, buffer, totalNumElements * dataTypeSize);
+        /* FIXME: Why doesn't static_cast<void**>(&data) work? */
+        readData<3, false>(mainDataSet_, frame, dataTypeSize, (void**)(&data), &totalNumElements);
     }
 #endif
 
-    H5free_memory(buffer);
     return true;
 }
 
@@ -324,12 +329,10 @@ size_t GmxH5mdTimeDataBlock::getNumParticles() const
 
 int64_t GmxH5mdTimeDataBlock::getStepOfFrame(hsize_t frame) const
 {
-    GMX_ASSERT(timeDataSet_ >= 0, "There must be a data set with time to get the time of a frame.");
+    GMX_ASSERT(stepDataSet_ >= 0, "There must be a data set with steps to get the step of a frame.");
 
-    void*  buffer;
     size_t totalNumElements;
-    size_t dataTypeSize;
-    readData<1, false>(stepDataSet_, frame, &buffer, &totalNumElements, &dataTypeSize);
+    size_t dataTypeSize = getDataTypeSize(stepDataSet_);
 
     if (dataTypeSize != 4 && dataTypeSize != 8)
     {
@@ -338,46 +341,75 @@ int64_t GmxH5mdTimeDataBlock::getStepOfFrame(hsize_t frame) const
 
     if (dataTypeSize == 4)
     {
+        void* buffer = nullptr;
+        readData<1, false>(stepDataSet_, frame, dataTypeSize, &buffer, &totalNumElements);
         int* tmpIntData = static_cast<int*>(buffer);
         int  tmpValue   = *tmpIntData;
         H5free_memory(tmpIntData);
         tmpIntData = nullptr;
         return tmpValue;
     }
-    int64_t* tmpIntData = static_cast<int64_t*>(buffer);
-    int64_t  tmpValue   = *tmpIntData;
-    H5free_memory(tmpIntData);
-    tmpIntData = nullptr;
-    return tmpValue;
+    else
+    {
+        /* FIXME: Avoid c-type casting */
+        int64_t  tmpValue;
+        int64_t* tmpValuePtr = &tmpValue;
+        readData<1, false>(stepDataSet_, frame, dataTypeSize, (void**)(&tmpValuePtr), &totalNumElements);
+        return tmpValue;
+    }
 }
 
 real GmxH5mdTimeDataBlock::getTimeOfFrame(hsize_t frame) const
 {
     GMX_ASSERT(timeDataSet_ >= 0, "There must be a data set with time to get the time of a frame.");
 
-    void*  buffer;
     size_t totalNumElements;
-    size_t dataTypeSize;
-    readData<1, false>(timeDataSet_, frame, &buffer, &totalNumElements, &dataTypeSize);
+    size_t dataTypeSize = getDataTypeSize(timeDataSet_);
 
     if (dataTypeSize != 4 && dataTypeSize != 8)
     {
         throw gmx::FileIOError("Can only read float or double time data.");
     }
 
-    if (dataTypeSize == 4)
+#if GMX_DOUBLE
+    if (dataTypeSize != 8)
     {
+        void* buffer = nullptr;
+        readData<1, false>(timeDataSet_, frame, dataTypeSize, &buffer, &totalNumElements);
         float* tmpFloatData = static_cast<float*>(buffer);
-        float  tmpValue     = *tmpFloatData;
+        double tmpValue     = *tmpFloatData;
         H5free_memory(tmpFloatData);
         tmpFloatData = nullptr;
         return tmpValue;
     }
-    double* tmpDoubleData = static_cast<double*>(buffer);
-    double  tmpValue      = *tmpDoubleData;
-    H5free_memory(tmpDoubleData);
-    tmpDoubleData = nullptr;
-    return tmpValue;
+    else
+    {
+        /* FIXME: Avoid c-type casting */
+        double  tmpValue;
+        double* tmpValuePtr = &tmpValue;
+        readData<1, false>(timeDataSet_, frame, dataTypeSize, (void**)(&tmpValuePtr), &totalNumElements);
+        return tmpValue;
+    }
+#else
+    if (dataTypeSize != 4)
+    {
+        void* buffer = nullptr;
+        readData<1, false>(timeDataSet_, frame, dataTypeSize, &buffer, &totalNumElements);
+        double* tmpDoubleData = static_cast<double*>(buffer);
+        float tmpValue = *tmpDoubleData;
+        H5free_memory(tmpDoubleData);
+        tmpDoubleData = nullptr;
+        return tmpValue;
+    }
+    else
+    {
+        /* FIXME: Avoid c-type casting */
+        float tmpValue;
+        float* tmpValuePtr = &tmpValue;
+        readData<1, false>(timeDataSet_, frame, dataTypeSize, (void**)(&tmpValuePtr), &totalNumElements);
+        return tmpValue;
+    }
+#endif
 }
 
 real GmxH5mdTimeDataBlock::getLossyCompressionError()
@@ -393,5 +425,5 @@ openOrCreateDataSet<3>(hid_t, const char*, const char*, hid_t, const hsize_t*, C
 extern template void writeData<1, false>(hid_t, const void*, hsize_t);
 extern template void writeData<3, false>(hid_t, const void*, hsize_t);
 
-extern template void readData<1, false>(hid_t, hsize_t, void**, size_t*, size_t*);
-extern template void readData<3, false>(hid_t, hsize_t, void**, size_t*, size_t*);
+extern template void readData<1, false>(hid_t, hsize_t, size_t, void**, size_t*);
+extern template void readData<3, false>(hid_t, hsize_t, size_t, void**, size_t*);
