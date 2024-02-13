@@ -48,6 +48,7 @@
 #include <string>
 
 #include "gromacs/mdtypes/md_enums.h"
+#include "gromacs/topology/mtop_util.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/baseversion.h"
@@ -391,28 +392,18 @@ void GmxH5mdIo::setupMolecularSystem(const gmx_mtop_t&        topology,
     std::vector<real>        atomMasses;
     std::vector<std::string> atomNames;
 
-    atomCharges.reserve(topology.natoms);
-    atomMasses.reserve(topology.natoms);
-    atomNames.reserve(topology.natoms);
+    t_atoms atoms = gmx_mtop_global_atoms(topology);
+
+    atomCharges.reserve(atoms.nr);
+    atomMasses.reserve(atoms.nr);
+    atomNames.reserve(atoms.nr);
 
     /* FIXME: The names could be copied directly to a char array instead. */
-    for (const gmx_molblock_t& molBlock : topology.molblock)
+    for (int atomCounter = 0; atomCounter < atoms.nr; atomCounter++)
     {
-        const gmx_moltype_t* molType = &topology.moltype[molBlock.type];
-        for (int atomCounter = 0; atomCounter < molType->atoms.nr; atomCounter++)
-        {
-            atomCharges.push_back(molType->atoms.atom[atomCounter].q);
-            atomMasses.push_back(molType->atoms.atom[atomCounter].m);
-            atomNames.push_back(*(molType->atoms.atomname[atomCounter]));
-        }
-        for (int molCounter = 1; molCounter < molBlock.nmol; molCounter++)
-        {
-            std::copy_n(atomCharges.end() - molType->atoms.nr,
-                        molType->atoms.nr,
-                        std::back_inserter(atomCharges));
-            std::copy_n(atomMasses.end() - molType->atoms.nr, molType->atoms.nr, std::back_inserter(atomMasses));
-            std::copy_n(atomNames.end() - molType->atoms.nr, molType->atoms.nr, std::back_inserter(atomNames));
-        }
+        atomCharges.push_back(atoms.atom[atomCounter].q);
+        atomMasses.push_back(atoms.atom[atomCounter].m);
+        atomNames.push_back(*(atoms.atomname[atomCounter]));
     }
 
     hsize_t atomPropertiesChunkDims[1];
