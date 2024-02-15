@@ -48,7 +48,7 @@ macro(gmx_test_compiler_problems)
     # Error if compiler doesn't support required C++17 features.
     # cmake feature detection is currently inconsistent: gitlab.kitware.com/cmake/cmake/issues/18869
     # We might want to switch to using feature test macros some time.
-    if(CMAKE_COMPILER_IS_GNUCXX)
+    if(CMAKE_CXX_COMPILER_ID MATCHES "GNU")
         if (CMAKE_CXX_COMPILER_VERSION VERSION_LESS 9)
             set(cxx_required_version "GCC version 9")
         endif()

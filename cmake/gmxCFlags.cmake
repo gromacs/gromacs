@@ -236,7 +236,7 @@ macro (gmx_c_flags)
     include(CheckCXXCompilerFlag)
 
     # gcc
-    if(CMAKE_COMPILER_IS_GNUCC)
+    if(CMAKE_C_COMPILER_ID MATCHES "GNU")
         #flags are added in reverse order and -Wno* need to appear after -Wall
         if(NOT GMX_OPENMP)
             GMX_TEST_CFLAG(CFLAGS_PRAGMA "-Wno-unknown-pragmas" GMXC_CFLAGS)
@@ -259,7 +259,7 @@ macro (gmx_c_flags)
         GMX_TEST_CFLAG(CFLAGS_NOINLINE "-fno-inline" GMXC_CFLAGS_DEBUG)
     endif()
     # g++
-    if(CMAKE_COMPILER_IS_GNUCXX)
+    if(CMAKE_CXX_COMPILER_ID MATCHES "GNU")
         if(NOT GMX_OPENMP)
             GMX_TEST_CXXFLAG(CXXFLAGS_PRAGMA "-Wno-unknown-pragmas" GMXC_CXXFLAGS)
         endif()
