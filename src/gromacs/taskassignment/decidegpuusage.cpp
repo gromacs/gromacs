@@ -504,9 +504,9 @@ PmeRunMode determinePmeRunMode(const bool useGpuForPme, const TaskTarget& pmeFft
     {
         if (c_gpuBuildSyclWithoutGpuFft && pmeFftTarget == TaskTarget::Gpu)
         {
-            gmx_fatal(FARGS,
-                      "GROMACS is built without SYCL GPU FFT library. Please do not use -pmefft "
-                      "gpu.");
+            GMX_THROW(NotImplementedError(
+                    "GROMACS is built without SYCL GPU FFT library. Please do not use -pmefft "
+                    "gpu."));
         }
         if (!decideWhetherToUseGpusForPmeFft(pmeFftTarget))
         {
@@ -521,9 +521,9 @@ PmeRunMode determinePmeRunMode(const bool useGpuForPme, const TaskTarget& pmeFft
     {
         if (pmeFftTarget == TaskTarget::Gpu)
         {
-            gmx_fatal(FARGS,
-                      "Assigning FFTs to GPU requires PME to be assigned to GPU as well. With PME "
-                      "on CPU you should not be using -pmefft.");
+            GMX_THROW(InconsistentInputError(
+                    "Assigning FFTs to GPU requires PME to be assigned to GPU as well. With PME "
+                    "on CPU you should not be using -pmefft."));
         }
         return PmeRunMode::CPU;
     }
@@ -638,171 +638,117 @@ bool decideWhetherToUseGpuForUpdate(const bool           isDomainDecomposition,
     const bool hasAnyConstraints      = gmx_mtop_interaction_count(mtop, IF_CONSTRAINT) > 0;
     const bool pmeSpreadGatherUsesCpu = (pmeRunMode == PmeRunMode::CPU);
 
-    std::string errorMessage;
+    gmx::MessageStringCollector errorReasons;
+    errorReasons.startContext(
+            "Update task can not run on the GPU, because the following "
+            "condition(s) were not satisfied:");
+
     // Flag to set if we do not want to log the error with `-update auto` (e.g., for non-GPU build)
     bool silenceWarningMessageWithUpdateAuto = forceCpuUpdateDefault;
 
     if (isDomainDecomposition)
     {
-        if (hasAnyConstraints && !useUpdateGroups)
-        {
-            errorMessage +=
-                    "Domain decomposition is only supported with constraints when update "
-                    "groups "
-                    "are used. This means constraining all bonds is not supported, except for "
-                    "small molecules, and box sizes close to half the pair-list cutoff are not "
-                    "supported.\n ";
-        }
+        errorReasons.appendIf(
+                (hasAnyConstraints && !useUpdateGroups),
+                "Domain decomposition is only supported with constraints when update "
+                "groups "
+                "are used. This means constraining all bonds is not supported, except for "
+                "small molecules, and box sizes close to half the pair-list cutoff are not "
+                "supported.");
     }
 
     if (havePmeOnlyRank)
     {
-        if (pmeSpreadGatherUsesCpu)
-        {
-            errorMessage += "With separate PME rank(s), PME must run on the GPU.\n";
-        }
+        errorReasons.appendIf(pmeSpreadGatherUsesCpu,
+                              "With separate PME rank(s), PME must run on the GPU.");
     }
 
-    if (inputrec.useMts)
-    {
-        errorMessage += "Multiple time stepping is not supported.\n";
-    }
+    errorReasons.appendIf(inputrec.useMts, "Multiple time stepping is not supported.");
 
-    if (inputrec.eConstrAlg == ConstraintAlgorithm::Shake && hasAnyConstraints
-        && gmx_mtop_ftype_count(mtop, F_CONSTR) > 0)
-    {
-        errorMessage += "SHAKE constraints are not supported.\n";
-    }
+    errorReasons.appendIf((inputrec.eConstrAlg == ConstraintAlgorithm::Shake && hasAnyConstraints
+                           && gmx_mtop_ftype_count(mtop, F_CONSTR) > 0),
+                          "SHAKE constraints are not supported.");
     // Using the GPU-version of update if:
     // 1. PME is on the GPU (there should be a copy of coordinates on GPU for PME spread) or inactive, or
     // 2. Non-bonded interactions are on the GPU.
     if ((pmeRunMode == PmeRunMode::CPU || pmeRunMode == PmeRunMode::None) && !useGpuForNonbonded)
     {
-        errorMessage +=
-                "Either PME or short-ranged non-bonded interaction tasks must run on the GPU.\n";
+        errorReasons.append(
+                "Either PME or short-ranged non-bonded interaction tasks must run on the GPU.");
         silenceWarningMessageWithUpdateAuto = true;
     }
     if (!gpusWereDetected)
     {
-        errorMessage += "Compatible GPUs must have been found.\n";
+        errorReasons.append("Compatible GPUs must have been found.");
         silenceWarningMessageWithUpdateAuto = true;
     }
     if (!(GMX_GPU_CUDA || GMX_GPU_SYCL))
     {
-        errorMessage += "Only CUDA and SYCL builds are supported.\n";
+        errorReasons.append("Only CUDA and SYCL builds are supported.");
         // Silence clang-analyzer deadcode.DeadStores warning about ignoring the previous assignments
         GMX_UNUSED_VALUE(silenceWarningMessageWithUpdateAuto);
         silenceWarningMessageWithUpdateAuto = true;
     }
-    if (inputrec.eI != IntegrationAlgorithm::MD)
-    {
-        errorMessage += "Only the md integrator is supported.\n";
-    }
-    if (inputrec.etc == TemperatureCoupling::NoseHoover)
-    {
-        errorMessage += "Nose-Hoover temperature coupling is not supported.\n";
-    }
-    if (!(inputrec.pressureCouplingOptions.epc == PressureCoupling::No
-          || inputrec.pressureCouplingOptions.epc == PressureCoupling::ParrinelloRahman
-          || inputrec.pressureCouplingOptions.epc == PressureCoupling::Berendsen
-          || inputrec.pressureCouplingOptions.epc == PressureCoupling::CRescale))
-    {
-        errorMessage +=
-                "Only Parrinello-Rahman, Berendsen, and C-rescale pressure coupling are "
-                "supported.\n";
-    }
-    if (inputrec.cos_accel != 0 || inputrec.useConstantAcceleration)
-    {
-        errorMessage += "Acceleration is not supported.\n";
-    }
-    if (ir_haveBoxDeformation(inputrec))
-    {
-        errorMessage += "Box deformation is not supported.\n";
-    }
-    if (usingPmeOrEwald(inputrec.coulombtype) && inputrec.epsilon_surface != 0)
-    {
-        // The graph is needed, but not supported
-        errorMessage += "Ewald surface correction is not supported.\n";
-    }
-    if (gmx_mtop_interaction_count(mtop, IF_VSITE) > 0)
-    {
-        errorMessage += "Virtual sites are not supported.\n";
-    }
-    if (useEssentialDynamics)
-    {
-        errorMessage += "Essential dynamics is not supported.\n";
-    }
-    if (inputrec.bPull && pull_have_constraint(*inputrec.pull))
-    {
-        errorMessage += "Constraints pulling is not supported.\n";
-    }
-    if (doOrientationRestraints)
-    {
-        // The graph is needed, but not supported
-        errorMessage += "Orientation restraints are not supported.\n";
-    }
-    if (inputrec.efep != FreeEnergyPerturbationType::No
-        && (haveFepPerturbedMasses(mtop) || havePerturbedConstraints(mtop)))
-    {
-        errorMessage += "Free energy perturbation for mass and constraints are not supported.\n";
-    }
+    errorReasons.appendIf((inputrec.eI != IntegrationAlgorithm::MD),
+                          "Only the md integrator is supported.");
+    errorReasons.appendIf((inputrec.etc == TemperatureCoupling::NoseHoover),
+                          "Nose-Hoover temperature coupling is not supported.");
+    errorReasons.appendIf((!(inputrec.pressureCouplingOptions.epc == PressureCoupling::No
+                             || inputrec.pressureCouplingOptions.epc == PressureCoupling::ParrinelloRahman
+                             || inputrec.pressureCouplingOptions.epc == PressureCoupling::Berendsen
+                             || inputrec.pressureCouplingOptions.epc == PressureCoupling::CRescale)),
+
+                          "Only Parrinello-Rahman, Berendsen, and C-rescale pressure coupling are "
+                          "supported.");
+    errorReasons.appendIf((inputrec.cos_accel != 0 || inputrec.useConstantAcceleration),
+                          "Acceleration is not supported.");
+    errorReasons.appendIf(ir_haveBoxDeformation(inputrec), "Box deformation is not supported.");
+    errorReasons.appendIf((usingPmeOrEwald(inputrec.coulombtype) && inputrec.epsilon_surface != 0),
+                          // The graph is needed, but not supported
+                          "Ewald surface correction is not supported.");
+    errorReasons.appendIf((gmx_mtop_interaction_count(mtop, IF_VSITE) > 0),
+                          "Virtual sites are not supported.");
+    errorReasons.appendIf(useEssentialDynamics, "Essential dynamics is not supported.");
+    errorReasons.appendIf((inputrec.bPull && pull_have_constraint(*inputrec.pull)),
+                          "Constraints pulling is not supported.");
+    errorReasons.appendIf(doOrientationRestraints,
+                          // The graph is needed, but not supported
+                          "Orientation restraints are not supported.");
+    errorReasons.appendIf((inputrec.efep != FreeEnergyPerturbationType::No
+                           && (haveFepPerturbedMasses(mtop) || havePerturbedConstraints(mtop))),
+                          "Free energy perturbation for mass and constraints are not supported.");
     const auto particleTypes = gmx_mtop_particletype_count(mtop);
-    if (particleTypes[ParticleType::Shell] > 0)
-    {
-        errorMessage += "Shells are not supported.\n";
-    }
-    if (inputrec.eSwapCoords != SwapType::No)
-    {
-        errorMessage += "Swapping the coordinates is not supported.\n";
-    }
-    if (useModularSimulator)
-    {
-        errorMessage += "The modular simulator is not supported.\n";
-    }
-    if (doRerun)
-    {
-        errorMessage += "Re-run is not supported.\n";
-    }
+    errorReasons.appendIf((particleTypes[ParticleType::Shell] > 0), "Shells are not supported.");
+    errorReasons.appendIf(inputrec.eSwapCoords != SwapType::No,
+                          "Swapping the coordinates is not supported.");
+    errorReasons.appendIf(useModularSimulator, "The modular simulator is not supported.");
+    errorReasons.appendIf(doRerun, "Re-run is not supported.");
 
     // TODO: F_CONSTRNC is only unsupported, because isNumCoupledConstraintsSupported()
     // does not support it, the actual CUDA LINCS code does support it
-    if (gmx_mtop_ftype_count(mtop, F_CONSTRNC) > 0)
-    {
-        errorMessage += "Non-connecting constraints are not supported\n";
-    }
-    if (!UpdateConstrainGpu::isNumCoupledConstraintsSupported(mtop))
-    {
-        errorMessage +=
-                "The number of coupled constraints is higher than supported in the GPU LINCS "
-                "code.\n";
-    }
-    if (hasAnyConstraints && !UpdateConstrainGpu::areConstraintsSupported())
-    {
-        errorMessage += "Chosen GPU implementation does not support constraints.\n";
-    }
-    if (haveFrozenAtoms)
-    {
-        // There is a known bug with frozen atoms and GPU update, see Issue #3920.
-        errorMessage += "Frozen atoms not supported.\n";
-    }
+    errorReasons.appendIf((gmx_mtop_ftype_count(mtop, F_CONSTRNC) > 0),
+                          "Non-connecting constraints are not supported");
+    errorReasons.appendIf(
+            !UpdateConstrainGpu::isNumCoupledConstraintsSupported(mtop),
+            "The number of coupled constraints is higher than supported in the GPU LINCS "
+            "code.");
+    errorReasons.appendIf((hasAnyConstraints && !UpdateConstrainGpu::areConstraintsSupported()),
+                          "Chosen GPU implementation does not support constraints.");
+    errorReasons.appendIf(haveFrozenAtoms,
+                          // There is a known bug with frozen atoms and GPU update, see Issue #3920.
+                          "Frozen atoms not supported.");
 
-    if (!errorMessage.empty())
+    errorReasons.finishContext();
+
+    if (!errorReasons.isEmpty())
     {
         if (updateTarget == TaskTarget::Auto && !silenceWarningMessageWithUpdateAuto)
         {
-            GMX_LOG(mdlog.info)
-                    .asParagraph()
-                    .appendText(
-                            "Update task can not run on the GPU, because the following "
-                            "condition(s) were not satisfied:");
-            GMX_LOG(mdlog.info).asParagraph().appendText(errorMessage.c_str());
+            GMX_LOG(mdlog.info).asParagraph().appendText(errorReasons.toString());
         }
         else if (updateTarget == TaskTarget::Gpu)
         {
-            std::string prefix = gmx::formatString(
-                    "Update task on the GPU was required,\n"
-                    "but the following condition(s) were not satisfied:\n");
-            GMX_THROW(InconsistentInputError((prefix + errorMessage).c_str()));
+            GMX_THROW(InconsistentInputError(errorReasons.toString().c_str()));
         }
         return false;
     }
