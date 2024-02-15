@@ -261,6 +261,9 @@ add_library(legacy_modules INTERFACE)
 target_include_directories(legacy_modules INTERFACE $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src>)
 target_link_libraries(libgromacs PRIVATE $<BUILD_INTERFACE:legacy_modules>)
 
+gmx_manage_hdf5()
+gmx_manage_sz3()
+
 # Add these contents first because linking their tests can take a lot
 # of time, so we want lots of parallel work still available after
 # linking starts.
