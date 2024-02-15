@@ -96,7 +96,7 @@ GmxH5mdTimeDataBlock::GmxH5mdTimeDataBlock(hid_t                container,
         }
         H5Dclose(tmpDataSet);
 
-        size_t cacheSize = sizeof(real);
+        size_t cacheSize = sizeof(real) * 2;
         for (int i = 0; i < DIM; i++)
         {
             cacheSize *= chunkDims[i];
@@ -125,7 +125,9 @@ GmxH5mdTimeDataBlock::GmxH5mdTimeDataBlock(hid_t                container,
 
         mainDataSet_ = openOrCreateDataSet<DIM>(
                 group_, c_valueName, mainUnit_.c_str(), datatype, chunkDims, compression, compressionAbsoluteError);
+
         hsize_t chunkDimsTimeStep[1] = { numFramesPerChunk };
+
         stepDataSet_                 = openOrCreateDataSet<1>(
                 group_, c_stepName, nullptr, H5T_NATIVE_INT64, chunkDimsTimeStep, CompressionAlgorithm::None, 0);
 

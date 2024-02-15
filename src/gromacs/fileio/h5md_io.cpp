@@ -559,22 +559,22 @@ void GmxH5mdIo::writeFrame(int64_t      step,
 
     CompressionAlgorithm compressionAlgorithm = CompressionAlgorithm::LosslessWithShuffle;
     hsize_t              numFramesPerChunk    = 1;
-    if (xCompressionError != 0)
-    {
-        /* Use no more than 10 frames per chunk (compression unit). Use fewer frames per chunk if there are many atoms. */
-        numFramesPerChunk    = std::min(10, int(std::ceil(2e6f / numParticles)));
-        compressionAlgorithm = CompressionAlgorithm::LossySz3;
-
-        /* Register the SZ3 filter. This is not necessary when creating a dataset with the filter,
-         * but must be done to append to an existing file (e.g. when restarting from checkpoint). */
-        registerSz3FilterImplicitly();
-    }
     if (x != nullptr)
     {
         std::string wantedName = "/particles/" + systemOutputName_ + "/position";
         auto foundDataBlock = std::find(dataBlocks_.begin(), dataBlocks_.end(), wantedName.c_str());
         if (foundDataBlock == dataBlocks_.end())
         {
+            if (xCompressionError != 0)
+            {
+                /* Use no more than 10 frames per chunk (compression unit). Use fewer frames per chunk if there are many atoms. */
+                numFramesPerChunk    = std::min(10, int(std::ceil(2e6f / numParticles)));
+                compressionAlgorithm = CompressionAlgorithm::LossySz3;
+
+                /* Register the SZ3 filter. This is not necessary when creating a dataset with the filter,
+                * but must be done to append to an existing file (e.g. when restarting from checkpoint). */
+                registerSz3FilterImplicitly();
+            }
             GmxH5mdTimeDataBlock position(systemGroup,
                                           "position",
                                           "nm",

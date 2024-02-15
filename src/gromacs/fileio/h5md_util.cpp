@@ -205,7 +205,7 @@ hid_t openOrCreateDataSet(hid_t                container,
                 }
                 /* Fall through */
             case CompressionAlgorithm::LosslessNoShuffle:
-                if (H5Pset_deflate(createPropertyList, 6) < 0)
+                if (H5Pset_deflate(createPropertyList, 1) < 0)
                 {
                     H5Eprint2(H5E_DEFAULT, nullptr);
                     throw gmx::FileIOError("Cannot set GZIP compression.");
