@@ -3939,7 +3939,7 @@ static bool checkRebalanceSimpleLists(gmx::ArrayRef<const NbnxnPairlistCpu> list
 static void sort_sci(NbnxnPairlistGpu* nbl)
 {
     /* For CUDA version, sorting is done on the GPU */
-    if (GMX_GPU_CUDA)
+    if (nbnxmSortListsOnGpu())
     {
         return;
     }

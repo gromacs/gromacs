@@ -42,7 +42,7 @@
 #ifndef GMX_NBNXM_NBNXM_GPU_DATA_MGMT_H
 #define GMX_NBNXM_NBNXM_GPU_DATA_MGMT_H
 
-class DeviceContext;
+class DeviceStream;
 struct interaction_const_t;
 struct NBParamGpu;
 struct PairlistParams;
@@ -63,9 +63,15 @@ void gpu_init_platform_specific(NbnxmGpu* nb);
 /*! \brief Releases the NBNXM GPU data structures. */
 void gpu_free_platform_specific(NbnxmGpu* nb);
 
-#if GMX_GPU_CUDA
-/*! Calculates working memory required for exclusive sum, used in neighbour list sorting */
+/*! \brief Calculates working memory required for exclusive sum, used in neighbour list sorting on GPU. */
 void getExclusiveScanWorkingArraySize(size_t& scan_size, gpu_plist* d_plist, const DeviceStream& deviceStream);
+#if !GMX_GPU_CUDA
+// CUDA's CUB requires temporary data storage, and is defined there.
+// SYCL's oneDPL does not need one, so we can return 0 there too.
+inline void getExclusiveScanWorkingArraySize(size_t& scan_size, gpu_plist*, const DeviceStream&)
+{
+    scan_size = 0;
+}
 #endif
 
 } // namespace Nbnxm

@@ -591,52 +591,53 @@ void gpu_init_pairlist(NbnxmGpu* nb, const NbnxnPairlistGpu* h_plist, const Inte
                        GpuApiCallBehavior::Async,
                        bDoTime ? iTimers.pl_h2d.fetchNextEvent() : nullptr);
 
-/* gpu sorting is only implemented for cuda */
-#if GMX_GPU_CUDA
-    reallocateDeviceBuffer(&d_plist->sorting.sciSorted,
-                           h_plist->sci.size(),
-                           &d_plist->sorting.nsciSorted,
-                           &d_plist->sorting.sciSortedNalloc,
-                           deviceContext);
-    copyToDeviceBuffer(&d_plist->sorting.sciSorted,
-                       h_plist->sci.data(),
-                       0,
-                       h_plist->sci.size(),
-                       deviceStream,
-                       GpuApiCallBehavior::Async,
-                       bDoTime ? iTimers.pl_h2d.fetchNextEvent() : nullptr);
-    reallocateDeviceBuffer(&d_plist->sorting.sciCount,
-                           h_plist->sci.size(),
-                           &d_plist->sorting.nsciCounted,
-                           &d_plist->sorting.sciCountedNalloc,
-                           deviceContext);
-
-    if (d_plist->sorting.nscanTemporary == -1)
+    /* gpu sorting is only implemented for cuda */
+    if (nbnxmSortListsOnGpu())
     {
-        reallocateDeviceBuffer(&d_plist->sorting.sciHistogram,
-                               c_sciHistogramSize + 1,
-                               &d_plist->sorting.nsciHistogram,
-                               &d_plist->sorting.sciHistogramNalloc,
+        reallocateDeviceBuffer(&d_plist->sorting.sciSorted,
+                               h_plist->sci.size(),
+                               &d_plist->sorting.nsciSorted,
+                               &d_plist->sorting.sciSortedNalloc,
+                               deviceContext);
+        copyToDeviceBuffer(&d_plist->sorting.sciSorted,
+                           h_plist->sci.data(),
+                           0,
+                           h_plist->sci.size(),
+                           deviceStream,
+                           GpuApiCallBehavior::Async,
+                           bDoTime ? iTimers.pl_h2d.fetchNextEvent() : nullptr);
+        reallocateDeviceBuffer(&d_plist->sorting.sciCount,
+                               h_plist->sci.size(),
+                               &d_plist->sorting.nsciCounted,
+                               &d_plist->sorting.sciCountedNalloc,
                                deviceContext);
 
-        reallocateDeviceBuffer(&d_plist->sorting.sciOffset,
-                               c_sciHistogramSize,
-                               &d_plist->sorting.nsciOffset,
-                               &d_plist->sorting.sciOffsetNalloc,
-                               deviceContext);
+        if (d_plist->sorting.nscanTemporary == -1)
+        {
+            reallocateDeviceBuffer(&d_plist->sorting.sciHistogram,
+                                   c_sciHistogramSize + 1,
+                                   &d_plist->sorting.nsciHistogram,
+                                   &d_plist->sorting.sciHistogramNalloc,
+                                   deviceContext);
 
-        size_t scanTemporarySize = 0;
-        getExclusiveScanWorkingArraySize(scanTemporarySize, d_plist, deviceStream);
+            reallocateDeviceBuffer(&d_plist->sorting.sciOffset,
+                                   c_sciHistogramSize,
+                                   &d_plist->sorting.nsciOffset,
+                                   &d_plist->sorting.sciOffsetNalloc,
+                                   deviceContext);
 
-        reallocateDeviceBuffer(&d_plist->sorting.scanTemporary,
-                               static_cast<int>(scanTemporarySize),
-                               &d_plist->sorting.nscanTemporary,
-                               &d_plist->sorting.scanTemporaryNalloc,
-                               deviceContext);
+            size_t scanTemporarySize = 0;
+            getExclusiveScanWorkingArraySize(scanTemporarySize, d_plist, deviceStream);
+
+            reallocateDeviceBuffer(&d_plist->sorting.scanTemporary,
+                                   scanTemporarySize,
+                                   &d_plist->sorting.nscanTemporary,
+                                   &d_plist->sorting.scanTemporaryNalloc,
+                                   deviceContext);
+        }
+
+        clearDeviceBufferAsync(&d_plist->sorting.sciHistogram, 0, c_sciHistogramSize, deviceStream);
     }
-
-    clearDeviceBufferAsync(&d_plist->sorting.sciHistogram, 0, c_sciHistogramSize, deviceStream);
-#endif
 
     reallocateDeviceBuffer(&d_plist->cjPacked,
                            h_plist->cjPacked.size(),

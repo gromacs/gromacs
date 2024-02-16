@@ -171,6 +171,13 @@ constexpr int c_nbnxnGpuNumClusterPerSupercluster =
  */
 constexpr int c_nbnxnGpuJgroupSize = (32 / c_nbnxnGpuNumClusterPerSupercluster);
 
+//! Whether we want to use GPU for neighbour list sorting
+constexpr bool nbnxmSortListsOnGpu()
+{
+    return (GMX_GPU_CUDA != 0);
+}
+
+
 /*! \internal
  * \brief Simple pair-list i-unit
  */

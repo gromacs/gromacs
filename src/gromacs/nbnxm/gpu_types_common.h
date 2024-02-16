@@ -272,7 +272,7 @@ struct gpuPlistSorting
     //! allocation size of scanTemporary
     int scanTemporaryNalloc;
 
-    // //! Temporary data of scan algorithm
+    //! Temporary data of scan algorithm
     DeviceBuffer<char> scanTemporary;
 
     //! number of buckets in histogram
