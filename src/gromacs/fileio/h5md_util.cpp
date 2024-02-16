@@ -216,7 +216,7 @@ hid_t openOrCreateDataSet(hid_t                container,
         }
         /* Set a reasonable cache based on chunk sizes. The cache is not stored in file, so must be set when opening a dataset */
         size_t cacheSize = sizeof(real);
-        for (int i = 0; i < numDims; i++)
+        for (int i = 0; i < DIM; i++)
         {
             cacheSize *= chunkDims[i];
         }
@@ -553,7 +553,6 @@ openOrCreateDataSet<3>(hid_t, const char*, const char*, hid_t, const hsize_t*, C
 
 template void writeData<1, false>(hid_t, const void*, hsize_t);
 template void writeData<1, true>(hid_t, const void*, hsize_t);
-template void writeData<2, true>(hid_t, const void*, hsize_t);
 template void writeData<3, false>(hid_t, const void*, hsize_t);
 
 template void readData<1, false>(hid_t, hsize_t, size_t, void**, size_t*);

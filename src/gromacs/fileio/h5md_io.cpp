@@ -406,12 +406,10 @@ void GmxH5mdIo::setupMolecularSystem(const gmx_mtop_t&        topology,
         atomNames.push_back(*(atoms.atomname[atomCounter]));
     }
 
-    hsize_t atomPropertiesChunkDims[2];
-    /* FIXME: Currently atom properties cannot change during the simulation. */
-    atomPropertiesChunkDims[0] = 1;
-    atomPropertiesChunkDims[1] = topology.natoms;
+    hsize_t atomPropertiesChunkDims[1];
 
     /* Don't replace data that already exists and cannot (currently) change during the simulation */
+    /* FIXME: Currently atom names cannot change during the simulation. */
     if (!H5Lexists(file_, "/particles/system/atomname", H5P_DEFAULT))
     {
         /* Is there a more convenient way to do this? std::string is nice above, but cannot be used for writing in HDF5. */
@@ -430,7 +428,12 @@ void GmxH5mdIo::setupMolecularSystem(const gmx_mtop_t&        topology,
         // H5Tset_strpad(stringDataType, H5T_STR_NULLTERM);
         H5Tset_cset(stringDataType, H5T_CSET_UTF8);
 
-        hid_t atomName = openOrCreateDataSet<2>(file_,
+        // hsize_t atomPropertiesChunkDims[2];
+        // atomPropertiesChunkDims[0] = 1;
+        // atomPropertiesChunkDims[1] = topology.natoms;
+        atomPropertiesChunkDims[0] = topology.natoms;
+
+        hid_t atomName = openOrCreateDataSet<1>(file_,
                                                 "/particles/system/atomname",
                                                 "",
                                                 stringDataType,
@@ -439,7 +442,7 @@ void GmxH5mdIo::setupMolecularSystem(const gmx_mtop_t&        topology,
                                                 0);
         // writeData<1, true>(atomName, atomNamesChars.data(), 0);
         // printf("atomNamesChars.data()[0]: %s %s %s %s\n", atomNamesChars.data()[0], atomNamesChars.data()[1], atomNamesChars.data()[2], atomNamesChars.data()[3]);
-        writeData<2, true>(atomName, atomNamesChars, 0);
+        writeData<1, true>(atomName, atomNamesChars, 0);
         H5Dclose(atomName);
         sfree(atomNamesChars);
     }
@@ -449,30 +452,30 @@ void GmxH5mdIo::setupMolecularSystem(const gmx_mtop_t&        topology,
 #    else
     const hid_t floatDatatype = H5Tcopy(H5T_NATIVE_FLOAT);
 #    endif
-
+    /* FIXME: Currently charges and masses cannot change during the simulation. For time dependent data use GmxH5mdDataBlock */
     if (!H5Lexists(file_, "/particles/system/charge", H5P_DEFAULT))
     {
-        hid_t charge = openOrCreateDataSet<2>(file_,
+        hid_t charge = openOrCreateDataSet<1>(file_,
                                               "/particles/system/charge",
                                               "",
                                               floatDatatype,
                                               atomPropertiesChunkDims,
                                               CompressionAlgorithm::LosslessNoShuffle,
                                               0);
-        writeData<2, true>(charge, atomCharges.data(), 0);
+        writeData<1, true>(charge, atomCharges.data(), 0);
         H5Dclose(charge);
     }
 
     if (!H5Lexists(file_, "/particles/system/mass", H5P_DEFAULT))
     {
-        hid_t mass = openOrCreateDataSet<2>(file_,
+        hid_t mass = openOrCreateDataSet<1>(file_,
                                             "/particles/system/mass",
                                             "",
                                             floatDatatype,
                                             atomPropertiesChunkDims,
                                             CompressionAlgorithm::LosslessNoShuffle,
                                             0);
-        writeData<2, true>(mass, atomMasses.data(), 0);
+        writeData<1, true>(mass, atomMasses.data(), 0);
         H5Dclose(mass);
     }
 
@@ -569,7 +572,7 @@ void GmxH5mdIo::writeFrame(int64_t      step,
                 compressionAlgorithm = CompressionAlgorithm::LossySz3;
 
                 /* Register the SZ3 filter. This is not necessary when creating a dataset with the filter,
-                 * but must be done to append to an existing file (e.g. when restarting from checkpoint). */
+                * but must be done to append to an existing file (e.g. when restarting from checkpoint). */
                 registerSz3FilterImplicitly();
             }
             GmxH5mdTimeDataBlock position(systemGroup,
@@ -874,7 +877,6 @@ extern template hid_t
 openOrCreateDataSet<2>(hid_t, const char*, const char*, hid_t, const hsize_t*, CompressionAlgorithm, double);
 
 extern template void writeData<1, true>(hid_t, const void*, hsize_t);
-extern template void writeData<2, true>(hid_t, const void*, hsize_t);
 
 extern template void setAttribute<int>(hid_t, const char*, int, hid_t);
 extern template void setAttribute<float>(hid_t, const char*, float, hid_t);
