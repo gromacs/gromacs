@@ -64,3 +64,11 @@ a nullptr.
 
 :issue:`4980`
 
+Fix broken completion script on zsh-5.9 (Mac OS Sonoma)
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+The compinit command must be loaded by the script before
+loading bashcompinit, or there will be an error message
+when sourcing GMXRC on some zsh versions.
+
+:issue:`4986`
