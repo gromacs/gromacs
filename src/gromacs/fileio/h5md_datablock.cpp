@@ -211,8 +211,7 @@ bool GmxH5mdTimeDataBlock::readFrame(real* data, int frame)
     }
     else
     {
-        /* FIXME: Why doesn't static_cast<void**>(&data) work? */
-        readData<3, false>(mainDataSet_, frame, dataTypeSize, (void**)(&data), &totalNumElements);
+        readData<3, false>(mainDataSet_, frame, dataTypeSize, reinterpret_cast<void**>(&data), &totalNumElements);
     }
 #else
     if (dataTypeSize != 4)
@@ -227,8 +226,7 @@ bool GmxH5mdTimeDataBlock::readFrame(real* data, int frame)
     }
     else
     {
-        /* FIXME: Why doesn't static_cast<void**>(&data) work? */
-        readData<3, false>(mainDataSet_, frame, dataTypeSize, (void**)(&data), &totalNumElements);
+        readData<3, false>(mainDataSet_, frame, dataTypeSize, reinterpret_cast<void**>(&data), &totalNumElements);
     }
 #endif
 
@@ -353,10 +351,9 @@ int64_t GmxH5mdTimeDataBlock::getStepOfFrame(hsize_t frame) const
     }
     else
     {
-        /* FIXME: Avoid c-type casting */
         int64_t  tmpValue;
         int64_t* tmpValuePtr = &tmpValue;
-        readData<1, false>(stepDataSet_, frame, dataTypeSize, (void**)(&tmpValuePtr), &totalNumElements);
+        readData<1, false>(stepDataSet_, frame, dataTypeSize, reinterpret_cast<void**>(&tmpValuePtr), &totalNumElements);
         return tmpValue;
     }
 }
@@ -386,10 +383,9 @@ real GmxH5mdTimeDataBlock::getTimeOfFrame(hsize_t frame) const
     }
     else
     {
-        /* FIXME: Avoid c-type casting */
         double  tmpValue;
         double* tmpValuePtr = &tmpValue;
-        readData<1, false>(timeDataSet_, frame, dataTypeSize, (void**)(&tmpValuePtr), &totalNumElements);
+        readData<1, false>(timeDataSet_, frame, dataTypeSize, reinterpret_cast<void**>(&tmpValuePtr), &totalNumElements);
         return tmpValue;
     }
 #else
@@ -405,10 +401,9 @@ real GmxH5mdTimeDataBlock::getTimeOfFrame(hsize_t frame) const
     }
     else
     {
-        /* FIXME: Avoid c-type casting */
         float tmpValue;
         float* tmpValuePtr = &tmpValue;
-        readData<1, false>(timeDataSet_, frame, dataTypeSize, (void**)(&tmpValuePtr), &totalNumElements);
+        readData<1, false>(timeDataSet_, frame, dataTypeSize, reinterpret_cast<void**>(&tmpValuePtr), &totalNumElements);
         return tmpValue;
     }
 #endif
