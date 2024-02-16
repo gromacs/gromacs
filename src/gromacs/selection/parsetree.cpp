@@ -599,9 +599,9 @@ gmx::SelectionTreeElementPointer _gmx_sel_init_arithmetic(const gmx::SelectionTr
         case '/': sel->u.arith.type = ARITH_DIV; break;
         case '^': sel->u.arith.type = ARITH_EXP; break;
     }
-    char buf[2]{ op, 0 };
+    std::string buf(1, op);
     sel->setName(buf);
-    sel->u.arith.opstr = gmx_strdup(buf);
+    sel->u.arith.opstr = gmx_strdup(buf.c_str());
     sel->child         = left;
     sel->child->next   = right;
     return sel;

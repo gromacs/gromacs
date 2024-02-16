@@ -69,7 +69,7 @@ KeyValueTreePath::KeyValueTreePath(const std::string& path) : path_(splitPathEle
 
 std::string KeyValueTreePath::toString() const
 {
-    return "/" + joinStrings(path_, "/");
+    return std::string("/") + joinStrings(path_, "/");
 }
 
 /********************************************************************
