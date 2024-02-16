@@ -31,7 +31,6 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out https://www.gromacs.org.
  */
-/* This file was inspired by ch5md by Pierre de Buyl (BSD license). */
 
 #include "gmxpre.h"
 
