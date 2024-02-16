@@ -128,7 +128,7 @@ GmxH5mdTimeDataBlock::GmxH5mdTimeDataBlock(hid_t                container,
 
         hsize_t chunkDimsTimeStep[1] = { numFramesPerChunk };
 
-        stepDataSet_                 = openOrCreateDataSet<1>(
+        stepDataSet_ = openOrCreateDataSet<1>(
                 group_, c_stepName, nullptr, H5T_NATIVE_INT64, chunkDimsTimeStep, CompressionAlgorithm::None, 0);
 
 #if GMX_DOUBLE

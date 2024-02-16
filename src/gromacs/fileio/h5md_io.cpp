@@ -572,7 +572,7 @@ void GmxH5mdIo::writeFrame(int64_t      step,
                 compressionAlgorithm = CompressionAlgorithm::LossySz3;
 
                 /* Register the SZ3 filter. This is not necessary when creating a dataset with the filter,
-                * but must be done to append to an existing file (e.g. when restarting from checkpoint). */
+                 * but must be done to append to an existing file (e.g. when restarting from checkpoint). */
                 registerSz3FilterImplicitly();
             }
             GmxH5mdTimeDataBlock position(systemGroup,

@@ -144,9 +144,7 @@ hid_t openOrCreateDataSet(hid_t                container,
 
 
 {
-    /* TOOD: Make default accessPropertyList */
-    hid_t accessPropertyList = H5Pcreate(H5P_DATASET_ACCESS);
-    hid_t dataSet            = H5Dopen(container, name, accessPropertyList);
+    hid_t dataSet = H5Dopen(container, name, H5P_DEFAULT);
 
     if (dataSet < 0)
     {
@@ -216,10 +214,11 @@ hid_t openOrCreateDataSet(hid_t                container,
         }
         /* Set a reasonable cache based on chunk sizes. The cache is not stored in file, so must be set when opening a dataset */
         size_t cacheSize = sizeof(real);
-        for (int i = 0; i < DIM; i++)
+        for (int i = 0; i < numDims; i++)
         {
             cacheSize *= chunkDims[i];
         }
+        hid_t accessPropertyList = H5Pcreate(H5P_DATASET_ACCESS);
         H5Pset_chunk_cache(
                 accessPropertyList, H5D_CHUNK_CACHE_NSLOTS_DEFAULT, cacheSize, H5D_CHUNK_CACHE_W0_DEFAULT);
 

@@ -64,7 +64,7 @@ enum class CompressionAlgorithm
 hid_t openOrCreateGroup(hid_t container, const char* name);
 
 /*! \brief Registers the SZ3 filter by using the automatic registration mechanism by H5Pset_filter().
- * Must be done before appending (e.g. when restarting from acheckpoint) to a compressed dataset. */
+ * Must be done before appending (e.g. when restarting from a checkpoint) to a compressed dataset. */
 void registerSz3FilterImplicitly();
 
 /*! \brief Open an existing dataset (called name, in container). If it does not exist create a new dataset.
