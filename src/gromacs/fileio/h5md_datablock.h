@@ -69,13 +69,13 @@ private:
     std::string fullName_;        //!< The full HDF5 path of the group storing the data sets.
     std::string mainUnit_;        //!< The physical unit of the main (value) data.
     std::string timeUnit_;        //!< The unit of the time data.
-    int         writingInterval_; //!< The interval (in MD steps) between outputs.
+    int64_t     writingInterval_; //!< The interval (in MD steps) between outputs.
 
     /*! The index of the next frame to write. 0 when no frames have been written. */
-    int writingFrameIndex_;
+    int64_t writingFrameIndex_;
 
     /*! The index of the next frame to read, 0 or the frame after the previously read frame. */
-    int readingFrameIndex_;
+    int64_t readingFrameIndex_;
 
 public:
     /*! \brief Create a management entity for a time dependent set of data.
@@ -122,14 +122,14 @@ public:
      * \param[in] time The time stamp (in ps) of the data record.
      * \param[in] frame The frame number to write.
      */
-    void writeFrame(const void* data, int64_t step, real time, int frame);
+    void writeFrame(const void* data, int64_t step, real time, int64_t frame);
 
     /*! \brief Read a specific frame.
      *
      * \param[out] data The data that is read. Memory must be allocated beforehand.
      * \param[in] frame The frame number to read.
      */
-    bool readFrame(real* data, int frame);
+    bool readFrame(real* data, int64_t frame);
 
     /*! \brief Read the next, or the first frame, frame.
      *
@@ -151,19 +151,19 @@ public:
     size_t getNumParticles() const;
 
     /*! \brief Return the MD simulation step of a given frame. */
-    int64_t getStepOfFrame(hsize_t frame) const;
+    int64_t getStepOfFrame(int64_t frame) const;
 
     /*! \brief Get the time of a given frame. */
-    real getTimeOfFrame(hsize_t frame) const;
+    real getTimeOfFrame(int64_t frame) const;
 
     /*! \brief Returns the compression error of lossy SZ3 compression, or -1 if there is no lossy SZ3 compression. */
     real getLossyCompressionError();
 
-    int         numberOfFrames() const { return writingFrameIndex_; }
+    int64_t     numberOfFrames() const { return writingFrameIndex_; }
     std::string name() const { return name_; }
     std::string fullName() const { return fullName_; }
-    int         writingFrameIndex() const { return writingFrameIndex_; }
-    int         readingFrameIndex() const { return readingFrameIndex_; }
+    int64_t     writingFrameIndex() const { return writingFrameIndex_; }
+    int64_t     readingFrameIndex() const { return readingFrameIndex_; }
     std::string mainUnit() const { return mainUnit_; }
     std::string timeUnit() const { return timeUnit_; }
 };

@@ -704,7 +704,7 @@ bool GmxH5mdIo::readNextFrameOfStandardDataBlocks(int64_t* step,
         {
             continue;
         }
-        int frameIndex = foundDataBlock->readingFrameIndex();
+        const int64_t frameIndex = foundDataBlock->readingFrameIndex();
         if (frameIndex >= foundDataBlock->writingFrameIndex())
         {
             continue;

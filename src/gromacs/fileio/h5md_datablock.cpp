@@ -174,7 +174,7 @@ void GmxH5mdTimeDataBlock::writeFrame(const void* data, int64_t step, real time)
     GMX_ASSERT(step >= 0, "Invalid step when writing frame.");
 
     /* If there is no specified writing interval for this data block, write after the previous output. */
-    const int frameNumber = writingInterval_ > 0 ? step / writingInterval_ : writingFrameIndex_;
+    const int64_t frameNumber = writingInterval_ > 0 ? step / writingInterval_ : writingFrameIndex_;
 
     writeData<3, false>(mainDataSet_, data, frameNumber);
     writeData<1, false>(stepDataSet_, &step, frameNumber);
@@ -182,7 +182,7 @@ void GmxH5mdTimeDataBlock::writeFrame(const void* data, int64_t step, real time)
     ++writingFrameIndex_;
 }
 
-void GmxH5mdTimeDataBlock::writeFrame(const void* data, int64_t step, real time, int frame)
+void GmxH5mdTimeDataBlock::writeFrame(const void* data, int64_t step, real time, int64_t frame)
 {
     GMX_ASSERT(frame >= 0, "Invalid frame when writing.");
 
@@ -191,7 +191,7 @@ void GmxH5mdTimeDataBlock::writeFrame(const void* data, int64_t step, real time,
     writeData<1, false>(timeDataSet_, &time, frame);
 }
 
-bool GmxH5mdTimeDataBlock::readFrame(real* data, int frame)
+bool GmxH5mdTimeDataBlock::readFrame(real* data, int64_t frame)
 {
     size_t totalNumElements;
     size_t dataTypeSize = getDataTypeSize(mainDataSet_);
@@ -211,7 +211,8 @@ bool GmxH5mdTimeDataBlock::readFrame(real* data, int frame)
     }
     else
     {
-        readData<3, false>(mainDataSet_, frame, dataTypeSize, reinterpret_cast<void**>(&data), &totalNumElements);
+        readData<3, false>(
+                mainDataSet_, frame, dataTypeSize, reinterpret_cast<void**>(&data), &totalNumElements);
     }
 #else
     if (dataTypeSize != 4)
@@ -226,7 +227,8 @@ bool GmxH5mdTimeDataBlock::readFrame(real* data, int frame)
     }
     else
     {
-        readData<3, false>(mainDataSet_, frame, dataTypeSize, reinterpret_cast<void**>(&data), &totalNumElements);
+        readData<3, false>(
+                mainDataSet_, frame, dataTypeSize, reinterpret_cast<void**>(&data), &totalNumElements);
     }
 #endif
 
@@ -327,7 +329,7 @@ size_t GmxH5mdTimeDataBlock::getNumParticles() const
     return dimExtents[1];
 }
 
-int64_t GmxH5mdTimeDataBlock::getStepOfFrame(hsize_t frame) const
+int64_t GmxH5mdTimeDataBlock::getStepOfFrame(int64_t frame) const
 {
     GMX_ASSERT(stepDataSet_ >= 0, "There must be a data set with steps to get the step of a frame.");
 
@@ -353,12 +355,13 @@ int64_t GmxH5mdTimeDataBlock::getStepOfFrame(hsize_t frame) const
     {
         int64_t  tmpValue;
         int64_t* tmpValuePtr = &tmpValue;
-        readData<1, false>(stepDataSet_, frame, dataTypeSize, reinterpret_cast<void**>(&tmpValuePtr), &totalNumElements);
+        readData<1, false>(
+                stepDataSet_, frame, dataTypeSize, reinterpret_cast<void**>(&tmpValuePtr), &totalNumElements);
         return tmpValue;
     }
 }
 
-real GmxH5mdTimeDataBlock::getTimeOfFrame(hsize_t frame) const
+real GmxH5mdTimeDataBlock::getTimeOfFrame(int64_t frame) const
 {
     GMX_ASSERT(timeDataSet_ >= 0, "There must be a data set with time to get the time of a frame.");
 
@@ -385,7 +388,8 @@ real GmxH5mdTimeDataBlock::getTimeOfFrame(hsize_t frame) const
     {
         double  tmpValue;
         double* tmpValuePtr = &tmpValue;
-        readData<1, false>(timeDataSet_, frame, dataTypeSize, reinterpret_cast<void**>(&tmpValuePtr), &totalNumElements);
+        readData<1, false>(
+                timeDataSet_, frame, dataTypeSize, reinterpret_cast<void**>(&tmpValuePtr), &totalNumElements);
         return tmpValue;
     }
 #else
@@ -403,7 +407,8 @@ real GmxH5mdTimeDataBlock::getTimeOfFrame(hsize_t frame) const
     {
         float tmpValue;
         float* tmpValuePtr = &tmpValue;
-        readData<1, false>(timeDataSet_, frame, dataTypeSize, reinterpret_cast<void**>(&tmpValuePtr), &totalNumElements);
+        readData<1, false>(
+                timeDataSet_, frame, dataTypeSize, reinterpret_cast<void**>(&tmpValuePtr), &totalNumElements);
         return tmpValue;
     }
 #endif
