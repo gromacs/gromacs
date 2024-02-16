@@ -36,8 +36,6 @@
 
 #include "h5md_datablock.h"
 
-#include "config.h"
-
 #include <string>
 
 #include "gromacs/math/vectypes.h"

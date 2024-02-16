@@ -38,9 +38,6 @@
 
 #include "config.h"
 
-#include <cmath>
-#include <cstring>
-
 #include <algorithm>
 #include <functional>
 #include <limits>
