@@ -434,8 +434,8 @@ TEST_F(SelectionCollectionTest, HandlesForceRequestForCenterOfGeometry)
 
 TEST_F(SelectionCollectionTest, ParsesSelectionsFromFile)
 {
-    ASSERT_NO_THROW_GMX(sel_ = sc_.parseFromFile(
-                                gmx::test::TestFileManager::getInputFilePath("selfile.dat").u8string()));
+    ASSERT_NO_THROW_GMX(
+            sel_ = sc_.parseFromFile(gmx::test::TestFileManager::getInputFilePath("selfile.dat")));
     // These should match the contents of selfile.dat
     ASSERT_EQ(2U, sel_.size());
     EXPECT_STREQ("resname RA RB", sel_[0].selectionText());

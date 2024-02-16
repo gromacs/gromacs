@@ -51,8 +51,8 @@ void applyGlobalSimulationState(const SimulationInput&      simulationInput,
                                 t_inputrec*                 inputRecord,
                                 gmx_mtop_t*                 molecularTopology)
 {
-    *partialDeserializedTpr = read_tpx_state(
-            simulationInput.tprFilename_.c_str(), inputRecord, globalState, molecularTopology);
+    *partialDeserializedTpr =
+            read_tpx_state(simulationInput.tprFilename_, inputRecord, globalState, molecularTopology);
 }
 
 void applyLocalState(const SimulationInput&         simulationInput,

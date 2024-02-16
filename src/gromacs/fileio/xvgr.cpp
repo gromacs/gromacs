@@ -696,8 +696,7 @@ int read_xvg_legend(const std::filesystem::path& fn, double*** y, int* ny, char*
 
 int read_xvg(const std::filesystem::path& fn, double*** y, int* ny)
 {
-    gmx::MultiDimArray<std::vector<double>, gmx::dynamicExtents2D> xvgData =
-            readXvgData(std::string(fn.u8string()));
+    gmx::MultiDimArray<std::vector<double>, gmx::dynamicExtents2D> xvgData = readXvgData(fn);
 
     int numColumns = xvgData.extent(0);
     int numRows    = xvgData.extent(1);

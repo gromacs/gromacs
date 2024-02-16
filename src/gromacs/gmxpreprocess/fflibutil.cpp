@@ -138,7 +138,7 @@ bool fflib_fexist(const std::filesystem::path& file)
 
 FILE* fflib_open(const std::filesystem::path& file)
 {
-    std::string fileFullPath = gmx::findLibraryFile(file).u8string();
-    fprintf(stderr, "Opening force field file %s\n", fileFullPath.c_str());
+    std::filesystem::path fileFullPath = gmx::findLibraryFile(file);
+    fprintf(stderr, "Opening force field file %s\n", fileFullPath.u8string().c_str());
     return gmx_ffopen(fileFullPath, "r");
 }

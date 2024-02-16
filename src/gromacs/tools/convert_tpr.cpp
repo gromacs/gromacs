@@ -421,7 +421,7 @@ int ConvertTpr::run()
 
     t_inputrec  irInstance;
     t_inputrec* ir = &irInstance;
-    read_tpx_state(inputTprFileName_.c_str(), ir, &state, &mtop);
+    read_tpx_state(inputTprFileName_, ir, &state, &mtop);
 
     if (generateVelocities_)
     {

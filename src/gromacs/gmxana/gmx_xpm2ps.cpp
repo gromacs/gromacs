@@ -140,9 +140,9 @@ static void get_params(const char* mpin, const char* mpout, t_psrec* psr)
 
     if (mpin != nullptr)
     {
-        std::string        libmpin = gmx::findLibraryFile(mpin).u8string();
-        gmx::TextInputFile stream(libmpin);
-        inp = read_inpfile(&stream, libmpin.c_str(), &wi);
+        const std::filesystem::path libmpin = gmx::findLibraryFile(mpin);
+        gmx::TextInputFile          stream(libmpin);
+        inp = read_inpfile(&stream, libmpin, &wi);
     }
     else
     {

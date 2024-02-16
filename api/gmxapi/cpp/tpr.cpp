@@ -74,7 +74,7 @@ public:
         mtop_{ std::make_unique<gmx_mtop_t>() },
         state_{ std::make_unique<t_state>() }
     {
-        read_tpx_state(infile.c_str(), irInstance_.get(), state_.get(), mtop_.get());
+        read_tpx_state(infile, irInstance_.get(), state_.get(), mtop_.get());
     }
     ~TprContents()                             = default;
     TprContents(TprContents&& source) noexcept = default;
@@ -753,14 +753,10 @@ bool copy_tprfile(const gmxapicompat::TprReadHandle& input, const std::string& o
 
 bool rewrite_tprfile(const std::string& inFile, const std::string& outFile, double endTime)
 {
-    auto success = false;
-
-    const char* top_fn = inFile.c_str();
-
     t_inputrec irInstance;
     gmx_mtop_t mtop;
     t_state    state;
-    read_tpx_state(top_fn, &irInstance, &state, &mtop);
+    read_tpx_state(inFile, &irInstance, &state, &mtop);
 
     /* set program name, command line, and default values for output options */
     gmx_output_env_t* oenv;
@@ -774,8 +770,7 @@ bool rewrite_tprfile(const std::string& inFile, const std::string& outFile, doub
 
     write_tpx_state(outFile.c_str(), &irInstance, &state, mtop);
 
-    success = true;
-    return success;
+    return true;
 }
 
 } // end namespace gmxapicompat

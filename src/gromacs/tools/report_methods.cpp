@@ -222,7 +222,7 @@ int ReportMethods::run()
     t_state    state;
     t_inputrec ir;
     gmx_mtop_t top;
-    read_tpx_state(inputTopology_.c_str(), &ir, &state, &top);
+    read_tpx_state(inputTopology_, &ir, &state, &top);
     if (writeLatex_)
     {
         TextOutputFile file(outputFileLatex_);

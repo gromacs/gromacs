@@ -86,14 +86,14 @@ public:
     TestFileManager fileManager_;
     // Make sure the file extension is one that gmx_fio_open will
     // recognize to open as binary.
-    std::string filename_ = fileManager_.getTemporaryFilePath("data.edr").u8string();
-    t_fileio*   file_     = nullptr;
+    std::filesystem::path filename_ = fileManager_.getTemporaryFilePath("data.edr");
+    t_fileio*             file_     = nullptr;
 };
 
 TEST_F(FileMD5Test, CanComputeMD5)
 {
     prepareFile(1000);
-    file_ = gmx_fio_open(filename_.c_str(), "r+");
+    file_ = gmx_fio_open(filename_, "r+");
 
     std::array<unsigned char, 16> digest = { 0 };
     // Chosen to be less than the full file length
@@ -110,7 +110,7 @@ TEST_F(FileMD5Test, CanComputeMD5)
 TEST_F(FileMD5Test, ReturnsErrorIfFileModeIsWrong)
 {
     prepareFile(1000);
-    file_ = gmx_fio_open(filename_.c_str(), "r");
+    file_ = gmx_fio_open(filename_, "r");
 
     std::array<unsigned char, 16> digest;
     gmx_off_t                     offset             = 100;

@@ -94,7 +94,7 @@ static void readTprInput(const TprAndFileManager* tprHandle, gmx_mtop_t* mtop, t
     // read tpr into variables needed for output
     {
         t_state state;
-        read_tpx_state(tprHandle->tprName().c_str(), ir, &state, mtop);
+        read_tpx_state(tprHandle->tprName(), ir, &state, mtop);
     }
 }
 

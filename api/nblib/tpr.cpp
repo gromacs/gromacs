@@ -75,7 +75,7 @@ TprReader::TprReader(std::string filename)
 
     // If the file does not exist, this function will throw
     PartialDeserializedTprFile partialDeserializedTpr =
-            read_tpx_state(filename.c_str(), &inputRecord, &globalState, &molecularTopology);
+            read_tpx_state(filename, &inputRecord, &globalState, &molecularTopology);
 
     // init forcerec
     t_forcerec          forceRecord;

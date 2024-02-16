@@ -397,7 +397,7 @@ public:
                 writeFunction(&writeCheckpointData);
             }
 
-            auto*               file = gmx_fio_open(filename_.c_str(), "w");
+            auto*               file = gmx_fio_open(filename_, "w");
             FileIOXdrSerializer serializer(file);
             writeCheckpointDataHolder.serialize(&serializer);
             gmx_fio_close(file);
@@ -405,7 +405,7 @@ public:
 
         // Deserialize values and test against reference
         {
-            auto*               file = gmx_fio_open(filename_.c_str(), "r");
+            auto*               file = gmx_fio_open(filename_, "r");
             FileIOXdrSerializer deserializer(file);
 
             ReadCheckpointDataHolder readCheckpointDataHolder;
@@ -455,8 +455,8 @@ public:
                                                "tensor" };
 
     // We'll need a temporary file to write / read our dummy checkpoint to
-    TestFileManager fileManager_;
-    std::string     filename_ = fileManager_.getTemporaryFilePath("test.cpt").u8string();
+    TestFileManager       fileManager_;
+    std::filesystem::path filename_ = fileManager_.getTemporaryFilePath("test.cpt");
 };
 
 TEST_F(CheckpointDataTest, SingleDataTest)

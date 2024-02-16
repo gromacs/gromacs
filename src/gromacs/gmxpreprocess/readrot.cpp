@@ -266,8 +266,9 @@ extern void set_reference_positions(t_rot* rot, rvec* x, matrix box, const char*
         rotg->x_ref_original.resize(rotg->nat);
 
         /* Construct the name for the file containing the reference positions for this group: */
-        auto reffileString = gmx::concatenateBeforeExtension(fn, gmx::formatString(".%d", g)).u8string();
-        const char* reffile = reffileString.c_str();
+        const std::filesystem::path reffile =
+                gmx::concatenateBeforeExtension(fn, gmx::formatString(".%d", g));
+        const std::string reffileString = reffile.u8string();
 
         /* If the base filename for the reference position files was explicitly set by
          * the user, we issue a fatal error if the group file can not be found */
@@ -277,20 +278,20 @@ extern void set_reference_positions(t_rot* rot, rvec* x, matrix box, const char*
                       "%s The file containing the reference positions was not found.\n"
                       "Expected the file '%s' for group %d.\n",
                       RotStr.c_str(),
-                      reffile,
+                      reffileString.c_str(),
                       g);
         }
 
         if (gmx_fexist(reffile))
         {
-            fprintf(stderr, "  Reading them from %s.\n", reffile);
+            fprintf(stderr, "  Reading them from %s.\n", reffileString.c_str());
             gmx_trr_read_single_header(reffile, &header);
             if (rotg->nat != header.natoms)
             {
                 gmx_fatal(FARGS,
                           "Number of atoms in file %s (%d) does not match the number of atoms in "
                           "rotation group (%d)!\n",
-                          reffile,
+                          reffileString.c_str(),
                           header.natoms,
                           rotg->nat);
             }
@@ -305,11 +306,11 @@ extern void set_reference_positions(t_rot* rot, rvec* x, matrix box, const char*
                                       nullptr);
 
             /* Check whether the box is unchanged and output a warning if not: */
-            check_box_unchanged(f_box, box, reffile, wi);
+            check_box_unchanged(f_box, box, reffileString.c_str(), wi);
         }
         else
         {
-            fprintf(stderr, " Saving them to %s.\n", reffile);
+            fprintf(stderr, " Saving them to %s.\n", reffileString.c_str());
             for (i = 0; i < rotg->nat; i++)
             {
                 ii = rotg->ind[i];
