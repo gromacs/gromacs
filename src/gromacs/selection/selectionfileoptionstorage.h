@@ -69,12 +69,9 @@ public:
     OptionInfo&              optionInfo() override { return info_; }
     std::string              typeString() const override { return "file"; }
     int                      valueCount() const override { return 0; }
-    std::vector<Any>         defaultValues() const override { return {}; }
+    std::vector<Any>         defaultValues() const override;
     std::vector<std::string> defaultValuesAsStrings() const override { return {}; }
-    std::vector<Any>         normalizeValues(const std::vector<Any>& values) const override
-    {
-        return values;
-    }
+    std::vector<Any>         normalizeValues(const std::vector<Any>& values) const override;
 
 private:
     void clearSet() override;

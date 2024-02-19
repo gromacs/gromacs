@@ -226,6 +226,11 @@ bool mergeBondedInteractionList(gmx::ArrayRef<const BondedInteractionList> s,
     return bBondsRemoved;
 }
 
+int PreprocessResidue::natom() const
+{
+    return atom.size();
+}
+
 void copyPreprocessResidues(const PreprocessResidue& s, PreprocessResidue* d, t_symtab* symtab)
 {
     *d = s;

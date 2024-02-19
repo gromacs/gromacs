@@ -106,6 +106,9 @@ public:
                          ArrayRef<const real> numDegreesOfFreedom,
                          NhcUsage             nhcUsage);
 
+    //! Explicit default destructor
+    ~NoseHooverChainsData();
+
     //! Explicit copy constructor (interface has a standard destructor)
     NoseHooverChainsData(const NoseHooverChainsData& other);
 

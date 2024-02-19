@@ -145,7 +145,7 @@ struct PreprocessResidue
     //! List of bonded interactions to potentially add.
     gmx::EnumerationArray<BondedTypes, BondedInteractionList> rb;
     //! Get number of atoms in residue.
-    int natom() const { return atom.size(); }
+    int natom() const;
 };
 
 //! Declare different types of hacks for later check.

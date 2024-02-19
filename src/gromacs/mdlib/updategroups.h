@@ -111,16 +111,13 @@ public:
 
     bool                              useUpdateGroups() const { return useUpdateGroups_; }
     real                              maxUpdateGroupRadius() const { return maxUpdateGroupRadius_; }
-    ArrayRef<const RangePartitioning> updateGroupingPerMoleculeType() const
-    {
-        return updateGroupingPerMoleculeType_;
-    }
+    ArrayRef<const RangePartitioning> updateGroupingPerMoleculeType() const;
 
 private:
     //! Whether update groups are in use
     bool useUpdateGroups_ = false;
     //! The update groupings within each respective molecule type, empty when not in use
-    std::vector<RangePartitioning> updateGroupingPerMoleculeType_ = {};
+    std::vector<RangePartitioning> updateGroupingPerMoleculeType_;
     //! The maximum radius of any update group, 0 when not in use
     real maxUpdateGroupRadius_ = 0.0_real;
 };

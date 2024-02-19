@@ -255,6 +255,8 @@ void NoseHooverChainsData::build(NhcUsage                                nhcUsag
     });
 }
 
+NoseHooverChainsData::~NoseHooverChainsData() = default;
+
 void NoseHooverGroup::finalizeUpdate(real couplingTimeStep)
 {
     coordinateTime_ += couplingTimeStep;

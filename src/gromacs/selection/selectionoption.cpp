@@ -297,6 +297,16 @@ void SelectionFileOptionStorage::processSet()
     }
 }
 
+std::vector<Any> SelectionFileOptionStorage::defaultValues() const
+{
+    return {};
+}
+
+std::vector<Any> SelectionFileOptionStorage::normalizeValues(const std::vector<Any>& values) const
+{
+    return values;
+}
+
 
 /********************************************************************
  * SelectionFileOptionInfo

@@ -778,6 +778,11 @@ UpdateGroups::UpdateGroups(std::vector<RangePartitioning>&& updateGroupingPerMol
 {
 }
 
+ArrayRef<const RangePartitioning> UpdateGroups::updateGroupingPerMoleculeType() const
+{
+    return updateGroupingPerMoleculeType_;
+}
+
 bool systemHasConstraintsOrVsites(const gmx_mtop_t& mtop)
 {
     IListRange ilistRange(mtop);
