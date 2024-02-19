@@ -4,14 +4,14 @@
 #   Compiler: Clang newest supported
 #   GPU: no
 #   MPI: OpenMPI
-#   Features: double precision FP
+#   Features: double precision FP, two-wide SIMD
 #   Scope: configure, build, unit tests, regression tests
 # Test implementation choices (free to change as needed):
 #   OS: Ubuntu 20.04
 #   Build type: Debug
 #   Compiler: Clang 17
 #   MPI: OpenMPI 3.1
-#   SIMD: AVX2_256
+#   SIMD: SSE4.1
 #   FFT: FFTW3
 #   Parallelism np/ntomp: 4/2
 #   Subcyclecounting: Active
@@ -28,6 +28,7 @@ gromacs:clang-17-mpi:configure:
     COMPILER_MAJOR_VERSION: 17
     CMAKE_PRECISION_OPTIONS: -DGMX_DOUBLE=ON
     CMAKE_EXTRA_OPTIONS: -DGMX_CYCLE_SUBCOUNTERS=ON -DGMX_INSTALL_LEGACY_API=ON
+    CMAKE_SIMD_OPTIONS: "-DGMX_SIMD=SSE4.1"
 
 gromacs:clang-17-mpi:build:
   # Test using configuration: gromacs:clang-17-mpi:configure
