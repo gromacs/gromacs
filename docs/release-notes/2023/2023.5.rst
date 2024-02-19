@@ -26,6 +26,16 @@ sites.
 
 :issue:`4978`
 
+Avoid rounding errors with Parrinello-Rahman coupling of triclinic boxes
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+With triclinic boxes and isotropic or diagonal Parrinello-Rahman pressure
+coupling, the off-diagonal scaling matrix arguments could be non-zero.
+This was harmless, apart from causing an assertion failure when update
+was executed on a GPU.
+
+:issue:`4974`
+
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
 
