@@ -936,9 +936,9 @@ constexpr std::array<T, iClusterSize / jClusterSize> diagonalMaskJSmallerI()
     {
         for (int i = 0; i < iClusterSize; i++)
         {
-            for (int j = maskIndex * jClusterSize + i + 1; j < jClusterSize; j++)
+            for (int j = std::max(i + 1 - maskIndex * jClusterSize, 0); j < jClusterSize; j++)
             {
-                mask[maskIndex] |= (T(1) << (i * iClusterSize + j));
+                mask[maskIndex] |= (T(1) << (i * jClusterSize + j));
             }
         }
     }
