@@ -88,6 +88,18 @@ TEST_F(InsertMoleculesTest, InsertsMoleculesIntoEmptyBox)
     runTest(CommandLine(cmdline));
 }
 
+TEST_F(InsertMoleculesTest, InsertsMoleculesIntoEmptyBoxConcentration)
+{
+    // Same test as InsertsMoleculesIntoEmptyBox, but now specifying -conc instead of -nmol
+    // 5 molecules in 4nm³ box is 0.12977574750830564 mol/l.
+    // -conc parameter must override -nmol value
+    const char* const cmdline[] = {
+        "insert-molecules", "-box", "4", "-nmol", "8", "-conc", "0.130", "-seed", "1997"
+    };
+    setInputFile("-ci", "x2.gro");
+    runTest(CommandLine(cmdline));
+}
+
 TEST_F(InsertMoleculesTest, InsertsMoleculesIntoEnlargedBox)
 {
     const char* const cmdline[] = { "insert-molecules", "-box", "4", "-nmol", "2", "-seed", "1997" };

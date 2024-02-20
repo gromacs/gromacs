@@ -336,6 +336,8 @@ public:
     InsertMolecules() :
         bBox_(false),
         nmolIns_(0),
+        concIns_(0.0),
+        concInsIsSet_(false),
         nmolTry_(10),
         seed_(0),
         defaultDistance_(0.105),
@@ -367,6 +369,8 @@ private:
     rvec         newBox_;
     bool         bBox_;
     int          nmolIns_;
+    real         concIns_;
+    bool         concInsIsSet_;
     int          nmolTry_;
     int          seed_;
     real         defaultDistance_;
@@ -385,12 +389,13 @@ void InsertMolecules::initOptions(IOptionsContainer* options, ICommandLineOption
 {
     const char* const desc[] = {
         "[THISMODULE] inserts [TT]-nmol[tt] copies of the system specified in",
-        "the [TT]-ci[tt] input file. The insertions take place either into",
-        "vacant space in the solute conformation given with [TT]-f[tt], or",
-        "into an empty box given by [TT]-box[tt]. Specifying both [TT]-f[tt]",
-        "and [TT]-box[tt] behaves like [TT]-f[tt], but places a new box",
-        "around the solute before insertions. Any velocities present are",
-        "discarded.",
+        "the [TT]-ci[tt] input file. The number of copies can also be determined",
+        "by the concentration [TT]-conc[tt] in mol/liter and box volume.",
+        "The insertions take place either into vacant space in the solute conformation",
+        "given with [TT]-f[tt], or into an empty box given by [TT]-box[tt].",
+        "Specifying both [TT]-f[tt] and [TT]-box[tt] behaves like [TT]-f[tt],",
+        "but places a new box around the solute before insertions.",
+        "Any velocities present are discarded.",
         "",
         "It is possible to also insert into a solvated configuration and",
         "replace solvent atoms with the inserted atoms. To do this, use",
@@ -470,6 +475,12 @@ void InsertMolecules::initOptions(IOptionsContainer* options, ICommandLineOption
             "Box size (in nm)"));
     options->addOption(IntegerOption("nmol").store(&nmolIns_).description(
             "Number of extra molecules to insert"));
+    options->addOption(
+            RealOption("conc")
+                    .store(&concIns_)
+                    .storeIsSet(&concInsIsSet_)
+                    .description("Concentration (in mol/liter) of extra molecules to insert. "
+                                 "This overrides [TT]-nmol[tt]"));
     options->addOption(IntegerOption("try").store(&nmolTry_).description(
             "Try inserting [TT]-nmol[tt] times [TT]-try[tt] times"));
     options->addOption(IntegerOption("seed").store(&seed_).description(
@@ -488,10 +499,10 @@ void InsertMolecules::initOptions(IOptionsContainer* options, ICommandLineOption
 
 void InsertMolecules::optionsFinished()
 {
-    if (nmolIns_ <= 0 && positionFile_.empty())
+    if ((nmolIns_ <= 0 && concIns_ <= 0.0) && positionFile_.empty())
     {
         GMX_THROW(
-                InconsistentInputError("Either -nmol must be larger than 0, "
+                InconsistentInputError("Either -nmol or -conc must be larger than 0, "
                                        "or positions must be given with -ip."));
     }
     if (inputConfFile_.empty() && !bBox_)
@@ -552,11 +563,27 @@ int InsertMolecules::run()
         box_[YY][YY] = newBox_[YY];
         box_[ZZ][ZZ] = newBox_[ZZ];
     }
-    if (det(box_) == 0)
+    const real vol = det(box_);
+    if (!(vol > 0))
     {
         gmx_fatal(FARGS,
                   "Undefined solute box.\nCreate one with gmx editconf "
                   "or give explicit -box command line option");
+    }
+    if (concInsIsSet_)
+    {
+        if (concIns_ > 0)
+        {
+            nmolIns_ = gmx::roundToInt(concIns_ * vol * gmx::c_avogadro / 1e24);
+            if (!nmolIns_)
+            {
+                gmx_fatal(FARGS, "Very low concentration is set, nothing to insert");
+            }
+        }
+        else
+        {
+            gmx_fatal(FARGS, "Concentration is defined, but it is equal to zero or negative");
+        }
     }
 
     gmx_mtop_t        topInserted;
