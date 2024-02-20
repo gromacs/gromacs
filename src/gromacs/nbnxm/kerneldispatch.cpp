@@ -60,6 +60,7 @@
 #include "gromacs/utility/real.h"
 
 #include "kernel_common.h"
+#include "nbnxm_geometry.h"
 #include "nbnxm_gpu.h"
 #include "nbnxm_simd.h"
 #include "pairlistset.h"
@@ -337,24 +338,19 @@ static void nbnxn_kernel_cpu(const PairlistSet&             pairlistSet,
             /* Calculate energy group contributions */
             clearGroupEnergies(out);
 
-            int unrollj = 0;
-
             switch (kernelSetup.kernelType)
             {
                 case Nbnxm::KernelType::Cpu4x4_PlainC:
-                    unrollj = c_nbnxnCpuIClusterSize;
                     nbnxn_kernel_energrp_ref[coulkt][vdwkt](pairlist, nbat, &ic, shiftVecPointer, out);
                     break;
 #if GMX_HAVE_NBNXM_SIMD_2XMM
                 case Nbnxm::KernelType::Cpu4xN_Simd_2xNN:
-                    unrollj = GMX_SIMD_REAL_WIDTH / 2;
                     gmx::nbnxmKernelEnergrpSimd2xmm[coulkt][vdwkt](
                             pairlist, nbat, &ic, shiftVecPointer, out);
                     break;
 #endif
 #if GMX_HAVE_NBNXM_SIMD_4XM
                 case Nbnxm::KernelType::Cpu4xN_Simd_4xN:
-                    unrollj = GMX_SIMD_REAL_WIDTH;
                     gmx::nbnxmKernelEnergrpSimd4xm[coulkt][vdwkt](
                             pairlist, nbat, &ic, shiftVecPointer, out);
                     break;
@@ -364,7 +360,7 @@ static void nbnxn_kernel_cpu(const PairlistSet&             pairlistSet,
 
             if (kernelSetup.kernelType != Nbnxm::KernelType::Cpu4x4_PlainC)
             {
-                switch (unrollj)
+                switch (Nbnxm::sc_jClusterSize(kernelSetup.kernelType))
                 {
                     case 2:
                         reduceGroupEnergySimdBuffers<2>(nbatParams.nenergrp, nbatParams.neg_2log, out);

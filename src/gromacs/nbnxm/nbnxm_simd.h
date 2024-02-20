@@ -49,6 +49,7 @@
 #include "gromacs/simd/simd.h"
 #include "gromacs/utility/real.h"
 
+#include "pairlist.h"
 #include "pairlistparams.h"
 
 //! The types of nbNxM SIMD kernel layout
@@ -66,7 +67,27 @@ enum class KernelLayoutClusterRatio
     JSizeIsHalfISize    //!< j-cluster size = i-cluster size / 2
 };
 
+//! The NBNxM i-cluster size in atoms for the given NBNxM kernel layout
+static constexpr int sc_iClusterSize(const KernelLayout kernelLayout)
+{
+    switch (kernelLayout)
+    {
+        case KernelLayout::r4xM: return 4;
+        case KernelLayout::r2xMM: return 4;
+    }
+}
+
 #if GMX_SIMD
+
+//! The NBNxM j-cluster size in atoms for the given NBNxM kernel layout
+static constexpr int sc_jClusterSize(const KernelLayout kernelLayout)
+{
+    switch (kernelLayout)
+    {
+        case KernelLayout::r4xM: return GMX_SIMD_REAL_WIDTH;
+        case KernelLayout::r2xMM: return GMX_SIMD_REAL_WIDTH / 2;
+    }
+}
 
 /*! \brief Returns the ratio of j-cluster size versus i-cluster size
  *
@@ -79,19 +100,18 @@ template<KernelLayout kernelLayout>
 static constexpr KernelLayoutClusterRatio kernelLayoutClusterRatio()
 {
     static_assert(kernelLayout == KernelLayout::r4xM || kernelLayout == KernelLayout::r2xMM);
-    constexpr int iClusterSize = 4;
-    constexpr int jClusterSize =
-            (kernelLayout == KernelLayout::r4xM ? GMX_SIMD_REAL_WIDTH : GMX_SIMD_REAL_WIDTH / 2);
+    constexpr int c_iClusterSize = sc_iClusterSize(kernelLayout);
+    constexpr int c_jClusterSize = sc_jClusterSize(kernelLayout);
 
-    if constexpr (jClusterSize == iClusterSize)
+    if constexpr (c_jClusterSize == c_iClusterSize)
     {
         return KernelLayoutClusterRatio::JSizeEqualsISize;
     }
-    else if constexpr (jClusterSize == 2 * iClusterSize)
+    else if constexpr (c_jClusterSize == 2 * c_iClusterSize)
     {
         return KernelLayoutClusterRatio::JSizeIsDoubleISize;
     }
-    else if constexpr (2 * jClusterSize == iClusterSize)
+    else if constexpr (2 * c_jClusterSize == c_iClusterSize)
     {
         return KernelLayoutClusterRatio::JSizeIsHalfISize;
     }

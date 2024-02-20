@@ -286,7 +286,7 @@ void increaseNstlist(FILE*               fp,
     ir->nstlist = nstlist_prev;
 
     /* Determine the pair list size increase due to zero interactions */
-    real rlist_inc = nbnxn_get_rlist_effective_inc(listSetup.cluster_size_j, effectiveAtomDensity);
+    real rlist_inc = nbnxmPairlistVolumeRadiusIncrease(useOrEmulateGpuForNonbondeds, effectiveAtomDensity);
     real rlist_ok  = (rlistWithReferenceNstlist + rlist_inc) * std::cbrt(listfac_ok) - rlist_inc;
     real rlist_max = (rlistWithReferenceNstlist + rlist_inc) * std::cbrt(listfac_max) - rlist_inc;
     if (debug)
@@ -515,7 +515,7 @@ static void setDynamicPairlistPruningParameters(const t_inputrec&          input
     else
     {
         /* Determine the pair list size increase due to zero interactions */
-        real rlistInc = nbnxn_get_rlist_effective_inc(listSetup.cluster_size_j, effectiveAtomDensity);
+        real rlistInc = nbnxmPairlistVolumeRadiusIncrease(useGpuList, effectiveAtomDensity);
 
         /* Dynamic pruning is only useful when the inner list is smaller than
          * the outer. The factor 0.99 ensures at least 3% list size reduction.

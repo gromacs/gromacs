@@ -70,7 +70,7 @@ PairlistParams::PairlistParams(const Nbnxm::KernelType kernelType,
     }
     else
     {
-        switch (Nbnxm::JClusterSizePerKernelType[kernelType])
+        switch (Nbnxm::sc_jClusterSize(kernelType))
         {
             case 2: pairlistType = PairlistType::Simple4x2; break;
             case 4: pairlistType = PairlistType::Simple4x4; break;

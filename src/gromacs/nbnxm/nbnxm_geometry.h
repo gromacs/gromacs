@@ -42,13 +42,22 @@
 #ifndef GMX_NBNXM_NBNXM_GEOMETRY_H
 #define GMX_NBNXM_NBNXM_GEOMETRY_H
 
+#include "gromacs/math/functions.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/nbnxm/nbnxm.h"
-#include "gromacs/simd/simd.h"
+// dpcpp warns about being unabled to implement __vectorcall during device
+// compilation, so avoid including it then.
+#if GMX_SYCL_DPCPP && defined(__SYCL_DEVICE_ONLY__)
+#    define DO_NOT_INCLUDE_SIMD_H
+#endif
+
+#ifndef DO_NOT_INCLUDE_SIMD_H
+#    include "gromacs/simd/simd.h"
+#endif
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/gmxassert.h"
 
 #include "pairlist.h"
-
 
 /*! \brief Returns the base-2 log of n.
  * *
@@ -67,56 +76,94 @@ static inline int get_2log(int n)
 namespace Nbnxm
 {
 
-/*! \brief The nbnxn i-cluster size in atoms for each nbnxn kernel type */
-static constexpr gmx::EnumerationArray<KernelType, int> IClusterSizePerKernelType = {
-    { 0, c_nbnxnCpuIClusterSize, c_nbnxnCpuIClusterSize, c_nbnxnCpuIClusterSize, c_nbnxnGpuClusterSize, c_nbnxnGpuClusterSize }
-};
+//! The nbnxn i-cluster size in atoms for the given NBNxM kernel type
+static constexpr int sc_iClusterSize(const KernelType kernelType)
+{
+    switch (kernelType)
+    {
+        case KernelType::Cpu4x4_PlainC:
+        case KernelType::Cpu4xN_Simd_4xN:
+        case KernelType::Cpu4xN_Simd_2xNN: return 4;
+        case KernelType::Gpu8x8x8:
+        case KernelType::Cpu8x8x8_PlainC: return c_nbnxnGpuClusterSize;
+        case KernelType::NotSet:
+        case KernelType::Count: return 0;
+    }
 
-/*! \brief The nbnxn j-cluster size in atoms for each nbnxn kernel type */
-static constexpr gmx::EnumerationArray<KernelType, int> JClusterSizePerKernelType = {
-    { 0,
-      c_nbnxnCpuIClusterSize,
-#if GMX_SIMD
-      GMX_SIMD_REAL_WIDTH,
-      GMX_SIMD_REAL_WIDTH / 2,
+    return 0;
+}
+
+/*! \brief The nbnxn j-cluster size in atoms for the given NBNxM kernel type
+ *
+ * \note When including this file in files compiled for SYCL devices only,
+ *       this function can not be called for SIMD kernel types. This is asserted.
+ */
+static constexpr int sc_jClusterSize(const KernelType kernelType)
+{
+    switch (kernelType)
+    {
+        case KernelType::Cpu4x4_PlainC: return 4;
+#ifdef DO_NOT_INCLUDE_SIMD_H
+        case KernelType::Cpu4xN_Simd_4xN:
+        case KernelType::Cpu4xN_Simd_2xNN:
+            GMX_ASSERT(false, "c_jClusterSize() can not be called for SIMD kernel types with SYCL");
+            return 0;
 #else
-      0,
-      0,
+#    if GMX_SIMD
+        case KernelType::Cpu4xN_Simd_4xN: return GMX_SIMD_REAL_WIDTH;
+        case KernelType::Cpu4xN_Simd_2xNN: return GMX_SIMD_REAL_WIDTH / 2;
+#    else
+        case KernelType::Cpu4xN_Simd_4xN: return 0;
+        case KernelType::Cpu4xN_Simd_2xNN: return 0;
+#    endif
 #endif
-      c_nbnxnGpuClusterSize,
-      c_nbnxnGpuClusterSize / 2 }
-};
+        case KernelType::Gpu8x8x8: return c_nbnxnGpuClusterSize / 2;
+        case KernelType::Cpu8x8x8_PlainC: return c_nbnxnGpuClusterSize / 2;
+        case KernelType::NotSet:
+        case KernelType::Count: return 0;
+    }
+
+    return 0;
+}
 
 /*! \brief Returns whether the pair-list corresponding to nb_kernel_type is simple */
-static inline bool kernelTypeUsesSimplePairlist(const KernelType kernelType)
+static constexpr bool kernelTypeUsesSimplePairlist(const KernelType kernelType)
 {
     return (kernelType == KernelType::Cpu4x4_PlainC || kernelType == KernelType::Cpu4xN_Simd_4xN
             || kernelType == KernelType::Cpu4xN_Simd_2xNN);
 }
 
 //! Returns whether a SIMD kernel is in use
-static inline bool kernelTypeIsSimd(const KernelType kernelType)
+static constexpr bool kernelTypeIsSimd(const KernelType kernelType)
 {
     return (kernelType == KernelType::Cpu4xN_Simd_4xN || kernelType == KernelType::Cpu4xN_Simd_2xNN);
 }
 
+//! The fixed size of the exclusion mask array for a half GPU cluster pair
+static constexpr int c_nbnxnGpuExclSize =
+        c_nbnxnGpuClusterSize * c_nbnxnGpuClusterSize / c_nbnxnGpuClusterpairSplit;
+
 } // namespace Nbnxm
 
-/*! \brief Returns the effective list radius of the pair-list
+/*! \brief Returns the increase in pairlist radius when including volume of pairs beyond rlist
  *
- * Due to the cluster size the effective pair-list is longer than
- * that of a simple atom pair-list. This function gives the extra distance.
+ * Due to the cluster size the total volume of the pairlist is (much) more
+ * than 4/3*pi*rlist^3. This function returns the increase in radius
+ * required to match the volume of the pairlist including the atoms pairs
+ * that are beyond rlist.
  *
- * NOTE: If the i- and j-cluster sizes are identical and you know
- *       the physical dimensions of the clusters, use the next function
- *       for more accurate results
+ * \note This routine does not know which cluster layout is used and assumes the most common one.
+ *       Therefore this should only be used to estimates, not for setting a pair list buffer.
  */
-real nbnxn_get_rlist_effective_inc(int jClusterSize, real atomDensity);
+real nbnxmPairlistVolumeRadiusIncrease(bool useGpu, real atomDensity);
 
 /*! \brief Returns the effective list radius of the pair-list
  *
  * Due to the cluster size the effective pair-list is longer than
  * that of a simple atom pair-list. This function gives the extra distance.
+ *
+ * \note This routine does not know which cluster layout is used and assumes the most common one.
+ *       Therefore this should only be used to estimates, not for setting a pair list buffer.
  */
 real nbnxn_get_rlist_effective_inc(int clusterSize, const gmx::RVec& averageClusterBoundingBox);
 

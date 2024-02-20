@@ -205,6 +205,8 @@ struct nbnxn_atomdata_t
         int nenergrp;
         //! 2log(nenergrp)
         int neg_2log;
+        //! The i-cluster size
+        int iClusterSize;
         //! The energy groups, one int entry per cluster, only set when needed
         gmx::HostVector<int> energrp;
     };
@@ -213,7 +215,7 @@ struct nbnxn_atomdata_t
      * \brief Diagonal and topology exclusion helper data for all SIMD kernels. */
     struct SimdMasks
     {
-        SimdMasks();
+        SimdMasks(Nbnxm::KernelType kernelType);
 
         //! Helper data for setting up diagonal exclusion masks in the SIMD 4xN kernels
         AlignedVector<real> diagonal_4xn_j_minus_i;

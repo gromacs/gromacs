@@ -40,6 +40,8 @@
 
 #include <algorithm>
 
+#include "../nbnxm_geometry.h"
+
 #include "gromacs/math/functions.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/gmx_omp_nthreads.h"

@@ -111,7 +111,7 @@ nbnxn_atomdata_output_t::nbnxn_atomdata_output_t(Nbnxm::KernelType  kernelType,
 
     if (Nbnxm::kernelTypeIsSimd(kernelType))
     {
-        int cj_size = Nbnxm::JClusterSizePerKernelType[kernelType];
+        int cj_size = Nbnxm::sc_jClusterSize(kernelType);
         int numElements =
                 numEnergyGroups * numEnergyGroups * simdEnergyBufferStride * (cj_size / 2) * cj_size;
         VSvdw.resize(numElements);
@@ -335,7 +335,7 @@ static void set_lj_parameter_data(nbnxn_atomdata_t::Params* params, gmx_bool bSI
     }
 }
 
-nbnxn_atomdata_t::SimdMasks::SimdMasks()
+nbnxn_atomdata_t::SimdMasks::SimdMasks(const Nbnxm::KernelType gmx_unused kernelType)
 {
 #if GMX_SIMD
     constexpr int simd_width = GMX_SIMD_REAL_WIDTH;
@@ -345,7 +345,7 @@ nbnxn_atomdata_t::SimdMasks::SimdMasks()
      * we subtract 0.5 to avoid rounding issues.
      * In the kernel we can subtract 1 to generate the subsequent mask.
      */
-    const int simd_4xn_diag_size = std::max(c_nbnxnCpuIClusterSize, simd_width);
+    const int simd_4xn_diag_size = std::max(Nbnxm::sc_iClusterSize(kernelType), simd_width);
     diagonal_4xn_j_minus_i.resize(simd_4xn_diag_size);
     for (int j = 0; j < simd_4xn_diag_size; j++)
     {
@@ -368,7 +368,7 @@ nbnxn_atomdata_t::SimdMasks::SimdMasks()
      * In single precision this means the real and integer SIMD registers
      * are of equal size.
      */
-    const int simd_excl_size = c_nbnxnCpuIClusterSize * simd_width;
+    const int simd_excl_size = Nbnxm::sc_iClusterSize(kernelType) * simd_width;
 #    if GMX_DOUBLE && !GMX_SIMD_HAVE_INT32_LOGICAL
     exclusion_filter64.resize(simd_excl_size);
 #    else
@@ -397,6 +397,7 @@ nbnxn_atomdata_t::Params::Params(gmx::PinningPolicy pinningPolicy) :
     q({}, { pinningPolicy }),
     nenergrp(0),
     neg_2log(0),
+    iClusterSize(0),
     energrp({}, { pinningPolicy })
 {
 }
@@ -582,6 +583,7 @@ static void nbnxn_atomdata_params_init(const gmx::MDLogger&      mdlog,
     {
         params->neg_2log++;
     }
+    params->iClusterSize = Nbnxm::sc_iClusterSize(kernelType);
 }
 
 /* Initializes an nbnxn_atomdata_t data structure */
@@ -598,7 +600,7 @@ nbnxn_atomdata_t::nbnxn_atomdata_t(gmx::PinningPolicy      pinningPolicy,
     natoms_local(0),
     shift_vec({}, { pinningPolicy }),
     x_({}, { pinningPolicy }),
-    simdMasks(),
+    simdMasks(kernelType),
     bUseBufferFlags(FALSE)
 {
     nbnxn_atomdata_params_init(
@@ -611,7 +613,7 @@ nbnxn_atomdata_t::nbnxn_atomdata_t(gmx::PinningPolicy      pinningPolicy,
     {
         if (bSIMD)
         {
-            int pack_x = std::max(c_nbnxnCpuIClusterSize, Nbnxm::JClusterSizePerKernelType[kernelType]);
+            int pack_x = std::max(Nbnxm::sc_iClusterSize(kernelType), Nbnxm::sc_jClusterSize(kernelType));
             switch (pack_x)
             {
                 case 4: XFormat = nbatX4; break;
@@ -883,7 +885,7 @@ static void nbnxn_atomdata_set_energygroups(nbnxn_atomdata_t::Params* params,
             copy_egp_to_nbat_egps(gridSet.atomIndices().data() + atomOffset,
                                   grid.numAtomsInColumn(i),
                                   numAtoms,
-                                  c_nbnxnCpuIClusterSize,
+                                  params->iClusterSize,
                                   params->neg_2log,
                                   atomInfo,
                                   params->energrp.data() + grid.atomToCluster(atomOffset));

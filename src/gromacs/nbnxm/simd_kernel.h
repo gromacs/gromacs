@@ -121,10 +121,10 @@ void nbnxmKernelSimd(const NbnxnPairlistCpu*    nbl,
 {
     constexpr int c_numJClustersPerSimdRegister = (kernelLayout == KernelLayout::r2xMM ? 2 : 1);
 
-    // The i-cluster size
-    constexpr int c_iClusterSize = 4;
-    // The j-cluster size
-    constexpr int c_jClusterSize(GMX_SIMD_REAL_WIDTH / c_numJClustersPerSimdRegister);
+    constexpr int c_iClusterSize = sc_iClusterSize(kernelLayout);
+    constexpr int c_jClusterSize = sc_jClusterSize(kernelLayout);
+
+    static_assert(c_numJClustersPerSimdRegister * c_jClusterSize == GMX_SIMD_REAL_WIDTH);
 
     // The ratio of cluster sizes
     constexpr KernelLayoutClusterRatio clusterRatio = kernelLayoutClusterRatio<kernelLayout>();

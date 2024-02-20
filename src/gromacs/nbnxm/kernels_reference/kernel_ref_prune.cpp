@@ -36,6 +36,8 @@
 
 #include "kernel_ref_prune.h"
 
+#include "../nbnxm_geometry.h"
+
 #include "gromacs/nbnxm/atomdata.h"
 #include "gromacs/nbnxm/pairlist.h"
 #include "gromacs/utility/gmxassert.h"
@@ -65,8 +67,8 @@ void nbnxn_kernel_prune_ref(NbnxnPairlistCpu*              nbl,
     GMX_ASSERT(c_xStride == nbat->xstride, "xStride should match nbat->xstride");
     constexpr int c_xiStride = 3;
 
-    constexpr int c_iUnroll = c_nbnxnCpuIClusterSize;
-    constexpr int c_jUnroll = c_nbnxnCpuIClusterSize;
+    constexpr int c_iUnroll = Nbnxm::sc_iClusterSize(Nbnxm::KernelType::Cpu4x4_PlainC);
+    constexpr int c_jUnroll = Nbnxm::sc_jClusterSize(Nbnxm::KernelType::Cpu4x4_PlainC);
 
     /* Initialize the new list as empty and add pairs that are in range */
     int       nciInner = 0;

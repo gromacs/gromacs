@@ -50,52 +50,13 @@
 #include "gromacs/utility/enumerationhelpers.h"
 #include "gromacs/utility/real.h"
 
+#include "nbnxm_geometry.h"
+#include "pairlist.h"
+
 namespace Nbnxm
 {
 enum class KernelType;
 }
-
-//! The i-cluster size for CPU kernels, always 4 atoms
-static constexpr int c_nbnxnCpuIClusterSize = 4;
-
-//! The i- and j-cluster size for GPU lists, 8 atoms for CUDA, set at configure time for OpenCL and SYCL
-#if GMX_GPU_OPENCL || GMX_GPU_SYCL
-static constexpr int c_nbnxnGpuClusterSize = GMX_GPU_NB_CLUSTER_SIZE;
-#else
-static constexpr int c_nbnxnGpuClusterSize      = 8;
-#endif
-
-/*! \brief The number of clusters along a direction in a pair-search grid cell for GPU lists
- *
- * Typically all 2, but X can be 1 when targeting Intel Ponte Vecchio */
-//! \{
-static constexpr int c_gpuNumClusterPerCellZ = GMX_GPU_NB_NUM_CLUSTER_PER_CELL_Z;
-static constexpr int c_gpuNumClusterPerCellY = GMX_GPU_NB_NUM_CLUSTER_PER_CELL_Y;
-static constexpr int c_gpuNumClusterPerCellX = GMX_GPU_NB_NUM_CLUSTER_PER_CELL_X;
-//! \}
-//! The number of clusters in a pair-search grid cell for GPU lists
-static constexpr int c_gpuNumClusterPerCell =
-        c_gpuNumClusterPerCellZ * c_gpuNumClusterPerCellY * c_gpuNumClusterPerCellX;
-
-
-/*! \brief The number of sub-parts used for data storage for a GPU cluster pair
- *
- * In CUDA the number of threads in a warp is 32 and we have cluster pairs
- * of 8*8=64 atoms, so it's convenient to store data for cluster pair halves,
- * i.e. split in 2.
- *
- * On architectures with 64-wide execution however it is better to avoid splitting
- * (e.g. AMD GCN, CDNA and later).
- */
-#if GMX_GPU_NB_DISABLE_CLUSTER_PAIR_SPLIT
-static constexpr int c_nbnxnGpuClusterpairSplit = 1;
-#else
-static constexpr int c_nbnxnGpuClusterpairSplit = 2;
-#endif
-
-//! The fixed size of the exclusion mask array for a half GPU cluster pair
-static constexpr int c_nbnxnGpuExclSize =
-        c_nbnxnGpuClusterSize * c_nbnxnGpuClusterSize / c_nbnxnGpuClusterpairSplit;
 
 //! The available pair list types
 enum class PairlistType : int
@@ -109,7 +70,7 @@ enum class PairlistType : int
 
 //! Gives the i-cluster size for each pairlist type
 static constexpr gmx::EnumerationArray<PairlistType, int> IClusterSizePerListType = {
-    { c_nbnxnCpuIClusterSize, c_nbnxnCpuIClusterSize, c_nbnxnCpuIClusterSize, c_nbnxnGpuClusterSize }
+    { 4, 4, 4, c_nbnxnGpuClusterSize }
 };
 //! Gives the j-cluster size for each pairlist type
 static constexpr gmx::EnumerationArray<PairlistType, int> JClusterSizePerListType = {
