@@ -486,6 +486,9 @@ function(gmx_warn_on_everything target)
     # It's OK to not have branches for Count members of enum classes
     gmx_target_warning_suppression(${target} "-Wno-switch-enum" HAS_WARNING_NO_SWITCH_ENUM)
 
+    # Sometimes it's ok to not have a default: switch statement
+    gmx_target_warning_suppression(${target} "-Wno-switch-default" HAS_WARNING_NO_SWITCH_DEFAULT)
+
     # We need to use macros like
     # GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR and
     # CLANG_DIAGNOSTIC_IGNORE. Those will look strange if they don't
