@@ -200,6 +200,8 @@ ExpandedEnsembleElement::ExpandedEnsembleElement(bool                           
     init_df_history(dfhist_.get(), inputrec_->fepvals->n_lambda);
 }
 
+ExpandedEnsembleElement::~ExpandedEnsembleElement() = default;
+
 ISimulatorElement* ExpandedEnsembleElement::getElementPointerImpl(
         LegacySimulatorData*                    legacySimulatorData,
         ModularSimulatorAlgorithmBuilderHelper* builderHelper,

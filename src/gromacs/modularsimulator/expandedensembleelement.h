@@ -77,6 +77,8 @@ public:
                                      const FreeEnergyPerturbationData* freeEnergyPerturbationData,
                                      FILE*                             fplog,
                                      const t_inputrec*                 inputrec);
+    //! Destructor
+    ~ExpandedEnsembleElement();
 
     //! Attempt lambda MC step and write log
     void scheduleTask(Step step, Time time, const RegisterRunFunction& registerRunFunction) override;

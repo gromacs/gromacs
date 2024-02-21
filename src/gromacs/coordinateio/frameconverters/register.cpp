@@ -50,6 +50,10 @@
 namespace gmx
 {
 
+ProcessFrameConversion::ProcessFrameConversion() = default;
+
+ProcessFrameConversion::~ProcessFrameConversion() = default;
+
 void ProcessFrameConversion::addAndCheckGuarantee(const unsigned long flag)
 {
     listOfGuarantees_ |= flag;

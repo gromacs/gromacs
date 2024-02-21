@@ -151,6 +151,8 @@ ForceElement::ForceElement(StatePropagatorData*        statePropagatorData,
     }
 }
 
+ForceElement::~ForceElement() = default;
+
 void ForceElement::scheduleTask(Step step, Time time, const RegisterRunFunction& registerRunFunction)
 {
     unsigned int flags =

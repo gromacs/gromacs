@@ -60,6 +60,10 @@
 namespace gmx
 {
 
+SimulatorBuilder::SimulatorBuilder() = default;
+
+SimulatorBuilder::~SimulatorBuilder() = default;
+
 //! \brief Build a Simulator object
 std::unique_ptr<ISimulator> SimulatorBuilder::build(bool useModularSimulator)
 {
@@ -209,6 +213,11 @@ std::unique_ptr<ISimulator> SimulatorBuilder::build(bool useModularSimulator)
 void SimulatorBuilder::add(MembedHolder&& membedHolder)
 {
     membedHolder_ = std::make_unique<MembedHolder>(std::move(membedHolder));
+}
+
+void SimulatorBuilder::add(std::unique_ptr<StopHandlerBuilder> stopHandlerBuilder)
+{
+    stopHandlerBuilder_ = std::move(stopHandlerBuilder);
 }
 
 void SimulatorBuilder::add(ReplicaExchangeParameters&& replicaExchangeParameters)

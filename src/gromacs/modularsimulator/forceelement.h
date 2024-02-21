@@ -115,6 +115,8 @@ public:
                  Constraints*                constr,
                  const gmx_mtop_t&           globalTopology,
                  gmx_enfrot*                 enforcedRotation);
+    //! Destructor
+    ~ForceElement();
 
     /*! \brief Register force calculation for step / time
      *

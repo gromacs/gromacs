@@ -75,6 +75,9 @@ class ReadCheckpointDataHolder;
 class ModularSimulator final : public ISimulator
 {
 public:
+    //! Destructor
+    ~ModularSimulator() override;
+
     //! Run the simulator
     void run() override;
 

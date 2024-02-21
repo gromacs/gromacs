@@ -73,9 +73,12 @@ public:
     /*! \brief
      * Default constructor for ProcessFrameConversion.
      */
-    ProcessFrameConversion() {}
+    ProcessFrameConversion();
 
-    ~ProcessFrameConversion() override {}
+    /*! \brief
+     * Default destructor for ProcessFrameConversion.
+     */
+    ~ProcessFrameConversion() override;
 
     /*! \brief
      * Change coordinate frame information for output.

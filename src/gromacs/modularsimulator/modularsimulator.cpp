@@ -520,6 +520,8 @@ ModularSimulator::ModularSimulator(std::unique_ptr<LegacySimulatorData>      leg
     checkInputForDisabledFunctionality();
 }
 
+ModularSimulator::~ModularSimulator() = default;
+
 void ModularSimulator::checkInputForDisabledFunctionality()
 {
     isInputCompatible(true,

@@ -338,12 +338,19 @@ public:
 class SimulatorBuilder
 {
 public:
+    /*!
+     * \brief Default constructor for SimulatorBuilder.
+     */
+    SimulatorBuilder();
+
+    /*!
+     * \brief Default destructor for SimulatorBuilder.
+     */
+    ~SimulatorBuilder();
+
     void add(MembedHolder&& membedHolder);
 
-    void add(std::unique_ptr<StopHandlerBuilder> stopHandlerBuilder)
-    {
-        stopHandlerBuilder_ = std::move(stopHandlerBuilder);
-    }
+    void add(std::unique_ptr<StopHandlerBuilder> stopHandlerBuilder);
 
     void add(SimulatorStateData&& simulatorStateData)
     {
