@@ -112,7 +112,7 @@ public:
     void ColvarsConfigStringFromFile(const std::string& filename)
     {
         // Path to the sample colvars input file
-        std::string colvarsInputFile = gmx::test::TestFileManager::getInputFilePath(filename).u8string();
+        std::filesystem::path colvarsInputFile = gmx::test::TestFileManager::getInputFilePath(filename);
 
         colvarsConfigString_ = TextReader::readFileToString(colvarsInputFile);
     }
@@ -142,8 +142,8 @@ public:
     void IncorrectColvarsConfigString()
     {
         // Path to the sample colvars input file
-        std::string colvarsInputFile =
-                gmx::test::TestFileManager::getInputFilePath("colvars_sample.dat").u8string();
+        std::filesystem::path colvarsInputFile =
+                gmx::test::TestFileManager::getInputFilePath("colvars_sample.dat");
 
         colvarsConfigString_ = TextReader::readFileToString(colvarsInputFile);
     }

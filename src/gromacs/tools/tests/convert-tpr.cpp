@@ -105,11 +105,14 @@ TEST_F(ConvertTprTest, ExtendRuntimeExtensionTest)
     const std::filesystem::path anotherOutTprFilename =
             fileManager.getTemporaryFilePath("extended_again.tpr");
 
-    const std::string secondCommand[] = {
-        "convert-tpr", "-s",          outTprFilename, "-o", anotherOutTprFilename.u8string(),
-        "-extend",     extendByString
-    };
-    CommandLine secondCmdline(secondCommand);
+    const std::string secondCommand[] = { "convert-tpr",
+                                          "-s",
+                                          outTprFilename.u8string(),
+                                          "-o",
+                                          anotherOutTprFilename.u8string(),
+                                          "-extend",
+                                          extendByString };
+    CommandLine       secondCmdline(secondCommand);
     gmx::test::CommandLineTestHelper::runModuleFactory(&gmx::ConvertTprInfo::create, &secondCmdline);
 
 

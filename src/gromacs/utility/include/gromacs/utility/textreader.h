@@ -42,6 +42,7 @@
 #ifndef GMX_UTILITY_TEXTREADER_H
 #define GMX_UTILITY_TEXTREADER_H
 
+#include <filesystem>
 #include <memory>
 #include <string>
 
@@ -74,9 +75,9 @@ public:
      * \throws    std::bad_alloc if out of memory.
      * \throws    FileIOError on any I/O error.
      */
-    static std::string readFileToString(const char* filename);
-    //! \copydoc readFileToString(const char *)
     static std::string readFileToString(const std::string& filename);
+    //! \copydoc readFileToString(const std::string&)
+    static std::string readFileToString(const std::filesystem::path& filename);
 
     /*! \brief
      * Creates a reader that reads from specified file.
@@ -88,7 +89,7 @@ public:
      * This constructor is provided for convenience for reading directly
      * from a file, without the need to construct multiple objects.
      */
-    explicit TextReader(const std::string& filename);
+    explicit TextReader(const std::filesystem::path& filename);
     /*! \brief
      * Creates a reader that reads from specified stream.
      *

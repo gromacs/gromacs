@@ -766,7 +766,7 @@ SelectionList SelectionCollection::parseInteractive(int                count,
 }
 
 
-SelectionList SelectionCollection::parseFromFile(const std::string& filename)
+SelectionList SelectionCollection::parseFromFile(const std::filesystem::path& filename)
 {
 
     try

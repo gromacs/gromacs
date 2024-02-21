@@ -44,6 +44,7 @@
 
 #include <cstdio>
 
+#include <filesystem>
 #include <memory>
 #include <optional>
 #include <string>
@@ -335,7 +336,7 @@ public:
      * Some information about the selections only becomes available once
      * compile() has been called; see \ref Selection.
      */
-    SelectionList parseFromFile(const std::string& filename);
+    SelectionList parseFromFile(const std::filesystem::path& filename);
     /*! \brief
      * Parses selection(s) from a string.
      *

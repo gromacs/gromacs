@@ -72,7 +72,7 @@ public:
         std::vector<char> data(lengthInBytes);
         std::iota(data.begin(), data.end(), 1);
         // Binary mode ensures it works the same on all OS
-        FILE* fp = fopen(filename_.c_str(), "wb");
+        FILE* fp = fopen(filename_.u8string().c_str(), "wb");
         fwrite(data.data(), sizeof(char), data.size(), fp);
         fclose(fp);
     }

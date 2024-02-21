@@ -155,7 +155,7 @@ private:
 class TextOutputFile : public TextOutputStream
 {
 public:
-    //! \copydoc TextInputFile::TextInputFile(const std::string &)
+    //! \copydoc TextInputFile::TextInputFile(const std::filesystem::path&)
     explicit TextOutputFile(const std::filesystem::path& filename);
     //! \copydoc TextInputFile::TextInputFile(FILE *)
     explicit TextOutputFile(FILE* fp);
