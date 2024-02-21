@@ -544,8 +544,8 @@ int PmeSolve::solveCoulombYZX(const gmx_pme_t& pme,
         work.energy_q = 0.5 * energy;
     }
 
-    /* Return the loop count */
-    return local_ndata[YY] * local_ndata[XX];
+    /* Return the loop count over all threads */
+    return local_ndata[YY] * local_ndata[ZZ] * local_ndata[XX];
 }
 
 int PmeSolve::solveLJYZX(const gmx_pme_t&              pme,
@@ -877,6 +877,6 @@ int PmeSolve::solveLJYZX(const gmx_pme_t&              pme,
         /* This energy should be corrected for a charged system */
         work.energy_lj = 0.5 * energy;
     }
-    /* Return the loop count */
-    return local_ndata[YY] * local_ndata[XX];
+    /* Return the loop count over all threads */
+    return local_ndata[YY] * local_ndata[ZZ] * local_ndata[XX];
 }

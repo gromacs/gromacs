@@ -16,8 +16,23 @@ in the :ref:`release-notes`.
 Fixes where mdrun could behave incorrectly
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Avoid rounding errors with Parrinello-Rahman coupling of triclinic boxes
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+With triclinic boxes and isotropic or diagonal Parrinello-Rahman pressure
+coupling, the off-diagonal scaling matrix arguments could be non-zero.
+This was harmless, apart from causing an assertion failure when update
+was executed on a GPU.
+
+:issue:`4974`
+
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
+
+Fixed parsing of phases in gmx nmtraj
+"""""""""""""""""""""""""""""""""""""
+
+:issue:`4968`
 
 Fixes that affect portability
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -30,6 +45,7 @@ Fixed nbnxm-test failure when bounds checking was enabled for stdlib
 
 :issue:`4966`
 :issue:`4973`
+
 Increase tolerance of mdrun continuation tests in double precision
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
@@ -39,3 +55,30 @@ errors just above the tolerance.
 :issue:`4788`
 :issue:`4931`
 
+Fix missing OpenMP initialization in grompp
+"""""""""""""""""""""""""""""""""""""""""""
+
+The problem only manifested as a pop-up message when running
+``gmx grompp`` built with Visual Studio. Since this message was
+blocking the application, it could mess up with test suite
+or automated scripts. No other deleterious effects noted.
+
+:issue:`4961`
+
+Fix grompp & mdrun crash when GMX_USE_COLVARS=NONE
+""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Colvars MDModule was not properly constructed when the Colvars
+library was not compiled. Colvars mdp fields handler was returning
+a nullptr.
+
+:issue:`4980`
+
+Fix broken completion script on zsh-5.9 (Mac OS Sonoma)
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+The compinit command must be loaded by the script before
+loading bashcompinit, or there will be an error message
+when sourcing GMXRC on some zsh versions.
+
+:issue:`4986`

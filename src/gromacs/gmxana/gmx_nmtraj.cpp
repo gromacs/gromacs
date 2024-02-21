@@ -142,7 +142,7 @@ int gmx_nmtraj(int argc, char* argv[])
     phases.reserve(nmodes);
     for (const auto& phaseString : gmx::splitString(phasevec))
     {
-        phases.emplace_back(gmx::fromStdString<int>(phaseString));
+        phases.emplace_back(gmx::fromStdString<real>(phaseString));
     }
     int nphases = gmx::ssize(phases);
 

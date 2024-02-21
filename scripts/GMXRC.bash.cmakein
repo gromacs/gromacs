@@ -87,7 +87,10 @@ if test -n "${BASH_VERSION+set}" && (complete) > /dev/null 2>&1; then
     fi
   fi
 elif test -n "${ZSH_VERSION+set}" > /dev/null 2>&1 ; then
-  autoload bashcompinit
+  autoload compinit bashcompinit
+  if (compinit) > /dev/null 2>&1; then
+    compinit
+  fi
   if (bashcompinit) > /dev/null 2>&1; then
     bashcompinit
     if [ -f $GMXBIN/gmx-completion.bash ]; then

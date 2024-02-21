@@ -709,10 +709,28 @@ static void calcParrinelloRahmanInvMass(const PressureCouplingOptions& pressureC
  * velocities to that of the box vectors introduced by mu (see \c
  * calculateMu()).
  */
-static Matrix3x3 calculateM(const Matrix3x3& invbox, const Matrix3x3& boxv)
+static Matrix3x3 calculateM(const PressureCouplingOptions& pressureCouplingOptions,
+                            const Matrix3x3&               invbox,
+                            const Matrix3x3&               boxv)
 
 {
-    return multiplyBoxMatrices(invbox, boxv);
+    Matrix3x3 M;
+
+    if (TRICLINIC(pressureCouplingOptions.compress))
+    {
+        M = multiplyBoxMatrices(invbox, boxv);
+    }
+    else
+    {
+        // Compute only the diagonal elements to avoid non-zero off-diagonal due to rounding
+        M = { { 0._real } };
+        for (int d = 0; d < DIM; d++)
+        {
+            M(d, d) = invbox(d, d) * boxv(d, d);
+        }
+    }
+
+    return M;
 }
 
 /*! \brief Calculate the mu tensor for Parrinello-Rahman pressure coupling
@@ -740,7 +758,21 @@ static Matrix3x3 calculateMu(const PressureCouplingOptions& pressureCouplingOpti
     preserveBoxShape(pressureCouplingOptions, deform, box_rel, temp);
     // Now temp is the box at t+dt, determine mu as the relative
     // change in the box.
-    Matrix3x3 mu = multiplyBoxMatrices(invbox, temp);
+    Matrix3x3 mu;
+    if (TRICLINIC(pressureCouplingOptions.compress))
+    {
+        mu = multiplyBoxMatrices(invbox, temp);
+    }
+    else
+    {
+        // Compute only the diagonal elements to avoid non-zero off-diagonal due to rounding
+        mu = { { 0._real } };
+        for (int d = 0; d < DIM; d++)
+        {
+            mu(d, d) = invbox(d, d) * temp[d][d];
+        }
+    }
+
     return mu;
 }
 
@@ -755,7 +787,7 @@ void init_parrinellorahman(const PressureCouplingOptions& pressureCouplingOption
 {
     const Matrix3x3 inverseBox = gmx::invertBoxMatrix(gmx::createMatrix3x3FromLegacyMatrix(box));
     preserveBoxShape(pressureCouplingOptions, deform, box_rel, boxv);
-    *M = calculateM(inverseBox, gmx::createMatrix3x3FromLegacyMatrix(boxv));
+    *M = calculateM(pressureCouplingOptions, inverseBox, gmx::createMatrix3x3FromLegacyMatrix(boxv));
     *mu = calculateMu(pressureCouplingOptions, deform, box_rel, box, inverseBox, boxv, couplingTimePeriod);
 }
 
@@ -916,7 +948,7 @@ void parrinellorahman_pcoupl(const gmx::MDLogger&           mdlog,
     preserveBoxShape(pressureCouplingOptions, deform, box_rel, boxv);
 
     const Matrix3x3 inverseBox = gmx::createMatrix3x3FromLegacyMatrix(invbox);
-    *M                         = calculateM(inverseBox, gmx::createMatrix3x3FromLegacyMatrix(boxv));
+    *M = calculateM(pressureCouplingOptions, inverseBox, gmx::createMatrix3x3FromLegacyMatrix(boxv));
 
     *mu = calculateMu(pressureCouplingOptions, deform, box_rel, box, inverseBox, boxv, couplingTimePeriod);
 }

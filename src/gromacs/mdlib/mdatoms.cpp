@@ -37,6 +37,7 @@
 
 #include <cmath>
 
+#include <algorithm>
 #include <memory>
 
 #include "gromacs/ewald/pme.h"
@@ -169,7 +170,6 @@ void atoms2md(const gmx_mtop_t&  mtop,
 {
     gmx_bool         bLJPME;
     const t_grpopts* opts;
-    int nthreads     gmx_unused;
 
     bLJPME = usingLJPme(inputrec.vdwtype);
 
@@ -262,7 +262,8 @@ void atoms2md(const gmx_mtop_t&  mtop,
     }
     int molb = 0;
 
-    nthreads = gmx_omp_nthreads_get(ModuleMultiThread::Default);
+    // In grompp, OpenMP is not initialized and nthreads_get returns 0. We want 1 thread in this case.
+    const int gmx_unused nthreads = std::max(gmx_omp_nthreads_get(ModuleMultiThread::Default), 1);
 #pragma omp parallel for num_threads(nthreads) schedule(static) firstprivate(molb)
     for (int i = 0; i < md->nr; i++)
     {

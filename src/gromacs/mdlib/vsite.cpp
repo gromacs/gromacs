@@ -1263,7 +1263,7 @@ static void spread_vsite1(const t_iatom ia[], ArrayRef<RVec> f)
     const int av = ia[1];
     const int ai = ia[2];
 
-    f[av] += f[ai];
+    f[ai] += f[av];
 }
 
 template<VirialHandling virialHandling>
