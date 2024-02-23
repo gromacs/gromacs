@@ -90,6 +90,17 @@ Some software packages that can be used to graph data in a :ref:`xvg` file:
     plot "file.xvg" using 1:2 with lines
 
   is a hack that will achieve the right result.
+* Matplotlib - a popular Python library for visualization. A simple script that will plot the data
+  in ``file.xvg`` and show the result on the screen
+
+  .. code-block:: python
+
+      import numpy as np
+      import matplotlib.pyplot as plt
+      x, y = np.loadtxt("file.xvg", comments=["@", "#", "&"], unpack=True)
+      plt.plot(x, y)
+      plt.show()
+
 * MS Excel - change the file extension to .csv and open the file (when prompted, choose to ignore the
   first 20 or so rows and select fixed-width columns, if you are using German MS Excel version, you
   have to change decimal delimiter from "," to ".", or use your favourite \*nix tool.
