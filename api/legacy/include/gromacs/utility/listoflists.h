@@ -66,19 +66,12 @@ namespace gmx
  * lists concatenated. List i is stored in entries listRanges_[i] to
  * listRanges_[i+1] in elements_.
  *
- * \note This class is currently limited to arithmetic types, mainly because
- * this should only be used for performance critical applications.
- * When performance is not critical, a std::vector of std::vector can be used.
- *
  * \tparam T value type
  */
 
 template<typename T>
 class ListOfLists
 {
-    // TODO: Use std::is_arithmetic_v when CUDA 11 is a requirement.
-    static_assert(std::is_arithmetic<T>::value, "This class is limited to arithmetic types");
-
 public:
     //! Constructs an empty list of lists
     ListOfLists() = default;
@@ -128,13 +121,14 @@ public:
         listRanges_.push_back(int(elements_.size()));
     }
 
-    //! Appends a new list with \p numElements elements
+    /*! \brief Appends a new list with \p numElements elements
+     *
+     * \note Type T should be default constructible.
+     */
     void pushBackListOfSize(int numElements)
     {
-        // With arithmetic types enforced, this assertion is always true
-        // TODO: Use std::is_default_constructible_v when CUDA 11 is a requirement.
-        static_assert(std::is_default_constructible<T>::value,
-                      "pushBackListOfSize should only be called with default constructable types");
+        static_assert(std::is_default_constructible_v<T>);
+
         elements_.resize(elements_.size() + numElements);
         listRanges_.push_back(int(elements_.size()));
     }
