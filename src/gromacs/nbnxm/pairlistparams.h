@@ -50,7 +50,6 @@
 #include "gromacs/utility/enumerationhelpers.h"
 #include "gromacs/utility/real.h"
 
-#include "nbnxm_geometry.h"
 #include "pairlist.h"
 
 namespace Nbnxm

@@ -45,15 +45,7 @@
 #include "gromacs/math/functions.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/nbnxm/nbnxm.h"
-// dpcpp warns about being unabled to implement __vectorcall during device
-// compilation, so avoid including it then.
-#if GMX_SYCL_DPCPP && defined(__SYCL_DEVICE_ONLY__)
-#    define DO_NOT_INCLUDE_SIMD_H
-#endif
-
-#ifndef DO_NOT_INCLUDE_SIMD_H
-#    include "gromacs/simd/simd.h"
-#endif
+#include "gromacs/simd/simd.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
 
@@ -103,19 +95,12 @@ static constexpr int sc_jClusterSize(const KernelType kernelType)
     switch (kernelType)
     {
         case KernelType::Cpu4x4_PlainC: return 4;
-#ifdef DO_NOT_INCLUDE_SIMD_H
-        case KernelType::Cpu4xN_Simd_4xN:
-        case KernelType::Cpu4xN_Simd_2xNN:
-            GMX_ASSERT(false, "c_jClusterSize() can not be called for SIMD kernel types with SYCL");
-            return 0;
-#else
-#    if GMX_SIMD
+#if GMX_SIMD
         case KernelType::Cpu4xN_Simd_4xN: return GMX_SIMD_REAL_WIDTH;
         case KernelType::Cpu4xN_Simd_2xNN: return GMX_SIMD_REAL_WIDTH / 2;
-#    else
+#else
         case KernelType::Cpu4xN_Simd_4xN: return 0;
         case KernelType::Cpu4xN_Simd_2xNN: return 0;
-#    endif
 #endif
         case KernelType::Gpu8x8x8: return c_nbnxnGpuClusterSize / 2;
         case KernelType::Cpu8x8x8_PlainC: return c_nbnxnGpuClusterSize / 2;
