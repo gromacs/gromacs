@@ -56,7 +56,7 @@
 #    endif
 #elif GMX_GPU_SYCL
 #    include "gpu_3dfft_sycl.h"
-#    if GMX_GPU_FFT_MKL
+#    if GMX_GPU_FFT_MKL || GMX_GPU_FFT_ONEMKL
 #        include "gpu_3dfft_sycl_mkl.h"
 #    elif GMX_GPU_FFT_BBFFT
 #        include "gpu_3dfft_sycl_bbfft.h"
@@ -182,8 +182,9 @@ Gpu3dFft::Gpu3dFft(FftBackend           backend,
 #elif GMX_GPU_SYCL
     switch (backend)
     {
-#    if GMX_GPU_FFT_MKL
-        case FftBackend::SyclMkl:
+#    if GMX_GPU_FFT_MKL || GMX_GPU_FFT_ONEMKL
+        case FftBackend::SyclMkl: [[fallthrough]];
+        case FftBackend::SyclOneMkl:
             impl_ = std::make_unique<Gpu3dFft::ImplSyclMkl>(allocateRealGrid,
                                                             comm,
                                                             gridSizesInXForEachRank,

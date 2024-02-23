@@ -193,6 +193,12 @@ int main() {
     set(_sycl_has_valid_fft TRUE)
 endif()
 
+if(GMX_GPU_FFT_ONEMKL)
+    include(gmxManageOneMKL)
+    gmx_manage_onemkl()
+    set(_sycl_has_valid_fft TRUE)
+endif()
+
 if(GMX_GPU_FFT_BBFFT)
     # The double-batched FFT library is still called by its former
     # name bbfft in the implementation. For now, only the shared

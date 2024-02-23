@@ -44,7 +44,17 @@
 #ifndef GMX_FFT_GPU_3DFFT_SYCL_MKL_H
 #define GMX_FFT_GPU_3DFFT_SYCL_MKL_H
 
-#include <oneapi/mkl/dfti.hpp>
+#include "config.h"
+
+#if GMX_GPU_FFT_MKL
+// Use Intel closed-source oneMKL directly.
+#    include <oneapi/mkl/dfti.hpp>
+#elif GMX_GPU_FFT_ONEMKL
+// Use oneMKL interface library
+#    include <oneapi/mkl/dft.hpp>
+#else
+#    error Expected GMX_GPU_FFT_ONEMKL or GMX_GPU_FFT_MKL
+#endif
 
 #include "gromacs/fft/fft.h"
 #include "gromacs/gpu_utils/devicebuffer_datatype.h"

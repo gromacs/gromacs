@@ -72,6 +72,8 @@
 #cmakedefine01 GMX_GPU_FFT_VKFFT
 /* Use MKL library for FFT on GPUs */
 #cmakedefine01 GMX_GPU_FFT_MKL
+/* Use oneMKL interface library for FFT on GPUs */
+#cmakedefine01 GMX_GPU_FFT_ONEMKL
 /* Use rocFFT library for FFT on GPUs */
 #cmakedefine01 GMX_GPU_FFT_ROCFFT
 /* Use double-batched FFT library (BBFFT) for FFT on GPUs */

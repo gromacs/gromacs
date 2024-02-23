@@ -881,6 +881,10 @@ static gmx::FftBackend getFftBackend(const PmeGpu* pmeGpu)
                         "PME decomposition on oneAPI-compatible GPUs"));
             }
         }
+        else if (GMX_GPU_FFT_ONEMKL)
+        {
+            return gmx::FftBackend::SyclOneMkl;
+        }
         else if (GMX_GPU_FFT_BBFFT)
         {
             return gmx::FftBackend::SyclBbfft;

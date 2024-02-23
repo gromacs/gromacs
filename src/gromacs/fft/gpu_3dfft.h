@@ -75,6 +75,7 @@ enum class FftBackend
     HeFFTe_Sycl_Rocfft, //!< supports only multi-gpu
     HeFFTe_Sycl_cuFFT,  //!< supports only multi-gpu
     SyclMkl,            //!< supports only single-GPU
+    SyclOneMkl,         //!< supports only single-GPU
     SyclRocfft,         //!< supports only single-GPU
     SyclVkfft,          //!< supports only single-GPU
     SyclBbfft,          //!< supports only single-GPU
@@ -138,6 +139,7 @@ private:
     class ImplOclVkfft;
     class ImplOcl;
     class ImplSyclMkl;
+    // oneMKL has an identical interface to MKL, so uses the ImplSyclMkl implemenation.
     class ImplSyclBbfft;
     class ImplSyclRocfft;
     class ImplSyclVkfft;

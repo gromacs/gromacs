@@ -224,6 +224,27 @@ if(GMX_GPU_FFT_ROCFFT)
     target_link_libraries(libgromacs PRIVATE roc::rocfft)
 endif()
 
+if(GMX_GPU_FFT_ONEMKL)
+    # Availability of targets was checked in gmxManageOneMKL.cmake.
+    # Linking directly against backend library to avoid double-free issue
+    # encountered with cufft backend and urTearDown for the DPC++ runtime.
+    # See #5000.
+    if("${SYCL_CXX_FLAGS_EXTRA}" MATCHES "fsycl-targets=.*(nvptx64|nvidia_gpu)")
+        target_link_libraries(libgromacs PRIVATE MKL::onemkl_dft_cufft)
+        target_compile_definitions(libgromacs PRIVATE ONEMKL_USING_CUFFT_BACKEND)
+    elseif("${SYCL_CXX_FLAGS_EXTRA}" MATCHES "fsycl-targets=.*(amdgcn|amd_gpu)")
+        target_link_libraries(libgromacs PRIVATE MKL::onemkl_dft_rocfft)
+        target_compile_definitions(libgromacs PRIVATE ONEMKL_USING_ROCFFT_BACKEND)
+    else()
+        target_link_libraries(libgromacs PRIVATE MKL::onemkl_dft_mklgpu)
+        target_compile_definitions(libgromacs PRIVATE ONEMKL_USING_MKLGPU_BACKEND)
+    endif()
+    # Linking directly against the backend seems to additionally require
+    # manually including the required headers.
+    get_target_property(ONEMKL_DFT_INCLUDE_DIR MKL::onemkl INTERFACE_INCLUDE_DIRECTORIES)
+    target_include_directories(libgromacs PRIVATE ${ONEMKL_DFT_INCLUDE_DIR})
+endif()
+
 target_link_libraries(libgromacs PRIVATE $<BUILD_INTERFACE:common>)
 # As long as the libgromacs target has source files that reference headers from
 # modules that don't provide CMake targets, libgromacs needs to use `src/`

@@ -54,6 +54,10 @@
 #    include <mkl.h>
 #endif
 
+#if GMX_GPU_FFT_ONEMKL
+#    include <oneapi/mkl/dft.hpp>
+#endif
+
 #if HAVE_EXTRAE
 #    include <extrae_user_events.h>
 #endif
@@ -213,6 +217,27 @@ std::string describeMkl()
 #endif
 }
 
+std::string describeOneMkl()
+{
+#if GMX_GPU_FFT_ONEMKL
+    std::string description = "oneMKL interface library (backends:";
+#    ifdef ONEMKL_USING_CUFFT_BACKEND
+    description += " cuFFT";
+#    endif
+#    ifdef ONEMKL_USING_MKLGPU_BACKEND
+    description += " MKLGPU";
+#    endif
+#    ifdef ONEMKL_USING_ROCFFT_BACKEND
+    description += " rocFFT";
+#    endif
+    description += ")";
+    return description;
+#else
+    GMX_RELEASE_ASSERT(false, "describeOneMkl called in a build without oneMKL");
+    return "";
+#endif
+}
+
 //! Construct a string that describes the library that provides CPU FFT support to this build
 std::string getCpuFftDescriptionString()
 {
@@ -259,6 +284,10 @@ std::string getGpuFftDescriptionString()
         {
             return describeMkl();
         }
+        else if (GMX_GPU_FFT_ONEMKL)
+        {
+            return describeOneMkl();
+        }
         else if (GMX_GPU_FFT_ROCFFT)
         {
             return std::string("rocFFT ") + rocfft_VERSION;
@@ -269,7 +298,7 @@ std::string getGpuFftDescriptionString()
         }
         else
         {
-            /* Some SYCL builds (e.g., Intel DPC++ for AMD devices) have no support for GPU FFT,
+            /* Some SYCL builds have no support for GPU FFT,
              * but that's a corner case not intended for general users */
             GMX_RELEASE_ASSERT(GMX_GPU_SYCL,
                                "Only the SYCL build can function without a GPU FFT library");
