@@ -37,6 +37,14 @@ Fixed parsing of phases in gmx nmtraj
 Fixes that affect portability
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Fix compiler flag check with oneAPI DPC++
+"""""""""""""""""""""""""""""""""""""""""
+
+Some compiler warning flags were not tested properly when compiling for
+NVIDIA/AMD GPUs using Intel oneAPI. No user-facing impact expected.
+
+:issue:`5005`
+
 Miscellaneous
 ^^^^^^^^^^^^^
 
