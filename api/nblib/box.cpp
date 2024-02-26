@@ -44,6 +44,8 @@
 
 #include <cmath>
 
+#include <algorithm>
+
 #include "nblib/exception.h"
 
 namespace nblib
