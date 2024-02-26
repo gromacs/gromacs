@@ -40,6 +40,15 @@ Fixes that affect portability
 Miscellaneous
 ^^^^^^^^^^^^^
 
+Address mdrun performance regression with non-bonded interactions on CPU
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+The heuristics for choosing the inner pair-list interval has been
+improved to regain or improve the performance on non-bonded interactions
+on the CPU. Correctness is unaffected.
+
+:issue:`4988`
+
 Fixed nbnxm-test failure when bounds checking was enabled for stdlib
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 

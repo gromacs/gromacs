@@ -419,9 +419,9 @@ static const int c_nbnxnGpuRollingListPruningInterval = 2;
 
 /*! \brief The minimum nstlist for dynamic pair list pruning on CPUs.
  *
- * In most cases going lower than 10 will lead to a too high pruning cost.
+ * In most cases going lower than 5 will lead to a too high pruning cost.
  */
-static const int c_nbnxnCpuDynamicListPruningMinLifetime = 10;
+static const int c_nbnxnCpuDynamicListPruningMinLifetime = 5;
 
 /*! \brief The minimum nstlist for dynamic pair list pruning om GPUs.
  *
@@ -429,6 +429,38 @@ static const int c_nbnxnCpuDynamicListPruningMinLifetime = 10;
  * This value should be a multiple of \p c_nbnxnGpuRollingListPruningInterval
  */
 static const int c_nbnxnGpuDynamicListPruningMinLifetime = 4;
+
+//! Struct with references for most parameters for calling calcVerletBufferSize()
+struct CalcVerletBufferParameters
+{
+    const gmx_mtop_t&         mtop;
+    const real                effectiveAtomDensity;
+    const t_inputrec&         inputrec;
+    const real                pressureTolerance;
+    const VerletbufListSetup& listSetup;
+    const bool                useGpuList;
+    const int                 mtsFactor;
+};
+
+/*! \brief Wrapper for calcVerletBufferSize() for determining the pruning cut-off
+ *
+ * \param[in] params   References to most parameters for calcVerletBufferSize()
+ * \param[in] nstlist  The pruning interval, also used for setting the list lifetime
+ * \return The cut-off for pruning the pairlist
+ */
+static real calcPruneVerletBufferSize(const CalcVerletBufferParameters& params, const int nstlist)
+{
+    const int listLifetime = nstlist - (params.useGpuList ? 0 : params.mtsFactor);
+
+    return calcVerletBufferSize(params.mtop,
+                                params.effectiveAtomDensity,
+                                params.inputrec,
+                                params.pressureTolerance,
+                                nstlist,
+                                listLifetime,
+                                -1,
+                                params.listSetup);
+}
 
 /*! \brief Set the dynamic pairlist pruning parameters in \p ic
  *
@@ -482,12 +514,30 @@ static void setDynamicPairlistPruningParameters(const t_inputrec&          input
 
     listParams->lifetime = inputrec.nstlist - mtsFactor;
 
-    /* When nstlistPrune was set by the user, we need to execute one loop
-     * iteration to determine rlistInner.
-     * Otherwise we compute rlistInner and increase nstlist as long as
-     * we have a pairlist buffer of length 0 (i.e. rlistInner == cutoff).
+    /* We are now left with determining the following parameters of listParams:
+     * - useDynamicPruning
+     * - nstlistPrune (left untouched when set by user)
+     * - rlistInner
+     */
+
+    // Gather (references to) all constant parameters to calcVerletBufferSize() in a struct
+    CalcVerletBufferParameters calcBufferParams(
+            { mtop, effectiveAtomDensity, inputrec, pressureTolerance, listSetup, useGpuList, mtsFactor });
+
+    if (userSetNstlistPrune)
+    {
+        listParams->useDynamicPruning = true;
+        listParams->rlistInner = calcPruneVerletBufferSize(calcBufferParams, listParams->nstlistPrune);
+
+        return;
+    }
+
+    /* We compute rlistInner and increase nstlist as long as we have
+     * a pairlist buffer of length 0 (i.e. rlistInner == cutoff).
      */
     const real interactionCutoff = std::max(interactionConst.rcoulomb, interactionConst.rvdw);
+    int        nstlistPrune;
+    real       rlistInner;
     int        tunedNstlistPrune = listParams->nstlistPrune;
     do
     {
@@ -495,43 +545,57 @@ static void setDynamicPairlistPruningParameters(const t_inputrec&          input
          * the next step on the coordinates of the current step,
          * so the list lifetime is nstlistPrune (not the usual nstlist-mtsFactor).
          */
-        int listLifetime         = tunedNstlistPrune - (useGpuList ? 0 : mtsFactor);
-        listParams->nstlistPrune = tunedNstlistPrune;
-        listParams->rlistInner   = calcVerletBufferSize(
-                mtop, effectiveAtomDensity, inputrec, pressureTolerance, tunedNstlistPrune, listLifetime, -1, listSetup);
+        nstlistPrune = tunedNstlistPrune;
+        rlistInner   = calcPruneVerletBufferSize(calcBufferParams, nstlistPrune);
 
         /* On the GPU we apply the dynamic pruning in a rolling fashion
          * every c_nbnxnGpuRollingListPruningInterval steps,
          * so keep nstlistPrune a multiple of the interval.
          */
         tunedNstlistPrune += (useGpuList ? c_nbnxnGpuRollingListPruningInterval : 1) * mtsFactor;
-    } while (!userSetNstlistPrune && tunedNstlistPrune < inputrec.nstlist
-             && listParams->rlistInner == interactionCutoff);
+    } while (tunedNstlistPrune < inputrec.nstlist && rlistInner == interactionCutoff);
 
-    if (userSetNstlistPrune)
+    /* The current nstlistPrune in listParams is in most cases sub-optimal,
+     * as it often just increases the buffer from zero to a (small) non-zero value.
+     * When pruning on GPU this doesn't matter much as we prune parts every (second) step.
+     */
+    if (!useGpuList)
     {
-        listParams->useDynamicPruning = true;
+        /* Generally nstlistPrune can be lowered without generating more pruning events.
+         * Thus here we decrease nstlistPrune to the lowest value that has the same number
+         * of pruning events and therefore the same pruning cost.
+         */
+        const int numPrunings = (inputrec.nstlist + nstlistPrune - 1) / nstlistPrune;
+        // Compute the lowest nstlistPrune that has numPrunings pruning steps
+        const int lowerNstlistPrune = (inputrec.nstlist + numPrunings - 1) / numPrunings;
+        if (lowerNstlistPrune < nstlistPrune)
+        {
+            nstlistPrune = lowerNstlistPrune;
+            rlistInner   = calcPruneVerletBufferSize(calcBufferParams, nstlistPrune);
+        }
+    }
+
+    /* Determine the pair list size increase due to zero interactions */
+    real rlistInc = nbnxn_get_rlist_effective_inc(listSetup.cluster_size_j, effectiveAtomDensity);
+
+    /* Dynamic pruning is only useful when the inner list is smaller than
+     * the outer. The factor 0.99 ensures at least 3% list size reduction.
+     *
+     * With dynamic pruning on the CPU we prune after updating,
+     * so nstlistPrune=nstlist-1 would add useless extra work.
+     * With the GPU there will probably be more overhead than gain
+     * with nstlistPrune=nstlist-1, so we disable dynamic pruning.
+     * Note that in such cases the first sub-condition is likely also false.
+     */
+    listParams->useDynamicPruning = (rlistInner + rlistInc < 0.99 * (listParams->rlistOuter + rlistInc)
+                                     && nstlistPrune < listParams->lifetime);
+
+    if (listParams->useDynamicPruning)
+    {
+        listParams->nstlistPrune = nstlistPrune;
+        listParams->rlistInner   = rlistInner;
     }
     else
-    {
-        /* Determine the pair list size increase due to zero interactions */
-        real rlistInc = nbnxn_get_rlist_effective_inc(listSetup.cluster_size_j, effectiveAtomDensity);
-
-        /* Dynamic pruning is only useful when the inner list is smaller than
-         * the outer. The factor 0.99 ensures at least 3% list size reduction.
-         *
-         * With dynamic pruning on the CPU we prune after updating,
-         * so nstlistPrune=nstlist-1 would add useless extra work.
-         * With the GPU there will probably be more overhead than gain
-         * with nstlistPrune=nstlist-1, so we disable dynamic pruning.
-         * Note that in such cases the first sub-condition is likely also false.
-         */
-        listParams->useDynamicPruning =
-                (listParams->rlistInner + rlistInc < 0.99 * (listParams->rlistOuter + rlistInc)
-                 && listParams->nstlistPrune < listParams->lifetime);
-    }
-
-    if (!listParams->useDynamicPruning)
     {
         /* These parameters should not be used, but set them to useful values */
         listParams->nstlistPrune = -1;
