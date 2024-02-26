@@ -76,6 +76,8 @@
 #cmakedefine01 GMX_GPU_FFT_ONEMKL
 /* Use rocFFT library for FFT on GPUs */
 #cmakedefine01 GMX_GPU_FFT_ROCFFT
+/* Use hipFFT library for FFT on GPUs */
+#cmakedefine01 GMX_GPU_FFT_HIPFFT
 /* Use double-batched FFT library (BBFFT) for FFT on GPUs */
 #cmakedefine01 GMX_GPU_FFT_BBFFT
 
@@ -84,6 +86,9 @@
 
 /* rocFFT version */
 #define rocfft_VERSION "@rocfft_VERSION@"
+
+/* hipFFT version */
+#define hipfft_VERSION "@hipfft_VERSION@"
 
 /* HeFFTe version */
 #define Heffte_VERSION "@Heffte_VERSION@"
@@ -281,6 +286,12 @@
 
 /* Use a single compilation unit when compiling the CUDA (non-bonded) kernels.  */
 #cmakedefine01 GMX_CUDA_NB_SINGLE_COMPILATION_UNIT
+
+/* Define if HIP GPU acceleration is compiled */
+#cmakedefine01 GMX_GPU_HIP
+
+/* Define if using HIP unified memory */
+#cmakedefine01 GMX_GPU_HIP_UNIFIED_MEMORY
 
 /* Whether MPI can report its GPU-awareness  */
 #cmakedefine01 HAVE_MPI_EXT

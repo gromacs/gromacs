@@ -49,6 +49,10 @@ if(GMX_GPU_CUDA)
     get_cuda_compiler_info(CUDA_COMPILER_INFO CUDA_DEVICE_COMPILER_FLAGS CUDA_HOST_COMPILER_FLAGS)
 endif()
 
+if(GMX_GPU_HIP)
+    get_hip_compiler_info(HIP_COMPILER_INFO HIP_COMPILER_FLAGS)
+endif()
+
 # Make a file with compiler flags used for libgromacs for each
 # langauge and build configuration.  The one that corresponds to
 # CMAKE_BUILD_TYPE is #included into buildinfo.h and populates the

@@ -58,7 +58,7 @@
 #include "gromacs/fft/gpu_3dfft.h"
 #include "gromacs/fft/parallel_3dfft.h"
 #include "gromacs/gpu_utils/clfftinitializer.h"
-#if GMX_GPU
+#if GMX_GPU && !GMX_GPU_HIP
 #    include "gromacs/gpu_utils/devicebuffer.h"
 #endif
 #include "gromacs/utility/stringutil.h"
@@ -400,7 +400,7 @@ TEST_P(ParameterizedFFTTest3D, RunsOnHost)
     checkRealGrid(realGridSize, realGridSizePadded, in_, outputRealGridValues);
 }
 
-#if GMX_GPU
+#if GMX_GPU && !GMX_GPU_HIP
 
 /*! \brief Whether the FFT is in- or out-of-place
  *

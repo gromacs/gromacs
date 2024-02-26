@@ -292,6 +292,10 @@ std::string getGpuFftDescriptionString()
         {
             return std::string("rocFFT ") + rocfft_VERSION;
         }
+        else if (GMX_GPU_FFT_HIPFFT)
+        {
+            return std::string("hipFFT ") + hipfft_VERSION;
+        }
         else if (GMX_GPU_FFT_BBFFT)
         {
             return std::string("Double-Batched FFT Library ") + bbfft_VERSION;
@@ -519,6 +523,13 @@ void gmx_print_version_info(gmx::TextWriter* writer)
     writer->writeLine(formatString("hipSYCL GPU flags:   %s", SYCL_HIPSYCL_DEVICE_COMPILER_FLAGS));
     writer->writeLine(formatString("hipSYCL targets:     %s", SYCL_HIPSYCL_TARGETS));
     writer->writeLine("hipSYCL version:     " + gmx::getSyclCompilerVersion());
+#endif
+#if GMX_GPU_HIP
+    writer->writeLine(formatString("HIP compiler:        %s", HIP_COMPILER_INFO));
+    writer->writeLine(formatString(
+            "HIP compiler flags:  %s %s", HIP_COMPILER_FLAGS, CMAKE_BUILD_CONFIGURATION_CXX_FLAGS));
+//    writer->writeLine("HIP driver:         " + gmx::getHipDriverVersionString());
+//    writer->writeLine("HIP runtime:        " + gmx::getHipRuntimeVersionString());
 #endif
 }
 

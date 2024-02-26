@@ -45,7 +45,7 @@
 
 #include "gromacs/mdtypes/state_propagator_data_gpu.h"
 
-#if !GMX_GPU
+#if !GMX_GPU || GMX_GPU_HIP
 namespace gmx
 {
 
@@ -317,4 +317,4 @@ void StatePropagatorDataGpu::waitCoordinatesUpdatedOnDevice()
 
 } // namespace gmx
 
-#endif // !GMX_GPU
+#endif // !GMX_GPU || GMX_GPU_HIP

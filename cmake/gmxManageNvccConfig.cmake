@@ -310,12 +310,9 @@ function(gmx_cuda_add_library TARGET)
     # need access to thread-MPI.
     include_directories(SYSTEM ${PROJECT_SOURCE_DIR}/src/external/thread_mpi/include)
     add_definitions(-DTMPI_USE_VISIBILITY)
-    # Source files can also contain topology related files and need access to
-    # the remaining external headers
-    include_directories(SYSTEM ${PROJECT_SOURCE_DIR}/src/external)
 
     # Now add all the compilation options
-    gmx_cuda_target_compile_options(CUDA_${TARGET}_CXXFLAGS)
+    gmx_device_target_compile_options(CUDA_${TARGET}_CXXFLAGS)
     list(APPEND CMAKE_CXX_FLAGS ${CUDA_${TARGET}_CXXFLAGS})
     foreach(build_type ${build_types_with_explicit_flags})
         list(APPEND CMAKE_CXX_FLAGS_${build_type} ${CUDA_${TARGET}_CXXFLAGS_${build_type}})

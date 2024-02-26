@@ -82,6 +82,7 @@ if (GMX_GPU_CUDA)
         target_link_libraries(nblib PUBLIC CUDA::nvml CUDA::cuda_driver)
     endif()
 endif()
+
 # Workaround for #4922
 target_link_libraries(nblib PUBLIC ${GMX_PUBLIC_LIBRARIES})
 

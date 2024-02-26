@@ -63,7 +63,7 @@
 #include "pme_gpu_settings.h"
 #include "pme_gpu_staging.h"
 
-#if GMX_GPU
+#if GMX_GPU && !GMX_GPU_HIP
 struct PmeGpuSpecific;
 struct PmeGpuHaloExchange;
 #else

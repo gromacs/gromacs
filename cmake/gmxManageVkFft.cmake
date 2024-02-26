@@ -110,3 +110,17 @@ function(gmx_manage_vkfft BACKEND_NAME)
 
 endfunction()
 
+if (GMX_GPU_CUDA)
+    gmx_manage_vkfft("CUDA")
+elseif(GMX_GPU_HIP)
+    gmx_manage_vkfft("HIP")
+elseif(GMX_GPU_OPENCL)
+    gmx_manage_vkfft("OpenCL")
+elseif((GMX_SYCL_ACPP AND GMX_ACPP_HAVE_CUDA_TARGET) OR (GMX_SYCL_DPCPP AND "${SYCL_CXX_FLAGS_EXTRA}" MATCHES "fsycl-targets=.*(nvptx64|nvidia_gpu)"))
+    gmx_manage_vkfft("CUDA")
+elseif((GMX_SYCL_ACPP AND GMX_ACPP_HAVE_HIP_TARGET) OR (GMX_SYCL_DPCPP AND "${SYCL_CXX_FLAGS_EXTRA}" MATCHES "fsycl-targets=.*(amdgcn|amd_gpu)"))
+    gmx_manage_vkfft("HIP")
+else()
+     message(FATAL_ERROR "VkFFT can only be used with CUDA, HIP or OpenCL backend")
+endif()
+

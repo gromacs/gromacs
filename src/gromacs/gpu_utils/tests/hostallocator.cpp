@@ -108,8 +108,12 @@ void runTest(const DeviceContext&     deviceContext,
     auto outputRef = charArrayRefFromArray(output.data(), output.size());
 
     ASSERT_EQ(inputRef.size(), outputRef.size());
-
+#if !GMX_GPU_HIP
     doDeviceTransfers(deviceContext, deviceInfo, inputRef, outputRef);
+#else
+    GMX_UNUSED_VALUE(deviceContext);
+    GMX_UNUSED_VALUE(deviceInfo);
+#endif
     compareViews(input, output);
 }
 

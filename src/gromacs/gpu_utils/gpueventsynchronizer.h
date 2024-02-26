@@ -125,6 +125,8 @@ public:
     //! Remove move constructor, because we don't allow moving the underlying event object.
     GpuEventSynchronizer(GpuEventSynchronizer&&) = delete;
 
+#if !GMX_GPU_HIP
+
     /*! \brief Marks the synchronization point in the \p stream and reset the consumption counter.
      *
      * Should be called before implicitly consuming actions (\ref waitForEvent() or \ref enqueueWaitEvent()) are executed or explicit \ref consume() calls are made.
@@ -147,13 +149,13 @@ public:
     //NOLINTNEXTLINE(readability-convert-member-functions-to-static)
     inline void markExternalEventWhileCapturingGraph(const DeviceStream& deviceStream)
     {
-#if GMX_HAVE_GPU_GRAPH_SUPPORT && GMX_GPU_CUDA
+#    if GMX_HAVE_GPU_GRAPH_SUPPORT && GMX_GPU_CUDA
         event_.markExternalEventWhileCapturingGraph(deviceStream);
-#else
+#    else
         GMX_UNUSED_VALUE(deviceStream);
         GMX_THROW(gmx::InternalError(
                 "markExternalEventWhileCapturingGraph called without CUDA graph support"));
-#endif
+#    endif
         consumptionCount_ = 0;
     }
 
@@ -219,24 +221,28 @@ public:
     //NOLINTNEXTLINE(readability-convert-member-functions-to-static)
     inline void enqueueExternalWaitEventWhileCapturingGraph(const DeviceStream& deviceStream)
     {
-#if GMX_HAVE_GPU_GRAPH_SUPPORT && GMX_GPU_CUDA
+#    if GMX_HAVE_GPU_GRAPH_SUPPORT && GMX_GPU_CUDA
         event_.enqueueExternalWaitEventWhileCapturingGraph(deviceStream);
-#else
+#    else
         GMX_UNUSED_VALUE(deviceStream);
         GMX_THROW(gmx::InternalError(
                 "enqueueExternalWaitEventWhileCapturingGraph called without CUDA graph support"));
-#endif
+#    endif
         resetIfFullyConsumed();
     }
-#ifdef __clang__
-#    pragma clang diagnostic pop
+#    ifdef __clang__
+#        pragma clang diagnostic pop
+#    endif
+
 #endif
     //! Resets the event to unmarked state, releasing the underlying event object if needed.
     inline void reset()
     {
+#if !GMX_GPU_HIP
         // Set such that we can mark new event without triggering an exception, but can not consume.
         consumptionCount_ = maxConsumptionCount_;
         event_.reset();
+#endif
     }
 
     //! Set the event consumption limits.
@@ -247,10 +253,12 @@ public:
     }
 
 private:
+#if !GMX_GPU_HIP
     DeviceEvent event_;
     int         consumptionCount_;
-    int         minConsumptionCount_;
-    int         maxConsumptionCount_;
+#endif
+    int minConsumptionCount_;
+    int maxConsumptionCount_;
 };
 
 #endif

@@ -84,6 +84,10 @@ const char* getGpuImplementationString()
         {
             return "OpenCL";
         }
+        else if (GMX_GPU_HIP)
+        {
+            return "HIP (not implemented yet}";
+        }
         else if (GMX_GPU_SYCL)
         {
             if (GMX_SYCL_DPCPP)

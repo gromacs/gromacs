@@ -80,6 +80,12 @@
 #define CUDA_HOST_COMPILER_FLAGS @CUDA_HOST_COMPILER_FLAGS@
 #define CUDA_COMPILER_FLAGS CUDA_DEVICE_COMPILER_FLAGS CUDA_HOST_COMPILER_FLAGS
 
+/** HIP compiler version information */
+#define HIP_COMPILER_INFO "@HIP_COMPILER_INFO@"
+
+/** HIP compiler flags (device flags)*/
+#define HIP_COMPILER_FLAGS "@HIP_COMPILER_FLAGS@"
+
 /** OpenCL include dir */
 #define OPENCL_INCLUDE_DIR "@OpenCL_INCLUDE_DIR@"
 

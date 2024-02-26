@@ -43,6 +43,7 @@ endif()
 
 set_property(GLOBAL PROPERTY GMX_LIBGROMACS_SOURCES)
 set_property(GLOBAL PROPERTY CUDA_SOURCES)
+set_property(GLOBAL PROPERTY HIP_SOURCES)
 set_property(GLOBAL PROPERTY GMX_INSTALLED_HEADERS)
 set_property(GLOBAL PROPERTY GMX_AVX_512_SOURCE)
 
@@ -212,6 +213,15 @@ if (GMX_GPU_CUDA)
         # point we can use PRIVATE linking for these libs until then we stick with PUBLIC linking.
         target_link_libraries(libgromacs PUBLIC ${GMX_CUDA_DRV_LIB} ${GMX_NVIDIA_ML_LIB})
     endif()
+elseif(GMX_GPU_HIP)
+    get_property(PROPERTY_HIP_SOURCES GLOBAL PROPERTY HIP_SOURCES)
+
+    foreach(hip_file ${PROPERTY_HIP_SOURCES})
+       set_source_files_properties(${hip_file} PROPERTIES LANGUAGE HIP)
+    endforeach()
+
+    gmx_hip_add_library(libgromacs ${LIBGROMACS_SOURCES})
+    target_link_libraries(libgromacs PRIVATE hip::host)
 else()
     add_library(libgromacs ${LIBGROMACS_SOURCES})
 endif()
@@ -220,6 +230,12 @@ if (TARGET Heffte::Heffte)
     target_link_libraries(libgromacs PRIVATE Heffte::Heffte)
 endif()
 
+if(GMX_GPU_FFT_HIPFFT)
+    target_link_libraries(libgromacs PRIVATE roc::rocfft hip::hipfft)
+endif()
+if(GMX_GPU_FFT_VKFFT)
+    target_link_libraries(libgromacs PRIVATE VkFFT)
+endif()
 if(GMX_GPU_FFT_ROCFFT)
     target_link_libraries(libgromacs PRIVATE roc::rocfft)
 endif()
@@ -359,6 +375,11 @@ if (GMX_GPU_CUDA AND CMAKE_CXX_COMPILER_ID MATCHES "Clang")
         get_property(CUDA_SOURCES GLOBAL PROPERTY CUDA_SOURCES)
         set_source_files_properties(${CUDA_SOURCES} PROPERTIES COMPILE_FLAGS ${GMX_CUDA_CLANG_FLAGS})
     endif()
+endif()
+
+if (GMX_GPU_HIP)
+    get_property(HIP_SOURCES GLOBAL PROPERTY HIP_SOURCES)
+    set_source_files_properties(${HIP_SOURCES} PROPERTIES COMPILE_FLAGS "${HIP_CXX_FLAGS}")
 endif()
 
 # Only add the -fsycl flag to sources that really need it

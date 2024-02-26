@@ -125,6 +125,7 @@ function (gmx_add_gtest_executable EXENAME)
         set(_multi_value_keywords
             CPP_SOURCE_FILES
             CUDA_CU_SOURCE_FILES
+            HIP_CPP_SOURCE_FILES
             GPU_CPP_SOURCE_FILES
             OPENCL_CPP_SOURCE_FILES
             SYCL_CPP_SOURCE_FILES
@@ -177,6 +178,17 @@ function (gmx_add_gtest_executable EXENAME)
                 ${ARG_CPP_SOURCE_FILES}
                 ${ARG_CUDA_CU_SOURCE_FILES}
                 ${ARG_GPU_CPP_SOURCE_FILES})
+        elseif (GMX_GPU_HIP)
+            set_source_files_properties(${ARG_HIP_CPP_SOURCE_FILES} PROPERTIES LANGUAGE HIP)
+            set_source_files_properties(${ARG_GPU_CPP_SOURCE_FILES} PROPERTIES LANGUAGE HIP)
+            add_executable(${EXENAME} ${UNITTEST_TARGET_OPTIONS}
+                    ${ARG_CPP_SOURCE_FILES}
+                    ${ARG_HIP_CPP_SOURCE_FILES}
+                    ${ARG_GPU_CPP_SOURCE_FILES})
+
+            set_target_properties(${EXENAME}  PROPERTIES HIP_ARCHITECTURES OFF)
+            set_property(TARGET ${EXENAME} PROPERTY HIP_STANDARD 17)
+            target_compile_options(${EXENAME} PRIVATE $<$<COMPILE_LANGUAGE:HIP>:${GMX_HIP_HIPCC_FLAGS}>)
         else()
             add_executable(${EXENAME} ${UNITTEST_TARGET_OPTIONS}
                 ${ARG_CPP_SOURCE_FILES})
@@ -193,6 +205,10 @@ function (gmx_add_gtest_executable EXENAME)
                 if(ARG_CUDA_CU_SOURCE_FILES OR ARG_GPU_CPP_SOURCE_FILES)
                     target_link_libraries(${EXENAME} PRIVATE ${GMX_EXTRA_LIBRARIES})
                 endif()
+            endif()
+        elseif (GMX_GPU_HIP)
+            if(ARG_HIP_CPP_SOURCE_FILES OR ARG_GPU_CPP_SOURCE_FILES)
+                target_link_libraries(${EXENAME} PRIVATE hip::host)
             endif()
         elseif (GMX_GPU_OPENCL)
             target_sources(${EXENAME} PRIVATE ${ARG_OPENCL_CPP_SOURCE_FILES} ${ARG_GPU_CPP_SOURCE_FILES})

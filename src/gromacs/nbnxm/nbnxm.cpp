@@ -247,6 +247,7 @@ bool buildSupportsNonbondedOnGpu(std::string* error)
     errorReasons.startContext("Nonbonded interactions on GPUs are not supported in:");
     errorReasons.appendIf(GMX_DOUBLE, "Double precision build of GROMACS");
     errorReasons.appendIf(!GMX_GPU, "Non-GPU build of GROMACS.");
+    errorReasons.appendIf(GMX_GPU_HIP, "HIP API not supported yet");
     errorReasons.finishContext();
     if (error != nullptr)
     {

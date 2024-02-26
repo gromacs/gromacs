@@ -69,7 +69,6 @@ endif()
 if (GMX_GPU_FFT_VKFFT)
     # Use VkFFT with OpenCL back end as header-only library
     include(gmxManageVkFft)
-    gmx_manage_vkfft("OpenCL")
 elseif(NOT GMX_GPU_FFT_CLFFT)
     message(FATAL_ERROR "In the OpenCL build, only -DGMX_GPU_FFT_LIBRARY=VkFFT and -DGMX_GPU_FFT_LIBRARY=clFFT are supported")
 endif()

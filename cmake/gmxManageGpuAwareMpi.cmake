@@ -100,6 +100,12 @@ if (GMX_GPU_CUDA)
   set(MPI_SUPPORTS_ROCM_AWARE_DETECTION FALSE)
   set(MPI_SUPPORTS_ZE_AWARE_DETECTION FALSE)
 endif()
+if (GMX_GPU_HIP)
+  set(MPI_SUPPORTS_CUDA_AWARE_DETECTION FALSE)
+  gmx_test_gpu_aware_mpi(hip) # MPICH has MPIX_Query_hip_support
+  gmx_test_gpu_aware_mpi(rocm) # OpenMPI has MPIX_Query_rocm_support
+  set(MPI_SUPPORTS_ZE_AWARE_DETECTION FALSE)
+endif()
 if(GMX_GPU_SYCL)
   gmx_test_gpu_aware_mpi(cuda)
   gmx_test_gpu_aware_mpi(hip) # MPICH has MPIX_Query_hip_support

@@ -43,7 +43,7 @@
 
 #include "config.h"
 
-#if GMX_GPU
+#if GMX_GPU && !GMX_GPU_HIP
 
 #    include "gromacs/gpu_utils/device_stream_manager.h"
 #    include "gromacs/gpu_utils/devicebuffer.h"

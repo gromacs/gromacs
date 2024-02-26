@@ -80,7 +80,7 @@
 #else // Not DOXYGEN
 
 /* GPU support is enabled, so these functions will have real code defined somewhere */
-#    if GMX_GPU
+#    if GMX_GPU && !GMX_GPU_HIP
 #        define GPU_FUNC_QUALIFIER REAL_FUNC_QUALIFIER
 #        define GPU_FUNC_ARGUMENT REAL_FUNC_ARGUMENT
 #        define GPU_FUNC_TERM REAL_FUNC_TERM

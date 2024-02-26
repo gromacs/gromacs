@@ -76,7 +76,7 @@ endfunction()
 # GROMACS build configurations, and those expected for the current
 # CMake build type (e.g. Release) to TARGET. Other GROMACS CMake code
 # is expected to use either gmx_target_compile_options(name_of_target)
-# or gmx_cuda_target_compile_options(name_of_variable) because CUDA
+# or gmx_device_target_compile_options(name_of_variable) because CUDA
 # compilation has special requirements.
 #
 # Most targets (ie. libraries, executables) need compiler flags that
@@ -146,7 +146,9 @@ endfunction()
 # ${VARIABLE_NAME}, along with other such variables that are
 # specialized for the various build_types. Hopefully this will improve
 # when we use native CUDA language support in our CMake.
-function(gmx_cuda_target_compile_options VARIABLE_NAME)
+# This function is also used for wrapping the options passed to the HIP
+# compiler
+function(gmx_device_target_compile_options VARIABLE_NAME)
     if (GMX_SKIP_DEFAULT_CFLAGS)
         set (CXXFLAGS "")
     else()

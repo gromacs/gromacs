@@ -203,13 +203,6 @@ unset(_rerun_acpp_try_compile_tests)
 
 if(GMX_GPU_FFT_VKFFT)
     include(gmxManageVkFft)
-    if (GMX_ACPP_HAVE_CUDA_TARGET)
-        gmx_manage_vkfft("CUDA")
-    elseif (GMX_ACPP_HAVE_HIP_TARGET)
-        gmx_manage_vkfft("HIP")
-    else()
-        message(FATAL_ERROR "VkFFT can only be used with HIP or CUDA backends")
-    endif()
     set(_sycl_has_valid_fft TRUE)
 endif()
 

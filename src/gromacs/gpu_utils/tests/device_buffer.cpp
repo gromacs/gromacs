@@ -42,7 +42,7 @@
 
 #include "config.h"
 
-#if GMX_GPU
+#if GMX_GPU && !GMX_GPU_HIP
 #    include <numeric>
 
 #    include <gmock/gmock.h>

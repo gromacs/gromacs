@@ -155,13 +155,6 @@ endif()
 
 if(GMX_GPU_FFT_VKFFT)
     include(gmxManageVkFft)
-    if ("${SYCL_CXX_FLAGS_EXTRA}" MATCHES "fsycl-targets=.*(nvptx64|nvidia_gpu)")
-        gmx_manage_vkfft("CUDA")
-    elseif ("${SYCL_CXX_FLAGS_EXTRA}" MATCHES "fsycl-targets=.*(amdgcn|amd_gpu)")
-        gmx_manage_vkfft("HIP")
-    else()
-        message(FATAL_ERROR "VkFFT can only be used with CUDA or HIP backend")
-    endif()
     set(_sycl_has_valid_fft TRUE)
 endif()
 
