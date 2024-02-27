@@ -226,11 +226,6 @@ void SelectionTreeElement::freeExpressionData()
             u.expr.pc = nullptr;
         }
     }
-    if (type == SEL_ARITHMETIC)
-    {
-        sfree(u.arith.opstr);
-        u.arith.opstr = nullptr;
-    }
     if (type == SEL_SUBEXPR || type == SEL_ROOT || (type == SEL_CONST && v.type == GROUP_VALUE))
     {
         gmx_ana_index_deinit(&u.cgrp);

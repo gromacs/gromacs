@@ -593,17 +593,16 @@ gmx::SelectionTreeElementPointer _gmx_sel_init_arithmetic(const gmx::SelectionTr
     sel->v.type = REAL_VALUE;
     switch (op)
     {
-        case '+': sel->u.arith.type = ARITH_PLUS; break;
-        case '-': sel->u.arith.type = (right ? ARITH_MINUS : ARITH_NEG); break;
-        case '*': sel->u.arith.type = ARITH_MULT; break;
-        case '/': sel->u.arith.type = ARITH_DIV; break;
-        case '^': sel->u.arith.type = ARITH_EXP; break;
+        case '+': sel->u.type = ARITH_PLUS; break;
+        case '-': sel->u.type = (right ? ARITH_MINUS : ARITH_NEG); break;
+        case '*': sel->u.type = ARITH_MULT; break;
+        case '/': sel->u.type = ARITH_DIV; break;
+        case '^': sel->u.type = ARITH_EXP; break;
     }
     std::string buf(1, op);
     sel->setName(buf);
-    sel->u.arith.opstr = gmx_strdup(buf.c_str());
-    sel->child         = left;
-    sel->child->next   = right;
+    sel->child       = left;
+    sel->child->next = right;
     return sel;
 }
 

@@ -451,13 +451,7 @@ public:
         //! Operation type for \ref SEL_BOOLEAN elements.
         e_boolean_t boolt;
         //! Operation type for \ref SEL_ARITHMETIC elements.
-        struct
-        {
-            //! Operation type.
-            e_arithmetic_t type;
-            //! String representation.
-            char* opstr;
-        } arith;
+        e_arithmetic_t type;
         //! Associated selection parameter for \ref SEL_SUBEXPRREF elements.
         struct gmx_ana_selparam_t* param;
         //! The string/number used to reference the group.

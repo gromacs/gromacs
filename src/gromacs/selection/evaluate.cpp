@@ -1171,7 +1171,7 @@ void _gmx_sel_evaluate_arithmetic(gmx_sel_evaluate_t*                     data,
     n         = (sel->flags & SEL_SINGLEVAL) ? 1 : g->isize;
     sel->v.nr = n;
 
-    bool bArithNeg = (sel->u.arith.type == ARITH_NEG);
+    bool bArithNeg = (sel->u.type == ARITH_NEG);
     GMX_ASSERT(right || bArithNeg, "Right operand cannot be null except for negations");
     for (i = i1 = i2 = 0; i < n; ++i)
     {
@@ -1180,7 +1180,7 @@ void _gmx_sel_evaluate_arithmetic(gmx_sel_evaluate_t*                     data,
         {
             rval = right->v.u.r[i2];
         }
-        switch (sel->u.arith.type)
+        switch (sel->u.type)
         {
             case ARITH_PLUS: val = lval + rval; break;
             case ARITH_MINUS: val = lval - rval; break;
