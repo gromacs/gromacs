@@ -42,6 +42,7 @@
 #include <functional>
 #include <limits>
 #include <string>
+#include <vector>
 
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/topology/mtop_util.h"
@@ -383,12 +384,17 @@ void GmxH5mdIo::setupMolecularSystem(const gmx_mtop_t&        topology,
         throw gmx::FileIOError("No file open for writing");
     }
 
+    t_atoms atoms = gmx_mtop_global_atoms(topology);
+
+    if(atoms.nr == 0)
+    {
+        return;
+    }
+
     /* Vectors are used to keep the values in a continuous memory block. */
     std::vector<real>        atomCharges;
     std::vector<real>        atomMasses;
     std::vector<std::string> atomNames;
-
-    t_atoms atoms = gmx_mtop_global_atoms(topology);
 
     atomCharges.reserve(atoms.nr);
     atomMasses.reserve(atoms.nr);
@@ -411,17 +417,15 @@ void GmxH5mdIo::setupMolecularSystem(const gmx_mtop_t&        topology,
         /* Is there a more convenient way to do this? std::string is nice above, but cannot be used for writing in HDF5. */
         /* Hard-code the atom name lengths to max 17 (max 4 char 4-byte UTF8). Flexible strings make a lot of unaccounted space,
          * which is wasted. For strings that are numerous, such as atom names, it is better to use fixed-length. */
-        constexpr size_t atomNameLen = 17;
         char*            atomNamesChars;
-        snew(atomNamesChars, atomNames.size() * atomNameLen);
+        snew(atomNamesChars, atomNames.size() * c_atomNameLen);
         for (size_t i = 0; i < atomNames.size(); i++)
         {
-            strncpy(&atomNamesChars[i * atomNameLen], atomNames[i].c_str(), atomNameLen);
+            strncpy(&atomNamesChars[i * c_atomNameLen], atomNames[i].c_str(), c_atomNameLen);
         }
 
         hid_t stringDataType = H5Tcopy(H5T_C_S1);
-        H5Tset_size(stringDataType, atomNameLen);
-        // H5Tset_strpad(stringDataType, H5T_STR_NULLTERM);
+        H5Tset_size(stringDataType, c_atomNameLen);
         H5Tset_cset(stringDataType, H5T_CSET_UTF8);
 
         // hsize_t atomPropertiesChunkDims[2];
@@ -521,6 +525,27 @@ void GmxH5mdIo::setupMolecularSystem(const gmx_mtop_t&        topology,
     throw gmx::FileIOError(
             "GROMACS was compiled without HDF5 support, cannot handle this file type");
 #endif
+}
+
+std::vector<std::string> GmxH5mdIo::readAtomNames()
+{
+    hid_t atomNameDataSet = H5Dopen(file_, "/particles/system/atomname", H5P_DEFAULT);
+
+    hsize_t stringDataTypeSize = c_atomNameLen;
+    size_t totalNumElements;
+
+    char *atomNames = nullptr;
+    readData<1, true>(atomNameDataSet, 0, stringDataTypeSize, reinterpret_cast<void**>(&atomNames), &totalNumElements);
+    std::vector<std::string> atomNameList;
+    atomNameList.reserve(totalNumElements);
+
+    for (size_t i = 0; i < totalNumElements; i++)
+    {
+        atomNameList.push_back(atomNames + i * c_atomNameLen);
+    }
+
+    free(atomNames);
+    return atomNameList;
 }
 
 void GmxH5mdIo::writeFrame(int64_t      step,
@@ -873,6 +898,8 @@ extern template hid_t
 openOrCreateDataSet<2>(hid_t, const char*, const char*, hid_t, const hsize_t*, CompressionAlgorithm, double);
 
 extern template void writeData<1, true>(hid_t, const void*, hsize_t);
+
+extern template void readData<1, true>(hid_t, hsize_t, size_t, void**, size_t*);
 
 extern template void setAttribute<int>(hid_t, const char*, int, hid_t);
 extern template void setAttribute<float>(hid_t, const char*, float, hid_t);

@@ -54,4 +54,4 @@ gmx_add_unit_test(FileIOTests fileio-test
         ${tng_sources}
         xvgio.cpp
     )
-target_link_libraries(fileio-test PRIVATE fileio legacy_api math)
+target_link_libraries(fileio-test PRIVATE fileio legacy_api math mdlib)

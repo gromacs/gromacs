@@ -552,6 +552,7 @@ template void writeData<1, true>(hid_t, const void*, hsize_t);
 template void writeData<3, false>(hid_t, const void*, hsize_t);
 
 template void readData<1, false>(hid_t, hsize_t, size_t, void**, size_t*);
+template void readData<1, true>(hid_t, hsize_t, size_t, void**, size_t*);
 template void readData<3, false>(hid_t, hsize_t, size_t, void**, size_t*);
 
 template void setAttribute<int>(hid_t, const char*, int, hid_t);

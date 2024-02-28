@@ -36,6 +36,7 @@
 #define GMX_FILEIO_H5MD_IO_H
 
 #include <string>
+#include <vector>
 
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/arrayref.h"
@@ -47,6 +48,8 @@ struct gmx_mtop_t;
 typedef int64_t            hid_t;
 typedef unsigned long long hsize_t;
 enum class PbcType : int;
+constexpr size_t c_atomNameLen = 17;
+
 
 /*! \brief The container of the H5MD data. The class is designed to read/write data according to de Buyl et al., 2014
  * (https://www.sciencedirect.com/science/article/pii/S0010465514000447) and https://www.nongnu.org/h5md/h5md.html
@@ -137,6 +140,8 @@ public:
     void setupMolecularSystem(const gmx_mtop_t&        topology,
                               gmx::ArrayRef<const int> index            = {},
                               const std::string        index_group_name = "");
+
+    std::vector<std::string> readAtomNames();
 
     /*! \brief Write a trajectory frame to the file. Only writes the data that is passed as input
      *

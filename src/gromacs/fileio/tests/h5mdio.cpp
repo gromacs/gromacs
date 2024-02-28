@@ -48,6 +48,9 @@
 #include "gromacs/fileio/h5md_io.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdtypes/md_enums.h"
+#include "gromacs/topology/mtop_util.h"
+#include "gromacs/topology/symtab.h"
+#include "gromacs/topology/topology.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/smalloc.h"
 
@@ -73,6 +76,13 @@ public:
     {
         clear_mat(refBox_);
         referenceFilename_ = fileManager_.getTemporaryFilePath(getFileSuffix("ref")).u8string();
+        open_symtab(&topologySymbolTable_);
+        strcpy(atomNameBase, "мệ🚀");
+    }
+
+    ~H5mdIoTest() override
+    {
+        close_symtab(&topologySymbolTable_);
     }
 
     void openReferenceFile(const char mode) { referenceH5mdIo_.openFile(referenceFilename_, mode); }
@@ -101,7 +111,7 @@ public:
         snew(refX_, refAtomCount_);
         snew(refV_, refAtomCount_);
         refF_ = nullptr;
-        for (int i = 0; i < refAtomCount_; ++i)
+        for (size_t i = 0; i < refAtomCount_; ++i)
         {
             gmx::RVec v(0.1, 0.22, -frame * 0.01);
             gmx::RVec x(i % 4 + frame * v[0], i / 4 + frame * v[1], (i / 2) % 3 + frame * v[2]);
@@ -115,6 +125,55 @@ public:
         referenceH5mdIo_.setUpParticlesDataBlocks(
                 1, 1, 0, refAtomCount_, PbcType::Xyz, refCompressionPrecision_);
     }
+
+    void setupMolecularSystem()
+    {
+        gmx::ArrayRef<const int> index;
+        std::string indexGroupName = "";
+        referenceH5mdIo_.setupMolecularSystem(refTopology_, index, indexGroupName);
+    }
+
+    void generateReferenceTopologyAtomNames()
+    {
+        auto& moltype        = refTopology_.moltype.emplace_back();
+        moltype.atoms.nr     = refAtomCount_;
+        srenew(moltype.atoms.atom, refAtomCount_);
+        init_t_atoms(&moltype.atoms, refAtomCount_, false);
+
+        /* We are using some UTF8 characters, so there must be some margin in the string length. */
+        for (size_t i = 0; i < refAtomCount_; i++)
+        {
+            char tmpUtf8CharBuffer[c_atomNameLen];
+            sprintf(tmpUtf8CharBuffer, "%s%zu", atomNameBase, i);
+            moltype.atoms.atom[i].resind = 0;
+            moltype.atoms.atomname[i]    = put_symtab(&topologySymbolTable_, tmpUtf8CharBuffer);
+        }
+
+        refTopology_.molblock.resize(1);
+        refTopology_.molblock[0].type = 0;
+        refTopology_.molblock[0].nmol = 1;
+        refTopology_.natoms           = moltype.atoms.nr * refTopology_.molblock[0].nmol;
+
+        refTopology_.finalize();
+    }
+
+    std::vector<std::string> readAtomNamesFromReferenceFile()
+    {
+        return referenceH5mdIo_.readAtomNames();
+    }
+
+    void compareAtomNamesToReference(const std::vector<std::string> &atomNames)
+    {
+        for (size_t i = 0; i < refAtomCount_; i++)
+        {
+            char tmpUtf8CharBuffer[c_atomNameLen];
+            sprintf(tmpUtf8CharBuffer, "%s%zu", atomNameBase, i);
+            // printf("name %zu: %s %s\n", i, atomNames[i].c_str(), *(atoms.atomname[i]));
+            EXPECT_STREQ(tmpUtf8CharBuffer, atomNames[i].c_str());
+        }
+    }
+
+    void generateReferenceTopology() {}
 
     void initReferenceDataBlocksFromFile() { referenceH5mdIo_.initParticleDataBlocksFromFile(); }
 
@@ -194,7 +253,7 @@ public:
                 EXPECT_REAL_EQ_TOL(refBox_[d1][d2], testBox[d1][d2], gmx::test::defaultRealTolerance());
             }
         }
-        for (int atom = 0; atom < refAtomCount_; atom++)
+        for (size_t atom = 0; atom < refAtomCount_; atom++)
         {
             for (int d = 0; d < DIM; d++)
             {
@@ -225,8 +284,11 @@ private:
     rvec*                      refV_;
     rvec*                      refF_;
     matrix                     refBox_;
-    int                        refAtomCount_;
+    gmx_mtop_t                 refTopology_;
+    t_symtab                   topologySymbolTable_;
+    size_t                     refAtomCount_;
     real                       refCompressionPrecision_;
+    char                       atomNameBase[c_atomNameLen];
 };
 
 TEST_F(H5mdIoTest, CanCreateAndCloseH5mdFile)
@@ -250,6 +312,8 @@ TEST_P(H5mdIoTest, HighLevelWriteRead)
     int numFrames = std::get<1>(params);
     setRefCompressionPrecision(std::get<2>(params));
 
+    generateReferenceTopologyAtomNames();
+
     EXPECT_FALSE(isReferenceFileOpen());
     openReferenceFile('w');
     if (getRefAtomCount() <= 0)
@@ -260,6 +324,7 @@ TEST_P(H5mdIoTest, HighLevelWriteRead)
     {
         setupReferenceDataBlocks();
     }
+    setupMolecularSystem();
     for (int i = 0; i < numFrames; i++)
     {
         real time   = i * 10;
@@ -284,6 +349,9 @@ TEST_P(H5mdIoTest, HighLevelWriteRead)
         /* The rest of the tests will fail. */
         return;
     }
+
+    std::vector<std::string> atomNames = readAtomNamesFromReferenceFile();
+    compareAtomNamesToReference(atomNames);
 
     EXPECT_EQ(getRefAtomCount(), readReferenceNumAtoms("position"));
     EXPECT_EQ(getRefAtomCount(), readReferenceNumAtoms("velocity"));
