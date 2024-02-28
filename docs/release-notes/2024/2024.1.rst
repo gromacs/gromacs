@@ -1,7 +1,7 @@
 GROMACS 2024.1 release notes
 ----------------------------
 
-This version was released on TODO, 2024. These release notes
+This version was released on February 28th, 2024. These release notes
 document the changes that have taken place in |Gromacs| since the
 previous 2024.0 version, to fix known issues. It also incorporates all
 fixes made in version 2023.4 and earlier, which you can find described
