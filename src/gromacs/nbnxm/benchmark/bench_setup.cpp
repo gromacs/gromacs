@@ -180,8 +180,9 @@ static std::unique_ptr<nonbonded_verlet_t> setupNbnxmForBenchInstance(const Kern
     const auto pinPolicy  = (options.useGpu ? gmx::PinningPolicy::PinnedIfSupported
                                             : gmx::PinningPolicy::CannotBePinned);
     const int  numThreads = options.numThreads;
-    // Note: the options and Nbnxm combination rule enums values should match
-    const int combinationRule = static_cast<int>(options.ljCombinationRule);
+    // Note: the options and Nbnxm combination rule enums values should match,
+    //       the Nbnxm enum has "detect" as first entry, so we need to add 1
+    const int combinationRule = 1 + static_cast<int>(options.ljCombinationRule);
 
     auto messageWhenInvalid = checkKernelSetup(options);
     if (messageWhenInvalid)
