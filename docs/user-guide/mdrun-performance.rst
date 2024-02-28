@@ -53,7 +53,7 @@ definitions. Experienced HPC users can skip this section.
         A stream of instructions for a core to execute. There are many
         different programming abstractions that create and manage
         spreading computation over multiple threads, such as OpenMP,
-        pthreads, winthreads, CUDA, OpenCL, and OpenACC. Some kinds of
+        pthreads, winthreads, CUDA, SYCL, OpenCL, and OpenACC. Some kinds of
         hardware can map more than one software thread to a core; on
         Intel x86 processors this is called "hyper-threading", while
         the more general concept is often called SMT for
@@ -433,7 +433,7 @@ Running :ref:`mdrun <gmx mdrun>` within a single node
 :ref:`gmx mdrun` can be configured and compiled in several different ways that
 are efficient to use within a single :term:`node`. The default configuration
 using a suitable compiler will deploy a multi-level hybrid parallelism
-that uses CUDA, OpenMP and the threading platform native to the
+that uses CUDA/SYCL/OpenCL, OpenMP and the threading platform native to the
 hardware. For programming convenience, in |Gromacs|, those native
 threads are used to implement on a single node the same MPI scheme as
 would be used between nodes, but much more efficient; this is called
@@ -536,7 +536,7 @@ behavior.
     Used to set where to execute the bonded interactions that are part of the
     PP workload for a domain.
     Can be set to "auto", "cpu", "gpu."
-    Defaults to "auto," which uses a compatible CUDA GPU only when one
+    Defaults to "auto," which uses a compatible CUDA or SYCL GPU only when one
     is available, a GPU is handling short-ranged interactions, and the
     CPU is handling long-ranged interaction work (electrostatic or
     LJ). The work for the bonded interactions takes place on the same
@@ -549,7 +549,7 @@ behavior.
     Used to set where to execute update and constraints, when present.
     Can be set to "auto", "cpu", "gpu."
     Defaults to "auto," which currently always uses the CPU.
-    Setting "gpu" requires that a compatible CUDA GPU is available,
+    Setting "gpu" requires that a compatible CUDA or SYCL GPU is available,
     the simulation uses a single rank.
     Update and constraints on a GPU is currently not supported
     with mass and constraints free-energy perturbation, domain
@@ -1413,7 +1413,7 @@ problem for long production MD, but you might prefer to do some kinds
 of work, e.g. that runs very few steps, on just the CPU (e.g. see ``-nb`` above).
 
 The same ``-gpu_id`` option (or ``GMX_GPU_ID`` environment variable)
-used to select CUDA devices, or to define a mapping of GPUs to PP
+used to select CUDA or SYCL devices, or to define a mapping of GPUs to PP
 ranks, is used for OpenCL devices.
 
 Some other :ref:`OpenCL management <opencl-management>` environment
@@ -1480,7 +1480,7 @@ of 2. So it can be useful go through the checklist.
 * If you have GPUs that support either CUDA, OpenCL, or SYCL, use them.
 
   * Configure with ``-DGMX_GPU=CUDA``, ``-DGMX_GPU=OpenCL``, or ``-DGMX_GPU=SYCL``.
-  * For CUDA, use the newest CUDA available for your GPU to take advantage of the
+  * For GPUs, use the newest available SDK for your GPU to take advantage of the
     latest performance enhancements.
   * Use a recent GPU driver.
   * Make sure you use an :ref:`gmx mdrun` with ``GMX_SIMD`` appropriate for the CPU
