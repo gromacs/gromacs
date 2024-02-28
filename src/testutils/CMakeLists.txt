@@ -45,7 +45,7 @@ if (GMX_GPU_CUDA)
     else()
         set_source_files_properties(test_device.cpp PROPERTIES CUDA_SOURCE_PROPERTY_FORMAT OBJ)
         gmx_compile_cuda_file_with_clang(test_device.cpp)
-        add_library(testutils STATIC ${TESTUTILS_SOURCES})
+        add_library(testutils STATIC)
         target_link_libraries(testutils PRIVATE ${GMX_CUDA_CLANG_LINK_LIBS})
     endif()
     #we cannot link with both cufftmp and cufft

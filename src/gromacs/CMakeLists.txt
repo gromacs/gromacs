@@ -390,18 +390,13 @@ endif()
 
 gmx_setup_tng_for_libgromacs()
 
-# We apply the SYCL flag explicitly just for libgromacs, since bugs in the beta versions of
-# icpx/dpcpp leads to crashes if we try to link an library without any SYCL code with the
-# -fsycl flag enabled. Once that bug is fixed, we should change it to simply add
-# SYCL_CXX_FLAGS to GMX_SHARED_LINKER_FLAGS.
 target_link_libraries(libgromacs
                       PRIVATE
                       ${EXTRAE_LIBRARIES}
                       ${GMX_EXTRA_LIBRARIES}
                       ${GMX_COMMON_LIBRARIES}
                       ${FFT_LIBRARIES} ${LINEAR_ALGEBRA_LIBRARIES}
-                      ${THREAD_LIB} ${GMX_SHARED_LINKER_FLAGS}
-                      ${SYCL_CXX_FLAGS}
+                      ${THREAD_LIB}
                       ${OpenCL_LIBRARIES}
                       $<$<PLATFORM_ID:SunOS>:socket>
                       PUBLIC
