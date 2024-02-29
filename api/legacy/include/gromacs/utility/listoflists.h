@@ -123,12 +123,10 @@ public:
 
     /*! \brief Appends a new list with \p numElements elements
      *
-     * \note Type T should be default constructible.
+     * \note Type T has to be default constructible.
      */
-    void pushBackListOfSize(int numElements)
+    std::enable_if_t<std::is_default_constructible_v<T>, void> pushBackListOfSize(int numElements)
     {
-        static_assert(std::is_default_constructible_v<T>);
-
         elements_.resize(elements_.size() + numElements);
         listRanges_.push_back(int(elements_.size()));
     }
