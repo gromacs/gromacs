@@ -116,8 +116,6 @@ inline void ensureNoPendingDeviceError(const std::string& errorMessage)
 } // namespace
 } // namespace gmx
 
-enum class GpuApiCallBehavior;
-
 /* TODO error checking needs to be rewritten. We have 2 types of error checks needed
    based on where they occur in the code:
    - non performance-critical: these errors are unsafe to be ignored and must be
@@ -155,17 +153,6 @@ enum class GpuApiCallBehavior;
 // TODO: the 2 functions below are pretty much a constructor/destructor of a simple
 // GPU table object. There is also almost self-contained fetchFromParamLookupTable()
 // in cuda_kernel_utils.cuh. They could all live in a separate class/struct file.
-
-/*! \brief Add a triplets stored in a float3 to an rvec variable.
- *
- * \param[out]  a Rvec to increment
- * \param[in]   b Float triplet to increment with.
- */
-static inline void rvec_inc(rvec a, const float3 b)
-{
-    rvec tmp = { b.x, b.y, b.z };
-    rvec_inc(a, tmp);
-}
 
 /*! \brief  Returns true if all tasks in \p s have completed.
  *

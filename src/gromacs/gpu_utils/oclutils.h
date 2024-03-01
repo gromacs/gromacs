@@ -51,8 +51,6 @@
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/stringutil.h"
 
-enum class GpuApiCallBehavior;
-
 /*! \internal
  * \brief OpenCL GPU runtime data
  *
