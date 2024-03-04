@@ -24,3 +24,14 @@ Fixes that affect portability
 
 Miscellaneous
 ^^^^^^^^^^^^^
+
+Fix Performance Regression for Some Cases on Latest NVIDIA GPUs
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+In version 2024.0 we included optimizations to non-bonded force
+calculations on NVIDIA GPUs which improved performance for a range of
+cases, through loop unrolling tuning. Here, we tweak the optimization
+to fix a regression in a specific case, which was discovered to be
+caused by this tuning.
+
+:issue:`4867`

@@ -271,7 +271,7 @@ __launch_bounds__(THREADS_PER_BLOCK)
 #        if !defined CALC_ENERGIES && !defined PRUNE_NBL
 #            if (defined EL_CUTOFF || defined EL_RF                                            \
                  || defined EL_EWALD_ANY && !defined LJ_FORCE_SWITCH && !defined LJ_POT_SWITCH \
-                            && (!defined LJ_COMB_LB || GMX_PTX_ARCH == 800))
+                            && (defined LJ_COMB_GEOM || GMX_PTX_ARCH == 800))
     static constexpr int jmLoopUnrollFactor = 4;
 #            else
     static constexpr int jmLoopUnrollFactor = 2;
