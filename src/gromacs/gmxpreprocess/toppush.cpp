@@ -1570,10 +1570,10 @@ static bool default_nb_params(int                               ftype,
     InteractionOfType* pi    = nullptr;
     int                nr    = bt[ftype].size();
     int                nral  = NRAL(ftype);
-    int                nrfp  = interaction_function[ftype].nrfpA;
+    int                nrfpA = interaction_function[ftype].nrfpA;
     int                nrfpB = interaction_function[ftype].nrfpB;
 
-    if ((!bB && nrfp == 0) || (bB && nrfpB == 0))
+    if ((!bB && nrfpA == 0) || (bB && nrfpB == 0))
     {
         return TRUE;
     }
@@ -1631,18 +1631,18 @@ static bool default_nb_params(int                               ftype,
         gmx::ArrayRef<const real> forceParam = pi->forceParam();
         if (bB)
         {
-            if (nrfp + nrfpB > MAXFORCEPARAM)
+            if (nrfpA + nrfpB > MAXFORCEPARAM)
             {
                 gmx_incons("Too many force parameters");
             }
             for (int j = c_start; j < nrfpB; j++)
             {
-                p->setForceParameter(nrfp + j, forceParam[j]);
+                p->setForceParameter(nrfpA + j, forceParam[j]);
             }
         }
         else
         {
-            for (int j = c_start; j < nrfp; j++)
+            for (int j = c_start; j < nrfpA; j++)
             {
                 p->setForceParameter(j, forceParam[j]);
             }
@@ -1650,7 +1650,7 @@ static bool default_nb_params(int                               ftype,
     }
     else
     {
-        for (int j = c_start; j < nrfp; j++)
+        for (int j = c_start; j < nrfpA; j++)
         {
             p->setForceParameter(j, 0.0);
         }
