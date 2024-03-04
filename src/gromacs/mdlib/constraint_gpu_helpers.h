@@ -34,13 +34,17 @@
 #ifndef GMX_MDLIB_CONSTRAINT_GPU_HELPERS_H
 #define GMX_MDLIB_CONSTRAINT_GPU_HELPERS_H
 
+#include <numeric>
 #include <vector>
 
 #include "gromacs/utility/arrayref.h"
+#include "gromacs/utility/listoflists.h"
 #include "gromacs/utility/real.h"
 
 struct gmx_mtop_t;
 class InteractionDefinitions;
+template<typename>
+class ListOfLists;
 
 //! Check if the coupled contraints work for LINCS for specific number of threads.
 bool isNumCoupledConstraintsSupported(const gmx_mtop_t& mtop, int threadsPerBlock);
@@ -66,9 +70,10 @@ struct AtomsAdjacencyListElement
     int signFactor_;
 };
 
+
 //! Constructs and returns an atom constraint adjacency list
-std::vector<std::vector<AtomsAdjacencyListElement>>
-constructAtomsAdjacencyList(int numAtoms, gmx::ArrayRef<const int> iatoms);
+gmx::ListOfLists<AtomsAdjacencyListElement> constructAtomsAdjacencyList(int numAtoms,
+                                                                        gmx::ArrayRef<const int> iatoms);
 
 /*! \brief Computes and returns how many constraints are coupled to each constraint
  *
@@ -79,8 +84,7 @@ constructAtomsAdjacencyList(int numAtoms, gmx::ArrayRef<const int> iatoms);
  * numCoupledConstraints vector is also used to keep track if the constrain was already counted.
  */
 std::vector<int> countNumCoupledConstraints(gmx::ArrayRef<const int> iatoms,
-                                            gmx::ArrayRef<const std::vector<AtomsAdjacencyListElement>> atomsAdjacencyList);
-
+                                            const gmx::ListOfLists<AtomsAdjacencyListElement>& atomAdjacencyList);
 
 /*! \brief Helper function to go through constraints recursively.
  *
@@ -100,9 +104,9 @@ std::vector<int> countNumCoupledConstraints(gmx::ArrayRef<const int> iatoms,
  *                                    the group has to be moved to the next one.
  * \param[in]     atomsAdjacencyList  Stores information about connections between atoms.
  */
-int countCoupled(int                                                         a,
-                 gmx::ArrayRef<int>                                          numCoupledConstraints,
-                 gmx::ArrayRef<const std::vector<AtomsAdjacencyListElement>> atomsAdjacencyList);
+int countCoupled(int                                                a,
+                 gmx::ArrayRef<int>                                 numCoupledConstraints,
+                 const gmx::ListOfLists<AtomsAdjacencyListElement>& atomsAdjacencyList);
 
 //! \brief Indices of atoms in a water molecule
 struct WaterMolecule

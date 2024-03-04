@@ -39,10 +39,11 @@
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/listoflists.h"
 
-int countCoupled(int                                                         a,
-                 gmx::ArrayRef<int>                                          numCoupledConstraints,
-                 gmx::ArrayRef<const std::vector<AtomsAdjacencyListElement>> atomsAdjacencyList)
+int countCoupled(int                                                a,
+                 gmx::ArrayRef<int>                                 numCoupledConstraints,
+                 const gmx::ListOfLists<AtomsAdjacencyListElement>& atomsAdjacencyList)
 
 {
     int counted = 0;
@@ -62,7 +63,7 @@ int countCoupled(int                                                         a,
 }
 
 std::vector<int> countNumCoupledConstraints(gmx::ArrayRef<const int> iatoms,
-                                            gmx::ArrayRef<const std::vector<AtomsAdjacencyListElement>> atomsAdjacencyList)
+                                            const gmx::ListOfLists<AtomsAdjacencyListElement>& atomsAdjacencyList)
 {
     const int        stride         = 1 + NRAL(F_CONSTR);
     const int        numConstraints = iatoms.ssize() / stride;
@@ -82,12 +83,33 @@ std::vector<int> countNumCoupledConstraints(gmx::ArrayRef<const int> iatoms,
 }
 
 //! Constructs and returns an atom constraint adjacency list
-std::vector<std::vector<AtomsAdjacencyListElement>> constructAtomsAdjacencyList(const int numAtoms,
-                                                                                gmx::ArrayRef<const int> iatoms)
+gmx::ListOfLists<AtomsAdjacencyListElement> constructAtomsAdjacencyList(const int numAtoms,
+                                                                        gmx::ArrayRef<const int> iatoms)
 {
-    const int                                           stride         = 1 + NRAL(F_CONSTR);
-    const int                                           numConstraints = iatoms.ssize() / stride;
-    std::vector<std::vector<AtomsAdjacencyListElement>> atomsAdjacencyList(numAtoms);
+    const int stride         = 1 + NRAL(F_CONSTR);
+    const int numConstraints = iatoms.ssize() / stride;
+
+    // count how many constraints each atom has. These counts will be used to place the constraints
+    // for each atom in contiguous memory in a ListOfLists object, which is more performant than
+    // using vector<vector<>>
+    std::vector<int> count(numAtoms + 1);
+    count[0] = 0;
+    for (int c = 0; c < numConstraints; c++)
+    {
+        int a1 = iatoms[stride * c + 1];
+        int a2 = iatoms[stride * c + 2];
+        count[a1 + 1]++;
+        count[a2 + 1]++;
+    }
+
+    // perform an inclusive prefix sum on count to use for tracking insertion indices
+    std::inclusive_scan(count.begin(), count.end(), count.begin());
+    // take a copy of the initial state of count as these are the list ranges
+    std::vector<int> listRanges = count;
+    // initialise the elements list. The dummy value of (0,0,0) is required as AtomsAdjacencyListElement
+    // has no default constructor, but all these elements should be overwritten in the loop below
+    std::vector<AtomsAdjacencyListElement> elements(listRanges.back(), AtomsAdjacencyListElement(0, 0, 0));
+
     for (int c = 0; c < numConstraints; c++)
     {
         int a1 = iatoms[stride * c + 1];
@@ -96,11 +118,10 @@ std::vector<std::vector<AtomsAdjacencyListElement>> constructAtomsAdjacencyList(
         // Each constraint will be represented as a tuple, containing index of the second
         // constrained atom, index of the constraint and a sign that indicates the order of atoms in
         // which they are listed. Sign is needed to compute the mass factors.
-        atomsAdjacencyList[a1].emplace_back(a2, c, +1);
-        atomsAdjacencyList[a2].emplace_back(a1, c, -1);
+        elements[count[a1]++] = AtomsAdjacencyListElement(a2, c, +1);
+        elements[count[a2]++] = AtomsAdjacencyListElement(a1, c, -1);
     }
-
-    return atomsAdjacencyList;
+    return gmx::ListOfLists<AtomsAdjacencyListElement>(std::move(listRanges), std::move(elements));
 }
 
 bool isNumCoupledConstraintsSupported(const gmx_mtop_t& mtop, int threadsPerBlock)

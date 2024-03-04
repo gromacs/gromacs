@@ -62,10 +62,11 @@
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/topology/ifunc.h"
 #include "gromacs/topology/mtop_util.h"
+#include "gromacs/utility/listoflists.h"
+
 
 namespace gmx
 {
-
 void LincsGpu::apply(const DeviceBuffer<Float3>& d_x,
                      DeviceBuffer<Float3>        d_xp,
                      const bool                  updateVelocities,
@@ -183,12 +184,12 @@ LincsGpu::~LincsGpu()
  * \param[in]     c                   Sequential index for constraint to consider adding.
  * \param[in,out] currentMapIndex     The rolling index for the constraints mapping.
  */
-inline void addWithCoupled(ArrayRef<const int>                                    iatoms,
-                           const int                                              stride,
-                           ArrayRef<const std::vector<AtomsAdjacencyListElement>> atomsAdjacencyList,
-                           ArrayRef<int>                                          splitMap,
-                           const int                                              c,
-                           int*                                                   currentMapIndex)
+inline void addWithCoupled(ArrayRef<const int>                                iatoms,
+                           const int                                          stride,
+                           const gmx::ListOfLists<AtomsAdjacencyListElement>& atomsAdjacencyList,
+                           ArrayRef<int>                                      splitMap,
+                           const int                                          c,
+                           int*                                               currentMapIndex)
 {
     if (splitMap[c] == -1)
     {
