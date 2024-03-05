@@ -35,6 +35,12 @@
 #ifndef GMX_SIMD_IMPL_X86_AVX_512_H
 #define GMX_SIMD_IMPL_X86_AVX_512_H
 
+#if defined(__GNUC__) && __GNUC__ == 12
+#    pragma GCC diagnostic push
+#    pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
+#    pragma GCC diagnostic ignored "-Wuninitialized"
+#endif
+
 #include "impl_x86_avx_512_definitions.h"
 #include "impl_x86_avx_512_general.h"
 #include "impl_x86_avx_512_simd4_double.h"
@@ -44,5 +50,8 @@
 #include "impl_x86_avx_512_util_double.h"
 #include "impl_x86_avx_512_util_float.h"
 
+#if defined(__GNUC__) && __GNUC__ == 12
+#    pragma GCC diagnostic pop
+#endif
 
 #endif // GMX_SIMD_IMPL_X86_AVX_512_H

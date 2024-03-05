@@ -1,7 +1,7 @@
 GROMACS 2024.1 release notes
 ----------------------------
 
-This version was released on TODO, 2024. These release notes
+This version was released on February 28th, 2024. These release notes
 document the changes that have taken place in |Gromacs| since the
 previous 2024.0 version, to fix known issues. It also incorporates all
 fixes made in version 2023.4 and earlier, which you can find described
@@ -37,8 +37,25 @@ Fixed parsing of phases in gmx nmtraj
 Fixes that affect portability
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Fix compiler flag check with oneAPI DPC++
+"""""""""""""""""""""""""""""""""""""""""
+
+Some compiler warning flags were not tested properly when compiling for
+NVIDIA/AMD GPUs using Intel oneAPI. No user-facing impact expected.
+
+:issue:`5005`
+
 Miscellaneous
 ^^^^^^^^^^^^^
+
+Address mdrun performance regression with non-bonded interactions on CPU
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+The heuristics for choosing the inner pair-list interval has been
+improved to regain or improve the performance on non-bonded interactions
+on the CPU. Correctness is unaffected.
+
+:issue:`4988`
 
 Fixed nbnxm-test failure when bounds checking was enabled for stdlib
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""

@@ -126,7 +126,7 @@ if("${SYCL_CXX_FLAGS_EXTRA}" MATCHES "fsycl-targets=.*(nvptx64|amdgcn|amd_gpu|nv
     set(SYCL_WARNINGS_CXX_FLAGS "-Wno-linker-warnings -Wno-override-module -Wno-sycl-target")
     gmx_check_source_compiles_with_flags(
         "${SAMPLE_SYCL_SOURCE}"
-        "${SYCL_TOOLCHAIN_CXX_FLAGS} ${SYCL_WARNING_CXX_FLAGS}"
+        "${SYCL_TOOLCHAIN_CXX_FLAGS} ${SYCL_WARNINGS_CXX_FLAGS}"
         "CXX"
         SYCL_WARNINGS_CXX_FLAGS_RESULT
     )
