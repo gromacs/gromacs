@@ -35,3 +35,12 @@ to fix a regression in a specific case, which was discovered to be
 caused by this tuning.
 
 :issue:`4867`
+
+Fix crash in NbnxmSetupTest.CanCreateNbnxmGPU
+"""""""""""""""""""""""""""""""""""""""""""""
+
+``NbnxmSetupTest.CanCreateNbnxmGPU`` could crash in GPU builds
+with an error in ``freeDeviceBuffer`` function during pairlist
+deinitialization.
+
+:issue:`4888`
