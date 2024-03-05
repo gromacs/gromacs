@@ -37,6 +37,7 @@
 
 #include <list>
 #include <string>
+#include <sys/_types/_int64_t.h>
 
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/real.h"
@@ -88,7 +89,7 @@ public:
     GmxH5mdTimeDataBlock(hid_t                container         = -1,
                          const std::string    name              = "",
                          const std::string    unit              = "",
-                         int                  writingInterval   = 0,
+                         int64_t              writingInterval   = 0,
                          hsize_t              numFramesPerChunk = 1,
                          hsize_t              numEntries        = 0,
                          hsize_t              numValuesPerEntry = 1,

@@ -37,6 +37,7 @@
 
 #include <string>
 #include <vector>
+#include <sys/_types/_int64_t.h>
 
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/arrayref.h"
@@ -121,9 +122,9 @@ public:
      * \param[in] xCompressionError The accepted error of the lossy compression of coordinates.
      * \throws FileIOError If the data blocks could not be created.
      */
-    void setUpParticlesDataBlocks(int     writeCoordinatesSteps,
-                                  int     writeVelocitiesSteps,
-                                  int     writeForcesSteps,
+    void setUpParticlesDataBlocks(int64_t writeCoordinatesSteps,
+                                  int64_t writeVelocitiesSteps,
+                                  int64_t writeForcesSteps,
                                   int64_t numParticles,
                                   PbcType pbcType,
                                   double  xCompressionError);
@@ -160,7 +161,7 @@ public:
                     real        time,
                     real        lambda,
                     const rvec* box,
-                    int         numParticles,
+                    int64_t     numParticles,
                     const rvec* x,
                     const rvec* v,
                     const rvec* f,

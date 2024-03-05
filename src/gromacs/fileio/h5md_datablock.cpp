@@ -37,6 +37,7 @@
 #include "h5md_datablock.h"
 
 #include <string>
+#include <sys/_types/_int64_t.h>
 
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/exceptions.h"
@@ -55,7 +56,7 @@
 GmxH5mdTimeDataBlock::GmxH5mdTimeDataBlock(hid_t                container,
                                            const std::string    name,
                                            const std::string    unit,
-                                           int                  writingInterval,
+                                           int64_t              writingInterval,
                                            hsize_t              numFramesPerChunk,
                                            hsize_t              numEntries,
                                            hsize_t              numValuesPerEntry,

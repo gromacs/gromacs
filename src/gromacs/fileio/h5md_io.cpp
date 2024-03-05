@@ -43,6 +43,7 @@
 #include <limits>
 #include <string>
 #include <vector>
+#include <sys/_types/_int64_t.h>
 
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/topology/mtop_util.h"
@@ -260,9 +261,9 @@ void GmxH5mdIo::initParticleDataBlocksFromFile()
     }
 }
 
-void GmxH5mdIo::setUpParticlesDataBlocks(int     writeCoordinatesSteps,
-                                         int     writeVelocitiesSteps,
-                                         int     writeForcesSteps,
+void GmxH5mdIo::setUpParticlesDataBlocks(int64_t writeCoordinatesSteps,
+                                         int64_t writeVelocitiesSteps,
+                                         int64_t writeForcesSteps,
                                          int64_t numParticles,
                                          PbcType pbcType,
                                          double  xCompressionError)
@@ -401,6 +402,7 @@ void GmxH5mdIo::setupMolecularSystem(const gmx_mtop_t&        topology,
     atomNames.reserve(atoms.nr);
 
     /* FIXME: The names could be copied directly to a char array instead. */
+    /* FIXME: Should use int64_t. Needs changes in atoms. */
     for (int atomCounter = 0; atomCounter < atoms.nr; atomCounter++)
     {
         atomCharges.push_back(atoms.atom[atomCounter].q);
@@ -489,6 +491,7 @@ void GmxH5mdIo::setupMolecularSystem(const gmx_mtop_t&        topology,
     }
     else
     {
+        /* FIXME: Should use int64_t. Needs changes in topology. */
         for (int i = 0; (i < topology.natoms); i++)
         {
             if (getGroupType(topology.groups, SimulationAtomGroupType::CompressedPositionOutput, i) != 0)
@@ -548,15 +551,15 @@ std::vector<std::string> GmxH5mdIo::readAtomNames()
     return atomNameList;
 }
 
-void GmxH5mdIo::writeFrame(int64_t      step,
-                           real         time,
-                           real         lambda,
-                           const rvec*  box,
-                           const int    numParticles,
-                           const rvec*  x,
-                           const rvec*  v,
-                           const rvec*  f,
-                           const double xCompressionError)
+void GmxH5mdIo::writeFrame(int64_t       step,
+                           real          time,
+                           real          lambda,
+                           const rvec*   box,
+                           const int64_t numParticles,
+                           const rvec*   x,
+                           const rvec*   v,
+                           const rvec*   f,
+                           const double  xCompressionError)
 {
 #if GMX_USE_HDF5
     if (numParticles <= 0)
@@ -875,7 +878,7 @@ real GmxH5mdIo::getFinalTimeFromAllDataBlocks()
     bool foundAny  = false;
     for (auto& dataBlock : dataBlocks_)
     {
-        int numFrames = dataBlock.numberOfFrames();
+        int64_t numFrames = dataBlock.numberOfFrames();
         if (numFrames < 1)
         {
             continue;
