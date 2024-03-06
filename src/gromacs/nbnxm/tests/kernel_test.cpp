@@ -620,8 +620,8 @@ public:
 
         // Resize the energy output buffers to 1 to trigger the non-energy-group kernel
         nbv_->nbat().paramsDeprecated().nenergrp = 1;
-        nbv_->nbat().out[0].Vvdw.resize(1);
-        nbv_->nbat().out[0].Vc.resize(1);
+        nbv_->nbat().outputBuffer(0).Vvdw.resize(1);
+        nbv_->nbat().outputBuffer(0).Vc.resize(1);
 
         // The reduction still acts on all groups pairs
         std::vector<real> vVdw(square(c_numEnergyGroups));
@@ -702,8 +702,8 @@ public:
 
         // Now call the energy group pair kernel
         nbv_->nbat().paramsDeprecated().nenergrp = c_numEnergyGroups;
-        nbv_->nbat().out[0].Vvdw.resize(square(c_numEnergyGroups));
-        nbv_->nbat().out[0].Vc.resize(square(c_numEnergyGroups));
+        nbv_->nbat().outputBuffer(0).Vvdw.resize(square(c_numEnergyGroups));
+        nbv_->nbat().outputBuffer(0).Vc.resize(square(c_numEnergyGroups));
         stepWork.computeEnergy = true;
 
         std::vector<real> vVdwGrps(gmx::square(c_numEnergyGroups));

@@ -4036,11 +4036,10 @@ void PairlistSet::constructPairlists(gmx::InteractionLocality      locality,
         fprintf(debug, "ns making %d nblists\n", numLists);
     }
 
-    nbat->bUseBufferFlags = (nbat->out.size() > 1);
     /* We should re-init the flags before making the first list */
-    if (nbat->bUseBufferFlags && locality == InteractionLocality::Local)
+    if (nbat->useBufferFlags() && locality == InteractionLocality::Local)
     {
-        resizeAndZeroBufferFlags(&nbat->buffer_flags, nbat->numAtoms());
+        resizeAndZeroBufferFlags(&nbat->bufferFlags(), nbat->numAtoms());
     }
 
     int   nsubpair_target  = 0;
@@ -4111,7 +4110,7 @@ void PairlistSet::constructPairlists(gmx::InteractionLocality      locality,
                     /* Re-init the thread-local work flag data before making
                      * the first list (not an elegant conditional).
                      */
-                    if (nbat->bUseBufferFlags && (iZone == 0 && jZone == 0))
+                    if (nbat->useBufferFlags() && (iZone == 0 && jZone == 0))
                     {
                         resizeAndZeroBufferFlags(&searchWork[th].buffer_flags, nbat->numAtoms());
                     }
@@ -4141,7 +4140,7 @@ void PairlistSet::constructPairlists(gmx::InteractionLocality      locality,
                                                  rlist,
                                                  params_.pairlistType,
                                                  ci_block,
-                                                 nbat->bUseBufferFlags,
+                                                 nbat->useBufferFlags(),
                                                  nsubpair_target,
                                                  progBal,
                                                  nsubpair_tot_est,
@@ -4161,7 +4160,7 @@ void PairlistSet::constructPairlists(gmx::InteractionLocality      locality,
                                                  rlist,
                                                  params_.pairlistType,
                                                  ci_block,
-                                                 nbat->bUseBufferFlags,
+                                                 nbat->useBufferFlags(),
                                                  nsubpair_target,
                                                  progBal,
                                                  nsubpair_tot_est,
@@ -4261,9 +4260,9 @@ void PairlistSet::constructPairlists(gmx::InteractionLocality      locality,
         }
     }
 
-    if (nbat->bUseBufferFlags)
+    if (nbat->useBufferFlags())
     {
-        reduce_buffer_flags(searchWork, numLists, nbat->buffer_flags);
+        reduce_buffer_flags(searchWork, numLists, nbat->bufferFlags());
     }
 
     if (gridSet.haveFep())
@@ -4321,9 +4320,9 @@ void PairlistSet::constructPairlists(gmx::InteractionLocality      locality,
             }
         }
 
-        if (nbat->bUseBufferFlags)
+        if (nbat->useBufferFlags())
         {
-            print_reduction_cost(nbat->buffer_flags, numLists);
+            print_reduction_cost(nbat->bufferFlags(), numLists);
         }
     }
 

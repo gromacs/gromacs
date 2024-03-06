@@ -1353,6 +1353,7 @@ void Grid::calcColumnIndices(const Grid::Dimensions&        gridDims,
 /*! \brief Resizes grid and atom data which depend on the number of cells */
 static void resizeForNumberOfCells(const int         numNbnxnAtoms,
                                    const int         numAtomsMoved,
+                                   const int         ddZone,
                                    GridSetData*      gridSetData,
                                    nbnxn_atomdata_t* nbat)
 {
@@ -1364,7 +1365,7 @@ static void resizeForNumberOfCells(const int         numNbnxnAtoms,
     gridSetData->atomIndices.resize(numNbnxnAtoms + numAtomsMoved);
 
     /* Make space in nbat for storing the atom coordinates */
-    nbat->resizeCoordinateBuffer(numNbnxnAtoms);
+    nbat->resizeCoordinateBuffer(numNbnxnAtoms, ddZone);
 }
 
 void Grid::setCellIndices(int                            ddZone,
@@ -1419,7 +1420,7 @@ void Grid::setCellIndices(int                            ddZone,
     numCellsColumnMax_ = ncz_max;
 
     /* Resize grid and atom data which depend on the number of cells */
-    resizeForNumberOfCells(atomIndexEnd(), numAtomsMoved, gridSetData, nbat);
+    resizeForNumberOfCells(atomIndexEnd(), numAtomsMoved, ddZone, gridSetData, nbat);
 
     if (debug)
     {

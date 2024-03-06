@@ -75,9 +75,14 @@ const char* enumValueToString(LJCombinationRule enumValue)
     return s_ljCombinationRuleNames[enumValue];
 }
 
-void nbnxn_atomdata_t::resizeCoordinateBuffer(int numAtoms)
+void nbnxn_atomdata_t::resizeCoordinateBuffer(const int numAtoms, const int domainDecompositioZone)
 {
     numAtoms_ = numAtoms;
+
+    if (domainDecompositioZone == 0)
+    {
+        numLocalAtoms_ = numAtoms;
+    }
 
     x_.resize(numAtoms * xstride);
 }
@@ -89,9 +94,9 @@ void nbnxn_atomdata_t::resizeForceBuffers()
             (numAtoms() + NBNXN_BUFFERFLAG_SIZE - 1) / NBNXN_BUFFERFLAG_SIZE * NBNXN_BUFFERFLAG_SIZE;
 
     /* Should we let each thread allocate it's own data instead? */
-    for (nbnxn_atomdata_output_t& outBuffer : out)
+    for (nbnxn_atomdata_output_t& outputBuffer : outputBuffers_)
     {
-        outBuffer.f.resize(paddedSize * fstride);
+        outputBuffer.f.resize(paddedSize * fstride);
     }
 }
 
@@ -597,11 +602,11 @@ nbnxn_atomdata_t::nbnxn_atomdata_t(gmx::PinningPolicy      pinningPolicy,
                                    int                     nout) :
     params_(pinningPolicy),
     numAtoms_(0),
-    natoms_local(0),
+    numLocalAtoms_(0),
     shift_vec({}, { pinningPolicy }),
     x_({}, { pinningPolicy }),
-    simdMasks(kernelType),
-    bUseBufferFlags(FALSE)
+    simdMasks_(kernelType),
+    useBufferFlags_(nout > 1)
 {
     nbnxn_atomdata_params_init(
             mdlog, &paramsDeprecated(), kernelType, enbnxninitcombrule, ntype, nbfp, n_energygroups);
@@ -643,10 +648,11 @@ nbnxn_atomdata_t::nbnxn_atomdata_t(gmx::PinningPolicy      pinningPolicy,
     for (int i = 0; i < nout; i++)
     {
         const auto& outputPinningPolicy = params().type.get_allocator().pinningPolicy();
-        out.emplace_back(kernelType, params().nenergrp, 1 << params().neg_2log, outputPinningPolicy);
+        outputBuffers_.emplace_back(
+                kernelType, params().nenergrp, 1 << params().neg_2log, outputPinningPolicy);
     }
 
-    buffer_flags.clear();
+    bufferFlags_.clear();
 }
 
 template<int packSize>
@@ -1149,8 +1155,11 @@ static void nbnxn_atomdata_add_nbat_f_to_f_part(const Nbnxm::GridSet&          g
     }
 }
 
-static void nbnxn_atomdata_add_nbat_f_to_f_reduce(nbnxn_atomdata_t* nbat, int nth)
+void nbnxn_atomdata_t::reduceForcesOverThreads()
 {
+    // The number of output buffers should match the number of OpenMP threads
+    const int nth = gmx::ssize(outputBuffers_);
+
 #pragma omp parallel for num_threads(nth) schedule(static)
     for (int th = 0; th < nth; th++)
     {
@@ -1158,7 +1167,7 @@ static void nbnxn_atomdata_add_nbat_f_to_f_reduce(nbnxn_atomdata_t* nbat, int nt
         {
             const real* fptr[NBNXN_BUFFERFLAG_MAX_THREADS];
 
-            gmx::ArrayRef<const gmx_bitmask_t> flags = nbat->buffer_flags;
+            gmx::ArrayRef<const gmx_bitmask_t> flags = bufferFlags_;
 
             /* Calculate the cell-block range for our thread */
             const int b0 = (flags.size() * th) / nth;
@@ -1166,15 +1175,15 @@ static void nbnxn_atomdata_add_nbat_f_to_f_reduce(nbnxn_atomdata_t* nbat, int nt
 
             for (int b = b0; b < b1; b++)
             {
-                const int i0 = b * NBNXN_BUFFERFLAG_SIZE * nbat->fstride;
-                const int i1 = (b + 1) * NBNXN_BUFFERFLAG_SIZE * nbat->fstride;
+                const int i0 = b * NBNXN_BUFFERFLAG_SIZE * fstride;
+                const int i1 = (b + 1) * NBNXN_BUFFERFLAG_SIZE * fstride;
 
                 int nfptr = 0;
-                for (gmx::Index out = 1; out < gmx::ssize(nbat->out); out++)
+                for (gmx::Index out = 1; out < gmx::ssize(outputBuffers_); out++)
                 {
                     if (bitmask_is_set(flags[b], out))
                     {
-                        fptr[nfptr++] = nbat->out[out].f.data();
+                        fptr[nfptr++] = outputBuffers_[out].f.data();
                     }
                 }
                 if (nfptr > 0)
@@ -1184,11 +1193,11 @@ static void nbnxn_atomdata_add_nbat_f_to_f_reduce(nbnxn_atomdata_t* nbat, int nt
 #else
                     nbnxn_atomdata_reduce_reals
 #endif
-                            (nbat->out[0].f.data(), bitmask_is_set(flags[b], 0), fptr, nfptr, i0, i1);
+                            (outputBuffers_[0].f.data(), bitmask_is_set(flags[b], 0), fptr, nfptr, i0, i1);
                 }
                 else if (!bitmask_is_set(flags[b], 0))
                 {
-                    nbnxn_atomdata_clear_reals(nbat->out[0].f, i0, i1);
+                    nbnxn_atomdata_clear_reals(outputBuffers_[0].f, i0, i1);
                 }
             }
         }
@@ -1223,7 +1232,7 @@ static Range<int> getAtomRange(const gmx::AtomLocality locality, const Nbnxm::Gr
 }
 
 /* Add the force array(s) from nbnxn_atomdata_t to f */
-void reduceForces(nbnxn_atomdata_t* nbat, const gmx::AtomLocality locality, const Nbnxm::GridSet& gridSet, rvec* f)
+void nbnxn_atomdata_t::reduceForces(const gmx::AtomLocality locality, const Nbnxm::GridSet& gridSet, rvec* f)
 {
     const auto atomRange = getAtomRange(locality, gridSet);
 
@@ -1235,7 +1244,7 @@ void reduceForces(nbnxn_atomdata_t* nbat, const gmx::AtomLocality locality, cons
 
     int nth = gmx_omp_nthreads_get(ModuleMultiThread::Nonbonded);
 
-    if (nbat->out.size() > 1)
+    if (outputBuffers_.size() > 1)
     {
         if (locality != gmx::AtomLocality::All)
         {
@@ -1245,7 +1254,7 @@ void reduceForces(nbnxn_atomdata_t* nbat, const gmx::AtomLocality locality, cons
         /* Reduce the force thread output buffers into buffer 0, before adding
          * them to the, differently ordered, "real" force buffer.
          */
-        nbnxn_atomdata_add_nbat_f_to_f_reduce(nbat, nth);
+        reduceForcesOverThreads();
     }
 #pragma omp parallel for num_threads(nth) schedule(static)
     for (int th = 0; th < nth; th++)
@@ -1253,8 +1262,8 @@ void reduceForces(nbnxn_atomdata_t* nbat, const gmx::AtomLocality locality, cons
         try
         {
             nbnxn_atomdata_add_nbat_f_to_f_part(gridSet,
-                                                *nbat,
-                                                nbat->out[0],
+                                                *this,
+                                                outputBuffers_[0],
                                                 *atomRange.begin() + ((th + 0) * atomRange.size()) / nth,
                                                 *atomRange.begin() + ((th + 1) * atomRange.size()) / nth,
                                                 f);
@@ -1265,7 +1274,7 @@ void reduceForces(nbnxn_atomdata_t* nbat, const gmx::AtomLocality locality, cons
 
 void nbnxn_atomdata_add_nbat_fshift_to_fshift(const nbnxn_atomdata_t& nbat, gmx::ArrayRef<gmx::RVec> fshift)
 {
-    gmx::ArrayRef<const nbnxn_atomdata_output_t> outputBuffers = nbat.out;
+    gmx::ArrayRef<const nbnxn_atomdata_output_t> outputBuffers = nbat.outputBuffers();
 
     for (int s = 0; s < gmx::c_numShiftVectors; s++)
     {
@@ -1278,5 +1287,49 @@ void nbnxn_atomdata_add_nbat_fshift_to_fshift(const nbnxn_atomdata_t& nbat, gmx:
             sum[ZZ] += out.fshift[s * DIM + ZZ];
         }
         fshift[s] += sum;
+    }
+}
+
+//! Clears all elements of buffer
+static void clearBufferAll(gmx::ArrayRef<real> buffer)
+{
+    std::fill(buffer.begin(), buffer.end(), 0.0_real);
+}
+
+/*! \brief Clears elements of size and stride \p numComponentsPerElement
+ *
+ * Only elements with flags in \p nbat set for index \p outputIndex
+ * are cleared.
+ */
+template<int numComponentsPerElement>
+static void clearBufferFlagged(const int                          outputIndex,
+                               gmx::ArrayRef<const gmx_bitmask_t> flags,
+                               gmx::ArrayRef<real>                buffer)
+{
+    gmx_bitmask_t our_flag; // NOLINT(cppcoreguidelines-init-variables)
+    bitmask_init_bit(&our_flag, outputIndex);
+
+    constexpr size_t numComponentsPerBlock = NBNXN_BUFFERFLAG_SIZE * numComponentsPerElement;
+
+    for (size_t b = 0; b < flags.size(); b++)
+    {
+        if (!bitmask_is_disjoint(flags[b], our_flag))
+        {
+            clearBufferAll(buffer.subArray(b * numComponentsPerBlock, numComponentsPerBlock));
+        }
+    }
+}
+
+void nbnxn_atomdata_t::clearForceBuffer(const int outputIndex)
+{
+    if (useBufferFlags_)
+    {
+        GMX_ASSERT(fstride == DIM, "Only fstride=3 is currently handled here");
+
+        clearBufferFlagged<DIM>(outputIndex, bufferFlags_, outputBuffers_[outputIndex].f);
+    }
+    else
+    {
+        clearBufferAll(outputBuffers_[outputIndex].f);
     }
 }

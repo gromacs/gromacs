@@ -257,27 +257,72 @@ struct nbnxn_atomdata_t
     //! Returns the current total number of atoms stored
     int numAtoms() const { return numAtoms_; }
 
+    //! Returns the number of local atoms
+    int numLocalAtoms() const { return numLocalAtoms_; }
+
     //! Return the coordinate buffer, and q with xFormat==nbatXYZQ
     gmx::ArrayRef<const real> x() const { return x_; }
 
     //! Return the coordinate buffer, and q with xFormat==nbatXYZQ
     gmx::ArrayRef<real> x() { return x_; }
 
-    //! Resizes the coordinate buffer and sets the number of atoms
-    void resizeCoordinateBuffer(int numAtoms);
+    //! Masks for handling exclusions in the SIMD kernels
+    const SimdMasks& simdMasks() const { return simdMasks_; }
+
+    /*! \brief Resizes the coordinate buffer and sets the number of atoms
+     *
+     * \param numAtoms                 The new number of atoms
+     * \param domainDecompositionZone  The domain decomposition zone index
+     */
+    void resizeCoordinateBuffer(int numAtoms, int domainDecompositionZone);
 
     //! Resizes the force buffers for the current number of atoms
     void resizeForceBuffers();
 
+    //! Returns the output buffer for the given \p thread
+    nbnxn_atomdata_output_t& outputBuffer(int thread) { return outputBuffers_[thread]; }
+
+    //! Returns the output buffer for the given \p thread
+    const nbnxn_atomdata_output_t& outputBuffer(int thread) const { return outputBuffers_[thread]; }
+
+    //! Returns the list of output buffers
+    gmx::ArrayRef<const nbnxn_atomdata_output_t> outputBuffers() const { return outputBuffers_; }
+
+    //! Returns whether buffer flags are used
+    bool useBufferFlags() const { return useBufferFlags_; }
+
+    //! Returns the vector of buffer flags
+    std::vector<gmx_bitmask_t>& bufferFlags() { return bufferFlags_; }
+
+    /*! \brief Add the computed forces to \p f, an internal reduction might be performed as well
+     *
+     * \param[in]  locality    If the reduction should be performed on local or non-local atoms.
+     * \param[in]  gridSet     The grids data.
+     * \param[out] totalForce  Buffer to accumulate resulting force
+     */
+    void reduceForces(gmx::AtomLocality locality, const Nbnxm::GridSet& gridSet, rvec* totalForce);
+
+    /*! \brief Clears the force buffer.
+     *
+     * Either the whole buffer is cleared or only the parts used
+     * by thread/task \p outputIndex when useBufferFlags() returns true.
+     *
+     * \param[in]     outputIndex  The index of the output object to clear
+     */
+    void clearForceBuffer(int outputIndex);
+
 private:
+    //! Reduce the output buffers into the first one
+    void reduceForcesOverThreads();
+
     //! The LJ and charge parameters
     Params params_;
     //! The total number of atoms currently stored
     int numAtoms_;
+    //! The number of local atoms
+    int numLocalAtoms_;
 
 public:
-    //! Number of local atoms
-    int natoms_local;
     //! The format of x (and q), enum
     int XFormat;
     //! The format of f, enum
@@ -295,19 +340,18 @@ private:
     //! x and possibly q, size natoms*xstride
     gmx::HostVector<real> x_;
 
-public:
     //! Masks for handling exclusions in the SIMD kernels
-    const SimdMasks simdMasks;
+    SimdMasks simdMasks_;
 
     //! Output data structures, 1 per thread
-    std::vector<nbnxn_atomdata_output_t> out;
+    std::vector<nbnxn_atomdata_output_t> outputBuffers_;
 
     //! Reduction related data
     //! \{
     //! Use the flags or operate on all atoms
-    bool bUseBufferFlags;
+    bool useBufferFlags_;
     //! Flags for buffer zeroing+reduc.
-    std::vector<gmx_bitmask_t> buffer_flags;
+    std::vector<gmx_bitmask_t> bufferFlags_;
     //! \}
 };
 
@@ -367,15 +411,6 @@ void nbnxn_atomdata_x_to_nbat_x_gpu(const Nbnxm::GridSet&   gridSet,
                                     NbnxmGpu*               gpu_nbv,
                                     DeviceBuffer<gmx::RVec> d_x,
                                     GpuEventSynchronizer*   xReadyOnDevice);
-
-/*! \brief Add the computed forces to \p f, an internal reduction might be performed as well
- *
- * \param[in]  nbat        Atom data in NBNXM format.
- * \param[in]  locality    If the reduction should be performed on local or non-local atoms.
- * \param[in]  gridSet     The grids data.
- * \param[out] totalForce  Buffer to accumulate resulting force
- */
-void reduceForces(nbnxn_atomdata_t* nbat, gmx::AtomLocality locality, const Nbnxm::GridSet& gridSet, rvec* totalForce);
 
 //! Add the fshift force stored in nbat to fshift
 void nbnxn_atomdata_add_nbat_fshift_to_fshift(const nbnxn_atomdata_t& nbat, gmx::ArrayRef<gmx::RVec> fshift);

@@ -136,16 +136,6 @@ int getVdwKernelType(Nbnxm::KernelType    kernelType,
                      InteractionModifiers interactionModifiers,
                      LongRangeVdW         longRangeVdW);
 
-/*! \brief Clears the force buffer.
- *
- * Either the whole buffer is cleared or only the parts used
- * by thread/task \p outputIndex when nbat->bUseBufferFlags is set.
- *
- * \param[in,out] nbat         The Nbnxm atom data
- * \param[in]     outputIndex  The index of the output object to clear
- */
-void clearForceBuffer(nbnxn_atomdata_t* nbat, int outputIndex);
-
 /*! \brief Clears the shift forces.
  */
 void clear_fshift(real* fshift);

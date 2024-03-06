@@ -188,12 +188,12 @@ void nbnxmKernelSimd(const NbnxnPairlistCpu*    nbl,
     }
 
     /* Set up the diagonal exclusion masks */
-    const DiagonalMasker<nR, kernelLayout, clusterRatio> diagonalMasker(nbat->simdMasks);
+    const DiagonalMasker<nR, kernelLayout, clusterRatio> diagonalMasker(nbat->simdMasks());
 
 #if GMX_DOUBLE && !GMX_SIMD_HAVE_INT32_LOGICAL
-    const std::uint64_t* gmx_restrict exclusion_filter = nbat->simdMasks.exclusion_filter64.data();
+    const std::uint64_t* gmx_restrict exclusion_filter = nbat->simdMasks().exclusion_filter64.data();
 #else
-    const std::uint32_t* gmx_restrict exclusion_filter = nbat->simdMasks.exclusion_filter.data();
+    const std::uint32_t* gmx_restrict exclusion_filter = nbat->simdMasks().exclusion_filter.data();
 #endif
 
     /* Here we cast the exclusion filters from unsigned * to int * or real *.

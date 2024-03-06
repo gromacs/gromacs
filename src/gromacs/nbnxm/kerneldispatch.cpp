@@ -269,13 +269,13 @@ static void nbnxn_kernel_cpu(const PairlistSet&             pairlistSet,
     {
         // Presently, the kernels do not call C++ code that can throw,
         // so no need for a try/catch pair in this OpenMP region.
-        nbnxn_atomdata_output_t* out = &nbat->out[nb];
+        nbnxn_atomdata_output_t& out = nbat->outputBuffer(nb);
 
         if (clearF == enbvClearFYes)
         {
-            clearForceBuffer(nbat, nb);
+            nbat->clearForceBuffer(nb);
 
-            clear_fshift(out->fshift.data());
+            clear_fshift(out.fshift.data());
         }
 
         if (nb == 0)
@@ -293,41 +293,42 @@ static void nbnxn_kernel_cpu(const PairlistSet&             pairlistSet,
             switch (kernelSetup.kernelType)
             {
                 case Nbnxm::KernelType::Cpu4x4_PlainC:
-                    nbnxn_kernel_noener_ref[coulkt][vdwkt](pairlist, nbat, &ic, shiftVecPointer, out);
+                    nbnxn_kernel_noener_ref[coulkt][vdwkt](pairlist, nbat, &ic, shiftVecPointer, &out);
                     break;
 #if GMX_HAVE_NBNXM_SIMD_2XMM
                 case Nbnxm::KernelType::Cpu4xN_Simd_2xNN:
                     gmx::nbnxmKernelNoenerSimd2xmm[coulkt][vdwkt](
-                            pairlist, nbat, &ic, shiftVecPointer, out);
+                            pairlist, nbat, &ic, shiftVecPointer, &out);
                     break;
 #endif
 #if GMX_HAVE_NBNXM_SIMD_4XM
                 case Nbnxm::KernelType::Cpu4xN_Simd_4xN:
-                    gmx::nbnxmKernelNoenerSimd4xm[coulkt][vdwkt](pairlist, nbat, &ic, shiftVecPointer, out);
+                    gmx::nbnxmKernelNoenerSimd4xm[coulkt][vdwkt](
+                            pairlist, nbat, &ic, shiftVecPointer, &out);
                     break;
 #endif
                 default: GMX_RELEASE_ASSERT(false, "Unsupported kernel architecture");
             }
         }
-        else if (out->Vvdw.size() == 1)
+        else if (out.Vvdw.size() == 1)
         {
             /* A single energy group (pair) */
-            out->Vvdw[0] = 0;
-            out->Vc[0]   = 0;
+            out.Vvdw[0] = 0;
+            out.Vc[0]   = 0;
 
             switch (kernelSetup.kernelType)
             {
                 case Nbnxm::KernelType::Cpu4x4_PlainC:
-                    nbnxn_kernel_ener_ref[coulkt][vdwkt](pairlist, nbat, &ic, shiftVecPointer, out);
+                    nbnxn_kernel_ener_ref[coulkt][vdwkt](pairlist, nbat, &ic, shiftVecPointer, &out);
                     break;
 #if GMX_HAVE_NBNXM_SIMD_2XMM
                 case Nbnxm::KernelType::Cpu4xN_Simd_2xNN:
-                    gmx::nbnxmKernelEnerSimd2xmm[coulkt][vdwkt](pairlist, nbat, &ic, shiftVecPointer, out);
+                    gmx::nbnxmKernelEnerSimd2xmm[coulkt][vdwkt](pairlist, nbat, &ic, shiftVecPointer, &out);
                     break;
 #endif
 #if GMX_HAVE_NBNXM_SIMD_4XM
                 case Nbnxm::KernelType::Cpu4xN_Simd_4xN:
-                    gmx::nbnxmKernelEnerSimd4xm[coulkt][vdwkt](pairlist, nbat, &ic, shiftVecPointer, out);
+                    gmx::nbnxmKernelEnerSimd4xm[coulkt][vdwkt](pairlist, nbat, &ic, shiftVecPointer, &out);
                     break;
 #endif
                 default: GMX_RELEASE_ASSERT(false, "Unsupported kernel architecture");
@@ -336,23 +337,23 @@ static void nbnxn_kernel_cpu(const PairlistSet&             pairlistSet,
         else
         {
             /* Calculate energy group contributions */
-            clearGroupEnergies(out);
+            clearGroupEnergies(&out);
 
             switch (kernelSetup.kernelType)
             {
                 case Nbnxm::KernelType::Cpu4x4_PlainC:
-                    nbnxn_kernel_energrp_ref[coulkt][vdwkt](pairlist, nbat, &ic, shiftVecPointer, out);
+                    nbnxn_kernel_energrp_ref[coulkt][vdwkt](pairlist, nbat, &ic, shiftVecPointer, &out);
                     break;
 #if GMX_HAVE_NBNXM_SIMD_2XMM
                 case Nbnxm::KernelType::Cpu4xN_Simd_2xNN:
                     gmx::nbnxmKernelEnergrpSimd2xmm[coulkt][vdwkt](
-                            pairlist, nbat, &ic, shiftVecPointer, out);
+                            pairlist, nbat, &ic, shiftVecPointer, &out);
                     break;
 #endif
 #if GMX_HAVE_NBNXM_SIMD_4XM
                 case Nbnxm::KernelType::Cpu4xN_Simd_4xN:
                     gmx::nbnxmKernelEnergrpSimd4xm[coulkt][vdwkt](
-                            pairlist, nbat, &ic, shiftVecPointer, out);
+                            pairlist, nbat, &ic, shiftVecPointer, &out);
                     break;
 #endif
                 default: GMX_RELEASE_ASSERT(false, "Unsupported kernel architecture");
@@ -363,13 +364,13 @@ static void nbnxn_kernel_cpu(const PairlistSet&             pairlistSet,
                 switch (Nbnxm::sc_jClusterSize(kernelSetup.kernelType))
                 {
                     case 2:
-                        reduceGroupEnergySimdBuffers<2>(nbatParams.nenergrp, nbatParams.neg_2log, out);
+                        reduceGroupEnergySimdBuffers<2>(nbatParams.nenergrp, nbatParams.neg_2log, &out);
                         break;
                     case 4:
-                        reduceGroupEnergySimdBuffers<4>(nbatParams.nenergrp, nbatParams.neg_2log, out);
+                        reduceGroupEnergySimdBuffers<4>(nbatParams.nenergrp, nbatParams.neg_2log, &out);
                         break;
                     case 8:
-                        reduceGroupEnergySimdBuffers<8>(nbatParams.nenergrp, nbatParams.neg_2log, out);
+                        reduceGroupEnergySimdBuffers<8>(nbatParams.nenergrp, nbatParams.neg_2log, &out);
                         break;
                     default: GMX_RELEASE_ASSERT(false, "Unsupported j-unroll size");
                 }
@@ -481,8 +482,8 @@ void nonbonded_verlet_t::dispatchNonbondedKernel(gmx::InteractionLocality       
                                  shiftvec,
                                  stepWork,
                                  clearF,
-                                 nbat_->out[0].f,
-                                 nbat_->out[0].fshift.data(),
+                                 nbat_->outputBuffer(0).f,
+                                 nbat_->outputBuffer(0).fshift.data(),
                                  CoulombSR.data(),
                                  repulsionDispersionSR.data());
             break;

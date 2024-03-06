@@ -247,10 +247,6 @@ void GridSet::putOnGrid(const matrix                   box,
     grid.setCellIndices(
             ddZone, cellOffset, &gridSetData_, gridWork_, atomRange, atomInfo, x, numAtomsMoved, nbat);
 
-    if (gridIndex == 0)
-    {
-        nbat->natoms_local = nbat->numAtoms();
-    }
     if (gridIndex == gmx::ssize(grids_) - 1)
     {
         /* We are done setting up all grids, we can resize the force buffers */
