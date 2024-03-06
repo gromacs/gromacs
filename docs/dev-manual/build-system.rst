@@ -69,21 +69,24 @@ testing. Their implementations can be found in ``cmake/gmxBuildTypeXXX.cmake``.
   be useful for the tools.
 
 **TSAN**
-  Builds |Gromacs| for use with ThreadSanitizer in gcc and clang
-  (https://clang.llvm.org/docs/ThreadSanitizer.html) to detect
+  Builds |Gromacs| for use with
+  `ThreadSanitizer <https://clang.llvm.org/docs/ThreadSanitizer.html>`__
+  in GCC and Clang to detect
   data races. This disables the use of atomics in ThreadMPI,
   preferring the mutex-based implementation.
 
 **ASAN**
-  Builds |Gromacs| for use with AddressSanitizer in gcc and
-  clang (https://clang.llvm.org/docs/AddressSanitizer.html) to
+  Builds |Gromacs| for use with
+  `AddressSanitizer <https://clang.llvm.org/docs/AddressSanitizer.html>`__
+  in GCC and Clang to
   detect many kinds of memory mis-use. By default, AddressSanitizer
   includes LeakSanitizer (LSAN) but in many cases GROMACS suppresses
   leak detection either from particular functions known to leak, or in bulk.
 
 **MSAN**
-  Builds |Gromacs| for use with MemorySanitizer in clang
-  (https://clang.llvm.org/docs/MemorySanitizer.html) to detect
+  Builds |Gromacs| for use with
+  `MemorySanitizer <https://clang.llvm.org/docs/MemorySanitizer.html>`__
+  in Clang to detect
   reads of uninitialized memory. This functionality requires that
   dependencies of the |Gromacs| build have been built in a compatible
   way (roughly, static libraries with ``-g -fsanitize=memory
@@ -93,6 +96,13 @@ testing. Their implementations can be found in ``cmake/gmxBuildTypeXXX.cmake``.
   build type is set in the CMake cache variable
   ``GMX_MSAN_PATH``. Only internal XDR and internal fftpack are
   supported at this time.
+
+**UBSAN**
+  Builds |Gromacs| for use with
+  `UndefinedBehaviorSanitizer <https://clang.llvm.org/docs/UndefinedBehaviorSanitizer.html>`__
+  in GCC and Clang  to detect undefined behavior during execution. The
+  checks performed during execution have a small cost and do not impact
+  address space layout and application binary interface.
 
 For all of the sanitizer builds, to get readable stack traces, you may
 need to ensure that the ``ASAN_SYMBOLIZER_PATH`` environment variable
