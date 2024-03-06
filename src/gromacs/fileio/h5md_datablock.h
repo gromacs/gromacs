@@ -38,13 +38,15 @@
 #include <list>
 #include <string>
 
-#include <sys/_types/_int64_t.h>
-
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/real.h"
 
 #include "h5md_util.h"
 
+namespace gmx
+{
+namespace h5mdio
+{
 typedef int64_t            hid_t;
 typedef unsigned long long hsize_t;
 
@@ -175,4 +177,6 @@ public:
     std::string timeUnit() const { return timeUnit_; }
 };
 
+} // namespace h5mdio
+} // nameepace gmx
 #endif // GMX_FILEIO_H5MD_DATABLOCK_H

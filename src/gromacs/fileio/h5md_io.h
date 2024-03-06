@@ -38,18 +38,22 @@
 #include <string>
 #include <vector>
 
-#include <sys/_types/_int64_t.h>
-
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/real.h"
 
 #include "h5md_datablock.h"
 
+enum class PbcType : int;
 struct gmx_mtop_t;
+
+namespace gmx
+{
+namespace h5mdio
+{
+
 typedef int64_t            hid_t;
 typedef unsigned long long hsize_t;
-enum class PbcType : int;
 constexpr size_t c_atomNameLen = 17;
 
 
@@ -238,4 +242,6 @@ public:
     real getFinalTimeFromAllDataBlocks();
 };
 
+} // namespace h5mdio
+} // namespace gmx
 #endif // GMX_FILEIO_H5MD_IO_H

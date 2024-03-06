@@ -441,7 +441,7 @@ void list_tng(const char* fn)
 void list_h5md(const char* fn)
 {
 #if GMX_USE_HDF5
-    GmxH5mdIo h5mdIo(fn, 'r');
+    gmx::h5mdio::GmxH5mdIo h5mdIo(fn, 'r');
     h5mdIo.initParticleDataBlocksFromFile();
     real firstTime = h5mdIo.getFirstTimeFromAllDataBlocks();
     real finalTime = h5mdIo.getFinalTimeFromAllDataBlocks();

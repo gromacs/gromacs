@@ -44,8 +44,6 @@
 #include <string>
 #include <vector>
 
-#include <sys/_types/_int64_t.h>
-
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/topology/topology.h"
@@ -68,6 +66,10 @@
 #    include "external/SZ3-bio/tools/H5Z-SZ3/include/H5Z_SZ3.hpp"
 #endif
 
+namespace gmx
+{
+namespace h5mdio
+{
 /*! \brief Iterates through groups with contents matching time dependent particles data blocks,
  * i.e., "step", "time" and "value". Then it creates corresponding H5MD data blocks.
  * Inspired by https://support.hdfgroup.org/ftp/HDF5/examples/examples-by-api/hdf5-examples/1_8/C/H5G/h5ex_g_traverse.c
@@ -910,3 +912,6 @@ extern template void setAttribute<int>(hid_t, const char*, int, hid_t);
 extern template void setAttribute<float>(hid_t, const char*, float, hid_t);
 extern template void setAttribute<double>(hid_t, const char*, double, hid_t);
 extern template void setAttribute<char*>(hid_t, const char*, char*, hid_t);
+
+} // namespace h5mdio
+} // namespace gmx

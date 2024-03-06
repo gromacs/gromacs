@@ -39,10 +39,13 @@
 
 #include "gromacs/utility/real.h"
 
-
+enum class PbcType : int;
+namespace gmx
+{
+namespace h5mdio
+{
 typedef int64_t            hid_t;
 typedef unsigned long long hsize_t;
-enum class PbcType : int;
 
 /*! \brief An enumeration of compression options */
 enum class CompressionAlgorithm
@@ -182,5 +185,6 @@ real getDataSetSz3CompressionError(hid_t dataSet);
  */
 bool objectExists(hid_t container, const char* name);
 
-
+} // namespace h5mdio
+} // namespace gmx
 #endif

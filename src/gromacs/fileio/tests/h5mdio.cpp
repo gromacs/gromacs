@@ -152,7 +152,7 @@ public:
         /* We are using some UTF8 characters, so there must be some margin in the string length. */
         for (size_t i = 0; i < refAtomCount_; i++)
         {
-            char tmpUtf8CharBuffer[c_atomNameLen];
+            char tmpUtf8CharBuffer[gmx::h5mdio::c_atomNameLen];
             sprintf(tmpUtf8CharBuffer, "%s%zu", atomNameBase, i);
             moltype.atoms.atom[i].resind = 0;
             moltype.atoms.atomname[i]    = put_symtab(&topologySymbolTable_, tmpUtf8CharBuffer);
@@ -175,7 +175,7 @@ public:
     {
         for (size_t i = 0; i < refAtomCount_; i++)
         {
-            char tmpUtf8CharBuffer[c_atomNameLen];
+            char tmpUtf8CharBuffer[gmx::h5mdio::c_atomNameLen];
             sprintf(tmpUtf8CharBuffer, "%s%zu", atomNameBase, i);
             // printf("name %zu: %s %s\n", i, atomNames[i].c_str(), *(atoms.atomname[i]));
             EXPECT_STREQ(tmpUtf8CharBuffer, atomNames[i].c_str());
@@ -288,7 +288,7 @@ private:
 
     gmx::test::TestFileManager fileManager_;
     std::string                referenceFilename_;
-    GmxH5mdIo                  referenceH5mdIo_;
+    gmx::h5mdio::GmxH5mdIo     referenceH5mdIo_;
     rvec*                      refX_;
     rvec*                      refV_;
     rvec*                      refF_;
@@ -297,7 +297,7 @@ private:
     t_symtab                   topologySymbolTable_;
     size_t                     refAtomCount_;
     real                       refCompressionPrecision_;
-    char                       atomNameBase[c_atomNameLen];
+    char                       atomNameBase[gmx::h5mdio::c_atomNameLen];
 };
 
 /*! \brief Tests that opening (creating a new), closing, re-opening and closing

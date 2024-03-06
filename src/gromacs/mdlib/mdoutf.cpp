@@ -92,8 +92,8 @@ struct gmx_mdoutf
     t_fileio*                      fp_xtc;
     gmx_tng_trajectory_t           tng;
     gmx_tng_trajectory_t           tng_low_prec;
-    GmxH5mdIo*                     h5mdIo;
-    GmxH5mdIo*                     h5mdIoLowPrec;
+    gmx::h5mdio::GmxH5mdIo*        h5mdIo;
+    gmx::h5mdio::GmxH5mdIo*        h5mdIoLowPrec;
     int                            x_compression_precision; /* only used by XTC output */
     ener_file_t                    fp_ene;
     const char*                    fn_cpt;
@@ -185,7 +185,7 @@ gmx_mdoutf_t init_mdoutf(FILE*                          fplog,
                     }
                     bCiteTng = TRUE;
                     break;
-                case efH5MD: of->h5mdIoLowPrec = new GmxH5mdIo(filename, filemode[0]); break;
+                case efH5MD: of->h5mdIoLowPrec = new gmx::h5mdio::GmxH5mdIo(filename, filemode[0]); break;
                 default: gmx_incons("Invalid reduced precision file format");
             }
         }
@@ -226,7 +226,7 @@ gmx_mdoutf_t init_mdoutf(FILE*                          fplog,
                                     "H5MD file.");
                         }
                     }
-                    of->h5mdIo = new GmxH5mdIo(filename, filemode[0]);
+                    of->h5mdIo = new gmx::h5mdio::GmxH5mdIo(filename, filemode[0]);
                     break;
                 default: gmx_incons("Invalid full precision file format");
             }

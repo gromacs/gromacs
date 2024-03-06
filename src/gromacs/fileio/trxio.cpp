@@ -98,13 +98,13 @@ struct t_trxstatus
     int  currentFrame;
     real t0;                 /* time of the first frame, needed  *
                               * for skipping frames with -dt     */
-    real                 tf; /* internal frame time              */
-    t_trxframe*          xframe;
-    t_fileio*            fio;
-    gmx_tng_trajectory_t tng;
-    GmxH5mdIo*           h5mdIo;
-    int                  natoms;
-    char*                persistent_line; /* Persistent line for reading g96 trajectories */
+    real                    tf; /* internal frame time              */
+    t_trxframe*             xframe;
+    t_fileio*               fio;
+    gmx_tng_trajectory_t    tng;
+    gmx::h5mdio::GmxH5mdIo* h5mdIo;
+    int                     natoms;
+    char*                   persistent_line; /* Persistent line for reading g96 trajectories */
 #if GMX_USE_PLUGINS
     gmx_vmdplugin_t* vmdplugin;
 #endif
@@ -551,7 +551,7 @@ t_trxstatus* trjtools_gmx_prepare_h5md_writing(const std::filesystem::path& file
     snew(out, 1);
     status_init(out);
 
-    out->h5mdIo = new GmxH5mdIo(filename, filemode);
+    out->h5mdIo = new gmx::h5mdio::GmxH5mdIo(filename, filemode);
     if (mtop != nullptr)
     {
         out->h5mdIo->setupMolecularSystem(*mtop, index, index_group_name);
@@ -1055,7 +1055,7 @@ bool read_first_frame(const gmx_output_env_t*      oenv,
     }
     else if (efH5MD == ftp)
     {
-        (*status)->h5mdIo = new GmxH5mdIo(fn, 'r');
+        (*status)->h5mdIo = new gmx::h5mdio::GmxH5mdIo(fn, 'r');
         (*status)->h5mdIo->initParticleDataBlocksFromFile();
     }
     else

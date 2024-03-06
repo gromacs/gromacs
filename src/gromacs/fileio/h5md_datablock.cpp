@@ -38,8 +38,6 @@
 
 #include <string>
 
-#include <sys/_types/_int64_t.h>
-
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
@@ -53,6 +51,10 @@
 #    include <hdf5.h>
 #endif
 
+namespace gmx
+{
+namespace h5mdio
+{
 
 GmxH5mdTimeDataBlock::GmxH5mdTimeDataBlock(hid_t                container,
                                            const std::string    name,
@@ -428,3 +430,6 @@ extern template void writeData<3, false>(hid_t, const void*, hsize_t);
 
 extern template void readData<1, false>(hid_t, hsize_t, size_t, void**, size_t*);
 extern template void readData<3, false>(hid_t, hsize_t, size_t, void**, size_t*);
+
+} // namespace h5mdio
+} // namespace gmx

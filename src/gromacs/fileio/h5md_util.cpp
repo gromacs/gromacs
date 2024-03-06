@@ -52,6 +52,11 @@
 #    include "external/SZ3-bio/tools/H5Z-SZ3/include/H5Z_SZ3.hpp"
 #endif
 
+namespace gmx
+{
+namespace h5mdio
+{
+
 /*! Set the fill value to -1 in a data set property list.
  * \param[in] dataSetCreatePropertyList The propery list to update.
  * \param[in] dataType The ID of the HDF5 data type of the data set.
@@ -540,22 +545,26 @@ bool objectExists(hid_t container, const char* name)
            && H5Oexists_by_name(container, name, H5P_DEFAULT) >= 0;
 }
 
-template hid_t
-openOrCreateDataSet<1>(hid_t, const char*, const char*, hid_t, const hsize_t*, CompressionAlgorithm, double);
-template hid_t
-openOrCreateDataSet<2>(hid_t, const char*, const char*, hid_t, const hsize_t*, CompressionAlgorithm, double);
-template hid_t
-openOrCreateDataSet<3>(hid_t, const char*, const char*, hid_t, const hsize_t*, CompressionAlgorithm, double);
+} // namespace h5mdio
+} // namespace gmx
 
-template void writeData<1, false>(hid_t, const void*, hsize_t);
-template void writeData<1, true>(hid_t, const void*, hsize_t);
-template void writeData<3, false>(hid_t, const void*, hsize_t);
+template hid_t
+gmx::h5mdio::openOrCreateDataSet<1>(hid_t, const char*, const char*, hid_t, const hsize_t*, gmx::h5mdio::CompressionAlgorithm, double);
+template hid_t
+gmx::h5mdio::openOrCreateDataSet<2>(hid_t, const char*, const char*, hid_t, const hsize_t*, gmx::h5mdio::CompressionAlgorithm, double);
+template hid_t
+gmx::h5mdio::openOrCreateDataSet<3>(hid_t, const char*, const char*, hid_t, const hsize_t*, gmx::h5mdio::CompressionAlgorithm, double);
 
-template void readData<1, false>(hid_t, hsize_t, size_t, void**, size_t*);
-template void readData<1, true>(hid_t, hsize_t, size_t, void**, size_t*);
-template void readData<3, false>(hid_t, hsize_t, size_t, void**, size_t*);
+template void gmx::h5mdio::writeData<1, false>(hid_t, const void*, hsize_t);
+template void gmx::h5mdio::writeData<1, true>(hid_t, const void*, hsize_t);
+template void gmx::h5mdio::writeData<3, false>(hid_t, const void*, hsize_t);
 
-template void setAttribute<int>(hid_t, const char*, int, hid_t);
-template void setAttribute<float>(hid_t, const char*, float, hid_t);
-template void setAttribute<double>(hid_t, const char*, double, hid_t);
-template void setAttribute<char*>(hid_t, const char*, char*, hid_t);
+template void gmx::h5mdio::readData<1, false>(hid_t, hsize_t, size_t, void**, size_t*);
+template void gmx::h5mdio::readData<1, true>(hid_t, hsize_t, size_t, void**, size_t*);
+template void gmx::h5mdio::readData<3, false>(hid_t, hsize_t, size_t, void**, size_t*);
+
+template void gmx::h5mdio::setAttribute<int>(hid_t, const char*, int, hid_t);
+template void gmx::h5mdio::setAttribute<float>(hid_t, const char*, float, hid_t);
+template void gmx::h5mdio::setAttribute<double>(hid_t, const char*, double, hid_t);
+template void gmx::h5mdio::setAttribute<char*>(hid_t, const char*, char*, hid_t);
+
