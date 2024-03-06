@@ -43,6 +43,7 @@
 #include <limits>
 #include <string>
 #include <vector>
+
 #include <sys/_types/_int64_t.h>
 
 #include "gromacs/mdtypes/md_enums.h"
@@ -387,7 +388,7 @@ void GmxH5mdIo::setupMolecularSystem(const gmx_mtop_t&        topology,
 
     t_atoms atoms = gmx_mtop_global_atoms(topology);
 
-    if(atoms.nr == 0)
+    if (atoms.nr == 0)
     {
         return;
     }
@@ -419,7 +420,7 @@ void GmxH5mdIo::setupMolecularSystem(const gmx_mtop_t&        topology,
         /* Is there a more convenient way to do this? std::string is nice above, but cannot be used for writing in HDF5. */
         /* Hard-code the atom name lengths to max 17 (max 4 char 4-byte UTF8). Flexible strings make a lot of unaccounted space,
          * which is wasted. For strings that are numerous, such as atom names, it is better to use fixed-length. */
-        char*            atomNamesChars;
+        char* atomNamesChars;
         snew(atomNamesChars, atomNames.size() * c_atomNameLen);
         for (size_t i = 0; i < atomNames.size(); i++)
         {
@@ -535,10 +536,11 @@ std::vector<std::string> GmxH5mdIo::readAtomNames()
     hid_t atomNameDataSet = H5Dopen(file_, "/particles/system/atomname", H5P_DEFAULT);
 
     hsize_t stringDataTypeSize = c_atomNameLen;
-    size_t totalNumElements;
+    size_t  totalNumElements;
 
-    char *atomNames = nullptr;
-    readData<1, true>(atomNameDataSet, 0, stringDataTypeSize, reinterpret_cast<void**>(&atomNames), &totalNumElements);
+    char* atomNames = nullptr;
+    readData<1, true>(
+            atomNameDataSet, 0, stringDataTypeSize, reinterpret_cast<void**>(&atomNames), &totalNumElements);
     std::vector<std::string> atomNameList;
     atomNameList.reserve(totalNumElements);
 

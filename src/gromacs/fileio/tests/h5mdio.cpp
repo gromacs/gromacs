@@ -80,28 +80,34 @@ public:
         strcpy(atomNameBase, "мệ🚀");
     }
 
-    ~H5mdIoTest() override
-    {
-        close_symtab(&topologySymbolTable_);
-    }
+    ~H5mdIoTest() override { close_symtab(&topologySymbolTable_); }
 
+    /*! \brief Open a file used as reference for further tests. */
     void openReferenceFile(const char mode) { referenceH5mdIo_.openFile(referenceFilename_, mode); }
 
+    /*! \brief Close the reference file. */
     void closeReferenceFile() { referenceH5mdIo_.closeFile(); }
 
+    /*! \brief Check whether the reference file is open.
+     * \returns true if the reference file is open, otherwise false.
     bool isReferenceFileOpen() { return referenceH5mdIo_.isFileOpen(); }
 
+    /*! \brief Set the number of reference atoms to use. */
     void setRefAtomCount(int atomCount) { refAtomCount_ = atomCount; }
 
+    /*! \brief Set the number of reference atoms. */
     int getRefAtomCount() { return refAtomCount_; }
 
+    /*! \brief Set the lossy compression precision to use when writing reference data. */
     void setRefCompressionPrecision(real compressionPrecision)
     {
         refCompressionPrecision_ = compressionPrecision;
     }
 
+    /*! \brief Get the lossy compression precision of the referece data. */
     real getRefCompressionPrecision() { return refCompressionPrecision_; }
 
+    /*! \brief Generate reference data (coordinates and velocities) for the reference atoms. */
     void generateReferenceCoordinatesAndVelocities(int frame = 0)
     {
         clear_mat(refBox_);
@@ -120,23 +126,26 @@ public:
         }
     }
 
+    /* Initialize H5MD data blocks for the refeence data */
     void setupReferenceDataBlocks()
     {
         referenceH5mdIo_.setUpParticlesDataBlocks(
                 1, 1, 0, refAtomCount_, PbcType::Xyz, refCompressionPrecision_);
     }
 
+    /* Initialize the molecular system information in the reference H5MD file. */
     void setupMolecularSystem()
     {
         gmx::ArrayRef<const int> index;
-        std::string indexGroupName = "";
+        std::string              indexGroupName = "";
         referenceH5mdIo_.setupMolecularSystem(refTopology_, index, indexGroupName);
     }
 
+    /* Generate a bunch of nonsensical atom names for the reference data, using UTF8 characters. */
     void generateReferenceTopologyAtomNames()
     {
-        auto& moltype        = refTopology_.moltype.emplace_back();
-        moltype.atoms.nr     = refAtomCount_;
+        auto& moltype    = refTopology_.moltype.emplace_back();
+        moltype.atoms.nr = refAtomCount_;
         srenew(moltype.atoms.atom, refAtomCount_);
         init_t_atoms(&moltype.atoms, refAtomCount_, false);
 
@@ -162,7 +171,7 @@ public:
         return referenceH5mdIo_.readAtomNames();
     }
 
-    void compareAtomNamesToReference(const std::vector<std::string> &atomNames)
+    void compareAtomNamesToReference(const std::vector<std::string>& atomNames)
     {
         for (size_t i = 0; i < refAtomCount_; i++)
         {
@@ -291,6 +300,9 @@ private:
     char                       atomNameBase[c_atomNameLen];
 };
 
+/*! \brief Tests that opening (creating a new), closing, re-opening and closing
+ * an H5MD file works
+ */
 TEST_F(H5mdIoTest, CanCreateAndCloseH5mdFile)
 {
     EXPECT_THROW_GMX(openReferenceFile('r'), gmx::FileIOError);

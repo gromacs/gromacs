@@ -37,6 +37,7 @@
 
 #include <list>
 #include <string>
+
 #include <sys/_types/_int64_t.h>
 
 #include "gromacs/math/vectypes.h"
@@ -156,12 +157,21 @@ public:
     /*! \brief Returns the compression error of lossy SZ3 compression, or -1 if there is no lossy SZ3 compression. */
     real getLossyCompressionError();
 
-    int64_t     numberOfFrames() const { return writingFrameIndex_; }
+    /*! \brief Get the number of frames in the data block. */
+    int64_t numberOfFrames() const { return writingFrameIndex_; }
+
+    /*! \brief Get the name of the data block. */
     std::string name() const { return name_; }
+
+    /*! \brief Get the path to the data block. */
     std::string fullName() const { return fullName_; }
-    int64_t     writingFrameIndex() const { return writingFrameIndex_; }
-    int64_t     readingFrameIndex() const { return readingFrameIndex_; }
+    /*! \brief Get the frame number of the next frame to write (in sequence). */
+    int64_t writingFrameIndex() const { return writingFrameIndex_; }
+    /*! \brief Get the frame number of the next frame to read (in sequence). */
+    int64_t readingFrameIndex() const { return readingFrameIndex_; }
+    /*! \brief Get the unit of the data stored in the data block. */
     std::string mainUnit() const { return mainUnit_; }
+    /*! \brief Get the unit of the time stamps in the data block. */
     std::string timeUnit() const { return timeUnit_; }
 };
 

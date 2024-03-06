@@ -37,6 +37,7 @@
 
 #include <string>
 #include <vector>
+
 #include <sys/_types/_int64_t.h>
 
 #include "gromacs/math/vectypes.h"
