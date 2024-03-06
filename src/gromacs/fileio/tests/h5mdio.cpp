@@ -89,7 +89,7 @@ public:
     void closeReferenceFile() { referenceH5mdIo_.closeFile(); }
 
     /*! \brief Check whether the reference file is open.
-     * \returns true if the reference file is open, otherwise false.
+     * \returns true if the reference file is open, otherwise false. */
     bool isReferenceFileOpen() { return referenceH5mdIo_.isFileOpen(); }
 
     /*! \brief Set the number of reference atoms to use. */
