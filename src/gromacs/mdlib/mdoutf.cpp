@@ -185,7 +185,9 @@ gmx_mdoutf_t init_mdoutf(FILE*                          fplog,
                     }
                     bCiteTng = TRUE;
                     break;
-                case efH5MD: of->h5mdIoLowPrec = new gmx::h5mdio::GmxH5mdIo(filename, filemode[0]); break;
+                case efH5MD:
+                    of->h5mdIoLowPrec = new gmx::h5mdio::GmxH5mdIo(filename, filemode[0]);
+                    break;
                 default: gmx_incons("Invalid reduced precision file format");
             }
         }

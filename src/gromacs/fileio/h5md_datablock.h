@@ -178,5 +178,5 @@ public:
 };
 
 } // namespace h5mdio
-} // nameepace gmx
+} // namespace gmx
 #endif // GMX_FILEIO_H5MD_DATABLOCK_H

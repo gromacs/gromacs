@@ -96,8 +96,8 @@ struct t_trxstatus
 {
     int  flags; /* flags for read_first/next_frame  */
     int  currentFrame;
-    real t0;                 /* time of the first frame, needed  *
-                              * for skipping frames with -dt     */
+    real t0;                    /* time of the first frame, needed  *
+                                 * for skipping frames with -dt     */
     real                    tf; /* internal frame time              */
     t_trxframe*             xframe;
     t_fileio*               fio;

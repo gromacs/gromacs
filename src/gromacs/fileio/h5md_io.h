@@ -54,7 +54,7 @@ namespace h5mdio
 
 typedef int64_t            hid_t;
 typedef unsigned long long hsize_t;
-constexpr size_t c_atomNameLen = 17;
+constexpr size_t           c_atomNameLen = 17;
 
 
 /*! \brief The container of the H5MD data. The class is designed to read/write data according to de Buyl et al., 2014

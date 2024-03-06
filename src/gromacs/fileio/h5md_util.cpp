@@ -548,12 +548,27 @@ bool objectExists(hid_t container, const char* name)
 } // namespace h5mdio
 } // namespace gmx
 
-template hid_t
-gmx::h5mdio::openOrCreateDataSet<1>(hid_t, const char*, const char*, hid_t, const hsize_t*, gmx::h5mdio::CompressionAlgorithm, double);
-template hid_t
-gmx::h5mdio::openOrCreateDataSet<2>(hid_t, const char*, const char*, hid_t, const hsize_t*, gmx::h5mdio::CompressionAlgorithm, double);
-template hid_t
-gmx::h5mdio::openOrCreateDataSet<3>(hid_t, const char*, const char*, hid_t, const hsize_t*, gmx::h5mdio::CompressionAlgorithm, double);
+template hid_t gmx::h5mdio::openOrCreateDataSet<1>(hid_t,
+                                                   const char*,
+                                                   const char*,
+                                                   hid_t,
+                                                   const hsize_t*,
+                                                   gmx::h5mdio::CompressionAlgorithm,
+                                                   double);
+template hid_t gmx::h5mdio::openOrCreateDataSet<2>(hid_t,
+                                                   const char*,
+                                                   const char*,
+                                                   hid_t,
+                                                   const hsize_t*,
+                                                   gmx::h5mdio::CompressionAlgorithm,
+                                                   double);
+template hid_t gmx::h5mdio::openOrCreateDataSet<3>(hid_t,
+                                                   const char*,
+                                                   const char*,
+                                                   hid_t,
+                                                   const hsize_t*,
+                                                   gmx::h5mdio::CompressionAlgorithm,
+                                                   double);
 
 template void gmx::h5mdio::writeData<1, false>(hid_t, const void*, hsize_t);
 template void gmx::h5mdio::writeData<1, true>(hid_t, const void*, hsize_t);
@@ -567,4 +582,3 @@ template void gmx::h5mdio::setAttribute<int>(hid_t, const char*, int, hid_t);
 template void gmx::h5mdio::setAttribute<float>(hid_t, const char*, float, hid_t);
 template void gmx::h5mdio::setAttribute<double>(hid_t, const char*, double, hid_t);
 template void gmx::h5mdio::setAttribute<char*>(hid_t, const char*, char*, hid_t);
-
