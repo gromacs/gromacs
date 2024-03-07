@@ -268,7 +268,7 @@ Run control
       Interval for computing the forces in level 2 of the multiple time-stepping
       scheme
 
-.. mdp:: mass-repartitioning-factor
+.. mdp:: mass-repartition-factor
 
       (1) []
       Scales the masses of the lightest atoms in the system by this factor
