@@ -258,7 +258,7 @@ GpuEventSynchronizer* GpuHaloExchange::Impl::communicateHaloCoordinates(const ma
     if (receiveInPlace_)
     {
         communicateHaloData(
-                asMpiPointer(d_sendBuf_), xSendSize_, sendRankX_, recvPtr, xRecvSize_, recvRankX_);
+                asMpiPointer(d_sendBuf_), xSendSize_, sendRankX_, recvPtr, xRecvSize_, recvRankX_, HaloType::Coordinates);
     }
     else
     {
@@ -294,8 +294,13 @@ void GpuHaloExchange::Impl::communicateHaloForces(bool accumulateForces,
     // Communicate halo data
     if (receiveInPlace_)
     {
-        communicateHaloData(
-                (asMpiPointer(d_f_) + atomOffset_), fSendSize_, sendRankF_, recvPtr, fRecvSize_, recvRankF_);
+        communicateHaloData((asMpiPointer(d_f_) + atomOffset_),
+                            fSendSize_,
+                            sendRankF_,
+                            recvPtr,
+                            fRecvSize_,
+                            recvRankF_,
+                            HaloType::Forces);
     }
     else
     {
@@ -324,18 +329,19 @@ void GpuHaloExchange::Impl::communicateHaloForces(bool accumulateForces,
     wallcycle_stop(wcycle_, WallCycleCounter::LaunchGpuPp);
 }
 
-void GpuHaloExchange::Impl::communicateHaloData(Float3* sendPtr,
-                                                int     sendSize,
-                                                int     sendRank,
-                                                Float3* recvPtr,
-                                                int     recvSize,
-                                                int     recvRank)
+void GpuHaloExchange::Impl::communicateHaloData(Float3*  sendPtr,
+                                                int      sendSize,
+                                                int      sendRank,
+                                                Float3*  recvPtr,
+                                                int      recvSize,
+                                                int      recvRank,
+                                                HaloType haloType)
 {
     if (supportedThreadMpiBuild)
     {
         // no need to explicitly sync with GMX_THREAD_MPI as all operations are
         // anyway launched in correct stream
-        communicateHaloDataPeerToPeer(sendPtr, sendSize, sendRank, recvPtr, recvRank);
+        communicateHaloDataPeerToPeer(sendPtr, sendSize, sendRank, recvPtr, recvRank, haloType);
     }
     else
     {
@@ -467,11 +473,12 @@ void GpuHaloExchange::Impl::communicateHaloForcesOutOfPlace(DeviceBuffer<Float3>
 #endif
 }
 
-void GpuHaloExchange::Impl::communicateHaloDataPeerToPeer(Float3* sendPtr,
-                                                          int     sendSize,
-                                                          int     sendRank,
-                                                          Float3* remotePtr,
-                                                          int     recvRank)
+void GpuHaloExchange::Impl::communicateHaloDataPeerToPeer(Float3*  sendPtr,
+                                                          int      sendSize,
+                                                          int      sendRank,
+                                                          Float3*  remotePtr,
+                                                          int      recvRank,
+                                                          HaloType haloType)
 {
     GMX_RELEASE_ASSERT(supportedThreadMpiBuild, "Build does not support peer-to-peer communication");
     // The code below can be made backend-agnostic once we add device-to-device copy functionality to DeviceBuffer
@@ -502,13 +509,15 @@ void GpuHaloExchange::Impl::communicateHaloDataPeerToPeer(Float3* sendPtr,
     // This rank receives event from remote rank which has pushed data here, and enqueues that event
     // to its stream.
     GpuEventSynchronizer* haloDataTransferRemote;
-
-    GMX_ASSERT(haloDataTransferLaunched_ != nullptr,
+    GpuEventSynchronizer* haloDataTransferLaunched = (haloType == HaloType::Coordinates)
+                                                             ? haloXDataTransferLaunched_.get()
+                                                             : haloFDataTransferLaunched_.get();
+    GMX_ASSERT(haloDataTransferLaunched != nullptr,
                "Halo exchange requires valid event to synchronize data transfer initiated in "
                "remote rank");
-    haloDataTransferLaunched_->markEvent(*haloStream_);
+    haloDataTransferLaunched->markEvent(*haloStream_);
 
-    MPI_Sendrecv(&haloDataTransferLaunched_,
+    MPI_Sendrecv(&haloDataTransferLaunched,
                  sizeof(GpuEventSynchronizer*), //NOLINT(bugprone-sizeof-expression)
                  MPI_BYTE,
                  sendRank,
@@ -525,6 +534,7 @@ void GpuHaloExchange::Impl::communicateHaloDataPeerToPeer(Float3* sendPtr,
 #    else
     GMX_UNUSED_VALUE(sendRank);
     GMX_UNUSED_VALUE(recvRank);
+    GMX_UNUSED_VALUE(haloType);
 #    endif
 #else
     GMX_UNUSED_VALUE(sendPtr);
@@ -532,6 +542,7 @@ void GpuHaloExchange::Impl::communicateHaloDataPeerToPeer(Float3* sendPtr,
     GMX_UNUSED_VALUE(sendRank);
     GMX_UNUSED_VALUE(remotePtr);
     GMX_UNUSED_VALUE(recvRank);
+    GMX_UNUSED_VALUE(haloType);
 #endif
 }
 
@@ -553,7 +564,8 @@ GpuHaloExchange::Impl::Impl(gmx_domdec_t*        dd,
     sendRankF_(dd->neighbor[dimIndex][0]),
     recvRankF_(dd->neighbor[dimIndex][1]),
     usePBC_(dd->ci[dd->dim[dimIndex]] == 0),
-    haloDataTransferLaunched_(GMX_THREAD_MPI ? new GpuEventSynchronizer() : nullptr),
+    haloXDataTransferLaunched_(GMX_THREAD_MPI ? new GpuEventSynchronizer() : nullptr),
+    haloFDataTransferLaunched_(GMX_THREAD_MPI ? new GpuEventSynchronizer() : nullptr),
     mpi_comm_mysim_(mpi_comm_mysim),
     deviceContext_(deviceContext),
     haloStream_(new DeviceStream(deviceContext, DeviceStreamPriority::High, false)),

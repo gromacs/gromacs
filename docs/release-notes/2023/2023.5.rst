@@ -63,3 +63,12 @@ Now it is replaced with ``rdtime``.
 Miscellaneous
 ^^^^^^^^^^^^^
 
+Fix crashes with GPU direct communication for some atypical run configurations
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+When GPU direct communication was used in combination with atypical
+run conditions (e.g. many thread-MPI tasks on each GPU), crashes could
+occur when the tasks became very out of sync. This has now been made
+more robust.
+
+:issue:`5024`
