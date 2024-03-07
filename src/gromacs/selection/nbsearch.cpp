@@ -442,7 +442,7 @@ AnalysisNeighborhoodSearchImpl::~AnalysisNeighborhoodSearchImpl()
     PairSearchList::const_iterator i;
     for (i = pairSearchList_.begin(); i != pairSearchList_.end(); ++i)
     {
-        GMX_RELEASE_ASSERT(i->unique(), "Dangling AnalysisNeighborhoodPairSearch reference");
+        GMX_RELEASE_ASSERT(i->use_count() == 1, "Dangling AnalysisNeighborhoodPairSearch reference");
     }
 }
 
@@ -454,7 +454,7 @@ AnalysisNeighborhoodSearchImpl::PairSearchImplPointer AnalysisNeighborhoodSearch
     PairSearchList::const_iterator i;
     for (i = pairSearchList_.begin(); i != pairSearchList_.end(); ++i)
     {
-        if (i->unique())
+        if (i->use_count() == 1)
         {
             return *i;
         }
@@ -1243,7 +1243,7 @@ public:
         SearchList::const_iterator i;
         for (i = searchList_.begin(); i != searchList_.end(); ++i)
         {
-            GMX_RELEASE_ASSERT(i->unique(), "Dangling AnalysisNeighborhoodSearch reference");
+            GMX_RELEASE_ASSERT(i->use_count() == 1, "Dangling AnalysisNeighborhoodSearch reference");
         }
     }
 
@@ -1265,7 +1265,7 @@ AnalysisNeighborhood::Impl::SearchImplPointer AnalysisNeighborhood::Impl::getSea
     SearchList::const_iterator i;
     for (i = searchList_.begin(); i != searchList_.end(); ++i)
     {
-        if (i->unique())
+        if (i->use_count() == 1)
         {
             return *i;
         }
