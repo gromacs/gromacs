@@ -110,10 +110,12 @@ void testEnergyAccumulator()
         energyAccumulator.clearEnergiesAndSetEnergyGroupsForJClusters(energyGroupsPerCluster);
     }
 
+    // NOLINTNEXTLINE(readability-misleading-indentation) remove when clang-tidy-13 is required
     for (int iCluster = 0; iCluster < numIClusters; iCluster++)
     {
         energyAccumulator.template initICluster<c_iClusterSize>(iCluster);
 
+        // NOLINTNEXTLINE(readability-misleading-indentation) remove when clang-tidy-13 is required
         for (int jCluster = 0; jCluster < numJClusters; jCluster++)
         {
             AlignedArray<real, GMX_SIMD_REAL_WIDTH> coulombEnergies;
@@ -132,6 +134,7 @@ void testEnergyAccumulator()
                         iGroup = energyGroups[iCluster * c_iClusterSize + iRegister * c_numIClustersPerRegister + half];
                     }
 
+                    // NOLINTNEXTLINE(readability-misleading-indentation) remove when clang-tidy-13 is required
                     for (int j = 0; j < c_jClusterSize; j++)
                     {
                         const real coulombEnergy = std::rand() / real(RAND_MAX);
@@ -143,6 +146,7 @@ void testEnergyAccumulator()
                         {
                             jGroup = energyGroups[jCluster * c_jClusterSize + j];
                         }
+                        // NOLINTNEXTLINE(readability-misleading-indentation) remove when clang-tidy-13 is required
                         refCoulombEnergies[iGroup][jGroup] += coulombEnergy;
                         refVdwEnergies[iGroup][jGroup] += vdwEnergy;
 
