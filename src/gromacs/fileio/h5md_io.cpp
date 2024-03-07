@@ -378,6 +378,98 @@ void GmxH5mdIo::setAuthorAndCreator()
     }
 }
 
+void GmxH5mdIo::setAtomNames(const std::vector<std::string>& atomNames)
+{
+    /* Don't replace data that already exists and cannot (currently) change during the simulation */
+    /* FIXME: Currently atom names cannot change during the simulation. */
+    if (!H5Lexists(file_, "/particles/system/atomname", H5P_DEFAULT))
+    {
+        /* Is there a more convenient way to do this? std::string is nice above, but cannot be used for writing in HDF5. */
+        /* Hard-code the atom name lengths to max 17 (max 4 char 4-byte UTF8). Flexible strings make a lot of unaccounted space,
+         * which is wasted. For strings that are numerous, such as atom names, it is better to use fixed-length. */
+        char* atomNamesChars;
+        snew(atomNamesChars, atomNames.size() * c_atomNameLen);
+        for (size_t i = 0; i < atomNames.size(); i++)
+        {
+            strncpy(&atomNamesChars[i * c_atomNameLen], atomNames[i].c_str(), c_atomNameLen);
+        }
+
+        hid_t stringDataType = H5Tcopy(H5T_C_S1);
+        H5Tset_size(stringDataType, c_atomNameLen);
+        H5Tset_cset(stringDataType, H5T_CSET_UTF8);
+
+        hsize_t atomPropertiesChunkDims[1];
+        atomPropertiesChunkDims[0] = atomNames.size();
+
+        hid_t atomName = openOrCreateDataSet<1>(file_,
+                                                "/particles/system/atomname",
+                                                "",
+                                                stringDataType,
+                                                atomPropertiesChunkDims,
+                                                CompressionAlgorithm::LosslessNoShuffle,
+                                                0);
+        // writeData<1, true>(atomName, atomNamesChars.data(), 0);
+        // printf("atomNamesChars.data()[0]: %s %s %s %s\n", atomNamesChars.data()[0], atomNamesChars.data()[1], atomNamesChars.data()[2], atomNamesChars.data()[3]);
+        writeData<1, true>(atomName, atomNamesChars, 0);
+        H5Dclose(atomName);
+        sfree(atomNamesChars);
+    }
+}
+
+void GmxH5mdIo::setAtomPartialCharges(const std::vector<real>& atomCharges)
+{
+    /* Don't replace data that already exists and cannot (currently) change during the simulation */
+    /* FIXME: Currently charges cannot change during the simulation. For time dependent data use GmxH5mdDataBlock */
+    if (!H5Lexists(file_, "/particles/system/charge", H5P_DEFAULT))
+    {
+#if GMX_DOUBLE
+        const hid_t floatDatatype = H5Tcopy(H5T_NATIVE_DOUBLE);
+#else
+        const hid_t floatDatatype = H5Tcopy(H5T_NATIVE_FLOAT);
+#endif
+
+        hsize_t atomPropertiesChunkDims[1];
+        atomPropertiesChunkDims[0] = atomCharges.size();
+
+        hid_t charge = openOrCreateDataSet<1>(file_,
+                                              "/particles/system/charge",
+                                              "",
+                                              floatDatatype,
+                                              atomPropertiesChunkDims,
+                                              CompressionAlgorithm::LosslessNoShuffle,
+                                              0);
+        writeData<1, true>(charge, atomCharges.data(), 0);
+        H5Dclose(charge);
+    }
+}
+
+void GmxH5mdIo::setAtomMasses(const std::vector<real>& atomMasses)
+{
+    /* Don't replace data that already exists and cannot (currently) change during the simulation */
+    /* FIXME: Currently masses cannot change during the simulation. For time dependent data use GmxH5mdDataBlock */
+    if (!H5Lexists(file_, "/particles/system/mass", H5P_DEFAULT))
+    {
+#if GMX_DOUBLE
+        const hid_t floatDatatype = H5Tcopy(H5T_NATIVE_DOUBLE);
+#else
+        const hid_t floatDatatype = H5Tcopy(H5T_NATIVE_FLOAT);
+#endif
+
+        hsize_t atomPropertiesChunkDims[1];
+        atomPropertiesChunkDims[0] = atomMasses.size();
+
+        hid_t mass = openOrCreateDataSet<1>(file_,
+                                            "/particles/system/mass",
+                                            "",
+                                            floatDatatype,
+                                            atomPropertiesChunkDims,
+                                            CompressionAlgorithm::LosslessNoShuffle,
+                                            0);
+        writeData<1, true>(mass, atomMasses.data(), 0);
+        H5Dclose(mass);
+    }
+}
+
 void GmxH5mdIo::setupMolecularSystem(const gmx_mtop_t&        topology,
                                      gmx::ArrayRef<const int> index,
                                      const std::string        index_group_name)
@@ -413,76 +505,9 @@ void GmxH5mdIo::setupMolecularSystem(const gmx_mtop_t&        topology,
         atomNames.push_back(*(atoms.atomname[atomCounter]));
     }
 
-    hsize_t atomPropertiesChunkDims[1];
-
-    /* Don't replace data that already exists and cannot (currently) change during the simulation */
-    /* FIXME: Currently atom names cannot change during the simulation. */
-    if (!H5Lexists(file_, "/particles/system/atomname", H5P_DEFAULT))
-    {
-        /* Is there a more convenient way to do this? std::string is nice above, but cannot be used for writing in HDF5. */
-        /* Hard-code the atom name lengths to max 17 (max 4 char 4-byte UTF8). Flexible strings make a lot of unaccounted space,
-         * which is wasted. For strings that are numerous, such as atom names, it is better to use fixed-length. */
-        char* atomNamesChars;
-        snew(atomNamesChars, atomNames.size() * c_atomNameLen);
-        for (size_t i = 0; i < atomNames.size(); i++)
-        {
-            strncpy(&atomNamesChars[i * c_atomNameLen], atomNames[i].c_str(), c_atomNameLen);
-        }
-
-        hid_t stringDataType = H5Tcopy(H5T_C_S1);
-        H5Tset_size(stringDataType, c_atomNameLen);
-        H5Tset_cset(stringDataType, H5T_CSET_UTF8);
-
-        // hsize_t atomPropertiesChunkDims[2];
-        // atomPropertiesChunkDims[0] = 1;
-        // atomPropertiesChunkDims[1] = topology.natoms;
-        atomPropertiesChunkDims[0] = topology.natoms;
-
-        hid_t atomName = openOrCreateDataSet<1>(file_,
-                                                "/particles/system/atomname",
-                                                "",
-                                                stringDataType,
-                                                atomPropertiesChunkDims,
-                                                CompressionAlgorithm::LosslessNoShuffle,
-                                                0);
-        // writeData<1, true>(atomName, atomNamesChars.data(), 0);
-        // printf("atomNamesChars.data()[0]: %s %s %s %s\n", atomNamesChars.data()[0], atomNamesChars.data()[1], atomNamesChars.data()[2], atomNamesChars.data()[3]);
-        writeData<1, true>(atomName, atomNamesChars, 0);
-        H5Dclose(atomName);
-        sfree(atomNamesChars);
-    }
-
-#    if GMX_DOUBLE
-    const hid_t floatDatatype = H5Tcopy(H5T_NATIVE_DOUBLE);
-#    else
-    const hid_t floatDatatype = H5Tcopy(H5T_NATIVE_FLOAT);
-#    endif
-    /* FIXME: Currently charges and masses cannot change during the simulation. For time dependent data use GmxH5mdDataBlock */
-    if (!H5Lexists(file_, "/particles/system/charge", H5P_DEFAULT))
-    {
-        hid_t charge = openOrCreateDataSet<1>(file_,
-                                              "/particles/system/charge",
-                                              "",
-                                              floatDatatype,
-                                              atomPropertiesChunkDims,
-                                              CompressionAlgorithm::LosslessNoShuffle,
-                                              0);
-        writeData<1, true>(charge, atomCharges.data(), 0);
-        H5Dclose(charge);
-    }
-
-    if (!H5Lexists(file_, "/particles/system/mass", H5P_DEFAULT))
-    {
-        hid_t mass = openOrCreateDataSet<1>(file_,
-                                            "/particles/system/mass",
-                                            "",
-                                            floatDatatype,
-                                            atomPropertiesChunkDims,
-                                            CompressionAlgorithm::LosslessNoShuffle,
-                                            0);
-        writeData<1, true>(mass, atomMasses.data(), 0);
-        H5Dclose(mass);
-    }
+    setAtomNames(atomNames);
+    setAtomPartialCharges(atomCharges);
+    setAtomMasses(atomMasses);
 
     /* We only need to create a separate selection group entry if not all atoms are part of it. */
     /* TODO: Write atom name, charge and mass for the selection group as well. */
@@ -579,7 +604,7 @@ void GmxH5mdIo::writeFrame(int64_t       step,
 #    if GMX_DOUBLE
     const hid_t datatype = H5Tcopy(H5T_NATIVE_DOUBLE);
 #    else
-    const hid_t datatype      = H5Tcopy(H5T_NATIVE_FLOAT);
+    const hid_t datatype = H5Tcopy(H5T_NATIVE_FLOAT);
 #    endif
 
     std::string name        = "particles/" + systemOutputName_;

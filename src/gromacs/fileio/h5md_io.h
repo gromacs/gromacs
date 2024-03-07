@@ -134,6 +134,28 @@ public:
                                   PbcType pbcType,
                                   double  xCompressionError);
 
+    /*! \brief Set atom names, if not already set. Atom names cannot be modified after setting.
+     *
+     * \param[in] atomNames The names of the atoms.
+     * \throws FileIOError If there was an error creating the data block or writing the data.
+     */
+    void setAtomNames(const std::vector<std::string>& atomNames);
+
+    /*! \brief Set atom partial charges, if not already set. Partial charges cannot be modified after setting.
+     *
+     * \param[in] atomCharges The names of the atoms.
+     * \throws FileIOError If there was an error creating the data block or writing the data.
+     */
+    void setAtomPartialCharges(const std::vector<real>& atomCharges);
+
+    /*! \brief Set atom masses, if not already set. Masses cannot be modified after setting.
+     *
+     * \param[in] atomMasses The names of the atoms.
+     * \throws FileIOError If there was an error creating the data block or writing the data.
+     */
+    void setAtomMasses(const std::vector<real>& atomMasses);
+
+
     /*! \brief Write molecule system related data to the file.
      *
      * This is currently not updated during the trajectory. The data that is written are atom masses, atom charges and atom names.
@@ -141,7 +163,7 @@ public:
      * \param[in] topology The molecular topology describing the system.
      * \param[in] index    The selected atoms to include. If empty, use all atoms in the topology.
      * \param[in] index_group_name The name of the atom selection specified by index.
-     * \throws FileIOError    If there is no file open.
+     * \throws FileIOError    If there is no file open or if the data could not be written.
      */
     void setupMolecularSystem(const gmx_mtop_t&        topology,
                               gmx::ArrayRef<const int> index            = {},
