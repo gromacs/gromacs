@@ -42,9 +42,6 @@
 {
     const int cj = l_cj[cjind].cj;
 
-#ifdef ENERGY_GROUPS
-    const int egp_cj = nbatParams.energrp[cj];
-#endif
     for (int i = 0; i < UNROLLI; i++)
     {
         const int ai = ci * UNROLLI + i;
@@ -106,6 +103,10 @@
             rinv = rinv * skipmask;
 
             const real rinvsq = rinv * rinv;
+
+#ifdef ENERGY_GROUPS
+            const int egpJ = nbatParams.energyGroupsPerCluster->getEnergyGroup(cj, j);
+#endif
 
 #ifdef HALF_LJ
             if (i < UNROLLI / 2)
@@ -225,7 +226,7 @@
 
 #ifdef CALC_ENERGIES
 #    ifdef ENERGY_GROUPS
-                Vvdw[egp_sh_i[i] + ((egp_cj >> (nbatParams.neg_2log * j)) & egp_mask)] += VLJ;
+                Vvdw[egp_sh_i[i] + egpJ] += VLJ;
 #    else
                 Vvdw_ci += VLJ;
                 /* 1 flop for LJ energy addition */
@@ -285,7 +286,7 @@
 
 #    ifdef CALC_ENERGIES
 #        ifdef ENERGY_GROUPS
-            Vc[egp_sh_i[i] + ((egp_cj >> (nbatParams.neg_2log * j)) & egp_mask)] += vcoul;
+            Vc[egp_sh_i[i] + egpJ] += vcoul;
 #        else
             Vc_ci += vcoul;
             /* 1 flop for Coulomb energy addition */

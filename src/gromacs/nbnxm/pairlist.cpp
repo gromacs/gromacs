@@ -77,6 +77,7 @@
 #include "pairlistsets.h"
 #include "pairlistwork.h"
 #include "pairsearch.h"
+#include "simd_energy_accumulator.h"
 
 using namespace gmx; // TODO: Remove when this file is moved into gmx namespace
 
@@ -1513,6 +1514,29 @@ static gmx::RVec getCoordinate(const nbnxn_atomdata_t& nbat, const int a)
     return x;
 }
 
+//! Returns the j/i cluster size ratio for the geometry of a grid
+static KernelLayoutClusterRatio layoutClusterRatio(const Grid::Geometry& geometry)
+{
+    if (geometry.numAtomsJCluster == geometry.numAtomsICluster)
+    {
+        return KernelLayoutClusterRatio::JSizeEqualsISize;
+    }
+    else if (geometry.numAtomsJCluster == 2 * geometry.numAtomsICluster)
+    {
+        return KernelLayoutClusterRatio::JSizeIsDoubleISize;
+    }
+    else if (2 * geometry.numAtomsJCluster == geometry.numAtomsICluster)
+    {
+        return KernelLayoutClusterRatio::JSizeIsHalfISize;
+    }
+    else
+    {
+        GMX_ASSERT(false, "Unhandled cluster ratio");
+
+        return KernelLayoutClusterRatio::JSizeEqualsISize;
+    }
+}
+
 /* Add a new i-entry to the FEP list and copy the i-properties */
 static inline void fep_list_new_nri_copy(t_nblist* nlist)
 {
@@ -1591,8 +1615,7 @@ static void make_fep_list(gmx::ArrayRef<const int> atomIndices,
                           const Grid&              jGrid,
                           t_nblist*                nlist)
 {
-    int gid_i  = 0;
-    int gid_cj = 0;
+    const KernelLayoutClusterRatio jGridClusterRatio = layoutClusterRatio(jGrid.geometry());
 
     // Exclude pairs from the current (ie. last) i-cluster entry in
     // the list
@@ -1619,26 +1642,24 @@ static void make_fep_list(gmx::ArrayRef<const int> atomIndices,
         reallocate_nblist(nlist);
     }
 
-    const int numAtomsJCluster = jGrid.geometry().numAtomsJCluster;
+    const int c_iClusterSize = jGrid.geometry().numAtomsICluster;
+    const int c_jClusterSize = jGrid.geometry().numAtomsJCluster;
 
     const nbnxn_atomdata_t::Params& nbatParams = nbat->params();
 
-    const int ngid = nbatParams.nenergrp;
+    const int numEnergyGroups = nbatParams.numEnergyGroups;
 
     /* TODO: Consider adding a check in grompp and changing this to an assert */
-    const int numBitsInEnergyGroupIdsForAtomsInJCluster = sizeof(gid_cj) * 8;
-    if (ngid * numAtomsJCluster > numBitsInEnergyGroupIdsForAtomsInJCluster)
+    constexpr int numBitsInEnergyGroupIdsForAtomsInJCluster = sizeof(*nlist->gid.data()) * 8;
+    if (numEnergyGroups * c_jClusterSize > numBitsInEnergyGroupIdsForAtomsInJCluster)
     {
         gmx_fatal(FARGS,
-                  "The Verlet scheme with %dx%d kernels and free-energy only supports up to %zu "
+                  "The Verlet scheme with %dx%d kernels and free-energy only supports up to %d "
                   "energy groups",
                   iGrid.geometry().numAtomsICluster,
-                  numAtomsJCluster,
-                  (sizeof(gid_cj) * 8) / numAtomsJCluster);
+                  c_jClusterSize,
+                  numBitsInEnergyGroupIdsForAtomsInJCluster / c_jClusterSize);
     }
-
-    const int egp_shift = nbatParams.neg_2log;
-    const int egp_mask  = (1 << egp_shift) - 1;
 
     const gmx::RVec shift = { shx, shy, shz };
 
@@ -1670,38 +1691,29 @@ static void make_fep_list(gmx::ArrayRef<const int> atomIndices,
                 nlist->excl_fep.resize(nlist->maxnrj);
             }
 
-            if (ngid > 1)
+            int gid_i = 0;
+            if (numEnergyGroups > 1)
             {
-                gid_i = (nbatParams.energrp[ci] >> (egp_shift * i)) & egp_mask;
+                gid_i = nbatParams.energyGroupsPerCluster->getEnergyGroup(ci, i);
             }
 
             for (int cj_ind = cj_ind_start; cj_ind < cj_ind_end; cj_ind++)
             {
                 unsigned int fep_cj = 0U;
-                gid_cj              = 0;
 
                 const int cja = nbl->cj.cj(cj_ind);
 
-                if (numAtomsJCluster == jGrid.geometry().numAtomsICluster)
+                if (jGridClusterRatio == KernelLayoutClusterRatio::JSizeEqualsISize)
                 {
                     const int cjr = cja - jGrid.cellOffset();
                     fep_cj        = jGrid.fepBits(cjr);
-                    if (ngid > 1)
-                    {
-                        gid_cj = nbatParams.energrp[cja];
-                    }
                 }
-                else if (2 * numAtomsJCluster == jGrid.geometry().numAtomsICluster)
+                else if (jGridClusterRatio == KernelLayoutClusterRatio::JSizeIsHalfISize)
                 {
                     const int cjr = cja - jGrid.cellOffset() * 2;
                     /* Extract half of the ci fep/energrp mask */
-                    fep_cj = (jGrid.fepBits(cjr >> 1) >> ((cjr & 1) * numAtomsJCluster))
-                             & ((1 << numAtomsJCluster) - 1);
-                    if (ngid > 1)
-                    {
-                        gid_cj = nbatParams.energrp[cja >> 1] >> ((cja & 1) * numAtomsJCluster * egp_shift)
-                                 & ((1 << (numAtomsJCluster * egp_shift)) - 1);
-                    }
+                    fep_cj = (jGrid.fepBits(cjr >> 1) >> ((cjr & 1) * c_jClusterSize))
+                             & ((1 << c_jClusterSize) - 1);
                 }
                 else
                 {
@@ -1709,12 +1721,6 @@ static void make_fep_list(gmx::ArrayRef<const int> atomIndices,
                     /* Combine two ci fep masks/energrp */
                     fep_cj = jGrid.fepBits(cjr * 2)
                              + (jGrid.fepBits(cjr * 2 + 1) << jGrid.geometry().numAtomsICluster);
-                    if (ngid > 1)
-                    {
-                        gid_cj = nbatParams.energrp[cja * 2]
-                                 + (nbatParams.energrp[cja * 2 + 1]
-                                    << (jGrid.geometry().numAtomsICluster * egp_shift));
-                    }
                 }
 
                 if (bFEP_i || fep_cj != 0)
@@ -1731,10 +1737,24 @@ static void make_fep_list(gmx::ArrayRef<const int> atomIndices,
                                     norm2(xiShifted - getCoordinate(*nbat, ind_j)) < rlist_fep2;
                             if (isWithinFepListRange)
                             {
-                                if (ngid > 1)
+                                if (numEnergyGroups > 1)
                                 {
-                                    const int gid_j = (gid_cj >> (j * egp_shift)) & egp_mask;
-                                    const int gid   = GID(gid_i, gid_j, ngid);
+                                    int gid_j;
+                                    if (jGridClusterRatio == KernelLayoutClusterRatio::JSizeEqualsISize)
+                                    {
+                                        gid_j = nbatParams.energyGroupsPerCluster->getEnergyGroup(cja, j);
+                                    }
+                                    else if (jGridClusterRatio == KernelLayoutClusterRatio::JSizeIsHalfISize)
+                                    {
+                                        gid_j = nbatParams.energyGroupsPerCluster->getEnergyGroup(
+                                                cja >> 1, (cja & 1) * 2 + j);
+                                    }
+                                    else
+                                    {
+                                        gid_j = nbatParams.energyGroupsPerCluster->getEnergyGroup(
+                                                cja * 2 + j / c_iClusterSize, j & (c_iClusterSize - 1));
+                                    }
+                                    const int gid = GID(gid_i, gid_j, numEnergyGroups);
 
                                     if (nlist->nrj > nlist->jindex[nri] && nlist->gid[nri] != gid)
                                     {

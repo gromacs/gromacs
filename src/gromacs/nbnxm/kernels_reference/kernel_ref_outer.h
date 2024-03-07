@@ -161,11 +161,6 @@ void
 #    endif
 #endif
 
-#ifdef ENERGY_GROUPS
-    const int egp_mask = (1 << nbatParams.neg_2log) - 1;
-#endif
-
-
     const real rcut2 = ic->rcoulomb * ic->rcoulomb;
 #ifdef VDW_CUTOFF_CHECK
     const real rvdw2 = ic->rvdw * ic->rvdw;
@@ -216,8 +211,7 @@ void
         int        egp_sh_i[UNROLLI];
         for (int i = 0; i < UNROLLI; i++)
         {
-            egp_sh_i[i] = ((nbatParams.energrp[ci] >> (i * nbatParams.neg_2log)) & egp_mask)
-                          * nbatParams.nenergrp;
+            egp_sh_i[i] = nbatParams.energyGroupsPerCluster->getEnergyGroup(ci, i) * nbatParams.numEnergyGroups;
         }
 #    endif
 #endif
@@ -253,7 +247,7 @@ void
                 {
 #    ifdef ENERGY_GROUPS
                     const int egp_ind =
-                            egp_sh_i[i] + ((nbatParams.energrp[ci] >> (i * nbatParams.neg_2log)) & egp_mask);
+                            egp_sh_i[i] + nbatParams.energyGroupsPerCluster->getEnergyGroup(ci, i);
 #    else
                     const int egp_ind = 0;
 #    endif

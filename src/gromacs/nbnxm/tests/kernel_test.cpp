@@ -72,6 +72,7 @@
 #include "gromacs/nbnxm/pairlistset.h"
 #include "gromacs/nbnxm/pairlistsets.h"
 #include "gromacs/nbnxm/pairsearch.h"
+#include "gromacs/nbnxm/simd_energy_accumulator.h"
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/topology/topology.h"
@@ -312,6 +313,19 @@ std::unique_ptr<nonbonded_verlet_t> setupNbnxmForBenchInstance(const KernelOptio
                                                        system.nonbondedParameters,
                                                        c_numEnergyGroups,
                                                        numThreads);
+
+    if (options.kernelSetup.kernelType != Nbnxm::KernelType::Cpu4x4_PlainC)
+    {
+        // We normally only get the energy group energy accumulator when we use energy
+        // groups. For this test it's convenient to have both types of accumulators,
+        // so we can run one and multiple energy groups without rebuilding atomData.
+        // So we manually add the single energy group accumulator here.
+        for (int th = 0; th < numThreads; th++)
+        {
+            atomData->outputBuffer(th).accumulatorSingleEnergies =
+                    std::make_unique<EnergyAccumulator<false, true>>();
+        }
+    }
 
     // Put everything together
     auto nbv = std::make_unique<nonbonded_verlet_t>(
@@ -619,7 +633,7 @@ public:
         stepWork.computeEnergy = true;
 
         // Resize the energy output buffers to 1 to trigger the non-energy-group kernel
-        nbv_->nbat().paramsDeprecated().nenergrp = 1;
+        nbv_->nbat().paramsDeprecated().numEnergyGroups = 1;
         nbv_->nbat().outputBuffer(0).Vvdw.resize(1);
         nbv_->nbat().outputBuffer(0).Vc.resize(1);
 
@@ -701,7 +715,7 @@ public:
         }
 
         // Now call the energy group pair kernel
-        nbv_->nbat().paramsDeprecated().nenergrp = c_numEnergyGroups;
+        nbv_->nbat().paramsDeprecated().numEnergyGroups = c_numEnergyGroups;
         nbv_->nbat().outputBuffer(0).Vvdw.resize(square(c_numEnergyGroups));
         nbv_->nbat().outputBuffer(0).Vc.resize(square(c_numEnergyGroups));
         stepWork.computeEnergy = true;

@@ -63,6 +63,7 @@
 #include "nbnxm_geometry.h"
 #include "nbnxm_gpu.h"
 #include "pairlist.h"
+#include "simd_energy_accumulator.h"
 
 using namespace gmx; // TODO: Remove when this file is moved into gmx namespace
 
@@ -103,7 +104,6 @@ void nbnxn_atomdata_t::resizeForceBuffers()
 /* Initializes an nbnxn_atomdata_output_t data structure */
 nbnxn_atomdata_output_t::nbnxn_atomdata_output_t(Nbnxm::KernelType  kernelType,
                                                  int                numEnergyGroups,
-                                                 int                simdEnergyBufferStride,
                                                  gmx::PinningPolicy pinningPolicy) :
     f({}, { pinningPolicy }),
     fshift({}, { pinningPolicy }),
@@ -116,13 +116,24 @@ nbnxn_atomdata_output_t::nbnxn_atomdata_output_t(Nbnxm::KernelType  kernelType,
 
     if (Nbnxm::kernelTypeIsSimd(kernelType))
     {
-        int cj_size = Nbnxm::sc_jClusterSize(kernelType);
-        int numElements =
-                numEnergyGroups * numEnergyGroups * simdEnergyBufferStride * (cj_size / 2) * cj_size;
-        VSvdw.resize(numElements);
-        VSc.resize(numElements);
+        if (numEnergyGroups == 1)
+        {
+            accumulatorSingleEnergies = std::make_unique<EnergyAccumulator<false, true>>();
+        }
+        else
+        {
+            const int c_iClusterSize = Nbnxm::sc_iClusterSize(kernelType);
+            const int c_jClusterSize = Nbnxm::sc_jClusterSize(kernelType);
+
+            accumulatorGroupEnergies = std::make_unique<EnergyAccumulator<true, true>>(
+                    numEnergyGroups, c_iClusterSize, c_jClusterSize);
+        }
     }
 }
+
+nbnxn_atomdata_output_t::nbnxn_atomdata_output_t(nbnxn_atomdata_output_t&&) noexcept = default;
+
+nbnxn_atomdata_output_t::~nbnxn_atomdata_output_t() = default;
 
 static void copy_int_to_nbat_int(const int* a, int na, int na_round, const int* in, int fill, int* innb)
 {
@@ -400,10 +411,7 @@ nbnxn_atomdata_t::Params::Params(gmx::PinningPolicy pinningPolicy) :
     type({}, { pinningPolicy }),
     lj_comb({}, { pinningPolicy }),
     q({}, { pinningPolicy }),
-    nenergrp(0),
-    neg_2log(0),
-    iClusterSize(0),
-    energrp({}, { pinningPolicy })
+    numEnergyGroups(0)
 {
 }
 
@@ -572,23 +580,22 @@ static void nbnxn_atomdata_params_init(const gmx::MDLogger&      mdlog,
 
     set_lj_parameter_data(params, bSIMD);
 
-    params->nenergrp = n_energygroups;
+    params->numEnergyGroups = n_energygroups;
     if (!simple)
     {
         // We now check for energy groups already when starting mdrun
         GMX_RELEASE_ASSERT(n_energygroups == 1, "GPU kernels do not support energy groups");
     }
     /* Temporary storage goes as #grp^3*simd_width^2/2, so limit to 64 */
-    if (params->nenergrp > 64)
+    if (params->numEnergyGroups > 64)
     {
         gmx_fatal(FARGS, "With NxN kernels not more than 64 energy groups are supported\n");
     }
-    params->neg_2log = 1;
-    while (params->nenergrp > (1 << params->neg_2log))
+    if (params->numEnergyGroups > 1)
     {
-        params->neg_2log++;
+        params->energyGroupsPerCluster = std::make_unique<EnergyGroupsPerCluster>(
+                params->numEnergyGroups, Nbnxm::sc_iClusterSize(kernelType));
     }
-    params->iClusterSize = Nbnxm::sc_iClusterSize(kernelType);
 }
 
 /* Initializes an nbnxn_atomdata_t data structure */
@@ -648,12 +655,13 @@ nbnxn_atomdata_t::nbnxn_atomdata_t(gmx::PinningPolicy      pinningPolicy,
     for (int i = 0; i < nout; i++)
     {
         const auto& outputPinningPolicy = params().type.get_allocator().pinningPolicy();
-        outputBuffers_.emplace_back(
-                kernelType, params().nenergrp, 1 << params().neg_2log, outputPinningPolicy);
+        outputBuffers_.emplace_back(kernelType, params().numEnergyGroups, outputPinningPolicy);
     }
 
     bufferFlags_.clear();
 }
+
+nbnxn_atomdata_t::~nbnxn_atomdata_t() = default;
 
 template<int packSize>
 static void copy_lj_to_nbat_lj_comb(gmx::ArrayRef<const real> ljparam_type, const int* type, int na, real* ljparam_at)
@@ -837,49 +845,11 @@ static void nbnxn_atomdata_mask_fep(nbnxn_atomdata_t* nbat, const Nbnxm::GridSet
     }
 }
 
-/* Copies the energy group indices to a reordered and packed array */
-static void copy_egp_to_nbat_egps(const int*              a,
-                                  int                     na,
-                                  int                     na_round,
-                                  int                     na_c,
-                                  int                     bit_shift,
-                                  ArrayRef<const int64_t> atomInfo,
-                                  int*                    atomInfoNb)
-{
-    int i = 0, j = 0;
-    for (; i < na; i += na_c)
-    {
-        /* Store na_c energy group numbers into one int */
-        int comb = 0;
-        for (int sa = 0; sa < na_c; sa++)
-        {
-            int at = a[i + sa];
-            if (at >= 0)
-            {
-                comb |= (atomInfo[at] & sc_atomInfo_EnergyGroupIdMask) << (sa * bit_shift);
-            }
-        }
-        atomInfoNb[j++] = comb;
-    }
-    /* Complete the partially filled last cell with fill */
-    for (; i < na_round; i += na_c)
-    {
-        atomInfoNb[j++] = 0;
-    }
-}
-
 /* Set the energy group indices for atoms in nbnxn_atomdata_t */
-static void nbnxn_atomdata_set_energygroups(nbnxn_atomdata_t::Params* params,
-                                            const Nbnxm::GridSet&     gridSet,
-                                            ArrayRef<const int64_t>   atomInfo)
+static void nbnxn_atomdata_set_energygroups(const Nbnxm::GridSet&   gridSet,
+                                            ArrayRef<const int64_t> atomInfo,
+                                            EnergyGroupsPerCluster* energyGroupsPerCluster)
 {
-    if (params->nenergrp == 1)
-    {
-        return;
-    }
-
-    params->energrp.resize(gridSet.numGridAtomsTotal());
-
     for (const Nbnxm::Grid& grid : gridSet.grids())
     {
         /* Loop over all columns and copy and fill */
@@ -888,13 +858,10 @@ static void nbnxn_atomdata_set_energygroups(nbnxn_atomdata_t::Params* params,
             const int numAtoms   = grid.paddedNumAtomsInColumn(i);
             const int atomOffset = grid.firstAtomInColumn(i);
 
-            copy_egp_to_nbat_egps(gridSet.atomIndices().data() + atomOffset,
-                                  grid.numAtomsInColumn(i),
-                                  numAtoms,
-                                  params->iClusterSize,
-                                  params->neg_2log,
-                                  atomInfo,
-                                  params->energrp.data() + grid.atomToCluster(atomOffset));
+            energyGroupsPerCluster->setEnergyGroups(gridSet.atomIndices().subArray(atomOffset, numAtoms),
+                                                    atomInfo,
+                                                    sc_atomInfo_EnergyGroupIdMask,
+                                                    grid.atomToCluster(atomOffset));
         }
     }
 }
@@ -920,7 +887,10 @@ void nbnxn_atomdata_set(nbnxn_atomdata_t*       nbat,
     /* This must be done after masking types for FEP */
     nbnxn_atomdata_set_ljcombparams(&params, nbat->XFormat, gridSet);
 
-    nbnxn_atomdata_set_energygroups(&params, gridSet, atomInfo);
+    if (nbat->params().energyGroupsPerCluster)
+    {
+        nbnxn_atomdata_set_energygroups(gridSet, atomInfo, nbat->params().energyGroupsPerCluster.get());
+    }
 }
 
 /* Copies the shift vector array to nbnxn_atomdata_t */

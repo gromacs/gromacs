@@ -525,7 +525,7 @@ nonbonded_verlet_t::nonbonded_verlet_t(std::unique_ptr<PairlistSets>     pairlis
 
     if (pairlistSets_->params().haveFep_)
     {
-        freeEnergyDispatch_ = std::make_unique<FreeEnergyDispatch>(nbat_->params().nenergrp);
+        freeEnergyDispatch_ = std::make_unique<FreeEnergyDispatch>(nbat_->params().numEnergyGroups);
     }
 }
 
@@ -548,7 +548,7 @@ nonbonded_verlet_t::nonbonded_verlet_t(std::unique_ptr<PairlistSets>     pairlis
 
     if (pairlistSets_->params().haveFep_)
     {
-        freeEnergyDispatch_ = std::make_unique<FreeEnergyDispatch>(nbat_->params().nenergrp);
+        freeEnergyDispatch_ = std::make_unique<FreeEnergyDispatch>(nbat_->params().numEnergyGroups);
     }
 }
 

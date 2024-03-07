@@ -48,6 +48,7 @@
 #include "gromacs/mdtypes/interaction_const.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/nbnxm/nbnxm.h"
+#include "gromacs/nbnxm/simd_energy_accumulator.h"
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"

@@ -46,6 +46,8 @@
 
 #include <cstdio>
 
+#include <memory>
+
 #include "gromacs/gpu_utils/devicebuffer_datatype.h"
 #include "gromacs/gpu_utils/hostallocator.h"
 #include "gromacs/math/vectypes.h"
@@ -55,8 +57,11 @@
 
 namespace gmx
 {
+template<bool, bool>
+class EnergyAccumulator;
+class EnergyGroupsPerCluster;
 class MDLogger;
-}
+} // namespace gmx
 
 struct NbnxmGpu;
 struct nbnxn_atomdata_t;
@@ -108,15 +113,18 @@ struct nbnxn_atomdata_output_t
 {
     /*! \brief Constructor
      *
-     * \param[in] kernelType              Type of non-bonded kernel
-     * \param[in] numEnergyGroups         The number of energy groups
-     * \param[in] simdEnergyBufferStride  Stride for entries in the energy buffers for SIMD kernels
-     * \param[in] pinningPolicy           Sets the pinning policy for all buffers used on the GPU
+     * \param[in] kernelType       Type of non-bonded kernel
+     * \param[in] numEnergyGroups  The number of energy groups
+     * \param[in] pinningPolicy    Sets the pinning policy for all buffers used on the GPU
      */
-    nbnxn_atomdata_output_t(Nbnxm::KernelType  kernelType,
-                            int                numEnergyGroups,
-                            int                simdEnergyBufferStride,
-                            gmx::PinningPolicy pinningPolicy);
+    nbnxn_atomdata_output_t(Nbnxm::KernelType kernelType, int numEnergyGroups, gmx::PinningPolicy pinningPolicy);
+
+    //! Move constructor
+    nbnxn_atomdata_output_t(nbnxn_atomdata_output_t&&) noexcept;
+
+    //! Destructor
+    ~nbnxn_atomdata_output_t();
+
 
     //! f, size natoms*fstride
     gmx::HostVector<real> f;
@@ -126,10 +134,11 @@ struct nbnxn_atomdata_output_t
     gmx::HostVector<real> Vvdw;
     //! Temporary Coulomb group energy storage
     gmx::HostVector<real> Vc;
-    //! Temporary SIMD Van der Waals group energy storage
-    AlignedVector<real> VSvdw;
-    //! Temporary SIMD Coulomb group energy storage
-    AlignedVector<real> VSc;
+
+    //! Accumulator for energy output with a single energy group
+    std::unique_ptr<gmx::EnergyAccumulator<false, true>> accumulatorSingleEnergies;
+    //! Accumulator for energy output with multiple energy groups
+    std::unique_ptr<gmx::EnergyAccumulator<true, true>> accumulatorGroupEnergies;
 };
 
 /*! \brief Block size in atoms for the non-bonded thread force-buffer reduction.
@@ -175,6 +184,11 @@ const char* enumValueToString(LJCombinationRule enumValue);
  */
 struct nbnxn_atomdata_t
 { //NOLINT(clang-analyzer-optin.performance.Padding)
+
+    nbnxn_atomdata_t(gmx::PinningPolicy pinningPolicy);
+
+    ~nbnxn_atomdata_t();
+
     /*! \internal
      * \brief The actual atom data parameter values */
     struct Params
@@ -202,13 +216,9 @@ struct nbnxn_atomdata_t
         //! Charges per atom, not set with format nbatXYZQ
         gmx::HostVector<real> q;
         //! The number of energy groups
-        int nenergrp;
-        //! 2log(nenergrp)
-        int neg_2log;
-        //! The i-cluster size
-        int iClusterSize;
-        //! The energy groups, one int entry per cluster, only set when needed
-        gmx::HostVector<int> energrp;
+        int numEnergyGroups;
+        //! The list of energy groups per i-cluster
+        std::unique_ptr<gmx::EnergyGroupsPerCluster> energyGroupsPerCluster;
     };
 
     /*! \internal

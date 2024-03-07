@@ -220,47 +220,6 @@ loadSimdPairInteractionMasks(const int excl, SimdBitMask* filterBitMasksV)
     return interactionMasksV;
 }
 
-//! Adds energies to temporary energy group pair buffers for the 4xM kernel layout
-template<KernelLayout kernelLayout, std::size_t offsetJJSize>
-inline void accumulateGroupPairEnergies4xM(SimdReal energies,
-                                           real*    groupPairEnergyBuffersPtr,
-                                           const std::array<int, offsetJJSize>& offsetJJ)
-{
-    using namespace gmx;
-
-    static_assert(offsetJJSize == GMX_SIMD_REAL_WIDTH / 2);
-
-    /* We need to balance the number of store operations with
-     * the rapidly increasing number of combinations of energy groups.
-     * We add to a temporary buffer for 1 i-group vs 2 j-groups.
-     */
-    for (int jj = 0; jj < GMX_SIMD_REAL_WIDTH / 2; jj++)
-    {
-        SimdReal groupPairEnergyBuffers =
-                load<SimdReal>(groupPairEnergyBuffersPtr + offsetJJ[jj] + jj * GMX_SIMD_REAL_WIDTH);
-
-        store(groupPairEnergyBuffersPtr + offsetJJ[jj] + jj * GMX_SIMD_REAL_WIDTH,
-              groupPairEnergyBuffers + energies);
-    }
-}
-
-//! Adds energies to temporary energy group pair buffers for the 2xMM kernel layout
-template<KernelLayout kernelLayout, std::size_t offsetJJSize>
-inline void accumulateGroupPairEnergies2xMM(SimdReal energies,
-                                            real*    groupPairEnergyBuffersPtr0,
-                                            real*    groupPairEnergyBuffersPtr1,
-                                            const std::array<int, offsetJJSize>& offsetJJ)
-{
-    static_assert(offsetJJSize == GMX_SIMD_REAL_WIDTH / 4);
-
-    for (int jj = 0; jj < GMX_SIMD_REAL_WIDTH / 4; jj++)
-    {
-        incrDualHsimd(groupPairEnergyBuffersPtr0 + offsetJJ[jj] + jj * GMX_SIMD_REAL_WIDTH / 2,
-                      groupPairEnergyBuffersPtr1 + offsetJJ[jj] + jj * GMX_SIMD_REAL_WIDTH / 2,
-                      energies);
-    }
-}
-
 //! Return the number of atoms pairs that are within the cut-off distance
 template<int nR>
 inline int pairCountWithinCutoff(SimdReal rSquaredV[nR], SimdReal cutoffSquared)

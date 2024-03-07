@@ -45,6 +45,7 @@
 #include "nbnxm_simd.h"
 #include "simd_coulomb_functions.h"
 #include "simd_diagonal_masker.h"
+#include "simd_energy_accumulator.h"
 #include "simd_lennardjones_functions.h"
 #include "simd_load_store_functions.h"
 
@@ -90,6 +91,60 @@ namespace gmx
 
 //! Whether we calculate shift forces, always true, because it's cheap anyhow
 static constexpr bool sc_calculateShiftForces = true;
+
+namespace
+{
+
+//! Energy accumulator without data members can be static
+static EnergyAccumulator<false, false> s_energyAccumulator;
+
+//! General template for EnergyAccumulator getter, only specializations are used
+template<bool haveEnergyGroups, bool computeEnergies>
+class EnergyAccumulatorGetter;
+
+//! Specialized EnergyAccumulator getter for no energy output
+template<>
+class EnergyAccumulatorGetter<false, false>
+{
+public:
+    inline gmx_unused EnergyAccumulatorGetter(nbnxn_atomdata_output_t gmx_unused* out) {}
+
+    inline gmx_unused EnergyAccumulator<false, false>& get() { return s_energyAccumulator; }
+};
+
+//! Specialized EnergyAccumulator getter for single energy group output
+template<>
+class EnergyAccumulatorGetter<false, true>
+{
+public:
+    inline gmx_unused EnergyAccumulatorGetter(nbnxn_atomdata_output_t* out) : out_(*out) {}
+
+    inline gmx_unused EnergyAccumulator<false, true>& get()
+    {
+        return *out_.accumulatorSingleEnergies;
+    }
+
+private:
+    nbnxn_atomdata_output_t& out_;
+};
+
+//! Specialized EnergyAccumulator getter for multiple energy groups output
+template<>
+class EnergyAccumulatorGetter<true, true>
+{
+public:
+    inline gmx_unused EnergyAccumulatorGetter(nbnxn_atomdata_output_t* out) : out_(*out) {}
+
+    inline gmx_unused EnergyAccumulator<true, true>& get()
+    {
+        return *out_.accumulatorGroupEnergies;
+    }
+
+private:
+    nbnxn_atomdata_output_t& out_;
+};
+
+} // namespace
 
 /*! \brief The actual NBNxM SIMD kernel
  *
@@ -146,21 +201,6 @@ void nbnxmKernelSimd(const NbnxnPairlistCpu*    nbl,
     /* Unpack pointers for output */
     real* f                 = out->f.data();
     real gmx_unused* fshift = out->fshift.data();
-    real*            Vvdw;
-    real*            Vc;
-    if constexpr (calculateEnergies)
-    {
-        if constexpr (useEnergyGroups)
-        {
-            Vvdw = out->VSvdw.data();
-            Vc   = out->VSc.data();
-        }
-        else
-        {
-            Vvdw = out->Vvdw.data();
-            Vc   = out->Vc.data();
-        }
-    }
 
     const SimdReal zero_S(0.0);
 
@@ -258,15 +298,8 @@ void nbnxmKernelSimd(const NbnxnPairlistCpu*    nbl,
     const real* gmx_restrict shiftvec = shift_vec[0];
     const real* gmx_restrict x        = nbat->x().data();
 
-
-    // These constants are only used when useEnergyGroups==true
-    const int egps_ishift  = nbatParams.neg_2log;
-    const int egps_imask   = (1 << egps_ishift) - 1;
-    const int egps_jshift  = 2 * nbatParams.neg_2log;
-    const int egps_jmask   = (1 << egps_jshift) - 1;
-    const int egps_jstride = (c_jClusterSize >> 1) * c_jClusterSize;
-    /* Major division is over i-particle energy groups, determine the stride */
-    const int Vstride_i = nbatParams.nenergrp * (1 << nbatParams.neg_2log) * egps_jstride;
+    EnergyAccumulator<useEnergyGroups, calculateEnergies>& energyAccumulator =
+            EnergyAccumulatorGetter<useEnergyGroups, calculateEnergies>(out).get();
 
     const nbnxn_cj_t* l_cj = nbl->cj.list_.data();
 
@@ -311,19 +344,7 @@ void nbnxmKernelSimd(const NbnxnPairlistCpu*    nbl,
         const bool do_coul = ((ciEntry.shift & NBNXN_CI_DO_COUL(0)) != 0);
         const bool half_LJ = (((ciEntry.shift & NBNXN_CI_HALF_LJ(0)) != 0) || !do_LJ) && do_coul;
 
-        std::array<real*, useEnergyGroups ? c_iClusterSize : 0> gmx_unused vvdwtp;
-        std::array<real*, useEnergyGroups ? c_iClusterSize : 0> gmx_unused vctp;
-        int                                                                egps_i;
-        if constexpr (useEnergyGroups)
-        {
-            egps_i = nbatParams.energrp[ci];
-            for (int ia = 0; ia < c_iClusterSize; ia++)
-            {
-                int egp_ia = (egps_i >> (ia * egps_ishift)) & egps_imask;
-                vvdwtp[ia] = Vvdw + egp_ia * Vstride_i;
-                vctp[ia]   = Vc + egp_ia * Vstride_i;
-            }
-        }
+        energyAccumulator.template initICluster<c_iClusterSize>(ci);
 
         if constexpr (calculateEnergies)
         {
@@ -339,15 +360,8 @@ void nbnxmKernelSimd(const NbnxnPairlistCpu*    nbl,
                     for (int ia = 0; ia < c_iClusterSize; ia++)
                     {
                         const real qi = q[sci + ia];
-                        if constexpr (useEnergyGroups)
-                        {
-                            vctp[ia][((egps_i >> (ia * egps_ishift)) & egps_imask) * egps_jstride] -=
-                                    facel * qi * qi * Vc_sub_self;
-                        }
-                        else
-                        {
-                            Vc[0] -= facel * qi * qi * Vc_sub_self;
-                        }
+
+                        energyAccumulator.addCoulombEnergy(ia, -facel * qi * qi * Vc_sub_self);
                     }
                 }
 
@@ -358,15 +372,7 @@ void nbnxmKernelSimd(const NbnxnPairlistCpu*    nbl,
                         real c6_i =
                                 nbatParams.nbfp[nbatParams.type[sci + ia] * (nbatParams.numTypes + 1) * 2]
                                 / 6;
-                        if constexpr (useEnergyGroups)
-                        {
-                            vvdwtp[ia][((egps_i >> (ia * egps_ishift)) & egps_imask) * egps_jstride] +=
-                                    0.5 * c6_i * lj_ewaldcoeff6_6;
-                        }
-                        else
-                        {
-                            Vvdw[0] += 0.5 * c6_i * lj_ewaldcoeff6_6;
-                        }
+                        energyAccumulator.addVdwEnergy(ia, 0.5 * c6_i * lj_ewaldcoeff6_6);
                     }
                 }
             }
@@ -429,15 +435,6 @@ void nbnxmKernelSimd(const NbnxnPairlistCpu*    nbl,
             {
                 c6GeomV[i] = loadIAtomData<kernelLayout>(ljc, sci2, i);
             }
-        }
-
-        SimdReal Vvdwtot_S;
-        SimdReal vctot_S;
-        if constexpr (calculateEnergies)
-        {
-            /* Zero the potential energy for this list */
-            Vvdwtot_S = setZero();
-            vctot_S   = setZero();
         }
 
         /* Declare and clear i atom forces */
@@ -545,15 +542,7 @@ void nbnxmKernelSimd(const NbnxnPairlistCpu*    nbl,
             fshift[ish3 + 2] += fShiftZ;
         }
 
-        if constexpr (calculateEnergies)
-        {
-            if (do_coul)
-            {
-                *Vc += reduce(vctot_S);
-            }
-
-            *Vvdw += reduce(Vvdwtot_S);
-        }
+        energyAccumulator.reduceIEnergies(do_coul);
 
         /* Outer loop uses 6 flops/iteration */
     }
