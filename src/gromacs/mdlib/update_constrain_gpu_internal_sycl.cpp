@@ -55,7 +55,7 @@ namespace gmx
 {
 
 //! \brief Function returning the scaling kernel lambda.
-static auto scaleKernel(Float3* gm_x, const ScalingMatrix scalingMatrix)
+static auto scaleKernel(Float3* gm_x, const ScalingMatrix& scalingMatrix)
 {
     return [=](sycl::id<1> itemIdx) {
         Float3 x      = gm_x[itemIdx];

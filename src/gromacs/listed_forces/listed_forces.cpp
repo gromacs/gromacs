@@ -93,9 +93,9 @@ ListedForces::ListedForces(ListedForces&& o) noexcept = default;
 ListedForces::~ListedForces() = default;
 
 //! Copies the selection interactions from \p idefSrc to \p idef
-static void selectInteractions(InteractionDefinitions*                  idef,
-                               const InteractionDefinitions&            idefSrc,
-                               const ListedForces::InteractionSelection interactionSelection)
+static void selectInteractions(InteractionDefinitions*                   idef,
+                               const InteractionDefinitions&             idefSrc,
+                               const ListedForces::InteractionSelection& interactionSelection)
 {
     const bool selectPairs =
             interactionSelection.test(static_cast<int>(ListedForces::InteractionGroup::Pairs));
