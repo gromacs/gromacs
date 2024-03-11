@@ -123,12 +123,6 @@ VerletbufListSetup verletbufGetListSetup(Nbnxm::KernelType nbnxnKernelType)
     listSetup.cluster_size_i = Nbnxm::sc_iClusterSize(nbnxnKernelType);
     listSetup.cluster_size_j = Nbnxm::sc_jClusterSize(nbnxnKernelType);
 
-    if (!Nbnxm::kernelTypeUsesSimplePairlist(nbnxnKernelType))
-    {
-        /* The GPU kernels (except for OpenCL) split the j-clusters in two halves */
-        listSetup.cluster_size_j /= 2;
-    }
-
     return listSetup;
 }
 
