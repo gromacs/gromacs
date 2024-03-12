@@ -63,6 +63,13 @@ struct gmx_wallcycle;
 namespace gmx
 {
 
+/*! \brief Whether the halo exchange is of coordinates or forces. */
+enum class HaloType
+{
+    Coordinates,
+    Forces,
+};
+
 /*! \internal \brief Class with interfaces and data for GPU Halo Exchange */
 class GpuHaloExchange::Impl
 {
@@ -120,8 +127,15 @@ private:
      * \param [in] recvPtr      receive buffer address
      * \param [in] recvSize     number of elements to receive
      * \param [in] recvRank     rank of source
+     * \param [in] haloType     whether halo exchange is of coordinates or forces
      */
-    void communicateHaloData(Float3* sendPtr, int sendSize, int sendRank, Float3* recvPtr, int recvSize, int recvRank);
+    void communicateHaloData(Float3*  sendPtr,
+                             int      sendSize,
+                             int      sendRank,
+                             Float3*  recvPtr,
+                             int      recvSize,
+                             int      recvRank,
+                             HaloType haloType);
 
     /*! \brief Data transfer for GPU halo exchange using peer-to-peer copies
      * \param [inout] sendPtr    address to send data from
@@ -129,8 +143,14 @@ private:
      * \param [in] sendRank      rank to send data to
      * \param [in] remotePtr     remote address to recv data
      * \param [in] recvRank      rank to recv data from
+     * \param [in] haloType      whether halo exchange is of coordinates or forces
      */
-    void communicateHaloDataPeerToPeer(Float3* sendPtr, int sendSize, int sendRank, Float3* remotePtr, int recvRank);
+    void communicateHaloDataPeerToPeer(Float3*  sendPtr,
+                                       int      sendSize,
+                                       int      sendRank,
+                                       Float3*  remotePtr,
+                                       int      recvRank,
+                                       HaloType haloType);
 
     /*! \brief Data transfer for GPU halo exchange using GPU-aware MPI
      * \param [in] sendPtr      send buffer address
@@ -234,8 +254,10 @@ private:
     bool usePBC_ = false;
     //! force shift buffer on device
     DeviceBuffer<Float3> d_fShift_ = nullptr;
-    //! Event triggered when halo transfer has been launched with peer-to-peer memory copy
-    std::unique_ptr<GpuEventSynchronizer> haloDataTransferLaunched_;
+    //! Event triggered when X halo transfer has been launched with peer-to-peer memory copy
+    std::unique_ptr<GpuEventSynchronizer> haloXDataTransferLaunched_;
+    //! Event triggered when F halo transfer has been launched with peer-to-peer memory copy
+    std::unique_ptr<GpuEventSynchronizer> haloFDataTransferLaunched_;
     //! MPI communicator used for simulation
     MPI_Comm mpi_comm_mysim_;
     //! GPU context object

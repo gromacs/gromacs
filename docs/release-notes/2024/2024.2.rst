@@ -44,3 +44,11 @@ with an error in ``freeDeviceBuffer`` function during pairlist
 deinitialization.
 
 :issue:`4888`
+
+Fix incorrect mdp keyword for mass repartioning in documentation
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+The mdp keyword for mass repartioning was incorrect in the list of mdp
+options in the documentation.
+
+:issue:`5007`
