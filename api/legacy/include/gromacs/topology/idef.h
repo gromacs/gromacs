@@ -31,6 +31,13 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out https://www.gromacs.org.
  */
+/*! \file
+ * \brief
+ * Defines interaction types and parameters.
+ *
+ * \ingroup module_topology
+ * \inlibraryapi
+ */
 #ifndef GMX_TOPOLOGY_IDEF_H
 #define GMX_TOPOLOGY_IDEF_H
 
@@ -45,14 +52,19 @@
 
 struct gmx_ffparams_t;
 
+/*! \brief
+ * Union of various interaction paramters.
+ *
+ * Some parameters have A and B values for free energy calculations.
+ * The B values are not used for regular simulations of course.
+ * Free Energy for nonbondeds can be computed by changing the atom type.
+ * The harmonic type is used for all harmonic potentials:
+ * bonds, angles and improper dihedrals.
+ *
+ * No free energy supported for cubic bonds, FENE, WPOL or cross terms.
+ */
 typedef union t_iparams
 {
-    /* Some parameters have A and B values for free energy calculations.
-     * The B values are not used for regular simulations of course.
-     * Free Energy for nonbondeds can be computed by changing the atom type.
-     * The harmonic type is used for all harmonic potentials:
-     * bonds, angles and improper dihedrals
-     */
     struct
     {
         real a, b, c;
@@ -69,7 +81,6 @@ typedef union t_iparams
     {
         real lowA, up1A, up2A, kA, lowB, up1B, up2B, kB;
     } restraint;
-    /* No free energy supported for cubic bonds, FENE, WPOL or cross terms */
     struct
     {
         real b0, kb, kcub;
@@ -126,7 +137,9 @@ typedef union t_iparams
     {
         real qi, qj, c6, c12;
     } ljcnb;
-    /* Proper dihedrals can not have different multiplicity when
+    /*! \brief Proper dihedrals.
+     *
+     * Proper dihedrals can not have different multiplicity when
      * doing free energy calculations, because the potential would not
      * be periodic anymore.
      */
@@ -140,7 +153,9 @@ typedef union t_iparams
     {
         real dA, dB;
     } constr;
-    /* Settle can not be used for Free energy calculations of water bond geometry.
+    /*! \brief SETTLE.
+     *
+     * SETTLE can not be used for Free energy calculations of water bond geometry.
      * Use shake (or lincs) instead if you have to change the water bonds.
      */
     struct
@@ -210,20 +225,26 @@ typedef union t_iparams
 
 typedef int t_functype;
 
-/* List of listed interactions, see description further down.
+/*! \brief List of listed interactions.
+ *
+ * Defines a list of atoms with their interactions.
  *
  * TODO: Consider storing the function type as well.
  * TODO: Consider providing per interaction access.
  */
 struct InteractionList
 {
-    /* Returns the total number of elements in iatoms */
+    //! \return The total number of elements in iatoms.
     int size() const { return static_cast<int>(iatoms.size()); }
 
-    /* Returns whether the list is empty */
+    //! \return Whether the list is empty.
     bool empty() const { return iatoms.empty(); }
 
-    /* Adds one interaction to the list */
+    /*! \brief Adds one interaction to the list.
+     *
+     * \param[in] parameterType Type.
+     * \param[in] atoms Array of atoms indices.
+     */
     template<std::size_t numAtoms>
     void push_back(const int parameterType, const std::array<int, numAtoms>& atoms)
     {
@@ -236,7 +257,12 @@ struct InteractionList
         }
     }
 
-    /* Adds one interaction to the list */
+    /*! \brief Adds one interaction to the list.
+     *
+     * \param[in] parameterType Type.
+     * \param[in] numAtoms Number of atoms.
+     * \param[in] atoms Atoms indices.
+     */
     void push_back(const int parameterType, const int numAtoms, const int* atoms)
     {
         const std::size_t oldSize = iatoms.size();
@@ -248,34 +274,55 @@ struct InteractionList
         }
     }
 
-    /* Appends \p ilist at the back of the list */
+    /*! \brief Appends interaction list \p ilist at the back of the list.
+     *
+     * \param[in] ilist Interaction list to append.
+     */
     void append(const InteractionList& ilist)
     {
         iatoms.insert(iatoms.end(), ilist.iatoms.begin(), ilist.iatoms.end());
     }
 
-    /* Clears the list */
+    /*! \brief Clears the list.
+     */
     void clear() { iatoms.clear(); }
 
-    /* List of interactions, see explanation further down */
+    /*! \brief List of interactions.
+     *
+     * Specifies which atoms are involved in an interaction of a certain type.
+     * The layout of this array is as follows:
+     *
+     *     +-----+---+---+---+-----+---+---+-----+---+---+---+-----+---+---+...
+     *     |type1|at1|at2|at3|type2|at1|at2|type1|at1|at2|at3|type3|at1|at2|
+     *     +-----+---+---+---+-----+---+---+-----+---+---+---+-----+---+---+...
+     *
+     * So for interaction type type1 3 atoms are needed, and for type2 and
+     * type3 only 2. The type identifier is used to select the function to
+     * calculate the interaction and its actual parameters. This type
+     * identifier is an index in a `params[]` and `functype[]` array.
+     */
     std::vector<int> iatoms;
 };
 
-/* List of interaction lists, one list for each interaction type
+/*! \brief List of interaction lists.
+ *
+ * Contains one list for each interaction type.
  *
  * TODO: Consider only including entries in use instead of all F_NRE
  */
 using InteractionLists = std::array<InteractionList, F_NRE>;
 
-/* Deprecated list of listed interactions */
+/*! \brief Deprecated list of listed interactions.
+ */
 struct t_ilist
 {
-    /* Returns the total number of elements in iatoms */
+    //! \return The total number of elements in iatoms.
     int size() const { return nr; }
 
-    /* Returns whether the list is empty */
+    //! \return Whether the list is empty.
     bool empty() const { return nr == 0; }
 
+    //! The size (nr elements) of the interactions array (iatoms[]).
     int      nr;
     t_iatom* iatoms;
     int      nalloc;
@@ -283,39 +330,20 @@ struct t_ilist
 
 /* TODO: Remove t_ilist and remove templating on list type in mshift.cpp */
 
-/*
- * The structs InteractionList and t_ilist defines a list of atoms with their interactions.
- * General field description:
- *   int nr
- *      the size (nr elements) of the interactions array (iatoms[]).
- *   t_iatom *iatoms
- *  specifies which atoms are involved in an interaction of a certain
- *       type. The layout of this array is as follows:
+/*! \brief Type for returning a list of InteractionList references.
  *
- *        +-----+---+---+---+-----+---+---+-----+---+---+---+-----+---+---+...
- *        |type1|at1|at2|at3|type2|at1|at2|type1|at1|at2|at3|type3|at1|at2|
- *        +-----+---+---+---+-----+---+---+-----+---+---+---+-----+---+---+...
- *
- *  So for interaction type type1 3 atoms are needed, and for type2 and
- *      type3 only 2. The type identifier is used to select the function to
- *      calculate the interaction and its actual parameters. This type
- *      identifier is an index in a params[] and functype[] array.
- */
-
-/*! \brief Type for returning a list of InteractionList references
- *
- * TODO: Remove when the function type is made part of InteractionList
+ * TODO: Remove when the function type is made part of InteractionList.
  */
 struct InteractionListHandle
 {
-    const int               functionType; //!< The function type
-    const std::vector<int>& iatoms;       //!< Reference to interaction list
+    const int               functionType; //!< The function type.
+    const std::vector<int>& iatoms;       //!< Reference to interaction list.
 };
 
 /*! \brief Returns a list of all non-empty InteractionList entries with any of the interaction flags in \p flags set
  *
- * \param[in] ilists  Set of interaction lists
- * \param[in] flags   Bit mask with one or more IF_... bits set
+ * \param[in] ilists Set of interaction lists.
+ * \param[in] flags Bit mask with one or more IF_... bits set.
  */
 static inline std::vector<InteractionListHandle> extractILists(const InteractionLists& ilists, int flags)
 {
@@ -330,36 +358,41 @@ static inline std::vector<InteractionListHandle> extractILists(const Interaction
     return handles;
 }
 
-/*! \brief Returns the stride for the iatoms array in \p ilistHandle
+/*! \brief Returns the stride for the iatoms array in \p ilistHandle.
  *
- * \param[in] ilistHandle  The ilist to return the stride for
+ * \param[in] ilistHandle The ilist to return the stride for.
  */
 static inline int ilistStride(const InteractionListHandle& ilistHandle)
 {
     return 1 + NRAL(ilistHandle.functionType);
 }
 
+/*! \brief CMAP data for a single grid. */
 struct gmx_cmapdata_t
 {
-    std::vector<real> cmap; /* Has length 4*grid_spacing*grid_spacing, */
-    /* there are 4 entries for each cmap type (V,dVdx,dVdy,d2dVdxdy) */
+    /*! Has length \f$4 \times grid\_spacing \times grid\_spacing\f$,
+     * there are 4 entries for each CMAP type \f$(V, dV dx, dV dy, d^2 dV dx dy)\f$
+     */
+    std::vector<real> cmap;
 };
 
+/*! \brief CMAP grids. */
 struct gmx_cmap_t
 {
-    int                         grid_spacing = 0; /* Grid spacing */
-    std::vector<gmx_cmapdata_t> cmapdata; /* Lists of grids with actual, pre-interpolated data */
+    int                         grid_spacing = 0; //!< Grid spacing.
+    std::vector<gmx_cmapdata_t> cmapdata; //!< Lists of grids with actual, pre-interpolated data.
 };
 
-
+/*! \brief Sorting of the interaction list. */
 enum
 {
-    ilsortUNKNOWN,
-    ilsortNO_FE,
-    ilsortFE_SORTED
+    ilsortUNKNOWN,  //!< Sorting unknown.
+    ilsortNO_FE,    //!< Sorting without the free energy interactions.
+    ilsortFE_SORTED //!< Sorting with the free energy interactions also sorted.
 };
 
-/* Struct with list of interaction parameters and lists of interactions
+/*! \brief
+ * Struct with list of interaction parameters and lists of interactions
  *
  * TODO: Convert to a proper class with private data members so we can
  * ensure that the free-energy sorting and sorting setting is consistent.
@@ -367,80 +400,70 @@ enum
 class InteractionDefinitions
 {
 public:
-    /* Constructor
+    /*! \brief Constructor
      *
-     * \param[in] ffparams  The interaction parameters, the lifetime of the created object should not exceed the lifetime of the passed parameters
+     * \param[in] ffparams The interaction parameters, the lifetime of the created object should not exceed the lifetime of the passed parameters.
      */
     InteractionDefinitions(const gmx_ffparams_t& ffparams);
 
-    // Clears data not read in from ffparams
+    //! \brief Clears data not read in from ffparams.
     void clear();
 
-    // The interaction parameters
+    //! The interaction parameters.
     const std::vector<t_iparams>& iparams;
-    // The function type per type
+    //! The function type per type.
     const std::vector<int>& functype;
-    // Position restraint interaction parameters
+    //! Position restraint interaction parameters.
     std::vector<t_iparams> iparams_posres;
-    // Flat-bottomed position restraint parameters
+    //! Flat-bottomed position restraint parameters.
     std::vector<t_iparams> iparams_fbposres;
-    // The list of interactions for each type. Note that some, such as LJ and COUL will have 0 entries.
+    //! The list of interactions for each type. Note that some, such as LJ and COUL will have 0 entries.
     std::array<InteractionList, F_NRE> il;
-    /* The number of non-perturbed interactions at the start of each entry in il */
+    //! The number of non-perturbed interactions at the start of each entry in il.
     std::array<int, F_NRE> numNonperturbedInteractions;
-    // The sorting state of interaction in il
+    //! The sorting state of interaction in il.
     int ilsort = ilsortUNKNOWN;
-    // The dihedral correction maps
+    //! The dihedral correction maps.
     gmx_cmap_t cmap_grid;
 };
 
-/* Deprecated interation definitions, used in t_topology */
-struct t_idef
-{
-    int         ntypes;
-    int         atnr;
-    t_functype* functype;
-    t_iparams*  iparams;
-    real        fudgeQQ;
-    t_iparams * iparams_posres, *iparams_fbposres;
-
-    t_ilist il[F_NRE];
-    int     ilsort;
-};
-
-/*
+/*! \brief Deprecated interation definitions, used in t_topology
+ *
  * The struct t_idef defines all the interactions for the complete
  * simulation. The structure is setup in such a way that the multinode
  * version of the program  can use it as easy as the single node version.
- * General field description:
- *   int ntypes
- *      defines the number of elements in functype[] and param[].
- *   int nodeid
- *      the node id (if parallel machines)
- *   int atnr
- *      the number of atomtypes
- *   t_functype *functype
- *      array of length ntypes, defines for every force type what type of
- *      function to use. Every "bond" with the same function but different
- *      force parameters is a different force type. The type identifier in the
- *      forceatoms[] array is an index in this array.
- *   t_iparams *iparams
- *      array of length ntypes, defines the parameters for every interaction
- *      type. The type identifier in the actual interaction list
- *      (ilist[ftype].iatoms[]) is an index in this array.
- *   gmx_cmap_t cmap_grid
- *      the grid for the dihedral pair correction maps.
- *   t_iparams *iparams_posres, *iparams_fbposres
- *      defines the parameters for position restraints only.
- *      Position restraints are the only interactions that have different
- *      parameters (reference positions) for different molecules
- *      of the same type. ilist[F_POSRES].iatoms[] is an index in this array.
- *   t_ilist il[F_NRE]
- *      The list of interactions for each type. Note that some,
- *      such as LJ and COUL will have 0 entries.
- *   int ilsort
- *      The state of the sorting of il, values are provided above.
  */
+struct t_idef
+{
+    //! Defines the number of elements in functype[] and param[].
+    int ntypes;
+    //! The number of atomtypes.
+    int atnr;
+    /*! Array of length ntypes, defines for every force type what type of
+     * function to use. Every "bond" with the same function but different
+     * force parameters is a different force type. The type identifier in the
+     * forceatoms[] array is an index in this array.
+     */
+    t_functype* functype;
+    /*! Array of length ntypes, defines the parameters for every interaction
+     * type. The type identifier in the actual interaction list
+     * (ilist[ftype].iatoms[]) is an index in this array.
+     */
+    t_iparams* iparams;
+    real       fudgeQQ;
+    /*! Defines the parameters for position restraints only.
+     * Position restraints are the only interactions that have different
+     * parameters (reference positions) for different molecules
+     * of the same type. ilist[F_POSRES].iatoms[] is an index in this array.
+     */
+    t_iparams *iparams_posres, *iparams_fbposres;
+    /*! The list of interactions for each type. Note that some,
+     * such as LJ and COUL will have 0 entries.
+     */
+    t_ilist il[F_NRE];
+    //! The state of the sorting of il, values are provided above.
+    int ilsort;
+};
 
 namespace gmx
 {

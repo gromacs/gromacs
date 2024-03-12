@@ -31,6 +31,13 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out https://www.gromacs.org.
  */
+/*! \file
+ * \brief
+ * Declares interaction functions.
+ *
+ * \ingroup module_topology
+ * \inlibraryapi
+ */
 #ifndef GMX_TOPOLOGY_IFUNC_H
 #define GMX_TOPOLOGY_IFUNC_H
 
@@ -51,8 +58,34 @@ typedef int t_iatom;
  */
 typedef real rvec4[4];
 
-/*
- * The function type t_ifunc() calculates one interaction, using iatoms[]
+/*! These flags tell to some of the routines what can be done with this
+ * item in the list.
+ */
+constexpr unsigned int IF_NULL = 0;
+//! With IF_BOND a bonded interaction will be calculated.
+constexpr unsigned int IF_BOND       = 1 << 0;
+constexpr unsigned int IF_VSITE      = 1 << 1;
+constexpr unsigned int IF_CONSTRAINT = 1 << 2;
+constexpr unsigned int IF_CHEMBOND   = 1 << 3;
+//! With IF_BTYPE grompp can convert the bond to a Morse potential.
+constexpr unsigned int IF_BTYPE = 1 << 4;
+/*! With IF_BTYPE or IF_ATYPE the bond/angle can be converted to
+ * a constraint or used for vsite parameter determination by grompp.
+ */
+constexpr unsigned int IF_ATYPE     = 1 << 5;
+constexpr unsigned int IF_DIHEDRAL  = 1 << 6;
+constexpr unsigned int IF_PAIR      = 1 << 7;
+constexpr unsigned int IF_TABULATED = 1 << 8;
+/*! IF_LIMZERO indicates that for a bonded interaction the potential
+ * does goes to zero for large distances, thus if such an interaction
+ * it not assigned to any node by the domain decomposition, the simulation
+ * still continue, if mdrun has been told so.
+ */
+constexpr unsigned int IF_LIMZERO = 1 << 9;
+
+/*! \brief Interaction function.
+ *
+ * This function type calculates one interaction, using iatoms[]
  * and iparams. Within the function the number of atoms to be used is
  * known. Within the function only the atomid part of the iatoms[] array
  * is supplied, not the type field (see also t_ilist). The function
@@ -64,44 +97,26 @@ typedef real rvec4[4];
  * atom numbers for warnings and error messages.
  * ddgatindex is NULL when domain decomposition is not used.
  */
-
-constexpr unsigned int IF_NULL       = 0;
-constexpr unsigned int IF_BOND       = 1 << 0;
-constexpr unsigned int IF_VSITE      = 1 << 1;
-constexpr unsigned int IF_CONSTRAINT = 1 << 2;
-constexpr unsigned int IF_CHEMBOND   = 1 << 3;
-constexpr unsigned int IF_BTYPE      = 1 << 4;
-constexpr unsigned int IF_ATYPE      = 1 << 5;
-constexpr unsigned int IF_DIHEDRAL   = 1 << 6;
-constexpr unsigned int IF_PAIR       = 1 << 7;
-constexpr unsigned int IF_TABULATED  = 1 << 8;
-constexpr unsigned int IF_LIMZERO    = 1 << 9;
-/* These flags tell to some of the routines what can be done with this
- * item in the list.
- * With IF_BOND a bonded interaction will be calculated.
- * With IF_BTYPE grompp can convert the bond to a Morse potential.
- * With IF_BTYPE or IF_ATYPE the bond/angle can be converted to
- * a constraint or used for vsite parameter determination by grompp.
- * IF_LIMZERO indicates that for a bonded interaction the potential
- * does goes to zero for large distances, thus if such an interaction
- * it not assigned to any node by the domain decomposition, the simulation
- * still continue, if mdrun has been told so.
- */
-
 struct t_interaction_function // NOLINT (clang-analyzer-optin.performance.Padding)
 {
-    const char* name;         /* the name of this function			*/
-    const char* longname;     /* The name for printing etc.                   */
-    int         nratoms;      /* nr of atoms needed for this function		*/
-    int         nrfpA, nrfpB; /* number of parameters for this function.      */
-                              /* this corresponds to the number of params in  */
-                              /* iparams struct! (see idef.h)                 */
-    /* A and B are for normal and free energy components respectively.    */
-    unsigned int flags; /* Flags (see above)                            */
+    const char* name;         //!< The name of this function.
+    const char* longname;     //!< The name for printing etc.
+    int         nratoms;      //!< Number of atoms needed for this function.
+    int         nrfpA, nrfpB; /*!< \brief Number of parameters for this function.
+                               *
+                               * This corresponds to the number of parameters in
+                               * iparams struct.
+                               *
+                               * A and B are for normal and free energy components
+                               * respectively.
+                               */
+    unsigned int flags;       //!< Flags (IF_NULL, IF_BOND, etc.).
 };
 
-/* this MUST correspond to the
-   t_interaction_function[F_NRE] in src/gromacs/topology/ifunc.cpp */
+/*! \brief Interaction function enums.
+ *
+ * This MUST correspond to the t_interaction_function[F_NRE] in src/gromacs/topology/ifunc.cpp.
+ */
 enum
 {
     F_BONDS,
@@ -197,8 +212,8 @@ enum
     F_DVDL_VDW,
     F_DVDL_BONDED,
     F_DVDL_RESTRAINT,
-    F_DVDL_TEMPERATURE, /* not calculated for now, but should just be the energy (NVT) or enthalpy (NPT), or 0 (NVE) */
-    F_NRE /* This number is for the total number of energies      */
+    F_DVDL_TEMPERATURE, //!< Not calculated for now, but should just be the energy (NVT) or enthalpy (NPT), or 0 (NVE).
+    F_NRE //!< This number is for the total number of energies.
 };
 
 static inline bool IS_RESTRAINT_TYPE(int ifunc)
@@ -208,17 +223,17 @@ static inline bool IS_RESTRAINT_TYPE(int ifunc)
            || ifunc == F_ANGRES || ifunc == F_ANGRESZ || ifunc == F_DIHRES;
 }
 
-/* Maximum allowed number of atoms, parameters and terms in interaction_function.
- * Check kernel/toppush.c when you change these numbers.
- */
-constexpr int MAXATOMLIST   = 6;
+//! Maximum allowed number of atoms
+constexpr int MAXATOMLIST = 6;
+//! Maximum allowed number of parameters
 constexpr int MAXFORCEPARAM = 12;
-constexpr int NR_RBDIHS     = 6;
-constexpr int NR_CBTDIHS    = 6;
-constexpr int NR_FOURDIHS   = 4;
+//! Maximum terms in interaction_function. Check src/gromacs/gmxpreprocess/toppush.cpp when you change these numbers.
+constexpr int NR_RBDIHS   = 6;
+constexpr int NR_CBTDIHS  = 6;
+constexpr int NR_FOURDIHS = 4;
 
+//! Initialised interaction functions descriptor.
 LIBGROMACS_EXPORT extern const t_interaction_function interaction_function[F_NRE];
-/* initialised interaction functions descriptor				*/
 
 static inline int NRFPA(int ftype)
 {
@@ -240,15 +255,16 @@ static inline int NRAL(int ftype)
     return interaction_function[ftype].nratoms;
 }
 
+//! \brief Tells if function type ftype represents a chemical bond.
 static inline bool IS_CHEMBOND(int ftype)
 {
     return interaction_function[ftype].nratoms == 2
            && (interaction_function[ftype].flags & IF_CHEMBOND) != 0;
 }
-/* IS_CHEMBOND tells if function type ftype represents a chemical bond */
 
-/* IS_ANGLE tells if a function type ftype represents an angle
- * Per Larsson, 2007-11-06
+/*! \brief Tells if a function type ftype represents an angle.
+ *
+ * Per Larsson, 2007-11-06.
  */
 static inline bool IS_ANGLE(int ftype)
 {

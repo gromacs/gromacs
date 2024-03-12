@@ -31,6 +31,13 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out https://www.gromacs.org.
  */
+/*! \file
+ * \brief
+ * Defines interaction functions.
+ *
+ * \ingroup module_topology
+ * \inlibraryapi
+ */
 /* This file is completely threadsafe - keep it that way! */
 #include "gmxpre.h"
 
@@ -112,7 +119,9 @@ static constexpr t_interaction_function def_nofc(const char* str, const char* ls
     return t_interaction_function{ str, lstr, 0, 0, 0, IF_NULL };
 }
 
-/* This MUST correspond to the enum in src/gromacs/topology/ifunc.h
+/*! \brief Interaction function definitions.
+ *
+ * This MUST correspond to the enum in api/legacy/include/gromacs/topology/ifunc.h.
  *
  * Note also that the longname field of the interaction is used for
  * printing e.g. the mdrun log file in a columnar style, and pr_ebin
