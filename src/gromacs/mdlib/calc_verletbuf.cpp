@@ -1008,12 +1008,23 @@ static real computeEffectiveAtomDensity(gmx::ArrayRef<const gmx::RVec> coordinat
 
     std::vector<int> atomCount(numCells[XX] * numCells[YY] * numCells[ZZ], 0);
 
-    for (const gmx::RVec& coord : coordinates)
+    // Create a new vector with all coordinates in the rectangular unit cell
+    std::vector<gmx::RVec> coordinatesInBox(coordinates.begin(), coordinates.end());
+    put_atoms_in_box(PbcType::Xyz, box, coordinatesInBox);
+
+    for (const gmx::RVec& coord : coordinatesInBox)
     {
         gmx::IVec indices;
         for (int d = 0; d < DIM; d++)
         {
-            indices[d] = (int(coord[d] * invCellSize[d]) + numCells[d]) % numCells[d];
+            indices[d] = static_cast<int>(coord[d] * invCellSize[d]);
+            // Acount for rounding errors in this assert; int cast goes towards zero
+            GMX_ASSERT(indices[d] >= 0 && indices[d] <= numCells[d],
+                       "Expect atoms to be in the box");
+            if (indices[d] == numCells[d])
+            {
+                indices[d] = numCells[d] - 1;
+            }
         }
         int index = (indices[XX] * numCells[YY] + indices[YY]) * numCells[ZZ] + indices[ZZ];
         atomCount[index]++;

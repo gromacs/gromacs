@@ -16,6 +16,16 @@ in the :ref:`release-notes`.
 Fixes where mdrun could behave incorrectly
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+The Verlet buffer estimate could be wrong with initial coordinates out of the box
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Due to incorrect periodic boundary treatment in the density estimate for
+the Verlet buffer calcalution, the Verlet buffer could be off when many atoms
+were outside the rectangular unit cell. In nearly all cases this would lead
+to a slightly too large buffer and almost never to a too short buffer.
+
+:issue:`5002`
+
 Correct forces with virtual_sites1
 """"""""""""""""""""""""""""""""""
 
@@ -38,6 +48,14 @@ was executed on a GPU.
 
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
+
+Fix grompp crash with atoms far out of the box
+""""""""""""""""""""""""""""""""""""""""""""""
+
+The Verlet buffer tolerance code did not put atoms correctly in the box,
+which could lead to illegal memory access in grompp
+
+:issue:`5002`
 
 Fix LJ combination rules mixup in nonbonded-benchmark tool
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""
