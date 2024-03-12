@@ -37,12 +37,10 @@
  *
  * These tests covers all compiled flavors of the NBNxM kernels, not only
  * those used by default by mdrun.
- * The forces and energies are compared to reference data for the force+energy
- * kernel. The reference data is only stored once for kernels that are expected
- * to produce the same output (i.e. only different kernel layout or analytical
- * vs tabulated Ewald LR correction).
- * For the force only kernel, the forces are compared to those produced
- * by the force+energy flavor.
+ * The forces and energies are compared to common reference data for
+ * kernels that are expected to produce the same output (i.e. only
+ * different kernel layout or analytical vs tabulated Ewald LR
+ * correction).
  *
  * The only thing currently not covered is LJ-PME with the Lorentz-Berthelot
  * combination rule, as this is only implemented in the plain-C reference kernel
@@ -54,6 +52,7 @@
 
 #include "gmxpre.h"
 
+#include <algorithm>
 #include <numeric>
 #include <vector>
 
@@ -72,10 +71,10 @@
 #include "gromacs/nbnxm/pairlistset.h"
 #include "gromacs/nbnxm/pairlistsets.h"
 #include "gromacs/nbnxm/pairsearch.h"
-#include "gromacs/nbnxm/simd_energy_accumulator.h"
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/topology/topology.h"
+#include "gromacs/utility/enumerationhelpers.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/listoflists.h"
 #include "gromacs/utility/logger.h"
@@ -102,6 +101,22 @@ namespace
 #    error "We should only generate reference data with double precision"
 #endif
 
+/*! \brief How the kernel should compute energies
+ *
+ * Note that the construction of the test system is currently
+ * not general enough to handle more than one case with multiple
+ * energy groups. */
+enum class EnergyHandling : int
+{
+    NoEnergies,
+    Energies,
+    ThreeEnergyGroups,
+    Count
+};
+
+//! Lookup table for the number of energy groups in use
+const EnumerationArray<EnergyHandling, int> sc_numEnergyGroups = { 0, 1, 3 };
+
 //! The options for the kernel
 struct KernelOptions
 {
@@ -127,6 +142,8 @@ struct KernelOptions
     real ewaldRTol = 1e-6;
     //! The Coulomb interaction function
     CoulombKernelType coulombType = CoulombKernelType::Ewald;
+    //! How to handle energy computations
+    EnergyHandling energyHandling = EnergyHandling::NoEnergies;
 };
 
 //! Description of the system used for benchmarking.
@@ -136,6 +153,10 @@ struct TestSystem
      *
      * Generates test system of a cubic box partially filled with 27 water molecules.
      * It has parts with uncharged molecules, normal SPC/E and part with full LJ.
+     *
+     * It assigns energy groups in round-robin style based on the largest number of
+     * energy groups that might be being tested. This is not general enough to work
+     * if we would extend the number of energy-group cases that we test.
      */
     TestSystem(LJCombinationRule ljCombinationRule);
 
@@ -201,8 +222,6 @@ std::pair<real, real> combineLJParams(const real              sigma0,
     return { c6, c12 };
 }
 
-const int c_numEnergyGroups = 3;
-
 TestSystem::TestSystem(const LJCombinationRule ljCombinationRule)
 {
     numAtomTypes = 3;
@@ -227,6 +246,9 @@ TestSystem::TestSystem(const LJCombinationRule ljCombinationRule)
     atomTypes.resize(numAtoms);
     charges.resize(numAtoms);
     atomInfo.resize(numAtoms);
+
+    const int maxNumEnergyGroups =
+            *std::max_element(sc_numEnergyGroups.begin(), sc_numEnergyGroups.end());
 
     for (int a = 0; a < numAtoms; a++)
     {
@@ -260,8 +282,8 @@ TestSystem::TestSystem(const LJCombinationRule ljCombinationRule)
             atomInfo[a] |= gmx::sc_atomInfo_HasCharge;
         }
 
-        // Set the energy group, 0, 1 or 2
-        atomInfo[a] |= (a / (numAtoms / c_numEnergyGroups));
+        // Set the energy group from 0 to n-1
+        atomInfo[a] |= (a / (numAtoms / maxNumEnergyGroups));
 
         // Generate the exclusions like for water molecules
         excls.pushBackListOfSize(numAtomsInMolecule);
@@ -328,21 +350,8 @@ std::unique_ptr<nonbonded_verlet_t> setupNbnxmForBenchInstance(const KernelOptio
             chooseLJPmeCombinationRule(options),
             system.numAtomTypes,
             system.nonbondedParameters,
-            c_numEnergyGroups,
+            sc_numEnergyGroups[options.energyHandling],
             numThreads);
-
-    if (options.kernelSetup.kernelType != Nbnxm::KernelType::Cpu4x4_PlainC)
-    {
-        // We normally only get the energy group energy accumulator when we use energy
-        // groups. For this test it's convenient to have both types of accumulators,
-        // so we can run one and multiple energy groups without rebuilding atomData.
-        // So we manually add the single energy group accumulator here.
-        for (int th = 0; th < numThreads; th++)
-        {
-            atomData->outputBuffer(th).accumulatorSingleEnergies =
-                    std::make_unique<EnergyAccumulator<false, true>>();
-        }
-    }
 
     // Put everything together
     auto nbv = std::make_unique<nonbonded_verlet_t>(
@@ -376,15 +385,20 @@ std::unique_ptr<nonbonded_verlet_t> setupNbnxmForBenchInstance(const KernelOptio
 //! Convenience typedef of the test input parameters
 struct KernelInputParameters
 {
-    using TupleT = std::tuple<Nbnxm::KernelType, CoulombKernelType, int>;
+    using TupleT = std::tuple<Nbnxm::KernelType, CoulombKernelType, int, EnergyHandling>;
     //! The kernel type and cluster pair layout
     Nbnxm::KernelType kernelType;
     //! The Coulomb kernel type
     CoulombKernelType coulombKernelType;
     //! The VdW interaction type
     int vdwKernelType;
+    //! How to handle energy computations
+    EnergyHandling energyHandling = EnergyHandling::NoEnergies;
     KernelInputParameters(TupleT t) :
-        kernelType(std::get<0>(t)), coulombKernelType(std::get<1>(t)), vdwKernelType(std::get<2>(t))
+        kernelType(std::get<0>(t)),
+        coulombKernelType(std::get<1>(t)),
+        vdwKernelType(std::get<2>(t)),
+        energyHandling(std::get<3>(t))
     {
     }
 };
@@ -393,7 +407,7 @@ struct KernelInputParameters
 class NbnxmKernelTest : public ::testing::TestWithParam<KernelInputParameters>
 {
 public:
-    NbnxmKernelTest(LJCombinationRule ljCombinationRule) : system_(ljCombinationRule) {}
+    NbnxmKernelTest(const LJCombinationRule ljCombinationRule) : system_(ljCombinationRule) {}
 
     KernelOptions                       options_;
     TestSystem                          system_;
@@ -620,7 +634,8 @@ public:
             case vdwktLJPOTSWITCH: options_.vdwModifier = InteractionModifiers::PotSwitch; break;
             default: options_.vdwModifier = InteractionModifiers::PotShift; break;
         }
-        options_.useLJPme = (parameters_.vdwKernelType == vdwktLJEWALDCOMBGEOM);
+        options_.useLJPme       = (parameters_.vdwKernelType == vdwktLJEWALDCOMBGEOM);
+        options_.energyHandling = parameters_.energyHandling;
 
         if (options_.kernelSetup.kernelType == Nbnxm::KernelType::Cpu4x4_PlainC
             && (options_.coulombType == CoulombKernelType::Ewald
@@ -637,33 +652,10 @@ public:
             GTEST_SKIP() << "There are no combination rule versions of the plain-C kernel";
         }
 
-        nbv_ = setupNbnxmForBenchInstance(options_, system_);
-
-        nbv_->constructPairlist(InteractionLocality::Local, system_.excls, 0, nullptr);
-
         const interaction_const_t ic = setupInteractionConst(options_);
 
-        std::vector<RVec> shiftVecs(c_numShiftVectors);
-        calc_shifts(system_.box, shiftVecs);
-
-        StepWorkload stepWork;
-        stepWork.computeForces = true;
-        stepWork.computeEnergy = true;
-
-        // Resize the energy output buffers to 1 to trigger the non-energy-group kernel
-        nbv_->nbat().paramsDeprecated().numEnergyGroups = 1;
-        nbv_->nbat().outputBuffer(0).Vvdw.resize(1);
-        nbv_->nbat().outputBuffer(0).Vc.resize(1);
-
-        // The reduction still acts on all groups pairs
-        std::vector<real> vVdw(square(c_numEnergyGroups));
-        std::vector<real> vCoulomb(square(c_numEnergyGroups));
-        nbv_->dispatchNonbondedKernel(
-                InteractionLocality::Local, ic, stepWork, enbvClearFYes, shiftVecs, vVdw, vCoulomb, nullptr);
-
-        std::vector<RVec> forces(system_.coordinates.size(), { 0.0_real, 0.0_real, 0.0_real });
-        nbv_->atomdata_add_nbat_f_to_f(AtomLocality::All, forces);
-
+        // Set up test checkers with suitable tolerances
+        //
         // The reference data for double is generated with 44 accuracy bits,
         // so we should not compare with more than that accuracy
         const int  simdAccuracyBits = (GMX_DOUBLE ? std::min(GMX_SIMD_ACCURACY_BITS_DOUBLE, 44)
@@ -699,75 +691,68 @@ public:
             tolerance = std::max(tolerance, forceMagnitude * simdRealEps * ulpToleranceExp);
         }
         forceChecker.setDefaultTolerance(absoluteTolerance(tolerance));
-        forceChecker.checkSequence(forces.begin(), forces.end(), "Forces");
 
         TestReferenceChecker ljEnergyChecker(refData.rootChecker());
         // Energies per atom are more accurate than forces, but there is loss
         // of precision due to summation over all atoms. The tolerance on
         // the energy turns out to be the same as on the forces.
         ljEnergyChecker.setDefaultTolerance(absoluteTolerance(tolerance));
-        ljEnergyChecker.checkReal(vVdw[0], "VdW energy");
         TestReferenceChecker coulombEnergyChecker(refData.rootChecker());
         // Coulomb energy errors are higher
         coulombEnergyChecker.setDefaultTolerance(absoluteTolerance(10 * tolerance));
-        coulombEnergyChecker.checkReal(vCoulomb[0], "Coulomb energy");
 
-        // Now call the force only kernel
-        stepWork.computeEnergy = false;
+        // Finish setting up data structures
+        nbv_ = setupNbnxmForBenchInstance(options_, system_);
+        nbv_->constructPairlist(InteractionLocality::Local, system_.excls, 0, nullptr);
 
+        std::vector<RVec> shiftVecs(c_numShiftVectors);
+        calc_shifts(system_.box, shiftVecs);
+
+        StepWorkload stepWork;
+        stepWork.computeForces = true;
+        stepWork.computeEnergy = options_.energyHandling != EnergyHandling::NoEnergies;
+
+        std::vector<real> vVdw(square(sc_numEnergyGroups[options_.energyHandling]));
+        std::vector<real> vCoulomb(square(sc_numEnergyGroups[options_.energyHandling]));
+
+        // Call the kernel to test
         nbv_->dispatchNonbondedKernel(
                 InteractionLocality::Local, ic, stepWork, enbvClearFYes, shiftVecs, vVdw, vCoulomb, nullptr);
 
-        std::vector<RVec> forces2(system_.coordinates.size(), { 0.0_real, 0.0_real, 0.0_real });
-        nbv_->atomdata_add_nbat_f_to_f(AtomLocality::All, forces2);
+        // Get and check the forces
+        std::vector<RVec> forces(system_.coordinates.size(), { 0.0_real, 0.0_real, 0.0_real });
+        nbv_->atomdata_add_nbat_f_to_f(AtomLocality::All, forces);
+        forceChecker.checkSequence(forces.begin(), forces.end(), "Forces");
 
-        // Compare the forces to the forces computed with energies
-        FloatingPointTolerance forcesOnlyTolerance(relativeToleranceAsUlp(1000.0, 10));
-
-        for (int i = 0; i < gmx::ssize(forces); i++)
+        // Check the energies, as applicable
+        if (options_.energyHandling == EnergyHandling::NoEnergies)
         {
-            for (int d = 0; d < DIM; d++)
-            {
-                EXPECT_REAL_EQ_TOL(forces2[i][d], forces[i][d], forcesOnlyTolerance);
-            }
+            // The force-only kernels can't compare with the reference
+            // data for energies.
+            ljEnergyChecker.disableUnusedEntriesCheck();
+            coulombEnergyChecker.disableUnusedEntriesCheck();
         }
-
-        // Now call the energy group pair kernel
-        nbv_->nbat().paramsDeprecated().numEnergyGroups = c_numEnergyGroups;
-        nbv_->nbat().outputBuffer(0).Vvdw.resize(square(c_numEnergyGroups));
-        nbv_->nbat().outputBuffer(0).Vc.resize(square(c_numEnergyGroups));
-        stepWork.computeEnergy = true;
-
-        std::vector<real> vVdwGrps(gmx::square(c_numEnergyGroups));
-        std::vector<real> vCoulombGrps(gmx::square(c_numEnergyGroups));
-        nbv_->dispatchNonbondedKernel(
-                InteractionLocality::Local, ic, stepWork, enbvClearFYes, shiftVecs, vVdwGrps, vCoulombGrps, nullptr);
-
-        std::vector<RVec> forces3(system_.coordinates.size(), { 0.0_real, 0.0_real, 0.0_real });
-        nbv_->atomdata_add_nbat_f_to_f(AtomLocality::All, forces3);
-
-        for (int i = 0; i < gmx::ssize(forces); i++)
+        else if (options_.energyHandling == EnergyHandling::Energies)
         {
-            for (int d = 0; d < DIM; d++)
-            {
-                EXPECT_REAL_EQ_TOL(forces3[i][d], forces[i][d], forcesOnlyTolerance);
-            }
+            ljEnergyChecker.checkReal(vVdw[0], "VdW energy");
+            coulombEnergyChecker.checkReal(vCoulomb[0], "Coulomb energy");
+            // The energy kernels can't compare with the reference data
+            // for energy groups.
+            ljEnergyChecker.disableUnusedEntriesCheck();
+            coulombEnergyChecker.disableUnusedEntriesCheck();
         }
-
-        ljEnergyChecker.checkSequence(vVdwGrps.begin(), vVdwGrps.end(), "VdW group pair energy");
-        coulombEnergyChecker.checkSequence(
-                vCoulombGrps.begin(), vCoulombGrps.end(), "Coulomb group pair energy");
-
-        // Cross check the sum of group energies with the total energies
-        real vVdwGrpsSum     = 0;
-        real vCoulombGrpsSum = 0;
-        for (int gg = 0; gg < gmx::ssize(vVdwGrps); gg++)
+        else if (options_.energyHandling == EnergyHandling::ThreeEnergyGroups)
         {
-            vVdwGrpsSum += vVdwGrps[gg];
-            vCoulombGrpsSum += vCoulombGrps[gg];
+            // Cross check the sum of group energies with the total energies
+            real vVdwGroupsSum     = std::accumulate(vVdw.begin(), vVdw.end(), 0.0_real);
+            real vCoulombGroupsSum = std::accumulate(vCoulomb.begin(), vCoulomb.end(), 0.0_real);
+            ljEnergyChecker.checkReal(vVdwGroupsSum, "VdW energy");
+            coulombEnergyChecker.checkReal(vCoulombGroupsSum, "Coulomb energy");
+
+            ljEnergyChecker.checkSequence(vVdw.begin(), vVdw.end(), "VdW group pair energy");
+            coulombEnergyChecker.checkSequence(
+                    vCoulomb.begin(), vCoulomb.end(), "Coulomb group pair energy");
         }
-        EXPECT_REAL_EQ_TOL(vVdwGrpsSum, vVdw[0], absoluteTolerance(tolerance));
-        EXPECT_REAL_EQ_TOL(vCoulombGrpsSum, vCoulomb[0], absoluteTolerance(10 * tolerance));
     }
 };
 
@@ -820,7 +805,10 @@ void registerTestsDynamically()
                                                  static_cast<int>(vdwktLJCUT_COMBNONE),
                                                  static_cast<int>(vdwktLJFORCESWITCH),
                                                  static_cast<int>(vdwktLJPOTSWITCH),
-                                                 static_cast<int>(vdwktLJEWALDCOMBGEOM))));
+                                                 static_cast<int>(vdwktLJEWALDCOMBGEOM)),
+                               ::testing::Values(EnergyHandling::NoEnergies,
+                                                 EnergyHandling::Energies,
+                                                 EnergyHandling::ThreeEnergyGroups)));
 
     registerTests<NbnxmKernelTest, NbnxmKernelTestBody, decltype(testCombinations)>(
             "NbnxmKernelTest", nameOfTest, fullNameOfTest, testCombinations);
