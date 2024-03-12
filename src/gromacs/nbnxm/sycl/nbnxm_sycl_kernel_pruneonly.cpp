@@ -64,15 +64,16 @@ namespace Nbnxm
  */
 template<bool haveFreshList>
 auto nbnxmKernelPruneOnly(sycl::handler& cgh,
+                          const int      numSci,
+                          const int      numParts,
                           const Float4* __restrict__ gm_xq,
                           const Float3* __restrict__ gm_shiftVec,
                           nbnxn_cj_packed_t* __restrict__ gm_plistCJPacked,
                           const nbnxn_sci_t* __restrict__ gm_plistSci,
                           unsigned int* __restrict__ gm_plistIMask,
+                          int* __restrict__ gm_rollingPruningPart,
                           const float rlistOuterSq,
-                          const float rlistInnerSq,
-                          const int   numParts,
-                          const int   part)
+                          const float rlistInnerSq)
 {
     /* shmem buffer for i x+q pre-loading */
     sycl::local_accessor<Float4, 1> sm_xq(
@@ -100,6 +101,21 @@ auto nbnxmKernelPruneOnly(sycl::handler& cgh,
         const int      tidx  = tidxj * c_clSize + tidxi;
         const unsigned tidxz = itemIdx.get_local_id(0);
         const unsigned bidx  = itemIdx.get_group(0);
+
+        int part = gm_rollingPruningPart[bidx];
+        itemIdx.barrier(fence_space::global_and_local);
+        if (tidxi == 0 && tidxj == 0 && tidxz == 0)
+        {
+            gm_rollingPruningPart[bidx] = (part + 1) % numParts;
+        }
+
+        // Kernel has been launched with max number of blocks across all passes (plist.nsci/numParts),
+        // but the last pass will require 1 less block, so extra block should return early.
+        const unsigned int numSciInPart = (numSci - part) / numParts;
+        if (bidx >= numSciInPart)
+        {
+            return; // Since the whole block is exiting, it is fine w.r.t. group_barrier
+        }
 
         const sycl::sub_group sg   = itemIdx.get_sub_group();
         const unsigned        widx = tidx / warpSize;
@@ -218,7 +234,7 @@ auto nbnxmKernelPruneOnly(sycl::handler& cgh,
 
 //! \brief Leap Frog SYCL prune-only kernel launch code.
 template<bool haveFreshList, class... Args>
-void launchNbnxmKernelPruneOnly(const DeviceStream& deviceStream, const int numSciInPart, Args&&... args)
+void launchNbnxmKernelPruneOnly(const DeviceStream& deviceStream, const int numSciInPartMax, Args&&... args)
 {
     using kernelNameType = NbnxmKernelPruneOnly<haveFreshList>;
 
@@ -227,7 +243,7 @@ void launchNbnxmKernelPruneOnly(const DeviceStream& deviceStream, const int numS
      *   and j-cluster concurrency, in x, y, and z, respectively.
      * - The 1D block-grid contains as many blocks as super-clusters.
      */
-    const unsigned long     numBlocks = numSciInPart;
+    const unsigned long     numBlocks = numSciInPartMax;
     const sycl::range<3>    blockSize{ c_syclPruneKernelJPackedConcurrency, c_clSize, c_clSize };
     const sycl::range<3>    globalSize{ numBlocks * blockSize[0], blockSize[1], blockSize[2] };
     const sycl::nd_range<3> range{ globalSize, blockSize };
@@ -251,11 +267,7 @@ void chooseAndLaunchNbnxmKernelPruneOnly(bool haveFreshList, Args&&... args)
             haveFreshList);
 }
 
-void launchNbnxmKernelPruneOnly(NbnxmGpu*                 nb,
-                                const InteractionLocality iloc,
-                                const int                 numParts,
-                                const int                 part,
-                                const int                 numSciInPart)
+void launchNbnxmKernelPruneOnly(NbnxmGpu* nb, const InteractionLocality iloc, const int numParts, const int numSciInPartMax)
 {
     NBAtomDataGpu*      adat          = nb->atdat;
     NBParamGpu*         nbp           = nb->nbparam;
@@ -265,16 +277,17 @@ void launchNbnxmKernelPruneOnly(NbnxmGpu*                 nb,
 
     chooseAndLaunchNbnxmKernelPruneOnly(haveFreshList,
                                         deviceStream,
-                                        numSciInPart,
+                                        numSciInPartMax,
+                                        plist->nsci,
+                                        numParts,
                                         adat->xq.get_pointer(),
                                         adat->shiftVec.get_pointer(),
                                         plist->cjPacked.get_pointer(),
                                         plist->sci.get_pointer(),
                                         plist->imask.get_pointer(),
+                                        plist->d_rollingPruningPart.get_pointer(),
                                         nbp->rlistOuter_sq,
-                                        nbp->rlistInner_sq,
-                                        numParts,
-                                        part);
+                                        nbp->rlistInner_sq);
 }
 
 } // namespace Nbnxm

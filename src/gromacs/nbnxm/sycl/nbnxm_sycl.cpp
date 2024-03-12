@@ -60,7 +60,6 @@ void gpu_launch_kernel_pruneonly(NbnxmGpu* nb, const InteractionLocality iloc, c
 
         /* Set rollingPruningNumParts to signal that it is not set */
         plist->rollingPruningNumParts = 0;
-        plist->rollingPruningPart     = 0;
     }
     else
     {
@@ -75,28 +74,23 @@ void gpu_launch_kernel_pruneonly(NbnxmGpu* nb, const InteractionLocality iloc, c
         }
     }
 
-    /* Use a local variable for part and update in plist, so we can return here
-     * without duplicating the part increment code.
+    /* Compute the max number of list entries to prune across all passes
+     * Note that the actual number for a specific pass will be computed inside the kernel.
+     * Also note that this implementation (parts tracking on device) differs from some
+     * other backends (parts tracking on host, passed as kernel argument).
      */
-    const int part = plist->rollingPruningPart;
 
-    plist->rollingPruningPart++;
-    if (plist->rollingPruningPart >= plist->rollingPruningNumParts)
-    {
-        plist->rollingPruningPart = 0;
-    }
-
-    /* Compute the number of list entries to prune in this pass */
-    const int numSciInPart = (plist->nsci - part) / numParts;
+    /* Compute the max number of list entries to prune in this pass */
+    const int numSciInPartMax = (plist->nsci) / numParts;
 
     /* Don't launch the kernel if there is no work to do */
-    if (numSciInPart <= 0)
+    if (numSciInPartMax <= 0)
     {
         plist->haveFreshList = false;
         return;
     }
 
-    launchNbnxmKernelPruneOnly(nb, iloc, numParts, part, numSciInPart);
+    launchNbnxmKernelPruneOnly(nb, iloc, numParts, numSciInPartMax);
 
     if (plist->haveFreshList)
     {

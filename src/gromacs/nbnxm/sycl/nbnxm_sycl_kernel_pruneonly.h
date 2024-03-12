@@ -56,14 +56,12 @@ using gmx::InteractionLocality;
  * \param nb Non-bonded parameters.
  * \param iloc Interaction locality.
  * \param numParts Total number of rolling-prune parts.
- * \param part Number of the part to prune.
- * \param numSciInPart Number of superclusters in \p part.
+ * \param numSciInPartMax Maximum number of superclusters in a part.
  */
 void launchNbnxmKernelPruneOnly(NbnxmGpu*                 nb,
                                 const InteractionLocality iloc,
                                 const int                 numParts,
-                                const int                 part,
-                                const int                 numSciInPart);
+                                const int                 numSciInPartMax);
 
 } // namespace Nbnxm
 
