@@ -315,9 +315,10 @@ bool equalIgnoreDash(const std::string& source, const std::string& target)
            && std::equal(source.begin(),
                          source.end(),
                          target.begin(),
-                         [](const char& s, const char& t) {
-                             return ((s == '-' || s == '_') ? toupper(s) : s)
-                                    == ((t == '-' || t == '_') ? toupper(t) : t);
+                         [](const char& s, const char& t)
+                         {
+                             return ((s == '-' || s == '_') ? std::toupper(s) : s)
+                                    == ((t == '-' || t == '_') ? std::toupper(t) : t);
                          });
 }
 

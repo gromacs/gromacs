@@ -642,7 +642,7 @@ int gmx_potential(int argc, char* argv[])
         bSymmetrize = false;
     }
     /* Calculate axis */
-    axis = toupper(axtitle[0]) - 'X';
+    axis = std::toupper(axtitle[0]) - 'X';
 
     top = read_top(ftp2fn(efTPR, NFILE, fnm), &pbcType); /* read topology file */
 

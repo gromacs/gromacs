@@ -824,7 +824,7 @@ int gmx_densorder(int argc, char* argv[])
     snew(ngx, 1);
 
     /* Calculate axis */
-    axis = toupper(axtitle[0]) - 'X';
+    axis = std::toupper(axtitle[0]) - 'X';
 
     get_index(&top->atoms, ftp2fn_null(efNDX, NFILE, fnm), 1, ngx, index, grpname);
 

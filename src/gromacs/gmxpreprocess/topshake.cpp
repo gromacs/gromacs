@@ -70,7 +70,7 @@ static int count_hydrogens(char*** atomname, int nra, gmx::ArrayRef<const int> a
     nh = 0;
     for (int i = 0; (i < nra); i++)
     {
-        if (toupper(**(atomname[a[i]])) == 'H')
+        if (std::toupper(**(atomname[a[i]])) == 'H')
         {
             nh++;
         }
@@ -138,7 +138,7 @@ void make_shake(gmx::ArrayRef<InteractionsOfType> plist, t_atoms* atoms, int nsh
 #endif
                                 int numhydrogens = count_hydrogens(info, 3, ang->atoms());
                                 if ((nshake == eshALLANGLES) || (numhydrogens > 1)
-                                    || (numhydrogens == 1 && toupper(**(info[ang->aj()])) == 'O'))
+                                    || (numhydrogens == 1 && std::toupper(**(info[ang->aj()])) == 'O'))
                                 {
                                     /* Can only add hydrogen angle shake, if the two bonds
                                      * are constrained.

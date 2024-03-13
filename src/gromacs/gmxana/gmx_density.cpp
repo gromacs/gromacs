@@ -705,7 +705,7 @@ int gmx_density(int argc, char* argv[])
         bCenter = TRUE;
     }
     /* Calculate axis */
-    axis = toupper(axtitle[0]) - 'X';
+    axis = std::toupper(axtitle[0]) - 'X';
 
     top = read_top(ftp2fn(efTPR, NFILE, fnm), &pbcType); /* read topology file */
 

@@ -811,7 +811,7 @@ CpuInfo::Vendor detectProcCpuInfoVendor(const std::map<std::string, std::string>
                                s2.end(),
                                s1.begin(),
                                [](const char& x, const char& y) -> bool
-                               { return tolower(x) == tolower(y); }))
+                               { return std::tolower(x) == std::tolower(y); }))
                 {
                     return t.second;
                 }
