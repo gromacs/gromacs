@@ -298,7 +298,7 @@ static __inline gmx_cycles_t gmx_cycles_read(void)
 static __inline gmx_cycles_t gmx_cycles_read(void)
 {
     /* Irix compilers on SGI hardware */
-    struct timespec t;
+    struct std::timespec t;
     clock_gettime(CLOCK_SGI_CYCLE, &t);
     /* Return the number of nanoseconds, so we can subtract/add */
     return ((unsigned long long)t.tv_sec) * 1000000000 + (unsigned long long)t.tv_nsec;

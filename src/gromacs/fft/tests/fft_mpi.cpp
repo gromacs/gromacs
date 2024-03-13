@@ -214,7 +214,7 @@ public:
         // initialize random input data
         std::vector<real>                in(sizeInReals);
         std::uniform_real_distribution<> dis(-10.0f, 10.0f);
-        std::minstd_rand                 gen(time(NULL) + rank);
+        std::minstd_rand                 gen(std::time(NULL) + rank);
         std::generate(in.begin(),
                       in.end(),
                       [&dis, &gen]()
