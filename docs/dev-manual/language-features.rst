@@ -38,12 +38,26 @@ pushed to a `issue tracker`_ thread. Large changes should be suggested early in 
 cycle for each release so we avoid being hit by last-minute compiler bugs just before
 a release.
 
-* Use namespaces. Everything in ``libgromacs`` should be in a ``gmx``
-  namespace. Don't use using in headers except possibly for aliasing
-  some commonly-used names, and avoid file-level blanket ``using
-  namespace gmx`` and similar. If only a small number of ``gmx``
-  namespace symbols needed in a not-yet-updated file, consider
-  importing just those symbols. See also |linkref2|.
+* Use namespaces.
+
+  * Everything in the |Gromacs|, ``gmxapi``, ``nblib`` libraries/layers should be in the
+    respective ``gmx``, ``gmxapi``, ``nblib`` namespaces. See also |linkref10|
+  * Code used in testing should be in a nested ``test`` namespace so that it is
+    clearly distinct from both the code being tested and the ``testing``
+    namespace used by GoogleTest.
+  * Use anonymous namespaces in source files to describe symbols that should
+    not have external linkage (see |linkref12|).
+  * Use the ``internal`` namespace in header files to denote implementation
+    details that cannot be dependend upon, because anonymous namespaces
+    cannot be used (see |linkref11|).
+  * Otherwise, avoid nested namespaces unless needing to expose a group of
+    related free functions in a module header.
+  * Don't use ``using`` in headers except possibly for aliasing
+    some commonly-used names, and avoid file-level blanket ``using
+    namespace gmx`` and similar. If only a small number of ``gmx``
+    namespace symbols needed in a not-yet-updated file, consider
+    importing just those symbols. See also |linkref2|.
+
 * Use STL, but do not use iostreams outside of the unit tests. iostreams can have
   a negative impact on performance compared to other forms 
   of string streams, depending on the use case. Also, they don't always
@@ -169,6 +183,9 @@ a release.
 .. |linkref7| replace:: `here <http://isocpp.github.io/CppCoreGuidelines/CppCoreGuidelines#c129-when-designing-a-class-hierarchy-distinguish-between-implementation-inheritance-and-interface-inheritance>`__
 .. |linkref8| replace:: `here <http://isocpp.github.io/CppCoreGuidelines/CppCoreGuidelines#Renum-class>`__
 .. |linkref9| replace:: `here <http://isocpp.github.io/CppCoreGuidelines/CppCoreGuidelines#Rc-explicit>`__
+.. |linkref10| replace:: `here <https://isocpp.github.io/CppCoreGuidelines/CppCoreGuidelines#Rs-namespace>`__
+.. |linkref11| replace:: `here <https://isocpp.github.io/CppCoreGuidelines/CppCoreGuidelines#Rs-unnamed>`__
+.. |linkref12| replace:: `here <https://isocpp.github.io/CppCoreGuidelines/CppCoreGuidelines#Rs-unnamed2>`__
 .. |linkrefnotnull1| replace:: `here <http://isocpp.github.io/CppCoreGuidelines/CppCoreGuidelines#Ri-nullptr>`__
 .. |linkrefnotnull2| replace:: `here <http://isocpp.github.io/CppCoreGuidelines/CppCoreGuidelines#Rf-nullptr>`__
 .. |linkrefstringview| replace:: `here <https://isocpp.github.io/CppCoreGuidelines/CppCoreGuidelines.html#Rstr-view>`__
