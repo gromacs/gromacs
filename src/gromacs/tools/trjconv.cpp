@@ -1620,7 +1620,7 @@ int gmx_trjconv(int argc, char* argv[])
                             char c[255];
                             sprintf(c, "%s  %d", exec_command, file_nr - 1);
                             /*fprintf(stderr,"Executing '%s'\n",c);*/
-                            if (0 != system(c))
+                            if (0 != std::system(c))
                             {
                                 gmx_fatal(FARGS, "Error executing command: %s", c);
                             }

@@ -148,7 +148,7 @@ static void sep_line(FILE* fp)
 /* Wrapper for system calls */
 static int gmx_system_call(char* command)
 {
-    return (system(command));
+    return (std::system(command));
 }
 
 

@@ -123,7 +123,7 @@ void do_view(const gmx_output_env_t* oenv, const char* fn, const char* opts)
             {
                 sprintf(buf, "%s %s %s &", cmd, opts ? opts : "", fn);
                 fprintf(stderr, "Executing '%s'\n", buf);
-                if (0 != system(buf))
+                if (0 != std::system(buf))
                 {
                     gmx_fatal(FARGS, "Failed executing command: %s", buf);
                 }
