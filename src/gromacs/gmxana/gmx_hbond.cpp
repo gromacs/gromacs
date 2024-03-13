@@ -2660,7 +2660,7 @@ int gmx_hbond(int argc, char* argv[])
                 grpnames_spec[0],
                 isize[0]);
     }
-    free(datable);
+    std::free(datable);
 
     /* search donors and acceptors in groups */
     snew(datable, top.atoms.nr);

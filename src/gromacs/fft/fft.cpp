@@ -77,7 +77,7 @@ int gmx_fft_init_many_1d(gmx_fft_t* pfft, int nx, int howmany, gmx_fft_flag flag
     }
     *pfft = nullptr;
 
-    if ((fft = static_cast<gmx_many_fft_t>(malloc(sizeof(struct gmx_many_fft)))) == nullptr)
+    if ((fft = static_cast<gmx_many_fft_t>(std::malloc(sizeof(struct gmx_many_fft)))) == nullptr)
     {
         return ENOMEM;
     }
@@ -100,7 +100,7 @@ int gmx_fft_init_many_1d_real(gmx_fft_t* pfft, int nx, int howmany, gmx_fft_flag
     }
     *pfft = nullptr;
 
-    if ((fft = static_cast<gmx_many_fft_t>(malloc(sizeof(struct gmx_many_fft)))) == nullptr)
+    if ((fft = static_cast<gmx_many_fft_t>(std::malloc(sizeof(struct gmx_many_fft)))) == nullptr)
     {
         return ENOMEM;
     }
@@ -157,7 +157,7 @@ void gmx_many_fft_destroy(gmx_fft_t fft)
         {
             gmx_fft_destroy(mfft->fft);
         }
-        free(mfft);
+        std::free(mfft);
     }
 }
 

@@ -107,7 +107,7 @@ gmx_unused void* alignedMallocGeneric(std::size_t bytes, std::size_t alignment)
     // The amount of extra memory (beyound what the user asked for) we need is:
     // - sizeof(void *), to store the original pointer
     // - alignment, to make sure we have an aligned pointer in the area
-    void* pMalloc = malloc(bytes + sizeof(void*) + alignment);
+    void* pMalloc = std::malloc(bytes + sizeof(void*) + alignment);
 
     if (pMalloc == nullptr)
     {
@@ -147,7 +147,7 @@ gmx_unused void alignedFreeGeneric(void* p)
     if (p)
     {
         // Pick up the pointer stored just below p, and use that to call free()
-        free(reinterpret_cast<void**>(p)[-1]);
+        std::free(reinterpret_cast<void**>(p)[-1]);
     }
 }
 
@@ -182,7 +182,7 @@ void freeImpl(void* p)
 #if HAVE__MM_MALLOC
         _mm_free(p);
 #elif HAVE_POSIX_MEMALIGN || HAVE_MEMALIGN
-        free(p);
+        std::free(p);
 #elif HAVE__ALIGNED_MALLOC
         _aligned_free(p);
 #else

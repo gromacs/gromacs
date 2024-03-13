@@ -69,7 +69,7 @@ void* save_malloc(const char* name, const char* file, int line, size_t size)
     }
     else
     {
-        if ((p = malloc(size)) == nullptr)
+        if ((p = std::malloc(size)) == nullptr)
         {
             gmx_fatal(errno,
                       __FILE__,
@@ -112,7 +112,7 @@ void* save_calloc(const char* name, const char* file, int line, size_t nelem, si
 #if GMX_BROKEN_CALLOC
         /* emulate calloc(3) with malloc/memset on machines with
            a broken calloc, e.g. in -lgmalloc on cray xt3. */
-        if ((p = malloc((size_t)nelem * (size_t)elsize)) == NULL)
+        if ((p = std::malloc((size_t)nelem * (size_t)elsize)) == NULL)
         {
             gmx_fatal(errno,
                       __FILE__,
@@ -127,7 +127,7 @@ void* save_calloc(const char* name, const char* file, int line, size_t nelem, si
         }
         memset(p, 0, (size_t)(nelem * elsize));
 #else
-        if ((p = calloc(nelem, elsize)) == nullptr)
+        if ((p = std::calloc(nelem, elsize)) == nullptr)
         {
             gmx_fatal(errno,
                       __FILE__,
@@ -170,11 +170,11 @@ void* save_realloc(const char* name, const char* file, int line, void* ptr, size
 #endif
         if (ptr == nullptr)
         {
-            p = malloc(size);
+            p = std::malloc(size);
         }
         else
         {
-            p = realloc(ptr, size);
+            p = std::realloc(ptr, size);
         }
         if (p == nullptr)
         {
@@ -198,7 +198,7 @@ void save_free(const char gmx_unused* name, const char gmx_unused* file, int gmx
 {
     if (ptr != nullptr)
     {
-        free(ptr);
+        std::free(ptr);
     }
 }
 

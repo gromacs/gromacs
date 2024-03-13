@@ -307,7 +307,7 @@ static void calc_electron_density(const char*             fn,
                 {
                     (*slDensity)[n][sliceIndex] += (found->nr_el - top->atoms.atom[index[n][i]].q) * invvol;
                 }
-                free(sought.atomname);
+                std::free(sought.atomname);
             }
         }
         nr_frames++;

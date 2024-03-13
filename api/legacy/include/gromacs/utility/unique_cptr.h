@@ -57,7 +57,7 @@ namespace gmx
 template<class T>
 inline void free_wrapper(T* p)
 {
-    free(p);
+    std::free(p);
 }
 
 //! sfree wrapper to be used as unique_cptr deleter

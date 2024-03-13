@@ -121,7 +121,7 @@ SettleTestData::SettleTestData(int numSettles) :
 
     // Set up the masses.
     mtop_.moltype[0].atoms.atom =
-            static_cast<t_atom*>(calloc(numSettles * atomsPerSettle_, sizeof(t_atom)));
+            static_cast<t_atom*>(std::calloc(numSettles * atomsPerSettle_, sizeof(t_atom)));
     numAtoms_ = numSettles * atomsPerSettle_;
     masses_.resize(numAtoms_);
     inverseMasses_.resize(numAtoms_);

@@ -267,18 +267,18 @@ fft5d_plan fft5d_plan_3d(int                NG,
 
     /*for transpose we need to know the size for each processor not only our own size*/
 
-    N0  = static_cast<int*>(malloc(P[0] * sizeof(int)));
-    N1  = static_cast<int*>(malloc(P[1] * sizeof(int)));
-    M0  = static_cast<int*>(malloc(P[0] * sizeof(int)));
-    M1  = static_cast<int*>(malloc(P[1] * sizeof(int)));
-    K0  = static_cast<int*>(malloc(P[0] * sizeof(int)));
-    K1  = static_cast<int*>(malloc(P[1] * sizeof(int)));
-    oN0 = static_cast<int*>(malloc(P[0] * sizeof(int)));
-    oN1 = static_cast<int*>(malloc(P[1] * sizeof(int)));
-    oM0 = static_cast<int*>(malloc(P[0] * sizeof(int)));
-    oM1 = static_cast<int*>(malloc(P[1] * sizeof(int)));
-    oK0 = static_cast<int*>(malloc(P[0] * sizeof(int)));
-    oK1 = static_cast<int*>(malloc(P[1] * sizeof(int)));
+    N0  = static_cast<int*>(std::malloc(P[0] * sizeof(int)));
+    N1  = static_cast<int*>(std::malloc(P[1] * sizeof(int)));
+    M0  = static_cast<int*>(std::malloc(P[0] * sizeof(int)));
+    M1  = static_cast<int*>(std::malloc(P[1] * sizeof(int)));
+    K0  = static_cast<int*>(std::malloc(P[0] * sizeof(int)));
+    K1  = static_cast<int*>(std::malloc(P[1] * sizeof(int)));
+    oN0 = static_cast<int*>(std::malloc(P[0] * sizeof(int)));
+    oN1 = static_cast<int*>(std::malloc(P[1] * sizeof(int)));
+    oM0 = static_cast<int*>(std::malloc(P[0] * sizeof(int)));
+    oM1 = static_cast<int*>(std::malloc(P[1] * sizeof(int)));
+    oK0 = static_cast<int*>(std::malloc(P[0] * sizeof(int)));
+    oK1 = static_cast<int*>(std::malloc(P[1] * sizeof(int)));
 
     for (i = 0; i < P[0]; i++)
     {
@@ -370,10 +370,10 @@ fft5d_plan fft5d_plan_3d(int                NG,
         K[2]     = vmax(N1, P[1]);
         pK[2]    = N1[prank[1]];
         oK[2]    = oN1[prank[1]];
-        free(N0);
-        free(oN0); /*these are not used for this order*/
-        free(M1);
-        free(oM1); /*the rest is freed in destroy*/
+        std::free(N0);
+        std::free(oN0); /*these are not used for this order*/
+        std::free(M1);
+        std::free(oM1); /*the rest is freed in destroy*/
     }
     else
     {
@@ -409,10 +409,10 @@ fft5d_plan fft5d_plan_3d(int                NG,
         K[2]     = vmax(M1, P[1]);
         pK[2]    = M1[prank[1]];
         oK[2]    = oM1[prank[1]];
-        free(N1);
-        free(oN1); /*these are not used for this order*/
-        free(K0);
-        free(oK0); /*the rest is freed in destroy*/
+        std::free(N1);
+        std::free(oN1); /*these are not used for this order*/
+        std::free(K0);
+        std::free(oK0); /*the rest is freed in destroy*/
     }
     N[2] = pN[2] = -1; /*not used*/
 
@@ -624,7 +624,7 @@ fft5d_plan fft5d_plan_3d(int                NG,
             {
                 fprintf(debug, "FFT5D: Plan s %d rC %d M %d pK %d C %d lsize %d\n", s, rC[s], M[s], pK[s], C[s], lsize);
             }
-            plan->p1d[s] = static_cast<gmx_fft_t*>(malloc(sizeof(gmx_fft_t) * nthreads));
+            plan->p1d[s] = static_cast<gmx_fft_t*>(std::malloc(sizeof(gmx_fft_t) * nthreads));
 
             /* Make sure that the init routines are only called by one thread at a time and in order
                (later is only important to not confuse valgrind)
@@ -1432,26 +1432,26 @@ void fft5d_destroy(fft5d_plan plan)
             {
                 gmx_many_fft_destroy(plan->p1d[s][t]);
             }
-            free(plan->p1d[s]);
+            std::free(plan->p1d[s]);
         }
         if (plan->iNin[s])
         {
-            free(plan->iNin[s]);
+            std::free(plan->iNin[s]);
             plan->iNin[s] = nullptr;
         }
         if (plan->oNin[s])
         {
-            free(plan->oNin[s]);
+            std::free(plan->oNin[s]);
             plan->oNin[s] = nullptr;
         }
         if (plan->iNout[s])
         {
-            free(plan->iNout[s]);
+            std::free(plan->iNout[s]);
             plan->iNout[s] = nullptr;
         }
         if (plan->oNout[s])
         {
-            free(plan->oNout[s]);
+            std::free(plan->oNout[s]);
             plan->oNout[s] = nullptr;
         }
     }
@@ -1495,5 +1495,5 @@ void fft5d_destroy(fft5d_plan plan)
 #    endif
 #endif
 
-    free(plan);
+    std::free(plan);
 }

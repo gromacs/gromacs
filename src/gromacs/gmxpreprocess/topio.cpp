@@ -1509,9 +1509,9 @@ static void generate_qmexcl_moltype(gmx_moltype_t*       molt,
         }
     }
 
-    free(qm_arr);
-    free(bQMMM);
-    free(link_arr);
+    std::free(qm_arr);
+    std::free(bQMMM);
+    std::free(link_arr);
 } /* generate_qmexcl */
 
 void generate_qmexcl(gmx_mtop_t* sys, t_inputrec* ir, const gmx::MDLogger& logger)
