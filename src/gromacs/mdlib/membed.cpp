@@ -1001,7 +1001,7 @@ static void top_update(const char* topfile, rm_t* rm_p, gmx_mtop_t* mtop)
     /* use gmx_ffopen to generate backup of topinout */
     fpout = gmx_ffopen(topfile, "w");
     gmx_ffclose(fpout);
-    rename(temporary_filename, topfile);
+    std::rename(temporary_filename, topfile);
 }
 
 void rescale_membed(int step_rel, gmx_membed_t* membed, rvec* x)

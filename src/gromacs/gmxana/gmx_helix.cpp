@@ -206,12 +206,12 @@ int gmx_helix(int argc, char* argv[])
     for (i = 0; (i < efhNR); i++)
     {
         sprintf(buf, "%s.xvg", xf[i].filenm);
-        remove(buf);
+        std::remove(buf);
         xf[i].fp = xvgropen(buf, xf[i].title, xf[i].xaxis ? xf[i].xaxis : "Time (ps)", xf[i].yaxis, oenv);
         if (xf[i].bfp2)
         {
             sprintf(buf, "%s.out", xf[i].filenm);
-            remove(buf);
+            std::remove(buf);
             xf[i].fp2 = gmx_ffopen(buf, "w");
         }
     }

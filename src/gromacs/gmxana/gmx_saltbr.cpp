@@ -303,7 +303,7 @@ int gmx_saltbr(int argc, char* argv[])
             xvgrclose(out[m]);
             if (nset[m] == 0)
             {
-                remove(fn[m]);
+                std::remove(fn[m]);
             }
         }
     }

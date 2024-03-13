@@ -172,7 +172,7 @@ static void remove_if_exists(const char* fn)
     if (gmx_fexist(fn))
     {
         fprintf(stdout, "Deleting %s\n", fn);
-        remove(fn);
+        std::remove(fn);
     }
 }
 
@@ -795,7 +795,7 @@ static void check_mdrun_works(gmx_bool    bThreads,
     fprintf(stdout, "passed.\n");
 
     /* Clean up ... */
-    remove(filename);
+    std::remove(filename);
     sfree(command);
 }
 
@@ -1236,7 +1236,7 @@ static void cleanup(const t_filenm* fnm, int nfile, int k, int nnodes, int nPMEn
             {
                 fprintf(stdout, "renaming log file to %s\n", newfilename.c_str());
                 make_backup(newfilename);
-                rename(opt2fn("-bg", nfile, fnm), newfilename.c_str());
+                std::rename(opt2fn("-bg", nfile, fnm), newfilename.c_str());
             }
         }
         else if (std::strcmp(opt, "-err") == 0)
@@ -1257,12 +1257,12 @@ static void cleanup(const t_filenm* fnm, int nfile, int k, int nnodes, int nPMEn
                 {
                     fprintf(stdout, "Saving stderr output in %s\n", newfilename.c_str());
                     make_backup(newfilename);
-                    rename(fn, newfilename.c_str());
+                    std::rename(fn, newfilename.c_str());
                 }
                 else
                 {
                     fprintf(stdout, "Deleting %s\n", fn);
-                    remove(fn);
+                    std::remove(fn);
                 }
             }
         }
@@ -2770,7 +2770,7 @@ int gmx_tune_pme(int argc, char* argv[])
         for (i = 0; i < ntprs; i++)
         {
             fprintf(stdout, "Deleting temporary benchmark input file %s\n", tpr_names[i]);
-            remove(tpr_names[i]);
+            std::remove(tpr_names[i]);
         }
 
         /* Now start the real simulation if the user requested it ... */
