@@ -455,7 +455,7 @@ static char* fgets3(FILE* fp, char ptr[], int* len)
         return nullptr;
     }
     p = ptr;
-    while ((std::strchr(ptr, '\n') == nullptr) && (!feof(fp)))
+    while ((std::strchr(ptr, '\n') == nullptr) && (!std::feof(fp)))
     {
         /* This line is longer than len characters, let's increase len! */
         *len += STRLEN;

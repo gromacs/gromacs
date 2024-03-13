@@ -260,7 +260,7 @@ static void read_ter_db_file(const std::filesystem::path&        fn,
     std::optional<ReplaceType> rtkw;
     get_a_line(in, line, STRLEN);
     MoleculePatchDatabase* block = nullptr;
-    while (!feof(in))
+    while (!std::feof(in))
     {
         if (get_header(line, header))
         {

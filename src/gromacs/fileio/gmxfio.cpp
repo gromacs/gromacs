@@ -493,11 +493,11 @@ static int gmx_fio_int_get_file_md5(t_fileio* fio, gmx_off_t offset, std::array<
     {
         // Read an unexpected length. This is not a fatal error; the
         // md5sum check to prevent overwriting files is not vital.
-        if (ferror(fio->fp))
+        if (std::ferror(fio->fp))
         {
             fprintf(stderr, "\nTrying to get md5sum: %s: %s\n", fio->fn.string().c_str(), std::strerror(errno));
         }
-        else if (!feof(fio->fp))
+        else if (!std::feof(fio->fp))
         {
             fprintf(stderr,
                     "\nTrying to get md5sum: Unknown reason for short read: %s\n",

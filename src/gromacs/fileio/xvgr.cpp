@@ -469,14 +469,14 @@ static char* fgets3(FILE* fp, char** ptr, int* len, int maxlen)
         }
         curp += len_remaining - 1; /* overwrite the nul char in next iteration */
         len_remaining = 1;
-    } while ((std::strchr(*ptr, '\n') == nullptr) && (feof(fp) == 0));
+    } while ((std::strchr(*ptr, '\n') == nullptr) && (std::feof(fp) == 0));
 
     if (*len + STRLEN >= maxlen)
     {
         return nullptr; /* this line was too long */
     }
 
-    if (feof(fp))
+    if (std::feof(fp))
     {
         /* We reached EOF before '\n', skip this last line. */
         return nullptr;

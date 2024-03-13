@@ -249,7 +249,7 @@ int read_g96_conf(FILE* fp, const std::filesystem::path& infile, char** name, t_
     int      natoms, nbp;
     double   db1, db2, db3, db4, db5, db6, db7, db8, db9;
 
-    bAtStart = (ftell(fp) == 0);
+    bAtStart = (std::ftell(fp) == 0);
 
     clear_trxframe(fr, FALSE);
 

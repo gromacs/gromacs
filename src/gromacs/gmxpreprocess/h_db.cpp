@@ -168,7 +168,7 @@ static void read_h_db_file(const std::filesystem::path& hfn, std::vector<Molecul
         {
             for (int i = 0; (i < nab); i++)
             {
-                if (feof(in))
+                if (std::feof(in))
                 {
                     gmx_fatal(FARGS,
                               "Expected %d lines of hydrogens, found only %d "

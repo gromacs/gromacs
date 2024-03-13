@@ -253,7 +253,7 @@ void frewind(FILE* fp)
         }
         ps = ps->prev;
     }
-    rewind(fp);
+    std::rewind(fp);
 }
 
 int gmx_fseek(FILE* stream, gmx_off_t offset, int whence)
@@ -264,7 +264,7 @@ int gmx_fseek(FILE* stream, gmx_off_t offset, int whence)
 #    if HAVE__FSEEKI64
     return _fseeki64(stream, offset, whence);
 #    else
-    return fseek(stream, offset, whence);
+    return std::fseek(stream, offset, whence);
 #    endif
 #endif
 }
@@ -281,7 +281,7 @@ gmx_off_t gmx_ftell(FILE* stream)
     return ftello64(stream);
 #        endif
 #    else
-    return ftell(stream);
+    return std::ftell(stream);
 #    endif
 #endif
 }

@@ -90,7 +90,7 @@ char* fgets2(char* line, int n, FILE* stream)
          * or because of n being too small.
          * Since both cases occur very infrequently, we can check for EOF.
          */
-        if (!feof(stream))
+        if (!std::feof(stream))
         {
             gmx_fatal(FARGS,
                       "An input file contains a line longer than %d characters, while the buffer "

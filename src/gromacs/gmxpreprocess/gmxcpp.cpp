@@ -546,7 +546,7 @@ int cpp_read_line(gmx_cpp_t* handlep, int n, char buf[])
         return eCPP_FILE_NOT_OPEN;
     }
 
-    bEOF = (feof(handle->fp) != 0);
+    bEOF = (std::feof(handle->fp) != 0);
     if (!bEOF)
     {
         /* Read the actual line now. */
@@ -555,7 +555,7 @@ int cpp_read_line(gmx_cpp_t* handlep, int n, char buf[])
             /* Recheck EOF, since we could have been at the end before
              * the fgets2 call, but we need to read past the end to know.
              */
-            bEOF = (feof(handle->fp) != 0);
+            bEOF = (std::feof(handle->fp) != 0);
             if (!bEOF)
             {
                 /* Something strange happened, fgets returned NULL,

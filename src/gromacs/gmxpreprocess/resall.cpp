@@ -78,7 +78,7 @@ PreprocessingAtomTypes read_atype(const std::filesystem::path& ffdir)
     for (const auto& filename : files)
     {
         in = fflib_open(filename);
-        while (!feof(in))
+        while (!std::feof(in))
         {
             /* Skip blank or comment-only lines */
             do
@@ -88,7 +88,7 @@ PreprocessingAtomTypes read_atype(const std::filesystem::path& ffdir)
                     strip_comment(buf);
                     trim(buf);
                 }
-            } while ((feof(in) == 0) && std::strlen(buf) == 0);
+            } while ((std::feof(in) == 0) && std::strlen(buf) == 0);
 
             if (sscanf(buf, "%s%lf", name, &m) == 2)
             {
@@ -423,7 +423,7 @@ void readResidueDatabase(const std::filesystem::path&    rrdb,
     }
     /* We don't know the current size of rrtp, but simply realloc immediately */
     auto oldArrayEnd = rtpDBEntry->end();
-    while (!feof(in))
+    while (!std::feof(in))
     {
         /* Initialise rtp entry structure */
         rtpDBEntry->push_back(header_settings);
@@ -467,7 +467,7 @@ void readResidueDatabase(const std::filesystem::path&    rrdb,
             {
                 gmx_fatal(FARGS, "in .rtp file in residue %s at line:\n%s\n", res->resname.c_str(), line);
             }
-        } while ((feof(in) == 0) && !bNextResidue);
+        } while ((std::feof(in) == 0) && !bNextResidue);
 
         if (res->natom() == 0)
         {

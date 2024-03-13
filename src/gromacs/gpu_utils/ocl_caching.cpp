@@ -110,13 +110,13 @@ cl_program makeProgramFromCache(const std::string& filename, cl_context context,
     }
 
     // TODO more stdio error handling
-    fseek(f.get(), 0, SEEK_END);
+    std::fseek(f.get(), 0, SEEK_END);
     unsigned char*             binary;
     unique_cptr<unsigned char> binaryGuard;
-    size_t                     fileSize = ftell(f.get());
+    size_t                     fileSize = std::ftell(f.get());
     snew(binary, fileSize);
     binaryGuard.reset(binary);
-    fseek(f.get(), 0, SEEK_SET);
+    std::fseek(f.get(), 0, SEEK_SET);
     size_t readCount = fread(binary, 1, fileSize, f.get());
 
     if (readCount != fileSize)

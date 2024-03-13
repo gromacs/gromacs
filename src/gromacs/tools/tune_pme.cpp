@@ -738,7 +738,7 @@ static void check_mdrun_works(gmx_bool    bThreads,
     fp = fopen(filename, "r");
     /* We need to scan the whole output file, since sometimes the queuing system
      * also writes stuff to stdout/err */
-    while (!feof(fp))
+    while (!std::feof(fp))
     {
         cp = fgets(line, STRLEN, fp);
         if (cp != nullptr)
