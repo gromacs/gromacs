@@ -485,7 +485,7 @@ static int imd_send_energies(IMDSocket* socket, const IMDEnergyBlock* energies, 
 
     recsize = c_headerSize + sizeof(IMDEnergyBlock);
     fill_header(reinterpret_cast<IMDHeader*>(buffer), IMDMessageType::Energies, 1);
-    memcpy(buffer + c_headerSize, energies, sizeof(IMDEnergyBlock));
+    std::memcpy(buffer + c_headerSize, energies, sizeof(IMDEnergyBlock));
 
     return static_cast<int>(imd_write_multiple(socket, buffer, recsize) != recsize);
 }
@@ -589,7 +589,7 @@ static int imd_send_rvecs(IMDSocket* socket, int nat, rvec* x, char* buffer)
         sendx[0] = static_cast<float>(x[i][0]) * gmx::c_nm2A;
         sendx[1] = static_cast<float>(x[i][1]) * gmx::c_nm2A;
         sendx[2] = static_cast<float>(x[i][2]) * gmx::c_nm2A;
-        memcpy(buffer + c_headerSize + i * tuplesize, sendx, tuplesize);
+        std::memcpy(buffer + c_headerSize + i * tuplesize, sendx, tuplesize);
     }
 
     return static_cast<int>(imd_write_multiple(socket, buffer, size) != size);

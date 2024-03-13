@@ -480,7 +480,8 @@ static int enter_params(gmx_ffparams_t*           ffparams,
             {
                 // Note that the first condition is always met by starting the loop at start
                 if (ffparams->functype[type] == ftype
-                    && memcmp(&newparam, &ffparams->iparams[type], static_cast<size_t>(sizeof(newparam))) == 0)
+                    && std::memcmp(&newparam, &ffparams->iparams[type], static_cast<size_t>(sizeof(newparam)))
+                               == 0)
                 {
                     return type;
                 }
@@ -493,7 +494,7 @@ static int enter_params(gmx_ffparams_t*           ffparams,
             // This changes the complexity from quadratic to linear in the number of restraints.
             const int type = ffparams->numTypes() - 1;
             if (type >= 0 && ffparams->functype[type] == ftype
-                && memcmp(&newparam, &ffparams->iparams[type], static_cast<size_t>(sizeof(newparam))) == 0)
+                && std::memcmp(&newparam, &ffparams->iparams[type], static_cast<size_t>(sizeof(newparam))) == 0)
             {
                 return type;
             }

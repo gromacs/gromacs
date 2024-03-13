@@ -182,7 +182,7 @@ int gmx_fft_transpose_2d(t_complex* in_data, t_complex* out_data, int nx, int ny
     {
         if (in_data != out_data)
         {
-            memcpy(out_data, in_data, sizeof(t_complex) * nx * ny);
+            std::memcpy(out_data, in_data, sizeof(t_complex) * nx * ny);
         }
         return 0;
     }

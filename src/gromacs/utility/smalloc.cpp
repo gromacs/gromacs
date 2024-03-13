@@ -82,7 +82,7 @@ void* save_malloc(const char* name, const char* file, int line, size_t size)
                       file,
                       line);
         }
-        (void)memset(p, 0, size);
+        (void)std::memset(p, 0, size);
     }
     return p;
 }
@@ -125,7 +125,7 @@ void* save_calloc(const char* name, const char* file, int line, size_t nelem, si
                       file,
                       line);
         }
-        memset(p, 0, (size_t)(nelem * elsize));
+        std::memset(p, 0, (size_t)(nelem * elsize));
 #else
         if ((p = std::calloc(nelem, elsize)) == nullptr)
         {
@@ -279,7 +279,7 @@ void* save_calloc_aligned(const char* name, const char* file, int line, size_t n
     void* aligned = save_malloc_aligned(name, file, line, nelem, elsize, alignment);
     if (aligned != nullptr)
     {
-        memset(aligned, 0, static_cast<size_t>(nelem * elsize));
+        std::memset(aligned, 0, static_cast<size_t>(nelem * elsize));
     }
     return aligned;
 }

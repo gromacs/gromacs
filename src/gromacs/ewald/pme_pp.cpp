@@ -521,7 +521,7 @@ static void receive_virial_energy(const t_commrec*      cr,
 #if GMX_MPI
         MPI_Recv(&cve, sizeof(cve), MPI_BYTE, cr->dd->pme_nodeid, 1, cr->mpi_comm_mysim, MPI_STATUS_IGNORE);
 #else
-        memset(&cve, 0, sizeof(cve));
+        std::memset(&cve, 0, sizeof(cve));
 #endif
 
         forceWithVirial->addVirialContribution(cve.vir_q);

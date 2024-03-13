@@ -192,7 +192,7 @@ void pme_gpu_realloc_and_copy_bspline_values(PmeGpu* pmeGpu, const int gridIndex
                                           pmeGpu->kernelParams->grid.realGridSize[XX],
                                           pmeGpu->kernelParams->grid.realGridSize[XX]
                                                   + pmeGpu->kernelParams->grid.realGridSize[YY] };
-    memcpy(&pmeGpu->kernelParams->grid.splineValuesOffset, &splineValuesOffset, sizeof(splineValuesOffset));
+    std::memcpy(&pmeGpu->kernelParams->grid.splineValuesOffset, &splineValuesOffset, sizeof(splineValuesOffset));
 
     const int newSplineValuesSize = pmeGpu->kernelParams->grid.realGridSize[XX]
                                     + pmeGpu->kernelParams->grid.realGridSize[YY]
@@ -212,9 +212,9 @@ void pme_gpu_realloc_and_copy_bspline_values(PmeGpu* pmeGpu, const int gridIndex
     }
     for (int i = 0; i < DIM; i++)
     {
-        memcpy(pmeGpu->staging.h_splineModuli[gridIndex].data() + splineValuesOffset[i],
-               pmeGpu->common->bsp_mod[i].data(),
-               pmeGpu->common->bsp_mod[i].size() * sizeof(float));
+        std::memcpy(pmeGpu->staging.h_splineModuli[gridIndex].data() + splineValuesOffset[i],
+                    pmeGpu->common->bsp_mod[i].data(),
+                    pmeGpu->common->bsp_mod[i].size() * sizeof(float));
     }
     /* TODO: pin original buffer instead! */
     copyToDeviceBuffer(&pmeGpu->kernelParams->grid.d_splineModuli[gridIndex],
@@ -630,7 +630,7 @@ void pme_gpu_realloc_and_copy_fract_shifts(PmeGpu* pmeGpu)
     const int cellCount           = c_pmeNeighborUnitcellCount;
     const int gridDataOffset[DIM] = { 0, cellCount * nx, cellCount * (nx + ny) };
 
-    memcpy(kernelParamsPtr->grid.tablesOffsets, &gridDataOffset, sizeof(gridDataOffset));
+    std::memcpy(kernelParamsPtr->grid.tablesOffsets, &gridDataOffset, sizeof(gridDataOffset));
 
     const int newFractShiftsSize = cellCount * (nx + ny + nz);
 
@@ -977,11 +977,11 @@ void pme_gpu_reinit_3dfft(const PmeGpu* pmeGpu)
 
             if (!useDecomposition)
             {
-                memcpy(pmeGpu->archSpecific->localRealGridSize, grid.realGridSize, DIM * sizeof(int));
-                memcpy(pmeGpu->archSpecific->localRealGridSizePadded,
-                       grid.realGridSizePadded,
-                       DIM * sizeof(int));
-                memcpy(grid.localComplexGridSizePadded, grid.complexGridSizePadded, DIM * sizeof(int));
+                std::memcpy(pmeGpu->archSpecific->localRealGridSize, grid.realGridSize, DIM * sizeof(int));
+                std::memcpy(pmeGpu->archSpecific->localRealGridSizePadded,
+                            grid.realGridSizePadded,
+                            DIM * sizeof(int));
+                std::memcpy(grid.localComplexGridSizePadded, grid.complexGridSizePadded, DIM * sizeof(int));
 
                 // PME grid is same as FFT real grid in case of no decomposition
                 pmeGpu->archSpecific->d_fftRealGrid[gridIndex] = grid.d_realGrid[gridIndex];
@@ -1004,7 +1004,7 @@ void pme_gpu_reinit_3dfft(const PmeGpu* pmeGpu)
                     &(grid.d_fftComplexGrid[gridIndex])));
 
             // no difference in padded and unpadded size
-            memcpy(grid.localComplexGridSize, grid.localComplexGridSizePadded, DIM * sizeof(int));
+            std::memcpy(grid.localComplexGridSize, grid.localComplexGridSizePadded, DIM * sizeof(int));
         }
     }
     else
@@ -1013,8 +1013,8 @@ void pme_gpu_reinit_3dfft(const PmeGpu* pmeGpu)
         // These values needs to be initialized for unit tests which run pme_gpu_solve even in mixed
         // mode. In real world cases, pme_gpu_solve is never called in mixed mode.
         PmeGpuGridParams& grid = pme_gpu_get_kernel_params_base_ptr(pmeGpu)->grid;
-        memcpy(grid.localComplexGridSizePadded, grid.complexGridSizePadded, DIM * sizeof(int));
-        memcpy(grid.localComplexGridSize, grid.complexGridSize, DIM * sizeof(int));
+        std::memcpy(grid.localComplexGridSizePadded, grid.complexGridSizePadded, DIM * sizeof(int));
+        std::memcpy(grid.localComplexGridSize, grid.complexGridSize, DIM * sizeof(int));
 
         for (int gridIndex = 0; gridIndex < pmeGpu->common->ngrids; gridIndex++)
         {
@@ -1144,7 +1144,7 @@ void pme_gpu_update_input_box(PmeGpu gmx_unused* pmeGpu, const matrix gmx_unused
     const real newRecipBox[DIM][DIM] = { { recipBox[XX][XX], recipBox[YY][XX], recipBox[ZZ][XX] },
                                          { 0.0, recipBox[YY][YY], recipBox[ZZ][YY] },
                                          { 0.0, 0.0, recipBox[ZZ][ZZ] } };
-    memcpy(kernelParamsPtr->current.recipBox, newRecipBox, sizeof(matrix));
+    std::memcpy(kernelParamsPtr->current.recipBox, newRecipBox, sizeof(matrix));
 #endif
 }
 

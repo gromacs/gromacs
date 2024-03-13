@@ -1228,7 +1228,7 @@ void convert_array_to_real_array(void*       from,
             {
                 if (fact == 1)
                 {
-                    memcpy(to, from, nValues * sizeof(real) * nAtoms);
+                    std::memcpy(to, from, nValues * sizeof(real) * nAtoms);
                 }
                 else
                 {
@@ -1266,7 +1266,7 @@ void convert_array_to_real_array(void*       from,
             {
                 if (fact == 1)
                 {
-                    memcpy(to, from, nValues * sizeof(real) * nAtoms);
+                    std::memcpy(to, from, nValues * sizeof(real) * nAtoms);
                 }
                 else
                 {

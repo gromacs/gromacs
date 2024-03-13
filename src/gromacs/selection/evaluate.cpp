@@ -783,7 +783,7 @@ void _gmx_sel_evaluate_subexprref(gmx_sel_evaluate_t*                     data,
             if (!g)
             {
                 sel->v.nr = expr->v.nr;
-                memcpy(sel->v.u.i, expr->v.u.i, sel->v.nr * sizeof(*sel->v.u.i));
+                std::memcpy(sel->v.u.i, expr->v.u.i, sel->v.nr * sizeof(*sel->v.u.i));
             }
             else
             {
@@ -804,7 +804,7 @@ void _gmx_sel_evaluate_subexprref(gmx_sel_evaluate_t*                     data,
             if (!g)
             {
                 sel->v.nr = expr->v.nr;
-                memcpy(sel->v.u.r, expr->v.u.r, sel->v.nr * sizeof(*sel->v.u.r));
+                std::memcpy(sel->v.u.r, expr->v.u.r, sel->v.nr * sizeof(*sel->v.u.r));
             }
             else
             {
@@ -825,7 +825,7 @@ void _gmx_sel_evaluate_subexprref(gmx_sel_evaluate_t*                     data,
             if (!g)
             {
                 sel->v.nr = expr->v.nr;
-                memcpy(sel->v.u.s, expr->v.u.s, sel->v.nr * sizeof(*sel->v.u.s));
+                std::memcpy(sel->v.u.s, expr->v.u.s, sel->v.nr * sizeof(*sel->v.u.s));
             }
             else
             {

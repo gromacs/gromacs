@@ -202,16 +202,16 @@ void gmx_ana_pos_copy(gmx_ana_pos_t* dest, gmx_ana_pos_t* src, bool bFirst)
             gmx_ana_pos_reserve_forces(dest);
         }
     }
-    memcpy(dest->x, src->x, src->count() * sizeof(*dest->x));
+    std::memcpy(dest->x, src->x, src->count() * sizeof(*dest->x));
     if (dest->v)
     {
         GMX_ASSERT(src->v, "src velocities should be non-null if dest velocities are allocated");
-        memcpy(dest->v, src->v, src->count() * sizeof(*dest->v));
+        std::memcpy(dest->v, src->v, src->count() * sizeof(*dest->v));
     }
     if (dest->f)
     {
         GMX_ASSERT(src->f, "src forces should be non-null if dest forces are allocated");
-        memcpy(dest->f, src->f, src->count() * sizeof(*dest->f));
+        std::memcpy(dest->f, src->f, src->count() * sizeof(*dest->f));
     }
     gmx_ana_indexmap_copy(&dest->m, &src->m, bFirst);
 }

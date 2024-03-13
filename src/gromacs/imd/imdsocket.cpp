@@ -186,7 +186,7 @@ int imdsock_bind(IMDSocket* sock, int port)
 
 
 #if GMX_IMD
-    memset(&(sock->address), 0, sizeof(sock->address));
+    std::memset(&(sock->address), 0, sizeof(sock->address));
     sock->address.sin_family = PF_INET;
     sock->address.sin_port   = htons(port);
 

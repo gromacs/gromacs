@@ -253,7 +253,7 @@ void TrajectoryAnalysisRunnerCommon::Impl::initFirstFrame()
         fr->natoms = topInfo_.mtop()->natoms;
         fr->bX     = TRUE;
         snew(fr->x, fr->natoms);
-        memcpy(fr->x, topInfo_.xtop_.data(), sizeof(*fr->x) * fr->natoms);
+        std::memcpy(fr->x, topInfo_.xtop_.data(), sizeof(*fr->x) * fr->natoms);
         if (frflags & (TRX_NEED_V))
         {
             if (topInfo_.vtop_.empty())
@@ -263,7 +263,7 @@ void TrajectoryAnalysisRunnerCommon::Impl::initFirstFrame()
             }
             fr->bV = TRUE;
             snew(fr->v, fr->natoms);
-            memcpy(fr->v, topInfo_.vtop_.data(), sizeof(*fr->v) * fr->natoms);
+            std::memcpy(fr->v, topInfo_.vtop_.data(), sizeof(*fr->v) * fr->natoms);
         }
         fr->bBox = TRUE;
         copy_mat(topInfo_.boxtop_, fr->box);

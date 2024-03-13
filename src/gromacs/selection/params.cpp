@@ -403,11 +403,11 @@ static void parse_values_range(const SelectionParserValueList& values, gmx_ana_s
         }
         if (param->val.type == INT_VALUE)
         {
-            memcpy(param->val.u.i, idata, 2 * n * sizeof(int));
+            std::memcpy(param->val.u.i, idata, 2 * n * sizeof(int));
         }
         else
         {
-            memcpy(param->val.u.r, rdata, 2 * n * sizeof(real));
+            std::memcpy(param->val.u.r, rdata, 2 * n * sizeof(real));
         }
     }
     if (param->nvalptr)

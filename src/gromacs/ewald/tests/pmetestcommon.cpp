@@ -713,9 +713,9 @@ void pmeSetGridLineIndices(gmx_pme_t* pme, CodePath mode, const GridLineIndicesV
     switch (mode)
     {
         case CodePath::GPU:
-            memcpy(pme_gpu_staging(pme->gpu).h_gridlineIndices.data(),
-                   gridLineIndices.data(),
-                   atomCount * sizeof(gridLineIndices[0]));
+            std::memcpy(pme_gpu_staging(pme->gpu).h_gridlineIndices.data(),
+                        gridLineIndices.data(),
+                        atomCount * sizeof(gridLineIndices[0]));
             break;
 
         case CodePath::CPU:

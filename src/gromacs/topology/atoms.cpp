@@ -271,7 +271,7 @@ void add_t_atoms(t_atoms* atoms, int natom_extra, int nres_extra)
         for (int i = atoms->nr; (i < atoms->nr + natom_extra); i++)
         {
             atoms->atomname[i] = nullptr;
-            memset(&atoms->atom[i], 0, sizeof(atoms->atom[i]));
+            std::memset(&atoms->atom[i], 0, sizeof(atoms->atom[i]));
             if (nullptr != atoms->pdbinfo)
             {
                 std::memset(&atoms->pdbinfo[i], 0, sizeof(atoms->pdbinfo[i]));

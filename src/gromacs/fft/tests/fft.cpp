@@ -374,7 +374,7 @@ TEST_P(ParameterizedFFTTest3D, RunsOnHost)
     // Use std::copy to convert from double to real easily
     std::copy(inputdata, inputdata + sizeInReals, in_.begin());
     // Use memcpy to convert to t_complex easily
-    memcpy(rdata, in_.data(), sizeInBytes);
+    std::memcpy(rdata, in_.data(), sizeInBytes);
 
     // Do the forward FFT to compute the complex grid
     gmx_parallel_3dfft_execute(fft_, GMX_FFT_REAL_TO_COMPLEX, 0, nullptr);

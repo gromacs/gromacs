@@ -230,7 +230,7 @@ void connolly_plot(const char*  fn,
         int i0 = atoms->nr;
         int r0 = atoms->nres;
         srenew(atoms->atom, atoms->nr + ndots);
-        memset(&atoms->atom[i0], 0, sizeof(*atoms->atom) * ndots);
+        std::memset(&atoms->atom[i0], 0, sizeof(*atoms->atom) * ndots);
         srenew(atoms->atomname, atoms->nr + ndots);
         srenew(atoms->resinfo, r0 + 1);
         atoms->atom[i0].resind = r0;

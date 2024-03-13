@@ -1000,12 +1000,12 @@ void dd_redistribute_cg(FILE*         fplog,
                     comm->cgcm_state[mc].resize(nvr + 1 + nvec);
                 }
                 /* Copy from the receive to the send buffers */
-                memcpy(comm->cggl_flag[mc].data() + nat[mc] * DD_CGIBS,
-                       flagBuffer.buffer.data() + cg * DD_CGIBS,
-                       DD_CGIBS * sizeof(int));
-                memcpy(comm->cgcm_state[mc][nvr],
-                       rvecBuffer.buffer.data() + buf_pos,
-                       (1 + nvec) * sizeof(rvec));
+                std::memcpy(comm->cggl_flag[mc].data() + nat[mc] * DD_CGIBS,
+                            flagBuffer.buffer.data() + cg * DD_CGIBS,
+                            DD_CGIBS * sizeof(int));
+                std::memcpy(comm->cgcm_state[mc][nvr],
+                            rvecBuffer.buffer.data() + buf_pos,
+                            (1 + nvec) * sizeof(rvec));
                 buf_pos += 1 + nvec;
                 nat[mc]++;
             }
