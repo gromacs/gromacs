@@ -423,14 +423,14 @@ FILE* gmx_ffopen(const std::filesystem::path& file, const char* mode)
             const int bs = bUnbuffered ? 0 : strtol(bufsize, nullptr, 10);
             if (bs <= 0)
             {
-                setbuf(ff, nullptr);
+                std::setbuf(ff, nullptr);
             }
             else
             {
                 // Note: this leaks memory, because one has to free ptr after closing the file.
                 char* ptr = nullptr;
                 snew(ptr, bs + 8);
-                if (setvbuf(ff, ptr, _IOFBF, bs) != 0)
+                if (std::setvbuf(ff, ptr, _IOFBF, bs) != 0)
                 {
                     gmx_file("Buffering File");
                 }
