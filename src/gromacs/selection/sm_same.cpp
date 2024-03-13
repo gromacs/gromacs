@@ -360,7 +360,7 @@ static void init_frame_same_int(const gmx::SelMethodEvalContext& /*context*/, vo
 
     if (!d->bSorted)
     {
-        qsort(d->as.i, d->nas, sizeof(d->as.i[0]), &cmp_int);
+        std::qsort(d->as.i, d->nas, sizeof(d->as.i[0]), &cmp_int);
         /* More identical values may become adjacent after sorting. */
         for (i = 1, j = 0; i < d->nas; ++i)
         {
@@ -484,7 +484,7 @@ static void init_frame_same_str(const gmx::SelMethodEvalContext& /*context*/, vo
     }
     d->nas = j + 1;
 
-    qsort(d->as_s_sorted, d->nas, sizeof(d->as_s_sorted[0]), &cmp_str);
+    std::qsort(d->as_s_sorted, d->nas, sizeof(d->as_s_sorted[0]), &cmp_str);
     /* More identical values may become adjacent after sorting. */
     for (i = 1, j = 0; i < d->nas; ++i)
     {
@@ -522,7 +522,7 @@ static void evaluate_same_str(const gmx::SelMethodEvalContext& /*context*/,
         void* ptr = nullptr;
         if (d->nas > 0)
         {
-            ptr = bsearch(&d->val.s[j], d->as_s_sorted, d->nas, sizeof(d->as_s_sorted[0]), &cmp_str);
+            ptr = std::bsearch(&d->val.s[j], d->as_s_sorted, d->nas, sizeof(d->as_s_sorted[0]), &cmp_str);
         }
         /* Check whether the value was found in the as list. */
         if (ptr == nullptr)

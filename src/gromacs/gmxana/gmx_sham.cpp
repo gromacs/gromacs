@@ -429,7 +429,7 @@ static void pick_minima(const char* logfile, int* ibox, int ndim, int len, real 
             sfree(this_point);
             break;
     }
-    qsort(mm, nmin, sizeof(mm[0]), comp_minima);
+    std::qsort(mm, nmin, sizeof(mm[0]), comp_minima);
     fprintf(fp, "Minima sorted after energy\n");
     for (i = 0; (i < nmin); i++)
     {

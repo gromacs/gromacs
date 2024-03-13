@@ -686,7 +686,7 @@ static float dd_force_load(gmx_domdec_comm_t* comm)
         load = comm->flop;
         if (comm->ddSettings.eFlop > 1)
         {
-            load *= 1.0 + (comm->ddSettings.eFlop - 1) * (0.1 * rand() / RAND_MAX - 0.05);
+            load *= 1.0 + (comm->ddSettings.eFlop - 1) * (0.1 * std::rand() / RAND_MAX - 0.05);
         }
     }
     else

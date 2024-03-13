@@ -372,7 +372,7 @@ int gmx_trjorder(int argc, char* argv[])
         }
         if (out)
         {
-            qsort(order, nwat, sizeof(*order), ocomp);
+            std::qsort(order, nwat, sizeof(*order), ocomp);
             for (i = 0; (i < nwat); i++)
             {
                 for (j = 0; (j < na); j++)

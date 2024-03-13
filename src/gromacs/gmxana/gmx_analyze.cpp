@@ -368,7 +368,7 @@ static void average(const char* avfile, int avbar_opt, int n, int nset, real** v
                 {
                     tmp[s] = val[s][i];
                 }
-                qsort(tmp, nset, sizeof(tmp[0]), real_comp);
+                std::qsort(tmp, nset, sizeof(tmp[0]), real_comp);
                 fprintf(fp, " %g %g", tmp[nset - 1 - edge] - av, av - tmp[edge]);
             }
             else

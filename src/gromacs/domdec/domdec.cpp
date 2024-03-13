@@ -2769,7 +2769,7 @@ DomainDecompositionBuilder::Impl::Impl(const MDLogger&           mdlog,
     if (ddSettings_.eFlop > 1)
     {
         /* Ensure that we have different random flop counts on different ranks */
-        srand(1 + cr_->rankInDefaultCommunicator);
+        std::srand(1 + cr_->rankInDefaultCommunicator);
     }
 
     systemInfo_ = getSystemInfo(mdlog_,

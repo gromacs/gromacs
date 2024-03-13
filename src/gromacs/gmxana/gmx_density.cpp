@@ -136,7 +136,7 @@ static int get_electrons(t_electron** eltab, const char* fn)
 
     /* sort the list */
     fprintf(stderr, "Sorting list..\n");
-    qsort(*eltab, nr, sizeof(t_electron), compare);
+    std::qsort(*eltab, nr, sizeof(t_electron), compare);
 
     return nr;
 }
@@ -294,7 +294,8 @@ static void calc_electron_density(const char*             fn,
                 sought.atomname = gmx_strdup(*(top->atoms.atomname[index[n][i]]));
 
                 /* now find the number of electrons. This is not efficient. */
-                found = static_cast<t_electron*>(bsearch(&sought, eltab, nr, sizeof(t_electron), compare));
+                found = static_cast<t_electron*>(
+                        std::bsearch(&sought, eltab, nr, sizeof(t_electron), compare));
 
                 if (found == nullptr)
                 {
