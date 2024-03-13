@@ -375,8 +375,10 @@ static std::string makeKernelIncludePathOption(const std::string& unescapedKerne
 static void removeExtraSpaces(std::string* str)
 {
     GMX_RELEASE_ASSERT(str != nullptr, "A pointer to an actual string must be provided");
-    std::string::iterator newEnd = std::unique(
-            str->begin(), str->end(), [=](char a, char b) { return isspace(a) != 0 && (a == b); });
+    std::string::iterator newEnd =
+            std::unique(str->begin(),
+                        str->end(),
+                        [=](char a, char b) { return std::isspace(a) != 0 && (a == b); });
     str->erase(newEnd, str->end());
 }
 

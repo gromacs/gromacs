@@ -2473,7 +2473,7 @@ static gmx_bool legend2lambda(const char* fn, const char* legend, lambda_vec_t* 
                 gmx_fatal(FARGS, "dhdl legend '%s' %s faulty", legend, fn);
             }
             /* now backtrack to the start of the identifier */
-            while (isspace(*ptr))
+            while (std::isspace(*ptr))
             {
                 end = ptr;
                 ptr--;

@@ -383,12 +383,12 @@ void push_at(PreprocessingAtomTypes*    at,
         return;
     }
 
-    if ((std::strlen(tmpfield[5]) == 1) && isalpha(tmpfield[5][0]))
+    if ((std::strlen(tmpfield[5]) == 1) && std::isalpha(tmpfield[5][0]))
     {
         have_bonded_type   = TRUE;
         have_atomic_number = TRUE;
     }
-    else if ((std::strlen(tmpfield[3]) == 1) && isalpha(tmpfield[3][0]))
+    else if ((std::strlen(tmpfield[3]) == 1) && std::isalpha(tmpfield[3][0]))
     {
         have_bonded_type   = FALSE;
         have_atomic_number = FALSE;
@@ -546,12 +546,12 @@ void push_at(PreprocessingAtomTypes*    at,
     }
     std::array<real, MAXFORCEPARAM> forceParam;
 
-    if (std::strlen(type) == 1 && isdigit(type[0]))
+    if (std::strlen(type) == 1 && std::isdigit(type[0]))
     {
         warning_error_and_exit(wi, "Atom type names can't be single digits.", FARGS);
     }
 
-    if (std::strlen(btype) == 1 && isdigit(btype[0]))
+    if (std::strlen(btype) == 1 && std::isdigit(btype[0]))
     {
         warning_error_and_exit(wi, "Bond atom type names can't be single digits.", FARGS);
     }
@@ -951,7 +951,7 @@ void push_dihedraltype(Directive                         d,
      * and the 5th column defining the dihedral type.
      */
     nn = sscanf(line, formal[4], alc[0], alc[1], alc[2], alc[3], alc[4]);
-    if (nn >= 3 && std::strlen(alc[2]) == 1 && isdigit(alc[2][0]))
+    if (nn >= 3 && std::strlen(alc[2]) == 1 && std::isdigit(alc[2][0]))
     {
         nral = 2;
         ft   = std::strtol(alc[nral], nullptr, 10);
@@ -976,7 +976,7 @@ void push_dihedraltype(Directive                         d,
             sprintf(alc[0], "X");
         }
     }
-    else if (nn == 5 && std::strlen(alc[4]) == 1 && isdigit(alc[4][0]))
+    else if (nn == 5 && std::strlen(alc[4]) == 1 && std::isdigit(alc[4][0]))
     {
         nral = 4;
         ft   = std::strtol(alc[nral], nullptr, 10);
@@ -1498,14 +1498,14 @@ static void push_atom_now(t_symtab*       symtab,
     }
 
     j = std::strlen(resnumberic) - 1;
-    if (isdigit(resnumberic[j]))
+    if (std::isdigit(resnumberic[j]))
     {
         ric = ' ';
     }
     else
     {
         ric = resnumberic[j];
-        if (j == 0 || !isdigit(resnumberic[j - 1]))
+        if (j == 0 || !std::isdigit(resnumberic[j - 1]))
         {
             auto message =
                     gmx::formatString("Invalid residue number '%s' for atom %d", resnumberic, atomnr);

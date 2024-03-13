@@ -395,7 +395,7 @@ bool AtomProperties::setAtomProperty(int                eprop,
         printWarning();
         impl_->bWarned = true;
     }
-    if (isdigit(atomName[0]))
+    if (std::isdigit(atomName[0]))
     {
         /* put digit after atomname */
         tmpAtomName.append(atomName.substr(1));

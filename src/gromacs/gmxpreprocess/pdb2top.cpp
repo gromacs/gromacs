@@ -1160,7 +1160,7 @@ static bool atomname_cmp_nr(const char* anm, const MoleculePatch* patch, int* nr
     }
     else
     {
-        if (isdigit(anm[std::strlen(anm) - 1]))
+        if (std::isdigit(anm[std::strlen(anm) - 1]))
         {
             *nr = anm[std::strlen(anm) - 1] - '0';
         }

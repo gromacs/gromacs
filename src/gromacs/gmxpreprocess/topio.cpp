@@ -472,12 +472,12 @@ static std::vector<char*> cpp_opts(const char* define, const char* include, Warn
             ptr = cppadds[n];
             while (*ptr != '\0')
             {
-                while ((*ptr != '\0') && isspace(*ptr))
+                while ((*ptr != '\0') && std::isspace(*ptr))
                 {
                     ptr++;
                 }
                 rptr = ptr;
-                while ((*rptr != '\0') && !isspace(*rptr))
+                while ((*rptr != '\0') && !std::isspace(*rptr))
                 {
                     rptr++;
                 }

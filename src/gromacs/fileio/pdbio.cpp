@@ -400,7 +400,7 @@ void write_pdbfile_indexed(FILE*          out,
         }
         type   = pdbinfo.type;
         altloc = pdbinfo.altloc;
-        if (!isalnum(altloc))
+        if (!std::isalnum(altloc))
         {
             altloc = ' ';
         }

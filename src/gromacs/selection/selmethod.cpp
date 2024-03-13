@@ -306,7 +306,7 @@ static bool check_params(FILE*                                  fp,
         {
             continue;
         }
-        if (!isalpha(params[i].name[0]))
+        if (!std::isalpha(params[i].name[0]))
         {
             report_param_error(fp, name, params[i].name, "error: name does not begin with a letter");
             bOk = false;
@@ -314,7 +314,7 @@ static bool check_params(FILE*                                  fp,
         }
         for (j = 1; params[i].name[j] != 0; ++j)
         {
-            if (params[i].name[j] != '_' && !isalnum(params[i].name[j]))
+            if (params[i].name[j] != '_' && !std::isalnum(params[i].name[j]))
             {
                 report_param_error(fp,
                                    name,

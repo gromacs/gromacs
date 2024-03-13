@@ -2770,7 +2770,7 @@ static int wordcount(char* ptr)
     n = 1;
     for (i = 0; (ptr[i] != '\0'); i++)
     {
-        is[cur] = isspace(ptr[i]);
+        is[cur] = std::isspace(ptr[i]);
         if ((i > 0) && (is[cur] && !is[1 - cur]))
         {
             n++;

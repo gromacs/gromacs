@@ -91,7 +91,7 @@ struct gmx_cpp
 
 static bool is_word_end(char c)
 {
-    return !((isalnum(c) != 0) || c == '_');
+    return !((std::isalnum(c) != 0) || c == '_');
 }
 
 static const char* strstrw(const char* buf, const char* word)
@@ -119,7 +119,7 @@ static const char* strstrw(const char* buf, const char* word)
 static bool find_directive(const char* buf, std::string* name, std::string* val)
 {
     /* Skip initial whitespace */
-    while (isspace(*buf))
+    while (std::isspace(*buf))
     {
         ++buf;
     }
@@ -130,13 +130,13 @@ static bool find_directive(const char* buf, std::string* name, std::string* val)
     }
     /* Skip the hash and any space after it */
     ++buf;
-    while (isspace(*buf))
+    while (std::isspace(*buf))
     {
         ++buf;
     }
     /* Set the name pointer and find the next space */
     name->clear();
-    while (*buf != '\0' && !isspace(*buf))
+    while (*buf != '\0' && !std::isspace(*buf))
     {
         *name += *buf;
         ++buf;
@@ -145,7 +145,7 @@ static bool find_directive(const char* buf, std::string* name, std::string* val)
     if (*buf != '\0')
     {
         ++buf;
-        while (isspace(*buf))
+        while (std::isspace(*buf))
         {
             ++buf;
         }
@@ -155,7 +155,7 @@ static bool find_directive(const char* buf, std::string* name, std::string* val)
     {
         *val = buf;
         // Remove trailing whitespace
-        while (!val->empty() && isspace(val->back()))
+        while (!val->empty() && std::isspace(val->back()))
         {
             val->resize(val->size() - 1);
         }
@@ -486,13 +486,13 @@ static int process_directive(gmx_cpp_t* handlep, const std::string& dname, const
         }
         /* Split it into name and value. */
         const char* ptr = dval.c_str();
-        while ((*ptr != '\0') && !isspace(*ptr))
+        while ((*ptr != '\0') && !std::isspace(*ptr))
         {
             ptr++;
         }
         std::string name = dval.substr(0, ptr - dval.c_str());
 
-        while ((*ptr != '\0') && isspace(*ptr))
+        while ((*ptr != '\0') && std::isspace(*ptr))
         {
             ptr++;
         }

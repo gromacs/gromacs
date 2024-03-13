@@ -182,7 +182,7 @@ static bool read_bondeds(BondedTypes bt, FILE* in, char* line, PreprocessResidue
             }
             n += ni;
         }
-        while (isspace(line[n]))
+        while (std::isspace(line[n]))
         {
             n++;
         }

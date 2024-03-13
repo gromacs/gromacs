@@ -110,7 +110,7 @@ static void read_atom(char* line, bool bAdd, std::string* nname, t_atom* a, Prep
      * We have to assume that the atom type does not start with a digit
      * to make a line with 4 entries uniquely interpretable.
      */
-    if (!bAdd && nr == 4 && isdigit(buf[1][0]))
+    if (!bAdd && nr == 4 && std::isdigit(buf[1][0]))
     {
         nr = 3;
     }

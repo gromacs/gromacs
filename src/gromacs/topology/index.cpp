@@ -401,7 +401,7 @@ static void analyse_prot(gmx::ArrayRef<const std::string> restype,
                 {
                     /* skip digits at beginning of atomname, e.g. 1H */
                     char* atnm = *atoms->atomname[n];
-                    while (isdigit(atnm[0]))
+                    while (std::isdigit(atnm[0]))
                     {
                         atnm++;
                     }
