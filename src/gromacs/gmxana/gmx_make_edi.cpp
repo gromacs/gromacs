@@ -283,7 +283,7 @@ static int sscan_list(int* list[], const char* str, const char* listname)
                     srenew(*list, nvecs + end_number - number + 1);
                     if (step)
                     {
-                        istep = strtol(step, nullptr, 10);
+                        istep = std::strtol(step, nullptr, 10);
                         step  = nullptr;
                     }
                     else

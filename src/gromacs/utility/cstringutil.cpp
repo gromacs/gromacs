@@ -60,7 +60,7 @@ int continuing(char* s)
     assert(s);
 
     rtrim(s);
-    int sl = strlen(s);
+    int sl = std::strlen(s);
     if ((sl > 0) && (s[sl - 1] == CONTINUE))
     {
         s[sl - 1] = 0;
@@ -80,7 +80,7 @@ char* fgets2(char* line, int n, FILE* stream)
     {
         return nullptr;
     }
-    if ((c = strchr(line, '\n')) != nullptr)
+    if ((c = std::strchr(line, '\n')) != nullptr)
     {
         *c = '\0';
     }
@@ -100,7 +100,7 @@ char* fgets2(char* line, int n, FILE* stream)
                       line);
         }
     }
-    if ((c = strchr(line, '\r')) != nullptr)
+    if ((c = std::strchr(line, '\r')) != nullptr)
     {
         *c = '\0';
     }
@@ -118,7 +118,7 @@ void strip_comment(char* line)
     }
 
     /* search for a comment mark and replace it by a zero */
-    if ((c = strchr(line, COMMENTSIGN)) != nullptr)
+    if ((c = std::strchr(line, COMMENTSIGN)) != nullptr)
     {
         (*c) = 0;
     }
@@ -130,7 +130,7 @@ void upstring(char* str)
     {
         return;
     }
-    for (size_t i = 0; i < strlen(str); i++)
+    for (size_t i = 0; i < std::strlen(str); i++)
     {
         str[i] = toupper(str[i]);
     }
@@ -166,7 +166,7 @@ void rtrim(char* str)
         return;
     }
 
-    int nul = strlen(str) - 1;
+    int nul = std::strlen(str) - 1;
     while ((nul >= 0) && ((str[nul] == ' ') || (str[nul] == '\t')))
     {
         str[nul] = '\0';
@@ -270,7 +270,7 @@ char* gmx_strdup(const char* src)
 {
     char* dest = nullptr;
 
-    auto length = strlen(src) + 1;
+    auto length = std::strlen(src) + 1;
     snew(dest, length);
     std::strncpy(dest, src, length);
 
@@ -281,13 +281,13 @@ char* gmx_strndup(const char* src, int n)
 {
     char* dest = nullptr;
 
-    int len = strlen(src);
+    int len = std::strlen(src);
     if (len > n)
     {
         len = n;
     }
     snew(dest, len + 1);
-    strncpy(dest, src, len);
+    std::strncpy(dest, src, len);
     dest[len] = 0;
     return dest;
 }
@@ -403,7 +403,7 @@ char* wrap_lines(const char* buf, int line_width, int indent, gmx_bool bIndentFi
      */
 
     char* b2    = nullptr;
-    int   b2len = strlen(buf) + 1 + indent;
+    int   b2len = std::strlen(buf) + 1 + indent;
     snew(b2, b2len);
     int i0 = 0;
     int i2 = 0;
@@ -491,7 +491,7 @@ char* wrap_lines(const char* buf, int line_width, int indent, gmx_bool bIndentFi
 int64_t str_to_int64_t(const char* str, char** endptr)
 {
 #ifndef _MSC_VER
-    return strtoll(str, endptr, 10);
+    return std::strtoll(str, endptr, 10);
 #else
     return _strtoi64(str, endptr, 10);
 #endif

@@ -112,7 +112,7 @@ int get_ebin_space(t_ebin* eb, int nener, const char* const enm[], const char* u
             u = unit_energy;
             for (f = 0; f < F_NRE; f++)
             {
-                if (strcmp(eb->enm[i].name, interaction_function[f].longname) == 0)
+                if (std::strcmp(eb->enm[i].name, interaction_function[f].longname) == 0)
                 {
                     /* Only the terms in this list are not energies */
                     switch (f)
@@ -292,7 +292,7 @@ void pr_ebin(FILE* fp, t_ebin* eb, int entryIndex, int nener, int nperline, int 
             i0 = i;
             for (j = 0; (j < nperline) && (i < end) && rc >= 0; j++, i++)
             {
-                if (strncmp(eb->enm[i].name, "Pres", 4) == 0)
+                if (std::strncmp(eb->enm[i].name, "Pres", 4) == 0)
                 {
                     /* Print the pressure unit to avoid confusion */
                     sprintf(buf, "%s (%s)", eb->enm[i].name, unit_pres_bar);

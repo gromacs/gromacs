@@ -119,7 +119,7 @@ void do_view(const gmx_output_env_t* oenv, const char* fn, const char* opts)
                         return;
                     }
             }
-            if (strlen(cmd))
+            if (std::strlen(cmd))
             {
                 sprintf(buf, "%s %s %s &", cmd, opts ? opts : "", fn);
                 fprintf(stderr, "Executing '%s'\n", buf);

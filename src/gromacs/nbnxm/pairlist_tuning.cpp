@@ -673,7 +673,7 @@ void setupDynamicPairlistPruning(const MDLogger&            mdlog,
         if (userSetNstlistPrune)
         {
             char* end                = nullptr;
-            listParams->nstlistPrune = strtol(env, &end, 10);
+            listParams->nstlistPrune = std::strtol(env, &end, 10);
             if (!end || (*end != 0)
                 || !(listParams->nstlistPrune > 0 && listParams->nstlistPrune < inputrec.nstlist))
             {

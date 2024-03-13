@@ -262,12 +262,12 @@ static void read_vsite_database(const std::filesystem::path&           ddbname,
     {
         strip_comment(pline);
         trim(pline);
-        if (strlen(pline) > 0)
+        if (std::strlen(pline) > 0)
         {
             if (pline[0] == OPENDIR)
             {
-                strncpy(dirstr, pline + 1, STRLEN - 1);
-                if ((ch = strchr(dirstr, CLOSEDIR)) != nullptr)
+                std::strncpy(dirstr, pline + 1, STRLEN - 1);
+                if ((ch = std::strchr(dirstr, CLOSEDIR)) != nullptr)
                 {
                     (*ch) = 0;
                 }
@@ -358,13 +358,14 @@ static void read_vsite_database(const std::filesystem::path&           ddbname,
                         if (numberOfSites == 3)
                         {
                             /* bond */
-                            vsitetoplist->back().bond.emplace_back(s1String, s2String, strtod(s3, nullptr));
+                            vsitetoplist->back().bond.emplace_back(
+                                    s1String, s2String, std::strtod(s3, nullptr));
                         }
                         else if (numberOfSites == 4)
                         {
                             /* angle */
                             vsitetoplist->back().angle.emplace_back(
-                                    s1String, s2String, s3String, strtod(s4, nullptr));
+                                    s1String, s2String, s3String, std::strtod(s4, nullptr));
                             /* angle */
                         }
                         else
@@ -1370,7 +1371,7 @@ static int gen_vsites_tyr(PreprocessingAtomTypes*                  atype,
     svmul(2.0, r1, r1);
     rvec_add(r1, x[ats[atHH]], (*newx)[atM]);
 
-    strcpy(name, "MW1");
+    std::strcpy(name, "MW1");
     (*newatomname)[atM] = put_symtab(symtab, name);
     (*newatom)[atM].m = (*newatom)[atM].mB = mM;
     (*newatom)[atM].q = (*newatom)[atM].qB = 0.0;
@@ -1805,7 +1806,7 @@ void do_vsites(gmx::ArrayRef<const PreprocessResidue> rtpFFDB,
          * CA atom, since there might be an X2/X3 group on the
          * N-terminus that must be treated first.
          */
-        if (bVsiteAromatics && (strcmp(*(at->atomname[i]), "CA") == 0) && !bResProcessed[resind]
+        if (bVsiteAromatics && (std::strcmp(*(at->atomname[i]), "CA") == 0) && !bResProcessed[resind]
             && namedResidueHasType(residueTypeMap, *(at->resinfo[resind].name), "Protein"))
         {
             /* mark this residue */
@@ -1815,7 +1816,7 @@ void do_vsites(gmx::ArrayRef<const PreprocessResidue> rtpFFDB,
             for (int j = 0; j < resNR && whatres == NOTSET; j++)
             {
 
-                cmplength = bPartial[j] ? strlen(resnm) - 1 : strlen(resnm);
+                cmplength = bPartial[j] ? std::strlen(resnm) - 1 : std::strlen(resnm);
 
                 bFound = ((gmx::equalCaseInsensitive(resnm, resnms[j], cmplength))
                           || (gmx::equalCaseInsensitive(resnm, resnmsN[j], cmplength))

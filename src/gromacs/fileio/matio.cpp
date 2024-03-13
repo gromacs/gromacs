@@ -306,7 +306,7 @@ static t_matrix read_xpm_entry(FILE* in)
         }
     }
 
-    if (!line_buf || strncmp(line_buf, "static", 6) != 0)
+    if (!line_buf || std::strncmp(line_buf, "static", 6) != 0)
     {
         gmx_input("Invalid XPixMap");
     }
@@ -459,7 +459,7 @@ static t_matrix read_xpm_entry(FILE* in)
         }
         bSetLine = TRUE;
         GMX_RELEASE_ASSERT(line, "Need to have valid line to parse");
-        if (strstr(line, "x-axis"))
+        if (std::strstr(line, "x-axis"))
         {
             line = std::strstr(line, "x-axis");
             skipstr(line);

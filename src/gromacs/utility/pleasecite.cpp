@@ -453,7 +453,7 @@ void please_cite(FILE* fp, const char* key)
     }
 
     int index = 0;
-    for (; index < NSTR && (strcmp(citedb[index].key, key) != 0); index++) {}
+    for (; index < NSTR && (std::strcmp(citedb[index].key, key) != 0); index++) {}
 
     fprintf(fp, "\n++++ PLEASE READ AND CITE THE FOLLOWING REFERENCE ++++\n");
     if (index < NSTR)
@@ -489,7 +489,7 @@ void writeSourceDoi(FILE* fp)
      * TODO The check should properly target something else than
      * the string being empty
      */
-    if (strlen(gmxDOI()) == 0)
+    if (std::strlen(gmxDOI()) == 0)
     {
         /* Not a release build, return without printing anything */
         return;

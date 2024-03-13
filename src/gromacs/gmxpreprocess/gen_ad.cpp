@@ -223,7 +223,7 @@ static int n_hydro(gmx::ArrayRef<const int> a, char*** atomname)
         {
             nh++;
         }
-        else if ((static_cast<int>(strlen(aname)) > 1) && (c0 >= '0') && (c0 <= '9'))
+        else if ((static_cast<int>(std::strlen(aname)) > 1) && (c0 >= '0') && (c0 <= '9'))
         {
             char c1 = toupper(aname[1]);
             if (c1 == 'H')

@@ -1409,7 +1409,7 @@ static void init_edi(const gmx_mtop_t& mtop, t_edpar* edi)
 
 static void check(const char* line, const char* label)
 {
-    if (!strstr(line, label))
+    if (!std::strstr(line, label))
     {
         gmx_fatal(FARGS,
                   "Could not find input parameter %s at expected position in edsam input-file "

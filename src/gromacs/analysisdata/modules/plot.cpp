@@ -284,7 +284,7 @@ void AbstractPlotModule::setXFormat(int width, int precision, char format)
 {
     GMX_RELEASE_ASSERT(width >= 0 && precision >= 0 && width <= 99 && precision <= 99,
                        "Invalid width or precision");
-    GMX_RELEASE_ASSERT(strchr("eEfFgG", format) != nullptr, "Invalid format specifier");
+    GMX_RELEASE_ASSERT(std::strchr("eEfFgG", format) != nullptr, "Invalid format specifier");
     impl_->xformat_ = formatString("%%%d.%d%c", width, precision, format);
 }
 
@@ -293,7 +293,7 @@ void AbstractPlotModule::setYFormat(int width, int precision, char format)
 {
     GMX_RELEASE_ASSERT(width >= 0 && precision >= 0 && width <= 99 && precision <= 99,
                        "Invalid width or precision");
-    GMX_RELEASE_ASSERT(strchr("eEfFgG", format) != nullptr, "Invalid format specifier");
+    GMX_RELEASE_ASSERT(std::strchr("eEfFgG", format) != nullptr, "Invalid format specifier");
     impl_->yformat_ = formatString(" %%%d.%d%c", width, precision, format);
 }
 

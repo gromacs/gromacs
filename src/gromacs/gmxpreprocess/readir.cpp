@@ -2987,7 +2987,7 @@ void get_ir(const char*     mdparin,
     }
 
     opts->couple_moltype = nullptr;
-    if (strlen(inputrecStrings->couple_moltype) > 0)
+    if (std::strlen(inputrecStrings->couple_moltype) > 0)
     {
         if (ir->efep != FreeEnergyPerturbationType::No)
         {
@@ -3113,7 +3113,7 @@ void get_ir(const char*     mdparin,
                          &(dumdub[0][5]),
                          &canary);
 
-    if (strlen(inputrecStrings->deform) > 0 && ndeform != 6)
+    if (std::strlen(inputrecStrings->deform) > 0 && ndeform != 6)
     {
         wi->addError(gmx::formatString(
                 "Cannot parse exactly 6 box deformation velocities from string '%s'",
@@ -3729,8 +3729,8 @@ static void make_swap_groups(t_swapcoords* swap, gmx::ArrayRef<const IndexGroup>
 
 
     /* Just a quick check here, more thorough checks are in mdrun */
-    if (strcmp(swap->grp[static_cast<int>(SwapGroupSplittingType::Split0)].molname,
-               swap->grp[static_cast<int>(SwapGroupSplittingType::Split1)].molname)
+    if (std::strcmp(swap->grp[static_cast<int>(SwapGroupSplittingType::Split0)].molname,
+                    swap->grp[static_cast<int>(SwapGroupSplittingType::Split1)].molname)
         == 0)
     {
         gmx_fatal(FARGS,

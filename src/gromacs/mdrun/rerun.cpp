@@ -265,8 +265,8 @@ void gmx::LegacySimulator::do_rerun()
     /* Rerun can't work if an output file name is the same as the input file name.
      * If this is the case, the user will get an error telling them what the issue is.
      */
-    if (strcmp(opt2fn("-rerun", nFile_, fnm_), opt2fn("-o", nFile_, fnm_)) == 0
-        || strcmp(opt2fn("-rerun", nFile_, fnm_), opt2fn("-x", nFile_, fnm_)) == 0)
+    if (std::strcmp(opt2fn("-rerun", nFile_, fnm_), opt2fn("-o", nFile_, fnm_)) == 0
+        || std::strcmp(opt2fn("-rerun", nFile_, fnm_), opt2fn("-x", nFile_, fnm_)) == 0)
     {
         gmx_fatal(FARGS,
                   "When using mdrun -rerun, the name of the input trajectory file "

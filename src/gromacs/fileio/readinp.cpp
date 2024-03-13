@@ -433,7 +433,7 @@ double get_ereal(std::vector<t_inpfile>* inp, const char* name, double def, Warn
     }
     else
     {
-        double ret = strtod(inpRef[ii].value_.c_str(), &ptr);
+        double ret = std::strtod(inpRef[ii].value_.c_str(), &ptr);
         if (*ptr != '\0')
         {
             wi->addError(gmx::formatString(

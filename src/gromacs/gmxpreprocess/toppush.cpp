@@ -383,12 +383,12 @@ void push_at(PreprocessingAtomTypes*    at,
         return;
     }
 
-    if ((strlen(tmpfield[5]) == 1) && isalpha(tmpfield[5][0]))
+    if ((std::strlen(tmpfield[5]) == 1) && isalpha(tmpfield[5][0]))
     {
         have_bonded_type   = TRUE;
         have_atomic_number = TRUE;
     }
-    else if ((strlen(tmpfield[3]) == 1) && isalpha(tmpfield[3][0]))
+    else if ((std::strlen(tmpfield[3]) == 1) && isalpha(tmpfield[3][0]))
     {
         have_bonded_type   = FALSE;
         have_atomic_number = FALSE;
@@ -397,7 +397,7 @@ void push_at(PreprocessingAtomTypes*    at,
     {
         // Attempt parsing field 1 to integer. If successful, *end == '\0'
         char* end;
-        strtol(tmpfield[1], &end, 10);
+        std::strtol(tmpfield[1], &end, 10);
 
         // If conversion fails, we do not have an atomic number but a bonded type
         have_bonded_type   = (*end != 0);
@@ -462,7 +462,7 @@ void push_at(PreprocessingAtomTypes*    at,
 
             if (!have_bonded_type)
             {
-                strcpy(btype, type);
+                std::strcpy(btype, type);
             }
 
             if (!have_atomic_number)
@@ -526,7 +526,7 @@ void push_at(PreprocessingAtomTypes*    at,
 
             if (!have_bonded_type)
             {
-                strcpy(btype, type);
+                std::strcpy(btype, type);
             }
 
             if (!have_atomic_number)
@@ -546,12 +546,12 @@ void push_at(PreprocessingAtomTypes*    at,
     }
     std::array<real, MAXFORCEPARAM> forceParam;
 
-    if (strlen(type) == 1 && isdigit(type[0]))
+    if (std::strlen(type) == 1 && isdigit(type[0]))
     {
         warning_error_and_exit(wi, "Atom type names can't be single digits.", FARGS);
     }
 
-    if (strlen(btype) == 1 && isdigit(btype[0]))
+    if (std::strlen(btype) == 1 && isdigit(btype[0]))
     {
         warning_error_and_exit(wi, "Bond atom type names can't be single digits.", FARGS);
     }
@@ -862,12 +862,12 @@ void push_bt(Directive                         d,
         return;
     }
 
-    ft    = strtol(alc[nral], nullptr, 10);
+    ft    = std::strtol(alc[nral], nullptr, 10);
     ftype = ifunc_index(d, ft);
     nrfp  = NRFP(ftype);
     nrfpA = interaction_function[ftype].nrfpA;
-    strcpy(f1, formnl[nral]);
-    strcat(f1, formlf);
+    std::strcpy(f1, formnl[nral]);
+    std::strcat(f1, formlf);
     if ((nn = sscanf(
                  line, f1, &c[0], &c[1], &c[2], &c[3], &c[4], &c[5], &c[6], &c[7], &c[8], &c[9], &c[10], &c[11], &c[12]))
         != nrfp)
@@ -951,10 +951,10 @@ void push_dihedraltype(Directive                         d,
      * and the 5th column defining the dihedral type.
      */
     nn = sscanf(line, formal[4], alc[0], alc[1], alc[2], alc[3], alc[4]);
-    if (nn >= 3 && strlen(alc[2]) == 1 && isdigit(alc[2][0]))
+    if (nn >= 3 && std::strlen(alc[2]) == 1 && isdigit(alc[2][0]))
     {
         nral = 2;
-        ft   = strtol(alc[nral], nullptr, 10);
+        ft   = std::strtol(alc[nral], nullptr, 10);
         /* Move atom types around a bit and use 'X' for wildcard atoms
          * to create a 4-atom dihedral definition with arbitrary atoms in
          * position 1 and 4.
@@ -962,7 +962,7 @@ void push_dihedraltype(Directive                         d,
         if (alc[2][0] == '2')
         {
             /* improper - the two atomtypes are 1,4. Use wildcards for 2,3 */
-            strcpy(alc[3], alc[1]);
+            std::strcpy(alc[3], alc[1]);
             sprintf(alc[2], "X");
             sprintf(alc[1], "X");
             /* alc[0] stays put */
@@ -971,15 +971,15 @@ void push_dihedraltype(Directive                         d,
         {
             /* proper - the two atomtypes are 2,3. Use wildcards for 1,4 */
             sprintf(alc[3], "X");
-            strcpy(alc[2], alc[1]);
-            strcpy(alc[1], alc[0]);
+            std::strcpy(alc[2], alc[1]);
+            std::strcpy(alc[1], alc[0]);
             sprintf(alc[0], "X");
         }
     }
-    else if (nn == 5 && strlen(alc[4]) == 1 && isdigit(alc[4][0]))
+    else if (nn == 5 && std::strlen(alc[4]) == 1 && isdigit(alc[4][0]))
     {
         nral = 4;
-        ft   = strtol(alc[nral], nullptr, 10);
+        ft   = std::strtol(alc[nral], nullptr, 10);
     }
     else
     {
@@ -1012,8 +1012,8 @@ void push_dihedraltype(Directive                         d,
     nrfp  = NRFP(ftype);
     nrfpA = interaction_function[ftype].nrfpA;
 
-    strcpy(f1, formnl[nral]);
-    strcat(f1, formlf[nrfp - 1]);
+    std::strcpy(f1, formnl[nral]);
+    std::strcat(f1, formlf[nrfp - 1]);
 
     /* Check number of parameters given */
     if ((nn = sscanf(
@@ -1050,7 +1050,7 @@ void push_dihedraltype(Directive                         d,
     std::array<real, MAXFORCEPARAM> forceParam;
     for (int i = 0; (i < 4); i++)
     {
-        if (!strcmp(alc[i], "X"))
+        if (!std::strcmp(alc[i], "X"))
         {
             atoms.emplace_back(-1);
         }
@@ -1497,7 +1497,7 @@ static void push_atom_now(t_symtab*       symtab,
         warning_error_and_exit(wi, message, FARGS);
     }
 
-    j = strlen(resnumberic) - 1;
+    j = std::strlen(resnumberic) - 1;
     if (isdigit(resnumberic[j]))
     {
         ric = ' ';
@@ -1512,13 +1512,13 @@ static void push_atom_now(t_symtab*       symtab,
             warning_error_and_exit(wi, message, FARGS);
         }
     }
-    resnr = strtol(resnumberic, nullptr, 10);
+    resnr = std::strtol(resnumberic, nullptr, 10);
 
     if (nr > 0)
     {
         resind = at->atom[nr - 1].resind;
     }
-    if (nr == 0 || strcmp(resname, *at->resinfo[resind].name) != 0
+    if (nr == 0 || std::strcmp(resname, *at->resinfo[resind].name) != 0
         || resnr != at->resinfo[resind].nr || ric != at->resinfo[resind].ic)
     {
         if (nr == 0)
@@ -1661,8 +1661,10 @@ void push_molt(t_symtab* symtab, std::vector<MoleculeInformation>* mol, char* li
     }
 
     /* Test if this moleculetype overwrites another */
-    const auto found = std::find_if(
-            mol->begin(), mol->end(), [&type](const auto& m) { return strcmp(*(m.name), type) == 0; });
+    const auto found =
+            std::find_if(mol->begin(),
+                         mol->end(),
+                         [&type](const auto& m) { return std::strcmp(*(m.name), type) == 0; });
     if (found != mol->end())
     {
         auto message = gmx::formatString("moleculetype %s is redefined", type);
@@ -2224,8 +2226,8 @@ void push_bond(Directive                         d,
     {
         /* Manually specified parameters - in this case we discard multiple torsion info! */
 
-        strcpy(format, asformat[nral_fmt - 1]);
-        strcat(format, ccformat);
+        std::strcpy(format, asformat[nral_fmt - 1]);
+        std::strcat(format, ccformat);
 
         nread = sscanf(line,
                        format,
@@ -2695,7 +2697,7 @@ void push_mol(gmx::ArrayRef<MoleculeInformation> mols, char* pline, int* whichmo
     int i       = 0;
     for (const auto& mol : mols)
     {
-        if (strcmp(type, *(mol.name)) == 0)
+        if (std::strcmp(type, *(mol.name)) == 0)
         {
             nrcs++;
             matchcs = i;
@@ -2759,11 +2761,11 @@ void push_excl(char* line, gmx::ArrayRef<gmx::ExclusionBlock> b2, WarningHandler
     {
         return;
     }
-    strcpy(base, "%*d");
+    std::strcpy(base, "%*d");
     do
     {
-        strcpy(format, base);
-        strcat(format, "%d");
+        std::strcpy(format, base);
+        std::strcat(format, "%d");
         n = sscanf(line, format, &j);
         if (n == 1)
         {
@@ -2773,7 +2775,7 @@ void push_excl(char* line, gmx::ArrayRef<gmx::ExclusionBlock> b2, WarningHandler
                 b2[i].atomNumber.push_back(j);
                 /* also add the reverse exclusion! */
                 b2[j].atomNumber.push_back(i);
-                strcat(base, "%*d");
+                std::strcat(base, "%*d");
             }
             else
             {

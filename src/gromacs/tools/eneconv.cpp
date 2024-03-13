@@ -290,7 +290,7 @@ static void edit_files(gmx::ArrayRef<std::string> files,
                 }
                 else
                 {
-                    settime[i] = strtod(inputstring, &chptr);
+                    settime[i] = std::strtod(inputstring, &chptr);
                     if (chptr == inputstring)
                     {
                         fprintf(stderr, "Try that again: ");

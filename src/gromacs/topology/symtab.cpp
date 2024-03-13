@@ -189,13 +189,13 @@ static char* trim_string(const char* s, char* out, int maxlen)
 {
     int len = 0, i = 0;
 
-    if (strlen(s) > static_cast<size_t>(maxlen - 1))
+    if (std::strlen(s) > static_cast<size_t>(maxlen - 1))
     {
-        gmx_fatal(FARGS, "String '%s' (%zu) is longer than buffer (%d).\n", s, strlen(s), maxlen - 1);
+        gmx_fatal(FARGS, "String '%s' (%zu) is longer than buffer (%d).\n", s, std::strlen(s), maxlen - 1);
     }
 
     for (; (*s) == ' '; s++) {}
-    for (len = strlen(s); (len > 0); len--)
+    for (len = std::strlen(s); (len > 0); len--)
     {
         if (s[len - 1] != ' ')
         {
@@ -292,7 +292,7 @@ static char** enter_buf(t_symtab* symtab, char* name)
                 symbuf->buf[i] = gmx_strdup(name);
                 return &(symbuf->buf[i]);
             }
-            else if (strcmp(symbuf->buf[i], name) == 0)
+            else if (std::strcmp(symbuf->buf[i], name) == 0)
             {
                 return &(symbuf->buf[i]);
             }

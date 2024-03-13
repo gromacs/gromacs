@@ -932,7 +932,7 @@ static void top_update(const char* topfile, rm_t* rm_p, gmx_mtop_t* mtop)
     char  temporary_filename[STRLEN];
 
     fpin = gmx_ffopen(topfile, "r");
-    strncpy(temporary_filename, "temp.topXXXXXX", STRLEN);
+    std::strncpy(temporary_filename, "temp.topXXXXXX", STRLEN);
     gmx_tmpnam(temporary_filename);
     fpout = gmx_ffopen(temporary_filename, "w");
 
@@ -946,8 +946,8 @@ static void top_update(const char* topfile, rm_t* rm_p, gmx_mtop_t* mtop)
     {
         if (buf[0] != ';')
         {
-            strcpy(buf2, buf);
-            if ((temp = strchr(buf2, '\n')) != nullptr)
+            std::strcpy(buf2, buf);
+            if ((temp = std::strchr(buf2, '\n')) != nullptr)
             {
                 temp[0] = '\0';
             }
@@ -955,14 +955,14 @@ static void top_update(const char* topfile, rm_t* rm_p, gmx_mtop_t* mtop)
             if (buf2[0] == '[')
             {
                 buf2[0] = ' ';
-                if ((temp = strchr(buf2, '\n')) != nullptr)
+                if ((temp = std::strchr(buf2, '\n')) != nullptr)
                 {
                     temp[0] = '\0';
                 }
                 rtrim(buf2);
-                if (buf2[strlen(buf2) - 1] == ']')
+                if (buf2[std::strlen(buf2) - 1] == ']')
                 {
-                    buf2[strlen(buf2) - 1] = '\0';
+                    buf2[std::strlen(buf2) - 1] = '\0';
                     ltrim(buf2);
                     rtrim(buf2);
                     if (gmx_strcasecmp(buf2, "molecules") == 0)

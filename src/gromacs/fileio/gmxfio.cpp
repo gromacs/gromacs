@@ -272,7 +272,7 @@ t_fileio* gmx_fio_open(const std::filesystem::path& fn, const char* mode)
     {
         std::strcpy(newmode, "r");
     }
-    else if (strncmp(mode, "w+", 2) == 0)
+    else if (std::strncmp(mode, "w+", 2) == 0)
     {
         std::strcpy(newmode, "w+");
     }
@@ -280,7 +280,7 @@ t_fileio* gmx_fio_open(const std::filesystem::path& fn, const char* mode)
     {
         std::strcpy(newmode, "w");
     }
-    else if (strncmp(mode, "a+", 2) == 0)
+    else if (std::strncmp(mode, "a+", 2) == 0)
     {
         std::strcpy(newmode, "a+");
     }
@@ -296,7 +296,7 @@ t_fileio* gmx_fio_open(const std::filesystem::path& fn, const char* mode)
     /* Check if it should be opened as a binary file */
     if (!ftp_is_text(fn2ftp(fn)))
     {
-        strcat(newmode, "b");
+        std::strcat(newmode, "b");
     }
 
     fio = new t_fileio{};
@@ -495,7 +495,7 @@ static int gmx_fio_int_get_file_md5(t_fileio* fio, gmx_off_t offset, std::array<
         // md5sum check to prevent overwriting files is not vital.
         if (ferror(fio->fp))
         {
-            fprintf(stderr, "\nTrying to get md5sum: %s: %s\n", fio->fn.string().c_str(), strerror(errno));
+            fprintf(stderr, "\nTrying to get md5sum: %s: %s\n", fio->fn.string().c_str(), std::strerror(errno));
         }
         else if (!feof(fio->fp))
         {

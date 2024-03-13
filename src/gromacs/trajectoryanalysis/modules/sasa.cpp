@@ -560,7 +560,7 @@ void Sasa::initAnalysis(const TrajectoryAnalysisSettings& settings, const Topolo
         }
         else
         {
-            if (strcmp(*(atoms_->atomtype[0]), "?") == 0)
+            if (std::strcmp(*(atoms_->atomtype[0]), "?") == 0)
             {
                 GMX_THROW(InconsistentInputError(
                         "Your input tpr file is too old (does not contain atom types). Cannot not "

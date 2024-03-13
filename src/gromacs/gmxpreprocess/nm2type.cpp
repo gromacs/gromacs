@@ -98,18 +98,18 @@ static void rd_nm2type_file(const std::filesystem::path& filename, int* nnm, t_n
                 if (nb > 0)
                 {
                     snew(newbuf, nb);
-                    strcpy(format, "%*s%*s%*s%*s%*s");
+                    std::strcpy(format, "%*s%*s%*s%*s%*s");
                     for (i = 0; (i < nb); i++)
                     {
                         /* Complicated format statement */
-                        strcpy(f1, format);
-                        strcat(f1, "%s%lf");
+                        std::strcpy(f1, format);
+                        std::strcat(f1, "%s%lf");
                         if (sscanf(buf, f1, nbbuf, &(nm2t[nnnm].blen[i])) != 2)
                         {
                             gmx_fatal(FARGS, "Error on line %d of %s", line, libfilename);
                         }
                         newbuf[i] = gmx_strdup(nbbuf);
-                        strcat(format, "%*s%*s");
+                        std::strcat(format, "%*s%*s");
                     }
                 }
                 else
@@ -184,7 +184,7 @@ static int match_str(const char* atom, const char* template_string)
     {
         return ematchElem;
     }
-    else if (strcmp(template_string, "*") == 0)
+    else if (std::strcmp(template_string, "*") == 0)
     {
         return ematchWild;
     }

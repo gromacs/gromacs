@@ -1376,7 +1376,7 @@ void EnergyOutput::printAverages(FILE* log, const SimulationGroups* groups)
 
         if (nE_ > 1)
         {
-            int padding = 8 - strlen(unit_energy);
+            int padding = 8 - std::strlen(unit_energy);
             fprintf(log, "%*sEpot (%s)   ", padding, "", unit_energy);
             for (auto key : keysOf(bEInd_))
             {
@@ -1393,9 +1393,10 @@ void EnergyOutput::printAverages(FILE* log, const SimulationGroups* groups)
                 int ni = groups->groups[SimulationAtomGroupType::EnergyOutput][i];
                 for (int j = i; (j < nEg_); j++)
                 {
-                    int nj = groups->groups[SimulationAtomGroupType::EnergyOutput][j];
-                    int padding =
-                            14 - (strlen(*(groups->groupNames[ni])) + strlen(*(groups->groupNames[nj])));
+                    int nj      = groups->groups[SimulationAtomGroupType::EnergyOutput][j];
+                    int padding = 14
+                                  - (std::strlen(*(groups->groupNames[ni]))
+                                     + std::strlen(*(groups->groupNames[nj])));
                     fprintf(log, "%*s%s-%s", padding, "", *(groups->groupNames[ni]), *(groups->groupNames[nj]));
                     pr_ebin(log, ebin_, igrp_[n], nEc_, nEc_, eprAVER, false);
                     n++;

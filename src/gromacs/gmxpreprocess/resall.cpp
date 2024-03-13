@@ -88,7 +88,7 @@ PreprocessingAtomTypes read_atype(const std::filesystem::path& ffdir)
                     strip_comment(buf);
                     trim(buf);
                 }
-            } while ((feof(in) == 0) && strlen(buf) == 0);
+            } while ((feof(in) == 0) && std::strlen(buf) == 0);
 
             if (sscanf(buf, "%s%lf", name, &m) == 2)
             {
@@ -135,7 +135,7 @@ static bool read_atoms(FILE* in, char* line, PreprocessResidue* r0, t_symtab* ta
     /* Read Atoms */
     r0->atom.clear();
     r0->atomname.clear();
-    while (get_a_line(in, line, STRLEN) && (strchr(line, '[') == nullptr))
+    while (get_a_line(in, line, STRLEN) && (std::strchr(line, '[') == nullptr))
     {
         if (sscanf(line, "%s%s%lf%d", buf, buf1, &q, &cg) != 4)
         {
@@ -164,7 +164,7 @@ static bool read_bondeds(BondedTypes bt, FILE* in, char* line, PreprocessResidue
 {
     char str[STRLEN];
 
-    while (get_a_line(in, line, STRLEN) && (strchr(line, '[') == nullptr))
+    while (get_a_line(in, line, STRLEN) && (std::strchr(line, '[') == nullptr))
     {
         int n = 0;
         int ni;
@@ -548,8 +548,8 @@ static int neq_str_sign(const char* a1, const char* a2)
 {
     int l1, l2, lm;
 
-    l1 = static_cast<int>(strlen(a1));
-    l2 = static_cast<int>(strlen(a2));
+    l1 = static_cast<int>(std::strlen(a1));
+    l2 = static_cast<int>(std::strlen(a2));
     lm = std::min(l1, l2);
 
     if (lm >= 1 && ((l1 == l2 + 1 && is_sign(a1[l1 - 1])) || (l2 == l1 + 1 && is_sign(a2[l2 - 1])))

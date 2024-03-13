@@ -98,8 +98,8 @@ static bool runningOnCompatibleOSForAmd()
 
     sysctl(mib, sizeof(mib) / sizeof(mib[0]), kernelVersion, &len, NULL, 0);
 
-    int major = strtod(kernelVersion, NULL);
-    int minor = strtod(strchr(kernelVersion, '.') + 1, NULL);
+    int major = std::strtod(kernelVersion, NULL);
+    int minor = std::strtod(std::strchr(kernelVersion, '.') + 1, NULL);
 
     // Kernel 14.4 corresponds to OS X 10.10.4
     return (major > 14 || (major == 14 && minor >= 4));

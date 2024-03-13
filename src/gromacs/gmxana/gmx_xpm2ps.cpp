@@ -475,7 +475,7 @@ static void draw_boxes(t_psdata* ps, real x0, real y0, real w, gmx::ArrayRef<t_m
         if (!psr->bYonce || m == halfway)
         {
             std::string mylab;
-            if (strlen(psr->Y.label) > 0)
+            if (std::strlen(psr->Y.label) > 0)
             {
                 mylab = psr->Y.label;
             }
@@ -497,7 +497,7 @@ static void draw_boxes(t_psdata* ps, real x0, real y0, real w, gmx::ArrayRef<t_m
     }
     /* Label on X-axis */
     std::string mylab;
-    if (strlen(psr->X.label) > 0)
+    if (std::strlen(psr->X.label) > 0)
     {
         mylab = psr->X.label;
     }

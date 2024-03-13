@@ -89,19 +89,19 @@ DeviceVendor getDeviceVendor(const char* vendorName)
 {
     if (vendorName)
     {
-        if (strstr(vendorName, "NVIDIA"))
+        if (std::strstr(vendorName, "NVIDIA"))
         {
             return DeviceVendor::Nvidia;
         }
-        else if (strstr(vendorName, "AMD") || strstr(vendorName, "Advanced Micro Devices"))
+        else if (std::strstr(vendorName, "AMD") || std::strstr(vendorName, "Advanced Micro Devices"))
         {
             return DeviceVendor::Amd;
         }
-        else if (strstr(vendorName, "Intel"))
+        else if (std::strstr(vendorName, "Intel"))
         {
             return DeviceVendor::Intel;
         }
-        else if (strstr(vendorName, "Apple"))
+        else if (std::strstr(vendorName, "Apple"))
         {
             return DeviceVendor::Apple;
         }

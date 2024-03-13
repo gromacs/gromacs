@@ -375,7 +375,7 @@ static int getMinimumIlistCountForGpuBalancing(NbnxmGpu* nbnxmGpu)
     {
         char* end = nullptr;
 
-        int minimumIlistCount = strtol(env, &end, 10);
+        int minimumIlistCount = std::strtol(env, &end, 10);
         if (!end || (*end != 0) || minimumIlistCount < 0)
         {
             gmx_fatal(

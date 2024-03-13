@@ -786,7 +786,7 @@ static void update_top(t_atoms*        atoms,
     if (ftp2bSet(efTOP, NFILE, fnm))
     {
         char temporary_filename[STRLEN];
-        strncpy(temporary_filename, "temp.topXXXXXX", STRLEN);
+        std::strncpy(temporary_filename, "temp.topXXXXXX", STRLEN);
 
         fprintf(stderr, "Processing topology\n");
         fpin    = gmx_ffopen(topinout, "r");
@@ -794,8 +794,8 @@ static void update_top(t_atoms*        atoms,
         bSystem = false;
         while (fgets(buf, STRLEN, fpin))
         {
-            strcpy(buf2, buf);
-            if ((temp = strchr(buf2, '\n')) != nullptr)
+            std::strcpy(buf2, buf);
+            if ((temp = std::strchr(buf2, '\n')) != nullptr)
             {
                 temp[0] = '\0';
             }
@@ -803,14 +803,14 @@ static void update_top(t_atoms*        atoms,
             if (buf2[0] == '[')
             {
                 buf2[0] = ' ';
-                if ((temp = strchr(buf2, '\n')) != nullptr)
+                if ((temp = std::strchr(buf2, '\n')) != nullptr)
                 {
                     temp[0] = '\0';
                 }
                 rtrim(buf2);
-                if (buf2[strlen(buf2) - 1] == ']')
+                if (buf2[std::strlen(buf2) - 1] == ']')
                 {
-                    buf2[strlen(buf2) - 1] = '\0';
+                    buf2[std::strlen(buf2) - 1] = '\0';
                     ltrim(buf2);
                     rtrim(buf2);
                     bSystem = (gmx_strcasecmp(buf2, "system") == 0);
@@ -820,7 +820,7 @@ static void update_top(t_atoms*        atoms,
             {
                 /* if sol present, append "in water" to system name */
                 rtrim(buf2);
-                if (buf2[0] && (!strstr(buf2, " water")))
+                if (buf2[0] && (!std::strstr(buf2, " water")))
                 {
                     sprintf(buf, "%s in water\n", buf2);
                     bSystem = false;

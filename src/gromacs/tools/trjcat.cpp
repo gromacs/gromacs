@@ -247,7 +247,7 @@ static void edit_files(gmx::ArrayRef<std::string> files,
                 }
                 else
                 {
-                    settime[i] = strtod(inputstring, &chptr) * output_env_get_time_invfactor(oenv);
+                    settime[i] = std::strtod(inputstring, &chptr) * output_env_get_time_invfactor(oenv);
                     if (chptr == inputstring)
                     {
                         fprintf(stderr,

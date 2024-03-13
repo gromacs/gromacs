@@ -404,7 +404,7 @@ static void get_nbparm(char* nb_str, char* comb_str, VanDerWaalsPotential* nb, C
     }
     if (*nb == VanDerWaalsPotential::Count)
     {
-        int integerValue = strtol(nb_str, nullptr, 10);
+        int integerValue = std::strtol(nb_str, nullptr, 10);
         if ((integerValue < 1) || (integerValue >= static_cast<int>(VanDerWaalsPotential::Count)))
         {
             std::string message =
@@ -429,7 +429,7 @@ static void get_nbparm(char* nb_str, char* comb_str, VanDerWaalsPotential* nb, C
     }
     if (*comb == CombinationRule::Count)
     {
-        int integerValue = strtol(comb_str, nullptr, 10);
+        int integerValue = std::strtol(comb_str, nullptr, 10);
         if ((integerValue < 1) || (integerValue >= static_cast<int>(CombinationRule::Count)))
         {
             std::string message =
@@ -485,8 +485,8 @@ static std::vector<char*> cpp_opts(const char* define, const char* include, Warn
                 if (len > 2)
                 {
                     snew(buf, (len + 1));
-                    strncpy(buf, ptr, len);
-                    if (strstr(ptr, option[n]) != ptr)
+                    std::strncpy(buf, ptr, len);
+                    if (std::strstr(ptr, option[n]) != ptr)
                     {
                         wi->setFileAndLineNumber("mdp file", -1);
                         sprintf(warn_buf, "Malformed %s option %s", nopt[n], buf);
@@ -642,7 +642,7 @@ static char** read_topol(const char*                                 infile,
             pline = gmx_strdup(line);
 
             /* Strip trailing '\' from pline, if it exists */
-            sl = strlen(pline);
+            sl = std::strlen(pline);
             if ((sl > 0) && (pline[sl - 1] == CONTINUE))
             {
                 pline[sl - 1] = ' ';
@@ -659,7 +659,7 @@ static char** read_topol(const char*                                 infile,
                  */
                 tmp_line = gmx_strdup(line);
 
-                sl = strlen(tmp_line);
+                sl = std::strlen(tmp_line);
                 if ((sl > 0) && (tmp_line[sl - 1] == CONTINUE))
                 {
                     tmp_line[sl - 1] = ' ';
@@ -678,8 +678,8 @@ static char** read_topol(const char*                                 infile,
                     }
                 }
 
-                srenew(pline, strlen(pline) + strlen(tmp_line) + 1);
-                strcat(pline, tmp_line);
+                srenew(pline, std::strlen(pline) + std::strlen(tmp_line) + 1);
+                std::strcat(pline, tmp_line);
                 sfree(tmp_line);
             }
 
@@ -688,7 +688,7 @@ static char** read_topol(const char*                                 infile,
             trim(pline);
 
             /* if there is something left... */
-            if (static_cast<int>(strlen(pline)) > 0)
+            if (static_cast<int>(std::strlen(pline)) > 0)
             {
                 if (pline[0] == OPENDIR)
                 {
@@ -697,7 +697,7 @@ static char** read_topol(const char*                                 infile,
                      * skip spaces and tabs on either side of directive
                      */
                     dirstr = gmx_strdup((pline + 1));
-                    if ((dummy2 = strchr(dirstr, CLOSEDIR)) != nullptr)
+                    if ((dummy2 = std::strchr(dirstr, CLOSEDIR)) != nullptr)
                     {
                         (*dummy2) = 0;
                     }
@@ -1032,7 +1032,7 @@ static char** read_topol(const char*                                 infile,
 
                             bCouple = (opts->couple_moltype != nullptr
                                        && (gmx_strcasecmp("system", opts->couple_moltype) == 0
-                                           || strcmp(*(mi0->name), opts->couple_moltype) == 0));
+                                           || std::strcmp(*(mi0->name), opts->couple_moltype) == 0));
                             if (bCouple)
                             {
                                 nmol_couple += nrcopies;

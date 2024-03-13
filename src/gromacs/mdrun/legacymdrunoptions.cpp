@@ -67,7 +67,7 @@ static bool is_multisim_option_set(int argc, const char* const argv[])
 {
     for (int i = 0; i < argc; ++i)
     {
-        if (strcmp(argv[i], "-multidir") == 0)
+        if (std::strcmp(argv[i], "-multidir") == 0)
         {
             return true;
         }

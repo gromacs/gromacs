@@ -307,7 +307,7 @@ choose_ff_impl(const char* ffsel, char* forcefield, int ff_maxlen, const gmx::MD
 
             if (pret != nullptr)
             {
-                sel = strtol(buf, nullptr, 10);
+                sel = std::strtol(buf, nullptr, 10);
                 sel--;
             }
         } while (pret == nullptr || (sel < 0) || (sel >= nff));
@@ -347,7 +347,7 @@ choose_ff_impl(const char* ffsel, char* forcefield, int ff_maxlen, const gmx::MD
                                                 ff_maxlen);
         GMX_THROW(gmx::InvalidInputError(message));
     }
-    strcpy(forcefield, ffs[sel].c_str());
+    std::strcpy(forcefield, ffs[sel].c_str());
 
     std::filesystem::path ffpath;
     if (ffdirs[sel].fromDefaultDir_)
@@ -382,13 +382,13 @@ void choose_watermodel(const char*                  wmsel,
     char**      model;
     char*       pret;
 
-    if (strcmp(wmsel, "none") == 0)
+    if (std::strcmp(wmsel, "none") == 0)
     {
         *watermodel = nullptr;
 
         return;
     }
-    else if (strcmp(wmsel, "select") != 0)
+    else if (std::strcmp(wmsel, "select") != 0)
     {
         *watermodel = gmx_strdup(wmsel);
 
@@ -436,7 +436,7 @@ void choose_watermodel(const char*                  wmsel,
 
         if (pret != nullptr)
         {
-            sel = strtol(buf, nullptr, 10);
+            sel = std::strtol(buf, nullptr, 10);
             sel--;
         }
     } while (pret == nullptr || sel < 0 || sel > nwm);
@@ -1160,9 +1160,9 @@ static bool atomname_cmp_nr(const char* anm, const MoleculePatch* patch, int* nr
     }
     else
     {
-        if (isdigit(anm[strlen(anm) - 1]))
+        if (isdigit(anm[std::strlen(anm) - 1]))
         {
-            *nr = anm[strlen(anm) - 1] - '0';
+            *nr = anm[std::strlen(anm) - 1] - '0';
         }
         else
         {
@@ -1174,7 +1174,7 @@ static bool atomname_cmp_nr(const char* anm, const MoleculePatch* patch, int* nr
         }
         else
         {
-            return (strlen(anm) == patch->nname.length() + 1
+            return (std::strlen(anm) == patch->nname.length() + 1
                     && gmx_strncasecmp(anm, patch->nname.c_str(), patch->nname.length()) == 0);
         }
     }
@@ -1429,8 +1429,8 @@ static void gen_cmap(InteractionsOfType*                    psb,
                  */
                 if (cyclicBondsIndex.empty())
                 {
-                    if (((strchr(pname, '-') != nullptr) && (residx == 0))
-                        || ((strchr(pname, '+') != nullptr) && (residx == nres - 1)))
+                    if (((std::strchr(pname, '-') != nullptr) && (residx == 0))
+                        || ((std::strchr(pname, '+') != nullptr) && (residx == nres - 1)))
                     {
                         bAddCMAP = false;
                         break;

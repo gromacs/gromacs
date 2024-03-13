@@ -498,9 +498,10 @@ int gmx_x2top(int argc, char* argv[])
 
 
     /* Force field selection, interactive or direct */
-    auto ffdir = choose_ff(strcmp(ff, "select") == 0 ? nullptr : ff, forcefield, sizeof(forcefield), logger);
+    auto ffdir = choose_ff(
+            std::strcmp(ff, "select") == 0 ? nullptr : ff, forcefield, sizeof(forcefield), logger);
 
-    bOPLS = (strcmp(forcefield, "oplsaa") == 0);
+    bOPLS = (std::strcmp(forcefield, "oplsaa") == 0);
 
 
     mymol.name = gmx_strdup(molnm);

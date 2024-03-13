@@ -471,7 +471,7 @@ bool ModularSimulator::isInputCompatible(bool                             exitOn
         auto* distantRestraintEnsembleEnvVar = std::getenv("GMX_DISRE_ENSEMBLE_SIZE");
         numEnsembleRestraintSystems =
                 (ms != nullptr && distantRestraintEnsembleEnvVar != nullptr)
-                        ? static_cast<int>(strtol(distantRestraintEnsembleEnvVar, nullptr, 10))
+                        ? static_cast<int>(std::strtol(distantRestraintEnsembleEnvVar, nullptr, 10))
                         : 0;
     }
     isInputCompatible =

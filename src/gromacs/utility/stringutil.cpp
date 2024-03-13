@@ -61,7 +61,7 @@ namespace gmx
 std::size_t countWords(const char* s)
 {
     std::size_t nWords = 0;
-    // Use length variable to avoid N^2 complexity when executing strlen(s) every iteration
+    // Use length variable to avoid N^2 complexity when executing std::strlen(s) every iteration
     std::size_t length = std::strlen(s);
 
     for (std::size_t i = 0; i < length; i++)

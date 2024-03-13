@@ -326,7 +326,7 @@ void PositionCalculationCollection::typeFromEnum(const char* post, e_poscalc_t* 
     {
         GMX_THROW(InternalError("Unknown position calculation type"));
     }
-    if (strlen(ptr) < 7)
+    if (std::strlen(ptr) < 7)
     {
         GMX_THROW(InternalError("Unknown position calculation type"));
     }

@@ -221,77 +221,77 @@ void PmeGpuProgramImpl::compileKernels(const DeviceInformation& deviceInfo)
 
         // The names below must correspond to those defined in pme_program.cl
         // TODO use a map with string key instead?
-        if (!strcmp(kernelNamesBuffer.data(), "pmeSplineKernelSingle"))
+        if (!std::strcmp(kernelNamesBuffer.data(), "pmeSplineKernelSingle"))
         {
             splineKernelSingle = kernel;
         }
-        else if (!strcmp(kernelNamesBuffer.data(), "pmeSplineAndSpreadKernelSingle"))
+        else if (!std::strcmp(kernelNamesBuffer.data(), "pmeSplineAndSpreadKernelSingle"))
         {
             splineAndSpreadKernelSingle             = kernel;
             splineAndSpreadKernelWriteSplinesSingle = kernel;
             checkRequiredWarpSize(splineAndSpreadKernelSingle, kernelNamesBuffer.data(), deviceInfo);
         }
-        else if (!strcmp(kernelNamesBuffer.data(), "pmeSpreadKernelSingle"))
+        else if (!std::strcmp(kernelNamesBuffer.data(), "pmeSpreadKernelSingle"))
         {
             spreadKernelSingle = kernel;
             checkRequiredWarpSize(spreadKernelSingle, kernelNamesBuffer.data(), deviceInfo);
         }
-        else if (!strcmp(kernelNamesBuffer.data(), "pmeSplineKernelDual"))
+        else if (!std::strcmp(kernelNamesBuffer.data(), "pmeSplineKernelDual"))
         {
             splineKernelDual = kernel;
         }
-        else if (!strcmp(kernelNamesBuffer.data(), "pmeSplineAndSpreadKernelDual"))
+        else if (!std::strcmp(kernelNamesBuffer.data(), "pmeSplineAndSpreadKernelDual"))
         {
             splineAndSpreadKernelDual             = kernel;
             splineAndSpreadKernelWriteSplinesDual = kernel;
             checkRequiredWarpSize(splineAndSpreadKernelDual, kernelNamesBuffer.data(), deviceInfo);
         }
-        else if (!strcmp(kernelNamesBuffer.data(), "pmeSpreadKernelDual"))
+        else if (!std::strcmp(kernelNamesBuffer.data(), "pmeSpreadKernelDual"))
         {
             spreadKernelDual = kernel;
             checkRequiredWarpSize(spreadKernelDual, kernelNamesBuffer.data(), deviceInfo);
         }
-        else if (!strcmp(kernelNamesBuffer.data(), "pmeGatherKernelSingle"))
+        else if (!std::strcmp(kernelNamesBuffer.data(), "pmeGatherKernelSingle"))
         {
             gatherKernelSingle            = kernel;
             gatherKernelReadSplinesSingle = kernel;
             checkRequiredWarpSize(gatherKernelSingle, kernelNamesBuffer.data(), deviceInfo);
         }
-        else if (!strcmp(kernelNamesBuffer.data(), "pmeGatherKernelDual"))
+        else if (!std::strcmp(kernelNamesBuffer.data(), "pmeGatherKernelDual"))
         {
             gatherKernelDual            = kernel;
             gatherKernelReadSplinesDual = kernel;
             checkRequiredWarpSize(gatherKernelDual, kernelNamesBuffer.data(), deviceInfo);
         }
-        else if (!strcmp(kernelNamesBuffer.data(), "pmeSolveYZXKernelA"))
+        else if (!std::strcmp(kernelNamesBuffer.data(), "pmeSolveYZXKernelA"))
         {
             solveYZXKernelA = kernel;
         }
-        else if (!strcmp(kernelNamesBuffer.data(), "pmeSolveYZXEnergyKernelA"))
+        else if (!std::strcmp(kernelNamesBuffer.data(), "pmeSolveYZXEnergyKernelA"))
         {
             solveYZXEnergyKernelA = kernel;
         }
-        else if (!strcmp(kernelNamesBuffer.data(), "pmeSolveXYZKernelA"))
+        else if (!std::strcmp(kernelNamesBuffer.data(), "pmeSolveXYZKernelA"))
         {
             solveXYZKernelA = kernel;
         }
-        else if (!strcmp(kernelNamesBuffer.data(), "pmeSolveXYZEnergyKernelA"))
+        else if (!std::strcmp(kernelNamesBuffer.data(), "pmeSolveXYZEnergyKernelA"))
         {
             solveXYZEnergyKernelA = kernel;
         }
-        else if (!strcmp(kernelNamesBuffer.data(), "pmeSolveYZXKernelB"))
+        else if (!std::strcmp(kernelNamesBuffer.data(), "pmeSolveYZXKernelB"))
         {
             solveYZXKernelB = kernel;
         }
-        else if (!strcmp(kernelNamesBuffer.data(), "pmeSolveYZXEnergyKernelB"))
+        else if (!std::strcmp(kernelNamesBuffer.data(), "pmeSolveYZXEnergyKernelB"))
         {
             solveYZXEnergyKernelB = kernel;
         }
-        else if (!strcmp(kernelNamesBuffer.data(), "pmeSolveXYZKernelB"))
+        else if (!std::strcmp(kernelNamesBuffer.data(), "pmeSolveXYZKernelB"))
         {
             solveXYZKernelB = kernel;
         }
-        else if (!strcmp(kernelNamesBuffer.data(), "pmeSolveXYZEnergyKernelB"))
+        else if (!std::strcmp(kernelNamesBuffer.data(), "pmeSolveXYZEnergyKernelB"))
         {
             solveXYZEnergyKernelB = kernel;
         }

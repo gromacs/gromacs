@@ -123,7 +123,7 @@ int sffn2effn(const char** sffn)
     eFitFn = 0;
     for (i = 0; i < effnNR; i++)
     {
-        if (sffn[i + 1] && strcmp(sffn[0], sffn[i + 1]) == 0)
+        if (sffn[i + 1] && std::strcmp(sffn[0], sffn[i + 1]) == 0)
         {
             eFitFn = i;
         }

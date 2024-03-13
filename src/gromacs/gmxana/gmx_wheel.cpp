@@ -171,7 +171,7 @@ static void wheel2(const char* fn, int nres, char* resnm[], real rot0, const cha
     slen  = 0;
     for (i = 0; (i < nres); i++)
     {
-        slen = std::max(slen, static_cast<int>(strlen(resnm[i])));
+        slen = std::max(slen, static_cast<int>(std::strlen(resnm[i])));
     }
     fprintf(stderr, "slen = %d\n", slen);
     ring  = slen * fontwidth;
@@ -260,7 +260,7 @@ int gmx_wheel(int argc, char* argv[])
         }
         else if (std::strcmp(argv[i], "-rot0") == 0)
         {
-            rot0 = strtod(argv[++i], nullptr);
+            rot0 = std::strtod(argv[++i], nullptr);
             fprintf(stderr, "Initial rotation is %g\n", rot0);
         }
         else if (std::strcmp(argv[i], "-T") == 0)

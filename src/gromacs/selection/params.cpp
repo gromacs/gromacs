@@ -103,13 +103,13 @@ gmx_ana_selparam_t* gmx_ana_selparam_find(const char* name, int nparam, gmx_ana_
     }
     for (; i < nparam; ++i)
     {
-        if (!strcmp(param[i].name, name))
+        if (!std::strcmp(param[i].name, name))
         {
             return &param[i];
         }
         /* Check for 'no' prefix on boolean parameters */
-        if (param[i].val.type == NO_VALUE && strlen(name) > 2 && name[0] == 'n' && name[1] == 'o'
-            && !strcmp(param[i].name, name + 2))
+        if (param[i].val.type == NO_VALUE && std::strlen(name) > 2 && name[0] == 'n'
+            && name[1] == 'o' && !std::strcmp(param[i].name, name + 2))
         {
             return &param[i];
         }

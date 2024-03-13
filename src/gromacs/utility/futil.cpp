@@ -137,7 +137,7 @@ void gmx_set_max_backup_count(int count)
         if (env != nullptr)
         {
             // TODO: Check that the value is converted properly.
-            count = strtol(env, nullptr, 10);
+            count = std::strtol(env, nullptr, 10);
             if (count < 0)
             {
                 count = 0;
@@ -420,7 +420,7 @@ FILE* gmx_ffopen(const std::filesystem::path& file, const char* mode)
         if (bUnbuffered || ((bufsize = std::getenv("GMX_LOG_BUFFER")) != nullptr))
         {
             /* Check whether to use completely unbuffered */
-            const int bs = bUnbuffered ? 0 : strtol(bufsize, nullptr, 10);
+            const int bs = bUnbuffered ? 0 : std::strtol(bufsize, nullptr, 10);
             if (bs <= 0)
             {
                 std::setbuf(ff, nullptr);
@@ -502,7 +502,7 @@ static int makeTemporaryFilename(char* buf)
 {
     int len = 0;
 
-    if ((len = strlen(buf)) < 7)
+    if ((len = std::strlen(buf)) < 7)
     {
         gmx_fatal(FARGS, "Buf passed to gmx_tmpnam must be at least 7 bytes long");
     }
@@ -518,7 +518,7 @@ static int makeTemporaryFilename(char* buf)
     _mktemp(buf);
     if (buf == NULL)
     {
-        gmx_fatal(FARGS, "Error creating temporary file %s: %s", buf, strerror(errno));
+        gmx_fatal(FARGS, "Error creating temporary file %s: %s", buf, std::strerror(errno));
     }
     int fd = 0;
 #else
@@ -531,7 +531,7 @@ static int makeTemporaryFilename(char* buf)
 
     if (fd < 0)
     {
-        gmx_fatal(FARGS, "Error creating temporary file %s: %s", buf, strerror(errno));
+        gmx_fatal(FARGS, "Error creating temporary file %s: %s", buf, std::strerror(errno));
     }
 #endif
     return fd;

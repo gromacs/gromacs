@@ -490,7 +490,7 @@ void rename_pdbres(t_atoms* pdba, const char* oldnm, const char* newnm, bool bFu
     {
         resnm = *pdba->resinfo[i].name;
         if ((bFullCompare && (gmx::equalCaseInsensitive(resnm, oldnm)))
-            || (!bFullCompare && strstr(resnm, oldnm) != nullptr))
+            || (!bFullCompare && std::strstr(resnm, oldnm) != nullptr))
         {
             /* Rename the residue name (not the rtp name) */
             pdba->resinfo[i].name = put_symtab(symtab, newnm);
@@ -522,7 +522,7 @@ void renameResidue(const gmx::MDLogger& logger,
         /* We have not set the rtp name yet, use the residue name */
         const char* residueNameInInputConfiguration = *pdba->resinfo[i].name;
         if ((bFullCompare && (gmx::equalCaseInsensitive(residueNameInInputConfiguration, oldnm)))
-            || (!bFullCompare && strstr(residueNameInInputConfiguration, oldnm) != nullptr))
+            || (!bFullCompare && std::strstr(residueNameInInputConfiguration, oldnm) != nullptr))
         {
             /* Change the rtp building block name */
             pdba->resinfo[i].rtp  = put_symtab(symtab, newnm);
@@ -566,8 +566,8 @@ void renameResidueInteractively(t_atoms*    pdba,
     {
         /* We have not set the rtp name yet, use the residue name */
         char* residueNameInInputConfiguration = *pdba->resinfo[i].name;
-        if ((bFullCompare && (strcmp(residueNameInInputConfiguration, oldnm) == 0))
-            || (!bFullCompare && strstr(residueNameInInputConfiguration, oldnm) != nullptr))
+        if ((bFullCompare && (std::strcmp(residueNameInInputConfiguration, oldnm) == 0))
+            || (!bFullCompare && std::strstr(residueNameInInputConfiguration, oldnm) != nullptr))
         {
             const char* interactiveRtpChoice = gettp(i, rr);
             pdba->resinfo[i].rtp             = put_symtab(symtab, interactiveRtpChoice);
@@ -950,7 +950,7 @@ int remove_duplicate_atoms(t_atoms* pdba, gmx::ArrayRef<gmx::RVec> x, bool bVerb
         /* compare 'i' and 'i-1', throw away 'i' if they are identical
            this is a 'while' because multiple alternate locations can be present */
         while ((i < pdba->nr) && (pdba->atom[i - 1].resind == pdba->atom[i].resind)
-               && (strcmp(*pdba->atomname[i - 1], *pdba->atomname[i]) == 0))
+               && (std::strcmp(*pdba->atomname[i - 1], *pdba->atomname[i]) == 0))
         {
             ndel++;
             if (bVerbose)
@@ -1973,12 +1973,12 @@ void pdb2gmx::optionsFinished()
     }
 
     /* Force field selection, interactive or direct */
-    ffdir_ = choose_ff(strcmp(ff_.c_str(), "select") == 0 ? nullptr : ff_.c_str(),
+    ffdir_ = choose_ff(std::strcmp(ff_.c_str(), "select") == 0 ? nullptr : ff_.c_str(),
                        forcefield_,
                        sizeof(forcefield_),
                        loggerOwner_->logger());
 
-    if (strlen(forcefield_) > 0)
+    if (std::strlen(forcefield_) > 0)
     {
         ffname_    = forcefield_;
         ffname_[0] = std::toupper(ffname_[0]);
@@ -2076,11 +2076,12 @@ int pdb2gmx::run()
     matrix      box;
     const char* watres;
     clear_mat(box);
-    if (watermodel_ != nullptr && (strstr(watermodel_, "4p") || strstr(watermodel_, "4P")))
+    if (watermodel_ != nullptr && (std::strstr(watermodel_, "4p") || std::strstr(watermodel_, "4P")))
     {
         watres = "HO4";
     }
-    else if (watermodel_ != nullptr && (strstr(watermodel_, "5p") || strstr(watermodel_, "5P")))
+    else if (watermodel_ != nullptr
+             && (std::strstr(watermodel_, "5p") || std::strstr(watermodel_, "5P")))
     {
         watres = "HO5";
     }
@@ -2172,7 +2173,7 @@ int pdb2gmx::run()
             bMerged         = false;
             if (i > 0 && !bWat_)
             {
-                if (!strncmp(c_mergeTypeNames[mergeType_], "int", 3))
+                if (!std::strncmp(c_mergeTypeNames[mergeType_], "int", 3))
                 {
                     GMX_LOG(logger.info)
                             .asParagraph()
@@ -2198,7 +2199,7 @@ int pdb2gmx::run()
                     }
                     bMerged = (select[0] == 'y');
                 }
-                else if (!strncmp(c_mergeTypeNames[mergeType_], "all", 3))
+                else if (!std::strncmp(c_mergeTypeNames[mergeType_], "all", 3))
                 {
                     bMerged = true;
                 }

@@ -611,15 +611,15 @@ static TaskTarget findTaskTarget(const char* optionString)
 {
     TaskTarget returnValue = TaskTarget::Auto;
 
-    if (strncmp(optionString, "auto", 3) == 0)
+    if (std::strncmp(optionString, "auto", 3) == 0)
     {
         returnValue = TaskTarget::Auto;
     }
-    else if (strncmp(optionString, "cpu", 3) == 0)
+    else if (std::strncmp(optionString, "cpu", 3) == 0)
     {
         returnValue = TaskTarget::Cpu;
     }
-    else if (strncmp(optionString, "gpu", 3) == 0)
+    else if (std::strncmp(optionString, "gpu", 3) == 0)
     {
         returnValue = TaskTarget::Gpu;
     }

@@ -2300,7 +2300,7 @@ static gmx_bool read_lambda_compvec(const char*                str,
                     else
                     {
                         /* add a vector component to lv */
-                        lv->val[n] = strtod(val_start, &strtod_end);
+                        lv->val[n] = std::strtod(val_start, &strtod_end);
                         if (val_start == strtod_end)
                         {
                             gmx_fatal(FARGS, "Error reading lambda vector in %s", fn);

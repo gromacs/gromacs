@@ -323,7 +323,7 @@ static int check_atom_names(const char*          fn1,
         {
             for (j = 0; j < tat->nr; j++)
             {
-                if (strcmp(*(tat->atomname[j]), *(at->atomname[i])) != 0)
+                if (std::strcmp(*(tat->atomname[j]), *(at->atomname[i])) != 0)
                 {
                     if (nmismatch < c_maxNumberOfMismatches)
                     {
@@ -2447,7 +2447,7 @@ int gmx_grompp(int argc, char* argv[])
         if (bVerbose)
         {
             std::string message = gmx::formatString("Reading position restraint coords from %s", fn);
-            if (strcmp(fn, fnB) != 0)
+            if (std::strcmp(fn, fnB) != 0)
             {
                 message += gmx::formatString(" and %s", fnB);
             }

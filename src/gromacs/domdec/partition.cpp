@@ -1073,13 +1073,13 @@ static void print_dd_load_av(FILE* fplog, gmx_domdec_t* dd)
         for (int d = 0; d < dd->ndim; d++)
         {
             int limitPercentage = (200 * comm->load_lim[d] + 1) / (2 * comm->nload);
-            sprintf(buf + strlen(buf), " %c %d %%", dim2char(dd->dim[d]), limitPercentage);
+            sprintf(buf + std::strlen(buf), " %c %d %%", dim2char(dd->dim[d]), limitPercentage);
             if (limitPercentage >= 50)
             {
                 dlbWasLimited = true;
             }
         }
-        sprintf(buf + strlen(buf), "\n");
+        sprintf(buf + std::strlen(buf), "\n");
         fprintf(fplog, "%s", buf);
         fprintf(stderr, "%s", buf);
     }

@@ -92,7 +92,7 @@ void make_wall_tables(FILE*                   fplog,
             if (!(fr->egp_flags[egp * ir.opts.ngener + negp_pp + w] & EGP_EXCL))
             {
                 sprintf(buf, "%s", tabfn);
-                sprintf(buf + strlen(tabfn) - strlen(ftp2ext(efXVG)) - 1,
+                sprintf(buf + std::strlen(tabfn) - std::strlen(ftp2ext(efXVG)) - 1,
                         "_%s_%s.%s",
                         *groups->groupNames[nm_ind[egp]],
                         *groups->groupNames[nm_ind[negp_pp + w]],

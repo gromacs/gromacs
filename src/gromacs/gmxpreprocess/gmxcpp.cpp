@@ -98,16 +98,16 @@ static const char* strstrw(const char* buf, const char* word)
 {
     const char* ptr;
 
-    while ((ptr = strstr(buf, word)) != nullptr)
+    while ((ptr = std::strstr(buf, word)) != nullptr)
     {
         /* Check if we did not find part of a longer word */
-        if (ptr && is_word_end(ptr[strlen(word)])
+        if (ptr && is_word_end(ptr[std::strlen(word)])
             && (((ptr > buf) && is_word_end(ptr[-1])) || (ptr == buf)))
         {
             return ptr;
         }
 
-        buf = ptr + strlen(word);
+        buf = ptr + std::strlen(word);
     }
     return nullptr;
 }
@@ -243,14 +243,14 @@ static int cpp_open_file(const std::filesystem::path&                         fi
     {
         while (cppopts[i])
         {
-            if (strstr(cppopts[i], "-I") == cppopts[i])
+            if (std::strstr(cppopts[i], "-I") == cppopts[i])
             {
                 add_include(cpp->includes.get(), cppopts[i] + 2);
             }
-            if (strstr(cppopts[i], "-D") == cppopts[i])
+            if (std::strstr(cppopts[i], "-D") == cppopts[i])
             {
                 /* If the option contains a =, split it into name and value. */
-                char* ptr = strchr(cppopts[i], '=');
+                char* ptr = std::strchr(cppopts[i], '=');
                 if (ptr)
                 {
                     std::string buf = cppopts[i] + 2;
@@ -618,7 +618,7 @@ int cpp_read_line(gmx_cpp_t* handlep, int n, char buf[])
             while ((ptr = strstrw(ptr, define.name.c_str())) != nullptr)
             {
                 nn++;
-                ptr += strlen(define.name.c_str());
+                ptr += std::strlen(define.name.c_str());
             }
             if (nn > 0)
             {
@@ -642,7 +642,7 @@ int cpp_read_line(gmx_cpp_t* handlep, int n, char buf[])
                 name += ptr;
                 GMX_RELEASE_ASSERT(name.size() < static_cast<size_t>(n),
                                    "The line should fit in buf");
-                strcpy(buf, name.c_str());
+                std::strcpy(buf, name.c_str());
             }
         }
     }

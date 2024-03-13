@@ -90,7 +90,7 @@ int gmx_gethostname(char* buf, size_t len)
         return 0;
     }
 #endif
-    strcpy(buf, c_unknown);
+    std::strcpy(buf, c_unknown);
     return -1;
 }
 
@@ -130,7 +130,7 @@ int gmx_getusername(char* buf, size_t len)
         return 0;
     }
 #endif
-    strcpy(buf, c_unknown);
+    std::strcpy(buf, c_unknown);
     return -1;
 }
 

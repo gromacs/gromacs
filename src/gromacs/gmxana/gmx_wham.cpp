@@ -1703,7 +1703,7 @@ static void read_tpr_header(const char* fn, t_UmbrellaHeader* header, t_Umbrella
         int maxlen = 0;
         for (int i = 0; i < ir->pull->ncoord; i++)
         {
-            int lentmp = strlen(enumValueToString(header->pcrd[i].geometry));
+            int lentmp = std::strlen(enumValueToString(header->pcrd[i].geometry));
             maxlen     = (lentmp > maxlen) ? lentmp : maxlen;
         }
         char fmt[STRLEN];

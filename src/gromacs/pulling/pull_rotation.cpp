@@ -951,9 +951,9 @@ static void add_to_string(char** str, char* buf)
     int len;
 
 
-    len = strlen(*str) + strlen(buf) + 1;
+    len = std::strlen(*str) + std::strlen(buf) + 1;
     srenew(*str, len);
-    strcat(*str, buf);
+    std::strcat(*str, buf);
 }
 
 

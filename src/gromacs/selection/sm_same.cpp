@@ -457,7 +457,7 @@ static void evaluate_same_int(const gmx::SelMethodEvalContext& /*context*/,
  */
 static int cmp_str(const void* a, const void* b)
 {
-    return strcmp(*static_cast<char* const*>(a), *static_cast<char* const*>(b));
+    return std::strcmp(*static_cast<char* const*>(a), *static_cast<char* const*>(b));
 }
 
 static void init_frame_same_str(const gmx::SelMethodEvalContext& /*context*/, void* data)
@@ -476,7 +476,7 @@ static void init_frame_same_str(const gmx::SelMethodEvalContext& /*context*/, vo
     d->as_s_sorted[0] = d->as.s[0];
     for (i = 1, j = 0; i < d->nas; ++i)
     {
-        if (strcmp(d->as.s[i], d->as_s_sorted[j]) != 0)
+        if (std::strcmp(d->as.s[i], d->as_s_sorted[j]) != 0)
         {
             ++j;
             d->as_s_sorted[j] = d->as.s[i];
@@ -488,7 +488,7 @@ static void init_frame_same_str(const gmx::SelMethodEvalContext& /*context*/, vo
     /* More identical values may become adjacent after sorting. */
     for (i = 1, j = 0; i < d->nas; ++i)
     {
-        if (strcmp(d->as_s_sorted[i], d->as_s_sorted[j]) != 0)
+        if (std::strcmp(d->as_s_sorted[i], d->as_s_sorted[j]) != 0)
         {
             ++j;
             d->as_s_sorted[j] = d->as_s_sorted[i];
@@ -530,7 +530,7 @@ static void evaluate_same_str(const gmx::SelMethodEvalContext& /*context*/,
             /* If not, skip all atoms with the same value. */
             const char* tmpval = d->val.s[j];
             ++j;
-            while (j < g->isize && strcmp(d->val.s[j], tmpval) == 0)
+            while (j < g->isize && std::strcmp(d->val.s[j], tmpval) == 0)
             {
                 ++j;
             }
@@ -539,7 +539,7 @@ static void evaluate_same_str(const gmx::SelMethodEvalContext& /*context*/,
         {
             const char* tmpval = d->val.s[j];
             /* Copy all the atoms with this value to the output. */
-            while (j < g->isize && strcmp(d->val.s[j], tmpval) == 0)
+            while (j < g->isize && std::strcmp(d->val.s[j], tmpval) == 0)
             {
                 out->u.g->index[out->u.g->isize++] = g->index[j];
                 ++j;

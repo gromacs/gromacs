@@ -173,9 +173,9 @@ static void read_cryst1(char* line, PbcType* pbcType, matrix box)
     sscanf(line, "%*s%s%s%s%lf%lf%lf", sa, sb, sc, &alpha, &beta, &gamma);
 
     pbcTypeFile = PbcType::Unset;
-    if (strlen(line) >= 55)
+    if (std::strlen(line) >= 55)
     {
-        strncpy(sg, line + 55, SG_SIZE);
+        std::strncpy(sg, line + 55, SG_SIZE);
         sg[SG_SIZE] = '\0';
         ident       = ' ';
         syma        = 0;
@@ -184,7 +184,7 @@ static void read_cryst1(char* line, PbcType* pbcType, matrix box)
         sscanf(sg, "%c %d %d %d", &ident, &syma, &symb, &symc);
         if (ident == 'P' && syma == 1 && symb <= 1 && symc <= 1)
         {
-            fc          = strtod(sc, nullptr) * 0.1;
+            fc          = std::strtod(sc, nullptr) * 0.1;
             pbcTypeFile = (fc > 0 ? PbcType::Xyz : PbcType::XY);
         }
         if (ident == 'P' && syma == 21 && symb == 1 && symc == 1)
@@ -199,9 +199,9 @@ static void read_cryst1(char* line, PbcType* pbcType, matrix box)
 
     if (box)
     {
-        fa = strtod(sa, nullptr) * 0.1;
-        fb = strtod(sb, nullptr) * 0.1;
-        fc = strtod(sc, nullptr) * 0.1;
+        fa = std::strtod(sa, nullptr) * 0.1;
+        fb = std::strtod(sb, nullptr) * 0.1;
+        fc = std::strtod(sc, nullptr) * 0.1;
         if (pbcTypeFile == PbcType::Screw)
         {
             fa *= 0.5;
@@ -582,7 +582,7 @@ void get_pdb_atomnumber(const t_atoms* atoms, AtomProperties* aps)
         std::strcpy(anm, atoms->pdbinfo[i].atomnm);
         std::strcpy(anm_copy, atoms->pdbinfo[i].atomnm);
         bool atomNumberSet = false;
-        len                = strlen(anm);
+        len                = std::strlen(anm);
         if ((anm[0] != ' ') && ((len <= 2) || !std::isdigit(anm[2])))
         {
             anm_copy[2] = nc;
@@ -740,7 +740,7 @@ read_atom(t_symtab* symtab, const char line[], PdbRecordType type, int natom, t_
         atomn = &(atoms->atom[natom]);
         if ((natom == 0) || atoms->resinfo[atoms->atom[natom - 1].resind].nr != resnr
             || atoms->resinfo[atoms->atom[natom - 1].resind].ic != resic
-            || (strcmp(*atoms->resinfo[atoms->atom[natom - 1].resind].name, resnm) != 0))
+            || (std::strcmp(*atoms->resinfo[atoms->atom[natom - 1].resind].name, resnm) != 0))
         {
             if (natom == 0)
             {
@@ -761,19 +761,19 @@ read_atom(t_symtab* symtab, const char line[], PdbRecordType type, int natom, t_
         atomn->m               = 0.0;
         atomn->q               = 0.0;
         atomn->atomnumber      = atomnumber;
-        strncpy(atomn->elem, elem, 4);
+        std::strncpy(atomn->elem, elem, 4);
     }
-    x[natom][XX] = strtod(xc, nullptr) * 0.1;
-    x[natom][YY] = strtod(yc, nullptr) * 0.1;
-    x[natom][ZZ] = strtod(zc, nullptr) * 0.1;
+    x[natom][XX] = std::strtod(xc, nullptr) * 0.1;
+    x[natom][YY] = std::strtod(yc, nullptr) * 0.1;
+    x[natom][ZZ] = std::strtod(zc, nullptr) * 0.1;
     if (atoms->pdbinfo)
     {
         atoms->pdbinfo[natom].type   = type;
-        atoms->pdbinfo[natom].atomnr = strtol(anr, nullptr, 10);
+        atoms->pdbinfo[natom].atomnr = std::strtol(anr, nullptr, 10);
         atoms->pdbinfo[natom].altloc = altloc;
-        strcpy(atoms->pdbinfo[natom].atomnm, anm_copy);
-        atoms->pdbinfo[natom].bfac  = strtod(bfac, nullptr);
-        atoms->pdbinfo[natom].occup = strtod(occup, nullptr);
+        std::strcpy(atoms->pdbinfo[natom].atomnm, anm_copy);
+        atoms->pdbinfo[natom].bfac  = std::strtod(bfac, nullptr);
+        atoms->pdbinfo[natom].occup = std::strtod(occup, nullptr);
     }
     natom++;
 
@@ -797,7 +797,7 @@ gmx_bool is_dummymass(const char* nm)
     std::strcpy(buf, nm);
     trim(buf);
 
-    return (buf[0] == 'M') && (std::isdigit(buf[strlen(buf) - 1]) != 0);
+    return (buf[0] == 'M') && (std::isdigit(buf[std::strlen(buf) - 1]) != 0);
 }
 
 static void gmx_conect_addline(gmx_conect_t* con, char* line)
@@ -989,7 +989,7 @@ int read_pdbfile(FILE*      in,
                         c++;
                     }
                     /* truncate after title */
-                    d = strstr(c, "   ");
+                    d = std::strstr(c, "   ");
                     if (d)
                     {
                         while ((d[-1] == ';') && d > c)
@@ -998,7 +998,7 @@ int read_pdbfile(FILE*      in,
                         }
                         d[0] = '\0';
                     }
-                    if (strlen(c) > 0)
+                    if (std::strlen(c) > 0)
                     {
                         if (bCOMPND)
                         {

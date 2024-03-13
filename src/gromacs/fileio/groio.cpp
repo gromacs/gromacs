@@ -143,7 +143,7 @@ static gmx_bool get_w_conf(FILE*                        in,
         {
             gmx_fatal(FARGS, "Unexpected end of file in file %s at line %d", infile.string().c_str(), i + 2);
         }
-        if (strlen(line) < 39)
+        if (std::strlen(line) < 39)
         {
             gmx_fatal(FARGS, "Invalid line in %s for atom %d:\n%s", infile.string().c_str(), i + 1, line);
         }
@@ -153,12 +153,12 @@ static gmx_bool get_w_conf(FILE*                        in,
         if (bFirst)
         {
             bFirst = FALSE;
-            p1     = strchr(line, '.');
+            p1     = std::strchr(line, '.');
             if (p1 == nullptr)
             {
                 gmx_fatal(FARGS, "A coordinate in file %s does not contain a '.'", infile.string().c_str());
             }
-            p2 = strchr(&p1[1], '.');
+            p2 = std::strchr(&p1[1], '.');
             if (p2 == nullptr)
             {
                 gmx_fatal(FARGS, "A coordinate in file %s does not contain a '.'", infile.string().c_str());
@@ -166,7 +166,7 @@ static gmx_bool get_w_conf(FILE*                        in,
             ddist = p2 - p1;
             *ndec = ddist - 5;
 
-            p3 = strchr(&p2[1], '.');
+            p3 = std::strchr(&p2[1], '.');
             if (p3 == nullptr)
             {
                 gmx_fatal(FARGS, "A coordinate in file %s does not contain a '.'", infile.string().c_str());
@@ -188,7 +188,7 @@ static gmx_bool get_w_conf(FILE*                        in,
         sscanf(line + 5, "%5s", resname);
 
 
-        if (!oldResFirst || oldres != resnr || strncmp(resname, oldresname, sizeof(resname)) != 0)
+        if (!oldResFirst || oldres != resnr || std::strncmp(resname, oldresname, sizeof(resname)) != 0)
         {
             oldres      = resnr;
             oldResFirst = TRUE;
@@ -391,7 +391,7 @@ gmx_bool gro_next_x_or_v(FILE* status, t_trxframe* fr)
     sfree(atoms.atomname);
     done_symtab(&symtab);
 
-    if ((p = strstr(title, "t=")) != nullptr)
+    if ((p = std::strstr(title, "t=")) != nullptr)
     {
         p += 2;
         if (sscanf(p, "%lf", &tt) == 1)
