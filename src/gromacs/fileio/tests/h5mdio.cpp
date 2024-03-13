@@ -116,12 +116,14 @@ public:
         refBox_[ZZ][ZZ] = 4.123;
         snew(refX_, refAtomCount_);
         snew(refV_, refAtomCount_);
-        refF_ = nullptr;
+        refF_       = nullptr;
         int divisor = refAtomCount_ % 8 == 0 ? 4 : 3;
         for (size_t i = 0; i < refAtomCount_; ++i)
         {
             gmx::RVec v(0.1, 0.22, -frame * 0.01);
-            gmx::RVec x(i % divisor + frame * v[0], i / divisor + frame * v[1], (i / 2) % divisor + frame * v[2]);
+            gmx::RVec x(i % divisor + frame * v[0],
+                        i / divisor + frame * v[1],
+                        (i / 2) % divisor + frame * v[2]);
             copy_rvec(x, refX_[i]);
             copy_rvec(v, refV_[i]);
         }
