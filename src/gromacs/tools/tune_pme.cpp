@@ -1432,7 +1432,7 @@ static void make_sure_it_runs(char* mdrun_cmd_line, int length, FILE* fp, const 
         sep_line(fp);
         fprintf(fp, "%s", msg);
 
-        exit(ret);
+        std::exit(ret);
     }
     fprintf(stdout, "Benchmarks can be executed!\n");
 
@@ -1535,7 +1535,7 @@ static void do_the_tests(FILE*  fp,                    /* General tune_pme outpu
         fprintf(fp, "\nNo benchmarks done since number of repeats (-r) is 0.\n");
         gmx_ffclose(fp);
         finalize(opt2fn("-p", nfile, fnm));
-        exit(0);
+        std::exit(0);
     }
 
     /* Allocate one dataset for each tpr input file: */

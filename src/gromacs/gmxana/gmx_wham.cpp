@@ -2163,7 +2163,7 @@ static void read_tpr_pullxf_files(char**             fnTprs,
         if (opt->bBoundsOnly)
         {
             printf("Found option -boundsonly, now exiting.\n");
-            exit(0);
+            std::exit(0);
         }
     }
     /* store stepsize in profile */

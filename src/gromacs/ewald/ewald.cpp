@@ -103,7 +103,7 @@ static void tabulateStructureFactors(int natom, gmx::ArrayRef<const gmx::RVec> x
     if (kmax < 1)
     {
         printf("Go away! kmax = %d\n", kmax);
-        exit(1);
+        std::exit(1);
     }
 
     for (i = 0; (i < natom); i++)

@@ -926,7 +926,7 @@ int gmx_traj(int argc, char* argv[])
     if ((flags == 0) && !bOB)
     {
         fprintf(stderr, "Please select one or more output file options\n");
-        exit(0);
+        std::exit(0);
     }
 
     read_first_frame(oenv, &status, ftp2fn(efTRX, NFILE, fnm), &fr, flags);

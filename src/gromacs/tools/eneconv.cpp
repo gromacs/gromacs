@@ -209,7 +209,7 @@ static int scan_ene_files(const std::vector<std::string>& files, real* readtime,
                 if (inputstring[0] != 'y' && inputstring[0] != 'Y')
                 {
                     fprintf(stderr, "Will not convert\n");
-                    exit(0);
+                    std::exit(0);
                 }
                 nresav = fr->nre;
             }

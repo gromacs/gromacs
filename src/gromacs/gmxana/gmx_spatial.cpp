@@ -284,7 +284,7 @@ int gmx_spatial(int argc, char* argv[])
                        fr.x[index[i]][XX],
                        fr.x[index[i]][YY],
                        fr.x[index[i]][ZZ]);
-                exit(1);
+                std::exit(1);
             }
 
             bin[x][y][z]++;

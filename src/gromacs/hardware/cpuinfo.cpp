@@ -1221,7 +1221,7 @@ int main(int argc, char** argv)
                 "-stepping      Print CPU stepping version.\n"
                 "-features      Print CPU feature flags.\n",
                 argv[0]);
-        exit(1);
+        std::exit(1);
     }
 
     std::string  arg(argv[1]);

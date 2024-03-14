@@ -256,7 +256,7 @@ static void sendints(struct DataBuffer* buffer,
                     "match size %u\n",
                     nums[i],
                     sizes[i]);
-            exit(1);
+            std::exit(1);
         }
         /* use one step multiply */
         tmp = nums[i];
@@ -460,7 +460,7 @@ int xdr3dfcoord(XDR* xdrs, float* fp, int* size, float* precision, int magic_num
                 magic_number,
                 XTC_MAGIC,
                 XTC_NEW_MAGIC);
-        exit(1);
+        std::exit(1);
     }
 
     if (*size > XTC_1995_MAX_NATOMS && magic_number != XTC_NEW_MAGIC)
@@ -470,7 +470,7 @@ int xdr3dfcoord(XDR* xdrs, float* fp, int* size, float* precision, int magic_num
                 "with %d atoms in a frame without using the new XTC magic number (%d).\n",
                 *size,
                 XTC_NEW_MAGIC);
-        exit(1);
+        std::exit(1);
     }
 
     struct DataBuffer buffer;
@@ -523,7 +523,7 @@ int xdr3dfcoord(XDR* xdrs, float* fp, int* size, float* precision, int magic_num
             if (ip == nullptr || buffer.data == nullptr)
             {
                 fprintf(stderr, "malloc failed\n");
-                exit(1);
+                std::exit(1);
             }
         }
 
@@ -906,7 +906,7 @@ int xdr3dfcoord(XDR* xdrs, float* fp, int* size, float* precision, int magic_num
             if (ip == nullptr || buffer.data == nullptr)
             {
                 fprintf(stderr, "malloc failed\n");
-                exit(1);
+                std::exit(1);
             }
         }
 

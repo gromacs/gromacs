@@ -187,7 +187,7 @@ int gmx_vanhove(int argc, char* argv[])
     if (!matfile && !otfile && !orfile)
     {
         fprintf(stderr, "For output set one (or more) of the output file options\n");
-        exit(0);
+        std::exit(0);
     }
 
     read_tps_conf(ftp2fn(efTPS, NFILE, fnm), &top, &pbcType, &xtop, nullptr, boxtop, FALSE);
