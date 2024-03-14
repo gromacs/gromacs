@@ -1210,7 +1210,7 @@ static void edit_index(int                      natoms,
             if (bVerbose)
             {
                 printf("\npress Enter ");
-                getchar();
+                std::getchar();
             }
         }
         else if (std::strncmp(string, "del", 3) == 0)
