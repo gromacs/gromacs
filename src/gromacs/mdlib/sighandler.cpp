@@ -104,7 +104,7 @@ static void signal_handler(int n)
             }
             if (stop_condition >= StopCondition::Abort)
             {
-                abort();
+                std::abort();
             }
             break;
 #if HAVE_SIGUSR1
