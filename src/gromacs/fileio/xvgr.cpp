@@ -462,7 +462,7 @@ static char* fgets3(FILE* fp, char** ptr, int* len, int maxlen)
                 curp          = 0;
             }
         }
-        if (fgets(*ptr + curp, len_remaining, fp) == nullptr)
+        if (std::fgets(*ptr + curp, len_remaining, fp) == nullptr)
         {
             /* if last line, skip */
             return nullptr;
@@ -919,7 +919,7 @@ real** read_xvg_time(const std::filesystem::path& fn,
         }
         n         = 0;
         bEndOfSet = FALSE;
-        while (!bEndOfSet && fgets(line0, MAXLINELEN, fp))
+        while (!bEndOfSet && std::fgets(line0, MAXLINELEN, fp))
         {
             line = line0;
             /* Remove whitespace */

@@ -354,7 +354,7 @@ void print_atoms(FILE* out, PreprocessingAtomTypes* atype, t_atoms* at, bool bRT
             }
             else
             {
-                fputs("\n", out);
+                std::fputs("\n", out);
             }
         }
     }

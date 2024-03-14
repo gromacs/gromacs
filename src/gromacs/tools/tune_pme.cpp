@@ -186,7 +186,7 @@ static void finalize(const char* fn_out)
     fp = std::fopen(fn_out, "r");
     fprintf(stdout, "\n\n");
 
-    while (fgets(buf, STRLEN - 1, fp) != nullptr)
+    while (std::fgets(buf, STRLEN - 1, fp) != nullptr)
     {
         fprintf(stdout, "%s", buf);
     }
@@ -244,7 +244,7 @@ static int parse_logfile(const char* logfile,
         iFound = eFoundDDStr; /* Skip some case statements */
     }
 
-    while (fgets(line, STRLEN, fp) != nullptr)
+    while (std::fgets(line, STRLEN, fp) != nullptr)
     {
         /* Remove leading spaces */
         ltrim(line);
@@ -389,11 +389,11 @@ static int parse_logfile(const char* logfile,
     if (gmx_fexist(errfile))
     {
         fp = std::fopen(errfile, "r");
-        while (fgets(line, STRLEN, fp) != nullptr)
+        while (std::fgets(line, STRLEN, fp) != nullptr)
         {
             if (str_starts(line, "Fatal error:"))
             {
-                if (fgets(line, STRLEN, fp) != nullptr)
+                if (std::fgets(line, STRLEN, fp) != nullptr)
                 {
                     fprintf(stderr,
                             "\nWARNING: An error occurred during this benchmark:\n"
@@ -740,7 +740,7 @@ static void check_mdrun_works(gmx_bool    bThreads,
      * also writes stuff to stdout/err */
     while (!std::feof(fp))
     {
-        cp = fgets(line, STRLEN, fp);
+        cp = std::fgets(line, STRLEN, fp);
         if (cp != nullptr)
         {
             if (str_starts(line, match_mdrun))

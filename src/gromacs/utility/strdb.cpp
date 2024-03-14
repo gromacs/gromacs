@@ -58,7 +58,7 @@ gmx_bool get_a_line(FILE* fp, char line[], int n)
 
     do
     {
-        if (!fgets(line0, n + 1, fp))
+        if (!std::fgets(line0, n + 1, fp))
         {
             sfree(line0);
             return FALSE;
@@ -132,7 +132,7 @@ static int fget_lines(FILE* in, const char* db, char*** strings)
     char   buf[STRLEN];
     int    nstr = 0;
 
-    char* pret = fgets(buf, STRLEN, in);
+    char* pret = std::fgets(buf, STRLEN, in);
     if (pret == nullptr || sscanf(buf, "%d", &nstr) != 1)
     {
         gmx_warning("File is empty");

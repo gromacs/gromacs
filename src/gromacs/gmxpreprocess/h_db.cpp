@@ -178,7 +178,7 @@ static void read_h_db_file(const std::filesystem::path& hfn, std::vector<Molecul
                               block->name.c_str(),
                               hfn.string().c_str());
                 }
-                if (nullptr == fgets(buf, STRLEN, in))
+                if (nullptr == std::fgets(buf, STRLEN, in))
                 {
                     gmx_fatal(FARGS, "Error reading from file %s", hfn.string().c_str());
                 }

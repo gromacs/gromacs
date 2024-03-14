@@ -202,7 +202,7 @@ static int scan_ene_files(const std::vector<std::string>& files, real* readtime,
                         "\nContinue conversion using only the first %d terms (n/y)?\n"
                         "(you should be sure that the energy terms match)\n",
                         nremin);
-                if (nullptr == fgets(inputstring, STRLEN - 1, stdin))
+                if (nullptr == std::fgets(inputstring, STRLEN - 1, stdin))
                 {
                     gmx_fatal(FARGS, "Error reading user input");
                 }
@@ -268,7 +268,7 @@ static void edit_files(gmx::ArrayRef<std::string> files,
             ok = FALSE;
             do
             {
-                if (nullptr == fgets(inputstring, STRLEN - 1, stdin))
+                if (nullptr == std::fgets(inputstring, STRLEN - 1, stdin))
                 {
                     gmx_fatal(FARGS, "Error reading user input");
                 }

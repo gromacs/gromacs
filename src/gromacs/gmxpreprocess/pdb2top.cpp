@@ -303,7 +303,7 @@ choose_ff_impl(const char* ffsel, char* forcefield, int ff_maxlen, const gmx::MD
         char* pret;
         do
         {
-            pret = fgets(buf, STRLEN, stdin);
+            pret = std::fgets(buf, STRLEN, stdin);
 
             if (pret != nullptr)
             {
@@ -432,7 +432,7 @@ void choose_watermodel(const char*                  wmsel,
     sel = -1;
     do
     {
-        pret = fgets(buf, STRLEN, stdin);
+        pret = std::fgets(buf, STRLEN, stdin);
 
         if (pret != nullptr)
         {

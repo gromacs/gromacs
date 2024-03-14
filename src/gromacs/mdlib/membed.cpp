@@ -942,7 +942,7 @@ static void top_update(const char* topfile, rm_t* rm_p, gmx_mtop_t* mtop)
         nmol_rm[rm_p->block[i]]++;
     }
 
-    while (fgets(buf, STRLEN, fpin))
+    while (std::fgets(buf, STRLEN, fpin))
     {
         if (buf[0] != ';')
         {

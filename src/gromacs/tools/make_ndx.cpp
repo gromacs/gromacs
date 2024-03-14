@@ -1144,7 +1144,7 @@ static void edit_index(int                      natoms,
         }
         printf("\n");
         printf("> ");
-        if (nullptr == fgets(inp_string, STRLEN, stdin))
+        if (nullptr == std::fgets(inp_string, STRLEN, stdin))
         {
             gmx_fatal(FARGS, "Error reading user input");
         }

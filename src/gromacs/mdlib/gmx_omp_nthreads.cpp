@@ -222,7 +222,7 @@ void gmx_omp_nthreads_read_env(const gmx::MDLogger& mdlog, int* nthreads_omp)
             /* This prints once per process for real MPI (i.e. once
              * per debug file), and once per simulation for thread MPI
              * (because of logic in the calling function). */
-            fputs(buffer, debug);
+            std::fputs(buffer, debug);
         }
     }
 }

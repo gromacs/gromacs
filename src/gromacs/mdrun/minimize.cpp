@@ -247,8 +247,8 @@ static void warn_step(FILE* fp, real ftol, real fmax, gmx_bool bLastStep, gmx_bo
                            : "");
     }
 
-    fputs(wrap_lines(buffer, 78, 0, FALSE), stderr);
-    fputs(wrap_lines(buffer, 78, 0, FALSE), fp);
+    std::fputs(wrap_lines(buffer, 78, 0, FALSE), stderr);
+    std::fputs(wrap_lines(buffer, 78, 0, FALSE), fp);
 }
 
 //! Print message about convergence of the EM

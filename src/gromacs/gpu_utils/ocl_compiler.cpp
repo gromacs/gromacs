@@ -151,7 +151,7 @@ static void writeOclBuildLog(FILE*              fplog,
     message += "---------------LOG END----------------\n";
     ;
 
-    fputs(message.c_str(), fplog);
+    std::fputs(message.c_str(), fplog);
 }
 
 /*! \brief Construct compiler options string

@@ -193,7 +193,7 @@ static char* fgetline(char** line, int llmax, int* llalloc, FILE* in)
         srenew(*line, llmax + 1);
         *llalloc = llmax;
     }
-    fg = fgets(*line, llmax, in);
+    fg = std::fgets(*line, llmax, in);
     trim(*line);
 
     return fg;

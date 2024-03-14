@@ -80,7 +80,7 @@ void pr_iparams(FILE* fp, t_functype ftype, const t_iparams& iparams)
         gmx::TextWriter writer(&stream);
         printInteractionParameters(&writer, ftype, iparams);
     }
-    fputs(stream.toString().c_str(), fp);
+    std::fputs(stream.toString().c_str(), fp);
 }
 
 void printInteractionParameters(gmx::TextWriter* writer, t_functype ftype, const t_iparams& iparams)

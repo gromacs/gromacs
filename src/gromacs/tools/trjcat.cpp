@@ -224,7 +224,7 @@ static void edit_files(gmx::ArrayRef<std::string> files,
             ok = FALSE;
             do
             {
-                if (nullptr == fgets(inputstring, STRLEN - 1, stdin))
+                if (nullptr == std::fgets(inputstring, STRLEN - 1, stdin))
                 {
                     gmx_fatal(FARGS, "Error reading user input");
                 }

@@ -313,7 +313,7 @@ static void update_topol(const char* topinout, int p_num, int n_num, const char*
     nmol_line  = 0;
     sol_line   = -1;
     nsol_last  = -1;
-    while (fgets(buf, STRLEN, fpin))
+    while (std::fgets(buf, STRLEN, fpin))
     {
         std::strcpy(buf2, buf);
         if ((temp = std::strchr(buf2, '\n')) != nullptr)

@@ -1420,7 +1420,7 @@ void modify_chain_numbers(t_atoms* pdba, ChainSeparationType chainSeparation, co
                                         this_atomnum,
                                         this_atomname);
 
-                        if (nullptr == fgets(select, STRLEN - 1, stdin))
+                        if (nullptr == std::fgets(select, STRLEN - 1, stdin))
                         {
                             gmx_fatal(FARGS, "Error reading from stdin");
                         }
@@ -2193,7 +2193,7 @@ int pdb2gmx::run()
                                     this_atomnum,
                                     this_atomname);
 
-                    if (nullptr == fgets(select, STRLEN - 1, stdin))
+                    if (nullptr == std::fgets(select, STRLEN - 1, stdin))
                     {
                         gmx_fatal(FARGS, "Error reading from stdin");
                     }

@@ -107,7 +107,7 @@ static int get_electrons(t_electron** eltab, const char* fn)
         gmx_fatal(FARGS, "Couldn't open %s. Exiting.\n", fn);
     }
 
-    if (nullptr == fgets(buffer, 255, in))
+    if (nullptr == std::fgets(buffer, 255, in))
     {
         gmx_fatal(FARGS, "Error reading from file %s", fn);
     }
@@ -121,7 +121,7 @@ static int get_electrons(t_electron** eltab, const char* fn)
 
     for (i = 0; i < nr; i++)
     {
-        if (fgets(buffer, 255, in) == nullptr)
+        if (std::fgets(buffer, 255, in) == nullptr)
         {
             gmx_fatal(FARGS, "reading datafile. Check your datafile.\n");
         }

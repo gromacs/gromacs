@@ -792,7 +792,7 @@ static void update_top(t_atoms*        atoms,
         fpin    = gmx_ffopen(topinout, "r");
         fpout   = gmx_fopen_temporary(temporary_filename);
         bSystem = false;
-        while (fgets(buf, STRLEN, fpin))
+        while (std::fgets(buf, STRLEN, fpin))
         {
             std::strcpy(buf2, buf);
             if ((temp = std::strchr(buf2, '\n')) != nullptr)

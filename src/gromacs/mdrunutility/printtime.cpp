@@ -64,8 +64,8 @@ void print_time(FILE*                     out,
     {
         fprintf(out, "\r");
     }
-    fputs("step ", out);
-    fputs(gmx::int64ToString(step).c_str(), out);
+    std::fputs("step ", out);
+    std::fputs(gmx::int64ToString(step).c_str(), out);
     std::fflush(out);
 
     if ((step >= ir->nstlist))
@@ -83,8 +83,8 @@ void print_time(FILE*                     out,
                 finish       = static_cast<std::time_t>(seconds_since_epoch + dt);
                 auto timebuf = gmx_ctime_r(&finish);
                 timebuf.erase(timebuf.find_first_of('\n'));
-                fputs(", will finish ", out);
-                fputs(timebuf.c_str(), out);
+                std::fputs(", will finish ", out);
+                std::fputs(timebuf.c_str(), out);
             }
             else
             {
