@@ -78,7 +78,7 @@ static bool yesno()
 
     do
     {
-        c = std::toupper(fgetc(stdin));
+        c = std::toupper(std::fgetc(stdin));
     } while ((c != 'Y') && (c != 'N'));
 
     return (c == 'Y');

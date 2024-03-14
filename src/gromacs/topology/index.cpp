@@ -71,7 +71,7 @@ static gmx_bool gmx_ask_yesno(gmx_bool bASK)
     {
         do
         {
-            c = std::toupper(fgetc(stdin));
+            c = std::toupper(std::fgetc(stdin));
         } while ((c != 'Y') && (c != 'N'));
 
         return (c == 'Y');
