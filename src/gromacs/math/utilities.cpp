@@ -92,7 +92,7 @@ int gmx_feenableexcept()
     // RISC-V architecture does not support trapping FPEs and the linker loudly warns about using the function
 #if HAVE_FEENABLEEXCEPT && !defined(__riscv)
 #    if defined(__powerpc__) || defined(__ppc__) || defined(__PPC__)
-    feclearexcept(c_FPexceptions);
+    std::feclearexcept(c_FPexceptions);
 #    endif
     return feenableexcept(c_FPexceptions);
 #elif (defined(__i386__) || defined(__x86_64__)) && defined(__APPLE__)
@@ -102,10 +102,10 @@ int gmx_feenableexcept()
      * Might also work on non-Apple Unix. But should be tested
      * before enabling.
      */
-    static fenv_t fenv;
-    unsigned int  new_excepts = c_FPexceptions & FE_ALL_EXCEPT;
+    static std::fenv_t fenv;
+    unsigned int       new_excepts = c_FPexceptions & FE_ALL_EXCEPT;
 
-    if (fegetenv(&fenv))
+    if (std::fegetenv(&fenv))
     {
         return -1;
     }
@@ -114,7 +114,7 @@ int gmx_feenableexcept()
     fenv.__control &= ~new_excepts;
     fenv.__mxcsr &= ~(new_excepts << 7);
 
-    return fesetenv(&fenv);
+    return std::fesetenv(&fenv);
 #else
     return -1;
 #endif
@@ -126,9 +126,9 @@ int gmx_fedisableexcept()
 #if HAVE_FEDISABLEEXCEPT && !defined(__riscv)
     return fedisableexcept(c_FPexceptions);
 #elif (defined(__i386__) || defined(__x86_64__)) && defined(__APPLE__)
-    static fenv_t fenv;
-    unsigned int  new_excepts = c_FPexceptions & FE_ALL_EXCEPT;
-    if (fegetenv(&fenv))
+    static std::fenv_t fenv;
+    unsigned int       new_excepts = c_FPexceptions & FE_ALL_EXCEPT;
+    if (std::fegetenv(&fenv))
     {
         return -1;
     }
@@ -137,7 +137,7 @@ int gmx_fedisableexcept()
     fenv.__control |= new_excepts;
     fenv.__mxcsr |= new_excepts << 7;
 
-    return fesetenv(&fenv);
+    return std::fesetenv(&fenv);
 #else
     return -1;
 #endif
