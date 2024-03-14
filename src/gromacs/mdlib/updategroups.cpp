@@ -823,7 +823,7 @@ UpdateGroups makeUpdateGroups(const gmx::MDLogger&             mdlog,
                       "groups");
 
     messages.appendIf(
-            getenv("GMX_NO_UPDATEGROUPS") != nullptr,
+            std::getenv("GMX_NO_UPDATEGROUPS") != nullptr,
             "Environment variable GMX_NO_UPDATEGROUPS prohibited the use of update groups");
 
     // To use update groups, the large domain-to-domain cutoff

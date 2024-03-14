@@ -732,7 +732,8 @@ void init_forcerec(FILE*                            fplog,
     /* Free energy */
     forcerec->efep = inputrec.efep;
 
-    if ((getenv("GMX_DISABLE_SIMD_KERNELS") != nullptr) || (getenv("GMX_NOOPTIMIZEDKERNELS") != nullptr))
+    if ((std::getenv("GMX_DISABLE_SIMD_KERNELS") != nullptr)
+        || (std::getenv("GMX_NOOPTIMIZEDKERNELS") != nullptr))
     {
         forcerec->use_simd_kernels = FALSE;
         if (fplog != nullptr)

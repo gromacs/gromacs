@@ -1376,7 +1376,7 @@ real calcVerletBufferSize(const gmx_mtop_t&         mtop,
     /* Resolution of the buffer size */
     resolution = 0.001;
 
-    env = getenv("GMX_VERLET_BUFFER_RES");
+    env = std::getenv("GMX_VERLET_BUFFER_RES");
     if (env != nullptr)
     {
         sscanf(env, "%lf", &resolution);

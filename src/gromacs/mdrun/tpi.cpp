@@ -411,7 +411,7 @@ TestParticleInsertion::TestParticleInsertion(const t_inputrec&         inputRec,
     /* The GMX_TPI_DUMP environment variable can be set to dump all configurations
      * to pdb with an insertion energy <= the value of GMX_TPI_DUMP.
      */
-    const char* dumpPdbString = getenv("GMX_TPI_DUMP");
+    const char* dumpPdbString = std::getenv("GMX_TPI_DUMP");
     dumpPdbs_                 = (dumpPdbString != nullptr);
     if (dumpPdbs_)
     {
@@ -890,7 +890,7 @@ void LegacySimulator::do_tpi()
     std::vector<real> massesDefiningCavity;
     if (insertIntoCavity)
     {
-        char* ptr = getenv("GMX_TPIC_MASSES");
+        char* ptr = std::getenv("GMX_TPIC_MASSES");
         if (ptr == nullptr)
         {
             // With a single atom the masses doesn't matter as long as it is !=0

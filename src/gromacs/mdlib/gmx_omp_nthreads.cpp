@@ -131,7 +131,7 @@ static void pick_module_nthreads(const gmx::MDLogger& mdlog, ModuleMultiThread m
     }
 
     /* check the environment variable */
-    if ((env = getenv(enumValueToEnvVariableString(m))) != nullptr)
+    if ((env = std::getenv(enumValueToEnvVariableString(m))) != nullptr)
     {
         sscanf(env, "%d", &nth);
 
@@ -145,7 +145,7 @@ static void pick_module_nthreads(const gmx::MDLogger& mdlog, ModuleMultiThread m
 
         /* with the verlet codepath, when any GMX_*_NUM_THREADS env var is set,
          * OMP_NUM_THREADS also has to be set */
-        if (getenv("OMP_NUM_THREADS") == nullptr)
+        if (std::getenv("OMP_NUM_THREADS") == nullptr)
         {
             gmx_warning(
                     "%s=%d is set, the default number of threads also "
@@ -183,7 +183,7 @@ void gmx_omp_nthreads_read_env(const gmx::MDLogger& mdlog, int* nthreads_omp)
 
     GMX_RELEASE_ASSERT(nthreads_omp, "nthreads_omp must be a non-NULL pointer");
 
-    if ((env = getenv("OMP_NUM_THREADS")) != nullptr)
+    if ((env = std::getenv("OMP_NUM_THREADS")) != nullptr)
     {
         int nt_omp;
 
@@ -276,7 +276,7 @@ static void manage_number_of_openmp_threads(const gmx::MDLogger& mdlog,
      * - 1
      */
     nth = 1;
-    if ((env = getenv("OMP_NUM_THREADS")) != nullptr)
+    if ((env = std::getenv("OMP_NUM_THREADS")) != nullptr)
     {
         if (!bOMP && (std::strncmp(env, "1", 1) != 0))
         {

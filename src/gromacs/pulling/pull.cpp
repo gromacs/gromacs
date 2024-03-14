@@ -2396,7 +2396,7 @@ struct pull_t* init_pull(FILE*                     fplog,
      */
     comm->bParticipateAll = (cr == nullptr || !haveDDAtomOrdering(*cr) || cr->dd->nnodes <= 32
                              || pull->numCoordinatesWithExternalPotential > 0
-                             || getenv("GMX_PULL_PARTICIPATE_ALL") != nullptr);
+                             || std::getenv("GMX_PULL_PARTICIPATE_ALL") != nullptr);
     /* This sub-commicator is not used with comm->bParticipateAll,
      * so we can always initialize it to NULL.
      */

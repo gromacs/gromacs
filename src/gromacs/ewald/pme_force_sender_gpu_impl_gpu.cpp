@@ -74,7 +74,7 @@ PmeForceSenderGpu::Impl::Impl(GpuEventSynchronizer*  pmeForcesReady,
     }
     pmeForcesReady_->setConsumptionLimits(ppRanks_.size(), ppRanks_.size());
     pmeForcesReady_->reset();
-    stageThreadMpiGpuCpuComm_ = (getenv("GMX_ENABLE_STAGED_GPU_TO_CPU_PMEPP_COMM") != nullptr);
+    stageThreadMpiGpuCpuComm_ = (std::getenv("GMX_ENABLE_STAGED_GPU_TO_CPU_PMEPP_COMM") != nullptr);
 }
 
 PmeForceSenderGpu::Impl::~Impl() = default;

@@ -202,7 +202,7 @@ const gmx::EnumerationArray<XvgFormat, const char*> c_xvgFormatNames = {
  */
 XvgFormat getDefaultXvgFormat()
 {
-    const char* const select = getenv("GMX_VIEW_XVG");
+    const char* const select = std::getenv("GMX_VIEW_XVG");
     if (select != nullptr)
     {
         for (XvgFormat c : keysOf(c_xvgFormatNames))

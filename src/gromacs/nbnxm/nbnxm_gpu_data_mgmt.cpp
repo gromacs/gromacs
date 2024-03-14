@@ -152,9 +152,9 @@ static inline ElecType nbnxn_gpu_pick_ewald_kernel_type(const interaction_const_
 
     /* Benchmarking/development environment variables to force the use of
        analytical or tabulated Ewald kernel. */
-    const bool forceAnalyticalEwald = (getenv("GMX_GPU_NB_ANA_EWALD") != nullptr);
-    const bool forceTabulatedEwald  = (getenv("GMX_GPU_NB_TAB_EWALD") != nullptr);
-    const bool forceTwinCutoffEwald = (getenv("GMX_GPU_NB_EWALD_TWINCUT") != nullptr);
+    const bool forceAnalyticalEwald = (std::getenv("GMX_GPU_NB_ANA_EWALD") != nullptr);
+    const bool forceTabulatedEwald  = (std::getenv("GMX_GPU_NB_TAB_EWALD") != nullptr);
+    const bool forceTwinCutoffEwald = (std::getenv("GMX_GPU_NB_EWALD_TWINCUT") != nullptr);
 
     if (forceAnalyticalEwald && forceTabulatedEwald)
     {

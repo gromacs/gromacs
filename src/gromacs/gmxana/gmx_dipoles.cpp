@@ -111,7 +111,7 @@ static t_gkrbin* mk_gkrbin(real radius, real rcmax, gmx_bool bPhi, int ndegrees)
 
     snew(gb, 1);
 
-    if ((ptr = getenv("GMX_DIPOLE_SPACING")) != nullptr)
+    if ((ptr = std::getenv("GMX_DIPOLE_SPACING")) != nullptr)
     {
         double bw   = strtod(ptr, nullptr);
         gb->spacing = bw;

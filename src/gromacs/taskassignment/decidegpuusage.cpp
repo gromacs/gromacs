@@ -668,7 +668,7 @@ bool decideWhetherToUseGpuForUpdate(const bool           isDomainDecomposition,
 {
 
     // '-update cpu' overrides the environment variable, '-update auto' does not
-    const bool forceCpuUpdateDefault = getenv("GMX_FORCE_UPDATE_DEFAULT_CPU") != nullptr;
+    const bool forceCpuUpdateDefault = std::getenv("GMX_FORCE_UPDATE_DEFAULT_CPU") != nullptr;
 
     if (forceCpuUpdateDefault)
     {
@@ -829,7 +829,7 @@ bool decideWhetherDirectGpuCommunicationCanBeUsed(gmx::GpuAwareMpiStatus gpuAwar
     }
 
     // We disable the GPU direct communication if the user requests it
-    const bool isDisabledByUser = getenv("GMX_DISABLE_DIRECT_GPU_COMM") != nullptr;
+    const bool isDisabledByUser = std::getenv("GMX_DISABLE_DIRECT_GPU_COMM") != nullptr;
     if (isDisabledByUser)
     {
         GMX_LOG(mdlog.warning)

@@ -75,7 +75,7 @@ namespace ocl
  *
  *  Currently caching is disabled by default unless the env var override
  *  is used until we resolve concurrency issues. */
-static bool useBuildCache = getenv("GMX_OCL_GENCACHE") != nullptr;
+static bool useBuildCache = std::getenv("GMX_OCL_GENCACHE") != nullptr;
 
 /*! \brief Handles writing the OpenCL JIT compilation log to \c fplog.
  *
@@ -99,7 +99,8 @@ static void writeOclBuildLog(FILE*              fplog,
                              const std::string& preprocessorOptions,
                              bool               buildFailed)
 {
-    bool writeOutput = ((fplog != nullptr) && (buildFailed || (getenv("GMX_OCL_DUMP_LOG") != nullptr)));
+    bool writeOutput =
+            ((fplog != nullptr) && (buildFailed || (std::getenv("GMX_OCL_DUMP_LOG") != nullptr)));
 
     if (!writeOutput)
     {
@@ -163,14 +164,14 @@ static std::string selectCompilerOptions(DeviceVendor deviceVendor)
 {
     std::string compilerOptions;
 
-    if (getenv("GMX_OCL_NOOPT"))
+    if (std::getenv("GMX_OCL_NOOPT"))
     {
         compilerOptions += " -cl-opt-disable";
     }
 
     /* Fastmath improves performance on all supported arch,
      * but is tends to cause problems on Intel (Issue #3898) */
-    if ((deviceVendor != DeviceVendor::Intel) && (getenv("GMX_OCL_DISABLE_FASTMATH") == nullptr))
+    if ((deviceVendor != DeviceVendor::Intel) && (std::getenv("GMX_OCL_DISABLE_FASTMATH") == nullptr))
     {
         compilerOptions += " -cl-fast-relaxed-math";
 
@@ -180,12 +181,12 @@ static std::string selectCompilerOptions(DeviceVendor deviceVendor)
         compilerOptions += " -cl-denorms-are-zero";
     }
 
-    if ((deviceVendor == DeviceVendor::Nvidia) && getenv("GMX_OCL_VERBOSE"))
+    if ((deviceVendor == DeviceVendor::Nvidia) && std::getenv("GMX_OCL_VERBOSE"))
     {
         compilerOptions += " -cl-nv-verbose";
     }
 
-    if ((deviceVendor == DeviceVendor::Amd) && getenv("GMX_OCL_DUMP_INTERM_FILES"))
+    if ((deviceVendor == DeviceVendor::Amd) && std::getenv("GMX_OCL_DUMP_INTERM_FILES"))
     {
         /* To dump OpenCL build intermediate files, caching must be off */
         if (!useBuildCache)
@@ -194,12 +195,12 @@ static std::string selectCompilerOptions(DeviceVendor deviceVendor)
         }
     }
 
-    if (getenv("GMX_OCL_DEBUG"))
+    if (std::getenv("GMX_OCL_DEBUG"))
     {
         compilerOptions += " -g";
     }
 
-    if (deviceVendor == DeviceVendor::Amd && getenv("GMX_OCL_FORCE_AMD_WAVEFRONT64"))
+    if (deviceVendor == DeviceVendor::Amd && std::getenv("GMX_OCL_FORCE_AMD_WAVEFRONT64"))
     {
         compilerOptions += " -Wf,-mwavefrontsize64";
     }
@@ -225,7 +226,7 @@ static std::filesystem::path getSourceRootPath(const std::string& sourceRelative
 {
     std::filesystem::path sourceRootPath;
     /* Use GMX_OCL_FILE_PATH if the user has defined it */
-    const char* gmxOclFilePath = getenv("GMX_OCL_FILE_PATH");
+    const char* gmxOclFilePath = std::getenv("GMX_OCL_FILE_PATH");
 
     if (gmxOclFilePath == nullptr)
     {
@@ -522,7 +523,7 @@ cl_program compileProgram(FILE*              fplog,
             }
         }
     }
-    if ((deviceVendor == DeviceVendor::Nvidia) && getenv("GMX_OCL_DUMP_INTERM_FILES"))
+    if ((deviceVendor == DeviceVendor::Nvidia) && std::getenv("GMX_OCL_DUMP_INTERM_FILES"))
     {
         /* If dumping intermediate files has been requested and this is an NVIDIA card
            => write PTX to file */

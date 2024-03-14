@@ -186,7 +186,7 @@ static NbnxmKernelSetup pick_nbnxn_kernel_cpu(const t_inputrec gmx_unused&    in
         }
     }
 
-    if (getenv("GMX_NBNXN_SIMD_4XN") != nullptr)
+    if (std::getenv("GMX_NBNXN_SIMD_4XN") != nullptr)
     {
         if (sc_haveNbnxmSimd4xmKernels)
         {
@@ -199,7 +199,7 @@ static NbnxmKernelSetup pick_nbnxn_kernel_cpu(const t_inputrec gmx_unused&    in
                       "for these kernels");
         }
     }
-    if (getenv("GMX_NBNXN_SIMD_2XNN") != nullptr)
+    if (std::getenv("GMX_NBNXN_SIMD_2XNN") != nullptr)
     {
         if (sc_haveNbnxmSimd2xmmKernels)
         {
@@ -245,11 +245,11 @@ static NbnxmKernelSetup pick_nbnxn_kernel_cpu(const t_inputrec gmx_unused&    in
         {
             kernelSetup.ewaldExclusionType = EwaldExclusionType::Table;
         }
-        if (getenv("GMX_NBNXN_EWALD_TABLE") != nullptr)
+        if (std::getenv("GMX_NBNXN_EWALD_TABLE") != nullptr)
         {
             kernelSetup.ewaldExclusionType = EwaldExclusionType::Table;
         }
-        if (getenv("GMX_NBNXN_EWALD_ANALYTICAL") != nullptr)
+        if (std::getenv("GMX_NBNXN_EWALD_ANALYTICAL") != nullptr)
         {
             kernelSetup.ewaldExclusionType = EwaldExclusionType::Analytical;
         }
@@ -371,7 +371,7 @@ PairlistSets::PairlistSets(const PairlistParams& pairlistParams,
 /*! \brief Gets and returns the minimum i-list count for balancing based on the GPU used or env.var. when set */
 static int getMinimumIlistCountForGpuBalancing(NbnxmGpu* nbnxmGpu)
 {
-    if (const char* env = getenv("GMX_NB_MIN_CI"))
+    if (const char* env = std::getenv("GMX_NB_MIN_CI"))
     {
         char* end = nullptr;
 
@@ -408,7 +408,7 @@ static std::optional<LJCombinationRule> chooseLJCombinationRule(const t_forcerec
     if (forcerec.ic->vdwtype == VanDerWaalsType::Cut
         && (forcerec.ic->vdw_modifier == InteractionModifiers::None
             || forcerec.ic->vdw_modifier == InteractionModifiers::PotShift)
-        && getenv("GMX_NO_LJ_COMB_RULE") == nullptr)
+        && std::getenv("GMX_NO_LJ_COMB_RULE") == nullptr)
     {
         /* Plain LJ cut-off: we can optimize with combination rules */
         return std::nullopt;
@@ -456,7 +456,7 @@ std::unique_ptr<nonbonded_verlet_t> init_nb_verlet(const gmx::MDLogger& mdlog,
                                                    matrix                         box,
                                                    gmx_wallcycle*                 wcycle)
 {
-    const bool emulateGpu = (getenv("GMX_EMULATE_GPU") != nullptr);
+    const bool emulateGpu = (std::getenv("GMX_EMULATE_GPU") != nullptr);
 
     GMX_RELEASE_ASSERT(!(emulateGpu && useGpuForNonbonded),
                        "When GPU emulation is active, there cannot be a GPU assignment");

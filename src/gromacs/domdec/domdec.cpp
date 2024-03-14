@@ -1555,7 +1555,7 @@ static int multi_body_bondeds_count(const gmx_mtop_t& mtop)
 static int dd_getenv(const gmx::MDLogger& mdlog, const char* env_var, int def)
 {
     int   nst = def;
-    char* val = getenv(env_var);
+    char* val = std::getenv(env_var);
     if (val)
     {
         if (sscanf(val, "%20d", &nst) <= 0)
@@ -2135,7 +2135,7 @@ static DDRankSetup getDDRankSetup(const gmx::MDLogger& mdlog,
             && ddGridSetup.ddDimensions[1] == YY
             && ddRankSetup.numRanksDoingPme > ddGridSetup.numDomains[XX]
             && ddRankSetup.numRanksDoingPme % ddGridSetup.numDomains[XX] == 0
-            && getenv("GMX_PMEONEDD") == nullptr)
+            && std::getenv("GMX_PMEONEDD") == nullptr)
         {
             ddRankSetup.npmedecompdim = 2;
             ddRankSetup.npmenodes_x   = ddGridSetup.numDomains[XX];

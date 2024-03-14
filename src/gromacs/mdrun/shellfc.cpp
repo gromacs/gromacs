@@ -495,7 +495,7 @@ gmx_shellfc_t* init_shell_flexcon(FILE*             fplog,
     shfc->shell_gl       = shell;
     shfc->shell_index_gl = shell_index;
 
-    shfc->predictShells = (getenv("GMX_NOPREDICT") == nullptr);
+    shfc->predictShells = (std::getenv("GMX_NOPREDICT") == nullptr);
     shfc->requireInit   = false;
     if (!shfc->predictShells)
     {
@@ -506,7 +506,7 @@ gmx_shellfc_t* init_shell_flexcon(FILE*             fplog,
     }
     else
     {
-        shfc->requireInit = (getenv("GMX_REQUIRE_SHELL_INIT") != nullptr);
+        shfc->requireInit = (std::getenv("GMX_REQUIRE_SHELL_INIT") != nullptr);
         if (shfc->requireInit && fplog)
         {
             fprintf(fplog, "\nWill always initiate shell positions\n");

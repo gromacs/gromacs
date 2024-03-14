@@ -77,7 +77,7 @@ bool isDeviceDetectionEnabled()
 {
     if (c_binarySupportsGpus)
     {
-        return getenv("GMX_DISABLE_GPU_DETECTION") == nullptr;
+        return std::getenv("GMX_DISABLE_GPU_DETECTION") == nullptr;
     }
     else
     {

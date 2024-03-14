@@ -310,7 +310,7 @@ static DeviceStatus isDeviceCompatible(const sycl::device&           syclDevice,
 {
     try
     {
-        if (getenv("GMX_GPU_DISABLE_COMPATIBILITY_CHECK") != nullptr)
+        if (std::getenv("GMX_GPU_DISABLE_COMPATIBILITY_CHECK") != nullptr)
         {
             // Assume the device is compatible because checking has been disabled.
             return DeviceStatus::Compatible;
@@ -357,7 +357,7 @@ static DeviceStatus isDeviceCompatible(const sycl::device&           syclDevice,
         /* Host device can not be used, because NBNXM requires sub-groups, which are not supported.
          * Accelerators (FPGAs and their emulators) are not supported.
          * So, the only viable options are CPUs and GPUs. */
-        const bool forceCpu = (getenv("GMX_SYCL_FORCE_CPU") != nullptr);
+        const bool forceCpu = (std::getenv("GMX_SYCL_FORCE_CPU") != nullptr);
 
         if (forceCpu && syclDevice.is_cpu())
         {
@@ -701,7 +701,7 @@ std::vector<std::unique_ptr<DeviceInformation>> findDevices()
     }
 #if GMX_SYCL_DPCPP
     // Now, filter by the backend if we did not disable compatibility check
-    if (getenv("GMX_GPU_DISABLE_COMPATIBILITY_CHECK") == nullptr)
+    if (std::getenv("GMX_GPU_DISABLE_COMPATIBILITY_CHECK") == nullptr)
     {
         std::optional<sycl::backend> preferredBackend = chooseBestBackend(deviceInfos);
         if (preferredBackend.has_value())

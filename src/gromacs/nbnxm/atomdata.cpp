@@ -520,7 +520,7 @@ static void nbnxn_atomdata_params_init(const MDLogger&                         m
      * force-field floating point parameters.
      */
     real        tol               = 1e-5;
-    const char* tolOverrideString = getenv("GMX_LJCOMB_TOL");
+    const char* tolOverrideString = std::getenv("GMX_LJCOMB_TOL");
     if (tolOverrideString != nullptr)
     {
         double tolOverride = std::strtod(tolOverrideString, nullptr);

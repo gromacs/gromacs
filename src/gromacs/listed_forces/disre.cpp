@@ -216,7 +216,7 @@ void init_disres(FILE*                 fplog,
     snew(dd->Rt_6, 2 * dd->nres);
     dd->Rtav_6 = &(dd->Rt_6[dd->nres]);
 
-    ptr = getenv("GMX_DISRE_ENSEMBLE_SIZE");
+    ptr = std::getenv("GMX_DISRE_ENSEMBLE_SIZE");
     if ((disResRunMode == DisResRunMode::MDRun) && ms != nullptr && ptr != nullptr && !bIsREMD)
     {
 #if GMX_MPI

@@ -809,7 +809,7 @@ BiasGrid::BiasGrid(ArrayRef<const DimParams> dimParams, ArrayRef<const AwhDimPar
     // 10^7 points are practically impossible to sample and use about 1 GB of data
     const int64_t c_maxNumPoints = 10'000'000;
     const char*   envVar         = "GMX_AWH_NO_POINT_LIMIT";
-    if (numPoints > c_maxNumPoints && getenv(envVar) == nullptr)
+    if (numPoints > c_maxNumPoints && std::getenv(envVar) == nullptr)
     {
         std::string mesg = gmx::formatString(
                 "An AWH bias grid has %" PRId64

@@ -429,7 +429,7 @@ static void write_checkpoint(const char*                     fn,
                 "Cannot fsync '%s'; maybe you are out of disk space?",
                 gmx_fio_getname(ret).string().c_str());
 
-        if (getenv(GMX_IGNORE_FSYNC_FAILURE_ENV) == nullptr)
+        if (std::getenv(GMX_IGNORE_FSYNC_FAILURE_ENV) == nullptr)
         {
             gmx_file(buf);
         }

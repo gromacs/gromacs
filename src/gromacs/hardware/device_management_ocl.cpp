@@ -151,7 +151,7 @@ static FixedCapacityVector<int, 10> fillSupportedSubGroupSizes(const cl_device_i
     {
         case DeviceVendor::Amd:
         {
-            if (getenv("GMX_OCL_FORCE_AMD_WAVEFRONT64"))
+            if (std::getenv("GMX_OCL_FORCE_AMD_WAVEFRONT64"))
             {
                 result.push_back(64);
                 return result;
@@ -249,12 +249,12 @@ static bool runningOnCompatibleHWForAmd(const DeviceInformation& deviceInfo)
  */
 static DeviceStatus isDeviceFunctional(const DeviceInformation& deviceInfo)
 {
-    if (getenv("GMX_GPU_DISABLE_COMPATIBILITY_CHECK") != nullptr)
+    if (std::getenv("GMX_GPU_DISABLE_COMPATIBILITY_CHECK") != nullptr)
     {
         // Assume the device is compatible because checking has been disabled.
         return DeviceStatus::Compatible;
     }
-    if (getenv("GMX_OCL_DISABLE_COMPATIBILITY_CHECK") != nullptr)
+    if (std::getenv("GMX_OCL_DISABLE_COMPATIBILITY_CHECK") != nullptr)
     {
         fprintf(stderr,
                 "Environment variable GMX_OCL_DISABLE_COMPATIBILITY_CHECK is deprecated and will "
@@ -470,7 +470,7 @@ std::vector<std::unique_ptr<DeviceInformation>> findDevices()
 
     ocl_platform_ids = nullptr;
 
-    if (getenv("GMX_OCL_FORCE_CPU") != nullptr)
+    if (std::getenv("GMX_OCL_FORCE_CPU") != nullptr)
     {
         req_dev_type = CL_DEVICE_TYPE_CPU;
     }

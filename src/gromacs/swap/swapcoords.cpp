@@ -1279,7 +1279,7 @@ static void detect_flux_per_channel_init(t_swap* s, swaphistory_t* swapstate, co
  */
 static void outputStartStructureIfWanted(const gmx_mtop_t& mtop, rvec* x, PbcType pbcType, const matrix box)
 {
-    char* env = getenv("GMX_COMPELDUMP");
+    char* env = std::getenv("GMX_COMPELDUMP");
 
     if (env != nullptr)
     {

@@ -121,7 +121,7 @@ void pr_reals_of_dim(FILE* fp, int indent, const char* title, const real* vec, i
 {
     const char* fshort = "%12.5e";
     const char* flong  = "%15.8e";
-    const char* format = (getenv("GMX_PRINT_LONGFORMAT") != nullptr) ? flong : fshort;
+    const char* format = (std::getenv("GMX_PRINT_LONGFORMAT") != nullptr) ? flong : fshort;
 
     if (available(fp, vec, indent, title))
     {

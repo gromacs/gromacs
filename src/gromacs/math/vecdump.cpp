@@ -162,7 +162,7 @@ void pr_rvecs(FILE* fp, int indent, const char* title, const rvec vec[], int n)
     const char* format;
     int         i, j;
 
-    if (getenv("GMX_PRINT_LONGFORMAT") != nullptr)
+    if (std::getenv("GMX_PRINT_LONGFORMAT") != nullptr)
     {
         format = flong;
     }

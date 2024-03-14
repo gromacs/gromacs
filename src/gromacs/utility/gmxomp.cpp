@@ -112,7 +112,7 @@ bool gmx_omp_check_thread_affinity(char** message)
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR
 
-    const char* const gomp_env            = getenv("GOMP_CPU_AFFINITY");
+    const char* const gomp_env            = std::getenv("GOMP_CPU_AFFINITY");
     const bool        bGompCpuAffinitySet = (gomp_env != nullptr);
 
     /* turn off internal pinning if GOMP_CPU_AFFINITY is set & non-empty */

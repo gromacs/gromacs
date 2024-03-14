@@ -789,7 +789,7 @@ gmx_pme_t* gmx_pme_init(const t_commrec*                 cr,
     pme->nkx       = ir->nkx;
     pme->nky       = ir->nky;
     pme->nkz       = ir->nkz;
-    pme->bP3M = (ir->coulombtype == CoulombInteractionType::P3mAD || getenv("GMX_PME_P3M") != nullptr);
+    pme->bP3M = (ir->coulombtype == CoulombInteractionType::P3mAD || std::getenv("GMX_PME_P3M") != nullptr);
     pme->pme_order     = ir->pme_order;
     pme->ewaldcoeff_q  = ewaldcoeff_q;
     pme->ewaldcoeff_lj = ewaldcoeff_lj;

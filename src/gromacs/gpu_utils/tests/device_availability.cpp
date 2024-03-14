@@ -72,7 +72,7 @@ namespace test
 
 static unsigned long int getRequiredNumberOfDevices()
 {
-    const char* required_num_of_devices_str = getenv("GMX_TEST_REQUIRED_NUMBER_OF_DEVICES");
+    const char* required_num_of_devices_str = std::getenv("GMX_TEST_REQUIRED_NUMBER_OF_DEVICES");
     if (required_num_of_devices_str == nullptr)
     {
         return 0;

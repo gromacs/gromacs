@@ -156,7 +156,7 @@ settleParameters(const real mO, const real mH, const real invmO, const real invm
 }
 
 SettleData::SettleData(const gmx_mtop_t& mtop) :
-    useSimd_(getenv("GMX_DISABLE_SIMD_KERNELS") == nullptr)
+    useSimd_(std::getenv("GMX_DISABLE_SIMD_KERNELS") == nullptr)
 {
     /* Check that we have only one settle type */
     int       settle_type = -1;

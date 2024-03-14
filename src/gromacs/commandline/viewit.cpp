@@ -81,7 +81,7 @@ void do_view(const gmx_output_env_t* oenv, const char* fn, const char* opts)
 
     if (output_env_get_view(oenv) && fn)
     {
-        if (getenv("DISPLAY") == nullptr)
+        if (std::getenv("DISPLAY") == nullptr)
         {
             fprintf(stderr, "Can not view %s, no DISPLAY environment variable.\n", fn);
         }
@@ -93,9 +93,9 @@ void do_view(const gmx_output_env_t* oenv, const char* fn, const char* opts)
             switch (ftp)
             {
                 case efXVG:
-                    if (!(cmd = getenv(env)))
+                    if (!(cmd = std::getenv(env)))
                     {
-                        if (getenv("GMX_USE_XMGR"))
+                        if (std::getenv("GMX_USE_XMGR"))
                         {
                             cmd = "xmgr";
                         }
@@ -108,7 +108,7 @@ void do_view(const gmx_output_env_t* oenv, const char* fn, const char* opts)
                 default:
                     if ((n = can_view(ftp)))
                     {
-                        if (!(cmd = getenv(env)))
+                        if (!(cmd = std::getenv(env)))
                         {
                             cmd = viewProgram[n];
                         }

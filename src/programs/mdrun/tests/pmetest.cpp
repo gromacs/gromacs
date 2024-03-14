@@ -247,7 +247,7 @@ MessageStringCollector PmeTest::getSkipMessagesIfNecessary(const CommandLine& co
                               "it targets PME decomposition, but that is not supported");
             if (pmeDecompositionSupported)
             {
-                const bool pmeDecompositionActive = (getenv("GMX_GPU_PME_DECOMPOSITION") != nullptr);
+                const bool pmeDecompositionActive = (std::getenv("GMX_GPU_PME_DECOMPOSITION") != nullptr);
                 messages.appendIf(!pmeDecompositionActive,
                                   "it targets PME decomposition, but that is not enabled");
                 GpuAwareMpiStatus gpuAwareMpiStatus = s_hwinfo->minGpuAwareMpiStatus;

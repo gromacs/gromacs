@@ -297,12 +297,12 @@ static int load_vmd_library(const std::filesystem::path& fn, gmx_vmdplugin_t* vm
      * plugins, then an implicit run-time path, and finally for one
      * given at configure time. This last might be hard-coded to the
      * default for VMD installs. */
-    const char*           pathEnvChar = getenv("VMD_PLUGIN_PATH");
+    const char*           pathEnvChar = std::getenv("VMD_PLUGIN_PATH");
     std::filesystem::path pathenv     = pathEnvChar != nullptr ? pathEnvChar : "";
     std::filesystem::path fallBackPathEnv;
     if (pathenv.empty())
     {
-        pathenv = getenv("VMDDIR");
+        pathenv = std::getenv("VMDDIR");
         if (pathenv.empty())
         {
             printf("\nNeither VMD_PLUGIN_PATH or VMDDIR set. ");

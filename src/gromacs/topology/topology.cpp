@@ -147,7 +147,7 @@ void gmx_mtop_t::finalize()
         maxResiduesPerMoleculeToTriggerRenumber_ = 1;
     }
 
-    const char* env = getenv("GMX_MAXRESRENUM");
+    const char* env = std::getenv("GMX_MAXRESRENUM");
     if (env != nullptr)
     {
         sscanf(env, "%d", &maxResiduesPerMoleculeToTriggerRenumber_);

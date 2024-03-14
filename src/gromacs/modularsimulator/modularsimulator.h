@@ -140,7 +140,7 @@ auto checkUseModularSimulator(Ts&&... args)
         -> decltype(ModularSimulator::isInputCompatible(std::forward<Ts>(args)...))
 {
     return ModularSimulator::isInputCompatible(std::forward<Ts>(args)...)
-           && getenv("GMX_DISABLE_MODULAR_SIMULATOR") == nullptr;
+           && std::getenv("GMX_DISABLE_MODULAR_SIMULATOR") == nullptr;
 }
 
 } // namespace gmx

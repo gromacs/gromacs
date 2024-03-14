@@ -153,7 +153,7 @@ void gmx_setup_nodecomm(FILE gmx_unused* fplog, t_commrec* cr)
         fprintf(debug, "In gmx_setup_nodecomm: groups %d, my group size %d\n", ng, ni);
     }
 
-    if (getenv("GMX_NO_NODECOMM") == nullptr && ((ng > 1 && ng < n) || (ni > 1 && ni < n)))
+    if (std::getenv("GMX_NO_NODECOMM") == nullptr && ((ng > 1 && ng < n) || (ni > 1 && ni < n)))
     {
         nc->bUse = TRUE;
         if (fplog)

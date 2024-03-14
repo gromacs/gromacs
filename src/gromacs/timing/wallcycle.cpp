@@ -110,7 +110,7 @@ std::unique_ptr<gmx_wallcycle> wallcycle_init(FILE* fplog, int resetstep, const 
 
 
 #if GMX_MPI
-    if (cr != nullptr && PAR(cr) && getenv("GMX_CYCLE_BARRIER") != nullptr)
+    if (cr != nullptr && PAR(cr) && std::getenv("GMX_CYCLE_BARRIER") != nullptr)
     {
         if (fplog)
         {
@@ -120,7 +120,7 @@ std::unique_ptr<gmx_wallcycle> wallcycle_init(FILE* fplog, int resetstep, const 
     }
 #endif
 
-    if (getenv("GMX_CYCLE_ALL") != nullptr)
+    if (std::getenv("GMX_CYCLE_ALL") != nullptr)
     {
         if (fplog)
         {

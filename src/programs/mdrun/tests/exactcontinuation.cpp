@@ -387,7 +387,8 @@ TEST_P(MdrunNoAppendContinuationIsExact, WithinTolerances)
 
     // Check for unimplemented functionality
     // TODO: Update this as modular simulator gains functionality
-    const bool isModularSimulatorExplicitlyDisabled = (getenv("GMX_DISABLE_MODULAR_SIMULATOR") != nullptr);
+    const bool isModularSimulatorExplicitlyDisabled =
+            (std::getenv("GMX_DISABLE_MODULAR_SIMULATOR") != nullptr);
     const bool isTCouplingCompatibleWithModularSimulator =
             (temperatureCoupling == "no" || temperatureCoupling == "v-rescale");
     if (integrator == "md-vv" && pressureCoupling == "parrinello-rahman"

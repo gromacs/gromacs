@@ -653,7 +653,7 @@ static void get_program_paths(gmx_bool bThreads, char* cmd_mpirun[], char* cmd_m
     /* Get the commands we need to set up the runs from environment variables */
     if (!bThreads)
     {
-        if ((cp = getenv("MPIRUN")) != nullptr)
+        if ((cp = std::getenv("MPIRUN")) != nullptr)
         {
             *cmd_mpirun = gmx_strdup(cp);
         }
@@ -672,7 +672,7 @@ static void get_program_paths(gmx_bool bThreads, char* cmd_mpirun[], char* cmd_m
         /* The use of MDRUN is deprecated, but made available in 5.1
            for backward compatibility. It may be removed in a future
            version. */
-        if ((cp = getenv("MDRUN")) != nullptr)
+        if ((cp = std::getenv("MDRUN")) != nullptr)
         {
             *cmd_mdrun = gmx_strdup(cp);
         }

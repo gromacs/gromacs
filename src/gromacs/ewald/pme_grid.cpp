@@ -674,7 +674,7 @@ static void make_subgrid_division(const ivec n, int ovl, int nthread, ivec nsub)
         }
     }
 
-    env = getenv("GMX_PME_THREAD_DIVISION");
+    env = std::getenv("GMX_PME_THREAD_DIVISION");
     if (env != nullptr)
     {
         sscanf(env, "%20d %20d %20d", &nsub[XX], &nsub[YY], &nsub[ZZ]);

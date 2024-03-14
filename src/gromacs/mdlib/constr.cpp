@@ -355,7 +355,7 @@ static void dump_confs(FILE*                log,
 {
     char buf[STRLEN], buf2[22];
 
-    char* env = getenv("GMX_SUPPRESS_DUMP");
+    char* env = std::getenv("GMX_SUPPRESS_DUMP");
     if (env)
     {
         return;
@@ -1247,7 +1247,7 @@ Constraints::Impl::Impl(const gmx_mtop_t&          mtop_p,
     }
 
     maxwarn   = 999;
-    char* env = getenv("GMX_MAXCONSTRWARN");
+    char* env = std::getenv("GMX_MAXCONSTRWARN");
     if (env)
     {
         maxwarn = 0;

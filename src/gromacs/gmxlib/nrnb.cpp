@@ -422,7 +422,7 @@ void print_perf(FILE*   out,
             mflop         = mflop / time_per_node;
             wallclocktime = nsteps * delta_t;
 
-            if (getenv("GMX_DETAILED_PERF_STATS") == nullptr)
+            if (std::getenv("GMX_DETAILED_PERF_STATS") == nullptr)
             {
                 fprintf(out, "%12s %12s %12s\n", "", "(ns/day)", "(hour/ns)");
                 fprintf(out,
@@ -451,7 +451,7 @@ void print_perf(FILE*   out,
         }
         else
         {
-            if (getenv("GMX_DETAILED_PERF_STATS") == nullptr)
+            if (std::getenv("GMX_DETAILED_PERF_STATS") == nullptr)
             {
                 fprintf(out, "%12s %14s\n", "", "(steps/hour)");
                 fprintf(out, "%12s %14.1f\n", "Performance:", nsteps * 3600.0 / time_per_node);

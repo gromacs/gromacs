@@ -436,7 +436,7 @@ bonded_threading_t::bonded_threading_t(const int numThreads, const int numEnergy
     const int max_nthread_uniform_default = 4;
     char*     ptr;
 
-    if ((ptr = getenv("GMX_BONDED_NTHREAD_UNIFORM")) != nullptr)
+    if ((ptr = std::getenv("GMX_BONDED_NTHREAD_UNIFORM")) != nullptr)
     {
         sscanf(ptr, "%d", &max_nthread_uniform);
         if (fplog != nullptr)

@@ -419,7 +419,7 @@ void rename_resrtp(t_atoms*                       pdba,
                    bool                           bVerbose,
                    const gmx::MDLogger&           logger)
 {
-    bool bFFRTPTERRNM = (getenv("GMX_NO_FFRTP_TER_RENAME") == nullptr);
+    bool bFFRTPTERRNM = (std::getenv("GMX_NO_FFRTP_TER_RENAME") == nullptr);
 
     for (int r = 0; r < pdba->nres; r++)
     {

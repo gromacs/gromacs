@@ -133,7 +133,7 @@ void gmx_set_max_backup_count(int count)
 {
     if (count < 0)
     {
-        const char* env = getenv("GMX_MAXBACKUP");
+        const char* env = std::getenv("GMX_MAXBACKUP");
         if (env != nullptr)
         {
             // TODO: Check that the value is converted properly.
@@ -417,7 +417,7 @@ FILE* gmx_ffopen(const std::filesystem::path& file, const char* mode)
          * (for debugging)
          */
         const char* bufsize = nullptr;
-        if (bUnbuffered || ((bufsize = getenv("GMX_LOG_BUFFER")) != nullptr))
+        if (bUnbuffered || ((bufsize = std::getenv("GMX_LOG_BUFFER")) != nullptr))
         {
             /* Check whether to use completely unbuffered */
             const int bs = bUnbuffered ? 0 : strtol(bufsize, nullptr, 10);

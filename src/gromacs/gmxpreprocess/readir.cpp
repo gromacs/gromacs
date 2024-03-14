@@ -4790,7 +4790,7 @@ static void check_combination_rule_differences(const gmx_mtop_t& mtop,
      * force-field floating point parameters.
      */
     tol = 1e-5;
-    ptr = getenv("GMX_LJCOMB_TOL");
+    ptr = std::getenv("GMX_LJCOMB_TOL");
     if (ptr != nullptr)
     {
         double            dbl;

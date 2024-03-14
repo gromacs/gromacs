@@ -152,7 +152,7 @@ static int* select_by_name(int nre, gmx_enxnm_t* nm, int* nset)
     const char* fm2   = "%3d  %-34s";
     char**      newnm = nullptr;
 
-    if ((getenv("GMX_ENER_VERBOSE")) != nullptr)
+    if ((std::getenv("GMX_ENER_VERBOSE")) != nullptr)
     {
         bVerbose = FALSE;
     }

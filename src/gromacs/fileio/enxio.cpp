@@ -335,7 +335,7 @@ void add_subblocks_enxblock(t_enxblock* eb, int n)
 
 static void enx_warning(const char* msg)
 {
-    if (getenv("GMX_ENX_NO_FATAL") != nullptr)
+    if (std::getenv("GMX_ENX_NO_FATAL") != nullptr)
     {
         gmx_warning("%s", msg);
     }

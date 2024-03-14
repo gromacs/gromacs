@@ -110,7 +110,7 @@ PairSearch::PairSearch(const PbcType      pbcType,
              pinningPolicy),
     work_(maxNumThreads)
 {
-    cycleCounting_.recordCycles_ = (getenv("GMX_NBNXN_CYCLE") != nullptr);
+    cycleCounting_.recordCycles_ = (std::getenv("GMX_NBNXN_CYCLE") != nullptr);
 }
 
 void PairSearch::setNonLocalGrid(const int                           gridIndex,

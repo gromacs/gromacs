@@ -180,7 +180,7 @@ std::optional<std::string> reasonsTestIsInvalid(MdpFlavor       mdpFlavor,
 #endif
     errorReasons.appendIf(haveAnyGpuWork && nonbondedFlavor == NonbondedFlavor::Cpu,
                           "Cannot offload PME or Update to GPU without offloading Nonbondeds");
-    if ((getenv("GMX_GPU_PME_DECOMPOSITION")) == nullptr)
+    if ((std::getenv("GMX_GPU_PME_DECOMPOSITION")) == nullptr)
     {
         errorReasons.appendIf(
                 pmeFlavor == PmeFlavor::Gpu && separatePmeRankFlavor == SeparatePmeRankFlavor::Two,

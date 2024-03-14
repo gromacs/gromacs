@@ -134,7 +134,7 @@ static const float c_nbnxnListSizeFactorMargin = 0.1;
 //! Returns the Verlet buffer pressure tolerance set by an env.var. or from input
 static real getPressureTolerance(const real inputrecVerletBufferPressureTolerance)
 {
-    const char* pressureToleranceString = getenv("GMX_VERLET_BUFFER_PRESSURE_TOLERANCE");
+    const char* pressureToleranceString = std::getenv("GMX_VERLET_BUFFER_PRESSURE_TOLERANCE");
     real        pressureTolerance       = -1;
     if (pressureToleranceString != nullptr)
     {
@@ -660,13 +660,14 @@ void setupDynamicPairlistPruning(const MDLogger&            mdlog,
     /* Currently emulation mode does not support dual pair-lists */
     const bool useGpuList = sc_isGpuPairListType[listParams->pairlistType];
 
-    if (supportsDynamicPairlistGenerationInterval(inputrec) && getenv("GMX_DISABLE_DYNAMICPRUNING") == nullptr)
+    if (supportsDynamicPairlistGenerationInterval(inputrec)
+        && std::getenv("GMX_DISABLE_DYNAMICPRUNING") == nullptr)
     {
         /* Note that nstlistPrune can have any value independently of nstlist.
          * Actually applying rolling pruning is only useful when
          * nstlistPrune < nstlist -1
          */
-        char* env                 = getenv("GMX_NSTLIST_DYNAMICPRUNING");
+        char* env                 = std::getenv("GMX_NSTLIST_DYNAMICPRUNING");
         bool  userSetNstlistPrune = (env != nullptr);
 
         if (userSetNstlistPrune)

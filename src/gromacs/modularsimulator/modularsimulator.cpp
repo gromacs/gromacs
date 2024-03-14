@@ -382,10 +382,11 @@ bool ModularSimulator::isInputCompatible(bool                             exitOn
 
     // GMX_USE_MODULAR_SIMULATOR allows to use modular simulator also for non-standard uses,
     // such as the leap-frog integrator
-    const auto modularSimulatorExplicitlyTurnedOn = (getenv("GMX_USE_MODULAR_SIMULATOR") != nullptr);
+    const auto modularSimulatorExplicitlyTurnedOn = (std::getenv("GMX_USE_MODULAR_SIMULATOR") != nullptr);
     // GMX_USE_MODULAR_SIMULATOR allows to use disable modular simulator for all uses,
     // including the velocity-verlet integrator used by default
-    const auto modularSimulatorExplicitlyTurnedOff = (getenv("GMX_DISABLE_MODULAR_SIMULATOR") != nullptr);
+    const auto modularSimulatorExplicitlyTurnedOff =
+            (std::getenv("GMX_DISABLE_MODULAR_SIMULATOR") != nullptr);
 
     GMX_RELEASE_ASSERT(
             !(modularSimulatorExplicitlyTurnedOn && modularSimulatorExplicitlyTurnedOff),
@@ -467,7 +468,7 @@ bool ModularSimulator::isInputCompatible(bool                             exitOn
     }
     else
     {
-        auto* distantRestraintEnsembleEnvVar = getenv("GMX_DISRE_ENSEMBLE_SIZE");
+        auto* distantRestraintEnsembleEnvVar = std::getenv("GMX_DISRE_ENSEMBLE_SIZE");
         numEnsembleRestraintSystems =
                 (ms != nullptr && distantRestraintEnsembleEnvVar != nullptr)
                         ? static_cast<int>(strtol(distantRestraintEnsembleEnvVar, nullptr, 10))

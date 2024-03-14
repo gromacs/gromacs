@@ -78,7 +78,7 @@ PmePpCommGpu::Impl::Impl(MPI_Comm                    comm,
     forcesReadyNvshmemFlags(nullptr),
     useNvshmem_(useNvshmem)
 {
-    stageLibMpiGpuCpuComm_ = (getenv("GMX_DISABLE_STAGED_GPU_TO_CPU_PMEPP_COMM") == nullptr);
+    stageLibMpiGpuCpuComm_ = (std::getenv("GMX_DISABLE_STAGED_GPU_TO_CPU_PMEPP_COMM") == nullptr);
 }
 
 PmePpCommGpu::Impl::~Impl()
