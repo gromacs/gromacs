@@ -198,7 +198,7 @@ int gmx_ffclose(FILE* fp)
     {
         if (fp != nullptr)
         {
-            ret = fclose(fp);
+            ret = std::fclose(fp);
         }
     }
     else if (ps->fp == fp)
@@ -230,7 +230,7 @@ int gmx_ffclose(FILE* fp)
         {
             if (fp != nullptr)
             {
-                ret = fclose(fp);
+                ret = std::fclose(fp);
             }
         }
     }
@@ -409,7 +409,7 @@ FILE* gmx_ffopen(const std::filesystem::path& file, const char* mode)
     bool bRead = (mode[0] == 'r' && mode[1] != '+');
     if (!bRead || gmx_fexist(file))
     {
-        if ((ff = fopen(file.string().c_str(), mode)) == nullptr)
+        if ((ff = std::fopen(file.string().c_str(), mode)) == nullptr)
         {
             gmx_file(file.string());
         }
@@ -552,7 +552,7 @@ FILE* gmx_fopen_temporary(char* buf)
     int   fd    = makeTemporaryFilename(buf);
 
 #if GMX_NATIVE_WINDOWS
-    if ((fpout = fopen(buf, "w")) == NULL)
+    if ((fpout = std::fopen(buf, "w")) == NULL)
     {
         gmx_fatal(FARGS, "Cannot open temporary file %s", buf);
     }

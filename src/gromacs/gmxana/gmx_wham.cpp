@@ -2347,7 +2347,7 @@ static void calcIntegratedAutocorrelationTimes(t_UmbrellaWindow*  window,
         fprintf(stdout,
                 "\rEstimating integrated autocorrelation times ... [%2.0f%%] ...",
                 100. * (i + 1) / nwins);
-        fflush(stdout);
+        std::fflush(stdout);
         ntot = window[i].Ntot[0];
 
         /* using half the maximum time as length of autocorrelation function */

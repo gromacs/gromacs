@@ -851,7 +851,7 @@ void gmx::LegacySimulator::do_rerun()
 
             if (do_per_step(step, ir->nstlog))
             {
-                if (fflush(fpLog_) != 0)
+                if (std::fflush(fpLog_) != 0)
                 {
                     gmx_fatal(FARGS, "Cannot flush logfile - maybe you are out of disk space?");
                 }

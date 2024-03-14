@@ -172,7 +172,7 @@ static void nma_full_hessian(real*                    hess,
     /* call diagonalization routine. */
 
     fprintf(stderr, "\nDiagonalizing to find vectors %d through %d...\n", begin, end);
-    fflush(stderr);
+    std::fflush(stderr);
 
     eigensolver(hess, ndim, begin - 1, end - 1, eigenvalues, eigenvectors);
 
@@ -237,7 +237,7 @@ static void nma_sparse_hessian(gmx_sparsematrix_t*      sparse_hessian,
         }
     }
     fprintf(stderr, "\nDiagonalizing to find eigenvectors 1 through %d...\n", neig);
-    fflush(stderr);
+    std::fflush(stderr);
 
     sparse_eigensolver(sparse_hessian, neig, eigenvalues, eigenvectors, 10000000);
 

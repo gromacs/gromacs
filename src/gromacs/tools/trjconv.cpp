@@ -1632,7 +1632,7 @@ int gmx_trjconv(int argc, char* argv[])
                                     " ->  frame %6d time %8.3f      \r",
                                     frameNumberToPrint,
                                     output_env_conv_time(oenv, frameTimeToPrint));
-                            fflush(stderr);
+                            std::fflush(stderr);
                             bFrameReadHasPrinted = false;
                         }
                     }

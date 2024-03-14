@@ -318,7 +318,7 @@ int gmx_enemat(int argc, char* argv[])
             if (bCont)
             {
                 fprintf(stderr, "\rRead frame: %d, Time: %.3f", teller, fr->t);
-                fflush(stderr);
+                std::fflush(stderr);
 
                 if ((nenergy % 1000) == 0)
                 {

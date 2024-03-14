@@ -204,7 +204,7 @@ static void print_bt(FILE*                                   out,
         fprintf(out, "\n");
     }
     fprintf(out, "\n");
-    fflush(out);
+    std::fflush(out);
 }
 
 void print_excl(FILE* out, int natoms, t_excls excls[])
@@ -236,7 +236,7 @@ void print_excl(FILE* out, int natoms, t_excls excls[])
             }
         }
         fprintf(out, "\n");
-        fflush(out);
+        std::fflush(out);
     }
 }
 
@@ -359,7 +359,7 @@ void print_atoms(FILE* out, PreprocessingAtomTypes* atype, t_atoms* at, bool bRT
         }
     }
     fprintf(out, "\n");
-    fflush(out);
+    std::fflush(out);
 }
 
 void print_bondeds(FILE* out, int natoms, Directive d, int ftype, int fsubtype, gmx::ArrayRef<const InteractionsOfType> plist)

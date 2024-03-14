@@ -1316,7 +1316,7 @@ int gmx_analyze(int argc, char* argv[])
                 if (j % 100 == 0)
                 {
                     fprintf(stderr, "\r%d", j);
-                    fflush(stderr);
+                    std::fflush(stderr);
                 }
                 tot = 0;
                 for (i = 0; i < n - j; i++)
@@ -1333,7 +1333,7 @@ int gmx_analyze(int argc, char* argv[])
         }
         xvgrclose(out);
         fprintf(stderr, "\r%d, time=%g\n", j - 1, (j - 1) * dt);
-        fflush(stderr);
+        std::fflush(stderr);
     }
     if (ccfile)
     {

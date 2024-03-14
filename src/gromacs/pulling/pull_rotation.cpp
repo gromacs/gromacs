@@ -938,7 +938,7 @@ static FILE* open_slab_out(const char* fn, gmx_enfrot* er)
             print_aligned(fp, "Z center");
         }
         fprintf(fp, " ...\n");
-        fflush(fp);
+        std::fflush(fp);
     }
 
     return fp;
@@ -1137,7 +1137,7 @@ static FILE* open_rot_out(const char* fn, const gmx_output_env_t* oenv, gmx_enfr
         fprintf(fp, "%s\n", LegendStr);
         sfree(LegendStr);
 
-        fflush(fp);
+        std::fflush(fp);
     }
 
     return fp;
@@ -1230,7 +1230,7 @@ static FILE* open_angles_out(const char* fn, gmx_enfrot* er)
                 fprintf(fp, "\n");
             }
         }
-        fflush(fp);
+        std::fflush(fp);
     }
 
     return fp;
@@ -1285,7 +1285,7 @@ static FILE* open_torque_out(const char* fn, gmx_enfrot* er)
         print_aligned_short(fp, "slab");
         print_aligned(fp, "tau");
         fprintf(fp, " ...\n");
-        fflush(fp);
+        std::fflush(fp);
     }
 
     return fp;

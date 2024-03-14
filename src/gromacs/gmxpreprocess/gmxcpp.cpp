@@ -313,7 +313,7 @@ static int cpp_open_file(const std::filesystem::path&                         fi
     cpp->parent = nullptr;
     if (cpp->fp == nullptr)
     {
-        cpp->fp = fopen(cpp->fn.string().c_str(), "r");
+        cpp->fp = std::fopen(cpp->fn.string().c_str(), "r");
     }
     if (cpp->fp == nullptr)
     {
@@ -673,7 +673,7 @@ int cpp_close_file(gmx_cpp_t* handlep)
     {
         return eCPP_FILE_NOT_OPEN;
     }
-    fclose(handle->fp);
+    std::fclose(handle->fp);
 
     if (!handle->cwd.empty())
     {

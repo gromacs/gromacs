@@ -141,7 +141,7 @@ static void get_refx(gmx_output_env_t* oenv,
     for (i = 0; i < nfr; i++)
     {
         fprintf(stdout, "\rProcessing frame %d of %d", i, nfr);
-        fflush(stdout);
+        std::fflush(stdout);
         for (j = i + 1; j < nfr; j++)
         {
             calc_fit_R(nfitdim, gnx, w_rls, xi[i], xi[j], R);

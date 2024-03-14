@@ -94,7 +94,7 @@ static real find_pdb_bfac(const t_atoms* atoms, t_resinfo* ri, char* atomnm)
     if (i == atoms->nr)
     {
         fprintf(stderr, "\rCan not find %s%d-%s in pdbfile\n", rresnm, ri->nr, atomnm);
-        fflush(stderr);
+        std::fflush(stderr);
         return 0.0;
     }
 

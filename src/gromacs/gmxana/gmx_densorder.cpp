@@ -322,7 +322,7 @@ static void outputfield(const char* fldfn, real**** Densmap, int xslices, int ys
     dim[3] = zslices;
 
     fldH = gmx_ffopen(fldfn, "w");
-    fwrite(dim, sizeof(int), 4, fldH);
+    std::fwrite(dim, sizeof(int), 4, fldH);
     for (n = 0; n < tdim; n++)
     {
         for (i = 0; i < xslices; i++)
@@ -331,7 +331,7 @@ static void outputfield(const char* fldfn, real**** Densmap, int xslices, int ys
             {
                 for (k = 0; k < zslices; k++)
                 {
-                    fwrite(&(Densmap[n][i][j][k]), sizeof(real), 1, fldH);
+                    std::fwrite(&(Densmap[n][i][j][k]), sizeof(real), 1, fldH);
                     totdens += (Densmap[n][i][j][k]);
                 }
             }

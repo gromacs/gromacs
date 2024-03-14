@@ -1278,7 +1278,7 @@ int gmx_cluster(int argc, char* argv[])
                         "\r# RMSD calculations left: "
                         "%" PRId64 "   ",
                         nrms);
-                fflush(stderr);
+                std::fflush(stderr);
             }
             sfree(x1);
         }
@@ -1307,7 +1307,7 @@ int gmx_cluster(int argc, char* argv[])
                         "\r# RMSD calculations left: "
                         "%" PRId64 "   ",
                         nrms);
-                fflush(stderr);
+                std::fflush(stderr);
             }
             /* Clean up work arrays */
             for (i = 0; (i < isize); i++)

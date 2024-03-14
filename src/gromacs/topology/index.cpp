@@ -273,7 +273,7 @@ static void analyse_other(gmx::ArrayRef<std::string> restype,
             if (bASK)
             {
                 printf("split %s into atoms (y/n) ? ", restp[i].gname);
-                fflush(stdout);
+                std::fflush(stdout);
                 if (gmx_ask_yesno(bASK))
                 {
                     std::vector<const char*> attp;

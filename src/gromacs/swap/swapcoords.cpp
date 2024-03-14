@@ -1160,7 +1160,7 @@ static void print_ionlist_legend(const t_inputrec* ir, t_swap* s, const gmx_outp
         fprintf(s->fpout, "%10s", gmx::formatString("s%d", i).c_str());
     }
     fprintf(s->fpout, "\n");
-    fflush(s->fpout);
+    std::fflush(s->fpout);
 }
 
 

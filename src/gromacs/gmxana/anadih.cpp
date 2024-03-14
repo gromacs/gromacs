@@ -81,7 +81,7 @@ void print_one(const gmx_output_env_t* oenv,
 
     sprintf(buf, "%s%s.xvg", base, name);
     fprintf(stderr, "\rPrinting %s  ", buf);
-    fflush(stderr);
+    std::fflush(stderr);
     sprintf(t2, "%s %s", title, name);
     fp = xvgropen(buf, t2, "Time (ps)", ylabel, oenv);
     for (k = 0; (k < nf); k++)

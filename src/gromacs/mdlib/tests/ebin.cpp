@@ -61,7 +61,7 @@ namespace
 //! Wraps fclose to discard the return value to use it as a deleter with gmx::unique_cptr.
 void fcloseWrapper(FILE* fp)
 {
-    fclose(fp);
+    std::fclose(fp);
 }
 
 class PrEbinTest : public ::testing::Test

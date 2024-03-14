@@ -1249,7 +1249,7 @@ void LegacySimulator::do_tpi()
                 fprintf(fp_tpi, " %12.5e", e / nsteps);
             }
             fprintf(fp_tpi, "\n");
-            fflush(fp_tpi);
+            std::fflush(fp_tpi);
         }
 
         isNotLastFrame = read_next_frame(oenv_, status, &rerun_fr);

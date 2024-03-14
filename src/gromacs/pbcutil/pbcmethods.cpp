@@ -240,7 +240,7 @@ void calc_pbc_cluster(int ecenter, int nrefat, t_topology* top, PbcType pbcType,
             rvec_inc(x[j], m_shift[jmin]);
         }
         fprintf(stdout, "\rClustering iteration %d of %d...", nadded, ncluster);
-        fflush(stdout);
+        std::fflush(stdout);
     }
 
     sfree(added);

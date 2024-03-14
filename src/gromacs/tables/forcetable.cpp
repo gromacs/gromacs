@@ -850,7 +850,7 @@ static void fill_table(t_tabledata* td, int tp, const interaction_const_t* ic, g
     if (debug)
     {
         fprintf(debug, "Setting up tables\n");
-        fflush(debug);
+        std::fflush(debug);
     }
 
     if (bPotentialShift)

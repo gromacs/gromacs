@@ -1054,7 +1054,7 @@ static void do_dip(const t_topology*       top,
                 if ((teller % 10) == 0)
                 {
                     fprintf(stderr, "\r Skipping Frame %6d, time: %8.3f", teller, t);
-                    fflush(stderr);
+                    std::fflush(stderr);
                 }
             }
             else

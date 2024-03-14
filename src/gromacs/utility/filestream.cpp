@@ -185,7 +185,7 @@ bool StandardInputStream::readLine(std::string* line)
 // static
 FilePtr TextInputFile::openRawHandle(const std::filesystem::path& filename)
 {
-    FilePtr fp(fopen(filename.string().c_str(), "r"));
+    FilePtr fp(std::fopen(filename.string().c_str(), "r"));
     if (fp == nullptr)
     {
         GMX_THROW_WITH_ERRNO(

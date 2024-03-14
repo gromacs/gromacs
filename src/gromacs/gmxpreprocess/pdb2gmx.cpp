@@ -265,7 +265,7 @@ const char* select_res(int resnr, const char* title, gmx::ArrayRef<const RtpRena
                res2bb_notermini(enumValueToString(sel), rr));
     }
     printf("\nType a number:");
-    fflush(stdout);
+    std::fflush(stdout);
 
     int userSelection;
     if (scanf("%d", &userSelection) != 1)

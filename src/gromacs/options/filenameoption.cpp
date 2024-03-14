@@ -324,7 +324,7 @@ std::string FileNameOptionStorage::processValue(const std::string& value) const
                     // only does that for the only case that it is currently
                     // required for: VMD plugins.
                     fprintf(stderr, "Value is %s\n", processedValue.c_str());
-                    fflush(stderr);
+                    std::fflush(stderr);
                     GMX_ASSERT(isInputFile() && isTrajectoryOption(),
                                "Manager returned an invalid file name");
                 }

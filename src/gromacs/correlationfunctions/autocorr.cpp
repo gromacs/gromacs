@@ -610,7 +610,7 @@ void low_do_autocorr(const char*             fn,
         if (bVerbose && (((i % 100) == 0) || (i == nitem - 1)))
         {
             fprintf(stderr, "\rThingie %d", i + 1);
-            fflush(stderr);
+            std::fflush(stderr);
         }
 
         if (bFour)

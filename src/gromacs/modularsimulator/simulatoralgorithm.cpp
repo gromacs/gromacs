@@ -304,7 +304,7 @@ void ModularSimulatorAlgorithm::postStep(Step step, Time gmx_unused time)
     {
         if (do_per_step(step, inputRec_->nstlog))
         {
-            if (fflush(fpLog_) != 0)
+            if (std::fflush(fpLog_) != 0)
             {
                 gmx_fatal(FARGS, "Cannot flush logfile - maybe you are out of disk space?");
             }

@@ -635,7 +635,7 @@ void ImdSession::Impl::prepareMainSocket()
 void ImdSession::Impl::disconnectClient()
 {
     /* Write out any buffered pulling data */
-    fflush(outf);
+    std::fflush(outf);
 
     /* we first try to shut down the clientsocket */
     imdsock_shutdown(clientsocket);
@@ -1069,7 +1069,7 @@ void ImdSession::Impl::openOutputFile(const char*                 fn,
         fprintf(outf,
                 "# Note that the force on any atom is always equal to the last value for that "
                 "atom-ID found in the data.\n");
-        fflush(outf);
+        std::fflush(outf);
     }
 
     /* To reduce the output file size we remember the old values and output only

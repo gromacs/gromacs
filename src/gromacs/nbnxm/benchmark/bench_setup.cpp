@@ -593,7 +593,7 @@ void bench(const int sizeFactor, const NbnxmKernelBenchOptions& options)
 
     if (!options.outputFile.empty())
     {
-        fclose(system.csv);
+        std::fclose(system.csv);
     }
 }
 

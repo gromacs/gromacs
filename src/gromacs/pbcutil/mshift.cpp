@@ -211,7 +211,7 @@ void p_graph(FILE* log, const char* title, const t_graph* g)
             fprintf(log, "\n");
         }
     }
-    fflush(log);
+    std::fflush(log);
 }
 
 /* Converts the vector of vector of edges to ListOfLists

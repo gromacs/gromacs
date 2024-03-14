@@ -88,7 +88,7 @@ TEST_F(LoggerTest, LogsToFile)
 {
     gmx::test::TestFileManager files;
     std::string                filename(files.getTemporaryFilePath("log.txt").string());
-    FILE*                      fp = fopen(filename.c_str(), "w");
+    FILE*                      fp = std::fopen(filename.c_str(), "w");
     {
         gmx::LoggerBuilder builder;
         builder.addTargetFile(gmx::MDLogger::LogLevel::VerboseDebug, fp);
@@ -101,7 +101,7 @@ TEST_F(LoggerTest, LogsToFile)
         GMX_LOG(logger.debug).appendText("debugline");
         GMX_LOG(logger.verboseDebug).appendText("verbose");
     }
-    fclose(fp);
+    std::fclose(fp);
     checkFileContents(filename, "Output");
 }
 
@@ -158,11 +158,11 @@ TEST_F(LoggerTest, LogsToMultipleFiles)
     std::string                filename3(files.getTemporaryFilePath("error.txt").string());
     std::string                filename4(files.getTemporaryFilePath("debug.txt").string());
     std::string                filename5(files.getTemporaryFilePath("verboseDebug.txt").string());
-    FILE*                      fp1 = fopen(filename1.c_str(), "w");
-    FILE*                      fp2 = fopen(filename2.c_str(), "w");
-    FILE*                      fp3 = fopen(filename3.c_str(), "w");
-    FILE*                      fp4 = fopen(filename4.c_str(), "w");
-    FILE*                      fp5 = fopen(filename5.c_str(), "w");
+    FILE*                      fp1 = std::fopen(filename1.c_str(), "w");
+    FILE*                      fp2 = std::fopen(filename2.c_str(), "w");
+    FILE*                      fp3 = std::fopen(filename3.c_str(), "w");
+    FILE*                      fp4 = std::fopen(filename4.c_str(), "w");
+    FILE*                      fp5 = std::fopen(filename5.c_str(), "w");
     {
         gmx::LoggerBuilder builder;
         builder.addTargetFile(gmx::MDLogger::LogLevel::Info, fp1);
@@ -179,11 +179,11 @@ TEST_F(LoggerTest, LogsToMultipleFiles)
         GMX_LOG(logger.debug).appendText("debugline");
         GMX_LOG(logger.verboseDebug).appendText("verbose");
     }
-    fclose(fp1);
-    fclose(fp2);
-    fclose(fp3);
-    fclose(fp4);
-    fclose(fp5);
+    std::fclose(fp1);
+    std::fclose(fp2);
+    std::fclose(fp3);
+    std::fclose(fp4);
+    std::fclose(fp5);
     checkFileContents(filename1, "Output1");
     checkFileContents(filename2, "Output2");
     checkFileContents(filename3, "Output3");
@@ -196,7 +196,7 @@ TEST_F(LoggerTest, LogsToStreamAndFile)
     gmx::test::TestFileManager files;
     gmx::StringOutputStream    stream;
     std::string                filename(files.getTemporaryFilePath("verboseDebug.txt").string());
-    FILE*                      fp = fopen(filename.c_str(), "w");
+    FILE*                      fp = std::fopen(filename.c_str(), "w");
     {
         gmx::LoggerBuilder builder;
         builder.addTargetFile(gmx::MDLogger::LogLevel::VerboseDebug, fp);
@@ -210,7 +210,7 @@ TEST_F(LoggerTest, LogsToStreamAndFile)
         GMX_LOG(logger.debug).appendText("debugline");
         GMX_LOG(logger.verboseDebug).appendText("verbose");
     }
-    fclose(fp);
+    std::fclose(fp);
     checkText(stream.toString(), "OutputStream");
     checkFileContents(filename, "OutputFile");
 }

@@ -345,7 +345,7 @@ void gmx_gro_read_conf(const std::filesystem::path& infile,
 static gmx_bool gmx_one_before_eof(FILE* fp)
 {
     char     data[4];
-    gmx_bool beof = fread(data, 1, 1, fp) != 1;
+    gmx_bool beof = std::fread(data, 1, 1, fp) != 1;
 
     if (!beof)
     {
@@ -538,7 +538,7 @@ void write_hconf_indexed_p(FILE*          out,
 
     write_hconf_box(out, box);
 
-    fflush(out);
+    std::fflush(out);
 }
 
 void write_hconf_mtop(FILE* out, const char* title, const gmx_mtop_t& mtop, const rvec* x, const rvec* v, const matrix box)
@@ -569,7 +569,7 @@ void write_hconf_mtop(FILE* out, const char* title, const gmx_mtop_t& mtop, cons
 
     write_hconf_box(out, box);
 
-    fflush(out);
+    std::fflush(out);
 }
 
 void write_hconf_p(FILE* out, const char* title, const t_atoms* atoms, const rvec* x, const rvec* v, const matrix box)

@@ -282,7 +282,7 @@ public:
      * \param filename Name of file to be opened.
      * \param mode access mode as described for the fopen C library call.
      */
-    RAIIFile(const char* filename, const char* mode) : fh_{ fopen(filename, mode) } {}
+    RAIIFile(const char* filename, const char* mode) : fh_{ std::fopen(filename, mode) } {}
 
     /*!
      * \brief Open a file for writing.
@@ -313,7 +313,7 @@ public:
     {
         if (fh_ != nullptr)
         {
-            fclose(fh_);
+            std::fclose(fh_);
         }
         fh_ = nullptr;
     }
@@ -327,7 +327,7 @@ public:
     {
         if (fh_ != nullptr)
         {
-            fclose(fh_);
+            std::fclose(fh_);
         }
     }
 

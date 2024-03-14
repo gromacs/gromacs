@@ -465,7 +465,7 @@ static void print_grid(FILE* fp_err, FILE* fp_log, const char* pre, const char* 
     if (fp_err != nullptr)
     {
         fprintf(fp_err, "\r%s\n", buf.c_str());
-        fflush(fp_err);
+        std::fflush(fp_err);
     }
     if (fp_log != nullptr)
     {
@@ -498,7 +498,7 @@ static void print_loadbal_limited(FILE* fp_err, FILE* fp_log, int64_t step, pme_
     if (fp_err != nullptr)
     {
         fprintf(fp_err, "\r%s\n", buf.c_str());
-        fflush(fp_err);
+        std::fflush(fp_err);
     }
     if (fp_log != nullptr)
     {

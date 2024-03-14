@@ -66,7 +66,7 @@ void print_time(FILE*                     out,
     }
     fputs("step ", out);
     fputs(gmx::int64ToString(step).c_str(), out);
-    fflush(out);
+    std::fflush(out);
 
     if ((step >= ir->nstlist))
     {
@@ -105,7 +105,7 @@ void print_time(FILE*                     out,
     GMX_UNUSED_VALUE(cr);
 #endif
 
-    fflush(out);
+    std::fflush(out);
 }
 
 void print_date_and_time(FILE* fplog, int nodeid, const char* title, double the_time)

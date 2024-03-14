@@ -1119,7 +1119,7 @@ static void test_for_replica_exchange(FILE*                 fplog,
         re->nmoves[re->ind[i]][pind[i]] += 1;
         re->nmoves[pind[i]][re->ind[i]] += 1;
     }
-    fflush(fplog); /* make sure we can see what the last exchange was */
+    std::fflush(fplog); /* make sure we can see what the last exchange was */
 }
 
 static void cyclic_decomposition(const int* destinations, int** cyclic, gmx_bool* incycle, const int nrepl, int* nswap)
@@ -1179,7 +1179,7 @@ static void cyclic_decomposition(const int* destinations, int** cyclic, gmx_bool
             }
             fprintf(debug, "\n");
         }
-        fflush(debug);
+        std::fflush(debug);
     }
 }
 
@@ -1222,7 +1222,7 @@ static void compute_exchange_order(int** cyclic, int** order, const int nrepl, c
             }
             fprintf(debug, "\n");
         }
-        fflush(debug);
+        std::fflush(debug);
     }
 }
 

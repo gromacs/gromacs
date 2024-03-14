@@ -437,7 +437,7 @@ static void pr_grp_opts(FILE* out, int indent, const char* title, const t_grpopt
         fprintf(out, "\n");
     }
 
-    fflush(out);
+    std::fflush(out);
 }
 
 static void pr_matrix(FILE* fp, int indent, const char* title, const rvec* m, gmx_bool bMDPformat)

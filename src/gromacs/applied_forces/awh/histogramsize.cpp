@@ -130,7 +130,7 @@ double HistogramSize::newHistogramSizeInitialStage(const BiasParams& params,
                is easy to calculate, but how the former depends on the histogram size
                is not known. */
         }
-        fflush(fplog);
+        std::fflush(fplog);
     }
     return newHistogramSize;
 }

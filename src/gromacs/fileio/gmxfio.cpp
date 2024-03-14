@@ -101,7 +101,7 @@ static int gmx_fio_int_flush(t_fileio* fio)
 
     if (fio->fp)
     {
-        rc = fflush(fio->fp);
+        rc = std::fflush(fio->fp);
     }
 
     return rc;
@@ -489,7 +489,7 @@ static int gmx_fio_int_get_file_md5(t_fileio* fio, gmx_off_t offset, std::array<
 
     std::vector<unsigned char> buf(maximumChecksumInputSize);
     // The fread puts the file position back to offset.
-    if (static_cast<gmx_off_t>(fread(buf.data(), 1, readLength, fio->fp)) != readLength)
+    if (static_cast<gmx_off_t>(std::fread(buf.data(), 1, readLength, fio->fp)) != readLength)
     {
         // Read an unexpected length. This is not a fatal error; the
         // md5sum check to prevent overwriting files is not vital.
@@ -691,8 +691,8 @@ t_fileio* gmx_fio_all_output_fsync()
     /* in addition, we force these to be written out too, if they're being
        redirected. We don't check for errors because errors most likely mean
        that they're not redirected. */
-    fflush(stdout);
-    fflush(stderr);
+    std::fflush(stdout);
+    std::fflush(stderr);
 #if HAVE_FSYNC
     /* again, fahcore defines HAVE_FSYNC and fsync() */
     fsync(STDOUT_FILENO);

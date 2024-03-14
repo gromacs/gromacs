@@ -541,7 +541,7 @@ static void dump_clust_stats(FILE*                           fp,
                 sumVT6,
                 maxVT6);
     }
-    fflush(fp);
+    std::fflush(fp);
     sfree(drs);
 }
 

@@ -802,7 +802,7 @@ static gmx_bool empty_file(const std::filesystem::path& fn)
     gmx_bool bEmpty;
 
     fp     = gmx_fio_fopen(fn, "r");
-    ret    = fread(&dum, sizeof(dum), 1, fp);
+    ret    = std::fread(&dum, sizeof(dum), 1, fp);
     bEmpty = (std::feof(fp) != 0);
     gmx_fio_fclose(fp);
 
@@ -986,7 +986,7 @@ gmx_bool do_enx(ener_file_t ef, t_enxframe* fr)
         if (bRead)
         {
             fprintf(stderr, "\rLast energy frame read %d time %8.3f         ", ef->framenr - 1, ef->frametime);
-            fflush(stderr);
+            std::fflush(stderr);
 
             if (!bOK)
             {

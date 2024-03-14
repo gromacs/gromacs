@@ -76,7 +76,7 @@ static void prepareLogFile(BinaryInformationSettings settings, FILE* fplog)
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR
     fprintf(fplog, "\n");
 
-    fflush(fplog);
+    std::fflush(fplog);
 }
 
 LogFilePtr openLogFile(const char* lognm, bool appendFiles)

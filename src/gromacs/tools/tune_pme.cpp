@@ -183,14 +183,14 @@ static void finalize(const char* fn_out)
     FILE* fp;
 
 
-    fp = fopen(fn_out, "r");
+    fp = std::fopen(fn_out, "r");
     fprintf(stdout, "\n\n");
 
     while (fgets(buf, STRLEN - 1, fp) != nullptr)
     {
         fprintf(stdout, "%s", buf);
     }
-    fclose(fp);
+    std::fclose(fp);
     fprintf(stdout, "\n\n");
 }
 
@@ -234,7 +234,7 @@ static int parse_logfile(const char* logfile,
         return eParselogNotFound;
     }
 
-    fp                            = fopen(logfile, "r");
+    fp                            = std::fopen(logfile, "r");
     perfdata->PME_f_load[test_nr] = -1.0;
     perfdata->guessPME            = -1;
 
@@ -252,7 +252,7 @@ static int parse_logfile(const char* logfile,
         /* Check for TERM and INT signals from user: */
         if (std::strstr(line, errSIG) != nullptr)
         {
-            fclose(fp);
+            std::fclose(fp);
             cleandata(perfdata, test_nr);
             return eParselogTerm;
         }
@@ -309,22 +309,22 @@ static int parse_logfile(const char* logfile,
                 /* Catch a few errors that might have occurred: */
                 else if (str_starts(line, "There is no domain decomposition for"))
                 {
-                    fclose(fp);
+                    std::fclose(fp);
                     return eParselogNoDDGrid;
                 }
                 else if (str_starts(line, "The number of ranks you selected"))
                 {
-                    fclose(fp);
+                    std::fclose(fp);
                     return eParselogLargePrimeFactor;
                 }
                 else if (str_starts(line, "reading tpx file"))
                 {
-                    fclose(fp);
+                    std::fclose(fp);
                     return eParselogTPXVersion;
                 }
                 else if (str_starts(line, "The -dd or -npme option request a parallel simulation"))
                 {
-                    fclose(fp);
+                    std::fclose(fp);
                     return eParselogNotParallel;
                 }
                 break;
@@ -333,12 +333,12 @@ static int parse_logfile(const char* logfile,
                  * it could be that mdrun had to quit due to some error. */
                 if (str_starts(line, "Incorrect launch configuration: mismatching number of"))
                 {
-                    fclose(fp);
+                    std::fclose(fp);
                     return eParselogMismatchOfNumberOfPPRanksAndAvailableGPUs;
                 }
                 else if (str_starts(line, "Some of the requested GPUs do not exist"))
                 {
-                    fclose(fp);
+                    std::fclose(fp);
                     return eParselogGpuProblem;
                 }
                 /* Look for PME mesh/force balance (not necessarily present, though) */
@@ -367,7 +367,7 @@ static int parse_logfile(const char* logfile,
                     ndum = sscanf(line, "%s %f %f %f %f", dumstring, &dum1, &dum2, &dum3, &dum4);
                     /* (ns/day) is the second last entry, depending on whether GMX_DETAILED_PERF_STATS was set in print_perf(), nrnb.c */
                     perfdata->ns_per_day[test_nr] = (ndum == 5) ? dum3 : dum1;
-                    fclose(fp);
+                    std::fclose(fp);
                     if (bResetChecked || presteps == 0)
                     {
                         return eParselogOK;
@@ -382,13 +382,13 @@ static int parse_logfile(const char* logfile,
     } /* while */
 
     /* Close the log file */
-    fclose(fp);
+    std::fclose(fp);
 
     /* Check why there is no performance data in the log file.
      * Did a fatal errors occur? */
     if (gmx_fexist(errfile))
     {
-        fp = fopen(errfile, "r");
+        fp = std::fopen(errfile, "r");
         while (fgets(line, STRLEN, fp) != nullptr)
         {
             if (str_starts(line, "Fatal error:"))
@@ -400,12 +400,12 @@ static int parse_logfile(const char* logfile,
                             "%s\n",
                             line);
                 }
-                fclose(fp);
+                std::fclose(fp);
                 cleandata(perfdata, test_nr);
                 return eParselogFatal;
             }
         }
-        fclose(fp);
+        std::fclose(fp);
     }
     else
     {
@@ -631,7 +631,7 @@ static gmx_bool analyze_data(FILE*          fp,
         fprintf(fp, "and original PME settings.\n");
     }
 
-    fflush(fp);
+    std::fflush(fp);
 
     /* Return the index of the mdp file that showed the highest performance
      * and the optimal number of PME nodes */
@@ -735,7 +735,7 @@ static void check_mdrun_works(gmx_bool    bThreads,
         gmx_fatal(FARGS, "Output from test run could not be found.");
     }
 
-    fp = fopen(filename, "r");
+    fp = std::fopen(filename, "r");
     /* We need to scan the whole output file, since sometimes the queuing system
      * also writes stuff to stdout/err */
     while (!std::feof(fp))
@@ -757,7 +757,7 @@ static void check_mdrun_works(gmx_bool    bThreads,
             }
         }
     }
-    fclose(fp);
+    std::fclose(fp);
 
     if (bThreads)
     {
@@ -865,14 +865,14 @@ static void launch_simulation(gmx_bool    bLaunch,          /* Should the simula
 
     fprintf(fp, "%s this command line to launch the simulation:\n\n%s", bLaunch ? "Using" : "Please use", command);
     sep_line(fp);
-    fflush(fp);
+    std::fflush(fp);
 
     /* Now the real thing! */
     if (bLaunch)
     {
         fprintf(stdout, "\nLaunching simulation with best parameters now.\nExecuting '%s'", command);
         sep_line(stdout);
-        fflush(stdout);
+        std::fflush(stdout);
         gmx_system_call(command);
     }
 }
@@ -898,7 +898,7 @@ static void modify_PMEsettings(int64_t     simsteps,    /* Set this value as num
     /* Write the tpr file which will be launched */
     sprintf(buf, "Writing optimized simulation file %s with nsteps=%s.\n", fn_sim_tpr, "%" PRId64);
     fprintf(stdout, buf, ir->nsteps);
-    fflush(stdout);
+    std::fflush(stdout);
     write_tpx_state(fn_sim_tpr, ir, &state, mtop);
 }
 
@@ -1198,8 +1198,8 @@ static void make_benchmark_tprs(const char* fn_sim_tpr,  /* READ : User-provided
                 "other input settings were also changed (see table above).\n"
                 "Please check if the modified settings are appropriate.\n");
     }
-    fflush(stdout);
-    fflush(fp);
+    std::fflush(stdout);
+    std::fflush(fp);
 }
 
 
@@ -1665,7 +1665,7 @@ static void do_the_tests(FILE*  fp,                    /* General tune_pme outpu
                     fprintf(fp, " Check %s file for problems.", ret == eParselogFatal ? "err" : "log");
                 }
                 fprintf(fp, "\n");
-                fflush(fp);
+                std::fflush(fp);
                 count++;
 
                 /* Do some cleaning up and delete the files we do not need any more */

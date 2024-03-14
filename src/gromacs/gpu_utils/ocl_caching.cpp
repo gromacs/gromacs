@@ -103,7 +103,7 @@ std::string makeBinaryCacheFilename(const std::string& kernelFilename, cl_device
 cl_program makeProgramFromCache(const std::string& filename, cl_context context, cl_device_id deviceId)
 {
     // TODO all this file reading stuff should become gmx::BinaryReader
-    const auto f = create_unique_with_deleter(fopen(filename.c_str(), "rb"), fclose);
+    const auto f = create_unique_with_deleter(std::fopen(filename.c_str(), "rb"), fclose);
     if (!f)
     {
         GMX_THROW(FileIOError("Failed to open binary cache file " + filename));
@@ -117,7 +117,7 @@ cl_program makeProgramFromCache(const std::string& filename, cl_context context,
     snew(binary, fileSize);
     binaryGuard.reset(binary);
     std::fseek(f.get(), 0, SEEK_SET);
-    size_t readCount = fread(binary, 1, fileSize, f.get());
+    size_t readCount = std::fread(binary, 1, fileSize, f.get());
 
     if (readCount != fileSize)
     {
@@ -167,13 +167,13 @@ void writeBinaryToCache(cl_program program, const std::string& filename)
                                 + ocl_get_error_string(cl_error)));
     }
 
-    const auto f = create_unique_with_deleter(fopen(filename.c_str(), "wb"), fclose);
+    const auto f = create_unique_with_deleter(std::fopen(filename.c_str(), "wb"), fclose);
     if (!f)
     {
         GMX_THROW(FileIOError("Failed to open binary cache file " + filename));
     }
 
-    fwrite(binary, 1, fileSize, f.get());
+    std::fwrite(binary, 1, fileSize, f.get());
 }
 
 } // namespace ocl

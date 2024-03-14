@@ -236,7 +236,7 @@ int gmx_helix(int argc, char* argv[])
         if ((teller++ % 10) == 0)
         {
             fprintf(stderr, "\rt=%.2f", t);
-            fflush(stderr);
+            std::fflush(stderr);
         }
         gmx_rmpbc_apply(gpbc, natoms, box, x);
 

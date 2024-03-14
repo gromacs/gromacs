@@ -209,7 +209,7 @@ BenchmarkSystem::BenchmarkSystem(const int multiplicationFactor, const std::stri
     calc_shifts(box, forceRec.shift_vec);
     if (!outputFile.empty())
     {
-        csv = fopen(outputFile.c_str(), "w+");
+        csv = std::fopen(outputFile.c_str(), "w+");
     }
 }
 

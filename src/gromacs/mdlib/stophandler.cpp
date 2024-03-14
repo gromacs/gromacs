@@ -109,13 +109,13 @@ StopSignal StopConditionSignal::getSignal(FILE* fplog)
                     "\n\nReceived the %s signal, stopping within %d steps\n\n",
                     gmx_get_signal_name(),
                     nsteps_stop);
-            fflush(fplog);
+            std::fflush(fplog);
         }
         fprintf(stderr,
                 "\n\nReceived the %s signal, stopping within %d steps\n\n",
                 gmx_get_signal_name(),
                 nsteps_stop);
-        fflush(stderr);
+        std::fflush(stderr);
         handledStopCondition_ = gmx_get_stop_condition();
     }
 

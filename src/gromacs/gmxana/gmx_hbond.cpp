@@ -1417,7 +1417,7 @@ static void merge_hb(HydrogenBondData* hb, gmx_bool bTwo, gmx_bool bContact)
     for (i = 0; (i < gmx::ssize(hb->d.don)); i++)
     {
         fprintf(stderr, "\r%d/%zu", i + 1, hb->d.don.size());
-        fflush(stderr);
+        std::fflush(stderr);
         id = hb->d.don[i];
         ii = hb->a.aptr[id];
         for (j = 0; (j < gmx::ssize(hb->a.acc)); j++)
@@ -1962,7 +1962,7 @@ static void do_hbac(const char*             fn,
 
     acType = AC_LUZAR;
     printf("according to the theory of Luzar and Chandler.\n");
-    fflush(stdout);
+    std::fflush(stdout);
     /* build hbexist matrix in reals for autocorr */
     /* Allocate memory for computing ACF (rhbex) and aggregating the ACF (ct) */
     n2 = 1;
@@ -1998,7 +1998,7 @@ static void do_hbac(const char*             fn,
         printf("ACF calculations parallelized with OpenMP using %i threads.\n"
                "Expect close to linear scaling over this donor-loop.\n",
                nThreads);
-        fflush(stdout);
+        std::fflush(stdout);
     }
 
 
@@ -2051,7 +2051,7 @@ static void do_hbac(const char*             fn,
                     if ((((nhbonds + 1) % 10) == 0) || (nhbonds + 1 == nrint))
                     {
                         fprintf(stderr, "\rACF %d/%d", nhbonds + 1, nrint);
-                        fflush(stderr);
+                        std::fflush(stderr);
                     }
                     nhbonds++;
                     for (j = 0; (j < nframes); j++)
@@ -2792,7 +2792,7 @@ int gmx_hbond(int argc, char* argv[])
 
         gmx_omp_set_num_threads(actual_nThreads);
         printf("Frame loop parallelized with OpenMP using %i threads.\n", actual_nThreads);
-        fflush(stdout);
+        std::fflush(stdout);
 
         p_hb.reserve(actual_nThreads);
         snew(p_adist, actual_nThreads);

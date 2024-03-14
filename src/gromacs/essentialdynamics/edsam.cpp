@@ -2703,7 +2703,7 @@ static void write_edo_legend(gmx_edsam* ed, int nED, const gmx_output_env_t* oen
             1 == n_edsam ? "" : "s");
     fprintf(ed->edo, "%s", LegendStr.c_str());
 
-    fflush(ed->edo);
+    std::fflush(ed->edo);
 }
 
 
@@ -3063,7 +3063,7 @@ std::unique_ptr<gmx::EssentialDynamics> init_edsam(const gmx::MDLogger&        m
      * when the simulation has started */
     if (ed->edo)
     {
-        fflush(ed->edo);
+        std::fflush(ed->edo);
     }
 
     return edHandle;

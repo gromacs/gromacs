@@ -476,7 +476,7 @@ void please_cite(FILE* fp, const char* key)
         fprintf(fp, "Entry %s not found in citation database\n", key);
     }
     fprintf(fp, "-------- -------- --- Thank You --- -------- --------\n\n");
-    fflush(fp);
+    std::fflush(fp);
 }
 
 namespace
@@ -506,7 +506,7 @@ void writeSourceDoi(FILE* fp)
     fprintf(fp, "\n++++ PLEASE CITE THE DOI FOR THIS VERSION OF GROMACS ++++\n");
     fprintf(fp, "%s%s\n", "https://doi.org/", doiString.c_str());
     fprintf(fp, "-------- -------- --- Thank You --- -------- --------\n\n");
-    fflush(fp);
+    std::fflush(fp);
 }
 
 } // namespace

@@ -271,7 +271,7 @@ int gmx_nmens(int argc, char* argv[])
         t = s + 1;
         write_trx(out, natoms, index, atoms, 0, t, box, xout2, nullptr, nullptr);
         fprintf(stderr, "\rGenerated %d structures", s + 1);
-        fflush(stderr);
+        std::fflush(stderr);
     }
     fprintf(stderr, "\n");
     close_trx(out);

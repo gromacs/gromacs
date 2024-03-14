@@ -96,7 +96,7 @@ static void __prints(char* str, int n, sortable* s)
             fprintf(debug, "%d\t%d\n", s[i].ai, s[i].aj);
         }
 
-        fflush(debug);
+        std::fflush(debug);
     }
 }
 #else

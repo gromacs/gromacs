@@ -626,7 +626,7 @@ int gmx_covar(int argc, char* argv[])
 
     std::memcpy(eigenvectors, mat, ndim * ndim * sizeof(real));
     fprintf(stderr, "\nDiagonalizing ...\n");
-    fflush(stderr);
+    std::fflush(stderr);
     eigensolver(eigenvectors, ndim, 0, ndim, eigenvalues, mat);
     sfree(eigenvectors);
 
