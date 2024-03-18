@@ -464,7 +464,7 @@ static float R2F_U(const float x)
 #endif
 
 //! Computes the bounding box for na coordinates in order x,y,z, bb order xyz0
-static void calc_bounding_box(int na, int stride, const real* x, BoundingBox* bb)
+static void calc_bounding_box(const int numAtoms, const int stride, const real* x, BoundingBox* bb)
 {
     int  i  = 0;
     real xl = x[i + XX];
@@ -474,7 +474,7 @@ static void calc_bounding_box(int na, int stride, const real* x, BoundingBox* bb
     real zl = x[i + ZZ];
     real zh = x[i + ZZ];
     i += stride;
-    for (int j = 1; j < na; j++)
+    for (int j = 1; j < numAtoms; j++)
     {
         xl = std::min(xl, x[i + XX]);
         xh = std::max(xh, x[i + XX]);
@@ -493,23 +493,29 @@ static void calc_bounding_box(int na, int stride, const real* x, BoundingBox* bb
     bb->upper.z = R2F_U(zh);
 }
 
-/*! \brief Computes the bounding box for na packed coordinates, bb order xyz0 */
-static void calc_bounding_box_x_x4(int na, const real* x, BoundingBox* bb)
+/*! \brief Computes the bounding box for packed coordinates
+ * \tparam     packSize  The pack size for the coordinates, also the number of atoms per cell
+ * \param[in]  numAtoms  The actual number of atoms in this cell
+ * \param[in]  x         Packed coodinates
+ * \param[out] bb        Pointer to the bounding box
+ */
+template<int packSize>
+static void calcBoundingBoxXPacked(const int numAtoms, const real* x, BoundingBox* bb)
 {
-    real xl = x[XX * c_packX4];
-    real xh = x[XX * c_packX4];
-    real yl = x[YY * c_packX4];
-    real yh = x[YY * c_packX4];
-    real zl = x[ZZ * c_packX4];
-    real zh = x[ZZ * c_packX4];
-    for (int j = 1; j < na; j++)
+    real xl = x[XX * packSize];
+    real xh = x[XX * packSize];
+    real yl = x[YY * packSize];
+    real yh = x[YY * packSize];
+    real zl = x[ZZ * packSize];
+    real zh = x[ZZ * packSize];
+    for (int j = 1; j < numAtoms; j++)
     {
-        xl = std::min(xl, x[j + XX * c_packX4]);
-        xh = std::max(xh, x[j + XX * c_packX4]);
-        yl = std::min(yl, x[j + YY * c_packX4]);
-        yh = std::max(yh, x[j + YY * c_packX4]);
-        zl = std::min(zl, x[j + ZZ * c_packX4]);
-        zh = std::max(zh, x[j + ZZ * c_packX4]);
+        xl = std::min(xl, x[j + XX * packSize]);
+        xh = std::max(xh, x[j + XX * packSize]);
+        yl = std::min(yl, x[j + YY * packSize]);
+        yh = std::max(yh, x[j + YY * packSize]);
+        zl = std::min(zl, x[j + ZZ * packSize]);
+        zh = std::max(zh, x[j + ZZ * packSize]);
     }
     /* Note: possible double to float conversion here */
     bb->lower.x = R2F_D(xl);
@@ -520,44 +526,28 @@ static void calc_bounding_box_x_x4(int na, const real* x, BoundingBox* bb)
     bb->upper.z = R2F_U(zh);
 }
 
-/*! \brief Computes the bounding box for na coordinates, bb order xyz0 */
-static void calc_bounding_box_x_x8(int na, const real* x, BoundingBox* bb)
-{
-    real xl = x[XX * c_packX8];
-    real xh = x[XX * c_packX8];
-    real yl = x[YY * c_packX8];
-    real yh = x[YY * c_packX8];
-    real zl = x[ZZ * c_packX8];
-    real zh = x[ZZ * c_packX8];
-    for (int j = 1; j < na; j++)
-    {
-        xl = std::min(xl, x[j + XX * c_packX8]);
-        xh = std::max(xh, x[j + XX * c_packX8]);
-        yl = std::min(yl, x[j + YY * c_packX8]);
-        yh = std::max(yh, x[j + YY * c_packX8]);
-        zl = std::min(zl, x[j + ZZ * c_packX8]);
-        zh = std::max(zh, x[j + ZZ * c_packX8]);
-    }
-    /* Note: possible double to float conversion here */
-    bb->lower.x = R2F_D(xl);
-    bb->lower.y = R2F_D(yl);
-    bb->lower.z = R2F_D(zl);
-    bb->upper.x = R2F_U(xh);
-    bb->upper.y = R2F_U(yh);
-    bb->upper.z = R2F_U(zh);
-}
-
-/*! \brief Computes the bounding box for na packed coordinates, bb order xyz0 */
-gmx_unused static void calc_bounding_box_x_x4_halves(int na, const real* x, BoundingBox* bb, BoundingBox* bbj)
+/*! \brief Computes the whole plus half bounding boxes for packed coordinates
+ *
+ * \tparam     packSize  The pack size for the coordinates, also the number of atoms per cell
+ * \param[in]  numAtoms  The actual number of atoms in this cell
+ * \param[in]  x         Packed coodinates
+ * \param[out] bb        Pointer to the bounding box for the whole cell
+ * \param[out] bbj       Pointer to the bounding boxes for the two halves of the cell
+ */
+template<int packSize>
+gmx_unused static void calcBoundingBoxHalves(const int numAtoms, const real* x, BoundingBox* bb, BoundingBox* bbj)
 {
     // TODO: During SIMDv2 transition only some archs use namespace (remove when done)
     using namespace gmx;
 
-    calc_bounding_box_x_x4(std::min(na, 2), x, bbj);
+    constexpr int halfPackSize = packSize / 2;
 
-    if (na > 2)
+    calcBoundingBoxXPacked<packSize>(std::min(numAtoms, halfPackSize), x, bbj);
+
+    if (numAtoms > halfPackSize)
     {
-        calc_bounding_box_x_x4(std::min(na - 2, 2), x + (c_packX4 >> 1), bbj + 1);
+        calcBoundingBoxXPacked<packSize>(
+                std::min(numAtoms - halfPackSize, halfPackSize), x + halfPackSize, bbj + 1);
     }
     else
     {
@@ -939,18 +929,19 @@ void Grid::fillCell(GridSetData*                   gridSetData,
         size_t       offset = atomToCluster(atomStart - cellOffset_ * geometry_.numAtomsICluster);
         BoundingBox* bb_ptr = bb_.data() + offset;
 
-#if GMX_SIMD && GMX_SIMD_REAL_WIDTH == 2
+#if GMX_SIMD
         if (2 * geometry_.numAtomsJCluster == geometry_.numAtomsICluster)
         {
-            calc_bounding_box_x_x4_halves(numAtoms,
-                                          nbat->x().data() + atom_to_x_index<c_packX4>(atomStart),
-                                          bb_ptr,
-                                          bbj_.data() + offset * 2);
+            calcBoundingBoxHalves<c_packX4>(numAtoms,
+                                            nbat->x().data() + atom_to_x_index<c_packX4>(atomStart),
+                                            bb_ptr,
+                                            bbj_.data() + offset * 2);
         }
         else
 #endif
         {
-            calc_bounding_box_x_x4(numAtoms, nbat->x().data() + atom_to_x_index<c_packX4>(atomStart), bb_ptr);
+            calcBoundingBoxXPacked<c_packX4>(
+                    numAtoms, nbat->x().data() + atom_to_x_index<c_packX4>(atomStart), bb_ptr);
         }
     }
     else if (nbat->XFormat == nbatX8)
@@ -959,7 +950,8 @@ void Grid::fillCell(GridSetData*                   gridSetData,
         size_t       offset = atomToCluster(atomStart - cellOffset_ * geometry_.numAtomsICluster);
         BoundingBox* bb_ptr = bb_.data() + offset;
 
-        calc_bounding_box_x_x8(numAtoms, nbat->x().data() + atom_to_x_index<c_packX8>(atomStart), bb_ptr);
+        calcBoundingBoxXPacked<c_packX8>(
+                numAtoms, nbat->x().data() + atom_to_x_index<c_packX8>(atomStart), bb_ptr);
     }
 #if NBNXN_BBXXXX
     else if (!geometry_.isSimple)
@@ -1407,7 +1399,7 @@ void Grid::setCellIndices(int                            ddZone,
             cxy_na_i += gridWork[thread].numAtomsPerColumn[i];
         }
         ncz = (cxy_na_i + numAtomsPerCell - 1) / numAtomsPerCell;
-        if (nbat->XFormat == nbatX8)
+        if (geometry_.numAtomsJCluster == 2 * numAtomsPerCell)
         {
             /* Make the number of cell a multiple of 2 */
             ncz = (ncz + 1) & ~1;
@@ -1504,7 +1496,7 @@ void Grid::setCellIndices(int                            ddZone,
         GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR
     }
 
-    if (geometry_.isSimple && nbat->XFormat == nbatX8)
+    if (geometry_.isSimple && geometry_.numAtomsJCluster == 2 * numAtomsPerCell)
     {
         combine_bounding_box_pairs(*this, bb_, bbj_);
     }
