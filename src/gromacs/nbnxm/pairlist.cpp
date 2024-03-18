@@ -67,12 +67,15 @@
 #include "gromacs/utility/listoflists.h"
 #include "gromacs/utility/smalloc.h"
 
+#include "boundingboxdistance.h"
 #include "boundingboxes.h"
 #include "clusterdistancekerneltype.h"
 #include "exclusionchecker.h"
 #include "gridset.h"
 #include "nbnxm_geometry.h"
 #include "nbnxm_simd.h"
+#include "pairlist_imask.h"
+#include "pairlist_simd_kernel.h"
 #include "pairlistset.h"
 #include "pairlistsets.h"
 #include "pairlistwork.h"
@@ -105,98 +108,6 @@ constexpr bool c_useSimdGpuClusterPairDistance = false;
  * We do this to get more balanced pair lists.
  */
 constexpr bool c_pbcShiftBackward = true;
-
-/*! \brief Returns the j-cluster index given the i-cluster index.
- *
- * \tparam    kernelType        The kernel type
- * \tparam    jSubClusterIndex  The j-sub-cluster index (0/1), used when size(j-cluster) <
- *                              size(i-cluster)
- * \param[in] ci                The i-cluster index
- */
-template<KernelType kernelType, int jSubClusterIndex>
-gmx_unused static inline int cjFromCi(int ci)
-{
-    constexpr int c_iClusterSize = sc_iClusterSize(kernelType);
-    constexpr int c_jClusterSize = sc_jClusterSize(kernelType);
-
-    static_assert(c_jClusterSize == c_iClusterSize / 2 || c_jClusterSize == c_iClusterSize
-                          || c_jClusterSize == c_iClusterSize * 2,
-                  "Only j-cluster sizes 2, 4 and 8 are currently implemented");
-
-    static_assert(jSubClusterIndex == 0 || jSubClusterIndex == 1,
-                  "Only sub-cluster indices 0 and 1 are supported");
-
-    if constexpr (c_jClusterSize == c_iClusterSize / 2)
-    {
-        if (jSubClusterIndex == 0)
-        {
-            return ci << 1;
-        }
-        else
-        {
-            return ((ci + 1) << 1) - 1;
-        }
-    }
-    else if constexpr (c_jClusterSize == c_iClusterSize)
-    {
-        return ci;
-    }
-    else
-    {
-        return ci >> 1;
-    }
-}
-
-/* Returns the nbnxn coordinate data index given the i-cluster index */
-template<KernelType kernelType>
-gmx_unused static inline int xIndexFromCi(int ci)
-{
-    constexpr int c_iClusterSize = sc_iClusterSize(kernelType);
-    constexpr int c_jClusterSize = sc_jClusterSize(kernelType);
-
-    static_assert(c_jClusterSize == c_iClusterSize / 2 || c_jClusterSize == c_iClusterSize
-                          || c_jClusterSize == c_iClusterSize * 2,
-                  "Only j-cluster sizes 2, 4 and 8 are currently implemented");
-
-    if constexpr (c_jClusterSize <= c_iClusterSize)
-    {
-        /* Coordinates are stored packed in groups of 4 */
-        return ci * STRIDE_P4;
-    }
-    else
-    {
-        /* Coordinates packed in 8, i-cluster size is half the packing width */
-        return (ci >> 1) * STRIDE_P8 + (ci & 1) * (c_packX8 >> 1);
-    }
-}
-
-/* Returns the nbnxn coordinate data index given the j-cluster index */
-template<KernelType kernelType>
-gmx_unused static inline int xIndexFromCj(int cj)
-{
-    constexpr int c_iClusterSize = sc_iClusterSize(kernelType);
-    constexpr int c_jClusterSize = sc_jClusterSize(kernelType);
-
-    static_assert(c_jClusterSize == c_iClusterSize / 2 || c_jClusterSize == c_iClusterSize
-                          || c_jClusterSize == c_iClusterSize * 2,
-                  "Only j-cluster sizes 2, 4 and 8 are currently implemented");
-
-    if constexpr (c_jClusterSize == c_iClusterSize / 2)
-    {
-        /* Coordinates are stored packed in groups of 4 */
-        return (cj >> 1) * STRIDE_P4 + (cj & 1) * (c_packX4 >> 1);
-    }
-    else if constexpr (c_jClusterSize == c_iClusterSize)
-    {
-        /* Coordinates are stored packed in groups of 4 */
-        return cj * STRIDE_P4;
-    }
-    else
-    {
-        /* Coordinates are stored packed in groups of 8 */
-        return cj * STRIDE_P8;
-    }
-}
 
 static constexpr int sizeNeededForBufferFlags(const int numAtoms)
 {
@@ -265,172 +176,6 @@ get_cell_range(real b0, real b1, const Grid::Dimensions& jGridDims, real d2, rea
         (*cl)++;
     }
 }
-
-/* Reference code calculating the distance^2 between two bounding boxes */
-/*
-   static float box_dist2(float bx0, float bx1, float by0,
-                       float by1, float bz0, float bz1,
-                       const BoundingBox *bb)
-   {
-    float d2;
-    float dl, dh, dm, dm0;
-
-    d2 = 0;
-
-    dl  = bx0 - bb->upper.x;
-    dh  = bb->lower.x - bx1;
-    dm  = std::max(dl, dh);
-    dm0 = std::max(dm, 0.0f);
-    d2 += dm0*dm0;
-
-    dl  = by0 - bb->upper.y;
-    dh  = bb->lower.y - by1;
-    dm  = std::max(dl, dh);
-    dm0 = std::max(dm, 0.0f);
-    d2 += dm0*dm0;
-
-    dl  = bz0 - bb->upper.z;
-    dh  = bb->lower.z - bz1;
-    dm  = std::max(dl, dh);
-    dm0 = std::max(dm, 0.0f);
-    d2 += dm0*dm0;
-
-    return d2;
-   }
- */
-
-#if !NBNXN_SEARCH_BB_SIMD4
-
-/*! \brief Plain C code calculating the distance^2 between two bounding boxes in xyz0 format
- *
- * \param[in] bb_i  First bounding box
- * \param[in] bb_j  Second bounding box
- */
-static float clusterBoundingBoxDistance2(const BoundingBox& bb_i, const BoundingBox& bb_j)
-{
-    float dl  = bb_i.lower.x - bb_j.upper.x;
-    float dh  = bb_j.lower.x - bb_i.upper.x;
-    float dm  = std::max(dl, dh);
-    float dm0 = std::max(dm, 0.0F);
-    float d2  = dm0 * dm0;
-
-    dl  = bb_i.lower.y - bb_j.upper.y;
-    dh  = bb_j.lower.y - bb_i.upper.y;
-    dm  = std::max(dl, dh);
-    dm0 = std::max(dm, 0.0F);
-    d2 += dm0 * dm0;
-
-    dl  = bb_i.lower.z - bb_j.upper.z;
-    dh  = bb_j.lower.z - bb_i.upper.z;
-    dm  = std::max(dl, dh);
-    dm0 = std::max(dm, 0.0F);
-    d2 += dm0 * dm0;
-
-    return d2;
-}
-
-#else /* NBNXN_SEARCH_BB_SIMD4 */
-
-/*! \brief 4-wide SIMD code calculating the distance^2 between two bounding boxes in xyz0 format
- *
- * \param[in] bb_i  First bounding box, should be aligned for 4-wide SIMD
- * \param[in] bb_j  Second bounding box, should be aligned for 4-wide SIMD
- */
-static float clusterBoundingBoxDistance2(const BoundingBox& bb_i, const BoundingBox& bb_j)
-{
-    // TODO: During SIMDv2 transition only some archs use namespace (remove when done)
-    using namespace gmx;
-
-    const Simd4Float bb_i_S0 = load4(bb_i.lower.ptr());
-    const Simd4Float bb_i_S1 = load4(bb_i.upper.ptr());
-    const Simd4Float bb_j_S0 = load4(bb_j.lower.ptr());
-    const Simd4Float bb_j_S1 = load4(bb_j.upper.ptr());
-
-    const Simd4Float dl_S = bb_i_S0 - bb_j_S1;
-    const Simd4Float dh_S = bb_j_S0 - bb_i_S1;
-
-    const Simd4Float dm_S  = max(dl_S, dh_S);
-    const Simd4Float dm0_S = max(dm_S, simd4SetZeroF());
-
-    return dotProduct(dm0_S, dm0_S);
-}
-
-/* Calculate bb bounding distances of bb_i[si,...,si+3] and store them in d2 */
-template<int boundingBoxStart>
-static inline void gmx_simdcall clusterBoundingBoxDistance2_xxxx_simd4_inner(const float*     bb_i,
-                                                                             float*           d2,
-                                                                             const Simd4Float xj_l,
-                                                                             const Simd4Float yj_l,
-                                                                             const Simd4Float zj_l,
-                                                                             const Simd4Float xj_h,
-                                                                             const Simd4Float yj_h,
-                                                                             const Simd4Float zj_h)
-{
-    constexpr int stride = c_packedBoundingBoxesDimSize;
-
-    const int shi = boundingBoxStart * Nbnxm::c_numBoundingBoxBounds1D * DIM;
-
-    const Simd4Float zero = setZero();
-
-    const Simd4Float xi_l = load4(bb_i + shi + 0 * stride);
-    const Simd4Float yi_l = load4(bb_i + shi + 1 * stride);
-    const Simd4Float zi_l = load4(bb_i + shi + 2 * stride);
-    const Simd4Float xi_h = load4(bb_i + shi + 3 * stride);
-    const Simd4Float yi_h = load4(bb_i + shi + 4 * stride);
-    const Simd4Float zi_h = load4(bb_i + shi + 5 * stride);
-
-    const Simd4Float dx_0 = xi_l - xj_h;
-    const Simd4Float dy_0 = yi_l - yj_h;
-    const Simd4Float dz_0 = zi_l - zj_h;
-
-    const Simd4Float dx_1 = xj_l - xi_h;
-    const Simd4Float dy_1 = yj_l - yi_h;
-    const Simd4Float dz_1 = zj_l - zi_h;
-
-    const Simd4Float mx = max(dx_0, dx_1);
-    const Simd4Float my = max(dy_0, dy_1);
-    const Simd4Float mz = max(dz_0, dz_1);
-
-    const Simd4Float m0x = max(mx, zero);
-    const Simd4Float m0y = max(my, zero);
-    const Simd4Float m0z = max(mz, zero);
-
-    const Simd4Float d2x = m0x * m0x;
-    const Simd4Float d2y = m0y * m0y;
-    const Simd4Float d2z = m0z * m0z;
-
-    const Simd4Float d2s = d2x + d2y;
-    const Simd4Float d2t = d2s + d2z;
-
-    store4(d2 + boundingBoxStart, d2t);
-}
-
-/* 4-wide SIMD code for nsi bb distances for bb format xxxxyyyyzzzz */
-static void clusterBoundingBoxDistance2_xxxx_simd4(const float* bb_j, const int nsi, const float* bb_i, float* d2)
-{
-    constexpr int stride = c_packedBoundingBoxesDimSize;
-
-    // TODO: During SIMDv2 transition only some archs use namespace (remove when done)
-    using namespace gmx;
-
-    const Simd4Float xj_l = Simd4Float(bb_j[0 * stride]);
-    const Simd4Float yj_l = Simd4Float(bb_j[1 * stride]);
-    const Simd4Float zj_l = Simd4Float(bb_j[2 * stride]);
-    const Simd4Float xj_h = Simd4Float(bb_j[3 * stride]);
-    const Simd4Float yj_h = Simd4Float(bb_j[4 * stride]);
-    const Simd4Float zj_h = Simd4Float(bb_j[5 * stride]);
-
-    /* Here we "loop" over si (0,stride) from 0 to nsi with step stride.
-     * But as we know the number of iterations is 1 or 2, we unroll manually.
-     */
-    clusterBoundingBoxDistance2_xxxx_simd4_inner<0>(bb_i, d2, xj_l, yj_l, zj_l, xj_h, yj_h, zj_h);
-    if (stride < nsi)
-    {
-        clusterBoundingBoxDistance2_xxxx_simd4_inner<stride>(bb_i, d2, xj_l, yj_l, zj_l, xj_h, yj_h, zj_h);
-    }
-}
-
-#endif /* NBNXN_SEARCH_BB_SIMD4 */
 
 #if GMX_SIMD
 // clang-format off
@@ -915,107 +660,6 @@ static void setSelfAndNewtonExclusionsGpu(NbnxnPairlistGpu* nbl,
     }
 }
 
-/*! \brief Returns a diagonal interaction mask with atoms j<i masked out
- *
- * \tparam T             Integer type, should have at least iClusterSize*jClusterSize bits
- * \tparam iClusterSize  The i-cluster size
- * \tparam jClusterSize  The j-cluster size
- *
- * Condition: jClusterSize <= iClusterSize
- */
-template<typename T, int iClusterSize, int jClusterSize>
-constexpr std::array<T, iClusterSize / jClusterSize> diagonalMaskJSmallerI()
-{
-    static_assert(jClusterSize <= iClusterSize);
-    static_assert(iClusterSize * jClusterSize <= sizeof(T) * 8);
-
-    // Call the constructor to initialize the array to zero
-    // to permit the function to be declared constexpr.
-    std::array<T, iClusterSize / jClusterSize> mask{};
-
-    for (int maskIndex = 0; maskIndex < iClusterSize / jClusterSize; maskIndex++)
-    {
-        for (int i = 0; i < iClusterSize; i++)
-        {
-            for (int j = std::max(i + 1 - maskIndex * jClusterSize, 0); j < jClusterSize; j++)
-            {
-                mask[maskIndex] |= (T(1) << (i * jClusterSize + j));
-            }
-        }
-    }
-
-    return mask;
-}
-
-/*! \brief Returns a diagonal interaction mask with atoms j>i masked out
- *
- * \tparam T             Integer type, should have at least iClusterSize*jClusterSize bits
- * \tparam iClusterSize  The i-cluster size
- * \tparam jClusterSize  The j-cluster size
- *
- * Condition: jClusterSize >= iClusterSize
- */
-template<typename T, int iClusterSize, int jClusterSize>
-constexpr std::array<T, jClusterSize / iClusterSize> diagonalMaskJLargerI()
-{
-    static_assert(jClusterSize >= iClusterSize);
-    static_assert(iClusterSize * jClusterSize <= sizeof(T) * 8);
-
-    // Call the constructor to initialize the array to zero
-    // to permit the function to be declared constexpr.
-    std::array<T, jClusterSize / iClusterSize> mask{};
-
-    for (int maskIndex = 0; maskIndex < jClusterSize / iClusterSize; maskIndex++)
-    {
-        for (int i = 0; i < iClusterSize; i++)
-        {
-            for (int j = maskIndex * iClusterSize + i + 1; j < jClusterSize; j++)
-            {
-                mask[maskIndex] |= (T(1) << (i * jClusterSize + j));
-            }
-        }
-    }
-
-    return mask;
-}
-
-/*! \brief Returns a diagonal or off-diagonal interaction mask
- *
- * \tparam iClusterSize  The i-cluster size
- * \tparam jClusterSize  The j-cluster size
- * \param[in] maskOutSubDiagonal  Whether to mask out the sub-diagonal interactions
- * \param[in] ci                  The i-cluster index
- * \param[in] cj                  The j-cluster index
- */
-template<int iClusterSize, int jClusterSize>
-static uint32_t getImask(const bool maskOutSubDiagonal, const int ci, const int cj)
-{
-    if constexpr (jClusterSize >= iClusterSize)
-    {
-        // static, so the diagonal mask is only created once
-        static constexpr auto sc_diagonalMask =
-                diagonalMaskJLargerI<uint32_t, iClusterSize, jClusterSize>();
-
-        constexpr int ratio = jClusterSize / iClusterSize;
-        const int     diff  = ci - cj * ratio;
-
-        return (maskOutSubDiagonal && diff >= 0 && diff < ratio ? sc_diagonalMask[diff]
-                                                                : NBNXN_INTERACTION_MASK_ALL);
-    }
-    else
-    {
-        // static, so the diagonal mask is only created once
-        static constexpr auto sc_diagonalMask =
-                diagonalMaskJSmallerI<uint32_t, iClusterSize, jClusterSize>();
-
-        constexpr int ratio = iClusterSize / jClusterSize;
-        const int     diff  = cj - ci * ratio;
-
-        return (maskOutSubDiagonal && diff >= 0 && diff < ratio ? sc_diagonalMask[diff]
-                                                                : NBNXN_INTERACTION_MASK_ALL);
-    }
-}
-
 /* Plain C code for checking and adding cluster-pairs to the list.
  *
  * \param[in]     gridj               The j-grid
@@ -1138,22 +782,15 @@ static void makeClusterListSimple(const Grid&              jGrid,
         {
             /* Store cj and the interaction mask */
             nbnxn_cj_t cjEntry;
-            cjEntry.cj = jGrid.cellOffset() + jcluster;
-            cjEntry.excl =
-                    getImask<c_iClusterSize, c_jClusterSize>(excludeSubDiagonal, icluster, jcluster);
+            cjEntry.cj   = jGrid.cellOffset() + jcluster;
+            cjEntry.excl = Nbnxm::getImask<c_iClusterSize, c_jClusterSize>(
+                    excludeSubDiagonal, icluster, jcluster);
             nbl->cj.list_.push_back(cjEntry);
         }
         /* Increase the closing index in the i list */
         nbl->ci.back().cj_ind_end = nbl->cj.size();
     }
 }
-
-#if GMX_HAVE_NBNXM_SIMD_4XM
-#    include "pairlist_simd_4xm.h"
-#endif
-#if GMX_HAVE_NBNXM_SIMD_2XMM
-#    include "pairlist_simd_2xmm.h"
-#endif
 
 /* Plain C or SIMD4 code for making a pair list of super-cell sci vs scj.
  * Checks bounding box distances and possibly atom pair distances.
@@ -1209,7 +846,7 @@ static void make_cluster_list_supersub(const Grid&       iGrid,
 #if NBNXN_BBXXXX
         /* Determine all ci1 bb distances in one call with SIMD4 */
         const int offset = packedBoundingBoxesIndex(cj) + (cj & (c_packedBoundingBoxesDimSize - 1));
-        clusterBoundingBoxDistance2_xxxx_simd4(
+        Nbnxm::clusterBoundingBoxDistance2_xxxx_simd4(
                 jGrid.packedBoundingBoxes().data() + offset, ci1, pbb_ci, d2l);
         *numDistanceChecks += c_nbnxnGpuClusterSize * 2;
 #endif
@@ -1226,7 +863,7 @@ static void make_cluster_list_supersub(const Grid&       iGrid,
 
 #if !NBNXN_BBXXXX
             /* Determine the bb distance between ci and cj */
-            d2l[ci] = clusterBoundingBoxDistance2(bb_ci[ci], jGrid.jBoundingBoxes()[cj]);
+            d2l[ci] = Nbnxm::clusterBoundingBoxDistance2(bb_ci[ci], jGrid.jBoundingBoxes()[cj]);
             *numDistanceChecks += 2;
 #endif
             float d2 = d2l[ci];
@@ -2364,26 +2001,28 @@ static void clear_pairlist_fep(t_nblist* nl)
 }
 
 /* Sets a simple list i-cell bounding box, including PBC shift */
-static inline void
-set_icell_bb_simple(gmx::ArrayRef<const BoundingBox> bb, int ci, real shx, real shy, real shz, BoundingBox* bb_ci)
+static inline void set_icell_bb_simple(gmx::ArrayRef<const BoundingBox> bb,
+                                       int                              ci,
+                                       const RVec&                      shift,
+                                       BoundingBox*                     bb_ci)
 {
-    bb_ci->lower.x = bb[ci].lower.x + shx;
-    bb_ci->lower.y = bb[ci].lower.y + shy;
-    bb_ci->lower.z = bb[ci].lower.z + shz;
-    bb_ci->upper.x = bb[ci].upper.x + shx;
-    bb_ci->upper.y = bb[ci].upper.y + shy;
-    bb_ci->upper.z = bb[ci].upper.z + shz;
+    bb_ci->lower.x = bb[ci].lower.x + shift[XX];
+    bb_ci->lower.y = bb[ci].lower.y + shift[YY];
+    bb_ci->lower.z = bb[ci].lower.z + shift[ZZ];
+    bb_ci->upper.x = bb[ci].upper.x + shift[XX];
+    bb_ci->upper.y = bb[ci].upper.y + shift[YY];
+    bb_ci->upper.z = bb[ci].upper.z + shift[ZZ];
 }
 
 /* Sets a simple list i-cell bounding box, including PBC shift */
-static inline void set_icell_bb(const Grid& iGrid, int ci, real shx, real shy, real shz, NbnxnPairlistCpuWork* work)
+static inline void set_icell_bb(const Grid& iGrid, int ci, const RVec& shift, NbnxnPairlistCpuWork* work)
 {
-    set_icell_bb_simple(iGrid.iBoundingBoxes(), ci, shx, shy, shz, &work->iClusterData.bb[0]);
+    set_icell_bb_simple(iGrid.iBoundingBoxes(), ci, shift, &work->iClusterData.bb[0]);
 }
 
 #if NBNXN_BBXXXX
 /* Sets a super-cell and sub cell bounding boxes, including PBC shift */
-static void set_icell_bbxxxx_supersub(gmx::ArrayRef<const float> bb, int ci, real shx, real shy, real shz, float* bb_ci)
+static void set_icell_bbxxxx_supersub(gmx::ArrayRef<const float> bb, int ci, const RVec& shift, float* bb_ci)
 {
     constexpr int cellBBStride = packedBoundingBoxesIndex(c_gpuNumClusterPerCell);
     constexpr int pbbStride    = c_packedBoundingBoxesDimSize;
@@ -2392,12 +2031,14 @@ static void set_icell_bbxxxx_supersub(gmx::ArrayRef<const float> bb, int ci, rea
     {
         for (int i = 0; i < pbbStride; i++)
         {
-            bb_ci[m + 0 * pbbStride + i] = bb[ia + m + 0 * pbbStride + i] + shx;
-            bb_ci[m + 1 * pbbStride + i] = bb[ia + m + 1 * pbbStride + i] + shy;
-            bb_ci[m + 2 * pbbStride + i] = bb[ia + m + 2 * pbbStride + i] + shz;
-            bb_ci[m + 3 * pbbStride + i] = bb[ia + m + 3 * pbbStride + i] + shx;
-            bb_ci[m + 4 * pbbStride + i] = bb[ia + m + 4 * pbbStride + i] + shy;
-            bb_ci[m + 5 * pbbStride + i] = bb[ia + m + 5 * pbbStride + i] + shz;
+            for (int d = 0; d < DIM; d++)
+            {
+                bb_ci[m + d * pbbStride + i] = bb[ia + m + d * pbbStride + i] + shift[d];
+            }
+            for (int d = 0; d < DIM; d++)
+            {
+                bb_ci[m + (DIM + d) * pbbStride + i] = bb[ia + m + (DIM + d) * pbbStride + i] + shift[d];
+            }
         }
     }
 }
@@ -2406,33 +2047,29 @@ static void set_icell_bbxxxx_supersub(gmx::ArrayRef<const float> bb, int ci, rea
 /* Sets a super-cell and sub cell bounding boxes, including PBC shift */
 gmx_unused static void set_icell_bb_supersub(gmx::ArrayRef<const BoundingBox> bb,
                                              int                              ci,
-                                             real                             shx,
-                                             real                             shy,
-                                             real                             shz,
+                                             const RVec&                      shift,
                                              BoundingBox*                     bb_ci)
 {
     for (int i = 0; i < c_gpuNumClusterPerCell; i++)
     {
-        set_icell_bb_simple(bb, ci * c_gpuNumClusterPerCell + i, shx, shy, shz, &bb_ci[i]);
+        set_icell_bb_simple(bb, ci * c_gpuNumClusterPerCell + i, shift, &bb_ci[i]);
     }
 }
 
 /* Sets a super-cell and sub cell bounding boxes, including PBC shift */
-gmx_unused static void set_icell_bb(const Grid& iGrid, int ci, real shx, real shy, real shz, NbnxnPairlistGpuWork* work)
+gmx_unused static void set_icell_bb(const Grid& iGrid, int ci, const RVec& shift, NbnxnPairlistGpuWork* work)
 {
 #if NBNXN_BBXXXX
     set_icell_bbxxxx_supersub(
-            iGrid.packedBoundingBoxes(), ci, shx, shy, shz, work->iSuperClusterData.bbPacked.data());
+            iGrid.packedBoundingBoxes(), ci, shift, work->iSuperClusterData.bbPacked.data());
 #else
-    set_icell_bb_supersub(iGrid.iBoundingBoxes(), ci, shx, shy, shz, work->iSuperClusterData.bb.data());
+    set_icell_bb_supersub(iGrid.iBoundingBoxes(), ci, shift, work->iSuperClusterData.bb.data());
 #endif
 }
 
 /* Copies PBC shifted i-cell atom coordinates x,y,z to working array */
 static void icell_set_x_simple(int                                 ci,
-                               real                                shx,
-                               real                                shy,
-                               real                                shz,
+                               const RVec&                         shift,
                                int                                 stride,
                                const real*                         x,
                                NbnxnPairlistCpuWork::IClusterData* iClusterData)
@@ -2443,16 +2080,15 @@ static void icell_set_x_simple(int                                 ci,
 
     for (int i = 0; i < c_iClusterSize; i++)
     {
-        iClusterData->x[i * STRIDE_XYZ + XX] = x[(ia + i) * stride + XX] + shx;
-        iClusterData->x[i * STRIDE_XYZ + YY] = x[(ia + i) * stride + YY] + shy;
-        iClusterData->x[i * STRIDE_XYZ + ZZ] = x[(ia + i) * stride + ZZ] + shz;
+        for (int d = 0; d < DIM; d++)
+        {
+            iClusterData->x[i * STRIDE_XYZ + d] = x[(ia + i) * stride + d] + shift[d];
+        }
     }
 }
 
 static void icell_set_x(int                             ci,
-                        real                            shx,
-                        real                            shy,
-                        real                            shz,
+                        const RVec&                     shift,
                         int                             stride,
                         const real*                     x,
                         const ClusterDistanceKernelType kernelType,
@@ -2462,16 +2098,16 @@ static void icell_set_x(int                             ci,
     {
 #if GMX_HAVE_NBNXM_SIMD_4XM
         case ClusterDistanceKernelType::CpuSimd_4xM:
-            icell_set_x_simd_4xn(ci, shx, shy, shz, stride, x, work);
+            Nbnxm::setICellCoordinatesSimd4xM(ci, shift, stride, x, work);
             break;
 #endif
 #if GMX_HAVE_NBNXM_SIMD_2XMM
         case ClusterDistanceKernelType::CpuSimd_2xMM:
-            icell_set_x_simd_2xnn(ci, shx, shy, shz, stride, x, work);
+            Nbnxm::setICellCoordinatesSimd2xMM(ci, shift, stride, x, work);
             break;
 #endif
         case ClusterDistanceKernelType::CpuPlainC:
-            icell_set_x_simple(ci, shx, shy, shz, stride, x, &work->iClusterData);
+            icell_set_x_simple(ci, shift, stride, x, &work->iClusterData);
             break;
         default: GMX_ASSERT(false, "Unhandled case"); break;
     }
@@ -2479,9 +2115,7 @@ static void icell_set_x(int                             ci,
 
 /* Copies PBC shifted super-cell atom coordinates x,y,z to working array */
 static void icell_set_x(int                                  ci,
-                        real                                 shx,
-                        real                                 shy,
-                        real                                 shz,
+                        const RVec&                          shift,
                         int                                  stride,
                         const real*                          x,
                         ClusterDistanceKernelType gmx_unused kernelType,
@@ -2494,9 +2128,10 @@ static void icell_set_x(int                                  ci,
         int ia = ci * c_gpuNumClusterPerCell * c_nbnxnGpuClusterSize;
         for (int i = 0; i < c_gpuNumClusterPerCell * c_nbnxnGpuClusterSize; i++)
         {
-            x_ci[i * DIM + XX] = x[(ia + i) * stride + XX] + shx;
-            x_ci[i * DIM + YY] = x[(ia + i) * stride + YY] + shy;
-            x_ci[i * DIM + ZZ] = x[(ia + i) * stride + ZZ] + shz;
+            for (int d = 0; d < DIM; d++)
+            {
+                x_ci[i * DIM + d] = x[(ia + i) * stride + d] + shift[d];
+            }
         }
     }
     else
@@ -2511,12 +2146,11 @@ static void icell_set_x(int                                  ci,
             const int outputOffset = si * c_nbnxnGpuClusterSize * DIM;
             for (int i = 0; i < c_nbnxnGpuClusterSize; i++)
             {
-                x_ci[outputOffset + XX * c_nbnxnGpuClusterSize + i] =
-                        x[inputOffset + i * stride + XX] + shx;
-                x_ci[outputOffset + YY * c_nbnxnGpuClusterSize + i] =
-                        x[inputOffset + i * stride + YY] + shy;
-                x_ci[outputOffset + ZZ * c_nbnxnGpuClusterSize + i] =
-                        x[inputOffset + i * stride + ZZ] + shz;
+                for (int d = 0; d < DIM; d++)
+                {
+                    x_ci[outputOffset + d * c_nbnxnGpuClusterSize + i] =
+                            x[inputOffset + i * stride + d] + shift[d];
+                }
             }
         }
     }
@@ -3092,13 +2726,13 @@ static void makeClusterListWrapper(NbnxnPairlistCpu* nbl,
             break;
 #if GMX_HAVE_NBNXM_SIMD_4XM
         case ClusterDistanceKernelType::CpuSimd_4xM:
-            makeClusterListSimd4xn(
+            Nbnxm::makeClusterListSimd4xM(
                     jGrid, nbl, ci, firstCell, lastCell, excludeSubDiagonal, nbat->x().data(), rlist2, rbb2, numDistanceChecks);
             break;
 #endif
 #if GMX_HAVE_NBNXM_SIMD_2XMM
         case ClusterDistanceKernelType::CpuSimd_2xMM:
-            makeClusterListSimd2xnn(
+            Nbnxm::makeClusterListSimd2xMM(
                     jGrid, nbl, ci, firstCell, lastCell, excludeSubDiagonal, nbat->x().data(), rlist2, rbb2, numDistanceChecks);
             break;
 #endif
@@ -3474,12 +3108,10 @@ static void nbnxn_make_pairlist_part(const Nbnxm::GridSet&   gridSet,
                         cxf = ci_x;
                     }
 
-                    set_icell_bb(iGrid, ci, shx, shy, shz, nbl->work.get());
+                    set_icell_bb(iGrid, ci, { shx, shy, shz }, nbl->work.get());
 
                     icell_set_x(cell0_i + ci,
-                                shx,
-                                shy,
-                                shz,
+                                { shx, shy, shz },
                                 nbat->xstride,
                                 nbat->x().data(),
                                 kernelType,

@@ -45,6 +45,7 @@
 #ifndef GMX_NBNXM_BOUNDINGBOXES_H
 #define GMX_NBNXM_BOUNDINGBOXES_H
 
+#include "gromacs/math/vec.h"
 #include "gromacs/simd/simd.h"
 
 namespace Nbnxm
