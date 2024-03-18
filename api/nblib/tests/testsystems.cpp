@@ -49,7 +49,7 @@ namespace nblib
 {
 
 //! User class to hold ParticleTypes
-//! Note: this is not part of NBLIB, users should write their own
+//! Note: this is not part of NB-LIB, users should write their own
 class ParticleLibrary
 {
 public:

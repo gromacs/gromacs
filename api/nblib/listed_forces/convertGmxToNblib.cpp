@@ -38,7 +38,7 @@
  * the listed forces parameters for NBLIB
  *
  * To be used to read system topology from TPR files
- * and construct NBLIB objects from it
+ * and construct NB-LIB objects from it
  *
  * \author Victor Holanda <victor.holanda@cscs.ch>
  * \author Joe Jordan <ejjordan@kth.se>

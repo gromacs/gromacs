@@ -35,7 +35,7 @@
  * \brief
  * This implements a fixture for calling calc_listed in gromacs
  * with nblib interaction data. The functionality implemented
- * in this file duplicates the corresponding NBLIB version and
+ * in this file duplicates the corresponding NB-LIB version and
  * exists for reference and testing purposes.
  *
  * \author Victor Holanda <victor.holanda@cscs.ch>

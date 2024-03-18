@@ -34,7 +34,7 @@
 /*! \internal \file
  * \brief
  * This implements common definitions used in both
- * GMX->NBLIB and NBLIB->GMX listed conversion utilities
+ * GMX->NB-LIB and NB-LIB->GMX listed conversion utilities
  *
  * \author Victor Holanda <victor.holanda@cscs.ch>
  * \author Joe Jordan <ejjordan@kth.se>
@@ -57,7 +57,7 @@ struct gmx_ffparams_t;
 
 namespace nblib
 {
-/*! \brief Interactions not supported by NBLIB but there in GROMACS
+/*! \brief Interactions not supported by NB-LIB but there in GROMACS
  *
  * Dummy no op interaction as placeholder
  * V(r, forceConstant, equilConstant) = 0;
@@ -66,7 +66,7 @@ class NotInNblibButInGMX
 {
 };
 
-/*! \brief Interactions not supported by both NBLIB and GROMACS
+/*! \brief Interactions not supported by both NB-LIB and GROMACS
  *
  * Dummy no op interaction as placeholder
  * V(r, forceConstant, equilConstant) = 0;
@@ -183,9 +183,9 @@ struct ListedTypeIsImplemented : std::bool_constant<Contains<InteractionType, Gm
 
 /*! \brief Function to convert from nblib-ListedInteractionData to gmx-InteractionDefinitions
  *
- * Supports all types implemented in NBLIB that are supported by GROMACS
+ * Supports all types implemented in NB-LIB that are supported by GROMACS
  *
- * \param  NBLIB ListedInteractionData
+ * \param  interactions NB-LIB ListedInteractionData
  * \return interactionDefinitions and gmx_ffparams_t objects as used in GROMACS
  */
 std::tuple<std::unique_ptr<InteractionDefinitions>, std::unique_ptr<gmx_ffparams_t>>
@@ -193,11 +193,11 @@ convertToGmxInteractions(const ListedInteractionData& interactions);
 
 /*! \brief Function to convert from gmx-InteractionDefinitions to nblib-ListedInteractionData
  *
- * Supports only those types that are supported by both NBLIB and GROMACS. Primary usecase
+ * Supports only those types that are supported by both NB-LIB and GROMACS. Primary usecase
  * to read data from TPR files using the GROMACS machinery
  *
  * \param   interactionDefinitions object as used in GROMACS
- * \return  NBLIB ListedInteractionData
+ * \return  NB-LIB ListedInteractionData
  */
 ListedInteractionData convertToNblibInteractions(const InteractionDefinitions& interactionDefinitions);
 

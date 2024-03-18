@@ -72,14 +72,14 @@ Assuming that the only other two center interaction is called ``DefaultBond``, t
 
 .. _kernels.hpp:
 
-Adding ``NewBondType`` to this macro ensures that the NBLIB ``molecule``
+Adding ``NewBondType`` to this macro ensures that the NB-LIB ``molecule``
 class ``addInteraction`` function supports adding the new bond type
 and includes it in the listed interaction data that the ``topology`` class
 provides.
 
 Note that, as of C++17, there's no alternative to preprocessor macros for adding
 the required template instantiations controlled through the macros described here.
-In NBLIB, the design decision we took, was that we did not want to expose a templated
+In NB-LIB, the design decision we took, was that we did not want to expose a templated
 interface in a user header and it is for this reason that we explicitly need
 to instantiate the interface with all the supported listed interaction types defined
 in this macro.

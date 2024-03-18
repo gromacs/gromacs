@@ -1,15 +1,13 @@
 .. _nblib:
 
-=========
-NBLIB API
-=========
+=================================
+(Non-)Bonded LIBrary (NB-LIB) API
+=================================
 
 This documentation is part of the |Gromacs| `manual <http://manual.gromacs.org/current/>`_
-and describes the *nblib* API.
-
+and describes the (Non-)Bonded LIBrary (NB-LIB) API.
 
 ..  toctree::
-    :maxdepth: 1
-    :caption: Documentation sections
+    :maxdepth: 2
 
-    guide-to-writing-MD-programs.rst
+    guide-to-writing-MD-programs
