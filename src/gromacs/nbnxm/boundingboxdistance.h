@@ -47,6 +47,7 @@
 #include "config.h"
 
 #include "gromacs/simd/simd.h"
+#include "gromacs/utility/gmxassert.h"
 
 #include "boundingboxes.h"
 #include "grid.h"
@@ -54,71 +55,98 @@
 namespace Nbnxm
 {
 
-#if !NBNXN_SEARCH_BB_SIMD4
-
-/*! \brief Plain C code calculating the distance^2 between two bounding boxes in xyz0 format
- *
- * \param[in] bb_i  First bounding box
- * \param[in] bb_j  Second bounding box
- */
-gmx_unused static float clusterBoundingBoxDistance2(const BoundingBox& bb_i, const BoundingBox& bb_j)
+//! Loads a corner of a bounding box into a float vector
+template<typename T>
+std::enable_if_t<std::is_same_v<T, gmx::BasicVector<float>>, gmx::BasicVector<float>> static inline loadBoundingBoxCorner(
+        const BoundingBox::Corner& corner)
 {
-    float dl  = bb_i.lower.x - bb_j.upper.x;
-    float dh  = bb_j.lower.x - bb_i.upper.x;
-    float dm  = std::max(dl, dh);
-    float dm0 = std::max(dm, 0.0F);
-    float d2  = dm0 * dm0;
-
-    dl  = bb_i.lower.y - bb_j.upper.y;
-    dh  = bb_j.lower.y - bb_i.upper.y;
-    dm  = std::max(dl, dh);
-    dm0 = std::max(dm, 0.0F);
-    d2 += dm0 * dm0;
-
-    dl  = bb_i.lower.z - bb_j.upper.z;
-    dh  = bb_j.lower.z - bb_i.upper.z;
-    dm  = std::max(dl, dh);
-    dm0 = std::max(dm, 0.0F);
-    d2 += dm0 * dm0;
-
-    return d2;
+    return { corner.x, corner.y, corner.z };
 }
 
-#else /* NBNXN_SEARCH_BB_SIMD4 */
+#if NBNXN_SEARCH_BB_SIMD4
 
-/*! \brief 4-wide SIMD code calculating the distance^2 between two bounding boxes in xyz0 format
+/*! Loads a corner of a bounding box into a 4-wide SIMD register
  *
- * \param[in] bb_i  First bounding box, should be aligned for 4-wide SIMD
- * \param[in] bb_j  Second bounding box, should be aligned for 4-wide SIMD
+ * \param[in] corner  A bounding box corner, should be SIMD4 aligned
  */
-static float clusterBoundingBoxDistance2(const BoundingBox& bb_i, const BoundingBox& bb_j)
+template<typename T>
+std::enable_if_t<std::is_same_v<T, gmx::Simd4Float>, gmx::Simd4Float> static inline gmx_simdcall
+loadBoundingBoxCorner(const BoundingBox::Corner& corner)
+{
+    static_assert(sizeof(BoundingBox::Corner) == 4 * sizeof(float));
+
+    GMX_ASSERT(std::size_t(corner.ptr()) % (4 * sizeof(*corner.ptr())) == 0,
+               "Bounding box should be SIMD4 aligned");
+
+    return gmx::load4(corner.ptr());
+}
+
+#endif
+
+//! Return the element-wise max of two 3-float vectors, needed to share code with SIMD
+static inline gmx::BasicVector<float> max(const gmx::BasicVector<float>& v1,
+                                          const gmx::BasicVector<float>& v2)
+{
+    return gmx::elementWiseMax(v1, v2);
+}
+
+//! Return the dot product of two 3-float vectors, needed to share code with SIMD
+static inline float dotProduct(const gmx::BasicVector<float>& v1, const gmx::BasicVector<float>& v2)
+{
+    return gmx::dot(v1, v2);
+}
+
+/*! \brief Returns the distance^2 between two bounding boxes
+ *
+ * Uses 4-wide SIMD operations when available.
+ *
+ * \param[in] bb_i  First bounding box, has to be aligned for 4-wide SIMD
+ * \param[in] bb_j  Second bounding box, has to be be aligned for 4-wide SIMD
+ */
+static inline float clusterBoundingBoxDistance2(const BoundingBox& bb_i, const BoundingBox& bb_j)
 {
     using namespace gmx;
 
-    const Simd4Float bb_i_S0 = load4(bb_i.lower.ptr());
-    const Simd4Float bb_i_S1 = load4(bb_i.upper.ptr());
-    const Simd4Float bb_j_S0 = load4(bb_j.lower.ptr());
-    const Simd4Float bb_j_S1 = load4(bb_j.upper.ptr());
+#if NBNXN_SEARCH_BB_SIMD4
+    using T = Simd4Float;
 
-    const Simd4Float dl_S = bb_i_S0 - bb_j_S1;
-    const Simd4Float dh_S = bb_j_S0 - bb_i_S1;
+    const T zero = simd4SetZeroF();
+#else
+    using T = BasicVector<float>;
 
-    const Simd4Float dm_S  = max(dl_S, dh_S);
-    const Simd4Float dm0_S = max(dm_S, simd4SetZeroF());
+    const T zero({ 0.0f, 0.0f, 0.0f });
+#endif
 
-    return dotProduct(dm0_S, dm0_S);
+    const T iLowerCorner = loadBoundingBoxCorner<T>(bb_i.lower);
+    const T iUpperCorner = loadBoundingBoxCorner<T>(bb_i.upper);
+    const T jLowerCorner = loadBoundingBoxCorner<T>(bb_j.lower);
+    const T jUpperCorner = loadBoundingBoxCorner<T>(bb_j.upper);
+
+    const T difference0 = iLowerCorner - jUpperCorner;
+    const T difference1 = jLowerCorner - iUpperCorner;
+
+    const T maxDifference     = max(difference0, difference1);
+    const T maxDifferenceZero = max(maxDifference, zero);
+
+    return dotProduct(maxDifferenceZero, maxDifferenceZero);
 }
 
-/* Calculate bb bounding distances of bb_i[si,...,si+3] and store them in d2 */
+#if NBNXN_SEARCH_BB_SIMD4
+
+/*! Calculates bounding box distances^2 of four i-bounding-boxes with one j-bounding-box
+ *
+ * \tparam     boundingBoxStart  The offset for reading bounding boxes and storing distances
+ * \param[in]  iBoundingBoxes    Bounding boxes, entries \p boundingBoxStart to \p boundingBoxStart+4 are used
+ * \param[in]  jLowerCorner      Lower X/Y/Z corners of the j-bounding box
+ * \param[in]  jUpperCorner      Upper X/Y/Z corners of the j-bounding box
+ * \param[out] distancesSquared  The four squared distances are returned in this list at offset \p boundingBoxStart
+ */
 template<int boundingBoxStart>
-static inline void gmx_simdcall clusterBoundingBoxDistance2_xxxx_simd4_inner(const float* bb_i,
-                                                                             float*       d2,
-                                                                             const gmx::Simd4Float xj_l,
-                                                                             const gmx::Simd4Float yj_l,
-                                                                             const gmx::Simd4Float zj_l,
-                                                                             const gmx::Simd4Float xj_h,
-                                                                             const gmx::Simd4Float yj_h,
-                                                                             const gmx::Simd4Float zj_h)
+static inline void gmx_simdcall
+clusterBoundingBoxDistance2_xxxx_simd4_inner(const float*                            iBoundingBoxes,
+                                             const std::array<gmx::Simd4Float, DIM>& jLowerCorner,
+                                             const std::array<gmx::Simd4Float, DIM>& jUpperCorner,
+                                             float* distancesSquared)
 {
     using namespace gmx;
 
@@ -128,20 +156,20 @@ static inline void gmx_simdcall clusterBoundingBoxDistance2_xxxx_simd4_inner(con
 
     const Simd4Float zero = setZero();
 
-    const Simd4Float xi_l = load4(bb_i + shi + 0 * stride);
-    const Simd4Float yi_l = load4(bb_i + shi + 1 * stride);
-    const Simd4Float zi_l = load4(bb_i + shi + 2 * stride);
-    const Simd4Float xi_h = load4(bb_i + shi + 3 * stride);
-    const Simd4Float yi_h = load4(bb_i + shi + 4 * stride);
-    const Simd4Float zi_h = load4(bb_i + shi + 5 * stride);
+    const Simd4Float iLowerCornerX = load4(iBoundingBoxes + shi + 0 * stride);
+    const Simd4Float iLowerCornerY = load4(iBoundingBoxes + shi + 1 * stride);
+    const Simd4Float iLowerCornerZ = load4(iBoundingBoxes + shi + 2 * stride);
+    const Simd4Float iUpperCornerX = load4(iBoundingBoxes + shi + 3 * stride);
+    const Simd4Float iUpperCornerY = load4(iBoundingBoxes + shi + 4 * stride);
+    const Simd4Float iUpperCornerZ = load4(iBoundingBoxes + shi + 5 * stride);
 
-    const Simd4Float dx_0 = xi_l - xj_h;
-    const Simd4Float dy_0 = yi_l - yj_h;
-    const Simd4Float dz_0 = zi_l - zj_h;
+    const Simd4Float dx_0 = iLowerCornerX - jUpperCorner[XX];
+    const Simd4Float dy_0 = iLowerCornerY - jUpperCorner[YY];
+    const Simd4Float dz_0 = iLowerCornerZ - jUpperCorner[ZZ];
 
-    const Simd4Float dx_1 = xj_l - xi_h;
-    const Simd4Float dy_1 = yj_l - yi_h;
-    const Simd4Float dz_1 = zj_l - zi_h;
+    const Simd4Float dx_1 = jLowerCorner[XX] - iUpperCornerX;
+    const Simd4Float dy_1 = jLowerCorner[YY] - iUpperCornerY;
+    const Simd4Float dz_1 = jLowerCorner[ZZ] - iUpperCornerZ;
 
     const Simd4Float mx = max(dx_0, dx_1);
     const Simd4Float my = max(dy_0, dy_1);
@@ -158,10 +186,10 @@ static inline void gmx_simdcall clusterBoundingBoxDistance2_xxxx_simd4_inner(con
     const Simd4Float d2s = d2x + d2y;
     const Simd4Float d2t = d2s + d2z;
 
-    store4(d2 + boundingBoxStart, d2t);
+    store4(distancesSquared + boundingBoxStart, d2t);
 }
 
-/* 4-wide SIMD code for nsi bb distances for bb format xxxxyyyyzzzz */
+//! 4-wide SIMD code for nsi bb distances for bb format xxxxyyyyzzzz
 gmx_unused static void clusterBoundingBoxDistance2_xxxx_simd4(const float* bb_j,
                                                               const int    nsi,
                                                               const float* bb_i,
@@ -171,20 +199,20 @@ gmx_unused static void clusterBoundingBoxDistance2_xxxx_simd4(const float* bb_j,
 
     constexpr int stride = c_packedBoundingBoxesDimSize;
 
-    const Simd4Float xj_l = Simd4Float(bb_j[0 * stride]);
-    const Simd4Float yj_l = Simd4Float(bb_j[1 * stride]);
-    const Simd4Float zj_l = Simd4Float(bb_j[2 * stride]);
-    const Simd4Float xj_h = Simd4Float(bb_j[3 * stride]);
-    const Simd4Float yj_h = Simd4Float(bb_j[4 * stride]);
-    const Simd4Float zj_h = Simd4Float(bb_j[5 * stride]);
+    const std::array<Simd4Float, DIM> jLowerCorner = { Simd4Float(bb_j[0 * stride]),
+                                                       Simd4Float(bb_j[1 * stride]),
+                                                       Simd4Float(bb_j[2 * stride]) };
+    const std::array<Simd4Float, DIM> jUpperCorner = { Simd4Float(bb_j[3 * stride]),
+                                                       Simd4Float(bb_j[4 * stride]),
+                                                       Simd4Float(bb_j[5 * stride]) };
 
     /* Here we "loop" over si (0,stride) from 0 to nsi with step stride.
      * But as we know the number of iterations is 1 or 2, we unroll manually.
      */
-    clusterBoundingBoxDistance2_xxxx_simd4_inner<0>(bb_i, d2, xj_l, yj_l, zj_l, xj_h, yj_h, zj_h);
+    clusterBoundingBoxDistance2_xxxx_simd4_inner<0>(bb_i, jLowerCorner, jUpperCorner, d2);
     if (stride < nsi)
     {
-        clusterBoundingBoxDistance2_xxxx_simd4_inner<stride>(bb_i, d2, xj_l, yj_l, zj_l, xj_h, yj_h, zj_h);
+        clusterBoundingBoxDistance2_xxxx_simd4_inner<stride>(bb_i, jLowerCorner, jUpperCorner, d2);
     }
 }
 
