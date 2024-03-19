@@ -42,7 +42,12 @@ endif()
 set(CMAKE_HIP_STANDARD 17)
 set(CMAKE_HIP_STANDARD_REQUIRED ON)
 
+# Using the required version directly doesn't work due to the way the versioning is implemented in HIP
 find_package(HIP REQUIRED CONFIG PATHS $ENV{ROCM_PATH} "/opt/rocm")
+if (${HIP_VERSION} VERSION_LESS ${REQUIRED_HIP_VERSION})
+    message(FATAL_ERROR "The found HIP version ${HIP_VERSION} is less than the required version ${REQUIRED_HIP_VERSION}. Please update your ROCm stack")
+endif()
+
 enable_language(HIP)
 set(GMX_GPU_HIP ON)
 

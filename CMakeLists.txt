@@ -695,6 +695,9 @@ gmx_manage_simd()
 set(REQUIRED_CUDA_VERSION 11.0)
 set(REQUIRED_CUDA_COMPUTE_CAPABILITY 3.5)
 
+# We start supporting HIP from version 5.2
+set(REQUIRED_HIP_VERSION 5.2)
+
 if(GMX_GPU)
 
     string(TOUPPER "${GMX_GPU}" _gmx_gpu_uppercase)
