@@ -480,7 +480,7 @@ template<typename T, typename = std::enable_if_t<std::is_integral<T>::value>>
  * space, unless --expt-relaxed-constexpr flag is set */
 __host__ __device__
 #endif
-        static inline constexpr bool
+        static constexpr bool
         isPowerOfTwo(const T v)
 {
     return (v > 0) && ((v & (v - 1)) == 0);

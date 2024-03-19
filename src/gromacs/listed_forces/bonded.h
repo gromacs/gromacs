@@ -145,20 +145,20 @@ enum class BondedKernelFlavor
 extern LIBGROMACS_EXPORT const gmx::EnumerationArray<BondedKernelFlavor, std::string, BondedKernelFlavor::Count> c_bondedKernelFlavorStrings;
 
 /*! \brief Returns whether the energy should be computed */
-static constexpr inline bool computeEnergy(const BondedKernelFlavor flavor)
+static constexpr bool computeEnergy(const BondedKernelFlavor flavor)
 {
     return (flavor == BondedKernelFlavor::ForcesAndVirialAndEnergy
             || flavor == BondedKernelFlavor::ForcesAndEnergy);
 }
 
 /*! \brief Returns whether the virial should be computed */
-static constexpr inline bool computeVirial(const BondedKernelFlavor flavor)
+static constexpr bool computeVirial(const BondedKernelFlavor flavor)
 {
     return (flavor == BondedKernelFlavor::ForcesAndVirialAndEnergy);
 }
 
 /*! \brief Returns whether the energy and/or virial should be computed */
-static constexpr inline bool computeEnergyOrVirial(const BondedKernelFlavor flavor)
+static constexpr bool computeEnergyOrVirial(const BondedKernelFlavor flavor)
 {
     return (flavor == BondedKernelFlavor::ForcesAndVirialAndEnergy
             || flavor == BondedKernelFlavor::ForcesAndEnergy);

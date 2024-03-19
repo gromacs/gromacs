@@ -47,7 +47,7 @@
 #include "gromacs/gpu_utils/gputraits_sycl.h"
 #include "gromacs/pbcutil/pbc_aiuc.h"
 
-static constexpr inline int xyzToShiftIndex(int x, int y, int z)
+static constexpr int xyzToShiftIndex(int x, int y, int z)
 {
     return gmx::detail::c_nBoxX * (gmx::detail::c_nBoxY * (z + gmx::c_dBoxZ) + y + gmx::c_dBoxY) + x
            + gmx::c_dBoxX;

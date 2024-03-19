@@ -94,7 +94,7 @@ static constexpr int c_packedBoundingBoxesSize =
         c_packedBoundingBoxesDimSize * DIM * Nbnxm::c_numBoundingBoxBounds1D;
 
 //! Returns the starting index of the bounding box pack that contains the given cluster
-static constexpr inline int packedBoundingBoxesIndex(int clusterIndex)
+static constexpr int packedBoundingBoxesIndex(int clusterIndex)
 {
     return (clusterIndex / c_packedBoundingBoxesDimSize) * c_packedBoundingBoxesSize;
 }
