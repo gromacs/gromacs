@@ -140,6 +140,8 @@ _rocm_version_dependent_packages = [
     "hipfft-dev",
     "rocfft",
     "rocfft-dev",
+    "rocprim",
+    "rocprim-dev",
     "rocm-dev",
     "rocm-opencl",
 ]
