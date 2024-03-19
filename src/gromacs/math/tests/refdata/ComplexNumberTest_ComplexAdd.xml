@@ -1,0 +1,21 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Sequence Name="ComplexAdd">
+    <Int Name="Length">7</Int>
+    <Real>15.869999999999999</Real>
+    <Real>43.43</Real>
+    <Real>15.869999999999999</Real>
+    <Real>1.2</Real>
+    <Real>2.5</Real>
+    <Real>43.43</Real>
+    <Real>13.369999999999999</Real>
+    <Real>43.43</Real>
+    <Real>15.869999999999999</Real>
+    <Real>42.229999999999997</Real>
+    <Real>13.369999999999999</Real>
+    <Real>42.229999999999997</Real>
+    <Real>2.5</Real>
+    <Real>1.2</Real>
+  </Sequence>
+</ReferenceData>

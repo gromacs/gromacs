@@ -138,7 +138,7 @@ target_link_libraries(testutils PUBLIC common)
 # Note that testutils conveys transitive dependencies on some modules.
 # TODO: Remove `legacy_modules` once specific modules are explicitly linked.
 target_link_libraries(testutils PUBLIC legacy_modules)
-target_link_libraries(testutils PUBLIC utility)
+target_link_libraries(testutils PUBLIC utility math)
 target_link_libraries(testutils PRIVATE topology)
 
 add_subdirectory(tests)

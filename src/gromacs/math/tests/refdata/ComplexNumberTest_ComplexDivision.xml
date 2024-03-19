@@ -1,0 +1,17 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Sequence Name="ComplexDivision">
+    <Int Name="Length">5</Int>
+    <Real>10.936410923276984</Real>
+    <Real>11.642522756827049</Real>
+    <Real>4.3465539661898571</Real>
+    <Real>-2.0863459037711309</Real>
+    <Real>6.5898569570871262</Real>
+    <Real>13.728868660598179</Real>
+    <Real>5.3479999999999999</Real>
+    <Real>16.891999999999999</Real>
+    <Real>0</Real>
+    <Real>0</Real>
+  </Sequence>
+</ReferenceData>

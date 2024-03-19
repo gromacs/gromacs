@@ -1,0 +1,13 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Sequence Name="ComplexConjugate">
+    <Int Name="Length">3</Int>
+    <Real>13.369999999999999</Real>
+    <Real>-42.229999999999997</Real>
+    <Real>13.369999999999999</Real>
+    <Real>-0</Real>
+    <Real>0</Real>
+    <Real>-42.229999999999997</Real>
+  </Sequence>
+</ReferenceData>

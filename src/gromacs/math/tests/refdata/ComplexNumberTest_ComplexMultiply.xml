@@ -1,0 +1,21 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Sequence Name="ComplexMultiply">
+    <Int Name="Length">7</Int>
+    <Real>-17.250999999999998</Real>
+    <Real>121.61899999999999</Real>
+    <Real>33.424999999999997</Real>
+    <Real>16.043999999999997</Real>
+    <Real>-50.675999999999995</Real>
+    <Real>105.57499999999999</Real>
+    <Real>-50.675999999999995</Real>
+    <Real>16.043999999999997</Real>
+    <Real>33.424999999999997</Real>
+    <Real>105.57499999999999</Real>
+    <Real>0</Real>
+    <Real>0</Real>
+    <Real>0</Real>
+    <Real>0</Real>
+  </Sequence>
+</ReferenceData>

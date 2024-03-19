@@ -1,0 +1,21 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Sequence Name="ComplexSubtract">
+    <Int Name="Length">7</Int>
+    <Real>10.869999999999999</Real>
+    <Real>41.029999999999994</Real>
+    <Real>10.869999999999999</Real>
+    <Real>-1.2</Real>
+    <Real>-2.5</Real>
+    <Real>41.029999999999994</Real>
+    <Real>13.369999999999999</Real>
+    <Real>41.029999999999994</Real>
+    <Real>10.869999999999999</Real>
+    <Real>42.229999999999997</Real>
+    <Real>13.369999999999999</Real>
+    <Real>42.229999999999997</Real>
+    <Real>-2.5</Real>
+    <Real>-1.2</Real>
+  </Sequence>
+</ReferenceData>

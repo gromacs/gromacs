@@ -1,0 +1,15 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Sequence Name="RealComplexMultiply">
+    <Int Name="Length">4</Int>
+    <Real>33.424999999999997</Real>
+    <Real>105.57499999999999</Real>
+    <Real>0</Real>
+    <Real>0</Real>
+    <Real>0</Real>
+    <Real>105.57499999999999</Real>
+    <Real>33.424999999999997</Real>
+    <Real>0</Real>
+  </Sequence>
+</ReferenceData>

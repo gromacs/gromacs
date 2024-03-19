@@ -36,7 +36,6 @@
 
 #include <cmath>
 
-#include "gromacs/math/vectypes.h"
 #include "gromacs/utility/real.h"
 
 struct t_complex

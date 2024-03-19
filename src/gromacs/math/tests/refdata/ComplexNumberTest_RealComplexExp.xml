@@ -1,0 +1,15 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Sequence Name="RealComplexExp">
+    <Int Name="Length">4</Int>
+    <Real>-0.8011436155469337</Real>
+    <Real>0.59847214410395655</Real>
+    <Real>0.69409856450869745</Real>
+    <Real>0.71987997801506165</Real>
+    <Real>1</Real>
+    <Real>0</Real>
+    <Real>-0.6662760212798241</Real>
+    <Real>-0.74570521217672026</Real>
+  </Sequence>
+</ReferenceData>

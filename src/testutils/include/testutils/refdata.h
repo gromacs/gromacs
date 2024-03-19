@@ -49,6 +49,7 @@
 #include <memory>
 #include <string>
 
+#include "gromacs/math/gmxcomplex.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/classhelpers.h"
 
@@ -493,6 +494,13 @@ public:
     {
         checkKeyValueTreeValue(value, id);
     }
+    //! Check a single complex number value.
+    void checkValue(const t_complex& value, const char* id)
+    {
+        checkValue(value.re, id);
+        checkValue(value.im, id);
+    }
+
     /*!\}*/
 
     /*! \brief
