@@ -52,7 +52,7 @@ function(gmx_manage_muparser)
         # particular, it sets up an easy call to add_subdirectory().
         include(FetchContent)
         FetchContent_Declare(muparser SOURCE_DIR ${CMAKE_SOURCE_DIR}/src/external/muparser)
-        if (NOT ${muparser}_POPULATED)
+        if (NOT muparser_POPULATED)
             if (OpenMP_CXX_FLAGS)
                 set(OpenMP_FIND_QUIETLY ON)
             endif()

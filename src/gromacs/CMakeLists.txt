@@ -44,8 +44,6 @@ endif()
 set_property(GLOBAL PROPERTY GMX_LIBGROMACS_SOURCES)
 set_property(GLOBAL PROPERTY CUDA_SOURCES)
 set_property(GLOBAL PROPERTY HIP_SOURCES)
-set_property(GLOBAL PROPERTY GMX_INSTALLED_HEADERS)
-set_property(GLOBAL PROPERTY GMX_AVX_512_SOURCE)
 
 set(libgromacs_object_library_dependencies "")
 function (_gmx_add_files_to_property PROPERTY)
