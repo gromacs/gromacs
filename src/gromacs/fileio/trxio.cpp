@@ -552,6 +552,10 @@ t_trxstatus* trjtools_gmx_prepare_h5md_writing(const std::filesystem::path& file
     status_init(out);
 
     out->h5mdIo = new gmx::h5mdio::GmxH5mdIo(filename, filemode);
+    if (filemode == 'w')
+    {
+        gmx::setH5mdAuthorAndCreator(out->h5mdIo);
+    }
     if (mtop != nullptr)
     {
         out->h5mdIo->setupMolecularSystem(*mtop, index, index_group_name);

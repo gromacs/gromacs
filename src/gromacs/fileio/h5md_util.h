@@ -158,7 +158,7 @@ bool getAttribute(hid_t dataSet, const char* name, T* value, hid_t dataType);
 
 /*! Get a string attribute value from a data set.
  * \param[in] dataSet The ID of the HDF5 data set.
- * \param[in] name The name of the attribute. Memory must be allocated by the caller.
+ * \param[in] name The name of the attribute.
  * \param[out] value The returned string value of the attribute.
  */
 bool getAttribute(hid_t dataSet, const char* name, char** value);

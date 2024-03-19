@@ -187,6 +187,10 @@ gmx_mdoutf_t init_mdoutf(FILE*                          fplog,
                     break;
                 case efH5MD:
                     of->h5mdIoLowPrec = new gmx::h5mdio::GmxH5mdIo(filename, filemode[0]);
+                    if (filemode[0] == 'w')
+                    {
+                        gmx::setH5mdAuthorAndCreator(of->h5mdIoLowPrec);
+                    }
                     break;
                 default: gmx_incons("Invalid reduced precision file format");
             }
@@ -229,6 +233,10 @@ gmx_mdoutf_t init_mdoutf(FILE*                          fplog,
                         }
                     }
                     of->h5mdIo = new gmx::h5mdio::GmxH5mdIo(filename, filemode[0]);
+                    if (filemode[0] == 'w')
+                    {
+                        gmx::setH5mdAuthorAndCreator(of->h5mdIo);
+                    }
                     break;
                 default: gmx_incons("Invalid full precision file format");
             }

@@ -168,7 +168,6 @@ void GmxH5mdIo::openFile(const std::string fileName, const char mode)
             {
                 throw gmx::FileIOError("Cannot create H5MD file.");
             }
-            setAuthorAndCreator();
         }
         else
         {
@@ -358,24 +357,52 @@ void GmxH5mdIo::setUpParticlesDataBlocks(int64_t writeCoordinatesSteps,
     }
 }
 
-void GmxH5mdIo::setAuthorAndCreator()
+void GmxH5mdIo::setAuthor(std::string authorName)
 {
-    std::string precisionString = "";
-#if GMX_DOUBLE
-    precisionString = " (double precision)";
-#endif
-
-    std::string programInfo  = gmx::getProgramContext().displayName() + precisionString;
-    hid_t       creatorGroup = openOrCreateGroup(file_, "h5md/creator");
-    setAttribute(creatorGroup, "name", programInfo.c_str());
-    const std::string gmxVersion = gmx_version();
-    setAttribute(creatorGroup, "version", gmxVersion.c_str());
     hid_t authorGroup = openOrCreateGroup(file_, "h5md/author");
-    char  username[c_maxFullNameLength];
-    if (!gmx_getusername(username, c_maxFullNameLength))
-    {
-        setAttribute(authorGroup, "name", username);
-    }
+    setAttribute(authorGroup, "name", authorName.c_str());
+}
+
+std::string GmxH5mdIo::getAuthor()
+{
+    hid_t authorGroup = openOrCreateGroup(file_, "h5md/author");
+    char* tmpName     = nullptr;
+    getAttribute(authorGroup, "name", &tmpName);
+    std::string name(tmpName);
+    H5free_memory(tmpName);
+    return name;
+}
+
+void GmxH5mdIo::setCreatorProgramName(std::string creatorName)
+{
+    hid_t creatorGroup = openOrCreateGroup(file_, "h5md/creator");
+    setAttribute(creatorGroup, "name", creatorName.c_str());
+}
+
+std::string GmxH5mdIo::getCreatorProgramName()
+{
+    hid_t creatorGroup = openOrCreateGroup(file_, "h5md/creator");
+    char* tmpName      = nullptr;
+    getAttribute(creatorGroup, "name", &tmpName);
+    std::string name(tmpName);
+    H5free_memory(tmpName);
+    return name;
+}
+
+void GmxH5mdIo::setCreatorProgramVersion(std::string version)
+{
+    hid_t creatorGroup = openOrCreateGroup(file_, "h5md/creator");
+    setAttribute(creatorGroup, "version", version.c_str());
+}
+
+std::string GmxH5mdIo::getCreatorProgramVersion()
+{
+    hid_t creatorGroup = openOrCreateGroup(file_, "h5md/creator");
+    char* tmpVersion   = nullptr;
+    getAttribute(creatorGroup, "version", &tmpVersion);
+    std::string version(tmpVersion);
+    H5free_memory(tmpVersion);
+    return version;
 }
 
 void GmxH5mdIo::setAtomNames(const std::vector<std::string>& atomNames)
@@ -939,4 +966,24 @@ extern template void setAttribute<double>(hid_t, const char*, double, hid_t);
 extern template void setAttribute<char*>(hid_t, const char*, char*, hid_t);
 
 } // namespace h5mdio
+
+void setH5mdAuthorAndCreator(h5mdio::GmxH5mdIo* file)
+{
+    char tmpUserName[gmx::h5mdio::c_maxFullNameLength];
+    if (!gmx_getusername(tmpUserName, gmx::h5mdio::c_maxFullNameLength))
+    {
+        file->setAuthor(tmpUserName);
+    }
+
+    std::string precisionString = "";
+#if GMX_DOUBLE
+    precisionString = " (double precision)";
+#endif
+    std::string programInfo = gmx::getProgramContext().displayName() + precisionString;
+    file->setCreatorProgramName(programInfo);
+
+    const std::string gmxVersion = gmx_version();
+    file->setCreatorProgramVersion(gmxVersion);
+}
+
 } // namespace gmx

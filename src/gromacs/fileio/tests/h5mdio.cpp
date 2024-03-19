@@ -98,6 +98,25 @@ public:
     /*! \brief Set the number of reference atoms. */
     int getRefAtomCount() { return refAtomCount_; }
 
+    void setAuthorAndCreator(std::string authorName, std::string creatorProgramName, std::string creatorProgramVersion)
+    {
+        referenceH5mdIo_.setAuthor(authorName);
+        referenceH5mdIo_.setCreatorProgramName(creatorProgramName);
+        referenceH5mdIo_.setCreatorProgramVersion(creatorProgramVersion);
+    }
+
+    void checkAuthorAndCreator(std::string referenceAuthorName,
+                               std::string referenceCreatorProgramName,
+                               std::string referenceCreatorProgramVersion)
+    {
+        std::string authorName = referenceH5mdIo_.getAuthor();
+        EXPECT_STREQ(referenceAuthorName.c_str(), authorName.c_str());
+        std::string creatorProgramName = referenceH5mdIo_.getCreatorProgramName();
+        EXPECT_STREQ(referenceCreatorProgramName.c_str(), creatorProgramName.c_str());
+        std::string creatorProgramVersion = referenceH5mdIo_.getCreatorProgramVersion();
+        EXPECT_STREQ(referenceCreatorProgramVersion.c_str(), creatorProgramVersion.c_str());
+    }
+
     /*! \brief Set the lossy compression precision to use when writing reference data. */
     void setRefCompressionPrecision(real compressionPrecision)
     {
@@ -312,6 +331,11 @@ TEST_F(H5mdIoTest, CanCreateAndCloseH5mdFile)
     EXPECT_FALSE(isReferenceFileOpen());
     openReferenceFile('w');
     EXPECT_TRUE(isReferenceFileOpen());
+    const std::string referenceAuthorName("AuthorName!");
+    const std::string referenceCreatorProgramName("GROMACS testing");
+    const char referenceCreatorProgramVersion[] = "v. 2468"; // Testing using a char string on purpose.
+    setAuthorAndCreator(referenceAuthorName, referenceCreatorProgramName, referenceCreatorProgramVersion);
+    checkAuthorAndCreator(referenceAuthorName, referenceCreatorProgramName, referenceCreatorProgramVersion);
     closeReferenceFile();
     EXPECT_FALSE(isReferenceFileOpen());
     openReferenceFile('r');

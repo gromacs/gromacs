@@ -134,6 +134,39 @@ public:
                                   PbcType pbcType,
                                   double  xCompressionError);
 
+    /*! \brief Set the author name attribute in the H5MD file
+     * \param[in] authorName The author name.
+     * \throws FileIOError If the author name attribute could not be set.
+     */
+    void setAuthor(std::string authorName);
+
+    /*! \brief Get the author name attribute from the H5MD file
+     * \returns the author name.
+     */
+    std::string getAuthor();
+
+    /*! \brief Set the name of the creating program as an attribute in the H5MD file.
+     * \param[in] creatorName The creator name, i.e. the name of the program that created the file.
+     * \throws FileIOError If the author name attribute could not be set.
+     */
+    void setCreatorProgramName(std::string creatorName);
+
+    /*! \brief Get the name of the creating program attribute from the H5MD file.
+     * \returns he creator name, i.e. the name of the program that created the file.
+     */
+    std::string getCreatorProgramName();
+
+    /*! \brief Set the version of the creating program as an attribute in the H5MD file.
+     * \param[in] version The version.
+     * \throws FileIOError If the author name attribute could not be set.
+     */
+    void setCreatorProgramVersion(std::string version);
+
+    /*! \brief Get the version of the creating program attribute from the H5MD file.
+     * \returns the version.
+     */
+    std::string getCreatorProgramVersion();
+
     /*! \brief Set atom names, if not already set. Atom names cannot be modified after setting.
      *
      * \param[in] atomNames The names of the atoms.
@@ -265,5 +298,9 @@ public:
 };
 
 } // namespace h5mdio
+
+/*! \brief Set the author and creator fields based on user and program data available in gromacs. */
+void setH5mdAuthorAndCreator(h5mdio::GmxH5mdIo* file);
+
 } // namespace gmx
 #endif // GMX_FILEIO_H5MD_IO_H
