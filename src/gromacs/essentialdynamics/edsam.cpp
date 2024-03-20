@@ -2770,7 +2770,7 @@ std::unique_ptr<gmx::EssentialDynamics> init_edsam(const gmx::MDLogger&        m
      * not before dd_partition_system which is called after init_edsam */
     if (MAIN(cr))
     {
-        edsamhistory_t* EDstate = oh->edsamHistory.get();
+        const edsamhistory_t* EDstate = oh->edsamHistory.get();
 
         if (!EDstate->bFromCpt)
         {
