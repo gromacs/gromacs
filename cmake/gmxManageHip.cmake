@@ -51,6 +51,9 @@ endif()
 enable_language(HIP)
 set(GMX_GPU_HIP ON)
 
+
+find_package(rocprim REQUIRED CONFIG HINTS ${HIP_PACKAGE_PREFIX_DIR})
+
 if(GMX_GPU_FFT_VKFFT)
     include(gmxManageVkFft)
 elseif(GMX_GPU_FFT_HIPFFT OR GMX_GPU_FFT_ROCFFT OR GMX_USE_Heffte)
