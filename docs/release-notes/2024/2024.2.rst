@@ -36,6 +36,17 @@ caused by this tuning.
 
 :issue:`4867`
 
+Address performance regression on ARM with clang and SVE
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+The non-bonded CPU SIMD kernels contained loops which were not unrolled,
+in particular with the LLVM backend of clang on ARM SVE. Other combinations
+of compilers and architectures might also have been affected.
+Note that there are still other performance regressions in certain versions
+of these kernels on multiple platforms.
+
+:issue:`5036`
+       
 Fix crash in NbnxmSetupTest.CanCreateNbnxmGPU
 """""""""""""""""""""""""""""""""""""""""""""
 

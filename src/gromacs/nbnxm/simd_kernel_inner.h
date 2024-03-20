@@ -285,10 +285,7 @@
         if constexpr (calculateEnergies && c_needToCheckExclusions)
         {
             /* The potential shift should be removed for excluded pairs */
-            for (int i = 0; i < c_nRLJ; i++)
-            {
-                vLJV[i] = selectByMask(vLJV[i], interactV[i]);
-            }
+            vLJV = genArr<c_nRLJ>([&](int i) { return selectByMask(vLJV[i], interactV[i]); });
         }
 
         if constexpr (haveLJEwaldGeometric)
@@ -306,20 +303,15 @@
             /* frLJ is multiplied later by rinvsq, which is masked for the Coulomb
              * cut-off, but if the VdW cut-off is shorter, we need to mask with that.
              */
-            for (int i = 0; i < c_nRLJ; i++)
-            {
-                frLJV[i] = selectByMask(frLJV[i], withinVdwCutoffV[i]);
-            }
+            frLJV = genArr<c_nRLJ>([&](int i) { return selectByMask(frLJV[i], withinVdwCutoffV[i]); });
         }
 
         if constexpr (calculateEnergies)
         {
             /* The potential shift should be removed for pairs beyond cut-off */
-            for (int i = 0; i < c_nRLJ; i++)
-            {
-                vLJV[i] = selectByMask(vLJV[i],
-                                       haveVdwCutoffCheck ? withinVdwCutoffV[i] : withinCutoffV[i]);
-            }
+            vLJV = genArr<c_nRLJ>([&](int i) {
+                return selectByMask(vLJV[i], haveVdwCutoffCheck ? withinVdwCutoffV[i] : withinCutoffV[i]);
+            });
         }
 
     } // calculateLJInteractions
@@ -416,29 +408,19 @@
     {
         if constexpr (c_calculateCoulombInteractions)
         {
-            for (int i = 0; i < c_nRLJ; i++)
-            {
-                fScalarV[i] = rInvSquaredV[i] * (frCoulombV[i] + frLJV[i]);
-            }
-            for (int i = c_nRLJ; i < nR; i++)
-            {
-                fScalarV[i] = rInvSquaredV[i] * frCoulombV[i];
-            }
+            fScalarV = genArr<nR>([&](int i) {
+                return rInvSquaredV[i] * (i < c_nRLJ ? frCoulombV[i] + frLJV[i] : frCoulombV[i]);
+            });
         }
         else
         {
-            for (int i = 0; i < c_nRLJ; i++)
-            {
-                fScalarV[i] = rInvSquaredV[i] * frLJV[i];
-            }
+            // Note that here c_nRLJ=nR (otherwise this wouldn't compile)
+            fScalarV = genArr<c_nRLJ>([&](int i) { return rInvSquaredV[i] * frLJV[i]; });
         }
     }
     else
     {
-        for (int i = c_nRLJ; i < nR; i++)
-        {
-            fScalarV[i] = rInvSquaredV[i] * frCoulombV[i];
-        }
+        fScalarV = genArr<nR>([&](int i) { return rInvSquaredV[i] * frCoulombV[i]; });
     }
 
     /* Calculate temporary vectorial force */
