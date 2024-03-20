@@ -185,7 +185,7 @@ gmx_unused static inline int cjFromCi(int ci)
     }
 }
 
-#if GMX_SIMD
+#if GMX_SIMD && GMX_USE_SIMD_KERNELS
 //! Copies PBC shifted i-cell packed atom coordinates to working array
 template<ClusterDistanceKernelType kernelType>
 static inline void setICellCoordinatesSimd(int                   ci,
@@ -234,7 +234,7 @@ static inline void setICellCoordinatesSimd(int                   ci,
 #    endif
     }
 }
-#endif
+#endif // GMX_SIMD && GMX_USE_SIMD_KERNELS
 
 void setICellCoordinatesSimd4xM(int gmx_unused  ci,
                                 const gmx::RVec gmx_unused& shift,
@@ -262,7 +262,8 @@ void setICellCoordinatesSimd2xMM(int gmx_unused  ci,
 #endif
 }
 
-#if GMX_SIMD
+#if GMX_SIMD && GMX_USE_SIMD_KERNELS
+
 template<ClusterDistanceKernelType kernelType>
 static inline gmx::SimdReal loadJData(const real* x)
 {
@@ -283,9 +284,7 @@ static inline gmx::SimdReal loadJData(const real* x)
 #    endif
     }
 }
-#endif
 
-#if GMX_SIMD
 /*! \brief SIMD code for checking and adding cluster-pairs to the list using coordinates in packed format.
  *
  * Checks bounding box distances and possibly atom pair distances.
@@ -485,7 +484,8 @@ static inline void makeClusterListSimd(const Grid&              jGrid,
         nbl->ci.back().cj_ind_end = nbl->cj.size();
     }
 }
-#endif
+
+#endif // GMX_SIMD && GMX_USE_SIMD_KERNELS
 
 void makeClusterListSimd4xM(const Grid gmx_unused& jGrid,
                             NbnxnPairlistCpu gmx_unused* nbl,
