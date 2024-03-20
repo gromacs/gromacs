@@ -962,11 +962,13 @@ bool read_next_frame(const gmx_output_env_t* oenv, t_trxstatus* status, t_trxfra
             case efH5MD:
                 bRet      = status->h5mdIo->readNextFrameOfStandardDataBlocks(&fr->step,
                                                                          &fr->time,
+                                                                         &fr->lambda,
                                                                          fr->box,
                                                                          fr->x,
                                                                          fr->v,
                                                                          fr->f,
                                                                          &fr->prec,
+                                                                         &fr->bLambda,
                                                                          &fr->bBox,
                                                                          &fr->bX,
                                                                          &fr->bV,
@@ -1060,7 +1062,8 @@ bool read_first_frame(const gmx_output_env_t*      oenv,
     else if (efH5MD == ftp)
     {
         (*status)->h5mdIo = new gmx::h5mdio::GmxH5mdIo(fn, 'r');
-        (*status)->h5mdIo->initParticleDataBlocksFromFile();
+        (*status)->h5mdIo->initGroupTimeDataBlocksFromFile("particles");
+        (*status)->h5mdIo->initGroupTimeDataBlocksFromFile("observables");
     }
     else
     {
@@ -1185,8 +1188,19 @@ bool read_first_frame(const gmx_output_env_t*      oenv,
                 fr->natoms = numFParticles;
                 snew(fr->f, numFParticles);
             }
-            if (!(*status)->h5mdIo->readNextFrameOfStandardDataBlocks(
-                        &fr->step, &fr->time, fr->box, fr->x, fr->v, fr->f, &fr->prec, &fr->bBox, &fr->bX, &fr->bV, &fr->bF))
+            if (!(*status)->h5mdIo->readNextFrameOfStandardDataBlocks(&fr->step,
+                                                                      &fr->time,
+                                                                      &fr->lambda,
+                                                                      fr->box,
+                                                                      fr->x,
+                                                                      fr->v,
+                                                                      fr->f,
+                                                                      &fr->prec,
+                                                                      &fr->bLambda,
+                                                                      &fr->bBox,
+                                                                      &fr->bX,
+                                                                      &fr->bV,
+                                                                      &fr->bF))
             {
                 fr->not_ok = DATA_NOT_OK;
                 printincomp(*status, fr);

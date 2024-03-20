@@ -206,12 +206,16 @@ public:
 
     void generateReferenceTopology() {}
 
-    void initReferenceDataBlocksFromFile() { referenceH5mdIo_.initParticleDataBlocksFromFile(); }
+    void initReferenceDataBlocksFromFile()
+    {
+        referenceH5mdIo_.initGroupTimeDataBlocksFromFile("particles");
+        referenceH5mdIo_.initGroupTimeDataBlocksFromFile("observables");
+    }
 
     void writeReferenceTrajectoryFrame(int step, real time, real lambda)
     {
         referenceH5mdIo_.writeFrame(
-                step, time, 0, refBox_, refAtomCount_, refX_, refV_, refF_, refCompressionPrecision_);
+                step, time, lambda, refBox_, refAtomCount_, refX_, refV_, refF_, refCompressionPrecision_);
     }
 
     int64_t readReferenceNumAtoms(const std::string dataBlockName)
@@ -238,9 +242,10 @@ public:
     {
         int64_t testStep;
         real    testTime;
+        real    testLambda;
         matrix  testBox;
         real    testPrecision;
-        bool    testReadBox, testReadX, testReadV, testReadF;
+        bool    testReadLambda, testReadBox, testReadX, testReadV, testReadF;
         rvec*   testX;
         rvec*   testV;
         rvec*   testF;
@@ -249,11 +254,13 @@ public:
         snew(testF, refAtomCount_);
         referenceH5mdIo_.readNextFrameOfStandardDataBlocks(&testStep,
                                                            &testTime,
+                                                           &testLambda,
                                                            testBox,
                                                            testX,
                                                            testV,
                                                            testF,
                                                            &testPrecision,
+                                                           &testReadLambda,
                                                            &testReadBox,
                                                            &testReadX,
                                                            &testReadV,
@@ -264,10 +271,13 @@ public:
 
         EXPECT_EQ(referenceStep, testStep);
         EXPECT_REAL_EQ_TOL(referenceTime, testTime, gmx::test::defaultRealTolerance());
+        EXPECT_TRUE(testReadLambda);
         EXPECT_TRUE(testReadBox);
         EXPECT_TRUE(testReadX);
         EXPECT_TRUE(testReadV);
         EXPECT_FALSE(testReadF);
+        EXPECT_REAL_EQ_TOL(referenceLambda, testLambda, gmx::test::defaultRealTolerance());
+
         if (refCompressionPrecision_ == 0)
         {
 

@@ -240,17 +240,21 @@ void GmxH5mdIo::flush()
 #endif
 }
 
-void GmxH5mdIo::initParticleDataBlocksFromFile()
+int GmxH5mdIo::initGroupTimeDataBlocksFromFile(std::string groupName)
 {
-    hid_t particlesGroup = H5Gopen(file_, "particles", H5P_DEFAULT);
-    if (particlesGroup < 0)
+    int   numDataBlocksBefore = dataBlocks_.size();
+    hid_t group               = H5Gopen(file_, groupName.c_str(), H5P_DEFAULT);
+    if (group < 0)
     {
-        H5Eprint2(H5E_DEFAULT, nullptr);
-        throw gmx::FileIOError(
-                "Cannot find particles group when initializing particles data blocks. Invalid H5MD "
-                "file?");
+        if (debug)
+        {
+            fprintf(debug,
+                    "Cannot find group %s when initializing particles data blocks. Invalid file?",
+                    groupName.c_str());
+        }
+        return 0;
     }
-    if (H5Literate(particlesGroup,
+    if (H5Literate(group,
                    H5_INDEX_NAME,
                    H5_ITER_NATIVE,
                    nullptr,
@@ -261,6 +265,7 @@ void GmxH5mdIo::initParticleDataBlocksFromFile()
         H5Eprint2(H5E_DEFAULT, nullptr);
         throw gmx::FileIOError("Error iterating over particles data blocks.");
     }
+    return dataBlocks_.size() - numDataBlocksBefore;
 }
 
 void GmxH5mdIo::setUpParticlesDataBlocks(int64_t writeCoordinatesSteps,
@@ -634,6 +639,30 @@ void GmxH5mdIo::writeFrame(int64_t       step,
     const hid_t datatype = H5Tcopy(H5T_NATIVE_FLOAT);
 #    endif
 
+    hid_t       observablesGroup = openOrCreateGroup(file_, "observables");
+    std::string wantedName       = "/observables/lambda";
+    auto foundDataBlock = std::find(dataBlocks_.begin(), dataBlocks_.end(), wantedName.c_str());
+    if (foundDataBlock == dataBlocks_.end())
+    {
+        GmxH5mdTimeDataBlock lambdaBlock(observablesGroup,
+                                         "lambda",
+                                         "",
+                                         -1,
+                                         10,
+                                         1,
+                                         1,
+                                         datatype,
+                                         CompressionAlgorithm::LosslessNoShuffle, // Never compress lambda output,
+                                         0);
+        dataBlocks_.emplace_back(lambdaBlock);
+        foundDataBlock = std::find(dataBlocks_.begin(), dataBlocks_.end(), wantedName.c_str());
+        if (foundDataBlock == dataBlocks_.end())
+        {
+            throw gmx::FileIOError("Error creating lambda data block when writing frame.");
+        }
+    }
+    foundDataBlock->writeFrame(&lambda, step, time);
+
     std::string name        = "particles/" + systemOutputName_;
     hid_t       systemGroup = openOrCreateGroup(file_, name.c_str());
 
@@ -763,23 +792,28 @@ void GmxH5mdIo::writeFrame(int64_t       step,
 
 bool GmxH5mdIo::readNextFrameOfStandardDataBlocks(int64_t* step,
                                                   real*    time,
+                                                  real*    lambda,
                                                   rvec*    box,
                                                   rvec*    x,
                                                   rvec*    v,
                                                   rvec*    f,
                                                   real*    xCompressionError,
+                                                  bool*    readLambda,
                                                   bool*    readBox,
                                                   bool*    readX,
                                                   bool*    readV,
                                                   bool*    readF)
 {
     std::string                     nameStem = "/particles/" + systemOutputName_;
-    std::list<std::string>          dataBlockNames{ nameStem + "/box/edges",
+    std::list<std::string>          dataBlockNames{ "/observables/lambda",
+                                           nameStem + "/box/edges",
                                            nameStem + "/position",
                                            nameStem + "/force",
                                            nameStem + "/velocity" };
     std::list<GmxH5mdTimeDataBlock> dataBlocksNextFrame{};
     int64_t                         minStepNextFrame = std::numeric_limits<int64_t>::max();
+    *readLambda = *readBox = *readX = *readV = *readF = false;
+
     for (std::string name : dataBlockNames)
     {
         auto foundDataBlock = std::find(dataBlocks_.begin(), dataBlocks_.end(), name.c_str());
@@ -813,7 +847,15 @@ bool GmxH5mdIo::readNextFrameOfStandardDataBlocks(int64_t* step,
          ++dataBlock)
     {
         /* FIXME: Can this be done more elegantly? */
-        if (box != nullptr && dataBlock->name() == "edges")
+        if (lambda != nullptr && dataBlock->name() == "lambda")
+        {
+            if (dataBlock->readNextFrame(lambda))
+            {
+                *readLambda  = true;
+                didReadFrame = true;
+            }
+        }
+        else if (box != nullptr && dataBlock->name() == "edges")
         {
             if (dataBlock->readNextFrame(static_cast<real*>(box[0])))
             {

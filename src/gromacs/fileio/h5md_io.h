@@ -110,10 +110,12 @@ public:
     /*! \brief Is there an open file? */
     bool isFileOpen() const { return file_ > 0; }
 
-    /*! \brief Create and initialize time dependent particles data block objects from the H5MD file.
-     * \throws FileIOError    If the particles data could not be read from the file. Invalid H5MD file?
+    /*! \brief Create and initialize time dependent data block objects from the H5MD file.
+     * \param groupName       The name of the group with blocks to create and initialize.
+     * \throws FileIOError    If there were errors reading data blocks from the file. Invalid file?
+     * \returns The number of initialized data blocks.
      */
-    void initParticleDataBlocksFromFile();
+    int initGroupTimeDataBlocksFromFile(std::string groupName);
 
     /*! \brief Set up data blocks related to particle data.
      *
@@ -208,7 +210,7 @@ public:
      *
      * \param[in] step The simulation step.
      * \param[in] time The time stamp (in ps).
-     * \param[in] lambda The lambda state. FIXME: Currently not written.
+     * \param[in] lambda The lambda state.
      * \param[in] box The box dimensions.
      * \param[in] numParticles The number of particles in the system.
      * \param[in] x The particle coordinates for lossless output.
@@ -228,29 +230,34 @@ public:
                     double      xCompressionError);
 
     /*! \brief Read the next frame of box, coordinates, velocities and forces. With next frame means
-     * the lowest step/time reading from the previous read frame of that data type. If data is written
-     * at different intervals the read data types will be different from one function call to the next.
-     * \param[out] step    The step number of the read data blocks.
-     * \param[out] time    The time of the read data blocks.
-     * \param[out] box     Read box data. Memory must be allocated by the caller.
-     * \param[out] x       Read coordinate data. Memory must be allocated by the caller.
-     * \param[out] v       Read velocity data. Memory must be allocated by the caller.
-     * \param[out] f       Read force data. Memory must be allocated by the caller.
-     * \param[out] xCompressionError The error of lossy (SZ3) coordinate compression. -1 if no lossy SZ3 compression.
-     * \param[out] readBox Whether box data was read or not, i.e. if there was box data matching step.
-     * \param[out] readX   Whether coordinate data was read or not, i.e. if there was coordinate data matching step.
-     * \param[out] readV   Whether velocity data was read or not, i.e. if there was velocity data matching step.
-     * \param[out] readF   Whether force data was read or not, i.e. if there was force data matching step.
+     * the lowest step/time reading from the previous read frame of that data type. If data is
+     * written at different intervals the read data types will be different from one function call
+     * to the next.
+     * \param[out] step       The step number of the read data blocks.
+     * \param[out] time       The time of the read data blocks.
+     * \param[out] lambda     Read lambda data. Memory (1 value) must be allocated by the caller.
+     * \param[out] box        Read box data. Memory must be allocated by the caller.
+     * \param[out] x          Read coordinate data. Memory must be allocated by the caller.
+     * \param[out] v          Read velocity data. Memory must be allocated by the caller.
+     * \param[out] f          Read force data. Memory must be allocated by the caller.
+     * \param[out] xCompressionError The error of lossy (SZ3) coordinate compression. -1 if no lossy SZ3.
+     * \param[out] readLambda Whether lambda data was read or not, i.e. if there was lambda data at this step.
+     * \param[out] readBox    Whether box data was read or not, i.e. if there was box data at this step.
+     * \param[out] readX      Whether coordinate data was read or not, i.e. if there was coordinate at this step.
+     * \param[out] readV      Whether velocity data was read or not, i.e. if there was velocity data at this step.
+     * \param[out] readF      Whether force data was read or not, i.e. if there was force data at this step.
      * \returns Whether any frame was read or not.
-     * \throws FileIOError If there was an error reading the next frame or if the data type of the read data was unknown.
+     * \throws FileIOError If there was an error reading the next frame or if the data type of the data was unknown.
      */
     bool readNextFrameOfStandardDataBlocks(int64_t* step,
                                            real*    time,
+                                           real*    lambda,
                                            rvec*    box,
                                            rvec*    x,
                                            rvec*    v,
                                            rvec*    f,
                                            real*    xCompressionError,
+                                           bool*    readLambda,
                                            bool*    readBox,
                                            bool*    readX,
                                            bool*    readV,

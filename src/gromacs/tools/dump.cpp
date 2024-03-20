@@ -442,7 +442,8 @@ void list_h5md(const char* fn)
 {
 #if GMX_USE_HDF5
     gmx::h5mdio::GmxH5mdIo h5mdIo(fn, 'r');
-    h5mdIo.initParticleDataBlocksFromFile();
+    h5mdIo.initGroupTimeDataBlocksFromFile("particles");
+    h5mdIo.initGroupTimeDataBlocksFromFile("observables");
     real firstTime = h5mdIo.getFirstTimeFromAllDataBlocks();
     real finalTime = h5mdIo.getFinalTimeFromAllDataBlocks();
 
@@ -467,16 +468,18 @@ void list_h5md(const char* fn)
         snew(f, numFParticles);
     }
     matrix  box;
-    bool    hasBox = false;
-    bool    hasX   = false;
-    bool    hasV   = false;
-    bool    hasF   = false;
+    bool    hasLambda = false;
+    bool    hasBox    = false;
+    bool    hasX      = false;
+    bool    hasV      = false;
+    bool    hasF      = false;
     int64_t step;
     real    time;
+    real    lambda;
     real    prec;
     int     nframe = 0;
     while (h5mdIo.readNextFrameOfStandardDataBlocks(
-            &step, &time, box, x, v, f, &prec, &hasBox, &hasX, &hasV, &hasF))
+            &step, &time, &lambda, box, x, v, f, &prec, &hasLambda, &hasBox, &hasX, &hasV, &hasF))
     {
         char buf[256];
         sprintf(buf, "%s frame %d", fn, nframe++);
