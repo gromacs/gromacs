@@ -117,25 +117,6 @@ public:
      */
     int initGroupTimeDataBlocksFromFile(std::string groupName);
 
-    /*! \brief Set up data blocks related to particle data.
-     *
-     * This needs to be done before writing the particle data to the trajectory.
-     *
-     * \param[in] writeCoordinatesSteps The lossless coordinate output interval.
-     * \param[in] writeVelocitiesSteps The lossless velocity output interval.
-     * \param[in] writeForcesSteps The lossless force output interval.
-     * \param[in] numParticles The number of particles/atoms in the system.
-     * \param[in] pbcType The periodic boundary condition that is used.
-     * \param[in] xCompressionError The accepted error of the lossy compression of coordinates.
-     * \throws FileIOError If the data blocks could not be created.
-     */
-    void setUpParticlesDataBlocks(int64_t writeCoordinatesSteps,
-                                  int64_t writeVelocitiesSteps,
-                                  int64_t writeForcesSteps,
-                                  int64_t numParticles,
-                                  PbcType pbcType,
-                                  double  xCompressionError);
-
     /*! \brief Set the author name attribute in the H5MD file
      * \param[in] authorName The author name.
      * \throws FileIOError If the author name attribute could not be set.

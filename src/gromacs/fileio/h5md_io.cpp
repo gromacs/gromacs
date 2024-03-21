@@ -269,96 +269,6 @@ int GmxH5mdIo::initGroupTimeDataBlocksFromFile(std::string groupName)
     return dataBlocks_.size() - numDataBlocksBefore;
 }
 
-void GmxH5mdIo::setUpParticlesDataBlocks(int64_t writeCoordinatesSteps,
-                                         int64_t writeVelocitiesSteps,
-                                         int64_t writeForcesSteps,
-                                         int64_t numParticles,
-                                         PbcType pbcType,
-                                         double  xCompressionError)
-{
-    if (numParticles <= 0)
-    {
-        throw gmx::FileIOError("There must be particles/atoms when writing trajectory frames.");
-    }
-#if GMX_DOUBLE
-    const hid_t datatype = H5Tcopy(H5T_NATIVE_DOUBLE);
-#else
-    const hid_t datatype = H5Tcopy(H5T_NATIVE_FLOAT);
-#endif
-
-    std::string name        = "particles/" + systemOutputName_;
-    hid_t       systemGroup = openOrCreateGroup(file_, name.c_str());
-
-    hsize_t              numFramesPerChunk    = 1;
-    CompressionAlgorithm compressionAlgorithm = CompressionAlgorithm::LosslessWithShuffle;
-    if (writeCoordinatesSteps > 0)
-    {
-        if (xCompressionError > 0)
-        {
-            /* Use no more than 10 frames per chunk (compression unit). Use fewer frames per chunk if there are many atoms. */
-            numFramesPerChunk    = std::min(10, int(std::ceil(2e6f / numParticles)));
-            compressionAlgorithm = CompressionAlgorithm::LossySz3;
-
-            /* Register the SZ3 filter. This is not necessary when creating a dataset with the filter,
-             * but must be done to append to an existing file (e.g. when restarting from checkpoint). */
-            registerSz3FilterImplicitly();
-        }
-
-
-        hid_t boxGroup = openOrCreateGroup(systemGroup, "box");
-        setBoxGroupAttributes(boxGroup, pbcType);
-        GmxH5mdTimeDataBlock box(boxGroup,
-                                 "edges",
-                                 "nm",
-                                 numFramesPerChunk,
-                                 DIM,
-                                 DIM,
-                                 datatype,
-                                 CompressionAlgorithm::LosslessNoShuffle, // Never compress box output
-                                 0);
-        dataBlocks_.emplace_back(box);
-
-        GmxH5mdTimeDataBlock position(systemGroup,
-                                      "position",
-                                      "nm",
-                                      numFramesPerChunk,
-                                      numParticles,
-                                      DIM,
-                                      datatype,
-                                      compressionAlgorithm,
-                                      xCompressionError);
-        dataBlocks_.emplace_back(position);
-    }
-    numFramesPerChunk    = 1;
-    compressionAlgorithm = CompressionAlgorithm::LosslessWithShuffle;
-    if (writeForcesSteps > 0)
-    {
-        GmxH5mdTimeDataBlock force(systemGroup,
-                                   "force",
-                                   "kJ mol-1 nm-1",
-                                   numFramesPerChunk,
-                                   numParticles,
-                                   DIM,
-                                   datatype,
-                                   compressionAlgorithm,
-                                   0);
-        dataBlocks_.emplace_back(force);
-    }
-    if (writeVelocitiesSteps > 0)
-    {
-        GmxH5mdTimeDataBlock velocity(systemGroup,
-                                      "velocity",
-                                      "nm ps-1",
-                                      numFramesPerChunk,
-                                      numParticles,
-                                      DIM,
-                                      datatype,
-                                      compressionAlgorithm,
-                                      0);
-        dataBlocks_.emplace_back(velocity);
-    }
-}
-
 void GmxH5mdIo::setAuthor(std::string authorName)
 {
     hid_t authorGroup = openOrCreateGroup(file_, "h5md/author");
@@ -437,8 +347,6 @@ void GmxH5mdIo::setAtomNames(const std::vector<std::string>& atomNames)
                                                 atomPropertiesChunkDims,
                                                 CompressionAlgorithm::LosslessNoShuffle,
                                                 0);
-        // writeData<1, true>(atomName, atomNamesChars.data(), 0);
-        // printf("atomNamesChars.data()[0]: %s %s %s %s\n", atomNamesChars.data()[0], atomNamesChars.data()[1], atomNamesChars.data()[2], atomNamesChars.data()[3]);
         writeData<1, true>(atomName, atomNamesChars, 0);
         H5Dclose(atomName);
         sfree(atomNamesChars);
@@ -515,6 +423,9 @@ void GmxH5mdIo::setupMolecularSystem(const gmx_mtop_t&        topology,
     {
         return;
     }
+
+    openOrCreateGroup(file_, "particles");
+    openOrCreateGroup(file_, "particles/system");
 
     /* Vectors are used to keep the values in a continuous memory block. */
     std::vector<real>        atomCharges;

@@ -148,13 +148,6 @@ public:
         }
     }
 
-    /* Initialize H5MD data blocks for the refeence data */
-    void setupReferenceDataBlocks()
-    {
-        referenceH5mdIo_.setUpParticlesDataBlocks(
-                1, 1, 0, refAtomCount_, PbcType::Xyz, refCompressionPrecision_);
-    }
-
     /* Initialize the molecular system information in the reference H5MD file. */
     void setupMolecularSystem()
     {
@@ -359,15 +352,8 @@ TEST_P(H5mdIoTest, HighLevelWriteRead)
 
     EXPECT_FALSE(isReferenceFileOpen());
     openReferenceFile('w');
-    if (getRefAtomCount() <= 0)
-    {
-        EXPECT_THROW_GMX(setupReferenceDataBlocks(), gmx::FileIOError);
-    }
-    else
-    {
-        setupReferenceDataBlocks();
-    }
     setupMolecularSystem();
+
     for (int i = 0; i < numFrames; i++)
     {
         real time   = i * 10;
@@ -391,7 +377,6 @@ TEST_P(H5mdIoTest, HighLevelWriteRead)
         /* The rest of the tests will fail. */
         return;
     }
-
     std::vector<std::string> atomNames = readAtomNamesFromReferenceFile();
     compareAtomNamesToReference(atomNames);
 
