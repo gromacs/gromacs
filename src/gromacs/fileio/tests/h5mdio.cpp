@@ -206,12 +206,6 @@ public:
 
     void generateReferenceTopology() {}
 
-    void initReferenceDataBlocksFromFile()
-    {
-        referenceH5mdIo_.initGroupTimeDataBlocksFromFile("particles");
-        referenceH5mdIo_.initGroupTimeDataBlocksFromFile("observables");
-    }
-
     void writeReferenceTrajectoryFrame(int step, real time, real lambda)
     {
         referenceH5mdIo_.writeFrame(
@@ -392,7 +386,6 @@ TEST_P(H5mdIoTest, HighLevelWriteRead)
 
     openReferenceFile('r');
     EXPECT_TRUE(isReferenceFileOpen());
-    initReferenceDataBlocksFromFile();
     if (getRefAtomCount() <= 0)
     {
         /* The rest of the tests will fail. */

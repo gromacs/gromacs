@@ -442,8 +442,6 @@ void list_h5md(const char* fn)
 {
 #if GMX_USE_HDF5
     gmx::h5mdio::GmxH5mdIo h5mdIo(fn, 'r');
-    h5mdIo.initGroupTimeDataBlocksFromFile("particles");
-    h5mdIo.initGroupTimeDataBlocksFromFile("observables");
     real firstTime = h5mdIo.getFirstTimeFromAllDataBlocks();
     real finalTime = h5mdIo.getFinalTimeFromAllDataBlocks();
 

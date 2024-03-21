@@ -59,7 +59,6 @@ namespace h5mdio
 GmxH5mdTimeDataBlock::GmxH5mdTimeDataBlock(hid_t                container,
                                            const std::string    name,
                                            const std::string    unit,
-                                           int64_t              writingInterval,
                                            hsize_t              numFramesPerChunk,
                                            hsize_t              numEntries,
                                            hsize_t              numValuesPerEntry,
@@ -69,7 +68,6 @@ GmxH5mdTimeDataBlock::GmxH5mdTimeDataBlock(hid_t                container,
 {
     container_       = container;
     name_            = name;
-    writingInterval_ = writingInterval;
 
     group_ = openOrCreateGroup(container_, name_.c_str());
     char tmpFullName[c_maxFullNameLength];
@@ -170,26 +168,19 @@ bool GmxH5mdTimeDataBlock::operator==(const std::string fullNameComparison)
     return false;
 }
 
-void GmxH5mdTimeDataBlock::writeFrame(const void* data, int64_t step, real time)
-{
-    GMX_ASSERT(step >= 0, "Invalid step when writing frame.");
-
-    /* If there is no specified writing interval for this data block, write after the previous output. */
-    const int64_t frameNumber = writingInterval_ > 0 ? step / writingInterval_ : writingFrameIndex_;
-
-    writeData<3, false>(mainDataSet_, data, frameNumber);
-    writeData<1, false>(stepDataSet_, &step, frameNumber);
-    writeData<1, false>(timeDataSet_, &time, frameNumber);
-    ++writingFrameIndex_;
-}
-
 void GmxH5mdTimeDataBlock::writeFrame(const void* data, int64_t step, real time, int64_t frame)
 {
+    if (frame < 0)
+    {
+        frame = writingFrameIndex_;
+    }
     GMX_ASSERT(frame >= 0, "Invalid frame when writing.");
 
     writeData<3, false>(mainDataSet_, data, frame);
     writeData<1, false>(stepDataSet_, &step, frame);
     writeData<1, false>(timeDataSet_, &time, frame);
+
+    writingFrameIndex_ = frame + 1;
 }
 
 bool GmxH5mdTimeDataBlock::readFrame(real* data, int64_t frame)

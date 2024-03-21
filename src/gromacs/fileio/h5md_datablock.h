@@ -69,7 +69,6 @@ private:
     std::string fullName_;        //!< The full HDF5 path of the group storing the data sets.
     std::string mainUnit_;        //!< The physical unit of the main (value) data.
     std::string timeUnit_;        //!< The unit of the time data.
-    int64_t     writingInterval_; //!< The interval (in MD steps) between outputs.
 
     /*! The index of the next frame to write. 0 when no frames have been written. */
     int64_t writingFrameIndex_;
@@ -92,7 +91,6 @@ public:
     GmxH5mdTimeDataBlock(hid_t                container         = -1,
                          const std::string    name              = "",
                          const std::string    unit              = "",
-                         int64_t              writingInterval   = 0,
                          hsize_t              numFramesPerChunk = 1,
                          hsize_t              numEntries        = 0,
                          hsize_t              numValuesPerEntry = 1,
@@ -106,23 +104,14 @@ public:
     bool operator==(const std::string fullSpecifier);
 
     /*! \brief Write a frame of time dependent data to the data block.
-     * The frame number is deduced from the writingInterval_, if set, otherwise the frame
-     * after the previously written frame is written.
      *
      * \param[in] data The data that should be written.
      * \param[in] step The MD simulation step of the data record.
      * \param[in] time The time stamp (in ps) of the data record.
+     * \param[in] frame The frame number to write. If <= 0 the frame to write will be
+     * the one after the previously written frame.
      */
-    void writeFrame(const void* data, int64_t step, real time);
-
-    /*! \brief Write a frame of time dependent data to the data block.
-     *
-     * \param[in] data The data that should be written.
-     * \param[in] step The MD simulation step of the data record.
-     * \param[in] time The time stamp (in ps) of the data record.
-     * \param[in] frame The frame number to write.
-     */
-    void writeFrame(const void* data, int64_t step, real time, int64_t frame);
+    void writeFrame(const void* data, int64_t step, real time, int64_t frame = -1);
 
     /*! \brief Read a specific frame.
      *

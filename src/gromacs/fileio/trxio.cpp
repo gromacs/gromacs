@@ -1062,8 +1062,6 @@ bool read_first_frame(const gmx_output_env_t*      oenv,
     else if (efH5MD == ftp)
     {
         (*status)->h5mdIo = new gmx::h5mdio::GmxH5mdIo(fn, 'r');
-        (*status)->h5mdIo->initGroupTimeDataBlocksFromFile("particles");
-        (*status)->h5mdIo->initGroupTimeDataBlocksFromFile("observables");
     }
     else
     {

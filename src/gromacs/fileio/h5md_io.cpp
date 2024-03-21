@@ -43,6 +43,7 @@
 #include <limits>
 #include <string>
 #include <vector>
+#include <sys/_types/_int64_t.h>
 
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/topology/mtop_util.h"
@@ -175,13 +176,13 @@ void GmxH5mdIo::openFile(const std::string fileName, const char mode)
         }
         /* Create H5MD groups. They should already be there if appending to a valid H5MD file, but it's better to be on the safe side. */
         openOrCreateGroup(file_, "h5md");
-        openOrCreateGroup(file_, "particles");
-        openOrCreateGroup(file_, "particles/system");
     }
     else
     {
         file_ = H5Fopen(fileName.c_str(), H5F_ACC_RDONLY, H5P_DEFAULT);
     }
+    initGroupTimeDataBlocksFromFile("particles");
+    initGroupTimeDataBlocksFromFile("observables");
     if (file_ < 0)
     {
         throw gmx::FileIOError("Cannot open H5MD file.");
@@ -309,7 +310,6 @@ void GmxH5mdIo::setUpParticlesDataBlocks(int64_t writeCoordinatesSteps,
         GmxH5mdTimeDataBlock box(boxGroup,
                                  "edges",
                                  "nm",
-                                 writeCoordinatesSteps,
                                  numFramesPerChunk,
                                  DIM,
                                  DIM,
@@ -321,7 +321,6 @@ void GmxH5mdIo::setUpParticlesDataBlocks(int64_t writeCoordinatesSteps,
         GmxH5mdTimeDataBlock position(systemGroup,
                                       "position",
                                       "nm",
-                                      writeCoordinatesSteps,
                                       numFramesPerChunk,
                                       numParticles,
                                       DIM,
@@ -337,7 +336,6 @@ void GmxH5mdIo::setUpParticlesDataBlocks(int64_t writeCoordinatesSteps,
         GmxH5mdTimeDataBlock force(systemGroup,
                                    "force",
                                    "kJ mol-1 nm-1",
-                                   writeForcesSteps,
                                    numFramesPerChunk,
                                    numParticles,
                                    DIM,
@@ -351,7 +349,6 @@ void GmxH5mdIo::setUpParticlesDataBlocks(int64_t writeCoordinatesSteps,
         GmxH5mdTimeDataBlock velocity(systemGroup,
                                       "velocity",
                                       "nm ps-1",
-                                      writeVelocitiesSteps,
                                       numFramesPerChunk,
                                       numParticles,
                                       DIM,
@@ -647,7 +644,6 @@ void GmxH5mdIo::writeFrame(int64_t       step,
         GmxH5mdTimeDataBlock lambdaBlock(observablesGroup,
                                          "lambda",
                                          "",
-                                         -1,
                                          10,
                                          1,
                                          1,
@@ -687,7 +683,6 @@ void GmxH5mdIo::writeFrame(int64_t       step,
             GmxH5mdTimeDataBlock position(systemGroup,
                                           "position",
                                           "nm",
-                                          -1,
                                           numFramesPerChunk,
                                           numParticles,
                                           DIM,
@@ -714,7 +709,6 @@ void GmxH5mdIo::writeFrame(int64_t       step,
                 GmxH5mdTimeDataBlock box(boxGroup,
                                          "edges",
                                          "nm",
-                                         -1,
                                          numFramesPerChunk,
                                          DIM,
                                          DIM,
@@ -743,7 +737,6 @@ void GmxH5mdIo::writeFrame(int64_t       step,
             GmxH5mdTimeDataBlock velocity(systemGroup,
                                           "velocity",
                                           "nm ps-1",
-                                          -1,
                                           numFramesPerChunk,
                                           numParticles,
                                           DIM,
@@ -768,7 +761,6 @@ void GmxH5mdIo::writeFrame(int64_t       step,
             GmxH5mdTimeDataBlock force(systemGroup,
                                        "force",
                                        "kJ mol-1 nm-1",
-                                       -1,
                                        numFramesPerChunk,
                                        numParticles,
                                        DIM,
