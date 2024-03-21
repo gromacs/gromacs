@@ -720,7 +720,7 @@ int gmx_editconf(int argc, char* argv[])
           etBOOL,
           { &bCONECT },
           "Add CONECT records to a [REF].pdb[ref] file when written. Can only be done when a "
-          "topology is present" }
+          "topology (tpr file) is present" }
     };
 #define NPA asize(pa)
 
@@ -804,17 +804,17 @@ int gmx_editconf(int argc, char* argv[])
         printf("Incompatible options -mead and -grasp. Turning off -grasp\n");
         bGrasp = FALSE;
     }
-    if (bGrasp && (outftp != efPDB))
+    if ((bGrasp || bCONECT) && (outftp != efPDB))
     {
         gmx_fatal(FARGS,
                   "Output file should be a .pdb file"
-                  " when using the -grasp option\n");
+                  " when using the -grasp or -conect options\n");
     }
-    if ((bMead || bGrasp) && (fn2ftp(infile) != efTPR))
+    if ((bMead || bGrasp || bCONECT) && inftp != efTPR)
     {
         gmx_fatal(FARGS,
                   "Input file should be a .tpr file"
-                  " when using the -mead option\n");
+                  " when using the -mead, -grasp, or -conect options\n");
     }
 
     t_symtab symtab;
@@ -1264,7 +1264,8 @@ int gmx_editconf(int argc, char* argv[])
                    "to use a cubic box instead, or why not try a dodecahedron today?\n");
         }
     }
-    if (bCONECT && (outftp == efPDB) && (inftp == efTPR))
+    /* We have already checked that the output is a pdb file and the input a tpr file */
+    if (bCONECT)
     {
         conect = gmx_conect_generate(top);
     }

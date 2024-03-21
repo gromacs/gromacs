@@ -19,6 +19,15 @@ Fixes where mdrun could behave incorrectly
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
 
+Improve error messages from editconf and trjconv
+""""""""""""""""""""""""""""""""""""""""""""""""
+
+Fail properly if a tpr file is not supplied when using the -conect option.
+Also avoid a "File input/output error:" when no tpr file is supplied when
+it is required for -pbc options.
+
+:issue:`5032`
+
 Fixes that affect portability
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
