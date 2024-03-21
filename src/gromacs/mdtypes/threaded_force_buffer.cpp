@@ -167,7 +167,11 @@ void reduceThreadForceBuffers(ArrayRef<gmx::RVec> force,
      * regions in OpenMP, otherwise the performance will degrade significantly.
      */
     const int gmx_unused numThreadsForReduction = threadForceBuffers.size();
-#pragma omp parallel for num_threads(numThreadsForReduction) schedule(static)
+// nvc++ 24.1+ version has bug due to which it generates incorrect OMP code for this region
+// so disable this until nvc++ gets fixed.
+#if !defined(__NVCOMPILER)
+#    pragma omp parallel for num_threads(numThreadsForReduction) schedule(static)
+#endif
     for (int b = 0; b < usedBlockIndices.ssize(); b++)
     {
         try

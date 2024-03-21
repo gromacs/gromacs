@@ -92,7 +92,16 @@ int many_auto_correl(std::vector<std::vector<real>>* c)
             int nthreads  = gmx_omp_get_max_threads();
             int thread_id = gmx_omp_get_thread_num();
             int i0        = (thread_id * nfunc) / nthreads;
-            int i1        = std::min(nfunc, ((thread_id + 1) * nfunc) / nthreads);
+// nvc++ 24.1+ version has bug due to which it generates incorrect OMP code for this region
+// with std::min() so we add a macro for min() function.
+#if defined(__NVCOMPILER)
+#    define min(l, r) (l < r ? l : r)
+            int i1 = min(nfunc, ((thread_id + 1) * nfunc) / nthreads);
+#    undef min
+#else
+            int i1 = std::min(nfunc, ((thread_id + 1) * nfunc) / nthreads);
+#endif
+
 
             gmx_fft_init_1d(&fft1, nfft, GMX_FFT_FLAG_CONSERVATIVE);
             /* Allocate temporary arrays */

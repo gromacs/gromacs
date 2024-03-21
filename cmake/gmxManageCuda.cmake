@@ -31,6 +31,11 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out https://www.gromacs.org.
 
+# Note that we are using this cmake source to also configure nvc++ as
+# CUDA_HOST_COMPILER. Due to a bug in find_package(CUDA) we have to
+# set the CUDA_HOST_COMPILER explicitly to nvc++.
+
+
 set(GMX_GPU_CUDA ON)
 
 option(GMX_CLANG_CUDA "Use clang for CUDA" OFF)
@@ -43,6 +48,12 @@ set(CMAKE_CUDA_STANDARD 17)
 set(CMAKE_CUDA_STANDARD_REQUIRED ON)
 
 find_package(CUDA ${REQUIRED_CUDA_VERSION} REQUIRED)
+
+if (${CMAKE_CXX_COMPILER_ID} STREQUAL "NVHPC")
+  # find_package(CUDA) sets the CUDA_HOST_COMPILER to nvc instead of nvc++
+  # hence we set it explicitly to nvc++
+  set(CUDA_HOST_COMPILER ${CMAKE_CXX_COMPILER})
+endif()
 
 if(${CUDA_VERSION} GREATER_EQUAL 11.1)
   set(GMX_HAVE_GPU_GRAPH_SUPPORT ON)

@@ -149,6 +149,8 @@ bool gmxShouldEnableFPExceptions()
     return false; // Release build
 #elif defined __clang__ && defined __OPTIMIZE__
     return false; // Buggy compiler
+#elif defined(__NVCOMPILER)
+    return false; // Buggy compiler
 #elif GMX_GPU_SYCL
     return false; // avoid spurious FPE during SYCL JIT
 #else

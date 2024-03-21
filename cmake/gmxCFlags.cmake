@@ -284,7 +284,13 @@ macro (gmx_c_flags)
                          GMXC_CXXFLAGS_RELEASE)
         GMX_TEST_CXXFLAG(CXXFLAGS_NOINLINE "-fno-inline" GMXC_CXXFLAGS_DEBUG)
     endif()
-
+    # NVHPC Compiler supported from version 24.1.
+    if (CMAKE_CXX_COMPILER_ID MATCHES "NVHPC")
+        GMX_TEST_CXXFLAG(CXXFLAGS_NVCXX_FAST "-fast" GMXC_CXXFLAGS)
+        GMX_TEST_CXXFLAG(CXXFLAGS_NVCXX_NOFLUSHZ "-Mnoflushz" GMXC_CXXFLAGS)
+        GMX_TEST_CXXFLAG(CXXFLAGS_NVCXX_NODAZ "-Mnodaz" GMXC_CXXFLAGS)
+        GMX_TEST_CFLAG(CFLAGS_NVC_FAST "-fast" GMXC_CFLAGS)
+    endif()
     # PGI
     # Inter-procedural analysis causes pgcc/pgc++ to crash when linking the library with PGI release 15.7.
     if (CMAKE_C_COMPILER_ID MATCHES "PGI")
