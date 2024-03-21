@@ -279,11 +279,11 @@ gmx_mdoutf_t init_mdoutf(FILE*                          fplog,
         }
         if (of->h5mdIo)
         {
-            of->h5mdIo->setupMolecularSystem(top_global);
+            gmx::setupMolecularSystem(of->h5mdIo, top_global);
         }
         if (of->h5mdIoLowPrec && ir->nstxout_compressed > 0)
         {
-            of->h5mdIoLowPrec->setupMolecularSystem(top_global);
+            gmx::setupMolecularSystem(of->h5mdIo, top_global);
         }
 
         if (ir->nstfout && haveDDAtomOrdering(*cr))

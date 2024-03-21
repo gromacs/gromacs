@@ -558,7 +558,7 @@ t_trxstatus* trjtools_gmx_prepare_h5md_writing(const std::filesystem::path& file
     }
     if (mtop != nullptr)
     {
-        out->h5mdIo->setupMolecularSystem(*mtop, index, index_group_name);
+        setupMolecularSystem(out->h5mdIo, *mtop, index, index_group_name);
     }
 
     return out;

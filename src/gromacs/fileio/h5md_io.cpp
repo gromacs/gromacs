@@ -43,7 +43,6 @@
 #include <limits>
 #include <string>
 #include <vector>
-#include <sys/_types/_int64_t.h>
 
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/topology/mtop_util.h"
@@ -317,11 +316,26 @@ std::string GmxH5mdIo::getCreatorProgramVersion()
     return version;
 }
 
-void GmxH5mdIo::setAtomNames(const std::vector<std::string>& atomNames)
+void GmxH5mdIo::setSystemOutputName(std::string systemOutputName)
 {
+    systemOutputName_ = systemOutputName;
+}
+
+std::string GmxH5mdIo::getSystemOutputName()
+{
+    return systemOutputName_;
+}
+
+
+void GmxH5mdIo::setAtomNames(const std::vector<std::string>& atomNames, std::string selectionName)
+{
+    openOrCreateGroup(file_, "particles");
+    openOrCreateGroup(file_, "particles/system");
+
+    std::string dataSetName("/particles/" + selectionName + "/atomname");
     /* Don't replace data that already exists and cannot (currently) change during the simulation */
     /* FIXME: Currently atom names cannot change during the simulation. */
-    if (!H5Lexists(file_, "/particles/system/atomname", H5P_DEFAULT))
+    if (!H5Lexists(file_, dataSetName.c_str(), H5P_DEFAULT))
     {
         /* Is there a more convenient way to do this? std::string is nice above, but cannot be used for writing in HDF5. */
         /* Hard-code the atom name lengths to max 17 (max 4 char 4-byte UTF8). Flexible strings make a lot of unaccounted space,
@@ -341,7 +355,7 @@ void GmxH5mdIo::setAtomNames(const std::vector<std::string>& atomNames)
         atomPropertiesChunkDims[0] = atomNames.size();
 
         hid_t atomName = openOrCreateDataSet<1>(file_,
-                                                "/particles/system/atomname",
+                                                dataSetName.c_str(),
                                                 "",
                                                 stringDataType,
                                                 atomPropertiesChunkDims,
@@ -353,11 +367,15 @@ void GmxH5mdIo::setAtomNames(const std::vector<std::string>& atomNames)
     }
 }
 
-void GmxH5mdIo::setAtomPartialCharges(const std::vector<real>& atomCharges)
+void GmxH5mdIo::setAtomPartialCharges(const std::vector<real>& atomCharges, std::string selectionName)
 {
+    openOrCreateGroup(file_, "particles");
+    openOrCreateGroup(file_, "particles/system");
+
+    std::string dataSetName("/particles/" + selectionName + "/charge");
     /* Don't replace data that already exists and cannot (currently) change during the simulation */
     /* FIXME: Currently charges cannot change during the simulation. For time dependent data use GmxH5mdDataBlock */
-    if (!H5Lexists(file_, "/particles/system/charge", H5P_DEFAULT))
+    if (!H5Lexists(file_, dataSetName.c_str(), H5P_DEFAULT))
     {
 #if GMX_DOUBLE
         const hid_t floatDatatype = H5Tcopy(H5T_NATIVE_DOUBLE);
@@ -369,7 +387,7 @@ void GmxH5mdIo::setAtomPartialCharges(const std::vector<real>& atomCharges)
         atomPropertiesChunkDims[0] = atomCharges.size();
 
         hid_t charge = openOrCreateDataSet<1>(file_,
-                                              "/particles/system/charge",
+                                              dataSetName.c_str(),
                                               "",
                                               floatDatatype,
                                               atomPropertiesChunkDims,
@@ -380,11 +398,15 @@ void GmxH5mdIo::setAtomPartialCharges(const std::vector<real>& atomCharges)
     }
 }
 
-void GmxH5mdIo::setAtomMasses(const std::vector<real>& atomMasses)
+void GmxH5mdIo::setAtomMasses(const std::vector<real>& atomMasses, std::string selectionName)
 {
+    openOrCreateGroup(file_, "particles");
+    openOrCreateGroup(file_, "particles/system");
+
+    std::string dataSetName("/particles/" + selectionName + "/mass");
     /* Don't replace data that already exists and cannot (currently) change during the simulation */
     /* FIXME: Currently masses cannot change during the simulation. For time dependent data use GmxH5mdDataBlock */
-    if (!H5Lexists(file_, "/particles/system/mass", H5P_DEFAULT))
+    if (!H5Lexists(file_, dataSetName.c_str(), H5P_DEFAULT))
     {
 #if GMX_DOUBLE
         const hid_t floatDatatype = H5Tcopy(H5T_NATIVE_DOUBLE);
@@ -396,7 +418,7 @@ void GmxH5mdIo::setAtomMasses(const std::vector<real>& atomMasses)
         atomPropertiesChunkDims[0] = atomMasses.size();
 
         hid_t mass = openOrCreateDataSet<1>(file_,
-                                            "/particles/system/mass",
+                                            dataSetName.c_str(),
                                             "",
                                             floatDatatype,
                                             atomPropertiesChunkDims,
@@ -405,97 +427,6 @@ void GmxH5mdIo::setAtomMasses(const std::vector<real>& atomMasses)
         writeData<1, true>(mass, atomMasses.data(), 0);
         H5Dclose(mass);
     }
-}
-
-void GmxH5mdIo::setupMolecularSystem(const gmx_mtop_t&        topology,
-                                     gmx::ArrayRef<const int> index,
-                                     const std::string        index_group_name)
-{
-#if GMX_USE_HDF5
-    if (file_ < 0)
-    {
-        throw gmx::FileIOError("No file open for writing");
-    }
-
-    t_atoms atoms = gmx_mtop_global_atoms(topology);
-
-    if (atoms.nr == 0)
-    {
-        return;
-    }
-
-    openOrCreateGroup(file_, "particles");
-    openOrCreateGroup(file_, "particles/system");
-
-    /* Vectors are used to keep the values in a continuous memory block. */
-    std::vector<real>        atomCharges;
-    std::vector<real>        atomMasses;
-    std::vector<std::string> atomNames;
-
-    atomCharges.reserve(atoms.nr);
-    atomMasses.reserve(atoms.nr);
-    atomNames.reserve(atoms.nr);
-
-    /* FIXME: The names could be copied directly to a char array instead. */
-    /* FIXME: Should use int64_t. Needs changes in atoms. */
-    for (int atomCounter = 0; atomCounter < atoms.nr; atomCounter++)
-    {
-        atomCharges.push_back(atoms.atom[atomCounter].q);
-        atomMasses.push_back(atoms.atom[atomCounter].m);
-        atomNames.push_back(*(atoms.atomname[atomCounter]));
-    }
-
-    setAtomNames(atomNames);
-    setAtomPartialCharges(atomCharges);
-    setAtomMasses(atomMasses);
-
-    /* We only need to create a separate selection group entry if not all atoms are part of it. */
-    /* TODO: Write atom name, charge and mass for the selection group as well. */
-    /* If a selection of atoms is explicitly provided then use that instead of the CompressedPositionOutput */
-    bool all_atoms_selected = true;
-    if (index.ssize() > 0 && index.ssize() != topology.natoms)
-    {
-        all_atoms_selected = false;
-    }
-    else
-    {
-        /* FIXME: Should use int64_t. Needs changes in topology. */
-        for (int i = 0; (i < topology.natoms); i++)
-        {
-            if (getGroupType(topology.groups, SimulationAtomGroupType::CompressedPositionOutput, i) != 0)
-            {
-                all_atoms_selected = false;
-                break;
-            }
-        }
-    }
-    bool setupSeparateOutputGroup = false;
-    if (!all_atoms_selected)
-    {
-        if (index.ssize() > 0 && index_group_name != "")
-        {
-            setupSeparateOutputGroup = true;
-            systemOutputName_        = index_group_name;
-        }
-        /* If no name was specified fall back to using the selection group name of compressed output, if any. */
-        else if (topology.groups.numberOfGroupNumbers(SimulationAtomGroupType::CompressedPositionOutput) != 0)
-        {
-            setupSeparateOutputGroup = true;
-            int nameIndex = topology.groups.groups[SimulationAtomGroupType::CompressedPositionOutput][0];
-            systemOutputName_ = *topology.groups.groupNames[nameIndex];
-        }
-    }
-    if (!setupSeparateOutputGroup)
-    {
-        systemOutputName_ = "system";
-    }
-    std::string name = "particles/" + systemOutputName_;
-    openOrCreateGroup(file_, name.c_str());
-
-#else
-    throw gmx::FileIOError(
-            "GROMACS was compiled without HDF5 support, cannot handle this file type");
-#endif
 }
 
 std::vector<std::string> GmxH5mdIo::readAtomNames()
@@ -929,6 +860,93 @@ void setH5mdAuthorAndCreator(h5mdio::GmxH5mdIo* file)
 
     const std::string gmxVersion = gmx_version();
     file->setCreatorProgramVersion(gmxVersion);
+}
+
+void setupMolecularSystem(h5mdio::GmxH5mdIo*       file,
+                          const gmx_mtop_t&        topology,
+                          gmx::ArrayRef<const int> index,
+                          const std::string        index_group_name)
+{
+#if GMX_USE_HDF5
+    if (file == nullptr || !file->isFileOpen())
+    {
+        throw gmx::FileIOError("No file open for writing");
+    }
+
+    t_atoms atoms = gmx_mtop_global_atoms(topology);
+
+    if (atoms.nr == 0)
+    {
+        return;
+    }
+
+    /* Vectors are used to keep the values in a continuous memory block. */
+    std::vector<real>        atomCharges;
+    std::vector<real>        atomMasses;
+    std::vector<std::string> atomNames;
+
+    atomCharges.reserve(atoms.nr);
+    atomMasses.reserve(atoms.nr);
+    atomNames.reserve(atoms.nr);
+
+    /* FIXME: The names could be copied directly to a char array instead. */
+    /* FIXME: Should use int64_t. Needs changes in atoms. */
+    for (int atomCounter = 0; atomCounter < atoms.nr; atomCounter++)
+    {
+        atomCharges.push_back(atoms.atom[atomCounter].q);
+        atomMasses.push_back(atoms.atom[atomCounter].m);
+        atomNames.push_back(*(atoms.atomname[atomCounter]));
+    }
+
+    file->setAtomNames(atomNames);
+    file->setAtomPartialCharges(atomCharges);
+    file->setAtomMasses(atomMasses);
+
+    /* We only need to create a separate selection group entry if not all atoms are part of it. */
+    /* TODO: Write atom name, charge and mass for the selection group as well. */
+    /* If a selection of atoms is explicitly provided then use that instead of the CompressedPositionOutput */
+    bool all_atoms_selected = true;
+    if (index.ssize() > 0 && index.ssize() != topology.natoms)
+    {
+        all_atoms_selected = false;
+    }
+    else
+    {
+        /* FIXME: Should use int64_t. Needs changes in topology. */
+        for (int i = 0; (i < topology.natoms); i++)
+        {
+            if (getGroupType(topology.groups, SimulationAtomGroupType::CompressedPositionOutput, i) != 0)
+            {
+                all_atoms_selected = false;
+                break;
+            }
+        }
+    }
+    bool setupSeparateOutputGroup = false;
+    if (!all_atoms_selected)
+    {
+        if (index.ssize() > 0 && index_group_name != "")
+        {
+            setupSeparateOutputGroup = true;
+            file->setSystemOutputName(index_group_name);
+        }
+        /* If no name was specified fall back to using the selection group name of compressed output, if any. */
+        else if (topology.groups.numberOfGroupNumbers(SimulationAtomGroupType::CompressedPositionOutput) != 0)
+        {
+            setupSeparateOutputGroup = true;
+            int nameIndex = topology.groups.groups[SimulationAtomGroupType::CompressedPositionOutput][0];
+            file->setSystemOutputName(*topology.groups.groupNames[nameIndex]);
+        }
+    }
+    if (!setupSeparateOutputGroup)
+    {
+        file->setSystemOutputName("system");
+    }
+
+#else
+    throw gmx::FileIOError(
+            "GROMACS was compiled without HDF5 support, cannot handle this file type");
+#endif
 }
 
 } // namespace gmx

@@ -66,6 +66,7 @@ private:
     hid_t file_; //!< The HDF5 identifier of the file. This is the H5MD root.
     std::list<GmxH5mdTimeDataBlock> dataBlocks_; //!< A list of time dependent data blocks in the HDF5 file.
 
+    /* FIXME: systemOutputName_ is a hacky solution. */
     std::string systemOutputName_; //!< The name of the selection of particles output. Defaults to "system"
 
     /*! \brief Sets the author (user) and creator (application name) properties in the h5md group (h5mdGroup_). */
@@ -150,40 +151,40 @@ public:
      */
     std::string getCreatorProgramVersion();
 
+    /* FIXME: This should be handled better. There should be ways to use multiple selections. */
+    /*! Set the name of the selection used for writing output.
+     * \param[in] systemOutputName The name to use for the selection.
+     */
+    void setSystemOutputName(std::string systemOutputName);
+
+    /*! Get the name of the selection used for writing output.
+     * \returns The name used for the output.
+     */
+    std::string getSystemOutputName();
+
     /*! \brief Set atom names, if not already set. Atom names cannot be modified after setting.
      *
      * \param[in] atomNames The names of the atoms.
+     * \param[in] selectionName The name of the selection the atoms belong to.
      * \throws FileIOError If there was an error creating the data block or writing the data.
      */
-    void setAtomNames(const std::vector<std::string>& atomNames);
+    void setAtomNames(const std::vector<std::string>& atomNames, std::string selectionName = "system");
 
     /*! \brief Set atom partial charges, if not already set. Partial charges cannot be modified after setting.
      *
      * \param[in] atomCharges The names of the atoms.
+     * \param[in] selectionName The name of the selection the atoms belong to.
      * \throws FileIOError If there was an error creating the data block or writing the data.
      */
-    void setAtomPartialCharges(const std::vector<real>& atomCharges);
+    void setAtomPartialCharges(const std::vector<real>& atomCharges, std::string selectionName = "system");
 
     /*! \brief Set atom masses, if not already set. Masses cannot be modified after setting.
      *
      * \param[in] atomMasses The names of the atoms.
+     * \param[in] selectionName The name of the selection the atoms belong to.
      * \throws FileIOError If there was an error creating the data block or writing the data.
      */
-    void setAtomMasses(const std::vector<real>& atomMasses);
-
-
-    /*! \brief Write molecule system related data to the file.
-     *
-     * This is currently not updated during the trajectory. The data that is written are atom masses, atom charges and atom names.
-     *
-     * \param[in] topology The molecular topology describing the system.
-     * \param[in] index    The selected atoms to include. If empty, use all atoms in the topology.
-     * \param[in] index_group_name The name of the atom selection specified by index.
-     * \throws FileIOError    If there is no file open or if the data could not be written.
-     */
-    void setupMolecularSystem(const gmx_mtop_t&        topology,
-                              gmx::ArrayRef<const int> index            = {},
-                              const std::string        index_group_name = "");
+    void setAtomMasses(const std::vector<real>& atomMasses, std::string selectionName = "system");
 
     std::vector<std::string> readAtomNames();
 
@@ -289,6 +290,21 @@ public:
 
 /*! \brief Set the author and creator fields based on user and program data available in gromacs. */
 void setH5mdAuthorAndCreator(h5mdio::GmxH5mdIo* file);
+
+/*! \brief Write molecule system related data to the file.
+ *
+ * This is currently not updated during the trajectory. The data that is written are atom masses, atom charges and atom names.
+ *
+ * \param[in] topology The molecular topology describing the system.
+ * \param[in] index    The selected atoms to include. If empty, use all atoms in the topology.
+ * \param[in] index_group_name The name of the atom selection specified by index.
+ * \throws FileIOError    If there is no file open or if the data could not be written.
+ */
+void setupMolecularSystem(h5mdio::GmxH5mdIo*       file,
+                          const gmx_mtop_t&        topology,
+                          gmx::ArrayRef<const int> index            = {},
+                          const std::string        index_group_name = "");
+
 
 } // namespace gmx
 #endif // GMX_FILEIO_H5MD_IO_H
