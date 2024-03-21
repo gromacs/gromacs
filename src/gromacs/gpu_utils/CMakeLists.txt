@@ -65,6 +65,16 @@ elseif(GMX_GPU_CUDA)
     _gmx_add_files_to_property(CUDA_SOURCES
         device_stream_manager.cpp
         )
+elseif(GMX_GPU_HIP)
+    gmx_add_libgromacs_sources(
+        device_context.cpp
+        device_stream_hip.cpp
+        gpu_utils_impl.cpp
+        pmalloc.cpp
+        )
+    _gmx_add_files_to_property(HIP_SOURCES
+        device_stream_hip.cpp
+        )
 elseif(GMX_GPU_SYCL)
     gmx_add_libgromacs_sources(
         devicebuffer_sycl.cpp

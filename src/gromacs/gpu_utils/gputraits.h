@@ -58,6 +58,10 @@
 
 #    include "gromacs/gpu_utils/gputraits_sycl.h"
 
+#elif GMX_GPU_HIP
+
+#    include "gromacs/gpu_utils/gputraits_hip.h"
+
 #else
 
 using DeviceTexture = void*;

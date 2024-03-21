@@ -51,7 +51,8 @@
 
 #if GMX_GPU_CUDA
 #    include <cuda_runtime.h>
-
+#elif GMX_GPU_HIP
+#    include <hip/hip_runtime.h>
 #elif GMX_GPU_OPENCL
 #    include "gromacs/gpu_utils/gmxopencl.h"
 #elif GMX_GPU_SYCL
@@ -119,6 +120,13 @@ public:
 
 private:
     cudaStream_t stream_ = nullptr;
+#elif GMX_GPU_HIP
+
+    //! Getter
+    hipStream_t stream() const;
+
+private:
+    hipStream_t stream_ = nullptr;
 #elif GMX_GPU_SYCL
 
     /*! \brief

@@ -36,7 +36,7 @@ if(GMX_DOUBLE)
 endif()
 
 if (NOT CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-        message(FATAL_ERROR "Building with HIP backend requires Clang compiler, but ${CMAKE_CXX_COMPILER_ID} is used")
+    message(FATAL_ERROR "Building with HIP backend requires Clang compiler, but ${CMAKE_CXX_COMPILER_ID} is used")
 endif()
 
 set(CMAKE_HIP_STANDARD 17)
