@@ -66,9 +66,9 @@ private:
 
     /*! The name of the data block, the HDF5 group containing the data sets, e.g. "position". */
     std::string name_;
-    std::string fullName_;        //!< The full HDF5 path of the group storing the data sets.
-    std::string mainUnit_;        //!< The physical unit of the main (value) data.
-    std::string timeUnit_;        //!< The unit of the time data.
+    std::string fullName_; //!< The full HDF5 path of the group storing the data sets.
+    std::string mainUnit_; //!< The physical unit of the main (value) data.
+    std::string timeUnit_; //!< The unit of the time data.
 
     /*! The index of the next frame to write. 0 when no frames have been written. */
     int64_t writingFrameIndex_;

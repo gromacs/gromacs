@@ -66,8 +66,8 @@ GmxH5mdTimeDataBlock::GmxH5mdTimeDataBlock(hid_t                container,
                                            CompressionAlgorithm compression,
                                            double               compressionAbsoluteError)
 {
-    container_       = container;
-    name_            = name;
+    container_ = container;
+    name_      = name;
 
     group_ = openOrCreateGroup(container_, name_.c_str());
     char tmpFullName[c_maxFullNameLength];

@@ -168,7 +168,8 @@ public:
      * \param[in] selectionName The name of the selection the atoms belong to.
      * \throws FileIOError If there was an error creating the data block or writing the data.
      */
-    void setAtomNames(const std::vector<std::string>& atomNames, std::string selectionName = "system");
+    void setAtomNames(const std::vector<std::string>& atomNames,
+                      std::string                     selectionName = "system");
 
     /*! \brief Set atom partial charges, if not already set. Partial charges cannot be modified after setting.
      *
@@ -176,7 +177,8 @@ public:
      * \param[in] selectionName The name of the selection the atoms belong to.
      * \throws FileIOError If there was an error creating the data block or writing the data.
      */
-    void setAtomPartialCharges(const std::vector<real>& atomCharges, std::string selectionName = "system");
+    void setAtomPartialCharges(const std::vector<real>& atomCharges,
+                               std::string              selectionName = "system");
 
     /*! \brief Set atom masses, if not already set. Masses cannot be modified after setting.
      *

@@ -576,15 +576,8 @@ void GmxH5mdIo::writeFrame(int64_t       step,
         auto foundDataBlock = std::find(dataBlocks_.begin(), dataBlocks_.end(), wantedName.c_str());
         if (foundDataBlock == dataBlocks_.end())
         {
-            GmxH5mdTimeDataBlock velocity(systemGroup,
-                                          "velocity",
-                                          "nm ps-1",
-                                          numFramesPerChunk,
-                                          numParticles,
-                                          DIM,
-                                          datatype,
-                                          compressionAlgorithm,
-                                          0);
+            GmxH5mdTimeDataBlock velocity(
+                    systemGroup, "velocity", "nm ps-1", numFramesPerChunk, numParticles, DIM, datatype, compressionAlgorithm, 0);
             dataBlocks_.emplace_back(velocity);
             foundDataBlock = std::find(dataBlocks_.begin(), dataBlocks_.end(), wantedName.c_str());
             if (foundDataBlock == dataBlocks_.end())
