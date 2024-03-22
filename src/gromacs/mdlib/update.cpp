@@ -1317,7 +1317,7 @@ static void do_update_sd(int                                 start,
                 f,
                 step,
                 seed,
-                haveDDAtomOrdering(*cr) ? cr->dd->globalAtomIndices.data() : nullptr,
+                (cr != nullptr && haveDDAtomOrdering(*cr)) ? cr->dd->globalAtomIndices.data() : nullptr,
                 dtPressureCouple,
                 parrinelloRahmanMToUseThisStep);
     }

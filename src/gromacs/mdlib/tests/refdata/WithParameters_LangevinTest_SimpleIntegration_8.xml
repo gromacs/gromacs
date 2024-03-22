@@ -1,0 +1,20 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Sequence Name="FinalPositions">
+    <Int Name="Length">1</Int>
+    <Atom>
+      <Real Name="XX">0.0067495802234557919</Real>
+      <Real Name="YY">6.484687890220826</Real>
+      <Real Name="ZZ">0.021423222717968916</Real>
+    </Atom>
+  </Sequence>
+  <Sequence Name="FinalVelocities">
+    <Int Name="Length">1</Int>
+    <Atom>
+      <Real Name="XX">0.89331347750908552</Real>
+      <Real Name="YY">-2.1362883713004148</Real>
+      <Real Name="ZZ">2.7377903142314768</Real>
+    </Atom>
+  </Sequence>
+</ReferenceData>
