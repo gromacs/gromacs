@@ -43,6 +43,7 @@
 #include "gromacs/utility/real.h"
 
 #include "h5md_datablock.h"
+#include "h5md_util.h"
 
 enum class PbcType : int;
 struct gmx_mtop_t;
@@ -190,28 +191,31 @@ public:
 
     std::vector<std::string> readAtomNames();
 
-    /*! \brief Write a trajectory frame to the file. Only writes the data that is passed as input
-     *
+    /*! \brief Write a frame of data to the file.
      * \param[in] step The simulation step.
      * \param[in] time The time stamp (in ps).
-     * \param[in] lambda The lambda state.
-     * \param[in] box The box dimensions.
-     * \param[in] numParticles The number of particles in the system.
-     * \param[in] x The particle coordinates for lossless output.
-     * \param[in] v The particle velocities for lossless output.
-     * \param[in] f The particle forces for lossless output.
-     * \param[in] xCompressionError The accepted error of the lossy compression of coordinates.
+     * \param[in] dataSetFullName Full path (including groups) to the data set.
+     * \param[in] dataDimensionalityFirstDim The number of data entries, e.g., the number of particles.
+     *                                       Must be > 0.
+     * \param[in] dataDimensionalitySecondDim The number of dimesions per particles, e.g., 3 for coordinates.
+     *                                        Must be > 0.
+     * \param[in] data The data to write.
+     * \param[in] unit The (SI) unit of the data.
+     * \param[in] numberOfFramesPerChunk The number of frames per compression chunk. Cannot change.
+     * \param[in] compressionAlgorithm The compression algorithm to use when writing the data.
+     * \param[in] compressionError The accepted error of the lossy compression (if applicable).
      * \throws FileIOError    If there is no file open or if errors occured during writing.
      */
-    void writeFrame(int64_t     step,
-                    real        time,
-                    real        lambda,
-                    const rvec* box,
-                    int64_t     numParticles,
-                    const rvec* x,
-                    const rvec* v,
-                    const rvec* f,
-                    double      xCompressionError);
+    void writeDataFrame(int64_t              step,
+                        real                 time,
+                        std::string          dataSetFullName,
+                        int                  dataDimensionalityFirstDim,
+                        int                  dataDimensionalitySecondDim,
+                        const real*          data,
+                        std::string          unit                   = "",
+                        hsize_t              numberOfFramesPerChunk = 1,
+                        CompressionAlgorithm compressionAlgorithm   = CompressionAlgorithm::None,
+                        double               lossyCompressionError  = 0);
 
     /*! \brief Read the next frame of box, coordinates, velocities and forces. With next frame means
      * the lowest step/time reading from the previous read frame of that data type. If data is
@@ -290,13 +294,17 @@ public:
 
 } // namespace h5mdio
 
-/*! \brief Set the author and creator fields based on user and program data available in gromacs. */
+/*! \brief Set the author and creator fields based on user and program data available in gromacs.
+
+ * \param[in] file     The H5MD file manager to use.
+ */
 void setH5mdAuthorAndCreator(h5mdio::GmxH5mdIo* file);
 
 /*! \brief Write molecule system related data to the file.
  *
  * This is currently not updated during the trajectory. The data that is written are atom masses, atom charges and atom names.
  *
+ * \param[in] file     The H5MD file manager to use.
  * \param[in] topology The molecular topology describing the system.
  * \param[in] index    The selected atoms to include. If empty, use all atoms in the topology.
  * \param[in] index_group_name The name of the atom selection specified by index.
@@ -306,6 +314,31 @@ void setupMolecularSystem(h5mdio::GmxH5mdIo*       file,
                           const gmx_mtop_t&        topology,
                           gmx::ArrayRef<const int> index            = {},
                           const std::string        index_group_name = "");
+
+/*! \brief Write a trajectory frame to the file. Only writes the data that is passed as input
+ *
+ * \param[in] file The H5MD file manager to use.
+ * \param[in] step The simulation step.
+ * \param[in] time The time stamp (in ps).
+ * \param[in] lambda The lambda state.
+ * \param[in] box The box dimensions.
+ * \param[in] numParticles The number of particles in the system.
+ * \param[in] x The particle coordinates for lossless output.
+ * \param[in] v The particle velocities for lossless output.
+ * \param[in] f The particle forces for lossless output.
+ * \param[in] xCompressionError The accepted error of the lossy compression of coordinates.
+ * \throws FileIOError    If there is no file open or if errors occured during writing.
+ */
+void writeFrame(h5mdio::GmxH5mdIo* file,
+                int64_t            step,
+                real               time,
+                real               lambda,
+                const rvec*        box,
+                int64_t            numParticles,
+                const rvec*        x,
+                const rvec*        v,
+                const rvec*        f,
+                double             xCompressionError);
 
 
 } // namespace gmx

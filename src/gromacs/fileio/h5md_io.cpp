@@ -329,10 +329,10 @@ std::string GmxH5mdIo::getSystemOutputName()
 
 void GmxH5mdIo::setAtomNames(const std::vector<std::string>& atomNames, std::string selectionName)
 {
-    openOrCreateGroup(file_, "particles");
-    openOrCreateGroup(file_, "particles/system");
-
+    std::string groupName("/particles/" + selectionName);
+    openOrCreateGroup(file_, groupName.c_str());
     std::string dataSetName("/particles/" + selectionName + "/atomname");
+
     /* Don't replace data that already exists and cannot (currently) change during the simulation */
     /* FIXME: Currently atom names cannot change during the simulation. */
     if (!H5Lexists(file_, dataSetName.c_str(), H5P_DEFAULT))
@@ -369,10 +369,10 @@ void GmxH5mdIo::setAtomNames(const std::vector<std::string>& atomNames, std::str
 
 void GmxH5mdIo::setAtomPartialCharges(const std::vector<real>& atomCharges, std::string selectionName)
 {
-    openOrCreateGroup(file_, "particles");
-    openOrCreateGroup(file_, "particles/system");
-
+    std::string groupName("/particles/" + selectionName);
+    openOrCreateGroup(file_, groupName.c_str());
     std::string dataSetName("/particles/" + selectionName + "/charge");
+
     /* Don't replace data that already exists and cannot (currently) change during the simulation */
     /* FIXME: Currently charges cannot change during the simulation. For time dependent data use GmxH5mdDataBlock */
     if (!H5Lexists(file_, dataSetName.c_str(), H5P_DEFAULT))
@@ -400,10 +400,10 @@ void GmxH5mdIo::setAtomPartialCharges(const std::vector<real>& atomCharges, std:
 
 void GmxH5mdIo::setAtomMasses(const std::vector<real>& atomMasses, std::string selectionName)
 {
-    openOrCreateGroup(file_, "particles");
-    openOrCreateGroup(file_, "particles/system");
-
+    std::string groupName("/particles/" + selectionName);
+    openOrCreateGroup(file_, groupName.c_str());
     std::string dataSetName("/particles/" + selectionName + "/mass");
+
     /* Don't replace data that already exists and cannot (currently) change during the simulation */
     /* FIXME: Currently masses cannot change during the simulation. For time dependent data use GmxH5mdDataBlock */
     if (!H5Lexists(file_, dataSetName.c_str(), H5P_DEFAULT))
@@ -451,170 +451,55 @@ std::vector<std::string> GmxH5mdIo::readAtomNames()
     return atomNameList;
 }
 
-void GmxH5mdIo::writeFrame(int64_t       step,
-                           real          time,
-                           real          lambda,
-                           const rvec*   box,
-                           const int64_t numParticles,
-                           const rvec*   x,
-                           const rvec*   v,
-                           const rvec*   f,
-                           const double  xCompressionError)
+void GmxH5mdIo::writeDataFrame(int64_t              step,
+                               real                 time,
+                               std::string          dataBlockFullName,
+                               int                  dataDimensionalityFirstDim,
+                               int                  dataDimensionalitySecondDim,
+                               const real*          data,
+                               std::string          unit,
+                               hsize_t              numberOfFramesPerChunk,
+                               CompressionAlgorithm compressionAlgorithm,
+                               double               lossyCompressionError)
+
 {
-#if GMX_USE_HDF5
-    if (numParticles <= 0)
-    {
-        throw gmx::FileIOError("There must be particles/atoms when writing trajectory frames.");
-    }
-    if (file_ < 0)
-    {
-        throw gmx::FileIOError("No file open for writing");
-    }
-
-
-#    if GMX_DOUBLE
-    const hid_t datatype = H5Tcopy(H5T_NATIVE_DOUBLE);
-#    else
-    const hid_t datatype = H5Tcopy(H5T_NATIVE_FLOAT);
-#    endif
-
-    hid_t       observablesGroup = openOrCreateGroup(file_, "observables");
-    std::string wantedName       = "/observables/lambda";
-    auto foundDataBlock = std::find(dataBlocks_.begin(), dataBlocks_.end(), wantedName.c_str());
+    GMX_ASSERT(data != nullptr, "Needs valid data to write a data frame.");
+    GMX_ASSERT(dataDimensionalityFirstDim > 0 && dataDimensionalitySecondDim > 0,
+               "The data dimensionality must be at least 1 in both dimensions.");
+    /* See if the data block (API container for time dependent data sets) exists, otherwise create it */
+    auto foundDataBlock = std::find(dataBlocks_.begin(), dataBlocks_.end(), dataBlockFullName.c_str());
     if (foundDataBlock == dataBlocks_.end())
     {
-        GmxH5mdTimeDataBlock lambdaBlock(observablesGroup,
-                                         "lambda",
-                                         "",
-                                         10,
-                                         1,
-                                         1,
-                                         datatype,
-                                         CompressionAlgorithm::LosslessNoShuffle, // Never compress lambda output,
-                                         0);
-        dataBlocks_.emplace_back(lambdaBlock);
-        foundDataBlock = std::find(dataBlocks_.begin(), dataBlocks_.end(), wantedName.c_str());
-        if (foundDataBlock == dataBlocks_.end())
-        {
-            throw gmx::FileIOError("Error creating lambda data block when writing frame.");
-        }
-    }
-    foundDataBlock->writeFrame(&lambda, step, time);
+        std::size_t lastSeparatorPos = dataBlockFullName.find_last_of("/");
+        std::string groupName        = dataBlockFullName.substr(0, lastSeparatorPos);
+        std::string dataBlockName =
+                dataBlockFullName.substr(lastSeparatorPos + 1, dataBlockFullName.length());
+        hid_t group = openOrCreateGroup(file_, groupName.c_str());
 
-    std::string name        = "particles/" + systemOutputName_;
-    hid_t       systemGroup = openOrCreateGroup(file_, name.c_str());
+#if GMX_DOUBLE
+        const hid_t datatype = H5Tcopy(H5T_NATIVE_DOUBLE);
+#else
+        const hid_t datatype      = H5Tcopy(H5T_NATIVE_FLOAT);
+#endif
 
-    CompressionAlgorithm compressionAlgorithm = CompressionAlgorithm::LosslessWithShuffle;
-    hsize_t              numFramesPerChunk    = 1;
-    if (x != nullptr)
-    {
-        std::string wantedName = "/particles/" + systemOutputName_ + "/position";
-        auto foundDataBlock = std::find(dataBlocks_.begin(), dataBlocks_.end(), wantedName.c_str());
-        if (foundDataBlock == dataBlocks_.end())
-        {
-            if (xCompressionError != 0)
-            {
-                /* Use no more than 10 frames per chunk (compression unit). Use fewer frames per chunk if there are many atoms. */
-                numFramesPerChunk    = std::min(10, int(std::ceil(2e6f / numParticles)));
-                compressionAlgorithm = CompressionAlgorithm::LossySz3;
-
-                /* Register the SZ3 filter. This is not necessary when creating a dataset with the filter,
-                 * but must be done to append to an existing file (e.g. when restarting from checkpoint). */
-                registerSz3FilterImplicitly();
-            }
-            GmxH5mdTimeDataBlock position(systemGroup,
-                                          "position",
-                                          "nm",
-                                          numFramesPerChunk,
-                                          numParticles,
-                                          DIM,
-                                          datatype,
-                                          compressionAlgorithm,
-                                          xCompressionError);
-            dataBlocks_.emplace_back(position);
-            foundDataBlock = std::find(dataBlocks_.begin(), dataBlocks_.end(), wantedName.c_str());
-            if (foundDataBlock == dataBlocks_.end())
-            {
-                throw gmx::FileIOError("Error creating position data block when writing frame.");
-            }
-        }
-        foundDataBlock->writeFrame(x, step, time);
-
-        if (box != nullptr)
-        {
-            std::string wantedName = "/particles/" + systemOutputName_ + "/box/edges";
-            foundDataBlock = std::find(dataBlocks_.begin(), dataBlocks_.end(), wantedName.c_str());
-            if (foundDataBlock == dataBlocks_.end())
-            {
-                hid_t boxGroup = openOrCreateGroup(systemGroup, "box");
-                setBoxGroupAttributes(boxGroup, PbcType::Xyz);
-                GmxH5mdTimeDataBlock box(boxGroup,
-                                         "edges",
-                                         "nm",
-                                         numFramesPerChunk,
-                                         DIM,
-                                         DIM,
-                                         datatype,
-                                         CompressionAlgorithm::LosslessNoShuffle, // Never compress box output
-                                         0);
-                dataBlocks_.emplace_back(box);
-                foundDataBlock = std::find(dataBlocks_.begin(), dataBlocks_.end(), wantedName.c_str());
-                if (foundDataBlock == dataBlocks_.end())
-                {
-                    throw gmx::FileIOError("Error creating box data block when writing frame.");
-                }
-            }
-            foundDataBlock->writeFrame(box, step, time);
-        }
-    }
-
-    numFramesPerChunk    = 1;
-    compressionAlgorithm = CompressionAlgorithm::LosslessWithShuffle;
-    if (v != nullptr)
-    {
-        std::string wantedName = "/particles/" + systemOutputName_ + "/velocity";
-        auto foundDataBlock = std::find(dataBlocks_.begin(), dataBlocks_.end(), wantedName.c_str());
-        if (foundDataBlock == dataBlocks_.end())
-        {
-            GmxH5mdTimeDataBlock velocity(
-                    systemGroup, "velocity", "nm ps-1", numFramesPerChunk, numParticles, DIM, datatype, compressionAlgorithm, 0);
-            dataBlocks_.emplace_back(velocity);
-            foundDataBlock = std::find(dataBlocks_.begin(), dataBlocks_.end(), wantedName.c_str());
-            if (foundDataBlock == dataBlocks_.end())
-            {
-                throw gmx::FileIOError("Error creating velocity data block when writing frame.");
-            }
-        }
-        foundDataBlock->writeFrame(v, step, time);
-    }
-    if (f != nullptr)
-    {
-        std::string wantedName = "/particles/" + systemOutputName_ + "/force";
-        auto foundDataBlock = std::find(dataBlocks_.begin(), dataBlocks_.end(), wantedName.c_str());
-        if (foundDataBlock == dataBlocks_.end())
-        {
-            GmxH5mdTimeDataBlock force(systemGroup,
-                                       "force",
-                                       "kJ mol-1 nm-1",
-                                       numFramesPerChunk,
-                                       numParticles,
-                                       DIM,
+        GmxH5mdTimeDataBlock dataBlock(group,
+                                       dataBlockName,
+                                       unit,
+                                       numberOfFramesPerChunk,
+                                       dataDimensionalityFirstDim,
+                                       dataDimensionalitySecondDim,
                                        datatype,
                                        compressionAlgorithm,
-                                       0);
-            dataBlocks_.emplace_back(force);
-            foundDataBlock = std::find(dataBlocks_.begin(), dataBlocks_.end(), wantedName.c_str());
-            if (foundDataBlock == dataBlocks_.end())
-            {
-                throw gmx::FileIOError("Error creating force data block when writing frame.");
-            }
+                                       lossyCompressionError);
+        dataBlocks_.emplace_back(dataBlock);
+        foundDataBlock = std::find(dataBlocks_.begin(), dataBlocks_.end(), dataBlockFullName.c_str());
+        if (foundDataBlock == dataBlocks_.end())
+        {
+            throw gmx::FileIOError("Error creating data block when writing frame.");
         }
-        foundDataBlock->writeFrame(f, step, time);
+        H5Gclose(group);
     }
-#else
-    throw gmx::FileIOError(
-            "GROMACS was compiled without HDF5 support, cannot handle this file type");
-#endif
+    foundDataBlock->writeFrame(data, step, time);
 }
 
 bool GmxH5mdIo::readNextFrameOfStandardDataBlocks(int64_t* step,
@@ -941,5 +826,110 @@ void setupMolecularSystem(h5mdio::GmxH5mdIo*       file,
             "GROMACS was compiled without HDF5 support, cannot handle this file type");
 #endif
 }
+
+void writeFrame(h5mdio::GmxH5mdIo* file,
+                int64_t            step,
+                real               time,
+                real               lambda,
+                const rvec*        box,
+                const int64_t      numParticles,
+                const rvec*        x,
+                const rvec*        v,
+                const rvec*        f,
+                const double       xCompressionError)
+{
+#if GMX_USE_HDF5
+    if (numParticles <= 0)
+    {
+        throw gmx::FileIOError("There must be particles/atoms when writing trajectory frames.");
+    }
+    if (file == nullptr || !file->isFileOpen())
+    {
+        throw gmx::FileIOError("No file open for writing");
+    }
+
+    /* There is so little lambda data per frame that it is best to write multiple per chunk. */
+    hsize_t     numFramesPerChunk = 10;
+    std::string wantedName        = "/observables/lambda";
+    file->writeDataFrame(
+            step, time, wantedName, 1, 1, &lambda, "", 10, h5mdio::CompressionAlgorithm::LosslessNoShuffle);
+    std::string systemOutputName = file->getSystemOutputName();
+
+    if (x != nullptr)
+    {
+        wantedName = "/particles/" + systemOutputName + "/position";
+        h5mdio::CompressionAlgorithm compressionAlgorithm =
+                h5mdio::CompressionAlgorithm::LosslessWithShuffle;
+        if (xCompressionError != 0)
+        {
+            /* Use no more than 10 frames per chunk (compression unit). Use fewer frames per chunk if there are many atoms. */
+            numFramesPerChunk    = std::min(10, int(std::ceil(2e6f / numParticles)));
+            compressionAlgorithm = h5mdio::CompressionAlgorithm::LossySz3;
+
+            /* Register the SZ3 filter. This is not necessary when creating a dataset with the filter,
+             * but must be done to append to an existing file (e.g. when restarting from checkpoint). */
+            h5mdio::registerSz3FilterImplicitly();
+        }
+        file->writeDataFrame(step,
+                             time,
+                             wantedName,
+                             numParticles,
+                             DIM,
+                             static_cast<const real*>(x[0]),
+                             "nm",
+                             numFramesPerChunk,
+                             compressionAlgorithm,
+                             xCompressionError);
+    }
+
+    if (box != nullptr)
+    {
+        numFramesPerChunk =
+                10; /* There is so little box data per frame that it is best to write multiple per chunk. */
+        wantedName = "/particles/" + systemOutputName + "/box/edges";
+        file->writeDataFrame(step,
+                             time,
+                             wantedName,
+                             DIM,
+                             DIM,
+                             static_cast<const real*>(box[0]),
+                             "nm",
+                             numFramesPerChunk,
+                             h5mdio::CompressionAlgorithm::LosslessNoShuffle);
+    }
+
+    numFramesPerChunk = 1;
+    if (v != nullptr)
+    {
+        wantedName = "/particles/" + systemOutputName + "/velocity";
+        file->writeDataFrame(step,
+                             time,
+                             wantedName,
+                             numParticles,
+                             DIM,
+                             static_cast<const real*>(v[0]),
+                             "nm ps-1",
+                             numFramesPerChunk,
+                             h5mdio::CompressionAlgorithm::LosslessWithShuffle);
+    }
+    if (f != nullptr)
+    {
+        wantedName = "/particles/" + systemOutputName + "/force";
+        file->writeDataFrame(step,
+                             time,
+                             wantedName,
+                             numParticles,
+                             DIM,
+                             static_cast<const real*>(f[0]),
+                             "kJ mol-1 nm-1",
+                             numFramesPerChunk,
+                             h5mdio::CompressionAlgorithm::LosslessWithShuffle);
+    }
+#else
+    throw gmx::FileIOError(
+            "GROMACS was compiled without HDF5 support, cannot handle this file type");
+#endif
+}
+
 
 } // namespace gmx

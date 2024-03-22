@@ -201,8 +201,8 @@ public:
 
     void writeReferenceTrajectoryFrame(int step, real time, real lambda)
     {
-        referenceH5mdIo_.writeFrame(
-                step, time, lambda, refBox_, refAtomCount_, refX_, refV_, refF_, refCompressionPrecision_);
+        gmx::writeFrame(
+                &referenceH5mdIo_, step, time, lambda, refBox_, refAtomCount_, refX_, refV_, refF_, refCompressionPrecision_);
     }
 
     int64_t readReferenceNumAtoms(const std::string dataBlockName)
