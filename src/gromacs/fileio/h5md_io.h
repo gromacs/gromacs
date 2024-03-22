@@ -222,10 +222,20 @@ public:
                         CompressionAlgorithm compressionAlgorithm   = CompressionAlgorithm::None,
                         double               lossyCompressionError  = 0);
 
-    /* FIXME! */
-    bool readNextFrameOfDataBlock(std::string dataBlockFullName, real* data, int64_t stepToRead);
+    /*! \brief Reads the next frame of the data block. If stepToRead >= 0 the step of the next frame
+     * must match stepToRead.
+     *
+     * \param[in] dataBlockFullName The full path (in the H5MD file) to the data block group.
+     * \param[in] data Then container in which the read data will be stored.
+     * \param[in] stepToRead If >0 the step of the next frame must match this. Otherwise no frame
+     *                       will be read.
+     * \returns Whether a frame was read or not.
+     */
+    bool readNextFrameOfDataBlock(std::string dataBlockFullName, real* data, int64_t stepToRead = -1);
 
-    /* FIXME! */
+    /* \brief Returns the lossy compression error of the data block matching the name.
+     *        Returns -1 if there is no lossy compression or if the data block was not found.
+     */
     real getLossyCompressionErrorOfDataBlock(std::string dataBlockFullName);
 
     /*! \brief Get the number of frames of a particles data block
@@ -255,7 +265,10 @@ public:
      */
     real getFirstTimeFromAllDataBlocks();
 
-    /* FIXME! */
+    /* \brief Looks through all data blocks to find which are the frames and steps of their
+     * next frame to read.
+     * \returns The lowest step and its corresponding time in a tuple.
+     */
     std::tuple<int64_t, real> getNextStepAndTimeToRead();
 
     /*! \brief Get the final time stamp of a particles data block
