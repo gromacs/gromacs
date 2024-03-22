@@ -28,6 +28,14 @@ it is required for -pbc options.
 
 :issue:`5032`
 
+Avoid floating point exception with corrupted xtc files
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Reading a corrupted xtc file could cause a floating point exception.
+Now the gmx binary will exit with an error message.
+
+:issue:`5037`
+
 Fixes that affect portability
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
