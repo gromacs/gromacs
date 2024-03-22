@@ -728,16 +728,17 @@ void mdoutf_write_to_trajectory_files(FILE*                           fplog,
             }
             else if (of->h5mdIo)
             {
-                gmx::writeFrame(of->h5mdIo,
-                                step,
-                                t,
-                                state_local->lambda[FreeEnergyPerturbationCouplingType::Fep],
-                                state_local->box,
-                                natoms,
-                                x,
-                                v,
-                                f,
-                                0);
+                gmx::writeFrameToStandardDataBlocks(
+                        of->h5mdIo,
+                        step,
+                        t,
+                        state_local->lambda[FreeEnergyPerturbationCouplingType::Fep],
+                        state_local->box,
+                        natoms,
+                        x,
+                        v,
+                        f,
+                        0);
             }
         }
         if (mdof_flags & MDOF_X_COMPRESSED)
@@ -787,7 +788,7 @@ void mdoutf_write_to_trajectory_files(FILE*                           fplog,
                            nullptr);
             if (of->h5mdIoLowPrec)
             {
-                gmx::writeFrame(
+                gmx::writeFrameToStandardDataBlocks(
                         of->h5mdIoLowPrec,
                         step,
                         t,

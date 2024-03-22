@@ -508,112 +508,33 @@ void GmxH5mdIo::writeDataFrame(int64_t              step,
     foundDataBlock->writeFrame(data, step, time);
 }
 
-bool GmxH5mdIo::readNextFrameOfStandardDataBlocks(int64_t* step,
-                                                  real*    time,
-                                                  real*    lambda,
-                                                  rvec*    box,
-                                                  rvec*    x,
-                                                  rvec*    v,
-                                                  rvec*    f,
-                                                  real*    xCompressionError,
-                                                  bool*    readLambda,
-                                                  bool*    readBox,
-                                                  bool*    readX,
-                                                  bool*    readV,
-                                                  bool*    readF)
+bool GmxH5mdIo::readNextFrameOfDataBlock(std::string dataBlockFullName, real* data, int64_t stepToRead)
 {
-    std::string                     nameStem = "/particles/" + systemOutputName_;
-    std::list<std::string>          dataBlockNames{ "/observables/lambda",
-                                           nameStem + "/box/edges",
-                                           nameStem + "/position",
-                                           nameStem + "/force",
-                                           nameStem + "/velocity" };
-    std::list<GmxH5mdTimeDataBlock> dataBlocksNextFrame{};
-    int64_t                         minStepNextFrame = std::numeric_limits<int64_t>::max();
-    *readLambda = *readBox = *readX = *readV = *readF = false;
-
-    for (std::string name : dataBlockNames)
+    for (auto& dataBlock : dataBlocks_)
     {
-        auto foundDataBlock = std::find(dataBlocks_.begin(), dataBlocks_.end(), name.c_str());
-        if (foundDataBlock == dataBlocks_.end())
+        if (dataBlock.fullName() == dataBlockFullName)
         {
-            continue;
-        }
-        const int64_t frameIndex = foundDataBlock->readingFrameIndex();
-        if (frameIndex >= foundDataBlock->writingFrameIndex())
-        {
-            continue;
-        }
-        int64_t frameStep = foundDataBlock->getStepOfFrame(frameIndex);
-        /* Discard data sets that had a higher time stamp if an earlier data point has been found. */
-        if (frameStep < minStepNextFrame)
-        {
-            dataBlocksNextFrame.clear();
-            minStepNextFrame = frameStep;
-            *time            = foundDataBlock->getTimeOfFrame(frameIndex);
-        }
-        if (frameStep <= minStepNextFrame)
-        {
-            dataBlocksNextFrame.emplace_back(*foundDataBlock);
+            if (stepToRead < 0 || dataBlock.getStepOfNextReadingFrame() == stepToRead)
+            {
+                return dataBlock.readNextFrame(data);
+            }
+            return false;
         }
     }
-    *step              = minStepNextFrame;
-    bool didReadFrame  = false;
-    *xCompressionError = -1;
-    for (std::list<GmxH5mdTimeDataBlock>::iterator dataBlock = dataBlocks_.begin();
-         dataBlock != dataBlocks_.end();
-         ++dataBlock)
-    {
-        /* FIXME: Can this be done more elegantly? */
-        if (lambda != nullptr && dataBlock->name() == "lambda")
-        {
-            if (dataBlock->readNextFrame(lambda))
-            {
-                *readLambda  = true;
-                didReadFrame = true;
-            }
-        }
-        else if (box != nullptr && dataBlock->name() == "edges")
-        {
-            if (dataBlock->readNextFrame(static_cast<real*>(box[0])))
-            {
-                *readBox     = true;
-                didReadFrame = true;
-            }
-        }
-        else if (x != nullptr && dataBlock->name() == "position")
-        {
-            if (dataBlock->readNextFrame(static_cast<real*>(x[0])))
-            {
-                *readX             = true;
-                didReadFrame       = true;
-                *xCompressionError = dataBlock->getLossyCompressionError();
-            }
-        }
-        else if (v != nullptr && dataBlock->name() == "velocity")
-        {
-            if (dataBlock->readNextFrame(static_cast<real*>(v[0])))
-            {
-                *readV       = true;
-                didReadFrame = true;
-            }
-        }
-        else if (f != nullptr && dataBlock->name() == "force")
-        {
-            if (dataBlock->readNextFrame(static_cast<real*>(f[0])))
-            {
-                *readF       = true;
-                didReadFrame = true;
-            }
-        }
-        else
-        {
-            throw gmx::FileIOError("Unexpected data type.");
-        }
-    }
-    return didReadFrame;
+    return false;
 }
 
+real GmxH5mdIo::getLossyCompressionErrorOfDataBlock(std::string dataBlockFullName)
+{
+    for (const auto& dataBlock : dataBlocks_)
+    {
+        if (dataBlock.fullName() == dataBlockFullName)
+        {
+            return dataBlock.getLossyCompressionError();
+        }
+    }
+    return -1;
+}
 
 int64_t GmxH5mdIo::getNumberOfFrames(const std::string dataBlockName)
 {
@@ -672,6 +593,23 @@ real GmxH5mdIo::getFirstTimeFromAllDataBlocks()
         return firstTime;
     }
     return -1;
+}
+
+std::tuple<int64_t, real> GmxH5mdIo::getNextStepAndTimeToRead()
+{
+    int64_t minStepNextFrame = std::numeric_limits<int64_t>::max();
+    real    minTime          = std::numeric_limits<real>::max();
+    for (const auto& dataBlock : dataBlocks_)
+    {
+        int64_t frameStep = dataBlock.getStepOfNextReadingFrame();
+        /* Discard data sets that had a higher time stamp if an earlier data point has been found. */
+        if (frameStep >= 0 && frameStep < minStepNextFrame)
+        {
+            minStepNextFrame = frameStep;
+            minTime          = dataBlock.getTimeOfFrame(dataBlock.readingFrameIndex());
+        }
+    }
+    return std::tuple<int64_t, real>(minStepNextFrame, minTime);
 }
 
 real GmxH5mdIo::getFinalTime(const std::string dataBlockName)
@@ -833,16 +771,16 @@ void setupMolecularSystem(h5mdio::GmxH5mdIo*       file,
 #endif
 }
 
-void writeFrame(h5mdio::GmxH5mdIo* file,
-                int64_t            step,
-                real               time,
-                real               lambda,
-                const rvec*        box,
-                const int64_t      numParticles,
-                const rvec*        x,
-                const rvec*        v,
-                const rvec*        f,
-                const double       xCompressionError)
+void writeFrameToStandardDataBlocks(h5mdio::GmxH5mdIo* file,
+                                    int64_t            step,
+                                    real               time,
+                                    real               lambda,
+                                    const rvec*        box,
+                                    const int64_t      numParticles,
+                                    const rvec*        x,
+                                    const rvec*        v,
+                                    const rvec*        f,
+                                    const double       xCompressionError)
 {
 #if GMX_USE_HDF5
     if (numParticles <= 0)
@@ -851,7 +789,7 @@ void writeFrame(h5mdio::GmxH5mdIo* file,
     }
     if (file == nullptr || !file->isFileOpen())
     {
-        throw gmx::FileIOError("No file open for writing");
+        throw gmx::FileIOError("No file open for writing.");
     }
 
     /* There is so little lambda data per frame that it is best to write multiple per chunk. */
@@ -935,6 +873,85 @@ void writeFrame(h5mdio::GmxH5mdIo* file,
     throw gmx::FileIOError(
             "GROMACS was compiled without HDF5 support, cannot handle this file type");
 #endif
+}
+
+bool readNextFrameOfStandardDataBlocks(h5mdio::GmxH5mdIo* file,
+                                       int64_t*           step,
+                                       real*              time,
+                                       real*              lambda,
+                                       rvec*              box,
+                                       rvec*              x,
+                                       rvec*              v,
+                                       rvec*              f,
+                                       real*              xCompressionError,
+                                       bool*              readLambda,
+                                       bool*              readBox,
+                                       bool*              readX,
+                                       bool*              readV,
+                                       bool*              readF)
+{
+    if (file == nullptr || !file->isFileOpen())
+    {
+        throw gmx::FileIOError("No file open for reading.");
+    }
+
+    std::string systemOutputName  = file->getSystemOutputName();
+    std::string particlesNameStem = "/particles/" + systemOutputName;
+    *readLambda = *readBox = *readX = *readV = *readF = false;
+
+    std::tuple<int64_t, real> temporaryStepTime = file->getNextStepAndTimeToRead();
+    *step                                       = std::get<0>(temporaryStepTime);
+    *time                                       = std::get<1>(temporaryStepTime);
+
+    bool didReadFrame  = false;
+    *xCompressionError = -1;
+
+    if (lambda != nullptr)
+    {
+        if (file->readNextFrameOfDataBlock("/observables/lambda", lambda, *step))
+        {
+            *readLambda  = true;
+            didReadFrame = true;
+        }
+    }
+    if (box != nullptr)
+    {
+        std::string boxDataName = particlesNameStem + "/box/edges";
+        if (file->readNextFrameOfDataBlock(boxDataName.c_str(), static_cast<real*>(box[0]), *step))
+        {
+            *readBox     = true;
+            didReadFrame = true;
+        }
+    }
+    if (x != nullptr)
+    {
+        std::string xDataName = particlesNameStem + "/position";
+        if (file->readNextFrameOfDataBlock(xDataName.c_str(), static_cast<real*>(x[0]), *step))
+        {
+            *readX             = true;
+            didReadFrame       = true;
+            *xCompressionError = file->getLossyCompressionErrorOfDataBlock(xDataName.c_str());
+        }
+    }
+    if (v != nullptr)
+    {
+        std::string boxDataName = particlesNameStem + "/velocity";
+        if (file->readNextFrameOfDataBlock(boxDataName.c_str(), static_cast<real*>(v[0]), *step))
+        {
+            *readV       = true;
+            didReadFrame = true;
+        }
+    }
+    if (f != nullptr)
+    {
+        std::string boxDataName = particlesNameStem + "/force";
+        if (file->readNextFrameOfDataBlock(boxDataName.c_str(), static_cast<real*>(f[0]), *step))
+        {
+            *readF       = true;
+            didReadFrame = true;
+        }
+    }
+    return didReadFrame;
 }
 
 

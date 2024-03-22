@@ -406,7 +406,25 @@ real GmxH5mdTimeDataBlock::getTimeOfFrame(int64_t frame) const
 #endif
 }
 
-real GmxH5mdTimeDataBlock::getLossyCompressionError()
+int64_t GmxH5mdTimeDataBlock::getStepOfNextReadingFrame() const
+{
+    if (readingFrameIndex_ < writingFrameIndex_)
+    {
+        return getStepOfFrame(readingFrameIndex_);
+    }
+    return -1;
+}
+
+real GmxH5mdTimeDataBlock::getTimeOfNextReadingFrame() const
+{
+    if (readingFrameIndex_ < writingFrameIndex_)
+    {
+        return getTimeOfFrame(readingFrameIndex_);
+    }
+    return -1;
+}
+
+real GmxH5mdTimeDataBlock::getLossyCompressionError() const
 {
     return getDataSetSz3CompressionError(mainDataSet_);
 }

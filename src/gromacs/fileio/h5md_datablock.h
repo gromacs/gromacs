@@ -142,11 +142,17 @@ public:
     /*! \brief Return the MD simulation step of a given frame. */
     int64_t getStepOfFrame(int64_t frame) const;
 
-    /*! \brief Get the time of a given frame. */
+    /*! \brief Return the time of a given frame. */
     real getTimeOfFrame(int64_t frame) const;
 
+    /*! \brief Return the MD simulation step of the next frame to read or -1 if there are no more frames to read.. */
+    int64_t getStepOfNextReadingFrame() const;
+
+    /*! \brief Return the time of the next frame to read or -1 if there are no more frames to read. */
+    real getTimeOfNextReadingFrame() const;
+
     /*! \brief Returns the compression error of lossy SZ3 compression, or -1 if there is no lossy SZ3 compression. */
-    real getLossyCompressionError();
+    real getLossyCompressionError() const;
 
     /*! \brief Get the number of frames in the data block. */
     int64_t numberOfFrames() const { return writingFrameIndex_; }

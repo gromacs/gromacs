@@ -425,16 +425,16 @@ int write_trxframe_indexed(t_trxstatus* status, const t_trxframe* fr, int nind, 
     {
         case efTNG: gmx_write_tng_from_trxframe(status->tng, fr, nind); break;
         case efH5MD:
-            gmx::writeFrame(status->h5mdIo,
-                            fr->step,
-                            fr->time,
-                            0,
-                            fr->box,
-                            fr->natoms,
-                            xout,
-                            vout,
-                            fout,
-                            prec > 0 ? 1 / (prec * 2) : 0);
+            gmx::writeFrameToStandardDataBlocks(status->h5mdIo,
+                                                fr->step,
+                                                fr->time,
+                                                0,
+                                                fr->box,
+                                                fr->natoms,
+                                                xout,
+                                                vout,
+                                                fout,
+                                                prec > 0 ? 1 / (prec * 2) : 0);
             break;
         case efXTC: write_xtc(status->fio, nind, fr->step, fr->time, fr->box, xout, prec); break;
         case efTRR:
@@ -602,16 +602,16 @@ int write_trxframe(t_trxstatus* status, t_trxframe* fr, gmx_conect gc)
 
     if (status->h5mdIo)
     {
-        gmx::writeFrame(status->h5mdIo,
-                        fr->step,
-                        fr->time,
-                        fr->lambda,
-                        fr->box,
-                        fr->natoms,
-                        fr->bX ? fr->x : nullptr,
-                        fr->bV ? fr->v : nullptr,
-                        fr->bF ? fr->f : nullptr,
-                        prec > 0 ? 1 / (prec * 2) : 0);
+        gmx::writeFrameToStandardDataBlocks(status->h5mdIo,
+                                            fr->step,
+                                            fr->time,
+                                            fr->lambda,
+                                            fr->box,
+                                            fr->natoms,
+                                            fr->bX ? fr->x : nullptr,
+                                            fr->bV ? fr->v : nullptr,
+                                            fr->bF ? fr->f : nullptr,
+                                            prec > 0 ? 1 / (prec * 2) : 0);
         return 0;
     }
 
@@ -969,19 +969,20 @@ bool read_next_frame(const gmx_output_env_t* oenv, t_trxstatus* status, t_trxfra
                 break;
             case efTNG: bRet = gmx_read_next_tng_frame(status->tng, fr, nullptr, 0); break;
             case efH5MD:
-                bRet      = status->h5mdIo->readNextFrameOfStandardDataBlocks(&fr->step,
-                                                                         &fr->time,
-                                                                         &fr->lambda,
-                                                                         fr->box,
-                                                                         fr->x,
-                                                                         fr->v,
-                                                                         fr->f,
-                                                                         &fr->prec,
-                                                                         &fr->bLambda,
-                                                                         &fr->bBox,
-                                                                         &fr->bX,
-                                                                         &fr->bV,
-                                                                         &fr->bF);
+                bRet      = gmx::readNextFrameOfStandardDataBlocks(status->h5mdIo,
+                                                              &fr->step,
+                                                              &fr->time,
+                                                              &fr->lambda,
+                                                              fr->box,
+                                                              fr->x,
+                                                              fr->v,
+                                                              fr->f,
+                                                              &fr->prec,
+                                                              &fr->bLambda,
+                                                              &fr->bBox,
+                                                              &fr->bX,
+                                                              &fr->bV,
+                                                              &fr->bF);
                 fr->bPrec = (bRet && fr->prec > 0);
                 if (fr->bPrec)
                 {
@@ -1195,19 +1196,20 @@ bool read_first_frame(const gmx_output_env_t*      oenv,
                 fr->natoms = numFParticles;
                 snew(fr->f, numFParticles);
             }
-            if (!(*status)->h5mdIo->readNextFrameOfStandardDataBlocks(&fr->step,
-                                                                      &fr->time,
-                                                                      &fr->lambda,
-                                                                      fr->box,
-                                                                      fr->x,
-                                                                      fr->v,
-                                                                      fr->f,
-                                                                      &fr->prec,
-                                                                      &fr->bLambda,
-                                                                      &fr->bBox,
-                                                                      &fr->bX,
-                                                                      &fr->bV,
-                                                                      &fr->bF))
+            if (!gmx::readNextFrameOfStandardDataBlocks((*status)->h5mdIo,
+                                                        &fr->step,
+                                                        &fr->time,
+                                                        &fr->lambda,
+                                                        fr->box,
+                                                        fr->x,
+                                                        fr->v,
+                                                        fr->f,
+                                                        &fr->prec,
+                                                        &fr->bLambda,
+                                                        &fr->bBox,
+                                                        &fr->bX,
+                                                        &fr->bV,
+                                                        &fr->bF))
             {
                 fr->not_ok = DATA_NOT_OK;
                 printincomp(*status, fr);

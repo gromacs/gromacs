@@ -476,8 +476,8 @@ void list_h5md(const char* fn)
     real    lambda;
     real    prec;
     int     nframe = 0;
-    while (h5mdIo.readNextFrameOfStandardDataBlocks(
-            &step, &time, &lambda, box, x, v, f, &prec, &hasLambda, &hasBox, &hasX, &hasV, &hasF))
+    while (gmx::readNextFrameOfStandardDataBlocks(
+            &h5mdIo, &step, &time, &lambda, box, x, v, f, &prec, &hasLambda, &hasBox, &hasX, &hasV, &hasF))
     {
         char buf[256];
         sprintf(buf, "%s frame %d", fn, nframe++);

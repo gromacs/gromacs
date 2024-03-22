@@ -222,39 +222,11 @@ public:
                         CompressionAlgorithm compressionAlgorithm   = CompressionAlgorithm::None,
                         double               lossyCompressionError  = 0);
 
-    /*! \brief Read the next frame of box, coordinates, velocities and forces. With next frame means
-     * the lowest step/time reading from the previous read frame of that data type. If data is
-     * written at different intervals the read data types will be different from one function call
-     * to the next.
-     * \param[out] step       The step number of the read data blocks.
-     * \param[out] time       The time of the read data blocks.
-     * \param[out] lambda     Read lambda data. Memory (1 value) must be allocated by the caller.
-     * \param[out] box        Read box data. Memory must be allocated by the caller.
-     * \param[out] x          Read coordinate data. Memory must be allocated by the caller.
-     * \param[out] v          Read velocity data. Memory must be allocated by the caller.
-     * \param[out] f          Read force data. Memory must be allocated by the caller.
-     * \param[out] xCompressionError The error of lossy (SZ3) coordinate compression. -1 if no lossy SZ3.
-     * \param[out] readLambda Whether lambda data was read or not, i.e. if there was lambda data at this step.
-     * \param[out] readBox    Whether box data was read or not, i.e. if there was box data at this step.
-     * \param[out] readX      Whether coordinate data was read or not, i.e. if there was coordinate at this step.
-     * \param[out] readV      Whether velocity data was read or not, i.e. if there was velocity data at this step.
-     * \param[out] readF      Whether force data was read or not, i.e. if there was force data at this step.
-     * \returns Whether any frame was read or not.
-     * \throws FileIOError If there was an error reading the next frame or if the data type of the data was unknown.
-     */
-    bool readNextFrameOfStandardDataBlocks(int64_t* step,
-                                           real*    time,
-                                           real*    lambda,
-                                           rvec*    box,
-                                           rvec*    x,
-                                           rvec*    v,
-                                           rvec*    f,
-                                           real*    xCompressionError,
-                                           bool*    readLambda,
-                                           bool*    readBox,
-                                           bool*    readX,
-                                           bool*    readV,
-                                           bool*    readF);
+    /* FIXME! */
+    bool readNextFrameOfDataBlock(std::string dataBlockFullName, real* data, int64_t stepToRead);
+
+    /* FIXME! */
+    real getLossyCompressionErrorOfDataBlock(std::string dataBlockFullName);
 
     /*! \brief Get the number of frames of a particles data block
      * \param[in] dataBlockName The name of the data block.
@@ -282,6 +254,9 @@ public:
      * \throws FileIOError    If there was an error determining the time of the first frame.
      */
     real getFirstTimeFromAllDataBlocks();
+
+    /* FIXME! */
+    std::tuple<int64_t, real> getNextStepAndTimeToRead();
 
     /*! \brief Get the final time stamp of a particles data block
      * \param[in] dataBlockName The name of the data block.
@@ -334,17 +309,52 @@ void setupMolecularSystem(h5mdio::GmxH5mdIo*       file,
  * \param[in] xCompressionError The accepted error of the lossy compression of coordinates.
  * \throws FileIOError    If there is no file open or if errors occured during writing.
  */
-void writeFrame(h5mdio::GmxH5mdIo* file,
-                int64_t            step,
-                real               time,
-                real               lambda,
-                const rvec*        box,
-                int64_t            numParticles,
-                const rvec*        x,
-                const rvec*        v,
-                const rvec*        f,
-                double             xCompressionError);
+void writeFrameToStandardDataBlocks(h5mdio::GmxH5mdIo* file,
+                                    int64_t            step,
+                                    real               time,
+                                    real               lambda,
+                                    const rvec*        box,
+                                    int64_t            numParticles,
+                                    const rvec*        x,
+                                    const rvec*        v,
+                                    const rvec*        f,
+                                    double             xCompressionError);
 
+/*! \brief Read the next frame of box, coordinates, velocities and forces. With next frame means
+ * the lowest step/time reading from the previous read frame of that data type. If data is
+ * written at different intervals the read data types will be different from one function call
+ * to the next.
+ * \param[in] file The H5MD file manager to use.
+ * \param[out] step       The step number of the read data blocks.
+ * \param[out] time       The time of the read data blocks.
+ * \param[out] lambda     Read lambda data. Memory (1 value) must be allocated by the caller.
+ * \param[out] box        Read box data. Memory must be allocated by the caller.
+ * \param[out] x          Read coordinate data. Memory must be allocated by the caller.
+ * \param[out] v          Read velocity data. Memory must be allocated by the caller.
+ * \param[out] f          Read force data. Memory must be allocated by the caller.
+ * \param[out] xCompressionError The error of lossy (SZ3) coordinate compression. -1 if no lossy SZ3.
+ * \param[out] readLambda Whether lambda data was read or not, i.e. if there was lambda data at this step.
+ * \param[out] readBox    Whether box data was read or not, i.e. if there was box data at this step.
+ * \param[out] readX      Whether coordinate data was read or not, i.e. if there was coordinate at this step.
+ * \param[out] readV      Whether velocity data was read or not, i.e. if there was velocity data at this step.
+ * \param[out] readF      Whether force data was read or not, i.e. if there was force data at this step.
+ * \returns Whether any frame was read or not.
+ * \throws FileIOError If there was an error reading the next frame or if the data type of the data was unknown.
+ */
+bool readNextFrameOfStandardDataBlocks(h5mdio::GmxH5mdIo* file,
+                                       int64_t*           step,
+                                       real*              time,
+                                       real*              lambda,
+                                       rvec*              box,
+                                       rvec*              x,
+                                       rvec*              v,
+                                       rvec*              f,
+                                       real*              xCompressionError,
+                                       bool*              readLambda,
+                                       bool*              readBox,
+                                       bool*              readX,
+                                       bool*              readV,
+                                       bool*              readF);
 
 } // namespace gmx
 #endif // GMX_FILEIO_H5MD_IO_H

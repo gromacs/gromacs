@@ -201,7 +201,7 @@ public:
 
     void writeReferenceTrajectoryFrame(int step, real time, real lambda)
     {
-        gmx::writeFrame(
+        gmx::writeFrameToStandardDataBlocks(
                 &referenceH5mdIo_, step, time, lambda, refBox_, refAtomCount_, refX_, refV_, refF_, refCompressionPrecision_);
     }
 
@@ -239,19 +239,20 @@ public:
         snew(testX, refAtomCount_);
         snew(testV, refAtomCount_);
         snew(testF, refAtomCount_);
-        referenceH5mdIo_.readNextFrameOfStandardDataBlocks(&testStep,
-                                                           &testTime,
-                                                           &testLambda,
-                                                           testBox,
-                                                           testX,
-                                                           testV,
-                                                           testF,
-                                                           &testPrecision,
-                                                           &testReadLambda,
-                                                           &testReadBox,
-                                                           &testReadX,
-                                                           &testReadV,
-                                                           &testReadF);
+        gmx::readNextFrameOfStandardDataBlocks(&referenceH5mdIo_,
+                                               &testStep,
+                                               &testTime,
+                                               &testLambda,
+                                               testBox,
+                                               testX,
+                                               testV,
+                                               testF,
+                                               &testPrecision,
+                                               &testReadLambda,
+                                               &testReadBox,
+                                               &testReadX,
+                                               &testReadV,
+                                               &testReadF);
 
         real referenceTime   = referenceStep * 10;
         real referenceLambda = static_cast<real>(referenceStep) / referenceNumFrames;
