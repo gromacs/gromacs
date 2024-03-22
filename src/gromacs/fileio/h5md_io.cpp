@@ -692,7 +692,7 @@ void setupMolecularSystem(h5mdio::GmxH5mdIo*       file,
 #if GMX_USE_HDF5
     if (file == nullptr || !file->isFileOpen())
     {
-        throw gmx::FileIOError("No file open for writing");
+        throw gmx::FileIOError("No file open for writing.");
     }
 
     t_atoms atoms = gmx_mtop_global_atoms(topology);

@@ -283,7 +283,7 @@ gmx_mdoutf_t init_mdoutf(FILE*                          fplog,
         }
         if (of->h5mdIoLowPrec && ir->nstxout_compressed > 0)
         {
-            gmx::setupMolecularSystem(of->h5mdIo, top_global);
+            gmx::setupMolecularSystem(of->h5mdIoLowPrec, top_global);
         }
 
         if (ir->nstfout && haveDDAtomOrdering(*cr))
@@ -798,7 +798,7 @@ void mdoutf_write_to_trajectory_files(FILE*                           fplog,
                         xxtc,
                         nullptr,
                         nullptr,
-                        of->x_compression_precision > 0 ? 1 / (of->x_compression_precision * 2) : 0);
+                        of->x_compression_precision > 0 ? 1.0 / (of->x_compression_precision * 2) : 0);
             }
             if (of->natoms_x_compressed != of->natoms_global)
             {
