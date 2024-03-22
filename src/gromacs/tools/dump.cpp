@@ -490,7 +490,12 @@ void list_h5md(const char* fn)
         //         trrheader.step,
         //         trrheader.t,
         //         trrheader.lambda);
-        fprintf(stdout, "natoms=%10" PRId64 "  step=%10" PRId64 "  time=%12.7e", numXParticles, step, time);
+        fprintf(stdout,
+                "natoms=%10" PRId64 "  step=%10" PRId64 "  time=%12.7e  lambda=%10g",
+                numXParticles,
+                step,
+                time,
+                lambda);
         if (prec > 0)
         {
             fprintf(stdout, "  x prec=%10g", 1 / (prec * 2));
