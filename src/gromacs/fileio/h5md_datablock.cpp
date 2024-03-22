@@ -159,6 +159,15 @@ void GmxH5mdTimeDataBlock::closeAllDataSets()
     }
 }
 
+bool GmxH5mdTimeDataBlock::operator==(const GmxH5mdTimeDataBlock& comparison)
+{
+    if (fullName_ == comparison.fullName())
+    {
+        return true;
+    }
+    return false;
+}
+
 bool GmxH5mdTimeDataBlock::operator==(const std::string fullNameComparison)
 {
     if (fullName_ == fullNameComparison)

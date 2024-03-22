@@ -101,7 +101,12 @@ public:
     /* Close the data sets: main (or value), step and time. */
     void closeAllDataSets();
 
-    bool operator==(const std::string fullSpecifier);
+    /* Overloaded operator to compare two objects. N.b., only compares the fullName_,
+     * does not check if files are the same. */
+    bool operator==(const GmxH5mdTimeDataBlock& comparison);
+
+    /* Overloaded operator to compare fullName_ to the fullNameComparison string. */
+    bool operator==(const std::string fullNameComparison);
 
     /*! \brief Write a frame of time dependent data to the data block.
      *
