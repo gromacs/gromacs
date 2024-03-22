@@ -189,7 +189,12 @@ public:
      */
     void setAtomMasses(const std::vector<real>& atomMasses, std::string selectionName = "system");
 
-    std::vector<std::string> readAtomNames();
+    /* \brief Read atom names from the file.
+     * \param[in] selectionName The name of the selection the atoms belong to.
+     * \returns A vector containing the atom names. Empty if no names could be read.
+     * \throws FileIOError If there was an error creating the data block or writing the data.
+     */
+    std::vector<std::string> readAtomNames(std::string selectionName = "system");
 
     /*! \brief Write a frame of data to the file.
      * \param[in] step The simulation step.

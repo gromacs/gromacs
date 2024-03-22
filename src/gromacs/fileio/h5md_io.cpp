@@ -429,9 +429,16 @@ void GmxH5mdIo::setAtomMasses(const std::vector<real>& atomMasses, std::string s
     }
 }
 
-std::vector<std::string> GmxH5mdIo::readAtomNames()
+std::vector<std::string> GmxH5mdIo::readAtomNames(std::string selectionName)
 {
-    hid_t atomNameDataSet = H5Dopen(file_, "/particles/system/atomname", H5P_DEFAULT);
+    std::string              dataSetName("/particles/" + selectionName + "/atomname");
+    hid_t                    atomNameDataSet = H5Dopen(file_, dataSetName.c_str(), H5P_DEFAULT);
+    std::vector<std::string> atomNameList;
+
+    if (atomNameDataSet < 0)
+    {
+        return atomNameList;
+    }
 
     hsize_t stringDataTypeSize = c_atomNameLen;
     size_t  totalNumElements;
@@ -439,7 +446,6 @@ std::vector<std::string> GmxH5mdIo::readAtomNames()
     char* atomNames = nullptr;
     readData<1, true>(
             atomNameDataSet, 0, stringDataTypeSize, reinterpret_cast<void**>(&atomNames), &totalNumElements);
-    std::vector<std::string> atomNameList;
     atomNameList.reserve(totalNumElements);
 
     for (size_t i = 0; i < totalNumElements; i++)
