@@ -1599,8 +1599,11 @@ void Update::Impl::update_sd_second_half(const t_inputrec&                 input
         wallcycle_start(wcycle, WallCycleCounter::Update);
 
         int nth = gmx_omp_nthreads_get(ModuleMultiThread::Update);
-
-#pragma omp parallel for num_threads(nth) schedule(static)
+        // nvc++ 24.1+ version has bug due to which it generates incorrect OMP code for this region
+        // so disable this until nvc++ gets fixed.
+#if !defined(__NVCOMPILER)
+#    pragma omp parallel for num_threads(nth) schedule(static)
+#endif
         for (int th = 0; th < nth; th++)
         {
             try
