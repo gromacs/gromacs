@@ -171,7 +171,7 @@ void MdGpuGraph::Impl::disableForDomainIfAnyPpRankHasCpuForces(bool disableGraph
     if (havePPDomainDecomposition_)
     {
         // If disabled on any domain, disable on all domains
-        int disableGraphAcrossAllPpRanksReductionInput  = disableGraphAcrossAllPpRanks;
+        int disableGraphAcrossAllPpRanksReductionInput = static_cast<int>(disableGraphAcrossAllPpRanks);
         int disableGraphAcrossAllPpRanksReductionOutput = 0;
         MPI_Allreduce(&disableGraphAcrossAllPpRanksReductionInput,
                       &disableGraphAcrossAllPpRanksReductionOutput,
