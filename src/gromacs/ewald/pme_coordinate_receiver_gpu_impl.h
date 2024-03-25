@@ -152,8 +152,6 @@ private:
     MPI_Comm comm_;
     //! MPI requests, one per PP rank
     std::vector<MPI_Request> requests_;
-    //! GPU context handle (not used in CUDA)
-    const DeviceContext& deviceContext_;
     //! Communication manager objects corresponding to multiple sending PP ranks
     std::vector<PpCommManager> ppCommManagers_;
 };

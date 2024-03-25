@@ -61,11 +61,10 @@ PmeCoordinateReceiverGpu::Impl::Impl(MPI_Comm                     comm,
                                      gmx::ArrayRef<const PpRanks> ppRanks) :
     comm_(comm),
 #if GMX_MPI
-    requests_(ppRanks.size(), MPI_REQUEST_NULL),
+    requests_(ppRanks.size(), MPI_REQUEST_NULL)
 #else
-    requests_(),
+    requests_()
 #endif
-    deviceContext_(deviceContext)
 {
     // Create streams to manage pipelining
     ppCommManagers_.reserve(ppRanks.size());
@@ -73,7 +72,7 @@ PmeCoordinateReceiverGpu::Impl::Impl(MPI_Comm                     comm,
     {
         ppCommManagers_.emplace_back(PpCommManager{
                 ppRank,
-                std::make_unique<DeviceStream>(deviceContext_, DeviceStreamPriority::High, false),
+                std::make_unique<DeviceStream>(deviceContext, DeviceStreamPriority::High, false),
                 nullptr,
                 std::make_unique<GpuEventSynchronizer>(),
                 { 0, 0 } });

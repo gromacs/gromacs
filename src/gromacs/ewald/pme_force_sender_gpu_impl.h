@@ -138,8 +138,6 @@ private:
     MPI_Comm comm_;
     //! list of PP ranks
     gmx::ArrayRef<PpRanks> ppRanks_;
-    //! GPU context handle (not used in CUDA)
-    const DeviceContext& deviceContext_;
     //! Whether GPU to CPU communication should be staged as GPU to
     //! GPU via P2P cudaMemcpy, then local D2H, for thread-MPI This
     //! may be beneficial when using servers with direct links between

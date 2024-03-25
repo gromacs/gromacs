@@ -53,7 +53,6 @@
 struct gmx_pme_t;
 struct nonbonded_verlet_t;
 struct bonded_threading_t;
-class DeviceContext;
 class DispersionCorrection;
 class ListedForces;
 class CpuPpLongRangeNonbondeds;
@@ -268,9 +267,6 @@ struct t_forcerec
     gmx::StatePropagatorDataGpu* stateGpu = nullptr;
     // TODO: Should not be here. This is here only to pass the pointer around.
     gmx::DeviceStreamManager* deviceStreamManager = nullptr;
-
-    //! GPU device context
-    DeviceContext* deviceContext = nullptr;
 
     /* For PME-PP GPU communication */
     std::unique_ptr<gmx::PmePpCommGpu> pmePpCommGpu;
