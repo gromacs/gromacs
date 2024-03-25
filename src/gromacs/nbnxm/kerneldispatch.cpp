@@ -249,8 +249,14 @@ static void nbnxn_kernel_cpu(const PairlistSet&             pairlistSet,
                              real*                          vVdw,
                              gmx_wallcycle*                 wcycle)
 {
-
     const nbnxn_atomdata_t::Params& nbatParams = nbat->params();
+
+    GMX_ASSERT(ic.vdwtype != VanDerWaalsType::Pme
+                       || ((ic.ljpme_comb_rule == LongRangeVdW::Geom
+                            && nbatParams.ljCombinationRule == LJCombinationRule::Geometric)
+                           || (ic.ljpme_comb_rule == LongRangeVdW::LB
+                               && nbatParams.ljCombinationRule == LJCombinationRule::LorentzBerthelot)),
+               "nbat combination rule parameters should match those for LJ-PME");
 
     const int coulkt = static_cast<int>(getCoulombKernelType(
             kernelSetup.ewaldExclusionType, ic.eeltype, (ic.rcoulomb == ic.rvdw)));
