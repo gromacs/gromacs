@@ -35,15 +35,14 @@
 /*! \file
  * \internal
  *
- * \brief Declares constants and helper functions used when handling
- * bounding boxes for clusters of particles.
+ * \brief Declares sizes and boolean macros for bouding boxes handled with SIMD code.
  *
  * \author Berk Hess <hess@kth.se>
  * \ingroup module_nbnxm
  */
 
-#ifndef GMX_NBNXM_BOUNDINGBOXES_H
-#define GMX_NBNXM_BOUNDINGBOXES_H
+#ifndef GMX_NBNXM_BOUNDINGBOX_SIMD_H
+#define GMX_NBNXM_BOUNDINGBOX_SIMD_H
 
 #include "gromacs/math/vec.h"
 #include "gromacs/simd/simd.h"
@@ -108,4 +107,4 @@ static constexpr int packedBoundingBoxesIndex(int clusterIndex)
 
 #endif // !DOXYGEN
 
-#endif
+#endif // GMX_NBNXM_BOUNDINGBOX_SIMD_H

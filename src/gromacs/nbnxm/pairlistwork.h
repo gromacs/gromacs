@@ -47,7 +47,7 @@
 #include <memory>
 #include <vector>
 
-#include "grid.h"
+#include "boundingbox.h"
 #include "pairlist.h"
 
 //! Working data for the actual i-supercell during pair search \internal

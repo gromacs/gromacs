@@ -59,7 +59,8 @@
 #include "gromacs/simd/simd.h"
 #include "gromacs/simd/vector_operations.h"
 
-#include "boundingboxes.h"
+#include "boundingbox.h"
+#include "boundingbox_simd.h"
 #include "gridsetdata.h"
 #include "nbnxm_geometry.h"
 #include "pairlistparams.h"

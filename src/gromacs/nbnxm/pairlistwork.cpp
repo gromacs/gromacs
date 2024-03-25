@@ -46,7 +46,7 @@
 
 #include "gromacs/simd/simd.h"
 
-#include "boundingboxes.h"
+#include "boundingbox_simd.h"
 
 NbnxnPairlistGpuWork::ISuperClusterData::ISuperClusterData() :
     bb(c_gpuNumClusterPerCell),

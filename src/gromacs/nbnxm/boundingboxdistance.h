@@ -49,8 +49,8 @@
 #include "gromacs/simd/simd.h"
 #include "gromacs/utility/gmxassert.h"
 
-#include "boundingboxes.h"
-#include "grid.h"
+#include "boundingbox.h"
+#include "boundingbox_simd.h"
 
 namespace Nbnxm
 {
@@ -101,7 +101,7 @@ static inline float dotProduct(const gmx::BasicVector<float>& v1, const gmx::Bas
  * Uses 4-wide SIMD operations when available.
  *
  * \param[in] bb_i  First bounding box, has to be aligned for 4-wide SIMD
- * \param[in] bb_j  Second bounding box, has to be be aligned for 4-wide SIMD
+ * \param[in] bb_j  Second bounding box, has to be aligned for 4-wide SIMD
  */
 static inline float clusterBoundingBoxDistance2(const BoundingBox& bb_i, const BoundingBox& bb_j)
 {
