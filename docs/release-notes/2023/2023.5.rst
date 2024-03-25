@@ -26,6 +26,14 @@ to a slightly too large buffer and almost never to a too short buffer.
 
 :issue:`5002`
 
+With energy minimization, dispersion correction energies were double counted
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+The only affected the reported energies, as dispersion correction does not
+affect the forces on the atoms.
+
+:issue:`5031`
+
 Correct forces with virtual_sites1
 """"""""""""""""""""""""""""""""""
 
