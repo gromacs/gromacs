@@ -59,11 +59,11 @@ enum class CompressionAlgorithm
 
 /*! \brief Open an existing HDF5 group or create it if it did not exist already.
  *
- * \param[in] container  The container where the group is located, or should be created.
+ * \param[in] container  The ID of the container where the group is located, or should be created.
  * \param[in] name       The name of the group.
  * \returns the ID of the group.
  */
-hid_t openOrCreateGroup(hid_t container, const char* name);
+hid_t openOrCreateGroup(const hid_t container, const char* name);
 
 /*! \brief Registers the SZ3 filter by using the automatic registration mechanism by H5Pset_filter().
  * Must be done before appending (e.g. when restarting from a checkpoint) to a compressed dataset. */
@@ -83,13 +83,13 @@ void registerSz3FilterImplicitly();
  */
 
 template<int numDims>
-hid_t openOrCreateDataSet(hid_t                container,
-                          const char*          name,
-                          const char*          unit,
-                          hid_t                dataType,
-                          const hsize_t*       chunkDims,
-                          CompressionAlgorithm compression,
-                          double               compressionError);
+hid_t openOrCreateDataSet(const hid_t                container,
+                          const char*                name,
+                          const char*                unit,
+                          const hid_t                dataType,
+                          const hsize_t*             chunkDims,
+                          const CompressionAlgorithm compression,
+                          const double               compressionError);
 
 /*! \brief Writes data to an HDF5 data set, labelled by name.
  *
@@ -100,13 +100,13 @@ hid_t openOrCreateDataSet(hid_t                container,
  * \param[in] frameToWrite The frame number to write (starting from 0).
  */
 template<int numDims, bool writeFullDataSet>
-void writeData(hid_t dataSet, const void* data, hsize_t frameToWrite);
+void writeData(const hid_t dataSet, const void* data, const hsize_t frameToWrite);
 
 /*! \brief Returns the size of the data type used in a dataset.
- * \param[in] The ID of the dataset.
+ * \param[in] dataSet The ID of the dataset.
  * \returns the size of the data type used in the dataset.
  */
-size_t getDataTypeSize(hid_t dataSet);
+size_t getDataTypeSize(const hid_t dataSet);
 
 /*! \brief Reads data from an HDF5 data set, labelled by name.
  *
@@ -121,13 +121,17 @@ size_t getDataTypeSize(hid_t dataSet);
  * \param[out] totalNumElements The number of data values read.
  */
 template<int numDims, bool readFullDataSet>
-void readData(hid_t dataSet, hsize_t frameToRead, size_t dataTypeSize, void** buffer, size_t* totalNumElements);
+void readData(const hid_t   dataSet,
+              const hsize_t frameToRead,
+              const size_t  dataTypeSize,
+              void**        buffer,
+              size_t*       totalNumElements);
 
 /*! Set the periodic box attribute of a box group.
  * \param[in] boxGroup The ID of the box group.
  * \param[in] pbcType The periodic box type.
  */
-void setBoxGroupAttributes(hid_t boxGroup, PbcType pbcType);
+void setBoxGroupAttributes(const hid_t boxGroup, const PbcType pbcType);
 
 /*! Set an attribute value in a data set.
  * \tparam T The type of the data to write.
@@ -137,14 +141,14 @@ void setBoxGroupAttributes(hid_t boxGroup, PbcType pbcType);
  * \param[in] dataType The HDF5 type of the output.
  */
 template<typename T>
-void setAttribute(hid_t dataSet, const char* name, const T value, hid_t dataType);
+void setAttribute(const hid_t dataSet, const char* name, const T value, const hid_t dataType);
 
 /*! Set a string attribute value in a data set.
  * \param[in] dataSet The ID of the HDF5 data set.
  * \param[in] name The name of the attribute.
  * \param[in] value The string to set as attribute value.
  */
-void setAttribute(hid_t dataSet, const char* name, const char* value);
+void setAttribute(const hid_t dataSet, const char* name, const char* value);
 
 /*! Get an attribute value from a data set.
  * \tparam T The type of the data to read.
@@ -154,14 +158,14 @@ void setAttribute(hid_t dataSet, const char* name, const char* value);
  * \param[in] dataType The HDF5 type of the output.
  */
 template<typename T>
-bool getAttribute(hid_t dataSet, const char* name, T* value, hid_t dataType);
+bool getAttribute(const hid_t dataSet, const char* name, T* value, const hid_t dataType);
 
 /*! Get a string attribute value from a data set.
  * \param[in] dataSet The ID of the HDF5 data set.
  * \param[in] name The name of the attribute.
  * \param[out] value The returned string value of the attribute.
  */
-bool getAttribute(hid_t dataSet, const char* name, char** value);
+bool getAttribute(const hid_t dataSet, const char* name, char** value);
 
 /*! Set a list of attribute strings in a data set.
  * \tparam numEntries The number of strings to set.
@@ -171,19 +175,19 @@ bool getAttribute(hid_t dataSet, const char* name, char** value);
  * \param[in] value The list of string to set as attribute value.
  */
 template<hid_t numEntries, size_t stringLength>
-void setAttributeStringList(hid_t dataSet, const char* name, const char value[numEntries][stringLength]);
+void setAttributeStringList(const hid_t dataSet, const char* name, const char value[numEntries][stringLength]);
 
 /*! Get the SZ3 lossy compression error setting (absolute or relative) from a data set.
  * \param[in] dataSet The ID of the HDF5 data set.
  * \returns The compression error setting of the data set or -1 if it is not SZ3 compressed or if the error is not absolute or relative.
  */
-real getDataSetSz3CompressionError(hid_t dataSet);
+real getDataSetSz3CompressionError(const hid_t dataSet);
 
 /*! Check if an object exists in a container
  * \param[in] container The ID of the HDF5 container.
  * \param[in] name The name of the HDF5 object to look for.
  */
-bool objectExists(hid_t container, const char* name);
+bool objectExists(const hid_t container, const char* name);
 
 } // namespace h5mdio
 } // namespace gmx

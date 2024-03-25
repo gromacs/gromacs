@@ -58,10 +58,10 @@ namespace h5mdio
 {
 
 /*! Set the fill value to -1 in a data set property list.
- * \param[in] dataSetCreatePropertyList The propery list to update.
+ * \param[in] dataSetCreatePropertyList The ID of the propery list to update.
  * \param[in] dataType The ID of the HDF5 data type of the data set.
  */
-static void setNumericFillValue(hid_t dataSetCreatePropertyList, const hid_t dataType)
+static void setNumericFillValue(const hid_t dataSetCreatePropertyList, const hid_t dataType)
 {
     if (H5Tequal(dataType, H5T_NATIVE_INT))
     {
@@ -85,7 +85,31 @@ static void setNumericFillValue(hid_t dataSetCreatePropertyList, const hid_t dat
     }
 }
 
-hid_t openOrCreateGroup(hid_t container, const char* name)
+/*! \brief Set the filter settings (of an SZ3 filter) in a property list
+ * \param[in] propertyList The ID of the property list to update
+ * \param[in] sz3Mode The compression error mode, 0 == absolute, 1 == relative
+ * \param[in] compressionError The maximum error when compressing (compressionError = accuracy / 2)
+ */
+static void setLossySz3CompressionProperties(const hid_t propertyList, const int sz3Mode, const double compressionError)
+{
+    size_t        numCompressionSettingsElements;
+    unsigned int* compressionSettings = nullptr;
+    SZ_errConfigToCdArray(
+            &numCompressionSettingsElements, &compressionSettings, sz3Mode, compressionError, compressionError, 0, 0);
+    if (H5Pset_filter(propertyList, H5Z_FILTER_SZ3, H5Z_FLAG_MANDATORY, numCompressionSettingsElements, compressionSettings)
+        < 0)
+    {
+        H5Eprint2(H5E_DEFAULT, nullptr);
+        throw gmx::FileIOError("Cannot set SZ3 compression.");
+    }
+    if (H5Zfilter_avail(H5Z_FILTER_SZ3) < 0)
+    {
+        H5Eprint2(H5E_DEFAULT, nullptr);
+        throw gmx::FileIOError("SZ3 filter not available.");
+    }
+}
+
+hid_t openOrCreateGroup(const hid_t container, const char* name)
 {
 #if GMX_USE_HDF5
     hid_t group = H5Gopen(container, name, H5P_DEFAULT);
@@ -116,10 +140,10 @@ void registerSz3FilterImplicitly()
 {
 #if GMX_USE_HDF5
     hid_t         propertyList = H5Pcreate(H5P_DATASET_CREATE);
-    int           sz3_mode     = 0; // 0: ABS, 1: REL
+    int           sz3Mode      = 0; // 0: ABS, 1: REL
     size_t        numCompressionSettingsElements;
     unsigned int* compressionSettings = nullptr;
-    SZ_errConfigToCdArray(&numCompressionSettingsElements, &compressionSettings, sz3_mode, 0, 0, 0, 0);
+    SZ_errConfigToCdArray(&numCompressionSettingsElements, &compressionSettings, sz3Mode, 0, 0, 0, 0);
     herr_t status = H5Pset_filter(
             propertyList, H5Z_FILTER_SZ3, H5Z_FLAG_MANDATORY, numCompressionSettingsElements, compressionSettings);
 
@@ -136,13 +160,13 @@ void registerSz3FilterImplicitly()
 }
 
 template<int numDims>
-hid_t openOrCreateDataSet(hid_t                container,
-                          const char*          name,
-                          const char*          unit,
-                          hid_t                dataType,
-                          const hsize_t*       chunkDims,
-                          CompressionAlgorithm compression,
-                          double               compressionError)
+hid_t openOrCreateDataSet(const hid_t                container,
+                          const char*                name,
+                          const char*                unit,
+                          const hid_t                dataType,
+                          const hsize_t*             chunkDims,
+                          const CompressionAlgorithm compression,
+                          const double               compressionError)
 
 
 {
@@ -175,27 +199,8 @@ hid_t openOrCreateDataSet(hid_t                container,
         {
             case CompressionAlgorithm::LossySz3:
             {
-                int           sz3_mode = 0; // 0: ABS, 1: REL
-                size_t        numCompressionSettingsElements;
-                unsigned int* compressionSettings = nullptr;
-                SZ_errConfigToCdArray(&numCompressionSettingsElements,
-                                      &compressionSettings,
-                                      sz3_mode,
-                                      compressionError,
-                                      compressionError,
-                                      0,
-                                      0);
-                if (H5Pset_filter(createPropertyList, H5Z_FILTER_SZ3, H5Z_FLAG_MANDATORY, numCompressionSettingsElements, compressionSettings)
-                    < 0)
-                {
-                    H5Eprint2(H5E_DEFAULT, nullptr);
-                    throw gmx::FileIOError("Cannot set SZ3 compression.");
-                }
-                if (H5Zfilter_avail(H5Z_FILTER_SZ3) < 0)
-                {
-                    H5Eprint2(H5E_DEFAULT, nullptr);
-                    throw gmx::FileIOError("SZ3 filter not available.");
-                }
+                const int sz3Mode = 0; // 0: ABS, 1: REL
+                setLossySz3CompressionProperties(createPropertyList, sz3Mode, compressionError);
                 break;
             }
             case CompressionAlgorithm::LosslessWithShuffle:
@@ -242,7 +247,7 @@ hid_t openOrCreateDataSet(hid_t                container,
 }
 
 template<int numDims, bool writeFullDataSet>
-void writeData(hid_t dataSet, const void* data, hsize_t frameToWrite)
+void writeData(const hid_t dataSet, const void* data, const hsize_t frameToWrite)
 {
 #if GMX_USE_HDF5
     GMX_ASSERT(dataSet >= 0, "Needs a valid dataSet to write data.");
@@ -311,7 +316,7 @@ void writeData(hid_t dataSet, const void* data, hsize_t frameToWrite)
 #endif
 }
 
-size_t getDataTypeSize(hid_t dataSet)
+size_t getDataTypeSize(const hid_t dataSet)
 {
     hid_t origDatatype   = H5Dget_type(dataSet);
     hid_t nativeDatatype = H5Tget_native_type(origDatatype, H5T_DIR_DEFAULT);
@@ -320,7 +325,7 @@ size_t getDataTypeSize(hid_t dataSet)
 }
 
 template<int numDims, bool readFullDataSet>
-void readData(hid_t dataSet, hsize_t frameToRead, size_t dataTypeSize, void** buffer, size_t* totalNumElements)
+void readData(const hid_t dataSet, const hsize_t frameToRead, const size_t dataTypeSize, void** buffer, size_t* totalNumElements)
 {
     GMX_ASSERT(dataSet >= 0, "Needs a valid dataSet to read data.");
     GMX_ASSERT(!readFullDataSet || frameToRead == 0,
@@ -389,7 +394,7 @@ void readData(hid_t dataSet, hsize_t frameToRead, size_t dataTypeSize, void** bu
     }
 }
 
-void setBoxGroupAttributes(hid_t boxGroup, PbcType pbcType)
+void setBoxGroupAttributes(const hid_t boxGroup, const PbcType pbcType)
 {
     setAttribute(boxGroup, "dimension", DIM, H5T_NATIVE_INT);
     static constexpr int c_pbcTypeStringLength                               = 9;
@@ -411,7 +416,7 @@ void setBoxGroupAttributes(hid_t boxGroup, PbcType pbcType)
 }
 
 template<typename T>
-void setAttribute(hid_t dataSet, const char* name, const T value, hid_t dataType)
+void setAttribute(const hid_t dataSet, const char* name, const T value, const hid_t dataType)
 {
     hid_t attribute = H5Aopen(dataSet, name, H5P_DEFAULT);
     if (attribute < 0)
@@ -427,7 +432,7 @@ void setAttribute(hid_t dataSet, const char* name, const T value, hid_t dataType
     H5Aclose(attribute);
 }
 
-void setAttribute(hid_t dataSet, const char* name, const char* value)
+void setAttribute(const hid_t dataSet, const char* name, const char* value)
 {
     hid_t dataType = H5Tcopy(H5T_C_S1);
     H5Tset_size(dataType, H5T_VARIABLE);
@@ -438,7 +443,7 @@ void setAttribute(hid_t dataSet, const char* name, const char* value)
 }
 
 template<typename T>
-bool getAttribute(hid_t dataSet, const char* name, T* value, hid_t dataType)
+bool getAttribute(const hid_t dataSet, const char* name, T* value, const hid_t dataType)
 {
     hid_t attribute = H5Aopen(dataSet, name, H5P_DEFAULT);
     if (attribute < 0)
@@ -454,7 +459,7 @@ bool getAttribute(hid_t dataSet, const char* name, T* value, hid_t dataType)
     return true;
 }
 
-bool getAttribute(hid_t dataSet, const char* name, char** value)
+bool getAttribute(const hid_t dataSet, const char* name, char** value)
 {
     if (!H5Aexists(dataSet, name))
     {
@@ -467,7 +472,7 @@ bool getAttribute(hid_t dataSet, const char* name, char** value)
 }
 
 template<hid_t numEntries, size_t stringLength>
-void setAttributeStringList(hid_t dataSet, const char* name, const char value[numEntries][stringLength])
+void setAttributeStringList(const hid_t dataSet, const char* name, const char value[numEntries][stringLength])
 {
     hid_t dataType = H5Tcopy(H5T_C_S1);
     H5Tset_size(dataType, stringLength);
@@ -488,7 +493,7 @@ void setAttributeStringList(hid_t dataSet, const char* name, const char value[nu
     H5Aclose(attribute);
 }
 
-real getDataSetSz3CompressionError(hid_t dataSet)
+real getDataSetSz3CompressionError(const hid_t dataSet)
 {
     hid_t        propertyList                   = H5Dget_create_plist(dataSet);
     unsigned int flags                          = 0;
@@ -539,7 +544,7 @@ real getDataSetSz3CompressionError(hid_t dataSet)
     return -1;
 }
 
-bool objectExists(hid_t container, const char* name)
+bool objectExists(const hid_t container, const char* name)
 {
     return H5Lexists(container, name, H5P_DEFAULT) >= 0
            && H5Oexists_by_name(container, name, H5P_DEFAULT) >= 0;
