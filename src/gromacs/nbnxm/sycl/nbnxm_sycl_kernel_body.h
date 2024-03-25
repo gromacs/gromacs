@@ -1114,6 +1114,7 @@ static auto nbnxmKernel(sycl::handler& cgh,
         }     // (doCalcEnergies && doExclusionForces)
 
         // Only needed if (doExclusionForces)
+        // Note that we use & instead of && for performance (benchmarked in 2017)
         const bool nonSelfInteraction = !(nbSci.shift == gmx::c_centralShiftIndex & tidxj <= tidxi);
 
         // loop over the j clusters = seen by any of the atoms in the current super-cluster

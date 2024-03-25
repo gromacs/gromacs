@@ -420,6 +420,7 @@ __launch_bounds__(THREADS_PER_BLOCK)
 #    endif /* CALC_ENERGIES */
 
 #    ifdef EXCLUSION_FORCES
+    // Note that we use & instead of && for performance (benchmarked in 2017)
     const int nonSelfInteraction = !(nb_sci.shift == gmx::c_centralShiftIndex & tidxj <= tidxi);
 #    endif
 

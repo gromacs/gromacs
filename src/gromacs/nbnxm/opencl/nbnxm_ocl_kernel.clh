@@ -317,6 +317,7 @@ __kernel void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_opencl)
 #endif /* CALC_ENERGIES */
 
 #ifdef EXCLUSION_FORCES
+    // Note that we use & instead of && for performance (benchmarked in 2017)
     const int nonSelfInteraction = !(nb_sci.shift == c_centralShiftIndex & tidxj <= tidxi);
 #endif
 
