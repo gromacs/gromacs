@@ -1752,7 +1752,11 @@ void Update::Impl::update_coords(const t_inputrec&                 inputRecord,
     /* ############# START The update of velocities and positions ######### */
     int nth = gmx_omp_nthreads_get(ModuleMultiThread::Update);
 
-#pragma omp parallel for num_threads(nth) schedule(static)
+    // nvc++ 24.1+ version has bug due to which it generates incorrect OMP code for this region
+    // (more specifically do_update_sd()) so disable this until nvc++ gets fixed.
+#if !defined(__NVCOMPILER)
+#    pragma omp parallel for num_threads(nth) schedule(static)
+#endif
     for (int th = 0; th < nth; th++)
     {
         try
