@@ -39,6 +39,17 @@ Now the gmx binary will exit with an error message.
 Fixes that affect portability
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Enable usage of Intel compiler with AVX-512 SIMD on AMD Zen 4
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+The fix is to use newer style compiler flags for Intel oneAPI DPC++/C++
+Compiler and AVX-512. Older style flag ``-xCORE-AVX512`` supports only
+Intel CPUs, while newer style ``-march=skylake-avx512`` additionally
+supports AMD CPUs. This fixes building with Intel compiler on AMD CPUs
+with Zen 4 cores.
+
+:issue:`5043`
+
 Miscellaneous
 ^^^^^^^^^^^^^
 

@@ -250,7 +250,7 @@ function(gmx_find_simd_avx_512_flags C_FLAGS_RESULT CXX_FLAGS_RESULT C_FLAGS_VAR
           return idata[0]*(int)(_mm512_cmp_ps_mask(x,y,_CMP_LT_OS));}"
         TOOLCHAIN_C_FLAGS TOOLCHAIN_CXX_FLAGS
         SIMD_AVX_512_C_FLAGS SIMD_AVX_512_CXX_FLAGS
-        "-xCORE-AVX512 -qopt-zmm-usage=high" "-xCORE-AVX512" "-mavx512f -mfma -mavx512vl -mavx512dq -mavx512bw" "-mavx512f -mfma" "-mavx512f" "/QxCORE-AVX512" "/arch:AVX512" "-hgnu")
+        "-march=skylake-avx512" "-xCORE-AVX512 -qopt-zmm-usage=high" "-xCORE-AVX512" "-mavx512f -mfma -mavx512vl -mavx512dq -mavx512bw" "-mavx512f -mfma" "-mavx512f" "/QxCORE-AVX512" "/arch:AVX512" "-hgnu")
 
     if(${SIMD_AVX_512_C_FLAGS_RESULT})
         set(${C_FLAGS_VARIABLE} "${TOOLCHAIN_C_FLAGS} ${SIMD_AVX_512_C_FLAGS}" CACHE INTERNAL "C flags required for AVX-512 instructions")
