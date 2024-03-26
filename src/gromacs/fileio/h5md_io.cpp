@@ -66,18 +66,17 @@
 #    include "external/SZ3-bio/tools/H5Z-SZ3/include/H5Z_SZ3.hpp"
 #endif
 
-namespace gmx
+namespace
 {
-namespace h5mdio
-{
+
 /*! \brief Iterates through groups with contents matching time dependent particles data blocks,
  * i.e., "step", "time" and "value". Then it creates corresponding H5MD data blocks.
  * Inspired by https://support.hdfgroup.org/ftp/HDF5/examples/examples-by-api/hdf5-examples/1_8/C/H5G/h5ex_g_traverse.c
  */
-static herr_t iterativeSetupTimeDataBlocks(hid_t            locationId,
-                                           const char*      name,
-                                           const H5L_info_t gmx_unused* info,
-                                           void*                        operatorData)
+herr_t iterativeSetupTimeDataBlocks(hid_t            locationId,
+                                    const char*      name,
+                                    const H5L_info_t gmx_unused* info,
+                                    void*                        operatorData)
 {
     /*
      * Get type of the object. The name of the object is passed to this function by
@@ -92,15 +91,15 @@ static herr_t iterativeSetupTimeDataBlocks(hid_t            locationId,
     switch (infoBuffer.type)
     {
         case H5O_TYPE_GROUP:
-            if (objectExists(locationId, stepDataSetName.c_str())
-                && objectExists(locationId, timeDataSetName.c_str())
-                && objectExists(locationId, valueDataSetName.c_str()))
+            if (gmx::h5mdio::objectExists(locationId, stepDataSetName.c_str())
+                && gmx::h5mdio::objectExists(locationId, timeDataSetName.c_str())
+                && gmx::h5mdio::objectExists(locationId, valueDataSetName.c_str()))
             {
-                char containerFullName[c_maxFullNameLength];
-                H5Iget_name(locationId, containerFullName, c_maxFullNameLength);
-                GmxH5mdTimeDataBlock             dataBlock(locationId, name);
-                std::list<GmxH5mdTimeDataBlock>* dataBlocks =
-                        static_cast<std::list<GmxH5mdTimeDataBlock>*>(operatorData);
+                char containerFullName[gmx::h5mdio::c_maxFullNameLength];
+                H5Iget_name(locationId, containerFullName, gmx::h5mdio::c_maxFullNameLength);
+                gmx::h5mdio::GmxH5mdTimeDataBlock             dataBlock(locationId, name);
+                std::list<gmx::h5mdio::GmxH5mdTimeDataBlock>* dataBlocks =
+                        static_cast<std::list<gmx::h5mdio::GmxH5mdTimeDataBlock>*>(operatorData);
 
                 dataBlock.updateNumWrittenFrames();
                 dataBlocks->emplace_back(dataBlock);
@@ -124,6 +123,12 @@ static herr_t iterativeSetupTimeDataBlocks(hid_t            locationId,
     return returnVal;
 }
 
+} // namespace
+
+namespace gmx
+{
+namespace h5mdio
+{
 
 GmxH5mdIo::GmxH5mdIo(const std::string fileName, const char mode)
 {

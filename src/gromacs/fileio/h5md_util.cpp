@@ -52,16 +52,14 @@
 #    include "external/SZ3-bio/tools/H5Z-SZ3/include/H5Z_SZ3.hpp"
 #endif
 
-namespace gmx
-{
-namespace h5mdio
+namespace
 {
 
 /*! Set the fill value to -1 in a data set property list.
  * \param[in] dataSetCreatePropertyList The ID of the propery list to update.
  * \param[in] dataType The ID of the HDF5 data type of the data set.
  */
-static void setNumericFillValue(const hid_t dataSetCreatePropertyList, const hid_t dataType)
+void setNumericFillValue(const hid_t dataSetCreatePropertyList, const hid_t dataType)
 {
     if (H5Tequal(dataType, H5T_NATIVE_INT))
     {
@@ -90,7 +88,7 @@ static void setNumericFillValue(const hid_t dataSetCreatePropertyList, const hid
  * \param[in] sz3Mode The compression error mode, 0 == absolute, 1 == relative
  * \param[in] compressionError The maximum error when compressing (compressionError = accuracy / 2)
  */
-static void setLossySz3CompressionProperties(const hid_t propertyList, const int sz3Mode, const double compressionError)
+void setLossySz3CompressionProperties(const hid_t propertyList, const int sz3Mode, const double compressionError)
 {
     size_t        numCompressionSettingsElements;
     unsigned int* compressionSettings = nullptr;
@@ -108,6 +106,13 @@ static void setLossySz3CompressionProperties(const hid_t propertyList, const int
         throw gmx::FileIOError("SZ3 filter not available.");
     }
 }
+
+} // namespace
+
+namespace gmx
+{
+namespace h5mdio
+{
 
 hid_t openOrCreateGroup(const hid_t container, const char* name)
 {
