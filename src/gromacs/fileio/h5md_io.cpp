@@ -725,9 +725,9 @@ void setupMolecularSystem(h5mdio::GmxH5mdIo*       file,
         atomNames.push_back(*(atoms.atomname[atomCounter]));
     }
 
-    file->setAtomNames(atomNames);
-    file->setAtomPartialCharges(atomCharges);
-    file->setAtomMasses(atomMasses);
+    file->setAtomNames(atomNames, "system");
+    file->setAtomPartialCharges(atomCharges, "system");
+    file->setAtomMasses(atomMasses, "system");
 
     /* We only need to create a separate selection group entry if not all atoms are part of it. */
     /* TODO: Write atom name, charge and mass for the selection group as well. */
@@ -740,7 +740,7 @@ void setupMolecularSystem(h5mdio::GmxH5mdIo*       file,
     else
     {
         /* FIXME: Should use int64_t. Needs changes in topology. */
-        for (int i = 0; (i < topology.natoms); i++)
+        for (int i = 0; i < topology.natoms; i++)
         {
             if (getGroupType(topology.groups, SimulationAtomGroupType::CompressedPositionOutput, i) != 0)
             {
@@ -752,18 +752,37 @@ void setupMolecularSystem(h5mdio::GmxH5mdIo*       file,
     bool setupSeparateOutputGroup = false;
     if (!all_atoms_selected)
     {
+        std::string systemOutputName;
         if (index.ssize() > 0 && index_group_name != "")
         {
             setupSeparateOutputGroup = true;
-            file->setSystemOutputName(index_group_name);
+            systemOutputName         = index_group_name;
         }
         /* If no name was specified fall back to using the selection group name of compressed output, if any. */
         else if (topology.groups.numberOfGroupNumbers(SimulationAtomGroupType::CompressedPositionOutput) != 0)
         {
             setupSeparateOutputGroup = true;
             int nameIndex = topology.groups.groups[SimulationAtomGroupType::CompressedPositionOutput][0];
-            file->setSystemOutputName(*topology.groups.groupNames[nameIndex]);
+            systemOutputName = *topology.groups.groupNames[nameIndex];
         }
+        file->setSystemOutputName(systemOutputName);
+
+        atomCharges.clear();
+        atomMasses.clear();
+        atomNames.clear();
+        atomCharges.reserve(index.ssize());
+        atomMasses.reserve(index.ssize());
+        atomNames.reserve(index.ssize());
+        for (int i = 0; i < index.ssize(); i++)
+        {
+            atomCharges.push_back(atoms.atom[i].q);
+            atomMasses.push_back(atoms.atom[i].m);
+            atomNames.push_back(*(atoms.atomname[i]));
+        }
+
+        file->setAtomNames(atomNames, systemOutputName);
+        file->setAtomPartialCharges(atomCharges, systemOutputName);
+        file->setAtomMasses(atomMasses, systemOutputName);
     }
     if (!setupSeparateOutputGroup)
     {
