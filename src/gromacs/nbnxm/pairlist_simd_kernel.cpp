@@ -104,15 +104,18 @@ gmx_unused static inline int xIndexFromCi(int ci)
                           || c_jClusterSize == c_iClusterSize * 2,
                   "Only j-cluster sizes 2, 4 and 8 are currently implemented");
 
-    if constexpr (c_jClusterSize <= c_iClusterSize)
+    constexpr int c_stride = sc_xStride<kernelType>();
+
+    if constexpr (c_iClusterSize == c_stride)
     {
-        /* Coordinates are stored packed in groups of 4 */
-        return ci * STRIDE_P4;
+        return ci * DIM * c_stride;
     }
     else
     {
-        /* Coordinates packed in 8, i-cluster size is half the packing width */
-        return (ci >> 1) * STRIDE_P8 + (ci & 1) * (c_packX8 >> 1);
+        static_assert(2 * c_iClusterSize == c_stride);
+
+        // i-clusters are half the stride
+        return (ci >> 1) * DIM * c_stride + (ci & 1) * (c_stride >> 1);
     }
 }
 
@@ -127,20 +130,18 @@ gmx_unused static inline int xIndexFromCj(int cj)
                           || c_jClusterSize == c_iClusterSize * 2,
                   "Only j-cluster sizes 2, 4 and 8 are currently implemented");
 
-    if constexpr (c_jClusterSize == c_iClusterSize / 2)
+    constexpr int c_stride = sc_xStride<kernelType>();
+
+    if constexpr (c_jClusterSize == c_stride)
     {
-        /* Coordinates are stored packed in groups of 4 */
-        return (cj >> 1) * STRIDE_P4 + (cj & 1) * (c_packX4 >> 1);
-    }
-    else if constexpr (c_jClusterSize == c_iClusterSize)
-    {
-        /* Coordinates are stored packed in groups of 4 */
-        return cj * STRIDE_P4;
+        return cj * DIM * c_stride;
     }
     else
     {
-        /* Coordinates are stored packed in groups of 8 */
-        return cj * STRIDE_P8;
+        static_assert(2 * c_jClusterSize == c_stride);
+
+        // j-clusters are half the stride
+        return (cj >> 1) * DIM * c_stride + (cj & 1) * (c_stride >> 1);
     }
 }
 
@@ -196,10 +197,10 @@ static inline void setICellCoordinatesSimd(int                   ci,
 {
     using namespace gmx;
 
-    static_assert(kernelType == ClusterDistanceKernelType::CpuSimd_4xM
-                  || kernelType == ClusterDistanceKernelType::CpuSimd_2xMM);
-
     constexpr int c_iClusterSize = sc_iClusterSizeSimd<kernelType>();
+    constexpr int c_jClusterSize = sc_jClusterSizeSimd<kernelType>();
+
+    static_assert(c_jClusterSize == GMX_SIMD_REAL_WIDTH || 2 * c_jClusterSize == GMX_SIMD_REAL_WIDTH);
 
     constexpr int c_xStride = sc_xStride<kernelType>();
 
@@ -207,7 +208,7 @@ static inline void setICellCoordinatesSimd(int                   ci,
 
     const int ia = xIndexFromCi<kernelType>(ci);
 
-    if constexpr (kernelType == ClusterDistanceKernelType::CpuSimd_4xM)
+    if constexpr (c_jClusterSize == GMX_SIMD_REAL_WIDTH)
     {
         for (int i = 0; i < c_iClusterSize; i++)
         {
@@ -267,10 +268,11 @@ void setICellCoordinatesSimd2xMM(int gmx_unused  ci,
 template<ClusterDistanceKernelType kernelType>
 static inline gmx::SimdReal loadJData(const real* x)
 {
-    static_assert(kernelType == ClusterDistanceKernelType::CpuSimd_4xM
-                  || kernelType == ClusterDistanceKernelType::CpuSimd_2xMM);
+    constexpr int c_jClusterSize = sc_jClusterSizeSimd<kernelType>();
 
-    if constexpr (kernelType == ClusterDistanceKernelType::CpuSimd_4xM)
+    static_assert(c_jClusterSize == GMX_SIMD_REAL_WIDTH || 2 * c_jClusterSize == GMX_SIMD_REAL_WIDTH);
+
+    if constexpr (c_jClusterSize == GMX_SIMD_REAL_WIDTH)
     {
         return gmx::load<gmx::SimdReal>(x);
     }

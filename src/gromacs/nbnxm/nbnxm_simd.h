@@ -99,9 +99,11 @@ static constexpr int sc_jClusterSize(const KernelLayout kernelLayout)
 template<KernelLayout kernelLayout>
 static constexpr KernelLayoutClusterRatio kernelLayoutClusterRatio()
 {
-    static_assert(kernelLayout == KernelLayout::r4xM || kernelLayout == KernelLayout::r2xMM);
     constexpr int c_iClusterSize = sc_iClusterSize(kernelLayout);
     constexpr int c_jClusterSize = sc_jClusterSize(kernelLayout);
+
+    static_assert(c_jClusterSize == c_iClusterSize || c_jClusterSize == 2 * c_iClusterSize
+                  || 2 * c_jClusterSize == c_iClusterSize);
 
     if constexpr (c_jClusterSize == c_iClusterSize)
     {
@@ -209,6 +211,26 @@ std::array<gmx::SimdBool, N> genBoolArr(F f)
     else
     {
         return std::array<gmx::SimdBool, 4>{ f(0), f(1), f(2), f(3) };
+    }
+}
+
+/*! \brief Returns the sum over an array of SimdReal elements
+ *
+ * \tparam N  The size of the array
+ * \tparam a  The elements to sum over
+ */
+template<size_t N>
+gmx::SimdReal sumArray(const std::array<gmx::SimdReal, N>& a)
+{
+    static_assert(N == 2 || N == 4);
+
+    if constexpr (N == 2)
+    {
+        return a[0] + a[1];
+    }
+    else
+    {
+        return a[0] + a[1] + a[2] + a[3];
     }
 }
 

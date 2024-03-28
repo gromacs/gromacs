@@ -354,7 +354,7 @@ public:
 
         for (int i = 0; i < nRCoulomb; i++)
         {
-            if constexpr (kernelLayout == KernelLayout::r4xM)
+            if constexpr (jClusterSize == GMX_SIMD_REAL_WIDTH)
             {
                 accumulateGroupPairEnergies4xM(coulombEnergy[i], coulombBinIAtomPtrs_[i], ijGroupPair);
             }
@@ -369,7 +369,7 @@ public:
 
         for (int i = 0; i < nRVdw; i++)
         {
-            if constexpr (kernelLayout == KernelLayout::r4xM)
+            if constexpr (jClusterSize == GMX_SIMD_REAL_WIDTH)
             {
                 accumulateGroupPairEnergies4xM(vdwEnergy[i], vdwBinIAtomPtrs_[i], ijGroupPair);
             }

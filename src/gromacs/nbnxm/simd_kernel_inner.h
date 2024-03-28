@@ -241,7 +241,7 @@
                 // Load 6*C6 and 6*C12 for all pairs
                 for (int i = 0; i < c_nRLJ; i++)
                 {
-                    if constexpr (kernelLayout == KernelLayout::r4xM)
+                    if constexpr (c_numJClustersPerSimdRegister == 1)
                     {
                         gatherLoadTranspose<c_simdBestPairAlignment>(
                                 nbfpI[i], type + aj, &c6V[i], &c12V[i]);
@@ -367,15 +367,15 @@
     forceIZV = genArr<nR>([&](int i) { return forceIZV[i] + tzV[i]; });
 
     /* Decrement j atom force */
-    if constexpr (kernelLayout == KernelLayout::r4xM)
+    if constexpr (c_numJClustersPerSimdRegister == 1)
     {
-        store(f + ajx, load<SimdReal>(f + ajx) - (txV[0] + txV[1] + txV[2] + txV[3]));
-        store(f + ajy, load<SimdReal>(f + ajy) - (tyV[0] + tyV[1] + tyV[2] + tyV[3]));
-        store(f + ajz, load<SimdReal>(f + ajz) - (tzV[0] + tzV[1] + tzV[2] + tzV[3]));
+        store(f + ajx, load<SimdReal>(f + ajx) - sumArray(txV));
+        store(f + ajy, load<SimdReal>(f + ajy) - sumArray(tyV));
+        store(f + ajz, load<SimdReal>(f + ajz) - sumArray(tzV));
     }
     else
     {
-        decr3Hsimd(f + aj * DIM, txV[0] + txV[1], tyV[0] + tyV[1], tzV[0] + tzV[1]);
+        decr3Hsimd(f + aj * DIM, sumArray(txV), sumArray(tyV), sumArray(tzV));
     }
 }
 
