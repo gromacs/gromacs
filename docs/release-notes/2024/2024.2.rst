@@ -42,6 +42,14 @@ Fixes that affect portability
 Miscellaneous
 ^^^^^^^^^^^^^
 
+NBLIB always used geometric Lennard-Jones combination rules
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Now NBLIB detects the Lennard-Jones combination rules (or none)
+from the Lennard-Jones parameters set by the user.
+
+:issue:`5015`
+
 Fix Performance Regression for Some Cases on Latest NVIDIA GPUs
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 

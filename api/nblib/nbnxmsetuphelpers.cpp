@@ -283,8 +283,6 @@ std::unique_ptr<nonbonded_verlet_t> createNbnxmCPU(const size_t              num
 {
     const auto pinPolicy  = gmx::PinningPolicy::CannotBePinned;
     const int  numThreads = options.numOpenMPThreads;
-    // Note: the options and Nbnxm combination rule enums values should match
-    const int combinationRule = static_cast<int>(options.ljCombinationRule);
 
     Nbnxm::KernelSetup kernelSetup =
             createKernelSetupCPU(options.nbnxmSimd, options.useTabulatedEwaldCorr);
@@ -299,7 +297,7 @@ std::unique_ptr<nonbonded_verlet_t> createNbnxmCPU(const size_t              num
     auto atomData = std::make_unique<nbnxn_atomdata_t>(pinPolicy,
                                                        gmx::MDLogger(),
                                                        kernelSetup.kernelType,
-                                                       combinationRule,
+                                                       enbnxninitcombruleDETECT,
                                                        numParticleTypes,
                                                        nonbondedParameters,
                                                        numEnergyGroups,
@@ -318,8 +316,7 @@ std::unique_ptr<nonbonded_verlet_t> createNbnxmGPU(const size_t               nu
                                                    const interaction_const_t& interactionConst,
                                                    const gmx::DeviceStreamManager& deviceStreamManager)
 {
-    const auto pinPolicy       = gmx::PinningPolicy::PinnedIfSupported;
-    const int  combinationRule = static_cast<int>(options.ljCombinationRule);
+    const auto pinPolicy = gmx::PinningPolicy::PinnedIfSupported;
 
     Nbnxm::KernelSetup kernelSetup = createKernelSetupGPU(options.useTabulatedEwaldCorr);
 
@@ -333,7 +330,7 @@ std::unique_ptr<nonbonded_verlet_t> createNbnxmGPU(const size_t               nu
     auto          atomData        = std::make_unique<nbnxn_atomdata_t>(pinPolicy,
                                                        gmx::MDLogger(),
                                                        kernelSetup.kernelType,
-                                                       combinationRule,
+                                                       enbnxninitcombruleDETECT,
                                                        numParticleTypes,
                                                        nonbondedParameters,
                                                        numEnergyGroups,
