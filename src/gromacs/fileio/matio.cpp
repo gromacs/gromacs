@@ -48,6 +48,7 @@
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/math/functions.h"
 #include "gromacs/math/utilities.h"
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/binaryinformation.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/exceptions.h"
@@ -101,12 +102,6 @@ void done_matrix(int nx, real*** m)
     *m = nullptr;
 }
 
-static bool operator==(t_xpmelmt e1, t_xpmelmt e2)
-{
-    return (e1.c1 == e2.c1) && (e1.c2 == e2.c2);
-}
-
-//! Return the index of the first element that matches \c c, or -1 if not found.
 t_matelmt searchcmap(ArrayRef<const t_mapping> map, t_xpmelmt c)
 {
     auto findIt = std::find_if(map.begin(), map.end(), [&c](const auto& m) { return (m.code == c); });
@@ -145,7 +140,7 @@ static std::vector<t_mapping> getcmap(FILE* in, const std::filesystem::path& fn)
         sscanf(line, "%s%s%lf%lf%lf", code, desc, &r, &g, &b);
         m[i].code.c1 = code[0];
         m[i].code.c2 = 0;
-        m[i].desc    = gmx_strdup(desc);
+        m[i].desc    = desc;
         m[i].rgb.r   = r;
         m[i].rgb.g   = g;
         m[i].rgb.b   = b;
@@ -160,7 +155,7 @@ std::vector<t_mapping> readcmap(const std::filesystem::path& fn)
     return getcmap(in.get(), fn);
 }
 
-void printcmap(FILE* out, int n, t_mapping map[])
+void printcmap(FILE* out, int n, const t_mapping map[])
 {
     int i;
 
@@ -171,14 +166,14 @@ void printcmap(FILE* out, int n, t_mapping map[])
                 "%c%c  %20s  %10g  %10g  %10g\n",
                 map[i].code.c1 ? map[i].code.c1 : ' ',
                 map[i].code.c2 ? map[i].code.c2 : ' ',
-                map[i].desc,
+                map[i].desc.c_str(),
                 map[i].rgb.r,
                 map[i].rgb.g,
                 map[i].rgb.b);
     }
 }
 
-void writecmap(const std::filesystem::path& fn, int n, t_mapping map[])
+void writecmap(const std::filesystem::path& fn, int n, const t_mapping map[])
 {
     FILE* out;
 
@@ -439,7 +434,7 @@ static t_matrix read_xpm_entry(FILE* in)
             line = std::strchr(line, '\"');
             line++;
             line2string(&line);
-            mm.map[m].desc = gmx_strdup(line);
+            mm.map[m].desc = line;
             m++;
         }
     }
@@ -581,7 +576,7 @@ std::vector<t_matrix> read_xpm_matrix(const std::filesystem::path& fnm)
     return mat;
 }
 
-real** matrix2real(t_matrix* in, real** out)
+real** matrix2real(const t_matrix* in, real** out)
 {
     double tmp;
 
@@ -589,13 +584,13 @@ real** matrix2real(t_matrix* in, real** out)
 
     for (gmx::Index i = 0; i != gmx::ssize(in->map); ++i)
     {
-        if ((in->map[i].desc == nullptr) || (sscanf(in->map[i].desc, "%lf", &tmp) != 1))
+        if ((in->map[i].desc.empty()) || (sscanf(in->map[i].desc.c_str(), "%lf", &tmp) != 1))
         {
             fprintf(stderr,
                     "Could not convert matrix to reals,\n"
                     "color map entry %zd has a non-real description: \"%s\"\n",
                     i,
-                    in->map[i].desc);
+                    in->map[i].desc.c_str());
             return nullptr;
         }
         rmap[i] = tmp;
@@ -873,7 +868,7 @@ static void writeXpmAxis(FILE* out, const char* axis, ArrayRef<const real> label
     fprintf(out, "*/\n");
 }
 
-static void write_xpm_data(FILE* out, int n_x, int n_y, real** mat, real lo, real hi, int nlevels)
+static void write_xpm_data(FILE* out, int n_x, int n_y, const real* const* mat, real lo, real hi, int nlevels)
 {
     int  i, j, c;
     real invlevel;
@@ -1070,7 +1065,7 @@ void write_xpm_m(FILE* out, t_matrix m)
                 static_cast<unsigned int>(std::round(map.rgb.r * 255)),
                 static_cast<unsigned int>(std::round(map.rgb.g * 255)),
                 static_cast<unsigned int>(std::round(map.rgb.b * 255)),
-                map.desc);
+                map.desc.c_str());
     }
     writeXpmAxis(out, "x", m.axis_x);
     writeXpmAxis(out, "y", m.axis_y);
@@ -1142,6 +1137,59 @@ void write_xpm3(FILE*              out,
     write_xpm_data3(out, n_x, n_y, mat, lo, mid, hi, *nlevels);
 }
 
+void write_xpm3(FILE*                                          out,
+                unsigned int                                   flags,
+                const std::string&                             title,
+                const std::string&                             legend,
+                const std::string&                             label_x,
+                const std::string&                             label_y,
+                gmx::ArrayRef<real>                            axis_x,
+                gmx::ArrayRef<real>                            axis_y,
+                gmx::basic_mdspan<real, gmx::dynamicExtents2D> mat,
+                real                                           lo,
+                real                                           mid,
+                real                                           hi,
+                t_rgb                                          rlo,
+                t_rgb                                          rmid,
+                t_rgb                                          rhi,
+                int*                                           nlevels)
+{
+    real** tempMatrix;
+    snew(tempMatrix, mat.extent(0));
+    for (int i = 0; i < mat.extent(0); ++i)
+    {
+        snew(tempMatrix[i], mat.extent(1));
+        for (int j = 0; j < mat.extent(1); ++j)
+        {
+            tempMatrix[i][j] = mat(i, j);
+        }
+    }
+    write_xpm3(out,
+               flags,
+               title,
+               legend,
+               label_x,
+               label_y,
+               axis_x.size(),
+               axis_y.size(),
+               axis_x.data(),
+               axis_y.data(),
+               tempMatrix,
+               lo,
+               mid,
+               hi,
+               rlo,
+               rmid,
+               rhi,
+               nlevels);
+    for (int i = 0; i < mat.extent(0); ++i)
+    {
+        sfree(tempMatrix[i]);
+    }
+    sfree(tempMatrix);
+}
+
+
 void write_xpm_split(FILE*              out,
                      unsigned int       flags,
                      const std::string& title,
@@ -1190,6 +1238,67 @@ void write_xpm_split(FILE*              out,
     write_xpm_data_split(out, n_x, n_y, mat, lo_top, hi_top, *nlevel_top, lo_bot, hi_bot, *nlevel_bot);
 }
 
+void write_xpm_split(FILE*                                          out,
+                     unsigned int                                   flags,
+                     const std::string&                             title,
+                     const std::string&                             legend,
+                     const std::string&                             label_x,
+                     const std::string&                             label_y,
+                     gmx::ArrayRef<real>                            axis_x,
+                     gmx::ArrayRef<real>                            axis_y,
+                     gmx::basic_mdspan<real, gmx::dynamicExtents2D> mat,
+                     real                                           lo_top,
+                     real                                           hi_top,
+                     int*                                           nlevel_top,
+                     t_rgb                                          rlo_top,
+                     t_rgb                                          rhi_top,
+                     real                                           lo_bot,
+                     real                                           hi_bot,
+                     int*                                           nlevel_bot,
+                     gmx_bool                                       bDiscreteColor,
+                     t_rgb                                          rlo_bot,
+                     t_rgb                                          rhi_bot)
+{
+    real** tempMatrix;
+    snew(tempMatrix, mat.extent(0));
+    for (int i = 0; i < mat.extent(0); ++i)
+    {
+        snew(tempMatrix[i], mat.extent(1));
+        for (int j = 0; j < mat.extent(1); ++j)
+        {
+            tempMatrix[i][j] = mat(i, j);
+        }
+    }
+    write_xpm_split(out,
+                    flags,
+                    title,
+                    legend,
+                    label_x,
+                    label_y,
+                    axis_x.size(),
+                    axis_y.size(),
+                    axis_x.data(),
+                    axis_y.data(),
+                    tempMatrix,
+                    lo_top,
+                    hi_top,
+                    nlevel_top,
+                    rlo_top,
+                    rhi_top,
+                    lo_bot,
+                    hi_bot,
+                    nlevel_bot,
+                    bDiscreteColor,
+                    rlo_bot,
+                    rhi_bot);
+    for (int i = 0; i < mat.extent(0); ++i)
+    {
+        sfree(tempMatrix[i]);
+    }
+    sfree(tempMatrix);
+}
+
+
 void write_xpm(FILE*              out,
                unsigned int       flags,
                const std::string& title,
@@ -1198,9 +1307,9 @@ void write_xpm(FILE*              out,
                const std::string& label_y,
                int                n_x,
                int                n_y,
-               real               axis_x[],
-               real               axis_y[],
-               real*              mat[],
+               const real         axis_x[],
+               const real         axis_y[],
+               const real* const  mat[],
                real               lo,
                real               hi,
                t_rgb              rlo,
@@ -1230,7 +1339,59 @@ void write_xpm(FILE*              out,
 
     write_xpm_header(out, title, legend, label_x, label_y, FALSE);
     write_xpm_map(out, n_x, n_y, nlevels, lo, hi, rlo, rhi);
-    writeXpmAxis(out, "x", ArrayRef<real>(axis_x, axis_x + n_x + ((flags & MAT_SPATIAL_X) != 0U ? 1 : 0)));
-    writeXpmAxis(out, "y", ArrayRef<real>(axis_y, axis_y + n_y + ((flags & MAT_SPATIAL_Y) != 0U ? 1 : 0)));
+    writeXpmAxis(out,
+                 "x",
+                 ArrayRef<const real>(axis_x, axis_x + n_x + ((flags & MAT_SPATIAL_X) != 0U ? 1 : 0)));
+    writeXpmAxis(out,
+                 "y",
+                 ArrayRef<const real>(axis_y, axis_y + n_y + ((flags & MAT_SPATIAL_Y) != 0U ? 1 : 0)));
     write_xpm_data(out, n_x, n_y, mat, lo, hi, *nlevels);
+}
+
+void write_xpm(FILE*                                                out,
+               unsigned int                                         flags,
+               const std::string&                                   title,
+               const std::string&                                   legend,
+               const std::string&                                   label_x,
+               const std::string&                                   label_y,
+               gmx::ArrayRef<const real>                            axis_x,
+               gmx::ArrayRef<const real>                            axis_y,
+               gmx::basic_mdspan<const real, gmx::dynamicExtents2D> mat,
+               real                                                 lo,
+               real                                                 hi,
+               t_rgb                                                rlo,
+               t_rgb                                                rhi,
+               int*                                                 nlevels)
+{
+    real** tempMatrix;
+    snew(tempMatrix, mat.extent(0));
+    for (int i = 0; i < mat.extent(0); ++i)
+    {
+        snew(tempMatrix[i], mat.extent(1));
+        for (int j = 0; j < mat.extent(1); ++j)
+        {
+            tempMatrix[i][j] = mat(i, j);
+        }
+    }
+    write_xpm(out,
+              flags,
+              title,
+              legend,
+              label_x,
+              label_y,
+              axis_x.size(),
+              axis_y.size(),
+              axis_x.data(),
+              axis_y.data(),
+              tempMatrix,
+              lo,
+              hi,
+              rlo,
+              rhi,
+              nlevels);
+    for (int i = 0; i < mat.extent(0); ++i)
+    {
+        sfree(tempMatrix[i]);
+    }
+    sfree(tempMatrix);
 }

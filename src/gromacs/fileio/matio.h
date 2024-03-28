@@ -43,6 +43,7 @@
 
 #include "gromacs/fileio/rgb.h"
 #include "gromacs/math/multidimarray.h"
+#include "gromacs/mdspan/extensions.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
@@ -69,10 +70,16 @@ struct t_mapping
     //! XPM element code
     t_xpmelmt code;
     //! Description
-    const char* desc = nullptr;
+    std::string desc;
     //! RGB color
     t_rgb rgb;
 };
+
+//! Comparison for mapping entry.
+inline bool operator==(const t_xpmelmt& e1, const t_xpmelmt& e2)
+{
+    return (e1.c1 == e2.c1) && (e1.c2 == e2.c2);
+}
 
 #define MAT_SPATIAL_X (1 << 0)
 #define MAT_SPATIAL_Y (1 << 1)
@@ -121,22 +128,22 @@ struct t_matrix
     std::vector<t_mapping> map;
 };
 
-//! Seach in the \c map for code \c c and return its entry, or -1 if not found.
+//! Seach in the \c map for code \c c and return its optional entry, or -1 if not found.
 t_matelmt searchcmap(gmx::ArrayRef<const t_mapping> map, t_xpmelmt c);
 
 //! Read the mapping table from fn, return number of entries
 std::vector<t_mapping> readcmap(const std::filesystem::path& fn);
 
-void printcmap(FILE* out, int n, t_mapping map[]);
+void printcmap(FILE* out, int n, const t_mapping map[]);
 /* print mapping table to out */
 
-void writecmap(const std::filesystem::path& fn, int n, t_mapping map[]);
+void writecmap(const std::filesystem::path& fn, int n, const t_mapping map[]);
 /* print mapping table to fn */
 
 //! Reads and returns a number of matrices from .xpm file \c fnm.
 std::vector<t_matrix> read_xpm_matrix(const std::filesystem::path& fnm);
 
-real** matrix2real(t_matrix* in, real** out);
+real** matrix2real(const t_matrix* in, real** out);
 /* Converts an matrix in a t_matrix struct to a matrix of reals
  * When mat==NULL memory will be allocated
  * Returns NULL when something went wrong
@@ -145,6 +152,11 @@ real** matrix2real(t_matrix* in, real** out);
 void write_xpm_m(FILE* out, t_matrix m);
 /* Writes a t_matrix struct to .xpm file */
 
+/*! \brief
+ * See write_xpm.
+ *
+ * Writes a colormap varying as rlo -> rmid -> rhi.
+ */
 void write_xpm3(FILE*              out,
                 unsigned int       flags,
                 const std::string& title,
@@ -163,8 +175,30 @@ void write_xpm3(FILE*              out,
                 t_rgb              rmid,
                 t_rgb              rhi,
                 int*               nlevels);
-/* See write_xpm.
- * Writes a colormap varying as rlo -> rmid -> rhi.
+
+//! \copydoc write_xpm3
+void write_xpm3(FILE*                                          out,
+                unsigned int                                   flags,
+                const std::string&                             title,
+                const std::string&                             legend,
+                const std::string&                             label_x,
+                const std::string&                             label_y,
+                gmx::ArrayRef<real>                            axis_x,
+                gmx::ArrayRef<real>                            axis_y,
+                gmx::basic_mdspan<real, gmx::dynamicExtents2D> mat,
+                real                                           lo,
+                real                                           mid,
+                real                                           hi,
+                t_rgb                                          rlo,
+                t_rgb                                          rmid,
+                t_rgb                                          rhi,
+                int*                                           nlevels);
+/*! \brief
+ * See write_xpm.
+ *
+ * Writes a colormap with separate above and below diagonal colormaps.
+ * If \c bDiscrete then a colormap with 16 fixed colors is used, first of
+ * which is white.
  */
 void write_xpm_split(FILE*              out,
                      unsigned int       flags,
@@ -188,12 +222,52 @@ void write_xpm_split(FILE*              out,
                      gmx_bool           bDiscreteColor,
                      t_rgb              rlo_bot,
                      t_rgb              rhi_bot);
-/* See write_xpm.
- * Writes a colormap with separate above and below diagonal colormaps.
- * If bDiscrete then a colormap with 16 fixed colors is used, first  of
- * which is white.
- */
 
+//! \copydoc write_xpm_split
+void write_xpm_split(FILE*                                          out,
+                     unsigned int                                   flags,
+                     const std::string&                             title,
+                     const std::string&                             legend,
+                     const std::string&                             label_x,
+                     const std::string&                             label_y,
+                     gmx::ArrayRef<real>                            axis_x,
+                     gmx::ArrayRef<real>                            axis_y,
+                     gmx::basic_mdspan<real, gmx::dynamicExtents2D> mat,
+                     real                                           lo_top,
+                     real                                           hi_top,
+                     int*                                           nlevel_top,
+                     t_rgb                                          rlo_top,
+                     t_rgb                                          rhi_top,
+                     real                                           lo_bot,
+                     real                                           hi_bot,
+                     int*                                           nlevel_bot,
+                     gmx_bool                                       bDiscreteColor,
+                     t_rgb                                          rlo_bot,
+                     t_rgb                                          rhi_bot);
+
+
+/*! \brief Writes matrix data to XPM file.
+ * \param[in] out        xpm file
+ * \param[in] flags      flags, defined types/matrix.h
+ *                       MAT_SPATIAL_X
+ *                       MAT_SPATIAL_Y
+ *                       Defines if x and y are spatial dimensions,
+ *                       when not, there are n axis ticks at the middle of the elements,
+ *                       when set, there are n+1 axis ticks at the edges of the elements.
+ * \param[in] title      matrix title
+ * \param[in] legend     label for the continuous legend
+ * \param[in] label_x    label for the x-axis
+ * \param[in] label_y    label for the y-axis
+ * \param[in] n_x, n_y   size of the matrix
+ * \param[in] axis_x[]   the x-ticklabels (n_x or n_x+1)
+ * \param[in] axis_y[]   the y-ticklables (n_y or n_y+1)
+ * \param[in] *mat[]     element x,y is mat[x][y]
+ * \param[in] lo         output lower than lo is set to lo
+ * \param[in] hi         output higher than hi is set to hi
+ * \param[in] rlo        rgb value for level lo
+ * \param[in] rhi        rgb value for level hi
+ * \param[in] nlevels    number of color levels for the output
+ */
 void write_xpm(FILE*              out,
                unsigned int       flags,
                const std::string& title,
@@ -202,35 +276,30 @@ void write_xpm(FILE*              out,
                const std::string& label_y,
                int                n_x,
                int                n_y,
-               real               t_x[],
-               real               t_y[],
-               real*              mat[],
+               const real         axis_x[],
+               const real         axis_y[],
+               const real* const  mat[],
                real               lo,
                real               hi,
                t_rgb              rlo,
                t_rgb              rhi,
                int*               nlevels);
-/* out        xpm file
- * flags      flags, defined types/matrix.h
- *            MAT_SPATIAL_X
- *            MAT_SPATIAL_Y
- *            Defines if x and y are spatial dimensions,
- *            when not, there are n axis ticks at the middle of the elements,
- *            when set, there are n+1 axis ticks at the edges of the elements.
- * title      matrix title
- * legend     label for the continuous legend
- * label_x    label for the x-axis
- * label_y    label for the y-axis
- * n_x, n_y   size of the matrix
- * axis_x[]   the x-ticklabels (n_x or n_x+1)
- * axis_y[]   the y-ticklables (n_y or n_y+1)
- * *mat[]     element x,y is mat[x][y]
- * lo         output lower than lo is set to lo
- * hi         output higher than hi is set to hi
- * rlo        rgb value for level lo
- * rhi        rgb value for level hi
- * nlevels    number of color levels for the output
- */
+
+//! \copydoc write_xpm
+void write_xpm(FILE*                                                out,
+               unsigned int                                         flags,
+               const std::string&                                   title,
+               const std::string&                                   legend,
+               const std::string&                                   label_x,
+               const std::string&                                   label_y,
+               gmx::ArrayRef<const real>                            axis_x,
+               gmx::ArrayRef<const real>                            axis_y,
+               gmx::basic_mdspan<const real, gmx::dynamicExtents2D> mat,
+               real                                                 lo,
+               real                                                 hi,
+               t_rgb                                                rlo,
+               t_rgb                                                rhi,
+               int*                                                 nlevels);
 
 real** mk_matrix(int nx, int ny, gmx_bool b1D);
 
