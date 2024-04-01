@@ -35,7 +35,7 @@ gromacs:nvcxx-24.1-cuda-12.3.0:buildMPI:
     - .variables:default
     - .gromacs:base:build
     - .before_script:default
-    - .use-ccache
+    # - .use-ccache # Disable CCache since it does not work correctly with NVC++ 24.1
     - .rules:post-merge-acceptance
   image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-22.04-gcc-11-cuda-12.3.0
   variables:
