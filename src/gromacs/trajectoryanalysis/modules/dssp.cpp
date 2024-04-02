@@ -129,12 +129,13 @@ enum class BackboneAtomTypes : std::size_t
     AtomO,
     AtomN,
     AtomH,
+    AtomHN,
     Count
 };
 
 //! String values corresponding to backbone atom types.
 const gmx::EnumerationArray<BackboneAtomTypes, const char*> c_backboneAtomTypeNames = {
-    { "CA", "C", "O", "N", "H" }
+    { "CA", "C", "O", "N", "H", "HN" }
 };
 
 /*! \brief
@@ -626,7 +627,8 @@ void SecondaryStructures::analyseTopology(const TopologyInformation& top,
             }
         }
         else if (hMode_ == HydrogenMode::Gromacs
-                 && atomName == c_backboneAtomTypeNames[BackboneAtomTypes::AtomH])
+                 && (atomName == c_backboneAtomTypeNames[BackboneAtomTypes::AtomH]
+                     || atomName == c_backboneAtomTypeNames[BackboneAtomTypes::AtomHN]))
         {
             topologyVector_.back().setIndex(BackboneAtomTypes::AtomH, ai);
         }
