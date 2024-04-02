@@ -144,12 +144,12 @@ TEST(ListOfLists, OutOfRangeAccessThrows)
 TEST(ListOfLists, FrontAndBackWork)
 {
     ListOfLists<char> list1;
-    std::vector<char> v1{ { 3, 4 } };
+    std::vector<char> v1{ 3, 4 };
     list1.pushBack(v1);
     EXPECT_THAT(list1.front(), Pointwise(Eq(), v1));
     EXPECT_THAT(list1.back(), Pointwise(Eq(), v1));
 
-    std::vector<char> v2{ { 12, 63, 1 } };
+    std::vector<char> v2{ 12, 63, 1 };
     list1.pushBack(v2);
     EXPECT_THAT(list1.front(), Pointwise(Eq(), v1));
     EXPECT_THAT(list1.back(), Pointwise(Eq(), v2));
@@ -158,7 +158,7 @@ TEST(ListOfLists, FrontAndBackWork)
     EXPECT_THAT(list1.front(), Pointwise(Eq(), v1));
     EXPECT_THAT(list1.back(), Pointwise(Eq(), std::vector<char>{}));
 
-    std::vector<char> v3{ { 99, 0, char(-1) } };
+    std::vector<char> v3{ 99, 0, char(-1) };
     list1.pushBack(v3);
     EXPECT_THAT(list1.front(), Pointwise(Eq(), v1));
     EXPECT_THAT(list1.back(), Pointwise(Eq(), v3));
@@ -179,7 +179,7 @@ TEST(ListOfLists, FrontAndBackWork)
 
 TEST(ListOfLists, ExtractsAndRestores)
 {
-    const std::vector<std::vector<char>> v({ { 5, 3 }, {}, { char(-1), 4 } });
+    const std::vector<std::vector<char>> v{ { 5, 3 }, {}, { char(-1), 4 } };
 
     ListOfLists<char> list1;
     for (const auto& vlist : v)

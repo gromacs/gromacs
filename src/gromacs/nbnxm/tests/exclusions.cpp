@@ -92,7 +92,7 @@ diagonalPairlist(const Nbnxm::KernelType kernelType, const int numAtoms)
     Nbnxm::GridSet gridSet(
             PbcType::Xyz, false, nullptr, nullptr, pairlistParams.pairlistType, false, 1, gmx::PinningPolicy::CannotBePinned);
 
-    std::vector<real> nbfp({ 0.0_real, 0.0_real });
+    std::vector<real> nbfp{ 0.0_real, 0.0_real };
 
     std::unique_ptr<nbnxn_atomdata_t> nbat = std::make_unique<nbnxn_atomdata_t>(
             gmx::PinningPolicy::CannotBePinned, emptyLogger, kernelType, 0, 1, nbfp, 1, 1);

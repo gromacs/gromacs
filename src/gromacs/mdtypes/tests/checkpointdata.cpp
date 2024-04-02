@@ -172,31 +172,31 @@ private:
 template<>
 const std::vector<std::string>& TestValues::getTestVector()
 {
-    static const std::vector<std::string> testStrings({ "Test string\nwith newlines\n", "" });
+    static const std::vector<std::string> testStrings{ "Test string\nwith newlines\n", "" };
     return testStrings;
 }
 template<>
 const std::vector<int>& TestValues::getTestVector()
 {
-    static const std::vector<int> testInts({ { 3, INT_MAX, INT_MIN } });
+    static const std::vector<int> testInts{ 3, INT_MAX, INT_MIN };
     return testInts;
 }
 template<>
 const std::vector<int64_t>& TestValues::getTestVector()
 {
-    static const std::vector<int64_t> testInt64s({ -7, LLONG_MAX, LLONG_MIN });
+    static const std::vector<int64_t> testInt64s{ -7, LLONG_MAX, LLONG_MIN };
     return testInt64s;
 }
 template<>
 const std::vector<float>& TestValues::getTestVector()
 {
-    static const std::vector<float> testFloats({ 33.9, GMX_FLOAT_MAX, GMX_FLOAT_MIN, GMX_FLOAT_EPS });
+    static const std::vector<float> testFloats{ 33.9, GMX_FLOAT_MAX, GMX_FLOAT_MIN, GMX_FLOAT_EPS };
     return testFloats;
 }
 template<>
 const std::vector<double>& TestValues::getTestVector()
 {
-    static const std::vector<double> testDoubles({ -123.45, GMX_DOUBLE_MAX, GMX_DOUBLE_MIN, GMX_DOUBLE_EPS });
+    static const std::vector<double> testDoubles{ -123.45, GMX_DOUBLE_MAX, GMX_DOUBLE_MIN, GMX_DOUBLE_EPS };
     return testDoubles;
 }
 

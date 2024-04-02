@@ -42,7 +42,7 @@ TEST(EnsembleBoundingPotentialPlugin, ForceCalc)
     auto resource  = std::make_shared<plugin::Resources>(dummyFunc);
 
     // Define a reference distribution with a triangular peak at the 1.0 bin.
-    const std::vector<double> experimental{ { 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1 } };
+    const std::vector<double> experimental{ 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1 };
 
 
     plugin::EnsemblePotential restraint{

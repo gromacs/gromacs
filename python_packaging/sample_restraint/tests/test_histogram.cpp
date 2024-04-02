@@ -44,7 +44,7 @@ TEST(EnsembleHistogramPotentialPlugin, ForceCalc)
     */
 
     // Define a reference distribution with a triangular peak at the 1.0 bin.
-    const std::vector<double> experimental{ { 0, 1, 0, 0, 0, 0, 0, 0, 0, 0 } };
+    const std::vector<double> experimental{ 0, 1, 0, 0, 0, 0, 0, 0, 0, 0 };
 
 
     plugin::EnsemblePotential restraint{
