@@ -73,6 +73,15 @@ of Lortenz-Berthelot and Lortenz-Berthelot instead of no combination rules.
 
 :issue:`4963`
 
+Fix ``make_ndx`` behavior with splitres
+"""""""""""""""""""""""""""""""""""""""
+
+Since |Gromacs| 2023, ``gmx make_ndx`` would only output the first atom
+in each residue when using ``splitres`` command. Now the old behavior
+is restored, where all atoms in the residue are printed.
+
+:issue:`5049`
+
 Fixes that affect portability
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 

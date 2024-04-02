@@ -734,8 +734,10 @@ static void split_group(const t_atoms* atoms, int sel_nr, std::vector<IndexGroup
             {
                 sprintf(buf, "%s_%s_%d", nameToSplit, name, atoms->resinfo[resind].nr);
             }
-            indexGroups->push_back({ buf, { a } });
+            indexGroups->push_back({ buf, {} });
         }
+        GMX_ASSERT(!indexGroups->empty(), "Should have already created an index group!");
+        indexGroups->back().particleIndices.push_back(a);
         prevAtom = a;
     }
 }

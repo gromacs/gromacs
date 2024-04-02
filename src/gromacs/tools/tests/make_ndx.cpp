@@ -114,4 +114,10 @@ TEST_F(GmxMakeNdx, HandlesEmptyIndexFile)
     runTest(sysName, "del 0\nq\n", true);
 }
 
+TEST_F(GmxMakeNdx, Splitres)
+{
+    std::string sysName("spc-dimer");
+    runTest(sysName, "splitres 1\nq\n", false);
+}
+
 } // namespace
