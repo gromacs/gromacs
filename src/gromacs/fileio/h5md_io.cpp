@@ -123,6 +123,18 @@ herr_t iterativeSetupTimeDataBlocks(hid_t            locationId,
     return returnVal;
 }
 
+/* Unused. May be useful later. */
+/*
+herr_t getGroupNamesInLocation(hid_t location, const char* name, const H5O_info_t* info, void* operatorData)
+{
+    if(info->type == H5O_TYPE_GROUP)
+    {
+        auto vec = static_cast<std::vector<std::string>*>(operatorData);
+        vec->push_back(std::string(name));
+    }
+}
+*/
+
 } // namespace
 
 namespace gmx
