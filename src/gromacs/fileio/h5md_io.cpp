@@ -154,7 +154,6 @@ void GmxH5mdIo::openFile(const std::string fileName, const char mode)
 
     closeFile();
 
-    systemOutputName_ = "system";
     dataBlocks_.clear();
 
     if (debug)
@@ -320,17 +319,6 @@ std::string GmxH5mdIo::getCreatorProgramVersion()
     H5free_memory(tmpVersion);
     return version;
 }
-
-void GmxH5mdIo::setSystemOutputName(std::string systemOutputName)
-{
-    systemOutputName_ = systemOutputName;
-}
-
-std::string GmxH5mdIo::getSystemOutputName()
-{
-    return systemOutputName_;
-}
-
 
 void GmxH5mdIo::setAtomNames(const std::vector<std::string>& atomNames, std::string selectionName)
 {
@@ -541,11 +529,11 @@ real GmxH5mdIo::getLossyCompressionErrorOfDataBlock(std::string dataBlockFullNam
     return -1;
 }
 
-int64_t GmxH5mdIo::getNumberOfFrames(const std::string dataBlockName)
+int64_t GmxH5mdIo::getNumberOfFrames(const std::string dataBlockName, std::string selectionName)
 {
     GMX_ASSERT(dataBlockName != "", "There must be a datablock name to look for.");
 
-    std::string wantedName = "/particles/" + systemOutputName_ + "/" + dataBlockName;
+    std::string wantedName = "/particles/" + selectionName + "/" + dataBlockName;
 
     auto foundDataBlock = std::find(dataBlocks_.begin(), dataBlocks_.end(), wantedName.c_str());
     if (foundDataBlock == dataBlocks_.end())
@@ -555,11 +543,11 @@ int64_t GmxH5mdIo::getNumberOfFrames(const std::string dataBlockName)
     return foundDataBlock->numberOfFrames();
 }
 
-int64_t GmxH5mdIo::getNumberOfParticles(const std::string dataBlockName)
+int64_t GmxH5mdIo::getNumberOfParticles(const std::string dataBlockName, std::string selectionName)
 {
     GMX_ASSERT(dataBlockName != "", "There must be a datablock name to look for.");
 
-    std::string wantedName = "/particles/" + systemOutputName_ + "/" + dataBlockName;
+    std::string wantedName = "/particles/" + selectionName + "/" + dataBlockName;
 
     auto foundDataBlock = std::find(dataBlocks_.begin(), dataBlocks_.end(), wantedName.c_str());
     if (foundDataBlock == dataBlocks_.end())
@@ -569,11 +557,11 @@ int64_t GmxH5mdIo::getNumberOfParticles(const std::string dataBlockName)
     return foundDataBlock->getNumParticles();
 }
 
-real GmxH5mdIo::getFirstTime(const std::string dataBlockName)
+real GmxH5mdIo::getFirstTime(const std::string dataBlockName, std::string selectionName)
 {
     GMX_ASSERT(dataBlockName != "", "There must be a datablock name to look for.");
 
-    std::string wantedName = "/particles/" + systemOutputName_ + "/" + dataBlockName;
+    std::string wantedName = "/particles/" + selectionName + "/" + dataBlockName;
 
     auto foundDataBlock = std::find(dataBlocks_.begin(), dataBlocks_.end(), wantedName.c_str());
     if (foundDataBlock == dataBlocks_.end())
@@ -617,11 +605,11 @@ std::tuple<int64_t, real> GmxH5mdIo::getNextStepAndTimeToRead()
     return std::tuple<int64_t, real>(minStepNextFrame, minTime);
 }
 
-real GmxH5mdIo::getFinalTime(const std::string dataBlockName)
+real GmxH5mdIo::getFinalTime(const std::string dataBlockName, std::string selectionName)
 {
     GMX_ASSERT(dataBlockName != "", "There must be a datablock name to look for.");
 
-    std::string wantedName = "/particles/" + systemOutputName_ + "/" + dataBlockName;
+    std::string wantedName = "/particles/" + selectionName + "/" + dataBlockName;
 
     auto foundDataBlock = std::find(dataBlocks_.begin(), dataBlocks_.end(), wantedName.c_str());
     if (foundDataBlock == dataBlocks_.end())
@@ -692,7 +680,7 @@ void setH5mdAuthorAndCreator(h5mdio::GmxH5mdIo* file)
 void setupMolecularSystem(h5mdio::GmxH5mdIo*       file,
                           const gmx_mtop_t&        topology,
                           gmx::ArrayRef<const int> index,
-                          const std::string        index_group_name)
+                          std::string              selectionName)
 {
 #if GMX_USE_HDF5
     if (file == nullptr || !file->isFileOpen())
@@ -749,24 +737,19 @@ void setupMolecularSystem(h5mdio::GmxH5mdIo*       file,
             }
         }
     }
-    bool setupSeparateOutputGroup = false;
     if (!all_atoms_selected)
     {
         std::string systemOutputName;
-        if (index.ssize() > 0 && index_group_name != "")
+        if (index.ssize() > 0 && selectionName != "")
         {
-            setupSeparateOutputGroup = true;
-            systemOutputName         = index_group_name;
+            systemOutputName = selectionName;
         }
         /* If no name was specified fall back to using the selection group name of compressed output, if any. */
         else if (topology.groups.numberOfGroupNumbers(SimulationAtomGroupType::CompressedPositionOutput) != 0)
         {
-            setupSeparateOutputGroup = true;
             int nameIndex = topology.groups.groups[SimulationAtomGroupType::CompressedPositionOutput][0];
             systemOutputName = *topology.groups.groupNames[nameIndex];
         }
-        file->setSystemOutputName(systemOutputName);
-
         atomCharges.clear();
         atomMasses.clear();
         atomNames.clear();
@@ -784,11 +767,6 @@ void setupMolecularSystem(h5mdio::GmxH5mdIo*       file,
         file->setAtomPartialCharges(atomCharges, systemOutputName);
         file->setAtomMasses(atomMasses, systemOutputName);
     }
-    if (!setupSeparateOutputGroup)
-    {
-        file->setSystemOutputName("system");
-    }
-
 #else
     throw gmx::FileIOError(
             "GROMACS was compiled without HDF5 support, cannot handle this file type");
@@ -804,7 +782,8 @@ void writeFrameToStandardDataBlocks(h5mdio::GmxH5mdIo* file,
                                     const rvec*        x,
                                     const rvec*        v,
                                     const rvec*        f,
-                                    const double       xCompressionError)
+                                    const double       xCompressionError,
+                                    const std::string  selectionName)
 {
 #if GMX_USE_HDF5
     if (numParticles <= 0)
@@ -821,11 +800,10 @@ void writeFrameToStandardDataBlocks(h5mdio::GmxH5mdIo* file,
     std::string wantedName        = "/observables/lambda";
     file->writeDataFrame(
             step, time, wantedName, 1, 1, &lambda, "", 10, h5mdio::CompressionAlgorithm::LosslessNoShuffle);
-    std::string systemOutputName = file->getSystemOutputName();
 
     if (x != nullptr)
     {
-        wantedName = "/particles/" + systemOutputName + "/position";
+        wantedName = "/particles/" + selectionName + "/position";
         h5mdio::CompressionAlgorithm compressionAlgorithm =
                 h5mdio::CompressionAlgorithm::LosslessWithShuffle;
         if (xCompressionError != 0)
@@ -854,7 +832,7 @@ void writeFrameToStandardDataBlocks(h5mdio::GmxH5mdIo* file,
     {
         numFramesPerChunk =
                 10; /* There is so little box data per frame that it is best to write multiple per chunk. */
-        wantedName = "/particles/" + systemOutputName + "/box/edges";
+        wantedName = "/particles/" + selectionName + "/box/edges";
         file->writeDataFrame(step,
                              time,
                              wantedName,
@@ -869,7 +847,7 @@ void writeFrameToStandardDataBlocks(h5mdio::GmxH5mdIo* file,
     numFramesPerChunk = 1;
     if (v != nullptr)
     {
-        wantedName = "/particles/" + systemOutputName + "/velocity";
+        wantedName = "/particles/" + selectionName + "/velocity";
         file->writeDataFrame(step,
                              time,
                              wantedName,
@@ -882,7 +860,7 @@ void writeFrameToStandardDataBlocks(h5mdio::GmxH5mdIo* file,
     }
     if (f != nullptr)
     {
-        wantedName = "/particles/" + systemOutputName + "/force";
+        wantedName = "/particles/" + selectionName + "/force";
         file->writeDataFrame(step,
                              time,
                              wantedName,
@@ -912,15 +890,15 @@ bool readNextFrameOfStandardDataBlocks(h5mdio::GmxH5mdIo* file,
                                        bool*              readBox,
                                        bool*              readX,
                                        bool*              readV,
-                                       bool*              readF)
+                                       bool*              readF,
+                                       const std::string  selectionName)
 {
     if (file == nullptr || !file->isFileOpen())
     {
         throw gmx::FileIOError("No file open for reading.");
     }
 
-    std::string systemOutputName  = file->getSystemOutputName();
-    std::string particlesNameStem = "/particles/" + systemOutputName;
+    std::string particlesNameStem = "/particles/" + selectionName;
     *readLambda = *readBox = *readX = *readV = *readF = false;
 
     std::tuple<int64_t, real> temporaryStepTime = file->getNextStepAndTimeToRead();

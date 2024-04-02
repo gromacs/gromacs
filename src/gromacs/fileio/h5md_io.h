@@ -67,9 +67,6 @@ private:
     hid_t file_; //!< The HDF5 identifier of the file. This is the H5MD root.
     std::list<GmxH5mdTimeDataBlock> dataBlocks_; //!< A list of time dependent data blocks in the HDF5 file.
 
-    /* FIXME: systemOutputName_ is a hacky solution. */
-    std::string systemOutputName_; //!< The name of the selection of particles output. Defaults to "system"
-
     /*! \brief Sets the author (user) and creator (application name) properties in the h5md group (h5mdGroup_). */
     void setAuthorAndCreator();
 
@@ -158,11 +155,6 @@ public:
      */
     void setSystemOutputName(std::string systemOutputName);
 
-    /*! Get the name of the selection used for writing output.
-     * \returns The name used for the output.
-     */
-    std::string getSystemOutputName();
-
     /*! \brief Set atom names, if not already set. Atom names cannot be modified after setting.
      *
      * \param[in] atomNames The names of the atoms.
@@ -240,24 +232,29 @@ public:
 
     /*! \brief Get the number of frames of a particles data block
      * \param[in] dataBlockName The name of the data block.
+     * \param[in] selectionName The name of the selection to use.
      * \returns the number of frames of the data block or -1 if not found.
      */
-    int64_t getNumberOfFrames(const std::string dataBlockName);
+    int64_t getNumberOfFrames(const std::string dataBlockName,
+                              const std::string selectionName = "system");
 
     /*! \brief Get the number of particles of a particles data block
      * \param[in] dataBlockName The name of the data block.
+     * \param[in] selectionName The name of the selection to use.
      * \returns the number of particles of the data block or -1 if not found.
      * \throws FileIOError    If there was an error reading the number of particles could not be
      * read, such as no atom data in particles data blocks.
      */
-    int64_t getNumberOfParticles(const std::string dataBlockName);
+    int64_t getNumberOfParticles(const std::string dataBlockName,
+                                 const std::string selectionName = "system");
 
     /*! \brief Get the first time stamp of a particles data block
      * \param[in] dataBlockName The name of the data block.
+     * \param[in] selectionName The name of the selection to use.
      * \returns the first time of the data block or -1 if not found.
      * \throws FileIOError    If there was an error determining the time of the first frame.
      */
-    real getFirstTime(const std::string dataBlockName);
+    real getFirstTime(const std::string dataBlockName, const std::string selectionName = "system");
 
     /*! \brief Get the very first time stamp of all particles data blocks
      * \returns the first time of all data blocks or -1 if no data blocks were found.
@@ -273,10 +270,11 @@ public:
 
     /*! \brief Get the final time stamp of a particles data block
      * \param[in] dataBlockName The name of the data block.
+     * \param[in] selectionName The name of the selection to use.
      * \returns the final time of the data block or -1 if not found.
      * \throws FileIOError    If there was an error determining the time of the final frame.
      */
-    real getFinalTime(const std::string dataBlockName);
+    real getFinalTime(const std::string dataBlockName, const std::string selectionName = "system");
 
     /*! \brief Get the very last time stamp of all particles data blocks
      * \returns the last time of all data blocks or -1 if no data blocks were found.
@@ -320,6 +318,7 @@ void setupMolecularSystem(h5mdio::GmxH5mdIo*       file,
  * \param[in] v The particle velocities for lossless output.
  * \param[in] f The particle forces for lossless output.
  * \param[in] xCompressionError The accepted error of the lossy compression of coordinates.
+ * \param[in] selectionName The name of the selection to use.
  * \throws FileIOError    If there is no file open or if errors occured during writing.
  */
 void writeFrameToStandardDataBlocks(h5mdio::GmxH5mdIo* file,
@@ -331,7 +330,8 @@ void writeFrameToStandardDataBlocks(h5mdio::GmxH5mdIo* file,
                                     const rvec*        x,
                                     const rvec*        v,
                                     const rvec*        f,
-                                    double             xCompressionError);
+                                    double             xCompressionError,
+                                    const std::string  selectionName = "system");
 
 /*! \brief Read the next frame of box, coordinates, velocities and forces. With next frame means
  * the lowest step/time reading from the previous read frame of that data type. If data is
@@ -351,6 +351,7 @@ void writeFrameToStandardDataBlocks(h5mdio::GmxH5mdIo* file,
  * \param[out] readX      Whether coordinate data was read or not, i.e. if there was coordinate at this step.
  * \param[out] readV      Whether velocity data was read or not, i.e. if there was velocity data at this step.
  * \param[out] readF      Whether force data was read or not, i.e. if there was force data at this step.
+ * \param[in] selectionName The name of the selection to use.
  * \returns Whether any frame was read or not.
  * \throws FileIOError If there was an error reading the next frame or if the data type of the data was unknown.
  */
@@ -367,7 +368,8 @@ bool readNextFrameOfStandardDataBlocks(h5mdio::GmxH5mdIo* file,
                                        bool*              readBox,
                                        bool*              readX,
                                        bool*              readV,
-                                       bool*              readF);
+                                       bool*              readF,
+                                       const std::string  selectionName = "system");
 
 } // namespace gmx
 #endif // GMX_FILEIO_H5MD_IO_H
