@@ -808,10 +808,10 @@ void writeFrameToStandardDataBlocks(h5mdio::GmxH5mdIo* file,
     }
 
     /* There is so little lambda data per frame that it is best to write multiple per chunk. */
-    hsize_t     numFramesPerChunk = 10;
+    hsize_t     numFramesPerChunk = 20;
     std::string wantedName        = "/observables/lambda";
     file->writeDataFrame(
-            step, time, wantedName, 1, 1, &lambda, "", 10, h5mdio::CompressionAlgorithm::LosslessNoShuffle);
+            step, time, wantedName, 1, 1, &lambda, "", numFramesPerChunk, h5mdio::CompressionAlgorithm::LosslessNoShuffle);
 
     if (x != nullptr)
     {
@@ -820,8 +820,8 @@ void writeFrameToStandardDataBlocks(h5mdio::GmxH5mdIo* file,
                 h5mdio::CompressionAlgorithm::LosslessWithShuffle;
         if (xCompressionError != 0)
         {
-            /* Use no more than 10 frames per chunk (compression unit). Use fewer frames per chunk if there are many atoms. */
-            numFramesPerChunk    = std::min(10, int(std::ceil(2e6f / numParticles)));
+            /* Use no more than 20 frames per chunk (compression unit). Use fewer frames per chunk if there are many atoms. */
+            numFramesPerChunk    = std::min(20, int(std::ceil(5e6f / numParticles)));
             compressionAlgorithm = h5mdio::CompressionAlgorithm::LossySz3;
 
             /* Register the SZ3 filter. This is not necessary when creating a dataset with the filter,
@@ -842,8 +842,8 @@ void writeFrameToStandardDataBlocks(h5mdio::GmxH5mdIo* file,
 
     if (box != nullptr)
     {
-        numFramesPerChunk =
-                10; /* There is so little box data per frame that it is best to write multiple per chunk. */
+        /* There is so little box data per frame that it is best to write multiple per chunk. */
+        numFramesPerChunk = 10;
         wantedName = "/particles/" + selectionName + "/box/edges";
         file->writeDataFrame(step,
                              time,
@@ -856,6 +856,7 @@ void writeFrameToStandardDataBlocks(h5mdio::GmxH5mdIo* file,
                              h5mdio::CompressionAlgorithm::LosslessNoShuffle);
     }
 
+    /* There is no temporal compression of velocities and forces. */
     numFramesPerChunk = 1;
     if (v != nullptr)
     {
