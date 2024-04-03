@@ -114,13 +114,12 @@ class ListedForcesGpu::Impl
 {
 public:
     //! Constructor
-    Impl(const gmx_ffparams_t&    ffparams,
-         float                    electrostaticsScaleFactor,
-         int                      numEnergyGroupsForListedForces,
-         const DeviceInformation& deviceInfo,
-         const DeviceContext&     deviceContext,
-         const DeviceStream&      deviceStream,
-         gmx_wallcycle*           wcycle);
+    Impl(const gmx_ffparams_t& ffparams,
+         float                 electrostaticsScaleFactor,
+         int                   numEnergyGroupsForListedForces,
+         const DeviceContext&  deviceContext,
+         const DeviceStream&   deviceStream,
+         gmx_wallcycle*        wcycle);
     //! \brief Destructor, non-default needed for freeing device-side buffers
     ~Impl();
 

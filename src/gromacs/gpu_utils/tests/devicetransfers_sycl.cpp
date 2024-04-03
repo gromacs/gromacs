@@ -52,16 +52,14 @@
 namespace gmx
 {
 
-void doDeviceTransfers(const DeviceContext&     deviceContext,
-                       const DeviceInformation& deviceInfo,
-                       ArrayRef<const char>     input,
-                       ArrayRef<char>           output)
+void doDeviceTransfers(const DeviceContext& deviceContext, ArrayRef<const char> input, ArrayRef<char> output)
 {
     GMX_RELEASE_ASSERT(input.size() == output.size(), "Input and output must have matching size");
 
     try
     {
-        sycl::queue syclQueue(deviceContext.context(), deviceInfo.syclDevice);
+        const sycl::device& device = deviceContext.deviceInfo().syclDevice;
+        sycl::queue         syclQueue(deviceContext.context(), device);
 
         sycl::global_ptr<char> d_buf = sycl::malloc_device<char>(input.size(), syclQueue);
 

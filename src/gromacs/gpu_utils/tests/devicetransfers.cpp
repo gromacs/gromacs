@@ -49,10 +49,7 @@
 namespace gmx
 {
 
-void doDeviceTransfers(const DeviceContext& /* deviceContext */,
-                       const DeviceInformation& /* deviceInfo */,
-                       ArrayRef<const char> input,
-                       ArrayRef<char>       output)
+void doDeviceTransfers(const DeviceContext& /* deviceContext */, ArrayRef<const char> input, ArrayRef<char> output)
 {
     GMX_RELEASE_ASSERT(input.size() == output.size(), "Input and output must have matching size");
     // We can't have any valid GPUs for this build configuration.

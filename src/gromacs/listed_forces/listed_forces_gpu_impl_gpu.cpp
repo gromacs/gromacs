@@ -87,13 +87,12 @@ static int chooseSubGroupSizeForDevice(const DeviceInformation& deviceInfo)
     }
 }
 
-ListedForcesGpu::Impl::Impl(const gmx_ffparams_t&    ffparams,
-                            const float              electrostaticsScaleFactor,
-                            const int                numEnergyGroupsForListedForces,
-                            const DeviceInformation& deviceInfo,
-                            const DeviceContext&     deviceContext,
-                            const DeviceStream&      deviceStream,
-                            gmx_wallcycle*           wcycle) :
+ListedForcesGpu::Impl::Impl(const gmx_ffparams_t& ffparams,
+                            const float           electrostaticsScaleFactor,
+                            const int             numEnergyGroupsForListedForces,
+                            const DeviceContext&  deviceContext,
+                            const DeviceStream&   deviceStream,
+                            gmx_wallcycle*        wcycle) :
     deviceContext_(deviceContext), deviceStream_(deviceStream)
 {
     GMX_RELEASE_ASSERT(numEnergyGroupsForListedForces == 1,
@@ -134,7 +133,8 @@ ListedForcesGpu::Impl::Impl(const gmx_ffparams_t&    ffparams,
         kernelParams_.fTypeRangeEnd[i]   = -1;
     }
 
-    deviceSubGroupSize_ = chooseSubGroupSizeForDevice(deviceInfo);
+    const DeviceInformation& deviceInfo = deviceContext.deviceInfo();
+    deviceSubGroupSize_                 = chooseSubGroupSizeForDevice(deviceInfo);
     GMX_RELEASE_ASSERT(std::find(deviceInfo.supportedSubGroupSizes.begin(),
                                  deviceInfo.supportedSubGroupSizes.end(),
                                  deviceSubGroupSize_)
@@ -397,14 +397,13 @@ void ListedForcesGpu::Impl::clearEnergies()
 
 // ---- ListedForcesGpu
 
-ListedForcesGpu::ListedForcesGpu(const gmx_ffparams_t&    ffparams,
-                                 const float              electrostaticsScaleFactor,
-                                 const int                numEnergyGroupsForListedForces,
-                                 const DeviceInformation& deviceInfo,
-                                 const DeviceContext&     deviceContext,
-                                 const DeviceStream&      deviceStream,
-                                 gmx_wallcycle*           wcycle) :
-    impl_(new Impl(ffparams, electrostaticsScaleFactor, numEnergyGroupsForListedForces, deviceInfo, deviceContext, deviceStream, wcycle))
+ListedForcesGpu::ListedForcesGpu(const gmx_ffparams_t& ffparams,
+                                 const float           electrostaticsScaleFactor,
+                                 const int             numEnergyGroupsForListedForces,
+                                 const DeviceContext&  deviceContext,
+                                 const DeviceStream&   deviceStream,
+                                 gmx_wallcycle*        wcycle) :
+    impl_(new Impl(ffparams, electrostaticsScaleFactor, numEnergyGroupsForListedForces, deviceContext, deviceStream, wcycle))
 {
 }
 

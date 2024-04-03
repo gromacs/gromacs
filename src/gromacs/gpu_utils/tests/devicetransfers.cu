@@ -58,10 +58,7 @@
 namespace gmx
 {
 
-void doDeviceTransfers(const DeviceContext& /*context*/,
-                       const DeviceInformation& deviceInfo,
-                       ArrayRef<const char>     input,
-                       ArrayRef<char>           output)
+void doDeviceTransfers(const DeviceContext& context, ArrayRef<const char> input, ArrayRef<char> output)
 {
     GMX_RELEASE_ASSERT(input.size() == output.size(), "Input and output must have matching size");
     cudaError_t status;
@@ -70,7 +67,7 @@ void doDeviceTransfers(const DeviceContext& /*context*/,
 
     status = cudaGetDevice(&oldDeviceId);
     checkDeviceError(status, "Error while getting old device id.");
-    status = cudaSetDevice(deviceInfo.id);
+    status = cudaSetDevice(context.deviceInfo().id);
     checkDeviceError(status, "Error while setting device id to the first compatible GPU.");
 
     void* devicePointer;

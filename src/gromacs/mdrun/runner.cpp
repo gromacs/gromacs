@@ -1877,7 +1877,6 @@ int Mdrunner::mdrunner()
                     std::make_unique<ListedForcesGpu>(mtop.ffparams,
                                                       fr->ic->epsfac * fr->fudgeQQ,
                                                       inputrec->opts.ngener - inputrec->nwall,
-                                                      *deviceInfo,
                                                       deviceStreamManager->context(),
                                                       deviceStreamManager->bondedStream(),
                                                       wcycle.get());

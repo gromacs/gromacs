@@ -71,16 +71,13 @@ void throwUponFailure(cl_int status, const char* message)
 
 } // namespace
 
-void doDeviceTransfers(const DeviceContext&     deviceContext,
-                       const DeviceInformation& deviceInfo,
-                       ArrayRef<const char>     input,
-                       ArrayRef<char>           output)
+void doDeviceTransfers(const DeviceContext& deviceContext, ArrayRef<const char> input, ArrayRef<char> output)
 {
     GMX_RELEASE_ASSERT(input.size() == output.size(), "Input and output must have matching size");
 
     cl_int status;
 
-    auto deviceId     = deviceInfo.oclDeviceId;
+    auto deviceId     = deviceContext.deviceInfo().oclDeviceId;
     auto context      = deviceContext.context();
     auto commandQueue = clCreateCommandQueue(context, deviceId, 0, &status);
     throwUponFailure(status, "creating command queue");
