@@ -1297,7 +1297,7 @@ void push_cmaptype(Directive                         d,
 
     /* Check for the correct number of atoms (again) */
     nct = (nral + 1) * bt[F_CMAP].numCmaps_;
-    if (bt[F_CMAP].nct() != nct)
+    if (bt[F_CMAP].nct() != static_cast<std::size_t>(nct))
     {
         auto message = gmx::formatString(
                 "Incorrect number of atom types (%d) in cmap type %d\n", nct, bt[F_CMAP].numCmaps_);
@@ -1675,7 +1675,7 @@ static bool default_cmap_params(gmx::ArrayRef<InteractionsOfType> bondtype,
     ct           = 0;
 
     /* Match the current cmap angle against the list of cmap_types */
-    for (int i = 0; i < bondtype[F_CMAP].nct() && !bFound; i += NRAL(F_CMAP) + 1)
+    for (std::size_t i = 0; i < bondtype[F_CMAP].nct() && !bFound; i += NRAL(F_CMAP) + 1)
     {
         if (bB) {}
         else

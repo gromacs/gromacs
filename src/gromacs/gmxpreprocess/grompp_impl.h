@@ -149,9 +149,9 @@ struct InteractionsOfType
     //! Number of parameters.
     size_t size() const { return interactionTypes.size(); }
     //! Elements in cmap grid data.
-    int ncmap() const { return cmap.size(); }
+    std::size_t ncmap() const { return cmap.size(); }
     //! Number of elements in cmapAtomTypes.
-    int nct() const { return cmapAtomTypes.size(); }
+    std::size_t nct() const { return cmapAtomTypes.size(); }
 };
 
 struct t_excls
