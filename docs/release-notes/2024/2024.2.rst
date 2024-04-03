@@ -88,3 +88,11 @@ The mdp keyword for mass repartioning was incorrect in the list of mdp
 options in the documentation.
 
 :issue:`5007`
+
+Report AdaptiveCpp/hipSYCL compiler path in ``gmx -version``
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+In 2024.0 and 2024.1 it was empty.
+
+:issue:`5045`
+
