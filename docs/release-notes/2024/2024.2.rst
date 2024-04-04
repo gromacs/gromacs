@@ -50,6 +50,15 @@ with Zen 4 cores.
 
 :issue:`5043`
 
+Warn about unsupported compilers sooner
+"""""""""""""""""""""""""""""""""""""""
+
+Now CMake reports that a user's compiler is broken or unsupported
+before running into other fatal issues that woud have obscured a
+critical problem.
+
+:issue:`5056`
+
 Miscellaneous
 ^^^^^^^^^^^^^
 

@@ -91,6 +91,10 @@ set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
+include(gmxTestIntelLLVM)
+# Run through a number of tests for buggy compilers and other issues
+include(gmxTestCompilerProblems)
+gmx_test_compiler_problems()
 find_package(LibStdCpp)
 
 # Python is first referenced in gmxVersionInfo, so we perform the search early
@@ -268,8 +272,6 @@ gmx_option_multichoice(
     "AUTO"
     AUTO None SSE2 SSE4.1 AVX_128_FMA AVX_256 AVX2_256 AVX2_128 AVX_512 AVX_512_KNL ARM_NEON_ASIMD ARM_SVE IBM_VSX Reference)
 
-include(gmxTestIntelLLVM)
-
 if (GMX_INTEL_LLVM)
     set(GMX_FFT_LIBRARY_DEFAULT "mkl")
 else()
@@ -440,10 +442,6 @@ gmx_c_flags()
 # might not also work for C++ compilation.
 set(EXTRA_C_FLAGS "")
 set(EXTRA_CXX_FLAGS "")
-
-# Run through a number of tests for buggy compilers and other issues
-include(gmxTestCompilerProblems)
-gmx_test_compiler_problems()
 
 # Implement double-precision option. This is complicated because we
 # need installed headers to use the precision mode of the build that
