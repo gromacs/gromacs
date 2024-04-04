@@ -78,9 +78,18 @@ public:
         referenceFilename_ = fileManager_.getTemporaryFilePath(getFileSuffix("ref")).u8string();
         open_symtab(&topologySymbolTable_);
         strcpy(atomNameBase, "мệ🚀");
+        refX_ = nullptr;
+        refV_ = nullptr;
+        refF_ = nullptr;
     }
 
-    ~H5mdIoTest() override { close_symtab(&topologySymbolTable_); }
+    ~H5mdIoTest() override
+    {
+        done_symtab(&topologySymbolTable_);
+        sfree(refX_);
+        sfree(refV_);
+        sfree(refF_);
+    }
 
     /*! \brief Open a file used as reference for further tests. */
     void openReferenceFile(const char mode) { referenceH5mdIo_.openFile(referenceFilename_, mode); }
@@ -133,6 +142,9 @@ public:
         refBox_[XX][XX] = 2;
         refBox_[YY][YY] = 3;
         refBox_[ZZ][ZZ] = 4.123;
+        sfree(refX_);
+        sfree(refV_);
+        sfree(refF_);
         snew(refX_, refAtomCount_);
         snew(refV_, refAtomCount_);
         refF_       = nullptr;
@@ -161,14 +173,13 @@ public:
     {
         auto& moltype    = refTopology_.moltype.emplace_back();
         moltype.atoms.nr = refAtomCount_;
-        srenew(moltype.atoms.atom, refAtomCount_);
         init_t_atoms(&moltype.atoms, refAtomCount_, false);
 
         /* We are using some UTF8 characters, so there must be some margin in the string length. */
         for (size_t i = 0; i < refAtomCount_; i++)
         {
-            char tmpUtf8CharBuffer[gmx::h5mdio::c_atomNameLen];
-            sprintf(tmpUtf8CharBuffer, "%s%zu", atomNameBase, i);
+            char tmpUtf8CharBuffer[gmx::h5mdio::c_atomNameLen + 1];
+            sprintf(tmpUtf8CharBuffer, "%s%zu", atomNameBase, i % 1000);
             moltype.atoms.atom[i].resind = 0;
             moltype.atoms.atomname[i]    = put_symtab(&topologySymbolTable_, tmpUtf8CharBuffer);
         }
@@ -190,8 +201,8 @@ public:
     {
         for (size_t i = 0; i < refAtomCount_; i++)
         {
-            char tmpUtf8CharBuffer[gmx::h5mdio::c_atomNameLen];
-            sprintf(tmpUtf8CharBuffer, "%s%zu", atomNameBase, i);
+            char tmpUtf8CharBuffer[gmx::h5mdio::c_atomNameLen + 1];
+            sprintf(tmpUtf8CharBuffer, "%s%zu", atomNameBase, i % 1000);
             // printf("name %zu: %s %s\n", i, atomNames[i].c_str(), *(atoms.atomname[i]));
             EXPECT_STREQ(tmpUtf8CharBuffer, atomNames[i].c_str());
         }
@@ -297,6 +308,9 @@ public:
                 EXPECT_REAL_EQ_TOL(refV_[atom][d], testV[atom][d], gmx::test::defaultRealTolerance());
             }
         }
+        sfree(testX);
+        sfree(testV);
+        sfree(testF);
     }
 
 private:
@@ -317,7 +331,7 @@ private:
     t_symtab                   topologySymbolTable_;
     size_t                     refAtomCount_;
     real                       refCompressionPrecision_;
-    char                       atomNameBase[gmx::h5mdio::c_atomNameLen];
+    char                       atomNameBase[gmx::h5mdio::c_atomNameLen - 5];
 };
 
 /*! \brief Tests that opening (creating a new), closing, re-opening and closing
@@ -402,10 +416,9 @@ TEST_P(H5mdIoTest, HighLevelWriteRead)
 
 INSTANTIATE_TEST_SUITE_P(H5mdTestWriteReadCombinations,
                          H5mdIoTest,
-                         ::testing::Combine(
-                                 ::testing::Values(0, 2, 18, 48),
-                                 ::testing::Values(2, 20, 101),
-                                 ::testing::Values(0, 0.001, 0.12))); // FIXME: Why does 0.0123 cause segfaults
+                         ::testing::Combine(::testing::Values(0, 2, 18, 48),
+                                            ::testing::Values(2, 20, 101),
+                                            ::testing::Values(0, 0.001, 0.0123))); // FIXME: Why does 0.0123 cause segfaults
 
 
 } // namespace

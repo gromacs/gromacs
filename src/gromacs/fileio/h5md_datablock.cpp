@@ -326,8 +326,10 @@ size_t GmxH5mdTimeDataBlock::getNumParticles() const
     hsize_t* dimExtents;
     snew(dimExtents, dataSpaceNumDims);
     H5Sget_simple_extent_dims(dataSpace, dimExtents, nullptr);
+    size_t numParticles = dimExtents[1];
+    sfree(dimExtents);
 
-    return dimExtents[1];
+    return numParticles;
 }
 
 int64_t GmxH5mdTimeDataBlock::getStepOfFrame(int64_t frame) const

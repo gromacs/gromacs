@@ -779,6 +779,9 @@ void setupMolecularSystem(h5mdio::GmxH5mdIo*       file,
         file->setAtomPartialCharges(atomCharges, systemOutputName);
         file->setAtomMasses(atomMasses, systemOutputName);
     }
+
+    done_atom(&atoms);
+
 #else
     throw gmx::FileIOError(
             "GROMACS was compiled without HDF5 support, cannot handle this file type");
@@ -844,7 +847,7 @@ void writeFrameToStandardDataBlocks(h5mdio::GmxH5mdIo* file,
     {
         /* There is so little box data per frame that it is best to write multiple per chunk. */
         numFramesPerChunk = 10;
-        wantedName = "/particles/" + selectionName + "/box/edges";
+        wantedName        = "/particles/" + selectionName + "/box/edges";
         file->writeDataFrame(step,
                              time,
                              wantedName,

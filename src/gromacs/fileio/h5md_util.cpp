@@ -94,8 +94,10 @@ void setLossySz3CompressionProperties(const hid_t propertyList, const int sz3Mod
     unsigned int* compressionSettings = nullptr;
     SZ_errConfigToCdArray(
             &numCompressionSettingsElements, &compressionSettings, sz3Mode, compressionError, compressionError, 0, 0);
-    if (H5Pset_filter(propertyList, H5Z_FILTER_SZ3, H5Z_FLAG_MANDATORY, numCompressionSettingsElements, compressionSettings)
-        < 0)
+    herr_t status = H5Pset_filter(
+            propertyList, H5Z_FILTER_SZ3, H5Z_FLAG_MANDATORY, numCompressionSettingsElements, compressionSettings);
+    free(compressionSettings);
+    if (status < 0)
     {
         H5Eprint2(H5E_DEFAULT, nullptr);
         throw gmx::FileIOError("Cannot set SZ3 compression.");
@@ -151,6 +153,7 @@ void registerSz3FilterImplicitly()
     SZ_errConfigToCdArray(&numCompressionSettingsElements, &compressionSettings, sz3Mode, 0, 0, 0, 0);
     herr_t status = H5Pset_filter(
             propertyList, H5Z_FILTER_SZ3, H5Z_FLAG_MANDATORY, numCompressionSettingsElements, compressionSettings);
+    free(compressionSettings);
 
     /* For some reason status is 0 even if the filter could not be found. Check if any HDF5 errors have occured */
     ssize_t numHdf5Errors = H5Eget_num(H5E_DEFAULT);
