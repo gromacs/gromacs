@@ -178,7 +178,7 @@ public:
         /* We are using some UTF8 characters, so there must be some margin in the string length. */
         for (size_t i = 0; i < refAtomCount_; i++)
         {
-            char tmpUtf8CharBuffer[gmx::h5mdio::c_atomNameLen + 1];
+            char tmpUtf8CharBuffer[gmx::h5mdio::c_atomStringLen + 1];
             sprintf(tmpUtf8CharBuffer, "%s%zu", atomNameBase, i % 1000);
             moltype.atoms.atom[i].resind = 0;
             moltype.atoms.atomname[i]    = put_symtab(&topologySymbolTable_, tmpUtf8CharBuffer);
@@ -194,16 +194,17 @@ public:
 
     std::vector<std::string> readAtomNamesFromReferenceFile()
     {
-        return referenceH5mdIo_.readAtomNames();
+        return referenceH5mdIo_.readAtomStringProperties("atomname");
     }
 
     void compareAtomNamesToReference(const std::vector<std::string>& atomNames)
     {
+        EXPECT_EQ(refAtomCount_, atomNames.size());
         for (size_t i = 0; i < refAtomCount_; i++)
         {
-            char tmpUtf8CharBuffer[gmx::h5mdio::c_atomNameLen + 1];
+            char tmpUtf8CharBuffer[gmx::h5mdio::c_atomStringLen + 1];
             sprintf(tmpUtf8CharBuffer, "%s%zu", atomNameBase, i % 1000);
-            // printf("name %zu: %s %s\n", i, atomNames[i].c_str(), *(atoms.atomname[i]));
+            // printf("name %zu: %s %s\n", i, atomNames[i].c_str(), tmpUtf8CharBuffer);
             EXPECT_STREQ(tmpUtf8CharBuffer, atomNames[i].c_str());
         }
     }
@@ -313,6 +314,60 @@ public:
         sfree(testF);
     }
 
+    void setupWaterAndLigandGroups()
+    {
+        refWaterAtomNames_       = { "Ow", "HW1", "HW2", "Ow", "HW1", "HW2", "Ow", "HW1", "HW2" };
+        refWaterPartialCharges_  = { -0.83,  -0.415, -0.415, -0.83, -0.415,
+                                    -0.415, -0.83,  -0.415, -0.415 };
+        refLigandAtomNames_      = { "C1", "HC11", "HC12", "HC13", "C2", "HC21", "HC22", "HC23" };
+        refLigandPartialCharges_ = { -0.27, 0.09, 0.09, 0.09, -0.27, 0.09, 0.09, 0.09 };
+
+        GMX_ASSERT(refWaterAtomNames_.size() == refWaterPartialCharges_.size()
+                           && refLigandAtomNames_.size() == refLigandPartialCharges_.size(),
+                   "Mismatching number of elements");
+    }
+
+    void writeWaterAndLigandGroups()
+    {
+        referenceH5mdIo_.setAtomStringProperties(refWaterAtomNames_, "atomname", "water");
+        referenceH5mdIo_.setAtomStringProperties(refLigandAtomNames_, "atomname", "ligand");
+        referenceH5mdIo_.setAtomFloatProperties(refWaterPartialCharges_, "charge", "water");
+        referenceH5mdIo_.setAtomFloatProperties(refLigandPartialCharges_, "charge", "ligand");
+    }
+
+    void readAndCheckWaterAndLigandGroups()
+    {
+        std::vector<std::string> testWaterAtomNames =
+                referenceH5mdIo_.readAtomStringProperties("atomname", "water");
+        std::vector<std::string> testLigandAtomNames =
+                referenceH5mdIo_.readAtomStringProperties("atomname", "ligand");
+        std::vector<real> testWaterCharges =
+                referenceH5mdIo_.readAtomFloatProperties("charge", "water");
+        std::vector<real> testLigandCharges =
+                referenceH5mdIo_.readAtomFloatProperties("charge", "ligand");
+
+        size_t refNumWaterNameElements  = refWaterAtomNames_.size();
+        size_t refNumLigandNameElements = refLigandAtomNames_.size();
+
+        EXPECT_EQ(refNumWaterNameElements, testWaterAtomNames.size());
+        EXPECT_EQ(refNumWaterNameElements, testWaterCharges.size());
+        EXPECT_EQ(refNumLigandNameElements, testLigandAtomNames.size());
+        EXPECT_EQ(refNumLigandNameElements, testLigandCharges.size());
+
+        for (size_t i = 0; i < refNumWaterNameElements; i++)
+        {
+            EXPECT_STREQ(refWaterAtomNames_[i].c_str(), testWaterAtomNames[i].c_str());
+            EXPECT_REAL_EQ_TOL(
+                    refWaterPartialCharges_[i], testWaterCharges[i], gmx::test::defaultRealTolerance());
+        }
+        for (size_t i = 0; i < refNumLigandNameElements; i++)
+        {
+            EXPECT_STREQ(refLigandAtomNames_[i].c_str(), testLigandAtomNames[i].c_str());
+            EXPECT_REAL_EQ_TOL(
+                    refLigandPartialCharges_[i], testLigandCharges[i], gmx::test::defaultRealTolerance());
+        }
+    }
+
 private:
     static std::string getFileSuffix(const char* type)
     {
@@ -331,7 +386,11 @@ private:
     t_symtab                   topologySymbolTable_;
     size_t                     refAtomCount_;
     real                       refCompressionPrecision_;
-    char                       atomNameBase[gmx::h5mdio::c_atomNameLen - 5];
+    char                       atomNameBase[gmx::h5mdio::c_atomStringLen - 5];
+    std::vector<std::string>   refWaterAtomNames_;
+    std::vector<real>          refWaterPartialCharges_;
+    std::vector<std::string>   refLigandAtomNames_;
+    std::vector<real>          refLigandPartialCharges_;
 };
 
 /*! \brief Tests that opening (creating a new), closing, re-opening and closing
@@ -354,6 +413,17 @@ TEST_F(H5mdIoTest, CanCreateAndCloseH5mdFile)
     EXPECT_TRUE(isReferenceFileOpen());
     closeReferenceFile();
     EXPECT_FALSE(isReferenceFileOpen());
+}
+
+TEST_F(H5mdIoTest, SelectionGroups)
+{
+    openReferenceFile('w');
+    setupWaterAndLigandGroups();
+    writeWaterAndLigandGroups();
+    closeReferenceFile();
+    openReferenceFile('r');
+    readAndCheckWaterAndLigandGroups();
+    closeReferenceFile();
 }
 
 TEST_P(H5mdIoTest, HighLevelWriteRead)

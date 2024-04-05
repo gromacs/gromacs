@@ -55,7 +55,7 @@ namespace h5mdio
 
 typedef int64_t            hid_t;
 typedef unsigned long long hsize_t;
-constexpr size_t           c_atomNameLen = 17;
+constexpr size_t           c_atomStringLen = 17;
 
 
 /*! \brief The container of the H5MD data. The class is designed to read/write data according to de Buyl et al., 2014
@@ -155,38 +155,49 @@ public:
      */
     void setSystemOutputName(std::string systemOutputName);
 
-    /*! \brief Set atom names, if not already set. Atom names cannot be modified after setting.
+    /*! \brief Set a string property for atoms, if not already set. Atom string properties,
+     * e.g., names cannot be modified after setting.
+     * N.b., The maximum string length is set to c_atomStringLen to avoid the overhead that comes
+     * with flexible string lengths in HDF5.
      *
-     * \param[in] atomNames The names of the atoms.
+     * \param[in] propertyValues A list of strings.
+     * \param[in] propertyName The name of the property to set, e.g., "atomname".
      * \param[in] selectionName The name of the selection the atoms belong to.
      * \throws FileIOError If there was an error creating the data block or writing the data.
      */
-    void setAtomNames(const std::vector<std::string>& atomNames,
-                      std::string                     selectionName = "system");
+    void setAtomStringProperties(const std::vector<std::string>& propertyValues,
+                                 const std::string&              propertyName,
+                                 const std::string&              selectionName = "system");
 
-    /*! \brief Set atom partial charges, if not already set. Partial charges cannot be modified after setting.
+    /*! \brief Set float properties, e.g. partial charges or masses, if not already set.
+     * Atom properties cannot be modified after setting.
      *
-     * \param[in] atomCharges The names of the atoms.
+     * \param[in] propertyValues A list of float values.
+     * \param[in] propertyName The name of the property to set, e.g., "charge".
      * \param[in] selectionName The name of the selection the atoms belong to.
      * \throws FileIOError If there was an error creating the data block or writing the data.
      */
-    void setAtomPartialCharges(const std::vector<real>& atomCharges,
-                               std::string              selectionName = "system");
+    void setAtomFloatProperties(const std::vector<real>& propertyValues,
+                                const std::string&       propertyName,
+                                const std::string&       selectionName = "system");
 
-    /*! \brief Set atom masses, if not already set. Masses cannot be modified after setting.
-     *
-     * \param[in] atomMasses The names of the atoms.
-     * \param[in] selectionName The name of the selection the atoms belong to.
-     * \throws FileIOError If there was an error creating the data block or writing the data.
-     */
-    void setAtomMasses(const std::vector<real>& atomMasses, std::string selectionName = "system");
 
-    /* \brief Read atom names from the file.
+    /* \brief Read string properties of atoms, e.g., atom names, from the file.
+     * \param[in] propertyName The name of the property to read, e.g., "atomname".
      * \param[in] selectionName The name of the selection the atoms belong to.
-     * \returns A vector containing the atom names. Empty if no names could be read.
-     * \throws FileIOError If there was an error creating the data block or writing the data.
+     * \returns A vector containing the strings. Empty if no strings could be read.
+     * \throws FileIOError If there was an error reading the data.
      */
-    std::vector<std::string> readAtomNames(std::string selectionName = "system");
+    std::vector<std::string> readAtomStringProperties(const std::string& propertyName,
+                                                      const std::string& selectionName = "system");
+
+    /* \brief Read atom float properties, e.g., partial charges, from the file.
+     * \param[in] selectionName The name of the selection the atoms belong to.
+     * \returns A vector containing the float values. Empty if no data could be read.
+     * \throws FileIOError If there was an error reading the data.
+     */
+    std::vector<real> readAtomFloatProperties(const std::string& propertyName,
+                                              const std::string& selectionName = "system");
 
     /*! \brief Write a frame of data to the file.
      * \param[in] step The simulation step.

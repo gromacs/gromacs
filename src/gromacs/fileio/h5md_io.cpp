@@ -332,54 +332,56 @@ std::string GmxH5mdIo::getCreatorProgramVersion()
     return version;
 }
 
-void GmxH5mdIo::setAtomNames(const std::vector<std::string>& atomNames, std::string selectionName)
+void GmxH5mdIo::setAtomStringProperties(const std::vector<std::string>& propertyValues,
+                                        const std::string&              propertyName,
+                                        const std::string&              selectionName)
 {
     std::string groupName("/particles/" + selectionName);
     openOrCreateGroup(file_, groupName.c_str());
-    std::string dataSetName("/particles/" + selectionName + "/atomname");
+    std::string dataSetName("/particles/" + selectionName + "/" + propertyName);
 
     /* Don't replace data that already exists and cannot (currently) change during the simulation */
-    /* FIXME: Currently atom names cannot change during the simulation. */
+    /* FIXME: Currently atom properties cannot change during the simulation. */
     if (!H5Lexists(file_, dataSetName.c_str(), H5P_DEFAULT))
     {
-        /* Is there a more convenient way to do this? std::string is nice above, but cannot be used for writing in HDF5. */
-        /* Hard-code the atom name lengths to max 17 (max 4 char 4-byte UTF8). Flexible strings make a lot of unaccounted space,
-         * which is wasted. For strings that are numerous, such as atom names, it is better to use fixed-length. */
-        char* atomNamesChars;
-        snew(atomNamesChars, atomNames.size() * c_atomNameLen);
-        for (size_t i = 0; i < atomNames.size(); i++)
+        /* FIXME: Is there a more convenient way to do this? std::string is nice above, but cannot be used for writing in HDF5. */
+        char* propertyValuesChars;
+        snew(propertyValuesChars, propertyValues.size() * c_atomStringLen);
+        for (size_t i = 0; i < propertyValues.size(); i++)
         {
-            strncpy(&atomNamesChars[i * c_atomNameLen], atomNames[i].c_str(), c_atomNameLen);
+            strncpy(&propertyValuesChars[i * c_atomStringLen], propertyValues[i].c_str(), c_atomStringLen);
         }
 
         hid_t stringDataType = H5Tcopy(H5T_C_S1);
-        H5Tset_size(stringDataType, c_atomNameLen);
+        H5Tset_size(stringDataType, c_atomStringLen);
         H5Tset_cset(stringDataType, H5T_CSET_UTF8);
 
         hsize_t atomPropertiesChunkDims[1];
-        atomPropertiesChunkDims[0] = atomNames.size();
+        atomPropertiesChunkDims[0] = propertyValues.size();
 
-        hid_t atomName = openOrCreateDataSet<1>(file_,
-                                                dataSetName.c_str(),
-                                                "",
-                                                stringDataType,
-                                                atomPropertiesChunkDims,
-                                                CompressionAlgorithm::LosslessNoShuffle,
-                                                0);
-        writeData<1, true>(atomName, atomNamesChars, 0);
-        H5Dclose(atomName);
-        sfree(atomNamesChars);
+        hid_t dataSet = openOrCreateDataSet<1>(file_,
+                                               dataSetName.c_str(),
+                                               "",
+                                               stringDataType,
+                                               atomPropertiesChunkDims,
+                                               CompressionAlgorithm::LosslessNoShuffle,
+                                               0);
+        writeData<1, true>(dataSet, propertyValuesChars, 0);
+        H5Dclose(dataSet);
+        sfree(propertyValuesChars);
     }
 }
 
-void GmxH5mdIo::setAtomPartialCharges(const std::vector<real>& atomCharges, std::string selectionName)
+void GmxH5mdIo::setAtomFloatProperties(const std::vector<real>& propertyValues,
+                                       const std::string&       propertyName,
+                                       const std::string&       selectionName)
 {
     std::string groupName("/particles/" + selectionName);
     openOrCreateGroup(file_, groupName.c_str());
-    std::string dataSetName("/particles/" + selectionName + "/charge");
+    std::string dataSetName("/particles/" + selectionName + "/" + propertyName);
 
     /* Don't replace data that already exists and cannot (currently) change during the simulation */
-    /* FIXME: Currently charges cannot change during the simulation. For time dependent data use GmxH5mdDataBlock */
+    /* FIXME: Currently atom properties cannot change during the simulation. */
     if (!H5Lexists(file_, dataSetName.c_str(), H5P_DEFAULT))
     {
 #if GMX_DOUBLE
@@ -389,77 +391,88 @@ void GmxH5mdIo::setAtomPartialCharges(const std::vector<real>& atomCharges, std:
 #endif
 
         hsize_t atomPropertiesChunkDims[1];
-        atomPropertiesChunkDims[0] = atomCharges.size();
+        atomPropertiesChunkDims[0] = propertyValues.size();
 
-        hid_t charge = openOrCreateDataSet<1>(file_,
-                                              dataSetName.c_str(),
-                                              "",
-                                              floatDatatype,
-                                              atomPropertiesChunkDims,
-                                              CompressionAlgorithm::LosslessNoShuffle,
-                                              0);
-        writeData<1, true>(charge, atomCharges.data(), 0);
-        H5Dclose(charge);
+        hid_t dataSet = openOrCreateDataSet<1>(file_,
+                                               dataSetName.c_str(),
+                                               "",
+                                               floatDatatype,
+                                               atomPropertiesChunkDims,
+                                               CompressionAlgorithm::LosslessNoShuffle,
+                                               0);
+        writeData<1, true>(dataSet, propertyValues.data(), 0);
+        H5Dclose(dataSet);
     }
 }
 
-void GmxH5mdIo::setAtomMasses(const std::vector<real>& atomMasses, std::string selectionName)
+std::vector<std::string> GmxH5mdIo::readAtomStringProperties(const std::string& propertyName,
+                                                             const std::string& selectionName)
 {
-    std::string groupName("/particles/" + selectionName);
-    openOrCreateGroup(file_, groupName.c_str());
-    std::string dataSetName("/particles/" + selectionName + "/mass");
+    std::string              dataSetName("/particles/" + selectionName + "/" + propertyName);
+    hid_t                    dataSet = H5Dopen(file_, dataSetName.c_str(), H5P_DEFAULT);
+    std::vector<std::string> propertyValues;
 
-    /* Don't replace data that already exists and cannot (currently) change during the simulation */
-    /* FIXME: Currently masses cannot change during the simulation. For time dependent data use GmxH5mdDataBlock */
-    if (!H5Lexists(file_, dataSetName.c_str(), H5P_DEFAULT))
+    if (dataSet < 0)
     {
-#if GMX_DOUBLE
-        const hid_t floatDatatype = H5Tcopy(H5T_NATIVE_DOUBLE);
-#else
-        const hid_t floatDatatype = H5Tcopy(H5T_NATIVE_FLOAT);
-#endif
-
-        hsize_t atomPropertiesChunkDims[1];
-        atomPropertiesChunkDims[0] = atomMasses.size();
-
-        hid_t mass = openOrCreateDataSet<1>(file_,
-                                            dataSetName.c_str(),
-                                            "",
-                                            floatDatatype,
-                                            atomPropertiesChunkDims,
-                                            CompressionAlgorithm::LosslessNoShuffle,
-                                            0);
-        writeData<1, true>(mass, atomMasses.data(), 0);
-        H5Dclose(mass);
-    }
-}
-
-std::vector<std::string> GmxH5mdIo::readAtomNames(std::string selectionName)
-{
-    std::string              dataSetName("/particles/" + selectionName + "/atomname");
-    hid_t                    atomNameDataSet = H5Dopen(file_, dataSetName.c_str(), H5P_DEFAULT);
-    std::vector<std::string> atomNameList;
-
-    if (atomNameDataSet < 0)
-    {
-        return atomNameList;
+        return propertyValues;
     }
 
-    hsize_t stringDataTypeSize = c_atomNameLen;
+    hsize_t stringDataTypeSize = c_atomStringLen;
     size_t  totalNumElements;
 
-    char* atomNames = nullptr;
+    char* propertyValuesChars = nullptr;
     readData<1, true>(
-            atomNameDataSet, 0, stringDataTypeSize, reinterpret_cast<void**>(&atomNames), &totalNumElements);
-    atomNameList.reserve(totalNumElements);
+            dataSet, 0, stringDataTypeSize, reinterpret_cast<void**>(&propertyValuesChars), &totalNumElements);
+    propertyValues.reserve(totalNumElements);
 
     for (size_t i = 0; i < totalNumElements; i++)
     {
-        atomNameList.push_back(atomNames + i * c_atomNameLen);
+        propertyValues.push_back(propertyValuesChars + i * c_atomStringLen);
     }
 
-    free(atomNames);
-    return atomNameList;
+    H5free_memory(propertyValuesChars);
+    return propertyValues;
+}
+
+std::vector<real> GmxH5mdIo::readAtomFloatProperties(const std::string& propertyName,
+                                                     const std::string& selectionName)
+{
+    std::string       dataSetName("/particles/" + selectionName + "/" + propertyName);
+    hid_t             dataSet = H5Dopen(file_, dataSetName.c_str(), H5P_DEFAULT);
+    std::vector<real> propertyValues;
+
+    printf("dataSet %lld\n", dataSet);
+
+    if (dataSet < 0)
+    {
+        return propertyValues;
+    }
+
+    size_t totalNumElements;
+    void*  buffer       = nullptr;
+    size_t dataTypeSize = getDataTypeSize(dataSet);
+    readData<1, true>(dataSet, 0, dataTypeSize, &buffer, &totalNumElements);
+    propertyValues.reserve(totalNumElements);
+    printf("dataTypeSize: %ld, totalNumElements: %ld\n", dataTypeSize, totalNumElements);
+
+    if (dataTypeSize == 8)
+    {
+        for (size_t i = 0; i < totalNumElements; i++)
+        {
+            propertyValues.push_back(static_cast<double*>(buffer)[i]);
+        }
+    }
+    else
+    {
+        for (size_t i = 0; i < totalNumElements; i++)
+        {
+            propertyValues.push_back(static_cast<float*>(buffer)[i]);
+        }
+    }
+
+    H5free_memory(buffer);
+
+    return propertyValues;
 }
 
 void GmxH5mdIo::writeDataFrame(int64_t              step,
@@ -725,9 +738,9 @@ void setupMolecularSystem(h5mdio::GmxH5mdIo*       file,
         atomNames.push_back(*(atoms.atomname[atomCounter]));
     }
 
-    file->setAtomNames(atomNames, "system");
-    file->setAtomPartialCharges(atomCharges, "system");
-    file->setAtomMasses(atomMasses, "system");
+    file->setAtomStringProperties(atomNames, "atomname", "system");
+    file->setAtomFloatProperties(atomCharges, "charge", "system");
+    file->setAtomFloatProperties(atomMasses, "mass", "system");
 
     /* We only need to create a separate selection group entry if not all atoms are part of it. */
     /* TODO: Write atom name, charge and mass for the selection group as well. */
@@ -775,9 +788,9 @@ void setupMolecularSystem(h5mdio::GmxH5mdIo*       file,
             atomNames.push_back(*(atoms.atomname[i]));
         }
 
-        file->setAtomNames(atomNames, systemOutputName);
-        file->setAtomPartialCharges(atomCharges, systemOutputName);
-        file->setAtomMasses(atomMasses, systemOutputName);
+        file->setAtomStringProperties(atomNames, "atomname", systemOutputName);
+        file->setAtomFloatProperties(atomCharges, "charge", systemOutputName);
+        file->setAtomFloatProperties(atomMasses, "mass", systemOutputName);
     }
 
     done_atom(&atoms);
