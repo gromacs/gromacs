@@ -846,7 +846,7 @@ void writeFrameToStandardDataBlocks(h5mdio::GmxH5mdIo* file,
     if (box != nullptr)
     {
         /* There is so little box data per frame that it is best to write multiple per chunk. */
-        numFramesPerChunk = 10;
+        numFramesPerChunk = 20;
         wantedName        = "/particles/" + selectionName + "/box/edges";
         file->writeDataFrame(step,
                              time,
