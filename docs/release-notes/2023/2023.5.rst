@@ -82,6 +82,14 @@ is restored, where all atoms in the residue are printed.
 
 :issue:`5049`
 
+Fix invalid memory access in ``gmx make_ndx`` when using splitres/splitat
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Could manifest in application crashes or garbled output data (for example,
+the output group names had empty prefix).
+
+:issue:`5050`
+
 Fixes that affect portability
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 

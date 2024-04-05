@@ -120,4 +120,10 @@ TEST_F(GmxMakeNdx, Splitres)
     runTest(sysName, "splitres 1\nq\n", false);
 }
 
+TEST_F(GmxMakeNdx, Splitat)
+{
+    std::string sysName("spc-dimer");
+    runTest(sysName, "splitat 1\nq\n", false);
+}
+
 } // namespace

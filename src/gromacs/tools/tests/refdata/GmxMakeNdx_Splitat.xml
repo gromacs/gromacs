@@ -1,0 +1,28 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <OutputFiles Name="Files">
+    <File Name="-o">
+      <String Name="Contents"><![CDATA[
+[ System ]
+   1    2    3    4    5    6
+[ Water ]
+   1    2    3    4    5    6
+[ SOL ]
+   1    2    3    4    5    6
+[ Water_OW_1 ]
+   1
+[ Water_HW1_2 ]
+   2
+[ Water_HW2_3 ]
+   3
+[ Water_OW_4 ]
+   4
+[ Water_HW1_5 ]
+   5
+[ Water_HW2_6 ]
+   6
+]]></String>
+    </File>
+  </OutputFiles>
+</ReferenceData>
