@@ -71,7 +71,6 @@
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/constr.h"
 #include "gromacs/mdlib/coupling.h"
-#include "gromacs/mdlib/dispersioncorrection.h"
 #include "gromacs/mdlib/ebin.h"
 #include "gromacs/mdlib/enerdata_utils.h"
 #include "gromacs/mdlib/energyoutput.h"
@@ -1103,22 +1102,6 @@ void EnergyEvaluator::run(em_state_t* ems, rvec mu_tot, tensor vir, tensor pres,
                     observablesReducer);
 
         wallcycle_stop(wcycle, WallCycleCounter::MoveE);
-    }
-
-    if (fr->dispersionCorrection)
-    {
-        /* Calculate long range corrections to pressure and energy */
-        const DispersionCorrection::Correction correction = fr->dispersionCorrection->calculate(
-                ems->s.box, ems->s.lambda[FreeEnergyPerturbationCouplingType::Vdw]);
-
-        enerd->term[F_DISPCORR] = correction.energy;
-        enerd->term[F_EPOT] += correction.energy;
-        enerd->term[F_PRES] += correction.pressure;
-        enerd->term[F_DVDL] += correction.dvdl;
-    }
-    else
-    {
-        enerd->term[F_DISPCORR] = 0;
     }
 
     ems->epot = enerd->term[F_EPOT];

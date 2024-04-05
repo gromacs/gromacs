@@ -458,6 +458,16 @@ std::unique_ptr<nonbonded_verlet_t> init_nb_verlet(const gmx::MDLogger& mdlog,
             mimimumNumEnergyGroupNonbonded,
             (useGpuForNonbonded || emulateGpu) ? 1 : gmx_omp_nthreads_get(ModuleMultiThread::Nonbonded));
 
+    if (forcerec.ic->vdwtype == VanDerWaalsType::Pme)
+    {
+        GMX_RELEASE_ASSERT(
+                (forcerec.ljpme_combination_rule == LongRangeVdW::Geom
+                 && nbat->params().ljCombinationRule == LJCombinationRule::Geometric)
+                        || (forcerec.ljpme_combination_rule == LongRangeVdW::LB
+                            && nbat->params().ljCombinationRule == LJCombinationRule::LorentzBerthelot),
+                "nbat combination rule parameters should match those for LJ-PME");
+    }
+
     NbnxmGpu* gpu_nbv                          = nullptr;
     int       minimumIlistCountForGpuBalancing = 0;
     if (useGpuForNonbonded)

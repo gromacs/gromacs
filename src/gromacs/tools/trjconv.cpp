@@ -565,7 +565,8 @@ int gmx_trjconv(int argc, char* argv[])
           { &bCONECT },
           "Add CONECT PDB records when writing [REF].pdb[ref] files. Useful "
           "for visualization of non-standard molecules, e.g. "
-          "coarse grained ones" }
+          "coarse grained ones. Can only be done when a topology (tpr) file "
+          "is present" }
     };
 #define NPA asize(pa)
 
@@ -779,16 +780,19 @@ int gmx_trjconv(int argc, char* argv[])
 
         if (bTPS)
         {
+            if (bCONECT && (!gmx_fexist(top_file) || !fn2bTPX(top_file)))
+            {
+                gmx_fatal(FARGS, "Option -conect requires a .tpr file for the -s option");
+            }
+            if ((bCluster || bPBCcomMol) && (!gmx_fexist(top_file) || !fn2bTPX(top_file)))
+            {
+                gmx_fatal(FARGS, "Option -pbc %s requires a .tpr file for the -s option", pbc_opt[pbc_enum]);
+            }
             snew(top, 1);
             read_tps_conf(top_file, top, &pbcType, &xp, nullptr, top_box, bReset || bPBCcomRes);
             std::strncpy(top_title, *top->name, 255);
             top_title[255] = '\0';
             atoms          = &top->atoms;
-
-            if (0 == top->mols.nr && (bCluster || bPBCcomMol))
-            {
-                gmx_fatal(FARGS, "Option -pbc %s requires a .tpr file for the -s option", pbc_opt[pbc_enum]);
-            }
 
             /* top_title is only used for gro and pdb,
              * the header in such a file is top_title, followed by

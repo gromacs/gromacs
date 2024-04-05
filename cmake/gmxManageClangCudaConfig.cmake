@@ -120,8 +120,10 @@ endif()
 
 # default flags
 list(APPEND _CUDA_CLANG_FLAGS "-x cuda" "-ffast-math" "-fcuda-flush-denormals-to-zero")
-# Workaround for clang>=9 (Bug 45533). No CUDA file uses OpenMP.
-list(APPEND _CUDA_CLANG_FLAGS "-fno-openmp")
+if (CMAKE_CXX_COMPILER_VERSION VERSION_LESS 11.0)
+    # Workaround for clang 9-10 (Bug 45533).
+    list(APPEND _CUDA_CLANG_FLAGS "-fno-openmp")
+endif()
 # CUDA toolkit
 list(APPEND _CUDA_CLANG_FLAGS "--cuda-path=${CUDA_TOOLKIT_ROOT_DIR}")
 # codegen flags

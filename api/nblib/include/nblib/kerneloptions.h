@@ -90,8 +90,6 @@ struct NBKernelOptions final
     int numOpenMPThreads = 1;
     //! The SIMD type for the kernel
     SimdKernels nbnxmSimd = SimdKernels::SimdAuto;
-    //! The LJ combination rule
-    CombinationRule ljCombinationRule = CombinationRule::Geometric;
     //! The pairlist and interaction cut-off
     real pairlistCutoff = 1.0;
     //! The Coulomb interaction function

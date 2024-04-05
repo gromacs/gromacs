@@ -282,9 +282,6 @@ The following table describes the possible options that can be set.
 |                      |      | (``SimdAuto``/``SimdNo``/``Simd4XM``/ |
 |                      |      | ``Simd2XMM``)                         |
 +----------------------+------+---------------------------------------+
-| ``ljCombination      | Enum | Lennard-Jones combination rule        |
-| Rule``               |      | (``Geometric``/``LorentzBerthelot``)  |
-+----------------------+------+---------------------------------------+
 | ``useHalfLJOptimizat | Bool | Enable i-cluster half-LJ optimization |
 | ion``                | ean  |                                       |
 +----------------------+------+---------------------------------------+

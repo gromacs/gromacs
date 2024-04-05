@@ -19,11 +19,56 @@ Fixes where mdrun could behave incorrectly
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
 
+Improve error messages from editconf and trjconv
+""""""""""""""""""""""""""""""""""""""""""""""""
+
+Fail properly if a tpr file is not supplied when using the -conect option.
+Also avoid a "File input/output error:" when no tpr file is supplied when
+it is required for -pbc options.
+
+:issue:`5032`
+
+Avoid floating point exception with corrupted xtc files
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Reading a corrupted xtc file could cause a floating point exception.
+Now the gmx binary will exit with an error message.
+
+:issue:`5037`
+
 Fixes that affect portability
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Enable usage of Intel compiler with AVX-512 SIMD on AMD Zen 4
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+The fix is to use newer style compiler flags for Intel oneAPI DPC++/C++
+Compiler and AVX-512. Older style flag ``-xCORE-AVX512`` supports only
+Intel CPUs, while newer style ``-march=skylake-avx512`` additionally
+supports AMD CPUs. This fixes building with Intel compiler on AMD CPUs
+with Zen 4 cores.
+
+:issue:`5043`
+
+Warn about unsupported compilers sooner
+"""""""""""""""""""""""""""""""""""""""
+
+Now CMake reports that a user's compiler is broken or unsupported
+before running into other fatal issues that woud have obscured a
+critical problem.
+
+:issue:`5056`
+
 Miscellaneous
 ^^^^^^^^^^^^^
+
+NBLIB always used geometric Lennard-Jones combination rules
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Now NBLIB detects the Lennard-Jones combination rules (or none)
+from the Lennard-Jones parameters set by the user.
+
+:issue:`5015`
 
 Fix Performance Regression for Some Cases on Latest NVIDIA GPUs
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
@@ -36,6 +81,17 @@ caused by this tuning.
 
 :issue:`4867`
 
+Address performance regression on ARM with clang and SVE
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+The non-bonded CPU SIMD kernels contained loops which were not unrolled,
+in particular with the LLVM backend of clang on ARM SVE. Other combinations
+of compilers and architectures might also have been affected.
+Note that there are still other performance regressions in certain versions
+of these kernels on multiple platforms.
+
+:issue:`5036`
+       
 Fix crash in NbnxmSetupTest.CanCreateNbnxmGPU
 """""""""""""""""""""""""""""""""""""""""""""
 
@@ -52,3 +108,11 @@ The mdp keyword for mass repartioning was incorrect in the list of mdp
 options in the documentation.
 
 :issue:`5007`
+
+Report AdaptiveCpp/hipSYCL compiler path in ``gmx -version``
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+In 2024.0 and 2024.1 it was empty.
+
+:issue:`5045`
+

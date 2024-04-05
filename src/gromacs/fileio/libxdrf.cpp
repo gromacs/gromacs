@@ -364,6 +364,12 @@ static void receiveints(struct DataBuffer* buffer,
     }
     for (i = num_of_ints - 1; i > 0; i--)
     {
+        if (sizes[i] == 0)
+        {
+            fprintf(stderr, "Cannot read trajectory, file possibly corrupted.");
+            exit(1);
+        }
+
         num = 0;
         for (j = num_of_bytes - 1; j >= 0; j--)
         {
