@@ -49,8 +49,6 @@
 
 #include "config.h"
 
-#include <memory>
-
 #if GMX_GPU_OPENCL
 #    include "gromacs/gpu_utils/gmxopencl.h"
 #endif
@@ -58,7 +56,6 @@
 #    include "gromacs/gpu_utils/gmxsycl.h"
 #endif
 
-#include "gromacs/gpu_utils/gpu_utils.h"
 #include "gromacs/gpu_utils/pmalloc.h"
 #include "gromacs/hardware/device_management.h"
 #include "gromacs/utility/classhelpers.h"

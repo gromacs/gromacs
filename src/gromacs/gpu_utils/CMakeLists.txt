@@ -40,9 +40,9 @@ add_library(gpu_utils INTERFACE)
 gmx_add_libgromacs_sources(
         clfftinitializer.cpp
         device_stream_manager.cpp
-        hostallocator.cpp
         gpu_utils.cpp
         gpueventsynchronizer_helpers.cpp
+        hostallocator.cpp
         nvshmem_utils.cpp
         )
 if(GMX_GPU_OPENCL)

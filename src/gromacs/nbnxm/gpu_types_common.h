@@ -43,6 +43,7 @@
 
 #include "config.h"
 
+#include "gromacs/gpu_utils/hostallocator.h"
 #include "gromacs/mdtypes/interaction_const.h"
 #include "gromacs/mdtypes/locality.h"
 #include "gromacs/utility/enumerationhelpers.h"
@@ -96,11 +97,11 @@ static constexpr int c_pruneKernelJPackedConcurrency = GMX_NBNXN_PRUNE_KERNEL_JP
 struct NBStagingData
 {
     //! LJ energy
-    float* eLJ = nullptr;
+    gmx::HostVector<float> eLJ;
     //! electrostatic energy
-    float* eElec = nullptr;
+    gmx::HostVector<float> eElec;
     //! shift forces
-    Float3* fShift = nullptr;
+    gmx::HostVector<Float3> fShift;
 };
 
 /** \internal

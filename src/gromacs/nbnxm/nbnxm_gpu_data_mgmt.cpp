@@ -60,7 +60,7 @@
 
 #include "gromacs/gpu_utils/device_stream_manager.h"
 #include "gromacs/gpu_utils/gputraits.h"
-#include "gromacs/gpu_utils/pmalloc.h"
+#include "gromacs/gpu_utils/hostallocator.h"
 #include "gromacs/hardware/device_information.h"
 #include "gromacs/mdtypes/interaction_const.h"
 #include "gromacs/mdtypes/simulation_workload.h"
@@ -468,9 +468,13 @@ NbnxmGpu* gpu_init(const gmx::DeviceStreamManager& deviceStreamManager,
     }
 
     /* init nbst */
-    pmalloc(reinterpret_cast<void**>(&nb->nbst.eLJ), sizeof(*nb->nbst.eLJ));
-    pmalloc(reinterpret_cast<void**>(&nb->nbst.eElec), sizeof(*nb->nbst.eElec));
-    pmalloc(reinterpret_cast<void**>(&nb->nbst.fShift), gmx::c_numShiftVectors * sizeof(*nb->nbst.fShift));
+    changePinningPolicy(&nb->nbst.eLJ, gmx::PinningPolicy::PinnedIfSupported);
+    changePinningPolicy(&nb->nbst.eElec, gmx::PinningPolicy::PinnedIfSupported);
+    changePinningPolicy(&nb->nbst.fShift, gmx::PinningPolicy::PinnedIfSupported);
+
+    nb->nbst.eLJ.resize(1);
+    nb->nbst.eElec.resize(1);
+    nb->nbst.fShift.resize(gmx::c_numShiftVectors);
 
     init_plist(nb->plist[InteractionLocality::Local]);
 
@@ -935,9 +939,9 @@ void gpu_launch_cpyback(NbnxmGpu*                nb,
         if (stepWork.computeVirial)
         {
             static_assert(
-                    sizeof(*nb->nbst.fShift) == sizeof(Float3),
+                    sizeof(*nb->nbst.fShift.data()) == sizeof(Float3),
                     "Sizes of host- and device-side shift vector elements should be the same.");
-            copyFromDeviceBuffer(nb->nbst.fShift,
+            copyFromDeviceBuffer(nb->nbst.fShift.data(),
                                  &adat->fShift,
                                  0,
                                  gmx::c_numShiftVectors,
@@ -949,19 +953,19 @@ void gpu_launch_cpyback(NbnxmGpu*                nb,
         /* DtoH energies */
         if (stepWork.computeEnergy)
         {
-            static_assert(sizeof(*nb->nbst.eLJ) == sizeof(float),
+            static_assert(sizeof(*nb->nbst.eLJ.data()) == sizeof(float),
                           "Sizes of host- and device-side LJ energy terms should be the same.");
-            copyFromDeviceBuffer(nb->nbst.eLJ,
+            copyFromDeviceBuffer(nb->nbst.eLJ.data(),
                                  &adat->eLJ,
                                  0,
                                  1,
                                  deviceStream,
                                  GpuApiCallBehavior::Async,
                                  bDoTime ? timers->xf[atomLocality].nb_d2h.fetchNextEvent() : nullptr);
-            static_assert(sizeof(*nb->nbst.eElec) == sizeof(float),
+            static_assert(sizeof(*nb->nbst.eElec.data()) == sizeof(float),
                           "Sizes of host- and device-side electrostatic energy terms should be the "
                           "same.");
-            copyFromDeviceBuffer(nb->nbst.eElec,
+            copyFromDeviceBuffer(nb->nbst.eElec.data(),
                                  &adat->eElec,
                                  0,
                                  1,
@@ -1262,15 +1266,6 @@ void gpu_free(NbnxmGpu* nb)
     freeDeviceBuffer(&nb->cxy_na);
     freeDeviceBuffer(&nb->cxy_ind);
     freeDeviceBuffer(&nb->atomIndices);
-    /* Free nbst */
-    pfree(nb->nbst.eLJ);
-    nb->nbst.eLJ = nullptr;
-
-    pfree(nb->nbst.eElec);
-    nb->nbst.eElec = nullptr;
-
-    pfree(nb->nbst.fShift);
-    nb->nbst.fShift = nullptr;
 
     delete atdat;
     delete nbparam;

@@ -148,8 +148,8 @@ static inline void gpu_reduce_staged_outputs(const NBStagingData&      nbst,
     {
         if (reduceEnergies)
         {
-            *e_lj += *nbst.eLJ;
-            *e_el += *nbst.eElec;
+            *e_lj += nbst.eLJ[0];
+            *e_el += nbst.eElec[0];
         }
 
         if (reduceFshift)
