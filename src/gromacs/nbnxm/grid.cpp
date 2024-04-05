@@ -77,11 +77,22 @@ Grid::Geometry::Geometry(const PairlistType pairlistType) :
 {
 }
 
-Grid::Grid(const PairlistType pairlistType, const bool& haveFep, gmx::PinningPolicy pinningPolicy) :
-    geometry_(pairlistType), haveFep_(haveFep)
+namespace
 {
-    changePinningPolicy(&cxy_na_, pinningPolicy);
-    changePinningPolicy(&cxy_ind_, pinningPolicy);
+/*! \brief Named constant
+ *
+ * We want the allocator for these two HostVectors to be propagated on
+ * copy construction of Grid during the construction of the vector of
+ * Grids in GridSet. */
+constexpr bool allocatorShouldPropagateDuringCopyConstruction = true;
+} // namespace
+
+Grid::Grid(const PairlistType pairlistType, const bool& haveFep, gmx::PinningPolicy pinningPolicy) :
+    geometry_(pairlistType),
+    cxy_na_(gmx::HostAllocationPolicy(pinningPolicy, allocatorShouldPropagateDuringCopyConstruction)),
+    cxy_ind_(gmx::HostAllocationPolicy(pinningPolicy, allocatorShouldPropagateDuringCopyConstruction)),
+    haveFep_(haveFep)
+{
 }
 
 /*! \brief Returns the atom density (> 0) of a rectangular grid */

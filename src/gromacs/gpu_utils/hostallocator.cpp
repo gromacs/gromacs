@@ -54,8 +54,10 @@
 namespace gmx
 {
 
-HostAllocationPolicy::HostAllocationPolicy(PinningPolicy pinningPolicy) :
-    pinningPolicy_(pinningPolicy)
+HostAllocationPolicy::HostAllocationPolicy(PinningPolicy pinningPolicy,
+                                           const bool    propagateDuringContainerCopyConstruction) :
+    pinningPolicy_(pinningPolicy),
+    propagateDuringContainerCopyConstruction_(propagateDuringContainerCopyConstruction)
 {
 }
 

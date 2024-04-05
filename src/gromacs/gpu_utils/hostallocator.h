@@ -137,8 +137,15 @@ using PaddedHostVector = PaddedVector<T, HostAllocator<T>>;
 class HostAllocationPolicy
 {
 public:
-    //! Constructor
-    HostAllocationPolicy(PinningPolicy policy = PinningPolicy::CannotBePinned);
+    /*! \brief Constructor
+     *
+     * \param[in] policy
+     *                Whether to pin the allocation
+     * \param[in] propagateDuringContainerCopyConstruction
+     *                Default is chosen to be consistent with copy assignment
+     */
+    HostAllocationPolicy(PinningPolicy policy = PinningPolicy::CannotBePinned,
+                         bool          propagateDuringContainerCopyConstruction = false);
     /*! \brief Return the alignment size currently used by the active pinning policy. */
     std::size_t alignment() const noexcept;
     /*! \brief Allocate and perhaps pin page-aligned memory suitable for
@@ -190,15 +197,25 @@ public:
     using propagate_on_container_move_assignment = std::true_type;
     //! Propagate the allocator during swap
     using propagate_on_container_swap = std::true_type;
-    /*! \brief Do not propagate the allocator for copy construction
-     *
-     * Chosen to be consistent with copy assignment. */
+    //! \brief Return the policy the container should use for copy construction
     // NOLINTNEXTLINE readability-convert-member-functions-to-static
-    HostAllocationPolicy select_on_container_copy_construction() const { return {}; }
+    HostAllocationPolicy select_on_container_copy_construction() const
+    {
+        if (propagateDuringContainerCopyConstruction_)
+        {
+            return *this;
+        }
+        else
+        {
+            return {};
+        }
+    }
 
 private:
     //! Pinning policy
     PinningPolicy pinningPolicy_;
+    //! Whether to propagate the allocator during copy construction by a container.
+    bool propagateDuringContainerCopyConstruction_;
 };
 
 /*! \brief Return true if two allocators are identical

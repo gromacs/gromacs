@@ -278,22 +278,33 @@ TYPED_TEST(HostAllocatorTestNoMemCopyable, CopyConstruction)
 template<typename T>
 struct HoldsHostVector
 {
-    HoldsHostVector(PinningPolicy p) : v(1, { p }) {}
+    HoldsHostVector(HostAllocationPolicy p) : v(1, p) {}
     HostVector<T> v;
 };
 
 TYPED_TEST(HostAllocatorTestNoMemCopyable, CopyConstructionOfStructHoldingAHostVectorDoesNotCopyTheAllocator)
 {
+    using Holder = HoldsHostVector<typename TestFixture::VectorType::value_type>;
     for (const auto& testDevice : getTestHardwareEnvironment()->getTestDeviceList())
     {
         testDevice->deviceContext().activate();
-        using Holder = HoldsHostVector<typename TestFixture::VectorType::value_type>;
-        Holder c{ PinningPolicy::PinnedIfSupported };
-        EXPECT_EQ(c.v.get_allocator().pinningPolicy(), PinningPolicy::PinnedIfSupported);
-        std::vector<Holder> v(2, c);
-        const auto          defaultPolicy = PinningPolicy::CannotBePinned;
-        EXPECT_EQ(v[0].v.get_allocator().pinningPolicy(), defaultPolicy);
-        EXPECT_EQ(v[1].v.get_allocator().pinningPolicy(), defaultPolicy);
+        SCOPED_TRACE("By default allocator does not propagate");
+        {
+            Holder c{ { PinningPolicy::PinnedIfSupported } };
+            EXPECT_EQ(c.v.get_allocator().pinningPolicy(), PinningPolicy::PinnedIfSupported);
+            std::vector<Holder> v(2, c);
+            const auto          defaultPolicy = PinningPolicy::CannotBePinned;
+            EXPECT_EQ(v[0].v.get_allocator().pinningPolicy(), defaultPolicy);
+            EXPECT_EQ(v[1].v.get_allocator().pinningPolicy(), defaultPolicy);
+        }
+        SCOPED_TRACE("Allocator can propagate");
+        {
+            Holder c{ { PinningPolicy::PinnedIfSupported, true } };
+            EXPECT_EQ(c.v.get_allocator().pinningPolicy(), PinningPolicy::PinnedIfSupported);
+            std::vector<Holder> v(2, c);
+            EXPECT_EQ(v[0].v.get_allocator().pinningPolicy(), c.v.get_allocator().pinningPolicy());
+            EXPECT_EQ(v[1].v.get_allocator().pinningPolicy(), c.v.get_allocator().pinningPolicy());
+        }
     }
 }
 
