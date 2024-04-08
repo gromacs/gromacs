@@ -20,7 +20,7 @@ namespace SZ3 {
         Lossless_zstd(int comp_level) : compression_level(comp_level) {};
 
         uchar *compress(uchar *data, size_t dataLength, size_t &outSize) {
-            size_t estimatedCompressedSize = std::max(size_t(dataLength * 1.2), size_t(400));
+            size_t estimatedCompressedSize = std::max(size_t(dataLength * 1.2), size_t(500));
             uchar *compressBytes = new uchar[estimatedCompressedSize];
             uchar *compressBytesPos = compressBytes;
             write(dataLength, compressBytesPos);
