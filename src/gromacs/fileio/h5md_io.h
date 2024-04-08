@@ -155,49 +155,51 @@ public:
      */
     void setSystemOutputName(std::string systemOutputName);
 
-    /*! \brief Set a string property for atoms, if not already set. Atom string properties,
-     * e.g., names cannot be modified after setting.
+    /*! \brief Set a string property.
      * N.b., The maximum string length is set to c_atomStringLen to avoid the overhead that comes
      * with flexible string lengths in HDF5.
      *
-     * \param[in] propertyValues A list of strings.
+     * \param[in] containerName The name of the HDF5 group that contains the property, e.g., "/particles/system".
      * \param[in] propertyName The name of the property to set, e.g., "atomname".
-     * \param[in] selectionName The name of the selection the atoms belong to.
+     * \param[in] propertyValues A list of strings.
+     * \param[in] replaceExisting Whether to replace the property if it already exists.
      * \throws FileIOError If there was an error creating the data block or writing the data.
      */
-    void setAtomStringProperties(const std::vector<std::string>& propertyValues,
-                                 const std::string&              propertyName,
-                                 const std::string&              selectionName = "system");
+    void setStringProperty(const std::string&              containerName,
+                           const std::string&              propertyName,
+                           const std::vector<std::string>& propertyValues,
+                           bool                            replaceExisting = false);
 
-    /*! \brief Set float properties, e.g. partial charges or masses, if not already set.
-     * Atom properties cannot be modified after setting.
+    /*! \brief Set a float property.
      *
+     * \param[in] containerName The name of the HDF5 group that contains the property, e.g., "/particles/system".
+     * \param[in] propertyName The name of the property to set, e.g., "atomname".
      * \param[in] propertyValues A list of float values.
-     * \param[in] propertyName The name of the property to set, e.g., "charge".
-     * \param[in] selectionName The name of the selection the atoms belong to.
+     * \param[in] replaceExisting Whether to replace the property if it already exists.
      * \throws FileIOError If there was an error creating the data block or writing the data.
      */
-    void setAtomFloatProperties(const std::vector<real>& propertyValues,
-                                const std::string&       propertyName,
-                                const std::string&       selectionName = "system");
+    void setFloatProperty(const std::string&       containerName,
+                          const std::string&       propertyName,
+                          const std::vector<real>& propertyValues,
+                          bool                     replaceExisting = false);
 
 
-    /* \brief Read string properties of atoms, e.g., atom names, from the file.
+    /* \brief Read a string property.
+     * \param[in] containerName The name of the HDF5 group that contains the property, e.g., "/particles/system".
      * \param[in] propertyName The name of the property to read, e.g., "atomname".
-     * \param[in] selectionName The name of the selection the atoms belong to.
      * \returns A vector containing the strings. Empty if no strings could be read.
      * \throws FileIOError If there was an error reading the data.
      */
-    std::vector<std::string> readAtomStringProperties(const std::string& propertyName,
-                                                      const std::string& selectionName = "system");
+    std::vector<std::string> readStringProperty(const std::string& containerName,
+                                                const std::string& propertyName);
 
-    /* \brief Read atom float properties, e.g., partial charges, from the file.
-     * \param[in] selectionName The name of the selection the atoms belong to.
+    /* \brief Read a float property.
+     * \param[in] containerName The name of the HDF5 group that contains the property, e.g., "/particles/system".
+     * \param[in] propertyName The name of the property to read, e.g., "atomname".
      * \returns A vector containing the float values. Empty if no data could be read.
      * \throws FileIOError If there was an error reading the data.
      */
-    std::vector<real> readAtomFloatProperties(const std::string& propertyName,
-                                              const std::string& selectionName = "system");
+    std::vector<real> readFloatProperty(const std::string& containerName, const std::string& propertyName);
 
     /*! \brief Write a frame of data to the file.
      * \param[in] step The simulation step.
@@ -381,6 +383,7 @@ bool readNextFrameOfStandardDataBlocks(h5mdio::GmxH5mdIo* file,
                                        bool*              readV,
                                        bool*              readF,
                                        const std::string  selectionName = "system");
+
 
 } // namespace gmx
 #endif // GMX_FILEIO_H5MD_IO_H

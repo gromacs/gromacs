@@ -332,17 +332,15 @@ std::string GmxH5mdIo::getCreatorProgramVersion()
     return version;
 }
 
-void GmxH5mdIo::setAtomStringProperties(const std::vector<std::string>& propertyValues,
-                                        const std::string&              propertyName,
-                                        const std::string&              selectionName)
+void GmxH5mdIo::setStringProperty(const std::string&              containerName,
+                                  const std::string&              propertyName,
+                                  const std::vector<std::string>& propertyValues,
+                                  bool                            replaceExisting)
 {
-    std::string groupName("/particles/" + selectionName);
-    openOrCreateGroup(file_, groupName.c_str());
-    std::string dataSetName("/particles/" + selectionName + "/" + propertyName);
+    openOrCreateGroup(file_, containerName.c_str());
+    std::string dataSetName(containerName + "/" + propertyName);
 
-    /* Don't replace data that already exists and cannot (currently) change during the simulation */
-    /* FIXME: Currently atom properties cannot change during the simulation. */
-    if (!H5Lexists(file_, dataSetName.c_str(), H5P_DEFAULT))
+    if (!H5Lexists(file_, dataSetName.c_str(), H5P_DEFAULT) || replaceExisting == true)
     {
         /* FIXME: Is there a more convenient way to do this? std::string is nice above, but cannot be used for writing in HDF5. */
         char* propertyValuesChars;
@@ -372,17 +370,15 @@ void GmxH5mdIo::setAtomStringProperties(const std::vector<std::string>& property
     }
 }
 
-void GmxH5mdIo::setAtomFloatProperties(const std::vector<real>& propertyValues,
-                                       const std::string&       propertyName,
-                                       const std::string&       selectionName)
+void GmxH5mdIo::setFloatProperty(const std::string&       containerName,
+                                 const std::string&       propertyName,
+                                 const std::vector<real>& propertyValues,
+                                 bool                     replaceExisting)
 {
-    std::string groupName("/particles/" + selectionName);
-    openOrCreateGroup(file_, groupName.c_str());
-    std::string dataSetName("/particles/" + selectionName + "/" + propertyName);
+    openOrCreateGroup(file_, containerName.c_str());
+    std::string dataSetName(containerName + "/" + propertyName);
 
-    /* Don't replace data that already exists and cannot (currently) change during the simulation */
-    /* FIXME: Currently atom properties cannot change during the simulation. */
-    if (!H5Lexists(file_, dataSetName.c_str(), H5P_DEFAULT))
+    if (!H5Lexists(file_, dataSetName.c_str(), H5P_DEFAULT) || replaceExisting == true)
     {
 #if GMX_DOUBLE
         const hid_t floatDatatype = H5Tcopy(H5T_NATIVE_DOUBLE);
@@ -405,10 +401,10 @@ void GmxH5mdIo::setAtomFloatProperties(const std::vector<real>& propertyValues,
     }
 }
 
-std::vector<std::string> GmxH5mdIo::readAtomStringProperties(const std::string& propertyName,
-                                                             const std::string& selectionName)
+std::vector<std::string> GmxH5mdIo::readStringProperty(const std::string& containerName,
+                                                       const std::string& propertyName)
 {
-    std::string              dataSetName("/particles/" + selectionName + "/" + propertyName);
+    std::string              dataSetName(containerName + "/" + propertyName);
     hid_t                    dataSet = H5Dopen(file_, dataSetName.c_str(), H5P_DEFAULT);
     std::vector<std::string> propertyValues;
 
@@ -434,14 +430,12 @@ std::vector<std::string> GmxH5mdIo::readAtomStringProperties(const std::string& 
     return propertyValues;
 }
 
-std::vector<real> GmxH5mdIo::readAtomFloatProperties(const std::string& propertyName,
-                                                     const std::string& selectionName)
+std::vector<real> GmxH5mdIo::readFloatProperty(const std::string& containerName, const std::string& propertyName)
 {
-    std::string       dataSetName("/particles/" + selectionName + "/" + propertyName);
+    std::string       dataSetName(containerName + "/" + propertyName);
     hid_t             dataSet = H5Dopen(file_, dataSetName.c_str(), H5P_DEFAULT);
     std::vector<real> propertyValues;
-
-    printf("dataSet %lld\n", dataSet);
+    printf("%s\n", dataSetName.c_str());
 
     if (dataSet < 0)
     {
@@ -453,7 +447,6 @@ std::vector<real> GmxH5mdIo::readAtomFloatProperties(const std::string& property
     size_t dataTypeSize = getDataTypeSize(dataSet);
     readData<1, true>(dataSet, 0, dataTypeSize, &buffer, &totalNumElements);
     propertyValues.reserve(totalNumElements);
-    printf("dataTypeSize: %ld, totalNumElements: %ld\n", dataTypeSize, totalNumElements);
 
     if (dataTypeSize == 8)
     {
@@ -738,9 +731,9 @@ void setupMolecularSystem(h5mdio::GmxH5mdIo*       file,
         atomNames.push_back(*(atoms.atomname[atomCounter]));
     }
 
-    file->setAtomStringProperties(atomNames, "atomname", "system");
-    file->setAtomFloatProperties(atomCharges, "charge", "system");
-    file->setAtomFloatProperties(atomMasses, "mass", "system");
+    file->setStringProperty("/particles/system", "atomname", atomNames, false);
+    file->setFloatProperty("/particles/system", "atomname", atomCharges, false);
+    file->setFloatProperty("/particles/system", "atomname", atomMasses, false);
 
     /* We only need to create a separate selection group entry if not all atoms are part of it. */
     /* TODO: Write atom name, charge and mass for the selection group as well. */
@@ -788,9 +781,9 @@ void setupMolecularSystem(h5mdio::GmxH5mdIo*       file,
             atomNames.push_back(*(atoms.atomname[i]));
         }
 
-        file->setAtomStringProperties(atomNames, "atomname", systemOutputName);
-        file->setAtomFloatProperties(atomCharges, "charge", systemOutputName);
-        file->setAtomFloatProperties(atomMasses, "mass", systemOutputName);
+        file->setStringProperty("particles/" + systemOutputName, "atomname", atomNames, false);
+        file->setFloatProperty("particles/" + systemOutputName, "charge", atomCharges, false);
+        file->setFloatProperty("particles/" + systemOutputName, "mass", atomMasses, false);
     }
 
     done_atom(&atoms);
@@ -984,6 +977,5 @@ bool readNextFrameOfStandardDataBlocks(h5mdio::GmxH5mdIo* file,
     }
     return didReadFrame;
 }
-
 
 } // namespace gmx

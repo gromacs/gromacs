@@ -194,7 +194,7 @@ public:
 
     std::vector<std::string> readAtomNamesFromReferenceFile()
     {
-        return referenceH5mdIo_.readAtomStringProperties("atomname");
+        return referenceH5mdIo_.readStringProperty("/particles/system", "atomname");
     }
 
     void compareAtomNamesToReference(const std::vector<std::string>& atomNames)
@@ -329,22 +329,23 @@ public:
 
     void writeWaterAndLigandGroups()
     {
-        referenceH5mdIo_.setAtomStringProperties(refWaterAtomNames_, "atomname", "water");
-        referenceH5mdIo_.setAtomStringProperties(refLigandAtomNames_, "atomname", "ligand");
-        referenceH5mdIo_.setAtomFloatProperties(refWaterPartialCharges_, "charge", "water");
-        referenceH5mdIo_.setAtomFloatProperties(refLigandPartialCharges_, "charge", "ligand");
+        referenceH5mdIo_.setStringProperty("/particles/water", "atomname", refWaterAtomNames_, false);
+        referenceH5mdIo_.setStringProperty("/particles/ligand", "atomname", refLigandAtomNames_, false);
+        referenceH5mdIo_.setFloatProperty("/particles/water", "charge", refWaterPartialCharges_, false);
+        referenceH5mdIo_.setFloatProperty("/particles/ligand", "charge", refLigandPartialCharges_, false);
     }
 
     void readAndCheckWaterAndLigandGroups()
     {
+        printf("readAndCheckWaterAndLigandGroups()\n");
         std::vector<std::string> testWaterAtomNames =
-                referenceH5mdIo_.readAtomStringProperties("atomname", "water");
+                referenceH5mdIo_.readStringProperty("/particles/water", "atomname");
         std::vector<std::string> testLigandAtomNames =
-                referenceH5mdIo_.readAtomStringProperties("atomname", "ligand");
+                referenceH5mdIo_.readStringProperty("/particles/ligand", "atomname");
         std::vector<real> testWaterCharges =
-                referenceH5mdIo_.readAtomFloatProperties("charge", "water");
+                referenceH5mdIo_.readFloatProperty("/particles/water", "charge");
         std::vector<real> testLigandCharges =
-                referenceH5mdIo_.readAtomFloatProperties("charge", "ligand");
+                referenceH5mdIo_.readFloatProperty("/particles/ligand", "charge");
 
         size_t refNumWaterNameElements  = refWaterAtomNames_.size();
         size_t refNumLigandNameElements = refLigandAtomNames_.size();
