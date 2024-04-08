@@ -152,12 +152,11 @@ std::vector<std::string> checkMtsRequirements(const t_inputrec& ir)
 
     ArrayRef<const MtsLevel> mtsLevels = ir.mtsLevels;
 
-    if (!(ir.eI == IntegrationAlgorithm::MD || ir.eI == IntegrationAlgorithm::SD1))
+    if (ir.eI != IntegrationAlgorithm::MD)
     {
-        errorMessages.push_back(gmx::formatString(
-                "Multiple time stepping is only supported with integrators %s and %s",
-                enumValueToString(IntegrationAlgorithm::MD),
-                enumValueToString(IntegrationAlgorithm::SD1)));
+        errorMessages.push_back(
+                gmx::formatString("Multiple time stepping is only supported with integrator %s",
+                                  enumValueToString(IntegrationAlgorithm::MD)));
     }
 
     if ((usingFullElectrostatics(ir.coulombtype) || usingLJPme(ir.vdwtype))

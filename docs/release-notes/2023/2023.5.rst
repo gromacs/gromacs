@@ -54,6 +54,15 @@ was executed on a GPU.
 
 :issue:`4974`
 
+Add checks for the combination of multiple time stepping and SD integrator
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+The documentation says that this combination is not supported, but the check
+for this in grompp was lost. Now both grompp and mdrun will exit with an error.
+
+:issue:`3775`
+:issue:`5053`
+
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
 
