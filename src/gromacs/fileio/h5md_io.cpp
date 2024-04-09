@@ -296,7 +296,7 @@ std::string GmxH5mdIo::getAuthor()
     char* tmpName     = nullptr;
     getAttribute(authorGroup, "name", &tmpName);
     std::string name(tmpName);
-    H5free_memory(tmpName);
+    free(tmpName);
     return name;
 }
 
@@ -312,7 +312,7 @@ std::string GmxH5mdIo::getCreatorProgramName()
     char* tmpName      = nullptr;
     getAttribute(creatorGroup, "name", &tmpName);
     std::string name(tmpName);
-    H5free_memory(tmpName);
+    free(tmpName);
     return name;
 }
 
@@ -328,7 +328,7 @@ std::string GmxH5mdIo::getCreatorProgramVersion()
     char* tmpVersion   = nullptr;
     getAttribute(creatorGroup, "version", &tmpVersion);
     std::string version(tmpVersion);
-    H5free_memory(tmpVersion);
+    free(tmpVersion);
     return version;
 }
 
@@ -695,7 +695,6 @@ extern template void readData<1, true>(hid_t, hsize_t, void**, size_t*, size_t*)
 extern template void setAttribute<int>(hid_t, const char*, int, hid_t);
 extern template void setAttribute<float>(hid_t, const char*, float, hid_t);
 extern template void setAttribute<double>(hid_t, const char*, double, hid_t);
-extern template void setAttribute<char*>(hid_t, const char*, char*, hid_t);
 
 } // namespace h5mdio
 

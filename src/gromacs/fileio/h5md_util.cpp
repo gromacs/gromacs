@@ -476,11 +476,22 @@ void setAttribute(const hid_t dataSet, const char* name, const T value, const hi
 void setAttribute(const hid_t dataSet, const char* name, const char* value)
 {
     hid_t dataType = H5Tcopy(H5T_C_S1);
-    H5Tset_size(dataType, H5T_VARIABLE);
+    H5Tset_size(dataType, strlen(value));
     H5Tset_strpad(dataType, H5T_STR_NULLTERM);
     H5Tset_cset(dataType, H5T_CSET_UTF8);
 
-    setAttribute(dataSet, name, value, dataType);
+    hid_t attribute = H5Aopen(dataSet, name, H5P_DEFAULT);
+    if (attribute < 0)
+    {
+        hid_t dataSpace = H5Screate(H5S_SCALAR);
+        attribute       = H5Acreate2(dataSet, name, dataType, dataSpace, H5P_DEFAULT, H5P_DEFAULT);
+    }
+    if (H5Awrite(attribute, dataType, value) < 0)
+    {
+        H5Eprint2(H5E_DEFAULT, nullptr);
+        throw gmx::FileIOError("Cannot write attribute.");
+    }
+    H5Aclose(attribute);
 }
 
 template<typename T>
@@ -507,9 +518,22 @@ bool getAttribute(const hid_t dataSet, const char* name, char** value)
         return false;
     }
     hid_t attribute = H5Aopen(dataSet, name, H5P_DEFAULT);
-    hid_t dataType  = H5Aget_type(attribute);
+    if (attribute < 0)
+    {
+        return false;
+    }
+    hid_t  dataType     = H5Aget_type(attribute);
+    size_t dataTypeSize = H5Tget_size(dataType);
+    /* Make room for string termination as well. */
+    *value = reinterpret_cast<char*>(malloc(dataTypeSize + 1));
+    memset(*value, NULL, dataTypeSize + 1);
+    if (H5Aread(attribute, dataType, *value) < 0)
+    {
+        return false;
+    }
 
-    return getAttribute(dataSet, name, value, dataType);
+    H5Aclose(attribute);
+    return true;
 }
 
 template<hid_t numEntries, size_t stringLength>
@@ -627,4 +651,3 @@ template void gmx::h5mdio::readData<3, false>(hid_t, hsize_t, void**, size_t*, s
 template void gmx::h5mdio::setAttribute<int>(hid_t, const char*, int, hid_t);
 template void gmx::h5mdio::setAttribute<float>(hid_t, const char*, float, hid_t);
 template void gmx::h5mdio::setAttribute<double>(hid_t, const char*, double, hid_t);
-template void gmx::h5mdio::setAttribute<char*>(hid_t, const char*, char*, hid_t);
