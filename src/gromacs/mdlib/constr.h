@@ -173,8 +173,7 @@ public:
      *
      * /note x is non-const, because non-local atoms need to be communicated.
      */
-    bool apply(bool                      bLog,
-               bool                      bEner,
+    bool apply(bool                      computeRmsd,
                int64_t                   step,
                int                       delta_step,
                real                      step_scaling,
@@ -183,7 +182,7 @@ public:
                ArrayRef<RVec>            min_proj,
                const matrix              box,
                real                      lambda,
-               real*                     dvdlambda,
+               real*                     dhdlambda,
                ArrayRefWithPadding<RVec> v,
                bool                      computeVirial,
                tensor                    constraintsVirial,
@@ -297,7 +296,7 @@ inline const int* constr_iatomptr(gmx::ArrayRef<const int> iatom_constr,
 /*! \brief Constrain the initial coordinates and velocities */
 void do_constrain_first(FILE*                     log,
                         gmx::Constraints*         constr,
-                        const t_inputrec*         inputrec,
+                        const t_inputrec&         inputrec,
                         int                       numAtoms,
                         int                       numHomeAtoms,
                         ArrayRefWithPadding<RVec> x,
@@ -305,30 +304,47 @@ void do_constrain_first(FILE*                     log,
                         const matrix              box,
                         real                      lambda);
 
-/*! \brief Constrain velocities only.
+/*! \brief Constrain the velocities only.
  *
- * The dvdlambda contribution has to be added to the bonded interactions
+ * The dhdlambda contribution has to be added to the bonded interactions
+ *
+ * \param[in,out] constr         The constraints object
+ * \param[in]     computeRmsd    Tells whether the constraint RMS deviation should be computed
+ * \param[in]     step           The integration step index
+ * \param[in,out] state          The state, x is read and halo data updated, v is constrained
+ * \param[out]    dhdlambda      The dHdlambda contraint contribution is returned in this
+ * \param[in]     computeVirial  Whether the constraint virial contribution should be computed
+ * \param[out]    constraintsVirial  The constraint virial is returned in this
  */
 void constrain_velocities(gmx::Constraints* constr,
-                          bool              do_log,
-                          bool              do_ene,
+                          bool              computeRmsd,
                           int64_t           step,
                           t_state*          state,
-                          real*             dvdlambda,
+                          real*             dhdlambda,
                           bool              computeVirial,
                           tensor            constraintsVirial);
 
-/*! \brief Constraint coordinates.
+/*! \brief Constrain the coordinates.
  *
- * The dvdlambda contribution has to be added to the bonded interactions
+ * Constrain the coordinates \p xp using reference coordinates in \p state.
+ * When present, the velocities in \p state are also constrained.
+ * The dhdlambda contribution has to be added to the bonded interactions.
+ *
+ * \param[in,out] constr         The constraints object
+ * \param[in]     computeRmsd    Tells whether the constraint RMS deviation should be computed
+ * \param[in]     step           The integration step index
+ * \param[in,out] state          The state, x is read and halo data updated, v is constrained
+ * \param[in,out] xp             The coordinates to constrain
+ * \param[out]    dhdlambda      The dHdlambda contraint contribution is returned in this
+ * \param[in]     computeVirial  Whether the constraint virial contribution should be computed
+ * \param[out]    constraintsVirial  The constraint virial is returned in this
  */
 void constrain_coordinates(gmx::Constraints*         constr,
-                           bool                      do_log,
-                           bool                      do_ene,
+                           bool                      computeRmsd,
                            int64_t                   step,
                            t_state*                  state,
                            ArrayRefWithPadding<RVec> xp,
-                           real*                     dvdlambda,
+                           real*                     dhdlambda,
                            bool                      computeVirial,
                            tensor                    constraintsVirial);
 

@@ -867,11 +867,9 @@ static void init_adir(gmx_shellfc_t*            shfc,
             }
         }
     }
-    bool needsLogging  = false;
-    bool computeEnergy = false;
+    bool computeRmsd   = false;
     bool computeVirial = false;
-    constr->apply(needsLogging,
-                  computeEnergy,
+    constr->apply(computeRmsd,
                   step,
                   0,
                   1.0,
@@ -885,8 +883,7 @@ static void init_adir(gmx_shellfc_t*            shfc,
                   computeVirial,
                   nullptr,
                   gmx::ConstraintVariable::Positions);
-    constr->apply(needsLogging,
-                  computeEnergy,
+    constr->apply(computeRmsd,
                   step,
                   0,
                   1.0,
@@ -912,8 +909,7 @@ static void init_adir(gmx_shellfc_t*            shfc,
     }
 
     /* Project the acceleration on the old bond directions */
-    constr->apply(needsLogging,
-                  computeEnergy,
+    constr->apply(computeRmsd,
                   step,
                   0,
                   1.0,

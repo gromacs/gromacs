@@ -98,7 +98,7 @@ void ConstraintsElement<variable>::elementSetup()
         // Constrain the initial coordinates and velocities
         do_constrain_first(fplog_,
                            constr_,
-                           inputrec_,
+                           *inputrec_,
                            statePropagatorData_->totalNumAtoms(),
                            statePropagatorData_->localNumAtoms(),
                            statePropagatorData_->positionsView(),
@@ -165,8 +165,7 @@ void ConstraintsElement<variable>::apply(Step step, bool calculateVirial, bool w
         default: gmx_fatal(FARGS, "Constraint algorithm not implemented for modular simulator.");
     }
 
-    constr_->apply(writeLog,
-                   writeEnergy,
+    constr_->apply(writeLog || writeEnergy,
                    step,
                    1,
                    1.0,

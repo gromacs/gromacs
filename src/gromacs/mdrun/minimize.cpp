@@ -479,12 +479,10 @@ static void init_em(FILE*                     fplog,
         if (!ir->bContinuation)
         {
             /* Constrain the starting coordinates */
-            bool needsLogging  = true;
-            bool computeEnergy = true;
+            bool computeRmsd   = true;
             bool computeVirial = false;
             dvdl_constr        = 0;
-            constr->apply(needsLogging,
-                          computeEnergy,
+            constr->apply(computeRmsd,
                           -1,
                           0,
                           1.0,
@@ -734,8 +732,7 @@ static bool do_em_step(const t_commrec*                          cr,
     if (constr)
     {
         dvdl_constr = 0;
-        validStep   = constr->apply(TRUE,
-                                  TRUE,
+        validStep   = constr->apply(true,
                                   count,
                                   0,
                                   1.0,
@@ -1109,13 +1106,11 @@ void EnergyEvaluator::run(em_state_t* ems, rvec mu_tot, tensor vir, tensor pres,
     if (constr)
     {
         /* Project out the constraint components of the force */
-        bool needsLogging  = false;
-        bool computeEnergy = false;
+        bool computeRmsd   = false;
         bool computeVirial = true;
         dvdl_constr        = 0;
         auto f             = ems->f.view().forceWithPadding();
-        constr->apply(needsLogging,
-                      computeEnergy,
+        constr->apply(computeRmsd,
                       count,
                       0,
                       1.0,

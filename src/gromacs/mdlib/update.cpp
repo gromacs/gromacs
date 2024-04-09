@@ -1637,8 +1637,7 @@ void Update::Impl::update_sd_second_half(const t_inputrec&                 input
 
         /* Constrain the coordinates upd->xp for half a time step */
         bool computeVirial = false;
-        constr->apply(do_log,
-                      do_ene,
+        constr->apply(do_log || do_ene,
                       step,
                       1,
                       0.5,

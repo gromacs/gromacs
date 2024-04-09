@@ -158,7 +158,7 @@ void integrateVVFirstStep(int64_t                   step,
                            constr != nullptr);
 
         wallcycle_stop(wcycle, WallCycleCounter::Update);
-        constrain_velocities(constr, do_log, do_ene, step, state, nullptr, bCalcVir, shake_vir);
+        constrain_velocities(constr, do_log || do_ene, step, state, nullptr, bCalcVir, shake_vir);
         wallcycle_start(wcycle, WallCycleCounter::Update);
         /* if VV, compute the pressure and constraints */
         /* For VV2, we strictly only need this if using pressure
@@ -413,7 +413,7 @@ void integrateVVSecondStep(int64_t                   step,
     wallcycle_stop(wcycle, WallCycleCounter::Update);
 
     constrain_coordinates(
-            constr, do_log, do_ene, step, state, upd->xp()->arrayRefWithPadding(), dvdl_constr, bCalcVir, shake_vir);
+            constr, do_log || do_ene, step, state, upd->xp()->arrayRefWithPadding(), dvdl_constr, bCalcVir, shake_vir);
 
     upd->update_sd_second_half(
             *ir, step, dvdl_constr, mdatoms->homenr, mdatoms->ptype, mdatoms->invmass, state, cr, nrnb, wcycle, constr, do_log, do_ene);

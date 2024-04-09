@@ -575,7 +575,7 @@ void gmx::LegacySimulator::do_md()
             /* Constrain the initial coordinates and velocities */
             do_constrain_first(fpLog_,
                                constr_,
-                               ir,
+                               *ir,
                                md->nr,
                                md->homenr,
                                state_->x.arrayRefWithPadding(),
@@ -1458,7 +1458,7 @@ void gmx::LegacySimulator::do_md()
                 /* if we have constraints, we have to remove the kinetic energy parallel to the bonds */
                 if (constr_ && bIfRandomize)
                 {
-                    constrain_velocities(constr_, do_log, do_ene, step, state_, nullptr, false, nullptr);
+                    constrain_velocities(constr_, do_log || do_ene, step, state_, nullptr, false, nullptr);
                 }
             }
             /* Box is changed in update() when we do pressure coupling,
@@ -1623,8 +1623,7 @@ void gmx::LegacySimulator::do_md()
                                                          *ekind_);
 
                         constrain_coordinates(constr_,
-                                              do_log,
-                                              do_ene,
+                                              do_log || do_ene,
                                               step,
                                               state_,
                                               upd.xp()->arrayRefWithPadding(),
@@ -1656,8 +1655,7 @@ void gmx::LegacySimulator::do_md()
                     wallcycle_stop(wallCycleCounters_, WallCycleCounter::Update);
 
                     constrain_coordinates(constr_,
-                                          do_log,
-                                          do_ene,
+                                          do_log || do_ene,
                                           step,
                                           state_,
                                           upd.xp()->arrayRefWithPadding(),
