@@ -316,7 +316,7 @@ public:
 
     void setupWaterAndLigandGroups()
     {
-        refWaterAtomNames_       = { "Ow", "HW1", "HW2", "Ow", "HW1", "HW2", "Ow", "HW1", "HW2" };
+        refWaterAtomNames_       = { "OW", "HW1", "HW2", "OW", "HW1", "HW2", "OW", "HW1", "HW2" };
         refWaterPartialCharges_  = { -0.83,  -0.415, -0.415, -0.83, -0.415,
                                     -0.415, -0.83,  -0.415, -0.415 };
         refLigandAtomNames_      = { "C1", "HC11", "HC12", "HC13", "C2", "HC21", "HC22", "HC23" };
@@ -329,7 +329,8 @@ public:
 
     void writeWaterAndLigandGroups()
     {
-        referenceH5mdIo_.setStringProperty("/particles/water", "atomname", refWaterAtomNames_, false);
+        /* Test variable-length string writing. */
+        referenceH5mdIo_.setStringProperty("/particles/water", "atomname", refWaterAtomNames_, false, 0);
         referenceH5mdIo_.setStringProperty("/particles/ligand", "atomname", refLigandAtomNames_, false);
         referenceH5mdIo_.setFloatProperty("/particles/water", "charge", refWaterPartialCharges_, false);
         referenceH5mdIo_.setFloatProperty("/particles/ligand", "charge", refLigandPartialCharges_, false);
@@ -337,7 +338,6 @@ public:
 
     void readAndCheckWaterAndLigandGroups()
     {
-        printf("readAndCheckWaterAndLigandGroups()\n");
         std::vector<std::string> testWaterAtomNames =
                 referenceH5mdIo_.readStringProperty("/particles/water", "atomname");
         std::vector<std::string> testLigandAtomNames =

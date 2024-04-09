@@ -163,12 +163,16 @@ public:
      * \param[in] propertyName The name of the property to set, e.g., "atomname".
      * \param[in] propertyValues A list of strings.
      * \param[in] replaceExisting Whether to replace the property if it already exists.
+     * \param[in] maxStringLength Is the length if fixed-length strings. If 0, the string will be
+     * written as variable-length. Variable-length strings cannot be compressed, and are therefore
+     * recommended against.
      * \throws FileIOError If there was an error creating the data block or writing the data.
      */
     void setStringProperty(const std::string&              containerName,
                            const std::string&              propertyName,
                            const std::vector<std::string>& propertyValues,
-                           bool                            replaceExisting = false);
+                           bool                            replaceExisting = false,
+                           size_t                          maxStringLength = c_atomStringLen);
 
     /*! \brief Set a float property.
      *
@@ -184,7 +188,7 @@ public:
                           bool                     replaceExisting = false);
 
 
-    /* \brief Read a string property.
+    /* \brief Read a string property. The string can be either fixed-length or variable-length.
      * \param[in] containerName The name of the HDF5 group that contains the property, e.g., "/particles/system".
      * \param[in] propertyName The name of the property to read, e.g., "atomname".
      * \returns A vector containing the strings. Empty if no strings could be read.

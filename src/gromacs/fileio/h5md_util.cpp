@@ -333,7 +333,11 @@ size_t getDataTypeSize(const hid_t dataSet)
 }
 
 template<int numDims, bool readFullDataSet>
-void readData(const hid_t dataSet, const hsize_t frameToRead, const size_t dataTypeSize, void** buffer, size_t* totalNumElements)
+void readData(const hid_t   dataSet,
+              const hsize_t frameToRead,
+              void**        buffer,
+              size_t*       totalNumElements,
+              size_t*       varLengthStringMaxLength)
 {
     GMX_ASSERT(dataSet >= 0, "Needs a valid dataSet to read data.");
     GMX_ASSERT(!readFullDataSet || frameToRead == 0,
@@ -384,21 +388,50 @@ void readData(const hid_t dataSet, const hsize_t frameToRead, const size_t dataT
         H5Eprint2(H5E_DEFAULT, nullptr);
         throw gmx::FileIOError("Cannot select the input region.");
     }
-
-    hid_t memoryDataspace = H5Screate_simple(numDims, inputBlockSize, nullptr);
-    hid_t origDatatype    = H5Dget_type(dataSet);
-    hid_t nativeDatatype  = H5Tget_native_type(origDatatype, H5T_DIR_DEFAULT);
-
     *totalNumElements = totalBlockSize;
 
-    if (*buffer == nullptr)
+    hid_t   memoryDataspace = H5Screate_simple(numDims, inputBlockSize, nullptr);
+    hid_t   origDatatype    = H5Dget_type(dataSet);
+    hid_t   nativeDatatype  = H5Tget_native_type(origDatatype, H5T_DIR_DEFAULT);
+    hsize_t dataTypeSize    = H5Tget_size(nativeDatatype);
+    if (H5Tis_variable_str(origDatatype))
     {
-        *buffer = malloc(dataTypeSize * totalBlockSize);
+        char** tmpBuffer = static_cast<char**>(malloc(dataTypeSize * totalBlockSize));
+        if (H5Dread(dataSet, nativeDatatype, memoryDataspace, dataSpace, H5P_DEFAULT, tmpBuffer) < 0)
+        {
+            H5Eprint2(H5E_DEFAULT, nullptr);
+            throw gmx::FileIOError("Error reading data set.");
+        }
+        size_t maxLength = 0;
+        for (size_t i = 0; i < totalBlockSize; i++)
+        {
+            maxLength = std::max(strlen(tmpBuffer[i]), maxLength);
+        }
+        maxLength += 1;
+        *varLengthStringMaxLength = maxLength;
+        if (*buffer == nullptr)
+        {
+            *buffer = malloc(maxLength * totalBlockSize);
+        }
+        for (size_t i = 0; i < totalBlockSize; i++)
+        {
+            strncpy(static_cast<char*>(*buffer) + i * maxLength, tmpBuffer[i], maxLength);
+        }
+        H5Dvlen_reclaim(origDatatype, dataSpace, H5P_DEFAULT, tmpBuffer);
+        free(tmpBuffer);
     }
-    if (H5Dread(dataSet, nativeDatatype, memoryDataspace, dataSpace, H5P_DEFAULT, *buffer) < 0)
+    else
     {
-        H5Eprint2(H5E_DEFAULT, nullptr);
-        throw gmx::FileIOError("Error reading data set.");
+        *varLengthStringMaxLength = 0;
+        if (*buffer == nullptr)
+        {
+            *buffer = malloc(dataTypeSize * totalBlockSize);
+        }
+        if (H5Dread(dataSet, nativeDatatype, memoryDataspace, dataSpace, H5P_DEFAULT, *buffer) < 0)
+        {
+            H5Eprint2(H5E_DEFAULT, nullptr);
+            throw gmx::FileIOError("Error reading data set.");
+        }
     }
 }
 
@@ -587,9 +620,9 @@ template void gmx::h5mdio::writeData<1, false>(hid_t, const void*, hsize_t);
 template void gmx::h5mdio::writeData<1, true>(hid_t, const void*, hsize_t);
 template void gmx::h5mdio::writeData<3, false>(hid_t, const void*, hsize_t);
 
-template void gmx::h5mdio::readData<1, false>(hid_t, hsize_t, size_t, void**, size_t*);
-template void gmx::h5mdio::readData<1, true>(hid_t, hsize_t, size_t, void**, size_t*);
-template void gmx::h5mdio::readData<3, false>(hid_t, hsize_t, size_t, void**, size_t*);
+template void gmx::h5mdio::readData<1, false>(hid_t, hsize_t, void**, size_t*, size_t*);
+template void gmx::h5mdio::readData<1, true>(hid_t, hsize_t, void**, size_t*, size_t*);
+template void gmx::h5mdio::readData<3, false>(hid_t, hsize_t, void**, size_t*, size_t*);
 
 template void gmx::h5mdio::setAttribute<int>(hid_t, const char*, int, hid_t);
 template void gmx::h5mdio::setAttribute<float>(hid_t, const char*, float, hid_t);

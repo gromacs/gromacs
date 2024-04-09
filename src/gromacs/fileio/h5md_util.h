@@ -108,24 +108,28 @@ void writeData(const hid_t dataSet, const void* data, const hsize_t frameToWrite
  */
 size_t getDataTypeSize(const hid_t dataSet);
 
-/*! \brief Reads data from an HDF5 data set, labelled by name.
+/*! \brief Reads data from an HDF5 data set, labelled by name. Strings can be read as
+ * either fixed-length or variable-length.
  *
  * \tparam numDims The number of dimensions of the data.
  * \tparam readFullDataSet Whether to read the whole data set at once.
  *                         If true, frameToRead must be 0.
  * \param[in] dataSet The ID of the dataset to read from.
  * \param[in] frameToRead The frame number to read (starting from 0).
- * \param[in] dataTypeSize The size (in bytes) per value.
  * \param[out] buffer The buffer to fill with the read data. Memory will be allocated.
  *                    Must be freed by the caller.
  * \param[out] totalNumElements The number of data values read.
+ * \param[out] varLengthStringMaxLength If reading a variable length string data set,
+ *                              this is be the fixed-length size needed to fit all strings,
+ *                              otherwise it will be 0, and can be used for determining
+ *                              what type of string was read (if reading a string).
  */
 template<int numDims, bool readFullDataSet>
 void readData(const hid_t   dataSet,
               const hsize_t frameToRead,
-              const size_t  dataTypeSize,
               void**        buffer,
-              size_t*       totalNumElements);
+              size_t*       totalNumElements,
+              size_t*       varLengthStringMaxLength);
 
 /*! Set the periodic box attribute of a box group.
  * \param[in] boxGroup The ID of the box group.

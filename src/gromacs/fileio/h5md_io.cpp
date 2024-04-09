@@ -335,38 +335,61 @@ std::string GmxH5mdIo::getCreatorProgramVersion()
 void GmxH5mdIo::setStringProperty(const std::string&              containerName,
                                   const std::string&              propertyName,
                                   const std::vector<std::string>& propertyValues,
-                                  bool                            replaceExisting)
+                                  bool                            replaceExisting,
+                                  size_t                          maxStringLength)
 {
     openOrCreateGroup(file_, containerName.c_str());
     std::string dataSetName(containerName + "/" + propertyName);
 
     if (!H5Lexists(file_, dataSetName.c_str(), H5P_DEFAULT) || replaceExisting == true)
     {
-        /* FIXME: Is there a more convenient way to do this? std::string is nice above, but cannot be used for writing in HDF5. */
-        char* propertyValuesChars;
-        snew(propertyValuesChars, propertyValues.size() * c_atomStringLen);
-        for (size_t i = 0; i < propertyValues.size(); i++)
-        {
-            strncpy(&propertyValuesChars[i * c_atomStringLen], propertyValues[i].c_str(), c_atomStringLen);
-        }
-
         hid_t stringDataType = H5Tcopy(H5T_C_S1);
-        H5Tset_size(stringDataType, c_atomStringLen);
         H5Tset_cset(stringDataType, H5T_CSET_UTF8);
-
         hsize_t atomPropertiesChunkDims[1];
         atomPropertiesChunkDims[0] = propertyValues.size();
+        if (maxStringLength > 0)
+        {
+            /* FIXME: Is there a more convenient way to do this? std::string is nice above, but cannot be used for writing in HDF5. */
+            char* propertyValuesChars;
+            snew(propertyValuesChars, propertyValues.size() * maxStringLength);
+            for (size_t i = 0; i < propertyValues.size(); i++)
+            {
+                strncpy(&propertyValuesChars[i * maxStringLength], propertyValues[i].c_str(), maxStringLength);
+            }
 
-        hid_t dataSet = openOrCreateDataSet<1>(file_,
-                                               dataSetName.c_str(),
-                                               "",
-                                               stringDataType,
-                                               atomPropertiesChunkDims,
-                                               CompressionAlgorithm::LosslessNoShuffle,
-                                               0);
-        writeData<1, true>(dataSet, propertyValuesChars, 0);
-        H5Dclose(dataSet);
-        sfree(propertyValuesChars);
+            H5Tset_size(stringDataType, maxStringLength);
+            hid_t dataSet = openOrCreateDataSet<1>(file_,
+                                                   dataSetName.c_str(),
+                                                   "",
+                                                   stringDataType,
+                                                   atomPropertiesChunkDims,
+                                                   CompressionAlgorithm::LosslessNoShuffle,
+                                                   0);
+            writeData<1, true>(dataSet, propertyValuesChars, 0);
+            H5Dclose(dataSet);
+            sfree(propertyValuesChars);
+        }
+        else
+        {
+            /* Is there a more convenient way to do this? std::string is nice above, but cannot be used for writing. */
+            std::vector<const char*> propertyValuesChars(propertyValues.size());
+            std::transform(propertyValues.begin(),
+                           propertyValues.end(),
+                           propertyValuesChars.begin(),
+                           std::mem_fn(&std::string::c_str));
+
+            H5Tset_size(stringDataType, H5T_VARIABLE);
+            H5Tset_strpad(stringDataType, H5T_STR_NULLTERM);
+            hid_t dataSet = openOrCreateDataSet<1>(file_,
+                                                   dataSetName.c_str(),
+                                                   "",
+                                                   stringDataType,
+                                                   atomPropertiesChunkDims,
+                                                   CompressionAlgorithm::LosslessNoShuffle,
+                                                   0);
+            writeData<1, true>(dataSet, propertyValuesChars.data(), 0);
+            H5Dclose(dataSet);
+        }
     }
 }
 
@@ -413,20 +436,22 @@ std::vector<std::string> GmxH5mdIo::readStringProperty(const std::string& contai
         return propertyValues;
     }
 
-    hsize_t stringDataTypeSize = c_atomStringLen;
-    size_t  totalNumElements;
 
-    char* propertyValuesChars = nullptr;
+    hid_t   origDatatype        = H5Dget_type(dataSet);
+    hid_t   nativeDatatype      = H5Tget_native_type(origDatatype, H5T_DIR_DEFAULT);
+    hsize_t dataTypeSize        = H5Tget_size(nativeDatatype);
+    char*   propertyValuesChars = nullptr;
+    size_t  totalNumElements, varStringLengthMaxLength;
     readData<1, true>(
-            dataSet, 0, stringDataTypeSize, reinterpret_cast<void**>(&propertyValuesChars), &totalNumElements);
+            dataSet, 0, reinterpret_cast<void**>(&propertyValuesChars), &totalNumElements, &varStringLengthMaxLength);
     propertyValues.reserve(totalNumElements);
-
+    dataTypeSize = varStringLengthMaxLength != 0 ? varStringLengthMaxLength : dataTypeSize;
     for (size_t i = 0; i < totalNumElements; i++)
     {
-        propertyValues.push_back(propertyValuesChars + i * c_atomStringLen);
+        propertyValues.push_back(propertyValuesChars + i * dataTypeSize);
     }
+    free(propertyValuesChars);
 
-    H5free_memory(propertyValuesChars);
     return propertyValues;
 }
 
@@ -435,19 +460,18 @@ std::vector<real> GmxH5mdIo::readFloatProperty(const std::string& containerName,
     std::string       dataSetName(containerName + "/" + propertyName);
     hid_t             dataSet = H5Dopen(file_, dataSetName.c_str(), H5P_DEFAULT);
     std::vector<real> propertyValues;
-    printf("%s\n", dataSetName.c_str());
 
     if (dataSet < 0)
     {
         return propertyValues;
     }
 
-    size_t totalNumElements;
-    void*  buffer       = nullptr;
-    size_t dataTypeSize = getDataTypeSize(dataSet);
-    readData<1, true>(dataSet, 0, dataTypeSize, &buffer, &totalNumElements);
+    size_t totalNumElements, dummy;
+    void*  buffer = nullptr;
+    readData<1, true>(dataSet, 0, &buffer, &totalNumElements, &dummy);
     propertyValues.reserve(totalNumElements);
 
+    size_t dataTypeSize = getDataTypeSize(dataSet);
     if (dataTypeSize == 8)
     {
         for (size_t i = 0; i < totalNumElements; i++)
@@ -462,8 +486,7 @@ std::vector<real> GmxH5mdIo::readFloatProperty(const std::string& containerName,
             propertyValues.push_back(static_cast<float*>(buffer)[i]);
         }
     }
-
-    H5free_memory(buffer);
+    free(buffer);
 
     return propertyValues;
 }
@@ -667,7 +690,7 @@ openOrCreateDataSet<2>(hid_t, const char*, const char*, hid_t, const hsize_t*, C
 
 extern template void writeData<1, true>(hid_t, const void*, hsize_t);
 
-extern template void readData<1, true>(hid_t, hsize_t, size_t, void**, size_t*);
+extern template void readData<1, true>(hid_t, hsize_t, void**, size_t*, size_t*);
 
 extern template void setAttribute<int>(hid_t, const char*, int, hid_t);
 extern template void setAttribute<float>(hid_t, const char*, float, hid_t);
