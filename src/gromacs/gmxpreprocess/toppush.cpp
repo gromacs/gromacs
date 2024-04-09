@@ -1282,7 +1282,7 @@ void push_cmaptype(Directive                         d,
     /* Set grid spacing and the number of grids (we assume these numbers to be the same for all
      * grids so we can safely assign them each time
      */
-    bt[F_CMAP].cmakeGridSpacing = nxcmap; /* Or nycmap, they need to be equal */
+    bt[F_CMAP].cmapGridSpacing_ = nxcmap; /* Or nycmap, they need to be equal */
 
     for (int i = 0; (i < nral); i++)
     {
@@ -1292,15 +1292,15 @@ void push_cmaptype(Directive                         d,
     }
 
     /* Assign a type number to this cmap */
-    bt[F_CMAP].cmapAtomTypes.emplace_back(bt[F_CMAP].cmapAngles);
-    bt[F_CMAP].cmapAngles++;
+    bt[F_CMAP].cmapAtomTypes.emplace_back(bt[F_CMAP].numCmaps_);
+    bt[F_CMAP].numCmaps_++;
 
     /* Check for the correct number of atoms (again) */
-    nct = (nral + 1) * bt[F_CMAP].cmapAngles;
+    nct = (nral + 1) * bt[F_CMAP].numCmaps_;
     if (bt[F_CMAP].nct() != nct)
     {
         auto message = gmx::formatString(
-                "Incorrect number of atom types (%d) in cmap type %d\n", nct, bt[F_CMAP].cmapAngles);
+                "Incorrect number of atom types (%d) in cmap type %d\n", nct, bt[F_CMAP].numCmaps_);
         wi->addError(message);
     }
     std::vector<int> atomTypes =

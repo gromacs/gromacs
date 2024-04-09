@@ -138,9 +138,9 @@ struct InteractionsOfType
     //! The different parameters in the system.
     std::vector<InteractionOfType> interactionTypes;
     //! CMAP grid spacing.
-    int cmakeGridSpacing = -1;
-    //! Number of cmap angles.
-    int cmapAngles = -1;
+    int cmapGridSpacing_ = -1;
+    //! Number of CMAP dihedral angle pairs.
+    int numCmaps_ = -1;
     //! CMAP grid data.
     std::vector<real> cmap;
     //! The five atomtypes followed by a number that identifies the type.

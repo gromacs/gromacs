@@ -2303,10 +2303,10 @@ int gmx_grompp(int argc, char* argv[])
     if (interactions[F_CMAP].ncmap() > 0)
     {
         init_cmap_grid(&sys.ffparams.cmap_grid,
-                       interactions[F_CMAP].cmapAngles,
-                       interactions[F_CMAP].cmakeGridSpacing);
-        setup_cmap(interactions[F_CMAP].cmakeGridSpacing,
-                   interactions[F_CMAP].cmapAngles,
+                       interactions[F_CMAP].numCmaps_,
+                       interactions[F_CMAP].cmapGridSpacing_);
+        setup_cmap(interactions[F_CMAP].cmapGridSpacing_,
+                   interactions[F_CMAP].numCmaps_,
                    interactions[F_CMAP].cmap,
                    &sys.ffparams.cmap_grid);
     }
