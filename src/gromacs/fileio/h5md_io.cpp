@@ -189,8 +189,9 @@ void GmxH5mdIo::openFile(const std::string fileName, const char mode)
         {
             file_ = H5Fopen(fileName.c_str(), H5F_ACC_RDWR, H5P_DEFAULT);
         }
-        /* Create H5MD groups. They should already be there if appending to a valid H5MD file, but it's better to be on the safe side. */
-        openOrCreateGroup(file_, "h5md");
+        /* Create H5MD group. They should already be there if appending to a valid H5MD file, but it's better to be on the safe side. */
+        hid_t h5mdGroup = openOrCreateGroup(file_, "h5md");
+        setVersionAttribute(h5mdGroup, c_h5mdMajorVersion, c_h5mdMinorVersion);
     }
     else
     {
@@ -282,6 +283,18 @@ int GmxH5mdIo::initGroupTimeDataBlocksFromFile(std::string groupName)
         throw gmx::FileIOError("Error iterating over particles data blocks.");
     }
     return dataBlocks_.size() - numDataBlocksBefore;
+}
+
+std::string GmxH5mdIo::getH5mdRootVersionNumber()
+{
+    int   majorVersion, minorVersion;
+    hid_t h5mdGroup = H5Gopen(file_, "h5md", H5P_DEFAULT);
+
+    if (getVersionAttribute(h5mdGroup, &majorVersion, &minorVersion))
+    {
+        return std::to_string(majorVersion) + "." + std::to_string(minorVersion);
+    }
+    return "";
 }
 
 void GmxH5mdIo::setAuthor(std::string authorName)

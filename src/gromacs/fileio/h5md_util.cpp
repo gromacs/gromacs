@@ -456,6 +456,49 @@ void setBoxGroupAttributes(const hid_t boxGroup, const PbcType pbcType)
     setAttributeStringList<DIM, c_pbcTypeStringLength>(boxGroup, "boundary", boundaryAttributeString);
 }
 
+void setVersionAttribute(const hid_t group, const int majorVersion, const int minorVersion)
+{
+    char  name[]    = "version";
+    hid_t attribute = H5Aopen(group, name, H5P_DEFAULT);
+    hid_t dataType  = H5Tcopy(H5T_NATIVE_INT32);
+
+    if (attribute < 0)
+    {
+        hsize_t dataSize[1] = { 2 };
+        hid_t   dataSpace   = H5Screate_simple(1, dataSize, nullptr);
+        attribute = H5Acreate2(group, name, dataType, dataSpace, H5P_DEFAULT, H5P_DEFAULT);
+    }
+    const int value[2] = { majorVersion, minorVersion };
+    if (H5Awrite(attribute, dataType, &value) < 0)
+    {
+        H5Eprint2(H5E_DEFAULT, nullptr);
+        throw gmx::FileIOError("Cannot write attribute.");
+    }
+    H5Aclose(attribute);
+}
+
+bool getVersionAttribute(const hid_t group, int* majorVersion, int* minorVersion)
+{
+    char  name[]    = "version";
+    hid_t attribute = H5Aopen(group, name, H5P_DEFAULT);
+    if (attribute < 0)
+    {
+        return false;
+    }
+    hid_t dataType = H5Aget_type(attribute);
+    int   value[2];
+    if (H5Aread(attribute, dataType, &value) < 0)
+    {
+        H5Eprint2(H5E_DEFAULT, nullptr);
+        throw gmx::FileIOError("Cannot write attribute.");
+    }
+    *majorVersion = value[0];
+    *minorVersion = value[1];
+
+    H5Aclose(attribute);
+    return true;
+}
+
 template<typename T>
 void setAttribute(const hid_t dataSet, const char* name, const T value, const hid_t dataType)
 {
@@ -495,13 +538,14 @@ void setAttribute(const hid_t dataSet, const char* name, const char* value)
 }
 
 template<typename T>
-bool getAttribute(const hid_t dataSet, const char* name, T* value, const hid_t dataType)
+bool getAttribute(const hid_t dataSet, const char* name, T* value)
 {
     hid_t attribute = H5Aopen(dataSet, name, H5P_DEFAULT);
     if (attribute < 0)
     {
         return false;
     }
+    hid_t dataType = H5Aget_type(attribute);
     if (H5Aread(attribute, dataType, value) < 0)
     {
         H5Eprint2(H5E_DEFAULT, nullptr);

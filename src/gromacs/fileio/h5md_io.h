@@ -55,7 +55,9 @@ namespace h5mdio
 
 typedef int64_t            hid_t;
 typedef unsigned long long hsize_t;
-constexpr size_t           c_atomStringLen = 17;
+constexpr size_t           c_atomStringLen    = 17;
+constexpr int              c_h5mdMajorVersion = 1;
+constexpr int              c_h5mdMinorVersion = 1;
 
 
 /*! \brief The container of the H5MD data. The class is designed to read/write data according to de Buyl et al., 2014
@@ -66,9 +68,6 @@ class GmxH5mdIo
 private:
     hid_t file_; //!< The HDF5 identifier of the file. This is the H5MD root.
     std::list<GmxH5mdTimeDataBlock> dataBlocks_; //!< A list of time dependent data blocks in the HDF5 file.
-
-    /*! \brief Sets the author (user) and creator (application name) properties in the h5md group (h5mdGroup_). */
-    void setAuthorAndCreator();
 
 public:
     /*! \brief Construct a GmxH5mdIo object and open a GmxHdf5 file.
@@ -115,6 +114,11 @@ public:
      * \returns The number of initialized data blocks.
      */
     int initGroupTimeDataBlocksFromFile(std::string groupName);
+
+    /*! \brief Return the version number of the H5MD root group. The version number is returned
+     * as a string, composed as "<majorVersion>.<minorVersion>". If not version number could be
+     * read, the returned string is empty. */
+    std::string getH5mdRootVersionNumber();
 
     /*! \brief Set the author name attribute in the H5MD file
      * \param[in] authorName The author name.

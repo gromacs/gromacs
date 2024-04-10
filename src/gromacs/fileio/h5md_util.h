@@ -137,6 +137,25 @@ void readData(const hid_t   dataSet,
  */
 void setBoxGroupAttributes(const hid_t boxGroup, const PbcType pbcType);
 
+/*! Set an H5MD version number attribute, i.e. two integer values with major and minor
+ * version numbers. The version can be different for the H5MD root group and module
+ * groups in the file.
+ * \param[in] group The group of which to set the version attribute.
+ * \param[in] majorVersion The major version of the group.
+ * \param[in] minorVersion The minor version of the group.
+ */
+void setVersionAttribute(const hid_t group, const int majorVersion, const int minorVersion);
+
+/*! Get an H5MD version number attribute, i.e. two integer values with major and minor
+ * version numbers. The version can be different for the H5MD root group and module
+ * groups in the file.
+ * \param[in] group The group from which to get the version attribute.
+ * \param[out] majorVersion The major version of the group.
+ * \param[out] minorVersion The minor version of the group.
+ * \returns true if the version attribute was found and successfully read, otherwise false.
+ */
+bool getVersionAttribute(const hid_t group, int* majorVersion, int* minorVersion);
+
 /*! Set an attribute value in a data set.
  * \tparam T The type of the data to write.
  * \param[in] dataSet The ID of the HDF5 data set.
@@ -159,11 +178,10 @@ void setAttribute(const hid_t dataSet, const char* name, const char* value);
  * \param[in] dataSet The ID of the HDF5 data set.
  * \param[in] name The name of the attribute.
  * \param[out] value The returned value of the attribute.
- * \param[in] dataType The HDF5 type of the output.
  * \returns true if the attribute was found and successfully read otherwise false.
  */
 template<typename T>
-bool getAttribute(const hid_t dataSet, const char* name, T* value, const hid_t dataType);
+bool getAttribute(const hid_t dataSet, const char* name, T* value);
 
 /*! Get a string attribute value from a data set.
  * \param[in] dataSet The ID of the HDF5 data set.

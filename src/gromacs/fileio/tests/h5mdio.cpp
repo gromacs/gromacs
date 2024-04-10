@@ -107,6 +107,14 @@ public:
     /*! \brief Set the number of reference atoms. */
     int getRefAtomCount() { return refAtomCount_; }
 
+    void checkH5mdRootVersionNumber()
+    {
+        std::string fileVersion   = referenceH5mdIo_.getH5mdRootVersionNumber();
+        std::string versionString = std::to_string(gmx::h5mdio::c_h5mdMajorVersion) + "."
+                                    + std::to_string(gmx::h5mdio::c_h5mdMinorVersion);
+        EXPECT_STREQ(fileVersion.c_str(), versionString.c_str());
+    }
+
     void setAuthorAndCreator(std::string authorName, std::string creatorProgramName, std::string creatorProgramVersion)
     {
         referenceH5mdIo_.setAuthor(authorName);
@@ -408,9 +416,12 @@ TEST_F(H5mdIoTest, CanCreateAndCloseH5mdFile)
     const char referenceCreatorProgramVersion[] = "v. 2468"; // Testing using a char string on purpose.
     setAuthorAndCreator(referenceAuthorName, referenceCreatorProgramName, referenceCreatorProgramVersion);
     checkAuthorAndCreator(referenceAuthorName, referenceCreatorProgramName, referenceCreatorProgramVersion);
+    checkH5mdRootVersionNumber();
     closeReferenceFile();
     EXPECT_FALSE(isReferenceFileOpen());
     openReferenceFile('r');
+    /* Verify that the version number is the same after flushing, closing and opening. */
+    checkH5mdRootVersionNumber();
     EXPECT_TRUE(isReferenceFileOpen());
     closeReferenceFile();
     EXPECT_FALSE(isReferenceFileOpen());
