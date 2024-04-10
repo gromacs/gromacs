@@ -160,6 +160,7 @@ void setAttribute(const hid_t dataSet, const char* name, const char* value);
  * \param[in] name The name of the attribute.
  * \param[out] value The returned value of the attribute.
  * \param[in] dataType The HDF5 type of the output.
+ * \returns true if the attribute was found and successfully read otherwise false.
  */
 template<typename T>
 bool getAttribute(const hid_t dataSet, const char* name, T* value, const hid_t dataType);
@@ -168,6 +169,7 @@ bool getAttribute(const hid_t dataSet, const char* name, T* value, const hid_t d
  * \param[in] dataSet The ID of the HDF5 data set.
  * \param[in] name The name of the attribute.
  * \param[out] value The returned string value of the attribute.
+ * \returns true if the attribute was found and successfully read otherwise false.
  */
 bool getAttribute(const hid_t dataSet, const char* name, char** value);
 

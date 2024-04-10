@@ -504,7 +504,8 @@ bool getAttribute(const hid_t dataSet, const char* name, T* value, const hid_t d
     }
     if (H5Aread(attribute, dataType, value) < 0)
     {
-        return false;
+        H5Eprint2(H5E_DEFAULT, nullptr);
+        throw gmx::FileIOError("Cannot read attribute.");
     }
 
     H5Aclose(attribute);
@@ -522,14 +523,15 @@ bool getAttribute(const hid_t dataSet, const char* name, char** value)
     {
         return false;
     }
-    hid_t  dataType     = H5Aget_type(attribute);
-    size_t dataTypeSize = H5Tget_size(dataType);
+    hid_t dataType = H5Aget_type(attribute);
     /* Make room for string termination as well. */
-    *value = reinterpret_cast<char*>(malloc(dataTypeSize + 1));
-    memset(*value, NULL, dataTypeSize + 1);
+    size_t allocationSize = H5Tget_size(dataType) + 1;
+    *value                = reinterpret_cast<char*>(malloc(allocationSize));
+    memset(*value, NULL, allocationSize);
     if (H5Aread(attribute, dataType, *value) < 0)
     {
-        return false;
+        H5Eprint2(H5E_DEFAULT, nullptr);
+        throw gmx::FileIOError("Cannot read attribute.");
     }
 
     H5Aclose(attribute);
