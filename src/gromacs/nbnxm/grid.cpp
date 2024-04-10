@@ -77,25 +77,24 @@ Grid::Geometry::Geometry(const PairlistType pairlistType) :
 {
 }
 
-Grid::Grid(const PairlistType pairlistType, const bool& haveFep) :
+Grid::Grid(const PairlistType pairlistType, const bool& haveFep, gmx::PinningPolicy pinningPolicy) :
     geometry_(pairlistType), haveFep_(haveFep)
 {
+    changePinningPolicy(&cxy_na_, pinningPolicy);
+    changePinningPolicy(&cxy_ind_, pinningPolicy);
 }
 
 /*! \brief Returns the atom density (> 0) of a rectangular grid */
-static real gridAtomDensity(int numAtoms, const rvec lowerCorner, const rvec upperCorner)
+static real gridAtomDensity(int numAtoms, const gmx::RVec& gridBoundingBoxSize)
 {
-    rvec size;
-
     if (numAtoms == 0)
     {
         /* To avoid zero density we use a minimum of 1 atom */
         numAtoms = 1;
     }
 
-    rvec_sub(upperCorner, lowerCorner, size);
-
-    return static_cast<real>(numAtoms) / (size[XX] * size[YY] * size[ZZ]);
+    return static_cast<real>(numAtoms)
+           / (gridBoundingBoxSize[XX] * gridBoundingBoxSize[YY] * gridBoundingBoxSize[ZZ]);
 }
 
 //! \brief Get approximate dimensions of each cell. Returns the length along X and Y.
@@ -133,15 +132,16 @@ static int getMaxNumCells(const Grid::Geometry& geometry, const int numAtoms, co
     }
 }
 
-void Grid::setDimensions(const int          ddZone,
-                         const int          numAtoms,
-                         gmx::RVec          lowerCorner,
-                         gmx::RVec          upperCorner,
-                         real*              atomDensity,
-                         const real         maxAtomGroupRadius,
-                         const bool         haveFep,
-                         gmx::PinningPolicy pinningPolicy)
+void Grid::setDimensions(const int        ddZone,
+                         const int        numAtoms,
+                         const gmx::RVec& lowerCorner,
+                         const gmx::RVec& upperCorner,
+                         real*            atomDensity,
+                         const real       maxAtomGroupRadius)
 {
+    dimensions_.lowerCorner = lowerCorner;
+    dimensions_.upperCorner = upperCorner;
+
     /* We allow passing lowerCorner=upperCorner, in which case we need to
      * create a finite sized bounding box to avoid division by zero.
      * We use a minimum size such that the volume fits in float with some
@@ -152,28 +152,29 @@ void Grid::setDimensions(const int          ddZone,
     {
         GMX_ASSERT(upperCorner[d] >= lowerCorner[d],
                    "Upper corner should be larger than the lower corner");
-        if (upperCorner[d] - lowerCorner[d] < c_minimumGridSize)
+        if (dimensions_.upperCorner[d] - dimensions_.lowerCorner[d] < c_minimumGridSize)
         {
             /* Ensure we apply a correction to the bounding box */
             real correction =
                     std::max(std::abs(lowerCorner[d]) * GMX_REAL_EPS, 0.5_real * c_minimumGridSize);
-            lowerCorner[d] -= correction;
-            upperCorner[d] += correction;
+            dimensions_.lowerCorner[d] -= correction;
+            dimensions_.upperCorner[d] += correction;
         }
     }
+
+    const gmx::RVec gridBoundingBoxSize = dimensions_.upperCorner - dimensions_.lowerCorner;
+
+    dimensions_.gridSize = gridBoundingBoxSize;
 
     /* For the home zone we compute the density when not set (=-1) or when =0 */
     GMX_ASSERT(atomDensity, "atomDensity cannot be nullptr");
     if (ddZone == 0 && *atomDensity <= 0)
     {
-        *atomDensity = gridAtomDensity(numAtoms, lowerCorner, upperCorner);
+        *atomDensity = gridAtomDensity(numAtoms, gridBoundingBoxSize);
     }
 
     dimensions_.atomDensity        = *atomDensity;
     dimensions_.maxAtomGroupRadius = maxAtomGroupRadius;
-
-    rvec size;
-    rvec_sub(upperCorner, lowerCorner, size);
 
     if (numAtoms > geometry_.numAtomsPerCell)
     {
@@ -186,8 +187,8 @@ void Grid::setDimensions(const int          ddZone,
          * in the pairlist when the fixed cell dimensions (x,y) are
          * larger than the variable one (z) than the other way around.
          */
-        dimensions_.numCells[XX] = std::max(1, static_cast<int>(size[XX] / tlen[XX]));
-        dimensions_.numCells[YY] = std::max(1, static_cast<int>(size[YY] / tlen[YY]));
+        dimensions_.numCells[XX] = std::max(1, static_cast<int>(gridBoundingBoxSize[XX] / tlen[XX]));
+        dimensions_.numCells[YY] = std::max(1, static_cast<int>(gridBoundingBoxSize[YY] / tlen[YY]));
     }
     else
     {
@@ -197,7 +198,7 @@ void Grid::setDimensions(const int          ddZone,
 
     for (int d = 0; d < DIM - 1; d++)
     {
-        dimensions_.cellSize[d]    = size[d] / dimensions_.numCells[d];
+        dimensions_.cellSize[d]    = gridBoundingBoxSize[d] / dimensions_.numCells[d];
         dimensions_.invCellSize[d] = 1 / dimensions_.cellSize[d];
     }
 
@@ -216,8 +217,6 @@ void Grid::setDimensions(const int          ddZone,
     /* We need one additional cell entry for particles moved by DD */
     cxy_na_.resize(numColumns() + 1);
     cxy_ind_.resize(numColumns() + 2);
-    changePinningPolicy(&cxy_na_, pinningPolicy);
-    changePinningPolicy(&cxy_ind_, pinningPolicy);
 
     /* Worst case scenario of 1 atom in each last cell */
     const int maxNumCells = getMaxNumCells(geometry_, numAtoms, numColumns());
@@ -257,14 +256,10 @@ void Grid::setDimensions(const int          ddZone,
     }
 
     flags_.resize(maxNumCells);
-    if (haveFep)
+    if (haveFep_)
     {
         fep_.resize(maxNumCells * geometry_.numAtomsPerCell / geometry_.numAtomsICluster);
     }
-
-    copy_rvec(lowerCorner, dimensions_.lowerCorner);
-    copy_rvec(upperCorner, dimensions_.upperCorner);
-    copy_rvec(size, dimensions_.gridSize);
 }
 
 /* We need to sort particles in grid columns on z-coordinate.
@@ -1538,7 +1533,6 @@ real generateAndFill2DGrid(Grid*                          grid,
                            const gmx::Range<int>          atomRange,
                            real*                          atomDensity,
                            const real                     maxAtomGroupRadius,
-                           const bool                     haveFep,
                            gmx::ArrayRef<const gmx::RVec> x,
                            const int                      ddZone,
                            const int*                     move,
@@ -1546,11 +1540,8 @@ real generateAndFill2DGrid(Grid*                          grid,
                            const bool                     computeGridDensityRatio)
 {
     const int n = atomRange.size();
-    // grid data used in GPU transfers inherits the gridset pinning policy
-    const auto pinPolicy = cells->get_allocator().pinningPolicy();
 
-    grid->setDimensions(
-            ddZone, n - numAtomsMoved, lowerCorner, upperCorner, atomDensity, maxAtomGroupRadius, haveFep, pinPolicy);
+    grid->setDimensions(ddZone, n - numAtomsMoved, lowerCorner, upperCorner, atomDensity, maxAtomGroupRadius);
 
     for (GridWork& work : gridWork)
     {

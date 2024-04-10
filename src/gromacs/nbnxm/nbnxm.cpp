@@ -57,8 +57,8 @@
 
 void nonbonded_verlet_t::putAtomsOnGrid(const matrix                   box,
                                         int                            gridIndex,
-                                        const rvec                     lowerCorner,
-                                        const rvec                     upperCorner,
+                                        const gmx::RVec&               lowerCorner,
+                                        const gmx::RVec&               upperCorner,
                                         const gmx::UpdateGroupsCog*    updateGroupsCog,
                                         gmx::Range<int>                atomRange,
                                         real                           atomDensity,

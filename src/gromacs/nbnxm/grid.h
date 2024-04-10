@@ -137,11 +137,11 @@ public:
     struct Dimensions
     {
         //! The lower corner of the (local) grid
-        rvec lowerCorner;
+        gmx::RVec lowerCorner;
         //! The upper corner of the (local) grid
-        rvec upperCorner;
+        gmx::RVec upperCorner;
         //! The physical grid size: upperCorner - lowerCorner
-        rvec gridSize;
+        gmx::RVec gridSize;
         //! An estimate for the atom number density of the region targeted by the grid
         real atomDensity;
         //! The maximum distance an atom can be outside of a cell and outside of the grid
@@ -155,7 +155,7 @@ public:
     };
 
     //! Constructs a grid given the type of pairlist
-    Grid(PairlistType pairlistType, const bool& haveFep);
+    Grid(PairlistType pairlistType, const bool& haveFep, gmx::PinningPolicy pinningPolicy);
 
     //! Returns the geometry of the grid cells
     const Geometry& geometry() const { return geometry_; }
@@ -274,17 +274,13 @@ public:
      * \param[in] upperCorner      The maximum Cartesian coordinates of the grid
      * \param[in,out] atomDensity  The atom density, will be computed when <= 0
      * \param[in] maxAtomGroupRadius  The maximum radius of atom groups
-     * \param[in] haveFep          Whether non-bonded parameters are perturbed
-     * \param[in] pinningPolicy    The pinning policy for memory
      */
-    void setDimensions(int                ddZone,
-                       int                numAtoms,
-                       gmx::RVec          lowerCorner,
-                       gmx::RVec          upperCorner,
-                       real*              atomDensity,
-                       real               maxAtomGroupRadius,
-                       bool               haveFep,
-                       gmx::PinningPolicy pinningPolicy);
+    void setDimensions(int              ddZone,
+                       int              numAtoms,
+                       const gmx::RVec& lowerCorner,
+                       const gmx::RVec& upperCorner,
+                       real*            atomDensity,
+                       real             maxAtomGroupRadius);
 
     //! Sets the cell indices using indices in \p gridSetData and \p gridWork
     void setCellIndices(int                            ddZone,
@@ -408,7 +404,6 @@ private:
  * \param[in] atomRange     The range of atoms to put on this grid
  * \param[in,out] atomDensity  The atom density, will be computed when <= 0
  * \param[in] maxAtomGroupRadius  The maximum radius of atom groups
- * \param[in] haveFep       Whether non-bonded parameters are perturbed
  * \param[in] x             The coordinates of the atoms
  * \param[in] ddZone        The domain decomposition zone
  * \param[in] move          Tells whether atoms have moved to another DD domain
@@ -426,7 +421,6 @@ real generateAndFill2DGrid(Grid*                          grid,
                            gmx::Range<int>                atomRange,
                            real*                          atomDensity,
                            real                           maxAtomGroupRadius,
-                           bool                           haveFep,
                            gmx::ArrayRef<const gmx::RVec> x,
                            int                            ddZone,
                            const int*                     move,

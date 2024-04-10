@@ -101,7 +101,6 @@ GridSet::GridSet(const PbcType             pbcType,
                  const int                 numThreads,
                  gmx::PinningPolicy        pinningPolicy) :
     domainSetup_(pbcType, doTestParticleInsertion, numDDCells, ddZones),
-    grids_(numGrids(domainSetup_), Grid(pairlistType, haveFep_)),
     haveFep_(haveFep),
     numRealAtomsLocal_(0),
     numRealAtomsTotal_(0),
@@ -110,6 +109,13 @@ GridSet::GridSet(const PbcType             pbcType,
     clear_mat(box_);
     changePinningPolicy(&gridSetData_.cells, pinningPolicy);
     changePinningPolicy(&gridSetData_.atomIndices, pinningPolicy);
+
+    // We cannot do this in the initializer list as we would lose the pinning policy
+    grids_.reserve(numGrids(domainSetup_));
+    for (int i = 0; i < numGrids(domainSetup_); i++)
+    {
+        grids_.emplace_back(pairlistType, haveFep_, pinningPolicy);
+    }
 }
 
 void GridSet::setLocalAtomOrder()
@@ -233,7 +239,6 @@ void GridSet::putOnGrid(const matrix                   box,
                                                  atomRange,
                                                  &atomDensity,
                                                  maxAtomGroupRadius,
-                                                 haveFep_,
                                                  x,
                                                  ddZone,
                                                  move,
