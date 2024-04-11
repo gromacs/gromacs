@@ -49,7 +49,6 @@
 #include "gromacs/math/vec.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/topology/mtop_util.h"
-#include "gromacs/topology/symtab.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/smalloc.h"
@@ -76,16 +75,13 @@ public:
     {
         clear_mat(refBox_);
         referenceFilename_ = fileManager_.getTemporaryFilePath(getFileSuffix("ref")).u8string();
-        open_symtab(&topologySymbolTable_);
-        strcpy(atomNameBase, "мệ🚀");
-        refX_ = nullptr;
-        refV_ = nullptr;
-        refF_ = nullptr;
+        refX_              = nullptr;
+        refV_              = nullptr;
+        refF_              = nullptr;
     }
 
     ~H5mdIoTest() override
     {
-        done_symtab(&topologySymbolTable_);
         sfree(refX_);
         sfree(refV_);
         sfree(refF_);
@@ -176,20 +172,18 @@ public:
         gmx::setupMolecularSystem(&referenceH5mdIo_, refTopology_, index, indexGroupName);
     }
 
-    /* Generate a bunch of nonsensical atom names for the reference data, using UTF8 characters. */
-    void generateReferenceTopologyAtomNames()
+    /* Generate a bunch of atom properties for the reference data. */
+    void generateReferenceTopologyAtomProperties()
     {
         auto& moltype    = refTopology_.moltype.emplace_back();
         moltype.atoms.nr = refAtomCount_;
         init_t_atoms(&moltype.atoms, refAtomCount_, false);
 
-        /* We are using some UTF8 characters, so there must be some margin in the string length. */
         for (size_t i = 0; i < refAtomCount_; i++)
         {
-            char tmpUtf8CharBuffer[gmx::h5mdio::c_atomStringLen + 1];
-            sprintf(tmpUtf8CharBuffer, "%s%zu", atomNameBase, i % 1000);
-            moltype.atoms.atom[i].resind = 0;
-            moltype.atoms.atomname[i]    = put_symtab(&topologySymbolTable_, tmpUtf8CharBuffer);
+            moltype.atoms.atom[i].resind     = i % 3;
+            moltype.atoms.atom[i].atomnumber = i % 5;
+            moltype.atoms.atom[i].m          = 0.1 * i;
         }
 
         refTopology_.molblock.resize(1);
@@ -204,20 +198,6 @@ public:
     {
         return referenceH5mdIo_.readStringProperty("/particles/system", "atomname");
     }
-
-    void compareAtomNamesToReference(const std::vector<std::string>& atomNames)
-    {
-        EXPECT_EQ(refAtomCount_, atomNames.size());
-        for (size_t i = 0; i < refAtomCount_; i++)
-        {
-            char tmpUtf8CharBuffer[gmx::h5mdio::c_atomStringLen + 1];
-            sprintf(tmpUtf8CharBuffer, "%s%zu", atomNameBase, i % 1000);
-            // printf("name %zu: %s %s\n", i, atomNames[i].c_str(), tmpUtf8CharBuffer);
-            EXPECT_STREQ(tmpUtf8CharBuffer, atomNames[i].c_str());
-        }
-    }
-
-    void generateReferenceTopology() {}
 
     void writeReferenceTrajectoryFrame(int step, real time, real lambda)
     {
@@ -324,11 +304,12 @@ public:
 
     void setupWaterAndLigandGroups()
     {
-        refWaterAtomNames_       = { "OW", "HW1", "HW2", "OW", "HW1", "HW2", "OW", "HW1", "HW2" };
-        refWaterPartialCharges_  = { -0.83,  -0.415, -0.415, -0.83, -0.415,
+        refWaterAtomNames_      = { "OW", "HW1", "HW2", "OW", "HW1", "HW2", "OW", "HW1", "HW2" };
+        refWaterPartialCharges_ = { -0.83,  -0.415, -0.415, -0.83, -0.415,
                                     -0.415, -0.83,  -0.415, -0.415 };
-        refLigandAtomNames_      = { "C1", "HC11", "HC12", "HC13", "C2", "HC21", "HC22", "HC23" };
-        refLigandPartialCharges_ = { -0.27, 0.09, 0.09, 0.09, -0.27, 0.09, 0.09, 0.09 };
+        refWaterAtomicNumbers_  = { 8, 1, 1, 8, 1, 1, 8, 1, 1 };
+        refLigandAtomNames_ = { "C1", "HC11", "HC12", "HC13", "C2", "HC21", "HC22", "HC23", "мệ🚀" };
+        refLigandPartialCharges_ = { -0.27, 0.09, 0.09, 0.09, -0.27, 0.09, 0.09, 0.09, 99 };
 
         GMX_ASSERT(refWaterAtomNames_.size() == refWaterPartialCharges_.size()
                            && refLigandAtomNames_.size() == refLigandPartialCharges_.size(),
@@ -337,11 +318,13 @@ public:
 
     void writeWaterAndLigandGroups()
     {
+        /* Atom name is not stored in particle data blocks, but used here to test that string properties work. */
         /* Test variable-length string writing. */
         referenceH5mdIo_.setStringProperty("/particles/water", "atomname", refWaterAtomNames_, false, 0);
         referenceH5mdIo_.setStringProperty("/particles/ligand", "atomname", refLigandAtomNames_, false);
-        referenceH5mdIo_.setFloatProperty("/particles/water", "charge", refWaterPartialCharges_, false);
-        referenceH5mdIo_.setFloatProperty("/particles/ligand", "charge", refLigandPartialCharges_, false);
+        referenceH5mdIo_.setNumericProperty("/particles/water", "charge", refWaterPartialCharges_, false);
+        referenceH5mdIo_.setNumericProperty("/particles/ligand", "charge", refLigandPartialCharges_, false);
+        referenceH5mdIo_.setNumericProperty("/particles/water", "species", refWaterAtomicNumbers_, false);
     }
 
     void readAndCheckWaterAndLigandGroups()
@@ -351,9 +334,11 @@ public:
         std::vector<std::string> testLigandAtomNames =
                 referenceH5mdIo_.readStringProperty("/particles/ligand", "atomname");
         std::vector<real> testWaterCharges =
-                referenceH5mdIo_.readFloatProperty("/particles/water", "charge");
+                referenceH5mdIo_.readNumericProperty<real>("/particles/water", "charge");
         std::vector<real> testLigandCharges =
-                referenceH5mdIo_.readFloatProperty("/particles/ligand", "charge");
+                referenceH5mdIo_.readNumericProperty<real>("/particles/ligand", "charge");
+        std::vector<int> testWaterElementNumbers =
+                referenceH5mdIo_.readNumericProperty<int>("/particles/water", "species");
 
         size_t refNumWaterNameElements  = refWaterAtomNames_.size();
         size_t refNumLigandNameElements = refLigandAtomNames_.size();
@@ -368,6 +353,7 @@ public:
             EXPECT_STREQ(refWaterAtomNames_[i].c_str(), testWaterAtomNames[i].c_str());
             EXPECT_REAL_EQ_TOL(
                     refWaterPartialCharges_[i], testWaterCharges[i], gmx::test::defaultRealTolerance());
+            EXPECT_EQ(refWaterAtomicNumbers_[i], testWaterElementNumbers[i]);
         }
         for (size_t i = 0; i < refNumLigandNameElements; i++)
         {
@@ -392,12 +378,11 @@ private:
     rvec*                      refF_;
     matrix                     refBox_;
     gmx_mtop_t                 refTopology_;
-    t_symtab                   topologySymbolTable_;
     size_t                     refAtomCount_;
     real                       refCompressionPrecision_;
-    char                       atomNameBase[gmx::h5mdio::c_atomStringLen - 5];
     std::vector<std::string>   refWaterAtomNames_;
     std::vector<real>          refWaterPartialCharges_;
+    std::vector<int>           refWaterAtomicNumbers_;
     std::vector<std::string>   refLigandAtomNames_;
     std::vector<real>          refLigandPartialCharges_;
 };
@@ -445,7 +430,7 @@ TEST_P(H5mdIoTest, HighLevelWriteRead)
     int numFrames = std::get<1>(params);
     setRefCompressionPrecision(std::get<2>(params));
 
-    generateReferenceTopologyAtomNames();
+    generateReferenceTopologyAtomProperties();
 
     EXPECT_FALSE(isReferenceFileOpen());
     openReferenceFile('w');
@@ -474,8 +459,8 @@ TEST_P(H5mdIoTest, HighLevelWriteRead)
         /* The rest of the tests will fail. */
         return;
     }
-    std::vector<std::string> atomNames = readAtomNamesFromReferenceFile();
-    compareAtomNamesToReference(atomNames);
+
+    /* TODO: We should test the atom properties in the topology */
 
     EXPECT_EQ(getRefAtomCount(), readReferenceNumAtoms("position"));
     EXPECT_EQ(getRefAtomCount(), readReferenceNumAtoms("velocity"));
@@ -504,3 +489,17 @@ INSTANTIATE_TEST_SUITE_P(H5mdTestWriteReadCombinations,
 
 
 } // namespace
+
+extern template void gmx::h5mdio::GmxH5mdIo::setNumericProperty<real>(const std::string&,
+                                                                      const std::string&,
+                                                                      const std::vector<real>&,
+                                                                      bool);
+extern template void gmx::h5mdio::GmxH5mdIo::setNumericProperty<int>(const std::string&,
+                                                                     const std::string&,
+                                                                     const std::vector<int>&,
+                                                                     bool);
+
+extern template std::vector<real> gmx::h5mdio::GmxH5mdIo::readNumericProperty<real>(const std::string&,
+                                                                                    const std::string&);
+extern template std::vector<int> gmx::h5mdio::GmxH5mdIo::readNumericProperty<int>(const std::string&,
+                                                                                  const std::string&);

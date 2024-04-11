@@ -178,18 +178,19 @@ public:
                            bool                            replaceExisting = false,
                            size_t                          maxStringLength = c_atomStringLen);
 
-    /*! \brief Set a float property.
+    /*! \brief Set a numeric property.
      *
      * \param[in] containerName The name of the HDF5 group that contains the property, e.g., "/particles/system".
      * \param[in] propertyName The name of the property to set, e.g., "atomname".
-     * \param[in] propertyValues A list of float values.
+     * \param[in] propertyValues A list of numeric values.
      * \param[in] replaceExisting Whether to replace the property if it already exists.
      * \throws FileIOError If there was an error creating the data block or writing the data.
      */
-    void setFloatProperty(const std::string&       containerName,
-                          const std::string&       propertyName,
-                          const std::vector<real>& propertyValues,
-                          bool                     replaceExisting = false);
+    template<typename T>
+    void setNumericProperty(const std::string&    containerName,
+                            const std::string&    propertyName,
+                            const std::vector<T>& propertyValues,
+                            bool                  replaceExisting = false);
 
 
     /* \brief Read a string property. The string can be either fixed-length or variable-length.
@@ -201,13 +202,14 @@ public:
     std::vector<std::string> readStringProperty(const std::string& containerName,
                                                 const std::string& propertyName);
 
-    /* \brief Read a float property.
-     * \param[in] containerName The name of the HDF5 group that contains the property, e.g., "/particles/system".
-     * \param[in] propertyName The name of the property to read, e.g., "atomname".
-     * \returns A vector containing the float values. Empty if no data could be read.
+    /* \brief Read a numeric property.
+     * \param[in] containerName The name of the HDF5 group that contains the property, e.g.,
+     * "/particles/system". \param[in] propertyName The name of the property to read, e.g.,
+     * "atomname". \returns A vector containing the numeric values. Empty if no data could be read.
      * \throws FileIOError If there was an error reading the data.
      */
-    std::vector<real> readFloatProperty(const std::string& containerName, const std::string& propertyName);
+    template<typename T>
+    std::vector<T> readNumericProperty(const std::string& containerName, const std::string& propertyName);
 
     /*! \brief Write a frame of data to the file.
      * \param[in] step The simulation step.

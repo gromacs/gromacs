@@ -406,21 +406,34 @@ void GmxH5mdIo::setStringProperty(const std::string&              containerName,
     }
 }
 
-void GmxH5mdIo::setFloatProperty(const std::string&       containerName,
-                                 const std::string&       propertyName,
-                                 const std::vector<real>& propertyValues,
-                                 bool                     replaceExisting)
+template<typename T>
+void GmxH5mdIo::setNumericProperty(const std::string&    containerName,
+                                   const std::string&    propertyName,
+                                   const std::vector<T>& propertyValues,
+                                   bool                  replaceExisting)
 {
     openOrCreateGroup(file_, containerName.c_str());
     std::string dataSetName(containerName + "/" + propertyName);
 
     if (!H5Lexists(file_, dataSetName.c_str(), H5P_DEFAULT) || replaceExisting == true)
     {
-#if GMX_DOUBLE
-        const hid_t floatDatatype = H5Tcopy(H5T_NATIVE_DOUBLE);
-#else
-        const hid_t floatDatatype = H5Tcopy(H5T_NATIVE_FLOAT);
-#endif
+        hid_t dataType;
+        if constexpr (std::is_same<T, float>::value)
+        {
+            dataType = H5Tcopy(H5T_NATIVE_FLOAT);
+        }
+        else if constexpr (std::is_same<T, double>::value)
+        {
+            dataType = H5Tcopy(H5T_NATIVE_DOUBLE);
+        }
+        else if constexpr (std::is_same<T, int>::value)
+        {
+            dataType = H5Tcopy(H5T_NATIVE_INT);
+        }
+        else if constexpr (std::is_same<T, std::int64_t>::value)
+        {
+            dataType = H5Tcopy(H5T_NATIVE_INT64);
+        }
 
         hsize_t atomPropertiesChunkDims[1];
         atomPropertiesChunkDims[0] = propertyValues.size();
@@ -428,7 +441,7 @@ void GmxH5mdIo::setFloatProperty(const std::string&       containerName,
         hid_t dataSet = openOrCreateDataSet<1>(file_,
                                                dataSetName.c_str(),
                                                "",
-                                               floatDatatype,
+                                               dataType,
                                                atomPropertiesChunkDims,
                                                CompressionAlgorithm::LosslessNoShuffle,
                                                0);
@@ -468,11 +481,12 @@ std::vector<std::string> GmxH5mdIo::readStringProperty(const std::string& contai
     return propertyValues;
 }
 
-std::vector<real> GmxH5mdIo::readFloatProperty(const std::string& containerName, const std::string& propertyName)
+template<typename T>
+std::vector<T> GmxH5mdIo::readNumericProperty(const std::string& containerName, const std::string& propertyName)
 {
-    std::string       dataSetName(containerName + "/" + propertyName);
-    hid_t             dataSet = H5Dopen(file_, dataSetName.c_str(), H5P_DEFAULT);
-    std::vector<real> propertyValues;
+    std::string    dataSetName(containerName + "/" + propertyName);
+    hid_t          dataSet = H5Dopen(file_, dataSetName.c_str(), H5P_DEFAULT);
+    std::vector<T> propertyValues;
 
     if (dataSet < 0)
     {
@@ -484,21 +498,42 @@ std::vector<real> GmxH5mdIo::readFloatProperty(const std::string& containerName,
     readData<1, true>(dataSet, 0, &buffer, &totalNumElements, &dummy);
     propertyValues.reserve(totalNumElements);
 
-    size_t dataTypeSize = getDataTypeSize(dataSet);
-    if (dataTypeSize == 8)
-    {
-        for (size_t i = 0; i < totalNumElements; i++)
-        {
-            propertyValues.push_back(static_cast<double*>(buffer)[i]);
-        }
-    }
-    else
+    hid_t dataType       = H5Dget_type(dataSet);
+    hid_t nativeDataType = H5Tget_native_type(dataType, H5T_DIR_DEFAULT);
+
+    if (H5Tequal(nativeDataType, H5T_NATIVE_FLOAT))
     {
         for (size_t i = 0; i < totalNumElements; i++)
         {
             propertyValues.push_back(static_cast<float*>(buffer)[i]);
         }
     }
+    else if (H5Tequal(nativeDataType, H5T_NATIVE_DOUBLE))
+    {
+        for (size_t i = 0; i < totalNumElements; i++)
+        {
+            propertyValues.push_back(static_cast<double*>(buffer)[i]);
+        }
+    }
+    else if (H5Tequal(nativeDataType, H5T_NATIVE_INT))
+    {
+        for (size_t i = 0; i < totalNumElements; i++)
+        {
+            propertyValues.push_back(static_cast<int*>(buffer)[i]);
+        }
+    }
+    else if (H5Tequal(nativeDataType, H5T_NATIVE_INT64))
+    {
+        for (size_t i = 0; i < totalNumElements; i++)
+        {
+            propertyValues.push_back(static_cast<std::int64_t*>(buffer)[i]);
+        }
+    }
+    else
+    {
+        throw gmx::FileIOError("Unhandled numeric data type when reading.");
+    }
+
     free(buffer);
 
     return propertyValues;
@@ -532,7 +567,7 @@ void GmxH5mdIo::writeDataFrame(int64_t              step,
 #if GMX_DOUBLE
         const hid_t datatype = H5Tcopy(H5T_NATIVE_DOUBLE);
 #else
-        const hid_t datatype      = H5Tcopy(H5T_NATIVE_FLOAT);
+        const hid_t datatype = H5Tcopy(H5T_NATIVE_FLOAT);
 #endif
 
         GmxH5mdTimeDataBlock dataBlock(group,
@@ -709,6 +744,29 @@ extern template void setAttribute<int>(hid_t, const char*, int, hid_t);
 extern template void setAttribute<float>(hid_t, const char*, float, hid_t);
 extern template void setAttribute<double>(hid_t, const char*, double, hid_t);
 
+template void GmxH5mdIo::setNumericProperty<float>(const std::string&,
+                                                   const std::string&,
+                                                   const std::vector<float>&,
+                                                   bool);
+template void GmxH5mdIo::setNumericProperty<double>(const std::string&,
+                                                    const std::string&,
+                                                    const std::vector<double>&,
+                                                    bool);
+template void GmxH5mdIo::setNumericProperty<int>(const std::string&,
+                                                 const std::string&,
+                                                 const std::vector<int>&,
+                                                 bool);
+template void GmxH5mdIo::setNumericProperty<std::int64_t>(const std::string&,
+                                                          const std::string&,
+                                                          const std::vector<std::int64_t>&,
+                                                          bool);
+
+template std::vector<float> GmxH5mdIo::readNumericProperty<float>(const std::string&, const std::string&);
+template std::vector<double> GmxH5mdIo::readNumericProperty<double>(const std::string&, const std::string&);
+template std::vector<int> GmxH5mdIo::readNumericProperty<int>(const std::string&, const std::string&);
+template std::vector<std::int64_t> GmxH5mdIo::readNumericProperty<std::int64_t>(const std::string&,
+                                                                                const std::string&);
+
 } // namespace h5mdio
 
 void setH5mdAuthorAndCreator(h5mdio::GmxH5mdIo* file)
@@ -749,26 +807,26 @@ void setupMolecularSystem(h5mdio::GmxH5mdIo*       file,
     }
 
     /* Vectors are used to keep the values in a continuous memory block. */
-    std::vector<real>        atomCharges;
-    std::vector<real>        atomMasses;
-    std::vector<std::string> atomNames;
+    std::vector<real> atomCharges;
+    std::vector<real> atomMasses;
+    std::vector<int>  atomElements;
 
     atomCharges.reserve(atoms.nr);
     atomMasses.reserve(atoms.nr);
-    atomNames.reserve(atoms.nr);
+    atomElements.reserve(atoms.nr);
 
     /* FIXME: The names could be copied directly to a char array instead. */
     /* FIXME: Should use int64_t. Needs changes in atoms. */
-    for (int atomCounter = 0; atomCounter < atoms.nr; atomCounter++)
+    for (int i = 0; i < atoms.nr; i++)
     {
-        atomCharges.push_back(atoms.atom[atomCounter].q);
-        atomMasses.push_back(atoms.atom[atomCounter].m);
-        atomNames.push_back(*(atoms.atomname[atomCounter]));
+        atomCharges.push_back(atoms.atom[i].q);
+        atomMasses.push_back(atoms.atom[i].m);
+        atomElements.push_back(atoms.atom[i].atomnumber);
     }
 
-    file->setStringProperty("/particles/system", "atomname", atomNames, false);
-    file->setFloatProperty("/particles/system", "atomname", atomCharges, false);
-    file->setFloatProperty("/particles/system", "atomname", atomMasses, false);
+    file->setNumericProperty("/particles/system", "charge", atomCharges, false);
+    file->setNumericProperty("/particles/system", "mass", atomMasses, false);
+    file->setNumericProperty("/particles/system", "species", atomElements, false);
 
     /* We only need to create a separate selection group entry if not all atoms are part of it. */
     /* TODO: Write atom name, charge and mass for the selection group as well. */
@@ -805,20 +863,20 @@ void setupMolecularSystem(h5mdio::GmxH5mdIo*       file,
         }
         atomCharges.clear();
         atomMasses.clear();
-        atomNames.clear();
+        atomElements.clear();
         atomCharges.reserve(index.ssize());
         atomMasses.reserve(index.ssize());
-        atomNames.reserve(index.ssize());
+        atomElements.reserve(index.ssize());
         for (int i = 0; i < index.ssize(); i++)
         {
             atomCharges.push_back(atoms.atom[i].q);
             atomMasses.push_back(atoms.atom[i].m);
-            atomNames.push_back(*(atoms.atomname[i]));
+            atomElements.push_back(atoms.atom[i].atomnumber);
         }
 
-        file->setStringProperty("particles/" + systemOutputName, "atomname", atomNames, false);
-        file->setFloatProperty("particles/" + systemOutputName, "charge", atomCharges, false);
-        file->setFloatProperty("particles/" + systemOutputName, "mass", atomMasses, false);
+        file->setNumericProperty("particles/" + systemOutputName, "charge", atomCharges, false);
+        file->setNumericProperty("particles/" + systemOutputName, "mass", atomMasses, false);
+        file->setNumericProperty("particles/" + systemOutputName, "species", atomElements, false);
     }
 
     done_atom(&atoms);

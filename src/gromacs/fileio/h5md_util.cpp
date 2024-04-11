@@ -81,6 +81,7 @@ void setNumericFillValue(const hid_t dataSetCreatePropertyList, const hid_t data
         const double dataFill = -1;
         H5Pset_fill_value(dataSetCreatePropertyList, dataType, &dataFill);
     }
+    /* No fill value for other data types */
 }
 
 /*! \brief Set the filter settings (of an SZ3 filter) in a property list
