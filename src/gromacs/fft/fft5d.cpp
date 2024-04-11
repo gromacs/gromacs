@@ -48,7 +48,6 @@
 
 #include "gromacs/gpu_utils/gpu_utils.h"
 #include "gromacs/gpu_utils/hostallocator.h"
-#include "gromacs/gpu_utils/pmalloc.h"
 #include "gromacs/utility/alignedallocator.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
@@ -428,8 +427,9 @@ fft5d_plan fft5d_plan_3d(int                NG,
         if ((GMX_GPU_CUDA || GMX_GPU_SYCL)
             && realGridAllocationPinningPolicy == gmx::PinningPolicy::PinnedIfSupported)
         {
-            const std::size_t numBytes = lsize * sizeof(t_complex);
-            pmalloc(reinterpret_cast<void**>(&lin), numBytes);
+            gmx::HostAllocationPolicy policy(realGridAllocationPinningPolicy);
+            const std::size_t         numBytes = lsize * sizeof(t_complex);
+            lin = reinterpret_cast<t_complex*>(policy.malloc(numBytes));
         }
         else
         {
@@ -1472,7 +1472,8 @@ void fft5d_destroy(fft5d_plan plan)
              */
             GMX_ASSERT(GMX_GPU_SYCL || isHostMemoryPinned(plan->lin),
                        "Memory should have been pinned");
-            pfree(plan->lin);
+            gmx::HostAllocationPolicy policy(plan->pinningPolicy);
+            policy.free(plan->lin);
         }
         else
         {
