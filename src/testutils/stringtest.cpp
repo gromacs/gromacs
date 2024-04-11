@@ -120,13 +120,14 @@ void StringTestBase::checkText(const std::string& text, const char* id)
     checkText(&checker(), text, id);
 }
 
-void StringTestBase::checkFileContents(const std::string& filename, const char* id)
+void StringTestBase::checkFileContents(const std::filesystem::path& filename, const char* id)
 {
     const std::string text = TextReader::readFileToString(filename);
     checkText(text, id);
 }
 
-void StringTestBase::testFilesEqual(const std::string& refFilename, const std::string& testFilename)
+void StringTestBase::testFilesEqual(const std::filesystem::path& refFilename,
+                                    const std::filesystem::path& testFilename)
 {
     const std::string expectedContents = TextReader::readFileToString(refFilename);
     const std::string contents         = TextReader::readFileToString(testFilename);

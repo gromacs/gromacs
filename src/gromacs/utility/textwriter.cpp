@@ -118,14 +118,14 @@ public:
 };
 
 // static
-void TextWriter::writeFileFromString(const std::string& filename, const std::string& text)
+void TextWriter::writeFileFromString(const std::filesystem::path& filename, const std::string& text)
 {
     TextWriter file(filename);
     file.writeString(text);
     file.close();
 }
 
-TextWriter::TextWriter(const std::string& filename) :
+TextWriter::TextWriter(const std::filesystem::path& filename) :
     impl_(new Impl(TextOutputStreamPointer(new TextOutputFile(filename))))
 {
 }

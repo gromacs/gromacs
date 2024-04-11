@@ -42,6 +42,7 @@
 #ifndef GMX_TESTUTILS_STRINGTEST_H
 #define GMX_TESTUTILS_STRINGTEST_H
 
+#include <filesystem>
 #include <memory>
 #include <string>
 
@@ -109,7 +110,7 @@ public:
      * Provided for convenience.  Reads the contents of \p filename into a
      * single string and calls checkText().
      */
-    void checkFileContents(const std::string& filename, const char* id);
+    void checkFileContents(const std::filesystem::path& filename, const char* id);
 
     /*! \brief
      * Tests that contents of two files are equal.
@@ -117,7 +118,8 @@ public:
      * \param[in] refFilename   File with the expected contents.
      * \param[in] testFilename  File with the contents to be tested.
      */
-    static void testFilesEqual(const std::string& refFilename, const std::string& testFilename);
+    static void testFilesEqual(const std::filesystem::path& refFilename,
+                               const std::filesystem::path& testFilename);
 
 private:
     class Impl;

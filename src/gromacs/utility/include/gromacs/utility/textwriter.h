@@ -44,6 +44,7 @@
 
 #include <cstdio>
 
+#include <filesystem>
 #include <memory>
 #include <string>
 
@@ -79,7 +80,7 @@ public:
      *
      * If \p filename exists, it is overwritten.
      */
-    static void writeFileFromString(const std::string& filename, const std::string& text);
+    static void writeFileFromString(const std::filesystem::path& filename, const std::string& text);
 
     /*! \brief
      * Creates a writer that writes to specified file.
@@ -91,7 +92,7 @@ public:
      * This constructor is provided for convenience for writing directly to
      * a file, without the need to construct multiple objects.
      */
-    explicit TextWriter(const std::string& filename);
+    explicit TextWriter(const std::filesystem::path& filename);
     /*! \brief
      * Creates a writer that writes to specified file.
      *
