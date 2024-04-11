@@ -70,10 +70,11 @@ elseif(GMX_GPU_HIP)
         device_context.cpp
         device_stream_hip.cpp
         gpu_utils_impl.cpp
-        pmalloc.cpp
+        pmalloc_hip.cpp
         )
     _gmx_add_files_to_property(HIP_SOURCES
         device_stream_hip.cpp
+        pmalloc_hip.cpp
         )
 elseif(GMX_GPU_SYCL)
     gmx_add_libgromacs_sources(
