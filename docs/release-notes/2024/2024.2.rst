@@ -59,6 +59,15 @@ critical problem.
 
 :issue:`5056`
 
+Enable specification of custom install rpath during build configuration
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+CMake build and installation steps will now append to the
+``CMAKE_INSTALL_RPATH`` value provided by the user at the configuration
+time (if any) instead of overwriting it.
+
+:issue:`5064`
+
 Miscellaneous
 ^^^^^^^^^^^^^
 
