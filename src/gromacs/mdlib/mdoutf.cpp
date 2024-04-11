@@ -60,6 +60,7 @@
 #include "gromacs/mdtypes/observableshistory.h"
 #include "gromacs/mdtypes/state.h"
 #include "gromacs/mdtypes/swaphistory.h"
+#include "gromacs/mdtypes/colvarshistory.h"
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/baseversion.h"
@@ -353,6 +354,10 @@ static void write_checkpoint(const char*                     fn,
     swaphistory_t* swaphist    = observablesHistory->swapHistory.get();
     SwapType       eSwapCoords = (swaphist ? swaphist->eSwapCoords : SwapType::No);
 
+    /* COLVARS */
+    colvarshistory_t* colvarshist = observablesHistory->colvarsHistory.get();
+    int               ecolvars    = (colvarshist ? colvarshist->n_atoms : 0);
+
     CheckpointHeaderContents headerContents = { CheckPointVersion::UnknownVersion0,
                                                 { 0 },
                                                 { 0 },
@@ -381,6 +386,7 @@ static void write_checkpoint(const char*                     fn,
                                                 0,
                                                 nED,
                                                 eSwapCoords,
+                                                ecolvars,
                                                 false };
     std::strcpy(headerContents.version, gmx_version());
     std::strcpy(headerContents.fprog, gmx::getProgramContext().fullBinaryPath());

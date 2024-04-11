@@ -51,6 +51,8 @@ struct gmx_enfrot;
 struct gmx_enfrotgrp;
 struct pull_params_t;
 
+class colvarproxy_gromacs;
+
 namespace gmx
 {
 class Awh;
@@ -577,6 +579,10 @@ struct t_inputrec // NOLINT (clang-analyzer-optin.performance.Padding)
 
     //! KVT for storing simulation parameters that are not part of the mdp file.
     std::unique_ptr<gmx::KeyValueTreeObject> internalParameters;
+
+    /* COLVARS */
+    bool                bColvars = false;       /* Do we do colvars calculations ? */
+    colvarproxy_gromacs     *colvars_proxy = nullptr; /* The object for the colvars calculations */
 };
 
 int ir_optimal_nstcalcenergy(const t_inputrec* ir);

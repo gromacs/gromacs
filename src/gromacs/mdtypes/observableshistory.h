@@ -58,6 +58,7 @@ class energyhistory_t;
 class PullHistory;
 struct edsamhistory_t;
 struct swaphistory_t;
+struct colvarshistory_t;
 
 /*! \libinternal \brief Observables history, for writing/reading to/from checkpoint file
  */
@@ -74,6 +75,9 @@ struct ObservablesHistory
 
     //! Ion/water position swapping history
     std::unique_ptr<swaphistory_t> swapHistory;
+
+    //! Colvars
+    std::unique_ptr<colvarshistory_t> colvarsHistory;
 
     ObservablesHistory();
 

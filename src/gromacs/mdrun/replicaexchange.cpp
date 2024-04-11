@@ -617,6 +617,7 @@ static void exchange_state(const gmx_multisim_t* ms, int b, t_state* state)
     exchange_doubles(ms, b, &state->baros_integral, 1);
     exchange_rvecs(ms, b, state->x.rvec_array(), state->natoms);
     exchange_rvecs(ms, b, state->v.rvec_array(), state->natoms);
+    exchange_rvecs(ms, b, state->xa_old_whole_colvars, state->n_colvars_atoms);
 }
 
 static void copy_state_serial(const t_state* src, t_state* dest)

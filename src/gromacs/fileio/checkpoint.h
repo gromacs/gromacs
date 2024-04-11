@@ -220,6 +220,8 @@ enum class CheckPointVersion : int
     MDModules,
     //! Added checkpointing for modular simulator.
     ModularSimulator,
+    //! Added Colvars
+    Colvars,
     //! The total number of checkpoint versions.
     Count,
     //! Current version
@@ -302,6 +304,8 @@ struct CheckpointHeaderContents
     int nED;
     //! Enum for coordinate swapping.
     SwapType eSwapCoords;
+    //! Colvars
+    int ecolvars;
     //! Whether the checkpoint was written by modular simulator.
     bool isModularSimulatorCheckpoint = false;
 };

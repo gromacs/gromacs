@@ -126,6 +126,7 @@
 #include "gromacs/mdtypes/mdrunoptions.h"
 #include "gromacs/mdtypes/multipletimestepping.h"
 #include "gromacs/mdtypes/observableshistory.h"
+#include "gromacs/mdtypes/colvarshistory.h"
 #include "gromacs/mdtypes/observablesreducer.h"
 #include "gromacs/mdtypes/simulation_workload.h"
 #include "gromacs/mdtypes/state.h"
@@ -169,6 +170,8 @@
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/stringutil.h"
 #include "gromacs/utility/mpiinfo.h"
+
+#include "gromacs/applied_forces/colvars/colvarproxy_gromacs.h"
 
 #include "isimulator.h"
 #include "membedholder.h"
@@ -2055,6 +2058,52 @@ int Mdrunner::mdrunner()
                                          mdrunOptions.imdOptions,
                                          startingBehavior);
 
+        /* COLVARS */
+        if (opt2bSet("-colvars",filenames.size(), filenames.data()))
+        {
+
+            gmx::ArrayRef<const std::string> filenames_colvars;
+            std::string filename_restart;
+            std::string prefix;
+
+            inputrec->bColvars = TRUE;
+
+            /* Retrieve filenames */
+            filenames_colvars = opt2fns("-colvars", filenames.size(), filenames.data());
+            if (opt2bSet("-colvars_restart",filenames.size(), filenames.data()))
+            {
+                filename_restart = opt2fn("-colvars_restart",filenames.size(), filenames.data());
+            }
+
+            /* Determine the prefix for the colvars output files, based on the logfile name. */
+            std::string logfile = ftp2fn(efLOG, filenames.size(), filenames.data());
+            /* 4 = ".log".length() */
+            if(logfile.length() > 4)
+            {
+                prefix = logfile.substr(0,logfile.length()-4);
+            }
+
+            inputrec->colvars_proxy =  new colvarproxy_gromacs();
+            inputrec->colvars_proxy->init(inputrec.get(),inputrec->init_step,mtop, &observablesHistory, prefix, filenames_colvars,filename_restart, cr, MASTER(cr) ? globalState->x.rvec_array() : nullptr,
+                                          MASTER(cr) ? &globalState->xa_old_whole_colvars : nullptr, MASTER(cr) ? &globalState->n_colvars_atoms : nullptr);
+            fr->forceProviders->addForceProvider(inputrec->colvars_proxy);
+        }
+        else
+        {
+            inputrec->bColvars = FALSE;
+            if (opt2bSet("-colvars_restart",filenames.size(), filenames.data()))
+            {
+                gmx_fatal(FARGS, "-colvars_restart can only be used together with the -colvars option.");
+            }
+            if(observablesHistory.colvarsHistory) {
+                gmx_fatal(FARGS,
+                  "The checkpoint is from a run with colvars, "
+                  "but the current run did not specify the -colvars option. "
+                  "Either specify the -colvars option to mdrun, or do not use this checkpoint file.");
+            }
+        }
+
+
         if (haveDDAtomOrdering(*cr))
         {
             GMX_RELEASE_ASSERT(fr, "fr was NULL while cr->duty was DUTY_PP");
@@ -2223,6 +2272,16 @@ int Mdrunner::mdrunner()
         // This can also cause issues in tests that invoke mdrunner() multiple
         // times in the same process; ref #3952.
         releaseDevice(deviceInfo);
+    }
+
+    /* COLVARS */
+    if (inputrec->bColvars)
+    {
+        GMX_RELEASE_ASSERT(inputrec->colvars_proxy, "inputrec->colvars_proxy was NULL while colvars module was enabled.");
+
+        inputrec->colvars_proxy->finish(cr);
+        delete inputrec->colvars_proxy;
+        inputrec->colvars_proxy = nullptr;
     }
 
     /* Does what it says */

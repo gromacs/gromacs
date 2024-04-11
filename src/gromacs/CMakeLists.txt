@@ -142,6 +142,11 @@ if (WIN32)
 endif()
 list(APPEND libgromacs_object_library_dependencies thread_mpi)
 
+gmx_manage_colvars()
+gmx_manage_lepton()
+list(APPEND libgromacs_object_library_dependencies colvars)
+list(APPEND libgromacs_object_library_dependencies lepton)
+
 if(GMX_INSTALL_LEGACY_API)
   install(FILES
 	  analysisdata.h
@@ -186,6 +191,8 @@ if (GMX_GPU_CUDA)
 else()
     add_library(libgromacs ${LIBGROMACS_SOURCES})
 endif()
+
+gmx_include_colvars_headers()
 
 if (TARGET Heffte::Heffte)
     target_link_libraries(libgromacs PRIVATE Heffte::Heffte)

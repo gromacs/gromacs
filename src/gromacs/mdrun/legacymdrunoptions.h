@@ -124,7 +124,9 @@ public:
                                           { efTOP, "-mp", "membed", ffOPTRD },
                                           { efNDX, "-mn", "membed", ffOPTRD },
                                           { efXVG, "-if", "imdforces", ffOPTWR },
-                                          { efXVG, "-swap", "swapions", ffOPTWR } } };
+                                          { efXVG, "-swap", "swapions", ffOPTWR },
+                                          { efDAT, "-colvars",  "colvars",   ffOPTRDMULT },     /* COLVARS */
+                                          { efDAT, "-colvars_restart", "colvars",  ffOPTRD },   /* COLVARS */}};
 
     //! Print a warning if any force is larger than this (in kJ/mol nm).
     real pforce = -1;

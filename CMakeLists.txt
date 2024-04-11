@@ -588,6 +588,10 @@ include(gmxManageLmfit)
 
 include(gmxManageMuparser)
 
+include(gmxManageColvars)
+
+include(gmxManageLepton)
+
 ##################################################
 # Process SIMD instruction settings
 ##################################################

@@ -40,6 +40,7 @@
 #include "gromacs/mdtypes/energyhistory.h"
 #include "gromacs/mdtypes/pullhistory.h"
 #include "gromacs/mdtypes/swaphistory.h"
+#include "gromacs/mdtypes/colvarshistory.h"
 
 ObservablesHistory::ObservablesHistory()  = default;
 ObservablesHistory::~ObservablesHistory() = default;

@@ -254,7 +254,7 @@ EnergyOutput::EnergyOutput(ener_file*                fp_ene,
     bEner_[F_DISPCORR]   = (inputrec.eDispCorr != DispersionCorrectionType::No);
     bEner_[F_DISRESVIOL] = (gmx_mtop_ftype_count(mtop, F_DISRES) > 0);
     bEner_[F_ORIRESDEV]  = (gmx_mtop_ftype_count(mtop, F_ORIRES) > 0);
-    bEner_[F_COM_PULL]   = ((inputrec.bPull && pull_have_potential(*pull_work)) || inputrec.bRot);
+    bEner_[F_COM_PULL]   = ((inputrec.bPull && pull_have_potential(*pull_work)) || inputrec.bRot || inputrec.bColvars);
 
     // Check MDModules for any energy output
     MDModulesEnergyOutputToDensityFittingRequestChecker mdModulesAddOutputToDensityFittingFieldRequest;

@@ -6,7 +6,8 @@
 gmx [-s [&lt;.tpr&gt;]] [-cpi [&lt;.cpt&gt;]] [-table [&lt;.xvg&gt;]] [-tablep [&lt;.xvg&gt;]]
     [-tableb [&lt;.xvg&gt; [...]]] [-rerun [&lt;.xtc/.trr/...&gt;]] [-ei [&lt;.edi&gt;]]
     [-multidir [&lt;dir&gt; [...]]] [-awh [&lt;.xvg&gt;]] [-membed [&lt;.dat&gt;]]
-    [-mp [&lt;.top&gt;]] [-mn [&lt;.ndx&gt;]] [-o [&lt;.trr/.cpt/...&gt;]] [-x [&lt;.xtc/.tng&gt;]]
+    [-mp [&lt;.top&gt;]] [-mn [&lt;.ndx&gt;]] [-colvars [&lt;.dat&gt; [...]]]
+    [-colvars_restart [&lt;.dat&gt;]] [-o [&lt;.trr/.cpt/...&gt;]] [-x [&lt;.xtc/.tng&gt;]]
     [-cpo [&lt;.cpt&gt;]] [-c [&lt;.gro/.g96/...&gt;]] [-e [&lt;.edr&gt;]] [-g [&lt;.log&gt;]]
     [-dhdl [&lt;.xvg&gt;]] [-field [&lt;.xvg&gt;]] [-tpi [&lt;.xvg&gt;]] [-tpid [&lt;.xvg&gt;]]
     [-eo [&lt;.xvg&gt;]] [-px [&lt;.xvg&gt;]] [-pf [&lt;.xvg&gt;]] [-ro [&lt;.xvg&gt;]]
@@ -163,6 +164,10 @@ Options to specify input files:
            Topology file
  -mn     [&lt;.ndx&gt;]           (membed.ndx)     (Opt.)
            Index file
+ -colvars [&lt;.dat&gt; [...]]    (colvars.dat)    (Opt.)
+           Generic data file
+ -colvars_restart [&lt;.dat&gt;]  (colvars.dat)    (Opt.)
+           Generic data file
 
 Options to specify output files:
 

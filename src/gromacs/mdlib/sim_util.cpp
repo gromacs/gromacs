@@ -122,6 +122,8 @@
 #include "gromacs/utility/stringutil.h"
 #include "gromacs/utility/sysinfo.h"
 
+#include "gromacs/applied_forces/colvars/colvarproxy_gromacs.h"
+
 #include "gpuforcereduction.h"
 
 using gmx::ArrayRef;
@@ -648,6 +650,16 @@ static void computeSpecialForces(FILE*                          fplog,
      */
     if (stepWork.computeForces)
     {
+
+        /* COLVARS */
+        /* Colvars Module needs some updated data - just PBC & step number - before calling its ForceProvider */
+        if (inputrec.bColvars)
+        {
+            t_pbc pbc;
+            set_pbc(&pbc, inputrec.pbcType, box);
+            inputrec.colvars_proxy->update_data(cr, step, pbc, box, didNeighborSearch);
+        }
+
         gmx::ForceProviderInput forceProviderInput(
                 x,
                 mdatoms->homenr,

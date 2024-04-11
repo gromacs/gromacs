@@ -282,6 +282,9 @@ public:
     std::vector<int> cg_gl;           //!< The global cg number of the local cgs
 
     std::vector<double> pull_com_prev_step; //!< The COM of the previous step of each pull group
+
+    int      n_colvars_atoms; //!< number of colvars atoms
+    rvec*    xa_old_whole_colvars; //!< last whole positions of colvars atoms
 };
 
 #ifndef DOXYGEN
