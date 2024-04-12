@@ -810,10 +810,15 @@ void setupMolecularSystem(h5mdio::GmxH5mdIo*       file,
     std::vector<real> atomCharges;
     std::vector<real> atomMasses;
     std::vector<int>  atomElements;
+    /* Since the system block contains all atoms it is not necessary to record the ID,
+     * but we do that in order to allow changing the mapping or "remove" particles,
+     * in order to enable grand canonical simulations. */
+    std::vector<int>  atomIds;
 
     atomCharges.reserve(atoms.nr);
     atomMasses.reserve(atoms.nr);
     atomElements.reserve(atoms.nr);
+    atomIds.reserve(atoms.nr);
 
     /* FIXME: The names could be copied directly to a char array instead. */
     /* FIXME: Should use int64_t. Needs changes in atoms. */
@@ -822,19 +827,20 @@ void setupMolecularSystem(h5mdio::GmxH5mdIo*       file,
         atomCharges.push_back(atoms.atom[i].q);
         atomMasses.push_back(atoms.atom[i].m);
         atomElements.push_back(atoms.atom[i].atomnumber);
+        atomIds.push_back(i);
     }
 
     file->setNumericProperty("/particles/system", "charge", atomCharges, false);
     file->setNumericProperty("/particles/system", "mass", atomMasses, false);
     file->setNumericProperty("/particles/system", "species", atomElements, false);
+    file->setNumericProperty("/particles/system", "id", atomIds, false);
 
     /* We only need to create a separate selection group entry if not all atoms are part of it. */
-    /* TODO: Write atom name, charge and mass for the selection group as well. */
     /* If a selection of atoms is explicitly provided then use that instead of the CompressedPositionOutput */
-    bool all_atoms_selected = true;
-    if (index.ssize() > 0 && index.ssize() != topology.natoms)
+    bool separateSelection = false;
+    if (index.ssize() > 0)
     {
-        all_atoms_selected = false;
+        separateSelection = true;
     }
     else
     {
@@ -843,12 +849,12 @@ void setupMolecularSystem(h5mdio::GmxH5mdIo*       file,
         {
             if (getGroupType(topology.groups, SimulationAtomGroupType::CompressedPositionOutput, i) != 0)
             {
-                all_atoms_selected = false;
+                separateSelection = true;
                 break;
             }
         }
     }
-    if (!all_atoms_selected)
+    if (separateSelection)
     {
         std::string systemOutputName;
         if (index.ssize() > 0 && selectionName != "")
@@ -864,19 +870,23 @@ void setupMolecularSystem(h5mdio::GmxH5mdIo*       file,
         atomCharges.clear();
         atomMasses.clear();
         atomElements.clear();
+        atomIds.clear();
         atomCharges.reserve(index.ssize());
         atomMasses.reserve(index.ssize());
         atomElements.reserve(index.ssize());
+        atomIds.reserve(index.ssize());
         for (int i = 0; i < index.ssize(); i++)
         {
             atomCharges.push_back(atoms.atom[i].q);
             atomMasses.push_back(atoms.atom[i].m);
             atomElements.push_back(atoms.atom[i].atomnumber);
+            atomIds.push_back(i);
         }
 
-        file->setNumericProperty("particles/" + systemOutputName, "charge", atomCharges, false);
-        file->setNumericProperty("particles/" + systemOutputName, "mass", atomMasses, false);
-        file->setNumericProperty("particles/" + systemOutputName, "species", atomElements, false);
+        file->setNumericProperty("/particles/" + systemOutputName, "charge", atomCharges, false);
+        file->setNumericProperty("/particles/" + systemOutputName, "mass", atomMasses, false);
+        file->setNumericProperty("/particles/" + systemOutputName, "species", atomElements, false);
+        file->setNumericProperty("/particles/" + systemOutputName, "id", atomIds, false);
     }
 
     done_atom(&atoms);
