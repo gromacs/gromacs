@@ -304,7 +304,7 @@ archive:nightly-webpage:
     - chmod 644 ~/.ssh/known_hosts
   script:
     - tar czf webpage.tar.gz $BUILD_DIR/docs/html/
-    - rsync --chmod=u+rwX,g+rwX,o+rX -av $BUILD_DIR/docs/html/* $BUILD_DIR/docs/html/.[a-z]* manualbot@manual.gromacs.org:/var/www/manual/nightly/
+    - rsync --chmod=u+rwX,g+rwX,o+rX -av $BUILD_DIR/docs/html/* $BUILD_DIR/docs/html/.[a-z]* manualbot@manual.gromacs.org:nightly/
 
   artifacts:
     when: always
