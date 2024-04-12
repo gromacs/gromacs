@@ -584,7 +584,7 @@ static int getSplineParamFullIndex(int order, int splineIndex, int dimIndex, int
  * \param[in]  dimIndex   Dimension index.
  * \param[in]  transform  Layout transform type
  */
-static void pme_gpu_transform_spline_atom_data(const PmeGpu*      pmeGpu,
+static void pme_gpu_transform_spline_atom_data(PmeGpu*            pmeGpu,
                                                const PmeAtomComm* atc,
                                                PmeSplineDataType  type,
                                                int                dimIndex,
@@ -609,12 +609,12 @@ static void pme_gpu_transform_spline_atom_data(const PmeGpu*      pmeGpu,
     {
         case PmeSplineDataType::Values:
             cpuSplineBuffer = atc->spline[threadIndex].theta.coefficients[dimIndex];
-            h_splineBuffer  = pmeGpu->staging.h_theta;
+            h_splineBuffer  = pmeGpu->staging.h_theta.data();
             break;
 
         case PmeSplineDataType::Derivatives:
             cpuSplineBuffer = atc->spline[threadIndex].dtheta.coefficients[dimIndex];
-            h_splineBuffer  = pmeGpu->staging.h_dtheta;
+            h_splineBuffer  = pmeGpu->staging.h_dtheta.data();
             break;
 
         default: GMX_THROW(InternalError("Unknown spline data type"));
@@ -698,7 +698,7 @@ void pmeSetGridLineIndices(gmx_pme_t* pme, CodePath mode, const GridLineIndicesV
     switch (mode)
     {
         case CodePath::GPU:
-            memcpy(pme_gpu_staging(pme->gpu).h_gridlineIndices,
+            memcpy(pme_gpu_staging(pme->gpu).h_gridlineIndices.data(),
                    gridLineIndices.data(),
                    atomCount * sizeof(gridLineIndices[0]));
             break;
@@ -807,7 +807,7 @@ SplineParamsDimVector pmeGetSplineData(const gmx_pme_t* pme, CodePath mode, PmeS
 GridLineIndicesVector pmeGetGridlineIndices(const gmx_pme_t* pme, CodePath mode)
 {
     GMX_RELEASE_ASSERT(pme != nullptr, "PME data is not initialized");
-    const PmeAtomComm* atc       = &(pme->atc[0]);
+    const PmeAtomComm* atc       = pme->atc.data();
     const size_t       atomCount = atc->numAtoms();
 
     GridLineIndicesVector gridLineIndices;
@@ -816,7 +816,7 @@ GridLineIndicesVector pmeGetGridlineIndices(const gmx_pme_t* pme, CodePath mode)
         case CodePath::GPU:
         {
             auto* gridlineIndicesAsIVec =
-                    reinterpret_cast<IVec*>(pme_gpu_staging(pme->gpu).h_gridlineIndices);
+                    reinterpret_cast<IVec*>(pme_gpu_staging(pme->gpu).h_gridlineIndices.data());
             ArrayRef<IVec> gridlineIndicesArrayRef = arrayRefFromArray(gridlineIndicesAsIVec, atomCount);
             gridLineIndices = { gridlineIndicesArrayRef.begin(), gridlineIndicesArrayRef.end() };
         }

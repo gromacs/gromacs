@@ -159,7 +159,7 @@ void pme_gpu_realloc_and_copy_bspline_values(PmeGpu* pmeGpu, int gridIndex = 0);
  *
  * \param[in] pmeGpu             The PME GPU structure.
  */
-void pme_gpu_free_bspline_values(const PmeGpu* pmeGpu);
+void pme_gpu_free_bspline_values(PmeGpu* pmeGpu);
 
 /*! \libinternal \brief
  * Reallocates the GPU buffer for the PME forces.
@@ -234,7 +234,7 @@ void pme_gpu_realloc_spline_data(PmeGpu* pmeGpu);
  *
  * \param[in] pmeGpu            The PME GPU structure.
  */
-void pme_gpu_free_spline_data(const PmeGpu* pmeGpu);
+void pme_gpu_free_spline_data(PmeGpu* pmeGpu);
 
 /*! \libinternal \brief
  * Reallocates the buffers on the GPU and the host for the particle gridline indices.
@@ -248,7 +248,7 @@ void pme_gpu_realloc_grid_indices(PmeGpu* pmeGpu);
  *
  * \param[in] pmeGpu            The PME GPU structure.
  */
-void pme_gpu_free_grid_indices(const PmeGpu* pmeGpu);
+void pme_gpu_free_grid_indices(PmeGpu* pmeGpu);
 
 /*! \libinternal \brief
  * Reallocates the real space grid and the complex reciprocal grid (if needed) on the GPU.
@@ -325,7 +325,7 @@ void pme_gpu_copy_output_spread_grid(const PmeGpu* pmeGpu, float* h_grid, int gr
  *
  * \param[in] pmeGpu    The PME GPU structure.
  */
-void pme_gpu_copy_output_spread_atom_data(const PmeGpu* pmeGpu);
+void pme_gpu_copy_output_spread_atom_data(PmeGpu* pmeGpu);
 
 /*! \libinternal \brief
  * Copies the gather input spline data and gridline indices from the host to the GPU.
@@ -377,7 +377,7 @@ void pme_gpu_destroy_3dfft(const PmeGpu* pmeGpu);
  * \param[in]  useMdGpuGraph             Whether MD GPU Graph is in use.
  * \param[in]  wcycle                    The wallclock counter.
  */
-GPU_FUNC_QUALIFIER void pme_gpu_spread(const PmeGpu*         GPU_FUNC_ARGUMENT(pmeGpu),
+GPU_FUNC_QUALIFIER void pme_gpu_spread(PmeGpu*               GPU_FUNC_ARGUMENT(pmeGpu),
                                        GpuEventSynchronizer* GPU_FUNC_ARGUMENT(xReadyOnDevice),
                                        gmx::ArrayRef<PmeAndFftGrids> GPU_FUNC_ARGUMENT(h_grids),
                                        bool GPU_FUNC_ARGUMENT(computeSplines),
@@ -408,10 +408,10 @@ void pme_gpu_3dfft(const PmeGpu* pmeGpu, enum gmx_fft_direction direction, int g
  * \param[in]     gridOrdering            Specifies the dimenion ordering of the complex grid. TODO: store this information?
  * \param[in]     computeEnergyAndVirial  Tells if the energy and virial computation should be performed.
  */
-GPU_FUNC_QUALIFIER void pme_gpu_solve(const PmeGpu* GPU_FUNC_ARGUMENT(pmeGpu),
-                                      int           GPU_FUNC_ARGUMENT(gridIndex),
-                                      t_complex*    GPU_FUNC_ARGUMENT(h_grid),
-                                      GridOrdering  GPU_FUNC_ARGUMENT(gridOrdering),
+GPU_FUNC_QUALIFIER void pme_gpu_solve(PmeGpu*      GPU_FUNC_ARGUMENT(pmeGpu),
+                                      int          GPU_FUNC_ARGUMENT(gridIndex),
+                                      t_complex*   GPU_FUNC_ARGUMENT(h_grid),
+                                      GridOrdering GPU_FUNC_ARGUMENT(gridOrdering),
                                       bool GPU_FUNC_ARGUMENT(computeEnergyAndVirial)) GPU_FUNC_TERM;
 
 /*! \libinternal \brief
@@ -471,7 +471,7 @@ inline const PmeGpuSettings& pme_gpu_settings(const PmeGpu* pmeGpu)
  * \param[in] pmeGpu         The PME GPU structure.
  * \returns                  The staging object for PME on GPU
  */
-inline const PmeGpuStaging& pme_gpu_staging(const PmeGpu* pmeGpu)
+inline PmeGpuStaging& pme_gpu_staging(PmeGpu* pmeGpu)
 {
     return pmeGpu->staging;
 }

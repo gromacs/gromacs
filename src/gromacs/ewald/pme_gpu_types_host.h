@@ -180,7 +180,7 @@ struct PmeNvshmemHost
     /*! \brief PpRanks struct reference */
     gmx::ArrayRef<PpRanks> ppRanksRef;
     /*! \brief PpRanksSendFInfo struct containing info about each PP rank offsets */
-    PpRanksSendFInfo* ppRanksFInfo;
+    gmx::HostVector<PpRanksSendFInfo> ppRanksFInfo;
     /*! \brief PpRanksSendFInfo struct allocation size tracker */
     int ppRanksFInfoSize = 0;
     /*! \brief PpRanksSendFInfo struct allocation size tracker */

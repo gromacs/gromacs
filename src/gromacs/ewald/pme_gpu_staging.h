@@ -48,15 +48,13 @@
 #ifndef GMX_EWALD_PME_GPU_STAGING_H
 #define GMX_EWALD_PME_GPU_STAGING_H
 
-#include <vector>
+#include <array>
 
 #include "gromacs/gpu_utils/hostallocator.h"
 #include "gromacs/math/vectypes.h"
 
-#ifndef NUM_STATES
-//! Number of FEP states.
-#    define NUM_STATES 2
-#endif
+//! Number of FEP states
+static constexpr int sc_numFepStates = 2;
 
 /*! \internal \brief
  * The PME GPU intermediate buffers structure, included in the main PME GPU structure by value.
@@ -68,16 +66,16 @@ struct PmeGpuStaging
     gmx::PaddedHostVector<gmx::RVec> h_forces;
 
     /*! \brief Virial and energy intermediate host-side buffer. Size is PME_GPU_VIRIAL_AND_ENERGY_COUNT. */
-    float* h_virialAndEnergy[NUM_STATES];
+    std::array<gmx::HostVector<float>, sc_numFepStates> h_virialAndEnergy;
     /*! \brief B-spline values intermediate host-side buffer. */
-    float* h_splineModuli[NUM_STATES];
+    std::array<gmx::HostVector<float>, sc_numFepStates> h_splineModuli;
 
     /*! \brief Pointer to the host memory with B-spline values. Only used for host-side gather, or unit tests */
-    float* h_theta;
+    gmx::HostVector<float> h_theta;
     /*! \brief Pointer to the host memory with B-spline derivative values. Only used for host-side gather, or unit tests */
-    float* h_dtheta;
+    gmx::HostVector<float> h_dtheta;
     /*! \brief Pointer to the host memory with ivec atom gridline indices. Only used for host-side gather, or unit tests */
-    int* h_gridlineIndices;
+    gmx::HostVector<int> h_gridlineIndices;
 };
 
 #endif
