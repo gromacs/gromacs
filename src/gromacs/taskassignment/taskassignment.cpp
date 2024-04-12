@@ -307,10 +307,19 @@ GpuTaskAssignments GpuTaskAssignmentsBuilder::build(const gmx::ArrayRef<const in
         {
             ArrayRef<const int> compatibleGpusToUse = availableDevices;
 
-            // enforce the single device/rank restriction
-            if (numRanksOnThisNode == 1 && !compatibleGpusToUse.empty())
+            // Enforce the single device per rank restriction by ensuring
+            // that there are only at most as many devices used as ranks.
+            //
+            // This means that with a single rank with NB and PME
+            // offloaded we assign both tasks to the same GPU
+            // regardless of how many GPUs are detected. Similarly,
+            // with N combined PP-PME ranks (ie. with NB and PME
+            // offloaded and PME decomposition active) we assign both
+            // tasks on each rank to the same GPU even when more than
+            // N GPUs are detected.
+            if (numRanksOnThisNode < compatibleGpusToUse.size())
             {
-                compatibleGpusToUse = compatibleGpusToUse.subArray(0, 1);
+                compatibleGpusToUse = compatibleGpusToUse.subArray(0, numRanksOnThisNode);
             }
 
             // When doing automated assignment of GPU tasks to GPU

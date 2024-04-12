@@ -123,8 +123,10 @@ std::vector<int> parseUserTaskAssignmentString(const std::string& gpuIdString);
  *
  * \throws  std::bad_alloc          If out of memory
  *
- * \returns A sorted vector of IDs of compatible vectors, whose
- * length matches that of the number of GPU tasks required.
+ * \returns A sorted vector of IDs of compatible vectors, whose length
+ * matches that of the number of GPU tasks required. If more tasks are
+ * required than compatible GPUs, then some GPU IDs will appear more
+ * than once.
  */
 std::vector<int> makeGpuIds(ArrayRef<const int> compatibleGpus, size_t numGpuTasks);
 
