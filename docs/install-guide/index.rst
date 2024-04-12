@@ -103,7 +103,7 @@ Platform
 
 |Gromacs| can be compiled for many operating systems and
 architectures.  These include any distribution of Linux, macOS or
-Windows, and architectures including x86, AMD64/x86-64, several
+Windows, and architectures including 64-bit x86 (AMD64/x86-64), several
 PowerPC including POWER9, ARM v8, and RISC-V.
 
 Compiler
