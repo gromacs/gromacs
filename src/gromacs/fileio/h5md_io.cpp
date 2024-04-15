@@ -345,6 +345,12 @@ std::string GmxH5mdIo::getCreatorProgramVersion()
     return version;
 }
 
+void GmxH5mdIo::setupGromacsTopologyGroup()
+{
+    hid_t topologyGroup = openOrCreateGroup(file_, "parameters/gromacs_topology");
+    setVersionAttribute(topologyGroup, c_gmxH5mdParametersGroupMajorVersion, c_gmxH5mdParametersGroupMinorVersion);
+}
+
 void GmxH5mdIo::setStringProperty(const std::string&              containerName,
                                   const std::string&              propertyName,
                                   const std::vector<std::string>& propertyValues,
@@ -788,17 +794,12 @@ void setH5mdAuthorAndCreator(h5mdio::GmxH5mdIo* file)
     file->setCreatorProgramVersion(gmxVersion);
 }
 
-void setupMolecularSystem(h5mdio::GmxH5mdIo*       file,
-                          const gmx_mtop_t&        topology,
-                          gmx::ArrayRef<const int> index,
-                          std::string              selectionName)
+void setupMolecularSystemParticleData(h5mdio::GmxH5mdIo*       file,
+                                      const gmx_mtop_t&        topology,
+                                      gmx::ArrayRef<const int> index,
+                                      std::string              selectionName)
 {
 #if GMX_USE_HDF5
-    if (file == nullptr || !file->isFileOpen())
-    {
-        throw gmx::FileIOError("No file open for writing.");
-    }
-
     t_atoms atoms = gmx_mtop_global_atoms(topology);
 
     if (atoms.nr == 0)
@@ -890,6 +891,32 @@ void setupMolecularSystem(h5mdio::GmxH5mdIo*       file,
     }
 
     done_atom(&atoms);
+#else
+    throw gmx::FileIOError(
+            "GROMACS was compiled without HDF5 support, cannot handle this file type");
+#endif
+}
+
+void setupMolecularSystemTopology(h5mdio::GmxH5mdIo* file, const gmx_mtop_t&  topology)
+{
+#if GMX_USE_HDF5
+    if (file == nullptr || !file->isFileOpen())
+    {
+        throw gmx::FileIOError("No file open for writing.");
+    }
+
+    size_t numMolBlocks = topology.molblock.size();
+    size_t numMolBlockIndices = topology.moleculeBlockIndices.size();
+
+    GMX_ASSERT(numMolBlocks == numMolBlockIndices, "The number of molecule blocks and molecule block indices do not match.");
+
+    file->setupGromacsTopologyGroup();
+
+    for (size_t i = 0; i < numMolBlocks; i++)
+    {
+        const gmx_molblock_t&       molBlock = topology.molblock[i];
+        const MoleculeBlockIndices& molBlockIndex = topology.moleculeBlockIndices[i];
+    }
 
 #else
     throw gmx::FileIOError(

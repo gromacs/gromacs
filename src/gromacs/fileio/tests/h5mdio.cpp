@@ -169,7 +169,7 @@ public:
     {
         gmx::ArrayRef<const int> index;
         std::string              indexGroupName = "";
-        gmx::setupMolecularSystem(&referenceH5mdIo_, refTopology_, index, indexGroupName);
+        gmx::setupMolecularSystemParticleData(&referenceH5mdIo_, refTopology_, index, indexGroupName);
     }
 
     /* Generate a bunch of atom properties for the reference data. */

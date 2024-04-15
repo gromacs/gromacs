@@ -58,6 +58,8 @@ typedef unsigned long long hsize_t;
 constexpr size_t           c_atomStringLen    = 17;
 constexpr int              c_h5mdMajorVersion = 1;
 constexpr int              c_h5mdMinorVersion = 1;
+constexpr int              c_gmxH5mdParametersGroupMajorVersion = 0;
+constexpr int              c_gmxH5mdParametersGroupMinorVersion = 9;
 
 
 /*! \brief The container of the H5MD data. The class is designed to read/write data according to de Buyl et al., 2014
@@ -153,11 +155,8 @@ public:
      */
     std::string getCreatorProgramVersion();
 
-    /* FIXME: This should be handled better. There should be ways to use multiple selections. */
-    /*! Set the name of the selection used for writing output.
-     * \param[in] systemOutputName The name to use for the selection.
-     */
-    void setSystemOutputName(std::string systemOutputName);
+    /*! \brief Create a custom group containing the topology used in the simulation. */
+    void setupGromacsTopologyGroup();
 
     /*! \brief Set a string property.
      * N.b., The maximum string length is set to c_atomStringLen to avoid the overhead that comes
@@ -314,20 +313,29 @@ public:
  */
 void setH5mdAuthorAndCreator(h5mdio::GmxH5mdIo* file);
 
-/*! \brief Write molecule system related data to the file.
+/*! \brief Setup molecular system particle related data to the file. Write the data that is present from the beginning.
  *
- * This is currently not updated during the trajectory. The data that is written are atom masses, atom charges and atom names.
+ * This is currently not updated during the trajectory. The data that is written are atom masses, atom charges, atom
+ * species and IDs.
  *
  * \param[in] file     The H5MD file manager to use.
  * \param[in] topology The molecular topology describing the system.
  * \param[in] index    The selected atoms to include. If empty, use all atoms in the topology.
  * \param[in] index_group_name The name of the atom selection specified by index.
- * \throws FileIOError    If there is no file open or if the data could not be written.
+ * \throws FileIOError If there is no file open or if the data could not be written.
  */
-void setupMolecularSystem(h5mdio::GmxH5mdIo*       file,
-                          const gmx_mtop_t&        topology,
-                          gmx::ArrayRef<const int> index            = {},
-                          const std::string        index_group_name = "");
+void setupMolecularSystemParticleData(h5mdio::GmxH5mdIo*       file,
+                                      const gmx_mtop_t&        topology,
+                                      gmx::ArrayRef<const int> index            = {},
+                                      const std::string        index_group_name = "");
+
+/*! \brief Setup molecular system topology data.
+ *
+ * \param[in] file     The H5MD file manager to use.
+ * \param[in] topology The molecular topology describing the system.
+ * \throws FileIOError If there is no file open or if the data could not be written.
+ */
+void setupMolecularSystemTopology(h5mdio::GmxH5mdIo* file, const gmx_mtop_t&  topology);
 
 /*! \brief Write a trajectory frame to the file. Only writes the data that is passed as input
  *
