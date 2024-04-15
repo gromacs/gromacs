@@ -178,13 +178,21 @@ public:
      * Does not throw.
      */
     PinningPolicy pinningPolicy() const { return pinningPolicy_; }
-    //! Don't propagate for copy
+    /*! \brief Do not propagate the allocator for copy assignment
+     *
+     * We choose that the allocator is a property of the container,
+     * and should be changed explicitly as required with e.g. \c
+     * changePinningPolicy if the usage dictates that the copy adopts
+     * the policy of the original container or a specific policy.
+     */
     using propagate_on_container_copy_assignment = std::false_type;
-    //! Propagate for move
+    //! Propagate the allocator for move assignment
     using propagate_on_container_move_assignment = std::true_type;
-    //! Propagate for move
+    //! Propagate the allocator during swap
     using propagate_on_container_swap = std::true_type;
-    //! Use default allocator for copy (same as construct+copy)
+    /*! \brief Do not propagate the allocator for copy construction
+     *
+     * Chosen to be consistent with copy assignment. */
     // NOLINTNEXTLINE readability-convert-member-functions-to-static
     HostAllocationPolicy select_on_container_copy_construction() const { return {}; }
 
