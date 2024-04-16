@@ -135,7 +135,7 @@ void setupSystemParticleProperties(gmx::h5mdio::GmxH5mdIo*  file,
     /* Since the system block contains all atoms it is not necessary to record the ID,
      * but we do that in order to allow changing the mapping or "remove" particles,
      * in order to enable grand canonical simulations. */
-    std::vector<int>  atomIds;
+    std::vector<int> atomIds;
 
     const size_t numSelectedParticles = selectionIndices.size() > 0 ? selectionIndices.size() : atoms.nr;
 
@@ -386,7 +386,8 @@ std::string GmxH5mdIo::getCreatorProgramVersion()
 void GmxH5mdIo::setupGromacsTopologyGroup()
 {
     hid_t topologyGroup = openOrCreateGroup(file_, "parameters/gromacs_topology");
-    setVersionAttribute(topologyGroup, c_gmxH5mdParametersGroupMajorVersion, c_gmxH5mdParametersGroupMinorVersion);
+    setVersionAttribute(
+            topologyGroup, c_gmxH5mdParametersGroupMajorVersion, c_gmxH5mdParametersGroupMinorVersion);
 }
 
 void GmxH5mdIo::setStringProperty(const std::string&              containerName,
@@ -889,7 +890,7 @@ void setupMolecularSystemParticleData(h5mdio::GmxH5mdIo*       file,
 #endif
 }
 
-void setupMolecularSystemTopology(h5mdio::GmxH5mdIo* file, const gmx_mtop_t&  topology)
+void setupMolecularSystemTopology(h5mdio::GmxH5mdIo* file, const gmx_mtop_t& topology)
 {
 #if GMX_USE_HDF5
     if (file == nullptr || !file->isFileOpen())
@@ -897,16 +898,17 @@ void setupMolecularSystemTopology(h5mdio::GmxH5mdIo* file, const gmx_mtop_t&  to
         throw gmx::FileIOError("No file open for writing.");
     }
 
-    size_t numMolBlocks = topology.molblock.size();
+    size_t numMolBlocks       = topology.molblock.size();
     size_t numMolBlockIndices = topology.moleculeBlockIndices.size();
 
-    GMX_ASSERT(numMolBlocks == numMolBlockIndices, "The number of molecule blocks and molecule block indices do not match.");
+    GMX_ASSERT(numMolBlocks == numMolBlockIndices,
+               "The number of molecule blocks and molecule block indices do not match.");
 
     file->setupGromacsTopologyGroup();
 
     for (size_t i = 0; i < numMolBlocks; i++)
     {
-        const gmx_molblock_t&       molBlock = topology.molblock[i];
+        const gmx_molblock_t&       molBlock      = topology.molblock[i];
         const MoleculeBlockIndices& molBlockIndex = topology.moleculeBlockIndices[i];
     }
 

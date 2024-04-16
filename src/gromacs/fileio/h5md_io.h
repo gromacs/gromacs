@@ -55,9 +55,9 @@ namespace h5mdio
 
 typedef int64_t            hid_t;
 typedef unsigned long long hsize_t;
-constexpr size_t           c_atomStringLen    = 17;
-constexpr int              c_h5mdMajorVersion = 1;
-constexpr int              c_h5mdMinorVersion = 1;
+constexpr size_t           c_atomStringLen                      = 17;
+constexpr int              c_h5mdMajorVersion                   = 1;
+constexpr int              c_h5mdMinorVersion                   = 1;
 constexpr int              c_gmxH5mdParametersGroupMajorVersion = 0;
 constexpr int              c_gmxH5mdParametersGroupMinorVersion = 9;
 
@@ -335,7 +335,7 @@ void setupMolecularSystemParticleData(h5mdio::GmxH5mdIo*       file,
  * \param[in] topology The molecular topology describing the system.
  * \throws FileIOError If there is no file open or if the data could not be written.
  */
-void setupMolecularSystemTopology(h5mdio::GmxH5mdIo* file, const gmx_mtop_t&  topology);
+void setupMolecularSystemTopology(h5mdio::GmxH5mdIo* file, const gmx_mtop_t& topology);
 
 /*! \brief Write a trajectory frame to the file. Only writes the data that is passed as input
  *
