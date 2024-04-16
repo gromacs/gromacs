@@ -626,16 +626,15 @@ public:
             && (options_.coulombType == CoulombKernelType::Ewald
                 || options_.coulombType == CoulombKernelType::EwaldTwin))
         {
-            // Analytical Ewald is not implemented for the plain-C kernel, skip this test
-            return;
+            GTEST_SKIP()
+                    << "Analytical Ewald is not implemented for the plain-C kernel, skip this test";
         }
 
         if (options_.kernelSetup.kernelType == Nbnxm::KernelType::Cpu4x4_PlainC
             && (parameters_.vdwKernelType == vdwktLJCUT_COMBGEOM
                 || parameters_.vdwKernelType == vdwktLJCUT_COMBLB))
         {
-            // There are no combination rule versions of the plain-C kernel
-            return;
+            GTEST_SKIP() << "There are no combination rule versions of the plain-C kernel";
         }
 
         nbv_ = setupNbnxmForBenchInstance(options_, system_);
