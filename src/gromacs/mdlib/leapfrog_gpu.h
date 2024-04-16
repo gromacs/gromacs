@@ -102,7 +102,7 @@ class LeapFrogGpu
 public:
     /*! \brief Constructor.
      *
-     * \param[in] deviceContext       Device context (dummy in CUDA).
+     * \param[in] deviceContext       Device context.
      * \param[in] deviceStream        Device stream to use.
      * \param[in] numTempScaleValues  Number of temperature scale groups.
      */

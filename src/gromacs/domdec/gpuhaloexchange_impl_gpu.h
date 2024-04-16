@@ -262,7 +262,7 @@ private:
     MPI_Comm mpi_comm_mysim_;
     //! GPU context object
     const DeviceContext& deviceContext_;
-    //! CUDA stream for this halo exchange
+    //! Device stream for this halo exchange
     std::unique_ptr<DeviceStream> haloStream_;
     //! full coordinates buffer in GPU memory
     DeviceBuffer<Float3> d_x_ = nullptr;

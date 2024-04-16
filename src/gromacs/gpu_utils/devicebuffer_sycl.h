@@ -421,7 +421,7 @@ void initParamLookupTable(DeviceBuffer<ValueType>* deviceBuffer,
             deviceBuffer, hostBuffer, 0, numValues, temporaryStream, GpuApiCallBehavior::Sync, nullptr);
 }
 
-/*! \brief Release the OpenCL device buffer.
+/*! \brief Release the underlying device allocations.
  *
  * \tparam        ValueType     Raw data type.
  *

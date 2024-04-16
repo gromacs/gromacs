@@ -80,7 +80,7 @@ enum class DeviceStreamPriority : int
  * The command stream (or command queue) is a sequence of operations that are executed
  * in they order they were issued. Several streams may co-exist to represent concurrency.
  * This class declares the interfaces, that are exposed to platform-agnostic code and
- * it should be implemented for each compute architecture (e.g. CUDA and OpenCL).
+ * it should be implemented for each compute architecture.
  *
  * Destruction of the \p DeviceStream calls the destructor of the underlying low-level
  * stream/queue, hence should only be called when the stream is no longer needed. To
@@ -94,9 +94,9 @@ class DeviceStream
 public:
     /*! \brief Construct and init.
      *
-     * \param[in] deviceContext  Device context (only used in OpenCL and SYCL).
-     * \param[in] priority       Stream priority: high or normal (only used in CUDA).
-     * \param[in] useTiming      If the timing should be enabled (only used in OpenCL and SYCL).
+     * \param[in] deviceContext  Device context.
+     * \param[in] priority       Stream priority: high or normal (ignored in OpenCL).
+     * \param[in] useTiming      If the timing should be enabled (ignored in CUDA).
      */
     DeviceStream(const DeviceContext& deviceContext, DeviceStreamPriority priority, bool useTiming);
 

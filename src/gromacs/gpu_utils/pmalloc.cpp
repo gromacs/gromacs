@@ -45,9 +45,8 @@
 
 /*! \brief Allocates nbytes of host memory. Use pfree to free memory allocated with this function.
  *
- *  \todo
- *  This function should allocate page-locked memory to help reduce D2H and H2D
- *  transfer times, similar with pmalloc from pmalloc.cu.
+ * This function is a stub for CPU-only and OpenCL builds.
+ * CUDA, HIP, and SYCL have special implementations in separate files.
  *
  * \param[in,out]    h_ptr   Pointer where to store the address of the newly allocated buffer.
  * \param[in]        nbytes  Size in bytes of the buffer to be allocated.

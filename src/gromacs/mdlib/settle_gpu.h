@@ -75,7 +75,7 @@ public:
      * \param[in] mtop           Topology of the system to gen the masses for O and H atoms and
      *                           target O-H and H-H distances. These values are also checked for
      *                           consistency.
-     * \param[in] deviceContext  Device context (dummy in CUDA).
+     * \param[in] deviceContext  Device context.
      * \param[in] deviceStream   Device stream to use.
      */
     SettleGpu(const gmx_mtop_t& mtop, const DeviceContext& deviceContext, const DeviceStream& deviceStream);

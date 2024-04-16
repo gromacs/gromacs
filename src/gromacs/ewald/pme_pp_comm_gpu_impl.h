@@ -65,7 +65,7 @@ public:
      * \param[in] pmeRank           Rank of PME task
      * \param[in] pmeCpuForceBuffer Buffer for PME force in CPU memory
      * \param[in] deviceContext     GPU context.
-     * \param[in] deviceStream      GPU stream.
+     * \param[in] deviceStream      Device stream.
      * \param[in] useNvshmem        NVSHMEM enable/disable for GPU comm.
      */
     Impl(MPI_Comm                    comm,
@@ -166,9 +166,9 @@ private:
                                          int                   sendSize,
                                          GpuEventSynchronizer* coordinatesReadyOnDeviceEvent);
 
-    //! GPU context handle (not used in CUDA)
+    //! Device context handle
     const DeviceContext& deviceContext_;
-    //! Handle for CUDA stream used for the communication operations in this class
+    //! Handle for the device stream used for the communication operations in this class
     const DeviceStream& pmePpCommStream_;
     //! Remote location of PME coordinate data buffer
     Float3* remotePmeXBuffer_ = nullptr;

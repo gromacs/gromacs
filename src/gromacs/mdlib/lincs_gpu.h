@@ -116,7 +116,7 @@ public:
      *
      * \param[in] numIterations    Number of iteration for the correction of the projection.
      * \param[in] expansionOrder   Order of the matrix inversion algorithm.
-     * \param[in] deviceContext    Device context (dummy in CUDA).
+     * \param[in] deviceContext    Device context.
      * \param[in] deviceStream     Device command stream.
      */
     LincsGpu(int                  numIterations,

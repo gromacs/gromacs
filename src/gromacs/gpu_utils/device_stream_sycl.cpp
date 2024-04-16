@@ -46,8 +46,7 @@
 
 #include "gromacs/gpu_utils/device_context.h"
 #include "gromacs/gpu_utils/device_stream.h"
-#include "gromacs/utility/exceptions.h"
-
+#include "gromacs/hardware/device_information.h"
 
 static sycl::property_list makeQueuePropertyList(bool enableProfiling, DeviceStreamPriority priority)
 {
@@ -103,9 +102,7 @@ static sycl::property_list makeQueuePropertyList(bool enableProfiling, DeviceStr
 
 DeviceStream::DeviceStream(const DeviceContext& deviceContext, DeviceStreamPriority priority, const bool useTiming)
 {
-    const std::vector<sycl::device> devicesInContext = deviceContext.context().get_devices();
-    // The context is constructed to have exactly one device
-    const sycl::device device = devicesInContext[0];
+    const sycl::device& device = deviceContext.deviceInfo().syclDevice;
 
     bool enableProfiling = false;
     if (useTiming)

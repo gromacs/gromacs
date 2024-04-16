@@ -102,7 +102,7 @@ public:
      *        not nullptr. This should be improved.
      *
      *  \param[in] pmeStream       Device PME stream, nullptr is not allowed.
-     *  \param[in] deviceContext   Device context, nullptr allowed for non-OpenCL builds.
+     *  \param[in] deviceContext   Device context.
      *  \param[in] transferKind    H2D/D2H transfer call behavior (synchronous or not).
      *  \param[in] allocationBlockSizeDivisor  Determines the padding size for coordinates buffer.
      *  \param[in] wcycle          Wall cycle counter data.
@@ -403,9 +403,9 @@ private:
     //! An array of events that indicate D2H copy of forces is complete (one event for each atom locality)
     EnumerationArray<AtomLocality, GpuEventSynchronizer> fReadyOnHost_;
 
-    //! GPU context (for OpenCL builds)
+    //! Device context
     const DeviceContext& deviceContext_;
-    //! Default GPU calls behavior
+    //! Default device calls behavior
     GpuApiCallBehavior transferKind_ = GpuApiCallBehavior::Async;
     //! Required minimum divisor of the allocation size of the coordinates buffer
     int allocationBlockSizeDivisor_ = 0;

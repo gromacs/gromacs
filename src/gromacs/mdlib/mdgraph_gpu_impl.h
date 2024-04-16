@@ -170,9 +170,9 @@ private:
     bool disableGraphAcrossAllPpRanks_ = false;
     //! Device stream manager object
     const DeviceStreamManager& deviceStreamManager_;
-    //! CUDA stream for launching graph
+    //! Device stream for launching graph
     std::unique_ptr<DeviceStream> launchStream_;
-    //! Alternate CUDA stream for launching graph
+    //! Alternate Device stream for launching graph
     std::unique_ptr<DeviceStream> launchStreamAlternate_;
     //! Whether PP domain decomposition is in use
     bool havePPDomainDecomposition_;
