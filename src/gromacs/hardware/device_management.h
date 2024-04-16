@@ -231,23 +231,19 @@ gmx::GpuAwareMpiStatus getMinimalSupportedGpuAwareMpiStatus(
  */
 void setActiveDevice(const DeviceInformation& deviceInfo);
 
-/*! \brief Releases the GPU device used by the active context at the time of calling (CUDA only).
+/*! \brief Releases the GPU device used by the active context at the time of calling.
  *
- * If \c deviceInfo is nullptr, then it is understood that no device
- * was selected so no context is active to be freed. Otherwise, the
- * context is explicitly destroyed and therefore all data uploaded to
+ * With CUDA, the device is reset and therefore all data uploaded to
  * the GPU is lost. This must only be called when none of this data is
  * required anymore, because subsequent attempts to free memory
  * associated with the context will otherwise fail.
- *
  * Calls \c gmx_warning upon errors.
  *
- * \todo This should go through all the devices, not only the one currently active.
- *       Reseting only one device will not work, e.g. in CUDA tests.
+ * With other GPU SDKs, does nothing.
  *
- * \param[in] deviceInfo Information on the device to be released.
+ * Should only be called after \c setActiveDevice was called.
  */
-void releaseDevice(DeviceInformation* deviceInfo);
+void releaseDevice();
 
 /*! \brief Formats and returns a device information string for a given GPU.
  *

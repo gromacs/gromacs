@@ -118,10 +118,5 @@ const DeviceStream& TestDevice::deviceStream() const
     return impl_->deviceStream();
 }
 
-void TestDevice::activate() const
-{
-    deviceContext().activate();
-}
-
 } // namespace test
 } // namespace gmx

@@ -81,8 +81,9 @@ enum class DeviceStreamType : int
 /*! \libinternal
  * \brief Device stream and context manager.
  *
- * Manages the lifetime of the GPU streams and their association
- * with context and device information that is needed to use them.
+ * Given information on which device to use and what to compute with
+ * it, objects of this class manage the lifetime of the GPU context
+ * and streams.
  *
  * If supported by the GPU API, the available runtime and the
  * indicated device, some streams will be configured at high

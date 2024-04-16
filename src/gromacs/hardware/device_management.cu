@@ -348,27 +348,23 @@ void setActiveDevice(const DeviceInformation& deviceInfo)
     }
 }
 
-void releaseDevice(DeviceInformation* deviceInfo)
+void releaseDevice()
 {
-    // device was used is that deviceInfo will be non-null.
-    if (deviceInfo != nullptr)
+    cudaError_t stat;
+
+    int gpuid;
+    stat = cudaGetDevice(&gpuid);
+    if (stat == cudaSuccess)
     {
-        cudaError_t stat;
-
-        int gpuid;
-        stat = cudaGetDevice(&gpuid);
-        if (stat == cudaSuccess)
+        if (debug)
         {
-            if (debug)
-            {
-                fprintf(stderr, "Cleaning up context on GPU ID #%d.\n", gpuid);
-            }
+            fprintf(stderr, "Cleaning up context on GPU ID #%d.\n", gpuid);
+        }
 
-            stat = cudaDeviceReset();
-            if (stat != cudaSuccess)
-            {
-                gmx_warning("Failed to free GPU #%d. %s", gpuid, gmx::getDeviceErrorString(stat).c_str());
-            }
+        stat = cudaDeviceReset();
+        if (stat != cudaSuccess)
+        {
+            gmx_warning("Failed to free GPU #%d. %s", gpuid, gmx::getDeviceErrorString(stat).c_str());
         }
     }
 }

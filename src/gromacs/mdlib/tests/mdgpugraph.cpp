@@ -92,7 +92,6 @@ TEST(MdGraphTest, MdGpuGraphExecutesActivities)
     }
     for (const auto& testDevice : testDeviceList)
     {
-        testDevice->activate();
         const auto& deviceContext = testDevice->deviceContext();
 
         // Initialize required structures
@@ -216,7 +215,6 @@ TEST(MdGraphTest, MdGpuGraphCaptureAndUsageConsistency)
     }
     for (const auto& testDevice : testDeviceList)
     {
-        testDevice->activate();
         const auto& deviceContext = testDevice->deviceContext();
 
         // Initialize required structures

@@ -64,9 +64,9 @@ void SettleDeviceTestRunner::applySettle(SettleTestData* testData,
                                          const bool      calcVirial,
                                          const std::string& /* testDescription */)
 {
-    testDevice_.activate();
     const DeviceContext& deviceContext = testDevice_.deviceContext();
     const DeviceStream&  deviceStream  = testDevice_.deviceStream();
+    deviceContext.activate();
 
     auto settleGpu = std::make_unique<SettleGpu>(testData->mtop_, deviceContext, deviceStream);
 

@@ -482,7 +482,6 @@ DeviceInformation* GpuTaskAssignments::initDevice(int* deviceId) const
     {
         *deviceId  = gpuTaskMapping->deviceId_;
         deviceInfo = hardwareInfo_.deviceInfoList[*deviceId].get();
-        setActiveDevice(*deviceInfo);
     }
     return deviceInfo;
 }

@@ -453,9 +453,9 @@ TEST_P(ParameterizedFFTTest3D, RunsOnDevices)
     ClfftInitializer clfftInitializer;
     for (const auto& testDevice : getTestHardwareEnvironment()->getTestDeviceList())
     {
-        testDevice->activate();
         const DeviceContext& deviceContext = testDevice->deviceContext();
         const DeviceStream&  deviceStream  = testDevice->deviceStream();
+        deviceContext.activate();
 
         ivec realGridSize = { std::get<0>(GetParam()), std::get<1>(GetParam()), std::get<2>(GetParam()) };
         // Note the real-grid padding differs from that on the CPU

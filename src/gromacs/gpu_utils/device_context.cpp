@@ -45,6 +45,10 @@
 #include "device_context.h"
 
 //! Constructor.
-DeviceContext::DeviceContext(const DeviceInformation& deviceInfo) : deviceInfo_(deviceInfo) {}
+DeviceContext::DeviceContext(const DeviceInformation& deviceInfo) : deviceInfo_(deviceInfo)
+{
+    activate();
+}
+
 //! Destructor
 DeviceContext::~DeviceContext() = default;

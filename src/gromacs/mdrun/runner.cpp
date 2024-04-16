@@ -2417,7 +2417,7 @@ int Mdrunner::mdrunner()
             // resetting the device before MPI_Finalize() results in crashes inside UCX
             // This can also cause issues in tests that invoke mdrunner() multiple
             // times in the same process; ref #3952.
-            releaseDevice(deviceInfo);
+            releaseDevice();
         }
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR

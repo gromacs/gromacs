@@ -94,6 +94,7 @@ DeviceContext::DeviceContext(const DeviceInformation& deviceInfo) : deviceInfo_(
                 deviceInfo.device_name,
                 clError)));
     }
+    activate();
 }
 
 DeviceContext::~DeviceContext()

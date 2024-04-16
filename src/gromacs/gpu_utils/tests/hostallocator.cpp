@@ -48,6 +48,7 @@
 
 #include <gtest/gtest.h>
 
+#include "gromacs/gpu_utils/device_context.h"
 #include "gromacs/gpu_utils/gpu_utils.h"
 #include "gromacs/hardware/device_management.h"
 #include "gromacs/math/tests/testarrayrefs.h"
@@ -204,7 +205,7 @@ TYPED_TEST(HostAllocatorTestCopyable, TransfersWithoutPinningWork)
 {
     for (const auto& testDevice : getTestHardwareEnvironment()->getTestDeviceList())
     {
-        testDevice->activate();
+        testDevice->deviceContext().activate();
         typename TestFixture::VectorType input;
         resizeAndFillInput(&input, 3, 1);
         typename TestFixture::VectorType output;
@@ -320,7 +321,7 @@ TYPED_TEST(HostAllocatorTestCopyable, TransfersWithPinningWorkWithDevice)
 {
     for (const auto& testDevice : getTestHardwareEnvironment()->getTestDeviceList())
     {
-        testDevice->activate();
+        testDevice->deviceContext().activate();
         typename TestFixture::VectorType input;
         changePinningPolicy(&input, PinningPolicy::PinnedIfSupported);
         resizeAndFillInput(&input, 3, 1);
@@ -350,7 +351,7 @@ TYPED_TEST(HostAllocatorTestCopyable, ManualPinningOperationsWorkWithCuda)
 {
     for (const auto& testDevice : getTestHardwareEnvironment()->getTestDeviceList())
     {
-        testDevice->activate();
+        testDevice->deviceContext().activate();
         typename TestFixture::VectorType input;
         changePinningPolicy(&input, PinningPolicy::PinnedIfSupported);
         EXPECT_TRUE(input.get_allocator().pinningPolicy() == PinningPolicy::PinnedIfSupported);

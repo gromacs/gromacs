@@ -111,7 +111,6 @@ TEST_F(DeviceStreamManagerTest, CorrectStreamsAreReturnedOnNonbondedDevice)
     const auto& testDeviceList = getTestHardwareEnvironment()->getTestDeviceList();
     for (const auto& testDevice : testDeviceList)
     {
-        testDevice->activate();
         const DeviceInformation& deviceInfo = testDevice->deviceInfo();
 
         {

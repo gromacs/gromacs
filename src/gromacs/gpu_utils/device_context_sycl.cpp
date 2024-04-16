@@ -52,6 +52,7 @@
 DeviceContext::DeviceContext(const DeviceInformation& deviceInfo) :
     deviceInfo_(deviceInfo), context_(sycl::context(deviceInfo.syclDevice))
 {
+    activate();
     pmallocSetDefaultDeviceContext(this);
 }
 

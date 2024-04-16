@@ -207,7 +207,6 @@ TEST(NbnxmSetupTest, CanCreateDeviceStreamManager)
     const auto& testDeviceList = gmx::test::getTestHardwareEnvironment()->getTestDeviceList();
     for (const auto& testDevice : testDeviceList)
     {
-        testDevice->activate();
         const DeviceInformation& deviceInfo     = testDevice->deviceInfo();
         gmx::SimulationWorkload  simulationWork = createSimulationWorkloadGpu();
         EXPECT_NO_THROW(createDeviceStreamManager(deviceInfo, simulationWork));
@@ -219,7 +218,6 @@ TEST(NbnxmSetupTest, CanCreateNbnxmGPU)
     const auto& testDeviceList = gmx::test::getTestHardwareEnvironment()->getTestDeviceList();
     for (const auto& testDevice : testDeviceList)
     {
-        testDevice->activate();
         const DeviceInformation& deviceInfo   = testDevice->deviceInfo();
         size_t                   numParticles = 1;
         NBKernelOptions          nbKernelOptions;

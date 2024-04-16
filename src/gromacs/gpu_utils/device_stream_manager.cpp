@@ -58,7 +58,8 @@ namespace gmx
 {
 
 /*! \libinternal
- * \brief Impl class to manages the lifetime of the GPU streams.
+ * \brief Impl class to manages the lifetime of the GPU context
+ * and streams.
  *
  * If supported by the GPU API, the available runtime and the
  * indicated device, some streams will be configured at high

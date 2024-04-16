@@ -63,9 +63,9 @@ namespace test
 
 void LeapFrogDeviceTestRunner::integrate(LeapFrogTestData* testData, int numSteps)
 {
-    testDevice_.activate();
     const DeviceContext& deviceContext = testDevice_.deviceContext();
     const DeviceStream&  deviceStream  = testDevice_.deviceStream();
+    deviceContext.activate();
 
     int numAtoms = testData->numAtoms_;
 

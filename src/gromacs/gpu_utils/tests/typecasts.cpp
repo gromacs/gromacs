@@ -43,6 +43,7 @@
 
 #if GMX_GPU_CUDA
 
+#    include "gromacs/gpu_utils/device_context.h"
 #    include "gromacs/gpu_utils/gputraits.h"
 #    include "gromacs/hardware/device_management.h"
 #    include "gromacs/utility/arrayref.h"
@@ -74,7 +75,7 @@ TEST(GpuDataTypesCompatibilityTest, RVecAndFloat3Device)
 {
     for (const auto& testDevice : getTestHardwareEnvironment()->getTestDeviceList())
     {
-        testDevice->activate();
+        testDevice->deviceContext().activate();
         std::vector<RVec> rVecOutput(rVecInput.size());
         convertRVecToFloat3OnDevice(rVecOutput, rVecInput, testDevice.get());
         EXPECT_THAT(rVecInput, testing::Pointwise(RVecEq(ulpTolerance(0)), rVecOutput));

@@ -246,7 +246,7 @@ public:
      *
      * \param[out] deviceId Index of the assigned device.
      *
-     * \returns Device information on the selected devicce. Returns nullptr if no GPU task
+     * \returns Device information on the selected device. Returns nullptr if no GPU task
      *          is assigned to this rank.
      */
     DeviceInformation* initDevice(int* deviceId) const;

@@ -104,8 +104,8 @@ TYPED_TEST(DeviceBufferTest, CanAllocateAndFreeDeviceBuffer)
 {
     for (const auto& testDevice : getTestHardwareEnvironment()->getTestDeviceList())
     {
-        testDevice->activate();
         const DeviceContext& deviceContext = testDevice->deviceContext();
+        deviceContext.activate();
 
         DeviceBuffer<TypeParam> buffer;
         int                     numValues = 123;
@@ -118,8 +118,8 @@ TYPED_TEST(DeviceBufferTest, CanReallocateAndFreeDeviceBuffer)
 {
     for (const auto& testDevice : getTestHardwareEnvironment()->getTestDeviceList())
     {
-        testDevice->activate();
         const DeviceContext& deviceContext = testDevice->deviceContext();
+        deviceContext.activate();
 
         DeviceBuffer<TypeParam> buffer;
         int                     currentNumValues    = 456;
@@ -149,9 +149,9 @@ TYPED_TEST(DeviceBufferTest, CanCopyToAndFromDevice)
                                               : PinningPolicy::CannotBePinned;
         for (const auto& testDevice : getTestHardwareEnvironment()->getTestDeviceList())
         {
-            testDevice->activate();
             const DeviceContext& deviceContext = testDevice->deviceContext();
             const DeviceStream&  deviceStream  = testDevice->deviceStream();
+            deviceContext.activate();
 
             DeviceBuffer<TypeParam> buffer;
             int                     numValues = 123;
@@ -184,9 +184,9 @@ TYPED_TEST(DeviceBufferTest, CanCopyToAndFromDeviceWithOffset)
                                               : PinningPolicy::CannotBePinned;
         for (const auto& testDevice : getTestHardwareEnvironment()->getTestDeviceList())
         {
-            testDevice->activate();
             const DeviceContext& deviceContext = testDevice->deviceContext();
             const DeviceStream&  deviceStream  = testDevice->deviceStream();
+            deviceContext.activate();
 
             DeviceBuffer<TypeParam> buffer;
             int                     numValues = 123;
@@ -248,15 +248,16 @@ TYPED_TEST(DeviceBufferTest, CanCopyBetweenDeviceBuffersOnSameDevice)
                                               : PinningPolicy::CannotBePinned;
         for (const auto& testDevice : getTestHardwareEnvironment()->getTestDeviceList())
         {
-            testDevice->activate();
+            const DeviceContext& deviceContext = testDevice->deviceContext();
+            const DeviceStream&  deviceStream  = testDevice->deviceStream();
+            deviceContext.activate();
+
             int                   numValues = 321;
             HostVector<TypeParam> valuesIn(numValues, { pinningPolicy });
             HostVector<TypeParam> valuesOut(numValues, { pinningPolicy });
 
             std::iota(valuesIn.begin(), valuesIn.end(), c_initialValue<TypeParam>);
 
-            const DeviceContext&    deviceContext = testDevice->deviceContext();
-            const DeviceStream&     deviceStream  = testDevice->deviceStream();
             DeviceBuffer<TypeParam> bufferIn;
             allocateDeviceBuffer(&bufferIn, numValues, deviceContext);
 

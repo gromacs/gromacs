@@ -129,7 +129,7 @@ void gpuHalo(gmx_domdec_t* dd, matrix box, HostVector<RVec>* h_x, int numAtomsTo
     int         numDevices = getTestHardwareEnvironment()->getTestDeviceList().size();
     const auto& testDevice = getTestHardwareEnvironment()->getTestDeviceList()[rank % numDevices];
     const auto& deviceContext = testDevice->deviceContext();
-    testDevice->activate();
+    deviceContext.activate();
     DeviceStream deviceStream(deviceContext, DeviceStreamPriority::Normal, false);
 
     // Set up GPU buffer and copy input data from host

@@ -67,10 +67,10 @@ TEST(GpuEventSynchronizerTest, BasicFunctionality)
     const auto& testDeviceList = getTestHardwareEnvironment()->getTestDeviceList();
     for (const auto& testDevice : testDeviceList)
     {
-        testDevice->activate();
         const DeviceContext& context = testDevice->deviceContext();
-        DeviceStream         streamA(context, DeviceStreamPriority::Normal, false);
-        DeviceStream         streamB(context, DeviceStreamPriority::Normal, false);
+        context.activate();
+        DeviceStream streamA(context, DeviceStreamPriority::Normal, false);
+        DeviceStream streamB(context, DeviceStreamPriority::Normal, false);
 
         {
             SCOPED_TRACE("Constructor");

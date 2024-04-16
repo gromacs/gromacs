@@ -73,12 +73,10 @@ public:
     int id() const;
     //! Returns the device info pointer
     const DeviceInformation& deviceInfo() const;
-    //! Get the device context
+    //! Get the device context, particularly useful to activate the device
     const DeviceContext& deviceContext() const;
     //! Get the device stream
     const DeviceStream& deviceStream() const;
-    //! Set the device as currently active
-    void activate() const;
     //! Creates the device context and stream for tests on the GPU
     TestDevice(const char* description, const DeviceInformation& deviceInfo);
     //! Destructor
