@@ -62,10 +62,9 @@ HIPSYCL_UNIVERSAL_TARGET
 static inline void atomicAddOptimizedAmd(float gmx_unused* ptr, const float gmx_unused delta)
 {
 #    if defined(__gfx908__) // Special function for AMD MI100
-#        pragma clang diagnostic push
-#        pragma clang diagnostic ignored "-Wdeprecated-declarations"
+    CLANG_DIAGNOSTIC_IGNORE("-Wdeprecated-declarations")
     atomicAddNoRet(ptr, delta);
-#        pragma clang diagnostic pop
+    CLANG_DIAGNOSTIC_RESET
 #    elif defined(__gfx90a__) // Special function for AMD MI200
     unsafeAtomicAdd(ptr, delta); // Not checked on real hardware, see #4465
 #    else

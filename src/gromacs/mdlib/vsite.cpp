@@ -915,11 +915,7 @@ static void construct_vsites_thread(ArrayRef<RVec>                  x,
                            "Can't calculate velocities without access to velocity vector.");
     }
 
-    // Work around clang bug (unfixed as of Feb 2021)
-    // https://bugs.llvm.org/show_bug.cgi?id=35450
-    // clang-format off
-    CLANG_DIAGNOSTIC_IGNORE(-Wunused-lambda-capture)
-    // clang-format on
+    CLANG_DIAGNOSTIC_IGNORE("-Wunused-lambda-capture")
     // getVOrNull returns a velocity rvec if we need it, nullptr otherwise.
     auto getVOrNull = [v](int idx) -> real* {
         if (calculateVelocity == VSiteCalculateVelocity::Yes)

@@ -126,11 +126,10 @@ private:
     ArrayRefWithPadding<RVec> forceMtsCombined_;
     // GCC 9 complains about unused attribute "unused" as it never warns about unused members,
     // while clang requires it to avoid -Wunused
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wattributes"
+    GCC_DIAGNOSTIC_IGNORE("-Wattributes")
     //! Whether we use forceMtsCombined_
     gmx_used_in_debug bool useForceMtsCombined_;
-#pragma GCC diagnostic pop
+    GCC_DIAGNOSTIC_RESET
 };
 
 /*! \libinternal \brief Object that holds the force buffers

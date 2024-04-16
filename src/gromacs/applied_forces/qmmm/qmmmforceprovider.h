@@ -46,6 +46,7 @@
 #include "gromacs/mdtypes/forceoutput.h"
 #include "gromacs/mdtypes/iforceprovider.h"
 #include "gromacs/pbcutil/pbc.h"
+#include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/classhelpers.h"
 #include "gromacs/utility/logger.h"
 
@@ -54,10 +55,7 @@
 namespace gmx
 {
 
-#ifdef __clang__
-#    pragma clang diagnostic push
-#    pragma clang diagnostic ignored "-Wunused-private-field"
-#endif
+CLANG_DIAGNOSTIC_IGNORE("-Wunused-private-field")
 
 //! Type for CP2K force environment handle
 typedef int force_env_t;
@@ -113,9 +111,7 @@ private:
     force_env_t force_env_ = -1;
 };
 
-#ifdef __clang__
-#    pragma clang diagnostic pop
-#endif
+CLANG_DIAGNOSTIC_RESET
 
 } // namespace gmx
 

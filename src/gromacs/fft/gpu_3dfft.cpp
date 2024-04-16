@@ -76,16 +76,14 @@
 #endif
 
 #include "gromacs/utility/arrayref.h"
+#include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/exceptions.h"
 
 namespace gmx
 {
 
 // [[noreturn]] attributes must be added in the common headers, so it's easier to silence the warning here
-#ifdef __clang__
-#    pragma clang diagnostic push
-#    pragma clang diagnostic ignored "-Wmissing-noreturn"
-#endif
+CLANG_DIAGNOSTIC_IGNORE("-Wmissing-noreturn")
 
 Gpu3dFft::Gpu3dFft(FftBackend           backend,
                    bool                 allocateRealGrid,
@@ -385,8 +383,6 @@ void Gpu3dFft::perform3dFft(gmx_fft_direction dir, CommandEvent* timingEvent)
     impl_->perform3dFft(dir, timingEvent);
 }
 
-#ifdef __clang__
-#    pragma clang diagnostic pop
-#endif
+CLANG_DIAGNOSTIC_RESET
 
 } // namespace gmx

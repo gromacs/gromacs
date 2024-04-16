@@ -240,10 +240,7 @@ static const char* enumValuetoString(WallCycleCounter enumValue)
     return wallCycleCounterNames[enumValue];
 }
 
-// Clang complains about this function not used in builds without subcounters
-// clang-format off
-CLANG_DIAGNOSTIC_IGNORE(-Wunneeded-internal-declaration)
-// clang-format on
+CLANG_DIAGNOSTIC_IGNORE("-Wunneeded-internal-declaration")
 static const char* enumValuetoString(WallCycleSubCounter enumValue)
 {
     constexpr gmx::EnumerationArray<WallCycleSubCounter, const char*> wallCycleSubCounterNames = {

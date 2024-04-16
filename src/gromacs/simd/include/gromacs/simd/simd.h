@@ -117,16 +117,13 @@ struct SimdDInt32Tag
  *  \{
  */
 
-#ifdef __clang__
-#    pragma clang diagnostic push
 /* reinterpret_cast is used for SIMD->scalar conversion
  *
  * In general using reinterpret_cast for bit_cast is UB but
  * for intrinsics types it works for all known compilers
  * and not all compilers produce as good code for memcpy.
  */
-#    pragma clang diagnostic ignored "-Wundefined-reinterpret-cast"
-#endif
+CLANG_DIAGNOSTIC_IGNORE("-Wundefined-reinterpret-cast")
 
 #if GMX_SIMD_X86_SSE2
 #    include "impl_x86_sse2/impl_x86_sse2.h"
@@ -156,9 +153,7 @@ struct SimdDInt32Tag
 #    include "impl_none/impl_none.h"
 #endif
 
-#ifdef __clang__
-#    pragma clang diagnostic pop
-#endif
+CLANG_DIAGNOSTIC_RESET
 
 // Include Hsimd declarations and definitions with static_assert, so we can
 // use Hsimd functions in constexpr false branches without cpp fences.

@@ -143,7 +143,7 @@ Index ssize(const T& t)
 #if defined(__GNUC__) && !defined(__clang__)
 #    define DO_PRAGMA(x) _Pragma(#    x)
 #    define GCC_DIAGNOSTIC_IGNORE(warning) \
-        _Pragma("GCC diagnostic push") DO_PRAGMA(GCC diagnostic ignored #warning)
+        _Pragma("GCC diagnostic push") DO_PRAGMA(GCC diagnostic ignored warning)
 #    define GCC_DIAGNOSTIC_RESET _Pragma("GCC diagnostic pop")
 #else
 //! Ignore specified clang warning until GCC_DIAGNOSTIC_RESET
@@ -155,7 +155,7 @@ Index ssize(const T& t)
 #ifdef __clang__
 #    define DO_PRAGMA(x) _Pragma(#    x)
 #    define CLANG_DIAGNOSTIC_IGNORE(warning) \
-        _Pragma("clang diagnostic push") DO_PRAGMA(clang diagnostic ignored #warning)
+        _Pragma("clang diagnostic push") DO_PRAGMA(clang diagnostic ignored warning)
 #    define CLANG_DIAGNOSTIC_RESET _Pragma("clang diagnostic pop")
 #else
 //! Ignore specified clang warning until CLANG_DIAGNOSTIC_RESET

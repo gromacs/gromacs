@@ -47,6 +47,7 @@
 #include "gromacs/gpu_utils/gmxsycl.h"
 #include "gromacs/gpu_utils/sycl_kernel_utils.h"
 #include "gromacs/math/units.h"
+#include "gromacs/utility/basedefinitions.h"
 
 #include "pme_gpu_constants.h"
 
@@ -467,10 +468,7 @@ void PmeSolveKernel<gridOrdering, computeEnergyAndVirial, gridIndex, subGroupSiz
  * translation unit [-Wweak-template-vtables]" warning.
  * It is only explicitly instantiated in this translation unit, so we should be safe.
  */
-#ifdef __clang__
-#    pragma clang diagnostic push
-#    pragma clang diagnostic ignored "-Wweak-template-vtables"
-#endif
+CLANG_DIAGNOSTIC_IGNORE("-Wweak-template-vtables")
 
 #define INSTANTIATE(subGroupSize)                                             \
     template class PmeSolveKernel<GridOrdering::XYZ, false, 0, subGroupSize>; \
@@ -488,6 +486,4 @@ INSTANTIATE(16);
 INSTANTIATE(32);
 INSTANTIATE(64);
 
-#ifdef __clang__
-#    pragma clang diagnostic pop
-#endif
+CLANG_DIAGNOSTIC_RESET

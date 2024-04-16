@@ -50,6 +50,7 @@
 #include "gromacs/gpu_utils/gpu_utils.h" //only for GpuApiCallBehavior
 #include "gromacs/gpu_utils/gputraits_ocl.h"
 #include "gromacs/gpu_utils/oclutils.h"
+#include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/stringutil.h"
 
@@ -301,10 +302,7 @@ void clearDeviceBufferAsync(DeviceBuffer<ValueType>* buffer,
     }
 }
 
-#if defined(__clang__)
-#    pragma clang diagnostic push
-#    pragma clang diagnostic ignored "-Wunused-template"
-#endif
+CLANG_DIAGNOSTIC_IGNORE("-Wunused-template")
 
 /*! \brief Check the validity of the device buffer.
  *
@@ -378,9 +376,8 @@ void destroyParamLookupTable(DeviceBuffer<ValueType>* deviceBuffer, const Device
 {
     freeDeviceBuffer(deviceBuffer);
 }
-#if defined(__clang__)
-#    pragma clang diagnostic pop
-#endif
+
+CLANG_DIAGNOSTIC_RESET
 
 template<typename ValueType>
 ValueType* asMpiPointer(DeviceBuffer<ValueType>& /*buffer*/)

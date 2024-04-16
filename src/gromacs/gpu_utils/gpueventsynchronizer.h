@@ -50,10 +50,7 @@
 
 #include "device_event.h"
 
-#ifdef __clang__
-#    pragma clang diagnostic push
-#    pragma clang diagnostic ignored "-Wmissing-noreturn"
-#endif
+CLANG_DIAGNOSTIC_IGNORE("-Wmissing-noreturn")
 
 /*! \libinternal \brief
  * A class which allows for CPU thread to mark and wait for certain GPU stream execution point.
@@ -230,11 +227,8 @@ public:
 #    endif
         resetIfFullyConsumed();
     }
-#    ifdef __clang__
-#        pragma clang diagnostic pop
-#    endif
-
 #endif
+    CLANG_DIAGNOSTIC_RESET
     //! Resets the event to unmarked state, releasing the underlying event object if needed.
     inline void reset()
     {

@@ -179,9 +179,7 @@ get_cell_range(real b0, real b1, const Grid::Dimensions& jGridDims, real d2, rea
 }
 
 #if GMX_SIMD
-// clang-format off
-CLANG_DIAGNOSTIC_IGNORE(-Wunneeded-internal-declaration)
-// clang-format on
+CLANG_DIAGNOSTIC_IGNORE("-Wunneeded-internal-declaration")
 #endif
 // Returns whether any atom pair from two clusters is within distance sqrt(rlist2)
 static inline bool clusterpairInRangePlainC(const NbnxnPairlistGpuWork& work,

@@ -43,6 +43,7 @@
 
 #include "gmxpre.h"
 
+#include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/exceptions.h"
 
 #include "qmmmforceprovider.h"
@@ -50,11 +51,7 @@
 namespace gmx
 {
 
-
-#ifdef __clang__
-#    pragma clang diagnostic push
-#    pragma clang diagnostic ignored "-Wmissing-noreturn"
-#endif
+CLANG_DIAGNOSTIC_IGNORE("-Wmissing-noreturn")
 
 QMMMForceProvider::QMMMForceProvider(const QMMMParameters& parameters,
                                      const LocalAtomSet&   localQMAtomSet,
@@ -106,8 +103,6 @@ void QMMMForceProvider::calculateForces(const ForceProviderInput& /*fInput*/, Fo
                           "possible.\nPlease, reconfigure GROMACS with -DGMX_CP2K=ON\n"));
 };
 
-#ifdef __clang__
-#    pragma clang diagnostic pop
-#endif
+CLANG_DIAGNOSTIC_RESET
 
 } // namespace gmx

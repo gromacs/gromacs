@@ -45,14 +45,14 @@
 #include "gpu_3dfft_sycl.h"
 
 #include "gromacs/utility/arrayref.h"
+#include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/exceptions.h"
 
 namespace gmx
 {
 
 // [[noreturn]] attributes must be added in the common headers, so it's easier to silence the warning here
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wmissing-noreturn"
+CLANG_DIAGNOSTIC_IGNORE("-Wmissing-noreturn")
 
 Gpu3dFft::ImplSycl::ImplSycl(bool /*allocateRealGrid*/,
                              MPI_Comm /*comm*/,
@@ -78,6 +78,6 @@ void Gpu3dFft::ImplSycl::perform3dFft(gmx_fft_direction /*dir*/, CommandEvent* /
     GMX_THROW(NotImplementedError("Using SYCL build without GPU 3DFFT support"));
 }
 
-#pragma clang diagnostic pop
+CLANG_DIAGNOSTIC_RESET
 
 } // namespace gmx

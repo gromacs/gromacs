@@ -67,10 +67,7 @@ static constexpr bool sc_debugPrintDepth = false;
 
 
 #if GMX_USE_ITT
-#    ifdef __clang__
-#        pragma clang diagnostic push
-#        pragma clang diagnostic ignored "-Wzero-as-null-pointer-constant"
-#    endif
+CLANG_DIAGNOSTIC_IGNORE("-Wzero-as-null-pointer-constant")
 //! Heler for Intel tracing tools instrumentation
 const __itt_domain*  g_ittDomain = __itt_domain_create("GMX");
 __itt_string_handle* g_ittCounterHandles[static_cast<int>(WallCycleCounter::Count)];
@@ -151,9 +148,7 @@ std::unique_ptr<gmx_wallcycle> wallcycle_init(FILE* fplog, int resetstep, const 
 }
 
 #if GMX_USE_ITT
-#    ifdef __clang__
-#        pragma clang diagnostic pop
-#    endif
+CLANG_DIAGNOSTIC_RESET
 #endif
 
 void gmx_wallcycle::checkStart(WallCycleCounter ewc)

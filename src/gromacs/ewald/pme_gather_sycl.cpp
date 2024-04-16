@@ -47,6 +47,7 @@
 #include "gromacs/gpu_utils/sycl_kernel_utils.h"
 #include "gromacs/gpu_utils/syclutils.h"
 #include "gromacs/math/functions.h"
+#include "gromacs/utility/basedefinitions.h"
 
 #include "pme_gpu_calculate_splines_sycl.h"
 #include "pme_gpu_constants.h"
@@ -688,10 +689,7 @@ void PmeGatherKernel<order, wrapX, wrapY, numGrids, readGlobal, threadsPerAtom, 
  * translation unit [-Wweak-template-vtables]" warning.
  * It is only explicitly instantiated in this translation unit, so we should be safe.
  */
-#ifdef __clang__
-#    pragma clang diagnostic push
-#    pragma clang diagnostic ignored "-Wweak-template-vtables"
-#endif
+CLANG_DIAGNOSTIC_IGNORE("-Wweak-template-vtables")
 
 #define INSTANTIATE_3(order, numGrids, readGlobal, threadsPerAtom, subGroupSize) \
     template class PmeGatherKernel<order, true, true, numGrids, readGlobal, threadsPerAtom, subGroupSize>;
@@ -712,6 +710,4 @@ INSTANTIATE(4, 16); // TODO: Choose best value, Issue #4153.
 INSTANTIATE(4, 32);
 INSTANTIATE(4, 64);
 
-#ifdef __clang__
-#    pragma clang diagnostic pop
-#endif
+CLANG_DIAGNOSTIC_RESET

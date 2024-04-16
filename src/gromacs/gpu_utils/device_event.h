@@ -46,6 +46,7 @@
 
 #include "config.h"
 
+#include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/exceptions.h"
 
 #if !GMX_GPU || defined(DOXYGEN)
@@ -55,10 +56,7 @@ class DeviceStream;
 // [[noreturn]] attributes must be added to the methods, so it's
 // easier to silence the warning here and avoid them appearing in
 // the Doxygen
-#    ifdef __clang__
-#        pragma clang diagnostic push
-#        pragma clang diagnostic ignored "-Wmissing-noreturn"
-#    endif
+CLANG_DIAGNOSTIC_IGNORE("-Wmissing-noreturn")
 
 class DeviceEvent
 {
@@ -107,9 +105,7 @@ public:
     }
 };
 
-#    ifdef __clang__
-#        pragma clang diagnostic pop
-#    endif
+CLANG_DIAGNOSTIC_RESET
 
 #elif GMX_GPU_CUDA
 #    include "device_event.cuh"

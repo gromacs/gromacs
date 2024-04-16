@@ -46,6 +46,7 @@
 #include "gromacs/gpu_utils/gputraits_sycl.h"
 #include "gromacs/gpu_utils/sycl_kernel_utils.h"
 #include "gromacs/gpu_utils/syclutils.h"
+#include "gromacs/utility/basedefinitions.h"
 
 #include "pme_gpu_calculate_splines_sycl.h"
 #include "pme_gpu_types_host.h"
@@ -425,10 +426,7 @@ void PmeSplineAndSpreadKernel<order, computeSplines, spreadCharges, wrapX, wrapY
  * translation unit [-Wweak-template-vtables]" warning.
  * It is only explicitly instantiated in this translation unit, so we should be safe.
  */
-#ifdef __clang__
-#    pragma clang diagnostic push
-#    pragma clang diagnostic ignored "-Wweak-template-vtables"
-#endif
+CLANG_DIAGNOSTIC_IGNORE("-Wweak-template-vtables")
 
 #define INSTANTIATE_3(order, computeSplines, spreadCharges, numGrids, writeGlobal, threadsPerAtom, subGroupSize) \
     template class PmeSplineAndSpreadKernel<order, computeSplines, spreadCharges, true, true, numGrids, writeGlobal, threadsPerAtom, subGroupSize>;
@@ -451,6 +449,4 @@ INSTANTIATE(4, 16); // TODO: Choose best value, Issue #4153.
 INSTANTIATE(4, 32);
 INSTANTIATE(4, 64);
 
-#ifdef __clang__
-#    pragma clang diagnostic pop
-#endif
+CLANG_DIAGNOSTIC_RESET

@@ -42,6 +42,7 @@
 #include "gmxpre.h"
 
 #include "gromacs/fft/parallel_3dfft.h"
+#include "gromacs/utility/basedefinitions.h"
 
 #include "pme_gpu_grid.h"
 #include "pme_gpu_types.h"
@@ -49,10 +50,7 @@
 #include "pme_gpu_types_host_impl.h"
 
 // [[noreturn]] attributes must be added in the common headers, so it's easier to silence the warning here
-#if defined(__clang__)
-#    pragma clang diagnostic push
-#    pragma clang diagnostic ignored "-Wmissing-noreturn"
-#endif // (__clang__)
+CLANG_DIAGNOSTIC_IGNORE("-Wmissing-noreturn")
 
 void pmeGpuGridHaloExchange(const PmeGpu* /*pmeGpu*/, gmx_wallcycle* /*wcycle*/)
 {
@@ -97,6 +95,4 @@ template void convertPmeGridToFftGrid<false>(const PmeGpu* /*pmeGpu*/,
                                              DeviceBuffer<float>* /*d_fftRealGrid*/,
                                              const int /*gridIndex*/);
 
-#if defined(__clang__)
-#    pragma clang diagnostic pop
-#endif // (__clang__)
+CLANG_DIAGNOSTIC_RESET
