@@ -123,6 +123,44 @@ herr_t iterativeSetupTimeDataBlocks(hid_t            locationId,
     return returnVal;
 }
 
+void setupSystemParticleProperties(gmx::h5mdio::GmxH5mdIo*  file,
+                                   const t_atoms&           atoms,
+                                   gmx::ArrayRef<const int> selectionIndices,
+                                   std::string              selectionName)
+{
+    /* Vectors are used to keep the values in a continuous memory block. */
+    std::vector<real> atomCharges;
+    std::vector<real> atomMasses;
+    std::vector<int>  atomElements;
+    /* Since the system block contains all atoms it is not necessary to record the ID,
+     * but we do that in order to allow changing the mapping or "remove" particles,
+     * in order to enable grand canonical simulations. */
+    std::vector<int>  atomIds;
+
+    const size_t numSelectedParticles = selectionIndices.size() > 0 ? selectionIndices.size() : atoms.nr;
+
+    atomCharges.reserve(numSelectedParticles);
+    atomMasses.reserve(numSelectedParticles);
+    atomElements.reserve(numSelectedParticles);
+    atomIds.reserve(numSelectedParticles);
+
+    /* FIXME: The names could be copied directly to a char array instead. */
+    /* FIXME: Should use int64_t. Needs changes in atoms. */
+    for (size_t i = 0; i < numSelectedParticles; i++)
+    {
+        size_t iParticle = selectionIndices.size() > 0 ? selectionIndices[i] : i;
+        atomCharges.push_back(atoms.atom[iParticle].q);
+        atomMasses.push_back(atoms.atom[iParticle].m);
+        atomElements.push_back(atoms.atom[iParticle].atomnumber);
+        atomIds.push_back(iParticle);
+    }
+
+    file->setNumericProperty("/particles/" + selectionName, "charge", atomCharges, false);
+    file->setNumericProperty("/particles/" + selectionName, "mass", atomMasses, false);
+    file->setNumericProperty("/particles/" + selectionName, "species", atomElements, false);
+    file->setNumericProperty("/particles/" + selectionName, "id", atomIds, false);
+}
+
 /* Unused. May be useful later. */
 /*
 herr_t getGroupNamesInLocation(hid_t location, const char* name, const H5O_info_t* info, void* operatorData)
@@ -807,34 +845,7 @@ void setupMolecularSystemParticleData(h5mdio::GmxH5mdIo*       file,
         return;
     }
 
-    /* Vectors are used to keep the values in a continuous memory block. */
-    std::vector<real> atomCharges;
-    std::vector<real> atomMasses;
-    std::vector<int>  atomElements;
-    /* Since the system block contains all atoms it is not necessary to record the ID,
-     * but we do that in order to allow changing the mapping or "remove" particles,
-     * in order to enable grand canonical simulations. */
-    std::vector<int>  atomIds;
-
-    atomCharges.reserve(atoms.nr);
-    atomMasses.reserve(atoms.nr);
-    atomElements.reserve(atoms.nr);
-    atomIds.reserve(atoms.nr);
-
-    /* FIXME: The names could be copied directly to a char array instead. */
-    /* FIXME: Should use int64_t. Needs changes in atoms. */
-    for (int i = 0; i < atoms.nr; i++)
-    {
-        atomCharges.push_back(atoms.atom[i].q);
-        atomMasses.push_back(atoms.atom[i].m);
-        atomElements.push_back(atoms.atom[i].atomnumber);
-        atomIds.push_back(i);
-    }
-
-    file->setNumericProperty("/particles/system", "charge", atomCharges, false);
-    file->setNumericProperty("/particles/system", "mass", atomMasses, false);
-    file->setNumericProperty("/particles/system", "species", atomElements, false);
-    file->setNumericProperty("/particles/system", "id", atomIds, false);
+    setupSystemParticleProperties(file, atoms, gmx::ArrayRef<const int>(), "system");
 
     /* We only need to create a separate selection group entry if not all atoms are part of it. */
     /* If a selection of atoms is explicitly provided then use that instead of the CompressedPositionOutput */
@@ -868,26 +879,7 @@ void setupMolecularSystemParticleData(h5mdio::GmxH5mdIo*       file,
             int nameIndex = topology.groups.groups[SimulationAtomGroupType::CompressedPositionOutput][0];
             systemOutputName = *topology.groups.groupNames[nameIndex];
         }
-        atomCharges.clear();
-        atomMasses.clear();
-        atomElements.clear();
-        atomIds.clear();
-        atomCharges.reserve(index.ssize());
-        atomMasses.reserve(index.ssize());
-        atomElements.reserve(index.ssize());
-        atomIds.reserve(index.ssize());
-        for (int i = 0; i < index.ssize(); i++)
-        {
-            atomCharges.push_back(atoms.atom[i].q);
-            atomMasses.push_back(atoms.atom[i].m);
-            atomElements.push_back(atoms.atom[i].atomnumber);
-            atomIds.push_back(i);
-        }
-
-        file->setNumericProperty("/particles/" + systemOutputName, "charge", atomCharges, false);
-        file->setNumericProperty("/particles/" + systemOutputName, "mass", atomMasses, false);
-        file->setNumericProperty("/particles/" + systemOutputName, "species", atomElements, false);
-        file->setNumericProperty("/particles/" + systemOutputName, "id", atomIds, false);
+        setupSystemParticleProperties(file, atoms, index, systemOutputName);
     }
 
     done_atom(&atoms);
