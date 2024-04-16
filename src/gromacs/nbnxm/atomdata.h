@@ -47,6 +47,7 @@
 #include <cstdio>
 
 #include <memory>
+#include <optional>
 
 #include "gromacs/gpu_utils/devicebuffer_datatype.h"
 #include "gromacs/gpu_utils/hostallocator.h"
@@ -239,24 +240,34 @@ struct nbnxn_atomdata_t
 
     /*! \brief Constructor
      *
+     * This class only stores one, or no, LJ combination rule parameter list.
+     * With LJ-PME the rule for the LJ PME-grid must match the PME grid combination rule
+     * and there can be no combination rule for the LJ pair parameters.
+     * Without LJ-PME the combination rule should match the combination rule
+     * for the LJ parameters.
+     * An (release) assertion failure will occur when these conditions are not met.
+     *
      * \param[in] pinningPolicy      Sets the pinning policy for all data that might be transferred
      *                               to a GPU
      * \param[in] mdlog              The logger
      * \param[in] kernelType         Nonbonded NxN kernel type
-     * \param[in] enbnxninitcombrule LJ combination rule
-     * \param[in] ntype              Number of atom types
+     * \param[in] ljCombinationRule  The LJ combination rule parameters to generate,
+                                     empty is detect from the LJ parameters
+     * \param[in] pmeLJCombinationRule  The LJ combination rule parameters to generate for the LJ PME-grid part
+     * \param[in] numTypes           Number of atom types
      * \param[in] nbfp               Non-bonded force parameters
-     * \param[in] n_energygroups     Number of energy groups
-     * \param[in] nout               Number of output data structures
+     * \param[in] numEnergyGroups    Number of energy groups
+     * \param[in] numOutputBuffers   Number of output data structures
      */
-    nbnxn_atomdata_t(gmx::PinningPolicy        pinningPolicy,
-                     const gmx::MDLogger&      mdlog,
-                     Nbnxm::KernelType         kernelType,
-                     int                       enbnxninitcombrule,
-                     int                       ntype,
-                     gmx::ArrayRef<const real> nbfp,
-                     int                       n_energygroups,
-                     int                       nout);
+    nbnxn_atomdata_t(gmx::PinningPolicy                      pinningPolicy,
+                     const gmx::MDLogger&                    mdlog,
+                     Nbnxm::KernelType                       kernelType,
+                     const std::optional<LJCombinationRule>& ljCombinationRule,
+                     LJCombinationRule                       pmeLJCombinationRule,
+                     int                                     numTypes,
+                     gmx::ArrayRef<const real>               nbfp,
+                     int                                     numEnergyGroups,
+                     int                                     numOutputBuffers);
 
     //! Returns a const reference to the parameters
     const Params& params() const { return params_; }
@@ -369,15 +380,6 @@ private:
  * and fills up to na_round with coordinates that are far away.
  */
 void copy_rvec_to_nbat_real(const int* a, int na, int na_round, const rvec* x, int nbatFormat, real* xnb, int a0);
-
-//! Describes the combination rule in use by this force field
-enum
-{
-    enbnxninitcombruleDETECT,
-    enbnxninitcombruleGEOM,
-    enbnxninitcombruleLB,
-    enbnxninitcombruleNONE
-};
 
 //! Sets the atomdata after pair search
 void nbnxn_atomdata_set(nbnxn_atomdata_t*            nbat,

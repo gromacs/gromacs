@@ -173,6 +173,20 @@ static interaction_const_t setupInteractionConst(const KernelBenchOptions& optio
     return ic;
 }
 
+//! Converts the benchmark LJ comb.rule. enum to the corresponding NBNxM enum
+static LJCombinationRule convertLJCombinationRule(const BenchMarkCombRule combRule)
+{
+    switch (combRule)
+    {
+        case BenchMarkCombRule::RuleGeom: return LJCombinationRule::Geometric;
+        case BenchMarkCombRule::RuleLB: return LJCombinationRule::LorentzBerthelot;
+        case BenchMarkCombRule::RuleNone: return LJCombinationRule::None;
+        default: GMX_RELEASE_ASSERT(false, "Unhandled case");
+    }
+
+    return LJCombinationRule::None;
+}
+
 //! Sets up and returns a Nbnxm object for the given benchmark options and system
 static std::unique_ptr<nonbonded_verlet_t> setupNbnxmForBenchInstance(const KernelBenchOptions& options,
                                                                       const gmx::BenchmarkSystem& system)
@@ -180,9 +194,6 @@ static std::unique_ptr<nonbonded_verlet_t> setupNbnxmForBenchInstance(const Kern
     const auto pinPolicy  = (options.useGpu ? gmx::PinningPolicy::PinnedIfSupported
                                             : gmx::PinningPolicy::CannotBePinned);
     const int  numThreads = options.numThreads;
-    // Note: the options and Nbnxm combination rule enums values should match,
-    //       the Nbnxm enum has "detect" as first entry, so we need to add 1
-    const int combinationRule = 1 + static_cast<int>(options.ljCombinationRule);
 
     auto messageWhenInvalid = checkKernelSetup(options);
     if (messageWhenInvalid)
@@ -204,7 +215,8 @@ static std::unique_ptr<nonbonded_verlet_t> setupNbnxmForBenchInstance(const Kern
     auto atomData = std::make_unique<nbnxn_atomdata_t>(pinPolicy,
                                                        gmx::MDLogger(),
                                                        kernelSetup.kernelType,
-                                                       combinationRule,
+                                                       convertLJCombinationRule(options.ljCombinationRule),
+                                                       LJCombinationRule::None,
                                                        system.numAtomTypes,
                                                        system.nonbondedParameters,
                                                        1,

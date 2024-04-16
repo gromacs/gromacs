@@ -416,19 +416,27 @@ nbnxn_atomdata_t::Params::Params(gmx::PinningPolicy pinningPolicy) :
 }
 
 /* Initializes an nbnxn_atomdata_t::Params data structure */
-static void nbnxn_atomdata_params_init(const gmx::MDLogger&      mdlog,
-                                       nbnxn_atomdata_t::Params* params,
-                                       const Nbnxm::KernelType   kernelType,
-                                       int                       enbnxninitcombrule,
-                                       int                       ntype,
-                                       ArrayRef<const real>      nbfp,
-                                       int                       n_energygroups)
+static void nbnxn_atomdata_params_init(const gmx::MDLogger&                    mdlog,
+                                       nbnxn_atomdata_t::Params*               params,
+                                       const Nbnxm::KernelType                 kernelType,
+                                       const std::optional<LJCombinationRule>& ljCombinationRule,
+                                       const LJCombinationRule                 pmeLJCombinationRule,
+                                       const int                               numTypes,
+                                       ArrayRef<const real>                    nbfp,
+                                       const int                               numEnergyGroups)
 {
+    const bool usingLJPme = (pmeLJCombinationRule != LJCombinationRule::None);
+
+    GMX_RELEASE_ASSERT(!usingLJPme || !ljCombinationRule
+                               || ljCombinationRule.value() == LJCombinationRule::None,
+                       "Only one of ljCombinationRule and pmeLJCombinationRule can be active");
+
     if (debug)
     {
-        fprintf(debug, "There are %d atom types in the system, adding one for nbnxn_atomdata_t\n", ntype);
+        fprintf(debug, "There are %d atom types in the system, adding one for nbnxn_atomdata_t\n", numTypes);
     }
-    params->numTypes = ntype + 1;
+    // We add one type for the filler particles
+    params->numTypes = numTypes + 1;
     params->nbfp.resize(params->numTypes * params->numTypes * 2);
     params->nbfp_comb.resize(params->numTypes * 2);
 
@@ -448,10 +456,10 @@ static void nbnxn_atomdata_params_init(const gmx::MDLogger&      mdlog,
     /* Temporarily fill params->nbfp_comb with sigma and epsilon
      * to check for the LB rule.
      */
-    for (int i = 0; i < ntype; i++)
+    for (int i = 0; i < numTypes; i++)
     {
-        const real c6  = nbfp[(i * ntype + i) * 2] / 6.0;
-        const real c12 = nbfp[(i * ntype + i) * 2 + 1] / 12.0;
+        const real c6  = nbfp[(i * numTypes + i) * 2] / 6.0;
+        const real c12 = nbfp[(i * numTypes + i) * 2 + 1] / 12.0;
         if (c6 > 0 && c12 > 0)
         {
             params->nbfp_comb[i * 2]     = gmx::sixthroot(c12 / c6);
@@ -473,13 +481,13 @@ static void nbnxn_atomdata_params_init(const gmx::MDLogger&      mdlog,
     {
         for (int j = 0; j < params->numTypes; j++)
         {
-            if (i < ntype && j < ntype)
+            if (i < numTypes && j < numTypes)
             {
                 /* fr->nbfp has been updated, so that array too now stores c6/c12 including
                  * the 6.0/12.0 prefactors to save 2 flops in the most common case (force-only).
                  */
-                real c6  = nbfp[(i * ntype + j) * 2];
-                real c12 = nbfp[(i * ntype + j) * 2 + 1];
+                real c6  = nbfp[(i * numTypes + j) * 2];
+                real c12 = nbfp[(i * numTypes + j) * 2 + 1];
 
                 params->nbfp[(i * params->numTypes + j) * 2]     = c6;
                 params->nbfp[(i * params->numTypes + j) * 2 + 1] = c12;
@@ -488,10 +496,11 @@ static void nbnxn_atomdata_params_init(const gmx::MDLogger&      mdlog,
                 bCombGeom =
                         bCombGeom
                         && gmx_within_tol(
-                                c6 * c6, nbfp[(i * ntype + i) * 2] * nbfp[(j * ntype + j) * 2], tol)
-                        && gmx_within_tol(c12 * c12,
-                                          nbfp[(i * ntype + i) * 2 + 1] * nbfp[(j * ntype + j) * 2 + 1],
-                                          tol);
+                                c6 * c6, nbfp[(i * numTypes + i) * 2] * nbfp[(j * numTypes + j) * 2], tol)
+                        && gmx_within_tol(
+                                c12 * c12,
+                                nbfp[(i * numTypes + i) * 2 + 1] * nbfp[(j * numTypes + j) * 2 + 1],
+                                tol);
 
                 /* Compare C6 and C12 for Lorentz-Berthelot combination rule */
                 c6 /= 6.0;
@@ -527,64 +536,54 @@ static void nbnxn_atomdata_params_init(const gmx::MDLogger&      mdlog,
 
     const bool simple = Nbnxm::kernelTypeUsesSimplePairlist(kernelType);
 
-    switch (enbnxninitcombrule)
+    if (usingLJPme || ljCombinationRule)
     {
-        case enbnxninitcombruleDETECT:
-            /* We prefer the geometric combination rule,
-             * as that gives a slightly faster kernel than the LB rule.
-             */
-            if (bCombGeom)
-            {
-                params->ljCombinationRule = LJCombinationRule::Geometric;
-            }
-            else if (bCombLB)
-            {
-                params->ljCombinationRule = LJCombinationRule::LorentzBerthelot;
-            }
-            else
-            {
-                params->ljCombinationRule = LJCombinationRule::None;
-
-                params->nbfp_comb.clear();
-            }
-
-            {
-                std::string mesg;
-                if (params->ljCombinationRule == LJCombinationRule::None)
-                {
-                    mesg = "Using full Lennard-Jones parameter combination matrix";
-                }
-                else
-                {
-                    mesg = gmx::formatString("Using %s Lennard-Jones combination rule",
-                                             enumValueToString(params->ljCombinationRule));
-                }
-                GMX_LOG(mdlog.info).asParagraph().appendText(mesg);
-            }
-            break;
-        case enbnxninitcombruleGEOM:
+        params->ljCombinationRule = (usingLJPme ? pmeLJCombinationRule : ljCombinationRule.value());
+    }
+    else
+    {
+        /* We prefer the geometric combination rule,
+         * as that gives a slightly faster kernel than the LB rule.
+         */
+        if (bCombGeom)
+        {
             params->ljCombinationRule = LJCombinationRule::Geometric;
-            break;
-        case enbnxninitcombruleLB:
+        }
+        else if (bCombLB)
+        {
             params->ljCombinationRule = LJCombinationRule::LorentzBerthelot;
-            break;
-        case enbnxninitcombruleNONE:
+        }
+        else
+        {
             params->ljCombinationRule = LJCombinationRule::None;
 
             params->nbfp_comb.clear();
-            break;
-        default: gmx_incons("Unknown enbnxninitcombrule");
+        }
+
+        {
+            std::string mesg;
+            if (params->ljCombinationRule == LJCombinationRule::None)
+            {
+                mesg = "Using full Lennard-Jones parameter combination matrix";
+            }
+            else
+            {
+                mesg = gmx::formatString("Using %s Lennard-Jones combination rule",
+                                         enumValueToString(params->ljCombinationRule));
+            }
+            GMX_LOG(mdlog.info).asParagraph().appendText(mesg);
+        }
     }
 
     const bool bSIMD = Nbnxm::kernelTypeIsSimd(kernelType);
 
     set_lj_parameter_data(params, bSIMD);
 
-    params->numEnergyGroups = n_energygroups;
+    params->numEnergyGroups = numEnergyGroups;
     if (!simple)
     {
         // We now check for energy groups already when starting mdrun
-        GMX_RELEASE_ASSERT(n_energygroups == 1, "GPU kernels do not support energy groups");
+        GMX_RELEASE_ASSERT(numEnergyGroups == 1, "GPU kernels do not support energy groups");
     }
     /* Temporary storage goes as #grp^3*simd_width^2/2, so limit to 64 */
     if (params->numEnergyGroups > 64)
@@ -599,24 +598,25 @@ static void nbnxn_atomdata_params_init(const gmx::MDLogger&      mdlog,
 }
 
 /* Initializes an nbnxn_atomdata_t data structure */
-nbnxn_atomdata_t::nbnxn_atomdata_t(gmx::PinningPolicy      pinningPolicy,
-                                   const gmx::MDLogger&    mdlog,
-                                   const Nbnxm::KernelType kernelType,
-                                   int                     enbnxninitcombrule,
-                                   int                     ntype,
-                                   ArrayRef<const real>    nbfp,
-                                   int                     n_energygroups,
-                                   int                     nout) :
+nbnxn_atomdata_t::nbnxn_atomdata_t(gmx::PinningPolicy                      pinningPolicy,
+                                   const gmx::MDLogger&                    mdlog,
+                                   const Nbnxm::KernelType                 kernelType,
+                                   const std::optional<LJCombinationRule>& ljCombinationRule,
+                                   const LJCombinationRule                 pmeLJCombinationRule,
+                                   const int                               numTypes,
+                                   ArrayRef<const real>                    nbfp,
+                                   const int                               numEnergyGroups,
+                                   const int                               numOutputBuffers) :
     params_(pinningPolicy),
     numAtoms_(0),
     numLocalAtoms_(0),
     shift_vec({}, { pinningPolicy }),
     x_({}, { pinningPolicy }),
     simdMasks_(kernelType),
-    useBufferFlags_(nout > 1)
+    useBufferFlags_(numOutputBuffers > 1)
 {
     nbnxn_atomdata_params_init(
-            mdlog, &paramsDeprecated(), kernelType, enbnxninitcombrule, ntype, nbfp, n_energygroups);
+            mdlog, &paramsDeprecated(), kernelType, ljCombinationRule, pmeLJCombinationRule, numTypes, nbfp, numEnergyGroups);
 
     const bool simple = Nbnxm::kernelTypeUsesSimplePairlist(kernelType);
     const bool bSIMD  = Nbnxm::kernelTypeIsSimd(kernelType);
@@ -652,7 +652,7 @@ nbnxn_atomdata_t::nbnxn_atomdata_t(gmx::PinningPolicy      pinningPolicy,
     fstride = (FFormat == nbatXYZQ ? STRIDE_XYZQ : DIM);
 
     /* Initialize the output data structures */
-    for (int i = 0; i < nout; i++)
+    for (int i = 0; i < numOutputBuffers; i++)
     {
         const auto& outputPinningPolicy = params().type.get_allocator().pinningPolicy();
         outputBuffers_.emplace_back(kernelType, params().numEnergyGroups, outputPinningPolicy);

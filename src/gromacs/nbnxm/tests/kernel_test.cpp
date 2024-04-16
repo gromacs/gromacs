@@ -271,32 +271,21 @@ TestSystem::TestSystem(const LJCombinationRule ljCombinationRule)
     }
 }
 
-//! Returns the enum value for initializing the combination rule for nbxnm_atomdata_t
-int combRuleInitFromOptions(const KernelOptions& options)
+//! Returns the enum value for initializing the LJ PME-grid combination rule for nbxnm_atomdata_t
+LJCombinationRule chooseLJPmeCombinationRule(const KernelOptions& options)
 {
     if (options.useLJPme)
     {
         // We need to generate LJ combination parameters using the rule for LJ-PME
         switch (options.ljPmeCombinationRule)
         {
-            case LongRangeVdW::Geom: return enbnxninitcombruleGEOM;
-            case LongRangeVdW::LB: return enbnxninitcombruleLB;
-            default: GMX_RELEASE_ASSERT(false, "Unhandled combination rule");
-        }
-    }
-    else
-    {
-        // We generate parameters according to the combination rule set
-        switch (options.ljCombinationRule)
-        {
-            case LJCombinationRule::Geometric: return enbnxninitcombruleGEOM;
-            case LJCombinationRule::LorentzBerthelot: return enbnxninitcombruleLB;
-            case LJCombinationRule::None: return enbnxninitcombruleNONE;
+            case LongRangeVdW::Geom: return LJCombinationRule::Geometric;
+            case LongRangeVdW::LB: return LJCombinationRule::LorentzBerthelot;
             default: GMX_RELEASE_ASSERT(false, "Unhandled combination rule");
         }
     }
 
-    return enbnxninitcombruleDETECT;
+    return LJCombinationRule::None;
 }
 
 //! Sets up and returns a Nbnxm object for the given benchmark options and system
@@ -331,14 +320,16 @@ std::unique_ptr<nonbonded_verlet_t> setupNbnxmForBenchInstance(const KernelOptio
     auto pairSearch = std::make_unique<PairSearch>(
             PbcType::Xyz, false, nullptr, nullptr, pairlistParams.pairlistType, false, numThreads, pinPolicy);
 
-    auto atomData = std::make_unique<nbnxn_atomdata_t>(pinPolicy,
-                                                       MDLogger(),
-                                                       options.kernelSetup.kernelType,
-                                                       combRuleInitFromOptions(options),
-                                                       system.numAtomTypes,
-                                                       system.nonbondedParameters,
-                                                       c_numEnergyGroups,
-                                                       numThreads);
+    auto atomData = std::make_unique<nbnxn_atomdata_t>(
+            pinPolicy,
+            MDLogger(),
+            options.kernelSetup.kernelType,
+            options.useLJPme ? LJCombinationRule::None : options.ljCombinationRule,
+            chooseLJPmeCombinationRule(options),
+            system.numAtomTypes,
+            system.nonbondedParameters,
+            c_numEnergyGroups,
+            numThreads);
 
     if (options.kernelSetup.kernelType != Nbnxm::KernelType::Cpu4x4_PlainC)
     {

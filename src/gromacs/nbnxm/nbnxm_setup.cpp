@@ -352,7 +352,8 @@ static int getMinimumIlistCountForGpuBalancing(NbnxmGpu* nbnxmGpu)
     }
 }
 
-static int getENbnxnInitCombRule(const t_forcerec& forcerec)
+//! Returns the LJ combination rule choices for the LJ pair parameters
+static std::optional<LJCombinationRule> chooseLJCombinationRule(const t_forcerec& forcerec)
 {
     if (forcerec.ic->vdwtype == VanDerWaalsType::Cut
         && (forcerec.ic->vdw_modifier == InteractionModifiers::None
@@ -360,25 +361,35 @@ static int getENbnxnInitCombRule(const t_forcerec& forcerec)
         && getenv("GMX_NO_LJ_COMB_RULE") == nullptr)
     {
         /* Plain LJ cut-off: we can optimize with combination rules */
-        return enbnxninitcombruleDETECT;
+        return std::nullopt;
     }
     else if (forcerec.ic->vdwtype == VanDerWaalsType::Pme)
     {
-        /* LJ-PME: we need to use a combination rule for the grid */
-        if (forcerec.ljpme_combination_rule == LongRangeVdW::Geom)
-        {
-            return enbnxninitcombruleGEOM;
-        }
-        else
-        {
-            return enbnxninitcombruleLB;
-        }
+        /* With LJ-PME the NBNxM module does not support combination rules for the pair parameters */
+        return LJCombinationRule::None;
     }
     else
     {
         /* We use a full combination matrix: no rule required */
-        return enbnxninitcombruleNONE;
+        return LJCombinationRule::None;
     }
+}
+
+//! Returns the LJ combination rule choices for the LJ PME-grid parameters
+static LJCombinationRule chooseLJPmeCombinationRule(const t_forcerec& forcerec)
+{
+    if (forcerec.ic->vdwtype == VanDerWaalsType::Pme)
+    {
+        /* LJ-PME: we need to use a combination rule for the grid and none for the pairs */
+        switch (forcerec.ljpme_combination_rule)
+        {
+            case LongRangeVdW::Geom: return LJCombinationRule::Geometric;
+            case LongRangeVdW::LB: return LJCombinationRule::LorentzBerthelot;
+            default: GMX_RELEASE_ASSERT(false, "Unhandled case");
+        }
+    }
+
+    return LJCombinationRule::None;
 }
 
 std::unique_ptr<nonbonded_verlet_t> init_nb_verlet(const gmx::MDLogger& mdlog,
@@ -433,8 +444,6 @@ std::unique_ptr<nonbonded_verlet_t> init_nb_verlet(const gmx::MDLogger& mdlog,
         printNbnxmPressureError(mdlog, inputrec, mtop, effectiveAtomDensity, pairlistParams);
     }
 
-    const int enbnxninitcombrule = getENbnxnInitCombRule(forcerec);
-
     auto pinPolicy = (useGpuForNonbonded ? gmx::PinningPolicy::PinnedIfSupported
                                          : gmx::PinningPolicy::CannotBePinned);
 
@@ -452,7 +461,8 @@ std::unique_ptr<nonbonded_verlet_t> init_nb_verlet(const gmx::MDLogger& mdlog,
             pinPolicy,
             mdlog,
             kernelSetup.kernelType,
-            enbnxninitcombrule,
+            chooseLJCombinationRule(forcerec),
+            chooseLJPmeCombinationRule(forcerec),
             forcerec.ntype,
             forcerec.nbfp,
             mimimumNumEnergyGroupNonbonded,
