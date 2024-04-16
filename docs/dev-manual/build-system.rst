@@ -334,6 +334,25 @@ Variables affecting compilation/linking
 
    Use the TNG library for trajectory I/O. Defaults to ``ON``.
 
+.. cmake:: GMX_USE_ITT
+
+   Use the Intel ITT library for annotating |Gromacs| tasks in the Intel tracing tools.
+   Defaults to ``OFF``.
+   Relies on the ``VTUNE_PROFILER_DIR`` environment variable set when loading
+   the oneAPI toolkit to find the library.
+
+.. cmake:: GMX_USE_NVTX
+
+   Use the NVTX library for annotating |Gromacs| tasks in the NVIDIA tracing tools.
+   Defaults to ``OFF``.
+   Relies on the ``CUDA_HOME`` environment variable to find the library.
+
+.. cmake:: GMX_USE_ROCTX
+
+   Use the ROC-TX library for annotating |Gromacs| tasks in the AMD ROCm tracing tools.
+   Defaults to ``OFF``.
+   Relies on the ``ROCM_HOME`` environment variable to find the library.
+
 .. cmake:: GMX_VMD_PLUGIN_PATH
 
    Path to VMD plugins for molfile I/O. Only used when ``GMX_USE_PLUGINS`` is enabled.
