@@ -303,6 +303,26 @@ public:
      * \throws FileIOError    If there was an error determining the time of the final frame.
      */
     real getFinalTimeFromAllDataBlocks();
+
+    /*! \brief Add a molecule type to the GROMACS topology section in the file.
+     * \param[in] name The name of the molecule type.
+     * \param[in] numAtomsPerMolecule The number of atoms per molecule of this type.
+     * \returns the H5MD ID of the molecule type group
+     * \throws FileIOError If there was an error adding the molecule type information.
+     */
+    hid_t addMoleculeType(const std::string& name, size_t numAtomsPerMolecule);
+
+    /*! \brief Add a block consisting of a number of copies of a molecule type to the GROMACS topology section in the file.
+     * \param[in] molTypeId The hdf5 ID of the molecule type.
+     * \param[in] moleculeIndexStart The global molecule index of the first molecule of this type (in this molecule block).
+     * \param[in] numMol The number of molecules of this type (in this molecule block).
+     * \param[in] molSystemAtomsStart The first atom index of this molecule block.
+     * \throws FileIOError If there was an error adding the molecule type information.
+     */
+    hid_t addBlockOfMoleculeType(const hid_t molTypeId,
+                                 size_t      moleculeIndexStart,
+                                 size_t      numMol,
+                                 size_t      molSystemAtomsStart);
 };
 
 } // namespace h5mdio

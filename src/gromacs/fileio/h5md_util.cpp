@@ -696,5 +696,6 @@ template void gmx::h5mdio::readData<1, true>(hid_t, hsize_t, void**, size_t*, si
 template void gmx::h5mdio::readData<3, false>(hid_t, hsize_t, void**, size_t*, size_t*);
 
 template void gmx::h5mdio::setAttribute<int>(hid_t, const char*, int, hid_t);
+template void gmx::h5mdio::setAttribute<int64_t>(hid_t, const char*, int64_t, hid_t);
 template void gmx::h5mdio::setAttribute<float>(hid_t, const char*, float, hid_t);
 template void gmx::h5mdio::setAttribute<double>(hid_t, const char*, double, hid_t);

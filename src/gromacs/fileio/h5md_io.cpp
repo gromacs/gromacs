@@ -44,6 +44,8 @@
 #include <string>
 #include <vector>
 
+#include <sys/_types/_int64_t.h>
+
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/topology/topology.h"
@@ -385,7 +387,7 @@ std::string GmxH5mdIo::getCreatorProgramVersion()
 
 void GmxH5mdIo::setupGromacsTopologyGroup()
 {
-    hid_t topologyGroup = openOrCreateGroup(file_, "parameters/gromacs_topology");
+    hid_t topologyGroup = openOrCreateGroup(file_, "/parameters/gromacs_topology");
     setVersionAttribute(
             topologyGroup, c_gmxH5mdParametersGroupMajorVersion, c_gmxH5mdParametersGroupMinorVersion);
 }
@@ -775,6 +777,26 @@ real GmxH5mdIo::getFinalTimeFromAllDataBlocks()
     return -1;
 }
 
+hid_t GmxH5mdIo::addMoleculeType(const std::string& name, size_t numAtomsPerMolecule)
+{
+    std::string moleculesGroupName = "/parameters/gromacs_topology/molecules";
+    hid_t       moleculesGroup     = openOrCreateGroup(file_, moleculesGroupName.c_str());
+
+    hid_t moleculeTypeGroup = H5Gopen(moleculesGroup, name.c_str(), H5P_DEFAULT);
+    if (moleculeTypeGroup >= 0)
+    {
+        return moleculeTypeGroup;
+    }
+
+    moleculeTypeGroup = openOrCreateGroup(moleculesGroup, name.c_str());
+    setAttribute(moleculeTypeGroup, "number_of_atoms", static_cast<int64_t>(numAtomsPerMolecule), H5T_NATIVE_INT64);
+
+    return moleculeTypeGroup;
+
+    // hid_t dataType = H5Tcopy(H5T_NATIVE_INT);
+    // hid_t numAtomsDataSet = openOrCreateDataSet<1>(moleculeTypeGroup, "number_of_atoms", "", dataType, 1, CompressionAlgorithm::Uncompressed, 0);
+}
+
 
 extern template hid_t
 openOrCreateDataSet<1>(hid_t, const char*, const char*, hid_t, const hsize_t*, CompressionAlgorithm, double);
@@ -786,6 +808,7 @@ extern template void writeData<1, true>(hid_t, const void*, hsize_t);
 extern template void readData<1, true>(hid_t, hsize_t, void**, size_t*, size_t*);
 
 extern template void setAttribute<int>(hid_t, const char*, int, hid_t);
+extern template void setAttribute<int64_t>(hid_t, const char*, int64_t, hid_t);
 extern template void setAttribute<float>(hid_t, const char*, float, hid_t);
 extern template void setAttribute<double>(hid_t, const char*, double, hid_t);
 
@@ -910,6 +933,11 @@ void setupMolecularSystemTopology(h5mdio::GmxH5mdIo* file, const gmx_mtop_t& top
     {
         const gmx_molblock_t&       molBlock      = topology.molblock[i];
         const MoleculeBlockIndices& molBlockIndex = topology.moleculeBlockIndices[i];
+        const gmx_moltype_t&        molType       = topology.moltype[molBlock.type];
+        const std::string           molName       = *molType.name;
+        const size_t                numMol        = molBlock.nmol;
+        hid_t molTypeId = file->addMoleculeType(molName, molBlockIndex.numAtomsPerMolecule);
+        // file->addBlockOfMoleculeType(molTypeId, molBlockIndex.moleculeIndexStart, numMol, molBlockIndex.globalAtomStart);
     }
 
 #else
