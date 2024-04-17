@@ -91,9 +91,9 @@ static __global__ void nvshmemSimplePut(DeviceBuffer<int> gm_outDestination, con
 
 void nvshmemRunSimplePut(const TestDevice* testDevice)
 {
-    testDevice->activate();
     const DeviceContext& deviceContext = testDevice->deviceContext();
     const DeviceStream&  deviceStream  = testDevice->deviceStream();
+    deviceContext.activate();
 
     MPI_Comm mpi_comm = MPI_COMM_WORLD;
 
