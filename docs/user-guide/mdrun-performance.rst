@@ -1157,9 +1157,8 @@ Known limitations
 
 - LJ PME is not supported on GPUs.
 
-- When |Gromacs| is built with SYCL using oneAPI for AMD/NVIDIA GPUs, only
-  hybrid mode (``-pmefft cpu``) is supported. Fully-offloaded PME is supported
-  when using oneAPI for Intel GPUs and hipSYCL for AMD/NVIDIA GPUs.
+- When |Gromacs| is built without a GPU FFT library (``-DGMX_GPU_FFT_LIBRARY=none``),
+  only hybrid mode (``-pmefft cpu``) is supported.  
 
 .. _gmx-gpu-bonded:
 

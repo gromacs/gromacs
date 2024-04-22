@@ -61,7 +61,7 @@ or loading an appropriate :command:`module load` on an HPC system.
 ::
 
    cmake .. -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ \
-            -DGMX_GPU=SYCL -GMX_SYCL=DPCPP \
+            -DGMX_GPU=SYCL -DGMX_SYCL=DPCPP \
             -DGMX_GPU_NB_CLUSTER_SIZE=8 -DGMX_GPU_FFT_LIBRARY=vkfft \
             -DSYCL_CXX_FLAGS_EXTRA=-fsycl-targets=nvptx64-nvidia-cuda
 
