@@ -60,8 +60,8 @@
 
 #include "architecture.h"
 
-//! Constant used to help minimize preprocessed code
-static constexpr bool bGPUBinary = (GMX_GPU != 0);
+//! Constant used to help minimize preprocessed code. Currently disabled also for HIP builds until device detection is implemented.
+static constexpr bool bGPUBinary = (GMX_GPU != 0) && !GMX_GPU_HIP;
 
 /*! \internal \brief
  * Returns the GPU information text, one GPU per line.

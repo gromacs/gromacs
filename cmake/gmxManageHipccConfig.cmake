@@ -53,7 +53,7 @@ function(gmx_add_hipcc_flag_if_supported _output_variable_name_to_append_to _fla
     if (NOT DEFINED ${_flags_cache_variable_name} AND NOT WIN32)
         message(STATUS "Checking if hipcc accepts flags ${ARGN}")
         execute_process(
-                COMMAND ${HIP_HIPCC_EXECUTABLE} ${ARGN} --genco "${CMAKE_SOURCE_DIR}/cmake/TestHIP.cpp"
+                COMMAND ${HIP_HIPCC_EXECUTABLE} ${ARGN} -Werror --genco "${CMAKE_SOURCE_DIR}/cmake/TestHIP.cpp"
             RESULT_VARIABLE _hip_success
             OUTPUT_QUIET
             ERROR_QUIET
@@ -79,7 +79,7 @@ function(gmx_hip_check_single_flag _single_flag)
     STRING(REGEX REPLACE "=" "_" _flag_name_sanitized HIPCC_SUPPORTS_FLAG_${_single_flag})
     gmx_add_hipcc_flag_if_supported(GMX_HIP_HIPCC_FLAGS ${_flag_name_sanitized} ${_single_flag})
     if (NOT ${_flag_name_sanitized})
-        message(WARNING "The version of the HIPCC compiler does not support ${_single_flag}")
+        message(STATUS "The version of the HIPCC compiler does not support ${_single_flag}")
     endif()
     set(GMX_HIP_HIPCC_FLAGS ${GMX_HIP_HIPCC_FLAGS} PARENT_SCOPE)
 endfunction()
@@ -158,11 +158,13 @@ function(gmx_hip_add_library TARGET)
 
     # Now add all the compilation options
     gmx_device_target_compile_options(HIP_${TARGET}_CXXFLAGS)
+    gmx_hip_check_user_compile_flags("${HIP_${TARGET}_CXXFLAGS}")
+    gmx_hip_check_user_compile_flags("${HIP_${TARGET}_CXXFLAGS_${CMAKE_BUILD_TYPE}}")
 
     add_library(${TARGET} ${ARGN})
     set_property(TARGET ${TARGET} PROPERTY HIP_STANDARD 17)
     set_target_properties(${TARGET} PROPERTIES HIP_ARCHITECTURES OFF)
-    target_compile_options(${TARGET} PRIVATE $<$<COMPILE_LANGUAGE:HIP>:${GMX_HIP_HIPCC_FLAGS};${HIP_${TARGET}_CXXFLAGS};${HIP_${TARGET}_CXXFLAGS_${CMAKE_BUILD_TYPE}}>)
+    target_compile_options(${TARGET} PRIVATE $<$<COMPILE_LANGUAGE:HIP>:${GMX_HIP_HIPCC_FLAGS}>)
 
     # TODO: Restrict the scope of MPI dependence.
     # Targets that actually need MPI headers and build tool flags should

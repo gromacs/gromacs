@@ -46,7 +46,7 @@
 .use-hip:
   variables:
     CMAKE_PRECISION_OPTIONS: "-DGMX_DOUBLE=OFF"
-    CMAKE_GPU_OPTIONS: -DGMX_GPU=HIP -DCMAKE_PREFIX_PATH=/opt/rocm 
+    CMAKE_GPU_OPTIONS: -DGMX_GPU=HIP -DCMAKE_PREFIX_PATH=/opt/rocm -DCMAKE_HIP_COMPILER=/opt/rocm/bin/amdclang++
 
 .use-mpi:
   variables:

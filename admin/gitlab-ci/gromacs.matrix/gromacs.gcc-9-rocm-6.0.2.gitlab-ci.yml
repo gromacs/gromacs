@@ -1,51 +1,51 @@
 # Test goal: build with HIP to check HIP compilation
 # Test intents (should change rarely and conservatively):
 #   OS: Ubuntu newest supported
-#   Compiler: amdclang
+#   Compiler: gcc-9
 #   GPU: HIP
 #   Scope: configure, build
 # Test implementation choices (free to change as needed):
 #   OS: Ubuntu 22.04
 #   Build type: RelWithAssert
-#   Compiler: amdclang
+#   Compiler: gcc-9
 #   MPI: threadMPI (AMD build)
 #   SIMD: AVX2_256
 
-gromacs:hip-571:configure:
+gromacs:gcc-9-hip-602:configure:
   extends:
     - .gromacs:base:configure
-    - .use-amdclang:base
+    - .use-gcc:base
     - .use-hip
-    - .rules:merge-and-post-merge-acceptance
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-22.04-gcc-9-hipsycl-23.10.0-rocm-5.7.1
+    - .rules:post-merge-acceptance
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-22.04-gcc-9-rocm-6.0.2
   variables:
     CMAKE: /usr/local/cmake-3.24.0/bin/cmake
     CMAKE_SIMD_OPTIONS: "-DGMX_SIMD=AVX2_256"
     CMAKE_BUILD_TYPE_OPTIONS: "-DCMAKE_BUILD_TYPE=RelWithAssert"
-    COMPILER_MAJOR_VERSION: 15
+    COMPILER_MAJOR_VERSION: 9
 
-gromacs:hip-571:build:
+gromacs:gcc-9-hip-602:build:
   extends:
     - .variables:default
     - .gromacs:base:build
-    - .use-amdclang:base
+    - .use-gcc:base
     - .use-ccache
-    - .rules:merge-and-post-merge-acceptance
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-22.04-gcc-9-hipsycl-23.10.0-rocm-5.7.1
+    - .rules:post-merge-acceptance
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-22.04-gcc-9-rocm-6.0.2
   variables:
     CMAKE: /usr/local/cmake-3.24.0/bin/cmake
   tags:
     - k8s-scilifelab
   needs:
-    - job: gromacs:hip-571:configure
+    - job: gromacs:gcc-9-hip-602:configure
 
 # TODO enable tests once there is something to test
-#gromacs:hip-571:test:
+#gromacs:gcc-9-hip-602:test:
 #  extends:
 #    - .variables:default
 #    - .gromacs:base:test
 #    - .rules:post-merge-acceptance
-#  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-22.04-gcc-9-hipsycl-23.10.0-rocm-5.7.1
+#  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-22.04-gcc-9-rocm-6.0.2
 #  variables:
 #    CMAKE: /usr/local/cmake-3.24.0/bin/cmake
 #    KUBERNETES_EXTENDED_RESOURCE_NAME: "amd.com/gpu"
@@ -54,14 +54,14 @@ gromacs:hip-571:build:
 #  tags:
 #    - k8s-scilifelab
 #  needs:
-#    - job: gromacs:hip-571:build
+#    - job: gromacs:gcc-9-hip-602:build
 #
-#gromacs:hip-571:regressiontest:
+#gromacs:gcc-9-hip-602:regressiontest:
 #  extends:
 #    - .variables:default
 #    - .gromacs:base:regressiontest
 #    - .rules:post-merge-acceptance
-#  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-22.04-gcc-9-hipsycl-23.10.0-rocm-5.7.1
+#  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-22.04-gcc-9-rocm-6.0.2
 #  variables:
 #    CMAKE: /usr/local/cmake-3.24.0/bin/cmake
 #    REGRESSIONTEST_TOTAL_RANK_NUMBER: 1
@@ -71,5 +71,5 @@ gromacs:hip-571:build:
 #  tags:
 #    - k8s-scilifelab
 #  needs:
-#    - job: gromacs:hip-571:build
+#    - job: gromacs:gcc-9-hip-602:build
 #    - job: regressiontests:prepare

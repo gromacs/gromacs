@@ -35,10 +35,6 @@ if(GMX_DOUBLE)
     message(FATAL_ERROR "HIP acceleration is not available in double precision")
 endif()
 
-if (NOT CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-    message(FATAL_ERROR "Building with HIP backend requires Clang compiler, but ${CMAKE_CXX_COMPILER_ID} is used")
-endif()
-
 set(CMAKE_HIP_STANDARD 17)
 set(CMAKE_HIP_STANDARD_REQUIRED ON)
 
