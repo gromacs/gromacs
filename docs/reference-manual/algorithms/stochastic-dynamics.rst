@@ -51,7 +51,7 @@ leap-frog. The friction and noise are then applied as an impulse at step
 velocity-dependent terms act at the full time step, which makes the
 correct integration of forces that depend on both coordinates and
 velocities, such as constraints and dissipative particle dynamics (DPD,
-not implented yet), straightforward. With constraints, the coordinate
+not implemented yet), straightforward. With constraints, the coordinate
 update :eq:`eqn. %s <eqnsd1xupd>` is split into a normal leap-frog update
 and a :math:`\Delta \mathbf{v}`. After both of these
 updates the constraints are applied to coordinates and velocities.

@@ -97,7 +97,7 @@ double centerPeriodicValueAroundZero(const double x, double period)
 }
 
 /*! \brief
- * If period>0, retrun x so that it is periodic in [0, period), else return x.
+ * If period>0, return x so that it is periodic in [0, period), else return x.
  *
  * Return x is shifted its value by a +/- a period, if
  * needed. Thus, it is assumed that x is at most one period

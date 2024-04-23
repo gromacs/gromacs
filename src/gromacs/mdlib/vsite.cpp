@@ -895,9 +895,10 @@ static PbcMode getPbcMode(const t_pbc* pbcPtr)
 
 /*! \brief Executes the vsite construction task for a single thread
  *
- * \tparam        operation  Whether we are calculating positions, velocities, or both
+ * \tparam        calculatePosition  Whether we are calculating positions
+ * \tparam        calculateVelocity  Whether we are calculating velocities
  * \param[in,out] x   Coordinates to construct vsites for
- * \param[in,out] v   Velocities are generated for virtual sites if `operation` requires it
+ * \param[in,out] v   Velocities are generated for virtual sites if calculateVelocity is true
  * \param[in]     ip  Interaction parameters for all interaction, only vsite parameters are used
  * \param[in]     ilist  The interaction lists, only vsites are usesd
  * \param[in]     pbc_null  PBC struct, used for PBC distance calculations when !=nullptr

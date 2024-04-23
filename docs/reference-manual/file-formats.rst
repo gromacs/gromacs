@@ -333,7 +333,7 @@ m2p
 
 The m2p file format contains input options for the
 :ref:`gmx xpm2ps` program. All of these options
-are very easy to comprehend when you look at the PosScript(tm) output
+are very easy to comprehend when you look at the PostScript(tm) output
 from :ref:`gmx xpm2ps`.
 
 ::

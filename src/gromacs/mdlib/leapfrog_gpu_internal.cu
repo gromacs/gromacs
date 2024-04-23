@@ -166,7 +166,7 @@ __launch_bounds__(c_maxThreadsPerBlock) __global__
  * \param[in]  numTempScaleValues     Number of temperature coupling groups in the system.
  * \param[in]  parrinelloRahmanVelocityScaling  Type of the Parrinello-Rahman velocity scaling.
  *
- * \retrun                         Pointer to CUDA kernel
+ * \return                         Pointer to CUDA kernel
  */
 inline auto selectLeapFrogKernelPtr(bool                            doTemperatureScaling,
                                     int                             numTempScaleValues,
