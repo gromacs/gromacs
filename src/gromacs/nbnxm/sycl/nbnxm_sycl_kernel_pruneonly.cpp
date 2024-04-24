@@ -100,7 +100,7 @@ auto nbnxmKernelPruneOnly(sycl::handler& cgh,
         const unsigned tidxj = itemIdx.get_local_id(1);
         const int      tidx  = tidxj * c_clSize + tidxi;
         const unsigned tidxz = itemIdx.get_local_id(0);
-        const unsigned bidx  = itemIdx.get_group(0);
+        const int      bidx  = itemIdx.get_group(0);
 
         int part = gm_rollingPruningPart[bidx];
         itemIdx.barrier(fence_space::global_and_local);
@@ -111,14 +111,14 @@ auto nbnxmKernelPruneOnly(sycl::handler& cgh,
 
         // Kernel has been launched with max number of blocks across all passes (plist.nsci/numParts),
         // but the last pass will require 1 less block, so extra block should return early.
-        const unsigned int numSciInPart = (numSci - part) / numParts;
+        const int numSciInPart = (numSci - part) / numParts;
         if (bidx >= numSciInPart)
         {
             return; // Since the whole block is exiting, it is fine w.r.t. group_barrier
         }
 
         const sycl::sub_group sg   = itemIdx.get_sub_group();
-        const unsigned        widx = tidx / warpSize;
+        const int             widx = tidx / warpSize;
 
         // my i super-cluster's index = sciOffset + current bidx * numParts + part
         const nbnxn_sci_t nbSci          = gm_plistSci[bidx * numParts + part];
