@@ -140,7 +140,7 @@ public:
     void setCreatorProgramName(std::string creatorName);
 
     /*! \brief Get the name of the creating program attribute from the H5MD file.
-     * \returns he creator name, i.e. the name of the program that created the file.
+     * \returns The creator name, i.e. the name of the program that created the file.
      */
     std::string getCreatorProgramName();
 
@@ -155,8 +155,15 @@ public:
      */
     std::string getCreatorProgramVersion();
 
-    /*! \brief Create a custom group containing the topology used in the simulation. */
-    void setupGromacsTopologyGroup();
+    /*! \brief Get the HDF5 ID of the GROMACS topology group in the H5MD file.
+     * \returns The HDF5 ID of the topology group or < 0 if no group was found.
+     */
+    hid_t getGromacsTopologyGroup();
+
+    /*! \brief Create a custom group containing the topology used in the simulation.
+     * \returns The HDF5 ID of the created group.
+     */
+    hid_t setupGromacsTopologyGroup();
 
     /*! \brief Set a string property.
      * N.b., The maximum string length is set to c_atomStringLen to avoid the overhead that comes
@@ -305,24 +312,27 @@ public:
     real getFinalTimeFromAllDataBlocks();
 
     /*! \brief Add a molecule type to the GROMACS topology section in the file.
+     * \param[in] topologyGroup The topology group to create the molecule type in.
      * \param[in] name The name of the molecule type.
      * \param[in] numAtomsPerMolecule The number of atoms per molecule of this type.
      * \returns the H5MD ID of the molecule type group
      * \throws FileIOError If there was an error adding the molecule type information.
      */
-    hid_t addMoleculeType(const std::string& name, size_t numAtomsPerMolecule);
+    hid_t addMoleculeType(hid_t topologyGroup, const std::string& name, size_t numAtomsPerMolecule);
 
     /*! \brief Add a block consisting of a number of copies of a molecule type to the GROMACS topology section in the file.
      * \param[in] molTypeId The hdf5 ID of the molecule type.
+     * \param[in] blockIndex The index of the molecule block.
      * \param[in] moleculeIndexStart The global molecule index of the first molecule of this type (in this molecule block).
      * \param[in] numMol The number of molecules of this type (in this molecule block).
      * \param[in] molSystemAtomsStart The first atom index of this molecule block.
      * \throws FileIOError If there was an error adding the molecule type information.
      */
-    hid_t addBlockOfMoleculeType(const hid_t molTypeId,
-                                 size_t      moleculeIndexStart,
-                                 size_t      numMol,
-                                 size_t      molSystemAtomsStart);
+    void addBlockOfMoleculeType(const hid_t molTypeId,
+                                size_t      blockIndex,
+                                size_t      moleculeIndexStart,
+                                size_t      numMol,
+                                size_t      molSystemAtomsStart);
 };
 
 } // namespace h5mdio
@@ -353,9 +363,12 @@ void setupMolecularSystemParticleData(h5mdio::GmxH5mdIo*       file,
  *
  * \param[in] file     The H5MD file manager to use.
  * \param[in] topology The molecular topology describing the system.
+ * \param[in] abortIfPresent Do not set up the topology if it is already present in the file.
  * \throws FileIOError If there is no file open or if the data could not be written.
  */
-void setupMolecularSystemTopology(h5mdio::GmxH5mdIo* file, const gmx_mtop_t& topology);
+void setupMolecularSystemTopology(h5mdio::GmxH5mdIo* file,
+                                  const gmx_mtop_t&  topology,
+                                  bool               abortIfPresent = true);
 
 /*! \brief Write a trajectory frame to the file. Only writes the data that is passed as input
  *
