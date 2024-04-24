@@ -601,7 +601,7 @@ Proper dihedrals: Fourier function
 
 | Internally, |Gromacs| uses the Ryckaert-Bellemans code to compute
   Fourier dihedrals (see above), because this is more efficient.
-| **Note:** Mind the conversion from *k*\ cal mol\ :math:`^{-1}` for
+| **Note:** Mind the conversion from **kcal mol**\ :math:`^{-1}` for
   literature OPLS parameters to **kJ mol**\ :math:`^{-1}` in |Gromacs|.
 
 Proper dihedrals: Restricted torsion potential
