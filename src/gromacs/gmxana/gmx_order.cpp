@@ -994,7 +994,7 @@ int gmx_order(int argc, char* argv[])
     PbcType     pbcType;       /* type of periodic boundary conditions */
 
     t_filenm fnm[] = {
-        /* files for g_order    */
+        /* files for gmx order    */
         { efTRX, "-f", nullptr, ffREAD },     /* trajectory file              */
         { efNDX, "-n", nullptr, ffREAD },     /* index file           */
         { efNDX, "-nr", nullptr, ffOPTRD },   /* index for radial axis calculation */

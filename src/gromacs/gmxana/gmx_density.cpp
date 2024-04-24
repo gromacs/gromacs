@@ -667,7 +667,7 @@ int gmx_density(int argc, char* argv[])
     int**       index;        /* indices for all groups     */
 
     t_filenm fnm[] = {
-        /* files for g_density       */
+        /* files for gmx density       */
         { efTRX, "-f", nullptr, ffREAD },
         { efNDX, nullptr, nullptr, ffOPTRD },
         { efTPR, nullptr, nullptr, ffREAD },

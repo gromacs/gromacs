@@ -313,7 +313,7 @@ int gmx_h2order(int argc, char* argv[])
             *micelle = nullptr;
     gmx_bool bMicel  = FALSE; /* think we're a micel        */
     t_filenm fnm[]   = {
-        /* files for g_order      */
+        /* files for gmx order      */
         { efTRX, "-f", nullptr, ffREAD },    /* trajectory file            */
         { efNDX, nullptr, nullptr, ffREAD }, /* index file         */
         { efNDX, "-nm", nullptr, ffOPTRD },  /* index with micelle atoms   */

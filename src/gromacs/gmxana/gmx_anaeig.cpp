@@ -1317,10 +1317,11 @@ int gmx_anaeig(int argc, char* argv[])
             if (xref1 == nullptr)
             {
                 printf("\nNote: the structure in %s should be the same\n"
-                       "      as the one used for the fit in g_covar\n",
+                       "      as the one used for the fit in gmx covar\n",
                        topfile);
             }
-            printf("\nSelect the index group that was used for the least squares fit in g_covar\n");
+            printf("\nSelect the index group that was used for the least squares fit in gmx "
+                   "covar\n");
             get_index(atoms, indexfile, 1, &nfit, &ifit, &grpname);
 
             snew(w_rls, atoms->nr);

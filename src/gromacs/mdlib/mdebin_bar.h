@@ -43,7 +43,7 @@
 #include "gromacs/utility/real.h"
 
 /* The functions & data structures here describe writing
-   energy differences (or their histogram )for use with g_bar */
+   energy differences (or their histogram )for use with gmx bar */
 
 class delta_h_history_t;
 struct t_enxframe;

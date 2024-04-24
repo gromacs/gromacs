@@ -110,6 +110,14 @@ the output group names had empty prefix).
 
 :issue:`5050`
 
+Fixed references to old tool names in some commands
+"""""""""""""""""""""""""""""""""""""""""""""""""""
+
+There were references to old tool names, e.g., g_energy and g_bar in some
+commands.
+
+:issue:`5074`
+
 Fixes that affect portability
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 

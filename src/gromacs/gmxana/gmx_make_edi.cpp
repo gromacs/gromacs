@@ -1029,15 +1029,16 @@ int gmx_make_edi(int argc, char* argv[])
     {
         if (bFit1)
         {
-            /* if g_covar used different coordinate groups to fit and to do the PCA */
+            /* if gmx covar used different coordinate groups to fit and to do the PCA */
             printf("\nNote: the structure in %s should be the same\n"
-                   "      as the one used for the fit in g_covar\n",
+                   "      as the one used for the fit in gmx covar\n",
                    ftp2fn(efTPS, NFILE, fnm));
-            printf("\nSelect the index group that was used for the least squares fit in g_covar\n");
+            printf("\nSelect the index group that was used for the least squares fit in gmx "
+                   "covar\n");
         }
         else
         {
-            printf("\nNote: Apparently no fitting was done in g_covar.\n"
+            printf("\nNote: Apparently no fitting was done in gmx covar.\n"
                    "      However, you need to select a reference group for fitting in mdrun\n");
         }
         get_index(atoms, indexfile, 1, &nfit, &ifit, &grpname);
