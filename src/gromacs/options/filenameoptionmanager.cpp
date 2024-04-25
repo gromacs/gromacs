@@ -177,6 +177,17 @@ std::string FileNameOptionManager::completeFileName(const std::string& value, co
                     std::string newValue = value.substr(0, value.length() - std::strlen(*ext));
                     if (option.isValidType(fn2ftp(newValue.c_str())))
                     {
+                        // Note that here the "completed" filename no
+                        // longer has the extension appropriate for a
+                        // compressed file. When gmx_ffopen() sees
+                        // that the uncompressed file does not exist,
+                        // it will try to open the compressed
+                        // versions, one of which exists, and thus
+                        // will be able to fulfil the user's desire.
+                        // This is not very robust; doing better might
+                        // require a more elaborate abstraction around
+                        // the concept of a filename returned by
+                        // FileNameOptionManager.
                         return newValue;
                     }
                     else
