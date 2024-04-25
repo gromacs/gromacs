@@ -135,3 +135,8 @@ In 2024.0 and 2024.1 it was empty.
 
 :issue:`5045`
 
+Prevented CTest from running racy test cases concurrently
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+:issue:`4654`
+:issue:`4975`

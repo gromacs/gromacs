@@ -191,7 +191,7 @@ void initTestUtils(const std::filesystem::path& dataPath,
             {
                 fprintf(stderr,
                         "NOTE: You are running %s on %d MPI ranks, "
-                        "but it is does not contain MPI-enabled tests. "
+                        "but it does not contain MPI-enabled tests. "
                         "The test will now exit.\n",
                         context.programName(),
                         gmx_node_num());

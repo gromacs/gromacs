@@ -113,6 +113,12 @@ gmx_add_gtest_executable(${exename} MPI
 target_link_libraries(${exename} PRIVATE mdrun_test_infrastructure)
 gmx_register_gtest_test(MdrunTestsOneRank ${exename} MPI_RANKS 1 OPENMP_THREADS 2 INTEGRATION_TEST SLOW_TEST IGNORE_LEAKS SLOW_GPU_TEST)
 gmx_register_gtest_test(MdrunTestsTwoRanks ${exename} MPI_RANKS 2 OPENMP_THREADS 2 INTEGRATION_TEST SLOW_TEST IGNORE_LEAKS SLOW_GPU_TEST)
+# Because the mdrun tests depend on writing files whose names are not
+# unique across test cases, prevent CTest from running these tests
+# concurrently. See #4654
+if (TEST MdrunTestsTwoRanks AND TEST MdrunTestsOneRank)
+    set_tests_properties(MdrunTestsTwoRanks PROPERTIES DEPENDS MdrunTestsOneRank)
+endif()
 
 # The orires test is separate, as it supports only a single MPI rank
 set(testname "MdrunSingleRankAlgorithmsTests")
@@ -129,13 +135,31 @@ gmx_add_gtest_executable(${exename}
 target_link_libraries(${exename} PRIVATE mdrun_test_infrastructure)
 gmx_register_gtest_test(${testname} ${exename} OPENMP_THREADS 2 INTEGRATION_TEST IGNORE_LEAKS SLOW_GPU_TEST)
 
+set(exename "minimize-test")
+
+gmx_add_gtest_executable(${exename} MPI
+    CPP_SOURCE_FILES
+        # files with code for tests
+        minimize.cpp
+        # pseudo-library for code for mdrun
+        $<TARGET_OBJECTS:mdrun_objlib>
+        )
+target_link_libraries(${exename} PRIVATE mdrun_test_infrastructure)
+gmx_register_gtest_test(Minimize1RankTests ${exename} MPI_RANKS 1 OPENMP_THREADS 2 INTEGRATION_TEST IGNORE_LEAKS QUICK_GPU_TEST)
+gmx_register_gtest_test(Minimize2RankTests ${exename} MPI_RANKS 2 OPENMP_THREADS 2 INTEGRATION_TEST IGNORE_LEAKS QUICK_GPU_TEST)
+# Because the minimizer tests depend on writing files whose names are not
+# unique across test cases, prevent CTest from running these tests
+# concurrently. See #4654
+if (TEST Minimize2RankTests AND TEST Minimize1RankTests)
+    set_tests_properties(Minimize2RankTests PROPERTIES DEPENDS Minimize1RankTests)
+endif()
+
 set(testname "MdrunNonIntegratorTests")
 set(exename "mdrun-non-integrator-test")
 
 gmx_add_gtest_executable(${exename}
     CPP_SOURCE_FILES
         # files with code for tests
-        minimize.cpp
         nonbonded_bench.cpp
         normalmodes.cpp
         rerun.cpp
@@ -169,13 +193,19 @@ gmx_add_gtest_executable(${exename} MPI
     CPP_SOURCE_FILES
         # files with code for tests
         domain_decomposition.cpp
-        minimize.cpp
         mimic.cpp
         # pseudo-library for code for mdrun
         $<TARGET_OBJECTS:mdrun_objlib>
         )
 target_link_libraries(${exename} PRIVATE mdrun_test_infrastructure)
 gmx_register_gtest_test(${testname} ${exename} MPI_RANKS 2 OPENMP_THREADS 2 INTEGRATION_TEST IGNORE_LEAKS QUICK_GPU_TEST)
+
+# Because the mdrun tests depend on writing files whose names are not
+# unique across test cases, prevent CTest from running these tests
+# concurrently. See #4654. These test binaries both test aspects of MiMiC.
+if (TEST MdrunMpiTests AND TEST MdrunModulesTests)
+    set_tests_properties(MdrunMpiTests PROPERTIES DEPENDS MdrunModulesTests)
+endif()
 
 # Multi sim only makes sense with real MPI, and ideally at least 4 ranks,
 # to allow for multiple simulations (>= 2 sims) each using DD (>= 2 ranks per sim)
@@ -235,6 +265,12 @@ gmx_add_gtest_executable(${exename} MPI
 target_link_libraries(${exename} PRIVATE mdrun_test_infrastructure)
 gmx_register_gtest_test(MdrunMpi1RankPmeTests ${exename} MPI_RANKS 1 OPENMP_THREADS 2 INTEGRATION_TEST IGNORE_LEAKS SLOW_GPU_TEST)
 gmx_register_gtest_test(MdrunMpi2RankPmeTests ${exename} MPI_RANKS 2 OPENMP_THREADS 2 INTEGRATION_TEST IGNORE_LEAKS SLOW_GPU_TEST)
+# Because the mdrun tests depend on writing files whose names are not
+# unique across test cases, prevent CTest from running these tests
+# concurrently. See #4654
+if (TEST MdrunMpi2RankPmeTests AND TEST MdrunMpi1RankPmeTests)
+    set_tests_properties(MdrunMpi2RankPmeTests PROPERTIES DEPENDS MdrunMpi1RankPmeTests)
+endif()
 
 # Slow-running tests that target testing multiple-rank coordination behaviors
 # These tests are extremely slow without optimization or OpenMP, so only run them for
@@ -256,6 +292,12 @@ if (CMAKE_BUILD_TYPE MATCHES "Rel" AND GMX_OPENMP)
     gmx_register_gtest_test(${testname} ${exename} MPI_RANKS 1 SLOW_TEST IGNORE_LEAKS QUICK_GPU_TEST)
     set(testname "MdrunCoordinationBasicTests2Ranks")
     gmx_register_gtest_test(${testname} ${exename} MPI_RANKS 2 SLOW_TEST IGNORE_LEAKS QUICK_GPU_TEST)
+    # Because the mdrun tests depend on writing files whose names are not
+    # unique across test cases, prevent CTest from running these tests
+    # concurrently. See #4654
+    if (TEST MdrunCoordinationBasicTests2Ranks AND TEST MdrunCoordinationBasicTests1Rank)
+        set_tests_properties(MdrunCoordinationBasicTests2Ranks PROPERTIES DEPENDS MdrunCoordinationBasicTests1Rank)
+    endif()
 endif()
 
 set(exename "mdrun-coordination-coupling-test")
@@ -274,6 +316,12 @@ if (CMAKE_BUILD_TYPE MATCHES "Rel" AND GMX_OPENMP)
     gmx_register_gtest_test(${testname} ${exename} MPI_RANKS 1 SLOW_TEST IGNORE_LEAKS SLOW_GPU_TEST)
     set(testname "MdrunCoordinationCouplingTests2Ranks")
     gmx_register_gtest_test(${testname} ${exename} MPI_RANKS 2 SLOW_TEST IGNORE_LEAKS SLOW_GPU_TEST)
+    # Because the mdrun tests depend on writing files whose names are not
+    # unique across test cases, prevent CTest from running these tests
+    # concurrently. See #4654
+    if (TEST MdrunCoordinationCouplingTests2Ranks AND TEST MdrunCoordinationCouplingTests1Rank)
+        set_tests_properties(MdrunCoordinationCouplingTests2Ranks PROPERTIES DEPENDS MdrunCoordinationCouplingTests1Rank)
+    endif()
 endif()
 
 set(exename "mdrun-coordination-constraints-test")
@@ -292,6 +340,12 @@ if (CMAKE_BUILD_TYPE MATCHES "Rel" AND GMX_OPENMP)
     gmx_register_gtest_test(${testname} ${exename} MPI_RANKS 1 SLOW_TEST IGNORE_LEAKS SLOW_GPU_TEST)
     set(testname "MdrunCoordinationConstraintsTests2Ranks")
     gmx_register_gtest_test(${testname} ${exename} MPI_RANKS 2 SLOW_TEST IGNORE_LEAKS SLOW_GPU_TEST)
+    # Because the mdrun tests depend on writing files whose names are not
+    # unique across test cases, prevent CTest from running these tests
+    # concurrently. See #4654
+    if (TEST MdrunCoordinationConstraintsTests2Ranks AND TEST MdrunCoordinationConstraintsTests1Rank)
+        set_tests_properties(MdrunCoordinationConstraintsTests2Ranks PROPERTIES DEPENDS MdrunCoordinationConstraintsTests1Rank)
+    endif()
 endif()
 
 # Keeping the FEP tests separate for now to be able to judge runtime more easily
