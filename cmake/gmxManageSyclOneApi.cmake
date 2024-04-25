@@ -50,7 +50,10 @@ if(WIN32)
         # and -fsycl both appear before -link. Not possible to change order from cmake script. cmake fix is WIP.
     endif()
 endif()
-if(CMAKE_CXX_COMPILER MATCHES "dpcpp")
+
+# Prohibit the dpcpp compiler, but don't prohibit the use of e.g.
+# /opt/dpcpp/oneapi/....../icpx etc.
+if(CMAKE_CXX_COMPILER MATCHES "dpcpp$")
     message(FATAL_ERROR "Intel's \"dpcpp\" compiler is not supported; please use \"icpx\" for SYCL builds")
 endif()
 

@@ -68,6 +68,16 @@ time (if any) instead of overwriting it.
 
 :issue:`5064`
 
+Permit ``dpcpp`` to appear in the path to the compiler
+""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+The compiler named ``dpcpp`` is no longer supported, so CMake
+prohibits its use. However previously we inadvertently also prohibited
+any compiler whose full path also contained the string "dpcpp," which
+was not intended.
+
+:issue:`4716`
+
 Miscellaneous
 ^^^^^^^^^^^^^
 
