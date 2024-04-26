@@ -36,6 +36,16 @@ Now the gmx binary will exit with an error message.
 
 :issue:`5037`
 
+Make Colvars file backup scheme consistent with GROMACS
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Colvars output files in |Gromacs| versions 2024.0 and 2024.1 were backed up
+only once, regardless of the value of ``GMX_MAXBACKUP``.  This is corrected
+in 2024.2 and later releases, by letting Colvars back up existing output
+files consistently with other files produced by |Gromacs| itself.
+
+:issue:`5071`
+
 Fixes that affect portability
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 

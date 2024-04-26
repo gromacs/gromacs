@@ -43,6 +43,9 @@
 
 #include <sstream>
 
+#include "gromacs/utility/futil.h"
+#include "gromacs/utility/path.h"
+
 #include "colvarproxy_gromacs_version.h"
 
 
@@ -160,6 +163,27 @@ void ColvarProxyGromacs::error(std::string const& message)
 {
     log(message);
     GMX_THROW(InternalError("Error in collective variables module.\n"));
+}
+
+
+int ColvarProxyGromacs::backup_file(char const* filename)
+{
+    std::string const filename_str(filename);
+    auto const        state_suffix_pos = filename_str.rfind(std::string(".colvars.state"));
+    if (state_suffix_pos != std::string::npos)
+    {
+        // For a Colvars state file, which is ordinarily written together
+        // with the GROMACS checkpoint, use the same mechanism
+        std::filesystem::path fn_orig    = filename_str;
+        std::filesystem::path fn_renamed = gmx::concatenateBeforeExtension(fn_orig, "_prev");
+        gmx_file_copy(fn_orig.string(), fn_renamed.string(), true);
+    }
+    else
+    {
+        // General backup procedure
+        make_backup(filename);
+    }
+    return COLVARS_OK;
 }
 
 
