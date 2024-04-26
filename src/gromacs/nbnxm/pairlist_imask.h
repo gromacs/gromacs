@@ -59,7 +59,7 @@ template<typename T, int iClusterSize, int jClusterSize>
 constexpr std::array<T, iClusterSize / jClusterSize> diagonalMaskJSmallerI()
 {
     static_assert(jClusterSize <= iClusterSize);
-    static_assert(iClusterSize * jClusterSize <= sizeof(T) * 8);
+    static_assert(iClusterSize * jClusterSize <= sizeof(T) * CHAR_BIT);
 
     // Call the constructor to initialize the array to zero
     // to permit the function to be declared constexpr.
@@ -91,7 +91,7 @@ template<typename T, int iClusterSize, int jClusterSize>
 constexpr std::array<T, jClusterSize / iClusterSize> diagonalMaskJLargerI()
 {
     static_assert(jClusterSize >= iClusterSize);
-    static_assert(iClusterSize * jClusterSize <= sizeof(T) * 8);
+    static_assert(iClusterSize * jClusterSize <= sizeof(T) * CHAR_BIT);
 
     // Call the constructor to initialize the array to zero
     // to permit the function to be declared constexpr.

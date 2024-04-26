@@ -120,19 +120,19 @@ static void sendbits(struct DataBuffer* buffer, int num_of_bits, int num)
 
     lastbits = buffer->lastbits;
     lastbyte = buffer->lastbyte;
-    while (num_of_bits >= 8)
+    while (num_of_bits >= CHAR_BIT)
     {
-        lastbyte                      = (lastbyte << 8) | ((num >> (num_of_bits - 8)) /* & 0xff*/);
+        lastbyte = (lastbyte << CHAR_BIT) | ((num >> (num_of_bits - CHAR_BIT)) /* & 0xff*/);
         buffer->data[buffer->index++] = lastbyte >> lastbits;
-        num_of_bits -= 8;
+        num_of_bits -= CHAR_BIT;
     }
     if (num_of_bits > 0)
     {
         lastbyte = (lastbyte << num_of_bits) | num;
         lastbits += num_of_bits;
-        if (lastbits >= 8)
+        if (lastbits >= CHAR_BIT)
         {
-            lastbits -= 8;
+            lastbits -= CHAR_BIT;
             buffer->data[buffer->index++] = lastbyte >> lastbits;
         }
     }
@@ -140,7 +140,7 @@ static void sendbits(struct DataBuffer* buffer, int num_of_bits, int num)
     buffer->lastbyte = lastbyte;
     if (lastbits > 0)
     {
-        buffer->data[buffer->index] = lastbyte << (8 - lastbits);
+        buffer->data[buffer->index] = lastbyte << (CHAR_BIT - lastbits);
     }
 }
 
@@ -157,7 +157,7 @@ static int sizeofint(const int size)
     int num         = 1;
     int num_of_bits = 0;
 
-    while (size >= num && num_of_bits < 32)
+    while (size >= num && num_of_bits < 4 * CHAR_BIT)
     {
         num_of_bits++;
         num <<= 1;
@@ -192,12 +192,12 @@ static int sizeofints(const int num_of_ints, const unsigned int sizes[])
         {
             tmp            = bytes[bytecnt] * sizes[i] + tmp;
             bytes[bytecnt] = tmp & 0xff;
-            tmp >>= 8;
+            tmp >>= CHAR_BIT;
         }
         while (tmp != 0)
         {
             bytes[bytecnt++] = tmp & 0xff;
-            tmp >>= 8;
+            tmp >>= CHAR_BIT;
         }
         num_of_bytes = bytecnt;
     }
@@ -208,7 +208,7 @@ static int sizeofints(const int num_of_ints, const unsigned int sizes[])
         num_of_bits++;
         num *= 2;
     }
-    return num_of_bits + num_of_bytes * 8;
+    return num_of_bits + num_of_bytes * CHAR_BIT;
 }
 
 /*____________________________________________________________________________
@@ -241,7 +241,7 @@ static void sendints(struct DataBuffer* buffer,
     do
     {
         bytes[num_of_bytes++] = tmp & 0xff;
-        tmp >>= 8;
+        tmp >>= CHAR_BIT;
     } while (tmp != 0);
 
     for (i = 1; i < num_of_ints; i++)
@@ -261,30 +261,30 @@ static void sendints(struct DataBuffer* buffer,
         {
             tmp            = bytes[bytecnt] * sizes[i] + tmp;
             bytes[bytecnt] = tmp & 0xff;
-            tmp >>= 8;
+            tmp >>= CHAR_BIT;
         }
         while (tmp != 0)
         {
             bytes[bytecnt++] = tmp & 0xff;
-            tmp >>= 8;
+            tmp >>= CHAR_BIT;
         }
         num_of_bytes = bytecnt;
     }
-    if (num_of_bits >= num_of_bytes * 8)
+    if (num_of_bits >= num_of_bytes * CHAR_BIT)
     {
         for (i = 0; i < num_of_bytes; i++)
         {
-            sendbits(buffer, 8, bytes[i]);
+            sendbits(buffer, CHAR_BIT, bytes[i]);
         }
-        sendbits(buffer, num_of_bits - num_of_bytes * 8, 0);
+        sendbits(buffer, num_of_bits - num_of_bytes * CHAR_BIT, 0);
     }
     else
     {
         for (i = 0; i < num_of_bytes - 1; i++)
         {
-            sendbits(buffer, 8, bytes[i]);
+            sendbits(buffer, CHAR_BIT, bytes[i]);
         }
-        sendbits(buffer, num_of_bits - (num_of_bytes - 1) * 8, bytes[i]);
+        sendbits(buffer, num_of_bits - (num_of_bytes - 1) * CHAR_BIT, bytes[i]);
     }
 }
 
@@ -309,18 +309,18 @@ static int receivebits(struct DataBuffer* buffer, int num_of_bits)
     lastbyte = buffer->lastbyte;
 
     num = 0;
-    while (num_of_bits >= 8)
+    while (num_of_bits >= CHAR_BIT)
     {
-        lastbyte = (lastbyte << 8) | buffer->data[buffer->index++];
-        num |= (lastbyte >> lastbits) << (num_of_bits - 8);
-        num_of_bits -= 8;
+        lastbyte = (lastbyte << CHAR_BIT) | buffer->data[buffer->index++];
+        num |= (lastbyte >> lastbits) << (num_of_bits - CHAR_BIT);
+        num_of_bits -= CHAR_BIT;
     }
     if (num_of_bits > 0)
     {
         if (lastbits < num_of_bits)
         {
-            lastbits += 8;
-            lastbyte = (lastbyte << 8) | buffer->data[buffer->index++];
+            lastbits += CHAR_BIT;
+            lastbyte = (lastbyte << CHAR_BIT) | buffer->data[buffer->index++];
         }
         lastbits -= num_of_bits;
         num |= (lastbyte >> lastbits) & ((1 << num_of_bits) - 1);
@@ -353,10 +353,10 @@ static void receiveints(struct DataBuffer* buffer,
 
     bytes[0] = bytes[1] = bytes[2] = bytes[3] = 0;
     num_of_bytes                              = 0;
-    while (num_of_bits > 8)
+    while (num_of_bits > CHAR_BIT)
     {
-        bytes[num_of_bytes++] = receivebits(buffer, 8);
-        num_of_bits -= 8;
+        bytes[num_of_bytes++] = receivebits(buffer, CHAR_BIT);
+        num_of_bits -= CHAR_BIT;
     }
     if (num_of_bits > 0)
     {
@@ -373,14 +373,14 @@ static void receiveints(struct DataBuffer* buffer,
         num = 0;
         for (j = num_of_bytes - 1; j >= 0; j--)
         {
-            num      = (num << 8) | bytes[j];
+            num      = (num << CHAR_BIT) | bytes[j];
             p        = num / sizes[i];
             bytes[j] = p;
             num      = num - p * sizes[i];
         }
         nums[i] = num;
     }
-    nums[0] = bytes[0] | (bytes[1] << 8) | (bytes[2] << 16) | (bytes[3] << 24);
+    nums[0] = bytes[0] | (bytes[1] << CHAR_BIT) | (bytes[2] << 2 * CHAR_BIT) | (bytes[3] << 3 * CHAR_BIT);
 }
 
 /*____________________________________________________________________________

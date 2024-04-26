@@ -289,7 +289,7 @@ CorrelationTensor::CorrelationTensor(int numDim, int numBlockData, double blockL
 {
     unsigned int scaling = 1;
 
-    GMX_RELEASE_ASSERT(numBlockData < static_cast<int>(sizeof(scaling) * 8),
+    GMX_RELEASE_ASSERT(numBlockData < static_cast<int>(sizeof(scaling) * CHAR_BIT),
                        "numBlockData should we smaller than the number of bits in scaling");
 
     for (int n = 0; n < numBlockData; n++)

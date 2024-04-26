@@ -203,7 +203,7 @@ struct HydrogenBondData
 HydrogenBondData::HydrogenBondData(bool useHBondMap, bool useDAnr, bool useOneHBond) :
     bHBmap(useHBondMap),
     bDAnr(useDAnr),
-    wordlen(8 * sizeof(unsigned int)),
+    wordlen(CHAR_BIT * sizeof(unsigned int)),
     maxhydro(useOneHBond ? 1 : sc_maxNumHydrogens)
 {
 }

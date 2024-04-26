@@ -385,11 +385,12 @@ NbnxnPairlistGpu::NbnxnPairlistGpu(gmx::PinningPolicy pinningPolicy) :
     static_assert(c_nbnxnGpuNumClusterPerSupercluster == c_gpuNumClusterPerCell,
                   "The search code assumes that the a super-cluster matches a search grid cell");
 
-    static_assert(sizeof(cjPacked.list_[0].imei[0].imask) * 8 >= c_nbnxnGpuJgroupSize * c_gpuNumClusterPerCell,
+    static_assert(sizeof(cjPacked.list_[0].imei[0].imask) * CHAR_BIT
+                          >= c_nbnxnGpuJgroupSize * c_gpuNumClusterPerCell,
                   "The i super-cluster cluster interaction mask does not contain a sufficient "
                   "number of bits");
 
-    static_assert(sizeof(excl[0]) * 8 >= c_nbnxnGpuJgroupSize * c_gpuNumClusterPerCell,
+    static_assert(sizeof(excl[0]) * CHAR_BIT >= c_nbnxnGpuJgroupSize * c_gpuNumClusterPerCell,
                   "The GPU exclusion mask does not contain a sufficient number of bits");
 
     // We always want a first entry without any exclusions
@@ -1286,7 +1287,7 @@ static void make_fep_list(gmx::ArrayRef<const int> atomIndices,
     const int numEnergyGroups = nbatParams.numEnergyGroups;
 
     /* TODO: Consider adding a check in grompp and changing this to an assert */
-    constexpr int numBitsInEnergyGroupIdsForAtomsInJCluster = sizeof(*nlist->gid.data()) * 8;
+    constexpr int numBitsInEnergyGroupIdsForAtomsInJCluster = sizeof(*nlist->gid.data()) * CHAR_BIT;
     if (numEnergyGroups * c_jClusterSize > numBitsInEnergyGroupIdsForAtomsInJCluster)
     {
         gmx_fatal(FARGS,

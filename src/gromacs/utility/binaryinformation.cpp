@@ -43,6 +43,8 @@
 
 #include "config.h"
 
+#include <climits>
+
 #include <filesystem>
 
 #if GMX_FFT_FFTW3 || GMX_FFT_ARMPL_FFTW3
@@ -388,8 +390,8 @@ void gmx_print_version_info(gmx::TextWriter* writer)
 #else
     writer->writeLine("Precision:           mixed");
 #endif
-    writer->writeLine(
-            formatString("Memory model:        %u bit", static_cast<unsigned>(8 * sizeof(void*))));
+    writer->writeLine(formatString("Memory model:        %u bit",
+                                   static_cast<unsigned>(CHAR_BIT * sizeof(void*))));
 
 #if GMX_THREAD_MPI
     writer->writeLine("MPI library:         thread_mpi");

@@ -60,6 +60,7 @@
 #include "gmxpre.h"
 
 #include <cassert>
+#include <climits>
 #include <cstdlib>
 
 #if defined(_MSVC)
@@ -119,7 +120,7 @@ static inline void validate_global_work_size(const KernelLaunchConfig& config,
        https://www.khronos.org/registry/cl/sdk/1.0/docs/man/xhtml/clEnqueueNDRangeKernel.html
      */
     device_size_t_size_bits = dinfo->adress_bits;
-    host_size_t_size_bits   = static_cast<cl_uint>(sizeof(size_t) * 8);
+    host_size_t_size_bits   = static_cast<cl_uint>(sizeof(size_t) * CHAR_BIT);
 
     /* If sizeof(host size_t) <= sizeof(device size_t)
             => global_work_size components will always be valid
