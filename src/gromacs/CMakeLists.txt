@@ -186,6 +186,7 @@ if (GMX_GPU_CUDA)
     #we cannot link with both cufftmp and cufft
     if(GMX_USE_cuFFTMp)
         target_link_libraries(libgromacs PRIVATE ${cuFFTMp_LIBRARY})
+        target_include_directories(libgromacs PRIVATE ${cuFFTMp_INCLUDE_DIR})
     else()
         target_link_libraries(libgromacs PRIVATE ${CUDA_CUFFT_LIBRARIES})
     endif()

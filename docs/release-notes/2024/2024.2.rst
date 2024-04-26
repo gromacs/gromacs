@@ -89,7 +89,15 @@ from the Lennard-Jones parameters set by the user.
 
 :issue:`5015`
 
-Fix Performance Regression for Some Cases on Latest NVIDIA GPUs
+
+Fix cuFFTMp compilation issue
+"""""""""""""""""""""""""""""
+
+The cuFFTMp build is now more likely to compile because the compiler now
+sees the correct path.
+
+
+Fix performance regression for some cases on latest NVIDIA GPUs
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
 In version 2024.0 we included optimizations to non-bonded force
