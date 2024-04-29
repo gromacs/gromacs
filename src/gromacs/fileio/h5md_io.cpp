@@ -146,7 +146,6 @@ void setupSystemParticleProperties(gmx::h5mdio::GmxH5mdIo*  file,
     atomElements.reserve(numSelectedParticles);
     atomIds.reserve(numSelectedParticles);
 
-    /* FIXME: The names could be copied directly to a char array instead. */
     /* FIXME: Should use int64_t. Needs changes in atoms. */
     for (size_t i = 0; i < numSelectedParticles; i++)
     {
@@ -385,20 +384,18 @@ std::string GmxH5mdIo::getCreatorProgramVersion()
     return version;
 }
 
-hid_t GmxH5mdIo::getGromacsTopologyGroup()
+hid_t GmxH5mdIo::getGroupId(const std::string& name)
 {
-    hid_t topologyGroup = H5Gopen(file_, "/parameters/gromacs_topology", H5P_DEFAULT);
+    hid_t group = H5Gopen(file_, name.c_str(), H5P_DEFAULT);
 
-    return topologyGroup;
+    return group;
 }
 
-hid_t GmxH5mdIo::setupGromacsTopologyGroup()
+hid_t GmxH5mdIo::createGroup(const std::string& name)
 {
-    hid_t topologyGroup = openOrCreateGroup(file_, "/parameters/gromacs_topology");
-    setVersionAttribute(
-            topologyGroup, c_gmxH5mdParametersGroupMajorVersion, c_gmxH5mdParametersGroupMinorVersion);
+    hid_t group = openOrCreateGroup(file_, name.c_str());
 
-    return topologyGroup;
+    return group;
 }
 
 void GmxH5mdIo::setStringProperty(const std::string&              containerName,
@@ -414,8 +411,8 @@ void GmxH5mdIo::setStringProperty(const std::string&              containerName,
     {
         hid_t stringDataType = H5Tcopy(H5T_C_S1);
         H5Tset_cset(stringDataType, H5T_CSET_UTF8);
-        hsize_t atomPropertiesChunkDims[1];
-        atomPropertiesChunkDims[0] = propertyValues.size();
+        hsize_t chunkDims[1];
+        chunkDims[0] = propertyValues.size();
         if (maxStringLength > 0)
         {
             /* FIXME: Is there a more convenient way to do this? std::string is nice above, but cannot be used for writing in HDF5. */
@@ -431,7 +428,7 @@ void GmxH5mdIo::setStringProperty(const std::string&              containerName,
                                                    dataSetName.c_str(),
                                                    "",
                                                    stringDataType,
-                                                   atomPropertiesChunkDims,
+                                                   chunkDims,
                                                    CompressionAlgorithm::LosslessNoShuffle,
                                                    0);
             writeData<1, true>(dataSet, propertyValuesChars, 0);
@@ -453,7 +450,7 @@ void GmxH5mdIo::setStringProperty(const std::string&              containerName,
                                                    dataSetName.c_str(),
                                                    "",
                                                    stringDataType,
-                                                   atomPropertiesChunkDims,
+                                                   chunkDims,
                                                    CompressionAlgorithm::LosslessNoShuffle,
                                                    0);
             writeData<1, true>(dataSet, propertyValuesChars.data(), 0);
@@ -786,45 +783,6 @@ real GmxH5mdIo::getFinalTimeFromAllDataBlocks()
     return -1;
 }
 
-hid_t GmxH5mdIo::addMoleculeType(hid_t topologyGroup, const std::string& name, size_t numAtomsPerMolecule)
-{
-    std::string moleculesGroupName = "molecules";
-    hid_t       moleculesGroup     = openOrCreateGroup(topologyGroup, moleculesGroupName.c_str());
-
-    // Only create the requested molecule type if it is not already present
-    hid_t moleculeTypeGroup = H5Gopen(moleculesGroup, name.c_str(), H5P_DEFAULT);
-    if (moleculeTypeGroup < 0)
-    {
-        moleculeTypeGroup = openOrCreateGroup(moleculesGroup, name.c_str());
-    }
-
-    setAttribute(moleculeTypeGroup, "number_of_atoms", static_cast<int64_t>(numAtomsPerMolecule), H5T_NATIVE_INT64);
-
-    return moleculeTypeGroup;
-}
-
-void GmxH5mdIo::addBlockOfMoleculeType(hid_t  moleculeTypeGroup,
-                                       size_t molBlockIndex,
-                                       size_t moleculeIndexStart,
-                                       size_t numMol,
-                                       size_t globalAtomStart)
-{
-
-    hid_t   dataType                  = H5Tcopy(H5T_NATIVE_INT64);
-    hsize_t chunkDims[1]              = { 1 };
-    hid_t   moleculeIndexStartDataSet = openOrCreateDataSet<1>(
-            moleculeTypeGroup, "molecule_index_start", "", dataType, chunkDims, CompressionAlgorithm::None, 0);
-    writeData<1, false>(moleculeIndexStartDataSet, &moleculeIndexStart, molBlockIndex);
-
-    hid_t numMolStartDataSet = openOrCreateDataSet<1>(
-            moleculeTypeGroup, "number_of_molecules", "", dataType, chunkDims, CompressionAlgorithm::None, 0);
-    writeData<1, false>(numMolStartDataSet, &numMol, molBlockIndex);
-
-    hid_t globalAtomsStartDataSet = openOrCreateDataSet<1>(
-            moleculeTypeGroup, "global_atoms_start_index", "", dataType, chunkDims, CompressionAlgorithm::None, 0);
-    writeData<1, false>(globalAtomsStartDataSet, &globalAtomStart, molBlockIndex);
-}
-
 extern template hid_t
 openOrCreateDataSet<1>(hid_t, const char*, const char*, hid_t, const hsize_t*, CompressionAlgorithm, double);
 extern template hid_t
@@ -941,6 +899,81 @@ void setupMolecularSystemParticleData(h5mdio::GmxH5mdIo*       file,
 #endif
 }
 
+h5mdio::hid_t addMoleculeType(h5mdio::GmxH5mdIo* file, const gmx_moltype_t& molType)
+{
+#if GMX_USE_HDF5
+    std::string moleculesGroupName = h5mdio::s_gromacsTopologyGroupName + "/molecules";
+    file->createGroup(moleculesGroupName);
+    hid_t moleculeTypeGroup = file->createGroup(moleculesGroupName + "/" + (*molType.name));
+
+    h5mdio::setAttribute(
+            moleculeTypeGroup, "number_of_atoms", static_cast<int64_t>(molType.atoms.nr), H5T_NATIVE_INT64);
+
+    hid_t stringDataType = H5Tcopy(H5T_C_S1);
+    H5Tset_cset(stringDataType, H5T_CSET_UTF8);
+    size_t maxNameStringLength = 17;
+    H5Tset_size(stringDataType, maxNameStringLength);
+    hsize_t chunkDims[1];
+    chunkDims[0] = molType.atoms.nr;
+
+    hid_t atomNameDataSet = h5mdio::openOrCreateDataSet<1>(moleculeTypeGroup,
+                                                           "atom_name",
+                                                           "",
+                                                           stringDataType,
+                                                           chunkDims,
+                                                           h5mdio::CompressionAlgorithm::LosslessNoShuffle,
+                                                           0);
+    hid_t residueNameDataSet =
+            h5mdio::openOrCreateDataSet<1>(moleculeTypeGroup,
+                                           "residue_name",
+                                           "",
+                                           stringDataType,
+                                           chunkDims,
+                                           h5mdio::CompressionAlgorithm::LosslessNoShuffle,
+                                           0);
+    for (ssize_t i = 0; i < molType.atoms.nr; i++)
+    {
+        int residueIndex = molType.atoms.atom[i].resind;
+
+        h5mdio::writeData<1, false>(atomNameDataSet, *(molType.atoms.atomname[i]), i);
+        h5mdio::writeData<1, false>(residueNameDataSet, *(molType.atoms.resinfo[residueIndex].name), i);
+    }
+
+    return moleculeTypeGroup;
+#else
+    throw gmx::FileIOError(
+            "GROMACS was compiled without HDF5 support, cannot handle this file type");
+#endif
+}
+
+void addBlockOfMoleculeType(hid_t  moleculeTypeGroup,
+                            size_t molBlockIndex,
+                            size_t moleculeIndexStart,
+                            size_t numMol,
+                            size_t globalAtomStart)
+{
+
+    hid_t   dataType                  = H5Tcopy(H5T_NATIVE_INT64);
+    hsize_t chunkDims[1]              = { 1 };
+    hid_t   moleculeIndexStartDataSet = h5mdio::openOrCreateDataSet<1>(
+            moleculeTypeGroup, "molecule_index_start", "", dataType, chunkDims, h5mdio::CompressionAlgorithm::None, 0);
+    h5mdio::writeData<1, false>(moleculeIndexStartDataSet, &moleculeIndexStart, molBlockIndex);
+
+    hid_t numMolStartDataSet = h5mdio::openOrCreateDataSet<1>(
+            moleculeTypeGroup, "number_of_molecules", "", dataType, chunkDims, h5mdio::CompressionAlgorithm::None, 0);
+    h5mdio::writeData<1, false>(numMolStartDataSet, &numMol, molBlockIndex);
+
+    hid_t globalAtomsStartDataSet = h5mdio::openOrCreateDataSet<1>(moleculeTypeGroup,
+                                                                   "global_atoms_start_index",
+                                                                   "",
+                                                                   dataType,
+                                                                   chunkDims,
+                                                                   h5mdio::CompressionAlgorithm::None,
+                                                                   0);
+    h5mdio::writeData<1, false>(globalAtomsStartDataSet, &globalAtomStart, molBlockIndex);
+}
+
+
 void setupMolecularSystemTopology(h5mdio::GmxH5mdIo* file, const gmx_mtop_t& topology, bool abortIfPresent)
 {
 #if GMX_USE_HDF5
@@ -949,21 +982,25 @@ void setupMolecularSystemTopology(h5mdio::GmxH5mdIo* file, const gmx_mtop_t& top
         throw gmx::FileIOError("No file open for writing.");
     }
 
-    size_t numMolBlocks       = topology.molblock.size();
-    size_t numMolBlockIndices = topology.moleculeBlockIndices.size();
+    size_t            numMolBlocks       = topology.molblock.size();
+    size_t gmx_unused numMolBlockIndices = topology.moleculeBlockIndices.size();
 
     GMX_ASSERT(numMolBlocks == numMolBlockIndices,
                "The number of molecule blocks and molecule block indices do not match.");
 
-    hid_t topologyGroup = file->getGromacsTopologyGroup();
+    hid_t topologyGroup = file->getGroupId(h5mdio::s_gromacsTopologyGroupName);
     if (topologyGroup >= 0 && abortIfPresent)
     {
         return;
     }
+
     if (topologyGroup < 0)
     {
-        topologyGroup = file->setupGromacsTopologyGroup();
+        topologyGroup = file->createGroup(h5mdio::s_gromacsTopologyGroupName);
     }
+    h5mdio::setVersionAttribute(topologyGroup,
+                                h5mdio::c_gmxH5mdParametersGroupMajorVersion,
+                                h5mdio::c_gmxH5mdParametersGroupMinorVersion);
 
     for (size_t i = 0; i < numMolBlocks; i++)
     {
@@ -972,8 +1009,8 @@ void setupMolecularSystemTopology(h5mdio::GmxH5mdIo* file, const gmx_mtop_t& top
         const gmx_moltype_t&        molType       = topology.moltype[molBlock.type];
         const std::string           molName       = *molType.name;
         const size_t                numMol        = molBlock.nmol;
-        hid_t molTypeId = file->addMoleculeType(topologyGroup, molName, molBlockIndex.numAtomsPerMolecule);
-        file->addBlockOfMoleculeType(
+        hid_t                       molTypeId     = addMoleculeType(file, molType);
+        addBlockOfMoleculeType(
                 molTypeId, i, molBlockIndex.moleculeIndexStart, numMol, molBlockIndex.globalAtomStart);
     }
 

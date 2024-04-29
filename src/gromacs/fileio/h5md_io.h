@@ -46,6 +46,7 @@
 #include "h5md_util.h"
 
 enum class PbcType : int;
+struct gmx_moltype_t;
 struct gmx_mtop_t;
 
 namespace gmx
@@ -60,6 +61,7 @@ constexpr int              c_h5mdMajorVersion                   = 1;
 constexpr int              c_h5mdMinorVersion                   = 1;
 constexpr int              c_gmxH5mdParametersGroupMajorVersion = 0;
 constexpr int              c_gmxH5mdParametersGroupMinorVersion = 9;
+static std::string         s_gromacsTopologyGroupName           = "/parameters/gromacs_topology";
 
 
 /*! \brief The container of the H5MD data. The class is designed to read/write data according to de Buyl et al., 2014
@@ -155,6 +157,16 @@ public:
      */
     std::string getCreatorProgramVersion();
 
+    /*! \brief Get the HDF5 ID of the group specified by name (by absolute path in the file).
+     * \returns The ID of the group or < 0 if the group does not exist.
+     */
+    hid_t getGroupId(const std::string& name);
+
+    /*! \brief Create an HDF5 group specified by name (by absolute path in the file).
+     * \returns The ID of the group or < 0 if the group could not be created.
+     */
+    hid_t createGroup(const std::string& name);
+
     /*! \brief Get the HDF5 ID of the GROMACS topology group in the H5MD file.
      * \returns The HDF5 ID of the topology group or < 0 if no group was found.
      */
@@ -165,7 +177,7 @@ public:
      */
     hid_t setupGromacsTopologyGroup();
 
-    /*! \brief Set a string property.
+    /*! \brief Set a string property. All entries in the propertyValues vector are set.
      * N.b., The maximum string length is set to c_atomStringLen to avoid the overhead that comes
      * with flexible string lengths in HDF5.
      *
@@ -184,7 +196,7 @@ public:
                            bool                            replaceExisting = false,
                            size_t                          maxStringLength = c_atomStringLen);
 
-    /*! \brief Set a numeric property.
+    /*! \brief Set a numeric property. All entries in the propertyValues vector are set.
      *
      * \param[in] containerName The name of the HDF5 group that contains the property, e.g., "/particles/system".
      * \param[in] propertyName The name of the property to set, e.g., "atomname".
@@ -199,7 +211,8 @@ public:
                             bool                  replaceExisting = false);
 
 
-    /* \brief Read a string property. The string can be either fixed-length or variable-length.
+    /*! \brief Read a string property. The string can be either fixed-length or variable-length.
+     *
      * \param[in] containerName The name of the HDF5 group that contains the property, e.g., "/particles/system".
      * \param[in] propertyName The name of the property to read, e.g., "atomname".
      * \returns A vector containing the strings. Empty if no strings could be read.
@@ -208,10 +221,13 @@ public:
     std::vector<std::string> readStringProperty(const std::string& containerName,
                                                 const std::string& propertyName);
 
-    /* \brief Read a numeric property.
+    /*! \brief Read a numeric property.
+     *
      * \param[in] containerName The name of the HDF5 group that contains the property, e.g.,
-     * "/particles/system". \param[in] propertyName The name of the property to read, e.g.,
-     * "atomname". \returns A vector containing the numeric values. Empty if no data could be read.
+     * "/particles/system".
+     * \param[in] propertyName The name of the property to read, e.g.,
+     * "atomname".
+     * \returns A vector containing the numeric values. Empty if no data could be read.
      * \throws FileIOError If there was an error reading the data.
      */
     template<typename T>
@@ -311,28 +327,13 @@ public:
      */
     real getFinalTimeFromAllDataBlocks();
 
-    /*! \brief Add a molecule type to the GROMACS topology section in the file.
-     * \param[in] topologyGroup The topology group to create the molecule type in.
-     * \param[in] name The name of the molecule type.
-     * \param[in] numAtomsPerMolecule The number of atoms per molecule of this type.
-     * \returns the H5MD ID of the molecule type group
-     * \throws FileIOError If there was an error adding the molecule type information.
+    /*! \brief Add a residue to a molecule, or chain in a molecule, in the GROMACS topology section in the file.
+     * \param[in] containerGroup The ID of the container. Should be a moleculeGroup or a chainGroup in a molecule group.
+     * \param[in] name The name of the residue.
+     * \param[in] residueNumber The number of the residue in the chain or molecule.
+     * \returns the H5MD ID of the residue
      */
-    hid_t addMoleculeType(hid_t topologyGroup, const std::string& name, size_t numAtomsPerMolecule);
-
-    /*! \brief Add a block consisting of a number of copies of a molecule type to the GROMACS topology section in the file.
-     * \param[in] molTypeId The hdf5 ID of the molecule type.
-     * \param[in] blockIndex The index of the molecule block.
-     * \param[in] moleculeIndexStart The global molecule index of the first molecule of this type (in this molecule block).
-     * \param[in] numMol The number of molecules of this type (in this molecule block).
-     * \param[in] molSystemAtomsStart The first atom index of this molecule block.
-     * \throws FileIOError If there was an error adding the molecule type information.
-     */
-    void addBlockOfMoleculeType(const hid_t molTypeId,
-                                size_t      blockIndex,
-                                size_t      moleculeIndexStart,
-                                size_t      numMol,
-                                size_t      molSystemAtomsStart);
+    hid_t addResidue(hid_t containerGroup, const std::string& name, size_t residueNumber);
 };
 
 } // namespace h5mdio
@@ -358,6 +359,35 @@ void setupMolecularSystemParticleData(h5mdio::GmxH5mdIo*       file,
                                       const gmx_mtop_t&        topology,
                                       gmx::ArrayRef<const int> index            = {},
                                       const std::string        index_group_name = "");
+
+/*! \brief Adds the atoms of the molecule type \p molType to the corresponding molecule type in the file.
+ *
+ * \param[in] molType The GROMACS molecule type data.
+ * \throws FileIOError If there is an error writing the data.
+ */
+void addMoleculeTypeAtoms(const gmx_moltype_t& molType);
+
+/*! \brief Add a molecule type to the GROMACS topology section in the file.
+ * \param[in] file The H5MD file manager to use.
+ * \param[in] molType The molecule type to add.
+ * \returns the H5MD ID of the molecule type group
+ * \throws FileIOError If there was an error adding the molecule type information.
+ */
+h5mdio::hid_t addMoleculeType(h5mdio::GmxH5mdIo* file, const gmx_moltype_t& molType);
+
+/*! \brief Add a block consisting of a number of copies of a molecule type to the GROMACS topology section in the file.
+ * \param[in] molTypeId The hdf5 ID of the molecule type.
+ * \param[in] blockIndex The index of the molecule block.
+ * \param[in] moleculeIndexStart The global molecule index of the first molecule of this type (in this molecule block).
+ * \param[in] numMol The number of molecules of this type (in this molecule block).
+ * \param[in] molSystemAtomsStart The first atom index of this molecule block.
+ * \throws FileIOError If there was an error adding the molecule type information.
+ */
+void addBlockOfMoleculeType(const h5mdio::hid_t molTypeId,
+                            size_t              blockIndex,
+                            size_t              moleculeIndexStart,
+                            size_t              numMol,
+                            size_t              molSystemAtomsStart);
 
 /*! \brief Setup molecular system topology data.
  *
