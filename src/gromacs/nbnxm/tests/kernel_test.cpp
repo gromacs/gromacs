@@ -94,13 +94,6 @@ namespace test
 namespace
 {
 
-// Set this macro to 1 when generating reference data
-#define GENERATE_REFERENCE_DATA 0
-
-#if GENERATE_REFERENCE_DATA && !GMX_DOUBLE
-#    error "We should only generate reference data with double precision"
-#endif
-
 /*! \brief How the kernel should compute energies
  *
  * Note that the construction of the test system is currently
@@ -634,8 +627,43 @@ public:
             case vdwktLJPOTSWITCH: options_.vdwModifier = InteractionModifiers::PotSwitch; break;
             default: options_.vdwModifier = InteractionModifiers::PotShift; break;
         }
-        options_.useLJPme       = (parameters_.vdwKernelType == vdwktLJEWALDCOMBGEOM);
-        options_.energyHandling = parameters_.energyHandling;
+        options_.useLJPme = (parameters_.vdwKernelType == vdwktLJEWALDCOMBGEOM);
+
+        if (referenceDataMode() != ReferenceDataMode::Compare)
+        {
+            // Note that (for simplicity) runs in modes
+            // ReferenceDataMode::CreateMissing or
+            // ReferenceDataMode::UpdateChanged also skips
+            // testing unchanged values that could have been compared.
+            if (!GMX_DOUBLE)
+            {
+                ADD_FAILURE() << "Reference data can only be created or updated from a "
+                                 "double-precision build of GROMACS";
+            }
+
+            if (options_.kernelSetup.kernelType == Nbnxm::KernelType::Cpu4x4_PlainC)
+            {
+                GTEST_SKIP() << "Plain-C kernels are never used to generate reference data";
+            }
+
+            if (options_.coulombType == CoulombKernelType::Table
+                || options_.coulombType == CoulombKernelType::TableTwin)
+            {
+                GTEST_SKIP() << "Tabulated kernels are never used to generate reference data";
+            }
+        }
+
+        if ((GMX_HAVE_NBNXM_SIMD_4XM == (0)) && parameters_.kernelType == Nbnxm::KernelType::Cpu4xN_Simd_4xN)
+        {
+            GTEST_SKIP()
+                    << "Cannot test or generate data for 4xN kernels without suitable SIMD support";
+        }
+
+        if ((GMX_HAVE_NBNXM_SIMD_2XMM == (0)) && parameters_.kernelType == Nbnxm::KernelType::Cpu4xN_Simd_2xNN)
+        {
+            GTEST_SKIP() << "Cannot test or generate data for 2xNN kernels without suitable SIMD "
+                            "support";
+        }
 
         if (options_.kernelSetup.kernelType == Nbnxm::KernelType::Cpu4x4_PlainC
             && (options_.coulombType == CoulombKernelType::Ewald
@@ -756,31 +784,6 @@ public:
     }
 };
 
-#if GENERATE_REFERENCE_DATA
-// The plain-C kernels only support tabulated Ewald.
-// To get high accuracy in the reference data, we use SIMD kernels.
-#    if GMX_HAVE_NBNXM_SIMD_4XM
-const auto testKernelTypes = ::testing::Values(Nbnxm::KernelType::Cpu4xN_Simd_4xN);
-#    else
-#        if !GMX_HAVE_NBNXM_SIMD_2XMM
-#            error "We need SIMD kernels for generating reference data"
-#        else
-const auto testKernelTypes = ::testing::Values(Nbnxm::KernelType::Cpu4xN_Simd_2xNN);
-#        endif
-#    endif
-#else // GENERATE_REFERENCE_DATA
-const auto testKernelTypes = ::testing::Values(Nbnxm::KernelType::Cpu4x4_PlainC
-#    if GMX_HAVE_NBNXM_SIMD_4XM
-                                               ,
-                                               Nbnxm::KernelType::Cpu4xN_Simd_4xN
-#    endif
-#    if GMX_HAVE_NBNXM_SIMD_2XMM
-                                               ,
-                                               Nbnxm::KernelType::Cpu4xN_Simd_2xNN
-#    endif
-);
-#endif // GENERATE_REFERENCE_DATA
-
 /* Note that which tests are registered is determined at compile time, not dynamically.
  * The dynamic registration mechanism is only used to be able to call registerTests()
  * so we can supply different names for the test and the string used for the reference
@@ -790,16 +793,14 @@ void registerTestsDynamically()
 {
     // Form the Cartesian product of all test values we might check
     const auto testCombinations = testing::ConvertGenerator<KernelInputParameters::TupleT>(
-            ::testing::Combine(testKernelTypes,
+            ::testing::Combine(::testing::Values(Nbnxm::KernelType::Cpu4x4_PlainC,
+                                                 Nbnxm::KernelType::Cpu4xN_Simd_4xN,
+                                                 Nbnxm::KernelType::Cpu4xN_Simd_2xNN),
                                ::testing::Values(CoulombKernelType::ReactionField,
                                                  CoulombKernelType::Ewald,
-                                                 CoulombKernelType::EwaldTwin
-#if !GENERATE_REFERENCE_DATA
-                                                 ,
+                                                 CoulombKernelType::EwaldTwin,
                                                  CoulombKernelType::Table,
-                                                 CoulombKernelType::TableTwin
-#endif
-                                                 ),
+                                                 CoulombKernelType::TableTwin),
                                ::testing::Values(static_cast<int>(vdwktLJCUT_COMBGEOM),
                                                  static_cast<int>(vdwktLJCUT_COMBLB),
                                                  static_cast<int>(vdwktLJCUT_COMBNONE),

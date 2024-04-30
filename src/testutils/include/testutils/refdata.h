@@ -113,6 +113,10 @@ enum class ReferenceDataMode : int
 };
 
 /*! \libinternal \brief
+ * Returns the global mode describing how reference data is handled. */
+ReferenceDataMode referenceDataMode();
+
+/*! \libinternal \brief
  * Initializes reference data handling.
  *
  * Adds command-line options to \p options to set the reference data mode.

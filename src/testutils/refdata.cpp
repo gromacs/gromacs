@@ -158,21 +158,25 @@ typedef std::shared_ptr<internal::TestReferenceDataImpl> TestReferenceDataImplPo
  * test listener).
  */
 TestReferenceDataImplPointer g_referenceData;
-//! Global reference data mode set with setReferenceDataMode().
+//! Global reference data mode set by the `-ref-data` command-line option
 ReferenceDataMode g_referenceDataMode = ReferenceDataMode::Compare;
 
-//! Returns the global reference data mode.
-ReferenceDataMode getReferenceDataMode()
+} // namespace
+
+ReferenceDataMode referenceDataMode()
 {
     return g_referenceDataMode;
 }
+
+namespace
+{
 
 //! Returns a reference to the global reference data object.
 TestReferenceDataImplPointer initReferenceDataInstance(std::optional<std::filesystem::path> testNameOverride)
 {
     GMX_RELEASE_ASSERT(!g_referenceData, "Test cannot create multiple TestReferenceData instances");
     g_referenceData.reset(new internal::TestReferenceDataImpl(
-            getReferenceDataMode(), false, std::move(testNameOverride)));
+            referenceDataMode(), false, std::move(testNameOverride)));
     return g_referenceData;
 }
 
