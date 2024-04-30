@@ -42,7 +42,7 @@ if(GMX_NVSHMEM)
         message(FATAL_ERROR "NVSHMEM is not supported with Clang CUDA build")
     endif()
     if (GMX_USE_CUFFTMP)
-        message(FATAL_ERROR "NVSHMEM is not yet supported together with cuFFTMp")
+        message(FATAL_ERROR "Direct use of NVSHMEM is not yet supported together with cuFFTMp (which uses NVSHMEM internally). GMX_NVSHMEM and GMX_USE_CUFFTMP cannot be enabled at the same time.")
     endif()
 
     find_library(NVSHMEM_DEVICE_LIBS NAMES nvshmem_device PATHS "${GMX_NVSHMEM_HOME}/lib/" REQUIRED)
