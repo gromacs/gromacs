@@ -20,7 +20,7 @@ The Verlet buffer estimate could be wrong with initial coordinates out of the bo
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
 Due to incorrect periodic boundary treatment in the density estimate for
-the Verlet buffer calcalution, the Verlet buffer could be off when many atoms
+the Verlet buffer calculation, the Verlet buffer could be off when many atoms
 were outside the rectangular unit cell. In nearly all cases this would lead
 to a slightly too large buffer and almost never to a too short buffer.
 
@@ -89,7 +89,7 @@ Fix LJ combination rules mixup in nonbonded-benchmark tool
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
 The gmx nonbonded-benchmark tool would use geometric LH combination rules instead
-of Lortenz-Berthelot and Lortenz-Berthelot instead of no combination rules.
+of Lorentz-Berthelot and Lorentz-Berthelot instead of no combination rules.
 
 :issue:`4963`
 

@@ -88,6 +88,6 @@ Fixed compilation with Boost 1.83
 
 Miscellaneous
 ^^^^^^^^^^^^^
-A grompp warning when using Parinello-Rahman pressure coupling
+A grompp warning when using Parrinello-Rahman pressure coupling
 combining with position restraints suggested to use Berendsen
 instead. This suggestion has now been changed to C-rescale.
