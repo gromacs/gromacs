@@ -1111,9 +1111,9 @@ static void dump_grid(FILE* fp, ivec ngrid, const std::vector<std::vector<std::v
             {
                 for (x = 0; x < ngrid[XX]; x++)
                 {
-                    fprintf(fp, "%3zd", grid[x][y][z].d[gr].atoms.size());
+                    fprintf(fp, "%3zu", grid[x][y][z].d[gr].atoms.size());
                     sum[gr] += grid[z][y][x].d[gr].atoms.size();
-                    fprintf(fp, "%3zd", grid[x][y][z].a[gr].atoms.size());
+                    fprintf(fp, "%3zu", grid[x][y][z].a[gr].atoms.size());
                     sum[gr] += grid[z][y][x].a[gr].atoms.size();
                 }
                 fprintf(fp, " | ");
@@ -1121,9 +1121,9 @@ static void dump_grid(FILE* fp, ivec ngrid, const std::vector<std::vector<std::v
                 {
                     for (x = 0; x < ngrid[XX]; x++)
                     {
-                        fprintf(fp, "%3zd", grid[z + 1][y][x].d[gr].atoms.size());
+                        fprintf(fp, "%3zu", grid[z + 1][y][x].d[gr].atoms.size());
                         sum[gr] += grid[z + 1][y][x].d[gr].atoms.size();
-                        fprintf(fp, "%3zd", grid[z + 1][y][x].a[gr].atoms.size());
+                        fprintf(fp, "%3zu", grid[z + 1][y][x].a[gr].atoms.size());
                         sum[gr] += grid[z + 1][y][x].a[gr].atoms.size();
                     }
                 }

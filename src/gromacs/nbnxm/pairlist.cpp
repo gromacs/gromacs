@@ -514,7 +514,7 @@ static void print_nblist_statistics(FILE*                   fp,
         }
     }
     fprintf(fp,
-            "nbl cell pairs, total: %zu excl: %d %.1f%%\n",
+            "nbl cell pairs, total: %td excl: %d %.1f%%\n",
             nbl.cj.size(),
             npexcl,
             100 * npexcl / std::max(static_cast<double>(nbl.cj.size()), 1.0));
@@ -537,7 +537,7 @@ static void print_nblist_statistics(FILE*                   fp,
     const Grid::Dimensions& dims = grid.dimensions();
 
     fprintf(fp,
-            "nbl nsci %zu ncjPacked %zu nsi %d excl4 %zu\n",
+            "nbl nsci %zu ncjPacked %td nsi %d excl4 %zu\n",
             nbl.sci.size(),
             nbl.cjPacked.size(),
             nbl.nci_tot,
