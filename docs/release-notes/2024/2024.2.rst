@@ -64,7 +64,7 @@ Warn about unsupported compilers sooner
 """""""""""""""""""""""""""""""""""""""
 
 Now CMake reports that a user's compiler is broken or unsupported
-before running into other fatal issues that woud have obscured a
+before running into other fatal issues that would have obscured a
 critical problem.
 
 :issue:`5056`
@@ -138,10 +138,10 @@ deinitialization.
 
 :issue:`4888`
 
-Fix incorrect mdp keyword for mass repartioning in documentation
-""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+Fix incorrect mdp keyword for mass repartitioning in documentation
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
-The mdp keyword for mass repartioning was incorrect in the list of mdp
+The mdp keyword for mass repartitioning was incorrect in the list of mdp
 options in the documentation.
 
 :issue:`5007`

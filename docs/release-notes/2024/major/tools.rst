@@ -10,9 +10,9 @@ Improvements to |Gromacs| tools
 Improved Einstein viscosity calculation in gmx energy
 """""""""""""""""""""""""""""""""""""""""""""""""""""
 
-Viscosity calcalution using the Einstein formula is convenient as this does
+Viscosity calculation using the Einstein formula is convenient as this does
 not require extremely frequent pressure tensor data. However, the implementation
-of the calculation was inconvienent for long simulations and could take hours
+of the calculation was inconvenient for long simulations and could take hours
 to complete. Improved stepping through the data reduces the computational time
 to minutes and provides much clearer output.
 
@@ -33,4 +33,3 @@ Naming CYS residues as CYX shows that they should form a disulfide bond.
 residues.
 
 :issue:`4929`
-
