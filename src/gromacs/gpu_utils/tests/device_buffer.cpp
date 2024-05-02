@@ -42,7 +42,7 @@
 
 #include "config.h"
 
-#if GMX_GPU && !GMX_GPU_HIP
+#if GMX_GPU
 #    include <numeric>
 
 #    include <gmock/gmock.h>
@@ -54,7 +54,6 @@
 #    include "gromacs/gpu_utils/hostallocator.h"
 
 #    include "testutils/test_hardware_environment.h"
-#    include "testutils/testasserts.h"
 
 namespace gmx
 {
@@ -237,7 +236,7 @@ TYPED_TEST(DeviceBufferTest, CanCopyToAndFromDeviceWithOffset)
     }
 }
 
-#    if GMX_GPU_CUDA || GMX_GPU_SYCL
+#    if GMX_GPU_CUDA || GMX_GPU_SYCL || GMX_GPU_HIP
 
 TYPED_TEST(DeviceBufferTest, CanCopyBetweenDeviceBuffersOnSameDevice)
 {
@@ -288,7 +287,7 @@ TYPED_TEST(DeviceBufferTest, CanCopyBetweenDeviceBuffersOnSameDevice)
     }
 }
 
-#    endif // GMX_GPU_CUDA
+#    endif // GMX_GPU_CUDA || GMX_GPU_SYCL || GMX_GPU_HIP
 
 
 } // namespace
