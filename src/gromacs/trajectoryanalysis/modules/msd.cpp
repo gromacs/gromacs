@@ -571,13 +571,13 @@ void Msd::optionsFinished(TrajectoryAnalysisSettings gmx_unused* settings)
         std::string errorMessage =
                 "Options -type and -lateral are mutually exclusive. Choose one or neither (for 3D "
                 "MSDs).";
-        GMX_THROW(InconsistentInputError(errorMessage.c_str()));
+        GMX_THROW(InconsistentInputError(errorMessage));
     }
     if (selections_.size() > 1 && molSelected_)
     {
         std::string errorMessage =
                 "Cannot have multiple groups selected with -sel when using -mol.";
-        GMX_THROW(InconsistentInputError(errorMessage.c_str()));
+        GMX_THROW(InconsistentInputError(errorMessage));
     }
 }
 
@@ -670,6 +670,25 @@ void Msd::analyzeFrame(int gmx_unused                frameNumber,
     if (!dt_.has_value() && !times_.empty())
     {
         dt_ = time - times_[0];
+        // Place conditions so they are only checked once
+        if (*dt_ > trestart_)
+        {
+            std::string errorMessage = "-dt cannot be larger than -trestart (default 10 ps).";
+            GMX_THROW(InconsistentInputError(errorMessage));
+        }
+        if (!bRmod(trestart_, 0, *dt_))
+        {
+            std::string errorMessage =
+                    "-trestart (default 10 ps) must be divisible by -dt for useful results.";
+            GMX_THROW(InconsistentInputError(errorMessage));
+        }
+        if (*dt_ == trestart_)
+        {
+            //\n included below to avoid conflict with other output
+            fprintf(stderr,
+                    "\nWARNING: -dt and -trestart are equal. Statistics for each tau data point "
+                    "will not be independent.\n");
+        }
     }
 
     // Each frame gets an entry in times, but frameTimes only updates if we're at a restart.
@@ -692,8 +711,8 @@ void Msd::analyzeFrame(int gmx_unused                frameNumber,
         // For each preceding frame, calculate tau and do comparison.
         for (size_t i = firstValidFrame_; i < msdData.frames.size(); i++)
         {
-            // If dt > trestart, the tau increment will be dt rather than trestart.
-            const double tau = time - (t0_ + std::max<double>(trestart_, *dt_) * i);
+
+            const double tau = time - (t0_ + trestart_ * i);
             if (tau > maxTau_)
             {
                 // The (now empty) entry is no longer needed, so over time the outer vector will

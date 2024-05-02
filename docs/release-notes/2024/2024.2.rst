@@ -19,6 +19,14 @@ Fixes where mdrun could behave incorrectly
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
 
+Improve errors and warnings to avoid poor results with gmx msd
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Fail properly if ```-trestart``` is not divisible by ```-dt``` or if ```-dt```
+> ```-trestart```. A warning is generated if the two values are equal. 
+
+:issue:`5051`
+
 Improve error messages from editconf and trjconv
 """"""""""""""""""""""""""""""""""""""""""""""""
 
@@ -128,7 +136,7 @@ Note that there are still other performance regressions in certain versions
 of these kernels on multiple platforms.
 
 :issue:`5036`
-       
+
 Fix crash in NbnxmSetupTest.CanCreateNbnxmGPU
 """""""""""""""""""""""""""""""""""""""""""""
 
