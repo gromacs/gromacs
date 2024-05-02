@@ -162,18 +162,6 @@ void setupSystemParticleProperties(gmx::h5mdio::GmxH5mdIo*  file,
     file->setNumericProperty("/particles/" + selectionName, "id", atomIds, false);
 }
 
-/* Unused. May be useful later. */
-/*
-herr_t getGroupNamesInLocation(hid_t location, const char* name, const H5O_info_t* info, void* operatorData)
-{
-    if(info->type == H5O_TYPE_GROUP)
-    {
-        auto vec = static_cast<std::vector<std::string>*>(operatorData);
-        vec->push_back(std::string(name));
-    }
-}
-*/
-
 } // namespace
 
 namespace gmx
@@ -298,6 +286,7 @@ void GmxH5mdIo::flush()
 
 int GmxH5mdIo::initGroupTimeDataBlocksFromFile(std::string groupName)
 {
+#if GMX_USE_HDF5
     int   numDataBlocksBefore = dataBlocks_.size();
     hid_t group               = H5Gopen(file_, groupName.c_str(), H5P_DEFAULT);
     if (group < 0)
@@ -322,10 +311,15 @@ int GmxH5mdIo::initGroupTimeDataBlocksFromFile(std::string groupName)
         throw gmx::FileIOError("Error iterating over particles data blocks.");
     }
     return dataBlocks_.size() - numDataBlocksBefore;
+#else
+    throw gmx::FileIOError(
+            "GROMACS was compiled without HDF5 support, cannot handle this file type");
+#endif
 }
 
 std::string GmxH5mdIo::getH5mdRootVersionNumber()
 {
+#if GMX_USE_HDF5
     int   majorVersion, minorVersion;
     hid_t h5mdGroup = H5Gopen(file_, "h5md", H5P_DEFAULT);
 
@@ -334,68 +328,112 @@ std::string GmxH5mdIo::getH5mdRootVersionNumber()
         return std::to_string(majorVersion) + "." + std::to_string(minorVersion);
     }
     return "";
+#else
+    throw gmx::FileIOError(
+            "GROMACS was compiled without HDF5 support, cannot handle this file type");
+#endif
 }
 
 void GmxH5mdIo::setAuthor(std::string authorName)
 {
+#if GMX_USE_HDF5
     hid_t authorGroup = openOrCreateGroup(file_, "h5md/author");
     setAttribute(authorGroup, "name", authorName.c_str());
+#else
+    throw gmx::FileIOError(
+            "GROMACS was compiled without HDF5 support, cannot handle this file type");
+#endif
 }
 
 std::string GmxH5mdIo::getAuthor()
 {
+#if GMX_USE_HDF5
     hid_t authorGroup = openOrCreateGroup(file_, "h5md/author");
     char* tmpName     = nullptr;
     getAttribute(authorGroup, "name", &tmpName);
     std::string name(tmpName);
     free(tmpName);
     return name;
+#else
+    throw gmx::FileIOError(
+            "GROMACS was compiled without HDF5 support, cannot handle this file type");
+#endif
 }
 
 void GmxH5mdIo::setCreatorProgramName(std::string creatorName)
 {
+#if GMX_USE_HDF5
     hid_t creatorGroup = openOrCreateGroup(file_, "h5md/creator");
     setAttribute(creatorGroup, "name", creatorName.c_str());
+#else
+    throw gmx::FileIOError(
+            "GROMACS was compiled without HDF5 support, cannot handle this file type");
+#endif
 }
 
 std::string GmxH5mdIo::getCreatorProgramName()
 {
+#if GMX_USE_HDF5
     hid_t creatorGroup = openOrCreateGroup(file_, "h5md/creator");
     char* tmpName      = nullptr;
     getAttribute(creatorGroup, "name", &tmpName);
     std::string name(tmpName);
     free(tmpName);
     return name;
+#else
+    throw gmx::FileIOError(
+            "GROMACS was compiled without HDF5 support, cannot handle this file type");
+#endif
 }
 
 void GmxH5mdIo::setCreatorProgramVersion(std::string version)
 {
+#if GMX_USE_HDF5
     hid_t creatorGroup = openOrCreateGroup(file_, "h5md/creator");
     setAttribute(creatorGroup, "version", version.c_str());
+#else
+    throw gmx::FileIOError(
+            "GROMACS was compiled without HDF5 support, cannot handle this file type");
+#endif
 }
 
 std::string GmxH5mdIo::getCreatorProgramVersion()
 {
+#if GMX_USE_HDF5
     hid_t creatorGroup = openOrCreateGroup(file_, "h5md/creator");
     char* tmpVersion   = nullptr;
     getAttribute(creatorGroup, "version", &tmpVersion);
     std::string version(tmpVersion);
     free(tmpVersion);
     return version;
+#else
+    throw gmx::FileIOError(
+            "GROMACS was compiled without HDF5 support, cannot handle this file type");
+#endif
 }
 
 hid_t GmxH5mdIo::getGroupId(const std::string& name)
 {
+#if GMX_USE_HDF5
     hid_t group = H5Gopen(file_, name.c_str(), H5P_DEFAULT);
 
     return group;
+#else
+    throw gmx::FileIOError(
+            "GROMACS was compiled without HDF5 support, cannot handle this file type");
+#endif
 }
 
 hid_t GmxH5mdIo::createGroup(const std::string& name)
 {
+#if GMX_USE_HDF5
     hid_t group = openOrCreateGroup(file_, name.c_str());
 
     return group;
+#else
+    throw gmx::FileIOError(
+            "GROMACS was compiled without HDF5 support, cannot handle this file type");
+#endif
 }
 
 void GmxH5mdIo::setStringProperty(const std::string&              containerName,
@@ -404,6 +442,7 @@ void GmxH5mdIo::setStringProperty(const std::string&              containerName,
                                   bool                            replaceExisting,
                                   size_t                          maxStringLength)
 {
+#if GMX_USE_HDF5
     openOrCreateGroup(file_, containerName.c_str());
     std::string dataSetName(containerName + "/" + propertyName);
 
@@ -457,6 +496,10 @@ void GmxH5mdIo::setStringProperty(const std::string&              containerName,
             H5Dclose(dataSet);
         }
     }
+#else
+    throw gmx::FileIOError(
+            "GROMACS was compiled without HDF5 support, cannot handle this file type");
+#endif
 }
 
 template<typename T>
@@ -465,6 +508,7 @@ void GmxH5mdIo::setNumericProperty(const std::string&    containerName,
                                    const std::vector<T>& propertyValues,
                                    bool                  replaceExisting)
 {
+#if GMX_USE_HDF5
     openOrCreateGroup(file_, containerName.c_str());
     std::string dataSetName(containerName + "/" + propertyName);
 
@@ -501,11 +545,16 @@ void GmxH5mdIo::setNumericProperty(const std::string&    containerName,
         writeData<1, true>(dataSet, propertyValues.data(), 0);
         H5Dclose(dataSet);
     }
+#else
+    throw gmx::FileIOError(
+            "GROMACS was compiled without HDF5 support, cannot handle this file type");
+#endif
 }
 
 std::vector<std::string> GmxH5mdIo::readStringProperty(const std::string& containerName,
                                                        const std::string& propertyName)
 {
+#if GMX_USE_HDF5
     std::string              dataSetName(containerName + "/" + propertyName);
     hid_t                    dataSet = H5Dopen(file_, dataSetName.c_str(), H5P_DEFAULT);
     std::vector<std::string> propertyValues;
@@ -532,11 +581,16 @@ std::vector<std::string> GmxH5mdIo::readStringProperty(const std::string& contai
     free(propertyValuesChars);
 
     return propertyValues;
+#else
+    throw gmx::FileIOError(
+            "GROMACS was compiled without HDF5 support, cannot handle this file type");
+#endif
 }
 
 template<typename T>
 std::vector<T> GmxH5mdIo::readNumericProperty(const std::string& containerName, const std::string& propertyName)
 {
+#if GMX_USE_HDF5
     std::string    dataSetName(containerName + "/" + propertyName);
     hid_t          dataSet = H5Dopen(file_, dataSetName.c_str(), H5P_DEFAULT);
     std::vector<T> propertyValues;
@@ -590,6 +644,10 @@ std::vector<T> GmxH5mdIo::readNumericProperty(const std::string& containerName, 
     free(buffer);
 
     return propertyValues;
+#else
+    throw gmx::FileIOError(
+            "GROMACS was compiled without HDF5 support, cannot handle this file type");
+#endif
 }
 
 void GmxH5mdIo::writeDataFrame(int64_t              step,
@@ -604,6 +662,7 @@ void GmxH5mdIo::writeDataFrame(int64_t              step,
                                double               lossyCompressionError)
 
 {
+#if GMX_USE_HDF5
     GMX_ASSERT(data != nullptr, "Needs valid data to write a data frame.");
     GMX_ASSERT(dataDimensionalityFirstDim > 0 && dataDimensionalitySecondDim > 0,
                "The data dimensionality must be at least 1 in both dimensions.");
@@ -617,11 +676,11 @@ void GmxH5mdIo::writeDataFrame(int64_t              step,
                 dataBlockFullName.substr(lastSeparatorPos + 1, dataBlockFullName.length());
         hid_t group = openOrCreateGroup(file_, groupName.c_str());
 
-#if GMX_DOUBLE
+#    if GMX_DOUBLE
         const hid_t datatype = H5Tcopy(H5T_NATIVE_DOUBLE);
-#else
+#    else
         const hid_t datatype = H5Tcopy(H5T_NATIVE_FLOAT);
-#endif
+#    endif
 
         GmxH5mdTimeDataBlock dataBlock(group,
                                        dataBlockName,
@@ -641,10 +700,15 @@ void GmxH5mdIo::writeDataFrame(int64_t              step,
         H5Gclose(group);
     }
     foundDataBlock->writeFrame(data, step, time);
+#else
+    throw gmx::FileIOError(
+            "GROMACS was compiled without HDF5 support, cannot handle this file type");
+#endif
 }
 
 bool GmxH5mdIo::readNextFrameOfDataBlock(std::string dataBlockFullName, real* data, int64_t stepToRead)
 {
+#if GMX_USE_HDF5
     for (auto& dataBlock : dataBlocks_)
     {
         if (dataBlock.fullName() == dataBlockFullName)
@@ -657,10 +721,15 @@ bool GmxH5mdIo::readNextFrameOfDataBlock(std::string dataBlockFullName, real* da
         }
     }
     return false;
+#else
+    throw gmx::FileIOError(
+            "GROMACS was compiled without HDF5 support, cannot handle this file type");
+#endif
 }
 
 real GmxH5mdIo::getLossyCompressionErrorOfDataBlock(std::string dataBlockFullName)
 {
+#if GMX_USE_HDF5
     for (const auto& dataBlock : dataBlocks_)
     {
         if (dataBlock.fullName() == dataBlockFullName)
@@ -669,10 +738,15 @@ real GmxH5mdIo::getLossyCompressionErrorOfDataBlock(std::string dataBlockFullNam
         }
     }
     return -1;
+#else
+    throw gmx::FileIOError(
+            "GROMACS was compiled without HDF5 support, cannot handle this file type");
+#endif
 }
 
 int64_t GmxH5mdIo::getNumberOfFrames(const std::string dataBlockName, std::string selectionName)
 {
+#if GMX_USE_HDF5
     GMX_ASSERT(dataBlockName != "", "There must be a datablock name to look for.");
 
     std::string wantedName = "/particles/" + selectionName + "/" + dataBlockName;
@@ -683,10 +757,15 @@ int64_t GmxH5mdIo::getNumberOfFrames(const std::string dataBlockName, std::strin
         return -1;
     }
     return foundDataBlock->numberOfFrames();
+#else
+    throw gmx::FileIOError(
+            "GROMACS was compiled without HDF5 support, cannot handle this file type");
+#endif
 }
 
 int64_t GmxH5mdIo::getNumberOfParticles(const std::string dataBlockName, std::string selectionName)
 {
+#if GMX_USE_HDF5
     GMX_ASSERT(dataBlockName != "", "There must be a datablock name to look for.");
 
     std::string wantedName = "/particles/" + selectionName + "/" + dataBlockName;
@@ -697,10 +776,15 @@ int64_t GmxH5mdIo::getNumberOfParticles(const std::string dataBlockName, std::st
         return -1;
     }
     return foundDataBlock->getNumParticles();
+#else
+    throw gmx::FileIOError(
+            "GROMACS was compiled without HDF5 support, cannot handle this file type");
+#endif
 }
 
 real GmxH5mdIo::getFirstTime(const std::string dataBlockName, std::string selectionName)
 {
+#if GMX_USE_HDF5
     GMX_ASSERT(dataBlockName != "", "There must be a datablock name to look for.");
 
     std::string wantedName = "/particles/" + selectionName + "/" + dataBlockName;
@@ -711,10 +795,15 @@ real GmxH5mdIo::getFirstTime(const std::string dataBlockName, std::string select
         return -1;
     }
     return foundDataBlock->getTimeOfFrame(0);
+#else
+    throw gmx::FileIOError(
+            "GROMACS was compiled without HDF5 support, cannot handle this file type");
+#endif
 }
 
 real GmxH5mdIo::getFirstTimeFromAllDataBlocks()
 {
+#if GMX_USE_HDF5
     real firstTime = std::numeric_limits<real>::max();
     bool foundAny  = false;
     for (const auto& dataBlock : dataBlocks_)
@@ -728,10 +817,15 @@ real GmxH5mdIo::getFirstTimeFromAllDataBlocks()
         return firstTime;
     }
     return -1;
+#else
+    throw gmx::FileIOError(
+            "GROMACS was compiled without HDF5 support, cannot handle this file type");
+#endif
 }
 
 std::tuple<int64_t, real> GmxH5mdIo::getNextStepAndTimeToRead()
 {
+#if GMX_USE_HDF5
     int64_t minStepNextFrame = std::numeric_limits<int64_t>::max();
     real    minTime          = std::numeric_limits<real>::max();
     for (const auto& dataBlock : dataBlocks_)
@@ -745,10 +839,15 @@ std::tuple<int64_t, real> GmxH5mdIo::getNextStepAndTimeToRead()
         }
     }
     return std::tuple<int64_t, real>(minStepNextFrame, minTime);
+#else
+    throw gmx::FileIOError(
+            "GROMACS was compiled without HDF5 support, cannot handle this file type");
+#endif
 }
 
 real GmxH5mdIo::getFinalTime(const std::string dataBlockName, std::string selectionName)
 {
+#if GMX_USE_HDF5
     GMX_ASSERT(dataBlockName != "", "There must be a datablock name to look for.");
 
     std::string wantedName = "/particles/" + selectionName + "/" + dataBlockName;
@@ -759,10 +858,15 @@ real GmxH5mdIo::getFinalTime(const std::string dataBlockName, std::string select
         return -1;
     }
     return foundDataBlock->getTimeOfFrame(foundDataBlock->numberOfFrames() - 1);
+#else
+    throw gmx::FileIOError(
+            "GROMACS was compiled without HDF5 support, cannot handle this file type");
+#endif
 }
 
 real GmxH5mdIo::getFinalTimeFromAllDataBlocks()
 {
+#if GMX_USE_HDF5
     real finalTime = 0;
     bool foundAny  = false;
     for (auto& dataBlock : dataBlocks_)
@@ -781,6 +885,10 @@ real GmxH5mdIo::getFinalTimeFromAllDataBlocks()
         return finalTime;
     }
     return -1;
+#else
+    throw gmx::FileIOError(
+            "GROMACS was compiled without HDF5 support, cannot handle this file type");
+#endif
 }
 
 extern template hid_t
@@ -899,7 +1007,7 @@ void setupMolecularSystemParticleData(h5mdio::GmxH5mdIo*       file,
 #endif
 }
 
-h5mdio::hid_t addMoleculeType(h5mdio::GmxH5mdIo* file, const gmx_moltype_t& molType)
+hid_t addMoleculeType(h5mdio::GmxH5mdIo* file, const gmx_moltype_t& molType)
 {
 #if GMX_USE_HDF5
     std::string moleculesGroupName = h5mdio::s_gromacsTopologyGroupName + "/molecules";
@@ -952,7 +1060,7 @@ void addBlockOfMoleculeType(hid_t  moleculeTypeGroup,
                             size_t numMol,
                             size_t globalAtomStart)
 {
-
+#if GMX_USE_HDF5
     hid_t   dataType                  = H5Tcopy(H5T_NATIVE_INT64);
     hsize_t chunkDims[1]              = { 1 };
     hid_t   moleculeIndexStartDataSet = h5mdio::openOrCreateDataSet<1>(
@@ -971,6 +1079,10 @@ void addBlockOfMoleculeType(hid_t  moleculeTypeGroup,
                                                                    h5mdio::CompressionAlgorithm::None,
                                                                    0);
     h5mdio::writeData<1, false>(globalAtomsStartDataSet, &globalAtomStart, molBlockIndex);
+#else
+    throw gmx::FileIOError(
+            "GROMACS was compiled without HDF5 support, cannot handle this file type");
+#endif
 }
 
 
@@ -1141,6 +1253,7 @@ bool readNextFrameOfStandardDataBlocks(h5mdio::GmxH5mdIo* file,
                                        bool*              readF,
                                        const std::string  selectionName)
 {
+#if GMX_USE_HDF5
     if (file == nullptr || !file->isFileOpen())
     {
         throw gmx::FileIOError("No file open for reading.");
@@ -1202,6 +1315,10 @@ bool readNextFrameOfStandardDataBlocks(h5mdio::GmxH5mdIo* file,
         }
     }
     return didReadFrame;
+#else
+    throw gmx::FileIOError(
+            "GROMACS was compiled without HDF5 support, cannot handle this file type");
+#endif
 }
 
 } // namespace gmx
