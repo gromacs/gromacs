@@ -934,7 +934,7 @@ static void print_fitted_function(const char*       fitfile,
             std::filesystem::path buf;
             if (fn_fitted)
             {
-                buf = gmx::concatenateBeforeExtension(fn_fitted.value(), gmx::formatString("_%d", s));
+                buf = gmx::concatenateBeforeExtension(fn_fitted, gmx::formatString("_%d", s));
             }
             do_fit(out_fit, s, FALSE, n, t, val, npargs, ppa, oenv, buf.c_str());
         }
