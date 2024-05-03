@@ -2,7 +2,7 @@
 # Visit https://bit.ly/cffinit to generate yours today!
 
 cff-version: 1.2.0
-title: GROMACS 2023.4 source code
+title: GROMACS 2023.5 source code
 message: >-
   If you use GROMACS, please cite it using the
   metadata from this file.
@@ -89,14 +89,14 @@ authors:
     family-names: Lindahl
 identifiers:
   - type: doi
-    value: 10.5281/zenodo.10559950
+    value: 10.5281/zenodo.11104849
   - type: url
     value: >-
-      https://ftp.gromacs.org/gromacs/gromacs-2023.4.tar.gz
+      https://ftp.gromacs.org/gromacs/gromacs-2023.5.tar.gz
     description: Download URL
 repository-code: 'https://gitlab.com/gromacs/gromacs'
 url: 'https://www.gromacs.org/'
-repository: 'https://manual.gromacs.org/2023.4/index.html'
+repository: 'https://manual.gromacs.org/2023.5/index.html'
 abstract: "GROMACS\_is a free, open-source and high-performance software suite for molecular dynamics simulation and analysis."
 keywords:
   - molecular dynamics
@@ -105,6 +105,6 @@ keywords:
   - high performance computing
   - free software
 license: LGPL-2.1-or-later
-commit: v2023.4
-version: '2023.4'
-date-released: '2024-01-24'
+commit: v2023.5
+version: '2023.5'
+date-released: '2024-05-03'
