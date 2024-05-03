@@ -936,7 +936,7 @@ static void print_fitted_function(const char*       fitfile,
             {
                 buf = gmx::concatenateBeforeExtension(fn_fitted, gmx::formatString("_%d", s));
             }
-            do_fit(out_fit, s, FALSE, n, t, val, npargs, ppa, oenv, buf.c_str());
+            do_fit(out_fit, s, FALSE, n, t, val, npargs, ppa, oenv, buf.u8string().c_str());
         }
     }
     gmx_ffclose(out_fit);
