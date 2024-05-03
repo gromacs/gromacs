@@ -485,7 +485,7 @@ void gmx_print_version_info(gmx::TextWriter* writer)
     // Describe the BLAS and LAPACK libraries. We generally don't know
     // much about what external library was detected, but we do in the
     // case of MKL so then it is reported.
-    if (HAVE_LIBMKL && std::strstr(GMX_DESCRIBE_BLAS, "MKL") != nullptr)
+    if ((HAVE_LIBMKL) && std::strstr(GMX_DESCRIBE_BLAS, "MKL") != nullptr)
     {
         writer->writeLine(formatString("BLAS library:        %s", describeMkl().c_str()));
     }
@@ -493,7 +493,7 @@ void gmx_print_version_info(gmx::TextWriter* writer)
     {
         writer->writeLine(formatString("BLAS library:        %s", GMX_DESCRIBE_BLAS));
     }
-    if (HAVE_LIBMKL && std::strstr(GMX_DESCRIBE_LAPACK, "MKL") != nullptr)
+    if ((HAVE_LIBMKL) && std::strstr(GMX_DESCRIBE_LAPACK, "MKL") != nullptr)
     {
         writer->writeLine(formatString("LAPACK library:      %s", describeMkl().c_str()));
     }
