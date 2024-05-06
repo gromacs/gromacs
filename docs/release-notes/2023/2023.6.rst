@@ -1,0 +1,27 @@
+GROMACS 2023.6 release notes
+----------------------------
+
+This version was released on TODO, 2024. These release notes
+document the changes that have taken place in |Gromacs| since the
+previous 2023.5 version, to fix known issues. It also incorporates all
+fixes made in version 2022.6 and earlier, which you can find described
+in the :ref:`release-notes`.
+
+.. Note to developers!
+   Please use """"""" to underline the individual entries for fixed issues in the subfolders,
+   otherwise the formatting on the webpage is messed up.
+   Also, please use the syntax :issue:`number` to reference issues on GitLab, without
+   a space between the colon and number!
+
+Fixes where mdrun could behave incorrectly
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Fixes for ``gmx`` tools
+^^^^^^^^^^^^^^^^^^^^^^^
+
+Fixes that affect portability
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Miscellaneous
+^^^^^^^^^^^^^
+
