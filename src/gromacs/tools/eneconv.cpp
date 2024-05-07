@@ -745,8 +745,8 @@ int gmx_eneconv(int argc, char* argv[])
                                                "want.\n"
                                                "         Use the -rmdh option to throw all delta H "
                                                "samples away.\n"
-                                               "         Use g_energy -odh option to extract these "
-                                               "samples.\n",
+                                               "         Use gmx energy -odh option to extract "
+                                               "these samples.\n",
                                                files[f].c_str(),
                                                size);
                                         warned_about_dh = TRUE;

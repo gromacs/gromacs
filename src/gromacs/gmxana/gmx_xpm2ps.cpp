@@ -1203,7 +1203,7 @@ static void write_combined_matrix(int                     ecombine,
         {
             gmx_fatal(FARGS,
                       "Could not extract real data from %s xpm matrices. Note that, e.g.,\n"
-                      "g_rms and g_mdmat provide such data.\n",
+                      "gmx rms and gmx mdmat provide such data.\n",
                       (nullptr == rmat1 && nullptr == rmat2) ? "both" : "one of the");
         }
         rlo = 1e38;

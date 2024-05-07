@@ -789,6 +789,7 @@ bool systemHasConstraintsOrVsites(const gmx_mtop_t& mtop)
 UpdateGroups makeUpdateGroups(const gmx::MDLogger&             mdlog,
                               std::vector<RangePartitioning>&& updateGroupingPerMoleculeType,
                               const real                       maxUpdateGroupRadius,
+                              const bool                       doRerun,
                               const bool                       useDomainDecomposition,
                               const bool                       systemHasConstraintsOrVsites,
                               const real                       cutoffMargin)
@@ -798,6 +799,8 @@ UpdateGroups makeUpdateGroups(const gmx::MDLogger&             mdlog,
     MessageStringCollector messages;
 
     messages.startContext("When checking whether update groups are usable:");
+
+    messages.appendIf(doRerun, "Rerun does not support update groups");
 
     messages.appendIf(!useDomainDecomposition,
                       "Domain decomposition is not active, so there is no need for update groups");

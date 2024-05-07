@@ -246,6 +246,12 @@ TEST_F(GetIrTest, MtsCheckNstdhdl)
     runTest(joinStrings(inputMdpFile, "\n"), TestBehavior::ErrorAndDoNotCompareOutput);
 }
 
+TEST_F(GetIrTest, MtsCheckSDNotSupported)
+{
+    const char* inputMdpFile[] = { "mts = yes", "integrator = sd" };
+    runTest(joinStrings(inputMdpFile, "\n"), TestBehavior::ErrorAndDoNotCompareOutput);
+}
+
 // These tests observe how the electric-field keys behave, since they
 // are currently the only ones using the new Options-style handling.
 TEST_F(GetIrTest, AcceptsElectricField)

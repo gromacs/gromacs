@@ -1148,7 +1148,7 @@ static barres_t* barres_list_create(sim_data_t* sd, int* nres, gmx_bool use_dhdl
             gmx_fatal(FARGS,
                       "There is no path between the states X & Y below that is covered by foreign "
                       "lambdas:\ncannot proceed with BAR.\nUse thermodynamic integration of dH/dl "
-                      "by calculating the averages of dH/dl\nwith g_analyze and integrating "
+                      "by calculating the averages of dH/dl\nwith gmx analyze and integrating "
                       "them.\nAlternatively, use the -extp option if (and only if) the "
                       "Hamiltonian\ndepends linearly on lambda, which is NOT normally the "
                       "case.\n\n%s\n%s\n",

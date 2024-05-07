@@ -83,7 +83,7 @@ periodic_dist(PbcType pbcType, matrix box, rvec x[], int n, const int index[], r
     }
     else
     {
-        gmx_fatal(FARGS, "pbc = %s is not supported by g_mindist", c_pbcTypeNames[pbcType].c_str());
+        gmx_fatal(FARGS, "pbc = %s is not supported by gmx mindist", c_pbcTypeNames[pbcType].c_str());
     }
 
     nshift = 0;

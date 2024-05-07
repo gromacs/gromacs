@@ -414,7 +414,7 @@ static int donor_index_function(t_donors* d, int grp, int i, const char* file, i
 
 static gmx_bool isInterchangable(HydrogenBondData* hb, int d, int a, int grpa, int grpd)
 {
-    /* g_hbond doesn't allow overlapping groups */
+    /* gmx hbond doesn't allow overlapping groups */
     if (grpa != grpd)
     {
         return FALSE;

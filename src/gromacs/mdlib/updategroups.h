@@ -139,6 +139,8 @@ private:
  * requirements, such that makeUpdateGroupingsPerMoleculeType()
  * returns a non-empty vector.
  *
+ * mdrun -rerun does not support update groups (PBC corrections needed).
+ *
  * When we have constraints and/or vsites, it is beneficial to use
  * update groups (when possible) to allow independent update of
  * groups. But if there are no constraints or vsites, then there is no
@@ -150,6 +152,7 @@ private:
 UpdateGroups makeUpdateGroups(const gmx::MDLogger&             mdlog,
                               std::vector<RangePartitioning>&& updateGroupingPerMoleculeType,
                               real                             maxUpdateGroupRadius,
+                              bool                             doRerun,
                               bool                             useDomainDecomposition,
                               bool                             systemHasConstraintsOrVsites,
                               real                             cutoffMargin);

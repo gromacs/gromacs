@@ -57,7 +57,7 @@ gmxapi Python package avoids unnecessary MPI initialization
 
 Delayed initialization of MPI (due to automatic behavior of :py:mod:`mpi4py`)
 avoids MPI initialization that previously occurred just by importing :py:mod:`gmxapi`.
-The previoius behavior has been seen to cause strange interactions with
+The previous behavior has been seen to cause strange interactions with
 resource management libraries like ``libfabric`` at unexpected times
 (such as during package installation) with :py:mod:`gmxapi` version 0.3.
 
