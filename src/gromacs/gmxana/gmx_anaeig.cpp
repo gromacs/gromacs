@@ -39,6 +39,7 @@
 #include <cstring>
 
 #include <algorithm>
+#include <filesystem>
 #include <string>
 
 #include "gromacs/commandline/pargs.h"
@@ -62,6 +63,7 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/path.h"
 #include "gromacs/utility/smalloc.h"
 
 #include "thermochemistry.h"
@@ -500,7 +502,7 @@ static void project(const char*             trajfile,
     matrix       box;
     rvec *       xread, *x;
     real         t, inp, **inprod = nullptr;
-    char         str[STRLEN], str2[STRLEN], *c;
+    char         str[STRLEN], str2[STRLEN];
     const char** ylabel;
     real         fact;
     gmx_rmpbc_t  gpbc = nullptr;
@@ -834,24 +836,21 @@ static void project(const char*             trajfile,
             pmin[0] = -extreme;
             pmax[0] = extreme;
         }
-        /* build format string for filename: */
-        std::strcpy(str, extremefile); /* copy filename */
-        c = std::strrchr(str, '.');    /* find where extention begins */
-        std::strcpy(str2, c);          /* get extention */
-        sprintf(c, "%%d%s", str2);     /* append '%s' and extention to filename */
+        std::filesystem::path extremeFileToUse = extremefile;
         for (v = 0; v < noutvec_extr; v++)
         {
             /* make filename using format string */
-            if (noutvec_extr == 1)
+            if (noutvec_extr != 1)
             {
-                std::strcpy(str2, extremefile);
+                extremeFileToUse = gmx::concatenateBeforeExtension(
+                        extremefile, std::to_string(eignr[outvec[v]] + 1));
             }
-            else
-            {
-                sprintf(str2, str, eignr[outvec[v]] + 1);
-            }
-            fprintf(stderr, "Writing %d frames along eigenvector %d to %s\n", nextr, outvec[v] + 1, str2);
-            out = open_trx(str2, "w");
+            fprintf(stderr,
+                    "Writing %d frames along eigenvector %d to %s\n",
+                    nextr,
+                    outvec[v] + 1,
+                    extremeFileToUse.string().c_str());
+            out = open_trx(extremeFileToUse, "w");
             for (frame = 0; frame < nextr; frame++)
             {
                 if ((extreme == 0) && (nextr <= 3))
