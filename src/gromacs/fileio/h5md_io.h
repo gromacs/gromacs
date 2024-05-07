@@ -39,6 +39,7 @@
 #include <vector>
 
 #include "gromacs/math/vectypes.h"
+#include "gromacs/topology/atoms.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/real.h"
 
@@ -388,6 +389,13 @@ void addBlockOfMoleculeType(const h5mdio::hid_t molTypeId,
                             size_t              moleculeIndexStart,
                             size_t              numMol,
                             size_t              molSystemAtomsStart);
+
+/*! \brief Add atom type entries (species) for all different atom types in \p atoms.
+ * \param[in]     file           The H5MD file manager to use.
+ * \param[in]     atoms          The GROMACS atoms to iterate through to add their corresponding atom types (species)
+ * \param[in,out] atomTypesAdded Keeps track of which atom types have been added already.
+ */
+void addAtomTypesOfAtoms(h5mdio::GmxH5mdIo* file, const t_atoms& atoms, std::vector<bool>& atomTypesAdded);
 
 /*! \brief Setup molecular system topology data.
  *

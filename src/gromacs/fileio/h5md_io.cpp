@@ -47,6 +47,7 @@
 #include <sys/_types/_int64_t.h>
 
 #include "gromacs/mdtypes/md_enums.h"
+#include "gromacs/topology/atoms.h"
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/arrayref.h"
@@ -133,7 +134,7 @@ void setupSystemParticleProperties(gmx::h5mdio::GmxH5mdIo*  file,
     /* Vectors are used to keep the values in a continuous memory block. */
     std::vector<real> atomCharges;
     std::vector<real> atomMasses;
-    std::vector<int>  atomElements;
+    std::vector<int>  atomSpecies;
     /* Since the system block contains all atoms it is not necessary to record the ID,
      * but we do that in order to allow changing the mapping or "remove" particles,
      * in order to enable grand canonical simulations. */
@@ -143,7 +144,7 @@ void setupSystemParticleProperties(gmx::h5mdio::GmxH5mdIo*  file,
 
     atomCharges.reserve(numSelectedParticles);
     atomMasses.reserve(numSelectedParticles);
-    atomElements.reserve(numSelectedParticles);
+    atomSpecies.reserve(numSelectedParticles);
     atomIds.reserve(numSelectedParticles);
 
     /* FIXME: Should use int64_t. Needs changes in atoms. */
@@ -152,13 +153,13 @@ void setupSystemParticleProperties(gmx::h5mdio::GmxH5mdIo*  file,
         size_t iParticle = selectionIndices.size() > 0 ? selectionIndices[i] : i;
         atomCharges.push_back(atoms.atom[iParticle].q);
         atomMasses.push_back(atoms.atom[iParticle].m);
-        atomElements.push_back(atoms.atom[iParticle].atomnumber);
+        atomSpecies.push_back(atoms.atom[iParticle].type);
         atomIds.push_back(iParticle);
     }
 
     file->setNumericProperty("/particles/" + selectionName, "charge", atomCharges, false);
     file->setNumericProperty("/particles/" + selectionName, "mass", atomMasses, false);
-    file->setNumericProperty("/particles/" + selectionName, "species", atomElements, false);
+    file->setNumericProperty("/particles/" + selectionName, "species", atomSpecies, false);
     file->setNumericProperty("/particles/" + selectionName, "id", atomIds, false);
 }
 
@@ -1024,13 +1025,28 @@ hid_t addMoleculeType(h5mdio::GmxH5mdIo* file, const gmx_moltype_t& molType)
     hsize_t chunkDims[1];
     chunkDims[0] = molType.atoms.nr;
 
-    hid_t atomNameDataSet = h5mdio::openOrCreateDataSet<1>(moleculeTypeGroup,
+    hid_t atomNameDataSet  = h5mdio::openOrCreateDataSet<1>(moleculeTypeGroup,
                                                            "atom_name",
                                                            "",
                                                            stringDataType,
                                                            chunkDims,
                                                            h5mdio::CompressionAlgorithm::LosslessNoShuffle,
                                                            0);
+    hid_t atomTypeDataSet  = h5mdio::openOrCreateDataSet<1>(moleculeTypeGroup,
+                                                           "atom_species",
+                                                           "",
+                                                           H5T_NATIVE_INT16,
+                                                           chunkDims,
+                                                           h5mdio::CompressionAlgorithm::LosslessNoShuffle,
+                                                           0);
+    hid_t atomTypeBDataSet = h5mdio::openOrCreateDataSet<1>(moleculeTypeGroup,
+                                                            "atom_species_state_b",
+                                                            "",
+                                                            H5T_NATIVE_INT16,
+                                                            chunkDims,
+                                                            h5mdio::CompressionAlgorithm::LosslessNoShuffle,
+                                                            0);
+
     hid_t residueNameDataSet =
             h5mdio::openOrCreateDataSet<1>(moleculeTypeGroup,
                                            "residue_name",
@@ -1039,12 +1055,34 @@ hid_t addMoleculeType(h5mdio::GmxH5mdIo* file, const gmx_moltype_t& molType)
                                            chunkDims,
                                            h5mdio::CompressionAlgorithm::LosslessNoShuffle,
                                            0);
+
+    hid_t residueNumberDataSet =
+            h5mdio::openOrCreateDataSet<1>(moleculeTypeGroup,
+                                           "residue_number",
+                                           "",
+                                           H5T_NATIVE_INT,
+                                           chunkDims,
+                                           h5mdio::CompressionAlgorithm::LosslessNoShuffle,
+                                           0);
+
+    hid_t chainIdDataSet = h5mdio::openOrCreateDataSet<1>(moleculeTypeGroup,
+                                                          "chain_id",
+                                                          "",
+                                                          H5T_NATIVE_CHAR,
+                                                          chunkDims,
+                                                          h5mdio::CompressionAlgorithm::LosslessNoShuffle,
+                                                          0);
+
     for (ssize_t i = 0; i < molType.atoms.nr; i++)
     {
         int residueIndex = molType.atoms.atom[i].resind;
 
-        h5mdio::writeData<1, false>(atomNameDataSet, *(molType.atoms.atomname[i]), i);
-        h5mdio::writeData<1, false>(residueNameDataSet, *(molType.atoms.resinfo[residueIndex].name), i);
+        h5mdio::writeData<1, false>(atomNameDataSet, *molType.atoms.atomname[i], i);
+        h5mdio::writeData<1, false>(atomTypeDataSet, &molType.atoms.atom[i].type, i);
+        h5mdio::writeData<1, false>(atomTypeBDataSet, &molType.atoms.atom[i].typeB, i);
+        h5mdio::writeData<1, false>(residueNameDataSet, *molType.atoms.resinfo[residueIndex].name, i);
+        h5mdio::writeData<1, false>(residueNumberDataSet, &molType.atoms.resinfo[residueIndex].nr, i);
+        h5mdio::writeData<1, false>(chainIdDataSet, &molType.atoms.resinfo[residueIndex].chainid, i);
     }
 
     return moleculeTypeGroup;
@@ -1085,6 +1123,23 @@ void addBlockOfMoleculeType(hid_t  moleculeTypeGroup,
 #endif
 }
 
+void addAtomTypesOfAtoms(h5mdio::GmxH5mdIo* file, const t_atoms& atoms, std::vector<bool>& atomTypesAdded)
+{
+    hid_t atomTypesGroup = file->createGroup(h5mdio::s_gromacsTopologyGroupName + "/atom_species");
+    hid_t dataType       = H5Tcopy(H5T_NATIVE_INT);
+    hsize_t chunkDims[1] = { atomTypesAdded.size() };
+    hid_t   atomTypeAtomicNumberDataSet = h5mdio::openOrCreateDataSet<1>(
+            atomTypesGroup, "atomic_number", "", dataType, chunkDims, h5mdio::CompressionAlgorithm::LosslessNoShuffle, 0);
+    for (int i = 0; i < atoms.nr; i++)
+    {
+        t_atom* atom = &atoms.atom[i];
+        if (!atomTypesAdded[atom->type])
+        {
+            h5mdio::writeData<1, false>(atomTypeAtomicNumberDataSet, &atom->atomnumber, i);
+            atomTypesAdded[atom->type] = true;
+        }
+    }
+}
 
 void setupMolecularSystemTopology(h5mdio::GmxH5mdIo* file, const gmx_mtop_t& topology, bool abortIfPresent)
 {
@@ -1110,10 +1165,12 @@ void setupMolecularSystemTopology(h5mdio::GmxH5mdIo* file, const gmx_mtop_t& top
     {
         topologyGroup = file->createGroup(h5mdio::s_gromacsTopologyGroupName);
     }
+
     h5mdio::setVersionAttribute(topologyGroup,
                                 h5mdio::c_gmxH5mdParametersGroupMajorVersion,
                                 h5mdio::c_gmxH5mdParametersGroupMinorVersion);
 
+    std::vector<bool> atomTypesAdded(topology.ffparams.atnr, false);
     for (size_t i = 0; i < numMolBlocks; i++)
     {
         const gmx_molblock_t&       molBlock      = topology.molblock[i];
@@ -1122,6 +1179,7 @@ void setupMolecularSystemTopology(h5mdio::GmxH5mdIo* file, const gmx_mtop_t& top
         const std::string           molName       = *molType.name;
         const size_t                numMol        = molBlock.nmol;
         hid_t                       molTypeId     = addMoleculeType(file, molType);
+        addAtomTypesOfAtoms(file, molType.atoms, atomTypesAdded);
         addBlockOfMoleculeType(
                 molTypeId, i, molBlockIndex.moleculeIndexStart, numMol, molBlockIndex.globalAtomStart);
     }
