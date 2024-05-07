@@ -32,7 +32,6 @@
 # the research papers on the package. Check out https://www.gromacs.org.
 
 gmx_add_unit_test(NbnxmTests nbnxm-test
-    DYNAMIC_REGISTRATION
     CPP_SOURCE_FILES
         exclusions.cpp
         kernel_test.cpp

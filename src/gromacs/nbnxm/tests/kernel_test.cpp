@@ -110,6 +110,11 @@ enum class EnergyHandling : int
 //! Lookup table for the number of energy groups in use
 const EnumerationArray<EnergyHandling, int> sc_numEnergyGroups = { 0, 1, 3 };
 
+//! Names for the kinds of energy handling
+const EnumerationArray<EnergyHandling, const char*> sc_energyGroupNames = { "NoEnergies",
+                                                                            "Energies",
+                                                                            "ThreeEnergyGroups" };
+
 //! The options for the kernel
 struct KernelOptions
 {
@@ -378,6 +383,7 @@ std::unique_ptr<nonbonded_verlet_t> setupNbnxmForBenchInstance(const KernelOptio
 //! Convenience typedef of the test input parameters
 struct KernelInputParameters
 {
+    //! This type must match the layout of \c KernelInputParameters
     using TupleT = std::tuple<Nbnxm::KernelType, CoulombKernelType, int, EnergyHandling>;
     //! The kernel type and cluster pair layout
     Nbnxm::KernelType kernelType;
@@ -399,12 +405,6 @@ struct KernelInputParameters
 //! Class that sets up and holds a set of N atoms and a full NxM pairlist
 class NbnxmKernelTest : public ::testing::TestWithParam<KernelInputParameters>
 {
-public:
-    NbnxmKernelTest(const LJCombinationRule ljCombinationRule) : system_(ljCombinationRule) {}
-
-    KernelOptions                       options_;
-    TestSystem                          system_;
-    std::unique_ptr<nonbonded_verlet_t> nbv_;
 };
 
 //! Returns the coulomb interaction type given the Coulomb kernel type
@@ -482,12 +482,8 @@ const std::array<const char*, vdwktNR> vdwKernelTypeName = { "CutCombGeom", "Cut
 
 /*! \brief Help GoogleTest name our test cases
  *
- * This is intended to work like a custom test-naming function that
- * would be passed as the fourth argument to INSTANTIATE_TEST_SUITE_P,
- * except that we are not using that macro for these tests. Only the
- * components of KernelInputParameters that affect the reference data
- * values affect this name.
- * name. */
+ * If changes are needed here, consider making matching changes in
+ * makeRefDataFileName(). */
 std::string nameOfTest(const testing::TestParamInfo<KernelInputParameters>& info)
 {
     // We give tabulated Ewald the same name as Ewald to use the same reference data
@@ -498,9 +494,16 @@ std::string nameOfTest(const testing::TestParamInfo<KernelInputParameters>& info
         case CoulombKernelType::TableTwin: coulombKernelType = CoulombKernelType::EwaldTwin; break;
         default: break;
     }
-    std::string testName = formatString("Coulomb%s_Vdw%s",
-                                        coulombKernelTypeName[coulombKernelType],
-                                        vdwKernelTypeName[info.param.vdwKernelType]);
+    std::string testName =
+            formatString("type_%s_Tab%s_%s_Coulomb%s_Vdw%s",
+                         lookup_kernel_name(info.param.kernelType),
+                         info.param.coulombKernelType == CoulombKernelType::Table
+                                         || info.param.coulombKernelType == CoulombKernelType::TableTwin
+                                 ? "Yes"
+                                 : "No",
+                         sc_energyGroupNames[info.param.energyHandling],
+                         coulombKernelTypeName[coulombKernelType],
+                         vdwKernelTypeName[info.param.vdwKernelType]);
 
     // Note that the returned names must be unique and may use only
     // alphanumeric ASCII characters. It's not supposed to contain
@@ -519,51 +522,38 @@ bool isTabulated(const CoulombKernelType coulombKernelType)
     return coulombKernelType == CoulombKernelType::Table || coulombKernelType == CoulombKernelType::TableTwin;
 }
 
-/*! \brief Help GoogleTest name our test cases
+/*! \brief Construct a refdata filename for this test
  *
- * This is intended to work like a custom test-naming function that
- * would be passed as the fourth argument to INSTANTIATE_TEST_SUITE_P,
- * except that we are not using that macro for these tests. All
- * components of GatherInputParameters affect this name. */
-std::string fullNameOfTest(const testing::TestParamInfo<KernelInputParameters>& info,
-                           const std::string&                                   testName)
-{
-    return formatString(
-            "type_%s_Tab%s_"
-            "%s",
-            lookup_kernel_name(info.param.kernelType),
-            info.param.coulombKernelType == CoulombKernelType::Table
-                            || info.param.coulombKernelType == CoulombKernelType::TableTwin
-                    ? "Yes"
-                    : "No",
-            testName.c_str());
-}
-
+ * We want the same reference data to apply to every kernel type
+ * that we test. That means we need to store it in a file whose
+ * name relates to the name of the test excluding the part related to
+ * the kernel type. By default, the reference data filename is
+ * set via a call to gmx::TestFileManager::getTestSpecificFileName()
+ * that queries GoogleTest and gets a string that includes the return
+ * value for nameOfTest(). This code works similarly, but removes the
+ * part that relates to kernel type. This logic must match the
+ * implementation of nameOfTest() so that it works as intended.
+ *
+ * In particular, the name must include a "Coulomb" substring that
+ * follows the name of the kernel type, so that this can be
+ * removed. */
 std::string makeRefDataFileName()
 {
-    // By default, the reference data filename is set via a call to
-    // gmx::TestFileManager::getTestSpecificFileName() that queries
-    // GoogleTest and gets a string that includes the return value for
-    // nameOfTest(). The logic here must match that of the call to
-    // ::testing::RegisterTest, so that it works as intended. In
-    // particular, the name must include a "Coulomb" substring that
-    // follows the name of the kernel type, so that this can be
-    // removed.
-    //
     // Get the info about the test
     const ::testing::TestInfo* testInfo = ::testing::UnitTest::GetInstance()->current_test_info();
 
-    // Get the test name and prepare to remove the kernel type
+    // Get the test name and edit it to remove the kernel-type
+    // part.
     std::string testName(testInfo->name());
-    auto        CoulombPos = testName.find("Coulomb");
-    GMX_RELEASE_ASSERT(CoulombPos != testName.size(),
-                       "Test name must include the 'Coulomb' fragment");
+    auto        separatorPos = testName.find("Coulomb");
+    testName                 = testName.substr(separatorPos);
 
-    // Build the complete refdata filename like
-    // getTestSpecificFilename() would do it for a non-dynamical
-    // parameterized test.
-    std::string refDataFileName = formatString(
-            "%s_%s.xml", testInfo->test_suite_name(), testName.substr(CoulombPos).c_str());
+    // Build the complete filename like getTestSpecificFilename() does
+    // it.
+    std::string testSuiteName(testInfo->test_suite_name());
+    std::string refDataFileName = testSuiteName + "_" + testName + ".xml";
+    std::replace(refDataFileName.begin(), refDataFileName.end(), '/', '_');
+
     // Use the check that the name isn't too long
     checkTestNameLength(refDataFileName);
     return refDataFileName;
@@ -571,34 +561,16 @@ std::string makeRefDataFileName()
 
 } // namespace
 
-/*! \brief Test case whose body checks that the NBNxM kernel produces correct output
- *
- * Normally the declaration of this class would be produced by a call
- * to a macro like TEST_P(KernelTest, WorksWith). That macro places
- * the body of the test case in the TestBody() method, which here is
- * done explicitly.
- *
- * Note that it is important to use parameters_ to access the values
- * that describe the particular test case, rather than the usual
- * GoogleTest function GetParam(), because the latter no longer
- * works. */
-class NbnxmKernelTestBody : public NbnxmKernelTest
+//! Test case that checks that the NBNxM kernel produces correct output.
+TEST_P(NbnxmKernelTest, WorksWith)
 {
-public:
-    //! Constructor
-    explicit NbnxmKernelTestBody(const KernelInputParameters& parameters) :
-        NbnxmKernelTest(parameters.vdwKernelType == vdwktLJCUT_COMBGEOM
-                                ? LJCombinationRule::Geometric
-                                : LJCombinationRule::LorentzBerthelot),
-        parameters_(parameters)
-    {
-    }
+    // The test parameters with which the test case was instantiated
+    // TODO rename these in a follow-up change to conform to style
+    KernelInputParameters               parameters_ = GetParam();
+    KernelOptions                       options_;
+    std::unique_ptr<nonbonded_verlet_t> nbv_;
 
-    //! The test parameters with which the test case was instantiated
-    KernelInputParameters parameters_;
-
-    //! The test
-    void TestBody() override
+    // TODO remove this indentation in a follow-up change
     {
         options_.kernelSetup.kernelType = parameters_.kernelType;
 
@@ -653,13 +625,13 @@ public:
             }
         }
 
-        if ((GMX_HAVE_NBNXM_SIMD_4XM == (0)) && parameters_.kernelType == Nbnxm::KernelType::Cpu4xN_Simd_4xN)
+        if (!sc_haveNbnxmSimd4xmKernels && parameters_.kernelType == Nbnxm::KernelType::Cpu4xN_Simd_4xN)
         {
             GTEST_SKIP()
                     << "Cannot test or generate data for 4xN kernels without suitable SIMD support";
         }
 
-        if ((GMX_HAVE_NBNXM_SIMD_2XMM == (0)) && parameters_.kernelType == Nbnxm::KernelType::Cpu4xN_Simd_2xNN)
+        if (!sc_haveNbnxmSimd2xmmKernels && parameters_.kernelType == Nbnxm::KernelType::Cpu4xN_Simd_2xNN)
         {
             GTEST_SKIP() << "Cannot test or generate data for 2xNN kernels without suitable SIMD "
                             "support";
@@ -679,6 +651,11 @@ public:
         {
             GTEST_SKIP() << "There are no combination rule versions of the plain-C kernel";
         }
+
+        // TODO rename this in a follow-up change to conform to style
+        TestSystem system_(parameters_.vdwKernelType == vdwktLJCUT_COMBGEOM
+                                   ? LJCombinationRule::Geometric
+                                   : LJCombinationRule::LorentzBerthelot);
 
         const interaction_const_t ic = setupInteractionConst(options_);
 
@@ -784,36 +761,27 @@ public:
     }
 };
 
-/* Note that which tests are registered is determined at compile time, not dynamically.
- * The dynamic registration mechanism is only used to be able to call registerTests()
- * so we can supply different names for the test and the string used for the reference
- * data. This enables tests to share reference data.
- */
-void registerTestsDynamically()
-{
-    // Form the Cartesian product of all test values we might check
-    const auto testCombinations = testing::ConvertGenerator<KernelInputParameters::TupleT>(
-            ::testing::Combine(::testing::Values(Nbnxm::KernelType::Cpu4x4_PlainC,
-                                                 Nbnxm::KernelType::Cpu4xN_Simd_4xN,
-                                                 Nbnxm::KernelType::Cpu4xN_Simd_2xNN),
-                               ::testing::Values(CoulombKernelType::ReactionField,
-                                                 CoulombKernelType::Ewald,
-                                                 CoulombKernelType::EwaldTwin,
-                                                 CoulombKernelType::Table,
-                                                 CoulombKernelType::TableTwin),
-                               ::testing::Values(static_cast<int>(vdwktLJCUT_COMBGEOM),
-                                                 static_cast<int>(vdwktLJCUT_COMBLB),
-                                                 static_cast<int>(vdwktLJCUT_COMBNONE),
-                                                 static_cast<int>(vdwktLJFORCESWITCH),
-                                                 static_cast<int>(vdwktLJPOTSWITCH),
-                                                 static_cast<int>(vdwktLJEWALDCOMBGEOM)),
-                               ::testing::Values(EnergyHandling::NoEnergies,
-                                                 EnergyHandling::Energies,
-                                                 EnergyHandling::ThreeEnergyGroups)));
-
-    registerTests<NbnxmKernelTest, NbnxmKernelTestBody, decltype(testCombinations)>(
-            "NbnxmKernelTest", nameOfTest, fullNameOfTest, testCombinations);
-}
+INSTANTIATE_TEST_SUITE_P(Combinations,
+                         NbnxmKernelTest,
+                         ::testing::ConvertGenerator<KernelInputParameters::TupleT>(::testing::Combine(
+                                 ::testing::Values(Nbnxm::KernelType::Cpu4x4_PlainC,
+                                                   Nbnxm::KernelType::Cpu4xN_Simd_4xN,
+                                                   Nbnxm::KernelType::Cpu4xN_Simd_2xNN),
+                                 ::testing::Values(CoulombKernelType::ReactionField,
+                                                   CoulombKernelType::Ewald,
+                                                   CoulombKernelType::EwaldTwin,
+                                                   CoulombKernelType::Table,
+                                                   CoulombKernelType::TableTwin),
+                                 ::testing::Values(int(vdwktLJCUT_COMBGEOM),
+                                                   int(vdwktLJCUT_COMBLB),
+                                                   int(vdwktLJCUT_COMBNONE),
+                                                   int(vdwktLJFORCESWITCH),
+                                                   int(vdwktLJPOTSWITCH),
+                                                   int(vdwktLJEWALDCOMBGEOM)),
+                                 ::testing::Values(EnergyHandling::NoEnergies,
+                                                   EnergyHandling::Energies,
+                                                   EnergyHandling::ThreeEnergyGroups))),
+                         nameOfTest);
 
 } // namespace test
 
