@@ -50,13 +50,13 @@
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/topology/topology.h"
+#include "gromacs/trajectoryanalysis/topologyinformation.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/smalloc.h"
 
-
-// #include "testutils/simulationdatabase.h"
 #include "testutils/testasserts.h"
 #include "testutils/testfilemanager.h"
+#include "testutils/tprfilegenerator.h"
 
 
 namespace
@@ -169,29 +169,16 @@ public:
     {
         gmx::ArrayRef<const int> index;
         std::string              indexGroupName = "";
-        gmx::setupMolecularSystemParticleData(&referenceH5mdIo_, refTopology_, index, indexGroupName);
+        gmx::setupMolecularSystemParticleData(
+                &referenceH5mdIo_, *topologyInfo_.mtop(), index, indexGroupName);
+        gmx::setupMolecularSystemTopology(&referenceH5mdIo_, *topologyInfo_.mtop(), true);
     }
 
-    /* Generate a bunch of atom properties for the reference data. */
-    void generateReferenceTopologyAtomProperties()
+    /* Generate a tpr and read it */
+    void generateReferenceTopology()
     {
-        auto& moltype    = refTopology_.moltype.emplace_back();
-        moltype.atoms.nr = refAtomCount_;
-        init_t_atoms(&moltype.atoms, refAtomCount_, false);
-
-        for (size_t i = 0; i < refAtomCount_; i++)
-        {
-            moltype.atoms.atom[i].resind     = i % 3;
-            moltype.atoms.atom[i].atomnumber = i % 5;
-            moltype.atoms.atom[i].m          = 0.1 * i;
-        }
-
-        refTopology_.molblock.resize(1);
-        refTopology_.molblock[0].type = 0;
-        refTopology_.molblock[0].nmol = 1;
-        refTopology_.natoms           = moltype.atoms.nr * refTopology_.molblock[0].nmol;
-
-        refTopology_.finalize();
+        gmx::test::TprAndFileManager fileManager("lysozyme");
+        topologyInfo_.fillFromInputFile(fileManager.tprName());
     }
 
     std::vector<std::string> readAtomNamesFromReferenceFile()
@@ -322,9 +309,12 @@ public:
         /* Test variable-length string writing. */
         referenceH5mdIo_.setStringProperty("/particles/water", "atomname", refWaterAtomNames_, false, 0);
         referenceH5mdIo_.setStringProperty("/particles/ligand", "atomname", refLigandAtomNames_, false);
-        referenceH5mdIo_.setNumericProperty("/particles/water", "charge", refWaterPartialCharges_, false);
-        referenceH5mdIo_.setNumericProperty("/particles/ligand", "charge", refLigandPartialCharges_, false);
-        referenceH5mdIo_.setNumericProperty("/particles/water", "species", refWaterAtomicNumbers_, false);
+        referenceH5mdIo_.setNumericProperty(
+                "/particles/water", "charge", refWaterPartialCharges_, "", false);
+        referenceH5mdIo_.setNumericProperty(
+                "/particles/ligand", "charge", refLigandPartialCharges_, "", false);
+        referenceH5mdIo_.setNumericProperty(
+                "/particles/water", "species", refWaterAtomicNumbers_, "", false);
     }
 
     void readAndCheckWaterAndLigandGroups()
@@ -377,7 +367,6 @@ private:
     rvec*                      refV_;
     rvec*                      refF_;
     matrix                     refBox_;
-    gmx_mtop_t                 refTopology_;
     size_t                     refAtomCount_;
     real                       refCompressionPrecision_;
     std::vector<std::string>   refWaterAtomNames_;
@@ -385,6 +374,7 @@ private:
     std::vector<int>           refWaterAtomicNumbers_;
     std::vector<std::string>   refLigandAtomNames_;
     std::vector<real>          refLigandPartialCharges_;
+    gmx::TopologyInformation   topologyInfo_;
 };
 
 /*! \brief Tests that opening (creating a new), closing, re-opening and closing
@@ -423,6 +413,15 @@ TEST_F(H5mdIoTest, SelectionGroups)
     closeReferenceFile();
 }
 
+TEST_F(H5mdIoTest, WriteReadTopologyAndCoordinates)
+{
+    generateReferenceTopology();
+    openReferenceFile('w');
+    setupMolecularSystem();
+
+    closeReferenceFile();
+}
+
 TEST_P(H5mdIoTest, HighLevelWriteRead)
 {
     auto params = GetParam();
@@ -430,11 +429,8 @@ TEST_P(H5mdIoTest, HighLevelWriteRead)
     int numFrames = std::get<1>(params);
     setRefCompressionPrecision(std::get<2>(params));
 
-    generateReferenceTopologyAtomProperties();
-
     EXPECT_FALSE(isReferenceFileOpen());
     openReferenceFile('w');
-    setupMolecularSystem();
 
     for (int i = 0; i < numFrames; i++)
     {
@@ -450,20 +446,31 @@ TEST_P(H5mdIoTest, HighLevelWriteRead)
             writeReferenceTrajectoryFrame(i, time, lambda);
         }
     }
+
+    /* Check key values before closing/flushing the file. */
+    int refAtomCount = getRefAtomCount();
+    /* No trajectory data was written above if there were no atoms */
+    if (refAtomCount > 0)
+    {
+        EXPECT_EQ(refAtomCount, readReferenceNumAtoms("position"));
+        EXPECT_EQ(refAtomCount, readReferenceNumAtoms("velocity"));
+        EXPECT_EQ(-1, readReferenceNumAtoms("force"));
+        EXPECT_EQ(numFrames, readReferenceNumFrames("position"));
+        EXPECT_EQ(numFrames, readReferenceNumFrames("velocity"));
+    }
     closeReferenceFile();
 
     openReferenceFile('r');
     EXPECT_TRUE(isReferenceFileOpen());
-    if (getRefAtomCount() <= 0)
+    /* If there was no trajectory data written above (no atoms), the rest of the tests will fail. */
+    if (refAtomCount <= 0)
     {
-        /* The rest of the tests will fail. */
         return;
     }
 
-    /* TODO: We should test the atom properties in the topology */
-
-    EXPECT_EQ(getRefAtomCount(), readReferenceNumAtoms("position"));
-    EXPECT_EQ(getRefAtomCount(), readReferenceNumAtoms("velocity"));
+    /* Check key values after opening the file. */
+    EXPECT_EQ(refAtomCount, readReferenceNumAtoms("position"));
+    EXPECT_EQ(refAtomCount, readReferenceNumAtoms("velocity"));
     EXPECT_EQ(-1, readReferenceNumAtoms("force"));
     EXPECT_EQ(numFrames, readReferenceNumFrames("position"));
     EXPECT_EQ(numFrames, readReferenceNumFrames("velocity"));
@@ -493,10 +500,12 @@ INSTANTIATE_TEST_SUITE_P(H5mdTestWriteReadCombinations,
 extern template void gmx::h5mdio::GmxH5mdIo::setNumericProperty<real>(const std::string&,
                                                                       const std::string&,
                                                                       const std::vector<real>&,
+                                                                      const std::string&,
                                                                       bool);
 extern template void gmx::h5mdio::GmxH5mdIo::setNumericProperty<int>(const std::string&,
                                                                      const std::string&,
                                                                      const std::vector<int>&,
+                                                                     const std::string&,
                                                                      bool);
 
 extern template std::vector<real> gmx::h5mdio::GmxH5mdIo::readNumericProperty<real>(const std::string&,
