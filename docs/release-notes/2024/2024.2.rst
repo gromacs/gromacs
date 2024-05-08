@@ -16,6 +16,19 @@ in the :ref:`release-notes`.
 Fixes where mdrun could behave incorrectly
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Prevent crashes with AdaptiveCpp/hipSYCL
+""""""""""""""""""""""""""""""""""""""""
+
+In some cases, |Gromacs| could randomly crash on neighbor-search steps with
+``hip_queue: hipMemsetAsync() failed (error code = HIP:1)`` error.
+This was caused by a GPU buffer re-allocation while an operation on the buffer
+was pending. We add an explicit synchronization to avoid it.
+
+Only AdaptiveCpp/hipSYCL builds are affected.
+This should not have caused any incorrect physics, only the ``mdrun`` crash.
+
+:issue:`5078`
+
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
 
