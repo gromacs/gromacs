@@ -24,7 +24,7 @@ gromacs:gcc-11-cuda-11.7.1:configureMPI:
     - .rules:merge-and-post-merge-acceptance
   image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-gcc-11-cuda-11.7.1
   variables:
-    CMAKE: /usr/local/cmake-3.18.4/bin/cmake
+    CMAKE: /usr/local/cmake-3.21.2/bin/cmake
     CMAKE_SIMD_OPTIONS: "-DGMX_SIMD=SSE4.1"
     CMAKE_EXTRA_OPTIONS: "-DGMX_USE_CUFFTMP=ON -DcuFFTMp_ROOT=/opt/nvidia/hpc_sdk/Linux_x86_64/2022/math_libs"
     COMPILER_MAJOR_VERSION: 11
@@ -38,7 +38,7 @@ gromacs:gcc-11-cuda-11.7.1:buildMPI:
     - .rules:merge-and-post-merge-acceptance
   image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-gcc-11-cuda-11.7.1
   variables:
-    CMAKE: /usr/local/cmake-3.18.4/bin/cmake
+    CMAKE: /usr/local/cmake-3.21.2/bin/cmake
   needs:
     - job: gromacs:gcc-11-cuda-11.7.1:configureMPI
 
@@ -48,7 +48,7 @@ gromacs:gcc-11-cuda-11.7.1:testMPI:
     - .rules:post-merge-acceptance
   image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-gcc-11-cuda-11.7.1
   variables:
-    CMAKE: /usr/local/cmake-3.18.4/bin/cmake
+    CMAKE: /usr/local/cmake-3.21.2/bin/cmake
     KUBERNETES_EXTENDED_RESOURCE_NAME: "nvidia.com/gpu"
     KUBERNETES_EXTENDED_RESOURCE_LIMIT: 1
     GMX_ENABLE_DIRECT_GPU_COMM: 1
@@ -81,7 +81,7 @@ gromacs:gcc-11-cuda-11.7.1:regressiontest-gpucommupd-MPI:
     - .rules:post-merge-acceptance
   image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-gcc-11-cuda-11.7.1
   variables:
-    CMAKE: /usr/local/cmake-3.18.4/bin/cmake
+    CMAKE: /usr/local/cmake-3.21.2/bin/cmake
     KUBERNETES_EXTENDED_RESOURCE_NAME: "nvidia.com/gpu"
     KUBERNETES_EXTENDED_RESOURCE_LIMIT: 2
     REGRESSIONTEST_PME_RANK_NUMBER: 0

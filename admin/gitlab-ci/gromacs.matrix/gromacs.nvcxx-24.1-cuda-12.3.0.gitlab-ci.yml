@@ -25,7 +25,7 @@ gromacs:nvcxx-24.1-cuda-12.3.0:configureMPI:
   variables:
     CMAKE: /usr/local/cmake-3.21.2/bin/cmake
     CMAKE_SIMD_OPTIONS: "-DGMX_SIMD=SSE4.1"
-    CMAKE_EXTRA_OPTIONS: "-DCMAKE_CXX_FLAGS='--diag_suppress=2828,111,1408,490,550,177,unrecognized_attribute,integer_sign_change,implicit_return_from_non_void_function,partial_override'
+    CMAKE_EXTRA_OPTIONS: "-DCMAKE_CXX_FLAGS='--diag_suppress=2828,111,1408,490,550,177,unrecognized_attribute,integer_sign_change,implicit_return_from_non_void_function,partial_override,code_is_unreachable'
                           -DGMX_USE_CUFFTMP=ON -DcuFFTMp_ROOT=/opt/nvidia/hpc_sdk/Linux_x86_64/24.1/math_libs/12.3
                           -DCMAKE_CXX_COMPILER=/opt/nvidia/hpc_sdk/Linux_x86_64/24.1/compilers/bin/nvc++
                           -DCMAKE_C_COMPILER=/opt/nvidia/hpc_sdk/Linux_x86_64/24.1/compilers/bin/nvc"

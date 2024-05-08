@@ -58,20 +58,8 @@ target_link_libraries(timing INTERFACE
 # Tracing support for NVTX / ROCTX / ITT (with some basic includ/lib detection support,
 # sufficient for most use-cases and this is a dev-feature anyway).
 if(GMX_USE_NVTX)
-    find_path (NVTX_INCLUDE_DIR
-        NAMES nvToolsExt.h
-        HINTS ENV CUDA_HOME "${CUDA_TOOLKIT_ROOT_DIR}"
-        PATH_SUFFIXES include include/nvtx3
-        REQUIRED
-        )
-    find_library (NVTX_LIBRARY
-        NAMES libnvToolsExt.so
-        HINTS ENV CUDA_HOME "${CUDA_TOOLKIT_ROOT_DIR}"
-        PATH_SUFFIXES lib64 lib
-        REQUIRED
-        )
-    target_include_directories(timing INTERFACE "${NVTX_INCLUDE_DIR}")
-    target_link_libraries(timing INTERFACE "${NVTX_LIBRARY}")
+    find_package(CUDAToolkit ${REQUIRED_CUDA_VERSION} REQUIRED)
+    target_link_libraries(timing INTERFACE CUDA::nvToolsExt)
     # As of CUDA 11.8, there are a lot of old-style casts in nvToolsExt.h
     gmx_target_interface_warning_suppression(timing "-Wno-old-style-cast" HAS_WARNING_NO_OLD_STYLE_CAST)
 endif()

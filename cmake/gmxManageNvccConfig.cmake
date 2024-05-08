@@ -59,7 +59,7 @@ function(work_around_glibc_2_23)
     endif()
 endfunction()
 
-gmx_check_if_changed(CUDA_HOST_COMPILER_CHANGED CUDA_HOST_COMPILER)
+gmx_check_if_changed(CUDA_HOST_COMPILER_CHANGED CMAKE_CUDA_HOST_COMPILER)
 
 # set up host compiler and its options
 if(CUDA_HOST_COMPILER_CHANGED)
@@ -78,7 +78,7 @@ if(CUDA_HOST_COMPILER_CHANGED)
     set(CUDA_HOST_COMPILER_OPTIONS "${CUDA_HOST_COMPILER_OPTIONS}"
         CACHE STRING "Options for nvcc host compiler (do not edit!).")
 
-    mark_as_advanced(CUDA_HOST_COMPILER CUDA_HOST_COMPILER_OPTIONS)
+    mark_as_advanced(CMAKE_CUDA_HOST_COMPILER  CUDA_HOST_COMPILER_OPTIONS)
 endif()
 
 # We would like to be helpful and reject the host compiler with a
@@ -90,8 +90,9 @@ endif()
 # code. Set the CMake variable GMX_NVCC_WORKS on if you want to
 # bypass this check.
 if((_cuda_nvcc_executable_or_flags_changed OR CUDA_HOST_COMPILER_CHANGED OR NOT GMX_NVCC_WORKS) AND NOT WIN32)
-    message(STATUS "Check for working NVCC/C++ compiler combination with nvcc '${CUDA_NVCC_EXECUTABLE}'")
-    execute_process(COMMAND ${CUDA_NVCC_EXECUTABLE} --compiler-bindir=${CUDA_HOST_COMPILER} -c ${CUDA_NVCC_FLAGS} ${CUDA_NVCC_FLAGS_${_build_type}} ${CMAKE_SOURCE_DIR}/cmake/TestCUDA.cu
+    message(STATUS "Check for working NVCC/C++ compiler combination with nvcc '${CUDAToolkit_NVCC_EXECUTABLE}'")
+
+    execute_process(COMMAND ${CUDAToolkit_NVCC_EXECUTABLE} --compiler-bindir=${CMAKE_CUDA_HOST_COMPILER} -c ${CUDA_NVCC_FLAGS} ${CUDA_NVCC_FLAGS_${_build_type}} ${CMAKE_SOURCE_DIR}/cmake/TestCUDA.cu
         RESULT_VARIABLE _cuda_test_res
         OUTPUT_VARIABLE _cuda_test_out
         ERROR_VARIABLE  _cuda_test_err
@@ -99,11 +100,11 @@ if((_cuda_nvcc_executable_or_flags_changed OR CUDA_HOST_COMPILER_CHANGED OR NOT 
 
     if(${_cuda_test_res})
         message(STATUS "Check for working NVCC/C compiler combination - broken")
-        message(STATUS "${CUDA_NVCC_EXECUTABLE} standard output: '${_cuda_test_out}'")
-        message(STATUS "${CUDA_NVCC_EXECUTABLE} standard error:  '${_cuda_test_err}'")
+        message(STATUS "${CUDAToolkit_NVCC_EXECUTABLE} standard output: '${_cuda_test_out}'")
+        message(STATUS "${CUDAToolkit_NVCC_EXECUTABLE} standard error:  '${_cuda_test_err}'")
         if(${_cuda_test_err} MATCHES "nsupported")
             message(FATAL_ERROR "NVCC/C++ compiler combination does not seem to be supported. CUDA frequently does not support the latest versions of the host compiler, so you might want to try an earlier C++ compiler version and make sure your CUDA compiler and driver are as recent as possible. Set the GMX_NVCC_WORKS CMake cache variable to bypass this check if you know what you are doing.")
-        elseif(CMAKE_CXX_COMPILER_ID MATCHES "GNU" AND CMAKE_CXX_COMPILER_VERSION VERSION_EQUAL 11.2 AND CUDA_VERSION VERSION_GREATER 11.4 AND CUDA_VERSION VERSION_LESS 11.7) # Issue #4574, #4641
+        elseif(CMAKE_CXX_COMPILER_ID MATCHES "GNU" AND CMAKE_CXX_COMPILER_VERSION VERSION_EQUAL 11.2 AND CUDAToolkit_VERSION VERSION_GREATER 11.4 AND CUDAToolkit_VERSION VERSION_LESS 11.7) # Issue #4574, #4641
             # Above, we should be checking for VERSION_LESS 11.6.2, but CUDA_VERSION is only "major.minor"
             message(FATAL_ERROR "CUDA versions 11.5-11.6.1 are known to be incompatible with some GCC 11.x. Use a different GCC or update your CUDA installation to at least CUDA 11.6.2")
         else()
@@ -134,7 +135,7 @@ function(gmx_add_nvcc_flag_if_supported _output_variable_name_to_append_to _flag
     if (NOT ${_flags_cache_variable_name} AND NOT WIN32)
         message(STATUS "Checking if nvcc accepts flags ${ARGN}")
         execute_process(
-            COMMAND ${CUDA_NVCC_EXECUTABLE} ${ARGN} -ccbin ${CUDA_HOST_COMPILER} "${CMAKE_SOURCE_DIR}/cmake/TestCUDA.cu"
+            COMMAND ${CUDAToolkit_NVCC_EXECUTABLE} ${ARGN} -ccbin ${CMAKE_CUDA_HOST_COMPILER} "${CMAKE_SOURCE_DIR}/cmake/TestCUDA.cu"
             RESULT_VARIABLE _cuda_success
             OUTPUT_QUIET
             ERROR_QUIET
@@ -145,10 +146,10 @@ function(gmx_add_nvcc_flag_if_supported _output_variable_name_to_append_to _flag
             message(STATUS "Checking if nvcc accepts flags ${ARGN} - Success")
         else()
             if(NOT(CMAKE_CXX_COMPILER_ID MATCHES "GNU" AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS 11))
-              set(CCBIN "--compiler-bindir=${CUDA_HOST_COMPILER}")
+              set(CCBIN "--compiler-bindir=${CMAKE_CUDA_HOST_COMPILER}")
             endif()
             execute_process(
-                COMMAND ${CUDA_NVCC_EXECUTABLE} ${ARGN} ${CCBIN} "${CMAKE_SOURCE_DIR}/cmake/TestCUDA.cu"
+                COMMAND ${CUDAToolkit_NVCC_EXECUTABLE} ${ARGN} ${CCBIN} "${CMAKE_SOURCE_DIR}/cmake/TestCUDA.cu"
                 RESULT_VARIABLE _cuda_success
                 OUTPUT_QUIET
                 ERROR_QUIET
@@ -193,6 +194,8 @@ if (GMX_CUDA_TARGET_SM OR GMX_CUDA_TARGET_COMPUTE)
         endif()
     endforeach()
 else()
+    # TODO: Note that this SM arch populating code can be replaced with `CUDA_ARCHITECTURES=all` once we upgrade cmake to >= 3.23
+
     # Set the CUDA GPU architectures to compile for:
     # - with CUDA >=11.0        CC 8.0 is supported
     #     => compile sm_35, sm_37, sm_50, sm_52, sm_60, sm_61, sm_70, sm_75, sm_80 SASS, and compute_35, compute_80 PTX
@@ -216,7 +219,7 @@ else()
     endif()
     # Requesting sm or compute 35, 37, or 50 triggers deprecation messages with
     # nvcc 11.0, which we need to suppress for use in CI
-    gmx_add_nvcc_flag_if_supported(GMX_CUDA_NVCC_GENCODE_FLAGS NVCC_HAS_WARNING_NO_DEPRECATED_GPU_TARGETS -Wno-deprecated-gpu-targets)
+    gmx_add_nvcc_flag_if_supported(GMX_CUDA_NVCC_FLAGS NVCC_HAS_WARNING_NO_DEPRECATED_GPU_TARGETS -Wno-deprecated-gpu-targets)
 
     # Next add flags that trigger PTX code generation for the
     # newest supported virtual arch that's useful to JIT to future architectures
@@ -235,26 +238,15 @@ if (GMX_CUDA_TARGET_COMPUTE)
     set_property(CACHE GMX_CUDA_TARGET_COMPUTE PROPERTY TYPE STRING)
 endif()
 
-# FindCUDA.cmake is unaware of the mechanism used by cmake to embed
-# the compiler flag for the required C++ standard in the generated
-# build files, so we have to pass it ourselves
-if (CMAKE_CXX_COMPILER_ID MATCHES "NVHPC")
-    # we explicitly set c++17 flag for NVHPC compiler as cmake doesn't set correct value in
-    # ${CMAKE_CXX17_STANDARD_COMPILE_OPTION} which nvcc can understand (that is, -std=c++17).
-    list(APPEND GMX_CUDA_NVCC_FLAGS "-std=c++17")
-else()
-    list(APPEND GMX_CUDA_NVCC_FLAGS "${CMAKE_CXX17_STANDARD_COMPILE_OPTION}")
-endif()
-
 # assemble the CUDA flags
-list(APPEND GMX_CUDA_NVCC_FLAGS "${GMX_CUDA_NVCC_GENCODE_FLAGS}")
 gmx_add_nvcc_flag_if_supported(GMX_CUDA_NVCC_FLAGS NVCC_HAS_USE_FAST_MATH -use_fast_math)
 # Add warnings
-gmx_add_nvcc_flag_if_supported(GMX_CUDA_NVCC_FLAGS NVCC_HAS_PTXAS_WARN_DOUBLE_USAGE -Xptxas -warn-double-usage)
-gmx_add_nvcc_flag_if_supported(GMX_CUDA_NVCC_FLAGS NVCC_HAS_PTXAS_WERROR -Xptxas -Werror)
+gmx_add_nvcc_flag_if_supported(GMX_CUDA_NVCC_FLAGS NVCC_HAS_PTXAS_WARN_DOUBLE_USAGE -Xptxas=-warn-double-usage)
+gmx_add_nvcc_flag_if_supported(GMX_CUDA_NVCC_FLAGS NVCC_HAS_PTXAS_WERROR -Xptxas=-Werror)
 
-# assemble the CUDA host compiler flags
-list(APPEND GMX_CUDA_NVCC_FLAGS "${CUDA_HOST_COMPILER_OPTIONS}")
+# strip gencode/arch from GMX_CUDA_NVCC_GENCODE_FLAGS only keep the arch numbers
+string(REGEX REPLACE "([A-Za-z=_-])" ""  GMX_CUDA_NVCC_GENCODE_FLAGS "${GMX_CUDA_NVCC_GENCODE_FLAGS}")
+string(REGEX REPLACE "([0-9]+,)" ""  GMX_CUDA_NVCC_GENCODE_FLAGS "${GMX_CUDA_NVCC_GENCODE_FLAGS}")
 
 # Set the openmp host compilation flag if it has not been set automatically.
 # Some other compilation flags, mostly warnings are not automatically
@@ -262,74 +254,46 @@ list(APPEND GMX_CUDA_NVCC_FLAGS "${CUDA_HOST_COMPILER_OPTIONS}")
 # MR discussion in !3780 for more information.
 if(GMX_OPENMP AND NOT "${OpenMP_CXX_FLAGS}" STREQUAL "")
     if(NOT ${OpenMP_CXX_FLAGS} IN_LIST GMX_CUDA_NVCC_FLAGS)
-        list(APPEND GMX_CUDA_NVCC_FLAGS -Xcompiler ${OpenMP_CXX_FLAGS})
+        list(APPEND CUDA_HOST_COMPILER_OPTIONS -Xcompiler=${OpenMP_CXX_FLAGS})
     endif()
 endif()
 
-if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-    # CUDA header cuda_runtime_api.h in at least CUDA 10.1 uses 0
-    # where nullptr would be preferable. GROMACS can't fix these, so
-    # must suppress them.
-    GMX_TEST_CXXFLAG(HAS_WARNING_NO_ZERO_AS_NULL_POINTER_CONSTANT "-Wno-zero-as-null-pointer-constant" NVCC_CLANG_SUPPRESSIONS_CXXFLAGS)
-
-    # CUDA header crt/math_functions.h in at least CUDA 10.x and 11.1
-    # used throw() specifications that are deprecated in more recent
-    # C++ versions. GROMACS can't fix these, so must suppress them.
-    GMX_TEST_CXXFLAG(HAS_WARNING_NO_DEPRECATED_DYNAMIC_EXCEPTION_SPEC "-Wno-deprecated-dynamic-exception-spec" NVCC_CLANG_SUPPRESSIONS_CXXFLAGS)
-
-    # CUDA headers cuda_runtime.h and channel_descriptor.h in at least
-    # CUDA 11.0 uses many C-style casts, which are ncessary for this
-    # header to work for C. GROMACS can't fix these, so must suppress
-    # the warnings they generate
-    GMX_TEST_CXXFLAG(HAS_WARNING_NO_OLD_STYLE_CAST "-Wno-old-style-cast" NVCC_CLANG_SUPPRESSIONS_CXXFLAGS)
-
-    # Add these flags to those used for the host compiler. The
-    # "-Xcompiler" prefix directs nvcc to only use them for host
-    # compilation, which is all that is needed in this case.
-    foreach(_flag ${NVCC_CLANG_SUPPRESSIONS_CXXFLAGS})
-        list(APPEND GMX_CUDA_NVCC_FLAGS "-Xcompiler ${_flag}")
-    endforeach()
+# pass the CMAKE_CXX_FLAGS to nvcc as host compiler options
+if(NOT "${CMAKE_CXX_FLAGS}" STREQUAL "")
+    if(NOT ${CMAKE_CXX_FLAGS} IN_LIST GMX_CUDA_NVCC_FLAGS)
+        # convert the string to list
+        string(REPLACE " " ";" CMAKE_CXX_FLAGS_LIST_ "${CMAKE_CXX_FLAGS}")
+        # Loop over each item in the list
+        foreach(item IN LISTS CMAKE_CXX_FLAGS_LIST_)
+            list(APPEND CUDA_HOST_COMPILER_OPTIONS -Xcompiler="${item}")
+        endforeach()
+    endif()
 endif()
 
+# pass the GMXC_CXXFLAGS to nvcc as host compiler options.
+# This is used to suppress warnings for Clang for now.
+# Ideally should be enabled for all host compilers once
+# all the warnings are resolved in the test cases which are
+# compiled with nvcc.
+if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+    if(NOT "${GMXC_CXXFLAGS}" STREQUAL "")
+        if(NOT GMXC_CXXFLAGS IN_LIST GMX_CUDA_NVCC_FLAGS)
+            # convert the string to list
+            string(REPLACE " " ";" GMXC_CXXFLAGS_LIST_ "${GMXC_CXXFLAGS}")
+            # Loop over each item in the list
+            foreach(item IN LISTS GMXC_CXXFLAGS_LIST_)
+                list(APPEND CUDA_HOST_COMPILER_OPTIONS -Xcompiler="${item}")
+            endforeach()
+        endif()
+    endif()
+endif()
+
+# assemble the CUDA host compiler flags
+list(APPEND GMX_CUDA_NVCC_FLAGS "${CUDA_HOST_COMPILER_OPTIONS}")
+
+
+# Disable cudafe warnings with nvc++ as a host compiler - warning #177-D
+gmx_add_nvcc_flag_if_supported(GMX_CUDA_NVCC_FLAGS NVCC_HAS_DIAG_SUPPRESS_177 -diag-suppress=177)
+
 string(TOUPPER "${CMAKE_BUILD_TYPE}" _build_type)
-gmx_check_if_changed(_cuda_nvcc_executable_or_flags_changed CUDA_NVCC_EXECUTABLE CUDA_NVCC_FLAGS CUDA_NVCC_FLAGS_${_build_type})
-
-
-# The flags are set as local variables which shadow the cache variables. The cache variables
-# (can be set by the user) are appended. This is done in a macro to set the flags when all
-# host compiler flags are already set.
-macro(GMX_SET_CUDA_NVCC_FLAGS)
-    set(CUDA_NVCC_FLAGS "${GMX_CUDA_NVCC_FLAGS};${CUDA_NVCC_FLAGS}")
-endmacro()
-
-# This helper function creates a temporary scope in which we can set
-# the definitions, include directories and magic host-compiler-flag
-# variables that have to be set in advance of calling
-# cuda_add_library(). This is the only way cuda_add_library() can
-# modify the command line used for host compilation. It is not
-# possible to use the standard CMake mechanisms like
-# target_compile_options() to add such things to targets after they
-# are created.
-function(gmx_cuda_add_library TARGET)
-    add_definitions(-DHAVE_CONFIG_H)
-    # Source files generated by NVCC can include gmxmpi.h, and so
-    # need access to thread-MPI.
-    include_directories(SYSTEM ${PROJECT_SOURCE_DIR}/src/external/thread_mpi/include)
-    add_definitions(-DTMPI_USE_VISIBILITY)
-
-    # Now add all the compilation options
-    gmx_device_target_compile_options(CUDA_${TARGET}_CXXFLAGS)
-    list(APPEND CMAKE_CXX_FLAGS ${CUDA_${TARGET}_CXXFLAGS})
-    foreach(build_type ${build_types_with_explicit_flags})
-        list(APPEND CMAKE_CXX_FLAGS_${build_type} ${CUDA_${TARGET}_CXXFLAGS_${build_type}})
-    endforeach()
-
-    cuda_add_library(${TARGET} ${ARGN})
-    # TODO: Restrict the scope of MPI dependence.
-    # Targets that actually need MPI headers and build tool flags should
-    # manage their own `target_link_libraries` locally. Such a change is beyond
-    # the scope of the bug fix for #4678.
-    if (GMX_LIB_MPI)
-        target_link_libraries(${TARGET} PRIVATE MPI::MPI_CXX)
-    endif ()
-endfunction()
+gmx_check_if_changed(_cuda_nvcc_executable_or_flags_changed CUDAToolkit_NVCC_EXECUTABLE CUDA_NVCC_FLAGS CUDA_NVCC_FLAGS_${_build_type})

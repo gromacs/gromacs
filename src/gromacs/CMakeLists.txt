@@ -37,10 +37,6 @@ endif()
 
 set(LIBGROMACS_SOURCES)
 
-if (GMX_CLANG_CUDA)
-    include(gmxClangCudaUtils)
-endif()
-
 set_property(GLOBAL PROPERTY GMX_LIBGROMACS_SOURCES)
 set_property(GLOBAL PROPERTY CUDA_SOURCES)
 set_property(GLOBAL PROPERTY HIP_SOURCES)
@@ -164,30 +160,28 @@ list(APPEND LIBGROMACS_SOURCES ${GENERATED_VERSION_FILE})
 # Mark some shared GPU implementation files to compile with CUDA if needed
 if (GMX_GPU_CUDA)
     get_property(CUDA_SOURCES GLOBAL PROPERTY CUDA_SOURCES)
-    set_source_files_properties(${CUDA_SOURCES} PROPERTIES CUDA_SOURCE_PROPERTY_FORMAT OBJ)
+    set_source_files_properties(${CUDA_SOURCES} PROPERTIES LANGUAGE CUDA)
 endif()
 
 if (GMX_GPU_CUDA)
-    if(GMX_USE_cuFFTMp)
-        # needed as we need to include cufftmp include path before CUDA include path
-        cuda_include_directories(${cuFFTMp_INCLUDE_DIR})
-    endif()
-    # Work around FindCUDA that prevents using target_link_libraries()
-    # with keywords otherwise...
-    set(CUDA_LIBRARIES PRIVATE ${CUDA_LIBRARIES})
-
-    if (NOT GMX_CLANG_CUDA AND NOT GMX_NVSHMEM)
-        gmx_cuda_add_library(libgromacs ${LIBGROMACS_SOURCES})
-    else()
-        add_library(libgromacs ${LIBGROMACS_SOURCES})
-    endif()
+    add_library(libgromacs ${LIBGROMACS_SOURCES})
 
     #we cannot link with both cufftmp and cufft
     if(GMX_USE_cuFFTMp)
+        target_include_directories(libgromacs PRIVATE ${cuFFTMp_INCLUDE_DIR})
         target_link_libraries(libgromacs PRIVATE ${cuFFTMp_LIBRARY})
     else()
-        target_link_libraries(libgromacs PRIVATE ${CUDA_CUFFT_LIBRARIES})
+        target_link_libraries(libgromacs PRIVATE CUDA::cufft)
     endif()
+
+    if (GMX_CLANG_CUDA)
+        set_target_properties(libgromacs PROPERTIES CUDA_ARCHITECTURES "${_CUDA_CLANG_GENCODE_FLAGS}")
+        target_compile_options(libgromacs PRIVATE "$<$<COMPILE_LANGUAGE:CUDA>:${GMX_CUDA_CLANG_FLAGS}>")
+    else()
+        target_compile_options(libgromacs PRIVATE "$<$<COMPILE_LANGUAGE:CUDA>:${GMX_CUDA_NVCC_FLAGS}>")
+        set_target_properties(libgromacs PROPERTIES CUDA_ARCHITECTURES "${GMX_CUDA_NVCC_GENCODE_FLAGS}")
+    endif()
+
     if (GMX_NVSHMEM)
         set_target_properties(libgromacs PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
         # -fvisibility=hidden is required to be passed during device link phase to hide the
@@ -197,9 +191,8 @@ if (GMX_GPU_CUDA)
         target_link_options(libgromacs PRIVATE $<DEVICE_LINK:-fvisibility=hidden>)
         set_target_properties(libgromacs PROPERTIES CUDA_RESOLVE_DEVICE_SYMBOLS ON)
         target_link_libraries(libgromacs PRIVATE nvshmem_host_lib nvshmem_device_lib)
-        # NVSHMEM only supports SM 60+ so we make use of filtered GMX_NVSHMEM_LINK_ARCHS
-        set_target_properties(libgromacs PROPERTIES CUDA_ARCHITECTURES "${GMX_NVSHMEM_LINK_ARCHS}")
     endif()
+
     if (GMX_USE_cuFFTMp OR GMX_NVSHMEM)
         # We need to PUBLIC link to the stub libraries nvml/cuda to WAR an issue
         # with `bfd` linker which expects you always have dependencies on the link line.
@@ -209,7 +202,7 @@ if (GMX_GPU_CUDA)
         # version which is not present on the system where driver is not installed.
         # At some future release cmake will provide a workaround for this under the hood at which
         # point we can use PRIVATE linking for these libs until then we stick with PUBLIC linking.
-        target_link_libraries(libgromacs PUBLIC ${GMX_CUDA_DRV_LIB} ${GMX_NVIDIA_ML_LIB})
+        target_link_libraries(libgromacs PUBLIC CUDA::nvml CUDA::cuda_driver)
     endif()
 elseif(GMX_GPU_HIP)
     get_property(PROPERTY_HIP_SOURCES GLOBAL PROPERTY HIP_SOURCES)
@@ -361,17 +354,11 @@ if (GMX_GPU_CUDA AND CMAKE_CXX_COMPILER_ID MATCHES "Clang")
     foreach(_compile_flag ${NVCC_CLANG_SUPPRESSIONS_CXXFLAGS})
         set(GMX_CUDA_CLANG_FLAGS "${GMX_CUDA_CLANG_FLAGS} ${_compile_flag}")
     endforeach()
-    if (GMX_CLANG_CUDA)
-        foreach (_file ${LIBGROMACS_SOURCES})
-            get_filename_component(_ext ${_file} EXT)
-            get_source_file_property(_cuda_source_format ${_file} CUDA_SOURCE_PROPERTY_FORMAT)
-            if ("${_ext}" STREQUAL ".cu" OR _cuda_source_format)
-                gmx_compile_cuda_file_with_clang(${_file})
-            endif()
-        endforeach()
-    else()
+    if (NOT GMX_CLANG_CUDA)
         get_property(CUDA_SOURCES GLOBAL PROPERTY CUDA_SOURCES)
-        set_source_files_properties(${CUDA_SOURCES} PROPERTIES COMPILE_FLAGS ${GMX_CUDA_CLANG_FLAGS})
+        if (GMX_CUDA_CLANG_FLAGS)
+            set_source_files_properties(${CUDA_SOURCES} PROPERTIES COMPILE_FLAGS ${GMX_CUDA_CLANG_FLAGS})
+        endif()
     endif()
 endif()
 
@@ -530,26 +517,6 @@ if (BUILD_SHARED_LIBS)
     include(InstallLibInfo.cmake)
 endif()
 add_library(Gromacs::libgromacs ALIAS libgromacs)
-
-
-# Technically, the user could want to do this for an OpenCL build
-# using the CUDA runtime, but currently there's no reason to want to
-# do that.
-if (INSTALL_CUDART_LIB) #can be set manual by user
-    if (GMX_GPU_CUDA)
-        foreach(CUDA_LIB ${CUDA_LIBRARIES})
-            string(REGEX MATCH "cudart" IS_CUDART ${CUDA_LIB})
-            if(IS_CUDART) #libcuda should not be installed
-                #install also name-links (linker uses those)
-                file(GLOB CUDA_LIBS ${CUDA_LIB}*)
-                install(FILES ${CUDA_LIBS} DESTINATION
-                    ${CMAKE_INSTALL_LIBDIR} COMPONENT libraries)
-            endif()
-        endforeach()
-    else()
-        message(WARNING "INSTALL_CUDART_LIB only makes sense when configuring for CUDA support")
-    endif()
-endif()
 
 if(GMX_GPU_OPENCL)
     # Install the utility headers

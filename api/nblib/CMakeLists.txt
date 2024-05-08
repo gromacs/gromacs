@@ -68,8 +68,7 @@ set_target_properties(nblib PROPERTIES
         OUTPUT_NAME "nblib_gmx")
 
 if (GMX_GPU_CUDA)
-    find_package(CUDAToolkit)
-    target_link_libraries(nblib PRIVATE CUDA::cudart)
+    target_link_libraries(nblib PRIVATE CUDA::cudart_static)
     if(GMX_USE_cuFFTMp OR GMX_NVSHMEM)
         # We need to PUBLIC link to the stub libraries nvml/cuda to WAR an issue
         # with `bfd` linker which expects you always have dependencies on the link line.

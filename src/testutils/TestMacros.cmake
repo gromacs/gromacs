@@ -32,7 +32,6 @@
 # the research papers on the package. Check out https://www.gromacs.org.
 
 include(CMakeParseArguments)
-include(gmxClangCudaUtils)
 
 set(GMX_TEST_TIMEOUT_FACTOR "1" CACHE STRING "Scaling factor to apply for test timeouts")
 mark_as_advanced(GMX_TEST_TIMEOUT_FACTOR)
@@ -159,25 +158,19 @@ function (gmx_add_gtest_executable EXENAME)
                  TEST_USES_DYNAMIC_REGISTRATION=true)
         endif()
 
-        if (ARG_NVSHMEM AND GMX_NVSHMEM)
+        if (GMX_GPU_CUDA)
             add_executable(${EXENAME} ${UNITTEST_TARGET_OPTIONS}
                 ${ARG_CPP_SOURCE_FILES}
                 ${ARG_CUDA_CU_SOURCE_FILES}
                 ${ARG_GPU_CPP_SOURCE_FILES})
-            set_target_properties(${EXENAME} PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
-            set_target_properties(${EXENAME} PROPERTIES CUDA_RESOLVE_DEVICE_SYMBOLS ON)
-            target_link_libraries(${EXENAME} PRIVATE nvshmem_host_lib nvshmem_device_lib)
-            # disable CUDA_ARCHITECTURES to use gencode info from GMX_CUDA_NVCC_GENCODE_FLAGS
-            set_target_properties(${EXENAME}  PROPERTIES CUDA_ARCHITECTURES OFF)
-            target_compile_options(${EXENAME} PRIVATE $<$<COMPILE_LANGUAGE:CUDA>:${GMX_CUDA_NVCC_GENCODE_FLAGS}>)
-        elseif (GMX_GPU_CUDA AND NOT GMX_CLANG_CUDA)
-            # Work around FindCUDA that prevents using target_link_libraries()
-            # with keywords otherwise...
-            set(CUDA_LIBRARIES PRIVATE ${CUDA_LIBRARIES})
-            cuda_add_executable(${EXENAME} ${UNITTEST_TARGET_OPTIONS}
-                ${ARG_CPP_SOURCE_FILES}
-                ${ARG_CUDA_CU_SOURCE_FILES}
-                ${ARG_GPU_CPP_SOURCE_FILES})
+            if (GMX_CLANG_CUDA)
+                set_target_properties(${EXENAME} PROPERTIES CUDA_ARCHITECTURES "${_CUDA_CLANG_GENCODE_FLAGS}")
+                target_compile_options(${EXENAME} PRIVATE "$<$<COMPILE_LANGUAGE:CUDA>:${GMX_CUDA_CLANG_FLAGS}>")
+            else()
+                set_target_properties(${EXENAME} PROPERTIES CUDA_ARCHITECTURES "${GMX_CUDA_NVCC_GENCODE_FLAGS}")
+                target_compile_options(${EXENAME} PRIVATE "$<$<COMPILE_LANGUAGE:CUDA>:${GMX_CUDA_NVCC_FLAGS}>")
+            endif()
+            set_source_files_properties(${ARG_GPU_CPP_SOURCE_FILES} PROPERTIES LANGUAGE CUDA)
         elseif (GMX_GPU_HIP)
             set_source_files_properties(${ARG_HIP_CPP_SOURCE_FILES} PROPERTIES LANGUAGE HIP)
             set_source_files_properties(${ARG_GPU_CPP_SOURCE_FILES} PROPERTIES LANGUAGE HIP)
@@ -194,18 +187,14 @@ function (gmx_add_gtest_executable EXENAME)
                 ${ARG_CPP_SOURCE_FILES})
         endif()
 
+        if (ARG_NVSHMEM AND GMX_NVSHMEM)
+            set_target_properties(${EXENAME} PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
+            set_target_properties(${EXENAME} PROPERTIES CUDA_RESOLVE_DEVICE_SYMBOLS ON)
+            target_link_libraries(${EXENAME} PRIVATE nvshmem_host_lib nvshmem_device_lib)
+        endif()
+
         if (GMX_GPU_CUDA)
-            if (GMX_CLANG_CUDA)
-                target_sources(${EXENAME} PRIVATE
-                    ${ARG_CUDA_CU_SOURCE_FILES}
-                    ${ARG_GPU_CPP_SOURCE_FILES})
-                set_source_files_properties(${ARG_GPU_CPP_SOURCE_FILES} PROPERTIES CUDA_SOURCE_PROPERTY_FORMAT OBJ)
-                gmx_compile_cuda_file_with_clang(${ARG_CUDA_CU_SOURCE_FILES})
-                gmx_compile_cuda_file_with_clang(${ARG_GPU_CPP_SOURCE_FILES})
-                if(ARG_CUDA_CU_SOURCE_FILES OR ARG_GPU_CPP_SOURCE_FILES)
-                    target_link_libraries(${EXENAME} PRIVATE ${GMX_EXTRA_LIBRARIES})
-                endif()
-            endif()
+            target_link_libraries(${EXENAME} PRIVATE CUDA::cudart_static)
         elseif (GMX_GPU_HIP)
             if(ARG_HIP_CPP_SOURCE_FILES OR ARG_GPU_CPP_SOURCE_FILES)
                 target_link_libraries(${EXENAME} PRIVATE hip::host)

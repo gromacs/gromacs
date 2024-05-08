@@ -412,6 +412,16 @@ macro (gmx_c_flags)
         endif()
         GMX_TEST_CXXFLAG(CXXFLAGS_WARN_NO_RESERVED_IDENTIFIER "-Wno-reserved-identifier" GMXC_CXXFLAGS) # LLVM BUG #50644
         GMX_TEST_CXXFLAG(CXXFLAGS_WARN_NO_MISSING_FIELD_INITIALIZERS "-Wno-missing-field-initializers" GMXC_CXXFLAGS)
+        if(GMX_GPU)
+            string(TOUPPER "${GMX_GPU}" _gmx_gpu_uppercase)
+            if(${_gmx_gpu_uppercase} STREQUAL "CUDA")
+                # disable the missing prototypes warning as there are some tests which builds with nvcc and clang as host compiler
+                # still have this issue
+                GMX_TEST_CXXFLAG(CXXFLAGS_WARN_NO_MISSING_PROTOTYPES "-Wno-missing-prototypes" GMXC_CXXFLAGS)
+                GMX_TEST_CXXFLAG(CXXFLAGS_WARN_NO_CONSTANT_LOGICAL_OPERAND "-Wno-constant-logical-operand" GMXC_CXXFLAGS)
+            endif()
+        endif()
+
         if (CMAKE_BUILD_TYPE MATCHES "Debug")
             GMX_TEST_CXXFLAG(CXXFLAGS_NO_DEBUG_DISABLES_OPTIMIZATION "-Wno-debug-disables-optimization" GMXC_CXXFLAGS)
         endif()
