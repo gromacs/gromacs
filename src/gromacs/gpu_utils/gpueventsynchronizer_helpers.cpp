@@ -58,9 +58,9 @@ bool g_useEventConsumptionCounting = (CMAKE_BUILD_TYPE == CMAKE_BUILD_TYPE_DEBUG
 
 namespace gmx::internal
 {
-void disableCudaEventConsumptionCounting()
+void disableGpuEventConsumptionCounting()
 {
-    GMX_RELEASE_ASSERT(GMX_GPU_CUDA != 0, "Can only be called in CUDA builds");
+    GMX_RELEASE_ASSERT(GMX_GPU_CUDA, "Can only be called in CUDA builds");
 #if GMX_GPU_CUDA
     /* With threadMPI, we can have a race between different threads setting and reading this flag.
      * However, either all ranks call this function or no one does,

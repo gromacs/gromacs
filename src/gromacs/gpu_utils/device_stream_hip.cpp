@@ -102,3 +102,5 @@ void DeviceStream::synchronize() const
     hipError_t stat = hipStreamSynchronize(stream_);
     gmx::checkDeviceError(stat, "hipStreamSynchronize failed");
 }
+
+void issueClFlushInStream(const DeviceStream& /*deviceStream*/) {}

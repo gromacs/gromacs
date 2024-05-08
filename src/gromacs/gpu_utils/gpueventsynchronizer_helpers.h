@@ -40,12 +40,10 @@
 #ifndef GMX_GPU_UTILS_GPUEVENTSYNCHRONIZER_HELPERS_H
 #define GMX_GPU_UTILS_GPUEVENTSYNCHRONIZER_HELPERS_H
 
-#include "config.h"
-
 namespace gmx::internal
 {
 //! Setter for \c g_useEventConsumptionCounting.
-void disableCudaEventConsumptionCounting();
+void disableGpuEventConsumptionCounting();
 } // namespace gmx::internal
 
 #endif

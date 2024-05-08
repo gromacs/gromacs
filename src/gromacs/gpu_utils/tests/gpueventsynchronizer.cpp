@@ -61,7 +61,7 @@ namespace test
 namespace
 {
 
-#if GMX_GPU && !GMX_GPU_HIP
+#if GMX_GPU
 TEST(GpuEventSynchronizerTest, BasicFunctionality)
 {
     const auto& testDeviceList = getTestHardwareEnvironment()->getTestDeviceList();
