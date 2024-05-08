@@ -353,6 +353,18 @@ public:
         }
     }
 
+    void checkBasicTrajectoryInformation(const int atomCount, const int numFrames)
+    {
+        EXPECT_EQ(atomCount, readReferenceNumAtoms("position"));
+        EXPECT_EQ(atomCount, readReferenceNumAtoms("velocity"));
+        EXPECT_EQ(-1, readReferenceNumAtoms("force"));
+        EXPECT_EQ(numFrames, readReferenceNumFrames("position"));
+        EXPECT_EQ(numFrames, readReferenceNumFrames("velocity"));
+        EXPECT_EQ(-1, readReferenceNumFrames("force"));
+        EXPECT_EQ(0, getFirstTimeFromAllDataBlocks());
+        EXPECT_EQ((numFrames - 1) * 10, getFinalTimeFromAllDataBlocks());
+    }
+
 private:
     static std::string getFileSuffix(const char* type)
     {
@@ -452,11 +464,7 @@ TEST_P(H5mdIoTest, HighLevelWriteRead)
     /* No trajectory data was written above if there were no atoms */
     if (refAtomCount > 0)
     {
-        EXPECT_EQ(refAtomCount, readReferenceNumAtoms("position"));
-        EXPECT_EQ(refAtomCount, readReferenceNumAtoms("velocity"));
-        EXPECT_EQ(-1, readReferenceNumAtoms("force"));
-        EXPECT_EQ(numFrames, readReferenceNumFrames("position"));
-        EXPECT_EQ(numFrames, readReferenceNumFrames("velocity"));
+        checkBasicTrajectoryInformation(refAtomCount, numFrames);
     }
     closeReferenceFile();
 
@@ -469,14 +477,7 @@ TEST_P(H5mdIoTest, HighLevelWriteRead)
     }
 
     /* Check key values after opening the file. */
-    EXPECT_EQ(refAtomCount, readReferenceNumAtoms("position"));
-    EXPECT_EQ(refAtomCount, readReferenceNumAtoms("velocity"));
-    EXPECT_EQ(-1, readReferenceNumAtoms("force"));
-    EXPECT_EQ(numFrames, readReferenceNumFrames("position"));
-    EXPECT_EQ(numFrames, readReferenceNumFrames("velocity"));
-    // EXPECT_THROW_GMX(readReferenceNumFrames("force"), gmx::FileIOError);
-    EXPECT_EQ(0, getFirstTimeFromAllDataBlocks());
-    EXPECT_EQ((numFrames - 1) * 10, getFinalTimeFromAllDataBlocks());
+    checkBasicTrajectoryInformation(refAtomCount, numFrames);
 
     for (int i = 0; i < numFrames; i++)
     {
