@@ -2362,6 +2362,8 @@ int gmx_grompp(int argc, char* argv[])
     /* check masses */
     check_mol(&sys, &wi);
 
+    checkRBDihedralSum(sys, *ir, &wi);
+
     if (haveFepPerturbedMassesInSettles(sys))
     {
         wi.addError(

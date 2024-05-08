@@ -61,6 +61,17 @@ class MDLogger;
 double check_mol(const gmx_mtop_t* mtop, WarningHandler* wi);
 /* Check mass and charge */
 
+/*! \brief Check that RB/Fourier style dihedral sums to zero in free-energy computation
+ *
+ * Searches for, and emits a warning when dihedral of function type 3 (Ryckaert-Bellemans or
+ * Fourier) have a sum of coefficient different from zero, when performing a free-energy
+ * computation, in stateA and stateB, as this is likely a parameter mistake that can
+ * produce erroneous dHdl values.
+ *
+ */
+void checkRBDihedralSum(const gmx_mtop_t& mtop, const t_inputrec& ir, WarningHandler* wi);
+
+
 char** do_top(bool                                  bVerbose,
               const char*                           topfile,
               const char*                           topppfile,

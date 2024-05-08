@@ -45,6 +45,8 @@
 
 #include <algorithm>
 #include <memory>
+#include <numeric>
+#include <optional>
 #include <unordered_set>
 
 #include <sys/types.h>
@@ -191,6 +193,136 @@ double check_mol(const gmx_mtop_t* mtop, WarningHandler* wi)
         }
     }
     return q;
+}
+
+/*! \brief Describe molecule and involved atoms for a dihedral interaction of a given type
+ *
+ * Searches in the dihedrals of type 3 (Ryckaert-Bellemans or Fourier) for an interaction
+ * type matching the interactionType input parameters, returning for the first match
+ * a string with the name of the  molecule and the 4 involved atoms.
+ *
+ * Precondition: the interaction should exist in the topology
+ *
+ */
+static std::string describeAtomsForRBDihedralOfGivenType(const gmx_mtop_t& mtop, int interactionType)
+{
+    for (const auto& molt : mtop.moltype)
+    {
+        const int* ia = molt.ilist[F_RBDIHS].iatoms.data();
+        for (int i = 0; (i < molt.ilist[F_RBDIHS].size());)
+        {
+            const int type  = ia[0];
+            const int ftype = mtop.ffparams.functype[type];
+            const int nra   = interaction_function[ftype].nratoms;
+            if (type == interactionType)
+            {
+                return gmx::formatString(
+                        "First such dihedral in molecule %s, involving atoms %d %d %d %d",
+                        *(molt.name),
+                        ia[1],
+                        ia[2],
+                        ia[3],
+                        ia[4]);
+            }
+            ia += nra + 1;
+            i += nra + 1;
+        }
+    }
+    gmx_fatal(FARGS, "Precondition violation: could not find RB interaction of given type %d", interactionType);
+}
+
+void checkRBDihedralSum(const gmx_mtop_t& mtop, const t_inputrec& ir, WarningHandler* wi)
+{
+    /*
+     * The sum of the RB dihedral coefficient being zero is relevant when:
+     *     - Free energy computation is being performed (dHdl)
+     *     - Comparing energies between force field ports and/or other MD codes
+     *  because this affect the value of the potential energy.
+     *
+     *  We can clearly detect problems in the first situation: free energy is enabled, stateA
+     *  and stateB have a different sum (=> potential energy "offset" at 0 degree), so we emit a
+     *  warning. The second case is more subtle, since formally the potential is up to a constant,
+     *  which does not affect the dynamics. We therefore only emit a note.
+     */
+
+    // Mistakes here are typically due to using the wrong formula to port dihedrals, not numerical
+    // issues, so we use a relatively large tolerance
+    const real         absoluteTolerance        = 0.01;
+    int                numSumCoefficientNotZero = 0;
+    std::optional<int> indexOfFirstSumCoefficientNotZero;
+    int                numSumCoefficientDifferentInStateAStateB = 0;
+    std::optional<int> indexOfSumCoefficientDifferentInStateAStateB;
+
+    for (int j = 0; j < gmx::ssize(mtop.ffparams.functype); ++j)
+    {
+        int ftype = mtop.ffparams.functype[j];
+        if (ftype == F_RBDIHS)
+        {
+            const t_iparams& params = mtop.ffparams.iparams[j];
+            const real       sum_a =
+                    std::accumulate(std::begin(params.rbdihs.rbcA), std::end(params.rbdihs.rbcA), 0.0);
+            const real sum_b =
+                    std::accumulate(std::begin(params.rbdihs.rbcB), std::end(params.rbdihs.rbcB), 0.0);
+
+            if (std::abs(sum_a - sum_b) > absoluteTolerance)
+            {
+                numSumCoefficientDifferentInStateAStateB++;
+                if (!indexOfSumCoefficientDifferentInStateAStateB.has_value())
+                {
+                    indexOfSumCoefficientDifferentInStateAStateB = j;
+                }
+            }
+
+            if (std::abs(sum_a) > absoluteTolerance || std::abs(sum_b) > absoluteTolerance)
+            {
+                numSumCoefficientNotZero++;
+                if (!indexOfFirstSumCoefficientNotZero.has_value())
+                {
+                    indexOfFirstSumCoefficientNotZero = j;
+                }
+            }
+        }
+    }
+
+    // At this stage of grompp, we only have the interactions that are going to be used in the
+    // simulation - this eliminates warning unrelated to the user's system, but also unfortunately
+    // means that we cannot easily identify the file/line where the offending parameters were
+    // originally defined. We can however go through the molecule types and print one instance of
+    // the offending dihedral.
+
+    auto generateMessage = [](int numDihedrals, const std::string& note, const std::string& involvedAtoms) {
+        return gmx::formatString(
+                "%d dihedrals with function type 3 (Ryckaert-Bellemans or Fourier) have "
+                "coefficients %s"
+                "\n%s",
+                numDihedrals,
+                note.c_str(),
+                involvedAtoms.c_str());
+    };
+
+    if (numSumCoefficientNotZero > 0)
+    {
+        std::string involvedAtoms =
+                describeAtomsForRBDihedralOfGivenType(mtop, indexOfFirstSumCoefficientNotZero.value());
+        std::string note =
+                "that do not sum to zero. This does not affect the simulation and can "
+                "be ignored, unless you are comparing potential energy values with other force "
+                "field ports and/or MD software.";
+        std::string message = generateMessage(numSumCoefficientNotZero, note, involvedAtoms);
+        wi->addNote(message);
+    }
+
+    if (numSumCoefficientDifferentInStateAStateB > 0 && ir.efep != FreeEnergyPerturbationType::No)
+    {
+        std::string involvedAtoms = describeAtomsForRBDihedralOfGivenType(
+                mtop, indexOfSumCoefficientDifferentInStateAStateB.value());
+        std::string note =
+                "whose sums do not match in state A and B. This could introduce an "
+                "undesired offset in dHdl values.";
+        std::string message =
+                generateMessage(numSumCoefficientDifferentInStateAStateB, note, involvedAtoms);
+        wi->addWarning(message);
+    }
 }
 
 /*! \brief Returns the rounded charge of a molecule, when close to integer, otherwise returns the original charge.

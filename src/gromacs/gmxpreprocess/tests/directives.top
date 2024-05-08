@@ -34,6 +34,21 @@ A                    0
 ; Bond without values: will result in "No default Bond types" if bonded name were not parsed
     1     2     1 
 
+[ dihedrals ]
+;  ai    aj    ak    al funct            c0            c1            c2            c3            c4            c5
+#ifdef DIHEDRAL_SUM_NOT_ZERO
+; The following RB dihedral has coefficients that do not sum to zero:
+    1     3     2     4     3         1.27612   1.16734   0.89538  -3.33884   1.00000   0.00000  
+#else
+#ifdef DIHEDRAL_SUM_DIFFERENT_STATEA_STATEB
+; The following sums to 1.0 in state A, but to 2.0 in state B
+    1     3     2     4     3         1.27612   1.16734   0.89538  -3.33884   1.00000   0.00000   2.27612   1.16734   0.89538  -3.33884   1.00000   0.00000  
+#else
+; The following does sum to zero:
+    1     3     2     4     3         1.27612   1.16734   0.89538  -3.33884   0.00000   0.00000
+#endif  
+#endif
+
 [ system ]
 ; Name
 minimal edge case system

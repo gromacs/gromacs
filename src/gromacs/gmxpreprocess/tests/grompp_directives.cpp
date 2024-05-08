@@ -115,4 +115,54 @@ TEST_F(GromppDirectiveTest, edgeCaseAtomTypeNames)
     }
 }
 
+TEST_F(GromppDirectiveTest, NoteOnDihedralNotSumToZero)
+{
+    CommandLine cmdline;
+    cmdline.addOption("grompp");
+
+    std::string mdpString = mdpContentString_;
+    mdpString += "define = -DDIHEDRAL_SUM_NOT_ZERO";
+
+    const std::string mdpInputFileName = fileManager_.getTemporaryFilePath("directives.mdp").u8string();
+    gmx::TextWriter::writeFileFromString(mdpInputFileName, mdpString);
+    cmdline.addOption("-f", mdpInputFileName);
+
+
+    cmdline.addOption("-c", TestFileManager::getInputFilePath("directives.gro").u8string());
+    cmdline.addOption("-p", TestFileManager::getInputFilePath("directives.top").u8string());
+
+    std::string outTprFilename = fileManager_.getTemporaryFilePath("directives.tpr").u8string();
+    cmdline.addOption("-o", outTprFilename);
+
+    // We cannot directly check printing of a note, but we at least check that it terminates
+    // successfully.
+    EXPECT_EQ(gmx_grompp(cmdline.argc(), cmdline.argv()), 0);
+}
+
+TEST_F(GromppDirectiveTest, WarnOnDihedralSumDifferentForFreeEnergy)
+{
+    CommandLine cmdline;
+    cmdline.addOption("grompp");
+
+    std::string mdpString = mdpContentString_;
+    mdpString +=
+            "define = -DDIHEDRAL_SUM_DIFFERENT_STATEA_STATEB\n"
+            "free-energy = yes\n"
+            "init-lambda = 0.5";
+
+    const std::string mdpInputFileName = fileManager_.getTemporaryFilePath("directives.mdp").u8string();
+    gmx::TextWriter::writeFileFromString(mdpInputFileName, mdpString);
+    cmdline.addOption("-f", mdpInputFileName);
+
+
+    cmdline.addOption("-c", TestFileManager::getInputFilePath("directives.gro").u8string());
+    cmdline.addOption("-p", TestFileManager::getInputFilePath("directives.top").u8string());
+
+    std::string outTprFilename = fileManager_.getTemporaryFilePath("directives.tpr").u8string();
+    cmdline.addOption("-o", outTprFilename);
+
+    GMX_EXPECT_DEATH_IF_SUPPORTED(gmx_grompp(cmdline.argc(), cmdline.argv()),
+                                  "undesired offset in dHdl values");
+}
+
 } // namespace

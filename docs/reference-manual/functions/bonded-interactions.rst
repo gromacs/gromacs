@@ -528,6 +528,13 @@ Proper dihedrals: Ryckaert-Bellemans function
   by multiplying every coefficient :math:`\displaystyle C_n` by
   :math:`\displaystyle (-1)^n`.
 
+**Note:** In a force field, the :math:`\displaystyle C_n` coefficients for 
+each Ryckaert-Bellemans dihedral should sum to the same value, ideally zero,
+to ensure consistency in the zero point of the potential energy.
+Failing that, energy values and free energy determination (through
+:math:`\partial H/\partial \lambda`) might have an undesirable offset,
+though the dynamics itself will be unaffected.
+
 An example of constants for :math:`C` is given in :numref:`Table %s <tab-crb>`.
 
 .. _tab-crb:
