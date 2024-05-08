@@ -1622,14 +1622,21 @@ void gmx::LegacySimulator::do_md()
                                                          f.view().forceWithPadding(),
                                                          *ekind_);
 
-                        constrain_coordinates(constr_,
-                                              do_log || do_ene,
-                                              step,
-                                              state_,
-                                              upd.xp()->arrayRefWithPadding(),
-                                              &dvdl_constr,
-                                              bCalcVir,
-                                              shake_vir);
+                        // Call apply() directly so we can avoid constraining the velocities
+                        constr_->apply(false,
+                                       step,
+                                       1,
+                                       1.0,
+                                       state_->x.arrayRefWithPadding(),
+                                       upd.xp()->arrayRefWithPadding(),
+                                       {},
+                                       state_->box,
+                                       state_->lambda[FreeEnergyPerturbationCouplingType::Bonded],
+                                       &dvdl_constr,
+                                       {},
+                                       bCalcVir,
+                                       shake_vir,
+                                       ConstraintVariable::Positions);
                     }
 
                     ArrayRefWithPadding<const RVec> forceCombined =
