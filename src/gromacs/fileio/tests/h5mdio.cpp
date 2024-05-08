@@ -408,6 +408,8 @@ TEST_F(H5mdIoTest, CanCreateAndCloseH5mdFile)
     EXPECT_FALSE(isReferenceFileOpen());
     openReferenceFile('r');
     /* Verify that the version number is the same after flushing, closing and opening. */
+    setAuthorAndCreator(referenceAuthorName, referenceCreatorProgramName, referenceCreatorProgramVersion);
+    checkAuthorAndCreator(referenceAuthorName, referenceCreatorProgramName, referenceCreatorProgramVersion);
     checkH5mdRootVersionNumber();
     EXPECT_TRUE(isReferenceFileOpen());
     closeReferenceFile();
@@ -459,8 +461,8 @@ TEST_P(H5mdIoTest, HighLevelWriteRead)
         }
     }
 
-    /* Check key values before closing/flushing the file. */
     int refAtomCount = getRefAtomCount();
+    /* Check key values before closing/flushing the file. */
     /* No trajectory data was written above if there were no atoms */
     if (refAtomCount > 0)
     {
