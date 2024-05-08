@@ -209,6 +209,7 @@ public:
     void setNumericProperty(const std::string&    containerName,
                             const std::string&    propertyName,
                             const std::vector<T>& propertyValues,
+                            const std::string&    unit,
                             bool                  replaceExisting = false);
 
 

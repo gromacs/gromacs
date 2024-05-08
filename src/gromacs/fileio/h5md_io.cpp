@@ -157,10 +157,10 @@ void setupSystemParticleProperties(gmx::h5mdio::GmxH5mdIo*  file,
         atomIds.push_back(iParticle);
     }
 
-    file->setNumericProperty("/particles/" + selectionName, "charge", atomCharges, false);
-    file->setNumericProperty("/particles/" + selectionName, "mass", atomMasses, false);
-    file->setNumericProperty("/particles/" + selectionName, "species", atomSpecies, false);
-    file->setNumericProperty("/particles/" + selectionName, "id", atomIds, false);
+    file->setNumericProperty("/particles/" + selectionName, "charge", atomCharges, "", false);
+    file->setNumericProperty("/particles/" + selectionName, "mass", atomMasses, "amu", false);
+    file->setNumericProperty("/particles/" + selectionName, "species", atomSpecies, "", false);
+    file->setNumericProperty("/particles/" + selectionName, "id", atomIds, "", false);
 }
 
 } // namespace
@@ -507,6 +507,7 @@ template<typename T>
 void GmxH5mdIo::setNumericProperty(const std::string&    containerName,
                                    const std::string&    propertyName,
                                    const std::vector<T>& propertyValues,
+                                   const std::string&    unit,
                                    bool                  replaceExisting)
 {
 #if GMX_USE_HDF5
@@ -538,7 +539,7 @@ void GmxH5mdIo::setNumericProperty(const std::string&    containerName,
 
         hid_t dataSet = openOrCreateDataSet<1>(file_,
                                                dataSetName.c_str(),
-                                               "",
+                                               unit.c_str(),
                                                dataType,
                                                atomPropertiesChunkDims,
                                                CompressionAlgorithm::LosslessNoShuffle,
@@ -910,18 +911,22 @@ extern template void setAttribute<double>(hid_t, const char*, double, hid_t);
 template void GmxH5mdIo::setNumericProperty<float>(const std::string&,
                                                    const std::string&,
                                                    const std::vector<float>&,
+                                                   const std::string&,
                                                    bool);
 template void GmxH5mdIo::setNumericProperty<double>(const std::string&,
                                                     const std::string&,
                                                     const std::vector<double>&,
+                                                    const std::string&,
                                                     bool);
 template void GmxH5mdIo::setNumericProperty<int>(const std::string&,
                                                  const std::string&,
                                                  const std::vector<int>&,
+                                                 const std::string&,
                                                  bool);
 template void GmxH5mdIo::setNumericProperty<std::int64_t>(const std::string&,
                                                           const std::string&,
                                                           const std::vector<std::int64_t>&,
+                                                          const std::string&,
                                                           bool);
 
 template std::vector<float> GmxH5mdIo::readNumericProperty<float>(const std::string&, const std::string&);
@@ -1135,7 +1140,7 @@ void addAtomTypesOfAtoms(h5mdio::GmxH5mdIo* file, const t_atoms& atoms, std::vec
         t_atom* atom = &atoms.atom[i];
         if (!atomTypesAdded[atom->type])
         {
-            h5mdio::writeData<1, false>(atomTypeAtomicNumberDataSet, &atom->atomnumber, i);
+            h5mdio::writeData<1, false>(atomTypeAtomicNumberDataSet, &atom->atomnumber, atom->type);
             atomTypesAdded[atom->type] = true;
         }
     }
@@ -1164,6 +1169,7 @@ void setupMolecularSystemTopology(h5mdio::GmxH5mdIo* file, const gmx_mtop_t& top
     if (topologyGroup < 0)
     {
         topologyGroup = file->createGroup(h5mdio::s_gromacsTopologyGroupName);
+        printf("Created group %s\n", h5mdio::s_gromacsTopologyGroupName.c_str());
     }
 
     h5mdio::setVersionAttribute(topologyGroup,
