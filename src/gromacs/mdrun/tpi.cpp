@@ -98,7 +98,6 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/logger.h"
-#include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/stringutil.h"
 
 #include "legacysimulator.h"
@@ -106,33 +105,10 @@
 //! Global max algorithm
 static void global_max(t_commrec* cr, int* n)
 {
-    int *sum, i;
-
-    snew(sum, cr->nnodes);
+    std::vector<int> sum(cr->nnodes);
     sum[cr->nodeid] = *n;
-    gmx_sumi(cr->nnodes, sum, cr);
-    for (i = 0; i < cr->nnodes; i++)
-    {
-        *n = std::max(*n, sum[i]);
-    }
-
-    sfree(sum);
-}
-
-//! Reallocate arrays.
-static void realloc_bins(double** bin, int* nbin, int nbin_new)
-{
-    int i;
-
-    if (nbin_new != *nbin)
-    {
-        srenew(*bin, nbin_new);
-        for (i = *nbin; i < nbin_new; i++)
-        {
-            (*bin)[i] = 0;
-        }
-        *nbin = nbin_new;
-    }
+    gmx_sumi(cr->nnodes, sum.data(), cr);
+    *n = *std::max_element(sum.begin(), sum.end());
 }
 
 //! Computes and returns the RF exclusion energy for the last molecule starting at \p beginAtom
@@ -168,34 +144,6 @@ void LegacySimulator::do_tpi()
     GMX_RELEASE_ASSERT(gmx_omp_nthreads_get(ModuleMultiThread::Default) == 1,
                        "TPI does not support OpenMP");
 
-    gmx::ForceBuffers          f;
-    real                       lambda, t, temp, beta, drmax, epot;
-    double                     embU, sum_embU, *sum_UgembU, V, V_all, VembU_all;
-    t_trxstatus*               status;
-    t_trxframe                 rerun_fr;
-    gmx_bool                   bDispCorr, bCharge, bRFExcl, bNotLastFrame, bStateChanged, bNS;
-    tensor                     force_vir, shake_vir, vir, pres;
-    int                        a_tp0, a_tp1, ngid, gid_tp, nener, e;
-    rvec*                      x_mol;
-    rvec                       mu_tot, x_init, dx;
-    int                        nnodes, frame;
-    int64_t                    frame_step_prev, frame_step;
-    int64_t                    nsteps, stepblocksize = 0, step;
-    int64_t                    seed;
-    int                        i;
-    FILE*                      fp_tpi = nullptr;
-    char *                     ptr, *dump_pdb;
-    std::vector<std::string>   leg;
-    double                     dbl, dump_ener;
-    gmx_bool                   bCavity;
-    int                        nat_cavity  = 0, d;
-    real *                     mass_cavity = nullptr, mass_tot;
-    int                        nbin;
-    double                     invbinw, *bin, refvolshift, logV, bUlogV;
-    gmx_bool                   bEnergyOutOfBounds;
-    std::array<std::string, 2> tpid_leg = { "direct", "reweighted" };
-    auto*                      mdatoms  = mdAtoms_->mdatoms();
-
     GMX_UNUSED_VALUE(outputProvider_);
 
     if (usingLJPme(inputRec_->vdwtype))
@@ -219,40 +167,44 @@ void LegacySimulator::do_tpi()
     /* Since there is no upper limit to the insertion energies,
      * we need to set an upper limit for the distribution output.
      */
-    real bU_bin_limit      = 50;
-    real bU_logV_bin_limit = bU_bin_limit + 10;
+    const real bU_bin_limit      = 50;
+    const real bU_logV_bin_limit = bU_bin_limit + 10;
 
-    nnodes = cr_->nnodes;
+    const int nnodes = cr_->nnodes;
 
     gmx_mtop_generate_local_top(topGlobal_, top_, inputRec_->efep != FreeEnergyPerturbationType::No);
 
     const SimulationGroups* groups = &topGlobal_.groups;
 
-    bCavity = (inputRec_->eI == IntegrationAlgorithm::TPIC);
-    if (bCavity)
+    const bool        insertIntoCavity = (inputRec_->eI == IntegrationAlgorithm::TPIC);
+    std::vector<real> massesDefiningCavity;
+    if (insertIntoCavity)
     {
-        ptr = getenv("GMX_TPIC_MASSES");
+        char* ptr = getenv("GMX_TPIC_MASSES");
         if (ptr == nullptr)
         {
-            nat_cavity = 1;
+            // With a single atom the masses doesn't matter as long as it is !=0
+            massesDefiningCavity.push_back(1);
         }
         else
         {
             /* Read (multiple) masses from env var GMX_TPIC_MASSES,
              * The center of mass of the last atoms is then used for TPIC.
              */
-            nat_cavity = 0;
-            while (sscanf(ptr, "%20lf%n", &dbl, &i) > 0)
+            double dbl;
+            int    numCharactersRead;
+            while (sscanf(ptr, "%20lf%n", &dbl, &numCharactersRead) > 0)
             {
-                srenew(mass_cavity, nat_cavity + 1);
-                mass_cavity[nat_cavity] = dbl;
-                fprintf(fpLog_, "mass[%d] = %f\n", nat_cavity + 1, mass_cavity[nat_cavity]);
-                nat_cavity++;
-                ptr += i;
+                massesDefiningCavity.push_back(dbl);
+                fprintf(fpLog_,
+                        "mass[%d] = %f\n",
+                        int(gmx::ssize(massesDefiningCavity)) + 1,
+                        massesDefiningCavity.back());
+                ptr += numCharactersRead;
             }
-            if (nat_cavity == 0)
+            if (massesDefiningCavity.empty())
             {
-                gmx_fatal(FARGS, "Found %d masses in GMX_TPIC_MASSES", nat_cavity);
+                gmx_fatal(FARGS, "Found zero masses in GMX_TPIC_MASSES");
             }
         }
     }
@@ -263,10 +215,10 @@ void LegacySimulator::do_tpi()
     /* We never need full pbc for TPI */
     fr_->pbcType = PbcType::Xyz;
     /* Determine the temperature for the Boltzmann weighting */
-    temp = constantEnsembleTemperature(*inputRec_);
+    const real temp = constantEnsembleTemperature(*inputRec_);
     if (fpLog_)
     {
-        for (i = 1; (i < inputRec_->opts.ngtc); i++)
+        for (int i = 1; i < inputRec_->opts.ngtc; i++)
         {
             if (inputRec_->opts.ref_t[i] != temp)
             {
@@ -280,30 +232,32 @@ void LegacySimulator::do_tpi()
         }
         fprintf(fpLog_, "\n  The temperature for test particle insertion is %.3f K\n\n", temp);
     }
-    beta = 1.0 / (gmx::c_boltz * temp);
+    const real beta = 1.0 / (gmx::c_boltz * temp);
 
     /* Number of insertions per frame */
-    nsteps = inputRec_->nsteps;
+    const int64_t nsteps = inputRec_->nsteps;
 
     /* Use the same neighborlist with more insertions points
      * in a sphere of radius drmax around the initial point
      */
     /* This should be a proper mdp parameter */
-    drmax = inputRec_->rtpi;
+    const real drmax = inputRec_->rtpi;
 
     /* An environment variable can be set to dump all configurations
      * to pdb with an insertion energy <= this value.
      */
-    dump_pdb  = getenv("GMX_TPI_DUMP");
-    dump_ener = 0;
+    const char* dump_pdb  = getenv("GMX_TPI_DUMP");
+    double      dump_ener = 0;
     if (dump_pdb)
     {
         sscanf(dump_pdb, "%20lf", &dump_ener);
     }
 
+    auto* mdatoms = mdAtoms_->mdatoms();
     atoms2md(topGlobal_, *inputRec_, -1, {}, topGlobal_.natoms, mdAtoms_);
     update_mdatoms(mdatoms, inputRec_->fepvals->init_lambda);
 
+    gmx::ForceBuffers f;
     f.resize(topGlobal_.natoms);
 
     /* Print to log file  */
@@ -311,20 +265,20 @@ void LegacySimulator::do_tpi()
     wallcycle_start(wallCycleCounters_, WallCycleCounter::Run);
     print_start(fpLog_, cr_, wallTimeAccounting_, "Test Particle Insertion");
 
-    /* The last charge group is the group to be inserted */
+    /* The last molecule is the molecule to be inserted */
     const t_atoms& atomsToInsert = topGlobal_.moltype[topGlobal_.molblock.back().type].atoms;
-    a_tp0                        = topGlobal_.natoms - atomsToInsert.nr;
-    a_tp1                        = topGlobal_.natoms;
+    const int      testAtomStart = topGlobal_.natoms - atomsToInsert.nr;
+    const int      testAtomEnd   = topGlobal_.natoms;
     if (debug)
     {
-        fprintf(debug, "TPI atoms %d-%d\n", a_tp0, a_tp1);
+        fprintf(debug, "TPI atoms %d-%d\n", testAtomStart, testAtomEnd);
     }
 
     auto x = makeArrayRef(stateGlobal_->x);
 
     if (usingPme(fr_->ic->eeltype))
     {
-        gmx_pme_reinit_atoms(fr_->pmedata, a_tp0, {}, {});
+        gmx_pme_reinit_atoms(fr_->pmedata, testAtomStart, {}, {});
     }
 
     /* With reacion-field we have distance dependent potentials
@@ -334,42 +288,42 @@ void LegacySimulator::do_tpi()
     real rfExclusionEnergy = 0;
     if (usingRF(fr_->ic->eeltype))
     {
-        rfExclusionEnergy = reactionFieldExclusionCorrection(x, *mdatoms, *fr_->ic, a_tp0);
+        rfExclusionEnergy = reactionFieldExclusionCorrection(x, *mdatoms, *fr_->ic, testAtomStart);
         if (debug)
         {
             fprintf(debug, "RF exclusion correction for inserted molecule: %f kJ/mol\n", rfExclusionEnergy);
         }
     }
 
-    snew(x_mol, a_tp1 - a_tp0);
+    std::vector<gmx::RVec> x_mol(testAtomEnd - testAtomStart);
 
-    bDispCorr = (inputRec_->eDispCorr != DispersionCorrectionType::No);
-    bCharge   = FALSE;
-    for (i = a_tp0; i < a_tp1; i++)
+    const bool bDispCorr = (inputRec_->eDispCorr != DispersionCorrectionType::No);
+    bool       bCharge   = false;
+    for (int i = testAtomStart; i < testAtomEnd; i++)
     {
         /* Copy the coordinates of the molecule to be insterted */
-        copy_rvec(x[i], x_mol[i - a_tp0]);
+        x_mol[i - testAtomStart] = x[i];
         /* Check if we need to print electrostatic energies */
         bCharge |= (mdatoms->chargeA[i] != 0 || (!mdatoms->chargeB.empty() && mdatoms->chargeB[i] != 0));
     }
-    bRFExcl = (bCharge && usingRF(fr_->ic->eeltype));
+    const bool bRFExcl = (bCharge && usingRF(fr_->ic->eeltype));
 
     // Calculate the center of geometry of the molecule to insert
     rvec cog = { 0, 0, 0 };
-    for (int a = a_tp0; a < a_tp1; a++)
+    for (int a = testAtomStart; a < testAtomEnd; a++)
     {
         rvec_inc(cog, x[a]);
     }
-    svmul(1.0_real / (a_tp1 - a_tp0), cog, cog);
+    svmul(1.0_real / (testAtomEnd - testAtomStart), cog, cog);
     real molRadius = 0;
-    for (int a = a_tp0; a < a_tp1; a++)
+    for (int a = testAtomStart; a < testAtomEnd; a++)
     {
         molRadius = std::max(molRadius, distance2(x[a], cog));
     }
     molRadius = std::sqrt(molRadius);
 
     const real maxCutoff = std::max(inputRec_->rvdw, inputRec_->rcoulomb);
-    if (bCavity)
+    if (insertIntoCavity)
     {
         if (norm(cog) > 0.5 * maxCutoff && fpLog_)
         {
@@ -380,7 +334,7 @@ void LegacySimulator::do_tpi()
     else
     {
         /* Center the molecule to be inserted at zero */
-        for (i = 0; i < a_tp1 - a_tp0; i++)
+        for (int i = 0; i < testAtomEnd - testAtomStart; i++)
         {
             rvec_dec(x_mol[i], cog);
         }
@@ -388,7 +342,10 @@ void LegacySimulator::do_tpi()
 
     if (fpLog_)
     {
-        fprintf(fpLog_, "\nWill insert %d atoms %s partial charges\n", a_tp1 - a_tp0, bCharge ? "with" : "without");
+        fprintf(fpLog_,
+                "\nWill insert %d atoms %s partial charges\n",
+                testAtomEnd - testAtomStart,
+                bCharge ? "with" : "without");
 
         fprintf(fpLog_,
                 "\nWill insert %" PRId64 " times in each frame of %s\n",
@@ -396,13 +353,13 @@ void LegacySimulator::do_tpi()
                 opt2fn("-rerun", nFile_, fnm_));
     }
 
-    if (!bCavity)
+    if (!insertIntoCavity)
     {
         if (inputRec_->nstlist > 1)
         {
 
             /* With the same pair list we insert in a sphere of radius rtpi  in different orientations */
-            if (drmax == 0 && a_tp1 - a_tp0 == 1)
+            if (drmax == 0 && testAtomEnd - testAtomStart == 1)
             {
                 gmx_fatal(FARGS,
                           "Re-using the neighborlist %d times for insertions of a single atom in a "
@@ -447,9 +404,9 @@ void LegacySimulator::do_tpi()
         listedForces.setup(emptyInteractionDefinitions, 0, false);
     }
 
-    ngid   = groups->groups[SimulationAtomGroupType::EnergyOutput].size();
-    gid_tp = fr_->atomInfo[a_tp0] & gmx::sc_atomInfo_EnergyGroupIdMask;
-    for (int a = a_tp0 + 1; a < a_tp1; a++)
+    const int ngid   = groups->groups[SimulationAtomGroupType::EnergyOutput].size();
+    const int gid_tp = fr_->atomInfo[testAtomStart] & gmx::sc_atomInfo_EnergyGroupIdMask;
+    for (int a = testAtomStart + 1; a < testAtomEnd; a++)
     {
         if ((fr_->atomInfo[a] & gmx::sc_atomInfo_EnergyGroupIdMask) != gid_tp)
         {
@@ -459,7 +416,7 @@ void LegacySimulator::do_tpi()
             break;
         }
     }
-    nener = 1 + ngid;
+    int nener = 1 + ngid;
     if (bDispCorr)
     {
         nener += 1;
@@ -476,15 +433,18 @@ void LegacySimulator::do_tpi()
             nener += 1;
         }
     }
-    snew(sum_UgembU, nener);
+
+    // Buffer for summing energy terms times e^(bU) over MPI ranks
+    std::vector<double> sum_UgembU(nener);
 
     /* Copy the random seed set by the user */
-    seed = inputRec_->ld_seed;
+    const int64_t seed = inputRec_->ld_seed;
 
     gmx::ThreeFry2x64<16> rng(
             seed, gmx::RandomDomain::TestParticleInsertion); // 16 bits internal counter => 2^16 * 2 = 131072 values per stream
     gmx::UniformRealDistribution<real> dist;
 
+    FILE* fp_tpi = nullptr;
     if (MAIN(cr_))
     {
         fp_tpi = xvgropen(opt2fn("-tpi", nFile_, fnm_),
@@ -493,12 +453,13 @@ void LegacySimulator::do_tpi()
                           "(kJ mol\\S-1\\N) / (nm\\S3\\N)",
                           oenv_);
         xvgr_subtitle(fp_tpi, "f. are averages over one frame", oenv_);
+        std::vector<std::string> leg;
         leg.emplace_back("-kT log(<Ve\\S-\\betaU\\N>/<V>)");
         leg.emplace_back("f. -kT log<e\\S-\\betaU\\N>");
         leg.emplace_back("f. <e\\S-\\betaU\\N>");
         leg.emplace_back("#f. V");
         leg.emplace_back("f. <Ue\\S-\\betaU\\N>");
-        for (i = 0; i < ngid; i++)
+        for (int i = 0; i < ngid; i++)
         {
             leg.emplace_back(gmx::formatString(
                     "f. <U\\sVdW %s\\Ne\\S-\\betaU\\N>",
@@ -510,7 +471,7 @@ void LegacySimulator::do_tpi()
         }
         if (bCharge)
         {
-            for (i = 0; i < ngid; i++)
+            for (int i = 0; i < ngid; i++)
             {
                 leg.emplace_back(gmx::formatString(
                         "f. <U\\sCoul %s\\Ne\\S-\\betaU\\N>",
@@ -527,45 +488,48 @@ void LegacySimulator::do_tpi()
         }
         xvgrLegend(fp_tpi, leg, oenv_);
     }
-    clear_rvec(x_init);
-    V_all     = 0;
-    VembU_all = 0;
+    double V_all     = 0;
+    double VembU_all = 0;
 
-    invbinw = 10;
-    nbin    = 10;
-    snew(bin, nbin);
+    double              inverseBinWidth = 10;
+    int                 numBins         = 10;
+    std::vector<double> bin(numBins);
 
     /* Avoid frame step numbers <= -1 */
-    frame_step_prev = -1;
+    int64_t frame_step_prev = -1;
 
-    bNotLastFrame =
+    t_trxstatus* status;
+    t_trxframe   rerun_fr;
+    bool         isNotLastFrame =
             read_first_frame(oenv_, &status, opt2fn("-rerun", nFile_, fnm_), &rerun_fr, TRX_NEED_X);
-    frame = 0;
+    int frame = 0;
 
-    if (rerun_fr.natoms - (bCavity ? nat_cavity : 0) != mdatoms->nr - (a_tp1 - a_tp0))
+    if (rerun_fr.natoms - (insertIntoCavity ? gmx::ssize(massesDefiningCavity) : 0)
+        != mdatoms->nr - (testAtomEnd - testAtomStart))
     {
         gmx_fatal(FARGS,
                   "Number of atoms in trajectory (%d)%s "
                   "is not equal the number in the run input file (%d) "
                   "minus the number of atoms to insert (%d)\n",
                   rerun_fr.natoms,
-                  bCavity ? " minus one" : "",
+                  insertIntoCavity ? " minus one" : "",
                   mdatoms->nr,
-                  a_tp1 - a_tp0);
+                  testAtomEnd - testAtomStart);
     }
 
-    refvolshift = std::log(det(rerun_fr.box));
+    const double referenceVolumeShift = std::log(det(rerun_fr.box));
 
+    int stepBlockSize = 0;
     switch (inputRec_->eI)
     {
-        case IntegrationAlgorithm::TPI: stepblocksize = inputRec_->nstlist; break;
-        case IntegrationAlgorithm::TPIC: stepblocksize = 1; break;
+        case IntegrationAlgorithm::TPI: stepBlockSize = inputRec_->nstlist; break;
+        case IntegrationAlgorithm::TPIC: stepBlockSize = 1; break;
         default: gmx_fatal(FARGS, "Unknown integrator %s", enumValueToString(inputRec_->eI));
     }
 
-    while (bNotLastFrame)
+    while (isNotLastFrame)
     {
-        frame_step = rerun_fr.step;
+        int64_t frame_step = rerun_fr.step;
         if (frame_step <= frame_step_prev)
         {
             /* We don't have step number in the trajectory file,
@@ -577,29 +541,26 @@ void LegacySimulator::do_tpi()
         }
         frame_step_prev = frame_step;
 
-        lambda = rerun_fr.lambda;
-        t      = rerun_fr.time;
+        const real   lambda = rerun_fr.lambda;
+        const double t      = rerun_fr.time;
 
-        sum_embU = 0;
-        for (e = 0; e < nener; e++)
-        {
-            sum_UgembU[e] = 0;
-        }
+        double sum_embU = 0;
+        std::fill(sum_UgembU.begin(), sum_UgembU.end(), 0);
 
         /* Copy the coordinates from the input trajectory */
         auto x = makeArrayRef(stateGlobal_->x);
-        for (i = 0; i < rerun_fr.natoms; i++)
+        for (int i = 0; i < rerun_fr.natoms; i++)
         {
             copy_rvec(rerun_fr.x[i], x[i]);
         }
         copy_mat(rerun_fr.box, stateGlobal_->box);
         const matrix& box = stateGlobal_->box;
 
-        V    = det(box);
-        logV = std::log(V);
+        const double V    = det(box);
+        const double logV = std::log(V);
 
-        bStateChanged = TRUE;
-        bNS           = TRUE;
+        bool bStateChanged = true;
+        bool bNS           = true;
 
         put_atoms_in_box(fr_->pbcType, box, x);
 
@@ -607,7 +568,7 @@ void LegacySimulator::do_tpi()
         rvec vzero       = { 0, 0, 0 };
         rvec boxDiagonal = { box[XX][XX], box[YY][YY], box[ZZ][ZZ] };
         fr_->nbv->putAtomsOnGrid(
-                box, 0, vzero, boxDiagonal, nullptr, { 0, a_tp0 }, -1, fr_->atomInfo, x, 0, nullptr);
+                box, 0, vzero, boxDiagonal, nullptr, { 0, testAtomStart }, -1, fr_->atomInfo, x, 0, nullptr);
 
         gmx_edsam* const ed = nullptr;
 
@@ -624,7 +585,9 @@ void LegacySimulator::do_tpi()
         runScheduleWork_->domainWork = setupDomainLifetimeWorkload(
                 *inputRec_, *fr_, pullWork_, ed, *mdatoms, runScheduleWork_->simulationWork);
 
-        step = cr_->nodeid * stepblocksize;
+        int64_t step = cr_->nodeid * stepBlockSize;
+        // We initialize xInit to keep the static analyzer happy
+        gmx::RVec xInit = { 0.0_real, 0.0_real, 0.0_real };
         while (step < nsteps)
         {
             /* Restart random engine using the frame and insertion step
@@ -638,16 +601,16 @@ void LegacySimulator::do_tpi()
             rng.restart(frame_step, step);
             dist.reset(); // erase any memory in the distribution
 
-            if (!bCavity)
+            if (!insertIntoCavity)
             {
                 /* Random insertion in the whole volume */
                 bNS = (step % inputRec_->nstlist == 0);
                 if (bNS)
                 {
                     /* Generate a random position in the box */
-                    for (d = 0; d < DIM; d++)
+                    for (int d = 0; d < DIM; d++)
                     {
-                        x_init[d] = dist(rng) * stateGlobal_->box[d][d];
+                        xInit[d] = dist(rng) * stateGlobal_->box[d][d];
                     }
                 }
             }
@@ -658,43 +621,41 @@ void LegacySimulator::do_tpi()
                  */
                 if (step == 0)
                 {
-                    if (nat_cavity == 1)
+                    if (massesDefiningCavity.size() == 1)
                     {
                         /* Copy the location of the cavity */
-                        copy_rvec(rerun_fr.x[rerun_fr.natoms - 1], x_init);
+                        xInit = rerun_fr.x[rerun_fr.natoms - 1];
                     }
                     else
                     {
                         /* Determine the center of mass of the last molecule */
-                        clear_rvec(x_init);
-                        mass_tot = 0;
-                        for (i = 0; i < nat_cavity; i++)
+                        const int numMasses = gmx::ssize(massesDefiningCavity);
+                        clear_rvec(xInit);
+                        real totalMass = 0;
+                        for (int i = 0; i < numMasses; i++)
                         {
-                            for (d = 0; d < DIM; d++)
+                            for (int d = 0; d < DIM; d++)
                             {
-                                x_init[d] += mass_cavity[i]
-                                             * rerun_fr.x[rerun_fr.natoms - nat_cavity + i][d];
+                                xInit[d] += massesDefiningCavity[i]
+                                            * rerun_fr.x[rerun_fr.natoms - numMasses + i][d];
                             }
-                            mass_tot += mass_cavity[i];
+                            totalMass += massesDefiningCavity[i];
                         }
-                        for (d = 0; d < DIM; d++)
-                        {
-                            x_init[d] /= mass_tot;
-                        }
+                        xInit /= totalMass;
                     }
                 }
             }
 
             if (bNS)
             {
-                for (int a = a_tp0; a < a_tp1; a++)
+                for (int a = testAtomStart; a < testAtomEnd; a++)
                 {
-                    x[a] = x_init;
+                    x[a] = xInit;
                 }
 
                 /* Put the inserted molecule on it's own search grid */
                 fr_->nbv->putAtomsOnGrid(
-                        box, 1, x_init, x_init, nullptr, { a_tp0, a_tp1 }, -1, fr_->atomInfo, x, 0, nullptr);
+                        box, 1, xInit, xInit, nullptr, { testAtomStart, testAtomEnd }, -1, fr_->atomInfo, x, 0, nullptr);
 
                 /* TODO: Avoid updating all atoms at every bNS step */
                 fr_->nbv->setAtomProperties(mdatoms->typeA, mdatoms->chargeA, fr_->atomInfo);
@@ -708,35 +669,36 @@ void LegacySimulator::do_tpi()
              * of radius rtpi. We don't need to do this is we generate
              * a new center location every step.
              */
-            rvec x_tp;
-            if (bCavity || inputRec_->nstlist > 1)
+            gmx::RVec xTestParticle;
+            if (insertIntoCavity || inputRec_->nstlist > 1)
             {
-                /* Generate coordinates within |dx|=drmax of x_init */
+                /* Generate coordinates within |dx|=drmax of xInit */
+                gmx::RVec dx;
                 do
                 {
-                    for (d = 0; d < DIM; d++)
+                    for (int d = 0; d < DIM; d++)
                     {
                         dx[d] = (2 * dist(rng) - 1) * drmax;
                     }
                 } while (norm2(dx) > drmax * drmax);
-                rvec_add(x_init, dx, x_tp);
+                xTestParticle = xInit + dx;
             }
             else
             {
-                copy_rvec(x_init, x_tp);
+                xTestParticle = xInit;
             }
 
-            if (a_tp1 - a_tp0 == 1)
+            if (testAtomEnd - testAtomStart == 1)
             {
                 /* Insert a single atom, just copy the insertion location */
-                copy_rvec(x_tp, x[a_tp0]);
+                x[testAtomStart] = xTestParticle;
             }
             else
             {
                 /* Copy the coordinates from the top file */
-                for (i = a_tp0; i < a_tp1; i++)
+                for (int i = testAtomStart; i < testAtomEnd; i++)
                 {
-                    copy_rvec(x_mol[i - a_tp0], x[i]);
+                    x[i] = x_mol[i - testAtomStart];
                 }
                 /* Rotate the molecule randomly */
                 real angleX = 2 * M_PI * dist(rng);
@@ -744,23 +706,22 @@ void LegacySimulator::do_tpi()
                  * achieve the uniform distribution in the solid angles space. */
                 real angleY = std::asin(2 * dist(rng) - 1);
                 real angleZ = 2 * M_PI * dist(rng);
-                rotate_conf(a_tp1 - a_tp0, stateGlobal_->x.rvec_array() + a_tp0, nullptr, angleX, angleY, angleZ);
+                rotate_conf(testAtomEnd - testAtomStart,
+                            stateGlobal_->x.rvec_array() + testAtomStart,
+                            nullptr,
+                            angleX,
+                            angleY,
+                            angleZ);
                 /* Shift to the insertion location */
-                for (i = a_tp0; i < a_tp1; i++)
+                for (int i = testAtomStart; i < testAtomEnd; i++)
                 {
-                    rvec_inc(x[i], x_tp);
+                    x[i] += xTestParticle;
                 }
             }
 
             /* Note: NonLocal refers to the inserted molecule */
             fr_->nbv->convertCoordinates(AtomLocality::NonLocal, x);
             fr_->longRangeNonbondeds->updateAfterPartition(*mdatoms);
-
-            /* Clear some matrix variables  */
-            clear_mat(force_vir);
-            clear_mat(shake_vir);
-            clear_mat(vir);
-            clear_mat(pres);
 
             /* Calc energy (no forces) on new positions. */
             /* Make do_force do a single node force calculation */
@@ -780,6 +741,10 @@ void LegacySimulator::do_tpi()
                                                            step,
                                                            runScheduleWork_->domainWork,
                                                            runScheduleWork_->simulationWork);
+
+            tensor force_vir;
+            clear_mat(force_vir);
+            rvec mu_tot;
             do_force(fpLog_,
                      cr_,
                      ms_,
@@ -836,8 +801,8 @@ void LegacySimulator::do_tpi()
                 enerd_->term[F_EPOT] += rfExclusionEnergy;
             }
 
-            epot               = enerd_->term[F_EPOT];
-            bEnergyOutOfBounds = FALSE;
+            const double epot                = enerd_->term[F_EPOT];
+            bool         isEnergyOutOfBounds = false;
 
             /* If the compiler doesn't optimize this check away
              * we catch the NAN energies.
@@ -855,9 +820,10 @@ void LegacySimulator::do_tpi()
              */
             if (epot != epot || epot > GMX_REAL_MAX)
             {
-                bEnergyOutOfBounds = TRUE;
+                isEnergyOutOfBounds = TRUE;
             }
-            if (bEnergyOutOfBounds)
+            double embU;
+            if (isEnergyOutOfBounds)
             {
                 if (debug)
                 {
@@ -875,11 +841,11 @@ void LegacySimulator::do_tpi()
                 embU = std::exp(static_cast<double>(-beta * epot));
                 sum_embU += embU;
                 /* Determine the weighted energy contributions of each energy group */
-                e = 0;
+                int e = 0;
                 sum_UgembU[e++] += epot * embU;
                 if (fr_->haveBuckingham)
                 {
-                    for (i = 0; i < ngid; i++)
+                    for (int i = 0; i < ngid; i++)
                     {
                         sum_UgembU[e++] +=
                                 enerd_->grpp.energyGroupPairTerms[NonBondedEnergyTerms::BuckinghamSR]
@@ -889,7 +855,7 @@ void LegacySimulator::do_tpi()
                 }
                 else
                 {
-                    for (i = 0; i < ngid; i++)
+                    for (int i = 0; i < ngid; i++)
                     {
                         sum_UgembU[e++] +=
                                 enerd_->grpp.energyGroupPairTerms[NonBondedEnergyTerms::LJSR][GID(i, gid_tp, ngid)]
@@ -902,7 +868,7 @@ void LegacySimulator::do_tpi()
                 }
                 if (bCharge)
                 {
-                    for (i = 0; i < ngid; i++)
+                    for (int i = 0; i < ngid; i++)
                     {
                         sum_UgembU[e++] +=
                                 enerd_->grpp.energyGroupPairTerms[NonBondedEnergyTerms::CoulombSR][GID(i, gid_tp, ngid)]
@@ -925,15 +891,13 @@ void LegacySimulator::do_tpi()
             }
             else
             {
-                i = gmx::roundToInt((bU_logV_bin_limit - (beta * epot - logV + refvolshift)) * invbinw);
+                int i = gmx::roundToInt((bU_logV_bin_limit - (beta * epot - logV + referenceVolumeShift))
+                                        * inverseBinWidth);
                 if (i < 0)
                 {
                     i = 0;
                 }
-                if (i >= nbin)
-                {
-                    realloc_bins(&bin, &nbin, i + 10);
-                }
+                bin.resize(i + 1, 0);
                 bin[i]++;
             }
 
@@ -943,9 +907,9 @@ void LegacySimulator::do_tpi()
                         "TPI %7d %12.5e %12.5f %12.5f %12.5f\n",
                         static_cast<int>(step),
                         epot,
-                        x_tp[XX],
-                        x_tp[YY],
-                        x_tp[ZZ]);
+                        xTestParticle[XX],
+                        xTestParticle[YY],
+                        xTestParticle[ZZ]);
             }
 
             if (dump_pdb && epot <= dump_ener)
@@ -962,10 +926,10 @@ void LegacySimulator::do_tpi()
             }
 
             step++;
-            if ((step / stepblocksize) % cr_->nnodes != cr_->nodeid)
+            if ((step / stepBlockSize) % cr_->nnodes != cr_->nodeid)
             {
                 /* Skip all steps assigned to the other MPI ranks */
-                step += (cr_->nnodes - 1) * stepblocksize;
+                step += (cr_->nnodes - 1) * stepBlockSize;
             }
         }
 
@@ -973,7 +937,7 @@ void LegacySimulator::do_tpi()
         {
             /* When running in parallel sum the energies over the processes */
             gmx_sumd(1, &sum_embU, cr_);
-            gmx_sumd(nener, sum_UgembU, cr_);
+            gmx_sumd(gmx::ssize(sum_UgembU), sum_UgembU.data(), cr_);
         }
 
         frame++;
@@ -997,7 +961,7 @@ void LegacySimulator::do_tpi()
                     sum_embU == 0 ? 20 / beta : -std::log(sum_embU / nsteps) / beta,
                     sum_embU / nsteps,
                     V);
-            for (e = 0; e < nener; e++)
+            for (int e = 0; e < nener; e++)
             {
                 fprintf(fp_tpi, " %12.5e", sum_UgembU[e] / nsteps);
             }
@@ -1005,7 +969,7 @@ void LegacySimulator::do_tpi()
             fflush(fp_tpi);
         }
 
-        bNotLastFrame = read_next_frame(oenv_, status, &rerun_fr);
+        isNotLastFrame = read_next_frame(oenv_, status, &rerun_fr);
     } /* End of the loop  */
     walltime_accounting_end_time(wallTimeAccounting_);
 
@@ -1035,10 +999,10 @@ void LegacySimulator::do_tpi()
     if (PAR(cr_))
     {
         /* When running in parallel sum the bins over the processes */
-        i = nbin;
+        int i = gmx::ssize(bin);
         global_max(cr_, &i);
-        realloc_bins(&bin, &nbin, i);
-        gmx_sumd(nbin, bin, cr_);
+        bin.resize(i);
+        gmx_sumd(gmx::ssize(bin), bin.data(), cr_);
     }
     if (MAIN(cr_))
     {
@@ -1049,10 +1013,12 @@ void LegacySimulator::do_tpi()
                           oenv_);
         auto str = gmx::formatString("number \\betaU > %g: %9.3e", bU_bin_limit, bin[0]);
         xvgr_subtitle(fp_tpi, str.c_str(), oenv_);
+        std::array<std::string, 2> tpid_leg = { "direct", "reweighted" };
         xvgrLegend(fp_tpi, tpid_leg, oenv_);
-        for (i = nbin - 1; i > 0; i--)
+        for (int i = gmx::ssize(bin) - 1; i > 0; i--)
         {
-            bUlogV = -i / invbinw + bU_logV_bin_limit - refvolshift + std::log(V_all / frame);
+            double bUlogV = -i / inverseBinWidth + bU_logV_bin_limit - referenceVolumeShift
+                            + std::log(V_all / frame);
             fprintf(fp_tpi,
                     "%6.2f %10d %12.5e\n",
                     bUlogV,
@@ -1061,9 +1027,6 @@ void LegacySimulator::do_tpi()
         }
         xvgrclose(fp_tpi);
     }
-    sfree(bin);
-
-    sfree(sum_UgembU);
 
     walltime_accounting_set_nsteps_done(wallTimeAccounting_, frame * inputRec_->nsteps);
 }
