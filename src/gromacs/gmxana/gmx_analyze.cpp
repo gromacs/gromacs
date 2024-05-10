@@ -54,6 +54,7 @@
 #include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
+#include "gromacs/utility/path.h"
 #include "gromacs/utility/pleasecite.h"
 #include "gromacs/utility/smalloc.h"
 
@@ -927,27 +928,16 @@ static void print_fitted_function(const char*       fitfile,
     }
     else
     {
-        char* buf2 = nullptr;
-        int   s, buflen = 0;
-        if (nullptr != fn_fitted)
-        {
-            buflen = std::strlen(fn_fitted) + 32;
-            snew(buf2, buflen);
-            std::strncpy(buf2, fn_fitted, buflen);
-            buf2[std::strlen(buf2) - 4] = '\0';
-        }
+        int s;
         for (s = 0; s < nset; s++)
         {
-            char* buf = nullptr;
-            if (nullptr != fn_fitted)
+            std::filesystem::path buf;
+            if (fn_fitted)
             {
-                snew(buf, buflen);
-                snprintf(buf, n, "%s_%d.xvg", buf2, s);
+                buf = gmx::concatenateBeforeExtension(fn_fitted, gmx::formatString("_%d", s));
             }
-            do_fit(out_fit, s, FALSE, n, t, val, npargs, ppa, oenv, buf);
-            sfree(buf);
+            do_fit(out_fit, s, FALSE, n, t, val, npargs, ppa, oenv, buf.string().c_str());
         }
-        sfree(buf2);
     }
     gmx_ffclose(out_fit);
 }
