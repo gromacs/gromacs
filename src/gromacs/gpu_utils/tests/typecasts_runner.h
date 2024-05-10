@@ -42,8 +42,6 @@
 
 #include "gmxpre.h"
 
-#include <vector>
-
 #include <gtest/gtest.h>
 
 #include "gromacs/math/vectypes.h"

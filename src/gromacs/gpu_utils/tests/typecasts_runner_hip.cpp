@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright 2020- The GROMACS Authors
+ * Copyright 2024- The GROMACS Authors
  * and the project initiators Erik Lindahl, Berk Hess and David van der Spoel.
  * Consult the AUTHORS/COPYING files and https://www.gromacs.org for details.
  *
@@ -33,23 +33,19 @@
  */
 /*! \internal \file
  * \brief
- * Runners for tests of CUDA types compatibility.
+ * Runners for tests of HIP types compatibility.
  *
+ * \author Paul Bauer <paul.bauer.q@gmail.com>
  * \author Artem Zhmurov <zhmurov@gmail.com>
  */
 #include "gmxpre.h"
 
-#include "typecasts_runner.h"
-
-#include <vector>
-
-#include "gromacs/gpu_utils/cudautils.cuh"
 #include "gromacs/gpu_utils/devicebuffer.h"
+#include "gromacs/gpu_utils/hiputils.h"
 #include "gromacs/gpu_utils/typecasts_cuda_hip.h"
-#include "gromacs/hardware/device_information.h"
 #include "gromacs/utility/arrayref.h"
-#include "gromacs/utility/exceptions.h"
-#include "gromacs/utility/stringutil.h"
+
+#include "typecasts_runner.h"
 
 namespace gmx
 {
@@ -84,7 +80,7 @@ void convertRVecToFloat3OnHost(ArrayRef<gmx::RVec> rVecOutput, ArrayRef<const gm
     saveFloat3InRVecFormat(rVecOutput, dataFloat3, numElements);
 }
 
-//! Number of CUDA threads in a block.
+//! Number of HIP threads in a block.
 constexpr static int c_threadsPerBlock = 256;
 
 /*! \brief GPU kernel to perform type conversion on the device.
@@ -111,7 +107,8 @@ void convertRVecToFloat3OnDevice(ArrayRef<gmx::RVec>       h_rVecOutput,
 {
     const DeviceContext& deviceContext = testDevice->deviceContext();
     const DeviceStream&  deviceStream  = testDevice->deviceStream();
-    deviceContext.activate();
+
+    setActiveDevice(testDevice->deviceInfo());
 
     const int numElements = h_rVecInput.size();
 

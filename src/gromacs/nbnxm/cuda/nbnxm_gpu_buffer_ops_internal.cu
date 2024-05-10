@@ -43,7 +43,7 @@
 
 #include "gromacs/nbnxm/nbnxm_gpu_buffer_ops_internal.h"
 
-#include "gromacs/gpu_utils/typecasts.cuh"
+#include "gromacs/gpu_utils/typecasts_cuda_hip.h"
 #include "gromacs/gpu_utils/vectype_ops.cuh"
 #include "gromacs/nbnxm/cuda/nbnxm_cuda_types.h"
 #include "gromacs/nbnxm/grid.h"

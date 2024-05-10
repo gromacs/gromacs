@@ -55,6 +55,9 @@ gmx_add_unit_test(GpuUtilsUnitTests gpu_utils-test HARDWARE_DETECTION
         devicetransfers.cu
         typecasts_runner.cu
 
+    HIP_CPP_SOURCE_FILES
+        typecasts_runner_hip.cpp
+
     OPENCL_CPP_SOURCE_FILES
         devicetransfers_ocl.cpp
 

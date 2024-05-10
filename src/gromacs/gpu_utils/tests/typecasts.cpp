@@ -41,13 +41,12 @@
 
 #include "config.h"
 
-#if GMX_GPU_CUDA
+#if GMX_GPU_CUDA || GMX_GPU_HIP
+
 
 #    include "gromacs/gpu_utils/device_context.h"
-#    include "gromacs/gpu_utils/gputraits.h"
 #    include "gromacs/hardware/device_management.h"
 #    include "gromacs/utility/arrayref.h"
-#    include "gromacs/utility/exceptions.h"
 
 #    include "testutils/test_hardware_environment.h"
 #    include "testutils/testasserts.h"
@@ -85,4 +84,4 @@ TEST(GpuDataTypesCompatibilityTest, RVecAndFloat3Device)
 } // namespace test
 } // namespace gmx
 
-#endif // GMX_GPU_CUDA
+#endif // GMX_GPU_CUDA || GMX_GPU_HIP

@@ -46,7 +46,7 @@
 #include "gmxpre.h"
 
 #include "gromacs/gpu_utils/cuda_arch_utils.cuh"
-#include "gromacs/gpu_utils/typecasts.cuh"
+#include "gromacs/gpu_utils/typecasts_cuda_hip.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/pbcutil/ishift.h"
 

@@ -44,7 +44,7 @@
 #include <cassert>
 
 #include "gromacs/gpu_utils/cuda_kernel_utils.cuh"
-#include "gromacs/gpu_utils/typecasts.cuh"
+#include "gromacs/gpu_utils/typecasts_cuda_hip.h"
 
 #include "pme.cuh"
 #include "pme_gpu_calculate_splines.cuh"

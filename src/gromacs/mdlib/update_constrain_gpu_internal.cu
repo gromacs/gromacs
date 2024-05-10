@@ -44,7 +44,7 @@
 #include "update_constrain_gpu_internal.h"
 
 #include "gromacs/gpu_utils/cudautils.cuh"
-#include "gromacs/gpu_utils/typecasts.cuh"
+#include "gromacs/gpu_utils/typecasts_cuda_hip.h"
 #include "gromacs/gpu_utils/vectype_ops.cuh"
 
 namespace gmx
