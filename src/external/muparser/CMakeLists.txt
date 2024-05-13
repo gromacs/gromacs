@@ -40,6 +40,9 @@ elseif(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
 endif()
 
 FILE(GLOB_RECURSE MUPARSER_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp") #all .cpp
+# The test file produces warnings with MSVC and was recommended for exclusion, see
+# https://github.com/beltoforion/muparser/issues/142#issuecomment-2093561006
+list(REMOVE_ITEM MUPARSER_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/src/muParserTest.cpp")
 add_library(muparser ${MUPARSER_SOURCES})
 
 # Use the headers in the build-tree or the installed ones
