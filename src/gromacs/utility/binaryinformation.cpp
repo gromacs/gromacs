@@ -493,6 +493,7 @@ void gmx_print_version_info(gmx::TextWriter* writer)
     else
     {
         writer->writeLine(formatString("BLAS library:        %s", GMX_DESCRIBE_BLAS));
+        GMX_UNUSED_VALUE(descriptionContainsMkl);
     }
     descriptionContainsMkl = std::strstr(GMX_DESCRIBE_LAPACK, "MKL") != nullptr;
     if (HAVE_LIBMKL && descriptionContainsMkl)
@@ -502,6 +503,7 @@ void gmx_print_version_info(gmx::TextWriter* writer)
     else
     {
         writer->writeLine(formatString("LAPACK library:      %s", GMX_DESCRIBE_LAPACK));
+        GMX_UNUSED_VALUE(descriptionContainsMkl);
     }
 
 #if GMX_GPU_OPENCL
