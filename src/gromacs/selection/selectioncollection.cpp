@@ -781,7 +781,7 @@ SelectionList SelectionCollection::parseFromFile(const std::filesystem::path& fi
     catch (GromacsException& ex)
     {
         ex.prependContext(formatString("Error in parsing selections from file '%s'",
-                                       filename.u8string().c_str()));
+                                       filename.string().c_str()));
         throw;
     }
 }
