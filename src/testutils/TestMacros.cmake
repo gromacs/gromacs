@@ -265,7 +265,13 @@ endfunction()
 #   INTEGRATION_TEST      requires the use of the IntegrationTest label in CTest
 #   SLOW_TEST             requires the use of the SlowTest label in CTest, and
 #                         increase the length of the ctest timeout.
-#   IGNORE_LEAKS          Skip some memory safety checks.
+#   IGNORE_LEAKS          Skip leak detection with LeakSanitzer (LSAN) during
+#                         AddressSanizer (ASAN) tests.
+#                         Using this allows us to implement tests that call legacy GROMACS
+#                         infrastructure that still leaks memory, but also blocks us from
+#                         catching new leaks in code called by those test. It should be used
+#                         sparingly. Typical use cases are test code calling legacy routines like
+#                         preprocessing and analysis tools, or that have been ported from regressiontests.
 #   QUICK_GPU_TEST        marks tests that use GPUs and are fast (< 10 seconds on a desktop GPU in Release build);
 #                         currently this label is used to select tests for CUDA Compute Sanitizer runs.
 #   SLOW_GPU_TEST         marks all other tests that should run on a GPU, used to make sure GPU CI only runs GPU

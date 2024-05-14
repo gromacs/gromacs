@@ -78,7 +78,8 @@ testing. Their implementations can be found in ``cmake/gmxBuildTypeXXX.cmake``.
   Builds |Gromacs| for use with AddressSanitizer in gcc and
   clang (https://clang.llvm.org/docs/AddressSanitizer.html) to
   detect many kinds of memory mis-use. By default, AddressSanitizer
-  includes LeakSanitizer.
+  includes LeakSanitizer (LSAN) but in many cases GROMACS suppresses
+  leak detection either from particular functions known to leak, or in bulk.
 
 **MSAN**
   Builds |Gromacs| for use with MemorySanitizer in clang
