@@ -436,6 +436,15 @@ void readData(const hid_t   dataSet,
     }
 }
 
+template<int numDims>
+void readData(const hid_t dataSet, const hsize_t frameToRead, void** buffer)
+{
+    size_t totalNumElementsDummy, varLengthStringMaxLengthDummy;
+
+    readData<numDims, false>(
+            dataSet, frameToRead, buffer, &totalNumElementsDummy, &varLengthStringMaxLengthDummy);
+}
+
 void setBoxGroupAttributes(const hid_t boxGroup, const PbcType pbcType)
 {
     setAttribute(boxGroup, "dimension", DIM, H5T_NATIVE_INT);
@@ -694,8 +703,11 @@ template void gmx::h5mdio::writeData<3, false>(hid_t, const void*, hsize_t);
 template void gmx::h5mdio::readData<1, false>(hid_t, hsize_t, void**, size_t*, size_t*);
 template void gmx::h5mdio::readData<1, true>(hid_t, hsize_t, void**, size_t*, size_t*);
 template void gmx::h5mdio::readData<3, false>(hid_t, hsize_t, void**, size_t*, size_t*);
+template void gmx::h5mdio::readData<1>(hid_t, hsize_t, void**);
 
 template void gmx::h5mdio::setAttribute<int>(hid_t, const char*, int, hid_t);
 template void gmx::h5mdio::setAttribute<int64_t>(hid_t, const char*, int64_t, hid_t);
 template void gmx::h5mdio::setAttribute<float>(hid_t, const char*, float, hid_t);
 template void gmx::h5mdio::setAttribute<double>(hid_t, const char*, double, hid_t);
+
+template bool gmx::h5mdio::getAttribute<int64_t>(hid_t, const char*, int64_t*);

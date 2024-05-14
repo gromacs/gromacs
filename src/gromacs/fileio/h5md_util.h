@@ -116,9 +116,8 @@ size_t getDataTypeSize(const hid_t dataSet);
  *                         If true, frameToRead must be 0.
  * \param[in] dataSet The ID of the dataset to read from.
  * \param[in] frameToRead The frame number to read (starting from 0).
- * \param[out] buffer The buffer to fill with the read data. Memory will be allocated.
- *                    Must be freed by the caller.
- * \param[out] totalNumElements The number of data values read.
+ * \param[out] buffer The buffer to fill with the read data. Memory will be allocated if not already
+ * done. Must be freed by the caller. \param[out] totalNumElements The number of data values read.
  * \param[out] varLengthStringMaxLength If reading a variable length string data set,
  *                              this is be the fixed-length size needed to fit all strings,
  *                              otherwise it will be 0, and can be used for determining
@@ -130,6 +129,18 @@ void readData(const hid_t   dataSet,
               void**        buffer,
               size_t*       totalNumElements,
               size_t*       varLengthStringMaxLength);
+
+/*! \brief Reads one element of data from an HDF5 data set, labelled by name.
+ * Strings can be read as either fixed-length or variable-length.
+ *
+ * \tparam numDims The number of dimensions of the data.
+ * \param[in] dataSet The ID of the dataset to read from.
+ * \param[in] frameToRead The frame number to read (starting from 0).
+ * \param[out] buffer The buffer to fill with the read data. Memory will be allocated if not already
+ * done. Must be freed by the caller.
+ */
+template<int numDims>
+void readData(const hid_t dataSet, const hsize_t frameToRead, void** buffer);
 
 /*! Set the periodic box attribute of a box group.
  * \param[in] boxGroup The ID of the box group.

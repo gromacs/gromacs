@@ -347,7 +347,7 @@ int64_t GmxH5mdTimeDataBlock::getStepOfFrame(int64_t frame) const
     {
         void* buffer = nullptr;
         readData<1, false>(stepDataSet_, frame, &buffer, &totalNumElements, &dummy);
-        int tmpValue = static_cast<int>(*(static_cast<int*>(buffer)));
+        int tmpValue = *(static_cast<int*>(buffer));
         free(buffer);
         return tmpValue;
     }

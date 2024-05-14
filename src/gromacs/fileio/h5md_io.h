@@ -49,6 +49,7 @@
 enum class PbcType : int;
 struct gmx_moltype_t;
 struct gmx_mtop_t;
+struct MoleculeBlockIndices;
 
 namespace gmx
 {
@@ -57,7 +58,8 @@ namespace h5mdio
 
 typedef int64_t            hid_t;
 typedef unsigned long long hsize_t;
-constexpr size_t           c_atomStringLen                      = 17;
+constexpr size_t           c_atomResidueStringLen               = 17;
+constexpr size_t           c_moleculeTypeStringLen              = 256;
 constexpr int              c_h5mdMajorVersion                   = 1;
 constexpr int              c_h5mdMinorVersion                   = 1;
 constexpr int              c_gmxH5mdParametersGroupMajorVersion = 0;
@@ -179,7 +181,7 @@ public:
     hid_t setupGromacsTopologyGroup();
 
     /*! \brief Set a string property. All entries in the propertyValues vector are set.
-     * N.b., The maximum string length is set to c_atomStringLen to avoid the overhead that comes
+     * N.b., The maximum string length is set to c_atomResidueStringLen to avoid the overhead that comes
      * with flexible string lengths in HDF5.
      *
      * \param[in] containerName The name of the HDF5 group that contains the property, e.g., "/particles/system".
@@ -195,7 +197,7 @@ public:
                            const std::string&              propertyName,
                            const std::vector<std::string>& propertyValues,
                            bool                            replaceExisting = false,
-                           size_t                          maxStringLength = c_atomStringLen);
+                           size_t maxStringLength = c_atomResidueStringLen);
 
     /*! \brief Set a numeric property. All entries in the propertyValues vector are set.
      *
@@ -378,18 +380,38 @@ void addMoleculeTypeAtoms(const gmx_moltype_t& molType);
 h5mdio::hid_t addMoleculeType(h5mdio::GmxH5mdIo* file, const gmx_moltype_t& molType);
 
 /*! \brief Add a block consisting of a number of copies of a molecule type to the GROMACS topology section in the file.
- * \param[in] molTypeId The hdf5 ID of the molecule type.
- * \param[in] blockIndex The index of the molecule block.
- * \param[in] moleculeIndexStart The global molecule index of the first molecule of this type (in this molecule block).
+ * \param[in] file          The H5MD file manager to use.
+ * \param[in] moleculeTypeName The name of the molecule type of this molecule block.
+ * \param[in] molBlockIndex The index of the molecule block.
  * \param[in] numMol The number of molecules of this type (in this molecule block).
- * \param[in] molSystemAtomsStart The first atom index of this molecule block.
+ * \param[in] molBlockIndices The GROMACS data structure containing the indices of the molecule block.
  * \throws FileIOError If there was an error adding the molecule type information.
  */
-void addBlockOfMoleculeType(const h5mdio::hid_t molTypeId,
-                            size_t              blockIndex,
-                            size_t              moleculeIndexStart,
-                            size_t              numMol,
-                            size_t              molSystemAtomsStart);
+void addBlockOfMoleculeType(h5mdio::GmxH5mdIo*          file,
+                            const std::string&          moleculeTypeName,
+                            size_t                      molBlockIndex,
+                            size_t                      numMol,
+                            const MoleculeBlockIndices& molBlockIndices);
+
+/*! \brief Get the number of atoms of the molecule type specified by \p molTypeName.
+ * \param[in] file               The H5MD file manager to use.
+ * \param[in] molTypeName        The name of the molecule type.
+ * \returns the number of atoms in the molecule type or -1 if the molecule type could not be found.
+ * \throws FileIOError If there was an error reading the molecule type information.
+ */
+int64_t getNumberOfAtomsOfMoleculeTypeByName(h5mdio::GmxH5mdIo* file, std::string molTypeName);
+
+/*! \brief Get a specific GROMACS molecule block indices data structure (corresponding to a number
+ * of molecule of a certain molecule type) from the H5MD GROMACS topology section in the file.
+ *
+ * \param[in] file               The H5MD file manager to use.
+ * \param[in] molBlockIndex      The index of the molecule block.
+ * \returns the MoleculeBlockIndices struct. If the index does not match a valid molecule block it
+ * will be empty.
+ * \throws FileIOError If there was en error reading the data.
+ */
+MoleculeBlockIndices getMoleculeBlockIndicesByIndex(h5mdio::GmxH5mdIo* file, size_t molBlockIndex);
+
 
 /*! \brief Add atom type entries (species) for all different atom types in \p atoms.
  * \param[in]     file           The H5MD file manager to use.

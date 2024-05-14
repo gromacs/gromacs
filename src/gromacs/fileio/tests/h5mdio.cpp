@@ -164,21 +164,40 @@ public:
         }
     }
 
-    /* Initialize the molecular system information in the reference H5MD file. */
-    void setupMolecularSystem()
-    {
-        gmx::ArrayRef<const int> index;
-        std::string              indexGroupName = "";
-        gmx::setupMolecularSystemParticleData(
-                &referenceH5mdIo_, *topologyInfo_.mtop(), index, indexGroupName);
-        gmx::setupMolecularSystemTopology(&referenceH5mdIo_, *topologyInfo_.mtop(), true);
-    }
-
     /* Generate a tpr and read it */
     void generateReferenceTopology()
     {
         gmx::test::TprAndFileManager fileManager("lysozyme");
         topologyInfo_.fillFromInputFile(fileManager.tprName());
+    }
+
+    /* Initialize the molecular system information in the reference H5MD file. */
+    void setupMolecularSystem()
+    {
+        gmx::setupMolecularSystemParticleData(&referenceH5mdIo_, *topologyInfo_.mtop());
+        gmx::setupMolecularSystemTopology(&referenceH5mdIo_, *topologyInfo_.mtop(), true);
+    }
+
+    void checkTopologies()
+    {
+        gmx_mtop_t* topology = topologyInfo_.mtop();
+        for (size_t i = 0; i < topology->moleculeBlockIndices.size(); i++)
+        {
+            MoleculeBlockIndices fileMoleculeBlockIndices =
+                    gmx::getMoleculeBlockIndicesByIndex(&referenceH5mdIo_, i);
+            EXPECT_EQ(topology->moleculeBlockIndices[i].numAtomsPerMolecule,
+                      fileMoleculeBlockIndices.numAtomsPerMolecule);
+            EXPECT_EQ(topology->moleculeBlockIndices[i].globalAtomStart,
+                      fileMoleculeBlockIndices.globalAtomStart);
+            EXPECT_EQ(topology->moleculeBlockIndices[i].globalAtomEnd,
+                      fileMoleculeBlockIndices.globalAtomEnd);
+            EXPECT_EQ(topology->moleculeBlockIndices[i].globalResidueStart,
+                      fileMoleculeBlockIndices.globalResidueStart);
+            EXPECT_EQ(topology->moleculeBlockIndices[i].residueNumberStart,
+                      fileMoleculeBlockIndices.residueNumberStart);
+            EXPECT_EQ(topology->moleculeBlockIndices[i].moleculeIndexStart,
+                      fileMoleculeBlockIndices.moleculeIndexStart);
+        }
     }
 
     std::vector<std::string> readAtomNamesFromReferenceFile()
@@ -432,7 +451,7 @@ TEST_F(H5mdIoTest, WriteReadTopologyAndCoordinates)
     generateReferenceTopology();
     openReferenceFile('w');
     setupMolecularSystem();
-
+    checkTopologies();
     closeReferenceFile();
 }
 
