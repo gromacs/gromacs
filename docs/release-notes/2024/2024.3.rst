@@ -19,6 +19,15 @@ Fixes where mdrun could behave incorrectly
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
 
+Avoid crash of convert-tpr on velocity-less tpr files 
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+The convert-tpr now works on tpr files that do not contain velocities,
+as generated for, e.g., energy minimization.
+
+:issue:`5080`
+
+
 Fixes that affect portability
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
