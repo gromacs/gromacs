@@ -203,6 +203,7 @@ hid_t openOrCreateDataSet(const hid_t                container,
          * to avoid compressing edge chunks when writing checkpoints. Pros and cons for slightly
          * larger files vs slightly faster checkpoint writing must be evaluated.
          * Currently it seems like incomplete edge chunks are compressed even with this option. */
+        H5Pset_chunk_opts(createPropertyList, H5D_CHUNK_DONT_FILTER_PARTIAL_CHUNKS);
 
         switch (compression)
         {
