@@ -710,12 +710,13 @@ int gmx_trjcat(int argc, char* argv[])
                 /* Read first frame here. */
                 if (bIndex)
                 {
+                    /* Provenance data from input file will not be carried over to the output. */
                     trxout = trjtools_gmx_prepare_h5md_writing(
-                            out_file, 'w', nullptr, gmx::arrayRefFromArray(index, isize), grpname);
+                            out_file, 'w', nullptr, nullptr, gmx::arrayRefFromArray(index, isize), grpname);
                 }
                 else
                 {
-                    trxout = trjtools_gmx_prepare_h5md_writing(out_file, 'w', nullptr, {}, nullptr);
+                    trxout = trjtools_gmx_prepare_h5md_writing(out_file, 'w', nullptr, nullptr, {}, nullptr);
                 }
             }
             else

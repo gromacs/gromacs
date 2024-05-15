@@ -143,8 +143,23 @@ t_trxstatus* trjtools_gmx_prepare_tng_writing(const std::filesystem::path& filen
                                               gmx::ArrayRef<const int>     index,
                                               const char*                  index_group_name);
 
+/*! \brief Creates a t_trxstatus object and sets it up for H5MD writing.
+ *
+ * \param[in] filename The name of the H5MD file to write.
+ * \param[in] filemode The mode to open the file. Can be 'w' for creating, or overwriting
+ * a file, or 'a' for appending to an existing file.
+ * \param[in] input If this contains an H5MD file, used as input to a tool. This H5MD file is used
+ * for copying the provenance records, if any, of the input file to the output file.
+ * Provenance records are only copied if \p filemode is 'w'.
+ * \param[in] mtop Molecular system topology, used to initiate the particle data in the output
+ * file.
+ * \param[in] index Selected atoms for output.
+ * \param[in] index_group_name The name of the selection.
+ * \returns A pointer to the created t_trxstatus object.
+ */
 t_trxstatus* trjtools_gmx_prepare_h5md_writing(const std::filesystem::path& filename,
                                                char                         filemode,
+                                               t_trxstatus*                 input,
                                                const gmx_mtop_t*            mtop,
                                                gmx::ArrayRef<const int>     index,
                                                const char*                  index_group_name);

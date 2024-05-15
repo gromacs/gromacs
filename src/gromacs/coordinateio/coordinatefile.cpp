@@ -387,12 +387,15 @@ static t_trxstatus* openH5MD(const std::string& name, const Selection& sel, cons
     if (sel.isValid())
     {
         GMX_ASSERT(sel.hasOnlyAtoms(), "Can only work with selections consisting out of atoms");
-        return trjtools_gmx_prepare_h5md_writing(name, filemode[0], mtop, sel.atomIndices(), sel.name());
+        /* The nullptr below is an input H5MD file (for copying provenance). This is not possible from here. */
+        return trjtools_gmx_prepare_h5md_writing(
+                name, filemode[0], nullptr, mtop, sel.atomIndices(), sel.name());
     }
     else
     {
+        /* The nullptr below is an input H5MD file (for copying provenance). This is not possible from here. */
         return trjtools_gmx_prepare_h5md_writing(
-                name, filemode[0], mtop, get_atom_index(*mtop), "System");
+                name, filemode[0], nullptr, mtop, get_atom_index(*mtop), "System");
     }
 }
 

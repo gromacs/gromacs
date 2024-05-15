@@ -225,6 +225,7 @@ void GmxH5mdIo::openFile(const std::string fileName, const char mode)
     {
         file_ = H5Fopen(fileName.c_str(), H5F_ACC_RDONLY, H5P_DEFAULT);
     }
+    filemode_ = mode;
     initGroupTimeDataBlocksFromFile("particles");
     initGroupTimeDataBlocksFromFile("observables");
     if (file_ < 0)
@@ -242,11 +243,7 @@ void GmxH5mdIo::closeFile()
 #if GMX_USE_HDF5
     if (file_ >= 0)
     {
-        if (H5Fflush(file_, H5F_SCOPE_LOCAL) < 0)
-        {
-            H5Eprint2(H5E_DEFAULT, nullptr);
-            throw gmx::FileIOError("Error flushing H5MD file when closing.");
-        }
+        flush();
         if (debug)
         {
             fprintf(debug, "Closing H5MD file.\n");
@@ -273,11 +270,14 @@ void GmxH5mdIo::flush()
         {
             fprintf(debug, "Flushing H5MD file.\n");
         }
-        addToProvenanceRecord();
+        if (filemode_ == 'w' || filemode_ == 'a')
+        {
+            addToProvenanceRecord();
+        }
         if (H5Fflush(file_, H5F_SCOPE_LOCAL) < 0)
         {
             H5Eprint2(H5E_DEFAULT, nullptr);
-            throw gmx::FileIOError("Error flushing H5MD file when closing.");
+            throw gmx::FileIOError("Error flushing H5MD.");
         }
     }
 #else
@@ -935,6 +935,7 @@ void GmxH5mdIo::addToProvenanceRecord(const std::string& commandLine,
         }
         H5Sget_simple_extent_dims(dataSpace, &numFrames, nullptr);
     }
+    printf("%lld frames of provenance records.\n", numFrames);
 
     char tmpString[c_provenanceRecordStringLen];
     snprintf(tmpString,

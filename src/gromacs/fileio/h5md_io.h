@@ -79,6 +79,7 @@ class GmxH5mdIo
 private:
     hid_t file_; //!< The HDF5 identifier of the file. This is the H5MD root.
     std::list<GmxH5mdTimeDataBlock> dataBlocks_; //!< A list of time dependent data blocks in the HDF5 file.
+    char filemode_; //!< Whether the file is open for reading ('r'), writing ('w') or appending ('a')
 
 public:
     /*! \brief Construct a GmxH5mdIo object and open a GmxHdf5 file.

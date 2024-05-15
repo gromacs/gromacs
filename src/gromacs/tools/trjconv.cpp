@@ -1098,7 +1098,7 @@ int gmx_trjconv(int argc, char* argv[])
                     break;
                 case efH5MD:
                     trxout = trjtools_gmx_prepare_h5md_writing(
-                            out_file, filemode[0], nullptr, gmx::arrayRefFromArray(index, nout), grpnm);
+                            out_file, filemode[0], trxin, nullptr, gmx::arrayRefFromArray(index, nout), grpnm);
                     break;
                 case efXTC:
                 case efTRR:
@@ -1538,6 +1538,7 @@ int gmx_trjconv(int argc, char* argv[])
                                         trxout = trjtools_gmx_prepare_h5md_writing(
                                                 out_file2,
                                                 filemode[0],
+                                                trxin,
                                                 nullptr,
                                                 gmx::arrayRefFromArray(index, nout),
                                                 grpnm);

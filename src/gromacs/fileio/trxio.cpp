@@ -547,6 +547,7 @@ t_trxstatus* trjtools_gmx_prepare_tng_writing(const std::filesystem::path& filen
 
 t_trxstatus* trjtools_gmx_prepare_h5md_writing(const std::filesystem::path& filename,
                                                char                         filemode,
+                                               t_trxstatus*                 input,
                                                const gmx_mtop_t*            mtop,
                                                gmx::ArrayRef<const int>     index,
                                                const char*                  index_group_name)
@@ -563,6 +564,10 @@ t_trxstatus* trjtools_gmx_prepare_h5md_writing(const std::filesystem::path& file
     if (filemode == 'w')
     {
         gmx::setH5mdAuthorAndCreator(out->h5mdIo);
+        if (input != nullptr && input->h5mdIo != nullptr)
+        {
+            gmx::copyProvenanceRecords(input->h5mdIo, out->h5mdIo);
+        }
     }
     if (mtop != nullptr)
     {
