@@ -58,13 +58,17 @@ namespace h5mdio
 
 typedef int64_t            hid_t;
 typedef unsigned long long hsize_t;
-constexpr size_t           c_atomResidueStringLen               = 17;
+constexpr size_t           c_atomResidueStringLen               = 20;
 constexpr size_t           c_moleculeTypeStringLen              = 256;
+constexpr size_t           c_provenanceRecordStringLen          = 512;
 constexpr int              c_h5mdMajorVersion                   = 1;
 constexpr int              c_h5mdMinorVersion                   = 1;
 constexpr int              c_gmxH5mdParametersGroupMajorVersion = 0;
 constexpr int              c_gmxH5mdParametersGroupMinorVersion = 9;
+constexpr int              c_gmxH5mdProvenanceGroupMajorVersion = 0;
+constexpr int              c_gmxH5mdProvenanceGroupMinorVersion = 9;
 static std::string         s_gromacsTopologyGroupName           = "/parameters/gromacs_topology";
+static std::string         s_provenanceGroupName                = "/modules/provenance";
 
 
 /*! \brief The container of the H5MD data. The class is designed to read/write data according to de Buyl et al., 2014
@@ -338,6 +342,16 @@ public:
      * \returns the H5MD ID of the residue
      */
     hid_t addResidue(hid_t containerGroup, const std::string& name, size_t residueNumber);
+
+    /*! \brief Add an entry to the provenance record.
+     *
+     * \param[in] commandLine The command line used when opening the file (for writing).
+     * \param[in] version The version of the program used when opening the file.
+     * \param[in] comment A comment to this provenance entry, e.g., "open file", "flush", "close file" etc.
+     */
+    void addToProvenanceRecord(const std::string& commandLine = "",
+                               const std::string& version     = "",
+                               const std::string& comment     = "");
 };
 
 } // namespace h5mdio
@@ -462,6 +476,7 @@ void writeFrameToStandardDataBlocks(h5mdio::GmxH5mdIo* file,
  * the lowest step/time reading from the previous read frame of that data type. If data is
  * written at different intervals the read data types will be different from one function call
  * to the next.
+ *
  * \param[in] file The H5MD file manager to use.
  * \param[out] step       The step number of the read data blocks.
  * \param[out] time       The time of the read data blocks.
@@ -496,6 +511,13 @@ bool readNextFrameOfStandardDataBlocks(h5mdio::GmxH5mdIo* file,
                                        bool*              readF,
                                        const std::string  selectionName = "system");
 
+/*! \brief Copies the provenance group (in /modules) from \p srcFile to \p destFile, if it exists in \p srcFile.
+ *
+ * \param[in] srcFile The H5MD file manager of the source file.
+ * \param[in] destFile The H5MD file manager of the destination file.
+ * \returns Whether the group was copied.
+ */
+bool copyProvenanceRecords(h5mdio::GmxH5mdIo* srcFile, h5mdio::GmxH5mdIo* destFile);
 
 } // namespace gmx
 #endif // GMX_FILEIO_H5MD_IO_H
