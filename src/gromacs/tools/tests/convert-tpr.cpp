@@ -49,7 +49,11 @@
 #include "testutils/cmdlinetest.h"
 #include "testutils/refdata.h"
 #include "testutils/simulationdatabase.h"
+#include "testutils/stdiohelper.h"
+#include "testutils/testasserts.h"
 #include "testutils/tprfilegenerator.h"
+
+#include "convert-tpr-fixture.h"
 
 namespace gmx
 {
@@ -57,16 +61,6 @@ namespace test
 {
 namespace
 {
-
-class ConvertTprTest : public ::testing::Test
-{
-protected:
-    ConvertTprTest() : tprFileHandle("lysozyme") {}
-
-    //! Storage for opened file handles.
-    TprAndFileManager tprFileHandle;
-};
-
 
 TEST_F(ConvertTprTest, ExtendRuntimeExtensionTest)
 {
@@ -226,6 +220,28 @@ TEST_F(ConvertTprTest, generateVelocitiesTest)
         }
         checker.checkSequence(result.begin(), result.end(), "ConvertTprTestgenerateVelocitiesTestV");
     }
+}
+
+TEST_F(ConvertTprNoVelocityTest, refuseToGenerateVelocitiesWhenTprDidNotHaveVelocitiesInitiallyTest)
+{
+    gmx_mtop_t top;
+    t_inputrec ir;
+    t_state    state;
+    read_tpx_state(tprFileHandle.tprName(), &ir, &state, &top);
+
+    TestFileManager             fileManager;
+    const std::filesystem::path outTprFilename =
+            fileManager.getTemporaryFilePath("new_velocities.tpr");
+    const std::string command[] = { "convert-tpr",           "-s",
+                                    tprFileHandle.tprName(), "-o",
+                                    outTprFilename.string(), "-generate_velocities",
+                                    "-velocity_temp",        "300",
+                                    "-velocity_seed",        "12345" };
+    CommandLine       cmdline(command);
+
+    GMX_EXPECT_DEATH_IF_SUPPORTED(
+            gmx::test::CommandLineTestHelper::runModuleFactory(&gmx::ConvertTprInfo::create, &cmdline),
+            "does not contain velocities");
 }
 
 } // namespace

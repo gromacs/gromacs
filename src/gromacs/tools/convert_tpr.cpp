@@ -231,7 +231,7 @@ static void reduce_ilist(gmx::ArrayRef<const int> invindex,
     }
 }
 
-static void reduce_topology_x(int gnx, int index[], gmx_mtop_t* mtop, rvec x[], rvec v[])
+static void reduce_topology_x(int gnx, int index[], gmx_mtop_t* mtop, t_state* state)
 {
     gmx_localtop_t top(mtop->ffparams);
     gmx_mtop_generate_local_top(*mtop, &top, false);
@@ -240,8 +240,11 @@ static void reduce_topology_x(int gnx, int index[], gmx_mtop_t* mtop, rvec x[], 
     const std::vector<bool> bKeep    = bKeepIt(gnx, atoms.nr, index);
     const std::vector<int>  invindex = invind(gnx, atoms.nr, index);
 
-    reduce_rvec(gnx, index, x);
-    reduce_rvec(gnx, index, v);
+    reduce_rvec(gnx, index, state->x.rvec_array());
+    if (state->flags() & enumValueToBitMask(StateEntry::V))
+    {
+        reduce_rvec(gnx, index, state->v.rvec_array());
+    }
     reduce_atom(gnx, index, atoms.atom, atoms.atomname, &(atoms.nres), atoms.resinfo);
 
     for (int i = 0; (i < F_NRE); i++)
@@ -435,6 +438,15 @@ int ConvertTpr::run()
             velocitySeed_ = static_cast<int>(gmx::makeRandomSeed());
             printf("Using random seed %d for generating velocities", velocitySeed_);
         }
+        if (!(state.flags() & enumValueToBitMask(StateEntry::V)))
+        {
+            gmx_fatal(FARGS,
+                      "Input tpr file %s does not contain velocities, typically because this file "
+                      "is intended for energy minimization ('steep' integrator). This is not a "
+                      "supported use case of the 'generate_velocities' option of convert-tpr: use "
+                      "the mdp option 'gen_vel' instead",
+                      inputTprFileName_.c_str());
+        }
         // Since there is no log in convert-tpr, we generate-and-print the seed here
         maxwell_speed(velocityTemperature_, velocitySeed_, &mtop, state.v.rvec_array(), MDLogger());
         // Remove c-o-m after maxwell-boltzmann generation so we stay consistent with grompp
@@ -521,7 +533,7 @@ int ConvertTpr::run()
                     "atoms\n",
                     grpname,
                     gnx);
-            reduce_topology_x(gnx, index, &mtop, state.x.rvec_array(), state.v.rvec_array());
+            reduce_topology_x(gnx, index, &mtop, &state);
             state.changeNumAtoms(gnx);
         }
         else

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright 2019- The GROMACS Authors
+ * Copyright 2024- The GROMACS Authors
  * and the project initiators Erik Lindahl, Berk Hess and David van der Spoel.
  * Consult the AUTHORS/COPYING files and https://www.gromacs.org for details.
  *
@@ -31,52 +31,47 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out https://www.gromacs.org.
  */
-/*! \libinternal \file
+/*! \internal \file
  * \brief
- * Helper for generating reusuable TPR files for tests within the same test binary.
+ * Fixture for tests for gmx convert-tpr.
  *
- * \ingroup module_testutils
- * \author Paul Bauer <paul.bauer.q@gmail.com>
+ * \author Eliane Briand <eliane@br.iand.fr>
  */
-#ifndef GMX_TESTUTILS_TPRFILEGENERATOR_H
-#define GMX_TESTUTILS_TPRFILEGENERATOR_H
+#ifndef GMX_TOOLS_TESTS_CONVERT_TPR_FIXTURE_H
+#define GMX_TOOLS_TESTS_CONVERT_TPR_FIXTURE_H
 
-#include <memory>
-#include <string>
-
-#include "testutils/testfilemanager.h"
+#include "testutils/tprfilegenerator.h"
 
 namespace gmx
 {
 namespace test
 {
-
-class TestFileManager;
-
-/*! \libinternal \brief
- * Helper to bundle generated TPR and the file manager to clean it up.
- */
-class TprAndFileManager
+namespace
 {
-public:
-    /*! \brief
-     * Generates the file when needed.
-     *
-     * \param[in] name The basename of the input files and the generated TPR.
-     * \param[in] mdpContent Optionally, content of the MDP file used to generate the tpr
-     */
-    TprAndFileManager(const std::string& name, const std::string& mdpContent = "");
-    //! Access to the string.
-    const std::string& tprName() const { return tprFileName_; }
 
-private:
-    //! Tpr file name.
-    std::string tprFileName_;
-    //! Filemanager, needed to clean up the file later.
-    TestFileManager fileManager_;
+class ConvertTprTest : public ::testing::Test
+{
+protected:
+    ConvertTprTest(const std::string& mdpContent = "") : tprFileHandle("lysozyme", mdpContent) {}
+
+    //! Storage for opened file handles.
+    TprAndFileManager tprFileHandle;
 };
 
+/*!
+ * \brief Fixture producing tpr files without velocity
+ *
+ * Used to test successful completion of convert-tpr even when velocities are absent from
+ * the tpr file.
+ */
+class ConvertTprNoVelocityTest : public ConvertTprTest
+{
+protected:
+    ConvertTprNoVelocityTest() : ConvertTprTest("integrator  = steep\n") {}
+};
+
+} // namespace
 } // namespace test
 } // namespace gmx
 
-#endif
+#endif // GMX_TOOLS_TESTS_CONVERT_TPR_FIXTURE_H

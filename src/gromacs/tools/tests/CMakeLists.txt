@@ -42,3 +42,10 @@ gmx_add_gtest_executable(tool-test
         )
 gmx_register_gtest_test(ToolUnitTests tool-test SLOW_TEST)
 target_link_libraries(tool-test PRIVATE math)
+
+gmx_add_gtest_executable(tool-test-with-leaks
+        CPP_SOURCE_FILES
+        convert-tpr-with-leaks.cpp
+        )
+gmx_register_gtest_test(ToolWithLeaksUnitTests tool-test-with-leaks SLOW_TEST IGNORE_LEAKS)
+target_link_libraries(tool-test-with-leaks PRIVATE math)
