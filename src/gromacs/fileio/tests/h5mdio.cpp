@@ -198,6 +198,7 @@ public:
             EXPECT_EQ(topology->moleculeBlockIndices[i].moleculeIndexStart,
                       fileMoleculeBlockIndices.moleculeIndexStart);
         }
+        /* FIXME: Add comparisons for molecule type data and connectivities. */
     }
 
     std::vector<std::string> readAtomNamesFromReferenceFile()

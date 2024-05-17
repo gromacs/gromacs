@@ -354,87 +354,38 @@ hid_t addMoleculeType(gmx::h5mdio::GmxH5mdIo* file, const gmx_moltype_t& molType
     std::string moleculeTypesGroupName = gmx::h5mdio::s_gromacsTopologyGroupName + "/molecule_types";
     file->createGroup(moleculeTypesGroupName);
     std::string moleculeTypeName  = moleculeTypesGroupName + "/" + (*molType.name);
-    hid_t       moleculeTypeGroup = file->getGroupId(moleculeTypeName);
-    /* There cannot be more than one molecule type with the same name */
-    if (moleculeTypeGroup >= 0)
-    {
-        return moleculeTypeGroup;
-    }
-    moleculeTypeGroup = file->createGroup(moleculeTypeName);
+    hid_t       moleculeTypeGroup = file->createGroup(moleculeTypeName);
 
     gmx::h5mdio::setAttribute(
             moleculeTypeGroup, "number_of_atoms", static_cast<int64_t>(molType.atoms.nr), H5T_NATIVE_INT64);
 
-    hid_t stringDataType = H5Tcopy(H5T_C_S1);
-    H5Tset_cset(stringDataType, H5T_CSET_UTF8);
-    size_t maxNameStringLength = gmx::h5mdio::c_atomResidueStringLen;
-    H5Tset_size(stringDataType, maxNameStringLength);
-    hsize_t chunkDims[1];
-    chunkDims[0] = molType.atoms.nr;
-
-    hid_t atomNameDataSet =
-            gmx::h5mdio::openOrCreateDataSet<1>(moleculeTypeGroup,
-                                                "atom_name",
-                                                nullptr,
-                                                stringDataType,
-                                                chunkDims,
-                                                gmx::h5mdio::CompressionAlgorithm::LosslessNoShuffle,
-                                                0);
-    hid_t atomTypeDataSet =
-            gmx::h5mdio::openOrCreateDataSet<1>(moleculeTypeGroup,
-                                                "atom_species",
-                                                nullptr,
-                                                H5T_NATIVE_INT16,
-                                                chunkDims,
-                                                gmx::h5mdio::CompressionAlgorithm::LosslessNoShuffle,
-                                                0);
-    hid_t atomTypeBDataSet =
-            gmx::h5mdio::openOrCreateDataSet<1>(moleculeTypeGroup,
-                                                "atom_species_state_b",
-                                                nullptr,
-                                                H5T_NATIVE_INT16,
-                                                chunkDims,
-                                                gmx::h5mdio::CompressionAlgorithm::LosslessNoShuffle,
-                                                0);
-
-    hid_t residueNameDataSet =
-            gmx::h5mdio::openOrCreateDataSet<1>(moleculeTypeGroup,
-                                                "residue_name",
-                                                nullptr,
-                                                stringDataType,
-                                                chunkDims,
-                                                gmx::h5mdio::CompressionAlgorithm::LosslessNoShuffle,
-                                                0);
-
-    hid_t residueNumberDataSet =
-            gmx::h5mdio::openOrCreateDataSet<1>(moleculeTypeGroup,
-                                                "residue_number",
-                                                nullptr,
-                                                H5T_NATIVE_INT,
-                                                chunkDims,
-                                                gmx::h5mdio::CompressionAlgorithm::LosslessNoShuffle,
-                                                0);
-
-    hid_t chainIdDataSet =
-            gmx::h5mdio::openOrCreateDataSet<1>(moleculeTypeGroup,
-                                                "chain_id",
-                                                nullptr,
-                                                H5T_NATIVE_CHAR,
-                                                chunkDims,
-                                                gmx::h5mdio::CompressionAlgorithm::LosslessNoShuffle,
-                                                0);
+    std::vector<std::string>  atomNames(molType.atoms.nr);
+    std::vector<int>          atomTypes(molType.atoms.nr);
+    std::vector<int>          atomTypesB(molType.atoms.nr);
+    std::vector<std::string>  residueNames(molType.atoms.nr);
+    std::vector<std::int64_t> residueNumbers(molType.atoms.nr);
+    std::vector<std::string>  chainIds(molType.atoms.nr);
 
     for (ssize_t i = 0; i < molType.atoms.nr; i++)
     {
         int residueIndex = molType.atoms.atom[i].resind;
 
-        gmx::h5mdio::writeData<1, false>(atomNameDataSet, *molType.atoms.atomname[i], i);
-        gmx::h5mdio::writeData<1, false>(atomTypeDataSet, &molType.atoms.atom[i].type, i);
-        gmx::h5mdio::writeData<1, false>(atomTypeBDataSet, &molType.atoms.atom[i].typeB, i);
-        gmx::h5mdio::writeData<1, false>(residueNameDataSet, *molType.atoms.resinfo[residueIndex].name, i);
-        gmx::h5mdio::writeData<1, false>(residueNumberDataSet, &molType.atoms.resinfo[residueIndex].nr, i);
-        gmx::h5mdio::writeData<1, false>(chainIdDataSet, &molType.atoms.resinfo[residueIndex].chainid, i);
+        atomNames[i]      = *molType.atoms.atomname[i];
+        atomTypes[i]      = molType.atoms.atom[i].type;
+        atomTypesB[i]     = molType.atoms.atom[i].typeB;
+        residueNames[i]   = *molType.atoms.resinfo[residueIndex].name;
+        residueNumbers[i] = molType.atoms.resinfo[residueIndex].nr;
+        chainIds[i]       = molType.atoms.resinfo[residueIndex].chainid;
     }
+
+    file->setStringProperty(
+            moleculeTypeName, "atom_name", atomNames, false, gmx::h5mdio::c_atomResidueStringLen);
+    file->setNumericProperty(moleculeTypeName, "atom_species", atomTypes, "", false);
+    file->setNumericProperty(moleculeTypeName, "atom_species_state_b", atomTypesB, "", false);
+    file->setStringProperty(
+            moleculeTypeName, "residue_name", residueNames, false, gmx::h5mdio::c_atomResidueStringLen);
+    file->setNumericProperty(moleculeTypeName, "residue_number", residueNumbers, "", false);
+    file->setStringProperty(moleculeTypeName, "chain_id", chainIds, false, 1);
 
     return moleculeTypeGroup;
 
