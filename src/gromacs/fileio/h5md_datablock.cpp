@@ -43,6 +43,7 @@
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
 
+#include "h5md_io.h"
 #include "h5md_util.h"
 
 #define GMX_USE_HDF5 1 // FIXME: Temporary just for the editor
@@ -71,7 +72,7 @@ GmxH5mdTimeDataBlock::GmxH5mdTimeDataBlock(hid_t                container,
 
     group_ = openOrCreateGroup(container_, name_.c_str());
     char tmpFullName[c_maxFullNameLength];
-    H5Iget_name(group_, tmpFullName, c_maxFullNameLength);
+    H5Iget_name(group_, tmpFullName, c_maxFullNameLength - 1);
     fullName_          = tmpFullName;
     readingFrameIndex_ = 0;
     writingFrameIndex_ = 0;

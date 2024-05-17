@@ -572,6 +572,7 @@ t_trxstatus* trjtools_gmx_prepare_h5md_writing(const std::filesystem::path& file
     if (mtop != nullptr)
     {
         setupMolecularSystemParticleData(out->h5mdIo, *mtop, index, index_group_name);
+        setupMolecularSystemTopology(out->h5mdIo, *mtop, index, index_group_name);
     }
 
     return out;

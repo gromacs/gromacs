@@ -175,7 +175,7 @@ public:
     void setupMolecularSystem()
     {
         gmx::setupMolecularSystemParticleData(&referenceH5mdIo_, *topologyInfo_.mtop());
-        gmx::setupMolecularSystemTopology(&referenceH5mdIo_, *topologyInfo_.mtop(), true);
+        gmx::setupMolecularSystemTopology(&referenceH5mdIo_, *topologyInfo_.mtop(), {}, "", true);
     }
 
     void checkTopologies()

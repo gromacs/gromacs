@@ -61,6 +61,7 @@ typedef unsigned long long hsize_t;
 constexpr size_t           c_atomResidueStringLen               = 20;
 constexpr size_t           c_moleculeTypeStringLen              = 256;
 constexpr size_t           c_provenanceRecordStringLen          = 512;
+constexpr int              c_maxFullNameLength                  = 512;
 constexpr int              c_h5mdMajorVersion                   = 1;
 constexpr int              c_h5mdMinorVersion                   = 1;
 constexpr int              c_gmxH5mdParametersGroupMajorVersion = 0;
@@ -165,15 +166,20 @@ public:
      */
     std::string getCreatorProgramVersion();
 
-    /*! \brief Get the HDF5 ID of the group specified by name (by absolute path in the file).
+    /*! \brief Get the HDF5 ID of the group specified by \p fullName (by absolute path in the file).
      * \returns The ID of the group or < 0 if the group does not exist.
      */
-    hid_t getGroupId(const std::string& name);
+    hid_t getGroupId(const std::string& fullName);
 
-    /*! \brief Create an HDF5 group specified by name (by absolute path in the file).
+    /*! \brief Create an HDF5 group specified by \p fullName (by absolute path in the file).
      * \returns The ID of the group or < 0 if the group could not be created.
      */
-    hid_t createGroup(const std::string& name);
+    hid_t createGroup(const std::string& fullName);
+
+    /*! \brief Create an HDF5 group in \p container specified by \p nameInContainer.
+     * \returns The ID of the group or < 0 if the group could not be created.
+     */
+    hid_t createGroup(hid_t container, const std::string& nameInContainer);
 
     /*! \brief Get the HDF5 ID of the GROMACS topology group in the H5MD file.
      * \returns The HDF5 ID of the topology group or < 0 if no group was found.
@@ -371,50 +377,13 @@ void setH5mdAuthorAndCreator(h5mdio::GmxH5mdIo* file);
  * \param[in] file     The H5MD file manager to use.
  * \param[in] topology The molecular topology describing the system.
  * \param[in] index    The selected atoms to include. If empty, use all atoms in the topology.
- * \param[in] index_group_name The name of the atom selection specified by index.
+ * \param[in] selectionName The name of the atom selection specified by index.
  * \throws FileIOError If there is no file open or if the data could not be written.
  */
 void setupMolecularSystemParticleData(h5mdio::GmxH5mdIo*       file,
                                       const gmx_mtop_t&        topology,
-                                      gmx::ArrayRef<const int> index            = {},
-                                      const std::string        index_group_name = "");
-
-/*! \brief Adds the atoms of the molecule type \p molType to the corresponding molecule type in the file.
- *
- * \param[in] molType The GROMACS molecule type data.
- * \throws FileIOError If there is an error writing the data.
- */
-void addMoleculeTypeAtoms(const gmx_moltype_t& molType);
-
-/*! \brief Add a molecule type to the GROMACS topology section in the file.
- * \param[in] file The H5MD file manager to use.
- * \param[in] molType The molecule type to add.
- * \returns the H5MD ID of the molecule type group
- * \throws FileIOError If there was an error adding the molecule type information.
- */
-h5mdio::hid_t addMoleculeType(h5mdio::GmxH5mdIo* file, const gmx_moltype_t& molType);
-
-/*! \brief Add a block consisting of a number of copies of a molecule type to the GROMACS topology section in the file.
- * \param[in] file          The H5MD file manager to use.
- * \param[in] moleculeTypeName The name of the molecule type of this molecule block.
- * \param[in] molBlockIndex The index of the molecule block.
- * \param[in] numMol The number of molecules of this type (in this molecule block).
- * \param[in] molBlockIndices The GROMACS data structure containing the indices of the molecule block.
- * \throws FileIOError If there was an error adding the molecule type information.
- */
-void addBlockOfMoleculeType(h5mdio::GmxH5mdIo*          file,
-                            const std::string&          moleculeTypeName,
-                            size_t                      molBlockIndex,
-                            size_t                      numMol,
-                            const MoleculeBlockIndices& molBlockIndices);
-
-/*! \brief Get the number of atoms of the molecule type specified by \p molTypeName.
- * \param[in] file               The H5MD file manager to use.
- * \param[in] molTypeName        The name of the molecule type.
- * \returns the number of atoms in the molecule type or -1 if the molecule type could not be found.
- * \throws FileIOError If there was an error reading the molecule type information.
- */
-int64_t getNumberOfAtomsOfMoleculeTypeByName(h5mdio::GmxH5mdIo* file, std::string molTypeName);
+                                      gmx::ArrayRef<const int> index         = {},
+                                      const std::string        selectionName = "");
 
 /*! \brief Get a specific GROMACS molecule block indices data structure (corresponding to a number
  * of molecule of a certain molecule type) from the H5MD GROMACS topology section in the file.
@@ -427,24 +396,20 @@ int64_t getNumberOfAtomsOfMoleculeTypeByName(h5mdio::GmxH5mdIo* file, std::strin
  */
 MoleculeBlockIndices getMoleculeBlockIndicesByIndex(h5mdio::GmxH5mdIo* file, size_t molBlockIndex);
 
-
-/*! \brief Add atom type entries (species) for all different atom types in \p atoms.
- * \param[in]     file           The H5MD file manager to use.
- * \param[in]     atoms          The GROMACS atoms to iterate through to add their corresponding atom types (species)
- * \param[in,out] atomTypesAdded Keeps track of which atom types have been added already.
- */
-void addAtomTypesOfAtoms(h5mdio::GmxH5mdIo* file, const t_atoms& atoms, std::vector<bool>& atomTypesAdded);
-
 /*! \brief Setup molecular system topology data.
  *
  * \param[in] file     The H5MD file manager to use.
  * \param[in] topology The molecular topology describing the system.
+ * \param[in] index    The selected atoms to include. If empty, use all atoms in the topology.
+ * \param[in] selectionName The name of the atom selection specified by index.
  * \param[in] abortIfPresent Do not set up the topology if it is already present in the file.
  * \throws FileIOError If there is no file open or if the data could not be written.
  */
-void setupMolecularSystemTopology(h5mdio::GmxH5mdIo* file,
-                                  const gmx_mtop_t&  topology,
-                                  bool               abortIfPresent = true);
+void setupMolecularSystemTopology(h5mdio::GmxH5mdIo*       file,
+                                  const gmx_mtop_t&        topology,
+                                  gmx::ArrayRef<const int> index          = {},
+                                  const std::string&       selectionName  = "",
+                                  bool                     abortIfPresent = true);
 
 /*! \brief Write a trajectory frame to the file. Only writes the data that is passed as input
  *

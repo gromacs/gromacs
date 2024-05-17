@@ -50,8 +50,6 @@ namespace h5mdio
 typedef int64_t            hid_t;
 typedef unsigned long long hsize_t;
 
-constexpr int c_maxFullNameLength = 256;
-
 /*! \brief A class that handles H5MD data blocks with data can change during the MD trajectory.
  * Data is stored in three data sets, grouped together: main (value), time and step.
  */

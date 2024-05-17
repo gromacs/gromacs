@@ -699,6 +699,8 @@ template hid_t gmx::h5mdio::openOrCreateDataSet<3>(hid_t,
 
 template void gmx::h5mdio::writeData<1, false>(hid_t, const void*, hsize_t);
 template void gmx::h5mdio::writeData<1, true>(hid_t, const void*, hsize_t);
+template void gmx::h5mdio::writeData<2, false>(hid_t, const void*, hsize_t);
+template void gmx::h5mdio::writeData<2, true>(hid_t, const void*, hsize_t);
 template void gmx::h5mdio::writeData<3, false>(hid_t, const void*, hsize_t);
 
 template void gmx::h5mdio::readData<1, false>(hid_t, hsize_t, void**, size_t*, size_t*);
