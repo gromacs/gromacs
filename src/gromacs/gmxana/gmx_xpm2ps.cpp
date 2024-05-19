@@ -1454,7 +1454,8 @@ int gmx_xpm2ps(int argc, char* argv[])
     };
 
     gmx_output_env_t* oenv;
-    const char *      fn, *epsfile = nullptr, *xpmfile = nullptr;
+    const char*       fn;
+    const char*       fn2;
     int               i, etitle, elegend, ediag, erainbow, ecombine;
     gmx_bool          bTitle, bTitleOnce, bDiag, bFirstDiag, bGrad;
     static gmx_bool   bFrame = TRUE, bZeroLine = FALSE, bYonce = FALSE;
@@ -1558,29 +1559,6 @@ int gmx_xpm2ps(int argc, char* argv[])
         elegend = elNone;
     }
 
-    epsfile = ftp2fn_null(efEPS, NFILE, fnm);
-    xpmfile = opt2fn_null("-xpm", NFILE, fnm);
-    if (epsfile == nullptr && xpmfile == nullptr)
-    {
-        if (ecombine != ecHalves)
-        {
-            xpmfile = opt2fn("-xpm", NFILE, fnm);
-        }
-        else
-        {
-            epsfile = ftp2fn(efEPS, NFILE, fnm);
-        }
-    }
-    if (ecombine != ecHalves && epsfile)
-    {
-        fprintf(stderr,
-                "WARNING: can only write result of arithmetic combination "
-                "of two matrices to .xpm file\n"
-                "         file %s will not be written\n",
-                epsfile);
-        epsfile = nullptr;
-    }
-
     bDiag      = ediag != edNone;
     bFirstDiag = ediag != edSecond;
 
@@ -1593,16 +1571,16 @@ int gmx_xpm2ps(int argc, char* argv[])
             mat.size(),
             (mat.size() > 1) ? "ces" : "x",
             fn);
-    fn = opt2fn_null("-f2", NFILE, fnm);
-    if (fn)
+    fn2 = opt2fn_null("-f2", NFILE, fnm);
+    if (fn2)
     {
-        mat2 = read_xpm_matrix(fn);
+        mat2 = read_xpm_matrix(fn2);
         fprintf(stderr,
                 "There %s %zu matri%s in %s\n",
                 (mat2.size() > 1) ? "are" : "is",
                 mat2.size(),
                 (mat2.size() > 1) ? "ces" : "x",
-                fn);
+                fn2);
         if (mat.size() != mat2.size())
         {
             fprintf(stderr, "Different number of matrices, using the smallest number.\n");
@@ -1664,8 +1642,18 @@ int gmx_xpm2ps(int argc, char* argv[])
 
     if (ecombine && ecombine != ecHalves)
     {
+        const char* epsfile;
+        epsfile = ftp2fn_null(efEPS, NFILE, fnm);
+        if (epsfile)
+        {
+            fprintf(stderr,
+                    "WARNING: can only write result of arithmetic combination "
+                    "of two matrices to .xpm file\n"
+                    "         file %s will not be written\n",
+                    epsfile);
+        }
         write_combined_matrix(ecombine,
-                              xpmfile,
+                              opt2fn("-xpm", NFILE, fnm),
                               mat,
                               mat2,
                               opt2parg_bSet("-cmin", NPA, pa) ? &cmin : nullptr,
@@ -1686,8 +1674,8 @@ int gmx_xpm2ps(int argc, char* argv[])
                size,
                boxx,
                boxy,
-               epsfile,
-               xpmfile,
+               ftp2fn(efEPS, NFILE, fnm),
+               opt2fn_null("-xpm", NFILE, fnm),
                opt2fn_null("-di", NFILE, fnm),
                opt2fn_null("-do", NFILE, fnm),
                skip,
