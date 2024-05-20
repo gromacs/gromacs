@@ -1606,12 +1606,14 @@ void gmx::LegacySimulator::do_md()
                 else
                 {
                     /* With multiple time stepping we need to do an additional normal
-                     * update step to obtain the virial, as the actual MTS integration
+                     * update step to obtain the virial and dH/dl, as the actual MTS integration
                      * using an acceleration where the slow forces are multiplied by mtsFactor.
                      * Using that acceleration would result in a virial with the slow
                      * force contribution would be a factor mtsFactor too large.
                      */
-                    if (simulationWork.useMts && bCalcVir && constr_ != nullptr)
+                    const bool separateVirialConstraining =
+                            (simulationWork.useMts && (bCalcVir || computeDHDL) && constr_ != nullptr);
+                    if (separateVirialConstraining)
                     {
                         upd.update_for_constraint_virial(*ir,
                                                          md->homenr,
@@ -1666,8 +1668,8 @@ void gmx::LegacySimulator::do_md()
                                           step,
                                           state_,
                                           upd.xp()->arrayRefWithPadding(),
-                                          &dvdl_constr,
-                                          bCalcVir && !simulationWork.useMts,
+                                          separateVirialConstraining ? nullptr : &dvdl_constr,
+                                          bCalcVir && !separateVirialConstraining,
                                           shake_vir);
 
                     upd.update_sd_second_half(*ir,

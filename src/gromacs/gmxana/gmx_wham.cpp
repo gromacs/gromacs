@@ -1081,7 +1081,7 @@ static void create_synthetic_histo(t_UmbrellaWindow*  synthWindow,
                 "autocorrelation times (ACTs) are required. Otherwise the statistical error\n"
                 "cannot be predicted. You have 3 options:\n"
                 "1) Make gmx wham estimate the ACTs (options -ac and -acsig).\n"
-                "2) Calculate the ACTs by yourself (e.g. with g_analyze) and provide them\n");
+                "2) Calculate the ACTs by yourself (e.g. with gmx analyze) and provide them\n");
         std::strcat(errstr,
                     "   with option -iiact for all umbrella windows.\n"
                     "3) If all ACTs are identical and know, you can define them with -bs-tau.\n"

@@ -107,4 +107,10 @@ if (GMX_MPI)
         set_tests_properties(GmxapiMpiTests PROPERTIES
                              WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
     endif ()
+    if (TEST GmxapiExternalInterfaceTests AND TEST GmxapiMpiTests)
+        # Because the gmxapi tests depend on writing files whose names are not
+        # unique across test cases, prevent CTest from running these tests
+        # concurrently. See #4654
+        set_tests_properties(GmxapiMpiTests PROPERTIES DEPENDS GmxapiExternalInterfaceTests)
+    endif()
 endif ()

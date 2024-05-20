@@ -100,8 +100,10 @@ colvarmodule::colvarmodule(colvarproxy *proxy_in)
   version_int = proxy->get_version_from_string(COLVARS_VERSION);
 
   cvm::log(cvm::line_marker);
-  cvm::log("Initializing the collective variables module, version "+
-           version()+".\n");
+  cvm::log(
+      "Initializing the collective variables module, version " + version() +
+      (patch_version_number() ? (" (patch " + cvm::to_str(patch_version_number()) + ")") : "") +
+      ".\n");
   cvm::log("Please cite Fiorin et al, Mol Phys 2013:\n"
            "  https://doi.org/10.1080/00268976.2013.813594\n"
            "as well as all other papers listed below for individual features used.\n");

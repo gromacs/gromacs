@@ -627,7 +627,7 @@ int gmx_hydorder(int argc, char* argv[])
     };
 
     t_filenm fnm[] = {
-        /* files for g_order    */
+        /* files for gmx order    */
         { efTRX, "-f", nullptr, ffREAD },              /* trajectory file              */
         { efNDX, "-n", nullptr, ffREAD },              /* index file           */
         { efTPR, "-s", nullptr, ffREAD },              /* topology file                */

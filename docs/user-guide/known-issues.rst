@@ -108,3 +108,19 @@ and 12.3 on POWER9 architectures. It is possible that other GCC 12 and
 newer versions are affected.
 
 :issue:`4823`
+
+Launching multiple instances of GROMACS on the same machine with AMD GPUs
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+When |Gromacs| is built with AdaptiveCpp 23.10 or earlier for AMD GPUs,
+launching more than 4 instances of |Gromacs| (even on different GPUs)
+can lead to reduced performance.
+
+The issue is completely avoided when each process is limited to a single
+GPU using ``ROCR_VISIBLE_DEVICES`` environment variable. This is already
+the recommended setting on some of the relevant supercomputers.
+
+Building with AdaptiveCpp 24.02 also prevents the problem from arising.
+
+:issue:`4965`
+

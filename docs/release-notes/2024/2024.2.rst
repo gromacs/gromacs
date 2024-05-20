@@ -1,7 +1,7 @@
 GROMACS 2024.2 release notes
 ----------------------------
 
-This version was released on TODO, 2024. These release notes
+This version was released on May 10th, 2024. These release notes
 document the changes that have taken place in |Gromacs| since the
 previous 2024.1 version, to fix known issues. It also incorporates all
 fixes made in version 2023.5 and earlier, which you can find described
@@ -16,8 +16,29 @@ in the :ref:`release-notes`.
 Fixes where mdrun could behave incorrectly
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Prevent crashes with AdaptiveCpp/hipSYCL
+""""""""""""""""""""""""""""""""""""""""
+
+In some cases, |Gromacs| could randomly crash on neighbor-search steps with
+``hip_queue: hipMemsetAsync() failed (error code = HIP:1)`` error.
+This was caused by a GPU buffer re-allocation while an operation on the buffer
+was pending. We add an explicit synchronization to avoid it.
+
+Only AdaptiveCpp/hipSYCL builds are affected.
+This should not have caused any incorrect physics, only the ``mdrun`` crash.
+
+:issue:`5078`
+
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
+
+Improve errors and warnings to avoid poor results with gmx msd
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Fail properly if ```-trestart``` is not divisible by ```-dt``` or if ```-dt```
+> ```-trestart```. A warning is generated if the two values are equal. 
+
+:issue:`5051`
 
 Improve error messages from editconf and trjconv
 """"""""""""""""""""""""""""""""""""""""""""""""
@@ -35,6 +56,16 @@ Reading a corrupted xtc file could cause a floating point exception.
 Now the gmx binary will exit with an error message.
 
 :issue:`5037`
+
+Make Colvars file backup scheme consistent with GROMACS
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Colvars output files in |Gromacs| versions 2024.0 and 2024.1 were backed up
+only once, regardless of the value of ``GMX_MAXBACKUP``.  This is corrected
+in 2024.2 and later releases, by letting Colvars back up existing output
+files consistently with other files produced by |Gromacs| itself.
+
+:issue:`5071`
 
 Fixes that affect portability
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -54,10 +85,29 @@ Warn about unsupported compilers sooner
 """""""""""""""""""""""""""""""""""""""
 
 Now CMake reports that a user's compiler is broken or unsupported
-before running into other fatal issues that woud have obscured a
+before running into other fatal issues that would have obscured a
 critical problem.
 
 :issue:`5056`
+
+Enable specification of custom install rpath during build configuration
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+CMake build and installation steps will now append to the
+``CMAKE_INSTALL_RPATH`` value provided by the user at the configuration
+time (if any) instead of overwriting it.
+
+:issue:`5064`
+
+Permit ``dpcpp`` to appear in the path to the compiler
+""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+The compiler named ``dpcpp`` is no longer supported, so CMake
+prohibits its use. However previously we inadvertently also prohibited
+any compiler whose full path also contained the string "dpcpp," which
+was not intended.
+
+:issue:`4716`
 
 Miscellaneous
 ^^^^^^^^^^^^^
@@ -70,7 +120,15 @@ from the Lennard-Jones parameters set by the user.
 
 :issue:`5015`
 
-Fix Performance Regression for Some Cases on Latest NVIDIA GPUs
+
+Fix cuFFTMp compilation issue
+"""""""""""""""""""""""""""""
+
+The cuFFTMp build is now more likely to compile because the compiler now
+sees the correct path.
+
+
+Fix performance regression for some cases on latest NVIDIA GPUs
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
 In version 2024.0 we included optimizations to non-bonded force
@@ -91,7 +149,7 @@ Note that there are still other performance regressions in certain versions
 of these kernels on multiple platforms.
 
 :issue:`5036`
-       
+
 Fix crash in NbnxmSetupTest.CanCreateNbnxmGPU
 """""""""""""""""""""""""""""""""""""""""""""
 
@@ -101,10 +159,10 @@ deinitialization.
 
 :issue:`4888`
 
-Fix incorrect mdp keyword for mass repartioning in documentation
-""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+Fix incorrect mdp keyword for mass repartitioning in documentation
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
-The mdp keyword for mass repartioning was incorrect in the list of mdp
+The mdp keyword for mass repartitioning was incorrect in the list of mdp
 options in the documentation.
 
 :issue:`5007`
@@ -116,3 +174,8 @@ In 2024.0 and 2024.1 it was empty.
 
 :issue:`5045`
 
+Prevented CTest from running racy test cases concurrently
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+:issue:`4654`
+:issue:`4975`

@@ -715,8 +715,9 @@ static void split_group(const t_atoms* atoms, int sel_nr, std::vector<IndexGroup
 {
     char buf[STRLEN];
 
-    const char* nameToSplit = (*indexGroups)[sel_nr].name.c_str();
-    printf("Splitting group %d '%s' into %s\n", sel_nr, nameToSplit, bAtom ? "atoms" : "residues");
+    const std::string nameToSplit =
+            (*indexGroups)[sel_nr].name; // Need a copy since indexGroups can reallocate
+    printf("Splitting group %d '%s' into %s\n", sel_nr, nameToSplit.c_str(), bAtom ? "atoms" : "residues");
 
     gmx::ArrayRef<const int> groupToSplit = (*indexGroups)[sel_nr].particleIndices;
     int                      prevAtom     = -1;
@@ -728,14 +729,16 @@ static void split_group(const t_atoms* atoms, int sel_nr, std::vector<IndexGroup
         {
             if (bAtom)
             {
-                sprintf(buf, "%s_%s_%d", nameToSplit, *atoms->atomname[a], a + 1);
+                sprintf(buf, "%s_%s_%d", nameToSplit.c_str(), *atoms->atomname[a], a + 1);
             }
             else
             {
-                sprintf(buf, "%s_%s_%d", nameToSplit, name, atoms->resinfo[resind].nr);
+                sprintf(buf, "%s_%s_%d", nameToSplit.c_str(), name, atoms->resinfo[resind].nr);
             }
-            indexGroups->push_back({ buf, { a } });
+            indexGroups->push_back({ buf, {} });
         }
+        GMX_ASSERT(!indexGroups->empty(), "Should have already created an index group!");
+        indexGroups->back().particleIndices.push_back(a);
         prevAtom = a;
     }
 }

@@ -367,9 +367,9 @@ __launch_bounds__(sc_maxThreadsPerBlock) __global__
  * Returns pointer to a CUDA kernel based on provided booleans.
  *
  * \param[in] updateVelocities  If the velocities should be constrained.
- * \param[in] bCalcVir          If virial should be updated.
+ * \param[in] computeVirial     If virial should be updated.
  *
- * \retrun                      Pointer to CUDA kernel
+ * \return                      Pointer to CUDA kernel
  */
 inline auto getSettleKernelPtr(const bool updateVelocities, const bool computeVirial)
 {

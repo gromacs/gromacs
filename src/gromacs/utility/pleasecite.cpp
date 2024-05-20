@@ -590,6 +590,13 @@ void please_cite(FILE* fp, const char* key)
           42,
           2023,
           "477-489" },
+        { "Gorelov2024",
+          "S. Gorelov, A. Titov, O. Tolicheva, A. Konevega, A. Shvetsov",
+          "DSSP in GROMACS: Tool for Defining Secondary Structures of Proteins in Trajectories",
+          "Journal of Chemical Information and Modeling",
+          0,
+          2024,
+          "0" },
     };
 #define NSTR static_cast<int>(asize(citedb))
 

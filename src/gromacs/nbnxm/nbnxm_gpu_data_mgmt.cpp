@@ -717,6 +717,9 @@ void gpu_init_atomdata(NbnxmGpu* nb, const nbnxn_atomdata_t* nbat)
         /* free up first if the arrays have already been initialized */
         if (atdat->numAtomsAlloc != -1)
         {
+            // Wait for the force-buffer clearing from the previous step
+            localStream.synchronize();
+
             freeDeviceBuffer(&atdat->f);
             freeDeviceBuffer(&atdat->xq);
             if (useLjCombRule(nb->nbparam->vdwType))

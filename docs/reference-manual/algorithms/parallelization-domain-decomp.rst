@@ -40,7 +40,7 @@ partitioning can be an atom, or a charge group with the (deprecated)
 group cut-off scheme or an update group. An update group is a group
 of atoms that has dependencies during update, which occurs when using
 constraints and/or virtual sites. Thus different update groups can be
-updated independenly. Currently update groups can only be used with at most
+updated independently. Currently update groups can only be used with at most
 two sequential constraints, which is the case when only constraining
 bonds involving hydrogen atoms. The advantages of update groups are that
 no communication is required in the update and that this allows updating part

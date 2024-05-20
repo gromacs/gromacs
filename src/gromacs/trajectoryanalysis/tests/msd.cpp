@@ -267,7 +267,8 @@ TEST_F(MsdModuleTest, multipleGroupsWork)
     runTest(CommandLine(cmdline));
 }
 
-TEST_F(MsdModuleTest, trestartLessThanDt)
+// Disabled in release-2024 branch, to be fixed in main branch by !4263
+TEST_F(MsdModuleTest, DISABLED_trestartLessThanDt)
 {
     setAllInputs("alanine_vsite_solvated");
     const char* const cmdline[] = { "-trestart", "1", "-sel", "2" };

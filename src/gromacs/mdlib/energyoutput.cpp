@@ -785,7 +785,7 @@ FILE* open_dhdl(const char* filename, const t_inputrec* ir, const gmx_output_env
 
     if (fep->n_lambda > 0)
     {
-        /* g_bar has to determine the lambda values used in this simulation
+        /* gmx bar has to determine the lambda values used in this simulation
          * from this xvg legend.
          */
 

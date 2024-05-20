@@ -482,7 +482,7 @@ t_mde_delta_h_coll::t_mde_delta_h_coll(const t_inputrec& inputrec)
 
         /* now initialize them */
         /* the order, for now, must match that of the dhdl.xvg file because of
-           how g_energy -odh is implemented */
+           how gmx energy -odh is implemented */
         n = 0;
         if (bExpanded)
         {

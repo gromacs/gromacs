@@ -604,7 +604,7 @@ int gmx_potential(int argc, char* argv[])
     int         ncenter;      /* size of centering group    */
     int**       index;        /* indices for all groups     */
     t_filenm    fnm[] = {
-        /* files for g_order       */
+        /* files for gmx order       */
         { efTRX, "-f", nullptr, ffREAD },      /* trajectory file             */
         { efNDX, nullptr, nullptr, ffREAD },   /* index file          */
         { efTPR, nullptr, nullptr, ffREAD },   /* topology file               */

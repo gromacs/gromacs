@@ -876,8 +876,8 @@ void init_forcerec(FILE*                            fplog,
 
     if (simulationWork.useMts)
     {
-        GMX_ASSERT(gmx::checkMtsRequirements(inputrec).empty(),
-                   "All MTS requirements should be met here");
+        GMX_RELEASE_ASSERT(gmx::checkMtsRequirements(inputrec).empty(),
+                           "All MTS requirements should be met here");
     }
 
     const bool haveDirectVirialContributionsFast =

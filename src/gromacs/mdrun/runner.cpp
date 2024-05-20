@@ -352,7 +352,8 @@ static DevelopmentFeatureFlags manageDevelopmentFeatures(const gmx::MDLogger& md
                     .appendText(
                             "GMX_ENABLE_NVSHMEM environment variable is detected, "
                             "but GROMACS was built without NVSHMEM support. "
-                            "NVSHMEM will be disabled.");
+                            "Direct use of NVSHMEM will be disabled. "
+                            "NVSHMEM may still be used indirectly if cuFFTMp is enabled. ");
         }
     }
 
@@ -1426,6 +1427,7 @@ int Mdrunner::mdrunner()
         updateGroups            = makeUpdateGroups(mdlog,
                                         std::move(updateGroupingsPerMoleculeType),
                                         maxUpdateGroupRadius,
+                                        doRerun,
                                         useDomainDecomposition,
                                         systemHasConstraintsOrVsites(mtop),
                                         cutoffMargin);

@@ -58,14 +58,6 @@ class colvarvalue;
 /// child objects
 class colvarmodule {
 
-private:
-
-  /// Impossible to initialize the main object without arguments
-  colvarmodule();
-
-  /// Integer representing the version string (allows comparisons)
-  int version_int;
-
 public:
 
   /// Get the version string (YYYY-MM-DD format)
@@ -79,6 +71,22 @@ public:
   {
     return version_int;
   }
+
+  /// Get the patch version number (non-zero in patch releases of other packages)
+  int patch_version_number() const
+  {
+    return patch_version_int;
+  }
+
+private:
+
+  /// Integer representing the version string (allows comparisons)
+  int version_int = 0;
+
+  /// Patch version number (non-zero in patch releases of other packages)
+  int patch_version_int = 2;
+
+public:
 
   friend class colvarproxy;
 
@@ -334,6 +342,13 @@ public:
   /// Constructor
   /// \param Pointer to instance of the proxy class (communicate with engine)
   colvarmodule(colvarproxy *proxy);
+
+private:
+
+  /// Cannot initialize the main object without a proxy
+  colvarmodule();
+
+public:
 
   /// Destructor
   ~colvarmodule();

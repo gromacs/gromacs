@@ -1,7 +1,7 @@
 GROMACS 2023.5 release notes
 ----------------------------
 
-This version was released on TODO, 2024. These release notes
+This version was released on May 3rd, 2024. These release notes
 document the changes that have taken place in |Gromacs| since the
 previous 2023.4 version, to fix known issues. It also incorporates all
 fixes made in version 2022.6 and earlier, which you can find described
@@ -20,7 +20,7 @@ The Verlet buffer estimate could be wrong with initial coordinates out of the bo
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
 Due to incorrect periodic boundary treatment in the density estimate for
-the Verlet buffer calcalution, the Verlet buffer could be off when many atoms
+the Verlet buffer calculation, the Verlet buffer could be off when many atoms
 were outside the rectangular unit cell. In nearly all cases this would lead
 to a slightly too large buffer and almost never to a too short buffer.
 
@@ -69,9 +69,34 @@ Fix LJ combination rules mixup in nonbonded-benchmark tool
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
 The gmx nonbonded-benchmark tool would use geometric LH combination rules instead
-of Lortenz-Berthelot and Lortenz-Berthelot instead of no combination rules.
+of Lorentz-Berthelot and Lorentz-Berthelot instead of no combination rules.
 
 :issue:`4963`
+
+Fix ``make_ndx`` behavior with splitres
+"""""""""""""""""""""""""""""""""""""""
+
+Since |Gromacs| 2023, ``gmx make_ndx`` would only output the first atom
+in each residue when using ``splitres`` command. Now the old behavior
+is restored, where all atoms in the residue are printed.
+
+:issue:`5049`
+
+Fix invalid memory access in ``gmx make_ndx`` when using splitres/splitat
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Could manifest in application crashes or garbled output data (for example,
+the output group names had empty prefix).
+
+:issue:`5050`
+
+Fixed references to old tool names in some commands
+"""""""""""""""""""""""""""""""""""""""""""""""""""
+
+There were references to old tool names, e.g., g_energy and g_bar in some
+commands.
+
+:issue:`5074`
 
 Fixes that affect portability
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

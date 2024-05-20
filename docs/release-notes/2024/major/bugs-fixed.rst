@@ -35,7 +35,7 @@ Limit pressure deviations due to missing Lennard-Jones interactions
 
 For systems dominated by Lennard-Jones interactions, i.e. with no or very weak
 electrostatics, e.g. most coarse-grained systems, the Verlet buffer was often
-set such that missing Lennard-Jones interations could lead to the pressure
+set such that missing Lennard-Jones interactions could lead to the pressure
 increasing by more than 1 bar over the lifetime of the pair list. Now an mdp
 parameter has been added to limit the deviation in the average pressure.
 The default tolerance is 0.5 bar.

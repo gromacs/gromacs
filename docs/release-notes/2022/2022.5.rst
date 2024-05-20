@@ -47,6 +47,17 @@ so it is unlikely that incorrect results would go unnoticed.
 
 :issue:`4705`
 
+Fix mdrun -rerun energy output with update groups
+"""""""""""""""""""""""""""""""""""""""""""""""""
+
+In the, unlikely, case of using mdrun -rerun with domain decomposition
+or GPU on a trajectory produced without domain decompostion and GPU,
+the reported energies could be incorrect when update groups were used.
+Update groups are typically used with biomolecular force fields with
+h-bonds constrained only and domain decomposition on GPU.
+
+:issue:`5067`
+
 Fix checkpointing of expanded ensemble simulations with modular simulator
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
