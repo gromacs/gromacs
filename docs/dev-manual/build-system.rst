@@ -397,8 +397,11 @@ Variables affecting the ``all`` target
 .. cmake:: GMX_DEVELOPER_BUILD
 
    If set ``ON``, the ``all`` target will include also the test binaries using
-   Google Test (if :cmake:`GMX_BUILD_UNITTESTS` is ``ON``).
-   Also, :cmake:`GMX_COMPILER_WARNINGS` is always enabled.
+   Google Test (if :cmake:`GMX_BUILD_UNITTESTS` is ``ON``), while ``webpage``
+   target will also include Reference manual in PDF format.
+   Also, :cmake:`GMX_COMPILER_WARNINGS` and
+   `CMAKE_EXPORT_COMPILE_COMMANDS <https://cmake.org/cmake/help/latest/variable/CMAKE_EXPORT_COMPILE_COMMANDS.html>`__
+   are always enabled.
    In the future, other developer convenience features (as well as features
    inconvenient for a general user) can be added to the set controlled by this
    variable.

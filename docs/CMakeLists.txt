@@ -87,10 +87,9 @@ endif()
 
 add_subdirectory(doxygen)
 
-# TODO: Consider whether this could just be replaced by using
-# GMX_DEVELOPER_BUILD to control this as well.
 option(GMX_BUILD_MANUAL "Whether to try to configure to build the PDF manual" OFF)
 mark_as_advanced(GMX_BUILD_MANUAL)
+gmx_add_cache_dependency(GMX_BUILD_MANUAL BOOL GMX_DEVELOPER_BUILD ON)
 
 set(MANUAL_BUILD_IS_POSSIBLE ON)
 set(MANUAL_BUILD_NOT_POSSIBLE_REASON)

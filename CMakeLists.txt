@@ -397,9 +397,14 @@ option(GMX_BUILD_FOR_COVERAGE
 mark_as_advanced(GMX_BUILD_FOR_COVERAGE)
 
 option(GMX_DEVELOPER_BUILD
-    "Enable Developer convenience features: always build unit-tests"
+    "Enable Developer convenience features: always build unit-tests, manual also in PDF, enable warnings, and export compile commands"
     OFF)
 mark_as_advanced(GMX_DEVELOPER_BUILD)
+
+if(GMX_DEVELOPER_BUILD)
+    set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+    mark_as_advanced(CMAKE_EXPORT_COMPILE_COMMANDS)
+endif()
 
 gmx_set_boolean(GMX_COMPILER_WARNINGS_DEFAULT "NOT SOURCE_IS_SOURCE_DISTRIBUTION")
 option(GMX_COMPILER_WARNINGS
