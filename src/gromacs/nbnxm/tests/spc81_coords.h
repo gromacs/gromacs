@@ -34,9 +34,9 @@
 
 /*! \internal \file
  * \brief
- * This file defines a box with 27 SPC/E water molecules, 81 atoms, for use in tests
+ * This file defines a box with 81 SPC/E water molecules, 243 atoms, for use in tests
  *
- * The 27 water molecules are taken from the 216 SPC liquid system. This results
+ * The 81 water molecules are taken from the 216 SPC liquid system. This results
  * in a more inhomogeneous system and also one that makes the tests smaller.
  *
  * \author Berk Hess <hess@kth.se>
@@ -47,11 +47,11 @@
 
 #include "gromacs/math/vec.h"
 
-//! A cubic simulation box matching spc27Coordinates defined below
-static const matrix spc27Box = { { 1.86206, 0.0, 0.0 }, { 0.0, 1.86206, 0.0 }, { 0.0, 0.0, 1.86206 } };
+//! A cubic simulation box matching spc81Coordinates defined below
+static const matrix spc81Box = { { 1.86206, 0.0, 0.0 }, { 0.0, 1.86206, 0.0 }, { 0.0, 0.0, 1.86206 } };
 
-//! Coordinates of 27 SPC molecules taken from the standard 216 SPC system
-static const std::vector<gmx::RVec> spc27Coordinates = {
+//! Coordinates of 81 SPC molecules taken from the standard 216 SPC system
+static const std::vector<gmx::RVec> spc81Coordinates = {
     { 0.005, 0.600, 0.244 }, { -0.017, 0.690, 0.270 }, { 0.051, 0.610, 0.161 },
     { 0.155, 0.341, 0.735 }, { 0.140, 0.284, 0.660 },  { 0.081, 0.402, 0.734 },
     { 1.853, 0.500, 0.554 }, { 1.788, 0.505, 0.484 },  { 1.809, 0.533, 0.632 },
