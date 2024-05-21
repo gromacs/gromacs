@@ -284,13 +284,17 @@ struct HoldsHostVector
 
 TYPED_TEST(HostAllocatorTestNoMemCopyable, CopyConstructionOfStructHoldingAHostVectorDoesNotCopyTheAllocator)
 {
-    using Holder = HoldsHostVector<typename TestFixture::VectorType::value_type>;
-    Holder c{ PinningPolicy::PinnedIfSupported };
-    EXPECT_EQ(c.v.get_allocator().pinningPolicy(), PinningPolicy::PinnedIfSupported);
-    std::vector<Holder> v(2, c);
-    const auto          defaultPolicy = PinningPolicy::CannotBePinned;
-    EXPECT_EQ(v[0].v.get_allocator().pinningPolicy(), defaultPolicy);
-    EXPECT_EQ(v[1].v.get_allocator().pinningPolicy(), defaultPolicy);
+    for (const auto& testDevice : getTestHardwareEnvironment()->getTestDeviceList())
+    {
+        testDevice->deviceContext().activate();
+        using Holder = HoldsHostVector<typename TestFixture::VectorType::value_type>;
+        Holder c{ PinningPolicy::PinnedIfSupported };
+        EXPECT_EQ(c.v.get_allocator().pinningPolicy(), PinningPolicy::PinnedIfSupported);
+        std::vector<Holder> v(2, c);
+        const auto          defaultPolicy = PinningPolicy::CannotBePinned;
+        EXPECT_EQ(v[0].v.get_allocator().pinningPolicy(), defaultPolicy);
+        EXPECT_EQ(v[1].v.get_allocator().pinningPolicy(), defaultPolicy);
+    }
 }
 
 TYPED_TEST(HostAllocatorTestNoMem, Swap)
