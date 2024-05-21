@@ -162,7 +162,7 @@ function(gmx_hip_add_library TARGET)
     gmx_hip_check_user_compile_flags("${HIP_${TARGET}_CXXFLAGS_${CMAKE_BUILD_TYPE}}")
 
     add_library(${TARGET} ${ARGN})
-    set_property(TARGET ${TARGET} PROPERTY HIP_STANDARD 17)
+    set_property(TARGET ${TARGET} PROPERTY HIP_STANDARD ${CMAKE_CXX_STANDARD})
     set_target_properties(${TARGET} PROPERTIES HIP_ARCHITECTURES OFF)
     target_compile_options(${TARGET} PRIVATE $<$<COMPILE_LANGUAGE:HIP>:${GMX_HIP_HIPCC_FLAGS}>)
 

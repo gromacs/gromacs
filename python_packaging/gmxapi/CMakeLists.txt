@@ -58,7 +58,12 @@ if (CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR)
     endif()
 endif()
 
-set(CMAKE_CXX_STANDARD 17)
+if(NOT CMAKE_CXX_STANDARD)
+    set(CMAKE_CXX_STANDARD 17)
+endif()
+if(CMAKE_CXX_STANDARD LESS 17)
+    message(FATAL_ERROR "C++17 or newer is required")
+endif()
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # Only interpret if() arguments as variables or keywords when unquoted.

@@ -35,7 +35,7 @@ if(GMX_DOUBLE)
     message(FATAL_ERROR "HIP acceleration is not available in double precision")
 endif()
 
-set(CMAKE_HIP_STANDARD 17)
+set(CMAKE_HIP_STANDARD ${CMAKE_CXX_STANDARD})
 set(CMAKE_HIP_STANDARD_REQUIRED ON)
 
 # Using the required version directly doesn't work due to the way the versioning is implemented in HIP

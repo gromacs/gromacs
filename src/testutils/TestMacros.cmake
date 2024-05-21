@@ -180,7 +180,7 @@ function (gmx_add_gtest_executable EXENAME)
                     ${ARG_GPU_CPP_SOURCE_FILES})
 
             set_target_properties(${EXENAME}  PROPERTIES HIP_ARCHITECTURES OFF)
-            set_property(TARGET ${EXENAME} PROPERTY HIP_STANDARD 17)
+            set_property(TARGET ${EXENAME} PROPERTY HIP_STANDARD ${CMAKE_CXX_STANDARD})
             target_compile_options(${EXENAME} PRIVATE $<$<COMPILE_LANGUAGE:HIP>:${GMX_HIP_HIPCC_FLAGS}>)
         else()
             add_executable(${EXENAME} ${UNITTEST_TARGET_OPTIONS}

@@ -11,7 +11,12 @@ project(sample_restraint)
 # versions of GROMACS. If building from the command line, you can specify a Python executable with the PYTHON_EXECUTABLE
 # variable. For instance, to make sure you are building for your default Python, cmake -DPYTHON_EXECUTABLE=`which python`.
 
-set(CMAKE_CXX_STANDARD 17)
+if(NOT CMAKE_CXX_STANDARD)
+  set(CMAKE_CXX_STANDARD 17)
+endif()
+if(CMAKE_CXX_STANDARD LESS 17)
+  message(FATAL_ERROR "C++17 or newer is required")
+endif()
 set(CMAKE_CXX_VISIBILITY_PRESET hidden)
 
 # Allow gmxapi_ROOT hint (available with CMake 3.12).

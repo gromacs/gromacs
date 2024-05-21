@@ -41,7 +41,7 @@ if(GMX_DOUBLE)
     message(FATAL_ERROR "CUDA acceleration is not available in double precision")
 endif()
 
-set(CMAKE_CUDA_STANDARD 17)
+set(CMAKE_CUDA_STANDARD ${CMAKE_CXX_STANDARD})
 set(CMAKE_CUDA_STANDARD_REQUIRED ON)
 
 find_package(CUDAToolkit ${REQUIRED_CUDA_VERSION} REQUIRED)

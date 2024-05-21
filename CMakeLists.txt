@@ -77,7 +77,12 @@ endif()
 # release that is going to be made from this branch.
 project(Gromacs VERSION 2025.0)
 
-set(CMAKE_CXX_STANDARD 17)
+if(NOT CMAKE_CXX_STANDARD)
+    set(CMAKE_CXX_STANDARD 17)
+endif()
+if(CMAKE_CXX_STANDARD LESS 17)
+    message(FATAL_ERROR "C++17 or newer is required")
+endif()
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
