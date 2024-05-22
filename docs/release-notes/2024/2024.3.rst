@@ -19,6 +19,13 @@ Fixes where mdrun could behave incorrectly
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
 
+Permit ``gmx tune_pme`` to understand ``md.log`` files
+""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+The format of ``md.log`` files changed in 2024 which broke the ability of
+``gmx tune_pme`` to understand how previous runs worked by parsing that
+file. Now ``gmx tune_pme`` understands better.
+
 Avoid crash of convert-tpr on velocity-less tpr files 
 """""""""""""""""""""""""""""""""""""""""""""""""""""""
 
