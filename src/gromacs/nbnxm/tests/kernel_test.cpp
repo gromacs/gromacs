@@ -52,7 +52,6 @@
 
 #include "gmxpre.h"
 
-#include <algorithm>
 #include <numeric>
 #include <vector>
 
@@ -83,7 +82,7 @@
 #include "testutils/testasserts.h"
 #include "testutils/testinit.h"
 
-#include "spc81_coords.h"
+#include "testsystem.h"
 
 namespace gmx
 {
@@ -143,153 +142,6 @@ struct KernelOptions
     //! How to handle energy computations
     EnergyHandling energyHandling = EnergyHandling::NoEnergies;
 };
-
-//! Description of the system used for benchmarking.
-struct TestSystem
-{
-    /*! \brief Constructor
-     *
-     * Generates test system of a cubic box partially filled with 81 water molecules.
-     * It has parts with uncharged molecules, normal SPC/E and part with full LJ.
-     *
-     * It assigns energy groups in round-robin style based on the largest number of
-     * energy groups that might be being tested. This is not general enough to work
-     * if we would extend the number of energy-group cases that we test.
-     */
-    TestSystem(LJCombinationRule ljCombinationRule);
-
-    //! Number of different atom types in test system.
-    int numAtomTypes;
-    //! Storage for parameters for short range interactions.
-    std::vector<real> nonbondedParameters;
-    //! Storage for atom type parameters.
-    std::vector<int> atomTypes;
-    //! Storage for atom partial charges.
-    std::vector<real> charges;
-    //! Atom info
-    std::vector<int64_t> atomInfo;
-    //! Information about exclusions.
-    ListOfLists<int> excls;
-    //! Storage for atom positions.
-    std::vector<gmx::RVec> coordinates;
-    //! System simulation box.
-    matrix box;
-};
-
-// A 3-site water model
-//! The number of atoms in a molecule
-constexpr int numAtomsInMolecule = 3;
-//! The atom type of the oxygen atom
-constexpr int typeO = 0;
-//! The atom type of a hydrogen atom with LJ
-constexpr int typeHWithLJ = 1;
-//! The atom type of a hydrogen atom without LJ
-constexpr int typeHWithoutLJ = 2;
-//! The charge of the oxygen atom
-constexpr real chargeO = -0.8476;
-//! The charge of the hydrogen atom
-constexpr real chargeH = 0.4238;
-//! The LJ sigma parameter of the Oxygen atom
-constexpr real sigmaO = 0.316557;
-//! The LJ epsilon parameter of the Oxygen atom
-constexpr real epsilonO = 0.650194;
-//! The LJ sigma parameter of Hydrogen atoms with LJ
-constexpr real sigmaH = 0.04;
-//! The LJ epsilon parameter Hydrogen atoms with LJ
-constexpr real epsilonH = 0.192464;
-
-//! Generate a C6, C12 pair using the combination rule
-std::pair<real, real> combineLJParams(const real              sigma0,
-                                      const real              epsilon0,
-                                      const real              sigma1,
-                                      const real              epsilon1,
-                                      const LJCombinationRule ljCombinationRule)
-{
-    real sigma6;
-    if (ljCombinationRule == LJCombinationRule::Geometric)
-    {
-        sigma6 = std::pow(sigma0 * sigma1, 3);
-    }
-    else
-    {
-        sigma6 = std::pow(0.5 * (sigma0 + sigma1), 6);
-    }
-    real c6  = 4 * sqrt(epsilon0 * epsilon1) * sigma6;
-    real c12 = c6 * sigma6;
-
-    return { c6, c12 };
-}
-
-TestSystem::TestSystem(const LJCombinationRule ljCombinationRule)
-{
-    numAtomTypes = 3;
-    nonbondedParameters.resize(numAtomTypes * numAtomTypes * 2, 0);
-    std::tie(nonbondedParameters[0], nonbondedParameters[1]) =
-            combineLJParams(sigmaO, epsilonO, sigmaO, epsilonO, ljCombinationRule);
-    std::tie(nonbondedParameters[8], nonbondedParameters[9]) =
-            combineLJParams(sigmaH, epsilonH, sigmaH, epsilonH, ljCombinationRule);
-    std::tie(nonbondedParameters[2], nonbondedParameters[3]) =
-            combineLJParams(sigmaO, epsilonO, sigmaH, epsilonH, ljCombinationRule);
-    nonbondedParameters[6] = nonbondedParameters[2];
-    nonbondedParameters[7] = nonbondedParameters[3];
-
-    coordinates = spc81Coordinates;
-    copy_mat(spc81Box, box);
-    put_atoms_in_box(PbcType::Xyz, box, coordinates);
-
-    const int numAtoms = coordinates.size();
-    GMX_RELEASE_ASSERT(numAtoms % (3 * numAtomsInMolecule) == 0,
-                       "Coordinates should be a multiple of 3 x whole water molecules");
-
-    atomTypes.resize(numAtoms);
-    charges.resize(numAtoms);
-    atomInfo.resize(numAtoms);
-
-    const int maxNumEnergyGroups =
-            *std::max_element(sc_numEnergyGroups.begin(), sc_numEnergyGroups.end());
-
-    for (int a = 0; a < numAtoms; a++)
-    {
-        // The first third of the atoms has no charge to cover all code paths
-        const bool hasCharge = (a >= numAtoms / 3);
-
-        if (a % numAtomsInMolecule == 0)
-        {
-            // Oxgygen
-            atomTypes[a] = typeO;
-            charges[a]   = hasCharge ? chargeO : 0;
-            atomInfo[a] |= gmx::sc_atomInfo_HasVdw;
-        }
-        else
-        {
-            // Hydrogen
-            // Make the last third of molecules have LJ on all atoms
-            if (a >= numAtoms * 2 / 3)
-            {
-                atomTypes[a] = typeHWithLJ;
-                atomInfo[a] |= gmx::sc_atomInfo_HasVdw;
-            }
-            else
-            {
-                atomTypes[a] = typeHWithoutLJ;
-            }
-            charges[a] = hasCharge ? chargeH : 0;
-        }
-        if (hasCharge)
-        {
-            atomInfo[a] |= gmx::sc_atomInfo_HasCharge;
-        }
-
-        // Set the energy group from 0 to n-1
-        atomInfo[a] |= (a / (numAtoms / maxNumEnergyGroups));
-
-        // Generate the exclusions like for water molecules
-        excls.pushBackListOfSize(numAtomsInMolecule);
-        gmx::ArrayRef<int> exclusionsForAtom   = excls.back();
-        const int          firstAtomInMolecule = a - (a % numAtomsInMolecule);
-        std::iota(exclusionsForAtom.begin(), exclusionsForAtom.end(), firstAtomInMolecule);
-    }
-}
 
 //! Returns the enum value for initializing the LJ PME-grid combination rule for nbxnm_atomdata_t
 LJCombinationRule chooseLJPmeCombinationRule(const KernelOptions& options)
@@ -652,6 +504,10 @@ TEST_P(NbnxmKernelTest, WorksWith)
             GTEST_SKIP() << "There are no combination rule versions of the plain-C kernel";
         }
 
+        GMX_ASSERT(*std::max_element(sc_numEnergyGroups.begin(), sc_numEnergyGroups.end())
+                           == TestSystem::sc_numEnergyGroups,
+                   "The test system should have a sufficient number of energy groups");
+
         // TODO rename this in a follow-up change to conform to style
         TestSystem system_(parameters_.vdwKernelType == vdwktLJCUT_COMBGEOM
                                    ? LJCombinationRule::Geometric
@@ -686,7 +542,7 @@ TEST_P(NbnxmKernelTest, WorksWith)
                 ewaldRelError = GMX_DOUBLE ? 1e-11 : 1e-6;
             }
             const real maxEwaldPairForceError =
-                    ic.epsfac * ewaldRelError * gmx::square(chargeO / ic.rcoulomb);
+                    ic.epsfac * ewaldRelError * gmx::square(system_.maxCharge() / ic.rcoulomb);
             // We assume that the total force error is at max 20 times that of one pair
             tolerance = std::max(tolerance, 20 * maxEwaldPairForceError);
         }
