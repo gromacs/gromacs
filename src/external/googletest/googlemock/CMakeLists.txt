@@ -72,7 +72,7 @@ set(gmock_build_include_dirs
   "${gtest_SOURCE_DIR}/include"
   # This directory is needed to build directly from Google Test sources.
   "${gtest_SOURCE_DIR}")
-include_directories(${gmock_build_include_dirs})
+include_directories(BEFORE ${gmock_build_include_dirs})
 
 ########################################################################
 #

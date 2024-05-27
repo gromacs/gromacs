@@ -117,6 +117,15 @@ If there were no files provided with ``grompp -qmi`` option, module used ``topol
 Fixes that affect portability
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Fix build when GoogleTest is installed system-wide
+""""""""""""""""""""""""""""""""""""""""""""""""""
+
+In some cases (e.g., on FreeBSD), |Gromacs| build system can mix up
+different versions of GoogleTest leading to compilation errors.
+Now we always prefer the bundled version.
+
+:issue:`5046`
+
 Miscellaneous
 ^^^^^^^^^^^^^
 
