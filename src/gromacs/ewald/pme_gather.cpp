@@ -184,11 +184,11 @@ struct do_fspline
 #ifdef PME_SIMD4_SPREAD_GATHER
     /* Load order elements from unaligned memory into two 4-wide SIMD */
     template<int order>
-    static inline void loadOrderU(const real* data,
-                                  std::integral_constant<int, order> /*unused*/,
-                                  int        offset,
-                                  Simd4Real* S0,
-                                  Simd4Real* S1)
+    static void loadOrderU(const real* data,
+                           std::integral_constant<int, order> /*unused*/,
+                           int        offset,
+                           Simd4Real* S0,
+                           Simd4Real* S1)
     {
 #    ifdef PME_SIMD4_UNALIGNED
         *S0 = load4U(data - offset);
