@@ -920,8 +920,7 @@ real water_pol(int             nbonds,
 }
 
 template<BondedKernelFlavor flavor>
-static real
-do_1_thole(const rvec xi, const rvec xj, rvec fi, rvec fj, const t_pbc* pbc, real qq, rvec fshift[], real afac)
+real do_1_thole(const rvec xi, const rvec xj, rvec fi, rvec fj, const t_pbc* pbc, real qq, rvec fshift[], real afac)
 {
     rvec r12;
     real r12sq, r12_1, r12bar, v0, v1, fscal, ebar, fff;

@@ -66,7 +66,7 @@ enum class CheckpointVersion
 constexpr auto c_currentVersion = CheckpointVersion(int(CheckpointVersion::Count) - 1);
 
 template<CheckpointDataOperation operation>
-static void doCheckpoint(CheckpointData<operation> checkpointData, AwhPointStateHistory* awhPointStateHistory)
+void doCheckpoint(CheckpointData<operation> checkpointData, AwhPointStateHistory* awhPointStateHistory)
 {
     checkpointData.scalar("bias", &awhPointStateHistory->bias);
     checkpointData.scalar("free_energy", &awhPointStateHistory->free_energy);
@@ -83,7 +83,7 @@ static void doCheckpoint(CheckpointData<operation> checkpointData, AwhPointState
 }
 
 template<CheckpointDataOperation operation>
-static void doCheckpoint(CheckpointData<operation> checkpointData, AwhBiasStateHistory* awhBiasStateHistory)
+void doCheckpoint(CheckpointData<operation> checkpointData, AwhBiasStateHistory* awhBiasStateHistory)
 {
     checkpointData.scalar("umbrellaGridpoint", &awhBiasStateHistory->umbrellaGridpoint);
     checkpointData.scalar("origin_index_updatelist", &awhBiasStateHistory->origin_index_updatelist);
@@ -118,7 +118,7 @@ void doCheckpoint(CheckpointData<operation>    checkpointData,
 }
 
 template<CheckpointDataOperation operation>
-static void doCheckpoint(CheckpointData<operation> checkpointData, CorrelationGridHistory* correlationGridHistory)
+void doCheckpoint(CheckpointData<operation> checkpointData, CorrelationGridHistory* correlationGridHistory)
 {
     checkpointData.scalar("numCorrelationTensors", &correlationGridHistory->numCorrelationTensors);
     checkpointData.scalar("tensorSize", &correlationGridHistory->tensorSize);
