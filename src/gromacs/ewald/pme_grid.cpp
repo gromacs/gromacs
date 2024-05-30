@@ -626,8 +626,9 @@ static void pmegrid_init(pmegrid_t*           grid,
 #    endif
         )
         {
-            GMX_RELEASE_ASSERT(size_t(reinterpret_cast<void*>(memoryView.data())) % (4 * sizeof(real)) == 0,
-                               "Start of memoryView should be SIMD4 aligned");
+            GMX_RELEASE_ASSERT(
+                    reinterpret_cast<std::uintptr_t>(memoryView.data()) % (4 * sizeof(real)) == 0,
+                    "Start of memoryView should be SIMD4 aligned");
         }
 #endif
 
