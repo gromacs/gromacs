@@ -121,8 +121,6 @@ static DeviceDetectionResult detectAllDeviceInformation(const PhysicalNodeCommun
         return deviceDetectionResult;
     }
 
-    std::string errorMessage;
-
     bool isMainRankOfPhysicalNode = true;
 #if GMX_LIB_MPI
     isMainRankOfPhysicalNode = (physicalNodeComm.rank_ == 0);

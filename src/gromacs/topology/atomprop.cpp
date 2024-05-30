@@ -381,7 +381,7 @@ bool AtomProperties::setAtomProperty(int                eprop,
                                      const std::string& atomName,
                                      real*              value)
 {
-    std::string tmpAtomName, tmpResidueName;
+    std::string tmpAtomName;
     bool        bExact = false;
 
     if (setProperties(prop(eprop), impl_->residueTypeMap, eprop, impl_->bWarned))
