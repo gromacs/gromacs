@@ -77,7 +77,7 @@ std::vector<RVec> ColvarsPreProcessor::getColvarsCoords()
 {
 
     std::vector<RVec> colvarsCoords;
-
+    colvarsCoords.reserve(atoms_ids.size());
     for (const auto& atom_id : atoms_ids)
     {
         colvarsCoords.push_back(x_[atom_id]);

@@ -302,6 +302,7 @@ Awh::Awh(FILE*                 fplog,
     if (biasSharing_ && MAIN(commRecord_))
     {
         std::vector<size_t> pointSize;
+        pointSize.reserve(biasCoupledToSystem_.size());
         for (auto const& biasCts : biasCoupledToSystem_)
         {
             pointSize.push_back(biasCts.bias_.state().points().size());

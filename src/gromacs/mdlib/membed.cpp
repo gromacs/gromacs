@@ -1095,6 +1095,7 @@ gmx_membed_t* init_membed(FILE*          fplog,
         }
         groups = &(mtop->groups);
         std::vector<std::string> gnames;
+        gnames.reserve(groups->groupNames.size());
         for (const auto& groupName : groups->groupNames)
         {
             gnames.emplace_back(*groupName);
