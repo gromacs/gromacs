@@ -2676,7 +2676,7 @@ int pdb2gmx::run()
                 suffix.append(formatString("%d", nid_used + 1));
             }
 
-            if (suffix.length() > 0)
+            if (!suffix.empty())
             {
                 molname.append(restype);
                 molname.append(suffix);
