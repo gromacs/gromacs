@@ -236,21 +236,21 @@ void Update::update_coords(const t_inputrec&                 inputRecord,
                            const t_commrec*                                 cr,
                            const bool                                       haveConstraints)
 {
-    return impl_->update_coords(inputRecord,
-                                step,
-                                homenr,
-                                havePartiallyFrozenAtoms,
-                                ptype,
-                                invMass,
-                                invMassPerDim,
-                                state,
-                                f,
-                                fcdata,
-                                ekind,
-                                parrinelloRahmanM,
-                                updatePart,
-                                cr,
-                                haveConstraints);
+    impl_->update_coords(inputRecord,
+                         step,
+                         homenr,
+                         havePartiallyFrozenAtoms,
+                         ptype,
+                         invMass,
+                         invMassPerDim,
+                         state,
+                         f,
+                         fcdata,
+                         ekind,
+                         parrinelloRahmanM,
+                         updatePart,
+                         cr,
+                         haveConstraints);
 }
 
 void Update::finish_update(const t_inputrec& inputRecord,
@@ -260,7 +260,7 @@ void Update::finish_update(const t_inputrec& inputRecord,
                            gmx_wallcycle*    wcycle,
                            const bool        haveConstraints)
 {
-    return impl_->finish_update(
+    impl_->finish_update(
             inputRecord, havePartiallyFrozenAtoms, homenr, impl_->cFREEZE_, state, wcycle, haveConstraints);
 }
 
@@ -278,7 +278,7 @@ void Update::update_sd_second_half(const t_inputrec&                 inputRecord
                                    bool                              do_log,
                                    bool                              do_ene)
 {
-    return impl_->update_sd_second_half(
+    impl_->update_sd_second_half(
             inputRecord, step, dvdlambda, homenr, ptype, invMass, state, cr, nrnb, wcycle, constr, do_log, do_ene);
 }
 
@@ -291,13 +291,13 @@ void Update::update_for_constraint_virial(const t_inputrec&              inputRe
                                           const gmx::ArrayRefWithPadding<const gmx::RVec>& f,
                                           const gmx_ekindata_t&                            ekind)
 {
-    return impl_->update_for_constraint_virial(
+    impl_->update_for_constraint_virial(
             inputRecord, homenr, havePartiallyFrozenAtoms, invmass, invMassPerDim, state, f, ekind);
 }
 
 void Update::update_temperature_constants(const t_inputrec& inputRecord, const gmx_ekindata_t& ekind)
 {
-    return impl_->update_temperature_constants(inputRecord, ekind);
+    impl_->update_temperature_constants(inputRecord, ekind);
 }
 
 /*! \brief Sets whether we store the updated velocities */
