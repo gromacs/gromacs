@@ -1099,7 +1099,7 @@ void EnergyOutput::addDataAtEnergyStep(bool                    bDoDHDL,
             fprintf(fp_dhdl_, "\n");
             /* and the binary free energy output */
         }
-        if (dhc_ && bDoDHDL)
+        if (dhc_)
         {
             int idhdl = 0;
             for (auto i : keysOf(fep->separate_dvdl))
