@@ -1192,25 +1192,14 @@ char** do_top(bool                                  bVerbose,
               WarningHandler*                       wi,
               const gmx::MDLogger&                  logger)
 {
-    /* Tmpfile might contain a long path */
-    const char* tmpfile;
-    char**      title;
-
-    if (topppfile)
-    {
-        tmpfile = topppfile;
-    }
-    else
-    {
-        tmpfile = nullptr;
-    }
+    char** title;
 
     if (bVerbose)
     {
         GMX_LOG(logger.info).asParagraph().appendTextFormatted("processing topology...");
     }
     title = read_topol(topfile,
-                       tmpfile,
+                       topppfile,
                        opts->define,
                        opts->include,
                        symtab,
