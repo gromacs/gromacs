@@ -619,7 +619,7 @@ is the deviation of the force. The factors :math:`\omega(\lambda|x(t))`,
 see :eq:`Eq %s <eqawhomega>`, reweight the samples.
 :math:`\eta_{\mu\nu}(\lambda)` is a friction
 tensor :ref:`186 <reflindahl2018>` and :ref:`144 <refsivak2012thermodynamic>`.
-The diffusion matrix, on the flattened landscape, is equal to $k_B T$ times
+The diffusion matrix, on the flattened landscape, is equal to :math:`k_B T` times
 the inverse of the friction metrix tensor:
 
 .. math:: \mathbf{D}(\lambda) = k_B T \mathbf{\eta}^{-1}(\lambda).
@@ -641,11 +641,11 @@ Limitations
 
 The only real limitation of the AWH implementation, apart from the not uncommon
 practical issue that the method might not converge sufficiently fast, is a limit
-on the maximum free energy difference. This limit is set to 700 $k_B T$, because
-$e^700$ is close to the maximum value that can be accurately represented by
-a double precision floating point value. For physical reaction coordinates this
-is not a limit in practice. But for alchemical coordinates this does limit
-the range of applications. For instance, hydration free-energies of divalent
+on the maximum free energy difference. This limit is set to :math:`700 k_B T`, because
+:math:`e^700` is close to the maximum value that can be accurately represented by
+a double-precision floating-point value. For physical reaction coordinates, this
+is not a limit in practice. This does limit the range of applications for
+alchemical coordinates. For instance, hydration free-energies of divalent
 cations with a pair of monovalent anions can exceed this limit. The limit can
 also be exceeded when decoupling large molecules from solvent, but this often
 coincides with the limit where the sampling becomes problematic.
