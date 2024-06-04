@@ -1249,13 +1249,16 @@ int gmx_anaeig(int argc, char* argv[])
 
     if (bVec2)
     {
-        if (!Vec2File)
+        int natoms2;
+        if (Vec2File)
+        {
+            read_eigenvectors(
+                    Vec2File, &natoms2, &bFit2, &xref2, &bDMR2, &xav2, &bDMA2, &nvec2, &eignr2, &eigvec2, &eigval2);
+        }
+        else
         {
             gmx_fatal(FARGS, "Need a second eigenvector file to do this analysis.");
         }
-        int natoms2;
-        read_eigenvectors(
-                Vec2File, &natoms2, &bFit2, &xref2, &bDMR2, &xav2, &bDMA2, &nvec2, &eignr2, &eigvec2, &eigval2);
 
         neig2 = std::min(nvec2, DIM * natoms2);
         if (neig2 != neig1)
