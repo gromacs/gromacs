@@ -403,13 +403,15 @@ MoleculeBlockIndices getMoleculeBlockIndicesByIndex(h5mdio::GmxH5mdIo* file, siz
  * \param[in] index    The selected atoms to include. If empty, use all atoms in the topology.
  * \param[in] selectionName The name of the atom selection specified by index.
  * \param[in] abortIfPresent Do not set up the topology if it is already present in the file.
+ * \param[in] writeVmdStructureData Whether to write information describing the system according
+ * to VMD specifications in the H5MD group /parameters/vmd_structure/.
  * \throws FileIOError If there is no file open or if the data could not be written.
  */
 void setupMolecularSystemTopology(h5mdio::GmxH5mdIo*       file,
                                   const gmx_mtop_t&        topology,
-                                  gmx::ArrayRef<const int> index          = {},
-                                  const std::string&       selectionName  = "",
-                                  bool                     abortIfPresent = true);
+                                  gmx::ArrayRef<const int> index                 = {},
+                                  bool                     abortIfPresent        = true,
+                                  bool                     writeVmdStructureData = false);
 
 /*! \brief Write a trajectory frame to the file. Only writes the data that is passed as input
  *

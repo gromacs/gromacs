@@ -38,6 +38,8 @@
 
 #include "config.h"
 
+#include <strings.h>
+
 #include <algorithm>
 #include <functional>
 #include <limits>
@@ -406,7 +408,7 @@ hid_t addMoleculeType(gmx::h5mdio::GmxH5mdIo* file, const gmx_moltype_t& molType
  * \param[in] selectionName The name of the selection.
  * \param[in] allSystemBonds Pointer to a vector that will contain a full connectivity table of the system.
  * Can be a nullptr, in which case the bonds will not be added.
- * \param[in] allSystemBonds Pointer to a vector that will contain a full connectivity table for a selection
+ * \param[in] selectionBonds Pointer to a vector that will contain a full connectivity table for a selection
  * of the system. Can be a nullptr, in which case the bonds will not be added.
  * \throws FileIOError If there was an error adding the connectivity records.
  */
@@ -415,7 +417,6 @@ void addMoleculeTypeBondsToTopology(gmx::h5mdio::GmxH5mdIo* gmx_unused        fi
                                     const gmx_moltype_t&                      molType,
                                     int64_t                                   numMols,
                                     gmx::ArrayRef<const int>                  index,
-                                    const std::string&                        selectionName,
                                     std::vector<std::pair<int64_t, int64_t>>* systemBonds,
                                     std::vector<std::pair<int64_t, int64_t>>* selectionBonds)
 {
@@ -451,15 +452,29 @@ void addMoleculeTypeBondsToTopology(gmx::h5mdio::GmxH5mdIo* gmx_unused        fi
         fromAtomIndex += 4;
     }
 
-    if (systemBonds != nullptr)
+    if (systemBonds != nullptr || selectionBonds != nullptr)
     {
         for (int64_t molIterator = 0; molIterator < numMols; molIterator++)
         {
             for (size_t bondIterator = 0; bondIterator < bonds.size(); bondIterator++)
             {
                 int64_t offset = molIterator * molType.atoms.nr;
-                systemBonds->emplace_back(bonds[bondIterator].first + offset,
-                                          bonds[bondIterator].second + offset);
+                if (systemBonds != nullptr)
+                {
+                    systemBonds->emplace_back(bonds[bondIterator].first + offset,
+                                              bonds[bondIterator].second + offset);
+                }
+                if (selectionBonds != nullptr)
+                {
+                    if (std::find(index.begin(), index.end(), bonds[bondIterator].first + offset)
+                                != index.end()
+                        && std::find(index.begin(), index.end(), bonds[bondIterator].second + offset)
+                                   != index.end())
+                    {
+                        selectionBonds->emplace_back(bonds[bondIterator].first + offset,
+                                                     bonds[bondIterator].second + offset);
+                    }
+                }
             }
         }
     }
@@ -468,18 +483,37 @@ void addMoleculeTypeBondsToTopology(gmx::h5mdio::GmxH5mdIo* gmx_unused        fi
     H5Iget_name(molTypeGroup, molTypeGroupPath, gmx::h5mdio::c_maxFullNameLength - 1);
 
     file->setNumericProperty(molTypeGroupPath, "connectivity", bonds, "", false);
+}
 
-    // hid_t moleculeConnectivityDataSet = gmx::h5mdio::openOrCreateDataSet<2>(molTypeGroup,
-    //                                        "connectivity",
-    //                                        nullptr,
-    //                                        dataType,
-    //                                        chunkDims,
-    //                                        gmx::h5mdio::CompressionAlgorithm::LosslessNoShuffle,
-    //                                        0);
-    // if(writeFullConnectivityTable)
+/*! \brief Check whether there is a separate selection for output.
+ * TODO: Investigate more flexible ways of specifying selection groups.
+ *
+ * \param[in] index    The selected atoms to include. If empty, check whether there is a separate
+ * compression group.
+ */
+bool hasSeparateSelection(/*const gmx_mtop_t& topology,*/ gmx::ArrayRef<const int> index)
+{
+    /* We only need to create a separate selection group entry if not all atoms are part of it. */
+    /* If a selection of atoms is explicitly provided then use that instead of the CompressedPositionOutput */
+    bool separateSelection = false;
+    if (index.ssize() > 0)
+    {
+        separateSelection = true;
+    }
+    /* TODO: Check if the below code is necessary.
+    // else
     // {
-    //     hid_t fullConnectivityDataSet =
+    //     /* FIXME: Should use int64_t. Needs changes in topology. */
+    //     for (int i = 0; i < topology.natoms; i++)
+    //     {
+    //         if (getGroupType(topology.groups, SimulationAtomGroupType::CompressedPositionOutput, i) != 0)
+    //         {
+    //             separateSelection = true;
+    //             break;
+    //         }
+    //     }
     // }
+    return separateSelection;
 }
 
 
@@ -1415,23 +1449,7 @@ void setupMolecularSystemParticleData(h5mdio::GmxH5mdIo*       file,
 
     /* We only need to create a separate selection group entry if not all atoms are part of it. */
     /* If a selection of atoms is explicitly provided then use that instead of the CompressedPositionOutput */
-    bool separateSelection = false;
-    if (index.ssize() > 0)
-    {
-        separateSelection = true;
-    }
-    else
-    {
-        /* FIXME: Should use int64_t. Needs changes in topology. */
-        for (int i = 0; i < topology.natoms; i++)
-        {
-            if (getGroupType(topology.groups, SimulationAtomGroupType::CompressedPositionOutput, i) != 0)
-            {
-                separateSelection = true;
-                break;
-            }
-        }
-    }
+    bool separateSelection = hasSeparateSelection(index);
     if (separateSelection)
     {
         std::string systemOutputName;
@@ -1511,8 +1529,8 @@ MoleculeBlockIndices getMoleculeBlockIndicesByIndex(h5mdio::GmxH5mdIo* file, siz
 void setupMolecularSystemTopology(h5mdio::GmxH5mdIo*       file,
                                   const gmx_mtop_t&        topology,
                                   gmx::ArrayRef<const int> index,
-                                  const std::string&       selectionName,
-                                  bool                     abortIfPresent)
+                                  bool                     abortIfPresent,
+                                  bool                     writeVmdStructureData)
 {
 #if GMX_USE_HDF5
     if (file == nullptr || !file->isFileOpen())
@@ -1556,13 +1574,45 @@ void setupMolecularSystemTopology(h5mdio::GmxH5mdIo*       file,
             throw gmx::FileIOError("Cannot write molecule type group.");
         }
         addMoleculeTypeBondsToTopology(
-                file, molTypeGroup, molType, numMol, index, selectionName, &systemBonds, &selectionBonds);
+                file, molTypeGroup, molType, numMol, index, &systemBonds, &selectionBonds);
         addAtomTypesOfAtoms(file, molType.atoms, atomTypesAdded);
         addBlockOfMoleculeType(file, molName, i, numMol, molBlockIndices);
     }
     if (!systemBonds.empty())
     {
-        file->setNumericProperty("connectivity", "system", systemBonds, "", false);
+        file->setNumericProperty("/connectivity", "system", systemBonds, "", false);
+    }
+    if (writeVmdStructureData)
+    {
+        std::vector<int64_t> firstAtomsInPairs, secondAtomsInPairs;
+        if (selectionBonds.empty() || selectionBonds.size() == systemBonds.size())
+        {
+            firstAtomsInPairs.reserve(systemBonds.size());
+            secondAtomsInPairs.reserve(systemBonds.size());
+            std::transform(systemBonds.begin(),
+                           systemBonds.end(),
+                           std::back_inserter(firstAtomsInPairs),
+                           [](auto const& pair) { return pair.first; });
+            std::transform(systemBonds.begin(),
+                           systemBonds.end(),
+                           std::back_inserter(secondAtomsInPairs),
+                           [](auto const& pair) { return pair.second; });
+        }
+        else if (!selectionBonds.empty())
+        {
+            firstAtomsInPairs.reserve(selectionBonds.size());
+            secondAtomsInPairs.reserve(selectionBonds.size());
+            std::transform(selectionBonds.begin(),
+                           selectionBonds.end(),
+                           std::back_inserter(firstAtomsInPairs),
+                           [](auto const& pair) { return pair.first; });
+            std::transform(selectionBonds.begin(),
+                           selectionBonds.end(),
+                           std::back_inserter(secondAtomsInPairs),
+                           [](auto const& pair) { return pair.second; });
+        }
+        file->setNumericProperty("/parameters/vmd_structure", "bond_from", firstAtomsInPairs, "", false);
+        file->setNumericProperty("/parameters/vmd_structure", "bond_to", secondAtomsInPairs, "", false);
     }
 
 #else

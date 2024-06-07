@@ -280,12 +280,19 @@ gmx_mdoutf_t init_mdoutf(FILE*                          fplog,
         if (of->h5mdIo)
         {
             gmx::setupMolecularSystemParticleData(of->h5mdIo, top_global);
-            gmx::setupMolecularSystemTopology(of->h5mdIo, top_global);
+            gmx::setupMolecularSystemTopology(of->h5mdIo, top_global, {}, true, true);
         }
         if (of->h5mdIoLowPrec && ir->nstxout_compressed > 0)
         {
-            gmx::setupMolecularSystemParticleData(of->h5mdIoLowPrec, top_global);
-            gmx::setupMolecularSystemTopology(of->h5mdIoLowPrec, top_global);
+            /* FIXME: Selections in general in GROMACS should use int64_t. */
+            std::vector<int> selectionIndex(of->natoms_x_compressed);
+            int              numInSelection = 0;
+            for (i = 0; (i < top_global.natoms); i++)
+            {
+                selectionIndex[numInSelection++] = i;
+            }
+            gmx::setupMolecularSystemParticleData(of->h5mdIoLowPrec, top_global, selectionIndex);
+            gmx::setupMolecularSystemTopology(of->h5mdIoLowPrec, top_global, selectionIndex, true, true);
         }
 
         if (ir->nstfout && haveDDAtomOrdering(*cr))
