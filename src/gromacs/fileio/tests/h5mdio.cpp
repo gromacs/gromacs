@@ -45,6 +45,7 @@
 #include <gtest/gtest.h>
 
 #include "gromacs/fileio/filetypes.h"
+#include "gromacs/fileio/gmx_h5md_io.h"
 #include "gromacs/fileio/h5md_io.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdtypes/md_enums.h"

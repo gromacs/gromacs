@@ -54,6 +54,7 @@
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/gmxfio_xdr.h"
 #include "gromacs/fileio/groio.h"
+#include "gromacs/fileio/gmx_h5md_io.h"
 #include "gromacs/fileio/h5md_io.h"
 #include "gromacs/fileio/oenv.h"
 #include "gromacs/fileio/pdbio.h"

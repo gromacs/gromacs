@@ -79,7 +79,6 @@ public:
      * \param[in] container The ID of the container (HDF5 group or file) of the data.
      * \param[in] name The name of this set of time dependent data - the H5MD group.
      * \param[in] unit The unit of the time dependent values.
-     * \param[in] writingInterval How many simulation steps there are between each output.
      * \param[in] numFramesPerChunk Number of frames per chunk of data, relevant for compressed data.
      * \param[in] numEntries Number of data entries per frame, e.g., the number of atoms.
      * \param[in] numValuesPerEntry Number of data values per entry, e.g. 3 for 3D data.
