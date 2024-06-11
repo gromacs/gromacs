@@ -934,6 +934,7 @@ bool read_next_frame(const gmx_output_env_t* oenv, t_trxstatus* status, t_trxfra
             ftp = gmx_fio_getftp(status->fio);
         }
         auto startTime = timeValue(TimeControl::Begin);
+        double absoluteError;
         switch (ftp)
         {
             case efTRR: bRet = gmx_next_frame(status, fr); break;
@@ -984,16 +985,16 @@ bool read_next_frame(const gmx_output_env_t* oenv, t_trxstatus* status, t_trxfra
                                                               fr->x,
                                                               fr->v,
                                                               fr->f,
-                                                              &fr->prec,
+                                                              &absoluteError,
                                                               &fr->bLambda,
                                                               &fr->bBox,
                                                               &fr->bX,
                                                               &fr->bV,
                                                               &fr->bF);
-                fr->bPrec = (bRet && fr->prec > 0);
+                fr->bPrec = (bRet && absoluteError > 0);
                 if (fr->bPrec)
                 {
-                    fr->prec = 1 / (fr->prec * 2);
+                    fr->prec = 1 / (absoluteError * 2);
                 }
                 fr->bStep = bRet;
                 fr->bTime = bRet;
@@ -1203,6 +1204,7 @@ bool read_first_frame(const gmx_output_env_t*      oenv,
                 fr->natoms = numFParticles;
                 snew(fr->f, numFParticles);
             }
+            double absoluteError;
             if (!gmx::readNextFrameOfStandardDataBlocks((*status)->h5mdIo,
                                                         &fr->step,
                                                         &fr->time,
@@ -1211,7 +1213,7 @@ bool read_first_frame(const gmx_output_env_t*      oenv,
                                                         fr->x,
                                                         fr->v,
                                                         fr->f,
-                                                        &fr->prec,
+                                                        &absoluteError,
                                                         &fr->bLambda,
                                                         &fr->bBox,
                                                         &fr->bX,
@@ -1224,10 +1226,10 @@ bool read_first_frame(const gmx_output_env_t*      oenv,
             else
             {
                 printcount(*status, oenv, fr->time, false);
-                fr->bPrec = (fr->prec > 0);
+                fr->bPrec = (absoluteError > 0);
                 if (fr->bPrec)
                 {
-                    fr->prec = 1 / (fr->prec * 2);
+                    fr->prec = 1 / (absoluteError * 2);
                 }
                 fr->bStep = TRUE;
                 fr->bTime = TRUE;

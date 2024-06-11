@@ -250,7 +250,7 @@ public:
      * \param[in] unit The (SI) unit of the data.
      * \param[in] numberOfFramesPerChunk The number of frames per compression chunk. Cannot change.
      * \param[in] compressionAlgorithm The compression algorithm to use when writing the data.
-     * \param[in] compressionError The accepted error of the lossy compression (if applicable).
+     * \param[in] lossyCompressionError The accepted error of the lossy compression (if applicable).
      * \throws FileIOError    If there is no file open or if errors occured during writing.
      */
     void writeDataFrame(int64_t              step,

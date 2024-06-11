@@ -45,7 +45,6 @@
 
 #include "h5md_datablock.h"
 #include "h5md_io.h"
-#include "h5md_util.h"
 
 enum class PbcType : int;
 struct gmx_moltype_t;
@@ -166,7 +165,7 @@ bool readNextFrameOfStandardDataBlocks(h5mdio::GmxH5mdIo* file,
                                        rvec*              x,
                                        rvec*              v,
                                        rvec*              f,
-                                       real*              xCompressionError,
+                                       double*            xCompressionError,
                                        bool*              readLambda,
                                        bool*              readBox,
                                        bool*              readX,

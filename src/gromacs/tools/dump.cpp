@@ -474,10 +474,10 @@ void list_h5md(const char* fn)
     int64_t step;
     real    time;
     real    lambda;
-    real    prec;
+    double  absoluteError;
     int     nframe = 0;
     while (gmx::readNextFrameOfStandardDataBlocks(
-            &h5mdIo, &step, &time, &lambda, box, x, v, f, &prec, &hasLambda, &hasBox, &hasX, &hasV, &hasF))
+            &h5mdIo, &step, &time, &lambda, box, x, v, f, &absoluteError, &hasLambda, &hasBox, &hasX, &hasV, &hasF))
     {
         char buf[256];
         sprintf(buf, "%s frame %d", fn, nframe++);
@@ -496,9 +496,9 @@ void list_h5md(const char* fn)
                 step,
                 time,
                 lambda);
-        if (prec > 0)
+        if (absoluteError > 0)
         {
-            fprintf(stdout, "  x prec=%10g", 1 / (prec * 2));
+            fprintf(stdout, "  x prec=%10g", 1 / (absoluteError * 2));
         }
         fprintf(stdout, "\n");
         if (hasBox)

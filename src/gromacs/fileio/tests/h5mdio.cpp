@@ -65,7 +65,7 @@ namespace
 /*! \brief
  * Convienience type for testing combinations of atoms and number of frames.
  *
- * Fields are: atomCount, numFrames, xCompressionPrecision
+ * Fields are: atomCount, numFrames, xCompressionAbsoluteError
  */
 using H5mdWriteReadTrajectoryTestParams = std::tuple<int, int, float>;
 
@@ -131,14 +131,14 @@ public:
         EXPECT_STREQ(referenceCreatorProgramVersion.c_str(), creatorProgramVersion.c_str());
     }
 
-    /*! \brief Set the lossy compression precision to use when writing reference data. */
-    void setRefCompressionPrecision(real compressionPrecision)
+    /*! \brief Set the lossy compression max absolute error to use when writing reference data. */
+    void setRefCompressionAbsoluteError(double compressionAbsoluteError)
     {
-        refCompressionPrecision_ = compressionPrecision;
+        refCompressionAbsoluteError_ = compressionAbsoluteError;
     }
 
-    /*! \brief Get the lossy compression precision of the referece data. */
-    real getRefCompressionPrecision() { return refCompressionPrecision_; }
+    /*! \brief Get the lossy compression absolute error of the referece data. */
+    double getRefCompressionAbsoluteError() { return refCompressionAbsoluteError_; }
 
     /*! \brief Generate reference data (coordinates and velocities) for the reference atoms. */
     void generateReferenceCoordinatesAndVelocities(int frame = 0)
@@ -210,7 +210,7 @@ public:
     void writeReferenceTrajectoryFrame(int step, real time, real lambda)
     {
         gmx::writeFrameToStandardDataBlocks(
-                &referenceH5mdIo_, step, time, lambda, refBox_, refAtomCount_, refX_, refV_, refF_, refCompressionPrecision_);
+                &referenceH5mdIo_, step, time, lambda, refBox_, refAtomCount_, refX_, refV_, refF_, refCompressionAbsoluteError_);
     }
 
     int64_t readReferenceNumAtoms(const std::string dataBlockName)
@@ -239,7 +239,7 @@ public:
         real    testTime;
         real    testLambda;
         matrix  testBox;
-        real    testPrecision;
+        double  testAbsoluteError;
         bool    testReadLambda, testReadBox, testReadX, testReadV, testReadF;
         rvec*   testX;
         rvec*   testV;
@@ -255,7 +255,7 @@ public:
                                                testX,
                                                testV,
                                                testF,
-                                               &testPrecision,
+                                               &testAbsoluteError,
                                                &testReadLambda,
                                                &testReadBox,
                                                &testReadX,
@@ -274,14 +274,14 @@ public:
         EXPECT_FALSE(testReadF);
         EXPECT_REAL_EQ_TOL(referenceLambda, testLambda, gmx::test::defaultRealTolerance());
 
-        if (refCompressionPrecision_ == 0)
+        if (refCompressionAbsoluteError_ == 0)
         {
 
-            EXPECT_EQ(-1, testPrecision);
+            EXPECT_EQ(-1, testAbsoluteError);
         }
         else
         {
-            EXPECT_REAL_EQ_TOL(refCompressionPrecision_, testPrecision, gmx::test::defaultRealTolerance());
+            EXPECT_REAL_EQ_TOL(refCompressionAbsoluteError_, testAbsoluteError, gmx::test::defaultRealTolerance());
         }
         for (int d1 = 0; d1 < DIM; d1++)
         {
@@ -294,9 +294,9 @@ public:
         {
             for (int d = 0; d < DIM; d++)
             {
-                if (refCompressionPrecision_ > 0)
+                if (refCompressionAbsoluteError_ > 0)
                 {
-                    EXPECT_NEAR(refX_[atom][d], testX[atom][d], refCompressionPrecision_);
+                    EXPECT_NEAR(refX_[atom][d], testX[atom][d], refCompressionAbsoluteError_);
                 }
                 else
                 {
@@ -399,7 +399,7 @@ private:
     rvec*                      refF_;
     matrix                     refBox_;
     size_t                     refAtomCount_;
-    real                       refCompressionPrecision_;
+    double                     refCompressionAbsoluteError_;
     std::vector<std::string>   refWaterAtomNames_;
     std::vector<real>          refWaterPartialCharges_;
     std::vector<int>           refWaterAtomicNumbers_;
@@ -460,7 +460,7 @@ TEST_P(H5mdIoTest, HighLevelWriteRead)
     auto params = GetParam();
     setRefAtomCount(std::get<0>(params));
     int numFrames = std::get<1>(params);
-    setRefCompressionPrecision(std::get<2>(params));
+    setRefCompressionAbsoluteError(std::get<2>(params));
 
     EXPECT_FALSE(isReferenceFileOpen());
     openReferenceFile('w');
