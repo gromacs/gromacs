@@ -229,7 +229,7 @@ hid_t openOrCreateDataSet(const hid_t                container,
             case CompressionAlgorithm::None: break;
             default: throw gmx::FileIOError("Unrecognized compression mode.");
         }
-        /* Set a reasonable cache based on chunk sizes. The cache is not stored in file, so must be set when opening a dataset */
+        /* Set a reasonable cache based on chunk sizes. The cache is not stored in file, so must be set when opening a data set */
         size_t cacheSize = sizeof(real);
         for (int i = 0; i < numDims; i++)
         {
@@ -319,7 +319,7 @@ void writeData(const hid_t dataSet, const void* data, const hsize_t frameToWrite
         throw gmx::FileIOError("Error writing data.");
     }
 
-    // It would be good to close the dataset here, but that means compressing and writing the whole chunk every time - very slow.
+    // It would be good to close the data set here, but that means compressing and writing the whole chunk every time - very slow.
 #else
     throw gmx::FileIOError(
             "GROMACS was compiled without HDF5 support, cannot handle this file type");

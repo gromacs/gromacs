@@ -66,10 +66,10 @@ enum class CompressionAlgorithm
 hid_t openOrCreateGroup(const hid_t container, const char* name);
 
 /*! \brief Registers the SZ3 filter by using the automatic registration mechanism by H5Pset_filter().
- * Must be done before appending (e.g. when restarting from a checkpoint) to a compressed dataset. */
+ * Must be done before appending (e.g. when restarting from a checkpoint) to a compressed data set. */
 void registerSz3FilterImplicitly();
 
-/*! \brief Open an existing dataset (called name, in container). If it does not exist create a new dataset.
+/*! \brief Open an existing data set (called \p name, in \p container). If it does not exist create a new data set.
  *
  * \tparam numDims The number of dimensions.
  * \param[in] container The ID of the container of the data. This can be a group in the HDF5 or the HDF5 file itself.
@@ -79,7 +79,7 @@ void registerSz3FilterImplicitly();
  * \param[in] chunkDims The dimensions of each chunk. The size should match numDims.
  * \param[in] compression The compression algorithm to use.
  * \param[in] compressionError The required precision of lossy compression.
- * \returns The ID of the dataset.
+ * \returns The ID of the data set.
  */
 
 template<int numDims>
@@ -91,37 +91,38 @@ hid_t openOrCreateDataSet(const hid_t                container,
                           const CompressionAlgorithm compression,
                           const double               compressionError);
 
-/*! \brief Writes data to an HDF5 data set, labelled by name.
+/*! \brief Writes a frame of data or a whole data set to an HDF5 data set, specified by \p dataSet.
  *
  * \tparam numDims The number of dimensions of the data.
- * \tparam writeFullDataSet Whether to write the whole data set at once. If true, frameToWrite must be 0.
- * \param[in] dataSet The ID of the dataset to write to.
+ * \tparam writeFullDataSet Whether to write the whole data set at once, otherwise write 1 frame.
+ * If true, \p frameToWrite must be 0.
+ * \param[in] dataSet The ID of the data set to write to.
  * \param[in] data The data to write.
  * \param[in] frameToWrite The frame number to write (starting from 0).
  */
 template<int numDims, bool writeFullDataSet>
 void writeData(const hid_t dataSet, const void* data, const hsize_t frameToWrite);
 
-/*! \brief Returns the size of the data type used in a dataset.
- * \param[in] dataSet The ID of the dataset.
- * \returns the size of the data type used in the dataset.
+/*! \brief Returns the size of the data type used in a data set.
+ * \param[in] dataSet The ID of the data set.
+ * \returns the size of the data type used in the data set.
  */
 size_t getDataTypeSize(const hid_t dataSet);
 
-/*! \brief Reads data from an HDF5 data set, labelled by name. Strings can be read as
- * either fixed-length or variable-length.
+/*! \brief Reads a frame of data, or a whole data set, from an HDF5 data set, labelled by name.
+ * Strings can be read as either fixed-length or variable-length.
  *
  * \tparam numDims The number of dimensions of the data.
- * \tparam readFullDataSet Whether to read the whole data set at once.
- *                         If true, frameToRead must be 0.
- * \param[in] dataSet The ID of the dataset to read from.
+ * \tparam readFullDataSet Whether to read the whole data set at once, otherwise read a single frame.
+ * If true, frameToRead must be 0.
+ * \param[in] dataSet The ID of the data set to read from.
  * \param[in] frameToRead The frame number to read (starting from 0).
  * \param[out] buffer The buffer to fill with the read data. Memory will be allocated if not already
- * done. Must be freed by the caller. \param[out] totalNumElements The number of data values read.
+ * done. Must be freed by the caller.
+ * \param[out] totalNumElements The number of data values read.
  * \param[out] varLengthStringMaxLength If reading a variable length string data set,
- *                              this is be the fixed-length size needed to fit all strings,
- *                              otherwise it will be 0, and can be used for determining
- *                              what type of string was read (if reading a string).
+ * this is be the fixed-length size needed to fit all strings, otherwise it will be 0, and can be
+ * used for determining what type of string was read (if reading a string).
  */
 template<int numDims, bool readFullDataSet>
 void readData(const hid_t   dataSet,
@@ -130,11 +131,11 @@ void readData(const hid_t   dataSet,
               size_t*       totalNumElements,
               size_t*       varLengthStringMaxLength);
 
-/*! \brief Reads one element of data from an HDF5 data set, labelled by name.
+/*! \brief Reads one frame of data from an HDF5 data set, labelled by name.
  * Strings can be read as either fixed-length or variable-length.
  *
  * \tparam numDims The number of dimensions of the data.
- * \param[in] dataSet The ID of the dataset to read from.
+ * \param[in] dataSet The ID of the data set to read from.
  * \param[in] frameToRead The frame number to read (starting from 0).
  * \param[out] buffer The buffer to fill with the read data. Memory will be allocated if not already
  * done. Must be freed by the caller.
