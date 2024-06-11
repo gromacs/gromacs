@@ -181,62 +181,62 @@ public:
      */
     hid_t createGroup(hid_t container, const std::string& nameInContainer);
 
-    /*! \brief Set a string property. All entries in the propertyValues vector are set.
+    /*! \brief Set multiple values of a string data set. All entries in the propertyValues vector are set,
+     * starting at the beginning of the dataset.
      * N.b., The maximum string length is set to c_atomResidueStringLen to avoid the overhead that comes
      * with flexible string lengths in HDF5.
      *
-     * \param[in] containerName The name of the HDF5 group that contains the property, e.g., "/particles/system".
-     * \param[in] propertyName The name of the property to set, e.g., "atomname".
-     * \param[in] propertyValues A list of strings.
+     * \param[in] containerName The name of the HDF5 group that contains the data set, e.g., "/particles/system".
+     * \param[in] dataSetName The name of the property to set, e.g., "atomname".
+     * \param[in] propertyValues A vector of strings.
      * \param[in] replaceExisting Whether to replace the property if it already exists.
      * \param[in] maxStringLength Is the length if fixed-length strings. If 0, the string will be
      * written as variable-length. Variable-length strings cannot be compressed, and are therefore
      * recommended against.
      * \throws FileIOError If there was an error creating the data block or writing the data.
      */
-    void setStringProperty(const std::string&              containerName,
-                           const std::string&              propertyName,
-                           const std::vector<std::string>& propertyValues,
-                           bool                            replaceExisting = false,
-                           size_t maxStringLength = c_atomResidueStringLen);
+    void setStringDataSet(const std::string&              containerName,
+                          const std::string&              dataSetName,
+                          const std::vector<std::string>& propertyValues,
+                          bool                            replaceExisting = false,
+                          size_t                          maxStringLength = c_atomResidueStringLen);
 
-    /*! \brief Set a numeric property. All entries in the propertyValues vector are set.
+    /*! \brief Set multiple values of a numeric data set. All entries in the propertyValues vector are set.
      *
-     * \param[in] containerName The name of the HDF5 group that contains the property, e.g., "/particles/system".
-     * \param[in] propertyName The name of the property to set, e.g., "atomname".
-     * \param[in] propertyValues A list of numeric values.
+     * \param[in] containerName The name of the HDF5 group that contains the data set, e.g., "/particles/system".
+     * \param[in] dataSetName The name of the property to set, e.g., "position".
+     * \param[in] propertyValues A vector of numeric values.
      * \param[in] replaceExisting Whether to replace the property if it already exists.
      * \throws FileIOError If there was an error creating the data block or writing the data.
      */
     template<typename T>
-    void setNumericProperty(const std::string&    containerName,
-                            const std::string&    propertyName,
-                            const std::vector<T>& propertyValues,
-                            const std::string&    unit,
-                            bool                  replaceExisting = false);
+    void setNumericDataSet(const std::string&    containerName,
+                           const std::string&    dataSetName,
+                           const std::vector<T>& propertyValues,
+                           const std::string&    unit,
+                           bool                  replaceExisting = false);
 
 
-    /*! \brief Read a string property. The string can be either fixed-length or variable-length.
+    /*! \brief Read the contents of a string data set. The string can be either fixed-length or variable-length.
      *
-     * \param[in] containerName The name of the HDF5 group that contains the property, e.g., "/particles/system".
-     * \param[in] propertyName The name of the property to read, e.g., "atomname".
+     * \param[in] containerName The name of the HDF5 group that contains the data set, e.g., "/particles/system".
+     * \param[in] dataSetName The name of the property to read, e.g., "atomname".
      * \returns A vector containing the strings. Empty if no strings could be read.
      * \throws FileIOError If there was an error reading the data.
      */
-    std::vector<std::string> readStringProperty(const std::string& containerName,
-                                                const std::string& propertyName);
+    std::vector<std::string> readStringDataSet(const std::string& containerName,
+                                               const std::string& dataSetName);
 
     /*! \brief Read a numeric property.
      *
-     * \param[in] containerName The name of the HDF5 group that contains the property, e.g.,
+     * \param[in] containerName The name of the HDF5 group that contains the data set, e.g.,
      * "/particles/system".
-     * \param[in] propertyName The name of the property to read, e.g.,
-     * "atomname".
+     * \param[in] dataSetName The name of the property to read, e.g., "position".
      * \returns A vector containing the numeric values. Empty if no data could be read.
      * \throws FileIOError If there was an error reading the data.
      */
     template<typename T>
-    std::vector<T> readNumericProperty(const std::string& containerName, const std::string& propertyName);
+    std::vector<T> readNumericDataSet(const std::string& containerName, const std::string& dataSetName);
 
     /*! \brief Write a frame of data to the file.
      * \param[in] step The simulation step.

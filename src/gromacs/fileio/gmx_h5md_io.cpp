@@ -34,7 +34,7 @@
 
 #include "gmxpre.h"
 
-#include "h5md_io.h"
+#include "gmx_h5md_io.h"
 
 #include "config.h"
 
@@ -60,7 +60,6 @@
 #include "gromacs/utility/programcontext.h"
 #include "gromacs/utility/sysinfo.h"
 
-#include "gmx_h5md_io.h"
 #include "h5md_datablock.h"
 #include "h5md_io.h"
 #include "h5md_util.h"
@@ -107,10 +106,10 @@ void setupSystemParticleProperties(gmx::h5mdio::GmxH5mdIo*  file,
         atomIds.push_back(iParticle);
     }
 
-    file->setNumericProperty("/particles/" + selectionName, "charge", atomCharges, "", false);
-    file->setNumericProperty("/particles/" + selectionName, "mass", atomMasses, "amu", false);
-    file->setNumericProperty("/particles/" + selectionName, "species", atomSpecies, "", false);
-    file->setNumericProperty("/particles/" + selectionName, "id", atomIds, "", false);
+    file->setNumericDataSet("/particles/" + selectionName, "charge", atomCharges, "", false);
+    file->setNumericDataSet("/particles/" + selectionName, "mass", atomMasses, "amu", false);
+    file->setNumericDataSet("/particles/" + selectionName, "species", atomSpecies, "", false);
+    file->setNumericDataSet("/particles/" + selectionName, "id", atomIds, "", false);
 }
 
 /*! \brief Add atom type entries (species) for all different atom types in \p atoms.
@@ -328,14 +327,14 @@ hid_t addMoleculeType(gmx::h5mdio::GmxH5mdIo* file, const gmx_moltype_t& molType
         chainIds[i]       = molType.atoms.resinfo[residueIndex].chainid;
     }
 
-    file->setStringProperty(
+    file->setStringDataSet(
             moleculeTypeName, "atom_name", atomNames, false, gmx::h5mdio::c_atomResidueStringLen);
-    file->setNumericProperty(moleculeTypeName, "atom_species", atomTypes, "", false);
-    file->setNumericProperty(moleculeTypeName, "atom_species_state_b", atomTypesB, "", false);
-    file->setStringProperty(
+    file->setNumericDataSet(moleculeTypeName, "atom_species", atomTypes, "", false);
+    file->setNumericDataSet(moleculeTypeName, "atom_species_state_b", atomTypesB, "", false);
+    file->setStringDataSet(
             moleculeTypeName, "residue_name", residueNames, false, gmx::h5mdio::c_atomResidueStringLen);
-    file->setNumericProperty(moleculeTypeName, "residue_number", residueNumbers, "", false);
-    file->setStringProperty(moleculeTypeName, "chain_id", chainIds, false, 1);
+    file->setNumericDataSet(moleculeTypeName, "residue_number", residueNumbers, "", false);
+    file->setStringDataSet(moleculeTypeName, "chain_id", chainIds, false, 1);
 
     return moleculeTypeGroup;
 
@@ -430,7 +429,7 @@ void addMoleculeTypeBondsToTopology(gmx::h5mdio::GmxH5mdIo* gmx_unused        fi
     char molTypeGroupPath[gmx::h5mdio::c_maxFullNameLength];
     H5Iget_name(molTypeGroup, molTypeGroupPath, gmx::h5mdio::c_maxFullNameLength - 1);
 
-    file->setNumericProperty(molTypeGroupPath, "connectivity", bonds, "", false);
+    file->setNumericDataSet(molTypeGroupPath, "connectivity", bonds, "", false);
 }
 
 /*! \brief Check whether there is a separate selection for output.
@@ -543,7 +542,7 @@ MoleculeBlockIndices getMoleculeBlockIndicesByIndex(h5mdio::GmxH5mdIo* file, siz
     }
 
     std::vector<std::string> moleculeTypeNames =
-            file->readStringProperty(moleculeBlocksName, "molecule_type");
+            file->readStringDataSet(moleculeBlocksName, "molecule_type");
     std::string moleculeTypeName = moleculeTypeNames[molBlockIndex];
 
     molBlockIndices.numAtomsPerMolecule = getNumberOfAtomsOfMoleculeTypeByName(file, moleculeTypeName);
@@ -637,7 +636,7 @@ void setupMolecularSystemTopology(h5mdio::GmxH5mdIo*       file,
     }
     if (!systemBonds.empty())
     {
-        file->setNumericProperty("/connectivity", "system", systemBonds, "", false);
+        file->setNumericDataSet("/connectivity", "system", systemBonds, "", false);
     }
     if (writeVmdStructureData)
     {
@@ -668,8 +667,8 @@ void setupMolecularSystemTopology(h5mdio::GmxH5mdIo*       file,
                            std::back_inserter(secondAtomsInPairs),
                            [](auto const& pair) { return pair.second; });
         }
-        file->setNumericProperty("/parameters/vmd_structure", "bond_from", firstAtomsInPairs, "", false);
-        file->setNumericProperty("/parameters/vmd_structure", "bond_to", secondAtomsInPairs, "", false);
+        file->setNumericDataSet("/parameters/vmd_structure", "bond_from", firstAtomsInPairs, "", false);
+        file->setNumericDataSet("/parameters/vmd_structure", "bond_to", secondAtomsInPairs, "", false);
     }
 
 #else
@@ -882,5 +881,45 @@ bool copyProvenanceRecords(h5mdio::GmxH5mdIo* srcFile, h5mdio::GmxH5mdIo* destFi
     }
     return true;
 }
+
+extern template hid_t
+h5mdio::openOrCreateDataSet<1>(hid_t, const char*, const char*, hid_t, const hsize_t*, CompressionAlgorithm, double);
+// extern template hid_t
+// h5mdio::openOrCreateDataSet<2>(hid_t, const char*, const char*, hid_t, const hsize_t*, CompressionAlgorithm, double);
+
+extern template void h5mdio::writeData<1, false>(hid_t, const void*, hsize_t);
+
+extern template void h5mdio::readData<1>(hid_t, hsize_t, void**);
+
+extern template void h5mdio::setAttribute<int64_t>(hid_t, const char*, int64_t, hid_t);
+
+extern template bool h5mdio::getAttribute<int64_t>(hid_t, const char*, int64_t*);
+
+extern template void h5mdio::GmxH5mdIo::setNumericDataSet<float>(const std::string&,
+                                                                 const std::string&,
+                                                                 const std::vector<float>&,
+                                                                 const std::string&,
+                                                                 bool);
+extern template void h5mdio::GmxH5mdIo::setNumericDataSet<double>(const std::string&,
+                                                                  const std::string&,
+                                                                  const std::vector<double>&,
+                                                                  const std::string&,
+                                                                  bool);
+extern template void h5mdio::GmxH5mdIo::setNumericDataSet<int>(const std::string&,
+                                                               const std::string&,
+                                                               const std::vector<int>&,
+                                                               const std::string&,
+                                                               bool);
+extern template void h5mdio::GmxH5mdIo::setNumericDataSet<std::int64_t>(const std::string&,
+                                                                        const std::string&,
+                                                                        const std::vector<std::int64_t>&,
+                                                                        const std::string&,
+                                                                        bool);
+extern template void h5mdio::GmxH5mdIo::setNumericDataSet<std::pair<std::int64_t, std::int64_t>>(
+        const std::string&,
+        const std::string&,
+        const std::vector<std::pair<std::int64_t, std::int64_t>>&,
+        const std::string&,
+        bool);
 
 } // namespace gmx

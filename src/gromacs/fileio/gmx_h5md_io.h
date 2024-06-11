@@ -54,7 +54,8 @@ struct MoleculeBlockIndices;
 
 namespace gmx
 {
-namespace h5mdio{
+namespace h5mdio
+{
 class GmxH5mdIo;
 }
 /*! \brief Set the author and creator fields based on user and program data available in gromacs.

@@ -415,17 +415,17 @@ hid_t GmxH5mdIo::createGroup(hid_t container, const std::string& nameInContainer
 #endif
 }
 
-void GmxH5mdIo::setStringProperty(const std::string&              containerName,
-                                  const std::string&              propertyName,
-                                  const std::vector<std::string>& propertyValues,
-                                  bool                            replaceExisting,
-                                  size_t                          maxStringLength)
+void GmxH5mdIo::setStringDataSet(const std::string&              containerName,
+                                 const std::string&              dataSetName,
+                                 const std::vector<std::string>& propertyValues,
+                                 bool                            replaceExisting,
+                                 size_t                          maxStringLength)
 {
 #if GMX_USE_HDF5
     openOrCreateGroup(file_, containerName.c_str());
-    std::string dataSetName(containerName + "/" + propertyName);
+    std::string fullDataSetName(containerName + "/" + dataSetName);
 
-    if (!H5Lexists(file_, dataSetName.c_str(), H5P_DEFAULT) || replaceExisting == true)
+    if (!H5Lexists(file_, fullDataSetName.c_str(), H5P_DEFAULT) || replaceExisting == true)
     {
         hid_t stringDataType = H5Tcopy(H5T_C_S1);
         H5Tset_cset(stringDataType, H5T_CSET_UTF8);
@@ -433,7 +433,6 @@ void GmxH5mdIo::setStringProperty(const std::string&              containerName,
         chunkDims[0] = propertyValues.size();
         if (maxStringLength > 0)
         {
-            /* FIXME: Is there a more convenient way to do this? std::string is nice above, but cannot be used for writing in HDF5. */
             char* propertyValuesChars;
             snew(propertyValuesChars, propertyValues.size() * maxStringLength);
             for (size_t i = 0; i < propertyValues.size(); i++)
@@ -443,7 +442,7 @@ void GmxH5mdIo::setStringProperty(const std::string&              containerName,
 
             H5Tset_size(stringDataType, maxStringLength);
             hid_t dataSet = openOrCreateDataSet<1>(file_,
-                                                   dataSetName.c_str(),
+                                                   fullDataSetName.c_str(),
                                                    nullptr,
                                                    stringDataType,
                                                    chunkDims,
@@ -455,7 +454,6 @@ void GmxH5mdIo::setStringProperty(const std::string&              containerName,
         }
         else
         {
-            /* Is there a more convenient way to do this? std::string is nice above, but cannot be used for writing. */
             std::vector<const char*> propertyValuesChars(propertyValues.size());
             std::transform(propertyValues.begin(),
                            propertyValues.end(),
@@ -465,7 +463,7 @@ void GmxH5mdIo::setStringProperty(const std::string&              containerName,
             H5Tset_size(stringDataType, H5T_VARIABLE);
             H5Tset_strpad(stringDataType, H5T_STR_NULLTERM);
             hid_t dataSet = openOrCreateDataSet<1>(file_,
-                                                   dataSetName.c_str(),
+                                                   fullDataSetName.c_str(),
                                                    nullptr,
                                                    stringDataType,
                                                    chunkDims,
@@ -482,17 +480,17 @@ void GmxH5mdIo::setStringProperty(const std::string&              containerName,
 }
 
 template<typename T>
-void GmxH5mdIo::setNumericProperty(const std::string&    containerName,
-                                   const std::string&    propertyName,
-                                   const std::vector<T>& propertyValues,
-                                   const std::string&    unit,
-                                   bool                  replaceExisting)
+void GmxH5mdIo::setNumericDataSet(const std::string&    containerName,
+                                  const std::string&    dataSetName,
+                                  const std::vector<T>& propertyValues,
+                                  const std::string&    unit,
+                                  bool                  replaceExisting)
 {
 #if GMX_USE_HDF5
     openOrCreateGroup(file_, containerName.c_str());
-    std::string dataSetName(containerName + "/" + propertyName);
+    std::string fullDataSetName(containerName + "/" + dataSetName);
 
-    if (!H5Lexists(file_, dataSetName.c_str(), H5P_DEFAULT) || replaceExisting == true)
+    if (!H5Lexists(file_, fullDataSetName.c_str(), H5P_DEFAULT) || replaceExisting == true)
     {
         hid_t dataType;
         if constexpr (std::is_same<T, float>::value)
@@ -518,7 +516,7 @@ void GmxH5mdIo::setNumericProperty(const std::string&    containerName,
             hsize_t atomPropertiesChunkDims[2] = { propertyValues.size(), 2 };
 
             dataSet = openOrCreateDataSet<2>(file_,
-                                             dataSetName.c_str(),
+                                             fullDataSetName.c_str(),
                                              unit.empty() ? nullptr : unit.c_str(),
                                              dataType,
                                              atomPropertiesChunkDims,
@@ -532,7 +530,7 @@ void GmxH5mdIo::setNumericProperty(const std::string&    containerName,
             atomPropertiesChunkDims[0] = propertyValues.size();
 
             dataSet = openOrCreateDataSet<1>(file_,
-                                             dataSetName.c_str(),
+                                             fullDataSetName.c_str(),
                                              unit.empty() ? nullptr : unit.c_str(),
                                              dataType,
                                              atomPropertiesChunkDims,
@@ -548,12 +546,12 @@ void GmxH5mdIo::setNumericProperty(const std::string&    containerName,
 #endif
 }
 
-std::vector<std::string> GmxH5mdIo::readStringProperty(const std::string& containerName,
-                                                       const std::string& propertyName)
+std::vector<std::string> GmxH5mdIo::readStringDataSet(const std::string& containerName,
+                                                      const std::string& dataSetName)
 {
 #if GMX_USE_HDF5
-    std::string              dataSetName(containerName + "/" + propertyName);
-    hid_t                    dataSet = H5Dopen(file_, dataSetName.c_str(), H5P_DEFAULT);
+    std::string              fullDataSetName(containerName + "/" + dataSetName);
+    hid_t                    dataSet = H5Dopen(file_, fullDataSetName.c_str(), H5P_DEFAULT);
     std::vector<std::string> propertyValues;
 
     if (dataSet < 0)
@@ -585,11 +583,11 @@ std::vector<std::string> GmxH5mdIo::readStringProperty(const std::string& contai
 }
 
 template<typename T>
-std::vector<T> GmxH5mdIo::readNumericProperty(const std::string& containerName, const std::string& propertyName)
+std::vector<T> GmxH5mdIo::readNumericDataSet(const std::string& containerName, const std::string& dataSetName)
 {
 #if GMX_USE_HDF5
-    std::string    dataSetName(containerName + "/" + propertyName);
-    hid_t          dataSet = H5Dopen(file_, dataSetName.c_str(), H5P_DEFAULT);
+    std::string    fullDataSetName(containerName + "/" + dataSetName);
+    hid_t          dataSet = H5Dopen(file_, fullDataSetName.c_str(), H5P_DEFAULT);
     std::vector<T> propertyValues;
 
     if (dataSet < 0)
@@ -989,38 +987,38 @@ extern template void setAttribute<double>(hid_t, const char*, double, hid_t);
 
 extern template bool getAttribute<int64_t>(hid_t, const char*, int64_t*);
 
-template void GmxH5mdIo::setNumericProperty<float>(const std::string&,
+template void GmxH5mdIo::setNumericDataSet<float>(const std::string&,
+                                                  const std::string&,
+                                                  const std::vector<float>&,
+                                                  const std::string&,
+                                                  bool);
+template void GmxH5mdIo::setNumericDataSet<double>(const std::string&,
                                                    const std::string&,
-                                                   const std::vector<float>&,
+                                                   const std::vector<double>&,
                                                    const std::string&,
                                                    bool);
-template void GmxH5mdIo::setNumericProperty<double>(const std::string&,
-                                                    const std::string&,
-                                                    const std::vector<double>&,
-                                                    const std::string&,
-                                                    bool);
-template void GmxH5mdIo::setNumericProperty<int>(const std::string&,
-                                                 const std::string&,
-                                                 const std::vector<int>&,
-                                                 const std::string&,
-                                                 bool);
-template void GmxH5mdIo::setNumericProperty<std::int64_t>(const std::string&,
-                                                          const std::string&,
-                                                          const std::vector<std::int64_t>&,
-                                                          const std::string&,
-                                                          bool);
-template void GmxH5mdIo::setNumericProperty<std::pair<std::int64_t, std::int64_t>>(
+template void GmxH5mdIo::setNumericDataSet<int>(const std::string&,
+                                                const std::string&,
+                                                const std::vector<int>&,
+                                                const std::string&,
+                                                bool);
+template void GmxH5mdIo::setNumericDataSet<std::int64_t>(const std::string&,
+                                                         const std::string&,
+                                                         const std::vector<std::int64_t>&,
+                                                         const std::string&,
+                                                         bool);
+template void GmxH5mdIo::setNumericDataSet<std::pair<std::int64_t, std::int64_t>>(
         const std::string&,
         const std::string&,
         const std::vector<std::pair<std::int64_t, std::int64_t>>&,
         const std::string&,
         bool);
 
-template std::vector<float> GmxH5mdIo::readNumericProperty<float>(const std::string&, const std::string&);
-template std::vector<double> GmxH5mdIo::readNumericProperty<double>(const std::string&, const std::string&);
-template std::vector<int> GmxH5mdIo::readNumericProperty<int>(const std::string&, const std::string&);
-template std::vector<std::int64_t> GmxH5mdIo::readNumericProperty<std::int64_t>(const std::string&,
-                                                                                const std::string&);
+template std::vector<float> GmxH5mdIo::readNumericDataSet<float>(const std::string&, const std::string&);
+template std::vector<double> GmxH5mdIo::readNumericDataSet<double>(const std::string&, const std::string&);
+template std::vector<int> GmxH5mdIo::readNumericDataSet<int>(const std::string&, const std::string&);
+template std::vector<std::int64_t> GmxH5mdIo::readNumericDataSet<std::int64_t>(const std::string&,
+                                                                               const std::string&);
 
 } // namespace h5mdio
 

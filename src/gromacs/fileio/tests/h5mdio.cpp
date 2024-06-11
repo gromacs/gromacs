@@ -204,7 +204,7 @@ public:
 
     std::vector<std::string> readAtomNamesFromReferenceFile()
     {
-        return referenceH5mdIo_.readStringProperty("/particles/system", "atomname");
+        return referenceH5mdIo_.readStringDataSet("/particles/system", "atomname");
     }
 
     void writeReferenceTrajectoryFrame(int step, real time, real lambda)
@@ -328,28 +328,26 @@ public:
     {
         /* Atom name is not stored in particle data blocks, but used here to test that string properties work. */
         /* Test variable-length string writing. */
-        referenceH5mdIo_.setStringProperty("/particles/water", "atomname", refWaterAtomNames_, false, 0);
-        referenceH5mdIo_.setStringProperty("/particles/ligand", "atomname", refLigandAtomNames_, false);
-        referenceH5mdIo_.setNumericProperty(
-                "/particles/water", "charge", refWaterPartialCharges_, "", false);
-        referenceH5mdIo_.setNumericProperty(
+        referenceH5mdIo_.setStringDataSet("/particles/water", "atomname", refWaterAtomNames_, false, 0);
+        referenceH5mdIo_.setStringDataSet("/particles/ligand", "atomname", refLigandAtomNames_, false);
+        referenceH5mdIo_.setNumericDataSet("/particles/water", "charge", refWaterPartialCharges_, "", false);
+        referenceH5mdIo_.setNumericDataSet(
                 "/particles/ligand", "charge", refLigandPartialCharges_, "", false);
-        referenceH5mdIo_.setNumericProperty(
-                "/particles/water", "species", refWaterAtomicNumbers_, "", false);
+        referenceH5mdIo_.setNumericDataSet("/particles/water", "species", refWaterAtomicNumbers_, "", false);
     }
 
     void readAndCheckWaterAndLigandGroups()
     {
         std::vector<std::string> testWaterAtomNames =
-                referenceH5mdIo_.readStringProperty("/particles/water", "atomname");
+                referenceH5mdIo_.readStringDataSet("/particles/water", "atomname");
         std::vector<std::string> testLigandAtomNames =
-                referenceH5mdIo_.readStringProperty("/particles/ligand", "atomname");
+                referenceH5mdIo_.readStringDataSet("/particles/ligand", "atomname");
         std::vector<real> testWaterCharges =
-                referenceH5mdIo_.readNumericProperty<real>("/particles/water", "charge");
+                referenceH5mdIo_.readNumericDataSet<real>("/particles/water", "charge");
         std::vector<real> testLigandCharges =
-                referenceH5mdIo_.readNumericProperty<real>("/particles/ligand", "charge");
+                referenceH5mdIo_.readNumericDataSet<real>("/particles/ligand", "charge");
         std::vector<int> testWaterElementNumbers =
-                referenceH5mdIo_.readNumericProperty<int>("/particles/water", "species");
+                referenceH5mdIo_.readNumericDataSet<int>("/particles/water", "species");
 
         size_t refNumWaterNameElements  = refWaterAtomNames_.size();
         size_t refNumLigandNameElements = refLigandAtomNames_.size();
@@ -521,18 +519,18 @@ INSTANTIATE_TEST_SUITE_P(H5mdTestWriteReadCombinations,
 
 } // namespace
 
-extern template void gmx::h5mdio::GmxH5mdIo::setNumericProperty<real>(const std::string&,
-                                                                      const std::string&,
-                                                                      const std::vector<real>&,
-                                                                      const std::string&,
-                                                                      bool);
-extern template void gmx::h5mdio::GmxH5mdIo::setNumericProperty<int>(const std::string&,
+extern template void gmx::h5mdio::GmxH5mdIo::setNumericDataSet<real>(const std::string&,
                                                                      const std::string&,
-                                                                     const std::vector<int>&,
+                                                                     const std::vector<real>&,
                                                                      const std::string&,
                                                                      bool);
+extern template void gmx::h5mdio::GmxH5mdIo::setNumericDataSet<int>(const std::string&,
+                                                                    const std::string&,
+                                                                    const std::vector<int>&,
+                                                                    const std::string&,
+                                                                    bool);
 
-extern template std::vector<real> gmx::h5mdio::GmxH5mdIo::readNumericProperty<real>(const std::string&,
-                                                                                    const std::string&);
-extern template std::vector<int> gmx::h5mdio::GmxH5mdIo::readNumericProperty<int>(const std::string&,
-                                                                                  const std::string&);
+extern template std::vector<real> gmx::h5mdio::GmxH5mdIo::readNumericDataSet<real>(const std::string&,
+                                                                                   const std::string&);
+extern template std::vector<int> gmx::h5mdio::GmxH5mdIo::readNumericDataSet<int>(const std::string&,
+                                                                                 const std::string&);
