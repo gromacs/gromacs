@@ -19,7 +19,8 @@
 sample_taf:openmpi-double:
   extends:
     - .sample_taf
-    - .rules:merge-requests
+  rules:
+    - !reference [.rules:merge-requests, rules]
   image: ${CI_REGISTRY_IMAGE}/ci-ubuntu-20.04-llvm-17
   variables:
     KUBERNETES_CPU_LIMIT: 2
@@ -35,7 +36,8 @@ sample_taf:openmpi-double:
 sample_restraint:openmpi-double:
   extends:
     - .sample_restraint:clang
-    - .rules:merge-requests
+  rules:
+    - !reference [.rules:merge-requests, rules]
   image: ${CI_REGISTRY_IMAGE}/ci-ubuntu-20.04-llvm-17
   variables:
     COMPILER_MAJOR_VERSION: 17

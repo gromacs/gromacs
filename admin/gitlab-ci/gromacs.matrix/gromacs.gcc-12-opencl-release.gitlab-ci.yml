@@ -15,12 +15,13 @@
 #   Parallelism nt/ntomp: 4/2 (unit tests)
 #   Parallelism nt/ntomp: 2/1 (regression tests)
 
-gromacs:gcc-12:release:configure:
+gromacs:gcc-12-opencl:release:configure:
   extends:
     - .gromacs:base:release:configure
     - .use-gcc:base
     - .use-opencl
-    - .rules:nightly-only-for-release
+  rules:
+    - !reference [.rules:nightly-only-for-release, rules]
   image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-22.04-gcc-12-rocm-5.4.1
   variables:
     CMAKE: /usr/local/cmake-3.18.4/bin/cmake
@@ -32,64 +33,67 @@ gromacs:gcc-12:release:configure:
     - regressiontests:package
     - prepare-release-version
 
-gromacs:gcc-12:release:build:
-  # Test using configuration: gromacs:gcc-12:release:configure
+gromacs:gcc-12-opencl:release:build:
+  # Test using configuration: gromacs:gcc-12-opencl:release:configure
   # Test scope: build
   extends:
-    - .variables:default
     - .gromacs:base:build
     - .before_script:default
     - .use-ccache
-    - .rules:nightly-only-for-release
   stage: release-build
+  rules:
+    - !reference [.rules:nightly-only-for-release, rules]
   variables:
     CMAKE: /usr/local/cmake-3.18.4/bin/cmake
     BUILD_DIR: release-builds-gcc
   image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-22.04-gcc-12-rocm-5.4.1
   needs:
-    - job: gromacs:gcc-12:release:configure
+    - job: gromacs:gcc-12-opencl:release:configure
 
-gromacs:gcc-12:release:test:
+gromacs:gcc-12-opencl:release:test:
   extends:
     - .gromacs:base:test
-    - .rules:nightly-only-for-release
+  rules:
+    - !reference [.rules:skip-if-single-amd-gpu-unavailable, rules]
+    - !reference [.rules:nightly-only-for-release, rules]
   stage: release-tests
   image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-22.04-gcc-12-rocm-5.4.1
   variables:
     CMAKE: /usr/local/cmake-3.18.4/bin/cmake
     BUILD_DIR: release-builds-gcc
-    KUBERNETES_EXTENDED_RESOURCE_NAME: "amd.com/gpu"
-    KUBERNETES_EXTENDED_RESOURCE_LIMIT: 1
     LD_LIBRARY_PATH: "/opt/rocm/opencl/lib"
     # Enable limited support of RDNA devices
     GMX_OCL_FORCE_AMD_WAVEFRONT64: 1
     GMX_TEST_LABELS: "QuickGpuTest|SlowGpuTest"
+    GPU_VENDOR: "AMD"
+    GPU_COUNT: 1
   tags:
-    - k8s-scilifelab
+    - $GITLAB_RUNNER_TAG_1X_AMD_GPU
   needs:
-    - job: gromacs:gcc-12:release:configure
-    - job: gromacs:gcc-12:release:build
+    - job: gromacs:gcc-12-opencl:release:configure
+    - job: gromacs:gcc-12-opencl:release:build
 
-gromacs:gcc-12:release:regressiontest:
+gromacs:gcc-12-opencl:release:regressiontest:
   extends:
     - .gromacs:base:regressiontest
-    - .rules:nightly-only-for-release
+  rules:
+    - !reference [.rules:skip-if-single-amd-gpu-unavailable, rules]
+    - !reference [.rules:nightly-only-for-release, rules]
   stage: release-tests
   image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-22.04-gcc-12-rocm-5.4.1
   variables:
     CMAKE: /usr/local/cmake-3.18.4/bin/cmake
     BUILD_DIR: release-builds-gcc
-    KUBERNETES_EXTENDED_RESOURCE_NAME: "amd.com/gpu"
-    KUBERNETES_EXTENDED_RESOURCE_LIMIT: 1
     REGRESSIONTEST_PME_RANK_NUMBER: 0
     REGRESSIONTEST_TOTAL_RANK_NUMBER: 2
     REGRESSIONTEST_OMP_RANK_NUMBER: 1
     LD_LIBRARY_PATH: "/opt/rocm/opencl/lib"
     # Enable limited support of RDNA devices
     GMX_OCL_FORCE_AMD_WAVEFRONT64: 1
+    GPU_VENDOR: "AMD"
+    GPU_COUNT: 1
   tags:
-    - k8s-scilifelab
+    - $GITLAB_RUNNER_TAG_1X_AMD_GPU
   needs:
-    - job: gromacs:gcc-12:release:build
+    - job: gromacs:gcc-12-opencl:release:build
     - job: regressiontests:package
-

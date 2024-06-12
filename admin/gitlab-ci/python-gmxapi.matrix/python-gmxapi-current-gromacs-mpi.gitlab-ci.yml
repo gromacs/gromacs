@@ -14,7 +14,6 @@
 
 .gmxapi:clang-17-mpi:
   extends:
-    - .variables:default
     - .use-clang:base
   image: ${CI_REGISTRY_IMAGE}/ci-ubuntu-20.04-llvm-17
   stage: test
@@ -46,6 +45,7 @@
 gmxapi:clang-17-mpi:py-3.7:
   extends:
     - .gmxapi:clang-17-mpi
-    - .rules:merge-requests
+  rules:
+    - !reference [.rules:merge-requests, rules]
   variables:
     VENVPATH: "/root/venv/py3.7"

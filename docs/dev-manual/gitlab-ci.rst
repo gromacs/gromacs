@@ -1,3 +1,4 @@
+
 GitLab CI Pipeline Execution
 ============================
 
@@ -75,28 +76,32 @@ GitLab CI job parameters, but note the following |Gromacs|-specific conventions.
         (Some key words may have different meanings when occurring as elements
         of other parameters, such as *archive:when*, to which this note is not
         intended to apply.)
-        Instead of setting any of these directly in a job definition, try to use
-        one of the pre-defined behaviors (defined as ``.rules:<something>`` in
-        :file:`admin/gitlab-ci/rules.gitlab-ci.yml`).
+        Rules in GitLab are special, since the first matching rule will cause
+        a job to trigger, and then all remaining rules are ignored. To create
+        rules to skip jobs, write rules that use the execution time "never".
         Errors or unexpected behavior will occur if you specify more than one
         *.rules:...* template, or if you use these parameters in combination
-        with a *.rules...* template.
+        with a *.rules...* template - it is thus NOT possible to combine
+        rules through inheritance with the ``extends`` tag.
+        Instead, to combine sequences of rules we recommend using a plain
+        rules tag where you reference rule entries with the !reference tag,
+        e.g. ``!reference [.rules:<something>, rules]``. Each such reference
+        can be used as an individual rule in the list.
         To reduce errors and unexpected behavior, restrict usage of these controls
         to regular job definitions (don't use in "hidden" or parent jobs).
         Note that *rules* is not compatible with the older *only* and *except*
         parameters. We have standardized on the (newer) *rules* mechanism.
 
     tags
-        Jobs that can only run in the |Gromacs| GitLab CI Runner infrastructure
-        should require the ``k8s-scilifelab`` tag.
-        These include jobs that specify Kubernetes configuration variables or
-        require special facilities, such as GPUs or MPI.
-        Note that the *tag* controls which Runners are eligible to take a job.
-        It does not affect whether the job is eligible for addition to a particular pipeline.
-        Additional *rules* logic should be used to make sure that jobs with the
-        ``k8s-scilifelab`` do not become eligible for pipelines launched outside
-        of the |Gromacs| project environment.
-        See, for instance, :term:`CI_PROJECT_NAMESPACE`
+        We no longer use any special tags for general (meaning CPU-only)
+        |Gromacs| CI jobs, to make sure at least the CPU jobs can still run even
+        if somebody clones the repo. For testing you can still add a default tag
+        at the start of the top-level :file:`.gitlab-ci.yml`, but this should
+        only be used to check that a specific runner works - for production we
+        handle it in GitLab instead by selecting what runners accept untagged
+        jobs. By default we currently run those on the infrastructure in
+        Stockholm for the |Gromacs| project, but please design all CPU jobs so
+        they will work on the shared runners too.
 
     variables
         Many job definitions will add or override keys in *variables*.
@@ -192,8 +197,8 @@ Variables
 The GitLab CI framework, GitLab Runner, plugins, and our own scripts set and
 use several `variables <https://docs.gitlab.com/ee/ci/variables/README.html>`__.
 
-Default values are available from the ``.variables:default`` definition in
-:file:`admin/gitlab-ci/global.gitlab-ci.yml`.
+Default values are available from the top level ``variables`` definition in
+:file:`global.gitlab-ci.yml`.
 Many of the mix-in / template jobs provide additional or overriding definitions.
 Other variables may be set when making final job definitions.
 
@@ -290,6 +295,25 @@ Variables for individual piplelines are set in the gitlab interface under
 ``CI/CD``; ``Pipelines``. Then chose in the top right corner ``Run Piplelines``.
 Under ``Run for``, the desired branch may be selected, and variables may be set
 in the fields below.
+
+Using GPUs in Gitlab-runner
+"""""""""""""""""""""""""""
+
+Previously, |Gromacs| used a hacked local version of Gitlab-runner where we had
+added support for Kubernetes extended resources. However, Gitlab has unfortunately
+not shown interest in merging these, and as the runner has evolved it is
+difficult to keep up. In the future it might be possible to select GPUs directly
+in the job configuration, but for now we use the ability to specify it in each
+Gitlab-runner configuration and thus have separate runners going for CPU-only as
+well as single or dual GPU devices from Nvidia, AMD, and Intel.
+
+To enable both us and other users to also use the shared Gitlab runners, the
+top-level configuration :file:`.gitlab-ci.yml` now contains a few variables where
+you can select what tags to use for Gitlab-runners to get single or dual devices
+from each vendor. There are also variables that allow you to set the largest
+number of devices you have (on single nodes) in these runners; if any tests
+cannot be run because you do not have the right hardware, we will simply skip
+those tests.
 
 .. _containers:
 

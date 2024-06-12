@@ -15,9 +15,9 @@
 
 gromacs-cp2k-8.2:gcc-9-nightly:configure:
   extends:
-    - .variables:default
     - .use-gcc:base
-    - .rules:nightly-not-for-release
+  rules:
+    - !reference [.rules:nightly-not-for-release, rules]
   stage: configure-build
   cache: {}
   # Dockefile generated with /admin/containers/scripted_gmx_docker_builds.py
@@ -52,11 +52,11 @@ gromacs-cp2k-8.2:gcc-9-nightly:configure:
 # Build and test jobs for CP2K builds are joined because of huge build artifacts size
 gromacs-cp2k-8.2:gcc-9-nightly:build-test:
   extends:
-    - .variables:default
     - .use-gcc:base
-    - .rules:nightly-not-for-release
     - .use-ccache
   stage: build
+  rules:
+    - !reference [.rules:nightly-not-for-release, rules]
   image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-gcc-9-cp2k-8.2
   variables:
     KUBERNETES_CPU_LIMIT: 4

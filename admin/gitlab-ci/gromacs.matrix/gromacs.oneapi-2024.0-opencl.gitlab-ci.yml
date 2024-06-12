@@ -18,7 +18,8 @@ gromacs:oneapi-2024.0-opencl:configure:
    - .gromacs:base:configure
    - .use-oneapi:base
    - .use-opencl
-   - .rules:merge-requests
+  rules:
+   - !reference [.rules:merge-requests, rules]
   image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-22.04-oneapi-2024.0-intel-compute-runtime
   variables:
     CMAKE: /usr/local/cmake-3.18.4/bin/cmake
@@ -26,11 +27,11 @@ gromacs:oneapi-2024.0-opencl:configure:
 
 gromacs:oneapi-2024.0-opencl:build:
   extends:
-    - .variables:default
     - .gromacs:base:build
     - .use-ccache
     - .use-oneapi:base
-    - .rules:merge-requests
+  rules:
+    - !reference [.rules:merge-requests, rules]
   image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-22.04-oneapi-2024.0-intel-compute-runtime
   variables:
     CMAKE: /usr/local/cmake-3.18.4/bin/cmake
@@ -41,7 +42,8 @@ gromacs:oneapi-2024.0-opencl:test:
   extends:
     - .gromacs:base:test
     - .use-oneapi:base
-    - .rules:merge-requests
+  rules:
+    - !reference [.rules:merge-requests, rules]
   image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-22.04-oneapi-2024.0-intel-compute-runtime
   variables:
     CMAKE: /usr/local/cmake-3.18.4/bin/cmake
@@ -53,7 +55,8 @@ gromacs:oneapi-2024.0-opencl:regressiontest:
   extends:
     - .gromacs:base:regressiontest
     - .use-oneapi:base
-    - .rules:merge-requests
+  rules:
+    - !reference [.rules:merge-requests, rules]
   image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-22.04-oneapi-2024.0-intel-compute-runtime
   variables:
     CMAKE: /usr/local/cmake-3.18.4/bin/cmake

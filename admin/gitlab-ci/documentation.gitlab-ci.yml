@@ -16,7 +16,6 @@
 
 .docs:configure:
   extends:
-    - .variables:default
     - .gromacs:base:configure
     - .before_script:default
   # TODO (#3480) this should be organized more like the current documentation.py script
@@ -86,10 +85,10 @@
 
 .docs:configure:release:
   extends:
-    - .variables:default
     - .gromacs:base:configure
     - .before_script:default
-    - .rules:nightly-only-for-release
+  rules:
+    - !reference [.rules:nightly-only-for-release, rules]
   # TODO (#3480) this should be organized more like the current documentation.py script
   image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-llvm-9-docs
   stage: release-configure
@@ -193,7 +192,8 @@
 docs:configure:
   extends:
     - .docs:configure
-    - .rules:merge-requests
+  rules:
+    - !reference [.rules:merge-requests, rules]
   variables:
     BUILD_DIR: build-docs
     CMAKE_EXTRA_OPTIONS: -DGMX_BUILD_HELP=on -DGMX_BUILD_MANUAL=on -DGMX_USE_SIMD_KERNELS=off
@@ -214,13 +214,13 @@ docs:configure:
 
 docs:build:
   extends:
-    - .variables:default
     - .gromacs:base:build
     - .use-ccache
     - .docs:build
     - .before_script:default
-    - .rules:merge-requests
   stage: documentation
+  rules:
+    - !reference [.rules:merge-requests, rules]
   needs:
     - job: docs:configure
   variables:
@@ -236,7 +236,6 @@ docs:build:
 # TODO use a feature from gitlab runner instead of using pipefail to get timings for the job
 .webpage:build:
   extends:
-    - .variables:default
     - .gromacs:base:build
     - .before_script:default
   # TODO (#3480) this should be organized more like the current documentation.py script
@@ -307,8 +306,9 @@ docs:build:
 webpage:build:
   extends:
     - .webpage:build
-    - .rules:merge-requests
   stage: post-test
+  rules:
+    - !reference [.rules:merge-requests, rules]
   needs:
     - job: docs:build
     - job: check-source
@@ -319,10 +319,9 @@ webpage:build:
 webpage:configure:
   extends:
     - .docs:configure:release
-    - .rules:nightly-only-for-release
+  rules:
+    - !reference [.rules:nightly-only-for-release, rules]
   cache: {}
-  tags:
-    - k8s-scilifelab
   needs:
     - job: archive:package
     - job: regressiontests:package
@@ -334,14 +333,12 @@ webpage:configure:
 webpage:dependencies:
   extends:
     - .gromacs:base:build
-    - .variables:default
     - .use-ccache
     - .docs:build
     - .before_script:default
-    - .rules:nightly-only-for-release
   stage: release-build
-  tags:
-    - k8s-scilifelab
+  rules:
+    - !reference [.rules:nightly-only-for-release, rules]
   needs:
     - job: webpage:configure
   variables:
@@ -350,10 +347,9 @@ webpage:dependencies:
 webpage:build:release:
   extends:
     - .webpage:build
-    - .rules:nightly-only-for-release
   stage: release-prepare-deploy
-  tags:
-    - k8s-scilifelab
+  rules:
+    - !reference [.rules:nightly-only-for-release, rules]
   needs:
     - job: webpage:dependencies
     - job: webpage:configure

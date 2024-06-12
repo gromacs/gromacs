@@ -3,8 +3,6 @@
 # Job configurations are inside api-client.matrix/ directory.
 
 .sample_taf:
-  extends:
-    - .variables:default
   stage: test
   variables:
     KUBERNETES_CPU_LIMIT: 1
@@ -21,7 +19,6 @@
 # Consumers must set job.variables.COMPILER_MAJOR_VERSION!
 .sample_restraint:clang:
   extends:
-    - .variables:default
     - .use-clang:base
   stage: test
   variables:

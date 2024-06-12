@@ -1,40 +1,59 @@
+# Default jobs should NOT use any tags. We control where they
+# are executed by using the GitLab CI settings for what runners
+# accept untagged jobs. However, if you want to test a new
+# GitLab-runner without disrupting normal operations, set a
+# a temporary tag on the runner and specify it here too, check
+# that it works in a draft MR, and then remove it again.
+# For GPU builds, we use specific tags (see variables below)
+#
+# default:
+#  tags:
+#    - scilifelab-k8s-test
+
+variables:
+  KUBERNETES_CPU_LIMIT: 8
+  KUBERNETES_CPU_REQUEST: 4
+  KUBERNETES_MEMORY_REQUEST: 4Gi
+  KUBERNETES_MEMORY_LIMIT: 8Gi
+  CACHE_FALLBACK_KEY: "$CI_JOB_NAME-$CI_JOB_STAGE-main"
+  BUILD_DIR: build
+  INSTALL_DIR: install
+  CMAKE_GMXAPI_OPTIONS: ""
+  # Where to run GPU jobs
+  GITLAB_RUNNER_TAG_1X_NVIDIA_GPU: "scilifelab-k8s-1x-nvidia-gpu"
+  GITLAB_RUNNER_TAG_2X_NVIDIA_GPU: "scilifelab-k8s-2x-nvidia-gpu"
+  GITLAB_RUNNER_TAG_1X_AMD_GPU:    "scilifelab-k8s-1x-amd-gpu"
+  GITLAB_RUNNER_TAG_2X_AMD_GPU:    "scilifelab-k8s-2x-amd-gpu"
+  GITLAB_RUNNER_TAG_1X_INTEL_GPU:  "scilifelab-k8s-1x-intel-gpu"
+  GITLAB_RUNNER_TAG_2X_INTEL_GPU:  "scilifelab-k8s-2x-intel-gpu"
+  # If you set these to 0 or 1, we will skip GPU tests that cannot run
+  GITLAB_RUNNER_MAX_AVAILABLE_NVIDIA_GPUS: 2
+  GITLAB_RUNNER_MAX_AVAILABLE_AMD_GPUS:    2
+  GITLAB_RUNNER_MAX_AVAILABLE_INTEL_GPUS:  2
+
 # Declare and sequence the stages to which jobs may be assigned.
 # The pipeline is organized into stages so that if early stages fail
 # the later ones are not run.
 stages:
-  # Initial test build for checking simple compilation and getting regressiontest repo
+  # Normal builds for each MR
   - pre-build
-  # Configuration for building and testing
   - configure-build
-  # Build GROMACS in multiple configurations
   - build
-  # Unit test each configuration, perhaps in multiple ways
   - test
-  # Generate documentation files
   - documentation
-  # Check documentation from source code for errors
   - source-check
-  # Linting, docs, static analysis, coverage, code analysis...
-  - post-test
-  # Nightly work to configure builds
+  - post-test      # Linting, docs, static analysis, coverage, code analysis...
+  # Nightly builds
   - nightly-configure
-  # Nightly build stage
   - nightly-build
-  # Nightly deploy stage
   - nightly-deploy
-  # Release work for packaging code
+  # Release builds (run nightly with GROMACS_RELEASE is set)
   - release-package
-  # Configure code for release builds
   - release-configure
-  # Release work for packaging code
   - release-build
-  # Tests for release code
   - release-tests
-  # Release checksum verification
   - release-verify
-  # Prepare for deploying artifacts
   - release-prepare-deploy
-  # Deploy stage for release builds
   - release-deploy
 
 include:

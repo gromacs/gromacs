@@ -18,7 +18,8 @@ gromacs:intel-llvm-nvidia-weekly:configure:
    - .gromacs:base:configure
    - .use-sycl
    - .use-clang:base
-   - .rules:weekly-not-for-release
+  rules:
+   - !reference [.rules:weekly-not-for-release, rules]
   image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-intel_llvm-2022-09-cuda-11.5.2-rocm-5.3:latest
   variables:
     CMAKE: /usr/local/cmake-3.21.2/bin/cmake
@@ -30,10 +31,10 @@ gromacs:intel-llvm-nvidia-weekly:configure:
 
 gromacs:intel-llvm-nvidia-weekly:build:
   extends:
-    - .variables:default
     - .gromacs:base:build
     - .use-ccache
-    - .rules:weekly-not-for-release
+  rules:
+    - !reference [.rules:weekly-not-for-release, rules]
   image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-intel_llvm-2022-09-cuda-11.5.2-rocm-5.3:latest
   variables:
     CMAKE: /usr/local/cmake-3.21.2/bin/cmake
@@ -48,15 +49,17 @@ gromacs:intel-llvm-nvidia-weekly:build:
 gromacs:intel-llvm-nvidia-weekly:test:
   extends:
     - .gromacs:base:test
-    - .rules:weekly-not-for-release
+  rules:
+    - !reference [.rules:skip-if-single-nvidia-gpu-unavailable, rules]
+    - !reference [.rules:weekly-not-for-release, rules]
   image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-intel_llvm-2022-09-cuda-11.5.2-rocm-5.3:latest
   variables:
     CMAKE: /usr/local/cmake-3.21.2/bin/cmake
-    KUBERNETES_EXTENDED_RESOURCE_NAME: "nvidia.com/gpu"
-    KUBERNETES_EXTENDED_RESOURCE_LIMIT: 1
     GMX_TEST_LABELS: "QuickGpuTest|SlowGpuTest"
+    GPU_VENDOR: "NVIDIA"
+    GPU_COUNT: 1
   tags:
-    - k8s-scilifelab
+    - $GITLAB_RUNNER_TAG_1X_NVIDIA_GPU
   before_script:
     - source /opt/intel-llvm/setenv.sh
   needs:
@@ -65,20 +68,21 @@ gromacs:intel-llvm-nvidia-weekly:test:
 gromacs:intel-llvm-nvidia-weekly:regressiontest:
   extends:
     - .gromacs:base:regressiontest
-    - .rules:weekly-not-for-release
+  rules:
+    - !reference [.rules:skip-if-single-nvidia-gpu-unavailable, rules]
+    - !reference [.rules:weekly-not-for-release, rules]
   image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-intel_llvm-2022-09-cuda-11.5.2-rocm-5.3:latest
   variables:
     CMAKE: /usr/local/cmake-3.21.2/bin/cmake
     # Default not working, see #2980
     REGRESSIONTEST_TOTAL_RANK_NUMBER: 2
     REGRESSIONTEST_OMP_RANK_NUMBER: 1
-    KUBERNETES_EXTENDED_RESOURCE_NAME: "nvidia.com/gpu"
-    KUBERNETES_EXTENDED_RESOURCE_LIMIT: 1
+    GPU_VENDOR: "NVIDIA"
+    GPU_COUNT: 1
   tags:
-    - k8s-scilifelab
+    - $GITLAB_RUNNER_TAG_1X_NVIDIA_GPU
   before_script:
     - source /opt/intel-llvm/setenv.sh
   needs:
     - job: gromacs:intel-llvm-nvidia-weekly:build
     - job: regressiontests:prepare
-

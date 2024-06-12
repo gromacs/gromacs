@@ -19,7 +19,8 @@ gromacs:clang-9:configure:
   extends:
     - .gromacs:base:configure
     - .use-clang:base
-    - .rules:merge-requests
+  rules:
+    - !reference [.rules:merge-requests, rules]
   image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-llvm-9-cuda-11.0.3
   variables:
     COMPILER_MAJOR_VERSION: 9
@@ -27,11 +28,11 @@ gromacs:clang-9:configure:
 
 gromacs:clang-9:build:
   extends:
-    - .variables:default
     - .gromacs:base:build
     - .before_script:default
     - .use-ccache
-    - .rules:merge-requests
+  rules:
+    - !reference [.rules:merge-requests, rules]
   image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-llvm-9-cuda-11.0.3
   needs:
     - job: gromacs:clang-9:configure
@@ -39,7 +40,8 @@ gromacs:clang-9:build:
 gromacs:clang-9:test:
   extends:
     - .gromacs:base:test
-    - .rules:merge-requests
+  rules:
+    - !reference [.rules:merge-requests, rules]
   image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-llvm-9-cuda-11.0.3
   variables:
     GMX_FORCE_UPDATE_DEFAULT_CPU: 1
@@ -49,10 +51,9 @@ gromacs:clang-9:test:
 gromacs:clang-9:regressiontest:
   extends:
     - .gromacs:base:regressiontest
-    - .rules:merge-requests
+  rules:
+    - !reference [.rules:merge-requests, rules]
   image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-llvm-9-cuda-11.0.3
-  tags:
-    - k8s-scilifelab
   needs:
     - job: gromacs:clang-9:build
     - job: regressiontests:prepare

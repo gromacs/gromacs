@@ -16,7 +16,8 @@ gromacs:gcc-12:coverage:configure:
   extends:
     - .gromacs:base:configure
     - .use-gcc:base
-    - .rules:post-merge-acceptance
+  rules:
+    - !reference [.rules:post-merge-acceptance, rules]
   image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-22.04-gcc-12-rocm-5.4.1
   variables:
     CMAKE: /usr/local/cmake-3.18.4/bin/cmake
@@ -26,11 +27,11 @@ gromacs:gcc-12:coverage:configure:
 
 gromacs:gcc-12:coverage:build:
   extends:
-    - .variables:default
     - .gromacs:base:build
     - .before_script:default
     - .use-ccache
-    - .rules:post-merge-acceptance
+  rules:
+    - !reference [.rules:post-merge-acceptance, rules]
   image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-22.04-gcc-12-rocm-5.4.1
   variables:
     CMAKE: /usr/local/cmake-3.18.4/bin/cmake
@@ -41,16 +42,13 @@ gromacs:coverage:analyse:
   variables:
     CMAKE: /usr/local/cmake-3.18.4/bin/cmake
     VENVPATH: "/root/venv/py3.7"
-  extends:
-    - .variables:default
-    - .rules:post-merge-acceptance
+  rules:
+    - !reference [.rules:post-merge-acceptance, rules]
   stage: post-test
   image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-22.04-gcc-12-rocm-5.4.1
   needs:
     - job: gromacs:gcc-12:coverage:build
 
-  tags:
-    - k8s-scilifelab
   script:
     - source $VENVPATH/bin/activate
     - mkdir public

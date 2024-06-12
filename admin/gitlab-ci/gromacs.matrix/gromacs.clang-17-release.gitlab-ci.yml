@@ -20,7 +20,8 @@ gromacs:clang-17:release:configure:
     - .gromacs:base:release:configure
     - .use-clang:base
     - .use-mpi
-    - .rules:nightly-only-for-release
+  rules:
+    - !reference [.rules:nightly-only-for-release, rules]
   image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-llvm-17
   variables:
     CMAKE: /usr/local/cmake-3.18.4/bin/cmake
@@ -36,12 +37,12 @@ gromacs:clang-17:release:configure:
 
 gromacs:clang-17:release:build:
   extends:
-    - .variables:default
     - .gromacs:base:build
     - .before_script:default
     - .use-ccache
-    - .rules:nightly-only-for-release
   stage: release-build
+  rules:
+    - !reference [.rules:nightly-only-for-release, rules]
   variables:
     CMAKE: /usr/local/cmake-3.18.4/bin/cmake
     BUILD_DIR: release-builds-clang
@@ -52,8 +53,9 @@ gromacs:clang-17:release:build:
 gromacs:clang-17:release:test:
   extends:
     - .gromacs:base:test
-    - .rules:nightly-only-for-release
   stage: release-tests
+  rules:
+    - !reference [.rules:nightly-only-for-release, rules]
   image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-llvm-17
   variables:
     CMAKE: /usr/local/cmake-3.18.4/bin/cmake
@@ -65,16 +67,15 @@ gromacs:clang-17:release:test:
 gromacs:clang-17:release:regressiontest:
   extends:
     - .gromacs:base:regressiontest
-    - .rules:nightly-only-for-release
   stage: release-tests
+  rules:
+    - !reference [.rules:nightly-only-for-release, rules]
   image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-llvm-17
   variables:
     CMAKE: /usr/local/cmake-3.18.4/bin/cmake
     BUILD_DIR: release-builds-clang
     REGRESSIONTEST_DOUBLE: "-double"
     REGRESSIONTEST_PARALLEL: "-np"
-  tags:
-    - k8s-scilifelab
   needs:
     - job: gromacs:clang-17:release:build
     - job: regressiontests:package
