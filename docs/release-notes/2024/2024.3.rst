@@ -66,6 +66,12 @@ Fixed an error that caused gmx hbond to prematurely terminate if there were no d
 Add grompp warning about zero AWH cover diameter when sharing a bias
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
+Fix TPR generation with Andersen Massive thermostat and constraints
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+A restriction to not generate TPR files for the Andersen thermostat with constraints was incorrectly applied to also the Andersen Massive thermostat.
+
+:issue:`5093`
 
 Fixes that affect portability
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
