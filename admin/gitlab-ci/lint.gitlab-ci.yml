@@ -4,7 +4,8 @@ clang-tidy:configure-mr:
   extends:
     - .gromacs:base:configure
     - .use-clang:base
-    - .rules:merge-requests
+  rules:
+    - !reference [.rules:merge-requests, rules]
   image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-llvm-11-cuda-11.4.1
   variables:
     CMAKE: /usr/local/cmake-3.18.4/bin/cmake
@@ -16,7 +17,8 @@ clang-tidy:configure-schedule:
   extends:
     - .gromacs:base:configure
     - .use-clang:base
-    - .rules:post-merge-acceptance
+  rules:
+    - !reference [.rules:post-merge-acceptance, rules]
   image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-llvm-11-cuda-11.4.1
   variables:
     CMAKE: /usr/local/cmake-3.18.4/bin/cmake
@@ -29,7 +31,8 @@ clang-tidy:configure-schedule-cuda:
     - .gromacs:base:configure
     - .use-clang:base
     - .use-cuda
-    - .rules:post-merge-acceptance
+  rules:
+    - !reference [.rules:post-merge-acceptance, rules]
   image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-llvm-11-cuda-11.4.1
   variables:
     CMAKE: cmake
@@ -41,9 +44,9 @@ clang-tidy:build:
   extends:
     - .gromacs:base:build
     - .use-ccache
-    - .variables:default
-    - .rules:post-merge-acceptance
   stage: source-check
+  rules:
+    - !reference [.rules:post-merge-acceptance, rules]
   image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-llvm-11-cuda-11.4.1
   needs:
     - job: clang-tidy:configure-schedule
@@ -55,9 +58,9 @@ clang-tidy:build-cuda:
   extends:
     - .gromacs:base:build
     - .use-ccache
-    - .variables:default
-    - .rules:post-merge-acceptance
   stage: source-check
+  rules:
+    - !reference [.rules:post-merge-acceptance, rules]
   image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-llvm-11-cuda-11.4.1
   needs:
     - job: clang-tidy:configure-schedule-cuda
@@ -68,8 +71,8 @@ clang-tidy:build-cuda:
 clang-tidy:test:
   extends:
     - .gromacs:base:build
-    - .variables:default
-    - .rules:merge-requests
+  rules:
+    - !reference [.rules:merge-requests, rules]
   allow_failure: true
   stage: source-check
   image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-llvm-11-cuda-11.4.1
@@ -103,9 +106,8 @@ clang-tidy:test:
       - code-lint.txt
 
 clang-format:
-  extends:
-    - .variables:default
-    - .rules:merge-requests
+  rules:
+    - !reference [.rules:merge-requests, rules]
   cache: {}
   stage: pre-build
   image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-llvm-11-cuda-11.4.1
@@ -140,9 +142,8 @@ clang-format:
       - formatting.txt
 
 python-format:
-  extends:
-    - .variables:default
-    - .rules:merge-requests
+  rules:
+    - !reference [.rules:merge-requests, rules]
   cache: {}
   stage: pre-build
   image: ${CI_REGISTRY_IMAGE}/ci-ubuntu-20.04-llvm-9-docs
@@ -168,9 +169,8 @@ python-format:
       - black-format.log
 
 copyright-check:
-  extends:
-    - .variables:default
-    - .rules:merge-requests
+  rules:
+    - !reference [.rules:merge-requests, rules]
   cache: {}
   stage: pre-build
   image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-llvm-11-cuda-11.4.1
@@ -202,10 +202,10 @@ copyright-check:
 
 check-source:
   extends:
-    - .variables:default
     - .docs:build
     - .before_script:default
-    - .rules:merge-requests
+  rules:
+    - !reference [.rules:merge-requests, rules]
   cache: {}
   stage: source-check
   needs:
@@ -239,8 +239,9 @@ check-source:
 linkchecker:
   extends:
     - .webpage:build
-    - .rules:nightly-not-for-release
   stage: nightly-build
+  rules:
+    - !reference [.rules:nightly-not-for-release, rules]
   dependencies:
     - webpage:build
   variables:

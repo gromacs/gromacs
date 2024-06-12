@@ -105,6 +105,54 @@
 # logic of a rule element *if* and *when* clause in a new element definition
 # (above) in order to construct new rule sets.
 
+# Rule matching if user selected there are no Nvidia GPUs, it skips executing
+# the build in question, and marks the job - but not pipeline - as failed.
+.rules:skip-if-single-nvidia-gpu-unavailable:
+  rules:
+    - if: $GITLAB_RUNNER_MAX_AVAILABLE_NVIDIA_GPUS == "0"
+      when: never
+      allow_failure: true
+
+# Rule matching if user	selected there is max 1 Nvidia GPU, it skips executing
+# the build in question, and marks the job - but not pipeline - as failed.
+.rules:skip-if-dual-nvidia-gpus-unavailable:
+  rules:
+    - if: $GITLAB_RUNNER_MAX_AVAILABLE_NVIDIA_GPUS =~ /[01]/
+      when: never
+      allow_failure: true
+
+# Rule matching if user	selected there are no AMD GPUs, it skips executing
+# the build in question, and marks the job - but not pipeline - as failed.
+.rules:skip-if-single-amd-gpu-unavailable:
+  rules:
+    - if: $GITLAB_RUNNER_MAX_AVAILABLE_AMD_GPUS == "0"
+      when: never
+      allow_failure: true
+
+# Rule matching if user	selected there is max 1 AMD GPU, it skips executing
+# the build in question, and marks the job - but not pipeline - as failed.
+.rules:skip-if-dual-amd-gpus-unavailable:
+  rules:
+    - if: $GITLAB_RUNNER_MAX_AVAILABLE_AMD_GPUS =~ /[01]/
+      when: never
+      allow_failure: true
+
+# Rule matching if user	selected there are no Intel GPUs, it skips executing
+# the build in question, and marks the job - but not pipeline - as failed.
+.rules:skip-if-single-intel-gpu-unavailable:
+  rules:
+    - if: $GITLAB_RUNNER_MAX_AVAILABLE_INTEL_GPUS == "0"
+      when: never
+      allow_failure: true
+
+# Rule matching if user	selected there is max 1 Intel GPU, it skips executing
+# the build in question, and marks the job - but not pipeline - as failed.
+.rules:skip-if-dual-intel-gpus-unavailable:
+  rules:
+    - if: $GITLAB_RUNNER_MAX_AVAILABLE_INTEL_GPUS =~ /[01]/
+      when: never
+      allow_failure: true
+
 # Jobs to run after successful merge of a new commit.
 # Only run on GROMACS infrastructure and only when merging into
 # the main or release branches.

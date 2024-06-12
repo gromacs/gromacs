@@ -17,7 +17,8 @@ gromacs:clang-TSAN:configure:
   extends:
     - .gromacs:base:configure
     - .use-clang:base
-    - .rules:merge-and-post-merge-acceptance
+  rules:
+    - !reference [.rules:merge-and-post-merge-acceptance, rules]
   image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-llvm-11-tsan
   variables:
     CMAKE: /usr/local/cmake-3.18.4/bin/cmake
@@ -26,11 +27,11 @@ gromacs:clang-TSAN:configure:
 
 gromacs:clang-TSAN:build:
   extends:
-    - .variables:default
     - .gromacs:base:build
     - .use-clang:base
     - .use-ccache
-    - .rules:merge-and-post-merge-acceptance
+  rules:
+    - !reference [.rules:merge-and-post-merge-acceptance, rules]
   image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-llvm-11-tsan
   variables:
     CMAKE: /usr/local/cmake-3.18.4/bin/cmake
@@ -40,7 +41,8 @@ gromacs:clang-TSAN:build:
 gromacs:clang-TSAN:test:
   extends:
     - .gromacs:base:test
-    - .rules:post-merge-acceptance
+  rules:
+    - !reference [.rules:post-merge-acceptance, rules]
   image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-llvm-11-tsan
   variables:
     CMAKE: /usr/local/cmake-3.18.4/bin/cmake
@@ -51,12 +53,11 @@ gromacs:clang-TSAN:test:
 gromacs:clang-TSAN:regressiontest:
   extends:
     - .gromacs:base:regressiontest
-    - .rules:post-merge-acceptance
+  rules:
+    - !reference [.rules:post-merge-acceptance, rules]
   image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-llvm-11-tsan
   variables:
     CMAKE: /usr/local/cmake-3.18.4/bin/cmake
-  tags:
-    - k8s-scilifelab
   needs:
     - job: gromacs:clang-TSAN:build
     - job: regressiontests:prepare

@@ -14,7 +14,6 @@
 
 .gmxapi:clang-9:
   extends:
-    - .variables:default
     - .use-clang:base
   image: ${CI_REGISTRY_IMAGE}/ci-ubuntu-20.04-llvm-9-cuda-11.0.3
   stage: test
@@ -44,6 +43,7 @@
 gmxapi:clang-9:py-3.10:
   extends:
     - .gmxapi:clang-9
-    - .rules:merge-requests
+  rules:
+    - !reference [.rules:merge-requests, rules]
   variables:
     VENVPATH: "/root/venv/py3.10"

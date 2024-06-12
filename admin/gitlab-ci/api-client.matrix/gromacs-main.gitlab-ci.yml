@@ -19,7 +19,8 @@
 sample_taf:tmpi:
   extends:
     - .sample_taf
-    - .rules:merge-requests
+  rules:
+    - !reference [.rules:merge-requests, rules]
   image: ${CI_REGISTRY_IMAGE}/ci-ubuntu-22.04-llvm-15-cuda-11.7.1-hipsycl-0.9.4-rocm-5.3.3
   variables:
     CMAKE: /usr/local/cmake-3.21.2/bin/cmake
@@ -29,7 +30,8 @@ sample_taf:tmpi:
 sample_restraint:tmpi:
   extends:
     - .sample_restraint:clang
-    - .rules:merge-requests
+  rules:
+    - !reference [.rules:merge-requests, rules]
   image: ${CI_REGISTRY_IMAGE}/ci-ubuntu-20.04-llvm-9-cuda-11.0.3
   variables:
     VENVPATH: "/root/venv/py3.7"

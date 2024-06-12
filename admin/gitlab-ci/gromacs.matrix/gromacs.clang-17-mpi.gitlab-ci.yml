@@ -21,7 +21,8 @@ gromacs:clang-17-mpi:configure:
    - .gromacs:base:configure
    - .use-clang:base
    - .use-mpi
-   - .rules:merge-requests
+  rules:
+   - !reference [.rules:merge-requests, rules]
   image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-llvm-17
   variables:
     CMAKE: /usr/local/cmake-3.18.4/bin/cmake
@@ -33,11 +34,11 @@ gromacs:clang-17-mpi:build:
   # Test using configuration: gromacs:clang-17-mpi:configure
   # Test scope: build
   extends:
-    - .variables:default
     - .gromacs:base:build
     - .before_script:default
     - .use-ccache
-    - .rules:merge-requests
+  rules:
+    - !reference [.rules:merge-requests, rules]
   image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-llvm-17
   variables:
     CMAKE: /usr/local/cmake-3.18.4/bin/cmake
@@ -47,27 +48,25 @@ gromacs:clang-17-mpi:build:
 gromacs:clang-17-mpi:test:
   extends:
     - .gromacs:base:test
-    - .rules:merge-requests
+  rules:
+    - !reference [.rules:merge-requests, rules]
   image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-llvm-17
   variables:
     CMAKE: /usr/local/cmake-3.18.4/bin/cmake
-  tags:
-    - k8s-scilifelab
   needs:
     - job: gromacs:clang-17-mpi:build
 
 gromacs:clang-17:regressiontest:
   extends:
     - .gromacs:base:regressiontest
-    - .rules:merge-requests
+  rules:
+    - !reference [.rules:merge-requests, rules]
   image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-llvm-17
   variables:
     CMAKE: /usr/local/cmake-3.18.4/bin/cmake
     REGRESSIONTEST_DOUBLE: "-double"
     REGRESSIONTEST_PARALLEL: "-np"
     GMX_FORCE_UPDATE_DEFAULT_CPU: 1
-  tags:
-    - k8s-scilifelab
   needs:
     - job: gromacs:clang-17-mpi:build
     - job: regressiontests:prepare

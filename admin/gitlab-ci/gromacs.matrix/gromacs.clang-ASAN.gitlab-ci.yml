@@ -17,7 +17,8 @@ gromacs:clang-ASAN:configure:
   extends:
     - .gromacs:base:configure
     - .use-clang:base
-    - .rules:merge-requests
+  rules:
+    - !reference [.rules:merge-requests, rules]
   image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-llvm-11-tsan
   variables:
     CMAKE: /usr/local/cmake-3.21.2/bin/cmake
@@ -26,16 +27,14 @@ gromacs:clang-ASAN:configure:
 
 gromacs:clang-ASAN:build:
   extends:
-    - .variables:default
     - .gromacs:base:build
     - .use-clang:base
     - .use-ccache
-    - .rules:merge-requests
+  rules:
+    - !reference [.rules:merge-requests, rules]
   image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-llvm-11-tsan
   variables:
     CMAKE: /usr/local/cmake-3.21.2/bin/cmake
-  tags:
-    - k8s-scilifelab
   needs:
     - job: gromacs:clang-ASAN:configure
 
@@ -43,14 +42,13 @@ gromacs:clang-ASAN:test:
   extends:
     - .gromacs:base:test
     - .use-clang:base
-    - .rules:merge-requests
+  rules:
+    - !reference [.rules:merge-requests, rules]
   image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-llvm-11-tsan
   variables:
     CMAKE: /usr/local/cmake-3.21.2/bin/cmake
     CTEST_RUN_MODE: "ExperimentalMemCheck"
     GMX_FORCE_UPDATE_DEFAULT_CPU: 1
-  tags:
-    - k8s-scilifelab
   needs:
     - job: gromacs:clang-ASAN:build
   after_script:
@@ -63,12 +61,11 @@ gromacs:clang-ASAN:regressiontest:
   extends:
     - .gromacs:base:regressiontest
     - .use-clang:base
-    - .rules:merge-requests
+  rules:
+    - !reference [.rules:merge-requests, rules]
   image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-llvm-11-tsan
   variables:
     CMAKE: /usr/local/cmake-3.21.2/bin/cmake
-  tags:
-    - k8s-scilifelab
   needs:
     - job: gromacs:clang-ASAN:build
     - job: regressiontests:prepare

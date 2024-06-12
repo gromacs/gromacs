@@ -3,22 +3,8 @@
 # definitions in other files because this file is first in the *include* list
 # in the root `.gitlab-ci.yml` file.
 
-# Centralized definitions of common job parameter values.
 # Parameters with many optional configurations may be in separate files.
 # Refer to the Infrastructure section of the GROMACS Developer Guide.
-
-.variables:default:
-  variables:
-    KUBERNETES_CPU_LIMIT: 8
-    KUBERNETES_CPU_REQUEST: 4
-    KUBERNETES_MEMORY_REQUEST: 4Gi
-    KUBERNETES_MEMORY_LIMIT: 8Gi
-    KUBERNETES_EXTENDED_RESOURCE_NAME: ""
-    KUBERNETES_EXTENDED_RESOURCE_LIMIT: 0
-    CACHE_FALLBACK_KEY: "$CI_JOB_NAME-$CI_JOB_STAGE-release-2024"
-    BUILD_DIR: build
-    INSTALL_DIR: install
-    CMAKE_GMXAPI_OPTIONS: ""
 
 # Our generic before_script to install dependencies and prepare the ccache directory.
 .before_script:default:

@@ -30,7 +30,6 @@ gromacs:gcc-12:configure:
 
 gromacs:gcc-12:build:
   extends:
-    - .variables:default
     - .gromacs:base:build
     - .before_script:default
     - .use-ccache
@@ -44,39 +43,47 @@ gromacs:gcc-12:build:
 gromacs:gcc-12:test:
   extends:
     - .gromacs:base:test
-    - .rules:merge-requests
+  rules:
+    - if: $GITLAB_RUNNER_MAX_AVAILABLE_AMD_GPUS == "0"
+      when: never
+      allow_failure: true
+    - !reference [.rules:merge-requests, rules]
   image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-22.04-gcc-12-rocm-5.4.1
   variables:
     CMAKE: /usr/local/cmake-3.18.4/bin/cmake
-    KUBERNETES_EXTENDED_RESOURCE_NAME: "amd.com/gpu"
-    KUBERNETES_EXTENDED_RESOURCE_LIMIT: 1
     LD_LIBRARY_PATH: "/opt/rocm/opencl/lib"
     # Enable limited support of RDNA devices
     GMX_OCL_FORCE_AMD_WAVEFRONT64: 1
     GMX_TEST_LABELS: "QuickGpuTest|SlowGpuTest"
     GMX_FORCE_UPDATE_DEFAULT_CPU: 1
+    GPU_VENDOR: "AMD"
+    GPU_COUNT: 1
   tags:
-    - k8s-scilifelab
+    - $GITLAB_RUNNER_TAG_1X_AMD_GPU
   needs:
     - job: gromacs:gcc-12:build
 
 gromacs:gcc-12:regressiontest:
   extends:
     - .gromacs:base:regressiontest
-    - .rules:post-merge-acceptance
+  rules:
+    - if: $GITLAB_RUNNER_MAX_AVAILABLE_AMD_GPUS == "0"
+      when: never
+      allow_failure: true
+    - !reference [.rules:post-merge-acceptance, rules]
   image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-22.04-gcc-12-rocm-5.4.1
   variables:
     CMAKE: /usr/local/cmake-3.18.4/bin/cmake
-    KUBERNETES_EXTENDED_RESOURCE_NAME: "amd.com/gpu"
-    KUBERNETES_EXTENDED_RESOURCE_LIMIT: 1
     REGRESSIONTEST_PME_RANK_NUMBER: 0
     REGRESSIONTEST_TOTAL_RANK_NUMBER: 2
     REGRESSIONTEST_OMP_RANK_NUMBER: 1
     LD_LIBRARY_PATH: "/opt/rocm/opencl/lib"
     # Enable limited support of RDNA devices
     GMX_OCL_FORCE_AMD_WAVEFRONT64: 1
+    GPU_VENDOR: "AMD"
+    GPU_COUNT: 1
   tags:
-    - k8s-scilifelab
+    - $GITLAB_RUNNER_TAG_1X_AMD_GPU
   needs:
     - job: gromacs:gcc-12:build
     - job: regressiontests:prepare

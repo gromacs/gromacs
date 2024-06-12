@@ -31,7 +31,6 @@ gromacs:gcc-11-cuda-11.7.1:configureMPI-NVSHMEM:
 
 gromacs:gcc-11-cuda-11.7.1:buildMPI-NVSHMEM:
   extends:
-    - .variables:default
     - .gromacs:base:build
     - .before_script:default
     - .use-ccache
@@ -46,12 +45,14 @@ gromacs:gcc-11-cuda-11.7.1:buildMPI-NVSHMEM:
 gromacs:gcc-11-cuda-11.7.1:testMPI-NVSHMEM:
   extends:
     - .gromacs:base:test
-    - .rules:post-merge-acceptance
+  rules:
+    - if: $GITLAB_RUNNER_MAX_AVAILABLE_NVIDIA_GPUS =~ /[01]/
+      when: never
+      allow_failure: true
+    - !reference [.rules:post-merge-acceptance, rules]
   image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-gcc-11-cuda-11.7.1
   variables:
     CMAKE: /usr/local/cmake-3.21.2/bin/cmake
-    KUBERNETES_EXTENDED_RESOURCE_NAME: "nvidia.com/gpu"
-    KUBERNETES_EXTENDED_RESOURCE_LIMIT: 2
     GMX_ENABLE_DIRECT_GPU_COMM: 1
     GMX_ENABLE_NVSHMEM: 1
     # Disable CUDA VMM usage of NVSHMEM until all the comm on the
@@ -68,8 +69,10 @@ gromacs:gcc-11-cuda-11.7.1:testMPI-NVSHMEM:
     NVSHMEM_DISABLE_NCCL: 1
     GMX_TEST_REQUIRED_NUMBER_OF_DEVICES: 2
     GMX_TEST_LABELS: "QuickGpuTest|SlowGpuTest"
+    GPU_VENDOR: "NVIDIA"
+    GPU_COUNT: 2
   tags:
-    - k8s-scilifelab
+    - $GITLAB_RUNNER_TAG_2X_NVIDIA_GPU
   needs:
     - job: gromacs:gcc-11-cuda-11.7.1:buildMPI-NVSHMEM
 
@@ -78,12 +81,14 @@ gromacs:gcc-11-cuda-11.7.1:regressiontest-gpucommupd-MPI-NVSHMEM:
   # Test parallelism GPU: direct communications, update
   extends:
     - .gromacs:base:regressiontest
-    - .rules:post-merge-acceptance
+  rules:
+    - if: $GITLAB_RUNNER_MAX_AVAILABLE_NVIDIA_GPUS =~ /[01]/
+      when: never
+      allow_failure: true
+    - !reference [.rules:post-merge-acceptance, rules]
   image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-gcc-11-cuda-11.7.1
   variables:
     CMAKE: /usr/local/cmake-3.21.2/bin/cmake
-    KUBERNETES_EXTENDED_RESOURCE_NAME: "nvidia.com/gpu"
-    KUBERNETES_EXTENDED_RESOURCE_LIMIT: 2
     REGRESSIONTEST_PME_RANK_NUMBER: 0
     REGRESSIONTEST_TOTAL_RANK_NUMBER: 4
     REGRESSIONTEST_OMP_RANK_NUMBER: 1
@@ -94,8 +99,10 @@ gromacs:gcc-11-cuda-11.7.1:regressiontest-gpucommupd-MPI-NVSHMEM:
     # in CI we've GPUs like T400 which have 4 GB RAM so we disable NVSHMEM's
     # NCCL usage, as NCCL isn't required in our NVSHMEM usage.
     NVSHMEM_DISABLE_NCCL: 1
+    GPU_VENDOR: "NVIDIA"
+    GPU_COUNT: 2
   tags:
-    - k8s-scilifelab
+    - $GITLAB_RUNNER_TAG_2X_NVIDIA_GPU
   needs:
     - job: gromacs:gcc-11-cuda-11.7.1:buildMPI-NVSHMEM
     - job: regressiontests:prepare
@@ -104,4 +111,3 @@ gromacs:gcc-11-cuda-11.7.1:regressiontest-gpucommupd-MPI-NVSHMEM:
       - regressiontests
     when: always
     expire_in: 1 week
-
