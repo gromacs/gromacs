@@ -106,11 +106,7 @@ void runTest(const DeviceContext& deviceContext, ArrayRef<T> input, ArrayRef<T> 
     auto outputRef = charArrayRefFromArray(output.data(), output.size());
 
     ASSERT_EQ(inputRef.size(), outputRef.size());
-#if !GMX_GPU_HIP
     doDeviceTransfers(deviceContext, inputRef, outputRef);
-#else
-    GMX_UNUSED_VALUE(deviceContext);
-#endif
     compareViews(input, output);
 }
 
@@ -328,9 +324,9 @@ TYPED_TEST(HostAllocatorTestNoMem, Comparison)
     EXPECT_NE(AllocatorType{}, AllocatorType{ PinningPolicy::PinnedIfSupported });
 }
 
-#if GMX_GPU_CUDA || GMX_GPU_SYCL
+#if GMX_GPU_CUDA || GMX_GPU_SYCL || GMX_GPU_HIP
 
-// Policy suitable for pinning is only supported for a CUDA and SYCL build
+// Policy suitable for pinning is supported for a CUDA, HIP or SYCL build
 
 TYPED_TEST(HostAllocatorTestCopyable, TransfersWithPinningWorkWithDevice)
 {
@@ -350,7 +346,7 @@ TYPED_TEST(HostAllocatorTestCopyable, TransfersWithPinningWorkWithDevice)
 
 #endif
 
-#if GMX_GPU_CUDA
+#if GMX_GPU_CUDA || GMX_GPU_HIP
 
 // While we can allocate pinned memory with SYCL, we don't support isHostMemoryPinned yet. See #4522
 
@@ -362,7 +358,7 @@ bool isPinned(const VectorType& v)
     return isHostMemoryPinned(data);
 }
 
-TYPED_TEST(HostAllocatorTestCopyable, ManualPinningOperationsWorkWithCuda)
+TYPED_TEST(HostAllocatorTestCopyable, ManualPinningOperationsWork)
 {
     for (const auto& testDevice : getTestHardwareEnvironment()->getTestDeviceList())
     {

@@ -37,6 +37,7 @@
 __global__ void kernel (void) {
     float num = 0.;
     atomicAdd(&num, 1.3);
+    auto result =  __builtin_amdgcn_update_dpp(0, 0, 0x101, 0xf, 0xf, true);
 }
 
 int

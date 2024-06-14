@@ -54,6 +54,10 @@
 #    include <cuda_runtime.h>
 #endif
 
+#if GMX_GPU_HIP
+#    include <hip/hip_runtime.h>
+#endif
+
 #if GMX_GPU_OPENCL
 #    include "gromacs/gpu_utils/gmxopencl.h"
 #endif
@@ -179,6 +183,9 @@ struct DeviceInformation
 #if GMX_GPU_CUDA
     //! CUDA device properties.
     cudaDeviceProp prop;
+#elif GMX_GPU_HIP
+    //! HIP device properties.
+    hipDeviceProp_t prop;
 #elif GMX_GPU_OPENCL
     cl_platform_id oclPlatformId;       //!< OpenCL Platform ID.
     cl_device_id   oclDeviceId;         //!< OpenCL Device ID.

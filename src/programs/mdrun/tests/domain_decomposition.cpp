@@ -161,6 +161,7 @@ std::optional<std::string> reasonsTestIsInvalid(MdpFlavor       mdpFlavor,
     errorReasons.appendIf(updateFlavor == UpdateFlavor::Gpu && pmeFlavor == PmeFlavor::Cpu
                                   && separatePmeRankFlavor != SeparatePmeRankFlavor::None,
                           "Can not use GPU update and CPU PME on a separate rank");
+    errorReasons.appendIf(GMX_GPU_HIP, "HIP kernels are not implemented yet");
 #endif
     errorReasons.appendIf(haveAnyGpuWork && nonbondedFlavor == NonbondedFlavor::Cpu,
                           "Cannot offload PME or Update to GPU without offloading Nonbondeds");

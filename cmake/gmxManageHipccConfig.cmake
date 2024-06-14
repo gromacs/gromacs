@@ -116,7 +116,7 @@ endfunction()
 set(GMX_HIP_HIPCC_FLAGS)
 # If the users doesn't limit the architectures to generate code for, use an exhaustive list of possible targets, taken from compiler reference
 # https://github.com/ROCm/ROCR-Runtime/blob/rocm-5.7.x/src/core/runtime/isa.cpp and https://rocm.docs.amd.com/_/downloads/HIP/en/latest/pdf/
-set(GMX_HIP_TARGET_ARCH "gfx701,gfx801,gfx802,gfx803,gfx900,gfx906,gfx90a,gfx90c,gfx940,gfx941,gfx942,gfx1010,gfx1011,gfx1012,gfx1030,gfx1031,gfx1034,gfx1100" CACHE STRING "Comma-separated list of target architectures to generate device code")
+set(GMX_HIP_TARGET_ARCH "gfx801,gfx802,gfx803,gfx900,gfx906,gfx90a,gfx90c,gfx940,gfx941,gfx942,gfx1010,gfx1011,gfx1012,gfx1030,gfx1031,gfx1034,gfx1100" CACHE STRING "Comma-separated list of target architectures to generate device code")
 
 gmx_check_hip_architectures("${GMX_HIP_TARGET_ARCH}")
 
@@ -146,6 +146,7 @@ if(${_cmake_build_type} STREQUAL "RELEASE")
     gmx_hip_check_single_flag("-DNDEBUG")
 elseif(${_cmake_build_type} MATCHES "DEB") # should match all builds that include debug symbols, but exclude other RELWITH* builds
     gmx_hip_check_single_flag("-ggdb")
+    gmx_hip_check_single_flag("-O0")
 endif()
 
 # This helper function creates a temporary scope in which we can set
