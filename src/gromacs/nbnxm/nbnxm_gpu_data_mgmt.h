@@ -67,7 +67,7 @@ void gpu_free_platform_specific(NbnxmGpu* nb);
 void getExclusiveScanWorkingArraySize(size_t& scan_size, gpu_plist* d_plist, const DeviceStream& deviceStream);
 #if !GMX_GPU_CUDA
 // CUDA's CUB requires temporary data storage, and is defined there.
-// SYCL's oneDPL does not need one, so we can return 0 there too.
+// Current SYCL implementation does not need one, so we can return 0 there too.
 inline void getExclusiveScanWorkingArraySize(size_t& scan_size, gpu_plist*, const DeviceStream&)
 {
     scan_size = 0;

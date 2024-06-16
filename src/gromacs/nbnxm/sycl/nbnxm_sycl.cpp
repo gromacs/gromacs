@@ -50,6 +50,8 @@
 namespace Nbnxm
 {
 
+static void launchSciSortOnGpu(gpu_plist* plist, const DeviceStream& deviceStream);
+
 void gpu_launch_kernel_pruneonly(NbnxmGpu* nb, const InteractionLocality iloc, const int numParts)
 {
     gpu_plist* plist = nb->plist[iloc];
@@ -91,6 +93,10 @@ void gpu_launch_kernel_pruneonly(NbnxmGpu* nb, const InteractionLocality iloc, c
     }
 
     launchNbnxmKernelPruneOnly(nb, iloc, numParts, numSciInPartMax);
+    if (plist->haveFreshList && nbnxmSortListsOnGpu())
+    {
+        launchSciSortOnGpu(plist, *nb->deviceStreams[iloc]);
+    }
 
     if (plist->haveFreshList)
     {
@@ -102,6 +108,7 @@ void gpu_launch_kernel_pruneonly(NbnxmGpu* nb, const InteractionLocality iloc, c
         nb->didRollingPrune[iloc] = true; // Mark that rolling pruning has been done
     }
 }
+
 
 void gpu_launch_kernel(NbnxmGpu* nb, const gmx::StepWorkload& stepWork, const Nbnxm::InteractionLocality iloc)
 {
@@ -126,7 +133,126 @@ void gpu_launch_kernel(NbnxmGpu* nb, const gmx::StepWorkload& stepWork, const Nb
         return;
     }
 
-    launchNbnxmKernel(nb, stepWork, iloc);
+    /* Whether we need to call a combined prune and interaction kernel or just an interaction
+     * kernel. doPrune being true implies we are not using dynamic pruning and are in the first
+     * call to the interaction kernel after a neighbour list step */
+    bool doPrune = (plist->haveFreshList && !nb->timers->interaction[iloc].didPrune);
+
+    launchNbnxmKernel(nb, stepWork, iloc, doPrune);
+    if (doPrune && nbnxmSortListsOnGpu())
+    {
+        launchSciSortOnGpu(plist, *nb->deviceStreams[iloc]);
+    }
+}
+
+/*! \brief SYCL exclusive prefix sum kernel for list sorting.
+ *
+ * As of oneAPI 2024.1, \c oneapi::dpl::experimental::exclusive_scan_async for inputs <= 16384
+ * elements simply launches a single work-group and uses sycl::joint_exclusive_scan. We have,
+ * somewhat arbitrary, input size of 8192, so we're fine replicating the same approach.
+ *
+ * NVIDIA's CUB uses fancier approach ("Single-pass Parallel Prefix Scan with Decoupled Look-back"),
+ * but we are unlikely to need it here since this kernel is very small anyway.
+ *
+ * \tparam workGroupSize Size of the (only) work-group.
+ * \tparam nElements Input array size; should be a multiple of workGroupSize.
+ * \param gm_input Input data buffer, should contain nElements elements of type \c int.
+ * \param gm_output Output data buffer, should have enough space for nElements elements of type \c int.
+ *
+ * \warning This kernel should be launched with only a single work-group of size workGroupSize.
+ * \warning This kernel is inefficient for large inputs (oneDPL uses it with <= 16384 elements).
+ */
+template<int workGroupSize, int nElements>
+static auto nbnxnKernelExclusivePrefixSum(const int* __restrict__ gm_input, int* __restrict__ gm_output)
+{
+    static_assert(nElements % workGroupSize == 0, "This simple scan kernel does not handle padding");
+    return [=](sycl::nd_item<1> itemIdx) {
+        const sycl::group<1> workGroup = itemIdx.get_group();
+        sycl::joint_exclusive_scan(
+                workGroup, gm_input, gm_input + nElements, gm_output, 0, sycl::plus<int>{});
+    };
+}
+//! SYCL kernel name
+class ExclusivePrefixSum;
+
+/*! \brief SYCL bucket sci sort kernel.
+ *
+ *  Sorts sci in order from most to least neighbours, using the count sort algorithm
+ *
+ *  Unlike the cpu version of sci sort, this kernel uses counts which only contain pairs which have
+ *  not been masked out, giving an ordering which more accurately represents the work which will be
+ *  done in the non bonded force kernel. The counts themselves are generated in the prune kernel.
+ *
+ * \param gm_sci Unsorted pair list.
+ * \param gm_sciCount Total number of sci with exactly \c i neighbours
+ * \param gm_sciOffset Exclusive prefix sum of gm_sciCount. \c gm_sciOffset[i] is the offset that
+ *                     the first sci with \c i neighbours will have in the sorted sci
+ *                     list. All other sci with i neighbours will be placed randomly in
+ *                     positions \c gm_sciOffset[i] to \c gm_sciOffset[i+1] exclusive.
+ * \param gm_sciSorted Sorted pair list.
+ */
+static auto nbnxnKernelBucketSciSort(const nbnxn_sci_t* __restrict__ gm_sci,
+                                     const int* __restrict__ gm_sciCount,
+                                     int* __restrict__ gm_sciOffset,
+                                     nbnxn_sci_t* __restrict__ gm_sciSorted)
+{
+    return [=](sycl::id<1> itemIdx) {
+        using sycl::memory_order, sycl::memory_scope, sycl::access::address_space;
+
+        const int         idx      = itemIdx[0];
+        const nbnxn_sci_t sci      = gm_sci[idx];
+        const int         sciCount = gm_sciCount[idx];
+        // Choose an order in the sorted list for sci with the same number of neighbours as each other.
+        // We want each sci with the same count to go somewhere in the list between sciOffset[count]
+        // to sciOffset[count+1] exclusive.
+        // As the amount of work for each of these in the non bonded force kernel will
+        // be equivalent, the order within these bounds does not matter.
+        sycl::atomic_ref<int, memory_order::relaxed, memory_scope::device, address_space::global_space> offsetRef(
+                gm_sciOffset[sciCount]);
+
+        const int sciOffset = offsetRef.fetch_add(1);
+        // Insert the sci into the sorted list at the chosen index
+        gm_sciSorted[sciOffset] = sci;
+    };
+}
+//! SYCL kernel name
+class BucketSciSort;
+
+template<int workGroupSize>
+static void launchPrefixSumKernel(sycl::queue& q, gpuPlistSorting* sorting)
+{
+    q.submit(GMX_SYCL_DISCARD_EVENT[&](sycl::handler & cgh) {
+        cgh.parallel_for<ExclusivePrefixSum>(
+                sycl::nd_range<1>{ workGroupSize, workGroupSize },
+                nbnxnKernelExclusivePrefixSum<workGroupSize, c_sciHistogramSize>(
+                        sorting->sciHistogram.get_pointer(), sorting->sciOffset.get_pointer()));
+    });
+}
+
+static void launchBucketSortKernel(sycl::queue& q, gpu_plist* plist)
+{
+    const size_t size = plist->nsci;
+    q.submit(GMX_SYCL_DISCARD_EVENT[&](sycl::handler & cgh) {
+        cgh.parallel_for<BucketSciSort>(
+                sycl::range<1>{ size },
+                nbnxnKernelBucketSciSort(plist->sci.get_pointer(),
+                                         plist->sorting.sciCount.get_pointer(),
+                                         plist->sorting.sciOffset.get_pointer(),
+                                         plist->sorting.sciSorted.get_pointer()));
+    });
+}
+static void launchSciSortOnGpu(gpu_plist* plist, const DeviceStream& deviceStream)
+{
+    sycl::queue q = deviceStream.stream();
+
+    /* We are launching a single work-group, and it should be, in principle, as large as possible.
+     * E.g., on PVC1100, wgSizeScan=1024 is ~1.2 times faster than wgSizeScan=512, and on
+     * MI250X ~1.7 times faster. But Intel iGPUs only handle 512.
+     * It should be autodetected, but for now we just use the universally supported value.
+     * The kernel takes 10-100µs and is run rarely, so it is of minor concern. */
+    constexpr int wgSizeScan = 512;
+    launchPrefixSumKernel<wgSizeScan>(q, &plist->sorting);
+    launchBucketSortKernel(q, plist);
 }
 
 } // namespace Nbnxm

@@ -63,8 +63,9 @@ using gmx::InteractionLocality;
  * \param nb Non-bonded parameters.
  * \param stepWork Workload flags for the current step.
  * \param iloc Interaction locality.
+ * \param doPrune Whether to do neighborlist pruning.
  */
-void launchNbnxmKernel(NbnxmGpu* nb, const gmx::StepWorkload& stepWork, const InteractionLocality iloc);
+void launchNbnxmKernel(NbnxmGpu* nb, const gmx::StepWorkload& stepWork, InteractionLocality iloc, bool doPrune);
 
 } // namespace Nbnxm
 

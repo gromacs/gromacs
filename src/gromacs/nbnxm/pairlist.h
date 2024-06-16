@@ -211,7 +211,7 @@ static constexpr int c_nbnxnGpuExclSize =
 //! Whether we want to use GPU for neighbour list sorting
 constexpr bool nbnxmSortListsOnGpu()
 {
-    return (GMX_GPU_CUDA != 0);
+    return (GMX_GPU_CUDA || GMX_GPU_SYCL);
 }
 
 /*! \internal

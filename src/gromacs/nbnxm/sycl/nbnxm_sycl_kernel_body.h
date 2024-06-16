@@ -375,7 +375,7 @@ static inline void reduceForceJAmdDpp(Float3 f, const int tidxi, const int aidx,
  * reduced in log2(cl_Size) steps using shift and atomically accumulate them into \p a_f.
  */
 static inline void reduceForceJShuffle(Float3                   f,
-                                       const sycl::nd_item<3>   itemIdx,
+                                       const sycl::nd_item<3>&  itemIdx,
                                        const int                tidxi,
                                        const int                aidx,
                                        sycl::global_ptr<Float3> a_f)
@@ -460,7 +460,7 @@ static inline float groupReduce(const sycl::nd_item<3> itemIdx,
  */
 static inline void reduceForceJGeneric(sycl::local_ptr<float>   sm_buf,
                                        Float3                   f,
-                                       const sycl::nd_item<3>   itemIdx,
+                                       const sycl::nd_item<3>&  itemIdx,
                                        const int                tidxi,
                                        const int                tidxj,
                                        const int                aidx,
@@ -895,6 +895,8 @@ static auto nbnxmKernel(sycl::handler& cgh,
                         const Float2* __restrict__ gm_nbfp /* used iff !ljComb<vdwType> */,
                         const Float2* __restrict__ gm_nbfpComb /* used iff ljEwald<vdwType> */,
                         const float* __restrict__ gm_coulombTab /* used iff elecEwaldTab<elecType> */,
+                        int* __restrict__ gm_sciHistogram,      /* used iff doPruneNBL */
+                        int* __restrict__ gm_sciCount,          /* used iff doPruneNBL */
                         const int             numTypes,
                         const float           rCoulombSq,
                         const float           rVdwSq,
@@ -978,6 +980,17 @@ static auto nbnxmKernel(sycl::handler& cgh,
                                                           : (needExtraElementForReduction ? 1 : 0);
     sycl::local_accessor<float, 1> sm_reductionBuffer(sycl::range<1>(sm_reductionBufferSize), cgh);
 
+    auto sm_prunedPairCount = [&]() {
+        if constexpr (doPruneNBL && nbnxmSortListsOnGpu())
+        {
+            return sycl::local_accessor<int, 1>(sycl::range<1>(1), cgh);
+        }
+        else
+        {
+            return nullptr;
+        }
+    }();
+
     /* Flag to control the calculation of exclusion forces in the kernel
      * We do that with Ewald (elec/vdw) and RF. Cut-off only has exclusion for energy terms. */
     constexpr bool doExclusionForces =
@@ -1059,6 +1072,17 @@ static auto nbnxmKernel(sycl::handler& cgh,
                 }
             }
         }
+
+        if constexpr (doPruneNBL && nbnxmSortListsOnGpu())
+        {
+            /* Initialise one int for reducing prunedPairCount over warps */
+            if (tidx == 0)
+            {
+                sm_prunedPairCount[0] = 0;
+            }
+        }
+        int prunedPairCount = 0;
+
         itemIdx.barrier(fence_space::local_space);
 
         float ewaldCoeffLJ_6_6; // Only needed if (props.vdwEwald)
@@ -1389,6 +1413,10 @@ static auto nbnxmKernel(sycl::handler& cgh,
                 /* Update the imask with the new one which does not contain the
                  * out of range clusters anymore. */
                 gm_plistCJPacked[jPacked].imei[imeiIdx].imask = imask;
+                if constexpr (nbnxmSortListsOnGpu())
+                {
+                    prunedPairCount += sycl::popcount(imask);
+                }
             }
         } // for (int jPacked = cijPackedBegin; jPacked < cijPackedEnd; jPacked += 1)
 
@@ -1410,6 +1438,26 @@ static auto nbnxmKernel(sycl::handler& cgh,
             {
                 atomicFetchAdd(gm_energyVdw[0], energyVdwGroup);
                 atomicFetchAdd(gm_energyElec[0], energyElecGroup);
+            }
+        }
+        if constexpr (doPruneNBL && nbnxmSortListsOnGpu())
+        {
+            /* aggregate neighbour counts, to be used in bucket sci sort */
+            /* One thread in each warp contributes the count for that warp as soon as it reaches
+             * here. Masks are calculated per warp in a warp synchronising operation, so no
+             * syncthreads required here. */
+            if (sg.leader())
+            {
+                atomicFetchAddLocal(sm_prunedPairCount[0], prunedPairCount);
+            }
+            itemIdx.barrier(fence_space::local_space);
+            prunedPairCount = sm_prunedPairCount[0];
+            if (tidxi == 0 && tidxj == 0)
+            {
+                /* one thread in the block writes the final count for this sci */
+                int index = sycl::max(c_sciHistogramSize - prunedPairCount - 1, 0);
+                atomicFetchAdd(gm_sciHistogram[index], 1);
+                gm_sciCount[bidx] = index;
             }
         }
     };
@@ -1476,13 +1524,16 @@ void launchNbnxmKernelHelper(NbnxmGpu* nb, const gmx::StepWorkload& stepWork, co
             adat->eElec.get_pointer(),
             adat->eLJ.get_pointer(),
             plist->cjPacked.get_pointer(),
-            plist->sci.get_pointer(),
+            (doPruneNBL || !nbnxmSortListsOnGpu()) ? plist->sci.get_pointer()
+                                                   : plist->sorting.sciSorted.get_pointer(),
             plist->excl.get_pointer(),
             adat->ljComb.get_pointer(),
             adat->atomTypes.get_pointer(),
             nbp->nbfp.get_pointer(),
             nbp->nbfp_comb.get_pointer(),
             nbp->coulomb_tab.get_pointer(),
+            plist->sorting.sciHistogram.get_pointer(),
+            plist->sorting.sciCount.get_pointer(),
             adat->numTypes,
             nbp->rcoulomb_sq,
             nbp->rvdw_sq,
