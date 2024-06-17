@@ -1985,18 +1985,6 @@ static DDSystemInfo getSystemInfo(const gmx::MDLogger&              mdlog,
                 systemInfo.cutoff = std::max(systemInfo.cutoff, systemInfo.minCutoffForMultiBody);
             }
         }
-        else if (ir.bPeriodicMols)
-        {
-            /* Can not easily determine the required cut-off */
-            GMX_LOG(mdlog.warning)
-                    .appendText(
-                            "NOTE: Periodic molecules are present in this system. Because of this, "
-                            "the domain decomposition algorithm cannot easily determine the "
-                            "minimum cell size that it requires for treating bonded interactions. "
-                            "Instead, domain decomposition will assume that half the non-bonded "
-                            "cut-off will be a suitable lower bound.");
-            systemInfo.minCutoffForMultiBody = systemInfo.cutoff / 2;
-        }
         else
         {
             real r_2b = 0;

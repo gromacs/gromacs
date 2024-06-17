@@ -16,6 +16,17 @@ in the :ref:`release-notes`.
 Fixes where mdrun could behave incorrectly
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+mdrun now computes the initial bonded distancs with periodic molecules
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+When using periodic molecules, mdrun could quit with an error message
+about multiple assignments of bonded interactions telling the user to
+report the issue. The actual source of this was that mdrun did not
+determine the communication distance required for bonded interactions.
+Now this distance is determined.
+
+:issue:`5086`
+
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
 
