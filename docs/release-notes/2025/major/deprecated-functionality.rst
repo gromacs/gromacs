@@ -12,3 +12,8 @@ Changes anticipated to |Gromacs| 2025 functionality
 
 Functionality deprecated in |Gromacs| 2025
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+MTTK pressure coupling is deprecated
+""""""""""""""""""""""""""""""""""""
+
+:issue:`5072`

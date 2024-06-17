@@ -4007,6 +4007,8 @@ void do_index(const char*                    mdparin,
             }
             if (ir->pressureCouplingOptions.epc == PressureCoupling::Mttk)
             {
+                wi->addNote("MTTK coupling is deprecated and will soon be removed");
+
                 if (ir->etc != TemperatureCoupling::NoseHoover)
                 {
                     gmx_fatal(FARGS,

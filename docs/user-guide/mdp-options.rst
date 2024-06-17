@@ -1181,9 +1181,9 @@ Pressure coupling
       but beware that you can get very large oscillations if you are
       starting from a different pressure. This requires a constant
       ensemble temperature for the system.
-      Currently it only supports isotropic scaling, and only works without
-      constraints.
-
+      It only supports isotropic scaling, and only works without constraints.
+      MTTK coupling is deprecated.
+      
 .. mdp:: pcoupltype
 
    Specifies the kind of isotropy of the pressure coupling used. Each
