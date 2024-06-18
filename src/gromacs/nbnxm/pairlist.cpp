@@ -2695,16 +2695,6 @@ static int getBufferFlagShift(int numAtomsPerCluster)
     return bufferFlagShift;
 }
 
-static bool pairlistIsSimple(const NbnxnPairlistCpu gmx_unused& pairlist)
-{
-    return true;
-}
-
-static bool pairlistIsSimple(const NbnxnPairlistGpu gmx_unused& pairlist)
-{
-    return false;
-}
-
 static void makeClusterListWrapper(NbnxnPairlistCpu* nbl,
                                    const Grid gmx_unused&          iGrid,
                                    const int                       ci,
@@ -2840,14 +2830,9 @@ static void nbnxn_make_pairlist_part(const Nbnxm::GridSet&   gridSet,
                                      T*                      nbl,
                                      t_nblist*               nbl_fep)
 {
-    matrix         box;
-    real           rl_fep2 = 0;
-    ivec           shp;
-    int            gridi_flag_shift = 0, gridj_flag_shift = 0;
-    gmx_bitmask_t* gridj_flag = nullptr;
+    constexpr bool c_listIsSimple = !std::is_same_v<T, NbnxnPairlistGpu>;
 
-    if (jGrid.geometry().isSimple != pairlistIsSimple(*nbl)
-        || iGrid.geometry().isSimple != pairlistIsSimple(*nbl))
+    if (jGrid.geometry().isSimple != c_listIsSimple || iGrid.geometry().isSimple != c_listIsSimple)
     {
         gmx_incons("Grid incompatible with pair-list");
     }
@@ -2860,6 +2845,9 @@ static void nbnxn_make_pairlist_part(const Nbnxm::GridSet&   gridSet,
 
     nbl->rlist = rlist;
 
+    int            gridi_flag_shift = 0;
+    int            gridj_flag_shift = 0;
+    gmx_bitmask_t* gridj_flag       = nullptr;
     if (bFBufferFlag)
     {
         /* Determine conversion of clusters to flag blocks */
@@ -2869,6 +2857,7 @@ static void nbnxn_make_pairlist_part(const Nbnxm::GridSet&   gridSet,
         gridj_flag = work->buffer_flags.data();
     }
 
+    matrix box;
     gridSet.getBox(box);
 
     const bool haveFep = gridSet.haveFep();
@@ -2878,6 +2867,7 @@ static void nbnxn_make_pairlist_part(const Nbnxm::GridSet&   gridSet,
     // Select the cluster pair distance kernel type
     const ClusterDistanceKernelType kernelType = getClusterDistanceKernelType(pairlistType, *nbat);
 
+    real rFepListSquared = 0;
     if (haveFep)
     {
         /* To reduce the cost of the expensive free-energy kernel for which
@@ -2893,19 +2883,19 @@ static void nbnxn_make_pairlist_part(const Nbnxm::GridSet&   gridSet,
         const real rlistFep = nbl->rlist + effective_buffer_1x1_vs_MxN(iGrid, jGrid);
 
         /* Make sure we don't go above the maximum allowed cut-off distance */
-        rl_fep2 = std::min(gmx::square(rlistFep), max_cutoff2(gridSet.domainSetup().pbcType_, box));
+        rFepListSquared =
+                std::min(gmx::square(rlistFep), max_cutoff2(gridSet.domainSetup().pbcType_, box));
 
         if (debug)
         {
-            fprintf(debug, "nbl_fep atom-pair rlist %f\n", std::sqrt(rl_fep2));
+            fprintf(debug, "nbl_fep atom-pair rlist %f\n", std::sqrt(rFepListSquared));
         }
     }
 
     const Grid::Dimensions& iGridDims = iGrid.dimensions();
     const Grid::Dimensions& jGridDims = jGrid.dimensions();
 
-    const float rbb2 =
-            boundingbox_only_distance2(iGridDims, jGridDims, nbl->rlist, pairlistIsSimple(*nbl));
+    const float rbb2 = boundingbox_only_distance2(iGridDims, jGridDims, nbl->rlist, c_listIsSimple);
 
     if (debug)
     {
@@ -2915,6 +2905,7 @@ static void nbnxn_make_pairlist_part(const Nbnxm::GridSet&   gridSet,
     const bool isIntraGridList = (&iGrid == &jGrid);
 
     /* Set the shift range */
+    IVec shiftRange;
     for (int d = 0; d < DIM; d++)
     {
         /* Check if we need periodicity shifts.
@@ -2923,7 +2914,7 @@ static void nbnxn_make_pairlist_part(const Nbnxm::GridSet&   gridSet,
         if (d >= numPbcDimensions(gridSet.domainSetup().pbcType_)
             || gridSet.domainSetup().haveMultipleDomainsPerDim[d])
         {
-            shp[d] = 0;
+            shiftRange[d] = 0;
         }
         else
         {
@@ -2931,19 +2922,18 @@ static void nbnxn_make_pairlist_part(const Nbnxm::GridSet&   gridSet,
                     listRangeForGridCellToGridCell(rlist, iGrid.dimensions(), jGrid.dimensions());
             if (d == XX && box[XX][XX] - std::fabs(box[YY][XX]) - std::fabs(box[ZZ][XX]) < listRangeCellToCell)
             {
-                shp[d] = 2;
+                shiftRange[d] = 2;
             }
             else
             {
-                shp[d] = 1;
+                shiftRange[d] = 1;
             }
         }
     }
-    const bool                       bSimple = pairlistIsSimple(*nbl);
     gmx::ArrayRef<const BoundingBox> bb_i;
 #if NBNXN_BBXXXX
     gmx::ArrayRef<const float> pbb_i;
-    if (bSimple)
+    if (c_listIsSimple)
     {
         bb_i = iGrid.iBoundingBoxes();
     }
@@ -2983,18 +2973,18 @@ static void nbnxn_make_pairlist_part(const Nbnxm::GridSet&   gridSet,
     int ci_y = 0;
     while (next_ci(iGrid, nth, ci_block, &ci_x, &ci_y, &ci_b, &ci))
     {
-        if (bSimple && flags_i[ci] == 0)
+        if (c_listIsSimple && flags_i[ci] == 0)
         {
             continue;
         }
         const int ncj_old_i = getNumSimpleJClustersInList(*nbl);
 
         real d2cx = 0;
-        if (!isIntraGridList && shp[XX] == 0)
+        if (!isIntraGridList && shiftRange[XX] == 0)
         {
-            const real bx1 =
-                    bSimple ? bb_i[ci].upper.x
-                            : iGridDims.lowerCorner[XX] + (real(ci_x) + 1) * iGridDims.cellSize[XX];
+            const real bx1 = c_listIsSimple ? bb_i[ci].upper.x
+                                            : iGridDims.lowerCorner[XX]
+                                                      + (real(ci_x) + 1) * iGridDims.cellSize[XX];
             if (bx1 < jGridDims.lowerCorner[XX])
             {
                 d2cx = gmx::square(jGridDims.lowerCorner[XX] - bx1);
@@ -3009,7 +2999,7 @@ static void nbnxn_make_pairlist_part(const Nbnxm::GridSet&   gridSet,
         int ci_xy = ci_x * iGridDims.numCells[YY] + ci_y;
 
         /* Loop over shift vectors in three dimensions */
-        for (int tz = -shp[ZZ]; tz <= shp[ZZ]; tz++)
+        for (int tz = -shiftRange[ZZ]; tz <= shiftRange[ZZ]; tz++)
         {
             const real shz = real(tz) * box[ZZ][ZZ];
 
@@ -3040,14 +3030,15 @@ static void nbnxn_make_pairlist_part(const Nbnxm::GridSet&   gridSet,
             }
             /* The check with bz1_frac close to or larger than 1 comes later */
 
-            for (int ty = -shp[YY]; ty <= shp[YY]; ty++)
+            for (int ty = -shiftRange[YY]; ty <= shiftRange[YY]; ty++)
             {
                 const real shy = real(ty) * box[YY][YY] + real(tz) * box[ZZ][YY];
 
-                const real by0 = bSimple ? bb_i[ci].lower.y + shy
-                                         : iGridDims.lowerCorner[YY]
-                                                   + (real(ci_y)) * iGridDims.cellSize[YY] + shy;
-                const real by1 = bSimple ? bb_i[ci].upper.y + shy
+                const real by0 = c_listIsSimple ? bb_i[ci].lower.y + shy
+                                                : iGridDims.lowerCorner[YY]
+                                                          + (real(ci_y)) * iGridDims.cellSize[YY] + shy;
+                const real by1 = c_listIsSimple
+                                         ? bb_i[ci].upper.y + shy
                                          : iGridDims.lowerCorner[YY]
                                                    + (real(ci_y) + 1) * iGridDims.cellSize[YY] + shy;
 
@@ -3069,7 +3060,7 @@ static void nbnxn_make_pairlist_part(const Nbnxm::GridSet&   gridSet,
                     d2z_cy += gmx::square(by0 - jGridDims.upperCorner[YY]);
                 }
 
-                for (int tx = -shp[XX]; tx <= shp[XX]; tx++)
+                for (int tx = -shiftRange[XX]; tx <= shiftRange[XX]; tx++)
                 {
                     const int shift = xyzToShiftIndex(tx, ty, tz);
 
@@ -3083,10 +3074,12 @@ static void nbnxn_make_pairlist_part(const Nbnxm::GridSet&   gridSet,
                     const real shx =
                             real(tx) * box[XX][XX] + real(ty) * box[YY][XX] + real(tz) * box[ZZ][XX];
 
-                    const real bx0 = bSimple ? bb_i[ci].lower.x + shx
+                    const real bx0 = c_listIsSimple
+                                             ? bb_i[ci].lower.x + shx
                                              : iGridDims.lowerCorner[XX]
                                                        + (real(ci_x)) * iGridDims.cellSize[XX] + shx;
-                    const real bx1 = bSimple ? bb_i[ci].upper.x + shx
+                    const real bx1 = c_listIsSimple
+                                             ? bb_i[ci].upper.x + shx
                                              : iGridDims.lowerCorner[XX]
                                                        + (real(ci_x) + 1) * iGridDims.cellSize[XX] + shx;
 
@@ -3298,7 +3291,7 @@ static void nbnxn_make_pairlist_part(const Nbnxm::GridSet&   gridSet,
                                       shx,
                                       shy,
                                       shz,
-                                      rl_fep2,
+                                      rFepListSquared,
                                       iGrid,
                                       jGrid,
                                       nbl_fep);
