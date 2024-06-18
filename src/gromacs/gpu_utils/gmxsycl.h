@@ -43,35 +43,7 @@
 
 #include "config.h"
 
-// For hipSYCL, we need to activate floating-point atomics
-#if GMX_SYCL_HIPSYCL
-#    define HIPSYCL_EXT_FP_ATOMICS
-#    pragma clang diagnostic push
-#    pragma clang diagnostic ignored "-Wunused-variable"
-#    pragma clang diagnostic ignored "-Wunused-parameter"
-#    pragma clang diagnostic ignored "-Wmissing-noreturn"
-#    pragma clang diagnostic ignored "-Wshadow-field"
-#    pragma clang diagnostic ignored "-Wctad-maybe-unsupported"
-#    pragma clang diagnostic ignored "-Wdeprecated-copy-dtor"
-#    pragma clang diagnostic ignored "-Winconsistent-missing-destructor-override"
-#    pragma clang diagnostic ignored "-Wunused-template"
-#    pragma clang diagnostic ignored "-Wsign-compare"
-#    pragma clang diagnostic ignored "-Wundefined-reinterpret-cast"
-#    pragma clang diagnostic ignored "-Wdeprecated-copy"
-#    pragma clang diagnostic ignored "-Wnewline-eof"
-#    pragma clang diagnostic ignored "-Wextra-semi"
-#    pragma clang diagnostic ignored "-Wsuggest-override"
-#    pragma clang diagnostic ignored "-Wsuggest-destructor-override"
-#    pragma clang diagnostic ignored "-Wgcc-compat"
-#    include <sycl/sycl.hpp>
-#    pragma clang diagnostic pop
-#else // DPC++
-// Needed for CUDA targets https://github.com/intel/llvm/issues/5936, enabled for SPIR automatically
-#    if defined(__SYCL_DEVICE_ONLY__) && defined(__NVPTX__)
-#        define SYCL_USE_NATIVE_FP_ATOMICS 1
-#    endif
-#    include <sycl/sycl.hpp>
-#endif
+#include <sycl/sycl.hpp>
 
 /* Macro to optimize runtime performance by not recording unnecessary events.
  *
