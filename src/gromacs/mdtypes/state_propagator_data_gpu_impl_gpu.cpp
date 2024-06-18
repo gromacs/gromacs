@@ -73,10 +73,19 @@ StatePropagatorDataGpu::Impl::Impl(const DeviceStreamManager& deviceStreamManage
             "GPU state propagator data object should only be constructed on the GPU code-paths.");
 
     // We need to keep local copies for re-initialization.
-    pmeStream_      = &deviceStreamManager.stream(DeviceStreamType::Pme);
-    localStream_    = &deviceStreamManager.stream(DeviceStreamType::NonBondedLocal);
-    nonLocalStream_ = &deviceStreamManager.stream(DeviceStreamType::NonBondedNonLocal);
-    updateStream_   = &deviceStreamManager.stream(DeviceStreamType::UpdateAndConstraints);
+    pmeStream_      = deviceStreamManager.streamIsValid(DeviceStreamType::Pme)
+                              ? &deviceStreamManager.stream(DeviceStreamType::Pme)
+                              : nullptr;
+    localStream_    = deviceStreamManager.streamIsValid(DeviceStreamType::NonBondedLocal)
+                              ? &deviceStreamManager.stream(DeviceStreamType::NonBondedLocal)
+                              : nullptr;
+    nonLocalStream_ = deviceStreamManager.streamIsValid(DeviceStreamType::NonBondedNonLocal)
+                              ? &deviceStreamManager.stream(DeviceStreamType::NonBondedNonLocal)
+                              : nullptr;
+    updateStream_   = deviceStreamManager.streamIsValid(DeviceStreamType::UpdateAndConstraints)
+                              ? &deviceStreamManager.stream(DeviceStreamType::UpdateAndConstraints)
+                              : nullptr;
+
 
     // Map the atom locality to the stream that will be used for coordinates,
     // velocities and forces transfers. Same streams are used for H2D and D2H copies.

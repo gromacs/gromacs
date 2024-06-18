@@ -27,6 +27,16 @@ Now this distance is determined.
 
 :issue:`5086`
 
+Avoid using invalid device streams
+""""""""""""""""""""""""""""""""""
+
+Issue has only been seen via assertions in the GCC 13 standard
+library that guard against null-pointer dereferences.
+The dereferenced null pointers were never used in actual
+simulations.
+
+:issue:`5087`
+
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -59,3 +69,4 @@ Fixes that affect portability
 
 Miscellaneous
 ^^^^^^^^^^^^^
+
