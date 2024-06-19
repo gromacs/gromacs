@@ -41,9 +41,18 @@
 
 #include "gromacs/random/tabulatednormaldistribution.h"
 
+#include <cmath>
+#include <cstddef>
+
+#include <array>
+#include <string>
+#include <vector>
+
 #include <gtest/gtest.h>
 
+#include "gromacs/random/seed.h"
 #include "gromacs/random/threefry.h"
+#include "gromacs/utility/real.h"
 
 #include "testutils/refdata.h"
 #include "testutils/testasserts.h"

@@ -44,7 +44,10 @@
 
 #include "config.h"
 
+#include <filesystem>
+#include <iterator>
 #include <numeric>
+#include <type_traits>
 #include <vector>
 
 #include "gromacs/taskassignment/decidegpuusage.h"

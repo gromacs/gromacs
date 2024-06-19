@@ -42,9 +42,12 @@
 #include "gromacs/compat/pointers.h"
 
 #include <memory>
+#include <string>
 #include <vector>
 
 #include <gtest/gtest.h>
+
+#include "gromacs/utility/basedefinitions.h"
 
 #include "testutils/testasserts.h"
 

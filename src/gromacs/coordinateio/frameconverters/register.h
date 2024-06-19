@@ -42,10 +42,16 @@
 #ifndef GMX_COORDINATIO_FRAMECONVERTERS_REGISTER_H
 #define GMX_COORDINATIO_FRAMECONVERTERS_REGISTER_H
 
+#include <memory>
+#include <utility>
 #include <vector>
 
+#include "gromacs/coordinateio/frameconverterenums.h"
 #include "gromacs/coordinateio/iframeconverter.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/math/vectypes.h"
+
+struct t_trxframe;
 
 namespace gmx
 {

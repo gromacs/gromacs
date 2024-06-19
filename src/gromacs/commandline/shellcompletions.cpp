@@ -51,6 +51,7 @@
 #include "gromacs/commandline/cmdlinehelpcontext.h"
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/filetypes.h"
+#include "gromacs/options/abstractoption.h"
 #include "gromacs/options/basicoptions.h"
 #include "gromacs/options/filenameoption.h"
 #include "gromacs/options/options.h"
@@ -63,6 +64,7 @@
 
 namespace gmx
 {
+class OptionSectionInfo;
 
 namespace
 {

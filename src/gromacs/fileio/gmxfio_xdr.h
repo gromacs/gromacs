@@ -35,6 +35,7 @@
 #define GMX_FILEIO_GMXFIO_XDR_H
 
 #include <cstddef>
+#include <cstdint>
 
 #include <string>
 

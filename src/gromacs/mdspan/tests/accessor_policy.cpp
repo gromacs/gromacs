@@ -40,7 +40,10 @@
 
 #include "gromacs/mdspan/accessor_policy.h"
 
+#include <cstddef>
+
 #include <array>
+#include <string>
 
 #include <gtest/gtest.h>
 

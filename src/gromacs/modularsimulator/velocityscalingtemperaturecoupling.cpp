@@ -43,18 +43,34 @@
 
 #include "velocityscalingtemperaturecoupling.h"
 
+#include <cmath>
+#include <cstdio>
+
+#include <algorithm>
+#include <functional>
 #include <numeric>
+#include <type_traits>
 
 #include "gromacs/domdec/domdec_network.h"
+#include "gromacs/math/functions.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/coupling.h"
 #include "gromacs/mdlib/stat.h"
+#include "gromacs/mdrun/isimulator.h"
 #include "gromacs/mdtypes/checkpointdata.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/group.h"
 #include "gromacs/mdtypes/inputrec.h"
+#include "gromacs/mdtypes/md_enums.h"
+#include "gromacs/mdtypes/observablesreducer.h"
+#include "gromacs/modularsimulator/energydata.h"
+#include "gromacs/modularsimulator/modularsimulatorinterfaces.h"
+#include "gromacs/modularsimulator/propagator.h"
+#include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/strconvert.h"
 
 #include "modularsimulator.h"
@@ -62,6 +78,11 @@
 
 namespace gmx
 {
+class FreeEnergyPerturbationData;
+class StatePropagatorData;
+enum class ReferenceTemperatureChangeAlgorithm;
+template<CheckpointDataOperation operation>
+class CheckpointData;
 
 /*! \internal
  * \brief Data used by the concrete temperature coupling implementations

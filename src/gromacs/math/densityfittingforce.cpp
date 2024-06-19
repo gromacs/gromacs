@@ -42,8 +42,17 @@
 
 #include "gromacs/math/densityfittingforce.h"
 
+#include <array>
+#include <memory>
+
 #include "gromacs/math/functions.h"
+#include "gromacs/math/gausstransform.h"
 #include "gromacs/math/multidimarray.h"
+#include "gromacs/math/vectypes.h"
+#include "gromacs/mdspan/extensions.h"
+#include "gromacs/mdspan/extents.h"
+#include "gromacs/mdspan/mdspan.h"
+#include "gromacs/utility/arrayref.h"
 
 namespace gmx
 {

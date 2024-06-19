@@ -48,6 +48,7 @@
 #include "gromacs/mdtypes/enerdata.h"
 #include "gromacs/mdtypes/threaded_force_buffer.h"
 #include "gromacs/utility/arrayref.h"
+#include "gromacs/utility/real.h"
 
 struct gmx_enerdata_t;
 struct gmx_wallcycle;

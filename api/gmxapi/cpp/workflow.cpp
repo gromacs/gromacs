@@ -35,8 +35,11 @@
 #include "workflow.h"
 
 #include <memory>
+#include <utility>
 
 #include "gromacs/utility/gmxassert.h"
+
+#include "gmxapi/exceptions.h"
 
 #include "workflow_impl.h"
 

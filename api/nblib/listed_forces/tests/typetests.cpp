@@ -40,18 +40,33 @@
  * \author Prashanth Kanduri <kanduri@cscs.ch>
  * \author Sebastian Keller <keller@cscs.ch>
  */
+#include <string>
+#include <type_traits>
+#include <vector>
+
+#include <gtest/gtest.h>
+
 #include "listed_forces/dataflow.hpp"
 #include "listed_forces/tests/listedtesthelpers.h"
 
+#include "gromacs/math/vectypes.h"
+#include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/utility/arrayref.h"
 
 #include "testutils/refdata.h"
 #include "testutils/testasserts.h"
 
+#include "nblib/box.h"
+#include "nblib/listed_forces/bondtypes.h"
+#include "nblib/listed_forces/definitions.h"
+
+#include "pbc.hpp"
 #include "testhelpers.h"
 
 namespace nblib
 {
+template<class T, class TL>
+struct Contains;
 
 //! Coordinates for testing
 static const std::vector<gmx::RVec> c_coordinatesForDihTests = { { 0.0, 0.0, 0.0 },

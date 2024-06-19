@@ -44,12 +44,22 @@
 #ifndef NBLIB_TOPOLOGY_H
 #define NBLIB_TOPOLOGY_H
 
+#include <cstddef>
+
+#include <string>
+#include <tuple>
+#include <unordered_map>
+#include <utility>
 #include <vector>
 
+#include "nblib/basicdefinitions.h"
 #include "nblib/interactions.h"
+#include "nblib/kerneloptions.h"
+#include "nblib/listed_forces/bondtypes.h"
 #include "nblib/listed_forces/definitions.h"
 #include "nblib/molecules.h"
 #include "nblib/particlesequencer.h"
+#include "nblib/particletype.h"
 
 namespace nblib
 {

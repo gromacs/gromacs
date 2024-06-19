@@ -42,10 +42,14 @@
 
 #include "gromacs/options/filenameoptionmanager.h"
 
+#include <filesystem>
+#include <string>
+
 #include <gtest/gtest.h>
 
 #include "gromacs/fileio/filetypes.h"
 #include "gromacs/options/filenameoption.h"
+#include "gromacs/options/optionfiletype.h"
 #include "gromacs/options/options.h"
 #include "gromacs/options/optionsassigner.h"
 #include "gromacs/utility/exceptions.h"

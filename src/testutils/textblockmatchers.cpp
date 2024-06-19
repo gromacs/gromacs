@@ -44,6 +44,9 @@
 
 #include <memory>
 #include <regex>
+#include <string>
+#include <utility>
+#include <vector>
 
 #include "gromacs/utility/stringstream.h"
 #include "gromacs/utility/textreader.h"
@@ -53,6 +56,8 @@
 
 namespace gmx
 {
+class TextInputStream;
+
 namespace test
 {
 

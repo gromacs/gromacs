@@ -34,6 +34,8 @@
 #ifndef GMX_FILEIO_ENXIO_H
 #define GMX_FILEIO_ENXIO_H
 
+#include <cstdint>
+
 #include <filesystem>
 
 #include "gromacs/fileio/xdr_datatype.h"

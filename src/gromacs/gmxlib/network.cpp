@@ -43,6 +43,7 @@
 #include <cstring>
 
 #include <algorithm>
+#include <filesystem>
 #include <limits>
 
 #include "gromacs/commandline/filenm.h"

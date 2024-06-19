@@ -33,6 +33,10 @@
  */
 #include "gmxpre.h"
 
+#include <string>
+
+#include <gtest/gtest.h>
+
 #define BITMASK_SIZE 32
 #include "bitmask.h"
 

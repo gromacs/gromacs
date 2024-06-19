@@ -34,8 +34,11 @@
 #ifndef GMX_FILEIO_READINP_H
 #define GMX_FILEIO_READINP_H
 
+#include <cstdint>
+#include <cstdio>
 #include <cstring>
 
+#include <filesystem>
 #include <string>
 #include <utility>
 #include <vector>

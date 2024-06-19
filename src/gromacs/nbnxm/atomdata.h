@@ -44,15 +44,19 @@
 #ifndef GMX_NBNXN_ATOMDATA_H
 #define GMX_NBNXN_ATOMDATA_H
 
+#include <cstdint>
 #include <cstdio>
 
 #include <memory>
 #include <optional>
+#include <vector>
 
 #include "gromacs/gpu_utils/devicebuffer_datatype.h"
 #include "gromacs/gpu_utils/hostallocator.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/mdtypes/locality.h"
+#include "gromacs/utility/alignedallocator.h"
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/bitmask.h"
 #include "gromacs/utility/real.h"
 

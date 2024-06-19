@@ -42,12 +42,17 @@
 
 #include "gromacs/analysisdata/modules/displacement.h"
 
+#include <memory>
+#include <vector>
+
+#include "gromacs/analysisdata/abstractdata.h"
 #include "gromacs/analysisdata/dataframe.h"
 #include "gromacs/analysisdata/datamodulemanager.h"
 #include "gromacs/analysisdata/modules/histogram.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/real.h"
 #include "gromacs/utility/smalloc.h"
 
 namespace gmx

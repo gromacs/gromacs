@@ -43,6 +43,7 @@
 #include <algorithm>
 #include <atomic>
 #include <memory>
+#include <utility>
 
 #include "gromacs/mdlib/simulationsignal.h"
 #include "gromacs/mdrun/runner.h"

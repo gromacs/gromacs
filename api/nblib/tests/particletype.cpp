@@ -46,6 +46,8 @@
 
 #include <cmath>
 
+#include <gtest/gtest.h>
+
 #include "testutils/testasserts.h"
 
 #include "nblib/tests/testsystems.h"

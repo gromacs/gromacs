@@ -51,6 +51,7 @@
 #include <gtest/gtest.h>
 
 #include "gromacs/simd/simd.h"
+#include "gromacs/utility/real.h"
 
 #include "base.h"
 #include "data.h"

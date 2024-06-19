@@ -36,14 +36,20 @@
 #include "readir.h"
 
 #include <cctype>
+#include <cinttypes>
 #include <climits>
 #include <cmath>
+#include <cstdio>
 #include <cstdlib>
+#include <cstring>
 
 #include <algorithm>
+#include <array>
+#include <filesystem>
 #include <memory>
 #include <numeric>
 #include <string>
+#include <string_view>
 
 #include "gromacs/applied_forces/awh/read_params.h"
 #include "gromacs/fileio/readinp.h"
@@ -68,15 +74,21 @@
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/random/seed.h"
 #include "gromacs/selection/indexutil.h"
+#include "gromacs/topology/atoms.h"
 #include "gromacs/topology/block.h"
+#include "gromacs/topology/forcefieldparameters.h"
+#include "gromacs/topology/idef.h"
 #include "gromacs/topology/ifunc.h"
 #include "gromacs/topology/index.h"
 #include "gromacs/topology/mtop_atomloops.h"
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/topology/symtab.h"
 #include "gromacs/topology/topology.h"
+#include "gromacs/topology/topology_enums.h"
 #include "gromacs/utility/arrayref.h"
+#include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/enumerationhelpers.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/filestream.h"

@@ -43,6 +43,8 @@
 #ifndef GMX_MDRUNUTILITY_MDMODULESNOTIFIERS_H
 #define GMX_MDRUNUTILITY_MDMODULESNOTIFIERS_H
 
+#include <cstdint>
+
 #include <optional>
 #include <string>
 #include <vector>
@@ -51,6 +53,8 @@
 #include "gromacs/math/matrix.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/mdrunutility/mdmodulesnotifier.h"
+#include "gromacs/utility/arrayref.h"
+#include "gromacs/utility/real.h"
 
 
 struct t_commrec;

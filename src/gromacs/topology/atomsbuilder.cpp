@@ -41,12 +41,17 @@
 
 #include "gromacs/topology/atomsbuilder.h"
 
+#include <cstddef>
+
 #include <algorithm>
+#include <vector>
 
 #include "gromacs/math/vec.h"
+#include "gromacs/math/vectypes.h"
 #include "gromacs/topology/atoms.h"
 #include "gromacs/topology/symtab.h"
 #include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/real.h"
 #include "gromacs/utility/smalloc.h"
 
 namespace gmx

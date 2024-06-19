@@ -35,10 +35,12 @@
 #ifndef GMX_FILEIO_CHECKPOINT_H
 #define GMX_FILEIO_CHECKPOINT_H
 
+#include <cstdint>
 #include <cstdio>
 
 #include <filesystem>
 #include <limits>
+#include <string>
 #include <vector>
 
 #include "gromacs/compat/pointers.h"

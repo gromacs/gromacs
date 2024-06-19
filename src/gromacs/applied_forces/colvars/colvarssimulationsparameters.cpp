@@ -43,6 +43,8 @@
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/utility/exceptions.h"
 
+struct gmx_mtop_t;
+
 namespace gmx
 {
 

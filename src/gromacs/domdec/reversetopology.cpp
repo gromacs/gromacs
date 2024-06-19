@@ -47,23 +47,31 @@
 
 #include <cstdio>
 
+#include <algorithm>
 #include <memory>
 #include <vector>
 
 #include "gromacs/domdec/domdec_constraints.h"
 #include "gromacs/domdec/domdec_internal.h"
+#include "gromacs/domdec/domdec_struct.h"
 #include "gromacs/domdec/domdec_vsite.h"
 #include "gromacs/domdec/options.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/math/vectypes.h"
 #include "gromacs/mdlib/gmx_omp_nthreads.h"
 #include "gromacs/mdlib/vsite.h"
 #include "gromacs/mdtypes/inputrec.h"
+#include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/topology/atoms.h"
+#include "gromacs/topology/ifunc.h"
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/topology/topology.h"
+#include "gromacs/topology/topology_enums.h"
 #include "gromacs/topology/topsort.h"
 #include "gromacs/utility/arrayref.h"
+#include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/gmxassert.h"
 
 using gmx::ArrayRef;
 using gmx::DDBondedChecking;

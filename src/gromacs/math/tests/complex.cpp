@@ -40,11 +40,13 @@
  */
 #include "gmxpre.h"
 
+#include <string>
 #include <vector>
 
 #include <gtest/gtest.h>
 
 #include "gromacs/math/gmxcomplex.h"
+#include "gromacs/utility/real.h"
 
 #include "testutils/refdata.h"
 

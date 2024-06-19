@@ -42,13 +42,18 @@
 
 #include "gromacs/options/filenameoption.h"
 
+#include <cstdio>
 #include <cstring>
 
+#include <filesystem>
 #include <string>
 #include <vector>
 
 #include "gromacs/fileio/filetypes.h"
+#include "gromacs/options/abstractoption.h"
 #include "gromacs/options/filenameoptionmanager.h"
+#include "gromacs/options/optionfiletype.h"
+#include "gromacs/options/optionflags.h"
 #include "gromacs/options/optionmanagercontainer.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/enumerationhelpers.h"
@@ -60,6 +65,7 @@
 
 namespace gmx
 {
+class AbstractOptionStorage;
 
 namespace
 {

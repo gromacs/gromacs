@@ -44,8 +44,12 @@
 #include "gromacs/pbcutil/pbc_simd.h"
 
 #include "gromacs/math/vec.h"
+#include "gromacs/math/vectypes.h"
+#include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/simd/simd.h"
+#include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/real.h"
 
 using namespace gmx; // TODO: Remove when this file is moved into gmx namespace
 

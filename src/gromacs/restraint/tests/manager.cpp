@@ -36,7 +36,19 @@
 
 #include "gromacs/restraint/manager.h"
 
+#include <memory>
+#include <string>
+#include <vector>
+
 #include <gtest/gtest.h>
+
+#include "gromacs/restraint/restraintpotential.h"
+#include "gromacs/utility/basedefinitions.h"
+
+namespace gmxapi
+{
+class SessionResources;
+} // namespace gmxapi
 
 namespace
 {

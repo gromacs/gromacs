@@ -36,9 +36,12 @@
 
 #include "wholemoleculetransform.h"
 
+#include <algorithm>
+
 #include "gromacs/domdec/ga2la.h"
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/topology/topology.h"
+#include "gromacs/utility/gmxassert.h"
 
 namespace gmx
 {

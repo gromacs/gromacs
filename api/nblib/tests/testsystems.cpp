@@ -43,7 +43,15 @@
  */
 #include "testsystems.h"
 
+#include <map>
+#include <utility>
+
+#include "gromacs/math/vectypes.h"
+
 #include "nblib/exception.h"
+#include "nblib/interactions.h"
+#include "nblib/listed_forces/bondtypes.h"
+#include "nblib/util/util.hpp"
 
 namespace nblib
 {

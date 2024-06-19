@@ -36,6 +36,7 @@
 #include "statistics.h"
 
 #include <cmath>
+#include <cstdlib>
 
 #include "gromacs/math/functions.h"
 #include "gromacs/math/vec.h"

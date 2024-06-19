@@ -42,6 +42,7 @@
 
 #include "gromacs/options/repeatingsection.h"
 
+#include <string>
 #include <vector>
 
 #include <gtest/gtest.h>

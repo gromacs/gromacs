@@ -45,8 +45,11 @@
 
 #include "testutils/test_hardware_environment.h"
 
+#include <functional>
 #include <memory>
 #include <mutex>
+#include <string>
+#include <vector>
 
 #include "gromacs/gpu_utils/gpu_utils.h"
 #include "gromacs/hardware/detecthardware.h"
@@ -55,6 +58,10 @@
 #include "gromacs/utility/basenetwork.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/physicalnodecommunicator.h"
+
+#include "testutils/test_device.h"
+
+struct DeviceInformation;
 
 namespace gmx
 {

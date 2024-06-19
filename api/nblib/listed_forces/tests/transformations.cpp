@@ -43,6 +43,9 @@
 #include "listed_forces/transformations.h"
 
 #include <numeric>
+#include <string>
+#include <utility>
+#include <vector>
 
 #include <gtest/gtest.h>
 
@@ -50,6 +53,9 @@
 
 #include "testutils/refdata.h"
 #include "testutils/testasserts.h"
+
+#include "nblib/listed_forces/bondtypes.h"
+#include "nblib/util/traits.hpp"
 
 namespace nblib
 {

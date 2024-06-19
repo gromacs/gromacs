@@ -45,10 +45,14 @@
 #include "config.h"
 
 #include <algorithm>
+#include <memory>
+#include <string>
+#include <vector>
 
 #include <gtest/gtest.h>
 
 #include "gromacs/hardware/device_information.h"
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/inmemoryserializer.h"
 #include "gromacs/utility/stringutil.h"
 

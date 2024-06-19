@@ -41,11 +41,17 @@
 
 #include "gromacs/topology/symtab.h"
 
+#include <cstdio>
+
+#include <filesystem>
 #include <memory>
+#include <string>
+#include <vector>
 
 #include <gtest/gtest.h>
 
 #include "gromacs/utility/arrayref.h"
+#include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/inmemoryserializer.h"
 #include "gromacs/utility/strconvert.h"

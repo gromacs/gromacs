@@ -42,6 +42,13 @@
  */
 #include "nblib/topology.h"
 
+#include <cstddef>
+
+#include <algorithm>
+#include <array>
+#include <iterator>
+#include <map>
+
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
@@ -54,6 +61,8 @@
 #include "nblib/sequencing.hpp"
 #include "nblib/tests/testsystems.h"
 #include "nblib/topologyhelpers.h"
+#include "nblib/util/traits.hpp"
+#include "nblib/util/util.hpp"
 
 namespace nblib
 {

@@ -57,6 +57,8 @@
 #ifndef GMX_DOMDEC_DOMDEC_H
 #define GMX_DOMDEC_DOMDEC_H
 
+#include <cstddef>
+
 #include <vector>
 
 #include "gromacs/gpu_utils/devicebuffer_datatype.h"

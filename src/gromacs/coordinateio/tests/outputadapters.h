@@ -48,8 +48,14 @@
 
 #include "config.h"
 
+#include <memory>
+#include <string>
+
 #include <gtest/gtest.h>
 
+#include "gromacs/coordinateio/coordinatefileenums.h"
+#include "gromacs/coordinateio/ioutputadapter.h"
+#include "gromacs/coordinateio/outputadaptercontainer.h"
 #include "gromacs/coordinateio/outputadapters/outputselector.h"
 #include "gromacs/coordinateio/outputadapters/setatoms.h"
 #include "gromacs/coordinateio/outputadapters/setbox.h"
@@ -58,7 +64,14 @@
 #include "gromacs/coordinateio/outputadapters/setstarttime.h"
 #include "gromacs/coordinateio/outputadapters/settimestep.h"
 #include "gromacs/coordinateio/outputadapters/setvelocities.h"
+#include "gromacs/coordinateio/requirements.h"
 #include "gromacs/coordinateio/tests/coordinate_test.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/math/vectypes.h"
+#include "gromacs/selection/selection.h"
+#include "gromacs/utility/exceptions.h"
+
+#include "testutils/testasserts.h"
 
 namespace gmx
 {

@@ -43,8 +43,10 @@
 #include "testutils/simulationdatabase.h"
 
 #include <algorithm>
+#include <iterator>
 #include <map>
 #include <string>
+#include <vector>
 
 #include "gromacs/utility/stringutil.h"
 

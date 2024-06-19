@@ -43,9 +43,11 @@
 #ifndef GMX_MDLIB_CONSTR_H
 #define GMX_MDLIB_CONSTR_H
 
+#include <cstdint>
 #include <cstdio>
 
 #include <memory>
+#include <vector>
 
 #include "gromacs/math/vectypes.h"
 #include "gromacs/topology/idef.h"

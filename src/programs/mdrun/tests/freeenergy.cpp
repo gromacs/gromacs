@@ -43,6 +43,16 @@
 
 #include "config.h"
 
+#include <cstdio>
+
+#include <algorithm>
+#include <filesystem>
+#include <string>
+#include <tuple>
+#include <vector>
+
+#include <gtest/gtest.h>
+
 #include "gromacs/topology/ifunc.h"
 #include "gromacs/utility/filestream.h"
 #include "gromacs/utility/path.h"
@@ -52,7 +62,13 @@
 #include "testutils/refdata.h"
 #include "testutils/setenv.h"
 #include "testutils/simulationdatabase.h"
+#include "testutils/testasserts.h"
+#include "testutils/testfilemanager.h"
 #include "testutils/xvgtest.h"
+
+#include "programs/mdrun/tests/comparison_helpers.h"
+#include "programs/mdrun/tests/energycomparison.h"
+#include "programs/mdrun/tests/trajectorycomparison.h"
 
 #include "moduletest.h"
 #include "simulatorcomparison.h"

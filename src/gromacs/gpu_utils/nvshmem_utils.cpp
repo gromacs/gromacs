@@ -48,6 +48,9 @@
 
 #include "nvshmem_utils.h"
 
+#include "config.h"
+
+#include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
 #if GMX_NVSHMEM

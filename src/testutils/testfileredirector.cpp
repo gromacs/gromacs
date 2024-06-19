@@ -42,13 +42,16 @@
 
 #include "testutils/testfileredirector.h"
 
+#include <filesystem>
 #include <memory>
 #include <set>
 #include <string>
 #include <utility>
 #include <vector>
 
+#include "gromacs/utility/path.h"
 #include "gromacs/utility/stringstream.h"
+#include "gromacs/utility/textstream.h"
 
 #include "testutils/stringtest.h"
 
@@ -56,6 +59,7 @@ namespace gmx
 {
 namespace test
 {
+class TestReferenceChecker;
 
 /********************************************************************
  * TestFileInputRedirector

@@ -53,8 +53,13 @@
 #include <cstring>
 
 #include <algorithm>
+#include <iterator>
+#include <utility>
 #include <vector>
 
+#include "gromacs/applied_forces/awh/biasstate.h"
+#include "gromacs/applied_forces/awh/coordstate.h"
+#include "gromacs/applied_forces/awh/dimparams.h"
 #include "gromacs/fileio/enxio.h"
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/math/units.h"
@@ -64,6 +69,7 @@
 #include "gromacs/mdtypes/awh_params.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/inputrec.h"
+#include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/mdtypes/pull_params.h"
 #include "gromacs/mdtypes/state.h"
 #include "gromacs/pbcutil/pbc.h"
@@ -74,6 +80,7 @@
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/pleasecite.h"
+#include "gromacs/utility/stringutil.h"
 
 #include "bias.h"
 #include "biassharing.h"

@@ -50,6 +50,7 @@
 
 #include "gromacs/mdlib/vsite.h"
 #include "gromacs/topology/idef.h"
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/listoflists.h"
 
 struct gmx_domdec_t;

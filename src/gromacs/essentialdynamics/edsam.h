@@ -45,6 +45,8 @@
 #ifndef GMX_ESSENTIALDYNAMICS_EDSAM_H
 #define GMX_ESSENTIALDYNAMICS_EDSAM_H
 
+#include <cstdint>
+
 #include <memory>
 
 #include "gromacs/math/vectypes.h"

@@ -35,10 +35,12 @@
 
 #include "readinp.h"
 
+#include <cinttypes>
 #include <cstdlib>
 #include <cstring>
 
 #include <algorithm>
+#include <string_view>
 
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/binaryinformation.h"
@@ -46,6 +48,8 @@
 #include "gromacs/utility/enumerationhelpers.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/keyvaluetree.h"
 #include "gromacs/utility/keyvaluetreebuilder.h"
 #include "gromacs/utility/niceheader.h"
 #include "gromacs/utility/programcontext.h"

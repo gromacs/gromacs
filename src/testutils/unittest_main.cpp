@@ -40,6 +40,8 @@
  */
 #include "gmxpre.h"
 
+#include <filesystem>
+
 #include <gtest/gtest.h>
 
 #include "testutils/testinit.h"

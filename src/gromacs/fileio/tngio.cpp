@@ -38,12 +38,21 @@
 #include "config.h"
 
 #include <cmath>
+#include <cstdint>
+#include <cstring>
 
 #include <algorithm>
 #include <iterator>
 #include <memory>
 #include <numeric>
+#include <string>
 #include <vector>
+
+#include "gromacs/topology/atoms.h"
+#include "gromacs/topology/idef.h"
+#include "gromacs/topology/topology_enums.h"
+#include "gromacs/utility/arrayref.h"
+#include "gromacs/utility/enumerationhelpers.h"
 
 #if GMX_USE_TNG
 #    include "tng/tng_io.h"

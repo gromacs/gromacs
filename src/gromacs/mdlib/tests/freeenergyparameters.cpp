@@ -42,14 +42,24 @@
 
 #include "gromacs/mdlib/freeenergyparameters.h"
 
+#include <cstdint>
+
+#include <algorithm>
+#include <string>
+#include <vector>
+
+#include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/enumerationhelpers.h"
+#include "gromacs/utility/real.h"
 
 #include "testutils/testasserts.h"
 #include "testutils/testmatchers.h"
+
+enum class FreeEnergyPerturbationCouplingType : int;
 
 
 namespace gmx

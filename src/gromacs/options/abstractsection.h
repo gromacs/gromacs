@@ -46,6 +46,7 @@
 #define GMX_OPTIONS_ABSTRACTSECTION_H
 
 #include <memory>
+#include <string>
 
 #include "gromacs/options/ioptionscontainerwithsections.h"
 #include "gromacs/utility/classhelpers.h"
@@ -57,6 +58,9 @@ namespace gmx
 {
 
 class IOptionSectionStorage;
+class AbstractOption;
+class IOptionsContainer;
+class OptionInfo;
 
 namespace internal
 {

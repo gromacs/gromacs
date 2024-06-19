@@ -51,8 +51,14 @@
 
 #include "gromacs/gpu_utils/device_stream_manager.h"
 #include "gromacs/mdlib/mdgraph_gpu.h"
+#include "gromacs/mdtypes/simulation_workload.h"
 #include "gromacs/utility/classhelpers.h"
+#include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/gmxmpi.h"
+
+class GpuEventSynchronizer;
+enum class MdGraphEvenOrOddStep : int;
+struct gmx_wallcycle;
 
 #if !GMX_HAVE_GPU_GRAPH_SUPPORT
 

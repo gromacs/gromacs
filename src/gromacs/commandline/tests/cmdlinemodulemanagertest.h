@@ -54,6 +54,9 @@
 
 namespace gmx
 {
+class CommandLineModuleManager;
+class IOptionsContainer;
+
 namespace test
 {
 

@@ -50,6 +50,7 @@
 #include "gromacs/math/vectypes.h"
 #include "gromacs/topology/ifunc.h"
 #include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/real.h"
 
 struct gmx_cmap_t;
 struct t_fcdata;
@@ -57,6 +58,7 @@ struct t_nrnb;
 struct t_pbc;
 struct t_disresdata;
 struct t_oriresdata;
+union t_iparams;
 
 namespace gmx
 {

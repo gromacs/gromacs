@@ -43,10 +43,17 @@
 #define GMX_COORDINATEIO_OUTPUTSELECTOR_H
 
 #include <algorithm>
+#include <memory>
+#include <vector>
 
 #include "gromacs/coordinateio/ioutputadapter.h"
+#include "gromacs/math/vectypes.h"
+#include "gromacs/selection/selection.h"
 #include "gromacs/selection/selectionoption.h"
 #include "gromacs/topology/atoms.h"
+#include "gromacs/utility/gmxassert.h"
+
+struct t_trxframe;
 
 namespace gmx
 {

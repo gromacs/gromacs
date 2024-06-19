@@ -42,12 +42,15 @@
 
 #include "colvarsMDModule.h"
 
+#include <functional>
 #include <memory>
 #include <string>
 
 #include "gromacs/domdec/localatomsetmanager.h"
 #include "gromacs/fileio/checkpoint.h"
+#include "gromacs/mdrunutility/mdmodulesnotifiers.h"
 #include "gromacs/mdtypes/commrec.h"
+#include "gromacs/mdtypes/iforceprovider.h"
 #include "gromacs/mdtypes/imdmodule.h"
 #include "gromacs/utility/keyvaluetreebuilder.h"
 
@@ -55,9 +58,16 @@
 #include "colvarsoptions.h"
 #include "colvarssimulationsparameters.h"
 
+enum class PbcType : int;
+struct gmx_mtop_t;
+
 
 namespace gmx
 {
+class IMDOutputProvider;
+class IMdpOptionProvider;
+class KeyValueTreeObject;
+class MDLogger;
 
 namespace
 {

@@ -44,10 +44,12 @@
 #include "quadraticsplinetable.h"
 
 #include <cmath>
+#include <cstdlib>
 
 #include <algorithm>
 #include <functional>
 #include <initializer_list>
+#include <string>
 #include <utility>
 #include <vector>
 

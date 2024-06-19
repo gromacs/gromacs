@@ -47,6 +47,8 @@
 #ifndef GMX_RANDOM_SEED_H
 #define GMX_RANDOM_SEED_H
 
+#include <cstdint>
+
 #include <random>
 
 #include "gromacs/utility/basedefinitions.h"

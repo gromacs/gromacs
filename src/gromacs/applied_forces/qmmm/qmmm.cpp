@@ -43,18 +43,26 @@
 
 #include "qmmm.h"
 
+#include <cstdio>
+
+#include <functional>
 #include <memory>
 #include <numeric>
 
+#include "gromacs/applied_forces/qmmm/qmmmtypes.h"
+#include "gromacs/domdec/localatomset.h"
 #include "gromacs/domdec/localatomsetmanager.h"
 #include "gromacs/ewald/pme.h"
 #include "gromacs/fileio/checkpoint.h"
+#include "gromacs/gmxlib/network.h"
 #include "gromacs/math/multidimarray.h"
 #include "gromacs/mdlib/broadcaststructs.h"
 #include "gromacs/mdrunutility/mdmodulesnotifiers.h"
 #include "gromacs/mdtypes/commrec.h"
+#include "gromacs/mdtypes/iforceprovider.h"
 #include "gromacs/mdtypes/imdmodule.h"
 #include "gromacs/mdtypes/imdoutputprovider.h"
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/classhelpers.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/keyvaluetreebuilder.h"
@@ -63,8 +71,16 @@
 #include "qmmmforceprovider.h"
 #include "qmmmoptions.h"
 
+class WarningHandler;
+enum class PbcType : int;
+struct gmx_mtop_t;
+struct gmx_output_env_t;
+
 namespace gmx
 {
+class IMdpOptionProvider;
+class IndexGroupsAndNames;
+class KeyValueTreeObject;
 
 namespace
 {

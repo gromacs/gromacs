@@ -43,9 +43,14 @@
 
 #include "config.h"
 
+#include <memory>
+#include <string>
+
 #include <gtest/gtest.h>
 
 #include "gromacs/mdtypes/md_enums.h"
+
+#include "programs/mdrun/tests/moduletest.h"
 
 #include "multisimtest.h"
 

@@ -34,6 +34,11 @@
 
 #include "gmxapi/md/mdmodule.h"
 
+namespace gmx
+{
+class IRestraintPotential;
+} // namespace gmx
+
 namespace gmxapi
 {
 

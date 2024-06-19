@@ -46,6 +46,8 @@
 #include <cstdio>
 #include <cstring>
 
+#include <string>
+
 #include "gromacs/utility/basenetwork.h"
 #include "gromacs/utility/baseversion.h"
 #include "gromacs/utility/path.h"

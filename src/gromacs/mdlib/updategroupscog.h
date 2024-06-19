@@ -48,8 +48,10 @@
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/real.h"
 
 struct gmx_mtop_t;
+
 namespace gmx
 {
 class RangePartitioning;

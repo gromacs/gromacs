@@ -46,8 +46,11 @@
 
 #include <cstdio>
 
+#include <filesystem>
+#include <functional>
 #include <utility>
 
+#include "gromacs/commandline/cmdlineoptionsmodule.h"
 #include "gromacs/gmxana/gmx_ana.h"
 #include "gromacs/gmxpreprocess/grompp.h"
 #include "gromacs/hardware/detecthardware.h"
@@ -57,6 +60,7 @@
 #include "gromacs/tools/convert_tpr.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/basenetwork.h"
+#include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/gmxmpi.h"
 #include "gromacs/utility/physicalnodecommunicator.h"
 #include "gromacs/utility/textwriter.h"

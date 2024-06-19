@@ -42,6 +42,11 @@
 
 #include "topologyhelpers.h"
 
+#include <vector>
+
+#include "gromacs/topology/atoms.h"
+#include "gromacs/topology/idef.h"
+#include "gromacs/topology/ifunc.h"
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/topology/topology.h"
 

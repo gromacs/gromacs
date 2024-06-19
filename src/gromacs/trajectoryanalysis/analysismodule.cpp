@@ -43,15 +43,24 @@
 #include "gromacs/trajectoryanalysis/analysismodule.h"
 
 #include <map>
+#include <memory>
+#include <string>
 #include <utility>
+#include <vector>
 
+#include "gromacs/analysisdata/abstractdata.h"
 #include "gromacs/analysisdata/analysisdata.h"
 #include "gromacs/selection/selection.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
 
+struct t_trxframe;
+
 namespace gmx
 {
+class AnalysisDataParallelOptions;
+class SelectionCollection;
+class TrajectoryAnalysisSettings;
 
 /********************************************************************
  * TrajectoryAnalysisModule::Impl

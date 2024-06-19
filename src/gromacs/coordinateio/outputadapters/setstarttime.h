@@ -42,8 +42,12 @@
 #ifndef GMX_FILEIO_SETSTARTTIME_H
 #define GMX_FILEIO_SETSTARTTIME_H
 
+#include <memory>
+
 #include "gromacs/coordinateio/ioutputadapter.h"
 #include "gromacs/utility/real.h"
+
+struct t_trxframe;
 
 namespace gmx
 {

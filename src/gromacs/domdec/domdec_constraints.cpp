@@ -46,8 +46,10 @@
 #include "domdec_constraints.h"
 
 #include <cassert>
+#include <cstdio>
 
 #include <algorithm>
+#include <array>
 #include <memory>
 
 #include "gromacs/domdec/dlbtiming.h"
@@ -56,13 +58,17 @@
 #include "gromacs/domdec/ga2la.h"
 #include "gromacs/domdec/hashedmap.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/math/vectypes.h"
 #include "gromacs/mdlib/constr.h"
 #include "gromacs/mdlib/gmx_omp_nthreads.h"
 #include "gromacs/mdtypes/atominfo.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/pbcutil/ishift.h"
+#include "gromacs/topology/idef.h"
 #include "gromacs/topology/ifunc.h"
 #include "gromacs/topology/mtop_lookup.h"
+#include "gromacs/topology/topology.h"
+#include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"

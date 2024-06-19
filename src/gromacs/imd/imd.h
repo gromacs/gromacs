@@ -62,6 +62,8 @@
 #ifndef GMX_IMD_IMD_H
 #define GMX_IMD_IMD_H
 
+#include <cstdint>
+
 #include <memory>
 
 #include "gromacs/math/vectypes.h"

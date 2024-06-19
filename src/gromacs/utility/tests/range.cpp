@@ -42,10 +42,16 @@
 
 #include "gromacs/utility/range.h"
 
+#include <cstddef>
+
+#include <algorithm>
 #include <limits>
+#include <string>
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
+
+#include "gromacs/utility/basedefinitions.h"
 
 #include "testutils/testasserts.h"
 

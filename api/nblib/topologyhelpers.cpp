@@ -44,7 +44,11 @@
 
 #include "topologyhelpers.h"
 
+#include <cassert>
+
 #include <algorithm>
+#include <iterator>
+#include <utility>
 
 #include "gromacs/topology/exclusionblocks.h"
 

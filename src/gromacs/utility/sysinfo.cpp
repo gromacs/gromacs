@@ -48,6 +48,7 @@
 #include <ctime>
 
 #include <array>
+#include <string>
 
 #include <sys/types.h>
 #ifdef HAVE_SYS_TIME_H

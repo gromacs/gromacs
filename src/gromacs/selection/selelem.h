@@ -48,6 +48,8 @@
 #ifndef GMX_SELECTION_SELELEM_H
 #define GMX_SELECTION_SELELEM_H
 
+#include <cstdio>
+
 #include <memory>
 #include <string>
 
@@ -65,6 +67,7 @@ struct gmx_sel_evaluate_t;
 struct gmx_sel_mempool_t;
 
 struct t_compiler_data;
+struct gmx_ana_indexgrps_t;
 
 namespace gmx
 {

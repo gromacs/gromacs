@@ -34,6 +34,7 @@
 #ifndef GMX_MDLIB_MDOUTF_H
 #define GMX_MDLIB_MDOUTF_H
 
+#include <cstdint>
 #include <cstdio>
 
 #include "gromacs/fileio/enxio.h"
@@ -50,6 +51,7 @@ struct ObservablesHistory;
 struct t_commrec;
 struct t_filenm;
 struct t_inputrec;
+class t_state;
 
 namespace gmx
 {

@@ -42,10 +42,15 @@
 
 #include "abstractsection.h"
 
+#include "gromacs/options/isectionstorage.h"
+
 #include "options_impl.h"
 
 namespace gmx
 {
+class AbstractOption;
+class IOptionsContainer;
+class OptionInfo;
 
 /********************************************************************
  * AbstractOptionSectionHandle

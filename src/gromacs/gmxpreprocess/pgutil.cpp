@@ -37,9 +37,11 @@
 
 #include "pgutil.h"
 
+#include <cstdio>
 #include <cstring>
 
 #include <algorithm>
+#include <filesystem>
 
 #include "gromacs/topology/atoms.h"
 #include "gromacs/utility/cstringutil.h"

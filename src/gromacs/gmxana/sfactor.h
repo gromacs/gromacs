@@ -36,6 +36,7 @@
 
 #include "gromacs/math/gmxcomplex.h"
 #include "gromacs/math/vectypes.h"
+#include "gromacs/utility/real.h"
 
 struct gmx_output_env_t;
 struct t_topology;

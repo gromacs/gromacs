@@ -46,9 +46,14 @@
 
 #include "legacymdrunoptions.h"
 
+#include <cstdlib>
 #include <cstring>
 
+#include <filesystem>
+
+#include "gromacs/fileio/oenv.h"
 #include "gromacs/math/functions.h"
+#include "gromacs/math/vectypes.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/fatalerror.h"

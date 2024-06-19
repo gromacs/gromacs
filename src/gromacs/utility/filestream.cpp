@@ -46,6 +46,14 @@
 
 #include <cerrno>
 #include <cstdio>
+#include <cstring>
+
+#include <filesystem>
+#include <memory>
+#include <string>
+
+#include "gromacs/utility/fileptr.h"
+#include "gromacs/utility/unique_cptr.h"
 
 #ifdef HAVE_UNISTD_H
 #    include <unistd.h>

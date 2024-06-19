@@ -43,6 +43,13 @@
 #ifndef GMX_MODULARSIMULATOR_FREEENERGYPERTURBATIONELEMENT_H
 #define GMX_MODULARSIMULATOR_FREEENERGYPERTURBATIONELEMENT_H
 
+#include <cstdio>
+
+#include <memory>
+#include <optional>
+#include <string>
+
+#include "gromacs/mdtypes/checkpointdata.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/enumerationhelpers.h"
@@ -53,6 +60,7 @@
 class gmx_ekindata_t;
 struct t_inputrec;
 struct t_trxframe;
+struct t_commrec;
 
 namespace gmx
 {
@@ -64,6 +72,8 @@ class LegacySimulatorData;
 class MDAtoms;
 class ModularSimulatorAlgorithmBuilderHelper;
 class StatePropagatorData;
+template<CheckpointDataOperation operation>
+class CheckpointData;
 
 /*! \internal
  * \ingroup module_modularsimulator

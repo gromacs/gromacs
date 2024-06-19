@@ -48,6 +48,7 @@
 
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/real.h"
 
 class gmx_ga2la_t;
 struct t_commrec;

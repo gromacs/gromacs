@@ -47,6 +47,12 @@
 
 #include "config.h"
 
+#include <cmath>
+#include <cstdio>
+
+#include <filesystem>
+#include <memory>
+
 #include "gromacs/domdec/domdec.h"
 #include "gromacs/domdec/domdec_network.h"
 #include "gromacs/domdec/domdec_struct.h"
@@ -58,8 +64,10 @@
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/topology/block.h"
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/real.h"
 
 #include "domdec_internal.h"
 

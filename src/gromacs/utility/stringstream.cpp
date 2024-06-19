@@ -42,7 +42,10 @@
 
 #include "gromacs/utility/stringstream.h"
 
+#include <cstddef>
+
 #include <string>
+#include <vector>
 
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/stringutil.h"

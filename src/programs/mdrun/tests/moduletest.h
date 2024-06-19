@@ -47,6 +47,7 @@
 #define GMX_MDRUN_TESTS_MODULETEST_H
 
 #include <memory>
+#include <string>
 
 #include <gtest/gtest.h>
 

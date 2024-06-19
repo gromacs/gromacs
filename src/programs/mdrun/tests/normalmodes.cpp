@@ -41,6 +41,8 @@
  */
 #include "gmxpre.h"
 
+#include <cstdio>
+
 #include <map>
 #include <memory>
 #include <string>
@@ -58,6 +60,7 @@
 #include "gromacs/utility/filestream.h"
 #include "gromacs/utility/stringutil.h"
 
+#include "testutils/cmdlinetest.h"
 #include "testutils/mpitest.h"
 #include "testutils/refdata.h"
 #include "testutils/simulationdatabase.h"

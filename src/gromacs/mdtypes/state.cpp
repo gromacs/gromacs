@@ -39,6 +39,7 @@
 #include <cstring>
 
 #include <algorithm>
+#include <string>
 
 #include "gromacs/math/paddedvector.h"
 #include "gromacs/math/vec.h"

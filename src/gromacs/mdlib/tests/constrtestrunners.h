@@ -46,7 +46,11 @@
 #ifndef GMX_MDLIB_TESTS_CONSTRTESTRUNNERS_H
 #define GMX_MDLIB_TESTS_CONSTRTESTRUNNERS_H
 
+#include <string>
+
 #include <gtest/gtest.h>
+
+#include "gromacs/pbcutil/pbc.h"
 
 #include "testutils/test_device.h"
 

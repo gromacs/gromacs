@@ -48,13 +48,20 @@
 
 #include "config.h"
 
+#include <cerrno>
+#include <cstdlib>
+
+#include <memory>
 #include <string>
+#include <vector>
 
 #include <gtest/gtest.h>
 
 #include "gromacs/hardware/device_management.h"
 #include "gromacs/utility/baseversion.h"
+#include "gromacs/utility/gmxassert.h"
 
+#include "testutils/test_device.h"
 #include "testutils/test_hardware_environment.h"
 
 namespace gmx

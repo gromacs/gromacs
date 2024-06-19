@@ -45,6 +45,8 @@
 #include <cstdio>
 #include <cstring>
 
+#include <filesystem>
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -53,18 +55,26 @@
 #include "gromacs/fileio/oenv.h"
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/math/vectypes.h"
 #include "gromacs/options/basicoptions.h"
 #include "gromacs/options/ioptionscontainer.h"
 #include "gromacs/options/timeunitmanager.h"
 #include "gromacs/selection/selectioncollection.h"
+#include "gromacs/utility/arrayref.h"
+#include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/enumerationhelpers.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/programcontext.h"
+#include "gromacs/utility/real.h"
 #include "gromacs/utility/stringutil.h"
 #include "gromacs/utility/unique_cptr.h"
 
+struct gmx_output_env_t;
+
 namespace gmx
 {
+class AbstractAnalysisData;
 
 /********************************************************************
  * AnalysisDataPlotSettings

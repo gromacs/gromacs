@@ -35,6 +35,7 @@
 
 #include "xtcio.h"
 
+#include <cstdio>
 #include <cstring>
 
 #include "gromacs/fileio/gmxfio.h"
@@ -43,6 +44,7 @@
 #include "gromacs/math/vec.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
+#include "gromacs/utility/iserializer.h"
 #include "gromacs/utility/smalloc.h"
 
 static int xdr_r2f(XDR* xdrs, real* r, gmx_bool gmx_unused bRead)

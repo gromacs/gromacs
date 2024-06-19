@@ -36,6 +36,9 @@
 #define GMX_MDLIB_CALC_VERLETBUF_H
 
 #include <cmath>
+#include <cstdint>
+
+#include <limits>
 
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/basedefinitions.h"

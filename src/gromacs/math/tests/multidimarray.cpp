@@ -42,13 +42,21 @@
 
 #include "gromacs/math/multidimarray.h"
 
+#include <algorithm>
+#include <array>
 #include <string>
+#include <type_traits>
+#include <utility>
 #include <vector>
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
 #include "gromacs/mdspan/extensions.h"
+#include "gromacs/mdspan/extents.h"
+#include "gromacs/mdspan/layouts.h"
+#include "gromacs/mdspan/mdspan.h"
+#include "gromacs/utility/arrayref.h"
 
 #include "testutils/testasserts.h"
 

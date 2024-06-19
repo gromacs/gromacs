@@ -44,12 +44,16 @@
 #include "scattering-debye.h"
 
 #include <cmath>
+#include <cstddef>
 
+#include <algorithm>
+#include <iterator>
 #include <numeric>
 
 #include "gromacs/random/threefry.h"
 #include "gromacs/random/uniformintdistribution.h"
 #include "gromacs/topology/topology.h"
+#include "gromacs/utility/arrayref.h"
 
 namespace gmx
 {

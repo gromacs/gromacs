@@ -44,8 +44,10 @@
 
 #include <algorithm>
 #include <memory>
+#include <vector>
 
 #include "gromacs/domdec/localatomset.h"
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/exceptions.h"
 
 #include "localatomsetdata.h"

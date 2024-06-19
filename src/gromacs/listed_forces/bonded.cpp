@@ -48,8 +48,13 @@
 
 #include <cassert>
 #include <cmath>
+#include <cstdint>
 
 #include <algorithm>
+#include <array>
+#include <filesystem>
+#include <type_traits>
+#include <vector>
 
 #include "gromacs/gmxlib/nrnb.h"
 #include "gromacs/listed_forces/disre.h"
@@ -66,6 +71,7 @@
 #include "gromacs/simd/simd.h"
 #include "gromacs/simd/simd_math.h"
 #include "gromacs/simd/vector_operations.h"
+#include "gromacs/topology/idef.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/enumerationhelpers.h"

@@ -38,8 +38,12 @@
 #include <cmath>
 #include <cstdio>
 
+#include <algorithm>
+
+#include "gromacs/math/functions.h"
 #include "gromacs/math/units.h"
 #include "gromacs/utility/arrayref.h"
+#include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
 

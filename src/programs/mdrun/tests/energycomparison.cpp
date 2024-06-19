@@ -43,17 +43,26 @@
 
 #include "energycomparison.h"
 
+#include <cstdint>
+
+#include <map>
+#include <memory>
+#include <utility>
+
 #include <gtest/gtest-spi.h>
 #include <gtest/gtest.h>
 
 #include "gromacs/topology/ifunc.h"
 #include "gromacs/trajectory/energyframe.h"
 #include "gromacs/utility/basenetwork.h"
+#include "gromacs/utility/real.h"
 #include "gromacs/utility/strconvert.h"
 #include "gromacs/utility/stringutil.h"
 
 #include "testutils/refdata.h"
 #include "testutils/testasserts.h"
+
+#include "programs/mdrun/tests/comparison_helpers.h"
 
 #include "energyreader.h"
 #include "moduletest.h"

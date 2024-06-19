@@ -42,14 +42,22 @@
 
 #include "gromacs/topology/topsort.h"
 
+#include <cstdint>
+
+#include <array>
+#include <string>
+#include <vector>
+
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
 #include "gromacs/mdtypes/atominfo.h"
+#include "gromacs/topology/forcefieldparameters.h"
 #include "gromacs/topology/idef.h"
 #include "gromacs/topology/ifunc.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/arrayref.h"
+#include "gromacs/utility/real.h"
 
 namespace gmx
 {

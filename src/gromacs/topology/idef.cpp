@@ -37,9 +37,17 @@
 
 #include <cstdio>
 
+#include <array>
+#include <filesystem>
+#include <string>
+#include <vector>
+
+#include "gromacs/math/vectypes.h"
 #include "gromacs/topology/forcefieldparameters.h"
 #include "gromacs/topology/ifunc.h"
+#include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/real.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/stringstream.h"
 #include "gromacs/utility/textwriter.h"

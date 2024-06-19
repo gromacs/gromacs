@@ -36,15 +36,30 @@
 
 #include "restraintmdmodule.h"
 
-#include <memory>
+#include <cstddef>
 
+#include <memory>
+#include <utility>
+
+#include "gromacs/domdec/domdec_struct.h"
+#include "gromacs/domdec/ga2la.h"
+#include "gromacs/gmxlib/network.h"
+#include "gromacs/math/vectypes.h"
+#include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/forceoutput.h"
 #include "gromacs/mdtypes/iforceprovider.h"
+#include "gromacs/mdtypes/md_enums.h"
+#include "gromacs/pbcutil/pbc.h"
+#include "gromacs/utility/arrayref.h"
+#include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/gmxassert.h"
 
 #include "restraintmdmodule_impl.h"
 
 namespace gmx
 {
+class IMDOutputProvider;
+class IMdpOptionProvider;
 
 RestraintForceProvider::RestraintForceProvider(std::shared_ptr<IRestraintPotential> restraint,
                                                const std::vector<int>&              sites) :

@@ -42,6 +42,13 @@
 #ifndef NBLIB_NBNXMSETUPHELPERS_H
 #define NBLIB_NBNXMSETUPHELPERS_H
 
+#include <cstddef>
+#include <cstdint>
+
+#include <memory>
+#include <vector>
+
+#include "nblib/basicdefinitions.h"
 #include "nblib/interactions.h"
 #include "nblib/kerneloptions.h"
 #include "nblib/particletype.h"

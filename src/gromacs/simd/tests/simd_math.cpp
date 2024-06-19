@@ -39,15 +39,28 @@
 
 #include <cmath>
 #include <cstdint>
+#include <cstdlib>
 
+#include <algorithm>
+#include <iomanip>
+#include <limits>
 #include <map>
+#include <ostream>
+#include <string>
+#include <type_traits>
 #include <utility>
 #include <vector>
+
+#include <gtest/gtest.h>
 
 #include "gromacs/math/units.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/options/basicoptions.h"
 #include "gromacs/simd/simd.h"
+#include "gromacs/simd/tests/data.h"
+#include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/real.h"
 
 #include "testutils/refdata.h"
 #include "testutils/testasserts.h"

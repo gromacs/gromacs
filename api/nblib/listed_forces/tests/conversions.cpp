@@ -40,17 +40,34 @@
  * \author Prashanth Kanduri <kanduri@cscs.ch>
  * \author Sebastian Keller <keller@cscs.ch>
  */
+#include <cstddef>
+
 #include <array>
+#include <memory>
+#include <string>
+#include <tuple>
+#include <type_traits>
+#include <utility>
+#include <vector>
 
 #include <gtest/gtest.h>
 
 #include "listed_forces/conversionscommon.h"
 
+#include "gromacs/math/vectypes.h"
 #include "gromacs/topology/forcefieldparameters.h"
+#include "gromacs/topology/idef.h"
+#include "gromacs/topology/ifunc.h"
+#include "gromacs/utility/real.h"
 
 #include "testutils/testasserts.h"
 
+#include "nblib/basicdefinitions.h"
 #include "nblib/box.h"
+#include "nblib/listed_forces/bondtypes.h"
+#include "nblib/listed_forces/definitions.h"
+#include "nblib/util/traits.hpp"
+#include "nblib/util/util.hpp"
 
 #include "listedtesthelpers.h"
 #include "testhelpers.h"

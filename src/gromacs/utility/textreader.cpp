@@ -42,6 +42,12 @@
 
 #include "gromacs/utility/textreader.h"
 
+#include <cstddef>
+
+#include <filesystem>
+#include <memory>
+#include <string>
+
 #include "gromacs/utility/filestream.h"
 #include "gromacs/utility/nodelete.h"
 #include "gromacs/utility/textstream.h"

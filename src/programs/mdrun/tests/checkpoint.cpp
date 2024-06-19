@@ -44,11 +44,23 @@
 
 #include "config.h"
 
+#include <filesystem>
+#include <string>
+#include <tuple>
+#include <vector>
+
+#include <gtest/gtest.h>
+
 #include "gromacs/utility/strconvert.h"
 #include "gromacs/utility/stringutil.h"
 
 #include "testutils/simulationdatabase.h"
+#include "testutils/testasserts.h"
+#include "testutils/testfilemanager.h"
 #include "testutils/trajectoryreader.h"
+
+#include "programs/mdrun/tests/comparison_helpers.h"
+#include "programs/mdrun/tests/trajectorycomparison.h"
 
 #include "moduletest.h"
 #include "simulatorcomparison.h"

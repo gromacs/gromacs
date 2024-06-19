@@ -42,6 +42,8 @@
 
 #include "gromacs/trajectoryanalysis/analysissettings.h"
 
+#include <memory>
+
 #include "gromacs/commandline/cmdlineoptionsmodule.h"
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/utility/arrayref.h"
@@ -51,6 +53,8 @@
 
 namespace gmx
 {
+class AnalysisDataPlotSettings;
+enum class TimeUnit : int;
 
 
 /********************************************************************

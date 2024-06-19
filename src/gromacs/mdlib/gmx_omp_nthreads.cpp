@@ -42,6 +42,8 @@
 #include <cstdlib>
 #include <cstring>
 
+#include <filesystem>
+
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/utility/cstringutil.h"

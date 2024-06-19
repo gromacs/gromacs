@@ -54,11 +54,17 @@
 
 #include "scanner_internal.h"
 
+#include <cstdio>
 #include <cstdlib>
 #include <cstring>
 
+#include <memory>
 #include <string>
 
+#include "gromacs/selection/scanner_flex.h"
+#include "gromacs/selection/selparam.h"
+#include "gromacs/selection/selvalue.h"
+#include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"

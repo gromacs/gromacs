@@ -43,12 +43,14 @@
 #define GMX_ONLINEHELP_HELPTOPIC_H
 
 #include <memory>
+#include <string>
 
 #include "gromacs/onlinehelp/ihelptopic.h"
 #include "gromacs/utility/stringutil.h"
 
 namespace gmx
 {
+class HelpWriterContext;
 
 /*! \libinternal \brief
  * Abstract base class for help topics that have simple text and no subtopics.

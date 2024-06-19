@@ -42,12 +42,17 @@
 
 #include "mock_datamodule.h"
 
+#include <algorithm>
+#include <string>
+
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
+#include "gromacs/analysisdata/abstractdata.h"
 #include "gromacs/analysisdata/analysisdata.h"
 #include "gromacs/analysisdata/dataframe.h"
 #include "gromacs/analysisdata/tests/datatest.h"
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/stringutil.h"
 

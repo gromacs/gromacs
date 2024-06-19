@@ -46,6 +46,7 @@
 #define GMX_AWH_BIASWRITER_H
 
 #include <map>
+#include <utility>
 #include <vector>
 
 #include "gromacs/fileio/enxio.h"

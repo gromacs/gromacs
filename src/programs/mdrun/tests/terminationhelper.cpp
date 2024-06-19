@@ -43,11 +43,15 @@
 
 #include "terminationhelper.h"
 
+#include <filesystem>
+
 #include <gtest/gtest.h>
 
 #include "gromacs/utility/path.h"
 
 #include "testutils/testfilemanager.h"
+
+#include "programs/mdrun/tests/moduletest.h"
 
 namespace gmx
 {

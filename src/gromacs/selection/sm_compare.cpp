@@ -41,15 +41,22 @@
 #include "gmxpre.h"
 
 #include <cmath>
+#include <cstdio>
 
 #include "gromacs/math/utilities.h"
+#include "gromacs/selection/indexutil.h"
+#include "gromacs/selection/selparam.h"
+#include "gromacs/selection/selvalue.h"
 #include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/real.h"
 #include "gromacs/utility/smalloc.h"
 
 #include "keywords.h"
 #include "selmethod.h"
+
+struct gmx_mtop_t;
 
 /** Defines the comparison operator for comparison expressions. */
 typedef enum

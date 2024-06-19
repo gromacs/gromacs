@@ -45,6 +45,10 @@
 #include <cstdio>
 #include <cstdlib>
 
+#include <string>
+
+#include <gtest/gtest.h>
+
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/stringutil.h"
 #include "gromacs/utility/textreader.h"

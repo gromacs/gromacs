@@ -42,9 +42,17 @@
 
 #include "gmxpre.h"
 
+#include <filesystem>
+#include <initializer_list>
+#include <string>
+#include <tuple>
+
+#include <gtest/gtest.h>
+
 #include "gromacs/utility/path.h"
 #include "gromacs/utility/stringutil.h"
 
+#include "testutils/cmdlinetest.h"
 #include "testutils/simulationdatabase.h"
 
 #include "moduletest.h"

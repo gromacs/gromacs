@@ -37,6 +37,8 @@
 
 #include <cstdarg>
 
+#include <string>
+
 #include "gromacs/utility/stringutil.h"
 
 namespace gmx

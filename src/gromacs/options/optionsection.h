@@ -44,12 +44,18 @@
 
 #include <memory>
 
+#include "gromacs/options/isectionstorage.h"
+
 #include "abstractsection.h"
 
 namespace gmx
 {
 
 class OptionSectionHandle;
+namespace internal
+{
+class OptionSectionImpl;
+} // namespace internal
 
 /*! \brief
  * Declares a simple option section.

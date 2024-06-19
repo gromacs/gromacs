@@ -42,14 +42,18 @@
 
 #include <cstring>
 
+#include <initializer_list>
 #include <map>
 #include <string>
 #include <vector>
+
+#include <gtest/gtest.h>
 
 #include "gromacs/gmxana/gmx_ana.h"
 #include "gromacs/utility/stringutil.h"
 
 #include "testutils/cmdlinetest.h"
+#include "testutils/testasserts.h"
 #include "testutils/testfilemanager.h"
 #include "testutils/textblockmatchers.h"
 #include "testutils/xvgtest.h"

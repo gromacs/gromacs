@@ -43,13 +43,23 @@
 
 #include "gmxpre.h"
 
+#include <string>
+
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/exceptions.h"
 
 #include "qmmmforceprovider.h"
 
+enum class PbcType : int;
+struct t_commrec;
+
 namespace gmx
 {
+class ForceProviderInput;
+class ForceProviderOutput;
+class LocalAtomSet;
+class MDLogger;
+struct QMMMParameters;
 
 CLANG_DIAGNOSTIC_IGNORE("-Wmissing-noreturn")
 

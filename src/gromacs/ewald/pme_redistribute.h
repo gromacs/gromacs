@@ -43,7 +43,18 @@
 #ifndef GMX_EWALD_PME_REDISTRIBUTE_H
 #define GMX_EWALD_PME_REDISTRIBUTE_H
 
+#include "gromacs/math/vectypes.h"
+#include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/real.h"
+
 #include "pme_internal.h"
+
+namespace gmx
+{
+template<typename T>
+class ArrayRef;
+} // namespace gmx
+struct t_commrec;
 
 //! Redistributes forces along the dimension gives by \p atc
 void dd_pmeredist_f(struct gmx_pme_t* pme, PmeAtomComm* atc, gmx::ArrayRef<gmx::RVec> f, gmx_bool bAddF);

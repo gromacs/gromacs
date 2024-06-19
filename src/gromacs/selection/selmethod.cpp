@@ -44,7 +44,12 @@
 
 #include <cctype>
 #include <cstdarg>
+#include <cstdio>
 
+#include <string>
+
+#include "gromacs/selection/selparam.h"
+#include "gromacs/selection/selvalue.h"
 #include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/exceptions.h"

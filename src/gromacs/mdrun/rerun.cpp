@@ -44,12 +44,16 @@
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
+#include <cstring>
 
 #include <algorithm>
+#include <filesystem>
 #include <memory>
+#include <vector>
 
 #include "gromacs/applied_forces/awh/awh.h"
 #include "gromacs/commandline/filenm.h"
+#include "gromacs/compat/pointers.h"
 #include "gromacs/domdec/collect.h"
 #include "gromacs/domdec/dlbtiming.h"
 #include "gromacs/domdec/domdec.h"
@@ -61,6 +65,7 @@
 #include "gromacs/essentialdynamics/edsam.h"
 #include "gromacs/ewald/pme_load_balancing.h"
 #include "gromacs/ewald/pme_pp.h"
+#include "gromacs/fileio/enxio.h"
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/gmxlib/nrnb.h"
@@ -126,19 +131,27 @@
 #include "gromacs/timing/walltime_accounting.h"
 #include "gromacs/topology/atoms.h"
 #include "gromacs/topology/idef.h"
+#include "gromacs/topology/ifunc.h"
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/trajectory/trajectoryframe.h"
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/enumerationhelpers.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/logger.h"
 #include "gromacs/utility/real.h"
 
 #include "legacysimulator.h"
 #include "replicaexchange.h"
 #include "shellfc.h"
+
+struct gmx_edsam;
+struct gmx_mdoutf;
+struct gmx_shellfc_t;
 
 using gmx::SimulationSignaller;
 using gmx::VirtualSitesHandler;

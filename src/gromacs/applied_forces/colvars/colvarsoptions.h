@@ -50,8 +50,12 @@
 #include "gromacs/mdrunutility/mdmodulesnotifiers.h"
 #include "gromacs/mdtypes/imdpoptionprovider.h"
 #include "gromacs/topology/atoms.h"
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/logger.h"
 #include "gromacs/utility/real.h"
+
+enum class PbcType : int;
+struct gmx_mtop_t;
 
 
 namespace gmx
@@ -61,6 +65,9 @@ class KeyValueTreeObject;
 class KeyValueTreeBuilder;
 struct CoordinatesAndBoxPreprocessed;
 struct MdRunInputFilename;
+class IKeyValueTreeTransformRules;
+class IOptionsContainerWithSections;
+class KeyValueTreeObjectBuilder;
 
 
 //! Tag with name of the Colvars MDModule

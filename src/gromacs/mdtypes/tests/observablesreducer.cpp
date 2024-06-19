@@ -41,9 +41,16 @@
 
 #include "gromacs/mdtypes/observablesreducer.h"
 
+#include <cstddef>
+
+#include <algorithm>
+#include <functional>
 #include <numeric>
 #include <optional>
+#include <string>
 #include <tuple>
+#include <utility>
+#include <vector>
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>

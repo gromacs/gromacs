@@ -45,15 +45,30 @@
 #include "config.h"
 
 #include <algorithm>
+#include <array>
+#include <memory>
 #include <string>
+#include <vector>
 
 #include "gromacs/listed_forces/listed_forces_gpu.h"
+#include "gromacs/math/vectypes.h"
 #include "gromacs/mdtypes/inputrec.h"
+#include "gromacs/mdtypes/md_enums.h"
+#include "gromacs/topology/idef.h"
 #include "gromacs/topology/topology.h"
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/message_string_collector.h"
+
+class DeviceContext;
+class DeviceStream;
+struct NBAtomDataGpu;
+struct gmx_enerdata_t;
+struct gmx_ffparams_t;
+struct gmx_wallcycle;
 
 namespace gmx
 {
+class StepWorkload;
 
 //! Returns whether there are any interactions in ilists suitable for a GPU.
 static bool someInteractionsCanRunOnGpu(const InteractionLists& ilists)

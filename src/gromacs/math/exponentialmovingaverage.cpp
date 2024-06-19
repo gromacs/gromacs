@@ -42,8 +42,12 @@
 
 #include "gromacs/math/exponentialmovingaverage.h"
 
+#include <string>
+
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/keyvaluetree.h"
+#include "gromacs/utility/keyvaluetreebuilder.h"
+#include "gromacs/utility/real.h"
 
 namespace gmx
 {

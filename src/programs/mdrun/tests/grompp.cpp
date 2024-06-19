@@ -45,6 +45,10 @@
  */
 #include "gmxpre.h"
 
+#include "config.h"
+
+#include <string>
+
 #include <gtest/gtest.h>
 
 #include "gromacs/gmxpreprocess/readir.h"

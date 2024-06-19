@@ -38,11 +38,17 @@
 
 #include <cstdlib>
 
+#include <filesystem>
+#include <string>
+#include <vector>
+
 #include "gromacs/gmxpreprocess/grompp_impl.h"
 #include "gromacs/gmxpreprocess/toputil.h"
 #include "gromacs/topology/ifunc.h"
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/listoflists.h"
 #include "gromacs/utility/smalloc.h"
 
 /* #define DEBUG_NNB */

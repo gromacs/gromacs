@@ -38,12 +38,18 @@
 
 #include "checkpoint.h"
 
+#include "gmxpre-config.h"
+
 #include <cerrno>
+#include <cinttypes>
 #include <cstdlib>
 #include <cstring>
 
+#include <algorithm>
 #include <array>
+#include <iterator>
 #include <memory>
+#include <type_traits>
 
 #include "gromacs/fileio/filetypes.h"
 #include "gromacs/fileio/gmxfio.h"
@@ -75,20 +81,27 @@
 #include "gromacs/utility/baseversion.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/enumerationhelpers.h"
+#include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/int64_to_int.h"
+#include "gromacs/utility/iserializer.h"
 #include "gromacs/utility/keyvaluetree.h"
 #include "gromacs/utility/keyvaluetreebuilder.h"
 #include "gromacs/utility/keyvaluetreeserializer.h"
 #include "gromacs/utility/programcontext.h"
+#include "gromacs/utility/real.h"
 #include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/stringutil.h"
 #include "gromacs/utility/sysinfo.h"
 #include "gromacs/utility/textwriter.h"
 #include "gromacs/utility/txtdump.h"
 
 #include "buildinfo.h"
+
+
+enum class ChannelHistory : int;
 
 #define CPT_MAGIC1 171817
 #define CPT_MAGIC2 171819

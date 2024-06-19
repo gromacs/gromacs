@@ -50,6 +50,7 @@
 
 #include <algorithm>
 #include <filesystem>
+#include <memory>
 #include <optional>
 #include <string>
 #include <vector>

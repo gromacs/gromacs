@@ -43,7 +43,9 @@
 
 #include "gromacs/trajectoryanalysis/modules/scattering.h"
 
+#include <filesystem>
 #include <string>
+#include <tuple>
 
 #include <gtest/gtest-param-test.h>
 #include <gtest/gtest.h>
@@ -52,6 +54,7 @@
 #include "gromacs/utility/stringutil.h"
 
 #include "testutils/cmdlinetest.h"
+#include "testutils/testasserts.h"
 #include "testutils/textblockmatchers.h"
 #include "testutils/xvgtest.h"
 

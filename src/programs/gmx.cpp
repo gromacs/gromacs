@@ -38,6 +38,8 @@
  */
 #include "gmxpre.h"
 
+#include <cstdio>
+
 #include "gromacs/commandline/cmdlineinit.h"
 #include "gromacs/commandline/cmdlinemodulemanager.h"
 #include "gromacs/selection/selhelp.h"
@@ -45,6 +47,11 @@
 #include "gromacs/utility/exceptions.h"
 
 #include "legacymodules.h"
+
+namespace gmx
+{
+class CommandLineProgramContext;
+} // namespace gmx
 
 int main(int argc, char* argv[])
 {

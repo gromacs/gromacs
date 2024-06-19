@@ -49,14 +49,17 @@
 #include "gromacs/options/optionsassigner.h"
 
 #include <limits>
+#include <string>
 #include <vector>
 
 #include <gtest/gtest.h>
 
 #include "gromacs/options/basicoptions.h"
+#include "gromacs/options/ioptionscontainer.h"
 #include "gromacs/options/options.h"
 #include "gromacs/options/optionsection.h"
 #include "gromacs/utility/any.h"
+#include "gromacs/utility/enumerationhelpers.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/stringutil.h"
 

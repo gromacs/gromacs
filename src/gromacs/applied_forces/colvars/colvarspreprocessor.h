@@ -42,14 +42,23 @@
 #define GMX_APPLIED_FORCES_COLVARSPREPROCESSOR_H
 
 
+#include <string>
+#include <vector>
+
+#include "gromacs/math/vectypes.h"
+#include "gromacs/topology/atoms.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/keyvaluetreebuilder.h"
+#include "gromacs/utility/real.h"
 
 #include "colvarproxygromacs.h"
+
+enum class PbcType : int;
 
 
 namespace gmx
 {
+class MDLogger;
 
 /*! \internal \brief
  * Class that read a colvars configuration file during pre-processing and

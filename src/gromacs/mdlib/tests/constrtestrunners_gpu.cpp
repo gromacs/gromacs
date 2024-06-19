@@ -45,6 +45,8 @@
 
 #include <gtest/gtest.h>
 
+#include "gromacs/utility/basedefinitions.h"
+
 #include "constrtestrunners.h"
 
 #if GPU_CONSTRAINTS_SUPPORTED
@@ -58,6 +60,7 @@ namespace gmx
 {
 namespace test
 {
+class ConstraintsTestData;
 
 #if GPU_CONSTRAINTS_SUPPORTED
 

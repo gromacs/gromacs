@@ -42,12 +42,16 @@
 
 #include "gromacs/applied_forces/densityfitting/densityfittingamplitudelookup.h"
 
+#include <string>
+#include <utility>
 #include <vector>
 
 #include <gtest/gtest.h>
 
 #include "gromacs/mdtypes/mdatom.h"
 #include "gromacs/utility/arrayref.h"
+#include "gromacs/utility/booltype.h"
+#include "gromacs/utility/real.h"
 
 namespace gmx
 {

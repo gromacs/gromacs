@@ -44,12 +44,30 @@
 
 #include "config.h"
 
+#include <cstdio>
+#include <cstdlib>
+
+#include <filesystem>
+#include <string>
+#include <tuple>
+#include <unordered_map>
+#include <utility>
+
+#include <gtest/gtest.h>
+
 #include "gromacs/topology/ifunc.h"
+#include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/stringutil.h"
 
 #include "testutils/mpitest.h"
 #include "testutils/setenv.h"
 #include "testutils/simulationdatabase.h"
+#include "testutils/testasserts.h"
+#include "testutils/testfilemanager.h"
+
+#include "programs/mdrun/tests/comparison_helpers.h"
+#include "programs/mdrun/tests/energycomparison.h"
+#include "programs/mdrun/tests/trajectorycomparison.h"
 
 #include "moduletest.h"
 #include "simulatorcomparison.h"

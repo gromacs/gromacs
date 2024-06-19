@@ -35,6 +35,8 @@
 
 #include "gromacs/utility/template_mp.h"
 
+#include <string>
+
 #include <gtest/gtest.h>
 
 namespace gmx

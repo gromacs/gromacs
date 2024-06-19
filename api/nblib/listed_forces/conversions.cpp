@@ -46,11 +46,27 @@
 #ifndef NBLIB_LISTEDFORCES_CONVERSION_HPP
 #define NBLIB_LISTEDFORCES_CONVERSION_HPP
 
+#include <cmath>
+#include <cstddef>
+
+#include <array>
 #include <memory>
+#include <tuple>
+#include <type_traits>
+#include <utility>
+#include <vector>
 
 #include "listed_forces/conversionscommon.h"
 
 #include "gromacs/topology/forcefieldparameters.h"
+#include "gromacs/topology/idef.h"
+
+#include "nblib/basicdefinitions.h"
+#include "nblib/exception.h"
+#include "nblib/listed_forces/bondtypes.h"
+#include "nblib/listed_forces/definitions.h"
+#include "nblib/util/traits.hpp"
+#include "nblib/util/util.hpp"
 
 namespace nblib
 {

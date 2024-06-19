@@ -43,10 +43,16 @@
 
 #include "testutils/tprfilegenerator.h"
 
+#include <filesystem>
+#include <string>
+
+#include <gtest/gtest.h>
+
 #include "gromacs/gmxpreprocess/grompp.h"
 #include "gromacs/utility/textwriter.h"
 
 #include "testutils/cmdlinetest.h"
+#include "testutils/testfilemanager.h"
 
 namespace gmx
 {

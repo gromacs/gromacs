@@ -43,13 +43,26 @@
  */
 #include "gmxcalculator.h"
 
+#include <algorithm>
+#include <array>
+#include <iterator>
+#include <tuple>
+#include <type_traits>
+
 #include "listed_forces/conversionscommon.h"
 
 #include "gromacs/listed_forces/listed_forces.h"
+#include "gromacs/math/arrayrefwithpadding.h"
+#include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/timing/wallcycle.h"
+#include "gromacs/utility/arrayref.h"
+#include "gromacs/utility/booltype.h"
 
 #include "nblib/exception.h"
+#include "nblib/listed_forces/bondtypes.h"
+#include "nblib/util/traits.hpp"
+#include "nblib/util/util.hpp"
 
 namespace nblib
 {

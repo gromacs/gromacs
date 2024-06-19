@@ -48,9 +48,11 @@
 #include <map>
 #include <memory>
 #include <mutex>
+#include <utility>
 #include <vector>
 
 #include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/gmxassert.h"
 
 namespace gmx
 {

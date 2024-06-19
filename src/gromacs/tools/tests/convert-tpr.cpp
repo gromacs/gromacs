@@ -39,18 +39,32 @@
  */
 #include "gmxpre.h"
 
+#include <cstdint>
+
+#include <filesystem>
+#include <functional>
+#include <memory>
+#include <string>
+#include <vector>
+
+#include <gtest/gtest.h>
+
+#include "gromacs/commandline/cmdlineoptionsmodule.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/math/functions.h"
+#include "gromacs/math/vectypes.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/state.h"
 #include "gromacs/tools/convert_tpr.h"
 #include "gromacs/topology/topology.h"
+#include "gromacs/utility/real.h"
 
 #include "testutils/cmdlinetest.h"
 #include "testutils/refdata.h"
 #include "testutils/simulationdatabase.h"
 #include "testutils/stdiohelper.h"
 #include "testutils/testasserts.h"
+#include "testutils/testfilemanager.h"
 #include "testutils/tprfilegenerator.h"
 
 #include "convert-tpr-fixture.h"

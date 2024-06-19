@@ -35,6 +35,7 @@
 #define GMX_GMXPREPROCESS_PDB2GMX_H
 
 #include "gromacs/commandline/cmdlineoptionsmodule.h"
+#include "gromacs/libgromacs_export.h"
 
 namespace gmx
 {

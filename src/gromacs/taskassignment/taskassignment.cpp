@@ -52,8 +52,12 @@
 
 #include "config.h"
 
+#include <cstddef>
+
 #include <algorithm>
 #include <exception>
+#include <filesystem>
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -65,6 +69,7 @@
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/simulation_workload.h"
 #include "gromacs/taskassignment/usergpuids.h"
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
@@ -78,8 +83,12 @@
 #include "findallgputasks.h"
 #include "reportgpuusage.h"
 
+enum class PmeRunMode;
+struct DeviceInformation;
+
 namespace gmx
 {
+enum class TaskTarget;
 
 namespace
 {

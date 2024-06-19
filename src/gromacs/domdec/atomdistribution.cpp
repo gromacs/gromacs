@@ -44,6 +44,7 @@
 #include "atomdistribution.h"
 
 #include "gromacs/math/vec.h"
+#include "gromacs/utility/gmxassert.h"
 
 #include "domdec_internal.h"
 

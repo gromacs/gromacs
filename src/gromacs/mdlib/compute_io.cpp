@@ -38,11 +38,17 @@
 #include <csignal>
 #include <cstdlib>
 
+#include <memory>
+#include <vector>
+
 #include "gromacs/math/functions.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/mdtypes/pull_params.h"
 #include "gromacs/topology/topology.h"
+#include "gromacs/topology/topology_enums.h"
+#include "gromacs/utility/enumerationhelpers.h"
+#include "gromacs/utility/real.h"
 
 static int div_nsteps(int nsteps, int nst)
 {

@@ -45,6 +45,13 @@
 
 #include <tinyxml2.h>
 
+#include <cstring>
+
+#include <list>
+#include <memory>
+#include <utility>
+#include <vector>
+
 #include "gromacs/utility/exceptions.h"
 
 #include "testutils/testexceptions.h"

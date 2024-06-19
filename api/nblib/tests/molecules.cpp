@@ -43,6 +43,12 @@
  */
 #include "nblib/molecules.h"
 
+#include <cstddef>
+
+#include <stdexcept>
+
+#include <gtest/gtest.h>
+
 #include "testutils/testasserts.h"
 
 #include "nblib/exception.h"

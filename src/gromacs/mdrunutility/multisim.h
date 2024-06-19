@@ -42,6 +42,9 @@
 #ifndef GMX_MDRUNUTILITY_MULTISIM_H
 #define GMX_MDRUNUTILITY_MULTISIM_H
 
+#include <cstdint>
+#include <cstdio>
+
 #include <memory>
 #include <string>
 #include <vector>

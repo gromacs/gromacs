@@ -46,15 +46,25 @@
 #include <cstdlib>
 #include <cstring>
 
+#include <algorithm>
+#include <filesystem>
+#include <functional>
 #include <memory>
 #include <new>
+#include <optional>
 #include <sstream>
+#include <string>
+#include <string_view>
+#include <utility>
 #include <vector>
 
 #include "gromacs/commandline/cmdlinehelpcontext.h"
+#include "gromacs/commandline/cmdlinemodule.h"
 #include "gromacs/commandline/cmdlineoptionsmodule.h"
 #include "gromacs/commandline/cmdlineprogramcontext.h"
+#include "gromacs/onlinehelp/helpwritercontext.h"
 #include "gromacs/utility/arrayref.h"
+#include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/strconvert.h"
@@ -71,6 +81,8 @@ namespace gmx
 {
 namespace test
 {
+class FloatingPointTolerance;
+class ITextBlockMatcherSettings;
 
 /********************************************************************
  * CommandLine::Impl

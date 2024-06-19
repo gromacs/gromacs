@@ -42,13 +42,17 @@
 
 #include "gromacs/utility/exceptions.h"
 
+#include <cstdio>
 #include <cstring>
 
 #include <map>
 #include <memory>
 #include <new>
 #include <stdexcept>
+#include <string>
+#include <typeindex>
 #include <typeinfo>
+#include <utility>
 
 #include "gromacs/utility/basenetwork.h"
 #include "gromacs/utility/fatalerror.h"

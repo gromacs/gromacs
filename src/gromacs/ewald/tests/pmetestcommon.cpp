@@ -46,6 +46,10 @@
 #include <cstring>
 
 #include <algorithm>
+#include <iterator>
+#include <utility>
+
+#include <gtest/gtest.h>
 
 #include "gromacs/domdec/domdec.h"
 #include "gromacs/ewald/pme_coordinate_receiver_gpu.h"
@@ -54,6 +58,7 @@
 #include "gromacs/ewald/pme_gpu_constants.h"
 #include "gromacs/ewald/pme_gpu_internal.h"
 #include "gromacs/ewald/pme_gpu_staging.h"
+#include "gromacs/ewald/pme_gpu_types_host.h"
 #include "gromacs/ewald/pme_grid.h"
 #include "gromacs/ewald/pme_internal.h"
 #include "gromacs/ewald/pme_redistribute.h"
@@ -62,10 +67,15 @@
 #include "gromacs/fft/parallel_3dfft.h"
 #include "gromacs/gpu_utils/device_context.h"
 #include "gromacs/gpu_utils/gpu_utils.h"
+#include "gromacs/gpu_utils/hostallocator.h"
 #include "gromacs/math/boxmatrix.h"
 #include "gromacs/mdtypes/commrec.h"
+#include "gromacs/mdtypes/locality.h"
+#include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/topology/topology.h"
+#include "gromacs/utility/arrayref.h"
+#include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/logger.h"
@@ -76,6 +86,9 @@
 #include "testutils/testinit.h"
 
 class DeviceContext;
+class DeviceStream;
+class GpuEventSynchronizer;
+struct t_inputrec;
 
 namespace gmx
 {

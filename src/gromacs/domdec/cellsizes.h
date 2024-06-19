@@ -42,10 +42,14 @@
 #ifndef GMX_DOMDEC_DOMDEC_CELLSIZES_H
 #define GMX_DOMDEC_DOMDEC_CELLSIZES_H
 
+#include <cstdint>
+
 #include <vector>
 
 #include "gromacs/math/vectypes.h"
 #include "gromacs/timing/wallcycle.h"
+#include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/real.h"
 
 namespace gmx
 {

@@ -44,9 +44,18 @@
 
 #include "pairsearch.h"
 
+#include <cstdlib>
+
 #include "gromacs/mdtypes/nblist.h"
 
 #include "pairlist.h"
+
+enum class PairlistType;
+enum class PbcType : int;
+namespace gmx
+{
+enum class PinningPolicy : int;
+} // namespace gmx
 
 
 void SearchCycleCounting::printCycles(FILE* fp, gmx::ArrayRef<const PairsearchWork> work) const

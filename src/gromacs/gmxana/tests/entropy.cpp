@@ -39,8 +39,17 @@
  */
 #include "gmxpre.h"
 
+#include <algorithm>
+#include <iterator>
+#include <string>
+#include <vector>
+
+#include <gtest/gtest.h>
+
 #include "gromacs/gmxana/thermochemistry.h"
 #include "gromacs/utility/arrayref.h"
+#include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/real.h"
 
 #include "testutils/refdata.h"
 #include "testutils/testasserts.h"

@@ -43,6 +43,7 @@
 #ifndef GMX_MDLIB_LINCS_H
 #define GMX_MDLIB_LINCS_H
 
+#include <cstdint>
 #include <cstdio>
 
 #include "gromacs/math/vectypes.h"

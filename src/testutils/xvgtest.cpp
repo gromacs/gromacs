@@ -46,6 +46,7 @@
 #include <cerrno>
 #include <cstdlib>
 
+#include <string>
 #include <vector>
 
 #include "gromacs/utility/gmxassert.h"

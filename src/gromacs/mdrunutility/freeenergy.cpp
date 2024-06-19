@@ -43,11 +43,13 @@
 
 #include "freeenergy.h"
 
+#include <memory>
 #include <numeric>
 
 #include "gromacs/mdrun/replicaexchange.h"
 #include "gromacs/mdtypes/awh_params.h"
 #include "gromacs/mdtypes/inputrec.h"
+#include "gromacs/mdtypes/md_enums.h"
 
 namespace gmx
 {

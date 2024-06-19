@@ -79,6 +79,7 @@ extern int _gmx_sel_yydebug;
 
 #include "parsetree.h"
 #include "selelem.h"
+#include "gromacs/utility/real.h"
 
 #define YYLTYPE ::gmx::SelectionLocation
 

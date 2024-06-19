@@ -51,7 +51,10 @@
 
 #include "simulationsignal.h"
 
+#include <cstddef>
+
 #include <algorithm>
+#include <iterator>
 
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/mdrunutility/multisim.h"

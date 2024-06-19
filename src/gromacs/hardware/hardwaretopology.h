@@ -43,6 +43,7 @@
 #define GMX_HARDWARE_HARDWARETOPOLOGY_H
 
 #include <cmath>
+#include <cstddef>
 #include <cstdint>
 
 #include <array>

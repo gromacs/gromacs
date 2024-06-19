@@ -39,6 +39,8 @@
 #include <cstring>
 
 #include <algorithm>
+#include <filesystem>
+#include <vector>
 
 #include "gromacs/pbcutil/mshift.h"
 #include "gromacs/topology/block.h"
@@ -46,6 +48,7 @@
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/listoflists.h"
 
 typedef struct
 {

@@ -43,7 +43,11 @@
 
 #include "config.h"
 
+#include <filesystem>
+#include <memory>
 #include <regex>
+#include <string>
+#include <tuple>
 
 #include <gtest/gtest.h>
 
@@ -54,8 +58,13 @@
 #include "gromacs/utility/path.h"
 #include "gromacs/utility/stringutil.h"
 
+#include "testutils/cmdlinetest.h"
 #include "testutils/refdata.h"
+#include "testutils/testasserts.h"
 #include "testutils/testfilemanager.h"
+
+#include "programs/mdrun/tests/comparison_helpers.h"
+#include "programs/mdrun/tests/moduletest.h"
 
 #include "energycomparison.h"
 #include "multisimtest.h"

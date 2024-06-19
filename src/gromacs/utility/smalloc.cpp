@@ -38,13 +38,16 @@
 #include "config.h"
 
 #include <cerrno>
+#include <cinttypes>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
 
+#include <filesystem>
 #include <mutex>
 
 #include "gromacs/utility/alignedallocator.h"
+#include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/fatalerror.h"
 #ifdef PRINT_ALLOC_KB
 #    include "gromacs/utility/basenetwork.h"

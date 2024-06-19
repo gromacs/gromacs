@@ -45,7 +45,10 @@
 #include <cstdio>
 
 #include <algorithm>
+#include <filesystem>
+#include <memory>
 #include <set>
+#include <string>
 #include <vector>
 
 #include "gromacs/analysisdata/analysisdata.h"
@@ -56,21 +59,32 @@
 #include "gromacs/analysisdata/modules/plot.h"
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/trxio.h"
+#include "gromacs/math/vectypes.h"
 #include "gromacs/options/basicoptions.h"
 #include "gromacs/options/filenameoption.h"
 #include "gromacs/options/ioptionscontainer.h"
+#include "gromacs/options/optionfiletype.h"
+#include "gromacs/selection/indexutil.h"
 #include "gromacs/selection/selection.h"
+#include "gromacs/selection/selectionenums.h"
 #include "gromacs/selection/selectionoption.h"
+#include "gromacs/topology/atoms.h"
 #include "gromacs/trajectory/trajectoryframe.h"
 #include "gromacs/trajectoryanalysis/analysissettings.h"
 #include "gromacs/trajectoryanalysis/topologyinformation.h"
 #include "gromacs/utility/arrayref.h"
+#include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/enumerationhelpers.h"
 #include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/real.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/stringutil.h"
 
+struct t_pbc;
+
 namespace gmx
 {
+class AbstractAnalysisData;
 
 namespace analysismodules
 {

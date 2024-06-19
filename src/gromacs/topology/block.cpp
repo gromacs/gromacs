@@ -38,8 +38,11 @@
 #include <cstdio>
 
 #include <algorithm>
+#include <vector>
 
 #include "gromacs/topology/index.h"
+#include "gromacs/utility/arrayref.h"
+#include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/listoflists.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/txtdump.h"

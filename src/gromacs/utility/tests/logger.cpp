@@ -35,6 +35,11 @@
 
 #include "gromacs/utility/logger.h"
 
+#include <cstdio>
+
+#include <filesystem>
+#include <string>
+
 #include <gtest/gtest.h>
 
 #include "gromacs/utility/loggerbuilder.h"

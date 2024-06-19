@@ -45,12 +45,15 @@
 
 #include "gromacs/trajectoryanalysis/modules/dssp.h"
 
+#include <filesystem>
 #include <string>
+#include <tuple>
 
 #include <gtest/gtest-param-test.h>
 #include <gtest/gtest.h>
 
 #include "gromacs/utility/path.h"
+#include "gromacs/utility/real.h"
 #include "gromacs/utility/stringutil.h"
 
 #include "testutils/cmdlinetest.h"

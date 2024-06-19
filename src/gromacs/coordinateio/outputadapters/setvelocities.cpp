@@ -44,6 +44,8 @@
 
 #include "setvelocities.h"
 
+#include <string>
+
 #include "gromacs/coordinateio/coordinatefileenums.h"
 #include "gromacs/trajectory/trajectoryframe.h"
 #include "gromacs/utility/exceptions.h"

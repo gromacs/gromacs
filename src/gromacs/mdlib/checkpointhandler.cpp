@@ -43,6 +43,7 @@
 #include "checkpointhandler.h"
 
 #include "gromacs/timing/walltime_accounting.h"
+#include "gromacs/utility/gmxassert.h"
 
 namespace gmx
 {

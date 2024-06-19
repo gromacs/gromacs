@@ -42,6 +42,11 @@
 
 #include "gromacs/math/matrix.h"
 
+#include "gromacs/math/vectypes.h"
+#include "gromacs/mdspan/layouts.h"
+#include "gromacs/mdspan/mdspan.h"
+#include "gromacs/utility/real.h"
+
 namespace gmx
 {
 

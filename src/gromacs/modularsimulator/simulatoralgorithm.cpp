@@ -42,6 +42,11 @@
 
 #include "simulatoralgorithm.h"
 
+#include <algorithm>
+#include <array>
+#include <filesystem>
+#include <iterator>
+
 #include "gromacs/commandline/filenm.h"
 #include "gromacs/domdec/domdec.h"
 #include "gromacs/ewald/pme.h"
@@ -55,25 +60,36 @@
 #include "gromacs/mdlib/md_support.h"
 #include "gromacs/mdlib/mdatoms.h"
 #include "gromacs/mdlib/resethandler.h"
+#include "gromacs/mdlib/sighandler.h"
 #include "gromacs/mdlib/stat.h"
 #include "gromacs/mdrun/replicaexchange.h"
 #include "gromacs/mdrun/shellfc.h"
 #include "gromacs/mdrunutility/freeenergy.h"
 #include "gromacs/mdrunutility/handlerestart.h"
 #include "gromacs/mdrunutility/printtime.h"
+#include "gromacs/mdtypes/checkpointdata.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/fcdata.h"
 #include "gromacs/mdtypes/forcerec.h"
 #include "gromacs/mdtypes/inputrec.h"
+#include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/mdtypes/mdatom.h"
 #include "gromacs/mdtypes/mdrunoptions.h"
 #include "gromacs/mdtypes/observableshistory.h"
 #include "gromacs/mdtypes/simulation_workload.h"
+#include "gromacs/modularsimulator/modularsimulatorinterfaces.h"
+#include "gromacs/modularsimulator/signallers.h"
+#include "gromacs/modularsimulator/topologyholder.h"
+#include "gromacs/modularsimulator/trajectoryelement.h"
 #include "gromacs/nbnxm/nbnxm.h"
+#include "gromacs/timing/wallcycle.h"
 #include "gromacs/timing/walltime_accounting.h"
 #include "gromacs/topology/topology.h"
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/logger.h"
+#include "gromacs/utility/real.h"
 
 #include "checkpointhelper.h"
 #include "domdechelper.h"
@@ -85,6 +101,8 @@
 #include "propagator.h"
 #include "referencetemperaturemanager.h"
 #include "statepropagatordata.h"
+
+struct gmx_walltime_accounting;
 
 namespace gmx
 {

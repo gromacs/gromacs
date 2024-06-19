@@ -52,6 +52,8 @@
 #ifndef GMX_NBNXM_GRID_H
 #define GMX_NBNXM_GRID_H
 
+#include <cstdint>
+
 #include <memory>
 #include <vector>
 
@@ -59,7 +61,9 @@
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/alignedallocator.h"
 #include "gromacs/utility/arrayref.h"
+#include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/range.h"
+#include "gromacs/utility/real.h"
 
 #include "boundingbox.h"
 

@@ -42,7 +42,15 @@
 
 #include "qmmmtopologypreprocessor.h"
 
+#include <cstddef>
+
+#include <filesystem>
+
+#include "gromacs/applied_forces/qmmm/qmmmtypes.h"
 #include "gromacs/selection/indexutil.h"
+#include "gromacs/topology/atoms.h"
+#include "gromacs/topology/idef.h"
+#include "gromacs/topology/ifunc.h"
 #include "gromacs/topology/mtop_atomloops.h"
 #include "gromacs/topology/mtop_lookup.h"
 #include "gromacs/topology/mtop_util.h"

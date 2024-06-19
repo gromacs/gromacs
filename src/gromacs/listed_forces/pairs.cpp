@@ -45,10 +45,16 @@
 #include "pairs.h"
 
 #include <cmath>
+#include <cstdint>
+#include <cstdio>
+
+#include <filesystem>
+#include <memory>
 
 #include "gromacs/listed_forces/bonded.h"
 #include "gromacs/math/functions.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/mdtypes/enerdata.h"
 #include "gromacs/mdtypes/forcerec.h"
 #include "gromacs/mdtypes/group.h"
 #include "gromacs/mdtypes/interaction_const.h"
@@ -62,7 +68,11 @@
 #include "gromacs/simd/simd_math.h"
 #include "gromacs/simd/vector_operations.h"
 #include "gromacs/tables/forcetable.h"
+#include "gromacs/topology/idef.h"
+#include "gromacs/utility/alignedallocator.h"
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/enumerationhelpers.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
 

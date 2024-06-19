@@ -35,11 +35,22 @@
 
 #include "calc_verletbuf.h"
 
+#include "config.h"
+
 #include <cmath>
+#include <cstdint>
+#include <cstdio>
 #include <cstdlib>
 
 #include <algorithm>
+#include <filesystem>
+#include <functional>
+#include <string>
+#include <tuple>
+#include <typeindex>
 #include <unordered_map>
+#include <utility>
+#include <vector>
 
 #include "gromacs/ewald/ewald_utils.h"
 #include "gromacs/gmxlib/network.h"
@@ -52,9 +63,15 @@
 #include "gromacs/nbnxm/nbnxm.h"
 #include "gromacs/nbnxm/nbnxm_geometry.h"
 #include "gromacs/nbnxm/nbnxm_simd.h"
+#include "gromacs/pbcutil/pbc.h"
+#include "gromacs/topology/atoms.h"
 #include "gromacs/topology/block.h"
+#include "gromacs/topology/forcefieldparameters.h"
+#include "gromacs/topology/idef.h"
 #include "gromacs/topology/ifunc.h"
 #include "gromacs/topology/topology.h"
+#include "gromacs/topology/topology_enums.h"
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/strconvert.h"

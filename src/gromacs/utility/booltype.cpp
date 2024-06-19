@@ -42,6 +42,8 @@
 
 #include "gromacs/utility/booltype.h"
 
+#include <vector>
+
 #include "gromacs/utility/arrayref.h"
 
 namespace gmx

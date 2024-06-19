@@ -35,9 +35,11 @@
 
 #include "multipletimestepping.h"
 
+#include <memory>
 #include <optional>
 
 #include "gromacs/mdtypes/inputrec.h"
+#include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/mdtypes/pull_params.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/gmxassert.h"

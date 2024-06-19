@@ -37,9 +37,11 @@
 #include "gmxpre.h"
 
 #include <memory>
+#include <utility>
 #include <vector>
 
 #include "gromacs/applied_forces/awh/bias.h"
+#include "gromacs/applied_forces/awh/dimparams.h"
 #include "gromacs/mdtypes/awh_params.h"
 
 namespace gmx
@@ -47,6 +49,7 @@ namespace gmx
 
 template<typename>
 class ArrayRef;
+class ISerializer;
 
 namespace test
 {

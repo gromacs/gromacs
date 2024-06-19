@@ -44,6 +44,10 @@
 
 #include <cmath>
 
+#include <string>
+
+#include <gtest/gtest.h>
+
 #include "testutils/refdata.h"
 #include "testutils/testasserts.h"
 

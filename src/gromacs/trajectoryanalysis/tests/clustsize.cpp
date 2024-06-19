@@ -46,6 +46,8 @@
 
 #include <string>
 
+#include <gtest/gtest.h>
+
 #include "gromacs/gmxana/gmx_ana.h"
 
 #include "testutils/cmdlinetest.h"

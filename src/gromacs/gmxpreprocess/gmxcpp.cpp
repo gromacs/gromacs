@@ -47,10 +47,12 @@
 #include <filesystem>
 #include <memory>
 #include <unordered_set>
+#include <vector>
 
 #include <sys/types.h>
 
 #include "gromacs/utility/arrayref.h"
+#include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"

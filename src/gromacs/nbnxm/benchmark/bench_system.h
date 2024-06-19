@@ -43,12 +43,16 @@
 #ifndef GMX_NBNXN_BENCH_SYSTEM_H
 #define GMX_NBNXN_BENCH_SYSTEM_H
 
+#include <cstdint>
+#include <cstdio>
+
 #include <string>
 #include <vector>
 
 #include "gromacs/math/vectypes.h"
 #include "gromacs/mdtypes/forcerec.h"
 #include "gromacs/utility/listoflists.h"
+#include "gromacs/utility/real.h"
 #include "gromacs/utility/smalloc.h"
 
 namespace gmx

@@ -50,6 +50,8 @@
 
 namespace gmx
 {
+class IOptionsContainer;
+
 namespace test
 {
 

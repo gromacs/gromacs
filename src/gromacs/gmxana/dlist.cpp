@@ -33,13 +33,20 @@
  */
 #include "gmxpre.h"
 
+#include <cstdio>
 #include <cstring>
 
+#include <filesystem>
+#include <string>
 #include <vector>
 
 #include "gromacs/gmxana/gstat.h"
+#include "gromacs/topology/atoms.h"
 #include "gromacs/topology/topology.h"
+#include "gromacs/utility/arrayref.h"
+#include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/real.h"
 
 std::vector<t_dlist> mk_dlist(FILE*          log,
                               const t_atoms* atoms,

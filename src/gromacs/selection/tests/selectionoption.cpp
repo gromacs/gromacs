@@ -42,6 +42,9 @@
 
 #include "gromacs/selection/selectionoption.h"
 
+#include <filesystem>
+#include <string>
+
 #include <gtest/gtest.h>
 
 #include "gromacs/options/options.h"

@@ -56,15 +56,19 @@
 #ifndef GMX_TABLES_QUADRATICSPLINETABLE_H
 #define GMX_TABLES_QUADRATICSPLINETABLE_H
 
+#include <cstddef>
+
 #include <functional>
 #include <initializer_list>
 #include <memory>
+#include <utility>
 #include <vector>
 
 #include "gromacs/libgromacs_export.h"
 #include "gromacs/simd/simd.h"
 #include "gromacs/tables/tableinput.h"
 #include "gromacs/utility/alignedallocator.h"
+#include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/classhelpers.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"

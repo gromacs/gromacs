@@ -43,6 +43,8 @@
 
 #include "config.h"
 
+#include <cstddef>
+
 #include <memory>
 
 #include "gromacs/gpu_utils/device_context.h"

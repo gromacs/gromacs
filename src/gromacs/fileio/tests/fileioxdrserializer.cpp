@@ -41,11 +41,20 @@
 
 #include "gmxpre.h"
 
+#include <cstdint>
+#include <cstdio>
+
+#include <filesystem>
+#include <string>
+#include <type_traits>
+#include <vector>
+
 #include <gtest/gtest.h>
 
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/gmxfio_xdr.h"
 #include "gromacs/utility/futil.h"
+#include "gromacs/utility/real.h"
 
 #include "testutils/testfilemanager.h"
 

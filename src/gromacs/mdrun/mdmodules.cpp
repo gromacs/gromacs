@@ -35,7 +35,11 @@
 
 #include "mdmodules.h"
 
+#include <cstdio>
+
 #include <memory>
+#include <utility>
+#include <vector>
 
 #include "gromacs/applied_forces/colvars/colvarsMDModule.h"
 #include "gromacs/applied_forces/densityfitting/densityfitting.h"
@@ -52,10 +56,13 @@
 #include "gromacs/options/optionsection.h"
 #include "gromacs/options/treesupport.h"
 #include "gromacs/swap/swapcoords.h"
+#include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/keyvaluetree.h"
 #include "gromacs/utility/keyvaluetreebuilder.h"
 #include "gromacs/utility/keyvaluetreetransform.h"
 #include "gromacs/utility/smalloc.h"
+
+struct gmx_output_env_t;
 
 namespace gmx
 {

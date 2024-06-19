@@ -49,6 +49,9 @@
 
 #include "gromacs/analysisdata/modules/histogram.h"
 
+#include <memory>
+#include <string>
+
 #include <gtest/gtest.h>
 
 #include "gromacs/analysisdata/analysisdata.h"

@@ -44,7 +44,10 @@
 #ifndef GMX_EWALD_PME_PP_H
 #define GMX_EWALD_PME_PP_H
 
+#include <cstdint>
+
 #include "gromacs/math/vectypes.h"
+#include "gromacs/utility/real.h"
 
 struct gmx_wallcycle;
 struct interaction_const_t;

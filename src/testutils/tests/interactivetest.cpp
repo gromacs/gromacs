@@ -42,11 +42,16 @@
 
 #include "testutils/interactivetest.h"
 
+#include <cstddef>
+
+#include <string>
+#include <utility>
 #include <vector>
 
 #include <gtest/gtest-spi.h>
 #include <gtest/gtest.h>
 
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/textstream.h"
 
 #include "testutils/refdata.h"

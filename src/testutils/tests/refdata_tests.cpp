@@ -42,6 +42,7 @@
 
 #include "testutils/refdata.h"
 
+#include <iterator>
 #include <string>
 #include <vector>
 

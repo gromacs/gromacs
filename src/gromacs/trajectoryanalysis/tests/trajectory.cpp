@@ -47,7 +47,11 @@
 
 #include "gromacs/trajectoryanalysis/modules/trajectory.h"
 
+#include <string>
+
 #include <gtest/gtest.h>
+
+#include "gromacs/utility/arrayref.h"
 
 #include "testutils/cmdlinetest.h"
 #include "testutils/textblockmatchers.h"

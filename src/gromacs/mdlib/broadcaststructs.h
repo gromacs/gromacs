@@ -44,6 +44,8 @@
 #ifndef GMX_MDLIB_BROADCASTSTRUCTS_H
 #define GMX_MDLIB_BROADCASTSTRUCTS_H
 
+#include <cstddef>
+
 #include <vector>
 
 #include "gromacs/gmxlib/network.h"

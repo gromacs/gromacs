@@ -34,6 +34,8 @@
 #ifndef GMX_FILEIO_TRRIO_H
 #define GMX_FILEIO_TRRIO_H
 
+#include <cstdint>
+
 #include <filesystem>
 #include <limits>
 

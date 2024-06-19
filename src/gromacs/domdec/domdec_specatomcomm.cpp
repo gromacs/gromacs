@@ -46,8 +46,12 @@
 #include "domdec_specatomcomm.h"
 
 #include <cassert>
+#include <cstdio>
 
 #include <algorithm>
+#include <array>
+#include <filesystem>
+#include <memory>
 
 #include "gromacs/domdec/dlb.h"
 #include "gromacs/domdec/domdec.h"
@@ -59,6 +63,7 @@
 #include "gromacs/math/vec.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/pbcutil/ishift.h"
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
 

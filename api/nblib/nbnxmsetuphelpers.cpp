@@ -41,30 +41,46 @@
  */
 #include "nblib/nbnxmsetuphelpers.h"
 
+#include <cassert>
+
+#include <algorithm>
+#include <iterator>
+#include <optional>
+#include <string>
+#include <utility>
+
 #include "gromacs/ewald/ewald_utils.h"
 #include "gromacs/gmxlib/nrnb.h"
 #include "gromacs/gpu_utils/device_stream_manager.h"
+#include "gromacs/gpu_utils/hostallocator.h"
+#include "gromacs/math/functions.h"
 #include "gromacs/mdlib/forcerec.h"
 #include "gromacs/mdlib/gmx_omp_nthreads.h"
 #include "gromacs/mdlib/rf_util.h"
+#include "gromacs/mdtypes/atominfo.h"
 #include "gromacs/mdtypes/forcerec.h"
 #include "gromacs/mdtypes/interaction_const.h"
+#include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/mdtypes/simulation_workload.h"
 #include "gromacs/nbnxm/atomdata.h"
 #include "gromacs/nbnxm/gpu_data_mgmt.h"
 #include "gromacs/nbnxm/nbnxm.h"
 #include "gromacs/nbnxm/nbnxm_gpu.h"
 #include "gromacs/nbnxm/nbnxm_simd.h"
+#include "gromacs/nbnxm/pairlistparams.h"
 #include "gromacs/nbnxm/pairlistset.h"
 #include "gromacs/nbnxm/pairlistsets.h"
 #include "gromacs/nbnxm/pairsearch.h"
 #include "gromacs/pbcutil/pbc.h"
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/logger.h"
 #include "gromacs/utility/smalloc.h"
 
 #include "nblib/exception.h"
 #include "nblib/kerneloptions.h"
 #include "nblib/particletype.h"
+
+struct NbnxmGpu;
 
 namespace nblib
 {

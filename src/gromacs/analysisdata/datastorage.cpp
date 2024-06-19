@@ -42,16 +42,21 @@
 
 #include "datastorage.h"
 
+#include <cstddef>
+
 #include <algorithm>
 #include <iterator>
 #include <limits>
 #include <memory>
+#include <utility>
 #include <vector>
 
 #include "gromacs/analysisdata/abstractdata.h"
 #include "gromacs/analysisdata/dataframe.h"
 #include "gromacs/analysisdata/datamodulemanager.h"
 #include "gromacs/analysisdata/paralleloptions.h"
+#include "gromacs/utility/arrayref.h"
+#include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/classhelpers.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"

@@ -43,6 +43,11 @@
 
 #include "config.h"
 
+#include <cstddef>
+#include <cstdint>
+
+#include <memory>
+#include <string>
 #include <type_traits>
 #include <vector>
 
@@ -56,12 +61,18 @@
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/real.h"
 
+#include "testutils/test_device.h"
 #include "testutils/test_hardware_environment.h"
 
 #include "devicetransfers.h"
 
 namespace gmx
 {
+namespace detail
+{
+template<typename T>
+struct PaddingTraits;
+} // namespace detail
 
 namespace test
 {

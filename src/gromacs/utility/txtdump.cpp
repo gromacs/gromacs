@@ -35,8 +35,12 @@
 
 #include "gromacs/utility/txtdump.h"
 
+#include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/real.h"
+
 /* This file is completely threadsafe - please keep it that way! */
 
+#include <cstdint>
 #include <cstdio>
 #include <cstdlib>
 

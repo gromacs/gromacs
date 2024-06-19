@@ -40,15 +40,20 @@
 #include <cmath>
 #include <cstring>
 
+#include <filesystem>
 #include <memory>
+#include <string>
 
 #include "gromacs/fileio/enxio.h"
+#include "gromacs/fileio/xdr_datatype.h"
 #include "gromacs/mdlib/energyoutput.h"
 #include "gromacs/mdtypes/energyhistory.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/trajectory/energyframe.h"
 #include "gromacs/utility/arrayref.h"
+#include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/enumerationhelpers.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"

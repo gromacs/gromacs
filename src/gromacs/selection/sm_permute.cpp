@@ -40,8 +40,14 @@
  */
 #include "gmxpre.h"
 
+#include <string>
+
 #include "gromacs/math/vec.h"
+#include "gromacs/selection/indexutil.h"
 #include "gromacs/selection/position.h"
+#include "gromacs/selection/selparam.h"
+#include "gromacs/selection/selvalue.h"
+#include "gromacs/topology/block.h"
 #include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/smalloc.h"
@@ -49,6 +55,8 @@
 
 #include "selmethod.h"
 #include "selmethod_impl.h"
+
+struct gmx_mtop_t;
 
 /*! \internal \brief
  * Data structure for the \p permute selection modifier.

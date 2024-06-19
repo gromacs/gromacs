@@ -43,9 +43,14 @@
 
 #include "mrcdensitymapheader.h"
 
-#include <algorithm>
+#include <cstdint>
 
+#include <algorithm>
+#include <iterator>
+
+#include "gromacs/mdspan/extents.h"
 #include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/real.h"
 
 namespace gmx
 {

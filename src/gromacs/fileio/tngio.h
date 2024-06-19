@@ -35,6 +35,7 @@
 #ifndef GMX_FILEIO_TNGIO_H
 #define GMX_FILEIO_TNGIO_H
 
+#include <cstdint>
 #include <cstdio>
 
 #include <filesystem>

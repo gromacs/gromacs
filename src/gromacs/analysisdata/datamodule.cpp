@@ -46,6 +46,7 @@
 
 namespace gmx
 {
+class AbstractAnalysisData;
 
 bool AnalysisDataModuleSerial::parallelDataStarted(AbstractAnalysisData* data,
                                                    const AnalysisDataParallelOptions& /*options*/)

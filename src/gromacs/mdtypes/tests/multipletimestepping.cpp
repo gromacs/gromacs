@@ -42,10 +42,18 @@
 
 #include "gromacs/mdtypes/multipletimestepping.h"
 
+#include <bitset>
+#include <memory>
+#include <string>
+#include <tuple>
+#include <vector>
+
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
 #include "gromacs/mdtypes/inputrec.h"
+#include "gromacs/mdtypes/md_enums.h"
+#include "gromacs/utility/enumerationhelpers.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
 

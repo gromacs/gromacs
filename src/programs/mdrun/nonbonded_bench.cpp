@@ -42,6 +42,7 @@
 
 #include "nonbonded_bench.h"
 
+#include <memory>
 #include <vector>
 
 #include "gromacs/commandline/cmdlineoptionsmodule.h"
@@ -50,12 +51,16 @@
 #include "gromacs/options/basicoptions.h"
 #include "gromacs/options/filenameoption.h"
 #include "gromacs/options/ioptionscontainer.h"
+#include "gromacs/options/optionfiletype.h"
 #include "gromacs/selection/selectionoptionbehavior.h"
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/enumerationhelpers.h"
+#include "gromacs/utility/real.h"
 
 namespace gmx
 {
+class CommandLineModuleSettings;
 
 
 namespace

@@ -45,16 +45,19 @@
 #include <cstdlib>
 
 #include <filesystem>
+#include <memory>
 #include <set>
 #include <string>
 #include <vector>
 
 #include "gromacs/utility/directoryenumerator.h"
 #include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/fileptr.h"
 #include "gromacs/utility/filestream.h"
 #include "gromacs/utility/path.h"
 #include "gromacs/utility/programcontext.h"
 #include "gromacs/utility/stringutil.h"
+#include "gromacs/utility/unique_cptr.h"
 
 #include "buildinfo.h"
 

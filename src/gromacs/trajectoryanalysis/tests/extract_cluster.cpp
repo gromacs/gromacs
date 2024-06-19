@@ -42,10 +42,14 @@
 
 #include "gromacs/trajectoryanalysis/modules/extract_cluster.h"
 
+#include <array>
 #include <filesystem>
+#include <string>
 
 #include <gtest/gtest.h>
 
+#include "gromacs/trajectoryanalysis/analysismodule.h"
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/path.h"
 #include "gromacs/utility/stringutil.h"
 

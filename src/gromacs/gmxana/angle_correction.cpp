@@ -35,6 +35,8 @@
 
 #include "angle_correction.h"
 
+#include <cmath>
+
 #include "gromacs/math/units.h"
 
 real correctRadianAngleRange(const real angle)

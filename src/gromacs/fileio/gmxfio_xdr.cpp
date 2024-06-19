@@ -39,10 +39,13 @@
 #include <cstdio>
 #include <cstring>
 
+#include <algorithm>
+#include <filesystem>
 #include <limits>
 
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/xdrf.h"
+#include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/enumerationhelpers.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"

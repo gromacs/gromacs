@@ -43,10 +43,16 @@
  */
 #include "nblib/topology.h"
 
+#include <cassert>
+
 #include <algorithm>
+#include <array>
+#include <iterator>
 #include <numeric>
+#include <type_traits>
 
 #include "gromacs/topology/exclusionblocks.h"
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/listoflists.h"
 #include "gromacs/utility/smalloc.h"
 

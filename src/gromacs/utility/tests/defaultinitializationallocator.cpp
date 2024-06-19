@@ -42,6 +42,9 @@
 
 #include "gromacs/utility/defaultinitializationallocator.h"
 
+#include <string>
+#include <vector>
+
 #include <gtest/gtest.h>
 
 #include "gromacs/utility/gmxassert.h"

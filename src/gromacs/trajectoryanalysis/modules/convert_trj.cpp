@@ -44,15 +44,24 @@
 #include "convert_trj.h"
 
 #include <algorithm>
+#include <memory>
+#include <string>
 
 #include "gromacs/coordinateio/coordinatefile.h"
 #include "gromacs/coordinateio/requirements.h"
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/options/filenameoption.h"
 #include "gromacs/options/ioptionscontainer.h"
+#include "gromacs/options/optionfiletype.h"
+#include "gromacs/selection/selection.h"
 #include "gromacs/selection/selectionoption.h"
+#include "gromacs/topology/atoms.h"
 #include "gromacs/trajectoryanalysis/analysissettings.h"
 #include "gromacs/trajectoryanalysis/topologyinformation.h"
+#include "gromacs/utility/arrayref.h"
+
+struct t_pbc;
+struct t_trxframe;
 
 namespace gmx
 {

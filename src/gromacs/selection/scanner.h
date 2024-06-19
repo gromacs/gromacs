@@ -44,6 +44,8 @@
 #ifndef SELECTION_SCANNER_H
 #define SELECTION_SCANNER_H
 
+#include <cstdio>
+
 #include <exception>
 #include <string>
 
@@ -52,7 +54,8 @@
 namespace gmx
 {
 class TextWriter;
-}
+struct SelectionLocation;
+} // namespace gmx
 
 struct gmx_ana_indexgrps_t;
 struct gmx_ana_selcollection_t;

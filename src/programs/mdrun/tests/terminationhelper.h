@@ -42,6 +42,8 @@
 #ifndef GMX_MDRUN_TESTS_TERMINATIONHELPER_H
 #define GMX_MDRUN_TESTS_TERMINATIONHELPER_H
 
+#include <string>
+
 #include "testutils/cmdlinetest.h"
 
 #include "moduletest.h"

@@ -36,7 +36,10 @@
 
 #include "seed.h"
 
+#include <cstdio>
+
 #include <chrono>
+#include <limits>
 
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/fatalerror.h"

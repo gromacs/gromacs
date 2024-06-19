@@ -34,16 +34,26 @@
 #include "gmxpre.h"
 
 #include <cassert>
+#include <cstddef>
+#include <cstdio>
 #include <cstdlib>
 #include <cstring>
 
+#include <array>
+#include <filesystem>
+#include <iterator>
+#include <memory>
 #include <regex>
+#include <string>
+#include <string_view>
+#include <vector>
 
 #include "gromacs/domdec/localatomsetmanager.h"
 #include "gromacs/fileio/readinp.h"
 #include "gromacs/fileio/warninp.h"
 #include "gromacs/gmxpreprocess/readir.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/math/vectypes.h"
 #include "gromacs/mdlib/mdatoms.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
@@ -59,8 +69,12 @@
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
+#include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/real.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/stringutil.h"
+
+struct pull_t;
 
 
 static void string2dvec(const char buf[], dvec nums)

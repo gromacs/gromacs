@@ -43,15 +43,33 @@
 #define GMX_APPLIED_FORCES_COLVARSFORCEPROVIDER_H
 
 
+#include <cstdint>
+
+#include <map>
+#include <memory>
+#include <string>
+#include <vector>
+
 #include "gromacs/domdec/localatomset.h"
+#include "gromacs/math/vectypes.h"
 #include "gromacs/mdrunutility/mdmodulesnotifiers.h"
 #include "gromacs/mdtypes/iforceprovider.h"
+#include "gromacs/topology/atoms.h"
+#include "gromacs/utility/real.h"
 
 #include "colvarproxygromacs.h"
+
+enum class PbcType : int;
+struct t_commrec;
 
 
 namespace gmx
 {
+class KeyValueTreeObject;
+class KeyValueTreeObjectBuilder;
+class LocalAtomSetManager;
+class MDLogger;
+struct MDModulesWriteCheckpointData;
 
 
 /*! \internal

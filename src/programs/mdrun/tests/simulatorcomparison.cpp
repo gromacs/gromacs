@@ -45,9 +45,20 @@
 
 #include "simulatorcomparison.h"
 
-#include "gromacs/trajectory/energyframe.h"
+#include <functional>
+#include <memory>
 
+#include <gtest/gtest.h>
+
+#include "gromacs/trajectory/energyframe.h"
+#include "gromacs/trajectory/trajectoryframe.h"
+
+#include "testutils/cmdlinetest.h"
 #include "testutils/trajectoryreader.h"
+
+#include "programs/mdrun/tests/comparison_helpers.h"
+#include "programs/mdrun/tests/energycomparison.h"
+#include "programs/mdrun/tests/trajectorycomparison.h"
 
 #include "energyreader.h"
 #include "mdruncomparison.h"

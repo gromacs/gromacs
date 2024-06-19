@@ -38,12 +38,19 @@
 
 #include <cassert>
 #include <cmath>
+#include <cstddef>
 
 #include "gromacs/applied_forces/awh/awh.h"
+#include "gromacs/applied_forces/awh/biasparams.h"
+#include "gromacs/applied_forces/awh/biasstate.h"
+#include "gromacs/applied_forces/awh/dimparams.h"
+#include "gromacs/applied_forces/awh/histogramsize.h"
+#include "gromacs/fileio/xdr_datatype.h"
 #include "gromacs/mdtypes/awh_params.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/trajectory/energyframe.h"
 #include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/real.h"
 
 #include "bias.h"
 #include "biasgrid.h"

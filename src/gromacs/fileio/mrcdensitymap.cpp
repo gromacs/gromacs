@@ -44,13 +44,21 @@
 
 #include "mrcdensitymap.h"
 
+#include <cstdio>
+
 #include <algorithm>
+#include <iterator>
 #include <vector>
 
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/gmxfio_xdr.h"
 #include "gromacs/fileio/mrcdensitymapheader.h"
+#include "gromacs/math/coordinatetransformation.h"
+#include "gromacs/mdspan/extents.h"
+#include "gromacs/mdspan/layouts.h"
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/futil.h"
 #include "gromacs/utility/inmemoryserializer.h"
 #include "gromacs/utility/iserializer.h"
 #include "gromacs/utility/stringutil.h"

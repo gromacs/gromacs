@@ -40,12 +40,17 @@
  */
 #include "gmxpre.h"
 
+#include <cmath>
+
 #include <array>
+#include <string>
 
 #include <gtest/gtest.h>
 
 #include "gromacs/math/do_fit.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/math/vectypes.h"
+#include "gromacs/utility/real.h"
 
 #include "testutils/testasserts.h"
 

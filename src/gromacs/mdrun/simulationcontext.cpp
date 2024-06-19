@@ -41,6 +41,7 @@
 #include <cassert>
 
 #include "gromacs/mdrunutility/multisim.h"
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/gmxmpi.h"
 

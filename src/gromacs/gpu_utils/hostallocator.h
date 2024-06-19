@@ -50,9 +50,12 @@
 #include <cstddef>
 
 #include <memory>
+#include <type_traits>
+#include <vector>
 
 #include "gromacs/math/paddedvector.h"
 #include "gromacs/utility/alignedallocator.h"
+#include "gromacs/utility/allocator.h"
 #include "gromacs/utility/exceptions.h"
 
 namespace gmx

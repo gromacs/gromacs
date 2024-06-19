@@ -44,13 +44,23 @@
 #ifndef GMX_MODULARSIMULATOR_VELOCITYSCALINGTEMPERATURECOUPLING_H
 #define GMX_MODULARSIMULATOR_VELOCITYSCALINGTEMPERATURECOUPLING_H
 
+#include <cstdint>
+
+#include <memory>
+#include <optional>
+#include <string>
+#include <vector>
+
+#include "gromacs/mdtypes/checkpointdata.h"
 #include "gromacs/utility/arrayref.h"
+#include "gromacs/utility/real.h"
 
 #include "energydata.h"
 #include "modularsimulatorinterfaces.h"
 #include "propagator.h"
 
 struct t_commrec;
+enum class TemperatureCoupling : int;
 
 namespace gmx
 {
@@ -58,6 +68,13 @@ class ITemperatureCouplingImpl;
 class LegacySimulatorData;
 class ObservablesReducer;
 struct TemperatureCouplingData;
+class FreeEnergyPerturbationData;
+class GlobalCommunicationHelper;
+class ModularSimulatorAlgorithmBuilderHelper;
+class StatePropagatorData;
+enum class ReferenceTemperatureChangeAlgorithm;
+template<CheckpointDataOperation operation>
+class CheckpointData;
 
 //! Enum describing whether the thermostat is using full or half step kinetic energy
 enum class UseFullStepKE

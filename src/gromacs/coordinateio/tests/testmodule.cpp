@@ -45,6 +45,8 @@
 
 #include "testmodule.h"
 
+#include <string>
+
 #include <gtest/gtest.h>
 
 #include "gromacs/utility/exceptions.h"

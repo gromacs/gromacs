@@ -35,11 +35,17 @@
 
 #include "gromacs/utility/keyvaluetree.h"
 
+#include <cstdint>
+
+#include <algorithm>
+#include <map>
 #include <string>
+#include <typeindex>
 #include <vector>
 
 #include "gromacs/utility/compare.h"
 #include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/real.h"
 #include "gromacs/utility/strconvert.h"
 #include "gromacs/utility/stringutil.h"
 #include "gromacs/utility/textwriter.h"

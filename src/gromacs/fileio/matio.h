@@ -44,8 +44,16 @@
 #include "gromacs/fileio/rgb.h"
 #include "gromacs/math/multidimarray.h"
 #include "gromacs/mdspan/extensions.h"
+#include "gromacs/mdspan/extents.h"
+#include "gromacs/mdspan/mdspan.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
+
+namespace gmx
+{
+template<typename T>
+class ArrayRef;
+} // namespace gmx
 
 /*! \brief Models an XPM element
  *

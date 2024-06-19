@@ -73,11 +73,14 @@
  * \author Erik Lindahl <erik.lindahl@scilifelab.se>
  * \ingroup module_simd
  */
+#include <cstdint>
+
 #include <vector>
 
 #include <gtest/gtest.h>
 
 #include "gromacs/simd/simd.h"
+#include "gromacs/utility/real.h"
 
 #include "base.h"
 #include "data.h"

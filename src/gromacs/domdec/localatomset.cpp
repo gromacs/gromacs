@@ -42,6 +42,10 @@
 
 #include "localatomset.h"
 
+#include <vector>
+
+#include "gromacs/utility/arrayref.h"
+
 #include "localatomsetdata.h"
 
 namespace gmx

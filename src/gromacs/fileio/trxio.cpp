@@ -38,8 +38,14 @@
 #include "config.h"
 
 #include <cassert>
+#include <cinttypes>
 #include <cmath>
+#include <cstdio>
 #include <cstring>
+
+#include <filesystem>
+#include <optional>
+#include <string>
 
 #include "gromacs/fileio/checkpoint.h"
 #include "gromacs/fileio/confio.h"
@@ -56,16 +62,25 @@
 #include "gromacs/fileio/trrio.h"
 #include "gromacs/fileio/xdrf.h"
 #include "gromacs/fileio/xtcio.h"
+#include "gromacs/math/functions.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/math/vectypes.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/topology/atoms.h"
 #include "gromacs/topology/symtab.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/trajectory/trajectoryframe.h"
+#include "gromacs/utility/arrayref.h"
+#include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/iserializer.h"
+#include "gromacs/utility/real.h"
 #include "gromacs/utility/smalloc.h"
+
+struct gmx_output_env_t;
 
 #if GMX_USE_PLUGINS
 #    include "gromacs/fileio/vmdio.h"

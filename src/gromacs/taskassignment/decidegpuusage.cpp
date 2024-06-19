@@ -48,7 +48,9 @@
 #include <cstring>
 
 #include <algorithm>
+#include <memory>
 #include <string>
+#include <vector>
 
 #include "gromacs/ewald/pme.h"
 #include "gromacs/hardware/cpuinfo.h"
@@ -62,11 +64,16 @@
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/mdtypes/mdrunoptions.h"
+#include "gromacs/mdtypes/pull_params.h"
 #include "gromacs/pulling/pull.h"
 #include "gromacs/taskassignment/taskassignment.h"
+#include "gromacs/topology/ifunc.h"
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/topology/topology.h"
+#include "gromacs/topology/topology_enums.h"
+#include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/baseversion.h"
+#include "gromacs/utility/enumerationhelpers.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"

@@ -35,6 +35,8 @@
 
 #include "gromacs/utility/ikeyvaluetreeerror.h"
 
+#include <string>
+
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/keyvaluetree.h"
 #include "gromacs/utility/stringutil.h"

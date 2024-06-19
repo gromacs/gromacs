@@ -45,6 +45,7 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
+#include "gromacs/onlinehelp/ihelptopic.h"
 #include "gromacs/utility/stringutil.h"
 
 namespace gmx

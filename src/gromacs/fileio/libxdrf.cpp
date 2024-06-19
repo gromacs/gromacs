@@ -35,6 +35,7 @@
 
 #include <climits>
 #include <cmath>
+#include <cstdint>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -43,8 +44,10 @@
 
 #include "gromacs/fileio/xdr_datatype.h"
 #include "gromacs/fileio/xdrf.h"
+#include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/enumerationhelpers.h"
 #include "gromacs/utility/futil.h"
+#include "gromacs/utility/real.h"
 
 /* This is just for clarity - it can never be anything but 4! */
 #define XDR_INT_SIZE 4

@@ -42,8 +42,15 @@
 #include "gromacs/listed_forces/position_restraints.h"
 
 #include <cmath>
+#include <cstddef>
 
+#include <algorithm>
+#include <array>
+#include <iterator>
 #include <memory>
+#include <string>
+#include <tuple>
+#include <vector>
 
 #include <gtest/gtest.h>
 
@@ -56,6 +63,7 @@
 #include "gromacs/mdtypes/forcerec.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/interaction_const.h"
+#include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/mdtypes/mdatom.h"
 #include "gromacs/mdtypes/nblist.h"
 #include "gromacs/mdtypes/simulation_workload.h"
@@ -63,8 +71,13 @@
 #include "gromacs/tables/forcetable.h"
 #include "gromacs/topology/forcefieldparameters.h"
 #include "gromacs/topology/idef.h"
+#include "gromacs/topology/ifunc.h"
+#include "gromacs/utility/arrayref.h"
+#include "gromacs/utility/enumerationhelpers.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/real.h"
 #include "gromacs/utility/stringstream.h"
+#include "gromacs/utility/stringutil.h"
 
 #include "testutils/refdata.h"
 #include "testutils/testasserts.h"

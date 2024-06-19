@@ -34,6 +34,7 @@
 #ifndef GMX_MDLIB_COUPLING_H
 #define GMX_MDLIB_COUPLING_H
 
+#include <cstdint>
 #include <cstdio>
 
 #include <array>

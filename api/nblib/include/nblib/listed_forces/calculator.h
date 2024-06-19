@@ -47,9 +47,14 @@
 #ifndef NBLIB_LISTEDFORCES_CALCULATOR_H
 #define NBLIB_LISTEDFORCES_CALCULATOR_H
 
+#include <cstddef>
+
+#include <array>
 #include <memory>
 #include <unordered_map>
+#include <vector>
 
+#include "nblib/basicdefinitions.h"
 #include "nblib/listed_forces/definitions.h"
 #include "nblib/vector.h"
 

@@ -47,6 +47,8 @@
 
 #include "gromacs/analysisdata/arraydata.h"
 
+#include <string>
+
 #include <gtest/gtest.h>
 
 #include "gromacs/analysisdata/tests/datatest.h"

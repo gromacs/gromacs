@@ -41,6 +41,14 @@
 
 #include "gromacs/tools/report_methods.h"
 
+#include <filesystem>
+#include <functional>
+#include <memory>
+#include <string>
+
+#include <gtest/gtest.h>
+
+#include "gromacs/commandline/cmdlineoptionsmodule.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/gmxpreprocess/grompp.h"
 #include "gromacs/mdtypes/inputrec.h"

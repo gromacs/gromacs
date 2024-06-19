@@ -38,6 +38,7 @@
 #include <cmath>
 
 #include <algorithm>
+#include <filesystem>
 
 #include "gromacs/utility/fatalerror.h"
 

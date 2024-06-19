@@ -51,7 +51,10 @@
 #ifndef GMX_MDTYPES_STATE_H
 #define GMX_MDTYPES_STATE_H
 
+#include <cstdio>
+
 #include <array>
+#include <limits>
 #include <memory>
 #include <vector>
 
@@ -59,6 +62,8 @@
 #include "gromacs/math/paddedvector.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/mdtypes/md_enums.h"
+#include "gromacs/utility/arrayref.h"
+#include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/enumerationhelpers.h"
 #include "gromacs/utility/real.h"
 

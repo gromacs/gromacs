@@ -43,7 +43,9 @@
 
 #include <cstdio>
 
+#include "gromacs/math/vectypes.h"
 #include "gromacs/topology/ifunc.h"
+#include "gromacs/utility/real.h"
 
 struct gmx_mtop_t;
 struct gmx_multisim_t;
@@ -56,6 +58,7 @@ struct t_disresdata;
 struct t_fcdata;
 class t_state;
 struct t_mdatoms;
+union t_iparams;
 
 namespace gmx
 {

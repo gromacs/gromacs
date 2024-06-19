@@ -42,8 +42,11 @@
 
 #include "gromacs/utility/fileredirector.h"
 
+#include <filesystem>
+
 #include "gromacs/utility/filestream.h"
 #include "gromacs/utility/path.h"
+#include "gromacs/utility/textstream.h"
 
 namespace gmx
 {

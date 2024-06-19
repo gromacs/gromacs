@@ -42,9 +42,13 @@
 
 #include "gromacs/gmxpreprocess/editconf.h"
 
+#include <string>
 #include <tuple>
 
+#include <gtest/gtest.h>
+
 #include "gromacs/fileio/filetypes.h"
+#include "gromacs/utility/arrayref.h"
 
 #include "testutils/cmdlinetest.h"
 #include "testutils/filematchers.h"

@@ -42,6 +42,10 @@
 
 #include "gromacs/utility/message_string_collector.h"
 
+#include <cstddef>
+
+#include <memory>
+#include <string>
 #include <vector>
 
 #include "gromacs/utility/gmxassert.h"

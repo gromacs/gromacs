@@ -49,6 +49,9 @@
 #ifndef GMX_NBNXM_PAIRSEARCH_H
 #define GMX_NBNXM_PAIRSEARCH_H
 
+#include <cstdint>
+#include <cstdio>
+
 #include <memory>
 #include <vector>
 
@@ -57,6 +60,8 @@
 #include "gromacs/timing/cyclecounter.h"
 #include "gromacs/utility/alignedallocator.h"
 #include "gromacs/utility/arrayref.h"
+#include "gromacs/utility/bitmask.h"
+#include "gromacs/utility/range.h"
 #include "gromacs/utility/real.h"
 
 #include "gridset.h"
@@ -64,6 +69,14 @@
 
 struct gmx_domdec_zones_t;
 struct PairsearchWork;
+enum class PairlistType;
+enum class PbcType : int;
+namespace gmx
+{
+class UpdateGroupsCog;
+enum class PinningPolicy : int;
+} // namespace gmx
+struct t_nblist;
 
 
 /*! \brief Convenience declaration for an std::vector with aligned memory */

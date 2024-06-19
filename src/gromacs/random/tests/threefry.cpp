@@ -41,8 +41,14 @@
 
 #include "gromacs/random/threefry.h"
 
+#include <cstdint>
+
+#include <string>
+#include <vector>
+
 #include <gtest/gtest.h>
 
+#include "gromacs/random/seed.h"
 #include "gromacs/utility/exceptions.h"
 
 #include "testutils/refdata.h"

@@ -40,12 +40,16 @@
 #include <cstddef>
 #include <cstring>
 
+#include <algorithm>
 #include <array>
+#include <iterator>
 #include <string>
 
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/oenv.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/mdspan/layouts.h"
+#include "gromacs/mdspan/mdspan.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/binaryinformation.h"

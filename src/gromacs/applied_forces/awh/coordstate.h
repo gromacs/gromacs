@@ -51,6 +51,8 @@
 #ifndef GMX_AWH_COORDSTATE_H
 #define GMX_AWH_COORDSTATE_H
 
+#include <cstdint>
+
 #include <vector>
 
 #include "dimparams.h"

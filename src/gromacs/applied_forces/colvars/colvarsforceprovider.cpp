@@ -41,22 +41,40 @@
 
 #include "colvarsforceprovider.h"
 
+#include <cstddef>
+#include <cstdint>
+
+#include <array>
 #include <string>
 
 #include "external/colvars/colvars_memstream.h"
 
+#include "gromacs/applied_forces/colvars/colvarproxygromacs.h"
+#include "gromacs/compat/pointers.h"
 #include "gromacs/domdec/localatomsetmanager.h"
 #include "gromacs/fileio/checkpoint.h"
 #include "gromacs/gmxlib/network.h"
+#include "gromacs/math/vec.h"
 #include "gromacs/mdlib/broadcaststructs.h"
 #include "gromacs/mdlib/groupcoord.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/enerdata.h"
 #include "gromacs/mdtypes/forceoutput.h"
+#include "gromacs/pbcutil/pbc.h"
+#include "gromacs/topology/ifunc.h"
+#include "gromacs/utility/arrayref.h"
+#include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/keyvaluetree.h"
+#include "gromacs/utility/keyvaluetreebuilder.h"
+#include "gromacs/utility/smalloc.h"
+
+enum class PbcType : int;
 
 
 namespace gmx
 {
+class MDLogger;
 
 /********************************************************************
  * ColvarsForceProviderState

@@ -40,8 +40,12 @@
 #ifndef SELECTION_SCANNER_INTERNAL_H
 #define SELECTION_SCANNER_INTERNAL_H
 
+#include <cstddef>
+
 #include <exception>
 #include <string>
+
+#include "gromacs/selection/selelem.h"
 
 #include "parser.h"
 

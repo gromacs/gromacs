@@ -42,12 +42,19 @@
 
 #include <cstdio>
 
+#include <filesystem>
+#include <string>
+
 #include <gmock/gmock.h>
+#include <gtest/gtest.h>
 
 #include "gromacs/commandline/cmdlinemodulemanager.h"
+#include "gromacs/commandline/cmdlineoptionsmodule.h"
 #include "gromacs/onlinehelp/tests/mock_helptopic.h"
 #include "gromacs/options/basicoptions.h"
+#include "gromacs/options/ioptionscontainer.h"
 #include "gromacs/options/options.h"
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/textwriter.h"
 
 #include "testutils/cmdlinetest.h"

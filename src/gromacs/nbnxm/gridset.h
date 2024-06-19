@@ -47,6 +47,10 @@
 #ifndef GMX_NBNXM_GRIDSET_H
 #define GMX_NBNXM_GRIDSET_H
 
+#include <cstddef>
+#include <cstdint>
+
+#include <array>
 #include <memory>
 #include <vector>
 
@@ -55,6 +59,7 @@
 #include "gromacs/utility/alignedallocator.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/range.h"
+#include "gromacs/utility/real.h"
 
 #include "grid.h"
 #include "gridsetdata.h"
@@ -67,7 +72,8 @@ enum class PbcType : int;
 namespace gmx
 {
 class UpdateGroupsCog;
-}
+enum class PinningPolicy : int;
+} // namespace gmx
 
 namespace Nbnxm
 {

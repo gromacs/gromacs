@@ -45,10 +45,16 @@
 
 #include "listedtesthelpers.h"
 
+#include <gmock/gmock.h>
+#include <gtest/gtest.h>
+
+#include "gromacs/pbcutil/ishift.h"
 #include "gromacs/utility/arrayref.h"
 
 #include "testutils/testasserts.h"
 #include "testutils/testmatchers.h"
+
+#include "nblib/listed_forces/calculator.h"
 
 #include "gmxcalculator.h"
 

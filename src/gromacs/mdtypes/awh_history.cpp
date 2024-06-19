@@ -42,6 +42,8 @@
 
 #include "awh_history.h"
 
+#include <string>
+
 #include "gromacs/utility/strconvert.h"
 
 #include "checkpointdata.h"

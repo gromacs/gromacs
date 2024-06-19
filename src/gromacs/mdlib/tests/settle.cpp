@@ -74,24 +74,30 @@
 #include "config.h"
 
 #include <algorithm>
+#include <memory>
+#include <string>
 #include <unordered_map>
 #include <vector>
 
 #include <gtest/gtest.h>
 
 #include "gromacs/hardware/device_management.h"
+#include "gromacs/math/paddedvector.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/mdlib/tests/watersystem.h"
+#include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/mdtypes/mdatom.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/topology/idef.h"
 #include "gromacs/topology/ifunc.h"
 #include "gromacs/topology/topology.h"
+#include "gromacs/utility/real.h"
 #include "gromacs/utility/stringutil.h"
 #include "gromacs/utility/unique_cptr.h"
 
 #include "testutils/refdata.h"
+#include "testutils/test_device.h"
 #include "testutils/test_hardware_environment.h"
 #include "testutils/testasserts.h"
 

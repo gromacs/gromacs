@@ -43,9 +43,11 @@
 
 #include <cstdio>
 
+#include "gromacs/math/vectypes.h"
 #include "gromacs/topology/ifunc.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/gmxmpi.h"
+#include "gromacs/utility/real.h"
 
 struct gmx_mtop_t;
 struct gmx_multisim_t;
@@ -59,6 +61,7 @@ struct t_pbc;
 class t_state;
 enum class DDRole;
 enum class NumRanks;
+union t_iparams;
 
 namespace gmx
 {

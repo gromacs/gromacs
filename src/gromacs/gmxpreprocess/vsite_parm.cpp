@@ -41,6 +41,10 @@
 
 #include <algorithm>
 #include <array>
+#include <filesystem>
+#include <optional>
+#include <string>
+#include <vector>
 
 #include "gromacs/gmxpreprocess/add_par.h"
 #include "gromacs/gmxpreprocess/gpp_atomtype.h"
@@ -52,15 +56,21 @@
 #include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdtypes/md_enums.h"
+#include "gromacs/topology/atoms.h"
+#include "gromacs/topology/idef.h"
 #include "gromacs/topology/ifunc.h"
 #include "gromacs/topology/topology.h"
+#include "gromacs/topology/topology_enums.h"
 #include "gromacs/utility/arrayref.h"
+#include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/logger.h"
+#include "gromacs/utility/real.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/strconvert.h"
+#include "gromacs/utility/stringutil.h"
 
 #include "hackblock.h"
 #include "resall.h"

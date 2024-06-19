@@ -36,6 +36,10 @@
 
 #include "gromacs/topology/invblock.h"
 
+#include <vector>
+
+#include "gromacs/utility/arrayref.h"
+#include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/listoflists.h"
 
 std::vector<int> make_invblock(const gmx::ListOfLists<int>& block, const int maxElement)

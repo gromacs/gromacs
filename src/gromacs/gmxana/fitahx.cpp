@@ -37,6 +37,7 @@
 
 #include <cmath>
 
+#include <filesystem>
 #include <vector>
 
 #include "gromacs/math/do_fit.h"

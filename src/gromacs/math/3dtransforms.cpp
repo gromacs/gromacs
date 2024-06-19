@@ -38,8 +38,12 @@
 #include <cmath>
 #include <cstdio>
 
+#include <filesystem>
+
 #include "gromacs/math/vec.h"
+#include "gromacs/math/vectypes.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/real.h"
 
 #define N 4
 

@@ -44,14 +44,25 @@
 
 #include "dump.h"
 
+#include <cstdio>
+
+#include <array>
+#include <filesystem>
+#include <memory>
+#include <vector>
+
 #include "gromacs/domdec/domdec_network.h"
+#include "gromacs/domdec/domdec_struct.h"
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/pdbio.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdtypes/commrec.h"
+#include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/topology/mtop_lookup.h"
+#include "gromacs/topology/topology_enums.h"
 #include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/real.h"
 
 #include "domdec_internal.h"
 

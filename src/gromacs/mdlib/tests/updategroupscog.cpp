@@ -37,14 +37,24 @@
 
 #include <cstdlib>
 
+#include <string>
+#include <utility>
+#include <variant>
+#include <vector>
+
 #include <gtest/gtest.h>
 
 #include "gromacs/math/functions.h"
+#include "gromacs/math/vectypes.h"
 #include "gromacs/mdlib/updategroups.h"
+#include "gromacs/topology/block.h"
+#include "gromacs/topology/forcefieldparameters.h"
 #include "gromacs/topology/idef.h"
 #include "gromacs/topology/ifunc.h"
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/topology/topology.h"
+#include "gromacs/utility/arrayref.h"
+#include "gromacs/utility/real.h"
 
 #include "testutils/refdata.h"
 #include "testutils/testasserts.h"

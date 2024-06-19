@@ -44,8 +44,19 @@
 
 #include "config.h"
 
+#include <cstddef>
+#include <cstdint>
+
 #include <algorithm>
+#include <array>
+#include <memory>
+#include <string>
+#include <utility>
 #include <vector>
+
+#include "gromacs/utility/arrayref.h"
+#include "gromacs/utility/iserializer.h"
+#include "gromacs/utility/real.h"
 
 namespace gmx
 {

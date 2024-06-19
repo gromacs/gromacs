@@ -43,9 +43,16 @@
 #include "gromacs/mdtypes/forcebuffers.h"
 
 #include <array>
+#include <string>
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
+
+#include "gromacs/gpu_utils/hostallocator.h"
+#include "gromacs/math/arrayrefwithpadding.h"
+#include "gromacs/math/vectypes.h"
+#include "gromacs/utility/arrayref.h"
+#include "gromacs/utility/basedefinitions.h"
 
 #include "testutils/testasserts.h"
 

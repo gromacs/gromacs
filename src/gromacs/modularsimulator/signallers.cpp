@@ -42,10 +42,13 @@
 #include "signallers.h"
 
 #include <algorithm>
+#include <functional>
 
 #include "gromacs/mdlib/stat.h"
 #include "gromacs/mdlib/stophandler.h"
 #include "gromacs/mdrunutility/handlerestart.h"
+#include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/gmxassert.h"
 
 #include "modularsimulatorinterfaces.h"
 

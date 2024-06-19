@@ -37,7 +37,11 @@
 
 #include "config.h"
 
+#include <string>
+
 #include <gtest/gtest.h>
+
+#include "gromacs/hardware/hw_info.h"
 
 #include "threadaffinitytest.h"
 

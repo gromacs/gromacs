@@ -41,12 +41,21 @@
 #ifndef GMX_MODULARSIMULATOR_CHECKPOINTDATA_H
 #define GMX_MODULARSIMULATOR_CHECKPOINTDATA_H
 
+#include <cstdint>
+#include <cstdio>
+
 #include <optional>
+#include <string>
+#include <type_traits>
+#include <vector>
 
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/keyvaluetree.h"
 #include "gromacs/utility/keyvaluetreebuilder.h"
+#include "gromacs/utility/real.h"
 #include "gromacs/utility/stringutil.h"
 
 namespace gmx

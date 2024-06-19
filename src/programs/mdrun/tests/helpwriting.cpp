@@ -40,7 +40,12 @@
  */
 #include "gmxpre.h"
 
+#include <string>
+
+#include <gtest/gtest.h>
+
 #include "gromacs/commandline/cmdlinehelpcontext.h"
+#include "gromacs/onlinehelp/helpwritercontext.h"
 #include "gromacs/utility/stringstream.h"
 #include "gromacs/utility/textwriter.h"
 

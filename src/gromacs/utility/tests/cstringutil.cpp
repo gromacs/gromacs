@@ -46,6 +46,9 @@
 
 #include "gromacs/utility/cstringutil.h"
 
+#include <cstdlib>
+#include <cstring>
+
 #include <string>
 
 #include <gtest/gtest.h>

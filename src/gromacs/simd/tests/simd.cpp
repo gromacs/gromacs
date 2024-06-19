@@ -35,7 +35,10 @@
 
 #include "simd.h"
 
+#include <string>
+
 #include "gromacs/simd/simd.h"
+#include "gromacs/simd/tests/data.h"
 #include "gromacs/utility/basedefinitions.h"
 
 #if GMX_SIMD

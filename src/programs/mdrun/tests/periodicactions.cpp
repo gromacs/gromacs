@@ -45,6 +45,18 @@
 
 #include "config.h"
 
+#include <initializer_list>
+#include <map>
+#include <utility>
+
+#include <gtest/gtest.h>
+
+#include "testutils/cmdlinetest.h"
+
+#include "programs/mdrun/tests/energycomparison.h"
+#include "programs/mdrun/tests/energyreader.h"
+#include "programs/mdrun/tests/moduletest.h"
+
 namespace gmx
 {
 namespace test

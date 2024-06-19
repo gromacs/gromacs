@@ -44,6 +44,9 @@
  * \ingroup module_restraint
  */
 
+#include <memory>
+#include <vector>
+
 #include "gromacs/mdtypes/imdmodule.h"
 #include "gromacs/restraint/restraintpotential.h"
 
@@ -53,6 +56,9 @@ namespace gmx
 // Forward declaration to allow opaque pointer to library internal class.
 class RestraintMDModuleImpl;
 struct MDModulesNotifiers;
+class ForceProviders;
+class IMDOutputProvider;
+class IMdpOptionProvider;
 
 /*! \libinternal \ingroup module_restraint
  * \brief MDModule wrapper for Restraint implementations.

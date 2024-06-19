@@ -36,6 +36,8 @@
 
 #include "simulationinput.h"
 
+#include <filesystem>
+
 #include "gromacs/fileio/checkpoint.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/mdtypes/inputrec.h"

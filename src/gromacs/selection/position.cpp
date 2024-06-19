@@ -45,7 +45,9 @@
 #include <cstring>
 
 #include "gromacs/math/vec.h"
+#include "gromacs/math/vectypes.h"
 #include "gromacs/selection/indexutil.h"
+#include "gromacs/topology/block.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
 

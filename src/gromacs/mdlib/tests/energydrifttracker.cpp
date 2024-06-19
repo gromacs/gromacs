@@ -41,7 +41,11 @@
 
 #include "gromacs/mdlib/energydrifttracker.h"
 
+#include <string>
+
 #include <gtest/gtest.h>
+
+#include "gromacs/utility/real.h"
 
 #include "testutils/testasserts.h"
 

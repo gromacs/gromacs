@@ -42,9 +42,17 @@
 
 #include "gromacs/gmxpreprocess/pdb2gmx.h"
 
+#include <functional>
+#include <memory>
+#include <string>
 #include <tuple>
+#include <vector>
 
+#include <gtest/gtest.h>
+
+#include "gromacs/commandline/cmdlineoptionsmodule.h"
 #include "gromacs/fileio/filetypes.h"
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/stringutil.h"
 #include "gromacs/utility/textreader.h"
@@ -53,6 +61,7 @@
 #include "testutils/conftest.h"
 #include "testutils/filematchers.h"
 #include "testutils/refdata.h"
+#include "testutils/testasserts.h"
 #include "testutils/testfilemanager.h"
 #include "testutils/textblockmatchers.h"
 

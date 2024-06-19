@@ -49,6 +49,8 @@
 
 #include <memory>
 
+#include "gromacs/utility/basedefinitions.h"
+
 #if HAVE_MM_MALLOC_H
 #    include <mm_malloc.h>
 #elif HAVE_MALLOC_H

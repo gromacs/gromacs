@@ -42,21 +42,33 @@
 
 #include "trajectory.h"
 
+#include <cstddef>
+
 #include <algorithm>
+#include <array>
+#include <iterator>
+#include <memory>
+#include <string>
 
 #include "gromacs/analysisdata/analysisdata.h"
 #include "gromacs/analysisdata/modules/plot.h"
 #include "gromacs/fileio/trxio.h"
+#include "gromacs/math/vectypes.h"
 #include "gromacs/options/basicoptions.h"
 #include "gromacs/options/filenameoption.h"
 #include "gromacs/options/ioptionscontainer.h"
+#include "gromacs/options/optionfiletype.h"
 #include "gromacs/selection/selection.h"
 #include "gromacs/selection/selectionoption.h"
 #include "gromacs/trajectory/trajectoryframe.h"
 #include "gromacs/trajectoryanalysis/analysissettings.h"
+#include "gromacs/utility/arrayref.h"
+
+struct t_pbc;
 
 namespace gmx
 {
+class TopologyInformation;
 
 namespace analysismodules
 {

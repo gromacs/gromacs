@@ -42,6 +42,8 @@
 
 #include "gromacs/pbcutil/pbcenums.h"
 
+#include <string>
+
 #include <gtest/gtest.h>
 
 namespace gmx

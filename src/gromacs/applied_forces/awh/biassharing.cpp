@@ -48,6 +48,8 @@
 
 #include <algorithm>
 #include <set>
+#include <string>
+#include <type_traits>
 #include <vector>
 
 #include "gromacs/gmxlib/network.h"
@@ -55,6 +57,7 @@
 #include "gromacs/mdtypes/awh_params.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/utility/arrayref.h"
+#include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/stringutil.h"

@@ -35,6 +35,12 @@
 
 #include "gromacs/linearalgebra/eigensolver.h"
 
+#include "config.h"
+
+#include <cstdio>
+
+#include <filesystem>
+
 #include "gromacs/linearalgebra/sparsematrix.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/real.h"

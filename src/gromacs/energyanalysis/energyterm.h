@@ -41,6 +41,8 @@
 #ifndef GMX_ENERGYANALYSIS_ENERGYTERM_H
 #define GMX_ENERGYANALYSIS_ENERGYTERM_H
 
+#include <cstdint>
+
 #include <optional>
 #include <string>
 #include <vector>

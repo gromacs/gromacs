@@ -39,6 +39,9 @@
 
 #include <cstdlib>
 
+#include <filesystem>
+#include <memory>
+#include <set>
 #include <string>
 #include <vector>
 
@@ -59,6 +62,8 @@
 #include "gromacs/utility/sysinfo.h"
 
 #include "architecture.h"
+
+struct DeviceInformation;
 
 //! Constant used to help minimize preprocessed code. Currently disabled also for HIP builds until device detection is implemented.
 static constexpr bool bGPUBinary = (GMX_GPU != 0) && !GMX_GPU_HIP;

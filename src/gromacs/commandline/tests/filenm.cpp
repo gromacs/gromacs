@@ -43,8 +43,12 @@
 #include "gromacs/commandline/filenm.h"
 
 #include <string>
+#include <string_view>
+#include <vector>
 
 #include <gtest/gtest.h>
+
+#include "gromacs/fileio/filetypes.h"
 
 namespace gmx
 {

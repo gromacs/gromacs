@@ -45,6 +45,8 @@
 #ifndef GMX_PULLING_OUTPUT_H
 #define GMX_PULLING_OUTPUT_H
 
+#include <cstdint>
+
 #include "gromacs/utility/basedefinitions.h"
 
 struct pull_t;

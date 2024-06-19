@@ -44,7 +44,10 @@
 
 #include "nblib/particlesequencer.h"
 
+#include <cstdio>
+
 #include <algorithm>
+#include <stdexcept>
 
 #include "nblib/exception.h"
 

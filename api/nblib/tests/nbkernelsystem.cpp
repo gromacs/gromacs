@@ -41,14 +41,28 @@
  * \author Sebastian Keller <keller@cscs.ch>
  * \author Artem Zhmurov <zhmurov@gmail.com>
  */
+#include <cstddef>
+
+#include <algorithm>
+#include <iterator>
+#include <memory>
+#include <string>
+#include <vector>
+
 #include <gtest/gtest.h>
 
+#include "gromacs/math/vectypes.h"
 #include "gromacs/topology/exclusionblocks.h"
+#include "gromacs/utility/arrayref.h"
 
+#include "nblib/basicdefinitions.h"
 #include "nblib/gmxcalculatorcpu.h"
 #include "nblib/integrator.h"
+#include "nblib/kerneloptions.h"
+#include "nblib/simulationstate.h"
 #include "nblib/topology.h"
 #include "nblib/util/setup.h"
+#include "nblib/vector.h"
 
 #include "testhelpers.h"
 #include "testsystems.h"

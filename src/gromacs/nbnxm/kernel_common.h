@@ -60,7 +60,8 @@ enum class LongRangeVdW : int;
 namespace Nbnxm
 {
 enum class EwaldExclusionType : int;
-}
+enum class KernelType;
+} // namespace Nbnxm
 
 //! \brief Kinds of electrostatic treatments in SIMD Verlet kernels
 enum class CoulombKernelType : int

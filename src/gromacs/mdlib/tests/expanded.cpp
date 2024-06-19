@@ -48,11 +48,16 @@
 
 #include <cmath>
 
+#include <string>
+#include <tuple>
+
 #include <gtest/gtest.h>
 
 #include "gromacs/mdlib/expanded_internal.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/utility/enumerationhelpers.h"
+#include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/real.h"
 
 #include "testutils/testasserts.h"
 

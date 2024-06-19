@@ -44,11 +44,25 @@
 
 #include "listed_forces/helpers.hpp"
 
+#include <cstddef>
+
+#include <string>
+#include <tuple>
+#include <vector>
+
 #include <gtest/gtest.h>
 
 #include "listed_forces/traits.h"
 
+#include "gromacs/math/vectypes.h"
+#include "gromacs/utility/arrayref.h"
+
 #include "testutils/testasserts.h"
+
+#include "nblib/basicdefinitions.h"
+#include "nblib/listed_forces/bondtypes.h"
+#include "nblib/listed_forces/definitions.h"
+#include "nblib/util/traits.hpp"
 
 
 namespace nblib

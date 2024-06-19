@@ -42,12 +42,15 @@
 #ifndef GMX_NBNXM_NBNXM_GEOMETRY_H
 #define GMX_NBNXM_NBNXM_GEOMETRY_H
 
+#include <filesystem>
+
 #include "gromacs/math/functions.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/nbnxm/nbnxm.h"
 #include "gromacs/simd/simd.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/real.h"
 
 #include "pairlist.h"
 

@@ -86,6 +86,11 @@
 
 #include "gromacs/mdspan/extents.h"
 
+#include <cstddef>
+
+#include <array>
+#include <string>
+
 #include <gtest/gtest.h>
 
 namespace gmx

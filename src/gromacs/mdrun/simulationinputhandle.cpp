@@ -36,8 +36,12 @@
 
 #include "simulationinputhandle.h"
 
+#include <string>
 #include <utility>
+#include <vector>
 
+#include "gromacs/commandline/filenm.h"
+#include "gromacs/fileio/filetypes.h"
 #include "gromacs/mdrun/legacymdrunoptions.h"
 
 namespace gmx

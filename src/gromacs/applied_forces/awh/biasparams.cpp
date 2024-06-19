@@ -46,10 +46,12 @@
 #include "biasparams.h"
 
 #include <cmath>
+#include <cstddef>
 
 #include <algorithm>
 #include <limits>
 
+#include "gromacs/applied_forces/awh/dimparams.h"
 #include "gromacs/math/functions.h"
 #include "gromacs/mdtypes/awh_params.h"
 #include "gromacs/utility/arrayref.h"

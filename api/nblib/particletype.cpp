@@ -43,6 +43,8 @@
  */
 #include "nblib/particletype.h"
 
+#include <utility>
+
 namespace nblib
 {
 

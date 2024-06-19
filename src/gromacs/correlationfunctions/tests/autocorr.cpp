@@ -46,12 +46,16 @@
 #include <cmath>
 
 #include <memory>
+#include <string>
+#include <vector>
 
 #include <gtest/gtest.h>
 
+#include "gromacs/commandline/pargs.h"
 #include "gromacs/correlationfunctions/expfit.h"
 #include "gromacs/fft/fft.h"
 #include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/real.h"
 #include "gromacs/utility/smalloc.h"
 
 #include "testutils/refdata.h"

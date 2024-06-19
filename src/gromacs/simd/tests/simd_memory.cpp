@@ -39,12 +39,19 @@
  */
 #include "gmxpre.h"
 
+#include <cstddef>
+
+#include <array>
 #include <numeric>
+#include <string>
+#include <type_traits>
 #include <vector>
 
 #include <gtest/gtest.h>
 
 #include "gromacs/simd/simd.h"
+#include "gromacs/utility/arrayref.h"
+#include "gromacs/utility/real.h"
 
 #include "simd.h"
 

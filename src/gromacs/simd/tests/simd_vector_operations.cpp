@@ -35,6 +35,10 @@
 
 #include <cmath>
 
+#include <string>
+
+#include <gtest/gtest.h>
+
 #include "gromacs/simd/simd.h"
 #include "gromacs/simd/vector_operations.h"
 

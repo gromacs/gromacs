@@ -33,7 +33,12 @@
  */
 #include "gmxpre.h"
 
+#include <cstdio>
+
+#include <filesystem>
 #include <string>
+#include <string_view>
+#include <vector>
 
 #include "gromacs/fileio/readinp.h"
 #include "gromacs/fileio/trrio.h"
@@ -41,11 +46,13 @@
 #include "gromacs/gmxpreprocess/readir.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/math/vecdump.h"
+#include "gromacs/math/vectypes.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/topology/block.h"
 #include "gromacs/topology/index.h"
 #include "gromacs/utility/arrayref.h"
+#include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"

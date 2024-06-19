@@ -43,7 +43,9 @@
 
 #include <atomic>
 #include <functional>
+#include <map>
 #include <memory>
+#include <string>
 
 #include "gromacs/mdlib/simulationsignal.h"
 #include "gromacs/mdlib/stophandler.h"

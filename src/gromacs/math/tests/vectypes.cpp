@@ -47,11 +47,14 @@
 #include "gromacs/math/vectypes.h"
 
 #include <array>
+#include <string>
+#include <utility>
 #include <vector>
 
 #include <gtest/gtest.h>
 
 #include "gromacs/math/vec.h"
+#include "gromacs/utility/real.h"
 
 #include "testutils/testasserts.h"
 

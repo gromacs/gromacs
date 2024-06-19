@@ -46,9 +46,18 @@
 
 #include "config.h"
 
+#include <tuple>
+
 #include "gromacs/ewald/pme_coordinate_receiver_gpu.h"
+#include "gromacs/gpu_utils/devicebuffer_datatype.h"
+#include "gromacs/math/vectypes.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/gmxassert.h"
+
+class DeviceContext;
+class DeviceStream;
+class GpuEventSynchronizer;
+struct PpRanks;
 
 #if !GMX_GPU_CUDA && !GMX_GPU_SYCL
 

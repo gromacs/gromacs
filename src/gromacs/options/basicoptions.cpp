@@ -43,20 +43,37 @@
 #include "gromacs/options/basicoptions.h"
 
 #include <cerrno>
+#include <cstdint>
 #include <cstdio>
 #include <cstdlib>
 
 #include <algorithm>
+#include <functional>
 #include <limits>
+#include <memory>
 #include <string>
+#include <utility>
 #include <vector>
 
+#include "gromacs/options/abstractoption.h"
+#include "gromacs/options/ivaluestore.h"
+#include "gromacs/options/optionflags.h"
+#include "gromacs/utility/any.h"
+#include "gromacs/utility/arrayref.h"
+#include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/strconvert.h"
 #include "gromacs/utility/stringutil.h"
 
 #include "basicoptionstorage.h"
+
+namespace gmx
+{
+class AbstractOptionStorage;
+class OptionManagerContainer;
+} // namespace gmx
 
 namespace
 {

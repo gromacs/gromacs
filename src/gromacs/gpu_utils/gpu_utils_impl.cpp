@@ -38,7 +38,14 @@
  */
 #include "gmxpre.h"
 
+#include "gromacs/utility/arrayref.h"
+
 #include "gpu_utils.h"
+
+namespace gmx
+{
+class MDLogger;
+} // namespace gmx
 
 void startGpuProfiler() {}
 

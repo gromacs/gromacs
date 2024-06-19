@@ -45,24 +45,34 @@
 #include <cctype>
 #include <cstdio>
 
+#include <algorithm>
+#include <filesystem>
 #include <memory>
 #include <optional>
 #include <string>
+#include <string_view>
 #include <vector>
 
 #include "gromacs/onlinehelp/helpmanager.h"
 #include "gromacs/onlinehelp/helpwritercontext.h"
+#include "gromacs/onlinehelp/ihelptopic.h"
 #include "gromacs/options/basicoptions.h"
 #include "gromacs/options/ioptionscontainer.h"
+#include "gromacs/selection/indexutil.h"
+#include "gromacs/selection/parsetree.h"
 #include "gromacs/selection/selection.h"
+#include "gromacs/selection/selectionenums.h"
 #include "gromacs/selection/selhelp.h"
+#include "gromacs/selection/selvalue.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/trajectory/trajectoryframe.h"
+#include "gromacs/utility/enumerationhelpers.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/filestream.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/stringutil.h"
+#include "gromacs/utility/textstream.h"
 #include "gromacs/utility/textwriter.h"
 
 #include "compiler.h"
@@ -74,6 +84,9 @@
 #include "selelem.h"
 #include "selmethod.h"
 #include "symrec.h"
+
+struct gmx_ana_indexgrps_t;
+struct t_pbc;
 
 namespace gmx
 {

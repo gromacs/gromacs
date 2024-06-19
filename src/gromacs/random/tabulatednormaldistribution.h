@@ -46,6 +46,8 @@
 #define GMX_RANDOM_TABULATEDNORMALDISTRIBUTION_H
 
 #include <cmath>
+#include <cstddef>
+#include <cstdint>
 
 #include <array>
 #include <limits>

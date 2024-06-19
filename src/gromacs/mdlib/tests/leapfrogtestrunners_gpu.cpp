@@ -45,6 +45,8 @@
 
 #include <gtest/gtest.h>
 
+#include "gromacs/utility/basedefinitions.h"
+
 #include "leapfrogtestrunners.h"
 
 #if GPU_LEAPFROG_SUPPORTED
@@ -58,6 +60,7 @@ namespace gmx
 {
 namespace test
 {
+class LeapFrogTestData;
 
 #if GPU_LEAPFROG_SUPPORTED
 

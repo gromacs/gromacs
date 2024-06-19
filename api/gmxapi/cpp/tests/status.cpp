@@ -34,6 +34,10 @@
 
 #include "gmxapi/status.h"
 
+#include <string>
+
+#include <gtest/gtest.h>
+
 #include "testingconfiguration.h"
 
 namespace gmxapi

@@ -43,9 +43,12 @@
 #include "gromacs/options/timeunitmanager.h"
 
 #include <cstdlib>
+#include <cstring>
 
 #include <algorithm>
+#include <string>
 
+#include "gromacs/fileio/oenv.h"
 #include "gromacs/options/basicoptions.h"
 #include "gromacs/options/ioptionscontainer.h"
 #include "gromacs/options/options.h"
@@ -58,6 +61,7 @@
 
 namespace gmx
 {
+class OptionSectionInfo;
 
 namespace
 {

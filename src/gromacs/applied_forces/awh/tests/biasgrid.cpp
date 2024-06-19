@@ -36,17 +36,23 @@
 #include "gromacs/applied_forces/awh/biasgrid.h"
 
 #include <cmath>
+#include <cstdlib>
 
+#include <algorithm>
 #include <memory>
+#include <string>
 #include <vector>
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
+#include "gromacs/applied_forces/awh/dimparams.h"
 #include "gromacs/applied_forces/awh/tests/awh_setup.h"
 #include "gromacs/mdtypes/awh_params.h"
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/inmemoryserializer.h"
+#include "gromacs/utility/real.h"
 
 #include "testutils/testasserts.h"
 

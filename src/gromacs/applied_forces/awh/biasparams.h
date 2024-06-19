@@ -49,6 +49,8 @@
 #ifndef GMX_AWH_BIASPARAMS_H
 #define GMX_AWH_BIASPARAMS_H
 
+#include <cstdint>
+
 #include <vector>
 
 #include "gromacs/math/vectypes.h"

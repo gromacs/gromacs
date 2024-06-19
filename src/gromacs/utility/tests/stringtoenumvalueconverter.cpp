@@ -41,7 +41,14 @@
 
 #include "gromacs/utility/stringtoenumvalueconverter.h"
 
+#include <optional>
+#include <ostream>
+#include <string>
+
 #include <gtest/gtest.h>
+
+#include "gromacs/utility/enumerationhelpers.h"
+#include "gromacs/utility/stringcompare.h"
 
 namespace gmx
 {

@@ -45,8 +45,12 @@
 
 #include "gromacs/domdec/localtopology.h"
 
+#include <cstdio>
+
 #include <algorithm>
+#include <array>
 #include <iterator>
+#include <memory>
 #include <vector>
 
 #include "gromacs/domdec/domdec_internal.h"
@@ -54,19 +58,25 @@
 #include "gromacs/domdec/ga2la.h"
 #include "gromacs/domdec/options.h"
 #include "gromacs/domdec/reversetopology.h"
+#include "gromacs/math/functions.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdtypes/atominfo.h"
 #include "gromacs/mdtypes/forcerec.h"
 #include "gromacs/mdtypes/mdatom.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/topology/idef.h"
+#include "gromacs/topology/ifunc.h"
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/topology/topsort.h"
 #include "gromacs/utility/arrayref.h"
+#include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/listoflists.h"
+#include "gromacs/utility/range.h"
+#include "gromacs/utility/real.h"
 #include "gromacs/utility/strconvert.h"
 
 using gmx::ArrayRef;

@@ -51,8 +51,14 @@
 #ifndef NBLIB_LISTEDFORCES_BONDTYPES_H
 #define NBLIB_LISTEDFORCES_BONDTYPES_H
 
-#include <array>
+#include <cmath>
+#include <cstddef>
 
+#include <array>
+#include <string>
+#include <tuple>
+
+#include "nblib/basicdefinitions.h"
 #include "nblib/exception.h"
 #include "nblib/particletype.h"
 #include "nblib/util/util.hpp"

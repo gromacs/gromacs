@@ -42,10 +42,14 @@
 
 #include "testutils/testasserts.h"
 
+#include <cinttypes>
 #include <cmath>
 #include <cstdio>
+#include <cstdlib>
 
 #include <limits>
+#include <optional>
+#include <string>
 
 #include <gtest/gtest.h>
 

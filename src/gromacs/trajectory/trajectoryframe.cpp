@@ -35,16 +35,26 @@
 
 #include "gromacs/trajectory/trajectoryframe.h"
 
+#include <cinttypes>
+#include <cstdint>
 #include <cstdio>
 
 #include <algorithm>
+#include <array>
+#include <string>
 
 #include "gromacs/math/veccompare.h"
+#include "gromacs/math/vectypes.h"
 #include "gromacs/topology/atoms.h"
+#include "gromacs/utility/arrayref.h"
+#include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/compare.h"
 #include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/real.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/stringutil.h"
+
+enum class PbcType : int;
 
 void comp_frame(FILE* fp, t_trxframe* fr1, t_trxframe* fr2, gmx_bool bRMSD, real ftol, real abstol)
 {

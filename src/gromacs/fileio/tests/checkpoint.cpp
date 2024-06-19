@@ -42,9 +42,17 @@
 
 #include "gromacs/fileio/checkpoint.h"
 
+#include <cstdint>
+
+#include <string>
+
 #include <gtest/gtest.h>
 
+#include "gromacs/compat/pointers.h"
 #include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/keyvaluetree.h"
+#include "gromacs/utility/keyvaluetreebuilder.h"
+#include "gromacs/utility/real.h"
 
 #include "testutils/testasserts.h"
 

@@ -74,15 +74,39 @@
  */
 #include "gmxpre.h"
 
+#include <cstddef>
+
+#include <filesystem>
+#include <map>
+#include <memory>
+#include <optional>
+#include <string>
+#include <tuple>
+#include <type_traits>
+#include <vector>
+
 #include <gtest/gtest.h>
 
 #include "gromacs/fileio/xvgr.h"
+#include "gromacs/math/multidimarray.h"
+#include "gromacs/math/vectypes.h"
+#include "gromacs/mdspan/layouts.h"
+#include "gromacs/mdspan/mdspan.h"
 #include "gromacs/topology/ifunc.h"
 #include "gromacs/trajectory/energyframe.h"
+#include "gromacs/trajectory/trajectoryframe.h"
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/real.h"
+#include "gromacs/utility/stringutil.h"
 
+#include "testutils/cmdlinetest.h"
 #include "testutils/refdata.h"
+#include "testutils/testasserts.h"
+#include "testutils/testfilemanager.h"
 #include "testutils/trajectoryreader.h"
+
+#include "programs/mdrun/tests/comparison_helpers.h"
 
 #include "energycomparison.h"
 #include "energyreader.h"

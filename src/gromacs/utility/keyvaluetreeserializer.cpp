@@ -35,8 +35,16 @@
 
 #include "gromacs/utility/keyvaluetreeserializer.h"
 
-#include <mutex>
+#include <cstdint>
 
+#include <map>
+#include <mutex>
+#include <string>
+#include <typeindex>
+#include <utility>
+#include <vector>
+
+#include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/iserializer.h"
 #include "gromacs/utility/keyvaluetree.h"
 #include "gromacs/utility/keyvaluetreebuilder.h"

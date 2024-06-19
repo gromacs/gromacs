@@ -34,9 +34,12 @@
 #ifndef GMX_MDLIB_TRAJECTORY_WRITING_H
 #define GMX_MDLIB_TRAJECTORY_WRITING_H
 
+#include <cstdint>
 #include <cstdio>
 
+#include "gromacs/math/vectypes.h"
 #include "gromacs/mdlib/mdoutf.h"
+#include "gromacs/utility/basedefinitions.h"
 
 class gmx_ekindata_t;
 struct gmx_mtop_t;
@@ -44,11 +47,15 @@ struct ObservablesHistory;
 struct t_commrec;
 struct t_filenm;
 struct t_forcerec;
+class t_state;
+struct t_inputrec;
 
 namespace gmx
 {
 class EnergyOutput;
-}
+template<typename T>
+class ArrayRef;
+} // namespace gmx
 
 //! The current state of ekindata as passed to do_md_trajectory_writing()
 enum class EkindataState

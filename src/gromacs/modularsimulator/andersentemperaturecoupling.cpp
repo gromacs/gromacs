@@ -42,21 +42,36 @@
 
 #include "andersentemperaturecoupling.h"
 
+#include <cmath>
+
+#include <functional>
+#include <memory>
+#include <utility>
 #include <vector>
 
+#include "gromacs/compat/pointers.h"
 #include "gromacs/domdec/domdec_struct.h"
+#include "gromacs/math/arrayrefwithpadding.h"
 #include "gromacs/math/functions.h"
+#include "gromacs/math/paddedvector.h"
 #include "gromacs/math/units.h"
+#include "gromacs/math/vectypes.h"
 #include "gromacs/mdlib/constr.h"
 #include "gromacs/mdlib/mdatoms.h"
 #include "gromacs/mdlib/stat.h"
 #include "gromacs/mdrun/isimulator.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/inputrec.h"
+#include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/mdtypes/mdatom.h"
+#include "gromacs/mdtypes/observablesreducer.h"
+#include "gromacs/modularsimulator/modularsimulatorinterfaces.h"
+#include "gromacs/random/seed.h"
 #include "gromacs/random/tabulatednormaldistribution.h"
 #include "gromacs/random/threefry.h"
 #include "gromacs/random/uniformrealdistribution.h"
+#include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/gmxassert.h"
 
 #include "compositesimulatorelement.h"
 #include "constraintelement.h"
@@ -65,6 +80,10 @@
 
 namespace gmx
 {
+class EnergyData;
+class FreeEnergyPerturbationData;
+enum class ReferenceTemperatureChangeAlgorithm;
+
 AndersenTemperatureCoupling::AndersenTemperatureCoupling(double               simulationTimestep,
                                                          bool                 doMassive,
                                                          int64_t              seed,

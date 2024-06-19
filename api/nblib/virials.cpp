@@ -43,6 +43,9 @@
 
 #include "virials.h"
 
+#include <algorithm>
+
+#include "gromacs/math/vectypes.h"
 #include "gromacs/mdlib/calcvir.h"
 #include "gromacs/utility/arrayref.h"
 

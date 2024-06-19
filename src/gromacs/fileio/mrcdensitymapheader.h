@@ -43,6 +43,9 @@
 #ifndef GMX_FILEIO_MRCDENSITYMAPHEADER_H
 #define GMX_FILEIO_MRCDENSITYMAPHEADER_H
 
+#include <cstddef>
+#include <cstdint>
+
 #include <array>
 #include <vector>
 

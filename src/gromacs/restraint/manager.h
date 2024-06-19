@@ -47,6 +47,7 @@
 #include <memory>
 #include <mutex>
 #include <string>
+#include <vector>
 
 #include "gromacs/restraint/restraintpotential.h"
 #include "gromacs/utility/basedefinitions.h"

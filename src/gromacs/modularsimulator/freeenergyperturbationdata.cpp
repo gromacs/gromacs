@@ -42,6 +42,9 @@
 
 #include "freeenergyperturbationdata.h"
 
+#include <algorithm>
+#include <functional>
+
 #include "gromacs/domdec/domdec_network.h"
 #include "gromacs/mdlib/freeenergyparameters.h"
 #include "gromacs/mdlib/md_support.h"
@@ -50,14 +53,20 @@
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/mdatom.h"
+#include "gromacs/mdtypes/observablesreducer.h"
 #include "gromacs/mdtypes/state.h"
+#include "gromacs/modularsimulator/modularsimulatorinterfaces.h"
 #include "gromacs/trajectory/trajectoryframe.h"
+#include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/gmxassert.h"
 
 #include "modularsimulator.h"
 #include "simulatoralgorithm.h"
 
 namespace gmx
 {
+template<CheckpointDataOperation operation>
+class CheckpointData;
 
 FreeEnergyPerturbationData::FreeEnergyPerturbationData(FILE*             fplog,
                                                        const t_inputrec& inputrec,

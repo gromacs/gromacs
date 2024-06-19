@@ -44,13 +44,19 @@
 #include "testutils/refdata.h"
 
 #include <cctype>
+#include <cinttypes>
 #include <cstdlib>
 
 #include <algorithm>
 #include <filesystem>
 #include <limits>
+#include <list>
+#include <memory>
 #include <optional>
+#include <ostream>
 #include <string>
+#include <utility>
+#include <vector>
 
 #include <gtest/gtest.h>
 
@@ -58,6 +64,7 @@
 #include "gromacs/options/basicoptions.h"
 #include "gromacs/options/ioptionscontainer.h"
 #include "gromacs/utility/any.h"
+#include "gromacs/utility/enumerationhelpers.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/keyvaluetree.h"

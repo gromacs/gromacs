@@ -47,6 +47,7 @@
 #include "config.h"
 
 #include <cstdio>
+#include <cstdlib>
 
 #include <algorithm>
 #include <array>
@@ -69,6 +70,9 @@
 #include "gromacs/hardware/cpuinfo.h"
 #include "gromacs/utility/gmxassert.h"
 
+#ifdef HAVE_SCHED_H
+#    include <sched.h>
+#endif
 #ifdef HAVE_UNISTD_H
 #    include <unistd.h> // sysconf()
 #endif

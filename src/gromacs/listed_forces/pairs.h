@@ -46,12 +46,14 @@
 #include <vector>
 
 #include "gromacs/math/vec.h"
+#include "gromacs/math/vectypes.h"
 #include "gromacs/topology/ifunc.h"
 #include "gromacs/utility/real.h"
 
 struct gmx_grppairener_t;
 struct t_forcerec;
 struct t_pbc;
+union t_iparams;
 
 namespace gmx
 {

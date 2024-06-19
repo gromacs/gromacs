@@ -44,8 +44,15 @@
 
 #include "config.h"
 
+#include <cstdint>
+
+#include <array>
+#include <type_traits>
+#include <vector>
+
 #include "gromacs/fileio/mrcdensitymapheader.h"
 #include "gromacs/utility/inmemoryserializer.h"
+#include "gromacs/utility/iserializer.h"
 
 namespace gmx
 {

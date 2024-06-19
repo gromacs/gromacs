@@ -45,6 +45,9 @@
 #include <cerrno>
 #include <cstdio>
 
+#include <filesystem>
+#include <string>
+
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/textwriter.h"
 

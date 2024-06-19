@@ -43,6 +43,7 @@
 
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/enumerationhelpers.h"
+#include "gromacs/utility/real.h"
 
 class PreprocessingAtomTypes;
 

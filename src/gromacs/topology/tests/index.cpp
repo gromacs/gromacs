@@ -42,13 +42,18 @@
 
 #include "gromacs/topology/index.h"
 
+#include <filesystem>
+#include <memory>
 #include <string>
+#include <vector>
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
+#include "gromacs/topology/atoms.h"
 #include "gromacs/trajectoryanalysis/topologyinformation.h"
 #include "gromacs/utility/arrayref.h"
+#include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/smalloc.h"
 
 #include "testutils/cmdlinetest.h"

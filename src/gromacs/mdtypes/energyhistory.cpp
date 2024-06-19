@@ -36,6 +36,10 @@
 
 #include "energyhistory.h"
 
+#include <cstddef>
+
+#include <string>
+
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/stringutil.h"
 

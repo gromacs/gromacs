@@ -34,6 +34,8 @@
 #ifndef GMX_TRAJECTORY_ENERGYFRAME_H
 #define GMX_TRAJECTORY_ENERGYFRAME_H
 
+#include <cstdint>
+
 #include <map>
 #include <string>
 

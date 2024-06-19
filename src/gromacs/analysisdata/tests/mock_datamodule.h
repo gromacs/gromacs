@@ -54,6 +54,8 @@
 
 namespace gmx
 {
+class AbstractAnalysisData;
+
 namespace test
 {
 

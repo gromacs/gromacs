@@ -34,9 +34,14 @@
 
 #include "gmxpre.h"
 
+#include <algorithm>
+#include <memory>
+#include <string>
+
 #include "kernels_reference/kernel_gpu_ref.h"
 
 #include "gromacs/gmxlib/nrnb.h"
+#include "gromacs/gpu_utils/hostallocator.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/mdlib/enerdata_utils.h"
 #include "gromacs/mdlib/force.h"
@@ -50,14 +55,20 @@
 #include "gromacs/mdtypes/mdatom.h"
 #include "gromacs/mdtypes/nblist.h"
 #include "gromacs/mdtypes/simulation_workload.h"
+#include "gromacs/nbnxm/atomdata.h"
 #include "gromacs/nbnxm/gpu_data_mgmt.h"
 #include "gromacs/nbnxm/nbnxm.h"
+#include "gromacs/nbnxm/pairlist.h"
 #include "gromacs/simd/simd.h"
 #include "gromacs/timing/wallcycle.h"
+#include "gromacs/utility/arrayref.h"
+#include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/enumerationhelpers.h"
+#include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/real.h"
+#include "gromacs/utility/stringutil.h"
 
 #include "kernel_common.h"
 #include "nbnxm_geometry.h"
@@ -75,6 +86,11 @@
 #endif
 #undef INCLUDE_FUNCTION_TABLES
 #include "simd_energy_accumulator.h"
+
+namespace gmx
+{
+enum class InteractionLocality : int;
+} // namespace gmx
 
 CoulombKernelType getCoulombKernelType(const Nbnxm::EwaldExclusionType ewaldExclusionType,
                                        const CoulombInteractionType    coulombInteractionType,

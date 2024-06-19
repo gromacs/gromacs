@@ -46,6 +46,7 @@
 
 #include <algorithm>
 
+#include "gromacs/coordinateio/coordinatefileenums.h"
 #include "gromacs/options/basicoptions.h"
 #include "gromacs/options/filenameoption.h"
 #include "gromacs/options/ioptionscontainer.h"

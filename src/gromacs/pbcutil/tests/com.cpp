@@ -42,14 +42,24 @@
 
 #include "gromacs/pbcutil/com.h"
 
+#include <iterator>
+#include <string>
+#include <tuple>
 #include <vector>
 
 #include <gtest/gtest.h>
 
 #include "gromacs/math/vectypes.h"
+#include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/pbcutil/pbc.h"
+#include "gromacs/pbcutil/pbcenums.h"
+#include "gromacs/topology/idef.h"
+#include "gromacs/topology/ifunc.h"
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/topology/topology.h"
+#include "gromacs/utility/arrayref.h"
+#include "gromacs/utility/enumerationhelpers.h"
+#include "gromacs/utility/smalloc.h"
 
 #include "testutils/refdata.h"
 #include "testutils/testasserts.h"

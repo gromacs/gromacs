@@ -50,6 +50,7 @@
 #include "gromacs/topology/mtop_lookup.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/real.h"
 
 void gmx_calc_cog(const gmx_mtop_t* /* top */, rvec x[], int nrefat, const int index[], rvec xout)
 {

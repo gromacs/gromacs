@@ -51,7 +51,12 @@
 #include "config.h"
 
 #include <cerrno>
+#include <cstdio>
 #include <cstring>
+
+#include <array>
+#include <filesystem>
+#include <string>
 
 #include "gromacs/commandline/filenm.h"
 #include "gromacs/domdec/domdec_struct.h"
@@ -78,16 +83,26 @@
 #include "gromacs/mdtypes/state.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/timing/wallcycle.h"
+#include "gromacs/topology/atoms.h"
+#include "gromacs/topology/block.h"
+#include "gromacs/topology/ifunc.h"
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/topology/topology.h"
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/enumerationhelpers.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/logger.h"
+#include "gromacs/utility/real.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/stringutil.h"
 
 namespace gmx
 {
+class ForceProviders;
+class IMDOutputProvider;
+class IMdpOptionProvider;
+struct IMDSocket;
+struct MDModulesNotifiers;
 
 /*! \brief How long shall we wait in seconds until we check for a connection again? */
 constexpr int c_loopWait = 1;

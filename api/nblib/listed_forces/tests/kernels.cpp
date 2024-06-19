@@ -42,6 +42,10 @@
  */
 #include "listed_forces/kernels.hpp"
 
+#include <string>
+
+#include <gtest/gtest.h>
+
 #include "testutils/testasserts.h"
 
 namespace nblib

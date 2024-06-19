@@ -42,6 +42,9 @@
 #include "gmxpre.h"
 
 #include "densityfittingoutputprovider.h"
+
+struct gmx_output_env_t;
+
 namespace gmx
 {
 

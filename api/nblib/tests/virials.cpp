@@ -42,9 +42,15 @@
  */
 #include "nblib/virials.h"
 
+#include <algorithm>
+#include <string>
+#include <vector>
+
 #include <gtest/gtest.h>
 
 #include "gromacs/mdtypes/forcerec.h"
+#include "gromacs/pbcutil/ishift.h"
+#include "gromacs/utility/arrayref.h"
 
 #include "nblib/box.h"
 #include "nblib/nbnxmsetuphelpers.h"

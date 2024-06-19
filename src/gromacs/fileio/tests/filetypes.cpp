@@ -42,6 +42,7 @@
 
 #include "gromacs/fileio/filetypes.h"
 
+#include <filesystem>
 #include <string>
 #include <tuple>
 #include <vector>

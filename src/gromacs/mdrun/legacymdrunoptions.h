@@ -46,16 +46,27 @@
 #ifndef GMX_MDRUN_LEGACYMDRUNOPTIONS_H
 #define GMX_MDRUN_LEGACYMDRUNOPTIONS_H
 
+#include <string>
+#include <vector>
+
 #include "gromacs/commandline/filenm.h"
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/domdec/options.h"
+#include "gromacs/fileio/filetypes.h"
 #include "gromacs/hardware/hw_info.h"
 #include "gromacs/mdtypes/mdrunoptions.h"
+#include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/iserializer.h"
+#include "gromacs/utility/real.h"
 
 #include "replicaexchange.h"
 
+struct gmx_output_env_t;
+
 namespace gmx
 {
+template<typename>
+class ArrayRef;
 
 /*! \libinternal
  * \brief This class provides the same command-line option

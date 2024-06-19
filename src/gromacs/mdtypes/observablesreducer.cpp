@@ -45,8 +45,11 @@
 
 #include "observablesreducer.h"
 
+#include <cstddef>
+
 #include <algorithm>
 #include <numeric>
+#include <utility>
 
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/gmxassert.h"

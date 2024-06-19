@@ -43,12 +43,22 @@
 #ifndef GMX_MODULARSIMULATOR_STATEPROPAGATORDATA_H
 #define GMX_MODULARSIMULATOR_STATEPROPAGATORDATA_H
 
+#include <cstdio>
+
+#include <memory>
+#include <optional>
+#include <string>
+#include <vector>
+
 #include "gromacs/gpu_utils/hostallocator.h"
+#include "gromacs/math/arrayrefwithpadding.h"
 #include "gromacs/math/paddedvector.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/mdtypes/checkpointdata.h"
 #include "gromacs/mdtypes/forcebuffers.h"
+#include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/keyvaluetree.h"
+#include "gromacs/utility/real.h"
 
 #include "modularsimulatorinterfaces.h"
 #include "topologyholder.h"
@@ -60,6 +70,7 @@ struct t_inputrec;
 class t_state;
 struct t_mdatoms;
 struct t_trxframe;
+struct gmx_mtop_t;
 
 namespace gmx
 {
@@ -71,6 +82,11 @@ class GlobalCommunicationHelper;
 class LegacySimulatorData;
 class ModularSimulatorAlgorithmBuilderHelper;
 class ObservablesReducer;
+enum class ReferenceTemperatureChangeAlgorithm;
+template<CheckpointDataOperation operation>
+class CheckpointData;
+template<typename T>
+class ArrayRef;
 
 /*! \internal
  * \ingroup module_modularsimulator

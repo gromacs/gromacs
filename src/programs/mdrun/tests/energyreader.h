@@ -53,6 +53,7 @@
 
 #include <cstdint>
 
+#include <map>
 #include <memory>
 #include <string>
 #include <unordered_map>
@@ -63,6 +64,9 @@
 #include "gromacs/utility/unique_cptr.h"
 
 #include "testutils/testasserts.h"
+
+struct ener_file;
+struct t_enxframe;
 
 namespace gmx
 {

@@ -44,6 +44,7 @@
 #ifndef GMX_DOMDEC_PARTITION_H
 #define GMX_DOMDEC_PARTITION_H
 
+#include <cstdint>
 #include <cstdio>
 
 #include "gromacs/math/vectypes.h"

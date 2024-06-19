@@ -46,15 +46,18 @@
 
 #include <algorithm>
 #include <string>
+#include <vector>
 
 #include "gromacs/commandline/cmdlinehelpcontext.h"
 #include "gromacs/onlinehelp/helpwritercontext.h"
+#include "gromacs/options/abstractoption.h"
 #include "gromacs/options/basicoptions.h"
 #include "gromacs/options/filenameoption.h"
 #include "gromacs/options/options.h"
 #include "gromacs/options/optionsvisitor.h"
 #include "gromacs/options/timeunitmanager.h"
 #include "gromacs/utility/arrayref.h"
+#include "gromacs/utility/classhelpers.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/stringutil.h"
 #include "gromacs/utility/textwriter.h"
@@ -63,6 +66,7 @@
 
 namespace gmx
 {
+class OptionSectionInfo;
 
 namespace
 {

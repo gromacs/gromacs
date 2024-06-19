@@ -34,8 +34,10 @@
 #include "gmxapi/md.h"
 
 #include <memory>
+#include <utility>
 
 #include "gromacs/mdtypes/state.h"
+#include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/keyvaluetree.h"
 
 #include "gmxapi/gmxapi.h"

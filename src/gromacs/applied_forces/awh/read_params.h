@@ -47,6 +47,7 @@
 
 #include "gromacs/fileio/readinp.h"
 #include "gromacs/math/vectypes.h"
+#include "gromacs/utility/real.h"
 
 struct t_grpopts;
 struct t_inputrec;
@@ -54,6 +55,7 @@ struct gmx_mtop_t;
 struct pull_params_t;
 struct pull_t;
 enum class PbcType : int;
+class WarningHandler;
 
 namespace gmx
 {

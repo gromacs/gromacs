@@ -42,6 +42,9 @@
 
 #include "gromacs/utility/path.h"
 
+#include <filesystem>
+#include <string>
+#include <string_view>
 #include <utility>
 
 #include <gtest/gtest.h>

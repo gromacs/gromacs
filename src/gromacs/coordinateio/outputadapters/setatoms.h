@@ -43,11 +43,16 @@
 #define GMX_COORDINATEIO_SETATOMS_H
 
 #include <algorithm>
+#include <memory>
+#include <utility>
 
 #include "gromacs/coordinateio/coordinatefileenums.h"
 #include "gromacs/coordinateio/ioutputadapter.h"
 #include "gromacs/topology/atoms.h"
 #include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/unique_cptr.h"
+
+struct t_trxframe;
 
 namespace gmx
 {

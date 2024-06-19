@@ -43,7 +43,10 @@
 
 #include "forcebuffers.h"
 
+#include <algorithm>
+
 #include "gromacs/gpu_utils/hostallocator.h"
+#include "gromacs/utility/allocator.h"
 
 namespace gmx
 {

@@ -31,12 +31,21 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out https://www.gromacs.org.
  */
+#include <algorithm>
+#include <filesystem>
 #include <memory>
+#include <string>
+
+#include <gtest/gtest.h>
 
 #include "gromacs/mdlib/sighandler.h"
 #include "gromacs/mdtypes/iforceprovider.h"
+#include "gromacs/trajectory/trajectoryframe.h"
 
+#include "testutils/testfilemanager.h"
 #include "testutils/trajectoryreader.h"
+
+#include "programs/mdrun/tests/moduletest.h"
 
 #include "gmxapi/context.h"
 #include "gmxapi/exceptions.h"

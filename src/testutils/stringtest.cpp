@@ -42,7 +42,13 @@
 
 #include "testutils/stringtest.h"
 
+#include <cstdio>
+
+#include <filesystem>
+#include <memory>
 #include <string>
+
+#include <gtest/gtest.h>
 
 #include "gromacs/options/basicoptions.h"
 #include "gromacs/options/ioptionscontainer.h"

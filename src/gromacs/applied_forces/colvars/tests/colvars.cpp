@@ -40,6 +40,9 @@
  */
 #include "gmxpre.h"
 
+#include <memory>
+#include <string>
+
 #include <gtest/gtest.h>
 
 #include "gromacs/applied_forces/colvars/colvarsMDModule.h"
@@ -55,6 +58,7 @@
 #include "gromacs/mdtypes/mdatom.h"
 #include "gromacs/options/options.h"
 #include "gromacs/options/treesupport.h"
+#include "gromacs/utility/keyvaluetree.h"
 #include "gromacs/utility/keyvaluetreebuilder.h"
 #include "gromacs/utility/keyvaluetreetransform.h"
 #include "gromacs/utility/real.h"

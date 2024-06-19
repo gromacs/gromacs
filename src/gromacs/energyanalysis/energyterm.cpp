@@ -43,14 +43,17 @@
 #include "energyterm.h"
 
 #include <cmath>
+#include <cstdio>
 #include <cstring>
 
 #include <optional>
 
 #include "gromacs/commandline/viewit.h"
+#include "gromacs/energyanalysis/energyanalysisframe.h"
 #include "gromacs/fileio/enxio.h"
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/fileio/xvgr.h"
+#include "gromacs/math/functions.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/statistics/statistics.h"
 #include "gromacs/topology/ifunc.h"

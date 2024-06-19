@@ -36,14 +36,19 @@
 #include "gromacs/utility/fatalerror.h"
 
 #include "config.h"
+#include "gmxpre-config.h"
 
 #include <cerrno>
+#include <cstdarg>
 #include <cstddef>
+#include <cstdio>
 #include <cstdlib>
 #include <cstring>
 
 #include <exception>
+#include <filesystem>
 #include <mutex>
+#include <string>
 
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/baseversion.h"

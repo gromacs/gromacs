@@ -45,9 +45,12 @@
 #include <cstdio>
 #include <cstdlib>
 
+#include <filesystem>
 #include <memory>
+#include <string>
 
 #include <gmock/gmock.h>
+#include <gtest/gtest.h>
 
 #include "gromacs/commandline/cmdlinehelpcontext.h"
 #include "gromacs/commandline/cmdlinehelpwriter.h"
@@ -55,6 +58,7 @@
 #include "gromacs/commandline/cmdlineparser.h"
 #include "gromacs/commandline/cmdlineprogramcontext.h"
 #include "gromacs/math/utilities.h"
+#include "gromacs/onlinehelp/helpwritercontext.h"
 #include "gromacs/options/basicoptions.h"
 #include "gromacs/options/options.h"
 #include "gromacs/utility/basenetwork.h"

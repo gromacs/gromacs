@@ -36,6 +36,8 @@
 
 #include "gmxapi/version.h"
 
+#include <string>
+
 namespace gmxapi
 {
 

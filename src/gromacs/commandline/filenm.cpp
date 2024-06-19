@@ -39,6 +39,7 @@
 #include <cstdio>
 #include <cstring>
 
+#include <filesystem>
 #include <string_view>
 
 #include "gromacs/fileio/filetypes.h"

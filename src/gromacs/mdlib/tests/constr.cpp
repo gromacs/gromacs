@@ -48,18 +48,29 @@
 #include "config.h"
 
 #include <cassert>
+#include <cmath>
 
+#include <memory>
+#include <ostream>
+#include <string>
+#include <tuple>
 #include <unordered_map>
 #include <vector>
 
 #include <gtest/gtest.h>
 
+#include "gromacs/math/paddedvector.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/math/vectypes.h"
+#include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/pbcutil/pbc.h"
+#include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/enumerationhelpers.h"
+#include "gromacs/utility/real.h"
 #include "gromacs/utility/stringutil.h"
 
 #include "testutils/refdata.h"
+#include "testutils/test_device.h"
 #include "testutils/test_hardware_environment.h"
 #include "testutils/testasserts.h"
 

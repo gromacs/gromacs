@@ -42,11 +42,32 @@
 
 #include "gmxpre.h"
 
+#include <cmath>
+#include <cstdint>
+
+#include <algorithm>
+#include <map>
+#include <optional>
 #include <string>
+#include <tuple>
+#include <vector>
 
 #include <gmock/gmock.h>
+#include <gtest/gtest.h>
 
+#include "gromacs/ewald/pme.h"
+#include "gromacs/ewald/pme_gpu_internal.h"
+#include "gromacs/ewald/pme_output.h"
+#include "gromacs/math/gmxcomplex.h"
+#include "gromacs/math/vectypes.h"
 #include "gromacs/mdtypes/inputrec.h"
+#include "gromacs/mdtypes/md_enums.h"
+#include "gromacs/utility/arrayref.h"
+#include "gromacs/utility/enumerationhelpers.h"
+#include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/message_string_collector.h"
+#include "gromacs/utility/range.h"
+#include "gromacs/utility/real.h"
 #include "gromacs/utility/stringutil.h"
 
 #include "testutils/refdata.h"

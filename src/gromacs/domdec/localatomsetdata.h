@@ -42,6 +42,7 @@
 #define GMX_DOMDEC_LOCALATOMSETDATA_H
 
 #include <numeric>
+#include <type_traits>
 #include <vector>
 
 #include "gromacs/utility/arrayref.h"

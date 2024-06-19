@@ -42,13 +42,23 @@
 
 #include "gromacs/selection/selectionoption.h"
 
-#include <string>
+#include <cstddef>
 
+#include <string>
+#include <vector>
+
+#include "gromacs/options/abstractoption.h"
+#include "gromacs/options/abstractoptionstorage.h"
+#include "gromacs/options/optionflags.h"
 #include "gromacs/options/optionmanagercontainer.h"
 #include "gromacs/selection/selection.h"
+#include "gromacs/selection/selectionenums.h"
 #include "gromacs/selection/selectionfileoption.h"
 #include "gromacs/selection/selectionoptionmanager.h"
+#include "gromacs/utility/any.h"
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/flags.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/message_string_collector.h"
 

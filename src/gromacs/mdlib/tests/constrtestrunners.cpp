@@ -51,23 +51,31 @@
 #include <cmath>
 
 #include <algorithm>
+#include <memory>
+#include <utility>
 #include <vector>
 
 #include <gtest/gtest.h>
 
+#include "gromacs/math/arrayrefwithpadding.h"
 #include "gromacs/math/paddedvector.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/mdlib/constr.h"
+#include "gromacs/mdlib/gmx_omp_nthreads.h"
 #include "gromacs/mdlib/lincs.h"
 #include "gromacs/mdlib/shake.h"
+#include "gromacs/mdlib/tests/constrtestdata.h"
 #include "gromacs/mdrunutility/multisim.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/inputrec.h"
+#include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/pbcutil/pbc.h"
+#include "gromacs/topology/forcefieldparameters.h"
 #include "gromacs/topology/idef.h"
 #include "gromacs/topology/ifunc.h"
 #include "gromacs/topology/topology.h"
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/listoflists.h"
 #include "gromacs/utility/unique_cptr.h"
 
@@ -75,6 +83,8 @@
 
 namespace gmx
 {
+class Lincs;
+
 namespace test
 {
 

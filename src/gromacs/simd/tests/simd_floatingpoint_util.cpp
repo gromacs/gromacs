@@ -33,11 +33,19 @@
  */
 #include "gmxpre.h"
 
+#include <cstddef>
+
 #include <numeric>
+#include <string>
+#include <vector>
+
+#include <gtest/gtest.h>
 
 #include "gromacs/simd/simd.h"
+#include "gromacs/simd/tests/data.h"
 #include "gromacs/utility/alignedallocator.h"
 #include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/real.h"
 
 #include "testutils/testasserts.h"
 

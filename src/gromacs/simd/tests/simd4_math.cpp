@@ -36,13 +36,18 @@
 #include <cmath>
 #include <cstdint>
 
+#include <limits>
+#include <string>
 #include <vector>
+
+#include <gtest/gtest.h>
 
 #include "gromacs/math/units.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/options/basicoptions.h"
 #include "gromacs/simd/simd.h"
 #include "gromacs/simd/simd_math.h"
+#include "gromacs/utility/real.h"
 
 #include "simd4.h"
 

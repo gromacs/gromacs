@@ -46,11 +46,23 @@
 
 #include "config.h"
 
+#include <cstdio>
+
+#include <algorithm>
+#include <array>
+#include <filesystem>
+#include <memory>
+#include <string>
+
+#include "gromacs/domdec/domdec_struct.h"
 #include "gromacs/gmxlib/network.h"
+#include "gromacs/math/functions.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdtypes/commrec.h"
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/gmxassert.h"
 
 #include "atomdistribution.h"
 #include "domdec_internal.h"

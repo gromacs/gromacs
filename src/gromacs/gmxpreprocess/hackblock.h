@@ -45,6 +45,7 @@
 #include <vector>
 
 #include "gromacs/gmxpreprocess/notset.h"
+#include "gromacs/math/vectypes.h"
 #include "gromacs/topology/ifunc.h"
 #include "gromacs/utility/enumerationhelpers.h"
 

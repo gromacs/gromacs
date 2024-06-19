@@ -37,6 +37,7 @@
 #include <cstdio>
 
 #include "gromacs/math/vectypes.h"
+#include "gromacs/utility/real.h"
 
 struct SimulationGroups;
 struct t_forcerec;

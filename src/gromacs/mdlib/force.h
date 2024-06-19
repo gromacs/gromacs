@@ -34,14 +34,17 @@
 #ifndef GMX_MDLIB_FORCE_H
 #define GMX_MDLIB_FORCE_H
 
+#include <cstdint>
 #include <cstdio>
 
 #include <memory>
+#include <vector>
 
 #include "gromacs/math/vectypes.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/enumerationhelpers.h"
+#include "gromacs/utility/real.h"
 
 class DDBalanceRegionHandler;
 struct gmx_edsam;

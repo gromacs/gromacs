@@ -41,6 +41,10 @@
 
 #include "gromacs/utility/arrayref.h"
 
+#include <cstdint>
+
+#include <string>
+#include <type_traits>
 #include <vector>
 
 #include <gtest/gtest.h>

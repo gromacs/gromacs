@@ -42,11 +42,18 @@
 
 #include "gromacs/options/options.h"
 
+#include <map>
 #include <memory>
+#include <string>
 #include <utility>
 
 #include "gromacs/options/abstractoption.h"
 #include "gromacs/options/abstractoptionstorage.h"
+#include "gromacs/options/abstractsection.h"
+#include "gromacs/options/ioptionscontainer.h"
+#include "gromacs/options/ioptionscontainerwithsections.h"
+#include "gromacs/options/isectionstorage.h"
+#include "gromacs/options/optionmanagercontainer.h"
 #include "gromacs/options/optionsection.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/exceptions.h"

@@ -39,8 +39,12 @@
  * \ingroup module_trajectoryanalysis
  */
 
+#include <cstddef>
+
+#include <functional>
 #include <string>
 #include <unordered_map>
+#include <utility>
 #include <vector>
 
 #include "gromacs/math/vec.h"

@@ -45,15 +45,28 @@
 
 #include "config.h"
 
+#include <cstdio>
+
+#include <filesystem>
+#include <memory>
+#include <string>
+#include <vector>
+
 #include "gromacs/domdec/domdec_network.h"
+#include "gromacs/domdec/domdec_struct.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdtypes/state.h"
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/enumerationhelpers.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/real.h"
 
 #include "atomdistribution.h"
 #include "distribute.h"
 #include "domdec_internal.h"
+
+enum class FreeEnergyPerturbationCouplingType : int;
 
 static void dd_collect_cg(gmx_domdec_t*            dd,
                           const int                ddpCount,

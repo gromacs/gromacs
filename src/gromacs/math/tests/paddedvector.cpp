@@ -45,7 +45,10 @@
 
 #include "gromacs/math/paddedvector.h"
 
+#include <cstdint>
+
 #include <memory>
+#include <string>
 #include <vector>
 
 #include <gtest/gtest.h>
@@ -54,6 +57,7 @@
 #include "gromacs/math/vec.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/alignedallocator.h"
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/basedefinitions.h"
 
 namespace gmx

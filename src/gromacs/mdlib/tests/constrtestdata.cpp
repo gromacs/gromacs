@@ -48,6 +48,11 @@
 
 #include "constrtestdata.h"
 
+#include <algorithm>
+#include <array>
+
+#include "gromacs/mdtypes/md_enums.h"
+#include "gromacs/topology/forcefieldparameters.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/stringutil.h"
 

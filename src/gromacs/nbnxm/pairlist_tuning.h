@@ -48,6 +48,7 @@
 #include <cstdio>
 
 #include "gromacs/math/vectypes.h"
+#include "gromacs/utility/real.h"
 
 namespace gmx
 {

@@ -36,8 +36,10 @@
 #include "awh_setup.h"
 
 #include <cmath>
+#include <cstdint>
 
 #include <memory>
+#include <string>
 #include <tuple>
 #include <vector>
 
@@ -58,6 +60,7 @@
 
 namespace gmx
 {
+class ISerializer;
 
 namespace test
 {

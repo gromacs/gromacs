@@ -42,6 +42,7 @@
 
 #include "testutils/interactivetest.h"
 
+#include <memory>
 #include <string>
 #include <utility>
 
@@ -49,6 +50,7 @@
 #include <gtest/gtest.h>
 
 #include "gromacs/utility/arrayref.h"
+#include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/stringutil.h"
 #include "gromacs/utility/textstream.h"
 

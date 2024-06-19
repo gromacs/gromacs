@@ -45,10 +45,13 @@
 #include <cmath>
 
 #include <memory>
+#include <string>
+#include <vector>
 
 #include <gtest/gtest.h>
 
 #include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/real.h"
 
 #include "testutils/testasserts.h"
 #include "testutils/testfilemanager.h"

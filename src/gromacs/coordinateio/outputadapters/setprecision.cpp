@@ -46,6 +46,8 @@
 
 #include <cmath>
 
+#include <string>
+
 #include "gromacs/trajectory/trajectoryframe.h"
 #include "gromacs/utility/exceptions.h"
 

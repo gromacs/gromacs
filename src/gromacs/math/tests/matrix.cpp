@@ -42,13 +42,21 @@
 
 #include "gromacs/math/matrix.h"
 
+#include <algorithm>
+#include <array>
 #include <string>
+#include <type_traits>
 #include <vector>
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
+#include "gromacs/math/multidimarray.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/math/vectypes.h"
+#include "gromacs/mdspan/extents.h"
+#include "gromacs/mdspan/layouts.h"
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/real.h"
 
 #include "testutils/testasserts.h"

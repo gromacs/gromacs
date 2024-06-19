@@ -42,11 +42,17 @@
 
 #include "gromacs/math/optimization.h"
 
+#include <cmath>
+
+#include <functional>
+#include <string>
 #include <vector>
 
 #include <gtest/gtest.h>
 
 #include "gromacs/math/functions.h"
+#include "gromacs/utility/arrayref.h"
+#include "gromacs/utility/real.h"
 
 #include "testutils/testasserts.h"
 

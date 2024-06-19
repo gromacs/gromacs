@@ -44,7 +44,10 @@
 
 #include <gtest/gtest.h>
 
+#include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/topology/topology_enums.h"
+#include "gromacs/utility/arrayref.h"
+#include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
 
 namespace gmx

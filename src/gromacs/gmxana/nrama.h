@@ -36,10 +36,14 @@
 #define GMX_GMXANA_NRAMA_H
 
 #include "gromacs/fileio/trxio.h"
+#include "gromacs/math/vectypes.h"
 #include "gromacs/topology/topology.h"
+#include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
 struct gmx_output_env_t;
+enum class PbcType : int;
+struct t_idef;
 
 typedef struct
 {

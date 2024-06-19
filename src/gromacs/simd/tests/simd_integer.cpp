@@ -33,10 +33,17 @@
  */
 #include "gmxpre.h"
 
+#include <cstdint>
+
 #include <array>
+#include <string>
+
+#include <gtest/gtest.h>
 
 #include "gromacs/simd/simd.h"
+#include "gromacs/simd/tests/data.h"
 #include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/real.h"
 
 #include "simd.h"
 

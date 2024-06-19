@@ -37,7 +37,11 @@
 
 #include <cstring>
 
+#include <filesystem>
+#include <string>
+
 #include "gromacs/utility/arraysize.h"
+#include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/path.h"
 

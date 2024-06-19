@@ -35,7 +35,11 @@
 
 #include "interaction_const.h"
 
+#include <cmath>
 #include <cstdio>
+
+#include <filesystem>
+#include <string>
 
 #include "gromacs/ewald/ewald_utils.h"
 #include "gromacs/math/functions.h"
@@ -43,8 +47,13 @@
 #include "gromacs/mdlib/rf_util.h"
 #include "gromacs/mdtypes/forcerec.h"
 #include "gromacs/mdtypes/inputrec.h"
+#include "gromacs/topology/atoms.h"
+#include "gromacs/topology/forcefieldparameters.h"
+#include "gromacs/topology/idef.h"
+#include "gromacs/topology/ifunc.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/pleasecite.h"
 
 interaction_const_t::SoftCoreParameters::SoftCoreParameters(const t_lambda& fepvals) :

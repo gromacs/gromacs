@@ -51,11 +51,18 @@
 
 #include <cstdlib>
 
+#include <memory>
+#include <utility>
+
 #include "gromacs/mdrun/isimulator.h"
 
 struct CheckpointHeaderContents;
 struct t_fcdata;
 struct t_trxframe;
+struct ReplicaExchangeParameters;
+struct gmx_mtop_t;
+struct gmx_multisim_t;
+struct t_inputrec;
 
 namespace gmx
 {

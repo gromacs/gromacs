@@ -39,13 +39,22 @@
 
 #include "colvarsoptions.h"
 
-#include <fstream>
+#include <cstddef>
 
+#include <filesystem>
+#include <fstream>
+#include <optional>
+
+#include "gromacs/math/arrayrefwithpadding.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/options/basicoptions.h"
+#include "gromacs/options/ioptionscontainerwithsections.h"
 #include "gromacs/options/optionsection.h"
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/utility/arrayref.h"
+#include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/keyvaluetree.h"
 #include "gromacs/utility/keyvaluetreebuilder.h"
 #include "gromacs/utility/keyvaluetreetransform.h"
 #include "gromacs/utility/path.h"
@@ -53,6 +62,9 @@
 #include "gromacs/utility/textreader.h"
 
 #include "colvarspreprocessor.h"
+
+enum class PbcType : int;
+struct gmx_mtop_t;
 
 
 namespace gmx

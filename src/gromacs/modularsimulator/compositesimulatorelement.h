@@ -42,6 +42,7 @@
 #ifndef GROMACS_MDTYPES_COMPOSITESIMULATORELEMENT_H
 #define GROMACS_MDTYPES_COMPOSITESIMULATORELEMENT_H
 
+#include <memory>
 #include <vector>
 
 #include "gromacs/compat/pointers.h"

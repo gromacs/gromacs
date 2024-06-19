@@ -42,7 +42,15 @@
  */
 #include "nblib/util/setup.h"
 
+#include <cmath>
+#include <cstddef>
+
 #include <vector>
+
+#include <gtest/gtest.h>
+
+#include "gromacs/math/vectypes.h"
+#include "gromacs/utility/arrayref.h"
 
 #include "testutils/testasserts.h"
 

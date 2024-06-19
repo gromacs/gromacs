@@ -50,11 +50,18 @@
 #ifndef GMX_AWH_BIAS_H
 #define GMX_AWH_BIAS_H
 
+#include <cstdint>
+#include <cstdio>
+
+#include <algorithm>
+#include <iterator>
 #include <memory>
+#include <string>
 #include <vector>
 
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/alignedallocator.h"
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/gmxassert.h"
 

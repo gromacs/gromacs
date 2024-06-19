@@ -42,6 +42,7 @@
 #ifndef GMX_MDLIB_UPDATEGROUPS
 #define GMX_MDLIB_UPDATEGROUPS
 
+#include <string>
 #include <variant>
 #include <vector>
 

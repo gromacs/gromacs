@@ -41,18 +41,24 @@
 
 #include "gromacs/topology/atoms.h"
 
+#include <array>
 #include <memory>
 #include <optional>
 #include <string>
+#include <tuple>
 
+#include <gmock/gmock.h>
 #include <gtest/gtest-param-test.h>
 #include <gtest/gtest.h>
 
 #include "gromacs/topology/symtab.h"
+#include "gromacs/topology/topology_enums.h"
 #include "gromacs/utility/arrayref.h"
+#include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/inmemoryserializer.h"
 #include "gromacs/utility/iserializer.h"
+#include "gromacs/utility/real.h"
 #include "gromacs/utility/strconvert.h"
 #include "gromacs/utility/stringutil.h"
 

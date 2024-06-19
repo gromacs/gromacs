@@ -40,8 +40,12 @@
 #include <cstring>
 
 #include <algorithm>
+#include <array>
+#include <iterator>
+#include <memory>
 #include <optional>
 #include <string>
+#include <type_traits>
 #include <vector>
 
 #include "gromacs/gmxpreprocess/fflibutil.h"
@@ -49,6 +53,7 @@
 #include "gromacs/gmxpreprocess/grompp_impl.h"
 #include "gromacs/topology/atoms.h"
 #include "gromacs/topology/symtab.h"
+#include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/enumerationhelpers.h"
 #include "gromacs/utility/fatalerror.h"
@@ -56,6 +61,7 @@
 #include "gromacs/utility/logger.h"
 #include "gromacs/utility/strdb.h"
 #include "gromacs/utility/stringtoenumvalueconverter.h"
+#include "gromacs/utility/stringutil.h"
 
 #include "hackblock.h"
 

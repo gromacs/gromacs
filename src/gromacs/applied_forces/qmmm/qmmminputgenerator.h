@@ -42,11 +42,17 @@
 #define GMX_APPLIED_FORCES_QMMMINPUTGENERATOR_H
 
 #include <set>
+#include <string>
 
+#include "gromacs/math/vectypes.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/utility/arrayref.h"
+#include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/real.h"
 
 #include "qmmmtypes.h"
+
+enum class PbcType : int;
 
 namespace gmx
 {

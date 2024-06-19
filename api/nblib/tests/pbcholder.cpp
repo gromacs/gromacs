@@ -42,9 +42,17 @@
  */
 #include <cmath>
 
+#include <string>
+
+#include <gtest/gtest.h>
+
+#include "gromacs/math/vectypes.h"
+#include "gromacs/mdtypes/md_enums.h"
+
 #include "testutils/refdata.h"
 #include "testutils/testasserts.h"
 
+#include "nblib/box.h"
 #include "nblib/pbc.hpp"
 
 using gmx::test::defaultRealTolerance;

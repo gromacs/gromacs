@@ -40,7 +40,12 @@
 
 #include "gromacs/mdlib/calcvir.h"
 
+#include <string>
+#include <vector>
+
 #include <gtest/gtest.h>
+
+#include "gromacs/math/vectypes.h"
 
 #include "testutils/refdata.h"
 #include "testutils/testasserts.h"

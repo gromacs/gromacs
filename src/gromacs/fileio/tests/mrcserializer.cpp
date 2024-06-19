@@ -42,10 +42,17 @@
 
 #include "gromacs/fileio/mrcserializer.h"
 
+#include <cstddef>
+
+#include <array>
+#include <string>
+#include <vector>
+
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
 #include "gromacs/fileio/mrcdensitymapheader.h"
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/inmemoryserializer.h"
 
 #include "testutils/testasserts.h"

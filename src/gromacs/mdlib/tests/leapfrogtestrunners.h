@@ -47,6 +47,8 @@
 
 #include "config.h"
 
+#include <string>
+
 #include "gromacs/math/vec.h"
 
 #include "testutils/test_device.h"

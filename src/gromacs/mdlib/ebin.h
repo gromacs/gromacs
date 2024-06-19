@@ -43,11 +43,13 @@
 #ifndef GMX_MDLIB_EBIN_H
 #define GMX_MDLIB_EBIN_H
 
+#include <cstdint>
 #include <cstdio>
 
 #include "gromacs/fileio/enxio.h"
 #include "gromacs/trajectory/energyframe.h"
 #include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/real.h"
 
 namespace gmx
 {

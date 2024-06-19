@@ -34,7 +34,10 @@
 #ifndef GMX_MDLIB_UPDATE_H
 #define GMX_MDLIB_UPDATE_H
 
+#include <cstdint>
+
 #include <memory>
+#include <vector>
 
 #include "gromacs/math/matrix.h"
 #include "gromacs/math/paddedvector.h"
@@ -55,11 +58,14 @@ struct t_inputrec;
 struct t_nrnb;
 class t_state;
 enum class ParticleType;
+struct t_commrec;
 
 namespace gmx
 {
 class BoxDeformation;
 class Constraints;
+template<typename T>
+class ArrayRefWithPadding;
 
 
 /*! \libinternal

@@ -41,20 +41,25 @@
  */
 #include "gmxpre.h"
 
+#include <cstdio>
+
 #include <memory>
 #include <string>
 #include <vector>
 
 #include <gtest/gtest.h>
 
+#include "gromacs/math/vectypes.h"
 #include "gromacs/topology/idef.h"
 #include "gromacs/topology/ifunc.h"
 #include "gromacs/trajectory/trajectoryframe.h"
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/basenetwork.h"
 #include "gromacs/utility/filestream.h"
 #include "gromacs/utility/strconvert.h"
 #include "gromacs/utility/stringutil.h"
 
+#include "testutils/cmdlinetest.h"
 #include "testutils/mpitest.h"
 #include "testutils/refdata.h"
 #include "testutils/simulationdatabase.h"

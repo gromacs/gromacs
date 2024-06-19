@@ -42,7 +42,13 @@
 
 #include "gromacs/applied_forces/densityfitting/densityfittingforceprovider.h"
 
+#include <string>
+
 #include <gtest/gtest.h>
+
+#include "gromacs/math/exponentialmovingaverage.h"
+#include "gromacs/utility/keyvaluetree.h"
+#include "gromacs/utility/keyvaluetreebuilder.h"
 
 namespace gmx
 {

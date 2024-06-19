@@ -43,6 +43,10 @@
  */
 #include "nblib/interactions.h"
 
+#include <cmath>
+
+#include <gtest/gtest.h>
+
 #include "testutils/testasserts.h"
 
 #include "nblib/exception.h"

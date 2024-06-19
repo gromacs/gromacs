@@ -41,6 +41,7 @@
 #ifndef GMX_DOMDEC_DOMDEC_REDISTRIBUTE_H
 #define GMX_DOMDEC_DOMDEC_REDISTRIBUTE_H
 
+#include <cstdint>
 #include <cstdio>
 
 #include "gromacs/math/vectypes.h"

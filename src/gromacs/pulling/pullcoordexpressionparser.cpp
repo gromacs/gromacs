@@ -37,6 +37,8 @@
 
 #include "config.h"
 
+#include <algorithm>
+
 #include "gromacs/pulling/pull_internal.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/exceptions.h"

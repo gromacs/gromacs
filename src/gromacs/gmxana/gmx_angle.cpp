@@ -34,12 +34,17 @@
 #include "gmxpre.h"
 
 #include <cmath>
+#include <cstdio>
 
 #include <algorithm>
+#include <filesystem>
+#include <string>
 
+#include "gromacs/commandline/filenm.h"
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/commandline/viewit.h"
 #include "gromacs/correlationfunctions/autocorr.h"
+#include "gromacs/fileio/filetypes.h"
 #include "gromacs/fileio/trrio.h"
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/gmxana/angle_correction.h"
@@ -48,12 +53,17 @@
 #include "gromacs/math/functions.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/math/vectypes.h"
 #include "gromacs/topology/index.h"
 #include "gromacs/utility/arraysize.h"
+#include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/pleasecite.h"
+#include "gromacs/utility/real.h"
 #include "gromacs/utility/smalloc.h"
+
+struct gmx_output_env_t;
 
 static void dump_dih_trr(int nframes, int nangles, real** dih, const char* fn, real* time)
 {

@@ -43,6 +43,7 @@
 #include "gromacs/utility/strconvert.h"
 
 #include <cerrno>
+#include <cstdint>
 #include <cstdlib>
 
 #include <limits>

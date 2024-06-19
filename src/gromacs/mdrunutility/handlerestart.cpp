@@ -51,13 +51,28 @@
 #include "handlerestart.h"
 
 #include "config.h"
+#include "gmxpre-config.h"
 
 #include <fcntl.h>
 
 #include <cerrno>
+#include <cstdio>
 #include <cstring>
 
+#include <array>
 #include <filesystem>
+#include <iterator>
+#include <string>
+#include <string_view>
+#include <utility>
+#include <vector>
+
+#include "gromacs/fileio/filetypes.h"
+#include "gromacs/utility/arrayref.h"
+#include "gromacs/utility/futil.h"
+#include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/stringutil.h"
+#include "gromacs/utility/unique_cptr.h"
 #if GMX_NATIVE_WINDOWS
 #    include <io.h>
 

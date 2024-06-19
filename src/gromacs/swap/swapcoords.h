@@ -50,6 +50,7 @@
 #ifndef GMX_SWAP_SWAPCOORDS_H
 #define GMX_SWAP_SWAPCOORDS_H
 
+#include <cstdint>
 #include <cstdio>
 
 #include <memory>

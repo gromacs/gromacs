@@ -41,11 +41,14 @@
 #ifndef GMX_APPLIED_FORCES_DENSITYFITTINGPARAMETERS_H
 #define GMX_APPLIED_FORCES_DENSITYFITTINGPARAMETERS_H
 
+#include <cstdint>
+
 #include <string>
 #include <vector>
 
 #include "gromacs/math/densityfit.h"
 #include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/real.h"
 
 #include "densityfittingamplitudelookup.h"
 

@@ -47,6 +47,7 @@
 #include "gromacs/math/vectypes.h"
 #include "gromacs/pbcutil/mshift.h"
 #include "gromacs/utility/arrayref.h"
+#include "gromacs/utility/listoflists.h"
 
 class gmx_ga2la_t;
 struct gmx_mtop_t;

@@ -42,7 +42,11 @@
 
 #include "testutils/loggertest.h"
 
+#include <memory>
+#include <string>
+
 #include <gmock/gmock.h>
+#include <gtest/gtest.h>
 
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/logger.h"

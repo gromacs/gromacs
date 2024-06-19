@@ -43,6 +43,7 @@
 #include "helpwritercontext.h"
 
 #include <cctype>
+#include <cstring>
 
 #include <algorithm>
 #include <memory>

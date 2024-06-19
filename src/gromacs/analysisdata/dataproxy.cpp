@@ -48,6 +48,7 @@
 
 namespace gmx
 {
+class AnalysisDataParallelOptions;
 
 AnalysisDataProxy::AnalysisDataProxy(int firstColumn, int columnSpan, AbstractAnalysisData* data) :
     source_(*data), firstColumn_(firstColumn), columnSpan_(columnSpan), bParallel_(false)

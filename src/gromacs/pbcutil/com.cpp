@@ -44,12 +44,21 @@
 #include "gromacs/pbcutil/com.h"
 
 #include <algorithm>
+#include <iterator>
 #include <vector>
 
+#include "gromacs/math/vec.h"
+#include "gromacs/math/vectypes.h"
 #include "gromacs/pbcutil/pbc.h"
+#include "gromacs/pbcutil/pbcenums.h"
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/topology/topology.h"
+#include "gromacs/utility/arrayref.h"
+#include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/range.h"
+#include "gromacs/utility/real.h"
+
+enum class PbcType : int;
 
 namespace gmx
 {

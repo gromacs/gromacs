@@ -42,16 +42,20 @@
 
 #include "gromacs/applied_forces/qmmm/qmmmoptions.h"
 
+#include <filesystem>
 #include <string>
 #include <vector>
 
 #include <gtest/gtest.h>
 
+#include "gromacs/applied_forces/qmmm/qmmmtypes.h"
 #include "gromacs/mdrunutility/mdmodulesnotifiers.h"
 #include "gromacs/options/options.h"
 #include "gromacs/options/treesupport.h"
 #include "gromacs/selection/indexutil.h"
 #include "gromacs/topology/index.h"
+#include "gromacs/utility/arrayref.h"
+#include "gromacs/utility/keyvaluetree.h"
 #include "gromacs/utility/keyvaluetreebuilder.h"
 #include "gromacs/utility/keyvaluetreemdpwriter.h"
 #include "gromacs/utility/keyvaluetreetransform.h"

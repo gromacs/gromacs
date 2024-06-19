@@ -42,11 +42,16 @@
 #ifndef GMX_MDLIB_TESTS_SETTLETESTDATA_H
 #define GMX_MDLIB_TESTS_SETTLETESTDATA_H
 
+#include <memory>
+#include <vector>
+
 #include "gromacs/math/paddedvector.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/topology/idef.h"
+#include "gromacs/topology/ifunc.h"
 #include "gromacs/topology/topology.h"
+#include "gromacs/utility/real.h"
 
 namespace gmx
 {

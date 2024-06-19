@@ -45,16 +45,29 @@
 #include "coordinatefile.h"
 
 #include <algorithm>
+#include <filesystem>
 
+#include "gromacs/coordinateio/coordinatefileenums.h"
 #include "gromacs/coordinateio/outputadapters.h"
+#include "gromacs/coordinateio/outputadapters/outputselector.h"
+#include "gromacs/coordinateio/outputadapters/setatoms.h"
+#include "gromacs/coordinateio/outputadapters/setbox.h"
+#include "gromacs/coordinateio/outputadapters/setforces.h"
+#include "gromacs/coordinateio/outputadapters/setprecision.h"
+#include "gromacs/coordinateio/outputadapters/setstarttime.h"
+#include "gromacs/coordinateio/outputadapters/settimestep.h"
+#include "gromacs/coordinateio/outputadapters/setvelocities.h"
 #include "gromacs/coordinateio/requirements.h"
 #include "gromacs/fileio/filetypes.h"
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/selection/selection.h"
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/trajectory/trajectoryframe.h"
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/gmxassert.h"
 
 namespace gmx
 {

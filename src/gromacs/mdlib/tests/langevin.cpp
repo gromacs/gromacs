@@ -53,10 +53,15 @@
 
 #include <cmath>
 
+#include <memory>
+#include <string>
 #include <vector>
 
 #include <gtest/gtest.h>
 
+#include "gromacs/math/paddedvector.h"
+#include "gromacs/math/vectypes.h"
+#include "gromacs/utility/real.h"
 #include "gromacs/utility/stringutil.h"
 
 #include "testutils/refdata.h"

@@ -37,20 +37,27 @@
 
 #include <cmath>
 
+#include <filesystem>
 #include <memory>
+#include <string>
 #include <vector>
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
 #include "gromacs/applied_forces/awh/biasgrid.h"
+#include "gromacs/applied_forces/awh/biasparams.h"
 #include "gromacs/applied_forces/awh/correlationgrid.h"
+#include "gromacs/applied_forces/awh/dimparams.h"
 #include "gromacs/applied_forces/awh/pointstate.h"
 #include "gromacs/applied_forces/awh/tests/awh_setup.h"
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/math/functions.h"
+#include "gromacs/math/multidimarray.h"
+#include "gromacs/mdspan/extensions.h"
 #include "gromacs/mdtypes/awh_params.h"
 #include "gromacs/utility/arrayref.h"
+#include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/stringutil.h"
 
 #include "testutils/testasserts.h"

@@ -47,8 +47,12 @@
 #ifndef NBLIB_LISTEDFORCES_GMXCALCULATOR_H
 #define NBLIB_LISTEDFORCES_GMXCALCULATOR_H
 
+#include <memory>
+#include <vector>
+
 #include "gromacs/gmxlib/nrnb.h"
 #include "gromacs/listed_forces/listed_forces.h"
+#include "gromacs/math/vectypes.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/enerdata.h"
 #include "gromacs/mdtypes/fcdata.h"
@@ -60,9 +64,17 @@
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/topology/forcefieldparameters.h"
 #include "gromacs/topology/idef.h"
+#include "gromacs/utility/real.h"
 
 #include "nblib/box.h"
 #include "nblib/listed_forces/calculator.h"
+#include "nblib/listed_forces/definitions.h"
+
+namespace gmx
+{
+template<typename>
+class ArrayRef;
+} // namespace gmx
 
 namespace nblib
 {

@@ -43,12 +43,15 @@
 
 #include "config.h"
 
+#include <filesystem>
 #include <string>
 
 #include <gtest/gtest.h>
 
 #include "gromacs/options/filenameoption.h"
 #include "gromacs/utility/stringutil.h"
+
+#include "testutils/testfilemanager.h"
 
 #include "moduletest.h"
 

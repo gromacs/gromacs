@@ -35,11 +35,16 @@
 
 #include "cmat.h"
 
+#include <cstdio>
+
 #include <algorithm>
+#include <filesystem>
+#include <string>
 
 #include "gromacs/fileio/matio.h"
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/math/functions.h"
+#include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
 

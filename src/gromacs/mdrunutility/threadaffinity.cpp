@@ -41,6 +41,11 @@
 #include <cstdio>
 #include <cstring>
 
+#include <algorithm>
+#include <filesystem>
+#include <string>
+#include <vector>
+
 #if HAVE_SCHED_AFFINITY
 #    include <sched.h>
 #endif

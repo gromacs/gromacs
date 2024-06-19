@@ -46,13 +46,21 @@
 #ifndef NBLIB_LISTEDFORCES_LISTEDTESTHELPERS_H
 #define NBLIB_LISTEDFORCES_LISTEDTESTHELPERS_H
 
+#include <cstddef>
+
+#include <type_traits>
+#include <vector>
+
 #include "gromacs/math/vectypes.h"
+#include "gromacs/utility/real.h"
 
 #include "nblib/listed_forces/definitions.h"
 
 namespace nblib
 {
 class Box;
+template<class T, class TL>
+struct Contains;
 
 //! \brief Creates a default vector of indices for two-centered interactions
 template<class Interaction, std::enable_if_t<Contains<Interaction, SupportedTwoCenterTypes>{}>* = nullptr>

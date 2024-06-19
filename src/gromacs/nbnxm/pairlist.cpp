@@ -39,10 +39,17 @@
 #include "config.h"
 
 #include <cassert>
+#include <climits>
 #include <cmath>
+#include <cstdint>
+#include <cstdio>
 #include <cstring>
 
 #include <algorithm>
+#include <array>
+#include <filesystem>
+#include <string>
+#include <type_traits>
 
 #include "gromacs/domdec/domdec_struct.h"
 #include "gromacs/gmxlib/nrnb.h"
@@ -56,15 +63,21 @@
 #include "gromacs/mdtypes/nblist.h"
 #include "gromacs/nbnxm/atomdata.h"
 #include "gromacs/nbnxm/gpu_data_mgmt.h"
+#include "gromacs/nbnxm/grid.h"
 #include "gromacs/nbnxm/nbnxm.h"
+#include "gromacs/nbnxm/pairlistparams.h"
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/simd/simd.h"
 #include "gromacs/simd/vector_operations.h"
+#include "gromacs/utility/arrayref.h"
+#include "gromacs/utility/bitmask.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/gmxomp.h"
 #include "gromacs/utility/listoflists.h"
+#include "gromacs/utility/range.h"
 #include "gromacs/utility/smalloc.h"
 
 #include "boundingbox.h"

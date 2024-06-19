@@ -49,7 +49,11 @@
 
 #include <cstring>
 
+#include <memory>
+
 #include "gromacs/domdec/domdec_struct.h"
+#include "gromacs/utility/arrayref.h"
+#include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/gmxmpi.h"
 
 #include "domdec_internal.h"

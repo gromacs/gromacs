@@ -42,6 +42,8 @@
 
 #include "config.h"
 
+#include <cstdlib>
+
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/enumerationhelpers.h"
 #include "gromacs/utility/stringutil.h"

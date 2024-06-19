@@ -43,8 +43,11 @@
 
 #include "energyframe.h"
 
+#include <cinttypes>
+
 #include <map>
 #include <string>
+#include <utility>
 
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/stringutil.h"

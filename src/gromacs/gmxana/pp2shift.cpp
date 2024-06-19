@@ -34,16 +34,23 @@
 #include "gmxpre.h"
 
 #include <cmath>
+#include <cstdio>
 
 #include <algorithm>
+#include <filesystem>
+#include <string>
 
 #include "gromacs/fileio/matio.h"
+#include "gromacs/fileio/rgb.h"
 #include "gromacs/gmxana/gstat.h"
 #include "gromacs/math/units.h"
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/fileptr.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/pleasecite.h"
+#include "gromacs/utility/real.h"
 #include "gromacs/utility/smalloc.h"
 
 typedef struct

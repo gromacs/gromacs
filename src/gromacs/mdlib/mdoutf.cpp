@@ -36,11 +36,20 @@
 #include "mdoutf.h"
 
 #include "config.h"
+#include "gmxpre-config.h"
+
+#include <cstdlib>
+#include <cstring>
+
+#include <filesystem>
+#include <memory>
+#include <string>
 
 #include "gromacs/commandline/filenm.h"
 #include "gromacs/domdec/collect.h"
 #include "gromacs/domdec/domdec_struct.h"
 #include "gromacs/fileio/checkpoint.h"
+#include "gromacs/fileio/filetypes.h"
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/tngio.h"
 #include "gromacs/fileio/trrio.h"
@@ -62,11 +71,19 @@
 #include "gromacs/mdtypes/swaphistory.h"
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/topology/topology.h"
+#include "gromacs/topology/topology_enums.h"
 #include "gromacs/utility/baseversion.h"
+#include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/enumerationhelpers.h"
+#include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/futil.h"
+#include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/pleasecite.h"
 #include "gromacs/utility/programcontext.h"
+#include "gromacs/utility/real.h"
 #include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/stringutil.h"
 #include "gromacs/utility/sysinfo.h"
 
 struct gmx_mdoutf

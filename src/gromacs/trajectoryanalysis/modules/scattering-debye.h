@@ -42,11 +42,14 @@
 #ifndef GMX_TRAJECTORYANALYSIS_SCATTERING_DEBYE_H
 #define GMX_TRAJECTORYANALYSIS_SCATTERING_DEBYE_H
 
+#include <cstddef>
+
 #include <string>
 #include <unordered_map>
 #include <vector>
 
 #include "gromacs/math/vec.h"
+#include "gromacs/math/vectypes.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/selection/selection.h"
 #include "gromacs/topology/topology.h"

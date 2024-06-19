@@ -41,6 +41,9 @@
 
 #include "gromacs/gmxpreprocess/gpp_bond_atomtype.h"
 
+#include <optional>
+#include <string>
+
 #include <gtest/gtest.h>
 
 #include "gromacs/gmxpreprocess/grompp_impl.h"

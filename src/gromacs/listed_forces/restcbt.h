@@ -49,6 +49,7 @@
 #define GMX_LISTED_FORCES_RESTCBT_H
 
 #include "gromacs/math/vec.h"
+#include "gromacs/math/vectypes.h"
 #include "gromacs/topology/idef.h"
 #include "gromacs/utility/real.h"
 

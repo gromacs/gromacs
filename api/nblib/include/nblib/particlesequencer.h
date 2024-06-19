@@ -44,6 +44,7 @@
 #ifndef NBLIB_PARTICLESEQUENCER_H
 #define NBLIB_PARTICLESEQUENCER_H
 
+#include <string>
 #include <tuple>
 #include <unordered_map>
 #include <vector>

@@ -43,13 +43,18 @@
 #include "gromacs/selection/poscalc.h"
 
 #include <memory>
+#include <string>
+#include <utility>
 #include <vector>
 
 #include <gtest/gtest.h>
 
 #include "gromacs/math/vec.h"
+#include "gromacs/math/vectypes.h"
 #include "gromacs/selection/indexutil.h"
 #include "gromacs/selection/position.h"
+#include "gromacs/topology/atoms.h"
+#include "gromacs/topology/block.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/trajectory/trajectoryframe.h"
 #include "gromacs/utility/arrayref.h"
@@ -58,6 +63,8 @@
 #include "testutils/refdata.h"
 
 #include "toputils.h"
+
+struct gmx_ana_poscalc_t;
 
 namespace
 {

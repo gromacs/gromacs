@@ -40,19 +40,32 @@
  * \author Prashanth Kanduri <kanduri@cscs.ch>
  * \author Sebastian Keller <keller@cscs.ch>
  */
+#include "config.h"
+
 #include <cmath>
+#include <cstddef>
+#include <cstdint>
+
+#include <string>
+#include <vector>
+
+#include <gtest/gtest.h>
 
 #include "gromacs/hardware/device_management.h"
+#include "gromacs/mdtypes/atominfo.h"
 #include "gromacs/mdtypes/forcerec.h"
 #include "gromacs/mdtypes/interaction_const.h"
 #include "gromacs/mdtypes/simulation_workload.h"
 #include "gromacs/nbnxm/nbnxm.h"
 #include "gromacs/nbnxm/nbnxm_simd.h"
+#include "gromacs/utility/arrayref.h"
+#include "gromacs/utility/real.h"
 
 #include "testutils/test_hardware_environment.h"
 #include "testutils/testasserts.h"
 
 #include "nblib/box.h"
+#include "nblib/kerneloptions.h"
 #include "nblib/nbnxmsetuphelpers.h"
 
 namespace nblib

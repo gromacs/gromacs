@@ -35,12 +35,19 @@
 
 #include "gromacs/topology/residuetypes.h"
 
+#include <cstdio>
+
+#include <filesystem>
 #include <string>
+#include <unordered_map>
+#include <utility>
 
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/fileptr.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/strdb.h"
+#include "gromacs/utility/stringutil.h"
 
 //! Definition for residue type that is not known.
 const ResidueType c_undefinedResidueType = "Other";

@@ -45,6 +45,7 @@
 #include "pairlistset.h"
 
 #include "gromacs/mdtypes/nblist.h"
+#include "gromacs/nbnxm/pairlist.h"
 
 #include "pairlistwork.h"
 

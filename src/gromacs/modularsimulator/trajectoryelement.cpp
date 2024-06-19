@@ -41,10 +41,13 @@
 
 #include "trajectoryelement.h"
 
+#include <functional>
+
 #include "gromacs/mdlib/mdoutf.h"
 #include "gromacs/mdlib/stat.h"
 #include "gromacs/mdrunutility/handlerestart.h"
 #include "gromacs/mdtypes/inputrec.h"
+#include "gromacs/modularsimulator/modularsimulatorinterfaces.h"
 
 namespace gmx
 {

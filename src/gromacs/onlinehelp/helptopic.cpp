@@ -44,6 +44,7 @@
 
 #include <map>
 #include <utility>
+#include <vector>
 
 #include "gromacs/onlinehelp/helpformat.h"
 #include "gromacs/onlinehelp/helpwritercontext.h"

@@ -40,6 +40,7 @@
 #include <cstring>
 
 #include <algorithm>
+#include <filesystem>
 
 #include "gromacs/math/units.h"
 #include "gromacs/math/utilities.h"
@@ -50,6 +51,7 @@
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/stringutil.h"
 

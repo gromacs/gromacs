@@ -38,9 +38,15 @@
 #include <cmath>
 
 #include <algorithm>
+#include <memory>
+#include <optional>
+#include <utility>
 
 #include "gromacs/domdec/localtopologychecker.h"
 #include "gromacs/gmxlib/nrnb.h"
+#include "gromacs/math/arrayrefwithpadding.h"
+#include "gromacs/math/matrix.h"
+#include "gromacs/math/paddedvector.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/constr.h"
 #include "gromacs/mdlib/coupling.h"
@@ -50,6 +56,7 @@
 #include "gromacs/mdlib/stat.h"
 #include "gromacs/mdlib/tgroup.h"
 #include "gromacs/mdlib/update.h"
+#include "gromacs/mdlib/vcm.h"
 #include "gromacs/mdrunutility/handlerestart.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/enerdata.h"
@@ -59,10 +66,15 @@
 #include "gromacs/mdtypes/group.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/mdatom.h"
+#include "gromacs/mdtypes/pull_params.h"
 #include "gromacs/mdtypes/state.h"
 #include "gromacs/pulling/pull.h"
 #include "gromacs/timing/wallcycle.h"
+#include "gromacs/topology/ifunc.h"
 #include "gromacs/topology/topology.h"
+#include "gromacs/utility/arrayref.h"
+#include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/smalloc.h"
 
 void integrateVVFirstStep(int64_t                   step,
                           bool                      bFirstStep,

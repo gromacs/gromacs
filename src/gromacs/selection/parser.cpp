@@ -89,6 +89,17 @@
 /* Copy the first part of user declarations.  */
 #line 56 "parser.y" /* yacc.c:339  */
 
+#include <cstdlib>
+#include <list>
+#include <memory>
+#include <utility>
+
+#include "gromacs/selection/parser.h"
+#include "gromacs/selection/parsetree.h"
+#include "gromacs/selection/scanner.h"
+#include "gromacs/selection/selelem.h"
+#include "gromacs/selection/selvalue.h"
+#include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/unique_cptr.h"
 
 #include "parser_internal.h"

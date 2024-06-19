@@ -41,12 +41,17 @@
 #ifndef GMX_APPLIED_FORCES_DENSITYFITTINGFORCEPROVIDER_H
 #define GMX_APPLIED_FORCES_DENSITYFITTINGFORCEPROVIDER_H
 
+#include <cstdint>
+
 #include <memory>
+#include <string>
 
 #include "gromacs/fileio/checkpoint.h"
 #include "gromacs/math/exponentialmovingaverage.h"
 #include "gromacs/mdspan/extensions.h"
+#include "gromacs/mdspan/mdspan.h"
 #include "gromacs/mdtypes/iforceprovider.h"
+#include "gromacs/utility/real.h"
 
 enum class PbcType : int;
 
@@ -56,6 +61,8 @@ namespace gmx
 class LocalAtomSet;
 class TranslateAndScale;
 struct DensityFittingParameters;
+class KeyValueTreeObject;
+class KeyValueTreeObjectBuilder;
 
 /*! \internal
  * \brief Parameters defining the internal density fitting force provider state.

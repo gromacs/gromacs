@@ -41,6 +41,9 @@
 #include "gmxpre.h"
 
 #include <memory>
+#include <string>
+
+#include <gtest/gtest.h>
 
 #include "gromacs/commandline/cmdlinehelpcontext.h"
 #include "gromacs/commandline/cmdlinemodule.h"

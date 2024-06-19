@@ -42,6 +42,12 @@
 
 #include "gromacs/gmxpreprocess/genrestr.h"
 
+#include <string>
+
+#include <gtest/gtest.h>
+
+#include "gromacs/utility/arrayref.h"
+
 #include "testutils/cmdlinetest.h"
 #include "testutils/filematchers.h"
 #include "testutils/refdata.h"

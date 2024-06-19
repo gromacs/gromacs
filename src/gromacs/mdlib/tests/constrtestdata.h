@@ -46,6 +46,7 @@
 #define GMX_MDLIB_TESTS_CONSTRTESTDATA_H
 
 #include <memory>
+#include <string>
 #include <vector>
 
 #include "gromacs/gmxlib/nrnb.h"
@@ -61,6 +62,8 @@
 #include "gromacs/topology/idef.h"
 #include "gromacs/topology/ifunc.h"
 #include "gromacs/topology/topology.h"
+#include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/real.h"
 
 namespace gmx
 {

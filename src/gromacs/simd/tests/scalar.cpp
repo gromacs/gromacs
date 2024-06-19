@@ -34,6 +34,9 @@
 #include "gmxpre.h"
 
 #include <cmath>
+#include <cstdint>
+
+#include <string>
 
 #include <gtest/gtest.h>
 

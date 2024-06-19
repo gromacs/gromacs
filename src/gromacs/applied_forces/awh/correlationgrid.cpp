@@ -45,6 +45,7 @@
 
 #include "correlationgrid.h"
 
+#include "gromacs/applied_forces/awh/correlationtensor.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/real.h"
 

@@ -42,6 +42,8 @@
 
 #include "gromacs/gmxpreprocess/topdirs.h"
 
+#include <string>
+
 #include <gtest/gtest.h>
 
 #include "gromacs/utility/enumerationhelpers.h"

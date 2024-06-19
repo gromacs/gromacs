@@ -44,6 +44,8 @@
 #ifndef GMX_MODULARSIMULATOR_TOPOLOGYHOLDER_H
 #define GMX_MODULARSIMULATOR_TOPOLOGYHOLDER_H
 
+#include <memory>
+#include <utility>
 #include <vector>
 
 #include "gromacs/compat/pointers.h"

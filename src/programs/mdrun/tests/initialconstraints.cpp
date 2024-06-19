@@ -46,10 +46,19 @@
  */
 #include "gmxpre.h"
 
+#include <filesystem>
+#include <memory>
 #include <string>
+#include <vector>
+
+#include <gtest/gtest.h>
 
 #include "gromacs/trajectory/energyframe.h"
+#include "gromacs/utility/real.h"
 #include "gromacs/utility/stringutil.h"
+
+#include "testutils/testasserts.h"
+#include "testutils/testfilemanager.h"
 
 #include "energyreader.h"
 #include "moduletest.h"

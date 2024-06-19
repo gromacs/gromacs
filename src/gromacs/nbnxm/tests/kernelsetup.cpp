@@ -40,7 +40,12 @@
  */
 #include "gmxpre.h"
 
+#include <string>
+
+#include <gtest/gtest.h>
+
 #include "gromacs/mdtypes/md_enums.h"
+#include "gromacs/nbnxm/atomdata.h"
 #include "gromacs/nbnxm/kernel_common.h"
 #include "gromacs/nbnxm/nbnxm.h"
 

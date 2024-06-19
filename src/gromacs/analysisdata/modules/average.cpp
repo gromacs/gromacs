@@ -45,10 +45,15 @@
 #include <cmath>
 
 #include <algorithm>
+#include <memory>
+#include <utility>
 #include <vector>
 
+#include "gromacs/analysisdata/abstractdata.h"
 #include "gromacs/analysisdata/dataframe.h"
 #include "gromacs/analysisdata/datastorage.h"
+#include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/real.h"
 
 #include "frameaverager.h"
 

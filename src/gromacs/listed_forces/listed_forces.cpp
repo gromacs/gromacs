@@ -46,7 +46,10 @@
 
 #include <algorithm>
 #include <array>
+#include <filesystem>
+#include <iterator>
 #include <numeric>
+#include <string>
 
 #include "gromacs/gmxlib/nrnb.h"
 #include "gromacs/listed_forces/bonded.h"
@@ -54,15 +57,18 @@
 #include "gromacs/listed_forces/orires.h"
 #include "gromacs/listed_forces/pairs.h"
 #include "gromacs/listed_forces/position_restraints.h"
+#include "gromacs/math/arrayrefwithpadding.h"
 #include "gromacs/mdlib/enerdata_utils.h"
 #include "gromacs/mdlib/force.h"
 #include "gromacs/mdtypes/commrec.h"
+#include "gromacs/mdtypes/enerdata.h"
 #include "gromacs/mdtypes/fcdata.h"
 #include "gromacs/mdtypes/forceoutput.h"
 #include "gromacs/mdtypes/forcerec.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/mdtypes/simulation_workload.h"
+#include "gromacs/mdtypes/threaded_force_buffer.h"
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/timing/wallcycle.h"
@@ -71,6 +77,7 @@
 #include "gromacs/utility/enumerationhelpers.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/gmxassert.h"
 
 #include "listed_internal.h"
 #include "manage_threading.h"

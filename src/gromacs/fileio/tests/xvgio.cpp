@@ -39,12 +39,25 @@
  */
 #include "gmxpre.h"
 
+#include <cstddef>
+
+#include <algorithm>
+#include <filesystem>
 #include <numeric>
 #include <optional>
+#include <string>
+#include <tuple>
+#include <type_traits>
+#include <vector>
 
 #include <gtest/gtest.h>
 
 #include "gromacs/fileio/xvgr.h"
+#include "gromacs/math/multidimarray.h"
+#include "gromacs/mdspan/extensions.h"
+#include "gromacs/mdspan/layouts.h"
+#include "gromacs/mdspan/mdspan.h"
+#include "gromacs/utility/real.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/textwriter.h"
 

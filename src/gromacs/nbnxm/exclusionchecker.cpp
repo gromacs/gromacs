@@ -44,14 +44,23 @@
 
 #include "gromacs/nbnxm/exclusionchecker.h"
 
+#include <functional>
+#include <utility>
+#include <vector>
+
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/observablesreducer.h"
+#include "gromacs/topology/atoms.h"
 #include "gromacs/topology/idef.h"
 #include "gromacs/topology/ifunc.h"
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/topology/topology.h"
+#include "gromacs/utility/arrayref.h"
+#include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/listoflists.h"
 
 /*! \brief Data to help check local topology construction
  *

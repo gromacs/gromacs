@@ -45,6 +45,7 @@
 #include "setatoms.h"
 
 #include <algorithm>
+#include <string>
 
 #include "gromacs/coordinateio/coordinatefileenums.h"
 #include "gromacs/trajectory/trajectoryframe.h"

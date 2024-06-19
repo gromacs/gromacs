@@ -42,6 +42,8 @@
  */
 #include "nblib/listed_forces/bondtypes.h"
 
+#include <gtest/gtest.h>
+
 #include "testutils/testasserts.h"
 
 #include "nblib/util/util.hpp"

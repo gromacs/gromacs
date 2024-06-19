@@ -36,8 +36,10 @@
 
 #include <initializer_list>
 #include <memory>
+#include <string>
 
 #include <gmock/gmock.h>
+#include <gtest/gtest.h>
 
 #include "gromacs/hardware/hw_info.h"
 #include "gromacs/mdrunutility/threadaffinity.h"

@@ -53,6 +53,7 @@
 #include <filesystem>
 #include <mutex>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "gromacs/utility/exceptions.h"

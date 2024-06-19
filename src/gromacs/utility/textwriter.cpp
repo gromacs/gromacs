@@ -42,7 +42,13 @@
 
 #include "gromacs/utility/textwriter.h"
 
+#include <cstdarg>
+#include <cstdio>
 #include <cstring>
+
+#include <filesystem>
+#include <memory>
+#include <string>
 
 #include "gromacs/utility/filestream.h"
 #include "gromacs/utility/nodelete.h"

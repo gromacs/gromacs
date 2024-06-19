@@ -44,6 +44,7 @@
 #define GMX_MODULARSIMULATOR_REFERENCETEMPERATUREMANAGER_H
 
 #include <functional>
+#include <vector>
 
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/real.h"

@@ -43,15 +43,23 @@
  */
 #include "nblib/integrator.h"
 
+#include <string>
+
+#include <gtest/gtest.h>
+
+#include "gromacs/math/vectypes.h"
+#include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/utility/arrayref.h"
 
 #include "testutils/testasserts.h"
 
+#include "nblib/interactions.h"
 #include "nblib/molecules.h"
 #include "nblib/particletype.h"
 #include "nblib/simulationstate.h"
 #include "nblib/topology.h"
+#include "nblib/util/util.hpp"
 #include "nblib/vector.h"
 
 namespace nblib

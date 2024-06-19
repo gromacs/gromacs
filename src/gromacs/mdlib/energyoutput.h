@@ -44,16 +44,19 @@
 #ifndef GMX_MDLIB_ENERGYOUTPUT_H
 #define GMX_MDLIB_ENERGYOUTPUT_H
 
+#include <cstdint>
 #include <cstdio>
 
 #include <array>
 #include <memory>
+#include <vector>
 
 #include "gromacs/math/vectypes.h"
 #include "gromacs/mdtypes/enerdata.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/topology/ifunc.h"
 #include "gromacs/utility/arrayref.h"
+#include "gromacs/utility/enumerationhelpers.h"
 #include "gromacs/utility/real.h"
 
 class energyhistory_t;

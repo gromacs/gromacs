@@ -44,9 +44,14 @@
 
 #include <cstring>
 
+#include <filesystem>
+
+#include "gromacs/math/vectypes.h"
 #include "gromacs/selection/indexutil.h"
 #include "gromacs/selection/position.h"
 #include "gromacs/selection/selectionenums.h"
+#include "gromacs/selection/selparam.h"
+#include "gromacs/selection/selvalue.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
@@ -57,6 +62,8 @@
 #include "mempool.h"
 #include "poscalc.h"
 #include "selmethod.h"
+
+struct gmx_ana_indexgrps_t;
 
 /*!
  * \param[in] sel Selection for which the string is requested

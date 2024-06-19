@@ -33,6 +33,10 @@
  */
 #include "gmxapi/system.h"
 
+#include <gtest/gtest.h>
+
+#include "programs/mdrun/tests/moduletest.h"
+
 #include "testingconfiguration.h"
 
 namespace gmxapi

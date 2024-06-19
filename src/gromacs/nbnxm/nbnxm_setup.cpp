@@ -41,11 +41,20 @@
 
 #include "gmxpre.h"
 
+#include <cstdio>
+#include <cstdlib>
+
+#include <algorithm>
+#include <filesystem>
 #include <memory>
+#include <optional>
+#include <utility>
 
 #include "gromacs/domdec/domdec.h"
 #include "gromacs/domdec/domdec_struct.h"
+#include "gromacs/gpu_utils/hostallocator.h"
 #include "gromacs/hardware/hw_info.h"
+#include "gromacs/math/vectypes.h"
 #include "gromacs/mdlib/calc_verletbuf.h"
 #include "gromacs/mdlib/gmx_omp_nthreads.h"
 #include "gromacs/mdtypes/commrec.h"
@@ -53,14 +62,20 @@
 #include "gromacs/mdtypes/forcerec.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/interaction_const.h"
+#include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/nbnxm/atomdata.h"
 #include "gromacs/nbnxm/gpu_data_mgmt.h"
 #include "gromacs/nbnxm/nbnxm.h"
 #include "gromacs/nbnxm/pairlist_tuning.h"
+#include "gromacs/nbnxm/pairlistparams.h"
 #include "gromacs/simd/simd.h"
 #include "gromacs/topology/mtop_util.h"
+#include "gromacs/utility/arrayref.h"
+#include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/logger.h"
+#include "gromacs/utility/real.h"
 
 #include "exclusionchecker.h"
 #include "freeenergydispatch.h"
@@ -71,6 +86,15 @@
 #include "pairlistset.h"
 #include "pairlistsets.h"
 #include "pairsearch.h"
+
+namespace gmx
+{
+class DeviceStreamManager;
+class ObservablesReducerBuilder;
+} // namespace gmx
+struct NbnxmGpu;
+struct gmx_mtop_t;
+struct gmx_wallcycle;
 
 namespace Nbnxm
 {

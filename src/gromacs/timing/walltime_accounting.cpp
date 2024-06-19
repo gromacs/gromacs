@@ -37,6 +37,7 @@
 
 #include "config.h"
 
+#include <cstdint>
 #include <ctime>
 
 #ifdef HAVE_UNISTD_H

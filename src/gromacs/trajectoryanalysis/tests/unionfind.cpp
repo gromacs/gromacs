@@ -42,8 +42,13 @@
 
 #include "gromacs/trajectoryanalysis/modules/unionfind.h"
 
+#include <string>
+#include <vector>
+
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
+
+#include "gromacs/utility/arrayref.h"
 
 namespace
 {

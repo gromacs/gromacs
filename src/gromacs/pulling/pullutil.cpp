@@ -36,8 +36,16 @@
 #include "config.h"
 
 #include <cassert>
+#include <cmath>
 #include <cstdlib>
 
+#include <array>
+#include <filesystem>
+#include <memory>
+#include <optional>
+#include <vector>
+
+#include "gromacs/domdec/localatomset.h"
 #include "gromacs/fileio/confio.h"
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/math/functions.h"
@@ -48,11 +56,13 @@
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
+#include "gromacs/mdtypes/pull_params.h"
 #include "gromacs/mdtypes/state.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/pulling/pull.h"
 #include "gromacs/pulling/pull_internal.h"
 #include "gromacs/utility/arrayref.h"
+#include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/gmxassert.h"

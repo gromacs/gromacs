@@ -42,7 +42,10 @@
 #include <string>
 #include <string_view>
 
+
 // need to include gmxapi.h here as mpi.h needs to be included before mpi-ext.h
+#include "config.h"
+
 #include "gromacs/utility/gmxmpi.h"
 
 #if HAVE_MPI_EXT

@@ -42,8 +42,18 @@
 
 #include "gromacs/utility/listoflists.h"
 
+#include <cstddef>
+
+#include <algorithm>
+#include <stdexcept>
+#include <string>
+#include <utility>
+#include <vector>
+
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
+
+#include "gromacs/utility/arrayref.h"
 
 #include "testutils/testasserts.h"
 

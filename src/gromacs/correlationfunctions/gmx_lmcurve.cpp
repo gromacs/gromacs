@@ -47,6 +47,9 @@
 #include "config.h"
 
 #include <cmath>
+#include <cstdio>
+
+#include "gromacs/utility/basedefinitions.h"
 
 #if HAVE_LMFIT
 #    include <lmmin.h>

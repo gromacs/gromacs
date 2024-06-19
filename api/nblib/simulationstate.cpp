@@ -45,8 +45,10 @@
 #include "nblib/simulationstate.h"
 
 #include <memory>
+#include <utility>
 #include <vector>
 
+#include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/utility/arrayref.h"
 

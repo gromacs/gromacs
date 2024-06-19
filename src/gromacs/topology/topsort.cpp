@@ -35,12 +35,22 @@
 
 #include "gromacs/topology/topsort.h"
 
+#include <cstdint>
 #include <cstdio>
 
+#include <array>
+#include <filesystem>
+#include <vector>
+
+#include "gromacs/math/vectypes.h"
 #include "gromacs/mdtypes/atominfo.h"
+#include "gromacs/topology/atoms.h"
+#include "gromacs/topology/forcefieldparameters.h"
+#include "gromacs/topology/idef.h"
 #include "gromacs/topology/ifunc.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/arrayref.h"
+#include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 

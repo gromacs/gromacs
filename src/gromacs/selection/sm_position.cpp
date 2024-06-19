@@ -42,8 +42,11 @@
 
 #include "gromacs/selection/indexutil.h"
 #include "gromacs/selection/position.h"
+#include "gromacs/selection/selparam.h"
+#include "gromacs/selection/selvalue.h"
 #include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
 
 #include "keywords.h"
@@ -51,6 +54,9 @@
 #include "selelem.h"
 #include "selmethod.h"
 #include "selmethod_impl.h"
+
+struct gmx_ana_poscalc_t;
+struct gmx_mtop_t;
 
 /*! \internal \brief
  * Data structure for position keyword evaluation.

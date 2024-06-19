@@ -42,6 +42,11 @@
 
 #include "testutils/filematchers.h"
 
+#include <filesystem>
+#include <memory>
+#include <string>
+#include <utility>
+
 #include "gromacs/utility/filestream.h"
 
 #include "testutils/textblockmatchers.h"
@@ -50,6 +55,7 @@ namespace gmx
 {
 namespace test
 {
+class TestReferenceChecker;
 
 namespace
 {

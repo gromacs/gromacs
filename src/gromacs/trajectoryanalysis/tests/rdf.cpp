@@ -50,7 +50,11 @@
 
 #include "gromacs/trajectoryanalysis/modules/rdf.h"
 
+#include <string>
+
 #include <gtest/gtest.h>
+
+#include "gromacs/utility/arrayref.h"
 
 #include "testutils/cmdlinetest.h"
 #include "testutils/testasserts.h"

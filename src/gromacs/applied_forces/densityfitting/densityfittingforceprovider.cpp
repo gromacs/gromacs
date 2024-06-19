@@ -42,20 +42,35 @@
 
 #include "densityfittingforceprovider.h"
 
+#include <algorithm>
+#include <array>
+#include <iterator>
 #include <numeric>
 #include <optional>
+#include <vector>
 
+#include "gromacs/compat/pointers.h"
 #include "gromacs/domdec/localatomset.h"
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/math/coordinatetransformation.h"
 #include "gromacs/math/densityfit.h"
 #include "gromacs/math/densityfittingforce.h"
 #include "gromacs/math/gausstransform.h"
+#include "gromacs/math/matrix.h"
+#include "gromacs/math/multidimarray.h"
+#include "gromacs/math/vectypes.h"
 #include "gromacs/mdlib/broadcaststructs.h"
+#include "gromacs/mdspan/extents.h"
+#include "gromacs/mdspan/layouts.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/enerdata.h"
 #include "gromacs/mdtypes/forceoutput.h"
 #include "gromacs/pbcutil/pbc.h"
+#include "gromacs/topology/ifunc.h"
+#include "gromacs/utility/arrayref.h"
+#include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/keyvaluetree.h"
+#include "gromacs/utility/keyvaluetreebuilder.h"
 #include "gromacs/utility/strconvert.h"
 
 #include "densityfittingamplitudelookup.h"

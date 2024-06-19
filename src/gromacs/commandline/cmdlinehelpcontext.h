@@ -52,6 +52,7 @@ namespace gmx
 {
 
 class ShellCompletionWriter;
+class TextWriter;
 
 /*! \libinternal \brief
  * Context information for writing out command-line help.

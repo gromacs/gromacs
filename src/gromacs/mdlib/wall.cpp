@@ -36,9 +36,13 @@
 
 #include "wall.h"
 
+#include <cmath>
 #include <cstring>
 
 #include <algorithm>
+#include <filesystem>
+#include <memory>
+#include <vector>
 
 #include "gromacs/fileio/filetypes.h"
 #include "gromacs/gmxlib/nrnb.h"
@@ -53,8 +57,12 @@
 #include "gromacs/mdtypes/nblist.h"
 #include "gromacs/tables/forcetable.h"
 #include "gromacs/topology/topology.h"
+#include "gromacs/topology/topology_enums.h"
+#include "gromacs/utility/alignedallocator.h"
 #include "gromacs/utility/arrayref.h"
+#include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/enumerationhelpers.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 

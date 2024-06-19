@@ -36,13 +36,18 @@
 
 #include "viewit.h"
 
+#include <cstdio>
 #include <cstdlib>
 #include <cstring>
 
 #include <array>
+#include <filesystem>
+#include <string>
 #include <type_traits>
+#include <vector>
 
 #include "gromacs/commandline/filenm.h"
+#include "gromacs/fileio/filetypes.h"
 #include "gromacs/fileio/oenv.h"
 #include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/cstringutil.h"

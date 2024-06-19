@@ -34,9 +34,11 @@
 #include "gmxpre.h"
 
 #include <array>
+#include <string>
 
 #include <gtest/gtest.h>
 
+#include "gromacs/hardware/hw_info.h"
 #include "gromacs/utility/basenetwork.h"
 
 #include "testutils/mpitest.h"

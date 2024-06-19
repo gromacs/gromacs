@@ -35,19 +35,27 @@
 
 #include "report_methods.h"
 
+#include <filesystem>
+#include <memory>
+
 #include "gromacs/commandline/cmdlineoptionsmodule.h"
 #include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/filetypes.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/mdtypes/inputrec.h"
+#include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/mdtypes/state.h"
 #include "gromacs/options/basicoptions.h"
 #include "gromacs/options/filenameoption.h"
 #include "gromacs/options/ioptionscontainer.h"
+#include "gromacs/options/optionfiletype.h"
 #include "gromacs/selection/selectionoptionbehavior.h"
+#include "gromacs/topology/atoms.h"
 #include "gromacs/topology/mtop_atomloops.h"
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/topology/topology.h"
+#include "gromacs/topology/topology_enums.h"
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/fileredirector.h"
 #include "gromacs/utility/filestream.h"
@@ -55,6 +63,7 @@
 
 namespace gmx
 {
+class CommandLineModuleSettings;
 
 void writeHeader(TextWriter* writer, const std::string& text, const std::string& section, bool writeFormattedText)
 {

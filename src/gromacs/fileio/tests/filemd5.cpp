@@ -43,6 +43,8 @@
 #include <cstdio>
 
 #include <algorithm>
+#include <array>
+#include <filesystem>
 #include <numeric>
 #include <string>
 #include <vector>
@@ -52,6 +54,7 @@
 
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/utility/arrayref.h"
+#include "gromacs/utility/futil.h"
 
 #include "testutils/refdata.h"
 #include "testutils/testfilemanager.h"

@@ -45,7 +45,9 @@
 
 #include "config.h"
 
+#include <cmath>
 #include <cstdint>
+#include <cstdlib>
 
 #include <array>
 #include <limits>

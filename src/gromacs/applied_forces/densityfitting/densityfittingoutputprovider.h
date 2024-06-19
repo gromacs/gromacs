@@ -41,7 +41,12 @@
 #ifndef GMX_APPLIED_FORCES_DENSITYFITTINGOUTPUTPROVIDER_H
 #define GMX_APPLIED_FORCES_DENSITYFITTINGOUTPUTPROVIDER_H
 
+#include <cstdio>
+
 #include "gromacs/mdtypes/imdoutputprovider.h"
+
+struct gmx_output_env_t;
+struct t_filenm;
 
 namespace gmx
 {

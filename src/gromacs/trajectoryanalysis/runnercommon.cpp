@@ -45,7 +45,11 @@
 #include <cstring>
 
 #include <algorithm>
+#include <filesystem>
+#include <string>
+#include <vector>
 
+#include "gromacs/analysisdata/modules/plot.h"
 #include "gromacs/fileio/oenv.h"
 #include "gromacs/fileio/timecontrol.h"
 #include "gromacs/fileio/trxio.h"
@@ -53,6 +57,8 @@
 #include "gromacs/options/basicoptions.h"
 #include "gromacs/options/filenameoption.h"
 #include "gromacs/options/ioptionscontainer.h"
+#include "gromacs/options/optionfiletype.h"
+#include "gromacs/options/timeunitmanager.h"
 #include "gromacs/pbcutil/rmpbc.h"
 #include "gromacs/selection/selection.h"
 #include "gromacs/selection/selectioncollection.h"
@@ -62,6 +68,8 @@
 #include "gromacs/trajectory/trajectoryframe.h"
 #include "gromacs/trajectoryanalysis/analysissettings.h"
 #include "gromacs/trajectoryanalysis/topologyinformation.h"
+#include "gromacs/utility/arrayref.h"
+#include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
@@ -70,6 +78,8 @@
 #include "gromacs/utility/stringutil.h"
 
 #include "analysissettings_impl.h"
+
+struct gmx_output_env_t;
 
 namespace gmx
 {

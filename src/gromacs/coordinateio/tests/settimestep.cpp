@@ -46,10 +46,16 @@
 #include "gromacs/coordinateio/outputadapters/settimestep.h"
 
 #include <memory>
+#include <string>
+
+#include <gtest/gtest.h>
 
 #include "gromacs/coordinateio/tests/coordinate_test.h"
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/trajectory/trajectoryframe.h"
+#include "gromacs/utility/real.h"
+
+#include "testutils/cmdlinetest.h"
 
 namespace gmx
 {

@@ -35,8 +35,15 @@
 
 #include "dispersioncorrection.h"
 
+#include <cinttypes>
+#include <cmath>
 #include <cstdio>
 
+#include <filesystem>
+#include <string>
+#include <vector>
+
+#include "gromacs/math/functions.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
@@ -46,10 +53,19 @@
 #include "gromacs/mdtypes/interaction_const.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/tables/forcetable.h"
+#include "gromacs/topology/atoms.h"
+#include "gromacs/topology/forcefieldparameters.h"
+#include "gromacs/topology/idef.h"
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/topology/topology.h"
+#include "gromacs/utility/alignedallocator.h"
+#include "gromacs/utility/arrayref.h"
+#include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/listoflists.h"
 #include "gromacs/utility/logger.h"
+#include "gromacs/utility/stringutil.h"
 
 /* Implementation here to avoid other files needing to include the file that defines t_nblists */
 DispersionCorrection::InteractionParams::~InteractionParams() = default;

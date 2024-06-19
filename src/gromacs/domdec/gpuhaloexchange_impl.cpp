@@ -46,10 +46,23 @@
 
 #include "config.h"
 
+#include <memory>
 #include <utility>
 
 #include "gromacs/domdec/gpuhaloexchange.h"
+#include "gromacs/gpu_utils/devicebuffer_datatype.h"
+#include "gromacs/math/vectypes.h"
 #include "gromacs/utility/gmxassert.h"
+
+class DeviceContext;
+class GpuEventSynchronizer;
+namespace gmx
+{
+template<typename T, size_t capacity_>
+class FixedCapacityVector;
+} // namespace gmx
+struct gmx_domdec_t;
+struct gmx_wallcycle;
 
 #if !GMX_GPU_CUDA && !GMX_GPU_SYCL
 

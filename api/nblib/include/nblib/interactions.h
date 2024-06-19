@@ -44,7 +44,10 @@
 #ifndef NBLIB_INTERACTIONS_H
 #define NBLIB_INTERACTIONS_H
 
+#include <cstddef>
+
 #include <map>
+#include <string>
 #include <tuple>
 #include <unordered_map>
 

@@ -37,10 +37,13 @@
 
 #include "gromacs/utility/compare.h"
 
+#include <cinttypes>
 #include <cmath>
 #include <cstdio>
 #include <cstring>
 
+#include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/real.h"
 #include "gromacs/utility/strconvert.h"
 
 void cmp_int(FILE* fp, const char* s, int index, int i1, int i2)

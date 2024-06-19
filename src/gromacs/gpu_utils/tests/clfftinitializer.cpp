@@ -41,6 +41,8 @@
 
 #include "gromacs/gpu_utils/clfftinitializer.h"
 
+#include <string>
+
 #include <gtest/gtest.h>
 
 namespace gmx

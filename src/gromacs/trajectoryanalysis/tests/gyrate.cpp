@@ -53,6 +53,7 @@
 #include "gromacs/utility/stringutil.h"
 
 #include "testutils/cmdlinetest.h"
+#include "testutils/testasserts.h"
 #include "testutils/textblockmatchers.h"
 #include "testutils/xvgtest.h"
 

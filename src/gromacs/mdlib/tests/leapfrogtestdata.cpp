@@ -45,6 +45,7 @@
 #include <cmath>
 
 #include <algorithm>
+#include <array>
 #include <unordered_map>
 #include <vector>
 
@@ -53,7 +54,9 @@
 #include "gromacs/gpu_utils/gpu_utils.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/math/vectypes.h"
+#include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/mdtypes/mdatom.h"
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/stringutil.h"
 

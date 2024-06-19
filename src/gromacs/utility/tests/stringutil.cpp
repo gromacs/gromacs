@@ -47,6 +47,7 @@
 #include "gromacs/utility/stringutil.h"
 
 #include <string>
+#include <tuple>
 #include <vector>
 
 #include <gmock/gmock.h>

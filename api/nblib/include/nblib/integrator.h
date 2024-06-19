@@ -46,6 +46,7 @@
 
 #include <vector>
 
+#include "nblib/basicdefinitions.h"
 #include "nblib/box.h"
 #include "nblib/vector.h"
 

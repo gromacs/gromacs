@@ -44,6 +44,10 @@
 
 #include "requirements.h"
 
+#include <gtest/gtest.h>
+
+#include "gromacs/coordinateio/coordinatefileenums.h"
+
 namespace gmx
 {
 

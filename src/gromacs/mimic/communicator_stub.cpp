@@ -33,12 +33,18 @@
  */
 #include "gmxpre.h"
 
+#include <cstdint>
+
 #include "gromacs/math/units.h"
+#include "gromacs/math/vectypes.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/real.h"
 
 #include "communicator.h"
+
+struct gmx_mtop_t;
 
 namespace gmx
 {

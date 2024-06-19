@@ -145,8 +145,10 @@
 #ifndef GMX_COORDINATEIO_COORDINATEFILE_H
 #define GMX_COORDINATEIO_COORDINATEFILE_H
 
+#include <memory>
 #include <string>
 #include <utility>
+#include <vector>
 
 #include "gromacs/coordinateio/ioutputadapter.h"
 #include "gromacs/coordinateio/outputadaptercontainer.h"
@@ -155,6 +157,7 @@
 
 struct gmx_mtop_t;
 struct t_trxstatus;
+struct t_trxframe;
 
 namespace gmx
 {

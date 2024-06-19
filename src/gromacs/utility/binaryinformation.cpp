@@ -42,10 +42,12 @@
 #include "gromacs/utility/binaryinformation.h"
 
 #include "config.h"
+#include "gmxpre-config.h"
 
 #include <climits>
 
 #include <filesystem>
+#include <vector>
 
 #if GMX_FFT_FFTW3 || GMX_FFT_ARMPL_FFTW3
 // Needed for construction of the FFT library description string

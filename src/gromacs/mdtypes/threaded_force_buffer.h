@@ -59,6 +59,7 @@
 #define GMX_MDTYPES_THREADED_FORCE_BUFFER_H
 
 #include <memory>
+#include <vector>
 
 #include "gromacs/math/arrayrefwithpadding.h"
 #include "gromacs/math/vectypes.h"
@@ -67,8 +68,13 @@
 #include "gromacs/topology/ifunc.h"
 #include "gromacs/utility/alignedallocator.h"
 #include "gromacs/utility/arrayref.h"
+#include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/bitmask.h"
 #include "gromacs/utility/classhelpers.h"
+#include "gromacs/utility/enumerationhelpers.h"
+#include "gromacs/utility/real.h"
+
+enum class FreeEnergyPerturbationCouplingType : int;
 
 namespace gmx
 {

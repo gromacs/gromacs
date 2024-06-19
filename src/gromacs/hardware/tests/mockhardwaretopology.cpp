@@ -44,9 +44,13 @@
 
 #include <algorithm>
 #include <array>
+#include <filesystem>
 #include <iterator>
 #include <map>
 #include <numeric>
+#include <string>
+#include <tuple>
+#include <utility>
 #include <vector>
 
 #include <gtest/gtest-param-test.h>

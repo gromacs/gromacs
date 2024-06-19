@@ -48,9 +48,17 @@
 #include "gromacs/listed_forces/bonded.h"
 
 #include <cmath>
+#include <cstdint>
 
+#include <algorithm>
+#include <iterator>
+#include <limits>
 #include <memory>
+#include <ostream>
+#include <string>
+#include <tuple>
 #include <unordered_map>
+#include <vector>
 
 #include <gtest/gtest.h>
 
@@ -59,11 +67,15 @@
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/math/vectypes.h"
+#include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/mdtypes/mdatom.h"
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/topology/idef.h"
+#include "gromacs/topology/ifunc.h"
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/enumerationhelpers.h"
+#include "gromacs/utility/real.h"
 #include "gromacs/utility/strconvert.h"
 #include "gromacs/utility/stringstream.h"
 #include "gromacs/utility/textwriter.h"

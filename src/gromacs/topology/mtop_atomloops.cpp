@@ -35,7 +35,20 @@
 
 #include "gromacs/topology/mtop_atomloops.h"
 
+#include <cstddef>
+
+#include <filesystem>
+#include <memory>
+#include <string>
+#include <vector>
+
+#include "gromacs/topology/atoms.h"
+#include "gromacs/topology/idef.h"
+#include "gromacs/topology/topology.h"
+#include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/smalloc.h"
 
 AtomIterator::AtomIterator(const gmx_mtop_t& mtop, int globalAtomNumber) :
     mtop_(&mtop),

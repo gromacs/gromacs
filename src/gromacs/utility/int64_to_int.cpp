@@ -35,6 +35,7 @@
 
 #include "gromacs/utility/int64_to_int.h"
 
+#include <cinttypes>
 #include <cstdio>
 
 #include "gromacs/utility/basedefinitions.h"

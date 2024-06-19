@@ -41,8 +41,12 @@
 
 #include "gromacs/random/uniformintdistribution.h"
 
+#include <string>
+#include <vector>
+
 #include <gtest/gtest.h>
 
+#include "gromacs/random/seed.h"
 #include "gromacs/random/threefry.h"
 
 #include "testutils/refdata.h"

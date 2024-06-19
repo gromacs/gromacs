@@ -42,12 +42,15 @@
 
 #include "cmdlinehelpcontext.h"
 
+#include <utility>
+
 #include "gromacs/utility/gmxassert.h"
 
 #include "shellcompletions.h"
 
 namespace gmx
 {
+class TextWriter;
 
 namespace
 {

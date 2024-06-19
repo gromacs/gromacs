@@ -36,6 +36,7 @@
 #include "gromacs/utility/physicalnodecommunicator.h"
 
 #include <array>
+#include <string>
 
 #include <gtest/gtest.h>
 

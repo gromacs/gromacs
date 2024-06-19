@@ -42,11 +42,19 @@
 
 #include "gromacs/trajectoryanalysis/modules/msd.h"
 
+#include <filesystem>
+#include <memory>
+#include <string>
+#include <utility>
+#include <vector>
+
 #include <gromacs/commandline/cmdlineoptionsmodule.h>
 #include <gromacs/trajectoryanalysis/cmdlinerunner.h>
 #include <gtest/gtest.h>
 
 #include "gromacs/gmxpreprocess/grompp.h"
+#include "gromacs/utility/arrayref.h"
+#include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/path.h"
 #include "gromacs/utility/stringutil.h"
 #include "gromacs/utility/textstream.h"

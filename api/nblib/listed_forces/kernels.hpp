@@ -44,12 +44,18 @@
 #ifndef NBLIB_LISTEDFORCES_KERNELS_HPP
 #define NBLIB_LISTEDFORCES_KERNELS_HPP
 
+#include <cmath>
+#include <cstddef>
+
+#include <algorithm>
 #include <tuple>
 
 #include "gromacs/math/functions.h"
 #include "gromacs/math/vectypes.h"
+#include "gromacs/utility/real.h"
 
 #include "nblib/listed_forces/bondtypes.h"
+#include "nblib/particletype.h"
 
 namespace nblib
 {

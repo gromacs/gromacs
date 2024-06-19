@@ -38,8 +38,13 @@
 
 #include <cstring>
 
+#include <array>
+
 #include "gromacs/domdec/domdec.h"
+#include "gromacs/domdec/domdec_struct.h"
 #include "gromacs/gmxlib/nrnb.h"
+#include "gromacs/timing/cyclecounter.h"
+#include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/gmxassert.h"
 
 #include "domdec_internal.h"

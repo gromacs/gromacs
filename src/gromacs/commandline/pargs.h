@@ -41,9 +41,12 @@
 #ifndef GMX_COMMANDLINE_PARGS_H
 #define GMX_COMMANDLINE_PARGS_H
 
+#include <cstdint>
+
 #include "gromacs/commandline/filenm.h"
 #include "gromacs/fileio/oenv.h"
 #include "gromacs/math/vectypes.h"
+#include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
 struct gmx_output_env_t;

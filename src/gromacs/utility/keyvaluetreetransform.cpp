@@ -38,17 +38,26 @@
 #include <functional>
 #include <map>
 #include <memory>
+#include <string>
 #include <typeindex>
+#include <utility>
 #include <vector>
 
+#include "gromacs/utility/any.h"
 #include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/ikeyvaluetreeerror.h"
+#include "gromacs/utility/keyvaluetree.h"
 #include "gromacs/utility/keyvaluetreebuilder.h"
 #include "gromacs/utility/stringcompare.h"
 #include "gromacs/utility/stringutil.h"
 
 namespace gmx
 {
+namespace internal
+{
+class KeyValueTreeTransformerImpl;
+} // namespace internal
 
 /********************************************************************
  * IKeyValueTreeTransformRules

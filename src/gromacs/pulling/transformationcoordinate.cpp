@@ -35,6 +35,14 @@
 
 #include "gromacs/pulling/transformationcoordinate.h"
 
+#include "config.h"
+
+#include <cstdio>
+
+#include <string>
+#include <vector>
+
+#include "gromacs/mdtypes/pull_params.h"
 #include "gromacs/pulling/pull_internal.h"
 #include "gromacs/pulling/pullcoordexpressionparser.h"
 #include "gromacs/utility/arrayref.h"

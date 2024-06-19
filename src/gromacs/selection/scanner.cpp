@@ -26,6 +26,7 @@
 
 /* First, we deal with  platform-specific or compiler-specific issues. */
 
+#include <cstdint>
 /* begin standard C headers. */
 #include <cerrno>
 #include <cstdio>
@@ -502,6 +503,8 @@ static yyconst flex_int16_t yy_chk[151] = {
 #include "parser.h"
 #include "scanner.h"
 #include "scanner_internal.h"
+
+struct yyguts_t;
 
 // This macro makes the actions a bit shorter, since nearly every action needs
 // this call.

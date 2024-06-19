@@ -41,9 +41,16 @@
 
 #include "leapfrogtestrunners.h"
 
+#include <memory>
+#include <utility>
+
+#include "gromacs/math/arrayrefwithpadding.h"
+#include "gromacs/math/paddedvector.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/mdlib/gmx_omp_nthreads.h"
 #include "gromacs/mdlib/update.h"
+#include "gromacs/mdtypes/md_enums.h"
+#include "gromacs/mdtypes/state.h"
 #include "gromacs/utility/arrayref.h"
 
 #include "testutils/testasserts.h"

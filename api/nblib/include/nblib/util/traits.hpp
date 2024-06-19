@@ -46,6 +46,7 @@
 #define NBLIB_UTIL_TRAITS_HPP
 
 #include <cassert>
+#include <cstddef>
 
 #include <sstream>
 #include <string>

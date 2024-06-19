@@ -50,6 +50,9 @@ namespace gmx
 {
 
 class AnalysisDataParallelOptions;
+class AnalysisDataFrameHeader;
+class AnalysisDataPointSetRef;
+class IAnalysisDataModule;
 
 /*! \libinternal \brief
  * Encapsulates handling of data modules attached to AbstractAnalysisData.

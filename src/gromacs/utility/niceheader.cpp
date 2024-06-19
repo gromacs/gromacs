@@ -42,6 +42,8 @@
 
 #include "gromacs/utility/niceheader.h"
 
+#include <string>
+
 #include "gromacs/utility/stringutil.h"
 #include "gromacs/utility/sysinfo.h"
 #include "gromacs/utility/textwriter.h"

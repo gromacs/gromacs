@@ -35,7 +35,13 @@
 
 #include "gromacs/compat/mp11.h"
 
+#include <cstddef>
+
+#include <string>
+
 #include <gtest/gtest.h>
+
+#include "gromacs/utility/exceptions.h"
 
 // Defining some dummy functions to use later
 

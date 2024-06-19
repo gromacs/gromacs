@@ -40,14 +40,26 @@
  * \author Prashanth Kanduri <kanduri@cscs.ch>
  * \author Sebastian Keller <keller@cscs.ch>
  */
+#include <cmath>
+#include <cstddef>
+
+#include <string>
+#include <utility>
 #include <vector>
+
+#include <gtest/gtest.h>
+
+#include "gromacs/math/vectypes.h"
+#include "gromacs/utility/basedefinitions.h"
 
 #include "testutils/testasserts.h"
 
+#include "nblib/basicdefinitions.h"
 #include "nblib/box.h"
 #include "nblib/exception.h"
 #include "nblib/simulationstate.h"
 #include "nblib/topology.h"
+#include "nblib/vector.h"
 
 #include "simulationstateimpl.h"
 #include "testhelpers.h"

@@ -43,6 +43,8 @@
 #ifndef GMX_DOMDEC_LOCALTOPOLOGY_H
 #define GMX_DOMDEC_LOCALTOPOLOGY_H
 
+#include <cstdint>
+
 #include "gromacs/math/vectypes.h"
 
 struct gmx_domdec_t;

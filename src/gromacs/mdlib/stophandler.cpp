@@ -43,7 +43,9 @@
 
 #include "config.h"
 
+#include <algorithm>
 #include <memory>
+#include <utility>
 
 #include "gromacs/timing/walltime_accounting.h"
 #include "gromacs/utility/cstringutil.h"

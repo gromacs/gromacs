@@ -37,9 +37,14 @@
 
 #include "config.h"
 
+#include <ctime>
+
+#include <string>
+
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/timing/walltime_accounting.h"
+#include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/strconvert.h"
 #include "gromacs/utility/sysinfo.h"

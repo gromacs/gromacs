@@ -42,7 +42,12 @@
 
 #include "testutils/testasserts.h"
 
+#include <limits>
+#include <string>
+
 #include <gtest/gtest.h>
+
+#include "gromacs/utility/real.h"
 
 namespace
 {

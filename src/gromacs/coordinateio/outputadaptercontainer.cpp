@@ -45,11 +45,13 @@
 #include "outputadaptercontainer.h"
 
 #include <algorithm>
+#include <utility>
 
 #include "gromacs/utility/exceptions.h"
 
 namespace gmx
 {
+enum class CoordinateFileFlags : unsigned long;
 
 void OutputAdapterContainer::addAdapter(OutputAdapterPointer adapter, CoordinateFileFlags type)
 {

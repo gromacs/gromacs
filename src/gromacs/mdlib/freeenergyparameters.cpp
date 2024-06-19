@@ -42,6 +42,10 @@
 
 #include "freeenergyparameters.h"
 
+#include <cmath>
+
+#include <algorithm>
+#include <iterator>
 #include <vector>
 
 #include "gromacs/mdtypes/inputrec.h"

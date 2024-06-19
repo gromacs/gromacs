@@ -42,6 +42,8 @@
 
 #include "gromacs/onlinehelp/helpformat.h"
 
+#include <string>
+
 #include <gtest/gtest.h>
 
 #include "testutils/stringtest.h"

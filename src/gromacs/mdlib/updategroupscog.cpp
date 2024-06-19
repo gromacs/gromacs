@@ -43,10 +43,13 @@
 
 #include "updategroupscog.h"
 
+#include <cstddef>
+
 #include "gromacs/mdlib/updategroups.h"
 #include "gromacs/topology/block.h"
 #include "gromacs/topology/mtop_lookup.h"
 #include "gromacs/topology/topology.h"
+#include "gromacs/utility/basedefinitions.h"
 
 namespace gmx
 {

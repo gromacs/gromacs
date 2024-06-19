@@ -43,6 +43,11 @@
 
 #include <cstdio>
 
+#include <memory>
+#include <string>
+#include <vector>
+
+#include "gromacs/math/vectypes.h"
 #include "gromacs/utility/arrayref.h"
 
 // The entire nblib public API can be included with a single header or individual components

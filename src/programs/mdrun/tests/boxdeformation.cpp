@@ -48,6 +48,7 @@
 
 #include <memory>
 #include <string>
+#include <tuple>
 #include <vector>
 
 #include <gtest/gtest.h>
@@ -55,6 +56,7 @@
 #include "gromacs/topology/idef.h"
 #include "gromacs/topology/ifunc.h"
 
+#include "testutils/cmdlinetest.h"
 #include "testutils/refdata.h"
 #include "testutils/simulationdatabase.h"
 #include "testutils/testasserts.h"

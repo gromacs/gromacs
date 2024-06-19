@@ -40,12 +40,24 @@
  */
 #include "gmxpre.h"
 
+#include <array>
+#include <initializer_list>
+#include <memory>
+#include <string>
+#include <vector>
+
 #include <gtest/gtest.h>
 
+#include "gromacs/topology/atoms.h"
+#include "gromacs/topology/forcefieldparameters.h"
+#include "gromacs/topology/idef.h"
 #include "gromacs/topology/ifunc.h"
 #include "gromacs/topology/mtop_atomloops.h"
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/topology/topology.h"
+#include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/range.h"
+#include "gromacs/utility/smalloc.h"
 
 #include "testutils/topologyhelpers.h"
 

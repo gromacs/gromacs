@@ -43,12 +43,15 @@
 #ifndef NBLIB_TPR_H
 #define NBLIB_TPR_H
 
+#include <cstdint>
+
 #include <memory>
 #include <string>
 #include <vector>
 
 #include "nblib/basicdefinitions.h"
 #include "nblib/box.h"
+#include "nblib/listed_forces/definitions.h"
 #include "nblib/topology.h"
 #include "nblib/vector.h"
 

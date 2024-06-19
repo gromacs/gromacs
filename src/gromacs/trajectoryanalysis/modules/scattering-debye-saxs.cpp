@@ -45,9 +45,12 @@
 
 #include <cmath>
 
+#include <array>
 #include <vector>
 
 #include "gromacs/math/units.h"
+#include "gromacs/trajectoryanalysis/modules/isotope.h"
+#include "gromacs/trajectoryanalysis/modules/scatteringfactors.h"
 
 namespace gmx
 {

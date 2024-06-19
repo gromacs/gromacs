@@ -43,7 +43,10 @@
 #ifndef GMX_LISTED_FORCES_LISTED_INTERNAL_H
 #define GMX_LISTED_FORCES_LISTED_INTERNAL_H
 
+#include <cstdio>
+
 #include <memory>
+#include <vector>
 
 #include "gromacs/math/vectypes.h"
 #include "gromacs/mdtypes/enerdata.h"

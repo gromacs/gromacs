@@ -42,6 +42,11 @@
 
 #include "gromacs/trajectoryanalysis/cmdlinerunner.h"
 
+#include <cstdio>
+
+#include <memory>
+#include <utility>
+
 #include "gromacs/analysisdata/paralleloptions.h"
 #include "gromacs/commandline/cmdlinemodulemanager.h"
 #include "gromacs/commandline/cmdlineoptionsmodule.h"
@@ -60,6 +65,7 @@
 
 namespace gmx
 {
+class CommandLineModuleSettings;
 
 namespace
 {

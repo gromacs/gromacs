@@ -49,6 +49,9 @@
 
 namespace gmx
 {
+class AnalysisDataFrameHeader;
+class AnalysisDataParallelOptions;
+class AnalysisDataPointSetRef;
 
 /*! \internal
  * \brief

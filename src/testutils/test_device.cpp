@@ -44,6 +44,9 @@
 
 #include "testutils/test_device.h"
 
+#include <memory>
+#include <string>
+
 #include "gromacs/gpu_utils/device_context.h"
 #include "gromacs/gpu_utils/device_stream.h"
 #include "gromacs/gpu_utils/gpu_utils.h"

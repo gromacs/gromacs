@@ -45,6 +45,7 @@
 
 #include "kernel_common.h"
 
+#include "gromacs/gpu_utils/hostallocator.h"
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/utility/gmxassert.h"
 

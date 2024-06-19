@@ -43,10 +43,13 @@
 #define GMX_FILEIO_SETPRECISION_H
 
 #include <algorithm>
+#include <memory>
 
 #include "gromacs/coordinateio/coordinatefileenums.h"
 #include "gromacs/coordinateio/ioutputadapter.h"
 #include "gromacs/utility/real.h"
+
+struct t_trxframe;
 
 namespace gmx
 {

@@ -42,16 +42,23 @@
 
 #include "gromacs/trajectoryanalysis/modules/surfacearea.h"
 
+#include <cmath>
 #include <cstdlib>
+
+#include <string>
+#include <vector>
 
 #include <gtest/gtest.h>
 
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/math/vectypes.h"
+#include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/random/threefry.h"
 #include "gromacs/random/uniformrealdistribution.h"
 #include "gromacs/utility/arrayref.h"
+#include "gromacs/utility/real.h"
 #include "gromacs/utility/smalloc.h"
 
 #include "testutils/refdata.h"

@@ -44,9 +44,13 @@
 
 #include "config.h"
 
+#include <cstddef>
+
 #include <algorithm>
 #include <array>
 #include <map>
+#include <ostream>
+#include <string>
 #include <vector>
 
 #include <gtest/gtest.h>

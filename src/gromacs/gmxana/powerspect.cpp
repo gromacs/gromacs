@@ -36,8 +36,13 @@
 
 #include "powerspect.h"
 
+#include <cstdio>
+
+#include <filesystem>
+
 #include "gromacs/fft/fft.h"
 #include "gromacs/gmxana/interf.h"
+#include "gromacs/math/gmxcomplex.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"

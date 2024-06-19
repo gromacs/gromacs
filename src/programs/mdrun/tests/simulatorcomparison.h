@@ -46,6 +46,8 @@
 #define GMX_PROGRAMS_MDRUN_TESTS_SIMULATORCOMPARISON_H
 
 #include <string>
+#include <tuple>
+#include <vector>
 
 #include "comparison_helpers.h"
 #include "energycomparison.h"

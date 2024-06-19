@@ -42,6 +42,9 @@
 
 #include "gromacs/options/abstractoption.h"
 
+#include <string>
+#include <vector>
+
 #include "gromacs/options/abstractoptionstorage.h"
 #include "gromacs/options/optionflags.h"
 #include "gromacs/utility/any.h"

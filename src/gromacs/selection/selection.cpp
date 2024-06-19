@@ -42,14 +42,24 @@
 
 #include "gromacs/selection/selection.h"
 
-#include <string>
+#include <cstdio>
 
+#include <memory>
+#include <string>
+#include <vector>
+
+#include "gromacs/selection/indexutil.h"
 #include "gromacs/selection/nbsearch.h"
 #include "gromacs/selection/position.h"
+#include "gromacs/selection/selectionenums.h"
+#include "gromacs/topology/atoms.h"
+#include "gromacs/topology/block.h"
 #include "gromacs/topology/mtop_lookup.h"
 #include "gromacs/topology/topology.h"
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/real.h"
 #include "gromacs/utility/stringutil.h"
 #include "gromacs/utility/textwriter.h"
 

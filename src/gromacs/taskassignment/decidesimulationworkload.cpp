@@ -42,6 +42,14 @@
 
 #include "gromacs/taskassignment/decidesimulationworkload.h"
 
+#include "config.h"
+
+#include <cstdint>
+
+#include <bitset>
+#include <memory>
+#include <vector>
+
 #include "gromacs/essentialdynamics/edsam.h"
 #include "gromacs/ewald/pme.h"
 #include "gromacs/listed_forces/listed_forces.h"
@@ -49,12 +57,20 @@
 #include "gromacs/mdlib/force_flags.h"
 #include "gromacs/mdtypes/forcerec.h"
 #include "gromacs/mdtypes/iforceprovider.h"
+#include "gromacs/mdtypes/inputrec.h"
+#include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/mdtypes/mdatom.h"
 #include "gromacs/mdtypes/multipletimestepping.h"
+#include "gromacs/mdtypes/simulation_workload.h"
 #include "gromacs/pulling/pull.h"
 #include "gromacs/taskassignment/decidegpuusage.h"
 #include "gromacs/taskassignment/taskassignment.h"
+#include "gromacs/topology/ifunc.h"
 #include "gromacs/utility/arrayref.h"
+#include "gromacs/utility/gmxassert.h"
+
+struct gmx_edsam;
+struct pull_t;
 
 namespace gmx
 {

@@ -44,6 +44,7 @@
 #include "crosscorr.h"
 
 #include "gromacs/fft/fft.h"
+#include "gromacs/math/gmxcomplex.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/smalloc.h"
 

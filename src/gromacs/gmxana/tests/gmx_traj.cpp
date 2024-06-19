@@ -41,11 +41,16 @@
 
 #include "config.h"
 
+#include <string>
+
+#include <gtest/gtest.h>
+
 #include "gromacs/gmxana/gmx_ana.h"
 
 #include "testutils/cmdlinetest.h"
 #include "testutils/simulationdatabase.h"
 #include "testutils/stdiohelper.h"
+#include "testutils/testasserts.h"
 #include "testutils/textblockmatchers.h"
 #include "testutils/xvgtest.h"
 

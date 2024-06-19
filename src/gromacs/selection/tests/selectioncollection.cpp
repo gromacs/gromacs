@@ -42,17 +42,31 @@
 
 #include "gromacs/selection/selectioncollection.h"
 
+#include <cstddef>
+#include <cstdint>
+
+#include <filesystem>
+#include <optional>
+#include <string>
+#include <string_view>
+#include <utility>
+#include <vector>
+
 #include <gtest/gtest.h>
 
 #include "gromacs/options/basicoptions.h"
 #include "gromacs/options/ioptionscontainer.h"
 #include "gromacs/selection/indexutil.h"
 #include "gromacs/selection/selection.h"
+#include "gromacs/selection/selectionenums.h"
+#include "gromacs/topology/atoms.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/trajectory/trajectoryframe.h"
 #include "gromacs/utility/arrayref.h"
+#include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/flags.h"
+#include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/stringutil.h"
 
 #include "testutils/interactivetest.h"
@@ -62,6 +76,8 @@
 #include "testutils/testoptions.h"
 
 #include "toputils.h"
+
+struct gmx_ana_indexgrps_t;
 
 namespace
 {

@@ -42,6 +42,7 @@
 
 #include "gromacs/utility/booltype.h"
 
+#include <string>
 #include <vector>
 
 #include <gtest/gtest.h>

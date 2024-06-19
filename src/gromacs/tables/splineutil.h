@@ -42,6 +42,8 @@
 #ifndef GMX_TABLES_SPLINEUTIL_H
 #define GMX_TABLES_SPLINEUTIL_H
 
+#include <cstddef>
+
 #include <functional>
 #include <utility>
 #include <vector>

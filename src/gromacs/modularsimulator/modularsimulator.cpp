@@ -42,7 +42,14 @@
 
 #include "modularsimulator.h"
 
+#include "gmxpre-config.h"
+
+#include <filesystem>
+#include <optional>
+#include <string_view>
+
 #include "gromacs/commandline/filenm.h"
+#include "gromacs/compat/pointers.h"
 #include "gromacs/domdec/domdec.h"
 #include "gromacs/ewald/pme.h"
 #include "gromacs/ewald/pme_load_balancing.h"
@@ -50,6 +57,7 @@
 #include "gromacs/fileio/checkpoint.h"
 #include "gromacs/gmxlib/nrnb.h"
 #include "gromacs/listed_forces/listed_forces.h"
+#include "gromacs/math/vectypes.h"
 #include "gromacs/mdlib/checkpointhandler.h"
 #include "gromacs/mdlib/constr.h"
 #include "gromacs/mdlib/coupling.h"
@@ -60,19 +68,28 @@
 #include "gromacs/mdrun/shellfc.h"
 #include "gromacs/mdrunutility/handlerestart.h"
 #include "gromacs/mdrunutility/printtime.h"
+#include "gromacs/mdtypes/checkpointdata.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/fcdata.h"
 #include "gromacs/mdtypes/forcerec.h"
 #include "gromacs/mdtypes/inputrec.h"
+#include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/mdtypes/mdatom.h"
 #include "gromacs/mdtypes/mdrunoptions.h"
 #include "gromacs/mdtypes/observableshistory.h"
+#include "gromacs/modularsimulator/energydata.h"
+#include "gromacs/modularsimulator/freeenergyperturbationdata.h"
+#include "gromacs/modularsimulator/modularsimulatorinterfaces.h"
+#include "gromacs/modularsimulator/propagator.h"
 #include "gromacs/nbnxm/nbnxm.h"
+#include "gromacs/topology/ifunc.h"
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/trajectory/trajectoryframe.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/int64_to_int.h"
+#include "gromacs/utility/logger.h"
 
 #include "andersentemperaturecoupling.h"
 #include "computeglobalselement.h"
@@ -87,6 +104,8 @@
 #include "simulatoralgorithm.h"
 #include "statepropagatordata.h"
 #include "velocityscalingtemperaturecoupling.h"
+
+struct gmx_multisim_t;
 
 namespace gmx
 {

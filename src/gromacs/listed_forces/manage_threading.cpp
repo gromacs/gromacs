@@ -51,11 +51,18 @@
 #include <cstdlib>
 
 #include <algorithm>
+#include <array>
+#include <filesystem>
 #include <string>
+#include <vector>
 
 #include "gromacs/listed_forces/listed_forces_gpu.h"
+#include "gromacs/mdtypes/threaded_force_buffer.h"
 #include "gromacs/pbcutil/ishift.h"
+#include "gromacs/topology/idef.h"
 #include "gromacs/topology/ifunc.h"
+#include "gromacs/utility/arrayref.h"
+#include "gromacs/utility/bitmask.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"

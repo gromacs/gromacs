@@ -41,6 +41,10 @@
 
 #include "gromacs/tools/make_ndx.h"
 
+#include <string>
+
+#include <gtest/gtest.h>
+
 #include "testutils/cmdlinetest.h"
 #include "testutils/stdiohelper.h"
 #include "testutils/testfilemanager.h"

@@ -43,25 +43,44 @@
  */
 #include "gmxpre.h"
 
+#include "config.h"
+
+#include <cstdlib>
+
+#include <algorithm>
+#include <filesystem>
+#include <functional>
 #include <map>
+#include <memory>
 #include <mutex>
+#include <optional>
 #include <string>
+#include <string_view>
+#include <tuple>
+#include <unordered_map>
 #include <vector>
 
 #include <gtest/gtest-spi.h>
+#include <gtest/gtest.h>
 
 #include "gromacs/ewald/pme.h"
+#include "gromacs/hardware/device_management.h"
 #include "gromacs/hardware/hw_info.h"
 #include "gromacs/trajectory/energyframe.h"
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/basenetwork.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/enumerationhelpers.h"
 #include "gromacs/utility/message_string_collector.h"
 #include "gromacs/utility/mpiinfo.h"
+#include "gromacs/utility/real.h"
 #include "gromacs/utility/stringutil.h"
 
+#include "testutils/cmdlinetest.h"
 #include "testutils/mpitest.h"
 #include "testutils/refdata.h"
+#include "testutils/testasserts.h"
+#include "testutils/testfilemanager.h"
 
 #include "energyreader.h"
 #include "moduletest.h"

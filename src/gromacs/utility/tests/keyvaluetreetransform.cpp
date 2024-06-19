@@ -35,6 +35,7 @@
 
 #include "gromacs/utility/keyvaluetreetransform.h"
 
+#include <functional>
 #include <string>
 #include <vector>
 

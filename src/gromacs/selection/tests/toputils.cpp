@@ -45,22 +45,28 @@
 #include <cstring>
 
 #include <algorithm>
+#include <filesystem>
+#include <iterator>
 #include <memory>
 #include <numeric>
 
 #include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/math/vectypes.h"
 #include "gromacs/topology/atoms.h"
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/trajectory/trajectoryframe.h"
 #include "gromacs/utility/arrayref.h"
+#include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
 
 #include "testutils/testfilemanager.h"
+
+enum class PbcType : int;
 
 namespace gmx
 {

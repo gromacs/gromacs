@@ -42,7 +42,11 @@
 
 #include "gromacs/analysisdata/dataframe.h"
 
+#include <vector>
+
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/real.h"
 
 namespace gmx
 {

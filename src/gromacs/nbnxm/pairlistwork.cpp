@@ -44,6 +44,8 @@
 
 #include "pairlistwork.h"
 
+#include "gromacs/nbnxm/boundingbox.h"
+#include "gromacs/nbnxm/pairlist.h"
 #include "gromacs/simd/simd.h"
 
 #include "boundingbox_simd.h"

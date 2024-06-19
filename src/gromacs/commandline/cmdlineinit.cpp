@@ -42,6 +42,10 @@
 
 #include "cmdlineinit.h"
 
+#include "config.h"
+
+#include <cstdio>
+#include <cstdlib>
 #include <cstring>
 
 #include <memory>

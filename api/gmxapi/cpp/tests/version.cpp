@@ -36,6 +36,8 @@
 
 #include <climits>
 
+#include <gtest/gtest.h>
+
 #include "testingconfiguration.h"
 
 namespace gmxapi

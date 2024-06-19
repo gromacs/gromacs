@@ -41,15 +41,19 @@
  */
 #include "gmxpre.h"
 
+#include <filesystem>
 #include <string>
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
 #include "gromacs/topology/ifunc.h"
+#include "gromacs/utility/real.h"
 #include "gromacs/utility/stringutil.h"
 
+#include "testutils/cmdlinetest.h"
 #include "testutils/refdata.h"
+#include "testutils/testasserts.h"
 #include "testutils/testfilemanager.h"
 
 #include "energycomparison.h"

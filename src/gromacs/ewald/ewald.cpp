@@ -51,6 +51,8 @@
 #include <cstdlib>
 
 #include <algorithm>
+#include <array>
+#include <filesystem>
 
 #include "gromacs/ewald/ewald_utils.h"
 #include "gromacs/math/functions.h"

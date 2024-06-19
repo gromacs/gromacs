@@ -35,6 +35,7 @@
 
 #include "groio.h"
 
+#include <cinttypes>
 #include <cstdio>
 #include <cstring>
 

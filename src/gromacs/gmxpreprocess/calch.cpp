@@ -37,12 +37,15 @@
 
 #include <cmath>
 
+#include <filesystem>
+
 #include "gromacs/gmxpreprocess/notset.h"
 #include "gromacs/math/functions.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/real.h"
 
 #define xAI xa[0]
 #define xAJ xa[1]

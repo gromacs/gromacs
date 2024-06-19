@@ -36,9 +36,13 @@
 #include "gromacs/topology/exclusionblocks.h"
 
 #include <algorithm>
+#include <vector>
 
 #include "gromacs/topology/block.h"
+#include "gromacs/utility/arrayref.h"
+#include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/listoflists.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/stringutil.h"

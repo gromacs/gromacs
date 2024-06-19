@@ -42,11 +42,19 @@
 
 #include "gromacs/trajectoryanalysis/topologyinformation.h"
 
+#include <filesystem>
+#include <memory>
+#include <string>
+
 #include <gtest/gtest.h>
 
 #include "gromacs/gmxpreprocess/grompp.h"
 #include "gromacs/math/vectypes.h"
+#include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/pbcutil/pbc.h"
+#include "gromacs/topology/atoms.h"
+#include "gromacs/topology/topology.h"
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/textwriter.h"
 

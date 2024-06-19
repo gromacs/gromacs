@@ -42,9 +42,17 @@
 
 #include "programs/mdrun/nonbonded_bench.h"
 
+#include <functional>
+#include <memory>
+#include <string>
+
+#include <gtest/gtest.h>
+
+#include "gromacs/commandline/cmdlineoptionsmodule.h"
 #include "gromacs/utility/stringutil.h"
 #include "gromacs/utility/textreader.h"
 
+#include "testutils/cmdlinetest.h"
 #include "testutils/refdata.h"
 #include "testutils/testasserts.h"
 

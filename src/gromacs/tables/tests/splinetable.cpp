@@ -41,10 +41,14 @@
 #include "gmxpre.h"
 
 #include <cmath>
+#include <cstdlib>
 
 #include <algorithm>
 #include <functional>
+#include <ostream>
+#include <string>
 #include <utility>
+#include <vector>
 
 #include <gtest/gtest.h>
 
@@ -55,6 +59,8 @@
 #include "gromacs/simd/simd.h"
 #include "gromacs/tables/cubicsplinetable.h"
 #include "gromacs/tables/quadraticsplinetable.h"
+#include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/real.h"
 
 #include "testutils/testasserts.h"
 #include "testutils/testoptions.h"

@@ -34,12 +34,15 @@
 #ifndef GMX_MDLIB_SHELLFC_H
 #define GMX_MDLIB_SHELLFC_H
 
+#include <cstdint>
 #include <cstdio>
 
 #include "gromacs/math/vectypes.h"
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/topology/atoms.h"
+#include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/enumerationhelpers.h"
+#include "gromacs/utility/real.h"
 
 class DDBalanceRegionHandler;
 struct gmx_enerdata_t;
@@ -56,6 +59,7 @@ struct t_mdatoms;
 struct t_nrnb;
 class t_state;
 class CpuPpLongRangeNonbondeds;
+struct t_commrec;
 
 namespace gmx
 {

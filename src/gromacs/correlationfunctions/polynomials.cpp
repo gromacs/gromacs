@@ -43,6 +43,8 @@
 
 #include "polynomials.h"
 
+#include <filesystem>
+
 #include "gromacs/utility/fatalerror.h"
 
 real LegendreP(real x, unsigned int m)

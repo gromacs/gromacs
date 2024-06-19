@@ -43,6 +43,7 @@
 
 #include "testutils/trajectoryreader.h"
 
+#include <filesystem>
 #include <memory>
 #include <string>
 
@@ -50,9 +51,12 @@
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/trajectory/trajectoryframe.h"
 #include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/smalloc.h"
 
 #include "testutils/testasserts.h"
 #include "testutils/testmatchers.h"
+
+struct gmx_output_env_t;
 
 namespace gmx
 {

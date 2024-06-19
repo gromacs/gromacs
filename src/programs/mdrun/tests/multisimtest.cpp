@@ -43,6 +43,8 @@
 
 #include "multisimtest.h"
 
+#include "config.h"
+
 #include <cmath>
 
 #include <algorithm>

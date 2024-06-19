@@ -43,6 +43,11 @@
 
 #include "config.h"
 
+#include <string>
+#include <vector>
+
+#include <gtest/gtest.h>
+
 #include "periodicactions.h"
 
 namespace gmx

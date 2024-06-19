@@ -51,6 +51,7 @@
 #ifndef GMX_AWH_HISTOGRAMSIZE_H
 #define GMX_AWH_HISTOGRAMSIZE_H
 
+#include <cstdint>
 #include <cstdio>
 
 #include <vector>

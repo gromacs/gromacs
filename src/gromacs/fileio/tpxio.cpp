@@ -33,14 +33,33 @@
  */
 #include "gmxpre.h"
 
+#include "gromacs/math/vectypes.h"
+#include "gromacs/topology/atoms.h"
+#include "gromacs/topology/forcefieldparameters.h"
+#include "gromacs/topology/idef.h"
+#include "gromacs/utility/arrayref.h"
+#include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/enumerationhelpers.h"
+#include "gromacs/utility/keyvaluetree.h"
+#include "gromacs/utility/listoflists.h"
+#include "gromacs/utility/real.h"
+#include "gromacs/utility/stringutil.h"
+
 /* This file is completely threadsafe - keep it that way! */
 
+#include <cinttypes>
+#include <cstdint>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
 
 #include <algorithm>
+#include <array>
+#include <bitset>
+#include <filesystem>
 #include <memory>
+#include <string>
+#include <utility>
 #include <vector>
 
 #include "gromacs/applied_forces/awh/read_params.h"

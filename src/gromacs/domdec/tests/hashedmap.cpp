@@ -42,6 +42,8 @@
 
 #include "gromacs/domdec/hashedmap.h"
 
+#include <string>
+
 #include <gtest/gtest.h>
 
 #include "testutils/testasserts.h"

@@ -43,12 +43,19 @@
 
 #include "threaded_force_buffer.h"
 
+#include <cstdio>
+
+#include <algorithm>
+#include <array>
+#include <string>
+
 #include "gromacs/math/vec.h"
 #include "gromacs/mdtypes/forceoutput.h"
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/utility/alignedallocator.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/gmxassert.h"
 
 namespace gmx
 {

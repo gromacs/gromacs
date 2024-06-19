@@ -44,6 +44,7 @@
 
 #include <cmath>
 
+#include <filesystem>
 #include <sstream>
 
 #include "gromacs/fileio/xvgr.h"

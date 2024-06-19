@@ -43,6 +43,7 @@
 #include "optionsassigner.h"
 
 #include <deque>
+#include <vector>
 
 #include "gromacs/options/abstractoptionstorage.h"
 #include "gromacs/options/options.h"

@@ -43,9 +43,18 @@
 
 #include "qmmminputgenerator.h"
 
+#include <cmath>
+#include <cstddef>
+
+#include <vector>
+
+#include "gromacs/applied_forces/qmmm/qmmmtypes.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/utility/enumerationhelpers.h"
 #include "gromacs/utility/stringutil.h"
+
+enum class PbcType : int;
 
 namespace gmx
 {

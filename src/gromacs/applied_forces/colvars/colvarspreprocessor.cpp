@@ -42,10 +42,19 @@
 
 #include "colvarspreprocessor.h"
 
+#include <list>
+#include <map>
+#include <sstream>
 #include <string>
+
+#include "gromacs/applied_forces/colvars/colvarproxygromacs.h"
+#include "gromacs/pbcutil/pbc.h"
+
+enum class PbcType : int;
 
 namespace gmx
 {
+class MDLogger;
 
 ColvarsPreProcessor::ColvarsPreProcessor(const std::string&   colvarsConfigString,
                                          t_atoms              atoms,

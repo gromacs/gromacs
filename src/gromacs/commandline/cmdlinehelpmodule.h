@@ -42,6 +42,7 @@
 #define GMX_COMMANDLINE_CMDLINEHELPMODULE_H
 
 #include <memory>
+#include <string>
 
 #include "gromacs/commandline/cmdlinemodule.h"
 #include "gromacs/onlinehelp/ihelptopic.h"

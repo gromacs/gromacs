@@ -44,6 +44,8 @@
 
 #include "ga2la.h"
 
+#include <new>
+
 /*! \brief Returns whether to use a direct list only
  *
  * There are two methods implemented for finding the local atom number

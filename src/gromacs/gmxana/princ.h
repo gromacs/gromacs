@@ -36,6 +36,7 @@
 
 #include "gromacs/math/vectypes.h"
 #include "gromacs/topology/idef.h"
+#include "gromacs/utility/real.h"
 
 struct t_atom;
 struct t_atoms;

@@ -36,9 +36,11 @@
 
 #include <cstdint>
 
+#include "gromacs/math/vectypes.h"
 #include "gromacs/mdlib/vcm.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/timing/wallcycle.h"
+#include "gromacs/utility/basedefinitions.h"
 
 class gmx_ekindata_t;
 struct gmx_enerdata_t;
@@ -50,6 +52,8 @@ struct t_inputrec;
 struct t_nrnb;
 class t_state;
 struct t_trxframe;
+struct t_commrec;
+struct t_mdatoms;
 
 namespace gmx
 {

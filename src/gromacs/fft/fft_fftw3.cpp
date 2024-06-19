@@ -40,11 +40,13 @@
 #include <cerrno>
 #include <cstdlib>
 
+#include <filesystem>
 #include <mutex>
 
 #include "gromacs/fft/fft.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/real.h"
 
 #if GMX_DOUBLE
 #    define FFTWPREFIX(name) fftw_##name

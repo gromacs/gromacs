@@ -48,6 +48,11 @@
 #include <string>
 #include <tuple>
 
+#include <gtest/gtest.h>
+
+#include "gromacs/trajectory/trajectoryframe.h"
+#include "gromacs/utility/arrayref.h"
+#include "gromacs/utility/real.h"
 #include "gromacs/utility/stringutil.h"
 
 #include "testutils/cmdlinetest.h"

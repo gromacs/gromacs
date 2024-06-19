@@ -46,6 +46,8 @@
 #include <cstdio>
 #include <cstdlib>
 
+#include <string>
+
 #if GMX_OPENMP
 #    include <omp.h>
 #endif

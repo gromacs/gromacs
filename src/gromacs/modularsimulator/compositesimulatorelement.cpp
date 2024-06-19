@@ -42,7 +42,10 @@
 
 #include "compositesimulatorelement.h"
 
+#include <utility>
+
 #include "gromacs/mdlib/stat.h"
+#include "gromacs/modularsimulator/modularsimulatorinterfaces.h"
 
 namespace gmx
 {

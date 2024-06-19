@@ -44,6 +44,8 @@
 
 #include <cstdio>
 
+#include <filesystem>
+#include <map>
 #include <string>
 #include <utility>
 
@@ -56,6 +58,8 @@
 #include "gromacs/options/basicoptions.h"
 #include "gromacs/options/options.h"
 #include "gromacs/utility/basenetwork.h"
+#include "gromacs/utility/binaryinformation.h"
+#include "gromacs/utility/classhelpers.h"
 #include "gromacs/utility/coolstuff.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"

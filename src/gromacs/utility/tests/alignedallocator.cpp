@@ -43,11 +43,13 @@
 
 #include "gromacs/utility/alignedallocator.h"
 
+#include <string>
 #include <vector>
 
 #include <gtest/gtest.h>
 
 #include "gromacs/math/vectypes.h"
+#include "gromacs/utility/real.h"
 
 #ifndef DOXYGEN
 namespace gmx

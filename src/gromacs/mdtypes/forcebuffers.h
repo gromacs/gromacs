@@ -47,9 +47,14 @@
 #define GMX_MDTYPES_FORCEBUFFERS_H
 
 #include <memory>
+#include <utility>
 
 #include "gromacs/gpu_utils/hostallocator.h"
+#include "gromacs/math/arrayrefwithpadding.h"
 #include "gromacs/math/vectypes.h"
+#include "gromacs/utility/arrayref.h"
+#include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/gmxassert.h"
 
 namespace gmx
 {

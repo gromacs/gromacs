@@ -47,11 +47,17 @@
 #include <cstring>
 
 #include <algorithm>
+#include <filesystem>
+#include <string>
+#include <unordered_map>
+#include <utility>
+#include <vector>
 
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/iserializer.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/stringutil.h"

@@ -42,6 +42,8 @@
 
 #include "optionsvisitor.h"
 
+#include <list>
+
 #include "gromacs/options/abstractoptionstorage.h"
 #include "gromacs/options/options.h"
 #include "gromacs/options/optionsection.h"

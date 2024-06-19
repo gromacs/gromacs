@@ -49,9 +49,11 @@
 #define GMX_NBNXM_PAIRLISTSET_H
 
 #include <memory>
+#include <vector>
 
 #include "gromacs/math/vectypes.h"
 #include "gromacs/mdtypes/locality.h"
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
@@ -62,6 +64,7 @@ struct PairlistParams;
 struct PairsearchWork;
 struct SearchCycleCounting;
 struct t_nrnb;
+struct t_nblist;
 
 namespace gmx
 {

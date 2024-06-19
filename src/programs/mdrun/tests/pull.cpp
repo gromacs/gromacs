@@ -41,11 +41,15 @@
  */
 #include "gmxpre.h"
 
+#include <cstdio>
+
 #include <map>
 #include <memory>
 #include <regex>
 #include <string>
+#include <tuple>
 #include <unordered_map>
+#include <utility>
 #include <vector>
 
 #include <gtest/gtest.h>
@@ -55,6 +59,7 @@
 #include "gromacs/topology/ifunc.h"
 #include "gromacs/utility/stringutil.h"
 
+#include "testutils/cmdlinetest.h"
 #include "testutils/mpitest.h"
 #include "testutils/refdata.h"
 #include "testutils/simulationdatabase.h"

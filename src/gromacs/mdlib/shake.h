@@ -44,7 +44,12 @@
 #ifndef GMX_MDLIB_SHAKE_H
 #define GMX_MDLIB_SHAKE_H
 
+#include <cstdio>
+
+#include <vector>
+
 #include "gromacs/math/vec.h"
+#include "gromacs/math/vectypes.h"
 #include "gromacs/topology/block.h"
 #include "gromacs/utility/real.h"
 

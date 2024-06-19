@@ -43,6 +43,8 @@
 #include <cmath>
 #include <cstdio>
 
+#include <filesystem>
+
 #include "gromacs/math/functions.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/utility/fatalerror.h"

@@ -43,6 +43,7 @@
 #include "densityfittingamplitudelookup.h"
 
 #include <algorithm>
+#include <iterator>
 #include <vector>
 
 #include "gromacs/utility/arrayref.h"

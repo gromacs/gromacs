@@ -35,12 +35,16 @@
 
 #include "gromacs/utility/loggerbuilder.h"
 
+#include <cstdio>
+
 #include <memory>
+#include <utility>
 #include <vector>
 
 #include "gromacs/utility/filestream.h"
 #include "gromacs/utility/logger.h"
 #include "gromacs/utility/stringutil.h"
+#include "gromacs/utility/textstream.h"
 #include "gromacs/utility/textwriter.h"
 
 namespace gmx

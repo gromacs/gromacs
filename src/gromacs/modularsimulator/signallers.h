@@ -43,6 +43,9 @@
 #ifndef GMX_MODULARSIMULATOR_SIGNALLERS_H
 #define GMX_MODULARSIMULATOR_SIGNALLERS_H
 
+#include <memory>
+#include <optional>
+#include <utility>
 #include <vector>
 
 #include "gromacs/compat/pointers.h"

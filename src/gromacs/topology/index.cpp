@@ -37,11 +37,16 @@
 
 #include <cassert>
 #include <cctype>
+#include <cstdio>
 #include <cstdlib>
 #include <cstring>
 
 #include <algorithm>
+#include <filesystem>
 #include <numeric>
+#include <string>
+#include <utility>
+#include <vector>
 
 #include "gromacs/topology/atoms.h"
 #include "gromacs/topology/block.h"
@@ -49,9 +54,11 @@
 #include "gromacs/topology/residuetypes.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/arraysize.h"
+#include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
+#include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/listoflists.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/strdb.h"

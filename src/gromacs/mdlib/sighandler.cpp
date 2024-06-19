@@ -38,6 +38,7 @@
 #include "config.h"
 
 #include <csignal>
+#include <cstdio>
 #include <cstdlib>
 
 #include "gromacs/utility/enumerationhelpers.h"

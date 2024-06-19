@@ -35,7 +35,14 @@
 
 #include "gromacs/topology/forcefieldparameters.h"
 
+#include <cstdio>
+
+#include <vector>
+
+#include "gromacs/topology/idef.h"
+#include "gromacs/topology/ifunc.h"
 #include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/real.h"
 #include "gromacs/utility/txtdump.h"
 
 static void pr_cmap(FILE* fp, int indent, const char* title, const gmx_cmap_t* cmap_grid, gmx_bool bShowNumbers)

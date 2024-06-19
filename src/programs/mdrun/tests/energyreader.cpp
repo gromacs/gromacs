@@ -44,6 +44,8 @@
 #include "energyreader.h"
 
 #include <algorithm>
+#include <filesystem>
+#include <iterator>
 #include <map>
 #include <memory>
 #include <string>
@@ -52,9 +54,12 @@
 #include "gromacs/fileio/enxio.h"
 #include "gromacs/trajectory/energyframe.h"
 #include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/stringutil.h"
 
 #include "testutils/testasserts.h"
+
+struct ener_file;
 
 namespace gmx
 {

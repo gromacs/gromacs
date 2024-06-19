@@ -47,12 +47,19 @@
  */
 #include "gmxpre.h"
 
+#include <cstdio>
+
+#include <filesystem>
+#include <string>
+
 #include <gtest/gtest.h>
 
+#include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/path.h"
 #include "gromacs/utility/stringutil.h"
 #include "gromacs/utility/textreader.h"
 
+#include "testutils/cmdlinetest.h"
 #include "testutils/testasserts.h"
 #include "testutils/testfilemanager.h"
 

@@ -42,10 +42,14 @@
 
 #include <chrono>
 #include <memory>
+#include <string>
 #include <thread>
+
+#include <gtest/gtest.h>
 
 #include "gromacs/timing/cyclecounter.h"
 #include "gromacs/timing/wallcycle.h"
+#include "gromacs/utility/enumerationhelpers.h"
 
 #include "testutils/refdata.h"
 #include "testutils/testasserts.h"

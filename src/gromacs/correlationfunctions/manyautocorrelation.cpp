@@ -42,6 +42,8 @@
 
 #include "manyautocorrelation.h"
 
+#include <cstddef>
+
 #include <algorithm>
 
 #include "gromacs/fft/fft.h"

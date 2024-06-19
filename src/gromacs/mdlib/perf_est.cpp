@@ -36,6 +36,9 @@
 #include "perf_est.h"
 
 #include <cmath>
+#include <cstdio>
+
+#include <vector>
 
 #include "gromacs/math/functions.h"
 #include "gromacs/math/units.h"
@@ -46,9 +49,15 @@
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/nbnxm/nbnxm_geometry.h"
 #include "gromacs/simd/simd.h"
+#include "gromacs/topology/atoms.h"
+#include "gromacs/topology/forcefieldparameters.h"
+#include "gromacs/topology/idef.h"
 #include "gromacs/topology/ifunc.h"
 #include "gromacs/topology/topology.h"
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/listoflists.h"
+#include "gromacs/utility/real.h"
 
 /* Computational cost of bonded, non-bonded and PME calculations.
  * This will be machine dependent.

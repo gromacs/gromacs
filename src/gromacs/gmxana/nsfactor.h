@@ -36,6 +36,7 @@
 #define GMX_GMXANA_NSFACTOR_H
 
 #include "gromacs/math/vectypes.h"
+#include "gromacs/utility/real.h"
 
 struct t_topology;
 

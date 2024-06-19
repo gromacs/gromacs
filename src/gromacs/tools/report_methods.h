@@ -37,6 +37,7 @@
 #include <string>
 
 #include "gromacs/commandline/cmdlineoptionsmodule.h"
+#include "gromacs/libgromacs_export.h"
 #include "gromacs/utility/filestream.h"
 #include "gromacs/utility/textwriter.h"
 

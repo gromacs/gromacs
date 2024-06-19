@@ -44,6 +44,10 @@
 
 #include "config.h"
 
+#include <cinttypes>
+
+#include <filesystem>
+
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/utility/exceptions.h"

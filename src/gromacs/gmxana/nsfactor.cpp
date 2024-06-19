@@ -38,6 +38,10 @@
 #include "config.h"
 
 #include <cmath>
+#include <cstdint>
+#include <cstdio>
+
+#include <filesystem>
 
 #include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
@@ -48,6 +52,7 @@
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/fileptr.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/gmxomp.h"
 #include "gromacs/utility/smalloc.h"

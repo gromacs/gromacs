@@ -37,6 +37,10 @@
 
 #include <cmath>
 
+#include <array>
+#include <filesystem>
+#include <string>
+
 #include "gromacs/ewald/ewald_utils.h"
 #include "gromacs/math/functions.h"
 #include "gromacs/math/units.h"
@@ -47,6 +51,7 @@
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/interaction_const.h"
 #include "gromacs/mdtypes/md_enums.h"
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
 

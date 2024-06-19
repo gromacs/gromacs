@@ -45,11 +45,16 @@
 
 #include "gromacs/domdec/localtopologychecker.h"
 
+#include <array>
+#include <filesystem>
+#include <functional>
 #include <optional>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "gromacs/domdec/domdec_internal.h"
+#include "gromacs/domdec/domdec_struct.h"
 #include "gromacs/domdec/options.h"
 #include "gromacs/domdec/reversetopology.h"
 #include "gromacs/gmxlib/network.h"
@@ -62,8 +67,11 @@
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/logger.h"
+#include "gromacs/utility/range.h"
 #include "gromacs/utility/stringstream.h"
+#include "gromacs/utility/stringutil.h"
 #include "gromacs/utility/textwriter.h"
 
 #include "dump.h"

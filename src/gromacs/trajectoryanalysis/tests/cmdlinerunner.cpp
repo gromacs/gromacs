@@ -42,6 +42,10 @@
 
 #include "gromacs/trajectoryanalysis/cmdlinerunner.h"
 
+#include <memory>
+#include <string>
+#include <utility>
+
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
@@ -53,10 +57,13 @@
 #include "gromacs/trajectoryanalysis/analysismodule.h"
 #include "gromacs/trajectoryanalysis/analysissettings.h"
 #include "gromacs/trajectoryanalysis/topologyinformation.h"
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/exceptions.h"
 
 #include "testutils/cmdlinetest.h"
 #include "testutils/testasserts.h"
+
+struct t_pbc;
 
 namespace
 {

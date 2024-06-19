@@ -42,6 +42,8 @@
 
 #include "gromacs/utility/any.h"
 
+#include <cstdint>
+
 #include <string>
 
 #include "gromacs/utility/gmxassert.h"

@@ -47,16 +47,30 @@
 #ifndef GROMACS_MODULARSIMULATOR_SIMULATORALGORITHM_H
 #define GROMACS_MODULARSIMULATOR_SIMULATORALGORITHM_H
 
+#include <cstdio>
+
 #include <any>
+#include <functional>
+#include <limits>
 #include <map>
+#include <memory>
 #include <optional>
 #include <string>
+#include <type_traits>
 #include <typeinfo>
+#include <utility>
+#include <vector>
 
+#include "gromacs/compat/pointers.h"
+#include "gromacs/mdlib/simulationsignal.h"
+#include "gromacs/mdlib/stophandler.h"
 #include "gromacs/mdrun/isimulator.h"
 #include "gromacs/mdtypes/observablesreducer.h"
 #include "gromacs/mdtypes/state.h"
+#include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/stringutil.h"
 
 #include "checkpointhelper.h"
 #include "domdechelper.h"
@@ -67,6 +81,13 @@
 #include "topologyholder.h"
 #include "trajectoryelement.h"
 
+struct gmx_wallcycle;
+struct gmx_walltime_accounting;
+struct t_commrec;
+struct t_forcerec;
+struct t_inputrec;
+struct t_nrnb;
+
 namespace gmx
 {
 enum class IntegrationStage;
@@ -76,6 +97,10 @@ class ResetHandler;
 template<IntegrationStage integrationStage>
 class Propagator;
 class TopologyHolder;
+class MDLogger;
+class ReadCheckpointDataHolder;
+class StatePropagatorData;
+struct MdrunOptions;
 
 /*! \internal
  * \ingroup module_modularsimulator

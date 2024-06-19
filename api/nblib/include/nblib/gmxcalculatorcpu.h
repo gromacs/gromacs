@@ -46,9 +46,14 @@
 #ifndef NBLIB_GMXCALCULATORCPU_H
 #define NBLIB_GMXCALCULATORCPU_H
 
+#include <cstdint>
+
 #include <memory>
 #include <vector>
 
+#include "gromacs/math/vectypes.h"
+
+#include "nblib/basicdefinitions.h"
 #include "nblib/box.h"
 #include "nblib/vector.h"
 

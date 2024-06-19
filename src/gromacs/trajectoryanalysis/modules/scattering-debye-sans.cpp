@@ -46,6 +46,9 @@
 #include <utility>
 #include <vector>
 
+#include "gromacs/trajectoryanalysis/modules/isotope.h"
+#include "gromacs/trajectoryanalysis/modules/scatteringfactors.h"
+#include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/strdb.h"
 
 namespace gmx

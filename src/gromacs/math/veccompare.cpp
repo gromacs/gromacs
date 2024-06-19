@@ -38,7 +38,10 @@
 #include <cmath>
 #include <cstdio>
 
+#include "gromacs/math/vectypes.h"
+#include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/compare.h"
+#include "gromacs/utility/real.h"
 
 void cmp_rvec(FILE* fp, const char* s, int index, const rvec i1, const rvec i2, real ftol, real abstol)
 {

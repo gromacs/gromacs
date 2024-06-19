@@ -41,7 +41,21 @@
  * \author Sebastian Keller <keller@cscs.ch>
  */
 
+#include <cstdlib>
+
+#include <string>
+#include <vector>
+
+#include <gtest/gtest.h>
+
+#include "gromacs/math/vectypes.h"
+
 #include "testutils/testasserts.h"
+
+#include "nblib/box.h"
+#include "nblib/listed_forces/bondtypes.h"
+#include "nblib/listed_forces/definitions.h"
+#include "nblib/util/traits.hpp"
 
 #include "listedtesthelpers.h"
 #include "pbc.hpp"

@@ -50,6 +50,8 @@
 #define GMX_AWH_POINTSTATE_H
 
 #include <cmath>
+#include <cstdint>
+#include <cstdlib>
 
 #include "gromacs/mdtypes/awh_history.h"
 #include "gromacs/mdtypes/awh_params.h"

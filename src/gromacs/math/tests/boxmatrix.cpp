@@ -44,13 +44,17 @@
 
 #include "gromacs/math/boxmatrix.h"
 
+#include <string>
 #include <vector>
 
 #include <gtest/gtest.h>
 
 #include "gromacs/math/vec.h"
+#include "gromacs/math/vectypes.h"
+#include "gromacs/utility/real.h"
 
 #include "testutils/testasserts.h"
+
 namespace gmx
 {
 namespace test

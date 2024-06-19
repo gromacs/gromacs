@@ -44,10 +44,15 @@
 #include "testutils/testmatchers.h"
 
 #include <memory>
+#include <ostream>
+#include <string>
+#include <tuple>
 
 #include <gmock/gmock.h>
+#include <gtest/gtest.h>
 
 #include "gromacs/math/vectypes.h"
+#include "gromacs/utility/real.h"
 
 #include "testutils/testasserts.h"
 

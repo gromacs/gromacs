@@ -55,10 +55,18 @@
 #include <algorithm>
 #include <memory>
 
+#include "gromacs/applied_forces/awh/biasgrid.h"
+#include "gromacs/applied_forces/awh/biasparams.h"
+#include "gromacs/applied_forces/awh/biasstate.h"
+#include "gromacs/applied_forces/awh/biaswriter.h"
+#include "gromacs/applied_forces/awh/coordstate.h"
+#include "gromacs/applied_forces/awh/dimparams.h"
+#include "gromacs/applied_forces/awh/histogramsize.h"
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/math/functions.h"
 #include "gromacs/math/utilities.h"
+#include "gromacs/mdtypes/awh_correlation_history.h"
 #include "gromacs/mdtypes/awh_history.h"
 #include "gromacs/mdtypes/awh_params.h"
 #include "gromacs/mdtypes/commrec.h"

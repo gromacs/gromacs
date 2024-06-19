@@ -43,19 +43,33 @@
 
 #include "extract_cluster.h"
 
+#include <cstdio>
+
+#include <filesystem>
+#include <memory>
 #include <optional>
+#include <string>
+#include <vector>
 
 #include "gromacs/coordinateio/coordinatefile.h"
 #include "gromacs/coordinateio/requirements.h"
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/options/filenameoption.h"
 #include "gromacs/options/ioptionscontainer.h"
+#include "gromacs/options/optionfiletype.h"
+#include "gromacs/selection/selection.h"
 #include "gromacs/selection/selectionoption.h"
+#include "gromacs/topology/atoms.h"
 #include "gromacs/topology/index.h"
 #include "gromacs/trajectoryanalysis/analysissettings.h"
 #include "gromacs/trajectoryanalysis/topologyinformation.h"
+#include "gromacs/utility/arrayref.h"
+#include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/path.h"
 #include "gromacs/utility/stringutil.h"
+
+struct t_pbc;
+struct t_trxframe;
 
 namespace gmx
 {

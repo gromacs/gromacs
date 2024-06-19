@@ -38,9 +38,12 @@
 #include "config.h"
 
 #include <cmath>
+#include <cstdint>
 
 #include <algorithm>
+#include <memory>
 #include <set>
+#include <vector>
 
 #include "gromacs/gmxlib/nonbonded/nonbonded.h"
 #include "gromacs/gmxlib/nrnb.h"
@@ -59,6 +62,7 @@
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/gmxassert.h"
 
 #include "nb_softcore.h"
 

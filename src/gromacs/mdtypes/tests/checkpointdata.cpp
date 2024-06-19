@@ -35,16 +35,29 @@
 
 #include "gromacs/mdtypes/checkpointdata.h"
 
+#include <climits>
+#include <cstdint>
+
 #include <algorithm>
+#include <array>
+#include <filesystem>
+#include <functional>
+#include <iterator>
 #include <random>
+#include <string>
+#include <type_traits>
+#include <vector>
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/gmxfio_xdr.h"
+#include "gromacs/math/vectypes.h"
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/inmemoryserializer.h"
+#include "gromacs/utility/real.h"
 
 #include "testutils/testfilemanager.h"
 

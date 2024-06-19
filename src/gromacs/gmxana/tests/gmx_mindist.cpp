@@ -43,7 +43,12 @@
 #include <cstdio>
 #include <cstdlib>
 
+#include <string>
+
+#include <gtest/gtest.h>
+
 #include "gromacs/gmxana/gmx_ana.h"
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/path.h"
 #include "gromacs/utility/textreader.h"

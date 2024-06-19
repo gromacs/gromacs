@@ -42,6 +42,8 @@
 
 #include "helpformat.h"
 
+#include <cstddef>
+
 #include <algorithm>
 #include <string>
 #include <vector>

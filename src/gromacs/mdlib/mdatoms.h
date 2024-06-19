@@ -49,6 +49,8 @@ struct t_mdatoms;
 
 namespace gmx
 {
+template<typename T>
+class ArrayRef;
 
 /*! \libinternal
  * \brief Contains a C-style t_mdatoms while managing some of its

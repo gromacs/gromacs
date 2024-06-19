@@ -43,6 +43,7 @@
 #ifndef GMX_MDRUN_REPLICAEXCHANGE_H
 #define GMX_MDRUN_REPLICAEXCHANGE_H
 
+#include <cstdint>
 #include <cstdio>
 
 #include "gromacs/utility/basedefinitions.h"

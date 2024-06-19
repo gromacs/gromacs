@@ -52,31 +52,60 @@
 
 #include "gmxpre.h"
 
+#include "config.h"
+
+#include <cmath>
+#include <cstdint>
+
+#include <algorithm>
+#include <array>
+#include <filesystem>
+#include <memory>
 #include <numeric>
+#include <optional>
+#include <string>
+#include <tuple>
+#include <utility>
 #include <vector>
+
+#include <gtest/gtest.h>
 
 #include "gromacs/ewald/ewald_utils.h"
 #include "gromacs/gpu_utils/hostallocator.h"
+#include "gromacs/math/functions.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/math/vectypes.h"
 #include "gromacs/mdlib/forcerec.h"
 #include "gromacs/mdlib/gmx_omp_nthreads.h"
 #include "gromacs/mdtypes/atominfo.h"
+#include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/interaction_const.h"
+#include "gromacs/mdtypes/locality.h"
+#include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/mdtypes/simulation_workload.h"
+#include "gromacs/nbnxm/atomdata.h"
 #include "gromacs/nbnxm/gridset.h"
 #include "gromacs/nbnxm/kernel_common.h"
 #include "gromacs/nbnxm/nbnxm.h"
 #include "gromacs/nbnxm/nbnxm_simd.h"
+#include "gromacs/nbnxm/pairlistparams.h"
 #include "gromacs/nbnxm/pairlistset.h"
 #include "gromacs/nbnxm/pairlistsets.h"
 #include "gromacs/nbnxm/pairsearch.h"
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/pbcutil/pbc.h"
+#include "gromacs/topology/forcefieldparameters.h"
+#include "gromacs/topology/ifunc.h"
 #include "gromacs/topology/topology.h"
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/enumerationhelpers.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/listoflists.h"
 #include "gromacs/utility/logger.h"
+#include "gromacs/utility/range.h"
+#include "gromacs/utility/real.h"
+#include "gromacs/utility/stringutil.h"
 
 #include "testutils/refdata.h"
 #include "testutils/testasserts.h"

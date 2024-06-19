@@ -36,7 +36,10 @@
 
 #include "tgroup.h"
 
+#include <vector>
+
 #include "gromacs/math/vec.h"
+#include "gromacs/math/vectypes.h"
 #include "gromacs/mdlib/coupling.h"
 #include "gromacs/mdtypes/group.h"
 #include "gromacs/mdtypes/inputrec.h"

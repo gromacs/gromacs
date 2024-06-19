@@ -41,6 +41,9 @@
 
 #include "gromacs/fileio/readinp.h"
 
+#include <string>
+#include <vector>
+
 #include <gtest/gtest.h>
 
 #include "gromacs/fileio/warninp.h"

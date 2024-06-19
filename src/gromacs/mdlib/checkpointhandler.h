@@ -58,6 +58,7 @@
 
 #include "gromacs/compat/pointers.h"
 #include "gromacs/mdlib/simulationsignal.h"
+#include "gromacs/utility/real.h"
 
 struct gmx_walltime_accounting;
 

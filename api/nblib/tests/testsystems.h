@@ -46,11 +46,17 @@
 
 #include <cmath>
 
+#include <string>
+#include <unordered_map>
+#include <vector>
+
+#include "nblib/basicdefinitions.h"
 #include "nblib/box.h"
 #include "nblib/molecules.h"
 #include "nblib/particletype.h"
 #include "nblib/simulationstate.h"
 #include "nblib/topology.h"
+#include "nblib/vector.h"
 
 namespace nblib
 {

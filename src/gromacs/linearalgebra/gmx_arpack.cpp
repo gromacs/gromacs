@@ -36,6 +36,7 @@
 #include "gmx_arpack.h"
 
 #include <cmath>
+#include <cstdlib>
 #include <cstring>
 
 #include "gromacs/utility/basedefinitions.h"

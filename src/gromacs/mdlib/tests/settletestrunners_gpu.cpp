@@ -41,7 +41,12 @@
 
 #include "config.h"
 
+#include <string>
+
 #include <gtest/gtest.h>
+
+#include "gromacs/pbcutil/pbc.h"
+#include "gromacs/utility/basedefinitions.h"
 
 #include "settletestrunners.h"
 
@@ -55,6 +60,7 @@ namespace gmx
 {
 namespace test
 {
+class SettleTestData;
 
 #if GPU_SETTLE_SUPPORTED
 

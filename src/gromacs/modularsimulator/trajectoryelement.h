@@ -43,6 +43,11 @@
 #ifndef GMX_MODULARSIMULATOR_TRAJECTORYELEMENT_H
 #define GMX_MODULARSIMULATOR_TRAJECTORYELEMENT_H
 
+#include <cstdio>
+
+#include <memory>
+#include <optional>
+#include <utility>
 #include <vector>
 
 #include "gromacs/compat/pointers.h"
@@ -55,6 +60,7 @@ struct gmx_wallcycle;
 struct t_commrec;
 struct t_filenm;
 struct t_inputrec;
+struct gmx_mdoutf;
 
 namespace gmx
 {

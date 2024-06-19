@@ -34,9 +34,16 @@
 
 #include "gmxapi/session.h"
 
+#include <functional>
+#include <map>
 #include <memory>
+#include <stdexcept>
+#include <utility>
 
 #include "gromacs/mdlib/sighandler.h"
+#include "gromacs/mdlib/stophandler.h"
+#include "gromacs/mdrun/runner.h"
+#include "gromacs/mdrun/simulationcontext.h"
 #include "gromacs/mdrunutility/logging.h"
 #include "gromacs/restraint/restraintpotential.h"
 #include "gromacs/utility/basenetwork.h"
@@ -46,6 +53,7 @@
 #include "gmxapi/context.h"
 #include "gmxapi/exceptions.h"
 #include "gmxapi/md/mdmodule.h"
+#include "gmxapi/md/mdsignals.h"
 #include "gmxapi/status.h"
 
 #include "createsession.h"
@@ -55,6 +63,7 @@
 
 namespace gmxapi
 {
+class ContextImpl;
 
 SignalManager::SignalManager(gmx::StopHandlerBuilder* stopHandlerBuilder) :
     state_(std::make_shared<gmx::StopSignal>(gmx::StopSignal::noSignal))

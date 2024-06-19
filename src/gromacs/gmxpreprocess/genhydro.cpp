@@ -35,8 +35,14 @@
 
 #include "genhydro.h"
 
+#include <cstdio>
 #include <cstring>
 #include <ctime>
+
+#include <algorithm>
+#include <array>
+#include <filesystem>
+#include <string>
 
 #include "gromacs/fileio/confio.h"
 #include "gromacs/gmxlib/network.h"
@@ -48,11 +54,15 @@
 #include "gromacs/math/vec.h"
 #include "gromacs/topology/atoms.h"
 #include "gromacs/topology/symtab.h"
+#include "gromacs/utility/arrayref.h"
+#include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
+#include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/stringutil.h"
 
 #include "hackblock.h"
 #include "resall.h"

@@ -49,6 +49,7 @@
 
 #include "boxdeformation.h"
 
+#include <array>
 #include <memory>
 
 #include "gromacs/gmxlib/network.h"
@@ -60,6 +61,7 @@
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/real.h"
 
 namespace gmx
 {

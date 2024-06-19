@@ -42,7 +42,11 @@
 
 #include "gromacs/math/optimization.h"
 
+#include <functional>
+
 #include "gromacs/math/neldermead.h"
+#include "gromacs/utility/arrayref.h"
+#include "gromacs/utility/real.h"
 
 namespace gmx
 {

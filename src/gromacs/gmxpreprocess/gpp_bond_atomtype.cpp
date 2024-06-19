@@ -36,10 +36,14 @@
 #include "gpp_bond_atomtype.h"
 
 #include <algorithm>
+#include <iterator>
 #include <optional>
+#include <type_traits>
 #include <vector>
 
 #include "gromacs/topology/symtab.h"
+#include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
 
 class PreprocessingBondAtomType::Impl

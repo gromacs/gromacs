@@ -35,6 +35,8 @@
 #ifndef GMX_FILEIO_XTCIO_H
 #define GMX_FILEIO_XTCIO_H
 
+#include <cstdint>
+
 #include <filesystem>
 
 #include "gromacs/math/vectypes.h"

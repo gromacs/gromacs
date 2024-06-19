@@ -47,15 +47,23 @@
 
 #include <cmath>
 
+#include <filesystem>
+#include <string>
+#include <vector>
+
 #include <gtest/gtest.h>
 
 #include "gromacs/fileio/oenv.h"
 #include "gromacs/fileio/xvgr.h"
+#include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/real.h"
 #include "gromacs/utility/smalloc.h"
 
 #include "testutils/refdata.h"
 #include "testutils/testasserts.h"
 #include "testutils/testfilemanager.h"
+
+struct gmx_output_env_t;
 
 namespace gmx
 {

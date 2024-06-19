@@ -46,12 +46,24 @@
  */
 #include "gmxpre.h"
 
+#include <cstdlib>
+#include <cstring>
+
 #include <algorithm>
+#include <functional>
+#include <memory>
+#include <string>
+#include <vector>
 
 #include "gromacs/hardware/device_management.h"
 #include "gromacs/utility/arrayref.h"
+#include "gromacs/utility/enumerationhelpers.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/iserializer.h"
+#include "gromacs/utility/mpiinfo.h"
+#include "gromacs/utility/stringutil.h"
 
 #include "device_information.h"
 

@@ -42,6 +42,8 @@
 #ifndef GMX_ONLINEHELP_TESTS_MOCK_HELPTOPIC_H
 #define GMX_ONLINEHELP_TESTS_MOCK_HELPTOPIC_H
 
+#include <string>
+
 #include <gmock/gmock.h>
 
 #include "gromacs/onlinehelp/helptopic.h"

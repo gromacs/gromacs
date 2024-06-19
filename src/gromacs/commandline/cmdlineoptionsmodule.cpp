@@ -43,7 +43,9 @@
 #include "cmdlineoptionsmodule.h"
 
 #include <memory>
+#include <string>
 #include <utility>
+#include <vector>
 
 #include "gromacs/commandline/cmdlinehelpwriter.h"
 #include "gromacs/commandline/cmdlinemodulemanager.h"
@@ -58,6 +60,7 @@
 
 namespace gmx
 {
+class CommandLineHelpContext;
 
 namespace
 {

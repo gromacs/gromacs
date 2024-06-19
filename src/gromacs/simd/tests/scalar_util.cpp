@@ -34,11 +34,15 @@
 #include "gmxpre.h"
 
 #include <cmath>
+#include <cstdint>
+
+#include <string>
 
 #include <gtest/gtest.h>
 
 #include "gromacs/simd/simd.h"
 #include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/real.h"
 
 #include "testutils/testasserts.h"
 

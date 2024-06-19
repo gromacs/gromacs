@@ -42,7 +42,11 @@
 
 #include "gromacs/math/neldermead.h"
 
+#include <cmath>
+
 #include <algorithm>
+#include <functional>
+#include <iterator>
 #include <list>
 #include <numeric>
 #include <vector>
@@ -50,6 +54,7 @@
 #include "gromacs/math/utilities.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/real.h"
 
 namespace gmx
 {

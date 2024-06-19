@@ -42,8 +42,11 @@
 
 #include "angle.h"
 
+#include <cstddef>
+
 #include <algorithm>
 #include <memory>
+#include <string>
 #include <vector>
 
 #include "gromacs/analysisdata/analysisdata.h"
@@ -52,22 +55,27 @@
 #include "gromacs/analysisdata/modules/plot.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/math/vectypes.h"
 #include "gromacs/options/basicoptions.h"
 #include "gromacs/options/filenameoption.h"
 #include "gromacs/options/ioptionscontainer.h"
+#include "gromacs/options/optionfiletype.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/selection/selection.h"
 #include "gromacs/selection/selectionoption.h"
 #include "gromacs/trajectory/trajectoryframe.h"
 #include "gromacs/trajectoryanalysis/analysissettings.h"
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/classhelpers.h"
 #include "gromacs/utility/enumerationhelpers.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/real.h"
 #include "gromacs/utility/stringutil.h"
 
 namespace gmx
 {
+class TopologyInformation;
 
 namespace analysismodules
 {

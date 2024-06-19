@@ -37,6 +37,9 @@
 
 
 #include "gromacs/gmxana/hxprops.h"
+#include "gromacs/math/vectypes.h"
+#include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/real.h"
 
 real fit_ahx(int nres, t_bb bb[], int natoms, int nall, int allindex[], rvec x[], int nca, int caindex[], gmx_bool bFit);
 

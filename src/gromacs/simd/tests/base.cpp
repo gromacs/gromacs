@@ -37,6 +37,9 @@
 
 #include <cmath>
 #include <cstdint>
+#include <cstdlib>
+
+#include <string>
 
 #include "gromacs/options/basicoptions.h"
 #include "gromacs/options/ioptionscontainer.h"

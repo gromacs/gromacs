@@ -37,6 +37,8 @@
 #include "utilities.h"
 
 #include "gromacs/topology/topology.h"
+#include "gromacs/topology/topology_enums.h"
+#include "gromacs/utility/enumerationhelpers.h"
 
 std::vector<int> genQmmmIndices(const gmx_mtop_t& mtop)
 {

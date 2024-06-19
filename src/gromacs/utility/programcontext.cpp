@@ -44,6 +44,8 @@
 
 #include <cstddef>
 
+#include <filesystem>
+
 namespace gmx
 {
 

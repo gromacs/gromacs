@@ -43,8 +43,12 @@
 #ifndef GMX_MDLIB_SETTLE_H
 #define GMX_MDLIB_SETTLE_H
 
+#include <vector>
+
+#include "gromacs/math/vectypes.h"
 #include "gromacs/topology/idef.h"
 #include "gromacs/utility/alignedallocator.h"
+#include "gromacs/utility/real.h"
 
 struct gmx_mtop_t;
 struct InteractionList;

@@ -42,6 +42,8 @@
 
 #include "gromacs/onlinehelp/helpwritercontext.h"
 
+#include <cstdio>
+
 #include <string>
 
 #include <gtest/gtest.h>

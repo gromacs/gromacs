@@ -34,6 +34,7 @@
 #ifndef GMX_MDLIB_UPDATE_VV_H
 #define GMX_MDLIB_UPDATE_VV_H
 
+#include <cstdint>
 #include <cstdio>
 
 #include <array>
@@ -42,6 +43,7 @@
 #include "gromacs/math/vectypes.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/utility/enumerationhelpers.h"
+#include "gromacs/utility/real.h"
 
 class gmx_ekindata_t;
 struct gmx_enerdata_t;

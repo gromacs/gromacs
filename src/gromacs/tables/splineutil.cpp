@@ -44,9 +44,11 @@
 #include "splineutil.h"
 
 #include <cmath>
+#include <cstdlib>
 
 #include <algorithm>
 #include <functional>
+#include <string>
 #include <utility>
 #include <vector>
 

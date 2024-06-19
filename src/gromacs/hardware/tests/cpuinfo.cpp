@@ -44,6 +44,10 @@
 
 #include "config.h"
 
+#include <ostream>
+#include <string>
+#include <vector>
+
 #include <gtest/gtest.h>
 
 namespace

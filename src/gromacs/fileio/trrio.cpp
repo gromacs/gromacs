@@ -35,7 +35,10 @@
 
 #include "trrio.h"
 
+#include <cstdio>
 #include <cstring>
+
+#include <string>
 
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/gmxfio_xdr.h"
@@ -43,6 +46,7 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/iserializer.h"
 #include "gromacs/utility/smalloc.h"
 
 static int nFloatSize(gmx_trr_header_t* sh)

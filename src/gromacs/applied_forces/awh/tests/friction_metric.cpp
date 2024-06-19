@@ -33,11 +33,25 @@
  */
 #include "gmxpre.h"
 
+#include <cmath>
+#include <cstddef>
+#include <cstdint>
+
+#include <iterator>
+#include <memory>
+#include <string>
+#include <vector>
+
 #include <gmock/gmock-matchers.h>
+#include <gtest/gtest.h>
 
 #include "gromacs/applied_forces/awh/correlationgrid.h"
 #include "gromacs/applied_forces/awh/correlationhistory.h"
+#include "gromacs/applied_forces/awh/correlationtensor.h"
 #include "gromacs/mdtypes/awh_correlation_history.h"
+#include "gromacs/utility/arrayref.h"
+#include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/gmxassert.h"
 
 #include "testutils/refdata.h"
 #include "testutils/testasserts.h"

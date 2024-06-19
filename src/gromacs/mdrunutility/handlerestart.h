@@ -57,6 +57,8 @@
 #ifndef GMX_MDRUNUTILITY_HANDLERESTART_H
 #define GMX_MDRUNUTILITY_HANDLERESTART_H
 
+#include <tuple>
+
 #include "gromacs/mdrunutility/logging.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/gmxmpi.h"

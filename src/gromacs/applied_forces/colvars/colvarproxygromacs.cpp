@@ -41,12 +41,20 @@
 
 #include "colvarproxygromacs.h"
 
-#include <sstream>
+#include <cstddef>
 
+#include <sstream>
+#include <vector>
+
+#include "gromacs/math/vectypes.h"
+#include "gromacs/random/seed.h"
+#include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/path.h"
 
 #include "colvarproxy_gromacs_version.h"
+
+enum class PbcType : int;
 
 
 namespace gmx

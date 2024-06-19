@@ -45,6 +45,7 @@
 #include "gromacs/domdec/domdec.h"
 #include "gromacs/domdec/mdsetup.h"
 #include "gromacs/mdtypes/commrec.h"
+#include "gromacs/modularsimulator/modularsimulatorinterfaces.h"
 #include "gromacs/topology/topology.h"
 
 namespace gmx

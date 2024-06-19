@@ -32,10 +32,16 @@
  * the research papers on the package. Check out https://www.gromacs.org.
  */
 #include <memory>
+#include <string>
+#include <vector>
+
+#include <gtest/gtest.h>
 
 #include "gromacs/math/vectypes.h"
 #include "gromacs/restraint/restraintpotential.h"
 #include "gromacs/utility/arrayref.h"
+
+#include "programs/mdrun/tests/moduletest.h"
 
 #include "gmxapi/context.h"
 #include "gmxapi/md.h"
@@ -48,6 +54,7 @@
 
 namespace gmxapi
 {
+class SessionResources;
 
 namespace testing
 {

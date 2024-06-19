@@ -37,6 +37,8 @@
 
 #include "config.h"
 
+#include <utility>
+
 #include "gromacs/domdec/domdec_struct.h"
 #include "gromacs/utility/gmxmpi.h"
 

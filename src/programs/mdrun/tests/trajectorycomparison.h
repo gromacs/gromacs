@@ -43,6 +43,8 @@
 #ifndef GMX_PROGRAMS_MDRUN_TESTS_TRAJECTORYCOMPARISON_H
 #define GMX_PROGRAMS_MDRUN_TESTS_TRAJECTORYCOMPARISON_H
 
+#include <string>
+
 #include "testutils/testasserts.h"
 
 #include "comparison_helpers.h"

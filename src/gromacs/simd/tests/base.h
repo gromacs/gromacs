@@ -55,6 +55,7 @@
 #include <cstdint>
 
 #include <limits>
+#include <ostream>
 #include <vector>
 
 #include <gtest/gtest.h>

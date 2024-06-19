@@ -43,16 +43,27 @@
 #ifndef GMX_MODULARSIMULATOR_CHECKPOINTHELPER_H
 #define GMX_MODULARSIMULATOR_CHECKPOINTHELPER_H
 
+#include <cstdio>
+
 #include <map>
+#include <memory>
+#include <optional>
+#include <string>
+#include <tuple>
+#include <utility>
 #include <vector>
 
 #include "gromacs/mdlib/checkpointhandler.h"
 #include "gromacs/mdrunutility/handlerestart.h"
+#include "gromacs/mdtypes/checkpointdata.h"
+#include "gromacs/utility/exceptions.h"
 
 #include "modularsimulatorinterfaces.h"
 
 struct gmx_walltime_accounting;
 struct ObservablesHistory;
+class t_state;
+struct t_commrec;
 
 namespace gmx
 {

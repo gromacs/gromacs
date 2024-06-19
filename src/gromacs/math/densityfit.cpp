@@ -42,13 +42,26 @@
 
 #include "gromacs/math/densityfit.h"
 
-#include <algorithm>
-#include <numeric>
+#include <cmath>
 
+#include <algorithm>
+#include <functional>
+#include <iterator>
+#include <memory>
+#include <numeric>
+#include <vector>
+
+#include "gromacs/math/functions.h"
 #include "gromacs/math/multidimarray.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/mdspan/extensions.h"
+#include "gromacs/mdspan/extents.h"
+#include "gromacs/mdspan/layouts.h"
 #include "gromacs/utility/arrayref.h"
+#include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/real.h"
 
 namespace gmx
 {

@@ -47,11 +47,15 @@
 #define NBLIB_LISTEDFORCES_TRANSFORMATIONS_H
 
 #include <algorithm>
+#include <array>
+#include <type_traits>
 
 #include "nblib/listed_forces/definitions.h"
 
 namespace nblib
 {
+template<class T, class TL>
+struct Contains;
 
 namespace detail
 {

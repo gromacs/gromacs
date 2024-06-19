@@ -44,6 +44,7 @@
 
 #include <array>
 #include <stdexcept>
+#include <type_traits>
 
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/gmxassert.h"

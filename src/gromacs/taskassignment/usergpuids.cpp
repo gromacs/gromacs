@@ -42,16 +42,22 @@
 #include "gromacs/taskassignment/usergpuids.h"
 
 #include <cctype>
+#include <cstddef>
 
 #include <algorithm>
+#include <memory>
 #include <sstream>
 #include <string>
 #include <vector>
 
 #include "gromacs/hardware/device_management.h"
 #include "gromacs/hardware/hw_info.h"
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/stringutil.h"
+
+struct DeviceInformation;
 
 namespace gmx
 {

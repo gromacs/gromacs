@@ -65,14 +65,35 @@
 
 #include "config.h"
 
+#include <cmath>
+#include <cstdio>
+#include <cstdlib>
+
+#include <array>
+#include <string>
+#include <tuple>
+#include <utility>
+#include <vector>
+
+#include <gmock/gmock.h>
+#include <gtest/gtest.h>
+
+#include "gromacs/math/vectypes.h"
 #include "gromacs/topology/idef.h"
 #include "gromacs/topology/ifunc.h"
+#include "gromacs/topology/topology.h"
+#include "gromacs/trajectory/trajectoryframe.h"
 #include "gromacs/trajectoryanalysis/topologyinformation.h"
+#include "gromacs/utility/arrayref.h"
+#include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/real.h"
 #include "gromacs/utility/strconvert.h"
 #include "gromacs/utility/stringutil.h"
 
 #include "testutils/mpitest.h"
 #include "testutils/simulationdatabase.h"
+#include "testutils/testasserts.h"
 #include "testutils/testmatchers.h"
 #include "testutils/trajectoryreader.h"
 

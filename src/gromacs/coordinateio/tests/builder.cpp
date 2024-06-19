@@ -45,10 +45,16 @@
 
 #include "config.h"
 
+#include <string>
 #include <utility>
 
+#include <gtest/gtest.h>
+
 #include "gromacs/coordinateio/coordinatefile.h"
+#include "gromacs/coordinateio/coordinatefileenums.h"
+#include "gromacs/coordinateio/requirements.h"
 #include "gromacs/coordinateio/tests/coordinate_test.h"
+#include "gromacs/utility/exceptions.h"
 
 namespace gmx
 {

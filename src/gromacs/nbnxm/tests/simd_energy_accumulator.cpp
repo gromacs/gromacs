@@ -46,7 +46,18 @@
 
 #include <cstdlib>
 
+#include <algorithm>
+#include <array>
+#include <string>
+#include <type_traits>
+
+#include <gtest/gtest.h>
+
 #include "gromacs/nbnxm/nbnxm_simd.h"
+#include "gromacs/simd/simd.h"
+#include "gromacs/utility/arrayref.h"
+#include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/real.h"
 
 #include "testutils/testasserts.h"
 

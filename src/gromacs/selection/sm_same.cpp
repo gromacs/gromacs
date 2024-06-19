@@ -43,6 +43,12 @@
 #include <cstdlib>
 #include <cstring>
 
+#include <list>
+#include <string>
+
+#include "gromacs/selection/indexutil.h"
+#include "gromacs/selection/selparam.h"
+#include "gromacs/selection/selvalue.h"
 #include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/smalloc.h"
@@ -52,6 +58,8 @@
 #include "selelem.h"
 #include "selmethod.h"
 #include "selmethod_impl.h"
+
+struct gmx_mtop_t;
 
 /*! \internal
  * \brief

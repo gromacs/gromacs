@@ -44,19 +44,27 @@
 
 #include <cstdio>
 
+#include <memory>
 #include <string>
+#include <vector>
 
 #include "gromacs/options/filenameoption.h"
 #include "gromacs/options/ioptionscontainer.h"
+#include "gromacs/options/optionfiletype.h"
 #include "gromacs/options/options.h"
 #include "gromacs/selection/indexutil.h"
 #include "gromacs/selection/selectioncollection.h"
+#include "gromacs/selection/selectionenums.h"
 #include "gromacs/selection/selectionfileoption.h"
 #include "gromacs/selection/selectionoptionmanager.h"
 #include "gromacs/topology/atoms.h"
 #include "gromacs/topology/topology.h"
+#include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/filestream.h"
+#include "gromacs/utility/gmxassert.h"
+
+struct gmx_ana_indexgrps_t;
 
 namespace gmx
 {

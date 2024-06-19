@@ -52,20 +52,32 @@
 #include "config.h"
 
 #include <memory>
+#include <string>
+#include <tuple>
+#include <utility>
+#include <vector>
 
+#include "gromacs/commandline/filenm.h"
 #include "gromacs/commandline/pargs.h"
+#include "gromacs/compat/pointers.h"
 #include "gromacs/domdec/options.h"
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/hardware/detecthardware.h"
+#include "gromacs/hardware/hw_info.h"
 #include "gromacs/mdrun/legacymdrunoptions.h"
+#include "gromacs/mdrun/mdmodules.h"
 #include "gromacs/mdrun/runner.h"
 #include "gromacs/mdrun/simulationcontext.h"
+#include "gromacs/mdrun/simulationinputhandle.h"
 #include "gromacs/mdrunutility/handlerestart.h"
 #include "gromacs/mdrunutility/logging.h"
 #include "gromacs/mdrunutility/multisim.h"
+#include "gromacs/mdtypes/mdrunoptions.h"
 #include "gromacs/utility/arrayref.h"
+#include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/basenetwork.h"
 #include "gromacs/utility/physicalnodecommunicator.h"
+#include "gromacs/utility/unique_cptr.h"
 
 #include "mdrun_main.h"
 

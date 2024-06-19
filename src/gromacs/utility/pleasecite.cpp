@@ -35,9 +35,13 @@
 
 #include "gromacs/utility/pleasecite.h"
 
+#include <cstdio>
 #include <cstring>
 
+#include <string>
+
 #include "gromacs/utility/arraysize.h"
+#include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/baseversion.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/smalloc.h"

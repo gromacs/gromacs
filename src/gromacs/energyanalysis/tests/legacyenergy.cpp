@@ -46,6 +46,9 @@
 #include <cstring>
 
 #include <string>
+#include <string_view>
+
+#include <gtest/gtest.h>
 
 #include "gromacs/gmxana/gmx_ana.h"
 

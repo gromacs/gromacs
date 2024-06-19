@@ -42,10 +42,19 @@
 
 #include "gromacs/pbcutil/mshift.h"
 
+#include <string>
+#include <vector>
+
+#include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
+#include "gromacs/math/vectypes.h"
+#include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/pbcutil/pbc.h"
+#include "gromacs/topology/idef.h"
+#include "gromacs/topology/ifunc.h"
 #include "gromacs/topology/topology.h"
+#include "gromacs/utility/gmxassert.h"
 
 #include "testutils/testasserts.h"
 #include "testutils/testmatchers.h"

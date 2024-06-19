@@ -47,6 +47,8 @@
 #include "gromacs/coordinateio/coordinatefileenums.h"
 #include "gromacs/coordinateio/ioutputadapter.h"
 
+struct t_trxframe;
+
 namespace gmx
 {
 

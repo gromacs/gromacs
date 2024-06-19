@@ -38,10 +38,12 @@
 
 #include <cassert>
 #include <cctype>
+#include <cinttypes>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
 
+#include <filesystem>
 #include <string>
 #include <vector>
 

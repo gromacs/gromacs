@@ -43,7 +43,10 @@
 #ifndef GMX_DOMDEC_DOMDEC_CONSTRAINTS_H
 #define GMX_DOMDEC_DOMDEC_CONSTRAINTS_H
 
+#include <cstdint>
+
 #include <memory>
+#include <vector>
 
 #include "gromacs/domdec/hashedmap.h"
 #include "gromacs/utility/arrayref.h"

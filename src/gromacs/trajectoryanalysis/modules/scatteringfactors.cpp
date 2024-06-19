@@ -41,6 +41,11 @@
 
 #include "scatteringfactors.h"
 
+#include <cstdio>
+
+#include <filesystem>
+
+#include "gromacs/utility/fileptr.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/strdb.h"
 

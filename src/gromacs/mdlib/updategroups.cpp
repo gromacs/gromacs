@@ -44,8 +44,12 @@
 #include "updategroups.h"
 
 #include <cmath>
+#include <cstdlib>
 
+#include <algorithm>
+#include <array>
 #include <unordered_map>
+#include <utility>
 #include <variant>
 
 #include "gromacs/math/functions.h"
@@ -53,12 +57,15 @@
 #include "gromacs/math/utilities.h"
 #include "gromacs/mdlib/constr.h"
 #include "gromacs/pbcutil/pbc.h"
+#include "gromacs/topology/block.h"
+#include "gromacs/topology/forcefieldparameters.h"
 #include "gromacs/topology/idef.h"
 #include "gromacs/topology/ifunc.h"
 #include "gromacs/topology/mtop_atomloops.h"
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/enumerationhelpers.h"
+#include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/listoflists.h"
 #include "gromacs/utility/logger.h"
 #include "gromacs/utility/message_string_collector.h"

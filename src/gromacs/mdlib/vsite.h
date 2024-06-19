@@ -42,10 +42,13 @@
 #ifndef GMX_MDLIB_VSITE_H
 #define GMX_MDLIB_VSITE_H
 
+#include <array>
 #include <memory>
+#include <vector>
 
 #include "gromacs/math/vectypes.h"
 #include "gromacs/topology/idef.h"
+#include "gromacs/topology/ifunc.h"
 #include "gromacs/utility/real.h"
 
 struct gmx_domdec_t;

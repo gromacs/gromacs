@@ -44,8 +44,14 @@
 
 #include "gromacs/coordinateio/frameconverters/register.h"
 
+#include <memory>
 #include <numeric>
+#include <string>
 
+#include <gtest/gtest.h>
+
+#include "gromacs/coordinateio/frameconverterenums.h"
+#include "gromacs/coordinateio/iframeconverter.h"
 #include "gromacs/coordinateio/tests/frameconverter.h"
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/trajectory/trajectoryframe.h"

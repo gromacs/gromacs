@@ -44,10 +44,21 @@
 
 #include "bench_setup.h"
 
+#include <cmath>
+#include <cstdint>
+#include <cstdio>
+
+#include <algorithm>
+#include <filesystem>
+#include <memory>
 #include <optional>
+#include <utility>
+#include <vector>
 
 #include "gromacs/gmxlib/nrnb.h"
+#include "gromacs/gpu_utils/hostallocator.h"
 #include "gromacs/math/units.h"
+#include "gromacs/math/vec.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/mdlib/dispersioncorrection.h"
 #include "gromacs/mdlib/force_flags.h"
@@ -56,12 +67,15 @@
 #include "gromacs/mdtypes/enerdata.h"
 #include "gromacs/mdtypes/forcerec.h"
 #include "gromacs/mdtypes/interaction_const.h"
+#include "gromacs/mdtypes/locality.h"
+#include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/mdtypes/mdatom.h"
 #include "gromacs/mdtypes/simulation_workload.h"
 #include "gromacs/nbnxm/atomdata.h"
 #include "gromacs/nbnxm/gridset.h"
 #include "gromacs/nbnxm/nbnxm.h"
 #include "gromacs/nbnxm/nbnxm_simd.h"
+#include "gromacs/nbnxm/pairlistparams.h"
 #include "gromacs/nbnxm/pairlistset.h"
 #include "gromacs/nbnxm/pairlistsets.h"
 #include "gromacs/nbnxm/pairsearch.h"
@@ -69,9 +83,13 @@
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/simd/simd.h"
 #include "gromacs/timing/cyclecounter.h"
+#include "gromacs/utility/arrayref.h"
+#include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/enumerationhelpers.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/logger.h"
+#include "gromacs/utility/range.h"
 
 #include "bench_system.h"
 

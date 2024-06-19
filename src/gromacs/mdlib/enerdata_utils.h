@@ -38,6 +38,7 @@
 #include "gromacs/math/arrayrefwithpadding.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/arrayref.h"
+#include "gromacs/utility/real.h"
 
 struct gmx_enerdata_t;
 struct gmx_grppairener_t;

@@ -39,13 +39,19 @@
 #include <cstring>
 
 #include <algorithm>
+#include <filesystem>
 #include <list>
+#include <memory>
+#include <string>
+#include <vector>
 
 #include "gromacs/commandline/cmdlinehelpcontext.h"
 #include "gromacs/commandline/cmdlinehelpwriter.h"
 #include "gromacs/commandline/cmdlineparser.h"
+#include "gromacs/fileio/filetypes.h"
 #include "gromacs/fileio/oenv.h"
 #include "gromacs/fileio/timecontrol.h"
+#include "gromacs/options/abstractoption.h"
 #include "gromacs/options/basicoptions.h"
 #include "gromacs/options/behaviorcollection.h"
 #include "gromacs/options/filenameoption.h"

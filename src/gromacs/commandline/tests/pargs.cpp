@@ -45,18 +45,30 @@
 
 #include "gromacs/commandline/pargs.h"
 
+#include <cstddef>
+#include <cstdint>
+
+#include <filesystem>
 #include <string>
 
 #include <gtest/gtest.h>
 
+#include "gromacs/commandline/filenm.h"
+#include "gromacs/fileio/filetypes.h"
+#include "gromacs/fileio/oenv.h"
+#include "gromacs/math/vectypes.h"
 #include "gromacs/utility/arrayref.h"
+#include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/path.h"
+#include "gromacs/utility/real.h"
 #include "gromacs/utility/stringutil.h"
 #include "gromacs/utility/textwriter.h"
 
 #include "testutils/cmdlinetest.h"
 #include "testutils/testasserts.h"
 #include "testutils/testfilemanager.h"
+
+struct gmx_output_env_t;
 
 namespace
 {

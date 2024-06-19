@@ -44,12 +44,15 @@
 
 #include "config.h"
 
+#include <functional>
+
 #include <gtest/gtest.h>
 
 #include "thread_mpi/tmpi.h"
 
 #include "gromacs/options/basicoptions.h"
 #include "gromacs/options/ioptionscontainer.h"
+#include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/basenetwork.h"
 #include "gromacs/utility/exceptions.h"
 

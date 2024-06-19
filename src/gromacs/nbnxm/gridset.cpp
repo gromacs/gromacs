@@ -45,9 +45,19 @@
 
 #include "gridset.h"
 
+#include <cmath>
+#include <cstdio>
+
+#include <algorithm>
+
+#include "gromacs/gpu_utils/hostallocator.h"
 #include "gromacs/mdlib/gmx_omp_nthreads.h"
 #include "gromacs/mdlib/updategroupscog.h"
 #include "gromacs/nbnxm/atomdata.h"
+#include "gromacs/nbnxm/grid.h"
+#include "gromacs/nbnxm/gridsetdata.h"
+#include "gromacs/utility/allocator.h"
+#include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/fatalerror.h"
 
 namespace Nbnxm

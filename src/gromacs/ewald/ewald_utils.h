@@ -45,6 +45,7 @@
 #define GMX_EWALD_UTILS_H
 
 #include "gromacs/math/vec.h"
+#include "gromacs/math/vectypes.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/utility/gmxassert.h"

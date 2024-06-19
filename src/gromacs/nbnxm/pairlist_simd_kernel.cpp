@@ -43,9 +43,21 @@
 
 #include "pairlist_simd_kernel.h"
 
+#include "config.h"
+
+#include <algorithm>
+#include <array>
+#include <memory>
+#include <type_traits>
+
+#include "gromacs/math/functions.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/nbnxm/boundingbox.h"
+#include "gromacs/nbnxm/pairlist.h"
 #include "gromacs/simd/simd.h"
 #include "gromacs/simd/vector_operations.h"
+#include "gromacs/utility/arrayref.h"
+#include "gromacs/utility/gmxassert.h"
 
 #include "boundingboxdistance.h"
 #include "clusterdistancekerneltype.h"

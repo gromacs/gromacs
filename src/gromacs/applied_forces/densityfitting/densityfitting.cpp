@@ -42,9 +42,13 @@
 
 #include "densityfitting.h"
 
+#include <filesystem>
+#include <functional>
 #include <memory>
 #include <numeric>
+#include <vector>
 
+#include "gromacs/applied_forces/densityfitting/densityfittingparameters.h"
 #include "gromacs/domdec/localatomset.h"
 #include "gromacs/domdec/localatomsetmanager.h"
 #include "gromacs/fileio/checkpoint.h"
@@ -53,8 +57,13 @@
 #include "gromacs/math/densityfit.h"
 #include "gromacs/math/multidimarray.h"
 #include "gromacs/mdrunutility/mdmodulesnotifiers.h"
+#include "gromacs/mdspan/extensions.h"
+#include "gromacs/mdspan/layouts.h"
+#include "gromacs/mdspan/mdspan.h"
+#include "gromacs/mdtypes/iforceprovider.h"
 #include "gromacs/mdtypes/imdmodule.h"
 #include "gromacs/selection/indexutil.h"
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/classhelpers.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/keyvaluetreebuilder.h"
@@ -63,11 +72,15 @@
 #include "densityfittingoptions.h"
 #include "densityfittingoutputprovider.h"
 
+enum class PbcType : int;
+
 namespace gmx
 {
 
 class IMdpOptionProvider;
 class DensityFittingForceProvider;
+class IMDOutputProvider;
+class KeyValueTreeObject;
 
 namespace
 {

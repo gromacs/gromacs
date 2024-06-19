@@ -44,6 +44,7 @@
 #include "gromacs/utility/keyvaluetreemdpwriter.h"
 
 #include <string>
+#include <vector>
 
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/keyvaluetree.h"

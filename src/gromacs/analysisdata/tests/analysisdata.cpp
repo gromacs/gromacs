@@ -48,9 +48,12 @@
 
 #include "gromacs/analysisdata/analysisdata.h"
 
+#include <string>
+
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
+#include "gromacs/analysisdata/datamodule.h"
 #include "gromacs/analysisdata/paralleloptions.h"
 #include "gromacs/analysisdata/tests/datatest.h"
 #include "gromacs/analysisdata/tests/mock_datamodule.h"

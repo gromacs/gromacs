@@ -42,6 +42,7 @@
 
 #include "config.h"
 
+#include <cstdlib>
 #include <ctime>
 
 #include <random>

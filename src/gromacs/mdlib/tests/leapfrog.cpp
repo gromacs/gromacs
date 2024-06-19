@@ -52,17 +52,22 @@
 
 #include <cmath>
 
+#include <memory>
+#include <string>
 #include <vector>
 
 #include <gtest/gtest.h>
 
 #include "gromacs/hardware/device_management.h"
+#include "gromacs/math/paddedvector.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/mdtypes/mdatom.h"
+#include "gromacs/utility/real.h"
 #include "gromacs/utility/stringutil.h"
 
 #include "testutils/refdata.h"
+#include "testutils/test_device.h"
 #include "testutils/test_hardware_environment.h"
 #include "testutils/testasserts.h"
 

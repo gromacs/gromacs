@@ -42,17 +42,26 @@
 
 #include "gromacs/gmxpreprocess/gen_maxwell_velocities.h"
 
-#include <gtest/gtest-param-test.h>
+#include <string>
+#include <tuple>
+#include <vector>
 
+#include <gtest/gtest-param-test.h>
+#include <gtest/gtest.h>
+
+#include "gromacs/math/vectypes.h"
+#include "gromacs/topology/atoms.h"
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/logger.h"
+#include "gromacs/utility/real.h"
 #include "gromacs/utility/textreader.h"
 
 #include "testutils/cmdlinetest.h"
 #include "testutils/conftest.h"
 #include "testutils/refdata.h"
+#include "testutils/testasserts.h"
 #include "testutils/testfilemanager.h"
 #include "testutils/textblockmatchers.h"
 #include "testutils/topologyhelpers.h"

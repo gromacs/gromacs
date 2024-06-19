@@ -46,7 +46,9 @@
 #include <cmath>
 
 #include <set>
+#include <utility>
 
+#include "nblib/basicdefinitions.h"
 #include "nblib/exception.h"
 
 namespace nblib

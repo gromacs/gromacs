@@ -36,9 +36,12 @@
 
 #include <array>
 #include <memory>
+#include <utility>
+#include <vector>
 
 #include "gromacs/mdrun/runner.h"
 #include "gromacs/utility.h"
+#include "gromacs/utility/gmxassert.h"
 
 #include "gmxapi/context.h"
 #include "gmxapi/md.h"

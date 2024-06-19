@@ -43,6 +43,7 @@
 #include "gromacs/fileio/timecontrol.h"
 
 #include <iostream>
+#include <optional>
 #include <string>
 #include <vector>
 

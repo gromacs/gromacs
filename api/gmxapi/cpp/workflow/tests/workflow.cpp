@@ -35,6 +35,11 @@
 #include "workflow.h"
 
 #include <memory>
+#include <utility>
+
+#include <gtest/gtest.h>
+
+#include "programs/mdrun/tests/moduletest.h"
 
 #include "testingconfiguration.h"
 #include "workflow_impl.h"

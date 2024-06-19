@@ -48,22 +48,30 @@
 #include "gromacs/selection/nbsearch.h"
 
 #include <cmath>
+#include <cstddef>
+#include <cstdint>
 
 #include <algorithm>
 #include <limits>
 #include <map>
 #include <numeric>
+#include <string>
 #include <vector>
 
 #include <gtest/gtest.h>
 
 #include "gromacs/math/functions.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/math/vectypes.h"
+#include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/random/threefry.h"
 #include "gromacs/random/uniformrealdistribution.h"
 #include "gromacs/topology/block.h"
+#include "gromacs/utility/arrayref.h"
+#include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/listoflists.h"
+#include "gromacs/utility/real.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/stringutil.h"
 

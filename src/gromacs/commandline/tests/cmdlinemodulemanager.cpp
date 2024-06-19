@@ -42,7 +42,10 @@
 
 #include "gromacs/commandline/cmdlinemodulemanager.h"
 
+#include <string>
+
 #include <gmock/gmock.h>
+#include <gtest/gtest.h>
 
 #include "testutils/cmdlinetest.h"
 #include "testutils/testasserts.h"

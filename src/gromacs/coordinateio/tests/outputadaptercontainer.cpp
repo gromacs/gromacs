@@ -47,9 +47,12 @@
 
 #include <algorithm>
 #include <memory>
+#include <string>
 
 #include <gtest/gtest.h>
 
+#include "gromacs/coordinateio/coordinatefileenums.h"
+#include "gromacs/coordinateio/ioutputadapter.h"
 #include "gromacs/utility/exceptions.h"
 
 #include "testmodule.h"

@@ -50,10 +50,15 @@
 #include <string>
 #include <tuple>
 #include <unordered_map>
+#include <utility>
 #include <vector>
 
+#include "nblib/basicdefinitions.h"
+#include "nblib/listed_forces/bondtypes.h"
 #include "nblib/listed_forces/definitions.h"
 #include "nblib/particletype.h"
+#include "nblib/util/traits.hpp"
+#include "nblib/util/util.hpp"
 
 namespace nblib
 {

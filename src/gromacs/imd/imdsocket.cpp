@@ -52,6 +52,7 @@
 #include "config.h"
 
 #include <cerrno>
+#include <cstdio>
 #include <cstring>
 #include <ctime>
 

@@ -42,11 +42,16 @@
 #ifndef GMX_APPLIED_FORCES_COLVARSIMULATIONSPARAMETERS_H
 #define GMX_APPLIED_FORCES_COLVARSIMULATIONSPARAMETERS_H
 
+#include <memory>
+
 #include "gromacs/domdec/localatomsetmanager.h"
 #include "gromacs/mdtypes/commrec.h"
+#include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/topology/atoms.h"
 #include "gromacs/utility/logger.h"
+
+struct gmx_mtop_t;
 
 namespace gmx
 {

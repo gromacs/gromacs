@@ -41,6 +41,7 @@
 #include <cstdio>
 
 #include <filesystem>
+#include <string>
 #include <vector>
 
 #include "gromacs/utility/arrayref.h"

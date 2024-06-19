@@ -43,8 +43,14 @@
  */
 #include "nblib/molecules.h"
 
+#include <cstdio>
+
 #include <algorithm>
+#include <iterator>
+#include <stdexcept>
 #include <tuple>
+#include <type_traits>
+#include <variant>
 
 #include "nblib/exception.h"
 #include "nblib/particletype.h"

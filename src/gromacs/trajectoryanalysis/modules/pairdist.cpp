@@ -43,9 +43,12 @@
 #include "pairdist.h"
 
 #include <cmath>
+#include <cstddef>
 
 #include <algorithm>
 #include <limits>
+#include <memory>
+#include <string>
 #include <vector>
 
 #include "gromacs/analysisdata/analysisdata.h"
@@ -53,16 +56,26 @@
 #include "gromacs/options/basicoptions.h"
 #include "gromacs/options/filenameoption.h"
 #include "gromacs/options/ioptionscontainer.h"
+#include "gromacs/options/optionfiletype.h"
+#include "gromacs/selection/indexutil.h"
 #include "gromacs/selection/nbsearch.h"
 #include "gromacs/selection/selection.h"
 #include "gromacs/selection/selectionoption.h"
 #include "gromacs/trajectory/trajectoryframe.h"
 #include "gromacs/trajectoryanalysis/analysissettings.h"
 #include "gromacs/trajectoryanalysis/topologyinformation.h"
+#include "gromacs/utility/arrayref.h"
+#include "gromacs/utility/enumerationhelpers.h"
 #include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/real.h"
+
+struct gmx_mtop_t;
+struct t_pbc;
 
 namespace gmx
 {
+class AnalysisDataParallelOptions;
+class SelectionCollection;
 
 namespace analysismodules
 {

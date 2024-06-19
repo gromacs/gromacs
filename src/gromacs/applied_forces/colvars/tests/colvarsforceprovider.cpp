@@ -42,6 +42,10 @@
 
 #include "gromacs/applied_forces/colvars/colvarsforceprovider.h"
 
+#include <array>
+#include <filesystem>
+#include <map>
+#include <string>
 #include <vector>
 
 #include <gtest/gtest.h>
@@ -52,16 +56,22 @@
 #include "gromacs/gmxpreprocess/grompp.h"
 #include "gromacs/math/paddedvector.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/math/vectypes.h"
 #include "gromacs/mdlib/forcerec.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/enerdata.h"
 #include "gromacs/mdtypes/forceoutput.h"
 #include "gromacs/mdtypes/iforceprovider.h"
 #include "gromacs/pbcutil/pbc.h"
+#include "gromacs/topology/atoms.h"
+#include "gromacs/topology/ifunc.h"
 #include "gromacs/topology/mtop_lookup.h"
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/arrayref.h"
+#include "gromacs/utility/logger.h"
+#include "gromacs/utility/real.h"
+#include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/textreader.h"
 #include "gromacs/utility/textwriter.h"
 
@@ -69,6 +79,8 @@
 #include "testutils/refdata.h"
 #include "testutils/testasserts.h"
 #include "testutils/testfilemanager.h"
+
+enum class PbcType : int;
 
 namespace gmx
 {

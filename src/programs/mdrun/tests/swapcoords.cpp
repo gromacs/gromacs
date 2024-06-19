@@ -41,6 +41,14 @@
  */
 #include "gmxpre.h"
 
+#include <filesystem>
+#include <string>
+
+#include <gtest/gtest.h>
+
+#include "testutils/cmdlinetest.h"
+#include "testutils/testfilemanager.h"
+
 #include "moduletest.h"
 
 namespace gmx

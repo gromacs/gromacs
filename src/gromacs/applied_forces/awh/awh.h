@@ -62,6 +62,7 @@
 #ifndef GMX_AWH_H
 #define GMX_AWH_H
 
+#include <cstdint>
 #include <cstdio>
 
 #include <memory>
@@ -70,6 +71,7 @@
 
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/real.h"
 
 struct gmx_multisim_t;
 struct gmx_wallcycle;

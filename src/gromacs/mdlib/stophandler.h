@@ -64,6 +64,9 @@
 #ifndef GMX_MDLIB_STOPHANDLER_H
 #define GMX_MDLIB_STOPHANDLER_H
 
+#include <cstdint>
+#include <cstdio>
+
 #include <functional>
 #include <memory>
 #include <vector>
@@ -71,6 +74,8 @@
 #include "gromacs/compat/pointers.h"
 #include "gromacs/mdlib/sighandler.h"
 #include "gromacs/mdlib/simulationsignal.h"
+#include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/real.h"
 
 struct gmx_walltime_accounting;
 

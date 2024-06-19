@@ -41,12 +41,16 @@
  */
 #include "gmxpre.h"
 
+#include <filesystem>
+#include <string>
+
 #include <gtest/gtest.h>
 
 #include "gromacs/utility/stringutil.h"
 #include "gromacs/utility/textwriter.h"
 
 #include "testutils/cmdlinetest.h"
+#include "testutils/testfilemanager.h"
 
 #include "moduletest.h"
 

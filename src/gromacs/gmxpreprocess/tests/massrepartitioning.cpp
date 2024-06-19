@@ -35,12 +35,20 @@
 
 #include "gromacs/gmxpreprocess/massrepartitioning.h"
 
+#include <string>
+#include <vector>
+
 #include <gtest/gtest.h>
 
 #include "gromacs/fileio/warninp.h"
+#include "gromacs/topology/atoms.h"
 #include "gromacs/topology/idef.h"
 #include "gromacs/topology/ifunc.h"
 #include "gromacs/topology/topology.h"
+#include "gromacs/utility/arrayref.h"
+#include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/real.h"
+#include "gromacs/utility/smalloc.h"
 
 #include "testutils/testasserts.h"
 

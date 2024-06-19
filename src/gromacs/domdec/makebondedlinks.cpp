@@ -45,15 +45,25 @@
 
 #include "gromacs/domdec/makebondedlinks.h"
 
+#include <cstdio>
+
 #include <algorithm>
+#include <memory>
+#include <vector>
 
 #include "gromacs/domdec/domdec_internal.h"
+#include "gromacs/domdec/domdec_struct.h"
 #include "gromacs/domdec/options.h"
 #include "gromacs/domdec/reversetopology.h"
 #include "gromacs/mdtypes/atominfo.h"
+#include "gromacs/topology/atoms.h"
+#include "gromacs/topology/ifunc.h"
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/topology/topology.h"
+#include "gromacs/utility/arrayref.h"
+#include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/listoflists.h"
 
 using gmx::ArrayRef;

@@ -40,10 +40,15 @@
  * \author Prashanth Kanduri <kanduri@cscs.ch>
  * \author Sebastian Keller <keller@cscs.ch>
  */
+#include <memory>
+#include <string>
+#include <vector>
+
 #include <gtest/gtest.h>
 
 #include "gromacs/utility/arrayref.h"
 
+#include "nblib/basicdefinitions.h"
 #include "nblib/gmxcalculatorcpu.h"
 #include "nblib/kerneloptions.h"
 #include "nblib/simulationstate.h"

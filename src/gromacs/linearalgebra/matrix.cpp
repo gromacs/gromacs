@@ -39,6 +39,8 @@
 
 #include <cstdio>
 
+#include <filesystem>
+
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 

@@ -37,9 +37,12 @@
 
 #include "config.h"
 
+#include <cstdint>
+#include <cstdio>
 #include <cstdlib>
 
 #include <array>
+#include <filesystem>
 #include <memory>
 #include <string>
 #include <vector>

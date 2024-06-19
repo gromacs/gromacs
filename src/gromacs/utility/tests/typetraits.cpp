@@ -35,6 +35,9 @@
 
 #include "gromacs/utility/typetraits.h"
 
+#include <string>
+#include <type_traits>
+
 #include <gtest/gtest.h>
 
 namespace gmx

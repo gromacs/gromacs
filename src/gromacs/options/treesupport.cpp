@@ -44,13 +44,17 @@
 
 #include <set>
 #include <string>
+#include <utility>
 #include <vector>
 
+#include "gromacs/options/abstractoption.h"
 #include "gromacs/options/options.h"
 #include "gromacs/options/optionsassigner.h"
 #include "gromacs/options/optionsection.h"
 #include "gromacs/options/optionsvisitor.h"
+#include "gromacs/utility/any.h"
 #include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/ikeyvaluetreeerror.h"
 #include "gromacs/utility/keyvaluetree.h"
 #include "gromacs/utility/keyvaluetreebuilder.h"

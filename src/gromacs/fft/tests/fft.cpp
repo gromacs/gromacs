@@ -47,8 +47,11 @@
 
 #include "config.h"
 
+#include <cstring>
+
 #include <algorithm>
 #include <optional>
+#include <string>
 #include <tuple>
 #include <vector>
 
@@ -58,6 +61,11 @@
 #include "gromacs/fft/gpu_3dfft.h"
 #include "gromacs/fft/parallel_3dfft.h"
 #include "gromacs/gpu_utils/clfftinitializer.h"
+#include "gromacs/math/gmxcomplex.h"
+#include "gromacs/math/vectypes.h"
+#include "gromacs/utility/arrayref.h"
+#include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/real.h"
 #if GMX_GPU
 #    include "gromacs/gpu_utils/devicebuffer.h"
 #endif

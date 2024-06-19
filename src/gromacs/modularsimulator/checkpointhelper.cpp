@@ -42,6 +42,9 @@
 
 #include "checkpointhelper.h"
 
+#include <functional>
+#include <type_traits>
+
 #include "gromacs/domdec/domdec.h"
 #include "gromacs/mdlib/mdoutf.h"
 #include "gromacs/mdtypes/checkpointdata.h"
@@ -50,6 +53,8 @@
 #include "gromacs/mdtypes/observableshistory.h"
 #include "gromacs/mdtypes/pullhistory.h"
 #include "gromacs/mdtypes/state.h"
+#include "gromacs/modularsimulator/modularsimulatorinterfaces.h"
+#include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/stringutil.h"
 
 #include "trajectoryelement.h"

@@ -42,6 +42,8 @@
 #ifndef GMX_MDRUN_BOXDEFORMATION_H
 #define GMX_MDRUN_BOXDEFORMATION_H
 
+#include <cstdint>
+
 #include <memory>
 
 #include "gromacs/math/matrix.h"

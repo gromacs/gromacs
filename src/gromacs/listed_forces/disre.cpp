@@ -38,11 +38,14 @@
 
 #include "config.h"
 
+#include <climits>
 #include <cmath>
 #include <cstdlib>
 #include <cstring>
 
 #include <algorithm>
+#include <filesystem>
+#include <vector>
 
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/math/functions.h"
@@ -56,6 +59,8 @@
 #include "gromacs/mdtypes/state.h"
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/pbcutil/pbc.h"
+#include "gromacs/topology/forcefieldparameters.h"
+#include "gromacs/topology/idef.h"
 #include "gromacs/topology/mtop_atomloops.h"
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/topology/topology.h"

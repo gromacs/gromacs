@@ -41,11 +41,14 @@
 
 #include "gromacs/pbcutil/boxutilities.h"
 
+#include <cmath>
+
 #include <algorithm>
 
 #include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/math/vectypes.h"
+#include "gromacs/utility/real.h"
 
 void do_box_rel(int ndim, const matrix deform, matrix box_rel, matrix b, bool bInit)
 {

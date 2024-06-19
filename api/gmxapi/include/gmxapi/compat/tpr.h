@@ -43,6 +43,7 @@
 #define GMXAPICOMPAT_TPR_H
 
 #include <memory>
+#include <string>
 #include <vector>
 
 #include "gmxapi/compat/mdparams.h"

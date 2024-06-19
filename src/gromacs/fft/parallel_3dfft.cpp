@@ -39,6 +39,8 @@
 #include <cstdlib>
 #include <cstring>
 
+#include <filesystem>
+
 #include "gromacs/fft/fft.h"
 #include "gromacs/fft/fft5d.h"
 #include "gromacs/math/gmxcomplex.h"

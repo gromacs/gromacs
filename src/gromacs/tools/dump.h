@@ -35,6 +35,7 @@
 #define GMX_TOOLS_DUMP_H
 
 #include "gromacs/commandline/cmdlineoptionsmodule.h"
+#include "gromacs/libgromacs_export.h"
 
 namespace gmx
 {

@@ -45,16 +45,27 @@
 #include "config.h"
 
 #include <cassert>
+#include <cinttypes>
+#include <climits>
 #include <cmath>
+#include <cstdint>
 #include <cstdlib>
 
 #include <algorithm>
+#include <array>
+#include <filesystem>
+#include <functional>
+#include <memory>
 #include <optional>
+#include <string>
+#include <type_traits>
+#include <utility>
 #include <vector>
 
 #include "gromacs/domdec/domdec.h"
 #include "gromacs/domdec/domdec_struct.h"
 #include "gromacs/gmxlib/nrnb.h"
+#include "gromacs/math/arrayrefwithpadding.h"
 #include "gromacs/math/functions.h"
 #include "gromacs/math/paddedvector.h"
 #include "gromacs/math/units.h"
@@ -72,6 +83,8 @@
 #include "gromacs/simd/simd_math.h"
 #include "gromacs/simd/vector_operations.h"
 #include "gromacs/timing/wallcycle.h"
+#include "gromacs/topology/idef.h"
+#include "gromacs/topology/ifunc.h"
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/alignedallocator.h"
@@ -84,6 +97,7 @@
 #include "gromacs/utility/gmxomp.h"
 #include "gromacs/utility/listoflists.h"
 #include "gromacs/utility/pleasecite.h"
+#include "gromacs/utility/stringutil.h"
 
 namespace
 {

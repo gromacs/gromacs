@@ -54,6 +54,7 @@
 #include <list>
 #include <memory>
 #include <string>
+#include <utility>
 
 #include "gromacs/math/vec.h"
 #include "gromacs/math/vectypes.h"

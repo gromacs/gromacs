@@ -35,8 +35,14 @@
 
 #include "trajectory_writing.h"
 
+#include "gmxpre-config.h"
+
+#include <filesystem>
+#include <memory>
+
 #include "gromacs/commandline/filenm.h"
 #include "gromacs/fileio/confio.h"
+#include "gromacs/fileio/filetypes.h"
 #include "gromacs/fileio/tngio.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/energyoutput.h"
@@ -52,6 +58,7 @@
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/topology/topology.h"
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/smalloc.h"
 
 void do_md_trajectory_writing(FILE*                          fplog,

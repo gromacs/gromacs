@@ -53,6 +53,8 @@
 
 #include "config.h"
 
+#include <string>
+
 #include <gtest/gtest.h>
 
 #include "gromacs/simd/simd.h"

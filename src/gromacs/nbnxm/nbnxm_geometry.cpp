@@ -36,6 +36,8 @@
 
 #include "nbnxm_geometry.h"
 
+#include <cmath>
+
 #include "gromacs/nbnxm/nbnxm.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/real.h"

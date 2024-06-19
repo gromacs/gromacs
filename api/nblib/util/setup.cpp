@@ -44,6 +44,13 @@
 
 #include "nblib/util/setup.h"
 
+#include <cmath>
+#include <cstdio>
+
+#include <algorithm>
+
+#include "gromacs/math/vectypes.h"
+#include "gromacs/random/seed.h"
 #include "gromacs/random/tabulatednormaldistribution.h"
 #include "gromacs/random/threefry.h"
 #include "gromacs/utility/arrayref.h"

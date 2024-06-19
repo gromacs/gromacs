@@ -41,6 +41,8 @@
 #ifndef GMX_ONLINEHELP_RSTPARSER_H
 #define GMX_ONLINEHELP_RSTPARSER_H
 
+#include <cstddef>
+
 #include <memory>
 #include <string>
 

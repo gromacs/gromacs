@@ -44,7 +44,13 @@
 
 #include "gromacs/utility/strconvert.h"
 
+#include <array>
+#include <optional>
+#include <string>
+
 #include <gtest/gtest.h>
+
+#include "gromacs/utility/exceptions.h"
 
 namespace gmx
 {

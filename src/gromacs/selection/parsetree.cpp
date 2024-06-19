@@ -225,11 +225,17 @@
 
 #include <cstdarg>
 #include <cstdio>
+#include <cstring>
 
 #include <exception>
 #include <memory>
 
+#include "gromacs/selection/indexutil.h"
+#include "gromacs/selection/position.h"
 #include "gromacs/selection/selection.h"
+#include "gromacs/selection/selparam.h"
+#include "gromacs/selection/selvalue.h"
+#include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/smalloc.h"

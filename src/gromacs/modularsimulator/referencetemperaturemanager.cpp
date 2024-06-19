@@ -42,7 +42,11 @@
 
 #include "referencetemperaturemanager.h"
 
+#include <utility>
+
 #include "gromacs/mdtypes/group.h"
+#include "gromacs/modularsimulator/modularsimulatorinterfaces.h"
+#include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/gmxassert.h"
 
 namespace gmx

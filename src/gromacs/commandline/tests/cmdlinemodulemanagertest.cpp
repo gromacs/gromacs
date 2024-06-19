@@ -44,13 +44,17 @@
 
 #include <memory>
 #include <string>
+#include <utility>
 
 #include <gmock/gmock.h>
+#include <gtest/gtest.h>
 
 #include "gromacs/commandline/cmdlinehelpcontext.h"
 #include "gromacs/commandline/cmdlinemodule.h"
 #include "gromacs/commandline/cmdlinemodulemanager.h"
 #include "gromacs/commandline/cmdlineprogramcontext.h"
+#include "gromacs/onlinehelp/helpwritercontext.h"
+#include "gromacs/onlinehelp/ihelptopic.h"
 #include "gromacs/onlinehelp/tests/mock_helptopic.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/stringutil.h"

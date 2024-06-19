@@ -44,14 +44,20 @@
 #include <cctype>
 #include <cstring>
 
+#include <memory>
 #include <regex>
 #include <string>
+#include <vector>
 
+#include "gromacs/selection/indexutil.h"
 #include "gromacs/selection/position.h"
+#include "gromacs/selection/selparam.h"
+#include "gromacs/selection/selvalue.h"
 #include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/real.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/stringutil.h"
 
@@ -60,6 +66,8 @@
 #include "scanner.h"
 #include "selelem.h"
 #include "selmethod.h"
+
+struct gmx_mtop_t;
 
 /*! \brief
  * Allocates data for integer keyword evaluation.

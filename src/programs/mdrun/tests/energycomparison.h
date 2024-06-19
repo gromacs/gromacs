@@ -43,6 +43,7 @@
 
 #include <string>
 #include <unordered_map>
+#include <vector>
 
 #include "testutils/testasserts.h"
 

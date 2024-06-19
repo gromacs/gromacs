@@ -43,6 +43,10 @@
 
 #include "resethandler.h"
 
+#include <cinttypes>
+
+#include <filesystem>
+
 #include "gromacs/domdec/domdec.h"
 #include "gromacs/ewald/pme.h"
 #include "gromacs/ewald/pme_load_balancing.h"
@@ -53,9 +57,11 @@
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/nbnxm/gpu_data_mgmt.h"
 #include "gromacs/nbnxm/nbnxm.h"
+#include "gromacs/timing/wallcycle.h"
 #include "gromacs/timing/walltime_accounting.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/gmxassert.h"
 
 namespace gmx
 {

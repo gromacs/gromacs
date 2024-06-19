@@ -44,10 +44,12 @@
 
 #include <memory>
 #include <string>
+#include <tuple>
 
 #include <gtest/gtest.h>
 
 #include "testutils/cmdlinetest.h"
+#include "testutils/testfilemanager.h"
 
 #include "moduletest.h"
 

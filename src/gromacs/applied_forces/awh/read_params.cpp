@@ -36,9 +36,19 @@
 
 #include "read_params.h"
 
+#include <cinttypes>
+#include <cmath>
+#include <cstdio>
+
 #include <algorithm>
+#include <filesystem>
+#include <memory>
+#include <string>
+#include <string_view>
+#include <vector>
 
 #include "gromacs/applied_forces/awh/awh.h"
+#include "gromacs/applied_forces/awh/dimparams.h"
 #include "gromacs/fileio/readinp.h"
 #include "gromacs/fileio/warninp.h"
 #include "gromacs/math/units.h"
@@ -53,9 +63,12 @@
 #include "gromacs/pulling/pull.h"
 #include "gromacs/random/seed.h"
 #include "gromacs/topology/mtop_util.h"
+#include "gromacs/utility/arrayref.h"
+#include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/enumerationhelpers.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/iserializer.h"
 #include "gromacs/utility/stringutil.h"
 

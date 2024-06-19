@@ -41,15 +41,29 @@
  */
 #include "gmxpre.h"
 
+#include "config.h"
+
+#include <cstdlib>
+
 #include <algorithm>
+#include <array>
+#include <filesystem>
+#include <functional>
+#include <memory>
 #include <mutex>
+#include <optional>
 #include <string>
+#include <tuple>
 #include <unordered_map>
+#include <vector>
 
 #include <gtest/gtest.h>
 
+#include "gromacs/hardware/device_management.h"
 #include "gromacs/hardware/hw_info.h"
+#include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/enumerationhelpers.h"
+#include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/message_string_collector.h"
 #include "gromacs/utility/stringutil.h"
 
