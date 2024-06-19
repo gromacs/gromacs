@@ -63,6 +63,9 @@ Fixed an error that caused gmx hbond to prematurely terminate if there were no d
 :issue:`5059`
 :issue:`4985`
 
+Add grompp warning about zero AWH cover diameter when sharing a bias
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
 
 Fixes that affect portability
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

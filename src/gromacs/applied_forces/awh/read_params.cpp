@@ -552,7 +552,14 @@ void checkInputConsistencyAwhBias(const AwhBiasParams& awhBiasParams, WarningHan
         if (awhBiasParams.shareGroup() <= 0 && coverDiameter > 0)
         {
             wi->addWarning(
-                    "The covering diameter is only relevant to set for bias sharing simulations.");
+                    "The AWH covering diameter is only relevant to set for bias sharing "
+                    "simulations.");
+        }
+        if (awhBiasParams.shareGroup() > 0 && coverDiameter == 0)
+        {
+            wi->addWarning(
+                    "When simulations share an AWH bias, it is strongly recommended to use a "
+                    "non-zero covering diameter");
         }
     }
 }
