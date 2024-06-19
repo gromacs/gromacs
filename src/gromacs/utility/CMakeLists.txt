@@ -38,6 +38,9 @@ if (GMX_GPU_CUDA)
     set_source_files_properties(cuda_version_information.cu PROPERTIES LANGUAGE CUDA)
     set_property(GLOBAL APPEND PROPERTY GMX_LIBGROMACS_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/cuda_version_information.cu)
 endif ()
+if (GMX_GPU_HIP)
+    set_source_files_properties(hip_version_information_hip.cpp PROPERTIES LANGUAGE HIP)
+endif ()
 if (GMX_GPU_SYCL)
     _gmx_add_files_to_property(SYCL_SOURCES
                                sycl_version_information.cpp

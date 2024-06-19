@@ -93,6 +93,7 @@
 #include "buildinfo.h"
 #include "contributors.h"
 #include "cuda_version_information.h"
+#include "hip_version_information.h"
 #include "sycl_version_information.h"
 
 namespace
@@ -329,6 +330,14 @@ std::string getMultiGpuFftDescriptionString()
             // distinction does not matter here.
             return gmx::formatString("HeFFTe %s with cuFFT backend", Heffte_VERSION);
         }
+        else if (GMX_GPU_HIP && GMX_GPU_FFT_HIPFFT)
+        {
+            return gmx::formatString("HeFFTe %s with hipFFT backend", Heffte_VERSION);
+        }
+        else if (GMX_GPU_HIP && GMX_GPU_FFT_ROCFFT)
+        {
+            return gmx::formatString("HeFFTe %s with rocFFT backend", Heffte_VERSION);
+        }
         else if (GMX_GPU_SYCL && GMX_GPU_FFT_MKL)
         {
             return gmx::formatString("HeFFTe %s with oneMKL backend", Heffte_VERSION);
@@ -534,8 +543,7 @@ void gmx_print_version_info(gmx::TextWriter* writer)
     writer->writeLine(formatString("HIP compiler:        %s", HIP_COMPILER_INFO));
     writer->writeLine(formatString(
             "HIP compiler flags:  %s %s", HIP_COMPILER_FLAGS, CMAKE_BUILD_CONFIGURATION_CXX_FLAGS));
-//    writer->writeLine("HIP driver:         " + gmx::getHipDriverVersionString());
-//    writer->writeLine("HIP runtime:        " + gmx::getHipRuntimeVersionString());
+    writer->writeLine("HIP driver/runtime:  " + gmx::getHipDriverAndRuntimeVersionString());
 #endif
 }
 
