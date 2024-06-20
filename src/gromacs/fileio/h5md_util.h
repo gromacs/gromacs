@@ -32,6 +32,11 @@
  * the research papers on the package. Check out https://www.gromacs.org.
  */
 
+/*! \brief Declarations of low-level utility functions for working with H5MD HDF5 files.
+ *
+ * \author Magnus Lundborg <lundborg.magnus@gmail.com>
+ */
+
 #ifndef GMX_FILEIO_H5MD_UTIL_H
 #define GMX_FILEIO_H5MD_UTIL_H
 

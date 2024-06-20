@@ -32,6 +32,12 @@
  * the research papers on the package. Check out https://www.gromacs.org.
  */
 
+/*! \brief Definition low-level utility functions for working with H5MD HDF5 files.
+ *
+ * \author Magnus Lundborg <lundborg.magnus@gmail.com>
+ */
+
+
 #include "gmxpre.h"
 
 #include "h5md_util.h"

@@ -32,6 +32,11 @@
  * the research papers on the package. Check out https://www.gromacs.org.
  */
 
+/*! \brief Declares the i/o interface to H5MD HDF5 files.
+ *
+ * \author Magnus Lundborg <lundborg.magnus@gmail.com>
+ */
+
 #ifndef GMX_FILEIO_H5MD_IO_H
 #define GMX_FILEIO_H5MD_IO_H
 

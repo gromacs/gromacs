@@ -32,6 +32,11 @@
  * the research papers on the package. Check out https://www.gromacs.org.
  */
 
+/*! \brief Declarations for organizing time-dependent H5MD data blocks.
+ *
+ * \author Magnus Lundborg <lundborg.magnus@gmail.com>
+ */
+
 #ifndef GMX_FILEIO_H5MD_DATABLOCK_H
 #define GMX_FILEIO_H5MD_DATABLOCK_H
 

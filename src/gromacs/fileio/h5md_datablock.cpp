@@ -32,6 +32,12 @@
  * the research papers on the package. Check out https://www.gromacs.org.
  */
 
+/*! \brief Definition of a class for organizing time-dependent H5MD data blocks.
+ *
+ * \author Magnus Lundborg <lundborg.magnus@gmail.com>
+ */
+
+
 #include "gmxpre.h"
 
 #include "h5md_datablock.h"

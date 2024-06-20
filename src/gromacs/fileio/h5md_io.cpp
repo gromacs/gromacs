@@ -32,6 +32,11 @@
  * the research papers on the package. Check out https://www.gromacs.org.
  */
 
+/*! \brief I/o interface to H5MD HDF5 files.
+ *
+ * \author Magnus Lundborg <lundborg.magnus@gmail.com>
+ */
+
 #include "gmxpre.h"
 
 #include "h5md_io.h"

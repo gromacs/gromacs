@@ -32,6 +32,11 @@
  * the research papers on the package. Check out https://www.gromacs.org.
  */
 
+/*! \brief Defines the implementation of the GROMACS/H5MD i/o interface.
+ *
+ * \author Magnus Lundborg <lundborg.magnus@gmail.com>
+ */
+
 #include "gmxpre.h"
 
 #include "gmx_h5md_io.h"

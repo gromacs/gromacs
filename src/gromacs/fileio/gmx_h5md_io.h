@@ -32,6 +32,11 @@
  * the research papers on the package. Check out https://www.gromacs.org.
  */
 
+/*! \brief Declares the GROMACS/H5MD i/o interface.
+ *
+ * \author Magnus Lundborg <lundborg.magnus@gmail.com>
+ */
+
 #ifndef GMX_FILEIO_GMXH5MD_IO_H
 #define GMX_FILEIO_GMXH5MD_IO_H
 

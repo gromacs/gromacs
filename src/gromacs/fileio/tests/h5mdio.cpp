@@ -35,7 +35,7 @@
  * \brief
  * Tests for H5MD file I/O routines
  *
- * \author Magnus Lundborg <magnus.lundborg@scilifelab.se>
+ * \author Magnus Lundborg <lundborg.magnus@gmail.com>
  * \ingroup module_fileio
  */
 #include "gmxpre.h"
