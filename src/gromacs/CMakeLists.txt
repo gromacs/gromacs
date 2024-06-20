@@ -376,6 +376,16 @@ endif()
 
 gmx_setup_tng_for_libgromacs()
 
+if (GMX_INTERNAL_XDR)
+    set (_xdr_dir ../external/rpc_xdr)
+    target_sources(libgromacs PRIVATE
+        $<TARGET_OBJECTS:internal_rpc_xdr>
+    )
+    # This need is local to fileio and should be moved there if we
+    # move it to a CMake object library or C++ module.
+    target_include_directories(libgromacs SYSTEM PRIVATE ${_xdr_dir})
+endif()
+
 target_link_libraries(libgromacs
                       PRIVATE
                       ${EXTRAE_LIBRARIES}

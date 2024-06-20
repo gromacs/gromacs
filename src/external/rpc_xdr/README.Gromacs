@@ -1,0 +1,19 @@
+This directory contains source code for RPC XDR i/o
+
+The code has been copied from the source distribution for glibc
+(https://sourceware.org/git/glibc.git) 2.39 stable branch commit ef321e23
+(on Jun 18, 2024).
+
+The following files have been copied:
+sunrpc/xdr.c (renamed to xdr.cpp)
+sunrpc/xdr_array.c (renamed to xdr_array.cpp)
+sunrpc/xdr_float.c (renamed to xdr_float.cpp)
+sunrpc/xdr_stdio.c (renamed to xdr_stdio.cpp)
+install/rpc/types.h
+install/rpc/xdr.h
+
+The CMakeLists.txt file is part of the GROMACS build system and
+has been written from scratch to produce a static build of the RPC XDR library.
+
+Changes to each file have been noted in comments after the copyright header
+in each file.

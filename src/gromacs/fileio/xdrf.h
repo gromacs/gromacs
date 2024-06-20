@@ -42,7 +42,7 @@
 #include "gromacs/utility/real.h"
 
 #if GMX_INTERNAL_XDR
-#    include "gromacs/fileio/gmx_internal_xdr.h"
+#    include "rpc_xdr/xdr.h"
 #else
 #    include <rpc/rpc.h>
 #    include <rpc/xdr.h>
