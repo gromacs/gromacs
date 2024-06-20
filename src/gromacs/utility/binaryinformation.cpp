@@ -334,15 +334,11 @@ std::string getMultiGpuFftDescriptionString()
         {
             return gmx::formatString("HeFFTe %s with hipFFT backend", Heffte_VERSION);
         }
-        else if (GMX_GPU_HIP && GMX_GPU_FFT_ROCFFT)
-        {
-            return gmx::formatString("HeFFTe %s with rocFFT backend", Heffte_VERSION);
-        }
         else if (GMX_GPU_SYCL && GMX_GPU_FFT_MKL)
         {
             return gmx::formatString("HeFFTe %s with oneMKL backend", Heffte_VERSION);
         }
-        else if (GMX_GPU_SYCL && GMX_GPU_FFT_ROCFFT)
+        else if ((GMX_GPU_SYCL || GMX_GPU_HIP) && GMX_GPU_FFT_ROCFFT)
         {
             return gmx::formatString("HeFFTe %s with rocFFT backend", Heffte_VERSION);
         }
