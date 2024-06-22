@@ -933,7 +933,7 @@ bool read_next_frame(const gmx_output_env_t* oenv, t_trxstatus* status, t_trxfra
         {
             ftp = gmx_fio_getftp(status->fio);
         }
-        auto startTime = timeValue(TimeControl::Begin);
+        auto   startTime = timeValue(TimeControl::Begin);
         double absoluteError;
         switch (ftp)
         {

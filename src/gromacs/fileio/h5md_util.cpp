@@ -171,6 +171,9 @@ void registerSz3FilterImplicitly()
                 "Cannot use SZ3 compression filter. Please check that the SZ3 filter is in "
                 "HDF5_PLUGIN_PATH.");
     }
+#else
+    throw gmx::FileIOError(
+            "GROMACS was compiled without HDF5 support, cannot handle this file type");
 #endif
 }
 
@@ -185,6 +188,7 @@ hid_t openOrCreateDataSet(const hid_t                container,
 
 
 {
+#if GMX_USE_HDF5
     hid_t dataSet = H5Dopen(container, name, H5P_DEFAULT);
 
     if (dataSet < 0)
@@ -260,6 +264,10 @@ hid_t openOrCreateDataSet(const hid_t                container,
         }
     }
     return dataSet;
+#else
+    throw gmx::FileIOError(
+            "GROMACS was compiled without HDF5 support, cannot handle this file type");
+#endif
 }
 
 template<int numDims, bool writeFullDataSet>
@@ -334,10 +342,15 @@ void writeData(const hid_t dataSet, const void* data, const hsize_t frameToWrite
 
 size_t getDataTypeSize(const hid_t dataSet)
 {
+#if GMX_USE_HDF5
     hid_t origDatatype   = H5Dget_type(dataSet);
     hid_t nativeDatatype = H5Tget_native_type(origDatatype, H5T_DIR_DEFAULT);
 
     return H5Tget_size(nativeDatatype);
+#else
+    throw gmx::FileIOError(
+            "GROMACS was compiled without HDF5 support, cannot handle this file type");
+#endif
 }
 
 template<int numDims, bool readFullDataSet>
@@ -347,6 +360,7 @@ void readData(const hid_t   dataSet,
               size_t*       totalNumElements,
               size_t*       varLengthStringMaxLength)
 {
+#if GMX_USE_HDF5
     GMX_ASSERT(dataSet >= 0, "Needs a valid dataSet to read data.");
     GMX_ASSERT(!readFullDataSet || frameToRead == 0,
                "Must start reading from frame 0 if reading the whole data set.");
@@ -441,19 +455,29 @@ void readData(const hid_t   dataSet,
             throw gmx::FileIOError("Error reading data set.");
         }
     }
+#else
+    throw gmx::FileIOError(
+            "GROMACS was compiled without HDF5 support, cannot handle this file type");
+#endif
 }
 
 template<int numDims>
 void readData(const hid_t dataSet, const hsize_t frameToRead, void** buffer)
 {
+#if GMX_USE_HDF5
     size_t totalNumElementsDummy, varLengthStringMaxLengthDummy;
 
     readData<numDims, false>(
             dataSet, frameToRead, buffer, &totalNumElementsDummy, &varLengthStringMaxLengthDummy);
+#else
+    throw gmx::FileIOError(
+            "GROMACS was compiled without HDF5 support, cannot handle this file type");
+#endif
 }
 
 void setBoxGroupAttributes(const hid_t boxGroup, const PbcType pbcType)
 {
+#if GMX_USE_HDF5
     setAttribute(boxGroup, "dimension", DIM, H5T_NATIVE_INT);
     static constexpr int c_pbcTypeStringLength                               = 9;
     char                 boundaryAttributeString[DIM][c_pbcTypeStringLength] = { "periodic",
@@ -471,10 +495,15 @@ void setBoxGroupAttributes(const hid_t boxGroup, const PbcType pbcType)
             break;
     }
     setAttributeStringList<DIM, c_pbcTypeStringLength>(boxGroup, "boundary", boundaryAttributeString);
+#else
+    throw gmx::FileIOError(
+            "GROMACS was compiled without HDF5 support, cannot handle this file type");
+#endif
 }
 
 void setVersionAttribute(const hid_t group, const int majorVersion, const int minorVersion)
 {
+#if GMX_USE_HDF5
     char  name[]    = "version";
     hid_t attribute = H5Aopen(group, name, H5P_DEFAULT);
     hid_t dataType  = H5Tcopy(H5T_NATIVE_INT32);
@@ -492,10 +521,15 @@ void setVersionAttribute(const hid_t group, const int majorVersion, const int mi
         throw gmx::FileIOError("Cannot write attribute.");
     }
     H5Aclose(attribute);
+#else
+    throw gmx::FileIOError(
+            "GROMACS was compiled without HDF5 support, cannot handle this file type");
+#endif
 }
 
 bool getVersionAttribute(const hid_t group, int* majorVersion, int* minorVersion)
 {
+#if GMX_USE_HDF5
     char  name[]    = "version";
     hid_t attribute = H5Aopen(group, name, H5P_DEFAULT);
     if (attribute < 0)
@@ -514,11 +548,16 @@ bool getVersionAttribute(const hid_t group, int* majorVersion, int* minorVersion
 
     H5Aclose(attribute);
     return true;
+#else
+    throw gmx::FileIOError(
+            "GROMACS was compiled without HDF5 support, cannot handle this file type");
+#endif
 }
 
 template<typename T>
 void setAttribute(const hid_t dataSet, const char* name, const T value, const hid_t dataType)
 {
+#if GMX_USE_HDF5
     hid_t attribute = H5Aopen(dataSet, name, H5P_DEFAULT);
     if (attribute < 0)
     {
@@ -531,10 +570,15 @@ void setAttribute(const hid_t dataSet, const char* name, const T value, const hi
         throw gmx::FileIOError("Cannot write attribute.");
     }
     H5Aclose(attribute);
+#else
+    throw gmx::FileIOError(
+            "GROMACS was compiled without HDF5 support, cannot handle this file type");
+#endif
 }
 
 void setAttribute(const hid_t dataSet, const char* name, const char* value)
 {
+#if GMX_USE_HDF5
     hid_t dataType = H5Tcopy(H5T_C_S1);
     H5Tset_size(dataType, strlen(value));
     H5Tset_strpad(dataType, H5T_STR_NULLTERM);
@@ -552,11 +596,16 @@ void setAttribute(const hid_t dataSet, const char* name, const char* value)
         throw gmx::FileIOError("Cannot write attribute.");
     }
     H5Aclose(attribute);
+#else
+    throw gmx::FileIOError(
+            "GROMACS was compiled without HDF5 support, cannot handle this file type");
+#endif
 }
 
 template<typename T>
 bool getAttribute(const hid_t dataSet, const char* name, T* value)
 {
+#if GMX_USE_HDF5
     hid_t attribute = H5Aopen(dataSet, name, H5P_DEFAULT);
     if (attribute < 0)
     {
@@ -571,10 +620,15 @@ bool getAttribute(const hid_t dataSet, const char* name, T* value)
 
     H5Aclose(attribute);
     return true;
+#else
+    throw gmx::FileIOError(
+            "GROMACS was compiled without HDF5 support, cannot handle this file type");
+#endif
 }
 
 bool getAttribute(const hid_t dataSet, const char* name, char** value)
 {
+#if GMX_USE_HDF5
     if (!H5Aexists(dataSet, name))
     {
         return false;
@@ -597,11 +651,16 @@ bool getAttribute(const hid_t dataSet, const char* name, char** value)
 
     H5Aclose(attribute);
     return true;
+#else
+    throw gmx::FileIOError(
+            "GROMACS was compiled without HDF5 support, cannot handle this file type");
+#endif
 }
 
 template<hid_t numEntries, size_t stringLength>
 void setAttributeStringList(const hid_t dataSet, const char* name, const char value[numEntries][stringLength])
 {
+#if GMX_USE_HDF5
     hid_t dataType = H5Tcopy(H5T_C_S1);
     H5Tset_size(dataType, stringLength);
     H5Tset_strpad(dataType, H5T_STR_NULLTERM);
@@ -619,10 +678,15 @@ void setAttributeStringList(const hid_t dataSet, const char* name, const char va
         throw gmx::FileIOError("Cannot write attribute.");
     }
     H5Aclose(attribute);
+#else
+    throw gmx::FileIOError(
+            "GROMACS was compiled without HDF5 support, cannot handle this file type");
+#endif
 }
 
 real getDataSetSz3CompressionError(const hid_t dataSet)
 {
+#if GMX_USE_HDF5
     hid_t        propertyList                   = H5Dget_create_plist(dataSet);
     unsigned int flags                          = 0;
     size_t       numCompressionSettingsElements = 9;
@@ -670,12 +734,21 @@ real getDataSetSz3CompressionError(const hid_t dataSet)
         return relError;
     }
     return -1;
+#else
+    throw gmx::FileIOError(
+            "GROMACS was compiled without HDF5 support, cannot handle this file type");
+#endif
 }
 
 bool objectExists(const hid_t container, const char* name)
 {
+#if GMX_USE_HDF5
     return H5Lexists(container, name, H5P_DEFAULT) >= 0
            && H5Oexists_by_name(container, name, H5P_DEFAULT) >= 0;
+#else
+    throw gmx::FileIOError(
+            "GROMACS was compiled without HDF5 support, cannot handle this file type");
+#endif
 }
 
 } // namespace h5mdio

@@ -281,7 +281,8 @@ public:
         }
         else
         {
-            EXPECT_REAL_EQ_TOL(refCompressionAbsoluteError_, testAbsoluteError, gmx::test::defaultRealTolerance());
+            EXPECT_REAL_EQ_TOL(
+                    refCompressionAbsoluteError_, testAbsoluteError, gmx::test::defaultRealTolerance());
         }
         for (int d1 = 0; d1 < DIM; d1++)
         {

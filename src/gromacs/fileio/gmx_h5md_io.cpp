@@ -51,8 +51,6 @@
 #include <string>
 #include <vector>
 
-#include <sys/_types/_int64_t.h>
-
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/topology/atoms.h"
 #include "gromacs/topology/mtop_util.h"
@@ -85,6 +83,7 @@ void setupSystemParticleProperties(gmx::h5mdio::GmxH5mdIo*  file,
                                    gmx::ArrayRef<const int> selectionIndices,
                                    std::string              selectionName)
 {
+#if GMX_USE_HDF5
     /* Vectors are used to keep the values in a continuous memory block. */
     std::vector<real> atomCharges;
     std::vector<real> atomMasses;
@@ -115,6 +114,11 @@ void setupSystemParticleProperties(gmx::h5mdio::GmxH5mdIo*  file,
     file->setNumericDataSet("/particles/" + selectionName, "mass", atomMasses, "amu", false);
     file->setNumericDataSet("/particles/" + selectionName, "species", atomSpecies, "", false);
     file->setNumericDataSet("/particles/" + selectionName, "id", atomIds, "", false);
+
+#else
+    throw gmx::FileIOError(
+            "GROMACS was compiled without HDF5 support, cannot handle this file type");
+#endif
 }
 
 /*! \brief Add atom type entries (species) for all different atom types in \p atoms.
@@ -127,6 +131,7 @@ void setupSystemParticleProperties(gmx::h5mdio::GmxH5mdIo*  file,
  */
 void addAtomTypesOfAtoms(gmx::h5mdio::GmxH5mdIo* file, const t_atoms& atoms, std::vector<bool>& atomTypesAdded)
 {
+#if GMX_USE_HDF5
     hid_t atomTypesGroup =
             file->createGroup(gmx::h5mdio::s_gromacsTopologyGroupName + "/atom_species");
     hid_t   dataType     = H5Tcopy(H5T_NATIVE_INT);
@@ -148,6 +153,11 @@ void addAtomTypesOfAtoms(gmx::h5mdio::GmxH5mdIo* file, const t_atoms& atoms, std
             atomTypesAdded[atom->type] = true;
         }
     }
+
+#else
+    throw gmx::FileIOError(
+            "GROMACS was compiled without HDF5 support, cannot handle this file type");
+#endif
 }
 
 
@@ -290,7 +300,6 @@ void addBlockOfMoleculeType(gmx::h5mdio::GmxH5mdIo*     file,
     tmpValue = molBlockIndices.moleculeIndexStart;
     gmx::h5mdio::writeData<1, false>(moleculeIndexStartDataSet, &tmpValue, molBlockIndex);
 
-
 #else
     throw gmx::FileIOError(
             "GROMACS was compiled without HDF5 support, cannot handle this file type");
@@ -372,6 +381,7 @@ void addMoleculeTypeBondsToTopology(gmx::h5mdio::GmxH5mdIo* gmx_unused        fi
                                     std::vector<std::pair<int64_t, int64_t>>* systemBonds,
                                     std::vector<std::pair<int64_t, int64_t>>* selectionBonds)
 {
+#if GMX_USE_HDF5
     std::vector<std::pair<int64_t, int64_t>> bonds;
     /* Bonds have to be deduced from interactions (constraints etc). Different
      * interactions have different sets of parameters. */
@@ -435,6 +445,11 @@ void addMoleculeTypeBondsToTopology(gmx::h5mdio::GmxH5mdIo* gmx_unused        fi
     H5Iget_name(molTypeGroup, molTypeGroupPath, gmx::h5mdio::c_maxFullNameLength - 1);
 
     file->setNumericDataSet(molTypeGroupPath, "connectivity", bonds, "", false);
+
+#else
+    throw gmx::FileIOError(
+            "GROMACS was compiled without HDF5 support, cannot handle this file type");
+#endif
 }
 
 /*! \brief Check whether there is a separate selection for output.
@@ -476,6 +491,7 @@ namespace gmx
 
 void setH5mdAuthorAndCreator(h5mdio::GmxH5mdIo* file)
 {
+#if GMX_USE_HDF5
     char tmpUserName[gmx::h5mdio::c_maxFullNameLength];
     if (!gmx_getusername(tmpUserName, gmx::h5mdio::c_maxFullNameLength))
     {
@@ -483,14 +499,19 @@ void setH5mdAuthorAndCreator(h5mdio::GmxH5mdIo* file)
     }
 
     std::string precisionString = "";
-#if GMX_DOUBLE
+#    if GMX_DOUBLE
     precisionString = " (double precision)";
-#endif
+#    endif
     std::string programInfo = gmx::getProgramContext().displayName() + precisionString;
     file->setCreatorProgramName(programInfo);
 
     const std::string gmxVersion = gmx_version();
     file->setCreatorProgramVersion(gmxVersion);
+
+#else
+    throw gmx::FileIOError(
+            "GROMACS was compiled without HDF5 support, cannot handle this file type");
+#endif
 }
 
 void setupMolecularSystemParticleData(h5mdio::GmxH5mdIo*       file,
@@ -781,6 +802,7 @@ void writeFrameToStandardDataBlocks(h5mdio::GmxH5mdIo* file,
                              numFramesPerChunk,
                              h5mdio::CompressionAlgorithm::LosslessWithShuffle);
     }
+
 #else
     throw gmx::FileIOError(
             "GROMACS was compiled without HDF5 support, cannot handle this file type");
@@ -865,6 +887,7 @@ bool readNextFrameOfStandardDataBlocks(h5mdio::GmxH5mdIo* file,
         }
     }
     return didReadFrame;
+
 #else
     throw gmx::FileIOError(
             "GROMACS was compiled without HDF5 support, cannot handle this file type");
@@ -873,6 +896,7 @@ bool readNextFrameOfStandardDataBlocks(h5mdio::GmxH5mdIo* file,
 
 bool copyProvenanceRecords(h5mdio::GmxH5mdIo* srcFile, h5mdio::GmxH5mdIo* destFile)
 {
+#if GMX_USE_HDF5
     hid_t srcModulesGroup = srcFile->getGroupId("/modules");
     if (srcModulesGroup < 0)
     {
@@ -885,6 +909,11 @@ bool copyProvenanceRecords(h5mdio::GmxH5mdIo* srcFile, h5mdio::GmxH5mdIo* destFi
         return false;
     }
     return true;
+
+#else
+    throw gmx::FileIOError(
+            "GROMACS was compiled without HDF5 support, cannot handle this file type");
+#endif
 }
 
 extern template hid_t
