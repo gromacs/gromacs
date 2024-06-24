@@ -576,7 +576,6 @@ static void boxv_trotter(const t_inputrec*     ir,
                          const tensor          box,
                          const gmx_ekindata_t* ekind,
                          const tensor          vir,
-                         real                  pcorr,
                          const t_extmass*      MassQ)
 {
 
@@ -617,7 +616,7 @@ static void boxv_trotter(const t_inputrec*     ir,
     /* for now, we use Elr = 0, because if you want to get it right, you
        really should be using PME. Maybe print a warning? */
 
-    pscal = calc_pres(ir->pbcType, nwall, box, ekinmod, vir, localpres) + pcorr;
+    pscal = calc_pres(ir->pbcType, nwall, box, ekinmod, vir, localpres);
 
     vol = det(box);
     GW  = (vol * (MassQ->Winv / gmx::c_presfac))
@@ -1515,7 +1514,6 @@ static void nosehoover_tcoupl(const gmx_ekindata_t& ekind,
 void trotter_update(const t_inputrec*                   ir,
                     int64_t                             step,
                     gmx_ekindata_t*                     ekind,
-                    const gmx_enerdata_t*               enerd,
                     t_state*                            state,
                     const tensor                        vir,
                     int                                 homenr,
@@ -1583,7 +1581,7 @@ void trotter_update(const t_inputrec*                   ir,
         {
             case etrtBAROV:
             case etrtBAROV2:
-                boxv_trotter(ir, &(state->veta), dt, state->box, ekind, vir, enerd->term[F_PDISPCORR], MassQ);
+                boxv_trotter(ir, &(state->veta), dt, state->box, ekind, vir, MassQ);
                 break;
             case etrtBARONHC:
             case etrtBARONHC2:

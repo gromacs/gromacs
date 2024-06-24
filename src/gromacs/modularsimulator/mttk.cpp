@@ -536,9 +536,8 @@ void MttkElement::propagateEtaVelocity(Step step)
 
     tensor currentPressureTensor;
 
-    const real currentPressure =
-            calc_pres(pbcType_, numWalls_, statePropagatorData_->constBox(), modifiedKineticEnergy, virial, currentPressureTensor)
-            + energyData_->enerdata()->term[F_PDISPCORR];
+    const real currentPressure = calc_pres(
+            pbcType_, numWalls_, statePropagatorData_->constBox(), modifiedKineticEnergy, virial, currentPressureTensor);
 
     const real etaAcceleration = DIM * currentVolume * (mttkData_->invEtaMass() / c_presfac)
                                  * (currentPressure - mttkData_->referencePressure());
