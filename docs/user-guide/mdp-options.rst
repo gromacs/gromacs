@@ -148,7 +148,7 @@ Run control
       the test particle. A trajectory must be provided to ``mdrun
       -rerun``. This trajectory should not contain the molecule to be
       inserted. Insertions are performed :mdp:`nsteps` times in each
-      frame at random locations and with random orientiations of the
+      frame at random locations and with random orientations of the
       molecule. When :mdp:`nstlist` is larger than one,
       :mdp:`nstlist` insertions are performed in a sphere with radius
       :mdp:`rtpi` around a the same random location using the same
@@ -246,9 +246,9 @@ Run control
 
 .. mdp:: mts-levels
 
-        (2)
-	The number of levels for the multiple time-stepping scheme.
-	Currently only 2 is supported.
+   (2)
+   The number of levels for the multiple time-stepping scheme.
+   Currently only 2 is supported.
 
 .. mdp:: mts-level2-forces
 
@@ -1444,7 +1444,7 @@ Bonds
       does not support constraints between atoms on different
       decomposition domains, so it can only be used with domain
       decomposition when so-called update-groups are used, which is
-      usally the case when only bonds involving hydrogens are
+      usually the case when only bonds involving hydrogens are
       constrained. SHAKE can not be used with energy minimization.
 
 .. mdp:: continuation
@@ -1458,7 +1458,7 @@ Bonds
    .. mdp-value:: yes
 
       do not apply constraints to the start configuration and do not
-      reset shells, useful for exact coninuation and reruns
+      reset shells, useful for exact continuation and reruns
 
 .. mdp:: shake-tol
 
@@ -2687,8 +2687,8 @@ Free energy calculations
 
    (no)
    Whether to apply the soft-core free energy interaction
-   transformation to the Columbic interaction of a molecule. Default
-   is no, as it is generally more efficient to turn off the Coulomic
+   transformation to the Coulombic interaction of a molecule. Default
+   is no, as it is generally more efficient to turn off the Coulombic
    interactions linearly before turning off the van der Waals
    interactions. Note that it is only taken into account when lambda
    states are used, not with :mdp:`couple-lambda0` /
@@ -2773,7 +2773,7 @@ Free energy calculations
 
 .. mdp:: couple-lambda1
 
-   analogous to :mdp:`couple-lambda1`, but for lambda=1
+   analogous to :mdp:`couple-lambda0`, but for lambda=1
 
 .. mdp:: couple-intramol
 
@@ -2914,13 +2914,13 @@ Expanded Ensemble calculations
    .. mdp-value:: metropolis-transition
 
       Randomly chooses a new state up or down, then uses the
-      Metropolis critera to decide whether to accept or reject:
+      Metropolis criteria to decide whether to accept or reject:
       Min{1,exp(-(beta_new u_new - beta_old u_old)}
 
    .. mdp-value:: barker-transition
 
       Randomly chooses a new state up or down, then uses the Barker
-      transition critera to decide whether to accept or reject:
+      transition criteria to decide whether to accept or reject:
       exp(-beta_new u_new)/(exp(-beta_new u_new)+exp(-beta_old u_old))
 
    .. mdp-value:: gibbs
@@ -2986,7 +2986,7 @@ Expanded Ensemble calculations
    result in free energies getting 'burned in' to incorrect values
    that depend on the initial state. when :mdp:`wl-oneovert` is true,
    then when the incrementor becomes less than 1/N, where N is the
-   mumber of samples collected (and thus proportional to the data
+   number of samples collected (and thus proportional to the data
    collection time, hence '1 over t'), then the Wang-Lambda
    incrementor is set to 1/N, decreasing every step. Once this occurs,
    :mdp:`wl-ratio` is ignored, but the weights will still stop
@@ -3154,7 +3154,7 @@ Non-equilibrium MD
    groups for constant acceleration (*e.g.* ``Protein Sol``) all atoms
    in groups Protein and Sol will experience constant acceleration as
    specified in the :mdp:`accelerate` line. Note that the kinetic energy
-   of the center of mass of accelarated groups contributes to the kinetic
+   of the center of mass of accelerated groups contributes to the kinetic
    energy and temperature of the system. If this is not desired, make
    each accelerate group also a separate temperature coupling group.
 
@@ -3232,7 +3232,7 @@ Non-equilibrium MD
       When the :mdp:`deform` option is active, add a velocity profile
       corresponding to the box deformation to the initial velocities.
       This is done after computing observables from the initial state
-      such as the initial tempature.
+      such as the initial temperature.
 
 Electric fields
 ^^^^^^^^^^^^^^^
