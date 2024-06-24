@@ -892,7 +892,7 @@ if (tt != NOTSET)
     {
         fprintf(fp, "Cp-Cv                                    =  %10g J/(mol K)\n", dcp);
     }
-    please_cite(fp, "Allen1987a");
+    please_cite(fp, "Allen2017");
 }
 else
 {
