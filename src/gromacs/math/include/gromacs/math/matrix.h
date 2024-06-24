@@ -181,6 +181,30 @@ BasicMatrix3x3<ElementType> operator+(const BasicMatrix3x3<ElementType>& a,
     return result;
 }
 
+//! Return the inner product of multiplication of two 3x3 matrices \c a and \c b
+template<typename ElementType>
+BasicMatrix3x3<ElementType> inner(const BasicMatrix3x3<ElementType>& a,
+                                  const BasicMatrix3x3<ElementType>& b)
+{
+    BasicMatrix3x3<ElementType> result({ a(0, 0) * b(0, 0) + a(0, 1) * b(1, 0) + a(0, 2) * b(2, 0),
+                                         a(0, 0) * b(0, 1) + a(0, 1) * b(1, 1) + a(0, 2) * b(2, 1),
+                                         a(0, 0) * b(0, 2) + a(0, 1) * b(1, 2) + a(0, 2) * b(2, 2),
+                                         a(1, 0) * b(0, 0) + a(1, 1) * b(1, 0) + a(1, 2) * b(2, 0),
+                                         a(1, 0) * b(0, 1) + a(1, 1) * b(1, 1) + a(1, 2) * b(2, 1),
+                                         a(1, 0) * b(0, 2) + a(1, 1) * b(1, 2) + a(1, 2) * b(2, 2),
+                                         a(2, 0) * b(0, 0) + a(2, 1) * b(1, 0) + a(2, 2) * b(2, 0),
+                                         a(2, 0) * b(0, 1) + a(2, 1) * b(1, 1) + a(2, 2) * b(2, 1),
+                                         a(2, 0) * b(0, 2) + a(2, 1) * b(1, 2) + a(2, 2) * b(2, 2) });
+    return result;
+}
+
+//! Return the inner product of multiplication of two 3x3 matrices \c a and \c b
+template<typename ElementType>
+BasicMatrix3x3<ElementType> operator*(const BasicMatrix3x3<ElementType>& a,
+                                      const BasicMatrix3x3<ElementType>& b)
+{
+    return inner(a, b);
+}
 
 //! Return the product of multiplying the 3x3 matrix \c m by the scalar \c s
 template<typename ElementType>

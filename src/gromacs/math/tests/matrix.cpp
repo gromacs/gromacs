@@ -230,6 +230,40 @@ TEST_F(MatrixTest, IdentityMatrix)
     EXPECT_REAL_EQ(realIdMatrix(1, 0), 0);
 }
 
+TEST_F(MatrixTest, MatrixMatrixInnerProduct)
+{
+    const Matrix3x3 matrixA({ 1, 2, 3, 4, 5, 6, 7, 8, 9 });
+    const Matrix3x3 matrixB({ 9, 8, 7, 6, 5, 4, 3, 2, 1 });
+    Matrix3x3       matrixC = inner(matrixA, matrixB);
+    EXPECT_REAL_EQ(matrixC(0, 0), 30);
+    EXPECT_REAL_EQ(matrixC(0, 1), 24);
+    EXPECT_REAL_EQ(matrixC(0, 2), 18);
+    EXPECT_REAL_EQ(matrixC(1, 0), 84);
+    EXPECT_REAL_EQ(matrixC(1, 1), 69);
+    EXPECT_REAL_EQ(matrixC(1, 2), 54);
+    EXPECT_REAL_EQ(matrixC(2, 0), 138);
+    EXPECT_REAL_EQ(matrixC(2, 1), 114);
+    EXPECT_REAL_EQ(matrixC(2, 2), 90);
+}
+
+
+TEST_F(MatrixTest, MatrixMatrixMultiplication)
+{
+    const Matrix3x3 matrixA({ 1, 2, 3, 4, 5, 6, 7, 8, 9 });
+    const Matrix3x3 matrixB({ 9, 8, 7, 6, 5, 4, 3, 2, 1 });
+    Matrix3x3       matrixC = matrixA * matrixB;
+    EXPECT_REAL_EQ(matrixC(0, 0), 30);
+    EXPECT_REAL_EQ(matrixC(0, 1), 24);
+    EXPECT_REAL_EQ(matrixC(0, 2), 18);
+    EXPECT_REAL_EQ(matrixC(1, 0), 84);
+    EXPECT_REAL_EQ(matrixC(1, 1), 69);
+    EXPECT_REAL_EQ(matrixC(1, 2), 54);
+    EXPECT_REAL_EQ(matrixC(2, 0), 138);
+    EXPECT_REAL_EQ(matrixC(2, 1), 114);
+    EXPECT_REAL_EQ(matrixC(2, 2), 90);
+}
+
+
 TEST_F(MatrixTest, MatrixVectorMultiplication)
 {
     const Matrix3x3 matrix({ 0.1, 1, 0.1, 0.4, 1, 0.6, 0.7, 0.8, 0.9 });
