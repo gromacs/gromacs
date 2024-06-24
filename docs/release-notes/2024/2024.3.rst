@@ -82,6 +82,11 @@ A restriction to not generate TPR files for the Andersen thermostat with constra
 
 :issue:`5093`
 
+Fixed filenames of generated CP2K files in QMMM MdModule 
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+If there were no files provided with ``grompp -qmi`` option, module used ``topol/_cp2k.inp`` instead of ``topol_cp2k.inp``
+
 Fixes that affect portability
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
