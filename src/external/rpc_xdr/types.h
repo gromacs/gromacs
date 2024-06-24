@@ -28,6 +28,14 @@
  *   OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+/* This file has been modified in the GROMACS distribution by, e.g.:
+ * - removing macros for defining types such as:
+ * "-typedef __u_char u_char;"
+ * - removing network related definitions.
+ * - adding stdint.h header.
+ * - removing headers that are no longer necessary.
+ */
+
 /* fixincludes should not add extern "C" to this file */
 /*
  * Rpc additions to <sys/types.h>
@@ -66,41 +74,6 @@ typedef unsigned long rpcport_t;
  */
 #define mem_free(ptr, bsize)	free(ptr)
 
-#ifndef makedev /* ie, we haven't already included it */
-#include <sys/types.h>
-#endif
-
-#if defined __APPLE_CC__ || defined __FreeBSD__
-# define __u_char_defined
-# define __daddr_t_defined
-#endif
-
-#ifndef __u_char_defined
-typedef __u_char u_char;
-typedef __u_short u_short;
-typedef __u_int u_int;
-typedef __u_long u_long;
-typedef __quad_t quad_t;
-typedef __u_quad_t u_quad_t;
-typedef __fsid_t fsid_t;
-# define __u_char_defined
-#endif
-#ifndef __daddr_t_defined
-typedef __daddr_t daddr_t;
-typedef __caddr_t caddr_t;
-# define __daddr_t_defined
-#endif
-
-#include <sys/time.h>
-#include <sys/param.h>
-
-#include <netinet/in.h>
-
-#ifndef INADDR_LOOPBACK
-#define       INADDR_LOOPBACK         (u_long)0x7F000001
-#endif
-#ifndef MAXHOSTNAMELEN
-#define        MAXHOSTNAMELEN  64
-#endif
+#include <stdint.h>
 
 #endif /* rpc/types.h */

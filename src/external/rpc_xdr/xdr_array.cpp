@@ -43,6 +43,9 @@
  *  #endif"
  * - using fputs() instead of __fxprintf()
  * - using explicit cast to (char *) with calloc.
+ * - changing u_int to unsigned int, u_long to unsigned long,
+ *   u_short to unsigned short and u_char to unsigned char.
+ * - changing caddr_t to char*.
  * - removing headers that are no longer necessary.
  */
 
@@ -50,11 +53,9 @@
 #include <string.h>
 #include "types.h"
 #include "xdr.h"
-#include <libintl.h>
 #include <limits.h>
-#include <wchar.h>
 
-#define LASTUNSIGNED	((u_int)0-1)
+#define LASTUNSIGNED	((unsigned int)0-1)
 
 
 /*
@@ -67,19 +68,19 @@
 bool_t
 xdr_array (XDR *xdrs,
 	   /* array pointer */
-	   caddr_t *addrp,
+	   char** addrp,
 	   /* number of elements */
-	   u_int *sizep,
+	   unsigned int *sizep,
 	   /* max numberof elements */
-	   u_int maxsize,
+	   unsigned int maxsize,
 	   /* size in bytes of each element */
-	   u_int elsize,
+	   unsigned int elsize,
 	   /* xdr routine to handle each element */
 	   xdrproc_t elproc)
 {
-  u_int i;
-  caddr_t target = *addrp;
-  u_int c;		/* the actual element count */
+  unsigned int i;
+  char* target = *addrp;
+  unsigned int c;		/* the actual element count */
   bool_t stat = TRUE;
 
   /* like strings, arrays are really counted arrays */
@@ -152,10 +153,10 @@ xdr_array (XDR *xdrs,
  * > xdr_elem: routine to XDR each element
  */
 bool_t
-xdr_vector (XDR *xdrs, char *basep, u_int nelem, u_int elemsize,
+xdr_vector (XDR *xdrs, char *basep, unsigned int nelem, unsigned int elemsize,
 	    xdrproc_t xdr_elem)
 {
-  u_int i;
+  unsigned int i;
   char *elptr;
 
   elptr = basep;

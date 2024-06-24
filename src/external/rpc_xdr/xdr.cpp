@@ -43,19 +43,21 @@
  *  libc_hidden_nolink_sunrpc (xdr_free, GLIBC_2_0)
  *  #endif"
  * - using fputs() instead of __fxprintf()
+ * - changing u_int to unsigned int, u_long to unsigned long,
+ *   u_short to unsigned short and u_char to unsigned char.
+ * - changing caddr_t to char*.
+ * - removing functions xdr_hyper(), xdr_uhyper(),
+ *   xdr_longlong_t() and xdr_u_longlong_t().
  * - removing headers that are no longer necessary.
  */
 
 #include <stdio.h>
 #include <limits.h>
 #include <string.h>
-#include <libintl.h>
-#include <wchar.h>
 #include <stdint.h>
 
 #include "types.h"
 #include "xdr.h"
-// #include <shlib-compat.h>
 
 
 /*
@@ -63,7 +65,7 @@
  */
 #define XDR_FALSE	((long) 0)
 #define XDR_TRUE	((long) 1)
-#define LASTUNSIGNED	((u_int) 0-1)
+#define LASTUNSIGNED	((unsigned int) 0-1)
 
 /*
  * for unit alignment
@@ -132,7 +134,7 @@ xdr_int (XDR *xdrs, int *ip)
  * XDR unsigned integers
  */
 bool_t
-xdr_u_int (XDR *xdrs, u_int *up)
+xdr_u_int (XDR *xdrs, unsigned int *up)
 {
 #if UINT_MAX < ULONG_MAX
   long l;
@@ -140,7 +142,7 @@ xdr_u_int (XDR *xdrs, u_int *up)
   switch (xdrs->x_op)
     {
     case XDR_ENCODE:
-      l = (u_long) * up;
+      l = (unsigned long) * up;
       return XDR_PUTLONG (xdrs, &l);
 
     case XDR_DECODE:
@@ -148,14 +150,14 @@ xdr_u_int (XDR *xdrs, u_int *up)
 	{
 	  return FALSE;
 	}
-      *up = (u_int) (u_long) l;
+      *up = (unsigned int) (unsigned long) l;
       /* Fall through.  */
     case XDR_FREE:
       return TRUE;
     }
   return FALSE;
 #elif UINT_MAX == ULONG_MAX
-  return xdr_u_long (xdrs, (u_long *) up);
+  return xdr_u_long (xdrs, (unsigned long *) up);
 #elif UINT_MAX == USHRT_MAX
   return xdr_short (xdrs, (short *) up);
 #else
@@ -192,7 +194,7 @@ xdr_long (XDR *xdrs, long *lp)
  * compatibility. Instead xdr_u_int() should be used.
  */
 bool_t
-xdr_u_long (XDR *xdrs, u_long *ulp)
+xdr_u_long (XDR *xdrs, unsigned long *ulp)
 {
   switch (xdrs->x_op)
     {
@@ -208,7 +210,7 @@ xdr_u_long (XDR *xdrs, u_long *ulp)
       }
 
     case XDR_ENCODE:
-      if (sizeof (uint32_t) != sizeof (u_long)
+      if (sizeof (uint32_t) != sizeof (unsigned long)
 	  && (uint32_t) *ulp != *ulp)
 	return FALSE;
 
@@ -218,80 +220,6 @@ xdr_u_long (XDR *xdrs, u_long *ulp)
       return TRUE;
     }
   return FALSE;
-}
-
-/*
- * XDR hyper integers
- * same as xdr_u_hyper - open coded to save a proc call!
- */
-bool_t
-xdr_hyper (XDR *xdrs, quad_t *llp)
-{
-  long int t1, t2;
-
-  if (xdrs->x_op == XDR_ENCODE)
-    {
-      t1 = (long) ((*llp) >> 32);
-      t2 = (long) (*llp);
-      return (XDR_PUTLONG(xdrs, &t1) && XDR_PUTLONG(xdrs, &t2));
-    }
-
-  if (xdrs->x_op == XDR_DECODE)
-    {
-      if (!XDR_GETLONG(xdrs, &t1) || !XDR_GETLONG(xdrs, &t2))
-	return FALSE;
-      *llp = ((quad_t) t1) << 32;
-      *llp |= (uint32_t) t2;
-      return TRUE;
-    }
-
-  if (xdrs->x_op == XDR_FREE)
-    return TRUE;
-
-  return FALSE;
-}
-
-/*
- * XDR hyper integers
- * same as xdr_hyper - open coded to save a proc call!
- */
-bool_t
-xdr_u_hyper (XDR *xdrs, u_quad_t *ullp)
-{
-  long int t1, t2;
-
-  if (xdrs->x_op == XDR_ENCODE)
-    {
-      t1 = (unsigned long) ((*ullp) >> 32);
-      t2 = (unsigned long) (*ullp);
-      return (XDR_PUTLONG(xdrs, &t1) && XDR_PUTLONG(xdrs, &t2));
-    }
-
-  if (xdrs->x_op == XDR_DECODE)
-    {
-      if (!XDR_GETLONG(xdrs, &t1) || !XDR_GETLONG(xdrs, &t2))
-	return FALSE;
-      *ullp = ((u_quad_t) t1) << 32;
-      *ullp |= (uint32_t) t2;
-      return TRUE;
-    }
-
-  if (xdrs->x_op == XDR_FREE)
-    return TRUE;
-
-  return FALSE;
-}
-
-bool_t
-xdr_longlong_t (XDR *xdrs, quad_t *llp)
-{
-  return xdr_hyper (xdrs, llp);
-}
-
-bool_t
-xdr_u_longlong_t (XDR *xdrs, u_quad_t *ullp)
-{
-  return xdr_u_hyper (xdrs, ullp);
 }
 
 /*
@@ -326,14 +254,14 @@ xdr_short (XDR *xdrs, short *sp)
  * XDR unsigned short integers
  */
 bool_t
-xdr_u_short (XDR *xdrs, u_short *usp)
+xdr_u_short (XDR *xdrs, unsigned short *usp)
 {
   long l;
 
   switch (xdrs->x_op)
     {
     case XDR_ENCODE:
-      l = (u_long) * usp;
+      l = (unsigned long) * usp;
       return XDR_PUTLONG (xdrs, &l);
 
     case XDR_DECODE:
@@ -341,7 +269,7 @@ xdr_u_short (XDR *xdrs, u_short *usp)
 	{
 	  return FALSE;
 	}
-      *usp = (u_short) (u_long) l;
+      *usp = (unsigned short) (unsigned long) l;
       return TRUE;
 
     case XDR_FREE:
@@ -372,9 +300,9 @@ xdr_char (XDR *xdrs, char *cp)
  * XDR an unsigned char
  */
 bool_t
-xdr_u_char (XDR *xdrs, u_char *cp)
+xdr_u_char (XDR *xdrs, unsigned char *cp)
 {
-  u_int u;
+  unsigned int u;
 
   u = (*cp);
   if (!xdr_u_int (xdrs, &u))
@@ -470,9 +398,9 @@ xdr_enum (XDR *xdrs, enum_t *ep)
  * cp points to the opaque object and cnt gives the byte length.
  */
 bool_t
-xdr_opaque (XDR *xdrs, caddr_t cp, u_int cnt)
+xdr_opaque (XDR *xdrs, char* cp, unsigned int cnt)
 {
-  u_int rndup;
+  unsigned int rndup;
   static char crud[BYTES_PER_XDR_UNIT];
 
   /*
@@ -497,7 +425,7 @@ xdr_opaque (XDR *xdrs, caddr_t cp, u_int cnt)
 	}
       if (rndup == 0)
 	return TRUE;
-      return XDR_GETBYTES (xdrs, (caddr_t)crud, rndup);
+      return XDR_GETBYTES (xdrs, (char *)crud, rndup);
 
     case XDR_ENCODE:
       if (!XDR_PUTBYTES (xdrs, cp, cnt))
@@ -520,10 +448,10 @@ xdr_opaque (XDR *xdrs, caddr_t cp, u_int cnt)
  * If *cpp is NULL maxsize bytes are allocated
  */
 bool_t
-xdr_bytes (XDR *xdrs, char **cpp, u_int *sizep, u_int maxsize)
+xdr_bytes (XDR *xdrs, char **cpp, unsigned int *sizep, unsigned int maxsize)
 {
   char *sp = *cpp;	/* sp is the actual string pointer */
-  u_int nodesize;
+  unsigned int nodesize;
 
   /*
    * first deal with the length since xdr bytes are counted
@@ -649,13 +577,13 @@ xdr_union (XDR *xdrs,
  * of the string as specified by a protocol.
  */
 bool_t
-xdr_string (XDR *xdrs, char **cpp, u_int maxsize)
+xdr_string (XDR *xdrs, char **cpp, unsigned int maxsize)
 {
   char *sp = *cpp;	/* sp is the actual string pointer */
   /* Initialize to silence the compiler.  It is not really needed because SIZE
      never actually gets used without being initialized.  */
-  u_int size = 0;
-  u_int nodesize;
+  unsigned int size = 0;
+  unsigned int nodesize;
 
   /*
    * first deal with the length since xdr strings are counted-strings

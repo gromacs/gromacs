@@ -38,21 +38,16 @@
 /* This file has been modified in the GROMACS distribution by, e.g.:
  * - removing macros such as:
  *  libc_hidden_nolink_sunrpc (xdr_float, GLIBC_2_0)
+ * - instead of using non-portable header for endianness
+ *   detect the endianness by calculating the double precision
+ *   word order, using an algorithm from GROMACS.
  * - removing headers that are no longer necessary.
  */
 
 #include <stdio.h>
-#include <endian.h>
 
 #include "types.h"
 #include "xdr.h"
-
-/*
- * NB: Not portable.
- * This routine works on Suns (Sky / 68000's) and Vaxen.
- */
-
-#define LSW	(__FLOAT_WORD_ORDER == __BIG_ENDIAN)
 
 #ifdef vax
 
@@ -212,6 +207,56 @@ xdr_double (XDR *xdrs, double *dp)
 	register struct dbl_limits *lim;
 	int i;
 #endif
+
+    /* Windows and some other systems don't define double-precision
+     * word order in the header files, so unfortunately we have
+     * to calculate it!
+     *
+     * For thread safety, we calculate it every time: locking this would
+     * be more expensive.
+     *
+     * Copyright The GROMACS Authors
+     */
+    int LSW = -1;          /* Least significant fp word */
+
+
+    int*        ip;
+    int32_t     tmp[2];
+
+    if (LSW < 0)
+    {
+        double x = 0.987654321; /* Just a number */
+
+        /* Possible representations in IEEE double precision:
+         * (S=small endian, B=big endian)
+         *
+         * Byte order, Word order, Hex
+         *     S           S       b8 56 0e 3c dd 9a ef 3f
+         *     B           S       3c 0e 56 b8 3f ef 9a dd
+         *     S           B       dd 9a ef 3f b8 56 0e 3c
+         *     B           B       3f ef 9a dd 3c 0e 56 b8
+         */
+
+        unsigned char ix = *(reinterpret_cast<char*>(&x));
+
+        if (ix == 0xdd || ix == 0x3f)
+        {
+            LSW = 1; /* Big endian word order */
+        }
+        else if (ix == 0xb8 || ix == 0x3c)
+        {
+            LSW = 0; /* Small endian word order */
+        }
+        else /* Catch strange errors */
+        {
+            printf("Error when detecting floating-point word order.\n"
+                   "Do you have a non-IEEE system?\n"
+                   "If possible, use the XDR libraries provided with your system,\n"
+                   "instead of the GROMACS fallback XDR source.\n");
+            exit(0);
+        }
+    }
+
 
 	switch (xdrs->x_op) {
 

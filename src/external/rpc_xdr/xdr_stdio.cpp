@@ -44,10 +44,15 @@
  *  #endif"
  * - removing macros for fflush, fread, ftell and fwrite.
  * - removing an explicit cast to (struct xdr_ops *).
+ * - changing u_int to unsigned int, u_long to unsigned long,
+ *   u_short to unsigned short and u_char to unsigned char.
+ * - changing caddr_t to char*.
  * - Changing
  * "static const struct xdr_ops xdrstdio_ops = ..."
  * to
  * "static struct XDR::xdr_ops xdrstdio_ops = ..."
+ * - Adding xdr_swapbytes, xdr_htonl and xdr_ntohl functions
+ *   from GROMACS.
  * - removing headers that are no longer necessary.
  */
 
@@ -57,11 +62,11 @@
 
 static bool_t xdrstdio_getlong (XDR *, long *);
 static bool_t xdrstdio_putlong (XDR *, const long *);
-static bool_t xdrstdio_getbytes (XDR *, caddr_t, u_int);
-static bool_t xdrstdio_putbytes (XDR *, const char *, u_int);
-static u_int xdrstdio_getpos (const XDR *);
-static bool_t xdrstdio_setpos (XDR *, u_int);
-static int32_t *xdrstdio_inline (XDR *, u_int);
+static bool_t xdrstdio_getbytes (XDR *, char *, unsigned int);
+static bool_t xdrstdio_putbytes (XDR *, const char *, unsigned int);
+static unsigned int xdrstdio_getpos (const XDR *);
+static bool_t xdrstdio_setpos (XDR *, unsigned int);
+static int32_t *xdrstdio_inline (XDR *, unsigned int);
 static void xdrstdio_destroy (XDR *);
 static bool_t xdrstdio_getint32 (XDR *, int32_t *);
 static bool_t xdrstdio_putint32 (XDR *, const int32_t *);
@@ -83,6 +88,54 @@ static struct XDR::xdr_ops xdrstdio_ops =
   xdrstdio_putint32		/* serialize a int */
 };
 
+/* Copyright The GROMACS Authors */
+static uint32_t xdr_swapbytes(uint32_t x)
+{
+    uint32_t y;
+    int          i;
+    char*        px = reinterpret_cast<char*>(&x);
+    char*        py = reinterpret_cast<char*>(&y);
+
+    for (i = 0; i < 4; i++)
+    {
+        py[i] = px[3 - i];
+    }
+
+    return y;
+}
+
+/* Copyright The GROMACS Authors */
+static uint32_t xdr_htonl(uint32_t x)
+{
+    short s = 0x0F00;
+    if (*(reinterpret_cast<char*>(&s)) == static_cast<char>(0x0F))
+    {
+        /* bigendian, do nothing */
+        return x;
+    }
+    else
+    {
+        /* smallendian,swap bytes */
+        return xdr_swapbytes(x);
+    }
+}
+
+/* Copyright The GROMACS Authors */
+static uint32_t xdr_ntohl(uint32_t x)
+{
+    short s = 0x0F00;
+    if (*(reinterpret_cast<char*>(&s)) == static_cast<char>(0x0F))
+    {
+        /* bigendian, do nothing */
+        return x;
+    }
+    else
+    {
+        /* smallendian, swap bytes */
+        return xdr_swapbytes(x);
+    }
+}
+
 /*
  * Initialize a stdio xdr stream.
  * Sets the xdr stream handle xdrs for use on the stream file.
@@ -95,7 +148,7 @@ xdrstdio_create (XDR *xdrs, FILE *file, enum xdr_op op)
   /* We have to add the const since the `struct xdr_ops' in `struct XDR'
      is not `const'.  */
   xdrs->x_ops = &xdrstdio_ops;
-  xdrs->x_private = (caddr_t) file;
+  xdrs->x_private = (char *) file;
   xdrs->x_handy = 0;
   xdrs->x_base = 0;
 }
@@ -116,24 +169,24 @@ xdrstdio_getlong (XDR *xdrs, long *lp)
 {
   uint32_t mycopy;
 
-  if (fread ((caddr_t) &mycopy, 4, 1, (FILE *) xdrs->x_private) != 1)
+  if (fread ((char *) &mycopy, 4, 1, (FILE *) xdrs->x_private) != 1)
     return FALSE;
-  *lp = (long) ntohl (mycopy);
+  *lp = (long) xdr_ntohl (mycopy);
   return TRUE;
 }
 
 static bool_t
 xdrstdio_putlong (XDR *xdrs, const long *lp)
 {
-  int32_t mycopy = htonl ((uint32_t) *lp);
+  int32_t mycopy = xdr_htonl ((uint32_t) *lp);
 
-  if (fwrite ((caddr_t) &mycopy, 4, 1, (FILE *) xdrs->x_private) != 1)
+  if (fwrite ((char *) &mycopy, 4, 1, (FILE *) xdrs->x_private) != 1)
     return FALSE;
   return TRUE;
 }
 
 static bool_t
-xdrstdio_getbytes (XDR *xdrs, const caddr_t addr, u_int len)
+xdrstdio_getbytes (XDR *xdrs, char * addr, unsigned int len)
 {
   if ((len != 0) && (fread (addr, (int) len, 1,
 			    (FILE *) xdrs->x_private) != 1))
@@ -142,7 +195,7 @@ xdrstdio_getbytes (XDR *xdrs, const caddr_t addr, u_int len)
 }
 
 static bool_t
-xdrstdio_putbytes (XDR *xdrs, const char *addr, u_int len)
+xdrstdio_putbytes (XDR *xdrs, const char *addr, unsigned int len)
 {
   if ((len != 0) && (fwrite (addr, (int) len, 1,
 			     (FILE *) xdrs->x_private) != 1))
@@ -150,20 +203,20 @@ xdrstdio_putbytes (XDR *xdrs, const char *addr, u_int len)
   return TRUE;
 }
 
-static u_int
+static unsigned int
 xdrstdio_getpos (const XDR *xdrs)
 {
-  return (u_int) ftell ((FILE *) xdrs->x_private);
+  return (unsigned int) ftell ((FILE *) xdrs->x_private);
 }
 
 static bool_t
-xdrstdio_setpos (XDR *xdrs, u_int pos)
+xdrstdio_setpos (XDR *xdrs, unsigned int pos)
 {
   return fseek ((FILE *) xdrs->x_private, (long) pos, 0) < 0 ? FALSE : TRUE;
 }
 
 static int32_t *
-xdrstdio_inline (XDR *xdrs, u_int len)
+xdrstdio_inline (XDR *xdrs, unsigned int len)
 {
   /*
    * Must do some work to implement this: must insure
@@ -182,19 +235,19 @@ xdrstdio_getint32 (XDR *xdrs, int32_t *ip)
 {
   int32_t mycopy;
 
-  if (fread ((caddr_t) &mycopy, 4, 1, (FILE *) xdrs->x_private) != 1)
+  if (fread ((char *) &mycopy, 4, 1, (FILE *) xdrs->x_private) != 1)
     return FALSE;
-  *ip = ntohl (mycopy);
+  *ip = xdr_ntohl (mycopy);
   return TRUE;
 }
 
 static bool_t
 xdrstdio_putint32 (XDR *xdrs, const int32_t *ip)
 {
-  int32_t mycopy = htonl (*ip);
+  int32_t mycopy = xdr_htonl (*ip);
 
   ip = &mycopy;
-  if (fwrite ((caddr_t) ip, 4, 1, (FILE *) xdrs->x_private) != 1)
+  if (fwrite ((char *) ip, 4, 1, (FILE *) xdrs->x_private) != 1)
     return FALSE;
   return TRUE;
 }
