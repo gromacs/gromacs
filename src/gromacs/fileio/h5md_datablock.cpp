@@ -38,23 +38,23 @@
  */
 
 
-#include "gmxpre.h"
-
-#include "h5md_datablock.h"
-
-#include <string>
-
-#include "gromacs/math/vectypes.h"
-#include "gromacs/utility/exceptions.h"
-
-#include "h5md_io.h"
-#include "h5md_util.h"
-
 #define GMX_USE_HDF5 1 // FIXME: Temporary just for the editor
 
 #if GMX_USE_HDF5
+
+#    include "gmxpre.h"
+
+#    include "h5md_datablock.h"
+
 #    include <hdf5.h>
-#endif
+
+#    include <string>
+
+#    include "gromacs/math/vectypes.h"
+#    include "gromacs/utility/exceptions.h"
+
+#    include "h5md_io.h"
+#    include "h5md_util.h"
 
 namespace gmx
 {
@@ -135,11 +135,11 @@ GmxH5mdTimeDataBlock::GmxH5mdTimeDataBlock(hid_t                container,
         stepDataSet_ = openOrCreateDataSet<1>(
                 group_, c_stepName, nullptr, H5T_NATIVE_INT64, chunkDimsTimeStep, CompressionAlgorithm::None, 0);
 
-#if GMX_DOUBLE
+#    if GMX_DOUBLE
         const hid_t timeDatatype = H5Tcopy(H5T_NATIVE_DOUBLE);
-#else
+#    else
         const hid_t timeDatatype = H5Tcopy(H5T_NATIVE_FLOAT);
-#endif
+#    endif
         timeDataSet_ = openOrCreateDataSet<1>(
                 group_, c_timeName, timeUnit_.c_str(), timeDatatype, chunkDimsTimeStep, CompressionAlgorithm::None, 0);
     }
@@ -204,7 +204,7 @@ bool GmxH5mdTimeDataBlock::readFrame(real* data, int64_t frame)
 
     /* FIXME: Make the number of dimensions flexible */
 
-#if GMX_DOUBLE
+#    if GMX_DOUBLE
     if (dataTypeSize != 8)
     {
         void* buffer = nullptr;
@@ -220,7 +220,7 @@ bool GmxH5mdTimeDataBlock::readFrame(real* data, int64_t frame)
         readData<3, false>(
                 mainDataSet_, frame, dataTypeSize, reinterpret_cast<void**>(&data), &totalNumElements, &dummy);
     }
-#else
+#    else
     if (dataTypeSize != 4)
     {
         void* buffer = nullptr;
@@ -235,7 +235,7 @@ bool GmxH5mdTimeDataBlock::readFrame(real* data, int64_t frame)
     {
         readData<3, false>(mainDataSet_, frame, reinterpret_cast<void**>(&data), &totalNumElements, &dummy);
     }
-#endif
+#    endif
 
     return true;
 }
@@ -377,7 +377,7 @@ real GmxH5mdTimeDataBlock::getTimeOfFrame(int64_t frame) const
         throw gmx::FileIOError("Can only read float or double time data.");
     }
 
-#if GMX_DOUBLE
+#    if GMX_DOUBLE
     if (dataTypeSize != 8)
     {
         void* buffer = nullptr;
@@ -396,7 +396,7 @@ real GmxH5mdTimeDataBlock::getTimeOfFrame(int64_t frame) const
                 timeDataSet_, frame, reinterpret_cast<void**>(&tmpValuePtr), &totalNumElements, &dummy);
         return tmpValue;
     }
-#else
+#    else
     if (dataTypeSize != 4)
     {
         void* buffer = nullptr;
@@ -415,7 +415,7 @@ real GmxH5mdTimeDataBlock::getTimeOfFrame(int64_t frame) const
                 timeDataSet_, frame, reinterpret_cast<void**>(&tmpValuePtr), &totalNumElements, &dummy);
         return tmpValue;
     }
-#endif
+#    endif
 }
 
 int64_t GmxH5mdTimeDataBlock::getStepOfNextReadingFrame() const
@@ -454,3 +454,5 @@ extern template void readData<3, false>(hid_t, hsize_t, void**, size_t*, size_t*
 
 } // namespace h5mdio
 } // namespace gmx
+
+#endif // GMX_USE_HDF5

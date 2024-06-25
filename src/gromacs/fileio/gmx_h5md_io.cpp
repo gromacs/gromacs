@@ -63,7 +63,7 @@
 #    include <hdf5.h>
 
 #    include "external/SZ3-bio/tools/H5Z-SZ3/include/H5Z_SZ3.hpp"
-#endif
+
 
 namespace
 {
@@ -73,7 +73,6 @@ void setupSystemParticleProperties(gmx::h5mdio::GmxH5mdIo*  file,
                                    gmx::ArrayRef<const int> selectionIndices,
                                    std::string              selectionName)
 {
-#if GMX_USE_HDF5
     /* Vectors are used to keep the values in a continuous memory block. */
     std::vector<real> atomCharges;
     std::vector<real> atomMasses;
@@ -104,11 +103,6 @@ void setupSystemParticleProperties(gmx::h5mdio::GmxH5mdIo*  file,
     file->setNumericDataSet("/particles/" + selectionName, "mass", atomMasses, "amu", false);
     file->setNumericDataSet("/particles/" + selectionName, "species", atomSpecies, "", false);
     file->setNumericDataSet("/particles/" + selectionName, "id", atomIds, "", false);
-
-#else
-    throw gmx::FileIOError(
-            "GROMACS was compiled without HDF5 support, cannot handle this file type");
-#endif
 }
 
 /*! \brief Add atom type entries (species) for all different atom types in \p atoms.
@@ -121,7 +115,6 @@ void setupSystemParticleProperties(gmx::h5mdio::GmxH5mdIo*  file,
  */
 void addAtomTypesOfAtoms(gmx::h5mdio::GmxH5mdIo* file, const t_atoms& atoms, std::vector<bool>& atomTypesAdded)
 {
-#if GMX_USE_HDF5
     hid_t atomTypesGroup =
             file->createGroup(gmx::h5mdio::s_gromacsTopologyGroupName + "/atom_species");
     hid_t   dataType     = H5Tcopy(H5T_NATIVE_INT);
@@ -143,11 +136,6 @@ void addAtomTypesOfAtoms(gmx::h5mdio::GmxH5mdIo* file, const t_atoms& atoms, std
             atomTypesAdded[atom->type] = true;
         }
     }
-
-#else
-    throw gmx::FileIOError(
-            "GROMACS was compiled without HDF5 support, cannot handle this file type");
-#endif
 }
 
 
@@ -159,7 +147,6 @@ void addAtomTypesOfAtoms(gmx::h5mdio::GmxH5mdIo* file, const t_atoms& atoms, std
  */
 int64_t getNumberOfAtomsOfMoleculeTypeByName(gmx::h5mdio::GmxH5mdIo* file, std::string molTypeName)
 {
-#if GMX_USE_HDF5
     std::string moleculeTypesGroupName = gmx::h5mdio::s_gromacsTopologyGroupName + "/molecule_types";
     std::string moleculeTypeName       = moleculeTypesGroupName + "/" + molTypeName;
     hid_t       molelculeTypeGroup     = file->getGroupId(moleculeTypeName);
@@ -172,11 +159,6 @@ int64_t getNumberOfAtomsOfMoleculeTypeByName(gmx::h5mdio::GmxH5mdIo* file, std::
     gmx::h5mdio::getAttribute(molelculeTypeGroup, "number_of_atoms", &numAtoms);
 
     return numAtoms;
-
-#else
-    throw gmx::FileIOError(
-            "GROMACS was compiled without HDF5 support, cannot handle this file type");
-#endif
 }
 
 /*! \brief Add a block consisting of a number of copies of a molecule type to the GROMACS topology section in the file.
@@ -193,7 +175,6 @@ void addBlockOfMoleculeType(gmx::h5mdio::GmxH5mdIo*     file,
                             size_t                      numMol,
                             const MoleculeBlockIndices& molBlockIndices)
 {
-#if GMX_USE_HDF5
     std::string moleculeBlocksName  = gmx::h5mdio::s_gromacsTopologyGroupName + "/molecule_blocks";
     hid_t       moleculeBlocksGroup = file->createGroup(moleculeBlocksName);
 
@@ -289,12 +270,8 @@ void addBlockOfMoleculeType(gmx::h5mdio::GmxH5mdIo*     file,
                                                 0);
     tmpValue = molBlockIndices.moleculeIndexStart;
     gmx::h5mdio::writeData<1, false>(moleculeIndexStartDataSet, &tmpValue, molBlockIndex);
-
-#else
-    throw gmx::FileIOError(
-            "GROMACS was compiled without HDF5 support, cannot handle this file type");
-#endif
 }
+
 /*! \brief Add a molecule type to the GROMACS topology section in the file.
  * \param[in] file The H5MD file manager to use.
  * \param[in] molType The molecule type to add.
@@ -303,7 +280,6 @@ void addBlockOfMoleculeType(gmx::h5mdio::GmxH5mdIo*     file,
  */
 hid_t addMoleculeType(gmx::h5mdio::GmxH5mdIo* file, const gmx_moltype_t& molType)
 {
-#if GMX_USE_HDF5
     std::string moleculeTypesGroupName = gmx::h5mdio::s_gromacsTopologyGroupName + "/molecule_types";
     file->createGroup(moleculeTypesGroupName);
     std::string moleculeTypeName  = moleculeTypesGroupName + "/" + (*molType.name);
@@ -341,11 +317,6 @@ hid_t addMoleculeType(gmx::h5mdio::GmxH5mdIo* file, const gmx_moltype_t& molType
     file->setStringDataSet(moleculeTypeName, "chain_id", chainIds, false, 1);
 
     return moleculeTypeGroup;
-
-#else
-    throw gmx::FileIOError(
-            "GROMACS was compiled without HDF5 support, cannot handle this file type");
-#endif
 }
 
 /*! \brief Adds chemical bonds (including constraints and settle) in a "connectivity" dataset
@@ -371,7 +342,6 @@ void addMoleculeTypeBondsToTopology(gmx::h5mdio::GmxH5mdIo* gmx_unused        fi
                                     std::vector<std::pair<int64_t, int64_t>>* systemBonds,
                                     std::vector<std::pair<int64_t, int64_t>>* selectionBonds)
 {
-#if GMX_USE_HDF5
     std::vector<std::pair<int64_t, int64_t>> bonds;
     /* Bonds have to be deduced from interactions (constraints etc). Different
      * interactions have different sets of parameters. */
@@ -435,11 +405,6 @@ void addMoleculeTypeBondsToTopology(gmx::h5mdio::GmxH5mdIo* gmx_unused        fi
     H5Iget_name(molTypeGroup, molTypeGroupPath, gmx::h5mdio::c_maxFullNameLength - 1);
 
     file->setNumericDataSet(molTypeGroupPath, "connectivity", bonds, "", false);
-
-#else
-    throw gmx::FileIOError(
-            "GROMACS was compiled without HDF5 support, cannot handle this file type");
-#endif
 }
 
 /*! \brief Check whether there is a separate selection for output.
@@ -475,6 +440,7 @@ bool hasSeparateSelection(/*const gmx_mtop_t& topology,*/ gmx::ArrayRef<const in
 
 
 } // namespace
+#endif
 
 namespace gmx
 {

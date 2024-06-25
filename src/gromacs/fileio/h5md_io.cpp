@@ -67,7 +67,6 @@
 #    include <hdf5.h>
 
 #    include "external/SZ3-bio/tools/H5Z-SZ3/include/H5Z_SZ3.hpp"
-#endif
 
 namespace
 {
@@ -127,6 +126,7 @@ herr_t iterativeSetupTimeDataBlocks(hid_t            locationId,
 }
 
 } // namespace
+#endif
 
 namespace gmx
 {
