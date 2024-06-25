@@ -280,10 +280,10 @@ public:
      */
     bool readNextFrameOfDataBlock(std::string dataBlockFullName, real* data, int64_t stepToRead = -1);
 
-    /* \brief Returns the lossy compression error of the data block matching the name.
-     *        Returns -1 if there is no lossy compression or if the data block was not found.
+    /* \brief Returns the lossy compression error of the time-dependent data block matching the
+     * name. Returns -1 if there is no lossy compression or if the data block was not found.
      */
-    real getLossyCompressionErrorOfDataBlock(std::string dataBlockFullName);
+    double getLossyCompressionErrorOfDataBlock(std::string dataBlockFullName);
 
     /*! \brief Get the number of frames of a particles data block
      * \param[in] dataBlockName The name of the data block.

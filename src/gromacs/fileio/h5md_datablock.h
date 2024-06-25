@@ -43,7 +43,8 @@
 #include <list>
 #include <string>
 
-#include "gromacs/math/vectypes.h"
+/* This is currently written for use from GROMACS. If this is used in other packades,
+ * the datatype real cannot be used. */
 #include "gromacs/utility/real.h"
 
 #include "h5md_util.h"
@@ -159,7 +160,7 @@ public:
     real getTimeOfNextReadingFrame() const;
 
     /*! \brief Returns the compression error of lossy SZ3 compression, or -1 if there is no lossy SZ3 compression. */
-    real getLossyCompressionError() const;
+    double getLossyCompressionError() const;
 
     /*! \brief Get the number of frames in the data block. */
     int64_t numberOfFrames() const { return writingFrameIndex_; }

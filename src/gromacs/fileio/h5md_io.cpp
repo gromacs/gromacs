@@ -448,8 +448,7 @@ void GmxH5mdIo::setStringDataSet(const std::string&              containerName,
         chunkDims[0] = propertyValues.size();
         if (maxStringLength > 0)
         {
-            char* propertyValuesChars;
-            snew(propertyValuesChars, propertyValues.size() * maxStringLength);
+            char* propertyValuesChars = new char[propertyValues.size() * maxStringLength];
             for (size_t i = 0; i < propertyValues.size(); i++)
             {
                 strncpy(&propertyValuesChars[i * maxStringLength], propertyValues[i].c_str(), maxStringLength);
@@ -465,7 +464,7 @@ void GmxH5mdIo::setStringDataSet(const std::string&              containerName,
                                                    0);
             writeData<1, true>(dataSet, propertyValuesChars, 0);
             H5Dclose(dataSet);
-            sfree(propertyValuesChars);
+            delete[] propertyValuesChars;
         }
         else
         {
@@ -743,7 +742,7 @@ bool GmxH5mdIo::readNextFrameOfDataBlock(std::string dataBlockFullName, real* da
 #endif
 }
 
-real GmxH5mdIo::getLossyCompressionErrorOfDataBlock(std::string dataBlockFullName)
+double GmxH5mdIo::getLossyCompressionErrorOfDataBlock(std::string dataBlockFullName)
 {
 #if GMX_USE_HDF5
     for (const auto& dataBlock : dataBlocks_)

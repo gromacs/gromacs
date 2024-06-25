@@ -44,10 +44,7 @@
 
 #include <string>
 
-#include "gromacs/math/vectypes.h"
 #include "gromacs/utility/exceptions.h"
-#include "gromacs/utility/gmxassert.h"
-#include "gromacs/utility/smalloc.h"
 
 #include "h5md_io.h"
 #include "h5md_util.h"
@@ -329,11 +326,10 @@ size_t GmxH5mdTimeDataBlock::getNumParticles() const
     {
         throw gmx::FileIOError("No atoms in time dependent data set.");
     }
-    hsize_t* dimExtents;
-    snew(dimExtents, dataSpaceNumDims);
+    hsize_t* dimExtents = new hsize_t[dataSpaceNumDims];
     H5Sget_simple_extent_dims(dataSpace, dimExtents, nullptr);
     size_t numParticles = dimExtents[1];
-    sfree(dimExtents);
+    delete[] dimExtents;
 
     return numParticles;
 }
@@ -439,7 +435,7 @@ real GmxH5mdTimeDataBlock::getTimeOfNextReadingFrame() const
     return -1;
 }
 
-real GmxH5mdTimeDataBlock::getLossyCompressionError() const
+double GmxH5mdTimeDataBlock::getLossyCompressionError() const
 {
     return getDataSetSz3CompressionError(mainDataSet_);
 }

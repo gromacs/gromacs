@@ -240,7 +240,7 @@ hid_t openOrCreateDataSet(const hid_t                container,
             default: throw gmx::FileIOError("Unrecognized compression mode.");
         }
         /* Set a reasonable cache based on chunk sizes. The cache is not stored in file, so must be set when opening a data set */
-        size_t cacheSize = sizeof(real);
+        size_t cacheSize = H5Tget_size(dataType);
         for (int i = 0; i < numDims; i++)
         {
             cacheSize *= chunkDims[i];
@@ -684,19 +684,18 @@ void setAttributeStringList(const hid_t dataSet, const char* name, const char va
 #endif
 }
 
-real getDataSetSz3CompressionError(const hid_t dataSet)
+double getDataSetSz3CompressionError(const hid_t dataSet)
 {
 #if GMX_USE_HDF5
     hid_t        propertyList                   = H5Dget_create_plist(dataSet);
     unsigned int flags                          = 0;
     size_t       numCompressionSettingsElements = 9;
     unsigned int compressionSettingsValues[16];
-    real         compressionError = -1;
     if (H5Pget_filter_by_id(
                 propertyList, H5Z_FILTER_SZ3, &flags, &numCompressionSettingsElements, compressionSettingsValues, 0, nullptr, nullptr)
         < 0)
     {
-        return compressionError;
+        return -1;
     }
     int    dimSize     = 0;
     int    dataType    = 0;

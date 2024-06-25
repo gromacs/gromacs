@@ -42,8 +42,6 @@
 
 #include <string>
 
-#include "gromacs/utility/real.h"
-
 enum class PbcType : int;
 namespace gmx
 {
@@ -222,7 +220,7 @@ void setAttributeStringList(const hid_t dataSet, const char* name, const char va
  * \param[in] dataSet The ID of the HDF5 data set.
  * \returns The compression error setting of the data set or -1 if it is not SZ3 compressed or if the error is not absolute or relative.
  */
-real getDataSetSz3CompressionError(const hid_t dataSet);
+double getDataSetSz3CompressionError(const hid_t dataSet);
 
 /*! Check if an object exists in a container
  * \param[in] container The ID of the HDF5 container.
