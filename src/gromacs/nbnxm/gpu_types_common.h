@@ -471,13 +471,31 @@ constexpr bool ljEwald = EnergyFunctionProperties<ElecType::Count, vdwType>().vd
 //@}
 
 extern template GpuPairlist<PairlistType::Hierarchical8x8x8>::GpuPairlist();
+extern template GpuPairlist<PairlistType::Hierarchical8x8x8_nosplit>::GpuPairlist();
+extern template GpuPairlist<PairlistType::Hierarchical8x4x4>::GpuPairlist();
+extern template GpuPairlist<PairlistType::Hierarchical4x8x8>::GpuPairlist();
 
 extern template GpuPairlist<PairlistType::Hierarchical8x8x8>::~GpuPairlist();
+extern template GpuPairlist<PairlistType::Hierarchical8x8x8_nosplit>::~GpuPairlist();
+extern template GpuPairlist<PairlistType::Hierarchical8x4x4>::~GpuPairlist();
+extern template GpuPairlist<PairlistType::Hierarchical4x8x8>::~GpuPairlist();
 
 template<typename T>
 constexpr PairlistType getPairlistTypeFromPairlist()
 {
-    return PairlistType::Hierarchical8x8x8;
+    if constexpr (std::is_same_v<T, GpuPairlist<PairlistType::Hierarchical8x8x8>>)
+    {
+        return PairlistType::Hierarchical8x8x8;
+    }
+    if constexpr (std::is_same_v<T, GpuPairlist<PairlistType::Hierarchical8x4x4>>)
+    {
+        return PairlistType::Hierarchical8x4x4;
+    }
+    if constexpr (std::is_same_v<T, GpuPairlist<PairlistType::Hierarchical8x8x8_nosplit>>)
+    {
+        return PairlistType::Hierarchical8x8x8_nosplit;
+    }
+    return PairlistType::Hierarchical4x8x8;
 }
 
 } // namespace gmx

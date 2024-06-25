@@ -573,6 +573,8 @@ template<bool doPruneNBL, bool doCalcEnergies, enum ElecType elecType, enum VdwT
 __launch_bounds__(c_clSizeSq<pairlistType>* nthreadZ, minBlocksPerMp) __global__
         static void nbnxmKernel(NBAtomDataGpu atdat, NBParamGpu nbparam, GpuPairlist<pairlistType> plist, bool doCalcShift)
 {
+    // We only want to compile kernels that match the execution architecture
+    if constexpr (sc_gpuParallelExecutionWidth(pairlistType) == warpSize)
     {
 
         static constexpr EnergyFunctionProperties<elecType, vdwType> props;
@@ -1092,6 +1094,14 @@ __launch_bounds__(c_clSizeSq<pairlistType>* nthreadZ, minBlocksPerMp) __global__
                 }
             }
         }
+    }
+    else
+    {
+        GMX_UNUSED_VALUE(atdat);
+        GMX_UNUSED_VALUE(nbparam);
+        GMX_UNUSED_VALUE(plist);
+        GMX_UNUSED_VALUE(doCalcShift);
+        assert(false);
     }
 }
 //! \brief NBNXM kernel launch code.

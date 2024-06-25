@@ -71,3 +71,8 @@ bool isDeviceDetectionFunctional(std::string* /* errorMessage */)
 }
 
 void doubleCheckGpuAwareMpiWillWork(const DeviceInformation& /* deviceInfo */) {}
+
+gmx::PairlistType getDeviceSpecificGpuPairlistLayout(const DeviceInformation& /* deviceInfo */)
+{
+    return gmx::PairlistType::Count;
+}

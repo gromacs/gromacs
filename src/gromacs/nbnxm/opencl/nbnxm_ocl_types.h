@@ -175,7 +175,10 @@ struct NbnxmGpu
     //! parameters required for the non-bonded calc.
     NBParamGpu* nbparam = nullptr;
     //! pair-list data structures (local and non-local)
-    std::variant<EnumerationArray<InteractionLocality, std::unique_ptr<GpuPairlist<PairlistType::Hierarchical8x8x8>>>> plist;
+    std::variant<gmx::EnumerationArray<InteractionLocality, std::unique_ptr<GpuPairlist<PairlistType::Hierarchical8x8x8>>>,
+                 gmx::EnumerationArray<InteractionLocality, std::unique_ptr<GpuPairlist<PairlistType::Hierarchical8x4x4>>>,
+                 gmx::EnumerationArray<InteractionLocality, std::unique_ptr<GpuPairlist<PairlistType::Hierarchical4x8x8>>>>
+            plist;
     //! staging area where fshift/energies get downloaded
     NBStagingData nbst;
 

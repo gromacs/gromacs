@@ -174,22 +174,6 @@ if(GMX_GPU_FFT_VKFFT)
     set(_sycl_has_valid_fft TRUE)
 endif()
 
-if (GMX_ACPP_HAVE_HIP_TARGET AND GMX_ACPP_HAVE_HIP_WAVE32_TARGET)
-    set(_enable_rdna_support_automatically ON)
-else()
-    set(_enable_rdna_support_automatically OFF)
-    if (GMX_ACPP_HAVE_HIP_WAVE64_TARGET)
-        option(GMX_GPU_NB_DISABLE_CLUSTER_PAIR_SPLIT
-            "Disable NBNXM GPU cluster pair splitting. Only supported with SYCL and 64-wide GPU architectures (like AMD GCN/CDNA)."
-            ON)
-        mark_as_advanced(GMX_GPU_NB_DISABLE_CLUSTER_PAIR_SPLIT)
-    endif()
-endif()
-option(GMX_ENABLE_AMD_RDNA_SUPPORT
-    "Enable compiling kernels for AMD RDNA GPUs (gfx1xxx). When OFF, only CDNA and GCN are supported. Only used with AdaptiveCpp/hipSYCL."
-    ${_enable_rdna_support_automatically})
-mark_as_advanced(GMX_ENABLE_AMD_RDNA_SUPPORT)
-
 # Find a suitable rocFFT when AdaptiveCpp is targeting AMD devices
 if (GMX_ACPP_HAVE_HIP_TARGET AND GMX_GPU_FFT_ROCFFT)
     # For consistency, we prefer to find rocFFT as part of the

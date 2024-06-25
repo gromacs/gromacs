@@ -150,7 +150,7 @@ gmx::NbnxmKernelSetup createKernelSetupCPU(const SimdKernels nbnxmSimd, const bo
 gmx::NbnxmKernelSetup createKernelSetupGPU(const bool useTabulatedEwaldCorr)
 {
     gmx::NbnxmKernelSetup kernelSetup;
-    kernelSetup.kernelType         = gmx::NbnxmKernelType::Gpu8x8x8;
+    kernelSetup.kernelType         = gmx::NbnxmKernelType::GpuSxNxM;
     kernelSetup.ewaldExclusionType = useTabulatedEwaldCorr ? gmx::EwaldExclusionType::Table
                                                            : gmx::EwaldExclusionType::Analytical;
 

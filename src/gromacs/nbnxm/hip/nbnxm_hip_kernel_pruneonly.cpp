@@ -74,6 +74,8 @@ __launch_bounds__(c_clSizeSq<pairlistType>* threadZ, minBlocksPp) __global__
                                          GpuPairlist<pairlistType> plist,
                                          int                       numParts)
 {
+    // we only want to actually compile the kernel for archs that have matching execution widths
+    if constexpr (sc_gpuParallelExecutionWidth(pairlistType) == warpSize)
     {
         constexpr int c_clSize                 = sc_gpuClusterSize(pairlistType);
         constexpr int c_clusterPerSuperCluster = sc_gpuClusterPerSuperCluster(pairlistType);
@@ -271,6 +273,14 @@ __launch_bounds__(c_clSizeSq<pairlistType>* threadZ, minBlocksPp) __global__
                 }
             }
         }
+    }
+    else
+    {
+        GMX_UNUSED_VALUE(atdat);
+        GMX_UNUSED_VALUE(nbparam);
+        GMX_UNUSED_VALUE(plist);
+        GMX_UNUSED_VALUE(numParts);
+        assert(false);
     }
 }
 

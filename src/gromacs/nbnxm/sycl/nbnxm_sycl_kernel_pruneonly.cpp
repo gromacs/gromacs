@@ -98,7 +98,8 @@ auto nbnxmKernelPruneOnly(sycl::handler& cgh,
         }
     }();
 
-    constexpr int warpSize = sc_gpuParallelExecutionWidth(pairlistType);
+    constexpr int warpSize     = sc_gpuParallelExecutionWidth(pairlistType);
+    constexpr int subGroupSize = warpSize;
 
     /* Somewhat weird behavior inherited from OpenCL.
      * With clSize == 4, we use sub_group size of 16 (not enforced in OpenCL implementation, but chosen

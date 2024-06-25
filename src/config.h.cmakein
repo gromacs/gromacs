@@ -286,9 +286,6 @@
 // Define if AdaptiveCpp has CUDA target(s)
 #cmakedefine01 GMX_ACPP_HAVE_CUDA_TARGET
 
-// Define if AdaptiveCpp/HIP should have AMD RDNA support (32-wide execution)
-#cmakedefine01 GMX_ENABLE_AMD_RDNA_SUPPORT
-
 /* Use a single compilation unit when compiling the CUDA (non-bonded) kernels.  */
 #cmakedefine01 GMX_CUDA_NB_SINGLE_COMPILATION_UNIT
 
@@ -310,21 +307,6 @@
 
 /* Define if cuFFTMp library found */
 #cmakedefine01 GMX_USE_cuFFTMp
-
-// Cluster size used by GPU nonbonded kernel.
-#define GMX_GPU_NB_CLUSTER_SIZE @GMX_GPU_NB_CLUSTER_SIZE@
-
-// Number of clusters along X in a pair-search grid cell for GPU lists.
-#define GMX_GPU_NB_NUM_CLUSTER_PER_CELL_X @GMX_GPU_NB_NUM_CLUSTER_PER_CELL_X@
-
-// Number of clusters along Y in a pair-search grid cell for GPU lists.
-#define GMX_GPU_NB_NUM_CLUSTER_PER_CELL_Y @GMX_GPU_NB_NUM_CLUSTER_PER_CELL_Y@
-
-// Number of clusters along Z in a pair-search grid cell for GPU lists.
-#define GMX_GPU_NB_NUM_CLUSTER_PER_CELL_Z @GMX_GPU_NB_NUM_CLUSTER_PER_CELL_Z@
-
-// Disable nbnxm cluster setup splitting
-#cmakedefine01 GMX_GPU_NB_DISABLE_CLUSTER_PAIR_SPLIT
 
 /* Define constants for build types (starting at 1 to make sure undefined values don't match) */
 #define CMAKE_BUILD_TYPE_DEBUG 1

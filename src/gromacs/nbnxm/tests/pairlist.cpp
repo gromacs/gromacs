@@ -52,6 +52,7 @@
 #    include "gromacs/gpu_utils/gpu_utils.h"
 #    include "gromacs/gpu_utils/hostallocator.h"
 #    include "gromacs/hardware/architecture.h"
+#    include "gromacs/hardware/device_information.h"
 #    include "gromacs/hardware/device_management.h"
 #    include "gromacs/nbnxm/gpu_types_common.h"
 #    include "gromacs/utility/template_mp.h"
@@ -257,7 +258,7 @@ TEST(GpuPairlistTest, PairlistInitWorks)
     for (const auto& testDevice : getTestHardwareEnvironment()->getTestDeviceList())
     {
         testDevice->deviceContext().activate();
-        auto          pairlistType   = PairlistType::Hierarchical8x8x8;
+        auto          pairlistType   = getDeviceOptimalGpuPairlistLayout(testDevice->deviceInfo());
         constexpr int dataSize       = 23;
         constexpr int allocationSize = 42;
 
