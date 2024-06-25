@@ -3,22 +3,8 @@
 # definitions in other files because this file is first in the *include* list
 # in the root `.gitlab-ci.yml` file.
 
-# Centralized definitions of common job parameter values.
 # Parameters with many optional configurations may be in separate files.
 # Refer to the Infrastructure section of the GROMACS Developer Guide.
-
-.variables:default:
-  variables:
-    KUBERNETES_CPU_LIMIT: 8
-    KUBERNETES_CPU_REQUEST: 4
-    KUBERNETES_MEMORY_REQUEST: 4Gi
-    KUBERNETES_MEMORY_LIMIT: 8Gi
-    KUBERNETES_EXTENDED_RESOURCE_NAME: ""
-    KUBERNETES_EXTENDED_RESOURCE_LIMIT: 0
-    CACHE_FALLBACK_KEY: "$CI_JOB_NAME-$CI_JOB_STAGE-release-2023"
-    BUILD_DIR: build
-    INSTALL_DIR: install
-    CMAKE_GMXAPI_OPTIONS: ""
 
 # Our generic before_script to install dependencies and prepare the ccache directory.
 .before_script:default:
@@ -58,6 +44,7 @@
     CMAKE_GPU_OPTIONS: -DGMX_GPU=SYCL
 
 # Base definition for using gcc.
+# Consumers must set job.variables.COMPILER_MAJOR_VERSION!
 .use-gcc:base:
   variables:
     CMAKE_COMPILER_SCRIPT: -DCMAKE_C_COMPILER=gcc-$COMPILER_MAJOR_VERSION -DCMAKE_CXX_COMPILER=g++-$COMPILER_MAJOR_VERSION
@@ -87,6 +74,21 @@
     # setvar.sh script
     - set +e
     - source /opt/intel/oneapi/setvars.sh
+    - set -e
+    - mkdir -p ccache
+    - export CCACHE_BASEDIR=${PWD}
+    - export CCACHE_DIR=${PWD}/ccache
+
+# Base definition for using oneAPI IntelLLVM
+.use-oneapi-intel-llvm:base:
+  variables:
+    # We need to add -isystem directories manually for OpenMP to work.
+    # With CMake 3.26+, OpenMP_*_INCLUDE_DIR could be used instead of CMAKE_*_FLAGS
+    CMAKE_COMPILER_SCRIPT: -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_C_FLAGS=-isystem/opt/intel/oneapi/compiler/latest/linux/compiler/include/ -DCMAKE_CXX_FLAGS=-isystem/opt/intel/oneapi/compiler/latest/linux/compiler/include/
+  before_script:
+    # Necessary to override gitlab default 'set -e' which breaks Intel's setvar.sh script
+    - set +e
+    - source /opt/intel/oneapi/setvars.sh --include-intel-llvm --force
     - set -e
     - mkdir -p ccache
     - export CCACHE_BASEDIR=${PWD}

@@ -18,7 +18,8 @@ gromacs:oneapi-2022.2.0-sycl:configure:
    - .gromacs:base:configure
    - .use-oneapi:base
    - .use-sycl
-   - .rules:merge-and-post-merge-acceptance
+  rules:
+   - !reference [.rules:merge-and-post-merge-acceptance, rules]
   image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-oneapi-2022.2.0-intel-compute-runtime
   variables:
     CMAKE: /usr/local/cmake-3.18.4/bin/cmake
@@ -26,11 +27,11 @@ gromacs:oneapi-2022.2.0-sycl:configure:
 
 gromacs:oneapi-2022.2.0-sycl:build:
   extends:
-    - .variables:default
     - .gromacs:base:build
     - .use-ccache
     - .use-oneapi:base
-    - .rules:merge-and-post-merge-acceptance
+  rules:
+    - !reference [.rules:merge-and-post-merge-acceptance, rules]
   image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-oneapi-2022.2.0-intel-compute-runtime
   variables:
     CMAKE: /usr/local/cmake-3.18.4/bin/cmake
@@ -41,7 +42,8 @@ gromacs:oneapi-2022.2.0-sycl:test:
   extends:
     - .gromacs:base:test
     - .use-oneapi:base
-    - .rules:post-merge-acceptance
+  rules:
+    - !reference [.rules:post-merge-acceptance, rules]
   image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-oneapi-2022.2.0-intel-compute-runtime
   variables:
     CMAKE: /usr/local/cmake-3.18.4/bin/cmake
@@ -53,12 +55,11 @@ gromacs:oneapi-2022.2.0-sycl:regressiontest:
   extends:
     - .gromacs:base:regressiontest
     - .use-oneapi:base
-    - .rules:post-merge-acceptance
+  rules:
+    - !reference [.rules:post-merge-acceptance, rules]
   image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-oneapi-2022.2.0-intel-compute-runtime
   variables:
     CMAKE: /usr/local/cmake-3.18.4/bin/cmake
   needs:
     - job: gromacs:oneapi-2022.2.0-sycl:build
     - job: regressiontests:prepare
-
-

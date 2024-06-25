@@ -16,11 +16,11 @@
 simple-build:
   # Test scope: configure, build, unit tests
   extends:
-    - .variables:default
     - .use-ccache
     - .use-clang:base
-    - .rules:merge-requests
   stage: pre-build
+  rules:
+    - !reference [.rules:merge-requests, rules]
   image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-llvm-12
 
   variables:

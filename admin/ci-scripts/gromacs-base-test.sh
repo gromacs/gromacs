@@ -8,40 +8,38 @@ export OMPI_ALLOW_RUN_AS_ROOT=1
 export OMPI_ALLOW_RUN_AS_ROOT_CONFIRM=1
 export ASAN_OPTIONS="check_initialization_order=1:detect_invalid_pointer_pairs=1:strict_init_order=true:strict_string_checks=true:detect_stack_use_after_return=true"
 # If $GMX_TEST_REQUIRED_NUMBER_OF_DEVICES is not set and we have GPUs, set it
-if [ -z $GMX_TEST_REQUIRED_NUMBER_OF_DEVICES ] && [ -n $KUBERNETES_EXTENDED_RESOURCE_NAME ] ; then
-    if grep -q '/gpu$' <<< "$KUBERNETES_EXTENDED_RESOURCE_NAME"; then
-        echo "export GMX_TEST_REQUIRED_NUMBER_OF_DEVICES=\"$KUBERNETES_EXTENDED_RESOURCE_LIMIT\"";
-        export GMX_TEST_REQUIRED_NUMBER_OF_DEVICES="$KUBERNETES_EXTENDED_RESOURCE_LIMIT";
-    fi
+if [[ -z "$GMX_TEST_REQUIRED_NUMBER_OF_DEVICES" ]] && [[ -n "$GPU_VENDOR" ]] ; then
+    echo "export GMX_TEST_REQUIRED_NUMBER_OF_DEVICES=\"$GPU_COUNT\"";
+    export GMX_TEST_REQUIRED_NUMBER_OF_DEVICES="$GPU_COUNT";
 fi
-if grep -qF 'nvidia.com/gpu' <<< "$KUBERNETES_EXTENDED_RESOURCE_NAME"; then
+if grep -qF 'NVIDIA' <<< "$GPU_VENDOR"; then
     nvidia-smi -L && nvidia-smi || true;
     if [ "$GMX_CI_DISABLE_CUFFTMP_DECOMPOSITION_ON_INCOMPATIBLE_DEVICES" != "" ] 
     then
-	echo "DUE TO LIMITATIONS OF CUFFTMP, THIS JOB RUNS IN DIFFERENT CONFIGURATIONS DEPENDING ON THE VERSION OF GPU AVAILABLE. Now running:" 
-	computeCapability=`nvidia-smi -i 0 --query-gpu=compute_cap --format=csv | tail -1 | sed 's/\.//g'`    
-	if [ "$computeCapability" -lt "70" ]
-	then
-	    echo "    without PME decomposition, since compute Capability is less than 7.0"
-	    unset GMX_GPU_PME_DECOMPOSITION
-	    export LD_PRELOAD=$CUFFTLIB #TODO remove this when cuFFTMp is fixed regarding "regular" ffts for older GPUs #3884
-	else
-	    echo "    with PME decomposition"
-	fi
-	gpuMemory=`nvidia-smi -i 0 --query-gpu=memory.total --format=csv | tail -1 | awk '{ print $1 }'`
-	if [ "$gpuMemory" -lt "8000" ]
-	then
-	    echo "    without FFT MPI Decomposition test, since GPU memory is less than 8GB"
-	    EXTRA_FLAGS="--exclude-regex FFTMpiUnitTests"
-	else
-	    echo "    with FFT MPI Decomposition test"
-	fi
+        echo "DUE TO LIMITATIONS OF CUFFTMP, THIS JOB RUNS IN DIFFERENT CONFIGURATIONS DEPENDING ON THE VERSION OF GPU AVAILABLE. Now running:" 
+        computeCapability=`nvidia-smi -i 0 --query-gpu=compute_cap --format=csv | tail -1 | sed 's/\.//g'`    
+        if [ "$computeCapability" -lt "70" ]
+        then
+            echo "    without PME decomposition, since compute Capability is less than 7.0"
+            unset GMX_GPU_PME_DECOMPOSITION
+            export LD_PRELOAD=$CUFFTLIB #TODO remove this when cuFFTMp is fixed regarding "regular" ffts for older GPUs #3884
+        else
+            echo "    with PME decomposition"
+        fi
+        gpuMemory=`nvidia-smi -i 0 --query-gpu=memory.total --format=csv | tail -1 | awk '{ print $1 }'`
+        if [ "$gpuMemory" -lt "8000" ]
+        then
+            echo "    without FFT MPI Decomposition test, since GPU memory is less than 8GB"
+            EXTRA_FLAGS="--exclude-regex FFTMpiUnitTests"
+        else
+            echo "    with FFT MPI Decomposition test"
+        fi
     fi
 fi
-if grep -qF 'amd.com/gpu' <<< "$KUBERNETES_EXTENDED_RESOURCE_NAME"; then
+if grep -qF 'AMD' <<< "$GPU_VENDOR"; then
     clinfo -l || true;
 fi
-if grep -qF 'intel.com/gpu' <<< "$KUBERNETES_EXTENDED_RESOURCE_NAME"; then
+if grep -qF 'INTEL' <<< "$GPU_VENDOR"; then
     sycl-ls || true;
     export SYCL_CACHE_PERSISTENT=1; # Issue #4218
 fi

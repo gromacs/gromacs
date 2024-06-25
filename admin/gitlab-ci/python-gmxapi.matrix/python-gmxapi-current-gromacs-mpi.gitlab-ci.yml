@@ -14,11 +14,11 @@
 
 .gmxapi:clang-13-mpi:
   extends:
-    - .variables:default
     - .use-clang:base
   image: ${CI_REGISTRY_IMAGE}/ci-ubuntu-20.04-llvm-13
   stage: test
   variables:
+    COMPILER_MAJOR_VERSION: 13
     KUBERNETES_CPU_LIMIT: 4
     KUBERNETES_CPU_REQUEST: 4
     KUBERNETES_MEMORY_LIMIT: 2Gi
@@ -45,6 +45,7 @@
 gmxapi:clang-13-mpi:py-3.7:
   extends:
     - .gmxapi:clang-13-mpi
-    - .rules:merge-requests
+  rules:
+    - !reference [.rules:merge-requests, rules]
   variables:
     VENVPATH: "/root/venv/py3.7"

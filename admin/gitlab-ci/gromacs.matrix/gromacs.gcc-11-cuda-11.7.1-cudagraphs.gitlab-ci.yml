@@ -19,7 +19,8 @@ gromacs:gcc-11-cuda-11.7.1:configure:
     - .gromacs:base:configure
     - .use-gcc:base
     - .use-cuda
-    - .rules:post-merge-acceptance
+  rules:
+    - !reference [.rules:post-merge-acceptance, rules]
   image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-gcc-11-cuda-11.7.1
   variables:
     CMAKE: /usr/local/cmake-3.18.4/bin/cmake
@@ -29,11 +30,11 @@ gromacs:gcc-11-cuda-11.7.1:configure:
 
 gromacs:gcc-11-cuda-11.7.1:build:
   extends:
-    - .variables:default
     - .gromacs:base:build
     - .before_script:default
     - .use-ccache
-    - .rules:post-merge-acceptance
+  rules:
+    - !reference [.rules:post-merge-acceptance, rules]
   image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-gcc-11-cuda-11.7.1
   variables:
     CMAKE: /usr/local/cmake-3.18.4/bin/cmake
@@ -43,17 +44,19 @@ gromacs:gcc-11-cuda-11.7.1:build:
 gromacs:gcc-11-cuda-11.7.1:test-cudagraph:
   extends:
     - .gromacs:base:test
-    - .rules:post-merge-acceptance
+  rules:
+    - !reference [.rules:skip-if-single-nvidia-gpu-unavailable, rules]
+    - !reference [.rules:post-merge-acceptance, rules]
   image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-gcc-11-cuda-11.7.1
   variables:
     CMAKE: /usr/local/cmake-3.18.4/bin/cmake
-    KUBERNETES_EXTENDED_RESOURCE_NAME: "nvidia.com/gpu"
-    KUBERNETES_EXTENDED_RESOURCE_LIMIT: 1
     GMX_ENABLE_DIRECT_GPU_COMM: 1
     GMX_CUDA_GRAPH: 1
     GMX_TEST_LABELS: "QuickGpuTest|SlowGpuTest"
+    GPU_VENDOR: "NVIDIA"
+    GPU_COUNT: 1
   tags:
-    - k8s-scilifelab
+    - $GITLAB_RUNNER_TAG_1X_NVIDIA_GPU
   needs:
     - job: gromacs:gcc-11-cuda-11.7.1:build
 
@@ -61,18 +64,20 @@ gromacs:gcc-11-cuda-11.7.1:regressiontest-cudagraph:
   # single-rank regression tests
   extends:
     - .gromacs:base:regressiontest
-    - .rules:post-merge-acceptance
+  rules:
+    - !reference [.rules:skip-if-single-nvidia-gpu-unavailable, rules]
+    - !reference [.rules:post-merge-acceptance, rules]
   image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-gcc-11-cuda-11.7.1
   variables:
     CMAKE: /usr/local/cmake-3.18.4/bin/cmake
-    KUBERNETES_EXTENDED_RESOURCE_NAME: "nvidia.com/gpu"
-    KUBERNETES_EXTENDED_RESOURCE_LIMIT: 1
     REGRESSIONTEST_PME_RANK_NUMBER: 0
     REGRESSIONTEST_TOTAL_RANK_NUMBER: 1
     REGRESSIONTEST_OMP_RANK_NUMBER: 2
     GMX_CUDA_GRAPH: 1
+    GPU_VENDOR: "NVIDIA"
+    GPU_COUNT: 1
   tags:
-    - k8s-scilifelab
+    - $GITLAB_RUNNER_TAG_1X_NVIDIA_GPU
   needs:
     - job: gromacs:gcc-11-cuda-11.7.1:build
     - job: regressiontests:prepare
@@ -87,19 +92,21 @@ gromacs:gcc-11-cuda-11.7.1:regressiontest-cudagraph-gpucomm:
   # Note that we'd like to run 3+1 but that hangs in CI
   extends:
     - .gromacs:base:regressiontest
-    - .rules:post-merge-acceptance
+  rules:
+    - !reference [.rules:skip-if-dual-nvidia-gpus-unavailable, rules]
+    - !reference [.rules:post-merge-acceptance, rules]
   image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-gcc-11-cuda-11.7.1
   variables:
     CMAKE: /usr/local/cmake-3.18.4/bin/cmake
-    KUBERNETES_EXTENDED_RESOURCE_NAME: "nvidia.com/gpu"
-    KUBERNETES_EXTENDED_RESOURCE_LIMIT: 2
     REGRESSIONTEST_PME_RANK_NUMBER: 1
     REGRESSIONTEST_TOTAL_RANK_NUMBER: 2
     REGRESSIONTEST_OMP_RANK_NUMBER: 1
     GMX_CUDA_GRAPH: 1
     GMX_ENABLE_DIRECT_GPU_COMM: 1
+    GPU_VENDOR: "NVIDIA"
+    GPU_COUNT: 2
   tags:
-    - k8s-scilifelab
+    - $GITLAB_RUNNER_TAG_2X_NVIDIA_GPU
   needs:
     - job: gromacs:gcc-11-cuda-11.7.1:build
     - job: regressiontests:prepare

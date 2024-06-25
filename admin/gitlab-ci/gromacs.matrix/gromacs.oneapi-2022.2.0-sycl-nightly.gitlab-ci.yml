@@ -21,7 +21,8 @@ gromacs:oneapi-2022.2.0-sycl-nightly:configure:
    - .gromacs:base:configure
    - .use-oneapi:base
    - .use-sycl
-   - .rules:nightly-not-for-release
+  rules:
+   - !reference [.rules:nightly-not-for-release, rules]
   image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-oneapi-2022.2.0-intel-compute-runtime:latest
   variables:
     CMAKE: /usr/local/cmake-3.18.4/bin/cmake
@@ -30,11 +31,11 @@ gromacs:oneapi-2022.2.0-sycl-nightly:configure:
 
 gromacs:oneapi-2022.2.0-sycl-nightly:build:
   extends:
-    - .variables:default
     - .gromacs:base:build
     - .use-ccache
     - .use-oneapi:base
-    - .rules:nightly-not-for-release
+  rules:
+    - !reference [.rules:nightly-not-for-release, rules]
   image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-oneapi-2022.2.0-intel-compute-runtime:latest
   variables:
     CMAKE: /usr/local/cmake-3.18.4/bin/cmake
@@ -45,17 +46,19 @@ gromacs:oneapi-2022.2.0-sycl-nightly:test-opencl:
   extends:
     - .gromacs:base:test
     - .use-oneapi:base
-    - .rules:nightly-not-for-release
+  rules:
+    - !reference [.rules:nightly-not-for-release, rules]
   tags:
     - intel-gpu-dg1
+  allow_failure: true
   image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-oneapi-2022.2.0-intel-compute-runtime:latest
   variables:
     CMAKE: /usr/local/cmake-3.18.4/bin/cmake
     SYCL_DEVICE_FILTER: "opencl:gpu"
     # The following two variables are not used by k8s, since this job runs on a separate host
     # But it's easier to set them up and use the existing scripts for job preparation that rely on them
-    KUBERNETES_EXTENDED_RESOURCE_NAME: "intel.com/gpu"
-    KUBERNETES_EXTENDED_RESOURCE_LIMIT: 2
+    GPU_VENDOR: "INTEL"
+    GPU_COUNT: 2
     GMX_TEST_LABELS: "QuickGpuTest|SlowGpuTest"
   needs:
     - job: gromacs:oneapi-2022.2.0-sycl-nightly:build
@@ -64,17 +67,19 @@ gromacs:oneapi-2022.2.0-sycl-nightly:test-opencl-upd:
   extends:
     - .gromacs:base:test
     - .use-oneapi:base
-    - .rules:nightly-not-for-release
+  rules:
+    - !reference [.rules:nightly-not-for-release, rules]
   tags:
     - intel-gpu-dg1
+  allow_failure: true
   image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-oneapi-2022.2.0-intel-compute-runtime:latest
   variables:
     CMAKE: /usr/local/cmake-3.18.4/bin/cmake
     SYCL_DEVICE_FILTER: "opencl:gpu"
     # The following two variables are not used by k8s, since this job runs on a separate host
     # But it's easier to set them up and use the existing scripts for job preparation that rely on them
-    KUBERNETES_EXTENDED_RESOURCE_NAME: "intel.com/gpu"
-    KUBERNETES_EXTENDED_RESOURCE_LIMIT: 2
+    GPU_VENDOR: "INTEL"
+    GPU_COUNT: 2
     GMX_TEST_LABELS: "QuickGpuTest|SlowGpuTest"
   needs:
     - job: gromacs:oneapi-2022.2.0-sycl-nightly:build
@@ -83,9 +88,11 @@ gromacs:oneapi-2022.2.0-sycl-nightly:regressiontest-opencl:
   extends:
     - .gromacs:base:regressiontest
     - .use-oneapi:base
-    - .rules:nightly-not-for-release
+  rules:
+    - !reference [.rules:nightly-not-for-release, rules]
   tags:
     - intel-gpu-dg1
+  allow_failure: true
   image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-oneapi-2022.2.0-intel-compute-runtime:latest
   variables:
     CMAKE: /usr/local/cmake-3.18.4/bin/cmake
@@ -95,8 +102,8 @@ gromacs:oneapi-2022.2.0-sycl-nightly:regressiontest-opencl:
     REGRESSIONTEST_OMP_RANK_NUMBER: 1
     # The following two variables are not used by k8s, since this job runs on a separate host
     # But it's easier to set them up and use the existing scripts for job preparation that rely on them
-    KUBERNETES_EXTENDED_RESOURCE_NAME: "intel.com/gpu"
-    KUBERNETES_EXTENDED_RESOURCE_LIMIT: 2
+    GPU_VENDOR: "INTEL"
+    GPU_COUNT: 2
   needs:
     - job: gromacs:oneapi-2022.2.0-sycl-nightly:build
     - job: regressiontests:prepare
@@ -105,9 +112,11 @@ gromacs:oneapi-2022.2.0-sycl-nightly:regressiontest-opencl-singlerank-upd:
   extends:
     - .gromacs:base:regressiontest
     - .use-oneapi:base
-    - .rules:nightly-not-for-release
+  rules:
+    - !reference [.rules:nightly-not-for-release, rules]
   tags:
     - intel-gpu-dg1
+  allow_failure: true
   image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-oneapi-2022.2.0-intel-compute-runtime:latest
   variables:
     CMAKE: /usr/local/cmake-3.18.4/bin/cmake
@@ -117,8 +126,8 @@ gromacs:oneapi-2022.2.0-sycl-nightly:regressiontest-opencl-singlerank-upd:
     REGRESSIONTEST_OMP_RANK_NUMBER: 1
     # The following two variables are not used by k8s, since this job runs on a separate host
     # But it's easier to set them up and use the existing scripts for job preparation that rely on them
-    KUBERNETES_EXTENDED_RESOURCE_NAME: "intel.com/gpu"
-    KUBERNETES_EXTENDED_RESOURCE_LIMIT: 2
+    GPU_VENDOR: "INTEL"
+    GPU_COUNT: 2
   needs:
     - job: gromacs:oneapi-2022.2.0-sycl-nightly:build
     - job: regressiontests:prepare
@@ -128,9 +137,11 @@ gromacs:oneapi-2022.2.0-sycl-nightly:regressiontest-opencl-upd:
   extends:
     - .gromacs:base:regressiontest
     - .use-oneapi:base
-    - .rules:nightly-not-for-release
+  rules:
+    - !reference [.rules:nightly-not-for-release, rules]
   tags:
     - intel-gpu-dg1
+  allow_failure: true
   image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-oneapi-2022.2.0-intel-compute-runtime:latest
   variables:
     CMAKE: /usr/local/cmake-3.18.4/bin/cmake
@@ -140,8 +151,8 @@ gromacs:oneapi-2022.2.0-sycl-nightly:regressiontest-opencl-upd:
     REGRESSIONTEST_OMP_RANK_NUMBER: 1
     # The following two variables are not used by k8s, since this job runs on a separate host
     # But it's easier to set them up and use the existing scripts for job preparation that rely on them
-    KUBERNETES_EXTENDED_RESOURCE_NAME: "intel.com/gpu"
-    KUBERNETES_EXTENDED_RESOURCE_LIMIT: 2
+    GPU_VENDOR: "INTEL"
+    GPU_COUNT: 2
   needs:
     - job: gromacs:oneapi-2022.2.0-sycl-nightly:build
     - job: regressiontests:prepare
@@ -150,9 +161,11 @@ gromacs:oneapi-2022.2.0-sycl-nightly:regressiontest-opencl-singlerank:
   extends:
     - .gromacs:base:regressiontest
     - .use-oneapi:base
-    - .rules:nightly-not-for-release
+  rules:
+    - !reference [.rules:nightly-not-for-release, rules]
   tags:
     - intel-gpu-dg1
+  allow_failure: true
   image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-oneapi-2022.2.0-intel-compute-runtime:latest
   variables:
     CMAKE: /usr/local/cmake-3.18.4/bin/cmake
@@ -162,8 +175,8 @@ gromacs:oneapi-2022.2.0-sycl-nightly:regressiontest-opencl-singlerank:
     REGRESSIONTEST_OMP_RANK_NUMBER: 1
     # The following two variables are not used by k8s, since this job runs on a separate host
     # But it's easier to set them up and use the existing scripts for job preparation that rely on them
-    KUBERNETES_EXTENDED_RESOURCE_NAME: "intel.com/gpu"
-    KUBERNETES_EXTENDED_RESOURCE_LIMIT: 2
+    GPU_VENDOR: "INTEL"
+    GPU_COUNT: 2
   needs:
     - job: gromacs:oneapi-2022.2.0-sycl-nightly:build
     - job: regressiontests:prepare

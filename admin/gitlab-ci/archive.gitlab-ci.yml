@@ -4,9 +4,8 @@
 # regressiontest md5sum to a file
 
 prepare-release-version:
-  extends:
-    - .variables:default
-    - .rules:nightly-only-for-release
+  rules:
+    - !reference [.rules:nightly-only-for-release, rules]
   cache: {}
   image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-llvm-9-docs
   stage: configure-build
@@ -25,9 +24,8 @@ prepare-release-version:
 # Runs during pre-build
 # Set up to only fetch the files and prepare everything for merge requests
 regressiontests:prepare:
-  extends:
-    - .variables:default
-    - .rules:merge-and-post-merge-acceptance
+  rules:
+    - !reference [.rules:merge-and-post-merge-acceptance, rules]
   cache: {}
   image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-llvm-9-docs
   stage: configure-build
@@ -67,9 +65,8 @@ regressiontests:prepare:
       - gmx-regressiontests.tar.gz
 
 regressiontests:package:
-  extends:
-    - .variables:default
-    - .rules:nightly-only-for-release
+  rules:
+    - !reference [.rules:nightly-only-for-release, rules]
   cache: {}
   # Docker image uploaded to dockerhub by user eriklindahl
   # TODO: Get DockerFile for admin/dockerfiles
@@ -115,8 +112,9 @@ regressiontests:package:
 archive:configure:nightly:
   extends:
     - .docs:configure
-    - .rules:nightly-not-for-release
   stage: nightly-configure
+  rules:
+    - !reference [.rules:nightly-not-for-release, rules]
   dependencies: []
   variables:
     BUILD_DIR: build-package
@@ -127,7 +125,8 @@ archive:configure:nightly:
 archive:configure:release:
   extends:
     - .docs:configure
-    - .rules:nightly-only-for-release
+  rules:
+    - !reference [.rules:nightly-only-for-release, rules]
   variables:
     BUILD_DIR: build-package
     CMAKE_SIMD_OPTIONS: -DGMX_SIMD=None
@@ -141,7 +140,6 @@ archive:configure:release:
 # manually hacking things. TODO: #3361
 .archive:build:
   extends:
-    - .variables:default
     - .gromacs:base:build
     - .use-ccache
     - .before_script:default
@@ -193,8 +191,9 @@ archive:configure:release:
 archive:build:
   extends:
     - .archive:build
-    - .rules:nightly-not-for-release
   stage: nightly-build
+  rules:
+    - !reference [.rules:nightly-not-for-release, rules]
   needs:
     - job: archive:configure:nightly
   variables:
@@ -203,8 +202,9 @@ archive:build:
 archive:package:
   extends:
     - .archive:build
-    - .rules:nightly-only-for-release
   stage: release-package
+  rules:
+    - !reference [.rules:nightly-only-for-release, rules]
   needs:
     - job: archive:configure:release
   variables:
@@ -213,9 +213,8 @@ archive:package:
 checksum-verify:
   image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-llvm-9-docs
   stage: release-verify
-  extends:
-    - .variables:default
-    - .rules:nightly-only-for-release
+  rules:
+    - !reference [.rules:nightly-only-for-release, rules]
   cache: {}
 
   variables:
@@ -254,9 +253,8 @@ checksum-verify:
 version-verify:
   image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-llvm-9-docs
   stage: release-verify
-  extends:
-    - .variables:default
-    - .rules:nightly-only-for-release
+  rules:
+    - !reference [.rules:nightly-only-for-release, rules]
   cache: {}
 
   variables:
@@ -287,8 +285,9 @@ version-verify:
 archive:nightly-webpage:
   extends:
     - .webpage:build
-    - .rules:nightly-not-for-release
   stage: nightly-deploy
+  rules:
+    - !reference [.rules:nightly-not-for-release, rules]
   needs:
     - job: linkchecker
       artifacts: false
@@ -306,8 +305,9 @@ archive:nightly-webpage:
 archive:full-release:
   extends:
     - .webpage:build
-    - .rules:nightly-only-for-release-user-triggered
   stage: release-deploy
+  rules:
+    - !reference [.rules:nightly-only-for-release-user-triggered, rules]
   dependencies:
     - webpage:build:release
     - archive:package
