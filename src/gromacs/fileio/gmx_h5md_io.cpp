@@ -43,23 +43,13 @@
 
 #include "config.h"
 
-#include <strings.h>
-
-#include <algorithm>
-#include <functional>
-#include <limits>
 #include <string>
 #include <vector>
 
-#include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/topology/atoms.h"
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/topology/topology.h"
-#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/baseversion.h"
-#include "gromacs/utility/exceptions.h"
-#include "gromacs/utility/fatalerror.h"
-#include "gromacs/utility/futil.h"
 #include "gromacs/utility/programcontext.h"
 #include "gromacs/utility/sysinfo.h"
 

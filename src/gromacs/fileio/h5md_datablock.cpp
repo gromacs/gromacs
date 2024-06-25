@@ -44,6 +44,7 @@
 
 #include <string>
 
+#include "gromacs/math/vectypes.h"
 #include "gromacs/utility/exceptions.h"
 
 #include "h5md_io.h"
