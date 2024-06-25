@@ -39,9 +39,15 @@
 
 #include "gmxpre.h"
 
-#include "gmx_h5md_io.h"
-
 #include "config.h"
+
+// [[noreturn]] attributes must be added in the common headers, so it's easier to silence the warning here
+#ifdef __clang__
+#    if !GMX_USE_HDF5
+#        pragma clang diagnostic push
+#        pragma clang diagnostic ignored "-Wmissing-noreturn"
+#    endif
+#endif
 
 #include <string>
 #include <vector>
@@ -53,11 +59,10 @@
 #include "gromacs/utility/programcontext.h"
 #include "gromacs/utility/sysinfo.h"
 
+#include "gmx_h5md_io.h"
 #include "h5md_datablock.h"
 #include "h5md_io.h"
 #include "h5md_util.h"
-
-#define GMX_USE_HDF5 1 // FIXME: Temporary just for the editor
 
 #if GMX_USE_HDF5
 #    include <hdf5.h>
@@ -438,9 +443,9 @@ bool hasSeparateSelection(/*const gmx_mtop_t& topology,*/ gmx::ArrayRef<const in
     return separateSelection;
 }
 
-
 } // namespace
-#endif
+
+#endif // GMX_USE_HDF5
 
 namespace gmx
 {
@@ -465,6 +470,7 @@ void setH5mdAuthorAndCreator(h5mdio::GmxH5mdIo* file)
     file->setCreatorProgramVersion(gmxVersion);
 
 #else
+    GMX_UNUSED_VALUE(file);
     throw gmx::FileIOError(
             "GROMACS was compiled without HDF5 support, cannot handle this file type");
 #endif
@@ -506,6 +512,10 @@ void setupMolecularSystemParticleData(h5mdio::GmxH5mdIo*       file,
 
     done_atom(&atoms);
 #else
+    GMX_UNUSED_VALUE(file);
+    GMX_UNUSED_VALUE(topology);
+    GMX_UNUSED_VALUE(index);
+    GMX_UNUSED_VALUE(selectionName);
     throw gmx::FileIOError(
             "GROMACS was compiled without HDF5 support, cannot handle this file type");
 #endif
@@ -559,6 +569,8 @@ MoleculeBlockIndices getMoleculeBlockIndicesByIndex(h5mdio::GmxH5mdIo* file, siz
     return molBlockIndices;
 
 #else
+    GMX_UNUSED_VALUE(file);
+    GMX_UNUSED_VALUE(molBlockIndex);
     throw gmx::FileIOError(
             "GROMACS was compiled without HDF5 support, cannot handle this file type");
 #endif
@@ -654,6 +666,11 @@ void setupMolecularSystemTopology(h5mdio::GmxH5mdIo*       file,
     }
 
 #else
+    GMX_UNUSED_VALUE(file);
+    GMX_UNUSED_VALUE(topology);
+    GMX_UNUSED_VALUE(index);
+    GMX_UNUSED_VALUE(abortIfPresent);
+    GMX_UNUSED_VALUE(writeVmdStructureData);
     throw gmx::FileIOError(
             "GROMACS was compiled without HDF5 support, cannot handle this file type");
 #endif
@@ -760,6 +777,17 @@ void writeFrameToStandardDataBlocks(h5mdio::GmxH5mdIo* file,
     }
 
 #else
+    GMX_UNUSED_VALUE(file);
+    GMX_UNUSED_VALUE(step);
+    GMX_UNUSED_VALUE(time);
+    GMX_UNUSED_VALUE(lambda);
+    GMX_UNUSED_VALUE(box);
+    GMX_UNUSED_VALUE(numParticles);
+    GMX_UNUSED_VALUE(x);
+    GMX_UNUSED_VALUE(v);
+    GMX_UNUSED_VALUE(f);
+    GMX_UNUSED_VALUE(xCompressionError);
+    GMX_UNUSED_VALUE(selectionName);
     throw gmx::FileIOError(
             "GROMACS was compiled without HDF5 support, cannot handle this file type");
 #endif
@@ -845,6 +873,21 @@ bool readNextFrameOfStandardDataBlocks(h5mdio::GmxH5mdIo* file,
     return didReadFrame;
 
 #else
+    GMX_UNUSED_VALUE(file);
+    GMX_UNUSED_VALUE(step);
+    GMX_UNUSED_VALUE(time);
+    GMX_UNUSED_VALUE(lambda);
+    GMX_UNUSED_VALUE(box);
+    GMX_UNUSED_VALUE(x);
+    GMX_UNUSED_VALUE(v);
+    GMX_UNUSED_VALUE(f);
+    GMX_UNUSED_VALUE(xCompressionError);
+    GMX_UNUSED_VALUE(readLambda);
+    GMX_UNUSED_VALUE(readBox);
+    GMX_UNUSED_VALUE(readX);
+    GMX_UNUSED_VALUE(readV);
+    GMX_UNUSED_VALUE(readF);
+    GMX_UNUSED_VALUE(selectionName);
     throw gmx::FileIOError(
             "GROMACS was compiled without HDF5 support, cannot handle this file type");
 #endif
@@ -867,11 +910,14 @@ bool copyProvenanceRecords(h5mdio::GmxH5mdIo* srcFile, h5mdio::GmxH5mdIo* destFi
     return true;
 
 #else
+    GMX_UNUSED_VALUE(srcFile);
+    GMX_UNUSED_VALUE(destFile);
     throw gmx::FileIOError(
             "GROMACS was compiled without HDF5 support, cannot handle this file type");
 #endif
 }
 
+#if GMX_USE_HDF5
 extern template hid_t
 h5mdio::openOrCreateDataSet<1>(hid_t, const char*, const char*, hid_t, const hsize_t*, CompressionAlgorithm, double);
 // extern template hid_t
@@ -911,5 +957,6 @@ extern template void h5mdio::GmxH5mdIo::setNumericDataSet<std::pair<std::int64_t
         const std::vector<std::pair<std::int64_t, std::int64_t>>&,
         const std::string&,
         bool);
+#endif
 
 } // namespace gmx

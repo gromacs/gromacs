@@ -37,14 +37,11 @@
  * \author Magnus Lundborg <lundborg.magnus@gmail.com>
  */
 
+#include "gmxpre.h"
 
-#define GMX_USE_HDF5 1 // FIXME: Temporary just for the editor
+#include "config.h"
 
 #if GMX_USE_HDF5
-
-#    include "gmxpre.h"
-
-#    include "h5md_datablock.h"
 
 #    include <hdf5.h>
 
@@ -53,6 +50,7 @@
 #    include "gromacs/math/vectypes.h"
 #    include "gromacs/utility/exceptions.h"
 
+#    include "h5md_datablock.h"
 #    include "h5md_io.h"
 #    include "h5md_util.h"
 

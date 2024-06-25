@@ -40,6 +40,8 @@
  */
 #include "gmxpre.h"
 
+#include "config.h"
+
 #include <string>
 
 #include <gtest/gtest.h>
@@ -56,7 +58,7 @@
 #include "testutils/testfilemanager.h"
 #include "testutils/tprfilegenerator.h"
 
-
+#if GMX_USE_HDF5
 namespace
 {
 /*! \brief
@@ -532,3 +534,5 @@ extern template std::vector<real> gmx::h5mdio::GmxH5mdIo::readNumericDataSet<rea
                                                                                    const std::string&);
 extern template std::vector<int> gmx::h5mdio::GmxH5mdIo::readNumericDataSet<int>(const std::string&,
                                                                                  const std::string&);
+
+#endif // GMX_USE_HDF5

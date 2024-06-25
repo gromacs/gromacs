@@ -37,13 +37,11 @@
  * \author Magnus Lundborg <lundborg.magnus@gmail.com>
  */
 
-#define GMX_USE_HDF5 1 // FIXME: Temporary just for the editor
+#include "gmxpre.h"
+
+#include "config.h"
 
 #if GMX_USE_HDF5
-#    include "gmxpre.h"
-
-#    include "h5md_util.h"
-
 #    include <hdf5.h>
 
 #    include <string>
@@ -55,6 +53,8 @@
 #    include "gromacs/utility/exceptions.h"
 #    include "gromacs/utility/fatalerror.h"
 #    include "gromacs/utility/gmxassert.h"
+
+#    include "h5md_util.h"
 
 namespace
 {
@@ -706,4 +706,4 @@ template void gmx::h5mdio::setAttribute<double>(hid_t, const char*, double, hid_
 
 template bool gmx::h5mdio::getAttribute<int64_t>(hid_t, const char*, int64_t*);
 
-#endif
+#endif // GMX_USE_HDF5
