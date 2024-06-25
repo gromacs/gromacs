@@ -299,15 +299,9 @@ namespace
 //! Returns whether there are electrostatic contributions to the insertion energy
 bool haveElectrostatics(const t_mdatoms& mdatoms, const Range<int>& testAtomsRange)
 {
-    for (int i : testAtomsRange)
-    {
-        if (mdatoms.chargeA[i] != 0 || (!mdatoms.chargeB.empty() && mdatoms.chargeB[i] != 0))
-        {
-            return true;
-        }
-    }
-
-    return false;
+    return std::any_of(testAtomsRange.begin(), testAtomsRange.end(), [mdatoms](int i) {
+        return mdatoms.chargeA[i] != 0 || (!mdatoms.chargeB.empty() && mdatoms.chargeB[i] != 0);
+    });
 }
 
 } // namespace

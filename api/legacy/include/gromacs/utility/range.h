@@ -42,6 +42,7 @@
 #ifndef GMX_UTILITY_RANGE_H
 #define GMX_UTILITY_RANGE_H
 
+#include <iterator>
 #include <type_traits>
 
 #include "gromacs/utility/basedefinitions.h"
@@ -72,6 +73,12 @@ public:
     //! An iterator that loops over a range of integers
     struct iterator
     {
+        using iterator_category = std::forward_iterator_tag;
+        using difference_type   = T;
+        using value_type        = T;
+        using pointer           = T*;
+        using reference         = T&;
+
         //! Constructor
         iterator(T value) : value_(value) {}
         //! Value

@@ -2477,7 +2477,7 @@ void VirtualSitesHandler::Impl::spreadForces(ArrayRef<const RVec> x,
  */
 static std::vector<int> makeAtomToGroupMapping(const gmx::RangePartitioning& grouping)
 {
-    std::vector<int> atomToGroup(grouping.fullRange().end(), 0);
+    std::vector<int> atomToGroup(*grouping.fullRange().end(), 0);
 
     for (int group = 0; group < grouping.numBlocks(); group++)
     {
