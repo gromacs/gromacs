@@ -55,7 +55,7 @@ namespace gmx
 {
 
 //! \brief Class name for NBNXM kernel
-template<bool doPruneNBL, bool doCalcEnergies, enum ElecType elecType, enum VdwType vdwType, int subGroupSize>
+template<bool doPruneNBL, bool doCalcEnergies, enum ElecType elecType, enum VdwType vdwType, PairlistType layoutType>
 class NbnxmKernel;
 
 /*! \brief Macro to control the enablement of manually-packed Float3 structure.
@@ -1283,8 +1283,7 @@ static auto nbnxmKernel(sycl::handler& cgh,
 template<PairlistType pairlistType, bool doPruneNBL, bool doCalcEnergies, enum ElecType elecType, enum VdwType vdwType, class... Args>
 static void launchNbnxmKernel(const DeviceStream& deviceStream, const int numSci, Args&&... args)
 {
-    constexpr int subGroupSize = sc_gpuParallelExecutionWidth(pairlistType);
-    using kernelNameType = NbnxmKernel<doPruneNBL, doCalcEnergies, elecType, vdwType, subGroupSize>;
+    using kernelNameType = NbnxmKernel<doPruneNBL, doCalcEnergies, elecType, vdwType, pairlistType>;
 
     /* Kernel launch config:
      * - The thread block dimensions match the size of i-clusters, j-clusters,
@@ -1323,7 +1322,7 @@ void chooseAndLaunchNbnxmKernel(enum ElecType elecType, enum VdwType vdwType, Ar
             vdwType);
 }
 
-template<int subGroupSize, bool doPruneNBL, bool doCalcEnergies>
+template<bool doPruneNBL, bool doCalcEnergies>
 void launchNbnxmKernelHelper(NbnxmGpu* nb, const gmx::StepWorkload& stepWork, const InteractionLocality iloc)
 {
     NBAtomDataGpu*      adat         = nb->atdat;

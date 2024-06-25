@@ -88,6 +88,20 @@ extern template void gpu_init_pairlist<PairlistType::Hierarchical8x8x8>(
         const NbnxnPairlistGpu<PairlistType::Hierarchical8x8x8>* h_nblist,
         InteractionLocality                                      iloc);
 
+extern template void gpu_init_pairlist<PairlistType::Hierarchical8x8x8_nosplit>(
+        NbnxmGpu*                                                        nb,
+        const NbnxnPairlistGpu<PairlistType::Hierarchical8x8x8_nosplit>* h_nblist,
+        gmx::InteractionLocality                                         iloc);
+
+extern template void gpu_init_pairlist<PairlistType::Hierarchical4x8x8>(
+        NbnxmGpu*                                                nb,
+        const NbnxnPairlistGpu<PairlistType::Hierarchical4x8x8>* h_nblist,
+        gmx::InteractionLocality                                 iloc);
+
+extern template void gpu_init_pairlist<PairlistType::Hierarchical8x4x4>(
+        NbnxmGpu*                                                nb,
+        const NbnxnPairlistGpu<PairlistType::Hierarchical8x4x4>* h_nblist,
+        gmx::InteractionLocality                                 iloc);
 #endif
 
 /** Initializes atom-data on the GPU, called at every pair search step. */
@@ -170,6 +184,19 @@ extern template void performExclusiveScan<PairlistType::Hierarchical8x8x8>(
         char*                                         temporaryBuffer,
         GpuPairlist<PairlistType::Hierarchical8x8x8>* plist,
         const DeviceStream&                           deviceStream);
+
+#    if GMX_GPU_HIP
+extern template size_t getExclusiveScanWorkingArraySize<PairlistType::Hierarchical8x8x8_nosplit>(
+        GpuPairlist<PairlistType::Hierarchical8x8x8_nosplit>* plist,
+        const DeviceStream&                                   deviceStream);
+
+extern template void performExclusiveScan<PairlistType::Hierarchical8x8x8_nosplit>(
+        size_t                                                temporaryBufferSize,
+        char*                                                 temporaryBuffer,
+        GpuPairlist<PairlistType::Hierarchical8x8x8_nosplit>* plist,
+        const DeviceStream&                                   deviceStream);
+#    endif
+
 #endif
 
 } // namespace gmx

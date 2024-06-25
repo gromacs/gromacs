@@ -1085,6 +1085,7 @@ must be set:
    cmake .. -DCMAKE_C_COMPILER=icx -DCMAKE_CXX_COMPILER=icpx \
             -DGMX_GPU=SYCL -DGMX_SYCL=DPCPP
 
+
 When compiling for Intel Data Center GPU Max (also knows as Ponte Vecchio / PVC),
 Intel Xe2 GPUs (Lunar Lake, Arc Battlemage) and newer, we recommend passing additional
 flags for compatibility and improved performance:
@@ -1144,32 +1145,6 @@ on most consumer GPUs.
 
 AMD GPUs can also be targeted via `Intel oneAPI DPC++`_; please refer to
 :ref:`a separate section <install guide exotic sycl>` for the build instructions.
-
-
-SYCL GPU compilation options
-""""""""""""""""""""""""""""
-
-The following flags can be passed to CMake in order to tune |Gromacs|:
-
-``-DGMX_GPU_NB_CLUSTER_SIZE``
-      changes the data layout of non-bonded kernels. When compiling with
-      `Intel oneAPI DPC++`_, the default value is 4, which is optimal for
-      most Intel GPUs except Data Center MAX (Ponte Vecchio), for which 8
-      is better. When compiling with AdaptiveCpp_, the default value is 8,
-      which is the only supported value for AMD and NVIDIA devices.
-
-``-DGMX_GPU_NB_NUM_CLUSTER_PER_CELL_X``, ``-DGMX_GPU_NB_NUM_CLUSTER_PER_CELL_Y``, ``-DGMX_GPU_NB_NUM_CLUSTER_PER_CELL_Z``
-      Sets the number of clusters along X, Y, or Z in a pair-search
-      grid cell, default 2. When targeting Intel Ponte Vecchio GPUs,
-      set ``-DGMX_GPU_NB_NUM_CLUSTER_PER_CELL_X=1`` and leave the
-      other values as the default.
-
-``-DGMX_GPU_NB_DISABLE_CLUSTER_PAIR_SPLIT``
-     Disables cluster pair splitting in the GPU non-bonded kernels.
-     This is only supported in SYCL, and it is compatible with and improves performance
-     on GPUs with 64-wide execution like AMD GCN and CDNA family.
-     This option is automatically enabled in all builds that target GCN or CDNA GPUs (but not RDNA).
-
 
 .. _AMD-HIP:
 

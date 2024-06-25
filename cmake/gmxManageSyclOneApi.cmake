@@ -206,23 +206,6 @@ if(GMX_DPCPP_HAVE_CUDA_TARGET OR GMX_DPCPP_HAVE_HIP_TARGET)
         list(APPEND SYCL_TOOLCHAIN_CXX_FLAGS ${SYCL_WARNINGS_CXX_FLAGS})
         list(APPEND SYCL_TOOLCHAIN_LINKER_FLAGS ${SYCL_WARNINGS_CXX_FLAGS})
     endif()
-
-    # Set GMX_GPU_NB_DISABLE_CLUSTER_PAIR_SPLIT when targeting only devices with 64-wide execution
-    set(_have_subgroup_not_64 OFF)
-    set(_have_subgroup_64 OFF)
-    if (GMX_DPCPP_HAVE_CUDA_TARGET OR GMX_DPCPP_HAVE_INTEL_TARGET OR GMX_DPCPP_HAVE_HIP_WAVE32_TARGET)
-        set(_have_subgroup_not_64 ON) # We have AMD RDNA, NVIDIA, or Intel target(s)
-    endif()
-    # We assume that any GCN2-5 architecture (gfx7/8) and CDNA1-3 (gfx9 series) up until the time of writing of this conditional is 64-wide
-    if (GMX_DPCPP_HAVE_HIP_WAVE64_TARGET)
-        set(_have_subgroup_64 ON) # We have AMD GCN/CDNA target(s)
-    endif()
-    if (_have_subgroup_64 AND NOT _have_subgroup_not_64)
-        option(GMX_GPU_NB_DISABLE_CLUSTER_PAIR_SPLIT
-            "Disable NBNXM GPU cluster pair splitting. Only supported with SYCL and 64-wide GPU architectures (like AMD GCN/CDNA)."
-            ON)
-        mark_as_advanced(GMX_GPU_NB_DISABLE_CLUSTER_PAIR_SPLIT)
-    endif()
 endif()
 
 # The API is experimental and unstable, so we don't build it by default

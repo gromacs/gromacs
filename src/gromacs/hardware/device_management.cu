@@ -392,3 +392,9 @@ std::string getDeviceInformationString(const DeviceInformation& deviceInfo)
 }
 
 void doubleCheckGpuAwareMpiWillWork(const DeviceInformation& /* deviceInfo */) {}
+
+gmx::PairlistType getDeviceSpecificGpuPairlistLayout(const DeviceInformation& /* deviceInfo */)
+{
+    // only one kernel type supported for CUDA devices.
+    return gmx::PairlistType::Hierarchical8x8x8;
+}

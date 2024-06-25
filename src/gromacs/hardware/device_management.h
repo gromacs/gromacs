@@ -58,6 +58,7 @@
 #include <string>
 #include <vector>
 
+#include "gromacs/nbnxm/nbnxm_enums.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/iserializer.h"
 
@@ -305,5 +306,12 @@ std::optional<std::array<std::byte, 16>> uuidForDevice(const DeviceInformation& 
  *
  * \throw InvalidInputError if the user's choices would lead to a crash */
 void doubleCheckGpuAwareMpiWillWork(const DeviceInformation& deviceInfo);
+
+/*! \brief Report Nbnxm kernel layout for device.
+ *
+ * \param[in] deviceInfo Information about device to base decision on.
+ * \returns The specific kernel layout according to current knowledge.
+ */
+gmx::PairlistType getDeviceSpecificGpuPairlistLayout(const DeviceInformation& deviceInfo);
 
 #endif // GMX_HARDWARE_DEVICE_MANAGEMENT_H

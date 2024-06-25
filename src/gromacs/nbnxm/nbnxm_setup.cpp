@@ -52,6 +52,7 @@
 
 #include "gromacs/domdec/domdec.h"
 #include "gromacs/domdec/domdec_struct.h"
+#include "gromacs/gpu_utils/device_stream_manager.h"
 #include "gromacs/gpu_utils/hostallocator.h"
 #include "gromacs/hardware/architecture.h"
 #include "gromacs/hardware/hw_info.h"
@@ -266,10 +267,9 @@ const char* nbnxmKernelTypeToName(const NbnxmKernelType kernelType)
         case NbnxmKernelType::Cpu4x4_PlainC: return "plain-C-4x4";
         case NbnxmKernelType::Cpu4xN_Simd_4xN: return "SIMD4xM";
         case NbnxmKernelType::Cpu4xN_Simd_2xNN: return "SIMD2xMM";
-        case NbnxmKernelType::Gpu8x8x8: return "GPU";
+        case NbnxmKernelType::GpuSxNxM: return "GPU";
         case NbnxmKernelType::Cpu8x8x8_PlainC: return "plain-C-GPU-layout";
         case NbnxmKernelType::Cpu1x1_PlainC: return "plain-C-1x1";
-
         default: gmx_fatal(FARGS, "Illegal kernel type selected");
     }
 };
@@ -293,7 +293,7 @@ static NbnxmKernelSetup pick_nbnxn_kernel(const gmx::MDLogger&     mdlog,
     }
     else if (nonbondedResource == NonbondedResource::Gpu)
     {
-        kernelSetup.kernelType         = NbnxmKernelType::Gpu8x8x8;
+        kernelSetup.kernelType         = NbnxmKernelType::GpuSxNxM;
         kernelSetup.ewaldExclusionType = EwaldExclusionType::DecidedByGpuModule;
     }
     else

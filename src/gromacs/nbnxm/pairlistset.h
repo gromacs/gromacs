@@ -116,7 +116,11 @@ private:
     //! List of working list for rebalancing CPU lists
     std::vector<NbnxnPairlistCpu> cpuListsWork_;
     //! List of pairlists in GPU layout, variant for different kernel types
-    std::variant<std::vector<NbnxnPairlistGpu<PairlistType::Hierarchical8x8x8>>> gpuLists_;
+    std::variant<std::vector<NbnxnPairlistGpu<PairlistType::Hierarchical8x8x8>>,
+                 std::vector<NbnxnPairlistGpu<PairlistType::Hierarchical8x8x8_nosplit>>,
+                 std::vector<NbnxnPairlistGpu<PairlistType::Hierarchical8x4x4>>,
+                 std::vector<NbnxnPairlistGpu<PairlistType::Hierarchical4x8x8>>>
+            gpuLists_;
     //! Pairlist parameters describing setup and ranges
     const PairlistParams& params_;
     //! Tells whether multiple lists get merged into one (the first) after creation

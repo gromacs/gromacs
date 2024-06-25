@@ -113,7 +113,7 @@ enum class NbnxmKernelType : int
     Cpu4x4_PlainC,    //<! Plain C CPU kernels, only for comparison
     Cpu4xN_Simd_4xN,  //<! SIMD 4N CPU kernels
     Cpu4xN_Simd_2xNN, //<! SIMD 2NN CPU kernels
-    Gpu8x8x8,         //<! GPU kernels, will be specialized further later
+    GpuSxNxM,         //<! GPU kernels, specialized based on device
     Cpu8x8x8_PlainC,  //<! Reference plain C kernel for GPU pairlist layout
     Cpu1x1_PlainC,    //<! Plain C atom-pair list
     Count
@@ -121,7 +121,7 @@ enum class NbnxmKernelType : int
 
 static constexpr bool isGpuKernelType(const NbnxmKernelType kernelType)
 {
-    return kernelType == NbnxmKernelType::Gpu8x8x8;
+    return kernelType == NbnxmKernelType::GpuSxNxM;
 }
 
 /*! \brief Ewald exclusion types */
@@ -142,6 +142,9 @@ enum class PairlistType : int
     Simple4x4,
     Simple4x8,
     Hierarchical8x8x8,
+    Hierarchical8x8x8_nosplit,
+    Hierarchical8x4x4,
+    Hierarchical4x8x8,
     Simple1x1,
     Count
 };
@@ -149,7 +152,21 @@ enum class PairlistType : int
 //! If we use a pairlist that is GPU specific for our backend
 static constexpr bool isGpuSpecificPairlist(const PairlistType pairlistType)
 {
+#if GMX_GPU_HIP
+    return pairlistType == PairlistType::Hierarchical8x8x8
+           || pairlistType == PairlistType::Hierarchical8x8x8_nosplit;
+#elif GMX_GPU_SYCL
+    return pairlistType == PairlistType::Hierarchical8x8x8
+           || pairlistType == PairlistType::Hierarchical8x8x8_nosplit
+           || pairlistType == PairlistType::Hierarchical4x8x8
+           || pairlistType == PairlistType::Hierarchical8x4x4;
+#elif GMX_GPU_OPENCL
+    return pairlistType == PairlistType::Hierarchical8x8x8 || pairlistType == PairlistType::Hierarchical4x8x8
+           || pairlistType == PairlistType::Hierarchical8x4x4;
+#else
+    // default is for CUDA
     return pairlistType == PairlistType::Hierarchical8x8x8;
+#endif
 }
 
 //! \brief Kinds of electrostatic treatments in SIMD Verlet kernels
@@ -163,49 +180,16 @@ enum class CoulombKernelType : int
     Count
 };
 
-namespace detail
-{
-
-//! The i- and j-cluster size for GPU lists, 8 atoms for CUDA, set at configure time for OpenCL and SYCL
-#if GMX_GPU_OPENCL || GMX_GPU_SYCL
-constexpr int c_nbnxnGpuClusterSize = GMX_GPU_NB_CLUSTER_SIZE;
-#else
-constexpr int c_nbnxnGpuClusterSize = 8;
-#endif
-
-/*! \brief The number of clusters along a direction in a pair-search grid cell for GPU lists
- *
- * Typically all 2, but X can be 1 when targeting Intel Ponte Vecchio */
-//! \{
-constexpr int c_gpuNumClusterPerCellZ = GMX_GPU_NB_NUM_CLUSTER_PER_CELL_Z;
-constexpr int c_gpuNumClusterPerCellY = GMX_GPU_NB_NUM_CLUSTER_PER_CELL_Y;
-constexpr int c_gpuNumClusterPerCellX = GMX_GPU_NB_NUM_CLUSTER_PER_CELL_X;
-//! \}
-
-/*! \brief The number of sub-parts used for data storage for a GPU cluster pair
- *
- * In CUDA the number of threads in a warp is 32 and we have cluster pairs
- * of 8*8=64 atoms, so it's convenient to store data for cluster pair halves,
- * i.e. split in 2.
- *
- * On architectures with 64-wide execution however it is better to avoid splitting
- * (e.g. AMD GCN, CDNA and later).
- */
-#if GMX_GPU_NB_DISABLE_CLUSTER_PAIR_SPLIT
-static constexpr int c_nbnxnGpuClusterpairSplit = 1;
-#else
-static constexpr int c_nbnxnGpuClusterpairSplit = 2;
-#endif
-
-} // namespace detail
-
 //! The NBNxM GPU i-cluster size in atoms for the given NBNxM GPU kernel layout
 static constexpr int sc_gpuClusterSize(const PairlistType pairlistType)
 {
-    // for now we return only the default type here and in the other places
     switch (pairlistType)
     {
-        default: return detail::c_nbnxnGpuClusterSize;
+        case PairlistType::Hierarchical8x4x4: return 4;
+        case PairlistType::Hierarchical8x8x8:
+        case PairlistType::Hierarchical8x8x8_nosplit:
+        case PairlistType::Hierarchical4x8x8:
+        default: return 8;
     }
 }
 
@@ -214,7 +198,11 @@ static constexpr int sc_gpuNumClusterPerCellX(const PairlistType pairlistType)
 {
     switch (pairlistType)
     {
-        default: return detail::c_gpuNumClusterPerCellX;
+        case PairlistType::Hierarchical4x8x8: return 1;
+        case PairlistType::Hierarchical8x8x8:
+        case PairlistType::Hierarchical8x8x8_nosplit:
+        case PairlistType::Hierarchical8x4x4:
+        default: return 2;
     }
 }
 
@@ -223,7 +211,11 @@ static constexpr int sc_gpuNumClusterPerCellY(const PairlistType pairlistType)
 {
     switch (pairlistType)
     {
-        default: return detail::c_gpuNumClusterPerCellY;
+        case PairlistType::Hierarchical4x8x8:
+        case PairlistType::Hierarchical8x8x8:
+        case PairlistType::Hierarchical8x8x8_nosplit:
+        case PairlistType::Hierarchical8x4x4:
+        default: return 2;
     }
 }
 
@@ -232,7 +224,11 @@ static constexpr int sc_gpuNumClusterPerCellZ(const PairlistType pairlistType)
 {
     switch (pairlistType)
     {
-        default: return detail::c_gpuNumClusterPerCellZ;
+        case PairlistType::Hierarchical4x8x8:
+        case PairlistType::Hierarchical8x8x8:
+        case PairlistType::Hierarchical8x8x8_nosplit:
+        case PairlistType::Hierarchical8x4x4:
+        default: return 2;
     }
 }
 
@@ -263,7 +259,11 @@ static constexpr int sc_gpuClusterPairSplit(const PairlistType pairlistType)
 {
     switch (pairlistType)
     {
-        default: return detail::c_nbnxnGpuClusterpairSplit;
+        case PairlistType::Hierarchical8x8x8_nosplit: return 1;
+        case PairlistType::Hierarchical8x8x8:
+        case PairlistType::Hierarchical4x8x8:
+        case PairlistType::Hierarchical8x4x4:
+        default: return 2;
     }
 }
 

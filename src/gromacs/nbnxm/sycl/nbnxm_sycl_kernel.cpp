@@ -50,87 +50,25 @@
 namespace gmx
 {
 
-static int getNbnxmSubGroupSize(const DeviceInformation& deviceInfo, PairlistType layoutType)
-{
-    if (deviceInfo.supportedSubGroupSizes.size() == 1)
-    {
-        return deviceInfo.supportedSubGroupSizes[0];
-    }
-    else if (deviceInfo.supportedSubGroupSizes.size() > 1)
-    {
-        switch (deviceInfo.deviceVendor)
-        {
-            /* For Intel, choose 8 for 4x4 clusters, and 32 for 8x8 clusters.
-             * The optimal one depends on the hardware, but we cannot choose c_nbnxnGpuClusterSize
-             * at runtime anyway yet. */
-            case DeviceVendor::Intel: return sc_gpuParallelExecutionWidth(layoutType);
-            default:
-                GMX_RELEASE_ASSERT(false, "Flexible sub-groups only supported for Intel GPUs");
-                return 0;
-        }
-    }
-    else
-    {
-        GMX_RELEASE_ASSERT(false, "Device has no known supported sub-group sizes");
-        return 0;
-    }
-}
-
-template<int subGroupSize, bool doPruneNBL, bool doCalcEnergies>
+template<bool doPruneNBL, bool doCalcEnergies>
 void launchNbnxmKernelHelper(NbnxmGpu* nb, const gmx::StepWorkload& stepWork, const InteractionLocality iloc);
 
 // clang-format off
-#if SYCL_NBNXM_SUPPORTS_SUBGROUP_SIZE_8
-extern template void launchNbnxmKernelHelper<8, false, false>(NbnxmGpu* nb,const gmx::StepWorkload&  stepWork, const InteractionLocality iloc);
-extern template void launchNbnxmKernelHelper<8, false, true>(NbnxmGpu* nb, const gmx::StepWorkload&  stepWork, const InteractionLocality iloc);
-extern template void launchNbnxmKernelHelper<8, true, false>(NbnxmGpu* nb, const gmx::StepWorkload&  stepWork, const InteractionLocality iloc);
-extern template void launchNbnxmKernelHelper<8, true, true>(NbnxmGpu* nb, const gmx::StepWorkload&  stepWork, const InteractionLocality iloc);
-#endif
-#if SYCL_NBNXM_SUPPORTS_SUBGROUP_SIZE_32
-extern template void launchNbnxmKernelHelper<32, false, false>(NbnxmGpu* nb, const gmx::StepWorkload&  stepWork, const InteractionLocality iloc);
-extern template void launchNbnxmKernelHelper<32, false, true>(NbnxmGpu* nb, const gmx::StepWorkload&  stepWork, const InteractionLocality iloc);
-extern template void launchNbnxmKernelHelper<32, true, false>(NbnxmGpu* nb, const gmx::StepWorkload&  stepWork, const InteractionLocality iloc);
-extern template void launchNbnxmKernelHelper<32, true, true>(NbnxmGpu* nb, const gmx::StepWorkload&  stepWork, const InteractionLocality iloc);
-#endif
-#if SYCL_NBNXM_SUPPORTS_SUBGROUP_SIZE_64
-extern template void launchNbnxmKernelHelper<64, false, false>(NbnxmGpu* nb, const gmx::StepWorkload&  stepWork, const InteractionLocality iloc);
-extern template void launchNbnxmKernelHelper<64, false, true>(NbnxmGpu* nb, const gmx::StepWorkload&  stepWork, const InteractionLocality iloc);
-extern template void launchNbnxmKernelHelper<64, true, false>(NbnxmGpu* nb, const gmx::StepWorkload&  stepWork, const InteractionLocality iloc);
-extern template void launchNbnxmKernelHelper<64, true, true>(NbnxmGpu* nb, const gmx::StepWorkload&  stepWork, const InteractionLocality iloc);
-#endif
+extern template void launchNbnxmKernelHelper<false, false>(NbnxmGpu* nb,const gmx::StepWorkload&  stepWork, const InteractionLocality iloc);
+extern template void launchNbnxmKernelHelper<false, true>(NbnxmGpu* nb, const gmx::StepWorkload&  stepWork, const InteractionLocality iloc);
+extern template void launchNbnxmKernelHelper<true, false>(NbnxmGpu* nb, const gmx::StepWorkload&  stepWork, const InteractionLocality iloc);
+extern template void launchNbnxmKernelHelper<true, true>(NbnxmGpu* nb, const gmx::StepWorkload&  stepWork, const InteractionLocality iloc);
 // clang-format on
 
-template<int subGroupSize>
 void launchNbnxmKernel(NbnxmGpu* nb, const gmx::StepWorkload& stepWork, const InteractionLocality iloc, bool doPrune)
 {
     const bool doCalcEnergies = stepWork.computeEnergy;
 
     gmx::dispatchTemplatedFunction(
-            [&](auto doPruneNBL_, auto doCalcEnergies_) {
-                launchNbnxmKernelHelper<subGroupSize, doPruneNBL_, doCalcEnergies_>(nb, stepWork, iloc);
-            },
+            [&](auto doPruneNBL_, auto doCalcEnergies_)
+            { launchNbnxmKernelHelper<doPruneNBL_, doCalcEnergies_>(nb, stepWork, iloc); },
             doPrune,
             doCalcEnergies);
-}
-
-void launchNbnxmKernel(NbnxmGpu* nb, const gmx::StepWorkload& stepWork, const InteractionLocality iloc, bool doPrune)
-{
-    const int subGroupSize =
-            getNbnxmSubGroupSize(nb->deviceContext_->deviceInfo(), PairlistType::Hierarchical8x8x8);
-    switch (subGroupSize)
-    {
-        // Ensure any changes are in sync with device_management_sycl.cpp, nbnxm_sycl_kernel_body.h, and the #if above
-#if SYCL_NBNXM_SUPPORTS_SUBGROUP_SIZE_8
-        case 8: launchNbnxmKernel<8>(nb, stepWork, iloc, doPrune); break;
-#endif
-#if SYCL_NBNXM_SUPPORTS_SUBGROUP_SIZE_32
-        case 32: launchNbnxmKernel<32>(nb, stepWork, iloc, doPrune); break;
-#endif
-#if SYCL_NBNXM_SUPPORTS_SUBGROUP_SIZE_64
-        case 64: launchNbnxmKernel<64>(nb, stepWork, iloc, doPrune); break;
-#endif
-        default: GMX_RELEASE_ASSERT(false, "Unsupported sub-group size");
-    }
 }
 
 } // namespace gmx

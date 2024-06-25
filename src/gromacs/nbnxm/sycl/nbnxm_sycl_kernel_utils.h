@@ -72,8 +72,9 @@ static constexpr unsigned sc_superClInteractionMask(const PairlistType layoutTyp
  *  exclusion indices and imasks are uniform and generate the right instructions,
  *  but others (like 4.5 and 5.0.2) do not.
  */
-#if defined(__SYCL_DEVICE_ONLY__) && defined(__AMDGCN__) && GMX_GPU_NB_DISABLE_CLUSTER_PAIR_SPLIT
-#    define UNIFORM_LOAD_CLUSTER_PAIR_DATA(x) (__builtin_amdgcn_readfirstlane(x))
+#if defined(__SYCL_DEVICE_ONLY__) && defined(__AMDGCN__)
+#    define UNIFORM_LOAD_CLUSTER_PAIR_DATA(x) \
+        (subGroupSize == 64) ? (__builtin_amdgcn_readfirstlane(x)) : (x)
 #else
 #    define UNIFORM_LOAD_CLUSTER_PAIR_DATA(x) (x)
 #endif

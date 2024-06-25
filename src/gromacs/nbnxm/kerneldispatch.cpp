@@ -461,7 +461,7 @@ void nonbonded_verlet_t::dispatchNonbondedKernel(gmx::InteractionLocality       
                              wcycle_);
             break;
 
-        case NbnxmKernelType::Gpu8x8x8: gpu_launch_kernel(gpuNbv_, stepWork, iLocality); break;
+        case NbnxmKernelType::GpuSxNxM: gpu_launch_kernel(gpuNbv_, stepWork, iLocality); break;
 
         case NbnxmKernelType::Cpu8x8x8_PlainC:
             nbnxn_kernel_gpu_ref(std::get<GpuEmulatePairlists>(pairlistSet.gpuList()).data(),

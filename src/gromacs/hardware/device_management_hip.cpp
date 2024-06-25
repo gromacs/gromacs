@@ -102,29 +102,6 @@ void warnWhenDeviceNotTargeted(const gmx::MDLogger& mdlog, const DeviceInformati
                     deviceInfo.prop.gcnArchName)));
 }
 
-/*!
- * \brief Checks that device \c deviceInfo is compatible with GROMACS pairlist layout..
- *
- * \param[in]  deviceInfo              HIP device information.
- * \returns                            The status enumeration value for the checked device.
- */
-static DeviceStatus checkDevicePairlistCompatible(const DeviceInformation deviceInfo)
-{
-    if (!GMX_ENABLE_AMD_RDNA_SUPPORT && deviceInfo.supportedSubGroupSizes[0] == 32)
-    {
-        return DeviceStatus::IncompatibleAmdRdnaNotTargeted;
-    }
-    else if (GMX_GPU_NB_DISABLE_CLUSTER_PAIR_SPLIT && deviceInfo.supportedSubGroupSizes[0] == 32)
-    {
-        return DeviceStatus::Incompatible;
-    }
-    else
-    {
-        return DeviceStatus::Compatible;
-    }
-}
-
-
 static bool determineIfDeviceHasLargeRegisterPool(std::string deviceArch)
 {
     auto device = gmx::splitAndTrimDelimitedString(deviceArch, ':')[0];
@@ -224,7 +201,7 @@ static DeviceStatus checkDeviceStatus(const DeviceInformation& deviceInfo)
         gmx::checkDeviceError(hipGetLastError(), "hipDeviceReset failed");
     }
 
-    return checkDevicePairlistCompatible(deviceInfo);
+    return DeviceStatus::Compatible;
 }
 
 bool isDeviceDetectionFunctional(std::string* errorMessage)
@@ -386,4 +363,10 @@ std::string getDeviceInformationString(const DeviceInformation& deviceInfo)
                                  deviceInfo.prop.ECCEnabled ? "yes" : " no",
                                  c_deviceStateString[deviceInfo.status]);
     }
+}
+
+gmx::PairlistType getDeviceSpecificGpuPairlistLayout(const DeviceInformation& deviceInfo)
+{
+    return deviceInfo.supportedSubGroupSizes[0] == 64 ? gmx::PairlistType::Hierarchical8x8x8_nosplit
+                                                      : gmx::PairlistType::Hierarchical8x8x8;
 }
