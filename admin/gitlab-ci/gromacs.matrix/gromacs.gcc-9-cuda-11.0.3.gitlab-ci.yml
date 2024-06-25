@@ -132,6 +132,7 @@ gromacs:gcc-9-cuda-11.0.3:regressiontest-gpucommupd-tMPI:
     REGRESSIONTEST_PME_RANK_NUMBER: 0
     REGRESSIONTEST_TOTAL_RANK_NUMBER: 4
     REGRESSIONTEST_OMP_RANK_NUMBER: 1
+    GMX_ENABLE_DIRECT_GPU_COMM: 1
     GPU_VENDOR: "NVIDIA"
     GPU_COUNT: 2
   tags:
@@ -153,6 +154,7 @@ gromacs:gcc-9-cuda-11.0.3:regressiontest-upd-tMPI:
     - !reference [.rules:post-merge-acceptance, rules]
   image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-gcc-9-cuda-11.0.3
   variables:
+    CMAKE: /usr/local/cmake-3.21.2/bin/cmake
     REGRESSIONTEST_PME_RANK_NUMBER: 0
     REGRESSIONTEST_TOTAL_RANK_NUMBER: 4
     REGRESSIONTEST_OMP_RANK_NUMBER: 1
