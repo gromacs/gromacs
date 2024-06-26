@@ -1155,10 +1155,44 @@ static auto nbnxmKernel(sycl::handler& cgh,
 
             static_assert(gmx::isPowerOfTwo(prunedClusterPairSize));
             const unsigned wexcl = gm_plistExcl[wexclIdx].pair[tidx & (prunedClusterPairSize - 1)];
-// Unrolling has been verified to improve performance on AMD
-#if defined __AMDGCN__
-#    pragma unroll c_nbnxnGpuJgroupSize
+            // Unrolling has been verified to improve performance on AMD and Nvidia
+#if defined(__AMDGCN__)
+            constexpr int unrollFactor =
+                    c_nbnxnGpuJgroupSize; // Unrolling has been verified to improve performance on AMD
+#elif defined(__SYCL_CUDA_ARCH__) && __SYCL_CUDA_ARCH__ >= 800
+            // Unrolling parameters follow CUDA implementation for Ampere and later.
+            constexpr int unrollFactor = [=]() {
+                if constexpr (!doCalcEnergies && !doPruneNBL)
+                {
+                    if constexpr (props.elecCutoff || props.elecRF
+                                  || (props.elecEwald && !props.vdwFSwitch && !props.vdwPSwitch
+                                      && (props.vdwCombLB || __SYCL_CUDA_ARCH__ == 800)))
+                    {
+                        return 4;
+                    }
+                    else
+                    {
+                        return 2;
+                    }
+                }
+                else
+                {
+                    if constexpr (props.elecCutoff
+                                  || (props.elecRF && !props.vdwFSwitch && !props.vdwPSwitch))
+                    {
+                        return 2;
+                    }
+                    else
+                    {
+                        return 1;
+                    }
+                }
+            }();
+#else
+            constexpr int unrollFactor = 1; // No unrolling.
 #endif
+
+#pragma unroll unrollFactor
             for (int jm = 0; jm < c_nbnxnGpuJgroupSize; jm++)
             {
                 const bool maskSet =
@@ -1221,8 +1255,14 @@ static auto nbnxmKernel(sycl::handler& cgh,
                         const bool notExcluded = doExclusionForces ? (nonSelfInteraction | (ci != cj))
                                                                    : (wexcl & maskJI);
 
-                        // SYCL-TODO: Check optimal way of branching here.
+#if defined(__SYCL_CUDA_ARCH__)
+                        /* The use of * was benchmarked in 2024 for DPC++ 2024.1 CUDA and
+                         * found to be faster than the use of &&, just like for CUDA.
+                         * "&&" is still better for Intel and AMD devices. */
+                        if ((r2 < rCoulombSq) * notExcluded)
+#else // Intel and AMD paths
                         if ((r2 < rCoulombSq) && notExcluded)
+#endif
                         {
                             const float qi = xqi[3];
                             int         atomTypeI; // Only needed if (!props.vdwComb)

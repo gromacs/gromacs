@@ -65,6 +65,13 @@ or loading an appropriate :command:`module load` on an HPC system.
             -DGMX_GPU_NB_CLUSTER_SIZE=8 -DGMX_GPU_FFT_LIBRARY=vkfft \
             -DSYCL_CXX_FLAGS_EXTRA=-fsycl-targets=nvptx64-nvidia-cuda
 
+For more recent NVIDIA GPUs, compiling for a specific compute capability can be
+beneficial for performance. This is possible by setting the ``-fsycl-targets``
+parameter of ``SYCL_CXX_FLAGS_EXTRA``.
+For example for an Ampere architecture GPU such as the NVIDIA A100, set
+``-DSYCL_CXX_FLAGS_EXTRA=-fsycl-targets=nvidia_gpu_sm_80``.
+Possible values are given in the `DPC++ user manual <https://intel.github.io/llvm-docs/UsersManual.html>`__.
+
 .. _install guide exotic adaptivecpp:
 
 SYCL GPU acceleration for NVIDIA GPUs using AdaptiveCpp (hipSYCL)
