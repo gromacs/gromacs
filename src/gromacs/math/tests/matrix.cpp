@@ -150,6 +150,56 @@ TEST_F(MatrixTest, staticMultiDimArrayExtent)
     EXPECT_EQ(matrix_.extent(1), 3);
 }
 
+TEST_F(MatrixTest, canAddMatrix)
+{
+    Matrix3x3 a = { { 1, 2, 3, 4, 5, 6, 7, 8, 9 } };
+    Matrix3x3 b = { { 9, 8, 7, 6, 5, 4, 3, 2, 1 } };
+    Matrix3x3 c;
+    c = a + b;
+    EXPECT_EQ(c(0, 0), 10);
+    EXPECT_EQ(c(0, 1), 10);
+    EXPECT_EQ(c(0, 2), 10);
+    EXPECT_EQ(c(1, 0), 10);
+    EXPECT_EQ(c(1, 1), 10);
+    EXPECT_EQ(c(1, 2), 10);
+    EXPECT_EQ(c(2, 0), 10);
+    EXPECT_EQ(c(2, 1), 10);
+    EXPECT_EQ(c(2, 2), 10);
+}
+
+TEST_F(MatrixTest, canSubstractMatrix)
+{
+    Matrix3x3 a = { { 1, 2, 3, 4, 5, 6, 7, 8, 9 } };
+    Matrix3x3 b = { { 9, 8, 7, 6, 5, 4, 3, 2, 1 } };
+    Matrix3x3 c;
+    c = a - b;
+    EXPECT_EQ(c(0, 0), -8);
+    EXPECT_EQ(c(0, 1), -6);
+    EXPECT_EQ(c(0, 2), -4);
+    EXPECT_EQ(c(1, 0), -2);
+    EXPECT_EQ(c(1, 1), 0);
+    EXPECT_EQ(c(1, 2), 2);
+    EXPECT_EQ(c(2, 0), 4);
+    EXPECT_EQ(c(2, 1), 6);
+    EXPECT_EQ(c(2, 2), 8);
+}
+
+TEST_F(MatrixTest, canNegateMatrix)
+{
+    Matrix3x3 a = { { 1, 2, 3, 4, 5, 6, 7, 8, 9 } };
+    Matrix3x3 b;
+    b = -a;
+    EXPECT_EQ(b(0, 0), -1);
+    EXPECT_EQ(b(0, 1), -2);
+    EXPECT_EQ(b(0, 2), -3);
+    EXPECT_EQ(b(1, 0), -4);
+    EXPECT_EQ(b(1, 1), -5);
+    EXPECT_EQ(b(1, 2), -6);
+    EXPECT_EQ(b(2, 0), -7);
+    EXPECT_EQ(b(2, 1), -8);
+    EXPECT_EQ(b(2, 2), -9);
+}
+
 TEST_F(MatrixTest, determinantWorks)
 {
     const Matrix3x3 mat = { { 1.0, 2.0, 3.0, 0.0, 1.0, 4.0, 5.0, 6.0, 0.0 } };

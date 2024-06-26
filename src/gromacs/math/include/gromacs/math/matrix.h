@@ -181,6 +181,37 @@ BasicMatrix3x3<ElementType> operator+(const BasicMatrix3x3<ElementType>& a,
     return result;
 }
 
+//! Return the difference between two 3x3 matrices \c a and \c b
+template<typename ElementType>
+BasicMatrix3x3<ElementType> operator-(const BasicMatrix3x3<ElementType>& a,
+                                      const BasicMatrix3x3<ElementType>& b)
+{
+    BasicMatrix3x3<ElementType> result;
+    for (int i = 0; i < DIM; i++)
+    {
+        for (int j = 0; j < DIM; j++)
+        {
+            result(i, j) = a(i, j) - b(i, j);
+        }
+    }
+    return result;
+}
+
+//! Return the negative 3x3 matrix from matrix \c a
+template<typename ElementType>
+BasicMatrix3x3<ElementType> operator-(const BasicMatrix3x3<ElementType>& a)
+{
+    BasicMatrix3x3<ElementType> result;
+    for (int i = 0; i < DIM; i++)
+    {
+        for (int j = 0; j < DIM; j++)
+        {
+            result(i, j) = -a(i, j);
+        }
+    }
+    return result;
+}
+
 //! Return the inner product of multiplication of two 3x3 matrices \c a and \c b
 template<typename ElementType>
 BasicMatrix3x3<ElementType> inner(const BasicMatrix3x3<ElementType>& a,
