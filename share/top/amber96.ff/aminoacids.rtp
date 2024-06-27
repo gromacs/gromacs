@@ -620,8 +620,8 @@
     CA    HA
     CA    CB
     CA     C
-    CB   HB2
     CB   HB1
+    CB   HB2
     CB    CG
     CG   ND1
     CG   CD2
@@ -753,7 +753,6 @@
    CZ3   CD2   CE3   HE3
     CG   NE1   CD1   HD1
    CD1    CG    CB   CD2
-
 
 [ PHE ]
  [ atoms ]
@@ -1155,7 +1154,9 @@
     CA    +N     C     O
     -C    CD     N    CA
 
-[ HYP ] ; S D Mooney, P A Kollman & T E Klein (2002), Biopolymers 64, 63.
+; S D Mooney, P A Kollman & T E Klein (2002), Biopolymers 64, 63.
+; S Park, R J Radmer, T E Klein & V S Pande (2005), J. Comput. Chem. 26, 15.
+[ HYP ]
  [ atoms ]
      N    N           -0.25480     1
    CD2    CT           0.05950     2
@@ -3134,7 +3135,6 @@
     CG   CE1   CD1   HD1
    CD1   CD2    CG    CB
    CE1   CE2    CZ    OH
-
 
 [ NGLU ]
  [ atoms ]

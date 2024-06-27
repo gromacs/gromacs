@@ -22,7 +22,6 @@
 ; bonds  angles  dihedrals  impropers all_dihedrals nrexcl HH14 RemoveDih
      1       1          9          4        1         3      1     0
 
-
 ; 5' (XXF), 3' (XXT), non-terminal (XX), and monomer (XXN) nuc's
 
 [ DA5 ]
@@ -327,8 +326,6 @@
     N1    N3    C2    H2
     C5    N6    C6    N1
 
-
-
 [ DT5 ]
  [ atoms ]
    H5T    HO            0.44220     1
@@ -630,8 +627,6 @@
     C5    N3    C4    O4
     C4    C2    N3    H3
     N1    C5    C6    H6
-
-
 
 [ DG5 ]
  [ atoms ]
