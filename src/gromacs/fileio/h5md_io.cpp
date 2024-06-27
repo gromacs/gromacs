@@ -46,6 +46,7 @@
 #    if !GMX_USE_HDF5
 #        pragma clang diagnostic push
 #        pragma clang diagnostic ignored "-Wmissing-noreturn"
+// NOLINTBEGIN(readability-convert-member-functions-to-static)
 #    endif
 #endif
 
@@ -1112,6 +1113,7 @@ template std::vector<std::int64_t> GmxH5mdIo::readNumericDataSet<std::int64_t>(c
 
 #ifdef __clang__
 #    if !GMX_USE_HDF5
+// NOLINTEND(readability-convert-member-functions-to-static)
 #        pragma clang diagnostic pop
 #    endif
 #endif
