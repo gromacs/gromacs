@@ -94,7 +94,7 @@ public:
      * overwritten, but extended. 'r' means only reading.
      * \throws FileIOError if fileName is specified and the file cannot be opened.
      */
-    GmxH5mdIo(const std::string fileName = "", const char mode = '\0');
+    GmxH5mdIo(const std::string& fileName = "", const char mode = '\0');
 
     ~GmxH5mdIo();
 
@@ -108,7 +108,7 @@ public:
      *                        'r' means only read.
      * \throws FileIOError    If the file cannot be opened.
      */
-    void openFile(const std::string fileName, const char mode);
+    void openFile(const std::string& fileName, const char mode);
 
     /*! \brief Close the H5MD file.
      * \throws FileIOError    If the file cannot be closed.
@@ -128,7 +128,7 @@ public:
      * \throws FileIOError    If there were errors reading data blocks from the file. Invalid file?
      * \returns The number of initialized data blocks.
      */
-    int initGroupTimeDataBlocksFromFile(std::string groupName);
+    int initGroupTimeDataBlocksFromFile(const std::string& groupName);
 
     /*! \brief Return the version number of the H5MD root group. The version number is returned
      * as a string, composed as "<majorVersion>.<minorVersion>". If not version number could be
@@ -139,7 +139,7 @@ public:
      * \param[in] authorName The author name.
      * \throws FileIOError If the author name attribute could not be set.
      */
-    void setAuthor(std::string authorName);
+    void setAuthor(const std::string& authorName);
 
     /*! \brief Get the author name attribute from the H5MD file
      * \returns the author name.
@@ -150,7 +150,7 @@ public:
      * \param[in] creatorName The creator name, i.e. the name of the program that created the file.
      * \throws FileIOError If the author name attribute could not be set.
      */
-    void setCreatorProgramName(std::string creatorName);
+    void setCreatorProgramName(const std::string& creatorName);
 
     /*! \brief Get the name of the creating program attribute from the H5MD file.
      * \returns The creator name, i.e. the name of the program that created the file.
@@ -161,7 +161,7 @@ public:
      * \param[in] version The version.
      * \throws FileIOError If the author name attribute could not be set.
      */
-    void setCreatorProgramVersion(std::string version);
+    void setCreatorProgramVersion(const std::string& version);
 
     /*! \brief Get the version of the creating program attribute from the H5MD file.
      * \returns the version.
@@ -257,11 +257,11 @@ public:
      */
     void writeDataFrame(int64_t              step,
                         real                 time,
-                        std::string          dataSetFullName,
+                        const std::string&   dataSetFullName,
                         int                  dataDimensionalityFirstDim,
                         int                  dataDimensionalitySecondDim,
                         const real*          data,
-                        std::string          unit                   = "",
+                        const std::string&   unit                   = "",
                         hsize_t              numberOfFramesPerChunk = 1,
                         CompressionAlgorithm compressionAlgorithm   = CompressionAlgorithm::None,
                         double               lossyCompressionError  = 0);
@@ -275,20 +275,20 @@ public:
      *                       will be read.
      * \returns Whether a frame was read or not.
      */
-    bool readNextFrameOfDataBlock(std::string dataBlockFullName, real* data, int64_t stepToRead = -1);
+    bool readNextFrameOfDataBlock(const std::string& dataBlockFullName, real* data, int64_t stepToRead = -1);
 
     /* \brief Returns the lossy compression error of the time-dependent data block matching the
      * name. Returns -1 if there is no lossy compression or if the data block was not found.
      */
-    double getLossyCompressionErrorOfDataBlock(std::string dataBlockFullName);
+    double getLossyCompressionErrorOfDataBlock(const std::string& dataBlockFullName);
 
     /*! \brief Get the number of frames of a particles data block
      * \param[in] dataBlockName The name of the data block.
      * \param[in] selectionName The name of the selection to use.
      * \returns the number of frames of the data block or -1 if not found.
      */
-    int64_t getNumberOfFrames(const std::string dataBlockName,
-                              const std::string selectionName = "system");
+    int64_t getNumberOfFrames(const std::string& dataBlockName,
+                              const std::string& selectionName = "system");
 
     /*! \brief Get the number of particles of a particles data block
      * \param[in] dataBlockName The name of the data block.
@@ -297,8 +297,8 @@ public:
      * \throws FileIOError    If there was an error reading the number of particles could not be
      * read, such as no atom data in particles data blocks.
      */
-    int64_t getNumberOfParticles(const std::string dataBlockName,
-                                 const std::string selectionName = "system");
+    int64_t getNumberOfParticles(const std::string& dataBlockName,
+                                 const std::string& selectionName = "system");
 
     /*! \brief Get the first time stamp of a particles data block
      * \param[in] dataBlockName The name of the data block.
@@ -306,7 +306,7 @@ public:
      * \returns the first time of the data block or -1 if not found.
      * \throws FileIOError    If there was an error determining the time of the first frame.
      */
-    real getFirstTime(const std::string dataBlockName, const std::string selectionName = "system");
+    real getFirstTime(const std::string& dataBlockName, const std::string& selectionName = "system");
 
     /*! \brief Get the very first time stamp of all particles data blocks
      * \returns the first time of all data blocks or -1 if no data blocks were found.
@@ -326,7 +326,7 @@ public:
      * \returns the final time of the data block or -1 if not found.
      * \throws FileIOError    If there was an error determining the time of the final frame.
      */
-    real getFinalTime(const std::string dataBlockName, const std::string selectionName = "system");
+    real getFinalTime(const std::string& dataBlockName, const std::string& selectionName = "system");
 
     /*! \brief Get the very last time stamp of all particles data blocks
      * \returns the last time of all data blocks or -1 if no data blocks were found.

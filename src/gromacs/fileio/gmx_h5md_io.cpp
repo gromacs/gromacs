@@ -960,3 +960,9 @@ extern template void h5mdio::GmxH5mdIo::setNumericDataSet<std::pair<std::int64_t
 #endif
 
 } // namespace gmx
+
+#ifdef __clang__
+#    if !GMX_USE_HDF5
+#        pragma clang diagnostic pop
+#    endif
+#endif

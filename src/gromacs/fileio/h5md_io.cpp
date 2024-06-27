@@ -138,12 +138,12 @@ namespace gmx
 namespace h5mdio
 {
 
-GmxH5mdIo::GmxH5mdIo(const std::string fileName, const char mode)
+GmxH5mdIo::GmxH5mdIo(const std::string& fileName, const char mode)
 {
     file_ = -1;
     if (fileName.length() > 0)
     {
-        openFile(fileName.c_str(), mode);
+        openFile(fileName, mode);
     }
 }
 
@@ -155,7 +155,7 @@ GmxH5mdIo::~GmxH5mdIo()
     }
 }
 
-void GmxH5mdIo::openFile(const std::string fileName, const char mode)
+void GmxH5mdIo::openFile(const std::string& fileName, const char mode)
 {
 #if GMX_USE_HDF5
     H5Eset_auto2(H5E_DEFAULT, nullptr, nullptr); // Disable HDF5 error output, e.g. when items are not found.
@@ -262,7 +262,7 @@ void GmxH5mdIo::flush()
 #endif
 }
 
-int GmxH5mdIo::initGroupTimeDataBlocksFromFile(std::string groupName)
+int GmxH5mdIo::initGroupTimeDataBlocksFromFile(const std::string& groupName)
 {
 #if GMX_USE_HDF5
     int   numDataBlocksBefore = dataBlocks_.size();
@@ -315,7 +315,7 @@ std::string GmxH5mdIo::getH5mdRootVersionNumber()
 #endif
 }
 
-void GmxH5mdIo::setAuthor(std::string authorName)
+void GmxH5mdIo::setAuthor(const std::string& authorName)
 {
 #if GMX_USE_HDF5
     hid_t authorGroup = openOrCreateGroup(file_, "h5md/author");
@@ -344,7 +344,7 @@ std::string GmxH5mdIo::getAuthor()
 #endif
 }
 
-void GmxH5mdIo::setCreatorProgramName(std::string creatorName)
+void GmxH5mdIo::setCreatorProgramName(const std::string& creatorName)
 {
 #if GMX_USE_HDF5
     hid_t creatorGroup = openOrCreateGroup(file_, "h5md/creator");
@@ -372,7 +372,7 @@ std::string GmxH5mdIo::getCreatorProgramName()
 #endif
 }
 
-void GmxH5mdIo::setCreatorProgramVersion(std::string version)
+void GmxH5mdIo::setCreatorProgramVersion(const std::string& version)
 {
 #if GMX_USE_HDF5
     hid_t creatorGroup = openOrCreateGroup(file_, "h5md/creator");
@@ -692,11 +692,11 @@ std::vector<T> GmxH5mdIo::readNumericDataSet(const std::string& containerName, c
 
 void GmxH5mdIo::writeDataFrame(int64_t              step,
                                real                 time,
-                               std::string          dataBlockFullName,
+                               const std::string&   dataBlockFullName,
                                int                  dataDimensionalityFirstDim,
                                int                  dataDimensionalitySecondDim,
                                const real*          data,
-                               std::string          unit,
+                               const std::string&   unit,
                                hsize_t              numberOfFramesPerChunk,
                                CompressionAlgorithm compressionAlgorithm,
                                double               lossyCompressionError)
@@ -757,7 +757,7 @@ void GmxH5mdIo::writeDataFrame(int64_t              step,
 #endif
 }
 
-bool GmxH5mdIo::readNextFrameOfDataBlock(std::string dataBlockFullName, real* data, int64_t stepToRead)
+bool GmxH5mdIo::readNextFrameOfDataBlock(const std::string& dataBlockFullName, real* data, int64_t stepToRead)
 {
 #if GMX_USE_HDF5
     for (auto& dataBlock : dataBlocks_)
@@ -782,7 +782,7 @@ bool GmxH5mdIo::readNextFrameOfDataBlock(std::string dataBlockFullName, real* da
 #endif
 }
 
-double GmxH5mdIo::getLossyCompressionErrorOfDataBlock(std::string dataBlockFullName)
+double GmxH5mdIo::getLossyCompressionErrorOfDataBlock(const std::string& dataBlockFullName)
 {
 #if GMX_USE_HDF5
     for (const auto& dataBlock : dataBlocks_)
@@ -801,7 +801,7 @@ double GmxH5mdIo::getLossyCompressionErrorOfDataBlock(std::string dataBlockFullN
 #endif
 }
 
-int64_t GmxH5mdIo::getNumberOfFrames(const std::string dataBlockName, std::string selectionName)
+int64_t GmxH5mdIo::getNumberOfFrames(const std::string& dataBlockName, const std::string& selectionName)
 {
 #if GMX_USE_HDF5
     GMX_ASSERT(dataBlockName != "", "There must be a datablock name to look for.");
@@ -823,7 +823,7 @@ int64_t GmxH5mdIo::getNumberOfFrames(const std::string dataBlockName, std::strin
 #endif
 }
 
-int64_t GmxH5mdIo::getNumberOfParticles(const std::string dataBlockName, std::string selectionName)
+int64_t GmxH5mdIo::getNumberOfParticles(const std::string& dataBlockName, const std::string& selectionName)
 {
 #if GMX_USE_HDF5
     GMX_ASSERT(dataBlockName != "", "There must be a datablock name to look for.");
@@ -845,7 +845,7 @@ int64_t GmxH5mdIo::getNumberOfParticles(const std::string dataBlockName, std::st
 #endif
 }
 
-real GmxH5mdIo::getFirstTime(const std::string dataBlockName, std::string selectionName)
+real GmxH5mdIo::getFirstTime(const std::string& dataBlockName, const std::string& selectionName)
 {
 #if GMX_USE_HDF5
     GMX_ASSERT(dataBlockName != "", "There must be a datablock name to look for.");
@@ -913,7 +913,7 @@ std::tuple<int64_t, real> GmxH5mdIo::getNextStepAndTimeToRead()
 #endif
 }
 
-real GmxH5mdIo::getFinalTime(const std::string dataBlockName, std::string selectionName)
+real GmxH5mdIo::getFinalTime(const std::string& dataBlockName, const std::string& selectionName)
 {
 #if GMX_USE_HDF5
     GMX_ASSERT(dataBlockName != "", "There must be a datablock name to look for.");
@@ -1109,3 +1109,9 @@ template std::vector<std::int64_t> GmxH5mdIo::readNumericDataSet<std::int64_t>(c
 } // namespace h5mdio
 
 } // namespace gmx
+
+#ifdef __clang__
+#    if !GMX_USE_HDF5
+#        pragma clang diagnostic pop
+#    endif
+#endif
