@@ -171,7 +171,7 @@
 /* Compile to use TNG library */
 #cmakedefine01 GMX_USE_TNG
 
-/* Use (and compile) HDF5 related i/o features */
+/* Use (and compile) HDF5 related i/o features (H5MD) */
 #cmakedefine01 GMX_USE_HDF5
 
 /* Add support for tracing using Extrae */
