@@ -195,6 +195,23 @@ void GmxH5mdIo::openFile(const std::string& fileName, const char mode)
         file_ = H5Fopen(fileName.c_str(), H5F_ACC_RDONLY, H5P_DEFAULT);
     }
     filemode_ = mode;
+
+    const IProgramContext& programContext = gmx::getProgramContext();
+    const gmx::InstallationPrefixInfo installPrefix = programContext.installationPrefix();
+    if (installPrefix.sourceLayoutTreeLike_)
+    {
+        printf("Cannot identify location of SZ3 HDF5 plugin based on installation path. Please set the HDF5_PLUGIN_PATH environment variable manually.\n");
+    }
+    else
+    {
+        std::filesystem::path pluginDir = installPrefix.path_;
+        pluginDir.append("lib");
+        if (H5PLprepend(pluginDir.string().c_str()) < 0)
+        {
+            printf("Cannot set the HDF5 plugin path. Please set the HDF5_PLUGIN_PATH environment variable manually.\n");
+        }
+    }
+
     initGroupTimeDataBlocksFromFile("particles");
     initGroupTimeDataBlocksFromFile("observables");
     if (file_ < 0)
