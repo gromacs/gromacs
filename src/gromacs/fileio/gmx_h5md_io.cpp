@@ -564,7 +564,7 @@ void setupMolecularSystemTopology(GmxH5mdIo*               file,
                                   bool                     writeVmdStructureData)
 {
 #if GMX_USE_HDF5
-    if (file == nullptr || !file->isFileOpen())
+    if (file == nullptr)
     {
         throw gmx::FileIOError("No file open for writing.");
     }
@@ -673,7 +673,7 @@ void writeFrameToStandardDataBlocks(GmxH5mdIo*        file,
     {
         throw gmx::FileIOError("There must be particles/atoms when writing trajectory frames.");
     }
-    if (file == nullptr || !file->isFileOpen())
+    if (file == nullptr)
     {
         throw gmx::FileIOError("No file open for writing.");
     }
@@ -789,7 +789,7 @@ bool readNextFrameOfStandardDataBlocks(GmxH5mdIo*        file,
                                        const std::string selectionName)
 {
 #if GMX_USE_HDF5
-    if (file == nullptr || !file->isFileOpen())
+    if (file == nullptr)
     {
         throw gmx::FileIOError("No file open for reading.");
     }

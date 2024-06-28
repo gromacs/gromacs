@@ -131,6 +131,27 @@ herr_t iterativeSetupTimeDataBlocks(hid_t            locationId,
     return returnVal;
 }
 
+void setPluginPath()
+{
+    const gmx::IProgramContext&       programContext = gmx::getProgramContext();
+    const gmx::InstallationPrefixInfo installPrefix  = programContext.installationPrefix();
+    if (installPrefix.sourceLayoutTreeLike_)
+    {
+        printf("Cannot identify location of SZ3 HDF5 plugin based on installation path. Please set "
+               "the HDF5_PLUGIN_PATH environment variable manually.\n");
+    }
+    else
+    {
+        std::filesystem::path pluginDir = installPrefix.path_;
+        pluginDir.append("lib");
+        if (H5PLprepend(pluginDir.string().c_str()) < 0)
+        {
+            printf("Cannot set the HDF5 plugin path. Please set the HDF5_PLUGIN_PATH environment "
+                   "variable manually.\n");
+        }
+    }
+}
+
 } // namespace
 #endif // GMX_USE_HDF5
 
@@ -139,29 +160,8 @@ namespace gmx
 
 GmxH5mdIo::GmxH5mdIo(const std::string& fileName, const char mode)
 {
-    file_ = -1;
-    if (fileName.length() > 0)
-    {
-        openFile(fileName, mode);
-    }
-}
-
-GmxH5mdIo::~GmxH5mdIo()
-{
-    if (file_ != -1)
-    {
-        closeFile();
-    }
-}
-
-void GmxH5mdIo::openFile(const std::string& fileName, const char mode)
-{
 #if GMX_USE_HDF5
     H5Eset_auto2(H5E_DEFAULT, nullptr, nullptr); // Disable HDF5 error output, e.g. when items are not found.
-
-    closeFile();
-
-    dataBlocks_.clear();
 
     if (debug)
     {
@@ -194,23 +194,7 @@ void GmxH5mdIo::openFile(const std::string& fileName, const char mode)
     }
     filemode_ = mode;
 
-    const IProgramContext&            programContext = gmx::getProgramContext();
-    const gmx::InstallationPrefixInfo installPrefix  = programContext.installationPrefix();
-    if (installPrefix.sourceLayoutTreeLike_)
-    {
-        printf("Cannot identify location of SZ3 HDF5 plugin based on installation path. Please set "
-               "the HDF5_PLUGIN_PATH environment variable manually.\n");
-    }
-    else
-    {
-        std::filesystem::path pluginDir = installPrefix.path_;
-        pluginDir.append("lib");
-        if (H5PLprepend(pluginDir.string().c_str()) < 0)
-        {
-            printf("Cannot set the HDF5 plugin path. Please set the HDF5_PLUGIN_PATH environment "
-                   "variable manually.\n");
-        }
-    }
+    setPluginPath();
 
     initGroupTimeDataBlocksFromFile("particles");
     initGroupTimeDataBlocksFromFile("observables");
@@ -230,7 +214,7 @@ void GmxH5mdIo::openFile(const std::string& fileName, const char mode)
 #endif
 }
 
-void GmxH5mdIo::closeFile()
+GmxH5mdIo::~GmxH5mdIo()
 {
 #if GMX_USE_HDF5
     if (file_ >= 0)

@@ -96,30 +96,10 @@ public:
 
     ~GmxH5mdIo();
 
-    /*! \brief Open an H5MD file.
-     *
-     * \param[in] fileName    Name of the file to open. The same as the file path.
-     * \param[in] mode        The mode to open the file, described by a case-insensitive string of
-     *                        letters, up to three characters long. Reading is always assumed.
-     *                        'w' means writing, i.e. backup an existing file and replace it,
-     *                        'a' means truncate, i.e., that existing files will be overwritten
-     *                        'r' means only read.
-     * \throws FileIOError    If the file cannot be opened.
-     */
-    void openFile(const std::string& fileName, const char mode);
-
-    /*! \brief Close the H5MD file.
-     * \throws FileIOError    If the file cannot be closed.
-     */
-    void closeFile();
-
     /*! \brief Write all unwritten data to the file.
      * \throws FileIOError    If there were errors during flushing.
      */
     void flush();
-
-    /*! \brief Is there an open file? */
-    bool isFileOpen() const { return file_ > 0; }
 
     /*! \brief Create and initialize time dependent data block objects from the H5MD file.
      * \param groupName       The name of the group with blocks to create and initialize.

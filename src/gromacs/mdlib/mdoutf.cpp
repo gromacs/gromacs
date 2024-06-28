@@ -901,9 +901,7 @@ void done_mdoutf(gmx_mdoutf_t of)
 
     if (of->h5mdIo)
     {
-        of->h5mdIo->closeFile();
         delete of->h5mdIo;
-        of->h5mdIo = nullptr;
     }
 
     sfree(of);

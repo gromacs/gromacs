@@ -727,7 +727,7 @@ void close_trx(t_trxstatus* status)
     gmx_tng_close(&status->tng);
     if (status->h5mdIo)
     {
-        status->h5mdIo->closeFile();
+        delete status->h5mdIo;
     }
     if (status->fio)
     {

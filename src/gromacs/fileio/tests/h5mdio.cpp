@@ -74,6 +74,7 @@ public:
     H5mdIoTest()
     {
         clear_mat(refBox_);
+        referenceH5mdIo_   = nullptr;
         referenceFilename_ = fileManager_.getTemporaryFilePath(getFileSuffix("ref")).u8string();
         refX_              = nullptr;
         refV_              = nullptr;
@@ -88,14 +89,21 @@ public:
     }
 
     /*! \brief Open a file used as reference for further tests. */
-    void openReferenceFile(const char mode) { referenceH5mdIo_.openFile(referenceFilename_, mode); }
+    void openReferenceFile(const char mode)
+    {
+        referenceH5mdIo_ = new gmx::GmxH5mdIo(referenceFilename_, mode);
+    }
 
     /*! \brief Close the reference file. */
-    void closeReferenceFile() { referenceH5mdIo_.closeFile(); }
+    void closeReferenceFile()
+    {
+        delete referenceH5mdIo_;
+        referenceH5mdIo_ = nullptr;
+    }
 
     /*! \brief Check whether the reference file is open.
      * \returns true if the reference file is open, otherwise false. */
-    bool isReferenceFileOpen() { return referenceH5mdIo_.isFileOpen(); }
+    bool isReferenceFileOpen() { return referenceH5mdIo_ != nullptr; }
 
     /*! \brief Set the number of reference atoms to use. */
     void setRefAtomCount(int atomCount) { refAtomCount_ = atomCount; }
@@ -105,7 +113,7 @@ public:
 
     void checkH5mdRootVersionNumber()
     {
-        std::string fileVersion   = referenceH5mdIo_.getH5mdRootVersionNumber();
+        std::string fileVersion   = referenceH5mdIo_->getH5mdRootVersionNumber();
         std::string versionString = std::to_string(gmx::c_h5mdMajorVersion) + "."
                                     + std::to_string(gmx::c_h5mdMinorVersion);
         EXPECT_STREQ(fileVersion.c_str(), versionString.c_str());
@@ -113,20 +121,20 @@ public:
 
     void setAuthorAndCreator(std::string authorName, std::string creatorProgramName, std::string creatorProgramVersion)
     {
-        referenceH5mdIo_.setAuthor(authorName);
-        referenceH5mdIo_.setCreatorProgramName(creatorProgramName);
-        referenceH5mdIo_.setCreatorProgramVersion(creatorProgramVersion);
+        referenceH5mdIo_->setAuthor(authorName);
+        referenceH5mdIo_->setCreatorProgramName(creatorProgramName);
+        referenceH5mdIo_->setCreatorProgramVersion(creatorProgramVersion);
     }
 
     void checkAuthorAndCreator(std::string referenceAuthorName,
                                std::string referenceCreatorProgramName,
                                std::string referenceCreatorProgramVersion)
     {
-        std::string authorName = referenceH5mdIo_.getAuthor();
+        std::string authorName = referenceH5mdIo_->getAuthor();
         EXPECT_STREQ(referenceAuthorName.c_str(), authorName.c_str());
-        std::string creatorProgramName = referenceH5mdIo_.getCreatorProgramName();
+        std::string creatorProgramName = referenceH5mdIo_->getCreatorProgramName();
         EXPECT_STREQ(referenceCreatorProgramName.c_str(), creatorProgramName.c_str());
-        std::string creatorProgramVersion = referenceH5mdIo_.getCreatorProgramVersion();
+        std::string creatorProgramVersion = referenceH5mdIo_->getCreatorProgramVersion();
         EXPECT_STREQ(referenceCreatorProgramVersion.c_str(), creatorProgramVersion.c_str());
     }
 
@@ -174,8 +182,8 @@ public:
     /* Initialize the molecular system information in the reference H5MD file. */
     void setupMolecularSystem()
     {
-        gmx::setupMolecularSystemParticleData(&referenceH5mdIo_, *topologyInfo_.mtop());
-        gmx::setupMolecularSystemTopology(&referenceH5mdIo_, *topologyInfo_.mtop(), {}, "", true);
+        gmx::setupMolecularSystemParticleData(referenceH5mdIo_, *topologyInfo_.mtop());
+        gmx::setupMolecularSystemTopology(referenceH5mdIo_, *topologyInfo_.mtop(), {}, "", true);
     }
 
     void checkTopologies()
@@ -184,7 +192,7 @@ public:
         for (size_t i = 0; i < topology->moleculeBlockIndices.size(); i++)
         {
             MoleculeBlockIndices fileMoleculeBlockIndices =
-                    gmx::getMoleculeBlockIndicesByIndex(&referenceH5mdIo_, i);
+                    gmx::getMoleculeBlockIndicesByIndex(referenceH5mdIo_, i);
             EXPECT_EQ(topology->moleculeBlockIndices[i].numAtomsPerMolecule,
                       fileMoleculeBlockIndices.numAtomsPerMolecule);
             EXPECT_EQ(topology->moleculeBlockIndices[i].globalAtomStart,
@@ -203,33 +211,33 @@ public:
 
     std::vector<std::string> readAtomNamesFromReferenceFile()
     {
-        return referenceH5mdIo_.readStringDataSet("/particles/system", "atomname");
+        return referenceH5mdIo_->readStringDataSet("/particles/system", "atomname");
     }
 
     void writeReferenceTrajectoryFrame(int step, real time, real lambda)
     {
         gmx::writeFrameToStandardDataBlocks(
-                &referenceH5mdIo_, step, time, lambda, refBox_, refAtomCount_, refX_, refV_, refF_, refCompressionAbsoluteError_);
+                referenceH5mdIo_, step, time, lambda, refBox_, refAtomCount_, refX_, refV_, refF_, refCompressionAbsoluteError_);
     }
 
     int64_t readReferenceNumAtoms(const std::string dataBlockName)
     {
-        return referenceH5mdIo_.getNumberOfParticles(dataBlockName);
+        return referenceH5mdIo_->getNumberOfParticles(dataBlockName);
     }
 
     int64_t readReferenceNumFrames(const std::string dataBlockName)
     {
-        return referenceH5mdIo_.getNumberOfFrames(dataBlockName);
+        return referenceH5mdIo_->getNumberOfFrames(dataBlockName);
     }
 
     real getFirstTimeFromAllDataBlocks()
     {
-        return referenceH5mdIo_.getFirstTimeFromAllDataBlocks();
+        return referenceH5mdIo_->getFirstTimeFromAllDataBlocks();
     }
 
     real getFinalTimeFromAllDataBlocks()
     {
-        return referenceH5mdIo_.getFinalTimeFromAllDataBlocks();
+        return referenceH5mdIo_->getFinalTimeFromAllDataBlocks();
     }
 
     void readNextFrameAndCompareToReference(int64_t referenceStep, int64_t referenceNumFrames)
@@ -246,7 +254,7 @@ public:
         snew(testX, refAtomCount_);
         snew(testV, refAtomCount_);
         snew(testF, refAtomCount_);
-        gmx::readNextFrameOfStandardDataBlocks(&referenceH5mdIo_,
+        gmx::readNextFrameOfStandardDataBlocks(referenceH5mdIo_,
                                                &testStep,
                                                &testTime,
                                                &testLambda,
@@ -328,26 +336,28 @@ public:
     {
         /* Atom name is not stored in particle data blocks, but used here to test that string properties work. */
         /* Test variable-length string writing. */
-        referenceH5mdIo_.setStringDataSet("/particles/water", "atomname", refWaterAtomNames_, false, 0);
-        referenceH5mdIo_.setStringDataSet("/particles/ligand", "atomname", refLigandAtomNames_, false);
-        referenceH5mdIo_.setNumericDataSet("/particles/water", "charge", refWaterPartialCharges_, "", false);
-        referenceH5mdIo_.setNumericDataSet(
+        referenceH5mdIo_->setStringDataSet("/particles/water", "atomname", refWaterAtomNames_, false, 0);
+        referenceH5mdIo_->setStringDataSet("/particles/ligand", "atomname", refLigandAtomNames_, false);
+        referenceH5mdIo_->setNumericDataSet(
+                "/particles/water", "charge", refWaterPartialCharges_, "", false);
+        referenceH5mdIo_->setNumericDataSet(
                 "/particles/ligand", "charge", refLigandPartialCharges_, "", false);
-        referenceH5mdIo_.setNumericDataSet("/particles/water", "species", refWaterAtomicNumbers_, "", false);
+        referenceH5mdIo_->setNumericDataSet(
+                "/particles/water", "species", refWaterAtomicNumbers_, "", false);
     }
 
     void readAndCheckWaterAndLigandGroups()
     {
         std::vector<std::string> testWaterAtomNames =
-                referenceH5mdIo_.readStringDataSet("/particles/water", "atomname");
+                referenceH5mdIo_->readStringDataSet("/particles/water", "atomname");
         std::vector<std::string> testLigandAtomNames =
-                referenceH5mdIo_.readStringDataSet("/particles/ligand", "atomname");
+                referenceH5mdIo_->readStringDataSet("/particles/ligand", "atomname");
         std::vector<real> testWaterCharges =
-                referenceH5mdIo_.readNumericDataSet<real>("/particles/water", "charge");
+                referenceH5mdIo_->readNumericDataSet<real>("/particles/water", "charge");
         std::vector<real> testLigandCharges =
-                referenceH5mdIo_.readNumericDataSet<real>("/particles/ligand", "charge");
+                referenceH5mdIo_->readNumericDataSet<real>("/particles/ligand", "charge");
         std::vector<int> testWaterElementNumbers =
-                referenceH5mdIo_.readNumericDataSet<int>("/particles/water", "species");
+                referenceH5mdIo_->readNumericDataSet<int>("/particles/water", "species");
 
         size_t refNumWaterNameElements  = refWaterAtomNames_.size();
         size_t refNumLigandNameElements = refLigandAtomNames_.size();
@@ -393,7 +403,7 @@ private:
 
     gmx::test::TestFileManager fileManager_;
     std::string                referenceFilename_;
-    gmx::GmxH5mdIo             referenceH5mdIo_;
+    gmx::GmxH5mdIo*            referenceH5mdIo_;
     rvec*                      refX_;
     rvec*                      refV_;
     rvec*                      refF_;
