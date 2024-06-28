@@ -40,3 +40,10 @@ gmx_add_unit_test(NbnxmTests nbnxm-test
         testsystem.cpp
         )
 target_link_libraries(nbnxm-test PRIVATE nbnxm pbcutil simd timing)
+
+gmx_add_gtest_executable(nbnxm-gpu-test
+    GPU_CPP_SOURCE_FILES
+        pairlist.cpp
+        )
+target_link_libraries(nbnxm-gpu-test PRIVATE nbnxm gpu_utils timing)
+gmx_register_gtest_test(NbnxmGpuTests nbnxm-gpu-test HARDWARE_DETECTION QUICK_GPU_TEST)

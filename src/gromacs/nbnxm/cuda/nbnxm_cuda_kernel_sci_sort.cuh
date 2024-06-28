@@ -63,9 +63,9 @@
 #define NBNXM_CUDA_KERNEL_SCI_SORT_CUH
 
 __launch_bounds__(c_sciSortingThreadsPerBlock) static __global__
-        void nbnxnKernelBucketSciSort(Nbnxm::gpu_plist plist)
+        void nbnxnKernelBucketSciSort(Nbnxm::GpuPairlist plist)
 {
-    int size = plist.nsci;
+    int size = plist.numSci;
 
     const int tid         = threadIdx.x;
     const int blockOffset = blockIdx.x * c_sciSortingThreadsPerBlock;

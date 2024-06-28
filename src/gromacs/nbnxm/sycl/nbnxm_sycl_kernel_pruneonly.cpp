@@ -320,14 +320,14 @@ void launchNbnxmKernelPruneOnly(NbnxmGpu* nb, const InteractionLocality iloc, co
 {
     NBAtomDataGpu*      adat          = nb->atdat;
     NBParamGpu*         nbp           = nb->nbparam;
-    gpu_plist*          plist         = nb->plist[iloc];
+    auto*               plist         = nb->plist[iloc].get();
     const bool          haveFreshList = plist->haveFreshList;
     const DeviceStream& deviceStream  = *nb->deviceStreams[iloc];
 
     chooseAndLaunchNbnxmKernelPruneOnly(haveFreshList,
                                         deviceStream,
                                         numSciInPartMax,
-                                        plist->nsci,
+                                        plist->numSci,
                                         numParts,
                                         adat->xq.get_pointer(),
                                         adat->shiftVec.get_pointer(),

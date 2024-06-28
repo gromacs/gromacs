@@ -43,6 +43,8 @@
 #ifndef NBNXM_CUDA_TYPES_H
 #define NBNXM_CUDA_TYPES_H
 
+#include <memory>
+
 #include "gromacs/gpu_utils/cuda_arch_utils.cuh"
 #include "gromacs/gpu_utils/cudautils.cuh"
 #include "gromacs/gpu_utils/devicebuffer.h"
@@ -99,7 +101,7 @@ struct NbnxmGpu
     /*! \brief parameters required for the non-bonded calc. */
     NBParamGpu* nbparam = nullptr;
     /*! \brief pair-list data structures (local and non-local) */
-    gmx::EnumerationArray<Nbnxm::InteractionLocality, Nbnxm::gpu_plist*> plist = { { nullptr } };
+    gmx::EnumerationArray<Nbnxm::InteractionLocality, std::unique_ptr<Nbnxm::GpuPairlist>> plist = { { nullptr } };
     /*! \brief staging area where fshift/energies get downloaded */
     NBStagingData nbst;
     /*! \brief local and non-local GPU streams */

@@ -50,11 +50,11 @@
 namespace Nbnxm
 {
 
-static void launchSciSortOnGpu(gpu_plist* plist, const DeviceStream& deviceStream);
+static void launchSciSortOnGpu(GpuPairlist* plist, const DeviceStream& deviceStream);
 
 void gpu_launch_kernel_pruneonly(NbnxmGpu* nb, const InteractionLocality iloc, const int numParts)
 {
-    gpu_plist* plist = nb->plist[iloc];
+    auto* plist = nb->plist[iloc].get();
 
     if (plist->haveFreshList)
     {
@@ -83,7 +83,7 @@ void gpu_launch_kernel_pruneonly(NbnxmGpu* nb, const InteractionLocality iloc, c
      */
 
     /* Compute the max number of list entries to prune in this pass */
-    const int numSciInPartMax = (plist->nsci) / numParts;
+    const int numSciInPartMax = (plist->numSci) / numParts;
 
     /* Don't launch the kernel if there is no work to do */
     if (numSciInPartMax <= 0)
@@ -113,7 +113,7 @@ void gpu_launch_kernel_pruneonly(NbnxmGpu* nb, const InteractionLocality iloc, c
 void gpu_launch_kernel(NbnxmGpu* nb, const gmx::StepWorkload& stepWork, const Nbnxm::InteractionLocality iloc)
 {
     const NBParamGpu* nbp   = nb->nbparam;
-    gpu_plist*        plist = nb->plist[iloc];
+    auto*             plist = nb->plist[iloc].get();
 
     if (canSkipNonbondedWork(*nb, iloc))
     {
@@ -127,7 +127,7 @@ void gpu_launch_kernel(NbnxmGpu* nb, const gmx::StepWorkload& stepWork, const Nb
         gpu_launch_kernel_pruneonly(nb, iloc, 1);
     }
 
-    if (plist->nsci == 0)
+    if (plist->numSci == 0)
     {
         /* Don't launch an empty local kernel */
         return;
@@ -219,7 +219,7 @@ static auto nbnxnKernelBucketSciSort(const nbnxn_sci_t* __restrict__ gm_sci,
 class BucketSciSort;
 
 template<int workGroupSize>
-static void launchPrefixSumKernel(sycl::queue& q, gpuPlistSorting* sorting)
+static void launchPrefixSumKernel(sycl::queue& q, GpuPairlistSorting* sorting)
 {
     q.submit(GMX_SYCL_DISCARD_EVENT[&](sycl::handler & cgh) {
         cgh.parallel_for<ExclusivePrefixSum>(
@@ -229,9 +229,9 @@ static void launchPrefixSumKernel(sycl::queue& q, gpuPlistSorting* sorting)
     });
 }
 
-static void launchBucketSortKernel(sycl::queue& q, gpu_plist* plist)
+static void launchBucketSortKernel(sycl::queue& q, GpuPairlist* plist)
 {
-    const size_t size = plist->nsci;
+    const size_t size = plist->numSci;
     q.submit(GMX_SYCL_DISCARD_EVENT[&](sycl::handler & cgh) {
         cgh.parallel_for<BucketSciSort>(
                 sycl::range<1>{ size },
@@ -241,7 +241,7 @@ static void launchBucketSortKernel(sycl::queue& q, gpu_plist* plist)
                                          plist->sorting.sciSorted.get_pointer()));
     });
 }
-static void launchSciSortOnGpu(gpu_plist* plist, const DeviceStream& deviceStream)
+static void launchSciSortOnGpu(GpuPairlist* plist, const DeviceStream& deviceStream)
 {
     sycl::queue q = deviceStream.stream();
 

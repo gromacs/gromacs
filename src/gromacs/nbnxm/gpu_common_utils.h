@@ -60,7 +60,7 @@ namespace Nbnxm
 static inline bool canSkipNonbondedWork(const NbnxmGpu& nb, InteractionLocality iloc)
 {
     assert(nb.plist[iloc]);
-    return (iloc == InteractionLocality::NonLocal && nb.plist[iloc]->nsci == 0);
+    return (iloc == InteractionLocality::NonLocal && nb.plist[iloc]->numSci == 0);
 }
 
 /*! \brief Calculate atom range and return start index and length.

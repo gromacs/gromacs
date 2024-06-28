@@ -39,6 +39,8 @@
 
 #include <cstddef>
 
+#include <algorithm>
+#include <iterator>
 #include <memory>
 #include <vector>
 
@@ -230,10 +232,17 @@ struct nbnxn_ci_t
 };
 
 //! Grouped pair-list i-unit
-typedef struct nbnxn_sci
+struct nbnxn_sci_t
 {
     //! Returns the number of j-cluster groups in this entry
     int numJClusterGroups() const { return cjPackedEnd - cjPackedBegin; }
+
+    //! Check if two instances are the same.
+    bool operator==(const nbnxn_sci_t& other) const
+    {
+        return sci == other.sci && shift == other.shift && cjPackedBegin == other.cjPackedBegin
+               && cjPackedEnd == other.cjPackedEnd;
+    }
 
     //! i-super-cluster
     int sci;
@@ -243,7 +252,7 @@ typedef struct nbnxn_sci
     int cjPackedBegin;
     //! End index into cjPacked (ie. one past the last element)
     int cjPackedEnd;
-} nbnxn_sci_t;
+};
 
 //! Interaction data for a j-group for one warp
 struct nbnxn_im_ei_t
@@ -252,16 +261,27 @@ struct nbnxn_im_ei_t
     unsigned int imask = 0U;
     //! Index into the exclusion array for 1 warp, default index 0 which means no exclusions
     int excl_ind = 0;
+    //! Check if two instances are the same.
+    bool operator==(const nbnxn_im_ei_t& other) const
+    {
+        return imask == other.imask && excl_ind == other.excl_ind;
+    }
 };
 
 //! Packed j-cluster list element
-typedef struct
+struct nbnxn_cj_packed_t
 {
     //! The packed j-clusters
     int cj[c_nbnxnGpuJgroupSize];
     //! The i-cluster mask data for 2 warps
     nbnxn_im_ei_t imei[c_nbnxnGpuClusterpairSplit];
-} nbnxn_cj_packed_t;
+    //! Check if two instances are the same.
+    bool operator==(const nbnxn_cj_packed_t& other) const
+    {
+        return std::equal(std::begin(imei), std::end(imei), std::begin(other.imei), std::end(other.imei))
+               && std::equal(std::begin(cj), std::end(cj), std::begin(other.cj), std::end(other.cj));
+    }
+};
 
 /*! \brief Packed j-cluster list
  *
@@ -312,6 +332,11 @@ struct nbnxn_excl_t
 
     //! Topology exclusion interaction bits per warp
     unsigned int pair[c_nbnxnGpuExclSize];
+    //! Check if two instances are the same.
+    bool operator==(const nbnxn_excl_t& other) const
+    {
+        return std::equal(std::begin(pair), std::end(pair), std::begin(other.pair), std::end(other.pair));
+    }
 };
 
 //! Cluster pairlist type for use on CPUs

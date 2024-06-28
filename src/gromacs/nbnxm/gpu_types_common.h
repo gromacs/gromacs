@@ -265,102 +265,128 @@ struct GpuTimers
 
 /*! \internal
  * \brief Sorted pair list on GPU and data required for performing the sorting */
-struct gpuPlistSorting
+class GpuPairlistSorting
 {
+public:
+    GpuPairlistSorting();
+    ~GpuPairlistSorting();
+
+    //! Do not allow copy construct
+    GpuPairlistSorting(const GpuPairlistSorting&) = delete;
+    //! Do not allow move construct until device buffers have ownership semantics
+    GpuPairlistSorting(GpuPairlistSorting&&) = delete;
+    //! Do not allow copy assign
+    GpuPairlistSorting& operator=(const GpuPairlistSorting&) = delete;
+    //! Do not allow move assign until device buffers have ownership semantics
+    GpuPairlistSorting& operator=(GpuPairlistSorting&&) = delete;
+
     //! size of scanTemporary, working array used for exclusive prefix sum calculation
-    int nscanTemporary;
+    int nscanTemporary = -1;
 
     //! allocation size of scanTemporary
-    int scanTemporaryNalloc;
+    int scanTemporaryNalloc = -1;
 
     //! Temporary data of scan algorithm
-    DeviceBuffer<char> scanTemporary;
+    DeviceBuffer<char> scanTemporary = nullptr;
 
     //! number of buckets in histogram
-    int nsciHistogram;
+    int nsciHistogram = -1;
 
     //! allocation size of sciHistogram
-    int sciHistogramNalloc;
+    int sciHistogramNalloc = -1;
 
     //! Histogram of sci nsp
-    DeviceBuffer<int> sciHistogram;
+    DeviceBuffer<int> sciHistogram = nullptr;
 
     //! size of sciOffset, number of histogram buckets
-    int nsciOffset;
+    int nsciOffset = -1;
 
     //! allocation size of sciOffset
-    int sciOffsetNalloc;
+    int sciOffsetNalloc = -1;
 
     //! Sci offset, the exclusive prefix sum of sciHistogram
-    DeviceBuffer<int> sciOffset;
+    DeviceBuffer<int> sciOffset = nullptr;
 
     //! size of sci, # of i clusters in the list
-    int nsciCounted;
+    int nsciCounted = -1;
 
     //! allocation size of sci
-    int sciCountedNalloc;
+    int sciCountedNalloc = -1;
 
     //! list of imask counts of sorted i-cluster ("super-clusters")
-    DeviceBuffer<int> sciCount;
+    DeviceBuffer<int> sciCount = nullptr;
 
     //! size of sci, # of i clusters in the list
-    int nsciSorted;
+    int nsciSorted = -1;
     //! allocation size of sci
-    int sciSortedNalloc;
+    int sciSortedNalloc = -1;
 
     //! list of sorted i-cluster ("super-clusters")
-    DeviceBuffer<nbnxn_sci_t> sciSorted;
+    DeviceBuffer<nbnxn_sci_t> sciSorted = nullptr;
 };
 
 /*! \internal
  * \brief GPU pair list structure */
-struct gpu_plist
+class GpuPairlist
 {
+public:
+    GpuPairlist();
+    ~GpuPairlist();
+
+    //! Do not allow copy construct
+    GpuPairlist(const GpuPairlist&) = delete;
+    //! Do not allow move construct until device buffers have ownership semantics
+    GpuPairlist(GpuPairlist&&) = delete;
+    //! Do not allow copy assign
+    GpuPairlist& operator=(const GpuPairlist&) = delete;
+    //! Do not allow move assign until device buffers have ownership semantics
+    GpuPairlist& operator=(GpuPairlist&&) = delete;
+
     //! number of atoms per cluster
-    int na_c;
+    int numAtomsPerCluster = -1;
 
     //! size of sci, # of i clusters in the list
-    int nsci;
+    int numSci = -1;
     //! allocation size of sci
-    int sci_nalloc;
+    int sciAllocationSize = -1;
     //! list of i-cluster ("super-clusters")
-    DeviceBuffer<nbnxn_sci_t> sci;
+    DeviceBuffer<nbnxn_sci_t> sci = nullptr;
 
     //! sorted pair list and data used for sorting
-    gpuPlistSorting sorting;
+    GpuPairlistSorting sorting;
 
     //! total # of packed j clusters
-    int ncjPacked;
+    int numPackedJClusters = -1;
     //! allocation size of cjPacked
-    int cjPacked_nalloc;
+    int packedJClustersAllocationSize = -1;
     //! Packed j cluster list, contains j cluster number and index into the i cluster list
-    DeviceBuffer<nbnxn_cj_packed_t> cjPacked;
+    DeviceBuffer<nbnxn_cj_packed_t> cjPacked = nullptr;
     //! # of packed j clusters * # of warps
-    int nimask;
+    int numIMask = -1;
     //! allocation size of imask
-    int imask_nalloc;
+    int iMaskAllocationSize = -1;
     //! imask for 2 warps for each 4*j cluster group
-    DeviceBuffer<unsigned int> imask;
+    DeviceBuffer<unsigned int> imask = nullptr;
     //! atom interaction bits
-    DeviceBuffer<nbnxn_excl_t> excl;
+    DeviceBuffer<nbnxn_excl_t> excl = nullptr;
     //! count for excl
-    int nexcl;
+    int numExcl = 1;
     //! allocation size of excl
-    int excl_nalloc;
+    int exclAllocationSize = -1;
 
     /* parameter+variables for normal and rolling pruning */
     //! true after search, indicates that initial pruning with outer pruning is needed
-    bool haveFreshList;
+    bool haveFreshList = false;
     //! the number of parts/steps over which one cycle of rolling pruning takes places
-    int rollingPruningNumParts;
+    int rollingPruningNumParts = 0;
     //! the next part to which the rolling pruning needs to be applied
-    int rollingPruningPart;
+    int rollingPruningPart = 0;
     //! device memory buffer (1 value per thread block) for next part to which the rolling pruning needs to be applied
-    DeviceBuffer<int> d_rollingPruningPart;
+    DeviceBuffer<int> d_rollingPruningPart = nullptr;
     //! size of rolling pruning part buffer on device
-    int d_rollingPruningPart_size = -1;
+    int d_rollingPruningPartSize = -1;
     //! allocated size of rolling pruning part buffer on device
-    int d_rollingPruningPart_size_alloc = -1;
+    int d_rollingPruningPartAllocationSize = -1;
 };
 
 } // namespace Nbnxm

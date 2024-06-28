@@ -1546,7 +1546,7 @@ void launchNbnxmKernelHelper(NbnxmGpu* nb, const gmx::StepWorkload& stepWork, co
 {
     NBAtomDataGpu*      adat         = nb->atdat;
     NBParamGpu*         nbp          = nb->nbparam;
-    gpu_plist*          plist        = nb->plist[iloc];
+    auto*               plist        = nb->plist[iloc].get();
     const DeviceStream& deviceStream = *nb->deviceStreams[iloc];
 
     GMX_ASSERT(doPruneNBL == (plist->haveFreshList && !nb->didPrune[iloc]), "Wrong template called");
@@ -1556,7 +1556,7 @@ void launchNbnxmKernelHelper(NbnxmGpu* nb, const gmx::StepWorkload& stepWork, co
             nbp->elecType,
             nbp->vdwType,
             deviceStream,
-            plist->nsci,
+            plist->numSci,
             adat->xq.get_pointer(),
             adat->f.get_pointer(),
             adat->shiftVec.get_pointer(),

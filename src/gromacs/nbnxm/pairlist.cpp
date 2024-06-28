@@ -537,7 +537,7 @@ static void print_nblist_statistics(FILE*                   fp,
     const Grid::Dimensions& dims = grid.dimensions();
 
     fprintf(fp,
-            "nbl nsci %zu ncjPacked %td nsi %d excl4 %zu\n",
+            "nbl nsci %zu numPackedJClusters %td nsi %d excl4 %zu\n",
             nbl.sci.size(),
             nbl.cjPacked.size(),
             nbl.nci_tot,
@@ -1939,8 +1939,8 @@ static void closeIEntry(NbnxnPairlistGpu* nbl, int nsp_max_av, gmx_bool progBal,
         /* We can only have complete blocks of 4 j-entries in a list,
          * so round the count up before closing.
          */
-        int ncjPacked     = (nbl->work->cj_ind + c_nbnxnGpuJgroupSize - 1) / c_nbnxnGpuJgroupSize;
-        nbl->work->cj_ind = ncjPacked * c_nbnxnGpuJgroupSize;
+        int numPackedJClusters = (nbl->work->cj_ind + c_nbnxnGpuJgroupSize - 1) / c_nbnxnGpuJgroupSize;
+        nbl->work->cj_ind      = numPackedJClusters * c_nbnxnGpuJgroupSize;
 
         if (nsp_max_av > 0)
         {
@@ -2355,7 +2355,7 @@ static void print_nblist_sci_cj(FILE* fp, const NbnxnPairlistGpu& nbl)
 {
     for (const nbnxn_sci_t& sci : nbl.sci)
     {
-        fprintf(fp, "ci %4d  shift %2d  ncjPacked %2d\n", sci.sci, sci.shift, sci.numJClusterGroups());
+        fprintf(fp, "ci %4d  shift %2d  numPackedJClusters %2d\n", sci.sci, sci.shift, sci.numJClusterGroups());
 
         int ncp = 0;
         for (int jPacked = sci.cjPackedBegin; jPacked < sci.cjPackedEnd; jPacked++)
@@ -2376,27 +2376,32 @@ static void print_nblist_sci_cj(FILE* fp, const NbnxnPairlistGpu& nbl)
                 }
             }
         }
-        fprintf(fp, "ci %4d  shift %2d  ncjPacked %2d ncp %3d\n", sci.sci, sci.shift, sci.numJClusterGroups(), ncp);
+        fprintf(fp,
+                "ci %4d  shift %2d  numPackedJClusters %2d ncp %3d\n",
+                sci.sci,
+                sci.shift,
+                sci.numJClusterGroups(),
+                ncp);
     }
 }
 
 /* Combine pair lists *nbl generated on multiple threads nblc */
 static void combine_nblists(gmx::ArrayRef<const NbnxnPairlistGpu> nbls, NbnxnPairlistGpu* nblc)
 {
-    int nsci      = nblc->sci.size();
-    int ncjPacked = nblc->cjPacked.size();
-    int nexcl     = nblc->excl.size();
+    int nsci               = nblc->sci.size();
+    int numPackedJClusters = nblc->cjPacked.size();
+    int nexcl              = nblc->excl.size();
     for (const auto& nbl : nbls)
     {
         nsci += nbl.sci.size();
-        ncjPacked += nbl.cjPacked.size();
+        numPackedJClusters += nbl.cjPacked.size();
         nexcl += nbl.excl.size();
     }
 
     /* Resize with the final, combined size, so we can fill in parallel */
     /* NOTE: For better performance we should use default initialization */
     nblc->sci.resize(nsci);
-    nblc->cjPacked.resize(ncjPacked);
+    nblc->cjPacked.resize(numPackedJClusters);
     nblc->excl.resize(nexcl);
 
     /* Each thread should copy its own data to the combined arrays,
@@ -2413,7 +2418,7 @@ static void combine_nblists(gmx::ArrayRef<const NbnxnPairlistGpu> nbls, NbnxnPai
              * Note that the original sizes in nblc are lost.
              */
             int sci_offset      = nsci;
-            int cjPacked_offset = ncjPacked;
+            int cjPacked_offset = numPackedJClusters;
             int excl_offset     = nexcl;
 
             for (gmx::Index i = n; i < nbls.ssize(); i++)

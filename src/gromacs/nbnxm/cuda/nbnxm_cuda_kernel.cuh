@@ -155,7 +155,7 @@ __launch_bounds__(THREADS_PER_BLOCK)
         __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
 #    endif /* CALC_ENERGIES */
 #endif     /* PRUNE_NBL */
-                (NBAtomDataGpu atdat, NBParamGpu nbparam, Nbnxm::gpu_plist plist, bool bCalcFshift)
+                (NBAtomDataGpu atdat, NBParamGpu nbparam, Nbnxm::GpuPairlist plist, bool bCalcFshift)
 #ifdef FUNCTION_DECLARATION_ONLY
                         ; /* Only do function declaration, omit the function body. */
 #else

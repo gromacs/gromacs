@@ -122,7 +122,7 @@ int gpu_min_ci_balanced(NbnxmGpu* nb)
 
 /* Calculate size of working memory required for exclusive sum, part of sorting the neighbour list,
  * by calling exclusive sum with nullptr */
-void getExclusiveScanWorkingArraySize(size_t& scan_size, gpu_plist* d_plist, const DeviceStream& deviceStream)
+void getExclusiveScanWorkingArraySize(size_t& scan_size, GpuPairlist* d_plist, const DeviceStream& deviceStream)
 {
     cub::DeviceScan::ExclusiveSum(nullptr,
                                   scan_size,

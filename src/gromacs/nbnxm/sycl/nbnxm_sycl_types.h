@@ -42,6 +42,8 @@
 #ifndef NBNXM_SYCL_TYPES_H
 #define NBNXM_SYCL_TYPES_H
 
+#include <memory>
+
 #include "gromacs/gpu_utils/devicebuffer.h"
 #include "gromacs/gpu_utils/devicebuffer_sycl.h"
 #include "gromacs/gpu_utils/gmxsycl.h"
@@ -91,10 +93,10 @@ struct NbnxmGpu
     int ncxy_ind = 0;
     /*! \brief number of elements allocated allocated in device buffer */
     int ncxy_ind_alloc = 0;
-
+    /*! \brief parameters required for the non-bonded calc. */
     NBParamGpu* nbparam = nullptr;
     /*! \brief pair-list data structures (local and non-local) */
-    gmx::EnumerationArray<Nbnxm::InteractionLocality, Nbnxm::gpu_plist*> plist = { { nullptr } };
+    gmx::EnumerationArray<Nbnxm::InteractionLocality, std::unique_ptr<Nbnxm::GpuPairlist>> plist = { { nullptr } };
     /*! \brief staging area where fshift/energies get downloaded. Will be removed in SYCL. */
     NBStagingData nbst;
     /*! \brief local and non-local GPU streams */
