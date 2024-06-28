@@ -2158,17 +2158,19 @@ static void setup_dd_communication(gmx_domdec_t* dd, matrix box, gmx_ddbox_t* dd
                 zone = (p == 0 ? 0 : nzone - 1);
                 while (zone < nzone)
                 {
+                    const int gmx_unused numThreads = gmx_omp_nthreads_get(ModuleMultiThread::Domdec);
+#pragma omp parallel for num_threads(numThreads) schedule(static)
                     for (int i = 0; i < ind->nrecv[zone]; i++)
                     {
-                        int globalAtomIndex = dd->globalAtomIndices[pos_cg];
-                        fr->atomInfo[pos_cg] =
+                        int globalAtomIndex = dd->globalAtomIndices[pos_cg + i];
+                        fr->atomInfo[pos_cg + i] =
                                 ddGetAtomInfo(atomInfoForEachMoleculeBlock, globalAtomIndex);
-                        pos_cg++;
                     }
                     if (p == 0)
                     {
                         comm->zone_ncg1[nzone + zone] = ind->nrecv[zone];
                     }
+                    pos_cg += ind->nrecv[zone];
                     zone++;
                     zoneAtomRanges[nzone + zone] = pos_cg;
                 }
