@@ -99,15 +99,15 @@ herr_t iterativeSetupTimeDataBlocks(hid_t            locationId,
     switch (infoBuffer.type)
     {
         case H5O_TYPE_GROUP:
-            if (gmx::h5mdio::objectExists(locationId, stepDataSetName.c_str())
-                && gmx::h5mdio::objectExists(locationId, timeDataSetName.c_str())
-                && gmx::h5mdio::objectExists(locationId, valueDataSetName.c_str()))
+            if (gmx::objectExists(locationId, stepDataSetName.c_str())
+                && gmx::objectExists(locationId, timeDataSetName.c_str())
+                && gmx::objectExists(locationId, valueDataSetName.c_str()))
             {
-                char containerFullName[gmx::h5mdio::c_maxFullNameLength];
-                H5Iget_name(locationId, containerFullName, gmx::h5mdio::c_maxFullNameLength - 1);
-                gmx::h5mdio::GmxH5mdTimeDataBlock             dataBlock(locationId, name);
-                std::list<gmx::h5mdio::GmxH5mdTimeDataBlock>* dataBlocks =
-                        static_cast<std::list<gmx::h5mdio::GmxH5mdTimeDataBlock>*>(operatorData);
+                char containerFullName[gmx::c_maxFullNameLength];
+                H5Iget_name(locationId, containerFullName, gmx::c_maxFullNameLength - 1);
+                gmx::GmxH5mdTimeDataBlock             dataBlock(locationId, name);
+                std::list<gmx::GmxH5mdTimeDataBlock>* dataBlocks =
+                        static_cast<std::list<gmx::GmxH5mdTimeDataBlock>*>(operatorData);
 
                 dataBlock.updateNumWrittenFrames();
                 dataBlocks->emplace_back(dataBlock);
@@ -135,8 +135,6 @@ herr_t iterativeSetupTimeDataBlocks(hid_t            locationId,
 #endif // GMX_USE_HDF5
 
 namespace gmx
-{
-namespace h5mdio
 {
 
 GmxH5mdIo::GmxH5mdIo(const std::string& fileName, const char mode)
@@ -196,11 +194,12 @@ void GmxH5mdIo::openFile(const std::string& fileName, const char mode)
     }
     filemode_ = mode;
 
-    const IProgramContext& programContext = gmx::getProgramContext();
-    const gmx::InstallationPrefixInfo installPrefix = programContext.installationPrefix();
+    const IProgramContext&            programContext = gmx::getProgramContext();
+    const gmx::InstallationPrefixInfo installPrefix  = programContext.installationPrefix();
     if (installPrefix.sourceLayoutTreeLike_)
     {
-        printf("Cannot identify location of SZ3 HDF5 plugin based on installation path. Please set the HDF5_PLUGIN_PATH environment variable manually.\n");
+        printf("Cannot identify location of SZ3 HDF5 plugin based on installation path. Please set "
+               "the HDF5_PLUGIN_PATH environment variable manually.\n");
     }
     else
     {
@@ -208,7 +207,8 @@ void GmxH5mdIo::openFile(const std::string& fileName, const char mode)
         pluginDir.append("lib");
         if (H5PLprepend(pluginDir.string().c_str()) < 0)
         {
-            printf("Cannot set the HDF5 plugin path. Please set the HDF5_PLUGIN_PATH environment variable manually.\n");
+            printf("Cannot set the HDF5 plugin path. Please set the HDF5_PLUGIN_PATH environment "
+                   "variable manually.\n");
         }
     }
 
@@ -986,10 +986,9 @@ void GmxH5mdIo::addToProvenanceRecord(const std::string& commandLine,
                                       const std::string& comment)
 {
 #if GMX_USE_HDF5
-    hid_t provenanceGroup = createGroup(h5mdio::s_provenanceGroupName);
-    h5mdio::setVersionAttribute(provenanceGroup,
-                                h5mdio::c_gmxH5mdProvenanceGroupMajorVersion,
-                                h5mdio::c_gmxH5mdProvenanceGroupMinorVersion);
+    hid_t provenanceGroup = createGroup(s_provenanceGroupName);
+    setVersionAttribute(
+            provenanceGroup, c_gmxH5mdProvenanceGroupMajorVersion, c_gmxH5mdProvenanceGroupMinorVersion);
 
     hid_t stringDataType = H5Tcopy(H5T_C_S1);
     H5Tset_cset(stringDataType, H5T_CSET_UTF8);
@@ -1009,7 +1008,7 @@ void GmxH5mdIo::addToProvenanceRecord(const std::string& commandLine,
                                                     nullptr,
                                                     stringDataType,
                                                     chunkDims,
-                                                    h5mdio::CompressionAlgorithm::LosslessNoShuffle,
+                                                    CompressionAlgorithm::LosslessNoShuffle,
                                                     0);
     }
     else
@@ -1036,7 +1035,7 @@ void GmxH5mdIo::addToProvenanceRecord(const std::string& commandLine,
                                                          nullptr,
                                                          stringDataType,
                                                          chunkDims,
-                                                         h5mdio::CompressionAlgorithm::LosslessNoShuffle,
+                                                         CompressionAlgorithm::LosslessNoShuffle,
                                                          0);
     snprintf(tmpString,
              c_provenanceRecordStringLen - 1,
@@ -1046,17 +1045,12 @@ void GmxH5mdIo::addToProvenanceRecord(const std::string& commandLine,
 
     hid_t dataType    = H5Tcopy(H5T_NATIVE_INT64);
     hid_t timeDataSet = openOrCreateDataSet<1>(
-            provenanceGroup, "time", "s", dataType, chunkDims, h5mdio::CompressionAlgorithm::LosslessNoShuffle, 0);
+            provenanceGroup, "time", "s", dataType, chunkDims, CompressionAlgorithm::LosslessNoShuffle, 0);
     const int64_t timeStamp = std::time(nullptr);
     writeData<1, false>(timeDataSet, &timeStamp, numFrames);
 
-    hid_t commentDataSet = openOrCreateDataSet<1>(provenanceGroup,
-                                                  "comment",
-                                                  nullptr,
-                                                  stringDataType,
-                                                  chunkDims,
-                                                  h5mdio::CompressionAlgorithm::LosslessNoShuffle,
-                                                  0);
+    hid_t commentDataSet = openOrCreateDataSet<1>(
+            provenanceGroup, "comment", nullptr, stringDataType, chunkDims, CompressionAlgorithm::LosslessNoShuffle, 0);
     snprintf(tmpString, c_provenanceRecordStringLen - 1, "%s", comment.c_str());
     writeData<1, false>(commentDataSet, tmpString, numFrames);
 
@@ -1123,8 +1117,6 @@ template std::vector<double> GmxH5mdIo::readNumericDataSet<double>(const std::st
 template std::vector<int> GmxH5mdIo::readNumericDataSet<int>(const std::string&, const std::string&);
 template std::vector<std::int64_t> GmxH5mdIo::readNumericDataSet<std::int64_t>(const std::string&,
                                                                                const std::string&);
-
-} // namespace h5mdio
 
 } // namespace gmx
 

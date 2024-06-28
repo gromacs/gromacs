@@ -57,15 +57,13 @@ struct MoleculeBlockIndices;
 
 namespace gmx
 {
-namespace h5mdio
-{
 class GmxH5mdIo;
-}
+
 /*! \brief Set the author and creator fields based on user and program data available in gromacs.
 
  * \param[in] file     The H5MD file manager to use.
  */
-void setH5mdAuthorAndCreator(h5mdio::GmxH5mdIo* file);
+void setH5mdAuthorAndCreator(GmxH5mdIo* file);
 
 /*! \brief Setup molecular system particle related data to the file. Write the data that is present from the beginning.
  *
@@ -78,7 +76,7 @@ void setH5mdAuthorAndCreator(h5mdio::GmxH5mdIo* file);
  * \param[in] selectionName The name of the atom selection specified by index.
  * \throws FileIOError If there is no file open or if the data could not be written.
  */
-void setupMolecularSystemParticleData(h5mdio::GmxH5mdIo*       file,
+void setupMolecularSystemParticleData(GmxH5mdIo*               file,
                                       const gmx_mtop_t&        topology,
                                       gmx::ArrayRef<const int> index         = {},
                                       const std::string        selectionName = "");
@@ -92,7 +90,7 @@ void setupMolecularSystemParticleData(h5mdio::GmxH5mdIo*       file,
  * will be empty.
  * \throws FileIOError If there was en error reading the data.
  */
-MoleculeBlockIndices getMoleculeBlockIndicesByIndex(h5mdio::GmxH5mdIo* file, size_t molBlockIndex);
+MoleculeBlockIndices getMoleculeBlockIndicesByIndex(GmxH5mdIo* file, size_t molBlockIndex);
 
 /*! \brief Setup molecular system topology data.
  *
@@ -105,7 +103,7 @@ MoleculeBlockIndices getMoleculeBlockIndicesByIndex(h5mdio::GmxH5mdIo* file, siz
  * to VMD specifications in the H5MD group /parameters/vmd_structure/.
  * \throws FileIOError If there is no file open or if the data could not be written.
  */
-void setupMolecularSystemTopology(h5mdio::GmxH5mdIo*       file,
+void setupMolecularSystemTopology(GmxH5mdIo*               file,
                                   const gmx_mtop_t&        topology,
                                   gmx::ArrayRef<const int> index                 = {},
                                   bool                     abortIfPresent        = true,
@@ -126,17 +124,17 @@ void setupMolecularSystemTopology(h5mdio::GmxH5mdIo*       file,
  * \param[in] selectionName The name of the selection to use.
  * \throws FileIOError    If there is no file open or if errors occured during writing.
  */
-void writeFrameToStandardDataBlocks(h5mdio::GmxH5mdIo* file,
-                                    int64_t            step,
-                                    real               time,
-                                    real               lambda,
-                                    const rvec*        box,
-                                    int64_t            numParticles,
-                                    const rvec*        x,
-                                    const rvec*        v,
-                                    const rvec*        f,
-                                    double             xCompressionError,
-                                    const std::string  selectionName = "system");
+void writeFrameToStandardDataBlocks(GmxH5mdIo*        file,
+                                    int64_t           step,
+                                    real              time,
+                                    real              lambda,
+                                    const rvec*       box,
+                                    int64_t           numParticles,
+                                    const rvec*       x,
+                                    const rvec*       v,
+                                    const rvec*       f,
+                                    double            xCompressionError,
+                                    const std::string selectionName = "system");
 
 /*! \brief Read the next frame of box, coordinates, velocities and forces. With next frame means
  * the lowest step/time reading from the previous read frame of that data type. If data is
@@ -161,21 +159,21 @@ void writeFrameToStandardDataBlocks(h5mdio::GmxH5mdIo* file,
  * \returns Whether any frame was read or not.
  * \throws FileIOError If there was an error reading the next frame or if the data type of the data was unknown.
  */
-bool readNextFrameOfStandardDataBlocks(h5mdio::GmxH5mdIo* file,
-                                       int64_t*           step,
-                                       real*              time,
-                                       real*              lambda,
-                                       rvec*              box,
-                                       rvec*              x,
-                                       rvec*              v,
-                                       rvec*              f,
-                                       double*            xCompressionError,
-                                       bool*              readLambda,
-                                       bool*              readBox,
-                                       bool*              readX,
-                                       bool*              readV,
-                                       bool*              readF,
-                                       const std::string  selectionName = "system");
+bool readNextFrameOfStandardDataBlocks(GmxH5mdIo*        file,
+                                       int64_t*          step,
+                                       real*             time,
+                                       real*             lambda,
+                                       rvec*             box,
+                                       rvec*             x,
+                                       rvec*             v,
+                                       rvec*             f,
+                                       double*           xCompressionError,
+                                       bool*             readLambda,
+                                       bool*             readBox,
+                                       bool*             readX,
+                                       bool*             readV,
+                                       bool*             readF,
+                                       const std::string selectionName = "system");
 
 /*! \brief Copies the provenance group (in /modules) from \p srcFile to \p destFile, if it exists in \p srcFile.
  *
@@ -183,7 +181,7 @@ bool readNextFrameOfStandardDataBlocks(h5mdio::GmxH5mdIo* file,
  * \param[in] destFile The H5MD file manager of the destination file.
  * \returns Whether the group was copied.
  */
-bool copyProvenanceRecords(h5mdio::GmxH5mdIo* srcFile, h5mdio::GmxH5mdIo* destFile);
+bool copyProvenanceRecords(GmxH5mdIo* srcFile, GmxH5mdIo* destFile);
 
 } // namespace gmx
 #endif // GMX_FILEIO_GMXH5MD_IO_H

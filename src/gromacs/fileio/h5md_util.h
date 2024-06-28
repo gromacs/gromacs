@@ -43,9 +43,8 @@
 #include <string>
 
 enum class PbcType : int;
+
 namespace gmx
-{
-namespace h5mdio
 {
 typedef int64_t            hid_t;
 typedef unsigned long long hsize_t;
@@ -228,6 +227,6 @@ double getDataSetSz3CompressionError(const hid_t dataSet);
  */
 bool objectExists(const hid_t container, const char* name);
 
-} // namespace h5mdio
 } // namespace gmx
+
 #endif

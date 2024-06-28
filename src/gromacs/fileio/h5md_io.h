@@ -55,8 +55,6 @@ struct MoleculeBlockIndices;
 
 namespace gmx
 {
-namespace h5mdio
-{
 
 typedef int64_t            hid_t;
 typedef unsigned long long hsize_t;
@@ -344,8 +342,6 @@ public:
                                const std::string& version     = "",
                                const std::string& comment     = "");
 };
-
-} // namespace h5mdio
 
 } // namespace gmx
 #endif // GMX_FILEIO_H5MD_IO_H

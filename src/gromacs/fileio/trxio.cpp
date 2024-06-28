@@ -97,15 +97,15 @@ struct t_trxstatus
 {
     int  flags; /* flags for read_first/next_frame  */
     int  currentFrame;
-    real t0;                    /* time of the first frame, needed  *
-                                 * for skipping frames with -dt     */
-    real                    tf; /* internal frame time              */
-    t_trxframe*             xframe;
-    t_fileio*               fio;
-    gmx_tng_trajectory_t    tng;
-    gmx::h5mdio::GmxH5mdIo* h5mdIo;
-    int                     natoms;
-    char*                   persistent_line; /* Persistent line for reading g96 trajectories */
+    real t0;                 /* time of the first frame, needed  *
+                              * for skipping frames with -dt     */
+    real                 tf; /* internal frame time              */
+    t_trxframe*          xframe;
+    t_fileio*            fio;
+    gmx_tng_trajectory_t tng;
+    gmx::GmxH5mdIo*      h5mdIo;
+    int                  natoms;
+    char*                persistent_line; /* Persistent line for reading g96 trajectories */
 #if GMX_USE_PLUGINS
     gmx_vmdplugin_t* vmdplugin;
 #endif
@@ -561,7 +561,7 @@ t_trxstatus* trjtools_gmx_prepare_h5md_writing(const std::filesystem::path& file
     snew(out, 1);
     status_init(out);
 
-    out->h5mdIo = new gmx::h5mdio::GmxH5mdIo(filename, filemode);
+    out->h5mdIo = new gmx::GmxH5mdIo(filename, filemode);
     if (filemode == 'w')
     {
         gmx::setH5mdAuthorAndCreator(out->h5mdIo);
@@ -1079,7 +1079,7 @@ bool read_first_frame(const gmx_output_env_t*      oenv,
     }
     else if (efH5MD == ftp)
     {
-        (*status)->h5mdIo = new gmx::h5mdio::GmxH5mdIo(fn, 'r');
+        (*status)->h5mdIo = new gmx::GmxH5mdIo(fn, 'r');
     }
     else
     {

@@ -118,8 +118,6 @@ void setLossySz3CompressionProperties(const hid_t propertyList, const int sz3Mod
 
 namespace gmx
 {
-namespace h5mdio
-{
 
 hid_t openOrCreateGroup(const hid_t container, const char* name)
 {
@@ -663,47 +661,31 @@ bool objectExists(const hid_t container, const char* name)
            && H5Oexists_by_name(container, name, H5P_DEFAULT) >= 0;
 }
 
-} // namespace h5mdio
+template hid_t
+openOrCreateDataSet<1>(hid_t, const char*, const char*, hid_t, const hsize_t*, CompressionAlgorithm, double);
+template hid_t
+openOrCreateDataSet<2>(hid_t, const char*, const char*, hid_t, const hsize_t*, CompressionAlgorithm, double);
+template hid_t
+openOrCreateDataSet<3>(hid_t, const char*, const char*, hid_t, const hsize_t*, CompressionAlgorithm, double);
+
+template void writeData<1, false>(hid_t, const void*, hsize_t);
+template void writeData<1, true>(hid_t, const void*, hsize_t);
+template void writeData<2, false>(hid_t, const void*, hsize_t);
+template void writeData<2, true>(hid_t, const void*, hsize_t);
+template void writeData<3, false>(hid_t, const void*, hsize_t);
+
+template void readData<1, false>(hid_t, hsize_t, void**, size_t*, size_t*);
+template void readData<1, true>(hid_t, hsize_t, void**, size_t*, size_t*);
+template void readData<3, false>(hid_t, hsize_t, void**, size_t*, size_t*);
+template void readData<1>(hid_t, hsize_t, void**);
+
+template void setAttribute<int>(hid_t, const char*, int, hid_t);
+template void setAttribute<int64_t>(hid_t, const char*, int64_t, hid_t);
+template void setAttribute<float>(hid_t, const char*, float, hid_t);
+template void setAttribute<double>(hid_t, const char*, double, hid_t);
+
+template bool getAttribute<int64_t>(hid_t, const char*, int64_t*);
+
 } // namespace gmx
-
-template hid_t gmx::h5mdio::openOrCreateDataSet<1>(hid_t,
-                                                   const char*,
-                                                   const char*,
-                                                   hid_t,
-                                                   const hsize_t*,
-                                                   gmx::h5mdio::CompressionAlgorithm,
-                                                   double);
-template hid_t gmx::h5mdio::openOrCreateDataSet<2>(hid_t,
-                                                   const char*,
-                                                   const char*,
-                                                   hid_t,
-                                                   const hsize_t*,
-                                                   gmx::h5mdio::CompressionAlgorithm,
-                                                   double);
-template hid_t gmx::h5mdio::openOrCreateDataSet<3>(hid_t,
-                                                   const char*,
-                                                   const char*,
-                                                   hid_t,
-                                                   const hsize_t*,
-                                                   gmx::h5mdio::CompressionAlgorithm,
-                                                   double);
-
-template void gmx::h5mdio::writeData<1, false>(hid_t, const void*, hsize_t);
-template void gmx::h5mdio::writeData<1, true>(hid_t, const void*, hsize_t);
-template void gmx::h5mdio::writeData<2, false>(hid_t, const void*, hsize_t);
-template void gmx::h5mdio::writeData<2, true>(hid_t, const void*, hsize_t);
-template void gmx::h5mdio::writeData<3, false>(hid_t, const void*, hsize_t);
-
-template void gmx::h5mdio::readData<1, false>(hid_t, hsize_t, void**, size_t*, size_t*);
-template void gmx::h5mdio::readData<1, true>(hid_t, hsize_t, void**, size_t*, size_t*);
-template void gmx::h5mdio::readData<3, false>(hid_t, hsize_t, void**, size_t*, size_t*);
-template void gmx::h5mdio::readData<1>(hid_t, hsize_t, void**);
-
-template void gmx::h5mdio::setAttribute<int>(hid_t, const char*, int, hid_t);
-template void gmx::h5mdio::setAttribute<int64_t>(hid_t, const char*, int64_t, hid_t);
-template void gmx::h5mdio::setAttribute<float>(hid_t, const char*, float, hid_t);
-template void gmx::h5mdio::setAttribute<double>(hid_t, const char*, double, hid_t);
-
-template bool gmx::h5mdio::getAttribute<int64_t>(hid_t, const char*, int64_t*);
 
 #endif // GMX_USE_HDF5

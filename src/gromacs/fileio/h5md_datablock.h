@@ -51,8 +51,6 @@
 
 namespace gmx
 {
-namespace h5mdio
-{
 typedef int64_t            hid_t;
 typedef unsigned long long hsize_t;
 
@@ -180,6 +178,5 @@ public:
     std::string timeUnit() const { return timeUnit_; }
 };
 
-} // namespace h5mdio
 } // namespace gmx
 #endif // GMX_FILEIO_H5MD_DATABLOCK_H

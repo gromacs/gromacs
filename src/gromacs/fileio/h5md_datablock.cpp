@@ -56,8 +56,6 @@
 
 namespace gmx
 {
-namespace h5mdio
-{
 
 GmxH5mdTimeDataBlock::GmxH5mdTimeDataBlock(hid_t                container,
                                            const std::string    name,
@@ -73,8 +71,8 @@ GmxH5mdTimeDataBlock::GmxH5mdTimeDataBlock(hid_t                container,
     name_      = name;
 
     group_ = openOrCreateGroup(container_, name_.c_str());
-    char tmpFullName[c_maxFullNameLength];
-    H5Iget_name(group_, tmpFullName, c_maxFullNameLength - 1);
+    char tmpFullName[gmx::c_maxFullNameLength];
+    H5Iget_name(group_, tmpFullName, gmx::c_maxFullNameLength - 1);
     fullName_          = tmpFullName;
     readingFrameIndex_ = 0;
     writingFrameIndex_ = 0;
@@ -450,7 +448,6 @@ extern template void writeData<3, false>(hid_t, const void*, hsize_t);
 extern template void readData<1, false>(hid_t, hsize_t, void**, size_t*, size_t*);
 extern template void readData<3, false>(hid_t, hsize_t, void**, size_t*, size_t*);
 
-} // namespace h5mdio
 } // namespace gmx
 
 #endif // GMX_USE_HDF5

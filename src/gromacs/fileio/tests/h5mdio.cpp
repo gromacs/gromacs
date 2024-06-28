@@ -106,8 +106,8 @@ public:
     void checkH5mdRootVersionNumber()
     {
         std::string fileVersion   = referenceH5mdIo_.getH5mdRootVersionNumber();
-        std::string versionString = std::to_string(gmx::h5mdio::c_h5mdMajorVersion) + "."
-                                    + std::to_string(gmx::h5mdio::c_h5mdMinorVersion);
+        std::string versionString = std::to_string(gmx::c_h5mdMajorVersion) + "."
+                                    + std::to_string(gmx::c_h5mdMinorVersion);
         EXPECT_STREQ(fileVersion.c_str(), versionString.c_str());
     }
 
@@ -393,7 +393,7 @@ private:
 
     gmx::test::TestFileManager fileManager_;
     std::string                referenceFilename_;
-    gmx::h5mdio::GmxH5mdIo     referenceH5mdIo_;
+    gmx::GmxH5mdIo             referenceH5mdIo_;
     rvec*                      refX_;
     rvec*                      refV_;
     rvec*                      refF_;
@@ -519,20 +519,20 @@ INSTANTIATE_TEST_SUITE_P(H5mdTestWriteReadCombinations,
 
 } // namespace
 
-extern template void gmx::h5mdio::GmxH5mdIo::setNumericDataSet<real>(const std::string&,
-                                                                     const std::string&,
-                                                                     const std::vector<real>&,
-                                                                     const std::string&,
-                                                                     bool);
-extern template void gmx::h5mdio::GmxH5mdIo::setNumericDataSet<int>(const std::string&,
-                                                                    const std::string&,
-                                                                    const std::vector<int>&,
-                                                                    const std::string&,
-                                                                    bool);
+extern template void gmx::GmxH5mdIo::setNumericDataSet<real>(const std::string&,
+                                                             const std::string&,
+                                                             const std::vector<real>&,
+                                                             const std::string&,
+                                                             bool);
+extern template void gmx::GmxH5mdIo::setNumericDataSet<int>(const std::string&,
+                                                            const std::string&,
+                                                            const std::vector<int>&,
+                                                            const std::string&,
+                                                            bool);
 
-extern template std::vector<real> gmx::h5mdio::GmxH5mdIo::readNumericDataSet<real>(const std::string&,
-                                                                                   const std::string&);
-extern template std::vector<int> gmx::h5mdio::GmxH5mdIo::readNumericDataSet<int>(const std::string&,
-                                                                                 const std::string&);
+extern template std::vector<real> gmx::GmxH5mdIo::readNumericDataSet<real>(const std::string&,
+                                                                           const std::string&);
+extern template std::vector<int>  gmx::GmxH5mdIo::readNumericDataSet<int>(const std::string&,
+                                                                         const std::string&);
 
 #endif // GMX_USE_HDF5
