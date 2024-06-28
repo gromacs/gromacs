@@ -260,6 +260,13 @@ choose_ff_impl(const char* ffsel, char* forcefield, int ff_maxlen, const gmx::MD
             }
         }
 
+        GMX_LOG(logger.info)
+                .asParagraph()
+                .appendTextFormatted(
+                        "Note that more recent versions of the CHARMM force field may be "
+                        "downloaded "
+                        "from\nhttp://mackerell.umaryland.edu/charmm_ff.shtml#gromacs.");
+
         GMX_LOG(logger.info).asParagraph().appendTextFormatted("Select the Force Field:");
         for (int i = 0; i < nff; ++i)
         {
