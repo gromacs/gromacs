@@ -33,7 +33,7 @@
 
 set(GMX_HDF5_REQUIRED_VERSION "1.10.1")
 
-function(gmx_manage_hdf5)
+macro(gmx_manage_hdf5)
     # Find an external hdf5 library.
     set(GMX_USE_HDF5 ON CACHE BOOL "Use HDF5 (is it available?)")
     if(GMX_USE_HDF5)
@@ -44,9 +44,9 @@ function(gmx_manage_hdf5)
             set(GMX_USE_HDF5 OFF CACHE BOOL "Use HDF5 (is it available?)" FORCE)
         endif()
     endif()
-endfunction()
+endmacro()
 
-function(gmx_manage_sz3)
+macro(gmx_manage_sz3)
     # FIXME: H5Z-SZ3 cannot be built using gcc on Mac OS X
     if(GMX_USE_HDF5)
         include(FetchContent)
@@ -63,4 +63,4 @@ function(gmx_manage_sz3)
         endif()
         install(FILES ${CMAKE_SOURCE_DIR}/src/gromacs/fileio/sz3.config DESTINATION share/SZ3)
     endif()
-endfunction()
+endmacro()
