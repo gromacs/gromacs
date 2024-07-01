@@ -376,7 +376,7 @@ t_mde_delta_h_coll::t_mde_delta_h_coll(const t_inputrec& inputrec)
 
     /* this is the compatibility lambda value. If it is >=0, it is valid,
        and there is either an old-style lambda or a slow growth simulation. */
-    start_lambda = inputrec.fepvals->init_lambda;
+    start_lambda = inputrec.fepvals->init_lambda_without_states;
     /* for continuous change of lambda values */
     delta_lambda = inputrec.fepvals->delta_lambda * inputrec.fepvals->nstdhdl;
 
@@ -527,7 +527,7 @@ t_mde_delta_h_coll::t_mde_delta_h_coll(const t_inputrec& inputrec)
                                      dhbtDHDL,
                                      n_lambda_components,
                                      1,
-                                     &(fep->init_lambda));
+                                     &fep->init_lambda_without_states);
                     n++;
                     n_lambda_components++;
                 }

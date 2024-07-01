@@ -2126,7 +2126,7 @@ int Mdrunner::mdrunner()
                                       mtop,
                                       cr,
                                       &atomSets,
-                                      inputrec->fepvals->init_lambda);
+                                      inputrec->fepvals->init_lambda_without_states);
                 if (inputrec->pull->bXOutAverage || inputrec->pull->bFOutAverage)
                 {
                     initPullHistory(pull_work, &observablesHistory);

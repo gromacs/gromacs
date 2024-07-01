@@ -609,9 +609,9 @@ static void print_lambda_vector(t_lambda* fep, int i, bool get_native_lambda, bo
         {
             if (!get_names)
             {
-                if (get_native_lambda && fep->init_lambda >= 0)
+                if (get_native_lambda && fep->init_lambda_without_states >= 0)
                 {
-                    str += sprintf(str, "%.4f", fep->init_lambda);
+                    str += sprintf(str, "%.4f", fep->init_lambda_without_states);
                 }
                 else
                 {
@@ -687,10 +687,10 @@ FILE* open_dhdl(const char* filename, const t_inputrec* ir, const gmx_output_env
         && (ir->efep != FreeEnergyPerturbationType::Expanded)
         && !(ir->bDoAwh && awhHasFepLambdaDimension(*ir->awhParams)))
     {
-        if ((fep->init_lambda >= 0) && (n_lambda_terms == 1))
+        if ((fep->init_lambda_without_states >= 0) && (n_lambda_terms == 1))
         {
             /* compatibility output */
-            buf += gmx::formatString("%s = %.4f", lambda, fep->init_lambda);
+            buf += gmx::formatString("%s = %.4f", lambda, fep->init_lambda_without_states);
         }
         else
         {
@@ -725,7 +725,7 @@ FILE* open_dhdl(const char* filename, const t_inputrec* ir, const gmx_output_env
 
     nsetsextend = nsets;
     if ((ir->pressureCouplingOptions.epc != PressureCoupling::No) && (fep->n_lambda > 0)
-        && (fep->init_lambda < 0))
+        && (fep->init_lambda_without_states < 0))
     {
         nsetsextend += 1; /* for PV term, other terms possible if required for
                              the reduced potential (only needed with foreign
@@ -764,18 +764,16 @@ FILE* open_dhdl(const char* filename, const t_inputrec* ir, const gmx_output_env
             if (fep->separate_dvdl[i])
             {
                 std::string derivative;
-                if ((fep->init_lambda >= 0) && (n_lambda_terms == 1))
+                if ((fep->init_lambda_without_states >= 0) && (n_lambda_terms == 1))
                 {
                     /* compatibility output */
-                    derivative = gmx::formatString("%s %s %.4f", dhdl, lambda, fep->init_lambda);
+                    derivative = gmx::formatString(
+                            "%s %s %.4f", dhdl, lambda, fep->init_lambda_without_states);
                 }
                 else
                 {
-                    double lam = fep->init_lambda;
-                    if (fep->init_lambda < 0)
-                    {
-                        lam = fep->all_lambda[i][fep->init_fep_state];
-                    }
+                    const double lam = fep->initialLambda(i);
+
                     derivative = gmx::formatString("%s %s = %.4f", dhdl, enumValueToStringSingular(i), lam);
                 }
                 setname[s++] = derivative;
@@ -808,7 +806,7 @@ FILE* open_dhdl(const char* filename, const t_inputrec* ir, const gmx_output_env
         {
             print_lambda_vector(fep, i, false, false, lambda_vec_str);
             std::string buf;
-            if ((fep->init_lambda >= 0) && (n_lambda_terms == 1))
+            if ((fep->init_lambda_without_states >= 0) && (n_lambda_terms == 1))
             {
                 /* for compatible dhdl.xvg files */
                 buf = gmx::formatString("%s %s %s", deltag, lambda, lambda_vec_str);
@@ -1091,7 +1089,7 @@ void EnergyOutput::addDataAtEnergyStep(bool                    bDoDHDL,
                 fprintf(fp_dhdl_, " %#.8g", dE_[i]);
             }
             if (bDynBox_ && bDiagPres_ && (epc_ != PressureCoupling::No)
-                && foreignTerms.numLambdas() > 0 && (fep->init_lambda < 0))
+                && foreignTerms.numLambdas() > 0 && fep->init_lambda_without_states < 0)
             {
                 fprintf(fp_dhdl_, " %#.8g", pv); /* PV term only needed when
                                                          there are alternate state

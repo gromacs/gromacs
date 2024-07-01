@@ -549,7 +549,7 @@ static void pr_fepvals(FILE* fp, int indent, const t_lambda* fep, gmx_bool bMDPf
 {
     int j;
 
-    PR("init-lambda", fep->init_lambda);
+    PR("init-lambda", fep->init_lambda_without_states);
     PI("init-lambda-state", fep->init_fep_state);
     PR("delta-lambda", fep->delta_lambda);
     PI("nstdhdl", fep->nstdhdl);

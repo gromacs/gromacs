@@ -133,9 +133,9 @@ public:
     t_lambda getFepVals()
     {
         t_lambda fepvals;
-        fepvals.init_fep_state = GetParam().initFepState;
-        fepvals.init_lambda    = GetParam().initLambda;
-        fepvals.delta_lambda   = GetParam().deltaLambda;
+        fepvals.init_fep_state             = GetParam().initFepState;
+        fepvals.init_lambda_without_states = GetParam().initLambda;
+        fepvals.delta_lambda               = GetParam().deltaLambda;
         std::fill(fepvals.all_lambda.begin(),
                   fepvals.all_lambda.end(),
                   defaultLambdaArrayForTest_[GetParam().nLambda]);

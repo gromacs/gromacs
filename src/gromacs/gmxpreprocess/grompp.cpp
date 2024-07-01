@@ -2032,7 +2032,7 @@ int gmx_grompp(int argc, char* argv[])
     /* Command line options */
     gmx_bool bRenum   = TRUE;
     gmx_bool bRmVSBds = TRUE, bZero = FALSE;
-    int      i, maxwarn             = 0;
+    int      maxwarn = 0;
     real     fr_time = -1;
     t_pargs  pa[]    = {
         { "-v", FALSE, etBOOL, { &bVerbose }, "Be loud and noisy" },
@@ -2586,24 +2586,9 @@ int gmx_grompp(int argc, char* argv[])
     if (ir->efep != FreeEnergyPerturbationType::No)
     {
         state.fep_state = ir->fepvals->init_fep_state;
-        for (i = 0; i < static_cast<int>(FreeEnergyPerturbationCouplingType::Count); i++)
+        for (const auto couplingType : gmx::EnumerationWrapper<FreeEnergyPerturbationCouplingType>{})
         {
-            /* init_lambda trumps state definitions*/
-            if (ir->fepvals->init_lambda >= 0)
-            {
-                state.lambda[i] = ir->fepvals->init_lambda;
-            }
-            else
-            {
-                if (ir->fepvals->all_lambda[i].empty())
-                {
-                    gmx_fatal(FARGS, "Values of lambda not set for a free energy calculation!");
-                }
-                else
-                {
-                    state.lambda[i] = ir->fepvals->all_lambda[i][state.fep_state];
-                }
-            }
+            state.lambda[static_cast<int>(couplingType)] = ir->fepvals->initialLambda(couplingType);
         }
     }
 
@@ -2627,21 +2612,13 @@ int gmx_grompp(int argc, char* argv[])
         {
             copy_mat(ir->pressureCouplingOptions.compress, compressibility);
         }
-        real initLambda = 0;
+        real initialLambda = 0;
         if (ir->efep != FreeEnergyPerturbationType::No)
         {
-            if (ir->fepvals->init_fep_state >= 0)
-            {
-                initLambda = ir->fepvals->all_lambda[static_cast<int>(
-                        FreeEnergyPerturbationCouplingType::Fep)][ir->fepvals->init_fep_state];
-            }
-            else
-            {
-                initLambda = ir->fepvals->init_lambda;
-            }
+            initialLambda = ir->fepvals->initialLambda(FreeEnergyPerturbationCouplingType::Fep);
         }
         setStateDependentAwhParams(
-                ir->awhParams.get(), *ir->pull, pull, state.box, ir->pbcType, compressibility, *ir, initLambda, sys, &wi);
+                ir->awhParams.get(), *ir->pull, pull, state.box, ir->pbcType, compressibility, *ir, initialLambda, sys, &wi);
     }
 
     if (ir->bPull)

@@ -113,12 +113,25 @@ struct t_simtemp
 
 struct t_lambda
 {
+    //! Return the initial lambda
+    double initialLambda(const FreeEnergyPerturbationCouplingType couplingType) const
+    {
+        if (init_lambda_without_states >= 0)
+        {
+            return init_lambda_without_states;
+        }
+        else
+        {
+            return all_lambda[couplingType][init_fep_state];
+        }
+    }
+
     //! The frequency for calculating dhdl
     int nstdhdl = 0;
     //! Fractional value of lambda (usually will use init_fep_state, this will only be for slow growth, and for legacy free energy code. Only has a valid value if positive)
-    double init_lambda = 0;
+    double init_lambda_without_states = -1;
     //! The initial number of the state
-    int init_fep_state = 0;
+    int init_fep_state = -1;
     //! Change of lambda per time step (fraction of (0.1)
     double delta_lambda = 0;
     //! Print no, total or potential energies in dhdl

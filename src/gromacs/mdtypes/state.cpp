@@ -457,21 +457,11 @@ void initialize_lambdas(FILE*                            fplog,
                                              to prevent this.*/
     }
 
-    for (int i = 0; i < static_cast<int>(FreeEnergyPerturbationCouplingType::Count); i++)
+    for (auto couplingType : gmx::EnumerationWrapper<FreeEnergyPerturbationCouplingType>{})
     {
-        double thisLambda;
-        /* overwrite lambda state with init_lambda for now for backwards compatibility */
-        if (fep.init_lambda >= 0) /* if it's -1, it was never initialized */
-        {
-            thisLambda = fep.init_lambda;
-        }
-        else
-        {
-            thisLambda = fep.all_lambda[i][fep.init_fep_state];
-        }
         if (isMain)
         {
-            lambda[i] = thisLambda;
+            lambda[static_cast<int>(couplingType)] = fep.initialLambda(couplingType);
         }
     }
     if (haveSimulatedTempering)

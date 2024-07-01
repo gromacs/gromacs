@@ -512,18 +512,18 @@ static void do_fepvals(gmx::ISerializer* serializer, t_lambda* fepvals, int file
     if (file_version >= tpxv_Pre96Version79)
     {
         serializer->doInt(&fepvals->init_fep_state);
-        serializer->doDouble(&fepvals->init_lambda);
+        serializer->doDouble(&fepvals->init_lambda_without_states);
         serializer->doDouble(&fepvals->delta_lambda);
     }
     else if (file_version >= tpxv_Pre96Version59)
     {
-        serializer->doDouble(&fepvals->init_lambda);
+        serializer->doDouble(&fepvals->init_lambda_without_states);
         serializer->doDouble(&fepvals->delta_lambda);
     }
     else
     {
         serializer->doReal(&rdum);
-        fepvals->init_lambda = rdum;
+        fepvals->init_lambda_without_states = rdum;
         serializer->doReal(&rdum);
         fepvals->delta_lambda = rdum;
     }
@@ -538,9 +538,9 @@ static void do_fepvals(gmx::ISerializer* serializer, t_lambda* fepvals, int file
                 serializer->doDoubleArray(fepvals->all_lambda[g].data(), fepvals->n_lambda);
                 serializer->doBoolArray(fepvals->separate_dvdl.begin(), fepvals->separate_dvdl.size());
             }
-            else if (fepvals->init_lambda >= 0)
+            else if (fepvals->init_lambda_without_states >= 0)
             {
-                fepvals->separate_dvdl[FreeEnergyPerturbationCouplingType::Fep] = TRUE;
+                fepvals->separate_dvdl[FreeEnergyPerturbationCouplingType::Fep] = true;
             }
         }
     }
@@ -560,9 +560,9 @@ static void do_fepvals(gmx::ISerializer* serializer, t_lambda* fepvals, int file
         }
         serializer->doDoubleArray(fepvals->all_lambda[FreeEnergyPerturbationCouplingType::Fep].data(),
                                   fepvals->n_lambda);
-        if (fepvals->init_lambda >= 0)
+        if (fepvals->init_lambda_without_states >= 0)
         {
-            fepvals->separate_dvdl[FreeEnergyPerturbationCouplingType::Fep] = TRUE;
+            fepvals->separate_dvdl[FreeEnergyPerturbationCouplingType::Fep] = true;
 
             if (serializer->reading())
             {
@@ -585,7 +585,7 @@ static void do_fepvals(gmx::ISerializer* serializer, t_lambda* fepvals, int file
     else
     {
         fepvals->n_lambda = 0;
-        if (fepvals->init_lambda >= 0)
+        if (fepvals->init_lambda_without_states >= 0)
         {
             fepvals->separate_dvdl[FreeEnergyPerturbationCouplingType::Fep] = TRUE;
         }
@@ -681,8 +681,8 @@ static void do_fepvals(gmx::ISerializer* serializer, t_lambda* fepvals, int file
         || file_version >= tpxv_Pre96Version92)
     {
         serializer->doInt(&fepvals->lambda_neighbors);
-        if ((fepvals->lambda_neighbors >= 0) && (fepvals->init_fep_state >= 0)
-            && (fepvals->init_lambda < 0))
+        if (fepvals->lambda_neighbors >= 0 && fepvals->init_fep_state >= 0
+            && fepvals->init_lambda_without_states < 0)
         {
             fepvals->lambda_start_n = (fepvals->init_fep_state - fepvals->lambda_neighbors);
             fepvals->lambda_stop_n  = (fepvals->init_fep_state + fepvals->lambda_neighbors + 1);

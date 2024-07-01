@@ -167,11 +167,14 @@ currentLambdas(const int64_t step, const t_lambda& fepvals, const int currentLam
         }
 
         gmx::EnumerationArray<FreeEnergyPerturbationCouplingType, real> lambdas;
-        std::fill(std::begin(lambdas), std::end(lambdas), fepvals.init_lambda);
+        std::fill(std::begin(lambdas), std::end(lambdas), fepvals.init_lambda_without_states);
         return lambdas;
     }
-    const double globalLambda = currentGlobalLambda(
-            step, fepvals.delta_lambda, fepvals.init_fep_state, fepvals.init_lambda, fepvals.n_lambda);
+    const double globalLambda = currentGlobalLambda(step,
+                                                    fepvals.delta_lambda,
+                                                    fepvals.init_fep_state,
+                                                    fepvals.init_lambda_without_states,
+                                                    fepvals.n_lambda);
     return interpolatedLambdas(globalLambda, fepvals.all_lambda, fepvals.n_lambda);
 }
 

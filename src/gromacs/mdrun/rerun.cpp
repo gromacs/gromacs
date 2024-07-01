@@ -538,7 +538,7 @@ void gmx::LegacySimulator::do_rerun()
         {
             if (rerun_fr.bLambda)
             {
-                ir->fepvals->init_lambda = rerun_fr.lambda;
+                ir->fepvals->init_lambda_without_states = rerun_fr.lambda;
             }
             else
             {

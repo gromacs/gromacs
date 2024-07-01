@@ -939,7 +939,11 @@ void LegacySimulator::do_tpi()
 
     auto* mdatoms = mdAtoms_->mdatoms();
     atoms2md(topGlobal_, *inputRec_, -1, {}, topGlobal_.natoms, mdAtoms_);
-    update_mdatoms(mdatoms, inputRec_->fepvals->init_lambda);
+    const double initMassLambda =
+            (inputRec_->efep == FreeEnergyPerturbationType::No
+                     ? 0.0
+                     : inputRec_->fepvals->initialLambda(FreeEnergyPerturbationCouplingType::Mass));
+    update_mdatoms(mdatoms, initMassLambda);
 
     /* Print to log file  */
     walltime_accounting_start_time(wallTimeAccounting_);

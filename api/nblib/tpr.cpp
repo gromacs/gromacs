@@ -110,7 +110,11 @@ TprReader::TprReader(std::string filename)
     std::unique_ptr<gmx::MDAtoms> mdAtoms =
             gmx::makeMDAtoms(nullptr, molecularTopology, inputRecord, false);
     atoms2md(molecularTopology, inputRecord, -1, {}, ntopatoms, mdAtoms.get());
-    update_mdatoms(mdAtoms->mdatoms(), inputRecord.fepvals->init_lambda);
+    const double initMassLambda =
+            (inputRecord.efep == FreeEnergyPerturbationType::No
+                     ? 0.0
+                     : inputRecord.fepvals->initialLambda(FreeEnergyPerturbationCouplingType::Mass));
+    update_mdatoms(mdAtoms->mdatoms(), initMassLambda);
     auto numParticles = mdAtoms->mdatoms()->nr;
     charges_.resize(numParticles);
     particleTypeIdOfAllParticles_.resize(numParticles);
