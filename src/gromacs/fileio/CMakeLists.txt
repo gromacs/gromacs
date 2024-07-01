@@ -84,10 +84,8 @@ if(GMX_USE_HDF5)
     # Use the 1.10 version of the API. This is required to avoid new function macros (overloads) with different parameters.
     target_compile_options(fileio INTERFACE "-DH5_USE_110_API")
 
-    target_include_directories(fileio INTERFACE
-                           $<BUILD_INTERFACE:${HDF5_C_INCLUDE_DIR}>
-                           $<BUILD_INTERFACE:${HDF5_INCLUDE_DIRS}>)
-    target_link_libraries(fileio INTERFACE ${HDF5_C_LIBRARY_hdf5} SZ3 hdf5sz3)
+    target_include_directories(fileio INTERFACE ${HDF5_INCLUDE_DIRS})
+    target_link_libraries(fileio INTERFACE ${HDF5_LIBRARIES} SZ3 hdf5sz3)
 endif()
 # Source files have the following private module dependencies.
 #target_link_libraries(fileio PRIVATE tng_io)
