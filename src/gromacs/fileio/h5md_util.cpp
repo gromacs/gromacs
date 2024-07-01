@@ -95,18 +95,20 @@ void setNumericFillValue(const hid_t dataSetCreatePropertyList, const hid_t data
  */
 void setLossySz3CompressionProperties(const hid_t propertyList, const int sz3Mode, const double compressionError)
 {
-    size_t        numCompressionSettingsElements;
-    unsigned int* compressionSettings = nullptr;
-    SZ_errConfigToCdArray(
-            &numCompressionSettingsElements, &compressionSettings, sz3Mode, compressionError, compressionError, 0, 0);
-    herr_t status = H5Pset_filter(
-            propertyList, H5Z_FILTER_SZ3, H5Z_FLAG_MANDATORY, numCompressionSettingsElements, compressionSettings);
-    free(compressionSettings);
-    if (status < 0)
+    SZ3::Config configuration;
+    if (get_SZ3_conf_from_H5(propertyList, configuration) < 0)
     {
         H5Eprint2(H5E_DEFAULT, nullptr);
-        throw gmx::FileIOError("Cannot set SZ3 compression.");
+        throw gmx::FileIOError("Cannot get SZ3 compression configuration.");
     }
+    configuration.absErrorBound = compressionError;
+    configuration.relErrorBound = compressionError;
+    if (set_SZ3_conf_to_H5(propertyList, configuration) < 0)
+    {
+        H5Eprint2(H5E_DEFAULT, nullptr);
+        throw gmx::FileIOError("Cannot set SZ3 compression configuration.");
+    }
+
     if (H5Zfilter_avail(H5Z_FILTER_SZ3) < 0)
     {
         H5Eprint2(H5E_DEFAULT, nullptr);
@@ -143,16 +145,11 @@ hid_t openOrCreateGroup(const hid_t container, const char* name)
 
 void registerSz3FilterImplicitly()
 {
-    hid_t         propertyList = H5Pcreate(H5P_DATASET_CREATE);
-    int           sz3Mode      = 0; // 0: ABS, 1: REL
-    size_t        numCompressionSettingsElements;
-    unsigned int* compressionSettings = nullptr;
-    SZ_errConfigToCdArray(&numCompressionSettingsElements, &compressionSettings, sz3Mode, 0, 0, 0, 0);
-    herr_t status = H5Pset_filter(
-            propertyList, H5Z_FILTER_SZ3, H5Z_FLAG_MANDATORY, numCompressionSettingsElements, compressionSettings);
-    free(compressionSettings);
+    hid_t       propertyList = H5Pcreate(H5P_DATASET_CREATE);
+    SZ3::Config configuration;
+    herr_t      status = set_SZ3_conf_to_H5(propertyList, configuration);
 
-    /* For some reason status is 0 even if the filter could not be found. Check if any HDF5 errors have occured */
+    /* For some reason status can be 0 even if the filter could not be found. Check if any HDF5 errors have occured */
     ssize_t numHdf5Errors = H5Eget_num(H5E_DEFAULT);
     if (status < 0 || numHdf5Errors > 0)
     {
@@ -617,40 +614,22 @@ double getDataSetSz3CompressionError(const hid_t dataSet)
     {
         return -1;
     }
-    int    dimSize     = 0;
-    int    dataType    = 0;
-    int    errorMode   = 0;
-    double absError    = 0;
-    double relError    = 0;
-    double l2normError = 0;
-    double psNr        = 0;
-    size_t r1 = 0, r2 = 0, r3 = 0, r4 = 0, r5 = 0;
-    int withErrorInfo = checkCDValuesWithErrors(numCompressionSettingsElements, compressionSettingsValues);
-    if (!withErrorInfo)
+    SZ3::Config configuration;
+    if (get_SZ3_conf_from_H5(propertyList, configuration) < 0)
     {
-        return -1;
+        throw gmx::FileIOError("Cannot get SZ3 compression configuration.");
     }
-    SZ_cdArrayToMetaDataErr(numCompressionSettingsElements,
-                            compressionSettingsValues,
-                            &dimSize,
-                            &dataType,
-                            &r5,
-                            &r4,
-                            &r3,
-                            &r2,
-                            &r1,
-                            &errorMode,
-                            &absError,
-                            &relError,
-                            &l2normError,
-                            &psNr);
-    if (errorMode == 0)
+    if (configuration.errorBoundMode == SZ3::EB_ABS)
     {
-        return absError;
+        return configuration.absErrorBound;
     }
-    else if (errorMode == 1)
+    else if (configuration.errorBoundMode == SZ3::EB_REL)
     {
-        return relError;
+        return configuration.relErrorBound;
+    }
+    else
+    {
+        printf("Unsupported SZ3 error bound mode. Cannot get compression error bound.\n");
     }
     return -1;
 }

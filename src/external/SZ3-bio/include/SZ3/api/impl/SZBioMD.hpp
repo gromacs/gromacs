@@ -4,11 +4,14 @@
 #include "SZ3/compressor/SZGeneralCompressor.hpp"
 #include "SZ3/frontend/SZBioMDFrontend.hpp"
 #include "SZ3/quantizer/IntegerQuantizer.hpp"
+#include "SZ3/frontend/SZBioMDXtcBasedFrontend.hpp"
+#include "SZ3/encoder/XtcBasedEncoder.hpp"
 #include "SZ3/predictor/ComposedPredictor.hpp"
 #include "SZ3/predictor/LorenzoPredictor.hpp"
 #include "SZ3/predictor/RegressionPredictor.hpp"
 #include "SZ3/predictor/PolyRegressionPredictor.hpp"
 #include "SZ3/lossless/Lossless_zstd.hpp"
+#include "SZ3/lossless/Lossless_bypass.hpp"
 #include "SZ3/utils/Iterator.hpp"
 #include "SZ3/utils/Statistic.hpp"
 #include "SZ3/utils/Extraction.hpp"
@@ -19,15 +22,13 @@
 #include <memory>
 
 namespace SZ3 {
-
-
+    
     template<class T, uint N>
     char *SZ_compress_bioMD(Config &conf, T *data, size_t &outSize) {
-
         assert(N == conf.N);
         assert(conf.cmprAlgo == ALGO_BIOMD);
         calAbsErrorBound(conf, data);
-
+        
         char *cmpData;
         auto quantizer = LinearQuantizer<T>(conf.absErrorBound, conf.quantbinCnt / 2);
         auto sz = make_sz_general_compressor<T, N>(make_sz_bio_frontend<T, N>(conf, quantizer), HuffmanEncoder<int>(),
@@ -35,18 +36,40 @@ namespace SZ3 {
         cmpData = (char *) sz->compress(conf, data, outSize);
         return cmpData;
     }
-
-
+    
     template<class T, uint N>
     void SZ_decompress_bioMD(const Config &conf, char *cmpData, size_t cmpSize, T *decData) {
         assert(conf.cmprAlgo == ALGO_BIOMD);
-
+        
         uchar const *cmpDataPos = (uchar *) cmpData;
         LinearQuantizer<T> quantizer;
         auto sz = make_sz_general_compressor<T, N>(make_sz_bio_frontend<T, N>(conf, quantizer),
                                                    HuffmanEncoder<int>(), Lossless_zstd());
         sz->decompress(cmpDataPos, cmpSize, decData);
-
     }
+    
+    template<class T, uint N>
+    char *SZ_compress_bioMDXtcBased(Config &conf, T *data, size_t &outSize) {
+        assert(N == conf.N);
+        assert(conf.cmprAlgo == ALGO_BIOMDXTC);
+        calAbsErrorBound(conf, data);
+        
+        char *cmpData;
+        auto sz = make_sz_general_compressor<T, N>(SZBioMDXtcBasedFrontend<T, N>(conf), XtcBasedEncoder<int>(),
+                                                   Lossless_bypass());
+        cmpData = (char *) sz->compress(conf, data, outSize);
+        return cmpData;
+    }
+    
+    template<class T, uint N>
+    void SZ_decompress_bioMDXtcBased(const Config &conf, char *cmpData, size_t cmpSize, T *decData) {
+        assert(conf.cmprAlgo == ALGO_BIOMDXTC);
+        
+        const uchar *cmpDataPos = (uchar *) cmpData;
+        auto sz = make_sz_general_compressor<T, N>(SZBioMDXtcBasedFrontend<T, N>(conf),
+                                                   XtcBasedEncoder<int>(), Lossless_bypass());
+        sz->decompress(cmpDataPos, cmpSize, decData);
+    }
+    
 }
 #endif

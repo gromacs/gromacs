@@ -3,18 +3,6 @@
 #include <cmath>
 #include "SZ3/api/sz.hpp"
 
-
-#define SZ_FLOAT 0
-#define SZ_DOUBLE 1
-#define SZ_UINT8 2
-#define SZ_INT8 3
-#define SZ_UINT16 4
-#define SZ_INT16 5
-#define SZ_UINT32 6
-#define SZ_INT32 7
-#define SZ_UINT64 8
-#define SZ_INT64 9
-
 void usage() {
     printf("Note: SZ3 command line arguments are backward compatible with SZ2, \n");
     printf("      use -h2 to show the supported SZ2 command line arguments. \n");
@@ -126,12 +114,12 @@ template<class T>
 void compress(char *inPath, char *cmpPath, SZ3::Config conf) {
     T *data = new T[conf.num];
     SZ3::readfile<T>(inPath, conf.num, data);
-
+    
     size_t outSize;
     SZ3::Timer timer(true);
     char *bytes = SZ_compress<T>(conf, data, outSize);
     double compress_time = timer.stop();
-
+    
     char outputFilePath[1024];
     if (cmpPath == nullptr) {
         snprintf(outputFilePath, 1024, "%s.sz", inPath);
@@ -139,11 +127,11 @@ void compress(char *inPath, char *cmpPath, SZ3::Config conf) {
         strcpy(outputFilePath, cmpPath);
     }
     SZ3::writefile(outputFilePath, bytes, outSize);
-
+    
     printf("compression ratio = %.2f \n", conf.num * 1.0 * sizeof(T) / outSize);
     printf("compression time = %f\n", compress_time);
     printf("compressed data file = %s\n", outputFilePath);
-
+    
     delete[]data;
     delete[]bytes;
 }
@@ -152,14 +140,14 @@ template<class T>
 void decompress(char *inPath, char *cmpPath, char *decPath,
                 SZ3::Config conf,
                 int binaryOutput, int printCmpResults) {
-
+    
     size_t cmpSize;
     auto cmpData = SZ3::readfile<char>(cmpPath, cmpSize);
-
+    
     SZ3::Timer timer(true);
     T *decData = SZ_decompress<T>(conf, cmpData.get(), cmpSize);
     double compress_time = timer.stop();
-
+    
     char outputFilePath[1024];
     if (decPath == nullptr) {
         snprintf(outputFilePath, 1024, "%s.out", cmpPath);
@@ -179,7 +167,7 @@ void decompress(char *inPath, char *cmpPath, char *decPath,
         SZ3::verify<T>(ori_data.get(), decData, conf.num);
     }
     delete[]decData;
-
+    
     printf("compression ratio = %f\n", conf.num * sizeof(T) * 1.0 / cmpSize);
     printf("decompression time = %f seconds.\n", compress_time);
     printf("decompressed file = %s\n", outputFilePath);
@@ -196,7 +184,7 @@ int main(int argc, char *argv[]) {
     char *conPath = nullptr;
     char *decPath = nullptr;
     bool delCmpPath = false;
-
+    
     char *errBoundMode = nullptr;
     char *errBound = nullptr;
     char *absErrorBound = nullptr;
@@ -204,20 +192,20 @@ int main(int argc, char *argv[]) {
     char *pwrErrorBound = nullptr;
     char *psnrErrorBound = nullptr;
     char *normErrorBound = nullptr;
-
+    
     bool sz2mode = false;
-
+    
     size_t r4 = 0;
     size_t r3 = 0;
     size_t r2 = 0;
     size_t r1 = 0;
-
+    
     size_t i = 0;
     int status;
     if (argc == 1)
         usage();
     int width = -1;
-
+    
     for (i = 1; i < argc; i++) {
         if (argv[i][0] != '-' || argv[i][2]) {
             if (argv[i][1] == 'h' && argv[i][2] == '2') {
@@ -227,23 +215,17 @@ int main(int argc, char *argv[]) {
             }
         }
         switch (argv[i][1]) {
-            case 'h':
-                usage();
+            case 'h':usage();
                 exit(0);
-            case 'v':
-                printf("version: %s\n", SZ3_VER);
+            case 'v':printf("version: %s\n", SZ3_VER);
                 exit(0);
-            case 'b':
-                binaryOutput = true;
+            case 'b':binaryOutput = true;
                 break;
-            case 't':
-                binaryOutput = false;
+            case 't':binaryOutput = false;
                 break;
-            case 'a':
-                printCmpResults = 1;
+            case 'a':printCmpResults = 1;
                 break;
-            case 'z':
-                compression = true;
+            case 'z':compression = true;
                 if (i + 1 < argc) {
                     cmpPath = argv[i + 1];
                     if (cmpPath[0] != '-')
@@ -252,8 +234,7 @@ int main(int argc, char *argv[]) {
                         cmpPath = nullptr;
                 }
                 break;
-            case 'x':
-                sz2mode = true;
+            case 'x':sz2mode = true;
                 decompression = true;
                 if (i + 1 < argc) {
                     decPath = argv[i + 1];
@@ -263,11 +244,9 @@ int main(int argc, char *argv[]) {
                         decPath = nullptr;
                 }
                 break;
-            case 'f':
-                dataType = SZ_FLOAT;
+            case 'f':dataType = SZ_FLOAT;
                 break;
-            case 'd':
-                dataType = SZ_DOUBLE;
+            case 'd':dataType = SZ_DOUBLE;
                 break;
             case 'I':
                 if (++i == argc || sscanf(argv[i], "%d", &width) != 1) {
@@ -291,8 +270,7 @@ int main(int argc, char *argv[]) {
                     usage();
                 decPath = argv[i];
                 break;
-            case 's':
-                sz2mode = true;
+            case 's':sz2mode = true;
                 if (++i == argc)
                     usage();
                 cmpPath = argv[i];
@@ -357,18 +335,17 @@ int main(int argc, char *argv[]) {
                     usage();
                 psnrErrorBound = argv[i];
                 break;
-            default:
-                usage();
+            default:usage();
                 break;
         }
     }
-
+    
     if ((inPath == nullptr) && (cmpPath == nullptr)) {
         printf("Error: you need to specify either a raw binary data file or a compressed data file as input\n");
         usage();
         exit(0);
     }
-
+    
     if (!sz2mode && inPath != nullptr && cmpPath != nullptr) {
         compression = true;
     }
@@ -390,7 +367,7 @@ int main(int argc, char *argv[]) {
         usage();
         exit(0);
     }
-
+    
     SZ3::Config conf;
     if (r2 == 0) {
         conf = SZ3::Config(r1);
@@ -404,7 +381,7 @@ int main(int argc, char *argv[]) {
     if (compression && conPath != nullptr) {
         conf.loadcfg(conPath);
     }
-
+    
     if (errBoundMode != nullptr) {
         {
             // backward compatible with SZ2
@@ -451,9 +428,9 @@ int main(int argc, char *argv[]) {
             exit(0);
         }
     }
-
+    
     if (compression) {
-
+        
         if (dataType == SZ_FLOAT) {
             compress<float>(inPath, cmpPath, conf);
         } else if (dataType == SZ_DOUBLE) {
@@ -473,7 +450,7 @@ int main(int argc, char *argv[]) {
             printf("Error: Since you add -a option (analysis), please specify the original data path by -i <path>.\n");
             exit(0);
         }
-
+        
         if (dataType == SZ_FLOAT) {
             decompress<float>(inPath, cmpPath, decPath, conf, binaryOutput, printCmpResults);
         } else if (dataType == SZ_DOUBLE) {

@@ -72,8 +72,6 @@
 #if GMX_USE_HDF5
 #    include <hdf5.h>
 
-#    include "external/SZ3-bio/tools/H5Z-SZ3/include/H5Z_SZ3.hpp"
-
 namespace
 {
 

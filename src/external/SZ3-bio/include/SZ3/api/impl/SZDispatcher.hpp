@@ -12,10 +12,10 @@
 namespace SZ3 {
     template<class T, uint N>
     char *SZ_compress_dispatcher(Config &conf, T *data, size_t &outSize) {
-
+        
         assert(N == conf.N);
         calAbsErrorBound(conf, data);
-
+        
         char *cmpData;
         if (conf.absErrorBound == 0) {
             auto zstd = Lossless_zstd();
@@ -28,11 +28,12 @@ namespace SZ3 {
             cmpData = (char *) SZ_compress_Interp_lorenzo<T, N>(conf, data, outSize);
         } else if (conf.cmprAlgo == ALGO_BIOMD) {
             cmpData = (char *) SZ_compress_bioMD<T, N>(conf, data, outSize);
+        } else if (conf.cmprAlgo == ALGO_BIOMDXTC) {
+            cmpData = (char *) SZ_compress_bioMDXtcBased<T, N>(conf, data, outSize);
         }
         return cmpData;
     }
-
-
+    
     template<class T, uint N>
     void SZ_decompress_dispatcher(Config &conf, char *cmpData, size_t cmpSize, T *decData) {
         if (conf.absErrorBound == 0) {
@@ -45,11 +46,13 @@ namespace SZ3 {
             SZ_decompress_Interp<T, N>(conf, cmpData, cmpSize, decData);
         } else if (conf.cmprAlgo == ALGO_BIOMD) {
             SZ_decompress_bioMD<T, N>(conf, cmpData, cmpSize, decData);
+        } else if (conf.cmprAlgo == ALGO_BIOMDXTC) {
+            SZ_decompress_bioMDXtcBased<T, N>(conf, cmpData, cmpSize, decData);
         } else {
             printf("SZ_decompress_dispatcher, Method not supported\n");
             exit(0);
         }
-
+        
     }
 }
 #endif
