@@ -75,7 +75,7 @@ static std::string         s_provenanceGroupName                = "/modules/prov
 /*! \brief The container of the H5MD data. The class is designed to read/write data according to de Buyl et al., 2014
  * (https://www.sciencedirect.com/science/article/pii/S0010465514000447) and https://www.nongnu.org/h5md/h5md.html
  * The class contains a number of standard data blocks that are commonly used by GROMACS. */
-class GmxH5mdIo
+class H5md
 {
 private:
     hid_t file_; //!< The HDF5 identifier of the file. This is the H5MD root.
@@ -83,7 +83,7 @@ private:
     char filemode_; //!< Whether the file is open for reading ('r'), writing ('w') or appending ('a')
 
 public:
-    /*! \brief Construct a GmxH5mdIo object and open a GmxHdf5 file.
+    /*! \brief Construct a H5md object and open a GmxHdf5 file.
      *
      * \param[in] fileName    Name of the file to open. The same as the file path.
      * \param[in] mode        The mode to open the file, described by a lower-case letter
@@ -92,9 +92,9 @@ public:
      * overwritten, but extended. 'r' means only reading.
      * \throws FileIOError if fileName is specified and the file cannot be opened.
      */
-    GmxH5mdIo(const std::string& fileName = "", const char mode = '\0');
+    H5md(const std::string& fileName = "", const char mode = '\0');
 
-    ~GmxH5mdIo();
+    ~H5md();
 
     /*! \brief Write all unwritten data to the file.
      * \throws FileIOError    If there were errors during flushing.

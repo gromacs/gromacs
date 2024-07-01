@@ -103,7 +103,7 @@ struct t_trxstatus
     t_trxframe*          xframe;
     t_fileio*            fio;
     gmx_tng_trajectory_t tng;
-    gmx::GmxH5mdIo*      h5mdIo;
+    gmx::H5md*           h5mdIo;
     int                  natoms;
     char*                persistent_line; /* Persistent line for reading g96 trajectories */
 #if GMX_USE_PLUGINS
@@ -561,7 +561,7 @@ t_trxstatus* trjtools_gmx_prepare_h5md_writing(const std::filesystem::path& file
     snew(out, 1);
     status_init(out);
 
-    out->h5mdIo = new gmx::GmxH5mdIo(filename, filemode);
+    out->h5mdIo = new gmx::H5md(filename, filemode);
     if (filemode == 'w')
     {
         gmx::setH5mdAuthorAndCreator(out->h5mdIo);
@@ -1079,7 +1079,7 @@ bool read_first_frame(const gmx_output_env_t*      oenv,
     }
     else if (efH5MD == ftp)
     {
-        (*status)->h5mdIo = new gmx::GmxH5mdIo(fn, 'r');
+        (*status)->h5mdIo = new gmx::H5md(fn, 'r');
     }
     else
     {

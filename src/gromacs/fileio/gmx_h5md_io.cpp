@@ -74,7 +74,7 @@
 namespace
 {
 
-void setupSystemParticleProperties(gmx::GmxH5mdIo*          file,
+void setupSystemParticleProperties(gmx::H5md*               file,
                                    const t_atoms&           atoms,
                                    gmx::ArrayRef<const int> selectionIndices,
                                    std::string              selectionName)
@@ -119,7 +119,7 @@ void setupSystemParticleProperties(gmx::GmxH5mdIo*          file,
  * \param[in,out] atomTypesAdded Keeps track of which atom types have been added already.
  * \throws FileIOError If there was en error adding the atom type entries.
  */
-void addAtomTypesOfAtoms(gmx::GmxH5mdIo* file, const t_atoms& atoms, std::vector<bool>& atomTypesAdded)
+void addAtomTypesOfAtoms(gmx::H5md* file, const t_atoms& atoms, std::vector<bool>& atomTypesAdded)
 {
     hid_t   atomTypesGroup = file->createGroup(gmx::s_gromacsTopologyGroupName + "/atom_species");
     hid_t   dataType       = H5Tcopy(H5T_NATIVE_INT);
@@ -144,7 +144,7 @@ void addAtomTypesOfAtoms(gmx::GmxH5mdIo* file, const t_atoms& atoms, std::vector
  * \returns the number of atoms in the molecule type or -1 if the molecule type could not be found.
  * \throws FileIOError If there was an error reading the molecule type information.
  */
-int64_t getNumberOfAtomsOfMoleculeTypeByName(gmx::GmxH5mdIo* file, std::string molTypeName)
+int64_t getNumberOfAtomsOfMoleculeTypeByName(gmx::H5md* file, std::string molTypeName)
 {
     std::string moleculeTypesGroupName = gmx::s_gromacsTopologyGroupName + "/molecule_types";
     std::string moleculeTypeName       = moleculeTypesGroupName + "/" + molTypeName;
@@ -168,7 +168,7 @@ int64_t getNumberOfAtomsOfMoleculeTypeByName(gmx::GmxH5mdIo* file, std::string m
  * \param[in] molBlockIndices The GROMACS data structure containing the indices of the molecule block.
  * \throws FileIOError If there was an error adding the molecule type information.
  */
-void addBlockOfMoleculeType(gmx::GmxH5mdIo*             file,
+void addBlockOfMoleculeType(gmx::H5md*                  file,
                             const std::string&          moleculeTypeName,
                             size_t                      molBlockIndex,
                             size_t                      numMol,
@@ -265,7 +265,7 @@ void addBlockOfMoleculeType(gmx::GmxH5mdIo*             file,
  * \returns the H5MD ID of the molecule type group
  * \throws FileIOError If there was an error adding the molecule type information.
  */
-hid_t addMoleculeType(gmx::GmxH5mdIo* file, const gmx_moltype_t& molType)
+hid_t addMoleculeType(gmx::H5md* file, const gmx_moltype_t& molType)
 {
     std::string moleculeTypesGroupName = gmx::s_gromacsTopologyGroupName + "/molecule_types";
     file->createGroup(moleculeTypesGroupName);
@@ -320,7 +320,7 @@ hid_t addMoleculeType(gmx::GmxH5mdIo* file, const gmx_moltype_t& molType)
  * of the system. Can be a nullptr, in which case the bonds will not be added.
  * \throws FileIOError If there was an error adding the connectivity records.
  */
-void addMoleculeTypeBondsToTopology(gmx::GmxH5mdIo* gmx_unused                file,
+void addMoleculeTypeBondsToTopology(gmx::H5md* gmx_unused                     file,
                                     hid_t                                     molTypeGroup,
                                     const gmx_moltype_t&                      molType,
                                     int64_t                                   numMols,
@@ -431,7 +431,7 @@ bool hasSeparateSelection(/*const gmx_mtop_t& topology,*/ gmx::ArrayRef<const in
 namespace gmx
 {
 
-void setH5mdAuthorAndCreator(GmxH5mdIo* file)
+void setH5mdAuthorAndCreator(H5md* file)
 {
 #if GMX_USE_HDF5
     char tmpUserName[gmx::c_maxFullNameLength];
@@ -457,7 +457,7 @@ void setH5mdAuthorAndCreator(GmxH5mdIo* file)
 #endif
 }
 
-void setupMolecularSystemParticleData(GmxH5mdIo*               file,
+void setupMolecularSystemParticleData(H5md*                    file,
                                       const gmx_mtop_t&        topology,
                                       gmx::ArrayRef<const int> index,
                                       std::string              selectionName)
@@ -502,7 +502,7 @@ void setupMolecularSystemParticleData(GmxH5mdIo*               file,
 #endif
 }
 
-MoleculeBlockIndices getMoleculeBlockIndicesByIndex(GmxH5mdIo* file, size_t molBlockIndex)
+MoleculeBlockIndices getMoleculeBlockIndicesByIndex(H5md* file, size_t molBlockIndex)
 {
 #if GMX_USE_HDF5
     std::string moleculeBlocksName  = s_gromacsTopologyGroupName + "/molecule_blocks";
@@ -557,7 +557,7 @@ MoleculeBlockIndices getMoleculeBlockIndicesByIndex(GmxH5mdIo* file, size_t molB
 #endif
 }
 
-void setupMolecularSystemTopology(GmxH5mdIo*               file,
+void setupMolecularSystemTopology(H5md*                    file,
                                   const gmx_mtop_t&        topology,
                                   gmx::ArrayRef<const int> index,
                                   bool                     abortIfPresent,
@@ -656,7 +656,7 @@ void setupMolecularSystemTopology(GmxH5mdIo*               file,
 #endif
 }
 
-void writeFrameToStandardDataBlocks(GmxH5mdIo*        file,
+void writeFrameToStandardDataBlocks(H5md*             file,
                                     int64_t           step,
                                     real              time,
                                     real              lambda,
@@ -772,7 +772,7 @@ void writeFrameToStandardDataBlocks(GmxH5mdIo*        file,
 #endif
 }
 
-bool readNextFrameOfStandardDataBlocks(GmxH5mdIo*        file,
+bool readNextFrameOfStandardDataBlocks(H5md*             file,
                                        int64_t*          step,
                                        real*             time,
                                        real*             lambda,
@@ -872,7 +872,7 @@ bool readNextFrameOfStandardDataBlocks(GmxH5mdIo*        file,
 #endif
 }
 
-bool copyProvenanceRecords(GmxH5mdIo* srcFile, GmxH5mdIo* destFile)
+bool copyProvenanceRecords(H5md* srcFile, H5md* destFile)
 {
 #if GMX_USE_HDF5
     hid_t srcModulesGroup = srcFile->getGroupId("/modules");
@@ -910,27 +910,27 @@ extern template void setAttribute<int64_t>(hid_t, const char*, int64_t, hid_t);
 
 extern template bool getAttribute<int64_t>(hid_t, const char*, int64_t*);
 
-extern template void GmxH5mdIo::setNumericDataSet<float>(const std::string&,
-                                                         const std::string&,
-                                                         const std::vector<float>&,
-                                                         const std::string&,
-                                                         bool);
-extern template void GmxH5mdIo::setNumericDataSet<double>(const std::string&,
-                                                          const std::string&,
-                                                          const std::vector<double>&,
-                                                          const std::string&,
-                                                          bool);
-extern template void GmxH5mdIo::setNumericDataSet<int>(const std::string&,
-                                                       const std::string&,
-                                                       const std::vector<int>&,
-                                                       const std::string&,
-                                                       bool);
-extern template void GmxH5mdIo::setNumericDataSet<std::int64_t>(const std::string&,
-                                                                const std::string&,
-                                                                const std::vector<std::int64_t>&,
-                                                                const std::string&,
-                                                                bool);
-extern template void GmxH5mdIo::setNumericDataSet<std::pair<std::int64_t, std::int64_t>>(
+extern template void H5md::setNumericDataSet<float>(const std::string&,
+                                                    const std::string&,
+                                                    const std::vector<float>&,
+                                                    const std::string&,
+                                                    bool);
+extern template void H5md::setNumericDataSet<double>(const std::string&,
+                                                     const std::string&,
+                                                     const std::vector<double>&,
+                                                     const std::string&,
+                                                     bool);
+extern template void H5md::setNumericDataSet<int>(const std::string&,
+                                                  const std::string&,
+                                                  const std::vector<int>&,
+                                                  const std::string&,
+                                                  bool);
+extern template void H5md::setNumericDataSet<std::int64_t>(const std::string&,
+                                                           const std::string&,
+                                                           const std::vector<std::int64_t>&,
+                                                           const std::string&,
+                                                           bool);
+extern template void H5md::setNumericDataSet<std::pair<std::int64_t, std::int64_t>>(
         const std::string&,
         const std::string&,
         const std::vector<std::pair<std::int64_t, std::int64_t>>&,

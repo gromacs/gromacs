@@ -57,13 +57,13 @@ struct MoleculeBlockIndices;
 
 namespace gmx
 {
-class GmxH5mdIo;
+class H5md;
 
 /*! \brief Set the author and creator fields based on user and program data available in gromacs.
 
  * \param[in] file     The H5MD file manager to use.
  */
-void setH5mdAuthorAndCreator(GmxH5mdIo* file);
+void setH5mdAuthorAndCreator(H5md* file);
 
 /*! \brief Setup molecular system particle related data to the file. Write the data that is present from the beginning.
  *
@@ -76,7 +76,7 @@ void setH5mdAuthorAndCreator(GmxH5mdIo* file);
  * \param[in] selectionName The name of the atom selection specified by index.
  * \throws FileIOError If there is no file open or if the data could not be written.
  */
-void setupMolecularSystemParticleData(GmxH5mdIo*               file,
+void setupMolecularSystemParticleData(H5md*                    file,
                                       const gmx_mtop_t&        topology,
                                       gmx::ArrayRef<const int> index         = {},
                                       const std::string        selectionName = "");
@@ -90,7 +90,7 @@ void setupMolecularSystemParticleData(GmxH5mdIo*               file,
  * will be empty.
  * \throws FileIOError If there was en error reading the data.
  */
-MoleculeBlockIndices getMoleculeBlockIndicesByIndex(GmxH5mdIo* file, size_t molBlockIndex);
+MoleculeBlockIndices getMoleculeBlockIndicesByIndex(H5md* file, size_t molBlockIndex);
 
 /*! \brief Setup molecular system topology data.
  *
@@ -103,7 +103,7 @@ MoleculeBlockIndices getMoleculeBlockIndicesByIndex(GmxH5mdIo* file, size_t molB
  * to VMD specifications in the H5MD group /parameters/vmd_structure/.
  * \throws FileIOError If there is no file open or if the data could not be written.
  */
-void setupMolecularSystemTopology(GmxH5mdIo*               file,
+void setupMolecularSystemTopology(H5md*                    file,
                                   const gmx_mtop_t&        topology,
                                   gmx::ArrayRef<const int> index                 = {},
                                   bool                     abortIfPresent        = true,
@@ -124,7 +124,7 @@ void setupMolecularSystemTopology(GmxH5mdIo*               file,
  * \param[in] selectionName The name of the selection to use.
  * \throws FileIOError    If there is no file open or if errors occured during writing.
  */
-void writeFrameToStandardDataBlocks(GmxH5mdIo*        file,
+void writeFrameToStandardDataBlocks(H5md*             file,
                                     int64_t           step,
                                     real              time,
                                     real              lambda,
@@ -159,7 +159,7 @@ void writeFrameToStandardDataBlocks(GmxH5mdIo*        file,
  * \returns Whether any frame was read or not.
  * \throws FileIOError If there was an error reading the next frame or if the data type of the data was unknown.
  */
-bool readNextFrameOfStandardDataBlocks(GmxH5mdIo*        file,
+bool readNextFrameOfStandardDataBlocks(H5md*             file,
                                        int64_t*          step,
                                        real*             time,
                                        real*             lambda,
@@ -181,7 +181,7 @@ bool readNextFrameOfStandardDataBlocks(GmxH5mdIo*        file,
  * \param[in] destFile The H5MD file manager of the destination file.
  * \returns Whether the group was copied.
  */
-bool copyProvenanceRecords(GmxH5mdIo* srcFile, GmxH5mdIo* destFile);
+bool copyProvenanceRecords(H5md* srcFile, H5md* destFile);
 
 } // namespace gmx
 #endif // GMX_FILEIO_GMXH5MD_IO_H

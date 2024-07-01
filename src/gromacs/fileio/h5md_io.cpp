@@ -158,7 +158,7 @@ void setPluginPath()
 namespace gmx
 {
 
-GmxH5mdIo::GmxH5mdIo(const std::string& fileName, const char mode)
+H5md::H5md(const std::string& fileName, const char mode)
 {
 #if GMX_USE_HDF5
     H5Eset_auto2(H5E_DEFAULT, nullptr, nullptr); // Disable HDF5 error output, e.g. when items are not found.
@@ -214,7 +214,7 @@ GmxH5mdIo::GmxH5mdIo(const std::string& fileName, const char mode)
 #endif
 }
 
-GmxH5mdIo::~GmxH5mdIo()
+H5md::~H5md()
 {
 #if GMX_USE_HDF5
     if (file_ >= 0)
@@ -238,7 +238,7 @@ GmxH5mdIo::~GmxH5mdIo()
 #endif
 }
 
-void GmxH5mdIo::flush()
+void H5md::flush()
 {
 #if GMX_USE_HDF5
     if (file_ >= 0)
@@ -264,7 +264,7 @@ void GmxH5mdIo::flush()
 #endif
 }
 
-int GmxH5mdIo::initGroupTimeDataBlocksFromFile(const std::string& groupName)
+int H5md::initGroupTimeDataBlocksFromFile(const std::string& groupName)
 {
 #if GMX_USE_HDF5
     int   numDataBlocksBefore = dataBlocks_.size();
@@ -299,7 +299,7 @@ int GmxH5mdIo::initGroupTimeDataBlocksFromFile(const std::string& groupName)
 #endif
 }
 
-std::string GmxH5mdIo::getH5mdRootVersionNumber()
+std::string H5md::getH5mdRootVersionNumber()
 {
 #if GMX_USE_HDF5
     int   majorVersion, minorVersion;
@@ -317,7 +317,7 @@ std::string GmxH5mdIo::getH5mdRootVersionNumber()
 #endif
 }
 
-void GmxH5mdIo::setAuthor(const std::string& authorName)
+void H5md::setAuthor(const std::string& authorName)
 {
 #if GMX_USE_HDF5
     hid_t authorGroup = openOrCreateGroup(file_, "h5md/author");
@@ -330,7 +330,7 @@ void GmxH5mdIo::setAuthor(const std::string& authorName)
 #endif
 }
 
-std::string GmxH5mdIo::getAuthor()
+std::string H5md::getAuthor()
 {
 #if GMX_USE_HDF5
     hid_t authorGroup = openOrCreateGroup(file_, "h5md/author");
@@ -346,7 +346,7 @@ std::string GmxH5mdIo::getAuthor()
 #endif
 }
 
-void GmxH5mdIo::setCreatorProgramName(const std::string& creatorName)
+void H5md::setCreatorProgramName(const std::string& creatorName)
 {
 #if GMX_USE_HDF5
     hid_t creatorGroup = openOrCreateGroup(file_, "h5md/creator");
@@ -358,7 +358,7 @@ void GmxH5mdIo::setCreatorProgramName(const std::string& creatorName)
 #endif
 }
 
-std::string GmxH5mdIo::getCreatorProgramName()
+std::string H5md::getCreatorProgramName()
 {
 #if GMX_USE_HDF5
     hid_t creatorGroup = openOrCreateGroup(file_, "h5md/creator");
@@ -374,7 +374,7 @@ std::string GmxH5mdIo::getCreatorProgramName()
 #endif
 }
 
-void GmxH5mdIo::setCreatorProgramVersion(const std::string& version)
+void H5md::setCreatorProgramVersion(const std::string& version)
 {
 #if GMX_USE_HDF5
     hid_t creatorGroup = openOrCreateGroup(file_, "h5md/creator");
@@ -387,7 +387,7 @@ void GmxH5mdIo::setCreatorProgramVersion(const std::string& version)
 #endif
 }
 
-std::string GmxH5mdIo::getCreatorProgramVersion()
+std::string H5md::getCreatorProgramVersion()
 {
 #if GMX_USE_HDF5
     hid_t creatorGroup = openOrCreateGroup(file_, "h5md/creator");
@@ -403,7 +403,7 @@ std::string GmxH5mdIo::getCreatorProgramVersion()
 #endif
 }
 
-hid_t GmxH5mdIo::getGroupId(const std::string& fullName)
+hid_t H5md::getGroupId(const std::string& fullName)
 {
 #if GMX_USE_HDF5
     hid_t group = H5Gopen(file_, fullName.c_str(), H5P_DEFAULT);
@@ -417,7 +417,7 @@ hid_t GmxH5mdIo::getGroupId(const std::string& fullName)
 #endif
 }
 
-hid_t GmxH5mdIo::createGroup(const std::string& fullName)
+hid_t H5md::createGroup(const std::string& fullName)
 {
 #if GMX_USE_HDF5
     hid_t group = openOrCreateGroup(file_, fullName.c_str());
@@ -430,7 +430,7 @@ hid_t GmxH5mdIo::createGroup(const std::string& fullName)
 #endif
 }
 
-hid_t GmxH5mdIo::createGroup(hid_t container, const std::string& nameInContainer)
+hid_t H5md::createGroup(hid_t container, const std::string& nameInContainer)
 {
 #if GMX_USE_HDF5
     hid_t group = openOrCreateGroup(container, nameInContainer.c_str());
@@ -445,11 +445,11 @@ hid_t GmxH5mdIo::createGroup(hid_t container, const std::string& nameInContainer
 #endif
 }
 
-void GmxH5mdIo::setStringDataSet(const std::string&              containerName,
-                                 const std::string&              dataSetName,
-                                 const std::vector<std::string>& propertyValues,
-                                 bool                            replaceExisting,
-                                 size_t                          maxStringLength)
+void H5md::setStringDataSet(const std::string&              containerName,
+                            const std::string&              dataSetName,
+                            const std::vector<std::string>& propertyValues,
+                            bool                            replaceExisting,
+                            size_t                          maxStringLength)
 {
 #if GMX_USE_HDF5
     openOrCreateGroup(file_, containerName.c_str());
@@ -515,11 +515,11 @@ void GmxH5mdIo::setStringDataSet(const std::string&              containerName,
 }
 
 template<typename T>
-void GmxH5mdIo::setNumericDataSet(const std::string&    containerName,
-                                  const std::string&    dataSetName,
-                                  const std::vector<T>& propertyValues,
-                                  const std::string&    unit,
-                                  bool                  replaceExisting)
+void H5md::setNumericDataSet(const std::string&    containerName,
+                             const std::string&    dataSetName,
+                             const std::vector<T>& propertyValues,
+                             const std::string&    unit,
+                             bool                  replaceExisting)
 {
 #if GMX_USE_HDF5
     openOrCreateGroup(file_, containerName.c_str());
@@ -587,8 +587,7 @@ void GmxH5mdIo::setNumericDataSet(const std::string&    containerName,
 #endif
 }
 
-std::vector<std::string> GmxH5mdIo::readStringDataSet(const std::string& containerName,
-                                                      const std::string& dataSetName)
+std::vector<std::string> H5md::readStringDataSet(const std::string& containerName, const std::string& dataSetName)
 {
 #if GMX_USE_HDF5
     std::string              fullDataSetName(containerName + "/" + dataSetName);
@@ -627,7 +626,7 @@ std::vector<std::string> GmxH5mdIo::readStringDataSet(const std::string& contain
 }
 
 template<typename T>
-std::vector<T> GmxH5mdIo::readNumericDataSet(const std::string& containerName, const std::string& dataSetName)
+std::vector<T> H5md::readNumericDataSet(const std::string& containerName, const std::string& dataSetName)
 {
 #if GMX_USE_HDF5
     std::string    fullDataSetName(containerName + "/" + dataSetName);
@@ -692,16 +691,16 @@ std::vector<T> GmxH5mdIo::readNumericDataSet(const std::string& containerName, c
 #endif
 }
 
-void GmxH5mdIo::writeDataFrame(int64_t              step,
-                               real                 time,
-                               const std::string&   dataBlockFullName,
-                               int                  dataDimensionalityFirstDim,
-                               int                  dataDimensionalitySecondDim,
-                               const real*          data,
-                               const std::string&   unit,
-                               hsize_t              numberOfFramesPerChunk,
-                               CompressionAlgorithm compressionAlgorithm,
-                               double               lossyCompressionError)
+void H5md::writeDataFrame(int64_t              step,
+                          real                 time,
+                          const std::string&   dataBlockFullName,
+                          int                  dataDimensionalityFirstDim,
+                          int                  dataDimensionalitySecondDim,
+                          const real*          data,
+                          const std::string&   unit,
+                          hsize_t              numberOfFramesPerChunk,
+                          CompressionAlgorithm compressionAlgorithm,
+                          double               lossyCompressionError)
 
 {
 #if GMX_USE_HDF5
@@ -759,7 +758,7 @@ void GmxH5mdIo::writeDataFrame(int64_t              step,
 #endif
 }
 
-bool GmxH5mdIo::readNextFrameOfDataBlock(const std::string& dataBlockFullName, real* data, int64_t stepToRead)
+bool H5md::readNextFrameOfDataBlock(const std::string& dataBlockFullName, real* data, int64_t stepToRead)
 {
 #if GMX_USE_HDF5
     for (auto& dataBlock : dataBlocks_)
@@ -784,7 +783,7 @@ bool GmxH5mdIo::readNextFrameOfDataBlock(const std::string& dataBlockFullName, r
 #endif
 }
 
-double GmxH5mdIo::getLossyCompressionErrorOfDataBlock(const std::string& dataBlockFullName)
+double H5md::getLossyCompressionErrorOfDataBlock(const std::string& dataBlockFullName)
 {
 #if GMX_USE_HDF5
     for (const auto& dataBlock : dataBlocks_)
@@ -803,7 +802,7 @@ double GmxH5mdIo::getLossyCompressionErrorOfDataBlock(const std::string& dataBlo
 #endif
 }
 
-int64_t GmxH5mdIo::getNumberOfFrames(const std::string& dataBlockName, const std::string& selectionName)
+int64_t H5md::getNumberOfFrames(const std::string& dataBlockName, const std::string& selectionName)
 {
 #if GMX_USE_HDF5
     GMX_ASSERT(dataBlockName != "", "There must be a datablock name to look for.");
@@ -825,7 +824,7 @@ int64_t GmxH5mdIo::getNumberOfFrames(const std::string& dataBlockName, const std
 #endif
 }
 
-int64_t GmxH5mdIo::getNumberOfParticles(const std::string& dataBlockName, const std::string& selectionName)
+int64_t H5md::getNumberOfParticles(const std::string& dataBlockName, const std::string& selectionName)
 {
 #if GMX_USE_HDF5
     GMX_ASSERT(dataBlockName != "", "There must be a datablock name to look for.");
@@ -847,7 +846,7 @@ int64_t GmxH5mdIo::getNumberOfParticles(const std::string& dataBlockName, const 
 #endif
 }
 
-real GmxH5mdIo::getFirstTime(const std::string& dataBlockName, const std::string& selectionName)
+real H5md::getFirstTime(const std::string& dataBlockName, const std::string& selectionName)
 {
 #if GMX_USE_HDF5
     GMX_ASSERT(dataBlockName != "", "There must be a datablock name to look for.");
@@ -869,7 +868,7 @@ real GmxH5mdIo::getFirstTime(const std::string& dataBlockName, const std::string
 #endif
 }
 
-real GmxH5mdIo::getFirstTimeFromAllDataBlocks()
+real H5md::getFirstTimeFromAllDataBlocks()
 {
 #if GMX_USE_HDF5
     real firstTime = std::numeric_limits<real>::max();
@@ -892,7 +891,7 @@ real GmxH5mdIo::getFirstTimeFromAllDataBlocks()
 #endif
 }
 
-std::tuple<int64_t, real> GmxH5mdIo::getNextStepAndTimeToRead()
+std::tuple<int64_t, real> H5md::getNextStepAndTimeToRead()
 {
 #if GMX_USE_HDF5
     int64_t minStepNextFrame = std::numeric_limits<int64_t>::max();
@@ -915,7 +914,7 @@ std::tuple<int64_t, real> GmxH5mdIo::getNextStepAndTimeToRead()
 #endif
 }
 
-real GmxH5mdIo::getFinalTime(const std::string& dataBlockName, const std::string& selectionName)
+real H5md::getFinalTime(const std::string& dataBlockName, const std::string& selectionName)
 {
 #if GMX_USE_HDF5
     GMX_ASSERT(dataBlockName != "", "There must be a datablock name to look for.");
@@ -937,7 +936,7 @@ real GmxH5mdIo::getFinalTime(const std::string& dataBlockName, const std::string
 #endif
 }
 
-real GmxH5mdIo::getFinalTimeFromAllDataBlocks()
+real H5md::getFinalTimeFromAllDataBlocks()
 {
 #if GMX_USE_HDF5
     real finalTime = 0;
@@ -965,9 +964,9 @@ real GmxH5mdIo::getFinalTimeFromAllDataBlocks()
 #endif
 }
 
-void GmxH5mdIo::addToProvenanceRecord(const std::string& commandLine,
-                                      const std::string& programVersion,
-                                      const std::string& comment)
+void H5md::addToProvenanceRecord(const std::string& commandLine,
+                                 const std::string& programVersion,
+                                 const std::string& comment)
 {
 #if GMX_USE_HDF5
     hid_t provenanceGroup = createGroup(s_provenanceGroupName);
@@ -1069,38 +1068,38 @@ extern template void setAttribute<double>(hid_t, const char*, double, hid_t);
 
 extern template bool getAttribute<int64_t>(hid_t, const char*, int64_t*);
 
-template void GmxH5mdIo::setNumericDataSet<float>(const std::string&,
-                                                  const std::string&,
-                                                  const std::vector<float>&,
-                                                  const std::string&,
-                                                  bool);
-template void GmxH5mdIo::setNumericDataSet<double>(const std::string&,
-                                                   const std::string&,
-                                                   const std::vector<double>&,
-                                                   const std::string&,
-                                                   bool);
-template void GmxH5mdIo::setNumericDataSet<int>(const std::string&,
-                                                const std::string&,
-                                                const std::vector<int>&,
-                                                const std::string&,
-                                                bool);
-template void GmxH5mdIo::setNumericDataSet<std::int64_t>(const std::string&,
-                                                         const std::string&,
-                                                         const std::vector<std::int64_t>&,
-                                                         const std::string&,
-                                                         bool);
-template void GmxH5mdIo::setNumericDataSet<std::pair<std::int64_t, std::int64_t>>(
+template void H5md::setNumericDataSet<float>(const std::string&,
+                                             const std::string&,
+                                             const std::vector<float>&,
+                                             const std::string&,
+                                             bool);
+template void H5md::setNumericDataSet<double>(const std::string&,
+                                              const std::string&,
+                                              const std::vector<double>&,
+                                              const std::string&,
+                                              bool);
+template void H5md::setNumericDataSet<int>(const std::string&,
+                                           const std::string&,
+                                           const std::vector<int>&,
+                                           const std::string&,
+                                           bool);
+template void H5md::setNumericDataSet<std::int64_t>(const std::string&,
+                                                    const std::string&,
+                                                    const std::vector<std::int64_t>&,
+                                                    const std::string&,
+                                                    bool);
+template void H5md::setNumericDataSet<std::pair<std::int64_t, std::int64_t>>(
         const std::string&,
         const std::string&,
         const std::vector<std::pair<std::int64_t, std::int64_t>>&,
         const std::string&,
         bool);
 
-template std::vector<float> GmxH5mdIo::readNumericDataSet<float>(const std::string&, const std::string&);
-template std::vector<double> GmxH5mdIo::readNumericDataSet<double>(const std::string&, const std::string&);
-template std::vector<int> GmxH5mdIo::readNumericDataSet<int>(const std::string&, const std::string&);
-template std::vector<std::int64_t> GmxH5mdIo::readNumericDataSet<std::int64_t>(const std::string&,
-                                                                               const std::string&);
+template std::vector<float> H5md::readNumericDataSet<float>(const std::string&, const std::string&);
+template std::vector<double> H5md::readNumericDataSet<double>(const std::string&, const std::string&);
+template std::vector<int>    H5md::readNumericDataSet<int>(const std::string&, const std::string&);
+template std::vector<std::int64_t> H5md::readNumericDataSet<std::int64_t>(const std::string&,
+                                                                          const std::string&);
 
 } // namespace gmx
 

@@ -91,7 +91,7 @@ public:
     /*! \brief Open a file used as reference for further tests. */
     void openReferenceFile(const char mode)
     {
-        referenceH5mdIo_ = new gmx::GmxH5mdIo(referenceFilename_, mode);
+        referenceH5mdIo_ = new gmx::H5md(referenceFilename_, mode);
     }
 
     /*! \brief Close the reference file. */
@@ -403,7 +403,7 @@ private:
 
     gmx::test::TestFileManager fileManager_;
     std::string                referenceFilename_;
-    gmx::GmxH5mdIo*            referenceH5mdIo_;
+    gmx::H5md*                 referenceH5mdIo_;
     rvec*                      refX_;
     rvec*                      refV_;
     rvec*                      refF_;
@@ -529,20 +529,19 @@ INSTANTIATE_TEST_SUITE_P(H5mdTestWriteReadCombinations,
 
 } // namespace
 
-extern template void gmx::GmxH5mdIo::setNumericDataSet<real>(const std::string&,
-                                                             const std::string&,
-                                                             const std::vector<real>&,
-                                                             const std::string&,
-                                                             bool);
-extern template void gmx::GmxH5mdIo::setNumericDataSet<int>(const std::string&,
-                                                            const std::string&,
-                                                            const std::vector<int>&,
-                                                            const std::string&,
-                                                            bool);
+extern template void gmx::H5md::setNumericDataSet<real>(const std::string&,
+                                                        const std::string&,
+                                                        const std::vector<real>&,
+                                                        const std::string&,
+                                                        bool);
+extern template void gmx::H5md::setNumericDataSet<int>(const std::string&,
+                                                       const std::string&,
+                                                       const std::vector<int>&,
+                                                       const std::string&,
+                                                       bool);
 
-extern template std::vector<real> gmx::GmxH5mdIo::readNumericDataSet<real>(const std::string&,
-                                                                           const std::string&);
-extern template std::vector<int>  gmx::GmxH5mdIo::readNumericDataSet<int>(const std::string&,
-                                                                         const std::string&);
+extern template std::vector<real> gmx::H5md::readNumericDataSet<real>(const std::string&,
+                                                                      const std::string&);
+extern template std::vector<int> gmx::H5md::readNumericDataSet<int>(const std::string&, const std::string&);
 
 #endif // GMX_USE_HDF5

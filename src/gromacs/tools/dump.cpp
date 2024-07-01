@@ -441,9 +441,9 @@ void list_tng(const char* fn)
 void list_h5md(const char* fn)
 {
 #if GMX_USE_HDF5
-    gmx::GmxH5mdIo h5mdIo(fn, 'r');
-    real           firstTime = h5mdIo.getFirstTimeFromAllDataBlocks();
-    real           finalTime = h5mdIo.getFinalTimeFromAllDataBlocks();
+    gmx::H5md h5mdIo(fn, 'r');
+    real      firstTime = h5mdIo.getFirstTimeFromAllDataBlocks();
+    real      finalTime = h5mdIo.getFinalTimeFromAllDataBlocks();
 
     printf("First time %f, final time %f\n", firstTime, finalTime);
 

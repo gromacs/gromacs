@@ -92,8 +92,8 @@ struct gmx_mdoutf
     t_fileio*                      fp_xtc;
     gmx_tng_trajectory_t           tng;
     gmx_tng_trajectory_t           tng_low_prec;
-    gmx::GmxH5mdIo*                h5mdIo;
-    gmx::GmxH5mdIo*                h5mdIoLowPrec;
+    gmx::H5md*                     h5mdIo;
+    gmx::H5md*                     h5mdIoLowPrec;
     int                            x_compression_precision; /* only used by XTC output */
     ener_file_t                    fp_ene;
     const char*                    fn_cpt;
@@ -186,7 +186,7 @@ gmx_mdoutf_t init_mdoutf(FILE*                          fplog,
                     bCiteTng = TRUE;
                     break;
                 case efH5MD:
-                    of->h5mdIoLowPrec = new gmx::GmxH5mdIo(filename, filemode[0]);
+                    of->h5mdIoLowPrec = new gmx::H5md(filename, filemode[0]);
                     if (filemode[0] == 'w')
                     {
                         gmx::setH5mdAuthorAndCreator(of->h5mdIoLowPrec);
@@ -232,7 +232,7 @@ gmx_mdoutf_t init_mdoutf(FILE*                          fplog,
                                     "H5MD file.");
                         }
                     }
-                    of->h5mdIo = new gmx::GmxH5mdIo(filename, filemode[0]);
+                    of->h5mdIo = new gmx::H5md(filename, filemode[0]);
                     if (filemode[0] == 'w')
                     {
                         gmx::setH5mdAuthorAndCreator(of->h5mdIo);
