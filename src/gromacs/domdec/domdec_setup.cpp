@@ -848,8 +848,11 @@ void checkForValidRankCountRequests(const int                             numRan
     if (checkForLargePrimeFactors && numPPRanksRequested >= minPPRankCountToCheckForLargePrimeFactors)
     {
         const int largestDivisor = largest_divisor(numPPRanksRequested);
+        // Don't abort if the largest divisor is <= this value
+        const int c_maxAllowedPrimeFactor = 7;
         /* Check if the largest divisor is more than numPPRanks ^ (2/3) */
-        if (largestDivisor * largestDivisor * largestDivisor > numPPRanksRequested * numPPRanksRequested)
+        if (largestDivisor * largestDivisor * largestDivisor > numPPRanksRequested * numPPRanksRequested
+            && largestDivisor > c_maxAllowedPrimeFactor)
         {
             gmx_fatal(FARGS,
                       "The number of ranks selected for particle-particle work (%d) "
