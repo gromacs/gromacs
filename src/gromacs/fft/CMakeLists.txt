@@ -79,6 +79,29 @@ if (GMX_GPU_CUDA)
             gpu_3dfft_cufftmp.cpp
         )
     endif()
+elseif (GMX_GPU_HIP)
+    if (GMX_GPU_FFT_VKFFT)
+        gmx_add_libgromacs_sources(
+            # HIP-specific sources
+            gpu_3dfft_hip_vkfft.cpp
+            gpu_3dfft_impl.cpp
+            gpu_3dfft.cpp
+            )
+    elseif(GMX_GPU_FFT_HIPFFT)
+        gmx_add_libgromacs_sources(
+            # HIP-specific sources
+            gpu_3dfft_hipfft.cpp
+            gpu_3dfft_impl.cpp
+            gpu_3dfft.cpp
+            )
+    endif()
+    _gmx_add_files_to_property(HIP_SOURCES
+        # Must add these files so they can include hip_runtime.h
+        gpu_3dfft.cpp
+        gpu_3dfft_impl.cpp
+        gpu_3dfft_hip_vkfft.cpp
+        gpu_3dfft_hipfft.cpp
+        )
 elseif (GMX_GPU_OPENCL)
     if (GMX_GPU_FFT_VKFFT)
         gmx_add_libgromacs_sources(

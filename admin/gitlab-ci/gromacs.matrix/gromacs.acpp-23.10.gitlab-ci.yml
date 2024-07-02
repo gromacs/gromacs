@@ -114,7 +114,6 @@ gromacs:acpp-rocm-nightly:test:
   extends:
     - .gromacs:base:test
   rules:
-    - !reference [.rules:skip-if-dual-amd-gpus-unavailable, rules]
     - !reference [.rules:nightly-not-for-release, rules]
   image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-22.04-gcc-9-hipsycl-23.10.0-rocm-5.7.1
   variables:
@@ -132,7 +131,6 @@ gromacs:acpp-rocm-nightly:regressiontest:
   extends:
     - .gromacs:base:regressiontest
   rules:
-    - !reference [.rules:skip-if-dual-amd-gpus-unavailable, rules]
     - !reference [.rules:nightly-not-for-release, rules]
   image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-22.04-gcc-9-hipsycl-23.10.0-rocm-5.7.1
   variables:
@@ -142,7 +140,8 @@ gromacs:acpp-rocm-nightly:regressiontest:
     GPU_VENDOR: "AMD"
     GPU_COUNT: 2
   tags:
-    - $GITLAB_RUNNER_TAG_2X_AMD_GPU
+    - amd-gpu-gfx906
+  allow_failure: true   # allow job failure w/o failing pipeline, since no redundant hardware
   needs:
     - job: gromacs:acpp-rocm-nightly:build
     - job: regressiontests:prepare

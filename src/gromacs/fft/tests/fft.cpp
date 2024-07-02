@@ -58,7 +58,7 @@
 #include "gromacs/fft/gpu_3dfft.h"
 #include "gromacs/fft/parallel_3dfft.h"
 #include "gromacs/gpu_utils/clfftinitializer.h"
-#if GMX_GPU && !GMX_GPU_HIP
+#if GMX_GPU
 #    include "gromacs/gpu_utils/devicebuffer.h"
 #endif
 #include "gromacs/utility/stringutil.h"
@@ -400,7 +400,7 @@ TEST_P(ParameterizedFFTTest3D, RunsOnHost)
     checkRealGrid(realGridSize, realGridSizePadded, in_, outputRealGridValues);
 }
 
-#if GMX_GPU && !GMX_GPU_HIP
+#if GMX_GPU
 
 /*! \brief Whether the FFT is in- or out-of-place
  *
@@ -492,6 +492,12 @@ TEST_P(ParameterizedFFTTest3D, RunsOnDevices)
 
 #    if GMX_GPU_CUDA
         const FftBackend backend = FftBackend::Cufft;
+#    elif GMX_GPU_HIP
+#        if GMX_GPU_FFT_VKFFT
+        const FftBackend backend = FftBackend::HipVkfft;
+#        else
+        const FftBackend backend = FftBackend::Hipfft;
+#        endif
 #    elif GMX_GPU_OPENCL
 #        if GMX_GPU_FFT_VKFFT
         const FftBackend backend = FftBackend::OclVkfft;

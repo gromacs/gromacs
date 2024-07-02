@@ -319,7 +319,7 @@ gmx_dependent_option(
 # OpenCL           | VkFFT or clFFT according to toolchain
 # SYCL via hipSYCL | VkFFT
 # SYCL via DPCPP   | MKL
-# HIP              | hipFFT
+# HIP              | VkFFT
 # =================+======================================
 if (GMX_GPU)
     if (GMX_GPU STREQUAL CUDA)
