@@ -26,3 +26,10 @@ No parameters in default force fields in |Gromacs| were affected, so
 none have changed.
 
 :issue:`4253`
+
+Added support for DSSP v.2 in ``gmx dssp``
+""""""""""""""""""""""""""""""""""""""""""
+
+There is now the ability to choose between two different output modes: with polyproline helices
+search enabled (option "-polypro", default and corresponds to the output of DSSP v.4) and
+with polyproline helices search disabled (option "-nopolypro", corresponds to the output of DSSP v.2).

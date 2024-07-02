@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
 <ReferenceData>
-  <String Name="CommandLine">dssp -hmode gromacs -nb -cutoff 2 -hbond energy -clear</String>
+  <String Name="CommandLine">dssp -hmode dssp -nonb -cutoff 0.9 -hbond geometry -clear -polypro</String>
   <OutputData Name="Data">
     <AnalysisData Name="secondaryStructuresNum">
       <DataFrame Name="Frame0">
@@ -9,34 +9,34 @@
         <DataValues>
           <Int Name="Count">10</Int>
           <DataValue>
-            <Real Name="Value">45</Real>
-          </DataValue>
-          <DataValue>
-            <Real Name="Value">5</Real>
-          </DataValue>
-          <DataValue>
-            <Real Name="Value">10</Real>
-          </DataValue>
-          <DataValue>
-            <Real Name="Value">10</Real>
-          </DataValue>
-          <DataValue>
-            <Real Name="Value">0</Real>
-          </DataValue>
-          <DataValue>
-            <Real Name="Value">0</Real>
-          </DataValue>
-          <DataValue>
-            <Real Name="Value">0</Real>
-          </DataValue>
-          <DataValue>
-            <Real Name="Value">13</Real>
-          </DataValue>
-          <DataValue>
-            <Real Name="Value">2</Real>
-          </DataValue>
-          <DataValue>
             <Real Name="Value">37</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">9</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">20</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">18</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">4</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">36</Real>
           </DataValue>
         </DataValues>
       </DataFrame>
@@ -45,7 +45,7 @@
   <OutputFiles Name="Files">
     <File Name="-o">
       <String Name="Contents"><![CDATA[
-~~~~HHHHS~HHHHHHHHHHHHHH~=~~~=~EEEE~TT~~~~=~~S~~B~~~=~~~~HHHHHHHHHHHHT~~SSS~~EEEETTTB~~~TT~=~HHHHHHH~~SSS~~EEEEESS~~TT~~~~
+~~~S~~HHHHS~HHHHHHHHHHHHHH~TTEEEEE~~~~TT~~SS~~~S~~EEEEETT~BHHHHHHHHHHHTT~~TTS~~EEEETTTB~~~TT~BTHHHHHHH~~TTS~B~EEEESS~~TT~~~~
 ]]></String>
     </File>
     <File Name="-num">
@@ -71,16 +71,16 @@ s9 legend "α-Helices"
         <Sequence Name="Row0">
           <Int Name="Length">11</Int>
           <Real>0.000</Real>
-          <Real>45</Real>
-          <Real>5</Real>
-          <Real>10</Real>
-          <Real>10</Real>
-          <Real>0</Real>
-          <Real>0</Real>
-          <Real>0</Real>
-          <Real>13</Real>
-          <Real>2</Real>
           <Real>37</Real>
+          <Real>0</Real>
+          <Real>9</Real>
+          <Real>20</Real>
+          <Real>0</Real>
+          <Real>0</Real>
+          <Real>0</Real>
+          <Real>18</Real>
+          <Real>4</Real>
+          <Real>36</Real>
         </Sequence>
       </XvgData>
     </File>

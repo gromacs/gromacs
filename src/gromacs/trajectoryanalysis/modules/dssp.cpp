@@ -494,6 +494,7 @@ public:
                                      bool              transferredNbsMode,
                                      real              transferredCutoff,
                                      bool              transferredPiHelicesPreference,
+                                     bool              transferredSearchPolyPro,
                                      PPStretches       transferredPolyProStretch,
                                      HBondDefinition   transferredHbDef);
 
@@ -985,6 +986,7 @@ std::string SecondaryStructures::performPatternSearch(const t_trxframe& fr,
                                                       bool              transferredNbsMode,
                                                       real              transferredCutoff,
                                                       bool        transferredPiHelicesPreference,
+                                                      bool        transferredSearchPolyPro,
                                                       PPStretches transferredPolyProStretch,
                                                       HBondDefinition transferredHbDef)
 {
@@ -1004,7 +1006,10 @@ std::string SecondaryStructures::performPatternSearch(const t_trxframe& fr,
     calculateBends(fr, pbc);
     analyzeBridgesAndStrandsPatterns();
     analyzeTurnsAndHelicesPatterns();
-    calculateDihedrals(fr, pbc);
+    if (transferredSearchPolyPro)
+    {
+        calculateDihedrals(fr, pbc);
+    }
     for (auto i = static_cast<std::size_t>(SecondaryStructureTypes::Bend);
          i != static_cast<std::size_t>(SecondaryStructureTypes::Count);
          ++i)
@@ -1494,6 +1499,8 @@ private:
     bool nBSmode_ = true;
     //! Boolean value determines the removal of defective residues from the structure. Set in initial options.
     bool clearStructure_ = false;
+    //! Boolean value that determines whether the search for polyproline helices will be conducted. Set in initial options.
+    bool searchPolyPro_ = true;
     //! Real value that defines maximum distance from residue to its neighbor residue.
     real cutoff_ = 0.9;
     //! Enum value that defines polyproline helix stretch. Set in initial options.
@@ -1555,6 +1562,9 @@ void Dssp::initOptions(IOptionsContainer* options, TrajectoryAnalysisSettings* s
         "[TT]-pihelix[tt] changes pattern-search algorithm towards preference of pi-helices.[PAR]"
         "[TT]-ppstretch[tt] defines stretch value of polyproline-helices. \"shortened\" means "
         "stretch with size 2 and \"default\" means stretch with size 3.[PAR]"
+        "[TT]-polypro[tt] enables the search for polyproline helices (default behavior, equivalent "
+        "to DSSP v4). Disabling this option will result in disabling the search for polyproline "
+        "helices, reproducing the behavior of DSSP v2.[PAR]"
         "Note that [THISMODULE] currently is not capable of reproducing "
         "the secondary structure of proteins whose structure is determined by methods other than "
         "X-ray crystallography (structures in .pdb format with "
@@ -1605,6 +1615,8 @@ void Dssp::initOptions(IOptionsContainer* options, TrajectoryAnalysisSettings* s
                                .defaultValue(PPStretches::Default)
                                .enumValue(c_PPStretchesNames)
                                .description("Stretch value for PP-helices"));
+    options->addOption(
+            BooleanOption("polypro").store(&searchPolyPro_).defaultValue(true).description("Perform a search for polyproline helices"));
     settings->setHelpText(desc);
 }
 
@@ -1656,9 +1668,10 @@ void Dssp::initAfterFirstFrame(const TrajectoryAnalysisSettings& /* settings */,
 void Dssp::analyzeFrame(int frnr, const t_trxframe& fr, t_pbc* pbc, TrajectoryAnalysisModuleData* pdata)
 {
     AnalysisDataHandle dhNum_ = pdata->dataHandle(ssNumPerFrame_);
-    storage_.addData(frnr,
-                     patternSearch_.performPatternSearch(
-                             fr, pbc, nBSmode_, cutoff_, piHelicesPreference_, polyProStretch_, hbDef_));
+    storage_.addData(
+            frnr,
+            patternSearch_.performPatternSearch(
+                    fr, pbc, nBSmode_, cutoff_, piHelicesPreference_, searchPolyPro_, polyProStretch_, hbDef_));
     if (!fnmPlotOut_.empty())
     {
         dhNum_.startFrame(frnr, fr.time);

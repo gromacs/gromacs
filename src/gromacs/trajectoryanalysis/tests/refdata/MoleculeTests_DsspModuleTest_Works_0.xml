@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
 <ReferenceData>
-  <String Name="CommandLine">dssp -hmode dssp -nb -cutoff 0.9 -hbond energy -clear</String>
+  <String Name="CommandLine">dssp -hmode dssp -nb -cutoff 0.9 -hbond energy -clear -polypro</String>
   <OutputData Name="Data">
     <AnalysisData Name="secondaryStructuresNum">
       <DataFrame Name="Frame0">

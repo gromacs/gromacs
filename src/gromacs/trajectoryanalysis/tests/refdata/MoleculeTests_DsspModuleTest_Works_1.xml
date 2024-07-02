@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
 <ReferenceData>
-  <String Name="CommandLine">dssp -hmode dssp -nb -cutoff 0.9 -hbond energy -noclear</String>
+  <String Name="CommandLine">dssp -hmode dssp -nb -cutoff 0.9 -hbond energy -clear -nopolypro</String>
   <OutputData Name="Data">
     <AnalysisData Name="secondaryStructuresNum">
       <DataFrame Name="Frame0">
@@ -9,7 +9,7 @@
         <DataValues>
           <Int Name="Count">10</Int>
           <DataValue>
-            <Real Name="Value">34</Real>
+            <Real Name="Value">33</Real>
           </DataValue>
           <DataValue>
             <Real Name="Value">0</Real>
@@ -45,7 +45,7 @@
   <OutputFiles Name="Files">
     <File Name="-o">
       <String Name="Contents"><![CDATA[
-~~~S~~HHHHS~HHHHHHHHHHHHHH~TTEEEEEEEE~TT~~SS~~~S~~EEEEETT~BHHHHHHHHHHHHT~~SSS~~EEEETTTB~~~TT~BHHHHHHHH~~TTS~EEEEEESS~~TT~~~~~
+~~~S~~HHHHS~HHHHHHHHHHHHHH~TTEEEEEEEE~TT~~SS~~~S~~EEEEETT~BHHHHHHHHHHHHT~~SSS~~EEEETTTB~~~TT~BHHHHHHHH~~TTS~EEEEEESS~~TT~~~~
 ]]></String>
     </File>
     <File Name="-num">
@@ -71,7 +71,7 @@ s9 legend "α-Helices"
         <Sequence Name="Row0">
           <Int Name="Length">11</Int>
           <Real>0.000</Real>
-          <Real>34</Real>
+          <Real>33</Real>
           <Real>0</Real>
           <Real>11</Real>
           <Real>16</Real>

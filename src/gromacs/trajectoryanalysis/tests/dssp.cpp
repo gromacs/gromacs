@@ -70,7 +70,8 @@ namespace
  * Tests for gmx::analysismodules::Dssp.
  */
 
-using DsspTestParams = std::tuple<std::string, std::string, std::string, real, std::string, std::string>;
+using DsspTestParams =
+        std::tuple<std::string, std::string, std::string, real, std::string, std::string, std::string>;
 
 //! Test fixture for the dssp analysis module.
 class DsspModuleTest :
@@ -85,7 +86,7 @@ class DsspModuleTest :
 // NOLINTNEXTLINE(cppcoreguidelines-owning-memory)
 TEST_P(DsspModuleTest, Works)
 {
-    std::tuple<std::string, std::string, std::string, real, std::string, std::string> params = GetParam();
+    DsspTestParams              params    = GetParam();
     const char* const           cmdline[] = { "dssp" };
     const std::string           inputFilename(std::get<0>(params));
     const std::filesystem::path inputBasename = stripExtension(inputFilename);
@@ -107,6 +108,7 @@ TEST_P(DsspModuleTest, Works)
     command.addOption("-cutoff", std::get<3>(params));
     command.addOption("-hbond", std::get<4>(params));
     command.addOption(std::string("-" + std::get<5>(params)).c_str());
+    command.addOption(std::string("-" + std::get<6>(params)).c_str());
     setOutputFile("-num",
                   formatString("%s-%s-%s-%.1f-%s-%s.xvg",
                                inputBasename.c_str(),
@@ -128,7 +130,8 @@ INSTANTIATE_TEST_SUITE_P(
                            ::testing::Values("nb", "nonb"),
                            ::testing::Values(0.9, 2.0),
                            ::testing::Values("energy", "geometry"),
-                           ::testing::Values("clear", "noclear")));
+                           ::testing::Values("clear", "noclear"),
+                           ::testing::Values("polypro", "nopolypro")));
 } // namespace
 } // namespace test
 } // namespace gmx

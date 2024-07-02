@@ -1,0 +1,88 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <String Name="CommandLine">dssp -hmode gromacs -nb -cutoff 0.9 -hbond energy -noclear -nopolypro</String>
+  <OutputData Name="Data">
+    <AnalysisData Name="secondaryStructuresNum">
+      <DataFrame Name="Frame0">
+        <Real Name="X">500</Real>
+        <DataValues>
+          <Int Name="Count">10</Int>
+          <DataValue>
+            <Real Name="Value">23</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">7</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">10</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">6</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">4</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">35</Real>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+    </AnalysisData>
+  </OutputData>
+  <OutputFiles Name="Files">
+    <File Name="-o">
+      <String Name="Contents"><![CDATA[
+~~B~~~SSS~~~~BSSHHHHHHHHHHHHT~~~EEETTTTEEES~HHHHHHHHHHHHT~~~B~~TTTT~~BS~HHHHHHHHHHH~~
+]]></String>
+    </File>
+    <File Name="-num">
+      <XvgLegend Name="Legend">
+        <String Name="XvgLegend"><![CDATA[
+title "Number of Secondary Structures"
+xaxis  label "Time (ps)"
+yaxis  label "Secondary Structures"
+TYPE xy
+s0 legend "Loops"
+s1 legend "Breaks"
+s2 legend "Bends"
+s3 legend "Turns"
+s4 legend "PP_Helices"
+s5 legend "π-Helices"
+s6 legend "3⏨-Helices"
+s7 legend "β-Strands"
+s8 legend "β-Bridges"
+s9 legend "α-Helices"
+]]></String>
+      </XvgLegend>
+      <XvgData Name="Data">
+        <Sequence Name="Row0">
+          <Int Name="Length">11</Int>
+          <Real>500.000</Real>
+          <Real>23</Real>
+          <Real>0</Real>
+          <Real>7</Real>
+          <Real>10</Real>
+          <Real>0</Real>
+          <Real>0</Real>
+          <Real>0</Real>
+          <Real>6</Real>
+          <Real>4</Real>
+          <Real>35</Real>
+        </Sequence>
+      </XvgData>
+    </File>
+  </OutputFiles>
+</ReferenceData>

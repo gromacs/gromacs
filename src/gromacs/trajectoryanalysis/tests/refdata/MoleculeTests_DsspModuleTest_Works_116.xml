@@ -1,0 +1,88 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <String Name="CommandLine">dssp -hmode gromacs -nonb -cutoff 0.9 -hbond geometry -clear -polypro</String>
+  <OutputData Name="Data">
+    <AnalysisData Name="secondaryStructuresNum">
+      <DataFrame Name="Frame0">
+        <Real Name="X">0</Real>
+        <DataValues>
+          <Int Name="Count">10</Int>
+          <DataValue>
+            <Real Name="Value">35</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">4</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">15</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">8</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">4</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">34</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">1</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">22</Real>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+    </AnalysisData>
+  </OutputData>
+  <OutputFiles Name="Files">
+    <File Name="-o">
+      <String Name="Contents"><![CDATA[
+~~HHHHHHHHHB~~S~SS~~STTHHHHHHHHTTSSSSS~~=~EEEE~S~HHHHHGGGGSEE~~~TTS~S~EEE~SS~EEEEEEEE~TT~~~=~~~EEEEEEEE~EEEE~~~~=~~=~EEEEE~
+]]></String>
+    </File>
+    <File Name="-num">
+      <XvgLegend Name="Legend">
+        <String Name="XvgLegend"><![CDATA[
+title "Number of Secondary Structures"
+xaxis  label "Time (ps)"
+yaxis  label "Secondary Structures"
+TYPE xy
+s0 legend "Loops"
+s1 legend "Breaks"
+s2 legend "Bends"
+s3 legend "Turns"
+s4 legend "PP_Helices"
+s5 legend "π-Helices"
+s6 legend "3⏨-Helices"
+s7 legend "β-Strands"
+s8 legend "β-Bridges"
+s9 legend "α-Helices"
+]]></String>
+      </XvgLegend>
+      <XvgData Name="Data">
+        <Sequence Name="Row0">
+          <Int Name="Length">11</Int>
+          <Real>0.000</Real>
+          <Real>35</Real>
+          <Real>4</Real>
+          <Real>15</Real>
+          <Real>8</Real>
+          <Real>0</Real>
+          <Real>0</Real>
+          <Real>4</Real>
+          <Real>34</Real>
+          <Real>1</Real>
+          <Real>22</Real>
+        </Sequence>
+      </XvgData>
+    </File>
+  </OutputFiles>
+</ReferenceData>
