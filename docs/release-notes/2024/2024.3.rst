@@ -43,6 +43,15 @@ this could lead to illegal memory access.
 
 :issue:`5109`
        
+Correct AWH metric with free-energy and Beutler soft-core
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+The AWH metric was incorrect for free-energy dimensions when
+Beutler soft-core interactions were used. The free-energies
+themselves were unaffacted by this issue.
+
+:issue:`5107`
+
 mdrun now computes the initial bonded distancs with periodic molecules
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 

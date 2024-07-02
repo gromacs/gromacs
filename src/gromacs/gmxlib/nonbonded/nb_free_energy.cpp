@@ -106,19 +106,19 @@ constexpr real c_minDistanceSquared = 1.0e-12_real;
  */
 constexpr real c_maxRInvSix = 1.0e15_real;
 
-template<bool computeForces, class RealType>
+template<bool computeScalarForce, class RealType>
 static inline void
 pmeCoulombCorrectionVF(const RealType rSq, const real beta, RealType* pot, RealType gmx_unused* force)
 {
     const RealType brsq = rSq * beta * beta;
-    if constexpr (computeForces)
+    if constexpr (computeScalarForce)
     {
         *force = -brsq * beta * gmx::pmeForceCorrection(brsq);
     }
     *pot = beta * gmx::pmePotentialCorrection(brsq);
 }
 
-template<bool computeForces, class RealType, class BoolType>
+template<bool computeScalarForce, class RealType, class BoolType>
 static inline void pmeLJCorrectionVF(const RealType rInv,
                                      const RealType rSq,
                                      const real     ewaldLJCoeffSq,
@@ -153,7 +153,7 @@ static inline void pmeLJCorrectionVF(const RealType rInv,
             ewaldLJCoeffSixDivSix * (1.0_real + coeffSqRSq * (-0.75_real + 0.3_real * coeffSqRSq));
     const RealType term = gmx::blend(fullTerm, approximation, coeffSqRSq < c_coeffSqRSqSwitch);
 
-    if constexpr (computeForces)
+    if constexpr (computeScalarForce)
     {
         *force = term - expNegCoeffSqRSq * ewaldLJCoeffSixDivSix;
         *force = *force * rInvSq;
@@ -299,6 +299,9 @@ static void nb_free_energy_kernel(const t_nblist&                               
     using RealType = typename DataTypes::RealType;
     using IntType  = typename DataTypes::IntType;
     using BoolType = typename DataTypes::BoolType;
+
+    // We need the scalar force to compute the Beutler soft-core contribution to dV/dlambda
+    constexpr bool computeScalarForce = computeForces || softcoreType == KernelSoftcoreType::Beutler;
 
     constexpr real oneTwelfth = 1.0_real / 12.0_real;
     constexpr real oneSixth   = 1.0_real / 6.0_real;
@@ -818,32 +821,33 @@ static void nb_free_energy_kernel(const t_nblist&                               
                             if constexpr (elecInteractionTypeIsEwald)
                             {
                                 vCoul[i] = ewaldPotential(qq[i], rInvC, sh_ewald);
-                                if constexpr (computeForces)
+                                if constexpr (computeScalarForce)
                                 {
                                     scalarForcePerDistanceCoul[i] = ewaldScalarForce(qq[i], rInvC);
                                 }
 
                                 if constexpr (softcoreType == KernelSoftcoreType::Gapsys)
                                 {
-                                    ewaldQuadraticPotential<computeForces>(qq[i],
-                                                                           elecEpsilonFactor,
-                                                                           rC,
-                                                                           rCutoffCoul,
-                                                                           lambdaFactorCoul[i],
-                                                                           dLambdaFactor[i],
-                                                                           gapsysScaleLinpointCoulEff,
-                                                                           sh_ewald,
-                                                                           &scalarForcePerDistanceCoul[i],
-                                                                           &vCoul[i],
-                                                                           &dvdlCoul,
-                                                                           computeElecInteraction);
+                                    ewaldQuadraticPotential<computeScalarForce>(
+                                            qq[i],
+                                            elecEpsilonFactor,
+                                            rC,
+                                            rCutoffCoul,
+                                            lambdaFactorCoul[i],
+                                            dLambdaFactor[i],
+                                            gapsysScaleLinpointCoulEff,
+                                            sh_ewald,
+                                            &scalarForcePerDistanceCoul[i],
+                                            &vCoul[i],
+                                            &dvdlCoul,
+                                            computeElecInteraction);
                                 }
                             }
                             else
                             {
                                 vCoul[i] = reactionFieldPotential(
                                         qq[i], rInvC, rC, reactionFieldCoefficient, reactionFieldShift);
-                                if constexpr (computeForces)
+                                if constexpr (computeScalarForce)
                                 {
                                     scalarForcePerDistanceCoul[i] = reactionFieldScalarForce(
                                             qq[i], rInvC, rC, reactionFieldCoefficient, two);
@@ -851,7 +855,7 @@ static void nb_free_energy_kernel(const t_nblist&                               
 
                                 if constexpr (softcoreType == KernelSoftcoreType::Gapsys)
                                 {
-                                    reactionFieldQuadraticPotential<computeForces>(
+                                    reactionFieldQuadraticPotential<computeScalarForce>(
                                             qq[i],
                                             elecEpsilonFactor,
                                             rC,
@@ -869,7 +873,7 @@ static void nb_free_energy_kernel(const t_nblist&                               
                             }
 
                             vCoul[i] = gmx::selectByMask(vCoul[i], computeElecInteraction);
-                            if constexpr (computeForces)
+                            if constexpr (computeScalarForce)
                             {
                                 scalarForcePerDistanceCoul[i] = gmx::selectByMask(
                                         scalarForcePerDistanceCoul[i], computeElecInteraction);
@@ -913,7 +917,7 @@ static void nb_free_energy_kernel(const t_nblist&                               
 
                             vVdw[i] = lennardJonesPotential(
                                     vVdw6, vVdw12, c6[i], c12[i], repulsionShift, dispersionShift, oneSixth, oneTwelfth);
-                            if constexpr (computeForces)
+                            if constexpr (computeScalarForce)
                             {
                                 scalarForcePerDistanceVdw[i] = lennardJonesScalarForce(vVdw6, vVdw12);
                             }
@@ -956,7 +960,7 @@ static void nb_free_energy_kernel(const t_nblist&                               
                                 const RealType sw =
                                         one + d2 * d * (vdw_swV3 + d * (vdw_swV4 + d * vdw_swV5));
 
-                                if constexpr (computeForces)
+                                if constexpr (computeScalarForce)
                                 {
                                     const RealType dsw = d2 * (vdw_swF2 + d * (vdw_swF3 + d * vdw_swF4));
                                     scalarForcePerDistanceVdw[i] = potSwitchScalarForceMod(
@@ -966,14 +970,14 @@ static void nb_free_energy_kernel(const t_nblist&                               
                             }
 
                             vVdw[i] = gmx::selectByMask(vVdw[i], computeVdwInteraction);
-                            if constexpr (computeForces)
+                            if constexpr (computeScalarForce)
                             {
                                 scalarForcePerDistanceVdw[i] = gmx::selectByMask(
                                         scalarForcePerDistanceVdw[i], computeVdwInteraction);
                             }
                         }
 
-                        if constexpr (computeForces)
+                        if constexpr (computeScalarForce)
                         {
                             /* scalarForcePerDistanceCoul (and scalarForcePerDistanceVdw) now contain: dV/drC * rC
                              * Now we multiply by rC^-6, so it will be: dV/drC * rC^-5
