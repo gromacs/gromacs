@@ -25,6 +25,15 @@ too high.
 
 :issue:`5072`
 
+Correct zero Verlet buffer for system with only large masses
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+For system with most masses much larger than zero, the Verlet buffer
+estimate could be zero. Coarse-grained simulations could be affected
+by this issue.
+
+:issue:`5098`
+
 mdrun now computes the initial bonded distancs with periodic molecules
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 

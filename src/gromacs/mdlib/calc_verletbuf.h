@@ -281,7 +281,7 @@ public:
     {
         const real c_massRatioThreshold = 0.4_real;
 
-        return c_massRatioThreshold * constraintInvMass_ < invMass_;
+        return constraintLength_ > 0 && c_massRatioThreshold * constraintInvMass_ < invMass_;
     }
 
     // Returns 1/mass for the atom connected by a constraint with the largest mass
@@ -314,6 +314,8 @@ public:
     void addConstraint(real mass, real length)
     {
         GMX_ASSERT(mass != 0, "Atoms involved in constraints cannot have zero mass");
+
+        GMX_ASSERT(length > 0, "The constraint length should be non-zero");
 
         real invMass = 1 / mass;
 
