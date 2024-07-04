@@ -34,6 +34,15 @@ by this issue.
 
 :issue:`5098`
 
+Fix incorrect energy group pair assignment of pair interactions
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Energies for bonded pair interactions, typically 1-4 interactions, would
+be assigned to incorrect energy group pairs. With free-energy calculations
+this could lead to illegal memory access.
+
+:issue:`5109`
+       
 mdrun now computes the initial bonded distancs with periodic molecules
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 

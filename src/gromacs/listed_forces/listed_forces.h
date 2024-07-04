@@ -198,6 +198,8 @@ public:
 private:
     //! Pointer to the interaction definitions
     InteractionDefinitions const* idef_ = nullptr;
+    //! The number of energy groups
+    int numEnergyGroups_;
     //! Interaction definitions used for storing selections
     InteractionDefinitions idefSelection_;
     //! Thread parallelization setup, unique_ptr to avoid declaring bonded_threading_t
