@@ -1033,6 +1033,7 @@ void pme_gpu_getEnergyAndVirial(const gmx_pme_t& pme, const float lambda, PmeOut
     GMX_ASSERT(lambda == 1.0 || pmeGpu->common->ngrids == 2,
                "Invalid combination of lambda and number of grids");
 
+#ifndef __FAST_MATH__ // -ffast-math implies -fno-honor-infinities -fno-honor-nans
     for (int gridIndex = 0; gridIndex < pmeGpu->common->ngrids; gridIndex++)
     {
         for (int j = 0; j < c_virialAndEnergyCount; j++)
@@ -1041,6 +1042,7 @@ void pme_gpu_getEnergyAndVirial(const gmx_pme_t& pme, const float lambda, PmeOut
                        "PME GPU produces incorrect energy/virial.");
         }
     }
+#endif
     for (int dim1 = 0; dim1 < DIM; dim1++)
     {
         for (int dim2 = 0; dim2 < DIM; dim2++)

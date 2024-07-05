@@ -46,14 +46,15 @@
 //! \brief Full warp active thread mask used in CUDA warp-level primitives.
 static constexpr unsigned int c_cudaFullWarpMask = 0xffffffff;
 
-#if defined(SYCL_EXT_ONEAPI_ASSERT) && SYCL_EXT_ONEAPI_ASSERT
+#if defined(SYCL_EXT_ONEAPI_ASSERT) && SYCL_EXT_ONEAPI_ASSERT && !defined(__AMDGCN__)
 #    define SYCL_ASSERT(condition) assert(condition)
 #else
 /* Assertions are not defined in SYCL standard, but they are available as oneAPI extension sycl_ext_oneapi_assert.
  * Technically, asserts should work just fine with hipSYCL, since they are supported by CUDA since sm_20.
  * But with some settings (Clang 14, hipSYCL 0.9.2, RelWithAssert), CUDA build fails at link time:
  * ptxas fatal   : Unresolved extern function '__assert_fail'
- * So, we just disable kernel asserts unless they are promised to be available. */
+ * So, we just disable kernel asserts unless they are promised to be available.
+ * Also disable asserts on AMD GPUs, since they cause `hipErrorIllegalState` (oneAPI 2024.1-2024.2, ROCm 5.4-6.1) */
 #    define SYCL_ASSERT(condition)
 #endif
 

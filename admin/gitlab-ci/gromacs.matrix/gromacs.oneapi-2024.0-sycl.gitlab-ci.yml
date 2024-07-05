@@ -1,7 +1,7 @@
 # Test goal: Newest ICPX build with SYCL
 # Test intents (should change rarely and conservatively):
 #   OS: Ubuntu oldest supported
-#   Compiler: ICPX newest supported
+#   Compiler: ICPX oldest supported
 #   FFT: MKL
 #   GPU: SYCL with Intel GPUs
 #   Scope: configure, build, unit tests, regression tests

@@ -22,11 +22,10 @@ args[${#args[@]}]="--llvm 11 --tsan"
 args[${#args[@]}]="--llvm 9 --cuda 11.0.3 --clfft --mpi openmpi"
 args[${#args[@]}]="--llvm 17 --mpi openmpi"
 args[${#args[@]}]="--oneapi 2024.0 --intel-compute-runtime --ubuntu 22.04"
-args[${#args[@]}]="--oneapi 2023.2.0 --intel-compute-runtime --ubuntu 22.04 --rocm 5.4.3 --oneapi-plugin-amd"
+args[${#args[@]}]="--oneapi 2024.2 --ubuntu 22.04 --rocm 6.1.3 --cuda 12.0.1 --oneapi-plugin-amd --oneapi-plugin-nvidia"
 args[${#args[@]}]="--llvm --doxygen --mpi openmpi --venvs 3.7.7 3.9.13"
 args[${#args[@]}]="--ubuntu 22.04 --llvm 15 --cuda 11.7.1 --hipsycl 0.9.4 --rocm 5.3.3 --mpi mpich"
 args[${#args[@]}]="--ubuntu 22.04 --hipsycl 23.10.0 --rocm 5.7.1"
-args[${#args[@]}]="--intel-llvm 2022-09 --cuda 11.5.2 --rocm 5.3"
 args[${#args[@]}]="--ubuntu 22.04 --rocm 6.0.2 --mpi"
 
 echo

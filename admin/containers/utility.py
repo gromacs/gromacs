@@ -92,7 +92,7 @@ parser.add_argument(
     "--cmake",
     nargs="*",
     type=str,
-    default=["3.18.4", "3.21.2", "3.24.0"],
+    default=["3.28.0", "3.29.3"],
     help="Selection of CMake version to provide to base image. (default: %(default)s)",
 )
 
