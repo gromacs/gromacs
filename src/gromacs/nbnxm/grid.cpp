@@ -642,16 +642,18 @@ static void calc_bounding_box_simd4(int na, const float* x, BoundingBox* bb)
 #    if NBNXN_BBXXXX
 
 /*! \brief Computes the bounding box for na coordinates in order xyz?, bb order xxxxyyyyzzzz */
-static void calc_bounding_box_xxxx_simd4(int na, const float* x, BoundingBox* bb_work_aligned, real* bb)
+static void calc_bounding_box_xxxx_simd4(int na, const float* x, real* bb)
 {
-    calc_bounding_box_simd4(na, x, bb_work_aligned);
+    alignas(GMX_SIMD_ALIGNMENT) BoundingBox bbWorkAligned;
 
-    bb[0 * c_packedBoundingBoxesDimSize] = bb_work_aligned->lower.x;
-    bb[1 * c_packedBoundingBoxesDimSize] = bb_work_aligned->lower.y;
-    bb[2 * c_packedBoundingBoxesDimSize] = bb_work_aligned->lower.z;
-    bb[3 * c_packedBoundingBoxesDimSize] = bb_work_aligned->upper.x;
-    bb[4 * c_packedBoundingBoxesDimSize] = bb_work_aligned->upper.y;
-    bb[5 * c_packedBoundingBoxesDimSize] = bb_work_aligned->upper.z;
+    calc_bounding_box_simd4(na, x, &bbWorkAligned);
+
+    bb[0 * c_packedBoundingBoxesDimSize] = bbWorkAligned.lower.x;
+    bb[1 * c_packedBoundingBoxesDimSize] = bbWorkAligned.lower.y;
+    bb[2 * c_packedBoundingBoxesDimSize] = bbWorkAligned.lower.z;
+    bb[3 * c_packedBoundingBoxesDimSize] = bbWorkAligned.upper.x;
+    bb[4 * c_packedBoundingBoxesDimSize] = bbWorkAligned.upper.y;
+    bb[5 * c_packedBoundingBoxesDimSize] = bbWorkAligned.upper.z;
 }
 
 #    endif /* NBNXN_BBXXXX */
@@ -877,8 +879,7 @@ void Grid::fillCell(GridSetData*                   gridSetData,
                     int                            atomStart,
                     int                            atomEnd,
                     gmx::ArrayRef<const int64_t>   atomInfo,
-                    gmx::ArrayRef<const gmx::RVec> x,
-                    BoundingBox gmx_unused* bb_work_aligned)
+                    gmx::ArrayRef<const gmx::RVec> x)
 {
     const int numAtoms = atomEnd - atomStart;
 
@@ -974,9 +975,7 @@ void Grid::fillCell(GridSetData*                   gridSetData,
 #    if NBNXN_SEARCH_SIMD4_FLOAT_X_BB
         if (nbat->XFormat == nbatXYZQ)
         {
-            GMX_ASSERT(bb_work_aligned != nullptr, "Must have valid aligned work structure");
-            calc_bounding_box_xxxx_simd4(
-                    numAtoms, nbat->x().data() + atomStart * nbat->xstride, bb_work_aligned, pbb_ptr);
+            calc_bounding_box_xxxx_simd4(numAtoms, nbat->x().data() + atomStart * nbat->xstride, pbb_ptr);
         }
         else
 #    endif
@@ -1074,7 +1073,7 @@ void Grid::sortColumnsCpuGeometry(GridSetData*                   gridSetData,
             const int numAtomsLeftInColumn = std::max(numAtoms - (atomOffsetCell - atomOffset), 0);
             const int numAtomsCell         = std::min(numAtomsPerCell, numAtomsLeftInColumn);
 
-            fillCell(gridSetData, nbat, atomOffsetCell, atomOffsetCell + numAtomsCell, atomInfo, x, nullptr);
+            fillCell(gridSetData, nbat, atomOffsetCell, atomOffsetCell + numAtomsCell, atomInfo, x);
 
             /* This copy to bbcz is not really necessary.
              * But it allows to use the same grid search code
@@ -1105,10 +1104,6 @@ void Grid::sortColumnsGpuGeometry(GridSetData*                   gridSetData,
                                   const gmx::Range<int>          columnRange,
                                   gmx::ArrayRef<int>             sort_work)
 {
-    BoundingBox bb_work_array[2];
-    auto*       bb_work_aligned = reinterpret_cast<BoundingBox*>(
-            (reinterpret_cast<std::size_t>(bb_work_array + 1)) & (~(static_cast<std::size_t>(15))));
-
     if (debug)
     {
         fprintf(debug,
@@ -1223,7 +1218,7 @@ void Grid::sortColumnsGpuGeometry(GridSetData*                   gridSetData,
                     const int numAtomsX =
                             std::min(subdiv_x, numAtomsInColumn - (atomOffsetX - atomOffset));
 
-                    fillCell(gridSetData, nbat, atomOffsetX, atomOffsetX + numAtomsX, atomInfo, x, bb_work_aligned);
+                    fillCell(gridSetData, nbat, atomOffsetX, atomOffsetX + numAtomsX, atomInfo, x);
                 }
             }
         }

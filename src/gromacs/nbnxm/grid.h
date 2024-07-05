@@ -315,8 +315,7 @@ private:
                   int                            atomStart,
                   int                            atomEnd,
                   gmx::ArrayRef<const int64_t>   atomInfo,
-                  gmx::ArrayRef<const gmx::RVec> x,
-                  BoundingBox gmx_unused* bb_work_aligned);
+                  gmx::ArrayRef<const gmx::RVec> x);
 
     //! Spatially sort the atoms within the given column range, for CPU geometry
     void sortColumnsCpuGeometry(GridSetData*                   gridSetData,
