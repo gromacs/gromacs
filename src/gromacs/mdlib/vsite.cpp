@@ -1158,10 +1158,8 @@ static void construct_vsites(const ThreadingInfo*            threadingInfo,
         /* This is wasting some CPU time as we now do this multiple times
          * per MD step.
          */
-        ivec null_ivec;
-        clear_ivec(null_ivec);
         pbc_null = set_pbc_dd(
-                &pbc, domainInfo.pbcType_, useDomdec ? domainInfo.domdec_->numCells : null_ivec, FALSE, box);
+                &pbc, domainInfo.pbcType_, useDomdec ? &domainInfo.domdec_->numCells : nullptr, FALSE, box);
     }
     else
     {
@@ -2286,7 +2284,7 @@ void VirtualSitesHandler::Impl::spreadForces(ArrayRef<const RVec> x,
          * per MD step.
          */
         pbc_null = set_pbc_dd(
-                &pbc, domainInfo_.pbcType_, useDomdec ? domainInfo_.domdec_->numCells : nullptr, FALSE, box);
+                &pbc, domainInfo_.pbcType_, useDomdec ? &domainInfo_.domdec_->numCells : nullptr, FALSE, box);
     }
     else
     {

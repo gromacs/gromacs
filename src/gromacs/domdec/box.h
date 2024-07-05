@@ -70,14 +70,14 @@ void set_ddbox(const gmx_domdec_t&            dd,
 /*! \brief Set the box and PBC data in \p ddbox */
 void set_ddbox_cr(DDRole                         ddRole,
                   MPI_Comm                       communicator,
-                  const ivec*                    dd_nc,
+                  const gmx::IVec*               numDomains,
                   const t_inputrec&              ir,
                   const matrix                   box,
                   gmx::ArrayRef<const gmx::RVec> x,
                   gmx_ddbox_t*                   ddbox);
 
 /*! \brief Computes and returns a domain decomposition box */
-gmx_ddbox_t get_ddbox(const ivec&                    numDomains,
+gmx_ddbox_t get_ddbox(const gmx::IVec&               numDomains,
                       const t_inputrec&              ir,
                       const matrix                   box,
                       gmx::ArrayRef<const gmx::RVec> x);

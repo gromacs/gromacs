@@ -1011,7 +1011,7 @@ int dd_make_local_top(const gmx_domdec_t&          dd,
         {
             if (fr->bMolPBC)
             {
-                pbc_null = set_pbc_dd(&pbc, fr->pbcType, dd.numCells, TRUE, box);
+                pbc_null = set_pbc_dd(&pbc, fr->pbcType, &dd.numCells, TRUE, box);
             }
             else
             {

@@ -220,7 +220,7 @@ public:
      */
     PairSearch(PbcType                   pbcType,
                bool                      doTestParticleInsertion,
-               const ivec*               numDDCells,
+               const gmx::IVec*          numDDCells,
                const gmx_domdec_zones_t* zones,
                PairlistType              pairlistType,
                bool                      haveFep,

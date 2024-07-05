@@ -92,7 +92,7 @@ public:
         //! Constructor, without DD \p numDDCells and \p ddZones should be nullptr
         DomainSetup(PbcType                   pbcType,
                     bool                      doTestParticleInsertion,
-                    const ivec*               numDDCells,
+                    const gmx::IVec*          numDDCells,
                     const gmx_domdec_zones_t* ddZones);
 
         //! The type of PBC
@@ -110,7 +110,7 @@ public:
     //! Constructs a grid set for 1 or multiple DD zones, when numDDCells!=nullptr
     GridSet(PbcType                   pbcType,
             bool                      doTestParticleInsertion,
-            const ivec*               numDDCells,
+            const gmx::IVec*          numDDCells,
             const gmx_domdec_zones_t* ddZones,
             PairlistType              pairlistType,
             bool                      haveFep,

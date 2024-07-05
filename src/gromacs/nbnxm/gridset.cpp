@@ -78,7 +78,7 @@ static int numGrids(const GridSet::DomainSetup& domainSetup)
 
 GridSet::DomainSetup::DomainSetup(const PbcType             pbcType,
                                   const bool                doTestParticleInsertion,
-                                  const ivec*               numDDCells,
+                                  const gmx::IVec*          numDDCells,
                                   const gmx_domdec_zones_t* ddZones) :
     pbcType_(pbcType),
     doTestParticleInsertion_(doTestParticleInsertion),
@@ -94,7 +94,7 @@ GridSet::DomainSetup::DomainSetup(const PbcType             pbcType,
 
 GridSet::GridSet(const PbcType             pbcType,
                  const bool                doTestParticleInsertion,
-                 const ivec*               numDDCells,
+                 const gmx::IVec*          numDDCells,
                  const gmx_domdec_zones_t* ddZones,
                  const PairlistType        pairlistType,
                  const bool                haveFep,

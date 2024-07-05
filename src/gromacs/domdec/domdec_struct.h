@@ -117,7 +117,7 @@ struct gmx_domdec_zones_t
     /* The number of zones including the home zone */
     int n = 0;
     /* The shift of the zones with respect to the home zone */
-    std::array<ivec, DD_MAXZONE> shift;
+    std::array<gmx::IVec, DD_MAXZONE> shift;
     /* The charge group boundaries for the zones */
     std::array<int, DD_MAXZONE + 1> cg_range;
     /* The pair interaction zone and atom ranges per each i-zone */
@@ -188,7 +188,7 @@ struct gmx_domdec_t
 
     /* The communication setup, identical for each cell, cartesian index */
     //! Todo: refactor nbnxm to not rely on this sometimes being a nullptr so this can be IVec
-    ivec      numCells = { 0, 0, 0 };
+    gmx::IVec numCells = { 0, 0, 0 };
     int       ndim     = 0;
     gmx::IVec dim      = { 0, 0, 0 }; /* indexed by 0 to ndim */
 

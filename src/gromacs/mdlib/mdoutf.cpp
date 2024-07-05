@@ -517,7 +517,7 @@ void mdoutf_write_checkpoint(gmx_mdoutf_t                    of,
      * renaming old and new checkpoint files to minimize the risk of
      * checkpoint files getting out of sync.
      */
-    ivec one_ivec = { 1, 1, 1 };
+    gmx::IVec one_ivec = { 1, 1, 1 };
     write_checkpoint(of->fn_cpt,
                      of->bKeepAndNumCPT,
                      fplog,

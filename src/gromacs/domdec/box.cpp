@@ -120,7 +120,7 @@ static void calc_pos_av_stddev(gmx::ArrayRef<const gmx::RVec> x, rvec av, rvec s
 }
 
 /*! \brief Determines if dimensions require triclinic treatment and stores this info in ddbox */
-static void set_tric_dir(const ivec* dd_nc, gmx_ddbox_t* ddbox, const matrix box)
+static void set_tric_dir(const gmx::IVec* numDomains, gmx_ddbox_t* ddbox, const matrix box)
 {
     int   npbcdim = ddbox->npbcdim;
     rvec* normal  = ddbox->normal;
@@ -132,15 +132,15 @@ static void set_tric_dir(const ivec* dd_nc, gmx_ddbox_t* ddbox, const matrix box
             if (box[j][d] != 0)
             {
                 ddbox->tric_dir[d] = 1;
-                if (dd_nc != nullptr && (*dd_nc)[j] > 1 && (*dd_nc)[d] == 1)
+                if (numDomains != nullptr && (*numDomains)[j] > 1 && (*numDomains)[d] == 1)
                 {
                     gmx_fatal(FARGS,
                               "Domain decomposition has not been implemented for box vectors that "
                               "have non-zero components in directions that do not use domain "
                               "decomposition: ncells = %d %d %d, box vector[%d] = %f %f %f",
-                              (*dd_nc)[XX],
-                              (*dd_nc)[YY],
-                              (*dd_nc)[ZZ],
+                              (*numDomains)[XX],
+                              (*numDomains)[YY],
+                              (*numDomains)[ZZ],
                               j + 1,
                               box[j][XX],
                               box[j][YY],
@@ -230,7 +230,7 @@ static void set_tric_dir(const ivec* dd_nc, gmx_ddbox_t* ddbox, const matrix box
 /*! \brief This function calculates bounding box and pbc info and populates ddbox */
 static void low_set_ddbox(int                            numPbcDimensions,
                           int                            numBoundedDimensions,
-                          const ivec*                    dd_nc,
+                          const gmx::IVec*               numDomains,
                           const matrix                   box,
                           bool                           calculateUnboundedSize,
                           gmx::ArrayRef<const gmx::RVec> x,
@@ -269,7 +269,7 @@ static void low_set_ddbox(int                            numPbcDimensions,
         }
     }
 
-    set_tric_dir(dd_nc, ddbox, box);
+    set_tric_dir(numDomains, ddbox, box);
 }
 
 void set_ddbox(const gmx_domdec_t&            dd,
@@ -303,7 +303,7 @@ void set_ddbox(const gmx_domdec_t&            dd,
 
 void set_ddbox_cr(DDRole                         ddRole,
                   MPI_Comm                       communicator,
-                  const ivec*                    dd_nc,
+                  const gmx::IVec*               numDomains,
                   const t_inputrec&              ir,
                   const matrix                   box,
                   gmx::ArrayRef<const gmx::RVec> x,
@@ -312,13 +312,13 @@ void set_ddbox_cr(DDRole                         ddRole,
     if (ddRole == DDRole::Main)
     {
         low_set_ddbox(
-                numPbcDimensions(ir.pbcType), inputrec2nboundeddim(&ir), dd_nc, box, true, x, nullptr, ddbox);
+                numPbcDimensions(ir.pbcType), inputrec2nboundeddim(&ir), numDomains, box, true, x, nullptr, ddbox);
     }
 
     gmx_bcast(sizeof(gmx_ddbox_t), ddbox, communicator);
 }
 
-gmx_ddbox_t get_ddbox(const ivec&                    numDomains,
+gmx_ddbox_t get_ddbox(const gmx::IVec&               numDomains,
                       const t_inputrec&              ir,
                       const matrix                   box,
                       gmx::ArrayRef<const gmx::RVec> x)

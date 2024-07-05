@@ -86,7 +86,7 @@ PairsearchWork::~PairsearchWork() = default;
 
 PairSearch::PairSearch(const PbcType             pbcType,
                        const bool                doTestParticleInsertion,
-                       const ivec*               numDDCells,
+                       const gmx::IVec*          numDDCells,
                        const gmx_domdec_zones_t* ddZones,
                        const PairlistType        pairlistType,
                        const bool                haveFep,

@@ -220,7 +220,7 @@ void set_pbc(t_pbc* pbc, PbcType pbcType, const matrix box);
  * \param[in] box         The box tensor
  * \return the pbc structure when pbc operations are required, NULL otherwise.
  */
-t_pbc* set_pbc_dd(t_pbc* pbc, PbcType pbcType, const ivec domdecCells, bool bSingleDir, const matrix box);
+t_pbc* set_pbc_dd(t_pbc* pbc, PbcType pbcType, const gmx::IVec* domdecCells, bool bSingleDir, const matrix box);
 
 /*! \brief Compute distance with PBC
  *

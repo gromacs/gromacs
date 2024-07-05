@@ -473,7 +473,7 @@ bool Constraints::Impl::apply(const bool                computeRmsd,
          * so that here we can use normal pbc.
          */
         pbc_null = set_pbc_dd(
-                &pbc, ir.pbcType, haveDDAtomOrdering(*cr) ? cr->dd->numCells : nullptr, FALSE, box);
+                &pbc, ir.pbcType, haveDDAtomOrdering(*cr) ? &cr->dd->numCells : nullptr, FALSE, box);
     }
     else
     {

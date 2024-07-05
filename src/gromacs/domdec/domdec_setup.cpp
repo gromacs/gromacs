@@ -969,9 +969,8 @@ DDGridSetup getDDGridSetup(const gmx::MDLogger&                  mdlog,
     gmx::IVec numDomains;
     if (options.numCells[XX] > 0)
     {
-        numDomains                      = gmx::IVec(options.numCells);
-        const ivec numDomainsLegacyIvec = { numDomains[XX], numDomains[YY], numDomains[ZZ] };
-        set_ddbox_cr(ddRole, communicator, &numDomainsLegacyIvec, ir, box, xGlobal, ddbox);
+        numDomains = gmx::IVec(options.numCells);
+        set_ddbox_cr(ddRole, communicator, &numDomains, ir, box, xGlobal, ddbox);
     }
     else
     {

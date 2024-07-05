@@ -607,7 +607,7 @@ void set_pbc(t_pbc* pbc, PbcType pbcType, const matrix box)
     low_set_pbc(pbc, pbcType, nullptr, box);
 }
 
-t_pbc* set_pbc_dd(t_pbc* pbc, PbcType pbcType, const ivec domdecCells, gmx_bool bSingleDir, const matrix box)
+t_pbc* set_pbc_dd(t_pbc* pbc, PbcType pbcType, const gmx::IVec* domdecCells, gmx_bool bSingleDir, const matrix box)
 {
     if (pbcType == PbcType::No)
     {
@@ -622,7 +622,7 @@ t_pbc* set_pbc_dd(t_pbc* pbc, PbcType pbcType, const ivec domdecCells, gmx_bool 
     }
     else
     {
-        if (pbcType == PbcType::Screw && domdecCells[XX] > 1)
+        if (pbcType == PbcType::Screw && (*domdecCells)[XX] > 1)
         {
             /* The rotation has been taken care of during coordinate communication */
             pbcType = PbcType::Xyz;
@@ -633,7 +633,7 @@ t_pbc* set_pbc_dd(t_pbc* pbc, PbcType pbcType, const ivec domdecCells, gmx_bool 
         for (int i = 0; i < DIM; i++)
         {
             usePBC[i] = 0;
-            if (domdecCells[i] <= (bSingleDir ? 1 : 2) && !(pbcType == PbcType::XY && i == ZZ))
+            if ((*domdecCells)[i] <= (bSingleDir ? 1 : 2) && !(pbcType == PbcType::XY && i == ZZ))
             {
                 usePBC[i] = 1;
                 npbcdim++;
