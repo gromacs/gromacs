@@ -84,9 +84,6 @@ gmx_manage_hdf5()
 gmx_manage_sz3()
 
 if(GMX_USE_HDF5)
-    # Use the 1.10 version of the API. This is required to avoid new function macros (overloads) with different parameters.
-    target_compile_options(fileio INTERFACE "-DH5_USE_110_API")
-
     target_include_directories(fileio INTERFACE ${HDF5_INCLUDE_DIRS})
     target_link_libraries(fileio INTERFACE ${HDF5_LIBRARIES} SZ3 hdf5sz3)
 endif()

@@ -86,7 +86,11 @@ herr_t iterativeSetupTimeDataBlocks(hid_t            locationId,
      * the Library.
      */
     H5O_info_t infoBuffer;
+#    if H5_VERS_MINOR < 12
     H5Oget_info_by_name(locationId, name, &infoBuffer, H5P_DEFAULT);
+#    else
+    H5Oget_info_by_name(locationId, name, &infoBuffer, H5O_INFO_BASIC, H5P_DEFAULT);
+#    endif
     herr_t            returnVal        = 0;
     const std::string stepDataSetName  = std::string(name) + std::string("/step");
     const std::string timeDataSetName  = std::string(name) + std::string("/time");
