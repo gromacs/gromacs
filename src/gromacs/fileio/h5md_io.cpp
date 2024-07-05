@@ -39,16 +39,9 @@
 
 #include "gmxpre.h"
 
-#include "config.h"
+#include "h5md_io.h"
 
-// [[noreturn]] attributes must be added in the common headers, so it's easier to silence the warning here
-#ifdef __clang__
-#    if !GMX_USE_HDF5
-#        pragma clang diagnostic push
-#        pragma clang diagnostic ignored "-Wmissing-noreturn"
-// NOLINTBEGIN(readability-convert-member-functions-to-static)
-#    endif
-#endif
+#include "config.h"
 
 #include <strings.h>
 
@@ -66,12 +59,16 @@
 #include "gromacs/utility/programcontext.h"
 
 #include "h5md_datablock.h"
-#include "h5md_io.h"
 #include "h5md_util.h"
 
 #if GMX_USE_HDF5
+CLANG_DIAGNOSTIC_IGNORE("-Wold-style-cast")
 #    include <hdf5.h>
+#else
+CLANG_DIAGNOSTIC_IGNORE("-Wmissing-noreturn")
+#endif
 
+#if GMX_USE_HDF5
 namespace
 {
 
@@ -133,12 +130,7 @@ void setPluginPath()
 {
     const gmx::IProgramContext&       programContext = gmx::getProgramContext();
     const gmx::InstallationPrefixInfo installPrefix  = programContext.installationPrefix();
-    if (installPrefix.sourceLayoutTreeLike_)
-    {
-        printf("Cannot identify location of SZ3 HDF5 plugin based on installation path. Please set "
-               "the HDF5_PLUGIN_PATH environment variable manually.\n");
-    }
-    else
+    if (!installPrefix.sourceLayoutTreeLike_)
     {
         std::filesystem::path pluginDir = installPrefix.path_;
         pluginDir.append("lib");
@@ -182,7 +174,7 @@ H5md::H5md(const std::string& fileName, const char mode)
         {
             file_ = H5Fopen(fileName.c_str(), H5F_ACC_RDWR, H5P_DEFAULT);
         }
-        /* Create H5MD group. They should already be there if appending to a valid H5MD file, but it's better to be on the safe side. */
+        /* Create H5MD group. It should already be there if appending to a valid H5MD file, but it's better to be on the safe side. */
         hid_t h5mdGroup = openOrCreateGroup(file_, "h5md");
         setVersionAttribute(h5mdGroup, c_h5mdMajorVersion, c_h5mdMinorVersion);
     }
@@ -1101,9 +1093,4 @@ template std::vector<std::int64_t> H5md::readNumericDataSet<std::int64_t>(const 
 
 } // namespace gmx
 
-#ifdef __clang__
-#    if !GMX_USE_HDF5
-// NOLINTEND(readability-convert-member-functions-to-static)
-#        pragma clang diagnostic pop
-#    endif
-#endif
+CLANG_DIAGNOSTIC_RESET

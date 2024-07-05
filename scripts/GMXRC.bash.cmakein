@@ -70,7 +70,6 @@ MANPATH=$(replace_in_path "${MANPATH}" "${GMXMAN}" "${OLD_GMXMAN}")
 # export should be separate, so /bin/sh understands it
 export GMXBIN GMXLDLIB GMXMAN GMXDATA @LD_LIBRARY_PATH@ PATH MANPATH
 export PKG_CONFIG_PATH GROMACS_DIR
-export HDF5_PLUGIN_PATH
 export SZ3_CONFIG_PATH
 
 IFS="$old_IFS"

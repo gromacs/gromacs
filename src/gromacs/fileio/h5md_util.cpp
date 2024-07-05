@@ -93,7 +93,10 @@ void setNumericFillValue(const hid_t dataSetCreatePropertyList, const hid_t data
  * \param[in] sz3Mode The compression error mode, 0 == absolute, 1 == relative
  * \param[in] compressionError The maximum error when compressing (compressionError = accuracy / 2)
  */
-void setLossySz3CompressionProperties(const hid_t propertyList, const int sz3Mode, const double compressionError)
+void setLossySz3CompressionProperties(const hid_t  propertyList,
+                                      const int    sz3CompressionAlgorithm,
+                                      const int    sz3Mode,
+                                      const double compressionError)
 {
     SZ3::Config configuration;
     if (get_SZ3_conf_from_H5(propertyList, configuration) < 0)
@@ -101,9 +104,19 @@ void setLossySz3CompressionProperties(const hid_t propertyList, const int sz3Mod
         H5Eprint2(H5E_DEFAULT, nullptr);
         throw gmx::FileIOError("Cannot get SZ3 compression configuration.");
     }
-    configuration.absErrorBound = compressionError;
-    configuration.relErrorBound = compressionError;
-    if (set_SZ3_conf_to_H5(propertyList, configuration) < 0)
+    configuration.cmprAlgo       = sz3CompressionAlgorithm;
+    configuration.errorBoundMode = sz3Mode;
+    configuration.absErrorBound  = compressionError;
+    configuration.relErrorBound  = compressionError;
+    // Save configuration to cd_values
+    size_t                    cd_nelmts = std::ceil(configuration.size_est() / 1.0 / sizeof(int));
+    std::vector<unsigned int> cd_values(cd_nelmts);
+    auto                      buffer = (unsigned char*)(cd_values.data());
+    configuration.save(buffer);
+
+    herr_t status = H5Pset_filter(
+            propertyList, H5Z_FILTER_SZ3, H5Z_FLAG_MANDATORY, cd_nelmts, cd_values.data());
+    if (status < 0)
     {
         H5Eprint2(H5E_DEFAULT, nullptr);
         throw gmx::FileIOError("Cannot set SZ3 compression configuration.");
@@ -147,7 +160,15 @@ void registerSz3FilterImplicitly()
 {
     hid_t       propertyList = H5Pcreate(H5P_DATASET_CREATE);
     SZ3::Config configuration;
-    herr_t      status = set_SZ3_conf_to_H5(propertyList, configuration);
+    configuration.cmprAlgo = SZ3::ALGO_BIOMD; /* It does not matter which algorithm is used here */
+    // Save configuration to cd_values
+    size_t                    cd_nelmts = std::ceil(configuration.size_est() / 1.0 / sizeof(int));
+    std::vector<unsigned int> cd_values(cd_nelmts);
+    auto                      buffer = (unsigned char*)(cd_values.data());
+    configuration.save(buffer);
+
+    herr_t status = H5Pset_filter(
+            propertyList, H5Z_FILTER_SZ3, H5Z_FLAG_MANDATORY, cd_nelmts, cd_values.data());
 
     /* For some reason status can be 0 even if the filter could not be found. Check if any HDF5 errors have occured */
     ssize_t numHdf5Errors = H5Eget_num(H5E_DEFAULT);
@@ -201,8 +222,10 @@ hid_t openOrCreateDataSet(const hid_t                container,
         {
             case CompressionAlgorithm::LossySz3:
             {
-                const int sz3Mode = 0; // 0: ABS, 1: REL
-                setLossySz3CompressionProperties(createPropertyList, sz3Mode, compressionError);
+                const int sz3CompressionAlgorithm = SZ3::ALGO_BIOMD;
+                const int sz3Mode                 = 0; // 0: ABS, 1: REL
+                setLossySz3CompressionProperties(
+                        createPropertyList, sz3CompressionAlgorithm, sz3Mode, compressionError);
                 break;
             }
             case CompressionAlgorithm::LosslessWithShuffle:
