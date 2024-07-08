@@ -312,7 +312,7 @@ public:
             for (int i = 0; i < numSubscribers_; ++i)
             {
                 // Ensure each subscriber sends a different (but small) amount of data
-                rankData.subscribers.emplace_back(Subscriber(i, numRanks));
+                rankData.subscribers.emplace_back(i, numRanks);
             }
             // Now that the addresses of the subscribers are
             // stable, set up the build-time callback.

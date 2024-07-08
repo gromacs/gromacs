@@ -250,7 +250,7 @@ GpuTasksOnRanks findAllGpuTasksOnThisNode(ArrayRef<const GpuTask>         gpuTas
     auto nextDisplacementIt    = currentDisplacementIt + 1;
     do
     {
-        gpuTasksOnRanksOfThisNode.emplace_back(std::vector<GpuTask>());
+        gpuTasksOnRanksOfThisNode.emplace_back();
         for (auto taskOnThisRankIndex = *currentDisplacementIt; taskOnThisRankIndex != *nextDisplacementIt;
              ++taskOnThisRankIndex)
         {

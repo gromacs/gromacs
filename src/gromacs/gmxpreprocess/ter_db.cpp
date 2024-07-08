@@ -265,7 +265,7 @@ static void read_ter_db_file(const std::filesystem::path&        fn,
 
             if (!btkw.has_value() && !rtkw.has_value())
             {
-                tbptr->emplace_back(MoleculePatchDatabase());
+                tbptr->emplace_back();
                 block = &tbptr->back();
                 clearModificationBlock(block);
                 block->name     = header;
@@ -287,7 +287,7 @@ static void read_ter_db_file(const std::filesystem::path&        fn,
             {
                 /* this is a hack: add/rename/delete atoms */
                 /* make space for hacks */
-                block->hack.emplace_back(MoleculePatch());
+                block->hack.emplace_back();
                 MoleculePatch* hack = &block->hack.back();
 
                 /* get data */

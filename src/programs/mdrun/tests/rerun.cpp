@@ -142,7 +142,7 @@ void executeRerunTest(TestFileManager*            fileManager,
     auto options = std::vector<SimulationOptionTuple>();
     if (numWarningsToTolerate > 0)
     {
-        options.emplace_back(SimulationOptionTuple("-maxwarn", std::to_string(numWarningsToTolerate)));
+        options.emplace_back("-maxwarn", std::to_string(numWarningsToTolerate));
     }
     runGrompp(runner, options);
 

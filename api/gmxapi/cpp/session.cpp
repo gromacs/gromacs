@@ -178,7 +178,7 @@ Status SessionImpl::addRestraint(std::shared_ptr<gmxapi::MDModule> module)
             auto restraint = module->getRestraint();
             if (restraint != nullptr)
             {
-                restraints_.emplace(std::make_pair(name, restraint));
+                restraints_.emplace(name, restraint);
                 auto sessionResources = createResources(module);
                 if (!sessionResources)
                 {
@@ -241,7 +241,7 @@ gmxapi::SessionResources* SessionImpl::createResources(std::shared_ptr<gmxapi::M
     if (resources_.find(name) == resources_.end())
     {
         auto resourcesInstance = std::make_unique<SessionResources>(this, name);
-        resources_.emplace(std::make_pair(name, std::move(resourcesInstance)));
+        resources_.emplace(name, std::move(resourcesInstance));
         resources = resources_.at(name).get();
         // To do: This should be more dynamic.
         getSignalManager()->addSignaller(name);

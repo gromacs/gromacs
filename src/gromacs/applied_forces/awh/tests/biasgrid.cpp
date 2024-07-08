@@ -83,7 +83,7 @@ TEST(biasGridTest, neighborhood)
         auto   awhDimBuffer =
                 awhDimParamSerialized(coordinateProvider, coordIndex, origin, end, period, diffusion);
         gmx::InMemoryDeserializer serializer(awhDimBuffer, false);
-        awhDimParams.emplace_back(AwhDimParams(&serializer));
+        awhDimParams.emplace_back(&serializer);
     }
     {
         int    coordIndex = 1;
@@ -93,7 +93,7 @@ TEST(biasGridTest, neighborhood)
         auto   awhDimBuffer =
                 awhDimParamSerialized(coordinateProvider, coordIndex, origin, end, period, diffusion);
         gmx::InMemoryDeserializer serializer(awhDimBuffer, false);
-        awhDimParams.emplace_back(AwhDimParams(&serializer));
+        awhDimParams.emplace_back(&serializer);
     }
 
     const real conversionFactor = 1;

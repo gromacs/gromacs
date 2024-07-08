@@ -1013,12 +1013,12 @@ ArrayRef<const PmeTestHardwareContext> getPmeTestHardwareContexts()
     if (s_pmeTestHardwareContexts.empty())
     {
         // Add CPU
-        s_pmeTestHardwareContexts.emplace_back(PmeTestHardwareContext());
+        s_pmeTestHardwareContexts.emplace_back();
         // Add GPU devices
         const auto& testDeviceList = getTestHardwareEnvironment()->getTestDeviceList();
         for (const auto& testDevice : testDeviceList)
         {
-            s_pmeTestHardwareContexts.emplace_back(PmeTestHardwareContext(testDevice.get()));
+            s_pmeTestHardwareContexts.emplace_back(testDevice.get());
         }
     }
     return s_pmeTestHardwareContexts;

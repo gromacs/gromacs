@@ -342,7 +342,7 @@ static void read_vsite_database(const std::filesystem::path&           ddbname,
                         /* Allocate a new topology entry if this is a new residue */
                         if (found == vsitetoplist->end())
                         {
-                            vsitetoplist->push_back(VirtualSiteTopology(dirstr));
+                            vsitetoplist->emplace_back(dirstr);
                         }
                         int         numberOfSites = sscanf(pline, "%s%s%s%s", s1, s2, s3, s4);
                         std::string s1String      = s1;

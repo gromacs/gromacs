@@ -154,7 +154,7 @@ static void read_h_db_file(const std::filesystem::path& hfn, std::vector<Molecul
             fprintf(stderr, "Error in hdb file: nah = %d\nline = '%s'\n", size, line);
             break;
         }
-        globalPatches->emplace_back(MoleculePatchDatabase());
+        globalPatches->emplace_back();
         MoleculePatchDatabase* block = &globalPatches->back();
         clearModificationBlock(block);
         block->name     = buf;
@@ -179,7 +179,7 @@ static void read_h_db_file(const std::filesystem::path& hfn, std::vector<Molecul
                 {
                     gmx_fatal(FARGS, "Error reading from file %s", hfn.string().c_str());
                 }
-                block->hack.emplace_back(MoleculePatch());
+                block->hack.emplace_back();
                 read_ab(buf, hfn, &block->hack.back());
             }
         }
