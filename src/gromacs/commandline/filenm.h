@@ -41,6 +41,8 @@
 #ifndef GMX_COMMANDLINE_FILENM_H
 #define GMX_COMMANDLINE_FILENM_H
 
+#include <filesystem>
+#include <optional>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -150,19 +152,34 @@ bool ftp2bSet(int ftp, int nfile, const t_filenm fnm[]);
 bool opt2bSet(const char* opt, int nfile, const t_filenm fnm[]);
 
 /*! \brief
- * Returns the file name belonging top cmd-line option opt, or NULL when
- * no such option.
+ * DEPRECATED Returns the file name belonging top cmd-line option opt,
+ * or NULL when no such option.
  *
  * Also return NULL when opt is optional and option is not set.
  */
 const char* opt2fn_null(const char* opt, int nfile, const t_filenm fnm[]);
 
 /*! \brief
- * Returns the first file name with type ftp, or NULL when none found.
+ * Returns the file name belonging top cmd-line option opt, or
+ * std::nullopt when no such option.
+ *
+ * Also return std::nullopt when opt is optional and option is not set.
+ */
+std::optional<std::filesystem::path> opt2path_optional(const char* opt, int nfile, const t_filenm fnm[]);
+
+/*! \brief
+ * DEPRECATED Returns the first file name with type ftp, or NULL when none found.
  *
  * Also return NULL when ftp is optional and option is not set.
  */
 const char* ftp2fn_null(int ftp, int nfile, const t_filenm fnm[]);
+
+/*! \brief
+ * Returns the first file name with type ftp, or std::nullopt when none found.
+ *
+ * Also return std::nullopt when ftp is optional and option is not set.
+ */
+std::optional<std::filesystem::path> ftp2path_optional(int ftp, int nfile, const t_filenm fnm[]);
 
 //! Returns whether or not this filenm is optional.
 bool is_optional(const t_filenm* fnm);

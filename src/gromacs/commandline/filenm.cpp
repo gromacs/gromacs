@@ -180,6 +180,16 @@ gmx_bool opt2bSet(const char* opt, int nfile, const t_filenm fnm[])
     return FALSE;
 }
 
+std::optional<std::filesystem::path> opt2path_optional(const char* opt, int nfile, const t_filenm fnm[])
+{
+    const char* r = opt2fn_null(opt, nfile, fnm);
+    if (r != nullptr)
+    {
+        return std::make_optional<std::filesystem::path>(r);
+    }
+    return std::nullopt;
+}
+
 const char* opt2fn_null(const char* opt, int nfile, const t_filenm fnm[])
 {
     const t_filenm* fileOption = getFileOption(opt, nfile, fnm);
@@ -199,6 +209,16 @@ const char* opt2fn_null(const char* opt, int nfile, const t_filenm fnm[])
     GMX_RELEASE_ASSERT(false, "opt2fn_null should be called with a valid option");
 
     return nullptr;
+}
+
+std::optional<std::filesystem::path> ftp2path_optional(int ftp, int nfile, const t_filenm fnm[])
+{
+    const char* r = ftp2fn_null(ftp, nfile, fnm);
+    if (r != nullptr)
+    {
+        return std::make_optional<std::filesystem::path>(r);
+    }
+    return std::nullopt;
 }
 
 const char* ftp2fn_null(int ftp, int nfile, const t_filenm fnm[])
