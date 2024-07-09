@@ -97,6 +97,7 @@ struct HostBuffers
 void allocateDeviceBuffers(Nbnxm::GpuPairlist* pairlist, int allocationSize, const DeviceContext& deviceContext)
 {
     pairlist->sciAllocationSize                  = allocationSize;
+    pairlist->packedJClustersAllocationSize      = allocationSize;
     pairlist->exclAllocationSize                 = allocationSize;
     pairlist->d_rollingPruningPartAllocationSize = allocationSize;
 
