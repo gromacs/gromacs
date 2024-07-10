@@ -101,7 +101,12 @@ void PmeCoordinateReceiverGpu::Impl::reinitCoordinateReceiver(DeviceBuffer<RVec>
                     "Direct PME-PP communication with threadMPI is only supported with CUDA.");
             // Data will be transferred directly from GPU.
             void* sendBuf = reinterpret_cast<void*>(asMpiPointer(d_x) + indStart);
-            MPI_Send(&sendBuf, sizeof(void**), MPI_BYTE, ppCommManager.ppRank.rankId, 0, comm_);
+            MPI_Send(&sendBuf,
+                     sizeof(void**),
+                     MPI_BYTE,
+                     ppCommManager.ppRank.rankId,
+                     eCommType_COORD_GPU_REMOTE_GPU_PTR,
+                     comm_);
         }
     }
 #else
@@ -127,7 +132,7 @@ void PmeCoordinateReceiverGpu::Impl::receiveCoordinatesSynchronizerFromPpPeerToP
               sizeof(GpuEventSynchronizer*), // NOLINT(bugprone-sizeof-expression)
               MPI_BYTE,
               ppRank,
-              0,
+              eCommType_COORD_GPU_SYNCHRONIZER,
               comm_,
               &(requests_[ppRank]));
 #else

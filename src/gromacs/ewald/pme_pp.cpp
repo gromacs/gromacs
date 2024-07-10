@@ -519,7 +519,13 @@ static void receive_virial_energy(const t_commrec*      cr,
                     cr->dd->pme_nodeid);
         }
 #if GMX_MPI
-        MPI_Recv(&cve, sizeof(cve), MPI_BYTE, cr->dd->pme_nodeid, 1, cr->mpi_comm_mysim, MPI_STATUS_IGNORE);
+        MPI_Recv(&cve,
+                 sizeof(cve),
+                 MPI_BYTE,
+                 cr->dd->pme_nodeid,
+                 eCommType_ENERGY_VIRIAL_DVDL,
+                 cr->mpi_comm_mysim,
+                 MPI_STATUS_IGNORE);
 #else
         std::memset(&cve, 0, sizeof(cve));
 #endif
@@ -563,7 +569,7 @@ static void recvFFromPme(gmx::PmePpCommGpu* pmePpCommGpu,
     {
         // Receive data using MPI
 #if GMX_MPI
-        MPI_Recv(recvptr, n * sizeof(rvec), MPI_BYTE, cr->dd->pme_nodeid, 0, cr->mpi_comm_mysim, MPI_STATUS_IGNORE);
+        MPI_Recv(recvptr, n * sizeof(rvec), MPI_BYTE, cr->dd->pme_nodeid, eCommType_FORCES, cr->mpi_comm_mysim, MPI_STATUS_IGNORE);
 #else
         GMX_UNUSED_VALUE(cr);
         GMX_UNUSED_VALUE(n);

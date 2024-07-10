@@ -607,7 +607,7 @@ static void gmx_pme_send_force_vir_ener(const gmx_pme_t& pme,
                               receiver.numAtoms * sizeof(rvec),
                               MPI_BYTE,
                               receiver.rankId,
-                              0,
+                              eCommType_FORCES,
                               pme_pp->mpi_comm_mysim,
                               &pme_pp->req[messages]);
                 }
@@ -632,7 +632,13 @@ static void gmx_pme_send_force_vir_ener(const gmx_pme_t& pme,
     {
         fprintf(debug, "PME rank sending to PP rank %d: virial and energy\n", pme_pp->peerRankId);
     }
-    MPI_Isend(&cve, sizeof(cve), MPI_BYTE, pme_pp->peerRankId, 1, pme_pp->mpi_comm_mysim, &pme_pp->req[messages++]);
+    MPI_Isend(&cve,
+              sizeof(cve),
+              MPI_BYTE,
+              pme_pp->peerRankId,
+              eCommType_ENERGY_VIRIAL_DVDL,
+              pme_pp->mpi_comm_mysim,
+              &pme_pp->req[messages++]);
 
     /* Wait for the forces to arrive */
     MPI_Waitall(messages, pme_pp->req.data(), pme_pp->stat.data());

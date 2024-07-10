@@ -79,7 +79,7 @@ void PmePpCommGpu::Impl::sendCoordinatesToPmePeerToPeer(Float3* sendPtr,
     pmeCoordinatesSynchronizer_.markEvent(pmePpCommStream_);
     GpuEventSynchronizer* pmeSync = &pmeCoordinatesSynchronizer_;
     // NOLINTNEXTLINE(bugprone-sizeof-expression)
-    MPI_Send(&pmeSync, sizeof(GpuEventSynchronizer*), MPI_BYTE, pmeRank_, 0, comm_);
+    MPI_Send(&pmeSync, sizeof(GpuEventSynchronizer*), MPI_BYTE, pmeRank_, eCommType_COORD_GPU_SYNCHRONIZER, comm_);
 #endif
 }
 

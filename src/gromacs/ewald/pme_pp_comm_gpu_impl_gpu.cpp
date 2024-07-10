@@ -120,15 +120,33 @@ void PmePpCommGpu::Impl::reinit(int size)
     if (GMX_THREAD_MPI)
     {
         // receive device coordinate buffer address from PME rank
-        MPI_Recv(&remotePmeXBuffer_, sizeof(Float3*), MPI_BYTE, pmeRank_, 0, comm_, MPI_STATUS_IGNORE);
+        MPI_Recv(&remotePmeXBuffer_,
+                 sizeof(Float3*),
+                 MPI_BYTE,
+                 pmeRank_,
+                 eCommType_COORD_GPU_REMOTE_GPU_PTR,
+                 comm_,
+                 MPI_STATUS_IGNORE);
         // send host and device force buffer addresses to PME rank
-        MPI_Send(&d_pmeForces_, sizeof(Float3*), MPI_BYTE, pmeRank_, 0, comm_);
+        MPI_Send(&d_pmeForces_, sizeof(Float3*), MPI_BYTE, pmeRank_, eCommType_FORCES_GPU_REMOTE_GPU_PTR, comm_);
         RVec* pmeCpuForceBufferData = pmeCpuForceBuffer_->data();
-        MPI_Send(&pmeCpuForceBufferData, sizeof(RVec*), MPI_BYTE, pmeRank_, 0, comm_);
+        MPI_Send(&pmeCpuForceBufferData, sizeof(RVec*), MPI_BYTE, pmeRank_, eCommType_FORCES_GPU_REMOTE_CPU_PTR, comm_);
         // Receive address of event and associated flag from PME rank, to allow sync to local stream after force transfer
         // NOLINTNEXTLINE(bugprone-sizeof-expression)
-        MPI_Recv(&remotePmeForceSendEvent_, sizeof(GpuEventSynchronizer*), MPI_BYTE, pmeRank_, 0, comm_, MPI_STATUS_IGNORE);
-        MPI_Recv(&remotePmeForceSendEventRecorded_, sizeof(std::atomic<bool>*), MPI_BYTE, pmeRank_, 0, comm_, MPI_STATUS_IGNORE);
+        MPI_Recv(&remotePmeForceSendEvent_,
+                 sizeof(GpuEventSynchronizer*),
+                 MPI_BYTE,
+                 pmeRank_,
+                 eCommType_FORCES_GPU_SYNCHRONIZER,
+                 comm_,
+                 MPI_STATUS_IGNORE);
+        MPI_Recv(&remotePmeForceSendEventRecorded_,
+                 sizeof(std::atomic<bool>*),
+                 MPI_BYTE,
+                 pmeRank_,
+                 eCommType_FORCES_GPU_EVENT_RECORDED,
+                 comm_,
+                 MPI_STATUS_IGNORE);
     }
 
 #endif
@@ -183,7 +201,7 @@ void PmePpCommGpu::Impl::receiveForceFromPmeGpuAwareMpi(Float3* pmeForcePtr, int
 
     if (!stageLibMpiGpuCpuComm_)
     {
-        MPI_Recv(pmeForcePtr, recvSize * DIM, MPI_FLOAT, pmeRank_, 0, comm_, MPI_STATUS_IGNORE);
+        MPI_Recv(pmeForcePtr, recvSize * DIM, MPI_FLOAT, pmeRank_, eCommType_FORCES_GPU, comm_, MPI_STATUS_IGNORE);
     }
     else
     {
@@ -193,13 +211,25 @@ void PmePpCommGpu::Impl::receiveForceFromPmeGpuAwareMpi(Float3* pmeForcePtr, int
             if (pmeForcePtr != asMpiPointer(d_pmeForces_))
             {
                 // Receive data from remote GPU in memory of local GPU
-                MPI_Recv(asMpiPointer(d_pmeForces_), recvSize * DIM, MPI_FLOAT, pmeRank_, 0, comm_, MPI_STATUS_IGNORE);
+                MPI_Recv(asMpiPointer(d_pmeForces_),
+                         recvSize * DIM,
+                         MPI_FLOAT,
+                         pmeRank_,
+                         eCommType_FORCES_GPU,
+                         comm_,
+                         MPI_STATUS_IGNORE);
             }
         }
         else
         {
             // Receive data from remote GPU in memory of local GPU
-            MPI_Recv(asMpiPointer(d_pmeForces_), recvSize * DIM, MPI_FLOAT, pmeRank_, 0, comm_, MPI_STATUS_IGNORE);
+            MPI_Recv(asMpiPointer(d_pmeForces_),
+                     recvSize * DIM,
+                     MPI_FLOAT,
+                     pmeRank_,
+                     eCommType_FORCES_GPU,
+                     comm_,
+                     MPI_STATUS_IGNORE);
         }
 
         if (pmeForcePtr != asMpiPointer(d_pmeForces_)) // destination is CPU memory, so finalize transfer with local D2H

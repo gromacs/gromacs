@@ -62,6 +62,15 @@ enum
     eCommType_NR,
     eCommType_COORD,
     eCommType_COORD_GPU,
+    eCommType_COORD_GPU_SYNCHRONIZER,
+    eCommType_COORD_GPU_REMOTE_GPU_PTR,
+    eCommType_FORCES,
+    eCommType_FORCES_GPU,
+    eCommType_FORCES_GPU_SYNCHRONIZER,
+    eCommType_FORCES_GPU_EVENT_RECORDED,
+    eCommType_FORCES_GPU_REMOTE_GPU_PTR,
+    eCommType_FORCES_GPU_REMOTE_CPU_PTR,
+    eCommType_ENERGY_VIRIAL_DVDL,
     eCommType_CNB
 };
 
