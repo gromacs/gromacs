@@ -3897,15 +3897,15 @@ void do_index(const char*                    mdparin,
         fprintf(stderr, "processing index file...\n");
     }
     std::vector<IndexGroup> defaultIndexGroups;
-    if (ndx == nullptr)
+    if (ndx != nullptr)
+    {
+        defaultIndexGroups = init_index(ndx);
+    }
+    else
     {
         atoms_all          = gmx_mtop_global_atoms(*mtop);
         defaultIndexGroups = analyse(&atoms_all, false, true);
         done_atom(&atoms_all);
-    }
-    else
-    {
-        defaultIndexGroups = init_index(ndx);
     }
 
     SimulationGroups* groups = &mtop->groups;
