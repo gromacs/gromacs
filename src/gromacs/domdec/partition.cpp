@@ -477,7 +477,7 @@ static void restoreAtomGroups(gmx_domdec_t* dd, const t_state* state)
 }
 
 //! Sets the atom info structures.
-static void dd_set_atominfo(gmx::ArrayRef<const int> index_gl, int cg0, int cg1, t_forcerec* fr)
+static void dd_set_atominfo(gmx::ArrayRef<const int> index_gl, int atomStart, int atomEnd, t_forcerec* fr)
 {
     if (fr != nullptr)
     {
@@ -485,9 +485,11 @@ static void dd_set_atominfo(gmx::ArrayRef<const int> index_gl, int cg0, int cg1,
                 fr->atomInfoForEachMoleculeBlock;
         gmx::ArrayRef<int64_t> atomInfo = fr->atomInfo;
 
-        for (int cg = cg0; cg < cg1; cg++)
+        const int gmx_unused numThreads = gmx_omp_nthreads_get(ModuleMultiThread::Domdec);
+#pragma omp parallel for num_threads(numThreads) schedule(static)
+        for (int a = atomStart; a < atomEnd; a++)
         {
-            atomInfo[cg] = ddGetAtomInfo(atomInfoForEachMoleculeBlock, index_gl[cg]);
+            atomInfo[a] = ddGetAtomInfo(atomInfoForEachMoleculeBlock, index_gl[a]);
         }
     }
 }
