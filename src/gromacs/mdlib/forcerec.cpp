@@ -285,7 +285,7 @@ makeAtomInfoForEachMoleculeBlock(const gmx_mtop_t& mtop, const t_forcerec* fr)
             for (int a = 0; a < molt.atoms.nr; a++)
             {
                 const t_atom& atom = molt.atoms.atom[a];
-                int64_t& atomInfo  = atomInfoOfMoleculeBlock.atomInfo[moleculeOffsetInBlock + a];
+                int32_t& atomInfo  = atomInfoOfMoleculeBlock.atomInfo[moleculeOffsetInBlock + a];
 
                 /* Store the energy group in atomInfo */
                 int gid  = getGroupType(mtop.groups,
@@ -349,12 +349,12 @@ makeAtomInfoForEachMoleculeBlock(const gmx_mtop_t& mtop, const t_forcerec* fr)
     return atomInfoForEachMoleculeBlock;
 }
 
-static std::vector<int64_t> expandAtomInfo(const int nmb,
+static std::vector<int32_t> expandAtomInfo(const int nmb,
                                            gmx::ArrayRef<const gmx::AtomInfoWithinMoleculeBlock> atomInfoForEachMoleculeBlock)
 {
     const int numAtoms = atomInfoForEachMoleculeBlock[nmb - 1].indexOfLastAtomInMoleculeBlock;
 
-    std::vector<int64_t> atomInfo(numAtoms);
+    std::vector<int32_t> atomInfo(numAtoms);
 
     int mb = 0;
     for (int a = 0; a < numAtoms; a++)

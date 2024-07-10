@@ -70,7 +70,7 @@ int dd_make_local_top(const gmx_domdec_t&            dd,
                       t_forcerec*                    fr,
                       gmx::ArrayRef<const gmx::RVec> coordinates,
                       const gmx_mtop_t&              top,
-                      gmx::ArrayRef<const int64_t>   atomInfo,
+                      gmx::ArrayRef<const int32_t>   atomInfo,
                       gmx_localtop_t*                ltop);
 
 #endif

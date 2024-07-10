@@ -82,7 +82,7 @@ struct TestSystem
     //! Storage for atom partial charges.
     std::vector<real> charges;
     //! Atom info
-    std::vector<int64_t> atomInfo;
+    std::vector<int32_t> atomInfo;
     //! Information about exclusions.
     ListOfLists<int> excls;
     //! Storage for atom positions.

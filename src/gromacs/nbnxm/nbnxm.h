@@ -345,7 +345,7 @@ public:
                         const gmx::UpdateGroupsCog*    updateGroupsCog,
                         gmx::Range<int>                atomRange,
                         real                           atomDensity,
-                        gmx::ArrayRef<const int64_t>   atomInfo,
+                        gmx::ArrayRef<const int32_t>   atomInfo,
                         gmx::ArrayRef<const gmx::RVec> x,
                         int                            numAtomsMoved,
                         const int*                     move);
@@ -379,7 +379,7 @@ public:
     //! Updates all the atom properties in Nbnxm
     void setAtomProperties(gmx::ArrayRef<const int>     atomTypes,
                            gmx::ArrayRef<const real>    atomCharges,
-                           gmx::ArrayRef<const int64_t> atomInfo) const;
+                           gmx::ArrayRef<const int32_t> atomInfo) const;
 
     /*!\brief Convert the coordinates to NBNXM format for the given locality.
      *
@@ -540,7 +540,7 @@ std::unique_ptr<nonbonded_verlet_t> init_nb_verlet(const gmx::MDLogger& mdlog,
  */
 void nbnxn_put_on_grid_nonlocal(nonbonded_verlet_t*              nb_verlet,
                                 const struct gmx_domdec_zones_t* zones,
-                                gmx::ArrayRef<const int64_t>     atomInfo,
+                                gmx::ArrayRef<const int32_t>     atomInfo,
                                 gmx::ArrayRef<const gmx::RVec>   x);
 
 /*! \brief Check if GROMACS has been built with GPU support.

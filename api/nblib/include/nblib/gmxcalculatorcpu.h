@@ -70,7 +70,7 @@ public:
     GmxNBForceCalculatorCpu(gmx::ArrayRef<int>     particleTypeIdOfAllParticles,
                             gmx::ArrayRef<real>    nonBondedParams,
                             gmx::ArrayRef<real>    charges,
-                            gmx::ArrayRef<int64_t> particleInteractionFlags,
+                            gmx::ArrayRef<int32_t> particleInteractionFlags,
                             gmx::ArrayRef<int>     exclusionRanges,
                             gmx::ArrayRef<int>     exclusionElements,
                             const NBKernelOptions& options);

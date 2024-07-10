@@ -190,8 +190,6 @@ typedef struct gmx_domdec_sort
     std::vector<gmx_cgsort_t> moved;
     /**< Integer buffer for sorting */
     std::vector<int> intBuffer;
-    /**< Int64 buffer for sorting */
-    std::vector<int64_t> int64Buffer;
 } gmx_domdec_sort_t;
 
 /*! \brief Manages atom ranges and order for the local state atom vectors */

@@ -52,6 +52,6 @@ gmx_bool gmx_mtop_bondeds_free_energy(const struct gmx_mtop_t* mtop);
 /* Sort all the bonded ilists in idef to have the perturbed ones at the end
  * and set nr_nr_nonperturbed in ilist.
  */
-void gmx_sort_ilist_fe(InteractionDefinitions* idef, gmx::ArrayRef<const int64_t> atomInfo);
+void gmx_sort_ilist_fe(InteractionDefinitions* idef, gmx::ArrayRef<const int32_t> atomInfo);
 
 #endif

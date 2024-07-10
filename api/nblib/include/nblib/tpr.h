@@ -72,7 +72,7 @@ public:
     TprReader(std::string filename);
 
     //! Particle info where all particles are marked to have Van der Waals interactions
-    std::vector<int64_t> particleInteractionFlags_;
+    std::vector<int32_t> particleInteractionFlags_;
     //! particle type id of all particles
     std::vector<int> particleTypeIdOfAllParticles_;
     //! Storage for parameters for short range interactions.

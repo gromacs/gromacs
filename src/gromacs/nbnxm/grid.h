@@ -288,7 +288,7 @@ public:
                         GridSetData*                   gridSetData,
                         gmx::ArrayRef<GridWork>        gridWork,
                         gmx::Range<int>                atomRange,
-                        gmx::ArrayRef<const int64_t>   atomInfo,
+                        gmx::ArrayRef<const int32_t>   atomInfo,
                         gmx::ArrayRef<const gmx::RVec> x,
                         int                            numAtomsMoved,
                         nbnxn_atomdata_t*              nbat);
@@ -314,13 +314,13 @@ private:
                   nbnxn_atomdata_t*              nbat,
                   int                            atomStart,
                   int                            atomEnd,
-                  gmx::ArrayRef<const int64_t>   atomInfo,
+                  gmx::ArrayRef<const int32_t>   atomInfo,
                   gmx::ArrayRef<const gmx::RVec> x);
 
     //! Spatially sort the atoms within the given column range, for CPU geometry
     void sortColumnsCpuGeometry(GridSetData*                   gridSetData,
                                 int                            dd_zone,
-                                gmx::ArrayRef<const int64_t>   atomInfo,
+                                gmx::ArrayRef<const int32_t>   atomInfo,
                                 gmx::ArrayRef<const gmx::RVec> x,
                                 nbnxn_atomdata_t*              nbat,
                                 gmx::Range<int>                columnRange,
@@ -329,7 +329,7 @@ private:
     //! Spatially sort the atoms within the given column range, for GPU geometry
     void sortColumnsGpuGeometry(GridSetData*                   gridSetData,
                                 int                            dd_zone,
-                                gmx::ArrayRef<const int64_t>   atomInfo,
+                                gmx::ArrayRef<const int32_t>   atomInfo,
                                 gmx::ArrayRef<const gmx::RVec> x,
                                 nbnxn_atomdata_t*              nbat,
                                 gmx::Range<int>                columnRange,

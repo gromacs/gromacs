@@ -723,7 +723,7 @@ static void make_exclusions_zone(ArrayRef<const int>               globalAtomInd
                                  const gmx_domdec_zones_t&         zones,
                                  ArrayRef<const MolblockIndices>   molblockIndices,
                                  const std::vector<gmx_moltype_t>& moltype,
-                                 gmx::ArrayRef<const int64_t>      atomInfo,
+                                 gmx::ArrayRef<const int32_t>      atomInfo,
                                  ListOfLists<int>*                 lexcls,
                                  int                               iz,
                                  int                               at_start,
@@ -799,7 +799,7 @@ static void make_exclusions_zone(ArrayRef<const int>               globalAtomInd
 static int make_local_bondeds_excls(const gmx_domdec_t&       dd,
                                     const gmx_domdec_zones_t& zones,
                                     const gmx_mtop_t&         mtop,
-                                    ArrayRef<const int64_t>   atomInfo,
+                                    ArrayRef<const int32_t>   atomInfo,
                                     const bool                checkDistanceMultiBody,
                                     const ivec                rcheck,
                                     const gmx_bool            checkDistanceTwoBody,
@@ -952,7 +952,7 @@ int dd_make_local_top(const gmx_domdec_t&          dd,
                       t_forcerec*                  fr,
                       ArrayRef<const RVec>         coordinates,
                       const gmx_mtop_t&            mtop,
-                      gmx::ArrayRef<const int64_t> atomInfo,
+                      gmx::ArrayRef<const int32_t> atomInfo,
                       gmx_localtop_t*              ltop)
 {
     real  rc = -1;

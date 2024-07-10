@@ -466,8 +466,8 @@ public:
      * \param[in] clusterOffset  The cluster offset from where to start storing the energy groups
      */
     void setEnergyGroups(ArrayRef<const int>     indices,
-                         ArrayRef<const int64_t> atomInfo,
-                         const int64_t           mask,
+                         ArrayRef<const int32_t> atomInfo,
+                         const int               mask,
                          const int               clusterOffset)
     {
         GMX_ASSERT(indices.ssize() % iClusterSize_ == 0,

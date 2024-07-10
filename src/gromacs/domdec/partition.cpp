@@ -483,7 +483,7 @@ static void dd_set_atominfo(gmx::ArrayRef<const int> index_gl, int atomStart, in
     {
         gmx::ArrayRef<gmx::AtomInfoWithinMoleculeBlock> atomInfoForEachMoleculeBlock =
                 fr->atomInfoForEachMoleculeBlock;
-        gmx::ArrayRef<int64_t> atomInfo = fr->atomInfo;
+        gmx::ArrayRef<int32_t> atomInfo = fr->atomInfo;
 
         const int gmx_unused numThreads = gmx_omp_nthreads_get(ModuleMultiThread::Domdec);
 #pragma omp parallel for num_threads(numThreads) schedule(static)
@@ -1358,7 +1358,7 @@ static void mergeAtomBuffers(const int                                       num
                              gmx::ArrayRef<gmx::RVec>                        x,
                              gmx::ArrayRef<const gmx::RVec>                  recv_vr,
                              gmx::ArrayRef<gmx::AtomInfoWithinMoleculeBlock> atomInfoForEachMoleculeBlock,
-                             gmx::ArrayRef<int64_t>                          atomInfo)
+                             gmx::ArrayRef<int32_t>                          atomInfo)
 {
     GMX_ASSERT(zoneAtomRanges.ssize() >= 2 * numZones + 1,
                "zoneAtomRange should contain at least 2*numZones ranges");
@@ -1586,7 +1586,7 @@ static void get_zone_pulse_groups(gmx_domdec_t*                  dd,
                                   gmx_bool                       bDist2B,
                                   gmx_bool                       bDistMB,
                                   gmx::ArrayRef<const gmx::RVec> coordinates,
-                                  gmx::ArrayRef<const int64_t>   atomInfo,
+                                  gmx::ArrayRef<const int32_t>   atomInfo,
                                   std::vector<int>*              localAtomGroups,
                                   dd_comm_setup_work_t*          work)
 {
@@ -2614,7 +2614,7 @@ static void dd_sort_state(gmx_domdec_t* dd, t_forcerec* fr, t_state* state)
     /* Reorder the global cg index */
     orderVector<int>(cgsort, dd->globalAtomIndices, &sort->intBuffer);
     /* Reorder the atom info */
-    orderVector<int64_t>(cgsort, fr->atomInfo, &sort->int64Buffer);
+    orderVector<int>(cgsort, fr->atomInfo, &sort->intBuffer);
     /* Set the home atom number */
     dd->comm->atomRanges.setEnd(DDAtomRanges::Type::Home, dd->numHomeAtoms);
 

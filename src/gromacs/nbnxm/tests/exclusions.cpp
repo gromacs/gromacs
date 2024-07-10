@@ -113,7 +113,7 @@ diagonalPairlist(const Nbnxm::KernelType kernelType, const int numAtoms)
     rvec   lowerCorner = { 0.0_real, 0.0_real, 0.0_real };
     rvec   upperCorner = { 3.0_real, 3.0_real, 3.0_real };
 
-    std::vector<int64_t> atomInfo(numAtoms, sc_atomInfo_HasVdw);
+    std::vector<int32_t> atomInfo(numAtoms, sc_atomInfo_HasVdw);
 
     gridSet.putOnGrid(box,
                       0,

@@ -76,7 +76,7 @@ namespace nblib
  * Note: If the maximum energy group ID in the input is N, it is assumed that
  * all the energy groups with IDs from 0...N-1 also exist.
  */
-int64_t findNumEnergyGroups(gmx::ArrayRef<int64_t> particleInteractionFlags);
+int32_t findNumEnergyGroups(gmx::ArrayRef<int32_t> particleInteractionFlags);
 
 //! Helper to translate between the different enumeration values.
 Nbnxm::KernelType translateBenchmarkEnum(const SimdKernels& kernel);
@@ -94,7 +94,7 @@ Nbnxm::KernelSetup createKernelSetupCPU(const SimdKernels nbnxmSimd, const bool 
 Nbnxm::KernelSetup createKernelSetupGPU(const bool useTabulatedEwaldCorr);
 
 //! Create Particle info array to mark those that undergo VdV interaction
-std::vector<int64_t> createParticleInfoAllVdw(size_t numParticles);
+std::vector<int32_t> createParticleInfoAllVdw(size_t numParticles);
 
 //! Create the non-bonded parameter vector in GROMACS format
 std::vector<real> createNonBondedParameters(const std::vector<ParticleType>& particleTypes,

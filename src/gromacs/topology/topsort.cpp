@@ -149,7 +149,7 @@ static gmx_bool ip_pert(int ftype, const t_iparams* ip)
 
 
 //! Return whether the atom has its charge perturbed per \c atomInfo
-static bool hasPerturbedCharge(int atom, gmx::ArrayRef<const int64_t> atomInfo)
+static bool hasPerturbedCharge(int atom, gmx::ArrayRef<const int32_t> atomInfo)
 {
     return bool(atomInfo[atom] & gmx::sc_atomInfo_HasPerturbedCharge);
 }
@@ -190,7 +190,7 @@ gmx_bool gmx_mtop_bondeds_free_energy(const gmx_mtop_t* mtop)
     return bPert;
 }
 
-void gmx_sort_ilist_fe(InteractionDefinitions* idef, gmx::ArrayRef<const int64_t> atomInfo)
+void gmx_sort_ilist_fe(InteractionDefinitions* idef, gmx::ArrayRef<const int32_t> atomInfo)
 {
     bool havePerturbedInteractions = false;
 

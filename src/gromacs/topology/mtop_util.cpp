@@ -591,7 +591,7 @@ static void addMimicExclusions(gmx::ListOfLists<int>* excls, const gmx::ArrayRef
 
 static void sortFreeEnergyInteractionsAtEnd(const gmx_mtop_t& mtop, InteractionDefinitions* idef)
 {
-    std::vector<int64_t> atomInfo(mtop.natoms, 0);
+    std::vector<int32_t> atomInfo(mtop.natoms, 0);
 
 
     for (size_t mb = 0; mb < mtop.molblock.size(); mb++)

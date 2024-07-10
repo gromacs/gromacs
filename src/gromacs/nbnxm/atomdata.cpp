@@ -847,7 +847,7 @@ static void nbnxn_atomdata_mask_fep(nbnxn_atomdata_t* nbat, const Nbnxm::GridSet
 
 /* Set the energy group indices for atoms in nbnxn_atomdata_t */
 static void nbnxn_atomdata_set_energygroups(const Nbnxm::GridSet&   gridSet,
-                                            ArrayRef<const int64_t> atomInfo,
+                                            ArrayRef<const int32_t> atomInfo,
                                             EnergyGroupsPerCluster* energyGroupsPerCluster)
 {
     for (const Nbnxm::Grid& grid : gridSet.grids())
@@ -871,7 +871,7 @@ void nbnxn_atomdata_set(nbnxn_atomdata_t*       nbat,
                         const Nbnxm::GridSet&   gridSet,
                         ArrayRef<const int>     atomTypes,
                         ArrayRef<const real>    atomCharges,
-                        ArrayRef<const int64_t> atomInfo)
+                        ArrayRef<const int32_t> atomInfo)
 {
     nbnxn_atomdata_t::Params& params = nbat->paramsDeprecated();
 

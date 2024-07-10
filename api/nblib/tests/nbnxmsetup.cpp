@@ -64,7 +64,7 @@ namespace
 
 TEST(NbnxmSetupTest, findNumEnergyGroups)
 {
-    std::vector<int64_t> v(10);
+    std::vector<int32_t> v(10);
     int                  arbitraryGid = 7;
 
     // this sets some bit outside the range of bits used for the group ID
@@ -122,12 +122,12 @@ TEST(NbnxmSetupTest, canCreateKernelSetupPlain)
 
 TEST(NbnxmSetupTest, canCreateParticleInfoAllVdv)
 {
-    size_t  numParticles = 2;
-    int64_t mask         = 0;
+    size_t numParticles = 2;
+    int    mask         = 0;
     mask |= gmx::sc_atomInfo_HasVdw;
     mask |= gmx::sc_atomInfo_HasCharge;
-    std::vector<int64_t> refParticles  = { mask, mask };
-    std::vector<int64_t> testParticles = createParticleInfoAllVdw(numParticles);
+    std::vector<int> refParticles  = { mask, mask };
+    std::vector<int> testParticles = createParticleInfoAllVdw(numParticles);
     EXPECT_EQ(refParticles, testParticles);
 }
 

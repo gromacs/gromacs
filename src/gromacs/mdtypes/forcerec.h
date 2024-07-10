@@ -190,7 +190,7 @@ struct t_forcerec
     /* Information about atom properties for the molecule blocks in the global topology */
     std::vector<gmx::AtomInfoWithinMoleculeBlock> atomInfoForEachMoleculeBlock;
     /* Information about atom properties for local and non-local atoms */
-    std::vector<int64_t> atomInfo;
+    std::vector<int32_t> atomInfo;
 
     std::vector<gmx::RVec> shift_vec;
 

@@ -53,24 +53,24 @@ namespace gmx
 /*! \brief Constants whose bit describes a property of an atom in
  * AtomInfoWithinMoleculeBlock.atomInfo.
  *
- * No bit should exceed 1 << 63, so that it fits into a 64-bit
+ * No bit should exceed 1 << 31, so that it fits into a 32-bit
  * integer.
  *
  * Since the tpx format support max 256 energy groups, we do the same
  * here, reserving bits 0-7 for the energy-group ID.
  */
 //! \{
-static constexpr int64_t sc_atomInfo_FreeEnergyPerturbation = 1 << 15;
-static constexpr int64_t sc_atomInfo_HasPerturbedCharge     = 1 << 16;
-static constexpr int64_t sc_atomInfo_Exclusion              = 1 << 17;
-static constexpr int64_t sc_atomInfo_Constraint             = 1 << 20;
-static constexpr int64_t sc_atomInfo_Settle                 = 1 << 21;
-static constexpr int64_t sc_atomInfo_BondCommunication      = 1 << 22;
-static constexpr int64_t sc_atomInfo_HasVdw                 = 1 << 23;
-static constexpr int64_t sc_atomInfo_HasCharge              = 1 << 24;
+static constexpr int32_t sc_atomInfo_FreeEnergyPerturbation = 1 << 15;
+static constexpr int32_t sc_atomInfo_HasPerturbedCharge     = 1 << 16;
+static constexpr int32_t sc_atomInfo_Exclusion              = 1 << 17;
+static constexpr int32_t sc_atomInfo_Constraint             = 1 << 20;
+static constexpr int32_t sc_atomInfo_Settle                 = 1 << 21;
+static constexpr int32_t sc_atomInfo_BondCommunication      = 1 << 22;
+static constexpr int32_t sc_atomInfo_HasVdw                 = 1 << 23;
+static constexpr int32_t sc_atomInfo_HasCharge              = 1 << 24;
 //! \}
 //! The first 8 bits are reserved for energy-group ID
-static constexpr int64_t sc_atomInfo_EnergyGroupIdMask = 0b11111111;
+static constexpr int32_t sc_atomInfo_EnergyGroupIdMask = 0b11111111;
 
 /*! \internal
  *  \brief Contains information about each atom in a molecule block of the global topology.
@@ -97,7 +97,7 @@ struct AtomInfoWithinMoleculeBlock
      *
      * The vector needs to be indexed accordingly.
      */
-    std::vector<int64_t> atomInfo;
+    std::vector<int32_t> atomInfo;
 };
 
 } // namespace gmx
