@@ -108,6 +108,7 @@ add_subdirectory(imd)
 add_subdirectory(compat)
 add_subdirectory(mimic)
 add_subdirectory(modularsimulator)
+add_subdirectory(ramd)
 add_subdirectory(gmxana)
 add_subdirectory(gmxpreprocess)
 add_subdirectory(correlationfunctions)
@@ -437,6 +438,7 @@ target_link_libraries(libgromacs PRIVATE
                       $<BUILD_INTERFACE:options>
                       $<BUILD_INTERFACE:pbcutil>
                       $<BUILD_INTERFACE:pulling>
+                      $<BUILD_INTERFACE:ramd>
                       $<BUILD_INTERFACE:random>
                       $<BUILD_INTERFACE:restraint>
                       $<BUILD_INTERFACE:selection>

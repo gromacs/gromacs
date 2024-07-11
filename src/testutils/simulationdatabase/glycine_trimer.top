@@ -1,0 +1,34 @@
+;
+;	File 'topol.top' was generated
+;	By user: doserbd (15005)
+;	On host: rh02912
+;	At date: Mon Sep 22 09:45:06 2014
+;
+;	This is a standalone topology file
+;
+;	Created by:
+;	GROMACS:      gmx pdb2gmx, VERSION 5.0
+;	Executable:   /home/doserbd/Work/MBM/install/gromacs-5.0/bin/gmx
+;	Library dir:  /home/doserbd/Work/MBM/install/gromacs-5.0/share/gromacs/top
+;	Command line:
+;	  pdb2gmx -f glycine_trimer.pdb -o glycine_trimer.gro -ignh
+;	Force field was read from the standard Gromacs share directory.
+;
+
+; Include forcefield parameters
+#include "oplsaa.ff/forcefield.itp"
+
+; Include chain topologies
+#include "topol_Protein_chain_A.itp"
+#include "topol_Protein_chain_B.itp"
+#include "topol_Protein_chain_C.itp"
+
+[ system ]
+; Name
+UNNAMED
+
+[ molecules ]
+; Compound        #mols
+Protein_chain_A     1
+Protein_chain_B     1
+Protein_chain_C     1

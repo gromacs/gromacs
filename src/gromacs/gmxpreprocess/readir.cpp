@@ -69,6 +69,7 @@
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/mdtypes/multipletimestepping.h"
 #include "gromacs/mdtypes/pull_params.h"
+#include "gromacs/mdtypes/ramd_params.h"
 #include "gromacs/options/options.h"
 #include "gromacs/options/treesupport.h"
 #include "gromacs/pbcutil/pbc.h"
@@ -2520,10 +2521,19 @@ void get_ir(const char*     mdparin,
     setStringEntry(&inp, "wall-density", inputrecStrings->wall_density, nullptr);
     ir->wall_ewald_zfac = get_ereal(&inp, "wall-ewald-zfac", 3, wi);
 
+    /* RAMD */
+    printStringNewline(&inp, "RAMD");
+    ir->bRAMD = getEnum<Boolean>(&inp, "ramd", wi) != Boolean::No;
+    if (ir->bRAMD)
+    {
+        ir->ramdParams = std::make_unique<gmx::RAMDParams>();
+        read_ramdparams(&inp, ir->ramdParams.get(), wi);
+    }
+
     /* COM pulling */
     printStringNewline(&inp, "COM PULLING");
     ir->bPull = (getEnum<Boolean>(&inp, "pull", wi) != Boolean::No);
-    if (ir->bPull)
+    if (ir->bPull || ir->bRAMD)
     {
         ir->pull                        = std::make_unique<pull_params_t>();
         inputrecStrings->pullGroupNames = read_pullparams(&inp, ir->pull.get(), wi);
@@ -4274,7 +4284,7 @@ void do_index(const char*                                 mdparin,
         }
     }
 
-    if (ir->bPull)
+    if (ir->bPull || ir->bRAMD)
     {
         for (int i = 1; i < ir->pull->ngroup; i++)
         {

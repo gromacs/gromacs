@@ -2145,7 +2145,7 @@ int Mdrunner::mdrunner()
             walltime_accounting =
                     walltime_accounting_init(gmx_omp_nthreads_get(ModuleMultiThread::Default));
 
-            if (inputrec->bPull)
+            if (inputrec->bPull || inputrec->bRAMD)
             {
                 /* Initialize pull code */
                 pull_work = init_pull(fplog,

@@ -58,6 +58,7 @@
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/mdtypes/multipletimestepping.h"
 #include "gromacs/mdtypes/pull_params.h"
+#include "gromacs/mdtypes/ramd_params.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/basedefinitions.h"
@@ -641,6 +642,30 @@ static void pr_pull(FILE* fp, int indent, const pull_params_t& pull)
     }
 }
 
+static void pr_ramd_group(FILE* fp, int indent, int g, const gmx::RAMDGroup grp)
+{
+    pr_indent(fp, indent);
+    fprintf(fp, "ramd-group %d:\n", g);
+    indent += 2;
+    PR("force", grp.force);
+    PR("max_dist", grp.max_dist);
+    PR("r_min_dist", grp.r_min_dist);
+}
+
+static void pr_ramd(FILE* fp, int indent, const gmx::RAMDParams ramd)
+{
+    PI("ramd-seed", ramd.seed);
+    PI("ramd-ngroups", ramd.ngroup);
+    for (int g = 0; g < ramd.ngroup; g++)
+    {
+        pr_ramd_group(fp, indent, g, ramd.group[g]);
+    }
+    PI("ramd-eval-freq", ramd.eval_freq);
+    PI("ramd-force-out-freq", ramd.force_out_freq);
+    PS("ramd-old-angle-dist", EBOOL(ramd.old_angle_dist));
+    PS("ramd-connected-ligands", EBOOL(ramd.connected_ligands));
+}
+
 static void pr_awh_bias_dim(FILE* fp, int indent, const gmx::AwhDimParams& awhDimParams, const char* prefix)
 {
     pr_indent(fp, indent);
@@ -1006,9 +1031,16 @@ void pr_inputrec(FILE* fp, int indent, const char* title, const t_inputrec* ir, 
 
         /* COM PULLING */
         PS("pull", EBOOL(ir->bPull));
-        if (ir->bPull)
+        if (ir->bPull || ir->bRAMD)
         {
             pr_pull(fp, indent, *ir->pull);
+        }
+
+        /* RAMD */
+        PS("ramd", EBOOL(ir->bRAMD));
+        if (ir->bRAMD)
+        {
+            pr_ramd(fp, indent, *ir->ramdParams);
         }
 
         /* AWH BIASING */

@@ -11,15 +11,16 @@ gmx [-s [&lt;.tpr&gt;]] [-cpi [&lt;.cpt&gt;]] [-table [&lt;.xvg&gt;]] [-tablep [
     [-dhdl [&lt;.xvg&gt;]] [-field [&lt;.xvg&gt;]] [-tpi [&lt;.xvg&gt;]] [-tpid [&lt;.xvg&gt;]]
     [-eo [&lt;.xvg&gt;]] [-px [&lt;.xvg&gt;]] [-pf [&lt;.xvg&gt;]] [-ro [&lt;.xvg&gt;]]
     [-ra [&lt;.log&gt;]] [-rs [&lt;.log&gt;]] [-rt [&lt;.log&gt;]] [-mtx [&lt;.mtx&gt;]]
-    [-if [&lt;.xvg&gt;]] [-swap [&lt;.xvg&gt;]] [-deffnm &lt;string&gt;] [-xvg &lt;enum&gt;]
-    [-dd &lt;vector&gt;] [-ddorder &lt;enum&gt;] [-npme &lt;int&gt;] [-nt &lt;int&gt;] [-ntmpi &lt;int&gt;]
-    [-ntomp &lt;int&gt;] [-ntomp_pme &lt;int&gt;] [-pin &lt;enum&gt;] [-pinoffset &lt;int&gt;]
-    [-pinstride &lt;int&gt;] [-gpu_id &lt;string&gt;] [-gputasks &lt;string&gt;] [-[no]ddcheck]
-    [-rdd &lt;real&gt;] [-rcon &lt;real&gt;] [-dlb &lt;enum&gt;] [-dds &lt;real&gt;] [-nb &lt;enum&gt;]
-    [-nstlist &lt;int&gt;] [-[no]tunepme] [-pme &lt;enum&gt;] [-pmefft &lt;enum&gt;]
-    [-bonded &lt;enum&gt;] [-update &lt;enum&gt;] [-[no]v] [-pforce &lt;real&gt;] [-[no]reprod]
-    [-cpt &lt;real&gt;] [-[no]cpnum] [-[no]append] [-nsteps &lt;int&gt;] [-maxh &lt;real&gt;]
-    [-replex &lt;int&gt;] [-nex &lt;int&gt;] [-reseed &lt;int&gt;]
+    [-ramd [&lt;.xvg&gt;]] [-if [&lt;.xvg&gt;]] [-swap [&lt;.xvg&gt;]] [-deffnm &lt;string&gt;]
+    [-xvg &lt;enum&gt;] [-dd &lt;vector&gt;] [-ddorder &lt;enum&gt;] [-npme &lt;int&gt;] [-nt &lt;int&gt;]
+    [-ntmpi &lt;int&gt;] [-ntomp &lt;int&gt;] [-ntomp_pme &lt;int&gt;] [-pin &lt;enum&gt;]
+    [-pinoffset &lt;int&gt;] [-pinstride &lt;int&gt;] [-gpu_id &lt;string&gt;]
+    [-gputasks &lt;string&gt;] [-[no]ddcheck] [-rdd &lt;real&gt;] [-rcon &lt;real&gt;]
+    [-dlb &lt;enum&gt;] [-dds &lt;real&gt;] [-nb &lt;enum&gt;] [-nstlist &lt;int&gt;] [-[no]tunepme]
+    [-pme &lt;enum&gt;] [-pmefft &lt;enum&gt;] [-bonded &lt;enum&gt;] [-update &lt;enum&gt;] [-[no]v]
+    [-pforce &lt;real&gt;] [-[no]reprod] [-cpt &lt;real&gt;] [-[no]cpnum] [-[no]append]
+    [-nsteps &lt;int&gt;] [-maxh &lt;real&gt;] [-replex &lt;int&gt;] [-nex &lt;int&gt;]
+    [-reseed &lt;int&gt;]
 
 DESCRIPTION
 
@@ -202,6 +203,8 @@ Options to specify output files:
            Log file
  -mtx    [&lt;.mtx&gt;]           (nm.mtx)         (Opt.)
            Hessian matrix
+ -ramd   [&lt;.xvg&gt;]           (ramd.xvg)       (Opt.)
+           xvgr/xmgr file
  -if     [&lt;.xvg&gt;]           (imdforces.xvg)  (Opt.)
            xvgr/xmgr file
  -swap   [&lt;.xvg&gt;]           (swapions.xvg)   (Opt.)

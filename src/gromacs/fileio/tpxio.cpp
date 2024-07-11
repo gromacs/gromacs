@@ -75,6 +75,7 @@
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/mdtypes/multipletimestepping.h"
 #include "gromacs/mdtypes/pull_params.h"
+#include "gromacs/mdtypes/ramd_params.h"
 #include "gromacs/mdtypes/state.h"
 #include "gromacs/pbcutil/boxutilities.h"
 #include "gromacs/pbcutil/pbc.h"
@@ -110,7 +111,7 @@
  * merging with mainstream GROMACS, set this tag string back to
  * TPX_TAG_RELEASE, and instead add an element to tpxv.
  */
-static const std::string tpx_tag = TPX_TAG_RELEASE;
+static const std::string tpx_tag = "RAMD";
 
 /*! \brief Enum of values that describe the contents of a tpr file
  * whose format matches a version number
@@ -196,6 +197,7 @@ enum tpxv
     tpxv_MassRepartitioning,          /**< Add mass repartitioning */
     tpxv_AwhTargetMetricScaling,      /**< Add AWH friction optimized target distribution */
     tpxv_VerletBufferPressureTol,     /**< Add Verlet buffer pressure tolerance */
+    tpxv_RAMD,                        /**< Add RAMD information */
     tpxv_Count                        /**< the total number of tpxv versions */
 };
 
@@ -1554,6 +1556,38 @@ static void do_inputrec(gmx::ISerializer* serializer, t_inputrec* ir, int file_v
         ir->bAdress = FALSE;
     }
 
+    /* RAMD */
+    {
+        if (file_version >= tpxv_RAMD)
+        {
+            serializer->doBool(&ir->bRAMD);
+
+            if (ir->bRAMD)
+            {
+                if (serializer->reading())
+                {
+                    ir->ramdParams = std::make_unique<gmx::RAMDParams>();
+                }
+                serializer->doInt64(&ir->ramdParams->seed);
+                serializer->doInt(&ir->ramdParams->ngroup);
+                if (serializer->reading())
+                {
+                    snew(ir->ramdParams->group, ir->ramdParams->ngroup);
+                }
+                for (int g = 0; g < ir->ramdParams->ngroup; g++)
+                {
+                    serializer->doReal(&ir->ramdParams->group[g].force);
+                    serializer->doReal(&ir->ramdParams->group[g].max_dist);
+                    serializer->doReal(&ir->ramdParams->group[g].r_min_dist);
+                }
+                serializer->doInt(&ir->ramdParams->eval_freq);
+                serializer->doInt(&ir->ramdParams->force_out_freq);
+                serializer->doBool(&ir->ramdParams->old_angle_dist);
+                serializer->doBool(&ir->ramdParams->connected_ligands);
+            }
+        }
+    }
+
     /* pull stuff */
     {
         PullingAlgorithm ePullOld = PullingAlgorithm::Umbrella;
@@ -1587,7 +1621,7 @@ static void do_inputrec(gmx::ISerializer* serializer, t_inputrec* ir, int file_v
                 default: GMX_RELEASE_ASSERT(false, "Unhandled old pull algorithm");
             }
         }
-        if (ir->bPull)
+        if (ir->bPull || ir->bRAMD)
         {
             if (serializer->reading())
             {

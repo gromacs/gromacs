@@ -102,9 +102,11 @@
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/locality.h"
 #include "gromacs/mdtypes/md_enums.h"
+#include "gromacs/mdtypes/ramd_params.h"
 #include "gromacs/mdtypes/mdatom.h"
 #include "gromacs/mdtypes/multipletimestepping.h"
 #include "gromacs/mdtypes/simulation_workload.h"
+#include "gromacs/mdtypes/ramd_params.h"
 #include "gromacs/mdtypes/state.h"
 #include "gromacs/mdtypes/state_propagator_data_gpu.h"
 #include "gromacs/nbnxm/atomdata.h"
@@ -114,7 +116,9 @@
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/pulling/pull.h"
+#include "gromacs/pulling/pull_internal.h"
 #include "gromacs/pulling/pull_rotation.h"
+#include "gromacs/ramd/ramd.h"
 #include "gromacs/timing/cyclecounter.h"
 #include "gromacs/timing/gpu_timing.h"
 #include "gromacs/timing/wallcycle.h"
@@ -651,6 +655,16 @@ static void computeSpecialForces(FILE*                          fplog,
                                  gmx_edsam*                     ed,
                                  bool                           didNeighborSearch)
 {
+    // RAMD: Pull forces must be applied before ForceProviders
+    if ((inputrec.bRAMD) && pull_have_potential(*pull_work))
+    {
+        const int mtsLevel = forceGroupMtsLevel(inputrec.mtsLevels, gmx::MtsForceGroups::Pull);
+        if (mtsLevel == 0 || stepWork.computeSlowForces)
+        {
+            pull_potential_wrapper(cr, inputrec, box, x, mdatoms, enerd, pull_work, lambda.data(), t, wcycle);
+        }
+    }
+
     /* NOTE: Currently all ForceProviders only provide forces.
      *       When they also provide energies, remove this conditional.
      */
@@ -696,7 +710,7 @@ static void computeSpecialForces(FILE*                          fplog,
         enerd->term[F_COM_PULL] += awh->applyBiasForcesAndUpdateBias(
                 inputrec.pbcType, foreignLambdaDeltaH, foreignLambdaDhDl, box, t, step, wcycle, fplog);
     }
-    if (doPulling)
+    if (doPulling || inputrec.bRAMD)
     {
         wallcycle_start_nocount(wcycle, WallCycleCounter::PullPot);
         auto& forceWithVirial = (pullMtsLevel == 0) ? forceWithVirialMtsLevel0 : forceWithVirialMtsLevel1;

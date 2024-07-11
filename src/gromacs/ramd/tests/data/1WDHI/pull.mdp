@@ -1,0 +1,46 @@
+integrator               = md
+dt                       = 0.002
+nsteps                   = 500000
+
+nstlog                   = 1000
+nstenergy                = 1000
+nstxout-compressed       = 1000
+
+continuation             = yes
+constraints              = all-bonds
+constraint-algorithm     = lincs
+
+cutoff-scheme            = Verlet
+
+coulombtype              = PME
+rcoulomb                 = 1.0
+
+vdwtype                  = Cut-off
+rvdw                     = 1.0
+DispCorr                 = EnerPres
+
+tcoupl                   = V-rescale
+tc-grps                  = Protein  INH    SOL    Na+
+tau-t                    = 0.1      0.1    0.1    0.1
+ref-t                    = 300      300    300    300
+
+pcoupl                   = Parrinello-Rahman
+tau-p                    = 2.0
+compressibility          = 4.5e-5
+ref-p                    = 1.0
+
+pull                     = yes
+pull-ngroups             = 2
+pull-ncoords             = 1
+pull-group1-name         = Protein
+pull-group2-name         = INH
+pull-coord1-type         = umbrella
+pull-coord1-geometry     = distance
+pull-coord1-groups       = 1 2
+pull-coord1-dim          = N N Y         ; pull only in z direction
+pull-coord1-rate         = 0.001         ; nm per ps
+pull-coord1-k            = 1000          ; kJ mol^-1 nm^-2
+pull-coord1-start        = yes
+
+pull-group1-pbcatom          = 1
+pull-pbc-ref-prev-step-com   = yes

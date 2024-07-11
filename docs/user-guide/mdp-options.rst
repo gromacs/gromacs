@@ -2294,6 +2294,117 @@ AWH adaptive biasing
    On the other hand, when the diameter >= the sampling interval length, covering occurs when a single simulation
    has independently sampled the whole interval.
 
+
+RAMD Random accelerated Molecular Dynamics
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Random Acceleration Molecular Dynamics (RAMD) is a method to carry out
+molecular dynamics simulations with an additional randomly oriented force
+applied to a molecule in the system.
+
+.. mdp:: ramd
+
+   .. mdp-value:: no
+
+      RAMD will not be applied. All the following ramd options will
+      be ignored (and if present in the :ref:`mdp` file, they unfortunately
+      generate warnings)
+
+   .. mdp-value:: yes
+
+      RAMD will be applied.
+
+.. mdp:: ramd-seed
+
+   (1234)
+   Seed for the random direction generator
+
+.. mdp:: ramd-eval-freq
+
+   (50)
+   This parameter affect absolute dissociation time but have less
+   effect on the relative dissociation times of different compounds. It is
+   recommended to use default value.
+
+.. mdp:: ramd-force-out-freq
+
+   (100)
+   This ramd parameter resets pull-nstxout and pull-nstfout.
+
+.. mdp:: ramd-ngroups
+
+   (1)
+   The number of ramd groups defining the ligand-receptor pair.
+   Below only the pull options for group 1 are given,
+   further groups simply increase the group index number.
+
+.. mdp:: ramd-group1-force
+
+   (600) [kJ mol\ :sup:`-1` nm\ :sup:`-1`]
+   The force constant.
+   For a set of compounds with the dissociation rate expected to vary
+   within the range of 0.1-0.0001 1/s, a random force magnitude of 600
+   kJ/mol/nm can be applied. If necessary, the force magnitude can be
+   adjusted according to the longest and shortest dissociation time
+   observed in simulations. The upper threshold of the force magnitude is
+   determined by the fast-dissociated compounds, whose dissociation time
+   should be longer than 100 ps. The lower threshold of the force magnitude
+   depends on the computation facilities available.
+
+.. mdp:: ramd-group1-r-min-dist
+
+   (0.0025) [nm]
+   This parameter affect absolute dissociation time but have less
+   effect on the relative dissociation times of different compounds. It is
+   recommended to use default value.
+
+.. mdp:: ramd-group1-max-dist
+
+   (4) [nm]
+   This value has to be adjusted for the system studied: no
+   protein-ligand contacts should be observed in the last snapshot of a
+   dissociation trajectory. Usually 4 nm is enough, but in the case
+   of a long dissociation channel (as in membrane proteins) maxDist must be
+   increased accordingly. Method performance is not very sensitive to the
+   upper limit of this parameter since motion of the free ligand due to the
+   external force is very fast (i.e. the last part of the trajectory, where
+   ligand does not interact with the protein, has a negligible contribution
+   to the observed dissociation time.
+
+.. mdp:: ramd-group1-receptor
+
+   (Protein)
+
+.. mdp:: ramd-group1-ligand
+
+   (INH)
+
+.. mdp:: ramd-group1-receptor-pbcatom
+
+   (0)
+   The value will be forwarded to the associated pull group of the receptor.
+
+.. mdp:: ramd-group1-ligand-pbcatom
+
+   (0)
+   The value will be forwarded to the associated pull group of the ligand.
+
+.. mdp:: ramd-pbc-ref-prev-step-com
+
+   (yes)
+   The value will be forwarded to pull-pbc-ref-prev-step-com. Default value is 'yes'.
+
+.. mdp:: ramd-connected-ligands
+
+   (yes)
+   If ‘yes’, the trajectory will be terminated when all ligands have left the radius.
+   If one ligand leaves the radius, its last assigned force will continue to be
+   applied until the simulation end or radius re-entry.
+   If ‘no’, this should revert to standard RAMD for multiple disconnected ligands.
+   Each ligand is subject to a RAMD force until the individual ligand has left the
+   dissociation radius. The simulation stops when all ligands have left the
+   dissociation radius. Default value is 'yes'.
+
 Enforced rotation
 ^^^^^^^^^^^^^^^^^
 
@@ -3259,7 +3370,7 @@ Electric fields
    and only the cosine term is used. In this case, ``t0`` must be set to 0.
    If also ``omega = 0`` a static electric field is applied.
 
-   Read more at :ref:`electric fields` and in ref. \ :ref:`146 <refCaleman2008a>`.
+   Read more at :ref:`electric fields` and in ref.��\ :ref:`146 <refCaleman2008a>`.
 
 
 Mixed quantum/classical molecular dynamics
@@ -3506,7 +3617,7 @@ electron-microscopy experiments. (See the `reference manual`_ for details)
 
 .. mdp:: density-guided-simulation-shift-vector
 
-   (0,0,0) [nm] Add this vector to all atoms in the 
+   (0,0,0) [nm] Add this vector to all atoms in the
    density-guided-simulation-group before calculating forces and energies for
    density-guided-simulations. Affects only the density-guided-simulation forces
    and energies. Corresponds to a shift of the input density in the opposite
@@ -3514,7 +3625,7 @@ electron-microscopy experiments. (See the `reference manual`_ for details)
 
 .. mdp:: density-guided-simulation-transformation-matrix
 
-   (1,0,0,0,1,0,0,0,1) Multiply all atoms with this matrix in the 
+   (1,0,0,0,1,0,0,0,1) Multiply all atoms with this matrix in the
    density-guided-simulation-group before calculating forces and energies for
    density-guided-simulations. Affects only the density-guided-simulation forces
    and energies. Corresponds to a transformation of the input density by the

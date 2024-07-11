@@ -42,6 +42,7 @@
 
 #include "gromacs/fileio/readinp.h"
 #include "gromacs/math/vectypes.h"
+#include "gromacs/mdtypes/ramd_params.h"
 #include "gromacs/mdtypes/multipletimestepping.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/real.h"
@@ -153,7 +154,7 @@ void do_index(const char*                                 mdparin,
 /* Read the index file and assign grp numbers to atoms.
  */
 
-/* Routines In readpull.c */
+/* Routines In readpull.cpp */
 
 std::vector<std::string> read_pullparams(std::vector<t_inpfile>* inp, pull_params_t* pull, WarningHandler* wi);
 /* Reads the pull parameters, returns a list of the pull group names */
@@ -177,6 +178,10 @@ pull_t* set_pull_init(t_inputrec*                    ir,
  * Returns the pull_t pull work struct. This should be passed to finish_pull()
  * after all modules have registered their external potentials, if present.
  */
+
+/* Routines in readramd.cpp */
+void read_ramdparams(std::vector<t_inpfile>* inp, gmx::RAMDParams* ramdparams, WarningHandler* wi);
+/* Reads the ramd parameters, returns a list of the ramd group names */
 
 std::vector<std::string> read_rotparams(std::vector<t_inpfile>* inp, t_rot* rot, WarningHandler* wi);
 /* Reads enforced rotation parameters, returns a list of the rot group names */

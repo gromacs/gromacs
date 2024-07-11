@@ -202,6 +202,9 @@ wall-atomtype            =
 wall-density             = 
 wall-ewald-zfac          = 3
 
+; RAMD                 
+ramd                     = no
+
 ; COM PULLING          
 pull                     = no
 
