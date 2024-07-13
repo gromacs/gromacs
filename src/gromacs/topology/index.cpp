@@ -692,6 +692,11 @@ void check_index(const char* gname, int n, int index[], const char* traj, int na
     }
 }
 
+std::vector<IndexGroup> init_index(const std::filesystem::path& gfile)
+{
+    return init_index(gfile.string().c_str());
+}
+
 std::vector<IndexGroup> init_index(const char* gfile)
 {
     std::vector<IndexGroup> indexGroups;
@@ -923,6 +928,11 @@ static void rd_groups(gmx::ArrayRef<const IndexGroup> indexGroups,
     }
 }
 
+void rd_index(const std::filesystem::path& statfile, int ngrps, int isize[], int* index[], char* grpnames[])
+{
+    rd_index(statfile.string().c_str(), ngrps, isize, index, grpnames);
+}
+
 void rd_index(const char* statfile, int ngrps, int isize[], int* index[], char* grpnames[])
 {
     if (!statfile)
@@ -933,6 +943,24 @@ void rd_index(const char* statfile, int ngrps, int isize[], int* index[], char* 
     rd_groups(indexGroups, grpnames, ngrps, isize, index);
 }
 
+void get_index(const t_atoms*                              atoms,
+               const std::optional<std::filesystem::path>& fnm,
+               int                                         ngrps,
+               int                                         isize[],
+               int*                                        index[],
+               char*                                       grpnames[])
+{
+    if (fnm)
+    {
+        get_index(atoms, fnm.value().string().c_str(), ngrps, isize, index, grpnames);
+    }
+    else
+    {
+        get_index(atoms, nullptr, ngrps, isize, index, grpnames);
+    }
+}
+
+// Deprecated, remove and consolidate with the function above when there are no other callers
 void get_index(const t_atoms* atoms, const char* fnm, int ngrps, int isize[], int* index[], char* grpnames[])
 {
     std::vector<IndexGroup> indexGroups;

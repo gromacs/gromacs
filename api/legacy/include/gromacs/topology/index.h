@@ -36,6 +36,8 @@
 
 #include <cstdio>
 
+#include <filesystem>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -60,9 +62,12 @@ void check_index(const char* gname, int n, int index[], const char* traj, int na
  */
 
 /* Returns a list of atom index groups read from gfile */
+std::vector<IndexGroup> init_index(const std::filesystem::path& gfile);
+
+// DEPRECATED version of the above
 std::vector<IndexGroup> init_index(const char* gfile);
 
-void rd_index(const char* statfile, int ngrps, int isize[], int* index[], char* grpnames[]);
+void rd_index(const std::filesystem::path& statfile, int ngrps, int isize[], int* index[], char* grpnames[]);
 /* Assume the group file is generated, so the
  * format need not be user-friendly. The format is:
  * nr of groups, total nr of atoms
@@ -78,8 +83,24 @@ void rd_index(const char* statfile, int ngrps, int isize[], int* index[], char* 
  * the dimension of the isize and grpnames arrays are ngrps.
  */
 
+// DEPRECATED version of the above
+void rd_index(const char* statfile, int ngrps, int isize[], int* index[], char* grpnames[]);
+
+void get_index(const t_atoms*                              atoms,
+               const std::optional<std::filesystem::path>& fnm,
+               int                                         ngrps,
+               int                                         isize[],
+               int*                                        index[],
+               char*                                       grpnames[]);
+/* Does the same as rd_index, but if the fnm has no value it
+ * will not read from fnm, but it will make default index groups
+ * for the atoms in *atoms.
+ */
+
 void get_index(const t_atoms* atoms, const char* fnm, int ngrps, int isize[], int* index[], char* grpnames[]);
-/* Does the same as rd_index, but if the fnm pointer is NULL it
+/* DEPRECATED, use the above function instead.
+ *
+ * Does the same as rd_index, but if the fnm pointer is NULL it
  * will not read from fnm, but it will make default index groups
  * for the atoms in *atoms.
  */
