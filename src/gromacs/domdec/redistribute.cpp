@@ -56,6 +56,7 @@
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxomp.h"
+#include "gromacs/utility/template_mp.h"
 
 #include "domdec_internal.h"
 #include "utility.h"
@@ -322,23 +323,22 @@ static int computeMoveFlag(const gmx_domdec_t& dd, const ivec& dev)
  *
  * Returns in the move array where the atoms should go.
  */
-static void calc_cg_move(FILE*              fplog,
-                         int64_t            step,
-                         gmx_domdec_t*      dd,
-                         t_state*           state,
-                         const ivec         tric_dir,
-                         matrix             tcm,
-                         const rvec         cell_x0,
-                         const rvec         cell_x1,
-                         const MoveLimits&  moveLimits,
-                         int                cg_start,
-                         int                cg_end,
-                         gmx::ArrayRef<int> move)
+static void calc_cg_move(FILE*                  fplog,
+                         int64_t                step,
+                         gmx_domdec_t*          dd,
+                         t_state*               state,
+                         const ivec             tric_dir,
+                         matrix                 tcm,
+                         const rvec             cell_x0,
+                         const rvec             cell_x1,
+                         const MoveLimits&      moveLimits,
+                         const gmx::Range<int>& atomRange,
+                         gmx::ArrayRef<int>     move)
 {
     const int npbcdim = dd->unitCellInfo.npbcdim;
     auto      x       = makeArrayRef(state->x);
 
-    for (int a = cg_start; a < cg_end; a++)
+    for (int a : atomRange)
     {
         // TODO: Rename this center of geometry variable to cogNew
         rvec cm_new;
@@ -452,8 +452,7 @@ static void calcGroupMove(FILE*                     fplog,
                           const rvec                cell_x0,
                           const rvec                cell_x1,
                           const MoveLimits&         moveLimits,
-                          int                       groupBegin,
-                          int                       groupEnd,
+                          const gmx::Range<int>&    groupRange,
                           gmx::ArrayRef<PbcAndFlag> pbcAndFlags)
 {
     GMX_RELEASE_ASSERT(!dd->unitCellInfo.haveScrewPBC, "Screw PBC is not supported here");
@@ -462,7 +461,7 @@ static void calcGroupMove(FILE*                     fplog,
 
     gmx::UpdateGroupsCog* updateGroupsCog = dd->comm->updateGroupsCog.get();
 
-    for (int g = groupBegin; g < groupEnd; g++)
+    for (int g : groupRange)
     {
 
         gmx::RVec& cog    = updateGroupsCog->cog(g);
@@ -533,38 +532,36 @@ static void calcGroupMove(FILE*                     fplog,
     }
 }
 
-static void applyPbcAndSetMoveFlags(const gmx::UpdateGroupsCog&     updateGroupsCog,
-                                    gmx::ArrayRef<const PbcAndFlag> pbcAndFlags,
-                                    const bool                      haveBoxDeformation,
-                                    const matrix                    boxDeformationRate,
-                                    int                             atomBegin,
-                                    int                             atomEnd,
-                                    gmx::ArrayRef<gmx::RVec>        atomCoords,
-                                    gmx::ArrayRef<gmx::RVec>        atomVelocities,
-                                    gmx::ArrayRef<int>              move)
+template<bool haveBoxDeformation>
+static void applyPbcAndSetMoveFlags(const gmx::UpdateGroupsCog&         updateGroupsCog,
+                                    gmx::ArrayRef<const PbcAndFlag>     pbcAndFlags,
+                                    const matrix gmx_unused             boxDeformationRate,
+                                    const gmx::Range<int>&              atomRange,
+                                    gmx::ArrayRef<gmx::RVec>            atomCoords,
+                                    gmx::ArrayRef<gmx::RVec> gmx_unused atomVelocities,
+                                    gmx::ArrayRef<int>                  move)
 {
-    if (!haveBoxDeformation)
+    for (int a : atomRange)
     {
-        for (int a = atomBegin; a < atomEnd; a++)
+        const PbcAndFlag& pbcAndFlag = pbcAndFlags[updateGroupsCog.cogIndex(a)];
+        rvec_inc(atomCoords[a], pbcAndFlag.pbcShift);
+        if constexpr (haveBoxDeformation)
         {
-            const PbcAndFlag& pbcAndFlag = pbcAndFlags[updateGroupsCog.cogIndex(a)];
-            rvec_inc(atomCoords[a], pbcAndFlag.pbcShift);
-            /* Temporarily store the flag in move */
-            move[a] = pbcAndFlag.moveFlag;
-        }
-    }
-    else
-    {
-        for (int a = atomBegin; a < atomEnd; a++)
-        {
-            const PbcAndFlag& pbcAndFlag = pbcAndFlags[updateGroupsCog.cogIndex(a)];
-            rvec_inc(atomCoords[a], pbcAndFlag.pbcShift);
             // Correct the velocity for the position change along the flow profile
             correctVelocityForDisplacement<false>(boxDeformationRate, atomVelocities[a], pbcAndFlag.pbcShift);
-            /* Temporarily store the flag in move */
-            move[a] = pbcAndFlag.moveFlag;
         }
+        /* Temporarily store the flag in move */
+        move[a] = pbcAndFlag.moveFlag;
     }
+}
+
+// Return a item range for thread \p thread when dividing work equally over \p numThreads threads
+static gmx::Range<int> getThreadLocalRange(const int numItems, const int numThreads, const int thread)
+{
+    GMX_ASSERT(numThreads > 0, "There should be at least one thread");
+    GMX_ASSERT(thread < numThreads, "The thread index should be smaller than the number of threads");
+
+    return { (numItems * thread) / numThreads, (numItems * (thread + 1)) / numThreads };
 }
 
 void dd_redistribute_cg(FILE*         fplog,
@@ -645,50 +642,34 @@ void dd_redistribute_cg(FILE*         fplog,
         {
             const int thread = gmx_omp_get_thread_num();
 
+            const int             numHomeAtoms    = comm->atomRanges.numHomeAtoms();
+            const gmx::Range<int> threadAtomRange = getThreadLocalRange(numHomeAtoms, nthread, thread);
+
             if (comm->systemInfo.useUpdateGroups)
             {
-                const auto& updateGroupsCog = *comm->updateGroupsCog;
-                const int   numGroups       = updateGroupsCog.numCogs();
-                calcGroupMove(fplog,
-                              step,
-                              dd,
-                              state,
-                              tric_dir,
-                              tcm,
-                              cell_x0,
-                              cell_x1,
-                              moveLimits,
-                              (thread * numGroups) / nthread,
-                              ((thread + 1) * numGroups) / nthread,
-                              pbcAndFlags);
+                const auto&           updateGroupsCog = *comm->updateGroupsCog;
+                const int             numGroups       = updateGroupsCog.numCogs();
+                const gmx::Range<int> threadGroupRange = getThreadLocalRange(numGroups, nthread, thread);
+                calcGroupMove(
+                        fplog, step, dd, state, tric_dir, tcm, cell_x0, cell_x1, moveLimits, threadGroupRange, pbcAndFlags);
                 /* We need a barrier as atoms below can be in a COG of a different thread */
 #pragma omp barrier
-                const int numHomeAtoms = comm->atomRanges.numHomeAtoms();
-                applyPbcAndSetMoveFlags(updateGroupsCog,
-                                        pbcAndFlags,
-                                        comm->systemInfo.haveBoxDeformation,
-                                        comm->systemInfo.boxDeformationRate,
-                                        (thread * numHomeAtoms) / nthread,
-                                        ((thread + 1) * numHomeAtoms) / nthread,
-                                        state->x,
-                                        state->v,
-                                        move);
+                gmx::dispatchTemplatedFunction(
+                        [&](auto haveBoxDeformation) {
+                            applyPbcAndSetMoveFlags<haveBoxDeformation>(updateGroupsCog,
+                                                                        pbcAndFlags,
+                                                                        comm->systemInfo.boxDeformationRate,
+                                                                        threadAtomRange,
+                                                                        state->x,
+                                                                        state->v,
+                                                                        move);
+                        },
+                        comm->systemInfo.haveBoxDeformation);
             }
             else
             {
                 /* Here we handle single atoms or charge groups */
-                calc_cg_move(fplog,
-                             step,
-                             dd,
-                             state,
-                             tric_dir,
-                             tcm,
-                             cell_x0,
-                             cell_x1,
-                             moveLimits,
-                             (thread * dd->numHomeAtoms) / nthread,
-                             ((thread + 1) * dd->numHomeAtoms) / nthread,
-                             move);
+                calc_cg_move(fplog, step, dd, state, tric_dir, tcm, cell_x0, cell_x1, moveLimits, threadAtomRange, move);
             }
         }
         GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR
