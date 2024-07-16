@@ -296,7 +296,7 @@ void gmx::LegacySimulator::do_md()
             // Inter-simulation signal communication does not need to happen
             // often, so we use a minimum of 200 steps to reduce overhead.
             const int c_minimumInterSimulationSignallingInterval = 200;
-            nstSignalComm = ((c_minimumInterSimulationSignallingInterval + nstglobalcomm - 1) / nstglobalcomm)
+            nstSignalComm = gmx::divideRoundUp(c_minimumInterSimulationSignallingInterval, nstglobalcomm)
                             * nstglobalcomm;
         }
     }

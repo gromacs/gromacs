@@ -1426,12 +1426,12 @@ void pme_gpu_reinit_atoms(PmeGpu* pmeGpu, const int nAtoms, const real* chargesA
     auto* kernelParamsPtr         = pme_gpu_get_kernel_params_base_ptr(pmeGpu);
     kernelParamsPtr->atoms.nAtoms = nAtoms;
     const int  blockSize          = pme_gpu_get_atom_data_block_size();
-    const int  nAtomsNewPadded    = ((nAtoms + blockSize - 1) / blockSize) * blockSize;
+    const int  nAtomsNewPadded    = gmx::divideRoundUp(nAtoms, blockSize) * blockSize;
     const bool haveToRealloc      = (pmeGpu->nAtomsAlloc < nAtomsNewPadded);
     pmeGpu->nAtomsAlloc           = nAtomsNewPadded;
 
     const auto atomsPerWarp                 = pme_gpu_get_atoms_per_warp(pmeGpu);
-    const int  nWarps                       = ((nAtoms + atomsPerWarp - 1) / atomsPerWarp);
+    const int  nWarps                       = gmx::divideRoundUp(nAtoms, atomsPerWarp);
     pmeGpu->archSpecific->splineCountActive = DIM * nWarps * atomsPerWarp * pmeGpu->common->pme_order;
 
     if (pmeGpu->useNvshmem)
@@ -1582,9 +1582,9 @@ void pme_gpu_3dfft(const PmeGpu* pmeGpu, gmx_fft_direction dir, const int grid_i
 std::pair<int, int> inline pmeGpuCreateGrid(const PmeGpu* pmeGpu, int blockCount)
 {
     // How many maximum widths in X do we need (hopefully just one)
-    const int minRowCount = (blockCount + pmeGpu->maxGridWidthX - 1) / pmeGpu->maxGridWidthX;
+    const int minRowCount = gmx::divideRoundUp<std::intmax_t>(blockCount, pmeGpu->maxGridWidthX);
     // Trying to make things even
-    const int colCount = (blockCount + minRowCount - 1) / minRowCount;
+    const int colCount = gmx::divideRoundUp(blockCount, minRowCount);
     GMX_ASSERT((colCount * minRowCount - blockCount) >= 0, "pmeGpuCreateGrid: totally wrong");
     GMX_ASSERT((colCount * minRowCount - blockCount) < minRowCount,
                "pmeGpuCreateGrid: excessive blocks");
@@ -2153,7 +2153,7 @@ void pme_gpu_solve(PmeGpu* pmeGpu, const int gridIndex, t_complex* h_grid, GridO
 
     const int gridLineSize      = pmeGpu->kernelParams->grid.localComplexGridSize[minorDim];
     const int gridLinesPerBlock = std::max(maxBlockSize / gridLineSize, 1);
-    const int blocksPerGridLine = (gridLineSize + maxBlockSize - 1) / maxBlockSize;
+    const int blocksPerGridLine = gmx::divideRoundUp(gridLineSize, maxBlockSize);
     int       cellsPerBlock;
 
     if (pmeGpu->common->nnodesY > 1
@@ -2182,10 +2182,10 @@ void pme_gpu_solve(PmeGpu* pmeGpu, const int gridIndex, t_complex* h_grid, GridO
     }
     else
     {
-        cellsPerBlock = (gridLineSize + blocksPerGridLine - 1) / blocksPerGridLine;
+        cellsPerBlock = gmx::divideRoundUp(gridLineSize, blocksPerGridLine);
     }
     const int warpSize  = pmeGpu->programHandle_->warpSize();
-    const int blockSize = (cellsPerBlock + warpSize - 1) / warpSize * warpSize;
+    const int blockSize = gmx::divideRoundUp(cellsPerBlock, warpSize) * warpSize;
 
     static_assert(!GMX_GPU_CUDA || c_solveMaxWarpsPerBlock / 2 >= 4,
                   "The CUDA solve energy kernels needs at least 4 warps. "

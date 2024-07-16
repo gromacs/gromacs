@@ -348,8 +348,7 @@ static void launchSettleKernel(const DeviceStream& deviceStream, int numSettles,
     // Should not be needed for SYCL2020.
     using kernelNameType = SettleKernelName<updateVelocities, computeVirial>;
 
-    const int numSettlesRoundedUp =
-            static_cast<int>((numSettles + sc_workGroupSize - 1) / sc_workGroupSize) * sc_workGroupSize;
+    const int numSettlesRoundedUp = gmx::divideRoundUp(numSettles, sc_workGroupSize) * sc_workGroupSize;
     const sycl::nd_range<1> rangeAllSettles(numSettlesRoundedUp, sc_workGroupSize);
     sycl::queue             q = deviceStream.stream();
 

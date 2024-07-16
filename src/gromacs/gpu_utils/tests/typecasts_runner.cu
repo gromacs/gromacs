@@ -126,7 +126,7 @@ void convertRVecToFloat3OnDevice(ArrayRef<gmx::RVec>       h_rVecOutput,
     std::vector<float3> h_float3Output(numElements);
 
     KernelLaunchConfig kernelLaunchConfig;
-    kernelLaunchConfig.gridSize[0]      = (numElements + c_threadsPerBlock - 1) / c_threadsPerBlock;
+    kernelLaunchConfig.gridSize[0]      = gmx::divideRoundUp(numElements, c_threadsPerBlock);
     kernelLaunchConfig.blockSize[0]     = c_threadsPerBlock;
     kernelLaunchConfig.blockSize[1]     = 1;
     kernelLaunchConfig.blockSize[2]     = 1;

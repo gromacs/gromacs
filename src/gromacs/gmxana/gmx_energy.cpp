@@ -363,7 +363,7 @@ static void einstein_visco(const char*             fn,
     printf("\n");
     printf("Computing shear viscosity using the Einstein relation with %d start points separated "
            "by %g ps\n",
-           (nf4 + stepSize - 1) / stepSize,
+           gmx::divideRoundUp(nf4, stepSize),
            stepSize * dt);
 
 

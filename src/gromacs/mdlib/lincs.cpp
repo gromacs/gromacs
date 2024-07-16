@@ -2123,7 +2123,7 @@ void set_lincs(const InteractionDefinitions& idef,
     /* Set the target constraint count per task to exactly uniform,
      * this might be overridden below.
      */
-    int ncon_target = (ncon_assign + li->ntask - 1) / li->ntask;
+    int ncon_target = gmx::divideRoundUp(ncon_assign, li->ntask);
 
     /* Mark all constraints as unassigned by setting their index to -1 */
     for (int con = 0; con < ncon_tot; con++)
@@ -2211,7 +2211,7 @@ void set_lincs(const InteractionDefinitions& idef,
              */
             int i, last;
 
-            li->nc = ((li_task->b1 + simd_width - 1) / simd_width) * simd_width;
+            li->nc = gmx::divideRoundUp(li_task->b1, simd_width) * simd_width;
             last   = li_task->b1 - 1;
             for (i = li_task->b1; i < li->nc; i++)
             {

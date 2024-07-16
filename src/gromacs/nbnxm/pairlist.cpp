@@ -938,8 +938,7 @@ static void make_cluster_list_supersub(const Grid&       iGrid,
             nbl->nci_tot += npair;
 
             /* Increase the closing index in i super-cell list */
-            nbl->sci.back().cjPackedEnd =
-                    (nbl->work->cj_ind + c_nbnxnGpuJgroupSize - 1) / c_nbnxnGpuJgroupSize;
+            nbl->sci.back().cjPackedEnd = gmx::divideRoundUp(nbl->work->cj_ind, c_nbnxnGpuJgroupSize);
         }
     }
 }
@@ -1939,7 +1938,7 @@ static void closeIEntry(NbnxnPairlistGpu* nbl, int nsp_max_av, gmx_bool progBal,
         /* We can only have complete blocks of 4 j-entries in a list,
          * so round the count up before closing.
          */
-        int numPackedJClusters = (nbl->work->cj_ind + c_nbnxnGpuJgroupSize - 1) / c_nbnxnGpuJgroupSize;
+        int numPackedJClusters = gmx::divideRoundUp(nbl->work->cj_ind, c_nbnxnGpuJgroupSize);
         nbl->work->cj_ind      = numPackedJClusters * c_nbnxnGpuJgroupSize;
 
         if (nsp_max_av > 0)
@@ -2480,7 +2479,7 @@ static void balance_fep_lists(gmx::ArrayRef<std::unique_ptr<t_nblist>> fepLists,
         nrj_tot += list->nrj;
     }
 
-    const int nrj_target = (nrj_tot + numLists - 1) / numLists;
+    const int nrj_target = gmx::divideRoundUp(nrj_tot, numLists);
 
     GMX_ASSERT(gmx_omp_nthreads_get(ModuleMultiThread::Nonbonded) == numLists,
                "We should have as many work objects as FEP lists");
@@ -3465,7 +3464,7 @@ static void rebalanceSimpleLists(gmx::ArrayRef<const NbnxnPairlistCpu> srcSet,
 {
     const int ncjTotal  = countClusterpairs(srcSet);
     const int numLists  = srcSet.ssize();
-    const int ncjTarget = (ncjTotal + numLists - 1) / numLists;
+    const int ncjTarget = gmx::divideRoundUp(ncjTotal, numLists);
 
 #pragma omp parallel num_threads(numLists)
     {

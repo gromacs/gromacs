@@ -2904,7 +2904,7 @@ void ThreadingInfo::setVirtualSites(ArrayRef<const InteractionList> ilists,
             }
         }
         vsite_atom_range++;
-        natperthread = (vsite_atom_range + numThreads_ - 1) / numThreads_;
+        natperthread = gmx::divideRoundUp(vsite_atom_range, numThreads_);
     }
     else
     {
@@ -2916,7 +2916,7 @@ void ThreadingInfo::setVirtualSites(ArrayRef<const InteractionList> ilists,
          * threads also covers the non-local range.
          */
         vsite_atom_range = numAtoms;
-        natperthread     = (homenr + numThreads_ - 1) / numThreads_;
+        natperthread     = gmx::divideRoundUp(homenr, numThreads_);
     }
 
     if (debug)

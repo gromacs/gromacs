@@ -1317,7 +1317,7 @@ double BiasState::updateProbabilityWeightsAndConvolvedBias(ArrayRef<const DimPar
     constexpr int  packSize = 1;
 #endif
     /* Round the size of the weight array up to packSize */
-    const int weightSize = ((neighbors.size() + packSize - 1) / packSize) * packSize;
+    const int weightSize = gmx::divideRoundUp<int>(neighbors.size(), packSize) * packSize;
     weight->resize(weightSize);
 
     double* gmx_restrict weightData = weight->data();

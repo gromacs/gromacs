@@ -678,7 +678,7 @@ std::vector<int> get_pme_ddranks(const t_commrec* cr, const int pmenodeid)
     GMX_RELEASE_ASSERT(ddRankSetup.usePmeOnlyRanks,
                        "This function should only be called when PME-only ranks are in use");
     std::vector<int> ddranks;
-    ddranks.reserve((ddRankSetup.numPPRanks + ddRankSetup.numRanksDoingPme - 1) / ddRankSetup.numRanksDoingPme);
+    ddranks.reserve(gmx::divideRoundUp(ddRankSetup.numPPRanks, ddRankSetup.numRanksDoingPme));
 
     for (int x = 0; x < ddRankSetup.numPPCells[XX]; x++)
     {

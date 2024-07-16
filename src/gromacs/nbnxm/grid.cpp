@@ -1166,9 +1166,8 @@ void Grid::sortColumnsGpuGeometry(GridSetData*                   gridSetData,
                 const int numAtoms =
                         std::min(numAtomsPerCell, numAtomsInColumn - (atomOffsetZ - atomOffset));
 
-                numClusters_[cell] = std::min(
-                        c_gpuNumClusterPerCell,
-                        (numAtoms + geometry_.numAtomsICluster - 1) / geometry_.numAtomsICluster);
+                numClusters_[cell] = std::min(c_gpuNumClusterPerCell,
+                                              gmx::divideRoundUp(numAtoms, geometry_.numAtomsICluster));
 
                 /* Store the z-boundaries of the bounding box of the cell */
                 bbcz_[cell].lower = x[atomIndices[atomOffsetZ]][ZZ];
@@ -1400,7 +1399,7 @@ void Grid::setCellIndices(int                            ddZone,
         {
             cxy_na_i += gridWork[thread].numAtomsPerColumn[i];
         }
-        ncz = (cxy_na_i + numAtomsPerCell - 1) / numAtomsPerCell;
+        ncz = gmx::divideRoundUp(cxy_na_i, numAtomsPerCell);
         if (geometry_.numAtomsJCluster == 2 * numAtomsPerCell)
         {
             /* Make the number of cell a multiple of 2 */

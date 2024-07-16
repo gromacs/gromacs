@@ -120,7 +120,7 @@ void GpuHaloExchange::Impl::launchPackXKernel(const matrix box)
     config.blockSize[0]     = c_threadsPerBlock;
     config.blockSize[1]     = 1;
     config.blockSize[2]     = 1;
-    config.gridSize[0]      = (xSendSize_ + c_threadsPerBlock - 1) / c_threadsPerBlock;
+    config.gridSize[0]      = gmx::divideRoundUp(xSendSize_, c_threadsPerBlock);
     config.gridSize[1]      = 1;
     config.gridSize[2]      = 1;
     config.sharedMemorySize = 0;
