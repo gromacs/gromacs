@@ -256,9 +256,11 @@ if (GMX_ACPP_HAVE_HIP_TARGET AND GMX_GPU_FFT_ROCFFT)
         )
     elseif(ACPP_COMPILER)
         get_filename_component(ACPP_COMPILER_DIR ${ACPP_COMPILER} DIRECTORY)
-        # As of AdaptiveCpp 23.10.0, the file is still called "etc/hipSYCL/syclcc.json"
-        find_file(ACPP_JSON syclcc.json
-            HINTS ${ACPP_COMPILER_DIR}/../etc/hipSYCL
+        # As of AdaptiveCpp 23.10, the file is still called "etc/hipSYCL/syclcc.json"
+        # Starting from AdaptiveCpp 24.02, the file is "etc/AdaptiveCpp/acpp-rocm.json"
+        find_file(ACPP_JSON
+            NAMES acpp-rocm.json syclcc.json
+            HINTS ${ACPP_COMPILER_DIR}/../etc/AdaptiveCpp ${ACPP_COMPILER_DIR}/../etc/hipSYCL
             DOC "location of hipSYCL/AdaptiveCpp JSON configuration file"
         )
     endif()
@@ -276,7 +278,7 @@ if (GMX_ACPP_HAVE_HIP_TARGET AND GMX_GPU_FFT_ROCFFT)
             # Remove this when GROMACS requires CMake 3.19 or higher, as the
             # proper JSON parsing below is more robust.
             string(REGEX REPLACE ".*\"default-rocm-path\" *: * \"" "" ACPP_ROCM_PATH_VALUE ${ACPP_JSON_CONTENTS})
-            string(REGEX REPLACE "\",.*" "" ACPP_ROCM_PATH_VALUE ${HIPSYCL_SYCLCC_ROCM_PATH_VALUE})
+            string(REGEX REPLACE "\",.*" "" ACPP_ROCM_PATH_VALUE ${ACPP_ROCM_PATH_VALUE})
         else()
             string(JSON ACPP_ROCM_PATH_VALUE GET ${ACPP_JSON_CONTENTS} "default-rocm-path")
         endif()

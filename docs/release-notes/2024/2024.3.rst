@@ -111,3 +111,6 @@ Fixes that affect portability
 Miscellaneous
 ^^^^^^^^^^^^^
 
+Fix detection of rocFFT installed in non-standard locations
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
