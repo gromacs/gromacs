@@ -44,6 +44,10 @@ target_include_directories(legacy_api INTERFACE
                            $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
                            $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/include>
                            $<INSTALL_INTERFACE:include>)
+if(BUILD_SHARED_LIBS AND WIN32)
+  target_compile_definitions(legacy_api INTERFACE
+                             $<BUILD_INTERFACE:libgromacs_EXPORTS>)
+endif()
 
 configure_file(version.h.cmakein include/gromacs/version.h)
 

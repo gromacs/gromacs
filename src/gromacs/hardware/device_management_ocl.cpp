@@ -680,7 +680,7 @@ void setActiveDevice(const DeviceInformation& deviceInfo)
     {
         // Ignore return values, failing to set the variable does not mean
         // that something will go wrong later.
-#ifdef _MSC_VER
+#ifdef _WIN32
         _putenv("CUDA_CACHE_DISABLE=1");
 #else
         // Don't override, maybe a dev is testing.

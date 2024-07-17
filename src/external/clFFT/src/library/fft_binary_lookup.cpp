@@ -114,7 +114,11 @@ bool FFTBinaryLookup::CacheEntry::successful_creation()
 bool FFTBinaryLookup::CacheEntry::exclusive_create()
 {
 #ifdef _WIN32
+#ifdef _UNICODE
     std::wstring tmp;
+#else
+    std::string tmp;
+#endif
     tmp.assign(this->m_filename.begin(), this->m_filename.end());
 
     HANDLE handle = CreateFile(tmp.c_str(), 
