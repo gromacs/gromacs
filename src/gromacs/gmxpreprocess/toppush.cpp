@@ -1201,7 +1201,7 @@ void push_cmaptype(Directive                         d,
         < nral + 3)
     {
         auto message =
-                gmx::formatString("Incorrect number of atomtypes for cmap (%d instead of 5)", nn - 1);
+                gmx::formatString("Incorrect number of atomtypes for cmap (%d instead of 5)", nn - 3);
         wi->addError(message);
         return;
     }
