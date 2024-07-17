@@ -551,6 +551,7 @@ static void applyPbcAndSetMoveFlags(const gmx::UpdateGroupsCog&         updateGr
             correctVelocityForDisplacement<false>(boxDeformationRate, atomVelocities[a], pbcAndFlag.pbcShift);
         }
         /* Temporarily store the flag in move */
+        // NOLINTNEXTLINE(readability-misleading-indentation) remove when clang-tidy-13 is required
         move[a] = pbcAndFlag.moveFlag;
     }
 }
