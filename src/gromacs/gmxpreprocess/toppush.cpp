@@ -1197,11 +1197,11 @@ void push_cmaptype(Directive                         d,
     start     = 0;
 
     /* Here we can only check for < 8 */
-    if ((nn = sscanf(line, formal, alc[0], alc[1], alc[2], alc[3], alc[4], alc[5], alc[6], alc[7], &nchar_consumed))
+    if ((nn = sscanf(line, formal, alc[0], alc[1], alc[2], alc[3], alc[4], alc[nral], alc[nral + 1], alc[nral + 2], &nchar_consumed))
         < nral + 3)
     {
-        auto message =
-                gmx::formatString("Incorrect number of atomtypes for cmap (%d instead of 5)", nn - 3);
+        auto message = gmx::formatString(
+                "Incorrect number of atomtypes for cmap (%d instead of %d)", nn - 3, nral);
         wi->addError(message);
         return;
     }
@@ -1221,8 +1221,8 @@ void push_cmaptype(Directive                         d,
 
     ncmap = nxcmap * nycmap;
     ftype = ifunc_index(d, ft);
-    nrfpA = strtol(alc[6], nullptr, 10) * strtol(alc[6], nullptr, 10);
-    nrfpB = strtol(alc[7], nullptr, 10) * strtol(alc[7], nullptr, 10);
+    nrfpA = strtol(alc[nral + 1], nullptr, 10) * strtol(alc[nral + 1], nullptr, 10);
+    nrfpB = strtol(alc[nral + 2], nullptr, 10) * strtol(alc[nral + 2], nullptr, 10);
     nrfp  = nrfpA + nrfpB;
 
     /* Read in CMAP parameters */
