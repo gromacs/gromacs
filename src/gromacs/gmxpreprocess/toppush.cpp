@@ -1283,8 +1283,6 @@ void push_cmaptype(Directive                         d,
      * grids so we can safely assign them each time
      */
     bt[F_CMAP].cmakeGridSpacing = nxcmap; /* Or nycmap, they need to be equal */
-    bt[F_CMAP].cmapAngles++; /* Since we are incrementing here, we need to subtract later, see (*****) */
-    nct = (nral + 1) * bt[F_CMAP].cmapAngles;
 
     for (int i = 0; (i < nral); i++)
     {
@@ -1294,11 +1292,11 @@ void push_cmaptype(Directive                         d,
     }
 
     /* Assign a type number to this cmap */
-    bt[F_CMAP].cmapAtomTypes.emplace_back(
-            bt[F_CMAP].cmapAngles
-            - 1); /* Since we inremented earlier, we need to subtrac here, to get the types right (****) */
+    bt[F_CMAP].cmapAtomTypes.emplace_back(bt[F_CMAP].cmapAngles);
+    bt[F_CMAP].cmapAngles++;
 
     /* Check for the correct number of atoms (again) */
+    nct = (nral + 1) * bt[F_CMAP].cmapAngles;
     if (bt[F_CMAP].nct() != nct)
     {
         auto message = gmx::formatString(
