@@ -1677,7 +1677,7 @@ static bool default_cmap_params(gmx::ArrayRef<InteractionsOfType> bondtype,
     ct           = 0;
 
     /* Match the current cmap angle against the list of cmap_types */
-    for (int i = 0; i < bondtype[F_CMAP].nct() && !bFound; i += 6)
+    for (int i = 0; i < bondtype[F_CMAP].nct() && !bFound; i += NRAL(F_CMAP) + 1)
     {
         if (bB) {}
         else
@@ -1695,7 +1695,7 @@ static bool default_cmap_params(gmx::ArrayRef<InteractionsOfType> bondtype,
             {
                 /* Found cmap torsion */
                 bFound       = true;
-                ct           = bondtype[F_CMAP].cmapAtomTypes[i + 5];
+                ct           = bondtype[F_CMAP].cmapAtomTypes[i + NRAL(F_CMAP)];
                 nparam_found = 1;
             }
         }

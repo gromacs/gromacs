@@ -835,7 +835,7 @@ static char** read_topol(const char*                           infile,
                             break;
 
                         case Directive::d_cmaptypes:
-                            push_cmaptype(d, interactions, 5, atypes, &bondAtomType, pline, wi);
+                            push_cmaptype(d, interactions, NRAL(F_CMAP), atypes, &bondAtomType, pline, wi);
                             break;
 
                         case Directive::d_moleculetype:
