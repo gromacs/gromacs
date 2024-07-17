@@ -40,6 +40,7 @@
 #include "gromacs/math/units.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/mdlib/forcerec.h"
 #include "gromacs/mdtypes/forcerec.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/interaction_const.h"
@@ -47,49 +48,11 @@
 #include "gromacs/tables/forcetable.h"
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/topology/topology.h"
-#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/logger.h"
 
 /* Implementation here to avoid other files needing to include the file that defines t_nblists */
 DispersionCorrection::InteractionParams::~InteractionParams() = default;
-
-/* Returns a matrix, as flat list, of combination rule combined LJ parameters */
-static std::vector<real> mk_nbfp_combination_rule(const gmx_ffparams_t& ffparams,
-                                                  const CombinationRule comb_rule)
-{
-    const int atnr = ffparams.atnr;
-
-    std::vector<real> nbfp(atnr * atnr * 2);
-
-    for (int i = 0; i < atnr; ++i)
-    {
-        for (int j = 0; j < atnr; ++j)
-        {
-            const real c6i  = ffparams.iparams[i * (atnr + 1)].lj.c6;
-            const real c12i = ffparams.iparams[i * (atnr + 1)].lj.c12;
-            const real c6j  = ffparams.iparams[j * (atnr + 1)].lj.c6;
-            const real c12j = ffparams.iparams[j * (atnr + 1)].lj.c12;
-            real       c6   = std::sqrt(c6i * c6j);
-            real       c12  = std::sqrt(c12i * c12j);
-            if (comb_rule == CombinationRule::Arithmetic && !gmx_numzero(c6) && !gmx_numzero(c12))
-            {
-                const real sigmai = gmx::sixthroot(c12i / c6i);
-                const real sigmaj = gmx::sixthroot(c12j / c6j);
-                const real epsi   = c6i * c6i / c12i;
-                const real epsj   = c6j * c6j / c12j;
-                const real sigma  = 0.5 * (sigmai + sigmaj);
-                const real eps    = std::sqrt(epsi * epsj);
-                c6                = eps * gmx::power6(sigma);
-                c12               = eps * gmx::power12(sigma);
-            }
-            C6(nbfp, atnr, i, j)  = c6 * 6.0;
-            C12(nbfp, atnr, i, j) = c12 * 12.0;
-        }
-    }
-
-    return nbfp;
-}
 
 /* Returns the A-topology atom type when aOrB=0, the B-topology atom type when aOrB=1 */
 static int atomtypeAOrB(const t_atom& atom, int aOrB)
@@ -104,35 +67,29 @@ static int atomtypeAOrB(const t_atom& atom, int aOrB)
     }
 }
 
-DispersionCorrection::TopologyParams::TopologyParams(const gmx_mtop_t&         mtop,
-                                                     const t_inputrec&         inputrec,
-                                                     bool                      useBuckingham,
-                                                     int                       numAtomTypes,
-                                                     gmx::ArrayRef<const real> nonbondedForceParameters)
+DispersionCorrection::TopologyParams::TopologyParams(const gmx_mtop_t& mtop,
+                                                     const t_inputrec& inputrec,
+                                                     const bool        useBuckingham)
 {
-    const int      ntp   = numAtomTypes;
-    const gmx_bool bBHAM = useBuckingham;
+    const int ntp = mtop.ffparams.atnr;
 
-    gmx::ArrayRef<const real> nbfp = nonbondedForceParameters;
-    std::vector<real>         nbfp_comb;
+    std::vector<real> nbfp = makeNonBondedParameterLists(ntp, mtop.ffparams.iparams, useBuckingham);
+
     /* For LJ-PME, we want to correct for the difference between the
      * actual C6 values and the C6 values used by the LJ-PME based on
      * combination rules. */
     if (usingLJPme(inputrec.vdwtype))
     {
-        nbfp_comb = mk_nbfp_combination_rule(mtop.ffparams,
-                                             (inputrec.ljpme_combination_rule == LongRangeVdW::LB)
-                                                     ? CombinationRule::Arithmetic
-                                                     : CombinationRule::Geometric);
+        std::vector<real> nbfp_comb = makeLJPmeC6GridCorrectionParameters(
+                ntp, mtop.ffparams.iparams, inputrec.ljpme_combination_rule);
+
         for (int tpi = 0; tpi < ntp; ++tpi)
         {
             for (int tpj = 0; tpj < ntp; ++tpj)
             {
-                C6(nbfp_comb, ntp, tpi, tpj) = C6(nbfp, ntp, tpi, tpj) - C6(nbfp_comb, ntp, tpi, tpj);
-                C12(nbfp_comb, ntp, tpi, tpj) = C12(nbfp, ntp, tpi, tpj);
+                C6(nbfp, ntp, tpi, tpj) -= C6(nbfp_comb, ntp, tpi, tpj);
             }
         }
-        nbfp = nbfp_comb;
     }
 
     for (int q = 0; q < (inputrec.efep == FreeEnergyPerturbationType::No ? 1 : 2); q++)
@@ -165,7 +122,7 @@ DispersionCorrection::TopologyParams::TopologyParams(const gmx_mtop_t&         m
                     {
                         npair_ij = iCount * (iCount - 1) / 2;
                     }
-                    if (bBHAM)
+                    if (useBuckingham)
                     {
                         /* nbfp now includes the 6.0 derivative prefactor */
                         csix += npair_ij * BHAMC(nbfp, ntp, tpi, tpj) / 6.0;
@@ -198,7 +155,7 @@ DispersionCorrection::TopologyParams::TopologyParams(const gmx_mtop_t&         m
                         if (k > i)
                         {
                             const int tpj = atomtypeAOrB(atoms->atom[k], q);
-                            if (bBHAM)
+                            if (useBuckingham)
                             {
                                 /* nbfp now includes the 6.0 derivative prefactor */
                                 csix -= nmol * BHAMC(nbfp, ntp, tpi, tpj) / 6.0;
@@ -250,7 +207,7 @@ DispersionCorrection::TopologyParams::TopologyParams(const gmx_mtop_t&         m
                     for (int i = 0; i < atoms_tpi.nr; i++)
                     {
                         const int tpi = atomtypeAOrB(atoms_tpi.atom[i], q);
-                        if (bBHAM)
+                        if (useBuckingham)
                         {
                             /* nbfp now includes the 6.0 derivative prefactor */
                             csix += nmolc * BHAMC(nbfp, ntp, tpi, tpj) / 6.0;
@@ -522,14 +479,12 @@ void DispersionCorrection::setInteractionParameters(InteractionParams*         i
 DispersionCorrection::DispersionCorrection(const gmx_mtop_t&          mtop,
                                            const t_inputrec&          inputrec,
                                            bool                       useBuckingham,
-                                           int                        numAtomTypes,
-                                           gmx::ArrayRef<const real>  nonbondedForceParameters,
                                            const interaction_const_t& ic,
                                            const char*                tableFileName) :
     eDispCorr_(inputrec.eDispCorr),
     vdwType_(inputrec.vdwtype),
     eFep_(inputrec.efep),
-    topParams_(mtop, inputrec, useBuckingham, numAtomTypes, nonbondedForceParameters)
+    topParams_(mtop, inputrec, useBuckingham)
 {
     if (eDispCorr_ != DispersionCorrectionType::No)
     {

@@ -1072,7 +1072,7 @@ void init_forcerec(FILE*                            fplog,
     if (inputrec.eDispCorr != DispersionCorrectionType::No)
     {
         forcerec->dispersionCorrection = std::make_unique<DispersionCorrection>(
-                mtop, inputrec, forcerec->haveBuckingham, forcerec->ntype, forcerec->nbfp, *forcerec->ic, tabfn);
+                mtop, inputrec, forcerec->haveBuckingham, *forcerec->ic, tabfn);
         forcerec->dispersionCorrection->print(mdlog);
     }
 

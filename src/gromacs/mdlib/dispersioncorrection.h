@@ -43,7 +43,6 @@
 
 struct gmx_mtop_t;
 struct interaction_const_t;
-struct t_forcerec;
 struct t_forcetable;
 struct t_inputrec;
 enum class DispersionCorrectionType : int;
@@ -51,8 +50,6 @@ enum class VanDerWaalsType : int;
 enum class FreeEnergyPerturbationType : int;
 namespace gmx
 {
-template<typename>
-class ArrayRef;
 class MDLogger;
 } // namespace gmx
 
@@ -64,16 +61,12 @@ public:
      * \param[in] mtop           The global topology
      * \param[in] inputrec       The input record
      * \param[in] useBuckingham  True when Buckingham is used instead of LJ
-     * \param[in] numAtomTypes   The number of non-bonded atom types
-     * \param[in] nonbondedForceParameters  The LJ or Bham parameter matrix stored as a flat list
      * \param[in] ic             The nonbonded interaction parameters
      * \param[in] tableFileName  Table file name, should != nullptr (checked)
      */
     DispersionCorrection(const gmx_mtop_t&          mtop,
                          const t_inputrec&          inputrec,
                          bool                       useBuckingham,
-                         int                        numAtomTypes,
-                         gmx::ArrayRef<const real>  nonbondedForceParameters,
                          const interaction_const_t& ic,
                          const char*                tableFileName);
 
@@ -129,11 +122,7 @@ private:
     class TopologyParams
     {
     public:
-        TopologyParams(const gmx_mtop_t&         mtop,
-                       const t_inputrec&         inputrec,
-                       bool                      useBuckingham,
-                       int                       numAtomTypes,
-                       gmx::ArrayRef<const real> nonbondedForceParameters);
+        TopologyParams(const gmx_mtop_t& mtop, const t_inputrec& inputrec, bool useBuckingham);
 
         //! The number of atoms for computing the atom density
         int numAtomsForDensity_;
