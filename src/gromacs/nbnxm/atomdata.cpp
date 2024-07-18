@@ -421,8 +421,8 @@ static void nbnxn_atomdata_params_init(const gmx::MDLogger&                    m
                                        const Nbnxm::KernelType                 kernelType,
                                        const std::optional<LJCombinationRule>& ljCombinationRule,
                                        const LJCombinationRule                 pmeLJCombinationRule,
-                                       const int                               numTypes,
                                        ArrayRef<const real>                    nbfp,
+                                       const bool                              addFillerAtomType,
                                        const int                               numEnergyGroups)
 {
     const bool usingLJPme = (pmeLJCombinationRule != LJCombinationRule::None);
@@ -431,12 +431,35 @@ static void nbnxn_atomdata_params_init(const gmx::MDLogger&                    m
                                || ljCombinationRule.value() == LJCombinationRule::None,
                        "Only one of ljCombinationRule and pmeLJCombinationRule can be active");
 
+    const int numTypes = std::sqrt(gmx::ssize(nbfp) / 2);
+    GMX_RELEASE_ASSERT(size_t(numTypes) * size_t(numTypes) * 2 == nbfp.size(),
+                       "The size of nbfp should be two times a square number");
+
+    if (!addFillerAtomType)
+    {
+        for (int i = 0; i < numTypes; i++)
+        {
+            if (nbfp[(i * numTypes + numTypes - 1) * 2 + 0] != 0
+                || nbfp[(i * numTypes + numTypes - 1) * 2 + 1] != 0
+                || nbfp[((numTypes - 1) * numTypes + i) * 2 + 0] != 0
+                || nbfp[((numTypes - 1) * numTypes + i) * 2 + 1] != 0)
+            {
+                GMX_RELEASE_ASSERT(
+                        false,
+                        "With addFillerAtomType=false atom-type numTypes-1 should have params 0");
+            }
+        }
+    }
+
     if (debug)
     {
-        fprintf(debug, "There are %d atom types in the system, adding one for nbnxn_atomdata_t\n", numTypes);
+        fprintf(debug,
+                "There are %d atom types in the system%s\n",
+                numTypes,
+                addFillerAtomType ? ", adding one for nbnxn_atomdata_t" : "");
     }
     // We add one type for the filler particles
-    params->numTypes = numTypes + 1;
+    params->numTypes = numTypes + (addFillerAtomType ? 1 : 0);
     params->nbfp.resize(params->numTypes * params->numTypes * 2);
     params->nbfp_comb.resize(params->numTypes * 2);
 
@@ -603,8 +626,8 @@ nbnxn_atomdata_t::nbnxn_atomdata_t(gmx::PinningPolicy                      pinni
                                    const Nbnxm::KernelType                 kernelType,
                                    const std::optional<LJCombinationRule>& ljCombinationRule,
                                    const LJCombinationRule                 pmeLJCombinationRule,
-                                   const int                               numTypes,
                                    ArrayRef<const real>                    nbfp,
+                                   const bool                              addFillerAtomType,
                                    const int                               numEnergyGroups,
                                    const int                               numOutputBuffers) :
     params_(pinningPolicy),
@@ -615,8 +638,14 @@ nbnxn_atomdata_t::nbnxn_atomdata_t(gmx::PinningPolicy                      pinni
     simdMasks_(kernelType),
     useBufferFlags_(numOutputBuffers > 1)
 {
-    nbnxn_atomdata_params_init(
-            mdlog, &paramsDeprecated(), kernelType, ljCombinationRule, pmeLJCombinationRule, numTypes, nbfp, numEnergyGroups);
+    nbnxn_atomdata_params_init(mdlog,
+                               &paramsDeprecated(),
+                               kernelType,
+                               ljCombinationRule,
+                               pmeLJCombinationRule,
+                               nbfp,
+                               addFillerAtomType,
+                               numEnergyGroups);
 
     const bool simple = Nbnxm::kernelTypeUsesSimplePairlist(kernelType);
     const bool bSIMD  = Nbnxm::kernelTypeIsSimd(kernelType);

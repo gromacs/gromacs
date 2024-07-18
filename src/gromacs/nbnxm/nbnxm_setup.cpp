@@ -463,8 +463,8 @@ std::unique_ptr<nonbonded_verlet_t> init_nb_verlet(const gmx::MDLogger& mdlog,
             kernelSetup.kernelType,
             chooseLJCombinationRule(forcerec),
             chooseLJPmeCombinationRule(forcerec),
-            forcerec.ntype,
             forcerec.nbfp,
+            true,
             mimimumNumEnergyGroupNonbonded,
             (useGpuForNonbonded || emulateGpu) ? 1 : gmx_omp_nthreads_get(ModuleMultiThread::Nonbonded));
 

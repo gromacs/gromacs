@@ -198,8 +198,8 @@ std::unique_ptr<nonbonded_verlet_t> setupNbnxmForBenchInstance(const KernelOptio
             options.kernelSetup.kernelType,
             options.useLJPme ? LJCombinationRule::None : options.ljCombinationRule,
             chooseLJPmeCombinationRule(options),
-            system.numAtomTypes,
             system.nonbondedParameters,
+            true,
             sc_numEnergyGroups[options.energyHandling],
             numThreads);
 

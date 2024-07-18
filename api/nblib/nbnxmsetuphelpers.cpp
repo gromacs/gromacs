@@ -281,6 +281,12 @@ std::unique_ptr<nonbonded_verlet_t> createNbnxmCPU(const size_t              num
                                                    int                       numEnergyGroups,
                                                    gmx::ArrayRef<const real> nonbondedParameters)
 {
+    if (nonbondedParameters.size() != numParticleTypes * numParticleTypes * 2)
+    {
+        throw InputException(
+                "The size of the non-bonded parameter matrix does not match numParticleTypes");
+    }
+
     const auto pinPolicy  = gmx::PinningPolicy::CannotBePinned;
     const int  numThreads = options.numOpenMPThreads;
 
@@ -299,8 +305,8 @@ std::unique_ptr<nonbonded_verlet_t> createNbnxmCPU(const size_t              num
                                                        kernelSetup.kernelType,
                                                        std::nullopt,
                                                        LJCombinationRule::None,
-                                                       numParticleTypes,
                                                        nonbondedParameters,
+                                                       true,
                                                        numEnergyGroups,
                                                        numThreads);
 
@@ -317,6 +323,12 @@ std::unique_ptr<nonbonded_verlet_t> createNbnxmGPU(const size_t               nu
                                                    const interaction_const_t& interactionConst,
                                                    const gmx::DeviceStreamManager& deviceStreamManager)
 {
+    if (nonbondedParameters.size() != numParticleTypes * numParticleTypes * 2)
+    {
+        throw InputException(
+                "The size of the non-bonded parameter matrix does not match numParticleTypes");
+    }
+
     const auto pinPolicy = gmx::PinningPolicy::PinnedIfSupported;
 
     Nbnxm::KernelSetup kernelSetup = createKernelSetupGPU(options.useTabulatedEwaldCorr);
@@ -333,8 +345,8 @@ std::unique_ptr<nonbonded_verlet_t> createNbnxmGPU(const size_t               nu
                                                        kernelSetup.kernelType,
                                                        std::nullopt,
                                                        LJCombinationRule::None,
-                                                       numParticleTypes,
                                                        nonbondedParameters,
+                                                       true,
                                                        numEnergyGroups,
                                                        numThreadsInit);
 

@@ -100,8 +100,8 @@ diagonalPairlist(const Nbnxm::KernelType kernelType, const int numAtoms)
                                                kernelType,
                                                std::nullopt,
                                                LJCombinationRule::None,
-                                               1,
                                                nbfp,
+                                               false,
                                                1,
                                                1);
 

@@ -247,6 +247,10 @@ struct nbnxn_atomdata_t
      * for the LJ parameters.
      * An (release) assertion failure will occur when these conditions are not met.
      *
+     * The non-bonded force parameter matrix \p nbfp is a serialized version
+     * of a square parameter matrix with a pair of parameters 6*C6, 12*C12 for every
+     * atom type pair.
+     *
      * \param[in] pinningPolicy      Sets the pinning policy for all data that might be transferred
      *                               to a GPU
      * \param[in] mdlog              The logger
@@ -254,8 +258,10 @@ struct nbnxn_atomdata_t
      * \param[in] ljCombinationRule  The LJ combination rule parameters to generate,
                                      empty is detect from the LJ parameters
      * \param[in] pmeLJCombinationRule  The LJ combination rule parameters to generate for the LJ PME-grid part
-     * \param[in] numTypes           Number of atom types
-     * \param[in] nbfp               Non-bonded force parameters
+     * \param[in] nbfp               Non-bonded force parameter matrix
+     * \param[in] addFillerAtomType  When true, add a filler atom type, when false, \p nbfp should
+     *                               have atom-type with index numTypes-1 with all parameters zero
+     *                               so that that row and column have only zero values.
      * \param[in] numEnergyGroups    Number of energy groups
      * \param[in] numOutputBuffers   Number of output data structures
      */
@@ -264,8 +270,8 @@ struct nbnxn_atomdata_t
                      Nbnxm::KernelType                       kernelType,
                      const std::optional<LJCombinationRule>& ljCombinationRule,
                      LJCombinationRule                       pmeLJCombinationRule,
-                     int                                     numTypes,
                      gmx::ArrayRef<const real>               nbfp,
+                     bool                                    addFillerAtomType,
                      int                                     numEnergyGroups,
                      int                                     numOutputBuffers);
 

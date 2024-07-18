@@ -217,8 +217,8 @@ static std::unique_ptr<nonbonded_verlet_t> setupNbnxmForBenchInstance(const Kern
                                                        kernelSetup.kernelType,
                                                        convertLJCombinationRule(options.ljCombinationRule),
                                                        LJCombinationRule::None,
-                                                       system.numAtomTypes,
                                                        system.nonbondedParameters,
+                                                       true,
                                                        1,
                                                        numThreads);
 
