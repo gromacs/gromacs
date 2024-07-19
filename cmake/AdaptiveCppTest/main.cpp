@@ -32,6 +32,8 @@
  * the research papers on the package. Check out https://www.gromacs.org.
  */
 
+#include <sycl/sycl.hpp>
+
 // Always fail if we are not compiling with AdaptiveCpp/hipSYCL
 #if !defined(__HIPSYCL__) && !defined(__ADAPTIVECPP__)
 #    error "Neither __HIPSYCL__ nor __ADAPTIVECPP__ macro not defined. Please check your AdaptiveCpp/hipSYCL installation."

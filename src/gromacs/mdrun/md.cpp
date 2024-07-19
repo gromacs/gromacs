@@ -1480,7 +1480,6 @@ void gmx::LegacySimulator::do_md()
                 trotter_update(ir,
                                step,
                                ekind_,
-                               enerd_,
                                state_,
                                total_vir,
                                md->homenr,

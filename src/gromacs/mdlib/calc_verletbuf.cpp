@@ -323,7 +323,7 @@ public:
     }
 
     // Return the square root of the mean of the squared values
-    real rms() const { return count_ > 0 ? squaredSum_ / count_ : 0; }
+    real rms() const { return count_ > 0 ? std::sqrt(squaredSum_ / count_) : 0; }
 
     /* Returns the smallest resolution such that:
      *   |max value| / resolution does not exceed the maximum that can be stored in T
@@ -843,6 +843,8 @@ static real energyDrift(gmx::ArrayRef<const VerletbufAtomtype> att,
             drift_tot += std::abs(pot);
         }
     }
+
+    GMX_RELEASE_ASSERT(std::isfinite(drift_tot), "The drift estimate should be a finite value");
 
     return drift_tot;
 }

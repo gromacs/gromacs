@@ -83,10 +83,30 @@ static void update_max_bonded_distance(real r2, int ftype, int a1, int a2, bonde
     }
 }
 
+//! Returns the squared distance between two atoms, with or without PBC correction
+template<bool usePbc>
+static real inline distanceSquared(const t_pbc* pbc, const RVec& x1, const RVec& x2)
+{
+    if constexpr (usePbc)
+    {
+        rvec dx;
+        pbc_dx(pbc, x1, x2, dx);
+        return norm2(dx);
+    }
+    else
+    {
+        return distance2(x1, x2);
+
+        GMX_UNUSED_VALUE(pbc);
+    }
+}
+
 /*! \brief Set the distance, function type and atom indices for the longest distance between atoms of molecule type \p molt for two-body and multi-body bonded interactions */
+template<bool usePbc>
 static void bonded_cg_distance_mol(const gmx_moltype_t*   molt,
                                    const DDBondedChecking ddBondedChecking,
                                    gmx_bool               bExcl,
+                                   const t_pbc*           pbc,
                                    ArrayRef<const RVec>   x,
                                    bonded_distance_t*     bd_2b,
                                    bonded_distance_t*     bd_mb)
@@ -111,7 +131,7 @@ static void bonded_cg_distance_mol(const gmx_moltype_t*   molt,
                             int atomJ = il.iatoms[i + 1 + aj];
                             if (atomI != atomJ)
                             {
-                                real rij2 = distance2(x[atomI], x[atomJ]);
+                                const real rij2 = distanceSquared<usePbc>(pbc, x[atomI], x[atomJ]);
 
                                 update_max_bonded_distance(
                                         rij2, ftype, atomI, atomJ, (nral == 2) ? bd_2b : bd_mb);
@@ -131,7 +151,7 @@ static void bonded_cg_distance_mol(const gmx_moltype_t*   molt,
             {
                 if (ai != aj)
                 {
-                    real rij2 = distance2(x[ai], x[aj]);
+                    const real rij2 = distanceSquared<usePbc>(pbc, x[ai], x[aj]);
 
                     /* There is no function type for exclusions, use -1 */
                     update_max_bonded_distance(rij2, -1, ai, aj, bd_2b);
@@ -258,6 +278,12 @@ void dd_bonded_cg_distance(const gmx::MDLogger&   mdlog,
 
     bool bExclRequired = inputrecExclForces(&inputrec);
 
+    t_pbc pbc;
+    if (inputrec.bPeriodicMols)
+    {
+        set_pbc(&pbc, inputrec.pbcType, box);
+    }
+
     *r_2b         = 0;
     *r_mb         = 0;
     int at_offset = 0;
@@ -279,18 +305,25 @@ void dd_bonded_cg_distance(const gmx::MDLogger&   mdlog,
             std::vector<RVec> xs(molt.atoms.nr);
             for (int mol = 0; mol < molb.nmol; mol++)
             {
-                getWholeMoleculeCoordinates(&molt,
-                                            &mtop.ffparams,
-                                            inputrec.pbcType,
-                                            &graph,
-                                            box,
-                                            x.subArray(at_offset, molt.atoms.nr),
-                                            xs);
+                ArrayRef<const RVec> xMolWithPbc = x.subArray(at_offset, molt.atoms.nr);
 
                 bonded_distance_t bd_mol_2b = { 0, -1, -1, -1 };
                 bonded_distance_t bd_mol_mb = { 0, -1, -1, -1 };
 
-                bonded_cg_distance_mol(&molt, ddBondedChecking, bExclRequired, xs, &bd_mol_2b, &bd_mol_mb);
+                if (!inputrec.bPeriodicMols)
+                {
+                    getWholeMoleculeCoordinates(
+                            &molt, &mtop.ffparams, inputrec.pbcType, &graph, box, xMolWithPbc, xs);
+
+                    bonded_cg_distance_mol<false>(
+                            &molt, ddBondedChecking, bExclRequired, nullptr, xs, &bd_mol_2b, &bd_mol_mb);
+                }
+                else
+                {
+                    // Compute distances using PBC corrections
+                    bonded_cg_distance_mol<true>(
+                            &molt, ddBondedChecking, bExclRequired, &pbc, xMolWithPbc, &bd_mol_2b, &bd_mol_mb);
+                }
 
                 /* Process the mol data adding the atom index offset */
                 update_max_bonded_distance(bd_mol_2b.r2,

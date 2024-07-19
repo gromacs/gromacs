@@ -937,8 +937,11 @@ actually the settings most force fields were parameterized with,
 so this is also scientifically better.
 
 To completely avoid communication for constraints and/or to have
-the update run on a GPU, the system needs to support so-called
-"update groups" (or no constraints at all). Update groups are
+the update run on a GPU when using domain decomposition, the system
+needs to support so-called "update groups" (or no constraints at all).
+Update groups are grouped of atoms that are moved as one group between
+domains, thereby avoiding the need to communicate for constraints or
+virtual sites involving only atoms within the group. Update groups are
 supported when all atoms involved in coupled constraints are
 coupled directly to one central atom and consecutively ordered,
 not interdispersed with non-constrained atoms. An example is a

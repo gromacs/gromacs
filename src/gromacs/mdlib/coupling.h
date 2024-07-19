@@ -46,7 +46,6 @@
 #include "gromacs/utility/real.h"
 
 class gmx_ekindata_t;
-struct gmx_enerdata_t;
 struct t_commrec;
 struct t_extmass;
 struct t_grpopts;
@@ -168,7 +167,6 @@ void andersen_tcoupl(const t_inputrec*                   ir,
 void trotter_update(const t_inputrec*                   ir,
                     int64_t                             step,
                     gmx_ekindata_t*                     ekind,
-                    const gmx_enerdata_t*               enerd,
                     t_state*                            state,
                     const tensor                        vir,
                     int                                 homenr,

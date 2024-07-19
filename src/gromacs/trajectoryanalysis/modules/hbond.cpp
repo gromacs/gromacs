@@ -544,7 +544,7 @@ void Hbond::searchDonors(const TopologyInformation& top, t_info* selectionTool, 
 
 void Hbond::linkDA(t_info* selectionTool)
 {
-    if (!selectionTool->acceptors.empty() && !selectionTool->donors.empty())
+    if (!selectionTool->acceptors.empty() || !selectionTool->donors.empty())
     {
 
         auto i = selectionTool->acceptors.begin();
