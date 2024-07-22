@@ -1422,13 +1422,17 @@ void pme_gpu_reinit_atoms(PmeGpu* pmeGpu, const int nAtoms, const real* chargesA
     if (pmeGpu->useNvshmem)
     {
         // find the max nAtomsAlloc among all the ranks for symmetric forces buffer allocation.
+#if GMX_MPI
         MPI_Allreduce(
                 &pmeGpu->nAtomsAlloc, &pmeGpu->nvshmemParams->nAtomsAlloc_symmetric, 1, MPI_INT, MPI_MAX, MPI_COMM_WORLD);
+#endif
 
         int myRank     = -1;
         int numPpRanks = pmeGpu->nvshmemParams->ppRanksRef.size();
+#if GMX_MPI
         MPI_Comm_rank(MPI_COMM_WORLD, &myRank);
         MPI_Bcast(&numPpRanks, 1, MPI_INT, myRank, MPI_COMM_WORLD);
+#endif
         // symmetric buffer allocation used for synchronization purpose
         // 1 to be used to signal PME to PP rank of put, and
         // numPpRanks is intended to be used for each PP rank buffer consumption completion
