@@ -1213,13 +1213,14 @@ void push_cmaptype(Directive                         d,
         < nral + 3)
     {
         auto message = gmx::formatString(
-                "Incorrect number of atomtypes for cmap (%d instead of %d)", nn - 3, nral);
+                "Incorrect number of atomtypes for cmap type (%d instead of %d)", nn - 3, nral);
         wi->addError(message);
         return;
     }
     start += nchar_consumed;
 
-    ft     = strtol(alc[nral], nullptr, 10);
+    ft = strtol(alc[nral], nullptr, 10);
+    GMX_RELEASE_ASSERT(ft == 1, "Invalid function type for cmap type: must be 1");
     nxcmap = strtol(alc[nral + 1], nullptr, 10);
     nycmap = strtol(alc[nral + 2], nullptr, 10);
 
@@ -1255,13 +1256,30 @@ void push_cmaptype(Directive                         d,
         }
         else
         {
-            auto message =
-                    gmx::formatString("Error in reading cmap parameter for angle %s %s %s %s %s",
-                                      alc[0],
-                                      alc[1],
-                                      alc[2],
-                                      alc[3],
-                                      alc[4]);
+            auto message = gmx::formatString(
+                    "Error in reading cmap parameter for atomtypes %s %s %s %s %s: found %d, "
+                    "expected %d",
+                    alc[0],
+                    alc[1],
+                    alc[2],
+                    alc[3],
+                    alc[4],
+                    read_cmap,
+                    ncmap);
+            wi->addError(message);
+        }
+    }
+    if ((nn = sscanf(line + start + sl, " %s ", s)))
+    {
+        if (nn == 1)
+        {
+            auto message = gmx::formatString(
+                    "One or more unread cmap parameters exist for atomtypes %s %s %s %s %s",
+                    alc[0],
+                    alc[1],
+                    alc[2],
+                    alc[3],
+                    alc[4]);
             wi->addError(message);
         }
     }
@@ -1300,7 +1318,21 @@ void push_cmaptype(Directive                         d,
     {
         /* Assign a grid number to each cmap_type */
         GMX_RELEASE_ASSERT(bondAtomType != nullptr, "Need valid PreprocessingBondAtomType object");
-        bt[F_CMAP].cmapAtomTypes.emplace_back(*bondAtomType->bondAtomTypeFromName(alc[i]));
+        auto cmapBondAtomType = bondAtomType->bondAtomTypeFromName(alc[i]);
+        if (!cmapBondAtomType)
+        {
+            auto message = gmx::formatString(
+                    "Unknown bond_atomtype for %s in cmap atomtypes %s %s %s %s %s",
+                    alc[i],
+                    alc[0],
+                    alc[1],
+                    alc[2],
+                    alc[3],
+                    alc[4]);
+            wi->addError(message);
+            continue;
+        }
+        bt[F_CMAP].cmapAtomTypes.emplace_back(*cmapBondAtomType);
     }
 
     /* Assign a type number to this cmap */
@@ -1312,7 +1344,7 @@ void push_cmaptype(Directive                         d,
     if (bt[F_CMAP].nct() != static_cast<std::size_t>(nct))
     {
         auto message = gmx::formatString(
-                "Incorrect number of atom types (%d) in cmap type %d\n", nct, bt[F_CMAP].numCmaps_);
+                "Incorrect number of atomtypes (%d) in cmap type %d\n", nct, bt[F_CMAP].numCmaps_);
         wi->addError(message);
     }
     std::vector<int> atomTypes =
@@ -2318,9 +2350,7 @@ void push_cmap(Directive                         d,
                char*                             line,
                WarningHandler*                   wi)
 {
-    const char* aaformat[MAXATOMLIST + 1] = {
-        "%d", "%d%d", "%d%d%d", "%d%d%d%d", "%d%d%d%d%d", "%d%d%d%d%d%d", "%d%d%d%d%d%d%d"
-    };
+    const char* aaformat[] = { "%d%d%d%d%d%d", "%d%d%d%d%d%d%d", "%d%d%d%d%d%d%d%d" };
 
     int  ftype, nral, nread, ncmap_params;
     int  cmap_type;
@@ -2331,7 +2361,7 @@ void push_cmap(Directive                         d,
     nral         = NRAL(ftype);
     ncmap_params = 0;
 
-    nread = sscanf(line, aaformat[nral - 1], &aa[0], &aa[1], &aa[2], &aa[3], &aa[4], &aa[5]);
+    nread = sscanf(line, aaformat[0], &aa[0], &aa[1], &aa[2], &aa[3], &aa[4], &aa[nral]);
 
     if (nread < nral)
     {
@@ -2342,6 +2372,7 @@ void push_cmap(Directive                         d,
     {
         ftype = ifunc_index(d, 1);
     }
+    GMX_RELEASE_ASSERT(aa[nral] == 1, "Invalid function type for cmap torsion: must be 1");
 
     /* Check for double atoms and atoms out of bounds */
     for (int i = 0; i < nral; i++)

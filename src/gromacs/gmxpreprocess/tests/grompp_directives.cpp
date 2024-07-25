@@ -42,9 +42,12 @@
 
 #include <filesystem>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include <gtest/gtest.h>
+
+#include "gtest/gtest.h"
 
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/gmxpreprocess/grompp.h"
@@ -67,7 +70,7 @@ namespace
 using gmx::test::CommandLine;
 using gmx::test::TestFileManager;
 
-class GromppDirectiveTest : public ::testing::Test
+class GromppDirectiveTest : public ::testing::TestWithParam<std::tuple<bool, std::string, std::string>>
 {
 public:
     GromppDirectiveTest() = default;
@@ -170,5 +173,72 @@ TEST_F(GromppDirectiveTest, WarnOnDihedralSumDifferentForFreeEnergy)
     GMX_EXPECT_DEATH_IF_SUPPORTED(gmx_grompp(cmdline.argc(), cmdline.argv()),
                                   "undesired offset in dHdl values");
 }
+
+TEST_P(GromppDirectiveTest, AcceptValidAndErrorOnInvalidCMAP)
+{
+    auto testParam = GetParam();
+
+    CommandLine cmdline;
+    cmdline.addOption("grompp");
+
+    std::string mdpString = mdpContentString_;
+    mdpString += std::get<1>(testParam);
+
+    const std::string mdpInputFileName =
+            fileManager_.getTemporaryFilePath("directives-cmap.mdp").string();
+    gmx::TextWriter::writeFileFromString(mdpInputFileName, mdpString);
+    cmdline.addOption("-f", mdpInputFileName);
+
+
+    cmdline.addOption("-c", TestFileManager::getInputFilePath("directives-cmap.gro").string());
+    cmdline.addOption("-p", TestFileManager::getInputFilePath("directives-cmap.top").string());
+
+    std::string outTprFilename = fileManager_.getTemporaryFilePath("directives-cmap.tpr").string();
+    cmdline.addOption("-o", outTprFilename);
+
+    if (std::get<0>(testParam))
+    {
+        EXPECT_EQ(gmx_grompp(cmdline.argc(), cmdline.argv()), 0);
+    }
+    else
+    {
+        GMX_EXPECT_DEATH_IF_SUPPORTED(gmx_grompp(cmdline.argc(), cmdline.argv()), std::get<2>(testParam));
+    }
+}
+
+std::vector<std::tuple<bool, std::string, std::string>> cmapValidInputOutput = {
+    { false, "", "Unknown cmap torsion between atoms 1 2 3 4 5" },
+    { false,
+      "define = -DNOT_A_CMAPTYPE",
+      "Incorrect number of atomtypes for cmap type \\(4 instead of 5\\)" },
+    { true, "define = -DMATCHING_CMAPTYPE", "" },
+    { false,
+      "define = -DUNKNOWN_ATOMTYPE_IN_CMAPTYPE",
+      "Unknown bond_atomtype for Z in cmap atomtypes X Y X X Z" },
+    { false,
+      "define = -DTOO_MANY_ATOMTYPES_IN_CMAPTYPE",
+      "Invalid function type for cmap type: must be 1" },
+    { false,
+      "define = -DTOO_FEW_ATOMTYPES_IN_CMAPTYPE",
+      "Invalid function type for cmap type: must be 1" },
+    { false,
+      "define = -DINVALID_FUNCTYPE_IN_CMAPTYPE",
+      "Invalid function type for cmap type: must be 1" },
+    { false,
+      "define = -DRECTANGULAR_GRID_IN_CMAPTYPE",
+      "Not the same grid spacing in x and y for cmap grid: x=2, y=3" },
+    { false,
+      "define = -DTOO_FEW_GRID_PARAMETERS_IN_CMAPTYPE",
+      "Error in reading cmap parameter for atomtypes X Y X X Y: found 3,\n  expected 4" },
+    { false,
+      "define = -DTOO_MANY_GRID_PARAMETERS_IN_CMAPTYPE",
+      "One or more unread cmap parameters exist for atomtypes X Y X X Y" },
+    { false, "define = -DNOT_A_CMAP_TORSION", "Too few parameters on line" },
+    { false,
+      "define = -DINVALID_FUNCTYPE_IN_CMAP_TORSION",
+      "Invalid function type for cmap torsion: must be 1" }
+};
+
+INSTANTIATE_TEST_SUITE_P(CMAPDefinesAndErrors, GromppDirectiveTest, testing::ValuesIn(cmapValidInputOutput));
 
 } // namespace
