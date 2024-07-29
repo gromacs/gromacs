@@ -44,8 +44,7 @@ set(LIBGROMACS_SOURCES ${LIBGROMACS_SOURCES} ${TRAJECTORY_SOURCES} PARENT_SCOPE)
 
 # Public interface for modules, including dependencies and interfaces
 #target_include_directories(trajectory PUBLIC
-target_include_directories(trajectory INTERFACE
-                           $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>)
+#                           $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>)
 #target_link_libraries(trajectory PUBLIC
 target_link_libraries(trajectory INTERFACE
                       legacy_api

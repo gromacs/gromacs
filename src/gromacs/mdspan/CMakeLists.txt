@@ -35,8 +35,8 @@
 add_library(mdspan INTERFACE)
 
 # Public interface for modules, including dependencies and interfaces
-target_include_directories(mdspan INTERFACE
-        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>)
+# target_include_directories(mdspan INTERFACE
+#         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>)
 
 if (BUILD_TESTING)
     add_subdirectory(tests)

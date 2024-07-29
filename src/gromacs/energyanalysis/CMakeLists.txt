@@ -48,8 +48,8 @@ target_compile_definitions(energyanalysis PRIVATE HAVE_CONFIG_H)
 target_link_libraries(energyanalysis PRIVATE common)
 
 # Public interface for modules, including dependencies and interfaces
-target_include_directories(energyanalysis PUBLIC
-                           $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>)
+#target_include_directories(energyanalysis PUBLIC
+#                           $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>)
 target_link_libraries(energyanalysis PUBLIC
                       fileio
                       legacy_api

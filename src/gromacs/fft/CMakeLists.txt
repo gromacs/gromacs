@@ -141,8 +141,7 @@ target_link_libraries(fft PRIVATE
 
 # Public interface for modules, including dependencies and interfaces
 #target_include_directories(fft PUBLIC
-target_include_directories(fft INTERFACE
-                           $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>)
+#                           $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>)
 #target_link_libraries(fft PUBLIC
 target_link_libraries(fft INTERFACE
                       legacy_api

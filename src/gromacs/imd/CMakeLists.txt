@@ -44,8 +44,7 @@ target_link_libraries(imd PRIVATE
 
 # Public interface for modules, including dependencies and interfaces
 #target_include_directories(imd PUBLIC
-target_include_directories(imd INTERFACE
-                           $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>)
+#                           $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>)
 #target_link_libraries(imd PUBLIC
 target_link_libraries(imd INTERFACE
                       legacy_api

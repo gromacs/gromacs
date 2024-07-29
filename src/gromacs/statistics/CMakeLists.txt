@@ -39,8 +39,7 @@ set(LIBGROMACS_SOURCES
 
 # Public interface for modules, including dependencies and interfaces
 #target_include_directories(statistics PUBLIC
-target_include_directories(statistics INTERFACE
-                           $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>)
+#                           $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>)
 #target_link_libraries(statistics PUBLIC
 target_link_libraries(statistics INTERFACE
                       legacy_api

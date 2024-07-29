@@ -44,8 +44,7 @@ set(LIBGROMACS_SOURCES ${LIBGROMACS_SOURCES} ${TOOLS_SOURCES} PARENT_SCOPE)
 
 # Public interface for modules, including dependencies and interfaces
 #target_include_directories(tools PUBLIC
-target_include_directories(tools INTERFACE
-                           $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>)
+#                           $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>)
 #target_link_libraries(tools PUBLIC
 target_link_libraries(tools INTERFACE
                       legacy_api

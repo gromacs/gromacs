@@ -44,8 +44,7 @@ target_link_libraries(gmxana PRIVATE
 
 # Public interface for modules, including dependencies and interfaces
 #target_include_directories(gmxana PUBLIC
-target_include_directories(gmxana INTERFACE
-        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>)
+#        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>)
 #target_link_libraries(gmxana PUBLIC
 target_link_libraries(gmxana INTERFACE
         legacy_api

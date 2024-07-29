@@ -48,8 +48,7 @@ target_link_libraries(correlationfunctions PRIVATE
 
 # Public interface for modules, including dependencies and interfaces
 #target_include_directories(correlationfunctions PUBLIC
-target_include_directories(correlationfunctions INTERFACE
-                           $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>)
+#                           $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>)
 #target_link_libraries(correlationfunctions PUBLIC
 target_link_libraries(correlationfunctions INTERFACE
                       legacy_api

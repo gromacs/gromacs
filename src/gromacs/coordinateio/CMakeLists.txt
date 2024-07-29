@@ -43,9 +43,8 @@ set(LIBGROMACS_SOURCES ${LIBGROMACS_SOURCES} ${COORDINATEIO_SOURCES} PARENT_SCOP
 #)
 
 # Public interface for modules, including dependencies and interfaces
-#target_include_directories(coordinateio PUBLIC
-target_include_directories(coordinateio INTERFACE
-                           $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>)
+#target_include_directories(coordinateio PUBLIC\
+#                           $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>)
 #target_link_libraries(coordinateio PUBLIC
 target_link_libraries(coordinateio INTERFACE
                       legacy_api

@@ -62,8 +62,7 @@ gmx_target_interface_warning_suppression(fileio "-Wno-cast-function-type-strict"
 
 # Public interface for modules, including dependencies and interfaces
 #target_include_directories(fileio PUBLIC
-target_include_directories(fileio INTERFACE
-                           $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>)
+#                           $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>)
 #target_link_libraries(fileio PUBLIC
 target_link_libraries(fileio INTERFACE
                       legacy_api

@@ -44,8 +44,7 @@ set(LIBGROMACS_SOURCES ${LIBGROMACS_SOURCES} ${ONLINEHELP_SOURCES} PARENT_SCOPE)
 
 # Public interface for modules, including dependencies and interfaces
 #target_include_directories(onlinehelp PUBLIC
-target_include_directories(onlinehelp INTERFACE
-                           $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>)
+#                           $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>)
 #target_link_libraries(onlinehelp PUBLIC
 target_link_libraries(onlinehelp INTERFACE
                       legacy_api

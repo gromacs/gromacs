@@ -61,8 +61,7 @@ target_link_libraries(mdrun PRIVATE
 
 # Public interface for modules, including dependencies and interfaces
 #target_include_directories(mdrun PUBLIC
-target_include_directories(mdrun INTERFACE
-                           $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>)
+#                           $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>)
 #target_link_libraries(mdrun PUBLIC
 target_link_libraries(mdrun INTERFACE
                       legacy_api

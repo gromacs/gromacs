@@ -99,8 +99,7 @@ target_link_libraries(nbnxm PRIVATE
 
 # Public interface for modules, including dependencies and interfaces
 #target_include_directories(nbnxm PUBLIC
-target_include_directories(nbnxm INTERFACE
-        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>)
+#        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>)
 #target_link_libraries(nbnxm PUBLIC
 target_link_libraries(nbnxm INTERFACE
         legacy_api

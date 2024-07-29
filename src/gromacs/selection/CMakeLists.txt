@@ -73,8 +73,7 @@ set(libgromacs_object_library_dependencies ${libgromacs_object_library_dependenc
 
 # Public interface for modules, including dependencies and interfaces
 #target_include_directories(selection PUBLIC
-target_include_directories(selection INTERFACE
-                           $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>)
+#                           $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>)
 #target_link_libraries(selection PUBLIC
 target_link_libraries(selection INTERFACE
                       legacy_api

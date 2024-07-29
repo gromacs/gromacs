@@ -112,8 +112,7 @@ target_link_libraries(gpu_utils PRIVATE
 
 # Public interface for modules, including dependencies and interfaces
 #target_include_directories(gpu_utils PUBLIC
-target_include_directories(gpu_utils INTERFACE
-                           $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>)
+#                           $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>)
 #target_link_libraries(gpu_utils PUBLIC
 target_link_libraries(gpu_utils INTERFACE
                       legacy_api

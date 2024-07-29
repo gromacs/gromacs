@@ -52,8 +52,7 @@ target_link_libraries(gmxlib PRIVATE
 
 # Public interface for modules, including dependencies and interfaces
 #target_include_directories(gmxlib PUBLIC
-target_include_directories(gmxlib INTERFACE
-                           $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>)
+#                           $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>)
 #target_link_libraries(gmxlib PUBLIC
 target_link_libraries(gmxlib INTERFACE
                       legacy_api

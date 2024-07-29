@@ -39,8 +39,7 @@ target_link_libraries(compat PRIVATE
 
 # Public interface for modules, including dependencies and interfaces
 #target_include_directories(compat PUBLIC
-target_include_directories(compat INTERFACE
-                           $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>)
+#                           $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>)
 #target_link_libraries(compat PUBLIC
 target_link_libraries(compat INTERFACE
                       legacy_api

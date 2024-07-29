@@ -45,8 +45,7 @@ target_link_libraries(commandline PRIVATE
 
 # Public interface for modules, including dependencies and interfaces
 #target_include_directories(commandline PUBLIC
-target_include_directories(commandline INTERFACE
-                           $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>)
+#                           $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>)
 #target_link_libraries(commandline PUBLIC
 target_link_libraries(commandline INTERFACE
                       legacy_api

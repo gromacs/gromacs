@@ -87,8 +87,7 @@ target_link_libraries(mdtypes PRIVATE
 
 # Public interface for modules, including dependencies and interfaces
 #target_include_directories(mdtypes PUBLIC
-target_include_directories(mdtypes INTERFACE
-                           $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>)
+#                           $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>)
 #target_link_libraries(mdtypes PUBLIC
 target_link_libraries(mdtypes INTERFACE
                       legacy_api

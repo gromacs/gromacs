@@ -75,8 +75,8 @@ target_link_libraries(modularsimulator PRIVATE
 )
 
 # Public interface for modules, including dependencies and interfaces
-target_include_directories(modularsimulator PUBLIC
-                           $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>)
+#target_include_directories(modularsimulator PUBLIC
+#                           $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>)
 
 if (BUILD_SHARED_LIBS)
     set_target_properties(modularsimulator PROPERTIES POSITION_INDEPENDENT_CODE ON)

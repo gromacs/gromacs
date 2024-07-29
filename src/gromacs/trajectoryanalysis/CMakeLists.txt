@@ -44,8 +44,7 @@ set(LIBGROMACS_SOURCES ${LIBGROMACS_SOURCES} ${TRAJECTORYANALYSIS_SOURCES} PAREN
 
 # Public interface for modules, including dependencies and interfaces
 #target_include_directories(trajectoryanalysis PUBLIC
-target_include_directories(trajectoryanalysis INTERFACE
-                           $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>)
+#                           $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>)
 #target_link_libraries(trajectoryanalysis PUBLIC
 target_link_libraries(trajectoryanalysis INTERFACE
                       legacy_api

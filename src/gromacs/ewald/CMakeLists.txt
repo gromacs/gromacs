@@ -141,8 +141,7 @@ target_link_libraries(ewald PRIVATE
 
 # Public interface for modules, including dependencies and interfaces
 #target_include_directories(ewald PUBLIC
-target_include_directories(ewald INTERFACE
-                           $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>)
+#                           $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>)
 #target_link_libraries(ewald PUBLIC
 target_link_libraries(ewald INTERFACE
                       legacy_api

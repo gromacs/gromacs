@@ -55,8 +55,7 @@ set(LIBGROMACS_SOURCES ${LIBGROMACS_SOURCES} ${DOMDEC_SOURCES} ${DOMDEC_GPU_SOUR
 
 # Public interface for modules, including dependencies and interfaces
 #target_include_directories(domdec PUBLIC
-target_include_directories(domdec INTERFACE
-                           $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>)
+#                           $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>)
 #target_link_libraries(domdec PUBLIC
 target_link_libraries(domdec INTERFACE
                       legacy_api

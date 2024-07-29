@@ -52,8 +52,7 @@ target_link_libraries(mdrunutility PRIVATE
 
 # Public interface for modules, including dependencies and interfaces
 #target_include_directories(mdrunutility PUBLIC
-target_include_directories(mdrunutility INTERFACE
-                           $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>)
+#                           $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>)
 #target_link_libraries(mdrunutility PUBLIC
 target_link_libraries(mdrunutility INTERFACE
                       legacy_api

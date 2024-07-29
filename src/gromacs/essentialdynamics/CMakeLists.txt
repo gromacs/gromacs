@@ -45,8 +45,7 @@ target_link_libraries(essentialdynamics PRIVATE
 
 # Public interface for modules, including dependencies and interfaces
 #target_include_directories(essentialdynamics PUBLIC
-target_include_directories(essentialdynamics INTERFACE
-                           $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>)
+#                           $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>)
 #target_link_libraries(essentialdynamics PUBLIC
 target_link_libraries(essentialdynamics INTERFACE
                       legacy_api
