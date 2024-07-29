@@ -182,7 +182,7 @@ get_cell_range(real b0, real b1, const Grid::Dimensions& jGridDims, real d2, rea
 CLANG_DIAGNOSTIC_IGNORE("-Wunneeded-internal-declaration")
 #endif
 // Returns whether any atom pair from two clusters is within distance sqrt(rlist2)
-static inline bool clusterpairInRangePlainC(const NbnxnPairlistGpuWork& work,
+static inline bool clusterpairInRangePlainC(const NbnxmPairlistGpuWork& work,
                                             const int                   si,
                                             const int                   csj,
                                             const int                   jCoordStride,
@@ -234,7 +234,7 @@ gmx_unused static inline T simdLoad(std::enable_if_t<std::is_same_v<T, Simd4Real
 
 // Returns whether any atom pair from two clusters is within distance sqrt(rlist2), uses SIMD or SIMD4
 template<int simdWidth, typename T, typename BoolT>
-static inline bool clusterpairInRangeSimd(const NbnxnPairlistGpuWork& work,
+static inline bool clusterpairInRangeSimd(const NbnxmPairlistGpuWork& work,
                                           int                         si,
                                           int                         csj,
                                           int                         jCoordStride,
@@ -333,7 +333,7 @@ static inline bool clusterpairInRangeSimd(const NbnxnPairlistGpuWork& work,
 #endif // GMX_SIMD
 
 // Returns whether any atom between a GPU cluster pair is within range
-static inline bool clusterpairInRange(const NbnxnPairlistGpuWork& work,
+static inline bool clusterpairInRange(const NbnxmPairlistGpuWork& work,
                                       const int                   si,
                                       const int                   csj,
                                       const int                   jCoordStride,
@@ -367,7 +367,7 @@ NbnxnPairlistCpu::NbnxnPairlistCpu(const int iClusterSize) :
     na_cj(0),
     rlist(0),
     ncjInUse(0),
-    work(std::make_unique<NbnxnPairlistCpuWork>(iClusterSize))
+    work(std::make_unique<NbnxmPairlistCpuWork>(iClusterSize))
 {
 }
 
@@ -380,7 +380,7 @@ NbnxnPairlistGpu::NbnxnPairlistGpu(gmx::PinningPolicy pinningPolicy) :
     cjPacked(pinningPolicy),
     excl({}, { pinningPolicy }),
     nci_tot(0),
-    work(std::make_unique<NbnxnPairlistGpuWork>())
+    work(std::make_unique<NbnxmPairlistGpuWork>())
 {
     static_assert(c_nbnxnGpuNumClusterPerSupercluster == c_gpuNumClusterPerCell,
                   "The search code assumes that the a super-cluster matches a search grid cell");
@@ -807,7 +807,7 @@ static void make_cluster_list_supersub(const Grid&       iGrid,
                                        const float       rbb2,
                                        int*              numDistanceChecks)
 {
-    NbnxnPairlistGpuWork& work = *nbl->work;
+    NbnxmPairlistGpuWork& work = *nbl->work;
 
 #if NBNXN_BBXXXX
     const float* pbb_ci = work.iSuperClusterData.bbPacked.data();
@@ -1767,7 +1767,7 @@ static void addNewIEntry(NbnxnPairlistGpu* nbl, int sci, int shift, int gmx_unus
 /* Sort the simple j-list cj on exclusions.
  * Entries with exclusions will all be sorted to the beginning of the list.
  */
-static void sort_cj_excl(nbnxn_cj_t* cj, int ncj, NbnxnPairlistCpuWork* work)
+static void sort_cj_excl(nbnxn_cj_t* cj, int ncj, NbnxmPairlistCpuWork* work)
 {
     work->cj.resize(ncj);
 
@@ -2014,7 +2014,7 @@ static inline void set_icell_bb_simple(gmx::ArrayRef<const BoundingBox> bb,
 }
 
 /* Sets a simple list i-cell bounding box, including PBC shift */
-static inline void set_icell_bb(const Grid& iGrid, int ci, const RVec& shift, NbnxnPairlistCpuWork* work)
+static inline void set_icell_bb(const Grid& iGrid, int ci, const RVec& shift, NbnxmPairlistCpuWork* work)
 {
     set_icell_bb_simple(iGrid.iBoundingBoxes(), ci, shift, &work->iClusterData.bb[0]);
 }
@@ -2056,7 +2056,7 @@ gmx_unused static void set_icell_bb_supersub(gmx::ArrayRef<const BoundingBox> bb
 }
 
 /* Sets a super-cell and sub cell bounding boxes, including PBC shift */
-gmx_unused static void set_icell_bb(const Grid& iGrid, int ci, const RVec& shift, NbnxnPairlistGpuWork* work)
+gmx_unused static void set_icell_bb(const Grid& iGrid, int ci, const RVec& shift, NbnxmPairlistGpuWork* work)
 {
 #if NBNXN_BBXXXX
     set_icell_bbxxxx_supersub(
@@ -2071,7 +2071,7 @@ static void icell_set_x_simple(int                                 ci,
                                const RVec&                         shift,
                                int                                 stride,
                                const real*                         x,
-                               NbnxnPairlistCpuWork::IClusterData* iClusterData)
+                               NbnxmPairlistCpuWork::IClusterData* iClusterData)
 {
     constexpr int c_iClusterSize = sc_iClusterSize(KernelType::Cpu4x4_PlainC);
 
@@ -2091,7 +2091,7 @@ static void icell_set_x(int                             ci,
                         int                             stride,
                         const real*                     x,
                         const ClusterDistanceKernelType kernelType,
-                        NbnxnPairlistCpuWork*           work)
+                        NbnxmPairlistCpuWork*           work)
 {
     switch (kernelType)
     {
@@ -2118,7 +2118,7 @@ static void icell_set_x(int                                  ci,
                         int                                  stride,
                         const real*                          x,
                         ClusterDistanceKernelType gmx_unused kernelType,
-                        NbnxnPairlistGpuWork*                work)
+                        NbnxmPairlistGpuWork*                work)
 {
     if constexpr (!c_useSimdGpuClusterPairDistance)
     {
@@ -3581,7 +3581,7 @@ static void sort_sci(NbnxnPairlistGpu* nbl)
         return;
     }
 
-    NbnxnPairlistGpuWork& work = *nbl->work;
+    NbnxmPairlistGpuWork& work = *nbl->work;
 
     /* We will distinguish differences up to double the average */
     const int m = static_cast<int>((2 * gmx::ssize(nbl->cjPacked)) / gmx::ssize(nbl->sci));

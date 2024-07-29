@@ -51,9 +51,9 @@
 #include "pairlist.h"
 
 //! Working data for the actual i-supercell during pair search \internal
-struct NbnxnPairlistCpuWork
+struct NbnxmPairlistCpuWork
 {
-    NbnxnPairlistCpuWork(const int iClusterSize) : iClusterData(iClusterSize) {}
+    NbnxmPairlistCpuWork(const int iClusterSize) : iClusterData(iClusterSize) {}
 
     //! Struct for storing coordinates and bounding box for an i-entry during search \internal
     struct IClusterData
@@ -89,7 +89,7 @@ struct NbnxnPairlistCpuWork
 };
 
 /* Working data for the actual i-supercell during pair search */
-struct NbnxnPairlistGpuWork
+struct NbnxmPairlistGpuWork
 {
     struct ISuperClusterData
     {
@@ -105,7 +105,7 @@ struct NbnxnPairlistGpuWork
         AlignedVector<real> xSimd;
     };
 
-    NbnxnPairlistGpuWork();
+    NbnxmPairlistGpuWork();
 
     //! Protect data from cache pollution between threads
     gmx_cache_protect_t cp0;

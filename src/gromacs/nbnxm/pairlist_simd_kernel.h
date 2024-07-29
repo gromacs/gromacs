@@ -55,14 +55,14 @@ void setICellCoordinatesSimd4xM(int                   ci,
                                 const gmx::RVec&      shift,
                                 int gmx_unused        stride,
                                 const real*           x,
-                                NbnxnPairlistCpuWork* work);
+                                NbnxmPairlistCpuWork* work);
 
 //! Copies PBC shifted i-cell packed atom coordinates to working array for the 2xMM layout
 void setICellCoordinatesSimd2xMM(int                   ci,
                                  const gmx::RVec&      shift,
                                  int gmx_unused        stride,
                                  const real*           x,
-                                 NbnxnPairlistCpuWork* work);
+                                 NbnxmPairlistCpuWork* work);
 
 /*! \brief SIMD code for checking and adding cluster-pairs to the list using the 4xM layout.
  *

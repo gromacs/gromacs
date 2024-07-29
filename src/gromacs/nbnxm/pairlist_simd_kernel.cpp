@@ -193,7 +193,7 @@ static inline void setICellCoordinatesSimd(int                   ci,
                                            const gmx::RVec&      shift,
                                            int gmx_unused        stride,
                                            const real*           x,
-                                           NbnxnPairlistCpuWork* work)
+                                           NbnxmPairlistCpuWork* work)
 {
     using namespace gmx;
 
@@ -241,7 +241,7 @@ void setICellCoordinatesSimd4xM(int gmx_unused  ci,
                                 const gmx::RVec gmx_unused& shift,
                                 int gmx_unused              stride,
                                 const real gmx_unused* x,
-                                NbnxnPairlistCpuWork gmx_unused* work)
+                                NbnxmPairlistCpuWork gmx_unused* work)
 {
 #if GMX_HAVE_NBNXM_SIMD_4XM
     setICellCoordinatesSimd<ClusterDistanceKernelType::CpuSimd_4xM>(ci, shift, stride, x, work);
@@ -254,7 +254,7 @@ void setICellCoordinatesSimd2xMM(int gmx_unused  ci,
                                  const gmx::RVec gmx_unused& shift,
                                  int gmx_unused              stride,
                                  const real gmx_unused* x,
-                                 NbnxnPairlistCpuWork gmx_unused* work)
+                                 NbnxmPairlistCpuWork gmx_unused* work)
 {
 #if GMX_HAVE_NBNXM_SIMD_2XMM
     setICellCoordinatesSimd<ClusterDistanceKernelType::CpuSimd_2xMM>(ci, shift, stride, x, work);

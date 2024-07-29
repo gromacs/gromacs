@@ -52,8 +52,8 @@
 #include "gromacs/utility/enumerationhelpers.h"
 #include "gromacs/utility/real.h"
 
-struct NbnxnPairlistCpuWork;
-struct NbnxnPairlistGpuWork;
+struct NbnxmPairlistCpuWork;
+struct NbnxmPairlistGpuWork;
 struct t_nblist;
 
 
@@ -366,7 +366,7 @@ struct NbnxnPairlistCpu
     int ncjInUse;
 
     //! Working data storage for list construction
-    std::unique_ptr<NbnxnPairlistCpuWork> work;
+    std::unique_ptr<NbnxmPairlistCpuWork> work;
 
     //! Cache protection
     gmx_cache_protect_t cp1;
@@ -407,7 +407,7 @@ struct NbnxnPairlistGpu
     int nci_tot;
 
     //! Working data storage for list construction
-    std::unique_ptr<NbnxnPairlistGpuWork> work;
+    std::unique_ptr<NbnxmPairlistGpuWork> work;
 
     //! Cache protection
     gmx_cache_protect_t cp1;
