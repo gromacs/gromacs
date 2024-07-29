@@ -115,7 +115,6 @@ bool buildSupportsListedForcesGpu(std::string* error)
     errorReasons.appendIf(GMX_DOUBLE, "Double precision build of GROMACS");
     errorReasons.appendIf(GMX_GPU_OPENCL, "OpenCL build of GROMACS");
     errorReasons.appendIf(!GMX_GPU, "CPU-only build of GROMACS");
-    errorReasons.appendIf(GMX_GPU_HIP, "HIP listed forces not implemented yet");
     errorReasons.finishContext();
     if (error != nullptr)
     {
@@ -148,7 +147,7 @@ bool inputSupportsListedForcesGpu(const t_inputrec& ir, const gmx_mtop_t& mtop, 
     return errorReasons.isEmpty();
 }
 
-#if !GMX_GPU_CUDA && !GMX_GPU_SYCL
+#if !GMX_GPU_CUDA && !GMX_GPU_SYCL && !GMX_GPU_HIP
 
 class ListedForcesGpu::Impl
 {
@@ -198,6 +197,6 @@ void ListedForcesGpu::waitAccumulateEnergyTerms(gmx_enerdata_t* /* enerd */) {}
 
 void ListedForcesGpu::clearEnergies() {}
 
-#endif // !GMX_GPU_CUDA
+#endif // !GMX_GPU_CUDA && !GMX_GPU_SYCL && !GMX_GPU_HIP
 
 } // namespace gmx
